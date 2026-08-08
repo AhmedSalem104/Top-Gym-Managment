@@ -1,0 +1,326 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#0f172a">
+    <title>إدارة عضويات الجيم</title>
+    <style>
+        :root {
+            --bg: #f3f6fb;
+            --surface: #ffffff;
+            --surface-soft: #f8fafc;
+            --text: #172033;
+            --muted: #697386;
+            --line: #e5eaf2;
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --green: #059669;
+            --orange: #d97706;
+            --red: #dc2626;
+            --purple: #7c3aed;
+            --shadow: 0 12px 34px rgba(15, 23, 42, .07);
+            font-family: Tahoma, Arial, sans-serif;
+        }
+        * { box-sizing: border-box; }
+        body { margin: 0; background: var(--bg); color: var(--text); }
+        button, input, select, textarea { font: inherit; }
+        button { cursor: pointer; }
+        .app-shell { min-height: 100vh; }
+        .topbar { background: #0f172a; color: #fff; padding: 18px max(18px, calc((100vw - 1180px) / 2)); }
+        .topbar-inner { max-width: 1180px; margin: auto; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+        .brand { display: flex; align-items: center; gap: 12px; }
+        .brand-mark { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 14px; background: linear-gradient(135deg, #3b82f6, #8b5cf6); font-size: 22px; }
+        .brand h1 { font-size: 19px; margin: 0 0 4px; }
+        .brand p { margin: 0; color: #cbd5e1; font-size: 12px; }
+        .top-actions { display: flex; gap: 8px; }
+        .page { max-width: 1180px; margin: 0 auto; padding: 22px 18px 40px; }
+        .hero { display: flex; align-items: end; justify-content: space-between; gap: 18px; margin-bottom: 20px; }
+        .hero h2 { margin: 0 0 7px; font-size: clamp(22px, 4vw, 30px); }
+        .hero p { margin: 0; color: var(--muted); font-size: 14px; }
+        .date-chip { background: #eaf1ff; color: #1d4ed8; border-radius: 999px; padding: 10px 14px; font-size: 13px; white-space: nowrap; }
+        .stats-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 18px; }
+        .stat-card { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 16px; box-shadow: var(--shadow); }
+        .stat-card .stat-label { color: var(--muted); font-size: 12px; }
+        .stat-card .stat-value { display: block; font-size: 27px; font-weight: 700; margin-top: 8px; }
+        .stat-card.active .stat-value { color: var(--green); }
+        .stat-card.warning .stat-value { color: var(--orange); }
+        .stat-card.danger .stat-value { color: var(--red); }
+        .stat-card.frozen .stat-value { color: var(--purple); }
+        .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; box-shadow: var(--shadow); }
+        .panel-header, .section-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 18px 20px; border-bottom: 1px solid var(--line); }
+        .panel-header h3, .section-heading h3 { margin: 0; font-size: 17px; }
+        .panel-header p { margin: 4px 0 0; color: var(--muted); font-size: 12px; }
+        .alerts-panel { margin-bottom: 18px; }
+        .alerts-list { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 16px 20px 20px; }
+        .alert-card { border-radius: 13px; padding: 13px; background: var(--surface-soft); border-right: 4px solid var(--orange); }
+        .alert-card.expired { border-right-color: var(--red); }
+        .alert-card.frozen { border-right-color: var(--purple); }
+        .alert-card strong { display: block; margin-bottom: 6px; font-size: 14px; }
+        .alert-card span { display: block; color: var(--muted); font-size: 12px; line-height: 1.7; }
+        .empty { color: var(--muted); text-align: center; padding: 24px 12px; font-size: 13px; }
+        .workspace { display: grid; grid-template-columns: minmax(290px, 360px) minmax(0, 1fr); gap: 18px; align-items: start; }
+        .form-body { padding: 18px 20px 20px; }
+        .field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+        .field.full { grid-column: 1 / -1; }
+        label { font-size: 12px; color: #475569; font-weight: 700; }
+        input, select, textarea { width: 100%; border: 1px solid #d8e0eb; border-radius: 10px; padding: 11px 12px; color: var(--text); background: #fff; outline: none; transition: border .15s, box-shadow .15s; }
+        textarea { min-height: 78px; resize: vertical; }
+        input:focus, select:focus, textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37, 99, 235, .12); }
+        .section-label { font-size: 12px; color: var(--primary); font-weight: 800; margin: 18px 0 10px; padding-bottom: 7px; border-bottom: 1px dashed #cbd5e1; }
+        .form-actions { display: flex; gap: 9px; margin-top: 8px; }
+        .btn { border: 0; border-radius: 10px; padding: 10px 14px; font-weight: 700; font-size: 13px; transition: transform .15s, background .15s; }
+        .btn:active { transform: translateY(1px); }
+        .btn-primary { background: var(--primary); color: #fff; }
+        .btn-primary:hover { background: var(--primary-dark); }
+        .btn-light { background: #edf2f7; color: #334155; }
+        .btn-light:hover { background: #e2e8f0; }
+        .btn-danger { background: #fee2e2; color: #b91c1c; }
+        .btn-purple { background: #ede9fe; color: #6d28d9; }
+        .btn-small { padding: 8px 10px; font-size: 12px; }
+        .members-toolbar { display: flex; gap: 10px; padding: 15px 20px; border-bottom: 1px solid var(--line); }
+        .members-toolbar input { flex: 1; }
+        .members-toolbar select { width: 155px; }
+        .members-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; padding: 16px 20px 20px; }
+        .member-card { border: 1px solid var(--line); border-radius: 15px; padding: 15px; background: #fff; min-width: 0; }
+        .member-card:hover { border-color: #b9c9e4; }
+        .member-top { display: flex; align-items: start; justify-content: space-between; gap: 10px; }
+        .member-name { font-size: 16px; font-weight: 800; margin: 0 0 5px; word-break: break-word; }
+        .member-phone { color: var(--muted); font-size: 12px; text-decoration: none; direction: ltr; display: inline-block; }
+        .badge { border-radius: 999px; padding: 5px 9px; font-size: 11px; font-weight: 800; white-space: nowrap; }
+        .badge.active { background: #d1fae5; color: #047857; }
+        .badge.expiring_soon { background: #fef3c7; color: #b45309; }
+        .badge.expired { background: #fee2e2; color: #b91c1c; }
+        .badge.frozen { background: #ede9fe; color: #6d28d9; }
+        .member-details { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin: 15px 0; padding: 12px 0; border-top: 1px solid #eef2f7; border-bottom: 1px solid #eef2f7; }
+        .detail span { display: block; color: var(--muted); font-size: 11px; margin-bottom: 3px; }
+        .detail strong { font-size: 12px; }
+        .payment-line { display: flex; justify-content: space-between; gap: 8px; background: #f8fafc; border-radius: 9px; padding: 9px 10px; margin-bottom: 12px; font-size: 12px; }
+        .payment-line .remaining { color: var(--orange); font-weight: 800; }
+        .member-actions { display: flex; flex-wrap: wrap; gap: 7px; }
+        .status-note { color: var(--muted); font-size: 12px; margin: 0 0 10px; }
+        .loading { padding: 30px; text-align: center; color: var(--muted); font-size: 13px; }
+        .toast { position: fixed; inset-inline-start: 18px; bottom: 18px; z-index: 20; max-width: min(360px, calc(100vw - 36px)); padding: 13px 16px; border-radius: 12px; color: #fff; background: #0f172a; box-shadow: var(--shadow); transform: translateY(120px); opacity: 0; transition: .2s; pointer-events: none; font-size: 13px; }
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast.error { background: #b91c1c; }
+        dialog { border: 0; border-radius: 16px; width: min(430px, calc(100vw - 28px)); padding: 0; box-shadow: 0 25px 70px rgba(15, 23, 42, .25); color: var(--text); }
+        dialog::backdrop { background: rgba(15, 23, 42, .52); }
+        .dialog-body { padding: 20px; }
+        .dialog-body h3 { margin: 0 0 6px; font-size: 18px; }
+        .dialog-body p { margin: 0 0 17px; color: var(--muted); font-size: 12px; }
+        .dialog-actions { display: flex; gap: 8px; justify-content: end; margin-top: 18px; }
+        .hidden { display: none !important; }
+        @media (max-width: 900px) {
+            .stats-grid { grid-template-columns: repeat(3, 1fr); }
+            .workspace { grid-template-columns: 1fr; }
+            .form-panel { order: 1; }
+            .members-panel { order: 2; }
+        }
+        @media (max-width: 640px) {
+            .topbar { padding: 14px 15px; }
+            .topbar-inner { align-items: start; }
+            .brand h1 { font-size: 16px; }
+            .brand p { font-size: 11px; }
+            .brand-mark { width: 37px; height: 37px; font-size: 19px; }
+            .top-actions .btn { padding: 8px 10px; }
+            .page { padding: 18px 12px 32px; }
+            .hero { display: block; }
+            .date-chip { display: inline-block; margin-top: 13px; }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+            .stat-card { padding: 13px; }
+            .stat-card .stat-value { font-size: 23px; }
+            .alerts-list, .members-list { grid-template-columns: 1fr; padding-left: 13px; padding-right: 13px; }
+            .panel-header, .section-heading { padding-left: 15px; padding-right: 15px; }
+            .members-toolbar { padding-left: 13px; padding-right: 13px; flex-direction: column; }
+            .members-toolbar select { width: 100%; }
+            .form-body { padding-left: 15px; padding-right: 15px; }
+            .field-grid { grid-template-columns: 1fr; gap: 0; }
+            .field.full { grid-column: auto; }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-shell">
+        <header class="topbar">
+            <div class="topbar-inner">
+                <div class="brand">
+                    <div class="brand-mark">🏋️</div>
+                    <div><h1>إدارة عضويات الجيم</h1><p>متابعة بسيطة وسريعة للمشتركين</p></div>
+                </div>
+                <div class="top-actions"><button class="btn btn-light btn-small" id="refreshButton">تحديث البيانات</button></div>
+            </div>
+        </header>
+
+        <main class="page">
+            <section class="hero">
+                <div><h2>لوحة المتابعة</h2><p>أضف مشتركاً، تابع حالته، وسجل التجديد أو التجميد من مكان واحد.</p></div>
+                <div class="date-chip">اليوم: <span id="todayLabel">—</span></div>
+            </section>
+
+            <section class="stats-grid" aria-label="ملخص العضويات">
+                <div class="stat-card"><span class="stat-label">إجمالي الأعضاء</span><strong class="stat-value" id="statTotal">0</strong></div>
+                <div class="stat-card active"><span class="stat-label">نشطة</span><strong class="stat-value" id="statActive">0</strong></div>
+                <div class="stat-card warning"><span class="stat-label">قريبة الانتهاء</span><strong class="stat-value" id="statExpiring">0</strong></div>
+                <div class="stat-card danger"><span class="stat-label">منتهية</span><strong class="stat-value" id="statExpired">0</strong></div>
+                <div class="stat-card frozen"><span class="stat-label">مجمدة الآن</span><strong class="stat-value" id="statFrozen">0</strong></div>
+            </section>
+
+            <section class="panel alerts-panel">
+                <div class="panel-header"><div><h3>التنبيهات اليومية</h3><p>العضويات المنتهية اليوم، القريبة من الانتهاء، والمجمدة حالياً</p></div></div>
+                <div class="alerts-list" id="alertsList"><div class="empty">جاري تحميل التنبيهات…</div></div>
+            </section>
+
+            <section class="workspace">
+                <section class="panel form-panel">
+                    <div class="section-heading"><h3 id="formTitle">إضافة عضو جديد</h3><button class="btn btn-light btn-small hidden" id="cancelEditButton">إلغاء التعديل</button></div>
+                    <form class="form-body" id="memberForm">
+                        <input type="hidden" id="memberId">
+                        <div class="section-label">بيانات العضو</div>
+                        <div class="field"><label for="fullName">الاسم الكامل *</label><input id="fullName" required maxlength="120" placeholder="مثال: أحمد محمد"></div>
+                        <div class="field-grid">
+                            <div class="field"><label for="phone">رقم الهاتف *</label><input id="phone" required maxlength="30" inputmode="tel" placeholder="01xxxxxxxxx"></div>
+                            <div class="field"><label for="email">البريد الإلكتروني</label><input id="email" type="email" maxlength="254" placeholder="اختياري"></div>
+                        </div>
+                        <div class="field-grid">
+                            <div class="field"><label for="registrationDate">تاريخ التسجيل</label><input id="registrationDate" type="date" required></div>
+                            <div class="field"><label for="notes">ملاحظات العضو</label><input id="notes" maxlength="1000" placeholder="اختياري"></div>
+                        </div>
+
+                        <div class="section-label">بيانات الاشتراك</div>
+                        <div class="field"><label for="membershipType">نوع العضوية *</label><select id="membershipType" required><option value="monthly">شهرية</option><option value="quarterly">ربع سنوية</option><option value="semiannual">نصف سنوية</option><option value="annual">سنوية</option></select></div>
+                        <div class="field-grid">
+                            <div class="field"><label for="startDate">تاريخ البداية *</label><input id="startDate" type="date" required></div>
+                            <div class="field"><label for="endDate">تاريخ الانتهاء *</label><input id="endDate" type="date" required></div>
+                        </div>
+                        <div class="field"><label for="membershipNotes">ملاحظات الاشتراك</label><input id="membershipNotes" maxlength="1000" placeholder="اختياري"></div>
+
+                        <div class="section-label">الدفع</div>
+                        <div class="field-grid">
+                            <div class="field"><label for="amountDue">قيمة الاشتراك</label><input id="amountDue" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0.00"></div>
+                            <div class="field"><label for="amountPaid">المبلغ المدفوع</label><input id="amountPaid" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0.00"></div>
+                        </div>
+                        <div class="field"><label for="paymentMethod">طريقة الدفع</label><select id="paymentMethod"><option value="cash">نقدي</option><option value="card">بطاقة</option><option value="transfer">تحويل</option><option value="other">أخرى</option></select></div>
+                        <div class="form-actions"><button class="btn btn-primary" id="saveButton" type="submit">حفظ العضو</button><button class="btn btn-light hidden" id="resetButton" type="button">تفريغ</button></div>
+                    </form>
+                </section>
+
+                <section class="panel members-panel">
+                    <div class="panel-header"><div><h3>المشتركون</h3><p id="membersCount">—</p></div></div>
+                    <div class="members-toolbar"><input id="searchInput" placeholder="ابحث بالاسم أو الهاتف…" aria-label="بحث"><select id="statusFilter" aria-label="فلتر الحالة"><option value="">كل الحالات</option><option value="active">نشطة</option><option value="expiring_soon">قريبة الانتهاء</option><option value="expired">منتهية</option><option value="frozen">مجمدة</option></select></div>
+                    <div class="members-list" id="membersList"><div class="loading">جاري تحميل المشتركين…</div></div>
+                </section>
+            </section>
+        </main>
+    </div>
+
+    <dialog id="actionDialog">
+        <form class="dialog-body" id="actionForm">
+            <h3 id="dialogTitle">إجراء</h3><p id="dialogDescription"></p><div id="dialogFields"></div>
+            <div class="dialog-actions"><button class="btn btn-light" id="dialogCancel" type="button">إلغاء</button><button class="btn btn-primary" id="dialogSubmit" type="submit">تأكيد</button></div>
+        </form>
+    </dialog>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+    <script>
+        const TYPE_LABELS = { monthly: 'شهرية', quarterly: 'ربع سنوية', semiannual: 'نصف سنوية', annual: 'سنوية' };
+        const STATUS_LABELS = { active: 'نشطة', expiring_soon: 'قريبة الانتهاء', expired: 'منتهية', frozen: 'مجمدة' };
+        const PAYMENT_LABELS = { cash: 'نقدي', card: 'بطاقة', transfer: 'تحويل', other: 'أخرى' };
+        const state = { members: [], dashboard: null, editing: null, dialogAction: null, dialogMember: null, endDateManual: false };
+        const $ = (id) => document.getElementById(id);
+
+        function todayIso() { const now = new Date(); return new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 10); }
+        function addMonths(dateString, months) { const [y, m, d] = dateString.split('-').map(Number); const idx = m - 1 + months; const year = y + Math.floor(idx / 12); const month = ((idx % 12) + 12) % 12; const last = new Date(Date.UTC(year, month + 1, 0)).getUTCDate(); return new Date(Date.UTC(year, month, Math.min(d, last))).toISOString().slice(0, 10); }
+        function addDays(dateString, days) { const date = new Date(`${dateString}T00:00:00Z`); date.setUTCDate(date.getUTCDate() + days); return date.toISOString().slice(0, 10); }
+        function calculatedEndDate(start, type) { return addDays(addMonths(start, ({ monthly: 1, quarterly: 3, semiannual: 6, annual: 12 })[type]), -1); }
+        function formatDate(value) { if (!value) return '—'; return new Intl.DateTimeFormat('ar-EG', { dateStyle: 'medium' }).format(new Date(`${value}T00:00:00`)); }
+        function money(value) { return `${Number(value || 0).toLocaleString('ar-EG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ج.م`; }
+        function escapeHtml(value) { return String(value ?? '').replace(/[&<>'"]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[char])); }
+        function showToast(message, error = false) { const toast = $('toast'); toast.textContent = message; toast.className = `toast show${error ? ' error' : ''}`; clearTimeout(showToast.timer); showToast.timer = setTimeout(() => { toast.className = 'toast'; }, 3500); }
+
+        async function api(path, options = {}) {
+            const response = await fetch(path, { headers: { 'Content-Type': 'application/json', ...(options.headers || {}) }, ...options });
+            if (response.status === 204) return null;
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok) throw new Error(data.error || 'تعذر تنفيذ الطلب.');
+            return data;
+        }
+
+        async function loadData() {
+            $('membersList').innerHTML = '<div class="loading">جاري تحميل المشتركين…</div>';
+            try {
+                const params = new URLSearchParams({ search: $('searchInput').value.trim(), status: $('statusFilter').value });
+                const [membersResponse, dashboard] = await Promise.all([api(`/api/members?${params}`), api('/api/dashboard')]);
+                state.members = membersResponse.members || [];
+                state.dashboard = dashboard;
+                renderDashboard(); renderMembers();
+            } catch (error) { $('membersList').innerHTML = `<div class="empty">${escapeHtml(error.message)}</div>`; showToast(error.message, true); }
+        }
+
+        function renderDashboard() {
+            const dashboard = state.dashboard || { stats: {}, alerts: [] };
+            $('todayLabel').textContent = formatDate(dashboard.today);
+            $('statTotal').textContent = dashboard.stats.total || 0;
+            $('statActive').textContent = dashboard.stats.active || 0;
+            $('statExpiring').textContent = dashboard.stats.expiringSoon || 0;
+            $('statExpired').textContent = dashboard.stats.expired || 0;
+            $('statFrozen').textContent = dashboard.stats.frozen || 0;
+            const alerts = dashboard.alerts || [];
+            $('alertsList').innerHTML = alerts.length ? alerts.map((member) => {
+                const sub = member.membership; const status = sub.status;
+                const detail = status === 'frozen' ? `حتى ${formatDate(sub.freezeEnd)}` : status === 'expired' ? `انتهت في ${formatDate(sub.endDate)}` : `تنتهي في ${formatDate(sub.effectiveEndDate)}`;
+                return `<article class="alert-card ${status}"><strong>${escapeHtml(member.fullName)}</strong><span>${STATUS_LABELS[status]} · ${escapeHtml(detail)}</span><span>${escapeHtml(member.phone)}</span></article>`;
+            }).join('') : '<div class="empty">لا توجد تنبيهات اليوم.</div>';
+        }
+
+        function memberCard(member) {
+            const sub = member.membership;
+            if (!sub) return `<article class="member-card"><div class="member-top"><div><h4 class="member-name">${escapeHtml(member.fullName)}</h4><a class="member-phone" href="tel:${escapeHtml(member.phone)}">${escapeHtml(member.phone)}</a></div><span class="badge expired">بدون اشتراك</span></div><p class="status-note">أضف اشتراكاً لهذا العضو من خلال التعديل.</p><div class="member-actions"><button class="btn btn-light btn-small" data-action="edit" data-id="${member.id}">تعديل</button><button class="btn btn-danger btn-small" data-action="delete" data-id="${member.id}">حذف</button></div></article>`;
+            const remaining = sub.daysRemaining === null ? '—' : sub.status === 'expired' ? `منتهية منذ ${Math.abs(sub.daysRemaining)} يوم` : `${sub.daysRemaining} يوم متبقٍ`;
+            const freezeText = sub.status === 'frozen' ? `تجميد حتى ${formatDate(sub.freezeEnd)}` : remaining;
+            const payment = `<div class="payment-line"><span>الدفع: ${money(sub.amountPaid)} / ${money(sub.amountDue)} · ${escapeHtml(PAYMENT_LABELS[sub.paymentMethod] || sub.paymentMethod)}</span><span class="remaining">متبقي ${money(sub.amountRemaining)}</span></div>`;
+            const freezeButton = sub.status === 'frozen' ? '<button class="btn btn-purple btn-small" data-action="resume">استئناف</button>' : sub.status === 'expired' ? '' : '<button class="btn btn-light btn-small" data-action="freeze">تجميد</button>';
+            return `<article class="member-card"><div class="member-top"><div><h4 class="member-name">${escapeHtml(member.fullName)}</h4><a class="member-phone" href="tel:${escapeHtml(member.phone)}">${escapeHtml(member.phone)}</a></div><span class="badge ${sub.status}">${STATUS_LABELS[sub.status]}</span></div><div class="member-details"><div class="detail"><span>نوع الاشتراك</span><strong>${TYPE_LABELS[sub.type] || escapeHtml(sub.type)}</strong></div><div class="detail"><span>الموعد</span><strong>${escapeHtml(freezeText)}</strong></div><div class="detail"><span>البداية</span><strong>${formatDate(sub.startDate)}</strong></div><div class="detail"><span>النهاية الفعلية</span><strong>${formatDate(sub.effectiveEndDate)}</strong></div></div>${payment}<div class="member-actions"><button class="btn btn-light btn-small" data-action="edit">تعديل</button><button class="btn btn-primary btn-small" data-action="renew">تجديد</button>${freezeButton}<button class="btn btn-light btn-small" data-action="payment">دفعة</button><button class="btn btn-danger btn-small" data-action="delete">حذف</button></div></article>`;
+        }
+
+        function renderMembers() { $('membersCount').textContent = `${state.members.length} عضو ظاهر`; $('membersList').innerHTML = state.members.length ? state.members.map(memberCard).join('') : '<div class="empty">لا يوجد أعضاء مطابقون للبحث.</div>'; }
+
+        function setFormDefaults() {
+            const today = todayIso(); $('memberId').value = ''; $('fullName').value = ''; $('phone').value = ''; $('email').value = ''; $('registrationDate').value = today; $('notes').value = ''; $('membershipType').value = 'monthly'; $('startDate').value = today; $('endDate').value = calculatedEndDate(today, 'monthly'); $('membershipNotes').value = ''; $('amountDue').value = ''; $('amountPaid').value = ''; $('paymentMethod').value = 'cash'; state.editing = null; state.endDateManual = false; $('formTitle').textContent = 'إضافة عضو جديد'; $('saveButton').textContent = 'حفظ العضو'; $('cancelEditButton').classList.add('hidden'); $('resetButton').classList.add('hidden');
+        }
+
+        function editMember(member) {
+            const sub = member.membership || {}; $('memberId').value = member.id; $('fullName').value = member.fullName || ''; $('phone').value = member.phone || ''; $('email').value = member.email || ''; $('registrationDate').value = member.registrationDate || todayIso(); $('notes').value = member.notes || ''; $('membershipType').value = sub.type || 'monthly'; $('startDate').value = sub.startDate || todayIso(); $('endDate').value = sub.endDate || calculatedEndDate($('startDate').value, $('membershipType').value); $('membershipNotes').value = sub.notes || ''; $('amountDue').value = sub.amountDue || ''; $('amountPaid').value = sub.amountPaid || ''; $('paymentMethod').value = sub.paymentMethod || 'cash'; state.editing = member; state.endDateManual = true; $('formTitle').textContent = 'تعديل بيانات العضو'; $('saveButton').textContent = 'حفظ التعديلات'; $('cancelEditButton').classList.remove('hidden'); $('resetButton').classList.remove('hidden'); window.scrollTo({ top: document.querySelector('.form-panel').offsetTop - 15, behavior: 'smooth' }); }
+
+        function openDialog(action, member) {
+            state.dialogAction = action; state.dialogMember = member; const sub = member.membership || {}; const fields = $('dialogFields'); $('dialogTitle').textContent = action === 'freeze' ? 'تجميد العضوية' : action === 'renew' ? 'تجديد العضوية' : 'تسجيل دفعة'; $('dialogDescription').textContent = `${member.fullName} · ${member.phone}`;
+            if (action === 'freeze') fields.innerHTML = '<div class="field"><label for="dialogDays">عدد أيام التجميد</label><input id="dialogDays" type="number" min="1" max="365" value="7" required></div><div class="field"><label for="dialogReason">السبب (اختياري)</label><textarea id="dialogReason" maxlength="500"></textarea></div>';
+            if (action === 'renew') fields.innerHTML = `<div class="field"><label for="dialogType">نوع العضوية</label><select id="dialogType"><option value="monthly">شهرية</option><option value="quarterly">ربع سنوية</option><option value="semiannual">نصف سنوية</option><option value="annual">سنوية</option></select></div><div class="field-grid"><div class="field"><label for="dialogDue">قيمة الاشتراك</label><input id="dialogDue" type="number" min="0" step="0.01" value="${sub.amountDue || ''}"></div><div class="field"><label for="dialogPaid">المدفوع</label><input id="dialogPaid" type="number" min="0" step="0.01" value="${sub.amountPaid || ''}"></div></div><div class="field"><label for="dialogMethod">طريقة الدفع</label><select id="dialogMethod"><option value="cash">نقدي</option><option value="card">بطاقة</option><option value="transfer">تحويل</option><option value="other">أخرى</option></select></div>`;
+            if (action === 'payment') fields.innerHTML = `<div class="field"><label for="dialogDue">قيمة الاشتراك</label><input id="dialogDue" type="number" min="0" step="0.01" value="${sub.amountDue || 0}" required></div><div class="field"><label for="dialogPaid">إجمالي المدفوع</label><input id="dialogPaid" type="number" min="0" step="0.01" value="${sub.amountPaid || 0}" required></div><div class="field"><label for="dialogMethod">طريقة الدفع</label><select id="dialogMethod"><option value="cash">نقدي</option><option value="card">بطاقة</option><option value="transfer">تحويل</option><option value="other">أخرى</option></select></div>`;
+            if (action === 'renew') $('dialogType').value = sub.type || 'monthly'; if (action !== 'freeze') $('dialogMethod').value = sub.paymentMethod || 'cash'; const dialog = $('actionDialog'); if (typeof dialog.showModal === 'function') dialog.showModal(); else dialog.setAttribute('open', '');
+        }
+
+        function closeDialog() { const dialog = $('actionDialog'); if (typeof dialog.close === 'function') dialog.close(); else dialog.removeAttribute('open'); state.dialogAction = null; state.dialogMember = null; }
+
+        async function submitDialog(event) {
+            event.preventDefault(); const action = state.dialogAction; const member = state.dialogMember; if (!action || !member) return;
+            try {
+                if (action === 'freeze') await api(`/api/members/${member.id}/freeze`, { method: 'POST', body: JSON.stringify({ days: Number($('dialogDays').value), reason: $('dialogReason').value }) });
+                if (action === 'renew') await api(`/api/members/${member.id}/renew`, { method: 'POST', body: JSON.stringify({ membershipType: $('dialogType').value, amountDue: Number($('dialogDue').value || 0), amountPaid: Number($('dialogPaid').value || 0), paymentMethod: $('dialogMethod').value }) });
+                if (action === 'payment') await api(`/api/memberships/${member.membership.id}/payments`, { method: 'POST', body: JSON.stringify({ amountDue: Number($('dialogDue').value || 0), amountPaid: Number($('dialogPaid').value || 0), paymentMethod: $('dialogMethod').value }) });
+                closeDialog(); showToast(action === 'freeze' ? 'تم تجميد العضوية.' : action === 'renew' ? 'تم تجديد العضوية.' : 'تم تحديث الدفع.'); await loadData();
+            } catch (error) { showToast(error.message, true); }
+        }
+
+        async function submitMember(event) {
+            event.preventDefault(); const id = $('memberId').value; const body = { fullName: $('fullName').value, phone: $('phone').value, email: $('email').value, registrationDate: $('registrationDate').value, notes: $('notes').value, membershipType: $('membershipType').value, startDate: $('startDate').value, endDate: $('endDate').value, membershipNotes: $('membershipNotes').value, amountDue: Number($('amountDue').value || 0), amountPaid: Number($('amountPaid').value || 0), paymentMethod: $('paymentMethod').value };
+            const button = $('saveButton'); button.disabled = true; try { await api(id ? `/api/members/${id}` : '/api/members', { method: id ? 'PUT' : 'POST', body: JSON.stringify(body) }); showToast(id ? 'تم حفظ التعديلات.' : 'تمت إضافة العضو.'); setFormDefaults(); await loadData(); } catch (error) { showToast(error.message, true); } finally { button.disabled = false; }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            setFormDefaults(); loadData(); $('memberForm').addEventListener('submit', submitMember); $('refreshButton').addEventListener('click', loadData); $('cancelEditButton').addEventListener('click', setFormDefaults); $('resetButton').addEventListener('click', setFormDefaults); $('actionForm').addEventListener('submit', submitDialog); $('dialogCancel').addEventListener('click', closeDialog); $('membershipType').addEventListener('change', () => { if (!state.endDateManual) $('endDate').value = calculatedEndDate($('startDate').value, $('membershipType').value); }); $('startDate').addEventListener('change', () => { if (!state.endDateManual) $('endDate').value = calculatedEndDate($('startDate').value, $('membershipType').value); }); $('endDate').addEventListener('input', () => { state.endDateManual = true; }); let timer; $('searchInput').addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(loadData, 250); }); $('statusFilter').addEventListener('change', loadData);
+            $('membersList').addEventListener('click', async (event) => { const button = event.target.closest('button[data-action]'); if (!button) return; const member = state.members.find((item) => String(item.id) === button.dataset.id); if (!member) return; const action = button.dataset.action; if (action === 'edit') editMember(member); if (action === 'freeze' || action === 'renew' || action === 'payment') openDialog(action, member); if (action === 'resume') { try { await api(`/api/members/${member.id}/resume`, { method: 'POST' }); showToast('تم استئناف العضوية.'); await loadData(); } catch (error) { showToast(error.message, true); } } if (action === 'delete' && confirm(`هل تريد حذف العضو ${member.fullName}؟`)) { try { await api(`/api/members/${member.id}`, { method: 'DELETE' }); showToast('تم حذف العضو.'); if (String($('memberId').value) === String(member.id)) setFormDefaults(); await loadData(); } catch (error) { showToast(error.message, true); } } });
+        });
+    </script>
+</body>
+</html>
