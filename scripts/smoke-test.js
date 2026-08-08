@@ -24,6 +24,12 @@ async function call(baseUrl, path, options = {}) {
         const baseUrl = `http://127.0.0.1:${server.address().port}`;
         const suffix = Date.now();
 
+        const health = await call(baseUrl, '/api/health');
+        assert.equal(health.database, 'connected');
+        const page = await fetch(`${baseUrl}/`);
+        assert.equal(page.status, 200);
+        assert.match(await page.text(), /إدارة عضويات الجيم/);
+
         const created = await call(baseUrl, '/api/members', {
             method: 'POST',
             body: JSON.stringify({
