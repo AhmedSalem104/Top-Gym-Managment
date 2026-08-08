@@ -1,21 +1,26 @@
 const { getPool, sql } = require('./db');
 const {
     addDays,
+    addMonths,
     differenceInDays,
     formatDateOnly,
-    membershipEndDate,
     parseDateOnly,
     todayInTimeZone,
     toUtcDate
 } = require('./date-utils');
 
-const MEMBERSHIP_TYPES = ['monthly', 'quarterly', 'semiannual', 'annual'];
 const DEFAULT_MEMBERSHIP_PLANS = {
     gym_only: { label: 'جيم فقط', monthlyPrice: 305 },
     gym_cardio: { label: 'جيم وكارديو', monthlyPrice: 400 }
 };
 const MEMBERSHIP_PLAN_CODES = Object.keys(DEFAULT_MEMBERSHIP_PLANS);
-const MONTHS_BY_TYPE = { monthly: 1, quarterly: 3, semiannual: 6, annual: 12 };
+const DEFAULT_MEMBERSHIP_TYPES = {
+    monthly: { label: 'شهرية', mode: 'months', durationValue: 1, priceMultiplier: 1, active: true, sortOrder: 1 },
+    half_month: { label: 'نصف شهر', mode: 'days', durationValue: 15, priceMultiplier: 0.5, active: true, sortOrder: 2 },
+    quarterly: { label: 'ربع سنوية', mode: 'months', durationValue: 3, priceMultiplier: 3, active: true, sortOrder: 3 },
+    semiannual: { label: 'نصف سنوية', mode: 'months', durationValue: 6, priceMultiplier: 6, active: true, sortOrder: 4 },
+    annual: { label: 'سنوية', mode: 'months', durationValue: 12, priceMultiplier: 12, active: true, sortOrder: 5 }
+};
 const PAYMENT_METHODS = ['cash', 'card', 'transfer', 'other'];
 const MEMBER_STATUSES = ['active', 'expiring_soon', 'expired', 'frozen'];
 
@@ -62,15 +67,30 @@ function has(body, key) {
 
 async function getPricingCatalog(connection = null) {
     const pool = connection || await getPool();
-    const result = await pool.request()
+    const planResult = await pool.request()
         .query(`SELECT plan_code, plan_name, monthly_price
                 FROM dbo.membership_pricing ORDER BY id ASC;`);
+    const typeResult = await pool.request()
+        .query(`SELECT type_code, type_name, duration_mode, duration_value,
+                       price_multiplier, is_active, sort_order
+                FROM dbo.membership_types ORDER BY sort_order ASC, id ASC;`);
     const plans = { ...DEFAULT_MEMBERSHIP_PLANS };
-    for (const row of result.recordset) {
+    for (const row of planResult.recordset) {
         if (!MEMBERSHIP_PLAN_CODES.includes(row.plan_code)) continue;
         plans[row.plan_code] = {
             label: row.plan_name,
             monthlyPrice: Number(row.monthly_price)
+        };
+    }
+    const types = { ...DEFAULT_MEMBERSHIP_TYPES };
+    for (const row of typeResult.recordset) {
+        types[row.type_code] = {
+            label: row.type_name,
+            mode: row.duration_mode,
+            durationValue: Number(row.duration_value),
+            priceMultiplier: Number(row.price_multiplier),
+            active: Boolean(row.is_active),
+            sortOrder: Number(row.sort_order || 0)
         };
     }
     return {
@@ -78,19 +98,32 @@ async function getPricingCatalog(connection = null) {
             label: value.label,
             monthlyPrice: value.monthlyPrice
         }])),
-        durations: MONTHS_BY_TYPE
+        types,
+        durations: Object.fromEntries(Object.entries(types).map(([key, value]) => [key, value.mode === 'months' ? value.durationValue : null]))
     };
 }
 
+function positiveValue(value, fieldName, maximum = 10000) {
+    const number = Number(value);
+    if (!Number.isFinite(number) || number <= 0 || number > maximum) throw appError(`${fieldName} غير صالح.`);
+    return Math.round(number * 10000) / 10000;
+}
+
+function membershipEndDateFromConfig(startDate, typeConfig) {
+    if (typeConfig.mode === 'days') return addDays(startDate, Math.max(1, Math.round(typeConfig.durationValue)) - 1);
+    return addDays(addMonths(startDate, typeConfig.durationValue), -1);
+}
+
 async function calculatePricing(membershipType, membershipPlan = 'gym_only', discountAmount = 0, connection = null) {
-    if (!MEMBERSHIP_TYPES.includes(membershipType)) throw appError('نوع العضوية غير صالح.');
     if (!MEMBERSHIP_PLAN_CODES.includes(membershipPlan)) throw appError('باقة العضوية غير صالحة.');
     const pricing = await getPricingCatalog(connection);
     const plan = pricing.plans[membershipPlan];
-    const listPrice = plan.monthlyPrice * MONTHS_BY_TYPE[membershipType];
+    const type = pricing.types[membershipType];
+    if (!type) throw appError('نوع العضوية غير صالح.');
+    const listPrice = plan.monthlyPrice * type.priceMultiplier;
     const discount = money(discountAmount, 'الخصم');
     if (discount > listPrice) throw appError('الخصم لا يمكن أن يتجاوز قيمة الاشتراك.');
-    return { listPrice, discountAmount: discount, amountDue: listPrice - discount };
+    return { listPrice, discountAmount: discount, amountDue: listPrice - discount, typeConfig: type };
 }
 
 function normalizePayload(body = {}, { partial = false } = {}) {
@@ -114,8 +147,7 @@ function normalizePayload(body = {}, { partial = false } = {}) {
     if (!partial || has(body, 'notes')) output.notes = optionalString(body.notes, 1000);
 
     if (!partial || has(body, 'membershipType')) {
-        output.membershipType = requiredString(body.membershipType, 'نوع العضوية', 20);
-        if (!MEMBERSHIP_TYPES.includes(output.membershipType)) throw appError('نوع العضوية غير صالح.');
+        output.membershipType = requiredString(body.membershipType, 'نوع العضوية', 30);
     }
     if (!partial || has(body, 'membershipPlan')) {
         output.membershipPlan = body.membershipPlan || 'gym_only';
@@ -135,7 +167,6 @@ function normalizePayload(body = {}, { partial = false } = {}) {
         output.membershipNotes = optionalString(body.membershipNotes, 1000);
     }
 
-    if (!partial && !output.endDate) output.endDate = membershipEndDate(output.startDate, output.membershipType);
     if (output.startDate && output.endDate && output.endDate < output.startDate) {
         throw appError('تاريخ الانتهاء يجب أن يكون بعد أو مساوياً لتاريخ البداية.');
     }
@@ -428,6 +459,106 @@ async function updatePricingCatalog(body = {}) {
     return getPricingCatalog();
 }
 
+function normalizeTypeCode(value) {
+    const code = String(value ?? '').trim().toLowerCase();
+    if (!/^[a-z][a-z0-9_]{1,29}$/.test(code)) {
+        throw appError('رمز نوع العضوية يجب أن يبدأ بحرف إنجليزي ويحتوي على أحرف أو أرقام أو _.');
+    }
+    return code;
+}
+
+function booleanValue(value, fallback = true) {
+    if (value === undefined || value === null || value === '') return fallback;
+    if (typeof value === 'boolean') return value;
+    return ['true', '1', 'yes', 'on'].includes(String(value).trim().toLowerCase());
+}
+
+function normalizeMembershipTypePayload(body = {}, current = {}) {
+    const typeCode = normalizeTypeCode(body.typeCode ?? body.code ?? current.type_code);
+    const typeName = body.typeName === undefined && body.label === undefined
+        ? requiredString(current.type_name, 'اسم نوع العضوية', 80)
+        : requiredString(body.typeName ?? body.label, 'اسم نوع العضوية', 80);
+    const durationMode = String(body.durationMode ?? body.mode ?? current.duration_mode ?? '').trim().toLowerCase();
+    if (!['months', 'days'].includes(durationMode)) throw appError('وحدة مدة العضوية غير صالحة.');
+    const durationValue = positiveValue(
+        body.durationValue ?? body.duration ?? body.days ?? current.duration_value,
+        'مدة العضوية',
+        12000
+    );
+    if (!Number.isInteger(durationValue)) {
+        throw appError('مدة العضوية يجب أن تكون رقماً صحيحاً بالأيام أو الشهور.');
+    }
+    const priceMultiplier = positiveValue(
+        body.priceMultiplier ?? body.multiplier ?? current.price_multiplier,
+        'معامل السعر',
+        1000
+    );
+    const rawSortOrder = body.sortOrder ?? body.sort ?? current.sort_order ?? 0;
+    const sortOrder = Number(rawSortOrder);
+    if (!Number.isInteger(sortOrder) || sortOrder < 0 || sortOrder > 9999) {
+        throw appError('ترتيب نوع العضوية غير صالح.');
+    }
+    return {
+        typeCode,
+        typeName,
+        durationMode,
+        durationValue,
+        priceMultiplier,
+        isActive: booleanValue(body.isActive, current.is_active === undefined ? true : Boolean(current.is_active)),
+        sortOrder
+    };
+}
+
+async function createMembershipType(body = {}) {
+    const typeCode = normalizeTypeCode(body.typeCode ?? body.code);
+    const data = normalizeMembershipTypePayload({ ...body, typeCode });
+    const pool = await getPool();
+    const exists = await pool.request()
+        .input('typeCode', sql.VarChar(30), typeCode)
+        .query('SELECT id FROM dbo.membership_types WHERE type_code = @typeCode;');
+    if (exists.recordset[0]) throw appError('رمز نوع العضوية مستخدم بالفعل.');
+    await pool.request()
+        .input('typeCode', sql.VarChar(30), data.typeCode)
+        .input('typeName', sql.NVarChar(80), data.typeName)
+        .input('durationMode', sql.VarChar(10), data.durationMode)
+        .input('durationValue', sql.Decimal(8, 2), data.durationValue)
+        .input('priceMultiplier', sql.Decimal(8, 4), data.priceMultiplier)
+        .input('isActive', sql.Bit, data.isActive)
+        .input('sortOrder', sql.Int, data.sortOrder)
+        .query(`INSERT INTO dbo.membership_types
+                (type_code, type_name, duration_mode, duration_value, price_multiplier, is_active, sort_order)
+                VALUES (@typeCode, @typeName, @durationMode, @durationValue, @priceMultiplier, @isActive, @sortOrder);`);
+    return getPricingCatalog(pool);
+}
+
+async function updateMembershipType(typeCodeValue, body = {}) {
+    const typeCode = normalizeTypeCode(typeCodeValue);
+    const pool = await getPool();
+    const currentResult = await pool.request()
+        .input('typeCode', sql.VarChar(30), typeCode)
+        .query(`SELECT type_code, type_name, duration_mode, duration_value,
+                       price_multiplier, is_active, sort_order
+                FROM dbo.membership_types WHERE type_code = @typeCode;`);
+    const current = currentResult.recordset[0];
+    if (!current) throw appError('نوع العضوية غير موجود.', 404);
+    const data = normalizeMembershipTypePayload({ ...body, typeCode }, current);
+    await pool.request()
+        .input('typeCode', sql.VarChar(30), typeCode)
+        .input('typeName', sql.NVarChar(80), data.typeName)
+        .input('durationMode', sql.VarChar(10), data.durationMode)
+        .input('durationValue', sql.Decimal(8, 2), data.durationValue)
+        .input('priceMultiplier', sql.Decimal(8, 4), data.priceMultiplier)
+        .input('isActive', sql.Bit, data.isActive)
+        .input('sortOrder', sql.Int, data.sortOrder)
+        .query(`UPDATE dbo.membership_types
+                SET type_name = @typeName, duration_mode = @durationMode,
+                    duration_value = @durationValue, price_multiplier = @priceMultiplier,
+                    is_active = @isActive, sort_order = @sortOrder,
+                    updated_at = SYSUTCDATETIME()
+                WHERE type_code = @typeCode;`);
+    return getPricingCatalog(pool);
+}
+
 async function getDashboard() {
     const members = await getMembers({});
     return dashboardFromMembers(members);
@@ -513,6 +644,7 @@ async function createMember(body) {
     const memberId = await withTransaction(async (transaction) => {
         const pricing = await calculatePricing(data.membershipType, data.membershipPlan, data.discountAmount, transaction);
         if (amountPaid > pricing.amountDue) throw appError('المبلغ المدفوع لا يمكن أن يتجاوز قيمة الاشتراك بعد الخصم.');
+        const endDate = data.endDate || membershipEndDateFromConfig(data.startDate, pricing.typeConfig);
         const memberResult = await transaction.request()
             .input('fullName', sql.NVarChar(120), data.fullName)
             .input('phone', sql.NVarChar(30), data.phone)
@@ -526,9 +658,9 @@ async function createMember(body) {
         const membershipResult = await transaction.request()
             .input('memberId', sql.Int, id)
             .input('membershipPlan', sql.VarChar(20), data.membershipPlan)
-            .input('membershipType', sql.VarChar(20), data.membershipType)
+            .input('membershipType', sql.VarChar(30), data.membershipType)
             .input('startDate', sql.Date, toUtcDate(data.startDate))
-            .input('endDate', sql.Date, toUtcDate(data.endDate))
+            .input('endDate', sql.Date, toUtcDate(endDate))
             .input('notes', sql.NVarChar(1000), data.membershipNotes)
             .query(`INSERT INTO dbo.memberships (member_id, membership_plan, membership_type, start_date, end_date, notes)
                     OUTPUT INSERTED.id
@@ -549,7 +681,7 @@ async function createMember(body) {
             membershipPlan: data.membershipPlan,
             membershipType: data.membershipType,
             startDate: data.startDate,
-            endDate: data.endDate,
+            endDate,
             listPrice: pricing.listPrice,
             discountAmount: pricing.discountAmount,
             amountDue: pricing.amountDue,
@@ -601,7 +733,7 @@ async function updateMember(id, body) {
         await transaction.request()
             .input('id', sql.Int, currentMembership.id)
             .input('membershipPlan', sql.VarChar(20), membershipData.plan)
-            .input('membershipType', sql.VarChar(20), membershipData.type)
+            .input('membershipType', sql.VarChar(30), membershipData.type)
             .input('startDate', sql.Date, toUtcDate(membershipData.startDate))
             .input('endDate', sql.Date, toUtcDate(membershipData.endDate))
             .input('notes', sql.NVarChar(1000), membershipData.notes)
@@ -738,8 +870,7 @@ async function resumeMember(id) {
 async function renewMember(id, body = {}) {
     const memberId = ensureId(id);
     const type = body.membershipType || body.type;
-    const membershipType = requiredString(type, 'نوع العضوية', 20);
-    if (!MEMBERSHIP_TYPES.includes(membershipType)) throw appError('نوع العضوية غير صالح.');
+    const membershipType = requiredString(type, 'نوع العضوية', 30);
     const today = todayInTimeZone();
     const renewedId = await withTransaction(async (transaction) => {
         const current = await getRawMembership(transaction, memberId);
@@ -748,9 +879,9 @@ async function renewMember(id, body = {}) {
         const freezeDays = await getFreezeTotals(transaction, current.id);
         const effectiveEnd = addDays(formatDateOnly(current.end_date), freezeDays);
         const startDate = effectiveEnd < today ? today : addDays(effectiveEnd, 1);
-        const endDate = membershipEndDate(startDate, membershipType);
         const membershipPlan = body.membershipPlan || current.membership_plan || 'gym_only';
         const pricing = await calculatePricing(membershipType, membershipPlan, money(body.discountAmount, 'الخصم', 0), transaction);
+        const endDate = membershipEndDateFromConfig(startDate, pricing.typeConfig);
         const amountPaid = money(body.amountPaid, 'المبلغ المدفوع', 0);
         if (amountPaid > pricing.amountDue) throw appError('المبلغ المدفوع لا يمكن أن يتجاوز قيمة الاشتراك بعد الخصم.');
         const paymentMethod = parsePaymentMethod(body.paymentMethod, 'cash');
@@ -759,7 +890,7 @@ async function renewMember(id, body = {}) {
         const result = await transaction.request()
             .input('memberId', sql.Int, memberId)
             .input('membershipPlan', sql.VarChar(20), membershipPlan)
-            .input('membershipType', sql.VarChar(20), membershipType)
+            .input('membershipType', sql.VarChar(30), membershipType)
             .input('startDate', sql.Date, toUtcDate(startDate))
             .input('endDate', sql.Date, toUtcDate(endDate))
             .input('notes', sql.NVarChar(1000), membershipNotes)
@@ -978,10 +1109,12 @@ module.exports = {
     getMemberDetails,
     getMembers,
     getPricingCatalog,
+    createMembershipType,
     freezeMember,
     recordPayment,
     renewMember,
     resumeMember,
+    updateMembershipType,
     updatePricingCatalog,
     updatePricing,
     updateMember

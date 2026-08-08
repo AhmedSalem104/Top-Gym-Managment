@@ -2,7 +2,7 @@ require('dotenv').config();
 
 const assert = require('node:assert/strict');
 const app = require('../server');
-const { closePool, initDatabase } = require('../src/db');
+const { closePool, getPool, initDatabase, sql } = require('../src/db');
 
 async function call(baseUrl, path, options = {}) {
     const response = await fetch(`${baseUrl}${path}`, {
@@ -17,6 +17,7 @@ async function call(baseUrl, path, options = {}) {
 (async () => {
     let server;
     let memberId;
+    let temporaryTypeCode;
     try {
         await initDatabase();
         server = app.listen(0);
@@ -30,7 +31,11 @@ async function call(baseUrl, path, options = {}) {
         assert.ok(Array.isArray(bootstrap.members));
         assert.ok(bootstrap.dashboard && bootstrap.dashboard.stats);
         assert.ok(bootstrap.pricing && bootstrap.pricing.plans);
+        assert.equal(bootstrap.pricing.types.half_month.durationValue, 15);
+        assert.equal(bootstrap.pricing.types.half_month.mode, 'days');
         const pricing = await call(baseUrl, '/api/pricing');
+        const gymOnlyMonthly = Number(pricing.plans.gym_only.monthlyPrice);
+        const cardioMonthly = Number(pricing.plans.gym_cardio.monthlyPrice);
         const pricingUpdate = await call(baseUrl, '/api/pricing', {
             method: 'PUT',
             body: JSON.stringify({
@@ -42,6 +47,26 @@ async function call(baseUrl, path, options = {}) {
             })
         });
         assert.deepEqual(pricingUpdate.plans, pricing.plans);
+
+        temporaryTypeCode = `smoke_${String(Date.now()).slice(-20)}`;
+        const createdType = await call(baseUrl, '/api/membership-types', {
+            method: 'POST',
+            body: JSON.stringify({
+                typeCode: temporaryTypeCode,
+                typeName: 'نوع اختبار مؤقت',
+                durationMode: 'days',
+                durationValue: 10,
+                priceMultiplier: 0.33,
+                sortOrder: 99
+            })
+        });
+        assert.equal(createdType.types[temporaryTypeCode].durationValue, 10);
+        const updatedType = await call(baseUrl, `/api/membership-types/${temporaryTypeCode}`, {
+            method: 'PUT',
+            body: JSON.stringify({ isActive: false, durationValue: 12 })
+        });
+        assert.equal(updatedType.types[temporaryTypeCode].active, false);
+        assert.equal(updatedType.types[temporaryTypeCode].durationValue, 12);
         const page = await fetch(`${baseUrl}/`);
         assert.equal(page.status, 200);
         assert.match(await page.text(), /إدارة عضويات الجيم/);
@@ -52,20 +77,20 @@ async function call(baseUrl, path, options = {}) {
                 fullName: `Smoke Test ${suffix}`,
                 phone: `010${String(suffix).slice(-8)}`,
                 registrationDate: '2026-08-08',
-                membershipType: 'monthly',
+                membershipType: 'half_month',
                 membershipPlan: 'gym_only',
                 startDate: '2026-08-08',
-                endDate: '2026-09-07',
                 discountAmount: 5,
-                amountPaid: 150,
+                amountPaid: 50,
                 paymentMethod: 'cash'
             })
         });
         memberId = created.member.id;
         assert.equal(created.member.membership.status, 'active');
-        assert.equal(created.member.membership.amountDue, 300);
+        assert.equal(created.member.membership.endDate, '2026-08-22');
+        assert.equal(created.member.membership.amountDue, gymOnlyMonthly * 0.5 - 5);
         assert.equal(created.member.membership.discountAmount, 5);
-        assert.equal(created.member.membership.amountRemaining, 150);
+        assert.equal(created.member.membership.amountRemaining, gymOnlyMonthly * 0.5 - 55);
 
         const edited = await call(baseUrl, `/api/members/${memberId}`, {
             method: 'PUT',
@@ -83,7 +108,7 @@ async function call(baseUrl, path, options = {}) {
             })
         });
         assert.equal(edited.member.fullName, `Edited Smoke Test ${suffix}`);
-        assert.equal(edited.member.membership.amountDue, 305);
+        assert.equal(edited.member.membership.amountDue, gymOnlyMonthly);
 
         const frozen = await call(baseUrl, `/api/members/${memberId}/freeze`, {
             method: 'POST', body: JSON.stringify({ days: 2, reason: 'smoke test' })
@@ -94,16 +119,16 @@ async function call(baseUrl, path, options = {}) {
         assert.equal(resumed.member.membership.status, 'active');
 
         const paid = await call(baseUrl, `/api/memberships/${resumed.member.membership.id}/payments`, {
-            method: 'POST', body: JSON.stringify({ listPrice: 305, discountAmount: 0, amountPaid: 305, paymentMethod: 'card' })
+            method: 'POST', body: JSON.stringify({ listPrice: gymOnlyMonthly, discountAmount: 0, amountPaid: gymOnlyMonthly, paymentMethod: 'card' })
         });
         assert.equal(paid.member.membership.amountRemaining, 0);
 
         const renewed = await call(baseUrl, `/api/members/${memberId}/renew`, {
-            method: 'POST', body: JSON.stringify({ membershipType: 'quarterly', membershipPlan: 'gym_cardio', discountAmount: 0, amountPaid: 1200, paymentMethod: 'transfer' })
+            method: 'POST', body: JSON.stringify({ membershipType: 'quarterly', membershipPlan: 'gym_cardio', discountAmount: 0, amountPaid: cardioMonthly * 3, paymentMethod: 'transfer' })
         });
         assert.equal(renewed.member.membership.type, 'quarterly');
         assert.equal(renewed.member.membership.plan, 'gym_cardio');
-        assert.equal(renewed.member.membership.amountDue, 1200);
+        assert.equal(renewed.member.membership.amountDue, cardioMonthly * 3);
         assert.equal(renewed.member.membership.amountRemaining, 0);
 
         const details = await call(baseUrl, `/api/members/${memberId}/details`);
@@ -119,6 +144,13 @@ async function call(baseUrl, path, options = {}) {
             try {
                 const baseUrl = `http://127.0.0.1:${server.address().port}`;
                 await call(baseUrl, `/api/members/${memberId}`, { method: 'DELETE' });
+            } catch (_) { /* cleanup is best effort */ }
+        }
+        if (temporaryTypeCode) {
+            try {
+                const pool = await getPool();
+                await pool.request().input('typeCode', sql.VarChar(30), temporaryTypeCode)
+                    .query('DELETE FROM dbo.membership_types WHERE type_code = @typeCode;');
             } catch (_) { /* cleanup is best effort */ }
         }
         if (server) await new Promise((resolve) => server.close(resolve));

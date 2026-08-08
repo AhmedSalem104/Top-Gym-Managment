@@ -18,7 +18,7 @@ BEGIN
         id INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_memberships PRIMARY KEY,
         member_id INT NOT NULL,
         membership_plan VARCHAR(20) NOT NULL CONSTRAINT DF_memberships_plan DEFAULT ('gym_only'),
-        membership_type VARCHAR(20) NOT NULL,
+        membership_type VARCHAR(30) NOT NULL,
         start_date DATE NOT NULL,
         end_date DATE NOT NULL,
         notes NVARCHAR(1000) NULL,
@@ -26,7 +26,6 @@ BEGIN
         updated_at DATETIME2(0) NOT NULL CONSTRAINT DF_memberships_updated_at DEFAULT (SYSUTCDATETIME()),
         CONSTRAINT FK_memberships_member FOREIGN KEY (member_id)
             REFERENCES dbo.members(id) ON DELETE CASCADE,
-        CONSTRAINT CK_memberships_type CHECK (membership_type IN ('monthly', 'quarterly', 'semiannual', 'annual')),
         CONSTRAINT CK_memberships_plan CHECK (membership_plan IN ('gym_only', 'gym_cardio')),
         CONSTRAINT CK_memberships_dates CHECK (end_date >= start_date)
     );
@@ -56,6 +55,68 @@ IF NOT EXISTS (SELECT 1 FROM dbo.membership_pricing WHERE plan_code = 'gym_cardi
 BEGIN
     INSERT INTO dbo.membership_pricing (plan_code, plan_name, monthly_price)
     VALUES ('gym_cardio', N'جيم وكارديو', 400);
+END;
+
+IF OBJECT_ID(N'dbo.membership_types', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.membership_types (
+        id INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_membership_types PRIMARY KEY,
+        type_code VARCHAR(30) NOT NULL,
+        type_name NVARCHAR(80) NOT NULL,
+        duration_mode VARCHAR(10) NOT NULL,
+        duration_value DECIMAL(8,2) NOT NULL,
+        price_multiplier DECIMAL(8,4) NOT NULL,
+        is_active BIT NOT NULL CONSTRAINT DF_membership_types_active DEFAULT (1),
+        sort_order INT NOT NULL CONSTRAINT DF_membership_types_sort DEFAULT (0),
+        created_at DATETIME2(0) NOT NULL CONSTRAINT DF_membership_types_created_at DEFAULT (SYSUTCDATETIME()),
+        updated_at DATETIME2(0) NOT NULL CONSTRAINT DF_membership_types_updated_at DEFAULT (SYSUTCDATETIME()),
+        CONSTRAINT UQ_membership_types_code UNIQUE (type_code),
+        CONSTRAINT CK_membership_types_mode CHECK (duration_mode IN ('months', 'days')),
+        CONSTRAINT CK_membership_types_values CHECK (duration_value > 0 AND price_multiplier > 0)
+    );
+END;
+
+IF NOT EXISTS (SELECT 1 FROM dbo.membership_types WHERE type_code = 'monthly')
+BEGIN
+    INSERT INTO dbo.membership_types (type_code, type_name, duration_mode, duration_value, price_multiplier, sort_order)
+    VALUES ('monthly', N'شهرية', 'months', 1, 1, 1);
+END;
+
+IF NOT EXISTS (SELECT 1 FROM dbo.membership_types WHERE type_code = 'half_month')
+BEGIN
+    INSERT INTO dbo.membership_types (type_code, type_name, duration_mode, duration_value, price_multiplier, sort_order)
+    VALUES ('half_month', N'نصف شهر', 'days', 15, 0.5, 2);
+END;
+
+IF NOT EXISTS (SELECT 1 FROM dbo.membership_types WHERE type_code = 'quarterly')
+BEGIN
+    INSERT INTO dbo.membership_types (type_code, type_name, duration_mode, duration_value, price_multiplier, sort_order)
+    VALUES ('quarterly', N'ربع سنوية', 'months', 3, 3, 3);
+END;
+
+IF NOT EXISTS (SELECT 1 FROM dbo.membership_types WHERE type_code = 'semiannual')
+BEGIN
+    INSERT INTO dbo.membership_types (type_code, type_name, duration_mode, duration_value, price_multiplier, sort_order)
+    VALUES ('semiannual', N'نصف سنوية', 'months', 6, 6, 4);
+END;
+
+IF NOT EXISTS (SELECT 1 FROM dbo.membership_types WHERE type_code = 'annual')
+BEGIN
+    INSERT INTO dbo.membership_types (type_code, type_name, duration_mode, duration_value, price_multiplier, sort_order)
+    VALUES ('annual', N'سنوية', 'months', 12, 12, 5);
+END;
+
+IF COL_LENGTH(N'dbo.memberships', N'membership_type') IS NOT NULL
+BEGIN
+    EXEC(N'ALTER TABLE dbo.memberships ALTER COLUMN membership_type VARCHAR(30) NOT NULL;');
+END;
+
+IF EXISTS (
+    SELECT 1 FROM sys.check_constraints
+    WHERE name = N'CK_memberships_type' AND parent_object_id = OBJECT_ID(N'dbo.memberships')
+)
+BEGIN
+    EXEC(N'ALTER TABLE dbo.memberships DROP CONSTRAINT CK_memberships_type;');
 END;
 
 IF OBJECT_ID(N'dbo.membership_freezes', N'U') IS NULL

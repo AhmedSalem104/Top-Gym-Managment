@@ -12,10 +12,12 @@ const {
     getMemberDetails,
     getMembers,
     getPricingCatalog,
+    createMembershipType,
     freezeMember,
     recordPayment,
     renewMember,
     resumeMember,
+    updateMembershipType,
     updatePricingCatalog,
     updatePricing,
     updateMember
@@ -56,6 +58,14 @@ app.put('/api/pricing', asyncRoute(async (request, response) => {
 
 app.put('/api/pricing/:planCode', asyncRoute(async (request, response) => {
     response.json(await updatePricing(request.params.planCode, request.body));
+}));
+
+app.post('/api/membership-types', asyncRoute(async (request, response) => {
+    response.status(201).json(await createMembershipType(request.body));
+}));
+
+app.put('/api/membership-types/:typeCode', asyncRoute(async (request, response) => {
+    response.json(await updateMembershipType(request.params.typeCode, request.body));
 }));
 
 app.get('/api/members', asyncRoute(async (request, response) => {
