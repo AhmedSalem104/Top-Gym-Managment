@@ -117,6 +117,12 @@ async function call(baseUrl, path, options = {}) {
         assert.equal(created.member.membership.amountDue, gymOnlyMonthly * 0.5 - 5);
         assert.equal(created.member.membership.discountAmount, 5);
         assert.equal(created.member.membership.amountRemaining, gymOnlyMonthly * 0.5 - 55);
+        assert.equal(created.member.membership.freezeCount, 0);
+        assert.equal(created.member.membership.freezeLimit, 3);
+        assert.equal(created.member.membership.freezesRemaining, 3);
+        const listed = await call(baseUrl, `/api/members?search=${encodeURIComponent(created.member.fullName)}&page=1&pageSize=5`);
+        assert.equal(listed.members[0].membership.freezeCount, 0);
+        assert.equal(listed.members[0].membership.freezesRemaining, 3);
 
         const edited = await call(baseUrl, `/api/members/${memberId}`, {
             method: 'PUT',
@@ -143,6 +149,28 @@ async function call(baseUrl, path, options = {}) {
 
         const resumed = await call(baseUrl, `/api/members/${memberId}/resume`, { method: 'POST' });
         assert.equal(resumed.member.membership.status, 'active');
+        assert.equal(resumed.member.membership.freezeCount, 1);
+        assert.equal(resumed.member.membership.freezesRemaining, 2);
+
+        for (let freezeNumber = 2; freezeNumber <= 3; freezeNumber += 1) {
+            const extraFrozen = await call(baseUrl, `/api/members/${memberId}/freeze`, {
+                method: 'POST', body: JSON.stringify({ days: 1, reason: `smoke test ${freezeNumber}` })
+            });
+            assert.equal(extraFrozen.member.membership.freezeCount, freezeNumber);
+            assert.equal(extraFrozen.member.membership.freezesRemaining, 3 - freezeNumber);
+            const extraResumed = await call(baseUrl, `/api/members/${memberId}/resume`, { method: 'POST' });
+            assert.equal(extraResumed.member.membership.status, 'active');
+        }
+
+        let freezeLimitRejected = false;
+        try {
+            await call(baseUrl, `/api/members/${memberId}/freeze`, {
+                method: 'POST', body: JSON.stringify({ days: 1, reason: 'smoke test limit' })
+            });
+        } catch (error) {
+            freezeLimitRejected = /الحد الأقصى للتجميد/.test(error.message);
+        }
+        assert.equal(freezeLimitRejected, true);
 
         const paid = await call(baseUrl, `/api/memberships/${resumed.member.membership.id}/payments`, {
             method: 'POST', body: JSON.stringify({ listPrice: gymOnlyMonthly, discountAmount: 0, amountPaid: gymOnlyMonthly, paymentMethod: 'card' })

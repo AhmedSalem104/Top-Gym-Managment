@@ -6,7 +6,9 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "node --watch server.js"
+    "dev": "node --watch server.js",
+    "build:css": "tailwindcss -i ./src/tailwind.css -o ./public/tailwind.css --minify",
+    "build": "npm run build:css"
   },
   "engines": {
     "node": ">=18.18"
@@ -15,5 +17,8 @@
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "mssql": "^11.0.1"
+  },
+  "devDependencies": {
+    "tailwindcss": "^3.4.17"
   }
 }

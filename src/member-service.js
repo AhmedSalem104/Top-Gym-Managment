@@ -22,6 +22,7 @@ const DEFAULT_MEMBERSHIP_TYPES = {
 };
 const PAYMENT_METHODS = ['cash', 'card', 'transfer', 'other'];
 const MEMBER_STATUSES = ['active', 'expiring_soon', 'expired', 'frozen'];
+const MEMBERSHIP_FREEZE_LIMIT = 3;
 
 function appError(message, statusCode = 400) {
     const error = new Error(message);
@@ -254,6 +255,9 @@ function mapMember(row) {
             freezeId: row.freezeId ? Number(row.freezeId) : null,
             freezeStart: formatDateOnly(row.freezeStart),
             freezeEnd: formatDateOnly(row.freezeEnd),
+            freezeCount: Number(row.freezeCount || 0),
+            freezeLimit: MEMBERSHIP_FREEZE_LIMIT,
+            freezesRemaining: Math.max(0, MEMBERSHIP_FREEZE_LIMIT - Number(row.freezeCount || 0)),
             listPrice: Number(row.listPrice || 0),
             discountAmount: Number(row.discountAmount || 0),
             amountDue: Number(row.amountDue || 0),
@@ -289,6 +293,14 @@ freeze_totals AS (
         END) AS freezeDays
     FROM dbo.membership_freezes AS f
     GROUP BY f.membership_id
+),
+freeze_counts AS (
+    SELECT
+        m.member_id AS freezeCountMemberId,
+        COUNT_BIG(*) AS freezeCount
+    FROM dbo.membership_freezes AS f
+    INNER JOIN dbo.memberships AS m ON m.id = f.membership_id
+    GROUP BY m.member_id
 ),
 current_freeze AS (
     SELECT membership_id AS currentFreezeMembershipId, id AS freezeId, start_date AS freezeStart,
@@ -327,6 +339,7 @@ SELECT
     cf.freezeId,
     cf.freezeStart,
     cf.freezeEnd,
+    ISNULL(fc.freezeCount, 0) AS freezeCount,
     ISNULL(ps.listPrice, 0) AS listPrice,
     ISNULL(ps.discountAmount, 0) AS discountAmount,
     ISNULL(ps.amountDue, 0) AS amountDue,
@@ -347,6 +360,7 @@ FROM dbo.members AS b
 LEFT JOIN latest_membership AS lm
     ON lm.membershipMemberId = b.id AND lm.membershipRank = 1
 LEFT JOIN freeze_totals AS ft ON ft.freezeMembershipId = lm.membershipId
+LEFT JOIN freeze_counts AS fc ON fc.freezeCountMemberId = b.id
 LEFT JOIN current_freeze AS cf ON cf.currentFreezeMembershipId = lm.membershipId
 LEFT JOIN payment_summary AS ps ON ps.paymentMembershipId = lm.membershipId
 )
@@ -678,7 +692,7 @@ async function getDashboard() {
                         id, fullName, phone, email, registrationDate, memberNotes,
                         memberCreatedAt, memberUpdatedAt, membershipId, membershipPlan,
                         membershipType, startDate, endDate, membershipNotes,
-                        effectiveEndDate, freezeId, freezeStart, freezeEnd,
+                        effectiveEndDate, freezeId, freezeStart, freezeEnd, freezeCount,
                         listPrice, discountAmount, amountDue, amountPaid,
                         amountRemaining, paymentMethod, paymentPaidAt,
                         computedStatus, daysRemaining
@@ -716,7 +730,7 @@ async function getRawMembership(connection, memberId) {
     const result = await connection.request()
         .input('memberId', sql.Int, ensureId(memberId))
         .query(`SELECT TOP 1 id, member_id, membership_plan, membership_type, start_date, end_date, notes
-                FROM dbo.memberships WHERE member_id = @memberId
+                FROM dbo.memberships WITH (UPDLOCK, HOLDLOCK) WHERE member_id = @memberId
                 ORDER BY end_date DESC, id DESC;`);
     return result.recordset[0] || null;
 }
@@ -729,17 +743,25 @@ async function getRawPayment(connection, membershipId) {
     return result.recordset[0] || null;
 }
 
-async function getFreezeTotals(connection, membershipId) {
+async function getFreezeUsage(connection, memberId, membershipId) {
     const result = await connection.request()
+        .input('memberId', sql.Int, ensureId(memberId))
         .input('membershipId', sql.Int, ensureId(membershipId, 'معرّف الاشتراك'))
-        .query(`SELECT COALESCE(SUM(CASE
-                    WHEN resumed_date IS NULL THEN DATEDIFF(day, start_date, end_date) + 1
-                    WHEN resumed_date <= start_date THEN 0
-                    WHEN resumed_date < end_date THEN DATEDIFF(day, start_date, resumed_date)
-                    ELSE DATEDIFF(day, start_date, end_date) + 1
-                END), 0) AS freezeDays
-                FROM dbo.membership_freezes WHERE membership_id = @membershipId;`);
-    return Number(result.recordset[0].freezeDays || 0);
+        .query(`SELECT
+                    COALESCE((SELECT SUM(CASE
+                        WHEN f.resumed_date IS NULL THEN DATEDIFF(day, f.start_date, f.end_date) + 1
+                        WHEN f.resumed_date <= f.start_date THEN 0
+                        WHEN f.resumed_date < f.end_date THEN DATEDIFF(day, f.start_date, f.resumed_date)
+                        ELSE DATEDIFF(day, f.start_date, f.end_date) + 1
+                    END) FROM dbo.membership_freezes AS f WHERE f.membership_id = @membershipId), 0) AS freezeDays,
+                    COALESCE((SELECT COUNT_BIG(*)
+                              FROM dbo.membership_freezes AS f
+                              INNER JOIN dbo.memberships AS m ON m.id = f.membership_id
+                              WHERE m.member_id = @memberId), 0) AS freezeCount;`);
+    return {
+        freezeDays: Number(result.recordset[0].freezeDays || 0),
+        freezeCount: Number(result.recordset[0].freezeCount || 0)
+    };
 }
 
 async function getActiveFreeze(connection, membershipId, today) {
@@ -967,8 +989,11 @@ async function freezeMember(id, days, reason) {
         const membership = await getRawMembership(transaction, memberId);
         if (!membership) throw appError('لا يوجد اشتراك لهذا العضو.', 400);
         if (await getActiveFreeze(transaction, membership.id, today)) throw appError('العضوية مجمدة بالفعل.');
-        const freezeDaysAlreadyUsed = await getFreezeTotals(transaction, membership.id);
-        const effectiveEnd = addDays(formatDateOnly(membership.end_date), freezeDaysAlreadyUsed);
+        const freezeUsage = await getFreezeUsage(transaction, memberId, membership.id);
+        if (freezeUsage.freezeCount >= MEMBERSHIP_FREEZE_LIMIT) {
+            throw appError(`تم استهلاك الحد الأقصى للتجميد (${MEMBERSHIP_FREEZE_LIMIT} مرات) لهذا العضو.`);
+        }
+        const effectiveEnd = addDays(formatDateOnly(membership.end_date), freezeUsage.freezeDays);
         if (effectiveEnd < today) throw appError('لا يمكن تجميد اشتراك منتهٍ.');
         const freezeEnd = addDays(today, freezeDays - 1);
         const result = await transaction.request()
@@ -979,7 +1004,7 @@ async function freezeMember(id, days, reason) {
             .query(`INSERT INTO dbo.membership_freezes (membership_id, start_date, end_date, reason)
                     OUTPUT INSERTED.id VALUES (@membershipId, @startDate, @endDate, @reason);`);
         const freezeId = Number(result.recordset[0].id);
-        await addEvent(transaction, memberId, membership.id, 'frozen', { freezeId, days: freezeDays, startDate: today, endDate: freezeEnd });
+        await addEvent(transaction, memberId, membership.id, 'frozen', { freezeId, days: freezeDays, freezeNumber: freezeUsage.freezeCount + 1, freezeLimit: MEMBERSHIP_FREEZE_LIMIT, startDate: today, endDate: freezeEnd });
         return memberId;
     });
     return getMemberById(frozenId);
@@ -1016,8 +1041,8 @@ async function renewMember(id, body = {}) {
         const current = await getRawMembership(transaction, memberId);
         if (!current) throw appError('لا يوجد اشتراك لهذا العضو.', 400);
         if (await getActiveFreeze(transaction, current.id, today)) throw appError('استأنف العضوية قبل التجديد.');
-        const freezeDays = await getFreezeTotals(transaction, current.id);
-        const effectiveEnd = addDays(formatDateOnly(current.end_date), freezeDays);
+        const freezeUsage = await getFreezeUsage(transaction, memberId, current.id);
+        const effectiveEnd = addDays(formatDateOnly(current.end_date), freezeUsage.freezeDays);
         const startDate = effectiveEnd < today ? today : addDays(effectiveEnd, 1);
         const membershipPlan = body.membershipPlan || current.membership_plan || 'gym_only';
         const pricing = await calculatePricing(membershipType, membershipPlan, money(body.discountAmount, 'الخصم', 0), transaction);
@@ -1204,6 +1229,9 @@ async function getMemberDetails(id) {
             daysRemaining,
             notes: row.notes,
             freezeDays,
+            freezeCount: membershipFreezes.length,
+            freezeLimit: MEMBERSHIP_FREEZE_LIMIT,
+            freezesRemaining: Math.max(0, MEMBERSHIP_FREEZE_LIMIT - freezeRows.length),
             activeFreezeId: activeFreeze?.id || null,
             listPrice: Number(row.list_price || 0),
             discountAmount: Number(row.discount_amount || 0),

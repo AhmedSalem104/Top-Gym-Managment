@@ -286,6 +286,9 @@
         .members-toolbar select { width: 175px; appearance: none; padding-left: 32px; background-image: linear-gradient(45deg, transparent 50%, #64748b 50%), linear-gradient(135deg, #64748b 50%, transparent 50%); background-position: left 15px center, left 10px center; background-size: 5px 5px, 5px 5px; background-repeat: no-repeat; }
         .table-member-name { display: block; }
         .table-member-phone { display: block; margin-top: 2px; }
+        .action-icon { width: 16px; height: 16px; display: block; }
+        .icon-action { width: 34px; height: 34px; display: inline-grid; place-items: center; padding: 0 !important; }
+        .icon-action:disabled { cursor: not-allowed; opacity: .42; filter: grayscale(1); }
         .table-actions { position: relative; min-width: 176px; align-items: center; gap: 5px; }
         .table-actions .btn { box-shadow: none; }
         .table-action-visible { border: 1px solid #dbe3ef; background: #fff; color: #334155; }
@@ -297,8 +300,19 @@
         .action-menu-panel { position: absolute; z-index: 40; inset-inline-end: 0; top: calc(100% + 5px); min-width: 145px; padding: 5px; border: 1px solid #dbe3ef; border-radius: 8px; background: #fff; box-shadow: 0 16px 35px rgba(15, 23, 42, .16); }
         .action-menu-panel[hidden] { display: none; }
         .action-menu-item { display: block; width: 100%; border: 0; border-radius: 6px; padding: 9px 10px; background: transparent; color: #334155; text-align: right; font-size: 12px; font-weight: 700; box-shadow: none; }
+        .action-menu-item .action-icon { display: inline-block; margin-inline-end: 7px; vertical-align: -3px; }
         .action-menu-item:hover { background: #f1f5f9; }
         .action-menu-item.danger { color: #b91c1c; }
+        .freeze-usage { display: inline-flex; flex-direction: column; gap: 3px; min-width: 54px; color: #2563eb; font-size: 11px; font-weight: 800; }
+        .freeze-usage strong { direction: ltr; text-align: right; font-size: 13px; }
+        .freeze-usage span { color: #94a3b8; font-size: 10px; font-weight: 700; }
+        .freeze-usage.complete strong { color: #dc2626; }
+        .freeze-limit-note { display: flex; align-items: center; gap: 10px; margin: 0 0 16px; padding: 11px 12px; border: 1px solid #dbeafe; border-radius: 8px; color: #1e40af; background: #eff6ff; }
+        .freeze-limit-note .freeze-limit-icon { display: grid; place-items: center; width: 30px; height: 30px; flex: 0 0 30px; border-radius: 8px; color: #2563eb; background: #dbeafe; }
+        .freeze-limit-note .action-icon { width: 16px; height: 16px; }
+        .freeze-limit-note strong, .freeze-limit-note span { display: block; }
+        .freeze-limit-note strong { margin-bottom: 3px; font-size: 12px; }
+        .freeze-limit-note span { color: #64748b; font-size: 11px; }
         dialog { border: 1px solid #dbe3ef; border-radius: 9px; overflow: hidden; box-shadow: 0 24px 60px rgba(15, 23, 42, .24); }
         dialog::backdrop { background: rgba(15, 23, 42, .48); backdrop-filter: blur(2px); }
         dialog .dialog-body { padding: 22px; }
@@ -324,13 +338,15 @@
             .members-table td:nth-child(2)::before { content: 'الاشتراك'; }
             .members-table td:nth-child(3)::before { content: 'الحالة'; }
             .members-table td:nth-child(4)::before { content: 'الانتهاء'; }
-            .members-table td:nth-child(5)::before { content: 'الحساب'; }
+            .members-table td:nth-child(5)::before { content: 'التجميد'; }
+            .members-table td:nth-child(6)::before { content: 'الحساب'; }
             .members-table td:last-child { display: block; padding-top: 12px; border-bottom: 0; }
             .members-table td:last-child::before { display: block; margin-bottom: 7px; content: 'الإجراءات'; }
             .table-actions { min-width: 0; }
-            .table-action-visible, .action-menu-toggle { flex: 1; min-width: 74px; }
-            .action-menu { flex: 1; }
-            .action-menu-toggle { width: 100%; }
+            .table-action-visible, .action-menu-toggle { flex: 0 0 38px; width: 38px; min-width: 38px; }
+            .action-menu { flex: 0 0 38px; }
+            .action-menu-toggle { width: 38px; padding: 0; }
+            .action-menu-toggle span { display: none; }
             .action-menu-panel { inset-inline-end: 0; }
         }
         .swal2-title, .swal2-html-container { text-align: center; }
@@ -349,7 +365,7 @@
             .member-card { padding: 15px; }
             .member-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
             .member-actions .btn { min-height: 39px; }
-            .members-table { min-width: 820px; }
+            .members-table { min-width: 0; }
             .members-pagination { align-items: stretch; flex-direction: column; padding: 11px 13px; }
             .members-pagination-actions { justify-content: space-between; }
             .details-dialog .dialog-body { padding: 17px; }
@@ -365,37 +381,38 @@
              .pricing-section-head .btn { flex: 0 0 auto; }
          }
     </style>
+    <link rel="stylesheet" href="/tailwind.css">
 </head>
-<body>
+<body class="font-sans bg-slate-100 text-slate-900 gym-page-bg">
     <div class="app-shell">
-        <header class="topbar">
-            <div class="topbar-inner">
+        <header class="topbar bg-slate-950 border-b border-slate-800 gym-topbar-bg">
+            <div class="topbar-inner max-w-7xl">
                 <div class="brand">
-                    <div class="brand-mark" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4v5M4 5v3M18 4v5M20 5v3M6 7h12M6 20v-5M4 19v-3M18 20v-5M20 19v-3M6 17h12"/></svg></div>
+                    <div class="brand-mark rounded-lg bg-blue-600 gym-brand-bg" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4v5M4 5v3M18 4v5M20 5v3M6 7h12M6 20v-5M4 19v-3M18 20v-5M20 19v-3M6 17h12"/></svg></div>
                     <div><h1>إدارة عضويات الجيم</h1><p>متابعة بسيطة وسريعة للمشتركين</p></div>
                 </div>
                 <div class="top-actions"><button class="btn btn-primary btn-small" id="topAddMemberButton">إضافة مشترك</button><button class="btn btn-light btn-small" id="topPricingButton">الأسعار</button><button class="btn btn-light btn-small" id="refreshButton">تحديث البيانات</button></div>
             </div>
         </header>
 
-        <main class="page">
+        <main class="page max-w-7xl">
             <section class="stats-grid" aria-label="ملخص العضويات">
-                <div class="stat-card"><div class="stat-head"><span class="stat-label">إجمالي الأعضاء</span><span class="stat-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></span></div><strong class="stat-value" id="statTotal">0</strong><span class="stat-caption">كل المشتركين</span></div>
-                <div class="stat-card active"><div class="stat-head"><span class="stat-label">نشطة</span><span class="stat-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 4 4L19 6"/></svg></span></div><strong class="stat-value" id="statActive">0</strong><span class="stat-caption">اشتراك ساري</span></div>
-                <div class="stat-card warning"><div class="stat-head"><span class="stat-label">قريبة الانتهاء</span><span class="stat-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg></span></div><strong class="stat-value" id="statExpiring">0</strong><span class="stat-caption">خلال 7 أيام</span></div>
-                <div class="stat-card danger"><div class="stat-head"><span class="stat-label">منتهية</span><span class="stat-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 2.5 20h19L12 3Z"/><path d="M12 9v4M12 17h.01"/></svg></span></div><strong class="stat-value" id="statExpired">0</strong><span class="stat-caption">تحتاج متابعة</span></div>
-                <div class="stat-card frozen"><div class="stat-head"><span class="stat-label">مجمدة الآن</span><span class="stat-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M12 2v20M4.9 6l14.2 12M19.1 6 4.9 18M4 12h16"/></svg></span></div><strong class="stat-value" id="statFrozen">0</strong><span class="stat-caption">متوقفة مؤقتاً</span></div>
+                <div class="stat-card bg-white border-slate-200 rounded-xl shadow-sm"><div class="stat-head"><span class="stat-label">إجمالي الأعضاء</span><span class="stat-icon rounded-lg" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></span></div><strong class="stat-value" id="statTotal">0</strong><span class="stat-caption">كل المشتركين</span></div>
+                <div class="stat-card active bg-white border-slate-200 rounded-xl shadow-sm"><div class="stat-head"><span class="stat-label">نشطة</span><span class="stat-icon rounded-lg" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 4 4L19 6"/></svg></span></div><strong class="stat-value" id="statActive">0</strong><span class="stat-caption">اشتراك ساري</span></div>
+                <div class="stat-card warning bg-white border-slate-200 rounded-xl shadow-sm"><div class="stat-head"><span class="stat-label">قريبة الانتهاء</span><span class="stat-icon rounded-lg" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg></span></div><strong class="stat-value" id="statExpiring">0</strong><span class="stat-caption">خلال 7 أيام</span></div>
+                <div class="stat-card danger bg-white border-slate-200 rounded-xl shadow-sm"><div class="stat-head"><span class="stat-label">منتهية</span><span class="stat-icon rounded-lg" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 2.5 20h19L12 3Z"/><path d="M12 9v4M12 17h.01"/></svg></span></div><strong class="stat-value" id="statExpired">0</strong><span class="stat-caption">تحتاج متابعة</span></div>
+                <div class="stat-card frozen bg-white border-slate-200 rounded-xl shadow-sm"><div class="stat-head"><span class="stat-label">مجمدة الآن</span><span class="stat-icon rounded-lg" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M12 2v20M4.9 6l14.2 12M19.1 6 4.9 18M4 12h16"/></svg></span></div><strong class="stat-value" id="statFrozen">0</strong><span class="stat-caption">متوقفة مؤقتاً</span></div>
             </section>
 
-            <section class="panel alerts-panel">
-                <div class="panel-header"><div><h3>التنبيهات اليومية</h3><p>العضويات المنتهية اليوم، القريبة من الانتهاء، والمجمدة حالياً</p></div></div>
+            <section class="panel alerts-panel bg-white border-slate-200 rounded-xl shadow-panel">
+                <div class="panel-header bg-slate-50"><div><h3>التنبيهات اليومية</h3><p>العضويات المنتهية اليوم، القريبة من الانتهاء، والمجمدة حالياً</p></div></div>
                 <div class="alerts-list" id="alertsList"><div class="empty">جاري تحميل التنبيهات…</div></div>
             </section>
 
             <section class="workspace">
-                <dialog id="memberDialog" class="member-dialog">
-                <section class="panel form-panel">
-                    <div class="section-heading"><h3 id="formTitle">إضافة عضو جديد</h3><div class="dialog-heading-actions"><button class="btn btn-light btn-small hidden" id="cancelEditButton" type="button">إلغاء التعديل</button><button class="btn btn-light btn-small" id="memberDialogClose" type="button">إغلاق</button></div></div>
+                <dialog id="memberDialog" class="member-dialog rounded-lg border-slate-200">
+                <section class="panel form-panel bg-white">
+                    <div class="section-heading bg-slate-50"><h3 id="formTitle">إضافة عضو جديد</h3><div class="dialog-heading-actions"><button class="btn btn-light btn-small rounded-lg hidden" id="cancelEditButton" type="button">إلغاء التعديل</button><button class="btn btn-light btn-small rounded-lg" id="memberDialogClose" type="button">إغلاق</button></div></div>
                     <form class="form-body" id="memberForm">
                         <input type="hidden" id="memberId">
                         <div class="section-label">بيانات العضو</div>
@@ -433,9 +450,9 @@
                 </section>
                 </dialog>
 
-                <section class="panel members-panel">
-                    <div class="panel-header"><div><h3>المشتركون</h3><p id="membersCount">—</p></div><div class="header-actions"><button class="btn btn-primary btn-small" id="addMemberButton" type="button">+ إضافة مشترك</button><button class="btn btn-light btn-small" id="pricingButton" type="button">إدارة الأسعار</button></div></div>
-                    <div class="members-toolbar"><input id="searchInput" placeholder="ابحث بالاسم أو الهاتف…" aria-label="بحث"><select id="statusFilter" aria-label="فلتر الحالة"><option value="">كل الحالات</option><option value="active">نشطة</option><option value="expiring_soon">قريبة الانتهاء</option><option value="expired">منتهية</option><option value="frozen">مجمدة</option></select><select id="sortFilter" aria-label="ترتيب القائمة"><option value="expiry">الأقرب انتهاءً</option><option value="newest">الأحدث تسجيلًا</option><option value="remaining">الأعلى مبلغًا متبقيًا</option></select></div>
+                <section class="panel members-panel bg-white border-slate-200 rounded-xl shadow-panel">
+                    <div class="panel-header bg-slate-50"><div><h3>المشتركون</h3><p id="membersCount">—</p></div><div class="header-actions"><button class="btn btn-primary btn-small rounded-lg shadow-sm" id="addMemberButton" type="button">+ إضافة مشترك</button><button class="btn btn-light btn-small rounded-lg shadow-none" id="pricingButton" type="button">إدارة الأسعار</button></div></div>
+                    <div class="members-toolbar bg-white"><input class="rounded-lg" id="searchInput" placeholder="ابحث بالاسم أو الهاتف…" aria-label="بحث"><select class="rounded-lg" id="statusFilter" aria-label="فلتر الحالة"><option value="">كل الحالات</option><option value="active">نشطة</option><option value="expiring_soon">قريبة الانتهاء</option><option value="expired">منتهية</option><option value="frozen">مجمدة</option></select><select class="rounded-lg" id="sortFilter" aria-label="ترتيب القائمة"><option value="expiry">الأقرب انتهاءً</option><option value="newest">الأحدث تسجيلًا</option><option value="remaining">الأعلى مبلغًا متبقيًا</option></select></div>
                     <div class="members-list" id="membersList"><div class="loading">جاري تحميل المشتركين…</div></div>
                     <div class="members-pagination" id="membersPagination" hidden></div>
                 </section>
@@ -443,13 +460,13 @@
         </main>
     </div>
 
-    <dialog id="actionDialog">
+    <dialog id="actionDialog" class="rounded-lg border-slate-200 shadow-lift">
         <form class="dialog-body" id="actionForm">
             <h3 id="dialogTitle">إجراء</h3><p id="dialogDescription"></p><div id="dialogFields"></div>
             <div class="dialog-actions"><button class="btn btn-light" id="dialogCancel" type="button">إلغاء</button><button class="btn btn-primary" id="dialogSubmit" type="submit">تأكيد</button></div>
         </form>
     </dialog>
-    <dialog id="pricingDialog" class="pricing-dialog">
+    <dialog id="pricingDialog" class="pricing-dialog rounded-lg border-slate-200 shadow-lift">
         <form class="dialog-body" id="pricingForm">
             <div class="details-dialog-head"><div><h3>إدارة الأسعار وأنواع العضويات</h3><p>تحكم في الباقات والأسعار، وأضف أو عدّل مدة أي نوع عضوية.</p></div><button class="btn btn-light btn-small" id="pricingClose" type="button">إغلاق</button></div>
             <div class="pricing-section-head"><div><h4>أسعار الباقات</h4><p>السعر الأساسي الشهري، وتظهر تحته قيمة كل مدة تلقائيًا.</p></div><button class="btn btn-primary btn-small" id="addMembershipPlanButton" type="button">+ إضافة باقة جديدة</button></div>
@@ -459,7 +476,7 @@
             <div class="dialog-actions"><button class="btn btn-primary" id="pricingSave" type="submit">حفظ الأسعار</button></div>
         </form>
     </dialog>
-    <dialog id="membershipPlanDialog" class="type-dialog">
+    <dialog id="membershipPlanDialog" class="type-dialog rounded-lg border-slate-200 shadow-lift">
         <form class="dialog-body" id="membershipPlanForm">
             <div class="details-dialog-head"><div><h3 id="membershipPlanDialogTitle">إضافة باقة جديدة</h3><p id="membershipPlanDialogDescription">أدخل اسم الباقة وسعرها الشهري لتظهر عند إضافة أو تجديد الاشتراك.</p></div><button class="btn btn-light btn-small" id="membershipPlanDialogClose" type="button">إغلاق</button></div>
             <input type="hidden" id="editingMembershipPlanCode">
@@ -476,7 +493,7 @@
             <div class="dialog-actions"><button class="btn btn-light" id="membershipPlanCancel" type="button">إلغاء</button><button class="btn btn-primary" id="membershipPlanSave" type="submit">حفظ الباقة</button></div>
         </form>
     </dialog>
-    <dialog id="membershipTypeDialog" class="type-dialog">
+    <dialog id="membershipTypeDialog" class="type-dialog rounded-lg border-slate-200 shadow-lift">
         <form class="dialog-body" id="membershipTypeForm">
             <div class="details-dialog-head"><div><h3 id="membershipTypeDialogTitle">إضافة نوع عضوية</h3><p id="membershipTypeDialogDescription">أدخل مدة النوع ومعامل السعر ليتم احتساب الاشتراك تلقائيًا.</p></div><button class="btn btn-light btn-small" id="membershipTypeDialogClose" type="button">إغلاق</button></div>
             <input type="hidden" id="editingMembershipTypeCode">
@@ -497,7 +514,7 @@
             <div class="dialog-actions"><button class="btn btn-light" id="membershipTypeCancel" type="button">إلغاء</button><button class="btn btn-primary" id="membershipTypeSave" type="submit">حفظ النوع</button></div>
         </form>
     </dialog>
-    <dialog id="detailsDialog" class="details-dialog">
+    <dialog id="detailsDialog" class="details-dialog rounded-lg border-slate-200 shadow-lift">
         <div class="dialog-body">
             <div class="details-dialog-head"><div><h3 id="detailsTitle">تفاصيل العميل</h3><p id="detailsSubtitle"></p></div><button class="btn btn-light btn-small" id="detailsClose" type="button">إغلاق</button></div>
             <div id="detailsContent"><div class="loading">جاري تحميل التفاصيل…</div></div>
@@ -765,6 +782,19 @@
         const STATUS_LABELS = { active: 'نشطة', expiring_soon: 'قريبة الانتهاء', expired: 'منتهية', frozen: 'مجمدة' };
         const PAYMENT_LABELS = { cash: 'نقدي', card: 'بطاقة', transfer: 'تحويل', other: 'أخرى' };
          const EVENT_LABELS = { created: 'إضافة اشتراك', updated: 'تعديل بيانات', renewed: 'تجديد اشتراك', frozen: 'تجميد العضوية', resumed: 'استئناف العضوية', payment_updated: 'تحديث الدفع' };
+         const FREEZE_LIMIT = 3;
+         const ACTION_LABELS = { details: 'التفاصيل', edit: 'تعديل العضو', renew: 'تجديد الاشتراك', freeze: 'تجميد العضوية', resume: 'استئناف العضوية', payment: 'تسجيل دفعة', delete: 'حذف العضو' };
+         const ACTION_ICONS = {
+             details: '<path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="2.5"/>',
+             edit: '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z"/>',
+             renew: '<path d="M20 11a8 8 0 0 0-14.8-4L3 10"/><path d="M3 5v5h5"/><path d="M4 13a8 8 0 0 0 14.8 4L21 14"/><path d="M21 19v-5h-5"/>',
+             freeze: '<path d="M12 2v20M4.9 6l14.2 12M19.1 6 4.9 18M4 12h16"/>',
+             resume: '<path d="m8 5 11 7-11 7V5Z"/>',
+             payment: '<circle cx="12" cy="12" r="9"/><path d="M12 7v10M9 10h4a2 2 0 1 1 0 4H9"/>',
+             delete: '<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>'
+         };
+         function actionIcon(action) { return `<svg class="action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ACTION_ICONS[action] || ''}</svg>`; }
+         function actionButton(action, memberId, classes = 'btn btn-light btn-small', extra = '') { const label = ACTION_LABELS[action] || action; return `<button class="${classes} icon-action rounded-lg shadow-none transition-colors" data-action="${action}" data-label="${label}" data-id="${memberId}" aria-label="${label}" title="${label}" type="button" ${extra}>${actionIcon(action)}</button>`; }
          const DEFAULT_PRICING = { plans: { gym_only: { label: 'جيم فقط', monthlyPrice: 305, active: true, sortOrder: 1 }, gym_cardio: { label: 'جيم وكارديو', monthlyPrice: 400, active: true, sortOrder: 2 } }, types: { monthly: { label: 'شهرية', mode: 'months', durationValue: 1, priceMultiplier: 1, active: true, sortOrder: 1 }, half_month: { label: 'نصف شهر', mode: 'days', durationValue: 15, priceMultiplier: .5, active: true, sortOrder: 2 }, quarterly: { label: 'ربع سنوية', mode: 'months', durationValue: 3, priceMultiplier: 3, active: true, sortOrder: 3 }, semiannual: { label: 'نصف سنوية', mode: 'months', durationValue: 6, priceMultiplier: 6, active: true, sortOrder: 4 }, annual: { label: 'سنوية', mode: 'months', durationValue: 12, priceMultiplier: 12, active: true, sortOrder: 5 } }, durations: { monthly: 1, quarterly: 3, semiannual: 6, annual: 12 } };
          const state = { members: [], dashboard: null, pricing: DEFAULT_PRICING, editing: null, dialogAction: null, dialogMember: null, endDateManual: false };
          const $ = (id) => document.getElementById(id);
@@ -863,11 +893,20 @@
             const alerts = dashboard.alerts || []; $('alertsList').innerHTML = alerts.length ? alerts.map((member) => { const sub = member.membership; const detail = sub.status === 'frozen' ? `حتى ${formatDate(sub.freezeEnd)}` : sub.status === 'expired' ? `انتهت في ${formatDate(sub.endDate)}` : `تنتهي في ${formatDate(sub.effectiveEndDate)}`; return `<article class="alert-card ${sub.status}"><strong>${escapeHtml(member.fullName)}</strong><span>${STATUS_LABELS[sub.status]} · ${escapeHtml(detail)}</span><span>${escapeHtml(member.phone)}</span></article>`; }).join('') : '<div class="empty">لا توجد تنبيهات اليوم.</div>';
         }
         function memberTableRow(member) {
-            const sub = member.membership; if (!sub) return `<tr data-member-id="${member.id}"><td><span class="table-member-name">${escapeHtml(member.fullName)}</span><a class="table-member-phone" href="tel:${escapeHtml(member.phone)}">${escapeHtml(member.phone)}</a><span class="table-sub">تسجيل: ${formatDate(member.registrationDate)}</span></td><td>—</td><td><span class="badge expired">بدون اشتراك</span></td><td>—</td><td>—</td><td><div class="table-actions"><button class="btn btn-details" data-action="details" data-id="${member.id}">تفاصيل</button><button class="btn btn-light" data-action="edit" data-id="${member.id}">تعديل</button><button class="btn btn-danger" data-action="delete" data-id="${member.id}">حذف</button></div></td></tr>`;
-            const remaining = sub.status === 'expired' ? `منتهية منذ ${Math.abs(sub.daysRemaining || 0)} يوم` : sub.status === 'frozen' ? `تجميد حتى ${formatDate(sub.freezeEnd)}` : `${sub.daysRemaining} يوم متبقي`; const freezeButton = sub.status === 'frozen' ? `<button class="btn btn-purple" data-action="resume" data-id="${member.id}">استئناف</button>` : sub.status === 'expired' ? '' : `<button class="btn btn-light" data-action="freeze" data-id="${member.id}">تجميد</button>`;
-             return `<tr data-member-id="${member.id}"><td><span class="table-member-name">${escapeHtml(member.fullName)}</span><a class="table-member-phone" href="tel:${escapeHtml(member.phone)}">${escapeHtml(member.phone)}</a><span class="table-sub">تسجيل: ${formatDate(member.registrationDate)}</span></td><td><span class="table-main">${escapeHtml(planLabel(sub.plan))}</span><span class="table-sub">${escapeHtml(typeLabel(sub.type))}</span></td><td><span class="badge ${sub.status}">${STATUS_LABELS[sub.status] || sub.status}</span></td><td><span class="table-main">${formatDate(sub.effectiveEndDate)}</span><span class="table-sub">${escapeHtml(remaining)}</span></td><td><span class="table-money">${money(sub.amountDue)}</span><span class="table-sub">متبقي ${money(sub.amountRemaining)}</span></td><td><div class="table-actions"><button class="btn btn-details" data-action="details" data-id="${member.id}">تفاصيل</button><button class="btn btn-light" data-action="edit" data-id="${member.id}">تعديل</button><button class="btn btn-primary" data-action="renew" data-id="${member.id}">تجديد</button>${freezeButton}<button class="btn btn-light" data-action="payment" data-id="${member.id}">دفعة</button><button class="btn btn-danger" data-action="delete" data-id="${member.id}">حذف</button></div></td></tr>`;
+            const sub = member.membership;
+            if (!sub) return `<tr data-member-id="${member.id}"><td><span class="table-member-name">${escapeHtml(member.fullName)}</span><a class="table-member-phone" href="tel:${escapeHtml(member.phone)}">${escapeHtml(member.phone)}</a><span class="table-sub">تسجيل: ${formatDate(member.registrationDate)}</span></td><td>—</td><td><span class="badge expired">بدون اشتراك</span></td><td>—</td><td>—</td><td>—</td><td><div class="table-actions">${actionButton('details', member.id, 'btn btn-details btn-small')}${actionButton('edit', member.id)}${actionButton('delete', member.id, 'btn btn-danger btn-small')}</div></td></tr>`;
+            const freezeLimit = Number(sub.freezeLimit || FREEZE_LIMIT);
+            const freezeCount = Number(sub.freezeCount || 0);
+            const remaining = sub.status === 'expired' ? `منتهية منذ ${Math.abs(sub.daysRemaining || 0)} يوم` : sub.status === 'frozen' ? `تجميد حتى ${formatDate(sub.freezeEnd)}` : `${sub.daysRemaining} يوم متبقي`;
+            const freezeUsage = `<span class="freeze-usage${freezeCount >= freezeLimit ? ' complete' : ''}"><strong>${freezeCount}/${freezeLimit}</strong><span>متبقي ${Math.max(0, freezeLimit - freezeCount)}</span></span>`;
+            const freezeButton = sub.status === 'frozen'
+                ? actionButton('resume', member.id, 'btn btn-purple btn-small')
+                : sub.status === 'expired'
+                    ? ''
+                    : actionButton('freeze', member.id, 'btn btn-light btn-small', freezeCount >= freezeLimit ? 'disabled' : '');
+            return `<tr data-member-id="${member.id}"><td><span class="table-member-name">${escapeHtml(member.fullName)}</span><a class="table-member-phone" href="tel:${escapeHtml(member.phone)}">${escapeHtml(member.phone)}</a><span class="table-sub">تسجيل: ${formatDate(member.registrationDate)}</span></td><td><span class="table-main">${escapeHtml(planLabel(sub.plan))}</span><span class="table-sub">${escapeHtml(typeLabel(sub.type))}</span></td><td><span class="badge ${sub.status}">${STATUS_LABELS[sub.status] || sub.status}</span></td><td><span class="table-main">${formatDate(sub.effectiveEndDate)}</span><span class="table-sub">${escapeHtml(remaining)}</span></td><td>${freezeUsage}</td><td><span class="table-money">${money(sub.amountDue)}</span><span class="table-sub">متبقي ${money(sub.amountRemaining)}</span></td><td><div class="table-actions">${actionButton('details', member.id, 'btn btn-details btn-small')}${actionButton('edit', member.id)}${actionButton('renew', member.id, 'btn btn-primary btn-small')}${freezeButton}${actionButton('payment', member.id)}${actionButton('delete', member.id, 'btn btn-danger btn-small')}</div></td></tr>`;
         }
-        function renderMembers() { $('membersCount').textContent = `${state.members.length} عضو ظاهر`; $('membersList').innerHTML = state.members.length ? `<div class="table-scroll"><table class="members-table"><thead><tr><th>العضو</th><th>الاشتراك</th><th>الحالة</th><th>الانتهاء</th><th>الحساب</th><th>الإجراءات</th></tr></thead><tbody>${state.members.map(memberTableRow).join('')}</tbody></table></div>` : '<div class="empty">لا يوجد أعضاء مطابقون للبحث.</div>'; }
+        function renderMembers() { $('membersCount').textContent = `${state.members.length} عضو ظاهر`; $('membersList').innerHTML = state.members.length ? `<div class="table-scroll"><table class="members-table"><thead><tr><th>العضو</th><th>الاشتراك</th><th>الحالة</th><th>الانتهاء</th><th>التجميد</th><th>الحساب</th><th>الإجراءات</th></tr></thead><tbody>${state.members.map(memberTableRow).join('')}</tbody></table></div>` : '<div class="empty">لا يوجد أعضاء مطابقون للبحث.</div>'; }
 
         function closeMemberDialog() { const dialog = $('memberDialog'); if (typeof dialog.close === 'function' && dialog.open) dialog.close(); else dialog.removeAttribute('open'); }
          function setFormDefaults(close = false) { const today = todayIso(); const defaultType = activeTypeEntries()[0]?.[0] || 'monthly'; $('memberId').value = ''; $('fullName').value = ''; $('phone').value = ''; $('email').value = ''; $('registrationDate').value = today; $('notes').value = ''; $('membershipType').value = defaultType; $('membershipPlan').value = 'gym_only'; $('startDate').value = today; $('endDate').value = calculatedEndDate(today, defaultType); $('membershipNotes').value = ''; $('discountAmount').value = '0'; $('amountPaid').value = ''; $('paymentMethod').value = 'cash'; state.editing = null; state.endDateManual = false; $('formTitle').textContent = 'إضافة عضو جديد'; $('saveButton').textContent = 'حفظ العضو'; $('cancelEditButton').classList.add('hidden'); $('resetButton').classList.add('hidden'); updateFormPricing(); if (close) closeMemberDialog(); }
@@ -875,14 +914,15 @@
         function editMember(member) { const sub = member.membership || {}; $('memberId').value = member.id; $('fullName').value = member.fullName || ''; $('phone').value = member.phone || ''; $('email').value = member.email || ''; $('registrationDate').value = member.registrationDate || todayIso(); $('notes').value = member.notes || ''; $('membershipType').value = sub.type || 'monthly'; $('membershipPlan').value = sub.plan || 'gym_only'; $('startDate').value = sub.startDate || todayIso(); $('endDate').value = sub.endDate || calculatedEndDate($('startDate').value, $('membershipType').value); $('membershipNotes').value = sub.notes || ''; $('discountAmount').value = String(sub.discountAmount || 0); $('amountPaid').value = String(sub.amountPaid || 0); $('paymentMethod').value = sub.paymentMethod || 'cash'; state.editing = member; state.endDateManual = true; $('formTitle').textContent = 'تعديل بيانات العضو'; $('saveButton').textContent = 'حفظ التعديلات'; $('cancelEditButton').classList.remove('hidden'); $('resetButton').classList.remove('hidden'); updateFormPricing(); }
 
         function openDialog(action, member) {
-             state.dialogAction = action; state.dialogMember = member; const sub = member.membership || {}; const fields = $('dialogFields'); $('dialogTitle').textContent = action === 'freeze' ? 'تجميد العضوية' : action === 'renew' ? 'تجديد العضوية' : 'تسجيل دفعة'; $('dialogDescription').textContent = `${member.fullName} · ${member.phone}`;
-            if (action === 'freeze') fields.innerHTML = '<div class="field"><label for="dialogDays">عدد أيام التجميد</label><input id="dialogDays" type="number" min="1" max="365" value="7" required></div><div class="field"><label for="dialogReason">السبب (اختياري)</label><textarea id="dialogReason" maxlength="500"></textarea></div>';
+             state.dialogAction = action; state.dialogMember = member; const sub = member.membership || {}; const fields = $('dialogFields'); const freezeLimit = Number(sub.freezeLimit || FREEZE_LIMIT); const freezeCount = Number(sub.freezeCount || 0); $('dialogTitle').textContent = action === 'freeze' ? 'تجميد العضوية' : action === 'renew' ? 'تجديد العضوية' : 'تسجيل دفعة'; $('dialogDescription').textContent = `${member.fullName} · ${member.phone}`;
+            if (action === 'freeze' && freezeCount >= freezeLimit) { state.dialogAction = null; state.dialogMember = null; notify(`تم استهلاك الحد الأقصى للتجميد (${freezeLimit} مرات) لهذا العضو.`, 'warning'); return; }
+            if (action === 'freeze') fields.innerHTML = `<div class="freeze-limit-note"><span class="freeze-limit-icon">${actionIcon('freeze')}</span><div><strong>التجميد المستخدم ${freezeCount}/${freezeLimit}</strong><span>متبقي ${Math.max(0, freezeLimit - freezeCount)} مرات لهذا العضو.</span></div></div><div class="field"><label for="dialogDays">عدد أيام التجميد</label><input id="dialogDays" type="number" min="1" max="365" value="7" required></div><div class="field"><label for="dialogReason">السبب (اختياري)</label><textarea id="dialogReason" maxlength="500"></textarea></div>`;
              if (action === 'renew' || action === 'payment') { const plan = sub.plan || 'gym_only'; const type = sub.type || activeTypeEntries()[0]?.[0] || 'monthly'; const discount = sub.discountAmount || 0; const paidDefault = action === 'renew' ? 0 : (sub.amountPaid || 0); const planOptions = Object.entries(state.pricing.plans).map(([code, item]) => `<option value="${escapeHtml(code)}">${escapeHtml(item.label)}</option>`).join(''); const typeOptions = activeTypeEntries().map(([code, item]) => `<option value="${escapeHtml(code)}">${escapeHtml(item.label)}</option>`).join(''); fields.innerHTML = `<div class="field-grid"><div class="field"><label for="dialogPlan">الباقة</label><select id="dialogPlan">${planOptions}</select></div><div class="field"><label for="dialogType">نوع العضوية</label><select id="dialogType">${typeOptions}</select></div></div><div class="field-grid"><div class="field"><label for="dialogDiscount">الخصم</label><input id="dialogDiscount" type="number" min="0" step="0.01" value="${discount}"></div><div class="field"><label for="dialogDue">المستحق بعد الخصم</label><input id="dialogDue" type="number" readonly></div></div><div class="pricing-summary" id="dialogPricing"></div><div class="field"><label for="dialogPaid">إجمالي المدفوع</label><input id="dialogPaid" type="number" min="0" step="0.01" value="${paidDefault}" required></div><div class="field"><label for="dialogMethod">طريقة الدفع</label><select id="dialogMethod"><option value="cash">نقدي</option><option value="card">بطاقة</option><option value="transfer">تحويل</option><option value="other">أخرى</option></select></div>`; $('dialogPlan').value = plan; $('dialogType').value = type; $('dialogMethod').value = sub.paymentMethod || 'cash'; updateDialogPricing(); $('dialogPlan').addEventListener('change', updateDialogPricing); $('dialogType').addEventListener('change', updateDialogPricing); $('dialogDiscount').addEventListener('input', updateDialogPricing); }
             const dialog = $('actionDialog'); if (typeof dialog.showModal === 'function') dialog.showModal(); else dialog.setAttribute('open', '');
         }
         function closeDialog() { const dialog = $('actionDialog'); if (typeof dialog.close === 'function' && dialog.open) dialog.close(); else dialog.removeAttribute('open'); state.dialogAction = null; state.dialogMember = null; }
 
-        async function submitDialog(event) { event.preventDefault(); const action = state.dialogAction; const member = state.dialogMember; if (!action || !member) return; try { await withLoader(async () => { if (action === 'freeze') await api(`/api/members/${member.id}/freeze`, { method: 'POST', body: JSON.stringify({ days: Number($('dialogDays').value), reason: $('dialogReason').value }) }); if (action === 'renew') await api(`/api/members/${member.id}/renew`, { method: 'POST', body: JSON.stringify({ membershipType: $('dialogType').value, membershipPlan: $('dialogPlan').value, discountAmount: Number($('dialogDiscount').value || 0), amountPaid: Number($('dialogPaid').value || 0), paymentMethod: $('dialogMethod').value }) }); if (action === 'payment') { const pricing = calculateClientPricing($('dialogType').value, $('dialogPlan').value, $('dialogDiscount').value); await api(`/api/memberships/${member.membership.id}/payments`, { method: 'POST', body: JSON.stringify({ listPrice: pricing.listPrice, discountAmount: pricing.discountAmount, amountPaid: Number($('dialogPaid').value || 0), paymentMethod: $('dialogMethod').value }) }); } }, 'جاري تنفيذ الإجراء…'); closeDialog(); await loadData(); await notify(action === 'freeze' ? 'تم تجميد العضوية.' : action === 'renew' ? 'تم تجديد العضوية.' : 'تم تحديث الدفع.'); } catch (error) { await notify(error.message, 'error'); } }
+        async function submitDialog(event) { event.preventDefault(); const action = state.dialogAction; const member = state.dialogMember; if (!action || !member) return; if (action === 'freeze' && Number(member.membership?.freezeCount || 0) >= Number(member.membership?.freezeLimit || FREEZE_LIMIT)) { await notify(`تم استهلاك الحد الأقصى للتجميد (${FREEZE_LIMIT} مرات) لهذا العضو.`, 'warning'); return; } try { await withLoader(async () => { if (action === 'freeze') await api(`/api/members/${member.id}/freeze`, { method: 'POST', body: JSON.stringify({ days: Number($('dialogDays').value), reason: $('dialogReason').value }) }); if (action === 'renew') await api(`/api/members/${member.id}/renew`, { method: 'POST', body: JSON.stringify({ membershipType: $('dialogType').value, membershipPlan: $('dialogPlan').value, discountAmount: Number($('dialogDiscount').value || 0), amountPaid: Number($('dialogPaid').value || 0), paymentMethod: $('dialogMethod').value }) }); if (action === 'payment') { const pricing = calculateClientPricing($('dialogType').value, $('dialogPlan').value, $('dialogDiscount').value); await api(`/api/memberships/${member.membership.id}/payments`, { method: 'POST', body: JSON.stringify({ listPrice: pricing.listPrice, discountAmount: pricing.discountAmount, amountPaid: Number($('dialogPaid').value || 0), paymentMethod: $('dialogMethod').value }) }); } }, 'جاري تنفيذ الإجراء…'); closeDialog(); await loadData(); await notify(action === 'freeze' ? 'تم تجميد العضوية.' : action === 'renew' ? 'تم تجديد العضوية.' : 'تم تحديث الدفع.'); } catch (error) { await notify(error.message, 'error'); } }
 
          function renderPricingTable() { const typeEntries = activeTypeEntries(); const headers = typeEntries.map(([, type]) => `<th>${escapeHtml(type.label)}</th>`).join(''); const rows = Object.entries(state.pricing.plans).map(([code, plan]) => `<tr data-plan="${escapeHtml(code)}"><td><input data-field="planName" maxlength="80" value="${escapeHtml(plan.label)}"><span class="table-sub">${escapeHtml(code)}</span></td><td><input data-field="monthlyPrice" type="number" min="0" step="0.01" value="${Number(plan.monthlyPrice).toFixed(2)}"></td>${typeEntries.map(([typeCode, type]) => `<td class="duration-price" data-multiplier="${Number(type.priceMultiplier || 1)}">${money(Number(plan.monthlyPrice) * Number(type.priceMultiplier || 1))}</td>`).join('')}</tr>`).join(''); $('pricingTableContainer').innerHTML = `<table class="pricing-table"><thead><tr><th>الباقة</th><th>السعر الشهري</th>${headers}</tr></thead><tbody>${rows}</tbody></table>`; $('pricingTableContainer').querySelectorAll('[data-field="monthlyPrice"]').forEach((input) => input.addEventListener('input', () => { const row = input.closest('tr'); const price = Number(input.value || 0); row.querySelectorAll('.duration-price').forEach((cell) => { cell.textContent = money(price * Number(cell.dataset.multiplier || 1)); }); })); }
          function renderMembershipTypesTable() { const entries = Object.entries(state.pricing.types || {}).sort(([, first], [, second]) => Number(first.sortOrder || 0) - Number(second.sortOrder || 0)); const rows = entries.map(([code, type]) => { const duration = type.mode === 'days' ? `${Number(type.durationValue)} يوم` : `${Number(type.durationValue)} شهر`; const status = type.active === false ? '<span class="type-status off">غير ظاهر</span>' : '<span class="type-status">نشط</span>'; return `<tr><td><strong>${escapeHtml(type.label)}</strong><span class="table-sub">${escapeHtml(code)}</span></td><td>${duration}</td><td>${Number(type.priceMultiplier || 0).toFixed(4).replace(/0+$/, '').replace(/\.$/, '')}</td><td>${status}</td><td><div class="type-actions"><button class="btn btn-light btn-small" type="button" data-type-action="edit" data-code="${escapeHtml(code)}">تعديل</button></div></td></tr>`; }).join(''); $('membershipTypesTableContainer').innerHTML = `<table class="membership-types-table"><thead><tr><th>النوع</th><th>المدة</th><th>معامل السعر</th><th>الحالة</th><th>الإجراء</th></tr></thead><tbody>${rows || '<tr><td colspan="5">لا توجد أنواع عضويات.</td></tr>'}</tbody></table>`; }
@@ -1262,7 +1302,7 @@
                     const visible = buttons.filter((button) => visibleActions.has(button.dataset.action));
                     const advanced = buttons.filter((button) => !visibleActions.has(button.dataset.action));
                     actions.replaceChildren(...visible);
-                    visible.forEach((button) => button.classList.add('table-action-visible'));
+                    visible.forEach((button) => { button.classList.add('table-action-visible'); button.innerHTML = actionIcon(button.dataset.action); });
                     if (!advanced.length) return;
 
                     const menu = document.createElement('div');
@@ -1270,8 +1310,10 @@
                     menu.innerHTML = '<button class="btn btn-small action-menu-toggle" type="button" data-menu-toggle aria-expanded="false" aria-label="المزيد من الإجراءات"><svg class="ui-icon action-menu-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg><span>المزيد</span></button><div class="action-menu-panel" hidden></div>';
                     const panel = menu.querySelector('.action-menu-panel');
                     advanced.forEach((button) => {
+                        const label = button.dataset.label || ACTION_LABELS[button.dataset.action] || button.dataset.action;
                         button.className = `action-menu-item${button.dataset.action === 'delete' ? ' danger' : ''}`;
                         button.type = 'button';
+                        button.innerHTML = `${actionIcon(button.dataset.action)}<span>${escapeHtml(label)}</span>`;
                         panel.append(button);
                     });
                     actions.append(menu);
@@ -1304,6 +1346,26 @@
                 compactActions();
                 document.getElementById('sortFilter')?.addEventListener('change', loadMembersOnly);
             });
+        })();
+    </script>
+    <script>
+        (() => {
+            const baseRenderDetails = window.renderDetails;
+            if (typeof baseRenderDetails !== 'function') return;
+            window.renderDetails = (data) => {
+                baseRenderDetails(data);
+                const freezes = data.freezes || [];
+                const limit = Number(data.memberships?.[0]?.freezeLimit || 3);
+                const summaryCard = document.querySelector('#detailsContent .details-summary-card:nth-child(3)');
+                if (summaryCard) summaryCard.innerHTML = `<span>التجميد المستخدم</span><strong>${freezes.length}/${limit}</strong><small class="table-sub">متبقي ${Math.max(0, limit - freezes.length)} مرات</small>`;
+                const membershipTable = document.querySelector('#detailsContent .details-section .history-table');
+                membershipTable?.querySelectorAll('tbody tr').forEach((row, index) => {
+                    const membership = data.memberships?.[index];
+                    const freezeCell = row.lastElementChild;
+                    if (!membership || !freezeCell) return;
+                    freezeCell.innerHTML = `<span class="freeze-usage${membership.freezeCount >= (membership.freezeLimit || limit) ? ' complete' : ''}"><strong>${membership.freezeCount || 0}/${membership.freezeLimit || limit}</strong><span>متبقي ${membership.freezesRemaining ?? Math.max(0, limit - (membership.freezeCount || 0))}</span></span>`;
+                });
+            };
         })();
     </script>
 </body>
