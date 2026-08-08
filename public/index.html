@@ -271,7 +271,11 @@
          .checkbox-field { display: flex; align-items: center; gap: 9px; margin-top: 14px; color: #334155; font-size: 12px; font-weight: 700; cursor: pointer; }
          .checkbox-field input { width: 18px; height: 18px; accent-color: #2563eb; }
          .type-preview { margin-top: 14px; padding: 11px 13px; border: 1px solid #dbeafe; border-radius: 11px; color: #1d4ed8; background: #eff6ff; font-size: 12px; font-weight: 700; line-height: 1.8; }
-         .btn.is-loading { position: relative; opacity: .72; cursor: wait; pointer-events: none; }
+         .btn.is-loading { position: relative; opacity: .72; cursor: wait; pointer-events: none; color: transparent !important; }
+         .btn.is-loading::after { content: ''; position: absolute; top: 50%; left: 50%; width: 13px; height: 13px; margin: -7px 0 0 -7px; border: 2px solid rgba(37, 99, 235, .25); border-top-color: #2563eb; border-radius: 50%; animation: buttonSpin .65s linear infinite; }
+         .btn.btn-danger.is-loading::after { border-color: rgba(220, 38, 38, .25); border-top-color: #dc2626; }
+         .btn.btn-purple.is-loading::after { border-color: rgba(124, 58, 237, .25); border-top-color: #7c3aed; }
+         .btn.is-loading > * { visibility: hidden; }
          .button-spinner { width: 13px; height: 13px; display: inline-block; margin-inline-end: 7px; vertical-align: -2px; border: 2px solid currentColor; border-left-color: transparent; border-radius: 50%; animation: buttonSpin .65s linear infinite; }
          .button-loading-text { vertical-align: middle; }
          @keyframes buttonSpin { to { transform: rotate(360deg); } }
@@ -1019,7 +1023,6 @@
                 button.dataset.loading = 'true';
                 button.classList.add('is-loading');
                 button.setAttribute('aria-busy', 'true');
-                button.innerHTML = '<span class="button-spinner" aria-hidden="true"></span><span class="button-loading-text">جارٍ المعالجة...</span>';
                 setTimeout(() => {
                     if (button.__topGymLoading === record && !record.stopped) button.disabled = true;
                 }, 0);
