@@ -17,6 +17,7 @@ async function call(baseUrl, path, options = {}) {
 (async () => {
     let server;
     let memberId;
+    let temporaryPlanCode;
     let temporaryTypeCode;
     try {
         await initDatabase();
@@ -47,6 +48,25 @@ async function call(baseUrl, path, options = {}) {
             })
         });
         assert.deepEqual(pricingUpdate.plans, pricing.plans);
+
+        temporaryPlanCode = `smoke_plan_${String(Date.now()).slice(-14)}`;
+        const createdPlan = await call(baseUrl, '/api/pricing-plans', {
+            method: 'POST',
+            body: JSON.stringify({
+                planCode: temporaryPlanCode,
+                planName: 'باقة اختبار مؤقتة',
+                monthlyPrice: 777,
+                sortOrder: 99
+            })
+        });
+        assert.equal(createdPlan.plans[temporaryPlanCode].monthlyPrice, 777);
+        assert.equal(createdPlan.plans[temporaryPlanCode].active, true);
+        const updatedPlan = await call(baseUrl, `/api/pricing-plans/${temporaryPlanCode}`, {
+            method: 'PUT',
+            body: JSON.stringify({ monthlyPrice: 778, isActive: false, sortOrder: 100 })
+        });
+        assert.equal(updatedPlan.plans[temporaryPlanCode].monthlyPrice, 778);
+        assert.equal(updatedPlan.plans[temporaryPlanCode].active, false);
 
         temporaryTypeCode = `smoke_${String(Date.now()).slice(-20)}`;
         const createdType = await call(baseUrl, '/api/membership-types', {
@@ -144,6 +164,13 @@ async function call(baseUrl, path, options = {}) {
             try {
                 const baseUrl = `http://127.0.0.1:${server.address().port}`;
                 await call(baseUrl, `/api/members/${memberId}`, { method: 'DELETE' });
+            } catch (_) { /* cleanup is best effort */ }
+        }
+        if (temporaryPlanCode) {
+            try {
+                const pool = await getPool();
+                await pool.request().input('planCode', sql.VarChar(30), temporaryPlanCode)
+                    .query('DELETE FROM dbo.membership_pricing WHERE plan_code = @planCode;');
             } catch (_) { /* cleanup is best effort */ }
         }
         if (temporaryTypeCode) {

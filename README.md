@@ -48,6 +48,10 @@
 - `expired`: انتهى التاريخ الفعلي بعد احتساب التجميد.
 - `frozen`: يوجد تجميد نشط حالياً.
 
+## إدارة الباقات
+
+من شاشة «إدارة الأسعار» يمكن إضافة باقة جديدة أو تعديل باقة موجودة، مع تحديد رمزها البرمجي، الاسم، السعر الشهري، ترتيب العرض، وحالة ظهورها في قوائم الاشتراك. يتم إخفاء الباقة غير النشطة من الاشتراكات الجديدة مع الاحتفاظ بها للاشتراكات التاريخية.
+
 ## API
 
 ```text
@@ -60,6 +64,8 @@ GET    /api/members/:id/details
 GET    /api/pricing
 PUT    /api/pricing
 PUT    /api/pricing/:planCode
+POST   /api/pricing-plans
+PUT    /api/pricing-plans/:planCode
 POST   /api/membership-types
 PUT    /api/membership-types/:typeCode
 POST   /api/members

@@ -35,10 +35,6 @@
         .brand p { margin: 0; color: #cbd5e1; font-size: 12px; }
         .top-actions { display: flex; gap: 8px; }
         .page { max-width: 1180px; margin: 0 auto; padding: 22px 18px 40px; }
-        .hero { display: flex; align-items: end; justify-content: space-between; gap: 18px; margin-bottom: 20px; }
-        .hero h2 { margin: 0 0 7px; font-size: clamp(22px, 4vw, 30px); }
-        .hero p { margin: 0; color: var(--muted); font-size: 14px; }
-        .date-chip { background: #eaf1ff; color: #1d4ed8; border-radius: 999px; padding: 10px 14px; font-size: 13px; white-space: nowrap; }
         .stats-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 18px; }
         .stat-card { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 16px; box-shadow: var(--shadow); }
         .stat-card .stat-label { color: var(--muted); font-size: 12px; }
@@ -125,8 +121,6 @@
             .brand-mark { width: 37px; height: 37px; font-size: 19px; }
             .top-actions .btn { padding: 8px 10px; }
             .page { padding: 18px 12px 32px; }
-            .hero { display: block; }
-            .date-chip { display: inline-block; margin-top: 13px; }
             .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
             .stat-card { padding: 13px; }
             .stat-card .stat-value { font-size: 23px; }
@@ -146,12 +140,6 @@
         .top-actions .btn-light { color: #eff6ff; background: rgba(255, 255, 255, .1); border: 1px solid rgba(255, 255, 255, .18); }
         .top-actions .btn-light:hover { background: rgba(255, 255, 255, .18); }
         .page { max-width: 1240px; padding-top: 28px; }
-        .hero { position: relative; overflow: hidden; color: #fff; min-height: 170px; padding: 28px 30px; border-radius: 24px; background: linear-gradient(120deg, #111827 0%, #1e3a8a 62%, #2563eb 100%); box-shadow: 0 18px 45px rgba(30, 64, 175, .2); }
-        .hero::after { content: ''; position: absolute; width: 260px; height: 260px; border: 1px solid rgba(255, 255, 255, .13); border-radius: 50%; inset-inline-start: -80px; top: -95px; box-shadow: 0 0 0 28px rgba(255, 255, 255, .03), 0 0 0 58px rgba(255, 255, 255, .02); }
-        .hero > * { position: relative; z-index: 1; }
-        .hero h2 { font-size: clamp(25px, 4vw, 34px); letter-spacing: -.5px; }
-        .hero p { color: #dbeafe; max-width: 560px; line-height: 1.8; }
-        .date-chip { color: #fff; background: rgba(255, 255, 255, .11); border: 1px solid rgba(255, 255, 255, .2); backdrop-filter: blur(8px); }
         .stats-grid { gap: 14px; margin-top: 18px; }
         .stat-card { position: relative; overflow: hidden; border: 1px solid rgba(226, 232, 240, .95); border-radius: 18px; padding: 17px; box-shadow: 0 10px 26px rgba(15, 23, 42, .06); transition: transform .18s, box-shadow .18s; }
         .stat-card::after { content: ''; position: absolute; width: 74px; height: 74px; border-radius: 50%; background: currentColor; opacity: .04; inset-inline-start: -22px; bottom: -24px; }
@@ -162,8 +150,14 @@
         .stat-card.warning .stat-icon { color: var(--orange); background: #fef3c7; }
         .stat-card.danger .stat-icon { color: var(--red); background: #fee2e2; }
         .stat-card.frozen .stat-icon { color: var(--purple); background: #ede9fe; }
-        .stat-card .stat-value { font-size: 30px; margin-top: 13px; }
-        .stat-caption { color: #94a3b8; font-size: 11px; }
+         .stat-card .stat-value { font-size: 30px; margin-top: 13px; }
+         .stat-caption { color: #94a3b8; font-size: 11px; }
+         .stats-grid { gap: 9px; margin-top: 0; margin-bottom: 15px; }
+         .stat-card { display: flex; align-items: center; gap: 8px; min-height: 58px; padding: 8px 10px; border-radius: 13px; }
+         .stat-head { flex: 1; min-width: 0; gap: 7px; }
+         .stat-card .stat-icon { width: 27px; height: 27px; flex: 0 0 27px; border-radius: 8px; font-size: 13px; }
+         .stat-card .stat-value { flex: 0 0 auto; margin: 0; font-size: 21px; line-height: 1; }
+         .stat-caption { display: none; }
         .panel { border-radius: 20px; overflow: hidden; box-shadow: 0 12px 32px rgba(15, 23, 42, .065); }
         .panel-header, .section-heading { padding: 20px 22px; background: linear-gradient(180deg, #fff, #fbfdff); }
         .panel-header h3, .section-heading h3 { font-size: 18px; letter-spacing: -.2px; }
@@ -253,8 +247,9 @@
         .pricing-table th, .pricing-table td { padding: 11px 12px; border-bottom: 1px solid #eef2f7; vertical-align: middle; font-size: 12px; }
         .pricing-table th { color: #64748b; background: #f8fafc; font-size: 11px; white-space: nowrap; }
         .pricing-table tr:last-child td { border-bottom: 0; }
-        .pricing-table input { min-width: 120px; padding: 9px 10px; }
+         .pricing-table input { min-width: 120px; padding: 9px 10px; }
          .pricing-table .duration-price { direction: ltr; text-align: right; font-weight: 800; color: #1d4ed8; white-space: nowrap; }
+         .pricing-actions { display: flex; gap: 6px; min-width: 78px; }
          .pricing-section-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 20px 0 10px; }
          .pricing-section-head h4 { margin: 0 0 4px; color: #1e3a8a; font-size: 14px; }
          .pricing-section-head p { margin: 0; color: #64748b; font-size: 11px; line-height: 1.7; }
@@ -271,6 +266,10 @@
          .checkbox-field { display: flex; align-items: center; gap: 9px; margin-top: 14px; color: #334155; font-size: 12px; font-weight: 700; cursor: pointer; }
          .checkbox-field input { width: 18px; height: 18px; accent-color: #2563eb; }
          .type-preview { margin-top: 14px; padding: 11px 13px; border: 1px solid #dbeafe; border-radius: 11px; color: #1d4ed8; background: #eff6ff; font-size: 12px; font-weight: 700; line-height: 1.8; }
+         .btn.is-loading { position: relative; opacity: .72; cursor: wait; pointer-events: none; }
+         .button-spinner { width: 13px; height: 13px; display: inline-block; margin-inline-end: 7px; vertical-align: -2px; border: 2px solid currentColor; border-left-color: transparent; border-radius: 50%; animation: buttonSpin .65s linear infinite; }
+         .button-loading-text { vertical-align: middle; }
+         @keyframes buttonSpin { to { transform: rotate(360deg); } }
         .swal2-popup { font-family: Tahoma, Arial, sans-serif !important; direction: rtl; border-radius: 18px !important; }
         .swal2-title, .swal2-html-container { text-align: center; }
         @media (max-width: 900px) {
@@ -279,13 +278,9 @@
         }
         @media (max-width: 640px) {
             .page { padding: 16px 12px 32px; }
-            .hero { min-height: 190px; padding: 23px 20px; border-radius: 20px; }
-            .hero h2 { font-size: 25px; }
-            .hero p { font-size: 13px; }
-            .date-chip { margin-top: 17px; }
             .stats-grid { margin-top: 14px; }
-            .stat-card { padding: 14px; }
-            .stat-card .stat-value { font-size: 25px; }
+             .stat-card { min-height: 52px; padding: 7px 8px; }
+             .stat-card .stat-value { margin: 0; font-size: 19px; }
             .panel-header, .section-heading { padding: 17px 16px; }
             .alerts-list, .members-list { padding: 14px 13px 17px; }
             .members-toolbar { padding: 13px; }
@@ -320,11 +315,6 @@
         </header>
 
         <main class="page">
-            <section class="hero">
-                <div><h2>لوحة المتابعة</h2><p>أضف مشتركاً، تابع حالته، وسجل التجديد أو التجميد من مكان واحد.</p></div>
-                <div class="date-chip">اليوم: <span id="todayLabel">—</span></div>
-            </section>
-
             <section class="stats-grid" aria-label="ملخص العضويات">
                 <div class="stat-card"><div class="stat-head"><span class="stat-label">إجمالي الأعضاء</span><span class="stat-icon">👥</span></div><strong class="stat-value" id="statTotal">0</strong><span class="stat-caption">كل المشتركين</span></div>
                 <div class="stat-card active"><div class="stat-head"><span class="stat-label">نشطة</span><span class="stat-icon">✓</span></div><strong class="stat-value" id="statActive">0</strong><span class="stat-caption">اشتراك ساري</span></div>
@@ -397,11 +387,28 @@
     <dialog id="pricingDialog" class="pricing-dialog">
         <form class="dialog-body" id="pricingForm">
             <div class="details-dialog-head"><div><h3>إدارة الأسعار وأنواع العضويات</h3><p>تحكم في الباقات والأسعار، وأضف أو عدّل مدة أي نوع عضوية.</p></div><button class="btn btn-light btn-small" id="pricingClose" type="button">إغلاق</button></div>
-            <div class="pricing-section-head"><div><h4>أسعار الباقات</h4><p>السعر الأساسي الشهري، وتظهر تحته قيمة كل مدة تلقائيًا.</p></div></div>
+            <div class="pricing-section-head"><div><h4>أسعار الباقات</h4><p>السعر الأساسي الشهري، وتظهر تحته قيمة كل مدة تلقائيًا.</p></div><button class="btn btn-primary btn-small" id="addMembershipPlanButton" type="button">+ إضافة باقة جديدة</button></div>
             <div class="pricing-table-scroll" id="pricingTableContainer"><div class="loading">جاري تحميل الأسعار…</div></div>
             <div class="pricing-section-head"><div><h4>أنواع العضويات</h4><p>نصف الشهر وباقي المدد محفوظة في قاعدة البيانات ويمكن إدارتها من هنا.</p></div><button class="btn btn-primary btn-small" id="addMembershipTypeButton" type="button">+ إضافة نوع جديد</button></div>
             <div class="pricing-table-scroll" id="membershipTypesTableContainer"><div class="loading">جاري تحميل أنواع العضويات…</div></div>
             <div class="dialog-actions"><button class="btn btn-primary" id="pricingSave" type="submit">حفظ الأسعار</button></div>
+        </form>
+    </dialog>
+    <dialog id="membershipPlanDialog" class="type-dialog">
+        <form class="dialog-body" id="membershipPlanForm">
+            <div class="details-dialog-head"><div><h3 id="membershipPlanDialogTitle">إضافة باقة جديدة</h3><p id="membershipPlanDialogDescription">أدخل اسم الباقة وسعرها الشهري لتظهر عند إضافة أو تجديد الاشتراك.</p></div><button class="btn btn-light btn-small" id="membershipPlanDialogClose" type="button">إغلاق</button></div>
+            <input type="hidden" id="editingMembershipPlanCode">
+            <div class="field-grid">
+                <div class="field"><label for="membershipPlanCode">رمز الباقة *</label><input id="membershipPlanCode" maxlength="30" pattern="[A-Za-z][A-Za-z0-9_]{1,29}" placeholder="مثال: premium" required><small class="field-hint">بالإنجليزية للاستخدام البرمجي فقط.</small></div>
+                <div class="field"><label for="membershipPlanName">اسم الباقة *</label><input id="membershipPlanName" maxlength="80" placeholder="مثال: جيم وبخار" required></div>
+            </div>
+            <div class="field-grid">
+                <div class="field"><label for="membershipPlanPrice">السعر الشهري *</label><input id="membershipPlanPrice" type="number" min="0" step="0.01" inputmode="decimal" required></div>
+                <div class="field"><label for="membershipPlanSortOrder">ترتيب العرض</label><input id="membershipPlanSortOrder" type="number" min="0" step="1" inputmode="numeric" value="0"></div>
+            </div>
+            <label class="checkbox-field"><input id="membershipPlanActive" type="checkbox" checked><span>إظهار الباقة في قوائم الاشتراك</span></label>
+            <div class="type-preview" id="membershipPlanPreview">—</div>
+            <div class="dialog-actions"><button class="btn btn-light" id="membershipPlanCancel" type="button">إلغاء</button><button class="btn btn-primary" id="membershipPlanSave" type="submit">حفظ الباقة</button></div>
         </form>
     </dialog>
     <dialog id="membershipTypeDialog" class="type-dialog">
@@ -693,7 +700,7 @@
         const STATUS_LABELS = { active: 'نشطة', expiring_soon: 'قريبة الانتهاء', expired: 'منتهية', frozen: 'مجمدة' };
         const PAYMENT_LABELS = { cash: 'نقدي', card: 'بطاقة', transfer: 'تحويل', other: 'أخرى' };
          const EVENT_LABELS = { created: 'إضافة اشتراك', updated: 'تعديل بيانات', renewed: 'تجديد اشتراك', frozen: 'تجميد العضوية', resumed: 'استئناف العضوية', payment_updated: 'تحديث الدفع' };
-         const DEFAULT_PRICING = { plans: { gym_only: { label: 'جيم فقط', monthlyPrice: 305 }, gym_cardio: { label: 'جيم وكارديو', monthlyPrice: 400 } }, types: { monthly: { label: 'شهرية', mode: 'months', durationValue: 1, priceMultiplier: 1, active: true, sortOrder: 1 }, half_month: { label: 'نصف شهر', mode: 'days', durationValue: 15, priceMultiplier: .5, active: true, sortOrder: 2 }, quarterly: { label: 'ربع سنوية', mode: 'months', durationValue: 3, priceMultiplier: 3, active: true, sortOrder: 3 }, semiannual: { label: 'نصف سنوية', mode: 'months', durationValue: 6, priceMultiplier: 6, active: true, sortOrder: 4 }, annual: { label: 'سنوية', mode: 'months', durationValue: 12, priceMultiplier: 12, active: true, sortOrder: 5 } }, durations: { monthly: 1, quarterly: 3, semiannual: 6, annual: 12 } };
+         const DEFAULT_PRICING = { plans: { gym_only: { label: 'جيم فقط', monthlyPrice: 305, active: true, sortOrder: 1 }, gym_cardio: { label: 'جيم وكارديو', monthlyPrice: 400, active: true, sortOrder: 2 } }, types: { monthly: { label: 'شهرية', mode: 'months', durationValue: 1, priceMultiplier: 1, active: true, sortOrder: 1 }, half_month: { label: 'نصف شهر', mode: 'days', durationValue: 15, priceMultiplier: .5, active: true, sortOrder: 2 }, quarterly: { label: 'ربع سنوية', mode: 'months', durationValue: 3, priceMultiplier: 3, active: true, sortOrder: 3 }, semiannual: { label: 'نصف سنوية', mode: 'months', durationValue: 6, priceMultiplier: 6, active: true, sortOrder: 4 }, annual: { label: 'سنوية', mode: 'months', durationValue: 12, priceMultiplier: 12, active: true, sortOrder: 5 } }, durations: { monthly: 1, quarterly: 3, semiannual: 6, annual: 12 } };
          const state = { members: [], dashboard: null, pricing: DEFAULT_PRICING, editing: null, dialogAction: null, dialogMember: null, endDateManual: false };
          const $ = (id) => document.getElementById(id);
          let membersAbortController = null;
@@ -763,7 +770,7 @@
         }
 
         function renderDashboard() {
-            const dashboard = state.dashboard || { stats: {}, alerts: [] }; $('todayLabel').textContent = formatDate(dashboard.today); $('statTotal').textContent = dashboard.stats.total || 0; $('statActive').textContent = dashboard.stats.active || 0; $('statExpiring').textContent = dashboard.stats.expiringSoon || 0; $('statExpired').textContent = dashboard.stats.expired || 0; $('statFrozen').textContent = dashboard.stats.frozen || 0;
+             const dashboard = state.dashboard || { stats: {}, alerts: [] }; $('statTotal').textContent = dashboard.stats.total || 0; $('statActive').textContent = dashboard.stats.active || 0; $('statExpiring').textContent = dashboard.stats.expiringSoon || 0; $('statExpired').textContent = dashboard.stats.expired || 0; $('statFrozen').textContent = dashboard.stats.frozen || 0;
             const alerts = dashboard.alerts || []; $('alertsList').innerHTML = alerts.length ? alerts.map((member) => { const sub = member.membership; const detail = sub.status === 'frozen' ? `حتى ${formatDate(sub.freezeEnd)}` : sub.status === 'expired' ? `انتهت في ${formatDate(sub.endDate)}` : `تنتهي في ${formatDate(sub.effectiveEndDate)}`; return `<article class="alert-card ${sub.status}"><strong>${escapeHtml(member.fullName)}</strong><span>${STATUS_LABELS[sub.status]} · ${escapeHtml(detail)}</span><span>${escapeHtml(member.phone)}</span></article>`; }).join('') : '<div class="empty">لا توجد تنبيهات اليوم.</div>';
         }
         function memberTableRow(member) {
@@ -811,6 +818,242 @@
             $('membersList').addEventListener('click', async (event) => { const button = event.target.closest('button[data-action]'); if (!button) return; const id = button.dataset.id || button.closest('[data-member-id]')?.dataset.memberId; const member = state.members.find((item) => String(item.id) === String(id)); if (!member) { await notify('تعذر تحديد العضو. حدّث الصفحة وحاول مرة أخرى.', 'error'); return; } const action = button.dataset.action; if (action === 'details') { await openDetails(member); return; } if (action === 'edit') { openMemberDialog(member); return; } if (action === 'freeze' || action === 'renew' || action === 'payment') { openDialog(action, member); return; } if (action === 'resume') { try { await withLoader(() => api(`/api/members/${member.id}/resume`, { method: 'POST' }), 'جاري استئناف العضوية…'); await loadData(); await notify('تم استئناف العضوية.'); } catch (error) { await notify(error.message, 'error'); } return; } if (action === 'delete' && await confirmDelete(member.fullName)) { try { await withLoader(() => api(`/api/members/${member.id}`, { method: 'DELETE' }), 'جاري حذف العضو…'); if (String($('memberId').value) === String(member.id)) setFormDefaults(true); await loadData(); await notify('تم حذف العضو.'); } catch (error) { await notify(error.message, 'error'); } } });
             loadData();
         });
+    </script>
+    <script>
+        (() => {
+            const activeButtons = new Set();
+            let latestClickedButton = null;
+            let latestClickAt = 0;
+
+            function stopButtonLoading(button) {
+                const record = button && button.__topGymLoading;
+                if (!record || record.stopped) return;
+                record.stopped = true;
+                activeButtons.delete(button);
+                clearTimeout(record.finishTimer);
+                clearTimeout(record.safetyTimer);
+                button.innerHTML = record.originalHtml;
+                button.classList.remove('is-loading');
+                button.removeAttribute('aria-busy');
+                delete button.dataset.loading;
+                button.disabled = record.wasDisabled;
+                delete button.__topGymLoading;
+            }
+
+            function scheduleButtonStop(button, delay = 220) {
+                const record = button && button.__topGymLoading;
+                if (!record || record.stopped) return;
+                clearTimeout(record.finishTimer);
+                record.finishTimer = setTimeout(() => {
+                    if (record.pendingFetches === 0) stopButtonLoading(button);
+                }, delay);
+            }
+
+            function startButtonLoading(button) {
+                if (!button || button.dataset.loading === 'true') return button?.__topGymLoading;
+                const record = {
+                    originalHtml: button.innerHTML,
+                    wasDisabled: button.disabled,
+                    pendingFetches: 0,
+                    stopped: false,
+                    finishTimer: null,
+                    safetyTimer: null
+                };
+                button.__topGymLoading = record;
+                activeButtons.add(button);
+                latestClickedButton = button;
+                latestClickAt = Date.now();
+                button.dataset.loading = 'true';
+                button.classList.add('is-loading');
+                button.setAttribute('aria-busy', 'true');
+                button.innerHTML = '<span class="button-spinner" aria-hidden="true"></span><span class="button-loading-text">جارٍ المعالجة...</span>';
+                setTimeout(() => {
+                    if (button.__topGymLoading === record && !record.stopped) button.disabled = true;
+                }, 0);
+                record.safetyTimer = setTimeout(() => stopButtonLoading(button), 30000);
+                scheduleButtonStop(button);
+                return record;
+            }
+
+            function buttonForFetch() {
+                if (latestClickedButton && Date.now() - latestClickAt < 3000 && activeButtons.has(latestClickedButton)) {
+                    return latestClickedButton;
+                }
+                return [...activeButtons].reverse().find((button) => button.form?.__topGymLoadingButton === button) || null;
+            }
+
+            const originalFetch = window.fetch.bind(window);
+            window.fetch = (...args) => {
+                const button = buttonForFetch();
+                const record = button?.__topGymLoading;
+                if (record && !record.stopped) {
+                    record.pendingFetches += 1;
+                    clearTimeout(record.finishTimer);
+                }
+                return originalFetch(...args).finally(() => {
+                    if (record && !record.stopped) {
+                        record.pendingFetches = Math.max(0, record.pendingFetches - 1);
+                        scheduleButtonStop(button, 260);
+                    }
+                });
+            };
+
+            document.addEventListener('click', (event) => {
+                const button = event.target.closest?.('button');
+                if (!button) return;
+                if (button.dataset.loading === 'true') {
+                    event.preventDefault();
+                    event.stopImmediatePropagation();
+                    return;
+                }
+                const record = startButtonLoading(button);
+                if (record && button.form) button.form.__topGymLoadingButton = button;
+            }, true);
+
+            document.addEventListener('submit', (event) => {
+                const form = event.target;
+                const button = event.submitter || form.__topGymLoadingButton || form.querySelector('button[type="submit"]');
+                if (!button) return;
+                const record = startButtonLoading(button);
+                if (record) form.__topGymLoadingButton = button;
+            }, true);
+
+            window.topGymStopButtonLoading = stopButtonLoading;
+        })();
+
+        (() => {
+            const planTableContainer = document.getElementById('pricingTableContainer');
+            const planDialog = document.getElementById('membershipPlanDialog');
+            if (!planTableContainer || !planDialog) return;
+
+            function planEntries() {
+                return Object.entries(state.pricing.plans || {}).sort(([, first], [, second]) => Number(first.sortOrder || 0) - Number(second.sortOrder || 0));
+            }
+
+            function enhancePricingTable() {
+                const table = planTableContainer.querySelector('table.pricing-table');
+                if (!table) return;
+                const header = table.querySelector('thead tr');
+                if (header && !header.querySelector('[data-plan-status-heading]')) {
+                    header.insertAdjacentHTML('beforeend', '<th data-plan-status-heading>الحالة</th><th data-plan-action-heading>الإجراء</th>');
+                }
+                table.querySelectorAll('tbody tr[data-plan]').forEach((row) => {
+                    if (row.querySelector('[data-plan-status]')) return;
+                    const plan = state.pricing.plans?.[row.dataset.plan] || {};
+                    const status = document.createElement('td');
+                    status.dataset.planStatus = 'true';
+                    status.innerHTML = plan.active === false ? '<span class="type-status off">غير ظاهر</span>' : '<span class="type-status">نشطة</span>';
+                    const action = document.createElement('td');
+                    action.innerHTML = `<div class="pricing-actions"><button class="btn btn-light btn-small" type="button" data-plan-action="edit" data-code="${escapeHtml(row.dataset.plan)}">تعديل</button></div>`;
+                    row.append(status, action);
+                });
+            }
+
+            function syncVisiblePlanOptions() {
+                document.querySelectorAll('#membershipPlan, #dialogPlan').forEach((select) => {
+                    const current = select.value;
+                    const preserveHistorical = (select.id === 'membershipPlan' && document.getElementById('memberId')?.value) || (select.id === 'dialogPlan' && state.dialogMember);
+                    [...select.options].forEach((option) => {
+                        if (state.pricing.plans?.[option.value]?.active === false && !(preserveHistorical && option.value === current)) option.remove();
+                    });
+                    if (!select.value && select.options.length) select.selectedIndex = 0;
+                });
+            }
+
+            function ensureHistoricalPlanOption(code) {
+                if (!code) return;
+                const plan = state.pricing.plans?.[code];
+                if (!plan || plan.active !== false) return;
+                document.querySelectorAll('#membershipPlan, #dialogPlan').forEach((select) => {
+                    if (!select.querySelector(`option[value="${CSS.escape(code)}"]`)) {
+                        select.insertAdjacentHTML('beforeend', `<option value="${escapeHtml(code)}">${escapeHtml(plan.label)} (تاريخية)</option>`);
+                    }
+                    select.value = code;
+                });
+            }
+
+            function updatePlanPreview() {
+                const name = document.getElementById('membershipPlanName').value.trim() || 'باقة جديدة';
+                const price = Number(document.getElementById('membershipPlanPrice').value || 0);
+                const halfMonth = price * Number(state.pricing.types?.half_month?.priceMultiplier || .5);
+                document.getElementById('membershipPlanPreview').textContent = `${name} · شهري: ${money(price)} · نصف شهر: ${money(halfMonth)}`;
+            }
+
+            function openPlanDialog(code = '') {
+                const plan = code ? state.pricing.plans?.[code] : null;
+                const generatedCode = `custom_${Date.now().toString(36)}`;
+                document.getElementById('editingMembershipPlanCode').value = plan ? code : '';
+                document.getElementById('membershipPlanDialogTitle').textContent = plan ? 'تعديل الباقة' : 'إضافة باقة جديدة';
+                document.getElementById('membershipPlanDialogDescription').textContent = plan ? 'عدّل الاسم أو السعر أو حالة ظهور الباقة مع الاحتفاظ بالاشتراكات السابقة.' : 'أدخل بيانات الباقة الجديدة لتظهر مباشرة عند إضافة أو تجديد الاشتراك.';
+                document.getElementById('membershipPlanCode').value = plan ? code : generatedCode;
+                document.getElementById('membershipPlanCode').readOnly = Boolean(plan);
+                document.getElementById('membershipPlanName').value = plan?.label || '';
+                document.getElementById('membershipPlanPrice').value = plan?.monthlyPrice ?? '';
+                document.getElementById('membershipPlanSortOrder').value = plan?.sortOrder ?? (planEntries().length + 1);
+                document.getElementById('membershipPlanActive').checked = plan?.active !== false;
+                updatePlanPreview();
+                if (typeof planDialog.showModal === 'function') planDialog.showModal(); else planDialog.setAttribute('open', '');
+            }
+
+            function closePlanDialog() {
+                if (typeof planDialog.close === 'function' && planDialog.open) planDialog.close(); else planDialog.removeAttribute('open');
+            }
+
+            async function submitPlan(event) {
+                event.preventDefault();
+                const editingCode = document.getElementById('editingMembershipPlanCode').value;
+                const body = {
+                    planCode: document.getElementById('membershipPlanCode').value.trim().toLowerCase(),
+                    planName: document.getElementById('membershipPlanName').value,
+                    monthlyPrice: Number(document.getElementById('membershipPlanPrice').value),
+                    sortOrder: Number(document.getElementById('membershipPlanSortOrder').value || 0),
+                    isActive: document.getElementById('membershipPlanActive').checked
+                };
+                const button = event.submitter || event.currentTarget.__topGymLoadingButton || document.getElementById('membershipPlanSave');
+                try {
+                    state.pricing = await api(editingCode ? `/api/pricing-plans/${encodeURIComponent(editingCode)}` : '/api/pricing-plans', { method: editingCode ? 'PUT' : 'POST', body: JSON.stringify(body) });
+                    syncPlanOptions();
+                    syncVisiblePlanOptions();
+                    renderPricingTable();
+                    renderMembershipTypesTable();
+                    updateFormPricing();
+                    closePlanDialog();
+                    await notify(editingCode ? 'تم تعديل الباقة.' : 'تمت إضافة الباقة.');
+                } catch (error) {
+                    await notify(error.message, 'error');
+                } finally {
+                    window.topGymStopButtonLoading?.(button);
+                }
+            }
+
+            const observer = new MutationObserver(enhancePricingTable);
+            observer.observe(planTableContainer, { childList: true, subtree: true });
+            const optionObserver = new MutationObserver(syncVisiblePlanOptions);
+            optionObserver.observe(document.body, { childList: true, subtree: true });
+
+            document.addEventListener('DOMContentLoaded', () => {
+                document.getElementById('addMembershipPlanButton').addEventListener('click', () => openPlanDialog());
+                document.getElementById('membershipPlanDialogClose').addEventListener('click', closePlanDialog);
+                document.getElementById('membershipPlanCancel').addEventListener('click', closePlanDialog);
+                document.getElementById('membershipPlanForm').addEventListener('submit', submitPlan);
+                ['membershipPlanName', 'membershipPlanPrice'].forEach((id) => document.getElementById(id).addEventListener('input', updatePlanPreview));
+                planTableContainer.addEventListener('click', (event) => {
+                    const button = event.target.closest('[data-plan-action="edit"]');
+                    if (button) openPlanDialog(button.dataset.code);
+                });
+                document.addEventListener('click', (event) => {
+                    const button = event.target.closest('button[data-action]');
+                    if (!button) return;
+                    const id = button.dataset.id || button.closest('[data-member-id]')?.dataset.memberId;
+                    const member = state.members.find((item) => String(item.id) === String(id));
+                    if ((button.dataset.action === 'edit' || button.dataset.action === 'renew' || button.dataset.action === 'payment') && member?.membership?.plan) {
+                        setTimeout(() => ensureHistoricalPlanOption(member.membership.plan), 0);
+                    }
+                }, true);
+                syncVisiblePlanOptions();
+                enhancePricingTable();
+            });
+        })();
     </script>
 </body>
 </html>

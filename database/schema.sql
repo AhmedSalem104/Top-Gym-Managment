@@ -17,7 +17,7 @@ BEGIN
     CREATE TABLE dbo.memberships (
         id INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_memberships PRIMARY KEY,
         member_id INT NOT NULL,
-        membership_plan VARCHAR(20) NOT NULL CONSTRAINT DF_memberships_plan DEFAULT ('gym_only'),
+        membership_plan VARCHAR(30) NOT NULL CONSTRAINT DF_memberships_plan DEFAULT ('gym_only'),
         membership_type VARCHAR(30) NOT NULL,
         start_date DATE NOT NULL,
         end_date DATE NOT NULL,
@@ -26,7 +26,6 @@ BEGIN
         updated_at DATETIME2(0) NOT NULL CONSTRAINT DF_memberships_updated_at DEFAULT (SYSUTCDATETIME()),
         CONSTRAINT FK_memberships_member FOREIGN KEY (member_id)
             REFERENCES dbo.members(id) ON DELETE CASCADE,
-        CONSTRAINT CK_memberships_plan CHECK (membership_plan IN ('gym_only', 'gym_cardio')),
         CONSTRAINT CK_memberships_dates CHECK (end_date >= start_date)
     );
 END;
@@ -35,14 +34,33 @@ IF OBJECT_ID(N'dbo.membership_pricing', N'U') IS NULL
 BEGIN
     CREATE TABLE dbo.membership_pricing (
         id INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_membership_pricing PRIMARY KEY,
-        plan_code VARCHAR(20) NOT NULL,
+        plan_code VARCHAR(30) NOT NULL,
         plan_name NVARCHAR(80) NOT NULL,
         monthly_price DECIMAL(12,2) NOT NULL,
+        is_active BIT NOT NULL CONSTRAINT DF_membership_pricing_active DEFAULT (1),
+        sort_order INT NOT NULL CONSTRAINT DF_membership_pricing_sort DEFAULT (0),
         created_at DATETIME2(0) NOT NULL CONSTRAINT DF_membership_pricing_created_at DEFAULT (SYSUTCDATETIME()),
         updated_at DATETIME2(0) NOT NULL CONSTRAINT DF_membership_pricing_updated_at DEFAULT (SYSUTCDATETIME()),
         CONSTRAINT UQ_membership_pricing_code UNIQUE (plan_code),
         CONSTRAINT CK_membership_pricing_price CHECK (monthly_price >= 0)
     );
+END;
+
+IF COL_LENGTH(N'dbo.membership_pricing', N'plan_code') IS NOT NULL
+BEGIN
+    EXEC(N'ALTER TABLE dbo.membership_pricing ALTER COLUMN plan_code VARCHAR(30) NOT NULL;');
+END;
+
+IF COL_LENGTH(N'dbo.membership_pricing', N'is_active') IS NULL
+BEGIN
+    ALTER TABLE dbo.membership_pricing
+        ADD is_active BIT NOT NULL CONSTRAINT DF_membership_pricing_active_migration DEFAULT (1);
+END;
+
+IF COL_LENGTH(N'dbo.membership_pricing', N'sort_order') IS NULL
+BEGIN
+    ALTER TABLE dbo.membership_pricing
+        ADD sort_order INT NOT NULL CONSTRAINT DF_membership_pricing_sort_migration DEFAULT (0);
 END;
 
 IF NOT EXISTS (SELECT 1 FROM dbo.membership_pricing WHERE plan_code = 'gym_only')
@@ -167,17 +185,28 @@ END;
 IF COL_LENGTH(N'dbo.memberships', N'membership_plan') IS NULL
 BEGIN
     ALTER TABLE dbo.memberships
-        ADD membership_plan VARCHAR(20) NOT NULL CONSTRAINT DF_memberships_plan_migration DEFAULT ('gym_only');
+        ADD membership_plan VARCHAR(30) NOT NULL CONSTRAINT DF_memberships_plan_migration DEFAULT ('gym_only');
 END;
 
-IF NOT EXISTS (
+IF COL_LENGTH(N'dbo.memberships', N'membership_plan') IS NOT NULL
+BEGIN
+    EXEC(N'ALTER TABLE dbo.memberships ALTER COLUMN membership_plan VARCHAR(30) NOT NULL;');
+END;
+
+IF EXISTS (
     SELECT 1 FROM sys.check_constraints
-    WHERE name IN (N'CK_memberships_plan', N'CK_memberships_plan_migration')
-      AND parent_object_id = OBJECT_ID(N'dbo.memberships')
+    WHERE name = N'CK_memberships_plan' AND parent_object_id = OBJECT_ID(N'dbo.memberships')
 )
 BEGIN
-    EXEC(N'ALTER TABLE dbo.memberships ADD CONSTRAINT CK_memberships_plan_migration
-        CHECK (membership_plan IN (''gym_only'', ''gym_cardio''));');
+    EXEC(N'ALTER TABLE dbo.memberships DROP CONSTRAINT CK_memberships_plan;');
+END;
+
+IF EXISTS (
+    SELECT 1 FROM sys.check_constraints
+    WHERE name = N'CK_memberships_plan_migration' AND parent_object_id = OBJECT_ID(N'dbo.memberships')
+)
+BEGIN
+    EXEC(N'ALTER TABLE dbo.memberships DROP CONSTRAINT CK_memberships_plan_migration;');
 END;
 
 IF COL_LENGTH(N'dbo.gym_payments', N'list_price') IS NULL

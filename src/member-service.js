@@ -10,10 +10,9 @@ const {
 } = require('./date-utils');
 
 const DEFAULT_MEMBERSHIP_PLANS = {
-    gym_only: { label: 'جيم فقط', monthlyPrice: 305 },
-    gym_cardio: { label: 'جيم وكارديو', monthlyPrice: 400 }
+    gym_only: { label: 'جيم فقط', monthlyPrice: 305, active: true, sortOrder: 1 },
+    gym_cardio: { label: 'جيم وكارديو', monthlyPrice: 400, active: true, sortOrder: 2 }
 };
-const MEMBERSHIP_PLAN_CODES = Object.keys(DEFAULT_MEMBERSHIP_PLANS);
 const DEFAULT_MEMBERSHIP_TYPES = {
     monthly: { label: 'شهرية', mode: 'months', durationValue: 1, priceMultiplier: 1, active: true, sortOrder: 1 },
     half_month: { label: 'نصف شهر', mode: 'days', durationValue: 15, priceMultiplier: 0.5, active: true, sortOrder: 2 },
@@ -68,7 +67,7 @@ function has(body, key) {
 async function getPricingCatalog(connection = null) {
     const pool = connection || await getPool();
     const planResult = await pool.request()
-        .query(`SELECT plan_code, plan_name, monthly_price
+        .query(`SELECT plan_code, plan_name, monthly_price, is_active, sort_order
                 FROM dbo.membership_pricing ORDER BY id ASC;`);
     const typeResult = await pool.request()
         .query(`SELECT type_code, type_name, duration_mode, duration_value,
@@ -76,10 +75,11 @@ async function getPricingCatalog(connection = null) {
                 FROM dbo.membership_types ORDER BY sort_order ASC, id ASC;`);
     const plans = { ...DEFAULT_MEMBERSHIP_PLANS };
     for (const row of planResult.recordset) {
-        if (!MEMBERSHIP_PLAN_CODES.includes(row.plan_code)) continue;
         plans[row.plan_code] = {
             label: row.plan_name,
-            monthlyPrice: Number(row.monthly_price)
+            monthlyPrice: Number(row.monthly_price),
+            active: Boolean(row.is_active),
+            sortOrder: Number(row.sort_order || 0)
         };
     }
     const types = { ...DEFAULT_MEMBERSHIP_TYPES };
@@ -96,7 +96,9 @@ async function getPricingCatalog(connection = null) {
     return {
         plans: Object.fromEntries(Object.entries(plans).map(([key, value]) => [key, {
             label: value.label,
-            monthlyPrice: value.monthlyPrice
+            monthlyPrice: value.monthlyPrice,
+            active: value.active !== false,
+            sortOrder: Number(value.sortOrder || 0)
         }])),
         types,
         durations: Object.fromEntries(Object.entries(types).map(([key, value]) => [key, value.mode === 'months' ? value.durationValue : null]))
@@ -115,9 +117,9 @@ function membershipEndDateFromConfig(startDate, typeConfig) {
 }
 
 async function calculatePricing(membershipType, membershipPlan = 'gym_only', discountAmount = 0, connection = null) {
-    if (!MEMBERSHIP_PLAN_CODES.includes(membershipPlan)) throw appError('باقة العضوية غير صالحة.');
     const pricing = await getPricingCatalog(connection);
     const plan = pricing.plans[membershipPlan];
+    if (!plan) throw appError('باقة العضوية غير صالحة.');
     const type = pricing.types[membershipType];
     if (!type) throw appError('نوع العضوية غير صالح.');
     const listPrice = plan.monthlyPrice * type.priceMultiplier;
@@ -150,10 +152,7 @@ function normalizePayload(body = {}, { partial = false } = {}) {
         output.membershipType = requiredString(body.membershipType, 'نوع العضوية', 30);
     }
     if (!partial || has(body, 'membershipPlan')) {
-        output.membershipPlan = body.membershipPlan || 'gym_only';
-        if (!MEMBERSHIP_PLAN_CODES.includes(output.membershipPlan)) {
-            throw appError('باقة العضوية غير صالحة.');
-        }
+        output.membershipPlan = requiredString(body.membershipPlan || 'gym_only', 'باقة العضوية', 30);
     }
     if (!partial || has(body, 'startDate')) {
         output.startDate = body.startDate
@@ -402,27 +401,81 @@ async function getBootstrap() {
     return { members, dashboard: dashboardFromMembers(members), pricing };
 }
 
+function normalizePlanCode(value) {
+    const code = String(value ?? '').trim().toLowerCase();
+    if (!/^[a-z][a-z0-9_]{1,29}$/.test(code)) {
+        throw appError('رمز الباقة يجب أن يبدأ بحرف إنجليزي ويحتوي على أحرف أو أرقام أو _.');
+    }
+    return code;
+}
+
+function normalizePricingPlanPayload(body = {}, current = {}) {
+    const planCode = normalizePlanCode(body.planCode ?? body.code ?? current.plan_code);
+    const planName = body.planName === undefined && body.label === undefined
+        ? requiredString(current.plan_name, 'اسم الباقة', 80)
+        : requiredString(body.planName ?? body.label, 'اسم الباقة', 80);
+    const monthlyPrice = money(
+        body.monthlyPrice ?? body.price ?? current.monthly_price,
+        'السعر الشهري'
+    );
+    const rawSortOrder = body.sortOrder ?? body.sort ?? current.sort_order ?? 0;
+    const sortOrder = Number(rawSortOrder);
+    if (!Number.isInteger(sortOrder) || sortOrder < 0 || sortOrder > 9999) {
+        throw appError('ترتيب الباقة غير صالح.');
+    }
+    return {
+        planCode,
+        planName,
+        monthlyPrice,
+        isActive: booleanValue(body.isActive, current.is_active === undefined ? true : Boolean(current.is_active)),
+        sortOrder
+    };
+}
+
 async function updatePricing(planCode, body = {}) {
-    const code = String(planCode || '').trim();
-    if (!MEMBERSHIP_PLAN_CODES.includes(code)) throw appError('باقة العضوية غير صالحة.', 404);
+    return updatePricingPlan(planCode, body);
+}
+
+async function createPricingPlan(body = {}) {
+    const planCode = normalizePlanCode(body.planCode ?? body.code);
+    const data = normalizePricingPlanPayload({ ...body, planCode });
+    const pool = await getPool();
+    const exists = await pool.request()
+        .input('planCode', sql.VarChar(30), planCode)
+        .query('SELECT id FROM dbo.membership_pricing WHERE plan_code = @planCode;');
+    if (exists.recordset[0]) throw appError('رمز الباقة مستخدم بالفعل.');
+    await pool.request()
+        .input('planCode', sql.VarChar(30), data.planCode)
+        .input('planName', sql.NVarChar(80), data.planName)
+        .input('monthlyPrice', sql.Decimal(12, 2), data.monthlyPrice)
+        .input('isActive', sql.Bit, data.isActive)
+        .input('sortOrder', sql.Int, data.sortOrder)
+        .query(`INSERT INTO dbo.membership_pricing
+                (plan_code, plan_name, monthly_price, is_active, sort_order)
+                VALUES (@planCode, @planName, @monthlyPrice, @isActive, @sortOrder);`);
+    return getPricingCatalog(pool);
+}
+
+async function updatePricingPlan(planCodeValue, body = {}) {
+    const planCode = normalizePlanCode(planCodeValue);
     const pool = await getPool();
     const currentResult = await pool.request()
-        .input('planCode', sql.VarChar(20), code)
-        .query(`SELECT plan_name, monthly_price FROM dbo.membership_pricing WHERE plan_code = @planCode;`);
+        .input('planCode', sql.VarChar(30), planCode)
+        .query(`SELECT plan_code, plan_name, monthly_price, is_active, sort_order
+                FROM dbo.membership_pricing WHERE plan_code = @planCode;`);
     const current = currentResult.recordset[0];
     if (!current) throw appError('بيانات الباقة غير موجودة.', 404);
-    const planName = body.planName === undefined && body.label === undefined
-        ? current.plan_name
-        : requiredString(body.planName ?? body.label, 'اسم الباقة', 80);
-    const monthlyPrice = body.monthlyPrice === undefined && body.price === undefined
-        ? Number(current.monthly_price)
-        : money(body.monthlyPrice ?? body.price, 'السعر الشهري');
+    const data = normalizePricingPlanPayload({ ...body, planCode }, current);
     await pool.request()
-        .input('planCode', sql.VarChar(20), code)
-        .input('planName', sql.NVarChar(80), planName)
-        .input('monthlyPrice', sql.Decimal(12, 2), monthlyPrice)
+        .input('planCode', sql.VarChar(30), planCode)
+        .input('planName', sql.NVarChar(80), data.planName)
+        .input('monthlyPrice', sql.Decimal(12, 2), data.monthlyPrice)
+        .input('isActive', sql.Bit, data.isActive)
+        .input('sortOrder', sql.Int, data.sortOrder)
         .query(`UPDATE dbo.membership_pricing
-                SET plan_name = @planName, monthly_price = @monthlyPrice, updated_at = SYSUTCDATETIME()
+                SET plan_name = @planName, monthly_price = @monthlyPrice,
+                    is_active = @isActive, sort_order = @sortOrder,
+                    updated_at = SYSUTCDATETIME()
                 WHERE plan_code = @planCode;`);
     return getPricingCatalog(pool);
 }
@@ -430,15 +483,11 @@ async function updatePricing(planCode, body = {}) {
 async function updatePricingCatalog(body = {}) {
     const plans = Array.isArray(body.plans) ? body.plans : [];
     if (!plans.length) throw appError('أرسل بيانات أسعار الباقات للتحديث.');
-    const normalized = plans.map((item) => {
-        const code = String(item.planCode || item.code || '').trim();
-        if (!MEMBERSHIP_PLAN_CODES.includes(code)) throw appError('باقة العضوية غير صالحة.');
-        return {
-            code,
-            planName: requiredString(item.planName ?? item.label, 'اسم الباقة', 80),
-            monthlyPrice: money(item.monthlyPrice ?? item.price, 'السعر الشهري')
-        };
-    });
+    const normalized = plans.map((item) => ({
+        code: normalizePlanCode(item.planCode || item.code),
+        planName: requiredString(item.planName ?? item.label, 'اسم الباقة', 80),
+        monthlyPrice: money(item.monthlyPrice ?? item.price, 'السعر الشهري')
+    }));
     const seen = new Set();
     for (const item of normalized) {
         if (seen.has(item.code)) throw appError('لا يمكن تكرار الباقة في نفس الطلب.');
@@ -447,7 +496,7 @@ async function updatePricingCatalog(body = {}) {
     await withTransaction(async (transaction) => {
         for (const item of normalized) {
             const result = await transaction.request()
-                .input('planCode', sql.VarChar(20), item.code)
+                .input('planCode', sql.VarChar(30), item.code)
                 .input('planName', sql.NVarChar(80), item.planName)
                 .input('monthlyPrice', sql.Decimal(12, 2), item.monthlyPrice)
                 .query(`UPDATE dbo.membership_pricing
@@ -657,7 +706,7 @@ async function createMember(body) {
         const id = Number(memberResult.recordset[0].id);
         const membershipResult = await transaction.request()
             .input('memberId', sql.Int, id)
-            .input('membershipPlan', sql.VarChar(20), data.membershipPlan)
+            .input('membershipPlan', sql.VarChar(30), data.membershipPlan)
             .input('membershipType', sql.VarChar(30), data.membershipType)
             .input('startDate', sql.Date, toUtcDate(data.startDate))
             .input('endDate', sql.Date, toUtcDate(endDate))
@@ -732,7 +781,7 @@ async function updateMember(id, body) {
                     WHERE id = @id;`);
         await transaction.request()
             .input('id', sql.Int, currentMembership.id)
-            .input('membershipPlan', sql.VarChar(20), membershipData.plan)
+            .input('membershipPlan', sql.VarChar(30), membershipData.plan)
             .input('membershipType', sql.VarChar(30), membershipData.type)
             .input('startDate', sql.Date, toUtcDate(membershipData.startDate))
             .input('endDate', sql.Date, toUtcDate(membershipData.endDate))
@@ -889,7 +938,7 @@ async function renewMember(id, body = {}) {
         const membershipNotes = optionalString(body.membershipNotes, 1000);
         const result = await transaction.request()
             .input('memberId', sql.Int, memberId)
-            .input('membershipPlan', sql.VarChar(20), membershipPlan)
+            .input('membershipPlan', sql.VarChar(30), membershipPlan)
             .input('membershipType', sql.VarChar(30), membershipType)
             .input('startDate', sql.Date, toUtcDate(startDate))
             .input('endDate', sql.Date, toUtcDate(endDate))
@@ -1109,12 +1158,14 @@ module.exports = {
     getMemberDetails,
     getMembers,
     getPricingCatalog,
+    createPricingPlan,
     createMembershipType,
     freezeMember,
     recordPayment,
     renewMember,
     resumeMember,
     updateMembershipType,
+    updatePricingPlan,
     updatePricingCatalog,
     updatePricing,
     updateMember
