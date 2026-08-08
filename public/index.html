@@ -766,8 +766,28 @@
                 state.pagination = null;
                 if ($('membersPagination')) $('membersPagination').hidden = true;
                 $('membersList').innerHTML = '<div class="loading">جاري تحميل المشتركين…</div>';
-                try { const bootstrap = await api('/api/bootstrap'); state.members = bootstrap.members || []; state.pagination = bootstrap.pagination || null; state.detailsCache = new Map(); state.dashboard = bootstrap.dashboard || null; state.pricing = bootstrap.pricing || DEFAULT_PRICING; syncPlanOptions(); renderDashboard(); renderMembers(); updateFormPricing(); }
-                catch (error) { $('membersList').innerHTML = `<div class="empty">${escapeHtml(error.message)}</div>`; await notify(error.message, 'error'); }
+                const membersRequest = api('/api/members?page=1&pageSize=20');
+                const dashboardRequest = api('/api/dashboard');
+                const pricingRequest = api('/api/pricing');
+                let membersLoaded = false;
+                try {
+                    const membersResponse = await membersRequest;
+                    state.members = membersResponse.members || [];
+                    state.pagination = membersResponse.pagination || null;
+                    state.detailsCache = new Map();
+                    membersLoaded = true;
+                    renderMembers();
+                    updateFormPricing();
+                    const [dashboard, pricing] = await Promise.all([dashboardRequest, pricingRequest]);
+                    state.dashboard = dashboard || null;
+                    state.pricing = pricing || DEFAULT_PRICING;
+                    syncPlanOptions();
+                    renderDashboard();
+                    updateFormPricing();
+                } catch (error) {
+                    if (!membersLoaded) $('membersList').innerHTML = `<div class="empty">${escapeHtml(error.message)}</div>`;
+                    await notify(error.message, 'error');
+                }
             }, 'جاري تحميل بيانات TOP GYM…');
         }
         async function loadMembersOnly() {
