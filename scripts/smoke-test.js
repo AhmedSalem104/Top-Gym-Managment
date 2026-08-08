@@ -32,8 +32,14 @@ async function call(baseUrl, path, options = {}) {
         assert.ok(Array.isArray(bootstrap.members));
         assert.ok(bootstrap.dashboard && bootstrap.dashboard.stats);
         assert.ok(bootstrap.pricing && bootstrap.pricing.plans);
+        assert.ok(bootstrap.pagination && Number.isInteger(bootstrap.pagination.page));
         assert.equal(bootstrap.pricing.types.half_month.durationValue, 15);
         assert.equal(bootstrap.pricing.types.half_month.mode, 'days');
+        const firstPage = await call(baseUrl, '/api/members?page=1&pageSize=1');
+        assert.ok(firstPage.pagination && firstPage.pagination.pageSize === 1);
+        assert.ok(firstPage.members.length <= 1);
+        const filteredPage = await call(baseUrl, '/api/members?status=active&page=1&pageSize=5');
+        assert.ok(filteredPage.pagination && filteredPage.members.length <= 5);
         const pricing = await call(baseUrl, '/api/pricing');
         const gymOnlyMonthly = Number(pricing.plans.gym_only.monthlyPrice);
         const cardioMonthly = Number(pricing.plans.gym_cardio.monthlyPrice);

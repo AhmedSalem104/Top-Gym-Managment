@@ -266,11 +266,30 @@ END;
 
 IF NOT EXISTS (
     SELECT 1 FROM sys.indexes
+    WHERE name = N'IX_memberships_member_latest_cover' AND object_id = OBJECT_ID(N'dbo.memberships')
+)
+BEGIN
+    CREATE INDEX IX_memberships_member_latest_cover
+        ON dbo.memberships(member_id, end_date DESC, id DESC)
+        INCLUDE (membership_plan, membership_type, start_date, notes);
+END;
+
+IF NOT EXISTS (
+    SELECT 1 FROM sys.indexes
     WHERE name = N'IX_membership_freezes_membership_dates' AND object_id = OBJECT_ID(N'dbo.membership_freezes')
 )
 BEGIN
     CREATE INDEX IX_membership_freezes_membership_dates
         ON dbo.membership_freezes(membership_id, start_date, end_date, resumed_date);
+END;
+
+IF NOT EXISTS (
+    SELECT 1 FROM sys.indexes
+    WHERE name = N'IX_membership_freezes_active_lookup' AND object_id = OBJECT_ID(N'dbo.membership_freezes')
+)
+BEGIN
+    CREATE INDEX IX_membership_freezes_active_lookup
+        ON dbo.membership_freezes(membership_id, resumed_date, start_date, end_date);
 END;
 
 IF NOT EXISTS (

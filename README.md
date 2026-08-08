@@ -58,7 +58,7 @@
 GET    /api/health
 GET    /api/bootstrap
 GET    /api/dashboard
-GET    /api/members?search=&status=
+GET    /api/members?search=&status=&page=1&pageSize=20
 GET    /api/members/:id
 GET    /api/members/:id/details
 GET    /api/pricing
@@ -76,6 +76,8 @@ POST   /api/members/:id/resume
 POST   /api/members/:id/renew
 POST   /api/memberships/:id/payments
 ```
+
+قائمة المشتركين تستخدم pagination من السيرفر بحد أقصى 50 سجلًا للطلب، بينما يتم تحميل سجل العميل الكامل عند فتح «تفاصيل» فقط، مما يقلل حجم التحميل الأولي والاستعلامات غير الضرورية.
 
 ## ملاحظات النشر
 

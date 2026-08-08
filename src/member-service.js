@@ -259,7 +259,7 @@ function mapMember(row) {
     };
 }
 
-const MEMBER_CTE = `
+const MEMBER_ROWS_CTE = `
 WITH latest_membership AS (
     SELECT
         m.id AS membershipId,
@@ -300,7 +300,8 @@ payment_summary AS (
            amount_due AS amountDue, amount_paid AS amountPaid,
            amount_remaining AS amountRemaining, payment_method AS paymentMethod, paid_at AS paymentPaidAt
     FROM dbo.gym_payments
-)
+),
+member_rows AS (
 SELECT
     b.id,
     b.full_name AS fullName,
@@ -342,6 +343,12 @@ LEFT JOIN latest_membership AS lm
 LEFT JOIN freeze_totals AS ft ON ft.freezeMembershipId = lm.membershipId
 LEFT JOIN current_freeze AS cf ON cf.currentFreezeMembershipId = lm.membershipId
 LEFT JOIN payment_summary AS ps ON ps.paymentMembershipId = lm.membershipId
+)
+`;
+
+const MEMBER_CTE = `${MEMBER_ROWS_CTE}
+SELECT *, COUNT(1) OVER() AS totalCount
+FROM member_rows
 `;
 
 async function getMemberById(id, connection = null) {
@@ -350,24 +357,48 @@ async function getMemberById(id, connection = null) {
     const result = await pool.request()
         .input('today', sql.Date, toUtcDate(todayInTimeZone()))
         .input('id', sql.Int, memberId)
-        .query(`${MEMBER_CTE} WHERE b.id = @id;`);
+        .query(`${MEMBER_CTE} WHERE id = @id;`);
     if (!result.recordset[0]) throw appError('العضو غير موجود.', 404);
     return mapMember(result.recordset[0]);
 }
 
-async function getMembers({ search = '', status = '' } = {}) {
+async function getMembers({ search = '', status = '', page = 1, pageSize = 20 } = {}) {
     const normalizedSearch = String(search || '').trim().slice(0, 100);
     const normalizedStatus = ensureStatus(status);
+    const requestedPage = Number(page);
+    const requestedPageSize = Number(pageSize);
+    const currentPage = Number.isInteger(requestedPage) && requestedPage > 0 ? Math.min(requestedPage, 100000) : 1;
+    const currentPageSize = Number.isInteger(requestedPageSize) && requestedPageSize > 0 ? Math.min(requestedPageSize, 50) : 20;
+    const offset = (currentPage - 1) * currentPageSize;
     const pool = await getPool();
     const result = await pool.request()
         .input('today', sql.Date, toUtcDate(todayInTimeZone()))
         .input('search', sql.NVarChar(100), normalizedSearch)
         .input('pattern', sql.NVarChar(110), `%${normalizedSearch}%`)
+        .input('status', sql.VarChar(20), normalizedStatus)
+        .input('offset', sql.Int, offset)
+        .input('pageSize', sql.Int, currentPageSize)
         .query(`${MEMBER_CTE}
-            WHERE (@search = N'' OR b.full_name LIKE @pattern OR b.phone LIKE @pattern OR ISNULL(b.email, N'') LIKE @pattern)
-            ORDER BY effectiveEndDate ASC, fullName ASC;`);
+            WHERE (@search = N'' OR fullName LIKE @pattern OR phone LIKE @pattern OR ISNULL(email, N'') LIKE @pattern)
+              AND (@status = '' OR computedStatus = @status)
+            ORDER BY effectiveEndDate ASC, fullName ASC, id ASC
+            OFFSET @offset ROWS FETCH NEXT @pageSize ROWS ONLY;`);
     const members = result.recordset.map(mapMember);
-    return normalizedStatus ? members.filter((member) => member.membership?.status === normalizedStatus) : members;
+    const total = result.recordset[0]?.totalCount === undefined
+        ? offset
+        : Number(result.recordset[0].totalCount || 0);
+    const totalPages = total ? Math.ceil(total / currentPageSize) : 0;
+    return {
+        members,
+        pagination: {
+            page: currentPage,
+            pageSize: currentPageSize,
+            total,
+            totalPages,
+            hasNext: currentPage < totalPages,
+            hasPrevious: currentPage > 1
+        }
+    };
 }
 
 function dashboardFromMembers(members, today = todayInTimeZone()) {
@@ -397,8 +428,17 @@ function dashboardFromMembers(members, today = todayInTimeZone()) {
 }
 
 async function getBootstrap() {
-    const [members, pricing] = await Promise.all([getMembers({}), getPricingCatalog()]);
-    return { members, dashboard: dashboardFromMembers(members), pricing };
+    const [memberPage, dashboard, pricing] = await Promise.all([
+        getMembers({ page: 1, pageSize: 20 }),
+        getDashboard(),
+        getPricingCatalog()
+    ]);
+    return {
+        members: memberPage.members,
+        pagination: memberPage.pagination,
+        dashboard,
+        pricing
+    };
 }
 
 function normalizePlanCode(value) {
@@ -609,8 +649,46 @@ async function updateMembershipType(typeCodeValue, body = {}) {
 }
 
 async function getDashboard() {
-    const members = await getMembers({});
-    return dashboardFromMembers(members);
+    const pool = await getPool();
+    const today = todayInTimeZone();
+    const result = await pool.request()
+        .input('today', sql.Date, toUtcDate(today))
+        .query(`${MEMBER_ROWS_CTE}
+            SELECT
+                COUNT(1) AS total,
+                SUM(CASE WHEN computedStatus = 'active' THEN 1 ELSE 0 END) AS active,
+                SUM(CASE WHEN computedStatus = 'expiring_soon' THEN 1 ELSE 0 END) AS expiringSoon,
+                SUM(CASE WHEN computedStatus = 'expired' THEN 1 ELSE 0 END) AS expired,
+                SUM(CASE WHEN computedStatus = 'frozen' THEN 1 ELSE 0 END) AS frozen,
+                (
+                    SELECT TOP (50)
+                        id, fullName, phone, email, registrationDate, memberNotes,
+                        memberCreatedAt, memberUpdatedAt, membershipId, membershipPlan,
+                        membershipType, startDate, endDate, membershipNotes,
+                        effectiveEndDate, freezeId, freezeStart, freezeEnd,
+                        listPrice, discountAmount, amountDue, amountPaid,
+                        amountRemaining, paymentMethod, paymentPaidAt,
+                        computedStatus, daysRemaining
+                    FROM member_rows
+                    WHERE computedStatus IN ('frozen', 'expiring_soon')
+                       OR (computedStatus = 'expired' AND endDate = @today)
+                    ORDER BY effectiveEndDate ASC, fullName ASC, id ASC
+                    FOR JSON PATH
+                ) AS alertsJson
+            FROM member_rows;`);
+    const row = result.recordset[0] || {};
+    const alertRows = row.alertsJson ? JSON.parse(row.alertsJson) : [];
+    return {
+        today,
+        stats: {
+            total: Number(row.total || 0),
+            active: Number(row.active || 0),
+            expiringSoon: Number(row.expiringSoon || 0),
+            expired: Number(row.expired || 0),
+            frozen: Number(row.frozen || 0)
+        },
+        alerts: alertRows.map(mapMember)
+    };
 }
 
 async function getRawMember(connection, id) {

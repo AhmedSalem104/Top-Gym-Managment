@@ -79,7 +79,12 @@ app.put('/api/membership-types/:typeCode', asyncRoute(async (request, response) 
 }));
 
 app.get('/api/members', asyncRoute(async (request, response) => {
-    response.json({ members: await getMembers({ search: request.query.search, status: request.query.status }) });
+    response.json(await getMembers({
+        search: request.query.search,
+        status: request.query.status,
+        page: request.query.page,
+        pageSize: request.query.pageSize
+    }));
 }));
 
 app.get('/api/members/:id/details', asyncRoute(async (request, response) => {
