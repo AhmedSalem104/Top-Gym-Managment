@@ -26,6 +26,9 @@ async function call(baseUrl, path, options = {}) {
 
         const health = await call(baseUrl, '/api/health');
         assert.equal(health.database, 'connected');
+        const bootstrap = await call(baseUrl, '/api/bootstrap');
+        assert.ok(Array.isArray(bootstrap.members));
+        assert.ok(bootstrap.dashboard && bootstrap.dashboard.stats);
         const page = await fetch(`${baseUrl}/`);
         assert.equal(page.status, 200);
         assert.match(await page.text(), /إدارة عضويات الجيم/);
@@ -47,6 +50,22 @@ async function call(baseUrl, path, options = {}) {
         memberId = created.member.id;
         assert.equal(created.member.membership.status, 'active');
         assert.equal(created.member.membership.amountRemaining, 150);
+
+        const edited = await call(baseUrl, `/api/members/${memberId}`, {
+            method: 'PUT',
+            body: JSON.stringify({
+                fullName: `Edited Smoke Test ${suffix}`,
+                phone: `010${String(suffix).slice(-8)}`,
+                registrationDate: '2026-08-08',
+                membershipType: 'monthly',
+                startDate: '2026-08-08',
+                endDate: '2026-09-07',
+                amountDue: 300,
+                amountPaid: 150,
+                paymentMethod: 'cash'
+            })
+        });
+        assert.equal(edited.member.fullName, `Edited Smoke Test ${suffix}`);
 
         const frozen = await call(baseUrl, `/api/members/${memberId}/freeze`, {
             method: 'POST', body: JSON.stringify({ days: 2, reason: 'smoke test' })

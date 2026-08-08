@@ -42,6 +42,7 @@
 
 ```text
 GET    /api/health
+GET    /api/bootstrap
 GET    /api/dashboard
 GET    /api/members?search=&status=
 GET    /api/members/:id

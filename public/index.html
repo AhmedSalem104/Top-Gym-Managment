@@ -138,6 +138,88 @@
             .field-grid { grid-template-columns: 1fr; gap: 0; }
             .field.full { grid-column: auto; }
         }
+
+        /* Visual refresh: cleaner hierarchy, stronger contrast, and touch-friendly actions. */
+        body { background: radial-gradient(circle at 90% 0%, #dbeafe 0, transparent 30%), #f4f7fb; }
+        .topbar { position: sticky; top: 0; z-index: 10; background: linear-gradient(120deg, #0b1220 0%, #172554 58%, #1e3a8a 100%); box-shadow: 0 10px 30px rgba(15, 23, 42, .18); }
+        .brand-mark { box-shadow: 0 8px 22px rgba(59, 130, 246, .32); }
+        .top-actions .btn-light { color: #eff6ff; background: rgba(255, 255, 255, .1); border: 1px solid rgba(255, 255, 255, .18); }
+        .top-actions .btn-light:hover { background: rgba(255, 255, 255, .18); }
+        .page { max-width: 1240px; padding-top: 28px; }
+        .hero { position: relative; overflow: hidden; color: #fff; min-height: 170px; padding: 28px 30px; border-radius: 24px; background: linear-gradient(120deg, #111827 0%, #1e3a8a 62%, #2563eb 100%); box-shadow: 0 18px 45px rgba(30, 64, 175, .2); }
+        .hero::after { content: ''; position: absolute; width: 260px; height: 260px; border: 1px solid rgba(255, 255, 255, .13); border-radius: 50%; inset-inline-start: -80px; top: -95px; box-shadow: 0 0 0 28px rgba(255, 255, 255, .03), 0 0 0 58px rgba(255, 255, 255, .02); }
+        .hero > * { position: relative; z-index: 1; }
+        .hero h2 { font-size: clamp(25px, 4vw, 34px); letter-spacing: -.5px; }
+        .hero p { color: #dbeafe; max-width: 560px; line-height: 1.8; }
+        .date-chip { color: #fff; background: rgba(255, 255, 255, .11); border: 1px solid rgba(255, 255, 255, .2); backdrop-filter: blur(8px); }
+        .stats-grid { gap: 14px; margin-top: 18px; }
+        .stat-card { position: relative; overflow: hidden; border: 1px solid rgba(226, 232, 240, .95); border-radius: 18px; padding: 17px; box-shadow: 0 10px 26px rgba(15, 23, 42, .06); transition: transform .18s, box-shadow .18s; }
+        .stat-card::after { content: ''; position: absolute; width: 74px; height: 74px; border-radius: 50%; background: currentColor; opacity: .04; inset-inline-start: -22px; bottom: -24px; }
+        .stat-card:hover { transform: translateY(-3px); box-shadow: 0 16px 32px rgba(15, 23, 42, .1); }
+        .stat-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+        .stat-icon { width: 30px; height: 30px; display: grid; place-items: center; border-radius: 10px; background: #eef2ff; color: #4f46e5; font-weight: 900; }
+        .stat-card.active .stat-icon { color: var(--green); background: #d1fae5; }
+        .stat-card.warning .stat-icon { color: var(--orange); background: #fef3c7; }
+        .stat-card.danger .stat-icon { color: var(--red); background: #fee2e2; }
+        .stat-card.frozen .stat-icon { color: var(--purple); background: #ede9fe; }
+        .stat-card .stat-value { font-size: 30px; margin-top: 13px; }
+        .stat-caption { color: #94a3b8; font-size: 11px; }
+        .panel { border-radius: 20px; overflow: hidden; box-shadow: 0 12px 32px rgba(15, 23, 42, .065); }
+        .panel-header, .section-heading { padding: 20px 22px; background: linear-gradient(180deg, #fff, #fbfdff); }
+        .panel-header h3, .section-heading h3 { font-size: 18px; letter-spacing: -.2px; }
+        .panel-header p { line-height: 1.65; }
+        .alerts-list { gap: 12px; padding: 18px 22px 22px; }
+        .alert-card { min-height: 92px; padding: 15px; border: 1px solid #edf2f7; box-shadow: 0 5px 14px rgba(15, 23, 42, .035); transition: transform .18s; }
+        .alert-card:hover { transform: translateY(-2px); }
+        .workspace { gap: 20px; }
+        .form-body { padding: 20px 22px 22px; }
+        .section-label { margin-top: 22px; color: #1d4ed8; letter-spacing: .2px; }
+        input, select, textarea { border-color: #dbe3ef; border-radius: 12px; padding: 12px 13px; background: #fcfdff; }
+        input:hover, select:hover, textarea:hover { border-color: #b8c7dc; }
+        .btn { border-radius: 11px; box-shadow: 0 3px 8px rgba(15, 23, 42, .04); }
+        .btn-primary { background: linear-gradient(135deg, #2563eb, #1d4ed8); box-shadow: 0 6px 14px rgba(37, 99, 235, .2); }
+        .btn-danger { border: 1px solid #fecaca; }
+        .btn-purple { border: 1px solid #ddd6fe; }
+        .members-toolbar { padding: 16px 22px; background: #fbfdff; }
+        .members-toolbar input, .members-toolbar select { min-height: 43px; }
+        .members-list { gap: 14px; padding: 18px 22px 22px; }
+        .member-card { position: relative; overflow: hidden; border-color: #e3eaf4; border-radius: 17px; padding: 17px; box-shadow: 0 7px 18px rgba(15, 23, 42, .04); transition: transform .18s, box-shadow .18s, border-color .18s; }
+        .member-card::before { content: ''; position: absolute; inset: 0 0 auto; height: 3px; background: #cbd5e1; }
+        .member-card:has(.badge.active)::before { background: #10b981; }
+        .member-card:has(.badge.expiring_soon)::before { background: #f59e0b; }
+        .member-card:has(.badge.expired)::before { background: #ef4444; }
+        .member-card:has(.badge.frozen)::before { background: #8b5cf6; }
+        .member-card:hover { transform: translateY(-3px); border-color: #b8c7dc; box-shadow: 0 15px 30px rgba(15, 23, 42, .09); }
+        .member-name { font-size: 17px; }
+        .member-details { gap: 11px; margin: 16px 0; padding: 14px 0; }
+        .detail { min-width: 0; }
+        .detail strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .payment-line { align-items: center; min-height: 42px; margin-bottom: 14px; border: 1px solid #edf2f7; line-height: 1.6; }
+        .payment-line span:first-child { color: #64748b; }
+        .member-actions { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 7px; }
+        .member-actions .btn { width: 100%; min-height: 37px; padding: 8px 5px; white-space: nowrap; }
+        .toast { border: 1px solid rgba(255, 255, 255, .12); backdrop-filter: blur(10px); }
+        dialog { border-radius: 20px; }
+        .dialog-body { padding: 23px; }
+        @media (max-width: 900px) {
+            .member-actions { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        }
+        @media (max-width: 640px) {
+            .page { padding: 16px 12px 32px; }
+            .hero { min-height: 190px; padding: 23px 20px; border-radius: 20px; }
+            .hero h2 { font-size: 25px; }
+            .hero p { font-size: 13px; }
+            .date-chip { margin-top: 17px; }
+            .stats-grid { margin-top: 14px; }
+            .stat-card { padding: 14px; }
+            .stat-card .stat-value { font-size: 25px; }
+            .panel-header, .section-heading { padding: 17px 16px; }
+            .alerts-list, .members-list { padding: 14px 13px 17px; }
+            .members-toolbar { padding: 13px; }
+            .member-card { padding: 15px; }
+            .member-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .member-actions .btn { min-height: 39px; }
+        }
     </style>
 </head>
 <body>
@@ -159,11 +241,11 @@
             </section>
 
             <section class="stats-grid" aria-label="ملخص العضويات">
-                <div class="stat-card"><span class="stat-label">إجمالي الأعضاء</span><strong class="stat-value" id="statTotal">0</strong></div>
-                <div class="stat-card active"><span class="stat-label">نشطة</span><strong class="stat-value" id="statActive">0</strong></div>
-                <div class="stat-card warning"><span class="stat-label">قريبة الانتهاء</span><strong class="stat-value" id="statExpiring">0</strong></div>
-                <div class="stat-card danger"><span class="stat-label">منتهية</span><strong class="stat-value" id="statExpired">0</strong></div>
-                <div class="stat-card frozen"><span class="stat-label">مجمدة الآن</span><strong class="stat-value" id="statFrozen">0</strong></div>
+                <div class="stat-card"><div class="stat-head"><span class="stat-label">إجمالي الأعضاء</span><span class="stat-icon">👥</span></div><strong class="stat-value" id="statTotal">0</strong><span class="stat-caption">كل المشتركين</span></div>
+                <div class="stat-card active"><div class="stat-head"><span class="stat-label">نشطة</span><span class="stat-icon">✓</span></div><strong class="stat-value" id="statActive">0</strong><span class="stat-caption">اشتراك ساري</span></div>
+                <div class="stat-card warning"><div class="stat-head"><span class="stat-label">قريبة الانتهاء</span><span class="stat-icon">⏱</span></div><strong class="stat-value" id="statExpiring">0</strong><span class="stat-caption">خلال 7 أيام</span></div>
+                <div class="stat-card danger"><div class="stat-head"><span class="stat-label">منتهية</span><span class="stat-icon">!</span></div><strong class="stat-value" id="statExpired">0</strong><span class="stat-caption">تحتاج متابعة</span></div>
+                <div class="stat-card frozen"><div class="stat-head"><span class="stat-label">مجمدة الآن</span><span class="stat-icon">❄</span></div><strong class="stat-value" id="statFrozen">0</strong><span class="stat-caption">متوقفة مؤقتاً</span></div>
             </section>
 
             <section class="panel alerts-panel">
@@ -249,11 +331,20 @@
         async function loadData() {
             $('membersList').innerHTML = '<div class="loading">جاري تحميل المشتركين…</div>';
             try {
-                const params = new URLSearchParams({ search: $('searchInput').value.trim(), status: $('statusFilter').value });
-                const [membersResponse, dashboard] = await Promise.all([api(`/api/members?${params}`), api('/api/dashboard')]);
-                state.members = membersResponse.members || [];
-                state.dashboard = dashboard;
+                const bootstrap = await api('/api/bootstrap');
+                state.members = bootstrap.members || [];
+                state.dashboard = bootstrap.dashboard || null;
                 renderDashboard(); renderMembers();
+            } catch (error) { $('membersList').innerHTML = `<div class="empty">${escapeHtml(error.message)}</div>`; showToast(error.message, true); }
+        }
+
+        async function loadMembersOnly() {
+            $('membersList').innerHTML = '<div class="loading">جاري تحديث القائمة…</div>';
+            try {
+                const params = new URLSearchParams({ search: $('searchInput').value.trim(), status: $('statusFilter').value });
+                const membersResponse = await api(`/api/members?${params}`);
+                state.members = membersResponse.members || [];
+                renderMembers();
             } catch (error) { $('membersList').innerHTML = `<div class="empty">${escapeHtml(error.message)}</div>`; showToast(error.message, true); }
         }
 
@@ -279,8 +370,8 @@
             const remaining = sub.daysRemaining === null ? '—' : sub.status === 'expired' ? `منتهية منذ ${Math.abs(sub.daysRemaining)} يوم` : `${sub.daysRemaining} يوم متبقٍ`;
             const freezeText = sub.status === 'frozen' ? `تجميد حتى ${formatDate(sub.freezeEnd)}` : remaining;
             const payment = `<div class="payment-line"><span>الدفع: ${money(sub.amountPaid)} / ${money(sub.amountDue)} · ${escapeHtml(PAYMENT_LABELS[sub.paymentMethod] || sub.paymentMethod)}</span><span class="remaining">متبقي ${money(sub.amountRemaining)}</span></div>`;
-            const freezeButton = sub.status === 'frozen' ? '<button class="btn btn-purple btn-small" data-action="resume">استئناف</button>' : sub.status === 'expired' ? '' : '<button class="btn btn-light btn-small" data-action="freeze">تجميد</button>';
-            return `<article class="member-card"><div class="member-top"><div><h4 class="member-name">${escapeHtml(member.fullName)}</h4><a class="member-phone" href="tel:${escapeHtml(member.phone)}">${escapeHtml(member.phone)}</a></div><span class="badge ${sub.status}">${STATUS_LABELS[sub.status]}</span></div><div class="member-details"><div class="detail"><span>نوع الاشتراك</span><strong>${TYPE_LABELS[sub.type] || escapeHtml(sub.type)}</strong></div><div class="detail"><span>الموعد</span><strong>${escapeHtml(freezeText)}</strong></div><div class="detail"><span>البداية</span><strong>${formatDate(sub.startDate)}</strong></div><div class="detail"><span>النهاية الفعلية</span><strong>${formatDate(sub.effectiveEndDate)}</strong></div></div>${payment}<div class="member-actions"><button class="btn btn-light btn-small" data-action="edit">تعديل</button><button class="btn btn-primary btn-small" data-action="renew">تجديد</button>${freezeButton}<button class="btn btn-light btn-small" data-action="payment">دفعة</button><button class="btn btn-danger btn-small" data-action="delete">حذف</button></div></article>`;
+            const freezeButton = sub.status === 'frozen' ? `<button class="btn btn-purple btn-small" data-action="resume" data-id="${member.id}">استئناف</button>` : sub.status === 'expired' ? '' : `<button class="btn btn-light btn-small" data-action="freeze" data-id="${member.id}">تجميد</button>`;
+            return `<article class="member-card" data-member-id="${member.id}"><div class="member-top"><div><h4 class="member-name">${escapeHtml(member.fullName)}</h4><a class="member-phone" href="tel:${escapeHtml(member.phone)}">${escapeHtml(member.phone)}</a></div><span class="badge ${sub.status}">${STATUS_LABELS[sub.status]}</span></div><div class="member-details"><div class="detail"><span>نوع الاشتراك</span><strong>${TYPE_LABELS[sub.type] || escapeHtml(sub.type)}</strong></div><div class="detail"><span>الموعد</span><strong>${escapeHtml(freezeText)}</strong></div><div class="detail"><span>البداية</span><strong>${formatDate(sub.startDate)}</strong></div><div class="detail"><span>النهاية الفعلية</span><strong>${formatDate(sub.effectiveEndDate)}</strong></div></div>${payment}<div class="member-actions"><button class="btn btn-light btn-small" data-action="edit" data-id="${member.id}">تعديل</button><button class="btn btn-primary btn-small" data-action="renew" data-id="${member.id}">تجديد</button>${freezeButton}<button class="btn btn-light btn-small" data-action="payment" data-id="${member.id}">دفعة</button><button class="btn btn-danger btn-small" data-action="delete" data-id="${member.id}">حذف</button></div></article>`;
         }
 
         function renderMembers() { $('membersCount').textContent = `${state.members.length} عضو ظاهر`; $('membersList').innerHTML = state.members.length ? state.members.map(memberCard).join('') : '<div class="empty">لا يوجد أعضاء مطابقون للبحث.</div>'; }
@@ -318,8 +409,8 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            setFormDefaults(); loadData(); $('memberForm').addEventListener('submit', submitMember); $('refreshButton').addEventListener('click', loadData); $('cancelEditButton').addEventListener('click', setFormDefaults); $('resetButton').addEventListener('click', setFormDefaults); $('actionForm').addEventListener('submit', submitDialog); $('dialogCancel').addEventListener('click', closeDialog); $('membershipType').addEventListener('change', () => { if (!state.endDateManual) $('endDate').value = calculatedEndDate($('startDate').value, $('membershipType').value); }); $('startDate').addEventListener('change', () => { if (!state.endDateManual) $('endDate').value = calculatedEndDate($('startDate').value, $('membershipType').value); }); $('endDate').addEventListener('input', () => { state.endDateManual = true; }); let timer; $('searchInput').addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(loadData, 250); }); $('statusFilter').addEventListener('change', loadData);
-            $('membersList').addEventListener('click', async (event) => { const button = event.target.closest('button[data-action]'); if (!button) return; const member = state.members.find((item) => String(item.id) === button.dataset.id); if (!member) return; const action = button.dataset.action; if (action === 'edit') editMember(member); if (action === 'freeze' || action === 'renew' || action === 'payment') openDialog(action, member); if (action === 'resume') { try { await api(`/api/members/${member.id}/resume`, { method: 'POST' }); showToast('تم استئناف العضوية.'); await loadData(); } catch (error) { showToast(error.message, true); } } if (action === 'delete' && confirm(`هل تريد حذف العضو ${member.fullName}؟`)) { try { await api(`/api/members/${member.id}`, { method: 'DELETE' }); showToast('تم حذف العضو.'); if (String($('memberId').value) === String(member.id)) setFormDefaults(); await loadData(); } catch (error) { showToast(error.message, true); } } });
+            setFormDefaults(); loadData(); $('memberForm').addEventListener('submit', submitMember); $('refreshButton').addEventListener('click', loadData); $('cancelEditButton').addEventListener('click', setFormDefaults); $('resetButton').addEventListener('click', setFormDefaults); $('actionForm').addEventListener('submit', submitDialog); $('dialogCancel').addEventListener('click', closeDialog); $('membershipType').addEventListener('change', () => { if (!state.endDateManual) $('endDate').value = calculatedEndDate($('startDate').value, $('membershipType').value); }); $('startDate').addEventListener('change', () => { if (!state.endDateManual) $('endDate').value = calculatedEndDate($('startDate').value, $('membershipType').value); }); $('endDate').addEventListener('input', () => { state.endDateManual = true; }); let timer; $('searchInput').addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(loadMembersOnly, 250); }); $('statusFilter').addEventListener('change', loadMembersOnly);
+            $('membersList').addEventListener('click', async (event) => { const button = event.target.closest('button[data-action]'); if (!button) return; const id = button.dataset.id || button.closest('[data-member-id]')?.dataset.memberId; const member = state.members.find((item) => String(item.id) === String(id)); if (!member) { showToast('تعذر تحديد العضو. حدّث الصفحة وحاول مرة أخرى.', true); return; } const action = button.dataset.action; if (action === 'edit') editMember(member); if (action === 'freeze' || action === 'renew' || action === 'payment') openDialog(action, member); if (action === 'resume') { try { await api(`/api/members/${member.id}/resume`, { method: 'POST' }); showToast('تم استئناف العضوية.'); await loadData(); } catch (error) { showToast(error.message, true); } } if (action === 'delete' && confirm(`هل تريد حذف العضو ${member.fullName}؟`)) { try { await api(`/api/members/${member.id}`, { method: 'DELETE' }); showToast('تم حذف العضو.'); if (String($('memberId').value) === String(member.id)) setFormDefaults(); await loadData(); } catch (error) { showToast(error.message, true); } } });
         });
     </script>
 </body>

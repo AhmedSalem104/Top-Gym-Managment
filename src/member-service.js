@@ -274,9 +274,7 @@ async function getMembers({ search = '', status = '' } = {}) {
     return normalizedStatus ? members.filter((member) => member.membership?.status === normalizedStatus) : members;
 }
 
-async function getDashboard() {
-    const today = todayInTimeZone();
-    const members = await getMembers({});
+function dashboardFromMembers(members, today = todayInTimeZone()) {
     const counts = members.reduce((result, member) => {
         const status = member.membership?.status || 'expired';
         result[status] = (result[status] || 0) + 1;
@@ -300,6 +298,16 @@ async function getDashboard() {
         },
         alerts: alertRows
     };
+}
+
+async function getBootstrap() {
+    const members = await getMembers({});
+    return { members, dashboard: dashboardFromMembers(members) };
+}
+
+async function getDashboard() {
+    const members = await getMembers({});
+    return dashboardFromMembers(members);
 }
 
 async function getRawMember(connection, id) {
@@ -647,6 +655,7 @@ async function recordPayment(membershipId, body = {}) {
 module.exports = {
     createMember,
     deleteMember,
+    getBootstrap,
     getDashboard,
     getMemberById,
     getMembers,

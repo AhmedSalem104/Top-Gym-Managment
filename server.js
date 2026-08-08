@@ -6,6 +6,7 @@ const { getPool, initDatabase } = require('./src/db');
 const {
     createMember,
     deleteMember,
+    getBootstrap,
     getDashboard,
     getMemberById,
     getMembers,
@@ -35,6 +36,10 @@ app.get('/api/health', asyncRoute(async (request, response) => {
 
 app.get('/api/dashboard', asyncRoute(async (request, response) => {
     response.json(await getDashboard());
+}));
+
+app.get('/api/bootstrap', asyncRoute(async (request, response) => {
+    response.json(await getBootstrap());
 }));
 
 app.get('/api/members', asyncRoute(async (request, response) => {
