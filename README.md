@@ -27,6 +27,7 @@
 
 - `members`: بيانات العضو الأساسية فقط.
 - `memberships`: كل اشتراك وتجديد كسجل مستقل.
+- `membership_pricing`: أسعار الباقات القابلة للتعديل من شاشة إدارة الأسعار.
 - `membership_freezes`: كل عملية تجميد كسجل مستقل، ويمكن للعضو التجميد أكثر من مرة.
 - `gym_payments`: جدول مدفوعات التطبيق. تم استخدام هذا الاسم لأن قاعدة البيانات تحتوي مسبقاً على جدول `Payments` غير مرتبط بتطبيق الجيم.
 - `membership_events`: سجل عمليات الإضافة والتعديل والتجديد والتجميد والاستئناف والدفع.
@@ -54,6 +55,9 @@ GET    /api/dashboard
 GET    /api/members?search=&status=
 GET    /api/members/:id
 GET    /api/members/:id/details
+GET    /api/pricing
+PUT    /api/pricing
+PUT    /api/pricing/:planCode
 POST   /api/members
 PUT    /api/members/:id
 DELETE /api/members/:id

@@ -11,10 +11,13 @@ const {
     getMemberById,
     getMemberDetails,
     getMembers,
+    getPricingCatalog,
     freezeMember,
     recordPayment,
     renewMember,
     resumeMember,
+    updatePricingCatalog,
+    updatePricing,
     updateMember
 } = require('./src/member-service');
 
@@ -41,6 +44,18 @@ app.get('/api/dashboard', asyncRoute(async (request, response) => {
 
 app.get('/api/bootstrap', asyncRoute(async (request, response) => {
     response.json(await getBootstrap());
+}));
+
+app.get('/api/pricing', asyncRoute(async (request, response) => {
+    response.json(await getPricingCatalog());
+}));
+
+app.put('/api/pricing', asyncRoute(async (request, response) => {
+    response.json(await updatePricingCatalog(request.body));
+}));
+
+app.put('/api/pricing/:planCode', asyncRoute(async (request, response) => {
+    response.json(await updatePricing(request.params.planCode, request.body));
 }));
 
 app.get('/api/members', asyncRoute(async (request, response) => {

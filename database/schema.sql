@@ -32,6 +32,32 @@ BEGIN
     );
 END;
 
+IF OBJECT_ID(N'dbo.membership_pricing', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.membership_pricing (
+        id INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_membership_pricing PRIMARY KEY,
+        plan_code VARCHAR(20) NOT NULL,
+        plan_name NVARCHAR(80) NOT NULL,
+        monthly_price DECIMAL(12,2) NOT NULL,
+        created_at DATETIME2(0) NOT NULL CONSTRAINT DF_membership_pricing_created_at DEFAULT (SYSUTCDATETIME()),
+        updated_at DATETIME2(0) NOT NULL CONSTRAINT DF_membership_pricing_updated_at DEFAULT (SYSUTCDATETIME()),
+        CONSTRAINT UQ_membership_pricing_code UNIQUE (plan_code),
+        CONSTRAINT CK_membership_pricing_price CHECK (monthly_price >= 0)
+    );
+END;
+
+IF NOT EXISTS (SELECT 1 FROM dbo.membership_pricing WHERE plan_code = 'gym_only')
+BEGIN
+    INSERT INTO dbo.membership_pricing (plan_code, plan_name, monthly_price)
+    VALUES ('gym_only', N'جيم فقط', 305);
+END;
+
+IF NOT EXISTS (SELECT 1 FROM dbo.membership_pricing WHERE plan_code = 'gym_cardio')
+BEGIN
+    INSERT INTO dbo.membership_pricing (plan_code, plan_name, monthly_price)
+    VALUES ('gym_cardio', N'جيم وكارديو', 400);
+END;
+
 IF OBJECT_ID(N'dbo.membership_freezes', N'U') IS NULL
 BEGIN
     CREATE TABLE dbo.membership_freezes (

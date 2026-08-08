@@ -29,6 +29,19 @@ async function call(baseUrl, path, options = {}) {
         const bootstrap = await call(baseUrl, '/api/bootstrap');
         assert.ok(Array.isArray(bootstrap.members));
         assert.ok(bootstrap.dashboard && bootstrap.dashboard.stats);
+        assert.ok(bootstrap.pricing && bootstrap.pricing.plans);
+        const pricing = await call(baseUrl, '/api/pricing');
+        const pricingUpdate = await call(baseUrl, '/api/pricing', {
+            method: 'PUT',
+            body: JSON.stringify({
+                plans: Object.entries(pricing.plans).map(([planCode, plan]) => ({
+                    planCode,
+                    planName: plan.label,
+                    monthlyPrice: plan.monthlyPrice
+                }))
+            })
+        });
+        assert.deepEqual(pricingUpdate.plans, pricing.plans);
         const page = await fetch(`${baseUrl}/`);
         assert.equal(page.status, 200);
         assert.match(await page.text(), /إدارة عضويات الجيم/);

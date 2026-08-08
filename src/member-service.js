@@ -10,10 +10,11 @@ const {
 } = require('./date-utils');
 
 const MEMBERSHIP_TYPES = ['monthly', 'quarterly', 'semiannual', 'annual'];
-const MEMBERSHIP_PLANS = {
+const DEFAULT_MEMBERSHIP_PLANS = {
     gym_only: { label: 'جيم فقط', monthlyPrice: 305 },
     gym_cardio: { label: 'جيم وكارديو', monthlyPrice: 400 }
 };
+const MEMBERSHIP_PLAN_CODES = Object.keys(DEFAULT_MEMBERSHIP_PLANS);
 const MONTHS_BY_TYPE = { monthly: 1, quarterly: 3, semiannual: 6, annual: 12 };
 const PAYMENT_METHODS = ['cash', 'card', 'transfer', 'other'];
 const MEMBER_STATUSES = ['active', 'expiring_soon', 'expired', 'frozen'];
@@ -59,25 +60,37 @@ function has(body, key) {
     return Object.prototype.hasOwnProperty.call(body, key);
 }
 
-function calculatePricing(membershipType, membershipPlan = 'gym_only', discountAmount = 0) {
-    if (!MEMBERSHIP_TYPES.includes(membershipType)) throw appError('نوع العضوية غير صالح.');
-    if (!Object.prototype.hasOwnProperty.call(MEMBERSHIP_PLANS, membershipPlan)) {
-        throw appError('باقة العضوية غير صالحة.');
+async function getPricingCatalog(connection = null) {
+    const pool = connection || await getPool();
+    const result = await pool.request()
+        .query(`SELECT plan_code, plan_name, monthly_price
+                FROM dbo.membership_pricing ORDER BY id ASC;`);
+    const plans = { ...DEFAULT_MEMBERSHIP_PLANS };
+    for (const row of result.recordset) {
+        if (!MEMBERSHIP_PLAN_CODES.includes(row.plan_code)) continue;
+        plans[row.plan_code] = {
+            label: row.plan_name,
+            monthlyPrice: Number(row.monthly_price)
+        };
     }
-    const listPrice = MEMBERSHIP_PLANS[membershipPlan].monthlyPrice * MONTHS_BY_TYPE[membershipType];
-    const discount = money(discountAmount, 'الخصم');
-    if (discount > listPrice) throw appError('الخصم لا يمكن أن يتجاوز قيمة الاشتراك.');
-    return { listPrice, discountAmount: discount, amountDue: listPrice - discount };
-}
-
-function getPricingCatalog() {
     return {
-        plans: Object.fromEntries(Object.entries(MEMBERSHIP_PLANS).map(([key, value]) => [key, {
+        plans: Object.fromEntries(Object.entries(plans).map(([key, value]) => [key, {
             label: value.label,
             monthlyPrice: value.monthlyPrice
         }])),
         durations: MONTHS_BY_TYPE
     };
+}
+
+async function calculatePricing(membershipType, membershipPlan = 'gym_only', discountAmount = 0, connection = null) {
+    if (!MEMBERSHIP_TYPES.includes(membershipType)) throw appError('نوع العضوية غير صالح.');
+    if (!MEMBERSHIP_PLAN_CODES.includes(membershipPlan)) throw appError('باقة العضوية غير صالحة.');
+    const pricing = await getPricingCatalog(connection);
+    const plan = pricing.plans[membershipPlan];
+    const listPrice = plan.monthlyPrice * MONTHS_BY_TYPE[membershipType];
+    const discount = money(discountAmount, 'الخصم');
+    if (discount > listPrice) throw appError('الخصم لا يمكن أن يتجاوز قيمة الاشتراك.');
+    return { listPrice, discountAmount: discount, amountDue: listPrice - discount };
 }
 
 function normalizePayload(body = {}, { partial = false } = {}) {
@@ -106,7 +119,7 @@ function normalizePayload(body = {}, { partial = false } = {}) {
     }
     if (!partial || has(body, 'membershipPlan')) {
         output.membershipPlan = body.membershipPlan || 'gym_only';
-        if (!Object.prototype.hasOwnProperty.call(MEMBERSHIP_PLANS, output.membershipPlan)) {
+        if (!MEMBERSHIP_PLAN_CODES.includes(output.membershipPlan)) {
             throw appError('باقة العضوية غير صالحة.');
         }
     }
@@ -354,8 +367,65 @@ function dashboardFromMembers(members, today = todayInTimeZone()) {
 }
 
 async function getBootstrap() {
-    const members = await getMembers({});
-    return { members, dashboard: dashboardFromMembers(members), pricing: getPricingCatalog() };
+    const [members, pricing] = await Promise.all([getMembers({}), getPricingCatalog()]);
+    return { members, dashboard: dashboardFromMembers(members), pricing };
+}
+
+async function updatePricing(planCode, body = {}) {
+    const code = String(planCode || '').trim();
+    if (!MEMBERSHIP_PLAN_CODES.includes(code)) throw appError('باقة العضوية غير صالحة.', 404);
+    const pool = await getPool();
+    const currentResult = await pool.request()
+        .input('planCode', sql.VarChar(20), code)
+        .query(`SELECT plan_name, monthly_price FROM dbo.membership_pricing WHERE plan_code = @planCode;`);
+    const current = currentResult.recordset[0];
+    if (!current) throw appError('بيانات الباقة غير موجودة.', 404);
+    const planName = body.planName === undefined && body.label === undefined
+        ? current.plan_name
+        : requiredString(body.planName ?? body.label, 'اسم الباقة', 80);
+    const monthlyPrice = body.monthlyPrice === undefined && body.price === undefined
+        ? Number(current.monthly_price)
+        : money(body.monthlyPrice ?? body.price, 'السعر الشهري');
+    await pool.request()
+        .input('planCode', sql.VarChar(20), code)
+        .input('planName', sql.NVarChar(80), planName)
+        .input('monthlyPrice', sql.Decimal(12, 2), monthlyPrice)
+        .query(`UPDATE dbo.membership_pricing
+                SET plan_name = @planName, monthly_price = @monthlyPrice, updated_at = SYSUTCDATETIME()
+                WHERE plan_code = @planCode;`);
+    return getPricingCatalog(pool);
+}
+
+async function updatePricingCatalog(body = {}) {
+    const plans = Array.isArray(body.plans) ? body.plans : [];
+    if (!plans.length) throw appError('أرسل بيانات أسعار الباقات للتحديث.');
+    const normalized = plans.map((item) => {
+        const code = String(item.planCode || item.code || '').trim();
+        if (!MEMBERSHIP_PLAN_CODES.includes(code)) throw appError('باقة العضوية غير صالحة.');
+        return {
+            code,
+            planName: requiredString(item.planName ?? item.label, 'اسم الباقة', 80),
+            monthlyPrice: money(item.monthlyPrice ?? item.price, 'السعر الشهري')
+        };
+    });
+    const seen = new Set();
+    for (const item of normalized) {
+        if (seen.has(item.code)) throw appError('لا يمكن تكرار الباقة في نفس الطلب.');
+        seen.add(item.code);
+    }
+    await withTransaction(async (transaction) => {
+        for (const item of normalized) {
+            const result = await transaction.request()
+                .input('planCode', sql.VarChar(20), item.code)
+                .input('planName', sql.NVarChar(80), item.planName)
+                .input('monthlyPrice', sql.Decimal(12, 2), item.monthlyPrice)
+                .query(`UPDATE dbo.membership_pricing
+                        SET plan_name = @planName, monthly_price = @monthlyPrice, updated_at = SYSUTCDATETIME()
+                        WHERE plan_code = @planCode;`);
+            if (!result.rowsAffected[0]) throw appError('بيانات الباقة غير موجودة.', 404);
+        }
+    });
+    return getPricingCatalog();
 }
 
 async function getDashboard() {
@@ -439,10 +509,10 @@ async function withTransaction(work) {
 
 async function createMember(body) {
     const data = normalizePayload(body);
-    const pricing = calculatePricing(data.membershipType, data.membershipPlan, data.discountAmount);
     const amountPaid = data.amountPaid ?? 0;
-    if (amountPaid > pricing.amountDue) throw appError('المبلغ المدفوع لا يمكن أن يتجاوز قيمة الاشتراك بعد الخصم.');
     const memberId = await withTransaction(async (transaction) => {
+        const pricing = await calculatePricing(data.membershipType, data.membershipPlan, data.discountAmount, transaction);
+        if (amountPaid > pricing.amountDue) throw appError('المبلغ المدفوع لا يمكن أن يتجاوز قيمة الاشتراك بعد الخصم.');
         const memberResult = await transaction.request()
             .input('fullName', sql.NVarChar(120), data.fullName)
             .input('phone', sql.NVarChar(30), data.phone)
@@ -543,10 +613,11 @@ async function updateMember(id, body) {
         let payment = null;
         if (paymentChanged) {
             if (pricingChanged) {
-                const pricing = calculatePricing(
+                const pricing = await calculatePricing(
                     membershipData.type,
                     membershipData.plan,
-                    patch.discountAmount ?? currentPayment?.discount_amount ?? 0
+                    patch.discountAmount ?? currentPayment?.discount_amount ?? 0,
+                    transaction
                 );
                 const amountPaid = patch.amountPaid ?? currentPayment?.amount_paid ?? 0;
                 if (amountPaid > pricing.amountDue) throw appError('المبلغ المدفوع لا يمكن أن يتجاوز قيمة الاشتراك بعد الخصم.');
@@ -679,7 +750,7 @@ async function renewMember(id, body = {}) {
         const startDate = effectiveEnd < today ? today : addDays(effectiveEnd, 1);
         const endDate = membershipEndDate(startDate, membershipType);
         const membershipPlan = body.membershipPlan || current.membership_plan || 'gym_only';
-        const pricing = calculatePricing(membershipType, membershipPlan, money(body.discountAmount, 'الخصم', 0));
+        const pricing = await calculatePricing(membershipType, membershipPlan, money(body.discountAmount, 'الخصم', 0), transaction);
         const amountPaid = money(body.amountPaid, 'المبلغ المدفوع', 0);
         if (amountPaid > pricing.amountDue) throw appError('المبلغ المدفوع لا يمكن أن يتجاوز قيمة الاشتراك بعد الخصم.');
         const paymentMethod = parsePaymentMethod(body.paymentMethod, 'cash');
@@ -853,7 +924,7 @@ async function getMemberDetails(id) {
         return {
             id: membershipId,
             plan: row.membership_plan || 'gym_only',
-            planLabel: MEMBERSHIP_PLANS[row.membership_plan || 'gym_only']?.label || row.membership_plan,
+            planLabel: DEFAULT_MEMBERSHIP_PLANS[row.membership_plan || 'gym_only']?.label || row.membership_plan,
             type: row.membership_type,
             startDate,
             endDate,
@@ -906,9 +977,12 @@ module.exports = {
     getMemberById,
     getMemberDetails,
     getMembers,
+    getPricingCatalog,
     freezeMember,
     recordPayment,
     renewMember,
     resumeMember,
+    updatePricingCatalog,
+    updatePricing,
     updateMember
 };
