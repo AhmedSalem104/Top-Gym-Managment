@@ -10,6 +10,11 @@ const {
 } = require('./date-utils');
 
 const MEMBERSHIP_TYPES = ['monthly', 'quarterly', 'semiannual', 'annual'];
+const MEMBERSHIP_PLANS = {
+    gym_only: { label: 'جيم فقط', monthlyPrice: 305 },
+    gym_cardio: { label: 'جيم وكارديو', monthlyPrice: 400 }
+};
+const MONTHS_BY_TYPE = { monthly: 1, quarterly: 3, semiannual: 6, annual: 12 };
 const PAYMENT_METHODS = ['cash', 'card', 'transfer', 'other'];
 const MEMBER_STATUSES = ['active', 'expiring_soon', 'expired', 'frozen'];
 
@@ -54,6 +59,27 @@ function has(body, key) {
     return Object.prototype.hasOwnProperty.call(body, key);
 }
 
+function calculatePricing(membershipType, membershipPlan = 'gym_only', discountAmount = 0) {
+    if (!MEMBERSHIP_TYPES.includes(membershipType)) throw appError('نوع العضوية غير صالح.');
+    if (!Object.prototype.hasOwnProperty.call(MEMBERSHIP_PLANS, membershipPlan)) {
+        throw appError('باقة العضوية غير صالحة.');
+    }
+    const listPrice = MEMBERSHIP_PLANS[membershipPlan].monthlyPrice * MONTHS_BY_TYPE[membershipType];
+    const discount = money(discountAmount, 'الخصم');
+    if (discount > listPrice) throw appError('الخصم لا يمكن أن يتجاوز قيمة الاشتراك.');
+    return { listPrice, discountAmount: discount, amountDue: listPrice - discount };
+}
+
+function getPricingCatalog() {
+    return {
+        plans: Object.fromEntries(Object.entries(MEMBERSHIP_PLANS).map(([key, value]) => [key, {
+            label: value.label,
+            monthlyPrice: value.monthlyPrice
+        }])),
+        durations: MONTHS_BY_TYPE
+    };
+}
+
 function normalizePayload(body = {}, { partial = false } = {}) {
     const output = {};
     if (!partial || has(body, 'fullName')) output.fullName = requiredString(body.fullName, 'الاسم', 120);
@@ -78,6 +104,12 @@ function normalizePayload(body = {}, { partial = false } = {}) {
         output.membershipType = requiredString(body.membershipType, 'نوع العضوية', 20);
         if (!MEMBERSHIP_TYPES.includes(output.membershipType)) throw appError('نوع العضوية غير صالح.');
     }
+    if (!partial || has(body, 'membershipPlan')) {
+        output.membershipPlan = body.membershipPlan || 'gym_only';
+        if (!Object.prototype.hasOwnProperty.call(MEMBERSHIP_PLANS, output.membershipPlan)) {
+            throw appError('باقة العضوية غير صالحة.');
+        }
+    }
     if (!partial || has(body, 'startDate')) {
         output.startDate = body.startDate
             ? parseDateOnly(body.startDate, 'تاريخ البداية')
@@ -97,23 +129,36 @@ function normalizePayload(body = {}, { partial = false } = {}) {
 
     if (!partial || has(body, 'amountDue')) output.amountDue = money(body.amountDue, 'قيمة الاشتراك');
     if (!partial || has(body, 'amountPaid')) output.amountPaid = money(body.amountPaid, 'المبلغ المدفوع');
+    if (!partial || has(body, 'discountAmount')) output.discountAmount = money(body.discountAmount, 'الخصم');
     if (!partial || has(body, 'paymentMethod')) output.paymentMethod = parsePaymentMethod(body.paymentMethod);
     if (!partial || has(body, 'paymentNotes')) output.paymentNotes = optionalString(body.paymentNotes, 500);
-    if (output.amountPaid !== undefined && output.amountDue !== undefined && output.amountPaid > output.amountDue) {
-        throw appError('المبلغ المدفوع لا يمكن أن يتجاوز قيمة الاشتراك.');
-    }
     return output;
 }
 
 function normalizePaymentPayload(body = {}, current = {}) {
-    const amountDue = has(body, 'amountDue')
-        ? money(body.amountDue, 'قيمة الاشتراك')
-        : money(current.amount_due, 'قيمة الاشتراك');
+    let listPrice = has(body, 'listPrice')
+        ? money(body.listPrice, 'السعر الأساسي')
+        : money(current.list_price ?? current.amount_due, 'السعر الأساسي');
+    const discountAmount = has(body, 'discountAmount')
+        ? money(body.discountAmount, 'الخصم')
+        : money(current.discount_amount, 'الخصم');
+    let amountDue;
+    if (has(body, 'listPrice') || has(body, 'discountAmount')) {
+        amountDue = listPrice - discountAmount;
+    } else if (has(body, 'amountDue')) {
+        amountDue = money(body.amountDue, 'قيمة الاشتراك');
+        listPrice = amountDue + discountAmount;
+    } else {
+        amountDue = money(current.amount_due, 'قيمة الاشتراك');
+    }
     const amountPaid = has(body, 'amountPaid')
         ? money(body.amountPaid, 'المبلغ المدفوع')
         : money(current.amount_paid, 'المبلغ المدفوع');
+    if (discountAmount > listPrice) throw appError('الخصم لا يمكن أن يتجاوز قيمة الاشتراك.');
     if (amountPaid > amountDue) throw appError('المبلغ المدفوع لا يمكن أن يتجاوز قيمة الاشتراك.');
     return {
+        listPrice,
+        discountAmount,
         amountDue,
         amountPaid,
         paymentMethod: parsePaymentMethod(body.paymentMethod, current.payment_method || 'cash'),
@@ -149,6 +194,7 @@ function mapMember(row) {
         updatedAt: row.memberUpdatedAt,
         membership: membershipId ? {
             id: membershipId,
+            plan: row.membershipPlan || 'gym_only',
             type: row.membershipType,
             startDate: formatDateOnly(row.startDate),
             endDate: formatDateOnly(row.endDate),
@@ -159,6 +205,8 @@ function mapMember(row) {
             freezeId: row.freezeId ? Number(row.freezeId) : null,
             freezeStart: formatDateOnly(row.freezeStart),
             freezeEnd: formatDateOnly(row.freezeEnd),
+            listPrice: Number(row.listPrice || 0),
+            discountAmount: Number(row.discountAmount || 0),
             amountDue: Number(row.amountDue || 0),
             amountPaid: Number(row.amountPaid || 0),
             amountRemaining: Number(row.amountRemaining || 0),
@@ -173,6 +221,7 @@ WITH latest_membership AS (
     SELECT
         m.id AS membershipId,
         m.member_id AS membershipMemberId,
+        m.membership_plan AS membershipPlan,
         m.membership_type AS membershipType,
         m.start_date AS startDate,
         m.end_date AS endDate,
@@ -204,7 +253,8 @@ current_freeze AS (
     WHERE freezeRank = 1
 ),
 payment_summary AS (
-    SELECT membership_id AS paymentMembershipId, amount_due AS amountDue, amount_paid AS amountPaid,
+    SELECT membership_id AS paymentMembershipId, list_price AS listPrice, discount_amount AS discountAmount,
+           amount_due AS amountDue, amount_paid AS amountPaid,
            amount_remaining AS amountRemaining, payment_method AS paymentMethod, paid_at AS paymentPaidAt
     FROM dbo.gym_payments
 )
@@ -218,6 +268,7 @@ SELECT
     b.created_at AS memberCreatedAt,
     b.updated_at AS memberUpdatedAt,
     lm.membershipId,
+    lm.membershipPlan,
     lm.membershipType,
     lm.startDate,
     lm.endDate,
@@ -226,6 +277,8 @@ SELECT
     cf.freezeId,
     cf.freezeStart,
     cf.freezeEnd,
+    ISNULL(ps.listPrice, 0) AS listPrice,
+    ISNULL(ps.discountAmount, 0) AS discountAmount,
     ISNULL(ps.amountDue, 0) AS amountDue,
     ISNULL(ps.amountPaid, 0) AS amountPaid,
     ISNULL(ps.amountRemaining, 0) AS amountRemaining,
@@ -302,7 +355,7 @@ function dashboardFromMembers(members, today = todayInTimeZone()) {
 
 async function getBootstrap() {
     const members = await getMembers({});
-    return { members, dashboard: dashboardFromMembers(members) };
+    return { members, dashboard: dashboardFromMembers(members), pricing: getPricingCatalog() };
 }
 
 async function getDashboard() {
@@ -321,7 +374,7 @@ async function getRawMember(connection, id) {
 async function getRawMembership(connection, memberId) {
     const result = await connection.request()
         .input('memberId', sql.Int, ensureId(memberId))
-        .query(`SELECT TOP 1 id, member_id, membership_type, start_date, end_date, notes
+        .query(`SELECT TOP 1 id, member_id, membership_plan, membership_type, start_date, end_date, notes
                 FROM dbo.memberships WHERE member_id = @memberId
                 ORDER BY end_date DESC, id DESC;`);
     return result.recordset[0] || null;
@@ -330,7 +383,7 @@ async function getRawMembership(connection, memberId) {
 async function getRawPayment(connection, membershipId) {
     const result = await connection.request()
         .input('membershipId', sql.Int, ensureId(membershipId, 'معرّف الاشتراك'))
-        .query(`SELECT TOP 1 id, membership_id, amount_due, amount_paid, payment_method, notes
+        .query(`SELECT TOP 1 id, membership_id, list_price, discount_amount, amount_due, amount_paid, payment_method, paid_at, notes
                 FROM dbo.gym_payments WHERE membership_id = @membershipId;`);
     return result.recordset[0] || null;
 }
@@ -386,6 +439,9 @@ async function withTransaction(work) {
 
 async function createMember(body) {
     const data = normalizePayload(body);
+    const pricing = calculatePricing(data.membershipType, data.membershipPlan, data.discountAmount);
+    const amountPaid = data.amountPaid ?? 0;
+    if (amountPaid > pricing.amountDue) throw appError('المبلغ المدفوع لا يمكن أن يتجاوز قيمة الاشتراك بعد الخصم.');
     const memberId = await withTransaction(async (transaction) => {
         const memberResult = await transaction.request()
             .input('fullName', sql.NVarChar(120), data.fullName)
@@ -399,29 +455,35 @@ async function createMember(body) {
         const id = Number(memberResult.recordset[0].id);
         const membershipResult = await transaction.request()
             .input('memberId', sql.Int, id)
+            .input('membershipPlan', sql.VarChar(20), data.membershipPlan)
             .input('membershipType', sql.VarChar(20), data.membershipType)
             .input('startDate', sql.Date, toUtcDate(data.startDate))
             .input('endDate', sql.Date, toUtcDate(data.endDate))
             .input('notes', sql.NVarChar(1000), data.membershipNotes)
-            .query(`INSERT INTO dbo.memberships (member_id, membership_type, start_date, end_date, notes)
+            .query(`INSERT INTO dbo.memberships (member_id, membership_plan, membership_type, start_date, end_date, notes)
                     OUTPUT INSERTED.id
-                    VALUES (@memberId, @membershipType, @startDate, @endDate, @notes);`);
+                    VALUES (@memberId, @membershipPlan, @membershipType, @startDate, @endDate, @notes);`);
         const membershipId = Number(membershipResult.recordset[0].id);
         await transaction.request()
             .input('membershipId', sql.Int, membershipId)
-            .input('amountDue', sql.Decimal(12, 2), data.amountDue)
-            .input('amountPaid', sql.Decimal(12, 2), data.amountPaid)
+            .input('listPrice', sql.Decimal(12, 2), pricing.listPrice)
+            .input('discountAmount', sql.Decimal(12, 2), pricing.discountAmount)
+            .input('amountDue', sql.Decimal(12, 2), pricing.amountDue)
+            .input('amountPaid', sql.Decimal(12, 2), amountPaid)
             .input('paymentMethod', sql.VarChar(20), data.paymentMethod)
             .input('paidAt', sql.Date, data.amountPaid > 0 ? toUtcDate(todayInTimeZone()) : null)
             .input('notes', sql.NVarChar(500), data.paymentNotes)
-            .query(`INSERT INTO dbo.gym_payments (membership_id, amount_due, amount_paid, payment_method, paid_at, notes)
-                    VALUES (@membershipId, @amountDue, @amountPaid, @paymentMethod, @paidAt, @notes);`);
+            .query(`INSERT INTO dbo.gym_payments (membership_id, list_price, discount_amount, amount_due, amount_paid, payment_method, paid_at, notes)
+                    VALUES (@membershipId, @listPrice, @discountAmount, @amountDue, @amountPaid, @paymentMethod, @paidAt, @notes);`);
         await addEvent(transaction, id, membershipId, 'created', {
+            membershipPlan: data.membershipPlan,
             membershipType: data.membershipType,
             startDate: data.startDate,
             endDate: data.endDate,
-            amountDue: data.amountDue,
-            amountPaid: data.amountPaid
+            listPrice: pricing.listPrice,
+            discountAmount: pricing.discountAmount,
+            amountDue: pricing.amountDue,
+            amountPaid
         });
         return id;
     });
@@ -446,6 +508,7 @@ async function updateMember(id, body) {
             notes: patch.notes === undefined ? currentMember.notes : patch.notes
         };
         const membershipData = {
+            plan: patch.membershipPlan ?? currentMembership.membership_plan ?? 'gym_only',
             type: patch.membershipType ?? currentMembership.membership_type,
             startDate: patch.startDate ?? formatDateOnly(currentMembership.start_date),
             endDate: patch.endDate ?? formatDateOnly(currentMembership.end_date),
@@ -467,39 +530,75 @@ async function updateMember(id, body) {
                     WHERE id = @id;`);
         await transaction.request()
             .input('id', sql.Int, currentMembership.id)
+            .input('membershipPlan', sql.VarChar(20), membershipData.plan)
             .input('membershipType', sql.VarChar(20), membershipData.type)
             .input('startDate', sql.Date, toUtcDate(membershipData.startDate))
             .input('endDate', sql.Date, toUtcDate(membershipData.endDate))
             .input('notes', sql.NVarChar(1000), membershipData.notes)
-            .query(`UPDATE dbo.memberships SET membership_type = @membershipType, start_date = @startDate,
+            .query(`UPDATE dbo.memberships SET membership_plan = @membershipPlan, membership_type = @membershipType, start_date = @startDate,
                     end_date = @endDate, notes = @notes, updated_at = SYSUTCDATETIME() WHERE id = @id;`);
 
-        if (has(body, 'amountDue') || has(body, 'amountPaid') || has(body, 'paymentMethod') || has(body, 'paymentNotes')) {
-            const payment = normalizePaymentPayload(body, currentPayment || {});
+        const pricingChanged = has(body, 'membershipType') || has(body, 'membershipPlan') || has(body, 'discountAmount');
+        const paymentChanged = pricingChanged || has(body, 'amountDue') || has(body, 'amountPaid') || has(body, 'paymentMethod') || has(body, 'paymentNotes');
+        let payment = null;
+        if (paymentChanged) {
+            if (pricingChanged) {
+                const pricing = calculatePricing(
+                    membershipData.type,
+                    membershipData.plan,
+                    patch.discountAmount ?? currentPayment?.discount_amount ?? 0
+                );
+                const amountPaid = patch.amountPaid ?? currentPayment?.amount_paid ?? 0;
+                if (amountPaid > pricing.amountDue) throw appError('المبلغ المدفوع لا يمكن أن يتجاوز قيمة الاشتراك بعد الخصم.');
+                payment = {
+                    ...pricing,
+                    amountPaid,
+                    paymentMethod: patch.paymentMethod ?? currentPayment?.payment_method ?? 'cash',
+                    paymentNotes: patch.paymentNotes === undefined ? (currentPayment?.notes || null) : patch.paymentNotes,
+                    paidAt: amountPaid > 0 ? todayInTimeZone() : null
+                };
+            } else {
+                payment = normalizePaymentPayload(body, currentPayment || {});
+            }
             if (currentPayment) {
                 await transaction.request()
                     .input('id', sql.Int, currentPayment.id)
+                    .input('listPrice', sql.Decimal(12, 2), payment.listPrice)
+                    .input('discountAmount', sql.Decimal(12, 2), payment.discountAmount)
                     .input('amountDue', sql.Decimal(12, 2), payment.amountDue)
                     .input('amountPaid', sql.Decimal(12, 2), payment.amountPaid)
                     .input('paymentMethod', sql.VarChar(20), payment.paymentMethod)
                     .input('paidAt', sql.Date, payment.paidAt ? toUtcDate(payment.paidAt) : null)
                     .input('notes', sql.NVarChar(500), payment.paymentNotes)
-                    .query(`UPDATE dbo.gym_payments SET amount_due = @amountDue, amount_paid = @amountPaid,
+                    .query(`UPDATE dbo.gym_payments SET list_price = @listPrice, discount_amount = @discountAmount,
+                            amount_due = @amountDue, amount_paid = @amountPaid,
                             payment_method = @paymentMethod, paid_at = @paidAt, notes = @notes,
                             updated_at = SYSUTCDATETIME() WHERE id = @id;`);
             } else {
                 await transaction.request()
                     .input('membershipId', sql.Int, currentMembership.id)
+                    .input('listPrice', sql.Decimal(12, 2), payment.listPrice)
+                    .input('discountAmount', sql.Decimal(12, 2), payment.discountAmount)
                     .input('amountDue', sql.Decimal(12, 2), payment.amountDue)
                     .input('amountPaid', sql.Decimal(12, 2), payment.amountPaid)
                     .input('paymentMethod', sql.VarChar(20), payment.paymentMethod)
                     .input('paidAt', sql.Date, payment.paidAt ? toUtcDate(payment.paidAt) : null)
                     .input('notes', sql.NVarChar(500), payment.paymentNotes)
-                    .query(`INSERT INTO dbo.gym_payments (membership_id, amount_due, amount_paid, payment_method, paid_at, notes)
-                            VALUES (@membershipId, @amountDue, @amountPaid, @paymentMethod, @paidAt, @notes);`);
+                    .query(`INSERT INTO dbo.gym_payments (membership_id, list_price, discount_amount, amount_due, amount_paid, payment_method, paid_at, notes)
+                            VALUES (@membershipId, @listPrice, @discountAmount, @amountDue, @amountPaid, @paymentMethod, @paidAt, @notes);`);
             }
         }
-        await addEvent(transaction, memberId, currentMembership.id, 'updated', { fields: Object.keys(body || {}) });
+        await addEvent(transaction, memberId, currentMembership.id, 'updated', {
+            fields: Object.keys(body || {}),
+            membershipPlan: membershipData.plan,
+            membershipType: membershipData.type,
+            ...(paymentChanged ? {
+                listPrice: payment.listPrice,
+                discountAmount: payment.discountAmount,
+                amountDue: payment.amountDue,
+                amountPaid: payment.amountPaid
+            } : {})
+        });
         return memberId;
     });
     return getMemberById(updatedId);
@@ -579,33 +678,40 @@ async function renewMember(id, body = {}) {
         const effectiveEnd = addDays(formatDateOnly(current.end_date), freezeDays);
         const startDate = effectiveEnd < today ? today : addDays(effectiveEnd, 1);
         const endDate = membershipEndDate(startDate, membershipType);
-        const payment = normalizePaymentPayload(body, {
-            amount_due: body.amountDue === undefined ? 0 : body.amountDue,
-            amount_paid: body.amountPaid === undefined ? 0 : body.amountPaid,
-            payment_method: body.paymentMethod || 'cash',
-            notes: body.paymentNotes || null
-        });
+        const membershipPlan = body.membershipPlan || current.membership_plan || 'gym_only';
+        const pricing = calculatePricing(membershipType, membershipPlan, money(body.discountAmount, 'الخصم', 0));
+        const amountPaid = money(body.amountPaid, 'المبلغ المدفوع', 0);
+        if (amountPaid > pricing.amountDue) throw appError('المبلغ المدفوع لا يمكن أن يتجاوز قيمة الاشتراك بعد الخصم.');
+        const paymentMethod = parsePaymentMethod(body.paymentMethod, 'cash');
+        const paymentNotes = optionalString(body.paymentNotes, 500);
         const membershipNotes = optionalString(body.membershipNotes, 1000);
         const result = await transaction.request()
             .input('memberId', sql.Int, memberId)
+            .input('membershipPlan', sql.VarChar(20), membershipPlan)
             .input('membershipType', sql.VarChar(20), membershipType)
             .input('startDate', sql.Date, toUtcDate(startDate))
             .input('endDate', sql.Date, toUtcDate(endDate))
             .input('notes', sql.NVarChar(1000), membershipNotes)
-            .query(`INSERT INTO dbo.memberships (member_id, membership_type, start_date, end_date, notes)
-                    OUTPUT INSERTED.id VALUES (@memberId, @membershipType, @startDate, @endDate, @notes);`);
+            .query(`INSERT INTO dbo.memberships (member_id, membership_plan, membership_type, start_date, end_date, notes)
+                    OUTPUT INSERTED.id VALUES (@memberId, @membershipPlan, @membershipType, @startDate, @endDate, @notes);`);
         const membershipId = Number(result.recordset[0].id);
         await transaction.request()
             .input('membershipId', sql.Int, membershipId)
-            .input('amountDue', sql.Decimal(12, 2), payment.amountDue)
-            .input('amountPaid', sql.Decimal(12, 2), payment.amountPaid)
-            .input('paymentMethod', sql.VarChar(20), payment.paymentMethod)
-            .input('paidAt', sql.Date, payment.paidAt ? toUtcDate(today) : null)
-            .input('notes', sql.NVarChar(500), payment.paymentNotes)
-            .query(`INSERT INTO dbo.gym_payments (membership_id, amount_due, amount_paid, payment_method, paid_at, notes)
-                    VALUES (@membershipId, @amountDue, @amountPaid, @paymentMethod, @paidAt, @notes);`);
+            .input('listPrice', sql.Decimal(12, 2), pricing.listPrice)
+            .input('discountAmount', sql.Decimal(12, 2), pricing.discountAmount)
+            .input('amountDue', sql.Decimal(12, 2), pricing.amountDue)
+            .input('amountPaid', sql.Decimal(12, 2), amountPaid)
+            .input('paymentMethod', sql.VarChar(20), paymentMethod)
+            .input('paidAt', sql.Date, amountPaid > 0 ? toUtcDate(today) : null)
+            .input('notes', sql.NVarChar(500), paymentNotes)
+            .query(`INSERT INTO dbo.gym_payments (membership_id, list_price, discount_amount, amount_due, amount_paid, payment_method, paid_at, notes)
+                    VALUES (@membershipId, @listPrice, @discountAmount, @amountDue, @amountPaid, @paymentMethod, @paidAt, @notes);`);
         await addEvent(transaction, memberId, membershipId, 'renewed', {
-            membershipType, startDate, endDate, amountDue: payment.amountDue, amountPaid: payment.amountPaid
+            membershipPlan, membershipType, startDate, endDate,
+            listPrice: pricing.listPrice,
+            discountAmount: pricing.discountAmount,
+            amountDue: pricing.amountDue,
+            amountPaid
         });
         return memberId;
     });
@@ -625,31 +731,171 @@ async function recordPayment(membershipId, body = {}) {
         if (current) {
             await transaction.request()
                 .input('id', sql.Int, current.id)
+                .input('listPrice', sql.Decimal(12, 2), payment.listPrice)
+                .input('discountAmount', sql.Decimal(12, 2), payment.discountAmount)
                 .input('amountDue', sql.Decimal(12, 2), payment.amountDue)
                 .input('amountPaid', sql.Decimal(12, 2), payment.amountPaid)
                 .input('paymentMethod', sql.VarChar(20), payment.paymentMethod)
                 .input('paidAt', sql.Date, payment.paidAt ? toUtcDate(payment.paidAt) : null)
                 .input('notes', sql.NVarChar(500), payment.paymentNotes)
-                .query(`UPDATE dbo.gym_payments SET amount_due = @amountDue, amount_paid = @amountPaid,
+                .query(`UPDATE dbo.gym_payments SET list_price = @listPrice, discount_amount = @discountAmount,
+                        amount_due = @amountDue, amount_paid = @amountPaid,
                         payment_method = @paymentMethod, paid_at = @paidAt, notes = @notes,
                         updated_at = SYSUTCDATETIME() WHERE id = @id;`);
         } else {
             await transaction.request()
                 .input('membershipId', sql.Int, id)
+                .input('listPrice', sql.Decimal(12, 2), payment.listPrice)
+                .input('discountAmount', sql.Decimal(12, 2), payment.discountAmount)
                 .input('amountDue', sql.Decimal(12, 2), payment.amountDue)
                 .input('amountPaid', sql.Decimal(12, 2), payment.amountPaid)
                 .input('paymentMethod', sql.VarChar(20), payment.paymentMethod)
                 .input('paidAt', sql.Date, payment.paidAt ? toUtcDate(payment.paidAt) : null)
                 .input('notes', sql.NVarChar(500), payment.paymentNotes)
-                .query(`INSERT INTO dbo.gym_payments (membership_id, amount_due, amount_paid, payment_method, paid_at, notes)
-                        VALUES (@membershipId, @amountDue, @amountPaid, @paymentMethod, @paidAt, @notes);`);
+                .query(`INSERT INTO dbo.gym_payments (membership_id, list_price, discount_amount, amount_due, amount_paid, payment_method, paid_at, notes)
+                        VALUES (@membershipId, @listPrice, @discountAmount, @amountDue, @amountPaid, @paymentMethod, @paidAt, @notes);`);
         }
         await addEvent(transaction, Number(membership.member_id), id, 'payment_updated', {
-            amountDue: payment.amountDue, amountPaid: payment.amountPaid, paymentMethod: payment.paymentMethod
+            listPrice: payment.listPrice,
+            discountAmount: payment.discountAmount,
+            amountDue: payment.amountDue,
+            amountPaid: payment.amountPaid,
+            paymentMethod: payment.paymentMethod
         });
         return Number(membership.member_id);
     });
     return getMemberById(memberId);
+}
+
+function parseEventDetails(value) {
+    if (!value) return {};
+    try { return JSON.parse(value); } catch (_) { return { text: String(value) }; }
+}
+
+function freezeDaysFromDates(startDate, endDate, resumedDate) {
+    if (!resumedDate) return differenceInDays(startDate, endDate) + 1;
+    if (resumedDate <= startDate) return 0;
+    if (resumedDate < endDate) return differenceInDays(startDate, resumedDate);
+    return differenceInDays(startDate, endDate) + 1;
+}
+
+async function getMemberDetails(id) {
+    const memberId = ensureId(id);
+    const pool = await getPool();
+    const today = todayInTimeZone();
+    const [memberResult, membershipsResult, freezesResult, eventsResult] = await Promise.all([
+        pool.request()
+            .input('memberId', sql.Int, memberId)
+            .query(`SELECT id, full_name, phone, email, registration_date, notes, created_at, updated_at
+                    FROM dbo.members WHERE id = @memberId;`),
+        pool.request()
+            .input('memberId', sql.Int, memberId)
+            .query(`SELECT m.id, m.membership_plan, m.membership_type, m.start_date, m.end_date, m.notes,
+                           p.list_price, p.discount_amount, p.amount_due, p.amount_paid,
+                           p.amount_remaining, p.payment_method, p.paid_at, p.notes AS payment_notes
+                    FROM dbo.memberships AS m
+                    LEFT JOIN dbo.gym_payments AS p ON p.membership_id = m.id
+                    WHERE m.member_id = @memberId
+                    ORDER BY m.start_date ASC, m.id ASC;`),
+        pool.request()
+            .input('memberId', sql.Int, memberId)
+            .query(`SELECT f.id, f.membership_id, f.start_date, f.end_date, f.resumed_date,
+                           f.reason, f.created_at, f.updated_at
+                    FROM dbo.membership_freezes AS f
+                    INNER JOIN dbo.memberships AS m ON m.id = f.membership_id
+                    WHERE m.member_id = @memberId
+                    ORDER BY f.start_date ASC, f.id ASC;`),
+        pool.request()
+            .input('memberId', sql.Int, memberId)
+            .query(`SELECT id, membership_id, event_type, details, created_at
+                    FROM dbo.membership_events
+                    WHERE member_id = @memberId
+                    ORDER BY created_at ASC, id ASC;`)
+    ]);
+
+    const memberRow = memberResult.recordset[0];
+    if (!memberRow) throw appError('العضو غير موجود.', 404);
+
+    const freezeRows = freezesResult.recordset.map((row) => {
+        const startDate = formatDateOnly(row.start_date);
+        const endDate = formatDateOnly(row.end_date);
+        const resumedDate = formatDateOnly(row.resumed_date);
+        return {
+            id: Number(row.id),
+            membershipId: Number(row.membership_id),
+            startDate,
+            endDate,
+            resumedDate,
+            reason: row.reason,
+            days: freezeDaysFromDates(startDate, endDate, resumedDate),
+            active: !resumedDate && today >= startDate && today <= endDate,
+            createdAt: row.created_at,
+            updatedAt: row.updated_at
+        };
+    });
+
+    const memberships = membershipsResult.recordset.map((row) => {
+        const membershipId = Number(row.id);
+        const membershipFreezes = freezeRows.filter((freeze) => freeze.membershipId === membershipId);
+        const freezeDays = membershipFreezes.reduce((total, freeze) => total + freeze.days, 0);
+        const startDate = formatDateOnly(row.start_date);
+        const endDate = formatDateOnly(row.end_date);
+        const effectiveEndDate = addDays(endDate, freezeDays);
+        const activeFreeze = membershipFreezes.find((freeze) => freeze.active);
+        const daysRemaining = differenceInDays(today, effectiveEndDate);
+        const status = activeFreeze
+            ? 'frozen'
+            : effectiveEndDate < today
+                ? 'expired'
+                : daysRemaining <= 7
+                    ? 'expiring_soon'
+                    : 'active';
+        return {
+            id: membershipId,
+            plan: row.membership_plan || 'gym_only',
+            planLabel: MEMBERSHIP_PLANS[row.membership_plan || 'gym_only']?.label || row.membership_plan,
+            type: row.membership_type,
+            startDate,
+            endDate,
+            effectiveEndDate,
+            status,
+            daysRemaining,
+            notes: row.notes,
+            freezeDays,
+            activeFreezeId: activeFreeze?.id || null,
+            listPrice: Number(row.list_price || 0),
+            discountAmount: Number(row.discount_amount || 0),
+            amountDue: Number(row.amount_due || 0),
+            amountPaid: Number(row.amount_paid || 0),
+            amountRemaining: Number(row.amount_remaining || 0),
+            paymentMethod: row.payment_method || 'cash',
+            paidAt: formatDateOnly(row.paid_at),
+            paymentNotes: row.payment_notes,
+            freezes: membershipFreezes
+        };
+    });
+
+    return {
+        member: {
+            id: Number(memberRow.id),
+            fullName: memberRow.full_name,
+            phone: memberRow.phone,
+            email: memberRow.email,
+            registrationDate: formatDateOnly(memberRow.registration_date),
+            notes: memberRow.notes,
+            createdAt: memberRow.created_at,
+            updatedAt: memberRow.updated_at
+        },
+        memberships,
+        freezes: freezeRows,
+        events: eventsResult.recordset.map((row) => ({
+            id: Number(row.id),
+            membershipId: row.membership_id ? Number(row.membership_id) : null,
+            eventType: row.event_type,
+            details: parseEventDetails(row.details),
+            createdAt: row.created_at
+        }))
+    };
 }
 
 module.exports = {
@@ -658,6 +904,7 @@ module.exports = {
     getBootstrap,
     getDashboard,
     getMemberById,
+    getMemberDetails,
     getMembers,
     freezeMember,
     recordPayment,

@@ -40,15 +40,18 @@ async function call(baseUrl, path, options = {}) {
                 phone: `010${String(suffix).slice(-8)}`,
                 registrationDate: '2026-08-08',
                 membershipType: 'monthly',
+                membershipPlan: 'gym_only',
                 startDate: '2026-08-08',
                 endDate: '2026-09-07',
-                amountDue: 300,
+                discountAmount: 5,
                 amountPaid: 150,
                 paymentMethod: 'cash'
             })
         });
         memberId = created.member.id;
         assert.equal(created.member.membership.status, 'active');
+        assert.equal(created.member.membership.amountDue, 300);
+        assert.equal(created.member.membership.discountAmount, 5);
         assert.equal(created.member.membership.amountRemaining, 150);
 
         const edited = await call(baseUrl, `/api/members/${memberId}`, {
@@ -58,14 +61,16 @@ async function call(baseUrl, path, options = {}) {
                 phone: `010${String(suffix).slice(-8)}`,
                 registrationDate: '2026-08-08',
                 membershipType: 'monthly',
+                membershipPlan: 'gym_only',
                 startDate: '2026-08-08',
                 endDate: '2026-09-07',
-                amountDue: 300,
+                discountAmount: 0,
                 amountPaid: 150,
                 paymentMethod: 'cash'
             })
         });
         assert.equal(edited.member.fullName, `Edited Smoke Test ${suffix}`);
+        assert.equal(edited.member.membership.amountDue, 305);
 
         const frozen = await call(baseUrl, `/api/members/${memberId}/freeze`, {
             method: 'POST', body: JSON.stringify({ days: 2, reason: 'smoke test' })
@@ -76,15 +81,22 @@ async function call(baseUrl, path, options = {}) {
         assert.equal(resumed.member.membership.status, 'active');
 
         const paid = await call(baseUrl, `/api/memberships/${resumed.member.membership.id}/payments`, {
-            method: 'POST', body: JSON.stringify({ amountDue: 300, amountPaid: 300, paymentMethod: 'card' })
+            method: 'POST', body: JSON.stringify({ listPrice: 305, discountAmount: 0, amountPaid: 305, paymentMethod: 'card' })
         });
         assert.equal(paid.member.membership.amountRemaining, 0);
 
         const renewed = await call(baseUrl, `/api/members/${memberId}/renew`, {
-            method: 'POST', body: JSON.stringify({ membershipType: 'quarterly', amountDue: 750, amountPaid: 750, paymentMethod: 'transfer' })
+            method: 'POST', body: JSON.stringify({ membershipType: 'quarterly', membershipPlan: 'gym_cardio', discountAmount: 0, amountPaid: 1200, paymentMethod: 'transfer' })
         });
         assert.equal(renewed.member.membership.type, 'quarterly');
+        assert.equal(renewed.member.membership.plan, 'gym_cardio');
+        assert.equal(renewed.member.membership.amountDue, 1200);
         assert.equal(renewed.member.membership.amountRemaining, 0);
+
+        const details = await call(baseUrl, `/api/members/${memberId}/details`);
+        assert.equal(details.member.id, memberId);
+        assert.equal(details.memberships.length, 2);
+        assert.ok(details.events.length >= 6);
 
         const dashboard = await call(baseUrl, '/api/dashboard');
         assert.ok(Number.isInteger(dashboard.stats.total));

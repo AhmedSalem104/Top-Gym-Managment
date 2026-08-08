@@ -9,6 +9,7 @@ const {
     getBootstrap,
     getDashboard,
     getMemberById,
+    getMemberDetails,
     getMembers,
     freezeMember,
     recordPayment,
@@ -44,6 +45,10 @@ app.get('/api/bootstrap', asyncRoute(async (request, response) => {
 
 app.get('/api/members', asyncRoute(async (request, response) => {
     response.json({ members: await getMembers({ search: request.query.search, status: request.query.status }) });
+}));
+
+app.get('/api/members/:id/details', asyncRoute(async (request, response) => {
+    response.json(await getMemberDetails(request.params.id));
 }));
 
 app.get('/api/members/:id', asyncRoute(async (request, response) => {

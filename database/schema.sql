@@ -17,6 +17,7 @@ BEGIN
     CREATE TABLE dbo.memberships (
         id INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_memberships PRIMARY KEY,
         member_id INT NOT NULL,
+        membership_plan VARCHAR(20) NOT NULL CONSTRAINT DF_memberships_plan DEFAULT ('gym_only'),
         membership_type VARCHAR(20) NOT NULL,
         start_date DATE NOT NULL,
         end_date DATE NOT NULL,
@@ -26,6 +27,7 @@ BEGIN
         CONSTRAINT FK_memberships_member FOREIGN KEY (member_id)
             REFERENCES dbo.members(id) ON DELETE CASCADE,
         CONSTRAINT CK_memberships_type CHECK (membership_type IN ('monthly', 'quarterly', 'semiannual', 'annual')),
+        CONSTRAINT CK_memberships_plan CHECK (membership_plan IN ('gym_only', 'gym_cardio')),
         CONSTRAINT CK_memberships_dates CHECK (end_date >= start_date)
     );
 END;
@@ -55,6 +57,8 @@ BEGIN
     CREATE TABLE dbo.gym_payments (
         id INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_gym_payments PRIMARY KEY,
         membership_id INT NOT NULL,
+        list_price DECIMAL(12,2) NOT NULL CONSTRAINT DF_gym_payments_list_price DEFAULT (0),
+        discount_amount DECIMAL(12,2) NOT NULL CONSTRAINT DF_gym_payments_discount DEFAULT (0),
         amount_due DECIMAL(12,2) NOT NULL CONSTRAINT DF_gym_payments_amount_due DEFAULT (0),
         amount_paid DECIMAL(12,2) NOT NULL CONSTRAINT DF_gym_payments_amount_paid DEFAULT (0),
         payment_method VARCHAR(20) NOT NULL CONSTRAINT DF_gym_payments_method DEFAULT ('cash'),
@@ -67,8 +71,49 @@ BEGIN
         CONSTRAINT FK_gym_payments_membership FOREIGN KEY (membership_id)
             REFERENCES dbo.memberships(id) ON DELETE CASCADE,
         CONSTRAINT CK_gym_payments_amounts CHECK (amount_due >= 0 AND amount_paid >= 0 AND amount_paid <= amount_due),
+        CONSTRAINT CK_gym_payments_discount CHECK (list_price >= 0 AND discount_amount >= 0 AND discount_amount <= list_price AND amount_due = list_price - discount_amount),
         CONSTRAINT CK_gym_payments_method CHECK (payment_method IN ('cash', 'card', 'transfer', 'other'))
     );
+END;
+
+-- Safe migrations for databases that were initialized before pricing was added.
+IF COL_LENGTH(N'dbo.memberships', N'membership_plan') IS NULL
+BEGIN
+    ALTER TABLE dbo.memberships
+        ADD membership_plan VARCHAR(20) NOT NULL CONSTRAINT DF_memberships_plan_migration DEFAULT ('gym_only');
+END;
+
+IF NOT EXISTS (
+    SELECT 1 FROM sys.check_constraints
+    WHERE name IN (N'CK_memberships_plan', N'CK_memberships_plan_migration')
+      AND parent_object_id = OBJECT_ID(N'dbo.memberships')
+)
+BEGIN
+    EXEC(N'ALTER TABLE dbo.memberships ADD CONSTRAINT CK_memberships_plan_migration
+        CHECK (membership_plan IN (''gym_only'', ''gym_cardio''));');
+END;
+
+IF COL_LENGTH(N'dbo.gym_payments', N'list_price') IS NULL
+BEGIN
+    ALTER TABLE dbo.gym_payments
+        ADD list_price DECIMAL(12,2) NOT NULL CONSTRAINT DF_gym_payments_list_price_migration DEFAULT (0);
+    EXEC(N'UPDATE dbo.gym_payments SET list_price = amount_due WHERE list_price = 0 AND amount_due > 0;');
+END;
+
+IF COL_LENGTH(N'dbo.gym_payments', N'discount_amount') IS NULL
+BEGIN
+    ALTER TABLE dbo.gym_payments
+        ADD discount_amount DECIMAL(12,2) NOT NULL CONSTRAINT DF_gym_payments_discount_migration DEFAULT (0);
+END;
+
+IF NOT EXISTS (
+    SELECT 1 FROM sys.check_constraints
+    WHERE name IN (N'CK_gym_payments_discount', N'CK_gym_payments_discount_migration')
+      AND parent_object_id = OBJECT_ID(N'dbo.gym_payments')
+)
+BEGIN
+    EXEC(N'ALTER TABLE dbo.gym_payments ADD CONSTRAINT CK_gym_payments_discount_migration
+        CHECK (list_price >= 0 AND discount_amount >= 0 AND discount_amount <= list_price AND amount_due = list_price - discount_amount);');
 END;
 
 IF OBJECT_ID(N'dbo.membership_events', N'U') IS NULL
