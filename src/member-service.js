@@ -224,6 +224,12 @@ function ensureStatus(value) {
     return value;
 }
 
+function ensureMemberSort(value) {
+    const sort = String(value || 'expiry').trim();
+    if (!['expiry', 'newest', 'remaining'].includes(sort)) throw appError('ترتيب القائمة غير صالح.');
+    return sort;
+}
+
 function mapMember(row) {
     const membershipId = row.membershipId ? Number(row.membershipId) : null;
     return {
@@ -362,14 +368,20 @@ async function getMemberById(id, connection = null) {
     return mapMember(result.recordset[0]);
 }
 
-async function getMembers({ search = '', status = '', page = 1, pageSize = 20 } = {}) {
+async function getMembers({ search = '', status = '', sort = 'expiry', page = 1, pageSize = 20 } = {}) {
     const normalizedSearch = String(search || '').trim().slice(0, 100);
     const normalizedStatus = ensureStatus(status);
+    const normalizedSort = ensureMemberSort(sort);
     const requestedPage = Number(page);
     const requestedPageSize = Number(pageSize);
     const currentPage = Number.isInteger(requestedPage) && requestedPage > 0 ? Math.min(requestedPage, 100000) : 1;
     const currentPageSize = Number.isInteger(requestedPageSize) && requestedPageSize > 0 ? Math.min(requestedPageSize, 50) : 20;
     const offset = (currentPage - 1) * currentPageSize;
+    const orderBy = normalizedSort === 'newest'
+        ? 'registrationDate DESC, id DESC'
+        : normalizedSort === 'remaining'
+            ? 'amountRemaining DESC, id ASC'
+            : 'effectiveEndDate ASC, fullName ASC, id ASC';
     const pool = await getPool();
     const result = await pool.request()
         .input('today', sql.Date, toUtcDate(todayInTimeZone()))
@@ -381,7 +393,7 @@ async function getMembers({ search = '', status = '', page = 1, pageSize = 20 } 
         .query(`${MEMBER_CTE}
             WHERE (@search = N'' OR fullName LIKE @pattern OR phone LIKE @pattern OR ISNULL(email, N'') LIKE @pattern)
               AND (@status = '' OR computedStatus = @status)
-            ORDER BY effectiveEndDate ASC, fullName ASC, id ASC
+            ORDER BY ${orderBy}
             OFFSET @offset ROWS FETCH NEXT @pageSize ROWS ONLY;`);
     const members = result.recordset.map(mapMember);
     const total = result.recordset[0]?.totalCount === undefined
@@ -395,6 +407,7 @@ async function getMembers({ search = '', status = '', page = 1, pageSize = 20 } 
             pageSize: currentPageSize,
             total,
             totalPages,
+            sort: normalizedSort,
             hasNext: currentPage < totalPages,
             hasPrevious: currentPage > 1
         }
@@ -429,7 +442,7 @@ function dashboardFromMembers(members, today = todayInTimeZone()) {
 
 async function getBootstrap() {
     const [memberPage, dashboard, pricing] = await Promise.all([
-        getMembers({ page: 1, pageSize: 20 }),
+        getMembers({ page: 1, pageSize: 20, sort: 'expiry' }),
         getDashboard(),
         getPricingCatalog()
     ]);

@@ -82,6 +82,7 @@ app.get('/api/members', asyncRoute(async (request, response) => {
     response.json(await getMembers({
         search: request.query.search,
         status: request.query.status,
+        sort: request.query.sort,
         page: request.query.page,
         pageSize: request.query.pageSize
     }));

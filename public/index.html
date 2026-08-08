@@ -275,7 +275,64 @@
          .button-spinner { width: 13px; height: 13px; display: inline-block; margin-inline-end: 7px; vertical-align: -2px; border: 2px solid currentColor; border-left-color: transparent; border-radius: 50%; animation: buttonSpin .65s linear infinite; }
          .button-loading-text { vertical-align: middle; }
          @keyframes buttonSpin { to { transform: rotate(360deg); } }
-        .swal2-popup { font-family: Tahoma, Arial, sans-serif !important; direction: rtl; border-radius: 18px !important; }
+        /* Final UI polish: compact controls, restrained radii, consistent icons, and focused dialogs. */
+        .ui-icon { width: 17px; height: 17px; display: block; }
+        .brand-mark .ui-icon { width: 22px; height: 22px; }
+        .top-actions #topAddMemberButton, .top-actions #topPricingButton { display: none; }
+        .stat-icon { font-size: 0; }
+        .stat-icon .ui-icon { width: 15px; height: 15px; }
+        .members-toolbar { align-items: center; }
+        .members-toolbar input, .members-toolbar select { height: 43px; min-height: 43px; border-radius: 8px; }
+        .members-toolbar select { width: 175px; appearance: none; padding-left: 32px; background-image: linear-gradient(45deg, transparent 50%, #64748b 50%), linear-gradient(135deg, #64748b 50%, transparent 50%); background-position: left 15px center, left 10px center; background-size: 5px 5px, 5px 5px; background-repeat: no-repeat; }
+        .table-member-name { display: block; }
+        .table-member-phone { display: block; margin-top: 2px; }
+        .table-actions { position: relative; min-width: 176px; align-items: center; gap: 5px; }
+        .table-actions .btn { box-shadow: none; }
+        .table-action-visible { border: 1px solid #dbe3ef; background: #fff; color: #334155; }
+        .table-action-visible.btn-primary { border-color: #bfdbfe; background: #eff6ff; color: #1d4ed8; }
+        .action-menu { position: relative; }
+        .action-menu-toggle { display: inline-flex; align-items: center; justify-content: center; gap: 4px; min-height: 34px; border: 1px solid #dbe3ef; background: #f8fafc; color: #475569; box-shadow: none; }
+        .action-menu-icon { width: 15px; height: 15px; }
+        .action-menu-toggle span { font-size: 11px; }
+        .action-menu-panel { position: absolute; z-index: 40; inset-inline-end: 0; top: calc(100% + 5px); min-width: 145px; padding: 5px; border: 1px solid #dbe3ef; border-radius: 8px; background: #fff; box-shadow: 0 16px 35px rgba(15, 23, 42, .16); }
+        .action-menu-panel[hidden] { display: none; }
+        .action-menu-item { display: block; width: 100%; border: 0; border-radius: 6px; padding: 9px 10px; background: transparent; color: #334155; text-align: right; font-size: 12px; font-weight: 700; box-shadow: none; }
+        .action-menu-item:hover { background: #f1f5f9; }
+        .action-menu-item.danger { color: #b91c1c; }
+        dialog { border: 1px solid #dbe3ef; border-radius: 9px; overflow: hidden; box-shadow: 0 24px 60px rgba(15, 23, 42, .24); }
+        dialog::backdrop { background: rgba(15, 23, 42, .48); backdrop-filter: blur(2px); }
+        dialog .dialog-body { padding: 22px; }
+        dialog .details-dialog-head { margin: -22px -22px 20px; padding: 15px 22px; border-bottom: 1px solid #e5eaf2; background: #f8fafc; }
+        dialog .details-dialog-head h3 { font-size: 16px; }
+        dialog .dialog-actions { margin: 22px -22px -22px; padding: 13px 22px; border-top: 1px solid #eef2f7; background: #fbfdff; }
+        dialog input, dialog select, dialog textarea { border-radius: 8px; }
+        dialog .btn { border-radius: 8px; box-shadow: none; }
+        .swal2-popup { font-family: Tahoma, Arial, sans-serif !important; direction: rtl; border-radius: 9px !important; }
+        @media (max-width: 640px) {
+            dialog .dialog-body { padding: 16px; }
+            dialog .details-dialog-head { margin: -16px -16px 16px; padding: 13px 16px; }
+            dialog .dialog-actions { margin: 16px -16px -16px; padding: 12px 16px; }
+            .members-toolbar select { width: 100%; }
+            .table-scroll { overflow-x: visible; }
+            .members-table { display: block; min-width: 0; }
+            .members-table thead { display: none; }
+            .members-table tbody { display: grid; gap: 10px; padding: 12px 13px 15px; }
+            .members-table tbody tr { display: block; overflow: visible; border: 1px solid #e3eaf4; border-radius: 9px; background: #fff; box-shadow: 0 5px 14px rgba(15, 23, 42, .045); }
+            .members-table td { display: grid; grid-template-columns: 86px minmax(0, 1fr); gap: 8px; padding: 10px 12px; border-bottom: 1px solid #f1f5f9; word-break: break-word; }
+            .members-table td::before { color: #94a3b8; font-size: 11px; font-weight: 700; }
+            .members-table td:nth-child(1)::before { content: 'العضو'; }
+            .members-table td:nth-child(2)::before { content: 'الاشتراك'; }
+            .members-table td:nth-child(3)::before { content: 'الحالة'; }
+            .members-table td:nth-child(4)::before { content: 'الانتهاء'; }
+            .members-table td:nth-child(5)::before { content: 'الحساب'; }
+            .members-table td:last-child { display: block; padding-top: 12px; border-bottom: 0; }
+            .members-table td:last-child::before { display: block; margin-bottom: 7px; content: 'الإجراءات'; }
+            .table-actions { min-width: 0; }
+            .table-action-visible, .action-menu-toggle { flex: 1; min-width: 74px; }
+            .action-menu { flex: 1; }
+            .action-menu-toggle { width: 100%; }
+            .action-menu-panel { inset-inline-end: 0; }
+        }
         .swal2-title, .swal2-html-container { text-align: center; }
         @media (max-width: 900px) {
             .member-actions { grid-template-columns: repeat(3, minmax(0, 1fr)); }
@@ -314,7 +371,7 @@
         <header class="topbar">
             <div class="topbar-inner">
                 <div class="brand">
-                    <div class="brand-mark">🏋️</div>
+                    <div class="brand-mark" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4v5M4 5v3M18 4v5M20 5v3M6 7h12M6 20v-5M4 19v-3M18 20v-5M20 19v-3M6 17h12"/></svg></div>
                     <div><h1>إدارة عضويات الجيم</h1><p>متابعة بسيطة وسريعة للمشتركين</p></div>
                 </div>
                 <div class="top-actions"><button class="btn btn-primary btn-small" id="topAddMemberButton">إضافة مشترك</button><button class="btn btn-light btn-small" id="topPricingButton">الأسعار</button><button class="btn btn-light btn-small" id="refreshButton">تحديث البيانات</button></div>
@@ -323,11 +380,11 @@
 
         <main class="page">
             <section class="stats-grid" aria-label="ملخص العضويات">
-                <div class="stat-card"><div class="stat-head"><span class="stat-label">إجمالي الأعضاء</span><span class="stat-icon">👥</span></div><strong class="stat-value" id="statTotal">0</strong><span class="stat-caption">كل المشتركين</span></div>
-                <div class="stat-card active"><div class="stat-head"><span class="stat-label">نشطة</span><span class="stat-icon">✓</span></div><strong class="stat-value" id="statActive">0</strong><span class="stat-caption">اشتراك ساري</span></div>
-                <div class="stat-card warning"><div class="stat-head"><span class="stat-label">قريبة الانتهاء</span><span class="stat-icon">⏱</span></div><strong class="stat-value" id="statExpiring">0</strong><span class="stat-caption">خلال 7 أيام</span></div>
-                <div class="stat-card danger"><div class="stat-head"><span class="stat-label">منتهية</span><span class="stat-icon">!</span></div><strong class="stat-value" id="statExpired">0</strong><span class="stat-caption">تحتاج متابعة</span></div>
-                <div class="stat-card frozen"><div class="stat-head"><span class="stat-label">مجمدة الآن</span><span class="stat-icon">❄</span></div><strong class="stat-value" id="statFrozen">0</strong><span class="stat-caption">متوقفة مؤقتاً</span></div>
+                <div class="stat-card"><div class="stat-head"><span class="stat-label">إجمالي الأعضاء</span><span class="stat-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></span></div><strong class="stat-value" id="statTotal">0</strong><span class="stat-caption">كل المشتركين</span></div>
+                <div class="stat-card active"><div class="stat-head"><span class="stat-label">نشطة</span><span class="stat-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 4 4L19 6"/></svg></span></div><strong class="stat-value" id="statActive">0</strong><span class="stat-caption">اشتراك ساري</span></div>
+                <div class="stat-card warning"><div class="stat-head"><span class="stat-label">قريبة الانتهاء</span><span class="stat-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg></span></div><strong class="stat-value" id="statExpiring">0</strong><span class="stat-caption">خلال 7 أيام</span></div>
+                <div class="stat-card danger"><div class="stat-head"><span class="stat-label">منتهية</span><span class="stat-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 2.5 20h19L12 3Z"/><path d="M12 9v4M12 17h.01"/></svg></span></div><strong class="stat-value" id="statExpired">0</strong><span class="stat-caption">تحتاج متابعة</span></div>
+                <div class="stat-card frozen"><div class="stat-head"><span class="stat-label">مجمدة الآن</span><span class="stat-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M12 2v20M4.9 6l14.2 12M19.1 6 4.9 18M4 12h16"/></svg></span></div><strong class="stat-value" id="statFrozen">0</strong><span class="stat-caption">متوقفة مؤقتاً</span></div>
             </section>
 
             <section class="panel alerts-panel">
@@ -378,7 +435,7 @@
 
                 <section class="panel members-panel">
                     <div class="panel-header"><div><h3>المشتركون</h3><p id="membersCount">—</p></div><div class="header-actions"><button class="btn btn-primary btn-small" id="addMemberButton" type="button">+ إضافة مشترك</button><button class="btn btn-light btn-small" id="pricingButton" type="button">إدارة الأسعار</button></div></div>
-                    <div class="members-toolbar"><input id="searchInput" placeholder="ابحث بالاسم أو الهاتف…" aria-label="بحث"><select id="statusFilter" aria-label="فلتر الحالة"><option value="">كل الحالات</option><option value="active">نشطة</option><option value="expiring_soon">قريبة الانتهاء</option><option value="expired">منتهية</option><option value="frozen">مجمدة</option></select></div>
+                    <div class="members-toolbar"><input id="searchInput" placeholder="ابحث بالاسم أو الهاتف…" aria-label="بحث"><select id="statusFilter" aria-label="فلتر الحالة"><option value="">كل الحالات</option><option value="active">نشطة</option><option value="expiring_soon">قريبة الانتهاء</option><option value="expired">منتهية</option><option value="frozen">مجمدة</option></select><select id="sortFilter" aria-label="ترتيب القائمة"><option value="expiry">الأقرب انتهاءً</option><option value="newest">الأحدث تسجيلًا</option><option value="remaining">الأعلى مبلغًا متبقيًا</option></select></div>
                     <div class="members-list" id="membersList"><div class="loading">جاري تحميل المشتركين…</div></div>
                     <div class="members-pagination" id="membersPagination" hidden></div>
                 </section>
@@ -766,7 +823,7 @@
                 state.pagination = null;
                 if ($('membersPagination')) $('membersPagination').hidden = true;
                 $('membersList').innerHTML = '<div class="loading">جاري تحميل المشتركين…</div>';
-                const membersRequest = api('/api/members?page=1&pageSize=20');
+                const membersRequest = api('/api/members?page=1&pageSize=20&sort=expiry');
                 const dashboardRequest = api('/api/dashboard');
                 const pricingRequest = api('/api/pricing');
                 let membersLoaded = false;
@@ -796,7 +853,7 @@
                 state.pagination = null;
                 if ($('membersPagination')) $('membersPagination').hidden = true;
                 $('membersList').innerHTML = '<div class="loading">جاري تحديث القائمة…</div>';
-                try { const params = new URLSearchParams({ search: $('searchInput').value.trim(), status: $('statusFilter').value, page: '1', pageSize: '20' }); const response = await api(`/api/members?${params}`, { signal: controller.signal }); state.members = response.members || []; state.pagination = response.pagination || null; renderMembers(); }
+                try { const params = new URLSearchParams({ search: $('searchInput').value.trim(), status: $('statusFilter').value, sort: $('sortFilter').value, page: '1', pageSize: '20' }); const response = await api(`/api/members?${params}`, { signal: controller.signal }); state.members = response.members || []; state.pagination = response.pagination || null; renderMembers(); }
                 catch (error) { if (error.name !== 'AbortError') { $('membersList').innerHTML = `<div class="empty">${escapeHtml(error.message)}</div>`; await notify(error.message, 'error'); } }
             }, 'جاري تحديث قائمة TOP GYM…');
         }
@@ -1136,6 +1193,7 @@
                 const params = new URLSearchParams({
                     search: document.getElementById('searchInput').value.trim(),
                     status: document.getElementById('statusFilter').value,
+                    sort: document.getElementById('sortFilter').value,
                     page: String(page),
                     pageSize: '20'
                 });
@@ -1169,12 +1227,82 @@
                     }
                 }, true);
                 document.addEventListener('change', (event) => {
-                    if (event.target.id === 'statusFilter') {
+                    if (event.target.id === 'statusFilter' || event.target.id === 'sortFilter') {
                         state.pagination = null;
                         pagination.hidden = true;
                     }
                 }, true);
                 new MutationObserver(renderPagination).observe(list, { childList: true, subtree: true });
+            });
+        })();
+    </script>
+    <script>
+        (() => {
+            const list = document.getElementById('membersList');
+            if (!list) return;
+
+            function closeMenus(except = null) {
+                list.querySelectorAll('.action-menu-panel:not([hidden])').forEach((panel) => {
+                    const menu = panel.closest('.action-menu');
+                    const toggle = menu?.querySelector('[data-menu-toggle]');
+                    if (menu !== except) {
+                        panel.hidden = true;
+                        toggle?.setAttribute('aria-expanded', 'false');
+                    }
+                });
+            }
+
+            function compactActions() {
+                list.querySelectorAll('.table-actions').forEach((actions) => {
+                    if (actions.dataset.compact === 'true') return;
+                    const buttons = [...actions.querySelectorAll(':scope > button[data-action]')];
+                    if (!buttons.length) return;
+                    actions.dataset.compact = 'true';
+                    const visibleActions = new Set(['details', 'renew']);
+                    const visible = buttons.filter((button) => visibleActions.has(button.dataset.action));
+                    const advanced = buttons.filter((button) => !visibleActions.has(button.dataset.action));
+                    actions.replaceChildren(...visible);
+                    visible.forEach((button) => button.classList.add('table-action-visible'));
+                    if (!advanced.length) return;
+
+                    const menu = document.createElement('div');
+                    menu.className = 'action-menu';
+                    menu.innerHTML = '<button class="btn btn-small action-menu-toggle" type="button" data-menu-toggle aria-expanded="false" aria-label="المزيد من الإجراءات"><svg class="ui-icon action-menu-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg><span>المزيد</span></button><div class="action-menu-panel" hidden></div>';
+                    const panel = menu.querySelector('.action-menu-panel');
+                    advanced.forEach((button) => {
+                        button.className = `action-menu-item${button.dataset.action === 'delete' ? ' danger' : ''}`;
+                        button.type = 'button';
+                        panel.append(button);
+                    });
+                    actions.append(menu);
+                });
+            }
+
+            document.addEventListener('click', (event) => {
+                const toggle = event.target.closest('[data-menu-toggle]');
+                if (toggle && list.contains(toggle)) {
+                    event.preventDefault();
+                    const menu = toggle.closest('.action-menu');
+                    const panel = menu?.querySelector('.action-menu-panel');
+                    if (!panel) return;
+                    const shouldOpen = panel.hidden;
+                    closeMenus(menu);
+                    panel.hidden = !shouldOpen;
+                    toggle.setAttribute('aria-expanded', String(shouldOpen));
+                    window.topGymStopButtonLoading?.(toggle);
+                    return;
+                }
+                if (event.target.closest('.action-menu-item')) {
+                    closeMenus();
+                    return;
+                }
+                if (!event.target.closest('.action-menu')) closeMenus();
+            });
+
+            new MutationObserver(compactActions).observe(list, { childList: true, subtree: true });
+            document.addEventListener('DOMContentLoaded', () => {
+                compactActions();
+                document.getElementById('sortFilter')?.addEventListener('change', loadMembersOnly);
             });
         })();
     </script>

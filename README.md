@@ -58,7 +58,7 @@
 GET    /api/health
 GET    /api/bootstrap
 GET    /api/dashboard
-GET    /api/members?search=&status=&page=1&pageSize=20
+GET    /api/members?search=&status=&sort=expiry&page=1&pageSize=20
 GET    /api/members/:id
 GET    /api/members/:id/details
 GET    /api/pricing
