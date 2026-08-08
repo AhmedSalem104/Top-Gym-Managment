@@ -286,11 +286,20 @@
         .members-toolbar select { width: 175px; appearance: none; padding-left: 32px; background-image: linear-gradient(45deg, transparent 50%, #64748b 50%), linear-gradient(135deg, #64748b 50%, transparent 50%); background-position: left 15px center, left 10px center; background-size: 5px 5px, 5px 5px; background-repeat: no-repeat; }
         .table-member-name { display: block; }
         .table-member-phone { display: block; margin-top: 2px; }
-        .action-icon { width: 16px; height: 16px; display: block; }
-        .icon-action { width: 34px; height: 34px; display: inline-grid; place-items: center; padding: 0 !important; }
+        .action-icon { width: 18px; height: 18px; display: block; }
+        .icon-action { width: 36px; height: 36px; display: inline-grid; place-items: center; padding: 0 !important; border-radius: 9px !important; transition: transform .15s ease, box-shadow .15s ease, background-color .15s ease, border-color .15s ease; }
         .icon-action:disabled { cursor: not-allowed; opacity: .42; filter: grayscale(1); }
-        .table-actions { position: relative; min-width: 176px; align-items: center; gap: 5px; }
+        .table-actions { position: relative; min-width: 246px; align-items: center; gap: 7px; }
         .table-actions .btn { box-shadow: none; }
+        .table-actions > .icon-action { flex: 0 0 36px; border: 1px solid #dbe3ef; background: #fff; color: #475569; }
+        .table-actions > .icon-action:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 5px 12px rgba(15, 23, 42, .12); }
+        .table-actions > .icon-action:focus-visible { outline: 3px solid rgba(37, 99, 235, .25); outline-offset: 2px; }
+        .table-actions > .icon-action[data-action="details"] { border-color: #bfdbfe; background: #eff6ff; color: #1d4ed8; }
+        .table-actions > .icon-action[data-action="edit"] { border-color: #cbd5e1; background: #f8fafc; color: #334155; }
+        .table-actions > .icon-action[data-action="renew"] { border-color: #bfdbfe; background: #dbeafe; color: #1d4ed8; }
+        .table-actions > .icon-action[data-action="freeze"], .table-actions > .icon-action[data-action="resume"] { border-color: #ddd6fe; background: #f5f3ff; color: #7c3aed; }
+        .table-actions > .icon-action[data-action="payment"] { border-color: #a7f3d0; background: #ecfdf5; color: #047857; }
+        .table-actions > .icon-action[data-action="delete"] { border-color: #fecaca; background: #fff1f2; color: #dc2626; }
         .table-action-visible { border: 1px solid #dbe3ef; background: #fff; color: #334155; }
         .table-action-visible.btn-primary { border-color: #bfdbfe; background: #eff6ff; color: #1d4ed8; }
         .action-menu { position: relative; }
@@ -342,12 +351,8 @@
             .members-table td:nth-child(6)::before { content: 'الحساب'; }
             .members-table td:last-child { display: block; padding-top: 12px; border-bottom: 0; }
             .members-table td:last-child::before { display: block; margin-bottom: 7px; content: 'الإجراءات'; }
-            .table-actions { min-width: 0; }
-            .table-action-visible, .action-menu-toggle { flex: 0 0 38px; width: 38px; min-width: 38px; }
-            .action-menu { flex: 0 0 38px; }
-            .action-menu-toggle { width: 38px; padding: 0; }
-            .action-menu-toggle span { display: none; }
-            .action-menu-panel { inset-inline-end: 0; }
+            .table-actions { min-width: 0; gap: 7px; }
+            .table-actions > .icon-action { flex: 0 0 36px; width: 36px; min-width: 36px; }
         }
         .swal2-title, .swal2-html-container { text-align: center; }
         @media (max-width: 900px) {
@@ -1298,6 +1303,15 @@
                     const buttons = [...actions.querySelectorAll(':scope > button[data-action]')];
                     if (!buttons.length) return;
                     actions.dataset.compact = 'true';
+                    buttons.forEach((button) => {
+                        const label = button.dataset.label || ACTION_LABELS[button.dataset.action] || button.dataset.action;
+                        button.type = 'button';
+                        button.classList.add('table-action-visible');
+                        button.setAttribute('aria-label', label);
+                        button.title = label;
+                        button.innerHTML = actionIcon(button.dataset.action);
+                    });
+                    return;
                     const visibleActions = new Set(['details', 'renew']);
                     const visible = buttons.filter((button) => visibleActions.has(button.dataset.action));
                     const advanced = buttons.filter((button) => !visibleActions.has(button.dataset.action));
