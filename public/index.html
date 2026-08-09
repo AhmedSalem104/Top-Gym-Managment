@@ -13,6 +13,7 @@
     <link rel="stylesheet" href="/css/base.css?v=3">
     <link rel="stylesheet" href="/tailwind.css">
     <link rel="stylesheet" href="/css/dashboard.css?v=19">
+    <link rel="stylesheet" href="/css/dashboard-modern.css?v=1">
 </head>
 <body class="font-sans bg-slate-100 text-slate-900 gym-page-bg">
     <div class="app-shell">
@@ -35,6 +36,27 @@
 
         <main class="page max-w-7xl" id="dashboardSection">
             <section class="overview-grid" aria-label="ملخص العضويات والتنبيهات">
+            <section class="dashboard-hero" id="dashboardHero" aria-labelledby="dashboardHeroTitle">
+                <div class="dashboard-hero-glow dashboard-hero-glow-one" aria-hidden="true"></div>
+                <div class="dashboard-hero-glow dashboard-hero-glow-two" aria-hidden="true"></div>
+                <div class="dashboard-hero-copy">
+                    <div class="dashboard-hero-status"><span class="dashboard-hero-status-dot" aria-hidden="true"></span><span>مركز العمليات</span><span class="dashboard-hero-status-divider">•</span><span>البيانات محدثة</span></div>
+                    <h1 id="dashboardHeroTitle">نظرة ذكية على أداء الجيم</h1>
+                    <p>تابع العضويات، التدفقات المالية، والتنبيهات المهمة من مساحة واحدة مصممة لاتخاذ القرار بسرعة.</p>
+                    <div class="dashboard-hero-actions">
+                        <button class="dashboard-hero-action primary" type="button" data-open-dialog-button="topAddMemberButton"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>إضافة مشترك</span></button>
+                        <button class="dashboard-hero-action secondary" type="button" data-open-dialog-button="backupButton"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v11"/><path d="m7 10 5 5 5-5"/><path d="M5 20h14"/></svg><span>نسخة احتياطية</span></button>
+                    </div>
+                </div>
+                <div class="dashboard-hero-visual" aria-label="ملخص سريع">
+                    <div class="dashboard-hero-orbit dashboard-hero-orbit-one" aria-hidden="true"></div>
+                    <div class="dashboard-hero-orbit dashboard-hero-orbit-two" aria-hidden="true"></div>
+                    <div class="dashboard-hero-core"><span class="dashboard-hero-core-kicker">TOP GYM</span><strong>LIVE</strong><span class="dashboard-hero-core-pulse"></span></div>
+                    <div class="dashboard-hero-float dashboard-hero-float-active"><span class="dashboard-hero-float-icon"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></span><span><small>الأعضاء النشطون</small><strong id="heroActiveMembers">0</strong></span></div>
+                    <div class="dashboard-hero-float dashboard-hero-float-attention"><span class="dashboard-hero-float-icon"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 2.5 20h19L12 3Z"/><path d="M12 9v4M12 17h.01"/></svg></span><span><small>تحتاج متابعة</small><strong id="heroAttentionCount">0</strong></span></div>
+                    <div class="dashboard-hero-float dashboard-hero-float-net"><span class="dashboard-hero-float-icon"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19V5"/><path d="M4 19h16"/><path d="m7 15 3-4 3 2 5-6"/></svg></span><span><small>صافي الشهر</small><strong id="heroNetMonth">—</strong></span></div>
+                </div>
+            </section>
             <section class="stats-grid" aria-label="ملخص العضويات">
                 <div class="stat-card bg-white border-slate-200 rounded-xl shadow-sm"><div class="stat-head"><span class="stat-label">إجمالي الأعضاء</span><span class="stat-icon rounded-lg" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></span></div><strong class="stat-value" id="statTotal">0</strong><span class="stat-caption">كل المشتركين</span></div>
                 <div class="stat-card active bg-white border-slate-200 rounded-xl shadow-sm"><div class="stat-head"><span class="stat-label">نشطة</span><span class="stat-icon rounded-lg" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8 12 2.5 2.5L16.5 9"/></svg></span></div><strong class="stat-value" id="statActive">0</strong><span class="stat-caption">اشتراك ساري</span></div>
@@ -227,8 +249,8 @@
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="/js/app.js?v=pricing2"></script>
-    <script src="/js/monthly-finance.js?v=9"></script>
+    <script src="/js/app.js?v=pricing3"></script>
+    <script src="/js/monthly-finance.js?v=10"></script>
     <script src="/js/page-tabs.js?v=4"></script>
     <script src="/js/dashboard-analytics.js?v=3"></script>
     <script src="/js/button-loading.js"></script>

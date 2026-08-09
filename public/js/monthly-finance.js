@@ -139,6 +139,10 @@
         $('monthlyExpensesTotal').textContent = money(expenses.total);
         $('monthlyNetTotal').textContent = money(net);
         $('monthlyNetTotal').classList.toggle('negative', net < 0);
+        if ($('heroNetMonth')) {
+            $('heroNetMonth').textContent = money(net);
+            $('heroNetMonth').classList.toggle('negative', net < 0);
+        }
         $('monthlySubscriptionsMeta').textContent = `${Number(subscriptions.count || 0).toLocaleString('ar-EG')} اشتراك مدفوع خلال الشهر`;
         $('monthlyExpensesMeta').textContent = expenses.count
             ? `${Number(expenses.count).toLocaleString('ar-EG')} مصروف مسجل خلال الشهر`
