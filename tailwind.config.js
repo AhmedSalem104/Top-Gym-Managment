@@ -7,7 +7,7 @@ module.exports = {
     theme: {
         extend: {
             fontFamily: {
-                sans: ['Tajawal', 'Cairo', 'Tahoma', 'Arial', 'sans-serif']
+                sans: ['Cairo', 'Tahoma', 'Arial', 'sans-serif']
             },
             boxShadow: {
                 panel: '0 12px 35px rgba(15, 23, 42, .06)',
