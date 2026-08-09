@@ -411,12 +411,23 @@
         }
         html, body, button, input, select, textarea { font-family: 'Cairo', Tahoma, Arial, sans-serif; }
         .topbar-inner { direction: ltr; }
-        .brand, .top-actions { direction: rtl; }
+        .brand { direction: rtl; }
+        .top-actions { direction: ltr; }
         .brand h1 { font-weight: 800; letter-spacing: -.35px; }
         .brand p { font-weight: 500; }
         .top-actions .header-refresh { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 40px; padding-inline: 13px; color: #e2e8f0; background: #111827; border: 1px solid #334155; box-shadow: 0 6px 16px rgba(2, 6, 23, .24); }
         .top-actions .header-refresh:hover { color: #fff; background: #1e293b; border-color: #475569; }
         .top-actions .header-refresh .ui-icon { width: 16px; height: 16px; }
+        .topbar { background: linear-gradient(115deg, #020617 0%, #0f172a 52%, #172554 100%) !important; border-bottom-color: rgba(148, 163, 184, .2) !important; }
+        .brand { gap: 12px; min-width: 0; }
+        .brand-mark { width: 48px; height: 48px; flex: 0 0 48px; border: 1px solid rgba(147, 197, 253, .35); border-radius: 15px !important; background: linear-gradient(145deg, #2563eb, #4f46e5 58%, #7c3aed) !important; box-shadow: 0 10px 25px rgba(37, 99, 235, .34), inset 0 1px 0 rgba(255, 255, 255, .25); }
+        .brand-mark .ui-icon { width: 25px; height: 25px; }
+        .brand-copy { min-width: 0; display: flex; flex-direction: column; align-items: flex-start; }
+        .brand-kicker { color: #93c5fd; font-size: 10px; font-weight: 800; line-height: 1.2; letter-spacing: 2px; direction: ltr; }
+        .brand h1 { margin: 2px 0 1px; color: #f8fafc; font-size: 18px; line-height: 1.35; }
+        .brand p { margin: 0; color: #94a3b8; font-size: 10px; line-height: 1.4; }
+        .header-status { display: inline-flex; align-items: center; gap: 7px; padding: 7px 10px; color: #cbd5e1; border: 1px solid rgba(148, 163, 184, .2); border-radius: 999px; background: rgba(15, 23, 42, .58); font-size: 10px; font-weight: 700; direction: rtl; white-space: nowrap; }
+        .header-status-dot { width: 7px; height: 7px; border-radius: 50%; background: #22c55e; box-shadow: 0 0 0 4px rgba(34, 197, 94, .12); }
         .stats-grid .stat-card { border-inline-start: 0 !important; border-top: 0 !important; color: #1e293b; }
         .stats-grid .stat-card:nth-child(1) { background: #eff6ff !important; border-color: #bfdbfe !important; }
         .stats-grid .stat-card:nth-child(2) { background: #ecfdf5 !important; border-color: #a7f3d0 !important; }
@@ -445,6 +456,11 @@
         .badge { font-weight: 800; }
         @media (max-width: 640px) {
             .topbar-inner { gap: 10px; }
+            .brand-mark { width: 40px; height: 40px; flex-basis: 40px; border-radius: 12px !important; }
+            .brand-mark .ui-icon { width: 21px; height: 21px; }
+            .brand-kicker { font-size: 8px; letter-spacing: 1.5px; }
+            .brand h1 { font-size: 14px; }
+            .brand p, .header-status { display: none; }
             .top-actions .header-refresh span { display: none; }
             .top-actions .header-refresh { width: 40px; padding: 0; }
             .header-actions { gap: 6px; }
@@ -480,11 +496,11 @@
     <div class="app-shell">
         <header class="topbar bg-slate-950 border-b border-slate-800 gym-topbar-bg">
             <div class="topbar-inner max-w-7xl">
-                <div class="brand">
+                <div class="brand" aria-label="TOP GYM">
                     <div class="brand-mark rounded-lg bg-blue-600 gym-brand-bg" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4v5M4 5v3M18 4v5M20 5v3M6 7h12M6 20v-5M4 19v-3M18 20v-5M20 19v-3M6 17h12"/></svg></div>
-                    <div><h1>إدارة عضويات الجيم</h1><p>متابعة بسيطة وسريعة للمشتركين</p></div>
+                    <div class="brand-copy"><span class="brand-kicker">TOP GYM</span><h1>إدارة عضويات الجيم</h1><p>نظام ذكي لإدارة المشتركين</p></div>
                 </div>
-                <div class="top-actions"><button class="btn btn-primary btn-small" id="topAddMemberButton">إضافة مشترك</button><button class="btn btn-light btn-small" id="topPricingButton">الأسعار</button><button class="btn btn-light btn-small header-refresh" id="refreshButton" type="button"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 0 0-14.8-4L3 10"/><path d="M3 5v5h5"/><path d="M4 13a8 8 0 0 0 14.8 4L21 14"/><path d="M21 19v-5h-5"/></svg><span>تحديث البيانات</span></button></div>
+                <div class="top-actions"><button class="btn btn-primary btn-small" id="topAddMemberButton">إضافة مشترك</button><button class="btn btn-light btn-small" id="topPricingButton">الأسعار</button><span class="header-status"><span class="header-status-dot" aria-hidden="true"></span><span>النظام متصل</span></span><button class="btn btn-light btn-small header-refresh" id="refreshButton" type="button"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 0 0-14.8-4L3 10"/><path d="M3 5v5h5"/><path d="M4 13a8 8 0 0 0 14.8 4L21 14"/><path d="M21 19v-5h-5"/></svg><span>تحديث البيانات</span></button></div>
             </div>
         </header>
 
