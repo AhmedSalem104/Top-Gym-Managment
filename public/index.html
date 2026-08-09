@@ -520,21 +520,12 @@
         .header-profile-copy { display: flex; flex-direction: column; gap: 1px; line-height: 1.15; }
         .header-profile-copy strong { color: #f8fafc; font-size: 10px; }
         .header-profile-copy small { color: #94a3b8; font-size: 8px; }
-        .dashboard-grid { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(280px, .75fr); gap: 16px; margin-bottom: 16px; }
-        .activity-panel, .upcoming-panel { min-width: 0; overflow: hidden; }
+        .dashboard-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; margin-bottom: 16px; }
+        .upcoming-panel { min-width: 0; overflow: hidden; }
         .insight-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 17px 19px; border-bottom: 1px solid var(--dashboard-line); }
         .insight-header h3 { margin: 0; color: #172033; font-size: 15px; font-weight: 900; }
         .insight-header p { margin: 4px 0 0; color: var(--dashboard-muted); font-size: 10px; }
         .insight-chip { padding: 5px 8px; border-radius: 5px; color: #2563eb; background: #eff6ff; font-size: 9px; font-weight: 800; white-space: nowrap; }
-        .activity-content { padding: 18px 20px 20px; }
-        .activity-bars { display: grid; gap: 14px; }
-        .activity-row { display: grid; grid-template-columns: 88px minmax(0, 1fr) 48px; align-items: center; gap: 10px; }
-        .activity-row-label { color: #64748b; font-size: 11px; font-weight: 700; }
-        .activity-track { height: 9px; overflow: hidden; border-radius: 4px; background: #eef2f7; }
-        .activity-fill { height: 100%; min-width: 3px; border-radius: inherit; background: var(--activity-color, #2563eb); transition: width .3s ease; }
-        .activity-row-value { color: #172033; font-size: 12px; font-weight: 900; text-align: center; }
-        .activity-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 19px; padding-top: 13px; border-top: 1px solid #f0f3f8; color: #94a3b8; font-size: 10px; }
-        .activity-footer strong { color: #2563eb; font-size: 11px; }
         .upcoming-list { display: grid; gap: 8px; padding: 14px 17px 10px; }
         .upcoming-item { display: flex; align-items: center; gap: 9px; padding: 9px 10px; border: 1px solid #eef2f7; border-radius: 8px; background: #fbfdff; }
         .upcoming-avatar { display: grid; flex: 0 0 30px; width: 30px; height: 30px; place-items: center; border-radius: 8px; color: #1d4ed8; background: #dbeafe; font-size: 11px; font-weight: 900; }
@@ -549,9 +540,6 @@
         .mini-calendar-day.is-today { color: #fff; background: #2563eb; box-shadow: 0 4px 10px rgba(37, 99, 235, .23); }
         .mini-calendar-day.is-weekend { color: #cbd5e1; }
         .dashboard-grid + .workspace { margin-top: 0; }
-        @media (max-width: 1050px) {
-            .activity-row { grid-template-columns: 78px minmax(0, 1fr) 42px; }
-        }
         @media (max-width: 900px) {
             .topbar { padding-inline: 15px; }
             .topbar-inner { min-height: 62px; }
@@ -566,10 +554,6 @@
             .brand-mark { width: 38px; height: 38px; flex-basis: 38px; }
             .top-actions .header-refresh { width: 38px; min-height: 38px; }
             .dashboard-grid { gap: 12px; }
-            .activity-content { padding: 15px 14px 16px; }
-            .activity-row { grid-template-columns: 72px minmax(0, 1fr) 37px; gap: 7px; }
-            .activity-row-label { font-size: 10px; }
-            .activity-row-value { font-size: 11px; }
             .insight-header { padding: 15px 14px; }
             .upcoming-list { padding-inline: 13px; }
             .mini-calendar { margin-inline: 13px; }
@@ -603,10 +587,6 @@
             </section>
 
             <section class="dashboard-grid" aria-label="نظرة سريعة على الأداء">
-                <article class="panel activity-panel">
-                    <div class="insight-header"><div><h3>نشاط العضويات</h3><p>توزيع الحالة الحالية للمشتركين</p></div><span class="insight-chip">مباشر</span></div>
-                    <div class="activity-content"><div class="activity-bars" id="activityBars"><div class="loading">جاري تجهيز الملخص…</div></div><div class="activity-footer"><span>إجمالي المشتركين المسجلين</span><strong id="activityTotal">—</strong></div></div>
-                </article>
                 <aside class="panel upcoming-panel">
                     <div class="insight-header"><div><h3>الاشتراكات القادمة</h3><p>الأقرب إلى موعد الانتهاء</p></div><span class="insight-chip">متابعة</span></div>
                     <div class="upcoming-list" id="upcomingList"><div class="loading">جاري التحميل…</div></div>
@@ -1611,25 +1591,12 @@
             });
 
             function renderInsightWidgets() {
-                const bars = document.getElementById('activityBars');
                 const upcoming = document.getElementById('upcomingList');
                 const calendar = document.getElementById('miniCalendar');
-                if (!bars || !upcoming || !calendar) return;
+                if (!upcoming || !calendar) return;
                 const dashboard = typeof state !== 'undefined' ? (state.dashboard || {}) : {};
-                const stats = dashboard.stats || {};
                 const alertCount = document.getElementById('headerAlertCount');
                 if (alertCount) alertCount.textContent = Number((dashboard.alerts || []).length).toLocaleString('ar-EG');
-                const values = [
-                    { label: 'نشطة', value: Number(stats.active || 0), color: '#10b981' },
-                    { label: 'قريبة الانتهاء', value: Number(stats.expiringSoon || 0), color: '#f59e0b' },
-                    { label: 'منتهية', value: Number(stats.expired || 0), color: '#ef4444' },
-                    { label: 'مجمدة الآن', value: Number(stats.frozen || 0), color: '#8b5cf6' }
-                ];
-                const total = Number(stats.total || values.reduce((sum, item) => sum + item.value, 0));
-                const max = Math.max(total, ...values.map((item) => item.value), 1);
-                bars.innerHTML = values.map((item) => `<div class="activity-row"><span class="activity-row-label">${item.label}</span><span class="activity-track"><span class="activity-fill" style="--activity-color:${item.color};width:${Math.max(item.value ? 7 : 0, Math.round((item.value / max) * 100))}%"></span></span><strong class="activity-row-value">${item.value}</strong></div>`).join('');
-                const activityTotal = document.getElementById('activityTotal');
-                if (activityTotal) activityTotal.textContent = total.toLocaleString('ar-EG');
 
                 const members = typeof state !== 'undefined' ? (state.members || []) : [];
                 const upcomingMembers = members.filter((item) => item.membership && item.membership.status !== 'expired' && item.membership.status !== 'frozen').sort((first, second) => String(first.membership.effectiveEndDate || '').localeCompare(String(second.membership.effectiveEndDate || ''))).slice(0, 3);
