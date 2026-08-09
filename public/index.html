@@ -569,6 +569,9 @@
         .alerts-heading p { margin: 1px 0 0; color: #64748b; font-size: 9px; line-height: 1.35; }
         .alerts-count { display: inline-flex; flex: 0 0 auto; align-items: center; min-height: 23px; padding: 0 7px; border: 1px solid #bfdbfe; border-radius: 999px; color: #1d4ed8; background: #eff6ff; font-size: 9px; font-weight: 900; white-space: nowrap; }
         .alerts-list { grid-template-columns: 1fr; gap: 6px; padding: 8px 9px 10px; background: #f8fbff; }
+        .alerts-list.alerts-list-scroll { max-height: 128px; overflow-y: auto; align-content: start; scrollbar-width: thin; scrollbar-color: #93c5fd transparent; }
+        .alerts-list.alerts-list-scroll::-webkit-scrollbar { width: 5px; }
+        .alerts-list.alerts-list-scroll::-webkit-scrollbar-thumb { border-radius: 999px; background: #93c5fd; }
         .alert-card { display: grid; grid-template-columns: 28px minmax(0, 1fr); align-items: center; gap: 7px; min-height: 52px; padding: 7px 8px; border: 1px solid #e2e8f0; border-inline-start: 3px solid #f59e0b; border-radius: 8px; background: #fff; box-shadow: 0 2px 7px rgba(15, 23, 42, .035); transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease; }
         .alert-card:hover { transform: translateY(-2px); box-shadow: 0 9px 18px rgba(15, 23, 42, .08); }
         .alert-card.active { border-inline-start-color: #10b981; }
@@ -629,6 +632,7 @@
             .alerts-heading p { font-size: 8px; }
             .alerts-count { min-height: 22px; padding-inline: 6px; font-size: 8px; }
             .alerts-list { grid-template-columns: 1fr; gap: 5px; padding: 7px 8px 9px; }
+            .alerts-list.alerts-list-scroll { max-height: 119px; }
             .alert-card { grid-template-columns: 26px minmax(0, 1fr); gap: 6px; min-height: 49px; padding: 6px 7px; }
             .alert-card-icon { width: 25px; height: 25px; flex-basis: 25px; }
             .alert-card-icon .ui-icon { width: 13px; height: 13px; }
@@ -1680,6 +1684,7 @@
                     card.dataset.alertEnhanced = 'true';
                 });
                 const count = alertsList.querySelectorAll('.alert-card').length;
+                alertsList.classList.toggle('alerts-list-scroll', count > 2);
                 const badge = document.getElementById('alertsCount');
                 if (badge) badge.textContent = count ? `${count.toLocaleString('ar-EG')} تنبيه` : 'لا توجد تنبيهات';
             };
