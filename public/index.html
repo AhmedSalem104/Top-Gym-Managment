@@ -452,6 +452,27 @@
             .stats-grid .stat-card .stat-label { font-size: 10px; }
             .stats-grid .stat-card .stat-value { font-size: 20px; }
         }
+        .table-scroll, .pricing-table-scroll, .history-scroll { border: 1px solid #dbe3ef; border-radius: 13px; background: #fff; overflow: auto; -webkit-overflow-scrolling: touch; }
+        .members-table, .pricing-table, .membership-types-table, .history-table { text-align: center !important; }
+        .members-table th, .members-table td, .pricing-table th, .pricing-table td, .membership-types-table th, .membership-types-table td, .history-table th, .history-table td { text-align: center !important; vertical-align: middle !important; }
+        .members-table th, .pricing-table th, .membership-types-table th, .history-table th { color: #334155; font-weight: 800; letter-spacing: .05px; }
+        .members-table thead th, .pricing-table thead th, .membership-types-table thead th, .history-table thead th { background: #f1f5f9; border-bottom-color: #dbe3ef; }
+        .members-table tbody tr:nth-child(even) td, .pricing-table tbody tr:nth-child(even) td, .membership-types-table tbody tr:nth-child(even) td, .history-table tbody tr:nth-child(even) td { background: #fbfdff; }
+        .table-member-name, .table-member-phone, .table-main, .table-sub, .table-money, .freeze-usage { text-align: center; }
+        .table-member-phone { display: block; }
+        .table-money { direction: ltr; }
+        .pricing-table input { text-align: center; }
+        .pricing-table .duration-price { text-align: center !important; }
+        .freeze-usage { align-items: center; }
+        .freeze-usage strong, .freeze-usage span { text-align: center; }
+        .table-actions, .pricing-actions, .type-actions { justify-content: center; }
+        .members-table td:last-child { text-align: center !important; }
+        @media (max-width: 640px) {
+            .table-scroll, .pricing-table-scroll, .history-scroll { border-radius: 10px; }
+            .table-scroll { overflow-x: visible; overflow-y: visible; }
+            .members-table td::before { text-align: center; }
+            .members-table tbody tr:nth-child(even) td { background: transparent; }
+        }
     </style>
     <link rel="stylesheet" href="/tailwind.css">
 </head>
