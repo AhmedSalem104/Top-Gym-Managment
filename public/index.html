@@ -600,6 +600,21 @@
         .top-gym-alert .swal2-icon { width: 42px !important; height: 42px !important; margin: 0 0 10px auto !important; border-width: 2px !important; }
         .top-gym-alert .swal2-actions { justify-content: flex-start !important; gap: 7px !important; margin: 13px 0 0 !important; }
         .top-gym-alert .swal2-confirm, .top-gym-alert .swal2-cancel { min-height: 34px; margin: 0 !important; border-radius: 8px !important; padding: 7px 13px !important; font-family: 'Cairo', Tahoma, Arial, sans-serif !important; font-size: 11px !important; font-weight: 800 !important; }
+        .toast { position: fixed; top: 16px; left: 16px; right: auto; bottom: auto; z-index: 1100; display: flex; width: min(360px, calc(100vw - 32px)); max-width: none; flex-direction: column; gap: 8px; padding: 0; border: 0; border-radius: 0; color: inherit; background: transparent; box-shadow: none; transform: none; opacity: 1; pointer-events: none; transition: none; }
+        .toast.show { transform: none; opacity: 1; }
+        .toast.error { background: transparent; }
+        .toast-item { display: grid; grid-template-columns: 23px minmax(0, 1fr) 18px; align-items: center; gap: 9px; min-height: 46px; padding: 9px 11px; border: 1px solid; border-radius: 4px; direction: ltr; box-shadow: 0 3px 9px rgba(15, 23, 42, .1); animation: topGymAlertIn .18s ease-out both; pointer-events: auto; }
+        .toast-item.info { border-color: #bce8f1; color: #31708f; background: #d9edf7; }
+        .toast-item.warning { border-color: #faebcc; color: #8a6d3b; background: #fcf8e3; }
+        .toast-item.error { border-color: #ebccd1; color: #a94442; background: #f2dede; }
+        .toast-item.success { border-color: #d6e9c6; color: #3c763d; background: #dff0d8; }
+        .toast-icon { display: grid; width: 21px; height: 21px; place-items: center; }
+        .toast-icon .ui-icon { width: 20px; height: 20px; }
+        .toast-message { min-width: 0; overflow: hidden; direction: rtl; text-align: right; text-overflow: ellipsis; white-space: nowrap; font-family: 'Cairo', Tahoma, Arial, sans-serif; font-size: 11px; font-weight: 700; line-height: 1.5; }
+        .toast-close { display: grid; width: 18px; height: 18px; place-items: center; padding: 0; border: 0; color: currentColor; background: transparent; font-size: 18px; font-weight: 400; line-height: 1; opacity: .5; cursor: pointer; }
+        .toast-close:hover { opacity: 1; }
+        .toast-item.is-leaving { opacity: 0; transform: translateX(-10px); transition: opacity .18s ease, transform .18s ease; }
+        @keyframes topGymAlertIn { from { opacity: 0; transform: translateX(-12px); } to { opacity: 1; transform: translateX(0); } }
         .workspace { display: block; }
         @media (max-width: 900px) {
             .topbar { padding-inline: 15px; }
@@ -806,7 +821,7 @@
         function formatDate(value) { if (!value) return '—'; return new Intl.DateTimeFormat('ar-EG', { dateStyle: 'medium' }).format(new Date(`${value}T00:00:00`)); }
         function money(value) { return `${Number(value || 0).toLocaleString('ar-EG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ج.م`; }
         function escapeHtml(value) { return String(value ?? '').replace(/[&<>'"]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[char])); }
-        function showToast(message, error = false) { const toast = $('toast'); toast.textContent = message; toast.className = `toast show${error ? ' error' : ''}`; clearTimeout(showToast.timer); showToast.timer = setTimeout(() => { toast.className = 'toast'; }, 3500); }
+        function showToast(message, error = false, type = '') { const toast = $('toast'); if (!toast) return; const kind = ['success', 'error', 'warning', 'info'].includes(type) ? type : (error ? 'error' : 'success'); const icons = { info: '<svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7h.01"/></svg>', warning: '<svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 2.5 20h19L12 3Z"/><path d="M12 9v4M12 17h.01"/></svg>', error: '<svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m9 9 6 6M15 9l-6 6"/></svg>', success: '<svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>' }; const item = document.createElement('div'); item.className = `toast-item ${kind}`; item.setAttribute('role', kind === 'error' ? 'alert' : 'status'); item.innerHTML = `<span class="toast-icon" aria-hidden="true">${icons[kind]}</span><span class="toast-message">${escapeHtml(message)}</span><button class="toast-close" type="button" aria-label="إغلاق">×</button>`; toast.appendChild(item); toast.className = 'toast show'; const close = () => { if (item.dataset.closed) return; item.dataset.closed = 'true'; item.classList.add('is-leaving'); window.setTimeout(() => { item.remove(); if (!toast.children.length) toast.className = 'toast'; }, 180); }; item.querySelector('.toast-close')?.addEventListener('click', close); window.setTimeout(close, kind === 'error' ? 5000 : 3000); }
 
         async function api(path, options = {}) {
             const response = await fetch(path, { headers: { 'Content-Type': 'application/json', ...(options.headers || {}) }, ...options });
@@ -1088,8 +1103,8 @@
 
         function showToast(message, error = false) { const toast = $('toast'); toast.textContent = message; toast.className = `toast show${error ? ' error' : ''}`; clearTimeout(showToast.timer); showToast.timer = setTimeout(() => { toast.className = 'toast'; }, 3500); }
         function notify(title, icon = 'success') {
-            if (window.Swal) return window.Swal.fire({ position: 'top-start', icon, title, confirmButtonText: 'حسنًا', confirmButtonColor: '#2563eb', timer: icon === 'success' ? 1200 : undefined, timerProgressBar: icon === 'success', showConfirmButton: icon !== 'success', customClass: { popup: 'top-gym-alert' } });
-            showToast(title, icon === 'error'); return Promise.resolve();
+            const kind = ['success', 'error', 'warning', 'info'].includes(icon) ? icon : 'info';
+            showToast(title, kind === 'error', kind); return Promise.resolve();
          }
          async function refreshAfterAction(message, icon = 'success') {
              const refreshPromise = loadData();
