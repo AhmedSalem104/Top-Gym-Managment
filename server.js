@@ -3,6 +3,9 @@ require('dotenv').config();
 const express = require('express');
 const path = require('node:path');
 const { getPool, initDatabase } = require('./src/db');
+const { createBackup } = require('./src/backup-service');
+const { createExpense, deleteExpense, getMonthlyFinance, updateExpense } = require('./src/finance-service');
+const { getDashboardAnalytics } = require('./src/analytics-service');
 const {
     createMember,
     deleteMember,
@@ -42,8 +45,41 @@ app.get('/api/health', asyncRoute(async (request, response) => {
     response.json({ ok: true, database: 'connected' });
 }));
 
+app.get('/api/backup/download', asyncRoute(async (request, response) => {
+    const backup = await createBackup();
+    response.set({
+        'Cache-Control': 'no-store, no-cache, must-revalidate, private',
+        'Content-Type': 'application/gzip',
+        'Content-Disposition': `attachment; filename="${backup.filename}"`,
+        'Content-Length': String(backup.buffer.length),
+        'X-Content-Type-Options': 'nosniff'
+    });
+    response.send(backup.buffer);
+}));
+
+app.get('/api/monthly-finance', asyncRoute(async (request, response) => {
+    response.json(await getMonthlyFinance());
+}));
+
+app.post('/api/expenses', asyncRoute(async (request, response) => {
+    response.status(201).json({ expense: await createExpense(request.body) });
+}));
+
+app.put('/api/expenses/:id', asyncRoute(async (request, response) => {
+    response.json({ expense: await updateExpense(request.params.id, request.body) });
+}));
+
+app.delete('/api/expenses/:id', asyncRoute(async (request, response) => {
+    await deleteExpense(request.params.id);
+    response.status(204).send();
+}));
+
 app.get('/api/dashboard', asyncRoute(async (request, response) => {
     response.json(await getDashboard());
+}));
+
+app.get('/api/dashboard-analytics', asyncRoute(async (request, response) => {
+    response.json(await getDashboardAnalytics(request.query.period));
 }));
 
 app.get('/api/bootstrap', asyncRoute(async (request, response) => {

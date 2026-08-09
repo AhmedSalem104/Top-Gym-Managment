@@ -7,5 +7,7 @@
     </linearGradient>
   </defs>
   <rect width="64" height="64" rx="16" fill="url(#topGymGradient)"/>
-  <path d="M16 11v14M10 14v8M48 11v14M54 14v8M16 20h32M16 53V39M10 50v-8M48 53V39M54 50v-8M16 44h32" fill="none" stroke="#fff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M32 8 52 19.5v25L32 56 12 44.5v-25L32 8Z" fill="#fff" fill-opacity=".16" stroke="#fff" stroke-width="2.6" stroke-linejoin="round"/>
+  <path d="m20 37 7-8 6 5 11-12" fill="none" stroke="#fff" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M20 44h24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" opacity=".75"/>
 </svg>

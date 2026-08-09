@@ -75,6 +75,15 @@ BEGIN
     VALUES ('gym_cardio', N'جيم وكارديو', 400);
 END;
 
+UPDATE dbo.membership_pricing
+SET plan_name = CASE plan_code
+    WHEN 'gym_only' THEN N'جيم فقط'
+    WHEN 'gym_cardio' THEN N'جيم وكارديو'
+    ELSE plan_name
+END
+WHERE plan_code IN ('gym_only', 'gym_cardio')
+  AND plan_name LIKE N'%?%';
+
 IF OBJECT_ID(N'dbo.membership_types', N'U') IS NULL
 BEGIN
     CREATE TABLE dbo.membership_types (
@@ -122,6 +131,23 @@ IF NOT EXISTS (SELECT 1 FROM dbo.membership_types WHERE type_code = 'annual')
 BEGIN
     INSERT INTO dbo.membership_types (type_code, type_name, duration_mode, duration_value, price_multiplier, sort_order)
     VALUES ('annual', N'سنوية', 'months', 12, 12, 5);
+END;
+
+IF OBJECT_ID(N'dbo.membership_type_prices', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.membership_type_prices (
+        plan_code VARCHAR(30) NOT NULL,
+        type_code VARCHAR(30) NOT NULL,
+        price DECIMAL(12,2) NOT NULL,
+        created_at DATETIME2(0) NOT NULL CONSTRAINT DF_membership_type_prices_created_at DEFAULT (SYSUTCDATETIME()),
+        updated_at DATETIME2(0) NOT NULL CONSTRAINT DF_membership_type_prices_updated_at DEFAULT (SYSUTCDATETIME()),
+        CONSTRAINT PK_membership_type_prices PRIMARY KEY (plan_code, type_code),
+        CONSTRAINT FK_membership_type_prices_plan FOREIGN KEY (plan_code)
+            REFERENCES dbo.membership_pricing(plan_code) ON DELETE CASCADE,
+        CONSTRAINT FK_membership_type_prices_type FOREIGN KEY (type_code)
+            REFERENCES dbo.membership_types(type_code) ON DELETE CASCADE,
+        CONSTRAINT CK_membership_type_prices_price CHECK (price >= 0)
+    );
 END;
 
 IF COL_LENGTH(N'dbo.memberships', N'membership_type') IS NOT NULL
@@ -178,6 +204,20 @@ BEGIN
         CONSTRAINT CK_gym_payments_amounts CHECK (amount_due >= 0 AND amount_paid >= 0 AND amount_paid <= amount_due),
         CONSTRAINT CK_gym_payments_discount CHECK (list_price >= 0 AND discount_amount >= 0 AND discount_amount <= list_price AND amount_due = list_price - discount_amount),
         CONSTRAINT CK_gym_payments_method CHECK (payment_method IN ('cash', 'card', 'transfer', 'other'))
+    );
+END;
+
+IF OBJECT_ID(N'dbo.gym_expenses', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.gym_expenses (
+        id INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_gym_expenses PRIMARY KEY,
+        expense_name NVARCHAR(120) NOT NULL,
+        amount DECIMAL(12,2) NOT NULL,
+        expense_date DATE NOT NULL,
+        notes NVARCHAR(500) NULL,
+        created_at DATETIME2(0) NOT NULL CONSTRAINT DF_gym_expenses_created_at DEFAULT (SYSUTCDATETIME()),
+        updated_at DATETIME2(0) NOT NULL CONSTRAINT DF_gym_expenses_updated_at DEFAULT (SYSUTCDATETIME()),
+        CONSTRAINT CK_gym_expenses_amount CHECK (amount > 0)
     );
 END;
 
@@ -307,4 +347,12 @@ IF NOT EXISTS (
 )
 BEGIN
     CREATE INDEX IX_gym_payments_membership ON dbo.gym_payments(membership_id);
+END;
+
+IF NOT EXISTS (
+    SELECT 1 FROM sys.indexes
+    WHERE name = N'IX_gym_expenses_date' AND object_id = OBJECT_ID(N'dbo.gym_expenses')
+)
+BEGIN
+    CREATE INDEX IX_gym_expenses_date ON dbo.gym_expenses(expense_date DESC, id DESC);
 END;

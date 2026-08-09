@@ -23,6 +23,8 @@ const DEFAULT_MEMBERSHIP_TYPES = {
 const PAYMENT_METHODS = ['cash', 'card', 'transfer', 'other'];
 const MEMBER_STATUSES = ['active', 'expiring_soon', 'expired', 'frozen'];
 const MEMBERSHIP_FREEZE_LIMIT = 3;
+const DEFAULT_MEMBER_PAGE_SIZE = 5;
+let pricingOverridesPromise;
 
 function appError(message, statusCode = 400) {
     const error = new Error(message);
@@ -66,6 +68,7 @@ function has(body, key) {
 }
 
 async function getPricingCatalog(connection = null) {
+    await ensurePricingOverrides();
     const pool = connection || await getPool();
     const planResult = await pool.request()
         .query(`SELECT plan_code, plan_name, monthly_price, is_active, sort_order
@@ -74,10 +77,28 @@ async function getPricingCatalog(connection = null) {
         .query(`SELECT type_code, type_name, duration_mode, duration_value,
                        price_multiplier, is_active, sort_order
                 FROM dbo.membership_types ORDER BY sort_order ASC, id ASC;`);
+    const priceResult = await pool.request()
+        .query(`SELECT plan_code, type_code, price
+                FROM dbo.membership_type_prices;`);
+    const legacyTypeResult = await pool.request()
+        .query(`SELECT m.membership_type AS type_code,
+                       MIN(m.start_date) AS start_date,
+                       MAX(m.end_date) AS end_date,
+                       MIN(m.membership_plan) AS membership_plan,
+                       MIN(ISNULL(p.list_price, 0)) AS list_price
+                FROM dbo.memberships AS m
+                LEFT JOIN dbo.gym_payments AS p ON p.membership_id = m.id
+                WHERE NOT EXISTS (
+                    SELECT 1 FROM dbo.membership_types AS current_type
+                    WHERE current_type.type_code = m.membership_type
+                )
+                GROUP BY m.membership_type;`);
     const plans = { ...DEFAULT_MEMBERSHIP_PLANS };
     for (const row of planResult.recordset) {
+        const fallbackLabel = DEFAULT_MEMBERSHIP_PLANS[row.plan_code]?.label || row.plan_code;
+        const storedLabel = String(row.plan_name || '').trim();
         plans[row.plan_code] = {
-            label: row.plan_name,
+            label: storedLabel && !storedLabel.includes('?') ? storedLabel : fallbackLabel,
             monthlyPrice: Number(row.monthly_price),
             active: Boolean(row.is_active),
             sortOrder: Number(row.sort_order || 0)
@@ -94,6 +115,44 @@ async function getPricingCatalog(connection = null) {
             sortOrder: Number(row.sort_order || 0)
         };
     }
+    const prices = {};
+    for (const [planCode, plan] of Object.entries(plans)) {
+        prices[planCode] = {};
+        for (const [typeCode, type] of Object.entries(types)) {
+            prices[planCode][typeCode] = Math.round((Number(plan.monthlyPrice || 0) * Number(type.priceMultiplier || 0)) * 100) / 100;
+        }
+    }
+    for (const row of priceResult.recordset) {
+        if (!prices[row.plan_code]) prices[row.plan_code] = {};
+        prices[row.plan_code][row.type_code] = Number(row.price || 0);
+    }
+    const typeAliases = {};
+    for (const row of legacyTypeResult.recordset) {
+        const legacyCode = String(row.type_code || '').trim();
+        if (!legacyCode || types[legacyCode]) continue;
+        const startDate = formatDateOnly(row.start_date);
+        const endDate = formatDateOnly(row.end_date);
+        const spanDays = startDate && endDate ? differenceInDays(startDate, endDate) : null;
+        const matchingTypes = Object.entries(types).filter(([, type]) => (
+            startDate && endDate && (
+                membershipEndDateFromConfig(startDate, type) === endDate
+                || (type.mode === 'days' && [Number(type.durationValue), Number(type.durationValue) - 1].includes(spanDays))
+            )
+        ));
+        if (matchingTypes.length === 1) {
+            typeAliases[legacyCode] = matchingTypes[0][0];
+            continue;
+        }
+        if (matchingTypes.length > 1) {
+            const planCode = String(row.membership_plan || '').trim();
+            const listPrice = Number(row.list_price || 0);
+            const priceMatches = matchingTypes.filter(([typeCode]) => (
+                Number.isFinite(listPrice)
+                && Math.abs(Number(prices[planCode]?.[typeCode] ?? Number.NaN) - listPrice) < 0.01
+            ));
+            if (priceMatches.length === 1) typeAliases[legacyCode] = priceMatches[0][0];
+        }
+    }
     return {
         plans: Object.fromEntries(Object.entries(plans).map(([key, value]) => [key, {
             label: value.label,
@@ -102,8 +161,38 @@ async function getPricingCatalog(connection = null) {
             sortOrder: Number(value.sortOrder || 0)
         }])),
         types,
+        prices,
+        typeAliases,
         durations: Object.fromEntries(Object.entries(types).map(([key, value]) => [key, value.mode === 'months' ? value.durationValue : null]))
     };
+}
+
+async function ensurePricingOverrides() {
+    if (!pricingOverridesPromise) {
+        pricingOverridesPromise = (async () => {
+            const pool = await getPool();
+            await pool.request().batch(`
+                IF OBJECT_ID(N'dbo.membership_type_prices', N'U') IS NULL
+                BEGIN
+                    CREATE TABLE dbo.membership_type_prices (
+                        plan_code VARCHAR(30) NOT NULL,
+                        type_code VARCHAR(30) NOT NULL,
+                        price DECIMAL(12,2) NOT NULL,
+                        created_at DATETIME2(0) NOT NULL CONSTRAINT DF_membership_type_prices_created_runtime DEFAULT (SYSUTCDATETIME()),
+                        updated_at DATETIME2(0) NOT NULL CONSTRAINT DF_membership_type_prices_updated_runtime DEFAULT (SYSUTCDATETIME()),
+                        CONSTRAINT PK_membership_type_prices_runtime PRIMARY KEY (plan_code, type_code),
+                        CONSTRAINT FK_membership_type_prices_plan_runtime FOREIGN KEY (plan_code) REFERENCES dbo.membership_pricing(plan_code) ON DELETE CASCADE,
+                        CONSTRAINT FK_membership_type_prices_type_runtime FOREIGN KEY (type_code) REFERENCES dbo.membership_types(type_code) ON DELETE CASCADE,
+                        CONSTRAINT CK_membership_type_prices_price_runtime CHECK (price >= 0)
+                    );
+                END;
+            `);
+        })().catch((error) => {
+            pricingOverridesPromise = undefined;
+            throw error;
+        });
+    }
+    return pricingOverridesPromise;
 }
 
 function positiveValue(value, fieldName, maximum = 10000) {
@@ -117,16 +206,27 @@ function membershipEndDateFromConfig(startDate, typeConfig) {
     return addDays(addMonths(startDate, typeConfig.durationValue), -1);
 }
 
+function resolvePricingTypeCode(pricing, membershipType) {
+    const requestedCode = String(membershipType ?? '').trim();
+    return pricing.types[requestedCode]
+        ? requestedCode
+        : (pricing.typeAliases?.[requestedCode] || requestedCode);
+}
+
 async function calculatePricing(membershipType, membershipPlan = 'gym_only', discountAmount = 0, connection = null) {
     const pricing = await getPricingCatalog(connection);
     const plan = pricing.plans[membershipPlan];
     if (!plan) throw appError('باقة العضوية غير صالحة.');
-    const type = pricing.types[membershipType];
+    const resolvedTypeCode = resolvePricingTypeCode(pricing, membershipType);
+    const type = pricing.types[resolvedTypeCode];
     if (!type) throw appError('نوع العضوية غير صالح.');
-    const listPrice = plan.monthlyPrice * type.priceMultiplier;
+    const configuredPrice = pricing.prices?.[membershipPlan]?.[resolvedTypeCode];
+    const listPrice = configuredPrice === undefined
+        ? plan.monthlyPrice * type.priceMultiplier
+        : Number(configuredPrice);
     const discount = money(discountAmount, 'الخصم');
     if (discount > listPrice) throw appError('الخصم لا يمكن أن يتجاوز قيمة الاشتراك.');
-    return { listPrice, discountAmount: discount, amountDue: listPrice - discount, typeConfig: type };
+    return { listPrice, discountAmount: discount, amountDue: listPrice - discount, typeConfig: type, typeCode: resolvedTypeCode };
 }
 
 function normalizePayload(body = {}, { partial = false } = {}) {
@@ -382,14 +482,14 @@ async function getMemberById(id, connection = null) {
     return mapMember(result.recordset[0]);
 }
 
-async function getMembers({ search = '', status = '', sort = 'expiry', page = 1, pageSize = 20 } = {}) {
+async function getMembers({ search = '', status = '', sort = 'expiry', page = 1, pageSize = DEFAULT_MEMBER_PAGE_SIZE } = {}) {
     const normalizedSearch = String(search || '').trim().slice(0, 100);
     const normalizedStatus = ensureStatus(status);
     const normalizedSort = ensureMemberSort(sort);
     const requestedPage = Number(page);
     const requestedPageSize = Number(pageSize);
     const currentPage = Number.isInteger(requestedPage) && requestedPage > 0 ? Math.min(requestedPage, 100000) : 1;
-    const currentPageSize = Number.isInteger(requestedPageSize) && requestedPageSize > 0 ? Math.min(requestedPageSize, 50) : 20;
+    const currentPageSize = Number.isInteger(requestedPageSize) && requestedPageSize > 0 ? Math.min(requestedPageSize, 50) : DEFAULT_MEMBER_PAGE_SIZE;
     const offset = (currentPage - 1) * currentPageSize;
     const orderBy = normalizedSort === 'newest'
         ? 'registrationDate DESC, id DESC'
@@ -456,7 +556,7 @@ function dashboardFromMembers(members, today = todayInTimeZone()) {
 
 async function getBootstrap() {
     const [memberPage, dashboard, pricing] = await Promise.all([
-        getMembers({ page: 1, pageSize: 20, sort: 'expiry' }),
+        getMembers({ page: 1, pageSize: DEFAULT_MEMBER_PAGE_SIZE, sort: 'expiry' }),
         getDashboard(),
         getPricingCatalog()
     ]);
@@ -550,11 +650,19 @@ async function updatePricingPlan(planCodeValue, body = {}) {
 async function updatePricingCatalog(body = {}) {
     const plans = Array.isArray(body.plans) ? body.plans : [];
     if (!plans.length) throw appError('أرسل بيانات أسعار الباقات للتحديث.');
-    const normalized = plans.map((item) => ({
-        code: normalizePlanCode(item.planCode || item.code),
-        planName: requiredString(item.planName ?? item.label, 'اسم الباقة', 80),
-        monthlyPrice: money(item.monthlyPrice ?? item.price, 'السعر الشهري')
-    }));
+    const catalog = await getPricingCatalog();
+    const normalized = plans.map((item) => {
+        const code = normalizePlanCode(item.planCode || item.code);
+        const monthlyPrice = money(item.monthlyPrice ?? item.price, 'السعر الشهري');
+        const rawPrices = item.prices || item.typePrices || {};
+        const prices = Object.fromEntries(Object.entries(catalog.types).map(([typeCode, type]) => {
+            const fallback = catalog.prices?.[code]?.[typeCode]
+                ?? monthlyPrice * Number(type.priceMultiplier || 0);
+            const value = rawPrices[typeCode] === undefined ? fallback : rawPrices[typeCode];
+            return [typeCode, money(value, `سعر ${type.typeName || typeCode}`)];
+        }));
+        return { code, planName: requiredString(item.planName ?? item.label, 'اسم الباقة', 80), monthlyPrice, prices };
+    });
     const seen = new Set();
     for (const item of normalized) {
         if (seen.has(item.code)) throw appError('لا يمكن تكرار الباقة في نفس الطلب.');
@@ -570,6 +678,23 @@ async function updatePricingCatalog(body = {}) {
                         SET plan_name = @planName, monthly_price = @monthlyPrice, updated_at = SYSUTCDATETIME()
                         WHERE plan_code = @planCode;`);
             if (!result.rowsAffected[0]) throw appError('بيانات الباقة غير موجودة.', 404);
+            for (const [typeCode, price] of Object.entries(item.prices)) {
+                const updated = await transaction.request()
+                    .input('planCode', sql.VarChar(30), item.code)
+                    .input('typeCode', sql.VarChar(30), typeCode)
+                    .input('price', sql.Decimal(12, 2), price)
+                    .query(`UPDATE dbo.membership_type_prices
+                            SET price = @price, updated_at = SYSUTCDATETIME()
+                            WHERE plan_code = @planCode AND type_code = @typeCode;`);
+                if (!updated.rowsAffected[0]) {
+                    await transaction.request()
+                        .input('planCode', sql.VarChar(30), item.code)
+                        .input('typeCode', sql.VarChar(30), typeCode)
+                        .input('price', sql.Decimal(12, 2), price)
+                        .query(`INSERT INTO dbo.membership_type_prices (plan_code, type_code, price)
+                                VALUES (@planCode, @typeCode, @price);`);
+                }
+            }
         }
     });
     return getPricingCatalog();
@@ -805,6 +930,7 @@ async function createMember(body) {
     const amountPaid = data.amountPaid ?? 0;
     const memberId = await withTransaction(async (transaction) => {
         const pricing = await calculatePricing(data.membershipType, data.membershipPlan, data.discountAmount, transaction);
+        const membershipType = pricing.typeCode || data.membershipType;
         if (amountPaid > pricing.amountDue) throw appError('المبلغ المدفوع لا يمكن أن يتجاوز قيمة الاشتراك بعد الخصم.');
         const endDate = data.endDate || membershipEndDateFromConfig(data.startDate, pricing.typeConfig);
         const memberResult = await transaction.request()
@@ -820,7 +946,7 @@ async function createMember(body) {
         const membershipResult = await transaction.request()
             .input('memberId', sql.Int, id)
             .input('membershipPlan', sql.VarChar(30), data.membershipPlan)
-            .input('membershipType', sql.VarChar(30), data.membershipType)
+            .input('membershipType', sql.VarChar(30), membershipType)
             .input('startDate', sql.Date, toUtcDate(data.startDate))
             .input('endDate', sql.Date, toUtcDate(endDate))
             .input('notes', sql.NVarChar(1000), data.membershipNotes)
@@ -841,7 +967,7 @@ async function createMember(body) {
                     VALUES (@membershipId, @listPrice, @discountAmount, @amountDue, @amountPaid, @paymentMethod, @paidAt, @notes);`);
         await addEvent(transaction, id, membershipId, 'created', {
             membershipPlan: data.membershipPlan,
-            membershipType: data.membershipType,
+            membershipType,
             startDate: data.startDate,
             endDate,
             listPrice: pricing.listPrice,
@@ -881,6 +1007,18 @@ async function updateMember(id, body) {
         if (membershipData.endDate < membershipData.startDate) {
             throw appError('تاريخ الانتهاء يجب أن يكون بعد أو مساوياً لتاريخ البداية.');
         }
+        const pricingChanged = has(body, 'membershipType') || has(body, 'membershipPlan') || has(body, 'discountAmount');
+        const paymentChanged = pricingChanged || has(body, 'amountDue') || has(body, 'amountPaid') || has(body, 'paymentMethod') || has(body, 'paymentNotes');
+        let pricing = null;
+        if (pricingChanged) {
+            pricing = await calculatePricing(
+                membershipData.type,
+                membershipData.plan,
+                patch.discountAmount ?? currentPayment?.discount_amount ?? 0,
+                transaction
+            );
+            membershipData.type = pricing.typeCode || membershipData.type;
+        }
 
         await transaction.request()
             .input('id', sql.Int, memberId)
@@ -902,17 +1040,9 @@ async function updateMember(id, body) {
             .query(`UPDATE dbo.memberships SET membership_plan = @membershipPlan, membership_type = @membershipType, start_date = @startDate,
                     end_date = @endDate, notes = @notes, updated_at = SYSUTCDATETIME() WHERE id = @id;`);
 
-        const pricingChanged = has(body, 'membershipType') || has(body, 'membershipPlan') || has(body, 'discountAmount');
-        const paymentChanged = pricingChanged || has(body, 'amountDue') || has(body, 'amountPaid') || has(body, 'paymentMethod') || has(body, 'paymentNotes');
         let payment = null;
         if (paymentChanged) {
             if (pricingChanged) {
-                const pricing = await calculatePricing(
-                    membershipData.type,
-                    membershipData.plan,
-                    patch.discountAmount ?? currentPayment?.discount_amount ?? 0,
-                    transaction
-                );
                 const amountPaid = patch.amountPaid ?? currentPayment?.amount_paid ?? 0;
                 if (amountPaid > pricing.amountDue) throw appError('المبلغ المدفوع لا يمكن أن يتجاوز قيمة الاشتراك بعد الخصم.');
                 payment = {
@@ -1046,6 +1176,7 @@ async function renewMember(id, body = {}) {
         const startDate = effectiveEnd < today ? today : addDays(effectiveEnd, 1);
         const membershipPlan = body.membershipPlan || current.membership_plan || 'gym_only';
         const pricing = await calculatePricing(membershipType, membershipPlan, money(body.discountAmount, 'الخصم', 0), transaction);
+        const resolvedMembershipType = pricing.typeCode || membershipType;
         const endDate = membershipEndDateFromConfig(startDate, pricing.typeConfig);
         const amountPaid = money(body.amountPaid, 'المبلغ المدفوع', 0);
         if (amountPaid > pricing.amountDue) throw appError('المبلغ المدفوع لا يمكن أن يتجاوز قيمة الاشتراك بعد الخصم.');
@@ -1055,7 +1186,7 @@ async function renewMember(id, body = {}) {
         const result = await transaction.request()
             .input('memberId', sql.Int, memberId)
             .input('membershipPlan', sql.VarChar(30), membershipPlan)
-            .input('membershipType', sql.VarChar(30), membershipType)
+            .input('membershipType', sql.VarChar(30), resolvedMembershipType)
             .input('startDate', sql.Date, toUtcDate(startDate))
             .input('endDate', sql.Date, toUtcDate(endDate))
             .input('notes', sql.NVarChar(1000), membershipNotes)
@@ -1074,7 +1205,7 @@ async function renewMember(id, body = {}) {
             .query(`INSERT INTO dbo.gym_payments (membership_id, list_price, discount_amount, amount_due, amount_paid, payment_method, paid_at, notes)
                     VALUES (@membershipId, @listPrice, @discountAmount, @amountDue, @amountPaid, @paymentMethod, @paidAt, @notes);`);
         await addEvent(transaction, memberId, membershipId, 'renewed', {
-            membershipPlan, membershipType, startDate, endDate,
+            membershipPlan, membershipType: resolvedMembershipType, startDate, endDate,
             listPrice: pricing.listPrice,
             discountAmount: pricing.discountAmount,
             amountDue: pricing.amountDue,
