@@ -550,6 +550,9 @@
         .header-profile-copy strong { color: #f8fafc; font-size: 10px; }
         .header-profile-copy small { color: #94a3b8; font-size: 8px; }
         .overview-grid { display: grid; grid-template-columns: minmax(300px, .85fr) minmax(0, 1.5fr); gap: 16px; align-items: stretch; margin-bottom: 16px; direction: ltr; }
+        .overview-grid { grid-template-areas: 'alerts stats'; }
+        .overview-grid > .stats-grid { grid-area: stats; }
+        .overview-grid > .alerts-panel { grid-area: alerts; }
         .overview-grid > .stats-grid, .overview-grid > .alerts-panel { direction: rtl; }
         .overview-grid > .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); align-content: start; gap: 8px; height: 100%; margin: 0; padding: 8px; }
         .overview-grid > .stats-grid .stat-card { min-height: 64px; padding: 10px; border: 1px solid #e2e8f0 !important; border-inline-start: 1px solid #e2e8f0 !important; border-radius: 10px; box-shadow: 0 5px 14px rgba(15, 23, 42, .035) !important; }
@@ -565,8 +568,8 @@
         .alerts-heading h3 { margin: 0; color: #0f172a; font-size: 16px; font-weight: 900; line-height: 1.35; }
         .alerts-heading p { margin: 2px 0 0; color: #64748b; font-size: 10px; line-height: 1.5; }
         .alerts-count { display: inline-flex; flex: 0 0 auto; align-items: center; min-height: 28px; padding: 0 10px; border: 1px solid #bfdbfe; border-radius: 999px; color: #1d4ed8; background: #eff6ff; font-size: 10px; font-weight: 900; white-space: nowrap; }
-        .alerts-list { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; padding: 13px 15px 15px; background: #f8fbff; }
-        .alert-card { display: grid; grid-template-columns: 38px minmax(0, 1fr); align-items: center; gap: 10px; min-height: 76px; padding: 11px; border: 1px solid #e2e8f0; border-inline-start: 3px solid #f59e0b; border-radius: 12px; background: #fff; box-shadow: 0 5px 13px rgba(15, 23, 42, .045); transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease; }
+        .alerts-list { grid-template-columns: 1fr; gap: 8px; padding: 12px 13px 14px; background: #f8fbff; }
+        .alert-card { display: grid; grid-template-columns: 34px minmax(0, 1fr); align-items: center; gap: 9px; min-height: 64px; padding: 9px 10px; border: 1px solid #e2e8f0; border-inline-start: 3px solid #f59e0b; border-radius: 10px; background: #fff; box-shadow: 0 3px 10px rgba(15, 23, 42, .04); transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease; }
         .alert-card:hover { transform: translateY(-2px); box-shadow: 0 9px 18px rgba(15, 23, 42, .08); }
         .alert-card.active { border-inline-start-color: #10b981; }
         .alert-card.expired { border-inline-start-color: #ef4444; }
@@ -600,7 +603,7 @@
             .topbar-inner { min-height: 62px; }
             .members-toolbar { grid-template-columns: 1fr; gap: 13px; }
             .members-toolbar-controls { grid-template-columns: minmax(0, 1.45fr) repeat(2, minmax(135px, 1fr)); }
-            .overview-grid { grid-template-columns: 1fr; gap: 12px; }
+            .overview-grid { grid-template-columns: 1fr; grid-template-areas: 'alerts' 'stats'; gap: 12px; }
         }
         @media (max-width: 640px) {
             .header-search { display: none; }
