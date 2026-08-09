@@ -600,6 +600,14 @@
         .top-gym-alert .swal2-icon { width: 42px !important; height: 42px !important; margin: 0 0 10px auto !important; border-width: 2px !important; }
         .top-gym-alert .swal2-actions { justify-content: flex-start !important; gap: 7px !important; margin: 13px 0 0 !important; }
         .top-gym-alert .swal2-confirm, .top-gym-alert .swal2-cancel { min-height: 34px; margin: 0 !important; border-radius: 8px !important; padding: 7px 13px !important; font-family: 'Cairo', Tahoma, Arial, sans-serif !important; font-size: 11px !important; font-weight: 800 !important; }
+        .swal2-popup.delete-confirm-alert { width: min(430px, calc(100vw - 28px)) !important; padding: 20px 24px 18px !important; border: 0 !important; border-radius: 16px !important; background: #fff !important; box-shadow: 0 25px 70px rgba(15, 23, 42, .28) !important; direction: rtl; text-align: center; }
+        .delete-confirm-alert .swal2-icon { width: 54px !important; height: 54px !important; margin: 0 0 9px auto !important; border: 2px solid #f3b477 !important; color: #f3b477 !important; }
+        .delete-confirm-alert .swal2-title { margin: 0 0 7px !important; color: #172033 !important; font-family: 'Cairo', Tahoma, Arial, sans-serif !important; font-size: 18px !important; font-weight: 900 !important; }
+        .delete-confirm-alert .swal2-html-container { margin: 0 !important; color: #8290a7 !important; font-family: 'Cairo', Tahoma, Arial, sans-serif !important; font-size: 12px !important; line-height: 1.8 !important; }
+        .delete-confirm-alert .swal2-actions { display: flex !important; align-items: center; justify-content: center !important; gap: 8px !important; margin: 15px 0 0 !important; direction: rtl; }
+        .delete-confirm-alert .swal2-actions button { min-width: 92px; min-height: 40px; margin: 0 !important; border: 0 !important; border-radius: 9px !important; padding: 8px 15px !important; font-family: 'Cairo', Tahoma, Arial, sans-serif !important; font-size: 12px !important; font-weight: 900 !important; box-shadow: none !important; }
+        .delete-confirm-alert .swal2-confirm { color: #fff !important; background: #ef3f3f !important; }
+        .delete-confirm-alert .swal2-cancel { color: #fff !important; background: #64748b !important; }
         .toast { position: fixed; top: 18px; left: 18px; right: auto; bottom: auto; z-index: 1100; display: flex; width: min(390px, calc(100vw - 36px)); max-width: none; flex-direction: column; gap: 10px; padding: 0; border: 0; border-radius: 0; color: inherit; background: transparent; box-shadow: none; transform: none; opacity: 1; pointer-events: none; transition: none; }
         .toast.show { transform: none; opacity: 1; }
         .toast.error { background: transparent; }
@@ -1111,7 +1119,7 @@
              try { await notify(message, icon); } finally { await refreshPromise; }
          }
          async function confirmDelete(name) {
-            if (window.Swal) { const result = await window.Swal.fire({ position: 'center', icon: 'warning', title: 'تأكيد الحذف', text: `هل تريد حذف العضو ${name}؟`, showCancelButton: true, confirmButtonText: 'نعم، احذف', cancelButtonText: 'إلغاء', confirmButtonColor: '#dc2626', cancelButtonColor: '#64748b', customClass: { popup: 'top-gym-alert' } }); return result.isConfirmed; }
+            if (window.Swal) { const result = await window.Swal.fire({ position: 'center', backdrop: 'rgba(15, 23, 42, .52)', icon: 'warning', title: 'تأكيد الحذف', text: `هل تريد حذف العضو ${name}؟`, showCancelButton: true, confirmButtonText: 'نعم، احذف', cancelButtonText: 'إلغاء', buttonsStyling: false, customClass: { popup: 'delete-confirm-alert' } }); return result.isConfirmed; }
             return window.confirm(`هل تريد حذف العضو ${name}؟`);
         }
 
