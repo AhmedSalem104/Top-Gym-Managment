@@ -600,18 +600,18 @@
         .top-gym-alert .swal2-icon { width: 42px !important; height: 42px !important; margin: 0 0 10px auto !important; border-width: 2px !important; }
         .top-gym-alert .swal2-actions { justify-content: flex-start !important; gap: 7px !important; margin: 13px 0 0 !important; }
         .top-gym-alert .swal2-confirm, .top-gym-alert .swal2-cancel { min-height: 34px; margin: 0 !important; border-radius: 8px !important; padding: 7px 13px !important; font-family: 'Cairo', Tahoma, Arial, sans-serif !important; font-size: 11px !important; font-weight: 800 !important; }
-        .toast { position: fixed; top: 16px; left: 16px; right: auto; bottom: auto; z-index: 1100; display: flex; width: min(360px, calc(100vw - 32px)); max-width: none; flex-direction: column; gap: 8px; padding: 0; border: 0; border-radius: 0; color: inherit; background: transparent; box-shadow: none; transform: none; opacity: 1; pointer-events: none; transition: none; }
+        .toast { position: fixed; top: 18px; left: 18px; right: auto; bottom: auto; z-index: 1100; display: flex; width: min(390px, calc(100vw - 36px)); max-width: none; flex-direction: column; gap: 10px; padding: 0; border: 0; border-radius: 0; color: inherit; background: transparent; box-shadow: none; transform: none; opacity: 1; pointer-events: none; transition: none; }
         .toast.show { transform: none; opacity: 1; }
         .toast.error { background: transparent; }
-        .toast-item { display: grid; grid-template-columns: 23px minmax(0, 1fr) 18px; align-items: center; gap: 9px; min-height: 46px; padding: 9px 11px; border: 1px solid; border-radius: 4px; direction: ltr; box-shadow: 0 3px 9px rgba(15, 23, 42, .1); animation: topGymAlertIn .18s ease-out both; pointer-events: auto; }
+        .toast-item { display: grid; grid-template-columns: 27px minmax(0, 1fr) 21px; align-items: center; gap: 11px; min-height: 54px; padding: 11px 14px; border: 1px solid; border-radius: 6px; direction: ltr; box-shadow: 0 5px 14px rgba(15, 23, 42, .12); animation: topGymAlertIn .18s ease-out both; pointer-events: auto; }
         .toast-item.info { border-color: #bce8f1; color: #31708f; background: #d9edf7; }
         .toast-item.warning { border-color: #faebcc; color: #8a6d3b; background: #fcf8e3; }
         .toast-item.error { border-color: #ebccd1; color: #a94442; background: #f2dede; }
         .toast-item.success { border-color: #d6e9c6; color: #3c763d; background: #dff0d8; }
-        .toast-icon { display: grid; width: 21px; height: 21px; place-items: center; }
-        .toast-icon .ui-icon { width: 20px; height: 20px; }
-        .toast-message { min-width: 0; overflow: hidden; direction: rtl; text-align: right; text-overflow: ellipsis; white-space: nowrap; font-family: 'Cairo', Tahoma, Arial, sans-serif; font-size: 11px; font-weight: 700; line-height: 1.5; }
-        .toast-close { display: grid; width: 18px; height: 18px; place-items: center; padding: 0; border: 0; color: currentColor; background: transparent; font-size: 18px; font-weight: 400; line-height: 1; opacity: .5; cursor: pointer; }
+        .toast-icon { display: grid; width: 25px; height: 25px; place-items: center; }
+        .toast-icon .ui-icon { width: 23px; height: 23px; }
+        .toast-message { min-width: 0; overflow: hidden; direction: rtl; text-align: right; text-overflow: ellipsis; white-space: nowrap; font-family: 'Cairo', Tahoma, Arial, sans-serif; font-size: 12px; font-weight: 700; line-height: 1.6; }
+        .toast-close { display: grid; width: 21px; height: 21px; place-items: center; padding: 0; border: 0; color: currentColor; background: transparent; font-size: 20px; font-weight: 400; line-height: 1; opacity: .5; cursor: pointer; }
         .toast-close:hover { opacity: 1; }
         .toast-item.is-leaving { opacity: 0; transform: translateX(-10px); transition: opacity .18s ease, transform .18s ease; }
         @keyframes topGymAlertIn { from { opacity: 0; transform: translateX(-12px); } to { opacity: 1; transform: translateX(0); } }
@@ -1111,7 +1111,7 @@
              try { await notify(message, icon); } finally { await refreshPromise; }
          }
          async function confirmDelete(name) {
-            if (window.Swal) { const result = await window.Swal.fire({ position: 'top-start', icon: 'warning', title: 'تأكيد الحذف', text: `هل تريد حذف العضو ${name}؟`, showCancelButton: true, confirmButtonText: 'نعم، احذف', cancelButtonText: 'إلغاء', confirmButtonColor: '#dc2626', cancelButtonColor: '#64748b', customClass: { popup: 'top-gym-alert' } }); return result.isConfirmed; }
+            if (window.Swal) { const result = await window.Swal.fire({ position: 'center', icon: 'warning', title: 'تأكيد الحذف', text: `هل تريد حذف العضو ${name}؟`, showCancelButton: true, confirmButtonText: 'نعم، احذف', cancelButtonText: 'إلغاء', confirmButtonColor: '#dc2626', cancelButtonColor: '#64748b', customClass: { popup: 'top-gym-alert' } }); return result.isConfirmed; }
             return window.confirm(`هل تريد حذف العضو ${name}؟`);
         }
 
