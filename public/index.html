@@ -491,20 +491,254 @@
         }
     </style>
     <link rel="stylesheet" href="/tailwind.css">
+    <style id="dashboard-shell-styles">
+        :root {
+            --sidebar-width: 252px;
+            --sidebar-blue: #2563eb;
+            --sidebar-blue-deep: #1e40af;
+            --dashboard-ink: #172033;
+            --dashboard-muted: #7b8798;
+            --dashboard-line: #e8edf5;
+            --dashboard-panel: #ffffff;
+        }
+        body.gym-page-bg {
+            background: #f6f8fc;
+        }
+        .app-shell {
+            display: flex;
+            min-height: 100vh;
+            direction: ltr;
+        }
+        .app-main {
+            flex: 1 1 auto;
+            min-width: 0;
+            direction: rtl;
+        }
+        .app-sidebar {
+            position: sticky;
+            top: 0;
+            z-index: 30;
+            display: flex;
+            flex: 0 0 var(--sidebar-width);
+            flex-direction: column;
+            width: var(--sidebar-width);
+            height: 100vh;
+            overflow-y: auto;
+            padding: 22px 14px 16px;
+            color: #dbeafe;
+            direction: rtl;
+            background: linear-gradient(180deg, #2563eb 0%, #1d4ed8 52%, #172554 100%);
+            box-shadow: 10px 0 30px rgba(30, 64, 175, .12);
+        }
+        .sidebar-brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-height: 48px;
+            padding: 0 8px 22px;
+            border-bottom: 1px solid rgba(219, 234, 254, .18);
+        }
+        .sidebar-logo-mark {
+            display: grid;
+            flex: 0 0 42px;
+            width: 42px;
+            height: 42px;
+            place-items: center;
+            border: 1px solid rgba(255, 255, 255, .22);
+            border-radius: 12px;
+            color: #fff;
+            background: rgba(255, 255, 255, .16);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, .18);
+            font-size: 11px;
+            font-weight: 900;
+            line-height: 1.05;
+            letter-spacing: 1px;
+            direction: ltr;
+        }
+        .sidebar-logo-mark span { display: block; color: #bfdbfe; font-size: 9px; letter-spacing: 1.5px; }
+        .sidebar-brand-copy { min-width: 0; }
+        .sidebar-brand-copy strong { display: block; color: #fff; font-size: 16px; font-weight: 900; line-height: 1.25; letter-spacing: 1px; direction: ltr; text-align: right; }
+        .sidebar-brand-copy small { display: block; margin-top: 4px; color: #bfdbfe; font-size: 10px; font-weight: 600; }
+        .sidebar-section-label { margin: 23px 10px 8px; color: #bfdbfe; font-size: 10px; font-weight: 800; letter-spacing: .3px; }
+        .sidebar-nav { display: grid; gap: 4px; }
+        .sidebar-link {
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 11px;
+            width: 100%;
+            min-height: 44px;
+            padding: 8px 11px;
+            border: 1px solid transparent;
+            border-radius: 9px;
+            color: #dbeafe;
+            background: transparent;
+            text-decoration: none;
+            text-align: right;
+            transition: color .16s ease, background-color .16s ease, border-color .16s ease, transform .16s ease;
+        }
+        button.sidebar-link { font-weight: 700; }
+        .sidebar-link:hover:not(:disabled) { color: #fff; background: rgba(255, 255, 255, .11); border-color: rgba(255, 255, 255, .08); transform: translateX(-2px); }
+        .sidebar-link.active { color: #1d4ed8; background: #fff; box-shadow: 0 8px 18px rgba(15, 23, 42, .12); }
+        .sidebar-link.active::before { content: ''; position: absolute; inset-inline-start: -14px; width: 3px; height: 24px; border-radius: 0 4px 4px 0; background: #bfdbfe; }
+        .sidebar-link.is-disabled, .sidebar-link:disabled { opacity: .58; cursor: not-allowed; }
+        .sidebar-link .ui-icon { flex: 0 0 18px; width: 18px; height: 18px; }
+        .sidebar-link-copy { display: flex; flex: 1; align-items: baseline; justify-content: space-between; gap: 8px; min-width: 0; }
+        .sidebar-link-copy strong { overflow: hidden; font-size: 12px; font-weight: 800; text-overflow: ellipsis; white-space: nowrap; }
+        .sidebar-link-copy small { color: inherit; opacity: .68; direction: ltr; font-size: 9px; font-weight: 600; white-space: nowrap; }
+        .sidebar-link-copy em { padding: 2px 5px; border: 1px solid rgba(191, 219, 254, .25); border-radius: 4px; color: #dbeafe; font-size: 8px; font-style: normal; font-weight: 700; white-space: nowrap; }
+        .sidebar-link.active .sidebar-link-copy small { color: #64748b; opacity: 1; }
+        .sidebar-link.active .sidebar-link-copy em { border-color: #dbeafe; color: #2563eb; background: #eff6ff; }
+        .sidebar-footer { margin-top: auto; padding: 16px 10px 2px; border-top: 1px solid rgba(219, 234, 254, .18); }
+        .sidebar-footer strong { display: block; color: #fff; font-size: 10px; letter-spacing: 1.6px; direction: ltr; }
+        .sidebar-footer span { display: block; margin-top: 4px; color: #bfdbfe; font-size: 10px; }
+        .sidebar-toggle { display: none; align-items: center; justify-content: center; width: 36px; height: 36px; padding: 0; border: 1px solid rgba(148, 163, 184, .3); border-radius: 9px; color: #e2e8f0; background: rgba(15, 23, 42, .44); }
+        .sidebar-backdrop { display: none; }
+        .topbar { padding-inline: max(22px, calc((100vw - 1240px) / 2)); }
+        .topbar-inner { max-width: none; min-height: 68px; }
+        .header-search { display: inline-flex; align-items: center; gap: 8px; min-height: 39px; padding: 8px 12px; border: 1px solid rgba(148, 163, 184, .2); border-radius: 8px; color: #cbd5e1; background: rgba(255, 255, 255, .07); font-size: 11px; font-weight: 700; }
+        .header-search:hover { color: #fff; background: rgba(255, 255, 255, .13); }
+        .header-search .ui-icon { width: 15px; height: 15px; }
+        .header-search kbd { min-width: 19px; padding: 1px 4px; border: 1px solid rgba(203, 213, 225, .25); border-radius: 4px; color: #94a3b8; font-size: 9px; direction: ltr; }
+        .header-notification { position: relative; display: inline-grid; width: 39px; height: 39px; place-items: center; padding: 0; border: 1px solid rgba(148, 163, 184, .2); border-radius: 8px; color: #cbd5e1; background: rgba(255, 255, 255, .07); }
+        .header-notification:hover { color: #fff; background: rgba(255, 255, 255, .13); }
+        .header-notification .ui-icon { width: 16px; height: 16px; }
+        .header-notification-count { position: absolute; top: -4px; right: -4px; display: grid; min-width: 16px; height: 16px; place-items: center; padding: 0 3px; border: 2px solid #0f172a; border-radius: 999px; color: #fff; background: #ef4444; font-size: 8px; font-weight: 900; line-height: 1; }
+        .header-profile { display: inline-flex; align-items: center; gap: 8px; min-height: 39px; padding: 4px 9px 4px 5px; border: 1px solid rgba(148, 163, 184, .16); border-radius: 8px; color: #e2e8f0; background: rgba(255, 255, 255, .06); text-align: right; }
+        .profile-avatar { display: grid; width: 29px; height: 29px; place-items: center; border-radius: 8px; color: #1e3a8a; background: #bfdbfe; font-size: 9px; font-weight: 900; direction: ltr; }
+        .header-profile-copy { display: flex; flex-direction: column; gap: 1px; line-height: 1.15; }
+        .header-profile-copy strong { color: #f8fafc; font-size: 10px; }
+        .header-profile-copy small { color: #94a3b8; font-size: 8px; }
+        .dashboard-grid { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(280px, .75fr); gap: 16px; margin-bottom: 16px; }
+        .activity-panel, .upcoming-panel { min-width: 0; overflow: hidden; }
+        .insight-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 17px 19px; border-bottom: 1px solid var(--dashboard-line); }
+        .insight-header h3 { margin: 0; color: #172033; font-size: 15px; font-weight: 900; }
+        .insight-header p { margin: 4px 0 0; color: var(--dashboard-muted); font-size: 10px; }
+        .insight-chip { padding: 5px 8px; border-radius: 5px; color: #2563eb; background: #eff6ff; font-size: 9px; font-weight: 800; white-space: nowrap; }
+        .activity-content { padding: 18px 20px 20px; }
+        .activity-bars { display: grid; gap: 14px; }
+        .activity-row { display: grid; grid-template-columns: 88px minmax(0, 1fr) 48px; align-items: center; gap: 10px; }
+        .activity-row-label { color: #64748b; font-size: 11px; font-weight: 700; }
+        .activity-track { height: 9px; overflow: hidden; border-radius: 4px; background: #eef2f7; }
+        .activity-fill { height: 100%; min-width: 3px; border-radius: inherit; background: var(--activity-color, #2563eb); transition: width .3s ease; }
+        .activity-row-value { color: #172033; font-size: 12px; font-weight: 900; text-align: center; }
+        .activity-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 19px; padding-top: 13px; border-top: 1px solid #f0f3f8; color: #94a3b8; font-size: 10px; }
+        .activity-footer strong { color: #2563eb; font-size: 11px; }
+        .upcoming-list { display: grid; gap: 8px; padding: 14px 17px 10px; }
+        .upcoming-item { display: flex; align-items: center; gap: 9px; padding: 9px 10px; border: 1px solid #eef2f7; border-radius: 8px; background: #fbfdff; }
+        .upcoming-avatar { display: grid; flex: 0 0 30px; width: 30px; height: 30px; place-items: center; border-radius: 8px; color: #1d4ed8; background: #dbeafe; font-size: 11px; font-weight: 900; }
+        .upcoming-copy { min-width: 0; flex: 1; }
+        .upcoming-copy strong { display: block; overflow: hidden; color: #334155; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+        .upcoming-copy span { display: block; margin-top: 2px; color: #94a3b8; font-size: 9px; }
+        .upcoming-days { color: #d97706; font-size: 10px; font-weight: 800; white-space: nowrap; }
+        .mini-calendar { margin: 2px 17px 17px; padding-top: 12px; border-top: 1px solid #f0f3f8; }
+        .mini-calendar-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 9px; color: #334155; font-size: 10px; font-weight: 800; }
+        .mini-calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; direction: ltr; }
+        .mini-calendar-day { display: grid; min-height: 28px; place-items: center; border-radius: 6px; color: #94a3b8; font-size: 9px; font-weight: 700; }
+        .mini-calendar-day.is-today { color: #fff; background: #2563eb; box-shadow: 0 4px 10px rgba(37, 99, 235, .23); }
+        .mini-calendar-day.is-weekend { color: #cbd5e1; }
+        .dashboard-grid + .workspace { margin-top: 0; }
+        @media (max-width: 1050px) {
+            :root { --sidebar-width: 222px; }
+            .activity-row { grid-template-columns: 78px minmax(0, 1fr) 42px; }
+        }
+        @media (max-width: 900px) {
+            .app-sidebar { position: fixed; inset: 0 auto 0 0; width: min(270px, 86vw); transform: translateX(-105%); transition: transform .2s ease; box-shadow: 18px 0 38px rgba(15, 23, 42, .22); }
+            .app-shell.sidebar-open .app-sidebar { transform: translateX(0); }
+            .sidebar-backdrop { position: fixed; inset: 0; z-index: 25; display: block; background: rgba(15, 23, 42, .44); opacity: 0; pointer-events: none; transition: opacity .2s ease; }
+            .app-shell.sidebar-open .sidebar-backdrop { opacity: 1; pointer-events: auto; }
+            .sidebar-toggle { display: inline-flex; flex: 0 0 36px; }
+            .topbar { padding-inline: 15px; }
+            .topbar-inner { min-height: 62px; }
+            .dashboard-grid { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 640px) {
+            .header-search { display: none; }
+            .header-profile { display: none; }
+            .header-notification { width: 36px; height: 36px; }
+            .brand { gap: 8px; }
+            .brand h1 { font-size: 13px; }
+            .brand-mark { width: 38px; height: 38px; flex-basis: 38px; }
+            .sidebar-toggle { width: 34px; height: 34px; flex-basis: 34px; }
+            .top-actions .header-refresh { width: 38px; min-height: 38px; }
+            .dashboard-grid { gap: 12px; }
+            .activity-content { padding: 15px 14px 16px; }
+            .activity-row { grid-template-columns: 72px minmax(0, 1fr) 37px; gap: 7px; }
+            .activity-row-label { font-size: 10px; }
+            .activity-row-value { font-size: 11px; }
+            .insight-header { padding: 15px 14px; }
+            .upcoming-list { padding-inline: 13px; }
+            .mini-calendar { margin-inline: 13px; }
+        }
+    </style>
 </head>
 <body class="font-sans bg-slate-100 text-slate-900 gym-page-bg">
     <div class="app-shell">
+        <aside class="app-sidebar" id="appSidebar" aria-label="التنقل الرئيسي">
+            <div class="sidebar-brand">
+                <div class="sidebar-logo-mark" aria-hidden="true">TOP<span>GYM</span></div>
+                <div class="sidebar-brand-copy"><strong>TOP GYM</strong><small>نظام إدارة الجيم</small></div>
+            </div>
+            <nav class="sidebar-nav" aria-label="أقسام النظام">
+                <div class="sidebar-section-label">الرئيسية</div>
+                <a class="sidebar-link active" href="#dashboardSection" data-sidebar-link>
+                    <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 13h8V3H3v10ZM13 21h8V11h-8v10ZM13 3h8v4h-8V3ZM3 21h8v-4H3v4Z"/></svg>
+                    <span class="sidebar-link-copy"><strong>لوحة المتابعة</strong><small>Dashboard</small></span>
+                </a>
+                <div class="sidebar-section-label">إدارة الجيم</div>
+                <button class="sidebar-link is-disabled" type="button" disabled title="قسم قادم">
+                    <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="7" r="3"/><path d="M3 21v-1a6 6 0 0 1 12 0v1M16 4.5a3 3 0 0 1 0 5.8M18 14a5 5 0 0 1 3 4.6V21"/></svg>
+                    <span class="sidebar-link-copy"><strong>الموظفون</strong><small>Employee</small><em>قريباً</em></span>
+                </button>
+                <button class="sidebar-link is-disabled" type="button" disabled title="قسم قادم">
+                    <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m7 4 10 16M17 4 7 20M4 8h16M4 16h16"/></svg>
+                    <span class="sidebar-link-copy"><strong>الحصص والأنشطة</strong><small>Classes</small><em>قريباً</em></span>
+                </button>
+                <a class="sidebar-link" href="#membersSection" data-sidebar-link>
+                    <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8"/></svg>
+                    <span class="sidebar-link-copy"><strong>المشتركون</strong><small>Our Clients</small></span>
+                </a>
+                <button class="sidebar-link is-disabled" type="button" disabled title="قسم قادم">
+                    <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V9l8-5 8 5v11"/><path d="M8 20v-6h8v6M2 20h20"/></svg>
+                    <span class="sidebar-link-copy"><strong>المرافق</strong><small>Amenities</small><em>قريباً</em></span>
+                </button>
+                <button class="sidebar-link is-disabled" type="button" disabled title="قسم قادم">
+                    <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/><path d="M8 6h8M8 10h6"/></svg>
+                    <span class="sidebar-link-copy"><strong>الخدمات</strong><small>Services</small><em>قريباً</em></span>
+                </button>
+                <button class="sidebar-link is-disabled" type="button" disabled title="قسم قادم">
+                    <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h16v12H4zM7 4h10v4H7zM8 13h8"/></svg>
+                    <span class="sidebar-link-copy"><strong>تصاريح اليوم</strong><small>Daypass</small><em>قريباً</em></span>
+                </button>
+                <button class="sidebar-link is-disabled" type="button" disabled title="قسم قادم">
+                    <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/><circle cx="19" cy="18" r="2"/></svg>
+                    <span class="sidebar-link-copy"><strong>الحجوزات</strong><small>Bookings</small><em>قريباً</em></span>
+                </button>
+                <button class="sidebar-link" type="button" data-sidebar-action="pricing">
+                    <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v15H4zM8 9h8M8 13h5"/><path d="M7 2v3M17 2v3"/></svg>
+                    <span class="sidebar-link-copy"><strong>العضويات والباقات</strong><small>Membership</small></span>
+                </button>
+                <button class="sidebar-link is-disabled" type="button" disabled title="قسم قادم">
+                    <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 17l5-5-5-5M15 12H3"/><path d="M21 3v18"/></svg>
+                    <span class="sidebar-link-copy"><strong>تسجيل الخروج</strong><small>Logout</small><em>قريباً</em></span>
+                </button>
+            </nav>
+            <div class="sidebar-footer"><strong>TOP GYM</strong><span>نسخة الإدارة · بيانات محفوظة بأمان</span></div>
+        </aside>
+        <div class="sidebar-backdrop" id="sidebarBackdrop" aria-hidden="true"></div>
+        <div class="app-main">
         <header class="topbar bg-slate-950 border-b border-slate-800 gym-topbar-bg">
             <div class="topbar-inner max-w-7xl">
                 <div class="brand" aria-label="TOP GYM">
+                    <button class="sidebar-toggle" id="sidebarToggle" type="button" aria-label="فتح القائمة" aria-expanded="false"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
                     <div class="brand-mark rounded-lg bg-blue-600 gym-brand-bg" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4v5M4 5v3M18 4v5M20 5v3M6 7h12M6 20v-5M4 19v-3M18 20v-5M20 19v-3M6 17h12"/></svg></div>
                     <div class="brand-copy"><span class="brand-kicker">TOP GYM</span><h1>إدارة عضويات الجيم</h1><p>نظام ذكي لإدارة المشتركين</p></div>
                 </div>
-                <div class="top-actions"><button class="btn btn-primary btn-small" id="topAddMemberButton">إضافة مشترك</button><button class="btn btn-light btn-small" id="topPricingButton">الأسعار</button><span class="header-status"><span class="header-status-dot" aria-hidden="true"></span><span>النظام متصل</span></span><button class="btn btn-light btn-small header-refresh" id="refreshButton" type="button"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 0 0-14.8-4L3 10"/><path d="M3 5v5h5"/><path d="M4 13a8 8 0 0 0 14.8 4L21 14"/><path d="M21 19v-5h-5"/></svg><span>تحديث البيانات</span></button></div>
+                <div class="top-actions"><button class="header-search" id="headerSearchButton" type="button"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><span>بحث سريع</span><kbd>/</kbd></button><button class="btn btn-primary btn-small" id="topAddMemberButton">إضافة مشترك</button><button class="btn btn-light btn-small" id="topPricingButton">الأسعار</button><button class="header-notification" id="headerAlertsButton" type="button" aria-label="عرض التنبيهات"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg><span class="header-notification-count" id="headerAlertCount">0</span></button><div class="header-profile"><span class="profile-avatar">TG</span><span class="header-profile-copy"><strong>مدير TOP GYM</strong><small>لوحة الإدارة</small></span></div><span class="header-status"><span class="header-status-dot" aria-hidden="true"></span><span>النظام متصل</span></span><button class="btn btn-light btn-small header-refresh" id="refreshButton" type="button"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 0 0-14.8-4L3 10"/><path d="M3 5v5h5"/><path d="M4 13a8 8 0 0 0 14.8 4L21 14"/><path d="M21 19v-5h-5"/></svg><span>تحديث البيانات</span></button></div>
             </div>
         </header>
 
-        <main class="page max-w-7xl">
+        <main class="page max-w-7xl" id="dashboardSection">
             <section class="stats-grid" aria-label="ملخص العضويات">
                 <div class="stat-card bg-white border-slate-200 rounded-xl shadow-sm"><div class="stat-head"><span class="stat-label">إجمالي الأعضاء</span><span class="stat-icon rounded-lg" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></span></div><strong class="stat-value" id="statTotal">0</strong><span class="stat-caption">كل المشتركين</span></div>
                 <div class="stat-card active bg-white border-slate-200 rounded-xl shadow-sm"><div class="stat-head"><span class="stat-label">نشطة</span><span class="stat-icon rounded-lg" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 4 4L19 6"/></svg></span></div><strong class="stat-value" id="statActive">0</strong><span class="stat-caption">اشتراك ساري</span></div>
@@ -513,9 +747,21 @@
                 <div class="stat-card frozen bg-white border-slate-200 rounded-xl shadow-sm"><div class="stat-head"><span class="stat-label">مجمدة الآن</span><span class="stat-icon rounded-lg" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9Z"/></svg></span></div><strong class="stat-value" id="statFrozen">0</strong><span class="stat-caption">متوقفة مؤقتاً</span></div>
             </section>
 
-            <section class="panel alerts-panel bg-white border-slate-200 rounded-xl shadow-panel">
+            <section class="panel alerts-panel bg-white border-slate-200 rounded-xl shadow-panel" id="alertsSection">
                 <div class="panel-header bg-slate-50"><div><h3>التنبيهات اليومية</h3><p>العضويات المنتهية اليوم، القريبة من الانتهاء، والمجمدة حالياً</p></div></div>
                 <div class="alerts-list" id="alertsList"><div class="empty">جاري تحميل التنبيهات…</div></div>
+            </section>
+
+            <section class="dashboard-grid" aria-label="نظرة سريعة على الأداء">
+                <article class="panel activity-panel">
+                    <div class="insight-header"><div><h3>نشاط العضويات</h3><p>توزيع الحالة الحالية للمشتركين</p></div><span class="insight-chip">مباشر</span></div>
+                    <div class="activity-content"><div class="activity-bars" id="activityBars"><div class="loading">جاري تجهيز الملخص…</div></div><div class="activity-footer"><span>إجمالي المشتركين المسجلين</span><strong id="activityTotal">—</strong></div></div>
+                </article>
+                <aside class="panel upcoming-panel">
+                    <div class="insight-header"><div><h3>الاشتراكات القادمة</h3><p>الأقرب إلى موعد الانتهاء</p></div><span class="insight-chip">متابعة</span></div>
+                    <div class="upcoming-list" id="upcomingList"><div class="loading">جاري التحميل…</div></div>
+                    <div class="mini-calendar" id="miniCalendar"></div>
+                </aside>
             </section>
 
             <section class="workspace">
@@ -559,7 +805,7 @@
                 </section>
                 </dialog>
 
-                <section class="panel members-panel bg-white border-slate-200 rounded-xl shadow-panel">
+                <section class="panel members-panel bg-white border-slate-200 rounded-xl shadow-panel" id="membersSection">
                     <div class="panel-header bg-slate-50"><div><h3>المشتركون</h3><p id="membersCount">—</p></div><div class="header-actions"><button class="btn btn-primary btn-small rounded-lg shadow-sm" id="addMemberButton" type="button">+ إضافة مشترك</button><button class="btn btn-light btn-small rounded-lg shadow-none" id="pricingButton" type="button">أسعار الباقات</button><button class="btn btn-light btn-small rounded-lg shadow-none" id="membershipTypesButton" type="button">أنواع العضويات</button></div></div>
                     <div class="members-toolbar bg-white"><input class="rounded-lg" id="searchInput" placeholder="ابحث بالاسم أو الهاتف" aria-label="بحث"><select class="rounded-lg" id="statusFilter" aria-label="فلتر الحالة"><option value="">كل الحالات</option><option value="active">نشطة</option><option value="expiring_soon">قريبة الانتهاء</option><option value="expired">منتهية</option><option value="frozen">مجمدة</option></select><select class="rounded-lg" id="sortFilter" aria-label="ترتيب القائمة"><option value="expiry">الأقرب انتهاءً</option><option value="newest">الأحدث تسجيلًا</option><option value="remaining">الأعلى مبلغًا متبقيًا</option></select></div>
                     <div class="members-list" id="membersList"><div class="loading">جاري تحميل المشتركين…</div></div>
@@ -567,6 +813,7 @@
                 </section>
             </section>
         </main>
+        </div>
     </div>
 
     <dialog id="actionDialog" class="rounded-lg border-slate-200 shadow-lift">
@@ -1494,6 +1741,98 @@
                     freezeCell.innerHTML = `<span class="freeze-usage${membership.freezeCount >= (membership.freezeLimit || limit) ? ' complete' : ''}"><strong>${membership.freezeCount || 0}/${membership.freezeLimit || limit}</strong><span>متبقي ${membership.freezesRemaining ?? Math.max(0, limit - (membership.freezeCount || 0))}</span></span>`;
                 });
             };
+        })();
+    </script>
+    <script>
+        (() => {
+            const shell = document.querySelector('.app-shell');
+            const sidebar = document.getElementById('appSidebar');
+            const toggle = document.getElementById('sidebarToggle');
+            const backdrop = document.getElementById('sidebarBackdrop');
+            if (!shell || !sidebar || !toggle) return;
+
+            function closeSidebar() {
+                shell.classList.remove('sidebar-open');
+                toggle.setAttribute('aria-expanded', 'false');
+            }
+            toggle.addEventListener('click', () => {
+                const open = shell.classList.toggle('sidebar-open');
+                toggle.setAttribute('aria-expanded', String(open));
+            });
+            backdrop?.addEventListener('click', closeSidebar);
+            sidebar.querySelectorAll('[data-sidebar-link]').forEach((link) => link.addEventListener('click', () => {
+                sidebar.querySelectorAll('[data-sidebar-link]').forEach((item) => item.classList.remove('active'));
+                link.classList.add('active');
+                closeSidebar();
+            }));
+            sidebar.querySelector('[data-sidebar-action="pricing"]')?.addEventListener('click', (event) => {
+                sidebar.querySelectorAll('[data-sidebar-link]').forEach((item) => item.classList.remove('active'));
+                event.currentTarget.classList.add('active');
+                closeSidebar();
+                document.getElementById('pricingButton')?.click();
+            });
+            document.addEventListener('keydown', (event) => {
+                if (event.key === 'Escape') closeSidebar();
+                if (event.key === '/' && !['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName)) {
+                    event.preventDefault();
+                    document.getElementById('searchInput')?.focus();
+                }
+            });
+            document.getElementById('headerSearchButton')?.addEventListener('click', () => {
+                window.topGymStopButtonLoading?.(document.getElementById('headerSearchButton'));
+                document.getElementById('membersSection')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                window.setTimeout(() => document.getElementById('searchInput')?.focus(), 260);
+            });
+            document.getElementById('headerAlertsButton')?.addEventListener('click', (event) => {
+                window.topGymStopButtonLoading?.(event.currentTarget);
+                document.getElementById('alertsSection')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+
+            function renderInsightWidgets() {
+                const bars = document.getElementById('activityBars');
+                const upcoming = document.getElementById('upcomingList');
+                const calendar = document.getElementById('miniCalendar');
+                if (!bars || !upcoming || !calendar) return;
+                const dashboard = typeof state !== 'undefined' ? (state.dashboard || {}) : {};
+                const stats = dashboard.stats || {};
+                const alertCount = document.getElementById('headerAlertCount');
+                if (alertCount) alertCount.textContent = Number((dashboard.alerts || []).length).toLocaleString('ar-EG');
+                const values = [
+                    { label: 'نشطة', value: Number(stats.active || 0), color: '#10b981' },
+                    { label: 'قريبة الانتهاء', value: Number(stats.expiringSoon || 0), color: '#f59e0b' },
+                    { label: 'منتهية', value: Number(stats.expired || 0), color: '#ef4444' },
+                    { label: 'مجمدة الآن', value: Number(stats.frozen || 0), color: '#8b5cf6' }
+                ];
+                const total = Number(stats.total || values.reduce((sum, item) => sum + item.value, 0));
+                const max = Math.max(total, ...values.map((item) => item.value), 1);
+                bars.innerHTML = values.map((item) => `<div class="activity-row"><span class="activity-row-label">${item.label}</span><span class="activity-track"><span class="activity-fill" style="--activity-color:${item.color};width:${Math.max(item.value ? 7 : 0, Math.round((item.value / max) * 100))}%"></span></span><strong class="activity-row-value">${item.value}</strong></div>`).join('');
+                const activityTotal = document.getElementById('activityTotal');
+                if (activityTotal) activityTotal.textContent = total.toLocaleString('ar-EG');
+
+                const members = typeof state !== 'undefined' ? (state.members || []) : [];
+                const upcomingMembers = members.filter((item) => item.membership && item.membership.status !== 'expired' && item.membership.status !== 'frozen').sort((first, second) => String(first.membership.effectiveEndDate || '').localeCompare(String(second.membership.effectiveEndDate || ''))).slice(0, 3);
+                upcoming.innerHTML = upcomingMembers.length ? upcomingMembers.map((item) => {
+                    const sub = item.membership;
+                    const days = Number(sub.daysRemaining || 0);
+                    const initials = escapeHtml(String(item.fullName || '?').trim().slice(0, 1));
+                    return `<div class="upcoming-item"><span class="upcoming-avatar">${initials}</span><span class="upcoming-copy"><strong>${escapeHtml(item.fullName)}</strong><span>${escapeHtml(planLabel(sub.plan))} · ${formatDate(sub.effectiveEndDate)}</span></span><span class="upcoming-days">${days} يوم</span></div>`;
+                }).join('') : '<div class="empty">لا توجد اشتراكات قريبة حالياً.</div>';
+
+                const now = new Date();
+                const start = new Date(now);
+                start.setDate(now.getDate() - ((now.getDay() + 6) % 7));
+                const weekdays = ['ن', 'ث', 'ر', 'خ', 'ج', 'س', 'ح'];
+                const days = Array.from({ length: 7 }, (_, index) => { const date = new Date(start); date.setDate(start.getDate() + index); return date; });
+                const monthLabel = new Intl.DateTimeFormat('ar-EG', { month: 'long', year: 'numeric' }).format(now);
+                calendar.innerHTML = `<div class="mini-calendar-head"><span>هذا الأسبوع</span><strong>${monthLabel}</strong></div><div class="mini-calendar-grid">${days.map((date, index) => `<span class="mini-calendar-day${date.toDateString() === now.toDateString() ? ' is-today' : ''}${index > 4 ? ' is-weekend' : ''}" title="${formatDate(date.toISOString().slice(0, 10))}">${weekdays[index]}<br>${date.getDate()}</span>`).join('')}</div>`;
+            }
+
+            document.addEventListener('DOMContentLoaded', () => {
+                renderInsightWidgets();
+                const watched = ['statTotal', 'statActive', 'statExpiring', 'statExpired', 'statFrozen', 'membersList'].map((id) => document.getElementById(id)).filter(Boolean);
+                const observer = new MutationObserver(() => window.requestAnimationFrame(renderInsightWidgets));
+                watched.forEach((element) => observer.observe(element, { childList: true, characterData: true, subtree: true }));
+            });
         })();
     </script>
 </body>
