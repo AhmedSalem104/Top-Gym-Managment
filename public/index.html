@@ -515,6 +515,26 @@
         .brand-mark .ui-icon { width: 27px; height: 27px; }
         .brand-kicker { display: block; color: #dbeafe; font-size: 15px; font-weight: 900; line-height: 1; letter-spacing: 2.6px; direction: ltr; text-shadow: 0 1px 10px rgba(96, 165, 250, .24); }
         .brand h1 { margin: 4px 0 1px; font-size: 17px; font-weight: 800; line-height: 1.3; }
+        .members-toolbar { position: relative; display: grid; grid-template-columns: minmax(230px, .72fr) minmax(0, 1.85fr); align-items: center; gap: 20px; padding: 18px 22px; overflow: hidden; isolation: isolate; border-bottom: 1px solid #d7e3f4; background: linear-gradient(135deg, #0f1d37 0%, #153a70 54%, #2563a8 100%); }
+        .members-toolbar::before { content: ''; position: absolute; width: 250px; height: 250px; border: 1px solid rgba(191, 219, 254, .16); border-radius: 50%; inset-inline-end: -95px; top: -145px; z-index: -1; box-shadow: 0 0 0 24px rgba(191, 219, 254, .035), 0 0 0 48px rgba(191, 219, 254, .025); }
+        .members-toolbar::after { content: ''; position: absolute; width: 130px; height: 130px; border-radius: 35px; background: rgba(96, 165, 250, .13); transform: rotate(24deg); inset-inline-start: -55px; bottom: -75px; z-index: -1; }
+        .members-toolbar-copy { display: flex; align-items: center; gap: 12px; min-width: 0; color: #f8fafc; }
+        .members-toolbar-icon { display: grid; width: 42px; height: 42px; flex: 0 0 42px; place-items: center; border: 1px solid rgba(191, 219, 254, .3); border-radius: 12px; color: #dbeafe; background: rgba(255, 255, 255, .12); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .16); }
+        .members-toolbar-icon .ui-icon { width: 20px; height: 20px; }
+        .members-toolbar-copy > div { display: flex; min-width: 0; flex-direction: column; gap: 3px; }
+        .members-toolbar-copy strong { font-size: 15px; font-weight: 900; line-height: 1.3; }
+        .members-toolbar-copy > div > span { color: #bfdbfe; font-size: 10px; font-weight: 600; line-height: 1.5; }
+        .members-toolbar-controls { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(145px, .75fr) minmax(145px, .75fr); align-items: end; gap: 10px; min-width: 0; }
+        .members-search-field, .members-filter-field { min-width: 0; }
+        .members-search-field { display: flex; align-items: center; min-height: 48px; padding: 0 14px; border: 1px solid rgba(191, 219, 254, .7); border-radius: 10px; color: #2563eb; background: #fff; box-shadow: 0 8px 18px rgba(2, 6, 23, .15); cursor: text; transition: border-color .15s ease, box-shadow .15s ease, transform .15s ease; }
+        .members-search-field:focus-within { border-color: #93c5fd; box-shadow: 0 0 0 3px rgba(147, 197, 253, .27), 0 10px 22px rgba(2, 6, 23, .18); transform: translateY(-1px); }
+        .members-search-field .ui-icon { width: 18px; height: 18px; flex: 0 0 18px; }
+        .members-search-field input { width: 100%; min-width: 0; height: 44px; padding: 0 10px; border: 0; outline: 0; color: #172033; background: transparent; box-shadow: none; font-size: 12px; font-weight: 700; }
+        .members-search-field input::placeholder { color: #94a3b8; font-weight: 600; }
+        .members-filter-field { display: flex; flex-direction: column; gap: 4px; color: #dbeafe; font-size: 10px; font-weight: 800; line-height: 1.2; }
+        .members-filter-field select { width: 100%; min-height: 48px; padding: 0 12px; border: 1px solid rgba(191, 219, 254, .45); border-radius: 10px; outline: 0; color: #172033; background-color: #fff; background-image: none; box-shadow: 0 6px 15px rgba(2, 6, 23, .1); font-size: 11px; font-weight: 700; }
+        .members-filter-field select:focus { border-color: #93c5fd; box-shadow: 0 0 0 3px rgba(147, 197, 253, .22); }
+        .visually-hidden { position: absolute !important; width: 1px !important; height: 1px !important; padding: 0 !important; margin: -1px !important; overflow: hidden !important; clip: rect(0, 0, 0, 0) !important; white-space: nowrap !important; border: 0 !important; }
         .header-search { display: inline-flex; align-items: center; gap: 8px; min-height: 39px; padding: 8px 12px; border: 1px solid rgba(148, 163, 184, .2); border-radius: 8px; color: #cbd5e1; background: rgba(255, 255, 255, .07); font-size: 11px; font-weight: 700; }
         .header-search:hover { color: #fff; background: rgba(255, 255, 255, .13); }
         .header-search .ui-icon { width: 15px; height: 15px; }
@@ -538,6 +558,8 @@
         @media (max-width: 900px) {
             .topbar { padding-inline: 15px; }
             .topbar-inner { min-height: 62px; }
+            .members-toolbar { grid-template-columns: 1fr; gap: 13px; }
+            .members-toolbar-controls { grid-template-columns: minmax(0, 1.45fr) repeat(2, minmax(135px, 1fr)); }
             .overview-grid { grid-template-columns: 1fr; gap: 12px; }
         }
         @media (max-width: 640px) {
@@ -551,6 +573,12 @@
             .brand-mark { width: 40px; height: 40px; flex-basis: 40px; }
             .brand-mark .ui-icon { width: 22px; height: 22px; }
             .top-actions .header-refresh { width: 38px; min-height: 38px; }
+            .members-toolbar { gap: 14px; padding: 15px; }
+            .members-toolbar-controls { grid-template-columns: 1fr; gap: 8px; }
+            .members-toolbar-copy strong { font-size: 14px; }
+            .members-toolbar-copy > div > span { font-size: 9px; }
+            .members-search-field, .members-filter-field select { min-height: 44px; }
+            .members-search-field input { height: 40px; }
         }
     </style>
 </head>
@@ -625,7 +653,14 @@
 
                 <section class="panel members-panel bg-white border-slate-200 rounded-xl shadow-panel" id="membersSection">
                     <div class="panel-header bg-slate-50"><div><h3>المشتركون</h3><p id="membersCount">—</p></div><div class="header-actions"><button class="btn btn-primary btn-small rounded-lg shadow-sm" id="addMemberButton" type="button">+ إضافة مشترك</button><button class="btn btn-light btn-small rounded-lg shadow-none" id="pricingButton" type="button">أسعار الباقات</button><button class="btn btn-light btn-small rounded-lg shadow-none" id="membershipTypesButton" type="button">أنواع العضويات</button></div></div>
-                    <div class="members-toolbar bg-white"><input class="rounded-lg" id="searchInput" placeholder="ابحث بالاسم أو الهاتف" aria-label="بحث"><select class="rounded-lg" id="statusFilter" aria-label="فلتر الحالة"><option value="">كل الحالات</option><option value="active">نشطة</option><option value="expiring_soon">قريبة الانتهاء</option><option value="expired">منتهية</option><option value="frozen">مجمدة</option></select><select class="rounded-lg" id="sortFilter" aria-label="ترتيب القائمة"><option value="expiry">الأقرب انتهاءً</option><option value="newest">الأحدث تسجيلًا</option><option value="remaining">الأعلى مبلغًا متبقيًا</option></select></div>
+                    <div class="members-toolbar" aria-label="البحث وتصفية المشتركين">
+                        <div class="members-toolbar-copy"><span class="members-toolbar-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg></span><div><strong>بحث المشتركين</strong><span>الوصول السريع إلى بيانات الاسم أو الهاتف</span></div></div>
+                        <div class="members-toolbar-controls">
+                            <label class="members-search-field" for="searchInput"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><span class="visually-hidden">البحث بالاسم أو الهاتف</span><input id="searchInput" placeholder="ابحث بالاسم أو الهاتف" aria-label="بحث بالاسم أو الهاتف"></label>
+                            <label class="members-filter-field"><span>حالة الاشتراك</span><select id="statusFilter" aria-label="فلتر الحالة"><option value="">كل الحالات</option><option value="active">نشطة</option><option value="expiring_soon">قريبة الانتهاء</option><option value="expired">منتهية</option><option value="frozen">مجمدة</option></select></label>
+                            <label class="members-filter-field"><span>ترتيب النتائج</span><select id="sortFilter" aria-label="ترتيب القائمة"><option value="expiry">الأقرب انتهاءً</option><option value="newest">الأحدث تسجيلًا</option><option value="remaining">الأعلى مبلغًا متبقيًا</option></select></label>
+                        </div>
+                    </div>
                     <div class="members-list" id="membersList"><div class="loading">جاري تحميل المشتركين…</div></div>
                     <div class="members-pagination" id="membersPagination" hidden></div>
                 </section>
