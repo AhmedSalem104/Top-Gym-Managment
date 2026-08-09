@@ -377,14 +377,21 @@
             .members-table { min-width: 0; }
             .members-pagination { align-items: stretch; flex-direction: column; padding: 11px 13px; }
             .members-pagination-actions { justify-content: space-between; }
-            .details-dialog .dialog-body { padding: 17px; }
+             .details-dialog .dialog-body { padding: 14px; }
             .details-summary { gap: 7px; }
             .top-actions { gap: 5px; }
             .top-actions .btn { padding: 7px 8px; font-size: 10px; }
             .header-actions { width: 100%; }
             .header-actions .btn { flex: 1; }
-             .member-dialog, .pricing-dialog, .type-dialog { width: calc(100vw - 16px); max-height: calc(100vh - 16px); }
-             .member-dialog .form-panel, .pricing-dialog .dialog-body, .type-dialog .dialog-body { max-height: calc(100vh - 16px); }
+              dialog { max-width: calc(100vw - 28px); max-height: calc(100vh - 28px); max-height: calc(100dvh - 28px); }
+              .member-dialog, .pricing-dialog, .type-dialog, .details-dialog { width: calc(100vw - 28px); max-height: calc(100vh - 28px); max-height: calc(100dvh - 28px); }
+              .member-dialog .form-panel, .pricing-dialog .dialog-body, .type-dialog .dialog-body, .details-dialog .dialog-body { max-height: calc(100vh - 28px); max-height: calc(100dvh - 28px); overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+              #actionDialog { width: calc(100vw - 28px); max-height: calc(100vh - 28px); max-height: calc(100dvh - 28px); }
+              #actionDialog .dialog-body { max-height: calc(100vh - 28px); max-height: calc(100dvh - 28px); overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; padding: 14px; }
+              .dialog-actions { gap: 6px; }
+              .dialog-actions .btn { min-height: 38px; }
+              .swal2-popup { width: calc(100vw - 28px) !important; max-width: none !important; max-height: calc(100vh - 28px); max-height: calc(100dvh - 28px); overflow-y: auto; padding: 1rem !important; }
+              .swal2-html-container { max-height: 38vh; max-height: 38dvh; overflow-y: auto; }
              .dialog-heading-actions { gap: 5px; }
              .pricing-section-head { align-items: flex-start; }
              .pricing-section-head .btn { flex: 0 0 auto; }
