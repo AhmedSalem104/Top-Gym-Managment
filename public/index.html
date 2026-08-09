@@ -493,9 +493,6 @@
     <link rel="stylesheet" href="/tailwind.css">
     <style id="dashboard-shell-styles">
         :root {
-            --sidebar-width: 252px;
-            --sidebar-blue: #2563eb;
-            --sidebar-blue-deep: #1e40af;
             --dashboard-ink: #172033;
             --dashboard-muted: #7b8798;
             --dashboard-line: #e8edf5;
@@ -505,95 +502,9 @@
             background: #f6f8fc;
         }
         .app-shell {
-            display: flex;
             min-height: 100vh;
-            direction: ltr;
-        }
-        .app-main {
-            flex: 1 1 auto;
-            min-width: 0;
             direction: rtl;
         }
-        .app-sidebar {
-            position: sticky;
-            top: 0;
-            z-index: 30;
-            display: flex;
-            flex: 0 0 var(--sidebar-width);
-            flex-direction: column;
-            width: var(--sidebar-width);
-            height: 100vh;
-            overflow-y: auto;
-            padding: 22px 14px 16px;
-            color: #dbeafe;
-            direction: rtl;
-            background: linear-gradient(180deg, #2563eb 0%, #1d4ed8 52%, #172554 100%);
-            box-shadow: 10px 0 30px rgba(30, 64, 175, .12);
-        }
-        .sidebar-brand {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            min-height: 48px;
-            padding: 0 8px 22px;
-            border-bottom: 1px solid rgba(219, 234, 254, .18);
-        }
-        .sidebar-logo-mark {
-            display: grid;
-            flex: 0 0 42px;
-            width: 42px;
-            height: 42px;
-            place-items: center;
-            border: 1px solid rgba(255, 255, 255, .22);
-            border-radius: 12px;
-            color: #fff;
-            background: rgba(255, 255, 255, .16);
-            box-shadow: inset 0 1px 0 rgba(255, 255, 255, .18);
-            font-size: 11px;
-            font-weight: 900;
-            line-height: 1.05;
-            letter-spacing: 1px;
-            direction: ltr;
-        }
-        .sidebar-logo-mark span { display: block; color: #bfdbfe; font-size: 9px; letter-spacing: 1.5px; }
-        .sidebar-brand-copy { min-width: 0; }
-        .sidebar-brand-copy strong { display: block; color: #fff; font-size: 16px; font-weight: 900; line-height: 1.25; letter-spacing: 1px; direction: ltr; text-align: right; }
-        .sidebar-brand-copy small { display: block; margin-top: 4px; color: #bfdbfe; font-size: 10px; font-weight: 600; }
-        .sidebar-section-label { margin: 23px 10px 8px; color: #bfdbfe; font-size: 10px; font-weight: 800; letter-spacing: .3px; }
-        .sidebar-nav { display: grid; gap: 4px; }
-        .sidebar-link {
-            position: relative;
-            display: flex;
-            align-items: center;
-            gap: 11px;
-            width: 100%;
-            min-height: 44px;
-            padding: 8px 11px;
-            border: 1px solid transparent;
-            border-radius: 9px;
-            color: #dbeafe;
-            background: transparent;
-            text-decoration: none;
-            text-align: right;
-            transition: color .16s ease, background-color .16s ease, border-color .16s ease, transform .16s ease;
-        }
-        button.sidebar-link { font-weight: 700; }
-        .sidebar-link:hover:not(:disabled) { color: #fff; background: rgba(255, 255, 255, .11); border-color: rgba(255, 255, 255, .08); transform: translateX(-2px); }
-        .sidebar-link.active { color: #1d4ed8; background: #fff; box-shadow: 0 8px 18px rgba(15, 23, 42, .12); }
-        .sidebar-link.active::before { content: ''; position: absolute; inset-inline-start: -14px; width: 3px; height: 24px; border-radius: 0 4px 4px 0; background: #bfdbfe; }
-        .sidebar-link.is-disabled, .sidebar-link:disabled { opacity: .58; cursor: not-allowed; }
-        .sidebar-link .ui-icon { flex: 0 0 18px; width: 18px; height: 18px; }
-        .sidebar-link-copy { display: flex; flex: 1; align-items: baseline; justify-content: space-between; gap: 8px; min-width: 0; }
-        .sidebar-link-copy strong { overflow: hidden; font-size: 12px; font-weight: 800; text-overflow: ellipsis; white-space: nowrap; }
-        .sidebar-link-copy small { color: inherit; opacity: .68; direction: ltr; font-size: 9px; font-weight: 600; white-space: nowrap; }
-        .sidebar-link-copy em { padding: 2px 5px; border: 1px solid rgba(191, 219, 254, .25); border-radius: 4px; color: #dbeafe; font-size: 8px; font-style: normal; font-weight: 700; white-space: nowrap; }
-        .sidebar-link.active .sidebar-link-copy small { color: #64748b; opacity: 1; }
-        .sidebar-link.active .sidebar-link-copy em { border-color: #dbeafe; color: #2563eb; background: #eff6ff; }
-        .sidebar-footer { margin-top: auto; padding: 16px 10px 2px; border-top: 1px solid rgba(219, 234, 254, .18); }
-        .sidebar-footer strong { display: block; color: #fff; font-size: 10px; letter-spacing: 1.6px; direction: ltr; }
-        .sidebar-footer span { display: block; margin-top: 4px; color: #bfdbfe; font-size: 10px; }
-        .sidebar-toggle { display: none; align-items: center; justify-content: center; width: 36px; height: 36px; padding: 0; border: 1px solid rgba(148, 163, 184, .3); border-radius: 9px; color: #e2e8f0; background: rgba(15, 23, 42, .44); }
-        .sidebar-backdrop { display: none; }
         .topbar { padding-inline: max(22px, calc((100vw - 1240px) / 2)); }
         .topbar-inner { max-width: none; min-height: 68px; }
         .header-search { display: inline-flex; align-items: center; gap: 8px; min-height: 39px; padding: 8px 12px; border: 1px solid rgba(148, 163, 184, .2); border-radius: 8px; color: #cbd5e1; background: rgba(255, 255, 255, .07); font-size: 11px; font-weight: 700; }
@@ -639,15 +550,9 @@
         .mini-calendar-day.is-weekend { color: #cbd5e1; }
         .dashboard-grid + .workspace { margin-top: 0; }
         @media (max-width: 1050px) {
-            :root { --sidebar-width: 222px; }
             .activity-row { grid-template-columns: 78px minmax(0, 1fr) 42px; }
         }
         @media (max-width: 900px) {
-            .app-sidebar { position: fixed; inset: 0 auto 0 0; width: min(270px, 86vw); transform: translateX(-105%); transition: transform .2s ease; box-shadow: 18px 0 38px rgba(15, 23, 42, .22); }
-            .app-shell.sidebar-open .app-sidebar { transform: translateX(0); }
-            .sidebar-backdrop { position: fixed; inset: 0; z-index: 25; display: block; background: rgba(15, 23, 42, .44); opacity: 0; pointer-events: none; transition: opacity .2s ease; }
-            .app-shell.sidebar-open .sidebar-backdrop { opacity: 1; pointer-events: auto; }
-            .sidebar-toggle { display: inline-flex; flex: 0 0 36px; }
             .topbar { padding-inline: 15px; }
             .topbar-inner { min-height: 62px; }
             .dashboard-grid { grid-template-columns: 1fr; }
@@ -659,7 +564,6 @@
             .brand { gap: 8px; }
             .brand h1 { font-size: 13px; }
             .brand-mark { width: 38px; height: 38px; flex-basis: 38px; }
-            .sidebar-toggle { width: 34px; height: 34px; flex-basis: 34px; }
             .top-actions .header-refresh { width: 38px; min-height: 38px; }
             .dashboard-grid { gap: 12px; }
             .activity-content { padding: 15px 14px 16px; }
@@ -674,63 +578,9 @@
 </head>
 <body class="font-sans bg-slate-100 text-slate-900 gym-page-bg">
     <div class="app-shell">
-        <aside class="app-sidebar" id="appSidebar" aria-label="التنقل الرئيسي">
-            <div class="sidebar-brand">
-                <div class="sidebar-logo-mark" aria-hidden="true">TOP<span>GYM</span></div>
-                <div class="sidebar-brand-copy"><strong>TOP GYM</strong><small>نظام إدارة الجيم</small></div>
-            </div>
-            <nav class="sidebar-nav" aria-label="أقسام النظام">
-                <div class="sidebar-section-label">الرئيسية</div>
-                <a class="sidebar-link active" href="#dashboardSection" data-sidebar-link>
-                    <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 13h8V3H3v10ZM13 21h8V11h-8v10ZM13 3h8v4h-8V3ZM3 21h8v-4H3v4Z"/></svg>
-                    <span class="sidebar-link-copy"><strong>لوحة المتابعة</strong><small>Dashboard</small></span>
-                </a>
-                <div class="sidebar-section-label">إدارة الجيم</div>
-                <button class="sidebar-link is-disabled" type="button" disabled title="قسم قادم">
-                    <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="7" r="3"/><path d="M3 21v-1a6 6 0 0 1 12 0v1M16 4.5a3 3 0 0 1 0 5.8M18 14a5 5 0 0 1 3 4.6V21"/></svg>
-                    <span class="sidebar-link-copy"><strong>الموظفون</strong><small>Employee</small><em>قريباً</em></span>
-                </button>
-                <button class="sidebar-link is-disabled" type="button" disabled title="قسم قادم">
-                    <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m7 4 10 16M17 4 7 20M4 8h16M4 16h16"/></svg>
-                    <span class="sidebar-link-copy"><strong>الحصص والأنشطة</strong><small>Classes</small><em>قريباً</em></span>
-                </button>
-                <a class="sidebar-link" href="#membersSection" data-sidebar-link>
-                    <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8"/></svg>
-                    <span class="sidebar-link-copy"><strong>المشتركون</strong><small>Our Clients</small></span>
-                </a>
-                <button class="sidebar-link is-disabled" type="button" disabled title="قسم قادم">
-                    <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V9l8-5 8 5v11"/><path d="M8 20v-6h8v6M2 20h20"/></svg>
-                    <span class="sidebar-link-copy"><strong>المرافق</strong><small>Amenities</small><em>قريباً</em></span>
-                </button>
-                <button class="sidebar-link is-disabled" type="button" disabled title="قسم قادم">
-                    <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/><path d="M8 6h8M8 10h6"/></svg>
-                    <span class="sidebar-link-copy"><strong>الخدمات</strong><small>Services</small><em>قريباً</em></span>
-                </button>
-                <button class="sidebar-link is-disabled" type="button" disabled title="قسم قادم">
-                    <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h16v12H4zM7 4h10v4H7zM8 13h8"/></svg>
-                    <span class="sidebar-link-copy"><strong>تصاريح اليوم</strong><small>Daypass</small><em>قريباً</em></span>
-                </button>
-                <button class="sidebar-link is-disabled" type="button" disabled title="قسم قادم">
-                    <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/><circle cx="19" cy="18" r="2"/></svg>
-                    <span class="sidebar-link-copy"><strong>الحجوزات</strong><small>Bookings</small><em>قريباً</em></span>
-                </button>
-                <button class="sidebar-link" type="button" data-sidebar-action="pricing">
-                    <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v15H4zM8 9h8M8 13h5"/><path d="M7 2v3M17 2v3"/></svg>
-                    <span class="sidebar-link-copy"><strong>العضويات والباقات</strong><small>Membership</small></span>
-                </button>
-                <button class="sidebar-link is-disabled" type="button" disabled title="قسم قادم">
-                    <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 17l5-5-5-5M15 12H3"/><path d="M21 3v18"/></svg>
-                    <span class="sidebar-link-copy"><strong>تسجيل الخروج</strong><small>Logout</small><em>قريباً</em></span>
-                </button>
-            </nav>
-            <div class="sidebar-footer"><strong>TOP GYM</strong><span>نسخة الإدارة · بيانات محفوظة بأمان</span></div>
-        </aside>
-        <div class="sidebar-backdrop" id="sidebarBackdrop" aria-hidden="true"></div>
-        <div class="app-main">
         <header class="topbar bg-slate-950 border-b border-slate-800 gym-topbar-bg">
             <div class="topbar-inner max-w-7xl">
                 <div class="brand" aria-label="TOP GYM">
-                    <button class="sidebar-toggle" id="sidebarToggle" type="button" aria-label="فتح القائمة" aria-expanded="false"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
                     <div class="brand-mark rounded-lg bg-blue-600 gym-brand-bg" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4v5M4 5v3M18 4v5M20 5v3M6 7h12M6 20v-5M4 19v-3M18 20v-5M20 19v-3M6 17h12"/></svg></div>
                     <div class="brand-copy"><span class="brand-kicker">TOP GYM</span><h1>إدارة عضويات الجيم</h1><p>نظام ذكي لإدارة المشتركين</p></div>
                 </div>
@@ -813,7 +663,6 @@
                 </section>
             </section>
         </main>
-        </div>
     </div>
 
     <dialog id="actionDialog" class="rounded-lg border-slate-200 shadow-lift">
@@ -1745,34 +1594,7 @@
     </script>
     <script>
         (() => {
-            const shell = document.querySelector('.app-shell');
-            const sidebar = document.getElementById('appSidebar');
-            const toggle = document.getElementById('sidebarToggle');
-            const backdrop = document.getElementById('sidebarBackdrop');
-            if (!shell || !sidebar || !toggle) return;
-
-            function closeSidebar() {
-                shell.classList.remove('sidebar-open');
-                toggle.setAttribute('aria-expanded', 'false');
-            }
-            toggle.addEventListener('click', () => {
-                const open = shell.classList.toggle('sidebar-open');
-                toggle.setAttribute('aria-expanded', String(open));
-            });
-            backdrop?.addEventListener('click', closeSidebar);
-            sidebar.querySelectorAll('[data-sidebar-link]').forEach((link) => link.addEventListener('click', () => {
-                sidebar.querySelectorAll('[data-sidebar-link]').forEach((item) => item.classList.remove('active'));
-                link.classList.add('active');
-                closeSidebar();
-            }));
-            sidebar.querySelector('[data-sidebar-action="pricing"]')?.addEventListener('click', (event) => {
-                sidebar.querySelectorAll('[data-sidebar-link]').forEach((item) => item.classList.remove('active'));
-                event.currentTarget.classList.add('active');
-                closeSidebar();
-                document.getElementById('pricingButton')?.click();
-            });
             document.addEventListener('keydown', (event) => {
-                if (event.key === 'Escape') closeSidebar();
                 if (event.key === '/' && !['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName)) {
                     event.preventDefault();
                     document.getElementById('searchInput')?.focus();
