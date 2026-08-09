@@ -503,7 +503,18 @@
             direction: rtl;
         }
         .topbar { padding-inline: max(22px, calc((100vw - 1240px) / 2)); }
-        .topbar-inner { max-width: none; min-height: 68px; }
+        .topbar-inner { max-width: none; min-height: 68px; direction: rtl; }
+        .brand { direction: rtl; gap: 14px; }
+        .top-actions { direction: ltr; }
+        .top-actions .header-search,
+        .top-actions #topAddMemberButton,
+        .top-actions #topPricingButton,
+        .top-actions .header-notification,
+        .top-actions .header-profile { display: none !important; }
+        .brand-mark { width: 52px; height: 52px; flex-basis: 52px; }
+        .brand-mark .ui-icon { width: 27px; height: 27px; }
+        .brand-kicker { display: block; color: #dbeafe; font-size: 15px; font-weight: 900; line-height: 1; letter-spacing: 2.6px; direction: ltr; text-shadow: 0 1px 10px rgba(96, 165, 250, .24); }
+        .brand h1 { margin: 4px 0 1px; font-size: 17px; font-weight: 800; line-height: 1.3; }
         .header-search { display: inline-flex; align-items: center; gap: 8px; min-height: 39px; padding: 8px 12px; border: 1px solid rgba(148, 163, 184, .2); border-radius: 8px; color: #cbd5e1; background: rgba(255, 255, 255, .07); font-size: 11px; font-weight: 700; }
         .header-search:hover { color: #fff; background: rgba(255, 255, 255, .13); }
         .header-search .ui-icon { width: 15px; height: 15px; }
@@ -532,10 +543,13 @@
         @media (max-width: 640px) {
             .header-search { display: none; }
             .header-profile { display: none; }
+            .header-status { display: none; }
             .header-notification { width: 36px; height: 36px; }
             .brand { gap: 8px; }
+            .brand-kicker { font-size: 12px; letter-spacing: 2.1px; }
             .brand h1 { font-size: 13px; }
-            .brand-mark { width: 38px; height: 38px; flex-basis: 38px; }
+            .brand-mark { width: 40px; height: 40px; flex-basis: 40px; }
+            .brand-mark .ui-icon { width: 22px; height: 22px; }
             .top-actions .header-refresh { width: 38px; min-height: 38px; }
         }
     </style>
@@ -1544,26 +1558,6 @@
                     freezeCell.innerHTML = `<span class="freeze-usage${membership.freezeCount >= (membership.freezeLimit || limit) ? ' complete' : ''}"><strong>${membership.freezeCount || 0}/${membership.freezeLimit || limit}</strong><span>متبقي ${membership.freezesRemaining ?? Math.max(0, limit - (membership.freezeCount || 0))}</span></span>`;
                 });
             };
-        })();
-    </script>
-    <script>
-        (() => {
-            document.addEventListener('keydown', (event) => {
-                if (event.key === '/' && !['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName)) {
-                    event.preventDefault();
-                    document.getElementById('searchInput')?.focus();
-                }
-            });
-            document.getElementById('headerSearchButton')?.addEventListener('click', () => {
-                window.topGymStopButtonLoading?.(document.getElementById('headerSearchButton'));
-                document.getElementById('membersSection')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                window.setTimeout(() => document.getElementById('searchInput')?.focus(), 260);
-            });
-            document.getElementById('headerAlertsButton')?.addEventListener('click', (event) => {
-                window.topGymStopButtonLoading?.(event.currentTarget);
-                document.getElementById('alertsSection')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            });
-
         })();
     </script>
 </body>
