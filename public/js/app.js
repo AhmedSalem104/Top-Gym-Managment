@@ -114,24 +114,8 @@
         }
 
         function renderDashboard() {
-            const dashboard = state.dashboard || { stats: {}, alerts: [] };
-            const stats = dashboard.stats || {};
-            $('statTotal').textContent = stats.total || 0;
-            $('statActive').textContent = stats.active || 0;
-            $('statExpiring').textContent = stats.expiringSoon || 0;
-            $('statExpired').textContent = stats.expired || 0;
-            $('statFrozen').textContent = stats.frozen || 0;
-            const attention = Number(stats.expiringSoon || 0) + Number(stats.expired || 0);
-            if ($('heroActiveMembers')) $('heroActiveMembers').textContent = Number(stats.active || 0).toLocaleString('ar-EG');
-            if ($('heroAttentionCount')) $('heroAttentionCount').textContent = attention.toLocaleString('ar-EG');
-            const alerts = dashboard.alerts || [];
-            $('alertsList').innerHTML = alerts.length ? alerts.map((member) => {
-                const sub = member.membership;
-                const detail = sub.status === 'frozen' ? `حتى ${formatDate(sub.freezeEnd)}` : sub.status === 'expired' ? `انتهت في ${formatDate(sub.endDate)}` : `تنتهي في ${formatDate(sub.effectiveEndDate)}`;
-                return `<article class="alert-card ${sub.status}"><strong>${escapeHtml(member.fullName)}</strong><span>${STATUS_LABELS[sub.status]} · ${escapeHtml(detail)}</span><span>${escapeHtml(member.phone)}</span></article>`;
-            }).join('') : '<div class="empty">لا توجد تنبيهات اليوم.</div>';
-            const headerAlertCount = $('headerAlertCount');
-            if (headerAlertCount) headerAlertCount.textContent = alerts.length.toLocaleString('ar-EG');
+             const dashboard = state.dashboard || { stats: {}, alerts: [] }; $('statTotal').textContent = dashboard.stats.total || 0; $('statActive').textContent = dashboard.stats.active || 0; $('statExpiring').textContent = dashboard.stats.expiringSoon || 0; $('statExpired').textContent = dashboard.stats.expired || 0; $('statFrozen').textContent = dashboard.stats.frozen || 0;
+            const alerts = dashboard.alerts || []; $('alertsList').innerHTML = alerts.length ? alerts.map((member) => { const sub = member.membership; const detail = sub.status === 'frozen' ? `حتى ${formatDate(sub.freezeEnd)}` : sub.status === 'expired' ? `انتهت في ${formatDate(sub.endDate)}` : `تنتهي في ${formatDate(sub.effectiveEndDate)}`; return `<article class="alert-card ${sub.status}"><strong>${escapeHtml(member.fullName)}</strong><span>${STATUS_LABELS[sub.status]} · ${escapeHtml(detail)}</span><span>${escapeHtml(member.phone)}</span></article>`; }).join('') : '<div class="empty">لا توجد تنبيهات اليوم.</div>'; const headerAlertCount = $('headerAlertCount'); if (headerAlertCount) headerAlertCount.textContent = alerts.length.toLocaleString('ar-EG');
         }
         function memberTableRow(member) {
             const sub = member.membership;
