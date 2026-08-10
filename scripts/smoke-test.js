@@ -5,10 +5,14 @@ const app = require('../server');
 const { closePool, getPool, initDatabase, sql } = require('../src/db');
 
 async function call(baseUrl, path, options = {}) {
+    const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
+    if (globalThis.smokeCookie) headers.Cookie = globalThis.smokeCookie;
     const response = await fetch(`${baseUrl}${path}`, {
-        headers: { 'Content-Type': 'application/json' },
-        ...options
+        ...options,
+        headers,
     });
+    const setCookie = response.headers.get('set-cookie');
+    if (setCookie) globalThis.smokeCookie = setCookie.split(';')[0];
     const body = response.status === 204 ? null : await response.json();
     if (!response.ok) throw new Error(`${response.status}: ${body?.error || 'request failed'}`);
     return body;
@@ -28,6 +32,23 @@ async function call(baseUrl, path, options = {}) {
 
         const health = await call(baseUrl, '/api/health');
         assert.equal(health.database, 'connected');
+        const authStatus = await call(baseUrl, '/api/auth/status');
+        const smokeUsername = process.env.SMOKE_TEST_USERNAME;
+        const smokePassword = process.env.SMOKE_TEST_PASSWORD;
+        if (!smokeUsername || !smokePassword) {
+            throw new Error('ضع SMOKE_TEST_USERNAME وSMOKE_TEST_PASSWORD أو أنشئ حسابًا للاختبار قبل تشغيل smoke-test.');
+        }
+        if (authStatus.setupRequired) {
+            await call(baseUrl, '/api/auth/setup', {
+                method: 'POST',
+                body: JSON.stringify({ fullName: 'Smoke Test Manager', username: smokeUsername, password: smokePassword })
+            });
+        } else {
+            await call(baseUrl, '/api/auth/login', {
+                method: 'POST',
+                body: JSON.stringify({ username: smokeUsername, password: smokePassword })
+            });
+        }
         const bootstrap = await call(baseUrl, '/api/bootstrap');
         assert.ok(Array.isArray(bootstrap.members));
         assert.ok(bootstrap.dashboard && bootstrap.dashboard.stats);

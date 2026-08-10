@@ -25,6 +25,7 @@ const MEMBER_STATUSES = ['active', 'expiring_soon', 'expired', 'frozen'];
 const MEMBERSHIP_FREEZE_LIMIT = 3;
 const DEFAULT_MEMBER_PAGE_SIZE = 5;
 let pricingOverridesPromise;
+let memberIdentityPromise;
 
 function appError(message, statusCode = 400) {
     const error = new Error(message);
@@ -46,6 +47,64 @@ function optionalString(value, maxLength) {
     if (!normalized) return null;
     if (normalized.length > maxLength) throw appError('إحدى البيانات النصية أطول من المسموح.');
     return normalized;
+}
+
+function normalizePhone(value) {
+    const arabicDigits = '٠١٢٣٤٥٦٧٨٩';
+    const englishDigits = '0123456789';
+    let normalized = String(value ?? '').trim().replace(/[٠-٩]/gu, (digit) => englishDigits[arabicDigits.indexOf(digit)]);
+    normalized = normalized.replace(/[^0-9]/g, '');
+    if (normalized.startsWith('00')) normalized = normalized.slice(2);
+    if (normalized.startsWith('20') && normalized.length === 12) normalized = `0${normalized.slice(2)}`;
+    return normalized;
+}
+
+async function ensureMemberIdentityFields() {
+    if (!memberIdentityPromise) {
+        memberIdentityPromise = (async () => {
+            const pool = await getPool();
+            await pool.request().batch(`
+                IF COL_LENGTH(N'dbo.members', N'phone_normalized') IS NULL
+                BEGIN
+                    ALTER TABLE dbo.members ADD phone_normalized NVARCHAR(30) NULL;
+                END;
+                EXEC(N'UPDATE dbo.members
+                       SET phone_normalized = phone
+                       WHERE phone_normalized IS NULL OR LTRIM(RTRIM(phone_normalized)) = N'''';');
+                IF NOT EXISTS (
+                    SELECT 1 FROM sys.indexes
+                    WHERE name = N'IX_members_phone_normalized_runtime' AND object_id = OBJECT_ID(N'dbo.members')
+                )
+                BEGIN
+                    EXEC(N'CREATE INDEX IX_members_phone_normalized_runtime ON dbo.members(phone_normalized);');
+                END;
+            `);
+        })().catch((error) => {
+            memberIdentityPromise = undefined;
+            throw error;
+        });
+    }
+    return memberIdentityPromise;
+}
+
+async function assertNoDuplicateMember(connection, phoneNormalized, email, excludeId = null) {
+    const result = await connection.request().query(`
+        SELECT id, full_name, phone, phone_normalized, email
+        FROM dbo.members;
+    `);
+    const normalizedEmail = String(email || '').trim().toLowerCase();
+    const duplicate = result.recordset.find((row) => {
+        if (excludeId && Number(row.id) === Number(excludeId)) return false;
+        const rowPhone = normalizePhone(row.phone_normalized || row.phone);
+        const rowEmail = String(row.email || '').trim().toLowerCase();
+        return (phoneNormalized && rowPhone && rowPhone === phoneNormalized)
+            || (normalizedEmail && rowEmail && rowEmail === normalizedEmail);
+    });
+    if (!duplicate) return;
+    const samePhone = phoneNormalized && normalizePhone(duplicate.phone_normalized || duplicate.phone) === phoneNormalized;
+    throw appError(samePhone
+        ? `رقم الهاتف مسجل بالفعل باسم ${duplicate.full_name}.`
+        : `البريد الإلكتروني مسجل بالفعل باسم ${duplicate.full_name}.`);
 }
 
 function money(value, fieldName, fallback = 0) {
@@ -235,6 +294,8 @@ function normalizePayload(body = {}, { partial = false } = {}) {
     if (!partial || has(body, 'phone')) {
         output.phone = requiredString(body.phone, 'رقم الهاتف', 30);
         if (!/^[0-9٠-٩+()\-\s]{5,30}$/u.test(output.phone)) throw appError('رقم الهاتف غير صالح.');
+        output.phoneNormalized = normalizePhone(output.phone);
+        if (output.phoneNormalized.length < 5) throw appError('رقم الهاتف غير صالح.');
     }
     if (!partial || has(body, 'email')) {
         output.email = optionalString(body.email, 254);
@@ -846,7 +907,7 @@ async function getDashboard() {
 async function getRawMember(connection, id) {
     const result = await connection.request()
         .input('id', sql.Int, ensureId(id))
-        .query(`SELECT id, full_name, phone, email, registration_date, notes
+        .query(`SELECT id, full_name, phone, phone_normalized, email, registration_date, notes
                 FROM dbo.members WHERE id = @id;`);
     return result.recordset[0] || null;
 }
@@ -928,7 +989,9 @@ async function withTransaction(work) {
 async function createMember(body) {
     const data = normalizePayload(body);
     const amountPaid = data.amountPaid ?? 0;
+    await ensureMemberIdentityFields();
     const memberId = await withTransaction(async (transaction) => {
+        await assertNoDuplicateMember(transaction, data.phoneNormalized, data.email);
         const pricing = await calculatePricing(data.membershipType, data.membershipPlan, data.discountAmount, transaction);
         const membershipType = pricing.typeCode || data.membershipType;
         if (amountPaid > pricing.amountDue) throw appError('المبلغ المدفوع لا يمكن أن يتجاوز قيمة الاشتراك بعد الخصم.');
@@ -936,12 +999,13 @@ async function createMember(body) {
         const memberResult = await transaction.request()
             .input('fullName', sql.NVarChar(120), data.fullName)
             .input('phone', sql.NVarChar(30), data.phone)
+            .input('phoneNormalized', sql.NVarChar(30), data.phoneNormalized)
             .input('email', sql.NVarChar(254), data.email)
             .input('registrationDate', sql.Date, toUtcDate(data.registrationDate))
             .input('notes', sql.NVarChar(1000), data.notes)
-            .query(`INSERT INTO dbo.members (full_name, phone, email, registration_date, notes)
+            .query(`INSERT INTO dbo.members (full_name, phone, phone_normalized, email, registration_date, notes)
                     OUTPUT INSERTED.id
-                    VALUES (@fullName, @phone, @email, @registrationDate, @notes);`);
+                    VALUES (@fullName, @phone, @phoneNormalized, @email, @registrationDate, @notes);`);
         const id = Number(memberResult.recordset[0].id);
         const membershipResult = await transaction.request()
             .input('memberId', sql.Int, id)
@@ -982,6 +1046,7 @@ async function createMember(body) {
 
 async function updateMember(id, body) {
     const memberId = ensureId(id);
+    await ensureMemberIdentityFields();
     const updatedId = await withTransaction(async (transaction) => {
         const currentMember = await getRawMember(transaction, memberId);
         if (!currentMember) throw appError('العضو غير موجود.', 404);
@@ -993,10 +1058,12 @@ async function updateMember(id, body) {
         const memberData = {
             fullName: patch.fullName ?? currentMember.full_name,
             phone: patch.phone ?? currentMember.phone,
+            phoneNormalized: patch.phoneNormalized ?? normalizePhone(currentMember.phone_normalized || currentMember.phone),
             email: patch.email === undefined ? currentMember.email : patch.email,
             registrationDate: patch.registrationDate ?? formatDateOnly(currentMember.registration_date),
             notes: patch.notes === undefined ? currentMember.notes : patch.notes
         };
+        await assertNoDuplicateMember(transaction, memberData.phoneNormalized, memberData.email, memberId);
         const membershipData = {
             plan: patch.membershipPlan ?? currentMembership.membership_plan ?? 'gym_only',
             type: patch.membershipType ?? currentMembership.membership_type,
@@ -1024,10 +1091,11 @@ async function updateMember(id, body) {
             .input('id', sql.Int, memberId)
             .input('fullName', sql.NVarChar(120), memberData.fullName)
             .input('phone', sql.NVarChar(30), memberData.phone)
+            .input('phoneNormalized', sql.NVarChar(30), memberData.phoneNormalized)
             .input('email', sql.NVarChar(254), memberData.email)
             .input('registrationDate', sql.Date, toUtcDate(memberData.registrationDate))
             .input('notes', sql.NVarChar(1000), memberData.notes)
-            .query(`UPDATE dbo.members SET full_name = @fullName, phone = @phone, email = @email,
+            .query(`UPDATE dbo.members SET full_name = @fullName, phone = @phone, phone_normalized = @phoneNormalized, email = @email,
                     registration_date = @registrationDate, notes = @notes, updated_at = SYSUTCDATETIME()
                     WHERE id = @id;`);
         await transaction.request()
@@ -1281,7 +1349,7 @@ async function getMemberDetails(id) {
     const memberId = ensureId(id);
     const pool = await getPool();
     const today = todayInTimeZone();
-    const [memberResult, membershipsResult, freezesResult, eventsResult] = await Promise.all([
+    const [memberResult, membershipsResult, freezesResult, eventsResult, paymentsResult] = await Promise.all([
         pool.request()
             .input('memberId', sql.Int, memberId)
             .query(`SELECT id, full_name, phone, email, registration_date, notes, created_at, updated_at
@@ -1308,7 +1376,17 @@ async function getMemberDetails(id) {
             .query(`SELECT id, membership_id, event_type, details, created_at
                     FROM dbo.membership_events
                     WHERE member_id = @memberId
-                    ORDER BY created_at ASC, id ASC;`)
+                    ORDER BY created_at ASC, id ASC;`),
+        pool.request()
+            .input('memberId', sql.Int, memberId)
+            .query(`SELECT p.id, p.membership_id, p.list_price, p.discount_amount,
+                           p.amount_due, p.amount_paid, p.amount_remaining,
+                           p.payment_method, p.paid_at, p.notes, p.created_at,
+                           m.membership_plan, m.membership_type
+                    FROM dbo.gym_payments AS p
+                    INNER JOIN dbo.memberships AS m ON m.id = p.membership_id
+                    WHERE m.member_id = @memberId
+                    ORDER BY p.paid_at DESC, p.id DESC;`)
     ]);
 
     const memberRow = memberResult.recordset[0];
@@ -1362,7 +1440,7 @@ async function getMemberDetails(id) {
             freezeDays,
             freezeCount: membershipFreezes.length,
             freezeLimit: MEMBERSHIP_FREEZE_LIMIT,
-            freezesRemaining: Math.max(0, MEMBERSHIP_FREEZE_LIMIT - freezeRows.length),
+            freezesRemaining: Math.max(0, MEMBERSHIP_FREEZE_LIMIT - membershipFreezes.length),
             activeFreezeId: activeFreeze?.id || null,
             listPrice: Number(row.list_price || 0),
             discountAmount: Number(row.discount_amount || 0),
@@ -1389,6 +1467,21 @@ async function getMemberDetails(id) {
         },
         memberships,
         freezes: freezeRows,
+        payments: paymentsResult.recordset.map((row) => ({
+            id: Number(row.id),
+            membershipId: Number(row.membership_id),
+            plan: row.membership_plan || 'gym_only',
+            type: row.membership_type,
+            listPrice: Number(row.list_price || 0),
+            discountAmount: Number(row.discount_amount || 0),
+            amountDue: Number(row.amount_due || 0),
+            amountPaid: Number(row.amount_paid || 0),
+            amountRemaining: Number(row.amount_remaining || 0),
+            paymentMethod: row.payment_method || 'cash',
+            paidAt: formatDateOnly(row.paid_at),
+            notes: row.notes,
+            createdAt: row.created_at
+        })),
         events: eventsResult.recordset.map((row) => ({
             id: Number(row.id),
             membershipId: row.membership_id ? Number(row.membership_id) : null,

@@ -4,6 +4,7 @@ BEGIN
         id INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_members PRIMARY KEY,
         full_name NVARCHAR(120) NOT NULL,
         phone NVARCHAR(30) NOT NULL,
+        phone_normalized NVARCHAR(30) NULL,
         email NVARCHAR(254) NULL,
         registration_date DATE NOT NULL,
         notes NVARCHAR(1000) NULL,
@@ -228,6 +229,15 @@ BEGIN
         ADD membership_plan VARCHAR(30) NOT NULL CONSTRAINT DF_memberships_plan_migration DEFAULT ('gym_only');
 END;
 
+IF COL_LENGTH(N'dbo.members', N'phone_normalized') IS NULL
+BEGIN
+    ALTER TABLE dbo.members ADD phone_normalized NVARCHAR(30) NULL;
+END;
+
+EXEC(N'UPDATE dbo.members
+       SET phone_normalized = phone
+       WHERE phone_normalized IS NULL OR LTRIM(RTRIM(phone_normalized)) = N'''';');
+
 IF COL_LENGTH(N'dbo.memberships', N'membership_plan') IS NOT NULL
 BEGIN
     EXEC(N'ALTER TABLE dbo.memberships ALTER COLUMN membership_plan VARCHAR(30) NOT NULL;');
@@ -298,6 +308,14 @@ END;
 
 IF NOT EXISTS (
     SELECT 1 FROM sys.indexes
+    WHERE name = N'IX_members_phone_normalized' AND object_id = OBJECT_ID(N'dbo.members')
+)
+BEGIN
+    EXEC(N'CREATE INDEX IX_members_phone_normalized ON dbo.members(phone_normalized);');
+END;
+
+IF NOT EXISTS (
+    SELECT 1 FROM sys.indexes
     WHERE name = N'IX_memberships_member_end' AND object_id = OBJECT_ID(N'dbo.memberships')
 )
 BEGIN
@@ -355,4 +373,43 @@ IF NOT EXISTS (
 )
 BEGIN
     CREATE INDEX IX_gym_expenses_date ON dbo.gym_expenses(expense_date DESC, id DESC);
+END;
+
+IF OBJECT_ID(N'dbo.gym_users', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.gym_users (
+        id INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_gym_users PRIMARY KEY,
+        full_name NVARCHAR(120) NOT NULL,
+        username VARCHAR(50) NOT NULL,
+        password_hash NVARCHAR(255) NOT NULL,
+        role VARCHAR(20) NOT NULL CONSTRAINT DF_gym_users_role DEFAULT ('reception'),
+        is_active BIT NOT NULL CONSTRAINT DF_gym_users_active DEFAULT (1),
+        created_at DATETIME2(0) NOT NULL CONSTRAINT DF_gym_users_created DEFAULT (SYSUTCDATETIME()),
+        updated_at DATETIME2(0) NOT NULL CONSTRAINT DF_gym_users_updated DEFAULT (SYSUTCDATETIME()),
+        CONSTRAINT UQ_gym_users_username UNIQUE (username),
+        CONSTRAINT CK_gym_users_role CHECK (role IN ('manager', 'reception'))
+    );
+END;
+
+IF OBJECT_ID(N'dbo.gym_audit_log', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.gym_audit_log (
+        id BIGINT IDENTITY(1,1) NOT NULL CONSTRAINT PK_gym_audit_log PRIMARY KEY,
+        actor_user_id INT NULL,
+        actor_name NVARCHAR(120) NULL,
+        actor_role VARCHAR(20) NULL,
+        action VARCHAR(40) NOT NULL,
+        entity_type VARCHAR(40) NOT NULL,
+        entity_id INT NULL,
+        details NVARCHAR(MAX) NULL,
+        created_at DATETIME2(0) NOT NULL CONSTRAINT DF_gym_audit_created DEFAULT (SYSUTCDATETIME())
+    );
+END;
+
+IF NOT EXISTS (
+    SELECT 1 FROM sys.indexes
+    WHERE name = N'IX_gym_audit_log_created' AND object_id = OBJECT_ID(N'dbo.gym_audit_log')
+)
+BEGIN
+    CREATE INDEX IX_gym_audit_log_created ON dbo.gym_audit_log(created_at DESC, id DESC);
 END;

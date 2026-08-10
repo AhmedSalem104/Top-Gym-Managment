@@ -13,6 +13,7 @@
     <link rel="stylesheet" href="/css/base.css?v=3">
     <link rel="stylesheet" href="/tailwind.css">
     <link rel="stylesheet" href="/css/dashboard.css?v=19">
+    <link rel="stylesheet" href="/css/operations.css?v=1">
 </head>
 <body class="font-sans bg-slate-100 text-slate-900 gym-page-bg">
     <div class="app-shell">
@@ -28,10 +29,16 @@
 
         <nav class="page-tabs" id="pageTabs" aria-label="أقسام الإدارة">
             <button class="page-tab active" type="button" data-page-tab="dashboard" aria-selected="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span>لوحة التحكم</span></button>
-            <button class="page-tab" type="button" data-page-tab="members" aria-selected="false"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg><span>المشتركون</span></button>
-            <button class="page-tab" type="button" data-page-tab="expenses" aria-selected="false"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 9h10M7 13h5"/></svg><span>المصروفات</span></button>
-            <button class="page-tab" type="button" data-page-tab="management" aria-selected="false"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v18M3 12h18"/><circle cx="12" cy="12" r="9"/></svg><span>الأسعار والعضويات</span></button>
+            <button class="page-tab" type="button" data-page-tab="members" data-permission="members.read" aria-selected="false"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg><span>المشتركون</span></button>
+            <button class="page-tab" type="button" data-page-tab="expenses" data-permission="expenses.read" aria-selected="false"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 9h10M7 13h5"/></svg><span>المصروفات</span></button>
+            <button class="page-tab" type="button" data-page-tab="reports" data-permission="reports.read" aria-selected="false"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19V5"/><path d="M4 19h16"/><path d="m7 15 3-4 3 2 5-6"/></svg><span>التقارير</span></button>
+            <button class="page-tab" type="button" data-page-tab="management" data-permission="settings.read" aria-selected="false"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v18M3 12h18"/><circle cx="12" cy="12" r="9"/></svg><span>الأسعار والعضويات</span></button>
         </nav>
+
+        <div class="auth-user-bar" id="authUserBar" hidden>
+            <div class="auth-user-copy"><span class="auth-user-avatar" id="authUserAvatar">TG</span><span><strong id="authUserName">—</strong><small id="authUserRole">—</small></span></div>
+            <button class="btn btn-light btn-small" id="authLogoutButton" type="button">تسجيل الخروج</button>
+        </div>
 
         <main class="page max-w-7xl" id="dashboardSection">
             <section class="overview-grid" aria-label="ملخص العضويات والتنبيهات">
@@ -64,7 +71,7 @@
                         <small id="monthlySubscriptionsMeta">الاشتراكات المدفوعة خلال الشهر</small>
                     </article>
                     <article class="monthly-finance-metric expenses">
-                        <div class="monthly-finance-metric-top"><span class="monthly-finance-label">المصروفات</span><button class="btn btn-light btn-small add-expense-button" id="addExpenseButton" type="button"><span aria-hidden="true">+</span> إضافة مصروف</button></div>
+                        <div class="monthly-finance-metric-top"><span class="monthly-finance-label">المصروفات</span><button class="btn btn-light btn-small add-expense-button" id="addExpenseButton" data-permission="expenses.write" type="button"><span aria-hidden="true">+</span> إضافة مصروف</button></div>
                         <strong class="monthly-finance-value" id="monthlyExpensesTotal">0.00 ج.م</strong>
                         <small id="monthlyExpensesMeta">لا توجد مصروفات مسجلة</small>
                     </article>
@@ -79,11 +86,14 @@
 
             <section class="dashboard-analytics panel" id="dashboardAnalytics" hidden aria-labelledby="dashboardAnalyticsTitle"></section>
 
+            <section class="reports-section panel" id="reportsSection" hidden aria-labelledby="reportsTitle"></section>
+
             <section class="management-tab-panel panel" id="managementSection" hidden>
                 <div class="panel-header management-tab-header"><div><span class="management-eyebrow">إدارة النظام</span><h3>الأسعار والعضويات</h3><p>تحكم في الباقات وأنواع العضويات من مكان واحد.</p></div></div>
                 <div class="management-shortcuts">
-                    <button class="management-shortcut" type="button" data-open-dialog-button="pricingButton"><span class="management-shortcut-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 9h10M7 13h5"/></svg></span><span><strong>أسعار الباقات</strong><small>تعديل أسعار الجيم والكارديو.</small></span><svg class="management-shortcut-arrow ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></button>
-                    <button class="management-shortcut" type="button" data-open-dialog-button="membershipTypesButton"><span class="management-shortcut-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span><span><strong>أنواع العضويات</strong><small>إدارة المدد ومعاملات الأسعار.</small></span><svg class="management-shortcut-arrow ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></button>
+                    <button class="management-shortcut" type="button" data-permission="settings.write" data-open-dialog-button="pricingButton"><span class="management-shortcut-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 9h10M7 13h5"/></svg></span><span><strong>أسعار الباقات</strong><small>تعديل أسعار الجيم والكارديو.</small></span><svg class="management-shortcut-arrow ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></button>
+                    <button class="management-shortcut" type="button" data-permission="settings.write" data-open-dialog-button="membershipTypesButton"><span class="management-shortcut-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span><span><strong>أنواع العضويات</strong><small>إدارة المدد ومعاملات الأسعار.</small></span><svg class="management-shortcut-arrow ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></button>
+                    <button class="management-shortcut" type="button" data-permission="users.manage" id="usersButton"><span class="management-shortcut-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M17 11h5M19.5 8.5v5"/></svg></span><span><strong>المستخدمون والصلاحيات</strong><small>إدارة المديرين وموظفي الاستقبال.</small></span><svg class="management-shortcut-arrow ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></button>
                 </div>
             </section>
 
@@ -224,13 +234,34 @@
             <div id="detailsContent"><div class="loading">جاري تحميل التفاصيل…</div></div>
         </div>
     </dialog>
+    <dialog id="usersDialog" class="users-dialog rounded-lg border-slate-200 shadow-lift">
+        <div class="dialog-body">
+            <div class="details-dialog-head"><div><h3>المستخدمون والصلاحيات</h3><p>أنشئ حسابات مستقلة وسجّل كل تعديل باسم صاحبه.</p></div><button class="btn btn-light btn-small" id="usersDialogClose" type="button">إغلاق</button></div>
+            <div class="users-layout">
+                <form class="user-form" id="userForm">
+                    <input type="hidden" id="editingUserId">
+                    <h4 id="userFormTitle">إضافة مستخدم</h4>
+                    <div class="field"><label for="userFullName">الاسم الكامل *</label><input id="userFullName" maxlength="120" required></div>
+                    <div class="field"><label for="userUsername">اسم المستخدم *</label><input id="userUsername" maxlength="50" pattern="[A-Za-z][A-Za-z0-9._-]{2,49}" required><small class="field-hint">بالإنجليزية فقط.</small></div>
+                    <div class="field"><label for="userPassword">كلمة المرور <span id="userPasswordHint">*</span></label><input id="userPassword" type="password" minlength="8" maxlength="128" autocomplete="new-password"><small class="field-hint">8 أحرف على الأقل.</small></div>
+                    <div class="field"><label for="userRole">الصلاحية</label><select id="userRole"><option value="reception">استقبال</option><option value="manager">مدير</option></select></div>
+                    <label class="checkbox-field"><input id="userActive" type="checkbox" checked><span>حساب نشط</span></label>
+                    <div class="dialog-actions"><button class="btn btn-light" id="userResetButton" type="button">تفريغ</button><button class="btn btn-primary" id="userSaveButton" type="submit">حفظ المستخدم</button></div>
+                </form>
+                <div class="users-list-panel"><div class="users-list-head"><h4>الحسابات الحالية</h4><span id="usersCount">—</span></div><div id="usersList"><div class="loading">جاري تحميل المستخدمين…</div></div></div>
+            </div>
+            <section class="audit-panel"><div class="users-list-head"><h4>آخر العمليات</h4><button class="btn btn-light btn-small" id="refreshAuditButton" type="button">تحديث</button></div><div id="auditList"><div class="loading">جاري تحميل سجل العمليات…</div></div></section>
+        </div>
+    </dialog>
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="/js/app.js?v=pricing2"></script>
+    <script src="/js/auth.js?v=1"></script>
+    <script src="/js/app.js?v=security1"></script>
     <script src="/js/monthly-finance.js?v=9"></script>
     <script src="/js/page-tabs.js?v=4"></script>
     <script src="/js/dashboard-analytics.js?v=3"></script>
+    <script src="/js/reports.js?v=1"></script>
     <script src="/js/button-loading.js"></script>
     <script src="/js/backup-enhancements.js?v=1"></script>
     <script src="/js/pagination.js"></script>

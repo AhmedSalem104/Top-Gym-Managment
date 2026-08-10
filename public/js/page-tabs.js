@@ -13,16 +13,19 @@
         const expensesSection = document.getElementById('expensesSection');
         const managementSection = document.getElementById('managementSection');
         const analyticsSection = document.getElementById('dashboardAnalytics');
+        const reportsSection = document.getElementById('reportsSection');
         const isDashboard = name === 'dashboard';
         const isMembers = name === 'members';
         const isExpenses = name === 'expenses';
         const isManagement = name === 'management';
+        const isReports = name === 'reports';
 
         setHidden(overview, !isDashboard);
         setHidden(expensesSection, !isExpenses);
         setHidden(managementSection, !isManagement);
         setHidden(analyticsSection, !isDashboard);
-        setHidden(workspace, isDashboard || isExpenses);
+        setHidden(reportsSection, !isReports);
+        setHidden(workspace, isDashboard || isExpenses || isReports || isManagement);
         setHidden(membersSection, !isMembers);
 
         document.querySelectorAll('[data-page-tab]').forEach((button) => {
@@ -31,6 +34,7 @@
             button.setAttribute('aria-selected', String(active));
         });
         window.history.replaceState(null, '', `#${name}`);
+        window.dispatchEvent(new CustomEvent('topgym:tab-changed', { detail: { name } }));
     }
 
     document.addEventListener('DOMContentLoaded', () => {

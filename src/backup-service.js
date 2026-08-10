@@ -17,7 +17,8 @@ const BACKUP_TABLES = [
     { key: 'membership_freezes', table: 'membership_freezes' },
     { key: 'gym_payments', table: 'gym_payments' },
     { key: 'gym_expenses', table: 'gym_expenses' },
-    { key: 'membership_events', table: 'membership_events' }
+    { key: 'membership_events', table: 'membership_events' },
+    { key: 'gym_audit_log', table: 'gym_audit_log' }
 ];
 
 function getLocalTimeParts(date = new Date()) {
