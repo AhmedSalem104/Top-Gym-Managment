@@ -7,8 +7,12 @@
         trainees: [],
         pagination: null,
         page: 1,
+        pageSize: 20,
         search: '',
         loaded: false,
+        loadingKey: '',
+        requestId: 0,
+        abortController: null,
         catalog: { exercises: [], foods: [] },
         builder: null,
         profile: null
@@ -107,11 +111,15 @@
             activateCoachingSummary();
             return;
         }
-        container.innerHTML = state.trainees.map((trainee) => `<article class="external-trainee-card" data-trainee-id="${trainee.id}">
-            <div class="external-trainee-head"><div class="trainee-avatar">${escapeHtml((trainee.fullName || 'م').trim().slice(0, 1))}</div><div class="trainee-identity"><strong>${escapeHtml(trainee.fullName)}</strong><a href="tel:${escapeHtml(trainee.phone)}">${escapeHtml(trainee.phone)}</a>${trainee.email ? `<small>${escapeHtml(trainee.email)}</small>` : ''}</div><span class="trainee-badge">خارجي</span></div>
-            <div class="external-trainee-metrics"><span><b>${number(trainee.workoutCount, 0)}</b> برنامج تدريب</span><span><b>${number(trainee.dietCount, 0)}</b> خطة تغذية</span><span><b>${number(trainee.measurementCount, 0)}</b> قياس</span></div>
-            <div class="external-trainee-foot"><small>آخر نشاط: ${trainee.lastActivity ? escapeHtml(new Date(trainee.lastActivity).toLocaleDateString('ar-EG')) : '—'}</small><div class="trainee-actions"><button class="btn btn-light btn-small" data-coaching-action="profile" data-id="${trainee.id}">فتح الملف</button><button class="btn btn-primary btn-small" data-coaching-action="workout" data-id="${trainee.id}">+ تدريب</button><button class="btn btn-light btn-small" data-coaching-action="diet" data-id="${trainee.id}">+ تغذية</button></div></div>
-        </article>`).join('');
+        const rows = state.trainees.map((trainee) => `<tr data-trainee-id="${trainee.id}">
+            <td><div class="external-trainee-primary"><div class="trainee-avatar">${escapeHtml((trainee.fullName || 'م').trim().slice(0, 1))}</div><div><strong title="${escapeHtml(trainee.fullName)}">${escapeHtml(trainee.fullName)}</strong><a href="tel:${escapeHtml(trainee.phone)}">${escapeHtml(trainee.phone)}</a>${trainee.email ? `<small>${escapeHtml(trainee.email)}</small>` : ''}</div></div></td>
+            <td><span class="trainee-badge">خارجي</span></td>
+            <td><div class="external-trainee-counts"><span class="external-trainee-count"><b>${number(trainee.workoutCount, 0)}</b><span>تدريب</span></span><span class="external-trainee-count"><b>${number(trainee.dietCount, 0)}</b><span>تغذية</span></span></div></td>
+            <td><strong>${number(trainee.measurementCount, 0)}</strong><small>قياس محفوظ</small></td>
+            <td><span class="external-trainee-last-activity">${trainee.lastActivity ? escapeHtml(new Date(trainee.lastActivity).toLocaleDateString('ar-EG')) : '—'}</span></td>
+            <td><div class="trainee-actions"><button class="btn btn-light btn-small" data-coaching-action="profile" data-id="${trainee.id}">فتح الملف</button><button class="btn btn-primary btn-small" data-coaching-action="workout" data-id="${trainee.id}">+ تدريب</button><button class="btn btn-light btn-small" data-coaching-action="diet" data-id="${trainee.id}">+ تغذية</button></div></td>
+        </tr>`).join('');
+        container.innerHTML = `<div class="external-trainees-table-wrap"><table class="external-trainees-table"><thead><tr><th>المتدرب</th><th>النوع</th><th>الأنظمة</th><th>القياسات</th><th>آخر نشاط</th><th>الإجراءات</th></tr></thead><tbody>${rows}</tbody></table></div>`;
         activateCoachingSummary();
     }
 
@@ -124,19 +132,30 @@
     }
 
     async function loadTrainees(force = false) {
-        if (state.loaded && !force && state.search === String($('externalTraineeSearch')?.value || '').trim()) return;
-        state.search = String($('externalTraineeSearch')?.value || '').trim();
+        const requestedSearch = String($('externalTraineeSearch')?.value || '').trim();
+        const queryKey = `${state.page}:${requestedSearch}`;
+        if (state.loaded && !force && state.search === requestedSearch) return;
+        if (state.loadingKey === queryKey && !force) return;
+        state.search = requestedSearch;
+        state.loadingKey = queryKey;
+        if (state.abortController) state.abortController.abort();
+        state.abortController = new AbortController();
+        const requestId = ++state.requestId;
         setLoading($('externalTraineesList'), 'جاري تحميل المتدربين…');
         try {
-            const data = await requestJson(`/api/external-trainees?page=${state.page}&pageSize=12&search=${encodeURIComponent(state.search)}`);
+            const data = await requestJson(`/api/external-trainees?page=${state.page}&pageSize=${state.pageSize}&search=${encodeURIComponent(state.search)}`, { signal: state.abortController.signal });
+            if (requestId !== state.requestId) return;
             state.trainees = data.trainees || [];
             state.pagination = data.pagination;
             state.loaded = true;
             renderTrainees();
             renderPagination();
         } catch (error) {
+            if (error.name === 'AbortError' || requestId !== state.requestId) return;
             $('externalTraineesList').innerHTML = `<div class="coaching-empty error"><strong>تعذر تحميل المتدربين</strong><span>${escapeHtml(error.message)}</span></div>`;
             notify(error.message, 'error');
+        } finally {
+            if (requestId === state.requestId) state.loadingKey = '';
         }
     }
 

@@ -19,15 +19,25 @@
 .library-heading p { margin: 4px 0 0; color: #64748b; font-size: 11px; }
 .library-add-button { min-height: 43px; gap: 7px; white-space: nowrap; }
 .library-add-button > span:first-child { font-size: 21px; line-height: 1; }
-.library-summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.library-summary { display: block; }
 .library-summary:empty { display: none; }
+.library-summary-table-wrap { overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 13px; background: #fff; }
+.library-summary-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+.library-summary-table th, .library-summary-table td { padding: 9px 12px; border-bottom: 1px solid #eef2f7; text-align: right; }
+.library-summary-table th { color: #64748b; background: #f8fafc; font-size: 10px; font-weight: 900; }
+.library-summary-table tr:last-child td { border-bottom: 0; }
+.library-summary-table td:last-child { width: 180px; }
+.library-summary-table strong { color: #0f172a; font-size: 16px; }
+.library-summary-name { font-weight: 900; }
+.library-summary-name.foods { color: #047857; }
+.library-summary-name.exercises { color: #6d28d9; }
 .library-summary-card { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-width: 0; padding: 12px 14px; border: 1px solid #e2e8f0; border-radius: 13px; background: linear-gradient(135deg, #fff, #f8fbff); }
 .library-summary-card span { color: #64748b; font-size: 11px; font-weight: 800; }
 .library-summary-card strong { color: #0f172a; font-size: 21px; font-weight: 900; }
 .library-summary-card.muscles strong { color: #2563eb; }
 .library-summary-card.foods strong { color: #059669; }
 .library-summary-card.exercises strong { color: #7c3aed; }
-.library-type-tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; padding: 5px; border: 1px solid #e2e8f0; border-radius: 14px; background: #f8fafc; }
+.library-type-tabs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; padding: 5px; border: 1px solid #e2e8f0; border-radius: 14px; background: #f8fafc; }
 .library-type-tab { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 46px; padding: 8px 10px; color: #64748b; border: 1px solid transparent; border-radius: 10px; background: transparent; font: inherit; font-size: 12px; font-weight: 800; cursor: pointer; transition: .18s ease; }
 .library-type-tab:hover { color: #1e40af; background: #eff6ff; }
 .library-type-tab.active { color: #1d4ed8; border-color: #bfdbfe; background: #fff; box-shadow: 0 5px 14px rgba(37, 99, 235, .1); }
@@ -47,6 +57,30 @@
 .library-message.success { color: #047857; border: 1px solid #a7f3d0; background: #ecfdf5; }
 .library-message.error { color: #b91c1c; border: 1px solid #fecaca; background: #fff1f2; }
 .library-list { min-height: 160px; }
+.library-table-wrap { overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 14px; background: #fff; -webkit-overflow-scrolling: touch; }
+.library-data-table { width: 100%; min-width: 880px; border-collapse: collapse; font-size: 10px; }
+.library-data-table th, .library-data-table td { padding: 10px 11px; border-bottom: 1px solid #eef2f7; text-align: right; vertical-align: middle; white-space: nowrap; }
+.library-data-table th { color: #64748b; background: #f8fafc; font-size: 10px; font-weight: 900; }
+.library-data-table tbody tr { transition: background .16s ease; }
+.library-data-table tbody tr:hover { background: #f8fbff; }
+.library-data-table tbody tr:last-child td { border-bottom: 0; }
+.library-data-table td > strong, .library-data-table td > small { display: block; }
+.library-data-table td > strong { color: #0f172a; font-size: 11px; }
+.library-data-table td > small { margin-top: 2px; color: #94a3b8; font-size: 8px; }
+.library-table-primary { display: flex; align-items: center; gap: 8px; min-width: 190px; }
+.library-table-primary > div { min-width: 0; }
+.library-table-primary strong, .library-table-primary small { display: block; max-width: 250px; overflow: hidden; text-overflow: ellipsis; }
+.library-table-primary strong { color: #0f172a; font-size: 11px; }
+.library-table-primary small { margin-top: 2px; color: #94a3b8; direction: ltr; font-size: 8px; text-align: right; }
+.library-table-icon { display: grid; place-items: center; width: 32px; height: 32px; flex: 0 0 32px; border-radius: 9px; background: #eff6ff; font-size: 17px; line-height: 1; }
+.library-table-badge { display: inline-flex; align-items: center; max-width: 170px; overflow: hidden; padding: 4px 7px; color: #475569; border-radius: 999px; background: #f1f5f9; font-size: 9px; font-weight: 800; text-overflow: ellipsis; }
+.library-table-badge.foods { color: #047857; background: #d1fae5; }
+.library-table-badge.exercises { color: #6d28d9; background: #ede9fe; }
+.library-table-badge.warning { color: #b45309; background: #fef3c7; }
+.library-row-actions { display: flex; align-items: center; justify-content: flex-start; gap: 5px; }
+.library-row-actions .btn { min-height: 30px; padding: 4px 7px; font-size: 9px; }
+.library-row-actions .library-delete { color: #b91c1c; border-color: #fecaca; background: #fff; }
+.library-row-actions .library-delete:hover { color: #fff; background: #dc2626; }
 .library-card-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
 .library-card { display: flex; flex-direction: column; min-width: 0; padding: 15px; border: 1px solid #e2e8f0; border-radius: 15px; background: linear-gradient(155deg, #fff, #f8fbff); box-shadow: 0 7px 18px rgba(15, 23, 42, .04); transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease; }
 .library-card:hover { transform: translateY(-2px); border-color: #bfdbfe; box-shadow: 0 13px 26px rgba(30, 64, 175, .1); }
@@ -118,10 +152,9 @@
     .library-heading p { font-size: 10px; }
     .library-heading-icon { width: 42px; height: 42px; flex-basis: 42px; border-radius: 12px; }
     .library-add-button { width: 100%; justify-content: center; }
-    .library-summary { gap: 6px; }
-    .library-summary-card { display: grid; justify-items: center; gap: 2px; padding: 8px 5px; text-align: center; }
-    .library-summary-card span { font-size: 9px; }
-    .library-summary-card strong { font-size: 17px; }
+    .library-summary-table th, .library-summary-table td { padding: 8px 9px; }
+    .library-summary-table td:last-child { width: 120px; }
+    .library-summary-table strong { font-size: 14px; }
     .library-type-tabs { gap: 4px; padding: 4px; }
     .library-type-tab { min-height: 42px; gap: 4px; padding-inline: 4px; font-size: 10px; }
     .library-type-icon { font-size: 14px; }
@@ -132,6 +165,10 @@
     .library-filter { min-width: 0; width: calc(50% - 3px); flex: 1 1 calc(50% - 3px); font-size: 9px; }
     .library-refresh-button { flex: 1 1 100%; width: 100%; }
     .library-card-grid { grid-template-columns: 1fr; gap: 8px; }
+    .library-data-table { min-width: 760px; }
+    .library-data-table th, .library-data-table td { padding: 8px 9px; }
+    .library-table-primary { min-width: 165px; }
+    .library-row-actions .btn { min-height: 29px; padding-inline: 6px; }
     .library-card { padding: 12px; border-radius: 12px; }
     .library-card-description { margin: 9px 0; }
     .library-card-actions { padding-top: 9px; }

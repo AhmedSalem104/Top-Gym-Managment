@@ -456,27 +456,62 @@ async function getExternalTrainees({ search = '', page = 1, pageSize = 12 } = {}
         .input('offset', sql.Int, offset)
         .input('pageSize', sql.Int, currentPageSize)
         .query(`
-            WITH candidates AS (
+            WITH program_stats AS (
+                SELECT member_id,
+                       COUNT(CASE WHEN status <> 'archived' THEN 1 END) AS workout_count,
+                       MAX(updated_at) AS last_activity
+                FROM dbo.workout_programs
+                GROUP BY member_id
+            ),
+            diet_stats AS (
+                SELECT member_id,
+                       COUNT(CASE WHEN status <> 'archived' THEN 1 END) AS diet_count,
+                       MAX(updated_at) AS last_activity
+                FROM dbo.diet_plans
+                GROUP BY member_id
+            ),
+            measurement_stats AS (
+                SELECT member_id,
+                       COUNT(1) AS measurement_count,
+                       MAX(updated_at) AS last_activity
+                FROM dbo.body_measurements
+                GROUP BY member_id
+            ),
+            active_memberships AS (
+                SELECT DISTINCT membership.member_id
+                FROM dbo.memberships AS membership
+                OUTER APPLY (
+                    SELECT SUM(CASE
+                        WHEN freeze.resumed_date IS NULL THEN DATEDIFF(day, freeze.start_date, freeze.end_date) + 1
+                        WHEN freeze.resumed_date <= freeze.start_date THEN 0
+                        WHEN freeze.resumed_date < freeze.end_date THEN DATEDIFF(day, freeze.start_date, freeze.resumed_date)
+                        ELSE DATEDIFF(day, freeze.start_date, freeze.end_date) + 1
+                    END) AS freeze_days
+                    FROM dbo.membership_freezes AS freeze
+                    WHERE freeze.membership_id = membership.id
+                ) AS freeze_totals
+                WHERE DATEADD(day, ISNULL(freeze_totals.freeze_days, 0), membership.end_date) >= @today
+            ),
+            candidates AS (
                 SELECT
                     m.id, m.full_name, m.phone, m.email, m.registration_date, m.notes,
                     m.created_at, m.updated_at,
-                    (SELECT COUNT(1) FROM dbo.workout_programs p WHERE p.member_id = m.id AND p.status <> 'archived') AS workout_count,
-                    (SELECT COUNT(1) FROM dbo.diet_plans d WHERE d.member_id = m.id AND d.status <> 'archived') AS diet_count,
-                    (SELECT COUNT(1) FROM dbo.body_measurements bm WHERE bm.member_id = m.id) AS measurement_count,
-                    (SELECT MAX(activity_date) FROM (
-                        SELECT p.updated_at AS activity_date FROM dbo.workout_programs p WHERE p.member_id = m.id
-                        UNION ALL SELECT d.updated_at FROM dbo.diet_plans d WHERE d.member_id = m.id
-                        UNION ALL SELECT bm.updated_at FROM dbo.body_measurements bm WHERE bm.member_id = m.id
-                    ) activity) AS last_activity
-                FROM dbo.members m
+                    ISNULL(program_stats.workout_count, 0) AS workout_count,
+                    ISNULL(diet_stats.diet_count, 0) AS diet_count,
+                    ISNULL(measurement_stats.measurement_count, 0) AS measurement_count,
+                    (SELECT MAX(activity_date) FROM (VALUES
+                        (program_stats.last_activity),
+                        (diet_stats.last_activity),
+                        (measurement_stats.last_activity)
+                    ) AS activities(activity_date)) AS last_activity
+                FROM dbo.members AS m
+                LEFT JOIN program_stats ON program_stats.member_id = m.id
+                LEFT JOIN diet_stats ON diet_stats.member_id = m.id
+                LEFT JOIN measurement_stats ON measurement_stats.member_id = m.id
+                LEFT JOIN active_memberships ON active_memberships.member_id = m.id
                 WHERE (@search = N'' OR m.full_name LIKE @pattern OR m.phone LIKE @pattern OR ISNULL(m.email, N'') LIKE @pattern)
-                  AND (EXISTS (SELECT 1 FROM dbo.workout_programs p WHERE p.member_id = m.id AND p.status <> 'archived')
-                       OR EXISTS (SELECT 1 FROM dbo.diet_plans d WHERE d.member_id = m.id AND d.status <> 'archived'))
-                  AND NOT EXISTS (
-                      SELECT 1 FROM dbo.memberships membership
-                      WHERE membership.member_id = m.id
-                        AND DATEADD(day, ISNULL((SELECT SUM(CASE WHEN f.resumed_date IS NULL THEN DATEDIFF(day, f.start_date, f.end_date) + 1 WHEN f.resumed_date <= f.start_date THEN 0 WHEN f.resumed_date < f.end_date THEN DATEDIFF(day, f.start_date, f.resumed_date) ELSE DATEDIFF(day, f.start_date, f.end_date) + 1 END) FROM dbo.membership_freezes f WHERE f.membership_id = membership.id), 0), membership.end_date) >= @today
-                  )
+                  AND (ISNULL(program_stats.workout_count, 0) > 0 OR ISNULL(diet_stats.diet_count, 0) > 0)
+                  AND active_memberships.member_id IS NULL
             )
             SELECT *, COUNT(1) OVER() AS total_count
             FROM candidates
