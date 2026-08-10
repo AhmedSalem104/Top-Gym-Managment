@@ -498,3 +498,105 @@ IF NOT EXISTS (
 BEGIN
     CREATE INDEX IX_gym_expenses_date ON dbo.gym_expenses(expense_date DESC, id DESC);
 END;
+
+-- Training and nutrition library imported from the LogicFit seed data.
+IF OBJECT_ID(N'dbo.gym_muscles', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.gym_muscles (
+        id INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_gym_muscles PRIMARY KEY,
+        source_id INT NULL CONSTRAINT UQ_gym_muscles_source UNIQUE,
+        name NVARCHAR(120) NOT NULL,
+        name_ar NVARCHAR(120) NULL,
+        body_part NVARCHAR(80) NULL,
+        description NVARCHAR(1000) NULL,
+        description_ar NVARCHAR(1000) NULL,
+        icon NVARCHAR(20) NULL,
+        created_at DATETIME2(0) NOT NULL CONSTRAINT DF_gym_muscles_created DEFAULT (SYSUTCDATETIME()),
+        updated_at DATETIME2(0) NOT NULL CONSTRAINT DF_gym_muscles_updated DEFAULT (SYSUTCDATETIME())
+    );
+END;
+
+IF OBJECT_ID(N'dbo.gym_foods', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.gym_foods (
+        id INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_gym_foods PRIMARY KEY,
+        source_id INT NULL CONSTRAINT UQ_gym_foods_source UNIQUE,
+        name_ar NVARCHAR(160) NULL,
+        name_en NVARCHAR(160) NULL,
+        category NVARCHAR(80) NULL,
+        calories DECIMAL(12,3) NOT NULL CONSTRAINT DF_gym_foods_calories DEFAULT (0),
+        protein DECIMAL(12,3) NOT NULL CONSTRAINT DF_gym_foods_protein DEFAULT (0),
+        carbs DECIMAL(12,3) NOT NULL CONSTRAINT DF_gym_foods_carbs DEFAULT (0),
+        fat DECIMAL(12,3) NOT NULL CONSTRAINT DF_gym_foods_fat DEFAULT (0),
+        fiber DECIMAL(12,3) NOT NULL CONSTRAINT DF_gym_foods_fiber DEFAULT (0),
+        sugar DECIMAL(12,3) NOT NULL CONSTRAINT DF_gym_foods_sugar DEFAULT (0),
+        sodium DECIMAL(12,3) NOT NULL CONSTRAINT DF_gym_foods_sodium DEFAULT (0),
+        serving_size DECIMAL(12,3) NOT NULL CONSTRAINT DF_gym_foods_serving_size DEFAULT (100),
+        serving_unit NVARCHAR(40) NULL,
+        created_at DATETIME2(0) NOT NULL CONSTRAINT DF_gym_foods_created DEFAULT (SYSUTCDATETIME()),
+        updated_at DATETIME2(0) NOT NULL CONSTRAINT DF_gym_foods_updated DEFAULT (SYSUTCDATETIME())
+    );
+END;
+
+IF OBJECT_ID(N'dbo.gym_exercises', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.gym_exercises (
+        id INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_gym_exercises PRIMARY KEY,
+        source_id INT NULL CONSTRAINT UQ_gym_exercises_source UNIQUE,
+        name NVARCHAR(160) NOT NULL,
+        name_ar NVARCHAR(160) NULL,
+        description NVARCHAR(2000) NULL,
+        description_ar NVARCHAR(2000) NULL,
+        target_muscle_id INT NULL,
+        secondary_muscles_json NVARCHAR(MAX) NOT NULL CONSTRAINT DF_gym_exercises_secondary DEFAULT (N'[]'),
+        equipment NVARCHAR(100) NULL,
+        is_high_impact BIT NOT NULL CONSTRAINT DF_gym_exercises_impact DEFAULT (0),
+        difficulty NVARCHAR(60) NULL,
+        category NVARCHAR(80) NULL,
+        movement_pattern NVARCHAR(80) NULL,
+        mechanic NVARCHAR(80) NULL,
+        force NVARCHAR(80) NULL,
+        instructions_json NVARCHAR(MAX) NOT NULL CONSTRAINT DF_gym_exercises_instructions DEFAULT (N'[]'),
+        instructions_ar_json NVARCHAR(MAX) NOT NULL CONSTRAINT DF_gym_exercises_instructions_ar DEFAULT (N'[]'),
+        tips_json NVARCHAR(MAX) NOT NULL CONSTRAINT DF_gym_exercises_tips DEFAULT (N'[]'),
+        tips_ar_json NVARCHAR(MAX) NOT NULL CONSTRAINT DF_gym_exercises_tips_ar DEFAULT (N'[]'),
+        common_mistakes_json NVARCHAR(MAX) NOT NULL CONSTRAINT DF_gym_exercises_mistakes DEFAULT (N'[]'),
+        common_mistakes_ar_json NVARCHAR(MAX) NOT NULL CONSTRAINT DF_gym_exercises_mistakes_ar DEFAULT (N'[]'),
+        reps_range NVARCHAR(40) NULL,
+        sets_range NVARCHAR(40) NULL,
+        rest_seconds INT NULL,
+        tempo NVARCHAR(40) NULL,
+        icon NVARCHAR(20) NULL,
+        video_url NVARCHAR(1000) NULL,
+        metadata_json NVARCHAR(MAX) NULL,
+        created_at DATETIME2(0) NOT NULL CONSTRAINT DF_gym_exercises_created DEFAULT (SYSUTCDATETIME()),
+        updated_at DATETIME2(0) NOT NULL CONSTRAINT DF_gym_exercises_updated DEFAULT (SYSUTCDATETIME()),
+        CONSTRAINT FK_gym_exercises_target_muscle FOREIGN KEY (target_muscle_id)
+            REFERENCES dbo.gym_muscles(id) ON DELETE NO ACTION
+    );
+END;
+
+IF NOT EXISTS (
+    SELECT 1 FROM sys.indexes
+    WHERE name = N'IX_gym_muscles_body_part' AND object_id = OBJECT_ID(N'dbo.gym_muscles')
+)
+BEGIN
+    CREATE INDEX IX_gym_muscles_body_part ON dbo.gym_muscles(body_part, name_ar, name);
+END;
+
+IF NOT EXISTS (
+    SELECT 1 FROM sys.indexes
+    WHERE name = N'IX_gym_foods_category' AND object_id = OBJECT_ID(N'dbo.gym_foods')
+)
+BEGIN
+    CREATE INDEX IX_gym_foods_category ON dbo.gym_foods(category, name_ar, name_en);
+END;
+
+IF NOT EXISTS (
+    SELECT 1 FROM sys.indexes
+    WHERE name = N'IX_gym_exercises_filters' AND object_id = OBJECT_ID(N'dbo.gym_exercises')
+)
+BEGIN
+    CREATE INDEX IX_gym_exercises_filters
+        ON dbo.gym_exercises(category, difficulty, equipment, target_muscle_id, name_ar);
+END;

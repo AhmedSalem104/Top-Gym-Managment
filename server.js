@@ -9,6 +9,15 @@ const { getDashboardAnalytics } = require('./src/analytics-service');
 const { getReportData } = require('./src/report-service');
 const { checkIn, checkOut, getMemberAttendance, getTodayAttendance } = require('./src/attendance-service');
 const {
+    createLibraryItem,
+    deleteLibraryItem,
+    ensureLibraryData,
+    getLibraryCollection,
+    getLibraryItem,
+    getLibraryOptions,
+    updateLibraryItem
+} = require('./src/library-service');
+const {
     createMember,
     deleteMember,
     getBootstrap,
@@ -162,6 +171,31 @@ app.get('/api/dashboard-analytics', asyncRoute(async (request, response) => {
     response.json(await getDashboardAnalytics(request.query.period));
 }));
 
+app.get('/api/library/options', asyncRoute(async (request, response) => {
+    response.json(await getLibraryOptions());
+}));
+
+app.get('/api/library/:type', asyncRoute(async (request, response) => {
+    response.json(await getLibraryCollection(request.params.type, request.query));
+}));
+
+app.get('/api/library/:type/:id', asyncRoute(async (request, response) => {
+    response.json({ item: await getLibraryItem(request.params.type, request.params.id) });
+}));
+
+app.post('/api/library/:type', asyncRoute(async (request, response) => {
+    response.status(201).json({ item: await createLibraryItem(request.params.type, request.body) });
+}));
+
+app.put('/api/library/:type/:id', asyncRoute(async (request, response) => {
+    response.json({ item: await updateLibraryItem(request.params.type, request.params.id, request.body) });
+}));
+
+app.delete('/api/library/:type/:id', asyncRoute(async (request, response) => {
+    await deleteLibraryItem(request.params.type, request.params.id);
+    response.status(204).send();
+}));
+
 app.get('/api/reports', asyncRoute(async (request, response) => {
     response.json(await getReportData(request.query));
 }));
@@ -303,6 +337,7 @@ app.use((error, request, response, next) => {
 
 async function start() {
     await initDatabase();
+    await ensureLibraryData();
     const port = Number(process.env.PORT || 3000);
     app.listen(port, () => console.log(`Gym membership app is running on http://localhost:${port}`));
 }

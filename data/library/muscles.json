@@ -1,0 +1,1082 @@
+[
+  {
+    "name": "Chest",
+    "nameAr": "صدر",
+    "bodyPart": "Upper Body",
+    "description": "The main chest muscle responsible for pushing movements",
+    "descriptionAr": "عضلة الصدر الرئيسية المسؤولة عن حركات الدفع",
+    "icon": "💪"
+  },
+  {
+    "name": "Upper Chest",
+    "nameAr": "صدر علوي",
+    "bodyPart": "Upper Body",
+    "description": "Upper portion of the pectoralis major, targeted with incline exercises",
+    "descriptionAr": "الجزء العلوي من عضلة الصدر، يُستهدف بتمارين الإنحدار للأعلى",
+    "icon": "💪"
+  },
+  {
+    "name": "Lower Chest",
+    "nameAr": "صدر سفلي",
+    "bodyPart": "Upper Body",
+    "description": "Lower portion of the pectoralis major, targeted with decline exercises",
+    "descriptionAr": "الجزء السفلي من عضلة الصدر، يُستهدف بتمارين الإنحدار للأسفل",
+    "icon": "💪"
+  },
+  {
+    "name": "Inner Chest",
+    "nameAr": "صدر داخلي",
+    "bodyPart": "Upper Body",
+    "description": "The inner portion of the chest near the sternum",
+    "descriptionAr": "الجزء الداخلي من الصدر قرب عظمة القص",
+    "icon": "💪"
+  },
+  {
+    "name": "Outer Chest",
+    "nameAr": "صدر خارجي",
+    "bodyPart": "Upper Body",
+    "description": "The outer portion of the chest near the armpit",
+    "descriptionAr": "الجزء الخارجي من الصدر قرب الإبط",
+    "icon": "💪"
+  },
+  {
+    "name": "Pectoralis Minor",
+    "nameAr": "الصدرية الصغرى",
+    "bodyPart": "Upper Body",
+    "description": "Small muscle beneath the pectoralis major, aids in shoulder movement",
+    "descriptionAr": "عضلة صغيرة تحت الصدرية الكبرى، تساعد في حركة الكتف",
+    "icon": "💪"
+  },
+  {
+    "name": "Back",
+    "nameAr": "ظهر",
+    "bodyPart": "Upper Body",
+    "description": "The posterior muscles of the torso responsible for pulling movements",
+    "descriptionAr": "عضلات الجذع الخلفية المسؤولة عن حركات السحب",
+    "icon": "🔙"
+  },
+  {
+    "name": "Upper Back",
+    "nameAr": "ظهر علوي",
+    "bodyPart": "Upper Body",
+    "description": "The upper portion of back muscles including traps and rhomboids",
+    "descriptionAr": "الجزء العلوي من عضلات الظهر بما فيها الترابيس والمعينية",
+    "icon": "🔙"
+  },
+  {
+    "name": "Middle Back",
+    "nameAr": "ظهر أوسط",
+    "bodyPart": "Upper Body",
+    "description": "The middle portion of back muscles for posture and rowing movements",
+    "descriptionAr": "الجزء الأوسط من عضلات الظهر للقوام وحركات التجديف",
+    "icon": "🔙"
+  },
+  {
+    "name": "Lats",
+    "nameAr": "مجنص",
+    "bodyPart": "Upper Body",
+    "description": "Large V-shaped muscles of the back for pulling and width",
+    "descriptionAr": "عضلات الظهر الكبيرة على شكل V للسحب والعرض",
+    "icon": "🦅"
+  },
+  {
+    "name": "Rhomboids",
+    "nameAr": "العضلة المعينية",
+    "bodyPart": "Upper Body",
+    "description": "Muscles between shoulder blades for scapular retraction",
+    "descriptionAr": "عضلات بين لوحي الكتف لسحب الكتف للخلف",
+    "icon": "🔙"
+  },
+  {
+    "name": "Rhomboid Major",
+    "nameAr": "المعينية الكبرى",
+    "bodyPart": "Upper Body",
+    "description": "Larger rhomboid muscle for shoulder blade movement",
+    "descriptionAr": "العضلة المعينية الكبيرة لحركة لوح الكتف",
+    "icon": "🔙"
+  },
+  {
+    "name": "Rhomboid Minor",
+    "nameAr": "المعينية الصغرى",
+    "bodyPart": "Upper Body",
+    "description": "Smaller rhomboid muscle above the major",
+    "descriptionAr": "العضلة المعينية الصغيرة فوق الكبرى",
+    "icon": "🔙"
+  },
+  {
+    "name": "Teres Major",
+    "nameAr": "المدورة الكبرى",
+    "bodyPart": "Upper Body",
+    "description": "Muscle that assists lats in pulling movements",
+    "descriptionAr": "عضلة تساعد المجنص في حركات السحب",
+    "icon": "🔙"
+  },
+  {
+    "name": "Teres Minor",
+    "nameAr": "المدورة الصغرى",
+    "bodyPart": "Upper Body",
+    "description": "Part of rotator cuff, helps with shoulder rotation",
+    "descriptionAr": "جزء من الكفة المدورة، تساعد في دوران الكتف",
+    "icon": "🔄"
+  },
+  {
+    "name": "Serratus Anterior",
+    "nameAr": "العضلة المنشارية",
+    "bodyPart": "Upper Body",
+    "description": "Saw-tooth shaped muscle on side of ribs for shoulder stability",
+    "descriptionAr": "عضلة مسننة على جانب الأضلاع لثبات الكتف",
+    "icon": "〰️"
+  },
+  {
+    "name": "Traps",
+    "nameAr": "ترابيس",
+    "bodyPart": "Upper Body",
+    "description": "Diamond-shaped muscle from neck to mid-back",
+    "descriptionAr": "عضلة ماسية الشكل من الرقبة لمنتصف الظهر",
+    "icon": "⬆️"
+  },
+  {
+    "name": "Upper Traps",
+    "nameAr": "ترابيس علوي",
+    "bodyPart": "Upper Body",
+    "description": "Upper portion for shrugging and neck support",
+    "descriptionAr": "الجزء العلوي لرفع الكتفين ودعم الرقبة",
+    "icon": "⬆️"
+  },
+  {
+    "name": "Middle Traps",
+    "nameAr": "ترابيس أوسط",
+    "bodyPart": "Upper Body",
+    "description": "Middle portion for scapular retraction",
+    "descriptionAr": "الجزء الأوسط لسحب لوح الكتف",
+    "icon": "↔️"
+  },
+  {
+    "name": "Lower Traps",
+    "nameAr": "ترابيس سفلي",
+    "bodyPart": "Upper Body",
+    "description": "Lower portion for scapular depression",
+    "descriptionAr": "الجزء السفلي لخفض لوح الكتف",
+    "icon": "⬇️"
+  },
+  {
+    "name": "Shoulders",
+    "nameAr": "أكتاف",
+    "bodyPart": "Upper Body",
+    "description": "Deltoid muscles covering the shoulder joint",
+    "descriptionAr": "عضلات الدالية التي تغطي مفصل الكتف",
+    "icon": "🎯"
+  },
+  {
+    "name": "Front Deltoid",
+    "nameAr": "كتف أمامي",
+    "bodyPart": "Upper Body",
+    "description": "Front portion of shoulder for pressing and raising",
+    "descriptionAr": "الجزء الأمامي من الكتف للضغط والرفع",
+    "icon": "🎯"
+  },
+  {
+    "name": "Side Deltoid",
+    "nameAr": "كتف جانبي",
+    "bodyPart": "Upper Body",
+    "description": "Side portion of shoulder for lateral raises and width",
+    "descriptionAr": "الجزء الجانبي من الكتف للرفع الجانبي والعرض",
+    "icon": "🎯"
+  },
+  {
+    "name": "Rear Deltoid",
+    "nameAr": "كتف خلفي",
+    "bodyPart": "Upper Body",
+    "description": "Rear portion of shoulder for pulling and posture",
+    "descriptionAr": "الجزء الخلفي من الكتف للسحب والقوام",
+    "icon": "🎯"
+  },
+  {
+    "name": "Rotator Cuff",
+    "nameAr": "الكفة المدورة",
+    "bodyPart": "Upper Body",
+    "description": "Group of 4 muscles stabilizing the shoulder joint",
+    "descriptionAr": "مجموعة من 4 عضلات لتثبيت مفصل الكتف",
+    "icon": "🔄"
+  },
+  {
+    "name": "Infraspinatus",
+    "nameAr": "تحت الشوكة",
+    "bodyPart": "Upper Body",
+    "description": "Rotator cuff muscle for external rotation",
+    "descriptionAr": "عضلة الكفة المدورة للدوران الخارجي",
+    "icon": "🔄"
+  },
+  {
+    "name": "Supraspinatus",
+    "nameAr": "فوق الشوكة",
+    "bodyPart": "Upper Body",
+    "description": "Rotator cuff muscle for arm abduction initiation",
+    "descriptionAr": "عضلة الكفة المدورة لبدء رفع الذراع جانبياً",
+    "icon": "🔄"
+  },
+  {
+    "name": "Subscapularis",
+    "nameAr": "تحت الكتف",
+    "bodyPart": "Upper Body",
+    "description": "Rotator cuff muscle for internal rotation",
+    "descriptionAr": "عضلة الكفة المدورة للدوران الداخلي",
+    "icon": "🔄"
+  },
+  {
+    "name": "Biceps",
+    "nameAr": "باي",
+    "bodyPart": "Arms",
+    "description": "Two-headed muscle on front of upper arm for elbow flexion",
+    "descriptionAr": "عضلة برأسين في مقدمة العضد لثني الكوع",
+    "icon": "💪"
+  },
+  {
+    "name": "Long Head Biceps",
+    "nameAr": "باي طويل",
+    "bodyPart": "Arms",
+    "description": "Outer head of biceps for peak development",
+    "descriptionAr": "الرأس الخارجي للباي لتطوير القمة",
+    "icon": "💪"
+  },
+  {
+    "name": "Short Head Biceps",
+    "nameAr": "باي قصير",
+    "bodyPart": "Arms",
+    "description": "Inner head of biceps for width",
+    "descriptionAr": "الرأس الداخلي للباي للعرض",
+    "icon": "💪"
+  },
+  {
+    "name": "Brachialis",
+    "nameAr": "العضلة العضدية",
+    "bodyPart": "Arms",
+    "description": "Muscle under biceps for elbow flexion power",
+    "descriptionAr": "عضلة تحت الباي لقوة ثني الكوع",
+    "icon": "💪"
+  },
+  {
+    "name": "Brachioradialis",
+    "nameAr": "العضدية الكعبرية",
+    "bodyPart": "Arms",
+    "description": "Forearm muscle visible when arm is bent",
+    "descriptionAr": "عضلة الساعد الظاهرة عند ثني الذراع",
+    "icon": "💪"
+  },
+  {
+    "name": "Coracobrachialis",
+    "nameAr": "الغرابية العضدية",
+    "bodyPart": "Arms",
+    "description": "Deep arm muscle for arm adduction",
+    "descriptionAr": "عضلة عميقة في الذراع لتقريب الذراع",
+    "icon": "💪"
+  },
+  {
+    "name": "Triceps",
+    "nameAr": "تراي",
+    "bodyPart": "Arms",
+    "description": "Three-headed muscle on back of upper arm for elbow extension",
+    "descriptionAr": "عضلة بثلاث رؤوس في خلف العضد لمد الكوع",
+    "icon": "🦾"
+  },
+  {
+    "name": "Long Head Triceps",
+    "nameAr": "تراي طويل",
+    "bodyPart": "Arms",
+    "description": "Largest head of triceps, runs along inner arm",
+    "descriptionAr": "أكبر رأس في التراي، يمتد على طول الذراع الداخلي",
+    "icon": "🦾"
+  },
+  {
+    "name": "Lateral Head Triceps",
+    "nameAr": "تراي جانبي",
+    "bodyPart": "Arms",
+    "description": "Outer head of triceps for horseshoe shape",
+    "descriptionAr": "الرأس الخارجي للتراي لشكل حدوة الحصان",
+    "icon": "🦾"
+  },
+  {
+    "name": "Medial Head Triceps",
+    "nameAr": "تراي داخلي",
+    "bodyPart": "Arms",
+    "description": "Deep head of triceps for stability",
+    "descriptionAr": "الرأس العميق للتراي للثبات",
+    "icon": "🦾"
+  },
+  {
+    "name": "Anconeus",
+    "nameAr": "المرفقية",
+    "bodyPart": "Arms",
+    "description": "Small muscle assisting triceps in elbow extension",
+    "descriptionAr": "عضلة صغيرة تساعد التراي في مد الكوع",
+    "icon": "🦾"
+  },
+  {
+    "name": "Forearms",
+    "nameAr": "ساعد",
+    "bodyPart": "Arms",
+    "description": "Muscles between elbow and wrist for grip and wrist movement",
+    "descriptionAr": "عضلات بين الكوع والرسغ للقبضة وحركة الرسغ",
+    "icon": "✊"
+  },
+  {
+    "name": "Wrist Flexors",
+    "nameAr": "عضلات ثني الرسغ",
+    "bodyPart": "Arms",
+    "description": "Forearm muscles for bending wrist forward",
+    "descriptionAr": "عضلات الساعد لثني الرسغ للأمام",
+    "icon": "✊"
+  },
+  {
+    "name": "Wrist Extensors",
+    "nameAr": "عضلات بسط الرسغ",
+    "bodyPart": "Arms",
+    "description": "Forearm muscles for bending wrist backward",
+    "descriptionAr": "عضلات الساعد لثني الرسغ للخلف",
+    "icon": "✊"
+  },
+  {
+    "name": "Pronator Teres",
+    "nameAr": "الكابة المدورة",
+    "bodyPart": "Arms",
+    "description": "Forearm muscle for rotating palm downward",
+    "descriptionAr": "عضلة الساعد لتدوير الكف للأسفل",
+    "icon": "🔄"
+  },
+  {
+    "name": "Supinator",
+    "nameAr": "الباسطة",
+    "bodyPart": "Arms",
+    "description": "Forearm muscle for rotating palm upward",
+    "descriptionAr": "عضلة الساعد لتدوير الكف للأعلى",
+    "icon": "🔄"
+  },
+  {
+    "name": "Finger Flexors",
+    "nameAr": "عضلات ثني الأصابع",
+    "bodyPart": "Arms",
+    "description": "Muscles for closing fingers and gripping",
+    "descriptionAr": "عضلات لإغلاق الأصابع والقبض",
+    "icon": "✊"
+  },
+  {
+    "name": "Finger Extensors",
+    "nameAr": "عضلات بسط الأصابع",
+    "bodyPart": "Arms",
+    "description": "Muscles for opening and straightening fingers",
+    "descriptionAr": "عضلات لفتح ومد الأصابع",
+    "icon": "🖐️"
+  },
+  {
+    "name": "Grip Muscles",
+    "nameAr": "عضلات القبضة",
+    "bodyPart": "Arms",
+    "description": "Combined muscles for holding and squeezing objects",
+    "descriptionAr": "مجموعة عضلات للإمساك والضغط على الأشياء",
+    "icon": "✊"
+  },
+  {
+    "name": "Thenar Muscles",
+    "nameAr": "عضلات الإبهام",
+    "bodyPart": "Arms",
+    "description": "Muscles at base of thumb for opposition and grip",
+    "descriptionAr": "عضلات قاعدة الإبهام للمقابلة والقبض",
+    "icon": "👍"
+  },
+  {
+    "name": "Hypothenar Muscles",
+    "nameAr": "عضلات الخنصر",
+    "bodyPart": "Arms",
+    "description": "Muscles at base of pinky finger",
+    "descriptionAr": "عضلات قاعدة الخنصر",
+    "icon": "🤙"
+  },
+  {
+    "name": "Abs",
+    "nameAr": "بطن",
+    "bodyPart": "Core",
+    "description": "Abdominal muscles for core stability and trunk flexion",
+    "descriptionAr": "عضلات البطن لثبات الجذع وثنيه",
+    "icon": "🎯"
+  },
+  {
+    "name": "Upper Abs",
+    "nameAr": "بطن علوي",
+    "bodyPart": "Core",
+    "description": "Upper portion of rectus abdominis for crunching",
+    "descriptionAr": "الجزء العلوي من عضلة البطن المستقيمة للطحن",
+    "icon": "🎯"
+  },
+  {
+    "name": "Lower Abs",
+    "nameAr": "بطن سفلي",
+    "bodyPart": "Core",
+    "description": "Lower portion of rectus abdominis for leg raises",
+    "descriptionAr": "الجزء السفلي من عضلة البطن المستقيمة لرفع الأرجل",
+    "icon": "🎯"
+  },
+  {
+    "name": "Rectus Abdominis",
+    "nameAr": "المستقيمة البطنية",
+    "bodyPart": "Core",
+    "description": "Six-pack muscle running vertically on abdomen",
+    "descriptionAr": "عضلة السكس باك الممتدة عمودياً على البطن",
+    "icon": "🎯"
+  },
+  {
+    "name": "Obliques",
+    "nameAr": "جوانب البطن",
+    "bodyPart": "Core",
+    "description": "Side abdominal muscles for rotation and lateral flexion",
+    "descriptionAr": "عضلات البطن الجانبية للدوران والثني الجانبي",
+    "icon": "↔️"
+  },
+  {
+    "name": "External Obliques",
+    "nameAr": "المائلة الخارجية",
+    "bodyPart": "Core",
+    "description": "Outer oblique muscles visible on sides",
+    "descriptionAr": "العضلات المائلة الخارجية الظاهرة على الجوانب",
+    "icon": "↔️"
+  },
+  {
+    "name": "Internal Obliques",
+    "nameAr": "المائلة الداخلية",
+    "bodyPart": "Core",
+    "description": "Deep oblique muscles under external obliques",
+    "descriptionAr": "العضلات المائلة العميقة تحت الخارجية",
+    "icon": "↔️"
+  },
+  {
+    "name": "Transverse Abdominis",
+    "nameAr": "البطن المستعرضة",
+    "bodyPart": "Core",
+    "description": "Deepest ab muscle acting like a natural weight belt",
+    "descriptionAr": "أعمق عضلة بطن تعمل كحزام طبيعي",
+    "icon": "🔄"
+  },
+  {
+    "name": "Lower Back",
+    "nameAr": "أسفل الظهر",
+    "bodyPart": "Core",
+    "description": "Muscles of the lumbar region for spine support",
+    "descriptionAr": "عضلات المنطقة القطنية لدعم العمود الفقري",
+    "icon": "🔙"
+  },
+  {
+    "name": "Erector Spinae",
+    "nameAr": "العضلة الناصبة للفقار",
+    "bodyPart": "Core",
+    "description": "Group of muscles running along the spine for extension",
+    "descriptionAr": "مجموعة عضلات تمتد على طول العمود الفقري للمد",
+    "icon": "🔙"
+  },
+  {
+    "name": "Spinalis",
+    "nameAr": "الشوكية",
+    "bodyPart": "Core",
+    "description": "Innermost erector spinae muscle closest to spine",
+    "descriptionAr": "أعمق عضلة ناصبة للفقار قرب العمود",
+    "icon": "🔙"
+  },
+  {
+    "name": "Longissimus",
+    "nameAr": "الطويلة",
+    "bodyPart": "Core",
+    "description": "Middle and longest erector spinae muscle",
+    "descriptionAr": "العضلة الناصبة الوسطى والأطول",
+    "icon": "🔙"
+  },
+  {
+    "name": "Iliocostalis",
+    "nameAr": "الحرقفية الضلعية",
+    "bodyPart": "Core",
+    "description": "Outermost erector spinae muscle",
+    "descriptionAr": "أبعد عضلة ناصبة للفقار",
+    "icon": "🔙"
+  },
+  {
+    "name": "Quadratus Lumborum",
+    "nameAr": "المربعة القطنية",
+    "bodyPart": "Core",
+    "description": "Deep lower back muscle for lateral flexion",
+    "descriptionAr": "عضلة أسفل الظهر العميقة للثني الجانبي",
+    "icon": "🔙"
+  },
+  {
+    "name": "Multifidus",
+    "nameAr": "متعددة الفلح",
+    "bodyPart": "Core",
+    "description": "Deep spinal muscles for stability and rotation",
+    "descriptionAr": "عضلات العمود الفقري العميقة للثبات والدوران",
+    "icon": "🔙"
+  },
+  {
+    "name": "Psoas Major",
+    "nameAr": "القطنية الكبرى",
+    "bodyPart": "Core",
+    "description": "Deep hip flexor connecting spine to leg",
+    "descriptionAr": "عضلة ثني الورك العميقة تربط العمود بالساق",
+    "icon": "🦵"
+  },
+  {
+    "name": "Iliacus",
+    "nameAr": "الحرقفية",
+    "bodyPart": "Core",
+    "description": "Hip flexor muscle lining the pelvis",
+    "descriptionAr": "عضلة ثني الورك المبطنة للحوض",
+    "icon": "🦵"
+  },
+  {
+    "name": "Hip Flexors",
+    "nameAr": "عضلات ثني الورك",
+    "bodyPart": "Core",
+    "description": "Group of muscles for lifting the leg",
+    "descriptionAr": "مجموعة عضلات لرفع الساق",
+    "icon": "🦵"
+  },
+  {
+    "name": "Pelvic Floor",
+    "nameAr": "قاع الحوض",
+    "bodyPart": "Core",
+    "description": "Muscles supporting pelvic organs and core stability",
+    "descriptionAr": "عضلات تدعم أعضاء الحوض وثبات الجذع",
+    "icon": "🎯"
+  },
+  {
+    "name": "Diaphragm",
+    "nameAr": "الحجاب الحاجز",
+    "bodyPart": "Core",
+    "description": "Primary breathing muscle separating chest from abdomen",
+    "descriptionAr": "عضلة التنفس الرئيسية الفاصلة بين الصدر والبطن",
+    "icon": "🌬️"
+  },
+  {
+    "name": "Intercostals",
+    "nameAr": "العضلات الوربية",
+    "bodyPart": "Core",
+    "description": "Muscles between ribs for breathing",
+    "descriptionAr": "عضلات بين الأضلاع للتنفس",
+    "icon": "🌬️"
+  },
+  {
+    "name": "External Intercostals",
+    "nameAr": "الوربية الخارجية",
+    "bodyPart": "Core",
+    "description": "Outer rib muscles for inhalation",
+    "descriptionAr": "عضلات الأضلاع الخارجية للشهيق",
+    "icon": "🌬️"
+  },
+  {
+    "name": "Internal Intercostals",
+    "nameAr": "الوربية الداخلية",
+    "bodyPart": "Core",
+    "description": "Inner rib muscles for exhalation",
+    "descriptionAr": "عضلات الأضلاع الداخلية للزفير",
+    "icon": "🌬️"
+  },
+  {
+    "name": "Quadriceps",
+    "nameAr": "فخذ أمامي",
+    "bodyPart": "Lower Body",
+    "description": "Four-headed muscle on front of thigh for knee extension",
+    "descriptionAr": "عضلة بأربع رؤوس في مقدمة الفخذ لمد الركبة",
+    "icon": "🦵"
+  },
+  {
+    "name": "Rectus Femoris",
+    "nameAr": "المستقيمة الفخذية",
+    "bodyPart": "Lower Body",
+    "description": "Center quad muscle that also flexes the hip",
+    "descriptionAr": "عضلة الكواد المركزية التي تثني الورك أيضاً",
+    "icon": "🦵"
+  },
+  {
+    "name": "Vastus Lateralis",
+    "nameAr": "الواسعة الوحشية",
+    "bodyPart": "Lower Body",
+    "description": "Outer quad muscle for leg sweep",
+    "descriptionAr": "عضلة الكواد الخارجية لامتداد الساق",
+    "icon": "🦵"
+  },
+  {
+    "name": "Vastus Medialis",
+    "nameAr": "الواسعة الإنسية",
+    "bodyPart": "Lower Body",
+    "description": "Inner quad muscle (teardrop) for knee stability",
+    "descriptionAr": "عضلة الكواد الداخلية (الدمعة) لثبات الركبة",
+    "icon": "🦵"
+  },
+  {
+    "name": "Vastus Intermedius",
+    "nameAr": "الواسعة المتوسطة",
+    "bodyPart": "Lower Body",
+    "description": "Deep quad muscle under rectus femoris",
+    "descriptionAr": "عضلة الكواد العميقة تحت المستقيمة الفخذية",
+    "icon": "🦵"
+  },
+  {
+    "name": "Hamstrings",
+    "nameAr": "فخذ خلفي",
+    "bodyPart": "Lower Body",
+    "description": "Three muscles on back of thigh for knee flexion",
+    "descriptionAr": "ثلاث عضلات في خلف الفخذ لثني الركبة",
+    "icon": "🦵"
+  },
+  {
+    "name": "Biceps Femoris",
+    "nameAr": "ذات الرأسين الفخذية",
+    "bodyPart": "Lower Body",
+    "description": "Outer hamstring muscle with two heads",
+    "descriptionAr": "عضلة الهامسترنج الخارجية برأسين",
+    "icon": "🦵"
+  },
+  {
+    "name": "Semitendinosus",
+    "nameAr": "نصف الوترية",
+    "bodyPart": "Lower Body",
+    "description": "Inner hamstring with long tendon",
+    "descriptionAr": "هامسترنج داخلي بوتر طويل",
+    "icon": "🦵"
+  },
+  {
+    "name": "Semimembranosus",
+    "nameAr": "نصف الغشائية",
+    "bodyPart": "Lower Body",
+    "description": "Deepest inner hamstring muscle",
+    "descriptionAr": "أعمق عضلة هامسترنج داخلية",
+    "icon": "🦵"
+  },
+  {
+    "name": "Glutes",
+    "nameAr": "مؤخرة",
+    "bodyPart": "Lower Body",
+    "description": "Buttock muscles for hip extension and rotation",
+    "descriptionAr": "عضلات الأرداف لمد ودوران الورك",
+    "icon": "🍑"
+  },
+  {
+    "name": "Gluteus Maximus",
+    "nameAr": "الألوية الكبرى",
+    "bodyPart": "Lower Body",
+    "description": "Largest glute muscle for hip extension",
+    "descriptionAr": "أكبر عضلة ألوية لمد الورك",
+    "icon": "🍑"
+  },
+  {
+    "name": "Gluteus Medius",
+    "nameAr": "الألوية الوسطى",
+    "bodyPart": "Lower Body",
+    "description": "Side glute for hip abduction and stability",
+    "descriptionAr": "الألوية الجانبية لإبعاد وثبات الورك",
+    "icon": "🍑"
+  },
+  {
+    "name": "Gluteus Minimus",
+    "nameAr": "الألوية الصغرى",
+    "bodyPart": "Lower Body",
+    "description": "Smallest and deepest glute muscle",
+    "descriptionAr": "أصغر وأعمق عضلة ألوية",
+    "icon": "🍑"
+  },
+  {
+    "name": "Piriformis",
+    "nameAr": "الكمثرية",
+    "bodyPart": "Lower Body",
+    "description": "Deep hip rotator under glutes",
+    "descriptionAr": "عضلة دوران الورك العميقة تحت الألوية",
+    "icon": "🔄"
+  },
+  {
+    "name": "Tensor Fasciae Latae",
+    "nameAr": "موترة اللفافة العريضة",
+    "bodyPart": "Lower Body",
+    "description": "Hip muscle connecting to IT band",
+    "descriptionAr": "عضلة الورك المتصلة بالشريط الحرقفي",
+    "icon": "🦵"
+  },
+  {
+    "name": "Adductors",
+    "nameAr": "العضلات المقربة",
+    "bodyPart": "Lower Body",
+    "description": "Inner thigh muscles for bringing legs together",
+    "descriptionAr": "عضلات الفخذ الداخلية لتقريب الساقين",
+    "icon": "🦵"
+  },
+  {
+    "name": "Adductor Magnus",
+    "nameAr": "المقربة الكبرى",
+    "bodyPart": "Lower Body",
+    "description": "Largest inner thigh muscle",
+    "descriptionAr": "أكبر عضلة في الفخذ الداخلي",
+    "icon": "🦵"
+  },
+  {
+    "name": "Adductor Longus",
+    "nameAr": "المقربة الطويلة",
+    "bodyPart": "Lower Body",
+    "description": "Long adductor muscle in inner thigh",
+    "descriptionAr": "عضلة مقربة طويلة في الفخذ الداخلي",
+    "icon": "🦵"
+  },
+  {
+    "name": "Adductor Brevis",
+    "nameAr": "المقربة القصيرة",
+    "bodyPart": "Lower Body",
+    "description": "Short adductor muscle deep in inner thigh",
+    "descriptionAr": "عضلة مقربة قصيرة في عمق الفخذ الداخلي",
+    "icon": "🦵"
+  },
+  {
+    "name": "Pectineus",
+    "nameAr": "المشطية",
+    "bodyPart": "Lower Body",
+    "description": "Small muscle between hip flexors and adductors",
+    "descriptionAr": "عضلة صغيرة بين ثنيات الورك والمقربات",
+    "icon": "🦵"
+  },
+  {
+    "name": "Gracilis",
+    "nameAr": "الرشيقة",
+    "bodyPart": "Lower Body",
+    "description": "Long thin muscle on inner thigh",
+    "descriptionAr": "عضلة طويلة رفيعة على الفخذ الداخلي",
+    "icon": "🦵"
+  },
+  {
+    "name": "Abductors",
+    "nameAr": "العضلات المبعدة",
+    "bodyPart": "Lower Body",
+    "description": "Outer hip muscles for moving leg away from body",
+    "descriptionAr": "عضلات الورك الخارجية لإبعاد الساق عن الجسم",
+    "icon": "🦵"
+  },
+  {
+    "name": "Sartorius",
+    "nameAr": "الخياطية",
+    "bodyPart": "Lower Body",
+    "description": "Longest muscle in body, crosses hip and knee",
+    "descriptionAr": "أطول عضلة في الجسم، تعبر الورك والركبة",
+    "icon": "🦵"
+  },
+  {
+    "name": "Calves",
+    "nameAr": "سمانة",
+    "bodyPart": "Lower Body",
+    "description": "Muscles on back of lower leg for ankle movement",
+    "descriptionAr": "عضلات خلف الساق السفلى لحركة الكاحل",
+    "icon": "🦶"
+  },
+  {
+    "name": "Gastrocnemius",
+    "nameAr": "بطن الساق",
+    "bodyPart": "Lower Body",
+    "description": "Two-headed calf muscle for powerful push-off",
+    "descriptionAr": "عضلة السمانة برأسين للدفع القوي",
+    "icon": "🦶"
+  },
+  {
+    "name": "Soleus",
+    "nameAr": "النعلية",
+    "bodyPart": "Lower Body",
+    "description": "Flat calf muscle under gastrocnemius for endurance",
+    "descriptionAr": "عضلة السمانة المسطحة تحت بطن الساق للتحمل",
+    "icon": "🦶"
+  },
+  {
+    "name": "Plantaris",
+    "nameAr": "الأخمصية",
+    "bodyPart": "Lower Body",
+    "description": "Small vestigial muscle with long tendon",
+    "descriptionAr": "عضلة صغيرة أثرية بوتر طويل",
+    "icon": "🦶"
+  },
+  {
+    "name": "Tibialis Anterior",
+    "nameAr": "قصبة الساق الأمامية",
+    "bodyPart": "Lower Body",
+    "description": "Shin muscle for dorsiflexion (lifting foot)",
+    "descriptionAr": "عضلة الساق الأمامية لرفع القدم",
+    "icon": "🦶"
+  },
+  {
+    "name": "Tibialis Posterior",
+    "nameAr": "قصبة الساق الخلفية",
+    "bodyPart": "Lower Body",
+    "description": "Deep calf muscle for arch support",
+    "descriptionAr": "عضلة السمانة العميقة لدعم قوس القدم",
+    "icon": "🦶"
+  },
+  {
+    "name": "Peroneus Longus",
+    "nameAr": "الشظوية الطويلة",
+    "bodyPart": "Lower Body",
+    "description": "Outer lower leg muscle for ankle stability",
+    "descriptionAr": "عضلة الساق الخارجية لثبات الكاحل",
+    "icon": "🦶"
+  },
+  {
+    "name": "Peroneus Brevis",
+    "nameAr": "الشظوية القصيرة",
+    "bodyPart": "Lower Body",
+    "description": "Short outer lower leg muscle",
+    "descriptionAr": "عضلة الساق الخارجية القصيرة",
+    "icon": "🦶"
+  },
+  {
+    "name": "Peroneus Tertius",
+    "nameAr": "الشظوية الثالثة",
+    "bodyPart": "Lower Body",
+    "description": "Small muscle for foot eversion",
+    "descriptionAr": "عضلة صغيرة لقلب القدم للخارج",
+    "icon": "🦶"
+  },
+  {
+    "name": "Popliteus",
+    "nameAr": "المأبضية",
+    "bodyPart": "Lower Body",
+    "description": "Muscle behind knee for unlocking straight leg",
+    "descriptionAr": "عضلة خلف الركبة لفتح الساق المستقيمة",
+    "icon": "🦵"
+  },
+  {
+    "name": "Foot Intrinsics",
+    "nameAr": "عضلات القدم الداخلية",
+    "bodyPart": "Lower Body",
+    "description": "Small muscles within the foot for arch and toe control",
+    "descriptionAr": "عضلات صغيرة داخل القدم لقوس وأصابع القدم",
+    "icon": "🦶"
+  },
+  {
+    "name": "Toe Flexors",
+    "nameAr": "عضلات ثني أصابع القدم",
+    "bodyPart": "Lower Body",
+    "description": "Muscles for curling toes",
+    "descriptionAr": "عضلات لثني أصابع القدم",
+    "icon": "🦶"
+  },
+  {
+    "name": "Toe Extensors",
+    "nameAr": "عضلات بسط أصابع القدم",
+    "bodyPart": "Lower Body",
+    "description": "Muscles for lifting toes",
+    "descriptionAr": "عضلات لرفع أصابع القدم",
+    "icon": "🦶"
+  },
+  {
+    "name": "Extensor Digitorum Longus",
+    "nameAr": "الباسطة الطويلة للأصابع",
+    "bodyPart": "Lower Body",
+    "description": "Muscle on shin for extending toes",
+    "descriptionAr": "عضلة على الساق لمد أصابع القدم",
+    "icon": "🦶"
+  },
+  {
+    "name": "Flexor Digitorum Longus",
+    "nameAr": "القابضة الطويلة للأصابع",
+    "bodyPart": "Lower Body",
+    "description": "Deep calf muscle for curling toes",
+    "descriptionAr": "عضلة السمانة العميقة لثني أصابع القدم",
+    "icon": "🦶"
+  },
+  {
+    "name": "Flexor Hallucis Longus",
+    "nameAr": "القابضة الطويلة للإبهام",
+    "bodyPart": "Lower Body",
+    "description": "Muscle for big toe flexion, important for push-off",
+    "descriptionAr": "عضلة لثني إبهام القدم، مهمة للدفع",
+    "icon": "🦶"
+  },
+  {
+    "name": "Neck",
+    "nameAr": "رقبة",
+    "bodyPart": "Upper Body",
+    "description": "Muscles supporting and moving the head",
+    "descriptionAr": "عضلات تدعم وتحرك الرأس",
+    "icon": "🦒"
+  },
+  {
+    "name": "Sternocleidomastoid",
+    "nameAr": "القصية الترقوية الخشائية",
+    "bodyPart": "Upper Body",
+    "description": "Large neck muscle for head rotation and flexion",
+    "descriptionAr": "عضلة رقبة كبيرة لدوران وثني الرأس",
+    "icon": "🦒"
+  },
+  {
+    "name": "Scalenes",
+    "nameAr": "العضلات الأخمعية",
+    "bodyPart": "Upper Body",
+    "description": "Side neck muscles for breathing and neck movement",
+    "descriptionAr": "عضلات جانب الرقبة للتنفس وحركة الرقبة",
+    "icon": "🦒"
+  },
+  {
+    "name": "Levator Scapulae",
+    "nameAr": "رافعة الكتف",
+    "bodyPart": "Upper Body",
+    "description": "Muscle from neck to shoulder blade",
+    "descriptionAr": "عضلة من الرقبة إلى لوح الكتف",
+    "icon": "⬆️"
+  },
+  {
+    "name": "Splenius Capitis",
+    "nameAr": "الطحالية الرأسية",
+    "bodyPart": "Upper Body",
+    "description": "Back of neck muscle for head extension",
+    "descriptionAr": "عضلة خلف الرقبة لمد الرأس",
+    "icon": "🦒"
+  },
+  {
+    "name": "Splenius Cervicis",
+    "nameAr": "الطحالية العنقية",
+    "bodyPart": "Upper Body",
+    "description": "Neck muscle below splenius capitis",
+    "descriptionAr": "عضلة الرقبة تحت الطحالية الرأسية",
+    "icon": "🦒"
+  },
+  {
+    "name": "Longus Colli",
+    "nameAr": "الطويلة العنقية",
+    "bodyPart": "Upper Body",
+    "description": "Deep front neck flexor",
+    "descriptionAr": "عضلة ثني الرقبة الأمامية العميقة",
+    "icon": "🦒"
+  },
+  {
+    "name": "Longus Capitis",
+    "nameAr": "الطويلة الرأسية",
+    "bodyPart": "Upper Body",
+    "description": "Deep neck flexor connecting to skull",
+    "descriptionAr": "عضلة ثني الرقبة العميقة المتصلة بالجمجمة",
+    "icon": "🦒"
+  },
+  {
+    "name": "Platysma",
+    "nameAr": "العضلة الجلدية",
+    "bodyPart": "Upper Body",
+    "description": "Thin sheet of muscle over front of neck",
+    "descriptionAr": "طبقة عضلية رقيقة على مقدمة الرقبة",
+    "icon": "🦒"
+  },
+  {
+    "name": "Suboccipitals",
+    "nameAr": "تحت القذالية",
+    "bodyPart": "Upper Body",
+    "description": "Small muscles at base of skull for fine head movements",
+    "descriptionAr": "عضلات صغيرة في قاعدة الجمجمة لحركات الرأس الدقيقة",
+    "icon": "🦒"
+  },
+  {
+    "name": "Semispinalis Capitis",
+    "nameAr": "نصف الشوكية الرأسية",
+    "bodyPart": "Upper Body",
+    "description": "Deep neck extensor muscle",
+    "descriptionAr": "عضلة مد الرقبة العميقة",
+    "icon": "🦒"
+  },
+  {
+    "name": "Deep Hip Rotators",
+    "nameAr": "مدورات الورك العميقة",
+    "bodyPart": "Lower Body",
+    "description": "Group of 6 small muscles for hip rotation",
+    "descriptionAr": "مجموعة من 6 عضلات صغيرة لدوران الورك",
+    "icon": "🔄"
+  },
+  {
+    "name": "Gemellus Superior",
+    "nameAr": "التوأمية العلوية",
+    "bodyPart": "Lower Body",
+    "description": "Small deep hip rotator muscle",
+    "descriptionAr": "عضلة دوران ورك عميقة صغيرة",
+    "icon": "🔄"
+  },
+  {
+    "name": "Gemellus Inferior",
+    "nameAr": "التوأمية السفلية",
+    "bodyPart": "Lower Body",
+    "description": "Small deep hip rotator below gemellus superior",
+    "descriptionAr": "عضلة دوران ورك عميقة تحت التوأمية العلوية",
+    "icon": "🔄"
+  },
+  {
+    "name": "Obturator Internus",
+    "nameAr": "السدادة الداخلية",
+    "bodyPart": "Lower Body",
+    "description": "Deep hip rotator from inside pelvis",
+    "descriptionAr": "عضلة دوران ورك عميقة من داخل الحوض",
+    "icon": "🔄"
+  },
+  {
+    "name": "Obturator Externus",
+    "nameAr": "السدادة الخارجية",
+    "bodyPart": "Lower Body",
+    "description": "Deep hip rotator from outside pelvis",
+    "descriptionAr": "عضلة دوران ورك عميقة من خارج الحوض",
+    "icon": "🔄"
+  },
+  {
+    "name": "Quadratus Femoris",
+    "nameAr": "المربعة الفخذية",
+    "bodyPart": "Lower Body",
+    "description": "Square-shaped deep hip rotator",
+    "descriptionAr": "عضلة دوران ورك عميقة مربعة الشكل",
+    "icon": "🔄"
+  },
+  {
+    "name": "Intertransversarii",
+    "nameAr": "بين المستعرضات",
+    "bodyPart": "Core",
+    "description": "Small muscles between vertebrae for lateral bending",
+    "descriptionAr": "عضلات صغيرة بين الفقرات للثني الجانبي",
+    "icon": "🔙"
+  },
+  {
+    "name": "Interspinales",
+    "nameAr": "بين الشوكات",
+    "bodyPart": "Core",
+    "description": "Small muscles between spinous processes",
+    "descriptionAr": "عضلات صغيرة بين النتوءات الشوكية",
+    "icon": "🔙"
+  },
+  {
+    "name": "Rotatores",
+    "nameAr": "الدوارات",
+    "bodyPart": "Core",
+    "description": "Deepest back muscles for spinal rotation",
+    "descriptionAr": "أعمق عضلات الظهر لدوران العمود الفقري",
+    "icon": "🔄"
+  },
+  {
+    "name": "Serratus Posterior Superior",
+    "nameAr": "المنشارية الخلفية العلوية",
+    "bodyPart": "Upper Body",
+    "description": "Upper back breathing muscle",
+    "descriptionAr": "عضلة تنفس الظهر العلوية",
+    "icon": "🌬️"
+  },
+  {
+    "name": "Serratus Posterior Inferior",
+    "nameAr": "المنشارية الخلفية السفلية",
+    "bodyPart": "Core",
+    "description": "Lower back breathing muscle",
+    "descriptionAr": "عضلة تنفس أسفل الظهر",
+    "icon": "🌬️"
+  },
+  {
+    "name": "Pyramidalis",
+    "nameAr": "الهرمية",
+    "bodyPart": "Core",
+    "description": "Small triangular muscle in front of lower abs",
+    "descriptionAr": "عضلة مثلثية صغيرة أمام أسفل البطن",
+    "icon": "🔺"
+  },
+  {
+    "name": "Cremaster",
+    "nameAr": "المشمرة",
+    "bodyPart": "Core",
+    "description": "Muscle in groin area (males)",
+    "descriptionAr": "عضلة في منطقة الفخذ (ذكور)",
+    "icon": "🎯"
+  }
+]

@@ -6,6 +6,7 @@ const { getPool } = require('./db');
 const { ensureExpensesTable } = require('./finance-service');
 const { ensurePaymentTransactionsTable } = require('./member-service');
 const { ensureAttendanceTable } = require('./attendance-service');
+const { ensureLibraryData } = require('./library-service');
 
 const gzipAsync = promisify(gzip);
 
@@ -21,7 +22,10 @@ const BACKUP_TABLES = [
     { key: 'gym_payment_transactions', table: 'gym_payment_transactions' },
     { key: 'gym_expenses', table: 'gym_expenses' },
     { key: 'gym_attendance', table: 'gym_attendance' },
-    { key: 'membership_events', table: 'membership_events' }
+    { key: 'membership_events', table: 'membership_events' },
+    { key: 'gym_muscles', table: 'gym_muscles' },
+    { key: 'gym_foods', table: 'gym_foods' },
+    { key: 'gym_exercises', table: 'gym_exercises' }
 ];
 
 function getLocalTimeParts(date = new Date()) {
@@ -56,6 +60,7 @@ async function createBackup() {
     await ensureExpensesTable();
     await ensurePaymentTransactionsTable();
     await ensureAttendanceTable();
+    await ensureLibraryData();
     const pool = await getPool();
     const generatedAt = new Date();
     const { timeZone, stamp } = getLocalTimeParts(generatedAt);

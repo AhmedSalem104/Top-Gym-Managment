@@ -677,3 +677,25 @@ git push origin main
 ## الترخيص
 
 المستودع خاص حاليًا (`private: true` في `package.json`). أضف ملف ترخيص واضحًا قبل إعادة استخدام المشروع خارج نطاق TOP GYM.
+# Training & nutrition library
+
+The project now includes a dedicated `المكتبة` tab with three internal screens:
+
+- `muscles`: 135 imported muscle records with body-part filters and full CRUD.
+- `foods`: 221 imported nutrition records with category filters and macro values.
+- `exercises`: 200 imported exercises with filters for category, difficulty, equipment, and target muscle.
+
+The source JSON files are kept in `data/library/`. On the first application start, the library tables are created and seeded only when they are empty. Exercise instructions, Arabic translations, tips, common mistakes, secondary-muscle contributions, and the original metadata are preserved.
+
+Library API routes:
+
+```text
+GET    /api/library/options
+GET    /api/library/:type
+GET    /api/library/:type/:id
+POST   /api/library/:type
+PUT    /api/library/:type/:id
+DELETE /api/library/:type/:id
+```
+
+Library records are included in the downloadable `json.gz` backup.

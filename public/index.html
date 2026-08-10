@@ -15,6 +15,7 @@
     <link rel="stylesheet" href="/css/dashboard.css?v=27">
     <link rel="stylesheet" href="/css/operations.css?v=1">
     <link rel="stylesheet" href="/css/attendance.css?v=4">
+    <link rel="stylesheet" href="/css/library.css?v=1">
 </head>
 <body class="font-sans bg-slate-100 text-slate-900 gym-page-bg">
     <div class="app-shell">
@@ -35,6 +36,7 @@
             <button class="page-tab" type="button" data-page-tab="expenses" aria-selected="false"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 9h10M7 13h5"/></svg><span>المصروفات</span></button>
             <button class="page-tab" type="button" data-page-tab="reports" aria-selected="false"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19V5"/><path d="M4 19h16"/><path d="m7 15 3-4 3 2 5-6"/></svg><span>التقارير</span></button>
             <button class="page-tab" type="button" data-page-tab="management" aria-selected="false"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v18M3 12h18"/><circle cx="12" cy="12" r="9"/></svg><span>الأسعار والعضويات</span></button>
+            <button class="page-tab" type="button" data-page-tab="library" aria-selected="false"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v16H6.5A2.5 2.5 0 0 0 4 21.5z"/><path d="M4 5.5v16M8 7h8M8 11h6"/></svg><span>المكتبة</span></button>
         </nav>
 
         <main class="page max-w-7xl" id="dashboardSection">
@@ -91,6 +93,30 @@
                     <button class="management-shortcut" type="button" data-open-dialog-button="pricingButton"><span class="management-shortcut-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 9h10M7 13h5"/></svg></span><span><strong>أسعار الباقات</strong><small>تعديل أسعار الجيم والكارديو.</small></span><svg class="management-shortcut-arrow ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></button>
                     <button class="management-shortcut" type="button" data-open-dialog-button="membershipTypesButton"><span class="management-shortcut-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span><span><strong>أنواع العضويات</strong><small>إدارة المدد ومعاملات الأسعار.</small></span><svg class="management-shortcut-arrow ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></button>
                 </div>
+            </section>
+
+            <section class="library-section panel" id="librarySection" hidden aria-labelledby="libraryTitle">
+                <div class="library-header">
+                    <div class="library-heading">
+                        <span class="library-heading-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v16H6.5A2.5 2.5 0 0 0 4 21.5z"/><path d="M4 5.5v16M8 7h8M8 11h6"/></svg></span>
+                        <div><span class="library-kicker">مرجع TOP GYM</span><h3 id="libraryTitle">مكتبة التدريب والتغذية</h3><p>إدارة بيانات العضلات والأطعمة والتمارين لاستخدامها مستقبلًا في النظام.</p></div>
+                    </div>
+                    <button class="btn btn-primary library-add-button" id="libraryAddButton" type="button"><span aria-hidden="true">+</span><span>إضافة عنصر</span></button>
+                </div>
+                <div class="library-summary" id="librarySummary"></div>
+                <div class="library-type-tabs" role="tablist" aria-label="أقسام المكتبة">
+                    <button class="library-type-tab active" type="button" data-library-type="muscles" role="tab" aria-selected="true"><span class="library-type-icon">💪</span><span>العضلات</span><strong id="libraryMusclesCount">0</strong></button>
+                    <button class="library-type-tab" type="button" data-library-type="foods" role="tab" aria-selected="false"><span class="library-type-icon">🥗</span><span>الأطعمة</span><strong id="libraryFoodsCount">0</strong></button>
+                    <button class="library-type-tab" type="button" data-library-type="exercises" role="tab" aria-selected="false"><span class="library-type-icon">🏋️</span><span>التمارين</span><strong id="libraryExercisesCount">0</strong></button>
+                </div>
+                <div class="library-toolbar">
+                    <label class="library-search"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><span class="visually-hidden">بحث في المكتبة</span><input id="librarySearch" type="search" placeholder="ابحث بالاسم أو الوصف..."></label>
+                    <div class="library-filters" id="libraryFilters"></div>
+                    <button class="btn btn-light library-refresh-button" id="libraryRefreshButton" type="button">تحديث</button>
+                </div>
+                <div class="library-message" id="libraryMessage" role="status" aria-live="polite" hidden></div>
+                <div class="library-list" id="libraryList"><div class="loading">افتح تبويب المكتبة لتحميل البيانات...</div></div>
+                <div class="library-pagination" id="libraryPagination" hidden></div>
             </section>
 
             <section class="attendance-section panel" id="attendanceSection" hidden aria-labelledby="attendanceTitle">
@@ -259,6 +285,16 @@
     <dialog id="memberQrDialog" class="member-qr-dialog rounded-lg border-slate-200 shadow-lift">
         <div class="dialog-body"><div class="details-dialog-head"><div><h3>QR Code العضو</h3><p>احتفظ بالرمز أو اطبعه لاستخدامه عند الحضور.</p></div><button class="btn btn-light btn-small" id="memberQrClose" type="button">إغلاق</button></div><div class="member-qr-card"><canvas id="memberQrCanvas" width="210" height="210"></canvas><strong id="memberQrName">—</strong><span id="memberQrPhone">—</span></div><div class="dialog-actions"><button class="btn btn-primary" id="memberQrDownload" type="button">تحميل QR Code</button></div></div>
     </dialog>
+    <dialog id="libraryFormDialog" class="library-dialog rounded-lg border-slate-200 shadow-lift">
+        <form class="dialog-body" id="libraryForm">
+            <div class="details-dialog-head"><div><h3 id="libraryFormTitle">إضافة عنصر</h3><p id="libraryFormDescription">أدخل البيانات ثم احفظها في مكتبة TOP GYM.</p></div><button class="btn btn-light btn-small" id="libraryFormClose" type="button">إغلاق</button></div>
+            <div id="libraryFormFields"></div>
+            <div class="dialog-actions"><button class="btn btn-light" id="libraryFormCancel" type="button">إلغاء</button><button class="btn btn-primary" id="libraryFormSave" type="submit">حفظ العنصر</button></div>
+        </form>
+    </dialog>
+    <dialog id="libraryDetailsDialog" class="library-details-dialog rounded-lg border-slate-200 shadow-lift">
+        <div class="dialog-body"><div class="details-dialog-head"><div><h3 id="libraryDetailsTitle">تفاصيل العنصر</h3><p id="libraryDetailsSubtitle"></p></div><button class="btn btn-light btn-small" id="libraryDetailsClose" type="button">إغلاق</button></div><div id="libraryDetailsContent"></div></div>
+    </dialog>
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -279,5 +315,6 @@
     <script src="/js/details-enhancements.js"></script>
     <script src="/js/alerts-enhancements.js"></script>
     <script src="/js/attendance.js?v=5"></script>
+    <script src="/js/library.js?v=1"></script>
 </body>
 </html>
