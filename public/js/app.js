@@ -201,7 +201,12 @@
                 qrButton.title = 'عرض QR Code';
                 qrButton.setAttribute('aria-label', `عرض QR Code لـ ${member.fullName}`);
                 quickActions.append(qrButton);
-                cell.insertBefore(quickActions, cell.firstChild);
+                const tableActions = cell.querySelector(':scope > .table-actions');
+                const actionRow = document.createElement('div');
+                actionRow.className = 'member-action-row';
+                actionRow.append(quickActions);
+                if (tableActions) actionRow.append(tableActions);
+                cell.append(actionRow);
                 row.dataset.quickActionsReady = 'true';
             });
         }

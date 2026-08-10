@@ -252,6 +252,14 @@ async function call(baseUrl, path, options = {}) {
         const autoClosedMembers = await call(baseUrl, `/api/members?search=${encodeURIComponent(`Edited Smoke Test ${suffix}`)}&page=1&pageSize=5`);
         const autoClosedRecord = autoClosedMembers.members.find((item) => item.id === memberId)?.attendance;
         assert.equal(autoClosedRecord.checkOutSource, 'auto');
+        await smokePool.request()
+            .input('memberId', sql.Int, memberId)
+            .query('UPDATE dbo.gym_attendance SET attendance_date = DATEADD(day, -1, attendance_date) WHERE member_id = @memberId;');
+        const nextDayCheckIn = await call(baseUrl, '/api/attendance/check-in', {
+            method: 'POST', body: JSON.stringify({ phone: created.member.phone })
+        });
+        assert.equal(nextDayCheckIn.attendance.memberId, memberId);
+        assert.equal(nextDayCheckIn.attendance.checkInSource, 'phone');
 
         const dashboard = await call(baseUrl, '/api/dashboard');
         assert.ok(Number.isInteger(dashboard.stats.total));

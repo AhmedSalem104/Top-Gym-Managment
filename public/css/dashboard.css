@@ -373,7 +373,8 @@
         .badge.expired { color: #dc2626; background: #fef2f2; border-color: #fecaca; }
         .badge.frozen { color: #7c3aed; background: #f5f3ff; border-color: #ddd6fe; }
         .table-actions { min-width: 145px; align-items: center; gap: 7px; }
-        .member-quick-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-bottom: 7px; }
+        .member-action-row { display: flex; width: 100%; align-items: center; flex-wrap: wrap; gap: 8px; }
+        .member-quick-actions { display: flex; align-items: center; flex: 0 0 auto; flex-wrap: wrap; gap: 6px; margin: 0; }
         .member-attendance-quick, .member-qr-quick { min-height: 30px; padding: 5px 9px !important; border-radius: 8px !important; font-size: 10px; font-weight: 800; white-space: nowrap; }
         .member-attendance-quick.check-in { color: #047857; border-color: #a7f3d0; background: #ecfdf5; }
         .member-attendance-quick.check-in:hover { color: #fff; border-color: #059669; background: #059669; }
@@ -529,6 +530,7 @@
 
         /* Responsive action menu: keep the primary actions aligned and turn the overflow menu into a mobile sheet. */
         .table-actions { display: flex; width: 100%; min-width: 0; flex-wrap: wrap; align-items: center; }
+        .member-action-row > .table-actions { width: auto; min-width: 0; flex: 1 1 145px; }
         .action-menu { flex: 0 0 auto; }
         .action-menu-toggle:focus-visible { outline: 3px solid rgba(37, 99, 235, .2); outline-offset: 2px; }
         @media (max-width: 900px) {
@@ -536,7 +538,9 @@
         }
         @media (max-width: 640px) {
             .members-table td:last-child { overflow: visible; }
-            .member-quick-actions { width: 100%; margin-bottom: 8px; }
+            .member-action-row { align-items: stretch; gap: 6px; }
+            .member-quick-actions { max-width: 100%; }
+            .member-action-row > .table-actions { flex-basis: 170px; }
             .member-attendance-quick { flex: 1 1 auto; justify-content: center; }
             .table-actions { gap: 8px; justify-content: flex-start; }
             .table-actions > .table-action-visible[data-action="details"] {
@@ -595,6 +599,7 @@
             .members-pagination-actions .btn { min-width: 0; flex: 1 1 0; }
         }
         @media (max-width: 380px) {
+            .member-action-row > .table-actions { flex-basis: 100%; }
             .members-panel > .panel-header .header-actions { flex-direction: column; }
             .members-panel > .panel-header .header-actions .btn { width: 100%; }
             .table-actions > .table-action-visible[data-action="renew"] { min-width: 100px; flex-basis: 100px; }
