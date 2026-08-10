@@ -25,7 +25,10 @@ const PAYMENT_METHODS = ['cash', 'card', 'transfer', 'other'];
 const MEMBER_STATUSES = ['active', 'expiring_soon', 'expired', 'frozen'];
 const MEMBERSHIP_FREEZE_LIMIT = 3;
 const DEFAULT_MEMBER_PAGE_SIZE = 5;
+const PRICING_CACHE_TTL_MS = 30_000;
 let pricingOverridesPromise;
+let pricingCatalogCache = null;
+let pricingCatalogCachedAt = 0;
 let memberIdentityPromise;
 let paymentTransactionsTablePromise;
 
@@ -216,19 +219,22 @@ function has(body, key) {
 }
 
 async function getPricingCatalog(connection = null) {
+    if (!connection && pricingCatalogCache && Date.now() - pricingCatalogCachedAt < PRICING_CACHE_TTL_MS) {
+        return pricingCatalogCache;
+    }
     await ensurePricingOverrides();
     const pool = connection || await getPool();
-    const planResult = await pool.request()
+    const queryPlan = () => pool.request()
         .query(`SELECT plan_code, plan_name, monthly_price, is_active, sort_order
                 FROM dbo.membership_pricing ORDER BY id ASC;`);
-    const typeResult = await pool.request()
+    const queryType = () => pool.request()
         .query(`SELECT type_code, type_name, duration_mode, duration_value,
                        price_multiplier, is_active, sort_order
                 FROM dbo.membership_types ORDER BY sort_order ASC, id ASC;`);
-    const priceResult = await pool.request()
+    const queryPrice = () => pool.request()
         .query(`SELECT plan_code, type_code, price
                 FROM dbo.membership_type_prices;`);
-    const legacyTypeResult = await pool.request()
+    const queryLegacyType = () => pool.request()
         .query(`SELECT m.membership_type AS type_code,
                        MIN(m.start_date) AS start_date,
                        MAX(m.end_date) AS end_date,
@@ -241,6 +247,11 @@ async function getPricingCatalog(connection = null) {
                     WHERE current_type.type_code = m.membership_type
                 )
                 GROUP BY m.membership_type;`);
+    const queryFactories = [queryPlan, queryType, queryPrice, queryLegacyType];
+    const queryResults = connection && typeof connection.commit === 'function'
+        ? [await queryPlan(), await queryType(), await queryPrice(), await queryLegacyType()]
+        : await Promise.all(queryFactories.map((query) => query()));
+    const [planResult, typeResult, priceResult, legacyTypeResult] = queryResults;
     const plans = { ...DEFAULT_MEMBERSHIP_PLANS };
     for (const row of planResult.recordset) {
         const fallbackLabel = DEFAULT_MEMBERSHIP_PLANS[row.plan_code]?.label || row.plan_code;
@@ -301,7 +312,7 @@ async function getPricingCatalog(connection = null) {
             if (priceMatches.length === 1) typeAliases[legacyCode] = priceMatches[0][0];
         }
     }
-    return {
+    const catalog = {
         plans: Object.fromEntries(Object.entries(plans).map(([key, value]) => [key, {
             label: value.label,
             monthlyPrice: value.monthlyPrice,
@@ -313,6 +324,16 @@ async function getPricingCatalog(connection = null) {
         typeAliases,
         durations: Object.fromEntries(Object.entries(types).map(([key, value]) => [key, value.mode === 'months' ? value.durationValue : null]))
     };
+    if (!connection) {
+        pricingCatalogCache = catalog;
+        pricingCatalogCachedAt = Date.now();
+    }
+    return catalog;
+}
+
+function invalidatePricingCatalog() {
+    pricingCatalogCache = null;
+    pricingCatalogCachedAt = 0;
 }
 
 async function ensurePricingOverrides() {
@@ -776,7 +797,8 @@ async function createPricingPlan(body = {}) {
         .query(`INSERT INTO dbo.membership_pricing
                 (plan_code, plan_name, monthly_price, is_active, sort_order)
                 VALUES (@planCode, @planName, @monthlyPrice, @isActive, @sortOrder);`);
-    return getPricingCatalog(pool);
+    invalidatePricingCatalog();
+    return getPricingCatalog();
 }
 
 async function updatePricingPlan(planCodeValue, body = {}) {
@@ -800,7 +822,8 @@ async function updatePricingPlan(planCodeValue, body = {}) {
                     is_active = @isActive, sort_order = @sortOrder,
                     updated_at = SYSUTCDATETIME()
                 WHERE plan_code = @planCode;`);
-    return getPricingCatalog(pool);
+    invalidatePricingCatalog();
+    return getPricingCatalog();
 }
 
 async function updatePricingCatalog(body = {}) {
@@ -853,6 +876,7 @@ async function updatePricingCatalog(body = {}) {
             }
         }
     });
+    invalidatePricingCatalog();
     return getPricingCatalog();
 }
 
@@ -925,7 +949,8 @@ async function createMembershipType(body = {}) {
         .query(`INSERT INTO dbo.membership_types
                 (type_code, type_name, duration_mode, duration_value, price_multiplier, is_active, sort_order)
                 VALUES (@typeCode, @typeName, @durationMode, @durationValue, @priceMultiplier, @isActive, @sortOrder);`);
-    return getPricingCatalog(pool);
+    invalidatePricingCatalog();
+    return getPricingCatalog();
 }
 
 async function updateMembershipType(typeCodeValue, body = {}) {
@@ -953,7 +978,8 @@ async function updateMembershipType(typeCodeValue, body = {}) {
                     is_active = @isActive, sort_order = @sortOrder,
                     updated_at = SYSUTCDATETIME()
                 WHERE type_code = @typeCode;`);
-    return getPricingCatalog(pool);
+    invalidatePricingCatalog();
+    return getPricingCatalog();
 }
 
 async function getDashboard() {
