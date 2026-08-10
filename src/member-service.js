@@ -100,6 +100,28 @@ async function ensurePaymentTransactionsTable() {
                           ON dbo.gym_payment_transactions(source_payment_id)
                           WHERE source_payment_id IS NOT NULL;');
                 END;
+                ;WITH duplicate_subscriptions AS (
+                    SELECT id,
+                           ROW_NUMBER() OVER (
+                               PARTITION BY membership_id
+                               ORDER BY CASE WHEN source_payment_id IS NOT NULL THEN 0 ELSE 1 END,
+                                        created_at ASC,
+                                        id ASC
+                           ) AS row_number
+                    FROM dbo.gym_payment_transactions
+                    WHERE transaction_type = 'subscription'
+                )
+                DELETE FROM duplicate_subscriptions WHERE row_number > 1;
+                IF NOT EXISTS (
+                    SELECT 1 FROM sys.indexes
+                    WHERE name = N'UX_gym_payment_transactions_subscription_membership'
+                      AND object_id = OBJECT_ID(N'dbo.gym_payment_transactions')
+                )
+                BEGIN
+                    EXEC(N'CREATE UNIQUE INDEX UX_gym_payment_transactions_subscription_membership
+                          ON dbo.gym_payment_transactions(membership_id)
+                          WHERE transaction_type = ''subscription'';');
+                END;
                 EXEC(N'INSERT INTO dbo.gym_payment_transactions
                     (membership_id, transaction_type, list_price, discount_amount, amount_due,
                      amount_paid, amount_remaining, payment_method, paid_at, notes, source_payment_id, created_at)
@@ -110,8 +132,9 @@ async function ensurePaymentTransactionsTable() {
                     FROM dbo.gym_payments AS p
                     WHERE p.amount_paid > 0
                       AND NOT EXISTS (
-                          SELECT 1 FROM dbo.gym_payment_transactions AS t
+                          SELECT 1 FROM dbo.gym_payment_transactions AS t WITH (UPDLOCK, HOLDLOCK)
                           WHERE t.source_payment_id = p.id
+                             OR (t.membership_id = p.membership_id AND t.transaction_type = ''subscription'')
                       );');
             `);
         })().catch((error) => {

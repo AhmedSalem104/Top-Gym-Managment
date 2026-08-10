@@ -123,7 +123,7 @@ async function getMonthlyFinance() {
 
     const [paymentsResult, expenseSummaryResult, expenseItemsResult] = await Promise.all([
         paymentRequest.query(`
-            SELECT COUNT(*) AS paidSubscriptionCount,
+            SELECT COUNT(*) AS paidTransactionCount,
                    ISNULL(SUM(amount_paid), 0) AS subscriptionsTotal
             FROM dbo.gym_payment_transactions
             WHERE paid_at >= @monthStart
@@ -155,7 +155,7 @@ async function getMonthlyFinance() {
         period: range,
         subscriptions: {
             total: subscriptionsTotal,
-            count: Number(paymentSummary.paidSubscriptionCount || 0)
+            count: Number(paymentSummary.paidTransactionCount || 0)
         },
         expenses: {
             total: expensesTotal,
