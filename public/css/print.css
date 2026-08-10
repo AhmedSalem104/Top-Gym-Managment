@@ -60,6 +60,12 @@ body {
 .print-billing-item span { display: block; color: var(--print-muted); font-size: 9px; }
 .print-billing-item strong { display: block; margin-top: 2px; color: var(--print-ink); font-size: 13px; font-weight: 900; direction: rtl; }
 .print-billing-item.remaining strong { color: #d97706; }
+.print-payment-summary { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.print-receipt-id { display: inline-flex; align-items: center; min-height: 25px; padding: 3px 9px; border: 1px solid #bfdbfe; border-radius: 99px; color: #1d4ed8; background: #eff6ff; direction: ltr; font-size: 10px; font-weight: 900; }
+.print-receipt-amount { display: grid; justify-items: center; gap: 2px; margin-top: 12px; padding: 17px; border: 1px solid #bfdbfe; border-radius: 12px; background: linear-gradient(135deg, #eff6ff, #f8fbff); text-align: center; }
+.print-receipt-amount span { color: var(--print-muted); font-size: 10px; }
+.print-receipt-amount strong { color: #1d4ed8; direction: ltr; font-size: 25px; font-weight: 900; line-height: 1.2; }
+.print-receipt-amount small { color: #64748b; font-size: 10px; }
 .print-table-wrap { overflow: hidden; border: 1px solid var(--print-line); border-radius: 8px; }
 .print-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
 .print-table th, .print-table td { padding: 7px 8px; border-bottom: 1px solid #eef2f7; text-align: right; vertical-align: middle; word-break: break-word; }
@@ -86,5 +92,5 @@ body {
 @media (max-width: 640px) {
     .print-header { align-items: flex-start; flex-direction: column; }
     .print-document-meta { align-items: flex-start; }
-    .print-info-grid, .print-billing-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .print-info-grid, .print-billing-grid, .print-payment-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }

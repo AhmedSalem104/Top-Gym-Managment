@@ -14,18 +14,21 @@
         const managementSection = document.getElementById('managementSection');
         const analyticsSection = document.getElementById('dashboardAnalytics');
         const reportsSection = document.getElementById('reportsSection');
+        const attendanceSection = document.getElementById('attendanceSection');
         const isDashboard = name === 'dashboard';
         const isMembers = name === 'members';
         const isExpenses = name === 'expenses';
         const isManagement = name === 'management';
         const isReports = name === 'reports';
+        const isAttendance = name === 'attendance';
 
         setHidden(overview, !isDashboard);
         setHidden(expensesSection, !isExpenses);
         setHidden(managementSection, !isManagement);
         setHidden(analyticsSection, !isDashboard);
         setHidden(reportsSection, !isReports);
-        setHidden(workspace, isDashboard || isExpenses || isReports || isManagement);
+        setHidden(attendanceSection, !isAttendance);
+        setHidden(workspace, isDashboard || isExpenses || isReports || isManagement || isAttendance);
         setHidden(membersSection, !isMembers);
 
         document.querySelectorAll('[data-page-tab]').forEach((button) => {

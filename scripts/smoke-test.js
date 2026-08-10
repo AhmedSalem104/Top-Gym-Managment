@@ -29,6 +29,11 @@ async function call(baseUrl, path, options = {}) {
 
         const health = await call(baseUrl, '/api/health');
         assert.equal(health.database, 'connected');
+        const backupResponse = await fetch(`${baseUrl}/api/backup/download`);
+        assert.equal(backupResponse.status, 200);
+        assert.equal(backupResponse.headers.get('content-type'), 'application/gzip');
+        assert.match(backupResponse.headers.get('content-disposition') || '', /backup_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}\.json\.gz/);
+        assert.ok((await backupResponse.arrayBuffer()).byteLength > 20);
         const bootstrap = await call(baseUrl, '/api/bootstrap');
         assert.ok(Array.isArray(bootstrap.members));
         assert.ok(bootstrap.dashboard && bootstrap.dashboard.stats);
@@ -124,6 +129,23 @@ async function call(baseUrl, path, options = {}) {
         assert.equal(created.member.membership.freezeCount, 0);
         assert.equal(created.member.membership.freezeLimit, 3);
         assert.equal(created.member.membership.freezesRemaining, 3);
+        const duplicateResponse = await fetch(`${baseUrl}/api/members`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                fullName: `Duplicate Smoke Test ${suffix}`,
+                phone: created.member.phone,
+                membershipType: 'monthly',
+                membershipPlan: 'gym_only',
+                startDate: '2026-08-08',
+                amountPaid: 0,
+                paymentMethod: 'cash'
+            })
+        });
+        const duplicateBody = await duplicateResponse.json();
+        assert.equal(duplicateResponse.status, 409);
+        assert.equal(duplicateBody.code, 'DUPLICATE_MEMBER_PHONE');
+        assert.equal(duplicateBody.memberName, created.member.fullName);
         const listed = await call(baseUrl, `/api/members?search=${encodeURIComponent(created.member.fullName)}&page=1&pageSize=5`);
         assert.equal(listed.members[0].membership.freezeCount, 0);
         assert.equal(listed.members[0].membership.freezesRemaining, 3);
@@ -192,7 +214,32 @@ async function call(baseUrl, path, options = {}) {
         const details = await call(baseUrl, `/api/members/${memberId}/details`);
         assert.equal(details.member.id, memberId);
         assert.equal(details.memberships.length, 2);
+        assert.ok(details.payments.length >= 4);
+        assert.ok(details.payments.every((item) => item.receiptNumber));
+        assert.equal(details.financialSummary.totalRemaining, 0);
         assert.ok(details.events.length >= 6);
+
+        const attendance = await call(baseUrl, '/api/attendance', { method: 'GET' });
+        assert.ok(attendance.summary && Array.isArray(attendance.records));
+        const checkedIn = await call(baseUrl, '/api/attendance/check-in', {
+            method: 'POST', body: JSON.stringify({ phone: created.member.phone })
+        });
+        assert.equal(checkedIn.attendance.memberId, memberId);
+        let duplicateAttendanceRejected = false;
+        try {
+            await call(baseUrl, '/api/attendance/check-in', {
+                method: 'POST', body: JSON.stringify({ qrToken: `TOPGYM-MEMBER:${memberId}` })
+            });
+        } catch (error) {
+            duplicateAttendanceRejected = /بالفعل/.test(error.message);
+        }
+        assert.equal(duplicateAttendanceRejected, true);
+        const checkedOut = await call(baseUrl, '/api/attendance/check-out', {
+            method: 'POST', body: JSON.stringify({ qrToken: `TOPGYM-MEMBER:${memberId}` })
+        });
+        assert.ok(checkedOut.attendance.checkOutAt);
+        const memberAttendance = await call(baseUrl, `/api/attendance/member/${memberId}`);
+        assert.ok(memberAttendance.records.some((item) => item.id === checkedOut.attendance.id));
 
         const dashboard = await call(baseUrl, '/api/dashboard');
         assert.ok(Number.isInteger(dashboard.stats.total));

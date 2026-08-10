@@ -1,6 +1,6 @@
 const { getPool, sql } = require('./db');
 const { addDays, differenceInDays, formatDateOnly, parseDateOnly, todayInTimeZone, toUtcDate } = require('./date-utils');
-const { getDashboard } = require('./member-service');
+const { ensurePaymentTransactionsTable, getDashboard } = require('./member-service');
 const { ensureExpensesTable } = require('./finance-service');
 
 function appError(message, statusCode = 400) {
@@ -45,6 +45,7 @@ function addTimelineAmount(timelineByDate, rows, dateField, amountField) {
 async function getReportData(query = {}) {
     const range = normalizeRange(query);
     await ensureExpensesTable();
+    await ensurePaymentTransactionsTable();
     const pool = await getPool();
     const baseRequest = () => pool.request()
         .input('fromDate', sql.Date, toUtcDate(range.from))
@@ -80,7 +81,7 @@ async function getReportData(query = {}) {
         `),
         baseRequest().query(`
             SELECT paid_at AS event_date, amount_paid AS amount, payment_method
-            FROM dbo.gym_payments
+            FROM dbo.gym_payment_transactions
             WHERE paid_at >= @fromDate AND paid_at < @nextDate AND amount_paid > 0;
         `),
         baseRequest().query(`
@@ -90,7 +91,7 @@ async function getReportData(query = {}) {
         `),
         baseRequest().query(`
             SELECT payment_method, COUNT(*) AS count, ISNULL(SUM(amount_paid), 0) AS amount
-            FROM dbo.gym_payments
+            FROM dbo.gym_payment_transactions
             WHERE paid_at >= @fromDate AND paid_at < @nextDate AND amount_paid > 0
             GROUP BY payment_method ORDER BY amount DESC;
         `),

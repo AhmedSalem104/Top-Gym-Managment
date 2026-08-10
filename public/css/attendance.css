@@ -1,0 +1,104 @@
+.attendance-section { overflow: hidden; margin-bottom: 20px; border: 1px solid #dbe3ef; background: rgba(255, 255, 255, .92); }
+.attendance-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; padding: 22px 24px; border-bottom: 1px solid #e5eaf2; background: linear-gradient(135deg, #fff, #f5f9ff); }
+.attendance-heading { display: flex; align-items: flex-start; gap: 13px; }
+.attendance-heading-icon { display: grid; width: 44px; height: 44px; flex: 0 0 44px; place-items: center; border: 1px solid #bfdbfe; border-radius: 13px; color: #2563eb; background: #dbeafe; }
+.attendance-heading-icon .ui-icon { width: 23px; height: 23px; }
+.attendance-kicker { display: block; margin-bottom: 3px; color: #2563eb; font-size: 10px; font-weight: 900; letter-spacing: .4px; }
+.attendance-heading h3 { margin: 0; color: #0f172a; font-size: 20px; font-weight: 900; }
+.attendance-heading p { margin: 5px 0 0; color: #64748b; font-size: 11px; line-height: 1.7; }
+.attendance-date-badge { display: inline-flex; align-items: center; gap: 7px; padding: 9px 12px; border: 1px solid #dbeafe; border-radius: 10px; color: #1d4ed8; background: #eff6ff; font-size: 11px; font-weight: 800; white-space: nowrap; }
+.attendance-date-badge .ui-icon { width: 15px; height: 15px; }
+.attendance-control-panel { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 18px; padding: 20px 24px; background: #fbfdff; }
+.attendance-entry-card { padding: 18px; border: 1px solid #dbe3ef; border-radius: 15px; background: #fff; box-shadow: 0 8px 20px rgba(15, 23, 42, .04); }
+.attendance-entry-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 13px; }
+.attendance-entry-head h4 { margin: 0 0 4px; color: #1e3a8a; font-size: 14px; }
+.attendance-entry-head p { margin: 0; color: #94a3b8; font-size: 10px; line-height: 1.6; }
+.attendance-input-row { display: flex; align-items: stretch; gap: 8px; }
+.attendance-input-wrap { position: relative; display: flex; align-items: center; flex: 1; min-width: 0; }
+.attendance-input-wrap .ui-icon { position: absolute; inset-inline-start: 12px; width: 18px; height: 18px; color: #94a3b8; pointer-events: none; }
+.attendance-input-wrap input { width: 100%; min-height: 44px; padding-inline-start: 40px; border-color: #cbd5e1; }
+.attendance-action-buttons { display: flex; gap: 7px; }
+.attendance-action-buttons .btn { min-height: 44px; white-space: nowrap; }
+.attendance-action-buttons .btn-check-in { color: #047857; border-color: #a7f3d0; background: #ecfdf5; }
+.attendance-action-buttons .btn-check-out { color: #1d4ed8; border-color: #bfdbfe; background: #eff6ff; }
+.attendance-entry-hint { display: block; margin-top: 8px; color: #94a3b8; font-size: 10px; }
+.attendance-summary { display: grid; grid-template-columns: repeat(3, minmax(80px, 1fr)); gap: 8px; min-width: 300px; }
+.attendance-summary-card { display: flex; min-width: 0; align-items: center; justify-content: center; flex-direction: column; gap: 4px; padding: 14px 10px; border: 1px solid #e2e8f0; border-radius: 13px; background: #fff; text-align: center; }
+.attendance-summary-card .summary-icon { display: grid; width: 31px; height: 31px; place-items: center; border-radius: 10px; color: #2563eb; background: #dbeafe; }
+.attendance-summary-card.checked-in .summary-icon { color: #059669; background: #d1fae5; }
+.attendance-summary-card.checked-out .summary-icon { color: #7c3aed; background: #ede9fe; }
+.attendance-summary-card .summary-icon .ui-icon { width: 17px; height: 17px; }
+.attendance-summary-card strong { color: #0f172a; font-size: 22px; line-height: 1.2; }
+.attendance-summary-card span:last-child { color: #64748b; font-size: 10px; font-weight: 700; white-space: nowrap; }
+.attendance-list-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 18px 24px 12px; }
+.attendance-list-head h4 { margin: 0 0 3px; color: #0f172a; font-size: 15px; }
+.attendance-list-head p { margin: 0; color: #94a3b8; font-size: 10px; }
+.attendance-list-actions { display: flex; align-items: center; gap: 8px; }
+.attendance-search { width: min(230px, 42vw); min-height: 38px; }
+.attendance-table { width: 100%; min-width: 750px; border-collapse: collapse; text-align: center; }
+.attendance-table th, .attendance-table td { padding: 11px 12px; border-bottom: 1px solid #eef2f7; vertical-align: middle; text-align: center; font-size: 11px; }
+.attendance-table th { color: #475569; background: #f1f5f9; font-size: 10px; font-weight: 900; white-space: nowrap; }
+.attendance-table tbody tr:hover td { background: #f8fbff; }
+.attendance-member-name { display: block; color: #0f172a; font-size: 12px; font-weight: 900; }
+.attendance-member-phone { display: block; margin-top: 3px; color: #94a3b8; direction: ltr; font-size: 10px; }
+.attendance-time { direction: ltr; color: #334155; font-weight: 800; white-space: nowrap; }
+.attendance-source { display: inline-flex; align-items: center; gap: 4px; padding: 4px 7px; border-radius: 99px; color: #475569; background: #f1f5f9; font-size: 9px; font-weight: 800; white-space: nowrap; }
+.attendance-source.qr { color: #7c3aed; background: #f5f3ff; }
+.attendance-source.phone { color: #047857; background: #ecfdf5; }
+.attendance-status { display: inline-flex; padding: 5px 8px; border-radius: 99px; color: #b45309; background: #fffbeb; font-size: 9px; font-weight: 900; white-space: nowrap; }
+.attendance-status.complete { color: #047857; background: #ecfdf5; }
+.attendance-empty { margin: 0 24px 24px; padding: 30px 15px; border: 1px dashed #cbd5e1; border-radius: 12px; color: #94a3b8; text-align: center; font-size: 12px; }
+.attendance-table-wrap { margin: 0 24px 24px; overflow-x: auto; border: 1px solid #dbe3ef; border-radius: 12px; }
+.qr-reader-dialog { width: min(480px, calc(100vw - 28px)); max-height: calc(100vh - 28px); }
+.qr-reader-dialog .dialog-body { max-height: calc(100vh - 28px); overflow-y: auto; }
+#qrReader { min-height: 250px; overflow: hidden; border: 1px solid #dbe3ef; border-radius: 12px; background: #0f172a; }
+#qrReader video { width: 100% !important; border-radius: 11px; }
+.qr-reader-note { margin: 12px 0 0; color: #64748b; font-size: 11px; line-height: 1.7; text-align: center; }
+.member-qr-dialog { width: min(420px, calc(100vw - 28px)); text-align: center; }
+.member-qr-card { display: grid; justify-items: center; gap: 9px; padding: 18px; border: 1px solid #dbeafe; border-radius: 15px; background: linear-gradient(135deg, #f8fbff, #eff6ff); }
+.member-qr-card canvas { width: 210px; height: 210px; padding: 10px; border-radius: 12px; background: #fff; box-shadow: 0 8px 18px rgba(15, 23, 42, .08); }
+.member-qr-card strong { color: #0f172a; font-size: 15px; }
+.member-qr-card span { color: #64748b; direction: ltr; font-size: 11px; }
+.attendance-action-button { color: #1d4ed8 !important; border-color: #bfdbfe !important; background: #eff6ff !important; }
+.payment-dialog-balance { display: grid; grid-template-columns: 1fr auto; gap: 6px 12px; margin: 0 0 12px; padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 10px; background: #f8fafc; }
+.payment-dialog-balance span { color: #64748b; font-size: 11px; }
+.payment-dialog-balance strong { color: #047857; direction: ltr; font-size: 12px; }
+.payment-dialog-balance strong.has-debt { color: #d97706; }
+.financial-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin: 0 0 12px; }
+.financial-summary-card { padding: 10px 11px; border: 1px solid #dbe3ef; border-radius: 10px; background: #f8fafc; }
+.financial-summary-card span { display: block; margin-bottom: 4px; color: #64748b; font-size: 10px; }
+.financial-summary-card strong { display: block; color: #1d4ed8; direction: ltr; font-size: 12px; font-weight: 900; }
+.financial-summary-card.paid strong { color: #047857; }
+.financial-summary-card.remaining strong { color: #d97706; }
+.payment-history-table { min-width: 1040px; }
+.payment-history-table td:first-child strong { color: #1d4ed8; direction: ltr; font-size: 10px; }
+.payment-transaction-type { display: inline-flex; padding: 4px 7px; border-radius: 99px; color: #1d4ed8; background: #eff6ff; font-size: 9px; font-weight: 900; white-space: nowrap; }
+.payment-transaction-type.payment { color: #047857; background: #ecfdf5; }
+.payment-transaction-type.adjustment { color: #b45309; background: #fffbeb; }
+.payment-adjustment td { background: #fffbeb !important; }
+.payment-receipt-button { min-height: 30px !important; padding: 5px 8px !important; color: #1d4ed8 !important; border-color: #bfdbfe !important; background: #eff6ff !important; font-size: 10px !important; white-space: nowrap; }
+@media (max-width: 640px) {
+    .financial-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 850px) {
+    .attendance-control-panel { grid-template-columns: 1fr; }
+    .attendance-summary { min-width: 0; }
+}
+@media (max-width: 640px) {
+    .attendance-header, .attendance-list-head { padding-inline: 14px; }
+    .attendance-header { flex-direction: column; }
+    .attendance-date-badge { width: 100%; justify-content: center; }
+    .attendance-control-panel { gap: 12px; padding: 14px; }
+    .attendance-entry-card { padding: 14px; }
+    .attendance-entry-head { flex-direction: column; }
+    .attendance-input-row { flex-direction: column; }
+    .attendance-action-buttons { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .attendance-action-buttons .btn { padding-inline: 5px; font-size: 10px; }
+    .attendance-list-head { align-items: stretch; flex-direction: column; }
+    .attendance-list-actions { width: 100%; }
+    .attendance-search { width: 100%; flex: 1; }
+    .attendance-table-wrap { margin-inline: 14px; }
+    .attendance-empty { margin-inline: 14px; }
+    .attendance-summary-card { padding-inline: 6px; }
+    .attendance-summary-card strong { font-size: 19px; }
+}

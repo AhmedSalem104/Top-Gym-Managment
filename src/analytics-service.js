@@ -6,7 +6,7 @@ const {
     toUtcDate,
     todayInTimeZone
 } = require('./date-utils');
-const { getDashboard } = require('./member-service');
+const { ensurePaymentTransactionsTable, getDashboard } = require('./member-service');
 const { ensureExpensesTable } = require('./finance-service');
 
 const PERIOD_KEYS = new Set(['week', 'month', 'year']);
@@ -129,6 +129,7 @@ async function getDashboardAnalytics(periodValue = 'month') {
     const range = getPeriodRange(periodValue);
     const buckets = createBuckets(range);
     await ensureExpensesTable();
+    await ensurePaymentTransactionsTable();
     const pool = await getPool();
 
     const [dashboard, membersResult, membershipsResult, paymentsResult, expensesResult, outstandingResult] = await Promise.all([
@@ -145,7 +146,7 @@ async function getDashboardAnalytics(periodValue = 'month') {
         `),
         createRangeRequest(pool, range).query(`
             SELECT paid_at AS eventDate, amount_paid AS amount, payment_method AS paymentMethod
-            FROM dbo.gym_payments
+            FROM dbo.gym_payment_transactions
             WHERE paid_at >= @startDate AND paid_at < @nextDate AND amount_paid > 0;
         `),
         createRangeRequest(pool, range).query(`

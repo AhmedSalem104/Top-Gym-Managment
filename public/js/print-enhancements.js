@@ -3,6 +3,7 @@
             const STATUS_LABELS = { active: 'نشطة', expiring_soon: 'قريبة الانتهاء', expired: 'منتهية', frozen: 'مجمدة' };
             const EVENT_LABELS = { created: 'إضافة اشتراك', updated: 'تعديل بيانات', renewed: 'تجديد اشتراك', frozen: 'تجميد العضوية', resumed: 'استئناف العضوية', payment_updated: 'تحديث الدفع' };
             const PAYMENT_LABELS = { cash: 'نقدي', card: 'بطاقة', transfer: 'تحويل', other: 'أخرى' };
+            const PAYMENT_TRANSACTION_LABELS = { subscription: 'اشتراك', payment: 'دفعة', adjustment: 'تسوية' };
             const PLAN_LABELS = { gym_only: 'جيم فقط', gym_cardio: 'جيم وكارديو' };
             const TYPE_LABELS = { monthly: 'شهرية', half_month: 'نصف شهر', quarterly: 'ربع سنوية', semiannual: 'نصف سنوية', annual: 'سنوية', 'two month': 'شهرين', custom_mslzyl8m: 'شهرين' };
 
@@ -96,6 +97,20 @@
                 return rows || '<tr><td colspan="3"><div class="print-empty">لا توجد عمليات مسجلة.</div></td></tr>';
             }
 
+            function paymentHistory(data) {
+                const rows = (data.payments || []).map((payment) => `<tr>
+                    <td>${escapeHtml(payment.receiptNumber || `TG-${String(payment.id).padStart(6, '0')}`)}</td>
+                    <td>${escapeHtml(printDateTime(payment.transactionDate || payment.createdAt))}</td>
+                    <td>${escapeHtml(PAYMENT_TRANSACTION_LABELS[payment.transactionType] || payment.transactionType || 'دفعة')}</td>
+                    <td>${escapeHtml(planLabel(payment.plan))}<span class="print-table-sub">${escapeHtml(typeLabel(payment.type))}</span></td>
+                    <td>${escapeHtml(money(payment.amountPaid))}</td>
+                    <td>${escapeHtml(money(payment.amountRemaining))}</td>
+                    <td>${escapeHtml(paymentLabel(payment.paymentMethod))}</td>
+                    <td>${escapeHtml(payment.notes || '—')}</td>
+                </tr>`).join('');
+                return rows || '<tr><td colspan="8"><div class="print-empty">لا توجد مدفوعات أو إيصالات مسجلة.</div></td></tr>';
+            }
+
             function buildPrintDocument(data, mode) {
                 const member = data.member || {};
                 const membership = currentMembership(data);
@@ -112,12 +127,24 @@
                     <div class="print-billing-grid" style="margin-top: 10px;">${billingItem('السعر الأساسي', money(membership.listPrice))}${billingItem('الخصم', money(membership.discountAmount))}${billingItem('المستحق', money(membership.amountDue))}${billingItem('المتبقي', money(membership.amountRemaining), 'remaining')}</div>
                     ${membership.notes ? `<p class="print-notes" style="margin-top: 10px;"><strong>ملاحظات الاشتراك:</strong> ${escapeHtml(membership.notes)}</p>` : ''}
                 </section>` : '<section class="print-section"><div class="print-empty">لا يوجد اشتراك مسجل لهذا العضو.</div></section>';
-                const history = mode === 'full' ? `<section class="print-section"><div class="print-section-title"><div><span class="print-section-kicker">السجل الكامل</span><h2>سجل الاشتراكات والتجديدات</h2></div></div><div class="print-table-wrap"><table class="print-table"><thead><tr><th>الباقة والمدة</th><th>الفترة</th><th>الحالة</th><th>الحساب</th><th>الدفع</th></tr></thead><tbody>${membershipHistory(data)}</tbody></table></div></section>
+                const history = mode === 'full' ? `<section class="print-section"><div class="print-section-title"><div><span class="print-section-kicker">السجل المالي</span><h2>سجل المدفوعات والإيصالات</h2></div></div><div class="print-billing-grid print-payment-summary">${billingItem('إجمالي المستحق', money(data.financialSummary?.totalDue))}${billingItem('إجمالي المدفوع', money(data.financialSummary?.totalPaid))}${billingItem('إجمالي المتبقي', money(data.financialSummary?.totalRemaining), 'remaining')}${billingItem('عدد الإيصالات', String(data.financialSummary?.paidTransactionCount || 0))}</div><div class="print-table-wrap" style="margin-top: 10px;"><table class="print-table"><thead><tr><th>رقم الإيصال</th><th>التاريخ</th><th>العملية</th><th>الاشتراك</th><th>قيمة العملية</th><th>المتبقي</th><th>طريقة الدفع</th><th>ملاحظات</th></tr></thead><tbody>${paymentHistory(data)}</tbody></table></div></section>
+                    <section class="print-section"><div class="print-section-title"><div><span class="print-section-kicker">السجل الكامل</span><h2>سجل الاشتراكات والتجديدات</h2></div></div><div class="print-table-wrap"><table class="print-table"><thead><tr><th>الباقة والمدة</th><th>الفترة</th><th>الحالة</th><th>الحساب</th><th>الدفع</th></tr></thead><tbody>${membershipHistory(data)}</tbody></table></div></section>
                     <section class="print-section"><div class="print-section-title"><div><span class="print-section-kicker">سجل التجميد</span><h2>عمليات التجميد</h2></div></div><div class="print-table-wrap"><table class="print-table"><thead><tr><th>البداية</th><th>النهاية</th><th>الاستئناف</th><th>المدة</th><th>السبب</th></tr></thead><tbody>${freezeHistory(data)}</tbody></table></div></section>
                     <section class="print-section"><div class="print-section-title"><div><span class="print-section-kicker">سجل النشاط</span><h2>كل العمليات المسجلة</h2></div></div><div class="print-table-wrap"><table class="print-table"><thead><tr><th>التاريخ</th><th>العملية</th><th>التفاصيل</th></tr></thead><tbody>${eventHistory(data)}</tbody></table></div></section>` : '';
                 const printHeader = `<header class="print-header"><div class="print-brand"><img class="print-logo" src="${assetUrl('/favicon.svg?v=2')}" alt=""><div class="print-brand-copy"><h1 class="print-brand-title">TOP GYM</h1></div></div><div class="print-document-meta"><strong>${escapeHtml(title)}</strong><span>رقم العضو: #${escapeHtml(member.id || '—')}</span><span>تاريخ الطباعة: ${escapeHtml(printDate(new Date()))}</span></div></header>`;
                 const printFooter = `<footer class="print-footer"><div class="print-footer-management"><strong>إدارة الجيم</strong><span>C/ Ahmed Abdel Hamid · C/ Karim Abdelhamid</span></div><span class="print-signature">اعتماد الإدارة</span></footer>`;
                 return `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${escapeHtml(title)} - TOP GYM</title><link rel="stylesheet" href="${assetUrl('/css/print.css?v=3')}"></head><body><main class="print-sheet">${printHeader}<div class="print-accent"></div>${memberInfo}${membershipInfo}${history}${printFooter}</main></body></html>`;
+            }
+
+            function buildPaymentReceiptDocument(data, payment) {
+                const member = data.member || {};
+                const membership = (data.memberships || []).find((item) => Number(item.id) === Number(payment.membershipId)) || currentMembership(data);
+                const title = 'إيصال دفع';
+                const printHeader = `<header class="print-header"><div class="print-brand"><img class="print-logo" src="${assetUrl('/favicon.svg?v=2')}" alt=""><div class="print-brand-copy"><h1 class="print-brand-title">TOP GYM</h1></div></div><div class="print-document-meta"><strong>${title}</strong><span>رقم الإيصال: ${escapeHtml(payment.receiptNumber || `TG-${String(payment.id).padStart(6, '0')}`)}</span><span>تاريخ الطباعة: ${escapeHtml(printDate(new Date()))}</span></div></header>`;
+                const memberInfo = `<section class="print-section"><div class="print-section-title"><div><span class="print-section-kicker">بيانات العميل</span><h2>إيصال استلام دفعة</h2></div><span class="print-receipt-id">${escapeHtml(payment.receiptNumber || '—')}</span></div><div class="print-member-hero"><span class="print-member-avatar">${escapeHtml(initials(member.fullName))}</span><div class="print-member-copy"><h2>${escapeHtml(member.fullName || 'عضو الجيم')}</h2><p>${escapeHtml(member.phone || '—')}</p></div></div><div class="print-info-grid" style="margin-top: 10px;">${infoItem('رقم العضو', `#${member.id || '—'}`)}${infoItem('تاريخ العملية', printDateTime(payment.transactionDate || payment.createdAt))}${infoItem('الباقة', planLabel(payment.plan))}${infoItem('النوع', typeLabel(payment.type))}</div></section>`;
+                const paymentInfo = `<section class="print-section"><div class="print-section-title"><div><span class="print-section-kicker">تفاصيل العملية</span><h2>${escapeHtml(PAYMENT_TRANSACTION_LABELS[payment.transactionType] || 'دفعة')}</h2></div></div><div class="print-info-grid">${infoItem('طريقة الدفع', paymentLabel(payment.paymentMethod))}${infoItem('تاريخ الاشتراك', printDate(membership?.startDate))}${infoItem('تاريخ الانتهاء', printDate(membership?.effectiveEndDate))}${infoItem('المستحق', money(payment.amountDue))}</div><div class="print-receipt-amount"><span>قيمة العملية</span><strong>${escapeHtml(money(payment.amountPaid))}</strong><small>الرصيد المتبقي بعد العملية: ${escapeHtml(money(payment.amountRemaining))}</small></div>${payment.notes ? `<p class="print-notes"><strong>ملاحظات:</strong> ${escapeHtml(payment.notes)}</p>` : ''}</section>`;
+                const printFooter = `<footer class="print-footer"><div class="print-footer-management"><strong>إدارة الجيم</strong><span>C/ Ahmed Abdel Hamid · C/ Karim Abdelhamid</span></div><span class="print-signature">اعتماد الإدارة</span></footer>`;
+                return `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${title} - TOP GYM</title><link rel="stylesheet" href="${assetUrl('/css/print.css?v=4')}"></head><body><main class="print-sheet">${printHeader}<div class="print-accent"></div>${memberInfo}${paymentInfo}${printFooter}</main></body></html>`;
             }
 
             function writeWindow(printWindow, html) {
@@ -197,7 +224,26 @@
                 }
             }
 
-            window.topGymPrint = { ...(window.topGymPrint || {}), printMember, createPdfFile };
+            async function printPaymentReceipt(memberId, paymentId) {
+                const printWindow = window.open('', '_blank', 'width=900,height=760');
+                if (!printWindow) {
+                    window.alert('يرجى السماح بالنوافذ المنبثقة لإتمام طباعة الإيصال.');
+                    return;
+                }
+                writeWindow(printWindow, `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><link rel="stylesheet" href="${assetUrl('/css/print.css?v=4')}"></head><body><div class="print-loading">جاري تجهيز الإيصال…</div></body></html>`);
+                try {
+                    const data = await fetchMemberDetails(memberId);
+                    const payment = (data.payments || []).find((item) => Number(item.id) === Number(paymentId));
+                    if (!payment) throw new Error('الإيصال غير موجود. حدّث بيانات العضو وحاول مرة أخرى.');
+                    writeWindow(printWindow, buildPaymentReceiptDocument(data, payment));
+                    printWindow.onafterprint = () => printWindow.close();
+                    window.setTimeout(() => { printWindow.focus(); printWindow.print(); }, 450);
+                } catch (error) {
+                    writeWindow(printWindow, `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><link rel="stylesheet" href="${assetUrl('/css/print.css?v=4')}"></head><body><div class="print-error">${escapeHtml(error.message)}</div></body></html>`);
+                }
+            }
+
+            window.topGymPrint = { ...(window.topGymPrint || {}), printMember, printPaymentReceipt, createPdfFile };
 
             function ensurePrintActions() {
                 if (!list) return;

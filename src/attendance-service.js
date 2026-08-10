@@ -1,0 +1,285 @@
+const { getPool, sql } = require('./db');
+const { formatDateOnly, parseDateOnly, todayInTimeZone, toUtcDate } = require('./date-utils');
+
+const ATTENDANCE_SOURCES = new Set(['phone', 'qr', 'manual']);
+let attendanceTablePromise;
+
+function appError(message, statusCode = 400, code = null, details = {}) {
+    const error = new Error(message);
+    error.statusCode = statusCode;
+    error.expose = true;
+    if (code) error.code = code;
+    Object.assign(error, details);
+    return error;
+}
+
+function ensureId(value, label = 'المعرّف') {
+    const id = Number(value);
+    if (!Number.isInteger(id) || id < 1) throw appError(`${label} غير صالح.`);
+    return id;
+}
+
+function normalizePhone(value) {
+    const arabicDigits = '٠١٢٣٤٥٦٧٨٩';
+    const englishDigits = '0123456789';
+    let normalized = String(value ?? '').trim().replace(/[٠-٩]/gu, (digit) => englishDigits[arabicDigits.indexOf(digit)]);
+    normalized = normalized.replace(/[^0-9]/g, '');
+    if (normalized.startsWith('00')) normalized = normalized.slice(2);
+    if (normalized.startsWith('20') && normalized.length === 12) normalized = `0${normalized.slice(2)}`;
+    return normalized;
+}
+
+async function ensureAttendanceTable() {
+    if (!attendanceTablePromise) {
+        attendanceTablePromise = (async () => {
+            const pool = await getPool();
+            await pool.request().batch(`
+                IF OBJECT_ID(N'dbo.gym_attendance', N'U') IS NULL
+                BEGIN
+                    EXEC(N'CREATE TABLE dbo.gym_attendance (
+                        id INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_gym_attendance_runtime PRIMARY KEY,
+                        member_id INT NOT NULL,
+                        membership_id INT NULL,
+                        attendance_date DATE NOT NULL,
+                        check_in_at DATETIME2(0) NOT NULL CONSTRAINT DF_gym_attendance_check_in_runtime DEFAULT (SYSUTCDATETIME()),
+                        check_out_at DATETIME2(0) NULL,
+                        check_in_source VARCHAR(10) NOT NULL CONSTRAINT DF_gym_attendance_source_runtime DEFAULT (''phone''),
+                        check_out_source VARCHAR(10) NULL,
+                        notes NVARCHAR(250) NULL,
+                        created_at DATETIME2(0) NOT NULL CONSTRAINT DF_gym_attendance_created_runtime DEFAULT (SYSUTCDATETIME()),
+                        updated_at DATETIME2(0) NOT NULL CONSTRAINT DF_gym_attendance_updated_runtime DEFAULT (SYSUTCDATETIME()),
+                        CONSTRAINT FK_gym_attendance_member_runtime FOREIGN KEY (member_id)
+                            REFERENCES dbo.members(id) ON DELETE CASCADE,
+                        CONSTRAINT CK_gym_attendance_check_out_runtime CHECK (check_out_at IS NULL OR check_out_at >= check_in_at),
+                        CONSTRAINT CK_gym_attendance_source_runtime CHECK (check_in_source IN (''phone'', ''qr'', ''manual'') AND (check_out_source IS NULL OR check_out_source IN (''phone'', ''qr'', ''manual'')))
+                    );');
+                END;
+                IF NOT EXISTS (
+                    SELECT 1 FROM sys.indexes
+                    WHERE name = N'UX_gym_attendance_member_date' AND object_id = OBJECT_ID(N'dbo.gym_attendance')
+                )
+                BEGIN
+                    EXEC(N'CREATE UNIQUE INDEX UX_gym_attendance_member_date
+                          ON dbo.gym_attendance(member_id, attendance_date);');
+                END;
+                IF NOT EXISTS (
+                    SELECT 1 FROM sys.indexes
+                    WHERE name = N'IX_gym_attendance_date' AND object_id = OBJECT_ID(N'dbo.gym_attendance')
+                )
+                BEGIN
+                    EXEC(N'CREATE INDEX IX_gym_attendance_date
+                          ON dbo.gym_attendance(attendance_date DESC, check_in_at DESC, id DESC);');
+                END;
+            `);
+        })().catch((error) => {
+            attendanceTablePromise = undefined;
+            throw error;
+        });
+    }
+    return attendanceTablePromise;
+}
+
+function parseQrToken(value) {
+    const token = String(value ?? '').trim();
+    if (!token) return null;
+    if (/^TOPGYM-MEMBER:\d+$/i.test(token)) return Number(token.split(':')[1]);
+    if (/^TOPGYM\|MEMBER\|\d+$/i.test(token)) return Number(token.split('|')[2]);
+    try {
+        const parsed = JSON.parse(token);
+        if (parsed?.memberId) return ensureId(parsed.memberId, 'معرّف العضو');
+    } catch (_) { /* QR may contain the compact token above. */ }
+    return null;
+}
+
+async function findMember(pool, body = {}, { requireActive = true } = {}) {
+    const qrMemberId = parseQrToken(body.qrToken ?? body.token);
+    const phone = normalizePhone(body.phone);
+    if (!qrMemberId && phone.length < 5) {
+        throw appError('أدخل رقم الهاتف أو امسح QR Code للعضو.');
+    }
+
+    const memberRequest = pool.request();
+    let memberQuery = `SELECT TOP 1 id, full_name, phone, phone_normalized
+                       FROM dbo.members
+                       WHERE ${qrMemberId ? 'id = @memberId' : '(phone_normalized = @phone OR phone = @phone)'};`;
+    if (qrMemberId) memberRequest.input('memberId', sql.Int, qrMemberId);
+    else memberRequest.input('phone', sql.NVarChar(30), phone);
+    const memberResult = await memberRequest.query(memberQuery);
+    const member = memberResult.recordset[0];
+    if (!member) throw appError('لم يتم العثور على مشترك بهذا الرقم أو QR Code.', 404, 'ATTENDANCE_MEMBER_NOT_FOUND');
+
+    const today = todayInTimeZone();
+    const membershipResult = await pool.request()
+        .input('memberId', sql.Int, member.id)
+        .input('today', sql.Date, toUtcDate(today))
+        .query(`SELECT TOP 1 m.id, m.membership_plan, m.membership_type, m.start_date, m.end_date,
+                       CASE WHEN EXISTS (
+                           SELECT 1 FROM dbo.membership_freezes AS f
+                           WHERE f.membership_id = m.id AND f.resumed_date IS NULL
+                             AND @today BETWEEN f.start_date AND f.end_date
+                       ) THEN 1 ELSE 0 END AS is_frozen
+                FROM dbo.memberships AS m
+                WHERE m.member_id = @memberId
+                ORDER BY CASE WHEN @today BETWEEN m.start_date AND m.end_date THEN 0 ELSE 1 END,
+                         m.end_date DESC, m.id DESC;`);
+    const membership = membershipResult.recordset[0] || null;
+    if (requireActive) {
+        if (!membership || formatDateOnly(membership.start_date) > today || formatDateOnly(membership.end_date) < today) {
+            throw appError('لا توجد عضوية سارية لهذا المشترك اليوم.', 409, 'ATTENDANCE_MEMBERSHIP_INACTIVE');
+        }
+        if (Number(membership.is_frozen)) {
+            throw appError('لا يمكن تسجيل الحضور لأن عضوية المشترك مجمدة حالياً.', 409, 'ATTENDANCE_MEMBERSHIP_FROZEN');
+        }
+    }
+    return { member, membership, today, source: qrMemberId ? 'qr' : 'phone' };
+}
+
+function mapAttendance(row) {
+    return {
+        id: Number(row.id),
+        memberId: Number(row.member_id),
+        memberName: row.full_name,
+        phone: row.phone,
+        membershipId: row.membership_id ? Number(row.membership_id) : null,
+        plan: row.membership_plan || null,
+        type: row.membership_type || null,
+        attendanceDate: formatDateOnly(row.attendance_date),
+        checkInAt: row.check_in_at,
+        checkOutAt: row.check_out_at,
+        checkInSource: row.check_in_source || 'phone',
+        checkOutSource: row.check_out_source || null,
+        notes: row.notes || null,
+        durationMinutes: row.check_out_at && row.check_in_at
+            ? Math.max(0, Math.round((new Date(row.check_out_at).getTime() - new Date(row.check_in_at).getTime()) / 60000))
+            : null
+    };
+}
+
+async function getTodayAttendance(options = {}) {
+    await ensureAttendanceTable();
+    const pool = await getPool();
+    const date = parseDateOnly(options.date || todayInTimeZone(), 'تاريخ الحضور');
+    const search = String(options.search || '').trim();
+    const result = await pool.request()
+        .input('attendanceDate', sql.Date, toUtcDate(date))
+        .input('search', sql.NVarChar(120), search ? `%${search}%` : null)
+        .query(`SELECT a.id, a.member_id, a.membership_id, a.attendance_date,
+                       a.check_in_at, a.check_out_at, a.check_in_source, a.check_out_source,
+                       a.notes, m.full_name, m.phone,
+                       ms.membership_plan, ms.membership_type
+                FROM dbo.gym_attendance AS a
+                INNER JOIN dbo.members AS m ON m.id = a.member_id
+                OUTER APPLY (
+                    SELECT TOP 1 x.membership_plan, x.membership_type
+                    FROM dbo.memberships AS x
+                    WHERE x.id = a.membership_id
+                ) AS ms
+                WHERE a.attendance_date = @attendanceDate
+                  AND (@search IS NULL OR m.full_name LIKE @search OR m.phone LIKE @search)
+                ORDER BY a.check_in_at DESC, a.id DESC;`);
+    const records = result.recordset.map(mapAttendance);
+    return {
+        date,
+        summary: {
+            present: records.length,
+            checkedIn: records.filter((item) => !item.checkOutAt).length,
+            checkedOut: records.filter((item) => Boolean(item.checkOutAt)).length
+        },
+        records
+    };
+}
+
+async function getAttendanceRecordForDate(pool, memberId, date) {
+    const result = await pool.request()
+        .input('memberId', sql.Int, memberId)
+        .input('attendanceDate', sql.Date, toUtcDate(date))
+        .query(`SELECT a.id, a.member_id, a.membership_id, a.attendance_date,
+                       a.check_in_at, a.check_out_at, a.check_in_source, a.check_out_source,
+                       a.notes, m.full_name, m.phone,
+                       ms.membership_plan, ms.membership_type
+                FROM dbo.gym_attendance AS a
+                INNER JOIN dbo.members AS m ON m.id = a.member_id
+                OUTER APPLY (
+                    SELECT TOP 1 x.membership_plan, x.membership_type
+                    FROM dbo.memberships AS x WHERE x.id = a.membership_id
+                ) AS ms
+                WHERE a.member_id = @memberId AND a.attendance_date = @attendanceDate;`);
+    return result.recordset[0] ? mapAttendance(result.recordset[0]) : null;
+}
+
+async function checkIn(body = {}) {
+    await ensureAttendanceTable();
+    const pool = await getPool();
+    const resolved = await findMember(pool, body, { requireActive: true });
+    const existing = await getAttendanceRecordForDate(pool, resolved.member.id, resolved.today);
+    if (existing) {
+        throw appError('تم تسجيل حضور هذا المشترك اليوم بالفعل.', 409, 'ATTENDANCE_ALREADY_CHECKED_IN', { attendance: existing });
+    }
+    try {
+        await pool.request()
+            .input('memberId', sql.Int, resolved.member.id)
+            .input('membershipId', sql.Int, resolved.membership?.id || null)
+            .input('attendanceDate', sql.Date, toUtcDate(resolved.today))
+            .input('source', sql.VarChar(10), ATTENDANCE_SOURCES.has(resolved.source) ? resolved.source : 'manual')
+            .query(`INSERT INTO dbo.gym_attendance (member_id, membership_id, attendance_date, check_in_source)
+                    VALUES (@memberId, @membershipId, @attendanceDate, @source);`);
+    } catch (error) {
+        if (error.number === 2601 || error.number === 2627) {
+            const duplicate = await getAttendanceRecordForDate(pool, resolved.member.id, resolved.today);
+            throw appError('تم تسجيل حضور هذا المشترك اليوم بالفعل.', 409, 'ATTENDANCE_ALREADY_CHECKED_IN', { attendance: duplicate });
+        }
+        throw error;
+    }
+    const attendance = await getAttendanceRecordForDate(pool, resolved.member.id, resolved.today);
+    return { attendance, message: `تم تسجيل حضور ${resolved.member.full_name} بنجاح.` };
+}
+
+async function checkOut(body = {}) {
+    await ensureAttendanceTable();
+    const pool = await getPool();
+    const resolved = await findMember(pool, body, { requireActive: false });
+    const existing = await getAttendanceRecordForDate(pool, resolved.member.id, resolved.today);
+    if (!existing) throw appError('لا يوجد تسجيل حضور لهذا المشترك اليوم.', 409, 'ATTENDANCE_NOT_CHECKED_IN');
+    if (existing.checkOutAt) throw appError('تم تسجيل انصراف هذا المشترك اليوم بالفعل.', 409, 'ATTENDANCE_ALREADY_CHECKED_OUT', { attendance: existing });
+    await pool.request()
+        .input('id', sql.Int, existing.id)
+        .input('source', sql.VarChar(10), resolved.source)
+        .query(`UPDATE dbo.gym_attendance
+                SET check_out_at = SYSUTCDATETIME(), check_out_source = @source, updated_at = SYSUTCDATETIME()
+                WHERE id = @id;`);
+    const attendance = await getAttendanceRecordForDate(pool, resolved.member.id, resolved.today);
+    return { attendance, message: `تم تسجيل انصراف ${resolved.member.full_name} بنجاح.` };
+}
+
+async function getMemberAttendance(memberId, options = {}) {
+    await ensureAttendanceTable();
+    const id = ensureId(memberId, 'معرّف العضو');
+    const pool = await getPool();
+    const from = parseDateOnly(options.from || `${todayInTimeZone().slice(0, 7)}-01`, 'تاريخ البداية');
+    const to = parseDateOnly(options.to || todayInTimeZone(), 'تاريخ النهاية');
+    if (from > to) throw appError('تاريخ البداية يجب أن يكون قبل تاريخ النهاية.');
+    const result = await pool.request()
+        .input('memberId', sql.Int, id)
+        .input('fromDate', sql.Date, toUtcDate(from))
+        .input('toDate', sql.Date, toUtcDate(to))
+        .query(`SELECT a.id, a.member_id, a.membership_id, a.attendance_date,
+                       a.check_in_at, a.check_out_at, a.check_in_source, a.check_out_source,
+                       a.notes, m.full_name, m.phone,
+                       ms.membership_plan, ms.membership_type
+                FROM dbo.gym_attendance AS a
+                INNER JOIN dbo.members AS m ON m.id = a.member_id
+                OUTER APPLY (
+                    SELECT TOP 1 x.membership_plan, x.membership_type FROM dbo.memberships AS x WHERE x.id = a.membership_id
+                ) AS ms
+                WHERE a.member_id = @memberId AND a.attendance_date BETWEEN @fromDate AND @toDate
+                ORDER BY a.attendance_date DESC, a.check_in_at DESC;`);
+    return { from, to, records: result.recordset.map(mapAttendance) };
+}
+
+module.exports = {
+    checkIn,
+    checkOut,
+    ensureAttendanceTable,
+    getMemberAttendance,
+    getTodayAttendance
+};

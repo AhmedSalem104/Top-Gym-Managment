@@ -208,6 +208,67 @@ BEGIN
     );
 END;
 
+-- Immutable payment transactions used for the member financial ledger and receipts.
+IF OBJECT_ID(N'dbo.gym_payment_transactions', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.gym_payment_transactions (
+        id INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_gym_payment_transactions PRIMARY KEY,
+        membership_id INT NOT NULL,
+        transaction_type VARCHAR(20) NOT NULL CONSTRAINT DF_gym_payment_transactions_type DEFAULT ('payment'),
+        list_price DECIMAL(12,2) NOT NULL,
+        discount_amount DECIMAL(12,2) NOT NULL,
+        amount_due DECIMAL(12,2) NOT NULL,
+        amount_paid DECIMAL(12,2) NOT NULL,
+        amount_remaining DECIMAL(12,2) NOT NULL,
+        payment_method VARCHAR(20) NOT NULL CONSTRAINT DF_gym_payment_transactions_method DEFAULT ('cash'),
+        paid_at DATE NULL,
+        notes NVARCHAR(500) NULL,
+        source_payment_id INT NULL,
+        created_at DATETIME2(0) NOT NULL CONSTRAINT DF_gym_payment_transactions_created DEFAULT (SYSUTCDATETIME()),
+        CONSTRAINT FK_gym_payment_transactions_membership FOREIGN KEY (membership_id)
+            REFERENCES dbo.memberships(id) ON DELETE CASCADE,
+        CONSTRAINT CK_gym_payment_transactions_type CHECK (transaction_type IN ('subscription', 'payment', 'adjustment')),
+        CONSTRAINT CK_gym_payment_transactions_amounts CHECK (
+            list_price >= 0 AND discount_amount >= 0 AND discount_amount <= list_price
+            AND amount_due = list_price - discount_amount
+            AND amount_remaining >= 0 AND amount_remaining <= amount_due
+            AND ((transaction_type = 'adjustment' AND amount_paid <> 0) OR (transaction_type <> 'adjustment' AND amount_paid > 0))
+        ),
+        CONSTRAINT CK_gym_payment_transactions_method CHECK (payment_method IN ('cash', 'card', 'transfer', 'other'))
+    );
+END;
+
+IF NOT EXISTS (
+    SELECT 1 FROM sys.indexes
+    WHERE name = N'IX_gym_payment_transactions_membership_date'
+      AND object_id = OBJECT_ID(N'dbo.gym_payment_transactions')
+)
+BEGIN
+    CREATE INDEX IX_gym_payment_transactions_membership_date
+        ON dbo.gym_payment_transactions(membership_id, created_at DESC, id DESC);
+END;
+
+IF NOT EXISTS (
+    SELECT 1 FROM sys.indexes
+    WHERE name = N'IX_gym_payment_transactions_paid_at'
+      AND object_id = OBJECT_ID(N'dbo.gym_payment_transactions')
+)
+BEGIN
+    CREATE INDEX IX_gym_payment_transactions_paid_at
+        ON dbo.gym_payment_transactions(paid_at DESC, id DESC);
+END;
+
+IF NOT EXISTS (
+    SELECT 1 FROM sys.indexes
+    WHERE name = N'UX_gym_payment_transactions_source_payment'
+      AND object_id = OBJECT_ID(N'dbo.gym_payment_transactions')
+)
+BEGIN
+    CREATE UNIQUE INDEX UX_gym_payment_transactions_source_payment
+        ON dbo.gym_payment_transactions(source_payment_id)
+        WHERE source_payment_id IS NOT NULL;
+END;
+
 IF OBJECT_ID(N'dbo.gym_expenses', N'U') IS NULL
 BEGIN
     CREATE TABLE dbo.gym_expenses (
@@ -220,6 +281,50 @@ BEGIN
         updated_at DATETIME2(0) NOT NULL CONSTRAINT DF_gym_expenses_updated_at DEFAULT (SYSUTCDATETIME()),
         CONSTRAINT CK_gym_expenses_amount CHECK (amount > 0)
     );
+END;
+
+IF OBJECT_ID(N'dbo.gym_attendance', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.gym_attendance (
+        id INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_gym_attendance PRIMARY KEY,
+        member_id INT NOT NULL,
+        membership_id INT NULL,
+        attendance_date DATE NOT NULL,
+        check_in_at DATETIME2(0) NOT NULL CONSTRAINT DF_gym_attendance_check_in DEFAULT (SYSUTCDATETIME()),
+        check_out_at DATETIME2(0) NULL,
+        check_in_source VARCHAR(10) NOT NULL CONSTRAINT DF_gym_attendance_source DEFAULT ('phone'),
+        check_out_source VARCHAR(10) NULL,
+        notes NVARCHAR(250) NULL,
+        created_at DATETIME2(0) NOT NULL CONSTRAINT DF_gym_attendance_created DEFAULT (SYSUTCDATETIME()),
+        updated_at DATETIME2(0) NOT NULL CONSTRAINT DF_gym_attendance_updated DEFAULT (SYSUTCDATETIME()),
+        CONSTRAINT FK_gym_attendance_member FOREIGN KEY (member_id)
+            REFERENCES dbo.members(id) ON DELETE CASCADE,
+        CONSTRAINT CK_gym_attendance_check_out CHECK (check_out_at IS NULL OR check_out_at >= check_in_at),
+        CONSTRAINT CK_gym_attendance_source CHECK (
+            check_in_source IN ('phone', 'qr', 'manual')
+            AND (check_out_source IS NULL OR check_out_source IN ('phone', 'qr', 'manual'))
+        )
+    );
+END;
+
+IF NOT EXISTS (
+    SELECT 1 FROM sys.indexes
+    WHERE name = N'UX_gym_attendance_member_date'
+      AND object_id = OBJECT_ID(N'dbo.gym_attendance')
+)
+BEGIN
+    CREATE UNIQUE INDEX UX_gym_attendance_member_date
+        ON dbo.gym_attendance(member_id, attendance_date);
+END;
+
+IF NOT EXISTS (
+    SELECT 1 FROM sys.indexes
+    WHERE name = N'IX_gym_attendance_date'
+      AND object_id = OBJECT_ID(N'dbo.gym_attendance')
+)
+BEGIN
+    CREATE INDEX IX_gym_attendance_date
+        ON dbo.gym_attendance(attendance_date DESC, check_in_at DESC, id DESC);
 END;
 
 -- Safe migrations for databases that were initialized before pricing was added.
@@ -270,6 +375,25 @@ IF COL_LENGTH(N'dbo.gym_payments', N'discount_amount') IS NULL
 BEGIN
     ALTER TABLE dbo.gym_payments
         ADD discount_amount DECIMAL(12,2) NOT NULL CONSTRAINT DF_gym_payments_discount_migration DEFAULT (0);
+END;
+
+-- Preserve existing paid totals as one migrated ledger entry. New payments are
+-- appended by the application and never overwrite historical transactions.
+IF OBJECT_ID(N'dbo.gym_payment_transactions', N'U') IS NOT NULL
+BEGIN
+    INSERT INTO dbo.gym_payment_transactions
+        (membership_id, transaction_type, list_price, discount_amount, amount_due,
+         amount_paid, amount_remaining, payment_method, paid_at, notes, source_payment_id, created_at)
+    SELECT p.membership_id, 'subscription', p.list_price, p.discount_amount, p.amount_due,
+           p.amount_paid, p.amount_remaining, p.payment_method, p.paid_at,
+           CASE WHEN p.notes IS NULL THEN N'تم ترحيله من سجل الدفع السابق.' ELSE p.notes END,
+           p.id, p.created_at
+    FROM dbo.gym_payments AS p
+    WHERE p.amount_paid > 0
+      AND NOT EXISTS (
+          SELECT 1 FROM dbo.gym_payment_transactions AS t
+          WHERE t.source_payment_id = p.id
+      );
 END;
 
 IF NOT EXISTS (

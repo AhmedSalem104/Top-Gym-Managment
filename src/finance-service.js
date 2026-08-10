@@ -7,6 +7,7 @@ const {
     todayInTimeZone,
     toUtcDate
 } = require('./date-utils');
+const { ensurePaymentTransactionsTable } = require('./member-service');
 
 function appError(message, statusCode = 400) {
     const error = new Error(message);
@@ -107,6 +108,7 @@ function mapExpense(row) {
 
 async function getMonthlyFinance() {
     await ensureExpensesTable();
+    await ensurePaymentTransactionsTable();
     const pool = await getPool();
     const range = currentMonthRange();
     const paymentRequest = pool.request()
@@ -123,7 +125,7 @@ async function getMonthlyFinance() {
         paymentRequest.query(`
             SELECT COUNT(*) AS paidSubscriptionCount,
                    ISNULL(SUM(amount_paid), 0) AS subscriptionsTotal
-            FROM dbo.gym_payments
+            FROM dbo.gym_payment_transactions
             WHERE paid_at >= @monthStart
               AND paid_at < @nextMonth
               AND amount_paid > 0;

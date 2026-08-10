@@ -14,6 +14,7 @@
     <link rel="stylesheet" href="/tailwind.css">
     <link rel="stylesheet" href="/css/dashboard.css?v=19">
     <link rel="stylesheet" href="/css/operations.css?v=1">
+    <link rel="stylesheet" href="/css/attendance.css?v=1">
 </head>
 <body class="font-sans bg-slate-100 text-slate-900 gym-page-bg">
     <div class="app-shell">
@@ -30,6 +31,7 @@
         <nav class="page-tabs" id="pageTabs" aria-label="أقسام الإدارة">
             <button class="page-tab active" type="button" data-page-tab="dashboard" aria-selected="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span>لوحة التحكم</span></button>
             <button class="page-tab" type="button" data-page-tab="members" aria-selected="false"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg><span>المشتركون</span></button>
+            <button class="page-tab" type="button" data-page-tab="attendance" aria-selected="false"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h8M8 11h3M8 15h8"/><path d="m14 11 1.5 1.5L18 10"/></svg><span>الحضور والانصراف</span></button>
             <button class="page-tab" type="button" data-page-tab="expenses" aria-selected="false"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 9h10M7 13h5"/></svg><span>المصروفات</span></button>
             <button class="page-tab" type="button" data-page-tab="reports" aria-selected="false"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19V5"/><path d="M4 19h16"/><path d="m7 15 3-4 3 2 5-6"/></svg><span>التقارير</span></button>
             <button class="page-tab" type="button" data-page-tab="management" aria-selected="false"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v18M3 12h18"/><circle cx="12" cy="12" r="9"/></svg><span>الأسعار والعضويات</span></button>
@@ -89,6 +91,29 @@
                     <button class="management-shortcut" type="button" data-open-dialog-button="pricingButton"><span class="management-shortcut-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 9h10M7 13h5"/></svg></span><span><strong>أسعار الباقات</strong><small>تعديل أسعار الجيم والكارديو.</small></span><svg class="management-shortcut-arrow ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></button>
                     <button class="management-shortcut" type="button" data-open-dialog-button="membershipTypesButton"><span class="management-shortcut-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span><span><strong>أنواع العضويات</strong><small>إدارة المدد ومعاملات الأسعار.</small></span><svg class="management-shortcut-arrow ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></button>
                 </div>
+            </section>
+
+            <section class="attendance-section panel" id="attendanceSection" hidden aria-labelledby="attendanceTitle">
+                <div class="attendance-header">
+                    <div class="attendance-heading">
+                        <span class="attendance-heading-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h8M8 11h3M8 15h8"/><path d="m14 11 1.5 1.5L18 10"/></svg></span>
+                        <div><span class="attendance-kicker">تشغيل يومي</span><h3 id="attendanceTitle">الحضور والانصراف</h3><p>سجّل دخول وخروج المشترك بسرعة عن طريق الهاتف أو QR Code.</p></div>
+                    </div>
+                    <span class="attendance-date-badge"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg><span id="attendanceDateLabel">اليوم</span></span>
+                </div>
+                <div class="attendance-control-panel">
+                    <div class="attendance-entry-card">
+                        <div class="attendance-entry-head"><div><h4>تسجيل سريع</h4><p>اكتب رقم الهاتف، أو استخدم الكاميرا لمسح QR Code.</p></div><button class="btn btn-light btn-small" id="attendanceScanButton" type="button">مسح QR Code</button></div>
+                        <div class="attendance-input-row">
+                            <label class="attendance-input-wrap" for="attendancePhone"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.6 3h3l1.4 4-2 1.5a15 15 0 0 0 6.5 6.5l1.5-2 4 1.4v3c0 1-.8 1.8-1.8 1.8C11.5 19.2 4.8 12.5 4.8 4.8 4.8 3.8 5.6 3 6.6 3Z"/></svg><span class="visually-hidden">رقم الهاتف</span><input id="attendancePhone" type="tel" inputmode="tel" autocomplete="off" placeholder="رقم هاتف المشترك"></label>
+                            <div class="attendance-action-buttons"><button class="btn btn-check-in" id="attendanceCheckInButton" type="button">تسجيل حضور</button><button class="btn btn-check-out" id="attendanceCheckOutButton" type="button">تسجيل انصراف</button></div>
+                        </div>
+                        <small class="attendance-entry-hint">يتم السماح بالحضور فقط للعضوية السارية وغير المجمدة، مرة واحدة يوميًا.</small>
+                    </div>
+                    <div class="attendance-summary" aria-label="ملخص الحضور"><article class="attendance-summary-card"><span class="summary-icon"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M3 12h18"/></svg></span><strong id="attendancePresentCount">0</strong><span>حضور اليوم</span></article><article class="attendance-summary-card checked-in"><span class="summary-icon"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8 12 2.5 2.5L16 9"/></svg></span><strong id="attendanceCheckedInCount">0</strong><span>داخل الجيم</span></article><article class="attendance-summary-card checked-out"><span class="summary-icon"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12h8m-3-3 3 3-3 3"/></svg></span><strong id="attendanceCheckedOutCount">0</strong><span>انصرفوا</span></article></div>
+                </div>
+                <div class="attendance-list-head"><div><h4>سجل اليوم</h4><p id="attendanceListMeta">جاري تحميل سجل الحضور…</p></div><div class="attendance-list-actions"><input class="attendance-search" id="attendanceSearch" placeholder="بحث بالاسم أو الهاتف" aria-label="بحث في الحضور"><button class="btn btn-light btn-small" id="attendanceRefreshButton" type="button">تحديث</button></div></div>
+                <div class="attendance-table-wrap" id="attendanceTableWrap"><div class="loading">جاري تحميل سجل الحضور…</div></div>
             </section>
 
             <section class="workspace">
@@ -228,10 +253,18 @@
             <div id="detailsContent"><div class="loading">جاري تحميل التفاصيل…</div></div>
         </div>
     </dialog>
+    <dialog id="qrReaderDialog" class="qr-reader-dialog rounded-lg border-slate-200 shadow-lift">
+        <div class="dialog-body"><div class="details-dialog-head"><div><h3>مسح QR Code</h3><p>وجّه كاميرا الهاتف إلى رمز العضو.</p></div><button class="btn btn-light btn-small" id="qrReaderClose" type="button">إغلاق</button></div><div id="qrReader"></div><p class="qr-reader-note">إذا لم تعمل الكاميرا، أغلق النافذة وسجّل الحضور برقم الهاتف.</p></div>
+    </dialog>
+    <dialog id="memberQrDialog" class="member-qr-dialog rounded-lg border-slate-200 shadow-lift">
+        <div class="dialog-body"><div class="details-dialog-head"><div><h3>QR Code العضو</h3><p>احتفظ بالرمز أو اطبعه لاستخدامه عند الحضور.</p></div><button class="btn btn-light btn-small" id="memberQrClose" type="button">إغلاق</button></div><div class="member-qr-card"><canvas id="memberQrCanvas" width="210" height="210"></canvas><strong id="memberQrName">—</strong><span id="memberQrPhone">—</span></div><div class="dialog-actions"><button class="btn btn-primary" id="memberQrDownload" type="button">تحميل QR Code</button></div></div>
+    </dialog>
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="/js/app.js?v=public1"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <script src="/js/app.js?v=finance1"></script>
     <script src="/js/monthly-finance.js?v=9"></script>
     <script src="/js/page-tabs.js?v=4"></script>
     <script src="/js/dashboard-analytics.js?v=3"></script>
@@ -240,10 +273,11 @@
     <script src="/js/backup-enhancements.js?v=1"></script>
     <script src="/js/pagination.js"></script>
     <script src="/js/whatsapp-enhancements.js?v=10"></script>
-    <script src="/js/print-enhancements.js?v=3"></script>
+    <script src="/js/print-enhancements.js?v=4"></script>
     <script src="/js/action-menu.js?v=2"></script>
     <script src="/js/design-enhancements.js?v=2"></script>
     <script src="/js/details-enhancements.js"></script>
     <script src="/js/alerts-enhancements.js"></script>
+    <script src="/js/attendance.js?v=1"></script>
 </body>
 </html>

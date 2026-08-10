@@ -7,6 +7,7 @@ const { createBackup } = require('./src/backup-service');
 const { createExpense, deleteExpense, getMonthlyFinance, updateExpense } = require('./src/finance-service');
 const { getDashboardAnalytics } = require('./src/analytics-service');
 const { getReportData } = require('./src/report-service');
+const { checkIn, checkOut, getMemberAttendance, getTodayAttendance } = require('./src/attendance-service');
 const {
     createMember,
     deleteMember,
@@ -87,6 +88,22 @@ app.get('/api/dashboard-analytics', asyncRoute(async (request, response) => {
 
 app.get('/api/reports', asyncRoute(async (request, response) => {
     response.json(await getReportData(request.query));
+}));
+
+app.get('/api/attendance', asyncRoute(async (request, response) => {
+    response.json(await getTodayAttendance({ date: request.query.date, search: request.query.search }));
+}));
+
+app.get('/api/attendance/member/:id', asyncRoute(async (request, response) => {
+    response.json(await getMemberAttendance(request.params.id, request.query));
+}));
+
+app.post('/api/attendance/check-in', asyncRoute(async (request, response) => {
+    response.status(201).json(await checkIn(request.body));
+}));
+
+app.post('/api/attendance/check-out', asyncRoute(async (request, response) => {
+    response.json(await checkOut(request.body));
 }));
 
 app.get('/api/bootstrap', asyncRoute(async (request, response) => {
@@ -190,7 +207,13 @@ app.use((error, request, response, next) => {
     const message = error.expose || statusCode < 500
         ? error.message
         : 'حدث خطأ في الخادم. حاول مرة أخرى.';
-    response.status(statusCode).json({ error: message });
+    response.status(statusCode).json({
+        error: message,
+        code: error.code || null,
+        field: error.field || null,
+        memberName: error.memberName || null,
+        attendance: error.attendance || null
+    });
 });
 
 async function start() {

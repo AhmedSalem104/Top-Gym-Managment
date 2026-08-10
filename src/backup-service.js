@@ -4,6 +4,8 @@ const { promisify } = require('node:util');
 const { gzip } = require('node:zlib');
 const { getPool } = require('./db');
 const { ensureExpensesTable } = require('./finance-service');
+const { ensurePaymentTransactionsTable } = require('./member-service');
+const { ensureAttendanceTable } = require('./attendance-service');
 
 const gzipAsync = promisify(gzip);
 
@@ -16,7 +18,9 @@ const BACKUP_TABLES = [
     { key: 'membership_types', table: 'membership_types' },
     { key: 'membership_freezes', table: 'membership_freezes' },
     { key: 'gym_payments', table: 'gym_payments' },
+    { key: 'gym_payment_transactions', table: 'gym_payment_transactions' },
     { key: 'gym_expenses', table: 'gym_expenses' },
+    { key: 'gym_attendance', table: 'gym_attendance' },
     { key: 'membership_events', table: 'membership_events' }
 ];
 
@@ -50,6 +54,8 @@ async function readTable(pool, table) {
 
 async function createBackup() {
     await ensureExpensesTable();
+    await ensurePaymentTransactionsTable();
+    await ensureAttendanceTable();
     const pool = await getPool();
     const generatedAt = new Date();
     const { timeZone, stamp } = getLocalTimeParts(generatedAt);
