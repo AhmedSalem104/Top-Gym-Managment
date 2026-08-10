@@ -3,6 +3,7 @@ require('dotenv').config();
 const assert = require('node:assert/strict');
 const app = require('../server');
 const { closePool, getPool, initDatabase, sql } = require('../src/db');
+const { reconcileAutoCheckout } = require('../src/attendance-service');
 
 async function call(baseUrl, path, options = {}) {
     const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
@@ -241,20 +242,28 @@ async function call(baseUrl, path, options = {}) {
         assert.ok(checkedOut.attendance.checkOutAt);
         const memberAttendance = await call(baseUrl, `/api/attendance/member/${memberId}`);
         assert.ok(memberAttendance.records.some((item) => item.id === checkedOut.attendance.id));
-        process.env.ATTENDANCE_AUTO_CHECKOUT_MINUTES = '1';
+        const previousAutoCheckoutMinutes = process.env.ATTENDANCE_AUTO_CHECKOUT_MINUTES;
         const smokePool = await getPool();
+        try {
+            process.env.ATTENDANCE_AUTO_CHECKOUT_MINUTES = '1';
+            await smokePool.request()
+                .input('attendanceId', sql.Int, checkedOut.attendance.id)
+                .query(`UPDATE dbo.gym_attendance
+                        SET check_out_at = NULL, check_out_source = NULL,
+                            check_in_at = DATEADD(minute, -2, SYSUTCDATETIME()), updated_at = SYSUTCDATETIME()
+                        WHERE id = @attendanceId;`);
+            await reconcileAutoCheckout(smokePool, memberId);
+            const autoClosedResult = await smokePool.request()
+                .input('attendanceId', sql.Int, checkedOut.attendance.id)
+                .query('SELECT check_out_source FROM dbo.gym_attendance WHERE id = @attendanceId;');
+            assert.equal(autoClosedResult.recordset[0]?.check_out_source, 'auto');
+        } finally {
+            if (previousAutoCheckoutMinutes === undefined) delete process.env.ATTENDANCE_AUTO_CHECKOUT_MINUTES;
+            else process.env.ATTENDANCE_AUTO_CHECKOUT_MINUTES = previousAutoCheckoutMinutes;
+        }
         await smokePool.request()
-            .input('memberId', sql.Int, memberId)
-            .query(`UPDATE dbo.gym_attendance
-                    SET check_out_at = NULL, check_out_source = NULL,
-                        check_in_at = DATEADD(minute, -2, SYSUTCDATETIME()), updated_at = SYSUTCDATETIME()
-                    WHERE member_id = @memberId;`);
-        const autoClosedMembers = await call(baseUrl, `/api/members?search=${encodeURIComponent(`Edited Smoke Test ${suffix}`)}&page=1&pageSize=5`);
-        const autoClosedRecord = autoClosedMembers.members.find((item) => item.id === memberId)?.attendance;
-        assert.equal(autoClosedRecord.checkOutSource, 'auto');
-        await smokePool.request()
-            .input('memberId', sql.Int, memberId)
-            .query('UPDATE dbo.gym_attendance SET attendance_date = DATEADD(day, -1, attendance_date) WHERE member_id = @memberId;');
+            .input('attendanceId', sql.Int, checkedOut.attendance.id)
+            .query('UPDATE dbo.gym_attendance SET attendance_date = DATEADD(day, -1, attendance_date) WHERE id = @attendanceId;');
         const nextDayCheckIn = await call(baseUrl, '/api/attendance/check-in', {
             method: 'POST', body: JSON.stringify({ phone: created.member.phone })
         });
