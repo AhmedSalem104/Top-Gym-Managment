@@ -19,25 +19,7 @@
 .library-heading p { margin: 4px 0 0; color: #64748b; font-size: 11px; }
 .library-add-button { min-height: 43px; gap: 7px; white-space: nowrap; }
 .library-add-button > span:first-child { font-size: 21px; line-height: 1; }
-.library-summary { display: block; }
-.library-summary:empty { display: none; }
-.library-summary-table-wrap { overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 13px; background: #fff; }
-.library-summary-table { width: 100%; border-collapse: collapse; font-size: 11px; }
-.library-summary-table th, .library-summary-table td { padding: 9px 12px; border-bottom: 1px solid #eef2f7; text-align: right; }
-.library-summary-table th { color: #64748b; background: #f8fafc; font-size: 10px; font-weight: 900; }
-.library-summary-table tr:last-child td { border-bottom: 0; }
-.library-summary-table td:last-child { width: 180px; }
-.library-summary-table strong { color: #0f172a; font-size: 16px; }
-.library-summary-name { font-weight: 900; }
-.library-summary-name.foods { color: #047857; }
-.library-summary-name.exercises { color: #6d28d9; }
-.library-summary-card { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-width: 0; padding: 12px 14px; border: 1px solid #e2e8f0; border-radius: 13px; background: linear-gradient(135deg, #fff, #f8fbff); }
-.library-summary-card span { color: #64748b; font-size: 11px; font-weight: 800; }
-.library-summary-card strong { color: #0f172a; font-size: 21px; font-weight: 900; }
-.library-summary-card.muscles strong { color: #2563eb; }
-.library-summary-card.foods strong { color: #059669; }
-.library-summary-card.exercises strong { color: #7c3aed; }
-.library-type-tabs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; padding: 5px; border: 1px solid #e2e8f0; border-radius: 14px; background: #f8fafc; }
+.library-type-tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; padding: 5px; border: 1px solid #e2e8f0; border-radius: 14px; background: #f8fafc; }
 .library-type-tab { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 46px; padding: 8px 10px; color: #64748b; border: 1px solid transparent; border-radius: 10px; background: transparent; font: inherit; font-size: 12px; font-weight: 800; cursor: pointer; transition: .18s ease; }
 .library-type-tab:hover { color: #1e40af; background: #eff6ff; }
 .library-type-tab.active { color: #1d4ed8; border-color: #bfdbfe; background: #fff; box-shadow: 0 5px 14px rgba(37, 99, 235, .1); }
@@ -76,6 +58,8 @@
 .library-table-badge { display: inline-flex; align-items: center; max-width: 170px; overflow: hidden; padding: 4px 7px; color: #475569; border-radius: 999px; background: #f1f5f9; font-size: 9px; font-weight: 800; text-overflow: ellipsis; }
 .library-table-badge.foods { color: #047857; background: #d1fae5; }
 .library-table-badge.exercises { color: #6d28d9; background: #ede9fe; }
+.library-table-badge.muscles { color: #1d4ed8; background: #dbeafe; }
+.library-table-badge.positive { color: #047857; background: #ecfdf5; }
 .library-table-badge.warning { color: #b45309; background: #fef3c7; }
 .library-row-actions { display: flex; align-items: center; justify-content: flex-start; gap: 5px; }
 .library-row-actions .btn { min-height: 30px; padding: 4px 7px; font-size: 9px; }
@@ -152,9 +136,6 @@
     .library-heading p { font-size: 10px; }
     .library-heading-icon { width: 42px; height: 42px; flex-basis: 42px; border-radius: 12px; }
     .library-add-button { width: 100%; justify-content: center; }
-    .library-summary-table th, .library-summary-table td { padding: 8px 9px; }
-    .library-summary-table td:last-child { width: 120px; }
-    .library-summary-table strong { font-size: 14px; }
     .library-type-tabs { gap: 4px; padding: 4px; }
     .library-type-tab { min-height: 42px; gap: 4px; padding-inline: 4px; font-size: 10px; }
     .library-type-icon { font-size: 14px; }

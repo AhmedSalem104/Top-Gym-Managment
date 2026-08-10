@@ -23,7 +23,7 @@
         foods: { title: 'الأطعمة', singular: 'طعام', add: 'إضافة طعام', empty: 'لا توجد أطعمة مطابقة للبحث.', color: 'foods' },
         exercises: { title: 'التمارين', singular: 'تمرين', add: 'إضافة تمرين', empty: 'لا توجد تمارين مطابقة للبحث.', color: 'exercises' }
     };
-    const VISIBLE_TYPES = ['foods', 'exercises'];
+    const VISIBLE_TYPES = ['muscles', 'foods', 'exercises'];
 
     function escapeHtml(value) {
         return String(value ?? '').replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[character]));
@@ -77,10 +77,11 @@
     function renderSummary() {
         const counts = state.options?.counts || {};
         const summary = $('librarySummary');
-        if (!summary) return;
-        summary.innerHTML = `<div class="library-summary-table-wrap"><table class="library-summary-table"><thead><tr><th>القسم</th><th>عدد العناصر</th></tr></thead><tbody>${VISIBLE_TYPES.map((type) => `<tr><td><span class="library-summary-name ${META[type].color}">${META[type].title}</span></td><td><strong>${formatNumber(counts[type])}</strong></td></tr>`).join('')}</tbody></table></div>`;
+        if (summary) summary.innerHTML = '';
         const foodsCount = $('libraryFoodsCount');
         const exercisesCount = $('libraryExercisesCount');
+        const musclesCount = $('libraryMusclesCount');
+        if (musclesCount) musclesCount.textContent = formatNumber(counts.muscles);
         if (foodsCount) foodsCount.textContent = formatNumber(counts.foods);
         if (exercisesCount) exercisesCount.textContent = formatNumber(counts.exercises);
     }
@@ -143,6 +144,11 @@
         return `<div class="library-row-actions"><button class="btn btn-light" type="button" data-library-action="details" data-id="${id}">التفاصيل</button><button class="btn btn-light" type="button" data-library-action="edit" data-id="${id}">تعديل</button><button class="btn library-delete" type="button" data-library-action="delete" data-id="${id}">حذف</button></div>`;
     }
 
+    function renderMuscleRow(item) {
+        const title = item.nameAr || item.name || itemName(item);
+        return `<tr><td><div class="library-table-primary"><span class="library-table-icon">${escapeHtml(item.icon || '💪')}</span><div><strong title="${escapeHtml(title)}">${escapeHtml(title)}</strong><small>${escapeHtml(item.name || '')}</small></div></div></td><td>${item.bodyPart ? `<span class="library-table-badge muscles">${escapeHtml(item.bodyPart)}</span>` : '—'}</td><td>${item.descriptionAr || item.description ? '<span class="library-table-badge positive">وصف متاح</span>' : '—'}</td><td>${formatNumber(item.id)}</td><td>${tableActions(item.id)}</td></tr>`;
+    }
+
     function renderFoodRow(item) {
         const title = item.nameAr || item.nameEn || itemName(item);
         return `<tr><td><div class="library-table-primary"><span class="library-table-icon">🥗</span><div><strong title="${escapeHtml(title)}">${escapeHtml(title)}</strong><small>${escapeHtml(item.nameEn || '')}</small></div></div></td><td>${item.category ? `<span class="library-table-badge foods">${escapeHtml(item.category)}</span>` : '—'}</td><td><strong>${formatNumber(item.calories, 1)}</strong><small>سعرة</small></td><td><strong>${formatNumber(item.protein, 1)} g</strong><small>بروتين</small></td><td><strong>${formatNumber(item.carbs, 1)} g</strong><small>كارب</small></td><td><strong>${formatNumber(item.fat, 1)} g</strong><small>دهون</small></td><td>${formatNumber(item.servingSize, 1)} ${escapeHtml(item.servingUnit || '')}</td><td>${tableActions(item.id)}</td></tr>`;
@@ -162,15 +168,13 @@
             renderPagination();
             return;
         }
-        if (state.activeType === 'muscles') {
-            list.innerHTML = `<div class="library-card-grid">${state.items.map(renderMuscleCard).join('')}</div>`;
-        } else {
-            const renderer = state.activeType === 'foods' ? renderFoodRow : renderExerciseRow;
-            const headers = state.activeType === 'foods'
+        const renderer = state.activeType === 'muscles' ? renderMuscleRow : state.activeType === 'foods' ? renderFoodRow : renderExerciseRow;
+        const headers = state.activeType === 'muscles'
+            ? '<th>العضلة</th><th>منطقة الجسم</th><th>الوصف</th><th>الرقم</th><th>الإجراءات</th>'
+            : state.activeType === 'foods'
                 ? '<th>الطعام</th><th>التصنيف</th><th>السعرات</th><th>البروتين</th><th>الكربوهيدرات</th><th>الدهون</th><th>الحصة</th><th>الإجراءات</th>'
                 : '<th>التمرين</th><th>العضلة المستهدفة</th><th>المستوى</th><th>الأداة</th><th>التصنيف</th><th>التنبيه</th><th>الإجراءات</th>';
-            list.innerHTML = `<div class="library-table-wrap"><table class="library-data-table"><thead><tr>${headers}</tr></thead><tbody>${state.items.map(renderer).join('')}</tbody></table></div>`;
-        }
+        list.innerHTML = `<div class="library-table-wrap"><table class="library-data-table"><thead><tr>${headers}</tr></thead><tbody>${state.items.map(renderer).join('')}</tbody></table></div>`;
         renderPagination();
     }
 
