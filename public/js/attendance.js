@@ -65,12 +65,41 @@
         $('attendanceTableWrap').innerHTML = `<table class="attendance-table"><thead><tr><th>المشترك</th><th>الباقة</th><th>الحضور</th><th>الانصراف</th><th>المدة</th><th>طريقة التسجيل</th><th>الحالة</th></tr></thead><tbody>${records.map((record) => `<tr><td><span class="attendance-member-name">${escapeHtml(record.memberName)}</span><span class="attendance-member-phone">${escapeHtml(record.phone)}</span></td><td>${escapeHtml(record.plan || '—')}<span class="table-sub">${escapeHtml(record.type || '')}</span></td><td><span class="attendance-time">${timeText(record.checkInAt)}</span></td><td><span class="attendance-time">${timeText(record.checkOutAt)}</span></td><td>${record.durationMinutes === null ? 'داخل الجيم' : `${record.durationMinutes} دقيقة`}</td><td><span class="attendance-source ${escapeHtml(record.checkInSource)}">${escapeHtml(SOURCE_LABELS[record.checkInSource] || record.checkInSource)}</span></td><td><span class="attendance-status${record.checkOutAt ? ' complete' : ''}">${record.checkOutAt ? 'انصرف' : 'داخل الجيم'}</span></td></tr>`).join('')}</tbody></table>`;
     }
 
+    function decorateAttendanceActions(records) {
+        const table = $('attendanceTableWrap')?.querySelector('table');
+        if (!table?.tHead || !table.tBodies[0]) return;
+        const header = document.createElement('th');
+        header.textContent = 'الإجراء';
+        table.tHead.rows[0].append(header);
+        Array.from(table.tBodies[0].rows).forEach((row, index) => {
+            const record = records[index];
+            const cell = document.createElement('td');
+            cell.className = 'attendance-row-actions';
+            if (record?.checkOutAt) {
+                const status = document.createElement('span');
+                status.className = 'attendance-action-done';
+                status.textContent = 'تم الانصراف';
+                cell.append(status);
+            } else {
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.className = 'btn btn-small attendance-checkout-button';
+                button.dataset.attendanceCheckout = 'true';
+                button.dataset.phone = record?.phone || '';
+                button.textContent = 'تسجيل انصراف';
+                cell.append(button);
+            }
+            row.append(cell);
+        });
+    }
+
     async function loadAttendance() {
         const search = $('attendanceSearch')?.value.trim() || '';
         $('attendanceTableWrap').innerHTML = '<div class="loading">جاري تحديث سجل الحضور…</div>';
         try {
             const data = await request(`/api/attendance?${new URLSearchParams({ search })}`);
             renderRecords(data);
+            decorateAttendanceActions(data.records || []);
         } catch (error) {
             $('attendanceTableWrap').innerHTML = `<div class="attendance-empty">${escapeHtml(error.message)}</div>`;
         }
@@ -99,8 +128,8 @@
         }
     }
 
-    async function checkOut() {
-        const body = currentInput();
+    async function checkOut(payload = null) {
+        const body = payload || currentInput();
         if (!body) return;
         try {
             const result = await request('/api/attendance/check-out', { method: 'POST', body: JSON.stringify(body) });
@@ -182,6 +211,14 @@
         $('attendanceCheckInButton')?.addEventListener('click', () => checkIn());
         $('attendanceCheckOutButton')?.addEventListener('click', checkOut);
         $('attendanceRefreshButton')?.addEventListener('click', loadAttendance);
+        $('attendanceTableWrap')?.addEventListener('click', (event) => {
+            const button = event.target.closest('button[data-attendance-checkout="true"]');
+            if (!button || button.disabled || !button.dataset.phone) return;
+            button.disabled = true;
+            checkOut({ phone: button.dataset.phone }).finally(() => {
+                if (button.isConnected) button.disabled = false;
+            });
+        });
         $('attendanceScanButton')?.addEventListener('click', openScanner);
         $('qrReaderClose')?.addEventListener('click', closeScanner);
         $('memberQrClose')?.addEventListener('click', closeMemberQr);
