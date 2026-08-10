@@ -12,11 +12,11 @@
     <title>إدارة عضويات الجيم</title>
     <link rel="stylesheet" href="/css/base.css?v=3">
     <link rel="stylesheet" href="/tailwind.css">
-    <link rel="stylesheet" href="/css/dashboard.css?v=27">
+    <link rel="stylesheet" href="/css/dashboard.css?v=28">
     <link rel="stylesheet" href="/css/operations.css?v=1">
     <link rel="stylesheet" href="/css/attendance.css?v=4">
     <link rel="stylesheet" href="/css/library.css?v=1">
-    <link rel="stylesheet" href="/css/coaching.css?v=1">
+    <link rel="stylesheet" href="/css/coaching.css?v=2">
 </head>
 <body class="font-sans bg-slate-100 text-slate-900 gym-page-bg">
     <div class="app-shell">
@@ -323,14 +323,21 @@
         <div class="dialog-body"><div class="details-dialog-head"><div><h3 id="coachingProfileTitle">ملف المتدرب</h3><p id="coachingProfileSubtitle"></p></div><button class="btn btn-light btn-small" id="coachingProfileClose" type="button">إغلاق</button></div><div id="coachingProfileContent"><div class="loading">جاري تحميل الملف…</div></div></div>
     </dialog>
     <dialog id="coachingBuilderDialog" class="coaching-builder-dialog rounded-lg border-slate-200 shadow-lift">
-        <form class="dialog-body" id="coachingBuilderForm"><div class="details-dialog-head"><div><h3 id="coachingBuilderTitle">إنشاء نظام</h3><p id="coachingBuilderSubtitle"></p></div><button class="btn btn-light btn-small" id="coachingBuilderClose" type="button">إغلاق</button></div><input type="hidden" id="coachingBuilderId"><input type="hidden" id="coachingBuilderMemberId"><div id="coachingBuilderContent"></div><div class="dialog-actions"><button class="btn btn-light" id="coachingBuilderCancel" type="button">إلغاء</button><button class="btn btn-primary" id="coachingBuilderSave" type="submit">حفظ النظام</button></div></form>
+        <form class="dialog-body" id="coachingBuilderForm" novalidate>
+            <div class="details-dialog-head"><div><h3 id="coachingBuilderTitle">إنشاء نظام</h3><p id="coachingBuilderSubtitle"></p></div><button class="btn btn-light btn-small" id="coachingBuilderClose" type="button">إغلاق</button></div>
+            <input type="hidden" id="coachingBuilderId"><input type="hidden" id="coachingBuilderMemberId">
+            <div class="builder-stepper" id="coachingBuilderStepper" aria-label="مراحل إنشاء النظام"></div>
+            <div class="builder-progress" id="coachingBuilderProgress"></div>
+            <div id="coachingBuilderContent"></div>
+            <div class="dialog-actions builder-dialog-actions"><button class="btn btn-light" id="coachingBuilderCancel" type="button">إلغاء</button><button class="btn btn-light" id="coachingBuilderBack" type="button" hidden>السابق</button><button class="btn btn-light" id="coachingBuilderPreview" type="button" hidden>مراجعة</button><button class="btn btn-light" id="coachingBuilderPrint" type="button" hidden>طباعة</button><button class="btn btn-primary" id="coachingBuilderNext" type="button">التالي</button><button class="btn btn-primary" id="coachingBuilderSave" type="submit" hidden>حفظ النظام</button></div>
+        </form>
     </dialog>
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-    <script src="/js/app.js?v=attendance4"></script>
+    <script src="/js/app.js?v=attendance5"></script>
     <script src="/js/monthly-finance.js?v=9"></script>
     <script src="/js/page-tabs.js?v=4"></script>
     <script src="/js/dashboard-analytics.js?v=4"></script>
@@ -344,8 +351,8 @@
     <script src="/js/design-enhancements.js?v=2"></script>
     <script src="/js/details-enhancements.js"></script>
     <script src="/js/alerts-enhancements.js"></script>
-    <script src="/js/attendance.js?v=5"></script>
+    <script src="/js/attendance.js?v=6"></script>
     <script src="/js/library.js?v=1"></script>
-    <script src="/js/coaching.js?v=1"></script>
+    <script src="/js/coaching.js?v=3"></script>
 </body>
 </html>

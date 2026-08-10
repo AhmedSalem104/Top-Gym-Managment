@@ -211,15 +211,27 @@
                     status.title = 'العضوية غير سارية أو مجمدة';
                     quickActions.append(status);
                 }
-                const qrButton = document.createElement('button');
-                qrButton.className = 'btn member-qr-quick';
-                qrButton.type = 'button';
-                qrButton.dataset.memberQr = String(member.id);
-                qrButton.textContent = 'QR';
-                qrButton.title = 'عرض QR Code';
-                qrButton.setAttribute('aria-label', `عرض QR Code لـ ${member.fullName}`);
-                quickActions.append(qrButton);
+                [['workout', '\u002b \u062a\u062f\u0631\u064a\u0628', '\u0628\u0631\u0646\u0627\u0645\u062c \u062a\u062f\u0631\u064a\u0628'], ['diet', '\u002b \u062a\u063a\u0630\u064a\u0629', '\u062e\u0637\u0629 \u062a\u063a\u0630\u064a\u0629']].forEach(([action, label, description]) => {
+                    const button = document.createElement('button');
+                    button.className = `btn member-coaching-quick ${action}`;
+                    button.type = 'button';
+                    button.dataset.memberCoachingAction = action;
+                    button.dataset.memberId = String(member.id);
+                    button.dataset.memberName = member.fullName || '';
+                    button.textContent = label;
+                    button.title = `\u0625\u0646\u0634\u0627\u0621 ${description} \u0644\u0640 ${member.fullName}`;
+                    button.setAttribute('aria-label', `\u0625\u0646\u0634\u0627\u0621 ${description} \u0644\u0640 ${member.fullName}`);
+                    quickActions.append(button);
+                });
                 const tableActions = cell.querySelector(':scope > .table-actions');
+                if (tableActions && !tableActions.querySelector('[data-action="qr"]')) {
+                    const menuPanel = tableActions.querySelector('.action-menu-panel');
+                    if (menuPanel) {
+                        menuPanel.insertAdjacentHTML('beforeend', `<button class="action-menu-item" type="button" data-action="qr" data-id="${member.id}" aria-label="${ACTION_LABELS.qr}" title="${ACTION_LABELS.qr}">${actionIcon('qr')}<span>${escapeHtml(ACTION_LABELS.qr)}</span></button>`);
+                    } else {
+                        tableActions.insertAdjacentHTML('beforeend', actionButton('qr', member.id));
+                    }
+                }
                 const actionRow = document.createElement('div');
                 actionRow.className = 'member-action-row';
                 actionRow.append(quickActions);

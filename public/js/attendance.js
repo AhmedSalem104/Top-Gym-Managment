@@ -325,6 +325,12 @@
             if (!button) return;
             event.preventDefault();
             event.stopPropagation();
+            const menu = button.closest('.action-menu');
+            const menuPanel = menu?.querySelector('.action-menu-panel');
+            if (menuPanel) {
+                menuPanel.hidden = true;
+                menu.querySelector('[data-menu-toggle]')?.setAttribute('aria-expanded', 'false');
+            }
             openMemberQr(button.dataset.id || button.dataset.memberQr || button.closest('[data-member-id]')?.dataset.memberId);
         });
         window.addEventListener('topgym:member-created', (event) => {

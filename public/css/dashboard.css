@@ -375,7 +375,7 @@
         .table-actions { min-width: 145px; align-items: center; gap: 7px; }
         .member-action-row { display: flex; width: 100%; align-items: center; flex-wrap: wrap; gap: 8px; }
         .member-quick-actions { display: flex; align-items: center; flex: 0 0 auto; flex-wrap: wrap; gap: 6px; margin: 0; }
-        .member-attendance-quick, .member-qr-quick { min-height: 30px; padding: 5px 9px !important; border-radius: 8px !important; font-size: 10px; font-weight: 800; white-space: nowrap; }
+        .member-attendance-quick, .member-qr-quick, .member-coaching-quick { min-height: 30px; padding: 5px 9px !important; border-radius: 8px !important; font-size: 10px; font-weight: 800; white-space: nowrap; }
         .member-attendance-quick.check-in { color: #047857; border-color: #a7f3d0; background: #ecfdf5; }
         .member-attendance-quick.check-in:hover { color: #fff; border-color: #059669; background: #059669; }
         .member-attendance-quick.checkout { color: #1d4ed8; border-color: #bfdbfe; background: #eff6ff; }
@@ -386,6 +386,10 @@
         .member-attendance-status.unavailable { color: #94a3b8; border-color: #e2e8f0; background: #f8fafc; }
         .member-qr-quick { color: #7c3aed; border-color: #ddd6fe; background: #f5f3ff; }
         .member-qr-quick:hover { color: #fff; border-color: #7c3aed; background: #7c3aed; }
+        .member-coaching-quick.workout { color: #9a3412; border-color: #fed7aa; background: #fff7ed; }
+        .member-coaching-quick.workout:hover { color: #fff; border-color: #ea580c; background: #ea580c; }
+        .member-coaching-quick.diet { color: #0f766e; border-color: #99f6e4; background: #f0fdfa; }
+        .member-coaching-quick.diet:hover { color: #fff; border-color: #0f766e; background: #0f766e; }
         .table-action-visible { min-height: 36px; border-radius: 8px !important; }
         .table-action-visible[data-action="details"] { width: 36px; padding: 0 !important; }
         .table-action-visible[data-action="renew"] { display: inline-flex; width: auto; align-items: center; gap: 6px; padding-inline: 11px !important; color: #1d4ed8; background: #eff6ff; border: 1px solid #bfdbfe; font-size: 12px; font-weight: 700; }
@@ -1096,6 +1100,7 @@
         .member-action-row .member-quick-actions > .member-attendance-quick,
         .member-action-row .member-quick-actions > .member-attendance-status,
         .member-action-row .member-quick-actions > .member-qr-quick,
+        .member-action-row .member-quick-actions > .member-coaching-quick,
         .member-action-row > .table-actions > .table-action-visible[data-action="renew"] {
             display: inline-flex;
             width: 112px;
@@ -1111,7 +1116,8 @@
             white-space: nowrap;
         }
         .member-action-row .member-quick-actions > .member-attendance-quick,
-        .member-action-row .member-quick-actions > .member-qr-quick {
+        .member-action-row .member-quick-actions > .member-qr-quick,
+        .member-action-row .member-quick-actions > .member-coaching-quick {
             font-size: 11px;
         }
         .member-action-row > .table-actions > .table-action-visible[data-action="renew"] {
@@ -1127,6 +1133,7 @@
             .member-action-row .member-quick-actions > .member-attendance-quick,
             .member-action-row .member-quick-actions > .member-attendance-status,
             .member-action-row .member-quick-actions > .member-qr-quick,
+            .member-action-row .member-quick-actions > .member-coaching-quick,
             .member-action-row > .table-actions > .table-action-visible[data-action="renew"] {
                 width: 112px;
                 min-width: 112px;
@@ -1320,7 +1327,8 @@
             }
             .member-action-row .member-quick-actions > .member-attendance-quick,
             .member-action-row .member-quick-actions > .member-attendance-status,
-            .member-action-row .member-quick-actions > .member-qr-quick {
+            .member-action-row .member-quick-actions > .member-qr-quick,
+            .member-action-row .member-quick-actions > .member-coaching-quick {
                 width: 86px !important;
                 min-width: 86px !important;
                 height: 34px;
