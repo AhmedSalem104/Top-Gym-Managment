@@ -406,6 +406,214 @@ async function ensureLibraryData() {
     return librarySeedPromise;
 }
 
+// Synchronize the repository seed files with an existing database without
+// recreating rows. source_id is the stable position assigned by the original
+// seed process, so existing row ids remain unchanged for linked plans.
+async function syncLibraryData() {
+    await ensureLibraryTables();
+    const muscles = readSeedFile('muscles');
+    const foods = readSeedFile('foods');
+    const exercises = readSeedFile('exercises');
+    const pool = await getPool();
+    const transaction = pool.transaction();
+    await transaction.begin();
+    try {
+        await transaction.request()
+            .input('musclesJson', sql.NVarChar(sql.MAX), JSON.stringify(muscles))
+            .query(`
+                DECLARE @seed_muscles TABLE (
+                    source_id INT NOT NULL PRIMARY KEY,
+                    name NVARCHAR(120) NOT NULL,
+                    name_ar NVARCHAR(120) NULL,
+                    body_part NVARCHAR(80) NULL,
+                    description NVARCHAR(1000) NULL,
+                    description_ar NVARCHAR(1000) NULL,
+                    icon NVARCHAR(20) NULL
+                );
+                INSERT INTO @seed_muscles (source_id, name, name_ar, body_part, description, description_ar, icon)
+                SELECT TRY_CONVERT(INT, item.[key]) + 1, data.name, data.nameAr, data.bodyPart,
+                       data.description, data.descriptionAr, data.icon
+                FROM OPENJSON(@musclesJson) AS item
+                CROSS APPLY OPENJSON(item.[value]) WITH (
+                    name NVARCHAR(120) '$.name', nameAr NVARCHAR(120) '$.nameAr',
+                    bodyPart NVARCHAR(80) '$.bodyPart', description NVARCHAR(1000) '$.description',
+                    descriptionAr NVARCHAR(1000) '$.descriptionAr', icon NVARCHAR(20) '$.icon'
+                ) AS data
+                WHERE TRY_CONVERT(INT, item.[key]) IS NOT NULL
+                  AND NULLIF(LTRIM(RTRIM(data.name)), N'') IS NOT NULL;
+                UPDATE target
+                SET target.name = source.name, target.name_ar = source.name_ar,
+                    target.body_part = source.body_part, target.description = source.description,
+                    target.description_ar = source.description_ar, target.icon = source.icon,
+                    target.updated_at = SYSUTCDATETIME()
+                FROM dbo.gym_muscles AS target
+                INNER JOIN @seed_muscles AS source ON source.source_id = target.source_id;
+                INSERT INTO dbo.gym_muscles (source_id, name, name_ar, body_part, description, description_ar, icon)
+                SELECT source.source_id, source.name, source.name_ar, source.body_part,
+                       source.description, source.description_ar, source.icon
+                FROM @seed_muscles AS source
+                WHERE NOT EXISTS (SELECT 1 FROM dbo.gym_muscles target WHERE target.source_id = source.source_id);
+            `);
+
+        await transaction.request()
+            .input('foodsJson', sql.NVarChar(sql.MAX), JSON.stringify(foods))
+            .query(`
+                DECLARE @seed_foods TABLE (
+                    source_id INT NOT NULL PRIMARY KEY,
+                    name_ar NVARCHAR(160) NULL,
+                    name_en NVARCHAR(160) NULL,
+                    category NVARCHAR(80) NULL,
+                    calories DECIMAL(12,3) NOT NULL,
+                    protein DECIMAL(12,3) NOT NULL,
+                    carbs DECIMAL(12,3) NOT NULL,
+                    fat DECIMAL(12,3) NOT NULL,
+                    fiber DECIMAL(12,3) NOT NULL,
+                    sugar DECIMAL(12,3) NOT NULL,
+                    sodium DECIMAL(12,3) NOT NULL,
+                    serving_size DECIMAL(12,3) NOT NULL,
+                    serving_unit NVARCHAR(40) NULL
+                );
+                INSERT INTO @seed_foods
+                    (source_id, name_ar, name_en, category, calories, protein, carbs, fat, fiber, sugar, sodium, serving_size, serving_unit)
+                SELECT TRY_CONVERT(INT, item.[key]) + 1, data.nameAr, data.nameEn, data.category,
+                       COALESCE(data.calories, 0), COALESCE(data.protein, 0), COALESCE(data.carbs, 0),
+                       COALESCE(data.fat, 0), COALESCE(data.fiber, 0), COALESCE(data.sugar, 0),
+                       COALESCE(data.sodium, 0), COALESCE(data.servingSize, 100), data.servingUnit
+                FROM OPENJSON(@foodsJson) AS item
+                CROSS APPLY OPENJSON(item.[value]) WITH (
+                    nameAr NVARCHAR(160) '$.nameAr', nameEn NVARCHAR(160) '$.nameEn',
+                    category NVARCHAR(80) '$.category', calories DECIMAL(12,3) '$.calories',
+                    protein DECIMAL(12,3) '$.protein', carbs DECIMAL(12,3) '$.carbs',
+                    fat DECIMAL(12,3) '$.fat', fiber DECIMAL(12,3) '$.fiber',
+                    sugar DECIMAL(12,3) '$.sugar', sodium DECIMAL(12,3) '$.sodium',
+                    servingSize DECIMAL(12,3) '$.servingSize', servingUnit NVARCHAR(40) '$.servingUnit'
+                ) AS data
+                WHERE TRY_CONVERT(INT, item.[key]) IS NOT NULL;
+                UPDATE target
+                SET target.name_ar = source.name_ar, target.name_en = source.name_en,
+                    target.category = source.category, target.calories = source.calories,
+                    target.protein = source.protein, target.carbs = source.carbs, target.fat = source.fat,
+                    target.fiber = source.fiber, target.sugar = source.sugar, target.sodium = source.sodium,
+                    target.serving_size = source.serving_size, target.serving_unit = source.serving_unit,
+                    target.updated_at = SYSUTCDATETIME()
+                FROM dbo.gym_foods AS target
+                INNER JOIN @seed_foods AS source ON source.source_id = target.source_id;
+                INSERT INTO dbo.gym_foods
+                    (source_id, name_ar, name_en, category, calories, protein, carbs, fat, fiber, sugar, sodium, serving_size, serving_unit)
+                SELECT source.source_id, source.name_ar, source.name_en, source.category, source.calories,
+                       source.protein, source.carbs, source.fat, source.fiber, source.sugar, source.sodium,
+                       source.serving_size, source.serving_unit
+                FROM @seed_foods AS source
+                WHERE NOT EXISTS (SELECT 1 FROM dbo.gym_foods target WHERE target.source_id = source.source_id);
+            `);
+
+        await transaction.request()
+            .input('exercisesJson', sql.NVarChar(sql.MAX), JSON.stringify(exercises))
+            .query(`
+                DECLARE @seed_exercises TABLE (
+                    source_id INT NOT NULL PRIMARY KEY,
+                    name NVARCHAR(160) NOT NULL,
+                    name_ar NVARCHAR(160) NULL,
+                    description NVARCHAR(2000) NULL,
+                    description_ar NVARCHAR(2000) NULL,
+                    target_muscle_source_id INT NULL,
+                    secondary_muscles_json NVARCHAR(MAX) NOT NULL,
+                    equipment NVARCHAR(100) NULL,
+                    is_high_impact BIT NOT NULL,
+                    difficulty NVARCHAR(60) NULL,
+                    category NVARCHAR(80) NULL,
+                    movement_pattern NVARCHAR(80) NULL,
+                    mechanic NVARCHAR(80) NULL,
+                    force NVARCHAR(80) NULL,
+                    instructions_json NVARCHAR(MAX) NOT NULL,
+                    instructions_ar_json NVARCHAR(MAX) NOT NULL,
+                    tips_json NVARCHAR(MAX) NOT NULL,
+                    tips_ar_json NVARCHAR(MAX) NOT NULL,
+                    common_mistakes_json NVARCHAR(MAX) NOT NULL,
+                    common_mistakes_ar_json NVARCHAR(MAX) NOT NULL,
+                    reps_range NVARCHAR(40) NULL,
+                    sets_range NVARCHAR(40) NULL,
+                    rest_seconds INT NULL,
+                    tempo NVARCHAR(40) NULL,
+                    icon NVARCHAR(20) NULL,
+                    video_url NVARCHAR(1000) NULL,
+                    metadata_json NVARCHAR(MAX) NULL
+                );
+                INSERT INTO @seed_exercises
+                    (source_id, name, name_ar, description, description_ar, target_muscle_source_id,
+                     secondary_muscles_json, equipment, is_high_impact, difficulty, category, movement_pattern,
+                     mechanic, force, instructions_json, instructions_ar_json, tips_json, tips_ar_json,
+                     common_mistakes_json, common_mistakes_ar_json, reps_range, sets_range, rest_seconds, tempo,
+                     icon, video_url, metadata_json)
+                SELECT TRY_CONVERT(INT, item.[key]) + 1, data.name, data.nameAr, data.description, data.descriptionAr,
+                       data.targetMuscleId,
+                       CASE WHEN ISJSON(data.secondaryMuscles) = 1 THEN data.secondaryMuscles ELSE N'[]' END,
+                       data.equipment, COALESCE(data.isHighImpact, 0), data.difficulty, data.category,
+                       data.movementPattern, data.mechanic, data.force,
+                       CASE WHEN ISJSON(data.instructions) = 1 THEN data.instructions ELSE N'[]' END,
+                       CASE WHEN ISJSON(data.instructionsAr) = 1 THEN data.instructionsAr ELSE N'[]' END,
+                       CASE WHEN ISJSON(data.tips) = 1 THEN data.tips ELSE N'[]' END,
+                       CASE WHEN ISJSON(data.tipsAr) = 1 THEN data.tipsAr ELSE N'[]' END,
+                       CASE WHEN ISJSON(data.commonMistakes) = 1 THEN data.commonMistakes ELSE N'[]' END,
+                       CASE WHEN ISJSON(data.commonMistakesAr) = 1 THEN data.commonMistakesAr ELSE N'[]' END,
+                       data.repsRange, data.setsRange, data.restSeconds, data.tempo, data.icon, data.videoUrl,
+                       item.[value]
+                FROM OPENJSON(@exercisesJson) AS item
+                CROSS APPLY OPENJSON(item.[value]) WITH (
+                    name NVARCHAR(160) '$.name', nameAr NVARCHAR(160) '$.nameAr',
+                    description NVARCHAR(2000) '$.description', descriptionAr NVARCHAR(2000) '$.descriptionAr',
+                    targetMuscleId INT '$.targetMuscleId', secondaryMuscles NVARCHAR(MAX) '$.secondaryMuscles' AS JSON,
+                    equipment NVARCHAR(100) '$.equipment', isHighImpact BIT '$.isHighImpact', difficulty NVARCHAR(60) '$.difficulty',
+                    category NVARCHAR(80) '$.category', movementPattern NVARCHAR(80) '$.movementPattern', mechanic NVARCHAR(80) '$.mechanic',
+                    force NVARCHAR(80) '$.force', instructions NVARCHAR(MAX) '$.instructions' AS JSON,
+                    instructionsAr NVARCHAR(MAX) '$.instructionsAr' AS JSON, tips NVARCHAR(MAX) '$.tips' AS JSON,
+                    tipsAr NVARCHAR(MAX) '$.tipsAr' AS JSON, commonMistakes NVARCHAR(MAX) '$.commonMistakes' AS JSON,
+                    commonMistakesAr NVARCHAR(MAX) '$.commonMistakesAr' AS JSON, repsRange NVARCHAR(40) '$.repsRange',
+                    setsRange NVARCHAR(40) '$.setsRange', restSeconds INT '$.restSeconds', tempo NVARCHAR(40) '$.tempo',
+                    icon NVARCHAR(20) '$.icon', videoUrl NVARCHAR(1000) '$.videoUrl'
+                ) AS data
+                WHERE TRY_CONVERT(INT, item.[key]) IS NOT NULL
+                  AND NULLIF(LTRIM(RTRIM(data.name)), N'') IS NOT NULL;
+                UPDATE target
+                SET target.name = source.name, target.name_ar = source.name_ar,
+                    target.description = source.description, target.description_ar = source.description_ar,
+                    target.target_muscle_id = muscle.id, target.secondary_muscles_json = source.secondary_muscles_json,
+                    target.equipment = source.equipment, target.is_high_impact = source.is_high_impact,
+                    target.difficulty = source.difficulty, target.category = source.category,
+                    target.movement_pattern = source.movement_pattern, target.mechanic = source.mechanic,
+                    target.force = source.force, target.instructions_json = source.instructions_json,
+                    target.instructions_ar_json = source.instructions_ar_json, target.tips_json = source.tips_json,
+                    target.tips_ar_json = source.tips_ar_json, target.common_mistakes_json = source.common_mistakes_json,
+                    target.common_mistakes_ar_json = source.common_mistakes_ar_json, target.reps_range = source.reps_range,
+                    target.sets_range = source.sets_range, target.rest_seconds = source.rest_seconds,
+                    target.tempo = source.tempo, target.icon = source.icon, target.video_url = source.video_url,
+                    target.metadata_json = source.metadata_json, target.updated_at = SYSUTCDATETIME()
+                FROM dbo.gym_exercises AS target
+                INNER JOIN @seed_exercises AS source ON source.source_id = target.source_id
+                LEFT JOIN dbo.gym_muscles AS muscle ON muscle.source_id = source.target_muscle_source_id;
+                INSERT INTO dbo.gym_exercises
+                    (source_id, name, name_ar, description, description_ar, target_muscle_id, secondary_muscles_json,
+                     equipment, is_high_impact, difficulty, category, movement_pattern, mechanic, force,
+                     instructions_json, instructions_ar_json, tips_json, tips_ar_json, common_mistakes_json,
+                     common_mistakes_ar_json, reps_range, sets_range, rest_seconds, tempo, icon, video_url, metadata_json)
+                SELECT source.source_id, source.name, source.name_ar, source.description, source.description_ar,
+                       muscle.id, source.secondary_muscles_json, source.equipment, source.is_high_impact,
+                       source.difficulty, source.category, source.movement_pattern, source.mechanic, source.force,
+                       source.instructions_json, source.instructions_ar_json, source.tips_json, source.tips_ar_json,
+                       source.common_mistakes_json, source.common_mistakes_ar_json, source.reps_range, source.sets_range,
+                       source.rest_seconds, source.tempo, source.icon, source.video_url, source.metadata_json
+                FROM @seed_exercises AS source
+                LEFT JOIN dbo.gym_muscles AS muscle ON muscle.source_id = source.target_muscle_source_id
+                WHERE NOT EXISTS (SELECT 1 FROM dbo.gym_exercises target WHERE target.source_id = source.source_id);
+            `);
+        await transaction.commit();
+    } catch (error) {
+        await transaction.rollback().catch(() => {});
+        throw error;
+    }
+    return { muscles: muscles.length, foods: foods.length, exercises: exercises.length };
+}
+
 function likeValue(value) {
     return `%${String(value || '').replace(/[\\%_\[]/g, (character) => `\\${character}`)}%`;
 }
@@ -845,5 +1053,6 @@ module.exports = {
     getLibraryCollection,
     getLibraryItem,
     getLibraryOptions,
+    syncLibraryData,
     updateLibraryItem
 };

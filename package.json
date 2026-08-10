@@ -9,7 +9,8 @@
     "dev": "node --watch server.js",
     "build:css": "tailwindcss -i ./src/tailwind.css -o ./public/tailwind.css --minify",
     "build": "npm run build:css",
-    "seed:performance": "node scripts/seed-performance-test-data.js"
+    "seed:performance": "node scripts/seed-performance-test-data.js",
+    "sync:library": "node scripts/sync-library-data.js"
   },
   "engines": {
     "node": ">=18.18"
