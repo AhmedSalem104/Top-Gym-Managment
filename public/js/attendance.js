@@ -24,6 +24,80 @@
         return Number.isNaN(date.getTime()) ? String(value) : new Intl.DateTimeFormat('ar-EG', { timeStyle: 'short' }).format(date);
     }
 
+    const STATUS_LABELS = { active: 'نشطة', expiring_soon: 'قريبة الانتهاء', expired: 'منتهية', frozen: 'مجمدة' };
+    const PLAN_LABELS = { gym_only: 'جيم فقط', gym_cardio: 'جيم وكارديو' };
+    const TYPE_LABELS = { monthly: 'شهرية', half_month: 'نصف شهر', quarterly: 'ربع سنوية', semiannual: 'نصف سنوية', annual: 'سنوية' };
+
+    function qrMemberId(value) {
+        const token = String(value ?? '').trim();
+        const direct = token.match(/^TOPGYM-MEMBER:(\d+)$/i) || token.match(/^TOPGYM\|MEMBER\|(\d+)$/i);
+        if (direct) return Number(direct[1]);
+        try {
+            const payload = JSON.parse(token);
+            const id = Number(payload?.memberId || payload?.member_id || payload?.id);
+            return Number.isInteger(id) && id > 0 ? id : null;
+        } catch (_) {
+            return null;
+        }
+    }
+
+    function qrStatusClass(status) {
+        return ['active', 'expiring_soon', 'expired', 'frozen'].includes(status) ? status : 'unknown';
+    }
+
+    function qrPayload(member) {
+        const membership = member.membership || {};
+        return JSON.stringify({
+            app: 'TOP GYM',
+            memberId: Number(member.id),
+            name: member.fullName || '',
+            phone: member.phone || '',
+            plan: membership.plan || '',
+            type: membership.type || '',
+            startDate: membership.startDate || '',
+            endDate: membership.effectiveEndDate || membership.endDate || '',
+            status: membership.status || ''
+        });
+    }
+
+    async function showQrMemberPreview(member) {
+        const membership = member.membership || {};
+        const status = String(membership.status || '').toLowerCase();
+        const eligible = ['active', 'expiring_soon'].includes(status);
+        const statusLabel = STATUS_LABELS[status] || 'بدون اشتراك';
+        const planLabel = PLAN_LABELS[membership.plan] || membership.plan || '—';
+        const typeLabel = TYPE_LABELS[membership.type] || membership.type || '—';
+        if (!window.Swal) return eligible;
+        const result = await window.Swal.fire({
+            position: 'center',
+            icon: eligible ? 'info' : 'warning',
+            title: 'بيانات المشترك',
+            html: `<div class="qr-member-preview">
+                <div class="qr-member-preview-head">
+                    <div><strong>${escapeHtml(member.fullName || '—')}</strong><span dir="ltr">${escapeHtml(member.phone || '—')}</span></div>
+                    <b class="qr-member-preview-status ${qrStatusClass(status)}">${escapeHtml(statusLabel)}</b>
+                </div>
+                <div class="qr-member-preview-grid">
+                    <div><span>الباقة</span><strong>${escapeHtml(planLabel)}</strong></div>
+                    <div><span>النوع</span><strong>${escapeHtml(typeLabel)}</strong></div>
+                    <div><span>تاريخ البداية</span><strong>${escapeHtml(dateText(membership.startDate))}</strong></div>
+                    <div><span>تاريخ الانتهاء</span><strong>${escapeHtml(dateText(membership.effectiveEndDate || membership.endDate))}</strong></div>
+                    ${membership.amountRemaining > 0 ? `<div class="qr-member-preview-balance"><span>المتبقي</span><strong>${Number(membership.amountRemaining).toLocaleString('ar-EG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ج.م</strong></div>` : ''}
+                </div>
+            </div>`,
+            showCancelButton: eligible,
+            confirmButtonText: eligible ? 'تسجيل الحضور' : 'إغلاق',
+            cancelButtonText: 'إلغاء',
+            buttonsStyling: false,
+            customClass: {
+                popup: 'top-gym-alert qr-member-preview-alert',
+                confirmButton: 'duplicate-phone-alert-confirm',
+                cancelButton: 'qr-member-preview-cancel'
+            }
+        });
+        return eligible && result.isConfirmed;
+    }
+
     function showMessage(title, icon = 'success', text = '') {
         if (window.Swal) {
             return window.Swal.fire({
@@ -162,6 +236,21 @@
         if (dialog?.close && dialog.open) dialog.close(); else dialog?.removeAttribute('open');
     }
 
+    async function handleQrScan(decodedText) {
+        const memberId = qrMemberId(decodedText);
+        if (!memberId) {
+            await checkIn({ qrToken: decodedText });
+            return;
+        }
+        try {
+            const response = await request(`/api/members/${encodeURIComponent(memberId)}`);
+            const member = response.member || response;
+            if (await showQrMemberPreview(member)) await checkIn({ qrToken: decodedText });
+        } catch (error) {
+            await showMessage(error.message, 'error');
+        }
+    }
+
     async function openScanner() {
         if (!window.Html5Qrcode) {
             await showMessage('أداة مسح QR Code غير متاحة حالياً. استخدم رقم الهاتف.', 'warning');
@@ -174,7 +263,7 @@
         try {
             await scanner.start({ facingMode: 'environment' }, { fps: 10, qrbox: { width: 230, height: 230 } }, async (decodedText) => {
                 await closeScanner();
-                await checkIn({ qrToken: decodedText });
+                await handleQrScan(decodedText);
             }, () => {});
             scannerRunning = true;
         } catch (error) {
@@ -192,7 +281,7 @@
             $('memberQrPhone').textContent = member.phone || '—';
             const canvas = $('memberQrCanvas');
             if (!window.QRCode || !canvas) throw new Error('أداة إنشاء QR Code غير متاحة حالياً.');
-            await window.QRCode.toCanvas(canvas, member.qrToken || `TOPGYM-MEMBER:${member.id}`, { width: 210, margin: 1, color: { dark: '#0f172a', light: '#ffffff' } });
+            await window.QRCode.toCanvas(canvas, qrPayload(member), { width: 210, margin: 1, color: { dark: '#0f172a', light: '#ffffff' } });
             const dialog = $('memberQrDialog');
             if (dialog?.showModal) dialog.showModal(); else dialog?.setAttribute('open', '');
         } catch (error) {
