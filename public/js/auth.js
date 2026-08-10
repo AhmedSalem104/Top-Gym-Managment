@@ -45,9 +45,15 @@
         document.body.classList.toggle('topgym-authenticated', Boolean(state.user));
         const userBar = $('authUserBar');
         if (userBar) userBar.hidden = !state.user;
-        if ($('authUserName')) $('authUserName').textContent = state.user?.fullName || '—';
-        if ($('authUserRole')) $('authUserRole').textContent = state.user ? (ROLE_LABELS[state.user.role] || state.user.role) : '—';
-        if ($('authUserAvatar')) $('authUserAvatar').textContent = initials(state.user?.fullName);
+        const authUserName = $('authUserName');
+        const authUserRole = $('authUserRole');
+        const authUserAvatar = $('authUserAvatar');
+        const nextUserName = state.user?.fullName || '—';
+        const nextUserRole = state.user ? (ROLE_LABELS[state.user.role] || state.user.role) : '—';
+        const nextUserAvatar = initials(state.user?.fullName);
+        if (authUserName && authUserName.textContent !== nextUserName) authUserName.textContent = nextUserName;
+        if (authUserRole && authUserRole.textContent !== nextUserRole) authUserRole.textContent = nextUserRole;
+        if (authUserAvatar && authUserAvatar.textContent !== nextUserAvatar) authUserAvatar.textContent = nextUserAvatar;
     }
 
     function notify(message, type = 'error') {
