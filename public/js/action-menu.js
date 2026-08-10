@@ -28,7 +28,9 @@
                     const visibleActions = new Set(['details', 'renew']);
                     const visible = buttons.filter((button) => visibleActions.has(button.dataset.action));
                     const advanced = buttons.filter((button) => !visibleActions.has(button.dataset.action));
-                    actions.replaceChildren(...visible);
+                    const coachingButtons = [...actions.querySelectorAll(':scope > button[data-member-coaching-action]')];
+                    const directButtons = [...actions.children].filter((child) => visible.includes(child) || coachingButtons.includes(child));
+                    actions.replaceChildren(...directButtons);
                     visible.forEach((button) => {
                         const label = button.dataset.label || ACTION_LABELS[button.dataset.action] || button.dataset.action;
                         button.type = 'button';

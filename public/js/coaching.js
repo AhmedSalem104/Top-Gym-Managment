@@ -56,6 +56,7 @@
     }
 
     function notify(message, type = 'success') {
+        if (['error', 'warning'].includes(type) && window.topGymShowDialogValidation?.(message, type)) return;
         if (window.Swal) {
             window.Swal.fire({ toast: true, position: 'top-start', icon: type === 'error' ? 'error' : 'success', title: message, showConfirmButton: false, timer: type === 'error' ? 5000 : 2800, customClass: { popup: 'coaching-alert' } });
             return;
@@ -625,12 +626,160 @@
         }
     }
 
+    let builderSearchDismissBound = false;
+
+    function closeBuilderSearchSelects(except = null) {
+        document.querySelectorAll('.builder-search-select.is-open').forEach((wrapper) => {
+            if (wrapper === except) return;
+            wrapper.classList.remove('is-open');
+            const trigger = wrapper.querySelector('.builder-search-trigger');
+            const popover = wrapper.querySelector('.builder-search-popover');
+            trigger?.setAttribute('aria-expanded', 'false');
+            if (popover) popover.hidden = true;
+        });
+    }
+
+    function enhanceBuilderSearchSelects() {
+        const content = $('coachingBuilderContent');
+        if (!content) return;
+        if (!builderSearchDismissBound) {
+            document.addEventListener('click', (event) => {
+                if (!event.target.closest('.builder-search-select')) closeBuilderSearchSelects();
+            });
+            document.addEventListener('keydown', (event) => {
+                if (event.key === 'Escape') closeBuilderSearchSelects();
+            });
+            document.addEventListener('scroll', () => closeBuilderSearchSelects(), true);
+            builderSearchDismissBound = true;
+        }
+
+        const definitions = [
+            { selector: 'select[data-builder-field="memberId"]', kind: 'client', placeholder: 'اختر العميل', searchPlaceholder: 'ابحث باسم العميل أو الهاتف', empty: 'لا يوجد عميل مطابق.' },
+            { selector: 'select[data-food-field="foodId"]', kind: 'food', placeholder: 'اختر طعامًا', searchPlaceholder: 'ابحث عن الطعام', empty: 'لا يوجد طعام مطابق.' },
+            { selector: 'select[data-exercise-field="exerciseId"]', kind: 'exercise', placeholder: 'اختر تمرينًا', searchPlaceholder: 'ابحث عن التمرين أو العضلة', empty: 'لا يوجد تمرين مطابق.' },
+            { selector: 'select[data-builder-field]:not([data-builder-field="memberId"]), select[data-calculator-field], select[data-routine-field]', kind: 'option', placeholder: 'اختر من القائمة', searchPlaceholder: 'ابحث في الخيارات', empty: 'لا توجد خيارات مطابقة.' }
+        ];
+
+        definitions.forEach(({ selector, kind, placeholder, searchPlaceholder, empty }) => {
+            content.querySelectorAll(selector).forEach((select) => {
+                if (select.closest('.builder-search-select')) return;
+                const parent = select.parentElement;
+                if (!parent) return;
+                const wrapper = document.createElement('div');
+                wrapper.className = 'builder-search-select';
+                wrapper.dataset.searchKind = kind;
+
+                const trigger = document.createElement('button');
+                trigger.type = 'button';
+                trigger.className = 'builder-search-trigger';
+                trigger.setAttribute('aria-haspopup', 'listbox');
+                trigger.setAttribute('aria-expanded', 'false');
+                trigger.disabled = select.disabled;
+                const triggerText = document.createElement('span');
+                const triggerArrow = document.createElement('b');
+                triggerArrow.textContent = '⌄';
+                trigger.append(triggerText, triggerArrow);
+
+                const popover = document.createElement('div');
+                popover.className = 'builder-search-popover';
+                popover.hidden = true;
+                const searchLabel = document.createElement('label');
+                searchLabel.className = 'builder-search-input-wrap';
+                const searchInput = document.createElement('input');
+                searchInput.type = 'search';
+                searchInput.placeholder = searchPlaceholder;
+                searchInput.setAttribute('aria-label', searchPlaceholder);
+                searchLabel.append(searchInput);
+                const options = document.createElement('div');
+                options.className = 'builder-search-options';
+                options.setAttribute('role', 'listbox');
+                popover.append(searchLabel, options);
+
+                const updateTrigger = () => {
+                    const selected = select.selectedOptions?.[0];
+                    triggerText.textContent = selected?.value ? selected.textContent.trim() : placeholder;
+                    trigger.title = triggerText.textContent;
+                };
+                const renderOptions = () => {
+                    const query = searchInput.value.trim().toLocaleLowerCase();
+                    options.replaceChildren();
+                    const matchingOptions = [...select.options].filter((option) => !query || option.textContent.toLocaleLowerCase().includes(query));
+                    if (!matchingOptions.length) {
+                        const emptyState = document.createElement('div');
+                        emptyState.className = 'builder-search-empty';
+                        emptyState.textContent = empty;
+                        options.append(emptyState);
+                        return;
+                    }
+                    matchingOptions.forEach((option) => {
+                        const optionButton = document.createElement('button');
+                        optionButton.type = 'button';
+                        optionButton.className = 'builder-search-option';
+                        optionButton.setAttribute('role', 'option');
+                        optionButton.setAttribute('aria-selected', String(option.value === select.value));
+                        optionButton.disabled = option.disabled;
+                        optionButton.textContent = option.value ? option.textContent.trim() : placeholder;
+                        optionButton.addEventListener('click', () => {
+                            const previousValue = select.value;
+                            select.value = option.value;
+                            updateTrigger();
+                            closeBuilderSearchSelects();
+                            searchInput.value = '';
+                            if (previousValue !== select.value) select.dispatchEvent(new Event('change', { bubbles: true }));
+                        });
+                        options.append(optionButton);
+                    });
+                };
+                const setOpen = (open) => {
+                    if (select.disabled) return;
+                    if (open) closeBuilderSearchSelects(wrapper);
+                    wrapper.classList.toggle('is-open', open);
+                    trigger.setAttribute('aria-expanded', String(open));
+                    popover.hidden = !open;
+                    if (open) {
+                        const rect = trigger.getBoundingClientRect();
+                        const availableWidth = Math.max(180, window.innerWidth - 28);
+                        const width = Math.min(Math.max(rect.width, 230), availableWidth);
+                        const left = Math.min(Math.max(rect.left, 14), Math.max(14, window.innerWidth - width - 14));
+                        const estimatedHeight = Math.min(360, window.innerHeight * .6);
+                        const top = rect.bottom + 6 + estimatedHeight > window.innerHeight - 14
+                            ? Math.max(14, rect.top - estimatedHeight - 6)
+                            : rect.bottom + 6;
+                        popover.style.width = `${width}px`;
+                        popover.style.left = `${left}px`;
+                        popover.style.top = `${top}px`;
+                        searchInput.value = '';
+                        renderOptions();
+                        window.requestAnimationFrame(() => searchInput.focus());
+                    }
+                };
+
+                trigger.addEventListener('click', () => setOpen(!wrapper.classList.contains('is-open')));
+                trigger.addEventListener('keydown', (event) => {
+                    if (event.key === 'Enter' || event.key === 'ArrowDown') { event.preventDefault(); setOpen(true); }
+                });
+                searchInput.addEventListener('input', renderOptions);
+                searchInput.addEventListener('keydown', (event) => {
+                    if (event.key === 'Escape') { event.preventDefault(); setOpen(false); return; }
+                    if (event.key === 'Enter') { event.preventDefault(); options.querySelector('.builder-search-option:not(:disabled)')?.click(); }
+                });
+                select.addEventListener('change', updateTrigger);
+
+                parent.insertBefore(wrapper, select);
+                wrapper.append(trigger, popover, select);
+                select.classList.add('builder-search-native');
+                updateTrigger();
+            });
+        });
+    }
+
     function renderBuilderV2() {
         if (!state.builder) return;
         renderBuilderChrome();
         if (state.builder.step === 1) state.builder.type === 'diet' ? renderDietStepOne() : renderWorkoutStepOne();
         else if (state.builder.step === 2) state.builder.type === 'diet' ? renderDietStepTwo() : renderWorkoutStepTwo();
         else renderBuilderReview();
+        enhanceBuilderSearchSelects();
     }
 
     function syncBuilderDraft() {

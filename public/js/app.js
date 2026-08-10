@@ -16,6 +16,8 @@
              delete: '<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>'
          };
          function actionIcon(action) { return `<svg class="action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ACTION_ICONS[action] || ''}</svg>`; }
+         const COACHING_ACTION_LABELS = { workout: '\u0625\u0646\u0634\u0627\u0621 \u0628\u0631\u0646\u0627\u0645\u062c \u062a\u062f\u0631\u064a\u0628', diet: '\u0625\u0646\u0634\u0627\u0621 \u062e\u0637\u0629 \u062a\u063a\u0630\u064a\u0629' };
+         const COACHING_ACTION_ICONS = { workout: '<path d="M6 8v8M18 8v8M3 11h18M8 5h8v14H8z"/>', diet: '<path d="M12 21c-4-2-7-5.5-7-10a5 5 0 0 1 7-4.6A5 5 0 0 1 19 11c0 4.5-3 7.8-7 10Z"/><path d="M12 7c0 4-2 6-5 7"/>' };
          function actionButton(action, memberId, classes = 'btn btn-light btn-small', extra = '') { const label = ACTION_LABELS[action] || action; return `<button class="${classes} icon-action rounded-lg shadow-none transition-colors" data-action="${action}" data-label="${label}" data-id="${memberId}" aria-label="${label}" title="${label}" type="button" ${extra}>${actionIcon(action)}</button>`; }
          const DEFAULT_PRICING = { plans: { gym_only: { label: 'جيم فقط', monthlyPrice: 305, active: true, sortOrder: 1 }, gym_cardio: { label: 'جيم وكارديو', monthlyPrice: 400, active: true, sortOrder: 2 } }, types: { monthly: { label: 'شهرية', mode: 'months', durationValue: 1, priceMultiplier: 1, active: true, sortOrder: 1 }, half_month: { label: 'نصف شهر', mode: 'days', durationValue: 15, priceMultiplier: .5, active: true, sortOrder: 2 }, quarterly: { label: 'ربع سنوية', mode: 'months', durationValue: 3, priceMultiplier: 3, active: true, sortOrder: 3 }, semiannual: { label: 'نصف سنوية', mode: 'months', durationValue: 6, priceMultiplier: 6, active: true, sortOrder: 4 }, annual: { label: 'سنوية', mode: 'months', durationValue: 12, priceMultiplier: 12, active: true, sortOrder: 5 } }, durations: { monthly: 1, quarterly: 3, semiannual: 6, annual: 12 } };
          const state = { members: [], dashboard: null, pricing: DEFAULT_PRICING, pricingLoadedAt: 0, editing: null, dialogAction: null, dialogMember: null, endDateManual: false };
@@ -42,10 +44,66 @@
          async function withLoader(task) { return task(); }
 
         function showToast(message, error = false, type = '') { const toast = $('toast'); if (!toast) return; const kind = ['success', 'error', 'warning', 'info'].includes(type) ? type : (error ? 'error' : 'success'); const icons = { info: '<svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7h.01"/></svg>', warning: '<svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 2.5 20h19L12 3Z"/><path d="M12 9v4M12 17h.01"/></svg>', error: '<svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m9 9 6 6M15 9l-6 6"/></svg>', success: '<svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>' }; const item = document.createElement('div'); item.className = `toast-item ${kind}`; item.setAttribute('role', kind === 'error' ? 'alert' : 'status'); item.innerHTML = `<span class="toast-icon" aria-hidden="true">${icons[kind]}</span><span class="toast-message">${escapeHtml(message)}</span><button class="toast-close" type="button" aria-label="إغلاق">×</button>`; toast.appendChild(item); toast.className = 'toast show'; const close = () => { if (item.dataset.closed) return; item.dataset.closed = 'true'; item.classList.add('is-leaving'); window.setTimeout(() => { item.remove(); if (!toast.children.length) toast.className = 'toast'; }, 180); }; item.querySelector('.toast-close')?.addEventListener('click', close); window.setTimeout(close, kind === 'error' ? 5000 : 3000); }
+        function getTopLayerDialog() {
+            const dialogs = [...document.querySelectorAll('dialog[open]')];
+            return dialogs[dialogs.length - 1] || null;
+        }
+
+        function showDialogValidation(message, type = 'error') {
+            const dialog = getTopLayerDialog();
+            if (!dialog) return false;
+            const host = dialog.querySelector('.dialog-body, .form-body, .form-panel') || dialog;
+            let alert = [...host.children].find((child) => child.classList?.contains('dialog-validation'));
+            if (!alert) {
+                alert = document.createElement('div');
+                alert.setAttribute('role', 'alert');
+                const heading = [...host.children].find((child) => child.matches?.('.details-dialog-head, .section-heading, .builder-stepper'));
+                if (heading) heading.insertAdjacentElement('afterend', alert);
+                else host.prepend(alert);
+            }
+            alert.className = `dialog-validation ${type}`;
+            alert.textContent = String(message || 'حدث خطأ أثناء تنفيذ الطلب.');
+            alert.hidden = false;
+            window.clearTimeout(alert.validationTimer);
+            alert.validationTimer = window.setTimeout(() => { if (alert.isConnected) alert.hidden = true; }, type === 'error' ? 8000 : 5000);
+            alert.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' });
+            return true;
+        }
+
+        function clearDialogValidation(dialog) {
+            dialog?.querySelectorAll('.dialog-validation').forEach((alert) => {
+                window.clearTimeout(alert.validationTimer);
+                alert.hidden = true;
+            });
+        }
+
+        window.topGymDialogTarget = getTopLayerDialog;
+        window.topGymShowDialogValidation = showDialogValidation;
+        document.querySelectorAll('dialog').forEach((dialog) => dialog.addEventListener('close', () => clearDialogValidation(dialog)));
+        if (window.Swal && !window.Swal.__topGymDialogPatched) {
+            const originalSweetAlertFire = window.Swal.fire.bind(window.Swal);
+            window.Swal.fire = (...args) => {
+                if (args.length === 1 && args[0] && typeof args[0] === 'object' && !args[0].target) {
+                    const dialog = getTopLayerDialog();
+                    if (dialog) args[0] = { ...args[0], target: dialog };
+                }
+                return originalSweetAlertFire(...args);
+            };
+            window.Swal.__topGymDialogPatched = true;
+        }
+
+        const baseShowToast = showToast;
+        showToast = function(message, error = false, type = '') {
+            const kind = ['success', 'error', 'warning', 'info'].includes(type) ? type : (error ? 'error' : 'success');
+            if (['error', 'warning'].includes(kind) && showDialogValidation(message, kind)) return;
+            return baseShowToast(message, error, type);
+        };
+
         function notify(title, icon = 'success') {
             const kind = ['success', 'error', 'warning', 'info'].includes(icon) ? icon : 'info';
-            showToast(title, kind === 'error', kind); return Promise.resolve();
-         }
+            showToast(title, kind === 'error', kind);
+            return Promise.resolve();
+        }
          async function refreshAfterAction(message, icon = 'success') {
              const refreshPromise = loadData();
              try { await notify(message, icon); } finally { await refreshPromise; }
@@ -211,19 +269,13 @@
                     status.title = 'العضوية غير سارية أو مجمدة';
                     quickActions.append(status);
                 }
-                [['workout', '\u002b \u062a\u062f\u0631\u064a\u0628', '\u0628\u0631\u0646\u0627\u0645\u062c \u062a\u062f\u0631\u064a\u0628'], ['diet', '\u002b \u062a\u063a\u0630\u064a\u0629', '\u062e\u0637\u0629 \u062a\u063a\u0630\u064a\u0629']].forEach(([action, label, description]) => {
-                    const button = document.createElement('button');
-                    button.className = `btn member-coaching-quick ${action}`;
-                    button.type = 'button';
-                    button.dataset.memberCoachingAction = action;
-                    button.dataset.memberId = String(member.id);
-                    button.dataset.memberName = member.fullName || '';
-                    button.textContent = label;
-                    button.title = `\u0625\u0646\u0634\u0627\u0621 ${description} \u0644\u0640 ${member.fullName}`;
-                    button.setAttribute('aria-label', `\u0625\u0646\u0634\u0627\u0621 ${description} \u0644\u0640 ${member.fullName}`);
-                    quickActions.append(button);
-                });
                 const tableActions = cell.querySelector(':scope > .table-actions');
+                if (tableActions && !tableActions.querySelector('[data-member-coaching-action="workout"]')) {
+                    const detailsAction = tableActions.querySelector('[data-action="details"]');
+                    const coachingActions = ['workout', 'diet'].map((action) => `<button class="btn btn-light btn-small icon-action rounded-lg shadow-none transition-colors table-action-visible coaching-table-action ${action}" data-member-coaching-action="${action}" data-member-id="${member.id}" data-member-name="${escapeHtml(member.fullName || '')}" aria-label="${COACHING_ACTION_LABELS[action]}" title="${COACHING_ACTION_LABELS[action]}" type="button"><svg class="action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${COACHING_ACTION_ICONS[action]}</svg></button>`).join('');
+                    if (detailsAction) detailsAction.insertAdjacentHTML('afterend', coachingActions);
+                    else tableActions.insertAdjacentHTML('afterbegin', coachingActions);
+                }
                 if (tableActions && !tableActions.querySelector('[data-action="qr"]')) {
                     const menuPanel = tableActions.querySelector('.action-menu-panel');
                     if (menuPanel) {

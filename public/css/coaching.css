@@ -66,3 +66,63 @@
 @media (max-width: 420px) { .target-grid,.calculator-grid { grid-template-columns: 1fr; }.calculator-grid label:nth-last-child(-n+2) { grid-column: auto; }.calculator-results { grid-template-columns: 1fr; }.nutrition-macro-grid { grid-template-columns: 1fr; }.workout-metrics-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }.review-summary-grid { grid-template-columns: 1fr 1fr; }.builder-meal-row .builder-inline-fields,.builder-day-panel-head > div:first-child { grid-template-columns: 1fr; }.builder-row-actions .btn { min-height: 29px; padding-inline: 7px; font-size: 9px; } }
 @media (max-width: 760px) { .coaching-section { padding: 14px; }.coaching-header { align-items: flex-start; flex-direction: column; }.coaching-add-button { width: 100%; }.coaching-summary { grid-template-columns: repeat(2,minmax(0,1fr)); }.external-trainees-list,.builder-routines,.builder-meals { grid-template-columns: 1fr; }.profile-stats { grid-template-columns: repeat(2,minmax(0,1fr)); }.member-training-systems { grid-template-columns: 1fr; }.builder-basic-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }.builder-food { grid-template-columns: minmax(0,1fr) minmax(78px,.5fr) minmax(62px,.45fr) auto; }.profile-hero { align-items: flex-start; flex-wrap: wrap; }.profile-hero > .btn { margin-inline-start: auto; } }
 @media (max-width: 480px) { .coaching-toolbar { padding: 8px; }.coaching-toolbar .btn { width: 100%; }.coaching-summary { gap: 7px; }.coaching-summary-card { min-height: 82px; padding: 10px; }.coaching-summary-card strong { font-size: 20px; }.external-trainee-card { padding: 11px; }.external-trainee-foot { align-items: flex-start; flex-direction: column; }.trainee-actions { width: 100%; justify-content: stretch; }.trainee-actions .btn { flex: 1 1 0; }.profile-actions .btn { flex: 1 1 calc(50% - 7px); padding-inline: 6px; font-size: 10px; }.profile-system-card { align-items: flex-start; flex-direction: column; }.profile-system-card > div:last-child { width: 100%; justify-content: space-between; }.builder-basic-grid,.builder-inline-fields { grid-template-columns: 1fr; }.builder-mini-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }.builder-food { grid-template-columns: 1fr 1fr; }.builder-food label:first-child { grid-column: 1/-1; }.builder-food .btn { min-height: 36px; }.member-training-head { align-items: flex-start; flex-direction: column; }.member-training-head > div:last-child { justify-content: stretch; width: 100%; }.member-training-head .btn { flex: 1 1 0; }.dialog-actions { flex-wrap: wrap; }.dialog-actions .btn { flex: 1 1 120px; } }
+
+/* Searchable builder selects keep large libraries usable without changing their saved values. */
+.builder-search-select { position: relative; width: 100%; }
+.builder-search-native {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    padding: 0 !important;
+    margin: -1px !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    white-space: nowrap !important;
+    border: 0 !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
+.builder-search-trigger {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    width: 100%;
+    min-height: 36px;
+    padding: 8px 9px;
+    color: #334155;
+    border: 1px solid #dbe3ef;
+    border-radius: 8px;
+    background: #fff;
+    font: inherit;
+    font-size: 10px;
+    text-align: right;
+    cursor: pointer;
+}
+.builder-search-trigger:hover,
+.builder-search-select.is-open .builder-search-trigger { border-color: #93c5fd; box-shadow: 0 0 0 3px rgba(37, 99, 235, .1); }
+.builder-search-trigger span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.builder-search-trigger b { color: #64748b; font-size: 13px; line-height: 1; }
+.builder-search-popover {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: min(360px, calc(100vw - 28px));
+    z-index: 40;
+    display: grid;
+    gap: 7px;
+    padding: 8px;
+    border: 1px solid #bfdbfe;
+    border-radius: 11px;
+    background: #fff;
+    box-shadow: 0 18px 40px rgba(15, 23, 42, .18);
+}
+.builder-search-popover[hidden] { display: none; }
+.builder-search-input-wrap { display: flex; align-items: center; min-height: 34px; padding: 0 8px; border: 1px solid #dbe3ef; border-radius: 8px; background: #f8fafc; }
+.builder-search-input-wrap input { width: 100%; min-height: 30px; padding: 4px; border: 0; outline: 0; background: transparent; font-size: 10px; }
+.builder-search-options { display: grid; gap: 3px; max-height: 220px; overflow-y: auto; }
+.builder-search-option { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; min-height: 32px; padding: 7px 8px; color: #334155; border: 0; border-radius: 7px; background: #fff; font-size: 9px; text-align: right; cursor: pointer; }
+.builder-search-option:hover,
+.builder-search-option[aria-selected='true'] { color: #1d4ed8; background: #eff6ff; }
+.builder-search-empty { padding: 13px 8px; color: #94a3b8; text-align: center; font-size: 9px; }
+@media (max-width: 640px) { .builder-search-popover { max-height: 60vh; } .builder-search-options { max-height: 42vh; } }

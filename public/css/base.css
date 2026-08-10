@@ -515,3 +515,40 @@
                 radial-gradient(32rem 24rem at 92% 34%, rgba(99, 102, 241, .07), transparent 72%);
         }
         .app-shell { position: relative; z-index: 0; }
+
+        /* Validation belongs to the active native dialog, not to the page layer behind it. */
+        .dialog-validation {
+            display: flex;
+            align-items: flex-start;
+            gap: 9px;
+            margin: 0 0 14px;
+            padding: 10px 12px;
+            color: #b91c1c;
+            border: 1px solid #fecaca;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #fff1f2, #fff7f7);
+            font-family: 'Cairo', Tahoma, Arial, sans-serif;
+            font-size: 11px;
+            font-weight: 800;
+            line-height: 1.55;
+            text-align: right;
+        }
+        .dialog-validation::before {
+            content: '!';
+            display: grid;
+            width: 22px;
+            height: 22px;
+            flex: 0 0 22px;
+            place-items: center;
+            color: #fff;
+            border-radius: 50%;
+            background: #ef4444;
+            font-size: 13px;
+            font-weight: 900;
+        }
+        .dialog-validation.warning { color: #92400e; border-color: #fde68a; background: #fffbeb; }
+        .dialog-validation.warning::before { background: #f59e0b; }
+        .dialog-validation[hidden] { display: none !important; }
+        @media (max-width: 640px) {
+            .dialog-validation { margin-bottom: 11px; padding: 9px 10px; font-size: 10px; }
+        }

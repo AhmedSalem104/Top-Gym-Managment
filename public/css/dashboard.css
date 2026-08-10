@@ -1564,3 +1564,33 @@
             .attendance-insights-cardlet:first-child { grid-column: auto; }
             .attendance-peak-list, .attendance-member-list { min-height: 110px; }
         }
+
+        /* Coaching shortcuts stay beside Details so the member table keeps one compact action rail. */
+        .table-actions > .coaching-table-action {
+            display: inline-flex;
+            width: 36px;
+            min-width: 36px;
+            height: 36px;
+            min-height: 36px;
+            flex: 0 0 36px;
+            align-items: center;
+            justify-content: center;
+            padding: 0 !important;
+            border-radius: 8px !important;
+        }
+        .coaching-table-action.workout { color: #9a3412; border-color: #fed7aa; background: #fff7ed; }
+        .coaching-table-action.workout:hover { color: #fff; border-color: #ea580c; background: #ea580c; }
+        .coaching-table-action.diet { color: #0f766e; border-color: #99f6e4; background: #f0fdfa; }
+        .coaching-table-action.diet:hover { color: #fff; border-color: #0f766e; background: #0f766e; }
+        .coaching-table-action .action-icon { width: 16px; height: 16px; }
+        @media (max-width: 640px) {
+            .member-action-row > .table-actions > .coaching-table-action {
+                width: 34px !important;
+                min-width: 34px !important;
+                height: 34px !important;
+                min-height: 34px !important;
+                flex: 0 0 34px !important;
+                padding: 0 !important;
+            }
+            .member-action-row > .table-actions > .coaching-table-action .action-icon { width: 15px; height: 15px; }
+        }
