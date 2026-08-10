@@ -42,6 +42,11 @@ async function call(baseUrl, path, options = {}) {
         assert.ok(bootstrap.pagination && Number.isInteger(bootstrap.pagination.page));
         assert.equal(bootstrap.pricing.types.half_month.durationValue, 15);
         assert.equal(bootstrap.pricing.types.half_month.mode, 'days');
+        const dashboardAnalytics = await call(baseUrl, '/api/dashboard-analytics?period=month');
+        assert.ok(dashboardAnalytics.attendance && dashboardAnalytics.attendance.kpis);
+        assert.ok(Array.isArray(dashboardAnalytics.attendance.peakHours));
+        assert.ok(Array.isArray(dashboardAnalytics.attendance.topMembers));
+        assert.ok(Array.isArray(dashboardAnalytics.attendance.inactiveMembers));
         const firstPage = await call(baseUrl, '/api/members?page=1&pageSize=1');
         assert.ok(firstPage.pagination && firstPage.pagination.pageSize === 1);
         assert.ok(firstPage.members.length <= 1);

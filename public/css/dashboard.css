@@ -1503,3 +1503,56 @@
             .swal2-container.swal2-top-start .top-gym-toast .swal2-html-container { font-size: 8px !important; }
             .toast { top: 8px; left: 8px; width: calc(100vw - 16px); }
         }
+        /* Attendance insights inside the dashboard analytics panel. */
+        .attendance-insights-card { margin: 0 18px 18px; border-color: #dbe3ef; background: linear-gradient(180deg, #fbfdff 0%, #fff 100%); }
+        .attendance-insights-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 15px 11px; border-bottom: 1px solid #e2e8f0; background: linear-gradient(135deg, #f8fbff 0%, #f1f7ff 100%); }
+        .attendance-insights-heading { display: flex; min-width: 0; align-items: center; gap: 9px; }
+        .attendance-insights-heading-icon { display: grid; width: 34px; height: 34px; flex: 0 0 34px; place-items: center; border: 1px solid #bfdbfe; border-radius: 10px; color: #2563eb; background: #dbeafe; }
+        .attendance-insights-heading-icon .ui-icon { width: 17px; height: 17px; }
+        .attendance-insights-heading > div { min-width: 0; }
+        .attendance-insights-heading > div > span, .attendance-insights-cardlet-head span { display: block; margin-bottom: 2px; color: #2563eb; font-size: 8px; font-weight: 900; letter-spacing: .6px; }
+        .attendance-insights-heading h3, .attendance-insights-cardlet-head h4 { margin: 0; color: #0f172a; font-size: 13px; font-weight: 900; }
+        .attendance-insights-heading p { margin: 2px 0 0; overflow: hidden; color: #64748b; font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
+        .attendance-insights-badge { flex: 0 0 auto; padding: 6px 9px; border: 1px solid #bfdbfe; border-radius: 999px; color: #1d4ed8; background: #eff6ff; font-size: 9px; font-weight: 900; white-space: nowrap; }
+        .attendance-insights-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; padding: 12px 14px 4px; }
+        .attendance-insights-kpi { display: flex; min-width: 0; min-height: 70px; flex-direction: column; justify-content: center; gap: 1px; padding: 9px 10px; border: 1px solid #e2e8f0; border-radius: 11px; background: #fff; }
+        .attendance-insights-kpi strong { color: #0f172a; font-size: 18px; font-weight: 900; line-height: 1.1; }
+        .attendance-insights-kpi span { color: #475569; font-size: 9px; font-weight: 900; }
+        .attendance-insights-kpi small { color: #94a3b8; font-size: 8px; }
+        .attendance-insights-kpi.blue { border-color: #bfdbfe; background: #eff6ff; }.attendance-insights-kpi.blue strong { color: #1d4ed8; }
+        .attendance-insights-kpi.green { border-color: #a7f3d0; background: #ecfdf5; }.attendance-insights-kpi.green strong { color: #047857; }
+        .attendance-insights-kpi.violet { border-color: #ddd6fe; background: #f5f3ff; }.attendance-insights-kpi.violet strong { color: #6d28d9; }
+        .attendance-insights-kpi.amber { border-color: #fde68a; background: #fffbeb; }.attendance-insights-kpi.amber strong { color: #b45309; }
+        .attendance-insights-grid { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr) minmax(0, 1fr); gap: 10px; padding: 8px 14px 14px; }
+        .attendance-insights-cardlet { min-width: 0; overflow: hidden; border: 1px solid #e2e8f0; border-radius: 11px; background: #fff; }
+        .attendance-insights-cardlet-head { padding: 10px 11px 7px; border-bottom: 1px solid #eef2f7; }
+        .attendance-insights-cardlet-head h4 { font-size: 11px; }
+        .attendance-peak-list, .attendance-member-list { display: flex; min-height: 142px; flex-direction: column; gap: 8px; padding: 9px 11px 11px; }
+        .attendance-peak-row { display: flex; flex-direction: column; gap: 4px; }
+        .attendance-peak-row > div:first-child { display: flex; align-items: center; justify-content: space-between; gap: 7px; color: #475569; font-size: 9px; font-weight: 800; }
+        .attendance-peak-row strong { color: #0f172a; font-size: 9px; }
+        .attendance-peak-track { height: 7px; overflow: hidden; border-radius: 999px; background: #eef2f7; }
+        .attendance-peak-track span { display: block; height: 100%; min-width: 5px; border-radius: inherit; background: linear-gradient(90deg, #2563eb, #60a5fa); }
+        .attendance-member-row { display: flex; min-width: 0; align-items: center; justify-content: space-between; gap: 8px; padding: 7px 0; border-bottom: 1px solid #f1f5f9; }
+        .attendance-member-row:last-child { border-bottom: 0; }
+        .attendance-member-copy { display: flex; min-width: 0; flex-direction: column; gap: 2px; }
+        .attendance-member-copy strong { overflow: hidden; color: #1e293b; font-size: 10px; font-weight: 900; text-overflow: ellipsis; white-space: nowrap; }
+        .attendance-member-copy small { overflow: hidden; color: #94a3b8; font-size: 8px; text-overflow: ellipsis; white-space: nowrap; }
+        .attendance-member-stat { flex: 0 0 auto; padding: 4px 6px; border-radius: 7px; color: #1d4ed8; background: #eff6ff; font-size: 8px; font-weight: 900; white-space: nowrap; }
+        #attendanceInactiveMembers .attendance-member-stat { color: #b45309; background: #fffbeb; }
+        .attendance-insights-empty { display: grid; min-height: 120px; place-items: center; padding: 10px; color: #94a3b8; font-size: 9px; text-align: center; }
+        @media (max-width: 1000px) {
+            .attendance-insights-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .attendance-insights-cardlet:first-child { grid-column: 1 / -1; }
+        }
+        @media (max-width: 640px) {
+            .attendance-insights-card { margin: 0 10px 10px; }
+            .attendance-insights-head { align-items: flex-start; flex-direction: column; padding: 12px; }
+            .attendance-insights-badge { align-self: flex-start; }
+            .attendance-insights-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; padding: 10px; }
+            .attendance-insights-kpi { min-height: 64px; padding: 8px; }
+            .attendance-insights-kpi strong { font-size: 16px; }
+            .attendance-insights-grid { grid-template-columns: 1fr; gap: 8px; padding: 0 10px 10px; }
+            .attendance-insights-cardlet:first-child { grid-column: auto; }
+            .attendance-peak-list, .attendance-member-list { min-height: 110px; }
+        }

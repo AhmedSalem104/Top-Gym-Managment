@@ -108,6 +108,95 @@ function countByBucket(rows, dateField, buckets, range) {
     return values;
 }
 
+function uniqueMembersByBucket(rows, buckets, range) {
+    const indexByKey = new Map(buckets.map((bucket, index) => [bucket.key, index]));
+    const memberSets = buckets.map(() => new Set());
+    rows.forEach((row) => {
+        const index = indexByKey.get(bucketKey(row.eventDate, range));
+        if (index !== undefined && row.memberId !== null && row.memberId !== undefined) {
+            memberSets[index].add(Number(row.memberId));
+        }
+    });
+    return memberSets.map((members) => members.size);
+}
+
+function cairoHour(value) {
+    const date = value instanceof Date ? value : new Date(value);
+    if (!Number.isFinite(date.getTime())) return null;
+    const hour = Number(new Intl.DateTimeFormat('en-GB', {
+        timeZone: 'Africa/Cairo',
+        hour: '2-digit',
+        hour12: false
+    }).format(date));
+    return hour === 24 ? 0 : hour;
+}
+
+function buildAttendanceAnalytics(rows, inactiveRows, buckets, range) {
+    const hourCounts = Array.from({ length: 24 }, (_, hour) => ({
+        key: String(hour),
+        label: `${String(hour).padStart(2, '0')}:00`,
+        value: 0
+    }));
+    const members = new Map();
+    let openVisits = 0;
+    const activeDays = new Set();
+
+    rows.forEach((row) => {
+        const hour = cairoHour(row.checkInAt);
+        if (hour !== null) hourCounts[hour].value += 1;
+        activeDays.add(formatDateOnly(row.eventDate));
+        if (!row.checkOutAt) openVisits += 1;
+        const memberId = Number(row.memberId);
+        const current = members.get(memberId) || {
+            memberId,
+            fullName: row.fullName,
+            phone: row.phone,
+            visits: 0,
+            lastVisitAt: null
+        };
+        current.visits += 1;
+        if (!current.lastVisitAt || new Date(row.checkInAt) > new Date(current.lastVisitAt)) current.lastVisitAt = row.checkInAt;
+        members.set(memberId, current);
+    });
+
+    const topMembers = [...members.values()]
+        .sort((first, second) => second.visits - first.visits || new Date(second.lastVisitAt) - new Date(first.lastVisitAt))
+        .slice(0, 8);
+    const peakHours = hourCounts
+        .filter((item) => item.value > 0)
+        .sort((first, second) => second.value - first.value || Number(first.key) - Number(second.key))
+        .slice(0, 6);
+    const inactiveTotal = Number(inactiveRows[0]?.inactiveTotal || 0);
+
+    return {
+        kpis: {
+            visits: rows.length,
+            uniqueMembers: members.size,
+            activeDays: activeDays.size,
+            averageVisitsPerDay: activeDays.size ? Math.round((rows.length / activeDays.size) * 10) / 10 : 0,
+            openVisits,
+            inactiveMembers: inactiveTotal,
+            peakHour: peakHours[0]?.label || null
+        },
+        trend: {
+            visits: countByBucket(rows, 'eventDate', buckets, range),
+            uniqueMembers: uniqueMembersByBucket(rows, buckets, range)
+        },
+        peakHours,
+        topMembers,
+        inactiveMembers: inactiveRows.map((row) => ({
+            memberId: Number(row.memberId),
+            fullName: row.fullName,
+            phone: row.phone,
+            lastVisitDate: row.lastVisitDate ? formatDateOnly(row.lastVisitDate) : null,
+            membershipEndDate: row.membershipEndDate ? formatDateOnly(row.membershipEndDate) : null,
+            daysSinceLastVisit: row.daysSinceLastVisit === null || row.daysSinceLastVisit === undefined
+                ? null
+                : Number(row.daysSinceLastVisit)
+        }))
+    };
+}
+
 function distribution(rows, field) {
     const counts = new Map();
     rows.forEach((row) => {
@@ -128,11 +217,13 @@ function createRangeRequest(pool, range) {
 async function getDashboardAnalytics(periodValue = 'month') {
     const range = getPeriodRange(periodValue);
     const buckets = createBuckets(range);
+    const today = todayInTimeZone();
+    const inactiveSince = addDays(today, -7);
     await ensureExpensesTable();
     await ensurePaymentTransactionsTable();
     const pool = await getPool();
 
-    const [dashboard, membersResult, membershipsResult, paymentsResult, expensesResult, outstandingResult] = await Promise.all([
+    const [dashboard, membersResult, membershipsResult, paymentsResult, expensesResult, attendanceResult, inactiveAttendanceResult, outstandingResult] = await Promise.all([
         getDashboard(),
         createRangeRequest(pool, range).query(`
             SELECT registration_date AS eventDate
@@ -154,6 +245,52 @@ async function getDashboardAnalytics(periodValue = 'month') {
             FROM dbo.gym_expenses
             WHERE expense_date >= @startDate AND expense_date < @nextDate;
         `),
+        createRangeRequest(pool, range).query(`
+            SELECT a.attendance_date AS eventDate, a.member_id AS memberId,
+                   a.check_in_at AS checkInAt, a.check_out_at AS checkOutAt,
+                   m.full_name AS fullName, m.phone
+            FROM dbo.gym_attendance AS a
+            INNER JOIN dbo.members AS m ON m.id = a.member_id
+            WHERE a.attendance_date >= @startDate AND a.attendance_date < @nextDate;
+        `),
+        pool.request()
+            .input('today', sql.Date, toUtcDate(today))
+            .input('inactiveSince', sql.Date, toUtcDate(inactiveSince))
+            .query(`
+                WITH ranked_memberships AS (
+                    SELECT m.id AS membershipId, m.member_id AS memberId,
+                           m.start_date AS membershipStartDate, m.end_date AS membershipEndDate,
+                           ROW_NUMBER() OVER (PARTITION BY m.member_id ORDER BY m.end_date DESC, m.id DESC) AS membershipRank
+                    FROM dbo.memberships AS m
+                ), eligible_members AS (
+                    SELECT b.id AS memberId, b.full_name AS fullName, b.phone,
+                           lm.membershipId, lm.membershipEndDate
+                    FROM dbo.members AS b
+                    INNER JOIN ranked_memberships AS lm
+                        ON lm.memberId = b.id AND lm.membershipRank = 1
+                    WHERE lm.membershipStartDate <= @today
+                      AND lm.membershipEndDate >= @today
+                      AND NOT EXISTS (
+                          SELECT 1 FROM dbo.membership_freezes AS f
+                          WHERE f.membership_id = lm.membershipId AND f.resumed_date IS NULL
+                      )
+                )
+                SELECT TOP (12)
+                       em.memberId, em.fullName, em.phone, em.membershipEndDate,
+                       lastVisit.lastVisitDate,
+                       DATEDIFF(day, lastVisit.lastVisitDate, @today) AS daysSinceLastVisit,
+                       COUNT(1) OVER() AS inactiveTotal
+                FROM eligible_members AS em
+                OUTER APPLY (
+                    SELECT TOP (1) a.attendance_date AS lastVisitDate
+                    FROM dbo.gym_attendance AS a
+                    WHERE a.member_id = em.memberId
+                    ORDER BY a.attendance_date DESC, a.check_in_at DESC, a.id DESC
+                ) AS lastVisit
+                WHERE lastVisit.lastVisitDate IS NULL OR lastVisit.lastVisitDate < @inactiveSince
+                ORDER BY CASE WHEN lastVisit.lastVisitDate IS NULL THEN 0 ELSE 1 END,
+                         lastVisit.lastVisitDate ASC, em.fullName ASC;
+            `),
         pool.request().query(`
             SELECT COUNT_BIG(CASE WHEN amount_remaining > 0 THEN 1 END) AS outstandingCount,
                    ISNULL(SUM(CASE WHEN amount_remaining > 0 THEN amount_remaining ELSE 0 END), 0) AS outstandingTotal
@@ -165,6 +302,8 @@ async function getDashboardAnalytics(periodValue = 'month') {
     const membershipRows = membershipsResult.recordset || [];
     const paymentRows = paymentsResult.recordset || [];
     const expenseRows = expensesResult.recordset || [];
+    const attendanceRows = attendanceResult.recordset || [];
+    const inactiveAttendanceRows = inactiveAttendanceResult.recordset || [];
     const paymentTotal = paymentRows.reduce((sum, row) => sum + Number(row.amount || 0), 0);
     const expenseTotal = expenseRows.reduce((sum, row) => sum + Number(row.amount || 0), 0);
     const statusStats = dashboard.stats || {};
@@ -173,7 +312,7 @@ async function getDashboardAnalytics(periodValue = 'month') {
     return {
         period: {
             ...range,
-            today: todayInTimeZone(),
+            today,
             bucketCount: buckets.length,
             buckets
         },
@@ -213,7 +352,8 @@ async function getDashboardAnalytics(periodValue = 'month') {
             plans: distribution(membershipRows, 'planCode'),
             types: distribution(membershipRows, 'typeCode'),
             paymentMethods: distribution(paymentRows, 'paymentMethod')
-        }
+        },
+        attendance: buildAttendanceAnalytics(attendanceRows, inactiveAttendanceRows, buckets, range)
     };
 }
 

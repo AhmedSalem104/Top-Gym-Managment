@@ -72,7 +72,22 @@
                     <div class="analytics-card-head"><div><span>النشاط</span><h3 id="analyticsActivityTitle">الأعضاء والاشتراكات</h3></div></div>
                     <div class="analytics-activity-chart" id="analyticsActivityChart"></div>
                 </section>
-            </div>`;
+            </div>
+            <section class="analytics-card attendance-insights-card" aria-labelledby="attendanceInsightsTitle">
+                <div class="attendance-insights-head">
+                    <div class="attendance-insights-heading">
+                        <span class="attendance-insights-heading-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h8M8 11h3M8 15h8"/><path d="m14 11 1.5 1.5L18 10"/></svg></span>
+                        <div><span>تحليل التشغيل</span><h3 id="attendanceInsightsTitle">تحليل الحضور والانصراف</h3><p>اعرف أوقات الذروة، أكثر المشتركين حضورًا، ومن يحتاج إلى متابعة.</p></div>
+                    </div>
+                    <span class="attendance-insights-badge" id="attendanceInsightsBadge">—</span>
+                </div>
+                <div class="attendance-insights-kpis" id="attendanceInsightsKpis"></div>
+                <div class="attendance-insights-grid">
+                    <section class="attendance-insights-cardlet" aria-labelledby="attendancePeakTitle"><div class="attendance-insights-cardlet-head"><div><span>الزحام</span><h4 id="attendancePeakTitle">أوقات الذروة</h4></div></div><div class="attendance-peak-list" id="attendancePeakChart"></div></section>
+                    <section class="attendance-insights-cardlet" aria-labelledby="attendanceTopTitle"><div class="attendance-insights-cardlet-head"><div><span>الالتزام</span><h4 id="attendanceTopTitle">الأكثر حضورًا</h4></div></div><div class="attendance-member-list" id="attendanceTopMembers"></div></section>
+                    <section class="attendance-insights-cardlet" aria-labelledby="attendanceInactiveTitle"><div class="attendance-insights-cardlet-head"><div><span>المتابعة</span><h4 id="attendanceInactiveTitle">لم يحضروا منذ 7 أيام</h4></div></div><div class="attendance-member-list" id="attendanceInactiveMembers"></div></section>
+                </div>
+            </section>`;
 
         panel.querySelectorAll('[data-analytics-period]').forEach((button) => {
             button.addEventListener('click', () => loadAnalytics(button.dataset.analyticsPeriod));
@@ -195,6 +210,62 @@
         target.innerHTML = `<div class="analytics-activity-legend"><span><i class="members"></i>أعضاء جدد</span><span><i class="memberships"></i>اشتراكات</span></div><div class="analytics-column-chart">${members.map((value, index) => { const membershipValue = Number(memberships[index] || 0); const memberHeight = Math.max(value ? 7 : 2, (Number(value || 0) / max) * 100); const membershipHeight = Math.max(membershipValue ? 7 : 2, (membershipValue / max) * 100); const label = index % step === 0 || index === members.length - 1 ? bucketLabel((data.trend.labels || [])[index], data.period?.key) : ''; return `<div class="analytics-column-group"><div class="analytics-column-pair"><span class="analytics-column members" style="height:${memberHeight.toFixed(2)}%" title="أعضاء جدد: ${number(value)}"></span><span class="analytics-column memberships" style="height:${membershipHeight.toFixed(2)}%" title="اشتراكات: ${number(membershipValue)}"></span></div><small>${escapeHtml(label)}</small></div>`; }).join('')}</div>`;
     }
 
+    function formatDateTime(value) {
+        if (!value) return '—';
+        return new Intl.DateTimeFormat('ar-EG', {
+            dateStyle: 'short',
+            timeStyle: 'short',
+            timeZone: 'Africa/Cairo'
+        }).format(new Date(value));
+    }
+
+    function renderAttendanceInsights(data) {
+        const attendance = data.attendance || {};
+        const kpis = attendance.kpis || {};
+        const formatDecimal = (value) => Number(value || 0).toLocaleString('ar-EG', { maximumFractionDigits: 1 });
+        const peakHour = kpis.peakHour || '—';
+        const badge = $('attendanceInsightsBadge');
+        if (badge) badge.textContent = peakHour === '—' ? 'لا توجد زيارات' : `الذروة ${peakHour}`;
+
+        const kpiItems = [
+            ['الزيارات', number(kpis.visits), 'خلال الفترة', 'blue'],
+            ['مشتركون حضروا', number(kpis.uniqueMembers), 'مشترك مختلف', 'green'],
+            ['المتوسط اليومي', formatDecimal(kpis.averageVisitsPerDay), 'زيارة في اليوم', 'violet'],
+            ['تحتاج متابعة', number(kpis.inactiveMembers), 'بلا حضور 7 أيام', 'amber']
+        ];
+        if ($('attendanceInsightsKpis')) $('attendanceInsightsKpis').innerHTML = kpiItems.map(([label, value, meta, tone]) => `<article class="attendance-insights-kpi ${tone}"><strong>${value}</strong><span>${label}</span><small>${meta}</small></article>`).join('');
+
+        const peakTarget = $('attendancePeakChart');
+        const peakRows = (attendance.peakHours || []).filter((item) => Number(item.value || 0) > 0);
+        if (peakTarget) {
+            if (!peakRows.length) peakTarget.innerHTML = '<div class="attendance-insights-empty">لا توجد زيارات مسجلة في هذه الفترة.</div>';
+            else {
+                const max = Math.max(1, ...peakRows.map((item) => Number(item.value || 0)));
+                peakTarget.innerHTML = peakRows.map((item) => { const value = Number(item.value || 0); const width = Math.max(5, (value / max) * 100); return `<div class="attendance-peak-row"><div><span>${escapeHtml(item.label || '—')}</span><strong>${number(value)} زيارة</strong></div><div class="attendance-peak-track"><span style="width:${width.toFixed(2)}%"></span></div></div>`; }).join('');
+            }
+        }
+
+        const renderMembers = (targetId, rows, inactive = false) => {
+            const target = $(targetId);
+            if (!target) return;
+            if (!rows.length) {
+                target.innerHTML = `<div class="attendance-insights-empty">${inactive ? 'كل المشتركين حضروا خلال آخر 7 أيام.' : 'لا توجد زيارات مسجلة في هذه الفترة.'}</div>`;
+                return;
+            }
+            target.innerHTML = rows.map((item) => {
+                const secondary = inactive
+                    ? (item.lastVisitDate ? `آخر حضور ${formatDate(item.lastVisitDate)}` : 'لم يسجل حضورًا')
+                    : `آخر حضور ${formatDateTime(item.lastVisitAt)}`;
+                const meta = inactive
+                    ? (item.daysSinceLastVisit === null ? 'بحاجة إلى أول زيارة' : `منذ ${number(item.daysSinceLastVisit)} يوم`)
+                    : `${number(item.visits)} زيارة`;
+                return `<div class="attendance-member-row"><div class="attendance-member-copy"><strong>${escapeHtml(item.fullName || '—')}</strong><small>${escapeHtml(secondary)} · ${escapeHtml(item.phone || '—')}</small></div><span class="attendance-member-stat">${escapeHtml(meta)}</span></div>`;
+            }).join('');
+        };
+        renderMembers('attendanceTopMembers', attendance.topMembers || []);
+        renderMembers('attendanceInactiveMembers', (attendance.inactiveMembers || []).slice(0, 8), true);
+    }
+
     function renderAnalytics(data) {
         $('dashboardAnalyticsPeriod').textContent = periodText(data);
         renderSmartStrip(data);
@@ -206,6 +277,7 @@
         renderBars('analyticsMembershipChart', membershipItems, membershipLabels, '#7c3aed');
         renderBars('analyticsPaymentChart', data.distributions?.paymentMethods, PAYMENT_LABELS, '#059669');
         renderActivity(data);
+        renderAttendanceInsights(data);
     }
 
     async function loadAnalytics(period = state.period) {
