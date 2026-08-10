@@ -41,6 +41,82 @@ function asyncRoute(handler) {
     return (request, response, next) => Promise.resolve(handler(request, response, next)).catch(next);
 }
 
+function escapeHtml(value) {
+    return String(value ?? '').replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[character]));
+}
+
+function qrPageDate(value) {
+    if (!value) return '—';
+    const [year, month, day] = String(value).slice(0, 10).split('-');
+    return year && month && day ? `${day}/${month}/${year}` : String(value);
+}
+
+function renderQrMemberPage(member) {
+    const membership = member.membership || {};
+    const status = String(membership.status || '').toLowerCase();
+    const statusLabels = { active: 'نشطة', expiring_soon: 'قريبة الانتهاء', expired: 'منتهية', frozen: 'مجمدة' };
+    const planLabels = { gym_only: 'جيم فقط', gym_cardio: 'جيم وكارديو' };
+    const typeLabels = { monthly: 'شهرية', half_month: 'نصف شهر', quarterly: 'ربع سنوية', semiannual: 'نصف سنوية', annual: 'سنوية' };
+    const statusClass = ['active', 'expiring_soon', 'expired', 'frozen'].includes(status) ? status : 'unknown';
+    const statusLabel = statusLabels[status] || 'بدون اشتراك';
+    const planLabel = planLabels[membership.plan] || membership.plan || '—';
+    const typeLabel = typeLabels[membership.type] || membership.type || '—';
+    const remaining = Number(membership.amountRemaining || 0);
+    return `<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex,nofollow">
+    <meta name="theme-color" content="#0f172a">
+    <title>بيانات عضوية ${escapeHtml(member.fullName)}</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 18px; color: #172033; background: radial-gradient(circle at 85% 5%, rgba(59,130,246,.2), transparent 32%), linear-gradient(135deg, #edf4fb, #f8fafc 52%, #e5edf7); font-family: Cairo, Tahoma, Arial, sans-serif; }
+        .card { width: min(520px, 100%); overflow: hidden; border: 1px solid #dbe3ef; border-radius: 22px; background: rgba(255,255,255,.96); box-shadow: 0 22px 60px rgba(15,23,42,.14); }
+        .head { padding: 22px 22px 18px; color: #fff; background: linear-gradient(120deg, #0f172a, #1e3a8a 64%, #155e75); }
+        .brand { color: #bfdbfe; font-size: 11px; font-weight: 900; letter-spacing: 2px; direction: ltr; }
+        h1 { margin: 7px 0 3px; font-size: 22px; line-height: 1.35; }
+        .subtitle { margin: 0; color: #cbd5e1; font-size: 11px; }
+        .body { padding: 18px; }
+        .member { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; padding: 12px 13px; border: 1px solid #dbeafe; border-radius: 13px; background: #f8fbff; }
+        .member strong { display: block; color: #0f172a; font-size: 16px; }
+        .member span { display: block; margin-top: 3px; color: #64748b; direction: ltr; font-size: 11px; text-align: right; }
+        .status { display: inline-flex; align-items: center; min-height: 27px; padding: 4px 9px; border-radius: 999px; font-size: 10px; font-weight: 900; white-space: nowrap; }
+        .status.active { color: #047857; background: #d1fae5; }
+        .status.expiring_soon { color: #b45309; background: #fef3c7; }
+        .status.expired { color: #b91c1c; background: #fee2e2; }
+        .status.frozen { color: #6d28d9; background: #ede9fe; }
+        .status.unknown { color: #64748b; background: #f1f5f9; }
+        .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+        .item { display: grid; gap: 3px; min-width: 0; padding: 10px; border: 1px solid #e2e8f0; border-radius: 10px; background: #f8fafc; }
+        .item span { color: #94a3b8; font-size: 10px; font-weight: 700; }
+        .item strong { overflow: hidden; color: #334155; font-size: 11px; font-weight: 900; text-overflow: ellipsis; white-space: nowrap; }
+        .item.balance { grid-column: 1 / -1; border-color: #fde68a; background: #fffbeb; }
+        .item.balance strong { color: #b45309; direction: ltr; text-align: right; }
+        .foot { padding: 12px 18px 16px; border-top: 1px solid #eef2f7; color: #94a3b8; font-size: 10px; text-align: center; }
+        @media (max-width: 420px) { body { padding: 10px; } .head { padding: 18px 16px 15px; } h1 { font-size: 18px; } .body { padding: 13px; } .member { padding: 10px; } .member strong { font-size: 14px; } .grid { gap: 6px; } .item { padding: 8px; } }
+    </style>
+</head>
+<body>
+    <main class="card">
+        <header class="head"><div class="brand">TOP GYM</div><h1>بيانات العضوية</h1><p class="subtitle">تم التعرف على رمز المشترك بنجاح</p></header>
+        <section class="body">
+            <div class="member"><div><strong>${escapeHtml(member.fullName || '—')}</strong><span>${escapeHtml(member.phone || '—')}</span></div><b class="status ${statusClass}">${escapeHtml(statusLabel)}</b></div>
+            <div class="grid">
+                <div class="item"><span>الباقة</span><strong>${escapeHtml(planLabel)}</strong></div>
+                <div class="item"><span>النوع</span><strong>${escapeHtml(typeLabel)}</strong></div>
+                <div class="item"><span>تاريخ البداية</span><strong>${escapeHtml(qrPageDate(membership.startDate))}</strong></div>
+                <div class="item"><span>تاريخ الانتهاء</span><strong>${escapeHtml(qrPageDate(membership.effectiveEndDate || membership.endDate))}</strong></div>
+                ${remaining > 0 ? `<div class="item balance"><span>المبلغ المتبقي</span><strong>${remaining.toFixed(2)} ج.م</strong></div>` : ''}
+            </div>
+        </section>
+        <footer class="foot">نتمنى لك تجربة تدريب مميزة — TOP GYM</footer>
+    </main>
+</body>
+</html>`;
+}
+
 app.get('/api/health', asyncRoute(async (request, response) => {
     const pool = await getPool();
     await pool.request().query('SELECT 1 AS ok;');
@@ -195,6 +271,15 @@ app.post('/api/memberships/:id/payments', asyncRoute(async (request, response) =
 app.delete('/api/members/:id', asyncRoute(async (request, response) => {
     await deleteMember(request.params.id);
     response.status(204).send();
+}));
+
+app.get('/qr/:id', asyncRoute(async (request, response) => {
+    const member = await getMemberById(request.params.id);
+    response.set({
+        'Cache-Control': 'no-store, no-cache, must-revalidate, private',
+        'X-Robots-Tag': 'noindex, nofollow'
+    });
+    response.type('html').send(renderQrMemberPage(member));
 }));
 
 app.get('*', (request, response) => {

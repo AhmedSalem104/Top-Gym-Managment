@@ -123,6 +123,9 @@ async function call(baseUrl, path, options = {}) {
         });
         memberId = created.member.id;
         assert.match(created.member.qrToken, new RegExp(`^TOPGYM-MEMBER:${memberId}$`));
+        const qrPage = await fetch(`${baseUrl}/qr/${memberId}`);
+        assert.equal(qrPage.status, 200);
+        assert.match(await qrPage.text(), /TOP GYM/);
         assert.equal(created.member.membership.status, 'active');
         assert.equal(created.member.membership.endDate, '2026-08-22');
         assert.equal(created.member.membership.amountDue, gymOnlyHalfMonthPrice - 5);
@@ -230,7 +233,7 @@ async function call(baseUrl, path, options = {}) {
         let duplicateAttendanceRejected = false;
         try {
             await call(baseUrl, '/api/attendance/check-in', {
-                method: 'POST', body: JSON.stringify({ qrToken: `TOPGYM-MEMBER:${memberId}\nTOP GYM\nالاسم: ${created.member.fullName}\nالهاتف: ${created.member.phone}` })
+                method: 'POST', body: JSON.stringify({ qrToken: `${baseUrl}/qr/${memberId}` })
             });
         } catch (error) {
             duplicateAttendanceRejected = /بالفعل/.test(error.message);

@@ -136,6 +136,13 @@ function parseQrToken(value) {
     const embeddedToken = token.match(/TOPGYM-MEMBER:(\d+)/i) || token.match(/TOPGYM\|MEMBER\|(\d+)/i);
     if (embeddedToken) return Number(embeddedToken[1]);
     try {
+        const url = new URL(token);
+        const pathMatch = url.pathname.match(/\/qr\/(\d+)/i);
+        if (pathMatch) return Number(pathMatch[1]);
+        const queryId = Number(url.searchParams.get('memberId') || url.searchParams.get('member'));
+        if (Number.isInteger(queryId) && queryId > 0) return queryId;
+    } catch (_) { /* QR may contain plain text or JSON. */ }
+    try {
         const parsed = JSON.parse(token);
         if (parsed?.memberId) return ensureId(parsed.memberId, 'معرّف العضو');
     } catch (_) { /* QR may contain the compact token above. */ }

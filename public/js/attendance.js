@@ -33,6 +33,15 @@
         const direct = token.match(/TOPGYM-MEMBER:(\d+)/i) || token.match(/TOPGYM\|MEMBER\|(\d+)/i);
         if (direct) return Number(direct[1]);
         try {
+            const url = new URL(token, window.location.origin);
+            const pathMatch = url.pathname.match(/\/qr\/(\d+)/i);
+            if (pathMatch) return Number(pathMatch[1]);
+            const queryId = Number(url.searchParams.get('memberId') || url.searchParams.get('member'));
+            if (Number.isInteger(queryId) && queryId > 0) return queryId;
+        } catch (_) {
+            /* QR may contain JSON or the legacy readable text. */
+        }
+        try {
             const payload = JSON.parse(token);
             const id = Number(payload?.memberId || payload?.member_id || payload?.id);
             return Number.isInteger(id) && id > 0 ? id : null;
@@ -46,29 +55,7 @@
     }
 
     function qrPayload(member) {
-        const membership = member.membership || {};
-        const date = (value) => {
-            if (!value) return '—';
-            const [year, month, day] = String(value).slice(0, 10).split('-');
-            return year && month && day ? `${day}/${month}/${year}` : String(value);
-        };
-        const status = STATUS_LABELS[membership.status] || membership.status || 'بدون اشتراك';
-        const plan = PLAN_LABELS[membership.plan] || membership.plan || '—';
-        const type = TYPE_LABELS[membership.type] || membership.type || '—';
-        const remaining = Number(membership.amountRemaining || 0);
-        return [
-            `TOPGYM-MEMBER:${Number(member.id)}`,
-            'TOP GYM',
-            'بيانات المشترك',
-            `الاسم: ${member.fullName || '—'}`,
-            `الهاتف: ${member.phone || '—'}`,
-            `الباقة: ${plan}`,
-            `النوع: ${type}`,
-            `تاريخ البداية: ${date(membership.startDate)}`,
-            `تاريخ الانتهاء: ${date(membership.effectiveEndDate || membership.endDate)}`,
-            `الحالة: ${status}`,
-            ...(remaining > 0 ? [`المتبقي: ${remaining.toFixed(2)} ج.م`] : [])
-        ].join('\n');
+        return `${window.location.origin}/qr/${encodeURIComponent(Number(member.id))}`;
     }
 
     async function showQrMemberPreview(member) {
