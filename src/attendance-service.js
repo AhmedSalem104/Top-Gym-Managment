@@ -2,7 +2,13 @@ const { getPool, sql } = require('./db');
 const { formatDateOnly, parseDateOnly, todayInTimeZone, toUtcDate } = require('./date-utils');
 
 const ATTENDANCE_SOURCES = new Set(['phone', 'qr', 'manual']);
+const DEFAULT_AUTO_CHECKOUT_MINUTES = 60;
 let attendanceTablePromise;
+
+function getAutoCheckoutMinutes() {
+    const configured = Number.parseInt(process.env.ATTENDANCE_AUTO_CHECKOUT_MINUTES, 10);
+    return Number.isInteger(configured) && configured > 0 ? Math.min(configured, 1440) : DEFAULT_AUTO_CHECKOUT_MINUTES;
+}
 
 function appError(message, statusCode = 400, code = null, details = {}) {
     const error = new Error(message);
@@ -51,8 +57,35 @@ async function ensureAttendanceTable() {
                         CONSTRAINT FK_gym_attendance_member_runtime FOREIGN KEY (member_id)
                             REFERENCES dbo.members(id) ON DELETE CASCADE,
                         CONSTRAINT CK_gym_attendance_check_out_runtime CHECK (check_out_at IS NULL OR check_out_at >= check_in_at),
-                        CONSTRAINT CK_gym_attendance_source_runtime CHECK (check_in_source IN (''phone'', ''qr'', ''manual'') AND (check_out_source IS NULL OR check_out_source IN (''phone'', ''qr'', ''manual'')))
+                        CONSTRAINT CK_gym_attendance_source_runtime CHECK (check_in_source IN (''phone'', ''qr'', ''manual'') AND (check_out_source IS NULL OR check_out_source IN (''phone'', ''qr'', ''manual'', ''auto'')))
                     );');
+                END;
+                IF EXISTS (
+                    SELECT 1 FROM sys.check_constraints
+                    WHERE name = N'CK_gym_attendance_source'
+                      AND parent_object_id = OBJECT_ID(N'dbo.gym_attendance')
+                )
+                BEGIN
+                    ALTER TABLE dbo.gym_attendance DROP CONSTRAINT CK_gym_attendance_source;
+                END;
+                IF EXISTS (
+                    SELECT 1 FROM sys.check_constraints
+                    WHERE name = N'CK_gym_attendance_source_runtime'
+                      AND parent_object_id = OBJECT_ID(N'dbo.gym_attendance')
+                )
+                BEGIN
+                    ALTER TABLE dbo.gym_attendance DROP CONSTRAINT CK_gym_attendance_source_runtime;
+                END;
+                IF NOT EXISTS (
+                    SELECT 1 FROM sys.check_constraints
+                    WHERE name = N'CK_gym_attendance_source_v2'
+                      AND parent_object_id = OBJECT_ID(N'dbo.gym_attendance')
+                )
+                BEGIN
+                    ALTER TABLE dbo.gym_attendance ADD CONSTRAINT CK_gym_attendance_source_v2 CHECK (
+                        check_in_source IN ('phone', 'qr', 'manual')
+                        AND (check_out_source IS NULL OR check_out_source IN ('phone', 'qr', 'manual', 'auto'))
+                    );
                 END;
                 IF NOT EXISTS (
                     SELECT 1 FROM sys.indexes
@@ -77,6 +110,20 @@ async function ensureAttendanceTable() {
         });
     }
     return attendanceTablePromise;
+}
+
+async function reconcileAutoCheckout(pool = null) {
+    await ensureAttendanceTable();
+    const connection = pool || await getPool();
+    const result = await connection.request()
+        .input('autoMinutes', sql.Int, getAutoCheckoutMinutes())
+        .query(`UPDATE dbo.gym_attendance
+                SET check_out_at = DATEADD(minute, @autoMinutes, check_in_at),
+                    check_out_source = 'auto',
+                    updated_at = SYSUTCDATETIME()
+                WHERE check_out_at IS NULL
+                  AND DATEADD(minute, @autoMinutes, check_in_at) <= SYSUTCDATETIME();`);
+    return Number(result.rowsAffected?.[0] || 0);
 }
 
 function parseQrToken(value) {
@@ -158,6 +205,7 @@ function mapAttendance(row) {
 async function getTodayAttendance(options = {}) {
     await ensureAttendanceTable();
     const pool = await getPool();
+    const autoClosed = await reconcileAutoCheckout(pool);
     const date = parseDateOnly(options.date || todayInTimeZone(), 'تاريخ الحضور');
     const search = String(options.search || '').trim();
     const result = await pool.request()
@@ -180,6 +228,8 @@ async function getTodayAttendance(options = {}) {
     const records = result.recordset.map(mapAttendance);
     return {
         date,
+        autoClosed,
+        autoCheckoutMinutes: getAutoCheckoutMinutes(),
         summary: {
             present: records.length,
             checkedIn: records.filter((item) => !item.checkOutAt).length,
@@ -207,9 +257,38 @@ async function getAttendanceRecordForDate(pool, memberId, date) {
     return result.recordset[0] ? mapAttendance(result.recordset[0]) : null;
 }
 
+async function getMemberAttendanceStatuses(memberIds = [], date = todayInTimeZone()) {
+    await ensureAttendanceTable();
+    const pool = await getPool();
+    await reconcileAutoCheckout(pool);
+    const ids = [...new Set(memberIds.map((value) => Number(value)).filter((value) => Number.isInteger(value) && value > 0))];
+    if (!ids.length) return new Map();
+    const request = pool.request().input('attendanceDate', sql.Date, toUtcDate(parseDateOnly(date, 'تاريخ الحضور')));
+    const placeholders = ids.map((id, index) => {
+        const name = `memberId${index}`;
+        request.input(name, sql.Int, id);
+        return `@${name}`;
+    });
+    const result = await request.query(`SELECT a.id, a.member_id, a.membership_id, a.attendance_date,
+                       a.check_in_at, a.check_out_at, a.check_in_source, a.check_out_source,
+                       a.notes, m.full_name, m.phone,
+                       ms.membership_plan, ms.membership_type
+                FROM dbo.gym_attendance AS a
+                INNER JOIN dbo.members AS m ON m.id = a.member_id
+                OUTER APPLY (
+                    SELECT TOP 1 x.membership_plan, x.membership_type
+                    FROM dbo.memberships AS x
+                    WHERE x.id = a.membership_id
+                ) AS ms
+                WHERE a.attendance_date = @attendanceDate
+                  AND a.member_id IN (${placeholders.join(', ')});`);
+    return new Map(result.recordset.map((row) => [Number(row.member_id), mapAttendance(row)]));
+}
+
 async function checkIn(body = {}) {
     await ensureAttendanceTable();
     const pool = await getPool();
+    await reconcileAutoCheckout(pool);
     const resolved = await findMember(pool, body, { requireActive: true });
     const existing = await getAttendanceRecordForDate(pool, resolved.member.id, resolved.today);
     if (existing) {
@@ -237,6 +316,7 @@ async function checkIn(body = {}) {
 async function checkOut(body = {}) {
     await ensureAttendanceTable();
     const pool = await getPool();
+    await reconcileAutoCheckout(pool);
     const resolved = await findMember(pool, body, { requireActive: false });
     const existing = await getAttendanceRecordForDate(pool, resolved.member.id, resolved.today);
     if (!existing) throw appError('لا يوجد تسجيل حضور لهذا المشترك اليوم.', 409, 'ATTENDANCE_NOT_CHECKED_IN');
@@ -253,6 +333,7 @@ async function checkOut(body = {}) {
 
 async function getMemberAttendance(memberId, options = {}) {
     await ensureAttendanceTable();
+    await reconcileAutoCheckout();
     const id = ensureId(memberId, 'معرّف العضو');
     const pool = await getPool();
     const from = parseDateOnly(options.from || `${todayInTimeZone().slice(0, 7)}-01`, 'تاريخ البداية');
@@ -280,6 +361,9 @@ module.exports = {
     checkIn,
     checkOut,
     ensureAttendanceTable,
+    getAutoCheckoutMinutes,
+    getMemberAttendanceStatuses,
     getMemberAttendance,
-    getTodayAttendance
+    getTodayAttendance,
+    reconcileAutoCheckout
 };

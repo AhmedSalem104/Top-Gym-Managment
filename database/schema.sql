@@ -302,7 +302,7 @@ BEGIN
         CONSTRAINT CK_gym_attendance_check_out CHECK (check_out_at IS NULL OR check_out_at >= check_in_at),
         CONSTRAINT CK_gym_attendance_source CHECK (
             check_in_source IN ('phone', 'qr', 'manual')
-            AND (check_out_source IS NULL OR check_out_source IN ('phone', 'qr', 'manual'))
+            AND (check_out_source IS NULL OR check_out_source IN ('phone', 'qr', 'manual', 'auto'))
         )
     );
 END;

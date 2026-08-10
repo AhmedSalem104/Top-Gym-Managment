@@ -8,6 +8,7 @@ const {
     todayInTimeZone,
     toUtcDate
 } = require('./date-utils');
+const { getMemberAttendanceStatuses } = require('./attendance-service');
 
 const DEFAULT_MEMBERSHIP_PLANS = {
     gym_only: { label: 'جيم فقط', monthlyPrice: 305, active: true, sortOrder: 1 },
@@ -484,6 +485,7 @@ function mapMember(row) {
     const membershipId = row.membershipId ? Number(row.membershipId) : null;
     return {
         id: Number(row.id),
+        qrToken: `TOPGYM-MEMBER:${Number(row.id)}`,
         fullName: row.fullName,
         phone: row.phone,
         email: row.email,
@@ -658,7 +660,12 @@ async function getMembers({ search = '', status = '', sort = 'expiry', page = 1,
               AND (@status = '' OR computedStatus = @status)
             ORDER BY ${orderBy}
             OFFSET @offset ROWS FETCH NEXT @pageSize ROWS ONLY;`);
-    const members = result.recordset.map(mapMember);
+    const mappedMembers = result.recordset.map(mapMember);
+    const attendanceByMember = await getMemberAttendanceStatuses(mappedMembers.map((member) => member.id));
+    const members = mappedMembers.map((member) => ({
+        ...member,
+        attendance: attendanceByMember.get(member.id) || null
+    }));
     const total = result.recordset[0]?.totalCount === undefined
         ? offset
         : Number(result.recordset[0].totalCount || 0);

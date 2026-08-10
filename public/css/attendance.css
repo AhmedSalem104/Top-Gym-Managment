@@ -45,6 +45,7 @@
 .attendance-source { display: inline-flex; align-items: center; gap: 4px; padding: 4px 7px; border-radius: 99px; color: #475569; background: #f1f5f9; font-size: 9px; font-weight: 800; white-space: nowrap; }
 .attendance-source.qr { color: #7c3aed; background: #f5f3ff; }
 .attendance-source.phone { color: #047857; background: #ecfdf5; }
+.attendance-source.auto { color: #7c3aed; background: #f5f3ff; }
 .attendance-status { display: inline-flex; padding: 5px 8px; border-radius: 99px; color: #b45309; background: #fffbeb; font-size: 9px; font-weight: 900; white-space: nowrap; }
 .attendance-status.complete { color: #047857; background: #ecfdf5; }
 .attendance-row-actions { min-width: 118px; white-space: nowrap; }
@@ -52,6 +53,7 @@
 .attendance-checkout-button:hover { color: #fff !important; border-color: #2563eb !important; background: #2563eb !important; }
 .attendance-checkout-button:disabled { cursor: wait; opacity: .65; }
 .attendance-action-done { display: inline-flex; padding: 5px 8px; border-radius: 99px; color: #047857; background: #ecfdf5; font-size: 9px; font-weight: 900; white-space: nowrap; }
+.attendance-action-done.auto { color: #7c3aed; background: #f5f3ff; }
 .attendance-empty { margin: 0 24px 24px; padding: 30px 15px; border: 1px dashed #cbd5e1; border-radius: 12px; color: #94a3b8; text-align: center; font-size: 12px; }
 .attendance-table-wrap { margin: 0 24px 24px; overflow-x: auto; border: 1px solid #dbe3ef; border-radius: 12px; }
 .qr-reader-dialog { width: min(480px, calc(100vw - 28px)); max-height: calc(100vh - 28px); }

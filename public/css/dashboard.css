@@ -373,6 +373,18 @@
         .badge.expired { color: #dc2626; background: #fef2f2; border-color: #fecaca; }
         .badge.frozen { color: #7c3aed; background: #f5f3ff; border-color: #ddd6fe; }
         .table-actions { min-width: 145px; align-items: center; gap: 7px; }
+        .member-quick-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-bottom: 7px; }
+        .member-attendance-quick, .member-qr-quick { min-height: 30px; padding: 5px 9px !important; border-radius: 8px !important; font-size: 10px; font-weight: 800; white-space: nowrap; }
+        .member-attendance-quick.check-in { color: #047857; border-color: #a7f3d0; background: #ecfdf5; }
+        .member-attendance-quick.check-in:hover { color: #fff; border-color: #059669; background: #059669; }
+        .member-attendance-quick.checkout { color: #1d4ed8; border-color: #bfdbfe; background: #eff6ff; }
+        .member-attendance-quick.checkout:hover { color: #fff; border-color: #2563eb; background: #2563eb; }
+        .member-attendance-quick:disabled { cursor: wait; opacity: .65; }
+        .member-attendance-status { display: inline-flex; min-height: 30px; align-items: center; padding: 5px 8px; border: 1px solid #bbf7d0; border-radius: 8px; color: #047857; background: #f0fdf4; font-size: 10px; font-weight: 800; white-space: nowrap; }
+        .member-attendance-status.auto { color: #7c3aed; border-color: #ddd6fe; background: #f5f3ff; }
+        .member-attendance-status.unavailable { color: #94a3b8; border-color: #e2e8f0; background: #f8fafc; }
+        .member-qr-quick { color: #7c3aed; border-color: #ddd6fe; background: #f5f3ff; }
+        .member-qr-quick:hover { color: #fff; border-color: #7c3aed; background: #7c3aed; }
         .table-action-visible { min-height: 36px; border-radius: 8px !important; }
         .table-action-visible[data-action="details"] { width: 36px; padding: 0 !important; }
         .table-action-visible[data-action="renew"] { display: inline-flex; width: auto; align-items: center; gap: 6px; padding-inline: 11px !important; color: #1d4ed8; background: #eff6ff; border: 1px solid #bfdbfe; font-size: 12px; font-weight: 700; }
@@ -524,6 +536,8 @@
         }
         @media (max-width: 640px) {
             .members-table td:last-child { overflow: visible; }
+            .member-quick-actions { width: 100%; margin-bottom: 8px; }
+            .member-attendance-quick { flex: 1 1 auto; justify-content: center; }
             .table-actions { gap: 8px; justify-content: flex-start; }
             .table-actions > .table-action-visible[data-action="details"] {
                 width: 40px;

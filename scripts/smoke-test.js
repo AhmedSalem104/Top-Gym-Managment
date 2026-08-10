@@ -121,6 +121,7 @@ async function call(baseUrl, path, options = {}) {
             })
         });
         memberId = created.member.id;
+        assert.match(created.member.qrToken, new RegExp(`^TOPGYM-MEMBER:${memberId}$`));
         assert.equal(created.member.membership.status, 'active');
         assert.equal(created.member.membership.endDate, '2026-08-22');
         assert.equal(created.member.membership.amountDue, gymOnlyHalfMonthPrice - 5);
@@ -240,6 +241,17 @@ async function call(baseUrl, path, options = {}) {
         assert.ok(checkedOut.attendance.checkOutAt);
         const memberAttendance = await call(baseUrl, `/api/attendance/member/${memberId}`);
         assert.ok(memberAttendance.records.some((item) => item.id === checkedOut.attendance.id));
+        process.env.ATTENDANCE_AUTO_CHECKOUT_MINUTES = '1';
+        const smokePool = await getPool();
+        await smokePool.request()
+            .input('memberId', sql.Int, memberId)
+            .query(`UPDATE dbo.gym_attendance
+                    SET check_out_at = NULL, check_out_source = NULL,
+                        check_in_at = DATEADD(minute, -2, SYSUTCDATETIME()), updated_at = SYSUTCDATETIME()
+                    WHERE member_id = @memberId;`);
+        const autoClosedMembers = await call(baseUrl, `/api/members?search=${encodeURIComponent(`Edited Smoke Test ${suffix}`)}&page=1&pageSize=5`);
+        const autoClosedRecord = autoClosedMembers.members.find((item) => item.id === memberId)?.attendance;
+        assert.equal(autoClosedRecord.checkOutSource, 'auto');
 
         const dashboard = await call(baseUrl, '/api/dashboard');
         assert.ok(Number.isInteger(dashboard.stats.total));

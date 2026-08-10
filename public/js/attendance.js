@@ -3,7 +3,7 @@
     window.__topGymAttendanceLoaded = true;
 
     const $ = (id) => document.getElementById(id);
-    const SOURCE_LABELS = { phone: 'بالهاتف', qr: 'QR Code', manual: 'يدوي' };
+    const SOURCE_LABELS = { phone: 'بالهاتف', qr: 'QR Code', manual: 'يدوي', auto: 'تلقائي' };
     let scanner = null;
     let scannerRunning = false;
     let currentQrMember = null;
@@ -51,6 +51,10 @@
         return data;
     }
 
+    function announceAttendanceUpdate() {
+        window.dispatchEvent(new CustomEvent('topgym:attendance-updated'));
+    }
+
     function renderRecords(data) {
         const records = data.records || [];
         $('attendanceDateLabel').textContent = dateText(data.date);
@@ -62,7 +66,7 @@
             $('attendanceTableWrap').innerHTML = '<div class="attendance-empty">لا توجد سجلات حضور اليوم حتى الآن.</div>';
             return;
         }
-        $('attendanceTableWrap').innerHTML = `<table class="attendance-table"><thead><tr><th>المشترك</th><th>الباقة</th><th>الحضور</th><th>الانصراف</th><th>المدة</th><th>طريقة التسجيل</th><th>الحالة</th></tr></thead><tbody>${records.map((record) => `<tr><td><span class="attendance-member-name">${escapeHtml(record.memberName)}</span><span class="attendance-member-phone">${escapeHtml(record.phone)}</span></td><td>${escapeHtml(record.plan || '—')}<span class="table-sub">${escapeHtml(record.type || '')}</span></td><td><span class="attendance-time">${timeText(record.checkInAt)}</span></td><td><span class="attendance-time">${timeText(record.checkOutAt)}</span></td><td>${record.durationMinutes === null ? 'داخل الجيم' : `${record.durationMinutes} دقيقة`}</td><td><span class="attendance-source ${escapeHtml(record.checkInSource)}">${escapeHtml(SOURCE_LABELS[record.checkInSource] || record.checkInSource)}</span></td><td><span class="attendance-status${record.checkOutAt ? ' complete' : ''}">${record.checkOutAt ? 'انصرف' : 'داخل الجيم'}</span></td></tr>`).join('')}</tbody></table>`;
+        $('attendanceTableWrap').innerHTML = `<table class="attendance-table"><thead><tr><th>المشترك</th><th>الباقة</th><th>الحضور</th><th>الانصراف</th><th>المدة</th><th>طريقة التسجيل</th><th>الحالة</th></tr></thead><tbody>${records.map((record) => `<tr><td><span class="attendance-member-name">${escapeHtml(record.memberName)}</span><span class="attendance-member-phone">${escapeHtml(record.phone)}</span></td><td>${escapeHtml(record.plan || '—')}<span class="table-sub">${escapeHtml(record.type || '')}</span></td><td><span class="attendance-time">${timeText(record.checkInAt)}</span></td><td><span class="attendance-time">${timeText(record.checkOutAt)}</span></td><td>${record.durationMinutes === null ? 'داخل الجيم' : `${record.durationMinutes} دقيقة`}</td><td><span class="attendance-source ${escapeHtml(record.checkInSource)}">${escapeHtml(SOURCE_LABELS[record.checkInSource] || record.checkInSource)}</span></td><td><span class="attendance-status${record.checkOutAt ? ' complete' : ''}">${record.checkOutAt ? (record.checkOutSource === 'auto' ? 'انصرف تلقائيًا' : 'انصرف') : 'داخل الجيم'}</span></td></tr>`).join('')}</tbody></table>`;
     }
 
     function decorateAttendanceActions(records) {
@@ -77,8 +81,8 @@
             cell.className = 'attendance-row-actions';
             if (record?.checkOutAt) {
                 const status = document.createElement('span');
-                status.className = 'attendance-action-done';
-                status.textContent = 'تم الانصراف';
+                status.className = `attendance-action-done${record.checkOutSource === 'auto' ? ' auto' : ''}`;
+                status.textContent = record.checkOutSource === 'auto' ? 'انصراف تلقائي' : 'تم الانصراف';
                 cell.append(status);
             } else {
                 const button = document.createElement('button');
@@ -100,6 +104,7 @@
             const data = await request(`/api/attendance?${new URLSearchParams({ search })}`);
             renderRecords(data);
             decorateAttendanceActions(data.records || []);
+            if (Number(data.autoClosed || 0) > 0) announceAttendanceUpdate();
         } catch (error) {
             $('attendanceTableWrap').innerHTML = `<div class="attendance-empty">${escapeHtml(error.message)}</div>`;
         }
@@ -122,6 +127,7 @@
             $('attendancePhone').value = '';
             await showMessage('تم تسجيل الحضور بنجاح ✅', 'success', result.message);
             await loadAttendance();
+            announceAttendanceUpdate();
         } catch (error) {
             await showMessage(error.message, error.code?.startsWith('ATTENDANCE_') ? 'warning' : 'error');
             if (error.attendance) await loadAttendance();
@@ -136,6 +142,7 @@
             $('attendancePhone').value = '';
             await showMessage('تم تسجيل الانصراف بنجاح ✅', 'success', result.message);
             await loadAttendance();
+            announceAttendanceUpdate();
         } catch (error) {
             await showMessage(error.message, error.code?.startsWith('ATTENDANCE_') ? 'warning' : 'error');
         }
@@ -185,7 +192,7 @@
             $('memberQrPhone').textContent = member.phone || '—';
             const canvas = $('memberQrCanvas');
             if (!window.QRCode || !canvas) throw new Error('أداة إنشاء QR Code غير متاحة حالياً.');
-            await window.QRCode.toCanvas(canvas, `TOPGYM-MEMBER:${member.id}`, { width: 210, margin: 1, color: { dark: '#0f172a', light: '#ffffff' } });
+            await window.QRCode.toCanvas(canvas, member.qrToken || `TOPGYM-MEMBER:${member.id}`, { width: 210, margin: 1, color: { dark: '#0f172a', light: '#ffffff' } });
             const dialog = $('memberQrDialog');
             if (dialog?.showModal) dialog.showModal(); else dialog?.setAttribute('open', '');
         } catch (error) {
@@ -227,15 +234,22 @@
         $('attendanceSearch')?.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(loadAttendance, 250); });
         $('attendancePhone')?.addEventListener('keydown', (event) => { if (event.key === 'Enter') { event.preventDefault(); checkIn(); } });
         $('membersList')?.addEventListener('click', (event) => {
-            const button = event.target.closest('button[data-action="qr"]');
+            const button = event.target.closest('button[data-action="qr"], button[data-member-qr]');
             if (!button) return;
             event.preventDefault();
             event.stopPropagation();
-            openMemberQr(button.dataset.id || button.closest('[data-member-id]')?.dataset.memberId);
+            openMemberQr(button.dataset.id || button.dataset.memberQr || button.closest('[data-member-id]')?.dataset.memberId);
+        });
+        window.addEventListener('topgym:member-created', (event) => {
+            const detail = event.detail || {};
+            if (detail.isNew && detail.member?.id) openMemberQr(detail.member.id);
         });
         document.addEventListener('topgym:tab-changed', (event) => { if (event.detail?.name === 'attendance') loadAttendance(); });
+        window.setInterval(() => {
+            if (document.visibilityState !== 'hidden') loadAttendance();
+        }, 30000);
         loadAttendance();
     });
 
-    window.topGymAttendance = { checkIn, checkOut, loadAttendance, openMemberQr };
+    window.topGymAttendance = { checkIn, checkOut, loadAttendance, openMemberQr, quickAction: (action, payload) => action === 'checkin' ? checkIn(payload) : checkOut(payload) };
 })();

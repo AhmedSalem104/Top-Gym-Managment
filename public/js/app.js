@@ -146,9 +146,69 @@
              const dashboard = state.dashboard || { stats: {}, alerts: [] }; $('statTotal').textContent = dashboard.stats.total || 0; $('statActive').textContent = dashboard.stats.active || 0; $('statExpiring').textContent = dashboard.stats.expiringSoon || 0; $('statExpired').textContent = dashboard.stats.expired || 0; $('statFrozen').textContent = dashboard.stats.frozen || 0;
             const alerts = dashboard.alerts || []; $('alertsList').innerHTML = alerts.length ? alerts.map((member) => { const sub = member.membership; const detail = sub.status === 'frozen' ? `حتى ${formatDate(sub.freezeEnd)}` : sub.status === 'expired' ? `انتهت في ${formatDate(sub.endDate)}` : `تنتهي في ${formatDate(sub.effectiveEndDate)}`; return `<article class="alert-card ${sub.status}"><strong>${escapeHtml(member.fullName)}</strong><span>${STATUS_LABELS[sub.status]} · ${escapeHtml(detail)}</span><span>${escapeHtml(member.phone)}</span></article>`; }).join('') : '<div class="empty">لا توجد تنبيهات اليوم.</div>'; const headerAlertCount = $('headerAlertCount'); if (headerAlertCount) headerAlertCount.textContent = alerts.length.toLocaleString('ar-EG');
         }
+        function decorateMemberQuickActions() {
+            const list = $('membersList');
+            if (!list) return;
+            list.querySelectorAll('tr[data-member-id]').forEach((row) => {
+                if (row.dataset.quickActionsReady === 'true') return;
+                const member = state.members.find((item) => String(item.id) === String(row.dataset.memberId));
+                const cell = row.querySelector('td:last-child');
+                if (!member || !cell) return;
+                const quickActions = document.createElement('div');
+                quickActions.className = 'member-quick-actions';
+                const attendance = member.attendance;
+                const checkInOpen = attendance?.checkInAt && !attendance?.checkOutAt;
+                const canCheckIn = ['active', 'expiring_soon'].includes(member.membership?.status);
+                if (checkInOpen) {
+                    const button = document.createElement('button');
+                    button.className = 'btn member-attendance-quick checkout';
+                    button.type = 'button';
+                    button.dataset.attendanceAction = 'checkout';
+                    button.dataset.id = String(member.id);
+                    button.dataset.phone = member.phone || '';
+                    button.textContent = 'انصراف';
+                    button.title = 'تسجيل انصراف';
+                    button.setAttribute('aria-label', `تسجيل انصراف ${member.fullName}`);
+                    quickActions.append(button);
+                } else if (attendance?.checkOutAt) {
+                    const status = document.createElement('span');
+                    status.className = `member-attendance-status${attendance.checkOutSource === 'auto' ? ' auto' : ''}`;
+                    status.textContent = attendance.checkOutSource === 'auto' ? 'انصرف تلقائيًا' : 'تم الانصراف';
+                    quickActions.append(status);
+                } else if (canCheckIn) {
+                    const button = document.createElement('button');
+                    button.className = 'btn member-attendance-quick check-in';
+                    button.type = 'button';
+                    button.dataset.attendanceAction = 'checkin';
+                    button.dataset.id = String(member.id);
+                    button.dataset.phone = member.phone || '';
+                    button.textContent = 'حضور';
+                    button.title = 'تسجيل حضور';
+                    button.setAttribute('aria-label', `تسجيل حضور ${member.fullName}`);
+                    quickActions.append(button);
+                } else {
+                    const status = document.createElement('span');
+                    status.className = 'member-attendance-status unavailable';
+                    status.textContent = 'غير متاح';
+                    status.title = 'العضوية غير سارية أو مجمدة';
+                    quickActions.append(status);
+                }
+                const qrButton = document.createElement('button');
+                qrButton.className = 'btn member-qr-quick';
+                qrButton.type = 'button';
+                qrButton.dataset.memberQr = String(member.id);
+                qrButton.textContent = 'QR';
+                qrButton.title = 'عرض QR Code';
+                qrButton.setAttribute('aria-label', `عرض QR Code لـ ${member.fullName}`);
+                quickActions.append(qrButton);
+                cell.insertBefore(quickActions, cell.firstChild);
+                row.dataset.quickActionsReady = 'true';
+            });
+        }
+
         function memberTableRow(member) {
             const sub = member.membership;
-            if (!sub) return `<tr data-member-id="${member.id}"><td><span class="table-member-name">${escapeHtml(member.fullName)}</span><a class="table-member-phone" href="tel:${escapeHtml(member.phone)}">${escapeHtml(member.phone)}</a><span class="table-sub">تسجيل: ${formatDate(member.registrationDate)}</span></td><td>—</td><td><span class="badge expired">بدون اشتراك</span></td><td>—</td><td>—</td><td>—</td><td><div class="table-actions">${actionButton('details', member.id, 'btn btn-details btn-small')}${actionButton('edit', member.id)}${actionButton('qr', member.id, 'btn attendance-action-button btn-small')}${actionButton('delete', member.id, 'btn btn-danger btn-small')}</div></td></tr>`;
+            if (!sub) return `<tr data-member-id="${member.id}"><td><span class="table-member-name">${escapeHtml(member.fullName)}</span><a class="table-member-phone" href="tel:${escapeHtml(member.phone)}">${escapeHtml(member.phone)}</a><span class="table-sub">تسجيل: ${formatDate(member.registrationDate)}</span></td><td>—</td><td><span class="badge expired">بدون اشتراك</span></td><td>—</td><td>—</td><td>—</td><td><div class="table-actions">${actionButton('details', member.id, 'btn btn-details btn-small')}${actionButton('edit', member.id)}${actionButton('delete', member.id, 'btn btn-danger btn-small')}</div></td></tr>`;
             const freezeLimit = Number(sub.freezeLimit || FREEZE_LIMIT);
             const freezeCount = Number(sub.freezeCount || 0);
             const remaining = sub.status === 'expired' ? `منتهية منذ ${Math.abs(sub.daysRemaining || 0)} يوم` : sub.status === 'frozen' ? `تجميد حتى ${formatDate(sub.freezeEnd)}` : `${sub.daysRemaining} يوم متبقي`;
@@ -158,7 +218,7 @@
                 : sub.status === 'expired'
                     ? ''
                     : actionButton('freeze', member.id, 'btn btn-light btn-small', freezeCount >= freezeLimit ? 'disabled' : '');
-            return `<tr data-member-id="${member.id}"><td><span class="table-member-name">${escapeHtml(member.fullName)}</span><a class="table-member-phone" href="tel:${escapeHtml(member.phone)}">${escapeHtml(member.phone)}</a><span class="table-sub">تسجيل: ${formatDate(member.registrationDate)}</span></td><td><span class="table-main">${escapeHtml(planLabel(sub.plan))}</span><span class="table-sub">${escapeHtml(typeLabel(sub.type))}</span></td><td><span class="badge ${sub.status}">${STATUS_LABELS[sub.status] || sub.status}</span></td><td><span class="table-main">${formatDate(sub.effectiveEndDate)}</span><span class="table-sub">${escapeHtml(remaining)}</span></td><td>${freezeUsage}</td><td><span class="table-money">${money(sub.amountDue)}</span><span class="table-sub">متبقي ${money(sub.amountRemaining)}</span></td><td><div class="table-actions">${actionButton('details', member.id, 'btn btn-details btn-small')}${actionButton('edit', member.id)}${actionButton('renew', member.id, 'btn btn-primary btn-small')}${freezeButton}${actionButton('payment', member.id)}${actionButton('qr', member.id, 'btn attendance-action-button btn-small')}${actionButton('delete', member.id, 'btn btn-danger btn-small')}</div></td></tr>`;
+            return `<tr data-member-id="${member.id}"><td><span class="table-member-name">${escapeHtml(member.fullName)}</span><a class="table-member-phone" href="tel:${escapeHtml(member.phone)}">${escapeHtml(member.phone)}</a><span class="table-sub">تسجيل: ${formatDate(member.registrationDate)}</span></td><td><span class="table-main">${escapeHtml(planLabel(sub.plan))}</span><span class="table-sub">${escapeHtml(typeLabel(sub.type))}</span></td><td><span class="badge ${sub.status}">${STATUS_LABELS[sub.status] || sub.status}</span></td><td><span class="table-main">${formatDate(sub.effectiveEndDate)}</span><span class="table-sub">${escapeHtml(remaining)}</span></td><td>${freezeUsage}</td><td><span class="table-money">${money(sub.amountDue)}</span><span class="table-sub">متبقي ${money(sub.amountRemaining)}</span></td><td><div class="table-actions">${actionButton('details', member.id, 'btn btn-details btn-small')}${actionButton('edit', member.id)}${actionButton('renew', member.id, 'btn btn-primary btn-small')}${freezeButton}${actionButton('payment', member.id)}${actionButton('delete', member.id, 'btn btn-danger btn-small')}</div></td></tr>`;
         }
         function renderMembers() { $('membersCount').textContent = `${state.members.length} عضو ظاهر`; $('membersList').innerHTML = state.members.length ? `<div class="table-scroll"><table class="members-table"><thead><tr><th>العضو</th><th>الاشتراك</th><th>الحالة</th><th>الانتهاء</th><th>التجميد</th><th>الحساب</th><th>الإجراءات</th></tr></thead><tbody>${state.members.map(memberTableRow).join('')}</tbody></table></div>` : '<div class="empty">لا يوجد أعضاء مطابقون للبحث.</div>'; }
 
@@ -256,9 +316,10 @@
                 setFormDefaults(true);
                 if (shouldSendWhatsApp) {
                     await loadData();
-                    window.dispatchEvent(new CustomEvent('topgym:member-created', { detail: { member: saved?.member || saved, payload: body, whatsappWindow, sendWhatsApp: true, labels: { plan: planLabel(body.membershipPlan), type: typeLabel(body.membershipType), payment: PAYMENT_LABELS[body.paymentMethod] || body.paymentMethod } } }));
+                    window.dispatchEvent(new CustomEvent('topgym:member-created', { detail: { member: saved?.member || saved, payload: body, whatsappWindow, sendWhatsApp: true, isNew: !id, labels: { plan: planLabel(body.membershipPlan), type: typeLabel(body.membershipType), payment: PAYMENT_LABELS[body.paymentMethod] || body.paymentMethod } } }));
                 } else {
                     await refreshAfterAction(id ? 'تم حفظ تعديلات العضو.' : 'تمت إضافة العضو بنجاح.');
+                    if (!id) window.dispatchEvent(new CustomEvent('topgym:member-created', { detail: { member: saved?.member || saved, payload: body, sendWhatsApp: false, isNew: true } }));
                 }
             } catch (error) {
                 window.topGymWhatsapp?.closeWindow(whatsappWindow);
@@ -272,5 +333,23 @@
         document.addEventListener('DOMContentLoaded', () => {
              setFormDefaults(); $('memberForm').addEventListener('submit', submitMember); $('refreshButton').addEventListener('click', loadData); $('topAddMemberButton').addEventListener('click', () => openMemberDialog()); $('addMemberButton').addEventListener('click', () => openMemberDialog()); $('topPricingButton').addEventListener('click', openPricingDialog); $('pricingButton').addEventListener('click', openPricingDialog); $('membershipTypesButton').addEventListener('click', openMembershipTypesDialog); $('memberDialogClose').addEventListener('click', closeMemberDialog); $('cancelEditButton').addEventListener('click', () => setFormDefaults(true)); $('resetButton').addEventListener('click', () => setFormDefaults(true)); $('actionForm').addEventListener('submit', submitDialog); $('dialogCancel').addEventListener('click', closeDialog); $('pricingForm').addEventListener('submit', savePricing); $('pricingClose').addEventListener('click', closePricingDialog); $('membershipTypesClose').addEventListener('click', closeMembershipTypesDialog); $('detailsClose').addEventListener('click', closeDetails); $('detailsContent').addEventListener('click', (event) => { const button = event.target.closest('[data-payment-receipt]'); if (!button) return; window.topGymPrint?.printPaymentReceipt(button.dataset.memberId, button.dataset.paymentId); }); $('addMembershipTypeButton').addEventListener('click', () => openMembershipTypeDialog()); $('membershipTypeDialogClose').addEventListener('click', closeMembershipTypeDialog); $('membershipTypeCancel').addEventListener('click', closeMembershipTypeDialog); $('membershipTypeForm').addEventListener('submit', submitMembershipType); ['membershipTypeName', 'membershipTypeMode', 'membershipTypeDuration', 'membershipTypeMultiplier'].forEach((id) => $(id).addEventListener('input', updateMembershipTypePreview)); $('membershipTypeMode').addEventListener('change', updateMembershipTypePreview); $('membershipTypesTableContainer').addEventListener('click', (event) => { const button = event.target.closest('[data-type-action="edit"]'); if (button) openMembershipTypeDialog(button.dataset.code); }); $('membershipType').addEventListener('change', () => { if (!state.endDateManual) $('endDate').value = calculatedEndDate($('startDate').value, $('membershipType').value); updateFormPricing(); }); $('membershipPlan').addEventListener('change', updateFormPricing); $('discountAmount').addEventListener('input', updateFormPricing); $('startDate').addEventListener('change', () => { if (!state.endDateManual) $('endDate').value = calculatedEndDate($('startDate').value, $('membershipType').value); }); $('endDate').addEventListener('input', () => { state.endDateManual = true; }); let timer; $('searchInput').addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(loadMembersOnly, 300); }); $('statusFilter').addEventListener('change', loadMembersOnly);
             $('membersList').addEventListener('click', async (event) => { const button = event.target.closest('button[data-action]'); if (!button) return; const id = button.dataset.id || button.closest('[data-member-id]')?.dataset.memberId; const member = state.members.find((item) => String(item.id) === String(id)); if (!member) { await notify('تعذر تحديد العضو. حدّث الصفحة وحاول مرة أخرى.', 'error'); return; } const action = button.dataset.action; if (action === 'details') { await openDetails(member); return; } if (action === 'edit') { openMemberDialog(member); return; } if (action === 'freeze' || action === 'renew' || action === 'payment') { openDialog(action, member); return; } if (action === 'resume') { try { await withLoader(() => api(`/api/members/${member.id}/resume`, { method: 'POST' }), 'جاري استئناف العضوية…'); await refreshAfterAction('تم استئناف العضوية.'); } catch (error) { await notify(error.message, 'error'); } return; } if (action === 'delete' && await confirmDelete(member.fullName)) { try { await withLoader(() => api(`/api/members/${member.id}`, { method: 'DELETE' }), 'جاري حذف العضو…'); if (String($('memberId').value) === String(member.id)) setFormDefaults(true); await refreshAfterAction('تم حذف العضو.'); } catch (error) { await notify(error.message, 'error'); } } });
+            const membersQuickActionsObserver = new MutationObserver(() => decorateMemberQuickActions());
+            membersQuickActionsObserver.observe($('membersList'), { childList: true, subtree: true });
+            window.addEventListener('topgym:attendance-updated', () => loadMembersOnly());
+            $('membersList').addEventListener('click', async (event) => {
+                const button = event.target.closest('button[data-attendance-action]');
+                if (!button || button.disabled) return;
+                const action = button.dataset.attendanceAction;
+                if (!window.topGymAttendance?.quickAction) {
+                    await notify('أداة الحضور غير جاهزة. حدّث الصفحة وحاول مرة أخرى.', 'error');
+                    return;
+                }
+                button.disabled = true;
+                try {
+                    await window.topGymAttendance.quickAction(action, { phone: button.dataset.phone });
+                } finally {
+                    if (button.isConnected) button.disabled = false;
+                }
+            });
             loadData();
         });
