@@ -1300,3 +1300,70 @@
             .toast-icon .ui-icon { width: 20px; height: 20px; }
             .toast-message { font-size: 11px; line-height: 1.5; }
         }
+
+        /* Mobile action rail: keep every member action on one horizontal line. */
+        @media (max-width: 640px) {
+            .member-action-row {
+                flex-wrap: nowrap !important;
+                align-items: center;
+                gap: 5px;
+                overflow-x: auto;
+                overflow-y: visible;
+                padding: 2px 1px 3px;
+                scrollbar-width: none;
+            }
+            .member-action-row::-webkit-scrollbar { display: none; }
+            .member-action-row .member-quick-actions {
+                flex: 0 0 auto !important;
+                flex-wrap: nowrap !important;
+                gap: 5px;
+            }
+            .member-action-row .member-quick-actions > .member-attendance-quick,
+            .member-action-row .member-quick-actions > .member-attendance-status,
+            .member-action-row .member-quick-actions > .member-qr-quick {
+                width: 86px !important;
+                min-width: 86px !important;
+                height: 34px;
+                min-height: 34px;
+                flex: 0 0 86px !important;
+                overflow: hidden;
+                padding: 0 5px !important;
+                font-size: 9px;
+                text-overflow: ellipsis;
+            }
+            .member-action-row > .table-actions {
+                width: auto !important;
+                min-width: 0 !important;
+                flex: 0 0 auto !important;
+                flex-basis: auto !important;
+                flex-wrap: nowrap !important;
+                gap: 5px;
+            }
+            .member-action-row > .table-actions > .table-action-visible[data-action="details"],
+            .member-action-row > .table-actions > .table-action-visible[data-action="renew"],
+            .member-action-row > .table-actions > .action-menu,
+            .member-action-row > .table-actions > .action-menu .action-menu-toggle {
+                width: 34px !important;
+                min-width: 34px !important;
+                height: 34px !important;
+                min-height: 34px !important;
+                flex: 0 0 34px !important;
+            }
+            .member-action-row > .table-actions > .table-action-visible[data-action="renew"] {
+                padding: 0 !important;
+                gap: 0;
+            }
+            .member-action-row > .table-actions > .table-action-visible[data-action="renew"] .table-action-label { display: none; }
+            .member-action-row > .table-actions > .table-action-visible[data-action="renew"] .action-icon { width: 15px; height: 15px; }
+            .member-action-row > .table-actions > .action-menu .action-menu-toggle { padding: 0 !important; }
+        }
+
+        .swal2-popup.top-gym-alert:not(.top-gym-toast) .swal2-icon .swal2-icon-content,
+        .swal2-popup.delete-confirm-alert .swal2-icon .swal2-icon-content,
+        .swal2-popup.duplicate-phone-alert .swal2-icon .swal2-icon-content {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.45rem !important;
+            line-height: 1 !important;
+        }

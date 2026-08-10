@@ -133,6 +133,8 @@ function parseQrToken(value) {
     if (!token) return null;
     if (/^TOPGYM-MEMBER:\d+$/i.test(token)) return Number(token.split(':')[1]);
     if (/^TOPGYM\|MEMBER\|\d+$/i.test(token)) return Number(token.split('|')[2]);
+    const embeddedToken = token.match(/TOPGYM-MEMBER:(\d+)/i) || token.match(/TOPGYM\|MEMBER\|(\d+)/i);
+    if (embeddedToken) return Number(embeddedToken[1]);
     try {
         const parsed = JSON.parse(token);
         if (parsed?.memberId) return ensureId(parsed.memberId, 'معرّف العضو');

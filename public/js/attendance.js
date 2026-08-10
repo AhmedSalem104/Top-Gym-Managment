@@ -30,7 +30,7 @@
 
     function qrMemberId(value) {
         const token = String(value ?? '').trim();
-        const direct = token.match(/^TOPGYM-MEMBER:(\d+)$/i) || token.match(/^TOPGYM\|MEMBER\|(\d+)$/i);
+        const direct = token.match(/TOPGYM-MEMBER:(\d+)/i) || token.match(/TOPGYM\|MEMBER\|(\d+)/i);
         if (direct) return Number(direct[1]);
         try {
             const payload = JSON.parse(token);
@@ -47,17 +47,28 @@
 
     function qrPayload(member) {
         const membership = member.membership || {};
-        return JSON.stringify({
-            app: 'TOP GYM',
-            memberId: Number(member.id),
-            name: member.fullName || '',
-            phone: member.phone || '',
-            plan: membership.plan || '',
-            type: membership.type || '',
-            startDate: membership.startDate || '',
-            endDate: membership.effectiveEndDate || membership.endDate || '',
-            status: membership.status || ''
-        });
+        const date = (value) => {
+            if (!value) return '—';
+            const [year, month, day] = String(value).slice(0, 10).split('-');
+            return year && month && day ? `${day}/${month}/${year}` : String(value);
+        };
+        const status = STATUS_LABELS[membership.status] || membership.status || 'بدون اشتراك';
+        const plan = PLAN_LABELS[membership.plan] || membership.plan || '—';
+        const type = TYPE_LABELS[membership.type] || membership.type || '—';
+        const remaining = Number(membership.amountRemaining || 0);
+        return [
+            `TOPGYM-MEMBER:${Number(member.id)}`,
+            'TOP GYM',
+            'بيانات المشترك',
+            `الاسم: ${member.fullName || '—'}`,
+            `الهاتف: ${member.phone || '—'}`,
+            `الباقة: ${plan}`,
+            `النوع: ${type}`,
+            `تاريخ البداية: ${date(membership.startDate)}`,
+            `تاريخ الانتهاء: ${date(membership.effectiveEndDate || membership.endDate)}`,
+            `الحالة: ${status}`,
+            ...(remaining > 0 ? [`المتبقي: ${remaining.toFixed(2)} ج.م`] : [])
+        ].join('\n');
     }
 
     async function showQrMemberPreview(member) {

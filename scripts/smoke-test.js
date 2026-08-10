@@ -230,7 +230,7 @@ async function call(baseUrl, path, options = {}) {
         let duplicateAttendanceRejected = false;
         try {
             await call(baseUrl, '/api/attendance/check-in', {
-                method: 'POST', body: JSON.stringify({ qrToken: JSON.stringify({ app: 'TOP GYM', memberId, name: created.member.fullName, phone: created.member.phone }) })
+                method: 'POST', body: JSON.stringify({ qrToken: `TOPGYM-MEMBER:${memberId}\nTOP GYM\nالاسم: ${created.member.fullName}\nالهاتف: ${created.member.phone}` })
             });
         } catch (error) {
             duplicateAttendanceRejected = /بالفعل/.test(error.message);
