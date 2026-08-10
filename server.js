@@ -38,12 +38,40 @@ const {
     updatePricing,
     updateMember
 } = require('./src/member-service');
+const {
+    addWorkoutSet,
+    createDietPlan,
+    createExternalTrainee,
+    createMealLog,
+    createMeasurement,
+    createWorkoutProgram,
+    deleteDietPlan,
+    deleteMeasurement,
+    deleteWorkoutProgram,
+    endWorkoutSession,
+    ensureCoachingTables,
+    getClientOptions,
+    getDietPlan,
+    getDietPlans,
+    getExternalTrainees,
+    getMeasurements,
+    getTrainingOverview,
+    getWorkoutProgram,
+    getWorkoutPrograms,
+    setDietPlanStatus,
+    setWorkoutProgramStatus,
+    startWorkoutSession,
+    updateDietPlan,
+    updateClientBasic,
+    updateMeasurement,
+    updateWorkoutProgram
+} = require('./src/coaching-service');
 
 const app = express();
 const publicDirectory = path.join(__dirname, 'public');
 
 app.disable('x-powered-by');
-app.use(express.json({ limit: '100kb' }));
+app.use(express.json({ limit: '1mb' }));
 app.use(express.static(publicDirectory));
 
 function asyncRoute(handler) {
@@ -254,6 +282,112 @@ app.put('/api/membership-types/:typeCode', asyncRoute(async (request, response) 
     response.json(pricing);
 }));
 
+app.get('/api/external-trainees', asyncRoute(async (request, response) => {
+    response.json(await getExternalTrainees({
+        search: request.query.search,
+        page: request.query.page,
+        pageSize: request.query.pageSize
+    }));
+}));
+
+app.post('/api/external-trainees', asyncRoute(async (request, response) => {
+    response.status(201).json({ member: await createExternalTrainee(request.body) });
+}));
+
+app.get('/api/coaching/clients', asyncRoute(async (request, response) => {
+    response.json({ clients: await getClientOptions({ search: request.query.search, limit: request.query.limit }) });
+}));
+
+app.get('/api/clients/:id/training-overview', asyncRoute(async (request, response) => {
+    response.json(await getTrainingOverview(request.params.id));
+}));
+
+app.put('/api/clients/:id', asyncRoute(async (request, response) => {
+    response.json({ member: await updateClientBasic(request.params.id, request.body) });
+}));
+
+app.get('/api/clients/:id/measurements', asyncRoute(async (request, response) => {
+    response.json({ measurements: await getMeasurements(request.params.id) });
+}));
+
+app.post('/api/clients/:id/measurements', asyncRoute(async (request, response) => {
+    response.status(201).json({ measurement: await createMeasurement(request.params.id, request.body) });
+}));
+
+app.put('/api/clients/:id/measurements/:measurementId', asyncRoute(async (request, response) => {
+    response.json({ measurement: await updateMeasurement(request.params.id, request.params.measurementId, request.body) });
+}));
+
+app.delete('/api/clients/:id/measurements/:measurementId', asyncRoute(async (request, response) => {
+    await deleteMeasurement(request.params.id, request.params.measurementId);
+    response.status(204).send();
+}));
+
+function registerWorkoutRoutes(prefix) {
+    app.get(`${prefix}`, asyncRoute(async (request, response) => {
+        response.json({ programs: await getWorkoutPrograms({ memberId: request.query.memberId || request.query.clientId, search: request.query.search, status: request.query.status, level: request.query.level }) });
+    }));
+    app.get(`${prefix}/:id`, asyncRoute(async (request, response) => {
+        response.json({ program: await getWorkoutProgram(request.params.id, request.query.memberId || request.query.clientId) });
+    }));
+    app.post(`${prefix}`, asyncRoute(async (request, response) => {
+        response.status(201).json({ program: await createWorkoutProgram(request.body) });
+    }));
+    app.put(`${prefix}/:id`, asyncRoute(async (request, response) => {
+        response.json({ program: await updateWorkoutProgram(request.params.id, request.body) });
+    }));
+    app.patch(`${prefix}/:id/status`, asyncRoute(async (request, response) => {
+        response.json({ program: await setWorkoutProgramStatus(request.params.id, request.body?.status) });
+    }));
+    app.delete(`${prefix}/:id`, asyncRoute(async (request, response) => {
+        await deleteWorkoutProgram(request.params.id);
+        response.status(204).send();
+    }));
+}
+
+function registerDietRoutes(prefix) {
+    app.get(`${prefix}`, asyncRoute(async (request, response) => {
+        response.json({ plans: await getDietPlans({ memberId: request.query.memberId || request.query.clientId, search: request.query.search, status: request.query.status }) });
+    }));
+    app.get(`${prefix}/:id`, asyncRoute(async (request, response) => {
+        response.json({ plan: await getDietPlan(request.params.id, request.query.memberId || request.query.clientId) });
+    }));
+    app.post(`${prefix}`, asyncRoute(async (request, response) => {
+        response.status(201).json({ plan: await createDietPlan(request.body) });
+    }));
+    app.put(`${prefix}/:id`, asyncRoute(async (request, response) => {
+        response.json({ plan: await updateDietPlan(request.params.id, request.body) });
+    }));
+    app.patch(`${prefix}/:id/status`, asyncRoute(async (request, response) => {
+        response.json({ plan: await setDietPlanStatus(request.params.id, request.body?.status) });
+    }));
+    app.delete(`${prefix}/:id`, asyncRoute(async (request, response) => {
+        await deleteDietPlan(request.params.id);
+        response.status(204).send();
+    }));
+}
+
+registerWorkoutRoutes('/api/workoutprograms');
+registerWorkoutRoutes('/api/workout-programs');
+registerDietRoutes('/api/dietplans');
+registerDietRoutes('/api/diet-plans');
+
+app.post('/api/workoutsessions/start', asyncRoute(async (request, response) => {
+    response.status(201).json({ session: await startWorkoutSession(request.body) });
+}));
+
+app.post('/api/workoutsessions/:id/sets', asyncRoute(async (request, response) => {
+    response.status(201).json({ set: await addWorkoutSet(request.params.id, request.body) });
+}));
+
+app.post('/api/workoutsessions/:id/end', asyncRoute(async (request, response) => {
+    response.json({ session: await endWorkoutSession(request.params.id, request.body) });
+}));
+
+app.post('/api/meal-logs', asyncRoute(async (request, response) => {
+    response.status(201).json({ mealLog: await createMealLog(request.body) });
+}));
+
 app.get('/api/members', asyncRoute(async (request, response) => {
     response.json(await getMembers({
         search: request.query.search,
@@ -297,6 +431,11 @@ app.post('/api/members/:id/renew', asyncRoute(async (request, response) => {
     response.json({ member });
 }));
 
+app.post('/api/members/:id/memberships', asyncRoute(async (request, response) => {
+    const member = await renewMember(request.params.id, request.body);
+    response.status(201).json({ member });
+}));
+
 app.post('/api/memberships/:id/payments', asyncRoute(async (request, response) => {
     const member = await recordPayment(request.params.id, request.body);
     response.json({ member });
@@ -331,6 +470,7 @@ app.use((error, request, response, next) => {
         code: error.code || null,
         field: error.field || null,
         memberName: error.memberName || null,
+        memberId: error.memberId || null,
         attendance: error.attendance || null
     });
 });
@@ -338,6 +478,7 @@ app.use((error, request, response, next) => {
 async function start() {
     await initDatabase();
     await ensureLibraryData();
+    await ensureCoachingTables();
     const port = Number(process.env.PORT || 3000);
     app.listen(port, () => console.log(`Gym membership app is running on http://localhost:${port}`));
 }

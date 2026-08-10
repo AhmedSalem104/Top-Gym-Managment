@@ -16,6 +16,7 @@
     <link rel="stylesheet" href="/css/operations.css?v=1">
     <link rel="stylesheet" href="/css/attendance.css?v=4">
     <link rel="stylesheet" href="/css/library.css?v=1">
+    <link rel="stylesheet" href="/css/coaching.css?v=1">
 </head>
 <body class="font-sans bg-slate-100 text-slate-900 gym-page-bg">
     <div class="app-shell">
@@ -37,6 +38,7 @@
             <button class="page-tab" type="button" data-page-tab="reports" aria-selected="false"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19V5"/><path d="M4 19h16"/><path d="m7 15 3-4 3 2 5-6"/></svg><span>التقارير</span></button>
             <button class="page-tab" type="button" data-page-tab="management" aria-selected="false"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v18M3 12h18"/><circle cx="12" cy="12" r="9"/></svg><span>الأسعار والعضويات</span></button>
             <button class="page-tab" type="button" data-page-tab="library" aria-selected="false"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v16H6.5A2.5 2.5 0 0 0 4 21.5z"/><path d="M4 5.5v16M8 7h8M8 11h6"/></svg><span>المكتبة</span></button>
+            <button class="page-tab" type="button" data-page-tab="trainees" aria-selected="false"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M3 20a6 6 0 0 1 12 0M16 4.5a3 3 0 0 1 0 6M17 14a4 4 0 0 1 4 4"/><path d="M18 8h3M19.5 6.5v3"/></svg><span>المتدربون</span></button>
         </nav>
 
         <main class="page max-w-7xl" id="dashboardSection">
@@ -211,6 +213,18 @@
                     <div class="members-pagination" id="membersPagination" hidden></div>
                 </section>
             </section>
+
+            <section class="coaching-section panel" id="traineesSection" hidden aria-labelledby="traineesTitle">
+                <div class="coaching-header">
+                    <div class="coaching-heading"><span class="coaching-heading-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4v16M18 4v16M3 8h6M15 8h6M3 16h6M15 16h6"/><circle cx="12" cy="12" r="3"/></svg></span><div><span class="coaching-kicker">إدارة التدريب والتغذية</span><h3 id="traineesTitle">المتدربون غير المشتركين</h3><p>عملاء لديهم نظام تدريب أو تغذية بدون اشتراك Gym فعال، مع الحفاظ على نفس ملف العميل.</p></div></div>
+                    <button class="btn btn-primary coaching-add-button" id="addExternalTraineeButton" type="button"><span aria-hidden="true">+</span> إضافة متدرب خارجي</button>
+                </div>
+                <div class="coaching-summary" id="coachingSummary"></div>
+                <div class="coaching-toolbar"><label class="coaching-search" for="externalTraineeSearch"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><input id="externalTraineeSearch" type="search" placeholder="ابحث باسم المتدرب أو الهاتف" aria-label="البحث في المتدربين"></label><button class="btn btn-light" id="externalTraineeRefreshButton" type="button">تحديث القائمة</button></div>
+                <div class="coaching-message" id="coachingMessage" role="status" aria-live="polite" hidden></div>
+                <div class="external-trainees-list" id="externalTraineesList"><div class="loading">افتح تبويب المتدربين لتحميل البيانات…</div></div>
+                <div class="coaching-pagination" id="externalTraineesPagination" hidden></div>
+            </section>
         </main>
     </div>
 
@@ -295,6 +309,22 @@
     <dialog id="libraryDetailsDialog" class="library-details-dialog rounded-lg border-slate-200 shadow-lift">
         <div class="dialog-body"><div class="details-dialog-head"><div><h3 id="libraryDetailsTitle">تفاصيل العنصر</h3><p id="libraryDetailsSubtitle"></p></div><button class="btn btn-light btn-small" id="libraryDetailsClose" type="button">إغلاق</button></div><div id="libraryDetailsContent"></div></div>
     </dialog>
+    <dialog id="externalTraineeDialog" class="coaching-small-dialog rounded-lg border-slate-200 shadow-lift">
+        <form class="dialog-body" id="externalTraineeForm">
+            <div class="details-dialog-head"><div><h3>إضافة متدرب خارجي</h3><p>أدخل البيانات الأساسية فقط، ثم أنشئ له برنامجًا أو خطة تغذية من ملفه.</p></div><button class="btn btn-light btn-small" id="externalTraineeClose" type="button">إغلاق</button></div>
+            <div class="field"><label for="externalFullName">الاسم الكامل *</label><input id="externalFullName" maxlength="120" required placeholder="مثال: كريم عبد الحميد"></div>
+            <div class="field-grid"><div class="field"><label for="externalPhone">رقم الهاتف *</label><input id="externalPhone" inputmode="tel" maxlength="30" required placeholder="01xxxxxxxxx"></div><div class="field"><label for="externalEmail">البريد الإلكتروني</label><input id="externalEmail" type="email" maxlength="254" placeholder="اختياري"></div></div>
+            <div class="field"><label for="externalRegistrationDate">تاريخ التسجيل</label><input id="externalRegistrationDate" type="date" required></div>
+            <div class="field"><label for="externalNotes">ملاحظات</label><textarea id="externalNotes" maxlength="1000" rows="3" placeholder="اختياري"></textarea></div>
+            <div class="dialog-actions"><button class="btn btn-light" id="externalTraineeCancel" type="button">إلغاء</button><button class="btn btn-primary" type="submit">حفظ المتدرب</button></div>
+        </form>
+    </dialog>
+    <dialog id="coachingProfileDialog" class="coaching-profile-dialog rounded-lg border-slate-200 shadow-lift">
+        <div class="dialog-body"><div class="details-dialog-head"><div><h3 id="coachingProfileTitle">ملف المتدرب</h3><p id="coachingProfileSubtitle"></p></div><button class="btn btn-light btn-small" id="coachingProfileClose" type="button">إغلاق</button></div><div id="coachingProfileContent"><div class="loading">جاري تحميل الملف…</div></div></div>
+    </dialog>
+    <dialog id="coachingBuilderDialog" class="coaching-builder-dialog rounded-lg border-slate-200 shadow-lift">
+        <form class="dialog-body" id="coachingBuilderForm"><div class="details-dialog-head"><div><h3 id="coachingBuilderTitle">إنشاء نظام</h3><p id="coachingBuilderSubtitle"></p></div><button class="btn btn-light btn-small" id="coachingBuilderClose" type="button">إغلاق</button></div><input type="hidden" id="coachingBuilderId"><input type="hidden" id="coachingBuilderMemberId"><div id="coachingBuilderContent"></div><div class="dialog-actions"><button class="btn btn-light" id="coachingBuilderCancel" type="button">إلغاء</button><button class="btn btn-primary" id="coachingBuilderSave" type="submit">حفظ النظام</button></div></form>
+    </dialog>
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -316,5 +346,6 @@
     <script src="/js/alerts-enhancements.js"></script>
     <script src="/js/attendance.js?v=5"></script>
     <script src="/js/library.js?v=1"></script>
+    <script src="/js/coaching.js?v=1"></script>
 </body>
 </html>

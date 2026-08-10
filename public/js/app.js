@@ -296,12 +296,16 @@
             if (typeof dialog.showModal === 'function') dialog.showModal(); else dialog.setAttribute('open', '');
             try {
                 const cached = detailsCache.get(member.id);
-                if (cached) { renderDetails(cached); renderPaymentHistory(cached); }
+                if (cached) {
+                    renderDetails(cached); renderPaymentHistory(cached);
+                    window.dispatchEvent(new CustomEvent('topgym:member-details-opened', { detail: { member, details: cached } }));
+                }
                 else {
                     const details = await withLoader(() => api(`/api/members/${member.id}/details`), 'جاري تحميل ملف العميل…');
                     detailsCache.set(member.id, details);
                     renderDetails(details);
                     renderPaymentHistory(details);
+                    window.dispatchEvent(new CustomEvent('topgym:member-details-opened', { detail: { member, details } }));
                 }
             } catch (error) {
                 $('detailsContent').innerHTML = `<div class="empty">${escapeHtml(error.message)}</div>`;

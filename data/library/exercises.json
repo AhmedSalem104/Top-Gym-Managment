@@ -10235,5 +10235,3318 @@
     "tempo": "Controlled",
     "icon": "🔄",
     "videoUrl": null
+  },
+  {
+    "name": "Decline Cable Fly",
+    "nameAr": "فلاي كابل سفلي",
+    "description": "Cable fly emphasizing the lower chest",
+    "descriptionAr": "فلاي بالكابل يركز على الصدر السفلي",
+    "targetMuscleId": 3,
+    "secondaryMuscles": [
+      {
+        "muscleId": 1,
+        "contributionPercent": 15
+      }
+    ],
+    "equipment": "Cable Machine",
+    "isHighImpact": false,
+    "difficulty": "Beginner",
+    "category": "Hypertrophy",
+    "movementPattern": "Push",
+    "mechanic": "Isolation",
+    "force": "Push",
+    "instructions": [
+      "Set pulleys high",
+      "Lean slightly forward",
+      "Sweep hands down and together"
+    ],
+    "instructionsAr": [
+      "اضبط البكرات مرتفعة",
+      "مل للأمام قليلًا",
+      "اسحب اليدين لأسفل وللداخل"
+    ],
+    "tips": [
+      "Squeeze at the bottom"
+    ],
+    "tipsAr": [
+      "اضغط الصدر في نهاية الحركة"
+    ],
+    "commonMistakes": [
+      "Bending elbows too much"
+    ],
+    "commonMistakesAr": [
+      "ثني الكوعين أكثر من اللازم"
+    ],
+    "repsRange": "10-15",
+    "setsRange": "3-4",
+    "restSeconds": 60,
+    "tempo": "2-1-2-1",
+    "icon": "🦋",
+    "videoUrl": null
+  },
+  {
+    "name": "Single Arm Cable Press",
+    "nameAr": "ضغط كابل بذراع واحدة",
+    "description": "Unilateral cable press for chest and core stability",
+    "descriptionAr": "ضغط كابل أحادي للصدر وثبات الجذع",
+    "targetMuscleId": 1,
+    "secondaryMuscles": [
+      {
+        "muscleId": 22,
+        "contributionPercent": 20
+      },
+      {
+        "muscleId": 35,
+        "contributionPercent": 20
+      },
+      {
+        "muscleId": 54,
+        "contributionPercent": 10
+      }
+    ],
+    "equipment": "Cable Machine",
+    "isHighImpact": false,
+    "difficulty": "Intermediate",
+    "category": "Strength",
+    "movementPattern": "Push",
+    "mechanic": "Compound",
+    "force": "Push",
+    "instructions": [
+      "Stand staggered",
+      "Press one handle forward",
+      "Resist torso rotation"
+    ],
+    "instructionsAr": [
+      "قف بوضع متدرج",
+      "ادفع مقبضًا واحدًا للأمام",
+      "قاوم دوران الجذع"
+    ],
+    "tips": [
+      "Keep ribs down"
+    ],
+    "tipsAr": [
+      "حافظ على ثبات القفص الصدري"
+    ],
+    "commonMistakes": [
+      "Rotating torso"
+    ],
+    "commonMistakesAr": [
+      "تدوير الجذع"
+    ],
+    "repsRange": "8-12 each",
+    "setsRange": "3-4",
+    "restSeconds": 60,
+    "tempo": "2-1-2-0",
+    "icon": "🔗",
+    "videoUrl": null
+  },
+  {
+    "name": "Scapular Push Up",
+    "nameAr": "ضغط لوح الكتف",
+    "description": "Bodyweight scapular protraction exercise for serratus anterior",
+    "descriptionAr": "تمرين بوزن الجسم لدفع لوح الكتف وتنشيط المنشارية الأمامية",
+    "targetMuscleId": 16,
+    "secondaryMuscles": [
+      {
+        "muscleId": 50,
+        "contributionPercent": 10
+      }
+    ],
+    "equipment": "Bodyweight",
+    "isHighImpact": false,
+    "difficulty": "Beginner",
+    "category": "Activation",
+    "movementPattern": "Push",
+    "mechanic": "Isolation",
+    "force": "Push",
+    "instructions": [
+      "Hold plank position",
+      "Keep elbows straight",
+      "Let shoulder blades come together",
+      "Push floor away"
+    ],
+    "instructionsAr": [
+      "اثبت في وضع البلانك",
+      "أبقِ الكوعين مستقيمين",
+      "اسمح للوحي الكتف بالتقارب",
+      "ادفع الأرض بعيدًا"
+    ],
+    "tips": [
+      "Move only through shoulder blades"
+    ],
+    "tipsAr": [
+      "الحركة من لوحي الكتف فقط"
+    ],
+    "commonMistakes": [
+      "Bending elbows"
+    ],
+    "commonMistakesAr": [
+      "ثني الكوعين"
+    ],
+    "repsRange": "12-20",
+    "setsRange": "2-4",
+    "restSeconds": 45,
+    "tempo": "2-1-2-1",
+    "icon": "👊",
+    "videoUrl": null
+  },
+  {
+    "name": "Wall Slide",
+    "nameAr": "وول سلايد",
+    "description": "Scapular upward-rotation drill for serratus and lower traps",
+    "descriptionAr": "تمرين دوران لوح الكتف للأعلى للمنشارية والترابيس السفلية",
+    "targetMuscleId": 16,
+    "secondaryMuscles": [
+      {
+        "muscleId": 20,
+        "contributionPercent": 25
+      },
+      {
+        "muscleId": 25,
+        "contributionPercent": 15
+      }
+    ],
+    "equipment": "Bodyweight",
+    "isHighImpact": false,
+    "difficulty": "Beginner",
+    "category": "Rehab",
+    "movementPattern": "Push",
+    "mechanic": "Isolation",
+    "force": "Push",
+    "instructions": [
+      "Stand against wall",
+      "Place forearms on wall",
+      "Slide arms upward",
+      "Keep ribs down"
+    ],
+    "instructionsAr": [
+      "قف ملاصقًا للحائط",
+      "ضع الساعدين على الحائط",
+      "حرّك الذراعين للأعلى",
+      "حافظ على الأضلاع لأسفل"
+    ],
+    "tips": [
+      "Reach at the top"
+    ],
+    "tipsAr": [
+      "ادفع للأعلى في نهاية الحركة"
+    ],
+    "commonMistakes": [
+      "Arching lower back"
+    ],
+    "commonMistakesAr": [
+      "تقويس أسفل الظهر"
+    ],
+    "repsRange": "10-15",
+    "setsRange": "2-3",
+    "restSeconds": 45,
+    "tempo": "Controlled",
+    "icon": "↗️",
+    "videoUrl": null
+  },
+  {
+    "name": "Cuban Rotation",
+    "nameAr": "كيوبان روتيشن",
+    "description": "Shoulder external-rotation drill for rotator cuff",
+    "descriptionAr": "تمرين دوران خارجي للكتف لتقوية الكفة المدورة",
+    "targetMuscleId": 25,
+    "secondaryMuscles": [
+      {
+        "muscleId": 24,
+        "contributionPercent": 15
+      },
+      {
+        "muscleId": 19,
+        "contributionPercent": 10
+      }
+    ],
+    "equipment": "Dumbbells",
+    "isHighImpact": false,
+    "difficulty": "Intermediate",
+    "category": "Rehab",
+    "movementPattern": "Rotation",
+    "mechanic": "Isolation",
+    "force": "Pull",
+    "instructions": [
+      "Raise elbows to shoulder height",
+      "Externally rotate forearms upward",
+      "Return slowly"
+    ],
+    "instructionsAr": [
+      "ارفع الكوعين لمستوى الكتف",
+      "دوّر الساعدين للخارج ولأعلى",
+      "عد ببطء"
+    ],
+    "tips": [
+      "Use light weights"
+    ],
+    "tipsAr": [
+      "استخدم أوزانًا خفيفة"
+    ],
+    "commonMistakes": [
+      "Going too heavy"
+    ],
+    "commonMistakesAr": [
+      "استخدام وزن ثقيل"
+    ],
+    "repsRange": "12-20",
+    "setsRange": "2-3",
+    "restSeconds": 45,
+    "tempo": "2-1-2-1",
+    "icon": "🔄",
+    "videoUrl": null
+  },
+  {
+    "name": "Cable External Rotation at 90 Degrees",
+    "nameAr": "دوران خارجي كابل عند 90 درجة",
+    "description": "External rotation with the arm abducted to target rotator cuff",
+    "descriptionAr": "دوران خارجي مع الذراع مرفوعة لاستهداف الكفة المدورة",
+    "targetMuscleId": 26,
+    "secondaryMuscles": [
+      {
+        "muscleId": 15,
+        "contributionPercent": 25
+      },
+      {
+        "muscleId": 24,
+        "contributionPercent": 10
+      }
+    ],
+    "equipment": "Cable Machine",
+    "isHighImpact": false,
+    "difficulty": "Intermediate",
+    "category": "Rehab",
+    "movementPattern": "Rotation",
+    "mechanic": "Isolation",
+    "force": "Pull",
+    "instructions": [
+      "Set elbow at shoulder height",
+      "Rotate forearm backward",
+      "Control return"
+    ],
+    "instructionsAr": [
+      "ثبت الكوع عند مستوى الكتف",
+      "دوّر الساعد للخلف",
+      "تحكم في العودة"
+    ],
+    "tips": [
+      "Keep elbow fixed"
+    ],
+    "tipsAr": [
+      "ثبت الكوع"
+    ],
+    "commonMistakes": [
+      "Dropping elbow"
+    ],
+    "commonMistakesAr": [
+      "إسقاط الكوع"
+    ],
+    "repsRange": "12-20",
+    "setsRange": "2-3",
+    "restSeconds": 45,
+    "tempo": "2-1-2-1",
+    "icon": "🔄",
+    "videoUrl": null
+  },
+  {
+    "name": "Scaption Raise",
+    "nameAr": "رفع سكابشن",
+    "description": "Shoulder raise in the scapular plane for supraspinatus and deltoid",
+    "descriptionAr": "رفع في مستوى لوح الكتف للسوبراسبيناتس والدالية",
+    "targetMuscleId": 27,
+    "secondaryMuscles": [
+      {
+        "muscleId": 23,
+        "contributionPercent": 25
+      }
+    ],
+    "equipment": "Dumbbells",
+    "isHighImpact": false,
+    "difficulty": "Beginner",
+    "category": "Rehab",
+    "movementPattern": "Push",
+    "mechanic": "Isolation",
+    "force": "Push",
+    "instructions": [
+      "Hold light dumbbells",
+      "Raise arms 30 degrees forward of the sides",
+      "Stop around shoulder height"
+    ],
+    "instructionsAr": [
+      "امسك دمبل خفيف",
+      "ارفع الذراعين بزاوية 30 درجة أمام الجانبين",
+      "توقف قرب مستوى الكتف"
+    ],
+    "tips": [
+      "Thumbs slightly up"
+    ],
+    "tipsAr": [
+      "اجعل الإبهام لأعلى قليلًا"
+    ],
+    "commonMistakes": [
+      "Raising too high"
+    ],
+    "commonMistakesAr": [
+      "الرفع أعلى من اللازم"
+    ],
+    "repsRange": "12-20",
+    "setsRange": "2-3",
+    "restSeconds": 45,
+    "tempo": "2-1-2-0",
+    "icon": "🎯",
+    "videoUrl": null
+  },
+  {
+    "name": "Cable Internal Rotation at 90 Degrees",
+    "nameAr": "دوران داخلي كابل عند 90 درجة",
+    "description": "Internal rotation with arm abducted to target subscapularis",
+    "descriptionAr": "دوران داخلي مع الذراع مرفوعة لاستهداف تحت الكتف",
+    "targetMuscleId": 28,
+    "secondaryMuscles": [
+      {
+        "muscleId": 218,
+        "contributionPercent": 10
+      }
+    ],
+    "equipment": "Cable Machine",
+    "isHighImpact": false,
+    "difficulty": "Intermediate",
+    "category": "Rehab",
+    "movementPattern": "Rotation",
+    "mechanic": "Isolation",
+    "force": "Pull",
+    "instructions": [
+      "Set elbow at shoulder height",
+      "Rotate forearm forward",
+      "Return under control"
+    ],
+    "instructionsAr": [
+      "ثبت الكوع عند مستوى الكتف",
+      "دوّر الساعد للأمام",
+      "عد بتحكم"
+    ],
+    "tips": [
+      "Use light resistance"
+    ],
+    "tipsAr": [
+      "استخدم مقاومة خفيفة"
+    ],
+    "commonMistakes": [
+      "Letting elbow drift"
+    ],
+    "commonMistakesAr": [
+      "تحريك الكوع من مكانه"
+    ],
+    "repsRange": "12-20",
+    "setsRange": "2-3",
+    "restSeconds": 45,
+    "tempo": "2-1-2-1",
+    "icon": "🔄",
+    "videoUrl": null
+  },
+  {
+    "name": "Straight Arm Scapular Pulldown",
+    "nameAr": "سحب لوح الكتف بذراع مستقيمة",
+    "description": "Scapular depression exercise for lower traps and lats",
+    "descriptionAr": "تمرين خفض لوح الكتف للترابيس السفلية والمجنص",
+    "targetMuscleId": 20,
+    "secondaryMuscles": [
+      {
+        "muscleId": 10,
+        "contributionPercent": 20
+      }
+    ],
+    "equipment": "Cable Machine",
+    "isHighImpact": false,
+    "difficulty": "Beginner",
+    "category": "Activation",
+    "movementPattern": "Pull",
+    "mechanic": "Isolation",
+    "force": "Pull",
+    "instructions": [
+      "Hold bar with straight arms",
+      "Depress shoulder blades",
+      "Return slowly"
+    ],
+    "instructionsAr": [
+      "امسك البار بذراعين مستقيمين",
+      "اخفض لوحي الكتف",
+      "عد ببطء"
+    ],
+    "tips": [
+      "Avoid elbow bending"
+    ],
+    "tipsAr": [
+      "تجنب ثني الكوع"
+    ],
+    "commonMistakes": [
+      "Turning it into pulldown"
+    ],
+    "commonMistakesAr": [
+      "تحويله إلى سحب بالذراع"
+    ],
+    "repsRange": "12-20",
+    "setsRange": "2-4",
+    "restSeconds": 45,
+    "tempo": "2-1-2-1",
+    "icon": "⬇️",
+    "videoUrl": null
+  },
+  {
+    "name": "Chest Supported Rear Delt Row",
+    "nameAr": "تجديف كتف خلفي مدعوم بالصدر",
+    "description": "Row variation emphasizing rear deltoids",
+    "descriptionAr": "تنويعة تجديف تركز على الكتف الخلفي",
+    "targetMuscleId": 24,
+    "secondaryMuscles": [
+      {
+        "muscleId": 19,
+        "contributionPercent": 20
+      },
+      {
+        "muscleId": 11,
+        "contributionPercent": 20
+      }
+    ],
+    "equipment": "Dumbbells",
+    "isHighImpact": false,
+    "difficulty": "Beginner",
+    "category": "Hypertrophy",
+    "movementPattern": "Pull",
+    "mechanic": "Compound",
+    "force": "Pull",
+    "instructions": [
+      "Lie chest-down on incline bench",
+      "Flare elbows out",
+      "Row dumbbells toward upper chest"
+    ],
+    "instructionsAr": [
+      "استلقِ بصدرك على بنش مائل",
+      "افتح الكوعين للخارج",
+      "اسحب الدمبلز نحو أعلى الصدر"
+    ],
+    "tips": [
+      "Lead with elbows"
+    ],
+    "tipsAr": [
+      "قُد بالكوعين"
+    ],
+    "commonMistakes": [
+      "Pulling toward hips"
+    ],
+    "commonMistakesAr": [
+      "السحب باتجاه الورك"
+    ],
+    "repsRange": "10-15",
+    "setsRange": "3-4",
+    "restSeconds": 60,
+    "tempo": "2-1-2-1",
+    "icon": "🚣",
+    "videoUrl": null
+  },
+  {
+    "name": "Cable Y Raise",
+    "nameAr": "رفع Y بالكابل",
+    "description": "Cable exercise for lower traps and upward rotation",
+    "descriptionAr": "تمرين كابل للترابيس السفلية ودوران لوح الكتف للأعلى",
+    "targetMuscleId": 20,
+    "secondaryMuscles": [
+      {
+        "muscleId": 16,
+        "contributionPercent": 15
+      },
+      {
+        "muscleId": 23,
+        "contributionPercent": 10
+      }
+    ],
+    "equipment": "Cable Machine",
+    "isHighImpact": false,
+    "difficulty": "Beginner",
+    "category": "Activation",
+    "movementPattern": "Pull",
+    "mechanic": "Isolation",
+    "force": "Pull",
+    "instructions": [
+      "Set cables low",
+      "Raise arms into Y",
+      "Pause overhead"
+    ],
+    "instructionsAr": [
+      "اضبط الكابلات منخفضة",
+      "ارفع الذراعين بشكل Y",
+      "توقف بالأعلى"
+    ],
+    "tips": [
+      "Keep shoulders away from ears"
+    ],
+    "tipsAr": [
+      "أبعد الكتفين عن الأذنين"
+    ],
+    "commonMistakes": [
+      "Shrugging"
+    ],
+    "commonMistakesAr": [
+      "رفع الكتفين"
+    ],
+    "repsRange": "12-20",
+    "setsRange": "2-3",
+    "restSeconds": 45,
+    "tempo": "2-1-2-1",
+    "icon": "Y",
+    "videoUrl": null
+  },
+  {
+    "name": "Bayesian Cable Curl",
+    "nameAr": "بايزين كابل كيرل",
+    "description": "Cable curl with shoulder extended to bias the long head of the biceps",
+    "descriptionAr": "كيرل كابل والذراع خلف الجسم للتركيز على الرأس الطويل للباي",
+    "targetMuscleId": 30,
+    "secondaryMuscles": [
+      {
+        "muscleId": 29,
+        "contributionPercent": 25
+      }
+    ],
+    "equipment": "Cable Machine",
+    "isHighImpact": false,
+    "difficulty": "Intermediate",
+    "category": "Hypertrophy",
+    "movementPattern": "Pull",
+    "mechanic": "Isolation",
+    "force": "Pull",
+    "instructions": [
+      "Stand facing away from low cable",
+      "Keep upper arm behind torso",
+      "Curl handle forward"
+    ],
+    "instructionsAr": [
+      "قف وظهرك للكابل المنخفض",
+      "أبقِ العضد خلف الجذع",
+      "ارفع المقبض للأمام"
+    ],
+    "tips": [
+      "Keep shoulder still"
+    ],
+    "tipsAr": [
+      "ثبت الكتف"
+    ],
+    "commonMistakes": [
+      "Letting elbow drift forward"
+    ],
+    "commonMistakesAr": [
+      "تحريك الكوع للأمام"
+    ],
+    "repsRange": "10-15",
+    "setsRange": "3-4",
+    "restSeconds": 45,
+    "tempo": "2-1-2-1",
+    "icon": "💪",
+    "videoUrl": null
+  },
+  {
+    "name": "Wide Grip Barbell Curl",
+    "nameAr": "بار كيرل قبضة واسعة",
+    "description": "Curl variation emphasizing the short head of the biceps",
+    "descriptionAr": "تنويعة كيرل تركز على الرأس القصير للباي",
+    "targetMuscleId": 31,
+    "secondaryMuscles": [
+      {
+        "muscleId": 29,
+        "contributionPercent": 25
+      }
+    ],
+    "equipment": "Barbell",
+    "isHighImpact": false,
+    "difficulty": "Beginner",
+    "category": "Hypertrophy",
+    "movementPattern": "Pull",
+    "mechanic": "Isolation",
+    "force": "Pull",
+    "instructions": [
+      "Take a wider than shoulder-width grip",
+      "Keep elbows near sides",
+      "Curl bar up"
+    ],
+    "instructionsAr": [
+      "امسك البار أوسع من الكتفين",
+      "أبقِ الكوعين قرب الجانبين",
+      "ارفع البار"
+    ],
+    "tips": [
+      "Control the negative"
+    ],
+    "tipsAr": [
+      "تحكم في النزول"
+    ],
+    "commonMistakes": [
+      "Swinging"
+    ],
+    "commonMistakesAr": [
+      "التأرجح"
+    ],
+    "repsRange": "8-12",
+    "setsRange": "3-4",
+    "restSeconds": 60,
+    "tempo": "2-1-2-0",
+    "icon": "💪",
+    "videoUrl": null
+  },
+  {
+    "name": "Cross Body Hammer Curl",
+    "nameAr": "هامر كيرل عبر الجسم",
+    "description": "Neutral-grip curl emphasizing brachialis and brachioradialis",
+    "descriptionAr": "كيرل بقبضة محايدة يركز على العضدية والعضدية الكعبرية",
+    "targetMuscleId": 33,
+    "secondaryMuscles": [
+      {
+        "muscleId": 32,
+        "contributionPercent": 30
+      },
+      {
+        "muscleId": 29,
+        "contributionPercent": 20
+      }
+    ],
+    "equipment": "Dumbbells",
+    "isHighImpact": false,
+    "difficulty": "Beginner",
+    "category": "Hypertrophy",
+    "movementPattern": "Pull",
+    "mechanic": "Isolation",
+    "force": "Pull",
+    "instructions": [
+      "Hold dumbbell neutral",
+      "Curl toward opposite shoulder",
+      "Lower slowly"
+    ],
+    "instructionsAr": [
+      "امسك الدمبل بقبضة محايدة",
+      "ارفع نحو الكتف المقابل",
+      "أنزل ببطء"
+    ],
+    "tips": [
+      "Keep wrist neutral"
+    ],
+    "tipsAr": [
+      "حافظ على المعصم محايدًا"
+    ],
+    "commonMistakes": [
+      "Rotating wrist"
+    ],
+    "commonMistakesAr": [
+      "تدوير المعصم"
+    ],
+    "repsRange": "10-15",
+    "setsRange": "3-4",
+    "restSeconds": 45,
+    "tempo": "2-1-2-0",
+    "icon": "🔨",
+    "videoUrl": null
+  },
+  {
+    "name": "Behind the Back Wrist Curl",
+    "nameAr": "كيرل معصم خلف الظهر",
+    "description": "Loaded wrist-flexion exercise for forearm flexors",
+    "descriptionAr": "تمرين ثني معصم محمّل لعضلات الساعد القابضة",
+    "targetMuscleId": 41,
+    "secondaryMuscles": [
+      {
+        "muscleId": 47,
+        "contributionPercent": 10
+      }
+    ],
+    "equipment": "Barbell",
+    "isHighImpact": false,
+    "difficulty": "Beginner",
+    "category": "Hypertrophy",
+    "movementPattern": "Flexion",
+    "mechanic": "Isolation",
+    "force": "Pull",
+    "instructions": [
+      "Hold bar behind thighs",
+      "Let wrists extend",
+      "Curl bar with wrists"
+    ],
+    "instructionsAr": [
+      "امسك البار خلف الفخذين",
+      "اسمح للمعصم بالتمدد",
+      "ارفع بالمعصمين"
+    ],
+    "tips": [
+      "Keep elbows straight"
+    ],
+    "tipsAr": [
+      "أبقِ الكوعين مستقيمين"
+    ],
+    "commonMistakes": [
+      "Moving arms"
+    ],
+    "commonMistakesAr": [
+      "تحريك الذراعين"
+    ],
+    "repsRange": "15-25",
+    "setsRange": "3-4",
+    "restSeconds": 45,
+    "tempo": "2-1-2-0",
+    "icon": "✊",
+    "videoUrl": null
+  },
+  {
+    "name": "Dumbbell Pronation",
+    "nameAr": "كب الساعد بالدمبل",
+    "description": "Forearm rotation drill targeting pronators",
+    "descriptionAr": "تمرين دوران الساعد لاستهداف عضلات الكب",
+    "targetMuscleId": 43,
+    "secondaryMuscles": [
+      {
+        "muscleId": 231,
+        "contributionPercent": 30
+      }
+    ],
+    "equipment": "Dumbbells",
+    "isHighImpact": false,
+    "difficulty": "Beginner",
+    "category": "Rehab",
+    "movementPattern": "Rotation",
+    "mechanic": "Isolation",
+    "force": "Pull",
+    "instructions": [
+      "Support forearm",
+      "Hold one end of light dumbbell",
+      "Rotate palm downward",
+      "Return slowly"
+    ],
+    "instructionsAr": [
+      "ثبت الساعد",
+      "امسك طرف دمبل خفيف",
+      "دوّر الكف لأسفل",
+      "عد ببطء"
+    ],
+    "tips": [
+      "Use very light load"
+    ],
+    "tipsAr": [
+      "استخدم حملاً خفيفًا جدًا"
+    ],
+    "commonMistakes": [
+      "Moving elbow"
+    ],
+    "commonMistakesAr": [
+      "تحريك الكوع"
+    ],
+    "repsRange": "12-20 each",
+    "setsRange": "2-3",
+    "restSeconds": 45,
+    "tempo": "Controlled",
+    "icon": "🔄",
+    "videoUrl": null
+  },
+  {
+    "name": "Dumbbell Supination",
+    "nameAr": "استلقاء الساعد بالدمبل",
+    "description": "Forearm rotation drill targeting the supinator",
+    "descriptionAr": "تمرين دوران الساعد لاستهداف عضلة البسط الخارجي",
+    "targetMuscleId": 44,
+    "secondaryMuscles": [
+      {
+        "muscleId": 29,
+        "contributionPercent": 15
+      }
+    ],
+    "equipment": "Dumbbells",
+    "isHighImpact": false,
+    "difficulty": "Beginner",
+    "category": "Rehab",
+    "movementPattern": "Rotation",
+    "mechanic": "Isolation",
+    "force": "Pull",
+    "instructions": [
+      "Support forearm",
+      "Hold one end of light dumbbell",
+      "Rotate palm upward",
+      "Return slowly"
+    ],
+    "instructionsAr": [
+      "ثبت الساعد",
+      "امسك طرف دمبل خفيف",
+      "دوّر الكف لأعلى",
+      "عد ببطء"
+    ],
+    "tips": [
+      "Move only at forearm"
+    ],
+    "tipsAr": [
+      "الحركة من الساعد فقط"
+    ],
+    "commonMistakes": [
+      "Using heavy weight"
+    ],
+    "commonMistakesAr": [
+      "استخدام وزن ثقيل"
+    ],
+    "repsRange": "12-20 each",
+    "setsRange": "2-3",
+    "restSeconds": 45,
+    "tempo": "Controlled",
+    "icon": "🔄",
+    "videoUrl": null
+  },
+  {
+    "name": "Plate Pinch Hold",
+    "nameAr": "مسكة ضغط الأطباق",
+    "description": "Static grip exercise emphasizing finger and thumb strength",
+    "descriptionAr": "تمرين قبضة ثابتة يركز على قوة الأصابع والإبهام",
+    "targetMuscleId": 47,
+    "secondaryMuscles": [
+      {
+        "muscleId": 45,
+        "contributionPercent": 30
+      },
+      {
+        "muscleId": 48,
+        "contributionPercent": 20
+      }
+    ],
+    "equipment": "Weight Plate",
+    "isHighImpact": false,
+    "difficulty": "Beginner",
+    "category": "Strength",
+    "movementPattern": "Static",
+    "mechanic": "Isolation",
+    "force": "Static",
+    "instructions": [
+      "Pinch plates between fingers and thumb",
+      "Stand tall",
+      "Hold for time"
+    ],
+    "instructionsAr": [
+      "اضغط الأطباق بين الأصابع والإبهام",
+      "قف منتصبًا",
+      "اثبت للمدة المطلوبة"
+    ],
+    "tips": [
+      "Keep shoulders relaxed"
+    ],
+    "tipsAr": [
+      "حافظ على الكتفين مسترخيين"
+    ],
+    "commonMistakes": [
+      "Letting plates rest on palm"
+    ],
+    "commonMistakesAr": [
+      "إراحة الأطباق على راحة اليد"
+    ],
+    "repsRange": "20-45 sec",
+    "setsRange": "3-5",
+    "restSeconds": 60,
+    "tempo": "Hold",
+    "icon": "✊",
+    "videoUrl": null
+  },
+  {
+    "name": "Finger Curl",
+    "nameAr": "كيرل أصابع",
+    "description": "Barbell finger-flexion exercise for grip and finger flexors",
+    "descriptionAr": "تمرين ثني أصابع بالبار للقبضة وقوابض الأصابع",
+    "targetMuscleId": 45,
+    "secondaryMuscles": [
+      {
+        "muscleId": 47,
+        "contributionPercent": 20
+      }
+    ],
+    "equipment": "Barbell",
+    "isHighImpact": false,
+    "difficulty": "Beginner",
+    "category": "Strength",
+    "movementPattern": "Flexion",
+    "mechanic": "Isolation",
+    "force": "Pull",
+    "instructions": [
+      "Hold bar in fingertips",
+      "Curl fingers to roll bar into palm",
+      "Lower back to fingertips"
+    ],
+    "instructionsAr": [
+      "امسك البار بأطراف الأصابع",
+      "اثنِ الأصابع ليتدحرج البار داخل الكف",
+      "أعده لأطراف الأصابع"
+    ],
+    "tips": [
+      "Use light to moderate load"
+    ],
+    "tipsAr": [
+      "استخدم وزنًا خفيفًا إلى متوسط"
+    ],
+    "commonMistakes": [
+      "Dropping bar"
+    ],
+    "commonMistakesAr": [
+      "فقدان السيطرة على البار"
+    ],
+    "repsRange": "15-25",
+    "setsRange": "3-4",
+    "restSeconds": 45,
+    "tempo": "2-1-2-0",
+    "icon": "✊",
+    "videoUrl": null
+  },
+  {
+    "name": "Rubber Band Finger Extension",
+    "nameAr": "بسط أصابع بالباند",
+    "description": "Finger extension drill for extensor muscles",
+    "descriptionAr": "تمرين بسط أصابع لعضلات الباسطة",
+    "targetMuscleId": 46,
+    "secondaryMuscles": [],
+    "equipment": "Resistance Band",
+    "isHighImpact": false,
+    "difficulty": "Beginner",
+    "category": "Rehab",
+    "movementPattern": "Extension",
+    "mechanic": "Isolation",
+    "force": "Push",
+    "instructions": [
+      "Loop band around fingertips",
+      "Open fingers against resistance",
+      "Return slowly"
+    ],
+    "instructionsAr": [
+      "ضع الباند حول أطراف الأصابع",
+      "افتح الأصابع ضد المقاومة",
+      "عد ببطء"
+    ],
+    "tips": [
+      "Use full range"
+    ],
+    "tipsAr": [
+      "استخدم مدى حركة كامل"
+    ],
+    "commonMistakes": [
+      "Snapping band quickly"
+    ],
+    "commonMistakesAr": [
+      "ترك الباند يعود بسرعة"
+    ],
+    "repsRange": "20-30",
+    "setsRange": "2-4",
+    "restSeconds": 30,
+    "tempo": "Controlled",
+    "icon": "🖐️",
+    "videoUrl": null
+  },
+  {
+    "name": "McGill Curl Up",
+    "nameAr": "ماكجيل كيرل أب",
+    "description": "Low-load trunk flexion drill emphasizing abdominal bracing",
+    "descriptionAr": "تمرين ثني جذع بحمل منخفض يركز على تثبيت البطن",
+    "targetMuscleId": 53,
+    "secondaryMuscles": [
+      {
+        "muscleId": 57,
+        "contributionPercent": 20
+      }
+    ],
+    "equipment": "Bodyweight",
+    "isHighImpact": false,
+    "difficulty": "Beginner",
+    "category": "Rehab",
+    "movementPattern": "Flexion",
+    "mechanic": "Isolation",
+    "force": "Pull",
+    "instructions": [
+      "Lie on back with one knee bent",
+      "Brace abdomen",
+      "Lift head and shoulders slightly",
+      "Hold briefly"
+    ],
+    "instructionsAr": [
+      "استلقِ على الظهر مع ثني ركبة واحدة",
+      "شد البطن",
+      "ارفع الرأس والكتفين قليلًا",
+      "اثبت لحظة"
+    ],
+    "tips": [
+      "Keep lumbar spine neutral"
+    ],
+    "tipsAr": [
+      "حافظ على المنطقة القطنية محايدة"
+    ],
+    "commonMistakes": [
+      "Crunching too high"
+    ],
+    "commonMistakesAr": [
+      "الارتفاع أكثر من اللازم"
+    ],
+    "repsRange": "8-12",
+    "setsRange": "2-3",
+    "restSeconds": 30,
+    "tempo": "Slow",
+    "icon": "🎯",
+    "videoUrl": null
+  },
+  {
+    "name": "Stomach Vacuum",
+    "nameAr": "فاكيوم البطن",
+    "description": "Isometric abdominal draw-in drill emphasizing transverse abdominis",
+    "descriptionAr": "تمرين شد بطني ثابت يركز على العضلة المستعرضة",
+    "targetMuscleId": 57,
+    "secondaryMuscles": [
+      {
+        "muscleId": 68,
+        "contributionPercent": 10
+      }
+    ],
+    "equipment": "Bodyweight",
+    "isHighImpact": false,
+    "difficulty": "Beginner",
+    "category": "Activation",
+    "movementPattern": "Static",
+    "mechanic": "Isolation",
+    "force": "Static",
+    "instructions": [
+      "Exhale fully",
+      "Draw abdomen inward",
+      "Hold while breathing lightly"
+    ],
+    "instructionsAr": [
+      "ازفر بالكامل",
+      "اسحب البطن للداخل",
+      "اثبت مع تنفس خفيف"
+    ],
+    "tips": [
+      "Do not strain"
+    ],
+    "tipsAr": [
+      "لا تضغط أو تحبس النفس بقوة"
+    ],
+    "commonMistakes": [
+      "Holding breath too long"
+    ],
+    "commonMistakesAr": [
+      "حبس النفس لفترة طويلة"
+    ],
+    "repsRange": "15-30 sec",
+    "setsRange": "3-5",
+    "restSeconds": 30,
+    "tempo": "Hold",
+    "icon": "🎯",
+    "videoUrl": null
+  },
+  {
+    "name": "Suitcase Carry",
+    "nameAr": "حمل حقيبة جانب واحد",
+    "description": "Unilateral loaded carry for obliques and quadratus lumborum",
+    "descriptionAr": "حمل أحادي للعضلات المائلة والمربعة القطنية",
+    "targetMuscleId": 63,
+    "secondaryMuscles": [
+      {
+        "muscleId": 54,
+        "contributionPercent": 25
+      },
+      {
+        "muscleId": 47,
+        "contributionPercent": 15
+      }
+    ],
+    "equipment": "Dumbbells",
+    "isHighImpact": false,
+    "difficulty": "Beginner",
+    "category": "Functional",
+    "movementPattern": "Carry",
+    "mechanic": "Compound",
+    "force": "Static",
+    "instructions": [
+      "Hold heavy dumbbell on one side",
+      "Stand tall",
+      "Walk without leaning"
+    ],
+    "instructionsAr": [
+      "امسك دمبل ثقيل في جانب واحد",
+      "قف منتصبًا",
+      "امشِ بدون ميل"
+    ],
+    "tips": [
+      "Keep shoulders level"
+    ],
+    "tipsAr": [
+      "حافظ على مستوى الكتفين"
+    ],
+    "commonMistakes": [
+      "Leaning toward weight"
+    ],
+    "commonMistakesAr": [
+      "الميل ناحية الوزن"
+    ],
+    "repsRange": "30-60 sec each",
+    "setsRange": "3-4",
+    "restSeconds": 60,
+    "tempo": "Continuous",
+    "icon": "🚶",
+    "videoUrl": null
+  },
+  {
+    "name": "45 Degree Back Extension",
+    "nameAr": "تمديد ظهر 45 درجة",
+    "description": "Hip and spinal extension exercise for erector spinae and posterior chain",
+    "descriptionAr": "تمرين مد للورك والعمود للناصبة الفقرية والسلسلة الخلفية",
+    "targetMuscleId": 59,
+    "secondaryMuscles": [
+      {
+        "muscleId": 82,
+        "contributionPercent": 25
+      },
+      {
+        "muscleId": 78,
+        "contributionPercent": 20
+      }
+    ],
+    "equipment": "Machine",
+    "isHighImpact": false,
+    "difficulty": "Beginner",
+    "category": "Strength",
+    "movementPattern": "Extension",
+    "mechanic": "Compound",
+    "force": "Pull",
+    "instructions": [
+      "Set hips on pad",
+      "Lower torso with neutral spine",
+      "Extend to neutral"
+    ],
+    "instructionsAr": [
+      "ثبت الوركين على الوسادة",
+      "أنزل الجذع بظهر محايد",
+      "مد حتى الوضع المحايد"
+    ],
+    "tips": [
+      "Stop at neutral"
+    ],
+    "tipsAr": [
+      "توقف عند الوضع المحايد"
+    ],
+    "commonMistakes": [
+      "Hyperextending"
+    ],
+    "commonMistakesAr": [
+      "التمديد الزائد"
+    ],
+    "repsRange": "10-15",
+    "setsRange": "3-4",
+    "restSeconds": 60,
+    "tempo": "2-1-2-1",
+    "icon": "🔙",
+    "videoUrl": null
+  },
+  {
+    "name": "Reverse Hyperextension",
+    "nameAr": "ريفيرس هايبر",
+    "description": "Hip extension exercise with reduced spinal loading",
+    "descriptionAr": "تمرين مد ورك مع حمل أقل على العمود الفقري",
+    "targetMuscleId": 82,
+    "secondaryMuscles": [
+      {
+        "muscleId": 59,
+        "contributionPercent": 20
+      },
+      {
+        "muscleId": 78,
+        "contributionPercent": 25
+      }
+    ],
+    "equipment": "Machine",
+    "isHighImpact": false,
+    "difficulty": "Intermediate",
+    "category": "Strength",
+    "movementPattern": "Extension",
+    "mechanic": "Compound",
+    "force": "Pull",
+    "instructions": [
+      "Lie face down on machine",
+      "Let legs hang",
+      "Extend hips to body line",
+      "Lower under control"
+    ],
+    "instructionsAr": [
+      "استلقِ على الجهاز",
+      "اترك الساقين لأسفل",
+      "مد الوركين حتى خط الجسم",
+      "أنزل بتحكم"
+    ],
+    "tips": [
+      "Avoid excessive arch"
+    ],
+    "tipsAr": [
+      "تجنب تقويس الظهر"
+    ],
+    "commonMistakes": [
+      "Swinging legs"
+    ],
+    "commonMistakesAr": [
+      "تأرجح الساقين"
+    ],
+    "repsRange": "10-15",
+    "setsRange": "3-4",
+    "restSeconds": 60,
+    "tempo": "2-1-2-1",
+    "icon": "🔙",
+    "videoUrl": null
+  },
+  {
+    "name": "Cable Side Bend",
+    "nameAr": "ميل جانبي بالكابل",
+    "description": "Loaded lateral-flexion exercise for obliques and quadratus lumborum",
+    "descriptionAr": "تمرين ثني جانبي محمل للمائلة والمربعة القطنية",
+    "targetMuscleId": 54,
+    "secondaryMuscles": [
+      {
+        "muscleId": 63,
+        "contributionPercent": 25
+      }
+    ],
+    "equipment": "Cable Machine",
+    "isHighImpact": false,
+    "difficulty": "Beginner",
+    "category": "Hypertrophy",
+    "movementPattern": "Flexion",
+    "mechanic": "Isolation",
+    "force": "Pull",
+    "instructions": [
+      "Stand sideways to cable",
+      "Hold handle at side",
+      "Bend torso away and return"
+    ],
+    "instructionsAr": [
+      "قف جانبًا للكابل",
+      "امسك المقبض بجانبك",
+      "اثنِ الجذع جانبًا ثم عد"
+    ],
+    "tips": [
+      "Keep hips still"
+    ],
+    "tipsAr": [
+      "ثبت الوركين"
+    ],
+    "commonMistakes": [
+      "Rotating torso"
+    ],
+    "commonMistakesAr": [
+      "تدوير الجذع"
+    ],
+    "repsRange": "12-20 each",
+    "setsRange": "3-4",
+    "restSeconds": 45,
+    "tempo": "2-1-2-1",
+    "icon": "↔️",
+    "videoUrl": null
+  },
+  {
+    "name": "Hanging Knee Raise",
+    "nameAr": "رفع ركبتين معلق",
+    "description": "Hanging core exercise emphasizing lower abdominal region and hip flexors",
+    "descriptionAr": "تمرين بطن معلق يركز على أسفل البطن ومثنيات الورك",
+    "targetMuscleId": 52,
+    "secondaryMuscles": [
+      {
+        "muscleId": 67,
+        "contributionPercent": 20
+      },
+      {
+        "muscleId": 47,
+        "contributionPercent": 10
+      }
+    ],
+    "equipment": "Pull-up Bar",
+    "isHighImpact": false,
+    "difficulty": "Beginner",
+    "category": "Strength",
+    "movementPattern": "Flexion",
+    "mechanic": "Compound",
+    "force": "Pull",
+    "instructions": [
+      "Hang from bar",
+      "Posteriorly tilt pelvis",
+      "Raise knees toward chest",
+      "Lower slowly"
+    ],
+    "instructionsAr": [
+      "تعلق من العارضة",
+      "لف الحوض للخلف",
+      "ارفع الركبتين نحو الصدر",
+      "أنزل ببطء"
+    ],
+    "tips": [
+      "Avoid swinging"
+    ],
+    "tipsAr": [
+      "تجنب التأرجح"
+    ],
+    "commonMistakes": [
+      "Only flexing hips"
+    ],
+    "commonMistakesAr": [
+      "الاعتماد على ثني الورك فقط"
+    ],
+    "repsRange": "10-15",
+    "setsRange": "3-4",
+    "restSeconds": 60,
+    "tempo": "2-1-2-1",
+    "icon": "🎯",
+    "videoUrl": null
+  },
+  {
+    "name": "Seated Hip Flexion",
+    "nameAr": "ثني ورك جالس",
+    "description": "Hip flexor isolation exercise",
+    "descriptionAr": "تمرين عزل لمثنيات الورك",
+    "targetMuscleId": 67,
+    "secondaryMuscles": [
+      {
+        "muscleId": 65,
+        "contributionPercent": 30
+      },
+      {
+        "muscleId": 66,
+        "contributionPercent": 25
+      }
+    ],
+    "equipment": "Resistance Band",
+    "isHighImpact": false,
+    "difficulty": "Beginner",
+    "category": "Strength",
+    "movementPattern": "Flexion",
+    "mechanic": "Isolation",
+    "force": "Pull",
+    "instructions": [
+      "Sit upright",
+      "Loop band over foot",
+      "Lift knee toward chest",
+      "Lower slowly"
+    ],
+    "instructionsAr": [
+      "اجلس منتصبًا",
+      "ثبت الباند حول القدم",
+      "ارفع الركبة نحو الصدر",
+      "أنزل ببطء"
+    ],
+    "tips": [
+      "Keep torso still"
+    ],
+    "tipsAr": [
+      "ثبت الجذع"
+    ],
+    "commonMistakes": [
+      "Leaning backward"
+    ],
+    "commonMistakesAr": [
+      "الميل للخلف"
+    ],
+    "repsRange": "12-20 each",
+    "setsRange": "3-4",
+    "restSeconds": 45,
+    "tempo": "2-1-2-1",
+    "icon": "🦵",
+    "videoUrl": null
+  },
+  {
+    "name": "Standing Cable Hip Flexion",
+    "nameAr": "ثني ورك واقف بالكابل",
+    "description": "Cable hip flexion targeting iliopsoas",
+    "descriptionAr": "ثني ورك بالكابل يستهدف الحرقفية القطنية",
+    "targetMuscleId": 267,
+    "secondaryMuscles": [
+      {
+        "muscleId": 74,
+        "contributionPercent": 20
+      }
+    ],
+    "equipment": "Cable Machine",
+    "isHighImpact": false,
+    "difficulty": "Beginner",
+    "category": "Strength",
+    "movementPattern": "Flexion",
+    "mechanic": "Isolation",
+    "force": "Pull",
+    "instructions": [
+      "Attach ankle strap",
+      "Stand tall",
+      "Drive knee upward",
+      "Return slowly"
+    ],
+    "instructionsAr": [
+      "ثبت حزام الكاحل",
+      "قف منتصبًا",
+      "ارفع الركبة لأعلى",
+      "عد ببطء"
+    ],
+    "tips": [
+      "Keep pelvis neutral"
+    ],
+    "tipsAr": [
+      "حافظ على الحوض محايدًا"
+    ],
+    "commonMistakes": [
+      "Leaning back"
+    ],
+    "commonMistakesAr": [
+      "الميل للخلف"
+    ],
+    "repsRange": "12-15 each",
+    "setsRange": "3-4",
+    "restSeconds": 45,
+    "tempo": "2-1-2-1",
+    "icon": "🦵",
+    "videoUrl": null
+  },
+  {
+    "name": "Copenhagen Plank",
+    "nameAr": "بلانك كوبنهاجن",
+    "description": "Isometric adductor exercise for inner thigh strength",
+    "descriptionAr": "تمرين ثابت لتقوية العضلات المقربة والفخذ الداخلي",
+    "targetMuscleId": 88,
+    "secondaryMuscles": [
+      {
+        "muscleId": 54,
+        "contributionPercent": 15
+      }
+    ],
+    "equipment": "Bodyweight",
+    "isHighImpact": false,
+    "difficulty": "Intermediate",
+    "category": "Strength",
+    "movementPattern": "Static",
+    "mechanic": "Isolation",
+    "force": "Static",
+    "instructions": [
+      "Place top leg on bench",
+      "Support body on forearm",
+      "Lift hips",
+      "Hold straight line"
+    ],
+    "instructionsAr": [
+      "ضع الساق العليا على بنش",
+      "استند على الساعد",
+      "ارفع الوركين",
+      "اثبت بخط مستقيم"
+    ],
+    "tips": [
+      "Start with knee support if needed"
+    ],
+    "tipsAr": [
+      "ابدأ بدعم الركبة إذا لزم"
+    ],
+    "commonMistakes": [
+      "Hips dropping"
+    ],
+    "commonMistakesAr": [
+      "سقوط الوركين"
+    ],
+    "repsRange": "20-40 sec each",
+    "setsRange": "2-4",
+    "restSeconds": 60,
+    "tempo": "Hold",
+    "icon": "🦵",
+    "videoUrl": null
+  },
+  {
+    "name": "Cable Hip Adduction",
+    "nameAr": "تقريب ورك بالكابل",
+    "description": "Standing cable exercise for hip adductors",
+    "descriptionAr": "تمرين كابل واقف للعضلات المقربة",
+    "targetMuscleId": 90,
+    "secondaryMuscles": [
+      {
+        "muscleId": 89,
+        "contributionPercent": 25
+      },
+      {
+        "muscleId": 91,
+        "contributionPercent": 20
+      },
+      {
+        "muscleId": 93,
+        "contributionPercent": 15
+      }
+    ],
+    "equipment": "Cable Machine",
+    "isHighImpact": false,
+    "difficulty": "Beginner",
+    "category": "Hypertrophy",
+    "movementPattern": "Adduction",
+    "mechanic": "Isolation",
+    "force": "Pull",
+    "instructions": [
+      "Attach ankle strap",
+      "Stand sideways",
+      "Pull working leg across body",
+      "Return slowly"
+    ],
+    "instructionsAr": [
+      "ثبت حزام الكاحل",
+      "قف جانبًا",
+      "اسحب الساق عبر الجسم",
+      "عد ببطء"
+    ],
+    "tips": [
+      "Keep pelvis square"
+    ],
+    "tipsAr": [
+      "حافظ على الحوض ثابتًا"
+    ],
+    "commonMistakes": [
+      "Swinging leg"
+    ],
+    "commonMistakesAr": [
+      "تأرجح الساق"
+    ],
+    "repsRange": "12-20 each",
+    "setsRange": "3-4",
+    "restSeconds": 45,
+    "tempo": "2-1-2-1",
+    "icon": "🦵",
+    "videoUrl": null
+  },
+  {
+    "name": "Side Lying Hip Adduction",
+    "nameAr": "تقريب ورك مستلقٍ جانبًا",
+    "description": "Bodyweight adductor exercise",
+    "descriptionAr": "تمرين بوزن الجسم للعضلات المقربة",
+    "targetMuscleId": 91,
+    "secondaryMuscles": [
+      {
+        "muscleId": 90,
+        "contributionPercent": 25
+      },
+      {
+        "muscleId": 93,
+        "contributionPercent": 15
+      }
+    ],
+    "equipment": "Bodyweight",
+    "isHighImpact": false,
+    "difficulty": "Beginner",
+    "category": "Activation",
+    "movementPattern": "Adduction",
+    "mechanic": "Isolation",
+    "force": "Pull",
+    "instructions": [
+      "Lie on side",
+      "Cross top leg over",
+      "Lift bottom leg upward",
+      "Lower slowly"
+    ],
+    "instructionsAr": [
+      "استلقِ على جانبك",
+      "ضع الساق العليا أمام السفلى",
+      "ارفع الساق السفلى",
+      "أنزل ببطء"
+    ],
+    "tips": [
+      "Keep toes forward"
+    ],
+    "tipsAr": [
+      "أبقِ أصابع القدم للأمام"
+    ],
+    "commonMistakes": [
+      "Rotating hip"
+    ],
+    "commonMistakesAr": [
+      "تدوير الورك"
+    ],
+    "repsRange": "15-20 each",
+    "setsRange": "2-3",
+    "restSeconds": 30,
+    "tempo": "2-1-2-1",
+    "icon": "🦵",
+    "videoUrl": null
+  },
+  {
+    "name": "Cable Hip Abduction",
+    "nameAr": "إبعاد ورك بالكابل",
+    "description": "Standing cable exercise for glute medius and abductors",
+    "descriptionAr": "تمرين كابل واقف للألوية الوسطى والعضلات المبعدة",
+    "targetMuscleId": 84,
+    "secondaryMuscles": [
+      {
+        "muscleId": 94,
+        "contributionPercent": 25
+      },
+      {
+        "muscleId": 87,
+        "contributionPercent": 15
+      }
+    ],
+    "equipment": "Cable Machine",
+    "isHighImpact": false,
+    "difficulty": "Beginner",
+    "category": "Hypertrophy",
+    "movementPattern": "Abduction",
+    "mechanic": "Isolation",
+    "force": "Push",
+    "instructions": [
+      "Attach ankle strap",
+      "Stand tall",
+      "Move leg outward",
+      "Return under control"
+    ],
+    "instructionsAr": [
+      "ثبت حزام الكاحل",
+      "قف منتصبًا",
+      "حرّك الساق للخارج",
+      "عد بتحكم"
+    ],
+    "tips": [
+      "Keep torso still"
+    ],
+    "tipsAr": [
+      "ثبت الجذع"
+    ],
+    "commonMistakes": [
+      "Leaning sideways"
+    ],
+    "commonMistakesAr": [
+      "الميل جانبًا"
+    ],
+    "repsRange": "12-20 each",
+    "setsRange": "3-4",
+    "restSeconds": 45,
+    "tempo": "2-1-2-1",
+    "icon": "🦵",
+    "videoUrl": null
+  },
+  {
+    "name": "Side Lying Hip Abduction",
+    "nameAr": "إبعاد ورك مستلقٍ جانبًا",
+    "description": "Bodyweight exercise for glute medius and minimus",
+    "descriptionAr": "تمرين بوزن الجسم للألوية الوسطى والصغرى",
+    "targetMuscleId": 85,
+    "secondaryMuscles": [
+      {
+        "muscleId": 84,
+        "contributionPercent": 30
+      }
+    ],
+    "equipment": "Bodyweight",
+    "isHighImpact": false,
+    "difficulty": "Beginner",
+    "category": "Activation",
+    "movementPattern": "Abduction",
+    "mechanic": "Isolation",
+    "force": "Push",
+    "instructions": [
+      "Lie on side",
+      "Keep top leg straight",
+      "Raise leg upward",
+      "Lower slowly"
+    ],
+    "instructionsAr": [
+      "استلقِ على جانبك",
+      "أبقِ الساق العليا مستقيمة",
+      "ارفع الساق لأعلى",
+      "أنزل ببطء"
+    ],
+    "tips": [
+      "Slightly turn toes down"
+    ],
+    "tipsAr": [
+      "وجّه أصابع القدم لأسفل قليلًا"
+    ],
+    "commonMistakes": [
+      "Rolling pelvis back"
+    ],
+    "commonMistakesAr": [
+      "لف الحوض للخلف"
+    ],
+    "repsRange": "15-25 each",
+    "setsRange": "2-4",
+    "restSeconds": 30,
+    "tempo": "2-1-2-1",
+    "icon": "🍑",
+    "videoUrl": null
+  },
+  {
+    "name": "Band Lateral Walk",
+    "nameAr": "مشي جانبي بالباند",
+    "description": "Lateral band walk for glute medius and hip abductors",
+    "descriptionAr": "مشي جانبي بالباند للألوية الوسطى ومبعدات الورك",
+    "targetMuscleId": 84,
+    "secondaryMuscles": [
+      {
+        "muscleId": 85,
+        "contributionPercent": 20
+      },
+      {
+        "muscleId": 87,
+        "contributionPercent": 10
+      }
+    ],
+    "equipment": "Resistance Band",
+    "isHighImpact": false,
+    "difficulty": "Beginner",
+    "category": "Activation",
+    "movementPattern": "Abduction",
+    "mechanic": "Compound",
+    "force": "Push",
+    "instructions": [
+      "Place band around knees or ankles",
+      "Take athletic stance",
+      "Step sideways under tension"
+    ],
+    "instructionsAr": [
+      "ضع الباند حول الركبتين أو الكاحلين",
+      "خذ وضعًا رياضيًا",
+      "تحرك جانبًا مع الحفاظ على الشد"
+    ],
+    "tips": [
+      "Keep knees tracking out"
+    ],
+    "tipsAr": [
+      "حافظ على الركبتين للخارج"
+    ],
+    "commonMistakes": [
+      "Feet coming together fully"
+    ],
+    "commonMistakesAr": [
+      "ضم القدمين بالكامل"
+    ],
+    "repsRange": "10-20 steps each",
+    "setsRange": "2-4",
+    "restSeconds": 30,
+    "tempo": "Continuous",
+    "icon": "↔️",
+    "videoUrl": null
+  },
+  {
+    "name": "Hip Airplane",
+    "nameAr": "هيب إيربلين",
+    "description": "Single-leg hip-rotation and stability drill",
+    "descriptionAr": "تمرين دوران وثبات للورك على ساق واحدة",
+    "targetMuscleId": 123,
+    "secondaryMuscles": [
+      {
+        "muscleId": 84,
+        "contributionPercent": 20
+      },
+      {
+        "muscleId": 83,
+        "contributionPercent": 15
+      }
+    ],
+    "equipment": "Bodyweight",
+    "isHighImpact": false,
+    "difficulty": "Intermediate",
+    "category": "Functional",
+    "movementPattern": "Rotation",
+    "mechanic": "Compound",
+    "force": "Static",
+    "instructions": [
+      "Stand on one leg",
+      "Hinge forward",
+      "Rotate pelvis open and closed",
+      "Maintain balance"
+    ],
+    "instructionsAr": [
+      "قف على ساق واحدة",
+      "انحنِ من الورك",
+      "دوّر الحوض للفتح والإغلاق",
+      "حافظ على التوازن"
+    ],
+    "tips": [
+      "Use support if needed"
+    ],
+    "tipsAr": [
+      "استخدم دعامة إذا لزم"
+    ],
+    "commonMistakes": [
+      "Rotating through spine"
+    ],
+    "commonMistakesAr": [
+      "الدوران من العمود بدل الورك"
+    ],
+    "repsRange": "6-10 each",
+    "setsRange": "2-3",
+    "restSeconds": 45,
+    "tempo": "Controlled",
+    "icon": "🔄",
+    "videoUrl": null
+  },
+  {
+    "name": "Seated Hip Internal Rotation",
+    "nameAr": "دوران داخلي للورك جالس",
+    "description": "Hip internal-rotation drill for deep hip control",
+    "descriptionAr": "تمرين دوران داخلي للورك للتحكم العميق",
+    "targetMuscleId": 85,
+    "secondaryMuscles": [
+      {
+        "muscleId": 87,
+        "contributionPercent": 20
+      }
+    ],
+    "equipment": "Resistance Band",
+    "isHighImpact": false,
+    "difficulty": "Beginner",
+    "category": "Rehab",
+    "movementPattern": "Rotation",
+    "mechanic": "Isolation",
+    "force": "Pull",
+    "instructions": [
+      "Sit with knees bent",
+      "Move foot outward to rotate hip inward",
+      "Return slowly"
+    ],
+    "instructionsAr": [
+      "اجلس والركبتان مثنيتان",
+      "حرّك القدم للخارج ليدور الورك للداخل",
+      "عد ببطء"
+    ],
+    "tips": [
+      "Keep knee position controlled"
+    ],
+    "tipsAr": [
+      "ثبت الركبة"
+    ],
+    "commonMistakes": [
+      "Twisting pelvis"
+    ],
+    "commonMistakesAr": [
+      "لف الحوض"
+    ],
+    "repsRange": "12-20 each",
+    "setsRange": "2-3",
+    "restSeconds": 45,
+    "tempo": "Controlled",
+    "icon": "🔄",
+    "videoUrl": null
+  },
+  {
+    "name": "Nordic Hip Hinge",
+    "nameAr": "نورديك هيب هينج",
+    "description": "Kneeling hip-hinge drill emphasizing hamstrings at long muscle lengths",
+    "descriptionAr": "تمرين هينج من الركوع يركز على الهامسترنج في طول عضلي كبير",
+    "targetMuscleId": 78,
+    "secondaryMuscles": [
+      {
+        "muscleId": 82,
+        "contributionPercent": 20
+      }
+    ],
+    "equipment": "Bodyweight",
+    "isHighImpact": false,
+    "difficulty": "Intermediate",
+    "category": "Hypertrophy",
+    "movementPattern": "Hinge",
+    "mechanic": "Isolation",
+    "force": "Pull",
+    "instructions": [
+      "Kneel with hips extended",
+      "Hinge torso forward from knees and hips",
+      "Return using hamstrings"
+    ],
+    "instructionsAr": [
+      "اركع مع مد الوركين",
+      "مِل بالجذع للأمام بتحكم",
+      "عد باستخدام الهامسترنج"
+    ],
+    "tips": [
+      "Keep hips extended"
+    ],
+    "tipsAr": [
+      "حافظ على مد الورك"
+    ],
+    "commonMistakes": [
+      "Bending at waist"
+    ],
+    "commonMistakesAr": [
+      "الثني من الخصر"
+    ],
+    "repsRange": "8-15",
+    "setsRange": "3-4",
+    "restSeconds": 60,
+    "tempo": "3-1-2-0",
+    "icon": "🦵",
+    "videoUrl": null
+  },
+  {
+    "name": "Seated Leg Curl",
+    "nameAr": "ليج كيرل جالس",
+    "description": "Machine knee-flexion exercise emphasizing hamstrings at long lengths",
+    "descriptionAr": "تمرين ثني ركبة بالجهاز للهامسترنج في طول عضلي كبير",
+    "targetMuscleId": 78,
+    "secondaryMuscles": [
+      {
+        "muscleId": 79,
+        "contributionPercent": 20
+      },
+      {
+        "muscleId": 80,
+        "contributionPercent": 15
+      },
+      {
+        "muscleId": 81,
+        "contributionPercent": 15
+      }
+    ],
+    "equipment": "Machine",
+    "isHighImpact": false,
+    "difficulty": "Beginner",
+    "category": "Hypertrophy",
+    "movementPattern": "Pull",
+    "mechanic": "Isolation",
+    "force": "Pull",
+    "instructions": [
+      "Adjust pad above ankles",
+      "Keep hips against seat",
+      "Curl heels down and back",
+      "Return slowly"
+    ],
+    "instructionsAr": [
+      "اضبط الوسادة فوق الكاحلين",
+      "ثبت الوركين على المقعد",
+      "اسحب الكعبين لأسفل وخلف",
+      "عد ببطء"
+    ],
+    "tips": [
+      "Control full stretch"
+    ],
+    "tipsAr": [
+      "تحكم في التمدد الكامل"
+    ],
+    "commonMistakes": [
+      "Lifting hips"
+    ],
+    "commonMistakesAr": [
+      "رفع الوركين"
+    ],
+    "repsRange": "10-15",
+    "setsRange": "3-4",
+    "restSeconds": 60,
+    "tempo": "2-1-3-1",
+    "icon": "🦵",
+    "videoUrl": null
+  },
+  {
+    "name": "Heel Elevated Squat",
+    "nameAr": "سكوات بكعب مرتفع",
+    "description": "Squat variation increasing knee flexion and quadriceps demand",
+    "descriptionAr": "تنويعة سكوات تزيد ثني الركبة وتحميل الفخذ الأمامي",
+    "targetMuscleId": 73,
+    "secondaryMuscles": [
+      {
+        "muscleId": 82,
+        "contributionPercent": 20
+      },
+      {
+        "muscleId": 50,
+        "contributionPercent": 10
+      }
+    ],
+    "equipment": "Barbell",
+    "isHighImpact": false,
+    "difficulty": "Intermediate",
+    "category": "Hypertrophy",
+    "movementPattern": "Squat",
+    "mechanic": "Compound",
+    "force": "Push",
+    "instructions": [
+      "Elevate heels",
+      "Keep torso upright",
+      "Squat deep with knees forward",
+      "Drive up"
+    ],
+    "instructionsAr": [
+      "ارفع الكعبين",
+      "حافظ على الجذع منتصبًا",
+      "انزل بعمق مع تقدم الركبتين",
+      "ادفع للأعلى"
+    ],
+    "tips": [
+      "Use controlled depth"
+    ],
+    "tipsAr": [
+      "تحكم في العمق"
+    ],
+    "commonMistakes": [
+      "Heels losing contact"
+    ],
+    "commonMistakesAr": [
+      "فقدان ثبات الكعب"
+    ],
+    "repsRange": "8-15",
+    "setsRange": "3-5",
+    "restSeconds": 90,
+    "tempo": "3-1-2-0",
+    "icon": "🦵",
+    "videoUrl": null
+  },
+  {
+    "name": "Reverse Nordic Curl",
+    "nameAr": "ريفيرس نوردك كيرل",
+    "description": "Bodyweight knee-extension exercise for rectus femoris and quadriceps",
+    "descriptionAr": "تمرين بوزن الجسم لتمديد الركبة يركز على المستقيمة الفخذية والكوادز",
+    "targetMuscleId": 74,
+    "secondaryMuscles": [
+      {
+        "muscleId": 73,
+        "contributionPercent": 30
+      }
+    ],
+    "equipment": "Bodyweight",
+    "isHighImpact": false,
+    "difficulty": "Intermediate",
+    "category": "Hypertrophy",
+    "movementPattern": "Extension",
+    "mechanic": "Isolation",
+    "force": "Push",
+    "instructions": [
+      "Kneel upright",
+      "Keep hips extended",
+      "Lean torso backward as one unit",
+      "Return using quads"
+    ],
+    "instructionsAr": [
+      "اركع منتصبًا",
+      "حافظ على مد الوركين",
+      "مِل بالجسم للخلف كوحدة واحدة",
+      "عد باستخدام الكوادز"
+    ],
+    "tips": [
+      "Start with small range"
+    ],
+    "tipsAr": [
+      "ابدأ بمدى صغير"
+    ],
+    "commonMistakes": [
+      "Bending at hips"
+    ],
+    "commonMistakesAr": [
+      "الثني من الوركين"
+    ],
+    "repsRange": "8-15",
+    "setsRange": "3-4",
+    "restSeconds": 60,
+    "tempo": "3-1-2-0",
+    "icon": "🦵",
+    "videoUrl": null
+  },
+  {
+    "name": "Peterson Step Up",
+    "nameAr": "بيترسون ستيب أب",
+    "description": "Step-up variation emphasizing knee control and vastus medialis",
+    "descriptionAr": "تنويعة صعود تركز على التحكم بالركبة والواسعة الإنسية",
+    "targetMuscleId": 76,
+    "secondaryMuscles": [
+      {
+        "muscleId": 73,
+        "contributionPercent": 25
+      }
+    ],
+    "equipment": "Bodyweight",
+    "isHighImpact": false,
+    "difficulty": "Beginner",
+    "category": "Rehab",
+    "movementPattern": "Squat",
+    "mechanic": "Isolation",
+    "force": "Push",
+    "instructions": [
+      "Stand on low step",
+      "Lower opposite heel toward floor",
+      "Drive through working leg"
+    ],
+    "instructionsAr": [
+      "قف على درجة منخفضة",
+      "أنزل كعب الساق الأخرى نحو الأرض",
+      "ادفع بالساق العاملة"
+    ],
+    "tips": [
+      "Track knee over toes"
+    ],
+    "tipsAr": [
+      "اجعل الركبة تتجه مع أصابع القدم"
+    ],
+    "commonMistakes": [
+      "Knee collapsing inward"
+    ],
+    "commonMistakesAr": [
+      "انحراف الركبة للداخل"
+    ],
+    "repsRange": "10-15 each",
+    "setsRange": "2-4",
+    "restSeconds": 45,
+    "tempo": "3-1-2-0",
+    "icon": "🪜",
+    "videoUrl": null
+  },
+  {
+    "name": "Spanish Squat",
+    "nameAr": "سبانيش سكوات",
+    "description": "Band-supported squat emphasizing quadriceps with upright torso",
+    "descriptionAr": "سكوات مدعوم بالباند يركز على الكوادز مع جذع منتصب",
+    "targetMuscleId": 73,
+    "secondaryMuscles": [
+      {
+        "muscleId": 76,
+        "contributionPercent": 20
+      }
+    ],
+    "equipment": "Resistance Band",
+    "isHighImpact": false,
+    "difficulty": "Beginner",
+    "category": "Rehab",
+    "movementPattern": "Squat",
+    "mechanic": "Compound",
+    "force": "Push",
+    "instructions": [
+      "Anchor thick band behind knees",
+      "Sit back while staying upright",
+      "Squat down",
+      "Stand up"
+    ],
+    "instructionsAr": [
+      "ثبت باند قوي خلف الركبتين",
+      "اجلس للخلف مع بقاء الجذع مستقيمًا",
+      "انزل سكوات",
+      "قف"
+    ],
+    "tips": [
+      "Keep shins fairly vertical"
+    ],
+    "tipsAr": [
+      "حافظ على الساقين شبه عموديتين"
+    ],
+    "commonMistakes": [
+      "Leaning forward"
+    ],
+    "commonMistakesAr": [
+      "الميل للأمام"
+    ],
+    "repsRange": "12-20",
+    "setsRange": "3-4",
+    "restSeconds": 60,
+    "tempo": "3-1-2-0",
+    "icon": "🦵",
+    "videoUrl": null
+  },
+  {
+    "name": "Standing Tibialis Raise Weighted",
+    "nameAr": "رفع تيبياليس بوزن",
+    "description": "Loaded dorsiflexion exercise for tibialis anterior",
+    "descriptionAr": "تمرين رفع القدم بمقاومة للقصبة الأمامية",
+    "targetMuscleId": 100,
+    "secondaryMuscles": [],
+    "equipment": "Weight Plate",
+    "isHighImpact": false,
+    "difficulty": "Beginner",
+    "category": "Strength",
+    "movementPattern": "Flexion",
+    "mechanic": "Isolation",
+    "force": "Pull",
+    "instructions": [
+      "Sit or stand with heels fixed",
+      "Place light load over forefoot",
+      "Lift toes toward shins",
+      "Lower slowly"
+    ],
+    "instructionsAr": [
+      "اجلس أو قف مع تثبيت الكعبين",
+      "ضع حملاً خفيفًا على مقدمة القدم",
+      "ارفع الأصابع نحو الساق",
+      "أنزل ببطء"
+    ],
+    "tips": [
+      "Use full dorsiflexion"
+    ],
+    "tipsAr": [
+      "استخدم مدى رفع كامل"
+    ],
+    "commonMistakes": [
+      "Bouncing"
+    ],
+    "commonMistakesAr": [
+      "الارتداد"
+    ],
+    "repsRange": "15-25",
+    "setsRange": "3-4",
+    "restSeconds": 45,
+    "tempo": "2-1-2-1",
+    "icon": "🦶",
+    "videoUrl": null
+  },
+  {
+    "name": "Bent Knee Calf Raise",
+    "nameAr": "رفع سمانة بركبة مثنية",
+    "description": "Calf raise with bent knees to emphasize soleus",
+    "descriptionAr": "رفع سمانة مع ثني الركبتين للتركيز على النعلية",
+    "targetMuscleId": 98,
+    "secondaryMuscles": [
+      {
+        "muscleId": 97,
+        "contributionPercent": 10
+      }
+    ],
+    "equipment": "Machine",
+    "isHighImpact": false,
+    "difficulty": "Beginner",
+    "category": "Hypertrophy",
+    "movementPattern": "Push",
+    "mechanic": "Isolation",
+    "force": "Push",
+    "instructions": [
+      "Keep knees bent",
+      "Lower heels fully",
+      "Rise onto toes",
+      "Pause at top"
+    ],
+    "instructionsAr": [
+      "حافظ على الركبتين مثنيتين",
+      "أنزل الكعبين بالكامل",
+      "ارفع على الأصابع",
+      "توقف في الأعلى"
+    ],
+    "tips": [
+      "Use slow stretch"
+    ],
+    "tipsAr": [
+      "تحكم في التمدد"
+    ],
+    "commonMistakes": [
+      "Straightening knees"
+    ],
+    "commonMistakesAr": [
+      "فرد الركبتين"
+    ],
+    "repsRange": "15-25",
+    "setsRange": "4-5",
+    "restSeconds": 45,
+    "tempo": "2-2-2-1",
+    "icon": "🦶",
+    "videoUrl": null
+  },
+  {
+    "name": "Single Leg Calf Raise",
+    "nameAr": "رفع سمانة رجل واحدة",
+    "description": "Unilateral calf raise for gastrocnemius and ankle stability",
+    "descriptionAr": "رفع سمانة أحادي لبطن الساق وثبات الكاحل",
+    "targetMuscleId": 97,
+    "secondaryMuscles": [
+      {
+        "muscleId": 98,
+        "contributionPercent": 20
+      }
+    ],
+    "equipment": "Bodyweight",
+    "isHighImpact": false,
+    "difficulty": "Beginner",
+    "category": "Hypertrophy",
+    "movementPattern": "Push",
+    "mechanic": "Isolation",
+    "force": "Push",
+    "instructions": [
+      "Stand on one foot",
+      "Lower heel",
+      "Rise onto toes",
+      "Pause at top"
+    ],
+    "instructionsAr": [
+      "قف على قدم واحدة",
+      "أنزل الكعب",
+      "ارفع على الأصابع",
+      "توقف في الأعلى"
+    ],
+    "tips": [
+      "Use support for balance"
+    ],
+    "tipsAr": [
+      "استخدم دعامة للتوازن"
+    ],
+    "commonMistakes": [
+      "Bouncing"
+    ],
+    "commonMistakesAr": [
+      "الارتداد"
+    ],
+    "repsRange": "12-25 each",
+    "setsRange": "3-5",
+    "restSeconds": 45,
+    "tempo": "2-2-2-1",
+    "icon": "🦶",
+    "videoUrl": null
+  },
+  {
+    "name": "Band Ankle Eversion",
+    "nameAr": "قلب القدم للخارج بالباند",
+    "description": "Ankle eversion drill targeting fibularis muscles",
+    "descriptionAr": "تمرين قلب القدم للخارج لاستهداف العضلات الشظوية",
+    "targetMuscleId": 102,
+    "secondaryMuscles": [
+      {
+        "muscleId": 103,
+        "contributionPercent": 30
+      }
+    ],
+    "equipment": "Resistance Band",
+    "isHighImpact": false,
+    "difficulty": "Beginner",
+    "category": "Rehab",
+    "movementPattern": "Rotation",
+    "mechanic": "Isolation",
+    "force": "Pull",
+    "instructions": [
+      "Sit with leg supported",
+      "Loop band around forefoot",
+      "Turn foot outward",
+      "Return slowly"
+    ],
+    "instructionsAr": [
+      "اجلس مع تثبيت الساق",
+      "ضع الباند حول مقدمة القدم",
+      "حرّك القدم للخارج",
+      "عد ببطء"
+    ],
+    "tips": [
+      "Move at ankle only"
+    ],
+    "tipsAr": [
+      "الحركة من الكاحل فقط"
+    ],
+    "commonMistakes": [
+      "Rotating whole leg"
+    ],
+    "commonMistakesAr": [
+      "تدوير الساق بالكامل"
+    ],
+    "repsRange": "15-25 each",
+    "setsRange": "2-4",
+    "restSeconds": 30,
+    "tempo": "Controlled",
+    "icon": "🦶",
+    "videoUrl": null
+  },
+  {
+    "name": "Band Ankle Inversion",
+    "nameAr": "قلب القدم للداخل بالباند",
+    "description": "Ankle inversion drill targeting tibialis posterior",
+    "descriptionAr": "تمرين قلب القدم للداخل لاستهداف القصبة الخلفية",
+    "targetMuscleId": 101,
+    "secondaryMuscles": [],
+    "equipment": "Resistance Band",
+    "isHighImpact": false,
+    "difficulty": "Beginner",
+    "category": "Rehab",
+    "movementPattern": "Rotation",
+    "mechanic": "Isolation",
+    "force": "Pull",
+    "instructions": [
+      "Sit with leg supported",
+      "Anchor band laterally",
+      "Turn sole inward",
+      "Return slowly"
+    ],
+    "instructionsAr": [
+      "اجلس مع تثبيت الساق",
+      "ثبت الباند من الجانب",
+      "حرّك باطن القدم للداخل",
+      "عد ببطء"
+    ],
+    "tips": [
+      "Keep knee still"
+    ],
+    "tipsAr": [
+      "ثبت الركبة"
+    ],
+    "commonMistakes": [
+      "Moving entire leg"
+    ],
+    "commonMistakesAr": [
+      "تحريك الساق بالكامل"
+    ],
+    "repsRange": "15-25 each",
+    "setsRange": "2-4",
+    "restSeconds": 30,
+    "tempo": "Controlled",
+    "icon": "🦶",
+    "videoUrl": null
+  },
+  {
+    "name": "Short Foot Exercise",
+    "nameAr": "تمرين تقصير القدم",
+    "description": "Intrinsic foot exercise for arch control",
+    "descriptionAr": "تمرين لعضلات القدم الداخلية للتحكم في القوس",
+    "targetMuscleId": 106,
+    "secondaryMuscles": [
+      {
+        "muscleId": 288,
+        "contributionPercent": 20
+      }
+    ],
+    "equipment": "Bodyweight",
+    "isHighImpact": false,
+    "difficulty": "Beginner",
+    "category": "Rehab",
+    "movementPattern": "Static",
+    "mechanic": "Isolation",
+    "force": "Static",
+    "instructions": [
+      "Stand barefoot",
+      "Keep toes relaxed",
+      "Draw ball of foot toward heel without curling toes",
+      "Hold"
+    ],
+    "instructionsAr": [
+      "قف حافيًا",
+      "أبقِ الأصابع مرتخية",
+      "اسحب مقدمة القدم نحو الكعب دون ثني الأصابع",
+      "اثبت"
+    ],
+    "tips": [
+      "Maintain three-point foot contact"
+    ],
+    "tipsAr": [
+      "حافظ على ثلاث نقاط تماس للقدم"
+    ],
+    "commonMistakes": [
+      "Curling toes"
+    ],
+    "commonMistakesAr": [
+      "ثني الأصابع"
+    ],
+    "repsRange": "10-20 sec",
+    "setsRange": "3-5",
+    "restSeconds": 30,
+    "tempo": "Hold",
+    "icon": "🦶",
+    "videoUrl": null
+  },
+  {
+    "name": "Toe Yoga",
+    "nameAr": "تمرين يوجا أصابع القدم",
+    "description": "Foot intrinsic control drill separating big-toe and lesser-toe actions",
+    "descriptionAr": "تمرين تحكم لعضلات القدم الداخلية يفصل حركة الإبهام عن باقي الأصابع",
+    "targetMuscleId": 107,
+    "secondaryMuscles": [
+      {
+        "muscleId": 108,
+        "contributionPercent": 20
+      },
+      {
+        "muscleId": 106,
+        "contributionPercent": 20
+      }
+    ],
+    "equipment": "Bodyweight",
+    "isHighImpact": false,
+    "difficulty": "Beginner",
+    "category": "Rehab",
+    "movementPattern": "Flexion",
+    "mechanic": "Isolation",
+    "force": "Static",
+    "instructions": [
+      "Keep foot flat",
+      "Lift big toe while others stay down",
+      "Switch positions",
+      "Repeat slowly"
+    ],
+    "instructionsAr": [
+      "ثبت القدم على الأرض",
+      "ارفع الإبهام مع بقاء الباقي لأسفل",
+      "بدّل الوضع",
+      "كرر ببطء"
+    ],
+    "tips": [
+      "Move deliberately"
+    ],
+    "tipsAr": [
+      "تحرك ببطء وتحكم"
+    ],
+    "commonMistakes": [
+      "Rolling ankle"
+    ],
+    "commonMistakesAr": [
+      "لف الكاحل"
+    ],
+    "repsRange": "10-20",
+    "setsRange": "2-4",
+    "restSeconds": 30,
+    "tempo": "Controlled",
+    "icon": "🦶",
+    "videoUrl": null
+  },
+  {
+    "name": "Neck Isometric Flexion",
+    "nameAr": "ثبات ثني الرقبة",
+    "description": "Isometric neck-flexion exercise",
+    "descriptionAr": "تمرين ثبات لعضلات ثني الرقبة",
+    "targetMuscleId": 118,
+    "secondaryMuscles": [
+      {
+        "muscleId": 119,
+        "contributionPercent": 25
+      },
+      {
+        "muscleId": 113,
+        "contributionPercent": 15
+      }
+    ],
+    "equipment": "Bodyweight",
+    "isHighImpact": false,
+    "difficulty": "Beginner",
+    "category": "Rehab",
+    "movementPattern": "Static",
+    "mechanic": "Isolation",
+    "force": "Static",
+    "instructions": [
+      "Sit upright",
+      "Place hand on forehead",
+      "Press head into hand without moving"
+    ],
+    "instructionsAr": [
+      "اجلس منتصبًا",
+      "ضع اليد على الجبهة",
+      "اضغط الرأس في اليد بدون حركة"
+    ],
+    "tips": [
+      "Use gentle pressure"
+    ],
+    "tipsAr": [
+      "استخدم ضغطًا خفيفًا"
+    ],
+    "commonMistakes": [
+      "Holding breath"
+    ],
+    "commonMistakesAr": [
+      "حبس النفس"
+    ],
+    "repsRange": "10-20 sec",
+    "setsRange": "2-4",
+    "restSeconds": 30,
+    "tempo": "Hold",
+    "icon": "🦒",
+    "videoUrl": null
+  },
+  {
+    "name": "Neck Isometric Extension",
+    "nameAr": "ثبات مد الرقبة",
+    "description": "Isometric neck-extension exercise",
+    "descriptionAr": "تمرين ثبات لعضلات مد الرقبة",
+    "targetMuscleId": 116,
+    "secondaryMuscles": [
+      {
+        "muscleId": 122,
+        "contributionPercent": 25
+      },
+      {
+        "muscleId": 18,
+        "contributionPercent": 10
+      }
+    ],
+    "equipment": "Bodyweight",
+    "isHighImpact": false,
+    "difficulty": "Beginner",
+    "category": "Rehab",
+    "movementPattern": "Static",
+    "mechanic": "Isolation",
+    "force": "Static",
+    "instructions": [
+      "Sit upright",
+      "Place hands behind head",
+      "Press backward without moving"
+    ],
+    "instructionsAr": [
+      "اجلس منتصبًا",
+      "ضع اليدين خلف الرأس",
+      "اضغط للخلف بدون حركة"
+    ],
+    "tips": [
+      "Keep chin neutral"
+    ],
+    "tipsAr": [
+      "حافظ على الذقن محايدًا"
+    ],
+    "commonMistakes": [
+      "Overextending neck"
+    ],
+    "commonMistakesAr": [
+      "تمديد الرقبة أكثر من اللازم"
+    ],
+    "repsRange": "10-20 sec",
+    "setsRange": "2-4",
+    "restSeconds": 30,
+    "tempo": "Hold",
+    "icon": "🦒",
+    "videoUrl": null
+  },
+  {
+    "name": "Neck Isometric Lateral Flexion",
+    "nameAr": "ثبات ثني الرقبة الجانبي",
+    "description": "Isometric lateral neck exercise",
+    "descriptionAr": "تمرين ثبات جانبي للرقبة",
+    "targetMuscleId": 114,
+    "secondaryMuscles": [
+      {
+        "muscleId": 113,
+        "contributionPercent": 20
+      }
+    ],
+    "equipment": "Bodyweight",
+    "isHighImpact": false,
+    "difficulty": "Beginner",
+    "category": "Rehab",
+    "movementPattern": "Static",
+    "mechanic": "Isolation",
+    "force": "Static",
+    "instructions": [
+      "Place hand on side of head",
+      "Press head into hand",
+      "Do not allow movement"
+    ],
+    "instructionsAr": [
+      "ضع اليد على جانب الرأس",
+      "اضغط الرأس في اليد",
+      "لا تسمح بالحركة"
+    ],
+    "tips": [
+      "Keep shoulders relaxed"
+    ],
+    "tipsAr": [
+      "أبقِ الكتفين مرتخيين"
+    ],
+    "commonMistakes": [
+      "Shrugging"
+    ],
+    "commonMistakesAr": [
+      "رفع الكتف"
+    ],
+    "repsRange": "10-20 sec each",
+    "setsRange": "2-4",
+    "restSeconds": 30,
+    "tempo": "Hold",
+    "icon": "🦒",
+    "videoUrl": null
+  },
+  {
+    "name": "Neck Rotation Isometric",
+    "nameAr": "ثبات دوران الرقبة",
+    "description": "Isometric neck-rotation exercise",
+    "descriptionAr": "تمرين ثبات لدوران الرقبة",
+    "targetMuscleId": 113,
+    "secondaryMuscles": [
+      {
+        "muscleId": 114,
+        "contributionPercent": 15
+      },
+      {
+        "muscleId": 121,
+        "contributionPercent": 10
+      }
+    ],
+    "equipment": "Bodyweight",
+    "isHighImpact": false,
+    "difficulty": "Beginner",
+    "category": "Rehab",
+    "movementPattern": "Static",
+    "mechanic": "Isolation",
+    "force": "Static",
+    "instructions": [
+      "Place hand against side of face",
+      "Try to rotate head into hand",
+      "Hold without moving"
+    ],
+    "instructionsAr": [
+      "ضع اليد على جانب الوجه",
+      "حاول تدوير الرأس ضد اليد",
+      "اثبت بدون حركة"
+    ],
+    "tips": [
+      "Use low effort"
+    ],
+    "tipsAr": [
+      "استخدم مجهودًا منخفضًا"
+    ],
+    "commonMistakes": [
+      "Jerking"
+    ],
+    "commonMistakesAr": [
+      "الحركة المفاجئة"
+    ],
+    "repsRange": "10-20 sec each",
+    "setsRange": "2-4",
+    "restSeconds": 30,
+    "tempo": "Hold",
+    "icon": "🦒",
+    "videoUrl": null
+  },
+  {
+    "name": "Sled Drag",
+    "nameAr": "سحب الزلاجة",
+    "description": "Backward sled drag emphasizing quadriceps with low eccentric stress",
+    "descriptionAr": "سحب زلاجة للخلف يركز على الكوادز مع إجهاد لامركزي منخفض",
+    "targetMuscleId": 73,
+    "secondaryMuscles": [
+      {
+        "muscleId": 96,
+        "contributionPercent": 15
+      }
+    ],
+    "equipment": "Sled",
+    "isHighImpact": false,
+    "difficulty": "Beginner",
+    "category": "Conditioning",
+    "movementPattern": "Pull",
+    "mechanic": "Compound",
+    "force": "Pull",
+    "instructions": [
+      "Face sled",
+      "Hold straps",
+      "Walk backward with controlled steps"
+    ],
+    "instructionsAr": [
+      "واجه الزلاجة",
+      "امسك الأحزمة",
+      "امشِ للخلف بخطوات متحكمة"
+    ],
+    "tips": [
+      "Keep knees tracking over toes"
+    ],
+    "tipsAr": [
+      "حافظ على اتجاه الركبتين مع الأصابع"
+    ],
+    "commonMistakes": [
+      "Taking overly long steps"
+    ],
+    "commonMistakesAr": [
+      "أخذ خطوات طويلة جدًا"
+    ],
+    "repsRange": "20-40 m",
+    "setsRange": "4-8",
+    "restSeconds": 60,
+    "tempo": "Continuous",
+    "icon": "🛷",
+    "videoUrl": null
+  },
+  {
+    "name": "Battle Rope Alternating Waves",
+    "nameAr": "موجات حبل بالتبادل",
+    "description": "Conditioning exercise for shoulders, arms, and core",
+    "descriptionAr": "تمرين لياقة للكتفين والذراعين والجذع",
+    "targetMuscleId": 21,
+    "secondaryMuscles": [
+      {
+        "muscleId": 29,
+        "contributionPercent": 10
+      },
+      {
+        "muscleId": 35,
+        "contributionPercent": 10
+      },
+      {
+        "muscleId": 50,
+        "contributionPercent": 15
+      }
+    ],
+    "equipment": "Battle Ropes",
+    "isHighImpact": true,
+    "difficulty": "Intermediate",
+    "category": "Conditioning",
+    "movementPattern": "Compound",
+    "mechanic": "Compound",
+    "force": "Push",
+    "instructions": [
+      "Hold rope ends",
+      "Use athletic stance",
+      "Alternate arms rapidly to create waves"
+    ],
+    "instructionsAr": [
+      "امسك طرفي الحبل",
+      "خذ وضعًا رياضيًا",
+      "حرّك الذراعين بالتبادل لصنع موجات"
+    ],
+    "tips": [
+      "Keep core braced"
+    ],
+    "tipsAr": [
+      "شد الجذع"
+    ],
+    "commonMistakes": [
+      "Standing too tall"
+    ],
+    "commonMistakesAr": [
+      "الوقوف عاليًا أكثر من اللازم"
+    ],
+    "repsRange": "20-40 sec",
+    "setsRange": "4-8",
+    "restSeconds": 60,
+    "tempo": "Fast",
+    "icon": "🌊",
+    "videoUrl": null
+  },
+  {
+    "name": "Machine Pullover",
+    "nameAr": "جهاز بول أوفر",
+    "description": "Machine lat isolation through shoulder extension",
+    "descriptionAr": "عزل للمجنص بالجهاز عبر مد الكتف",
+    "targetMuscleId": 10,
+    "secondaryMuscles": [
+      {
+        "muscleId": 14,
+        "contributionPercent": 20
+      },
+      {
+        "muscleId": 222,
+        "contributionPercent": 10
+      }
+    ],
+    "equipment": "Machine",
+    "isHighImpact": false,
+    "difficulty": "Beginner",
+    "category": "Hypertrophy",
+    "movementPattern": "Pull",
+    "mechanic": "Isolation",
+    "force": "Pull",
+    "instructions": [
+      "Adjust seat",
+      "Keep elbows slightly bent",
+      "Drive arms down and back",
+      "Control stretch"
+    ],
+    "instructionsAr": [
+      "اضبط المقعد",
+      "أبقِ الكوعين مثنيين قليلًا",
+      "ادفع الذراعين لأسفل وخلف",
+      "تحكم في التمدد"
+    ],
+    "tips": [
+      "Focus on shoulder extension"
+    ],
+    "tipsAr": [
+      "ركز على مد الكتف"
+    ],
+    "commonMistakes": [
+      "Turning it into tricep extension"
+    ],
+    "commonMistakesAr": [
+      "تحويله لتمديد تراي"
+    ],
+    "repsRange": "10-15",
+    "setsRange": "3-4",
+    "restSeconds": 60,
+    "tempo": "2-1-3-1",
+    "icon": "🔻",
+    "videoUrl": null
+  },
+  {
+    "name": "One Arm Lat Pulldown",
+    "nameAr": "سحب علوي ذراع واحدة",
+    "description": "Unilateral lat pulldown for side-to-side balance",
+    "descriptionAr": "سحب علوي أحادي للمجنص لتوازن الجانبين",
+    "targetMuscleId": 10,
+    "secondaryMuscles": [
+      {
+        "muscleId": 29,
+        "contributionPercent": 20
+      },
+      {
+        "muscleId": 14,
+        "contributionPercent": 15
+      }
+    ],
+    "equipment": "Cable Machine",
+    "isHighImpact": false,
+    "difficulty": "Beginner",
+    "category": "Hypertrophy",
+    "movementPattern": "Pull",
+    "mechanic": "Compound",
+    "force": "Pull",
+    "instructions": [
+      "Sit tall",
+      "Pull handle toward side of ribcage",
+      "Control the stretch"
+    ],
+    "instructionsAr": [
+      "اجلس منتصبًا",
+      "اسحب المقبض نحو جانب القفص الصدري",
+      "تحكم في التمدد"
+    ],
+    "tips": [
+      "Drive elbow toward hip"
+    ],
+    "tipsAr": [
+      "اسحب الكوع نحو الورك"
+    ],
+    "commonMistakes": [
+      "Twisting torso"
+    ],
+    "commonMistakesAr": [
+      "لف الجذع"
+    ],
+    "repsRange": "10-15 each",
+    "setsRange": "3-4",
+    "restSeconds": 60,
+    "tempo": "2-1-3-1",
+    "icon": "🔻",
+    "videoUrl": null
+  },
+  {
+    "name": "Machine High Row",
+    "nameAr": "هاي رو جهاز",
+    "description": "Machine row emphasizing upper back and lats",
+    "descriptionAr": "تجديف جهاز يركز على أعلى الظهر والمجنص",
+    "targetMuscleId": 8,
+    "secondaryMuscles": [
+      {
+        "muscleId": 10,
+        "contributionPercent": 20
+      },
+      {
+        "muscleId": 24,
+        "contributionPercent": 15
+      },
+      {
+        "muscleId": 11,
+        "contributionPercent": 15
+      }
+    ],
+    "equipment": "Machine",
+    "isHighImpact": false,
+    "difficulty": "Beginner",
+    "category": "Hypertrophy",
+    "movementPattern": "Pull",
+    "mechanic": "Compound",
+    "force": "Pull",
+    "instructions": [
+      "Set chest against pad",
+      "Pull handles down and back",
+      "Squeeze upper back"
+    ],
+    "instructionsAr": [
+      "ثبت الصدر على الوسادة",
+      "اسحب المقابض لأسفل وخلف",
+      "اضغط أعلى الظهر"
+    ],
+    "tips": [
+      "Keep chest supported"
+    ],
+    "tipsAr": [
+      "حافظ على الصدر ملاصقًا"
+    ],
+    "commonMistakes": [
+      "Shrugging"
+    ],
+    "commonMistakesAr": [
+      "رفع الكتفين"
+    ],
+    "repsRange": "8-15",
+    "setsRange": "3-4",
+    "restSeconds": 60,
+    "tempo": "2-1-3-1",
+    "icon": "🚣",
+    "videoUrl": null
+  },
+  {
+    "name": "Cable Chest Supported Row",
+    "nameAr": "تجديف كابل مدعوم بالصدر",
+    "description": "Chest-supported cable row for strict mid-back work",
+    "descriptionAr": "تجديف كابل مدعوم بالصدر لمنتصف الظهر بشكل صارم",
+    "targetMuscleId": 9,
+    "secondaryMuscles": [
+      {
+        "muscleId": 11,
+        "contributionPercent": 20
+      },
+      {
+        "muscleId": 19,
+        "contributionPercent": 20
+      },
+      {
+        "muscleId": 29,
+        "contributionPercent": 15
+      }
+    ],
+    "equipment": "Cable Machine",
+    "isHighImpact": false,
+    "difficulty": "Beginner",
+    "category": "Hypertrophy",
+    "movementPattern": "Pull",
+    "mechanic": "Compound",
+    "force": "Pull",
+    "instructions": [
+      "Set incline bench facing cable",
+      "Support chest",
+      "Row handles toward ribs",
+      "Return slowly"
+    ],
+    "instructionsAr": [
+      "ضع بنش مائل أمام الكابل",
+      "ثبت الصدر",
+      "اسحب المقابض نحو الأضلاع",
+      "عد ببطء"
+    ],
+    "tips": [
+      "Keep shoulder blades moving"
+    ],
+    "tipsAr": [
+      "اسمح للوحي الكتف بالحركة"
+    ],
+    "commonMistakes": [
+      "Using lower back"
+    ],
+    "commonMistakesAr": [
+      "استخدام أسفل الظهر"
+    ],
+    "repsRange": "10-15",
+    "setsRange": "3-4",
+    "restSeconds": 60,
+    "tempo": "2-1-3-1",
+    "icon": "🚣",
+    "videoUrl": null
+  },
+  {
+    "name": "Cable Rear Delt Fly",
+    "nameAr": "فلاي كتف خلفي بالكابل",
+    "description": "Cable rear-delt isolation with constant tension",
+    "descriptionAr": "عزل كتف خلفي بالكابل مع توتر مستمر",
+    "targetMuscleId": 24,
+    "secondaryMuscles": [
+      {
+        "muscleId": 11,
+        "contributionPercent": 15
+      },
+      {
+        "muscleId": 19,
+        "contributionPercent": 10
+      }
+    ],
+    "equipment": "Cable Machine",
+    "isHighImpact": false,
+    "difficulty": "Beginner",
+    "category": "Hypertrophy",
+    "movementPattern": "Pull",
+    "mechanic": "Isolation",
+    "force": "Pull",
+    "instructions": [
+      "Set cables around shoulder height",
+      "Cross handles",
+      "Open arms wide",
+      "Control return"
+    ],
+    "instructionsAr": [
+      "اضبط الكابل قرب مستوى الكتف",
+      "أمسك المقابض بشكل متقاطع",
+      "افتح الذراعين",
+      "عد بتحكم"
+    ],
+    "tips": [
+      "Keep elbows soft"
+    ],
+    "tipsAr": [
+      "أبقِ الكوعين مثنيين قليلًا"
+    ],
+    "commonMistakes": [
+      "Pulling with traps"
+    ],
+    "commonMistakesAr": [
+      "السحب بالترابيس"
+    ],
+    "repsRange": "12-20",
+    "setsRange": "3-4",
+    "restSeconds": 45,
+    "tempo": "2-1-2-1",
+    "icon": "🦅",
+    "videoUrl": null
+  },
+  {
+    "name": "Lean Away Cable Lateral Raise",
+    "nameAr": "رفرفة جانبية كابل مع ميل",
+    "description": "Cable lateral raise increasing tension through a long range",
+    "descriptionAr": "رفرفة جانبية بالكابل تزيد التوتر عبر مدى طويل",
+    "targetMuscleId": 23,
+    "secondaryMuscles": [
+      {
+        "muscleId": 27,
+        "contributionPercent": 10
+      }
+    ],
+    "equipment": "Cable Machine",
+    "isHighImpact": false,
+    "difficulty": "Intermediate",
+    "category": "Hypertrophy",
+    "movementPattern": "Push",
+    "mechanic": "Isolation",
+    "force": "Push",
+    "instructions": [
+      "Hold support",
+      "Lean away from cable",
+      "Raise arm to side",
+      "Lower slowly"
+    ],
+    "instructionsAr": [
+      "امسك دعامة",
+      "مِل بعيدًا عن الكابل",
+      "ارفع الذراع للجانب",
+      "أنزل ببطء"
+    ],
+    "tips": [
+      "Lead with elbow"
+    ],
+    "tipsAr": [
+      "قُد بالكوع"
+    ],
+    "commonMistakes": [
+      "Shrugging"
+    ],
+    "commonMistakesAr": [
+      "رفع الكتف"
+    ],
+    "repsRange": "12-20",
+    "setsRange": "3-4",
+    "restSeconds": 45,
+    "tempo": "2-1-3-0",
+    "icon": "🦅",
+    "videoUrl": null
+  },
+  {
+    "name": "Cable Front Raise",
+    "nameAr": "رفرفة أمامية كابل",
+    "description": "Cable isolation for anterior deltoid",
+    "descriptionAr": "عزل بالكابل للكتف الأمامي",
+    "targetMuscleId": 22,
+    "secondaryMuscles": [
+      {
+        "muscleId": 2,
+        "contributionPercent": 10
+      }
+    ],
+    "equipment": "Cable Machine",
+    "isHighImpact": false,
+    "difficulty": "Beginner",
+    "category": "Hypertrophy",
+    "movementPattern": "Push",
+    "mechanic": "Isolation",
+    "force": "Push",
+    "instructions": [
+      "Stand facing away from low cable",
+      "Raise handle to eye level",
+      "Lower slowly"
+    ],
+    "instructionsAr": [
+      "قف وظهرك للكابل المنخفض",
+      "ارفع المقبض لمستوى العين",
+      "أنزل ببطء"
+    ],
+    "tips": [
+      "Keep torso still"
+    ],
+    "tipsAr": [
+      "ثبت الجذع"
+    ],
+    "commonMistakes": [
+      "Swinging"
+    ],
+    "commonMistakesAr": [
+      "التأرجح"
+    ],
+    "repsRange": "12-15 each",
+    "setsRange": "3-4",
+    "restSeconds": 45,
+    "tempo": "2-1-2-0",
+    "icon": "🎯",
+    "videoUrl": null
+  },
+  {
+    "name": "Overhead Cable Tricep Extension",
+    "nameAr": "تمديد تراي كابل فوق الرأس",
+    "description": "Overhead triceps extension emphasizing the long head",
+    "descriptionAr": "تمديد تراي فوق الرأس يركز على الرأس الطويل",
+    "targetMuscleId": 36,
+    "secondaryMuscles": [
+      {
+        "muscleId": 35,
+        "contributionPercent": 20
+      }
+    ],
+    "equipment": "Cable Machine",
+    "isHighImpact": false,
+    "difficulty": "Beginner",
+    "category": "Hypertrophy",
+    "movementPattern": "Push",
+    "mechanic": "Isolation",
+    "force": "Push",
+    "instructions": [
+      "Face away from cable",
+      "Hold rope overhead",
+      "Extend elbows",
+      "Control stretch"
+    ],
+    "instructionsAr": [
+      "قف وظهرك للكابل",
+      "امسك الحبل فوق الرأس",
+      "مد الكوعين",
+      "تحكم في التمدد"
+    ],
+    "tips": [
+      "Keep upper arms fixed"
+    ],
+    "tipsAr": [
+      "ثبت العضدين"
+    ],
+    "commonMistakes": [
+      "Elbows drifting"
+    ],
+    "commonMistakesAr": [
+      "تحريك الكوعين"
+    ],
+    "repsRange": "10-15",
+    "setsRange": "3-4",
+    "restSeconds": 60,
+    "tempo": "2-1-3-0",
+    "icon": "🦾",
+    "videoUrl": null
+  },
+  {
+    "name": "Single Arm Cable Pushdown",
+    "nameAr": "بوش داون كابل ذراع واحدة",
+    "description": "Unilateral triceps pushdown for strict elbow extension",
+    "descriptionAr": "بوش داون أحادي للتراي لمد الكوع بشكل صارم",
+    "targetMuscleId": 37,
+    "secondaryMuscles": [
+      {
+        "muscleId": 35,
+        "contributionPercent": 20
+      }
+    ],
+    "equipment": "Cable Machine",
+    "isHighImpact": false,
+    "difficulty": "Beginner",
+    "category": "Hypertrophy",
+    "movementPattern": "Push",
+    "mechanic": "Isolation",
+    "force": "Push",
+    "instructions": [
+      "Stand facing cable",
+      "Keep elbow at side",
+      "Extend arm fully",
+      "Return slowly"
+    ],
+    "instructionsAr": [
+      "قف مواجهًا للكابل",
+      "ثبت الكوع بجانبك",
+      "مد الذراع بالكامل",
+      "عد ببطء"
+    ],
+    "tips": [
+      "Pause at lockout"
+    ],
+    "tipsAr": [
+      "توقف عند المد الكامل"
+    ],
+    "commonMistakes": [
+      "Moving shoulder"
+    ],
+    "commonMistakesAr": [
+      "تحريك الكتف"
+    ],
+    "repsRange": "12-20 each",
+    "setsRange": "3-4",
+    "restSeconds": 45,
+    "tempo": "2-1-2-1",
+    "icon": "🦾",
+    "videoUrl": null
   }
 ]

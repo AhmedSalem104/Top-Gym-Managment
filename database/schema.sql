@@ -600,3 +600,260 @@ BEGIN
     CREATE INDEX IX_gym_exercises_filters
         ON dbo.gym_exercises(category, difficulty, equipment, target_muscle_id, name_ar);
 END;
+
+-- Client training, nutrition and progress extension. The existing members table
+-- remains the single client identity; a client may have zero or more gym
+-- memberships and can still own training data without a gym subscription.
+IF OBJECT_ID(N'dbo.workout_programs', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.workout_programs (
+        id INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_workout_programs PRIMARY KEY,
+        member_id INT NOT NULL,
+        name NVARCHAR(160) NOT NULL,
+        description NVARCHAR(2000) NULL,
+        start_date DATE NOT NULL,
+        end_date DATE NULL,
+        duration_weeks INT NULL,
+        goal NVARCHAR(60) NULL,
+        level NVARCHAR(40) NULL,
+        days_per_week INT NULL,
+        status VARCHAR(20) NOT NULL CONSTRAINT DF_workout_programs_status DEFAULT ('active'),
+        notes NVARCHAR(2000) NULL,
+        version INT NOT NULL CONSTRAINT DF_workout_programs_version DEFAULT (1),
+        created_at DATETIME2(0) NOT NULL CONSTRAINT DF_workout_programs_created DEFAULT (SYSUTCDATETIME()),
+        updated_at DATETIME2(0) NOT NULL CONSTRAINT DF_workout_programs_updated DEFAULT (SYSUTCDATETIME()),
+        CONSTRAINT FK_workout_programs_member FOREIGN KEY (member_id)
+            REFERENCES dbo.members(id) ON DELETE CASCADE,
+        CONSTRAINT CK_workout_programs_dates CHECK (end_date IS NULL OR end_date >= start_date),
+        CONSTRAINT CK_workout_programs_duration CHECK (duration_weeks IS NULL OR duration_weeks BETWEEN 1 AND 520),
+        CONSTRAINT CK_workout_programs_days CHECK (days_per_week IS NULL OR days_per_week BETWEEN 1 AND 7),
+        CONSTRAINT CK_workout_programs_status CHECK (status IN ('draft', 'active', 'paused', 'completed', 'archived'))
+    );
+END;
+
+IF OBJECT_ID(N'dbo.workout_routines', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.workout_routines (
+        id INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_workout_routines PRIMARY KEY,
+        program_id INT NOT NULL,
+        name NVARCHAR(160) NOT NULL,
+        day_of_week INT NULL,
+        sort_order INT NOT NULL CONSTRAINT DF_workout_routines_sort DEFAULT (0),
+        notes NVARCHAR(1000) NULL,
+        created_at DATETIME2(0) NOT NULL CONSTRAINT DF_workout_routines_created DEFAULT (SYSUTCDATETIME()),
+        updated_at DATETIME2(0) NOT NULL CONSTRAINT DF_workout_routines_updated DEFAULT (SYSUTCDATETIME()),
+        CONSTRAINT FK_workout_routines_program FOREIGN KEY (program_id)
+            REFERENCES dbo.workout_programs(id) ON DELETE CASCADE,
+        CONSTRAINT CK_workout_routines_day CHECK (day_of_week IS NULL OR day_of_week BETWEEN 1 AND 7)
+    );
+END;
+
+IF OBJECT_ID(N'dbo.workout_exercises', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.workout_exercises (
+        id INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_workout_exercises PRIMARY KEY,
+        routine_id INT NOT NULL,
+        exercise_id INT NOT NULL,
+        sort_order INT NOT NULL CONSTRAINT DF_workout_exercises_sort DEFAULT (0),
+        sets INT NOT NULL CONSTRAINT DF_workout_exercises_sets DEFAULT (3),
+        reps_min INT NULL,
+        reps_max INT NULL,
+        weight_kg DECIMAL(10,2) NULL,
+        rest_seconds INT NULL,
+        tempo NVARCHAR(40) NULL,
+        superset_group_id NVARCHAR(40) NULL,
+        notes NVARCHAR(1000) NULL,
+        created_at DATETIME2(0) NOT NULL CONSTRAINT DF_workout_exercises_created DEFAULT (SYSUTCDATETIME()),
+        updated_at DATETIME2(0) NOT NULL CONSTRAINT DF_workout_exercises_updated DEFAULT (SYSUTCDATETIME()),
+        CONSTRAINT FK_workout_exercises_routine FOREIGN KEY (routine_id)
+            REFERENCES dbo.workout_routines(id) ON DELETE CASCADE,
+        CONSTRAINT FK_workout_exercises_library FOREIGN KEY (exercise_id)
+            REFERENCES dbo.gym_exercises(id) ON DELETE NO ACTION,
+        CONSTRAINT CK_workout_exercises_sets CHECK (sets BETWEEN 1 AND 100),
+        CONSTRAINT CK_workout_exercises_reps CHECK (reps_min IS NULL OR reps_min BETWEEN 1 AND 1000),
+        CONSTRAINT CK_workout_exercises_reps_max CHECK (reps_max IS NULL OR reps_max BETWEEN 1 AND 1000),
+        CONSTRAINT CK_workout_exercises_reps_range CHECK (reps_max IS NULL OR reps_min IS NULL OR reps_max >= reps_min),
+        CONSTRAINT CK_workout_exercises_weight CHECK (weight_kg IS NULL OR weight_kg >= 0),
+        CONSTRAINT CK_workout_exercises_rest CHECK (rest_seconds IS NULL OR rest_seconds BETWEEN 0 AND 7200)
+    );
+END;
+
+IF OBJECT_ID(N'dbo.diet_plans', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.diet_plans (
+        id INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_diet_plans PRIMARY KEY,
+        member_id INT NOT NULL,
+        name NVARCHAR(160) NOT NULL,
+        description NVARCHAR(2000) NULL,
+        start_date DATE NOT NULL,
+        end_date DATE NULL,
+        meals_per_day INT NULL,
+        target_calories DECIMAL(12,2) NULL,
+        target_protein DECIMAL(12,2) NULL,
+        target_carbs DECIMAL(12,2) NULL,
+        target_fats DECIMAL(12,2) NULL,
+        status VARCHAR(20) NOT NULL CONSTRAINT DF_diet_plans_status DEFAULT ('active'),
+        notes NVARCHAR(2000) NULL,
+        version INT NOT NULL CONSTRAINT DF_diet_plans_version DEFAULT (1),
+        created_at DATETIME2(0) NOT NULL CONSTRAINT DF_diet_plans_created DEFAULT (SYSUTCDATETIME()),
+        updated_at DATETIME2(0) NOT NULL CONSTRAINT DF_diet_plans_updated DEFAULT (SYSUTCDATETIME()),
+        CONSTRAINT FK_diet_plans_member FOREIGN KEY (member_id)
+            REFERENCES dbo.members(id) ON DELETE CASCADE,
+        CONSTRAINT CK_diet_plans_dates CHECK (end_date IS NULL OR end_date >= start_date),
+        CONSTRAINT CK_diet_plans_meals CHECK (meals_per_day IS NULL OR meals_per_day BETWEEN 1 AND 12),
+        CONSTRAINT CK_diet_plans_calories CHECK (target_calories IS NULL OR target_calories >= 0),
+        CONSTRAINT CK_diet_plans_macros CHECK (
+            (target_protein IS NULL OR target_protein >= 0) AND
+            (target_carbs IS NULL OR target_carbs >= 0) AND
+            (target_fats IS NULL OR target_fats >= 0)
+        ),
+        CONSTRAINT CK_diet_plans_status CHECK (status IN ('draft', 'active', 'paused', 'completed', 'archived'))
+    );
+END;
+
+IF OBJECT_ID(N'dbo.diet_meals', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.diet_meals (
+        id INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_diet_meals PRIMARY KEY,
+        diet_plan_id INT NOT NULL,
+        name NVARCHAR(120) NOT NULL,
+        meal_time VARCHAR(10) NULL,
+        sort_order INT NOT NULL CONSTRAINT DF_diet_meals_sort DEFAULT (0),
+        notes NVARCHAR(1000) NULL,
+        created_at DATETIME2(0) NOT NULL CONSTRAINT DF_diet_meals_created DEFAULT (SYSUTCDATETIME()),
+        updated_at DATETIME2(0) NOT NULL CONSTRAINT DF_diet_meals_updated DEFAULT (SYSUTCDATETIME()),
+        CONSTRAINT FK_diet_meals_plan FOREIGN KEY (diet_plan_id)
+            REFERENCES dbo.diet_plans(id) ON DELETE CASCADE
+    );
+END;
+
+IF OBJECT_ID(N'dbo.diet_meal_items', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.diet_meal_items (
+        id INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_diet_meal_items PRIMARY KEY,
+        meal_id INT NOT NULL,
+        food_id INT NOT NULL,
+        sort_order INT NOT NULL CONSTRAINT DF_diet_meal_items_sort DEFAULT (0),
+        assigned_quantity DECIMAL(12,3) NOT NULL,
+        serving_unit NVARCHAR(40) NULL,
+        calc_calories DECIMAL(12,3) NOT NULL CONSTRAINT DF_diet_meal_items_calories DEFAULT (0),
+        calc_protein DECIMAL(12,3) NOT NULL CONSTRAINT DF_diet_meal_items_protein DEFAULT (0),
+        calc_carbs DECIMAL(12,3) NOT NULL CONSTRAINT DF_diet_meal_items_carbs DEFAULT (0),
+        calc_fats DECIMAL(12,3) NOT NULL CONSTRAINT DF_diet_meal_items_fats DEFAULT (0),
+        notes NVARCHAR(500) NULL,
+        created_at DATETIME2(0) NOT NULL CONSTRAINT DF_diet_meal_items_created DEFAULT (SYSUTCDATETIME()),
+        updated_at DATETIME2(0) NOT NULL CONSTRAINT DF_diet_meal_items_updated DEFAULT (SYSUTCDATETIME()),
+        CONSTRAINT FK_diet_meal_items_meal FOREIGN KEY (meal_id)
+            REFERENCES dbo.diet_meals(id) ON DELETE CASCADE,
+        CONSTRAINT FK_diet_meal_items_food FOREIGN KEY (food_id)
+            REFERENCES dbo.gym_foods(id) ON DELETE NO ACTION,
+        CONSTRAINT CK_diet_meal_items_quantity CHECK (assigned_quantity > 0)
+    );
+END;
+
+IF OBJECT_ID(N'dbo.body_measurements', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.body_measurements (
+        id INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_body_measurements PRIMARY KEY,
+        member_id INT NOT NULL,
+        measured_at DATE NOT NULL,
+        weight_kg DECIMAL(8,2) NULL,
+        height_cm DECIMAL(8,2) NULL,
+        body_fat_percent DECIMAL(5,2) NULL,
+        chest_cm DECIMAL(8,2) NULL,
+        waist_cm DECIMAL(8,2) NULL,
+        hips_cm DECIMAL(8,2) NULL,
+        arms_cm DECIMAL(8,2) NULL,
+        thighs_cm DECIMAL(8,2) NULL,
+        notes NVARCHAR(1000) NULL,
+        created_at DATETIME2(0) NOT NULL CONSTRAINT DF_body_measurements_created DEFAULT (SYSUTCDATETIME()),
+        updated_at DATETIME2(0) NOT NULL CONSTRAINT DF_body_measurements_updated DEFAULT (SYSUTCDATETIME()),
+        CONSTRAINT FK_body_measurements_member FOREIGN KEY (member_id)
+            REFERENCES dbo.members(id) ON DELETE CASCADE
+    );
+END;
+
+IF OBJECT_ID(N'dbo.workout_sessions', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.workout_sessions (
+        id INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_workout_sessions PRIMARY KEY,
+        member_id INT NOT NULL,
+        program_id INT NULL,
+        routine_id INT NULL,
+        started_at DATETIME2(0) NOT NULL CONSTRAINT DF_workout_sessions_started DEFAULT (SYSUTCDATETIME()),
+        ended_at DATETIME2(0) NULL,
+        status VARCHAR(20) NOT NULL CONSTRAINT DF_workout_sessions_status DEFAULT ('started'),
+        notes NVARCHAR(1000) NULL,
+        CONSTRAINT FK_workout_sessions_member FOREIGN KEY (member_id)
+            REFERENCES dbo.members(id) ON DELETE CASCADE,
+        CONSTRAINT FK_workout_sessions_program FOREIGN KEY (program_id)
+            REFERENCES dbo.workout_programs(id) ON DELETE NO ACTION,
+        CONSTRAINT FK_workout_sessions_routine FOREIGN KEY (routine_id)
+            REFERENCES dbo.workout_routines(id) ON DELETE NO ACTION,
+        CONSTRAINT CK_workout_sessions_status CHECK (status IN ('started', 'completed', 'cancelled'))
+    );
+END;
+
+IF OBJECT_ID(N'dbo.workout_set_logs', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.workout_set_logs (
+        id INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_workout_set_logs PRIMARY KEY,
+        session_id INT NOT NULL,
+        workout_exercise_id INT NULL,
+        set_number INT NOT NULL,
+        weight_kg DECIMAL(10,2) NULL,
+        reps INT NULL,
+        completed_at DATETIME2(0) NOT NULL CONSTRAINT DF_workout_set_logs_completed DEFAULT (SYSUTCDATETIME()),
+        notes NVARCHAR(500) NULL,
+        CONSTRAINT FK_workout_set_logs_session FOREIGN KEY (session_id)
+            REFERENCES dbo.workout_sessions(id) ON DELETE CASCADE,
+        CONSTRAINT FK_workout_set_logs_exercise FOREIGN KEY (workout_exercise_id)
+            REFERENCES dbo.workout_exercises(id) ON DELETE NO ACTION,
+        CONSTRAINT CK_workout_set_logs_set CHECK (set_number BETWEEN 1 AND 100),
+        CONSTRAINT CK_workout_set_logs_reps CHECK (reps IS NULL OR reps BETWEEN 0 AND 1000),
+        CONSTRAINT CK_workout_set_logs_weight CHECK (weight_kg IS NULL OR weight_kg >= 0)
+    );
+END;
+
+IF OBJECT_ID(N'dbo.meal_logs', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.meal_logs (
+        id INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_meal_logs PRIMARY KEY,
+        member_id INT NOT NULL,
+        meal_item_id INT NULL,
+        consumed_quantity DECIMAL(12,3) NOT NULL,
+        consumed_at DATETIME2(0) NOT NULL CONSTRAINT DF_meal_logs_consumed DEFAULT (SYSUTCDATETIME()),
+        calc_calories DECIMAL(12,3) NOT NULL CONSTRAINT DF_meal_logs_calories DEFAULT (0),
+        calc_protein DECIMAL(12,3) NOT NULL CONSTRAINT DF_meal_logs_protein DEFAULT (0),
+        calc_carbs DECIMAL(12,3) NOT NULL CONSTRAINT DF_meal_logs_carbs DEFAULT (0),
+        calc_fats DECIMAL(12,3) NOT NULL CONSTRAINT DF_meal_logs_fats DEFAULT (0),
+        notes NVARCHAR(500) NULL,
+        created_at DATETIME2(0) NOT NULL CONSTRAINT DF_meal_logs_created DEFAULT (SYSUTCDATETIME()),
+        CONSTRAINT FK_meal_logs_member FOREIGN KEY (member_id)
+            REFERENCES dbo.members(id) ON DELETE CASCADE,
+        CONSTRAINT FK_meal_logs_item FOREIGN KEY (meal_item_id)
+            REFERENCES dbo.diet_meal_items(id) ON DELETE NO ACTION,
+        CONSTRAINT CK_meal_logs_quantity CHECK (consumed_quantity > 0)
+    );
+END;
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_workout_programs_member_status' AND object_id = OBJECT_ID(N'dbo.workout_programs'))
+    CREATE INDEX IX_workout_programs_member_status ON dbo.workout_programs(member_id, status, start_date DESC, id DESC);
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_workout_routines_program_sort' AND object_id = OBJECT_ID(N'dbo.workout_routines'))
+    CREATE INDEX IX_workout_routines_program_sort ON dbo.workout_routines(program_id, sort_order, id);
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_workout_exercises_routine_sort' AND object_id = OBJECT_ID(N'dbo.workout_exercises'))
+    CREATE INDEX IX_workout_exercises_routine_sort ON dbo.workout_exercises(routine_id, sort_order, id);
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_diet_plans_member_status' AND object_id = OBJECT_ID(N'dbo.diet_plans'))
+    CREATE INDEX IX_diet_plans_member_status ON dbo.diet_plans(member_id, status, start_date DESC, id DESC);
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_diet_meals_plan_sort' AND object_id = OBJECT_ID(N'dbo.diet_meals'))
+    CREATE INDEX IX_diet_meals_plan_sort ON dbo.diet_meals(diet_plan_id, sort_order, id);
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_diet_meal_items_meal_sort' AND object_id = OBJECT_ID(N'dbo.diet_meal_items'))
+    CREATE INDEX IX_diet_meal_items_meal_sort ON dbo.diet_meal_items(meal_id, sort_order, id);
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_body_measurements_member_date' AND object_id = OBJECT_ID(N'dbo.body_measurements'))
+    CREATE INDEX IX_body_measurements_member_date ON dbo.body_measurements(member_id, measured_at DESC, id DESC);
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_workout_sessions_member_started' AND object_id = OBJECT_ID(N'dbo.workout_sessions'))
+    CREATE INDEX IX_workout_sessions_member_started ON dbo.workout_sessions(member_id, started_at DESC, id DESC);
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_workout_set_logs_session' AND object_id = OBJECT_ID(N'dbo.workout_set_logs'))
+    CREATE INDEX IX_workout_set_logs_session ON dbo.workout_set_logs(session_id, id);
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_meal_logs_member_consumed' AND object_id = OBJECT_ID(N'dbo.meal_logs'))
+    CREATE INDEX IX_meal_logs_member_consumed ON dbo.meal_logs(member_id, consumed_at DESC, id DESC);

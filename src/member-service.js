@@ -678,6 +678,7 @@ async function getMembers({ search = '', status = '', sort = 'expiry', page = 1,
         .input('pageSize', sql.Int, currentPageSize)
         .query(`${MEMBER_CTE}
             WHERE (@search = N'' OR fullName LIKE @pattern OR phone LIKE @pattern OR ISNULL(email, N'') LIKE @pattern)
+              AND membershipId IS NOT NULL
               AND (@status = '' OR computedStatus = @status)
             ORDER BY ${orderBy}
             OFFSET @offset ROWS FETCH NEXT @pageSize ROWS ONLY;`);
@@ -1009,7 +1010,8 @@ async function getDashboard() {
                     ORDER BY effectiveEndDate ASC, fullName ASC, id ASC
                     FOR JSON PATH
                 ) AS alertsJson
-            FROM member_rows;`);
+            FROM member_rows
+            WHERE membershipId IS NOT NULL;`);
     const row = result.recordset[0] || {};
     const alertRows = row.alertsJson ? JSON.parse(row.alertsJson) : [];
     return {
@@ -1356,10 +1358,101 @@ async function updateMember(id, body) {
 
 async function deleteMember(id) {
     const memberId = ensureId(id);
-    const pool = await getPool();
-    const result = await pool.request().input('id', sql.Int, memberId)
-        .query('DELETE FROM dbo.members WHERE id = @id;');
-    if (!result.rowsAffected[0]) throw appError('العضو غير موجود.', 404);
+    const result = await withTransaction(async (transaction) => transaction.request()
+        .input('id', sql.Int, memberId)
+        .query(`
+            IF OBJECT_ID(N'dbo.workout_set_logs', N'U') IS NOT NULL
+            BEGIN
+                UPDATE logs SET workout_exercise_id = NULL
+                FROM dbo.workout_set_logs logs
+                INNER JOIN dbo.workout_exercises exercises ON exercises.id = logs.workout_exercise_id
+                INNER JOIN dbo.workout_routines routines ON routines.id = exercises.routine_id
+                INNER JOIN dbo.workout_programs programs ON programs.id = routines.program_id
+                WHERE programs.member_id = @id;
+            END;
+            IF OBJECT_ID(N'dbo.meal_logs', N'U') IS NOT NULL
+            BEGIN
+                UPDATE logs SET meal_item_id = NULL
+                FROM dbo.meal_logs logs
+                INNER JOIN dbo.diet_meal_items items ON items.id = logs.meal_item_id
+                INNER JOIN dbo.diet_meals meals ON meals.id = items.meal_id
+                INNER JOIN dbo.diet_plans plans ON plans.id = meals.diet_plan_id
+                WHERE plans.member_id = @id;
+            END;
+            DELETE FROM dbo.members WHERE id = @id;
+        `));
+    if (!result.rowsAffected.some((count) => Number(count) > 0)) throw appError('العضو غير موجود.', 404);
+}
+
+async function activateMembership(id, body = {}) {
+    const memberId = ensureId(id);
+    await ensurePaymentTransactionsTable();
+    const membershipType = requiredString(body.membershipType || body.type, 'نوع العضوية', 30);
+    const today = todayInTimeZone();
+    const activatedId = await withTransaction(async (transaction) => {
+        const member = await getRawMember(transaction, memberId);
+        if (!member) throw appError('العضو غير موجود.', 404);
+        const existing = await getRawMembership(transaction, memberId);
+        if (existing) throw appError('يوجد اشتراك مسجل لهذا العضو بالفعل. استخدم التجديد.', 409);
+        const membershipPlan = body.membershipPlan || 'gym_only';
+        const pricing = await calculatePricing(membershipType, membershipPlan, money(body.discountAmount, 'الخصم', 0), transaction);
+        const resolvedMembershipType = pricing.typeCode || membershipType;
+        const startDate = body.startDate ? parseDateOnly(body.startDate, 'تاريخ البداية') : today;
+        const configuredEndDate = body.endDate ? parseDateOnly(body.endDate, 'تاريخ الانتهاء') : membershipEndDateFromConfig(startDate, pricing.typeConfig);
+        if (configuredEndDate < startDate) throw appError('تاريخ الانتهاء يجب أن يكون بعد أو مساوياً لتاريخ البداية.');
+        const amountPaid = money(body.amountPaid, 'المبلغ المدفوع', 0);
+        if (amountPaid > pricing.amountDue) throw appError('المبلغ المدفوع لا يمكن أن يتجاوز قيمة الاشتراك بعد الخصم.');
+        const paymentMethod = parsePaymentMethod(body.paymentMethod, 'cash');
+        const paymentNotes = optionalString(body.paymentNotes, 500);
+        const membershipNotes = optionalString(body.membershipNotes, 1000);
+        const result = await transaction.request()
+            .input('memberId', sql.Int, memberId)
+            .input('membershipPlan', sql.VarChar(30), membershipPlan)
+            .input('membershipType', sql.VarChar(30), resolvedMembershipType)
+            .input('startDate', sql.Date, toUtcDate(startDate))
+            .input('endDate', sql.Date, toUtcDate(configuredEndDate))
+            .input('notes', sql.NVarChar(1000), membershipNotes)
+            .query(`INSERT INTO dbo.memberships (member_id, membership_plan, membership_type, start_date, end_date, notes)
+                    OUTPUT INSERTED.id VALUES (@memberId, @membershipPlan, @membershipType, @startDate, @endDate, @notes);`);
+        const membershipId = Number(result.recordset[0].id);
+        await transaction.request()
+            .input('membershipId', sql.Int, membershipId)
+            .input('listPrice', sql.Decimal(12, 2), pricing.listPrice)
+            .input('discountAmount', sql.Decimal(12, 2), pricing.discountAmount)
+            .input('amountDue', sql.Decimal(12, 2), pricing.amountDue)
+            .input('amountPaid', sql.Decimal(12, 2), amountPaid)
+            .input('paymentMethod', sql.VarChar(20), paymentMethod)
+            .input('paidAt', sql.Date, amountPaid > 0 ? toUtcDate(today) : null)
+            .input('notes', sql.NVarChar(500), paymentNotes)
+            .query(`INSERT INTO dbo.gym_payments (membership_id, list_price, discount_amount, amount_due, amount_paid, payment_method, paid_at, notes)
+                    VALUES (@membershipId, @listPrice, @discountAmount, @amountDue, @amountPaid, @paymentMethod, @paidAt, @notes);`);
+        if (amountPaid > 0) {
+            await addPaymentTransaction(transaction, {
+                membershipId,
+                transactionType: 'subscription',
+                listPrice: pricing.listPrice,
+                discountAmount: pricing.discountAmount,
+                amountDue: pricing.amountDue,
+                amountPaid,
+                amountRemaining: pricing.amountDue - amountPaid,
+                paymentMethod,
+                paidAt: today,
+                notes: paymentNotes
+            });
+        }
+        await addEvent(transaction, memberId, membershipId, 'activated', {
+            membershipPlan,
+            membershipType: resolvedMembershipType,
+            startDate,
+            endDate: configuredEndDate,
+            listPrice: pricing.listPrice,
+            discountAmount: pricing.discountAmount,
+            amountDue: pricing.amountDue,
+            amountPaid
+        });
+        return memberId;
+    });
+    return getMemberById(activatedId);
 }
 
 async function freezeMember(id, days, reason) {
@@ -1423,6 +1516,9 @@ async function renewMember(id, body = {}) {
     const type = body.membershipType || body.type;
     const membershipType = requiredString(type, 'نوع العضوية', 30);
     const today = todayInTimeZone();
+    const pool = await getPool();
+    const existingMembership = await getRawMembership(pool, memberId);
+    if (!existingMembership) return activateMembership(memberId, body);
     const renewedId = await withTransaction(async (transaction) => {
         const current = await getRawMembership(transaction, memberId);
         if (!current) throw appError('لا يوجد اشتراك لهذا العضو.', 400);

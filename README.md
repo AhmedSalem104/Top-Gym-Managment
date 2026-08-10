@@ -627,7 +627,7 @@ TOPGYM-MEMBER:<memberId>
 ## الأمان وحدود النسخة الحالية
 
 - يستخدم السيرفر معاملات SQL parameters بدل تركيب قيم المستخدم داخل الاستعلامات.
-- يحدد حجم JSON الوارد إلى `100kb`.
+- يحدد حجم JSON الوارد إلى `1mb` ليستوعب حفظ نظام كامل داخل طلب واحد.
 - لا يقرأ أو يعدل جدول `dbo.Payments` المشترك مع نظام آخر.
 - يضع `Cache-Control: no-store` على ملف النسخة الاحتياطية.
 - `.env` و`node_modules` وملفات Vercel المحلية مستبعدة من Git.
@@ -699,3 +699,52 @@ DELETE /api/library/:type/:id
 ```
 
 Library records are included in the downloadable `json.gz` backup.
+
+# Client coaching extension
+
+TOP GYM now uses `members` as the single client identity for both gym members and external trainees. A client may be created with basic data only; a gym membership is optional and is attached later to the same `member_id`. No coach account, tenant separation, client login, or duplicate `clients` entity was introduced.
+
+The `المتدربون` tab lists only clients who have at least one non-archived workout program or nutrition plan and do not have an active gym membership. From the client profile, administration can create or edit:
+
+- Complete workout programs linked to `gym_exercises`, with routines, sets, reps, rest, weight, tempo, and notes.
+- Complete nutrition plans linked to `gym_foods`, with meals, quantities, calculated macros, and nutrition snapshots captured at save time.
+- Body measurements and progress history.
+- Persisted workout sessions, set logs, and meal logs for future client execution screens.
+
+Program and plan create/update requests accept the complete nested structure in one request and are written in one SQL transaction. Invalid library IDs, invalid client ownership, date errors, and incomplete structures are rejected before the transaction is committed. Updates replace child rows atomically while preserving execution history by detaching old routine/item references first.
+
+Coaching API overview:
+
+```text
+GET    /api/external-trainees
+POST   /api/external-trainees
+GET    /api/clients/:id/training-overview
+PUT    /api/clients/:id
+
+GET    /api/workoutprograms?memberId=:id
+GET    /api/workoutprograms/:id
+POST   /api/workoutprograms
+PUT    /api/workoutprograms/:id
+PATCH  /api/workoutprograms/:id/status
+DELETE /api/workoutprograms/:id
+
+GET    /api/dietplans?memberId=:id
+GET    /api/dietplans/:id
+POST   /api/dietplans
+PUT    /api/dietplans/:id
+PATCH  /api/dietplans/:id/status
+DELETE /api/dietplans/:id
+
+GET    /api/clients/:id/measurements
+POST   /api/clients/:id/measurements
+PUT    /api/clients/:id/measurements/:measurementId
+DELETE /api/clients/:id/measurements/:measurementId
+
+POST   /api/members/:id/memberships
+POST   /api/workoutsessions/start
+POST   /api/workoutsessions/:id/sets
+POST   /api/workoutsessions/:id/end
+POST   /api/meal-logs
+```
+
+All coaching tables are created idempotently by `database/schema.sql` and the runtime service. They are included in the downloadable backup together with the existing membership and library data. The JSON body limit is `1mb` to allow complete nested systems without encouraging unbounded payloads.

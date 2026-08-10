@@ -1078,5 +1078,1301 @@
     "description": "Muscle in groin area (males)",
     "descriptionAr": "عضلة في منطقة الفخذ (ذكور)",
     "icon": "🎯"
+  },
+  {
+    "name": "Frontalis",
+    "nameAr": "الجبهية",
+    "bodyPart": "Upper Body",
+    "description": "Muscle of the forehead that raises the eyebrows and wrinkles the forehead",
+    "descriptionAr": "عضلة الجبهة التي ترفع الحاجبين وتكوّن تجاعيد الجبهة",
+    "icon": "🙂"
+  },
+  {
+    "name": "Occipitalis",
+    "nameAr": "القذالية",
+    "bodyPart": "Upper Body",
+    "description": "Posterior scalp muscle that retracts the scalp",
+    "descriptionAr": "عضلة خلف فروة الرأس التي تسحب فروة الرأس للخلف",
+    "icon": "🙂"
+  },
+  {
+    "name": "Temporoparietalis",
+    "nameAr": "الصدغية الجدارية",
+    "bodyPart": "Upper Body",
+    "description": "Thin scalp muscle over the temporal region",
+    "descriptionAr": "عضلة رقيقة في فروة الرأس فوق المنطقة الصدغية",
+    "icon": "🙂"
+  },
+  {
+    "name": "Auricularis Anterior",
+    "nameAr": "الأذنية الأمامية",
+    "bodyPart": "Upper Body",
+    "description": "Small muscle that draws the ear forward",
+    "descriptionAr": "عضلة صغيرة تسحب الأذن للأمام",
+    "icon": "👂"
+  },
+  {
+    "name": "Auricularis Superior",
+    "nameAr": "الأذنية العلوية",
+    "bodyPart": "Upper Body",
+    "description": "Small muscle that elevates the ear",
+    "descriptionAr": "عضلة صغيرة ترفع الأذن",
+    "icon": "👂"
+  },
+  {
+    "name": "Auricularis Posterior",
+    "nameAr": "الأذنية الخلفية",
+    "bodyPart": "Upper Body",
+    "description": "Small muscle that draws the ear backward",
+    "descriptionAr": "عضلة صغيرة تسحب الأذن للخلف",
+    "icon": "👂"
+  },
+  {
+    "name": "Orbicularis Oculi",
+    "nameAr": "الدائرية العينية",
+    "bodyPart": "Upper Body",
+    "description": "Circular muscle that closes the eyelids",
+    "descriptionAr": "عضلة دائرية تغلق الجفون",
+    "icon": "👁️"
+  },
+  {
+    "name": "Corrugator Supercilii",
+    "nameAr": "المجعّدة للحاجب",
+    "bodyPart": "Upper Body",
+    "description": "Small muscle that draws the eyebrows medially and downward",
+    "descriptionAr": "عضلة صغيرة تسحب الحاجبين للداخل وللأسفل",
+    "icon": "🙂"
+  },
+  {
+    "name": "Procerus",
+    "nameAr": "الهرمية الأنفية",
+    "bodyPart": "Upper Body",
+    "description": "Small facial muscle over the bridge of the nose",
+    "descriptionAr": "عضلة وجه صغيرة فوق جسر الأنف",
+    "icon": "👃"
+  },
+  {
+    "name": "Nasalis",
+    "nameAr": "الأنفية",
+    "bodyPart": "Upper Body",
+    "description": "Muscle that compresses and dilates the nostrils",
+    "descriptionAr": "عضلة تضيق وتوسع فتحتي الأنف",
+    "icon": "👃"
+  },
+  {
+    "name": "Depressor Septi Nasi",
+    "nameAr": "خافضة حاجز الأنف",
+    "bodyPart": "Upper Body",
+    "description": "Small muscle that pulls the nasal septum downward",
+    "descriptionAr": "عضلة صغيرة تخفض حاجز الأنف",
+    "icon": "👃"
+  },
+  {
+    "name": "Levator Labii Superioris Alaeque Nasi",
+    "nameAr": "رافعة الشفة العليا وجناح الأنف",
+    "bodyPart": "Upper Body",
+    "description": "Facial muscle that elevates the upper lip and dilates the nostril",
+    "descriptionAr": "عضلة وجه ترفع الشفة العليا وتوسع فتحة الأنف",
+    "icon": "🙂"
+  },
+  {
+    "name": "Levator Labii Superioris",
+    "nameAr": "رافعة الشفة العليا",
+    "bodyPart": "Upper Body",
+    "description": "Muscle that elevates the upper lip",
+    "descriptionAr": "عضلة ترفع الشفة العليا",
+    "icon": "🙂"
+  },
+  {
+    "name": "Zygomaticus Major",
+    "nameAr": "الوجنية الكبرى",
+    "bodyPart": "Upper Body",
+    "description": "Facial muscle that elevates the corner of the mouth",
+    "descriptionAr": "عضلة وجه ترفع زاوية الفم",
+    "icon": "🙂"
+  },
+  {
+    "name": "Zygomaticus Minor",
+    "nameAr": "الوجنية الصغرى",
+    "bodyPart": "Upper Body",
+    "description": "Facial muscle that elevates the upper lip",
+    "descriptionAr": "عضلة وجه ترفع الشفة العليا",
+    "icon": "🙂"
+  },
+  {
+    "name": "Levator Anguli Oris",
+    "nameAr": "رافعة زاوية الفم",
+    "bodyPart": "Upper Body",
+    "description": "Facial muscle that elevates the angle of the mouth",
+    "descriptionAr": "عضلة وجه ترفع زاوية الفم",
+    "icon": "🙂"
+  },
+  {
+    "name": "Risorius",
+    "nameAr": "الضحكية",
+    "bodyPart": "Upper Body",
+    "description": "Facial muscle that retracts the corner of the mouth",
+    "descriptionAr": "عضلة وجه تسحب زاوية الفم للخلف",
+    "icon": "🙂"
+  },
+  {
+    "name": "Buccinator",
+    "nameAr": "المبوقة",
+    "bodyPart": "Upper Body",
+    "description": "Cheek muscle that compresses the cheek",
+    "descriptionAr": "عضلة الخد التي تضغط الخد",
+    "icon": "🙂"
+  },
+  {
+    "name": "Orbicularis Oris",
+    "nameAr": "الدائرية الفموية",
+    "bodyPart": "Upper Body",
+    "description": "Circular muscle around the mouth for lip closure and protrusion",
+    "descriptionAr": "عضلة دائرية حول الفم لإغلاق وبروز الشفتين",
+    "icon": "👄"
+  },
+  {
+    "name": "Depressor Anguli Oris",
+    "nameAr": "خافضة زاوية الفم",
+    "bodyPart": "Upper Body",
+    "description": "Muscle that depresses the corner of the mouth",
+    "descriptionAr": "عضلة تخفض زاوية الفم",
+    "icon": "🙂"
+  },
+  {
+    "name": "Depressor Labii Inferioris",
+    "nameAr": "خافضة الشفة السفلى",
+    "bodyPart": "Upper Body",
+    "description": "Muscle that lowers the lower lip",
+    "descriptionAr": "عضلة تخفض الشفة السفلى",
+    "icon": "🙂"
+  },
+  {
+    "name": "Mentalis",
+    "nameAr": "الذقنية",
+    "bodyPart": "Upper Body",
+    "description": "Chin muscle that elevates and protrudes the lower lip",
+    "descriptionAr": "عضلة الذقن التي ترفع وتبرز الشفة السفلى",
+    "icon": "🙂"
+  },
+  {
+    "name": "Masseter",
+    "nameAr": "الماضغة",
+    "bodyPart": "Upper Body",
+    "description": "Powerful jaw muscle for elevation of the mandible",
+    "descriptionAr": "عضلة قوية للفك ترفع الفك السفلي",
+    "icon": "🦷"
+  },
+  {
+    "name": "Temporalis",
+    "nameAr": "الصدغية",
+    "bodyPart": "Upper Body",
+    "description": "Fan-shaped muscle that elevates and retracts the mandible",
+    "descriptionAr": "عضلة مروحية ترفع وتسحب الفك السفلي للخلف",
+    "icon": "🦷"
+  },
+  {
+    "name": "Medial Pterygoid",
+    "nameAr": "الجناحية الإنسية",
+    "bodyPart": "Upper Body",
+    "description": "Deep jaw muscle for elevation and side-to-side movement",
+    "descriptionAr": "عضلة فك عميقة للرفع والحركة الجانبية",
+    "icon": "🦷"
+  },
+  {
+    "name": "Lateral Pterygoid",
+    "nameAr": "الجناحية الوحشية",
+    "bodyPart": "Upper Body",
+    "description": "Deep jaw muscle for protrusion and side-to-side movement",
+    "descriptionAr": "عضلة فك عميقة لبروز الفك والحركة الجانبية",
+    "icon": "🦷"
+  },
+  {
+    "name": "Superior Rectus",
+    "nameAr": "المستقيمة العلوية للعين",
+    "bodyPart": "Upper Body",
+    "description": "Extraocular muscle that elevates the eye",
+    "descriptionAr": "عضلة خارجية للعين ترفع العين",
+    "icon": "👁️"
+  },
+  {
+    "name": "Inferior Rectus",
+    "nameAr": "المستقيمة السفلية للعين",
+    "bodyPart": "Upper Body",
+    "description": "Extraocular muscle that depresses the eye",
+    "descriptionAr": "عضلة خارجية للعين تخفض العين",
+    "icon": "👁️"
+  },
+  {
+    "name": "Medial Rectus",
+    "nameAr": "المستقيمة الإنسية للعين",
+    "bodyPart": "Upper Body",
+    "description": "Extraocular muscle that adducts the eye",
+    "descriptionAr": "عضلة خارجية للعين تقرب العين للداخل",
+    "icon": "👁️"
+  },
+  {
+    "name": "Lateral Rectus",
+    "nameAr": "المستقيمة الوحشية للعين",
+    "bodyPart": "Upper Body",
+    "description": "Extraocular muscle that abducts the eye",
+    "descriptionAr": "عضلة خارجية للعين تبعد العين للخارج",
+    "icon": "👁️"
+  },
+  {
+    "name": "Superior Oblique",
+    "nameAr": "المائلة العلوية للعين",
+    "bodyPart": "Upper Body",
+    "description": "Extraocular muscle involved in depression and intorsion",
+    "descriptionAr": "عضلة خارجية للعين تشارك في الخفض والدوران الداخلي",
+    "icon": "👁️"
+  },
+  {
+    "name": "Inferior Oblique",
+    "nameAr": "المائلة السفلية للعين",
+    "bodyPart": "Upper Body",
+    "description": "Extraocular muscle involved in elevation and extorsion",
+    "descriptionAr": "عضلة خارجية للعين تشارك في الرفع والدوران الخارجي",
+    "icon": "👁️"
+  },
+  {
+    "name": "Levator Palpebrae Superioris",
+    "nameAr": "رافعة الجفن العلوي",
+    "bodyPart": "Upper Body",
+    "description": "Muscle that elevates the upper eyelid",
+    "descriptionAr": "عضلة ترفع الجفن العلوي",
+    "icon": "👁️"
+  },
+  {
+    "name": "Genioglossus",
+    "nameAr": "الذقنية اللسانية",
+    "bodyPart": "Upper Body",
+    "description": "Large tongue muscle that protrudes the tongue",
+    "descriptionAr": "عضلة كبيرة في اللسان تدفع اللسان للأمام",
+    "icon": "👅"
+  },
+  {
+    "name": "Hyoglossus",
+    "nameAr": "اللامية اللسانية",
+    "bodyPart": "Upper Body",
+    "description": "Tongue muscle that depresses and retracts the tongue",
+    "descriptionAr": "عضلة لسان تخفض وتسحب اللسان للخلف",
+    "icon": "👅"
+  },
+  {
+    "name": "Styloglossus",
+    "nameAr": "الإبرية اللسانية",
+    "bodyPart": "Upper Body",
+    "description": "Tongue muscle that retracts and elevates the tongue",
+    "descriptionAr": "عضلة لسان تسحب وترفع اللسان",
+    "icon": "👅"
+  },
+  {
+    "name": "Palatoglossus",
+    "nameAr": "الحنكية اللسانية",
+    "bodyPart": "Upper Body",
+    "description": "Muscle that elevates the posterior tongue and narrows the oropharyngeal isthmus",
+    "descriptionAr": "عضلة ترفع الجزء الخلفي من اللسان وتضيّق البرزخ الفموي البلعومي",
+    "icon": "👅"
+  },
+  {
+    "name": "Superior Longitudinal Tongue",
+    "nameAr": "الطولية العلوية للسان",
+    "bodyPart": "Upper Body",
+    "description": "Intrinsic tongue muscle that shortens and curls the tongue upward",
+    "descriptionAr": "عضلة داخلية تقصر اللسان وترفع طرفه",
+    "icon": "👅"
+  },
+  {
+    "name": "Inferior Longitudinal Tongue",
+    "nameAr": "الطولية السفلية للسان",
+    "bodyPart": "Upper Body",
+    "description": "Intrinsic tongue muscle that shortens and curls the tongue downward",
+    "descriptionAr": "عضلة داخلية تقصر اللسان وتخفض طرفه",
+    "icon": "👅"
+  },
+  {
+    "name": "Transverse Tongue",
+    "nameAr": "المستعرضة للسان",
+    "bodyPart": "Upper Body",
+    "description": "Intrinsic tongue muscle that narrows and elongates the tongue",
+    "descriptionAr": "عضلة داخلية تضيق وتطيل اللسان",
+    "icon": "👅"
+  },
+  {
+    "name": "Vertical Tongue",
+    "nameAr": "العمودية للسان",
+    "bodyPart": "Upper Body",
+    "description": "Intrinsic tongue muscle that flattens and broadens the tongue",
+    "descriptionAr": "عضلة داخلية تسطح وتوسع اللسان",
+    "icon": "👅"
+  },
+  {
+    "name": "Tensor Veli Palatini",
+    "nameAr": "موترة الحنك الرخو",
+    "bodyPart": "Upper Body",
+    "description": "Muscle that tenses the soft palate",
+    "descriptionAr": "عضلة تشد الحنك الرخو",
+    "icon": "🗣️"
+  },
+  {
+    "name": "Levator Veli Palatini",
+    "nameAr": "رافعة الحنك الرخو",
+    "bodyPart": "Upper Body",
+    "description": "Muscle that elevates the soft palate during swallowing",
+    "descriptionAr": "عضلة ترفع الحنك الرخو أثناء البلع",
+    "icon": "🗣️"
+  },
+  {
+    "name": "Musculus Uvulae",
+    "nameAr": "عضلة اللهاة",
+    "bodyPart": "Upper Body",
+    "description": "Small muscle that shortens and elevates the uvula",
+    "descriptionAr": "عضلة صغيرة تقصر وترفع اللهاة",
+    "icon": "🗣️"
+  },
+  {
+    "name": "Palatopharyngeus",
+    "nameAr": "الحنكية البلعومية",
+    "bodyPart": "Upper Body",
+    "description": "Muscle that elevates the pharynx during swallowing",
+    "descriptionAr": "عضلة ترفع البلعوم أثناء البلع",
+    "icon": "🗣️"
+  },
+  {
+    "name": "Superior Pharyngeal Constrictor",
+    "nameAr": "المضيقة البلعومية العلوية",
+    "bodyPart": "Upper Body",
+    "description": "Upper pharyngeal muscle involved in swallowing",
+    "descriptionAr": "عضلة بلعومية علوية تشارك في البلع",
+    "icon": "🗣️"
+  },
+  {
+    "name": "Middle Pharyngeal Constrictor",
+    "nameAr": "المضيقة البلعومية الوسطى",
+    "bodyPart": "Upper Body",
+    "description": "Middle pharyngeal muscle involved in swallowing",
+    "descriptionAr": "عضلة بلعومية وسطى تشارك في البلع",
+    "icon": "🗣️"
+  },
+  {
+    "name": "Inferior Pharyngeal Constrictor",
+    "nameAr": "المضيقة البلعومية السفلية",
+    "bodyPart": "Upper Body",
+    "description": "Lower pharyngeal muscle involved in swallowing",
+    "descriptionAr": "عضلة بلعومية سفلية تشارك في البلع",
+    "icon": "🗣️"
+  },
+  {
+    "name": "Stylopharyngeus",
+    "nameAr": "الإبرية البلعومية",
+    "bodyPart": "Upper Body",
+    "description": "Muscle that elevates the pharynx and larynx",
+    "descriptionAr": "عضلة ترفع البلعوم والحنجرة",
+    "icon": "🗣️"
+  },
+  {
+    "name": "Salpingopharyngeus",
+    "nameAr": "البوقية البلعومية",
+    "bodyPart": "Upper Body",
+    "description": "Small muscle that elevates the pharynx",
+    "descriptionAr": "عضلة صغيرة ترفع البلعوم",
+    "icon": "🗣️"
+  },
+  {
+    "name": "Cricothyroid",
+    "nameAr": "الحلقية الدرقية",
+    "bodyPart": "Upper Body",
+    "description": "Laryngeal muscle that tenses the vocal folds",
+    "descriptionAr": "عضلة حنجرية تشد الأحبال الصوتية",
+    "icon": "🗣️"
+  },
+  {
+    "name": "Posterior Cricoarytenoid",
+    "nameAr": "الحلقية الطرجهالية الخلفية",
+    "bodyPart": "Upper Body",
+    "description": "Laryngeal muscle that abducts the vocal folds",
+    "descriptionAr": "عضلة حنجرية تبعد الأحبال الصوتية",
+    "icon": "🗣️"
+  },
+  {
+    "name": "Lateral Cricoarytenoid",
+    "nameAr": "الحلقية الطرجهالية الوحشية",
+    "bodyPart": "Upper Body",
+    "description": "Laryngeal muscle that adducts the vocal folds",
+    "descriptionAr": "عضلة حنجرية تقرب الأحبال الصوتية",
+    "icon": "🗣️"
+  },
+  {
+    "name": "Transverse Arytenoid",
+    "nameAr": "الطرجهالية المستعرضة",
+    "bodyPart": "Upper Body",
+    "description": "Laryngeal muscle that adducts the arytenoid cartilages",
+    "descriptionAr": "عضلة حنجرية تقرب الغضاريف الطرجهالية",
+    "icon": "🗣️"
+  },
+  {
+    "name": "Oblique Arytenoid",
+    "nameAr": "الطرجهالية المائلة",
+    "bodyPart": "Upper Body",
+    "description": "Laryngeal muscle assisting closure of the laryngeal inlet",
+    "descriptionAr": "عضلة حنجرية تساعد في إغلاق مدخل الحنجرة",
+    "icon": "🗣️"
+  },
+  {
+    "name": "Thyroarytenoid",
+    "nameAr": "الدرقية الطرجهالية",
+    "bodyPart": "Upper Body",
+    "description": "Laryngeal muscle that relaxes and shortens the vocal folds",
+    "descriptionAr": "عضلة حنجرية ترخي وتقصر الأحبال الصوتية",
+    "icon": "🗣️"
+  },
+  {
+    "name": "Vocalis",
+    "nameAr": "الصوتية",
+    "bodyPart": "Upper Body",
+    "description": "Fine-control muscle of the vocal fold",
+    "descriptionAr": "عضلة للتحكم الدقيق في الحبل الصوتي",
+    "icon": "🗣️"
+  },
+  {
+    "name": "Digastric",
+    "nameAr": "ذات البطنين",
+    "bodyPart": "Upper Body",
+    "description": "Suprahyoid muscle that assists jaw opening and hyoid elevation",
+    "descriptionAr": "عضلة فوق لامية تساعد في فتح الفك ورفع العظم اللامي",
+    "icon": "🗣️"
+  },
+  {
+    "name": "Mylohyoid",
+    "nameAr": "الفكية اللامية",
+    "bodyPart": "Upper Body",
+    "description": "Forms much of the floor of the mouth and elevates the hyoid",
+    "descriptionAr": "تكوّن معظم أرضية الفم وترفع العظم اللامي",
+    "icon": "🗣️"
+  },
+  {
+    "name": "Geniohyoid",
+    "nameAr": "الذقنية اللامية",
+    "bodyPart": "Upper Body",
+    "description": "Suprahyoid muscle that draws the hyoid forward",
+    "descriptionAr": "عضلة فوق لامية تسحب العظم اللامي للأمام",
+    "icon": "🗣️"
+  },
+  {
+    "name": "Stylohyoid",
+    "nameAr": "الإبرية اللامية",
+    "bodyPart": "Upper Body",
+    "description": "Suprahyoid muscle that elevates and retracts the hyoid",
+    "descriptionAr": "عضلة فوق لامية ترفع وتسحب العظم اللامي للخلف",
+    "icon": "🗣️"
+  },
+  {
+    "name": "Sternohyoid",
+    "nameAr": "القصية اللامية",
+    "bodyPart": "Upper Body",
+    "description": "Infrahyoid muscle that depresses the hyoid",
+    "descriptionAr": "عضلة تحت لامية تخفض العظم اللامي",
+    "icon": "🗣️"
+  },
+  {
+    "name": "Omohyoid",
+    "nameAr": "الكتفية اللامية",
+    "bodyPart": "Upper Body",
+    "description": "Infrahyoid muscle that depresses and stabilizes the hyoid",
+    "descriptionAr": "عضلة تحت لامية تخفض وتثبت العظم اللامي",
+    "icon": "🗣️"
+  },
+  {
+    "name": "Sternothyroid",
+    "nameAr": "القصية الدرقية",
+    "bodyPart": "Upper Body",
+    "description": "Infrahyoid muscle that depresses the larynx",
+    "descriptionAr": "عضلة تحت لامية تخفض الحنجرة",
+    "icon": "🗣️"
+  },
+  {
+    "name": "Thyrohyoid",
+    "nameAr": "الدرقية اللامية",
+    "bodyPart": "Upper Body",
+    "description": "Infrahyoid muscle that depresses the hyoid or elevates the larynx",
+    "descriptionAr": "عضلة تحت لامية تخفض العظم اللامي أو ترفع الحنجرة",
+    "icon": "🗣️"
+  },
+  {
+    "name": "Rectus Capitis Anterior",
+    "nameAr": "المستقيمة الرأسية الأمامية",
+    "bodyPart": "Upper Body",
+    "description": "Deep neck flexor at the atlanto-occipital region",
+    "descriptionAr": "عضلة عميقة تثني الرأس عند المنطقة القذالية الأطلسية",
+    "icon": "🦒"
+  },
+  {
+    "name": "Rectus Capitis Lateralis",
+    "nameAr": "المستقيمة الرأسية الوحشية",
+    "bodyPart": "Upper Body",
+    "description": "Deep lateral stabilizer of the head",
+    "descriptionAr": "عضلة عميقة تثبت الرأس جانبياً",
+    "icon": "🦒"
+  },
+  {
+    "name": "Rectus Capitis Posterior Major",
+    "nameAr": "المستقيمة الرأسية الخلفية الكبرى",
+    "bodyPart": "Upper Body",
+    "description": "Suboccipital muscle for head extension and rotation",
+    "descriptionAr": "عضلة تحت قذالية لمد ودوران الرأس",
+    "icon": "🦒"
+  },
+  {
+    "name": "Rectus Capitis Posterior Minor",
+    "nameAr": "المستقيمة الرأسية الخلفية الصغرى",
+    "bodyPart": "Upper Body",
+    "description": "Small suboccipital muscle for head extension",
+    "descriptionAr": "عضلة صغيرة تحت قذالية لمد الرأس",
+    "icon": "🦒"
+  },
+  {
+    "name": "Obliquus Capitis Superior",
+    "nameAr": "المائلة الرأسية العلوية",
+    "bodyPart": "Upper Body",
+    "description": "Suboccipital muscle for head extension and lateral flexion",
+    "descriptionAr": "عضلة تحت قذالية لمد الرأس وثنيه جانبياً",
+    "icon": "🦒"
+  },
+  {
+    "name": "Obliquus Capitis Inferior",
+    "nameAr": "المائلة الرأسية السفلية",
+    "bodyPart": "Upper Body",
+    "description": "Suboccipital muscle for rotation of the atlas",
+    "descriptionAr": "عضلة تحت قذالية تساعد في دوران الفقرة الأطلسية",
+    "icon": "🦒"
+  },
+  {
+    "name": "Semispinalis Cervicis",
+    "nameAr": "نصف الشوكية العنقية",
+    "bodyPart": "Upper Body",
+    "description": "Deep extensor and rotator of the cervical spine",
+    "descriptionAr": "عضلة عميقة لمد ودوران العمود العنقي",
+    "icon": "🔙"
+  },
+  {
+    "name": "Semispinalis Thoracis",
+    "nameAr": "نصف الشوكية الصدرية",
+    "bodyPart": "Core",
+    "description": "Deep extensor and rotator of the thoracic spine",
+    "descriptionAr": "عضلة عميقة لمد ودوران العمود الصدري",
+    "icon": "🔙"
+  },
+  {
+    "name": "Multifidus Cervicis",
+    "nameAr": "متعددة الفلح العنقية",
+    "bodyPart": "Upper Body",
+    "description": "Deep cervical stabilizer and rotator",
+    "descriptionAr": "عضلة عنقية عميقة للثبات والدوران",
+    "icon": "🔙"
+  },
+  {
+    "name": "Multifidus Thoracis",
+    "nameAr": "متعددة الفلح الصدرية",
+    "bodyPart": "Core",
+    "description": "Deep thoracic spinal stabilizer",
+    "descriptionAr": "عضلة صدرية عميقة لثبات العمود الفقري",
+    "icon": "🔙"
+  },
+  {
+    "name": "Multifidus Lumborum",
+    "nameAr": "متعددة الفلح القطنية",
+    "bodyPart": "Core",
+    "description": "Deep lumbar spinal stabilizer",
+    "descriptionAr": "عضلة قطنية عميقة لثبات العمود الفقري",
+    "icon": "🔙"
+  },
+  {
+    "name": "Rotatores Breves",
+    "nameAr": "الدوارات القصيرة",
+    "bodyPart": "Core",
+    "description": "Short deep spinal rotators between adjacent vertebrae",
+    "descriptionAr": "عضلات قصيرة عميقة تدير الفقرات المتجاورة",
+    "icon": "🔄"
+  },
+  {
+    "name": "Rotatores Longi",
+    "nameAr": "الدوارات الطويلة",
+    "bodyPart": "Core",
+    "description": "Longer deep spinal rotators crossing more than one vertebra",
+    "descriptionAr": "عضلات دوران عميقة أطول تعبر أكثر من فقرة",
+    "icon": "🔄"
+  },
+  {
+    "name": "Transversus Thoracis",
+    "nameAr": "المستعرضة الصدرية",
+    "bodyPart": "Core",
+    "description": "Thin muscle on the inner anterior thoracic wall",
+    "descriptionAr": "عضلة رقيقة على الجدار الأمامي الداخلي للصدر",
+    "icon": "🌬️"
+  },
+  {
+    "name": "Subcostales",
+    "nameAr": "تحت الضلعية",
+    "bodyPart": "Core",
+    "description": "Small posterior thoracic muscles assisting rib movement",
+    "descriptionAr": "عضلات صغيرة خلفية تساعد في حركة الأضلاع",
+    "icon": "🌬️"
+  },
+  {
+    "name": "Innermost Intercostals",
+    "nameAr": "الوربية الأعمق",
+    "bodyPart": "Core",
+    "description": "Deepest layer of intercostal muscles",
+    "descriptionAr": "أعمق طبقة من العضلات الوربية",
+    "icon": "🌬️"
+  },
+  {
+    "name": "Pectoralis Major Clavicular Head",
+    "nameAr": "الرأس الترقوي للصدرية الكبرى",
+    "bodyPart": "Upper Body",
+    "description": "Clavicular portion of pectoralis major emphasizing shoulder flexion and upper-chest pressing",
+    "descriptionAr": "الجزء الترقوي من الصدرية الكبرى ويشارك في ثني الكتف وضغط الصدر العلوي",
+    "icon": "💪"
+  },
+  {
+    "name": "Pectoralis Major Sternocostal Head",
+    "nameAr": "الرأس القصي الضلعي للصدرية الكبرى",
+    "bodyPart": "Upper Body",
+    "description": "Sternocostal portion of pectoralis major for horizontal adduction and pressing",
+    "descriptionAr": "الجزء القصي الضلعي من الصدرية الكبرى للتقريب الأفقي وحركات الدفع",
+    "icon": "💪"
+  },
+  {
+    "name": "Deltoid Anterior Fibers",
+    "nameAr": "ألياف الدالية الأمامية",
+    "bodyPart": "Upper Body",
+    "description": "Anterior fibers of the deltoid for shoulder flexion and internal rotation",
+    "descriptionAr": "ألياف الدالية الأمامية لثني الكتف والدوران الداخلي",
+    "icon": "🎯"
+  },
+  {
+    "name": "Deltoid Middle Fibers",
+    "nameAr": "ألياف الدالية الوسطى",
+    "bodyPart": "Upper Body",
+    "description": "Middle fibers of the deltoid for shoulder abduction",
+    "descriptionAr": "ألياف الدالية الوسطى لإبعاد الذراع",
+    "icon": "🎯"
+  },
+  {
+    "name": "Deltoid Posterior Fibers",
+    "nameAr": "ألياف الدالية الخلفية",
+    "bodyPart": "Upper Body",
+    "description": "Posterior fibers of the deltoid for shoulder extension and external rotation",
+    "descriptionAr": "ألياف الدالية الخلفية لمد الكتف والدوران الخارجي",
+    "icon": "🎯"
+  },
+  {
+    "name": "Triceps Brachii Long Head",
+    "nameAr": "الرأس الطويل للعضلة ثلاثية الرؤوس العضدية",
+    "bodyPart": "Arms",
+    "description": "Long head of triceps crossing the shoulder and elbow joints",
+    "descriptionAr": "الرأس الطويل للترايسبس ويعبر مفصلي الكتف والكوع",
+    "icon": "🦾"
+  },
+  {
+    "name": "Triceps Brachii Lateral Head",
+    "nameAr": "الرأس الوحشي للعضلة ثلاثية الرؤوس العضدية",
+    "bodyPart": "Arms",
+    "description": "Lateral head of triceps important for elbow extension",
+    "descriptionAr": "الرأس الوحشي للترايسبس مهم لمد الكوع",
+    "icon": "🦾"
+  },
+  {
+    "name": "Triceps Brachii Medial Head",
+    "nameAr": "الرأس الإنسي للعضلة ثلاثية الرؤوس العضدية",
+    "bodyPart": "Arms",
+    "description": "Deep medial head of triceps active in elbow extension",
+    "descriptionAr": "الرأس الإنسي العميق للترايسبس ويشارك في مد الكوع",
+    "icon": "🦾"
+  },
+  {
+    "name": "Flexor Carpi Radialis",
+    "nameAr": "القابضة الكعبرية للرسغ",
+    "bodyPart": "Arms",
+    "description": "Forearm muscle that flexes and abducts the wrist",
+    "descriptionAr": "عضلة ساعد تثني الرسغ وتبعده كعبرياً",
+    "icon": "✊"
+  },
+  {
+    "name": "Flexor Carpi Ulnaris",
+    "nameAr": "القابضة الزندية للرسغ",
+    "bodyPart": "Arms",
+    "description": "Forearm muscle that flexes and adducts the wrist",
+    "descriptionAr": "عضلة ساعد تثني الرسغ وتقربه زندياً",
+    "icon": "✊"
+  },
+  {
+    "name": "Palmaris Longus",
+    "nameAr": "الراحية الطويلة",
+    "bodyPart": "Arms",
+    "description": "Superficial forearm muscle that flexes the wrist and tenses the palmar fascia",
+    "descriptionAr": "عضلة سطحية تثني الرسغ وتشد اللفافة الراحية",
+    "icon": "✊"
+  },
+  {
+    "name": "Flexor Digitorum Superficialis",
+    "nameAr": "القابضة السطحية للأصابع",
+    "bodyPart": "Arms",
+    "description": "Forearm muscle that flexes the proximal interphalangeal joints",
+    "descriptionAr": "عضلة ساعد تثني المفاصل بين السلاميات القريبة",
+    "icon": "✊"
+  },
+  {
+    "name": "Flexor Digitorum Profundus",
+    "nameAr": "القابضة العميقة للأصابع",
+    "bodyPart": "Arms",
+    "description": "Deep forearm muscle that flexes the distal interphalangeal joints",
+    "descriptionAr": "عضلة ساعد عميقة تثني المفاصل بين السلاميات البعيدة",
+    "icon": "✊"
+  },
+  {
+    "name": "Flexor Pollicis Longus",
+    "nameAr": "القابضة الطويلة للإبهام",
+    "bodyPart": "Arms",
+    "description": "Deep forearm muscle that flexes the thumb",
+    "descriptionAr": "عضلة ساعد عميقة تثني الإبهام",
+    "icon": "👍"
+  },
+  {
+    "name": "Pronator Quadratus",
+    "nameAr": "الكابة المربعة",
+    "bodyPart": "Arms",
+    "description": "Deep forearm muscle that pronates the forearm",
+    "descriptionAr": "عضلة ساعد عميقة تكب الساعد",
+    "icon": "🔄"
+  },
+  {
+    "name": "Extensor Carpi Radialis Longus",
+    "nameAr": "الباسطة الكعبرية الطويلة للرسغ",
+    "bodyPart": "Arms",
+    "description": "Posterior forearm muscle that extends and abducts the wrist",
+    "descriptionAr": "عضلة خلفية تمد الرسغ وتبعده كعبرياً",
+    "icon": "✊"
+  },
+  {
+    "name": "Extensor Carpi Radialis Brevis",
+    "nameAr": "الباسطة الكعبرية القصيرة للرسغ",
+    "bodyPart": "Arms",
+    "description": "Posterior forearm muscle that extends and abducts the wrist",
+    "descriptionAr": "عضلة خلفية تمد الرسغ وتبعده كعبرياً",
+    "icon": "✊"
+  },
+  {
+    "name": "Extensor Digitorum",
+    "nameAr": "باسطة الأصابع",
+    "bodyPart": "Arms",
+    "description": "Posterior forearm muscle that extends digits 2-5",
+    "descriptionAr": "عضلة خلفية تمد الأصابع من الثاني إلى الخامس",
+    "icon": "🖐️"
+  },
+  {
+    "name": "Extensor Digiti Minimi",
+    "nameAr": "باسطة الخنصر",
+    "bodyPart": "Arms",
+    "description": "Forearm muscle that extends the little finger",
+    "descriptionAr": "عضلة ساعد تمد الخنصر",
+    "icon": "🤙"
+  },
+  {
+    "name": "Extensor Carpi Ulnaris",
+    "nameAr": "الباسطة الزندية للرسغ",
+    "bodyPart": "Arms",
+    "description": "Posterior forearm muscle that extends and adducts the wrist",
+    "descriptionAr": "عضلة خلفية تمد الرسغ وتقربه زندياً",
+    "icon": "✊"
+  },
+  {
+    "name": "Abductor Pollicis Longus",
+    "nameAr": "مبعدة الإبهام الطويلة",
+    "bodyPart": "Arms",
+    "description": "Deep posterior forearm muscle that abducts the thumb",
+    "descriptionAr": "عضلة خلفية عميقة تبعد الإبهام",
+    "icon": "👍"
+  },
+  {
+    "name": "Extensor Pollicis Brevis",
+    "nameAr": "باسطة الإبهام القصيرة",
+    "bodyPart": "Arms",
+    "description": "Deep posterior forearm muscle that extends the thumb",
+    "descriptionAr": "عضلة خلفية عميقة تمد الإبهام",
+    "icon": "👍"
+  },
+  {
+    "name": "Extensor Pollicis Longus",
+    "nameAr": "باسطة الإبهام الطويلة",
+    "bodyPart": "Arms",
+    "description": "Deep posterior forearm muscle that extends the thumb",
+    "descriptionAr": "عضلة خلفية عميقة تمد الإبهام",
+    "icon": "👍"
+  },
+  {
+    "name": "Extensor Indicis",
+    "nameAr": "باسطة السبابة",
+    "bodyPart": "Arms",
+    "description": "Deep posterior forearm muscle that extends the index finger",
+    "descriptionAr": "عضلة خلفية عميقة تمد السبابة",
+    "icon": "☝️"
+  },
+  {
+    "name": "Abductor Pollicis Brevis",
+    "nameAr": "مبعدة الإبهام القصيرة",
+    "bodyPart": "Arms",
+    "description": "Thenar muscle that abducts the thumb",
+    "descriptionAr": "عضلة من عضلات الإبهام تبعد الإبهام",
+    "icon": "👍"
+  },
+  {
+    "name": "Flexor Pollicis Brevis",
+    "nameAr": "قابضة الإبهام القصيرة",
+    "bodyPart": "Arms",
+    "description": "Thenar muscle that flexes the thumb",
+    "descriptionAr": "عضلة من عضلات الإبهام تثني الإبهام",
+    "icon": "👍"
+  },
+  {
+    "name": "Opponens Pollicis",
+    "nameAr": "مقابلة الإبهام",
+    "bodyPart": "Arms",
+    "description": "Thenar muscle responsible for thumb opposition",
+    "descriptionAr": "عضلة مسؤولة عن مقابلة الإبهام",
+    "icon": "👍"
+  },
+  {
+    "name": "Adductor Pollicis",
+    "nameAr": "مقربة الإبهام",
+    "bodyPart": "Arms",
+    "description": "Deep hand muscle that adducts the thumb",
+    "descriptionAr": "عضلة عميقة تقرب الإبهام",
+    "icon": "👍"
+  },
+  {
+    "name": "Palmaris Brevis",
+    "nameAr": "الراحية القصيرة",
+    "bodyPart": "Arms",
+    "description": "Small superficial hand muscle that wrinkles the hypothenar skin",
+    "descriptionAr": "عضلة صغيرة سطحية تشد جلد منطقة الخنصر",
+    "icon": "✋"
+  },
+  {
+    "name": "Abductor Digiti Minimi Hand",
+    "nameAr": "مبعدة الخنصر في اليد",
+    "bodyPart": "Arms",
+    "description": "Hypothenar muscle that abducts the little finger",
+    "descriptionAr": "عضلة تبعد خنصر اليد",
+    "icon": "🤙"
+  },
+  {
+    "name": "Flexor Digiti Minimi Brevis Hand",
+    "nameAr": "قابضة الخنصر القصيرة في اليد",
+    "bodyPart": "Arms",
+    "description": "Hypothenar muscle that flexes the little finger",
+    "descriptionAr": "عضلة تثني خنصر اليد",
+    "icon": "🤙"
+  },
+  {
+    "name": "Opponens Digiti Minimi",
+    "nameAr": "مقابلة الخنصر",
+    "bodyPart": "Arms",
+    "description": "Hypothenar muscle assisting little-finger opposition",
+    "descriptionAr": "عضلة تساعد في مقابلة الخنصر",
+    "icon": "🤙"
+  },
+  {
+    "name": "Lumbricals Hand",
+    "nameAr": "الدودية في اليد",
+    "bodyPart": "Arms",
+    "description": "Four intrinsic hand muscles that flex MCP joints and extend IP joints",
+    "descriptionAr": "أربع عضلات داخلية تثني مفاصل المشط السلامية وتمد المفاصل بين السلاميات",
+    "icon": "✋"
+  },
+  {
+    "name": "Palmar Interossei Hand",
+    "nameAr": "بين العظمية الراحية",
+    "bodyPart": "Arms",
+    "description": "Intrinsic hand muscles that adduct the fingers",
+    "descriptionAr": "عضلات داخلية تقرب أصابع اليد",
+    "icon": "✋"
+  },
+  {
+    "name": "Dorsal Interossei Hand",
+    "nameAr": "بين العظمية الظهرية",
+    "bodyPart": "Arms",
+    "description": "Intrinsic hand muscles that abduct the fingers",
+    "descriptionAr": "عضلات داخلية تبعد أصابع اليد",
+    "icon": "✋"
+  },
+  {
+    "name": "Rectus Abdominis Upper Region",
+    "nameAr": "الجزء العلوي من المستقيمة البطنية",
+    "bodyPart": "Core",
+    "description": "Upper region of rectus abdominis involved in trunk flexion",
+    "descriptionAr": "الجزء العلوي من المستقيمة البطنية ويشارك في ثني الجذع",
+    "icon": "🎯"
+  },
+  {
+    "name": "Rectus Abdominis Lower Region",
+    "nameAr": "الجزء السفلي من المستقيمة البطنية",
+    "bodyPart": "Core",
+    "description": "Lower region of rectus abdominis involved in pelvic control and trunk flexion",
+    "descriptionAr": "الجزء السفلي من المستقيمة البطنية ويشارك في التحكم بالحوض وثني الجذع",
+    "icon": "🎯"
+  },
+  {
+    "name": "Pyramidalis Abdominis",
+    "nameAr": "الهرمية البطنية",
+    "bodyPart": "Core",
+    "description": "Small lower abdominal muscle that tenses the linea alba",
+    "descriptionAr": "عضلة صغيرة أسفل البطن تشد الخط الأبيض",
+    "icon": "🔺"
+  },
+  {
+    "name": "Levator Ani",
+    "nameAr": "رافعة الشرج",
+    "bodyPart": "Core",
+    "description": "Major pelvic floor muscle group supporting pelvic organs",
+    "descriptionAr": "مجموعة عضلية رئيسية في قاع الحوض تدعم أعضاء الحوض",
+    "icon": "🎯"
+  },
+  {
+    "name": "Puborectalis",
+    "nameAr": "العانية المستقيمية",
+    "bodyPart": "Core",
+    "description": "Pelvic floor muscle that maintains the anorectal angle",
+    "descriptionAr": "عضلة بقاع الحوض تحافظ على زاوية المستقيم والشرج",
+    "icon": "🎯"
+  },
+  {
+    "name": "Pubococcygeus",
+    "nameAr": "العانية العصعصية",
+    "bodyPart": "Core",
+    "description": "Pelvic floor muscle supporting pelvic viscera",
+    "descriptionAr": "عضلة بقاع الحوض تدعم أحشاء الحوض",
+    "icon": "🎯"
+  },
+  {
+    "name": "Iliococcygeus",
+    "nameAr": "الحرقفية العصعصية",
+    "bodyPart": "Core",
+    "description": "Posterior levator ani muscle supporting the pelvic floor",
+    "descriptionAr": "جزء خلفي من رافعة الشرج يدعم قاع الحوض",
+    "icon": "🎯"
+  },
+  {
+    "name": "Coccygeus",
+    "nameAr": "العصعصية",
+    "bodyPart": "Core",
+    "description": "Posterior pelvic floor muscle supporting pelvic organs",
+    "descriptionAr": "عضلة خلفية في قاع الحوض تدعم أعضاء الحوض",
+    "icon": "🎯"
+  },
+  {
+    "name": "External Anal Sphincter",
+    "nameAr": "المصرة الشرجية الخارجية",
+    "bodyPart": "Core",
+    "description": "Voluntary sphincter surrounding the anal canal",
+    "descriptionAr": "مصرة إرادية تحيط بالقناة الشرجية",
+    "icon": "🎯"
+  },
+  {
+    "name": "External Urethral Sphincter",
+    "nameAr": "المصرة الإحليلية الخارجية",
+    "bodyPart": "Core",
+    "description": "Voluntary sphincter involved in urinary continence",
+    "descriptionAr": "مصرة إرادية تشارك في التحكم بالتبول",
+    "icon": "🎯"
+  },
+  {
+    "name": "Bulbospongiosus",
+    "nameAr": "البصلية الإسفنجية",
+    "bodyPart": "Core",
+    "description": "Superficial perineal muscle involved in pelvic-floor function",
+    "descriptionAr": "عضلة عجان سطحية تشارك في وظائف قاع الحوض",
+    "icon": "🎯"
+  },
+  {
+    "name": "Ischiocavernosus",
+    "nameAr": "الإسكية الكهفية",
+    "bodyPart": "Core",
+    "description": "Superficial perineal muscle involved in pelvic-floor function",
+    "descriptionAr": "عضلة عجان سطحية تشارك في وظائف قاع الحوض",
+    "icon": "🎯"
+  },
+  {
+    "name": "Superficial Transverse Perineal",
+    "nameAr": "المستعرضة السطحية للعجان",
+    "bodyPart": "Core",
+    "description": "Small perineal muscle stabilizing the perineal body",
+    "descriptionAr": "عضلة صغيرة بالعجان تثبت الجسم العجاني",
+    "icon": "🎯"
+  },
+  {
+    "name": "Deep Transverse Perineal",
+    "nameAr": "المستعرضة العميقة للعجان",
+    "bodyPart": "Core",
+    "description": "Deep perineal muscle supporting the pelvic floor",
+    "descriptionAr": "عضلة عميقة بالعجان تدعم قاع الحوض",
+    "icon": "🎯"
+  },
+  {
+    "name": "Psoas Minor",
+    "nameAr": "القطنية الصغرى",
+    "bodyPart": "Core",
+    "description": "Small variable muscle that assists lumbar flexion",
+    "descriptionAr": "عضلة صغيرة متغيرة تساعد في ثني المنطقة القطنية",
+    "icon": "🦵"
+  },
+  {
+    "name": "Iliopsoas",
+    "nameAr": "الحرقفية القطنية",
+    "bodyPart": "Core",
+    "description": "Combined iliacus and psoas major, primary hip flexor",
+    "descriptionAr": "مركب الحرقفية والقطنية الكبرى وهو من أهم مثنيات الورك",
+    "icon": "🦵"
+  },
+  {
+    "name": "Gemellus Superior Hip",
+    "nameAr": "التوأمية العلوية للورك",
+    "bodyPart": "Lower Body",
+    "description": "Small deep external rotator of the hip",
+    "descriptionAr": "عضلة صغيرة عميقة للدوران الخارجي للورك",
+    "icon": "🔄"
+  },
+  {
+    "name": "Gemellus Inferior Hip",
+    "nameAr": "التوأمية السفلية للورك",
+    "bodyPart": "Lower Body",
+    "description": "Small deep external rotator of the hip",
+    "descriptionAr": "عضلة صغيرة عميقة للدوران الخارجي للورك",
+    "icon": "🔄"
+  },
+  {
+    "name": "Obturator Internus Hip",
+    "nameAr": "السدادة الداخلية للورك",
+    "bodyPart": "Lower Body",
+    "description": "Deep external rotator of the hip",
+    "descriptionAr": "عضلة عميقة للدوران الخارجي للورك",
+    "icon": "🔄"
+  },
+  {
+    "name": "Obturator Externus Hip",
+    "nameAr": "السدادة الخارجية للورك",
+    "bodyPart": "Lower Body",
+    "description": "Deep external rotator and stabilizer of the hip",
+    "descriptionAr": "عضلة عميقة للدوران الخارجي وثبات الورك",
+    "icon": "🔄"
+  },
+  {
+    "name": "Quadratus Femoris Hip",
+    "nameAr": "المربعة الفخذية للورك",
+    "bodyPart": "Lower Body",
+    "description": "Deep external rotator and adductor of the hip",
+    "descriptionAr": "عضلة عميقة تدير وتقرب الورك",
+    "icon": "🔄"
+  },
+  {
+    "name": "Adductor Minimus",
+    "nameAr": "المقربة الصغرى",
+    "bodyPart": "Lower Body",
+    "description": "Small superior portion of adductor magnus",
+    "descriptionAr": "جزء علوي صغير من المقربة الكبرى",
+    "icon": "🦵"
+  },
+  {
+    "name": "Adductor Magnus Adductor Part",
+    "nameAr": "الجزء المقرب من المقربة الكبرى",
+    "bodyPart": "Lower Body",
+    "description": "Anterior adductor portion of adductor magnus",
+    "descriptionAr": "الجزء الأمامي المقرب من العضلة المقربة الكبرى",
+    "icon": "🦵"
+  },
+  {
+    "name": "Adductor Magnus Hamstring Part",
+    "nameAr": "الجزء الهامسترنجي من المقربة الكبرى",
+    "bodyPart": "Lower Body",
+    "description": "Posterior extensor portion of adductor magnus",
+    "descriptionAr": "الجزء الخلفي الباسط من العضلة المقربة الكبرى",
+    "icon": "🦵"
+  },
+  {
+    "name": "Biceps Femoris Long Head",
+    "nameAr": "الرأس الطويل لذات الرأسين الفخذية",
+    "bodyPart": "Lower Body",
+    "description": "Long head of biceps femoris for hip extension and knee flexion",
+    "descriptionAr": "الرأس الطويل لذات الرأسين الفخذية لمد الورك وثني الركبة",
+    "icon": "🦵"
+  },
+  {
+    "name": "Biceps Femoris Short Head",
+    "nameAr": "الرأس القصير لذات الرأسين الفخذية",
+    "bodyPart": "Lower Body",
+    "description": "Short head of biceps femoris for knee flexion",
+    "descriptionAr": "الرأس القصير لذات الرأسين الفخذية لثني الركبة",
+    "icon": "🦵"
+  },
+  {
+    "name": "Extensor Hallucis Longus",
+    "nameAr": "الباسطة الطويلة لإبهام القدم",
+    "bodyPart": "Lower Body",
+    "description": "Anterior leg muscle that extends the big toe and dorsiflexes the ankle",
+    "descriptionAr": "عضلة أمامية تمد إبهام القدم وترفع القدم",
+    "icon": "🦶"
+  },
+  {
+    "name": "Fibularis Longus",
+    "nameAr": "الشظوية الطويلة",
+    "bodyPart": "Lower Body",
+    "description": "Lateral leg muscle for eversion and plantarflexion",
+    "descriptionAr": "عضلة جانبية لقلب القدم للخارج والثني الأخمصي",
+    "icon": "🦶"
+  },
+  {
+    "name": "Fibularis Brevis",
+    "nameAr": "الشظوية القصيرة",
+    "bodyPart": "Lower Body",
+    "description": "Lateral leg muscle for foot eversion",
+    "descriptionAr": "عضلة جانبية لقلب القدم للخارج",
+    "icon": "🦶"
+  },
+  {
+    "name": "Fibularis Tertius",
+    "nameAr": "الشظوية الثالثة",
+    "bodyPart": "Lower Body",
+    "description": "Anterior-lateral leg muscle assisting dorsiflexion and eversion",
+    "descriptionAr": "عضلة أمامية جانبية تساعد في رفع القدم وقلبها للخارج",
+    "icon": "🦶"
+  },
+  {
+    "name": "Flexor Hallucis Longus Foot",
+    "nameAr": "القابضة الطويلة لإبهام القدم",
+    "bodyPart": "Lower Body",
+    "description": "Deep posterior leg muscle that flexes the big toe",
+    "descriptionAr": "عضلة خلفية عميقة تثني إبهام القدم",
+    "icon": "🦶"
+  },
+  {
+    "name": "Extensor Digitorum Longus Foot",
+    "nameAr": "الباسطة الطويلة لأصابع القدم",
+    "bodyPart": "Lower Body",
+    "description": "Anterior leg muscle that extends toes 2-5",
+    "descriptionAr": "عضلة أمامية تمد أصابع القدم من الثاني للخامس",
+    "icon": "🦶"
+  },
+  {
+    "name": "Gastrocnemius Medial Head",
+    "nameAr": "الرأس الإنسي لبطن الساق",
+    "bodyPart": "Lower Body",
+    "description": "Medial head of gastrocnemius contributing to plantarflexion",
+    "descriptionAr": "الرأس الإنسي للسمانة ويشارك في الثني الأخمصي",
+    "icon": "🦶"
+  },
+  {
+    "name": "Gastrocnemius Lateral Head",
+    "nameAr": "الرأس الوحشي لبطن الساق",
+    "bodyPart": "Lower Body",
+    "description": "Lateral head of gastrocnemius contributing to plantarflexion",
+    "descriptionAr": "الرأس الوحشي للسمانة ويشارك في الثني الأخمصي",
+    "icon": "🦶"
+  },
+  {
+    "name": "Extensor Digitorum Brevis",
+    "nameAr": "الباسطة القصيرة لأصابع القدم",
+    "bodyPart": "Lower Body",
+    "description": "Intrinsic dorsal foot muscle that assists toe extension",
+    "descriptionAr": "عضلة داخلية ظهرية للقدم تساعد في مد الأصابع",
+    "icon": "🦶"
+  },
+  {
+    "name": "Extensor Hallucis Brevis",
+    "nameAr": "الباسطة القصيرة لإبهام القدم",
+    "bodyPart": "Lower Body",
+    "description": "Intrinsic dorsal foot muscle that extends the big toe",
+    "descriptionAr": "عضلة داخلية ظهرية تمد إبهام القدم",
+    "icon": "🦶"
+  },
+  {
+    "name": "Abductor Hallucis",
+    "nameAr": "مبعدة إبهام القدم",
+    "bodyPart": "Lower Body",
+    "description": "Medial plantar muscle that abducts and flexes the big toe",
+    "descriptionAr": "عضلة أخمصية إنسية تبعد وتثني إبهام القدم",
+    "icon": "🦶"
+  },
+  {
+    "name": "Flexor Digitorum Brevis",
+    "nameAr": "القابضة القصيرة لأصابع القدم",
+    "bodyPart": "Lower Body",
+    "description": "Superficial plantar muscle that flexes toes 2-5",
+    "descriptionAr": "عضلة أخمصية سطحية تثني أصابع القدم من الثاني للخامس",
+    "icon": "🦶"
+  },
+  {
+    "name": "Abductor Digiti Minimi Foot",
+    "nameAr": "مبعدة خنصر القدم",
+    "bodyPart": "Lower Body",
+    "description": "Lateral plantar muscle that abducts the fifth toe",
+    "descriptionAr": "عضلة أخمصية جانبية تبعد خنصر القدم",
+    "icon": "🦶"
+  },
+  {
+    "name": "Quadratus Plantae",
+    "nameAr": "المربعة الأخمصية",
+    "bodyPart": "Lower Body",
+    "description": "Plantar muscle assisting flexor digitorum longus",
+    "descriptionAr": "عضلة أخمصية تساعد القابضة الطويلة للأصابع",
+    "icon": "🦶"
+  },
+  {
+    "name": "Lumbricals Foot",
+    "nameAr": "الدودية في القدم",
+    "bodyPart": "Lower Body",
+    "description": "Four intrinsic foot muscles that assist toe flexion and extension",
+    "descriptionAr": "أربع عضلات داخلية تساعد في حركات أصابع القدم",
+    "icon": "🦶"
+  },
+  {
+    "name": "Flexor Hallucis Brevis",
+    "nameAr": "القابضة القصيرة لإبهام القدم",
+    "bodyPart": "Lower Body",
+    "description": "Intrinsic plantar muscle that flexes the big toe",
+    "descriptionAr": "عضلة أخمصية داخلية تثني إبهام القدم",
+    "icon": "🦶"
+  },
+  {
+    "name": "Adductor Hallucis",
+    "nameAr": "مقربة إبهام القدم",
+    "bodyPart": "Lower Body",
+    "description": "Intrinsic plantar muscle that adducts the big toe",
+    "descriptionAr": "عضلة أخمصية داخلية تقرب إبهام القدم",
+    "icon": "🦶"
+  },
+  {
+    "name": "Flexor Digiti Minimi Brevis Foot",
+    "nameAr": "القابضة القصيرة لخنصر القدم",
+    "bodyPart": "Lower Body",
+    "description": "Intrinsic plantar muscle that flexes the fifth toe",
+    "descriptionAr": "عضلة أخمصية داخلية تثني خنصر القدم",
+    "icon": "🦶"
+  },
+  {
+    "name": "Plantar Interossei Foot",
+    "nameAr": "بين العظمية الأخمصية",
+    "bodyPart": "Lower Body",
+    "description": "Intrinsic foot muscles that adduct toes 3-5",
+    "descriptionAr": "عضلات داخلية تقرب أصابع القدم من الثالث للخامس",
+    "icon": "🦶"
+  },
+  {
+    "name": "Dorsal Interossei Foot",
+    "nameAr": "بين العظمية الظهرية للقدم",
+    "bodyPart": "Lower Body",
+    "description": "Intrinsic foot muscles that abduct toes 2-4",
+    "descriptionAr": "عضلات داخلية تبعد أصابع القدم من الثاني للرابع",
+    "icon": "🦶"
   }
 ]

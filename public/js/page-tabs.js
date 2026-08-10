@@ -16,6 +16,7 @@
         const reportsSection = document.getElementById('reportsSection');
         const attendanceSection = document.getElementById('attendanceSection');
         const librarySection = document.getElementById('librarySection');
+        const traineesSection = document.getElementById('traineesSection');
         const isDashboard = name === 'dashboard';
         const isMembers = name === 'members';
         const isExpenses = name === 'expenses';
@@ -23,6 +24,7 @@
         const isReports = name === 'reports';
         const isAttendance = name === 'attendance';
         const isLibrary = name === 'library';
+        const isTrainees = name === 'trainees';
 
         setHidden(overview, !isDashboard);
         setHidden(expensesSection, !isExpenses);
@@ -31,7 +33,8 @@
         setHidden(reportsSection, !isReports);
         setHidden(attendanceSection, !isAttendance);
         setHidden(librarySection, !isLibrary);
-        setHidden(workspace, isDashboard || isExpenses || isReports || isManagement || isAttendance || isLibrary);
+        setHidden(traineesSection, !isTrainees);
+        setHidden(workspace, isDashboard || isExpenses || isReports || isManagement || isAttendance || isLibrary || isTrainees);
         setHidden(membersSection, !isMembers);
 
         document.querySelectorAll('[data-page-tab]').forEach((button) => {
