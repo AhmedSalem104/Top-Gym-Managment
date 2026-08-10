@@ -74,13 +74,18 @@
 
     async function loadReport() {
         const panel = ensurePanel();
-        if (!panel || !window.topGymAuth?.user) return;
+        if (!panel) return;
         const from = $('reportsFrom').value;
         const to = $('reportsTo').value;
         const requestId = ++state.requestId;
         $('reportsKpis').innerHTML = '<div class="loading">جاري تحديث التقرير…</div>';
         try {
-            const data = await window.topGymAuth.request(`/api/reports?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`);
+            const response = await fetch(`/api/reports?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`, {
+                cache: 'no-store',
+                headers: { Accept: 'application/json' }
+            });
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok) throw new Error(data.error || 'تعذر تحميل التقرير.');
             if (requestId === state.requestId) render(data);
         } catch (error) { $('reportsKpis').innerHTML = `<div class="analytics-error">${escapeHtml(error.message)}</div>`; }
     }
@@ -100,6 +105,5 @@
     }
 
     document.addEventListener('DOMContentLoaded', ensurePanel);
-    window.addEventListener('topgym:auth-ready', () => { if (window.location.hash === '#reports') loadReport(); });
     window.addEventListener('topgym:tab-changed', (event) => { if (event.detail?.name === 'reports') loadReport(); });
 })();

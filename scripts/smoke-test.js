@@ -6,13 +6,10 @@ const { closePool, getPool, initDatabase, sql } = require('../src/db');
 
 async function call(baseUrl, path, options = {}) {
     const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
-    if (globalThis.smokeCookie) headers.Cookie = globalThis.smokeCookie;
     const response = await fetch(`${baseUrl}${path}`, {
         ...options,
         headers,
     });
-    const setCookie = response.headers.get('set-cookie');
-    if (setCookie) globalThis.smokeCookie = setCookie.split(';')[0];
     const body = response.status === 204 ? null : await response.json();
     if (!response.ok) throw new Error(`${response.status}: ${body?.error || 'request failed'}`);
     return body;
@@ -32,23 +29,6 @@ async function call(baseUrl, path, options = {}) {
 
         const health = await call(baseUrl, '/api/health');
         assert.equal(health.database, 'connected');
-        const authStatus = await call(baseUrl, '/api/auth/status');
-        const smokeUsername = process.env.SMOKE_TEST_USERNAME;
-        const smokePassword = process.env.SMOKE_TEST_PASSWORD;
-        if (!smokeUsername || !smokePassword) {
-            throw new Error('ضع SMOKE_TEST_USERNAME وSMOKE_TEST_PASSWORD أو أنشئ حسابًا للاختبار قبل تشغيل smoke-test.');
-        }
-        if (authStatus.setupRequired) {
-            await call(baseUrl, '/api/auth/setup', {
-                method: 'POST',
-                body: JSON.stringify({ fullName: 'Smoke Test Manager', username: smokeUsername, password: smokePassword })
-            });
-        } else {
-            await call(baseUrl, '/api/auth/login', {
-                method: 'POST',
-                body: JSON.stringify({ username: smokeUsername, password: smokePassword })
-            });
-        }
         const bootstrap = await call(baseUrl, '/api/bootstrap');
         assert.ok(Array.isArray(bootstrap.members));
         assert.ok(bootstrap.dashboard && bootstrap.dashboard.stats);
@@ -64,6 +44,9 @@ async function call(baseUrl, path, options = {}) {
         const pricing = await call(baseUrl, '/api/pricing');
         const gymOnlyMonthly = Number(pricing.plans.gym_only.monthlyPrice);
         const cardioMonthly = Number(pricing.plans.gym_cardio.monthlyPrice);
+        const gymOnlyMonthlyPrice = Number(pricing.prices?.gym_only?.monthly ?? gymOnlyMonthly);
+        const gymOnlyHalfMonthPrice = Number(pricing.prices?.gym_only?.half_month ?? gymOnlyMonthly * 0.5);
+        const cardioQuarterlyPrice = Number(pricing.prices?.gym_cardio?.quarterly ?? cardioMonthly * 3);
         const pricingUpdate = await call(baseUrl, '/api/pricing', {
             method: 'PUT',
             body: JSON.stringify({
@@ -135,9 +118,9 @@ async function call(baseUrl, path, options = {}) {
         memberId = created.member.id;
         assert.equal(created.member.membership.status, 'active');
         assert.equal(created.member.membership.endDate, '2026-08-22');
-        assert.equal(created.member.membership.amountDue, gymOnlyMonthly * 0.5 - 5);
+        assert.equal(created.member.membership.amountDue, gymOnlyHalfMonthPrice - 5);
         assert.equal(created.member.membership.discountAmount, 5);
-        assert.equal(created.member.membership.amountRemaining, gymOnlyMonthly * 0.5 - 55);
+        assert.equal(created.member.membership.amountRemaining, gymOnlyHalfMonthPrice - 55);
         assert.equal(created.member.membership.freezeCount, 0);
         assert.equal(created.member.membership.freezeLimit, 3);
         assert.equal(created.member.membership.freezesRemaining, 3);
@@ -161,7 +144,7 @@ async function call(baseUrl, path, options = {}) {
             })
         });
         assert.equal(edited.member.fullName, `Edited Smoke Test ${suffix}`);
-        assert.equal(edited.member.membership.amountDue, gymOnlyMonthly);
+        assert.equal(edited.member.membership.amountDue, gymOnlyMonthlyPrice);
 
         const frozen = await call(baseUrl, `/api/members/${memberId}/freeze`, {
             method: 'POST', body: JSON.stringify({ days: 2, reason: 'smoke test' })
@@ -194,16 +177,16 @@ async function call(baseUrl, path, options = {}) {
         assert.equal(freezeLimitRejected, true);
 
         const paid = await call(baseUrl, `/api/memberships/${resumed.member.membership.id}/payments`, {
-            method: 'POST', body: JSON.stringify({ listPrice: gymOnlyMonthly, discountAmount: 0, amountPaid: gymOnlyMonthly, paymentMethod: 'card' })
+            method: 'POST', body: JSON.stringify({ listPrice: gymOnlyMonthlyPrice, discountAmount: 0, amountPaid: gymOnlyMonthlyPrice, paymentMethod: 'card' })
         });
         assert.equal(paid.member.membership.amountRemaining, 0);
 
         const renewed = await call(baseUrl, `/api/members/${memberId}/renew`, {
-            method: 'POST', body: JSON.stringify({ membershipType: 'quarterly', membershipPlan: 'gym_cardio', discountAmount: 0, amountPaid: cardioMonthly * 3, paymentMethod: 'transfer' })
+            method: 'POST', body: JSON.stringify({ membershipType: 'quarterly', membershipPlan: 'gym_cardio', discountAmount: 0, amountPaid: cardioQuarterlyPrice, paymentMethod: 'transfer' })
         });
         assert.equal(renewed.member.membership.type, 'quarterly');
         assert.equal(renewed.member.membership.plan, 'gym_cardio');
-        assert.equal(renewed.member.membership.amountDue, cardioMonthly * 3);
+        assert.equal(renewed.member.membership.amountDue, cardioQuarterlyPrice);
         assert.equal(renewed.member.membership.amountRemaining, 0);
 
         const details = await call(baseUrl, `/api/members/${memberId}/details`);

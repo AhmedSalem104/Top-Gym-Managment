@@ -75,7 +75,7 @@
             const item = items[index];
             if (!item) return;
             article.dataset.expenseId = String(item.id);
-            article.insertAdjacentHTML('beforeend', `<div class="monthly-expense-actions"><button class="monthly-expense-action edit" data-permission="expenses.write" type="button" data-expense-action="edit" data-expense-id="${item.id}" title="تعديل المصروف" aria-label="تعديل المصروف"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z"/></svg></button><button class="monthly-expense-action delete" data-permission="expenses.delete" type="button" data-expense-action="delete" data-expense-id="${item.id}" title="حذف المصروف" aria-label="حذف المصروف"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg></button></div>`);
+            article.insertAdjacentHTML('beforeend', `<div class="monthly-expense-actions"><button class="monthly-expense-action edit" type="button" data-expense-action="edit" data-expense-id="${item.id}" title="تعديل المصروف" aria-label="تعديل المصروف"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z"/></svg></button><button class="monthly-expense-action delete" type="button" data-expense-action="delete" data-expense-id="${item.id}" title="حذف المصروف" aria-label="حذف المصروف"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg></button></div>`);
         });
     }
 
@@ -99,7 +99,7 @@
             section.className = 'expenses-tab-panel panel';
             section.id = 'expensesSection';
             section.hidden = true;
-            section.innerHTML = '<div class="expenses-tab-heading"><div class="expenses-tab-heading-copy"><span>الحسابات</span><h3>إدارة المصروفات</h3><p>أضف وعدّل واحذف مصروفات الشهر الحالي من مكان واحد.</p></div><button class="btn btn-primary expenses-tab-add-button" id="addExpenseFromTabButton" data-permission="expenses.write" type="button"><span aria-hidden="true">+</span> إضافة مصروف</button></div><div id="expensesTabHost"></div>';
+            section.innerHTML = '<div class="expenses-tab-heading"><div class="expenses-tab-heading-copy"><span>الحسابات</span><h3>إدارة المصروفات</h3><p>أضف وعدّل واحذف مصروفات الشهر الحالي من مكان واحد.</p></div><button class="btn btn-primary expenses-tab-add-button" id="addExpenseFromTabButton" type="button"><span aria-hidden="true">+</span> إضافة مصروف</button></div><div id="expensesTabHost"></div>';
             main.appendChild(section);
         }
         return section;
