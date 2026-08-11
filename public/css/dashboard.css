@@ -614,7 +614,7 @@
         .whatsapp-after-save span { color: #166534; font-size: 11px; }
 
         /* Dashboard overview: keep statistics compact and place finance beside alerts. */
-        .overview-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important; grid-template-areas: 'stats stats' 'alerts finance' !important; gap: 12px !important; }
+        .overview-grid { grid-template-columns: minmax(270px, .78fr) minmax(0, 1.42fr) !important; grid-template-areas: 'stats stats' 'finance alerts' !important; gap: 12px !important; direction: ltr !important; }
         .overview-grid > .stats-grid { grid-area: stats !important; grid-template-columns: repeat(5, minmax(0, 1fr)) !important; gap: 8px !important; height: auto !important; padding: 0 !important; }
         .overview-grid > .stats-grid .stat-card { min-height: 62px !important; padding: 8px 10px !important; }
         .overview-grid > .stats-grid .stat-card:nth-child(5) { grid-column: auto !important; }
@@ -623,8 +623,9 @@
         .overview-grid > .stats-grid .stat-caption { font-size: 9px !important; }
         .overview-grid > .stats-grid .stat-icon { width: 24px; height: 24px; }
         .overview-grid > .stats-grid .stat-icon .ui-icon { width: 13px; height: 13px; }
-        .overview-grid > .alerts-panel { grid-area: alerts !important; min-width: 0; }
-        .overview-grid > #monthlyFinanceCard { grid-area: finance !important; min-width: 0; margin: 0 !important; }
+        .overview-grid > .alerts-panel { display: flex; min-width: 0; min-height: 278px; flex-direction: column; grid-area: alerts !important; }
+        .overview-grid > .alerts-panel .alerts-list { flex: 1 1 auto; }
+        .overview-grid > #monthlyFinanceCard { grid-area: finance !important; min-width: 0; margin: 0 !important; direction: rtl; }
         .overview-grid > #monthlyFinanceCard .monthly-finance-head { padding: 11px 13px; }
         .overview-grid > #monthlyFinanceCard .monthly-finance-icon { width: 32px; height: 32px; flex-basis: 32px; border-radius: 9px; }
         .overview-grid > #monthlyFinanceCard .monthly-finance-icon .ui-icon { width: 16px; height: 16px; }

@@ -208,17 +208,21 @@ app.get('/api/health', asyncRoute(async (request, response) => {
 }));
 
 app.get('/api/backup/download', asyncRoute(async (request, response) => {
-    const backup = await createBackup();
+    const requestedFormat = String(request.query.format || 'json.gz').toLowerCase();
+    if (!['json.gz', 'bak'].includes(requestedFormat)) {
+        return response.status(400).json({ error: 'صيغة النسخة غير مدعومة. اختر .json.gz أو .bak.' });
+    }
+    const backup = await createBackup({ format: requestedFormat });
     await recordBackupOperation({
         operationType: 'download',
         fileName: backup.filename,
         sourceGeneratedAt: backup.generatedAt,
         tableCounts: backup.rowCounts,
-        details: 'تم إنشاء نسخة لحظية وتنزيلها على جهاز المستخدم.'
+        details: `تم إنشاء نسخة TOP GYM بصيغة .${backup.format} وتنزيلها على جهاز المستخدم.`
     }).catch((error) => console.warn('Unable to record backup download:', error.message));
     response.set({
         'Cache-Control': 'no-store, no-cache, must-revalidate, private',
-        'Content-Type': 'application/gzip',
+        'Content-Type': backup.format === 'bak' ? 'application/octet-stream' : 'application/gzip',
         'Content-Disposition': `attachment; filename="${backup.filename}"`,
         'Content-Length': String(backup.buffer.length),
         'X-Content-Type-Options': 'nosniff'

@@ -4,6 +4,8 @@
 
     const $ = (id) => document.getElementById(id);
     const downloadButton = $('backupButton');
+    const jsonDownloadButton = $('backupJsonButton');
+    const bakDownloadButton = $('backupBakButton');
     const restoreButton = $('restoreBackupButton');
     const historyButton = $('backupHistoryButton');
     const restoreDialog = $('backupRestoreDialog');
@@ -46,17 +48,19 @@
         return Number.isNaN(date.getTime()) ? String(value) : new Intl.DateTimeFormat('ar-EG', { dateStyle: 'medium', timeStyle: 'short' }).format(date);
     }
 
-    function getFilename(response) {
+    function getFilename(response, fallback = 'TOP-GYM-backup.json.gz') {
         const disposition = response.headers.get('Content-Disposition') || '';
         const match = disposition.match(/filename="([^"]+)"/i);
-        return match?.[1] || 'TOP-GYM-backup.json.gz';
+        return match?.[1] || fallback;
     }
 
-    async function downloadBackup() {
-        if (!downloadButton || downloadButton.dataset.backupBusy === 'true') return;
-        downloadButton.dataset.backupBusy = 'true';
+    async function downloadBackup(format = 'json.gz', trigger = downloadButton) {
+        const normalizedFormat = format === 'bak' ? 'bak' : 'json.gz';
+        if (!trigger || trigger.dataset.backupBusy === 'true') return;
+        trigger.dataset.backupBusy = 'true';
         try {
-            const response = await fetch('/api/backup/download', { method: 'GET', cache: 'no-store', headers: { Accept: 'application/gzip' } });
+            const endpoint = normalizedFormat === 'bak' ? '/api/backup/download?format=bak' : '/api/backup/download';
+            const response = await fetch(endpoint, { method: 'GET', cache: 'no-store', headers: { Accept: normalizedFormat === 'bak' ? 'application/octet-stream' : 'application/gzip' } });
             if (!response.ok) {
                 const body = await response.json().catch(() => ({}));
                 throw new Error(body.error || 'تعذر إنشاء النسخة الاحتياطية.');
@@ -65,7 +69,7 @@
             const objectUrl = URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = objectUrl;
-            link.download = getFilename(response);
+            link.download = getFilename(response, `TOP-GYM-backup.${normalizedFormat}`);
             link.hidden = true;
             document.body.appendChild(link);
             link.click();
@@ -75,7 +79,7 @@
         } catch (error) {
             showToast('error', 'تعذر تحميل النسخة الاحتياطية', error.message || 'حاول مرة أخرى.');
         } finally {
-            delete downloadButton.dataset.backupBusy;
+            delete trigger.dataset.backupBusy;
         }
     }
 
@@ -192,7 +196,9 @@
         } catch (error) { showToast('error', 'تعذر تحميل سجل النسخ', error.message); }
     }
 
-    downloadButton?.addEventListener('click', downloadBackup);
+    downloadButton?.addEventListener('click', () => downloadBackup('json.gz', downloadButton));
+    jsonDownloadButton?.addEventListener('click', () => downloadBackup('json.gz', jsonDownloadButton));
+    bakDownloadButton?.addEventListener('click', () => downloadBackup('bak', bakDownloadButton));
     restoreButton?.addEventListener('click', () => { resetRestore(); openDialog(restoreDialog); });
     historyButton?.addEventListener('click', showHistory);
     $('backupRestoreClose')?.addEventListener('click', () => closeDialog(restoreDialog));

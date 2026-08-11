@@ -12,12 +12,12 @@
     <title>إدارة عضويات الجيم</title>
     <link rel="stylesheet" href="/css/base.css?v=4">
     <link rel="stylesheet" href="/tailwind.css">
-    <link rel="stylesheet" href="/css/dashboard.css?v=43">
+    <link rel="stylesheet" href="/css/dashboard.css?v=44">
     <link rel="stylesheet" href="/css/operations.css?v=1">
     <link rel="stylesheet" href="/css/attendance.css?v=5">
     <link rel="stylesheet" href="/css/library.css?v=6">
     <link rel="stylesheet" href="/css/coaching.css?v=6">
-    <link rel="stylesheet" href="/css/dark-theme.css?v=3">
+    <link rel="stylesheet" href="/css/dark-theme.css?v=4">
 </head>
 <body class="font-sans bg-slate-100 text-slate-900 gym-page-bg">
     <div class="app-shell">
@@ -56,7 +56,6 @@
                 <div class="panel-header alerts-panel-header"><div class="alerts-heading"><span class="alerts-heading-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></svg></span><div><span class="alerts-eyebrow">متابعة اليوم</span><h3>التنبيهات اليومية</h3><p>راجع الحالات التي تحتاج إلى إجراء سريع</p></div></div><span class="alerts-count" id="alertsCount">0 تنبيه</span></div>
                 <div class="alerts-list" id="alertsList"><div class="empty">جاري تحميل التنبيهات…</div></div>
             </section>
-            </section>
 
             <section class="monthly-finance-card panel" id="monthlyFinanceCard" aria-labelledby="monthlyFinanceTitle">
                 <div class="monthly-finance-head">
@@ -85,6 +84,7 @@
                 </div>
                 <div class="monthly-expenses-list" id="monthlyExpensesList"><span class="monthly-expenses-empty">جاري تحميل المصروفات…</span></div>
             </section>
+            </section>
 
             <section class="dashboard-analytics panel" id="dashboardAnalytics" hidden aria-labelledby="dashboardAnalyticsTitle"></section>
 
@@ -97,8 +97,8 @@
                     <button class="management-shortcut" type="button" data-open-dialog-button="membershipTypesButton"><span class="management-shortcut-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span><span><strong>أنواع العضويات</strong><small>إدارة المدد ومعاملات الأسعار.</small></span><svg class="management-shortcut-arrow ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></button>
                 </div>
                 <section class="backup-management-panel" aria-labelledby="backupManagementTitle">
-                    <div><span class="management-eyebrow">حماية البيانات</span><h4 id="backupManagementTitle">النسخ الاحتياطية والاسترجاع</h4><p>تحقق من ملف النسخة أولًا، ثم استرجعه داخل Transaction واحدة مع الاحتفاظ بسجل العمليات.</p></div>
-                    <div class="backup-management-actions"><button class="btn btn-primary" id="restoreBackupButton" type="button">استرجاع نسخة احتياطية</button><button class="btn btn-light" id="backupHistoryButton" type="button">سجل النسخ</button></div>
+                    <div><span class="management-eyebrow">حماية البيانات</span><h4 id="backupManagementTitle">النسخ الاحتياطية والاسترجاع</h4><p>أنشئ نسخة TOP GYM المحمولة بصيغة .json.gz أو .bak، ثم افحصها واسترجعها بأمان من نفس الشاشة.</p></div>
+                    <div class="backup-management-actions"><button class="btn btn-primary" id="backupJsonButton" type="button">تحميل .json.gz</button><button class="btn btn-light" id="backupBakButton" type="button">تحميل .bak</button><button class="btn btn-light" id="restoreBackupButton" type="button">استرجاع نسخة</button><button class="btn btn-light" id="backupHistoryButton" type="button">سجل النسخ</button></div>
                 </section>
             </section>
 
@@ -341,7 +341,7 @@
     <dialog id="backupRestoreDialog" class="backup-restore-dialog rounded-lg border-slate-200 shadow-lift">
         <form class="dialog-body" id="backupRestoreForm">
             <div class="details-dialog-head"><div><h3>استرجاع نسخة احتياطية</h3><p>اختر ملف TOP GYM المضغوط. سيتم فحصه أولًا ولن يبدأ الاسترجاع إلا بعد تأكيدك.</p></div><button class="btn btn-light btn-small" id="backupRestoreClose" type="button">إغلاق</button></div>
-            <label class="backup-file-field" for="backupFileInput"><span>ملف النسخة الاحتياطية (.json.gz)</span><input id="backupFileInput" type="file" accept=".gz,application/gzip,application/x-gzip" required></label>
+            <label class="backup-file-field" for="backupFileInput"><span>ملف النسخة الاحتياطية (.json.gz أو .bak)</span><input id="backupFileInput" type="file" accept=".gz,.bak,application/gzip,application/x-gzip,application/octet-stream" required></label>
             <div class="backup-validation-box" id="backupValidationBox" hidden></div>
             <div class="dialog-actions"><button class="btn btn-light" id="backupRestoreCancel" type="button">إلغاء</button><button class="btn btn-primary" id="backupRestoreSubmit" type="submit" disabled>استرجاع بعد التحقق</button></div>
         </form>
@@ -357,7 +357,7 @@
     <script src="/js/dashboard-analytics.js?v=4"></script>
     <script src="/js/reports.js?v=2"></script>
     <script src="/js/button-loading.js"></script>
-    <script src="/js/backup-enhancements.js?v=3"></script>
+    <script src="/js/backup-enhancements.js?v=4"></script>
     <script src="/js/pagination.js"></script>
     <script src="/js/whatsapp-enhancements.js?v=11"></script>
     <script src="/js/print-enhancements.js?v=4"></script>

@@ -158,7 +158,7 @@ async function inspectBackupBuffer(input) {
         throw backupInputError('ملف النسخة فارغ أو أكبر من الحد المسموح به (25 ميجابايت).');
     }
     if (buffer[0] !== 0x1f || buffer[1] !== 0x8b) {
-        throw backupInputError('يجب اختيار ملف النسخة المضغوط بصيغة .json.gz.');
+        throw backupInputError('يجب اختيار ملف TOP GYM بصيغة .json.gz أو .bak المضغوطة.');
     }
     let jsonBuffer;
     try {
@@ -321,7 +321,8 @@ async function restoreBackup(input, { fileName = 'uploaded-backup.json.gz' } = {
     }
 }
 
-async function createBackup() {
+async function createBackup({ format = 'json.gz' } = {}) {
+    const backupFormat = String(format).toLowerCase() === 'bak' ? 'bak' : 'json.gz';
     await ensureExpensesTable();
     await ensurePaymentTransactionsTable();
     await ensureAttendanceTable();
@@ -353,7 +354,8 @@ async function createBackup() {
 
     return {
         buffer,
-        filename: `backup_${stamp}.json.gz`,
+        format: backupFormat,
+        filename: `backup_${stamp}.${backupFormat}`,
         generatedAt: generatedAt.toISOString(),
         rowCounts: Object.fromEntries(
             Object.entries(tables).map(([key, records]) => [key, records.length])

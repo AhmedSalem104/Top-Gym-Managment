@@ -1126,3 +1126,91 @@ body.gym-page-bg {
     .app-shell table th,
     .app-shell table td { padding: 9px 10px; }
 }
+
+/* Dashboard overview: alerts get the wider right column, finance stays compact on the left. */
+.app-shell #dashboardSection .overview-grid {
+    grid-template-columns: minmax(270px, .78fr) minmax(0, 1.42fr) !important;
+    grid-template-areas: 'stats stats' 'finance alerts' !important;
+    direction: ltr !important;
+}
+.app-shell #dashboardSection .overview-grid > .stats-grid { grid-area: stats !important; direction: rtl; }
+.app-shell #dashboardSection .overview-grid > .alerts-panel {
+    display: flex;
+    min-height: 278px;
+    flex-direction: column;
+    grid-area: alerts !important;
+    direction: rtl;
+}
+.app-shell #dashboardSection .overview-grid > .alerts-panel .alerts-list { flex: 1 1 auto; }
+.app-shell #dashboardSection .overview-grid > #monthlyFinanceCard {
+    min-width: 0;
+    margin: 0 !important;
+    grid-area: finance !important;
+    direction: rtl;
+}
+.app-shell #dashboardSection .overview-grid > #monthlyFinanceSnapshot {
+    min-width: 0;
+    margin: 0 !important;
+    grid-area: finance !important;
+    direction: rtl;
+}
+.app-shell #dashboardSection .overview-grid > #monthlyFinanceCard .monthly-finance-head {
+    border-bottom-color: rgba(255, 255, 255, .14) !important;
+    background: rgba(15, 23, 42, .78) !important;
+}
+.app-shell #dashboardSection .overview-grid > #monthlyFinanceCard .monthly-finance-heading h3 { color: #f8fafc !important; text-shadow: 0 1px 4px rgba(0, 0, 0, .48); }
+.app-shell #dashboardSection .overview-grid > #monthlyFinanceCard .monthly-finance-heading p { color: #cbd5e1 !important; }
+.app-shell #dashboardSection .overview-grid > #monthlyFinanceCard .monthly-finance-eyebrow { color: #93c5fd !important; }
+.app-shell #dashboardSection .overview-grid > #monthlyFinanceCard .monthly-finance-icon {
+    color: #bfdbfe !important;
+    border-color: rgba(147, 197, 253, .5) !important;
+    background: rgba(30, 64, 175, .4) !important;
+}
+.app-shell #dashboardSection .overview-grid > #monthlyFinanceCard .monthly-finance-metrics { background: transparent !important; }
+.app-shell #dashboardSection .overview-grid > #monthlyFinanceCard .monthly-finance-metric {
+    border-color: rgba(255, 255, 255, .16) !important;
+    background: rgba(255, 255, 255, .07) !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+}
+.app-shell #dashboardSection .overview-grid > #monthlyFinanceCard .monthly-finance-metric.subscriptions,
+.app-shell #dashboardSection .overview-grid > #monthlyFinanceCard .monthly-finance-metric.expenses,
+.app-shell #dashboardSection .overview-grid > #monthlyFinanceCard .monthly-finance-metric.net { background: rgba(255, 255, 255, .07) !important; }
+.app-shell #dashboardSection .overview-grid > #monthlyFinanceCard .monthly-finance-label { color: #e2e8f0 !important; }
+.app-shell #dashboardSection .overview-grid > #monthlyFinanceCard .monthly-finance-value { color: #f8fafc !important; text-shadow: 0 2px 7px rgba(0, 0, 0, .45); }
+.app-shell #dashboardSection .overview-grid > #monthlyFinanceCard .monthly-finance-metric.subscriptions .monthly-finance-value { color: #bfdbfe !important; }
+.app-shell #dashboardSection .overview-grid > #monthlyFinanceCard .monthly-finance-metric.expenses .monthly-finance-value { color: #fcd34d !important; }
+.app-shell #dashboardSection .overview-grid > #monthlyFinanceCard .monthly-finance-metric.net .monthly-finance-value { color: #6ee7b7 !important; }
+.app-shell #dashboardSection .overview-grid > #monthlyFinanceCard .monthly-finance-metric.net .monthly-finance-value.negative { color: #fda4af !important; }
+.app-shell #dashboardSection .overview-grid > #monthlyFinanceCard .monthly-finance-metric small,
+.app-shell #dashboardSection .overview-grid > #monthlyFinanceCard .monthly-expenses-empty { color: #cbd5e1 !important; }
+.app-shell #dashboardSection .overview-grid > #monthlyFinanceCard .monthly-expenses-list { background: rgba(2, 6, 23, .22) !important; }
+.app-shell #dashboardSection .overview-grid > #monthlyFinanceCard .monthly-expense-item {
+    border-color: rgba(255, 255, 255, .14) !important;
+    background: rgba(255, 255, 255, .06) !important;
+}
+
+/* The detailed finance card is moved to the expenses tab after startup. */
+.app-shell #dashboardSection .monthly-finance-card .monthly-finance-metric {
+    border-color: rgba(255, 255, 255, .16) !important;
+    background: rgba(255, 255, 255, .07) !important;
+}
+.app-shell #dashboardSection .monthly-finance-card .monthly-finance-label { color: #e2e8f0 !important; }
+.app-shell #dashboardSection .monthly-finance-card .monthly-finance-value { color: #f8fafc !important; }
+.app-shell #dashboardSection .monthly-finance-card .monthly-finance-metric.subscriptions .monthly-finance-value { color: #bfdbfe !important; }
+.app-shell #dashboardSection .monthly-finance-card .monthly-finance-metric.expenses .monthly-finance-value { color: #fcd34d !important; }
+.app-shell #dashboardSection .monthly-finance-card .monthly-finance-metric.net .monthly-finance-value { color: #6ee7b7 !important; }
+.app-shell #dashboardSection .monthly-finance-card .monthly-finance-metric small { color: #cbd5e1 !important; }
+
+@media (max-width: 900px) {
+    .app-shell #dashboardSection .overview-grid {
+        grid-template-columns: 1fr !important;
+        grid-template-areas: 'stats' 'alerts' 'finance' !important;
+    }
+    .app-shell #dashboardSection .overview-grid > .alerts-panel { min-height: 0; }
+}
+
+@media (max-width: 640px) {
+    .app-shell #dashboardSection .overview-grid { gap: 10px !important; }
+    .app-shell #dashboardSection .overview-grid > #monthlyFinanceCard .monthly-finance-metrics { grid-template-columns: 1fr; }
+}
