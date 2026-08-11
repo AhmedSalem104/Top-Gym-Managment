@@ -10,7 +10,7 @@
         items: [],
         pagination: null,
         page: 1,
-        pageSize: 12,
+        pageSize: 20,
         search: '',
         filters: { muscles: { bodyPart: '' }, foods: { category: '' }, exercises: { category: '', difficulty: '', equipment: '', targetMuscleId: '' } },
         requestId: 0,
@@ -93,6 +93,7 @@
     function renderFilters() {
         const container = $('libraryFilters');
         if (!container) return;
+        container.classList.toggle('single-filter', state.activeType !== 'exercises');
         const filters = state.filters[state.activeType];
         const available = state.options?.filters || {};
         if (state.activeType === 'muscles') {
@@ -117,27 +118,6 @@
         });
         const addButton = $('libraryAddButton');
         if (addButton && META[state.activeType]) addButton.querySelector('span:last-child').textContent = META[state.activeType].add;
-    }
-
-    function cardActions(id) {
-        return `<div class="library-card-actions"><button class="btn btn-light" type="button" data-library-action="details" data-id="${id}">التفاصيل</button><button class="btn btn-light" type="button" data-library-action="edit" data-id="${id}">تعديل</button><button class="btn library-delete" type="button" data-library-action="delete" data-id="${id}">حذف</button></div>`;
-    }
-
-    function renderMuscleCard(item) {
-        const title = item.nameAr || item.name;
-        const secondary = item.nameAr && item.name ? item.name : '';
-        return `<article class="library-card"><div class="library-card-head"><div class="library-card-title"><span class="library-card-icon">${escapeHtml(item.icon || '💪')}</span><div><strong title="${escapeHtml(title)}">${escapeHtml(title)}</strong><small>${escapeHtml(secondary)}</small></div></div>${item.bodyPart ? `<span class="library-card-badge">${escapeHtml(item.bodyPart)}</span>` : ''}</div><p class="library-card-description">${escapeHtml(item.descriptionAr || item.description || 'لا يوجد وصف مسجل.')}</p><div class="library-card-meta">${item.description ? '<span class="library-meta-pill positive">وصف متاح</span>' : ''}<span class="library-meta-pill">رقم ${formatNumber(item.id)}</span></div>${cardActions(item.id)}</article>`;
-    }
-
-    function renderFoodCard(item) {
-        const title = item.nameAr || item.nameEn;
-        return `<article class="library-card"><div class="library-card-head"><div class="library-card-title"><span class="library-card-icon">🥗</span><div><strong title="${escapeHtml(title)}">${escapeHtml(title)}</strong><small>${escapeHtml(item.nameEn || '')}</small></div></div>${item.category ? `<span class="library-card-badge">${escapeHtml(item.category)}</span>` : ''}</div><div class="library-nutrition-grid"><span><b>${formatNumber(item.calories, 1)}</b><small>سعرة</small></span><span><b>${formatNumber(item.protein, 1)}g</b><small>بروتين</small></span><span><b>${formatNumber(item.carbs, 1)}g</b><small>كارب</small></span><span><b>${formatNumber(item.fat, 1)}g</b><small>دهون</small></span></div><div class="library-card-meta"><span class="library-meta-pill">الحصة: ${formatNumber(item.servingSize, 1)} ${escapeHtml(item.servingUnit || '')}</span><span class="library-meta-pill">رقم ${formatNumber(item.id)}</span></div>${cardActions(item.id)}</article>`;
-    }
-
-    function renderExerciseCard(item) {
-        const title = item.nameAr || item.name;
-        const target = item.targetMuscleNameAr || item.targetMuscleName || 'غير محددة';
-        return `<article class="library-card"><div class="library-card-head"><div class="library-card-title"><span class="library-card-icon">${escapeHtml(item.icon || '🏋️')}</span><div><strong title="${escapeHtml(title)}">${escapeHtml(title)}</strong><small>${escapeHtml(item.name || '')}</small></div></div>${item.difficulty ? `<span class="library-card-badge">${escapeHtml(item.difficulty)}</span>` : ''}</div><p class="library-card-description">${escapeHtml(item.descriptionAr || item.description || 'لا يوجد وصف مسجل.')}</p><div class="library-card-meta"><span class="library-meta-pill">العضلة: ${escapeHtml(target)}</span>${item.equipment ? `<span class="library-meta-pill">${escapeHtml(item.equipment)}</span>` : ''}${item.isHighImpact ? '<span class="library-meta-pill warning">مجهود مرتفع</span>' : ''}</div>${cardActions(item.id)}</article>`;
     }
 
     function tableActions(id) {
@@ -174,7 +154,7 @@
             : state.activeType === 'foods'
                 ? '<th>الطعام</th><th>التصنيف</th><th>السعرات</th><th>البروتين</th><th>الكربوهيدرات</th><th>الدهون</th><th>الحصة</th><th>الإجراءات</th>'
                 : '<th>التمرين</th><th>العضلة المستهدفة</th><th>المستوى</th><th>الأداة</th><th>التصنيف</th><th>التنبيه</th><th>الإجراءات</th>';
-        list.innerHTML = `<div class="library-table-wrap"><table class="library-data-table"><thead><tr>${headers}</tr></thead><tbody>${state.items.map(renderer).join('')}</tbody></table></div>`;
+        list.innerHTML = `<div class="library-table-wrap"><table class="library-data-table ${state.activeType}"><thead><tr>${headers}</tr></thead><tbody>${state.items.map(renderer).join('')}</tbody></table></div>`;
         renderPagination();
     }
 
@@ -191,7 +171,12 @@
         container.innerHTML = `<span class="library-pagination-info">عرض ${formatNumber(from)}–${formatNumber(to)} من ${formatNumber(pagination.totalItems)} ${META[state.activeType].singular}</span><div class="library-pagination-actions"><button class="btn btn-light" type="button" data-library-page="prev" ${pagination.page <= 1 ? 'disabled' : ''}>السابق</button><button class="btn btn-light" type="button" data-library-page="next" ${pagination.page >= pagination.totalPages ? 'disabled' : ''}>التالي</button></div>`;
     }
 
-    async function loadOptions() {
+    async function loadOptions(force = false) {
+        if (state.options && !force) {
+            renderSummary();
+            renderFilters();
+            return;
+        }
         try {
             state.options = await requestJson('/api/library/options');
             renderSummary();
@@ -350,7 +335,7 @@
         try {
             await requestJson(`/api/library/${state.activeType}/${item.id}`, { method: 'DELETE' });
             showMessage(`تم حذف ${META[state.activeType].singular} بنجاح.`);
-            await loadOptions();
+            await loadOptions(true);
             if (state.page > 1 && state.items.length === 1) state.page -= 1;
             await loadCollection();
         } catch (error) {
@@ -370,7 +355,7 @@
             await requestJson(id ? `/api/library/${type}/${id}` : `/api/library/${type}`, { method: id ? 'PUT' : 'POST', body: JSON.stringify(body) });
             closeDialog($('libraryFormDialog'));
             showMessage(id ? 'تم حفظ التعديلات بنجاح.' : `تمت إضافة ${META[type].singular} بنجاح.`);
-            await loadOptions();
+            await loadOptions(true);
             await loadCollection();
         } catch (error) {
             showMessage(error.message, 'error');
@@ -401,21 +386,21 @@
     }
 
     async function initialize() {
-        if (state.opened) {
-            await loadOptions();
-            await loadCollection();
+        if (!state.opened) {
+            state.opened = true;
+            renderTypeTabs();
+            await Promise.all([loadOptions(), loadCollection()]);
             return;
         }
-        state.opened = true;
         renderTypeTabs();
-        await loadOptions();
+        renderFilters();
         await loadCollection();
     }
 
     document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('[data-library-type]').forEach((button) => button.addEventListener('click', () => changeType(button.dataset.libraryType)));
         $('libraryAddButton')?.addEventListener('click', () => openForm());
-        $('libraryRefreshButton')?.addEventListener('click', () => { loadOptions(); loadCollection(); });
+        $('libraryRefreshButton')?.addEventListener('click', () => { loadOptions(true); loadCollection(); });
         $('libraryList')?.addEventListener('click', handleListClick);
         $('libraryPagination')?.addEventListener('click', (event) => {
             const button = event.target.closest('[data-library-page]');

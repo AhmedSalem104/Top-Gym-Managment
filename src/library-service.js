@@ -709,28 +709,29 @@ async function getLibraryCollection(typeValue, query = {}) {
 async function getLibraryOptions() {
     await ensureLibraryData();
     const pool = await getPool();
-    const [counts, bodyParts, categories, exerciseCategories, difficulties, equipment, muscles] = await Promise.all([
-        pool.request().query(`SELECT
+    const result = await pool.request().batch(`
+        SELECT
             (SELECT COUNT_BIG(*) FROM dbo.gym_muscles) AS muscles,
             (SELECT COUNT_BIG(*) FROM dbo.gym_foods) AS foods,
-            (SELECT COUNT_BIG(*) FROM dbo.gym_exercises) AS exercises;`),
-        pool.request().query(`SELECT DISTINCT body_part AS value FROM dbo.gym_muscles WHERE NULLIF(LTRIM(RTRIM(body_part)), N'') IS NOT NULL ORDER BY body_part;`),
-        pool.request().query(`SELECT DISTINCT category AS value FROM dbo.gym_foods WHERE NULLIF(LTRIM(RTRIM(category)), N'') IS NOT NULL ORDER BY category;`),
-        pool.request().query(`SELECT DISTINCT category AS value FROM dbo.gym_exercises WHERE NULLIF(LTRIM(RTRIM(category)), N'') IS NOT NULL ORDER BY category;`),
-        pool.request().query(`SELECT DISTINCT difficulty AS value FROM dbo.gym_exercises WHERE NULLIF(LTRIM(RTRIM(difficulty)), N'') IS NOT NULL ORDER BY difficulty;`),
-        pool.request().query(`SELECT DISTINCT equipment AS value FROM dbo.gym_exercises WHERE NULLIF(LTRIM(RTRIM(equipment)), N'') IS NOT NULL ORDER BY equipment;`),
-        pool.request().query(`SELECT id, name, name_ar FROM dbo.gym_muscles ORDER BY COALESCE(name_ar, name), name, id;`)
-    ]);
-    const countRow = counts.recordset[0] || {};
+            (SELECT COUNT_BIG(*) FROM dbo.gym_exercises) AS exercises;
+        SELECT DISTINCT body_part AS value FROM dbo.gym_muscles WHERE NULLIF(LTRIM(RTRIM(body_part)), N'') IS NOT NULL ORDER BY body_part;
+        SELECT DISTINCT category AS value FROM dbo.gym_foods WHERE NULLIF(LTRIM(RTRIM(category)), N'') IS NOT NULL ORDER BY category;
+        SELECT DISTINCT category AS value FROM dbo.gym_exercises WHERE NULLIF(LTRIM(RTRIM(category)), N'') IS NOT NULL ORDER BY category;
+        SELECT DISTINCT difficulty AS value FROM dbo.gym_exercises WHERE NULLIF(LTRIM(RTRIM(difficulty)), N'') IS NOT NULL ORDER BY difficulty;
+        SELECT DISTINCT equipment AS value FROM dbo.gym_exercises WHERE NULLIF(LTRIM(RTRIM(equipment)), N'') IS NOT NULL ORDER BY equipment;
+        SELECT id, name, name_ar FROM dbo.gym_muscles ORDER BY COALESCE(name_ar, name), name, id;
+    `);
+    const [counts = [], bodyParts = [], categories = [], exerciseCategories = [], difficulties = [], equipment = [], muscles = []] = result.recordsets || [];
+    const countRow = counts[0] || {};
     return {
         counts: { muscles: Number(countRow.muscles || 0), foods: Number(countRow.foods || 0), exercises: Number(countRow.exercises || 0) },
         filters: {
-            bodyParts: bodyParts.recordset.map((row) => row.value),
-            categories: categories.recordset.map((row) => row.value),
-            exerciseCategories: exerciseCategories.recordset.map((row) => row.value),
-            difficulties: difficulties.recordset.map((row) => row.value),
-            equipment: equipment.recordset.map((row) => row.value),
-            muscles: muscles.recordset.map((row) => ({ id: Number(row.id), name: row.name, nameAr: row.name_ar }))
+            bodyParts: bodyParts.map((row) => row.value),
+            categories: categories.map((row) => row.value),
+            exerciseCategories: exerciseCategories.map((row) => row.value),
+            difficulties: difficulties.map((row) => row.value),
+            equipment: equipment.map((row) => row.value),
+            muscles: muscles.map((row) => ({ id: Number(row.id), name: row.name, nameAr: row.name_ar }))
         }
     };
 }
