@@ -1,0 +1,870 @@
+:root {
+    --theme-bg: #08111f;
+    --theme-surface: rgba(15, 23, 42, .78);
+    --theme-surface-strong: rgba(15, 23, 42, .94);
+    --theme-surface-soft: rgba(255, 255, 255, .07);
+    --theme-surface-hover: rgba(255, 255, 255, .12);
+    --theme-line: rgba(255, 255, 255, .18);
+    --theme-line-strong: rgba(191, 219, 254, .38);
+    --theme-text: #f8fafc;
+    --theme-text-soft: #e2e8f0;
+    --theme-muted: #cbd5e1;
+    --theme-faint: #aebdce;
+    --theme-blue: #93c5fd;
+}
+
+body.gym-page-bg {
+    color: var(--theme-text) !important;
+    background-color: var(--theme-bg) !important;
+}
+
+.app-shell,
+.app-shell .page,
+.app-shell main {
+    color: var(--theme-text);
+}
+
+/* Navigation keeps one dark surface in every viewport. */
+.app-shell .page-tabs {
+    border-bottom: 1px solid var(--theme-line) !important;
+    background: rgba(2, 6, 23, .58) !important;
+}
+.app-shell .page-tab {
+    border-color: transparent !important;
+    color: var(--theme-muted) !important;
+    background: transparent !important;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, .42);
+}
+.app-shell .page-tab:hover:not(.active) {
+    border-color: rgba(147, 197, 253, .3) !important;
+    color: #dbeafe !important;
+    background: rgba(15, 23, 42, .68) !important;
+}
+.app-shell .page-tabs .page-tab.active {
+    border-color: rgba(147, 197, 253, .5) !important;
+    border-bottom-color: rgba(147, 197, 253, .5) !important;
+    color: #fff !important;
+    background: linear-gradient(135deg, rgba(15, 23, 42, .98), rgba(30, 41, 59, .96)) !important;
+    box-shadow: 0 8px 18px rgba(2, 6, 23, .3), inset 0 1px 0 rgba(255, 255, 255, .1) !important;
+}
+.app-shell .page-tab .ui-icon { color: currentColor !important; }
+.app-shell .page-tab.active .ui-icon { color: #bfdbfe !important; }
+
+/* Shared surfaces: cards and sections no longer switch back to white. */
+.app-shell .panel,
+.app-shell .members-panel,
+.app-shell .library-section,
+.app-shell .attendance-section,
+.app-shell .coaching-section,
+.app-shell .reports-section,
+.app-shell .expenses-tab-panel,
+.app-shell .management-tab-panel,
+.app-shell .dashboard-analytics,
+.app-shell .monthly-finance-card,
+.app-shell .form-panel,
+.app-shell .member-card,
+.app-shell .members-list,
+.app-shell .library-list,
+.app-shell .external-trainees-list {
+    border-color: var(--theme-line) !important;
+    background: var(--theme-surface) !important;
+    box-shadow: 0 18px 38px rgba(2, 6, 23, .3) !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+}
+
+.app-shell .panel-header,
+.app-shell .section-heading,
+.app-shell .library-header,
+.app-shell .attendance-header,
+.app-shell .coaching-header,
+.app-shell .management-tab-header,
+.app-shell .expenses-tab-heading,
+.app-shell .monthly-finance-head,
+.app-shell .dashboard-analytics-head,
+.app-shell .details-dialog-head,
+.app-shell .pricing-section-head,
+.app-shell .builder-stage-heading,
+.app-shell .builder-builder-head {
+    border-color: var(--theme-line) !important;
+    background: rgba(15, 23, 42, .86) !important;
+}
+
+/* Base typography and muted copy. */
+.app-shell h1,
+.app-shell h2,
+.app-shell h3,
+.app-shell h4,
+.app-shell h5,
+.app-shell strong,
+.app-shell th {
+    color: var(--theme-text) !important;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, .4);
+}
+.app-shell p,
+.app-shell small,
+.app-shell label,
+.app-shell .field-hint,
+.app-shell .status-note,
+.app-shell .stat-caption,
+.app-shell .monthly-finance-metric small,
+.app-shell [class*="muted"],
+.app-shell [class*="subtitle"],
+.app-shell [class*="description"],
+.app-shell [class*="hint"],
+.app-shell [class*="caption"],
+.app-shell [class*="last-activity"],
+.app-shell [class*="period"] {
+    color: var(--theme-muted) !important;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, .36);
+}
+.app-shell a:not(.btn) { color: var(--theme-blue) !important; }
+.app-shell .visually-hidden { color: transparent !important; }
+
+/* Inputs and native controls. */
+.app-shell input,
+.app-shell select,
+.app-shell textarea,
+.app-shell .members-search-field,
+.app-shell .library-search,
+.app-shell .coaching-search,
+.app-shell .attendance-input-wrap {
+    border-color: rgba(191, 219, 254, .3) !important;
+    color: var(--theme-text) !important;
+    background: rgba(2, 6, 23, .52) !important;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .04) !important;
+}
+.app-shell input::placeholder,
+.app-shell textarea::placeholder,
+.app-shell .members-search-field input::placeholder,
+.app-shell .library-search input::placeholder,
+.app-shell .coaching-search input::placeholder {
+    color: #9fb0c3 !important;
+}
+.app-shell input:focus,
+.app-shell select:focus,
+.app-shell textarea:focus,
+.app-shell .members-search-field:focus-within,
+.app-shell .library-search:focus-within,
+.app-shell .coaching-search:focus-within,
+.app-shell .attendance-input-wrap:focus-within {
+    border-color: rgba(147, 197, 253, .82) !important;
+    background: rgba(15, 23, 42, .78) !important;
+    box-shadow: 0 0 0 3px rgba(96, 165, 250, .18) !important;
+}
+.app-shell input:disabled,
+.app-shell select:disabled,
+.app-shell textarea:disabled {
+    color: #94a3b8 !important;
+    background: rgba(51, 65, 85, .48) !important;
+}
+.app-shell input[type="checkbox"],
+.app-shell input[type="radio"] {
+    background: transparent !important;
+    box-shadow: none !important;
+    accent-color: #60a5fa;
+}
+.app-shell select option,
+.app-shell select optgroup {
+    color: var(--theme-text) !important;
+    background: #0f172a !important;
+}
+.app-shell .field > label,
+.app-shell .field-grid > .field > label,
+.app-shell .section-label,
+.app-shell .checkbox-field,
+.app-shell .builder-basic-grid label,
+.app-shell .builder-inline-fields label,
+.app-shell .builder-mini-grid label,
+.app-shell .builder-food label,
+.app-shell .builder-wide-label,
+.app-shell .meal-time-field {
+    color: var(--theme-text-soft) !important;
+}
+
+/* Buttons and controls. */
+.app-shell .btn-light,
+.app-shell .action-menu-toggle,
+.app-shell .table-action-visible,
+.app-shell .table-actions .icon-action,
+.app-shell .library-row-actions .btn,
+.app-shell .trainee-actions .btn,
+.app-shell .profile-actions .btn {
+    border-color: rgba(191, 219, 254, .3) !important;
+    color: #e2e8f0 !important;
+    background: rgba(255, 255, 255, .08) !important;
+    box-shadow: none !important;
+}
+.app-shell .btn-light:hover,
+.app-shell .action-menu-toggle:hover,
+.app-shell .table-action-visible:hover,
+.app-shell .table-actions .icon-action:hover,
+.app-shell .library-row-actions .btn:hover,
+.app-shell .trainee-actions .btn:hover,
+.app-shell .profile-actions .btn:hover {
+    border-color: rgba(191, 219, 254, .58) !important;
+    color: #fff !important;
+    background: rgba(255, 255, 255, .16) !important;
+}
+.app-shell .btn-primary {
+    border-color: rgba(147, 197, 253, .35) !important;
+    color: #fff !important;
+    background: linear-gradient(135deg, #2563eb, #1d4ed8) !important;
+}
+.app-shell .btn-danger,
+.app-shell .library-delete,
+.app-shell .table-actions .icon-action[data-action="delete"] {
+    border-color: rgba(252, 165, 165, .45) !important;
+    color: #fee2e2 !important;
+    background: rgba(127, 29, 29, .48) !important;
+}
+.app-shell .btn-danger:hover,
+.app-shell .library-delete:hover,
+.app-shell .table-actions .icon-action[data-action="delete"]:hover {
+    color: #fff !important;
+    background: #b91c1c !important;
+}
+
+/* Tables and mobile table cards. */
+.app-shell .table-scroll,
+.app-shell .pricing-table-scroll,
+.app-shell .history-scroll,
+.app-shell .library-table-wrap,
+.app-shell .external-trainees-table-wrap,
+.app-shell .attendance-table-wrap,
+.app-shell .profile-table-wrap,
+.app-shell .builder-review-table-wrap {
+    border-color: var(--theme-line) !important;
+    background: rgba(2, 6, 23, .34) !important;
+}
+.app-shell table th {
+    border-color: var(--theme-line) !important;
+    color: #dbeafe !important;
+    background: rgba(255, 255, 255, .09) !important;
+}
+.app-shell table td {
+    border-color: rgba(255, 255, 255, .12) !important;
+    color: #f1f5f9 !important;
+    background: transparent !important;
+}
+.app-shell table td strong,
+.app-shell .table-main,
+.app-shell .table-money,
+.app-shell .attendance-member-name,
+.app-shell .external-trainee-primary strong,
+.app-shell .library-table-primary strong {
+    color: #f8fafc !important;
+}
+.app-shell table td small,
+.app-shell .table-sub,
+.app-shell .table-member-phone,
+.app-shell .attendance-member-phone,
+.app-shell .external-trainee-primary small,
+.app-shell .library-table-primary small {
+    color: #cbd5e1 !important;
+}
+.app-shell table tbody tr:nth-child(even) td {
+    background: rgba(255, 255, 255, .035) !important;
+}
+.app-shell table tbody tr:hover td {
+    background: rgba(96, 165, 250, .12) !important;
+}
+.app-shell table td::before {
+    color: #cbd5e1 !important;
+}
+
+/* Shared table-like pagination. */
+.app-shell .members-pagination,
+.app-shell .library-pagination,
+.app-shell .coaching-pagination,
+.app-shell .reports-pagination {
+    border-color: var(--theme-line) !important;
+    color: var(--theme-text-soft) !important;
+    background: rgba(255, 255, 255, .055) !important;
+}
+.app-shell .members-pagination-info,
+.app-shell .library-pagination-info,
+.app-shell .coaching-pagination > span,
+.app-shell .reports-pagination > span {
+    color: var(--theme-text-soft) !important;
+}
+
+/* Library. */
+.app-shell .library-type-tabs,
+.app-shell .library-toolbar {
+    border-color: var(--theme-line) !important;
+    background: rgba(2, 6, 23, .34) !important;
+}
+.app-shell .library-type-tab {
+    border-color: transparent !important;
+    color: var(--theme-muted) !important;
+    background: transparent !important;
+}
+.app-shell .library-type-tab:hover,
+.app-shell .library-type-tab.active {
+    border-color: rgba(147, 197, 253, .42) !important;
+    color: #fff !important;
+    background: rgba(30, 64, 175, .38) !important;
+    box-shadow: none !important;
+}
+.app-shell .library-type-tab strong {
+    border: 1px solid rgba(147, 197, 253, .3) !important;
+    color: #dbeafe !important;
+    background: rgba(30, 64, 175, .42) !important;
+}
+.app-shell .library-heading-icon,
+.app-shell .coaching-heading-icon,
+.app-shell .attendance-heading-icon {
+    border-color: rgba(147, 197, 253, .42) !important;
+    color: #bfdbfe !important;
+    background: rgba(30, 64, 175, .38) !important;
+    box-shadow: none !important;
+}
+.app-shell .library-heading h3,
+.app-shell .coaching-heading h3,
+.app-shell .attendance-heading h3,
+.app-shell .library-heading p,
+.app-shell .coaching-heading p,
+.app-shell .attendance-heading p,
+.app-shell .library-kicker,
+.app-shell .coaching-kicker,
+.app-shell .attendance-kicker {
+    color: var(--theme-text) !important;
+}
+.app-shell .library-heading p,
+.app-shell .coaching-heading p,
+.app-shell .attendance-heading p { color: var(--theme-muted) !important; }
+.app-shell .library-empty,
+.app-shell .coaching-empty,
+.app-shell .attendance-empty,
+.app-shell .reports-empty,
+.app-shell .builder-empty {
+    border-color: rgba(255, 255, 255, .28) !important;
+    color: var(--theme-muted) !important;
+    background: rgba(255, 255, 255, .05) !important;
+}
+.app-shell .library-message.success,
+.app-shell .coaching-message:not(.error) {
+    border-color: rgba(110, 231, 183, .42) !important;
+    color: #d1fae5 !important;
+    background: rgba(6, 95, 70, .38) !important;
+}
+.app-shell .library-message.error,
+.app-shell .coaching-message.error {
+    border-color: rgba(252, 165, 165, .44) !important;
+    color: #fee2e2 !important;
+    background: rgba(127, 29, 29, .4) !important;
+}
+.app-shell .library-table-icon,
+.app-shell .trainee-avatar,
+.app-shell .management-shortcut-icon {
+    border-color: rgba(147, 197, 253, .34) !important;
+    color: #bfdbfe !important;
+    background: rgba(30, 64, 175, .34) !important;
+}
+.app-shell .library-field.checkbox,
+.app-shell .library-detail-hero,
+.app-shell .library-detail-item,
+.app-shell .library-detail-code,
+.app-shell .profile-empty,
+.app-shell .builder-search-trigger,
+.app-shell .builder-search-popover,
+.app-shell .builder-search-input-wrap {
+    border-color: var(--theme-line) !important;
+    color: var(--theme-text-soft) !important;
+    background: rgba(255, 255, 255, .07) !important;
+    box-shadow: none !important;
+}
+.app-shell .library-detail-hero-icon,
+.app-shell .exercise-row-number {
+    color: #bfdbfe !important;
+    background: rgba(30, 64, 175, .4) !important;
+}
+.app-shell .library-detail-item span,
+.app-shell .library-detail-item strong,
+.app-shell .library-detail-item p,
+.app-shell .library-detail-list,
+.app-shell .library-detail-code,
+.app-shell .builder-search-trigger,
+.app-shell .builder-search-trigger b,
+.app-shell .profile-empty {
+    color: var(--theme-text-soft) !important;
+}
+.app-shell .builder-search-popover { background: var(--theme-surface-strong) !important; }
+.app-shell .builder-search-input-wrap { background: rgba(2, 6, 23, .5) !important; }
+.app-shell .builder-search-option[aria-selected="true"] {
+    color: #fff !important;
+    background: rgba(96, 165, 250, .2) !important;
+}
+
+/* Attendance and financial details. */
+.app-shell .attendance-control-panel,
+.app-shell .attendance-entry-card,
+.app-shell .attendance-summary-card,
+.app-shell .payment-dialog-balance,
+.app-shell .financial-summary-card,
+.app-shell .qr-member-preview-grid > div,
+.app-shell .attendance-insights-cardlet {
+    border-color: var(--theme-line) !important;
+    background: rgba(255, 255, 255, .065) !important;
+}
+.app-shell .attendance-entry-head h4,
+.app-shell .attendance-list-head h4,
+.app-shell .attendance-summary-card strong,
+.app-shell .payment-dialog-balance strong,
+.app-shell .financial-summary-card strong,
+.app-shell .qr-member-preview-head strong,
+.app-shell .qr-member-preview-grid strong {
+    color: #f8fafc !important;
+}
+.app-shell .attendance-entry-head p,
+.app-shell .attendance-entry-hint,
+.app-shell .attendance-list-head p,
+.app-shell .payment-dialog-balance span,
+.app-shell .financial-summary-card span,
+.app-shell .qr-member-preview-head span,
+.app-shell .qr-member-preview-grid span {
+    color: var(--theme-muted) !important;
+}
+.app-shell .member-qr-card,
+.app-shell .qr-reader-note,
+.app-shell .qr-member-preview-head {
+    border-color: var(--theme-line) !important;
+    background: rgba(255, 255, 255, .07) !important;
+}
+.app-shell .member-qr-card canvas { background: #fff !important; }
+
+/* Reports, expenses, and analytics. */
+.app-shell .reports-filters,
+.app-shell .monthly-finance-metrics,
+.app-shell .monthly-expenses-list,
+.app-shell .management-shortcuts,
+.app-shell .analytics-smart-strip,
+.app-shell .analytics-kpis,
+.app-shell .analytics-main-grid,
+.app-shell .analytics-secondary-grid {
+    background: transparent !important;
+}
+.app-shell .reports-filters input,
+.app-shell .reports-filters label span,
+.app-shell .reports-empty,
+.app-shell .reports-chart-legend,
+.app-shell .reports-day small,
+.app-shell .reports-day b,
+.app-shell .breakdown-group h4,
+.app-shell .breakdown-row span,
+.app-shell .breakdown-row small {
+    color: var(--theme-muted) !important;
+}
+.app-shell .report-kpi,
+.app-shell .report-card,
+.app-shell .breakdown-row,
+.app-shell .analytics-smart-health,
+.app-shell .analytics-smart-insight,
+.app-shell .analytics-kpi,
+.app-shell .analytics-card {
+    border-color: var(--theme-line) !important;
+    background: rgba(255, 255, 255, .07) !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+}
+.app-shell .report-kpi > span,
+.app-shell .report-kpi small,
+.app-shell .report-card-head span,
+.app-shell .report-card-head h3,
+.app-shell .analytics-card-head > div:first-child > span,
+.app-shell .analytics-card-head h3,
+.app-shell .analytics-smart-health h3,
+.app-shell .analytics-smart-health p,
+.app-shell .analytics-smart-insight > div > span,
+.app-shell .analytics-smart-insight small,
+.app-shell .analytics-kpi > div > span,
+.app-shell .analytics-kpi small {
+    color: var(--theme-text-soft) !important;
+}
+.app-shell .report-kpi strong,
+.app-shell .analytics-smart-insight strong,
+.app-shell .analytics-kpi strong {
+    color: #f8fafc !important;
+}
+.app-shell .analytics-period-switch {
+    border-color: var(--theme-line) !important;
+    background: rgba(255, 255, 255, .07) !important;
+    box-shadow: none !important;
+}
+.app-shell .analytics-period-switch button { color: var(--theme-muted) !important; }
+.app-shell .analytics-period-switch button:hover { color: #fff !important; background: rgba(255, 255, 255, .12) !important; }
+.app-shell .analytics-period-switch button.active { color: #fff !important; background: #1d4ed8 !important; }
+.app-shell .analytics-grid-line { stroke: rgba(255, 255, 255, .18) !important; }
+.app-shell .analytics-axis-label { fill: #cbd5e1 !important; }
+.app-shell .analytics-bar-label,
+.app-shell .analytics-bar-label strong,
+.app-shell .analytics-legend,
+.app-shell .analytics-activity-legend { color: var(--theme-text-soft) !important; }
+.app-shell .analytics-bar-track { background: rgba(255, 255, 255, .12) !important; }
+
+/* Training and nutrition builders keep their rows readable in every step. */
+.app-shell .coaching-summary-card,
+.app-shell .external-trainee-count,
+.app-shell .external-trainee-card,
+.app-shell .profile-hero,
+.app-shell .profile-stats article,
+.app-shell .profile-system-card,
+.app-shell .member-training-panel,
+.app-shell .member-training-systems > div,
+.app-shell .builder-routine,
+.app-shell .builder-meal,
+.app-shell .builder-exercise,
+.app-shell .builder-food,
+.app-shell .builder-day-tab,
+.app-shell .builder-day-panel,
+.app-shell .builder-exercise-row,
+.app-shell .builder-food-row,
+.app-shell .review-identity,
+.app-shell .review-summary-grid > div,
+.app-shell .review-block,
+.app-shell .review-block-head,
+.app-shell .nutrition-macro-grid > div,
+.app-shell .builder-search-option {
+    border-color: var(--theme-line) !important;
+    color: var(--theme-text-soft) !important;
+    background: rgba(255, 255, 255, .07) !important;
+    box-shadow: none !important;
+}
+.app-shell .coaching-summary-card span,
+.app-shell .coaching-summary-card small,
+.app-shell .external-trainee-count span,
+.app-shell .profile-hero span,
+.app-shell .profile-hero small,
+.app-shell .profile-stats span,
+.app-shell .profile-section-head span,
+.app-shell .profile-system-card small,
+.app-shell .member-training-head small,
+.app-shell .member-training-systems small,
+.app-shell .builder-structure-head small,
+.app-shell .builder-card-head span,
+.app-shell .builder-card-head small,
+.app-shell .builder-exercise-head strong,
+.app-shell .builder-exercise-reference,
+.app-shell .builder-row-note,
+.app-shell .builder-search-empty,
+.app-shell .review-identity span,
+.app-shell .review-summary-grid span,
+.app-shell .review-block-head span,
+.app-shell .builder-review-table th,
+.app-shell .builder-review-table td {
+    color: var(--theme-muted) !important;
+}
+.app-shell .coaching-summary-card strong,
+.app-shell .external-trainee-count b,
+.app-shell .profile-hero strong,
+.app-shell .profile-stats strong,
+.app-shell .profile-system-card strong,
+.app-shell .member-training-systems strong,
+.app-shell .builder-card-head strong,
+.app-shell .review-identity strong,
+.app-shell .review-summary-grid strong,
+.app-shell .builder-review-table td {
+    color: #f8fafc !important;
+}
+.app-shell .builder-search-dropdown,
+.app-shell .action-menu-panel,
+.app-shell .builder-client-search-dropdown,
+.app-shell .builder-food-search-dropdown,
+.app-shell .builder-exercise-search-dropdown {
+    border-color: var(--theme-line) !important;
+    background: var(--theme-surface-strong) !important;
+    box-shadow: 0 18px 36px rgba(2, 6, 23, .42) !important;
+}
+.app-shell .action-menu-item,
+.app-shell .builder-search-option { color: var(--theme-text-soft) !important; }
+.app-shell .action-menu-item:hover,
+.app-shell .builder-search-option:hover { color: #fff !important; background: rgba(96, 165, 250, .18) !important; }
+.app-shell .loading,
+.app-shell .empty {
+    color: var(--theme-muted) !important;
+    background: transparent !important;
+}
+.app-shell .builder-day-tab.active {
+    border-color: rgba(147, 197, 253, .55) !important;
+    color: #fff !important;
+    background: rgba(30, 64, 175, .44) !important;
+    box-shadow: none !important;
+}
+.app-shell .builder-progress,
+.app-shell .builder-stepper,
+.app-shell .diet-live-summary,
+.app-shell .nutrition-macro-grid b {
+    border-color: rgba(110, 231, 183, .35) !important;
+    color: #d1fae5 !important;
+    background: rgba(6, 95, 70, .28) !important;
+}
+.app-shell .coaching-builder-dialog .dialog-actions {
+    border-top-color: var(--theme-line) !important;
+    background: rgba(15, 23, 42, .94) !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+}
+
+/* Native dialogs and validation surfaces. */
+.app-shell dialog {
+    border-color: var(--theme-line-strong) !important;
+    color: var(--theme-text) !important;
+    background: var(--theme-surface-strong) !important;
+    box-shadow: 0 25px 70px rgba(2, 6, 23, .58) !important;
+}
+.app-shell dialog::backdrop {
+    background: rgba(2, 6, 23, .72) !important;
+    -webkit-backdrop-filter: blur(2px);
+    backdrop-filter: blur(2px);
+}
+.app-shell dialog .dialog-body { background: transparent !important; }
+.app-shell dialog .details-dialog-head {
+    border-bottom-color: var(--theme-line) !important;
+    background: rgba(2, 6, 23, .34) !important;
+}
+.app-shell dialog .dialog-body h3,
+.app-shell dialog .dialog-body h4 { color: #f8fafc !important; }
+.app-shell dialog .dialog-body p { color: var(--theme-muted) !important; }
+.app-shell dialog .dialog-actions {
+    border-top-color: var(--theme-line) !important;
+    background: rgba(2, 6, 23, .42) !important;
+}
+.app-shell .dialog-validation {
+    border-color: rgba(252, 211, 77, .45) !important;
+    color: #fef3c7 !important;
+    background: rgba(120, 53, 15, .38) !important;
+}
+.app-shell .pricing-summary,
+.app-shell .type-preview,
+.app-shell .review-note {
+    border-color: rgba(147, 197, 253, .38) !important;
+    color: #dbeafe !important;
+    background: rgba(30, 64, 175, .3) !important;
+}
+
+/* Remaining legacy cards and labels use the same contrast tokens. */
+.app-shell .payment-line,
+.app-shell .event-item,
+.app-shell .details-summary-card,
+.app-shell .freeze-limit-note,
+.app-shell .management-shortcut,
+.app-shell .monthly-finance-snapshot,
+.app-shell .monthly-finance-snapshot-metric,
+.app-shell .monthly-finance-snapshot-head {
+    border-color: var(--theme-line) !important;
+    color: var(--theme-text-soft) !important;
+    background: rgba(255, 255, 255, .07) !important;
+    box-shadow: none !important;
+}
+.app-shell .payment-line span:first-child,
+.app-shell .event-date,
+.app-shell .details-summary-card span,
+.app-shell .freeze-limit-note span,
+.app-shell .freeze-usage span,
+.app-shell .management-shortcut small,
+.app-shell .monthly-finance-snapshot-metric span,
+.app-shell .monthly-finance-snapshot-metric small {
+    color: var(--theme-muted) !important;
+}
+.app-shell .payment-line strong,
+.app-shell .event-item strong,
+.app-shell .details-summary-card strong,
+.app-shell .freeze-usage,
+.app-shell .management-shortcut strong,
+.app-shell .monthly-finance-snapshot-metric strong {
+    color: #f8fafc !important;
+}
+.app-shell .management-shortcut:hover {
+    border-color: rgba(147, 197, 253, .48) !important;
+    background: rgba(96, 165, 250, .14) !important;
+    box-shadow: none !important;
+}
+
+/* Small headings and generated builder copy must remain bright on dark rows. */
+.app-shell [class*="-kicker"],
+.app-shell [class*="-eyebrow"],
+.app-shell [class*="-label"],
+.app-shell [class*="-copy"],
+.app-shell [class*="-detail"],
+.app-shell [class*="-time"],
+.app-shell [class*="-phone"],
+.app-shell [class*="-date"],
+.app-shell [class*="-note"],
+.app-shell [class*="-empty"],
+.app-shell [class*="-info"],
+.app-shell [class*="-meta"] {
+    color: var(--theme-text-soft) !important;
+}
+.app-shell .builder-switch,
+.app-shell .builder-stage-heading span,
+.app-shell .builder-builder-head span,
+.app-shell .member-training-head span,
+.app-shell .nutrition-summary-head {
+    color: #bfdbfe !important;
+}
+.app-shell .nutrition-summary-foot,
+.app-shell .nutrition-macro-grid span,
+.app-shell .builder-step,
+.app-shell .builder-step > span,
+.app-shell .builder-exercise-table-head,
+.app-shell .builder-food-table-head {
+    color: var(--theme-muted) !important;
+}
+.app-shell .nutrition-macro-grid strong,
+.app-shell .nutrition-summary-foot b,
+.app-shell .food-live-value,
+.app-shell .exercise-row-number,
+.app-shell .builder-meal-row-summary {
+    color: #d1fae5 !important;
+}
+.app-shell .builder-meal-row-summary span {
+    border: 1px solid rgba(110, 231, 183, .3) !important;
+    background: rgba(6, 95, 70, .34) !important;
+}
+
+/* Status pills retain meaning without returning to bright white surfaces. */
+.app-shell .badge,
+.app-shell .type-status,
+.app-shell .system-type,
+.app-shell .system-status,
+.app-shell .trainee-badge,
+.app-shell .library-table-badge,
+.app-shell .attendance-source,
+.app-shell .attendance-status,
+.app-shell .attendance-action-done,
+.app-shell .member-attendance-status,
+.app-shell .alert-status,
+.app-shell .payment-transaction-type,
+.app-shell .qr-member-preview-status,
+.app-shell .attendance-date-badge,
+.app-shell .attendance-insights-badge,
+.app-shell .library-type-tab strong,
+.app-shell .monthly-finance-status,
+.app-shell .alerts-count,
+.app-shell .reports-debtors-count,
+.app-shell .builder-chip,
+.app-shell .builder-lock-chip,
+.app-shell .builder-ready-chip {
+    border: 1px solid rgba(255, 255, 255, .3) !important;
+    color: #fff !important;
+    background: rgba(15, 23, 42, .52) !important;
+    box-shadow: none !important;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, .42);
+}
+.app-shell .badge.active,
+.app-shell .attendance-status.complete,
+.app-shell .attendance-action-done,
+.app-shell .member-attendance-status:not(.auto):not(.unavailable),
+.app-shell .alert-card.active .alert-status,
+.app-shell .payment-transaction-type.payment,
+.app-shell .qr-member-preview-status.active,
+.app-shell .library-table-badge.foods,
+.app-shell .library-table-badge.positive,
+.app-shell .system-type.diet,
+.app-shell .builder-chip,
+.app-shell .builder-lock-chip {
+    border-color: rgba(110, 231, 183, .5) !important;
+    color: #d1fae5 !important;
+    background: rgba(6, 95, 70, .42) !important;
+}
+.app-shell .badge.expiring_soon,
+.app-shell .alert-status,
+.app-shell .attendance-status,
+.app-shell .payment-transaction-type.adjustment,
+.app-shell .qr-member-preview-status.expiring_soon,
+.app-shell .library-table-badge.warning,
+.app-shell .system-status.paused {
+    border-color: rgba(252, 211, 77, .5) !important;
+    color: #fef3c7 !important;
+    background: rgba(120, 53, 15, .44) !important;
+}
+.app-shell .badge.expired,
+.app-shell .alert-card.expired .alert-status,
+.app-shell .qr-member-preview-status.expired {
+    border-color: rgba(252, 165, 165, .52) !important;
+    color: #fee2e2 !important;
+    background: rgba(127, 29, 29, .44) !important;
+}
+.app-shell .badge.frozen,
+.app-shell .alert-card.frozen .alert-status,
+.app-shell .member-attendance-status.auto,
+.app-shell .attendance-source.qr,
+.app-shell .attendance-source.auto,
+.app-shell .system-type.workout {
+    border-color: rgba(196, 181, 253, .52) !important;
+    color: #ede9fe !important;
+    background: rgba(76, 29, 149, .44) !important;
+}
+
+/* Toasts and SweetAlert messages match the application theme. */
+.app-shell .toast-item,
+.app-shell .toast-item.success,
+.app-shell .toast-item.error,
+.app-shell .toast-item.warning,
+.app-shell .toast-item.info {
+    border-color: var(--theme-line) !important;
+    color: var(--theme-text) !important;
+    background: rgba(15, 23, 42, .94) !important;
+    box-shadow: 0 16px 34px rgba(2, 6, 23, .42) !important;
+}
+.app-shell .toast-item p,
+.app-shell .toast-item small { color: var(--theme-muted) !important; }
+.swal2-popup.top-gym-alert,
+.swal2-popup.delete-confirm-alert,
+.swal2-popup.duplicate-phone-alert,
+.swal2-popup.qr-member-preview-alert {
+    border-color: var(--theme-line-strong) !important;
+    color: var(--theme-text) !important;
+    background: #0f172a !important;
+    box-shadow: 0 25px 70px rgba(2, 6, 23, .62) !important;
+}
+.top-gym-alert .swal2-title,
+.delete-confirm-alert .swal2-title,
+.duplicate-phone-alert .swal2-title,
+.qr-member-preview-alert .swal2-title { color: #f8fafc !important; }
+.top-gym-alert .swal2-html-container,
+.delete-confirm-alert .swal2-html-container,
+.duplicate-phone-alert .swal2-html-container,
+.qr-member-preview-alert .swal2-html-container { color: #cbd5e1 !important; }
+.duplicate-phone-alert-content strong { color: #fef3c7 !important; background: rgba(120, 53, 15, .42) !important; border-color: rgba(252, 211, 77, .45) !important; }
+.top-gym-toast.swal2-toast { border-color: rgba(110, 231, 183, .42) !important; background: rgba(6, 95, 70, .9) !important; }
+.top-gym-toast .swal2-title { color: #d1fae5 !important; }
+
+/* Scrollbars and focus states remain visible on the dark canvas. */
+.app-shell * {
+    scrollbar-color: rgba(147, 197, 253, .52) rgba(2, 6, 23, .28);
+}
+.app-shell *:focus-visible {
+    outline: 2px solid rgba(147, 197, 253, .85) !important;
+    outline-offset: 2px;
+}
+
+@media (max-width: 640px) {
+    .app-shell .page-tabs {
+        background: rgba(2, 6, 23, .7) !important;
+    }
+    .app-shell .page-tab,
+    .app-shell .page-tab.active {
+        border-radius: 10px !important;
+    }
+    .app-shell .page-tab:not(.active) {
+        border-color: rgba(255, 255, 255, .14) !important;
+        background: rgba(15, 23, 42, .58) !important;
+    }
+    .app-shell .panel,
+    .app-shell .library-section,
+    .app-shell .attendance-section,
+    .app-shell .coaching-section {
+        border-radius: 14px !important;
+    }
+    .app-shell .panel-header,
+    .app-shell .section-heading,
+    .app-shell .library-header,
+    .app-shell .attendance-header,
+    .app-shell .coaching-header,
+    .app-shell .management-tab-header,
+    .app-shell .expenses-tab-heading {
+        background: rgba(15, 23, 42, .9) !important;
+    }
+}
