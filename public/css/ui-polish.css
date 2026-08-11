@@ -1,0 +1,243 @@
+/*
+ * TOP GYM UI polish layer
+ * Loaded last so every screen shares the same rhythm, focus states and
+ * responsive behavior without changing the application's data flow.
+ */
+:root {
+    --ui-radius-xs: 8px;
+    --ui-radius-sm: 10px;
+    --ui-radius-md: 14px;
+    --ui-radius-lg: 18px;
+    --ui-control-height: 42px;
+    --ui-content-max: 1380px;
+    --ui-focus: rgba(96, 165, 250, .34);
+}
+
+html { scroll-behavior: smooth; }
+body.gym-page-bg { min-width: 320px; overflow-x: hidden; }
+.app-shell { isolation: isolate; }
+
+/* A compact identity header keeps the current page understandable without
+   bringing back the old action-heavy navbar. */
+.app-shell .topbar {
+    display: block !important;
+    position: relative;
+    z-index: 40;
+    padding: 8px clamp(12px, 2.5vw, 36px) !important;
+    border-bottom: 1px solid rgba(147, 197, 253, .22) !important;
+    background: linear-gradient(110deg, rgba(2, 6, 23, .96), rgba(15, 23, 42, .92) 55%, rgba(23, 37, 84, .94)) !important;
+    box-shadow: 0 10px 26px rgba(2, 6, 23, .28);
+}
+.app-shell .topbar-inner {
+    min-height: 56px !important;
+    max-width: var(--ui-content-max) !important;
+    margin-inline: auto;
+}
+.app-shell .brand {
+    min-width: 0 !important;
+    gap: 10px;
+    padding: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+}
+.app-shell .brand-mark {
+    width: 42px !important;
+    height: 42px !important;
+    flex-basis: 42px !important;
+    border-radius: 12px !important;
+    border-color: rgba(147, 197, 253, .62) !important;
+    background: linear-gradient(145deg, #2563eb, #1e3a8a) !important;
+    box-shadow: 0 8px 18px rgba(37, 99, 235, .28) !important;
+}
+.app-shell .brand-mark .ui-icon { width: 22px !important; height: 22px !important; }
+.app-shell .brand-copy { display: flex !important; min-width: 0; flex-direction: column; align-items: flex-start; gap: 2px; }
+.app-shell .brand-kicker { color: #93c5fd !important; font-size: 8px !important; letter-spacing: 2.2px !important; line-height: 1 !important; }
+.app-shell .brand h1 { margin: 0 !important; color: #f8fafc !important; font-size: 17px !important; letter-spacing: 1.2px !important; line-height: 1.2 !important; }
+.app-shell .brand-copy p { display: none !important; }
+.app-shell .top-actions { display: none !important; }
+
+/* Tabs are a single, predictable navigation rail. */
+.app-shell .page-tabs {
+    display: flex !important;
+    width: min(100%, var(--ui-content-max));
+    max-width: var(--ui-content-max) !important;
+    margin-inline: auto;
+    padding: 12px clamp(12px, 2.5vw, 36px) 8px !important;
+    gap: 7px !important;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    scrollbar-width: none;
+    background: rgba(2, 6, 23, .62) !important;
+}
+.app-shell .page-tabs::-webkit-scrollbar { display: none; }
+.app-shell .page-tab {
+    flex: 0 0 auto;
+    min-height: 38px !important;
+    padding: 7px 13px !important;
+    border: 1px solid transparent !important;
+    border-radius: var(--ui-radius-xs) !important;
+    color: #cbd5e1 !important;
+    background: rgba(15, 23, 42, .38) !important;
+    font-size: 11px !important;
+    font-weight: 800;
+    transition: color .18s ease, background-color .18s ease, border-color .18s ease, transform .18s ease;
+}
+.app-shell .page-tab:hover:not(.active) { transform: translateY(-1px); border-color: rgba(147, 197, 253, .34) !important; color: #fff !important; background: rgba(30, 64, 175, .34) !important; }
+.app-shell .page-tab.active { border-color: rgba(147, 197, 253, .58) !important; color: #fff !important; background: linear-gradient(135deg, rgba(37, 99, 235, .72), rgba(30, 64, 175, .74)) !important; box-shadow: 0 7px 16px rgba(2, 6, 23, .28), inset 0 1px 0 rgba(255, 255, 255, .12) !important; }
+.app-shell .page-tab .ui-icon { width: 15px !important; height: 15px !important; }
+
+/* One content rhythm for every section. */
+.app-shell .page {
+    width: min(100%, var(--ui-content-max));
+    max-width: var(--ui-content-max) !important;
+    margin-inline: auto;
+    padding: 24px clamp(12px, 2.5vw, 36px) 48px !important;
+}
+.app-shell .page > section:not([hidden]) { margin-bottom: 20px; }
+.app-shell .page > section:last-child { margin-bottom: 0; }
+.app-shell .panel,
+.app-shell .library-section,
+.app-shell .attendance-section,
+.app-shell .coaching-section,
+.app-shell .reports-section,
+.app-shell .management-tab-panel,
+.app-shell .monthly-finance-card,
+.app-shell .dashboard-analytics {
+    border-radius: var(--ui-radius-lg) !important;
+}
+.app-shell .panel-header,
+.app-shell .section-heading,
+.app-shell .library-header,
+.app-shell .attendance-header,
+.app-shell .coaching-header,
+.app-shell .management-tab-header,
+.app-shell .expenses-tab-heading,
+.app-shell .monthly-finance-head,
+.app-shell .dashboard-analytics-head {
+    min-height: 64px;
+    padding: 14px clamp(14px, 2vw, 22px) !important;
+}
+.app-shell .panel-header h3,
+.app-shell .section-heading h3,
+.app-shell .library-heading h3,
+.app-shell .attendance-heading h3,
+.app-shell .coaching-heading h3,
+.app-shell .management-tab-header h3 { font-size: clamp(15px, 1.3vw, 18px) !important; line-height: 1.35; }
+
+/* Shared controls: readable, touch-friendly and visually consistent. */
+.app-shell .btn {
+    min-height: var(--ui-control-height);
+    border-radius: var(--ui-radius-sm) !important;
+    padding: 9px 14px;
+    font-size: 12px;
+    font-weight: 800;
+    line-height: 1.2;
+    transition: transform .16s ease, border-color .16s ease, background-color .16s ease, box-shadow .16s ease;
+}
+.app-shell .btn:not(:disabled):hover { transform: translateY(-1px); }
+.app-shell .btn:active { transform: translateY(0); }
+.app-shell .btn.btn-small { min-height: 34px; padding: 7px 11px; font-size: 10px; }
+.app-shell .btn:disabled { cursor: not-allowed; opacity: .58; transform: none; }
+.app-shell input:not([type="checkbox"]):not([type="radio"]),
+.app-shell select,
+.app-shell textarea {
+    min-height: var(--ui-control-height);
+    border-radius: var(--ui-radius-sm) !important;
+    font-size: 12px;
+}
+.app-shell textarea { min-height: 82px; }
+.app-shell input:not([type="checkbox"]):not([type="radio"]):focus,
+.app-shell select:focus,
+.app-shell textarea:focus { outline: 0 !important; box-shadow: 0 0 0 3px var(--ui-focus) !important; }
+.app-shell button:focus-visible,
+.app-shell a:focus-visible,
+.app-shell input:focus-visible,
+.app-shell select:focus-visible,
+.app-shell textarea:focus-visible { outline: 2px solid rgba(147, 197, 253, .9) !important; outline-offset: 2px; }
+
+/* Tables remain dense but never lose their hierarchy. */
+.app-shell table { border-collapse: separate; border-spacing: 0; }
+.app-shell table th,
+.app-shell table td { vertical-align: middle; }
+.app-shell table th { letter-spacing: .1px; font-size: 10px; font-weight: 900; }
+.app-shell table td { font-size: 11px; }
+.app-shell table tbody tr { transition: background-color .16s ease; }
+.app-shell table tbody tr:hover td { background: rgba(96, 165, 250, .14) !important; }
+.app-shell .table-scroll,
+.app-shell .pricing-table-scroll,
+.app-shell .history-scroll,
+.app-shell .library-table-wrap,
+.app-shell .external-trainees-table-wrap,
+.app-shell .attendance-table-wrap,
+.app-shell .profile-table-wrap,
+.app-shell .builder-review-table-wrap { border-radius: var(--ui-radius-md) !important; }
+
+/* Dialogs and validation stay usable on short screens. */
+.app-shell dialog { max-height: calc(100dvh - 20px) !important; overflow: hidden; border-radius: var(--ui-radius-lg) !important; }
+.app-shell dialog .dialog-body { max-height: calc(100dvh - 20px); overflow-y: auto; overscroll-behavior: contain; }
+.app-shell dialog .details-dialog-head { position: sticky; top: 0; z-index: 2; }
+.app-shell dialog .dialog-actions { position: sticky; bottom: 0; z-index: 2; flex-wrap: wrap; }
+.app-shell .dialog-validation { border-radius: var(--ui-radius-sm) !important; line-height: 1.7; }
+
+/* Toasts should never cover the main controls or grow beyond the viewport. */
+.app-shell .toast {
+    top: 12px !important;
+    bottom: auto !important;
+    left: auto !important;
+    right: auto !important;
+    inset-inline-start: 12px !important;
+    inset-inline-end: auto !important;
+    z-index: 1200 !important;
+    width: min(390px, calc(100vw - 24px));
+    max-width: calc(100vw - 24px);
+}
+.swal2-container { z-index: 2200 !important; padding: 12px !important; }
+.swal2-popup.top-gym-alert,
+.swal2-popup.delete-confirm-alert,
+.swal2-popup.duplicate-phone-alert,
+.swal2-popup.qr-member-preview-alert { max-width: calc(100vw - 24px) !important; border-radius: var(--ui-radius-lg) !important; }
+
+/* Compact navigation and controls on phones. */
+@media (max-width: 640px) {
+    .app-shell .topbar { padding: 7px 10px !important; }
+    .app-shell .topbar-inner { min-height: 49px !important; }
+    .app-shell .brand-mark { width: 38px !important; height: 38px !important; flex-basis: 38px !important; }
+    .app-shell .brand-mark .ui-icon { width: 20px !important; height: 20px !important; }
+    .app-shell .brand-kicker { font-size: 7px !important; }
+    .app-shell .brand h1 { font-size: 15px !important; }
+    .app-shell .page-tabs { padding: 9px 10px 7px !important; gap: 6px !important; }
+    .app-shell .page-tab { min-height: 36px !important; padding: 7px 10px !important; font-size: 10px !important; }
+    .app-shell .page { padding: 16px 10px 32px !important; }
+    .app-shell .page > section:not([hidden]) { margin-bottom: 14px; }
+    .app-shell .panel,
+    .app-shell .library-section,
+    .app-shell .attendance-section,
+    .app-shell .coaching-section,
+    .app-shell .reports-section { border-radius: var(--ui-radius-md) !important; }
+    .app-shell .panel-header,
+    .app-shell .section-heading,
+    .app-shell .library-header,
+    .app-shell .attendance-header,
+    .app-shell .coaching-header,
+    .app-shell .management-tab-header,
+    .app-shell .expenses-tab-heading { min-height: 58px; padding: 11px 12px !important; }
+    .app-shell .btn { min-height: 40px; padding-inline: 11px; }
+    .app-shell .btn.btn-small { min-height: 34px; padding-inline: 9px; }
+    .app-shell dialog { width: calc(100vw - 18px) !important; max-height: calc(100dvh - 18px) !important; }
+    .app-shell dialog .dialog-body { max-height: calc(100dvh - 18px); padding: 15px !important; }
+    .app-shell dialog .dialog-actions { margin-inline: -15px; padding: 10px 15px; }
+    .app-shell .toast { inset-inline-start: 12px !important; top: 12px !important; width: calc(100vw - 24px); }
+}
+
+@media (max-width: 380px) {
+    .app-shell .page-tab { padding-inline: 8px !important; font-size: 9px !important; }
+    .app-shell .page-tab .ui-icon { width: 14px !important; height: 14px !important; }
+    .app-shell .panel-header,
+    .app-shell .section-heading { padding-inline: 10px !important; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}
