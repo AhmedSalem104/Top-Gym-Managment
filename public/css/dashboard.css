@@ -1087,7 +1087,7 @@
         body.gym-page-bg {
             background-color: #e9f0f8 !important;
             background-image:
-                linear-gradient(135deg, rgba(248, 250, 252, .86), rgba(224, 231, 255, .78)),
+                linear-gradient(135deg, rgba(248, 250, 252, .58), rgba(224, 231, 255, .54)),
                 radial-gradient(circle at 92% 4%, rgba(30, 64, 175, .15) 0, rgba(37, 99, 235, .06) 16%, transparent 36%),
                 radial-gradient(circle at 6% 88%, rgba(8, 145, 178, .12) 0, rgba(14, 165, 233, .04) 17%, transparent 35%),
                 radial-gradient(rgba(71, 85, 105, .1) 1px, transparent 1px),
