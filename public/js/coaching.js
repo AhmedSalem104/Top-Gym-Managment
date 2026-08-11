@@ -191,7 +191,7 @@
         openDialog(dialog);
         try {
             state.profile = await requestJson(`/api/clients/${memberId}/training-overview`);
-            renderProfile(state.profile);
+            renderProfileEnhanced(state.profile);
         } catch (error) {
             $('coachingProfileContent').innerHTML = `<div class="coaching-empty error"><strong>تعذر فتح الملف</strong><span>${escapeHtml(error.message)}</span></div>`;
             notify(error.message, 'error');
@@ -210,6 +210,42 @@
             <div class="profile-actions"><button class="btn btn-primary" data-profile-action="new-workout">+ برنامج تدريب</button><button class="btn btn-light" data-profile-action="new-diet">+ خطة تغذية</button><button class="btn btn-light" data-profile-action="new-measurement">+ قياس جديد</button><button class="btn btn-light" data-profile-action="edit-client">تعديل البيانات الأساسية</button></div>
             <div class="profile-section"><div class="profile-section-head"><h4>الأنظمة الحالية</h4><span>${number((overview.workoutPrograms || []).length + (overview.dietPlans || []).length, 0)} نظام</span></div>${workoutCards || dietCards ? `${workoutCards}${dietCards}` : '<div class="profile-empty">لم يتم إنشاء نظام بعد.</div>'}</div>
             <div class="profile-section"><div class="profile-section-head"><h4>القياسات والمتابعة</h4><span>${number((overview.measurements || []).length, 0)} قياس</span></div>${measurements ? `<div class="profile-table-wrap"><table class="profile-table"><thead><tr><th>التاريخ</th><th>الوزن</th><th>الدهون</th><th>الإجراءات</th></tr></thead><tbody>${measurements}</tbody></table></div>` : '<div class="profile-empty">أضف أول قياس لمتابعة التقدم.</div>'}</div>`;
+    }
+
+    function progressPercent(value) {
+        return Math.max(0, Math.min(100, Number(value || 0)));
+    }
+
+    function renderMeasurementBars(measurements = []) {
+        const rows = measurements.filter((item) => item.weightKg != null).slice().reverse().slice(-10);
+        if (!rows.length) return '<div class="profile-empty">أضف قياسات لعرض تطور الوزن.</div>';
+        const values = rows.map((item) => Number(item.weightKg));
+        const min = Math.min(...values);
+        const max = Math.max(...values);
+        const range = Math.max(1, max - min);
+        return `<div class="profile-chart-bars">${rows.map((item) => { const value = Number(item.weightKg); const height = 30 + ((value - min) / range) * 70; return `<div class="profile-chart-bar" title="${escapeHtml(item.measuredAt)} · ${number(value, 1)} كجم"><span style="height:${height}%"><b>${number(value, 1)}</b></span><small>${escapeHtml(String(item.measuredAt).slice(5))}</small></div>`; }).join('')}</div>`;
+    }
+
+    function renderProfileEnhanced(overview) {
+        const member = overview.member;
+        $('coachingProfileTitle').textContent = member.fullName;
+        $('coachingProfileSubtitle').textContent = `${member.phone}${member.email ? ` · ${member.email}` : ''}`;
+        const workouts = overview.workoutPrograms || [];
+        const diets = overview.dietPlans || [];
+        const sessions = overview.workoutSessions || [];
+        const mealLogs = overview.mealLogs || [];
+        const workoutCards = workouts.map((program) => `<article class="profile-system-card"><div><span class="system-type workout">برنامج تدريب</span><strong>${escapeHtml(program.name)}</strong><small>${escapeHtml(program.goal || 'هدف غير محدد')} · ${number(program.exerciseCount, 0)} تمرين · ${number(program.completedSessions, 0)} جلسة مكتملة</small><div class="profile-inline-progress"><i style="width:${progressPercent(program.progressPercent)}%"></i></div></div><div><span class="system-status ${program.status}">${progressPercent(program.progressPercent)}٪ · ${STATUS_LABELS[program.status] || program.status}</span><button class="btn btn-light btn-small" data-profile-action="edit-workout" data-id="${program.id}">تعديل</button></div></article>`).join('');
+        const dietCards = diets.map((plan) => `<article class="profile-system-card"><div><span class="system-type diet">خطة تغذية</span><strong>${escapeHtml(plan.name)}</strong><small>${number(plan.targetCalories, 0)} سعر · ${number(plan.mealsPerDay || plan.mealCount, 0)} وجبات · ${number(plan.loggedMeals, 0)} تسجيل</small><div class="profile-inline-progress diet"><i style="width:${progressPercent(plan.progressPercent)}%"></i></div></div><div><span class="system-status ${plan.status}">${progressPercent(plan.progressPercent)}٪ · ${STATUS_LABELS[plan.status] || plan.status}</span><button class="btn btn-light btn-small" data-profile-action="edit-diet" data-id="${plan.id}">تعديل</button></div></article>`).join('');
+        const measurements = (overview.measurements || []).slice(0, 8).map((item) => `<tr><td>${escapeHtml(item.measuredAt)}</td><td>${item.weightKg == null ? '—' : `${number(item.weightKg, 1)} كجم`}</td><td>${item.bodyFatPercent == null ? '—' : `${number(item.bodyFatPercent, 1)}%`}</td><td><button class="btn btn-light btn-small" data-measurement-action="edit" data-id="${item.id}">تعديل</button><button class="btn btn-danger btn-small" data-measurement-action="delete" data-id="${item.id}">حذف</button></td></tr>`).join('');
+        const sessionRows = sessions.slice(0, 6).map((session) => `<tr><td>${escapeHtml(session.programName || 'جلسة تدريب')}</td><td>${escapeHtml(session.routineName || '—')}</td><td>${escapeHtml(session.status === 'completed' ? 'مكتملة' : session.status === 'started' ? 'مفتوحة' : 'ملغاة')}</td><td>${number(session.setCount, 0)}</td></tr>`).join('');
+        const mealRows = mealLogs.slice(0, 6).map((log) => `<tr><td>${escapeHtml(log.foodName || 'طعام')}</td><td>${escapeHtml(log.mealName || '—')}</td><td>${number(log.calories, 0)}</td><td>${escapeHtml(new Date(log.consumedAt).toLocaleDateString('ar-EG'))}</td></tr>`).join('');
+        $('coachingProfileContent').innerHTML = `<div class="profile-hero"><div class="trainee-avatar large">${escapeHtml((member.fullName || 'م').trim().slice(0, 1))}</div><div><strong>${escapeHtml(member.fullName)}</strong><span>${escapeHtml(member.phone)}${member.email ? ` · ${escapeHtml(member.email)}` : ''}</span><small>ملف العميل #${member.id} · التنفيذ والتقدم محفوظان في قاعدة البيانات</small></div><button class="btn btn-primary btn-small" data-profile-action="subscribe">إضافة اشتراك Gym</button></div>
+            <div class="profile-stats"><article><span>الوزن الحالي</span><strong>${overview.progress.currentWeight == null ? '—' : `${number(overview.progress.currentWeight, 1)} كجم`}</strong></article><article><span>تغير الوزن</span><strong>${overview.progress.weightChange == null ? '—' : `${overview.progress.weightChange > 0 ? '+' : ''}${number(overview.progress.weightChange, 1)} كجم`}</strong></article><article><span>الجلسات المكتملة</span><strong>${number(overview.progress.completedSessions, 0)}</strong></article><article><span>تسجيلات الوجبات</span><strong>${number(overview.progress.mealLogCount, 0)}</strong></article></div>
+            <div class="profile-actions"><button class="btn btn-primary" data-profile-action="new-workout">+ برنامج تدريب</button><button class="btn btn-light" data-profile-action="new-diet">+ خطة تغذية</button><button class="btn btn-light" data-profile-action="start-session">بدء جلسة</button><button class="btn btn-light" data-profile-action="log-meal">تسجيل وجبة</button><button class="btn btn-light" data-profile-action="new-measurement">+ قياس جديد</button><button class="btn btn-light" data-profile-action="edit-client">تعديل البيانات الأساسية</button></div>
+            <div class="profile-progress-dashboard"><div class="profile-progress-card"><div class="profile-section-head"><h4>تطور الوزن</h4><span>${escapeHtml(overview.progress.lastMeasurementAt || 'لا توجد قياسات')}</span></div>${renderMeasurementBars(overview.measurements)}</div><div class="profile-progress-card"><div class="profile-section-head"><h4>نسبة تنفيذ الأنظمة</h4><span>تتحدث مع كل جلسة أو وجبة</span></div><div class="profile-progress-meters"><div><span>التدريب</span><b>${progressPercent(overview.progress.workoutCompletionPercent)}٪</b><i><em style="width:${progressPercent(overview.progress.workoutCompletionPercent)}%"></em></i></div><div><span>التغذية</span><b>${progressPercent(overview.progress.nutritionCompletionPercent)}٪</b><i><em style="width:${progressPercent(overview.progress.nutritionCompletionPercent)}%"></em></i></div></div></div></div>
+            <div class="profile-section"><div class="profile-section-head"><h4>الأنظمة الحالية</h4><span>${number(workouts.length + diets.length, 0)} نظام</span></div>${workoutCards || dietCards ? `${workoutCards}${dietCards}` : '<div class="profile-empty">لم يتم إنشاء نظام بعد.</div>'}</div>
+            <div class="profile-section"><div class="profile-section-head"><h4>القياسات والمتابعة</h4><span>${number((overview.measurements || []).length, 0)} قياس</span></div>${measurements ? `<div class="profile-table-wrap"><table class="profile-table"><thead><tr><th>التاريخ</th><th>الوزن</th><th>الدهون</th><th>الإجراءات</th></tr></thead><tbody>${measurements}</tbody></table></div>` : '<div class="profile-empty">أضف أول قياس لمتابعة التقدم.</div>'}</div>
+            <div class="profile-execution-grid"><section class="profile-section"><div class="profile-section-head"><h4>جلسات التدريب الأخيرة</h4><span>${number(sessions.length, 0)}</span></div>${sessionRows ? `<div class="profile-table-wrap"><table class="profile-table"><thead><tr><th>البرنامج</th><th>اليوم</th><th>الحالة</th><th>المجموعات</th></tr></thead><tbody>${sessionRows}</tbody></table></div>` : '<div class="profile-empty">لم يتم تسجيل جلسات بعد.</div>'}</section><section class="profile-section"><div class="profile-section-head"><h4>سجل الوجبات</h4><span>${number(mealLogs.length, 0)}</span></div>${mealRows ? `<div class="profile-table-wrap"><table class="profile-table"><thead><tr><th>الطعام</th><th>الوجبة</th><th>السعرات</th><th>التاريخ</th></tr></thead><tbody>${mealRows}</tbody></table></div>` : '<div class="profile-empty">لم يتم تسجيل وجبات بعد.</div>'}</section></div>`;
     }
 
     function blankWorkout(memberId) {
@@ -1107,8 +1143,145 @@
         requestJson(`/api/clients/${memberId}/training-overview`).then((overview) => {
             const workout = overview.workoutPrograms || [];
             const diets = overview.dietPlans || [];
-            panel.innerHTML = `<div class="member-training-head"><div><span>امتداد ملف العميل</span><h4>التدريب والتغذية</h4><small>يمكن إنشاء الأنظمة للمشترك بدون تغيير نظام العضوية الحالي.</small></div><div><button class="btn btn-primary btn-small" data-member-coaching-action="new-workout" data-id="${memberId}">+ تدريب</button><button class="btn btn-light btn-small" data-member-coaching-action="new-diet" data-id="${memberId}">+ تغذية</button><button class="btn btn-light btn-small" data-member-coaching-action="new-measurement" data-id="${memberId}">+ قياس</button></div></div><div class="member-training-systems">${[...workout.map((item) => `<div><span class="system-type workout">تدريب</span><strong>${escapeHtml(item.name)}</strong><small>${number(item.exerciseCount, 0)} تمرين · ${STATUS_LABELS[item.status] || item.status}</small><button class="btn btn-light btn-small" data-member-coaching-action="edit-workout" data-id="${item.id}" data-member-id="${memberId}">تعديل</button></div>`), ...diets.map((item) => `<div><span class="system-type diet">تغذية</span><strong>${escapeHtml(item.name)}</strong><small>${number(item.itemCount, 0)} طعام · ${STATUS_LABELS[item.status] || item.status}</small><button class="btn btn-light btn-small" data-member-coaching-action="edit-diet" data-id="${item.id}" data-member-id="${memberId}">تعديل</button></div>`)].join('') || '<div class="profile-empty">لا توجد أنظمة مرتبطة بهذا العميل حتى الآن.</div>'}</div><div class="member-progress-line"><span>القياسات: <b>${number(overview.measurements?.length, 0)}</b></span><span>الجلسات المكتملة: <b>${number(overview.progress.completedSessions, 0)}</b></span><span>تسجيلات الوجبات: <b>${number(overview.progress.mealLogCount, 0)}</b></span></div>`;
+            panel.innerHTML = `<div class="member-training-head"><div><span>امتداد ملف العميل</span><h4>التدريب والتغذية</h4><small>يمكن إنشاء الأنظمة للمشترك بدون تغيير نظام العضوية الحالي.</small></div><div><button class="btn btn-light btn-small" data-member-coaching-action="profile" data-id="${memberId}">فتح المتابعة</button><button class="btn btn-primary btn-small" data-member-coaching-action="new-workout" data-id="${memberId}">+ تدريب</button><button class="btn btn-light btn-small" data-member-coaching-action="new-diet" data-id="${memberId}">+ تغذية</button><button class="btn btn-light btn-small" data-member-coaching-action="start-session" data-id="${memberId}">بدء جلسة</button><button class="btn btn-light btn-small" data-member-coaching-action="log-meal" data-id="${memberId}">تسجيل وجبة</button><button class="btn btn-light btn-small" data-member-coaching-action="new-measurement" data-id="${memberId}">+ قياس</button></div></div><div class="member-training-systems">${[...workout.map((item) => `<div><span class="system-type workout">تدريب</span><strong>${escapeHtml(item.name)}</strong><small>${number(item.exerciseCount, 0)} تمرين · ${STATUS_LABELS[item.status] || item.status}</small><button class="btn btn-light btn-small" data-member-coaching-action="edit-workout" data-id="${item.id}" data-member-id="${memberId}">تعديل</button></div>`), ...diets.map((item) => `<div><span class="system-type diet">تغذية</span><strong>${escapeHtml(item.name)}</strong><small>${number(item.itemCount, 0)} طعام · ${STATUS_LABELS[item.status] || item.status}</small><button class="btn btn-light btn-small" data-member-coaching-action="edit-diet" data-id="${item.id}" data-member-id="${memberId}">تعديل</button></div>`)].join('') || '<div class="profile-empty">لا توجد أنظمة مرتبطة بهذا العميل حتى الآن.</div>'}</div><div class="member-progress-line"><span>القياسات: <b>${number(overview.measurements?.length, 0)}</b></span><span>الجلسات المكتملة: <b>${number(overview.progress.completedSessions, 0)}</b></span><span>تسجيلات الوجبات: <b>${number(overview.progress.mealLogCount, 0)}</b></span></div>`;
         }).catch((error) => { panel.innerHTML = `<div class="coaching-empty error">${escapeHtml(error.message)}</div>`; });
+    }
+
+    function ensureExecutionDialogs() {
+        if (!$('coachingSessionDialog')) {
+            const dialog = document.createElement('dialog');
+            dialog.id = 'coachingSessionDialog';
+            dialog.className = 'coaching-small-dialog rounded-lg border-slate-200 shadow-lift';
+            dialog.innerHTML = `<form class="dialog-body" id="coachingSessionForm"><div class="details-dialog-head"><div><h3>تسجيل جلسة تدريب</h3><p>ابدأ الجلسة ثم احفظ كل مجموعة فعليًا في قاعدة البيانات.</p></div><button class="btn btn-light btn-small" type="button" data-session-action="close">إغلاق</button></div><input type="hidden" id="executionSessionMemberId"><input type="hidden" id="executionSessionId"><div id="executionSessionSetup"><div class="field-grid"><label>برنامج التدريب<select id="executionSessionProgram" required></select></label><label>اليوم التدريبي<select id="executionSessionRoutine"></select></label></div></div><div id="executionSessionActive" hidden></div><div class="dialog-actions"><button class="btn btn-light" type="button" data-session-action="close">إلغاء</button><button class="btn btn-primary" id="executionSessionStart" type="submit">بدء الجلسة</button><button class="btn btn-primary" id="executionSessionEnd" type="button" data-session-action="end" hidden>إنهاء الجلسة</button></div></form>`;
+            document.body.appendChild(dialog);
+            dialog.querySelector('form').addEventListener('submit', startExecutionSession);
+            dialog.addEventListener('click', (event) => {
+                const button = event.target.closest('[data-session-action]');
+                if (!button) return;
+                if (button.dataset.sessionAction === 'close') closeDialog(dialog);
+                if (button.dataset.sessionAction === 'end') endExecutionSession();
+                if (button.dataset.sessionAction === 'add-set') addExecutionSet();
+            });
+            $('executionSessionProgram')?.addEventListener('change', () => loadExecutionProgram($('executionSessionProgram').value));
+        }
+        if (!$('coachingMealLogDialog')) {
+            const dialog = document.createElement('dialog');
+            dialog.id = 'coachingMealLogDialog';
+            dialog.className = 'coaching-small-dialog rounded-lg border-slate-200 shadow-lift';
+            dialog.innerHTML = `<form class="dialog-body" id="coachingMealLogForm"><div class="details-dialog-head"><div><h3>تسجيل وجبة</h3><p>سجّل الكمية المستهلكة ليتم حفظ السعرات والماكروز تلقائيًا.</p></div><button class="btn btn-light btn-small" type="button" data-meal-action="close">إغلاق</button></div><input type="hidden" id="executionMealMemberId"><div class="field-grid"><label>خطة التغذية<select id="executionMealPlan" required></select></label><label>الوجبة والطعام<select id="executionMealItem" required></select></label><label>الكمية<input id="executionMealQuantity" type="number" min="0.001" step="0.1" required></label><label>وقت التسجيل<input id="executionMealAt" type="datetime-local" required></label></div><label class="builder-wide-label">ملاحظات<textarea id="executionMealNotes" rows="2"></textarea></label><div class="dialog-actions"><button class="btn btn-light" type="button" data-meal-action="close">إلغاء</button><button class="btn btn-primary" type="submit">حفظ تسجيل الوجبة</button></div></form>`;
+            document.body.appendChild(dialog);
+            dialog.querySelector('form').addEventListener('submit', saveExecutionMeal);
+            dialog.addEventListener('click', (event) => { if (event.target.closest('[data-meal-action="close"]')) closeDialog(dialog); });
+            $('executionMealPlan')?.addEventListener('change', renderExecutionMealItems);
+        }
+    }
+
+    function localDateTimeValue() {
+        const date = new Date();
+        const offset = date.getTimezoneOffset() * 60000;
+        return new Date(date.getTime() - offset).toISOString().slice(0, 16);
+    }
+
+    async function openSessionDialog(memberId) {
+        if (state.profile?.member?.id !== Number(memberId)) {
+            try { state.profile = await requestJson(`/api/clients/${memberId}/training-overview`); } catch (error) { return notify(error.message, 'error'); }
+        }
+        const programs = state.profile?.workoutPrograms || [];
+        if (!programs.length) return notify('أنشئ برنامج تدريب أولًا قبل تسجيل جلسة.', 'warning');
+        ensureExecutionDialogs();
+        state.execution = { memberId: Number(memberId), program: null, session: null };
+        $('executionSessionMemberId').value = memberId;
+        $('executionSessionId').value = '';
+        $('executionSessionProgram').innerHTML = programs.map((program) => `<option value="${program.id}">${escapeHtml(program.name)}</option>`).join('');
+        $('executionSessionSetup').hidden = false;
+        $('executionSessionActive').hidden = true;
+        $('executionSessionStart').hidden = false;
+        $('executionSessionEnd').hidden = true;
+        await loadExecutionProgram($('executionSessionProgram').value);
+        openDialog($('coachingSessionDialog'));
+    }
+
+    async function loadExecutionProgram(programId) {
+        if (!programId) return;
+        try {
+            const response = await requestJson(`/api/workoutprograms/${programId}`);
+            state.execution.program = response.program;
+            $('executionSessionRoutine').innerHTML = `<option value="">كل البرنامج</option>${(state.execution.program.routines || []).map((routine) => `<option value="${routine.id}">${escapeHtml(routine.name)}</option>`).join('')}`;
+        } catch (error) { notify(error.message, 'error'); }
+    }
+
+    async function startExecutionSession(event) {
+        event.preventDefault();
+        if (state.execution?.session) return;
+        try {
+            const response = await requestJson('/api/workoutsessions/start', { method: 'POST', body: JSON.stringify({ memberId: Number($('executionSessionMemberId').value), programId: Number($('executionSessionProgram').value), routineId: $('executionSessionRoutine').value ? Number($('executionSessionRoutine').value) : null }) });
+            state.execution.session = response.session;
+            $('executionSessionId').value = state.execution.session.id;
+            const exercises = (state.execution.program?.routines || []).flatMap((routine) => routine.exercises || []);
+            $('executionSessionSetup').hidden = true;
+            $('executionSessionStart').hidden = true;
+            $('executionSessionEnd').hidden = false;
+            $('executionSessionActive').hidden = false;
+            $('executionSessionActive').innerHTML = `<div class="execution-session-head"><strong>${escapeHtml(state.execution.program?.name || 'جلسة تدريب')}</strong><span>بدأت الآن</span></div><div class="field-grid"><label>التمرين<select id="executionSetExercise">${exercises.map((exercise) => `<option value="${exercise.id}">${escapeHtml(exercise.nameAr || exercise.name || 'تمرين')}</option>`).join('')}</select></label><label>رقم المجموعة<input id="executionSetNumber" type="number" min="1" value="1"></label><label>الوزن كجم<input id="executionSetWeight" type="number" min="0" step="0.5"></label><label>التكرارات<input id="executionSetReps" type="number" min="0"></label></div><button class="btn btn-light" type="button" data-session-action="add-set">حفظ المجموعة</button><div id="executionSetLog" class="execution-set-log"><div class="profile-empty">لم تُسجل مجموعات بعد.</div></div>`;
+            notify('تم بدء جلسة التدريب.');
+        } catch (error) { notify(error.message, 'error'); }
+    }
+
+    async function addExecutionSet() {
+        const sessionId = $('executionSessionId')?.value;
+        if (!sessionId) return;
+        try {
+            const response = await requestJson(`/api/workoutsessions/${sessionId}/sets`, { method: 'POST', body: JSON.stringify({ workoutExerciseId: Number($('executionSetExercise').value), setNumber: Number($('executionSetNumber').value), weightKg: $('executionSetWeight').value || null, reps: $('executionSetReps').value || null }) });
+            const log = $('executionSetLog');
+            if (log.querySelector('.profile-empty')) log.innerHTML = '';
+            log.insertAdjacentHTML('beforeend', `<div class="execution-set-row"><span>مجموعة ${response.set?.id || ''}</span><b>${$('executionSetWeight').value || 0} كجم × ${$('executionSetReps').value || 0}</b></div>`);
+            $('executionSetNumber').value = Number($('executionSetNumber').value || 0) + 1;
+            notify('تم حفظ المجموعة.');
+        } catch (error) { notify(error.message, 'error'); }
+    }
+
+    async function endExecutionSession() {
+        const sessionId = $('executionSessionId')?.value;
+        if (!sessionId) return;
+        try {
+            await requestJson(`/api/workoutsessions/${sessionId}/end`, { method: 'POST', body: JSON.stringify({ status: 'completed' }) });
+            closeDialog($('coachingSessionDialog'));
+            notify('تم إنهاء الجلسة وحفظ التقدم.');
+            openProfile(Number($('executionSessionMemberId').value));
+        } catch (error) { notify(error.message, 'error'); }
+    }
+
+    async function openMealDialog(memberId) {
+        if (state.profile?.member?.id !== Number(memberId)) {
+            try { state.profile = await requestJson(`/api/clients/${memberId}/training-overview`); } catch (error) { return notify(error.message, 'error'); }
+        }
+        const plans = state.profile?.dietPlans || [];
+        if (!plans.length) return notify('أنشئ خطة تغذية أولًا قبل تسجيل وجبة.', 'warning');
+        ensureExecutionDialogs();
+        state.executionMealPlans = await Promise.all(plans.map((plan) => requestJson(`/api/dietplans/${plan.id}`).then((response) => response.plan)));
+        $('executionMealMemberId').value = memberId;
+        $('executionMealPlan').innerHTML = state.executionMealPlans.map((plan) => `<option value="${plan.id}">${escapeHtml(plan.name)}</option>`).join('');
+        $('executionMealAt').value = localDateTimeValue();
+        $('executionMealNotes').value = '';
+        renderExecutionMealItems();
+        openDialog($('coachingMealLogDialog'));
+    }
+
+    function renderExecutionMealItems() {
+        const plan = state.executionMealPlans?.find((item) => String(item.id) === String($('executionMealPlan')?.value));
+        const items = (plan?.meals || []).flatMap((meal) => (meal.items || []).map((item) => ({ ...item, mealName: meal.name })));
+        $('executionMealItem').innerHTML = items.map((item) => `<option value="${item.id}" data-quantity="${item.assignedQuantity || 100}">${escapeHtml(item.mealName)} · ${escapeHtml(item.nameAr || item.nameEn || 'طعام')}</option>`).join('');
+        $('executionMealQuantity').value = items[0]?.assignedQuantity || 100;
+    }
+
+    async function saveExecutionMeal(event) {
+        event.preventDefault();
+        try {
+            await requestJson('/api/meal-logs', { method: 'POST', body: JSON.stringify({ memberId: Number($('executionMealMemberId').value), mealItemId: Number($('executionMealItem').value), consumedQuantity: Number($('executionMealQuantity').value), consumedAt: new Date($('executionMealAt').value).toISOString(), notes: $('executionMealNotes').value }) });
+            closeDialog($('coachingMealLogDialog'));
+            notify('تم تسجيل الوجبة وحفظ السعرات والماكروز.');
+            openProfile(Number($('executionMealMemberId').value));
+        } catch (error) { notify(error.message, 'error'); }
     }
 
     async function handleProfileAction(action, id) {
@@ -1119,6 +1292,8 @@
         if (action === 'edit-workout') return openBuilder('workout', memberId, id);
         if (action === 'edit-diet') return openBuilder('diet', memberId, id);
         if (action === 'new-measurement') return openMeasurementDialog(memberId);
+        if (action === 'start-session') return openSessionDialog(memberId);
+        if (action === 'log-meal') return openMealDialog(memberId);
         if (action === 'subscribe') return openSubscriptionDialog(memberId);
         if (action === 'edit-client') return openClientEditDialog(state.profile.member);
         if (action === 'delete') return;
@@ -1136,10 +1311,13 @@
         const memberId = button.dataset.memberId || button.dataset.id;
         const action = button.dataset.memberCoachingAction;
         if (!memberId || !action) return;
+        if (action === 'profile') return openProfile(memberId);
         if (action === 'new-workout') openBuilder('workout', memberId);
         else if (action === 'new-diet') openBuilder('diet', memberId);
         else if (action === 'edit-workout') openBuilder('workout', memberId, button.dataset.id);
         else if (action === 'edit-diet') openBuilder('diet', memberId, button.dataset.id);
+        else if (action === 'start-session') openSessionDialog(memberId);
+        else if (action === 'log-meal') openMealDialog(memberId);
         else if (action === 'new-measurement') openMeasurementDialog(memberId);
     }
 

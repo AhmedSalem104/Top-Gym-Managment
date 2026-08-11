@@ -393,6 +393,7 @@ BEGIN
       AND NOT EXISTS (
           SELECT 1 FROM dbo.gym_payment_transactions AS t
           WHERE t.source_payment_id = p.id
+             OR (t.membership_id = p.membership_id AND t.transaction_type = 'subscription')
       );
 END;
 
@@ -857,3 +858,22 @@ IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_workout_set_logs_sess
     CREATE INDEX IX_workout_set_logs_session ON dbo.workout_set_logs(session_id, id);
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_meal_logs_member_consumed' AND object_id = OBJECT_ID(N'dbo.meal_logs'))
     CREATE INDEX IX_meal_logs_member_consumed ON dbo.meal_logs(member_id, consumed_at DESC, id DESC);
+
+IF OBJECT_ID(N'dbo.gym_backup_operations', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.gym_backup_operations (
+        id INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_gym_backup_operations PRIMARY KEY,
+        operation_type VARCHAR(20) NOT NULL,
+        file_name NVARCHAR(260) NULL,
+        source_generated_at DATETIME2(0) NULL,
+        row_count INT NOT NULL CONSTRAINT DF_gym_backup_operations_rows DEFAULT (0),
+        table_counts NVARCHAR(MAX) NULL,
+        status VARCHAR(20) NOT NULL CONSTRAINT DF_gym_backup_operations_status DEFAULT ('success'),
+        details NVARCHAR(1000) NULL,
+        created_at DATETIME2(0) NOT NULL CONSTRAINT DF_gym_backup_operations_created DEFAULT (SYSUTCDATETIME()),
+        CONSTRAINT CK_gym_backup_operations_type CHECK (operation_type IN ('download', 'inspect', 'restore')),
+        CONSTRAINT CK_gym_backup_operations_status CHECK (status IN ('success', 'failed'))
+    );
+END;
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_gym_backup_operations_created' AND object_id = OBJECT_ID(N'dbo.gym_backup_operations'))
+    CREATE INDEX IX_gym_backup_operations_created ON dbo.gym_backup_operations(created_at DESC, id DESC);

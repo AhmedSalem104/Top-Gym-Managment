@@ -9,6 +9,7 @@
     "dev": "node --watch server.js",
     "build:css": "tailwindcss -i ./src/tailwind.css -o ./public/tailwind.css --minify",
     "build": "npm run build:css",
+    "test:smoke": "node scripts/smoke-test.js",
     "seed:performance": "node scripts/seed-performance-test-data.js",
     "sync:library": "node scripts/sync-library-data.js"
   },

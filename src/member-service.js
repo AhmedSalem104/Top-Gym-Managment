@@ -8,7 +8,7 @@ const {
     todayInTimeZone,
     toUtcDate
 } = require('./date-utils');
-const { getMemberAttendanceStatuses } = require('./attendance-service');
+const { ensureAttendanceTable, getMemberAttendanceStatuses } = require('./attendance-service');
 
 const DEFAULT_MEMBERSHIP_PLANS = {
     gym_only: { label: 'جيم فقط', monthlyPrice: 305, active: true, sortOrder: 1 },
@@ -1007,11 +1007,12 @@ async function updateMembershipType(typeCodeValue, body = {}) {
 }
 
 async function getDashboard() {
+    await ensureAttendanceTable();
     const pool = await getPool();
     const today = todayInTimeZone();
-    const result = await pool.request()
-        .input('today', sql.Date, toUtcDate(today))
-        .query(`${MEMBER_ROWS_CTE}
+    const baseRequest = pool.request().input('today', sql.Date, toUtcDate(today));
+    const [result, debtResult, inactiveResult] = await Promise.all([
+        baseRequest.query(`${MEMBER_ROWS_CTE}
             SELECT
                 COUNT(1) AS total,
                 SUM(CASE WHEN computedStatus = 'active' THEN 1 ELSE 0 END) AS active,
@@ -1034,9 +1035,47 @@ async function getDashboard() {
                     FOR JSON PATH
                 ) AS alertsJson
             FROM member_rows
-            WHERE membershipId IS NOT NULL;`);
+            WHERE membershipId IS NOT NULL;`),
+        pool.request().input('today', sql.Date, toUtcDate(today)).query(`${MEMBER_ROWS_CTE}
+            SELECT TOP (50) * FROM member_rows
+            WHERE membershipId IS NOT NULL AND amountRemaining > 0
+            ORDER BY amountRemaining DESC, effectiveEndDate ASC, fullName ASC;`),
+        pool.request()
+            .input('today', sql.Date, toUtcDate(today))
+            .input('inactiveSince', sql.Date, toUtcDate(addDays(today, -7)))
+            .query(`${MEMBER_ROWS_CTE}
+                SELECT TOP (50) member_rows.*,
+                       last_visit.lastVisitDate,
+                       DATEDIFF(day, last_visit.lastVisitDate, @today) AS daysSinceLastVisit
+                FROM member_rows
+                OUTER APPLY (
+                    SELECT TOP (1) a.attendance_date AS lastVisitDate
+                    FROM dbo.gym_attendance AS a
+                    WHERE a.member_id = member_rows.id
+                    ORDER BY a.attendance_date DESC, a.check_in_at DESC, a.id DESC
+                ) AS last_visit
+                WHERE member_rows.computedStatus = 'active'
+                  AND (
+                      (last_visit.lastVisitDate IS NULL
+                       AND (member_rows.registrationDate < @inactiveSince OR member_rows.startDate < @inactiveSince))
+                      OR last_visit.lastVisitDate < @inactiveSince
+                  )
+                ORDER BY CASE WHEN last_visit.lastVisitDate IS NULL THEN 0 ELSE 1 END,
+                         last_visit.lastVisitDate ASC, member_rows.fullName ASC;`)
+    ]);
     const row = result.recordset[0] || {};
     const alertRows = row.alertsJson ? JSON.parse(row.alertsJson) : [];
+    const membershipAlerts = alertRows.map((item) => ({ ...mapMember(item), alertKind: 'membership' }));
+    const debtAlerts = debtResult.recordset.map((item) => ({ ...mapMember(item), alertKind: 'debt' }));
+    const inactiveAlerts = inactiveResult.recordset.map((item) => ({
+        ...mapMember(item),
+        alertKind: 'inactive',
+        lastVisitDate: formatDateOnly(item.lastVisitDate),
+        daysSinceLastVisit: item.daysSinceLastVisit == null ? null : Number(item.daysSinceLastVisit)
+    }));
+    const alerts = [...membershipAlerts, ...debtAlerts, ...inactiveAlerts]
+        .filter((item, index, list) => list.findIndex((candidate) => `${candidate.alertKind}:${candidate.id}` === `${item.alertKind}:${item.id}`) === index)
+        .slice(0, 100);
     return {
         today,
         stats: {
@@ -1046,7 +1085,7 @@ async function getDashboard() {
             expired: Number(row.expired || 0),
             frozen: Number(row.frozen || 0)
         },
-        alerts: alertRows.map(mapMember)
+        alerts
     };
 }
 

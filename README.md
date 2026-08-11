@@ -333,6 +333,17 @@ erDiagram
 GET /api/backup/download
 ```
 
+إدارة الاسترجاع متاحة من تبويب **الأسعار والعضويات**:
+
+```text
+GET  /api/backup/history
+POST /api/backup/inspect
+POST /api/backup/restore
+```
+
+يرسل `inspect` الملف المضغوط للتحقق من نوعه، JSON، الجداول وعدد الصفوف قبل أي تغيير. ولا يقبل `restore` التنفيذ إلا مع رأس الطلب:
+`X-TOP-GYM-RESTORE-CONFIRM: RESTORE`. يتم الاسترجاع داخل transaction واحدة، وتُحفظ نتيجة التنزيل والفحص والاسترجاع في `gym_backup_operations` بدون حفظ ملف النسخة نفسه على السيرفر.
+
 ثم ينفذ الآتي:
 
 ```mermaid
@@ -541,6 +552,9 @@ node scripts\smoke-test.js
 | `GET` | `/api/dashboard-analytics?period=week\|month\|year` | مؤشرات ورسومات فترة محددة. |
 | `GET` | `/api/monthly-finance` | ملخص الشهر والمصروفات الحالية. |
 | `GET` | `/api/backup/download` | إنشاء وتنزيل backup مضغوط لحظيًا. |
+| `GET` | `/api/backup/history` | سجل عمليات التنزيل والفحص والاسترجاع. |
+| `POST` | `/api/backup/inspect` | التحقق من ملف `.json.gz` قبل الاسترجاع. |
+| `POST` | `/api/backup/restore` | استرجاع نسخة متحقق منها مع تأكيد صريح. |
 | `GET` | `/api/reports?from=YYYY-MM-DD&to=YYYY-MM-DD` | تقرير مخصص بالمؤشرات والحركة وقائمة المشتركين. |
 
 ### الحضور والانصراف
@@ -549,6 +563,7 @@ node scripts\smoke-test.js
 | --- | --- | --- |
 | `GET` | `/api/attendance?date=YYYY-MM-DD&search=` | سجل حضور اليوم أو تاريخ محدد. |
 | `GET` | `/api/attendance/member/:id` | سجل حضور عضو خلال الشهر الحالي أو فترة محددة. |
+| `GET` | `/api/attendance/report?from=YYYY-MM-DD&to=YYYY-MM-DD` | ملخص يومي، حضور كل مشترك، وحالات بلا حضور. |
 | `POST` | `/api/attendance/check-in` | تسجيل حضور برقم الهاتف أو `qrToken`. |
 | `POST` | `/api/attendance/check-out` | تسجيل انصراف برقم الهاتف أو `qrToken`. |
 
@@ -742,9 +757,12 @@ DELETE /api/clients/:id/measurements/:measurementId
 
 POST   /api/members/:id/memberships
 POST   /api/workoutsessions/start
+GET    /api/workoutsessions?memberId=:id
+GET    /api/workoutsessions/:id
 POST   /api/workoutsessions/:id/sets
 POST   /api/workoutsessions/:id/end
 POST   /api/meal-logs
+GET    /api/meal-logs?memberId=:id
 ```
 
 All coaching tables are created idempotently by `database/schema.sql` and the runtime service. They are included in the downloadable backup together with the existing membership and library data. The JSON body limit is `1mb` to allow complete nested systems without encouraging unbounded payloads.

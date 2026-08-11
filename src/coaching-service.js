@@ -2,6 +2,7 @@ const { getPool, sql } = require('./db');
 const { ensureLibraryData } = require('./library-service');
 const {
     addDays,
+    differenceInDays,
     formatDateOnly,
     parseDateOnly,
     todayInTimeZone,
@@ -1073,33 +1074,107 @@ async function deleteMeasurement(memberId, measurementId) {
 async function getTrainingOverview(memberId) {
     const id = ensureId(memberId, 'معرّف العميل');
     await ensureReady();
-    const [member, workoutPrograms, dietPlans, measurements] = await Promise.all([
+    const [member, workoutProgramsBase, dietPlansBase, measurements, workoutSessions, mealLogs] = await Promise.all([
         getClientBase(id),
         getWorkoutPrograms({ memberId: id }),
         getDietPlans({ memberId: id }),
-        getMeasurements(id)
+        getMeasurements(id),
+        getWorkoutSessions(id),
+        getMealLogs(id)
     ]);
-    const pool = await getPool();
-    const activityResult = await pool.request().input('memberId', sql.Int, id).query(`SELECT (SELECT COUNT(1) FROM dbo.workout_sessions WHERE member_id=@memberId) AS session_count, (SELECT COUNT(1) FROM dbo.workout_sessions WHERE member_id=@memberId AND status='completed') AS completed_sessions, (SELECT COUNT(1) FROM dbo.meal_logs WHERE member_id=@memberId) AS meal_log_count;`);
-    const activity = activityResult.recordset[0] || {};
+    const workoutPrograms = workoutProgramsBase.map((program) => {
+        const completedSessions = workoutSessions.filter((session) => session.programId === program.id && session.status === 'completed').length;
+        return { ...program, completedSessions, progressPercent: executionProgress(program.startDate, program.endDate, program.daysPerWeek, completedSessions) };
+    });
+    const dietPlans = dietPlansBase.map((plan) => {
+        const loggedMeals = mealLogs.filter((log) => log.planId === plan.id).length;
+        return { ...plan, loggedMeals, progressPercent: executionProgress(plan.startDate, plan.endDate, plan.mealsPerDay, loggedMeals) };
+    });
     const orderedMeasurements = [...measurements].sort((a, b) => String(a.measuredAt).localeCompare(String(b.measuredAt)));
     const firstWeight = orderedMeasurements.find((item) => item.weightKg != null)?.weightKg ?? null;
     const currentWeight = measurements.find((item) => item.weightKg != null)?.weightKg ?? null;
+    const average = (items) => items.length ? Math.round(items.reduce((sum, item) => sum + Number(item.progressPercent || 0), 0) / items.length) : 0;
     return {
         member,
         workoutPrograms,
         dietPlans,
         measurements,
+        workoutSessions,
+        mealLogs,
         progress: {
             firstWeight,
             currentWeight,
             weightChange: firstWeight != null && currentWeight != null ? Math.round((currentWeight - firstWeight) * 100) / 100 : null,
-            sessionCount: Number(activity.session_count || 0),
-            completedSessions: Number(activity.completed_sessions || 0),
-            mealLogCount: Number(activity.meal_log_count || 0),
+            sessionCount: workoutSessions.length,
+            completedSessions: workoutSessions.filter((session) => session.status === 'completed').length,
+            mealLogCount: mealLogs.length,
+            workoutCompletionPercent: average(workoutPrograms),
+            nutritionCompletionPercent: average(dietPlans),
             lastMeasurementAt: measurements[0]?.measuredAt || null
         }
     };
+}
+
+function executionProgress(startDate, endDate, unitsPerWeek, completedUnits) {
+    const todayValue = todayInTimeZone();
+    const totalDays = endDate ? Math.max(1, differenceInDays(startDate, endDate) + 1) : 84;
+    const elapsedDays = Math.min(totalDays, Math.max(1, differenceInDays(startDate, todayValue) + 1));
+    const expectedUnits = Math.max(1, (elapsedDays / 7) * Math.max(1, Number(unitsPerWeek || 1)));
+    return Math.max(0, Math.min(100, Math.round((Number(completedUnits || 0) / expectedUnits) * 100)));
+}
+
+async function getWorkoutSessions(memberId, options = {}) {
+    await ensureCoachingTables();
+    const id = ensureId(memberId, 'معرّف العميل');
+    const limit = Math.min(200, Math.max(1, Number(options.limit) || 100));
+    const pool = await getPool();
+    const result = await pool.request()
+        .input('memberId', sql.Int, id)
+        .input('limit', sql.Int, limit)
+        .query(`SELECT TOP (@limit) s.id, s.member_id, s.program_id, s.routine_id,
+                       s.started_at, s.ended_at, s.status, s.notes,
+                       p.name AS program_name, r.name AS routine_name,
+                       (SELECT COUNT(1) FROM dbo.workout_set_logs AS l WHERE l.session_id = s.id) AS set_count
+                FROM dbo.workout_sessions AS s
+                LEFT JOIN dbo.workout_programs AS p ON p.id = s.program_id
+                LEFT JOIN dbo.workout_routines AS r ON r.id = s.routine_id
+                WHERE s.member_id = @memberId
+                ORDER BY s.started_at DESC, s.id DESC;`);
+    return result.recordset.map((row) => ({
+        id: Number(row.id), memberId: Number(row.member_id), programId: row.program_id == null ? null : Number(row.program_id), routineId: row.routine_id == null ? null : Number(row.routine_id),
+        programName: row.program_name, routineName: row.routine_name, startedAt: row.started_at, endedAt: row.ended_at, status: row.status, notes: row.notes, setCount: Number(row.set_count || 0)
+    }));
+}
+
+async function getMealLogs(memberId, options = {}) {
+    await ensureCoachingTables();
+    const id = ensureId(memberId, 'معرّف العميل');
+    const from = optionalDateValue(options.from, 'تاريخ البداية');
+    const to = optionalDateValue(options.to, 'تاريخ النهاية');
+    if (from && to && from > to) throw appError('تاريخ بداية سجل الوجبات يجب أن يكون قبل تاريخ النهاية.');
+    const pool = await getPool();
+    const result = await pool.request()
+        .input('memberId', sql.Int, id)
+        .input('fromDate', sql.Date, from ? toUtcDate(from) : null)
+        .input('toDate', sql.Date, to ? toUtcDate(to) : null)
+        .query(`SELECT TOP (500) l.id, l.member_id, l.meal_item_id, l.consumed_quantity, l.consumed_at,
+                       l.calc_calories, l.calc_protein, l.calc_carbs, l.calc_fats, l.notes,
+                       dp.id AS plan_id, dp.name AS plan_name, dm.name AS meal_name,
+                       i.assigned_quantity, i.serving_unit, f.name_ar AS food_name_ar, f.name_en AS food_name_en
+                FROM dbo.meal_logs AS l
+                LEFT JOIN dbo.diet_meal_items AS i ON i.id = l.meal_item_id
+                LEFT JOIN dbo.diet_meals AS dm ON dm.id = i.meal_id
+                LEFT JOIN dbo.diet_plans AS dp ON dp.id = dm.diet_plan_id
+                LEFT JOIN dbo.gym_foods AS f ON f.id = i.food_id
+                WHERE l.member_id = @memberId
+                  AND (@fromDate IS NULL OR l.consumed_at >= @fromDate)
+                  AND (@toDate IS NULL OR l.consumed_at < DATEADD(day, 1, @toDate))
+                ORDER BY l.consumed_at DESC, l.id DESC;`);
+    return result.recordset.map((row) => ({
+        id: Number(row.id), memberId: Number(row.member_id), mealItemId: row.meal_item_id == null ? null : Number(row.meal_item_id), planId: row.plan_id == null ? null : Number(row.plan_id), planName: row.plan_name, mealName: row.meal_name,
+        foodName: row.food_name_ar || row.food_name_en || 'طعام', consumedQuantity: Number(row.consumed_quantity || 0), assignedQuantity: row.assigned_quantity == null ? null : Number(row.assigned_quantity), servingUnit: row.serving_unit, consumedAt: row.consumed_at,
+        calories: Number(row.calc_calories || 0), protein: Number(row.calc_protein || 0), carbs: Number(row.calc_carbs || 0), fats: Number(row.calc_fats || 0), notes: row.notes
+    }));
 }
 
 async function startWorkoutSession(body = {}) {
@@ -1114,7 +1189,7 @@ async function startWorkoutSession(body = {}) {
             if (!result.recordset[0]) throw appError('البرنامج لا يتبع هذا العميل.');
         }
         if (routineId) {
-            const result = await transaction.request().input('routineId', sql.Int, routineId).input('programId', sql.Int, programId).query('SELECT id FROM dbo.workout_routines WHERE id=@routineId AND (@programId IS NULL OR program_id=@programId);');
+            const result = await transaction.request().input('routineId', sql.Int, routineId).input('programId', sql.Int, programId).input('memberId', sql.Int, memberId).query(`SELECT r.id FROM dbo.workout_routines AS r INNER JOIN dbo.workout_programs AS p ON p.id = r.program_id WHERE r.id=@routineId AND p.member_id=@memberId AND (@programId IS NULL OR r.program_id=@programId);`);
             if (!result.recordset[0]) throw appError('اليوم التدريبي غير صالح.');
         }
         const result = await transaction.request().input('memberId', sql.Int, memberId).input('programId', sql.Int, programId).input('routineId', sql.Int, routineId).input('notes', sql.NVarChar(1000), text(body.notes, 'ملاحظات الجلسة', 1000)).query('INSERT INTO dbo.workout_sessions (member_id, program_id, routine_id, notes) OUTPUT INSERTED.id VALUES (@memberId,@programId,@routineId,@notes);');
@@ -1124,6 +1199,7 @@ async function startWorkoutSession(body = {}) {
 }
 
 async function getWorkoutSession(id) {
+    await ensureCoachingTables();
     const pool = await getPool();
     const result = await pool.request().input('id', sql.Int, ensureId(id, 'معرّف الجلسة')).query('SELECT * FROM dbo.workout_sessions WHERE id=@id;');
     const row = result.recordset[0];
@@ -1142,7 +1218,11 @@ async function addWorkoutSet(sessionId, body = {}) {
     if (!session.recordset[0]) throw appError('جلسة التمرين غير موجودة.', 404);
     if (session.recordset[0].status !== 'started') throw appError('جلسة التمرين مغلقة بالفعل.');
     if (workoutExerciseId) {
-        const exercise = await pool.request().input('id', sql.Int, workoutExerciseId).query('SELECT id FROM dbo.workout_exercises WHERE id=@id;');
+        const exercise = await pool.request().input('id', sql.Int, workoutExerciseId).input('sessionId', sql.Int, id).query(`SELECT we.id
+            FROM dbo.workout_exercises AS we
+            INNER JOIN dbo.workout_routines AS r ON r.id = we.routine_id
+            INNER JOIN dbo.workout_sessions AS s ON s.id = @sessionId
+            WHERE we.id=@id AND (s.program_id IS NULL OR r.program_id=s.program_id);`);
         if (!exercise.recordset[0]) throw appError('تمرين البرنامج غير موجود.');
     }
     const result = await pool.request().input('sessionId', sql.Int, id).input('workoutExerciseId', sql.Int, workoutExerciseId).input('setNumber', sql.Int, setNumber).input('weightKg', sql.Decimal(10, 2), numberValue(body.weightKg, 'الوزن', { min: 0, max: 10000 })).input('reps', sql.Int, numberValue(body.reps, 'التكرارات', { min: 0, max: 1000, integer: true })).input('notes', sql.NVarChar(500), text(body.notes, 'ملاحظات المجموعة', 500)).query('INSERT INTO dbo.workout_set_logs (session_id, workout_exercise_id, set_number, weight_kg, reps, notes) OUTPUT INSERTED.id VALUES (@sessionId,@workoutExerciseId,@setNumber,@weightKg,@reps,@notes);');
@@ -1192,10 +1272,13 @@ module.exports = {
     getDietPlan,
     getDietPlans,
     getExternalTrainees,
+    getMealLogs,
     getMeasurements,
     getTrainingOverview,
     getWorkoutProgram,
     getWorkoutPrograms,
+    getWorkoutSession,
+    getWorkoutSessions,
     startWorkoutSession,
     setDietPlanStatus,
     setWorkoutProgramStatus,

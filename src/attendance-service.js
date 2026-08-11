@@ -1,5 +1,5 @@
 const { getPool, sql } = require('./db');
-const { formatDateOnly, parseDateOnly, todayInTimeZone, toUtcDate } = require('./date-utils');
+const { addDays, differenceInDays, formatDateOnly, parseDateOnly, todayInTimeZone, toUtcDate } = require('./date-utils');
 
 const ATTENDANCE_SOURCES = new Set(['phone', 'qr', 'manual']);
 const DEFAULT_AUTO_CHECKOUT_MINUTES = 60;
@@ -368,10 +368,122 @@ async function getMemberAttendance(memberId, options = {}) {
     return { from, to, records: result.recordset.map(mapAttendance) };
 }
 
+async function getAttendanceReport(options = {}) {
+    await ensureAttendanceTable();
+    const pool = await getPool();
+    await reconcileAutoCheckout(pool);
+    const today = todayInTimeZone();
+    const from = parseDateOnly(options.from || addDays(today, -29), 'تاريخ البداية');
+    const to = parseDateOnly(options.to || today, 'تاريخ النهاية');
+    if (from > to) throw appError('تاريخ البداية يجب أن يكون قبل تاريخ النهاية.');
+    if (differenceInDays(from, to) > 366) throw appError('أقصى فترة لتقرير الحضور هي 366 يومًا.');
+
+    const baseRequest = () => pool.request()
+        .input('fromDate', sql.Date, toUtcDate(from))
+        .input('toDate', sql.Date, toUtcDate(to));
+    const [recordsResult, absentResult] = await Promise.all([
+        baseRequest().query(`
+            SELECT a.id, a.member_id, a.membership_id, a.attendance_date,
+                   a.check_in_at, a.check_out_at, a.check_in_source, a.check_out_source,
+                   a.notes, m.full_name, m.phone,
+                   ms.membership_plan, ms.membership_type
+            FROM dbo.gym_attendance AS a
+            INNER JOIN dbo.members AS m ON m.id = a.member_id
+            OUTER APPLY (
+                SELECT TOP 1 x.membership_plan, x.membership_type
+                FROM dbo.memberships AS x WHERE x.id = a.membership_id
+            ) AS ms
+            WHERE a.attendance_date BETWEEN @fromDate AND @toDate
+            ORDER BY a.attendance_date DESC, a.check_in_at DESC, a.id DESC;
+        `),
+        baseRequest().query(`
+            WITH ranked_memberships AS (
+                SELECT ms.id, ms.member_id, ms.start_date, ms.end_date,
+                       ROW_NUMBER() OVER (PARTITION BY ms.member_id ORDER BY ms.end_date DESC, ms.id DESC) AS membership_rank
+                FROM dbo.memberships AS ms
+                WHERE ms.start_date <= @toDate AND ms.end_date >= @fromDate
+            )
+            SELECT m.id AS member_id, m.full_name, m.phone, r.end_date
+            FROM dbo.members AS m
+            INNER JOIN ranked_memberships AS r ON r.member_id = m.id AND r.membership_rank = 1
+            WHERE NOT EXISTS (
+                SELECT 1 FROM dbo.gym_attendance AS a
+                WHERE a.member_id = m.id AND a.attendance_date BETWEEN @fromDate AND @toDate
+            )
+              AND NOT EXISTS (
+                SELECT 1 FROM dbo.membership_freezes AS f
+                WHERE f.membership_id = r.id
+                  AND f.resumed_date IS NULL
+                  AND @toDate BETWEEN f.start_date AND f.end_date
+            )
+            ORDER BY m.full_name ASC;
+        `)
+    ]);
+
+    const records = recordsResult.recordset.map(mapAttendance);
+    const dailyMap = new Map();
+    const memberMap = new Map();
+    records.forEach((record) => {
+        const day = record.attendanceDate;
+        const daily = dailyMap.get(day) || { date: day, visits: 0, uniqueMembers: new Set(), checkedOut: 0 };
+        daily.visits += 1;
+        daily.uniqueMembers.add(record.memberId);
+        if (record.checkOutAt) daily.checkedOut += 1;
+        dailyMap.set(day, daily);
+
+        const member = memberMap.get(record.memberId) || {
+            memberId: record.memberId,
+            fullName: record.memberName,
+            phone: record.phone,
+            visits: 0,
+            checkedOut: 0,
+            totalMinutes: 0,
+            lastVisitDate: record.attendanceDate
+        };
+        member.visits += 1;
+        if (record.checkOutAt) member.checkedOut += 1;
+        member.totalMinutes += Number(record.durationMinutes || 0);
+        if (record.attendanceDate > member.lastVisitDate) member.lastVisitDate = record.attendanceDate;
+        memberMap.set(record.memberId, member);
+    });
+
+    const members = [...memberMap.values()]
+        .map((member) => ({ ...member, averageMinutes: member.checkedOut ? Math.round(member.totalMinutes / member.checkedOut) : null }))
+        .sort((first, second) => second.visits - first.visits || first.fullName.localeCompare(second.fullName));
+    const daily = [...dailyMap.values()]
+        .map((item) => ({ ...item, uniqueMembers: item.uniqueMembers.size }))
+        .sort((first, second) => second.date.localeCompare(first.date));
+    const totalMinutes = records.reduce((sum, record) => sum + Number(record.durationMinutes || 0), 0);
+    return {
+        from,
+        to,
+        autoCheckoutMinutes: getAutoCheckoutMinutes(),
+        summary: {
+            totalVisits: records.length,
+            uniqueMembers: memberMap.size,
+            checkedIn: records.filter((record) => !record.checkOutAt).length,
+            checkedOut: records.filter((record) => Boolean(record.checkOutAt)).length,
+            averageMinutes: records.filter((record) => record.durationMinutes != null).length
+                ? Math.round(totalMinutes / records.filter((record) => record.durationMinutes != null).length)
+                : null,
+            absentMembers: absentResult.recordset.length
+        },
+        daily,
+        members,
+        absentMembers: absentResult.recordset.map((row) => ({
+            memberId: Number(row.member_id),
+            fullName: row.full_name,
+            phone: row.phone,
+            membershipEndDate: formatDateOnly(row.end_date)
+        }))
+    };
+}
+
 module.exports = {
     checkIn,
     checkOut,
     ensureAttendanceTable,
+    getAttendanceReport,
     getAutoCheckoutMinutes,
     getMemberAttendanceStatuses,
     getMemberAttendance,

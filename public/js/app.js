@@ -220,7 +220,24 @@
 
         function renderDashboard() {
              const dashboard = state.dashboard || { stats: {}, alerts: [] }; $('statTotal').textContent = dashboard.stats.total || 0; $('statActive').textContent = dashboard.stats.active || 0; $('statExpiring').textContent = dashboard.stats.expiringSoon || 0; $('statExpired').textContent = dashboard.stats.expired || 0; $('statFrozen').textContent = dashboard.stats.frozen || 0;
-            const alerts = dashboard.alerts || []; $('alertsList').innerHTML = alerts.length ? alerts.map((member) => { const sub = member.membership; const detail = sub.status === 'frozen' ? `حتى ${formatDate(sub.freezeEnd)}` : sub.status === 'expired' ? `انتهت في ${formatDate(sub.endDate)}` : `تنتهي في ${formatDate(sub.effectiveEndDate)}`; return `<article class="alert-card ${sub.status}"><strong>${escapeHtml(member.fullName)}</strong><span>${STATUS_LABELS[sub.status]} · ${escapeHtml(detail)}</span><span>${escapeHtml(member.phone)}</span></article>`; }).join('') : '<div class="empty">لا توجد تنبيهات اليوم.</div>'; const headerAlertCount = $('headerAlertCount'); if (headerAlertCount) headerAlertCount.textContent = alerts.length.toLocaleString('ar-EG');
+            const alerts = dashboard.alerts || [];
+            $('alertsList').innerHTML = alerts.length ? alerts.map((member) => {
+                const sub = member.membership || {};
+                const kind = member.alertKind || 'membership';
+                const status = sub.status || 'active';
+                const detail = kind === 'debt'
+                    ? `متبقي على الحساب ${money(sub.amountRemaining)}`
+                    : kind === 'inactive'
+                        ? (member.daysSinceLastVisit == null ? 'لم يسجل حضورًا من قبل' : `آخر حضور منذ ${member.daysSinceLastVisit} يومًا`)
+                        : status === 'frozen'
+                            ? `حتى ${formatDate(sub.freezeEnd)}`
+                            : status === 'expired'
+                                ? `انتهت في ${formatDate(sub.endDate)}`
+                                : `تنتهي في ${formatDate(sub.effectiveEndDate)}`;
+                const label = kind === 'debt' ? 'عليه مستحقات' : kind === 'inactive' ? 'غياب طويل' : (STATUS_LABELS[status] || status);
+                return `<article class="alert-card ${status}" data-alert-kind="${kind}" data-member-id="${member.id}" data-alert-name="${escapeHtml(member.fullName)}" data-alert-phone="${escapeHtml(member.phone)}" data-alert-status="${escapeHtml(status)}" data-alert-end="${escapeHtml(sub.effectiveEndDate || sub.endDate || '')}" data-alert-freeze-end="${escapeHtml(sub.freezeEnd || '')}" data-alert-remaining="${escapeHtml(sub.amountRemaining ?? '')}" data-alert-days="${escapeHtml(member.daysSinceLastVisit ?? '')}"><strong>${escapeHtml(member.fullName)}</strong><span>${escapeHtml(label)} · ${escapeHtml(detail)}</span><span>${escapeHtml(member.phone)}</span></article>`;
+            }).join('') : '<div class="empty">لا توجد تنبيهات اليوم.</div>';
+            const headerAlertCount = $('headerAlertCount'); if (headerAlertCount) headerAlertCount.textContent = alerts.length.toLocaleString('ar-EG');
         }
         function decorateMemberQuickActions() {
             const list = $('membersList');

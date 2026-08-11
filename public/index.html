@@ -14,10 +14,10 @@
     <link rel="stylesheet" href="/tailwind.css">
     <link rel="stylesheet" href="/css/dashboard.css?v=43">
     <link rel="stylesheet" href="/css/operations.css?v=1">
-    <link rel="stylesheet" href="/css/attendance.css?v=4">
+    <link rel="stylesheet" href="/css/attendance.css?v=5">
     <link rel="stylesheet" href="/css/library.css?v=6">
-    <link rel="stylesheet" href="/css/coaching.css?v=5">
-    <link rel="stylesheet" href="/css/dark-theme.css?v=2">
+    <link rel="stylesheet" href="/css/coaching.css?v=6">
+    <link rel="stylesheet" href="/css/dark-theme.css?v=3">
 </head>
 <body class="font-sans bg-slate-100 text-slate-900 gym-page-bg">
     <div class="app-shell">
@@ -96,6 +96,10 @@
                     <button class="management-shortcut" type="button" data-open-dialog-button="pricingButton"><span class="management-shortcut-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 9h10M7 13h5"/></svg></span><span><strong>أسعار الباقات</strong><small>تعديل أسعار الجيم والكارديو.</small></span><svg class="management-shortcut-arrow ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></button>
                     <button class="management-shortcut" type="button" data-open-dialog-button="membershipTypesButton"><span class="management-shortcut-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span><span><strong>أنواع العضويات</strong><small>إدارة المدد ومعاملات الأسعار.</small></span><svg class="management-shortcut-arrow ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></button>
                 </div>
+                <section class="backup-management-panel" aria-labelledby="backupManagementTitle">
+                    <div><span class="management-eyebrow">حماية البيانات</span><h4 id="backupManagementTitle">النسخ الاحتياطية والاسترجاع</h4><p>تحقق من ملف النسخة أولًا، ثم استرجعه داخل Transaction واحدة مع الاحتفاظ بسجل العمليات.</p></div>
+                    <div class="backup-management-actions"><button class="btn btn-primary" id="restoreBackupButton" type="button">استرجاع نسخة احتياطية</button><button class="btn btn-light" id="backupHistoryButton" type="button">سجل النسخ</button></div>
+                </section>
             </section>
 
             <section class="library-section panel" id="librarySection" hidden aria-labelledby="libraryTitle">
@@ -129,6 +133,7 @@
                     </div>
                     <span class="attendance-date-badge"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg><span id="attendanceDateLabel">اليوم</span></span>
                 </div>
+                <div class="attendance-mode-actions"><button class="btn btn-light btn-small" id="attendanceKioskButton" type="button">وضع Kiosk</button><button class="btn btn-light btn-small" id="attendanceReportButton" type="button">تقرير الحضور والغياب</button></div>
                 <div class="attendance-control-panel">
                     <div class="attendance-entry-card">
                         <div class="attendance-entry-head"><div><h4>تسجيل سريع</h4><p>اكتب رقم الهاتف، أو استخدم الكاميرا لمسح QR Code.</p></div><button class="btn btn-light btn-small" id="attendanceScanButton" type="button">مسح QR Code</button></div>
@@ -142,6 +147,7 @@
                 </div>
                 <div class="attendance-list-head"><div><h4>سجل اليوم</h4><p id="attendanceListMeta">جاري تحميل سجل الحضور…</p></div><div class="attendance-list-actions"><input class="attendance-search" id="attendanceSearch" placeholder="بحث بالاسم أو الهاتف" aria-label="بحث في الحضور"><button class="btn btn-light btn-small" id="attendanceRefreshButton" type="button">تحديث</button></div></div>
                 <div class="attendance-table-wrap" id="attendanceTableWrap"><div class="loading">جاري تحميل سجل الحضور…</div></div>
+                <section class="attendance-report-panel" id="attendanceReportPanel" hidden aria-labelledby="attendanceReportTitle"></section>
             </section>
 
             <section class="workspace">
@@ -332,27 +338,35 @@
             <div class="dialog-actions builder-dialog-actions"><button class="btn btn-light" id="coachingBuilderCancel" type="button">إلغاء</button><button class="btn btn-light" id="coachingBuilderBack" type="button" hidden>السابق</button><button class="btn btn-light" id="coachingBuilderPreview" type="button" hidden>مراجعة</button><button class="btn btn-light" id="coachingBuilderPrint" type="button" hidden>طباعة</button><button class="btn btn-primary" id="coachingBuilderNext" type="button">التالي</button><button class="btn btn-primary" id="coachingBuilderSave" type="submit" hidden>حفظ النظام</button></div>
         </form>
     </dialog>
+    <dialog id="backupRestoreDialog" class="backup-restore-dialog rounded-lg border-slate-200 shadow-lift">
+        <form class="dialog-body" id="backupRestoreForm">
+            <div class="details-dialog-head"><div><h3>استرجاع نسخة احتياطية</h3><p>اختر ملف TOP GYM المضغوط. سيتم فحصه أولًا ولن يبدأ الاسترجاع إلا بعد تأكيدك.</p></div><button class="btn btn-light btn-small" id="backupRestoreClose" type="button">إغلاق</button></div>
+            <label class="backup-file-field" for="backupFileInput"><span>ملف النسخة الاحتياطية (.json.gz)</span><input id="backupFileInput" type="file" accept=".gz,application/gzip,application/x-gzip" required></label>
+            <div class="backup-validation-box" id="backupValidationBox" hidden></div>
+            <div class="dialog-actions"><button class="btn btn-light" id="backupRestoreCancel" type="button">إلغاء</button><button class="btn btn-primary" id="backupRestoreSubmit" type="submit" disabled>استرجاع بعد التحقق</button></div>
+        </form>
+    </dialog>
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-    <script src="/js/app.js?v=coaching-actions2"></script>
+    <script src="/js/app.js?v=feature-expansion1"></script>
     <script src="/js/monthly-finance.js?v=10"></script>
     <script src="/js/page-tabs.js?v=4"></script>
     <script src="/js/dashboard-analytics.js?v=4"></script>
     <script src="/js/reports.js?v=2"></script>
     <script src="/js/button-loading.js"></script>
-    <script src="/js/backup-enhancements.js?v=1"></script>
+    <script src="/js/backup-enhancements.js?v=3"></script>
     <script src="/js/pagination.js"></script>
-    <script src="/js/whatsapp-enhancements.js?v=10"></script>
+    <script src="/js/whatsapp-enhancements.js?v=11"></script>
     <script src="/js/print-enhancements.js?v=4"></script>
     <script src="/js/action-menu.js?v=3"></script>
     <script src="/js/design-enhancements.js?v=2"></script>
     <script src="/js/details-enhancements.js"></script>
-    <script src="/js/alerts-enhancements.js"></script>
-    <script src="/js/attendance.js?v=6"></script>
-    <script src="/js/library.js?v=6"></script>
-    <script src="/js/coaching.js?v=5"></script>
+    <script src="/js/alerts-enhancements.js?v=2"></script>
+    <script src="/js/attendance.js?v=7"></script>
+    <script src="/js/library.js?v=7"></script>
+    <script src="/js/coaching.js?v=6"></script>
 </body>
 </html>

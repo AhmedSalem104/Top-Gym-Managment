@@ -869,6 +869,68 @@ body.gym-page-bg {
     }
 }
 
+/* Operational additions: backup, attendance reporting and coaching execution. */
+.dark-theme .attendance-mode-actions,
+.dark-theme .attendance-report-panel,
+.dark-theme .profile-progress-card,
+.dark-theme .backup-management-panel,
+.dark-theme .backup-validation-box { color: var(--theme-text); border-color: var(--theme-line); background: rgba(15, 23, 42, .66); }
+.app-shell .attendance-mode-actions { color: var(--theme-text); }
+.app-shell .attendance-report-panel { color: var(--theme-text); border-color: var(--theme-line); background: rgba(15, 23, 42, .66); }
+.app-shell .attendance-report-head h4,
+.app-shell .backup-management-panel h4,
+.app-shell .execution-session-head strong { color: var(--theme-text); }
+.app-shell .attendance-report-panel input,
+.app-shell .backup-file-field input { color: var(--theme-text); border-color: var(--theme-line); background: rgba(30, 41, 59, .78); }
+.app-shell .attendance-report-kpis > div,
+.app-shell .backup-count-table th,
+.app-shell .backup-history-table th,
+.app-shell .execution-set-row { color: var(--theme-text); border-color: var(--theme-line); background: rgba(30, 41, 59, .68); }
+.app-shell .attendance-report-kpis span,
+.app-shell .attendance-report-empty,
+.app-shell .backup-management-panel p,
+.app-shell .backup-validation-success span,
+.app-shell .backup-validation-success small { color: var(--theme-text-soft); }
+.app-shell .attendance-report-table th,
+.app-shell .attendance-report-table td,
+.app-shell .backup-count-table th,
+.app-shell .backup-count-table td,
+.app-shell .backup-history-table th,
+.app-shell .backup-history-table td { border-color: var(--theme-line); background: transparent; color: var(--theme-text-soft); }
+.app-shell .attendance-report-table th,
+.app-shell .backup-count-table th,
+.app-shell .backup-history-table th { color: var(--theme-text); background: rgba(51, 65, 85, .62); }
+.app-shell .attendance-report-daily h5,
+.app-shell .attendance-report-grid h5 { color: var(--theme-text); }
+.app-shell .profile-progress-card,
+.app-shell .profile-system-card { border-color: var(--theme-line); background: rgba(30, 41, 59, .62); }
+.app-shell .profile-chart-bars { border-color: var(--theme-line); }.app-shell .profile-chart-bar small { color: var(--theme-muted); }.app-shell .profile-progress-meters > div { color: var(--theme-text-soft); }.app-shell .profile-inline-progress,.app-shell .profile-progress-meters i { background: rgba(71, 85, 105, .55); }
+.app-shell .execution-session-head { border-color: rgba(96, 165, 250, .3); background: rgba(30, 64, 175, .24); }.app-shell .execution-session-head span { color: #6ee7b7; }
+.app-shell .backup-validation-error { color: #fca5a5; }.app-shell .backup-validation-loading { color: #93c5fd; }
+.app-shell .backup-history-table small { color: var(--theme-muted); }
+.app-shell .backup-management-panel .management-eyebrow { color: #93c5fd; }
+.app-shell .alert-whatsapp-button { color: #86efac; border-color: rgba(34, 197, 94, .32); background: rgba(22, 101, 52, .24); }
+.app-shell .alert-whatsapp-button:hover { color: #dcfce7; background: rgba(22, 101, 52, .42); }
+.app-shell .alert-whatsapp-button {
+    display: inline-flex;
+    min-height: 28px;
+    align-items: center;
+    justify-content: center;
+    margin-top: 7px;
+    padding: 5px 9px;
+    border: 1px solid rgba(34, 197, 94, .32);
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 10px;
+    font-weight: 800;
+    cursor: pointer;
+}
+
+@media (max-width: 640px) {
+    .app-shell .attendance-report-panel { margin-inline: 14px; }
+    .app-shell .backup-management-actions .btn { min-height: 40px; }
+}
+
 /* Premium refinement: consistent rhythm, hierarchy, and denser use of space. */
 .app-shell .page {
     max-width: 1380px !important;

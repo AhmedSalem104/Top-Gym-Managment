@@ -3,11 +3,17 @@ require('dotenv').config();
 const express = require('express');
 const path = require('node:path');
 const { getPool, initDatabase } = require('./src/db');
-const { createBackup } = require('./src/backup-service');
+const {
+    createBackup,
+    getBackupHistory,
+    inspectBackupBuffer,
+    recordBackupOperation,
+    restoreBackup
+} = require('./src/backup-service');
 const { createExpense, deleteExpense, getMonthlyFinance, updateExpense } = require('./src/finance-service');
 const { getDashboardAnalytics } = require('./src/analytics-service');
 const { getReportData } = require('./src/report-service');
-const { checkIn, checkOut, getMemberAttendance, getTodayAttendance } = require('./src/attendance-service');
+const { checkIn, checkOut, getAttendanceReport, getMemberAttendance, getTodayAttendance } = require('./src/attendance-service');
 const {
     createLibraryItem,
     deleteLibraryItem,
@@ -54,10 +60,13 @@ const {
     getDietPlan,
     getDietPlans,
     getExternalTrainees,
+    getMealLogs,
     getMeasurements,
     getTrainingOverview,
     getWorkoutProgram,
     getWorkoutPrograms,
+    getWorkoutSession,
+    getWorkoutSessions,
     setDietPlanStatus,
     setWorkoutProgramStatus,
     startWorkoutSession,
@@ -72,7 +81,45 @@ const publicDirectory = path.join(__dirname, 'public');
 
 app.disable('x-powered-by');
 app.use(express.json({ limit: '1mb' }));
+
+// Baseline browser protections. Camera access remains available for the QR scanner.
+app.use((request, response, next) => {
+    response.set({
+        'X-Content-Type-Options': 'nosniff',
+        'X-Frame-Options': 'SAMEORIGIN',
+        'Referrer-Policy': 'strict-origin-when-cross-origin',
+        'Permissions-Policy': 'camera=(self), microphone=()'
+    });
+    next();
+});
+
 app.use(express.static(publicDirectory));
+
+const sensitiveWindow = new Map();
+let sensitiveWindowLastCleanup = 0;
+function sensitiveRateLimit(request, response, next) {
+    if (request.method === 'GET' || request.method === 'HEAD' || request.method === 'OPTIONS') return next();
+    const now = Date.now();
+    if (now - sensitiveWindowLastCleanup > 300_000) {
+        for (const [entryKey, entry] of sensitiveWindow) {
+            if (now - entry.startedAt >= 60_000) sensitiveWindow.delete(entryKey);
+        }
+        sensitiveWindowLastCleanup = now;
+    }
+    const key = request.ip || request.socket.remoteAddress || 'unknown';
+    const current = sensitiveWindow.get(key);
+    if (!current || now - current.startedAt >= 60_000) {
+        sensitiveWindow.set(key, { startedAt: now, count: 1 });
+        return next();
+    }
+    current.count += 1;
+    if (current.count > 120) {
+        response.set('Retry-After', '60');
+        return response.status(429).json({ error: 'تم تجاوز عدد العمليات المسموح به مؤقتًا. حاول بعد دقيقة.' });
+    }
+    return next();
+}
+app.use('/api', sensitiveRateLimit);
 
 function asyncRoute(handler) {
     return (request, response, next) => Promise.resolve(handler(request, response, next)).catch(next);
@@ -162,6 +209,13 @@ app.get('/api/health', asyncRoute(async (request, response) => {
 
 app.get('/api/backup/download', asyncRoute(async (request, response) => {
     const backup = await createBackup();
+    await recordBackupOperation({
+        operationType: 'download',
+        fileName: backup.filename,
+        sourceGeneratedAt: backup.generatedAt,
+        tableCounts: backup.rowCounts,
+        details: 'تم إنشاء نسخة لحظية وتنزيلها على جهاز المستخدم.'
+    }).catch((error) => console.warn('Unable to record backup download:', error.message));
     response.set({
         'Cache-Control': 'no-store, no-cache, must-revalidate, private',
         'Content-Type': 'application/gzip',
@@ -170,6 +224,55 @@ app.get('/api/backup/download', asyncRoute(async (request, response) => {
         'X-Content-Type-Options': 'nosniff'
     });
     response.send(backup.buffer);
+}));
+
+const backupUploadBody = express.raw({
+    type: ['application/gzip', 'application/x-gzip', 'application/octet-stream'],
+    limit: '25mb'
+});
+
+app.get('/api/backup/history', asyncRoute(async (request, response) => {
+    response.json({ operations: await getBackupHistory(request.query.limit) });
+}));
+
+app.post('/api/backup/inspect', backupUploadBody, asyncRoute(async (request, response) => {
+    const fileName = String(request.get('X-BACKUP-FILENAME') || 'uploaded-backup.json.gz').slice(0, 260);
+    try {
+        const inspected = await inspectBackupBuffer(request.body);
+        await recordBackupOperation({
+            operationType: 'inspect',
+            fileName,
+            sourceGeneratedAt: inspected.generatedAt,
+            tableCounts: inspected.tableCounts,
+            details: 'تم التحقق من ضغط النسخة وبنيتها قبل الاسترجاع.'
+        }).catch((error) => console.warn('Unable to record backup inspection:', error.message));
+        return response.json({
+            valid: true,
+            generatedAt: inspected.generatedAt,
+            timeZone: inspected.timeZone,
+            compressedBytes: inspected.compressedBytes,
+            jsonBytes: inspected.jsonBytes,
+            rowCount: inspected.rowCount,
+            tableCounts: inspected.tableCounts
+        });
+    } catch (error) {
+        await recordBackupOperation({ operationType: 'inspect', fileName, status: 'failed', details: error.message }).catch((recordError) => console.warn('Unable to record failed backup inspection:', recordError.message));
+        throw error;
+    }
+}));
+
+app.post('/api/backup/restore', backupUploadBody, asyncRoute(async (request, response) => {
+    if (String(request.get('X-TOP-GYM-RESTORE-CONFIRM') || '').toUpperCase() !== 'RESTORE') {
+        return response.status(400).json({ error: 'يجب تأكيد عملية الاسترجاع من شاشة الإدارة.' });
+    }
+    const fileName = String(request.get('X-BACKUP-FILENAME') || 'uploaded-backup.json.gz').slice(0, 260);
+    try {
+        const result = await restoreBackup(request.body, { fileName });
+        return response.json({ restored: true, ...result });
+    } catch (error) {
+        await recordBackupOperation({ operationType: 'restore', fileName, status: 'failed', details: error.message }).catch((recordError) => console.warn('Unable to record failed backup restore:', recordError.message));
+        throw error;
+    }
 }));
 
 app.get('/api/monthly-finance', asyncRoute(async (request, response) => {
@@ -200,10 +303,12 @@ app.get('/api/dashboard-analytics', asyncRoute(async (request, response) => {
 }));
 
 app.get('/api/library/options', asyncRoute(async (request, response) => {
+    response.set('Cache-Control', 'private, max-age=20, stale-while-revalidate=60');
     response.json(await getLibraryOptions());
 }));
 
 app.get('/api/library/:type', asyncRoute(async (request, response) => {
+    response.set('Cache-Control', 'private, max-age=20, stale-while-revalidate=60');
     response.json(await getLibraryCollection(request.params.type, request.query));
 }));
 
@@ -230,6 +335,10 @@ app.get('/api/reports', asyncRoute(async (request, response) => {
 
 app.get('/api/attendance', asyncRoute(async (request, response) => {
     response.json(await getTodayAttendance({ date: request.query.date, search: request.query.search }));
+}));
+
+app.get('/api/attendance/report', asyncRoute(async (request, response) => {
+    response.json(await getAttendanceReport(request.query));
 }));
 
 app.get('/api/attendance/member/:id', asyncRoute(async (request, response) => {
@@ -376,6 +485,14 @@ app.post('/api/workoutsessions/start', asyncRoute(async (request, response) => {
     response.status(201).json({ session: await startWorkoutSession(request.body) });
 }));
 
+app.get('/api/workoutsessions', asyncRoute(async (request, response) => {
+    response.json({ sessions: await getWorkoutSessions(request.query.memberId || request.query.clientId, request.query) });
+}));
+
+app.get('/api/workoutsessions/:id', asyncRoute(async (request, response) => {
+    response.json({ session: await getWorkoutSession(request.params.id) });
+}));
+
 app.post('/api/workoutsessions/:id/sets', asyncRoute(async (request, response) => {
     response.status(201).json({ set: await addWorkoutSet(request.params.id, request.body) });
 }));
@@ -386,6 +503,10 @@ app.post('/api/workoutsessions/:id/end', asyncRoute(async (request, response) =>
 
 app.post('/api/meal-logs', asyncRoute(async (request, response) => {
     response.status(201).json({ mealLog: await createMealLog(request.body) });
+}));
+
+app.get('/api/meal-logs', asyncRoute(async (request, response) => {
+    response.json({ mealLogs: await getMealLogs(request.query.memberId || request.query.clientId, request.query) });
 }));
 
 app.get('/api/members', asyncRoute(async (request, response) => {

@@ -178,7 +178,8 @@
             return;
         }
         try {
-            state.options = await requestJson('/api/library/options');
+            const suffix = force ? `?refresh=${Date.now()}` : '';
+            state.options = await requestJson(`/api/library/options${suffix}`);
             renderSummary();
             renderFilters();
         } catch (error) {
@@ -186,13 +187,14 @@
         }
     }
 
-    async function loadCollection() {
+    async function loadCollection(force = false) {
         if (!state.opened) return;
         if (state.abortController) state.abortController.abort();
         state.abortController = new AbortController();
         const requestId = ++state.requestId;
         const filters = state.filters[state.activeType];
         const params = new URLSearchParams({ page: String(state.page), pageSize: String(state.pageSize), search: state.search });
+        if (force) params.set('refresh', String(Date.now()));
         Object.entries(filters).forEach(([key, value]) => { if (value) params.set(key, value); });
         const list = $('libraryList');
         if (list) list.innerHTML = '<div class="loading">جاري تحميل بيانات المكتبة...</div>';
@@ -337,7 +339,7 @@
             showMessage(`تم حذف ${META[state.activeType].singular} بنجاح.`);
             await loadOptions(true);
             if (state.page > 1 && state.items.length === 1) state.page -= 1;
-            await loadCollection();
+            await loadCollection(true);
         } catch (error) {
             showMessage(error.message, 'error');
         }
@@ -356,7 +358,7 @@
             closeDialog($('libraryFormDialog'));
             showMessage(id ? 'تم حفظ التعديلات بنجاح.' : `تمت إضافة ${META[type].singular} بنجاح.`);
             await loadOptions(true);
-            await loadCollection();
+            await loadCollection(true);
         } catch (error) {
             showMessage(error.message, 'error');
         } finally {
@@ -400,7 +402,7 @@
     document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('[data-library-type]').forEach((button) => button.addEventListener('click', () => changeType(button.dataset.libraryType)));
         $('libraryAddButton')?.addEventListener('click', () => openForm());
-        $('libraryRefreshButton')?.addEventListener('click', () => { loadOptions(true); loadCollection(); });
+    $('libraryRefreshButton')?.addEventListener('click', () => { loadOptions(true); loadCollection(true); });
         $('libraryList')?.addEventListener('click', handleListClick);
         $('libraryPagination')?.addEventListener('click', (event) => {
             const button = event.target.closest('[data-library-page]');

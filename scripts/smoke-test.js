@@ -1,6 +1,7 @@
 require('dotenv').config();
 
 const assert = require('node:assert/strict');
+const { gzipSync } = require('node:zlib');
 const app = require('../server');
 const { closePool, getPool, initDatabase, sql } = require('../src/db');
 const { reconcileAutoCheckout } = require('../src/attendance-service');
@@ -34,7 +35,32 @@ async function call(baseUrl, path, options = {}) {
         assert.equal(backupResponse.status, 200);
         assert.equal(backupResponse.headers.get('content-type'), 'application/gzip');
         assert.match(backupResponse.headers.get('content-disposition') || '', /backup_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}\.json\.gz/);
-        assert.ok((await backupResponse.arrayBuffer()).byteLength > 20);
+        const backupBuffer = Buffer.from(await backupResponse.arrayBuffer());
+        assert.ok(backupBuffer.byteLength > 20);
+        const backupInspectResponse = await fetch(`${baseUrl}/api/backup/inspect`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/gzip', 'X-Backup-Filename': 'smoke-backup.json.gz' },
+            body: backupBuffer
+        });
+        const backupInspection = await backupInspectResponse.json();
+        assert.equal(backupInspectResponse.status, 200);
+        assert.equal(backupInspection.valid, true);
+        assert.ok(Number(backupInspection.rowCount) >= 0);
+        const backupHistory = await call(baseUrl, '/api/backup/history?limit=5');
+        assert.ok(backupHistory.operations.some((item) => item.operationType === 'download'));
+        assert.ok(backupHistory.operations.some((item) => item.operationType === 'inspect'));
+        const invalidBackupResponse = await fetch(`${baseUrl}/api/backup/inspect`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/gzip' },
+            body: gzipSync(Buffer.from(JSON.stringify({ format: 'invalid', version: 1, tables: {} })))
+        });
+        assert.equal(invalidBackupResponse.status, 400);
+        const unconfirmedRestoreResponse = await fetch(`${baseUrl}/api/backup/restore`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/gzip' },
+            body: backupBuffer
+        });
+        assert.equal(unconfirmedRestoreResponse.status, 400);
         const bootstrap = await call(baseUrl, '/api/bootstrap');
         assert.ok(Array.isArray(bootstrap.members));
         assert.ok(bootstrap.dashboard && bootstrap.dashboard.stats);
@@ -139,6 +165,10 @@ async function call(baseUrl, path, options = {}) {
         assert.equal(created.member.membership.freezeCount, 0);
         assert.equal(created.member.membership.freezeLimit, 3);
         assert.equal(created.member.membership.freezesRemaining, 3);
+        const trainingOverview = await call(baseUrl, `/api/clients/${memberId}/training-overview`);
+        assert.equal(trainingOverview.member.id, memberId);
+        assert.ok(Array.isArray(trainingOverview.workoutSessions));
+        assert.ok(Array.isArray(trainingOverview.mealLogs));
         const duplicateResponse = await fetch(`${baseUrl}/api/members`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -250,6 +280,9 @@ async function call(baseUrl, path, options = {}) {
         assert.ok(checkedOut.attendance.checkOutAt);
         const memberAttendance = await call(baseUrl, `/api/attendance/member/${memberId}`);
         assert.ok(memberAttendance.records.some((item) => item.id === checkedOut.attendance.id));
+        const attendanceReport = await call(baseUrl, '/api/attendance/report');
+        assert.ok(attendanceReport.summary && Number.isInteger(attendanceReport.summary.totalVisits));
+        assert.ok(Array.isArray(attendanceReport.members));
         const previousAutoCheckoutMinutes = process.env.ATTENDANCE_AUTO_CHECKOUT_MINUTES;
         const smokePool = await getPool();
         try {
