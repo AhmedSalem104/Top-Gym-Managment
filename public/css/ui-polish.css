@@ -1,7 +1,7 @@
 /*
- * TOP GYM UI polish layer
- * Loaded last so every screen shares the same rhythm, focus states and
- * responsive behavior without changing the application's data flow.
+ * TOP GYM CENTRAL DESIGN SYSTEM
+ * Loaded last so every screen reuses the same component primitives, rhythm,
+ * focus states and responsive behavior without changing the data flow.
  */
 :root {
     --ui-radius-xs: 8px;
@@ -234,3 +234,277 @@ body.gym-page-bg {
     html { scroll-behavior: auto; }
     *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }
+
+/* ========================================================================
+   Central component system
+   Use the existing semantic classes (.btn, .btn-primary, .btn-small,
+   .ui-icon, .badge, .builder-search-*) everywhere. Page styles may add
+   meaning, but must not redefine the shared component geometry.
+   ======================================================================== */
+:root {
+    --ds-control-height: 40px;
+    --ds-control-height-sm: 34px;
+    --ds-icon-size: 18px;
+    --ds-icon-size-sm: 16px;
+    --ds-icon-size-lg: 22px;
+    --ds-control-radius: 10px;
+    --ds-pill-radius: 999px;
+    --ds-primary: #3b82f6;
+    --ds-primary-strong: #2563eb;
+    --ds-focus-ring: rgba(96, 165, 250, .34);
+    --ds-control-border: rgba(191, 219, 254, .32);
+    --ds-control-surface: rgba(255, 255, 255, .08);
+}
+
+.app-shell,
+.app-shell button,
+.app-shell input,
+.app-shell select,
+.app-shell textarea {
+    font-family: 'Cairo', Tahoma, Arial, sans-serif;
+}
+
+.app-shell button,
+.app-shell [role='button'] {
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* Buttons: one base geometry with explicit, intentional size modifiers. */
+.app-shell .btn,
+.app-shell .action-menu-toggle,
+.app-shell .table-action-visible,
+.app-shell .icon-action {
+    box-sizing: border-box;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    border-radius: var(--ds-control-radius) !important;
+    font-family: inherit;
+    font-weight: 800;
+    line-height: 1.2;
+}
+.app-shell .btn {
+    display: inline-flex;
+    min-height: var(--ds-control-height) !important;
+    padding: 9px 14px;
+    font-size: 12px;
+}
+.app-shell .btn.btn-small,
+.app-shell .btn-small {
+    min-height: var(--ds-control-height-sm) !important;
+    padding: 7px 11px !important;
+    font-size: 10px !important;
+}
+.app-shell .btn.btn-lg { min-height: 46px !important; padding-inline: 18px; font-size: 13px; }
+.app-shell .icon-action,
+.app-shell .btn-icon {
+    display: inline-flex;
+    width: 36px;
+    min-width: 36px;
+    height: 36px;
+    min-height: 36px !important;
+    padding: 0 !important;
+}
+.app-shell .action-menu-toggle {
+    display: inline-flex;
+    width: auto;
+    min-width: 0;
+    min-height: 36px !important;
+    padding: 7px 11px !important;
+}
+.app-shell .table-action-visible,
+.app-shell .member-attendance-quick,
+.app-shell .member-qr-quick,
+.app-shell .member-coaching-quick,
+.app-shell .monthly-expense-action,
+.app-shell .builder-add-item,
+.app-shell .row-delete-button {
+    min-height: 36px !important;
+    border-radius: var(--ds-control-radius) !important;
+}
+.app-shell .library-row-actions .btn,
+.app-shell .trainee-actions .btn,
+.app-shell .profile-table .btn { min-height: var(--ds-control-height-sm) !important; }
+.app-shell .btn-primary {
+    border: 1px solid rgba(147, 197, 253, .55) !important;
+    color: #f8fafc !important;
+    background: linear-gradient(135deg, var(--ds-primary), var(--ds-primary-strong)) !important;
+    box-shadow: 0 7px 16px rgba(37, 99, 235, .22) !important;
+}
+.app-shell .btn-light,
+.app-shell .action-menu-toggle,
+.app-shell .table-action-visible,
+.app-shell .icon-action {
+    border: 1px solid var(--ds-control-border) !important;
+    color: #e2e8f0 !important;
+    background: var(--ds-control-surface) !important;
+    box-shadow: none !important;
+}
+.app-shell .btn-danger {
+    border: 1px solid rgba(248, 113, 113, .5) !important;
+    color: #fecaca !important;
+    background: rgba(127, 29, 29, .42) !important;
+}
+.app-shell .btn-purple {
+    border: 1px solid rgba(196, 181, 253, .48) !important;
+    color: #ddd6fe !important;
+    background: rgba(76, 29, 149, .38) !important;
+}
+.app-shell .btn:not(:disabled):hover,
+.app-shell .action-menu-toggle:hover,
+.app-shell .table-action-visible:hover,
+.app-shell .icon-action:hover {
+    border-color: rgba(147, 197, 253, .7) !important;
+    box-shadow: 0 7px 16px rgba(2, 6, 23, .2) !important;
+}
+.app-shell .btn-primary:not(:disabled):hover { background: linear-gradient(135deg, #60a5fa, #2563eb) !important; }
+.app-shell .btn:disabled,
+.app-shell .action-menu-toggle:disabled,
+.app-shell .icon-action:disabled { cursor: not-allowed; opacity: .56; transform: none; }
+.app-shell .btn.is-loading { cursor: wait; }
+
+/* Icons: 18px is the shared inline size; component scale is explicit. */
+.app-shell .ui-icon,
+.app-shell .action-icon {
+    display: block;
+    width: var(--ds-icon-size);
+    height: var(--ds-icon-size);
+    flex: 0 0 var(--ds-icon-size);
+}
+.app-shell .btn .ui-icon,
+.app-shell .btn .action-icon,
+.app-shell .page-tab .ui-icon,
+.app-shell .action-menu-icon { width: var(--ds-icon-size-sm); height: var(--ds-icon-size-sm); flex-basis: var(--ds-icon-size-sm); }
+.app-shell .btn.btn-small .ui-icon { width: 15px; height: 15px; flex-basis: 15px; }
+.app-shell .stat-icon .ui-icon,
+.app-shell .library-heading-icon .ui-icon,
+.app-shell .coaching-heading-icon .ui-icon,
+.app-shell .attendance-heading-icon .ui-icon,
+.app-shell .dashboard-analytics-icon .ui-icon { width: var(--ds-icon-size-lg); height: var(--ds-icon-size-lg); flex-basis: var(--ds-icon-size-lg); }
+.app-shell .icon-action .ui-icon,
+.app-shell .icon-action .action-icon { width: 17px; height: 17px; flex-basis: 17px; }
+
+/* Native selects: same height, arrow, padding and focus behavior everywhere. */
+.app-shell select:not(.builder-search-native) {
+    box-sizing: border-box;
+    min-height: var(--ds-control-height) !important;
+    padding: 9px 12px 9px 38px !important;
+    border-radius: var(--ds-control-radius) !important;
+    appearance: none !important;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='m3 6 5 5 5-5' fill='none' stroke='%23cbd5e1' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") !important;
+    background-position: left 13px center !important;
+    background-repeat: no-repeat !important;
+    background-size: 16px 16px !important;
+}
+.app-shell select[multiple] { padding: 9px 12px !important; background-image: none !important; }
+.app-shell .builder-search-trigger {
+    box-sizing: border-box;
+    display: flex;
+    min-height: var(--ds-control-height) !important;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 9px 12px !important;
+    border-radius: var(--ds-control-radius) !important;
+    border-color: var(--ds-control-border) !important;
+    color: var(--theme-text-soft, #e2e8f0) !important;
+    background: rgba(2, 6, 23, .52) !important;
+    font: inherit;
+    font-size: 12px;
+}
+.app-shell .builder-search-trigger:focus-visible,
+.app-shell .builder-search-select.is-open .builder-search-trigger { border-color: rgba(147, 197, 253, .82) !important; box-shadow: 0 0 0 3px var(--ds-focus-ring) !important; }
+.app-shell .builder-search-popover,
+.app-shell .action-menu-panel {
+    z-index: 1400 !important;
+    border-radius: 12px !important;
+    border-color: var(--theme-line, rgba(255,255,255,.18)) !important;
+    background: var(--theme-surface-strong, #0f172a) !important;
+    box-shadow: 0 18px 42px rgba(2, 6, 23, .48) !important;
+}
+.app-shell .builder-search-input-wrap { min-height: 38px; border-radius: var(--ds-control-radius) !important; }
+.app-shell .builder-search-option,
+.app-shell .action-menu-item {
+    box-sizing: border-box;
+    display: flex;
+    min-height: 36px;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 7px;
+    width: 100%;
+    padding: 7px 10px;
+    border-radius: 8px !important;
+    color: var(--theme-text-soft, #e2e8f0) !important;
+    background: transparent !important;
+    font-family: inherit;
+    font-size: 11px;
+}
+.app-shell .builder-search-option:hover,
+.app-shell .builder-search-option[aria-selected='true'],
+.app-shell .action-menu-item:hover { color: #fff !important; background: rgba(96, 165, 250, .18) !important; }
+.app-shell .builder-search-option { justify-content: space-between; }
+.app-shell .action-menu-item { justify-content: flex-start; }
+
+/* Status labels, chips and messages share one readable pill geometry. */
+.app-shell .badge,
+.app-shell .alert-status,
+.app-shell .builder-chip,
+.app-shell .builder-lock-chip,
+.app-shell .builder-ready-chip,
+.app-shell .backup-history-status {
+    display: inline-flex;
+    min-height: 26px;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    border-radius: var(--ds-pill-radius) !important;
+    font-size: 11px;
+    font-weight: 800;
+    line-height: 1.15;
+    white-space: nowrap;
+}
+
+/* Shared pagination and empty-state controls. */
+.app-shell .members-pagination,
+.app-shell .library-pagination,
+.app-shell .coaching-pagination,
+.app-shell .reports-pagination { align-items: center; gap: 12px; }
+.app-shell .members-pagination .btn,
+.app-shell .library-pagination .btn,
+.app-shell .coaching-pagination .btn,
+.app-shell .reports-pagination .btn { min-height: var(--ds-control-height-sm) !important; border-radius: var(--ds-control-radius) !important; }
+.app-shell .library-empty,
+.app-shell .coaching-empty,
+.app-shell .attendance-empty,
+.app-shell .reports-empty,
+.app-shell .builder-empty {
+    border-radius: var(--ds-control-radius) !important;
+    line-height: 1.7;
+}
+
+/* Keep dialogs and validation messages on the same visual system. */
+.app-shell dialog,
+.app-shell .swal2-popup,
+.app-shell .dialog-validation {
+    border-radius: var(--ui-radius-lg) !important;
+}
+.app-shell dialog .details-dialog-head,
+.app-shell dialog .dialog-actions { border-color: var(--theme-line, rgba(255,255,255,.18)); }
+
+@media (max-width: 640px) {
+    .app-shell .btn { min-height: 40px !important; padding-inline: 11px; }
+    .app-shell .btn.btn-small,
+    .app-shell .btn-small { min-height: 34px !important; padding-inline: 9px !important; }
+    .app-shell .icon-action,
+    .app-shell .btn-icon { width: 36px; min-width: 36px; height: 36px; min-height: 36px !important; }
+    .app-shell .action-menu-toggle { width: auto; min-width: 0; min-height: 36px !important; }
+    .app-shell .builder-search-popover,
+    .app-shell .action-menu-panel { max-width: calc(100vw - 24px); }
+    .app-shell .members-pagination,
+    .app-shell .library-pagination,
+    .app-shell .coaching-pagination,
+    .app-shell .reports-pagination { align-items: stretch; flex-direction: column; }
+}
+
+/* Kiosk is intentionally larger for touch-first check-in. */
+body.attendance-kiosk-mode .app-shell .btn { min-height: 52px !important; font-size: 14px; }
