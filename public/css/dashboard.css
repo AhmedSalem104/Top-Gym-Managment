@@ -2283,3 +2283,19 @@
         #dashboardSection .analytics-axis-label,
         #dashboardSection .analytics-column-group small { fill: #cbd5e1 !important; color: #cbd5e1 !important; }
         #dashboardSection .analytics-column-chart { border-bottom-color: rgba(255, 255, 255, .18) !important; }
+
+        /* Active navigation tabs use a dark glass surface instead of white. */
+        .app-shell .page-tabs .page-tab.active {
+            border-color: rgba(147, 197, 253, .48) !important;
+            border-bottom-color: rgba(147, 197, 253, .48) !important;
+            color: #f8fafc !important;
+            background: linear-gradient(135deg, rgba(15, 23, 42, .96), rgba(30, 41, 59, .94)) !important;
+            box-shadow: 0 8px 18px rgba(2, 6, 23, .28), inset 0 1px 0 rgba(255, 255, 255, .1) !important;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, .48);
+        }
+        .app-shell .page-tabs .page-tab.active .ui-icon { color: #bfdbfe !important; }
+        .app-shell .page-tabs .page-tab:hover:not(.active) {
+            border-color: rgba(147, 197, 253, .3) !important;
+            color: #dbeafe !important;
+            background: rgba(15, 23, 42, .58) !important;
+        }
