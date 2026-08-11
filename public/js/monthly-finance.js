@@ -88,6 +88,15 @@
         snapshot.setAttribute('aria-labelledby', 'monthlyFinanceSnapshotTitle');
         snapshot.innerHTML = `<div class="monthly-finance-snapshot-head"><div class="monthly-finance-heading"><span class="monthly-finance-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V5"/><path d="M4 19h16"/><path d="m7 15 3-4 3 2 5-6"/></svg></span><div><span class="monthly-finance-eyebrow">الحسابات</span><h3 id="monthlyFinanceSnapshotTitle">ملخص الشهر الحالي</h3><p id="monthlyFinanceSnapshotPeriod">جاري تحميل حسابات الشهر…</p></div></div><button class="btn btn-light btn-small open-expenses-tab-button" id="openExpensesTabButton" type="button">إدارة المصروفات</button></div><div class="monthly-finance-snapshot-metrics"><article class="monthly-finance-snapshot-metric subscriptions"><span>إجمالي الاشتراكات</span><strong id="monthlySubscriptionsSnapshotTotal">0.00 ج.م</strong></article><article class="monthly-finance-snapshot-metric expenses"><span>المصروفات</span><strong id="monthlyExpensesSnapshotTotal">0.00 ج.م</strong></article><article class="monthly-finance-snapshot-metric net"><span>المتبقي / صافي الشهر</span><strong id="monthlyNetSnapshotTotal">0.00 ج.م</strong></article></div>`;
         overview.appendChild(snapshot);
+        const stats = overview.querySelector(':scope > .stats-grid');
+        if (stats) {
+            stats.classList.add('snapshot-membership-stats');
+            const statusHeading = document.createElement('div');
+            statusHeading.className = 'snapshot-membership-status-head';
+            statusHeading.innerHTML = '<span>حالة العضويات</span><small>ملخص سريع للمشتركين</small>';
+            snapshot.appendChild(statusHeading);
+            snapshot.appendChild(stats);
+        }
     }
 
     function ensureExpensesTab() {

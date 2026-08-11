@@ -877,3 +877,23 @@ BEGIN
 END;
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_gym_backup_operations_created' AND object_id = OBJECT_ID(N'dbo.gym_backup_operations'))
     CREATE INDEX IX_gym_backup_operations_created ON dbo.gym_backup_operations(created_at DESC, id DESC);
+
+IF OBJECT_ID(N'dbo.gym_backup_archives', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.gym_backup_archives (
+        id INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_gym_backup_archives PRIMARY KEY,
+        backup_day DATE NOT NULL,
+        file_name NVARCHAR(260) NOT NULL,
+        backup_format VARCHAR(10) NOT NULL,
+        generated_at DATETIME2(0) NOT NULL,
+        content VARBINARY(MAX) NOT NULL,
+        content_bytes BIGINT NOT NULL,
+        row_count INT NOT NULL CONSTRAINT DF_gym_backup_archives_rows DEFAULT (0),
+        table_counts NVARCHAR(MAX) NULL,
+        created_at DATETIME2(0) NOT NULL CONSTRAINT DF_gym_backup_archives_created DEFAULT (SYSUTCDATETIME()),
+        CONSTRAINT CK_gym_backup_archives_format CHECK (backup_format IN ('json.gz', 'bak')),
+        CONSTRAINT UQ_gym_backup_archives_day_format UNIQUE (backup_day, backup_format)
+    );
+END;
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_gym_backup_archives_created' AND object_id = OBJECT_ID(N'dbo.gym_backup_archives'))
+    CREATE INDEX IX_gym_backup_archives_created ON dbo.gym_backup_archives(created_at DESC, id DESC);

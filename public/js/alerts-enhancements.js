@@ -1,6 +1,8 @@
         (() => {
             const alertsList = document.getElementById('alertsList');
             if (!alertsList) return;
+            const alertsSearch = document.getElementById('alertsSearch');
+            const alertsSearchResult = document.getElementById('alertsSearchResult');
             const labels = { active: 'نشطة', expiring_soon: 'قريبة الانتهاء', expired: 'منتهية', frozen: 'مجمدة' };
             const kindLabels = { debt: 'عليه مستحقات', inactive: 'غياب طويل' };
             const icons = {
@@ -12,6 +14,25 @@
                 inactive: '<svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>'
             };
             const escape = (value) => String(value ?? '').replace(/[&<>'"]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[char]));
+            const filterAlerts = () => {
+                const query = String(alertsSearch?.value || '').trim().toLocaleLowerCase('ar-EG');
+                const cards = [...alertsList.querySelectorAll('.alert-card')];
+                let visibleCount = 0;
+                cards.forEach((card) => {
+                    const haystack = [card.dataset.alertName, card.dataset.alertPhone, card.textContent]
+                        .filter(Boolean)
+                        .join(' ')
+                        .toLocaleLowerCase('ar-EG');
+                    const matches = !query || haystack.includes(query);
+                    card.hidden = !matches;
+                    if (matches) visibleCount += 1;
+                });
+                if (alertsSearchResult) {
+                    const visible = visibleCount.toLocaleString('ar-EG');
+                    const total = cards.length.toLocaleString('ar-EG');
+                    alertsSearchResult.textContent = query ? `${visible} من ${total}` : `${total} تنبيه`;
+                }
+            };
             const enhanceDailyAlerts = () => {
                 alertsList.querySelectorAll('.alert-card:not([data-alert-enhanced])').forEach((card) => {
                     const status = ['active', 'expiring_soon', 'expired', 'frozen'].find((item) => card.classList.contains(item)) || 'expiring_soon';
@@ -40,7 +61,9 @@
                 alertsList.classList.toggle('alerts-list-scroll', count > 2);
                 const badge = document.getElementById('alertsCount');
                 if (badge) badge.textContent = count ? `${count.toLocaleString('ar-EG')} تنبيه` : 'لا توجد تنبيهات';
+                filterAlerts();
             };
             new MutationObserver(enhanceDailyAlerts).observe(alertsList, { childList: true, subtree: true });
+            alertsSearch?.addEventListener('input', filterAlerts);
             enhanceDailyAlerts();
         })();

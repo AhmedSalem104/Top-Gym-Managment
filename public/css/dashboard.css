@@ -73,28 +73,35 @@
         .alerts-heading h3 { margin: 0; color: #0f172a; font-size: 14px; font-weight: 900; line-height: 1.3; }
         .alerts-heading p { margin: 1px 0 0; color: #64748b; font-size: 9px; line-height: 1.35; }
         .alerts-count { display: inline-flex; flex: 0 0 auto; align-items: center; min-height: 23px; padding: 0 7px; border: 1px solid #bfdbfe; border-radius: 999px; color: #1d4ed8; background: #eff6ff; font-size: 9px; font-weight: 900; white-space: nowrap; }
-        .alerts-list { grid-template-columns: 1fr; gap: 6px; padding: 8px 9px 10px; background: #f8fbff; }
-        .alerts-list.alerts-list-scroll { max-height: 128px; overflow-y: auto; align-content: start; scrollbar-width: thin; scrollbar-color: #93c5fd transparent; }
+        .alerts-toolbar { display: flex; align-items: center; gap: 9px; padding: 10px 12px; border-bottom: 1px solid #dbe7f5; background: #f8fbff; }
+        .alerts-search-field { display: flex; min-width: 0; flex: 1 1 auto; align-items: center; gap: 7px; min-height: 36px; padding: 0 10px; border: 1px solid #dbe3ef; border-radius: 9px; color: #64748b; background: #fff; }
+        .alerts-search-field .ui-icon { width: 15px; height: 15px; flex: 0 0 15px; }
+        .alerts-search-field input { width: 100%; min-width: 0; height: 32px; padding: 0; border: 0; outline: 0; color: #0f172a; background: transparent; font-family: inherit; font-size: 10px; }
+        .alerts-search-field input::placeholder { color: #94a3b8; }
+        .alerts-search-result { flex: 0 0 auto; color: #64748b; font-size: 9px; font-weight: 800; white-space: nowrap; }
+        .alerts-list { display: grid; grid-template-columns: 1fr; gap: 10px; min-height: 150px; padding: 12px; background: #f8fbff; }
+        .alerts-list.alerts-list-scroll { max-height: min(46vh, 420px); overflow-y: auto; align-content: start; scrollbar-width: thin; scrollbar-color: #93c5fd transparent; }
         .alerts-list.alerts-list-scroll::-webkit-scrollbar { width: 5px; }
         .alerts-list.alerts-list-scroll::-webkit-scrollbar-thumb { border-radius: 999px; background: #93c5fd; }
-        .alert-card { display: grid; grid-template-columns: 28px minmax(0, 1fr); align-items: center; gap: 7px; min-height: 52px; padding: 7px 8px; border: 1px solid #e2e8f0; border-inline-start: 3px solid #f59e0b; border-radius: 8px; background: #fff; box-shadow: 0 2px 7px rgba(15, 23, 42, .035); transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease; }
+        .alert-card { display: grid; grid-template-columns: 38px minmax(0, 1fr); align-items: center; gap: 10px; min-height: 78px; padding: 11px 12px; border: 1px solid #dbe3ef; border-inline-start: 4px solid #f59e0b; border-radius: 12px; background: #fff; box-shadow: 0 5px 14px rgba(15, 23, 42, .055); transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease; }
+        .alert-card[hidden] { display: none !important; }
         .alert-card:hover { transform: translateY(-2px); box-shadow: 0 9px 18px rgba(15, 23, 42, .08); }
         .alert-card.active { border-inline-start-color: #10b981; }
         .alert-card.expired { border-inline-start-color: #ef4444; }
         .alert-card.frozen { border-inline-start-color: #8b5cf6; }
-        .alert-card-icon { display: grid; width: 27px; height: 27px; flex: 0 0 27px; place-items: center; border-radius: 7px; color: #d97706; background: #fef3c7; }
+        .alert-card-icon { display: grid; width: 36px; height: 36px; flex: 0 0 36px; place-items: center; border-radius: 10px; color: #d97706; background: #fef3c7; }
         .alert-card.active .alert-card-icon { color: #059669; background: #d1fae5; }
         .alert-card.expired .alert-card-icon { color: #dc2626; background: #fee2e2; }
         .alert-card.frozen .alert-card-icon { color: #7c3aed; background: #ede9fe; }
-        .alert-card-icon .ui-icon { width: 14px; height: 14px; }
+        .alert-card-icon .ui-icon { width: 18px; height: 18px; }
         .alert-card-body { display: flex; min-width: 0; flex-direction: column; gap: 2px; }
         .alert-card-head { display: flex; min-width: 0; align-items: center; justify-content: space-between; gap: 5px; }
-        .alert-card-head strong { min-width: 0; margin: 0; overflow: hidden; color: #172033; font-size: 10px; font-weight: 900; line-height: 1.25; text-overflow: ellipsis; white-space: nowrap; }
-        .alert-status { flex: 0 0 auto; padding: 2px 5px; border-radius: 999px; color: #a16207; background: #fef3c7; font-size: 8px; font-weight: 900; line-height: 1.3; }
+        .alert-card-head strong { min-width: 0; margin: 0; overflow: hidden; color: #172033; font-size: 12px; font-weight: 900; line-height: 1.3; text-overflow: ellipsis; white-space: nowrap; }
+        .alert-status { flex: 0 0 auto; padding: 3px 7px; border-radius: 999px; color: #a16207; background: #fef3c7; font-size: 9px; font-weight: 900; line-height: 1.3; }
         .alert-card.active .alert-status { color: #047857; background: #d1fae5; }
         .alert-card.expired .alert-status { color: #b91c1c; background: #fee2e2; }
         .alert-card.frozen .alert-status { color: #6d28d9; background: #ede9fe; }
-        .alert-card-detail, .alert-card-phone { display: block; color: #64748b; font-size: 9px; line-height: 1.3; }
+        .alert-card-detail, .alert-card-phone { display: block; color: #64748b; font-size: 10px; line-height: 1.45; }
         .alert-card-phone { color: #2563eb; direction: ltr; text-align: right; text-decoration: none; }
         .alert-card-phone:hover { text-decoration: underline; }
         .alerts-list > .empty { grid-column: 1 / -1; margin: 0; padding: 20px 12px; border: 1px dashed #cbd5e1; border-radius: 10px; background: #fff; }
@@ -614,8 +621,8 @@
         .whatsapp-after-save span { color: #166534; font-size: 11px; }
 
         /* Dashboard overview: keep statistics compact and place finance beside alerts. */
-        .overview-grid { grid-template-columns: minmax(270px, .78fr) minmax(0, 1.42fr) !important; grid-template-areas: 'stats stats' 'finance alerts' !important; gap: 12px !important; direction: ltr !important; }
-        .overview-grid > .stats-grid { grid-area: stats !important; grid-template-columns: repeat(5, minmax(0, 1fr)) !important; gap: 8px !important; height: auto !important; padding: 0 !important; }
+        .overview-grid { grid-template-columns: minmax(270px, .78fr) minmax(0, 1.42fr) !important; grid-template-areas: 'finance alerts' !important; gap: 12px !important; direction: ltr !important; }
+        .overview-grid > .stats-grid { display: none !important; }
         .overview-grid > .stats-grid .stat-card { min-height: 62px !important; padding: 8px 10px !important; }
         .overview-grid > .stats-grid .stat-card:nth-child(5) { grid-column: auto !important; }
         .overview-grid > .stats-grid .stat-label { font-size: 10px !important; }
@@ -658,6 +665,18 @@
         .monthly-finance-snapshot-metric.expenses strong { color: #b45309; }
         .monthly-finance-snapshot-metric.net strong { color: #047857; }
         .monthly-finance-snapshot-metric.net strong.negative { color: #dc2626; }
+        .monthly-finance-snapshot .snapshot-membership-status-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin: 0 10px; padding-top: 2px; color: #0f172a; }
+        .monthly-finance-snapshot .snapshot-membership-status-head span { font-size: 10px; font-weight: 900; }
+        .monthly-finance-snapshot .snapshot-membership-status-head small { color: #64748b; font-size: 8px; }
+        .monthly-finance-snapshot .snapshot-membership-stats { display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; margin: 7px 10px 10px; padding: 0; border: 0; border-radius: 0; background: transparent; direction: rtl; }
+        .monthly-finance-snapshot .snapshot-membership-stats .stat-card { display: grid !important; grid-template-columns: 28px minmax(0, 1fr); grid-template-rows: auto auto; align-items: center; gap: 2px 6px; min-height: 62px !important; padding: 7px 8px !important; border: 1px solid #dbe3ef !important; border-radius: 9px; background: #f8fafc !important; box-shadow: none !important; text-align: right; }
+        .monthly-finance-snapshot .snapshot-membership-stats .stat-card:nth-child(5) { grid-column: 1 / -1; }
+        .monthly-finance-snapshot .snapshot-membership-stats .stat-head { display: contents !important; }
+        .monthly-finance-snapshot .snapshot-membership-stats .stat-icon { grid-column: 1; grid-row: 1 / 3; width: 27px !important; height: 27px !important; flex-basis: 27px !important; margin: 0; border-radius: 8px !important; }
+        .monthly-finance-snapshot .snapshot-membership-stats .stat-icon .ui-icon { width: 14px !important; height: 14px !important; }
+        .monthly-finance-snapshot .snapshot-membership-stats .stat-label { grid-column: 2; grid-row: 1; color: #475569; font-size: 9px !important; font-weight: 800; line-height: 1.2; }
+        .monthly-finance-snapshot .snapshot-membership-stats .stat-value { grid-column: 2; grid-row: 2; margin: 0 !important; color: #0f172a; font-size: 17px !important; line-height: 1; }
+        .monthly-finance-snapshot .snapshot-membership-stats .stat-caption { display: none !important; }
         .expenses-tab-panel { margin: 0 0 16px; overflow: hidden; border: 1px solid #dbe3ef; border-radius: 14px; background: #fff; box-shadow: 0 12px 28px rgba(15, 23, 42, .06); }
         .expenses-tab-panel[hidden] { display: none !important; }
         .expenses-tab-heading { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 17px 20px; border-bottom: 1px solid #e2e8f0; background: linear-gradient(135deg, #f8fbff 0%, #eef6ff 100%); }
@@ -691,8 +710,7 @@
         .management-shortcut small { overflow: hidden; color: #64748b; font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
         .management-shortcut-arrow { flex: 0 0 auto; color: #94a3b8; }
         @media (max-width: 900px) {
-            .overview-grid { grid-template-columns: 1fr !important; grid-template-areas: 'stats' 'alerts' 'finance' !important; }
-            .overview-grid > .stats-grid { grid-template-columns: repeat(5, minmax(0, 1fr)) !important; }
+            .overview-grid { grid-template-columns: 1fr !important; grid-template-areas: 'alerts' 'finance' !important; }
         }
         @media (max-width: 640px) {
             .page-tabs { padding: 8px 12px 0; gap: 4px; overflow-x: auto; scrollbar-width: none; }
@@ -2299,4 +2317,23 @@
             border-color: rgba(147, 197, 253, .3) !important;
             color: #dbeafe !important;
             background: rgba(15, 23, 42, .58) !important;
+        }
+
+        /* Mobile alert refinement after the overview reordering. */
+        @media (max-width: 640px) {
+            #dashboardSection .alerts-toolbar { align-items: stretch; flex-direction: column; gap: 6px; padding: 8px 9px; }
+            #dashboardSection .alerts-search-field { width: 100%; }
+            #dashboardSection .alerts-search-result { align-self: flex-start; }
+            #dashboardSection .alerts-list { min-height: 120px; gap: 7px; padding: 9px; }
+            #dashboardSection .alerts-list.alerts-list-scroll { max-height: min(44vh, 360px); }
+            #dashboardSection .alert-card { grid-template-columns: 32px minmax(0, 1fr); gap: 8px; min-height: 72px; padding: 9px; }
+            #dashboardSection .alert-card-icon { width: 31px; height: 31px; flex-basis: 31px; }
+            #dashboardSection .alert-card-icon .ui-icon { width: 15px; height: 15px; }
+            #dashboardSection .alert-card-head strong { font-size: 11px; }
+            #dashboardSection .alert-card-detail,
+            #dashboardSection .alert-card-phone { font-size: 9px; }
+            .monthly-finance-snapshot .snapshot-membership-stats { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 6px; margin-inline: 8px; }
+            .monthly-finance-snapshot .snapshot-membership-stats .stat-card { min-height: 58px !important; padding: 6px 7px !important; }
+            .monthly-finance-snapshot .snapshot-membership-stats .stat-icon { width: 25px !important; height: 25px !important; flex-basis: 25px !important; }
+            .monthly-finance-snapshot .snapshot-membership-stats .stat-value { font-size: 16px !important; }
         }

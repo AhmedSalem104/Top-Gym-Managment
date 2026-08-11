@@ -8,6 +8,8 @@
     const bakDownloadButton = $('backupBakButton');
     const restoreButton = $('restoreBackupButton');
     const historyButton = $('backupHistoryButton');
+    const historyRefreshButton = $('backupHistoryRefresh');
+    const historyList = $('backupHistoryList');
     const restoreDialog = $('backupRestoreDialog');
     const restoreForm = $('backupRestoreForm');
     const fileInput = $('backupFileInput');
@@ -185,15 +187,57 @@
         return `<div class="backup-history-wrap"><table class="backup-history-table"><thead><tr><th>العملية</th><th>التاريخ</th><th>الصفوف</th><th>الحالة</th></tr></thead><tbody>${rows || '<tr><td colspan="4">لا يوجد سجل نسخ حتى الآن.</td></tr>'}</tbody></table></div>`;
     }
 
+    function renderVisibleHistory(data = {}) {
+        const archives = Array.isArray(data.archives) ? data.archives : [];
+        const operations = Array.isArray(data.operations) ? data.operations : [];
+        const archiveRows = archives.map((item) => `<tr><td><strong>${escapeHtml(item.fileName || '—')}</strong><small>${escapeHtml(formatDate(item.generatedAt || item.createdAt))}</small></td><td>${escapeHtml(String(item.format || 'bak').toUpperCase())}</td><td>${Number(item.rowCount || 0).toLocaleString('ar-EG')} صف</td><td>${formatBytes(item.contentBytes)}</td><td><button type="button" class="btn btn-light btn-small backup-history-download" data-backup-archive-id="${escapeHtml(item.id)}">تحميل</button></td></tr>`).join('');
+        const operationRows = operations.map((item) => `<tr><td><strong>${escapeHtml(HISTORY_LABELS[item.operationType] || item.operationType)}</strong><small>${escapeHtml(item.fileName || '—')}</small></td><td>${escapeHtml(formatDate(item.createdAt))}</td><td>${Number(item.rowCount || 0).toLocaleString('ar-EG')}</td><td><span class="backup-history-status ${item.status === 'success' ? 'success' : 'error'}">${item.status === 'success' ? 'ناجحة' : 'فاشلة'}</span></td></tr>`).join('');
+        return `<div class="backup-history-block"><div class="backup-history-block-head"><strong>النسخ اليومية المحفوظة</strong><span>الاحتفاظ: يومان</span></div><div class="backup-history-wrap"><table class="backup-history-table backup-archive-table"><thead><tr><th>الملف</th><th>الامتداد</th><th>البيانات</th><th>الحجم</th><th>الإجراء</th></tr></thead><tbody>${archiveRows || '<tr><td colspan="5">لا توجد نسخ تلقائية محفوظة حتى الآن.</td></tr>'}</tbody></table></div></div><div class="backup-history-block"><div class="backup-history-block-head"><strong>آخر العمليات</strong><span>${operations.length.toLocaleString('ar-EG')} عملية</span></div><div class="backup-history-wrap"><table class="backup-history-table"><thead><tr><th>العملية</th><th>التاريخ</th><th>الصفوف</th><th>الحالة</th></tr></thead><tbody>${operationRows || '<tr><td colspan="4">لا يوجد سجل عمليات حتى الآن.</td></tr>'}</tbody></table></div></div>`;
+    }
+
+    async function downloadArchive(id, trigger) {
+        if (!id || !trigger || trigger.dataset.backupBusy === 'true') return;
+        trigger.dataset.backupBusy = 'true';
+        try {
+            const response = await fetch(`/api/backup/archives/${encodeURIComponent(id)}`, { cache: 'no-store', headers: { Accept: 'application/octet-stream' } });
+            if (!response.ok) {
+                const body = await response.json().catch(() => ({}));
+                throw new Error(body.error || 'تعذر تحميل النسخة المحفوظة.');
+            }
+            const blob = await response.blob();
+            const objectUrl = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = objectUrl;
+            link.download = getFilename(response, `TOP-GYM-backup-${id}.bak`);
+            link.hidden = true;
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1500);
+            showToast('success', 'تم تحميل النسخة المحفوظة ✅');
+        } catch (error) {
+            showToast('error', 'تعذر تحميل النسخة المحفوظة', error.message || 'حاول مرة أخرى.');
+        } finally {
+            delete trigger.dataset.backupBusy;
+        }
+    }
+
     async function showHistory() {
         try {
             const response = await fetch('/api/backup/history?limit=30', { cache: 'no-store' });
             const data = await response.json().catch(() => ({}));
             if (!response.ok) throw new Error(data.error || 'تعذر تحميل سجل النسخ.');
+            if (historyList) {
+                historyList.innerHTML = renderVisibleHistory(data);
+                return;
+            }
             if (window.Swal) {
                 await window.Swal.fire({ position: 'center', title: 'سجل النسخ الاحتياطية', html: renderHistory(data.operations), confirmButtonText: 'إغلاق', buttonsStyling: false, customClass: { popup: 'top-gym-alert backup-history-alert', confirmButton: 'btn btn-primary' } });
             }
-        } catch (error) { showToast('error', 'تعذر تحميل سجل النسخ', error.message); }
+        } catch (error) {
+            if (historyList) historyList.innerHTML = `<div class="backup-history-error">${escapeHtml(error.message || 'تعذر تحميل سجل النسخ.')}</div>`;
+            showToast('error', 'تعذر تحميل سجل النسخ', error.message);
+        }
     }
 
     downloadButton?.addEventListener('click', () => downloadBackup('json.gz', downloadButton));
@@ -201,8 +245,14 @@
     bakDownloadButton?.addEventListener('click', () => downloadBackup('bak', bakDownloadButton));
     restoreButton?.addEventListener('click', () => { resetRestore(); openDialog(restoreDialog); });
     historyButton?.addEventListener('click', showHistory);
+    historyRefreshButton?.addEventListener('click', showHistory);
+    historyList?.addEventListener('click', (event) => {
+        const button = event.target.closest('[data-backup-archive-id]');
+        if (button) downloadArchive(button.dataset.backupArchiveId, button);
+    });
     $('backupRestoreClose')?.addEventListener('click', () => closeDialog(restoreDialog));
     $('backupRestoreCancel')?.addEventListener('click', () => closeDialog(restoreDialog));
     fileInput?.addEventListener('change', () => inspectFile(fileInput.files?.[0]));
     restoreForm?.addEventListener('submit', restoreBackup);
+    if (historyList) showHistory();
 })();

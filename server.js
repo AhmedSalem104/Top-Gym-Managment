@@ -5,7 +5,10 @@ const path = require('node:path');
 const { getPool, initDatabase } = require('./src/db');
 const {
     createBackup,
+    createScheduledBackupArchive,
+    getBackupArchive,
     getBackupHistory,
+    getScheduledBackupHistory,
     inspectBackupBuffer,
     recordBackupOperation,
     restoreBackup
@@ -125,6 +128,14 @@ function asyncRoute(handler) {
     return (request, response, next) => Promise.resolve(handler(request, response, next)).catch(next);
 }
 
+function isAuthorizedCronRequest(request) {
+    const secret = String(process.env.CRON_SECRET || '').trim();
+    const authorization = String(request.get('authorization') || '');
+    if (secret) return authorization === `Bearer ${secret}`;
+    if (String(request.get('user-agent') || '').toLowerCase() === 'vercel-cron/1.0') return true;
+    return process.env.NODE_ENV !== 'production' && request.get('x-top-gym-cron-key') === 'daily-backup';
+}
+
 function escapeHtml(value) {
     return String(value ?? '').replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[character]));
 }
@@ -207,6 +218,12 @@ app.get('/api/health', asyncRoute(async (request, response) => {
     response.json({ ok: true, database: 'connected' });
 }));
 
+app.get('/api/backup/daily', asyncRoute(async (request, response) => {
+    if (!isAuthorizedCronRequest(request)) return response.status(401).json({ error: 'طلب الجدولة غير مصرح به.' });
+    const result = await createScheduledBackupArchive({ format: 'bak' });
+    response.json({ ok: true, scheduled: true, ...result });
+}));
+
 app.get('/api/backup/download', asyncRoute(async (request, response) => {
     const requestedFormat = String(request.query.format || 'json.gz').toLowerCase();
     if (!['json.gz', 'bak'].includes(requestedFormat)) {
@@ -236,7 +253,23 @@ const backupUploadBody = express.raw({
 });
 
 app.get('/api/backup/history', asyncRoute(async (request, response) => {
-    response.json({ operations: await getBackupHistory(request.query.limit) });
+    const [operations, archives] = await Promise.all([
+        getBackupHistory(request.query.limit),
+        getScheduledBackupHistory(request.query.archiveLimit || 10)
+    ]);
+    response.json({ operations, archives });
+}));
+
+app.get('/api/backup/archives/:id', asyncRoute(async (request, response) => {
+    const archive = await getBackupArchive(request.params.id);
+    response.set({
+        'Cache-Control': 'no-store, no-cache, must-revalidate, private',
+        'Content-Type': archive.format === 'bak' ? 'application/octet-stream' : 'application/gzip',
+        'Content-Disposition': `attachment; filename="${archive.fileName}"`,
+        'Content-Length': String(archive.contentBytes),
+        'X-Content-Type-Options': 'nosniff'
+    });
+    response.send(archive.content);
 }));
 
 app.post('/api/backup/inspect', backupUploadBody, asyncRoute(async (request, response) => {

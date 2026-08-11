@@ -1130,9 +1130,10 @@ body.gym-page-bg {
 /* Dashboard overview: alerts get the wider right column, finance stays compact on the left. */
 .app-shell #dashboardSection .overview-grid {
     grid-template-columns: minmax(270px, .78fr) minmax(0, 1.42fr) !important;
-    grid-template-areas: 'stats stats' 'finance alerts' !important;
+    grid-template-areas: 'finance alerts' !important;
     direction: ltr !important;
 }
+.app-shell #dashboardSection .overview-grid > .stats-grid { display: none !important; }
 .app-shell #dashboardSection .overview-grid > .stats-grid { grid-area: stats !important; direction: rtl; }
 .app-shell #dashboardSection .overview-grid > .alerts-panel {
     display: flex;
@@ -1154,6 +1155,24 @@ body.gym-page-bg {
     grid-area: finance !important;
     direction: rtl;
 }
+.app-shell #dashboardSection .monthly-finance-snapshot .snapshot-membership-status-head {
+    color: #f8fafc !important;
+}
+.app-shell #dashboardSection .monthly-finance-snapshot .snapshot-membership-status-head small { color: #cbd5e1 !important; }
+.app-shell #dashboardSection .monthly-finance-snapshot .snapshot-membership-stats {
+    background: transparent !important;
+}
+.app-shell #dashboardSection .monthly-finance-snapshot .snapshot-membership-stats .stat-card {
+    border-color: rgba(255, 255, 255, .16) !important;
+    background: rgba(255, 255, 255, .07) !important;
+    box-shadow: none !important;
+}
+.app-shell #dashboardSection .monthly-finance-snapshot .snapshot-membership-stats .stat-label { color: #e2e8f0 !important; }
+.app-shell #dashboardSection .monthly-finance-snapshot .snapshot-membership-stats .stat-value { color: #f8fafc !important; }
+.app-shell #dashboardSection .monthly-finance-snapshot .snapshot-membership-stats .stat-card.active .stat-value { color: #6ee7b7 !important; }
+.app-shell #dashboardSection .monthly-finance-snapshot .snapshot-membership-stats .stat-card.warning .stat-value { color: #fcd34d !important; }
+.app-shell #dashboardSection .monthly-finance-snapshot .snapshot-membership-stats .stat-card.danger .stat-value { color: #fda4af !important; }
+.app-shell #dashboardSection .monthly-finance-snapshot .snapshot-membership-stats .stat-card.frozen .stat-value { color: #c4b5fd !important; }
 .app-shell #dashboardSection .overview-grid > #monthlyFinanceCard .monthly-finance-head {
     border-bottom-color: rgba(255, 255, 255, .14) !important;
     background: rgba(15, 23, 42, .78) !important;
@@ -1205,7 +1224,7 @@ body.gym-page-bg {
 @media (max-width: 900px) {
     .app-shell #dashboardSection .overview-grid {
         grid-template-columns: 1fr !important;
-        grid-template-areas: 'stats' 'alerts' 'finance' !important;
+        grid-template-areas: 'alerts' 'finance' !important;
     }
     .app-shell #dashboardSection .overview-grid > .alerts-panel { min-height: 0; }
 }
@@ -1213,4 +1232,57 @@ body.gym-page-bg {
 @media (max-width: 640px) {
     .app-shell #dashboardSection .overview-grid { gap: 10px !important; }
     .app-shell #dashboardSection .overview-grid > #monthlyFinanceCard .monthly-finance-metrics { grid-template-columns: 1fr; }
+}
+
+/* Dashboard alerts search and stored backup history use the same dark glass surface. */
+.app-shell #dashboardSection .alerts-toolbar {
+    border-color: rgba(255, 255, 255, .14) !important;
+    background: rgba(2, 6, 23, .22) !important;
+}
+.app-shell #dashboardSection .alerts-search-field {
+    border-color: rgba(255, 255, 255, .18) !important;
+    color: #cbd5e1 !important;
+    background: rgba(255, 255, 255, .07) !important;
+}
+.app-shell #dashboardSection .alerts-search-field input { color: #f8fafc !important; }
+.app-shell #dashboardSection .alerts-search-field input::placeholder,
+.app-shell #dashboardSection .alerts-search-result { color: #cbd5e1 !important; }
+.app-shell .backup-history-section {
+    border-color: rgba(255, 255, 255, .16) !important;
+    background: rgba(15, 23, 42, .68) !important;
+}
+.app-shell .backup-history-section-head h4,
+.app-shell .backup-history-block-head strong { color: #f8fafc !important; }
+.app-shell .backup-history-section-head p,
+.app-shell .backup-history-block-head span { color: #cbd5e1 !important; }
+.app-shell .backup-history-block {
+    border-color: rgba(255, 255, 255, .14) !important;
+    background: rgba(255, 255, 255, .055) !important;
+}
+.app-shell .backup-history-block-head {
+    border-bottom-color: rgba(255, 255, 255, .14) !important;
+    background: rgba(255, 255, 255, .06) !important;
+}
+.app-shell .backup-history-table th,
+.app-shell .backup-history-table td { border-bottom-color: rgba(255, 255, 255, .12) !important; }
+.app-shell .backup-history-table th { color: #cbd5e1 !important; background: rgba(255, 255, 255, .06) !important; }
+.app-shell .backup-history-table td { color: #e2e8f0 !important; }
+.app-shell .backup-history-table small { color: #94a3b8 !important; }
+.app-shell .backup-history-loading,
+.app-shell .backup-history-empty,
+.app-shell .backup-history-error { border-color: rgba(255, 255, 255, .2) !important; color: #cbd5e1 !important; background: rgba(255, 255, 255, .055) !important; }
+.app-shell .backup-history-error { color: #fecaca !important; border-color: rgba(248, 113, 113, .45) !important; background: rgba(127, 29, 29, .25) !important; }
+
+@media (max-width: 640px) {
+    .app-shell #dashboardSection .alerts-toolbar { align-items: stretch; flex-direction: column; gap: 6px; padding: 8px 9px; }
+    .app-shell #dashboardSection .alerts-search-field { width: 100%; }
+    .app-shell #dashboardSection .alerts-search-result { align-self: flex-start; }
+    .app-shell #dashboardSection .alerts-list { min-height: 120px; gap: 7px; padding: 9px; }
+    .app-shell #dashboardSection .alerts-list.alerts-list-scroll { max-height: min(44vh, 360px); }
+    .app-shell #dashboardSection .alert-card { grid-template-columns: 32px minmax(0, 1fr); gap: 8px; min-height: 72px; padding: 9px; }
+    .app-shell #dashboardSection .alert-card-icon { width: 31px; height: 31px; flex-basis: 31px; }
+    .app-shell #dashboardSection .alert-card-icon .ui-icon { width: 15px; height: 15px; }
+    .app-shell #dashboardSection .alert-card-head strong { font-size: 11px; }
+    .app-shell #dashboardSection .alert-card-detail,
+    .app-shell #dashboardSection .alert-card-phone { font-size: 9px; }
 }

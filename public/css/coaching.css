@@ -213,3 +213,30 @@
     .external-trainees-table td:not(:first-child):not(:last-child)::before { font-size: 7px; }
     .external-trainees-table .trainee-actions .btn { width: 29px; min-width: 29px; height: 29px; min-height: 29px; }
 }
+
+/* Visible backup history: automatic archives and recent operations share one compact table. */
+.backup-history-section { margin-top: 14px; padding: 15px; border: 1px solid #dbe3ef; border-radius: 13px; background: #f8fafc; }
+.backup-history-section-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; }
+.backup-history-section-head h4 { margin: 2px 0 3px; color: #0f172a; font-size: 14px; }
+.backup-history-section-head p { margin: 0; color: #64748b; font-size: 10px; line-height: 1.6; }
+.backup-history-section-head .btn { flex: 0 0 auto; white-space: nowrap; }
+.backup-history-list { display: grid; gap: 12px; margin-top: 13px; }
+.backup-history-block { overflow: hidden; border: 1px solid #dbe3ef; border-radius: 11px; background: #fff; }
+.backup-history-block-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 11px; border-bottom: 1px solid #e2e8f0; background: #f8fbff; }
+.backup-history-block-head strong { color: #172033; font-size: 11px; }
+.backup-history-block-head span { color: #64748b; font-size: 9px; font-weight: 800; }
+.backup-history-block .backup-history-wrap { padding: 0 9px 4px; }
+.backup-history-block .backup-history-table { min-width: 0; }
+.backup-archive-table { min-width: 660px !important; }
+.backup-history-table td small { display: block; }
+.backup-history-download { min-height: 28px !important; padding: 5px 9px !important; font-size: 9px !important; }
+.backup-history-loading, .backup-history-empty, .backup-history-error { padding: 18px 12px; border: 1px dashed #cbd5e1; border-radius: 10px; color: #64748b; background: #fff; font-size: 10px; text-align: center; }
+.backup-history-error { color: #b91c1c; border-color: #fecaca; background: #fff1f2; }
+@media (max-width: 760px) {
+    .backup-history-section { padding: 12px; }
+    .backup-history-section-head { flex-direction: column; }
+    .backup-history-section-head .btn { width: 100%; }
+    .backup-history-block .backup-history-wrap { overflow-x: auto; }
+    .backup-history-table { min-width: 540px; }
+    .backup-archive-table { min-width: 620px !important; }
+}
