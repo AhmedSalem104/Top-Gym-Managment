@@ -508,3 +508,308 @@ body.gym-page-bg {
 
 /* Kiosk is intentionally larger for touch-first check-in. */
 body.attendance-kiosk-mode .app-shell .btn { min-height: 52px !important; font-size: 14px; }
+
+/* ========================================================================
+   FitMaker visual adaptation
+   Source tokens: #1D1D1D charcoal, #D90A14 red, #CD4E17 orange,
+   Vazirmatn typography, rounded controls and restrained red shadows.
+   The admin information architecture and all interactions remain unchanged.
+   ======================================================================== */
+:root {
+    --ds-primary: #d90a14;
+    --ds-primary-strong: #9a070e;
+    --ds-secondary: #cd4e17;
+    --ds-surface: #1d1d1d;
+    --ds-surface-raised: #262626;
+    --ds-shadow-color: rgba(217, 10, 20, .16);
+    --theme-bg: #1d1d1d;
+    --theme-surface: rgba(29, 29, 29, .94);
+    --theme-surface-strong: #1d1d1d;
+    --theme-surface-soft: rgba(255, 255, 255, .06);
+    --theme-surface-hover: rgba(217, 10, 20, .14);
+    --theme-line: rgba(169, 169, 169, .22);
+    --theme-line-strong: rgba(205, 78, 23, .68);
+    --theme-text: #fff;
+    --theme-text-soft: #f0f0f0;
+    --theme-muted: #a9a9a9;
+    --theme-faint: #888;
+    --theme-blue: #cd4e17;
+}
+
+html,
+body,
+.app-shell,
+.app-shell button,
+.app-shell input,
+.app-shell select,
+.app-shell textarea {
+    font-family: 'Vazirmatn', 'Cairo', Tahoma, Arial, sans-serif !important;
+}
+body.gym-page-bg {
+    color: #fff !important;
+    background: #1d1d1d !important;
+}
+
+/* Navigation follows the Figma text-navigation pattern instead of blue pills. */
+.app-shell .page-tabs {
+    border-bottom: 1px solid rgba(205, 78, 23, .25) !important;
+    background: #1d1d1d !important;
+}
+.app-shell .page-tab {
+    border: 0 !important;
+    border-bottom: 2px solid transparent !important;
+    border-radius: 0 !important;
+    color: #fff !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+}
+.app-shell .page-tab:hover:not(.active) {
+    border-bottom-color: rgba(205, 78, 23, .6) !important;
+    color: #cd4e17 !important;
+    background: rgba(205, 78, 23, .08) !important;
+    transform: none;
+}
+.app-shell .page-tab.active {
+    border-bottom-color: #d90a14 !important;
+    color: #fff !important;
+    background: rgba(217, 10, 20, .08) !important;
+    box-shadow: 0 3px 14px rgba(217, 10, 20, .12) !important;
+}
+
+/* Shared dark surfaces use the same charcoal and red-orange edge treatment. */
+.app-shell .panel,
+.app-shell .members-panel,
+.app-shell .library-section,
+.app-shell .attendance-section,
+.app-shell .coaching-section,
+.app-shell .reports-section,
+.app-shell .management-tab-panel,
+.app-shell .monthly-finance-card,
+.app-shell .dashboard-analytics,
+.app-shell .attendance-control-panel,
+.app-shell .attendance-entry-card,
+.app-shell .financial-summary-card,
+.app-shell .backup-management-panel {
+    border-color: rgba(205, 78, 23, .38) !important;
+    background: #1d1d1d !important;
+    box-shadow: 0 10px 26px var(--ds-shadow-color), inset 0 1px 0 rgba(255, 255, 255, .035) !important;
+}
+.app-shell .panel::before,
+.app-shell .library-section::before,
+.app-shell .attendance-section::before,
+.app-shell .coaching-section::before,
+.app-shell .reports-section::before,
+.app-shell .management-tab-panel::before,
+.app-shell .monthly-finance-card::before,
+.app-shell .dashboard-analytics::before {
+    background: linear-gradient(90deg, transparent, rgba(217, 10, 20, .75), transparent) !important;
+}
+.app-shell .panel-header,
+.app-shell .section-heading,
+.app-shell .library-header,
+.app-shell .attendance-header,
+.app-shell .coaching-header,
+.app-shell .management-tab-header,
+.app-shell .expenses-tab-heading,
+.app-shell .monthly-finance-head,
+.app-shell .dashboard-analytics-head {
+    border-bottom-color: rgba(169, 169, 169, .18) !important;
+    background: #1d1d1d !important;
+}
+.app-shell .panel-header h3,
+.app-shell .section-heading h3,
+.app-shell .library-heading h3,
+.app-shell .attendance-heading h3,
+.app-shell .coaching-heading h3,
+.app-shell .management-tab-header h3,
+.app-shell .expenses-tab-heading h3,
+.app-shell .monthly-finance-heading h3,
+.app-shell .dashboard-analytics-heading h3 { color: #fff !important; }
+.app-shell .panel-header p,
+.app-shell .section-heading p,
+.app-shell .library-heading p,
+.app-shell .attendance-heading p,
+.app-shell .coaching-heading p,
+.app-shell .monthly-finance-heading p { color: #a9a9a9 !important; }
+
+/* Dashboard metrics and content cards inherit the same visual language. */
+.app-shell .stat-card,
+.app-shell .alert-card,
+.app-shell .member-card,
+.app-shell .monthly-finance-metric,
+.app-shell .analytics-kpi,
+.app-shell .analytics-smart-insight,
+.app-shell .management-shortcut,
+.app-shell .attendance-summary-card,
+.app-shell .attendance-insights-cardlet,
+.app-shell .coaching-stat-card,
+.app-shell .library-type-tab,
+.app-shell .member-training-systems > div,
+.app-shell .profile-system-card,
+.app-shell .profile-stat-card {
+    border-color: rgba(205, 78, 23, .32) !important;
+    background: #262626 !important;
+    box-shadow: 0 8px 20px rgba(217, 10, 20, .09) !important;
+}
+.app-shell .stat-card .stat-value,
+.app-shell .stat-card .stat-label,
+.app-shell .stat-card .stat-caption,
+.app-shell .alert-card-head strong,
+.app-shell .alert-card-name,
+.app-shell .table-main,
+.app-shell .member-identity-copy .table-member-name { color: #fff !important; }
+.app-shell .stat-card .stat-icon,
+.app-shell .alert-card-icon,
+.app-shell .monthly-finance-icon,
+.app-shell .analytics-kpi-icon,
+.app-shell .management-shortcut-icon {
+    border-color: rgba(205, 78, 23, .55) !important;
+    color: #fff !important;
+    background: rgba(217, 10, 20, .22) !important;
+}
+.app-shell .stat-card .stat-icon .ui-icon,
+.app-shell .monthly-finance-icon .ui-icon,
+.app-shell .analytics-kpi-icon .ui-icon,
+.app-shell .management-shortcut-icon .ui-icon { color: #cd4e17 !important; }
+
+/* Figma controls: red filled primary and orange outlined secondary. */
+.app-shell .btn,
+.app-shell .action-menu-toggle,
+.app-shell .table-action-visible,
+.app-shell .icon-action { border-radius: 20px !important; }
+.app-shell .btn-primary {
+    border-color: #d90a14 !important;
+    background: #d90a14 !important;
+    box-shadow: 0 8px 12px rgba(217, 10, 20, .16) !important;
+}
+.app-shell .btn-primary:not(:disabled):hover {
+    border-color: #9a070e !important;
+    background: #9a070e !important;
+    box-shadow: 0 10px 18px rgba(217, 10, 20, .24) !important;
+}
+.app-shell .btn-light,
+.app-shell .action-menu-toggle,
+.app-shell .table-action-visible,
+.app-shell .icon-action {
+    border-color: #cd4e17 !important;
+    color: #cd4e17 !important;
+    background: transparent !important;
+}
+.app-shell .btn-light:hover:not(:disabled),
+.app-shell .action-menu-toggle:hover,
+.app-shell .table-action-visible:hover,
+.app-shell .icon-action:hover {
+    border-color: #d90a14 !important;
+    color: #fff !important;
+    background: rgba(217, 10, 20, .18) !important;
+}
+.app-shell .btn-danger { border-color: #d90a14 !important; color: #ffb4b8 !important; background: rgba(119, 6, 11, .42) !important; }
+.app-shell .btn-purple { border-color: rgba(205, 78, 23, .75) !important; color: #f2a276 !important; background: rgba(113, 43, 13, .35) !important; }
+.app-shell .btn:focus-visible,
+.app-shell .action-menu-toggle:focus-visible,
+.app-shell .table-action-visible:focus-visible,
+.app-shell .icon-action:focus-visible { outline-color: #cd4e17 !important; }
+
+/* Form controls and searchable selects use the charcoal/orange treatment. */
+.app-shell input:not([type='checkbox']):not([type='radio']),
+.app-shell select:not(.builder-search-native),
+.app-shell textarea,
+.app-shell .members-search-field,
+.app-shell .library-search,
+.app-shell .coaching-search,
+.app-shell .attendance-input-wrap,
+.app-shell .builder-search-trigger {
+    border-color: rgba(169, 169, 169, .42) !important;
+    color: #fff !important;
+    background-color: #262626 !important;
+    box-shadow: none !important;
+}
+.app-shell input::placeholder,
+.app-shell textarea::placeholder,
+.app-shell .members-search-field input::placeholder,
+.app-shell .library-search input::placeholder,
+.app-shell .coaching-search input::placeholder { color: #a9a9a9 !important; }
+.app-shell input:not([type='checkbox']):not([type='radio']):focus,
+.app-shell select:not(.builder-search-native):focus,
+.app-shell textarea:focus,
+.app-shell .members-search-field:focus-within,
+.app-shell .library-search:focus-within,
+.app-shell .coaching-search:focus-within,
+.app-shell .attendance-input-wrap:focus-within,
+.app-shell .builder-search-select.is-open .builder-search-trigger {
+    border-color: #cd4e17 !important;
+    background-color: #262626 !important;
+    box-shadow: 0 0 0 3px rgba(205, 78, 23, .22) !important;
+}
+.app-shell select option,
+.app-shell select optgroup,
+.app-shell .builder-search-popover,
+.app-shell .action-menu-panel { color: #fff !important; background: #262626 !important; }
+.app-shell .builder-search-option,
+.app-shell .action-menu-item { color: #f0f0f0 !important; }
+.app-shell .builder-search-option:hover,
+.app-shell .builder-search-option[aria-selected='true'],
+.app-shell .action-menu-item:hover { color: #fff !important; background: rgba(217, 10, 20, .2) !important; }
+
+/* Data surfaces keep hierarchy while adopting the Figma palette. */
+.app-shell table th {
+    color: #fff !important;
+    border-bottom-color: rgba(205, 78, 23, .45) !important;
+    background: #262626 !important;
+}
+.app-shell table td {
+    color: #f0f0f0 !important;
+    border-bottom-color: rgba(169, 169, 169, .16) !important;
+    background: transparent !important;
+}
+.app-shell table tbody tr:hover td { background: rgba(217, 10, 20, .13) !important; }
+.app-shell .table-sub,
+.app-shell .table-member-phone,
+.app-shell .table-member-name + small,
+.app-shell .alert-card-detail,
+.app-shell .alert-card-phone,
+.app-shell [class*='muted'],
+.app-shell [class*='caption'],
+.app-shell [class*='hint'] { color: #a9a9a9 !important; }
+
+/* Dialogs, toasts and validation use the same red-orange emphasis. */
+.app-shell dialog,
+.app-shell .swal2-popup,
+.app-shell .dialog-body {
+    border-color: rgba(205, 78, 23, .52) !important;
+    background: #1d1d1d !important;
+    box-shadow: 0 16px 38px rgba(217, 10, 20, .18) !important;
+}
+.app-shell dialog::backdrop { background: rgba(0, 0, 0, .72) !important; }
+.app-shell .toast-item {
+    border-color: rgba(205, 78, 23, .55) !important;
+    color: #fff !important;
+    background: #262626 !important;
+    box-shadow: 0 8px 18px rgba(217, 10, 20, .16) !important;
+}
+.swal2-container .swal2-popup.top-gym-alert,
+.swal2-container .swal2-popup.delete-confirm-alert,
+.swal2-container .swal2-popup.duplicate-phone-alert,
+.swal2-container .swal2-popup.qr-member-preview-alert {
+    border: 1px solid rgba(205, 78, 23, .55) !important;
+    background: #1d1d1d !important;
+}
+.swal2-container .swal2-title,
+.swal2-container .swal2-html-container { color: #fff !important; }
+.swal2-container .swal2-confirm { border-radius: 20px !important; background: #d90a14 !important; }
+.swal2-container .swal2-cancel { border-radius: 20px !important; color: #cd4e17 !important; background: transparent !important; border: 1px solid #cd4e17 !important; }
+
+@media (max-width: 640px) {
+    .app-shell .page-tabs { padding-top: 18px !important; }
+    .app-shell .page-tab { min-height: 38px !important; }
+    .app-shell .btn,
+    .app-shell .btn.btn-small,
+    .app-shell .action-menu-toggle { border-radius: 18px !important; }
+    .app-shell .panel,
+    .app-shell .members-panel,
+    .app-shell .library-section,
+    .app-shell .attendance-section,
+    .app-shell .coaching-section,
+    .app-shell .reports-section { border-radius: 14px !important; }
+}
