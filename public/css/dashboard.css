@@ -1889,3 +1889,197 @@
             .reports-debtor-actions { gap: 4px; }
             .reports-debtor-actions .btn { min-width: 0; padding-inline: 6px; font-size: 8px; }
         }
+
+        /* Glass tags: replace bright white pills with readable, semantic surfaces. */
+        .app-shell .badge,
+        .app-shell .alert-status,
+        .app-shell .monthly-finance-status,
+        .app-shell .member-attendance-status,
+        .app-shell .type-status,
+        .app-shell .system-type,
+        .app-shell .system-status,
+        .app-shell .trainee-badge,
+        .app-shell .library-table-badge,
+        .app-shell .attendance-date-badge,
+        .app-shell .attendance-status,
+        .app-shell .payment-transaction-type,
+        .app-shell .qr-member-preview-status,
+        .app-shell .attendance-insights-badge,
+        .app-shell .builder-chip,
+        .app-shell .builder-lock-chip,
+        .app-shell .builder-ready-chip,
+        .app-shell .library-type-tab strong,
+        .app-shell .reports-debtors-count {
+            border: 1px solid rgba(255, 255, 255, .3) !important;
+            color: #fff !important;
+            background: rgba(15, 23, 42, .48) !important;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, .08), 0 4px 12px rgba(2, 6, 23, .14);
+            text-shadow: 0 1px 3px rgba(0, 0, 0, .45);
+        }
+        .app-shell .badge.active,
+        .app-shell .alert-card.active .alert-status,
+        .app-shell .member-attendance-status:not(.auto):not(.unavailable),
+        .app-shell .attendance-status.complete,
+        .app-shell .payment-transaction-type.payment,
+        .app-shell .qr-member-preview-status.active,
+        .app-shell .library-table-badge.foods,
+        .app-shell .library-table-badge.positive,
+        .app-shell .system-type.diet,
+        .app-shell .builder-chip,
+        .app-shell .builder-lock-chip {
+            border-color: rgba(110, 231, 183, .52) !important;
+            background: rgba(6, 95, 70, .42) !important;
+            color: #ecfdf5 !important;
+        }
+        .app-shell .badge.expiring_soon,
+        .app-shell .alert-status,
+        .app-shell .payment-transaction-type.adjustment,
+        .app-shell .qr-member-preview-status.expiring_soon,
+        .app-shell .library-table-badge.warning,
+        .app-shell .system-status.paused {
+            border-color: rgba(252, 211, 77, .54) !important;
+            background: rgba(120, 53, 15, .46) !important;
+            color: #fef3c7 !important;
+        }
+        .app-shell .badge.expired,
+        .app-shell .alert-card.expired .alert-status,
+        .app-shell .qr-member-preview-status.expired {
+            border-color: rgba(252, 165, 165, .55) !important;
+            background: rgba(127, 29, 29, .46) !important;
+            color: #fee2e2 !important;
+        }
+        .app-shell .badge.frozen,
+        .app-shell .alert-card.frozen .alert-status,
+        .app-shell .member-attendance-status.auto,
+        .app-shell .qr-member-preview-status.frozen,
+        .app-shell .attendance-source.qr,
+        .app-shell .system-type.workout {
+            border-color: rgba(196, 181, 253, .56) !important;
+            background: rgba(76, 29, 149, .45) !important;
+            color: #ede9fe !important;
+        }
+        .app-shell .type-status.off,
+        .app-shell .system-status.archived,
+        .app-shell .member-attendance-status.unavailable,
+        .app-shell .qr-member-preview-status.unknown {
+            border-color: rgba(203, 213, 225, .42) !important;
+            background: rgba(51, 65, 85, .52) !important;
+            color: #e2e8f0 !important;
+        }
+        .app-shell .attendance-date-badge,
+        .app-shell .payment-transaction-type,
+        .app-shell .qr-member-preview-status.unknown,
+        .app-shell .library-table-badge.muscles,
+        .app-shell .system-status,
+        .app-shell .builder-ready-chip {
+            border-color: rgba(147, 197, 253, .54) !important;
+            background: rgba(30, 64, 175, .42) !important;
+            color: #dbeafe !important;
+        }
+        .app-shell .library-table-badge.exercises,
+        .app-shell .attendance-insights-badge,
+        .app-shell .library-type-tab strong {
+            border-color: rgba(196, 181, 253, .54) !important;
+            background: rgba(76, 29, 149, .42) !important;
+            color: #ede9fe !important;
+        }
+        .app-shell .trainee-badge {
+            border-color: rgba(196, 181, 253, .54) !important;
+            background: rgba(76, 29, 149, .42) !important;
+            color: #ede9fe !important;
+        }
+        .app-shell .attendance-source.phone,
+        .app-shell .attendance-source.manual {
+            border-color: rgba(110, 231, 183, .52) !important;
+            background: rgba(6, 95, 70, .42) !important;
+            color: #ecfdf5 !important;
+        }
+        .app-shell .reports-debtors-count {
+            border-color: rgba(252, 165, 165, .55) !important;
+            background: rgba(127, 29, 29, .46) !important;
+            color: #fee2e2 !important;
+        }
+
+        /* Pagination follows the table surface instead of rendering as a white block. */
+        .app-shell .members-pagination,
+        .app-shell .library-pagination,
+        .app-shell .coaching-pagination,
+        .app-shell .reports-pagination {
+            min-height: 54px;
+            padding: 10px 14px !important;
+            border: 1px solid rgba(255, 255, 255, .22) !important;
+            border-top-color: rgba(255, 255, 255, .3) !important;
+            border-radius: 0 0 14px 14px;
+            color: #fff !important;
+            background: rgba(255, 255, 255, .055) !important;
+            -webkit-backdrop-filter: blur(4px) saturate(110%);
+            backdrop-filter: blur(4px) saturate(110%);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, .06);
+            text-shadow: 0 1px 3px rgba(0, 0, 0, .42);
+        }
+        .app-shell .members-pagination-info,
+        .app-shell .library-pagination-info,
+        .app-shell .coaching-pagination > span,
+        .app-shell .reports-pagination > span {
+            color: #fff !important;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, .45);
+        }
+        .app-shell .members-pagination-actions,
+        .app-shell .library-pagination-actions,
+        .app-shell .coaching-pagination > div,
+        .app-shell .reports-pagination > div {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .app-shell .members-pagination .btn,
+        .app-shell .library-pagination .btn,
+        .app-shell .coaching-pagination .btn,
+        .app-shell .reports-pagination .btn {
+            min-height: 32px;
+            border: 1px solid rgba(255, 255, 255, .28) !important;
+            border-radius: 8px;
+            color: #fff !important;
+            background: rgba(255, 255, 255, .08) !important;
+            box-shadow: none !important;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, .42);
+        }
+        .app-shell .members-pagination .btn:hover:not(:disabled),
+        .app-shell .library-pagination .btn:hover:not(:disabled),
+        .app-shell .coaching-pagination .btn:hover:not(:disabled),
+        .app-shell .reports-pagination .btn:hover:not(:disabled) {
+            border-color: rgba(255, 255, 255, .5) !important;
+            background: rgba(255, 255, 255, .17) !important;
+        }
+        .app-shell .members-pagination .btn:disabled,
+        .app-shell .library-pagination .btn:disabled,
+        .app-shell .coaching-pagination .btn:disabled,
+        .app-shell .reports-pagination .btn:disabled {
+            color: rgba(255, 255, 255, .48) !important;
+            border-color: rgba(255, 255, 255, .14) !important;
+            background: rgba(255, 255, 255, .035) !important;
+            opacity: 1;
+        }
+        @media (max-width: 640px) {
+            .app-shell .members-pagination,
+            .app-shell .library-pagination,
+            .app-shell .coaching-pagination,
+            .app-shell .reports-pagination {
+                align-items: stretch;
+                flex-direction: column;
+                gap: 8px;
+                text-align: center;
+            }
+            .app-shell .members-pagination-actions,
+            .app-shell .library-pagination-actions,
+            .app-shell .coaching-pagination > div,
+            .app-shell .reports-pagination > div {
+                width: 100%;
+            }
+            .app-shell .members-pagination .btn,
+            .app-shell .library-pagination .btn,
+            .app-shell .coaching-pagination .btn,
+            .app-shell .reports-pagination .btn {
+                flex: 1 1 0;
+            }
+        }
