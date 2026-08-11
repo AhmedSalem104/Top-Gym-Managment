@@ -121,7 +121,7 @@
     }
 
     function tableActions(id) {
-        return `<div class="library-row-actions"><button class="btn btn-light" type="button" data-library-action="details" data-id="${id}">التفاصيل</button><button class="btn btn-light" type="button" data-library-action="edit" data-id="${id}">تعديل</button><button class="btn library-delete" type="button" data-library-action="delete" data-id="${id}">حذف</button></div>`;
+        return `<div class="library-row-actions"><button class="btn btn-light" type="button" title="التفاصيل" aria-label="التفاصيل" data-library-action="details" data-id="${id}">التفاصيل</button><button class="btn btn-light" type="button" title="تعديل" aria-label="تعديل" data-library-action="edit" data-id="${id}">تعديل</button><button class="btn library-delete" type="button" title="حذف" aria-label="حذف" data-library-action="delete" data-id="${id}">حذف</button></div>`;
     }
 
     function renderMuscleRow(item) {
