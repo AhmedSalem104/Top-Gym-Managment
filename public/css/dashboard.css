@@ -1708,3 +1708,97 @@
         .app-shell .attendance-insights-cardlet-head {
             background: rgba(255, 255, 255, .16) !important;
         }
+
+        /* Ultra-glass mode: let the gym photo remain visible through every page component. */
+        .app-shell .page .panel,
+        .app-shell .page .stat-card,
+        .app-shell .page article,
+        .app-shell .page .card,
+        .app-shell .page .library-table-wrap,
+        .app-shell .page .external-trainees-table-wrap,
+        .app-shell .page .attendance-table-wrap,
+        .app-shell .page .table-scroll,
+        .app-shell .page .pricing-table-scroll,
+        .app-shell .page .history-scroll {
+            background: rgba(255, 255, 255, .1) !important;
+            -webkit-backdrop-filter: blur(3px) saturate(105%);
+            backdrop-filter: blur(3px) saturate(105%);
+        }
+        .app-shell .page .panel-header,
+        .app-shell .page .section-heading,
+        .app-shell .page .library-header,
+        .app-shell .page .attendance-header,
+        .app-shell .page .coaching-header,
+        .app-shell .page .management-tab-header,
+        .app-shell .page .monthly-finance-head,
+        .app-shell .page .attendance-insights-head,
+        .app-shell .page .attendance-insights-cardlet-head,
+        .app-shell .page .library-toolbar,
+        .app-shell .page .coaching-toolbar,
+        .app-shell .page .reports-filters,
+        .app-shell .page .monthly-finance-metrics,
+        .app-shell .page .monthly-expenses-list {
+            background: rgba(255, 255, 255, .08) !important;
+        }
+        .app-shell .page .members-toolbar {
+            background: rgba(15, 23, 42, .42) !important;
+        }
+        .app-shell .page .members-list,
+        .app-shell .page .external-trainees-list,
+        .app-shell .page .library-list,
+        .app-shell .page .attendance-table-wrap,
+        .app-shell .page .table-scroll,
+        .app-shell .page .pricing-table-scroll,
+        .app-shell .page .history-scroll {
+            background: rgba(255, 255, 255, .035) !important;
+        }
+        .app-shell .page .members-table tbody tr,
+        .app-shell .page .pricing-table tbody tr,
+        .app-shell .page .membership-types-table tbody tr,
+        .app-shell .page .history-table tbody tr,
+        .app-shell .page .library-data-table tbody tr,
+        .app-shell .page .external-trainees-table tbody tr,
+        .app-shell .page .attendance-table tbody tr {
+            background: rgba(255, 255, 255, .025) !important;
+        }
+        .app-shell .page .members-table thead th,
+        .app-shell .page .pricing-table thead th,
+        .app-shell .page .membership-types-table thead th,
+        .app-shell .page .history-table thead th,
+        .app-shell .page .library-data-table thead th,
+        .app-shell .page .external-trainees-table thead th,
+        .app-shell .page .attendance-table thead th {
+            background: rgba(255, 255, 255, .08) !important;
+        }
+
+        /* White text for muted content over the dark photo canvas. */
+        .app-shell .page .panel h1,
+        .app-shell .page .panel h2,
+        .app-shell .page .panel h3,
+        .app-shell .page .panel h4,
+        .app-shell .page .panel p,
+        .app-shell .page .panel small,
+        .app-shell .page .panel label,
+        .app-shell .page .panel th,
+        .app-shell .page .panel td,
+        .app-shell .page .panel a,
+        .app-shell .page .stat-label,
+        .app-shell .page .stat-caption,
+        .app-shell .page .table-main,
+        .app-shell .page .table-sub,
+        .app-shell .page .table-member-name,
+        .app-shell .page .table-member-phone,
+        .app-shell .page .members-count,
+        .app-shell .page .library-kicker,
+        .app-shell .page .coaching-kicker,
+        .app-shell .page .reports-eyebrow,
+        .app-shell .page .monthly-finance-eyebrow {
+            color: #fff !important;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, .42);
+        }
+        .app-shell .page .monthly-finance-value,
+        .app-shell .page .report-kpi strong,
+        .app-shell .page .coaching-summary-card strong {
+            color: #fff !important;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, .42);
+        }
