@@ -1600,9 +1600,9 @@
         .management-tab-panel,
         .monthly-finance-card,
         .dashboard-analytics {
-            background: rgba(255, 255, 255, .38) !important;
-            -webkit-backdrop-filter: blur(8px) saturate(112%);
-            backdrop-filter: blur(8px) saturate(112%);
+            background: rgba(255, 255, 255, .2) !important;
+            -webkit-backdrop-filter: blur(5px) saturate(108%);
+            backdrop-filter: blur(5px) saturate(108%);
         }
         .table-scroll,
         .pricing-table-scroll,
@@ -1614,10 +1614,10 @@
         .members-list,
         .external-trainees-list,
         .library-list {
-            background: rgba(255, 255, 255, .18) !important;
+            background: rgba(255, 255, 255, .08) !important;
             border-color: rgba(255, 255, 255, .5) !important;
-            -webkit-backdrop-filter: blur(7px) saturate(112%);
-            backdrop-filter: blur(7px) saturate(112%);
+            -webkit-backdrop-filter: blur(4px) saturate(108%);
+            backdrop-filter: blur(4px) saturate(108%);
         }
         .members-table,
         .pricing-table,
@@ -1637,7 +1637,7 @@
         .external-trainees-table thead th,
         .profile-table thead th,
         .attendance-table thead th {
-            background: rgba(248, 250, 252, .3) !important;
+            background: rgba(248, 250, 252, .16) !important;
         }
         .members-table tbody tr,
         .pricing-table tbody tr,
@@ -1647,7 +1647,7 @@
         .external-trainees-table tbody tr,
         .profile-table tbody tr,
         .attendance-table tbody tr {
-            background: rgba(255, 255, 255, .13) !important;
+            background: rgba(255, 255, 255, .06) !important;
         }
         .members-table tbody tr:nth-child(even) td,
         .pricing-table tbody tr:nth-child(even) td,
@@ -1660,7 +1660,7 @@
         .library-data-table tbody tr:hover,
         .external-trainees-table tbody tr:hover,
         .attendance-table tbody tr:hover td {
-            background: rgba(255, 255, 255, .2) !important;
+            background: rgba(255, 255, 255, .1) !important;
         }
         .members-table tbody tr td,
         .pricing-table tbody tr td,
@@ -1693,9 +1693,9 @@
         .app-shell .monthly-expenses-list,
         .app-shell .library-type-tabs,
         .app-shell .library-type-tab {
-            background: rgba(255, 255, 255, .24) !important;
-            -webkit-backdrop-filter: blur(7px) saturate(112%);
-            backdrop-filter: blur(7px) saturate(112%);
+            background: rgba(255, 255, 255, .12) !important;
+            -webkit-backdrop-filter: blur(4px) saturate(108%);
+            backdrop-filter: blur(4px) saturate(108%);
         }
         .app-shell .panel-header,
         .app-shell .section-heading,
@@ -1706,5 +1706,5 @@
         .app-shell .monthly-finance-head,
         .app-shell .attendance-insights-head,
         .app-shell .attendance-insights-cardlet-head {
-            background: rgba(255, 255, 255, .28) !important;
+            background: rgba(255, 255, 255, .16) !important;
         }
