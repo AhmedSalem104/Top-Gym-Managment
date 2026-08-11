@@ -1332,3 +1332,247 @@ dialog .dialog-body p,
     .swal2-container .swal2-confirm,
     .swal2-container .swal2-cancel { min-width: 112px !important; flex: 1 1 112px; }
 }
+
+/* ========================================================================
+   Dashboard + pricing finishing pass
+   The dashboard and membership-management views use the exact same frame,
+   inner cards and form language as the Add Member dialog.
+   ======================================================================== */
+.app-shell #dashboardSection .overview-grid {
+    gap: 14px !important;
+    background: transparent !important;
+}
+.app-shell #dashboardSection .overview-grid > .alerts-panel,
+.app-shell #dashboardSection .overview-grid > #monthlyFinanceSnapshot,
+.app-shell #dashboardSection .overview-grid > #monthlyFinanceCard {
+    border: 1px solid rgba(201, 90, 37, .62) !important;
+    border-radius: var(--ref-radius-panel) !important;
+    background: var(--ref-surface) !important;
+    box-shadow: var(--ref-shadow), inset 0 1px 0 rgba(255, 255, 255, .04) !important;
+}
+.app-shell #dashboardSection .overview-grid > .alerts-panel .panel-header,
+.app-shell #dashboardSection .overview-grid > #monthlyFinanceSnapshot .monthly-finance-snapshot-head,
+.app-shell #dashboardSection .overview-grid > #monthlyFinanceCard .monthly-finance-head {
+    border-bottom-color: var(--ref-line-soft) !important;
+    background: var(--ref-surface) !important;
+}
+.app-shell #dashboardSection .alerts-heading h3,
+.app-shell #dashboardSection .monthly-finance-heading h3,
+.app-shell #dashboardSection .monthly-finance-snapshot h3,
+.app-shell #dashboardSection .alerts-count,
+.app-shell #dashboardSection .monthly-finance-eyebrow { color: var(--ref-text) !important; }
+.app-shell #dashboardSection .alerts-heading p,
+.app-shell #dashboardSection .alerts-eyebrow,
+.app-shell #dashboardSection .alerts-search-result,
+.app-shell #dashboardSection .monthly-finance-heading p,
+.app-shell #dashboardSection .monthly-finance-snapshot p,
+.app-shell #dashboardSection .monthly-finance-status { color: var(--ref-muted) !important; }
+.app-shell #dashboardSection .alerts-heading-icon,
+.app-shell #dashboardSection .monthly-finance-icon {
+    border: 1px solid rgba(201, 90, 37, .4) !important;
+    border-radius: 10px !important;
+    color: var(--ref-accent-strong) !important;
+    background: rgba(150, 43, 30, .46) !important;
+}
+.app-shell #dashboardSection .alerts-toolbar,
+.app-shell #dashboardSection .alerts-list,
+.app-shell #dashboardSection .monthly-finance-metrics,
+.app-shell #dashboardSection .monthly-finance-snapshot-metrics {
+    background: transparent !important;
+}
+.app-shell #dashboardSection .alerts-search-field {
+    border: 1px solid var(--ref-line) !important;
+    border-radius: 10px !important;
+    color: var(--ref-muted) !important;
+    background: var(--ref-surface-raised) !important;
+}
+.app-shell #dashboardSection .alerts-search-field input { color: var(--ref-text) !important; background: transparent !important; }
+.app-shell #dashboardSection .alerts-search-field input::placeholder { color: var(--ref-muted) !important; }
+.app-shell #dashboardSection .alert-card {
+    border: 1px solid var(--ref-line) !important;
+    border-inline-start-width: 4px !important;
+    border-radius: var(--ref-radius-card) !important;
+    background: var(--ref-surface-raised) !important;
+    box-shadow: 0 7px 16px rgba(0, 0, 0, .16) !important;
+}
+.app-shell #dashboardSection .alert-card:hover { background: var(--ref-surface-hover) !important; }
+.app-shell #dashboardSection .alert-card-head strong,
+.app-shell #dashboardSection .alert-card-name { color: var(--ref-text) !important; }
+.app-shell #dashboardSection .alert-card-detail,
+.app-shell #dashboardSection .alert-card-phone { color: var(--ref-muted) !important; }
+.app-shell #dashboardSection .monthly-finance-metric,
+.app-shell #dashboardSection .monthly-finance-snapshot-metric {
+    border: 1px solid var(--ref-line) !important;
+    border-radius: var(--ref-radius-card) !important;
+    background: var(--ref-surface-raised) !important;
+}
+.app-shell #dashboardSection .monthly-finance-label,
+.app-shell #dashboardSection .monthly-finance-snapshot-metric span { color: var(--ref-muted) !important; }
+.app-shell #dashboardSection .monthly-finance-value,
+.app-shell #dashboardSection .monthly-finance-snapshot-metric strong { color: var(--ref-text) !important; }
+.app-shell #dashboardSection .monthly-finance-metric.subscriptions .monthly-finance-value,
+.app-shell #dashboardSection .monthly-finance-snapshot-metric.subscriptions strong { color: var(--ref-text) !important; }
+.app-shell #dashboardSection .monthly-finance-metric.expenses .monthly-finance-value,
+.app-shell #dashboardSection .monthly-finance-snapshot-metric.expenses strong { color: var(--ref-warning) !important; }
+.app-shell #dashboardSection .monthly-finance-metric.net .monthly-finance-value,
+.app-shell #dashboardSection .monthly-finance-snapshot-metric.net strong { color: var(--ref-success) !important; }
+.app-shell #dashboardSection .monthly-finance-metric small,
+.app-shell #dashboardSection .monthly-expenses-empty { color: var(--ref-muted) !important; }
+.app-shell #dashboardSection .snapshot-membership-status-head {
+    margin-top: 14px !important;
+    padding-top: 14px !important;
+    border-top: 1px solid var(--ref-line-soft) !important;
+}
+.app-shell #dashboardSection .snapshot-membership-status-head span { color: var(--ref-text) !important; }
+.app-shell #dashboardSection .snapshot-membership-status-head small { color: var(--ref-muted) !important; }
+.app-shell #dashboardSection .snapshot-membership-stats { background: transparent !important; }
+.app-shell #dashboardSection .snapshot-membership-stats .stat-card {
+    border: 1px solid var(--ref-line) !important;
+    border-radius: var(--ref-radius-card) !important;
+    background: var(--ref-surface-raised) !important;
+    box-shadow: 0 7px 16px rgba(0, 0, 0, .16) !important;
+}
+.app-shell #dashboardSection .snapshot-membership-stats .stat-label { color: var(--ref-muted) !important; }
+.app-shell #dashboardSection .snapshot-membership-stats .stat-value { color: var(--ref-text) !important; }
+.app-shell #dashboardSection .snapshot-membership-stats .stat-card.active .stat-value { color: var(--ref-success) !important; }
+.app-shell #dashboardSection .snapshot-membership-stats .stat-card.warning .stat-value { color: var(--ref-warning) !important; }
+.app-shell #dashboardSection .snapshot-membership-stats .stat-card.danger .stat-value { color: var(--ref-danger) !important; }
+.app-shell #dashboardSection .snapshot-membership-stats .stat-card.frozen .stat-value { color: var(--ref-purple) !important; }
+
+/* Pricing and membership management get the same inner-card rhythm. */
+.app-shell #managementSection {
+    border-color: rgba(201, 90, 37, .62) !important;
+    background: var(--ref-surface) !important;
+}
+.app-shell #managementSection .management-tab-header,
+.app-shell #managementSection .backup-history-section-head,
+.app-shell #managementSection .pricing-section-head {
+    border-color: var(--ref-line-soft) !important;
+    background: var(--ref-surface) !important;
+}
+.app-shell #managementSection .management-eyebrow,
+.app-shell #managementSection .pricing-section-head h4 { color: var(--ref-accent-strong) !important; }
+.app-shell #managementSection .management-tab-header h3,
+.app-shell #managementSection .backup-history-section-head h4,
+.app-shell #managementSection .pricing-section-head h4 { color: var(--ref-text) !important; }
+.app-shell #managementSection .management-tab-header p,
+.app-shell #managementSection .pricing-section-head p,
+.app-shell #managementSection .backup-history-section-head p,
+.app-shell #managementSection .backup-management-panel p { color: var(--ref-muted) !important; }
+.app-shell #managementSection .management-shortcuts { gap: 12px !important; }
+.app-shell #managementSection .management-shortcut {
+    border: 1px solid var(--ref-line) !important;
+    border-radius: var(--ref-radius-card) !important;
+    background: var(--ref-surface-raised) !important;
+}
+.app-shell #managementSection .management-shortcut:hover { border-color: rgba(201, 90, 37, .72) !important; background: var(--ref-surface-hover) !important; }
+.app-shell #managementSection .backup-management-panel,
+.app-shell #managementSection .backup-history-section,
+.app-shell #managementSection .backup-history-list {
+    border-color: var(--ref-line) !important;
+    border-radius: var(--ref-radius-card) !important;
+    background: var(--ref-surface-raised) !important;
+}
+.app-shell #managementSection .backup-management-panel h4,
+.app-shell #managementSection .backup-history-section h4 { color: var(--ref-text) !important; }
+
+/* Every native popup follows the Add Member dialog's header/content/footer anatomy. */
+.app-shell dialog,
+dialog {
+    border: 1px solid rgba(201, 90, 37, .68) !important;
+    border-radius: var(--ref-radius-panel) !important;
+    background: var(--ref-surface) !important;
+    color: var(--ref-text) !important;
+}
+.app-shell .member-dialog .form-panel,
+.app-shell dialog .dialog-body {
+    border: 0 !important;
+    border-radius: 0 !important;
+    color: var(--ref-text) !important;
+    background: var(--ref-surface) !important;
+    box-shadow: none !important;
+}
+.app-shell .member-dialog .section-heading,
+.app-shell dialog .details-dialog-head {
+    min-height: 66px !important;
+    margin: 0 !important;
+    padding: 16px 22px !important;
+    border-bottom: 1px solid var(--ref-line-soft) !important;
+    color: var(--ref-text) !important;
+    background: var(--ref-surface) !important;
+}
+.app-shell .member-dialog .section-heading h3,
+.app-shell dialog .details-dialog-head h3,
+.app-shell dialog .dialog-body > h3 { color: var(--ref-text) !important; font-size: 16px !important; font-weight: 800 !important; }
+.app-shell #actionDialog .dialog-body > h3 {
+    margin: -22px -22px 6px !important;
+    padding: 16px 22px !important;
+    border-bottom: 1px solid var(--ref-line-soft) !important;
+    background: var(--ref-surface) !important;
+}
+.app-shell #actionDialog .dialog-body > p {
+    margin: 0 -22px 18px !important;
+    padding: 0 22px !important;
+}
+.app-shell .member-dialog .form-body,
+.app-shell dialog .dialog-body > form,
+.app-shell dialog .dialog-body > .field-grid,
+.app-shell dialog .dialog-body > .field,
+.app-shell dialog .dialog-body > .checkbox-field,
+.app-shell dialog .dialog-body > .pricing-section-head,
+.app-shell dialog .dialog-body > .pricing-table-scroll,
+.app-shell dialog .dialog-body > .type-preview,
+.app-shell dialog .dialog-body > .pricing-summary {
+    color: var(--ref-text) !important;
+}
+.app-shell .member-dialog .section-label,
+.app-shell dialog .pricing-section-head h4 { color: var(--ref-accent-strong) !important; }
+.app-shell .member-dialog .field label,
+.app-shell dialog .field label,
+.app-shell dialog .checkbox-field { color: var(--ref-text-soft) !important; }
+.app-shell .member-dialog .field-hint,
+.app-shell dialog .field-hint { color: var(--ref-muted) !important; }
+.app-shell .member-dialog .form-actions,
+.app-shell dialog .dialog-actions {
+    margin-inline: 0 !important;
+    padding: 14px 22px !important;
+    border-top: 1px solid var(--ref-line-soft) !important;
+    background: var(--ref-surface-deep) !important;
+}
+.app-shell .member-dialog .form-actions .btn,
+.app-shell dialog .dialog-actions .btn { min-height: 40px !important; }
+
+/* Pricing tables are still tables, just placed on the same dialog surface. */
+.app-shell .pricing-table-scroll,
+.app-shell .pricing-dialog .pricing-table-scroll,
+.app-shell .membership-types-table,
+.app-shell .pricing-table {
+    border-color: var(--ref-line) !important;
+    background: var(--ref-surface-raised) !important;
+}
+.app-shell .pricing-table th,
+.app-shell .membership-types-table th { color: var(--ref-text) !important; background: var(--ref-surface-deep) !important; border-bottom-color: rgba(201, 90, 37, .46) !important; }
+.app-shell .pricing-table td,
+.app-shell .membership-types-table td { color: var(--ref-text-soft) !important; border-bottom-color: var(--ref-line-soft) !important; background: transparent !important; }
+.app-shell .pricing-table .duration-price { color: var(--ref-success) !important; }
+.app-shell .pricing-summary,
+.app-shell .type-preview {
+    border-color: rgba(201, 90, 37, .44) !important;
+    border-radius: var(--ref-radius-card) !important;
+    color: var(--ref-text-soft) !important;
+    background: var(--ref-accent-soft) !important;
+}
+
+@media (max-width: 640px) {
+    .app-shell #dashboardSection .overview-grid { gap: 10px !important; }
+    .app-shell #dashboardSection .overview-grid > .alerts-panel,
+    .app-shell #dashboardSection .overview-grid > #monthlyFinanceSnapshot,
+    .app-shell #dashboardSection .overview-grid > #monthlyFinanceCard { border-radius: 16px !important; }
+    .app-shell #managementSection .management-shortcuts { grid-template-columns: 1fr !important; }
+    .app-shell .member-dialog .section-heading,
+    .app-shell dialog .details-dialog-head { padding-inline: 16px !important; }
+    .app-shell .member-dialog .form-actions,
+    .app-shell dialog .dialog-actions { padding-inline: 16px !important; }
+    .app-shell #actionDialog .dialog-body > h3 { margin: -16px -16px 6px !important; padding-inline: 16px !important; }
+    .app-shell #actionDialog .dialog-body > p { margin-inline: -16px !important; padding-inline: 16px !important; }
+}
