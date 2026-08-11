@@ -26,6 +26,15 @@
             <div class="reports-kpis" id="reportsKpis"><div class="loading">جاري تحميل التقرير…</div></div>
             <div class="reports-grid"><section class="report-card"><div class="report-card-head"><div><span>التحليل الزمني</span><h3>الحركة اليومية</h3></div></div><div class="reports-timeline-wrap" id="reportsTimeline"></div></section><section class="report-card"><div class="report-card-head"><div><span>التوزيع</span><h3>الباقات وطرق الدفع</h3></div></div><div class="reports-breakdown" id="reportsBreakdown"></div></section></div>
             <section class="report-card reports-members-card"><div class="report-card-head"><div><span>تفاصيل الفترة</span><h3>المشتركون المسجلون</h3></div><span class="reports-members-count" id="reportsMembersCount">—</span></div><div class="reports-table-wrap" id="reportsMembers"></div></section>`;
+        const debtorsCard = document.createElement('section');
+        debtorsCard.className = 'report-card reports-debtors-card';
+        debtorsCard.innerHTML = '<div class="report-card-head"><div><span>أولوية التحصيل</span><h3>المشتركون عليهم مستحقات</h3></div><span class="reports-debtors-count" id="reportsDebtorsCount">—</span></div><div class="reports-debtors-table-wrap" id="reportsDebtors"></div>';
+        panel.insertBefore(debtorsCard, panel.querySelector('.reports-members-card'));
+        $('reportsDebtors').addEventListener('click', (event) => {
+            const button = event.target.closest('[data-report-member-action]');
+            if (!button) return;
+            window.dispatchEvent(new CustomEvent('topgym:report-member-action', { detail: { action: button.dataset.reportMemberAction, id: button.dataset.memberId } }));
+        });
         $('reportsFrom').value = monthStart();
         $('reportsTo').value = todayIso();
         $('reportsForm').addEventListener('submit', (event) => { event.preventDefault(); loadReport(); });
@@ -63,6 +72,17 @@
         $('reportsBreakdown').innerHTML = `<div class="breakdown-group"><h4>الباقات</h4>${planRows || '<span class="reports-empty">لا توجد بيانات.</span>'}</div><div class="breakdown-group"><h4>طرق الدفع</h4>${paymentRows || '<span class="reports-empty">لا توجد مدفوعات.</span>'}</div><div class="breakdown-group"><h4>الحالات الحالية</h4>${statusRows || '<span class="reports-empty">لا توجد بيانات.</span>'}</div>`;
     }
 
+    function renderDebtors(data) {
+        const debtors = (data.debtors || []).filter((member) => Number(member.amountRemaining || 0) > 0);
+        const total = debtors.reduce((sum, member) => sum + Number(member.amountRemaining || 0), 0);
+        $('reportsDebtorsCount').textContent = `${number(debtors.length)} مشترك · ${money(total)}`;
+        if (!debtors.length) {
+            $('reportsDebtors').innerHTML = '<div class="reports-empty-state">لا توجد مبالغ متبقية على المشتركين حاليًا.</div>';
+            return;
+        }
+        $('reportsDebtors').innerHTML = `<table class="reports-table reports-debtors-table"><thead><tr><th>المشترك</th><th>الاشتراك</th><th>الانتهاء</th><th>المتبقي</th><th>الوصول السريع</th></tr></thead><tbody>${debtors.map((member) => `<tr><td><strong>${escapeHtml(member.fullName)}</strong><small>${escapeHtml(member.phone)}</small></td><td>${escapeHtml(label(PLAN_LABELS, member.plan))}<small>${escapeHtml(label(TYPE_LABELS, member.type))}</small></td><td>${dateOnly(member.endDate)}</td><td class="has-debt">${money(member.amountRemaining)}</td><td><div class="reports-debtor-actions"><button class="btn btn-light btn-small" type="button" data-report-member-action="details" data-member-id="${member.id}">التفاصيل</button><button class="btn btn-primary btn-small" type="button" data-report-member-action="payment" data-member-id="${member.id}">تسجيل دفعة</button><a class="btn btn-light btn-small" href="tel:${escapeHtml(member.phone)}">اتصال</a></div></td></tr>`).join('')}</tbody></table>`;
+    }
+
     function renderMembers(data) {
         const members = data.members || [];
         $('reportsMembersCount').textContent = `${number(members.length)} مشترك`;
@@ -70,7 +90,7 @@
         $('reportsMembers').innerHTML = `<table class="reports-table"><thead><tr><th>المشترك</th><th>التسجيل</th><th>الاشتراك</th><th>الحساب</th><th>المتبقي</th></tr></thead><tbody>${members.map((member) => `<tr><td><strong>${escapeHtml(member.fullName)}</strong><small>${escapeHtml(member.phone)}</small></td><td>${dateOnly(member.registrationDate)}</td><td>${escapeHtml(label(PLAN_LABELS, member.plan))}<small>${escapeHtml(label(TYPE_LABELS, member.type))}</small></td><td>${money(member.amountDue)}<small>مدفوع ${money(member.amountPaid)}</small></td><td class="${Number(member.amountRemaining) > 0 ? 'has-debt' : 'paid'}">${money(member.amountRemaining)}</td></tr>`).join('')}</tbody></table>`;
     }
 
-    function render(data) { state.data = data; renderKpis(data); renderTimeline(data); renderBreakdown(data); renderMembers(data); }
+    function render(data) { state.data = data; renderKpis(data); renderTimeline(data); renderBreakdown(data); renderDebtors(data); renderMembers(data); }
 
     async function loadReport() {
         const panel = ensurePanel();
@@ -95,6 +115,10 @@
         if (!state.data) return;
         const rows = [['المشترك', 'الهاتف', 'التسجيل', 'الباقة', 'النوع', 'المستحق', 'المدفوع', 'المتبقي']];
         (state.data.members || []).forEach((member) => rows.push([member.fullName, member.phone, member.registrationDate, label(PLAN_LABELS, member.plan), label(TYPE_LABELS, member.type), member.amountDue, member.amountPaid, member.amountRemaining]));
+        rows.push([]);
+        rows.push(['المشتركون عليهم مستحقات']);
+        rows.push(['المشترك', 'الهاتف', 'الباقة', 'النوع', 'تاريخ الانتهاء', 'المتبقي']);
+        (state.data.debtors || []).forEach((member) => rows.push([member.fullName, member.phone, label(PLAN_LABELS, member.plan), label(TYPE_LABELS, member.type), member.endDate, member.amountRemaining]));
         const csv = '\uFEFF' + rows.map((row) => row.map(csvCell).join(',')).join('\r\n');
         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
         const link = document.createElement('a');

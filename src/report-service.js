@@ -51,7 +51,7 @@ async function getReportData(query = {}) {
         .input('fromDate', sql.Date, toUtcDate(range.from))
         .input('nextDate', sql.Date, toUtcDate(range.nextDate));
 
-    const [membersResult, membershipsResult, paymentsResult, expensesResult, paymentMethodsResult, dashboard] = await Promise.all([
+    const [membersResult, membershipsResult, paymentsResult, expensesResult, paymentMethodsResult, dashboard, debtorsResult] = await Promise.all([
         baseRequest().query(`
             SELECT TOP (1000) m.id, m.full_name, m.phone, m.email, m.registration_date,
                    ms.membership_plan, ms.membership_type, ms.start_date, ms.end_date,
@@ -95,13 +95,26 @@ async function getReportData(query = {}) {
             WHERE paid_at >= @fromDate AND paid_at < @nextDate AND amount_paid > 0
             GROUP BY payment_method ORDER BY amount DESC;
         `),
-        getDashboard()
+        getDashboard(),
+        pool.request().query(`
+            SELECT TOP (1000)
+                   m.id, m.full_name, m.phone, m.email,
+                   ms.id AS membership_id, ms.membership_plan, ms.membership_type,
+                   ms.start_date, ms.end_date,
+                   p.amount_due, p.amount_paid, p.amount_remaining
+            FROM dbo.gym_payments AS p
+            INNER JOIN dbo.memberships AS ms ON ms.id = p.membership_id
+            INNER JOIN dbo.members AS m ON m.id = ms.member_id
+            WHERE p.amount_remaining > 0
+            ORDER BY p.amount_remaining DESC, ms.end_date ASC, m.full_name ASC;
+        `)
     ]);
 
     const memberRows = membersResult.recordset || [];
     const membershipRows = membershipsResult.recordset || [];
     const paymentRows = paymentsResult.recordset || [];
     const expenseRows = expensesResult.recordset || [];
+    const debtorRows = debtorsResult.recordset || [];
     const collected = roundMoney(paymentRows.reduce((sum, row) => sum + Number(row.amount || 0), 0));
     const expenses = roundMoney(expenseRows.reduce((sum, row) => sum + Number(row.amount || 0), 0));
     const timeline = emptyTimeline(range.from, range.to);
@@ -141,6 +154,8 @@ async function getReportData(query = {}) {
             net: roundMoney(collected - expenses),
             outstanding: roundMoney(outstanding),
             outstandingCount: membershipRows.filter((row) => Number(row.amount_remaining || 0) > 0).length,
+            debtorsCount: debtorRows.length,
+            debtorsTotal: roundMoney(debtorRows.reduce((sum, row) => sum + Number(row.amount_remaining || 0), 0)),
             currentMembers: Number(dashboard.stats?.total || 0),
             activeMembers: Number(dashboard.stats?.active || 0),
             alertsCount: Array.isArray(dashboard.alerts) ? dashboard.alerts.length : 0
@@ -155,6 +170,20 @@ async function getReportData(query = {}) {
             }))
         },
         timeline,
+        debtors: debtorRows.map((row) => ({
+            id: Number(row.id),
+            membershipId: Number(row.membership_id),
+            fullName: row.full_name,
+            phone: row.phone,
+            email: row.email,
+            plan: row.membership_plan || null,
+            type: row.membership_type || null,
+            startDate: formatDateOnly(row.start_date),
+            endDate: formatDateOnly(row.end_date),
+            amountDue: Number(row.amount_due || 0),
+            amountPaid: Number(row.amount_paid || 0),
+            amountRemaining: Number(row.amount_remaining || 0)
+        })),
         members: memberRows.map((row) => ({
             id: Number(row.id),
             fullName: row.full_name,

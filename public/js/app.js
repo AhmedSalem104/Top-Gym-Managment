@@ -442,5 +442,21 @@
                     if (button.isConnected) button.disabled = false;
                 }
             });
+            window.addEventListener('topgym:report-member-action', async (event) => {
+                const action = event.detail?.action;
+                const memberId = Number(event.detail?.id || 0);
+                if (!memberId || !['details', 'payment'].includes(action)) return;
+                let member = state.members.find((item) => Number(item.id) === memberId);
+                try {
+                    if (!member) {
+                        const response = await api(`/api/members/${memberId}`);
+                        member = response.member;
+                    }
+                    if (action === 'details') await openDetails(member);
+                    if (action === 'payment') openDialog('payment', member);
+                } catch (error) {
+                    await notify(error.message || 'تعذر فتح بيانات المشترك.', 'error');
+                }
+            });
             loadData();
         });

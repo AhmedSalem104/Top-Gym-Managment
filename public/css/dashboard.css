@@ -1802,3 +1802,90 @@
             color: #fff !important;
             text-shadow: 0 1px 3px rgba(0, 0, 0, .42);
         }
+
+        /* Remaining component surfaces stay light enough to read, but no longer hide the photo. */
+        .app-shell .page [class*="-card"],
+        .app-shell .page [class*="-panel"],
+        .app-shell .page [class*="-metric"],
+        .app-shell .page [class*="-item"],
+        .app-shell .page [class*="-row"] {
+            background: rgba(255, 255, 255, .06) !important;
+        }
+        .app-shell .page .action-menu-panel,
+        .app-shell .page .toast {
+            background: rgba(15, 23, 42, .9) !important;
+        }
+
+        /* Make all visible table values and labels consistently centered. */
+        .app-shell table,
+        .app-shell table th,
+        .app-shell table td,
+        .app-shell table th *,
+        .app-shell table td *,
+        .app-shell table td::before {
+            text-align: center !important;
+        }
+
+        /* Force the last muted/gray content to a readable color on the photo. */
+        .app-shell .page [class*="muted"],
+        .app-shell .page [class*="secondary"],
+        .app-shell .page [class*="subtitle"],
+        .app-shell .page [class*="description"],
+        .app-shell .page [class*="detail"],
+        .app-shell .page [class*="hint"],
+        .app-shell .page [class*="caption"],
+        .app-shell .page [class*="eyebrow"],
+        .app-shell .page [class*="kicker"],
+        .app-shell .page [class*="pagination"],
+        .app-shell .page [class*="last-activity"],
+        .app-shell .page [class*="phone"],
+        .app-shell .page [class*="period"],
+        .app-shell .page [class*="label"],
+        .app-shell .page [class*="copy"],
+        .app-shell .page [class*="empty"],
+        .app-shell .page .attendance-time,
+        .app-shell .page .attendance-source,
+        .app-shell .page .library-table-badge,
+        .app-shell .page .external-trainee-count,
+        .app-shell .page .breakdown-row,
+        .app-shell .page .analytics-legend,
+        .app-shell .page .analytics-activity-legend {
+            color: #fff !important;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, .42);
+        }
+        .app-shell .page-tab,
+        .app-shell .brand-copy p {
+            color: #fff !important;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, .42);
+        }
+
+        .app-shell .page .coaching-summary-card span,
+        .app-shell .page .external-trainee-metrics span,
+        .app-shell .page .external-trainee-count span,
+        .app-shell .page .breakdown-row span,
+        .app-shell .page .attendance-insights-kpi span,
+        .app-shell .page .attendance-peak-row > div:first-child,
+        .app-shell .page .attendance-member-copy strong,
+        .app-shell .page .monthly-expense-copy strong,
+        .app-shell .page .monthly-expense-copy span,
+        .app-shell .page .report-kpi > span,
+        .app-shell .page .reports-day b,
+        .app-shell .page .reports-chart-legend,
+        .app-shell .page .analytics-legend,
+        .app-shell .page .analytics-activity-legend {
+            color: #fff !important;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, .42);
+        }
+
+        .reports-debtors-card { margin: 0 18px 15px; border-color: rgba(248, 113, 113, .45) !important; }
+        .reports-debtors-count { padding: 5px 8px; border: 1px solid rgba(252, 165, 165, .55); border-radius: 999px; color: #fff !important; background: rgba(185, 28, 28, .35) !important; font-size: 9px; font-weight: 900; white-space: nowrap; }
+        .reports-debtors-table-wrap { overflow-x: auto; }
+        .reports-debtors-table td.has-debt { color: #fff !important; font-weight: 900; text-shadow: 0 1px 3px rgba(127, 29, 29, .65); }
+        .reports-debtor-actions { display: flex; align-items: center; justify-content: center; gap: 5px; flex-wrap: wrap; }
+        .reports-debtor-actions .btn { min-height: 30px; padding: 5px 8px; font-size: 9px; white-space: nowrap; }
+        .reports-empty-state { padding: 22px 14px; color: #fff !important; border: 1px dashed rgba(255, 255, 255, .4); border-radius: 10px; background: rgba(255, 255, 255, .06); text-align: center; font-size: 10px; text-shadow: 0 1px 3px rgba(0, 0, 0, .42); }
+        @media (max-width: 640px) {
+            .reports-debtors-card { margin: 0 12px 12px; }
+            .reports-debtor-actions { gap: 4px; }
+            .reports-debtor-actions .btn { min-width: 0; padding-inline: 6px; font-size: 8px; }
+        }
