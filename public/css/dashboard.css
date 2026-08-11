@@ -1087,12 +1087,13 @@
         body.gym-page-bg {
             background-color: #e9f0f8 !important;
             background-image:
-                radial-gradient(circle at 92% 4%, rgba(30, 64, 175, .22) 0, rgba(37, 99, 235, .09) 16%, transparent 36%),
-                radial-gradient(circle at 6% 88%, rgba(8, 145, 178, .17) 0, rgba(14, 165, 233, .06) 17%, transparent 35%),
-                radial-gradient(circle at 50% 35%, rgba(255, 255, 255, .38) 0, transparent 43%),
-                radial-gradient(rgba(71, 85, 105, .12) 1px, transparent 1px),
-                linear-gradient(135deg, #e7eef7 0%, #f8fbff 50%, #e3ebf6 100%) !important;
-            background-size: auto, auto, auto, 24px 24px, auto !important;
+                linear-gradient(135deg, rgba(248, 250, 252, .86), rgba(224, 231, 255, .78)),
+                radial-gradient(circle at 92% 4%, rgba(30, 64, 175, .15) 0, rgba(37, 99, 235, .06) 16%, transparent 36%),
+                radial-gradient(circle at 6% 88%, rgba(8, 145, 178, .12) 0, rgba(14, 165, 233, .04) 17%, transparent 35%),
+                radial-gradient(rgba(71, 85, 105, .1) 1px, transparent 1px),
+                url('/assets/gym-background.webp') center / cover no-repeat !important;
+            background-size: auto, auto, auto, 24px 24px, cover !important;
+            background-position: center, center, center, center, center;
             background-attachment: fixed;
         }
 
