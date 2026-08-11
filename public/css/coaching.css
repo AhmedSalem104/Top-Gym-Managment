@@ -150,3 +150,55 @@
 .builder-search-option[aria-selected='true'] { color: #1d4ed8; background: #eff6ff; }
 .builder-search-empty { padding: 13px 8px; color: #94a3b8; text-align: center; font-size: 9px; }
 @media (max-width: 640px) { .builder-search-popover { max-height: 60vh; } .builder-search-options { max-height: 42vh; } }
+
+/* Keep the external trainees table readable on phones without horizontal scrolling. */
+.coaching-section,
+.external-trainees-list { min-width: 0; }
+
+@media (max-width: 640px) {
+    .coaching-section { gap: 13px; margin-top: 12px; padding: 13px; border-radius: 14px; }
+    .coaching-heading h3 { font-size: 16px; }
+    .coaching-heading p { max-width: 100%; font-size: 10px; line-height: 1.65; }
+    .coaching-toolbar { min-width: 0; }
+    .coaching-search { min-width: 0; width: 100%; flex-basis: 100%; }
+    .external-trainees-table-wrap { max-width: 100%; overflow-x: hidden; overflow-x: clip; border: 0; background: transparent; }
+    .external-trainees-table { display: block; width: 100%; min-width: 0; table-layout: auto; }
+    .external-trainees-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+    .external-trainees-table tbody { display: grid; width: 100%; gap: 8px; }
+    .external-trainees-table tbody tr { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 10px; width: 100%; min-width: 0; padding: 10px; border: 1px solid #e2e8f0; border-radius: 12px; background: #fff; box-shadow: 0 5px 14px rgba(15, 23, 42, .04); }
+    .external-trainees-table th,
+    .external-trainees-table td { min-width: 0; padding: 6px 0; border: 0; white-space: normal; overflow: hidden; overflow-wrap: anywhere; }
+    .external-trainees-table td:not(:first-child):not(:last-child) { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 0 6px; min-height: 34px; color: #334155; font-size: 9px; }
+    .external-trainees-table td:not(:first-child):not(:last-child)::before { content: ''; color: #94a3b8; font-size: 8px; font-weight: 800; white-space: nowrap; }
+    .external-trainees-table td:not(:first-child):not(:last-child) > strong,
+    .external-trainees-table td:not(:first-child):not(:last-child) > small,
+    .external-trainees-table td:not(:first-child):not(:last-child) > span,
+    .external-trainees-table td:not(:first-child):not(:last-child) > div { grid-column: 2; min-width: 0; }
+    .external-trainees-table td:nth-child(2) { display: none; }
+    .external-trainees-table td:nth-child(3)::before { content: 'الأنظمة'; }
+    .external-trainees-table td:nth-child(4)::before { content: 'القياسات'; }
+    .external-trainees-table td:nth-child(5)::before { content: 'آخر نشاط'; }
+    .external-trainees-table td:first-child { display: block; grid-column: 1 / -1; padding: 0 0 9px; border-bottom: 1px solid #eef2f7; }
+    .external-trainees-table td:last-child { display: flex; grid-column: 1 / -1; align-items: center; justify-content: flex-start; width: auto !important; min-height: 36px; padding: 8px 0 0; border-top: 1px solid #eef2f7; }
+    .external-trainee-primary { width: 100%; min-width: 0; }
+    .external-trainee-primary strong,
+    .external-trainee-primary a,
+    .external-trainee-primary small { max-width: 100%; }
+    .external-trainee-counts { min-width: 0; }
+    .external-trainee-count { min-width: 0; flex: 1 1 0; }
+    .trainee-actions { justify-content: flex-start; gap: 4px; }
+    .external-trainees-table .trainee-actions .btn { display: grid; place-items: center; width: 32px; min-width: 32px; height: 32px; min-height: 32px; padding: 0; overflow: hidden; font-size: 0; }
+    .external-trainees-table .trainee-actions .btn::before { color: currentColor; font-size: 16px; line-height: 1; }
+    .external-trainees-table .trainee-actions .btn[data-coaching-action='profile']::before { content: '⌕'; }
+    .external-trainees-table .trainee-actions .btn[data-coaching-action='workout']::before { content: '🏋'; font-size: 14px; }
+    .external-trainees-table .trainee-actions .btn[data-coaching-action='diet']::before { content: '🥗'; font-size: 14px; }
+}
+
+@media (max-width: 420px) {
+    .external-trainees-table tbody tr { padding: 9px; }
+    .external-trainees-table th,
+    .external-trainees-table td { padding: 5px 0; }
+    .external-trainees-table td:not(:first-child):not(:last-child) { gap: 0 5px; font-size: 8px; }
+    .external-trainees-table td:not(:first-child):not(:last-child)::before { font-size: 7px; }
+    .external-trainees-table .trainee-actions .btn { width: 29px; min-width: 29px; height: 29px; min-height: 29px; }
+}
