@@ -13,6 +13,12 @@
             const path = ALERT_ICON_PATHS[kind] || ALERT_ICON_PATHS[status] || ALERT_ICON_PATHS.expiring_soon;
             return `<span class="alert-card-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${path}</svg></span>`;
         }
+        function alertStatusMarkup(kind, status, label) {
+            const path = kind === 'inactive'
+                ? '<path d="M20 15.5A8.5 8.5 0 0 1 8.5 4 8.5 8.5 0 1 0 20 15.5Z"/>'
+                : ALERT_ICON_PATHS[kind] || ALERT_ICON_PATHS[status] || ALERT_ICON_PATHS.expiring_soon;
+            return `<span class="alert-status"><svg class="alert-status-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${path}</svg><span>${escapeHtml(label)}</span></span>`;
+        }
         const PAYMENT_LABELS = { cash: 'نقدي', card: 'بطاقة', transfer: 'تحويل', other: 'أخرى' };
         const PAYMENT_TRANSACTION_LABELS = { subscription: 'اشتراك', payment: 'دفعة', adjustment: 'تسوية' };
          const EVENT_LABELS = { created: 'إضافة اشتراك', updated: 'تعديل بيانات', renewed: 'تجديد اشتراك', frozen: 'تجميد العضوية', resumed: 'استئناف العضوية', payment_updated: 'تحديث الدفع' };
@@ -249,10 +255,10 @@
                                 : `تنتهي في ${formatDate(sub.effectiveEndDate)}`;
                 const label = kind === 'debt' ? 'عليه مستحقات' : kind === 'inactive' ? 'غياب طويل' : (STATUS_LABELS[status] || status);
                 const alertAction = member.id
-                    ? `<button type="button" class="alert-whatsapp-button" data-alert-whatsapp="${escapeHtml(kind)}" data-member-id="${escapeHtml(member.id)}" data-alert-name="${escapeHtml(member.fullName)}" data-alert-phone="${escapeHtml(member.phone)}" data-alert-status="${escapeHtml(status)}" data-alert-end="${escapeHtml(sub.effectiveEndDate || sub.endDate || '')}" data-alert-freeze-end="${escapeHtml(sub.freezeEnd || '')}" data-alert-remaining="${escapeHtml(sub.amountRemaining ?? '')}" data-alert-days="${escapeHtml(member.daysSinceLastVisit ?? '')}">${ALERT_WHATSAPP_ICON}<span>واتساب يدوي</span></button>`
+                    ? `<button type="button" class="alert-whatsapp-button" data-alert-whatsapp="${escapeHtml(kind)}" data-member-id="${escapeHtml(member.id)}" data-alert-name="${escapeHtml(member.fullName)}" data-alert-phone="${escapeHtml(member.phone)}" data-alert-status="${escapeHtml(status)}" data-alert-end="${escapeHtml(sub.effectiveEndDate || sub.endDate || '')}" data-alert-freeze-end="${escapeHtml(sub.freezeEnd || '')}" data-alert-remaining="${escapeHtml(sub.amountRemaining ?? '')}" data-alert-days="${escapeHtml(member.daysSinceLastVisit ?? '')}">${ALERT_WHATSAPP_ICON}<span><strong>واتساب يدوي</strong><small>تواصل الآن عبر واتساب</small></span></button>`
                     : '';
                 const phone = String(member.phone || '');
-                return `<article class="alert-card ${status}" data-alert-enhanced="true" data-alert-kind="${escapeHtml(kind)}" data-member-id="${escapeHtml(member.id || '')}" data-alert-name="${escapeHtml(member.fullName)}" data-alert-phone="${escapeHtml(member.phone)}" data-alert-status="${escapeHtml(status)}" data-alert-end="${escapeHtml(sub.effectiveEndDate || sub.endDate || '')}" data-alert-freeze-end="${escapeHtml(sub.freezeEnd || '')}" data-alert-remaining="${escapeHtml(sub.amountRemaining ?? '')}" data-alert-days="${escapeHtml(member.daysSinceLastVisit ?? '')}">${alertIconMarkup(kind, status)}<div class="alert-card-body"><div class="alert-card-head"><strong>${escapeHtml(member.fullName)}</strong><span class="alert-status">${escapeHtml(label)}</span></div><span class="alert-card-detail">${escapeHtml(detail)}</span><a class="alert-card-phone" href="tel:${escapeHtml(phone.replace(/\s+/g, ''))}">${escapeHtml(phone)}</a></div>${alertAction}</article>`;
+                return `<article class="alert-card ${status}" data-alert-enhanced="true" data-alert-kind="${escapeHtml(kind)}" data-member-id="${escapeHtml(member.id || '')}" data-alert-name="${escapeHtml(member.fullName)}" data-alert-phone="${escapeHtml(member.phone)}" data-alert-status="${escapeHtml(status)}" data-alert-end="${escapeHtml(sub.effectiveEndDate || sub.endDate || '')}" data-alert-freeze-end="${escapeHtml(sub.freezeEnd || '')}" data-alert-remaining="${escapeHtml(sub.amountRemaining ?? '')}" data-alert-days="${escapeHtml(member.daysSinceLastVisit ?? '')}">${alertIconMarkup(kind, status)}<div class="alert-card-body"><strong class="alert-card-name">${escapeHtml(member.fullName)}</strong><span class="alert-card-detail">${escapeHtml(detail)}</span><a class="alert-card-phone" href="tel:${escapeHtml(phone.replace(/\s+/g, ''))}">${escapeHtml(phone)}</a></div>${alertStatusMarkup(kind, status, label)}${alertAction}</article>`;
             }).join('') : '<div class="empty">لا توجد تنبيهات اليوم.</div>';
             const headerAlertCount = $('headerAlertCount'); if (headerAlertCount) headerAlertCount.textContent = alerts.length.toLocaleString('ar-EG');
         }

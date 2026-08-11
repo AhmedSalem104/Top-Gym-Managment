@@ -2391,3 +2391,141 @@
                 font-size: 9px;
             }
         }
+
+        /* Alert reference style: compact horizontal glass rows with a clear action zone. */
+        #dashboardSection .alerts-list .alert-card.alert-card {
+            grid-template-columns: 58px minmax(0, 1fr) auto auto !important;
+            align-items: center;
+            min-height: 112px;
+            gap: 16px;
+            padding: 17px 22px;
+            border: 1px solid rgba(59, 130, 246, .44) !important;
+            border-inline-start: 1px solid rgba(59, 130, 246, .44) !important;
+            border-radius: 18px;
+            background: linear-gradient(110deg, rgba(3, 16, 38, .94), rgba(7, 29, 64, .9) 55%, rgba(8, 25, 55, .96)) !important;
+            box-shadow: 0 12px 28px rgba(2, 6, 23, .3), inset 0 1px 0 rgba(147, 197, 253, .1);
+        }
+        #dashboardSection .alerts-list .alert-card.alert-card:hover {
+            border-color: rgba(96, 165, 250, .8) !important;
+            background: linear-gradient(110deg, rgba(4, 21, 48, .97), rgba(9, 38, 82, .93) 55%, rgba(8, 29, 63, .98)) !important;
+            box-shadow: 0 16px 32px rgba(2, 6, 23, .38), inset 0 1px 0 rgba(191, 219, 254, .16);
+        }
+        #dashboardSection .alerts-list .alert-card .alert-card-icon {
+            width: 56px !important;
+            height: 56px !important;
+            flex-basis: 56px !important;
+            margin: 0;
+            border: 1px solid rgba(96, 165, 250, .75);
+            border-radius: 16px;
+            color: #bfdbfe !important;
+            background: linear-gradient(145deg, rgba(37, 99, 235, .76), rgba(30, 64, 175, .48)) !important;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, .16), 0 7px 18px rgba(15, 23, 42, .28);
+        }
+        #dashboardSection .alerts-list .alert-card .alert-card-icon .ui-icon { width: 29px; height: 29px; }
+        #dashboardSection .alerts-list .alert-card .alert-card-body { justify-content: center; gap: 4px; }
+        #dashboardSection .alerts-list .alert-card .alert-card-name {
+            display: block;
+            min-width: 0;
+            margin: 0;
+            overflow: hidden;
+            color: #f8fafc !important;
+            font-size: 16px;
+            font-weight: 900;
+            line-height: 1.35;
+            text-overflow: ellipsis;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, .35);
+            white-space: nowrap;
+        }
+        #dashboardSection .alerts-list .alert-card .alert-card-detail {
+            color: #cbd5e1 !important;
+            font-size: 12px;
+            line-height: 1.5;
+        }
+        #dashboardSection .alerts-list .alert-card .alert-card-phone {
+            width: fit-content;
+            color: #60a5fa !important;
+            font-size: 13px;
+            font-weight: 700;
+        }
+        #dashboardSection .alerts-list .alert-card .alert-status {
+            display: inline-flex;
+            min-width: 112px;
+            min-height: 38px;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            padding: 0 13px;
+            border: 1px solid rgba(96, 165, 250, .55);
+            border-radius: 999px;
+            color: #dbeafe !important;
+            background: rgba(37, 99, 235, .62) !important;
+            font-size: 12px;
+            font-weight: 900;
+            line-height: 1.2;
+            white-space: nowrap;
+        }
+        #dashboardSection .alerts-list .alert-card .alert-status > span {
+            display: inline !important;
+            margin: 0 !important;
+            color: inherit !important;
+            font-size: inherit !important;
+            line-height: inherit !important;
+        }
+        #dashboardSection .alerts-list .alert-card .alert-status-icon { width: 17px; height: 17px; flex: 0 0 17px; }
+        #dashboardSection .alerts-list .alert-card[data-alert-kind="debt"] .alert-status { color: #fde68a !important; border-color: rgba(245, 158, 11, .55); background: rgba(146, 64, 14, .48) !important; }
+        #dashboardSection .alerts-list .alert-card[data-alert-kind="inactive"] .alert-status { color: #dbeafe !important; border-color: rgba(96, 165, 250, .55); background: rgba(30, 64, 175, .62) !important; }
+        #dashboardSection .alerts-list .alert-card.expired .alert-status { color: #fecaca !important; border-color: rgba(248, 113, 113, .55); background: rgba(127, 29, 29, .52) !important; }
+        #dashboardSection .alerts-list .alert-card.frozen .alert-status { color: #ddd6fe !important; border-color: rgba(167, 139, 250, .55); background: rgba(76, 29, 149, .52) !important; }
+        #dashboardSection .alerts-list .alert-card .alert-whatsapp-button {
+            display: inline-flex;
+            min-width: 176px;
+            min-height: 66px;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin: 0 !important;
+            padding: 9px 14px;
+            border: 1px solid rgba(34, 197, 94, .56);
+            border-radius: 15px;
+            color: #86efac !important;
+            background: rgba(6, 78, 59, .45) !important;
+            box-shadow: inset 0 1px 0 rgba(134, 239, 172, .12), 0 7px 18px rgba(2, 6, 23, .22);
+            font-size: 11px;
+            font-weight: 800;
+        }
+        #dashboardSection .alerts-list .alert-card .alert-whatsapp-button:hover { border-color: rgba(74, 222, 128, .88); color: #bbf7d0 !important; background: rgba(6, 95, 70, .62) !important; }
+        #dashboardSection .alerts-list .alert-card .alert-whatsapp-button .ui-icon { width: 31px; height: 31px; flex: 0 0 31px; }
+        #dashboardSection .alerts-list .alert-card .alert-whatsapp-button > span {
+            display: flex !important;
+            min-width: 0;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 1px;
+            margin: 0 !important;
+            color: inherit !important;
+            font-size: inherit !important;
+            line-height: 1.25 !important;
+        }
+        #dashboardSection .alerts-list .alert-card .alert-whatsapp-button > span strong { color: inherit; font-size: 12px; font-weight: 900; line-height: 1.25; }
+        #dashboardSection .alerts-list .alert-card .alert-whatsapp-button > span small { color: rgba(187, 247, 208, .78); font-size: 9px; font-weight: 600; white-space: nowrap; }
+
+        @media (max-width: 640px) {
+            #dashboardSection .alerts-list .alert-card.alert-card {
+                grid-template-columns: 43px minmax(0, 1fr) auto !important;
+                min-height: 0;
+                gap: 9px;
+                padding: 12px;
+                border-radius: 15px;
+            }
+            #dashboardSection .alerts-list .alert-card .alert-card-icon { width: 43px !important; height: 43px !important; flex-basis: 43px !important; border-radius: 13px; }
+            #dashboardSection .alerts-list .alert-card .alert-card-icon .ui-icon { width: 22px; height: 22px; }
+            #dashboardSection .alerts-list .alert-card .alert-card-name { font-size: 13px; }
+            #dashboardSection .alerts-list .alert-card .alert-card-detail { font-size: 10px; }
+            #dashboardSection .alerts-list .alert-card .alert-card-phone { font-size: 11px; }
+            #dashboardSection .alerts-list .alert-card .alert-status { min-width: 0; min-height: 30px; padding: 0 8px; gap: 4px; font-size: 9px; }
+            #dashboardSection .alerts-list .alert-card .alert-status-icon { width: 13px; height: 13px; flex-basis: 13px; }
+            #dashboardSection .alerts-list .alert-card .alert-whatsapp-button { grid-column: 2 / -1; width: 100%; min-width: 0; min-height: 48px; padding: 6px 9px; border-radius: 12px; }
+            #dashboardSection .alerts-list .alert-card .alert-whatsapp-button .ui-icon { width: 24px; height: 24px; flex-basis: 24px; }
+            #dashboardSection .alerts-list .alert-card .alert-whatsapp-button > span strong { font-size: 10px; }
+            #dashboardSection .alerts-list .alert-card .alert-whatsapp-button > span small { font-size: 8px; }
+        }
