@@ -1,5 +1,18 @@
         const TYPE_LABELS = { monthly: 'شهرية', quarterly: 'ربع سنوية', semiannual: 'نصف سنوية', annual: 'سنوية' };
         const STATUS_LABELS = { active: 'نشطة', expiring_soon: 'قريبة الانتهاء', expired: 'منتهية', frozen: 'مجمدة' };
+        const ALERT_ICON_PATHS = {
+            active: '<path d="m5 12 4 4L19 6"/>',
+            expiring_soon: '<circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/>',
+            expired: '<path d="M12 3 2.5 20h19L12 3Z"/><path d="M12 9v4M12 17h.01"/>',
+            frozen: '<path d="M12 3v18M5.6 6.7l12.8 10.6M18.4 6.7 5.6 17.3M4 12h16"/>',
+            debt: '<circle cx="12" cy="12" r="9"/><path d="M12 7v10M9 10h4a2 2 0 1 1 0 4H9"/>',
+            inactive: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'
+        };
+        const ALERT_WHATSAPP_ICON = '<svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11.5a8 8 0 0 1-8 8 8.5 8.5 0 0 1-3.7-.85L4 20l1.35-4.05A8.5 8.5 0 1 1 20 11.5Z"/><path d="M8.7 9.1c.2-.45.4-.46.7-.47h.35c.2 0 .4.08.5.34l.65 1.5c.1.23.08.42-.08.62l-.42.52c.55 1.1 1.4 1.8 2.55 2.3l.45-.5c.17-.2.36-.23.6-.14l1.42.63c.25.12.34.3.31.55-.1.8-.68 1.35-1.47 1.4-2.3.12-5.98-3.5-6.1-6.75-.02-.01.17-.75.54-1.02Z"/></svg>';
+        function alertIconMarkup(kind, status) {
+            const path = ALERT_ICON_PATHS[kind] || ALERT_ICON_PATHS[status] || ALERT_ICON_PATHS.expiring_soon;
+            return `<span class="alert-card-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${path}</svg></span>`;
+        }
         const PAYMENT_LABELS = { cash: 'نقدي', card: 'بطاقة', transfer: 'تحويل', other: 'أخرى' };
         const PAYMENT_TRANSACTION_LABELS = { subscription: 'اشتراك', payment: 'دفعة', adjustment: 'تسوية' };
          const EVENT_LABELS = { created: 'إضافة اشتراك', updated: 'تعديل بيانات', renewed: 'تجديد اشتراك', frozen: 'تجميد العضوية', resumed: 'استئناف العضوية', payment_updated: 'تحديث الدفع' };
@@ -236,9 +249,10 @@
                                 : `تنتهي في ${formatDate(sub.effectiveEndDate)}`;
                 const label = kind === 'debt' ? 'عليه مستحقات' : kind === 'inactive' ? 'غياب طويل' : (STATUS_LABELS[status] || status);
                 const alertAction = member.id
-                    ? `<button type="button" class="alert-whatsapp-button" data-alert-whatsapp="${escapeHtml(kind)}" data-member-id="${escapeHtml(member.id)}" data-alert-name="${escapeHtml(member.fullName)}" data-alert-phone="${escapeHtml(member.phone)}" data-alert-status="${escapeHtml(status)}" data-alert-end="${escapeHtml(sub.effectiveEndDate || sub.endDate || '')}" data-alert-freeze-end="${escapeHtml(sub.freezeEnd || '')}" data-alert-remaining="${escapeHtml(sub.amountRemaining ?? '')}" data-alert-days="${escapeHtml(member.daysSinceLastVisit ?? '')}">واتساب يدوي</button>`
+                    ? `<button type="button" class="alert-whatsapp-button" data-alert-whatsapp="${escapeHtml(kind)}" data-member-id="${escapeHtml(member.id)}" data-alert-name="${escapeHtml(member.fullName)}" data-alert-phone="${escapeHtml(member.phone)}" data-alert-status="${escapeHtml(status)}" data-alert-end="${escapeHtml(sub.effectiveEndDate || sub.endDate || '')}" data-alert-freeze-end="${escapeHtml(sub.freezeEnd || '')}" data-alert-remaining="${escapeHtml(sub.amountRemaining ?? '')}" data-alert-days="${escapeHtml(member.daysSinceLastVisit ?? '')}">${ALERT_WHATSAPP_ICON}<span>واتساب يدوي</span></button>`
                     : '';
-                return `<article class="alert-card ${status}" data-alert-kind="${escapeHtml(kind)}" data-member-id="${escapeHtml(member.id || '')}" data-alert-name="${escapeHtml(member.fullName)}" data-alert-phone="${escapeHtml(member.phone)}" data-alert-status="${escapeHtml(status)}" data-alert-end="${escapeHtml(sub.effectiveEndDate || sub.endDate || '')}" data-alert-freeze-end="${escapeHtml(sub.freezeEnd || '')}" data-alert-remaining="${escapeHtml(sub.amountRemaining ?? '')}" data-alert-days="${escapeHtml(member.daysSinceLastVisit ?? '')}"><strong>${escapeHtml(member.fullName)}</strong><span>${escapeHtml(label)} · ${escapeHtml(detail)}</span><span>${escapeHtml(member.phone)}</span>${alertAction}</article>`;
+                const phone = String(member.phone || '');
+                return `<article class="alert-card ${status}" data-alert-enhanced="true" data-alert-kind="${escapeHtml(kind)}" data-member-id="${escapeHtml(member.id || '')}" data-alert-name="${escapeHtml(member.fullName)}" data-alert-phone="${escapeHtml(member.phone)}" data-alert-status="${escapeHtml(status)}" data-alert-end="${escapeHtml(sub.effectiveEndDate || sub.endDate || '')}" data-alert-freeze-end="${escapeHtml(sub.freezeEnd || '')}" data-alert-remaining="${escapeHtml(sub.amountRemaining ?? '')}" data-alert-days="${escapeHtml(member.daysSinceLastVisit ?? '')}">${alertIconMarkup(kind, status)}<div class="alert-card-body"><div class="alert-card-head"><strong>${escapeHtml(member.fullName)}</strong><span class="alert-status">${escapeHtml(label)}</span></div><span class="alert-card-detail">${escapeHtml(detail)}</span><a class="alert-card-phone" href="tel:${escapeHtml(phone.replace(/\s+/g, ''))}">${escapeHtml(phone)}</a></div>${alertAction}</article>`;
             }).join('') : '<div class="empty">لا توجد تنبيهات اليوم.</div>';
             const headerAlertCount = $('headerAlertCount'); if (headerAlertCount) headerAlertCount.textContent = alerts.length.toLocaleString('ar-EG');
         }

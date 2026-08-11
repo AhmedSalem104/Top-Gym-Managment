@@ -2346,3 +2346,48 @@
             .monthly-finance-snapshot .snapshot-membership-stats .stat-icon { width: 25px !important; height: 25px !important; flex-basis: 25px !important; }
             .monthly-finance-snapshot .snapshot-membership-stats .stat-value { font-size: 16px !important; }
         }
+
+        /* Final alert-row layout: one stable structure for desktop and mobile. */
+        #dashboardSection .alerts-list .alert-card.alert-card {
+            grid-template-columns: 36px minmax(0, 1fr) auto !important;
+            align-items: center;
+            min-height: 70px;
+            gap: 10px;
+            padding: 10px 12px;
+        }
+        #dashboardSection .alerts-list .alert-card-body { min-width: 0; }
+        #dashboardSection .alerts-list .alert-whatsapp-button {
+            width: auto;
+            min-width: 104px;
+            min-height: 32px;
+            margin: 0;
+            padding: 6px 10px;
+            border-radius: 8px;
+            font-size: 10px;
+        }
+        #dashboardSection .alerts-list .alert-whatsapp-button .ui-icon { width: 14px; height: 14px; flex-basis: 14px; }
+        #dashboardSection .alerts-list .alert-card[data-alert-kind="debt"] { border-inline-start-color: #f59e0b !important; }
+        #dashboardSection .alerts-list .alert-card[data-alert-kind="debt"] .alert-card-icon { color: #d97706 !important; background: #fef3c7 !important; }
+        #dashboardSection .alerts-list .alert-card[data-alert-kind="debt"] .alert-status { color: #a16207 !important; background: #fef3c7 !important; }
+        #dashboardSection .alerts-list .alert-card[data-alert-kind="inactive"] { border-inline-start-color: #60a5fa !important; }
+        #dashboardSection .alerts-list .alert-card[data-alert-kind="inactive"] .alert-card-icon { color: #2563eb !important; background: #dbeafe !important; }
+        #dashboardSection .alerts-list .alert-card[data-alert-kind="inactive"] .alert-status { color: #1d4ed8 !important; background: #dbeafe !important; }
+
+        @media (max-width: 640px) {
+            #dashboardSection .alerts-list .alert-card.alert-card {
+                grid-template-columns: 32px minmax(0, 1fr) !important;
+                align-items: start;
+                min-height: 0;
+                gap: 8px;
+                padding: 9px;
+            }
+            #dashboardSection .alerts-list .alert-whatsapp-button {
+                grid-column: 2 / -1;
+                width: 100%;
+                min-width: 0;
+                min-height: 32px;
+                margin-top: 4px;
+                padding: 6px 8px;
+                font-size: 9px;
+            }
+        }
