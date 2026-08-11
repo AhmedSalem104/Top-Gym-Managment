@@ -16,28 +16,16 @@
 html { scroll-behavior: smooth; }
 body.gym-page-bg { min-width: 320px; overflow-x: hidden; }
 body.gym-page-bg {
-    background-color: #070d19 !important;
-    background-image:
-        radial-gradient(900px 520px at 100% -10%, rgba(37, 99, 235, .16), transparent 62%),
-        radial-gradient(760px 460px at -12% 100%, rgba(14, 165, 233, .10), transparent 64%),
-        linear-gradient(135deg, #070d19 0%, #0b1424 54%, #060b14 100%) !important;
-    background-position: center, center, center !important;
-    background-size: auto, auto, cover !important;
-    background-repeat: no-repeat, no-repeat, no-repeat !important;
-    background-attachment: fixed, fixed, fixed !important;
+    background-color: #0b1220 !important;
+    background-image: none !important;
+    background-attachment: scroll !important;
 }
 .app-shell { isolation: isolate; }
 
 /* A compact identity header keeps the current page understandable without
    bringing back the old action-heavy navbar. */
 .app-shell .topbar {
-    display: block !important;
-    position: relative;
-    z-index: 40;
-    padding: 8px clamp(12px, 2.5vw, 36px) !important;
-    border-bottom: 1px solid rgba(147, 197, 253, .22) !important;
-    background: linear-gradient(110deg, rgba(2, 6, 23, .96), rgba(15, 23, 42, .92) 55%, rgba(23, 37, 84, .94)) !important;
-    box-shadow: 0 10px 26px rgba(2, 6, 23, .28);
+    display: none !important;
 }
 .app-shell .topbar-inner {
     min-height: 56px !important;
@@ -74,7 +62,7 @@ body.gym-page-bg {
     width: min(100%, var(--ui-content-max));
     max-width: var(--ui-content-max) !important;
     margin-inline: auto;
-    padding: 12px clamp(12px, 2.5vw, 36px) 8px !important;
+    padding: 24px clamp(12px, 2.5vw, 36px) 8px !important;
     gap: 7px !important;
     overflow-x: auto;
     overscroll-behavior-inline: contain;
@@ -211,13 +199,7 @@ body.gym-page-bg {
 
 /* Compact navigation and controls on phones. */
 @media (max-width: 640px) {
-    .app-shell .topbar { padding: 7px 10px !important; }
-    .app-shell .topbar-inner { min-height: 49px !important; }
-    .app-shell .brand-mark { width: 38px !important; height: 38px !important; flex-basis: 38px !important; }
-    .app-shell .brand-mark .ui-icon { width: 20px !important; height: 20px !important; }
-    .app-shell .brand-kicker { font-size: 7px !important; }
-    .app-shell .brand h1 { font-size: 15px !important; }
-    .app-shell .page-tabs { padding: 9px 10px 7px !important; gap: 6px !important; }
+    .app-shell .page-tabs { padding: 18px 10px 7px !important; gap: 6px !important; }
     .app-shell .page-tab { min-height: 36px !important; padding: 7px 10px !important; font-size: 10px !important; }
     .app-shell .page { padding: 16px 10px 32px !important; }
     .app-shell .page > section:not([hidden]) { margin-bottom: 14px; }
