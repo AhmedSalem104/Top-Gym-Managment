@@ -104,6 +104,11 @@
         .alert-card-detail, .alert-card-phone { display: block; color: #64748b; font-size: 10px; line-height: 1.45; }
         .alert-card-phone { color: #2563eb; direction: ltr; text-align: right; text-decoration: none; }
         .alert-card-phone:hover { text-decoration: underline; }
+        .alert-whatsapp-button { display: inline-flex; width: fit-content; max-width: 100%; min-height: 30px; align-self: flex-start; align-items: center; justify-content: center; gap: 6px; margin-top: 6px; padding: 5px 10px; border: 1px solid #bbf7d0; border-radius: 8px; color: #15803d; background: #f0fdf4; font-family: inherit; font-size: 10px; font-weight: 800; line-height: 1.2; white-space: nowrap; cursor: pointer; transition: color .16s ease, background-color .16s ease, border-color .16s ease, transform .16s ease, box-shadow .16s ease; }
+        .alert-whatsapp-button .ui-icon { width: 14px; height: 14px; flex: 0 0 14px; }
+        .alert-whatsapp-button:hover { border-color: #86efac; color: #166534; background: #dcfce7; transform: translateY(-1px); box-shadow: 0 5px 12px rgba(22, 101, 52, .12); }
+        .alert-whatsapp-button:focus-visible { outline: 3px solid rgba(34, 197, 94, .24); outline-offset: 2px; }
+        .alert-whatsapp-button:active { transform: translateY(0); }
         .alerts-list > .empty { grid-column: 1 / -1; margin: 0; padding: 20px 12px; border: 1px dashed #cbd5e1; border-radius: 10px; background: #fff; }
         .swal2-container.swal2-top-start { direction: ltr !important; align-items: flex-start !important; justify-content: flex-start !important; padding: 16px !important; }
         .swal2-popup.top-gym-alert { width: min(380px, calc(100vw - 32px)) !important; margin: 0 !important; padding: 17px 18px 15px !important; border: 1px solid #dbe7f5 !important; border-radius: 12px !important; color: #172033 !important; background: #fff !important; box-shadow: 0 18px 42px rgba(15, 23, 42, .18) !important; direction: rtl; text-align: right; }
@@ -2332,6 +2337,8 @@
             #dashboardSection .alert-card-head strong { font-size: 11px; }
             #dashboardSection .alert-card-detail,
             #dashboardSection .alert-card-phone { font-size: 9px; }
+            #dashboardSection .alert-whatsapp-button { width: 100%; min-height: 32px; align-self: stretch; margin-top: 5px; padding: 6px 8px; border-radius: 8px; font-size: 9px; }
+            #dashboardSection .alert-whatsapp-button .ui-icon { width: 14px; height: 14px; flex-basis: 14px; }
             .monthly-finance-snapshot .snapshot-membership-stats { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 6px; margin-inline: 8px; }
             .monthly-finance-snapshot .snapshot-membership-stats .stat-card { min-height: 58px !important; padding: 6px 7px !important; }
             .monthly-finance-snapshot .snapshot-membership-stats .stat-icon { width: 25px !important; height: 25px !important; flex-basis: 25px !important; }
