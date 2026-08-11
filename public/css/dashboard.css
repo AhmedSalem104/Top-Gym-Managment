@@ -1590,3 +1590,90 @@
             }
             .member-action-row > .table-actions > .coaching-table-action .action-icon { width: 15px; height: 15px; }
         }
+
+        /* Glass table surfaces: keep the gym photo visible without sacrificing readability. */
+        .members-panel,
+        .library-section,
+        .attendance-section,
+        .coaching-section,
+        .reports-section,
+        .management-tab-panel,
+        .monthly-finance-card,
+        .dashboard-analytics {
+            background: rgba(255, 255, 255, .64) !important;
+            -webkit-backdrop-filter: blur(8px) saturate(112%);
+            backdrop-filter: blur(8px) saturate(112%);
+        }
+        .table-scroll,
+        .pricing-table-scroll,
+        .history-scroll,
+        .library-table-wrap,
+        .external-trainees-table-wrap,
+        .profile-table-wrap,
+        .attendance-table-wrap,
+        .members-list,
+        .external-trainees-list,
+        .library-list {
+            background: rgba(255, 255, 255, .34) !important;
+            border-color: rgba(255, 255, 255, .5) !important;
+            -webkit-backdrop-filter: blur(7px) saturate(112%);
+            backdrop-filter: blur(7px) saturate(112%);
+        }
+        .members-table,
+        .pricing-table,
+        .membership-types-table,
+        .history-table,
+        .library-data-table,
+        .external-trainees-table,
+        .profile-table,
+        .attendance-table {
+            background: transparent !important;
+        }
+        .members-table thead th,
+        .pricing-table thead th,
+        .membership-types-table thead th,
+        .history-table thead th,
+        .library-data-table thead th,
+        .external-trainees-table thead th,
+        .profile-table thead th,
+        .attendance-table thead th {
+            background: rgba(248, 250, 252, .58) !important;
+        }
+        .members-table tbody tr,
+        .pricing-table tbody tr,
+        .membership-types-table tbody tr,
+        .history-table tbody tr,
+        .library-data-table tbody tr,
+        .external-trainees-table tbody tr,
+        .profile-table tbody tr,
+        .attendance-table tbody tr {
+            background: rgba(255, 255, 255, .27) !important;
+        }
+        .members-table tbody tr:nth-child(even) td,
+        .pricing-table tbody tr:nth-child(even) td,
+        .membership-types-table tbody tr:nth-child(even) td,
+        .history-table tbody tr:nth-child(even) td,
+        .members-table tbody tr:hover td,
+        .pricing-table tbody tr:hover td,
+        .membership-types-table tbody tr:hover td,
+        .history-table tbody tr:hover td,
+        .library-data-table tbody tr:hover,
+        .external-trainees-table tbody tr:hover,
+        .attendance-table tbody tr:hover td {
+            background: rgba(255, 255, 255, .34) !important;
+        }
+        .members-table tbody tr td,
+        .pricing-table tbody tr td,
+        .membership-types-table tbody tr td,
+        .history-table tbody tr td,
+        .library-data-table tbody tr td,
+        .external-trainees-table tbody tr td,
+        .profile-table tbody tr td,
+        .attendance-table tbody tr td {
+            background: transparent !important;
+        }
+        .members-table tbody tr,
+        .library-data-table tbody tr,
+        .external-trainees-table tbody tr {
+            border-color: rgba(255, 255, 255, .42) !important;
+        }
