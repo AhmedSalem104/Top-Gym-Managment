@@ -2083,3 +2083,203 @@
                 flex: 1 1 0;
             }
         }
+
+        /* Dashboard dark-glass theme: one visual language over the gym canvas. */
+        #dashboardSection .overview-grid > .stats-grid,
+        #dashboardSection .overview-grid > .alerts-panel,
+        #dashboardSection > .monthly-finance-card,
+        #dashboardSection > .dashboard-analytics,
+        #dashboardSection > .reports-section,
+        #dashboardSection > .management-tab-panel {
+            border-color: rgba(255, 255, 255, .2) !important;
+            background: rgba(15, 23, 42, .64) !important;
+            box-shadow: 0 18px 38px rgba(2, 6, 23, .34) !important;
+            -webkit-backdrop-filter: none !important;
+            backdrop-filter: none !important;
+        }
+        #dashboardSection .overview-grid > .stats-grid .stat-card {
+            border-color: rgba(255, 255, 255, .2) !important;
+            background: rgba(15, 23, 42, .58) !important;
+            box-shadow: 0 8px 18px rgba(2, 6, 23, .26) !important;
+            -webkit-backdrop-filter: none !important;
+            backdrop-filter: none !important;
+        }
+        #dashboardSection .overview-grid > .stats-grid .stat-card:nth-child(1),
+        #dashboardSection .overview-grid > .stats-grid .stat-card:nth-child(2),
+        #dashboardSection .overview-grid > .stats-grid .stat-card:nth-child(3),
+        #dashboardSection .overview-grid > .stats-grid .stat-card:nth-child(4),
+        #dashboardSection .overview-grid > .stats-grid .stat-card:nth-child(5) {
+            background: rgba(15, 23, 42, .58) !important;
+        }
+        #dashboardSection .overview-grid > .stats-grid .stat-card .stat-label,
+        #dashboardSection .overview-grid > .stats-grid .stat-card .stat-caption {
+            color: #e2e8f0 !important;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, .5);
+        }
+        #dashboardSection .overview-grid > .stats-grid .stat-card .stat-value {
+            color: #f8fafc !important;
+            text-shadow: 0 2px 7px rgba(0, 0, 0, .45);
+        }
+        #dashboardSection .overview-grid > .stats-grid .stat-card.active .stat-value { color: #6ee7b7 !important; }
+        #dashboardSection .overview-grid > .stats-grid .stat-card.warning .stat-value { color: #fcd34d !important; }
+        #dashboardSection .overview-grid > .stats-grid .stat-card.danger .stat-value { color: #fda4af !important; }
+        #dashboardSection .overview-grid > .stats-grid .stat-card.frozen .stat-value { color: #c4b5fd !important; }
+        #dashboardSection .overview-grid > .stats-grid .stat-card:nth-child(1) .stat-icon {
+            color: #bfdbfe !important;
+            border-color: rgba(147, 197, 253, .55) !important;
+            background: rgba(30, 64, 175, .38) !important;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, .12), 0 7px 15px rgba(2, 6, 23, .25);
+        }
+        #dashboardSection .overview-grid > .stats-grid .stat-card.active .stat-icon {
+            color: #6ee7b7 !important;
+            border-color: rgba(110, 231, 183, .55) !important;
+            background: rgba(6, 95, 70, .4) !important;
+        }
+        #dashboardSection .overview-grid > .stats-grid .stat-card.warning .stat-icon {
+            color: #fcd34d !important;
+            border-color: rgba(252, 211, 77, .55) !important;
+            background: rgba(120, 53, 15, .4) !important;
+        }
+        #dashboardSection .overview-grid > .stats-grid .stat-card.danger .stat-icon {
+            color: #fda4af !important;
+            border-color: rgba(253, 164, 175, .55) !important;
+            background: rgba(127, 29, 29, .4) !important;
+        }
+        #dashboardSection .overview-grid > .stats-grid .stat-card.frozen .stat-icon {
+            color: #c4b5fd !important;
+            border-color: rgba(196, 181, 253, .55) !important;
+            background: rgba(76, 29, 149, .4) !important;
+        }
+
+        #dashboardSection .alerts-panel-header {
+            border-bottom-color: rgba(255, 255, 255, .14) !important;
+            background: rgba(15, 23, 42, .78) !important;
+        }
+        #dashboardSection .alerts-heading h3 { color: #f8fafc !important; text-shadow: 0 1px 4px rgba(0, 0, 0, .48); }
+        #dashboardSection .alerts-heading p { color: #cbd5e1 !important; }
+        #dashboardSection .alerts-eyebrow { color: #93c5fd !important; }
+        #dashboardSection .alerts-heading-icon {
+            color: #bfdbfe !important;
+            border-color: rgba(147, 197, 253, .5) !important;
+            background: rgba(30, 64, 175, .4) !important;
+        }
+        #dashboardSection .alerts-count {
+            border-color: rgba(147, 197, 253, .48) !important;
+            color: #dbeafe !important;
+            background: rgba(30, 64, 175, .42) !important;
+        }
+        #dashboardSection .alerts-list {
+            background: rgba(2, 6, 23, .3) !important;
+            scrollbar-color: rgba(147, 197, 253, .7) transparent;
+        }
+        #dashboardSection .alert-card {
+            border-color: rgba(255, 255, 255, .16) !important;
+            background: rgba(255, 255, 255, .075) !important;
+            box-shadow: 0 5px 14px rgba(2, 6, 23, .2) !important;
+            -webkit-backdrop-filter: none !important;
+            backdrop-filter: none !important;
+        }
+        #dashboardSection .alert-card-head strong { color: #f8fafc !important; text-shadow: 0 1px 3px rgba(0, 0, 0, .48); }
+        #dashboardSection .alert-card-detail { color: #dbe4f0 !important; }
+        #dashboardSection .alert-card-phone { color: #93c5fd !important; }
+        #dashboardSection .alerts-list > .empty {
+            border-color: rgba(255, 255, 255, .25) !important;
+            color: #dbe4f0 !important;
+            background: rgba(255, 255, 255, .055) !important;
+        }
+
+        #dashboardSection > .monthly-finance-card .monthly-finance-head {
+            border-bottom-color: rgba(255, 255, 255, .14) !important;
+            background: rgba(15, 23, 42, .78) !important;
+        }
+        #dashboardSection > .monthly-finance-card .monthly-finance-heading h3 { color: #f8fafc !important; text-shadow: 0 1px 4px rgba(0, 0, 0, .48); }
+        #dashboardSection > .monthly-finance-card .monthly-finance-heading p { color: #cbd5e1 !important; }
+        #dashboardSection > .monthly-finance-card .monthly-finance-eyebrow { color: #93c5fd !important; }
+        #dashboardSection > .monthly-finance-card .monthly-finance-icon {
+            color: #bfdbfe !important;
+            border-color: rgba(147, 197, 253, .5) !important;
+            background: rgba(30, 64, 175, .4) !important;
+        }
+        #dashboardSection > .monthly-finance-card .monthly-finance-metrics {
+            background: transparent !important;
+        }
+        #dashboardSection > .monthly-finance-card .monthly-finance-metric {
+            border-color: rgba(255, 255, 255, .16) !important;
+            background: rgba(255, 255, 255, .07) !important;
+            -webkit-backdrop-filter: none !important;
+            backdrop-filter: none !important;
+        }
+        #dashboardSection > .monthly-finance-card .monthly-finance-metric.subscriptions,
+        #dashboardSection > .monthly-finance-card .monthly-finance-metric.expenses,
+        #dashboardSection > .monthly-finance-card .monthly-finance-metric.net {
+            background: rgba(255, 255, 255, .07) !important;
+        }
+        #dashboardSection > .monthly-finance-card .monthly-finance-label { color: #e2e8f0 !important; }
+        #dashboardSection > .monthly-finance-card .monthly-finance-value { color: #f8fafc !important; text-shadow: 0 2px 7px rgba(0, 0, 0, .45); }
+        #dashboardSection > .monthly-finance-card .monthly-finance-metric.subscriptions .monthly-finance-value { color: #bfdbfe !important; }
+        #dashboardSection > .monthly-finance-card .monthly-finance-metric.expenses .monthly-finance-value { color: #fcd34d !important; }
+        #dashboardSection > .monthly-finance-card .monthly-finance-metric.net .monthly-finance-value { color: #6ee7b7 !important; }
+        #dashboardSection > .monthly-finance-card .monthly-finance-metric.net .monthly-finance-value.negative { color: #fda4af !important; }
+        #dashboardSection > .monthly-finance-card .monthly-finance-metric small,
+        #dashboardSection > .monthly-finance-card .monthly-expenses-empty { color: #cbd5e1 !important; }
+        #dashboardSection > .monthly-finance-card .monthly-expenses-list { background: rgba(2, 6, 23, .22) !important; }
+        #dashboardSection > .monthly-finance-card .monthly-expense-item {
+            border-color: rgba(255, 255, 255, .14) !important;
+            background: rgba(255, 255, 255, .06) !important;
+        }
+
+        /* Analytics uses the same dark surfaces and readable secondary text. */
+        #dashboardSection .dashboard-analytics-head,
+        #dashboardSection .analytics-loading {
+            border-color: rgba(255, 255, 255, .14) !important;
+            background: rgba(15, 23, 42, .78) !important;
+        }
+        #dashboardSection .dashboard-analytics-title h2,
+        #dashboardSection .analytics-card-head h3,
+        #dashboardSection .analytics-smart-health h3,
+        #dashboardSection .analytics-smart-insight strong,
+        #dashboardSection .analytics-kpi strong { color: #f8fafc !important; text-shadow: 0 1px 4px rgba(0, 0, 0, .48); }
+        #dashboardSection .dashboard-analytics-title p,
+        #dashboardSection .analytics-smart-health p,
+        #dashboardSection .analytics-smart-insight > div > span,
+        #dashboardSection .analytics-smart-insight small,
+        #dashboardSection .analytics-kpi > div > span,
+        #dashboardSection .analytics-kpi small,
+        #dashboardSection .analytics-chart-empty,
+        #dashboardSection .analytics-bars-empty,
+        #dashboardSection .analytics-error { color: #cbd5e1 !important; }
+        #dashboardSection .dashboard-analytics-eyebrow,
+        #dashboardSection .analytics-card-head > div:first-child > span,
+        #dashboardSection .analytics-smart-eyebrow { color: #93c5fd !important; }
+        #dashboardSection .analytics-period-switch {
+            border-color: rgba(255, 255, 255, .2) !important;
+            background: rgba(255, 255, 255, .07) !important;
+            box-shadow: none !important;
+        }
+        #dashboardSection .analytics-period-switch button { color: #cbd5e1 !important; }
+        #dashboardSection .analytics-period-switch button:hover { color: #fff !important; background: rgba(255, 255, 255, .12) !important; }
+        #dashboardSection .analytics-period-switch button.active { color: #fff !important; background: linear-gradient(135deg, #2563eb, #1d4ed8) !important; }
+        #dashboardSection .analytics-smart-health,
+        #dashboardSection .analytics-smart-insight,
+        #dashboardSection .analytics-kpi,
+        #dashboardSection .analytics-card {
+            border-color: rgba(255, 255, 255, .16) !important;
+            background: rgba(255, 255, 255, .07) !important;
+            -webkit-backdrop-filter: none !important;
+            backdrop-filter: none !important;
+        }
+        #dashboardSection .analytics-smart-health { background: rgba(30, 64, 175, .25) !important; }
+        #dashboardSection .analytics-smart-insight.blue { background: rgba(30, 64, 175, .24) !important; }
+        #dashboardSection .analytics-smart-insight.amber { background: rgba(120, 53, 15, .25) !important; }
+        #dashboardSection .analytics-smart-insight.violet { background: rgba(76, 29, 149, .25) !important; }
+        #dashboardSection .analytics-smart-insight.rose { background: rgba(127, 29, 29, .25) !important; }
+        #dashboardSection .analytics-health-ring::after { background: rgba(15, 23, 42, .88) !important; }
+        #dashboardSection .analytics-bar-label,
+        #dashboardSection .analytics-bar-label strong,
+        #dashboardSection .analytics-legend,
+        #dashboardSection .analytics-activity-legend { color: #e2e8f0 !important; }
+        #dashboardSection .analytics-bar-track { background: rgba(255, 255, 255, .12) !important; }
+        #dashboardSection .analytics-grid-line { stroke: rgba(255, 255, 255, .18) !important; }
+        #dashboardSection .analytics-axis-label,
+        #dashboardSection .analytics-column-group small { fill: #cbd5e1 !important; color: #cbd5e1 !important; }
+        #dashboardSection .analytics-column-chart { border-bottom-color: rgba(255, 255, 255, .18) !important; }
