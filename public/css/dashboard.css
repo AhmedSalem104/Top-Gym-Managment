@@ -1600,7 +1600,7 @@
         .management-tab-panel,
         .monthly-finance-card,
         .dashboard-analytics {
-            background: rgba(255, 255, 255, .64) !important;
+            background: rgba(255, 255, 255, .38) !important;
             -webkit-backdrop-filter: blur(8px) saturate(112%);
             backdrop-filter: blur(8px) saturate(112%);
         }
@@ -1614,7 +1614,7 @@
         .members-list,
         .external-trainees-list,
         .library-list {
-            background: rgba(255, 255, 255, .34) !important;
+            background: rgba(255, 255, 255, .18) !important;
             border-color: rgba(255, 255, 255, .5) !important;
             -webkit-backdrop-filter: blur(7px) saturate(112%);
             backdrop-filter: blur(7px) saturate(112%);
@@ -1637,7 +1637,7 @@
         .external-trainees-table thead th,
         .profile-table thead th,
         .attendance-table thead th {
-            background: rgba(248, 250, 252, .58) !important;
+            background: rgba(248, 250, 252, .3) !important;
         }
         .members-table tbody tr,
         .pricing-table tbody tr,
@@ -1647,7 +1647,7 @@
         .external-trainees-table tbody tr,
         .profile-table tbody tr,
         .attendance-table tbody tr {
-            background: rgba(255, 255, 255, .27) !important;
+            background: rgba(255, 255, 255, .13) !important;
         }
         .members-table tbody tr:nth-child(even) td,
         .pricing-table tbody tr:nth-child(even) td,
@@ -1660,7 +1660,7 @@
         .library-data-table tbody tr:hover,
         .external-trainees-table tbody tr:hover,
         .attendance-table tbody tr:hover td {
-            background: rgba(255, 255, 255, .34) !important;
+            background: rgba(255, 255, 255, .2) !important;
         }
         .members-table tbody tr td,
         .pricing-table tbody tr td,
@@ -1676,4 +1676,35 @@
         .library-data-table tbody tr,
         .external-trainees-table tbody tr {
             border-color: rgba(255, 255, 255, .42) !important;
+        }
+
+        /* Extend the glass treatment to the remaining page cards. */
+        .app-shell .stat-card,
+        .app-shell .alert-card,
+        .app-shell .report-card,
+        .app-shell .report-kpi,
+        .app-shell .attendance-insights-card,
+        .app-shell .attendance-insights-cardlet,
+        .app-shell .attendance-insights-kpi,
+        .app-shell .coaching-summary-card,
+        .app-shell .external-trainee-card,
+        .app-shell .management-shortcut,
+        .app-shell .monthly-finance-metric,
+        .app-shell .monthly-expenses-list,
+        .app-shell .library-type-tabs,
+        .app-shell .library-type-tab {
+            background: rgba(255, 255, 255, .24) !important;
+            -webkit-backdrop-filter: blur(7px) saturate(112%);
+            backdrop-filter: blur(7px) saturate(112%);
+        }
+        .app-shell .panel-header,
+        .app-shell .section-heading,
+        .app-shell .library-header,
+        .app-shell .attendance-header,
+        .app-shell .coaching-header,
+        .app-shell .management-tab-header,
+        .app-shell .monthly-finance-head,
+        .app-shell .attendance-insights-head,
+        .app-shell .attendance-insights-cardlet-head {
+            background: rgba(255, 255, 255, .28) !important;
         }
