@@ -76,40 +76,9 @@
         card.dataset.alertLayoutReady = 'true';
     }
 
-    function renderPagination(pageCount, itemCount) {
+    function renderPagination() {
         pagination.replaceChildren();
-        pagination.hidden = itemCount <= pageSize;
-        if (pagination.hidden) return;
-
-        const createButton = (label, className, disabled, onClick, ariaLabel) => {
-            const button = document.createElement('button');
-            button.type = 'button';
-            button.className = 'alerts-page-button' + (className ? ' ' + className : '');
-            button.textContent = label;
-            button.disabled = disabled;
-            button.setAttribute('aria-label', ariaLabel);
-            button.addEventListener('click', onClick);
-            return button;
-        };
-
-        pagination.appendChild(createButton('\u0627\u0644\u0633\u0627\u0628\u0642', 'previous', currentPage === 1, () => {
-            currentPage -= 1;
-            filterAlerts();
-        }, '\u0627\u0644\u0635\u0641\u062d\u0629 \u0627\u0644\u0633\u0627\u0628\u0642\u0629'));
-
-        for (let page = 1; page <= pageCount; page += 1) {
-            const button = createButton(page.toLocaleString('ar-EG'), page === currentPage ? 'is-active' : '', false, () => {
-                currentPage = page;
-                filterAlerts();
-            }, '\u0627\u0644\u0635\u0641\u062d\u0629 ' + page.toLocaleString('ar-EG'));
-            if (page === currentPage) button.setAttribute('aria-current', 'page');
-            pagination.appendChild(button);
-        }
-
-        pagination.appendChild(createButton('\u0627\u0644\u062a\u0627\u0644\u064a', 'next', currentPage === pageCount, () => {
-            currentPage += 1;
-            filterAlerts();
-        }, '\u0627\u0644\u0635\u0641\u062d\u0629 \u0627\u0644\u062a\u0627\u0644\u064a\u0629'));
+        pagination.hidden = true;
     }
 
     function filterAlerts() {
@@ -122,10 +91,7 @@
                 .toLocaleLowerCase('ar-EG');
             return !query || haystack.includes(query);
         });
-        const pageCount = Math.max(1, Math.ceil(matchingCards.length / pageSize));
-        currentPage = Math.min(currentPage, pageCount);
-        const first = (currentPage - 1) * pageSize;
-        const visibleCards = new Set(matchingCards.slice(first, first + pageSize));
+        const visibleCards = new Set(matchingCards);
         cards.forEach((card) => {
             card.hidden = !visibleCards.has(card);
         });
@@ -137,7 +103,7 @@
                 ? visible + ' ' + '\u0645\u0646' + ' ' + total
                 : total + ' ' + '\u062a\u0646\u0628\u064a\u0647';
         }
-        renderPagination(pageCount, matchingCards.length);
+        renderPagination();
     }
 
     function enhanceDailyAlerts() {
@@ -168,7 +134,7 @@
 
         alertsList.querySelectorAll('.alert-whatsapp-button').forEach(prepareWhatsappButton);
         const count = alertsList.querySelectorAll('.alert-card').length;
-        alertsList.classList.toggle('alerts-list-scroll', count > 2);
+        alertsList.classList.toggle('alerts-list-scroll', count > pageSize);
         const badge = document.getElementById('alertsCount');
         if (badge) badge.textContent = count ? count.toLocaleString('ar-EG') + ' ' + '\u062a\u0646\u0628\u064a\u0647' : '\u0644\u0627 \u062a\u0648\u062c\u062f \u062a\u0646\u0628\u064a\u0647\u0627\u062a';
         filterAlerts();

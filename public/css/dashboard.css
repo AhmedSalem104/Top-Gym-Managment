@@ -2804,6 +2804,53 @@
     #dashboardSection .alert-whatsapp-button .ui-icon { width: 19px; height: 19px; }
 }
 
+/* Keep five daily alerts visible; additional alerts scroll inside the panel. */
+#dashboardSection .alerts-list,
+#dashboardSection .alerts-list.alerts-list-scroll {
+    max-height: 430px !important;
+    min-height: 0;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    scrollbar-color: #93c5fd transparent;
+    scrollbar-width: thin;
+}
+#dashboardSection .alerts-list::-webkit-scrollbar { width: 6px; }
+#dashboardSection .alerts-list::-webkit-scrollbar-track { background: transparent; }
+#dashboardSection .alerts-list::-webkit-scrollbar-thumb { border-radius: 999px; background: #93c5fd; }
+#dashboardSection .alerts-list::-webkit-scrollbar-thumb:hover { background: #60a5fa; }
+
+/* The status badge must never be taller than the WhatsApp action. */
+#dashboardSection .alert-card { --alert-action-size: 38px; }
+#dashboardSection .alert-status {
+    box-sizing: border-box;
+    width: fit-content;
+    height: var(--alert-action-size);
+    min-height: var(--alert-action-size);
+    max-height: var(--alert-action-size);
+    align-items: center;
+    justify-content: center;
+    padding: 0 9px;
+    line-height: 1;
+    overflow: hidden;
+}
+#dashboardSection .alert-status > span:last-child {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+#dashboardSection .alert-whatsapp-button {
+    width: var(--alert-action-size);
+    height: var(--alert-action-size);
+    min-height: var(--alert-action-size);
+}
+
+@media (max-width: 560px) {
+    #dashboardSection .alerts-list,
+    #dashboardSection .alerts-list.alerts-list-scroll { max-height: 398px !important; }
+    #dashboardSection .alert-card { --alert-action-size: 34px; }
+}
+
 /* Focused refinement for the monthly summary and daily alerts screens. */
 #dashboardSection .monthly-finance-snapshot,
 #dashboardSection .alerts-panel {
@@ -2873,12 +2920,16 @@
 #dashboardSection .snapshot-membership-status-head {
     margin-inline: 16px;
     padding-top: 11px;
+    padding-bottom: 0;
+    border-top: 0;
 }
 #dashboardSection .snapshot-membership-status-head span { font-size: 12px; }
 #dashboardSection .snapshot-membership-status-head small { font-size: 8px; }
 #dashboardSection .snapshot-membership-stats {
     gap: 8px;
     margin: 9px 16px 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #e2e8f0;
 }
 #dashboardSection .snapshot-membership-stats .stat-card {
     min-height: 66px !important;
@@ -3015,7 +3066,7 @@
     #dashboardSection .alerts-panel-header { padding: 13px 14px; }
     #dashboardSection .monthly-finance-snapshot-metrics { padding: 10px 12px 8px; }
     #dashboardSection .snapshot-membership-status-head { margin-inline: 12px; }
-    #dashboardSection .snapshot-membership-stats { margin: 8px 12px 12px; gap: 8px; }
+    #dashboardSection .snapshot-membership-stats { margin: 8px 12px 12px; gap: 8px; padding-bottom: 10px; }
     #dashboardSection .snapshot-membership-stats .stat-card:nth-child(5) { grid-column: 1 / -1; width: calc(50% - 4px); justify-self: center; }
     #dashboardSection .alerts-toolbar { padding: 9px 12px; }
     #dashboardSection .alerts-list { padding: 10px 12px 12px; }
@@ -3025,4 +3076,43 @@
     #dashboardSection .alert-card-body { grid-template-columns: 34px minmax(0, 1fr); column-gap: 8px; }
     #dashboardSection .alert-whatsapp-button { width: 34px; height: 34px; min-height: 34px; }
     #dashboardSection .alert-whatsapp-button .ui-icon { width: 19px; height: 19px; }
+}
+
+/* Final alert viewport rules: five rows remain visible and the rest scroll in place. */
+#dashboardSection .alerts-list,
+#dashboardSection .alerts-list.alerts-list-scroll {
+    max-height: 430px !important;
+    min-height: 0 !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    scrollbar-color: #93c5fd transparent;
+    scrollbar-width: thin;
+}
+#dashboardSection .alerts-list::-webkit-scrollbar { width: 6px; }
+#dashboardSection .alerts-list::-webkit-scrollbar-track { background: transparent; }
+#dashboardSection .alerts-list::-webkit-scrollbar-thumb { border-radius: 999px; background: #93c5fd; }
+
+/* Keep the status badge exactly the same height as the WhatsApp action. */
+#dashboardSection .alert-card { --alert-action-size: 38px; }
+#dashboardSection .alert-status {
+    box-sizing: border-box;
+    height: var(--alert-action-size) !important;
+    min-height: var(--alert-action-size) !important;
+    max-height: var(--alert-action-size) !important;
+    align-items: center;
+    justify-content: center;
+    padding: 0 9px !important;
+    line-height: 1;
+    overflow: hidden;
+}
+#dashboardSection .alert-status > span:last-child { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#dashboardSection .alert-whatsapp-button {
+    width: var(--alert-action-size) !important;
+    height: var(--alert-action-size) !important;
+    min-height: var(--alert-action-size) !important;
+}
+@media (max-width: 560px) {
+    #dashboardSection .alerts-list,
+    #dashboardSection .alerts-list.alerts-list-scroll { max-height: 398px !important; }
+    #dashboardSection .alert-card { --alert-action-size: 34px; }
 }

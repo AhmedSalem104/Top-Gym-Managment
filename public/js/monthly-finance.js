@@ -102,8 +102,9 @@
             const statusHeading = document.createElement('div');
             statusHeading.className = 'snapshot-membership-status-head';
             statusHeading.innerHTML = '<span>حالة العضويات</span><small>ملخص سريع للمشتركين</small>';
-            snapshot.appendChild(statusHeading);
-            snapshot.appendChild(stats);
+            const metrics = snapshot.querySelector('.monthly-finance-snapshot-metrics');
+            snapshot.insertBefore(statusHeading, metrics);
+            snapshot.insertBefore(stats, metrics);
         }
     }
 
