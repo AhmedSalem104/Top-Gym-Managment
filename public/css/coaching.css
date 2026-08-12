@@ -319,3 +319,109 @@
     .external-trainee-diet-list { min-width: 0; }
     .external-trainee-diet-plan { width: 100%; }
 }
+
+/* Keep the systems column readable: counts stay on one line and each diet plan
+   gets its own compact row with an independent delete action. */
+@media (min-width: 761px) {
+    .external-trainees-table {
+        min-width: 1180px;
+    }
+    .external-trainees-table th:nth-child(1),
+    .external-trainees-table td:nth-child(1) { width: 22%; }
+    .external-trainees-table th:nth-child(2),
+    .external-trainees-table td:nth-child(2) { width: 8%; }
+    .external-trainees-table th:nth-child(3),
+    .external-trainees-table td:nth-child(3) { width: 30%; white-space: normal; }
+    .external-trainees-table th:nth-child(4),
+    .external-trainees-table td:nth-child(4) { width: 10%; }
+    .external-trainees-table th:nth-child(5),
+    .external-trainees-table td:nth-child(5) { width: 11%; }
+    .external-trainees-table th:nth-child(6),
+    .external-trainees-table td:nth-child(6) { width: 19%; }
+    .external-trainee-systems {
+        display: grid;
+        width: 100%;
+        min-width: 0;
+        gap: 7px;
+    }
+    .external-trainee-counts {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        width: 100%;
+        gap: 6px;
+    }
+    .external-trainee-count {
+        min-width: 0;
+        padding: 6px 8px;
+    }
+    .external-trainee-diet-list {
+        width: 100%;
+        min-width: 0;
+        margin-top: 0;
+    }
+    .external-trainee-diet-list-title {
+        display: block;
+        margin-bottom: 4px;
+        color: #64748b;
+        font-size: 8px;
+        font-weight: 900;
+    }
+    .external-trainee-diet-plan {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        width: 100%;
+        min-width: 0;
+        padding: 5px 6px;
+        text-align: right;
+    }
+    .external-trainee-diet-plan > span {
+        overflow: hidden;
+    }
+    .external-trainee-diet-plan strong {
+        max-width: 100%;
+        font-size: 9px;
+    }
+    .external-trainee-diet-plan small {
+        font-size: 8px;
+    }
+    .external-trainee-diet-plan .btn {
+        min-width: 44px;
+        min-height: 25px;
+    }
+    .external-trainees-table td:nth-child(3) {
+        vertical-align: top;
+    }
+}
+
+@media (max-width: 760px) {
+    .external-trainee-systems,
+    .external-trainee-diet-list {
+        width: 100%;
+        min-width: 0;
+    }
+    .external-trainee-counts {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        width: 100%;
+        gap: 5px;
+    }
+    .external-trainee-count {
+        min-width: 0;
+    }
+    .external-trainee-diet-list-title {
+        display: block;
+        margin-bottom: 3px;
+        color: #64748b;
+        font-size: 8px;
+        font-weight: 900;
+    }
+    .external-trainee-diet-plan {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        width: 100%;
+        min-width: 0;
+    }
+    .external-trainee-diet-plan > span {
+        overflow: hidden;
+    }
+}
