@@ -482,3 +482,417 @@
         line-height: 1;
     }
 }
+
+/* Final external-trainees overrides. These stay at the end so legacy rules
+   above cannot re-introduce the wide, sparse layout. */
+#traineesSection.coaching-section {
+    box-sizing: border-box;
+    width: min(100%, 1240px);
+    margin: 14px auto 0;
+    gap: 14px;
+    padding: 18px;
+    direction: rtl;
+    border: 1px solid #e5eaf2;
+    border-radius: 16px;
+    background: #fff;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, .045);
+}
+#traineesSection .coaching-header { align-items: center; gap: 16px; }
+#traineesSection .coaching-heading { gap: 11px; }
+#traineesSection .coaching-heading-icon {
+    width: 42px;
+    height: 42px;
+    flex-basis: 42px;
+    border-radius: 12px;
+    background: #eff6ff;
+    box-shadow: none;
+}
+#traineesSection .coaching-heading-icon .ui-icon { width: 21px; height: 21px; }
+#traineesSection .coaching-kicker { margin-bottom: 2px; font-size: 9px; }
+#traineesSection .coaching-heading h3 { font-size: 18px; line-height: 1.3; }
+#traineesSection .coaching-heading p {
+    max-width: 680px;
+    margin-top: 3px;
+    overflow: hidden;
+    color: #64748b;
+    font-size: 10px;
+    line-height: 1.5;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+#traineesSection .coaching-add-button {
+    min-height: 40px;
+    padding-inline: 14px;
+    border-radius: 9px;
+    box-shadow: none;
+}
+#traineesSection .coaching-add-button > span { font-size: 18px; }
+#traineesSection .coaching-summary { gap: 9px; }
+#traineesSection .coaching-summary-card {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 10px;
+    min-height: 82px;
+    padding: 11px 12px;
+    border-color: #e5eaf2;
+    border-radius: 12px;
+    background: #fff;
+    box-shadow: none;
+}
+#traineesSection .coaching-summary-card::after { opacity: .045; }
+#traineesSection .coaching-summary-icon {
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    border: 1px solid currentColor;
+    border-radius: 10px;
+    background: currentColor;
+    font-size: 0;
+}
+#traineesSection .coaching-summary-icon .coaching-inline-icon { width: 17px; height: 17px; color: #fff; }
+#traineesSection .coaching-summary-card.users .coaching-summary-icon { color: #2563eb; }
+#traineesSection .coaching-summary-card.workout .coaching-summary-icon { color: #7c3aed; }
+#traineesSection .coaching-summary-card.diet .coaching-summary-icon { color: #059669; }
+#traineesSection .coaching-summary-card.progress .coaching-summary-icon { color: #d97706; }
+#traineesSection .coaching-summary-copy { display: grid; min-width: 0; gap: 1px; }
+#traineesSection .coaching-summary-copy > span {
+    overflow: hidden;
+    color: #64748b;
+    font-size: 10px;
+    font-weight: 800;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+#traineesSection .coaching-summary-copy strong { font-size: 23px; line-height: 1.1; }
+#traineesSection .coaching-summary-copy small { color: #94a3b8; font-size: 8px; }
+#traineesSection .coaching-toolbar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 9px;
+    padding: 8px;
+    border-color: #e5eaf2;
+    border-radius: 11px;
+    background: #f8fafc;
+}
+#traineesSection .coaching-search { min-width: 0; height: 40px; border-radius: 9px; background: #fff; }
+#traineesSection .coaching-search input { min-width: 0; font-size: 10px; }
+#traineesSection .coaching-toolbar-actions { display: flex; align-items: center; justify-content: flex-end; gap: 7px; }
+#traineesSection .coaching-result-badge {
+    display: inline-flex;
+    align-items: center;
+    min-height: 28px;
+    padding: 0 9px;
+    color: #1d4ed8;
+    border: 1px solid #bfdbfe;
+    border-radius: 999px;
+    background: #eff6ff;
+    font-size: 9px;
+    font-weight: 900;
+    white-space: nowrap;
+}
+#traineesSection .coaching-toolbar-actions .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    min-height: 40px;
+    padding-inline: 11px;
+    border-radius: 8px;
+    font-size: 10px;
+}
+#traineesSection .coaching-toolbar-actions .ui-icon { width: 15px; height: 15px; }
+#traineesSection .coaching-inline-icon { display: block; }
+#traineesSection .external-trainees-table-wrap {
+    overflow: hidden;
+    border-color: #e5eaf2;
+    border-radius: 13px;
+    background: #fff;
+    box-shadow: none;
+}
+#traineesSection .external-trainees-table {
+    width: 100%;
+    min-width: 0;
+    table-layout: fixed;
+    color: #334155;
+    font-size: 10px;
+}
+#traineesSection .external-trainees-table th,
+#traineesSection .external-trainees-table td {
+    padding: 9px 8px;
+    border-bottom-color: #edf2f7;
+    text-align: center;
+    white-space: normal;
+}
+#traineesSection .external-trainees-table th { color: #64748b; background: #f8fafc; font-size: 9px; }
+#traineesSection .external-trainees-table th:nth-child(1),
+#traineesSection .external-trainees-table td:nth-child(1) { width: 26%; }
+#traineesSection .external-trainees-table th:nth-child(2),
+#traineesSection .external-trainees-table td:nth-child(2) { width: 8%; }
+#traineesSection .external-trainees-table th:nth-child(3),
+#traineesSection .external-trainees-table td:nth-child(3) { width: 25%; }
+#traineesSection .external-trainees-table th:nth-child(4),
+#traineesSection .external-trainees-table td:nth-child(4) { width: 11%; }
+#traineesSection .external-trainees-table th:nth-child(5),
+#traineesSection .external-trainees-table td:nth-child(5) { width: 12%; }
+#traineesSection .external-trainees-table th:nth-child(6),
+#traineesSection .external-trainees-table td:nth-child(6) { width: 18%; }
+#traineesSection .external-trainees-table tbody tr:hover { background: #fbfdff; }
+#traineesSection .external-trainee-primary { justify-content: flex-start !important; min-width: 0; text-align: right; }
+#traineesSection .external-trainee-primary > div:last-child { justify-items: start; min-width: 0; }
+#traineesSection .external-trainee-primary strong,
+#traineesSection .external-trainee-primary a,
+#traineesSection .external-trainee-primary small { max-width: 100%; text-align: right; }
+#traineesSection .external-trainee-primary strong { font-size: 11px; }
+#traineesSection .external-trainee-primary a { font-size: 9px; }
+#traineesSection .external-trainee-primary small { color: #94a3b8; font-size: 8px; }
+#traineesSection .trainee-avatar { width: 38px; height: 38px; flex-basis: 38px; border-radius: 11px; font-size: 15px; }
+#traineesSection .trainee-badge { padding: 4px 7px; color: #6d28d9; border: 1px solid #ddd6fe; background: #f5f3ff; font-size: 8px; }
+#traineesSection .external-trainee-systems { display: grid; width: 100%; min-width: 0; gap: 6px; }
+#traineesSection .external-trainee-counts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px; width: 100%; }
+#traineesSection .external-trainee-count {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    align-items: center;
+    min-width: 0;
+    gap: 1px 5px;
+    padding: 5px 6px;
+    border-color: #e5eaf2;
+    border-radius: 8px;
+    background: #f8fafc;
+}
+#traineesSection .external-trainee-count-icon {
+    display: grid;
+    grid-row: span 2;
+    place-items: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 6px;
+    background: #eff6ff;
+}
+#traineesSection .external-trainee-count-icon .coaching-inline-icon { width: 12px; height: 12px; color: #2563eb; }
+#traineesSection .external-trainee-count.diet .external-trainee-count-icon { background: #ecfdf5; }
+#traineesSection .external-trainee-count.diet .external-trainee-count-icon .coaching-inline-icon { color: #059669; }
+#traineesSection .external-trainee-count b { color: #0f172a; font-size: 12px; line-height: 1; }
+#traineesSection .external-trainee-count > span:last-child { color: #64748b; font-size: 8px; line-height: 1; }
+#traineesSection .external-trainee-diet-list {
+    width: 100%;
+    min-width: 0;
+    max-height: 68px;
+    margin-top: 0;
+    overflow-y: auto;
+}
+#traineesSection .external-trainee-diet-list-title { display: block; margin-bottom: 3px; color: #64748b; font-size: 8px; font-weight: 900; }
+#traineesSection .external-trainee-diet-plan {
+    grid-template-columns: minmax(0, 1fr);
+    width: 100%;
+    min-width: 0;
+    padding: 4px 6px;
+    border-color: #e5eaf2;
+    border-radius: 7px;
+    background: #fbfdff;
+    text-align: right;
+}
+#traineesSection .external-trainee-diet-plan strong { color: #334155; font-size: 8px; }
+#traineesSection .external-trainee-diet-plan small,
+#traineesSection .external-trainee-no-diet { font-size: 8px; }
+#traineesSection .external-trainee-compact-metric { display: inline-flex; align-items: center; justify-content: center; gap: 5px; min-width: 0; }
+#traineesSection .external-trainee-compact-metric > .coaching-inline-icon { width: 15px; height: 15px; flex: 0 0 15px; color: #64748b; }
+#traineesSection .external-trainee-compact-metric > span { display: grid; min-width: 0; gap: 1px; }
+#traineesSection .external-trainee-compact-metric strong { color: #334155; font-size: 11px; line-height: 1.1; }
+#traineesSection .external-trainee-compact-metric small,
+#traineesSection .external-trainee-last-activity { color: #64748b; font-size: 8px; line-height: 1.2; white-space: nowrap; }
+#traineesSection .external-trainee-last-activity { direction: ltr; }
+#traineesSection .external-trainee-actions-cell { display: grid; width: 100%; min-width: 0; gap: 5px; justify-items: center; }
+#traineesSection .external-trainee-actions-cell .trainee-actions { display: flex; width: 100%; justify-content: center; gap: 4px; }
+#traineesSection .external-trainee-actions-cell .trainee-actions .btn { min-width: 0; min-height: 30px; padding: 4px 6px; border-radius: 7px; font-size: 8px; white-space: nowrap; }
+#traineesSection .trainee-diet-actions { display: flex; width: 100%; justify-content: center; gap: 4px; }
+#traineesSection .trainee-diet-actions .btn { min-height: 25px; padding: 3px 6px; border-radius: 6px; font-size: 8px; }
+#traineesSection .coaching-empty { min-height: 150px; padding: 20px; border-color: #dbe3ef; border-radius: 13px; background: #f8fafc; }
+#traineesSection .coaching-empty strong { color: #334155; font-size: 13px; }
+#traineesSection .coaching-empty span { max-width: 420px; font-size: 10px; line-height: 1.6; }
+#traineesSection .coaching-empty .btn { margin-top: 4px; }
+#traineesSection .coaching-pagination { align-items: center; padding-top: 0; color: #64748b; }
+#traineesSection .coaching-pagination > div { gap: 5px; }
+#traineesSection .coaching-pagination .btn { min-height: 30px; border-radius: 7px; font-size: 9px; }
+#traineesSection .coaching-skeleton-list { display: grid; gap: 8px; }
+#traineesSection .coaching-skeleton-row {
+    display: grid;
+    grid-template-columns: 38px minmax(120px, 1.3fr) minmax(80px, 1fr) 90px;
+    align-items: center;
+    gap: 10px;
+    min-height: 62px;
+    padding: 10px 12px;
+    border: 1px solid #edf2f7;
+    border-radius: 11px;
+    background: #fff;
+}
+#traineesSection .coaching-skeleton-row > * {
+    display: block;
+    height: 10px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+    background-size: 200% 100%;
+    animation: coachingSkeleton 1.2s ease-in-out infinite;
+}
+#traineesSection .coaching-skeleton-row > span { width: 38px; height: 38px; border-radius: 11px; }
+#traineesSection .coaching-skeleton-row > i { width: 82%; }
+#traineesSection .coaching-skeleton-row > b { width: 70%; }
+#traineesSection .coaching-skeleton-row > em { width: 90%; }
+@keyframes coachingSkeleton { from { background-position: 100% 0; } to { background-position: -100% 0; } }
+#traineesSection button:focus-visible,
+#traineesSection a:focus-visible,
+#traineesSection input:focus-visible { outline: 3px solid rgba(37, 99, 235, .22); outline-offset: 2px; }
+
+@media (max-width: 900px) and (min-width: 761px) {
+    #traineesSection .external-trainee-primary small { display: none; }
+    #traineesSection .external-trainees-table th,
+    #traineesSection .external-trainees-table td { padding-inline: 5px; }
+    #traineesSection .external-trainee-actions-cell .trainee-actions .btn { padding-inline: 4px; font-size: 7px; }
+}
+
+@media (max-width: 760px) {
+    #traineesSection.coaching-section { width: 100%; margin-top: 10px; gap: 12px; padding: 13px; border-radius: 14px; }
+    #traineesSection .coaching-header { align-items: stretch; flex-direction: column; gap: 11px; }
+    #traineesSection .coaching-heading p { max-width: 100%; white-space: normal; }
+    #traineesSection .coaching-add-button { width: 100%; }
+    #traineesSection .coaching-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    #traineesSection .coaching-summary-card { min-height: 74px; padding: 9px; }
+    #traineesSection .coaching-summary-icon { width: 30px; height: 30px; border-radius: 8px; }
+    #traineesSection .coaching-summary-copy strong { font-size: 20px; }
+    #traineesSection .coaching-toolbar { grid-template-columns: 1fr; padding: 7px; }
+    #traineesSection .coaching-toolbar-actions { justify-content: space-between; }
+    #traineesSection .coaching-toolbar-actions .btn { min-height: 38px; }
+    #traineesSection .external-trainees-table-wrap { overflow: visible; border: 0; background: transparent; }
+    #traineesSection .external-trainees-table { display: block; min-width: 0; }
+    #traineesSection .external-trainees-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+    #traineesSection .external-trainees-table tbody { display: grid; width: 100%; gap: 8px; }
+    #traineesSection .external-trainees-table tbody tr {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0 10px;
+        width: 100%;
+        min-width: 0;
+        padding: 10px;
+        border: 1px solid #e5eaf2;
+        border-radius: 13px;
+        background: #fff;
+        box-shadow: 0 5px 16px rgba(15, 23, 42, .04);
+    }
+    #traineesSection .external-trainees-table th,
+    #traineesSection .external-trainees-table td {
+        width: auto !important;
+        min-width: 0;
+        padding: 6px 0;
+        border: 0;
+        white-space: normal;
+        overflow: hidden;
+        overflow-wrap: anywhere;
+    }
+    #traineesSection .external-trainees-table td:first-child {
+        display: block !important;
+        grid-column: 1 / -1;
+        padding: 0 0 8px;
+        border-bottom: 1px solid #eef2f7;
+    }
+    #traineesSection .external-trainees-table td:nth-child(2) {
+        display: flex !important;
+        grid-column: 1 / -1;
+        align-items: center;
+        justify-content: flex-start;
+        padding: 7px 0 1px;
+    }
+    #traineesSection .external-trainees-table td:nth-child(3) {
+        display: grid !important;
+        grid-column: 1 / -1;
+        grid-template-columns: auto minmax(0, 1fr);
+        align-items: center;
+        gap: 0 7px;
+        padding-top: 7px;
+    }
+    #traineesSection .external-trainees-table td:nth-child(3)::before,
+    #traineesSection .external-trainees-table td:nth-child(4)::before,
+    #traineesSection .external-trainees-table td:nth-child(5)::before {
+        color: #94a3b8;
+        font-size: 8px;
+        font-weight: 900;
+        white-space: nowrap;
+    }
+    #traineesSection .external-trainees-table td:nth-child(3)::before { content: 'الأنظمة'; }
+    #traineesSection .external-trainees-table td:nth-child(4)::before { content: 'القياسات'; }
+    #traineesSection .external-trainees-table td:nth-child(5)::before { content: 'آخر نشاط'; }
+    #traineesSection .external-trainees-table td:nth-child(3) > div,
+    #traineesSection .external-trainees-table td:nth-child(4) > div,
+    #traineesSection .external-trainees-table td:nth-child(5) > div { grid-column: 2; min-width: 0; }
+    #traineesSection .external-trainees-table td:nth-child(4),
+    #traineesSection .external-trainees-table td:nth-child(5) {
+        display: grid !important;
+        grid-template-columns: auto minmax(0, 1fr);
+        align-items: center;
+        gap: 0 6px;
+        min-height: 38px;
+        padding-top: 7px;
+    }
+    #traineesSection .external-trainees-table td:last-child {
+        display: block !important;
+        grid-column: 1 / -1;
+        width: auto !important;
+        padding: 8px 0 0;
+        border-top: 1px solid #eef2f7;
+    }
+    #traineesSection .external-trainee-primary { justify-content: flex-start !important; width: 100%; }
+    #traineesSection .external-trainee-primary > div:last-child { justify-items: start; }
+    #traineesSection .external-trainee-primary strong,
+    #traineesSection .external-trainee-primary a,
+    #traineesSection .external-trainee-primary small { max-width: 100%; text-align: right; }
+    #traineesSection .external-trainee-systems,
+    #traineesSection .external-trainee-diet-list { width: 100%; min-width: 0; }
+    #traineesSection .external-trainee-count { min-height: 39px; }
+    #traineesSection .external-trainee-actions-cell,
+    #traineesSection .external-trainee-actions-cell .trainee-actions { width: 100%; }
+    #traineesSection .external-trainee-actions-cell .trainee-actions { justify-content: stretch; }
+    #traineesSection .external-trainee-actions-cell .trainee-actions .btn {
+        display: inline-flex;
+        flex: 1 1 0;
+        width: auto;
+        min-width: 0;
+        height: auto;
+        min-height: 35px;
+        padding-inline: 6px;
+        overflow: visible;
+        font-size: 9px;
+    }
+    #traineesSection .external-trainee-actions-cell .trainee-actions .btn::before { display: none; }
+    #traineesSection .trainee-diet-actions { justify-content: flex-start; margin-top: 2px; }
+    #traineesSection .trainee-diet-actions .btn {
+        display: inline-flex;
+        width: auto;
+        min-width: 0;
+        height: auto;
+        min-height: 30px;
+        padding: 4px 8px;
+        overflow: visible;
+        font-size: 8px;
+    }
+    #traineesSection .trainee-diet-actions .btn::before { display: none; }
+    #traineesSection .coaching-skeleton-row { grid-template-columns: 34px minmax(0, 1fr) 70px; }
+    #traineesSection .coaching-skeleton-row > em { display: none; }
+}
+
+@media (max-width: 480px) {
+    #traineesSection .coaching-heading h3 { font-size: 16px; }
+    #traineesSection .coaching-heading p { font-size: 9px; }
+    #traineesSection .coaching-summary { gap: 7px; }
+    #traineesSection .coaching-summary-card { grid-template-columns: 28px minmax(0, 1fr); gap: 7px; padding: 8px; }
+    #traineesSection .coaching-summary-copy > span { font-size: 9px; }
+    #traineesSection .coaching-summary-copy small { font-size: 7px; }
+    #traineesSection .coaching-toolbar-actions .btn span { font-size: 9px; }
+    #traineesSection .external-trainees-table tbody tr { padding: 9px; }
+    #traineesSection .external-trainees-table td { padding-block: 5px; }
+    #traineesSection .external-trainee-primary strong { font-size: 10px; }
+    #traineesSection .external-trainee-primary a { font-size: 8px; }
+    #traineesSection .external-trainee-primary small { font-size: 7px; }
+    #traineesSection .external-trainee-count { padding-inline: 5px; }
+}

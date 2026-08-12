@@ -78,6 +78,22 @@
         if (element) element.innerHTML = `<div class="loading">${message}</div>`;
     }
 
+    function coachingIcon(name) {
+        const paths = {
+            users: '<path d="M16 20v-1.5a3.5 3.5 0 0 0-3.5-3.5h-5A3.5 3.5 0 0 0 4 18.5V20"/><circle cx="10" cy="7" r="3"/><path d="M16 6.5a3 3 0 0 1 0 5.8M18 15.2a3.5 3.5 0 0 1 2 3.3V20"/>',
+            workout: '<path d="M6 7v10M18 7v10M3 9v6M21 9v6M6 12h12"/><path d="M8 5v14M16 5v14"/>',
+            diet: '<path d="M4 15.5C4 11.4 7.1 8 11 8s7 3.4 7 7.5c0 1.4-1.1 2.5-2.5 2.5h-9C5.1 18 4 16.9 4 15.5Z"/><path d="M11 8c0-2 1.1-3.5 3-4M8 12h8M7 15h7"/>',
+            progress: '<path d="M4 19V5M4 19h16"/><path d="m7 15 3-4 3 2 5-7"/><circle cx="18" cy="6" r="1"/>',
+            calendar: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/>',
+            ruler: '<path d="m4 20 16-16M7 17l-2-2M10 14l-2-2M13 11l-2-2M16 8l-2-2M19 5l-2-2"/>'
+        };
+        return `<svg class="coaching-inline-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths[name] || ''}</svg>`;
+    }
+
+    function traineeSkeleton() {
+        return `<div class="coaching-skeleton-list" aria-hidden="true">${Array.from({ length: 3 }, () => '<div class="coaching-skeleton-row"><span></span><i></i><b></b><em></em></div>').join('')}</div>`;
+    }
+
     async function confirmAction(title, text, confirmText = 'نعم، احذف') {
         if (window.Swal) {
             const result = await window.Swal.fire({
@@ -123,22 +139,31 @@
     function activateCoachingSummary() {
         const summary = $('coachingSummary');
         if (!summary) return;
-        const workoutCount = state.trainees.reduce((sum, item) => sum + item.workoutCount, 0);
-        const dietCount = state.trainees.reduce((sum, item) => sum + item.dietCount, 0);
-        const measurements = state.trainees.reduce((sum, item) => sum + item.measurementCount, 0);
+        const workoutCount = state.trainees.reduce((sum, item) => sum + Number(item.workoutCount || 0), 0);
+        const dietCount = state.trainees.reduce((sum, item) => sum + Number(item.dietCount || 0), 0);
+        const measurements = state.trainees.reduce((sum, item) => sum + Number(item.measurementCount || 0), 0);
+        const total = state.pagination?.total ?? state.trainees.length;
         summary.innerHTML = [
-            ['المتدربون الخارجيون', state.pagination?.total || 0, 'users'],
-            ['برامج التدريب', workoutCount, 'workout'],
-            ['خطط التغذية', dietCount, 'diet'],
-            ['سجلات القياسات', measurements, 'progress']
-        ].map(([label, value, tone]) => `<article class="coaching-summary-card ${tone}"><span>${label}</span><strong>${number(value, 0)}</strong><small>بيانات محفوظة فعليًا</small></article>`).join('');
+            ['المتدربون الخارجيون', total, 'users', 'عملاء بدون عضوية فعالة'],
+            ['برامج التدريب', workoutCount, 'workout', 'أنظمة محفوظة'],
+            ['خطط التغذية', dietCount, 'diet', 'خطط محفوظة'],
+            ['سجلات القياسات', measurements, 'progress', 'متابعة محفوظة']
+        ].map(([label, value, tone, caption]) => `<article class="coaching-summary-card ${tone}"><span class="coaching-summary-icon">${coachingIcon(tone)}</span><div class="coaching-summary-copy"><span>${label}</span><strong>${number(value, 0)}</strong><small>${caption}</small></div></article>`).join('');
+        const badge = $('externalTraineeCountBadge');
+        if (badge) {
+            badge.textContent = `${number(total, 0)} متدرب`;
+            badge.hidden = false;
+        }
     }
 
     function renderTrainees() {
         const container = $('externalTraineesList');
         if (!container) return;
         if (!state.trainees.length) {
-            container.innerHTML = '<div class="coaching-empty"><strong>لا يوجد متدربون خارجيون حاليًا</strong><span>أضف متدربًا، ثم أنشئ له برنامج تدريب أو خطة تغذية ليظهر هنا.</span></div>';
+            const hasSearch = Boolean(state.search.trim());
+            container.innerHTML = hasSearch
+                ? '<div class="coaching-empty coaching-empty-search"><strong>لا يوجد متدربون مطابقون لبحثك</strong><span>جرّب البحث باسم آخر أو رقم هاتف مختلف.</span><button class="btn btn-light btn-small" type="button" data-coaching-action="clear-search">مسح البحث</button></div>'
+                : '<div class="coaching-empty"><strong>لا يوجد متدربون خارجيون حاليًا</strong><span>أضف متدربًا، ثم أنشئ له برنامج تدريب أو خطة تغذية ليظهر هنا.</span></div>';
             activateCoachingSummary();
             return;
         }
@@ -146,12 +171,12 @@
             const dietPlans = (trainee.dietPlans || []).map((plan) => `<span class="external-trainee-diet-plan"><span><strong>${escapeHtml(plan.name)}</strong><small>${number(plan.targetCalories, 0)} سعر</small></span></span>`).join('');
             const dietDeleteActions = (trainee.dietPlans || []).map((plan) => `<button class="btn btn-danger btn-small trainee-diet-delete" type="button" title="حذف خطة التغذية: ${escapeHtml(plan.name)}" aria-label="حذف خطة التغذية ${escapeHtml(plan.name)}" data-coaching-action="delete-diet" data-id="${plan.id}" data-member-id="${trainee.id}">حذف تغذية</button>`).join('');
             return `<tr data-trainee-id="${trainee.id}">
-            <td><div class="external-trainee-primary"><div class="trainee-avatar">${escapeHtml((trainee.fullName || 'م').trim().slice(0, 1))}</div><div><strong title="${escapeHtml(trainee.fullName)}">${escapeHtml(trainee.fullName)}</strong><a href="tel:${escapeHtml(trainee.phone)}">${escapeHtml(trainee.phone)}</a>${trainee.email ? `<small>${escapeHtml(trainee.email)}</small>` : ''}</div></div></td>
-            <td><span class="trainee-badge">خارجي</span></td>
-            <td><div class="external-trainee-systems"><div class="external-trainee-counts"><span class="external-trainee-count workout"><b>${number(trainee.workoutCount, 0)}</b><span>تدريب</span></span><span class="external-trainee-count diet"><b>${number(trainee.dietCount, 0)}</b><span>تغذية</span></span></div><div class="external-trainee-diet-list">${dietPlans ? `<span class="external-trainee-diet-list-title">خطط التغذية</span>${dietPlans}` : '<span class="external-trainee-no-diet">لا توجد خطط تغذية</span>'}</div></div></td>
-            <td><strong>${number(trainee.measurementCount, 0)}</strong><small>قياس محفوظ</small></td>
-            <td><span class="external-trainee-last-activity">${trainee.lastActivity ? escapeHtml(new Date(trainee.lastActivity).toLocaleDateString('ar-EG')) : '—'}</span></td>
-            <td><div class="external-trainee-actions-cell"><div class="trainee-actions"><button class="btn btn-light btn-small" type="button" title="فتح الملف" aria-label="فتح الملف" data-coaching-action="profile" data-id="${trainee.id}">فتح الملف</button><button class="btn btn-primary btn-small" type="button" title="إضافة تدريب" aria-label="إضافة تدريب" data-coaching-action="workout" data-id="${trainee.id}">+ تدريب</button><button class="btn btn-light btn-small" type="button" title="إضافة تغذية" aria-label="إضافة تغذية" data-coaching-action="diet" data-id="${trainee.id}">+ تغذية</button></div>${dietDeleteActions ? `<div class="trainee-diet-actions">${dietDeleteActions}</div>` : ''}</div></td>
+            <td class="trainee-cell"><div class="external-trainee-primary"><div class="trainee-avatar">${escapeHtml((trainee.fullName || 'م').trim().slice(0, 1))}</div><div><strong title="${escapeHtml(trainee.fullName)}">${escapeHtml(trainee.fullName)}</strong><a href="tel:${escapeHtml(trainee.phone)}" dir="ltr">${escapeHtml(trainee.phone)}</a>${trainee.email ? `<small title="${escapeHtml(trainee.email)}" dir="ltr">${escapeHtml(trainee.email)}</small>` : ''}</div></div></td>
+            <td class="trainee-type-cell"><span class="trainee-badge">خارجي</span></td>
+            <td class="trainee-systems-cell"><div class="external-trainee-systems"><div class="external-trainee-counts"><span class="external-trainee-count workout"><span class="external-trainee-count-icon">${coachingIcon('workout')}</span><b>${number(trainee.workoutCount, 0)}</b><span>تدريب</span></span><span class="external-trainee-count diet"><span class="external-trainee-count-icon">${coachingIcon('diet')}</span><b>${number(trainee.dietCount, 0)}</b><span>تغذية</span></span></div><div class="external-trainee-diet-list">${dietPlans ? `<span class="external-trainee-diet-list-title">الخطة الحالية</span>${dietPlans}` : '<span class="external-trainee-no-diet">لا توجد خطة تغذية</span>'}</div></div></td>
+            <td class="trainee-measurements-cell"><div class="external-trainee-compact-metric">${coachingIcon('ruler')}<span><strong>${number(trainee.measurementCount, 0)}</strong><small>قياس محفوظ</small></span></div></td>
+            <td class="trainee-activity-cell"><div class="external-trainee-compact-metric">${coachingIcon('calendar')}<span class="external-trainee-last-activity" dir="ltr">${trainee.lastActivity ? escapeHtml(new Date(trainee.lastActivity).toLocaleDateString('ar-EG')) : 'لا يوجد نشاط'}</span></div></td>
+            <td class="trainee-actions-cell"><div class="external-trainee-actions-cell"><div class="trainee-actions"><button class="btn btn-light btn-small" type="button" title="فتح الملف" aria-label="فتح الملف" data-coaching-action="profile" data-id="${trainee.id}">فتح الملف</button><button class="btn btn-primary btn-small" type="button" title="إضافة تدريب" aria-label="إضافة تدريب" data-coaching-action="workout" data-id="${trainee.id}">+ تدريب</button><button class="btn btn-light btn-small" type="button" title="إضافة تغذية" aria-label="إضافة تغذية" data-coaching-action="diet" data-id="${trainee.id}">+ تغذية</button></div>${dietDeleteActions ? `<div class="trainee-diet-actions" aria-label="إدارة خطط التغذية">${dietDeleteActions}</div>` : ''}</div></td>
         </tr>`;
         }).join('');
         container.innerHTML = `<div class="external-trainees-table-wrap"><table class="external-trainees-table"><thead><tr><th>المتدرب</th><th>النوع</th><th>الأنظمة</th><th>القياسات</th><th>آخر نشاط</th><th>الإجراءات</th></tr></thead><tbody>${rows}</tbody></table></div>`;
@@ -176,7 +201,7 @@
         if (state.abortController) state.abortController.abort();
         state.abortController = new AbortController();
         const requestId = ++state.requestId;
-        setLoading($('externalTraineesList'), 'جاري تحميل المتدربين…');
+        setLoading($('externalTraineesList'), traineeSkeleton());
         try {
             const data = await requestJson(`/api/external-trainees?page=${state.page}&pageSize=${state.pageSize}&search=${encodeURIComponent(state.search)}`, { signal: state.abortController.signal });
             if (requestId !== state.requestId) return;
@@ -187,7 +212,7 @@
             renderPagination();
         } catch (error) {
             if (error.name === 'AbortError' || requestId !== state.requestId) return;
-            $('externalTraineesList').innerHTML = `<div class="coaching-empty error"><strong>تعذر تحميل المتدربين</strong><span>${escapeHtml(error.message)}</span></div>`;
+            $('externalTraineesList').innerHTML = `<div class="coaching-empty error"><strong>تعذر تحميل قائمة المتدربين</strong><span>${escapeHtml(error.message)}</span><button class="btn btn-light btn-small" type="button" data-coaching-action="retry">إعادة المحاولة</button></div>`;
             notify(error.message, 'error');
         } finally {
             if (requestId === state.requestId) state.loadingKey = '';
@@ -1365,7 +1390,27 @@
         $('addExternalTraineeButton')?.addEventListener('click', () => { renderExternalForm(); openDialog($('externalTraineeDialog')); });
         $('externalTraineeRefreshButton')?.addEventListener('click', () => { state.page = 1; state.loaded = false; loadTrainees(true); });
         $('externalTraineeSearch')?.addEventListener('input', () => { window.clearTimeout(state.searchTimer); state.searchTimer = window.setTimeout(() => { state.page = 1; state.loaded = false; loadTrainees(true); }, 300); });
-        $('externalTraineesList')?.addEventListener('click', (event) => { const button = event.target.closest('[data-coaching-action]'); if (!button) return; const id = button.dataset.id; if (button.dataset.coachingAction === 'profile') openProfile(id); else if (button.dataset.coachingAction === 'workout') openBuilder('workout', id); else if (button.dataset.coachingAction === 'diet') openBuilder('diet', id); else if (button.dataset.coachingAction === 'delete-diet') deleteDietPlan(id, button.dataset.memberId); });
+        $('externalTraineesList')?.addEventListener('click', (event) => {
+            const button = event.target.closest('[data-coaching-action]');
+            if (!button) return;
+            const action = button.dataset.coachingAction;
+            const id = button.dataset.id;
+            if (action === 'profile') openProfile(id);
+            else if (action === 'workout') openBuilder('workout', id);
+            else if (action === 'diet') openBuilder('diet', id);
+            else if (action === 'delete-diet') deleteDietPlan(id, button.dataset.memberId);
+            else if (action === 'clear-search') {
+                const input = $('externalTraineeSearch');
+                if (input) input.value = '';
+                state.page = 1;
+                state.loaded = false;
+                loadTrainees(true);
+            } else if (action === 'retry') {
+                state.page = 1;
+                state.loaded = false;
+                loadTrainees(true);
+            }
+        });
         $('externalTraineesPagination')?.addEventListener('click', (event) => { const button = event.target.closest('[data-coaching-page]'); if (!button || button.disabled) return; state.page += button.dataset.coachingPage === 'next' ? 1 : -1; state.loaded = false; loadTrainees(true); });
         $('coachingProfileClose')?.addEventListener('click', () => closeDialog($('coachingProfileDialog')));
         $('coachingBuilderClose')?.addEventListener('click', () => closeDialog($('coachingBuilderDialog')));
