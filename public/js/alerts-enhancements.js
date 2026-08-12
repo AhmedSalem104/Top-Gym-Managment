@@ -3,6 +3,15 @@
             if (!alertsList) return;
             const alertsSearch = document.getElementById('alertsSearch');
             const alertsSearchResult = document.getElementById('alertsSearchResult');
+            const alertsHeader = document.querySelector('.alerts-panel-header');
+            if (alertsHeader && !alertsHeader.querySelector('.alerts-filter-button')) {
+                const filterButton = document.createElement('label');
+                filterButton.className = 'alerts-filter-button';
+                filterButton.htmlFor = 'alertsSearch';
+                filterButton.setAttribute('aria-label', '\u062a\u0635\u0641\u064a\u0629 \u0627\u0644\u062a\u0646\u0628\u064a\u0647\u0627\u062a');
+                filterButton.innerHTML = '<svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M7 12h10M10 18h4"/></svg><span>\u062a\u0635\u0641\u064a\u0629</span>';
+                alertsHeader.appendChild(filterButton);
+            }
             const labels = { active: 'نشطة', expiring_soon: 'قريبة الانتهاء', expired: 'منتهية', frozen: 'مجمدة' };
             const kindLabels = { debt: 'عليه مستحقات', inactive: 'غياب طويل' };
             const icons = {
