@@ -111,23 +111,6 @@
 @media (max-width: 640px) {
     .financial-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
-
-.attendance-mode-actions { display: flex; justify-content: flex-end; gap: 7px; padding: 0 24px 10px; }
-.attendance-report-panel { margin: 0 24px 24px; padding: 14px; border: 1px solid #dbe3ef; border-radius: 13px; background: #f8fafc; }
-.attendance-report-panel[hidden] { display: none !important; }
-.attendance-report-daily { margin-bottom: 10px; }
-.attendance-report-daily h5, .attendance-report-grid h5 { margin: 0 0 6px; color: #334155; font-size: 11px; }
-.attendance-report-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
-.attendance-report-head h4 { margin: 0; color: #0f172a; font-size: 14px; }
-.attendance-report-filters { display: flex; gap: 7px; flex-wrap: wrap; }
-.attendance-report-filters input { min-height: 33px; padding: 6px 8px; border: 1px solid #dbe3ef; border-radius: 8px; font-size: 10px; }
-.attendance-report-kpis { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 7px; margin-bottom: 10px; }
-.attendance-report-kpis > div { display: grid; gap: 2px; padding: 9px; border: 1px solid #e2e8f0; border-radius: 9px; background: #fff; }
-.attendance-report-kpis span { color: #64748b; font-size: 9px; }.attendance-report-kpis strong { color: #1d4ed8; font-size: 15px; }
-.attendance-report-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-.attendance-report-table { width: 100%; border-collapse: collapse; font-size: 9px; }.attendance-report-table th,.attendance-report-table td { padding: 7px; border-bottom: 1px solid #e2e8f0; text-align: center; }.attendance-report-table th { color: #64748b; background: #f1f5f9; }
-.attendance-report-empty { padding: 16px; color: #94a3b8; text-align: center; font-size: 10px; }
-@media (max-width: 760px) { .attendance-mode-actions { padding-inline: 14px; justify-content: stretch; }.attendance-mode-actions .btn { flex: 1; }.attendance-report-panel { margin-inline: 14px; }.attendance-report-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }.attendance-report-grid { grid-template-columns: 1fr; }.attendance-report-head { align-items: stretch; flex-direction: column; }.attendance-report-filters { display: grid; grid-template-columns: 1fr 1fr; }.attendance-report-filters .btn { grid-column: 1 / -1; } }
 @media (max-width: 850px) {
     .attendance-control-panel { grid-template-columns: 1fr; }
     .attendance-summary { min-width: 0; }
@@ -154,22 +137,4 @@
     .qr-member-preview-head strong { font-size: 13px; }
     .qr-member-preview-grid { gap: 6px; }
     .qr-member-preview-grid > div { padding: 7px 8px; }
-}
-
-/* Focused reception mode: keep the attendance workflow visible and distraction-free. */
-body.attendance-kiosk-mode { overflow-x: hidden; }
-body.attendance-kiosk-mode .topbar,
-body.attendance-kiosk-mode .page-tabs { display: none !important; }
-body.attendance-kiosk-mode .page { max-width: 980px !important; min-height: 100vh; margin-inline: auto; padding-top: 34px !important; }
-body.attendance-kiosk-mode .page > section:not(#attendanceSection) { display: none !important; }
-body.attendance-kiosk-mode #attendanceSection { display: block !important; margin: 0; }
-body.attendance-kiosk-mode .attendance-heading h3 { font-size: 25px; }
-body.attendance-kiosk-mode .attendance-input-wrap input { min-height: 56px; font-size: 18px; }
-body.attendance-kiosk-mode .attendance-action-buttons .btn { min-height: 56px; font-size: 14px; }
-body.attendance-kiosk-mode .attendance-mode-actions .btn { min-height: 42px; }
-@media (max-width: 640px) {
-    body.attendance-kiosk-mode .page { padding: 14px 10px 24px !important; }
-    body.attendance-kiosk-mode .attendance-action-buttons { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    body.attendance-kiosk-mode .attendance-action-buttons .btn { min-height: 52px; }
-    body.attendance-kiosk-mode .attendance-table-wrap { margin-inline: 0; }
 }
