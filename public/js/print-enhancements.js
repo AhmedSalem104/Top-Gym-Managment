@@ -259,8 +259,16 @@
                     button.dataset.id = row.dataset.memberId;
                     button.setAttribute('aria-label', 'طباعة الاشتراك');
                     button.title = 'طباعة الاشتراك';
-                    button.innerHTML = '<span class="print-source-icon" aria-hidden="true">⎙</span>';
-                    actions.append(button);
+                    const menuPanel = actions.querySelector('.action-menu-panel');
+                    if (menuPanel) {
+                        button.className = 'action-menu-item';
+                        button.dataset.printMenuItem = 'true';
+                        button.innerHTML = '<span class="action-menu-print-icon" aria-hidden="true">⎙</span><span>طباعة الاشتراك</span>';
+                        menuPanel.append(button);
+                    } else {
+                        button.innerHTML = '<span class="print-source-icon" aria-hidden="true">⎙</span>';
+                        actions.append(button);
+                    }
                 });
             }
 
