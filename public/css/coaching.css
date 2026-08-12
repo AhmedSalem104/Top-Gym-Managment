@@ -425,3 +425,60 @@
         overflow: hidden;
     }
 }
+
+/* Keep all row actions in the actions column, never inside the systems cell. */
+.external-trainee-actions-cell {
+    display: grid;
+    min-width: 0;
+    gap: 6px;
+    justify-items: center;
+}
+.external-trainee-actions-cell .trainee-actions {
+    width: 100%;
+    justify-content: center;
+}
+.trainee-diet-actions {
+    display: flex;
+    width: 100%;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 5px;
+}
+.trainee-diet-actions .btn {
+    min-height: 28px;
+    padding: 4px 8px;
+    border-radius: 7px;
+    font-size: 8px;
+    font-weight: 900;
+}
+.external-trainee-diet-plan {
+    grid-template-columns: minmax(0, 1fr);
+}
+.external-trainee-diet-plan .btn { display: none; }
+
+@media (max-width: 760px) {
+    .external-trainees-table td:last-child {
+        display: block;
+        width: 100% !important;
+    }
+    .external-trainee-actions-cell {
+        width: 100%;
+    }
+    .trainee-diet-actions .btn {
+        display: grid;
+        place-items: center;
+        width: 32px;
+        min-width: 32px;
+        height: 32px;
+        min-height: 32px;
+        padding: 0;
+        overflow: hidden;
+        font-size: 0;
+    }
+    .trainee-diet-actions .btn::before {
+        content: '×';
+        color: currentColor;
+        font-size: 20px;
+        line-height: 1;
+    }
+}
