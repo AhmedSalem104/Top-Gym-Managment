@@ -1594,3 +1594,549 @@
             }
             .member-action-row > .table-actions > .coaching-table-action .action-icon { width: 15px; height: 15px; }
         }
++/* ========================================================================
+   Dashboard finance, alerts and backup layout refinement
+   Presentation-only: preserves existing data flow, events and APIs.
+   ======================================================================== */
+#dashboardSection .overview-grid {
+    grid-template-areas: "alerts finance";
+    grid-template-columns: minmax(320px, .9fr) minmax(0, 1.6fr);
+    gap: 16px;
+    align-items: stretch;
+}
+
+#dashboardSection .overview-grid > .alerts-panel,
+#dashboardSection .overview-grid > #monthlyFinanceSnapshot {
+    min-width: 0;
+    min-height: 0;
+}
+
+#dashboardSection .overview-grid > .alerts-panel {
+    display: flex;
+    flex-direction: column;
+}
+
+#dashboardSection .overview-grid > #monthlyFinanceSnapshot {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+#dashboardSection .alerts-panel-header,
+#dashboardSection .monthly-finance-snapshot-head,
+#dashboardSection .monthly-finance-head {
+    min-width: 0;
+    flex-wrap: wrap;
+    padding: 14px 16px;
+}
+
+#dashboardSection .alerts-heading,
+#dashboardSection .monthly-finance-heading {
+    min-width: 0;
+    flex: 1 1 220px;
+}
+
+#dashboardSection .alerts-heading > div,
+#dashboardSection .monthly-finance-heading > div {
+    min-width: 0;
+}
+
+#dashboardSection .alerts-heading h3,
+#dashboardSection .monthly-finance-heading h3 {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+#dashboardSection .alerts-heading p,
+#dashboardSection .monthly-finance-heading p {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+#dashboardSection .alerts-count,
+#dashboardSection .monthly-finance-status,
+#dashboardSection .open-expenses-tab-button {
+    flex: 0 0 auto;
+}
+
+#dashboardSection .alerts-toolbar {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 9px;
+    padding: 10px 12px;
+    border-bottom: 1px solid #dbe7f5;
+    background: #f8fbff;
+}
+
+#dashboardSection .alerts-search-field {
+    display: flex;
+    min-width: 180px;
+    min-height: 36px;
+    flex: 1 1 230px;
+    align-items: center;
+    gap: 7px;
+    padding: 0 10px;
+    border: 1px solid #dbe3ef;
+    border-radius: 9px;
+    color: #64748b;
+    background: #fff;
+}
+
+#dashboardSection .alerts-search-field:focus-within {
+    border-color: #93c5fd;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, .12);
+}
+
+#dashboardSection .alerts-search-field input {
+    width: 100%;
+    min-width: 0;
+    height: 32px;
+    padding: 0;
+    border: 0;
+    outline: 0;
+    color: #172033;
+    background: transparent;
+    font-family: inherit;
+    font-size: 10px;
+}
+
+#dashboardSection .alerts-search-field input::placeholder { color: #94a3b8; }
+#dashboardSection .alerts-search-result { flex: 0 0 auto; color: #64748b; font-size: 9px; font-weight: 800; white-space: nowrap; }
+
+#dashboardSection .alerts-list {
+    display: grid;
+    min-height: 170px;
+    flex: 1 1 auto;
+    align-content: start;
+    gap: 9px;
+    max-height: min(44vh, 420px);
+    overflow-y: auto;
+    padding: 12px;
+    scrollbar-color: #93c5fd transparent;
+    scrollbar-width: thin;
+}
+
+#dashboardSection .alert-card {
+    min-width: 0;
+    min-height: 70px;
+    align-items: start;
+    padding: 10px;
+}
+
+#dashboardSection .alert-card-head {
+    align-items: flex-start;
+    flex-wrap: wrap;
+}
+
+#dashboardSection .alert-card-head strong {
+    min-width: 0;
+    flex: 1 1 110px;
+}
+
+#dashboardSection .alert-card-detail,
+#dashboardSection .alert-card-phone {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+#dashboardSection .alert-whatsapp-button {
+    display: inline-flex;
+    width: fit-content;
+    max-width: 100%;
+    min-height: 30px;
+    align-self: flex-start;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin-top: 5px;
+    padding: 5px 10px;
+    border: 1px solid #bbf7d0;
+    border-radius: 8px;
+    color: #15803d;
+    background: #f0fdf4;
+    font-family: inherit;
+    font-size: 10px;
+    font-weight: 800;
+    line-height: 1.2;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+#dashboardSection .alert-whatsapp-button:hover {
+    border-color: #86efac;
+    color: #166534;
+    background: #dcfce7;
+}
+
+#dashboardSection .alert-whatsapp-button .ui-icon { width: 14px; height: 14px; flex: 0 0 14px; }
+#dashboardSection .alerts-list > .empty { min-height: 92px; display: grid; place-items: center; }
+
+#dashboardSection .monthly-finance-snapshot-head {
+    align-items: center;
+    gap: 12px;
+}
+
+#dashboardSection .monthly-finance-snapshot-head .monthly-finance-heading {
+    flex: 1 1 240px;
+}
+
+#dashboardSection .monthly-finance-snapshot-head .open-expenses-tab-button {
+    margin-inline-start: auto;
+    white-space: nowrap;
+}
+
+#dashboardSection .monthly-finance-snapshot-metrics {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+    padding: 13px 15px 11px;
+}
+
+#dashboardSection .monthly-finance-snapshot-metric {
+    min-width: 0;
+    min-height: 86px;
+    padding: 12px 13px;
+}
+
+#dashboardSection .monthly-finance-snapshot-metric strong {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+#dashboardSection .snapshot-membership-status-head {
+    display: flex;
+    min-width: 0;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+    margin: 0 15px;
+    padding: 11px 0 0;
+    border-top: 1px solid #e2e8f0;
+    color: #172033;
+}
+
+#dashboardSection .snapshot-membership-status-head span {
+    font-size: 11px;
+    font-weight: 900;
+}
+
+#dashboardSection .snapshot-membership-status-head small {
+    overflow: hidden;
+    color: #64748b;
+    font-size: 9px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+#dashboardSection .snapshot-membership-stats {
+    display: grid !important;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 9px;
+    margin: 10px 15px 15px;
+    padding: 0;
+    direction: rtl;
+}
+
+#dashboardSection .snapshot-membership-stats .stat-card {
+    display: grid !important;
+    grid-template-columns: 30px minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    min-width: 0;
+    min-height: 70px !important;
+    align-items: center;
+    gap: 2px 7px;
+    padding: 9px !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 10px;
+    background: #fff !important;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, .035) !important;
+    text-align: right;
+}
+
+#dashboardSection .snapshot-membership-stats .stat-head { display: contents !important; }
+#dashboardSection .snapshot-membership-stats .stat-icon {
+    grid-column: 1;
+    grid-row: 1 / 3;
+    width: 30px !important;
+    height: 30px !important;
+    margin: 0;
+    border-radius: 9px !important;
+}
+#dashboardSection .snapshot-membership-stats .stat-icon .ui-icon { width: 15px !important; height: 15px !important; }
+#dashboardSection .snapshot-membership-stats .stat-label {
+    grid-column: 2;
+    grid-row: 1;
+    min-width: 0;
+    overflow: hidden;
+    color: #64748b;
+    font-size: 9px !important;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+#dashboardSection .snapshot-membership-stats .stat-value {
+    grid-column: 2;
+    grid-row: 2;
+    margin: 0 !important;
+    color: #172033;
+    font-size: 20px !important;
+    line-height: 1;
+}
+#dashboardSection .snapshot-membership-stats .stat-caption { display: none !important; }
+
+#dashboardSection .snapshot-membership-stats .stat-card.active .stat-value { color: #047857; }
+#dashboardSection .snapshot-membership-stats .stat-card.warning .stat-value { color: #b45309; }
+#dashboardSection .snapshot-membership-stats .stat-card.danger .stat-value { color: #b91c1c; }
+#dashboardSection .snapshot-membership-stats .stat-card.frozen .stat-value { color: #6d28d9; }
+
+/* Backup management is kept inside its own visual block to prevent controls
+   from colliding with the management header or with the history table. */
+#managementSection .backup-management-panel,
+#managementSection .backup-history-section {
+    min-width: 0;
+    margin: 16px 20px 0;
+    padding: 16px;
+    border: 1px solid #dbe3ef;
+    border-radius: 12px;
+    background: #f8fbff;
+}
+
+#managementSection .backup-management-panel {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(260px, auto);
+    align-items: center;
+    gap: 16px;
+}
+
+#managementSection .backup-management-panel h4,
+#managementSection .backup-history-section h4 {
+    margin: 0;
+    color: #172033;
+    font-size: 14px;
+    font-weight: 900;
+}
+
+#managementSection .backup-management-panel p,
+#managementSection .backup-history-section p {
+    max-width: 720px;
+    margin: 4px 0 0;
+    color: #64748b;
+    font-size: 10px;
+    line-height: 1.7;
+}
+
+#managementSection .backup-management-actions {
+    display: flex;
+    max-width: 420px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+#managementSection .backup-management-actions .btn {
+    min-height: 38px;
+    white-space: nowrap;
+}
+
+#managementSection .backup-history-section { padding: 0; overflow: hidden; }
+#managementSection .backup-history-section-head {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 16px;
+    border-bottom: 1px solid #e2e8f0;
+    background: #fff;
+}
+
+#managementSection .backup-history-section-head > div { min-width: 0; }
+#managementSection .backup-history-section-head p { margin-bottom: 0; }
+#managementSection .backup-history-list { min-width: 0; background: #fff; }
+#managementSection .backup-history-wrap { max-width: 100%; overflow-x: auto; }
+#managementSection .backup-history-block + .backup-history-block { border-top: 1px solid #e2e8f0; }
+#managementSection .backup-history-block-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 11px 16px 7px;
+}
+#managementSection .backup-history-block-head strong { color: #172033; font-size: 11px; }
+#managementSection .backup-history-block-head span { color: #64748b; font-size: 9px; }
+
+#managementSection .backup-history-table {
+    width: 100%;
+    min-width: 590px;
+    border-collapse: collapse;
+    table-layout: auto;
+}
+#managementSection .backup-history-table th,
+#managementSection .backup-history-table td {
+    padding: 9px 12px;
+    border-bottom: 1px solid #eef2f7;
+    color: #475569;
+    font-size: 10px;
+    text-align: right;
+    vertical-align: middle;
+    white-space: nowrap;
+}
+#managementSection .backup-history-table th {
+    color: #64748b;
+    background: #f8fafc;
+    font-size: 9px;
+    font-weight: 900;
+}
+#managementSection .backup-history-table td:first-child { min-width: 180px; }
+#managementSection .backup-history-table td strong,
+#managementSection .backup-history-table td small {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+#managementSection .backup-history-table td strong { max-width: 300px; color: #172033; font-size: 10px; }
+#managementSection .backup-history-table td small { margin-top: 2px; color: #94a3b8; font-size: 8px; }
+#managementSection .backup-history-table tbody tr:hover td { background: #f8fbff; }
+#managementSection .backup-history-status {
+    display: inline-flex;
+    min-height: 23px;
+    align-items: center;
+    padding: 3px 8px;
+    border-radius: 999px;
+    font-size: 9px;
+    font-weight: 900;
+}
+#managementSection .backup-history-status.success { color: #047857; background: #d1fae5; }
+#managementSection .backup-history-status.error { color: #b91c1c; background: #fee2e2; }
+#managementSection .backup-history-download { min-height: 30px !important; padding: 5px 9px !important; }
+
+#backupRestoreDialog {
+    width: min(560px, calc(100vw - 28px));
+    max-width: calc(100vw - 28px);
+    padding: 0;
+    border: 1px solid #dbe3ef;
+    border-radius: 14px;
+    background: #fff;
+    box-shadow: 0 20px 58px rgba(15, 23, 42, .22);
+}
+#backupRestoreDialog::backdrop { background: rgba(15, 23, 42, .44); }
+#backupRestoreDialog .dialog-body { padding: 0; }
+#backupRestoreDialog .details-dialog-head {
+    display: flex;
+    min-width: 0;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 16px 18px;
+    border-bottom: 1px solid #e2e8f0;
+    background: #f8fbff;
+}
+#backupRestoreDialog .details-dialog-head > div { min-width: 0; }
+#backupRestoreDialog .details-dialog-head h3 { margin: 0; color: #172033; font-size: 16px; font-weight: 900; }
+#backupRestoreDialog .details-dialog-head p { margin: 4px 0 0; color: #64748b; font-size: 10px; line-height: 1.6; }
+#backupRestoreDialog .backup-file-field {
+    display: grid;
+    gap: 7px;
+    margin: 16px 18px 10px;
+    color: #475569;
+    font-size: 11px;
+    font-weight: 800;
+}
+#backupRestoreDialog .backup-file-field input {
+    width: 100%;
+    min-height: 40px;
+    padding: 8px;
+    border: 1px solid #dbe3ef;
+    border-radius: 9px;
+    background: #fff;
+    font: inherit;
+    font-size: 10px;
+}
+#backupRestoreDialog .backup-validation-box { margin: 0 18px 14px; }
+#backupRestoreDialog .backup-validation-success,
+#backupRestoreDialog .backup-validation-error,
+#backupRestoreDialog .backup-validation-loading {
+    display: grid;
+    gap: 4px;
+    padding: 10px 12px;
+    border-radius: 9px;
+    font-size: 10px;
+}
+#backupRestoreDialog .backup-validation-success { border: 1px solid #a7f3d0; color: #047857; background: #ecfdf5; }
+#backupRestoreDialog .backup-validation-error { border: 1px solid #fecaca; color: #b91c1c; background: #fef2f2; }
+#backupRestoreDialog .backup-validation-loading { border: 1px solid #bfdbfe; color: #1d4ed8; background: #eff6ff; }
+#backupRestoreDialog .backup-validation-success span,
+#backupRestoreDialog .backup-validation-success small { color: #64748b; font-size: 9px; }
+#backupRestoreDialog .backup-count-table-wrap { max-width: 100%; margin-top: 6px; overflow-x: auto; }
+#backupRestoreDialog .backup-count-table { width: 100%; min-width: 260px; border-collapse: collapse; }
+#backupRestoreDialog .backup-count-table th,
+#backupRestoreDialog .backup-count-table td { padding: 7px 8px; border-bottom: 1px solid #eef2f7; color: #475569; font-size: 9px; text-align: right; }
+#backupRestoreDialog .backup-count-table th { color: #64748b; background: #f8fafc; font-weight: 900; }
+#backupRestoreDialog .dialog-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 13px 18px;
+    border-top: 1px solid #e2e8f0;
+    background: #f8fbff;
+}
+#backupRestoreDialog .dialog-actions .btn { min-width: 110px; }
+
+@media (max-width: 1000px) {
+    #dashboardSection .overview-grid { grid-template-columns: minmax(280px, .82fr) minmax(0, 1.18fr); }
+    #dashboardSection .snapshot-membership-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    #managementSection .backup-management-panel { grid-template-columns: 1fr; }
+    #managementSection .backup-management-actions { max-width: none; justify-content: flex-start; }
+}
+
+@media (max-width: 760px) {
+    #dashboardSection .overview-grid { grid-template-areas: "alerts" "finance"; grid-template-columns: 1fr; gap: 12px; }
+    #dashboardSection .alerts-list { max-height: min(50vh, 360px); }
+    #dashboardSection .monthly-finance-snapshot-metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    #dashboardSection .snapshot-membership-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    #managementSection .backup-management-panel,
+    #managementSection .backup-history-section { margin-inline: 14px; }
+    #managementSection .backup-management-actions .btn { flex: 1 1 145px; }
+}
+
+@media (max-width: 560px) {
+    #dashboardSection .alerts-panel-header,
+    #dashboardSection .monthly-finance-snapshot-head,
+    #dashboardSection .monthly-finance-head { align-items: flex-start; flex-direction: column; }
+    #dashboardSection .alerts-heading,
+    #dashboardSection .monthly-finance-heading { width: 100%; flex-basis: auto; }
+    #dashboardSection .alerts-count,
+    #dashboardSection .monthly-finance-snapshot-head .open-expenses-tab-button,
+    #dashboardSection .monthly-finance-head-actions { width: 100%; margin-inline-start: 0; }
+    #dashboardSection .alerts-count { justify-content: center; }
+    #dashboardSection .monthly-finance-snapshot-head .open-expenses-tab-button { min-height: 38px; }
+    #dashboardSection .alerts-toolbar { align-items: stretch; flex-direction: column; padding: 10px; }
+    #dashboardSection .alerts-search-field { width: 100%; min-width: 0; flex-basis: auto; }
+    #dashboardSection .alerts-search-result { align-self: flex-start; }
+    #dashboardSection .alerts-list { max-height: none; padding: 9px; }
+    #dashboardSection .alert-card { grid-template-columns: 28px minmax(0, 1fr); }
+    #dashboardSection .alert-whatsapp-button { width: 100%; }
+    #dashboardSection .monthly-finance-snapshot-metrics { grid-template-columns: 1fr; gap: 8px; padding: 10px; }
+    #dashboardSection .monthly-finance-snapshot-metric { min-height: 72px; }
+    #dashboardSection .snapshot-membership-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); margin-inline: 10px; }
+    #dashboardSection .snapshot-membership-stats .stat-card:nth-child(5) { grid-column: 1 / -1; }
+    #managementSection .backup-management-panel,
+    #managementSection .backup-history-section { margin-inline: 10px; padding: 12px; }
+    #managementSection .backup-history-section { padding: 0; }
+    #managementSection .backup-history-section-head { align-items: stretch; flex-direction: column; padding: 12px; }
+    #managementSection .backup-history-section-head .btn { width: 100%; }
+    #managementSection .backup-management-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    #managementSection .backup-management-actions .btn { width: 100%; min-width: 0; }
+    #backupRestoreDialog { width: calc(100vw - 20px); max-width: calc(100vw - 20px); }
+    #backupRestoreDialog .details-dialog-head { padding: 13px; }
+    #backupRestoreDialog .backup-file-field { margin-inline: 13px; }
+    #backupRestoreDialog .backup-validation-box { margin-inline: 13px; }
+    #backupRestoreDialog .dialog-actions { flex-wrap: wrap; padding: 11px 13px; }
+    #backupRestoreDialog .dialog-actions .btn { min-width: 0; flex: 1 1 120px; }
+}
