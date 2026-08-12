@@ -552,3 +552,67 @@
         @media (max-width: 640px) {
             .dialog-validation { margin-bottom: 11px; padding: 9px 10px; font-size: 10px; }
         }
+
+        /* Shared interaction polish: restrained motion, consistent icon feedback and accessible states. */
+        .ui-icon,
+        .action-icon,
+        .coaching-inline-icon {
+            flex: 0 0 auto;
+            transition: transform .18s ease, color .18s ease, opacity .18s ease;
+        }
+        .btn,
+        .page-tab,
+        .action-menu-toggle,
+        .action-menu-item,
+        .stat-card,
+        .coaching-summary-card,
+        .external-trainee-card {
+            transition: transform .18s ease, background-color .18s ease, border-color .18s ease, box-shadow .18s ease, color .18s ease;
+        }
+        .btn:not(:disabled):hover .ui-icon,
+        .btn:not(:disabled):hover .action-icon,
+        .btn:not(:disabled):hover .coaching-inline-icon,
+        .page-tab:not(.active):hover .ui-icon { transform: translateY(-1px); }
+        .btn:not(:disabled):active { transform: translateY(1px) scale(.99); }
+        .btn:not(:disabled):active .ui-icon,
+        .btn:not(:disabled):active .action-icon,
+        .btn:not(:disabled):active .coaching-inline-icon { transform: scale(.94); }
+        .btn:focus-visible,
+        .page-tab:focus-visible,
+        .action-menu-toggle:focus-visible,
+        .builder-search-trigger:focus-visible,
+        .builder-step:focus-visible { outline: 3px solid rgba(37, 99, 235, .22); outline-offset: 2px; }
+        .loading { display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .loading::before { content: ''; width: 14px; height: 14px; flex: 0 0 14px; border: 2px solid rgba(37, 99, 235, .2); border-top-color: #2563eb; border-radius: 50%; animation: topGymSpin .75s linear infinite; }
+        .stat-card:hover,
+        .coaching-summary-card:hover,
+        .external-trainee-card:hover { transform: translateY(-2px); }
+        .header-refresh.is-loading .ui-icon,
+        #refreshButton.is-loading .ui-icon,
+        #externalTraineeRefreshButton.is-loading .ui-icon { animation: topGymSpin .75s linear infinite; }
+        .header-refresh.is-loading,
+        #refreshButton.is-loading { color: #e2e8f0 !important; }
+        #externalTraineeRefreshButton.is-loading { color: #2563eb !important; }
+        .header-refresh.is-loading > .ui-icon,
+        #refreshButton.is-loading > .ui-icon,
+        #externalTraineeRefreshButton.is-loading > .ui-icon { visibility: visible; }
+        .header-refresh.is-loading::after,
+        #refreshButton.is-loading::after,
+        #externalTraineeRefreshButton.is-loading::after { display: none; }
+        .action-menu-panel:not([hidden]),
+        .builder-search-popover:not([hidden]),
+        dialog[open],
+        .swal2-popup,
+        .coaching-empty { animation: topGymFadeSlide .2s ease both; }
+        .toast.show { animation: topGymToastIn .2s ease both; }
+        @keyframes topGymSpin { to { transform: rotate(360deg); } }
+        @keyframes topGymFadeSlide { from { opacity: 0; transform: translateY(5px) scale(.99); } to { opacity: 1; transform: translateY(0) scale(1); } }
+        @keyframes topGymToastIn { from { opacity: 0; transform: translateY(-7px); } to { opacity: 1; transform: translateY(0); } }
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: .01ms !important;
+                animation-iteration-count: 1 !important;
+                scroll-behavior: auto !important;
+                transition-duration: .01ms !important;
+            }
+        }
