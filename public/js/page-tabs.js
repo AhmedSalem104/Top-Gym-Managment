@@ -55,7 +55,7 @@
                 document.getElementById(button.dataset.openDialogButton)?.click();
             });
         });
-        activateTab('members');
+        activateTab('dashboard');
     });
 
     window.topGymActivateTab = activateTab;

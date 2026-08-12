@@ -87,6 +87,14 @@
         snapshot.id = 'monthlyFinanceSnapshot';
         snapshot.setAttribute('aria-labelledby', 'monthlyFinanceSnapshotTitle');
         snapshot.innerHTML = `<div class="monthly-finance-snapshot-head"><div class="monthly-finance-heading"><span class="monthly-finance-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V5"/><path d="M4 19h16"/><path d="m7 15 3-4 3 2 5-6"/></svg></span><div><span class="monthly-finance-eyebrow">الحسابات</span><h3 id="monthlyFinanceSnapshotTitle">ملخص الشهر الحالي</h3><p id="monthlyFinanceSnapshotPeriod">جاري تحميل حسابات الشهر…</p></div></div><button class="btn btn-light btn-small open-expenses-tab-button" id="openExpensesTabButton" type="button">إدارة المصروفات</button></div><div class="monthly-finance-snapshot-metrics"><article class="monthly-finance-snapshot-metric subscriptions"><span>إجمالي الاشتراكات</span><strong id="monthlySubscriptionsSnapshotTotal">0.00 ج.م</strong></article><article class="monthly-finance-snapshot-metric expenses"><span>المصروفات</span><strong id="monthlyExpensesSnapshotTotal">0.00 ج.م</strong></article><article class="monthly-finance-snapshot-metric net"><span>المتبقي / صافي الشهر</span><strong id="monthlyNetSnapshotTotal">0.00 ج.م</strong></article></div>`;
+        const metricIcons = [
+            '<span class="monthly-finance-snapshot-metric-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>',
+            '<span class="monthly-finance-snapshot-metric-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18v12H3z"/><path d="m3 7 2-3h14l2 3M16 13h5"/><circle cx="16" cy="13" r="1"/></svg></span>',
+            '<span class="monthly-finance-snapshot-metric-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="m8 15 2 2 5-5"/></svg></span>'
+        ];
+        snapshot.querySelectorAll('.monthly-finance-snapshot-metric').forEach((metric, index) => {
+            if (!metric.querySelector('.monthly-finance-snapshot-metric-icon')) metric.insertAdjacentHTML('afterbegin', metricIcons[index]);
+        });
         overview.appendChild(snapshot);
         const stats = overview.querySelector(':scope > .stats-grid');
         if (stats) {

@@ -2803,3 +2803,226 @@
     #dashboardSection .alert-whatsapp-button { width: 34px; height: 34px; min-height: 34px; border-radius: 9px; }
     #dashboardSection .alert-whatsapp-button .ui-icon { width: 19px; height: 19px; }
 }
+
+/* Focused refinement for the monthly summary and daily alerts screens. */
+#dashboardSection .monthly-finance-snapshot,
+#dashboardSection .alerts-panel {
+    border-radius: 14px;
+    box-shadow: 0 6px 18px rgba(30, 64, 175, .06);
+}
+
+#dashboardSection .monthly-finance-snapshot-head {
+    min-height: 84px;
+    padding: 14px 18px;
+    gap: 12px;
+}
+#dashboardSection .monthly-finance-snapshot-head .monthly-finance-heading { gap: 10px; }
+#dashboardSection .monthly-finance-snapshot-head .monthly-finance-icon {
+    width: 36px;
+    height: 36px;
+    flex-basis: 36px;
+    border-radius: 9px;
+}
+#dashboardSection .monthly-finance-snapshot-head .monthly-finance-icon .ui-icon { width: 18px; height: 18px; }
+#dashboardSection .monthly-finance-snapshot-head .monthly-finance-heading h3 { font-size: 16px; }
+#dashboardSection .monthly-finance-snapshot-head .monthly-finance-heading p { margin-top: 2px; font-size: 9px; }
+#dashboardSection .monthly-finance-snapshot-head .open-expenses-tab-button {
+    min-height: 34px;
+    padding: 7px 11px;
+    border-radius: 8px;
+    font-size: 9px;
+}
+
+#dashboardSection .monthly-finance-snapshot-metrics {
+    gap: 10px;
+    padding: 12px 16px 10px;
+}
+#dashboardSection .monthly-finance-snapshot-metric {
+    position: relative;
+    min-height: 86px;
+    padding: 12px 13px;
+    border-radius: 10px;
+    box-shadow: none;
+}
+#dashboardSection .monthly-finance-snapshot-metric-icon {
+    position: absolute;
+    inset-block-start: 11px;
+    inset-inline-end: 11px;
+    display: grid !important;
+    width: 28px;
+    height: 28px;
+    place-items: center;
+    padding: 0 !important;
+    border: 1px solid currentColor;
+    border-radius: 8px;
+    opacity: .85;
+}
+#dashboardSection .monthly-finance-snapshot-metric-icon .ui-icon { width: 15px; height: 15px; }
+#dashboardSection .monthly-finance-snapshot-metric.subscriptions .monthly-finance-snapshot-metric-icon { color: #2563eb; background: #dbeafe; }
+#dashboardSection .monthly-finance-snapshot-metric.expenses .monthly-finance-snapshot-metric-icon { color: #d97706; background: #fef3c7; }
+#dashboardSection .monthly-finance-snapshot-metric.net .monthly-finance-snapshot-metric-icon { color: #059669; background: #d1fae5; }
+#dashboardSection .monthly-finance-snapshot-metric > span:not(.monthly-finance-snapshot-metric-icon) {
+    display: block;
+    max-width: calc(100% - 38px);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+#dashboardSection .monthly-finance-snapshot-metric strong { margin-top: 11px; font-size: 21px; }
+
+#dashboardSection .snapshot-membership-status-head {
+    margin-inline: 16px;
+    padding-top: 11px;
+}
+#dashboardSection .snapshot-membership-status-head span { font-size: 12px; }
+#dashboardSection .snapshot-membership-status-head small { font-size: 8px; }
+#dashboardSection .snapshot-membership-stats {
+    gap: 8px;
+    margin: 9px 16px 16px;
+}
+#dashboardSection .snapshot-membership-stats .stat-card {
+    min-height: 66px !important;
+    padding: 8px !important;
+    border-radius: 9px;
+    box-shadow: none !important;
+}
+#dashboardSection .snapshot-membership-stats .stat-icon { width: 28px !important; height: 28px !important; border-radius: 8px !important; }
+#dashboardSection .snapshot-membership-stats .stat-icon .ui-icon { width: 14px !important; height: 14px !important; }
+#dashboardSection .snapshot-membership-stats .stat-label { font-size: 8px !important; line-height: 1.25; }
+#dashboardSection .snapshot-membership-stats .stat-value { font-size: 19px !important; }
+
+#dashboardSection .alerts-panel-header {
+    min-height: 84px;
+    padding: 14px 18px;
+    gap: 12px;
+}
+#dashboardSection .alerts-heading { gap: 10px; }
+#dashboardSection .alerts-heading-icon {
+    width: 36px;
+    height: 36px;
+    flex-basis: 36px;
+    border-radius: 9px;
+}
+#dashboardSection .alerts-heading-icon .ui-icon { width: 18px; height: 18px; }
+#dashboardSection .alerts-heading h3 { font-size: 16px; }
+#dashboardSection .alerts-heading p { margin-top: 2px; font-size: 9px; }
+#dashboardSection .alerts-filter-button { min-height: 32px; padding: 6px 10px; font-size: 9px; }
+#dashboardSection .alerts-toolbar { gap: 8px; padding: 10px 16px; }
+#dashboardSection .alerts-search-field,
+#dashboardSection .alerts-search-result { min-height: 42px; border-radius: 9px; }
+#dashboardSection .alerts-search-field { padding-inline: 12px; }
+#dashboardSection .alerts-search-field input { height: 38px; font-size: 10px; }
+#dashboardSection .alerts-search-result { min-width: 78px; padding-inline: 10px; font-size: 9px; }
+#dashboardSection .alerts-list,
+#dashboardSection .alerts-list.alerts-list-scroll {
+    max-height: none !important;
+    min-height: 0;
+    overflow: visible !important;
+    gap: 8px;
+    padding: 12px 16px 14px;
+}
+
+#dashboardSection .alert-card {
+    grid-template-columns: 42px minmax(0, 1fr);
+    min-height: 72px;
+    align-items: stretch;
+    gap: 11px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    box-shadow: 0 3px 10px rgba(30, 64, 175, .045);
+}
+#dashboardSection .alert-card > .alert-card-icon { grid-column: 1; grid-row: 1; align-self: center; }
+#dashboardSection .alert-card > .alert-status { display: none; }
+#dashboardSection .alert-card-body {
+    grid-column: 2;
+    grid-row: 1;
+    grid-template-columns: 38px minmax(0, 1fr);
+    grid-template-rows: auto auto auto;
+    direction: ltr;
+    column-gap: 10px;
+}
+#dashboardSection .alert-card-body > .alert-card-head,
+#dashboardSection .alert-card-body > .alert-card-detail,
+#dashboardSection .alert-card-body > .alert-card-phone {
+    grid-column: 2;
+    direction: rtl;
+    text-align: right;
+}
+#dashboardSection .alert-card-body > .alert-card-head { grid-row: 1; justify-content: flex-start; }
+#dashboardSection .alert-card-body > .alert-card-detail { grid-row: 2; }
+#dashboardSection .alert-card-body > .alert-card-phone { grid-row: 3; }
+#dashboardSection .alert-card-head { gap: 7px; }
+#dashboardSection .alert-card-head strong { font-size: 12px; }
+#dashboardSection .alert-status {
+    display: inline-flex;
+    min-height: 20px;
+    align-items: center;
+    gap: 3px;
+    padding: 3px 6px;
+    font-size: 8px;
+}
+#dashboardSection .alert-status-icon { width: 11px; height: 11px; flex: 0 0 11px; }
+#dashboardSection .alert-card-detail,
+#dashboardSection .alert-card-phone { font-size: 10px; line-height: 1.35; }
+#dashboardSection .alert-whatsapp-button {
+    grid-column: 1;
+    grid-row: 1 / 4;
+    width: 38px;
+    height: 38px;
+    min-height: 38px;
+    justify-self: center;
+    align-self: center;
+    border-radius: 9px;
+    box-shadow: none;
+}
+#dashboardSection .alert-whatsapp-button .ui-icon { width: 21px; height: 21px; }
+
+#dashboardSection .alerts-pagination {
+    display: flex;
+    min-height: 48px;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    padding: 8px 16px 12px;
+    border-top: 1px solid #e6edf6;
+    background: #fff;
+    direction: ltr;
+}
+#dashboardSection .alerts-pagination[hidden] { display: none !important; }
+#dashboardSection .alerts-page-button {
+    display: inline-grid;
+    width: 28px;
+    height: 28px;
+    place-items: center;
+    padding: 0;
+    border: 1px solid #dce5f0;
+    border-radius: 7px;
+    color: #6e7f97;
+    background: #fff;
+    font-family: inherit;
+    font-size: 10px;
+    font-weight: 900;
+    cursor: pointer;
+}
+#dashboardSection .alerts-page-button.previous,
+#dashboardSection .alerts-page-button.next { width: auto; padding-inline: 8px; }
+#dashboardSection .alerts-page-button:hover:not(:disabled) { border-color: #93c5fd; color: #2563eb; background: #eff6ff; }
+#dashboardSection .alerts-page-button.is-active { border-color: #bfdbfe; color: #1d4ed8; background: #dbeafe; }
+#dashboardSection .alerts-page-button:disabled { cursor: not-allowed; opacity: .4; }
+
+@media (max-width: 560px) {
+    #dashboardSection .monthly-finance-snapshot-head,
+    #dashboardSection .alerts-panel-header { padding: 13px 14px; }
+    #dashboardSection .monthly-finance-snapshot-metrics { padding: 10px 12px 8px; }
+    #dashboardSection .snapshot-membership-status-head { margin-inline: 12px; }
+    #dashboardSection .snapshot-membership-stats { margin: 8px 12px 12px; gap: 8px; }
+    #dashboardSection .snapshot-membership-stats .stat-card:nth-child(5) { grid-column: 1 / -1; width: calc(50% - 4px); justify-self: center; }
+    #dashboardSection .alerts-toolbar { padding: 9px 12px; }
+    #dashboardSection .alerts-list { padding: 10px 12px 12px; }
+    #dashboardSection .alert-card { grid-template-columns: 36px minmax(0, 1fr); min-height: 68px; gap: 8px; padding: 9px 10px; }
+    #dashboardSection .alert-card-icon { width: 34px; height: 34px; }
+    #dashboardSection .alert-card-icon .ui-icon { width: 18px; height: 18px; }
+    #dashboardSection .alert-card-body { grid-template-columns: 34px minmax(0, 1fr); column-gap: 8px; }
+    #dashboardSection .alert-whatsapp-button { width: 34px; height: 34px; min-height: 34px; }
+    #dashboardSection .alert-whatsapp-button .ui-icon { width: 19px; height: 19px; }
+}
