@@ -52,7 +52,7 @@
 
     function normalizeRenderedCard(card) {
         const body = card.querySelector(':scope > .alert-card-body');
-        if (!body || body.querySelector(':scope > .alert-card-head')) {
+        if (!body || body.querySelector(':scope > .alert-card-content, :scope > .alert-card-head')) {
             prepareWhatsappButton(card.querySelector('.alert-whatsapp-button'));
             return;
         }
@@ -64,15 +64,21 @@
         const button = card.querySelector(':scope > .alert-whatsapp-button');
         if (!name || !detail || !phone) return;
 
+        const content = document.createElement('div');
+        content.className = 'alert-card-content';
         const head = document.createElement('div');
         head.className = 'alert-card-head';
         head.appendChild(name);
-        if (status) head.appendChild(status);
-        body.replaceChildren(head, detail, phone);
+        content.append(head, detail, phone);
+
+        const actions = document.createElement('div');
+        actions.className = 'alert-card-actions';
+        if (status) actions.appendChild(status);
         if (button) {
             prepareWhatsappButton(button);
-            body.appendChild(button);
+            actions.appendChild(button);
         }
+        body.replaceChildren(content, actions);
         card.dataset.alertLayoutReady = 'true';
     }
 
@@ -127,7 +133,7 @@
             const quickAction = memberId
                 ? '<button type="button" class="alert-whatsapp-button" data-alert-whatsapp="' + escape(kind) + '" data-member-id="' + escape(memberId) + '" data-alert-name="' + escape(card.dataset.alertName || name) + '" data-alert-phone="' + escape(card.dataset.alertPhone || phone) + '" data-alert-status="' + escape(card.dataset.alertStatus || status) + '" data-alert-end="' + escape(card.dataset.alertEnd || '') + '" data-alert-freeze-end="' + escape(card.dataset.alertFreezeEnd || '') + '" data-alert-remaining="' + escape(card.dataset.alertRemaining || '') + '" data-alert-days="' + escape(card.dataset.alertDays || '') + '" title="' + whatsappLabel + '" aria-label="' + whatsappLabel + '">' + whatsappIcon + '<span>\u0648\u0627\u062a\u0633\u0627\u0628</span></button>'
                 : '';
-            body.innerHTML = '<div class="alert-card-head"><strong>' + escape(name) + '</strong><span class="alert-status">' + escape(label) + '</span></div><span class="alert-card-detail">' + escape(detail) + '</span><a class="alert-card-phone" href="tel:' + escape(phone.replace(/\s+/g, '')) + '">' + escape(phone) + '</a>' + quickAction;
+            body.innerHTML = '<div class="alert-card-content"><div class="alert-card-head"><strong>' + escape(name) + '</strong></div><span class="alert-card-detail">' + escape(detail) + '</span><a class="alert-card-phone" href="tel:' + escape(phone.replace(/\s+/g, '')) + '">' + escape(phone) + '</a></div><div class="alert-card-actions"><span class="alert-status">' + escape(label) + '</span>' + quickAction + '</div>';
             card.replaceChildren(icon, body);
             card.dataset.alertEnhanced = 'true';
         });
