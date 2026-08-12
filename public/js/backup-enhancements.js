@@ -190,9 +190,10 @@
     function renderVisibleHistory(data = {}) {
         const archives = Array.isArray(data.archives) ? data.archives : [];
         const operations = Array.isArray(data.operations) ? data.operations : [];
+        const visibleOperations = operations.slice(0, 3);
         const archiveRows = archives.map((item) => `<tr><td><strong>${escapeHtml(item.fileName || '—')}</strong><small>${escapeHtml(formatDate(item.generatedAt || item.createdAt))}</small></td><td>${escapeHtml(String(item.format || 'bak').toUpperCase())}</td><td>${Number(item.rowCount || 0).toLocaleString('ar-EG')} صف</td><td>${formatBytes(item.contentBytes)}</td><td><button type="button" class="btn btn-light btn-small backup-history-download" data-backup-archive-id="${escapeHtml(item.id)}">تحميل</button></td></tr>`).join('');
-        const operationRows = operations.map((item) => `<tr><td><strong>${escapeHtml(HISTORY_LABELS[item.operationType] || item.operationType)}</strong><small>${escapeHtml(item.fileName || '—')}</small></td><td>${escapeHtml(formatDate(item.createdAt))}</td><td>${Number(item.rowCount || 0).toLocaleString('ar-EG')}</td><td><span class="backup-history-status ${item.status === 'success' ? 'success' : 'error'}">${item.status === 'success' ? 'ناجحة' : 'فاشلة'}</span></td></tr>`).join('');
-        return `<div class="backup-history-block"><div class="backup-history-block-head"><strong>النسخ اليومية المحفوظة</strong><span>الاحتفاظ: يومان</span></div><div class="backup-history-wrap"><table class="backup-history-table backup-archive-table"><thead><tr><th>الملف</th><th>الامتداد</th><th>البيانات</th><th>الحجم</th><th>الإجراء</th></tr></thead><tbody>${archiveRows || '<tr><td colspan="5">لا توجد نسخ تلقائية محفوظة حتى الآن.</td></tr>'}</tbody></table></div></div><div class="backup-history-block"><div class="backup-history-block-head"><strong>آخر العمليات</strong><span>${operations.length.toLocaleString('ar-EG')} عملية</span></div><div class="backup-history-wrap"><table class="backup-history-table"><thead><tr><th>العملية</th><th>التاريخ</th><th>الصفوف</th><th>الحالة</th></tr></thead><tbody>${operationRows || '<tr><td colspan="4">لا يوجد سجل عمليات حتى الآن.</td></tr>'}</tbody></table></div></div>`;
+        const operationRows = visibleOperations.map((item) => `<tr><td><strong>${escapeHtml(HISTORY_LABELS[item.operationType] || item.operationType)}</strong><small>${escapeHtml(item.fileName || '—')}</small></td><td>${escapeHtml(formatDate(item.createdAt))}</td><td>${Number(item.rowCount || 0).toLocaleString('ar-EG')}</td><td><span class="backup-history-status ${item.status === 'success' ? 'success' : 'error'}">${item.status === 'success' ? 'ناجحة' : 'فاشلة'}</span></td></tr>`).join('');
+        return `<div class="backup-history-block"><div class="backup-history-block-head"><strong>النسخ اليومية المحفوظة</strong><span>يوميًا 3:00 م · احتفاظ يومين</span></div><div class="backup-history-wrap"><table class="backup-history-table backup-archive-table"><thead><tr><th>الملف</th><th>الامتداد</th><th>البيانات</th><th>الحجم</th><th>الإجراء</th></tr></thead><tbody>${archiveRows || '<tr><td colspan="5">لا توجد نسخ تلقائية محفوظة حتى الآن.</td></tr>'}</tbody></table></div></div><div class="backup-history-block"><div class="backup-history-block-head"><strong>آخر 3 عمليات</strong><span>${visibleOperations.length.toLocaleString('ar-EG')} معروضة</span></div><div class="backup-history-wrap"><table class="backup-history-table backup-operations-table"><thead><tr><th>العملية</th><th>التاريخ</th><th>الصفوف</th><th>الحالة</th></tr></thead><tbody>${operationRows || '<tr><td colspan="4">لا يوجد سجل عمليات حتى الآن.</td></tr>'}</tbody></table></div></div>`;
     }
 
     async function downloadArchive(id, trigger) {
@@ -224,7 +225,7 @@
 
     async function showHistory() {
         try {
-            const response = await fetch('/api/backup/history?limit=30', { cache: 'no-store' });
+            const response = await fetch('/api/backup/history?limit=3&archiveLimit=10', { cache: 'no-store' });
             const data = await response.json().catch(() => ({}));
             if (!response.ok) throw new Error(data.error || 'تعذر تحميل سجل النسخ.');
             if (historyList) {

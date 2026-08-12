@@ -142,39 +142,6 @@
         else if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {});
     }
 
-    function reportDateDefaults() {
-        const now = new Date();
-        const to = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
-        const fromDate = new Date(`${to}T00:00:00`);
-        fromDate.setDate(1);
-        return { from: fromDate.toISOString().slice(0, 10), to };
-    }
-
-    function renderAttendanceReport(data) {
-        const panel = $('attendanceReportPanel');
-        if (!panel) return;
-        const summary = data.summary || {};
-        const dailyRows = (data.daily || []).slice(0, 31).map((day) => `<tr><td>${escapeHtml(day.date)}</td><td>${Number(day.visits || 0).toLocaleString('ar-EG')}</td><td>${Number(day.uniqueMembers || 0).toLocaleString('ar-EG')}</td><td>${Number(day.checkedOut || 0).toLocaleString('ar-EG')}</td></tr>`).join('');
-        const memberRows = (data.members || []).slice(0, 12).map((member) => `<tr><td>${escapeHtml(member.fullName)}</td><td>${escapeHtml(member.phone)}</td><td>${Number(member.visits || 0).toLocaleString('ar-EG')}</td><td>${Number(member.totalMinutes || 0).toLocaleString('ar-EG')}</td><td>${escapeHtml(member.lastVisitDate || '—')}</td></tr>`).join('');
-        const absentRows = (data.absentMembers || []).slice(0, 12).map((member) => `<tr><td>${escapeHtml(member.fullName)}</td><td>${escapeHtml(member.phone)}</td><td>${escapeHtml(member.membershipEndDate || '—')}</td></tr>`).join('');
-        panel.innerHTML = `<div class="attendance-report-head"><div><h4 id="attendanceReportTitle">تقرير الحضور والغياب</h4><span>${escapeHtml(data.from)} إلى ${escapeHtml(data.to)}</span></div><div class="attendance-report-filters"><input id="attendanceReportFrom" type="date" value="${escapeHtml(data.from)}"><input id="attendanceReportTo" type="date" value="${escapeHtml(data.to)}"><button class="btn btn-primary btn-small" id="attendanceReportRefresh" type="button">تحديث التقرير</button></div></div><div class="attendance-report-kpis"><div><span>إجمالي الزيارات</span><strong>${Number(summary.totalVisits || 0).toLocaleString('ar-EG')}</strong></div><div><span>مشتركون حضروا</span><strong>${Number(summary.uniqueMembers || 0).toLocaleString('ar-EG')}</strong></div><div><span>انصراف مسجل</span><strong>${Number(summary.checkedOut || 0).toLocaleString('ar-EG')}</strong></div><div><span>متوسط الدقائق</span><strong>${summary.averageMinutes == null ? '—' : Number(summary.averageMinutes).toLocaleString('ar-EG')}</strong></div><div><span>غياب خلال الفترة</span><strong>${Number(summary.absentMembers || 0).toLocaleString('ar-EG')}</strong></div></div><div class="attendance-report-daily"><h5>الملخص اليومي</h5>${dailyRows ? `<table class="attendance-report-table"><thead><tr><th>التاريخ</th><th>الزيارات</th><th>مشتركون مختلفون</th><th>انصراف</th></tr></thead><tbody>${dailyRows}</tbody></table>` : '<div class="attendance-report-empty">لا توجد زيارات في الفترة.</div>'}</div><div class="attendance-report-grid"><div><h5>الأكثر حضورًا</h5>${memberRows ? `<table class="attendance-report-table"><thead><tr><th>المشترك</th><th>الهاتف</th><th>الزيارات</th><th>الدقائق</th><th>آخر حضور</th></tr></thead><tbody>${memberRows}</tbody></table>` : '<div class="attendance-report-empty">لا توجد زيارات في الفترة.</div>'}</div><div><h5>مشتركون بلا حضور</h5>${absentRows ? `<table class="attendance-report-table"><thead><tr><th>المشترك</th><th>الهاتف</th><th>انتهاء الاشتراك</th></tr></thead><tbody>${absentRows}</tbody></table>` : '<div class="attendance-report-empty">لا توجد حالات غياب مستمرة.</div>'}</div></div>`;
-        $('attendanceReportRefresh')?.addEventListener('click', loadAttendanceReport);
-    }
-
-    async function loadAttendanceReport() {
-        const panel = $('attendanceReportPanel');
-        if (!panel) return;
-        const defaults = reportDateDefaults();
-        const from = $('attendanceReportFrom')?.value || defaults.from;
-        const to = $('attendanceReportTo')?.value || defaults.to;
-        panel.hidden = false;
-        panel.innerHTML = '<div class="loading">جاري إعداد تقرير الحضور…</div>';
-        try {
-            const data = await request(`/api/attendance/report?${new URLSearchParams({ from, to })}`);
-            renderAttendanceReport(data);
-        } catch (error) { panel.innerHTML = `<div class="attendance-report-empty">${escapeHtml(error.message)}</div>`; }
-    }
-
     async function request(path, options = {}) {
         const response = await fetch(path, { ...options, headers: { 'Content-Type': 'application/json', ...(options.headers || {}) } });
         const data = await response.json().catch(() => ({}));
@@ -382,7 +349,6 @@
         });
         $('attendanceScanButton')?.addEventListener('click', openScanner);
         $('attendanceKioskButton')?.addEventListener('click', toggleKiosk);
-        $('attendanceReportButton')?.addEventListener('click', () => { const panel = $('attendanceReportPanel'); if (panel?.hidden) loadAttendanceReport(); else if (panel) panel.hidden = true; });
         $('qrReaderClose')?.addEventListener('click', closeScanner);
         $('memberQrClose')?.addEventListener('click', closeMemberQr);
         $('memberQrDownload')?.addEventListener('click', downloadMemberQr);

@@ -3248,3 +3248,160 @@
     #dashboardSection .alert-card-actions { gap: 5px; }
     #dashboardSection .alert-card-actions .alert-status { max-width: 92px; }
 }
+
+/* Membership status cards: give the labels enough room on wide screens. */
+@media (min-width: 1001px) {
+    #dashboardSection .snapshot-membership-stats {
+        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+        grid-auto-flow: row;
+        gap: 10px;
+    }
+    #dashboardSection .snapshot-membership-stats .stat-card {
+        min-height: 76px !important;
+        padding: 10px !important;
+    }
+    #dashboardSection .snapshot-membership-stats .stat-label {
+        font-size: 10px !important;
+    }
+}
+
+/* Backup history: separate the saved archives from the latest operations and
+   keep both tables readable without letting them stretch the management page. */
+#managementSection .backup-history-list {
+    display: grid;
+    gap: 12px;
+    padding: 12px;
+    background: #f4f7fb;
+}
+#managementSection .backup-history-block {
+    min-width: 0;
+    overflow: hidden;
+    border: 1px solid #d8e3ef;
+    border-radius: 12px;
+    background: #fff;
+    box-shadow: 0 5px 16px rgba(15, 23, 42, .045);
+}
+#managementSection .backup-history-block + .backup-history-block {
+    margin: 0;
+    border-top: 1px solid #d8e3ef;
+}
+#managementSection .backup-history-block-head {
+    min-height: 50px;
+    padding: 10px 14px;
+    border-bottom: 1px solid #e2e8f0;
+    background: linear-gradient(135deg, #f8fbff 0%, #eef6ff 100%);
+}
+#managementSection .backup-history-block-head strong {
+    color: #172033;
+    font-size: 12px;
+    font-weight: 900;
+}
+#managementSection .backup-history-block-head span {
+    padding: 4px 8px;
+    border: 1px solid #d7e6f8;
+    border-radius: 999px;
+    color: #2563eb;
+    background: #eff6ff;
+    font-size: 9px;
+    font-weight: 800;
+    white-space: nowrap;
+}
+#managementSection .backup-history-wrap {
+    max-width: 100%;
+    overflow-x: auto;
+    scrollbar-color: #b7cbe2 transparent;
+    scrollbar-width: thin;
+}
+#managementSection .backup-history-wrap::-webkit-scrollbar { height: 6px; }
+#managementSection .backup-history-wrap::-webkit-scrollbar-thumb { border-radius: 999px; background: #b7cbe2; }
+#managementSection .backup-history-table {
+    min-width: 620px;
+    table-layout: fixed;
+}
+#managementSection .backup-archive-table { min-width: 760px; }
+#managementSection .backup-operations-table { min-width: 620px; }
+#managementSection .backup-history-table th,
+#managementSection .backup-history-table td {
+    box-sizing: border-box;
+    height: 48px;
+    padding: 9px 12px;
+    border-bottom: 1px solid #edf2f7;
+    text-align: center;
+    vertical-align: middle;
+}
+#managementSection .backup-history-table th {
+    color: #52647b;
+    background: #f8fafc;
+    font-size: 9px;
+    font-weight: 900;
+}
+#managementSection .backup-history-table td {
+    color: #52647b;
+    font-size: 10px;
+}
+#managementSection .backup-history-table th:first-child,
+#managementSection .backup-history-table td:first-child {
+    text-align: right;
+}
+#managementSection .backup-history-table tbody tr:last-child td { border-bottom: 0; }
+#managementSection .backup-history-table tbody tr:nth-child(even) td { background: #fbfdff; }
+#managementSection .backup-history-table tbody tr:hover td { background: #f0f7ff; }
+#managementSection .backup-history-table td strong,
+#managementSection .backup-history-table td small {
+    display: block;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+#managementSection .backup-history-table td strong {
+    color: #172033;
+    font-size: 10px;
+    font-weight: 900;
+}
+#managementSection .backup-history-table td small {
+    margin-top: 3px;
+    color: #8290a7;
+    font-size: 8px;
+}
+#managementSection .backup-archive-table th:first-child,
+#managementSection .backup-archive-table td:first-child { width: 34%; }
+#managementSection .backup-archive-table th:nth-child(2),
+#managementSection .backup-archive-table td:nth-child(2) { width: 13%; }
+#managementSection .backup-archive-table th:nth-child(3),
+#managementSection .backup-archive-table td:nth-child(3) { width: 18%; }
+#managementSection .backup-archive-table th:nth-child(4),
+#managementSection .backup-archive-table td:nth-child(4) { width: 15%; }
+#managementSection .backup-archive-table th:nth-child(5),
+#managementSection .backup-archive-table td:nth-child(5) { width: 20%; }
+#managementSection .backup-operations-table th:first-child,
+#managementSection .backup-operations-table td:first-child { width: 42%; }
+#managementSection .backup-operations-table th:nth-child(2),
+#managementSection .backup-operations-table td:nth-child(2) { width: 24%; }
+#managementSection .backup-operations-table th:nth-child(3),
+#managementSection .backup-operations-table td:nth-child(3) { width: 16%; }
+#managementSection .backup-operations-table th:nth-child(4),
+#managementSection .backup-operations-table td:nth-child(4) { width: 18%; }
+#managementSection .backup-history-status {
+    min-width: 54px;
+    justify-content: center;
+    padding-inline: 8px;
+}
+#managementSection .backup-history-download {
+    min-width: 62px;
+    border-color: #c9dff7;
+    color: #2563eb;
+    background: #eff6ff;
+}
+#managementSection .backup-history-download:hover {
+    border-color: #93c5fd;
+    color: #1d4ed8;
+    background: #dbeafe;
+}
+
+@media (max-width: 760px) {
+    #managementSection .backup-history-list { gap: 10px; padding: 10px; }
+    #managementSection .backup-history-block-head { padding: 10px 12px; }
+    #managementSection .backup-history-table th,
+    #managementSection .backup-history-table td { height: 44px; padding: 8px 9px; }
+}

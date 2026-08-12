@@ -88,3 +88,352 @@
     .reports-grid { padding: 0 12px 12px; }
     .reports-members-card { margin: 0 12px 12px; }
 }
+
+/* Reports workspace: one compact, responsive system for every report tab. */
+.reports-section {
+    overflow: hidden;
+}
+
+.reports-tabs {
+    display: flex;
+    gap: 6px;
+    padding: 10px 18px 0;
+    overflow-x: auto;
+    scrollbar-width: thin;
+    background: #fff;
+}
+
+.reports-tabs::-webkit-scrollbar {
+    height: 5px;
+}
+
+.reports-tabs::-webkit-scrollbar-thumb {
+    border-radius: 999px;
+    background: #cbd5e1;
+}
+
+.reports-tab {
+    flex: 0 0 auto;
+    min-height: 34px;
+    padding: 7px 13px;
+    border: 1px solid #e2e8f0;
+    border-radius: 9px 9px 0 0;
+    color: #64748b;
+    background: #f8fafc;
+    cursor: pointer;
+    font: inherit;
+    font-size: 10px;
+    font-weight: 900;
+    transition: color .18s ease, background-color .18s ease, border-color .18s ease;
+    white-space: nowrap;
+}
+
+.reports-tab:hover {
+    color: #1d4ed8;
+    border-color: #bfdbfe;
+    background: #eff6ff;
+}
+
+.reports-tab.active {
+    color: #1d4ed8;
+    border-color: #bfdbfe;
+    background: #eff6ff;
+    box-shadow: inset 0 -2px 0 #2563eb;
+}
+
+.reports-view[hidden] {
+    display: none !important;
+}
+
+.reports-filters {
+    align-items: flex-end;
+    flex-wrap: wrap;
+}
+
+.reports-date-fields,
+.reports-extra-filters {
+    display: flex;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.reports-extra-filters {
+    flex: 1 1 360px;
+}
+
+.reports-extra-filters label {
+    min-width: 145px;
+}
+
+.reports-extra-filters select,
+.reports-extra-filters input {
+    width: 100%;
+    height: 36px;
+    padding-inline: 9px;
+    border: 1px solid #dbe3ee;
+    border-radius: 9px;
+    color: #172033;
+    background: #fff;
+    font: inherit;
+    font-size: 10px;
+}
+
+.reports-extra-filters select:focus,
+.reports-extra-filters input:focus,
+.reports-filters input:focus {
+    outline: 3px solid rgba(37, 99, 235, .13);
+    border-color: #60a5fa;
+}
+
+.reports-check-field {
+    display: flex !important;
+    min-width: auto !important;
+    height: 36px;
+    align-items: center;
+    gap: 7px;
+    padding-inline: 9px;
+    border: 1px solid #dbe3ee;
+    border-radius: 9px;
+    color: #475569;
+    background: #fff;
+    cursor: pointer;
+}
+
+.reports-check-field input {
+    width: 15px !important;
+    height: 15px !important;
+    accent-color: #2563eb;
+}
+
+.reports-check-field span {
+    white-space: nowrap;
+}
+
+.reports-filter-note {
+    display: inline-flex;
+    min-height: 36px;
+    align-items: center;
+    padding: 0 10px;
+    border: 1px solid #e2e8f0;
+    border-radius: 9px;
+    color: #64748b;
+    background: #f8fafc;
+    font-size: 9px;
+    font-weight: 800;
+}
+
+.reports-loading,
+.reports-error,
+.reports-empty-state {
+    margin: 16px 18px;
+    padding: 22px 16px;
+    border: 1px dashed #cbd5e1;
+    border-radius: 12px;
+    color: #64748b;
+    background: #f8fafc;
+    text-align: center;
+    font-size: 10px;
+    font-weight: 800;
+}
+
+.reports-error {
+    border-color: #fecaca;
+    color: #b91c1c;
+    background: #fff1f2;
+}
+
+.reports-kpis-compact,
+.reports-kpis-coaching,
+.reports-kpis-attendance {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.reports-kpis-coaching {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.report-summary-strip {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+    padding: 15px 18px 0;
+}
+
+.report-summary-chip {
+    display: grid;
+    min-height: 82px;
+    align-content: center;
+    gap: 4px;
+    padding: 12px 14px;
+    border: 1px solid #dbeafe;
+    border-radius: 12px;
+    background: #f8fbff;
+}
+
+.report-summary-chip span {
+    color: #64748b;
+    font-size: 9px;
+    font-weight: 900;
+}
+
+.report-summary-chip strong {
+    color: #172033;
+    font-size: 19px;
+    font-weight: 950;
+    line-height: 1.1;
+}
+
+.report-summary-chip small {
+    color: #94a3b8;
+    font-size: 8px;
+}
+
+.reports-detail-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 13px;
+    padding: 15px 18px 0;
+}
+
+.reports-detail-grid .report-card {
+    min-width: 0;
+}
+
+.finance-detail-card {
+    margin: 0;
+}
+
+.reports-table {
+    text-align: center;
+}
+
+.reports-table th,
+.reports-table td {
+    text-align: center;
+    vertical-align: middle;
+}
+
+.reports-table th:first-child,
+.reports-table td:first-child {
+    text-align: right;
+}
+
+.reports-table tbody tr {
+    transition: background-color .16s ease;
+}
+
+.reports-table tbody tr:hover {
+    background: #f8fafc;
+}
+
+.reports-table .btn {
+    min-height: 30px;
+    padding-inline: 9px;
+}
+
+.reports-debtor-actions {
+    display: inline-flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 5px;
+}
+
+.report-summary-chip.total {
+    border-color: #bfdbfe;
+    background: #eff6ff;
+}
+
+.backup-history-status {
+    display: inline-flex;
+    min-width: 54px;
+    justify-content: center;
+    padding: 4px 7px;
+    border-radius: 999px;
+    font-size: 8px;
+    font-weight: 900;
+}
+
+.backup-history-status.success {
+    color: #047857;
+    background: #d1fae5;
+}
+
+.backup-history-status.error {
+    color: #b91c1c;
+    background: #fee2e2;
+}
+
+.attendance-report-hint {
+    display: inline-flex;
+    min-height: 34px;
+    align-items: center;
+    color: #64748b;
+    font-size: 10px;
+    font-weight: 800;
+}
+
+@media (max-width: 1000px) {
+    .reports-kpis-compact,
+    .reports-kpis-coaching,
+    .reports-kpis-attendance {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .reports-detail-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 640px) {
+    .reports-tabs {
+        padding-inline: 12px;
+    }
+
+    .reports-date-fields,
+    .reports-extra-filters {
+        width: 100%;
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .reports-extra-filters label,
+    .reports-extra-filters .reports-filter-note {
+        width: 100%;
+        min-width: 0;
+    }
+
+    .reports-filters .reports-date-fields label,
+    .reports-extra-filters label {
+        width: 100%;
+    }
+
+    .reports-kpis-compact,
+    .reports-kpis-coaching,
+    .reports-kpis-attendance {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .report-summary-strip {
+        grid-template-columns: 1fr;
+        padding: 12px 12px 0;
+    }
+
+    .reports-detail-grid {
+        padding: 12px 12px 0;
+    }
+
+    .reports-table {
+        min-width: 560px;
+    }
+
+    .reports-table-wrap {
+        margin-inline: -4px;
+        padding-bottom: 3px;
+    }
+
+    .attendance-report-hint {
+        min-height: 30px;
+        font-size: 9px;
+    }
+}
