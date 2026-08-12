@@ -13,14 +13,33 @@
     };
 
     const REPORT_TABS = [
-        ['overview', 'الملخص العام'],
-        ['attendance', 'الحضور والغياب'],
-        ['memberships', 'الاشتراكات والعضويات'],
-        ['finance', 'التحصيل والمصروفات'],
-        ['coaching', 'التدريب والتغذية'],
-        ['library', 'مكتبة النظام'],
-        ['backups', 'النسخ الاحتياطية']
+        ['overview', 'الملخص العام', 'chart'],
+        ['attendance', 'الحضور والغياب', 'attendance'],
+        ['memberships', 'الاشتراكات والعضويات', 'card'],
+        ['finance', 'التحصيل والمصروفات', 'wallet'],
+        ['coaching', 'التدريب والتغذية', 'program'],
+        ['library', 'مكتبة النظام', 'library'],
+        ['backups', 'النسخ الاحتياطية', 'backup']
     ];
+    const REPORT_ICON_PATHS = {
+        chart: '<path d="M4 19V5"/><path d="M4 19h16"/><path d="m7 15 3-4 3 2 5-6"/>',
+        attendance: '<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h8M8 11h3M8 15h8"/><path d="m14 11 1.5 1.5L18 10"/>',
+        card: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M7 15h4"/>',
+        wallet: '<path d="M4 7.5A2.5 2.5 0 0 1 6.5 5H20v14H6.5A2.5 2.5 0 0 1 4 16.5z"/><path d="M4 8h14a2 2 0 0 1 2 2v5h-5a2.5 2.5 0 0 1 0-5h5"/>',
+        program: '<path d="M5 4h14v16H5z"/><path d="M8 8h8M8 12h8M8 16h5"/><path d="M9 4V2h6v2"/>',
+        food: '<path d="M5 4v16M5 4c3 0 5 2 5 5H5M10 9h3M15 4v16M15 4c3 0 4 2 4 5h-4"/>',
+        library: '<path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v16H6.5A2.5 2.5 0 0 0 4 21.5z"/><path d="M4 5.5v16M8 7h8M8 11h6"/>',
+        backup: '<path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 20h14"/><path d="M5 4h4"/>',
+        users: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>',
+        payment: '<path d="M4 7.5A2.5 2.5 0 0 1 6.5 5H20v14H6.5A2.5 2.5 0 0 1 4 16.5z"/><path d="M4 9h16M8 14h3"/>',
+        debt: '<circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/>',
+        measure: '<path d="m4 7 3-3 13 13-3 3z"/><path d="m8 8 2-2M11 11l2-2M14 14l2-2"/>',
+        filter: '<path d="M4 6h16M7 12h10M10 18h4"/>',
+        refresh: '<path d="M20 11a8 8 0 0 0-14.5-4L4 9"/><path d="M4 4v5h5"/><path d="M4 13a8 8 0 0 0 14.5 4L20 15"/><path d="M20 20v-5h-5"/>',
+        export: '<path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 20h14"/>',
+        calendar: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/>',
+        check: '<circle cx="12" cy="12" r="9"/><path d="m8 12 2.5 2.5L16.5 9"/>'
+    };
     const PLAN_LABELS = { gym_only: 'جيم فقط', gym_cardio: 'جيم وكارديو' };
     const TYPE_LABELS = { monthly: 'شهرية', half_month: 'نصف شهر', quarterly: 'ربع سنوية', semiannual: 'نصف سنوية', annual: 'سنوية', 'two month': 'شهرين', custom_mslzyl8m: 'شهرين' };
     const PAYMENT_LABELS = { cash: 'نقدي', card: 'بطاقة', transfer: 'تحويل', other: 'أخرى' };
@@ -33,6 +52,14 @@
     function number(value) { return Number(value || 0).toLocaleString('ar-EG'); }
     function money(value) { return `${Number(value || 0).toLocaleString('ar-EG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ج.م`; }
     function label(map, key) { return map[key] || key || '—'; }
+    function reportIcon(name, className = 'ui-icon') { return `<svg class="${className}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${REPORT_ICON_PATHS[name] || REPORT_ICON_PATHS.chart}</svg>`; }
+    function reportBadge(value, labels, prefix = '') {
+        const token = String(value || 'unknown').toLowerCase().replace(/[^a-z0-9_-]/g, '-');
+        return `<span class="reports-status-badge${prefix ? ` ${prefix}-badge` : ''} ${token}">${escapeHtml(label(labels, value))}</span>`;
+    }
+    function reportKpi(title, value, meta, tone, icon = 'chart') {
+        return `<article class="report-kpi ${tone}"><div class="report-kpi-top"><span class="report-kpi-label">${title}</span><span class="report-kpi-icon">${reportIcon(icon)}</span></div><strong>${value}</strong><small>${meta}</small></article>`;
+    }
     function dateOnly(value) {
         if (!value) return '—';
         const raw = String(value).slice(0, 10);
@@ -62,13 +89,14 @@
         panel.innerHTML = `
             <div class="reports-header">
                 <div class="reports-heading"><span class="reports-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V5"/><path d="M4 19h16"/><path d="m7 15 3-4 3 2 5-6"/></svg></span><div><span class="reports-eyebrow">مركز التقارير</span><h2 id="reportsTitle">تقارير TOP GYM</h2><p id="reportsPeriod">اختر التقرير والفترة لعرض بيانات دقيقة وقابلة للمتابعة.</p></div></div>
-                <div class="reports-actions"><button class="btn btn-light btn-small" id="reportsExportButton" type="button">تصدير CSV</button><button class="btn btn-primary btn-small" id="reportsRefreshButton" type="button">تحديث البيانات</button></div>
+                <div class="reports-actions"><button class="btn btn-light btn-small" id="reportsExportButton" type="button"><span class="reports-button-icon">${reportIcon('export')}</span><span>تصدير CSV</span></button><button class="btn btn-primary btn-small" id="reportsRefreshButton" type="button"><span class="reports-button-icon">${reportIcon('refresh')}</span><span>تحديث البيانات</span></button></div>
             </div>
             <nav class="reports-tabs" id="reportsTabs" role="tablist" aria-label="أنواع التقارير"></nav>
             <form class="reports-filters" id="reportsForm">
+                <div class="reports-filter-heading"><span>خيارات العرض</span><strong>الفترة والفلاتر</strong></div>
                 <div class="reports-date-fields"><label><span>من تاريخ</span><input id="reportsFrom" type="date" required></label><label><span>إلى تاريخ</span><input id="reportsTo" type="date" required></label></div>
                 <div class="reports-extra-filters" id="reportsExtraFilters"></div>
-                <button class="btn btn-primary" type="submit">عرض التقرير</button>
+                <button class="btn btn-primary reports-submit-button" type="submit"><span class="reports-button-icon">${reportIcon('filter')}</span><span>عرض التقرير</span></button>
             </form>
             <div class="reports-view" id="reportsOverviewView" role="tabpanel"></div>
             <div class="reports-view" id="reportsAttendanceView" role="tabpanel" hidden></div>
@@ -113,7 +141,7 @@
     function renderReportTabs() {
         const tabs = $('reportsTabs');
         if (!tabs) return;
-        tabs.innerHTML = REPORT_TABS.map(([id, text]) => `<button class="reports-tab${id === state.activeTab ? ' active' : ''}" type="button" role="tab" aria-selected="${id === state.activeTab}" data-report-tab="${id}">${text}</button>`).join('');
+        tabs.innerHTML = REPORT_TABS.map(([id, text, icon]) => `<button class="reports-tab${id === state.activeTab ? ' active' : ''}" type="button" role="tab" aria-selected="${id === state.activeTab}" data-report-tab="${id}"><span class="reports-tab-icon">${reportIcon(icon)}</span><span class="reports-tab-label">${text}</span></button>`).join('');
     }
 
     function renderExtraFilters() {
@@ -183,6 +211,8 @@
         if (state.activeTab === 'finance') renderFinance();
         if (state.activeTab === 'coaching') renderCoaching();
         if (state.activeTab === 'library') renderLibrary();
+        if (state.activeTab === 'attendance' && state.attendance) renderAttendance();
+        if (state.activeTab === 'backups' && state.backups) renderBackups();
     }
 
     function renderOverview() {
@@ -191,14 +221,14 @@
         const data = state.data;
         const summary = data.summary || {};
         const items = [
-            ['الأعضاء الجدد', number(summary.newMembers), 'خلال الفترة', 'blue'],
-            ['الاشتراكات الجديدة', number(summary.newMemberships), 'اشتراك مسجل', 'indigo'],
-            ['إجمالي التحصيل', money(summary.collected), `${number(summary.paidTransactions)} دفعة`, 'green'],
-            ['المصروفات', money(summary.expenses), `${number(summary.expensesCount)} مصروف`, 'amber'],
-            ['صافي الفترة', money(summary.net), summary.net < 0 ? 'يحتاج مراجعة' : 'الصافي موجب', summary.net < 0 ? 'red' : 'teal'],
-            ['المبالغ المتبقية', money(summary.outstanding), `${number(summary.outstandingCount)} اشتراك`, 'rose']
+            ['الأعضاء الجدد', number(summary.newMembers), 'خلال الفترة', 'blue', 'users'],
+            ['الاشتراكات الجديدة', number(summary.newMemberships), 'اشتراك مسجل', 'indigo', 'card'],
+            ['إجمالي التحصيل', money(summary.collected), `${number(summary.paidTransactions)} دفعة`, 'green', 'payment'],
+            ['المصروفات', money(summary.expenses), `${number(summary.expensesCount)} مصروف`, 'amber', 'wallet'],
+            ['صافي الفترة', money(summary.net), summary.net < 0 ? 'يحتاج مراجعة' : 'الصافي موجب', summary.net < 0 ? 'red' : 'teal', 'chart'],
+            ['المبالغ المتبقية', money(summary.outstanding), `${number(summary.outstandingCount)} اشتراك`, 'rose', 'debt']
         ];
-        const kpis = items.map(([title, value, meta, tone]) => `<article class="report-kpi ${tone}"><span>${title}</span><strong>${value}</strong><small>${meta}</small></article>`).join('');
+        const kpis = items.map(([title, value, meta, tone, icon]) => reportKpi(title, value, meta, tone, icon)).join('');
         const timeline = renderTimeline(data);
         const breakdown = renderBreakdown(data);
         const debtors = (data.debtors || []).slice(0, 8);
@@ -236,7 +266,7 @@
         const query = localFilterValue();
         const members = (data.memberships || data.members || []).filter((member) => (!status || member.status === status) && (!plan || member.plan === plan) && (!debtorsOnly || Number(member.amountRemaining) > 0) && (contains(member.fullName, query) || contains(member.phone, query)));
         const statuses = (data.breakdown?.statuses || []).map((item) => `<div class="report-summary-chip"><span>${escapeHtml(label(STATUS_LABELS, item.key))}</span><strong>${number(item.value)}</strong></div>`).join('');
-        const rows = members.map((member) => `<tr><td><strong>${escapeHtml(member.fullName)}</strong><small>${escapeHtml(member.phone)}</small></td><td>${escapeHtml(label(PLAN_LABELS, member.plan))}<small>${escapeHtml(label(TYPE_LABELS, member.type))}</small></td><td>${escapeHtml(label(STATUS_LABELS, member.status))}</td><td>${dateOnly(member.startDate)}<small>حتى ${dateOnly(member.endDate)}</small></td><td>${money(member.amountDue)}<small>مدفوع ${money(member.amountPaid)}</small></td><td class="${Number(member.amountRemaining) > 0 ? 'has-debt' : 'paid'}">${money(member.amountRemaining)}</td></tr>`).join('');
+        const rows = members.map((member) => `<tr><td><strong>${escapeHtml(member.fullName)}</strong><small>${escapeHtml(member.phone)}</small></td><td>${escapeHtml(label(PLAN_LABELS, member.plan))}<small>${escapeHtml(label(TYPE_LABELS, member.type))}</small></td><td>${reportBadge(member.status, STATUS_LABELS)}</td><td>${dateOnly(member.startDate)}<small>حتى ${dateOnly(member.endDate)}</small></td><td>${money(member.amountDue)}<small>مدفوع ${money(member.amountPaid)}</small></td><td class="${Number(member.amountRemaining) > 0 ? 'has-debt' : 'paid'}">${money(member.amountRemaining)}</td></tr>`).join('');
         view.innerHTML = `<div class="report-summary-strip">${statuses}<div class="report-summary-chip total"><span>في الفترة</span><strong>${number(members.length)}</strong></div></div><section class="report-card reports-members-card"><div class="report-card-head"><div><span>تفاصيل الفترة</span><h3>سجل الاشتراكات والعضويات</h3></div><span class="reports-members-count">${number(members.length)} نتيجة</span></div><div class="reports-table-wrap">${rows ? `<table class="reports-table"><thead><tr><th>المشترك</th><th>الباقة والنوع</th><th>الحالة</th><th>الفترة</th><th>الحساب</th><th>المتبقي</th></tr></thead><tbody>${rows}</tbody></table>` : '<div class="reports-empty-state">لا توجد نتائج مطابقة للفلاتر.</div>'}</div></section>`;
     }
 
@@ -249,12 +279,12 @@
         const query = localFilterValue();
         const payments = (data.payments || []).filter((item) => (!method || item.paymentMethod === method) && (contains(item.fullName, query) || contains(item.phone, query)));
         const expenses = (data.expenses || []).filter((item) => contains(item.name, query) || contains(item.notes, query));
-        const paymentRows = payments.map((item) => `<tr><td><strong>${escapeHtml(item.fullName)}</strong><small>${escapeHtml(item.phone)}</small></td><td>${escapeHtml(label(TRANSACTION_LABELS, item.transactionType))}</td><td>${dateOnly(item.date)}</td><td>${escapeHtml(label(PAYMENT_LABELS, item.paymentMethod))}</td><td class="paid">${money(item.amountPaid)}</td><td>${money(item.amountRemaining)}</td></tr>`).join('');
+        const paymentRows = payments.map((item) => `<tr><td><strong>${escapeHtml(item.fullName)}</strong><small>${escapeHtml(item.phone)}</small></td><td>${reportBadge(item.transactionType, TRANSACTION_LABELS, 'transaction')}</td><td>${dateOnly(item.date)}</td><td>${escapeHtml(label(PAYMENT_LABELS, item.paymentMethod))}</td><td class="paid">${money(item.amountPaid)}</td><td>${money(item.amountRemaining)}</td></tr>`).join('');
         const expenseRows = expenses.map((item) => `<tr><td><strong>${escapeHtml(item.name)}</strong><small>${escapeHtml(item.notes || 'بدون ملاحظات')}</small></td><td>${dateOnly(item.date)}</td><td class="has-debt">${money(item.amount)}</td></tr>`).join('');
         const paymentTable = `<section class="report-card finance-detail-card"><div class="report-card-head"><div><span>حركة التحصيل</span><h3>المدفوعات والإيصالات</h3></div><span class="reports-members-count">${number(payments.length)} دفعة</span></div><div class="reports-table-wrap">${paymentRows ? `<table class="reports-table"><thead><tr><th>المشترك</th><th>العملية</th><th>التاريخ</th><th>طريقة الدفع</th><th>المدفوع</th><th>المتبقي</th></tr></thead><tbody>${paymentRows}</tbody></table>` : '<div class="reports-empty-state">لا توجد مدفوعات مطابقة.</div>'}</div></section>`;
         const expenseTable = `<section class="report-card finance-detail-card"><div class="report-card-head"><div><span>حركة المصروفات</span><h3>سجل المصروفات</h3></div><span class="reports-members-count">${number(expenses.length)} مصروف</span></div><div class="reports-table-wrap">${expenseRows ? `<table class="reports-table"><thead><tr><th>اسم المصروف والملاحظات</th><th>التاريخ</th><th>المبلغ</th></tr></thead><tbody>${expenseRows}</tbody></table>` : '<div class="reports-empty-state">لا توجد مصروفات مطابقة.</div>'}</div></section>`;
         const summary = data.summary || {};
-        const kpis = `<div class="reports-kpis reports-kpis-compact"><article class="report-kpi green"><span>التحصيل</span><strong>${money(summary.collected)}</strong><small>${number(summary.paidTransactions)} دفعة</small></article><article class="report-kpi amber"><span>المصروفات</span><strong>${money(summary.expenses)}</strong><small>${number(summary.expensesCount)} مصروف</small></article><article class="report-kpi teal"><span>الصافي</span><strong>${money(summary.net)}</strong><small>التحصيل − المصروفات</small></article></div>`;
+        const kpis = `<div class="reports-kpis reports-kpis-compact">${reportKpi('التحصيل', money(summary.collected), `${number(summary.paidTransactions)} دفعة`, 'green', 'payment')}${reportKpi('المصروفات', money(summary.expenses), `${number(summary.expensesCount)} مصروف`, 'amber', 'wallet')}${reportKpi('الصافي', money(summary.net), 'التحصيل − المصروفات', 'teal', 'chart')}</div>`;
         view.innerHTML = `${kpis}<div class="reports-detail-grid">${mode === 'expenses' ? expenseTable : mode === 'payments' ? paymentTable : paymentTable + expenseTable}</div>`;
     }
 
@@ -268,9 +298,9 @@
         const programs = (data.workoutPrograms || []).filter((item) => (!status || item.status === status) && (contains(item.fullName, query) || contains(item.phone, query) || contains(item.name, query)));
         const diets = (data.dietPlans || []).filter((item) => (!status || item.status === status) && (contains(item.fullName, query) || contains(item.phone, query) || contains(item.name, query)));
         const stats = data.summary || {};
-        const kpis = `<div class="reports-kpis reports-kpis-coaching"><article class="report-kpi blue"><span>برامج التدريب</span><strong>${number(stats.totalWorkoutPrograms)}</strong><small>${number(stats.activeWorkoutPrograms)} نشطة</small></article><article class="report-kpi indigo"><span>خطط التغذية</span><strong>${number(stats.totalDietPlans)}</strong><small>${number(stats.activeDietPlans)} نشطة</small></article><article class="report-kpi green"><span>جلسات التمرين</span><strong>${number(stats.workoutSessionsInPeriod)}</strong><small>${number(stats.completedWorkoutSessions)} مكتملة</small></article><article class="report-kpi amber"><span>سجل الوجبات</span><strong>${number(stats.mealLogsInPeriod)}</strong><small>خلال الفترة</small></article><article class="report-kpi teal"><span>القياسات</span><strong>${number(stats.measurementsInPeriod)}</strong><small>مضافة خلال الفترة</small></article></div>`;
-        const workoutRows = programs.map((item) => `<tr><td><strong>${escapeHtml(item.name)}</strong><small>${escapeHtml(item.fullName)} · ${escapeHtml(item.phone)}</small></td><td>${dateOnly(item.startDate)}<small>حتى ${dateOnly(item.endDate)}</small></td><td>${escapeHtml(label(COACHING_STATUS_LABELS, item.status))}</td><td>${number(item.routines)} أيام</td><td>${number(item.exercises)} تمارين</td></tr>`).join('');
-        const dietRows = diets.map((item) => `<tr><td><strong>${escapeHtml(item.name)}</strong><small>${escapeHtml(item.fullName)} · ${escapeHtml(item.phone)}</small></td><td>${dateOnly(item.startDate)}<small>حتى ${dateOnly(item.endDate)}</small></td><td>${escapeHtml(label(COACHING_STATUS_LABELS, item.status))}</td><td>${number(item.targetCalories)} سعر</td><td>${number(item.meals)} وجبات · ${number(item.foods)} أطعمة</td></tr>`).join('');
+        const kpis = `<div class="reports-kpis reports-kpis-coaching">${reportKpi('برامج التدريب', number(stats.totalWorkoutPrograms), `${number(stats.activeWorkoutPrograms)} نشطة`, 'blue', 'program')}${reportKpi('خطط التغذية', number(stats.totalDietPlans), `${number(stats.activeDietPlans)} نشطة`, 'indigo', 'food')}${reportKpi('جلسات التمرين', number(stats.workoutSessionsInPeriod), `${number(stats.completedWorkoutSessions)} مكتملة`, 'green', 'attendance')}${reportKpi('سجل الوجبات', number(stats.mealLogsInPeriod), 'خلال الفترة', 'amber', 'food')}${reportKpi('القياسات', number(stats.measurementsInPeriod), 'مضافة خلال الفترة', 'teal', 'measure')}</div>`;
+        const workoutRows = programs.map((item) => `<tr><td><strong>${escapeHtml(item.name)}</strong><small>${escapeHtml(item.fullName)} · ${escapeHtml(item.phone)}</small></td><td>${dateOnly(item.startDate)}<small>حتى ${dateOnly(item.endDate)}</small></td><td>${reportBadge(item.status, COACHING_STATUS_LABELS)}</td><td>${number(item.routines)} أيام</td><td>${number(item.exercises)} تمارين</td></tr>`).join('');
+        const dietRows = diets.map((item) => `<tr><td><strong>${escapeHtml(item.name)}</strong><small>${escapeHtml(item.fullName)} · ${escapeHtml(item.phone)}</small></td><td>${dateOnly(item.startDate)}<small>حتى ${dateOnly(item.endDate)}</small></td><td>${reportBadge(item.status, COACHING_STATUS_LABELS)}</td><td>${number(item.targetCalories)} سعر</td><td>${number(item.meals)} وجبات · ${number(item.foods)} أطعمة</td></tr>`).join('');
         const workoutTable = `<section class="report-card finance-detail-card"><div class="report-card-head"><div><span>التدريب</span><h3>البرامج المنشأة خلال الفترة</h3></div><span class="reports-members-count">${number(programs.length)}</span></div><div class="reports-table-wrap">${workoutRows ? `<table class="reports-table"><thead><tr><th>البرنامج والمتدرب</th><th>الفترة</th><th>الحالة</th><th>الأيام</th><th>التمارين</th></tr></thead><tbody>${workoutRows}</tbody></table>` : '<div class="reports-empty-state">لا توجد برامج مطابقة.</div>'}</div></section>`;
         const dietTable = `<section class="report-card finance-detail-card"><div class="report-card-head"><div><span>التغذية</span><h3>خطط التغذية المنشأة خلال الفترة</h3></div><span class="reports-members-count">${number(diets.length)}</span></div><div class="reports-table-wrap">${dietRows ? `<table class="reports-table"><thead><tr><th>الخطة والمتدرب</th><th>الفترة</th><th>الحالة</th><th>السعرات</th><th>المحتوى</th></tr></thead><tbody>${dietRows}</tbody></table>` : '<div class="reports-empty-state">لا توجد خطط مطابقة.</div>'}</div></section>`;
         view.innerHTML = `${kpis}<div class="reports-detail-grid">${type === 'workout' ? workoutTable : type === 'diet' ? dietTable : workoutTable + dietTable}</div>`;
@@ -317,7 +347,7 @@
         const dailyRows = (data.daily || []).map((day) => `<tr><td>${dateOnly(day.date)}</td><td>${number(day.visits)}</td><td>${number(day.uniqueMembers)}</td><td>${number(day.checkedOut)}</td></tr>`).join('');
         const memberRows = members.slice(0, 100).map((member) => `<tr><td><strong>${escapeHtml(member.fullName)}</strong><small>${escapeHtml(member.phone)}</small></td><td>${number(member.visits)}</td><td>${number(member.totalMinutes)} دقيقة</td><td>${dateOnly(member.lastVisitDate)}</td></tr>`).join('');
         const absentRows = absent.slice(0, 100).map((member) => `<tr><td><strong>${escapeHtml(member.fullName)}</strong><small>${escapeHtml(member.phone)}</small></td><td>${dateOnly(member.membershipEndDate)}</td><td><a class="btn btn-light btn-small" href="tel:${escapeHtml(member.phone)}">اتصال</a></td></tr>`).join('');
-        const kpis = [['إجمالي الزيارات', summary.totalVisits, 'blue'], ['مشتركون حضروا', summary.uniqueMembers, 'green'], ['انصراف مسجل', summary.checkedOut, 'indigo'], ['متوسط الدقائق', summary.averageMinutes == null ? '—' : summary.averageMinutes, 'amber'], ['بلا حضور', summary.absentMembers, 'red']].map(([title, value, tone]) => `<article class="report-kpi ${tone}"><span>${title}</span><strong>${typeof value === 'number' ? number(value) : value}</strong><small>${dateOnly(data.from)} — ${dateOnly(data.to)}</small></article>`).join('');
+        const kpis = [['إجمالي الزيارات', summary.totalVisits, 'blue', 'attendance'], ['مشتركون حضروا', summary.uniqueMembers, 'green', 'users'], ['انصراف مسجل', summary.checkedOut, 'indigo', 'check'], ['متوسط الدقائق', summary.averageMinutes == null ? '—' : summary.averageMinutes, 'amber', 'chart'], ['بلا حضور', summary.absentMembers, 'red', 'debt']].map(([title, value, tone, icon]) => reportKpi(title, typeof value === 'number' ? number(value) : value, `${dateOnly(data.from)} — ${dateOnly(data.to)}`, tone, icon)).join('');
         view.innerHTML = `<div class="reports-kpis reports-kpis-attendance">${kpis}</div><section class="report-card reports-members-card"><div class="report-card-head"><div><span>الحركة اليومية</span><h3>ملخص الحضور حسب اليوم</h3></div><span class="reports-members-count">${number((data.daily || []).length)} يوم</span></div><div class="reports-table-wrap">${dailyRows ? `<table class="reports-table"><thead><tr><th>التاريخ</th><th>الزيارات</th><th>مشتركون مختلفون</th><th>انصراف</th></tr></thead><tbody>${dailyRows}</tbody></table>` : '<div class="reports-empty-state">لا توجد زيارات في الفترة.</div>'}</div></section><div class="reports-detail-grid"><section class="report-card finance-detail-card"><div class="report-card-head"><div><span>الأعلى نشاطًا</span><h3>الأكثر حضورًا</h3></div><span class="reports-members-count">${number(members.length)}</span></div><div class="reports-table-wrap">${memberRows ? `<table class="reports-table"><thead><tr><th>المشترك</th><th>الزيارات</th><th>المدة</th><th>آخر حضور</th></tr></thead><tbody>${memberRows}</tbody></table>` : '<div class="reports-empty-state">لا توجد زيارات مطابقة.</div>'}</div></section><section class="report-card finance-detail-card"><div class="report-card-head"><div><span>تحتاج متابعة</span><h3>مشتركون بلا حضور</h3></div><span class="reports-members-count">${number(absent.length)}</span></div><div class="reports-table-wrap">${absentRows ? `<table class="reports-table"><thead><tr><th>المشترك</th><th>انتهاء الاشتراك</th><th>إجراء</th></tr></thead><tbody>${absentRows}</tbody></table>` : '<div class="reports-empty-state">لا توجد حالات غياب مستمرة.</div>'}</div></section></div>`;
     }
 
