@@ -2807,7 +2807,7 @@
 /* Keep five daily alerts visible; additional alerts scroll inside the panel. */
 #dashboardSection .alerts-list,
 #dashboardSection .alerts-list.alerts-list-scroll {
-    max-height: 430px !important;
+    max-height: 270px !important;
     min-height: 0;
     overflow-x: hidden !important;
     overflow-y: auto !important;
@@ -3078,10 +3078,10 @@
     #dashboardSection .alert-whatsapp-button .ui-icon { width: 19px; height: 19px; }
 }
 
-/* Final alert viewport rules: five rows remain visible and the rest scroll in place. */
+/* Final alert viewport rules: three rows remain visible and the rest scroll in place. */
 #dashboardSection .alerts-list,
 #dashboardSection .alerts-list.alerts-list-scroll {
-    max-height: 430px !important;
+    max-height: 270px !important;
     min-height: 0 !important;
     overflow-x: hidden !important;
     overflow-y: auto !important;
@@ -3111,8 +3111,13 @@
     height: var(--alert-action-size) !important;
     min-height: var(--alert-action-size) !important;
 }
+#dashboardSection .alert-card-body > .alert-whatsapp-button {
+    grid-row: 1 !important;
+    align-self: center;
+}
+#dashboardSection .alert-card-body > .alert-card-head { align-items: center; }
 @media (max-width: 560px) {
     #dashboardSection .alerts-list,
-    #dashboardSection .alerts-list.alerts-list-scroll { max-height: 398px !important; }
+    #dashboardSection .alerts-list.alerts-list-scroll { max-height: 250px !important; }
     #dashboardSection .alert-card { --alert-action-size: 34px; }
 }
