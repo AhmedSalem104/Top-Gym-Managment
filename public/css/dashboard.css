@@ -2327,7 +2327,7 @@
 #dashboardSection .snapshot-membership-stats {
     display: grid !important;
     grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: 12px;
+    gap: 10px;
     margin: 12px 20px 20px;
     padding: 0;
     direction: rtl;
@@ -2335,46 +2335,54 @@
 
 #dashboardSection .snapshot-membership-stats .stat-card {
     display: grid !important;
-    grid-template-columns: 34px minmax(0, 1fr);
+    grid-template-columns: 30px minmax(0, 1fr);
     grid-template-rows: auto auto;
     min-width: 0;
-    min-height: 84px !important;
+    min-height: 68px !important;
     align-items: center;
-    gap: 3px 9px;
-    padding: 11px !important;
+    gap: 2px 7px;
+    padding: 9px !important;
     border: 1px solid #dce5f0 !important;
-    border-radius: 12px;
+    border-radius: 10px;
     background: #fff !important;
-    box-shadow: 0 6px 16px rgba(30, 64, 175, .07) !important;
+    box-shadow: 0 4px 12px rgba(30, 64, 175, .06) !important;
     text-align: right;
 }
+#dashboardSection .snapshot-membership-stats .stat-card:first-child { border-color: #d9e7fb !important; background: #fbfdff !important; }
+#dashboardSection .snapshot-membership-stats .stat-card.active { border-color: #c9efdf !important; background: #fbfffd !important; }
+#dashboardSection .snapshot-membership-stats .stat-card.warning { border-color: #f3e3b8 !important; background: #fffdf8 !important; }
+#dashboardSection .snapshot-membership-stats .stat-card.danger { border-color: #f5d8dc !important; background: #fffafb !important; }
+#dashboardSection .snapshot-membership-stats .stat-card.frozen { border-color: #e5defb !important; background: #fdfbff !important; }
 #dashboardSection .snapshot-membership-stats .stat-head { display: contents !important; }
 #dashboardSection .snapshot-membership-stats .stat-icon {
     grid-column: 1;
     grid-row: 1 / 3;
-    width: 34px !important;
-    height: 34px !important;
+    width: 30px !important;
+    height: 30px !important;
     margin: 0;
-    border-radius: 10px !important;
+    border-radius: 9px !important;
 }
-#dashboardSection .snapshot-membership-stats .stat-icon .ui-icon { width: 17px !important; height: 17px !important; }
+#dashboardSection .snapshot-membership-stats .stat-icon .ui-icon { width: 15px !important; height: 15px !important; }
 #dashboardSection .snapshot-membership-stats .stat-label {
     grid-column: 2;
     grid-row: 1;
     min-width: 0;
     overflow: hidden;
     color: #64748b;
-    font-size: 10px !important;
+    font-size: 9px !important;
     font-weight: 800;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    line-height: 1.25;
+    text-align: right;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
 }
 #dashboardSection .snapshot-membership-stats .stat-value {
     grid-column: 2;
     grid-row: 2;
     margin: 0 !important;
     color: #172033;
-    font-size: 25px !important;
+    font-size: 20px !important;
     line-height: 1;
 }
 #dashboardSection .snapshot-membership-stats .stat-caption { display: none !important; }
@@ -2737,4 +2745,61 @@
     #dashboardSection .alert-card { padding: 9px; }
     #dashboardSection .alert-card-head { gap: 5px; }
     #dashboardSection .alert-card-head strong { font-size: 11px; }
+}
+
+/* Daily-alert row alignment: content on the right, WhatsApp action at the far left. */
+#dashboardSection .alert-card {
+    grid-template-columns: 50px minmax(0, 1fr);
+    column-gap: 14px;
+}
+#dashboardSection .alert-card-body {
+    direction: ltr;
+    grid-template-columns: 50px minmax(0, 1fr);
+    column-gap: 12px;
+}
+#dashboardSection .alert-card-body > .alert-card-head,
+#dashboardSection .alert-card-body > .alert-card-detail,
+#dashboardSection .alert-card-body > .alert-card-phone {
+    grid-column: 2;
+    direction: rtl;
+    text-align: right;
+}
+#dashboardSection .alert-card-body > .alert-card-head { justify-content: flex-start; }
+#dashboardSection .alert-card-body > .alert-whatsapp-button {
+    grid-column: 1;
+    grid-row: 1 / 4;
+    justify-self: center;
+    align-self: center;
+    margin: 0;
+}
+#dashboardSection .alert-whatsapp-button {
+    width: 46px;
+    height: 46px;
+    min-height: 46px;
+    border-color: #19b875;
+    border-radius: 12px;
+    color: #fff;
+    background: #20c779;
+    box-shadow: 0 6px 14px rgba(32, 199, 121, .2);
+}
+#dashboardSection .alert-whatsapp-button:hover {
+    border-color: #0da565;
+    color: #fff;
+    background: #0eae6d;
+    box-shadow: 0 8px 18px rgba(14, 174, 109, .28);
+}
+#dashboardSection .alert-whatsapp-button .ui-icon { width: 24px; height: 24px; }
+
+@media (max-width: 560px) {
+    #dashboardSection .alert-card { grid-template-columns: 42px minmax(0, 1fr); column-gap: 9px; }
+    #dashboardSection .alert-card-body { grid-template-columns: 40px minmax(0, 1fr); column-gap: 8px; }
+    #dashboardSection .alert-whatsapp-button { width: 38px; height: 38px; min-height: 38px; border-radius: 10px; }
+    #dashboardSection .alert-whatsapp-button .ui-icon { width: 21px; height: 21px; }
+}
+
+@media (max-width: 390px) {
+    #dashboardSection .alert-card { grid-template-columns: 38px minmax(0, 1fr); column-gap: 8px; }
+    #dashboardSection .alert-card-body { grid-template-columns: 36px minmax(0, 1fr); column-gap: 7px; }
+    #dashboardSection .alert-whatsapp-button { width: 34px; height: 34px; min-height: 34px; border-radius: 9px; }
+    #dashboardSection .alert-whatsapp-button .ui-icon { width: 19px; height: 19px; }
 }
