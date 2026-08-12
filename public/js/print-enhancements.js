@@ -305,8 +305,11 @@
                 new MutationObserver(ensurePrintActions).observe(list, { childList: true, subtree: true });
             }
 
-            document.addEventListener('DOMContentLoaded', () => {
+            function initializePrintEnhancements() {
                 ensurePrintActions();
                 ensureDetailsPrintButton();
-            });
+            }
+
+            if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initializePrintEnhancements, { once: true });
+            else initializePrintEnhancements();
         })();

@@ -41,8 +41,11 @@
          const DEFAULT_PRICING = { plans: { gym_only: { label: 'جيم فقط', monthlyPrice: 305, active: true, sortOrder: 1 }, gym_cardio: { label: 'جيم وكارديو', monthlyPrice: 400, active: true, sortOrder: 2 } }, types: { monthly: { label: 'شهرية', mode: 'months', durationValue: 1, priceMultiplier: 1, active: true, sortOrder: 1 }, half_month: { label: 'نصف شهر', mode: 'days', durationValue: 15, priceMultiplier: .5, active: true, sortOrder: 2 }, quarterly: { label: 'ربع سنوية', mode: 'months', durationValue: 3, priceMultiplier: 3, active: true, sortOrder: 3 }, semiannual: { label: 'نصف سنوية', mode: 'months', durationValue: 6, priceMultiplier: 6, active: true, sortOrder: 4 }, annual: { label: 'سنوية', mode: 'months', durationValue: 12, priceMultiplier: 12, active: true, sortOrder: 5 } }, durations: { monthly: 1, quarterly: 3, semiannual: 6, annual: 12 } };
          const state = { members: [], dashboard: null, pricing: DEFAULT_PRICING, pricingLoadedAt: 0, editing: null, dialogAction: null, dialogMember: null, endDateManual: false };
          const $ = (id) => document.getElementById(id);
-         let membersAbortController = null;
-         let pricingRequestPromise = null;
+        let membersAbortController = null;
+        let membersLoadPromise = null;
+        let membersLoadKey = '';
+        let dataLoadPromise = null;
+        let pricingRequestPromise = null;
          const PRICING_CACHE_TTL_MS = 5 * 60 * 1000;
 
         function todayIso() { const now = new Date(); return new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 10); }
@@ -199,42 +202,50 @@
             if (!$('dialogType') || !$('dialogPlan')) return; const pricing = calculateClientPricing($('dialogType').value, $('dialogPlan').value, $('dialogDiscount').value); $('dialogDue').value = pricing.amountDue.toFixed(2); $('dialogPricing').textContent = `السعر الأساسي: ${money(pricing.listPrice)} · الخصم: ${money(pricing.discountAmount)} · المستحق: ${money(pricing.amountDue)}`;
         }
 
+        function isMembersTabActive() {
+            return document.querySelector('[data-page-tab="members"]')?.classList.contains('active');
+        }
+
         async function loadData() {
-            return withLoader(async () => {
-                state.pagination = null;
-                if ($('membersPagination')) $('membersPagination').hidden = true;
-                $('membersList').innerHTML = '<div class="loading">جاري تحميل المشتركين…</div>';
-                const membersRequest = api('/api/members?page=1&pageSize=5&sort=expiry');
+            if (dataLoadPromise) return dataLoadPromise;
+            const loadPromise = withLoader(async () => {
                 const dashboardRequest = api('/api/dashboard');
                 const pricingRequest = loadPricingCatalog(true);
-                let membersLoaded = false;
                 try {
-                    const membersResponse = await membersRequest;
-                    state.members = membersResponse.members || [];
-                    state.pagination = membersResponse.pagination || null;
-                    state.detailsCache = new Map();
-                    membersLoaded = true;
-                    renderMembers();
-                    updateFormPricing();
                     const [dashboard] = await Promise.all([dashboardRequest, pricingRequest]);
                     state.dashboard = dashboard || null;
                     renderDashboard();
                     updateFormPricing();
+                    if (isMembersTabActive()) await loadMembersOnly();
                 } catch (error) {
-                    if (!membersLoaded) $('membersList').innerHTML = `<div class="empty">${escapeHtml(error.message)}</div>`;
                     await notify(error.message, 'error');
                 }
             }, 'جاري تحميل بيانات TOP GYM…');
+            const trackedPromise = loadPromise.finally(() => {
+                if (dataLoadPromise === trackedPromise) dataLoadPromise = null;
+            });
+            dataLoadPromise = trackedPromise;
+            return trackedPromise;
         }
         async function loadMembersOnly() {
-            if (membersAbortController) membersAbortController.abort(); membersAbortController = new AbortController(); const controller = membersAbortController;
-            return withLoader(async () => {
+            const queryKey = JSON.stringify([$('searchInput')?.value.trim() || '', $('statusFilter')?.value || '', $('sortFilter')?.value || '']);
+            if (membersLoadPromise && membersLoadKey === queryKey) return membersLoadPromise;
+            if (membersAbortController) membersAbortController.abort();
+            membersAbortController = new AbortController();
+            const controller = membersAbortController;
+            membersLoadKey = queryKey;
+            const loadPromise = withLoader(async () => {
                 state.pagination = null;
                 if ($('membersPagination')) $('membersPagination').hidden = true;
                 $('membersList').innerHTML = '<div class="loading">جاري تحديث القائمة…</div>';
-                try { const params = new URLSearchParams({ search: $('searchInput').value.trim(), status: $('statusFilter').value, sort: $('sortFilter').value, page: '1', pageSize: '5' }); const response = await api(`/api/members?${params}`, { signal: controller.signal }); state.members = response.members || []; state.pagination = response.pagination || null; renderMembers(); }
+                try { const params = new URLSearchParams({ search: $('searchInput').value.trim(), status: $('statusFilter').value, sort: $('sortFilter').value, page: '1', pageSize: '5' }); const response = await api(`/api/members?${params}`, { signal: controller.signal }); state.members = response.members || []; state.pagination = response.pagination || null; state.detailsCache = new Map(); renderMembers(); }
                 catch (error) { if (error.name !== 'AbortError') { $('membersList').innerHTML = `<div class="empty">${escapeHtml(error.message)}</div>`; await notify(error.message, 'error'); } }
             }, 'جاري تحديث قائمة TOP GYM…');
+            const trackedPromise = loadPromise.finally(() => {
+                if (membersLoadPromise === trackedPromise) membersLoadPromise = null;
+            });
+            membersLoadPromise = trackedPromise;
+            return trackedPromise;
         }
 
         function renderDashboard() {
@@ -497,6 +508,9 @@
                 } catch (error) {
                     await notify(error.message || 'تعذر فتح بيانات المشترك.', 'error');
                 }
+            });
+            window.addEventListener('topgym:tab-changed', (event) => {
+                if (event.detail?.name === 'members') loadMembersOnly();
             });
             loadData();
         });

@@ -9,7 +9,11 @@
         attendanceRange: '',
         backups: null,
         requestId: 0,
-        attendanceRequestId: 0
+        attendanceRequestId: 0,
+        reportAbortController: null,
+        attendanceAbortController: null,
+        loadedRangeKey: '',
+        loadedAt: 0
     };
 
     const REPORT_TABS = [
@@ -110,8 +114,8 @@
         $('reportsTo').value = todayIso();
         renderReportTabs();
         renderExtraFilters();
-        $('reportsForm').addEventListener('submit', (event) => { event.preventDefault(); loadReport(); });
-        $('reportsRefreshButton').addEventListener('click', loadReport);
+        $('reportsForm').addEventListener('submit', (event) => { event.preventDefault(); loadReport(true); });
+        $('reportsRefreshButton').addEventListener('click', () => loadReport(true));
         $('reportsExportButton').addEventListener('click', exportCurrentReport);
         $('reportsTabs').addEventListener('click', (event) => {
             const tab = event.target.closest('[data-report-tab]');
@@ -183,8 +187,8 @@
         if (view) view.innerHTML = `<div class="reports-loading">${text}</div>`;
     }
 
-    async function getJson(path) {
-        const response = await fetch(path, { cache: 'no-store', headers: { Accept: 'application/json' } });
+    async function getJson(path, options = {}) {
+        const response = await fetch(path, { cache: 'no-store', ...options, headers: { Accept: 'application/json', ...(options.headers || {}) } });
         const data = await response.json().catch(() => ({}));
         if (!response.ok) throw new Error(data.error || 'تعذر تحميل التقرير.');
         return data;
@@ -217,31 +221,42 @@
             if (!response.ok) throw new Error(data.error || 'تعذر حذف خطة التغذية.');
             if (window.Swal) window.Swal.fire({ toast: true, position: 'top-start', icon: 'success', title: 'تم حذف خطة التغذية ✅', showConfirmButton: false, timer: 2600, customClass: { popup: 'top-gym-alert top-gym-toast' } });
             window.dispatchEvent(new CustomEvent('topgym:coaching-data-changed', { detail: { type: 'diet-deleted', memberId: Number(memberId || 0) } }));
-            await loadReport();
+            await loadReport(true);
         } catch (error) {
             if (window.Swal) window.Swal.fire({ position: 'center', icon: 'error', title: 'تعذر حذف الخطة', text: error.message, customClass: { popup: 'top-gym-alert' } });
         }
     }
 
-    async function loadReport() {
+    async function loadReport(force = false) {
         const panel = ensurePanel();
         if (!panel) return;
         const { from, to } = rangeValues();
         if (!from || !to) return;
+        const rangeKey = `${from}:${to}`;
+        if (!force && state.data && state.loadedRangeKey === rangeKey && Date.now() - state.loadedAt < 20000) {
+            renderActiveView();
+            return;
+        }
         const requestId = ++state.requestId;
+        state.reportAbortController?.abort();
+        state.reportAbortController = new AbortController();
+        const controller = state.reportAbortController;
         state.attendance = null;
         state.attendanceRange = '';
         state.backups = null;
         showLoading(activeViewId());
         try {
-            const data = await getJson(`/api/reports?${new URLSearchParams({ from, to })}`);
+            const data = await getJson(`/api/reports?${new URLSearchParams({ from, to })}`, { signal: controller.signal });
             if (requestId !== state.requestId) return;
             state.data = data;
+            state.loadedRangeKey = rangeKey;
+            state.loadedAt = Date.now();
             $('reportsPeriod').textContent = `${dateOnly(data.period?.from || from)} — ${dateOnly(data.period?.to || to)} · ${number(data.summary?.currentMembers)} عضو حالي`;
             renderActiveView();
             if (state.activeTab === 'attendance') loadAttendanceReport();
             if (state.activeTab === 'backups') loadBackupReport();
         } catch (error) {
+            if (error.name === 'AbortError') return;
             const view = $(activeViewId());
             if (view) view.innerHTML = `<div class="reports-error">${escapeHtml(error.message)}</div>`;
         }
@@ -369,14 +384,20 @@
         const rangeKey = `${from}:${to}`;
         if (state.attendance && state.attendanceRange === rangeKey) { renderAttendance(); return; }
         const requestId = ++state.attendanceRequestId;
+        state.attendanceAbortController?.abort();
+        state.attendanceAbortController = new AbortController();
+        const controller = state.attendanceAbortController;
         showLoading('reportsAttendanceView', 'جاري إعداد تقرير الحضور والغياب…');
         try {
-            const data = await getJson(`/api/attendance/report?${new URLSearchParams({ from, to })}`);
+            const data = await getJson(`/api/attendance/report?${new URLSearchParams({ from, to })}`, { signal: controller.signal });
             if (requestId !== state.attendanceRequestId) return;
             state.attendance = data;
             state.attendanceRange = rangeKey;
             renderAttendance();
-        } catch (error) { view.innerHTML = `<div class="reports-error">${escapeHtml(error.message)}</div>`; }
+        } catch (error) {
+            if (error.name === 'AbortError') return;
+            view.innerHTML = `<div class="reports-error">${escapeHtml(error.message)}</div>`;
+        }
     }
 
     function renderAttendance() {
@@ -492,7 +513,7 @@
         URL.revokeObjectURL(link.href);
     }
 
-    document.addEventListener('DOMContentLoaded', () => {
+    function initializeReports() {
         ensurePanel();
         window.addEventListener('topgym:tab-changed', (event) => {
             if (event.detail?.name === 'reports') {
@@ -500,5 +521,9 @@
                 loadReport();
             }
         });
-    });
+        if (document.querySelector('[data-page-tab="reports"]')?.classList.contains('active')) loadReport();
+    }
+
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initializeReports, { once: true });
+    else initializeReports();
 })();

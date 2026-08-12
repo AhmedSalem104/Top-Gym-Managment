@@ -97,7 +97,19 @@ app.use((request, response, next) => {
     next();
 });
 
-app.use(express.static(publicDirectory));
+app.use(express.static(publicDirectory, {
+    etag: true,
+    lastModified: true,
+    setHeaders(response, filePath) {
+        if (path.extname(filePath).toLowerCase() === '.html') {
+            response.setHeader('Cache-Control', 'no-cache, must-revalidate');
+            return;
+        }
+        if (/\.(?:css|js|mjs|svg|webp|png|jpg|jpeg|woff2?)$/i.test(filePath)) {
+            response.setHeader('Cache-Control', 'public, max-age=86400, stale-while-revalidate=604800');
+        }
+    }
+}));
 
 const sensitiveWindow = new Map();
 let sensitiveWindowLastCleanup = 0;

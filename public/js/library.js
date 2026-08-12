@@ -15,7 +15,9 @@
         filters: { muscles: { bodyPart: '' }, foods: { category: '' }, exercises: { category: '', difficulty: '', equipment: '', targetMuscleId: '' } },
         requestId: 0,
         abortController: null,
-        searchTimer: null
+        searchTimer: null,
+        lastLoadedKey: '',
+        lastLoadedAt: 0
     };
 
     const META = {
@@ -189,10 +191,15 @@
 
     async function loadCollection(force = false) {
         if (!state.opened) return;
+        const filters = state.filters[state.activeType];
+        const requestKey = JSON.stringify([state.activeType, state.page, state.search, filters]);
+        if (!force && state.lastLoadedKey === requestKey && Date.now() - state.lastLoadedAt < 30000) {
+            renderList();
+            return;
+        }
         if (state.abortController) state.abortController.abort();
         state.abortController = new AbortController();
         const requestId = ++state.requestId;
-        const filters = state.filters[state.activeType];
         const params = new URLSearchParams({ page: String(state.page), pageSize: String(state.pageSize), search: state.search });
         if (force) params.set('refresh', String(Date.now()));
         Object.entries(filters).forEach(([key, value]) => { if (value) params.set(key, value); });
@@ -203,6 +210,8 @@
             if (requestId !== state.requestId) return;
             state.items = response.items || [];
             state.pagination = response.pagination || null;
+            state.lastLoadedKey = requestKey;
+            state.lastLoadedAt = Date.now();
             renderList();
         } catch (error) {
             if (error.name === 'AbortError') return;
@@ -399,10 +408,14 @@
         await loadCollection();
     }
 
-    document.addEventListener('DOMContentLoaded', () => {
+    let eventsInitialized = false;
+
+    function initializeEvents() {
+        if (eventsInitialized) return;
+        eventsInitialized = true;
         document.querySelectorAll('[data-library-type]').forEach((button) => button.addEventListener('click', () => changeType(button.dataset.libraryType)));
         $('libraryAddButton')?.addEventListener('click', () => openForm());
-    $('libraryRefreshButton')?.addEventListener('click', () => { loadOptions(true); loadCollection(true); });
+        $('libraryRefreshButton')?.addEventListener('click', () => { loadOptions(true); loadCollection(true); });
         $('libraryList')?.addEventListener('click', handleListClick);
         $('libraryPagination')?.addEventListener('click', (event) => {
             const button = event.target.closest('[data-library-page]');
@@ -428,5 +441,8 @@
         $('libraryFormCancel')?.addEventListener('click', () => closeDialog($('libraryFormDialog')));
         $('libraryDetailsClose')?.addEventListener('click', () => closeDialog($('libraryDetailsDialog')));
         window.addEventListener('topgym:tab-changed', (event) => { if (event.detail?.name === 'library') initialize(); });
-    });
+    }
+
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initializeEvents, { once: true });
+    else initializeEvents();
 })();

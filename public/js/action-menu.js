@@ -80,8 +80,11 @@
             });
 
             new MutationObserver(compactActions).observe(list, { childList: true, subtree: true });
-            document.addEventListener('DOMContentLoaded', () => {
+            function initializeActionMenu() {
                 compactActions();
                 document.getElementById('sortFilter')?.addEventListener('change', loadMembersOnly);
-            });
+            }
+
+            if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initializeActionMenu, { once: true });
+            else initializeActionMenu();
         })();

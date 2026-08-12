@@ -1444,7 +1444,7 @@
         else if (action === 'new-measurement') openMeasurementDialog(memberId);
     }
 
-    document.addEventListener('DOMContentLoaded', () => {
+    function initializeCoaching() {
         $('externalTraineeForm')?.addEventListener('submit', submitExternalTrainee);
         $('externalTraineeClose')?.addEventListener('click', () => closeDialog($('externalTraineeDialog')));
         $('externalTraineeCancel')?.addEventListener('click', () => closeDialog($('externalTraineeDialog')));
@@ -1564,5 +1564,9 @@
             const memberId = event.detail?.memberId;
             if (memberId && Number(state.profile?.member?.id) === Number(memberId) && $('coachingProfileDialog')?.open) openProfile(memberId);
         });
-    });
+        if (document.querySelector('[data-page-tab="trainees"]')?.classList.contains('active')) loadTrainees();
+    }
+
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initializeCoaching, { once: true });
+    else initializeCoaching();
 })();

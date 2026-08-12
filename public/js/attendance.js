@@ -8,6 +8,8 @@
     let scannerRunning = false;
     let currentQrMember = null;
     let kioskMode = false;
+    let attendanceAbortController = null;
+    let initialized = false;
 
     function escapeHtml(value) {
         return String(value ?? '').replace(/[&<>'"]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[char]));
@@ -201,13 +203,17 @@
 
     async function loadAttendance() {
         const search = $('attendanceSearch')?.value.trim() || '';
+        attendanceAbortController?.abort();
+        attendanceAbortController = new AbortController();
+        const controller = attendanceAbortController;
         $('attendanceTableWrap').innerHTML = '<div class="loading">جاري تحديث سجل الحضور…</div>';
         try {
-            const data = await request(`/api/attendance?${new URLSearchParams({ search })}`);
+            const data = await request(`/api/attendance?${new URLSearchParams({ search })}`, { signal: controller.signal });
             renderRecords(data);
             decorateAttendanceActions(data.records || []);
             if (Number(data.autoClosed || 0) > 0) announceAttendanceUpdate();
         } catch (error) {
+            if (error.name === 'AbortError') return;
             $('attendanceTableWrap').innerHTML = `<div class="attendance-empty">${escapeHtml(error.message)}</div>`;
         }
     }
@@ -284,6 +290,7 @@
     }
 
     async function openScanner() {
+        try { await window.topGymLoadExternalAsset?.('html5-qrcode'); } catch (_) { /* keep the existing user-facing fallback */ }
         if (!window.Html5Qrcode) {
             await showMessage('أداة مسح QR Code غير متاحة حالياً. استخدم رقم الهاتف.', 'warning');
             return;
@@ -306,9 +313,11 @@
 
     async function openMemberQr(memberId) {
         try {
+            const qrLibrary = window.topGymLoadExternalAsset?.('qrcode');
             const response = await request(`/api/members/${encodeURIComponent(memberId)}`);
             const member = response.member || response;
             currentQrMember = member;
+            try { await qrLibrary; } catch (_) { /* use the same validation below */ }
             $('memberQrName').textContent = member.fullName || '—';
             $('memberQrPhone').textContent = member.phone || '—';
             const canvas = $('memberQrCanvas');
@@ -335,7 +344,13 @@
         link.click();
     }
 
-    document.addEventListener('DOMContentLoaded', () => {
+    function isAttendanceActive() {
+        return !$('attendanceSection')?.hidden;
+    }
+
+    function initializeAttendance() {
+        if (initialized) return;
+        initialized = true;
         $('attendanceCheckInButton')?.addEventListener('click', () => checkIn());
         $('attendanceCheckOutButton')?.addEventListener('click', checkOut);
         $('attendanceRefreshButton')?.addEventListener('click', loadAttendance);
@@ -353,7 +368,7 @@
         $('memberQrClose')?.addEventListener('click', closeMemberQr);
         $('memberQrDownload')?.addEventListener('click', downloadMemberQr);
         let timer;
-        $('attendanceSearch')?.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(loadAttendance, 250); });
+        $('attendanceSearch')?.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(loadAttendance, 350); });
         $('attendancePhone')?.addEventListener('keydown', (event) => { if (event.key === 'Enter') { event.preventDefault(); checkIn(); } });
         $('membersList')?.addEventListener('click', (event) => {
             const button = event.target.closest('button[data-action="qr"], button[data-member-qr]');
@@ -374,11 +389,14 @@
         });
         document.addEventListener('topgym:tab-changed', (event) => { if (event.detail?.name === 'attendance') loadAttendance(); });
         window.setInterval(() => {
-            if (document.visibilityState !== 'hidden') loadAttendance();
+            if (document.visibilityState !== 'hidden' && isAttendanceActive()) loadAttendance();
         }, 30000);
         document.addEventListener('keydown', (event) => { if (event.key === 'Escape' && kioskMode) toggleKiosk(); });
-        loadAttendance();
-    });
+        if (isAttendanceActive()) loadAttendance();
+    }
+
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initializeAttendance, { once: true });
+    else initializeAttendance();
 
     window.topGymAttendance = { checkIn, checkOut, loadAttendance, openMemberQr, quickAction: (action, payload) => action === 'checkin' ? checkIn(payload) : checkOut(payload) };
 })();

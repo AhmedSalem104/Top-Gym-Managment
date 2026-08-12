@@ -2,7 +2,7 @@
     if (window.__topGymDashboardAnalyticsLoaded) return;
     window.__topGymDashboardAnalyticsLoaded = true;
 
-    const state = { period: 'month', requestId: 0 };
+    const state = { period: 'month', requestId: 0, abortController: null };
     const PERIOD_LABELS = { week: 'هذا الأسبوع', month: 'هذا الشهر', year: 'هذه السنة' };
     const STATUS_LABELS = { active: 'نشطة', expiring_soon: 'قريبة الانتهاء', expired: 'منتهية', frozen: 'مجمدة' };
     const STATUS_COLORS = { active: '#10b981', expiring_soon: '#f59e0b', expired: '#ef4444', frozen: '#8b5cf6' };
@@ -286,14 +286,18 @@
         state.period = ['week', 'month', 'year'].includes(period) ? period : 'month';
         setActivePeriod(state.period);
         const requestId = ++state.requestId;
+        state.abortController?.abort();
+        state.abortController = new AbortController();
+        const controller = state.abortController;
         const loading = $('dashboardAnalyticsLoading');
         if (loading) loading.hidden = false;
         try {
-            const response = await fetch(`/api/dashboard-analytics?period=${encodeURIComponent(state.period)}`, { cache: 'no-store', headers: { Accept: 'application/json' } });
+            const response = await fetch(`/api/dashboard-analytics?period=${encodeURIComponent(state.period)}`, { cache: 'no-store', signal: controller.signal, headers: { Accept: 'application/json' } });
             const data = await response.json().catch(() => ({}));
             if (!response.ok) throw new Error(data.error || 'تعذر تحميل تحليلات لوحة التحكم.');
             if (requestId === state.requestId) renderAnalytics(data);
         } catch (error) {
+            if (error.name === 'AbortError') return;
             if (requestId === state.requestId) {
                 $('dashboardAnalyticsPeriod').textContent = error.message || 'تعذر تحميل التحليلات.';
                 $('dashboardAnalyticsKpis').innerHTML = `<div class="analytics-error">${escapeHtml(error.message || 'تعذر تحميل التحليلات.')}</div>`;
@@ -303,10 +307,24 @@
         }
     }
 
-    document.addEventListener('DOMContentLoaded', () => {
+    function isDashboardActive() {
+        const requestedTab = window.location.hash.slice(1) || 'dashboard';
+        return requestedTab === 'dashboard' && document.querySelector('[data-page-tab="dashboard"]')?.classList.contains('active');
+    }
+
+    function initialize() {
         ensurePanel();
-        loadAnalytics('month');
-    });
+        window.addEventListener('topgym:tab-changed', (event) => {
+            if (event.detail?.name === 'dashboard') {
+                ensurePanel();
+                loadAnalytics(state.period);
+            }
+        });
+        if (isDashboardActive()) loadAnalytics('month');
+    }
+
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initialize, { once: true });
+    else initialize();
 
     window.topGymRefreshDashboardAnalytics = () => loadAnalytics(state.period);
 })();

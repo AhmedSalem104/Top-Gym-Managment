@@ -2,11 +2,19 @@
     if (window.__topGymPageTabsLoaded) return;
     window.__topGymPageTabsLoaded = true;
 
+    const validTabs = new Set(['dashboard', 'members', 'expenses', 'reports', 'management', 'attendance', 'library', 'trainees']);
+    let activationToken = 0;
+    let activeTabName = null;
+
     function setHidden(element, hidden) {
         if (element) element.hidden = hidden;
     }
 
-    function activateTab(name) {
+    function normalizeTab(name) {
+        return validTabs.has(name) ? name : 'dashboard';
+    }
+
+    function renderTab(name) {
         const overview = document.querySelector('.overview-grid');
         const workspace = document.querySelector('.workspace');
         const membersSection = document.getElementById('membersSection');
@@ -42,20 +50,41 @@
             button.classList.toggle('active', active);
             button.setAttribute('aria-selected', String(active));
         });
+    }
+
+    async function activateTab(rawName) {
+        const name = normalizeTab(rawName);
+        const token = ++activationToken;
+        if (name === activeTabName) return;
+        document.documentElement.setAttribute('data-top-gym-loading-tab', name);
+        try {
+            await window.topGymEnsureTab?.(name);
+        } catch (error) {
+            // The section still opens so one unavailable optional feature cannot lock navigation.
+            console.warn(`[TOP GYM] Failed to load the ${name} feature.`, error);
+        }
+        if (token !== activationToken) return;
+        renderTab(name);
+        activeTabName = name;
         window.history.replaceState(null, '', `#${name}`);
+        document.documentElement.removeAttribute('data-top-gym-loading-tab');
         window.dispatchEvent(new CustomEvent('topgym:tab-changed', { detail: { name } }));
     }
 
     document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('[data-page-tab]').forEach((button) => {
-            button.addEventListener('click', () => activateTab(button.dataset.pageTab));
+            button.addEventListener('click', () => { void activateTab(button.dataset.pageTab); });
         });
         document.querySelectorAll('[data-open-dialog-button]').forEach((button) => {
             button.addEventListener('click', () => {
                 document.getElementById(button.dataset.openDialogButton)?.click();
             });
         });
-        activateTab('dashboard');
+        void activateTab(window.location.hash.slice(1) || 'dashboard');
+    });
+
+    window.addEventListener('hashchange', () => {
+        void activateTab(window.location.hash.slice(1) || 'dashboard');
     });
 
     window.topGymActivateTab = activateTab;
