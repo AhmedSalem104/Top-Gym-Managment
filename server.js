@@ -6,6 +6,7 @@ const { getPool, initDatabase } = require('./src/db');
 const {
     createBackup,
     createScheduledBackupArchive,
+    deleteBackupArchive,
     getBackupArchive,
     getBackupHistory,
     getScheduledBackupHistory,
@@ -270,6 +271,11 @@ app.get('/api/backup/archives/:id', asyncRoute(async (request, response) => {
         'X-Content-Type-Options': 'nosniff'
     });
     response.send(archive.content);
+}));
+
+app.delete('/api/backup/archives/:id', asyncRoute(async (request, response) => {
+    await deleteBackupArchive(request.params.id);
+    response.status(204).send();
 }));
 
 app.post('/api/backup/inspect', backupUploadBody, asyncRoute(async (request, response) => {

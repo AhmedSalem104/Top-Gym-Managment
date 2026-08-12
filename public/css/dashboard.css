@@ -3405,3 +3405,27 @@
     #managementSection .backup-history-table th,
     #managementSection .backup-history-table td { height: 44px; padding: 8px 9px; }
 }
+/* Backup archive actions: keep download and delete controls aligned on all screens. */
+.backup-history-actions {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    flex-wrap: wrap;
+}
+.backup-history-actions .btn {
+    min-width: 48px;
+}
+
+@media (max-width: 560px) {
+    .backup-history-actions {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        width: 100%;
+    }
+    .backup-history-actions .btn {
+        width: 100%;
+        min-width: 0;
+        padding-inline: 6px;
+    }
+}

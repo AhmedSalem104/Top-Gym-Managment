@@ -316,6 +316,28 @@ async function getBackupArchive(id) {
     return { ...mapBackupArchiveRow(row), content: row.content };
 }
 
+async function deleteBackupArchive(id) {
+    await ensureBackupArchivesTable();
+    const archiveId = Number.parseInt(id, 10);
+    if (!Number.isInteger(archiveId) || archiveId < 1) {
+        const error = new Error('رقم النسخة الاحتياطية غير صالح.');
+        error.statusCode = 400;
+        error.expose = true;
+        throw error;
+    }
+    const pool = await getPool();
+    const result = await pool.request()
+        .input('id', sql.Int, archiveId)
+        .query('DELETE FROM dbo.gym_backup_archives WHERE id = @id;');
+    if (!result.rowsAffected.some((count) => Number(count) > 0)) {
+        const error = new Error('النسخة الاحتياطية المطلوبة غير موجودة أو انتهت مدة الاحتفاظ بها.');
+        error.statusCode = 404;
+        error.expose = true;
+        throw error;
+    }
+    return { id: archiveId };
+}
+
 async function createScheduledBackupArchive({ format = 'bak' } = {}) {
     await ensureBackupArchivesTable();
     const backup = await createBackup({ format });
@@ -527,6 +549,7 @@ async function createBackup({ format = 'json.gz' } = {}) {
 module.exports = {
     createBackup,
     createScheduledBackupArchive,
+    deleteBackupArchive,
     ensureBackupOperationsTable,
     ensureBackupArchivesTable,
     getBackupArchive,

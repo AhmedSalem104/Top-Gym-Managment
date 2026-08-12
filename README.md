@@ -562,6 +562,7 @@ node scripts\smoke-test.js
 | `GET` | `/api/backup/daily` | نقطة الجدولة المحمية لإنشاء النسخة اليومية وحفظها لمدة يومين. |
 | `GET` | `/api/backup/history` | سجل العمليات والنسخ اليومية المحفوظة. |
 | `GET` | `/api/backup/archives/:id` | تحميل نسخة يومية محفوظة من سجل النسخ. |
+| `DELETE` | `/api/backup/archives/:id` | حذف نسخة يومية محفوظة من السيرفر بعد تأكيد المستخدم. |
 | `POST` | `/api/backup/inspect` | التحقق من ملف `.json.gz` قبل الاسترجاع. |
 | `POST` | `/api/backup/restore` | استرجاع نسخة متحقق منها مع تأكيد صريح. |
 | `GET` | `/api/reports?from=YYYY-MM-DD&to=YYYY-MM-DD` | تقرير مخصص بالمؤشرات والحركة وقائمة المشتركين. |

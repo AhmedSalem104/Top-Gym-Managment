@@ -269,3 +269,53 @@
     .external-trainees-table td:last-child { justify-content: center; }
     .external-trainees-table .trainee-actions { justify-content: center; }
 }
+
+/* Diet plans are managed directly from the trainees table. */
+.external-trainee-diet-list {
+    display: grid;
+    gap: 4px;
+    min-width: 170px;
+    margin-top: 6px;
+}
+.external-trainee-diet-plan {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    min-width: 0;
+    padding: 4px 5px;
+    border: 1px solid #dbe3ef;
+    border-radius: 7px;
+    background: #f8fafc;
+    text-align: right;
+}
+.external-trainee-diet-plan > span {
+    display: grid;
+    min-width: 0;
+    gap: 1px;
+}
+.external-trainee-diet-plan strong {
+    overflow: hidden;
+    color: #334155;
+    font-size: 8px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.external-trainee-diet-plan small,
+.external-trainee-no-diet {
+    color: #94a3b8;
+    font-size: 8px;
+}
+.external-trainee-diet-plan .btn {
+    flex: 0 0 auto;
+    min-height: 24px;
+    padding: 3px 6px;
+    border-radius: 6px;
+    font-size: 8px;
+}
+.external-trainee-no-diet { display: block; margin-top: 5px; }
+
+@media (max-width: 640px) {
+    .external-trainee-diet-list { min-width: 0; }
+    .external-trainee-diet-plan { width: 100%; }
+}

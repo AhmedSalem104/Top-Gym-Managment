@@ -133,7 +133,17 @@
                 return;
             }
             const backupButton = event.target.closest('[data-report-backup-id]');
-            if (backupButton) downloadBackupArchive(backupButton.dataset.reportBackupId, backupButton);
+            if (backupButton) {
+                downloadBackupArchive(backupButton.dataset.reportBackupId, backupButton);
+                return;
+            }
+            const dietDeleteButton = event.target.closest('[data-report-diet-id]');
+            if (dietDeleteButton) {
+                deleteDietPlanFromReport(dietDeleteButton.dataset.reportDietId, dietDeleteButton.dataset.reportDietMemberId);
+                return;
+            }
+            const backupDeleteButton = event.target.closest('[data-report-backup-delete-id]');
+            if (backupDeleteButton) deleteBackupArchiveFromReport(backupDeleteButton.dataset.reportBackupDeleteId, backupDeleteButton);
         });
         return panel;
     }
@@ -178,6 +188,39 @@
         const data = await response.json().catch(() => ({}));
         if (!response.ok) throw new Error(data.error || 'تعذر تحميل التقرير.');
         return data;
+    }
+
+    async function confirmDelete(title, text) {
+        if (window.Swal) {
+            const result = await window.Swal.fire({
+                position: 'center',
+                icon: 'warning',
+                title,
+                text,
+                showCancelButton: true,
+                confirmButtonText: 'نعم، احذف',
+                cancelButtonText: 'إلغاء',
+                buttonsStyling: false,
+                customClass: { popup: 'top-gym-alert delete-confirm-alert', confirmButton: 'btn btn-danger', cancelButton: 'btn btn-light' }
+            });
+            return result.isConfirmed;
+        }
+        return window.confirm(`${title}\n${text}`);
+    }
+
+    async function deleteDietPlanFromReport(id, memberId) {
+        if (!id) return;
+        if (!await confirmDelete('تأكيد حذف خطة التغذية', 'سيتم حذف الخطة ووجباتها وتسجيلاتها المرتبطة بها نهائيًا.')) return;
+        try {
+            const response = await fetch(`/api/dietplans/${encodeURIComponent(id)}`, { method: 'DELETE' });
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok) throw new Error(data.error || 'تعذر حذف خطة التغذية.');
+            if (window.Swal) window.Swal.fire({ toast: true, position: 'top-start', icon: 'success', title: 'تم حذف خطة التغذية ✅', showConfirmButton: false, timer: 2600, customClass: { popup: 'top-gym-alert top-gym-toast' } });
+            window.dispatchEvent(new CustomEvent('topgym:coaching-data-changed', { detail: { type: 'diet-deleted', memberId: Number(memberId || 0) } }));
+            await loadReport();
+        } catch (error) {
+            if (window.Swal) window.Swal.fire({ position: 'center', icon: 'error', title: 'تعذر حذف الخطة', text: error.message, customClass: { popup: 'top-gym-alert' } });
+        }
     }
 
     async function loadReport() {
@@ -300,9 +343,9 @@
         const stats = data.summary || {};
         const kpis = `<div class="reports-kpis reports-kpis-coaching">${reportKpi('برامج التدريب', number(stats.totalWorkoutPrograms), `${number(stats.activeWorkoutPrograms)} نشطة`, 'blue', 'program')}${reportKpi('خطط التغذية', number(stats.totalDietPlans), `${number(stats.activeDietPlans)} نشطة`, 'indigo', 'food')}${reportKpi('جلسات التمرين', number(stats.workoutSessionsInPeriod), `${number(stats.completedWorkoutSessions)} مكتملة`, 'green', 'attendance')}${reportKpi('سجل الوجبات', number(stats.mealLogsInPeriod), 'خلال الفترة', 'amber', 'food')}${reportKpi('القياسات', number(stats.measurementsInPeriod), 'مضافة خلال الفترة', 'teal', 'measure')}</div>`;
         const workoutRows = programs.map((item) => `<tr><td><strong>${escapeHtml(item.name)}</strong><small>${escapeHtml(item.fullName)} · ${escapeHtml(item.phone)}</small></td><td>${dateOnly(item.startDate)}<small>حتى ${dateOnly(item.endDate)}</small></td><td>${reportBadge(item.status, COACHING_STATUS_LABELS)}</td><td>${number(item.routines)} أيام</td><td>${number(item.exercises)} تمارين</td></tr>`).join('');
-        const dietRows = diets.map((item) => `<tr><td><strong>${escapeHtml(item.name)}</strong><small>${escapeHtml(item.fullName)} · ${escapeHtml(item.phone)}</small></td><td>${dateOnly(item.startDate)}<small>حتى ${dateOnly(item.endDate)}</small></td><td>${reportBadge(item.status, COACHING_STATUS_LABELS)}</td><td>${number(item.targetCalories)} سعر</td><td>${number(item.meals)} وجبات · ${number(item.foods)} أطعمة</td></tr>`).join('');
+        const dietRows = diets.map((item) => `<tr><td><strong>${escapeHtml(item.name)}</strong><small>${escapeHtml(item.fullName)} · ${escapeHtml(item.phone)}</small></td><td>${dateOnly(item.startDate)}<small>حتى ${dateOnly(item.endDate)}</small></td><td>${reportBadge(item.status, COACHING_STATUS_LABELS)}</td><td>${number(item.targetCalories)} سعر</td><td>${number(item.meals)} وجبات · ${number(item.foods)} أطعمة</td><td><button type="button" class="btn btn-danger btn-small" data-report-diet-id="${item.id}" data-report-diet-member-id="${item.memberId}">حذف</button></td></tr>`).join('');
         const workoutTable = `<section class="report-card finance-detail-card"><div class="report-card-head"><div><span>التدريب</span><h3>البرامج المنشأة خلال الفترة</h3></div><span class="reports-members-count">${number(programs.length)}</span></div><div class="reports-table-wrap">${workoutRows ? `<table class="reports-table"><thead><tr><th>البرنامج والمتدرب</th><th>الفترة</th><th>الحالة</th><th>الأيام</th><th>التمارين</th></tr></thead><tbody>${workoutRows}</tbody></table>` : '<div class="reports-empty-state">لا توجد برامج مطابقة.</div>'}</div></section>`;
-        const dietTable = `<section class="report-card finance-detail-card"><div class="report-card-head"><div><span>التغذية</span><h3>خطط التغذية المنشأة خلال الفترة</h3></div><span class="reports-members-count">${number(diets.length)}</span></div><div class="reports-table-wrap">${dietRows ? `<table class="reports-table"><thead><tr><th>الخطة والمتدرب</th><th>الفترة</th><th>الحالة</th><th>السعرات</th><th>المحتوى</th></tr></thead><tbody>${dietRows}</tbody></table>` : '<div class="reports-empty-state">لا توجد خطط مطابقة.</div>'}</div></section>`;
+        const dietTable = `<section class="report-card finance-detail-card"><div class="report-card-head"><div><span>التغذية</span><h3>خطط التغذية المنشأة خلال الفترة</h3></div><span class="reports-members-count">${number(diets.length)}</span></div><div class="reports-table-wrap">${dietRows ? `<table class="reports-table"><thead><tr><th>الخطة والمتدرب</th><th>الفترة</th><th>الحالة</th><th>السعرات</th><th>المحتوى</th><th>الإجراء</th></tr></thead><tbody>${dietRows}</tbody></table>` : '<div class="reports-empty-state">لا توجد خطط مطابقة.</div>'}</div></section>`;
         view.innerHTML = `${kpis}<div class="reports-detail-grid">${type === 'workout' ? workoutTable : type === 'diet' ? dietTable : workoutTable + dietTable}</div>`;
     }
 
@@ -367,7 +410,7 @@
         const format = selected('reportsBackupFormat');
         const archives = (data.archives || []).filter((item) => !format || item.format === format);
         const operations = (data.operations || []).slice(0, 3);
-        const archiveRows = archives.map((item) => `<tr><td><strong>${escapeHtml(item.fileName)}</strong><small>${dateTime(item.generatedAt || item.createdAt)}</small></td><td>${escapeHtml(String(item.format || '').toUpperCase())}</td><td>${number(item.rowCount)} صف</td><td><button type="button" class="btn btn-light btn-small" data-report-backup-id="${escapeHtml(item.id)}">تحميل</button></td></tr>`).join('');
+        const archiveRows = archives.map((item) => `<tr><td><strong>${escapeHtml(item.fileName)}</strong><small>${dateTime(item.generatedAt || item.createdAt)}</small></td><td>${escapeHtml(String(item.format || '').toUpperCase())}</td><td>${number(item.rowCount)} صف</td><td><div class="reports-debtor-actions"><button type="button" class="btn btn-light btn-small" data-report-backup-id="${escapeHtml(item.id)}">تحميل</button><button type="button" class="btn btn-danger btn-small" data-report-backup-delete-id="${escapeHtml(item.id)}">حذف</button></div></td></tr>`).join('');
         const operationRows = operations.map((item) => `<tr><td>${escapeHtml(label({ download: 'تنزيل نسخة', inspect: 'فحص نسخة', restore: 'استرجاع نسخة' }, item.operationType))}</td><td>${dateTime(item.createdAt)}</td><td>${number(item.rowCount)}</td><td><span class="backup-history-status ${item.status === 'success' ? 'success' : 'error'}">${item.status === 'success' ? 'ناجحة' : 'فاشلة'}</span></td></tr>`).join('');
         view.innerHTML = `<div class="report-summary-strip"><div class="report-summary-chip"><span>النسخ المحفوظة</span><strong>${number(archives.length)}</strong><small>مدة الاحتفاظ يومان</small></div><div class="report-summary-chip"><span>آخر العمليات</span><strong>${number(operations.length)}</strong><small>عرض آخر 3 فقط</small></div><div class="report-summary-chip"><span>موعد النسخة</span><strong>3:00 م</strong><small>بتوقيت القاهرة</small></div></div><div class="reports-detail-grid"><section class="report-card finance-detail-card"><div class="report-card-head"><div><span>الأرشيف التلقائي</span><h3>النسخ اليومية المحفوظة</h3></div></div><div class="reports-table-wrap">${archiveRows ? `<table class="reports-table"><thead><tr><th>الملف والتاريخ</th><th>الامتداد</th><th>البيانات</th><th>الإجراء</th></tr></thead><tbody>${archiveRows}</tbody></table>` : '<div class="reports-empty-state">لا توجد نسخ محفوظة.</div>'}</div></section><section class="report-card finance-detail-card"><div class="report-card-head"><div><span>المتابعة</span><h3>آخر 3 عمليات</h3></div></div><div class="reports-table-wrap">${operationRows ? `<table class="reports-table"><thead><tr><th>العملية</th><th>التاريخ</th><th>الصفوف</th><th>الحالة</th></tr></thead><tbody>${operationRows}</tbody></table>` : '<div class="reports-empty-state">لا يوجد سجل عمليات.</div>'}</div></section></div>`;
     }
@@ -387,6 +430,24 @@
         } catch (error) {
             if (window.Swal) window.Swal.fire({ icon: 'error', title: 'تعذر تحميل النسخة', text: error.message, position: 'center' });
         } finally { if (trigger) delete trigger.dataset.busy; }
+    }
+
+    async function deleteBackupArchiveFromReport(id, trigger) {
+        if (!id || trigger?.dataset.busy === 'true') return;
+        if (!await confirmDelete('تأكيد حذف النسخة الاحتياطية', 'سيتم حذف النسخة المحفوظة من السيرفر نهائيًا، ولن يؤثر ذلك على بيانات النظام الحالية.')) return;
+        if (trigger) trigger.dataset.busy = 'true';
+        try {
+            const response = await fetch(`/api/backup/archives/${encodeURIComponent(id)}`, { method: 'DELETE' });
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok) throw new Error(data.error || 'تعذر حذف النسخة الاحتياطية.');
+            if (window.Swal) window.Swal.fire({ toast: true, position: 'top-start', icon: 'success', title: 'تم حذف النسخة الاحتياطية ✅', showConfirmButton: false, timer: 2600, customClass: { popup: 'top-gym-alert top-gym-toast' } });
+            state.backups = null;
+            await loadBackupReport();
+        } catch (error) {
+            if (window.Swal) window.Swal.fire({ position: 'center', icon: 'error', title: 'تعذر حذف النسخة', text: error.message, customClass: { popup: 'top-gym-alert' } });
+        } finally {
+            if (trigger) delete trigger.dataset.busy;
+        }
     }
 
     function exportCurrentReport() {

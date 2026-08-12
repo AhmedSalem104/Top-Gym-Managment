@@ -191,7 +191,7 @@
         const archives = Array.isArray(data.archives) ? data.archives : [];
         const operations = Array.isArray(data.operations) ? data.operations : [];
         const visibleOperations = operations.slice(0, 3);
-        const archiveRows = archives.map((item) => `<tr><td><strong>${escapeHtml(item.fileName || '—')}</strong><small>${escapeHtml(formatDate(item.generatedAt || item.createdAt))}</small></td><td>${escapeHtml(String(item.format || 'bak').toUpperCase())}</td><td>${Number(item.rowCount || 0).toLocaleString('ar-EG')} صف</td><td>${formatBytes(item.contentBytes)}</td><td><button type="button" class="btn btn-light btn-small backup-history-download" data-backup-archive-id="${escapeHtml(item.id)}">تحميل</button></td></tr>`).join('');
+        const archiveRows = archives.map((item) => `<tr><td><strong>${escapeHtml(item.fileName || '—')}</strong><small>${escapeHtml(formatDate(item.generatedAt || item.createdAt))}</small></td><td>${escapeHtml(String(item.format || 'bak').toUpperCase())}</td><td>${Number(item.rowCount || 0).toLocaleString('ar-EG')} صف</td><td>${formatBytes(item.contentBytes)}</td><td><div class="backup-history-actions"><button type="button" class="btn btn-light btn-small backup-history-download" data-backup-archive-id="${escapeHtml(item.id)}">تحميل</button><button type="button" class="btn btn-danger btn-small backup-history-delete" data-backup-archive-delete-id="${escapeHtml(item.id)}">حذف</button></div></td></tr>`).join('');
         const operationRows = visibleOperations.map((item) => `<tr><td><strong>${escapeHtml(HISTORY_LABELS[item.operationType] || item.operationType)}</strong><small>${escapeHtml(item.fileName || '—')}</small></td><td>${escapeHtml(formatDate(item.createdAt))}</td><td>${Number(item.rowCount || 0).toLocaleString('ar-EG')}</td><td><span class="backup-history-status ${item.status === 'success' ? 'success' : 'error'}">${item.status === 'success' ? 'ناجحة' : 'فاشلة'}</span></td></tr>`).join('');
         return `<div class="backup-history-block"><div class="backup-history-block-head"><strong>النسخ اليومية المحفوظة</strong><span>يوميًا 3:00 م · احتفاظ يومين</span></div><div class="backup-history-wrap"><table class="backup-history-table backup-archive-table"><thead><tr><th>الملف</th><th>الامتداد</th><th>البيانات</th><th>الحجم</th><th>الإجراء</th></tr></thead><tbody>${archiveRows || '<tr><td colspan="5">لا توجد نسخ تلقائية محفوظة حتى الآن.</td></tr>'}</tbody></table></div></div><div class="backup-history-block"><div class="backup-history-block-head"><strong>آخر 3 عمليات</strong><span>${visibleOperations.length.toLocaleString('ar-EG')} معروضة</span></div><div class="backup-history-wrap"><table class="backup-history-table backup-operations-table"><thead><tr><th>العملية</th><th>التاريخ</th><th>الصفوف</th><th>الحالة</th></tr></thead><tbody>${operationRows || '<tr><td colspan="4">لا يوجد سجل عمليات حتى الآن.</td></tr>'}</tbody></table></div></div>`;
     }
@@ -223,6 +223,36 @@
         }
     }
 
+    async function deleteArchive(id, trigger) {
+        if (!id || !trigger || trigger.dataset.backupBusy === 'true') return;
+        if (window.Swal) {
+            const result = await window.Swal.fire({
+                position: 'center',
+                icon: 'warning',
+                title: 'تأكيد حذف النسخة الاحتياطية',
+                text: 'سيتم حذف النسخة المحفوظة من السيرفر نهائيًا، ولن يؤثر ذلك على بيانات النظام الحالية.',
+                showCancelButton: true,
+                confirmButtonText: 'نعم، احذف',
+                cancelButtonText: 'إلغاء',
+                buttonsStyling: false,
+                customClass: { popup: 'top-gym-alert delete-confirm-alert', confirmButton: 'btn btn-danger', cancelButton: 'btn btn-light' }
+            });
+            if (!result.isConfirmed) return;
+        } else if (!window.confirm('هل تريد حذف النسخة الاحتياطية المحفوظة؟')) return;
+        trigger.dataset.backupBusy = 'true';
+        try {
+            const response = await fetch(`/api/backup/archives/${encodeURIComponent(id)}`, { method: 'DELETE' });
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok) throw new Error(data.error || 'تعذر حذف النسخة الاحتياطية.');
+            showToast('success', 'تم حذف النسخة الاحتياطية ✅');
+            await showHistory();
+        } catch (error) {
+            showToast('error', 'تعذر حذف النسخة الاحتياطية', error.message || 'حاول مرة أخرى.');
+        } finally {
+            delete trigger.dataset.backupBusy;
+        }
+    }
+
     async function showHistory() {
         try {
             const response = await fetch('/api/backup/history?limit=3&archiveLimit=10', { cache: 'no-store' });
@@ -249,7 +279,12 @@
     historyRefreshButton?.addEventListener('click', showHistory);
     historyList?.addEventListener('click', (event) => {
         const button = event.target.closest('[data-backup-archive-id]');
-        if (button) downloadArchive(button.dataset.backupArchiveId, button);
+        if (button) {
+            downloadArchive(button.dataset.backupArchiveId, button);
+            return;
+        }
+        const deleteButton = event.target.closest('[data-backup-archive-delete-id]');
+        if (deleteButton) deleteArchive(deleteButton.dataset.backupArchiveDeleteId, deleteButton);
     });
     $('backupRestoreClose')?.addEventListener('click', () => closeDialog(restoreDialog));
     $('backupRestoreCancel')?.addEventListener('click', () => closeDialog(restoreDialog));

@@ -499,6 +499,11 @@ async function getExternalTrainees({ search = '', page = 1, pageSize = 12 } = {}
                     m.created_at, m.updated_at,
                     ISNULL(program_stats.workout_count, 0) AS workout_count,
                     ISNULL(diet_stats.diet_count, 0) AS diet_count,
+                    JSON_QUERY((SELECT p.id, p.name, p.status, p.target_calories
+                        FROM dbo.diet_plans AS p
+                        WHERE p.member_id = m.id AND p.status <> 'archived'
+                        ORDER BY p.updated_at DESC, p.id DESC
+                        FOR JSON PATH)) AS diet_plans_json,
                     ISNULL(measurement_stats.measurement_count, 0) AS measurement_count,
                     (SELECT MAX(activity_date) FROM (VALUES
                         (program_stats.last_activity),
@@ -535,6 +540,17 @@ async function getExternalTrainees({ search = '', page = 1, pageSize = 12 } = {}
 }
 
 function mapExternalTrainee(row) {
+    let dietPlans = [];
+    try {
+        dietPlans = JSON.parse(row.diet_plans_json || '[]').map((plan) => ({
+            id: Number(plan.id),
+            name: plan.name,
+            status: plan.status,
+            targetCalories: plan.target_calories == null ? null : Number(plan.target_calories)
+        }));
+    } catch (_) {
+        dietPlans = [];
+    }
     return {
         id: Number(row.id),
         fullName: row.full_name,
@@ -544,6 +560,7 @@ function mapExternalTrainee(row) {
         notes: row.notes,
         workoutCount: Number(row.workout_count || 0),
         dietCount: Number(row.diet_count || 0),
+        dietPlans,
         measurementCount: Number(row.measurement_count || 0),
         lastActivity: row.last_activity || null,
         createdAt: row.created_at,

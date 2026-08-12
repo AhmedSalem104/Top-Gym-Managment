@@ -1117,3 +1117,325 @@
         font-size: 12px;
     }
 }
+
+/* Mobile layout pass: keep each report inside the viewport and scroll data locally. */
+.reports-section,
+.reports-section .reports-view,
+.reports-section .report-card,
+.reports-section .reports-kpis,
+.reports-section .reports-grid,
+.reports-section .reports-detail-grid {
+    min-width: 0;
+    max-width: 100%;
+}
+
+.reports-section .reports-table-wrap,
+.reports-section .reports-timeline-wrap {
+    width: 100%;
+    max-width: 100%;
+    overscroll-behavior-inline: contain;
+    -webkit-overflow-scrolling: touch;
+}
+
+.reports-section .reports-table-wrap {
+    scrollbar-width: thin;
+    scrollbar-color: #94a3b8 #f1f5f9;
+}
+
+.reports-section .reports-table-wrap::-webkit-scrollbar {
+    height: 7px;
+}
+
+.reports-section .reports-table-wrap::-webkit-scrollbar-track {
+    border-radius: 999px;
+    background: #f1f5f9;
+}
+
+.reports-section .reports-table-wrap::-webkit-scrollbar-thumb {
+    border: 2px solid #f1f5f9;
+    border-radius: 999px;
+    background: #94a3b8;
+}
+
+.reports-section .reports-table {
+    table-layout: auto;
+}
+
+@media (max-width: 760px) {
+    .reports-section {
+        width: 100%;
+        margin-bottom: 12px !important;
+        border-radius: 16px !important;
+    }
+
+    .reports-section .reports-header {
+        width: 100%;
+        align-items: stretch;
+        flex-direction: column;
+        gap: 12px;
+        padding: 14px 13px;
+    }
+
+    .reports-section .reports-heading {
+        width: 100%;
+        align-items: flex-start;
+    }
+
+    .reports-section .reports-heading > div {
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
+    .reports-section .reports-heading p {
+        display: -webkit-box;
+        overflow: hidden;
+        white-space: normal;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+    }
+
+    .reports-section .reports-actions {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        width: 100%;
+        gap: 7px;
+    }
+
+    .reports-section .reports-actions .btn {
+        width: 100%;
+        min-width: 0;
+        padding-inline: 8px;
+        white-space: nowrap;
+    }
+
+    .reports-section .reports-tabs {
+        width: 100%;
+        max-width: 100%;
+        min-height: 50px;
+        padding: 8px 10px 0;
+        gap: 5px;
+        overflow-x: auto;
+        overscroll-behavior-inline: contain;
+        scroll-snap-type: inline proximity;
+    }
+
+    .reports-section .reports-tab {
+        min-height: 38px;
+        scroll-snap-align: start;
+    }
+
+    .reports-section .reports-filters {
+        display: flex;
+        width: 100%;
+        align-items: stretch;
+        flex-direction: column;
+        gap: 9px;
+        padding: 12px;
+    }
+
+    .reports-section .reports-filter-heading {
+        width: 100%;
+        min-width: 0;
+    }
+
+    .reports-section .reports-date-fields {
+        display: grid;
+        width: 100%;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+    }
+
+    .reports-section .reports-extra-filters {
+        display: grid;
+        width: 100%;
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+
+    .reports-section .reports-extra-filters > *,
+    .reports-section .reports-extra-filters > label,
+    .reports-section .reports-extra-filters > .reports-filter-note,
+    .reports-section .reports-extra-filters > .reports-check-field {
+        width: 100%;
+        min-width: 0;
+        grid-column: auto;
+    }
+
+    .reports-section .reports-extra-filters > label:not(.reports-check-field) {
+        flex: none;
+    }
+
+    .reports-section .reports-submit-button {
+        width: 100%;
+        min-height: 40px !important;
+    }
+
+    .reports-section .reports-kpis,
+    .reports-section .reports-kpis-compact,
+    .reports-section .reports-kpis-coaching,
+    .reports-section .reports-kpis-attendance {
+        display: grid;
+        width: 100%;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 7px;
+        padding: 11px 12px;
+    }
+
+    .reports-section .report-kpi {
+        min-width: 0;
+        min-height: 90px;
+        padding: 10px;
+    }
+
+    .reports-section .report-kpi strong {
+        min-width: 0;
+        overflow-wrap: anywhere;
+        font-size: clamp(14px, 4.4vw, 17px);
+    }
+
+    .reports-section .report-kpi small {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .reports-section .reports-grid,
+    .reports-section .reports-detail-grid {
+        display: grid;
+        width: 100%;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 10px;
+        padding: 0 12px 12px;
+    }
+
+    .reports-section .report-card {
+        width: 100%;
+        padding: 10px;
+        border-radius: 12px;
+    }
+
+    .reports-section .report-card-head {
+        align-items: flex-start;
+        flex-wrap: wrap;
+        gap: 7px;
+        margin-bottom: 9px;
+    }
+
+    .reports-section .report-card-head > div {
+        flex: 1 1 150px;
+    }
+
+    .reports-section .report-card-head h3 {
+        max-width: 100%;
+        font-size: 12px;
+        white-space: normal;
+    }
+
+    .reports-section .reports-members-card {
+        width: auto;
+        margin: 0 12px 12px;
+    }
+
+    .reports-section .report-summary-strip {
+        width: 100%;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 7px;
+        padding: 11px 12px 0;
+    }
+
+    .reports-section .report-summary-chip {
+        min-width: 0;
+        min-height: 70px;
+        padding: 9px 10px;
+    }
+
+    .reports-section .report-summary-chip strong {
+        overflow-wrap: anywhere;
+        font-size: 16px;
+    }
+
+    .reports-section .report-summary-chip small {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .reports-section .reports-table-wrap {
+        margin: 0;
+        border-radius: 9px;
+    }
+
+    .reports-section .reports-table {
+        min-width: 560px;
+    }
+
+    .reports-section .reports-table th,
+    .reports-section .reports-table td {
+        padding: 9px 8px;
+    }
+
+    .reports-section .reports-table .btn {
+        min-height: 29px;
+        padding-inline: 8px;
+    }
+}
+
+@media (max-width: 430px) {
+    .reports-section .reports-actions .btn {
+        font-size: 9px;
+    }
+
+    .reports-section .reports-tab {
+        padding-inline: 8px;
+    }
+
+    .reports-section .reports-date-fields {
+        grid-template-columns: 1fr;
+    }
+
+    .reports-section .reports-kpis,
+    .reports-section .reports-kpis-compact,
+    .reports-section .reports-kpis-coaching,
+    .reports-section .reports-kpis-attendance {
+        gap: 6px;
+    }
+
+    .reports-section .report-kpi {
+        min-height: 86px;
+        padding: 9px;
+    }
+
+    .reports-section .report-kpi-label {
+        max-width: calc(100% - 29px);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .reports-section .reports-table {
+        min-width: 520px;
+    }
+
+    .reports-section .reports-empty-state,
+    .reports-section .reports-loading,
+    .reports-section .reports-error {
+        margin-inline: 12px;
+    }
+}
+
+@media (max-width: 360px) {
+    .reports-section .reports-actions {
+        grid-template-columns: 1fr;
+    }
+
+    .reports-section .reports-kpis,
+    .reports-section .reports-kpis-compact,
+    .reports-section .reports-kpis-coaching,
+    .reports-section .reports-kpis-attendance {
+        grid-template-columns: 1fr;
+    }
+
+    .reports-section .report-kpi {
+        min-height: 78px;
+    }
+}

@@ -78,6 +78,37 @@
         if (element) element.innerHTML = `<div class="loading">${message}</div>`;
     }
 
+    async function confirmAction(title, text, confirmText = 'نعم، احذف') {
+        if (window.Swal) {
+            const result = await window.Swal.fire({
+                position: 'center',
+                icon: 'warning',
+                title,
+                text,
+                showCancelButton: true,
+                confirmButtonText: confirmText,
+                cancelButtonText: 'إلغاء',
+                buttonsStyling: false,
+                customClass: { popup: 'top-gym-alert delete-confirm-alert', confirmButton: 'btn btn-danger', cancelButton: 'btn btn-light' }
+            });
+            return result.isConfirmed;
+        }
+        return window.confirm(`${title}\n${text}`);
+    }
+
+    async function deleteDietPlan(planId, memberId = state.profile?.member?.id) {
+        if (!planId) return;
+        const confirmed = await confirmAction('تأكيد حذف خطة التغذية', 'سيتم حذف الخطة ووجباتها وتسجيلاتها المرتبطة بها نهائيًا.');
+        if (!confirmed) return;
+        try {
+            await requestJson(`/api/dietplans/${encodeURIComponent(planId)}`, { method: 'DELETE' });
+            notify('تم حذف خطة التغذية بنجاح.');
+            window.dispatchEvent(new CustomEvent('topgym:coaching-data-changed', { detail: { type: 'diet-deleted', memberId: Number(memberId || 0) } }));
+        } catch (error) {
+            notify(error.message, 'error');
+        }
+    }
+
     function itemName(item) { return item?.nameAr || item?.name || item?.nameEn || 'عنصر بدون اسم'; }
 
     async function loadCatalog() {
@@ -111,14 +142,17 @@
             activateCoachingSummary();
             return;
         }
-        const rows = state.trainees.map((trainee) => `<tr data-trainee-id="${trainee.id}">
+        const rows = state.trainees.map((trainee) => {
+            const dietPlans = (trainee.dietPlans || []).map((plan) => `<span class="external-trainee-diet-plan"><span><strong>${escapeHtml(plan.name)}</strong><small>${number(plan.targetCalories, 0)} سعر</small></span><button class="btn btn-danger btn-small" type="button" title="حذف خطة التغذية" aria-label="حذف خطة التغذية ${escapeHtml(plan.name)}" data-coaching-action="delete-diet" data-id="${plan.id}" data-member-id="${trainee.id}">حذف</button></span>`).join('');
+            return `<tr data-trainee-id="${trainee.id}">
             <td><div class="external-trainee-primary"><div class="trainee-avatar">${escapeHtml((trainee.fullName || 'م').trim().slice(0, 1))}</div><div><strong title="${escapeHtml(trainee.fullName)}">${escapeHtml(trainee.fullName)}</strong><a href="tel:${escapeHtml(trainee.phone)}">${escapeHtml(trainee.phone)}</a>${trainee.email ? `<small>${escapeHtml(trainee.email)}</small>` : ''}</div></div></td>
             <td><span class="trainee-badge">خارجي</span></td>
-            <td><div class="external-trainee-counts"><span class="external-trainee-count"><b>${number(trainee.workoutCount, 0)}</b><span>تدريب</span></span><span class="external-trainee-count"><b>${number(trainee.dietCount, 0)}</b><span>تغذية</span></span></div></td>
+            <td><div class="external-trainee-counts"><span class="external-trainee-count"><b>${number(trainee.workoutCount, 0)}</b><span>تدريب</span></span><span class="external-trainee-count"><b>${number(trainee.dietCount, 0)}</b><span>تغذية</span></span></div><div class="external-trainee-diet-list">${dietPlans || '<span class="external-trainee-no-diet">لا توجد خطط تغذية</span>'}</div></td>
             <td><strong>${number(trainee.measurementCount, 0)}</strong><small>قياس محفوظ</small></td>
             <td><span class="external-trainee-last-activity">${trainee.lastActivity ? escapeHtml(new Date(trainee.lastActivity).toLocaleDateString('ar-EG')) : '—'}</span></td>
             <td><div class="trainee-actions"><button class="btn btn-light btn-small" type="button" title="فتح الملف" aria-label="فتح الملف" data-coaching-action="profile" data-id="${trainee.id}">فتح الملف</button><button class="btn btn-primary btn-small" type="button" title="إضافة تدريب" aria-label="إضافة تدريب" data-coaching-action="workout" data-id="${trainee.id}">+ تدريب</button><button class="btn btn-light btn-small" type="button" title="إضافة تغذية" aria-label="إضافة تغذية" data-coaching-action="diet" data-id="${trainee.id}">+ تغذية</button></div></td>
-        </tr>`).join('');
+        </tr>`;
+        }).join('');
         container.innerHTML = `<div class="external-trainees-table-wrap"><table class="external-trainees-table"><thead><tr><th>المتدرب</th><th>النوع</th><th>الأنظمة</th><th>القياسات</th><th>آخر نشاط</th><th>الإجراءات</th></tr></thead><tbody>${rows}</tbody></table></div>`;
         activateCoachingSummary();
     }
@@ -235,7 +269,7 @@
         const sessions = overview.workoutSessions || [];
         const mealLogs = overview.mealLogs || [];
         const workoutCards = workouts.map((program) => `<article class="profile-system-card"><div><span class="system-type workout">برنامج تدريب</span><strong>${escapeHtml(program.name)}</strong><small>${escapeHtml(program.goal || 'هدف غير محدد')} · ${number(program.exerciseCount, 0)} تمرين · ${number(program.completedSessions, 0)} جلسة مكتملة</small><div class="profile-inline-progress"><i style="width:${progressPercent(program.progressPercent)}%"></i></div></div><div><span class="system-status ${program.status}">${progressPercent(program.progressPercent)}٪ · ${STATUS_LABELS[program.status] || program.status}</span><button class="btn btn-light btn-small" data-profile-action="edit-workout" data-id="${program.id}">تعديل</button></div></article>`).join('');
-        const dietCards = diets.map((plan) => `<article class="profile-system-card"><div><span class="system-type diet">خطة تغذية</span><strong>${escapeHtml(plan.name)}</strong><small>${number(plan.targetCalories, 0)} سعر · ${number(plan.mealsPerDay || plan.mealCount, 0)} وجبات · ${number(plan.loggedMeals, 0)} تسجيل</small><div class="profile-inline-progress diet"><i style="width:${progressPercent(plan.progressPercent)}%"></i></div></div><div><span class="system-status ${plan.status}">${progressPercent(plan.progressPercent)}٪ · ${STATUS_LABELS[plan.status] || plan.status}</span><button class="btn btn-light btn-small" data-profile-action="edit-diet" data-id="${plan.id}">تعديل</button></div></article>`).join('');
+        const dietCards = diets.map((plan) => `<article class="profile-system-card"><div><span class="system-type diet">خطة تغذية</span><strong>${escapeHtml(plan.name)}</strong><small>${number(plan.targetCalories, 0)} سعر · ${number(plan.mealsPerDay || plan.mealCount, 0)} وجبات · ${number(plan.loggedMeals, 0)} تسجيل</small><div class="profile-inline-progress diet"><i style="width:${progressPercent(plan.progressPercent)}%"></i></div></div><div><span class="system-status ${plan.status}">${progressPercent(plan.progressPercent)}٪ · ${STATUS_LABELS[plan.status] || plan.status}</span><button class="btn btn-light btn-small" data-profile-action="edit-diet" data-id="${plan.id}">تعديل</button><button class="btn btn-danger btn-small" data-profile-action="delete-diet" data-id="${plan.id}">حذف</button></div></article>`).join('');
         const measurements = (overview.measurements || []).slice(0, 8).map((item) => `<tr><td>${escapeHtml(item.measuredAt)}</td><td>${item.weightKg == null ? '—' : `${number(item.weightKg, 1)} كجم`}</td><td>${item.bodyFatPercent == null ? '—' : `${number(item.bodyFatPercent, 1)}%`}</td><td><button class="btn btn-light btn-small" data-measurement-action="edit" data-id="${item.id}">تعديل</button><button class="btn btn-danger btn-small" data-measurement-action="delete" data-id="${item.id}">حذف</button></td></tr>`).join('');
         const sessionRows = sessions.slice(0, 6).map((session) => `<tr><td>${escapeHtml(session.programName || 'جلسة تدريب')}</td><td>${escapeHtml(session.routineName || '—')}</td><td>${escapeHtml(session.status === 'completed' ? 'مكتملة' : session.status === 'started' ? 'مفتوحة' : 'ملغاة')}</td><td>${number(session.setCount, 0)}</td></tr>`).join('');
         const mealRows = mealLogs.slice(0, 6).map((log) => `<tr><td>${escapeHtml(log.foodName || 'طعام')}</td><td>${escapeHtml(log.mealName || '—')}</td><td>${number(log.calories, 0)}</td><td>${escapeHtml(new Date(log.consumedAt).toLocaleDateString('ar-EG'))}</td></tr>`).join('');
@@ -1143,7 +1177,7 @@
         requestJson(`/api/clients/${memberId}/training-overview`).then((overview) => {
             const workout = overview.workoutPrograms || [];
             const diets = overview.dietPlans || [];
-            panel.innerHTML = `<div class="member-training-head"><div><span>امتداد ملف العميل</span><h4>التدريب والتغذية</h4><small>يمكن إنشاء الأنظمة للمشترك بدون تغيير نظام العضوية الحالي.</small></div><div><button class="btn btn-light btn-small" data-member-coaching-action="profile" data-id="${memberId}">فتح المتابعة</button><button class="btn btn-primary btn-small" data-member-coaching-action="new-workout" data-id="${memberId}">+ تدريب</button><button class="btn btn-light btn-small" data-member-coaching-action="new-diet" data-id="${memberId}">+ تغذية</button><button class="btn btn-light btn-small" data-member-coaching-action="start-session" data-id="${memberId}">بدء جلسة</button><button class="btn btn-light btn-small" data-member-coaching-action="log-meal" data-id="${memberId}">تسجيل وجبة</button><button class="btn btn-light btn-small" data-member-coaching-action="new-measurement" data-id="${memberId}">+ قياس</button></div></div><div class="member-training-systems">${[...workout.map((item) => `<div><span class="system-type workout">تدريب</span><strong>${escapeHtml(item.name)}</strong><small>${number(item.exerciseCount, 0)} تمرين · ${STATUS_LABELS[item.status] || item.status}</small><button class="btn btn-light btn-small" data-member-coaching-action="edit-workout" data-id="${item.id}" data-member-id="${memberId}">تعديل</button></div>`), ...diets.map((item) => `<div><span class="system-type diet">تغذية</span><strong>${escapeHtml(item.name)}</strong><small>${number(item.itemCount, 0)} طعام · ${STATUS_LABELS[item.status] || item.status}</small><button class="btn btn-light btn-small" data-member-coaching-action="edit-diet" data-id="${item.id}" data-member-id="${memberId}">تعديل</button></div>`)].join('') || '<div class="profile-empty">لا توجد أنظمة مرتبطة بهذا العميل حتى الآن.</div>'}</div><div class="member-progress-line"><span>القياسات: <b>${number(overview.measurements?.length, 0)}</b></span><span>الجلسات المكتملة: <b>${number(overview.progress.completedSessions, 0)}</b></span><span>تسجيلات الوجبات: <b>${number(overview.progress.mealLogCount, 0)}</b></span></div>`;
+            panel.innerHTML = `<div class="member-training-head"><div><span>امتداد ملف العميل</span><h4>التدريب والتغذية</h4><small>يمكن إنشاء الأنظمة للمشترك بدون تغيير نظام العضوية الحالي.</small></div><div><button class="btn btn-light btn-small" data-member-coaching-action="profile" data-id="${memberId}">فتح المتابعة</button><button class="btn btn-primary btn-small" data-member-coaching-action="new-workout" data-id="${memberId}">+ تدريب</button><button class="btn btn-light btn-small" data-member-coaching-action="new-diet" data-id="${memberId}">+ تغذية</button><button class="btn btn-light btn-small" data-member-coaching-action="start-session" data-id="${memberId}">بدء جلسة</button><button class="btn btn-light btn-small" data-member-coaching-action="log-meal" data-id="${memberId}">تسجيل وجبة</button><button class="btn btn-light btn-small" data-member-coaching-action="new-measurement" data-id="${memberId}">+ قياس</button></div></div><div class="member-training-systems">${[...workout.map((item) => `<div><span class="system-type workout">تدريب</span><strong>${escapeHtml(item.name)}</strong><small>${number(item.exerciseCount, 0)} تمرين · ${STATUS_LABELS[item.status] || item.status}</small><button class="btn btn-light btn-small" data-member-coaching-action="edit-workout" data-id="${item.id}" data-member-id="${memberId}">تعديل</button></div>`), ...diets.map((item) => `<div><span class="system-type diet">تغذية</span><strong>${escapeHtml(item.name)}</strong><small>${number(item.itemCount, 0)} طعام · ${STATUS_LABELS[item.status] || item.status}</small><button class="btn btn-light btn-small" data-member-coaching-action="edit-diet" data-id="${item.id}" data-member-id="${memberId}">تعديل</button><button class="btn btn-danger btn-small" data-member-coaching-action="delete-diet" data-id="${item.id}" data-member-id="${memberId}">حذف</button></div>`)].join('') || '<div class="profile-empty">لا توجد أنظمة مرتبطة بهذا العميل حتى الآن.</div>'}</div><div class="member-progress-line"><span>القياسات: <b>${number(overview.measurements?.length, 0)}</b></span><span>الجلسات المكتملة: <b>${number(overview.progress.completedSessions, 0)}</b></span><span>تسجيلات الوجبات: <b>${number(overview.progress.mealLogCount, 0)}</b></span></div>`;
         }).catch((error) => { panel.innerHTML = `<div class="coaching-empty error">${escapeHtml(error.message)}</div>`; });
     }
 
@@ -1291,6 +1325,7 @@
         if (action === 'new-diet') return openBuilder('diet', memberId);
         if (action === 'edit-workout') return openBuilder('workout', memberId, id);
         if (action === 'edit-diet') return openBuilder('diet', memberId, id);
+        if (action === 'delete-diet') return deleteDietPlan(id, memberId);
         if (action === 'new-measurement') return openMeasurementDialog(memberId);
         if (action === 'start-session') return openSessionDialog(memberId);
         if (action === 'log-meal') return openMealDialog(memberId);
@@ -1316,6 +1351,7 @@
         else if (action === 'new-diet') openBuilder('diet', memberId);
         else if (action === 'edit-workout') openBuilder('workout', memberId, button.dataset.id);
         else if (action === 'edit-diet') openBuilder('diet', memberId, button.dataset.id);
+        else if (action === 'delete-diet') deleteDietPlan(button.dataset.id, memberId);
         else if (action === 'start-session') openSessionDialog(memberId);
         else if (action === 'log-meal') openMealDialog(memberId);
         else if (action === 'new-measurement') openMeasurementDialog(memberId);
@@ -1328,7 +1364,7 @@
         $('addExternalTraineeButton')?.addEventListener('click', () => { renderExternalForm(); openDialog($('externalTraineeDialog')); });
         $('externalTraineeRefreshButton')?.addEventListener('click', () => { state.page = 1; state.loaded = false; loadTrainees(true); });
         $('externalTraineeSearch')?.addEventListener('input', () => { window.clearTimeout(state.searchTimer); state.searchTimer = window.setTimeout(() => { state.page = 1; state.loaded = false; loadTrainees(true); }, 300); });
-        $('externalTraineesList')?.addEventListener('click', (event) => { const button = event.target.closest('[data-coaching-action]'); if (!button) return; const id = button.dataset.id; if (button.dataset.coachingAction === 'profile') openProfile(id); else if (button.dataset.coachingAction === 'workout') openBuilder('workout', id); else if (button.dataset.coachingAction === 'diet') openBuilder('diet', id); });
+        $('externalTraineesList')?.addEventListener('click', (event) => { const button = event.target.closest('[data-coaching-action]'); if (!button) return; const id = button.dataset.id; if (button.dataset.coachingAction === 'profile') openProfile(id); else if (button.dataset.coachingAction === 'workout') openBuilder('workout', id); else if (button.dataset.coachingAction === 'diet') openBuilder('diet', id); else if (button.dataset.coachingAction === 'delete-diet') deleteDietPlan(id, button.dataset.memberId); });
         $('externalTraineesPagination')?.addEventListener('click', (event) => { const button = event.target.closest('[data-coaching-page]'); if (!button || button.disabled) return; state.page += button.dataset.coachingPage === 'next' ? 1 : -1; state.loaded = false; loadTrainees(true); });
         $('coachingProfileClose')?.addEventListener('click', () => closeDialog($('coachingProfileDialog')));
         $('coachingBuilderClose')?.addEventListener('click', () => closeDialog($('coachingBuilderDialog')));
@@ -1396,5 +1432,11 @@
         window.addEventListener('topgym:tab-changed', (event) => { if (event.detail?.name === 'trainees') loadTrainees(); });
         window.addEventListener('topgym:member-details-opened', (event) => renderMemberTrainingPanel(event.detail?.member?.id || event.detail?.details?.member?.id));
         window.addEventListener('topgym:coaching-updated', (event) => { if (event.detail?.memberId && $('detailsDialog')?.open) renderMemberTrainingPanel(event.detail.memberId); });
+        window.addEventListener('topgym:coaching-data-changed', (event) => {
+            state.loaded = false;
+            if (!$('traineesSection')?.hidden) loadTrainees(true);
+            const memberId = event.detail?.memberId;
+            if (memberId && Number(state.profile?.member?.id) === Number(memberId) && $('coachingProfileDialog')?.open) openProfile(memberId);
+        });
     });
 })();
