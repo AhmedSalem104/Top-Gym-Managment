@@ -1059,3 +1059,61 @@
         font-size: 9px;
     }
 }
+
+/* Final select override: keep the selected Arabic value readable on every report filter. */
+.reports-section .reports-filters .reports-extra-filters > label:not(.reports-check-field) {
+    min-width: 0;
+    flex: 1 1 145px;
+}
+
+.reports-section .reports-filters .reports-extra-filters select {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    height: 40px;
+    min-height: 40px;
+    box-sizing: border-box;
+    appearance: none;
+    overflow: hidden;
+    padding-top: 0;
+    padding-bottom: 0;
+    padding-right: 10px;
+    padding-left: 34px;
+    border-color: #d7e0ec;
+    border-radius: 10px;
+    color: #172033;
+    background-color: #fbfdff;
+    background-image: linear-gradient(45deg, transparent 50%, #64748b 50%), linear-gradient(135deg, #64748b 50%, transparent 50%);
+    background-position: left 14px center, left 9px center;
+    background-repeat: no-repeat;
+    background-size: 5px 5px, 5px 5px;
+    direction: rtl;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 38px;
+    text-align: right;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.reports-section .reports-filters .reports-extra-filters select:focus {
+    border-color: #60a5fa;
+    background-color: #fff;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, .13);
+}
+
+.reports-section .reports-filters .reports-extra-filters select option,
+.reports-section .reports-filters .reports-extra-filters select optgroup {
+    color: #172033;
+    background: #fff;
+    font-size: 11px;
+}
+
+@media (max-width: 430px) {
+    .reports-section .reports-filters .reports-extra-filters select {
+        height: 42px;
+        min-height: 42px;
+        font-size: 12px;
+    }
+}
