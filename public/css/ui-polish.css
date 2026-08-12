@@ -1576,3 +1576,852 @@ dialog {
     .app-shell #actionDialog .dialog-body > h3 { margin: -16px -16px 6px !important; padding-inline: 16px !important; }
     .app-shell #actionDialog .dialog-body > p { margin-inline: -16px !important; padding-inline: 16px !important; }
 }
++/* ========================================================================
+   Dashboard consistency pass
+   The monthly finance summary is the visual source of truth for every
+   dashboard surface. This block is scoped to the dashboard and changes
+   presentation only; data, state and API behaviour stay intact.
+   ======================================================================== */
+:root {
+    --dash-gap-1: 8px;
+    --dash-gap-2: 12px;
+    --dash-gap-3: 16px;
+    --dash-gap-4: 24px;
+    --dash-gap-5: 32px;
+    --dash-panel: #353535;
+    --dash-card: #464646;
+    --dash-deep: #2d2d2d;
+    --dash-line: rgba(255, 255, 255, .11);
+    --dash-line-strong: rgba(201, 90, 37, .44);
+    --dash-accent: #c95a25;
+    --dash-accent-strong: #e06a2b;
+    --dash-text: #f7f7f7;
+    --dash-text-soft: #e2e2e2;
+    --dash-muted: #a9a9a9;
+    --dash-success: #55dfad;
+    --dash-warning: #f2c83d;
+    --dash-danger: #f17f88;
+    --dash-frozen: #b8a6ff;
+    --dash-shadow: 0 12px 28px rgba(0, 0, 0, .24);
+    --dash-card-shadow: 0 7px 16px rgba(0, 0, 0, .16);
+}
+
+body.gym-page-bg { background-color: #191919 !important; }
+
+/* The visible page tabs are part of the dashboard reading frame. */
+.app-shell .page-tabs { background: var(--dash-deep, #2d2d2d) !important; }
+.app-shell .page-tab {
+    border-color: var(--dash-line, rgba(255, 255, 255, .11)) !important;
+    color: var(--dash-text-soft, #e2e2e2) !important;
+    background: rgba(70, 70, 70, .72) !important;
+}
+.app-shell .page-tab:hover:not(.active) {
+    border-color: var(--dash-line-strong, rgba(201, 90, 37, .44)) !important;
+    color: var(--dash-text, #f7f7f7) !important;
+    background: rgba(201, 90, 37, .16) !important;
+}
+.app-shell .page-tab.active {
+    border-color: var(--dash-accent-strong, #e06a2b) !important;
+    color: var(--dash-text, #f7f7f7) !important;
+    background: var(--dash-accent, #c95a25) !important;
+    box-shadow: 0 7px 16px rgba(0, 0, 0, .24) !important;
+}
+
+/* Shared dashboard vocabulary for future sections and generated content. */
+.dashboard-page .dashboard-panel,
+.dashboard-page .dashboard-card,
+.dashboard-page .dashboard-chart-panel {
+    color: var(--dash-text);
+    border: 1px solid var(--dash-line-strong);
+    border-radius: 20px;
+    background: var(--dash-panel);
+    box-shadow: var(--dash-shadow);
+}
+
+.dashboard-page .dashboard-card,
+.dashboard-page .dashboard-kpi,
+.dashboard-page .dashboard-badge {
+    border-radius: 12px;
+    background: var(--dash-card);
+}
+
+.dashboard-page .dashboard-card-header,
+.dashboard-page .dashboard-chart-panel > header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--dash-gap-3);
+    padding: var(--dash-gap-3) var(--dash-gap-4);
+    border-bottom: 1px solid var(--dash-line);
+}
+
+.dashboard-page .dashboard-card-header h3,
+.dashboard-page .dashboard-chart-panel > header h3 {
+    margin: 0;
+    color: var(--dash-text);
+    font-size: 14px;
+    font-weight: 800;
+}
+
+.dashboard-page .dashboard-card-header p,
+.dashboard-page .dashboard-chart-panel > header p {
+    margin: 4px 0 0;
+    color: var(--dash-muted);
+    font-size: 11px;
+}
+
+.dashboard-page .dashboard-action {
+    display: inline-flex;
+    min-height: 38px;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 8px 14px;
+    border: 1px solid var(--dash-line-strong);
+    border-radius: 20px;
+    color: var(--dash-text);
+    background: var(--dash-deep);
+    font: inherit;
+    font-size: 11px;
+    font-weight: 800;
+    cursor: pointer;
+    transition: border-color .18s ease, background-color .18s ease, transform .18s ease;
+}
+
+.dashboard-page .dashboard-action:hover,
+.dashboard-page .dashboard-action:focus-visible {
+    border-color: var(--dash-accent-strong);
+    background: rgba(201, 90, 37, .18);
+}
+
+.dashboard-page .dashboard-action:active { transform: translateY(1px); }
+
+.dashboard-page .dashboard-badge {
+    display: inline-flex;
+    min-height: 24px;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 9px;
+    border: 1px solid var(--dash-line);
+    color: var(--dash-text-soft);
+    font-size: 10px;
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+/* Dashboard composition: alerts lead the reading path, finance anchors it. */
+.app-shell #dashboardSection.dashboard-page {
+    color: var(--dash-text) !important;
+    background: transparent !important;
+}
+
+.app-shell #dashboardSection .dashboard-overview {
+    display: grid;
+    grid-template-areas: "alerts finance";
+    grid-template-columns: minmax(0, 1.36fr) minmax(300px, .84fr);
+    gap: var(--dash-gap-3);
+    align-items: stretch;
+    margin-bottom: var(--dash-gap-4);
+    direction: ltr;
+}
+
+.app-shell #dashboardSection .dashboard-overview > .alerts-panel {
+    grid-area: alerts;
+    direction: rtl;
+}
+
+.app-shell #dashboardSection .dashboard-overview > #monthlyFinanceSnapshot,
+.app-shell #dashboardSection .dashboard-overview > .monthly-finance-snapshot,
+.app-shell #dashboardSection .dashboard-overview > #monthlyFinanceCard {
+    grid-area: finance;
+    direction: rtl;
+}
+
+.app-shell #dashboardSection .dashboard-overview > .alerts-panel,
+.app-shell #dashboardSection .dashboard-overview > #monthlyFinanceSnapshot,
+.app-shell #dashboardSection .dashboard-overview > .monthly-finance-snapshot,
+.app-shell #dashboardSection .dashboard-overview > #monthlyFinanceCard,
+.app-shell #dashboardSection > .dashboard-analytics {
+    min-width: 0;
+    overflow: hidden;
+    border: 1px solid var(--dash-line-strong) !important;
+    border-radius: 20px !important;
+    background: var(--dash-panel) !important;
+    box-shadow: var(--dash-shadow) !important;
+}
+
+/* Shared header anatomy. */
+.app-shell #dashboardSection .alerts-panel-header,
+.app-shell #dashboardSection .monthly-finance-snapshot-head,
+.app-shell #dashboardSection .monthly-finance-head,
+.app-shell #dashboardSection .dashboard-analytics-head {
+    min-height: 74px;
+    padding: var(--dash-gap-3) var(--dash-gap-4) !important;
+    border-bottom: 1px solid var(--dash-line) !important;
+    background: var(--dash-panel) !important;
+}
+
+.app-shell #dashboardSection .alerts-heading,
+.app-shell #dashboardSection .monthly-finance-heading,
+.app-shell #dashboardSection .dashboard-analytics-title {
+    min-width: 0;
+    gap: var(--dash-gap-2) !important;
+}
+
+.app-shell #dashboardSection .alerts-heading-icon,
+.app-shell #dashboardSection .monthly-finance-icon,
+.app-shell #dashboardSection .dashboard-analytics-icon {
+    display: grid;
+    width: 38px !important;
+    height: 38px !important;
+    flex: 0 0 38px !important;
+    place-items: center;
+    border: 1px solid var(--dash-line-strong) !important;
+    border-radius: 12px !important;
+    color: var(--dash-accent-strong) !important;
+    background: rgba(201, 90, 37, .16) !important;
+    box-shadow: none !important;
+}
+
+.app-shell #dashboardSection .alerts-heading-icon .ui-icon,
+.app-shell #dashboardSection .monthly-finance-icon .ui-icon,
+.app-shell #dashboardSection .dashboard-analytics-icon .ui-icon {
+    width: 19px !important;
+    height: 19px !important;
+}
+
+.app-shell #dashboardSection .alerts-eyebrow,
+.app-shell #dashboardSection .monthly-finance-eyebrow,
+.app-shell #dashboardSection .dashboard-analytics-eyebrow {
+    display: block;
+    margin-bottom: 3px;
+    color: var(--dash-accent-strong) !important;
+    font-size: 10px !important;
+    font-weight: 900;
+    letter-spacing: .7px;
+}
+
+.app-shell #dashboardSection .alerts-heading h3,
+.app-shell #dashboardSection .monthly-finance-heading h3,
+.app-shell #dashboardSection .dashboard-analytics-title h2 {
+    margin: 0;
+    color: var(--dash-text) !important;
+    font-size: 16px !important;
+    font-weight: 900;
+    line-height: 1.35;
+}
+
+.app-shell #dashboardSection .alerts-heading p,
+.app-shell #dashboardSection .monthly-finance-heading p,
+.app-shell #dashboardSection .dashboard-analytics-title p {
+    margin: 4px 0 0;
+    color: var(--dash-muted) !important;
+    font-size: 10px !important;
+    line-height: 1.5;
+}
+
+.app-shell #dashboardSection .alerts-count,
+.app-shell #dashboardSection .monthly-finance-status,
+.app-shell #dashboardSection .attendance-insights-badge {
+    display: inline-flex;
+    min-height: 26px;
+    align-items: center;
+    justify-content: center;
+    padding: 5px 10px;
+    border: 1px solid var(--dash-line-strong) !important;
+    border-radius: 999px;
+    color: var(--dash-text-soft) !important;
+    background: var(--dash-deep) !important;
+    font-size: 10px;
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+/* Daily alerts: name and status are deliberately stronger than the action. */
+.app-shell #dashboardSection .alerts-toolbar {
+    display: flex;
+    align-items: center;
+    gap: var(--dash-gap-2);
+    padding: var(--dash-gap-3) var(--dash-gap-4) 0 !important;
+    background: var(--dash-panel) !important;
+}
+
+.app-shell #dashboardSection .alerts-search-field {
+    min-height: 38px;
+    border: 1px solid var(--dash-line) !important;
+    border-radius: 20px !important;
+    color: var(--dash-muted) !important;
+    background: var(--dash-deep) !important;
+}
+
+.app-shell #dashboardSection .alerts-search-field:focus-within {
+    border-color: var(--dash-accent-strong) !important;
+    box-shadow: 0 0 0 3px rgba(201, 90, 37, .14) !important;
+}
+
+.app-shell #dashboardSection .alerts-search-field input,
+.app-shell #dashboardSection .alerts-search-field input::placeholder {
+    color: var(--dash-text-soft) !important;
+}
+
+.app-shell #dashboardSection .alerts-search-result { color: var(--dash-muted) !important; font-size: 10px; }
+
+.app-shell #dashboardSection .alerts-list {
+    display: grid;
+    gap: var(--dash-gap-2);
+    padding: var(--dash-gap-3) var(--dash-gap-4) var(--dash-gap-4) !important;
+    background: var(--dash-panel) !important;
+}
+
+.app-shell #dashboardSection .alert-card {
+    display: grid;
+    min-width: 0;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: var(--dash-gap-2);
+    align-items: start;
+    padding: var(--dash-gap-3) !important;
+    border: 1px solid var(--dash-line) !important;
+    border-inline-start: 3px solid var(--dash-accent) !important;
+    border-radius: var(--ref-radius-card) !important;
+    background: var(--dash-card) !important;
+    box-shadow: var(--dash-card-shadow) !important;
+    transition: border-color .18s ease, background-color .18s ease, transform .18s ease;
+}
+
+.app-shell #dashboardSection .alert-card:hover {
+    border-color: var(--dash-line-strong) !important;
+    background: #4b4b4b !important;
+    transform: translateY(-1px);
+}
+
+.app-shell #dashboardSection .alert-card.active { border-inline-start-color: var(--dash-success) !important; }
+.app-shell #dashboardSection .alert-card.expiring_soon { border-inline-start-color: var(--dash-warning) !important; }
+.app-shell #dashboardSection .alert-card.expired { border-inline-start-color: var(--dash-danger) !important; }
+.app-shell #dashboardSection .alert-card.frozen { border-inline-start-color: var(--dash-frozen) !important; }
+
+.app-shell #dashboardSection .alert-card-icon {
+    width: 32px !important;
+    height: 32px !important;
+    border: 1px solid var(--dash-line-strong) !important;
+    border-radius: 10px !important;
+    color: var(--dash-accent-strong) !important;
+    background: rgba(201, 90, 37, .16) !important;
+}
+
+.app-shell #dashboardSection .alert-card-body { min-width: 0; }
+.app-shell #dashboardSection .alert-card-head { gap: var(--dash-gap-2) !important; }
+.app-shell #dashboardSection .alert-card-head strong,
+.app-shell #dashboardSection .alert-card-name {
+    overflow: hidden;
+    color: var(--dash-text) !important;
+    font-size: 13px !important;
+    font-weight: 900;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.app-shell #dashboardSection .alert-status {
+    min-height: 23px;
+    padding: 4px 8px !important;
+    border: 1px solid currentColor !important;
+    border-radius: 999px !important;
+    font-size: 9px !important;
+    font-weight: 900;
+}
+
+.app-shell #dashboardSection .alert-status.active,
+.app-shell #dashboardSection .alert-card.active .alert-status { color: var(--dash-success) !important; background: rgba(85, 223, 173, .12) !important; }
+.app-shell #dashboardSection .alert-status.expiring_soon,
+.app-shell #dashboardSection .alert-card.expiring_soon .alert-status { color: var(--dash-warning) !important; background: rgba(242, 200, 61, .12) !important; }
+.app-shell #dashboardSection .alert-status.expired,
+.app-shell #dashboardSection .alert-card.expired .alert-status { color: var(--dash-danger) !important; background: rgba(241, 127, 136, .12) !important; }
+.app-shell #dashboardSection .alert-status.frozen,
+.app-shell #dashboardSection .alert-card.frozen .alert-status { color: var(--dash-frozen) !important; background: rgba(184, 166, 255, .12) !important; }
+
+.app-shell #dashboardSection .alert-card-detail,
+.app-shell #dashboardSection .alert-card-phone {
+    color: var(--dash-muted) !important;
+    font-size: 10px !important;
+}
+
+.app-shell #dashboardSection .alert-card-phone { margin-top: 5px; }
+.app-shell #dashboardSection .alert-card-phone .ui-icon { width: 13px; height: 13px; color: var(--dash-text-soft); }
+
+.app-shell #dashboardSection .alert-whatsapp-button {
+    min-height: 32px !important;
+    align-self: center;
+    padding: 7px 10px !important;
+    border: 1px solid rgba(85, 223, 173, .5) !important;
+    border-radius: 18px !important;
+    color: var(--dash-success) !important;
+    background: rgba(85, 223, 173, .1) !important;
+    box-shadow: none !important;
+    font-size: 10px !important;
+    font-weight: 800;
+}
+
+.app-shell #dashboardSection .alert-whatsapp-button:hover,
+.app-shell #dashboardSection .alert-whatsapp-button:focus-visible {
+    border-color: var(--dash-success) !important;
+    background: rgba(85, 223, 173, .18) !important;
+}
+
+.app-shell #dashboardSection .alerts-list > .empty,
+.app-shell #dashboardSection .alerts-list > .alerts-empty {
+    min-height: 100px;
+    display: grid;
+    place-items: center;
+    margin: 0;
+    color: var(--dash-muted) !important;
+    background: var(--dash-deep) !important;
+    border: 1px dashed var(--dash-line) !important;
+    border-radius: var(--ref-radius-card) !important;
+}
+
+/* Monthly summary: parent panel, restrained inner surfaces, clear number hierarchy. */
+.app-shell #dashboardSection .monthly-finance-snapshot-metrics,
+.app-shell #dashboardSection .monthly-finance-metrics {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--dash-gap-2);
+    padding: var(--dash-gap-3) var(--dash-gap-4) var(--dash-gap-2) !important;
+    background: var(--dash-panel) !important;
+}
+
+.app-shell #dashboardSection .monthly-finance-snapshot-metric,
+.app-shell #dashboardSection .monthly-finance-metric {
+    min-width: 0;
+    min-height: 92px;
+    padding: var(--dash-gap-3) !important;
+    border: 1px solid var(--dash-line) !important;
+    border-radius: var(--ref-radius-card) !important;
+    background: var(--dash-card) !important;
+    box-shadow: var(--dash-card-shadow) !important;
+}
+
+.app-shell #dashboardSection .monthly-finance-snapshot-metric:hover,
+.app-shell #dashboardSection .monthly-finance-metric:hover { border-color: var(--dash-line-strong) !important; }
+
+.app-shell #dashboardSection .monthly-finance-snapshot-metric span,
+.app-shell #dashboardSection .monthly-finance-label {
+    color: var(--dash-muted) !important;
+    font-size: 10px !important;
+    font-weight: 800;
+}
+
+.app-shell #dashboardSection .monthly-finance-snapshot-metric strong,
+.app-shell #dashboardSection .monthly-finance-value {
+    display: block;
+    margin-top: 8px;
+    color: var(--dash-text) !important;
+    font-size: 20px !important;
+    font-weight: 900;
+    line-height: 1.2;
+}
+
+.app-shell #dashboardSection .monthly-finance-snapshot-metric.expenses strong,
+.app-shell #dashboardSection .monthly-finance-metric.expenses .monthly-finance-value { color: var(--dash-warning) !important; }
+.app-shell #dashboardSection .monthly-finance-snapshot-metric.net strong,
+.app-shell #dashboardSection .monthly-finance-metric.net .monthly-finance-value { color: var(--dash-success) !important; }
+
+.app-shell #dashboardSection .monthly-finance-snapshot-metric small,
+.app-shell #dashboardSection .monthly-finance-metric small { color: var(--dash-muted) !important; font-size: 9px !important; }
+
+.app-shell #dashboardSection .monthly-finance-metric-top { gap: var(--dash-gap-2); }
+.app-shell #dashboardSection .monthly-finance-metric-top .add-expense-button {
+    min-height: 30px !important;
+    padding: 5px 9px !important;
+    border-radius: 16px !important;
+    color: var(--dash-text-soft) !important;
+    background: var(--dash-deep) !important;
+}
+
+.app-shell #dashboardSection .snapshot-membership-status-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--dash-gap-2);
+    margin: var(--dash-gap-2) var(--dash-gap-4) 0 !important;
+    padding: var(--dash-gap-3) 0 0 !important;
+    border-top: 1px solid var(--dash-line) !important;
+}
+
+.app-shell #dashboardSection .snapshot-membership-status-head span { color: var(--dash-text) !important; font-size: 12px; font-weight: 900; }
+.app-shell #dashboardSection .snapshot-membership-status-head small { color: var(--dash-muted) !important; font-size: 9px; }
+
+.app-shell #dashboardSection .snapshot-membership-stats {
+    display: grid !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: var(--dash-gap-2);
+    margin: var(--dash-gap-2) var(--dash-gap-4) var(--dash-gap-4) !important;
+    padding: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+}
+
+.app-shell #dashboardSection .snapshot-membership-stats .stat-card {
+    display: grid !important;
+    grid-template-columns: 32px minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    min-height: 72px !important;
+    align-items: center;
+    gap: 2px var(--dash-gap-2);
+    padding: var(--dash-gap-2) !important;
+    border: 1px solid var(--dash-line) !important;
+    border-radius: var(--ref-radius-card) !important;
+    background: var(--dash-card) !important;
+    box-shadow: var(--dash-card-shadow) !important;
+}
+
+.app-shell #dashboardSection .snapshot-membership-stats .stat-card:nth-child(5) { grid-column: 1 / -1; }
+.app-shell #dashboardSection .snapshot-membership-stats .stat-head { display: contents !important; }
+.app-shell #dashboardSection .snapshot-membership-stats .stat-icon {
+    grid-column: 1;
+    grid-row: 1 / 3;
+    width: 32px !important;
+    height: 32px !important;
+    margin: 0 !important;
+    border: 1px solid var(--dash-line) !important;
+    border-radius: 10px !important;
+    color: var(--dash-accent-strong) !important;
+    background: rgba(201, 90, 37, .14) !important;
+}
+.app-shell #dashboardSection .snapshot-membership-stats .stat-icon .ui-icon { width: 16px !important; height: 16px !important; }
+.app-shell #dashboardSection .snapshot-membership-stats .stat-label { grid-column: 2; grid-row: 1; color: var(--dash-muted) !important; font-size: 9px !important; }
+.app-shell #dashboardSection .snapshot-membership-stats .stat-value { grid-column: 2; grid-row: 2; margin: 0 !important; color: var(--dash-text) !important; font-size: 22px !important; line-height: 1; }
+.app-shell #dashboardSection .snapshot-membership-stats .stat-caption { display: none !important; }
+.app-shell #dashboardSection .snapshot-membership-stats .stat-card.active .stat-value { color: var(--dash-success) !important; }
+.app-shell #dashboardSection .snapshot-membership-stats .stat-card.warning .stat-value { color: var(--dash-warning) !important; }
+.app-shell #dashboardSection .snapshot-membership-stats .stat-card.danger .stat-value { color: var(--dash-danger) !important; }
+.app-shell #dashboardSection .snapshot-membership-stats .stat-card.frozen .stat-value { color: var(--dash-frozen) !important; }
+
+/* Safe fallback while the finance snapshot is being assembled. */
+.app-shell #dashboardSection .dashboard-overview > .stats-grid {
+    grid-area: finance;
+    min-width: 0;
+    padding: var(--dash-gap-3) !important;
+    border: 1px solid var(--dash-line-strong) !important;
+    border-radius: 20px !important;
+    background: var(--dash-panel) !important;
+    box-shadow: var(--dash-shadow) !important;
+}
+.app-shell #dashboardSection .dashboard-overview > .stats-grid .stat-card {
+    border-color: var(--dash-line) !important;
+    border-inline-start-color: var(--dash-line) !important;
+    border-radius: var(--ref-radius-card) !important;
+    background: var(--dash-card) !important;
+    box-shadow: var(--dash-card-shadow) !important;
+}
+.app-shell #dashboardSection .dashboard-overview > .stats-grid .stat-label { color: var(--dash-muted) !important; }
+.app-shell #dashboardSection .dashboard-overview > .stats-grid .stat-value { color: var(--dash-text) !important; }
+
+/* Analytics: every insight, KPI and chart now speaks the same surface language. */
+.app-shell #dashboardSection > .dashboard-analytics {
+    margin: 0 0 var(--dash-gap-4) !important;
+    padding: 0 !important;
+}
+
+.app-shell #dashboardSection .dashboard-analytics-head { align-items: center; }
+.app-shell #dashboardSection .analytics-period-switch {
+    display: inline-flex;
+    gap: 4px;
+    padding: 4px;
+    border: 1px solid var(--dash-line) !important;
+    border-radius: 20px !important;
+    background: var(--dash-deep) !important;
+    box-shadow: none !important;
+}
+
+.app-shell #dashboardSection .analytics-period-switch button {
+    min-width: 64px;
+    min-height: 32px;
+    border: 0 !important;
+    border-radius: 16px !important;
+    color: var(--dash-muted) !important;
+    background: transparent !important;
+    font-size: 10px;
+    font-weight: 800;
+}
+
+.app-shell #dashboardSection .analytics-period-switch button:hover,
+.app-shell #dashboardSection .analytics-period-switch button:focus-visible { color: var(--dash-text) !important; background: rgba(201, 90, 37, .14) !important; }
+
+.app-shell #dashboardSection .analytics-period-switch button.active { color: var(--dash-text) !important; background: var(--dash-accent) !important; box-shadow: none !important; }
+
+.app-shell #dashboardSection .analytics-loading {
+    padding: var(--dash-gap-2) var(--dash-gap-4);
+    color: var(--dash-accent-strong) !important;
+    background: var(--dash-deep) !important;
+    font-size: 10px;
+}
+
+.app-shell #dashboardSection .analytics-smart-strip,
+.app-shell #dashboardSection .analytics-kpis,
+.app-shell #dashboardSection .analytics-main-grid,
+.app-shell #dashboardSection .analytics-secondary-grid {
+    gap: var(--dash-gap-2);
+    padding-inline: var(--dash-gap-4) !important;
+}
+
+.app-shell #dashboardSection .analytics-smart-strip { padding-top: var(--dash-gap-3) !important; padding-bottom: 0 !important; }
+.app-shell #dashboardSection .analytics-smart-health,
+.app-shell #dashboardSection .analytics-smart-insight,
+.app-shell #dashboardSection .analytics-kpi {
+    min-width: 0;
+    border: 1px solid var(--dash-line) !important;
+    border-radius: var(--ref-radius-card) !important;
+    background: var(--dash-card) !important;
+    box-shadow: var(--dash-card-shadow) !important;
+}
+
+.app-shell #dashboardSection .analytics-smart-health { min-height: 92px; border-inline-start: 3px solid var(--dash-accent) !important; }
+.app-shell #dashboardSection .analytics-smart-insight { min-height: 82px; }
+.app-shell #dashboardSection .analytics-smart-health:hover,
+.app-shell #dashboardSection .analytics-smart-insight:hover,
+.app-shell #dashboardSection .analytics-kpi:hover { border-color: var(--dash-line-strong) !important; background: #4b4b4b !important; }
+
+.app-shell #dashboardSection .analytics-health-ring {
+    width: 62px;
+    height: 62px;
+    flex-basis: 62px;
+    background: conic-gradient(var(--dash-accent-strong) var(--health-score), var(--dash-deep) 0) !important;
+}
+.app-shell #dashboardSection .analytics-health-ring::after { inset: 6px; background: var(--dash-card) !important; }
+.app-shell #dashboardSection .analytics-health-ring strong { color: var(--dash-text) !important; font-size: 14px; }
+.app-shell #dashboardSection .analytics-health-ring span { color: var(--dash-muted) !important; font-size: 8px; }
+.app-shell #dashboardSection .analytics-smart-eyebrow { color: var(--dash-accent-strong) !important; }
+.app-shell #dashboardSection .analytics-smart-health h3 { color: var(--dash-text) !important; font-size: 13px; }
+.app-shell #dashboardSection .analytics-smart-health p { color: var(--dash-muted) !important; font-size: 9px; }
+
+.app-shell #dashboardSection .analytics-smart-insight-icon,
+.app-shell #dashboardSection .analytics-kpi-icon {
+    border: 1px solid var(--dash-line) !important;
+    color: var(--dash-accent-strong) !important;
+    background: rgba(201, 90, 37, .14) !important;
+}
+.app-shell #dashboardSection .analytics-smart-insight.blue .analytics-smart-insight-icon,
+.app-shell #dashboardSection .analytics-kpi.green .analytics-kpi-icon { color: var(--dash-success) !important; background: rgba(85, 223, 173, .12) !important; }
+.app-shell #dashboardSection .analytics-smart-insight.amber .analytics-smart-insight-icon,
+.app-shell #dashboardSection .analytics-kpi.amber .analytics-kpi-icon { color: var(--dash-warning) !important; background: rgba(242, 200, 61, .12) !important; }
+.app-shell #dashboardSection .analytics-smart-insight.violet .analytics-smart-insight-icon,
+.app-shell #dashboardSection .analytics-kpi.violet .analytics-kpi-icon { color: var(--dash-frozen) !important; background: rgba(184, 166, 255, .12) !important; }
+.app-shell #dashboardSection .analytics-smart-insight.rose .analytics-smart-insight-icon,
+.app-shell #dashboardSection .analytics-kpi.rose .analytics-kpi-icon,
+.app-shell #dashboardSection .analytics-kpi.red .analytics-kpi-icon { color: var(--dash-danger) !important; background: rgba(241, 127, 136, .12) !important; }
+
+.app-shell #dashboardSection .analytics-smart-insight > div > span,
+.app-shell #dashboardSection .analytics-smart-insight small,
+.app-shell #dashboardSection .analytics-kpi > div > span,
+.app-shell #dashboardSection .analytics-kpi small { color: var(--dash-muted) !important; }
+.app-shell #dashboardSection .analytics-smart-insight strong,
+.app-shell #dashboardSection .analytics-kpi strong { color: var(--dash-text) !important; }
+.app-shell #dashboardSection .analytics-kpi strong { font-size: 19px !important; }
+.app-shell #dashboardSection .analytics-kpis .analytics-kpi:nth-child(1),
+.app-shell #dashboardSection .analytics-kpis .analytics-kpi:nth-child(4),
+.app-shell #dashboardSection .analytics-kpis .analytics-kpi:nth-child(6),
+.app-shell #dashboardSection .analytics-kpis .analytics-kpi:nth-child(8) { border-inline-start: 3px solid var(--dash-accent) !important; }
+
+.app-shell #dashboardSection .analytics-main-grid { padding-top: var(--dash-gap-3) !important; }
+.app-shell #dashboardSection .analytics-secondary-grid { padding-top: var(--dash-gap-2) !important; padding-bottom: var(--dash-gap-4) !important; }
+.app-shell #dashboardSection .analytics-card {
+    min-width: 0;
+    overflow: hidden;
+    border: 1px solid var(--dash-line) !important;
+    border-radius: var(--ref-radius-card) !important;
+    background: var(--dash-panel) !important;
+    box-shadow: none !important;
+}
+
+.app-shell #dashboardSection .analytics-card-head {
+    padding: var(--dash-gap-3) var(--dash-gap-3) var(--dash-gap-2) !important;
+    border-bottom: 1px solid var(--dash-line) !important;
+    background: var(--dash-panel) !important;
+}
+.app-shell #dashboardSection .analytics-card-head > div:first-child > span { color: var(--dash-accent-strong) !important; font-size: 9px; }
+.app-shell #dashboardSection .analytics-card-head h3 { color: var(--dash-text) !important; font-size: 14px !important; }
+.app-shell #dashboardSection .analytics-legend,
+.app-shell #dashboardSection .analytics-activity-legend { color: var(--dash-muted) !important; }
+.app-shell #dashboardSection .analytics-legend i.collected,
+.app-shell #dashboardSection .analytics-activity-legend i.members { background: var(--dash-accent-strong) !important; }
+.app-shell #dashboardSection .analytics-legend i.expenses { background: var(--dash-warning) !important; }
+.app-shell #dashboardSection .analytics-activity-legend i.memberships { background: var(--dash-frozen) !important; }
+
+.app-shell #dashboardSection .analytics-trend-wrap,
+.app-shell #dashboardSection .analytics-bars,
+.app-shell #dashboardSection .analytics-activity-chart { background: var(--dash-panel) !important; }
+.app-shell #dashboardSection .analytics-grid-line { stroke: var(--dash-line) !important; }
+.app-shell #dashboardSection .analytics-axis-label { fill: var(--dash-muted) !important; }
+.app-shell #dashboardSection .analytics-line.collected-line { stroke: var(--dash-accent-strong) !important; }
+.app-shell #dashboardSection .analytics-line.expenses-line { stroke: var(--dash-warning) !important; }
+.app-shell #dashboardSection .collected-points circle { fill: var(--dash-accent-strong) !important; stroke: var(--dash-panel) !important; }
+.app-shell #dashboardSection .expenses-points circle { fill: var(--dash-warning) !important; stroke: var(--dash-panel) !important; }
+.app-shell #dashboardSection .analytics-bar-label { color: var(--dash-text-soft) !important; }
+.app-shell #dashboardSection .analytics-bar-label strong { color: var(--dash-text) !important; }
+.app-shell #dashboardSection .analytics-bar-track { background: var(--dash-deep) !important; }
+.app-shell #dashboardSection .analytics-bars-empty,
+.app-shell #dashboardSection .analytics-chart-empty,
+.app-shell #dashboardSection .analytics-error { color: var(--dash-muted) !important; }
+.app-shell #dashboardSection .analytics-error { border-color: rgba(241, 127, 136, .42) !important; background: rgba(241, 127, 136, .1) !important; }
+
+.app-shell #dashboardSection #analyticsStatusChart .analytics-bar-track span { background: var(--dash-accent-strong) !important; }
+.app-shell #dashboardSection #analyticsMembershipChart .analytics-bar-track span { background: var(--dash-frozen) !important; }
+.app-shell #dashboardSection #analyticsPaymentChart .analytics-bar-track span { background: var(--dash-success) !important; }
+.app-shell #dashboardSection .analytics-column-chart { border-bottom-color: var(--dash-line) !important; }
+.app-shell #dashboardSection .analytics-column.members { background: var(--dash-accent-strong) !important; }
+.app-shell #dashboardSection .analytics-column.memberships { background: var(--dash-frozen) !important; }
+.app-shell #dashboardSection .analytics-column-group small { color: var(--dash-muted) !important; }
+
+/* Attendance insight panel and its lists use the same quiet depth hierarchy. */
+.app-shell #dashboardSection .attendance-insights-card {
+    margin: 0 var(--dash-gap-4) var(--dash-gap-4) !important;
+    border: 1px solid var(--dash-line) !important;
+    border-radius: var(--ref-radius-card) !important;
+    background: var(--dash-panel) !important;
+    box-shadow: none !important;
+}
+.app-shell #dashboardSection .attendance-insights-head,
+.app-shell #dashboardSection .attendance-insights-cardlet-head {
+    border-bottom-color: var(--dash-line) !important;
+    background: var(--dash-panel) !important;
+}
+.app-shell #dashboardSection .attendance-insights-heading-icon {
+    border-color: var(--dash-line-strong) !important;
+    color: var(--dash-accent-strong) !important;
+    background: rgba(201, 90, 37, .14) !important;
+}
+.app-shell #dashboardSection .attendance-insights-heading > div > span,
+.app-shell #dashboardSection .attendance-insights-cardlet-head span { color: var(--dash-accent-strong) !important; }
+.app-shell #dashboardSection .attendance-insights-heading h3,
+.app-shell #dashboardSection .attendance-insights-cardlet-head h4 { color: var(--dash-text) !important; }
+.app-shell #dashboardSection .attendance-insights-heading p { color: var(--dash-muted) !important; }
+.app-shell #dashboardSection .attendance-insights-kpis { gap: var(--dash-gap-2); }
+.app-shell #dashboardSection .attendance-insights-kpi,
+.app-shell #dashboardSection .attendance-insights-cardlet {
+    border: 1px solid var(--dash-line) !important;
+    border-radius: var(--ref-radius-card) !important;
+    background: var(--dash-card) !important;
+    box-shadow: var(--dash-card-shadow) !important;
+}
+.app-shell #dashboardSection .attendance-insights-kpi strong { color: var(--dash-text) !important; font-size: 20px; }
+.app-shell #dashboardSection .attendance-insights-kpi span { color: var(--dash-text-soft) !important; }
+.app-shell #dashboardSection .attendance-insights-kpi small { color: var(--dash-muted) !important; }
+.app-shell #dashboardSection .attendance-insights-kpi.blue strong { color: var(--dash-accent-strong) !important; }
+.app-shell #dashboardSection .attendance-insights-kpi.green strong { color: var(--dash-success) !important; }
+.app-shell #dashboardSection .attendance-insights-kpi.violet strong { color: var(--dash-frozen) !important; }
+.app-shell #dashboardSection .attendance-insights-kpi.amber strong { color: var(--dash-warning) !important; }
+.app-shell #dashboardSection .attendance-insights-list,
+.app-shell #dashboardSection .attendance-insights-peak-list { background: var(--dash-card) !important; }
+.app-shell #dashboardSection .attendance-insight-row,
+.app-shell #dashboardSection .attendance-insights-peak-row { border-bottom-color: var(--dash-line) !important; }
+.app-shell #dashboardSection .attendance-insight-row strong,
+.app-shell #dashboardSection .attendance-insights-peak-row strong { color: var(--dash-text) !important; }
+.app-shell #dashboardSection .attendance-insight-row span,
+.app-shell #dashboardSection .attendance-insights-peak-row span { color: var(--dash-muted) !important; }
+.app-shell #dashboardSection .attendance-insight-track,
+.app-shell #dashboardSection .attendance-insights-peak-track { background: var(--dash-deep) !important; }
+.app-shell #dashboardSection .attendance-insight-track span,
+.app-shell #dashboardSection .attendance-insights-peak-track span { background: var(--dash-accent-strong) !important; }
+.app-shell #dashboardSection .attendance-insights-empty { color: var(--dash-muted) !important; }
+
+/* Dashboard fields and controls follow the same 8/12/16/24 rhythm. */
+.app-shell #dashboardSection input,
+.app-shell #dashboardSection select,
+.app-shell #dashboardSection .analytics-period-switch,
+.app-shell #dashboardSection button { font-family: inherit; }
+
+.app-shell #dashboardSection .btn,
+.app-shell #dashboardSection .dashboard-action { transition: border-color .18s ease, background-color .18s ease, color .18s ease, transform .18s ease; }
+.app-shell #dashboardSection .btn.btn-primary {
+    border-color: var(--dash-accent-strong) !important;
+    color: var(--dash-text) !important;
+    background: var(--dash-accent) !important;
+    box-shadow: none !important;
+}
+.app-shell #dashboardSection .btn.btn-primary:hover,
+.app-shell #dashboardSection .btn.btn-primary:focus-visible {
+    border-color: var(--dash-accent-strong) !important;
+    background: var(--dash-accent-strong) !important;
+}
+.app-shell #dashboardSection .btn.btn-light,
+.app-shell #dashboardSection .open-expenses-tab-button,
+.app-shell #dashboardSection .add-expense-button {
+    border-color: var(--dash-line) !important;
+    color: var(--dash-text-soft) !important;
+    background: var(--dash-deep) !important;
+    box-shadow: none !important;
+}
+.app-shell #dashboardSection .btn.btn-light:hover,
+.app-shell #dashboardSection .open-expenses-tab-button:hover,
+.app-shell #dashboardSection .add-expense-button:hover {
+    border-color: var(--dash-line-strong) !important;
+    color: var(--dash-text) !important;
+    background: rgba(201, 90, 37, .16) !important;
+}
+.app-shell #dashboardSection .btn:focus-visible,
+.app-shell #dashboardSection button:focus-visible,
+.app-shell #dashboardSection input:focus-visible,
+.app-shell #dashboardSection select:focus-visible {
+    outline: 0;
+    box-shadow: 0 0 0 3px rgba(201, 90, 37, .16) !important;
+}
+
+@media (max-width: 1100px) {
+    .app-shell #dashboardSection .dashboard-overview { grid-template-columns: minmax(0, 1.12fr) minmax(260px, .88fr); }
+    .app-shell #dashboardSection .analytics-smart-strip { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .app-shell #dashboardSection .analytics-smart-health { grid-column: 1 / -1; }
+    .app-shell #dashboardSection .analytics-kpis { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+@media (max-width: 900px) {
+    .app-shell #dashboardSection .dashboard-overview {
+        grid-template-areas: "alerts" "finance";
+        grid-template-columns: 1fr;
+    }
+    .app-shell #dashboardSection .analytics-main-grid { grid-template-columns: 1fr; }
+    .app-shell #dashboardSection .analytics-secondary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .app-shell #dashboardSection .analytics-secondary-grid .analytics-activity-card { grid-column: 1 / -1; }
+}
+
+@media (max-width: 640px) {
+    .app-shell #dashboardSection .dashboard-overview { gap: var(--dash-gap-2); margin-bottom: var(--dash-gap-3); }
+    .app-shell #dashboardSection .alerts-panel-header,
+    .app-shell #dashboardSection .monthly-finance-snapshot-head,
+    .app-shell #dashboardSection .monthly-finance-head,
+    .app-shell #dashboardSection .dashboard-analytics-head { min-height: 0; padding: var(--dash-gap-3) !important; }
+    .app-shell #dashboardSection .alerts-heading h3,
+    .app-shell #dashboardSection .monthly-finance-heading h3,
+    .app-shell #dashboardSection .dashboard-analytics-title h2 { font-size: 14px !important; }
+    .app-shell #dashboardSection .alerts-toolbar { align-items: stretch; flex-direction: column; padding: var(--dash-gap-3) !important; }
+    .app-shell #dashboardSection .alerts-search-field { width: 100%; }
+    .app-shell #dashboardSection .alerts-list { padding: 0 var(--dash-gap-3) var(--dash-gap-3) !important; }
+    .app-shell #dashboardSection .alert-card { grid-template-columns: auto minmax(0, 1fr); padding: var(--dash-gap-2) !important; }
+    .app-shell #dashboardSection .alert-whatsapp-button { min-width: 0; padding-inline: 8px !important; }
+    .app-shell #dashboardSection .monthly-finance-snapshot-metrics,
+    .app-shell #dashboardSection .monthly-finance-metrics { grid-template-columns: 1fr; padding: var(--dash-gap-3) !important; }
+    .app-shell #dashboardSection .monthly-finance-snapshot-metric,
+    .app-shell #dashboardSection .monthly-finance-metric { min-height: 78px; }
+    .app-shell #dashboardSection .monthly-finance-snapshot-metric strong,
+    .app-shell #dashboardSection .monthly-finance-value { font-size: 18px !important; }
+    .app-shell #dashboardSection .snapshot-membership-status-head { margin-inline: var(--dash-gap-3) !important; }
+    .app-shell #dashboardSection .snapshot-membership-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); margin-inline: var(--dash-gap-3) !important; }
+    .app-shell #dashboardSection .snapshot-membership-stats .stat-card { min-height: 64px !important; }
+    .app-shell #dashboardSection .snapshot-membership-stats .stat-value { font-size: 19px !important; }
+    .app-shell #dashboardSection .dashboard-analytics-head { align-items: stretch; flex-direction: column; gap: var(--dash-gap-2); }
+    .app-shell #dashboardSection .analytics-period-switch { width: 100%; }
+    .app-shell #dashboardSection .analytics-period-switch button { min-width: 0; flex: 1 1 0; }
+    .app-shell #dashboardSection .analytics-smart-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: var(--dash-gap-3) var(--dash-gap-3) 0 !important; }
+    .app-shell #dashboardSection .analytics-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: var(--dash-gap-3) var(--dash-gap-3) 0 !important; }
+    .app-shell #dashboardSection .analytics-smart-insight { min-height: 70px; padding: var(--dash-gap-2); }
+    .app-shell #dashboardSection .analytics-smart-insight strong { font-size: 13px; }
+    .app-shell #dashboardSection .analytics-kpi { min-height: 76px; padding: var(--dash-gap-2); }
+    .app-shell #dashboardSection .analytics-kpi strong { font-size: 15px !important; }
+    .app-shell #dashboardSection .analytics-main-grid,
+    .app-shell #dashboardSection .analytics-secondary-grid { grid-template-columns: 1fr; gap: var(--dash-gap-2); padding-inline: var(--dash-gap-3) !important; }
+    .app-shell #dashboardSection .analytics-secondary-grid .analytics-activity-card { grid-column: auto; }
+    .app-shell #dashboardSection .analytics-card-head { padding: var(--dash-gap-2) !important; }
+    .app-shell #dashboardSection .analytics-trend-wrap,
+    .app-shell #dashboardSection .analytics-trend-svg { min-height: 220px; height: 220px; }
+    .app-shell #dashboardSection .attendance-insights-card { margin-inline: var(--dash-gap-3) !important; }
+    .app-shell #dashboardSection .attendance-insights-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); padding-inline: var(--dash-gap-3); }
+    .app-shell #dashboardSection .attendance-insights-grid { grid-template-columns: 1fr; padding-inline: var(--dash-gap-3); }
+}

@@ -19,7 +19,7 @@
     <link rel="stylesheet" href="/css/library.css?v=6">
     <link rel="stylesheet" href="/css/coaching.css?v=6">
     <link rel="stylesheet" href="/css/dark-theme.css?v=6">
-    <link rel="stylesheet" href="/css/ui-polish.css?v=5">
+    <link rel="stylesheet" href="/css/ui-polish.css?v=6">
 </head>
 <body class="font-sans bg-slate-100 text-slate-900 gym-page-bg">
     <div class="app-shell">
@@ -44,8 +44,8 @@
             <button class="page-tab" type="button" data-page-tab="trainees" aria-selected="false"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M3 20a6 6 0 0 1 12 0M16 4.5a3 3 0 0 1 0 6M17 14a4 4 0 0 1 4 4"/><path d="M18 8h3M19.5 6.5v3"/></svg><span>المتدربون</span></button>
         </nav>
 
-        <main class="page max-w-7xl" id="dashboardSection">
-            <section class="overview-grid" aria-label="ملخص العضويات والتنبيهات">
+        <main class="page max-w-7xl dashboard-page" id="dashboardSection">
+            <section class="overview-grid dashboard-overview" aria-label="ملخص العضويات والتنبيهات">
             <section class="stats-grid" aria-label="ملخص العضويات">
                 <div class="stat-card bg-white border-slate-200 rounded-xl shadow-sm"><div class="stat-head"><span class="stat-label">إجمالي الأعضاء</span><span class="stat-icon rounded-lg" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></span></div><strong class="stat-value" id="statTotal">0</strong><span class="stat-caption">كل المشتركين</span></div>
                 <div class="stat-card active bg-white border-slate-200 rounded-xl shadow-sm"><div class="stat-head"><span class="stat-label">نشطة</span><span class="stat-icon rounded-lg" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8 12 2.5 2.5L16.5 9"/></svg></span></div><strong class="stat-value" id="statActive">0</strong><span class="stat-caption">اشتراك ساري</span></div>
@@ -54,7 +54,7 @@
                 <div class="stat-card frozen bg-white border-slate-200 rounded-xl shadow-sm"><div class="stat-head"><span class="stat-label">مجمدة الآن</span><span class="stat-icon rounded-lg" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M4.2 7.5l15.6 9M4.2 16.5l15.6-9M5 12h14"/></svg></span></div><strong class="stat-value" id="statFrozen">0</strong><span class="stat-caption">متوقفة مؤقتاً</span></div>
             </section>
 
-            <section class="panel alerts-panel bg-white border-slate-200 rounded-xl shadow-panel" id="alertsSection">
+            <section class="panel alerts-panel dashboard-panel bg-white border-slate-200 rounded-xl shadow-panel" id="alertsSection">
                 <div class="panel-header alerts-panel-header"><div class="alerts-heading"><span class="alerts-heading-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></svg></span><div><span class="alerts-eyebrow">متابعة اليوم</span><h3>التنبيهات اليومية</h3><p>راجع الحالات التي تحتاج إلى إجراء سريع</p></div></div><span class="alerts-count" id="alertsCount">0 تنبيه</span></div>
                 <div class="alerts-toolbar" role="search"><label class="alerts-search-field"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><span class="visually-hidden">بحث في التنبيهات اليومية</span><input id="alertsSearch" type="search" placeholder="ابحث باسم المشترك أو رقم الهاتف" autocomplete="off"></label><span class="alerts-search-result" id="alertsSearchResult"></span></div>
                 <div class="alerts-list" id="alertsList"><div class="empty">جاري تحميل التنبيهات…</div></div>
@@ -89,7 +89,7 @@
             </section>
             </section>
 
-            <section class="dashboard-analytics panel" id="dashboardAnalytics" hidden aria-labelledby="dashboardAnalyticsTitle"></section>
+            <section class="dashboard-analytics dashboard-panel panel" id="dashboardAnalytics" hidden aria-labelledby="dashboardAnalyticsTitle"></section>
 
             <section class="reports-section panel" id="reportsSection" hidden aria-labelledby="reportsTitle"></section>
 
