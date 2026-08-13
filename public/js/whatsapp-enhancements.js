@@ -60,9 +60,9 @@
             function messageFrame(title, lines) {
                 return [
                     '╭────────────────────────────╮',
-                    `│          ${title}          │`,
+                    `│  ${title}`,
                     '├────────────────────────────┤',
-                    ...lines.map((line) => line ? `│ ${line}` : '│'),
+                    ...lines.map((line) => line ? `│  ${line}` : '│'),
                     '╰────────────────────────────╯'
                 ];
             }
@@ -88,31 +88,34 @@
                 const paymentMethod = inlineText(labels.payment || membership.paymentMethod || payload.paymentMethod);
                 const remainingAmount = Math.max(0, Number(amountRemaining) || 0);
                 const accountLines = [
-                    'السعر الأساسي: *' + money(listPrice) + '*',
-                    'الخصم: *' + money(discountAmount) + '*',
-                    'المستحق: *' + money(amountDue) + '*',
-                    'المدفوع: *' + money(amountPaid) + '*'
+                    '• السعر الأساسي: *' + money(listPrice) + '*',
+                    '• الخصم: *' + money(discountAmount) + '*',
+                    '• المستحق: *' + money(amountDue) + '*',
+                    '• المدفوع: *' + money(amountPaid) + '*'
                 ];
-                if (remainingAmount > 0) accountLines.push('المتبقي: *' + money(remainingAmount) + '*');
-                accountLines.push('طريقة الدفع: *' + paymentMethod + '*');
+                if (remainingAmount > 0) accountLines.push('• المتبقي: *' + money(remainingAmount) + '*');
+                accountLines.push('• طريقة الدفع: *' + paymentMethod + '*');
                 return messageFrame('TOP GYM', [
                     `السلام عليكم يا *${greetingName}*`,
                     '',
                     'مبروك يا بطل 🎉',
-                    `${ICONS.check} تم تسجيل اشتراكك في *TOP GYM* بنجاح`,
+                    'تم تسجيل اشتراكك في',
+                    `*TOP GYM* بنجاح ${ICONS.check}`,
                     '',
                     '*تفاصيل اشتراكك*',
-                    'الباقة: *' + plan + '*',
-                    'النوع: *' + type + '*',
-                    'البداية: *' + formatDate(membership.startDate || payload.startDate) + '*',
-                    'الانتهاء: *' + formatDate(membership.effectiveEndDate || membership.endDate || payload.endDate) + '*',
+                    '• الباقة: *' + plan + '*',
+                    '• النوع: *' + type + '*',
+                    '• البداية: *' + formatDate(membership.startDate || payload.startDate) + '*',
+                    '• الانتهاء: *' + formatDate(membership.effectiveEndDate || membership.endDate || payload.endDate) + '*',
                     '',
                     '*ملخص الحساب*',
                     ...accountLines,
                     '',
-                    'مبسوطين إنك بقيت جزء من *TOP GYM* ❤️',
-                    'مستنيينك تبدأ بقوة، وإحنا معاك',
-                    'خطوة بخطوة لحد ما توصل لهدفك'
+                    'مبسوطين إنك بقيت جزء من',
+                    '*TOP GYM* ❤️',
+                    'مستنيينك تبدأ بقوة،',
+                    'وإحنا معاك خطوة بخطوة',
+                    'لحد ما توصل لهدفك'
                 ]).join('\n');
             }
 
