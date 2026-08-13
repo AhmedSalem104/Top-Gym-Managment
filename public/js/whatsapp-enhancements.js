@@ -59,11 +59,11 @@
 
             function messageFrame(title, lines) {
                 return [
-                    '╭────────────────────╮',
-                    `│  *${title}*`,
-                    '├────────────────────┤',
-                    ...lines.map((line) => `│  ${line}`),
-                    '╰────────────────────╯'
+                    '╭────────────────────────────╮',
+                    `│          ${title}          │`,
+                    '├────────────────────────────┤',
+                    ...lines.map((line) => line ? `│ ${line}` : '│'),
+                    '╰────────────────────────────╯'
                 ];
             }
 
@@ -87,33 +87,33 @@
                 const listPrice = membership.listPrice ?? payload.listPrice ?? (Number(amountDue) + Number(discountAmount));
                 const paymentMethod = inlineText(labels.payment || membership.paymentMethod || payload.paymentMethod);
                 const remainingAmount = Math.max(0, Number(amountRemaining) || 0);
-                const lines = [
+                const accountLines = [
+                    'السعر الأساسي: *' + money(listPrice) + '*',
+                    'الخصم: *' + money(discountAmount) + '*',
+                    'المستحق: *' + money(amountDue) + '*',
+                    'المدفوع: *' + money(amountPaid) + '*'
+                ];
+                if (remainingAmount > 0) accountLines.push('المتبقي: *' + money(remainingAmount) + '*');
+                accountLines.push('طريقة الدفع: *' + paymentMethod + '*');
+                return messageFrame('TOP GYM', [
                     `السلام عليكم يا *${greetingName}*`,
                     '',
-                    '🎉 *مبروك*',
-                    `${ICONS.check} تم تسجيل اشتراكك في TOP GYM بنجاح`,
+                    'مبروك يا بطل 🎉',
+                    `${ICONS.check} تم تسجيل اشتراكك في *TOP GYM* بنجاح`,
                     '',
-                    ...messageFrame('تفاصيل اشتراكك', [
-                        `${ICONS.clipboard} الباقة: *${plan}*`,
-                        `${ICONS.timer} النوع: *${type}*`,
-                        `${ICONS.calendar} البداية: *${formatDate(membership.startDate || payload.startDate)}*`,
-                        `${ICONS.calendarEnd} الانتهاء: *${formatDate(membership.effectiveEndDate || membership.endDate || payload.endDate)}*`
-                    ]),
+                    '*تفاصيل اشتراكك*',
+                    'الباقة: *' + plan + '*',
+                    'النوع: *' + type + '*',
+                    'البداية: *' + formatDate(membership.startDate || payload.startDate) + '*',
+                    'الانتهاء: *' + formatDate(membership.effectiveEndDate || membership.endDate || payload.endDate) + '*',
                     '',
-                    ...messageFrame('ملخص الحساب', [
-                        `${ICONS.money} السعر الأساسي: *${money(listPrice)}*`,
-                        `${ICONS.gift} الخصم: *${money(discountAmount)}*`,
-                        `${ICONS.receipt} المستحق: *${money(amountDue)}*`,
-                        `${ICONS.cash} المدفوع: *${money(amountPaid)}*`
-                    ])
-                ];
-                const summaryEndIndex = lines.lastIndexOf('╰────────────────────╯');
-                if (remainingAmount > 0) {
-                    lines.splice(summaryEndIndex, 0, `│  ${ICONS.money} المتبقي: *${money(remainingAmount)}*`);
-                }
-                lines.splice(summaryEndIndex + (remainingAmount > 0 ? 1 : 0), 0, `│  ${ICONS.card} طريقة الدفع: *${paymentMethod}*`);
-                lines.push('', `${ICONS.sparkles} نتمنالك تمرين قوي وتجربة حلوة معانا!`, 'وشكرًا لاختيارك *TOP GYM* ❤️');
-                return lines.join('\n');
+                    '*ملخص الحساب*',
+                    ...accountLines,
+                    '',
+                    'مبسوطين إنك بقيت جزء من *TOP GYM* ❤️',
+                    'مستنيينك تبدأ بقوة، وإحنا معاك',
+                    'خطوة بخطوة لحد ما توصل لهدفك'
+                ]).join('\n');
             }
 
             function openWhatsappChat(phone, message = '', existingWindow = null) {
@@ -198,76 +198,92 @@
                     const status = String(membership.status || '').toLowerCase();
                     const endDate = formatDate(membership.effectiveEndDate || membership.endDate);
                     if (status === 'frozen') {
-                        return [
+                        return messageFrame('🧊 TOP GYM', [
                             `السلام عليكم يا *${greetingName}*`,
                             '',
-                            ...messageFrame('تذكير من TOP GYM', [
-                                `اشتراكك متجمّد لحد *${formatDate(membership.freezeEnd)}* 🧊`,
-                                'لو محتاج أي تفاصيل، راجع الإدارة وهنساعدك.'
-                            ]),
+                            'اشتراكك متجمّد لحد:',
+                            `*${formatDate(membership.freezeEnd)}*`,
                             '',
-                            'مستنيينك ترجع تكمل تمرينك معانا ❤️',
-                            'شكرًا لاختيارك *TOP GYM*'
-                        ].join('\n');
+                            'ياريت تراجع الإدارة لو محتاج أي تفاصيل.',
+                            '',
+                            'مستنيينك ترجع تكمل تمرينك معانا ❤️'
+                        ]).join('\n');
                     }
                     if (status === 'expired') {
-                        return [
+                        return messageFrame('⚠️ TOP GYM', [
                             `السلام عليكم يا *${greetingName}*`,
                             '',
-                            ...messageFrame('تذكير من TOP GYM', [
-                                'حبيت أنبهك إن اشتراكك في TOP GYM',
-                                `انتهى بتاريخ *${endDate}*.`,
-                                '',
-                                'لو حابب ترجع تتمرن معانا، تواصل مع الإدارة لتجديد الاشتراك ومعرفة التفاصيل.'
-                            ]),
+                            'حبيت أنبهك إن اشتراكك في',
+                            '*TOP GYM* انتهى بتاريخ:',
                             '',
-                            'مستنيين نشوفك قريب ❤️',
-                            'شكرًا لاختيارك *TOP GYM*'
-                        ].join('\n');
+                            `*${endDate}*`,
+                            '',
+                            'ياريت تمر علينا في الإدارة',
+                            'لتجديد الاشتراك والرجوع',
+                            'للتمرين من جديد.',
+                            '',
+                            'مكانك معانا موجود',
+                            'ومستنيين نشوفك راجع بقوة',
+                            '',
+                            'وجودك في *TOP GYM* بيفرق معانا ❤️'
+                        ]).join('\n');
                     }
-                    return [
+                    return messageFrame('⏳ TOP GYM', [
                         `السلام عليكم يا *${greetingName}*`,
                         '',
-                        ...messageFrame('تذكير من TOP GYM', [
-                            'حبيت أفكرك إن اشتراكك في TOP GYM',
-                            `هينتهي يوم *${endDate}* ⏳`,
-                            '',
-                            'لو حابب تجدده، تقدر تراجع الإدارة في أي وقت وهنساعدك بكل التفاصيل.'
-                        ]),
+                        'حبيت أفكرك إن اشتراكك في',
+                        '*TOP GYM* هينتهي يوم:',
                         '',
-                        'مستنيينك دايمًا في التمرين ❤️',
-                        'شكرًا لاختيارك *TOP GYM*'
-                    ].join('\n');
+                        `*${endDate}*`,
+                        '',
+                        'ياريت تعدّي علينا في الإدارة',
+                        'لتجديد الاشتراك واستمرار تمرينك',
+                        'من غير انقطاع.',
+                        '',
+                        'مستنيينك تكمل معانا يا بطل',
+                        'ولسه قدامنا أهداف نحققها سوا',
+                        '',
+                        '*TOP GYM* ❤️'
+                    ]).join('\n');
                 }
                 if (kind === 'debt') {
-                    return [
+                    return messageFrame('TOP GYM', [
                         `السلام عليكم يا *${greetingName}*`,
                         '',
-                        ...messageFrame('تذكير بسيط من TOP GYM', [
-                            'حبيت أفكرك إن لسه فيه مبلغ متبقي',
-                            `على اشتراكك بقيمة *${money(membership.amountRemaining)}*.`,
-                            `اشتراكك هينتهي بتاريخ *${formatDate(membership.effectiveEndDate || membership.endDate)}*.`,
-                            '',
-                            'لما يكون مناسب ليك، تقدر تراجع الإدارة لاستكمال السداد.'
-                        ]),
+                        'بنحب نفكرك إن فيه مبلغ متبقي',
+                        'على اشتراكك بقيمة:',
                         '',
-                        'شكرًا ليك، ومستنيينك دايمًا في TOP GYM ❤️'
-                    ].join('\n');
+                        `*${money(membership.amountRemaining)}*`,
+                        '',
+                        'واشتراكك مستمر لحد:',
+                        `*${formatDate(membership.effectiveEndDate || membership.endDate)}*`,
+                        '',
+                        'ياريت تعدّي علينا في الإدارة',
+                        'لاستكمال السداد وتنظيم حسابك.',
+                        '',
+                        'مستنيينك في الجيم يا بطل',
+                        'وجودك وتمرينك معانا مهم،',
+                        'ولسه عندنا أهداف نكملها سوا',
+                        '',
+                        'شكرًا إنك جزء من *TOP GYM* ❤️'
+                    ]).join('\n');
                 }
-                const days = member?.daysSinceLastVisit;
-                return [
+                return messageFrame('TOP GYM', [
                     `السلام عليكم يا *${greetingName}*`,
                     '',
-                    ...messageFrame('وحشتنا في TOP GYM', [
-                        'بقالنا فترة مشوفناكش في الجيم.',
-                        days == null ? 'مستنيين نشوفك راجع تتمرن معانا قريب.' : `عدّى ${days} يوم من آخر تسجيل حضور ليك.`,
-                        `اشتراكك لسه مستمر لحد *${formatDate(membership.effectiveEndDate || membership.endDate)}*.`,
-                        '',
-                        'يلا نرجع للحماس تاني 💪'
-                    ]),
+                    'بقالنا فترة مشوفناكش في الجيم',
                     '',
-                    'شكرًا لاختيارك TOP GYM ❤️'
-                ].join('\n');
+                    'اشتراكك لسه مستمر لحد:',
+                    `*${formatDate(membership.effectiveEndDate || membership.endDate)}*`,
+                    '',
+                    'ومستنيين نشوفك راجع تتمرن',
+                    'معانا قريب',
+                    '',
+                    'الجيم من غيرك ناقصه حماس',
+                    'يلا نرجع نكمل على هدفك سوا ❤️',
+                    '',
+                    '*TOP GYM*'
+                ]).join('\n');
             }
 
             async function sendAlertWhatsapp(memberId, kind, button = null) {
