@@ -740,7 +740,7 @@ function dashboardFromMembers(members, today = todayInTimeZone()) {
         if (!membership) return false;
         return membership.status === 'frozen'
             || membership.status === 'expiring_soon'
-            || (membership.status === 'expired' && membership.endDate === today);
+            || membership.status === 'expired';
     });
     return {
         today,
@@ -1020,7 +1020,7 @@ async function getDashboard() {
                 SUM(CASE WHEN computedStatus = 'expired' THEN 1 ELSE 0 END) AS expired,
                 SUM(CASE WHEN computedStatus = 'frozen' THEN 1 ELSE 0 END) AS frozen,
                 (
-                    SELECT TOP (50)
+                    SELECT
                         id, fullName, phone, email, registrationDate, memberNotes,
                         memberCreatedAt, memberUpdatedAt, membershipId, membershipPlan,
                         membershipType, startDate, endDate, membershipNotes,
@@ -1029,8 +1029,7 @@ async function getDashboard() {
                         amountRemaining, paymentMethod, paymentPaidAt,
                         computedStatus, daysRemaining
                     FROM member_rows
-                    WHERE computedStatus IN ('frozen', 'expiring_soon')
-                       OR (computedStatus = 'expired' AND endDate = @today)
+                    WHERE computedStatus IN ('frozen', 'expiring_soon', 'expired')
                     ORDER BY effectiveEndDate ASC, fullName ASC, id ASC
                     FOR JSON PATH
                 ) AS alertsJson
@@ -1074,8 +1073,7 @@ async function getDashboard() {
         daysSinceLastVisit: item.daysSinceLastVisit == null ? null : Number(item.daysSinceLastVisit)
     }));
     const alerts = [...membershipAlerts, ...debtAlerts, ...inactiveAlerts]
-        .filter((item, index, list) => list.findIndex((candidate) => `${candidate.alertKind}:${candidate.id}` === `${item.alertKind}:${item.id}`) === index)
-        .slice(0, 100);
+        .filter((item, index, list) => list.findIndex((candidate) => `${candidate.alertKind}:${candidate.id}` === `${item.alertKind}:${item.id}`) === index);
     return {
         today,
         stats: {
