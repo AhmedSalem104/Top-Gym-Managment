@@ -77,7 +77,7 @@
                 const membership = member.membership || {};
                 const labels = detail.labels || {};
                 const name = inlineText(member.fullName || payload.fullName, 'عضو TOP GYM');
-                const greetingName = inlineText(name.split(/\s+/)[0], name);
+                const greetingName = name;
                 const plan = inlineText(labels.plan || membership.plan || payload.membershipPlan);
                 const type = inlineText(labels.type || membership.type || payload.membershipType);
                 const amountDue = membership.amountDue ?? payload.amountDue ?? 0;
@@ -192,7 +192,7 @@
 
             function buildAlertMessage(member, kind) {
                 const name = inlineText(member?.fullName, 'عضو TOP GYM');
-                const greetingName = inlineText(name.split(/\s+/)[0], name);
+                const greetingName = name;
                 const membership = member?.membership || {};
                 if (kind === 'membership') {
                     const status = String(membership.status || '').toLowerCase();
