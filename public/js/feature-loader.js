@@ -174,8 +174,13 @@
         const ensurePrint = () => ensureTab('print').catch((error) => console.warn('[TOP GYM] Print feature failed to load.', error));
         window.addEventListener('topgym:member-details-opened', ensurePrint);
         document.addEventListener('click', (event) => {
-            const button = event.target.closest('[data-payment-receipt]');
-            if (!button || window.topGymPrint?.printPaymentReceipt || button.dataset.topGymPrintLoading === 'true') return;
+            const receiptButton = event.target.closest('[data-payment-receipt]');
+            const memberPrintButton = event.target.closest('button[data-action="print"]');
+            const button = receiptButton || memberPrintButton;
+            const printReady = receiptButton
+                ? window.topGymPrint?.printPaymentReceipt
+                : window.topGymPrint?.printMember;
+            if (!button || printReady || button.dataset.topGymPrintLoading === 'true') return;
             event.preventDefault();
             event.stopImmediatePropagation();
             button.dataset.topGymPrintLoading = 'true';
