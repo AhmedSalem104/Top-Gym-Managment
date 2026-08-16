@@ -160,7 +160,16 @@ async function getReportData(query = {}) {
                 (SELECT COUNT_BIG(*) FROM dbo.body_measurements WHERE measured_at >= @fromDate AND measured_at < @nextDate) AS measurements_in_period,
                 (SELECT COUNT_BIG(*) FROM dbo.workout_sessions WHERE started_at >= @fromDate AND started_at < @nextDate) AS workout_sessions_in_period,
                 (SELECT COUNT_BIG(*) FROM dbo.workout_sessions WHERE started_at >= @fromDate AND started_at < @nextDate AND status = 'completed') AS completed_workout_sessions,
-                (SELECT COUNT_BIG(*) FROM dbo.meal_logs WHERE consumed_at >= @fromDate AND consumed_at < @nextDate) AS meal_logs_in_period;
+                (SELECT COUNT_BIG(*) FROM dbo.meal_logs WHERE consumed_at >= @fromDate AND consumed_at < @nextDate) AS meal_logs_in_period,
+                (SELECT COUNT_BIG(*) FROM dbo.athlete_checkins WHERE checkin_date >= @fromDate AND checkin_date < @nextDate) AS checkins_in_period,
+                (SELECT COALESCE(SUM(COALESCE(log.weight_kg, 0) * COALESCE(log.reps, 0)), 0)
+                 FROM dbo.workout_set_logs AS log
+                 INNER JOIN dbo.workout_sessions AS session ON session.id = log.session_id
+                 WHERE session.started_at >= @fromDate AND session.started_at < @nextDate) AS workout_volume_in_period,
+                (SELECT COALESCE(SUM(calc_calories), 0) FROM dbo.meal_logs WHERE consumed_at >= @fromDate AND consumed_at < @nextDate) AS meal_calories_in_period,
+                (SELECT COALESCE(SUM(calc_protein), 0) FROM dbo.meal_logs WHERE consumed_at >= @fromDate AND consumed_at < @nextDate) AS meal_protein_in_period,
+                (SELECT COALESCE(SUM(calc_carbs), 0) FROM dbo.meal_logs WHERE consumed_at >= @fromDate AND consumed_at < @nextDate) AS meal_carbs_in_period,
+                (SELECT COALESCE(SUM(calc_fats), 0) FROM dbo.meal_logs WHERE consumed_at >= @fromDate AND consumed_at < @nextDate) AS meal_fats_in_period;
             SELECT 'workout' AS category, status, COUNT_BIG(*) AS count
             FROM dbo.workout_programs GROUP BY status
             UNION ALL
@@ -311,7 +320,13 @@ async function getReportData(query = {}) {
                 measurementsInPeriod: Number(coachingStats.measurements_in_period || 0),
                 workoutSessionsInPeriod: Number(coachingStats.workout_sessions_in_period || 0),
                 completedWorkoutSessions: Number(coachingStats.completed_workout_sessions || 0),
-                mealLogsInPeriod: Number(coachingStats.meal_logs_in_period || 0)
+                mealLogsInPeriod: Number(coachingStats.meal_logs_in_period || 0),
+                checkinsInPeriod: Number(coachingStats.checkins_in_period || 0),
+                workoutVolumeInPeriod: Number(coachingStats.workout_volume_in_period || 0),
+                mealCaloriesInPeriod: Number(coachingStats.meal_calories_in_period || 0),
+                mealProteinInPeriod: Number(coachingStats.meal_protein_in_period || 0),
+                mealCarbsInPeriod: Number(coachingStats.meal_carbs_in_period || 0),
+                mealFatsInPeriod: Number(coachingStats.meal_fats_in_period || 0)
             },
             statuses: coachingStatusRows.map((row) => ({ category: row.category, status: row.status, count: Number(row.count || 0) })),
             workoutPrograms: workoutProgramRows.map((row) => ({

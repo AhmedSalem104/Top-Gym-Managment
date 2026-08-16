@@ -54,8 +54,10 @@ const {
     createExternalTrainee,
     createMealLog,
     createMeasurement,
+    createCheckin,
     createWorkoutProgram,
     deleteDietPlan,
+    deleteCheckin,
     deleteMeasurement,
     deleteWorkoutProgram,
     endWorkoutSession,
@@ -65,6 +67,7 @@ const {
     getDietPlans,
     getExternalTrainees,
     getMealLogs,
+    getCheckins,
     getMeasurements,
     getTrainingOverview,
     getWorkoutProgram,
@@ -76,6 +79,7 @@ const {
     startWorkoutSession,
     updateDietPlan,
     updateClientBasic,
+    updateCheckin,
     updateMeasurement,
     updateWorkoutProgram
 } = require('./src/coaching-service');
@@ -488,6 +492,23 @@ app.put('/api/clients/:id/measurements/:measurementId', asyncRoute(async (reques
 
 app.delete('/api/clients/:id/measurements/:measurementId', asyncRoute(async (request, response) => {
     await deleteMeasurement(request.params.id, request.params.measurementId);
+    response.status(204).send();
+}));
+
+app.get('/api/clients/:id/checkins', asyncRoute(async (request, response) => {
+    response.json({ checkins: await getCheckins(request.params.id, { limit: request.query.limit }) });
+}));
+
+app.post('/api/clients/:id/checkins', asyncRoute(async (request, response) => {
+    response.status(201).json({ checkin: await createCheckin(request.params.id, request.body) });
+}));
+
+app.put('/api/clients/:id/checkins/:checkinId', asyncRoute(async (request, response) => {
+    response.json({ checkin: await updateCheckin(request.params.id, request.params.checkinId, request.body) });
+}));
+
+app.delete('/api/clients/:id/checkins/:checkinId', asyncRoute(async (request, response) => {
+    await deleteCheckin(request.params.id, request.params.checkinId);
     response.status(204).send();
 }));
 

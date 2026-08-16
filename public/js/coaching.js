@@ -14,6 +14,8 @@
         requestId: 0,
         abortController: null,
         catalog: { exercises: [], foods: [] },
+        catalogPromise: null,
+        builderClientsPromise: null,
         builder: null,
         profile: null
     };
@@ -189,11 +191,26 @@
 
     async function loadCatalog() {
         if (state.catalog.exercises.length && state.catalog.foods.length) return;
-        const loadCollection = async (type) => {
-            const pages = await Promise.all([1, 2, 3].map((page) => requestJson(`/api/library/${type}?page=${page}&pageSize=100`)));
-            return pages.flatMap((page) => page.items || []).filter((item, index, list) => list.findIndex((candidate) => candidate.id === item.id) === index);
-        };
-        [state.catalog.exercises, state.catalog.foods] = await Promise.all([loadCollection('exercises'), loadCollection('foods')]);
+        if (state.catalogPromise) return state.catalogPromise;
+        state.catalogPromise = (async () => {
+            const loadCollection = async (type) => {
+                const firstPage = await requestJson(`/api/library/${type}?page=1&pageSize=100`);
+                const totalPages = Math.min(50, Math.max(1, Number(firstPage.pagination?.totalPages) || 1));
+                const remainingPages = totalPages > 1
+                    ? await Promise.all(Array.from({ length: totalPages - 1 }, (_, index) => requestJson(`/api/library/${type}?page=${index + 2}&pageSize=100`)))
+                    : [];
+                return [firstPage, ...remainingPages]
+                    .flatMap((page) => page.items || [])
+                    .filter((item, index, list) => list.findIndex((candidate) => candidate.id === item.id) === index);
+            };
+            [state.catalog.exercises, state.catalog.foods] = await Promise.all([loadCollection('exercises'), loadCollection('foods')]);
+            return state.catalog;
+        })();
+        try {
+            return await state.catalogPromise;
+        } finally {
+            state.catalogPromise = null;
+        }
     }
 
     function activateCoachingSummary() {
@@ -296,6 +313,7 @@
         try {
             const data = await requestJson('/api/external-trainees', { method: 'POST', body: JSON.stringify({ fullName: $('externalFullName').value, phone: $('externalPhone').value, email: $('externalEmail').value, registrationDate: $('externalRegistrationDate').value, notes: $('externalNotes').value }) });
             closeDialog($('externalTraineeDialog'));
+            state.builderClients = null;
             state.loaded = false;
             await loadTrainees(true);
             notify('تم إنشاء ملف المتدرب. أنشئ له النظام من زر التدريب أو التغذية.');
@@ -313,6 +331,12 @@
         try {
             state.profile = await requestJson(`/api/clients/${memberId}/training-overview`);
             renderProfileEnhanced(state.profile);
+            renderProfileCheckins(state.profile.checkins || [], state.profile.progress?.checkinCount);
+            renderProfileTrainingLoad(state.profile);
+            renderProfileNutritionLoad(state.profile);
+            renderProfileWeeklySummary(state.profile);
+            renderProfileActivity(state.profile.activity || []);
+            renderProfileCoachingAlerts(state.profile);
         } catch (error) {
             $('coachingProfileContent').innerHTML = `<div class="coaching-empty error"><strong>تعذر فتح الملف</strong><span>${escapeHtml(error.message)}</span></div>`;
             notify(error.message, 'error');
@@ -359,14 +383,210 @@
         const dietCards = diets.map((plan) => `<article class="profile-system-card"><div><span class="system-type diet">خطة تغذية</span><strong>${escapeHtml(plan.name)}</strong><small>${number(plan.targetCalories, 0)} سعر · ${number(plan.mealsPerDay || plan.mealCount, 0)} وجبات · ${number(plan.loggedMeals, 0)} تسجيل</small><div class="profile-inline-progress diet"><i style="width:${progressPercent(plan.progressPercent)}%"></i></div></div><div><span class="system-status ${plan.status}">${progressPercent(plan.progressPercent)}٪ · ${STATUS_LABELS[plan.status] || plan.status}</span><button class="btn btn-light btn-small" data-profile-action="edit-diet" data-id="${plan.id}">تعديل</button><button class="btn btn-danger btn-small" data-profile-action="delete-diet" data-id="${plan.id}">حذف</button></div></article>`).join('');
         const measurements = (overview.measurements || []).slice(0, 8).map((item) => `<tr><td>${escapeHtml(item.measuredAt)}</td><td>${item.weightKg == null ? '—' : `${number(item.weightKg, 1)} كجم`}</td><td>${item.bodyFatPercent == null ? '—' : `${number(item.bodyFatPercent, 1)}%`}</td><td><button class="btn btn-light btn-small" data-measurement-action="edit" data-id="${item.id}">تعديل</button><button class="btn btn-danger btn-small" data-measurement-action="delete" data-id="${item.id}">حذف</button></td></tr>`).join('');
         const sessionRows = sessions.slice(0, 6).map((session) => `<tr><td>${escapeHtml(session.programName || 'جلسة تدريب')}</td><td>${escapeHtml(session.routineName || '—')}</td><td>${escapeHtml(session.status === 'completed' ? 'مكتملة' : session.status === 'started' ? 'مفتوحة' : 'ملغاة')}</td><td>${number(session.setCount, 0)}</td></tr>`).join('');
-        const mealRows = mealLogs.slice(0, 6).map((log) => `<tr><td>${escapeHtml(log.foodName || 'طعام')}</td><td>${escapeHtml(log.mealName || '—')}</td><td>${number(log.calories, 0)}</td><td>${escapeHtml(new Date(log.consumedAt).toLocaleDateString('ar-EG'))}</td></tr>`).join('');
+        const mealRows = mealLogs.slice(0, 6).map((log) => `<tr><td><strong>${escapeHtml(log.foodName || 'طعام')}</strong><small>${number(log.consumedQuantity, 1)} ${escapeHtml(log.servingUnit || '')}</small></td><td>${escapeHtml(log.mealName || '—')}</td><td><strong>${number(log.calories, 0)}</strong><small class="profile-meal-macros">P ${number(log.protein, 1)} · C ${number(log.carbs, 1)} · F ${number(log.fats, 1)}</small></td><td>${escapeHtml(new Date(log.consumedAt).toLocaleDateString('ar-EG'))}</td></tr>`).join('');
         $('coachingProfileContent').innerHTML = `<div class="profile-hero"><div class="trainee-avatar large">${escapeHtml((member.fullName || 'م').trim().slice(0, 1))}</div><div><strong>${escapeHtml(member.fullName)}</strong><span>${escapeHtml(member.phone)}${member.email ? ` · ${escapeHtml(member.email)}` : ''}</span><small>ملف العميل #${member.id} · التنفيذ والتقدم محفوظان في قاعدة البيانات</small></div><button class="btn btn-primary btn-small" data-profile-action="subscribe">إضافة اشتراك Gym</button></div>
             <div class="profile-stats"><article><span>الوزن الحالي</span><strong>${overview.progress.currentWeight == null ? '—' : `${number(overview.progress.currentWeight, 1)} كجم`}</strong></article><article><span>تغير الوزن</span><strong>${overview.progress.weightChange == null ? '—' : `${overview.progress.weightChange > 0 ? '+' : ''}${number(overview.progress.weightChange, 1)} كجم`}</strong></article><article><span>الجلسات المكتملة</span><strong>${number(overview.progress.completedSessions, 0)}</strong></article><article><span>تسجيلات الوجبات</span><strong>${number(overview.progress.mealLogCount, 0)}</strong></article></div>
             <div class="profile-actions"><button class="btn btn-primary" data-profile-action="new-workout">+ برنامج تدريب</button><button class="btn btn-light" data-profile-action="new-diet">+ خطة تغذية</button><button class="btn btn-light" data-profile-action="start-session">بدء جلسة</button><button class="btn btn-light" data-profile-action="log-meal">تسجيل وجبة</button><button class="btn btn-light" data-profile-action="new-measurement">+ قياس جديد</button><button class="btn btn-light" data-profile-action="edit-client">تعديل البيانات الأساسية</button></div>
             <div class="profile-progress-dashboard"><div class="profile-progress-card"><div class="profile-section-head"><h4>تطور الوزن</h4><span>${escapeHtml(overview.progress.lastMeasurementAt || 'لا توجد قياسات')}</span></div>${renderMeasurementBars(overview.measurements)}</div><div class="profile-progress-card"><div class="profile-section-head"><h4>نسبة تنفيذ الأنظمة</h4><span>تتحدث مع كل جلسة أو وجبة</span></div><div class="profile-progress-meters"><div><span>التدريب</span><b>${progressPercent(overview.progress.workoutCompletionPercent)}٪</b><i><em style="width:${progressPercent(overview.progress.workoutCompletionPercent)}%"></em></i></div><div><span>التغذية</span><b>${progressPercent(overview.progress.nutritionCompletionPercent)}٪</b><i><em style="width:${progressPercent(overview.progress.nutritionCompletionPercent)}%"></em></i></div></div></div></div>
             <div class="profile-section"><div class="profile-section-head"><h4>الأنظمة الحالية</h4><span>${number(workouts.length + diets.length, 0)} نظام</span></div>${workoutCards || dietCards ? `${workoutCards}${dietCards}` : '<div class="profile-empty">لم يتم إنشاء نظام بعد.</div>'}</div>
             <div class="profile-section"><div class="profile-section-head"><h4>القياسات والمتابعة</h4><span>${number((overview.measurements || []).length, 0)} قياس</span></div>${measurements ? `<div class="profile-table-wrap"><table class="profile-table"><thead><tr><th>التاريخ</th><th>الوزن</th><th>الدهون</th><th>الإجراءات</th></tr></thead><tbody>${measurements}</tbody></table></div>` : '<div class="profile-empty">أضف أول قياس لمتابعة التقدم.</div>'}</div>
-            <div class="profile-execution-grid"><section class="profile-section"><div class="profile-section-head"><h4>جلسات التدريب الأخيرة</h4><span>${number(sessions.length, 0)}</span></div>${sessionRows ? `<div class="profile-table-wrap"><table class="profile-table"><thead><tr><th>البرنامج</th><th>اليوم</th><th>الحالة</th><th>المجموعات</th></tr></thead><tbody>${sessionRows}</tbody></table></div>` : '<div class="profile-empty">لم يتم تسجيل جلسات بعد.</div>'}</section><section class="profile-section"><div class="profile-section-head"><h4>سجل الوجبات</h4><span>${number(mealLogs.length, 0)}</span></div>${mealRows ? `<div class="profile-table-wrap"><table class="profile-table"><thead><tr><th>الطعام</th><th>الوجبة</th><th>السعرات</th><th>التاريخ</th></tr></thead><tbody>${mealRows}</tbody></table></div>` : '<div class="profile-empty">لم يتم تسجيل وجبات بعد.</div>'}</section></div>`;
+            <div class="profile-execution-grid"><section class="profile-section"><div class="profile-section-head"><h4>جلسات التدريب الأخيرة</h4><span>${number(overview.progress.sessionCount, 0)} إجمالي</span></div>${sessionRows ? `<div class="profile-table-wrap"><table class="profile-table"><thead><tr><th>البرنامج</th><th>اليوم</th><th>الحالة</th><th>المجموعات</th></tr></thead><tbody>${sessionRows}</tbody></table></div>` : '<div class="profile-empty">لم يتم تسجيل جلسات بعد.</div>'}</section><section class="profile-section"><div class="profile-section-head"><h4>سجل الوجبات</h4><span>${number(overview.progress.mealLogCount, 0)} إجمالي</span></div>${mealRows ? `<div class="profile-table-wrap"><table class="profile-table"><thead><tr><th>الطعام</th><th>الوجبة</th><th>السعرات</th><th>التاريخ</th></tr></thead><tbody>${mealRows}</tbody></table></div>` : '<div class="profile-empty">لم يتم تسجيل وجبات بعد.</div>'}</section></div>`;
+    }
+
+    function checkinReadiness(checkin) {
+        const positive = [checkin.sleepQuality, checkin.mood].filter((value) => value != null).map((value) => Number(value) / 5);
+        const inverse = [checkin.fatigue, checkin.soreness, checkin.stress].filter((value) => value != null).map((value) => (6 - Number(value)) / 5);
+        const scores = [...positive, ...inverse];
+        return scores.length ? Math.round((scores.reduce((sum, value) => sum + value, 0) / scores.length) * 100) : null;
+    }
+
+    function checkinValue(value, suffix = '') {
+        return value == null || value === '' ? '—' : `${number(value, 1)}${suffix}`;
+    }
+
+    function checkinInsight(checkin) {
+        if (!checkin) return { tone: 'neutral', label: 'لا توجد متابعة', description: 'أضف متابعة يومية حتى تظهر قراءة الاستشفاء.' };
+        const readiness = checkinReadiness(checkin);
+        const highLoad = [checkin.fatigue, checkin.soreness, checkin.stress].some((value) => Number(value) >= 4);
+        const shortSleep = checkin.sleepHours != null && Number(checkin.sleepHours) < 6;
+        if (highLoad || shortSleep || (readiness != null && readiness < 50)) return { tone: 'alert', label: 'تحتاج إلى استشفاء', description: 'الإشارات الحالية تستدعي تخفيف الحمل ومراجعة شدة تمرين اليوم.' };
+        if (readiness != null && readiness >= 75) return { tone: 'good', label: 'جاهزية جيدة', description: 'مؤشرات المتابعة مناسبة للاستمرار مع الالتزام بالخطة الحالية.' };
+        if (readiness != null) return { tone: 'watch', label: 'استشفاء متوسط', description: 'تابع المؤشرات في المتابعة القادمة واضبط الحمل حسب استجابة المتدرب.' };
+        return { tone: 'neutral', label: 'بيانات جزئية', description: 'أكمل مؤشرات النوم والمزاج والإجهاد للحصول على قراءة أدق.' };
+    }
+
+    function renderCheckinTrend(checkins = []) {
+        const rows = checkins.slice(0, 7).filter((checkin) => checkinReadiness(checkin) != null).reverse();
+        if (!rows.length) return '<div class="profile-checkin-trend-empty">أكمل مؤشرات المتابعة لعرض اتجاه الجاهزية.</div>';
+        const values = rows.map((checkin) => checkinReadiness(checkin));
+        const latest = values[values.length - 1];
+        const previous = values.slice(0, -1);
+        const previousAverage = previous.length ? previous.reduce((sum, value) => sum + value, 0) / previous.length : latest;
+        const difference = Math.round(latest - previousAverage);
+        const trend = difference >= 8 ? { label: 'تحسن', className: 'up' } : difference <= -8 ? { label: 'انخفاض', className: 'down' } : { label: 'مستقر', className: 'steady' };
+        return `<div class="profile-checkin-trend-head"><span>آخر ${number(rows.length, 0)} متابعات مكتملة</span><b class="${trend.className}">${trend.label}${difference === 0 ? '' : ` ${difference > 0 ? '+' : ''}${number(difference, 0)}٪`}</b></div><div class="profile-checkin-trend-bars" role="img" aria-label="اتجاه مؤشر الجاهزية خلال آخر المتابعات">${rows.map((checkin, index) => { const value = values[index]; return `<div class="profile-checkin-trend-bar" title="${escapeHtml(checkin.checkinDate)} · ${number(value, 0)}٪"><span style="height:${Math.max(18, value)}%"><b>${number(value, 0)}</b></span><small>${escapeHtml(String(checkin.checkinDate).slice(5))}</small></div>`; }).join('')}</div>`;
+    }
+
+    function renderProfileCheckins(checkins = [], totalCount = checkins.length) {
+        const content = $('coachingProfileContent');
+        if (!content) return;
+        content.querySelector('.profile-checkin-section')?.remove();
+        const items = checkins.slice(0, 7);
+        const latest = items[0];
+        const insight = checkinInsight(latest);
+        const latestReadiness = latest ? checkinReadiness(latest) : null;
+        const cards = items.map((checkin) => {
+            const readiness = checkinReadiness(checkin);
+            return `<article class="profile-checkin-card"><div class="profile-checkin-card-head"><div><strong>${escapeHtml(checkin.checkinDate)}</strong><span>${readiness == null ? 'متابعة يومية' : `جاهزية ${number(readiness, 0)}٪`}</span></div><div class="profile-checkin-card-actions"><button type="button" class="btn btn-light btn-small" data-checkin-action="edit" data-id="${checkin.id}" aria-label="تعديل المتابعة">تعديل</button><button type="button" class="btn btn-danger btn-small" data-checkin-action="delete" data-id="${checkin.id}" aria-label="حذف المتابعة">حذف</button></div></div><div class="profile-checkin-signals"><span>النوم ${checkinValue(checkin.sleepHours, ' س')}</span><span>الإجهاد ${checkinValue(checkin.fatigue, '/5')}</span><span>الألم ${checkinValue(checkin.soreness, '/5')}</span><span>المزاج ${checkinValue(checkin.mood, '/5')}</span>${checkin.restingHr == null ? '' : `<span>نبض ${checkinValue(checkin.restingHr)}</span>`}${checkin.hrv == null ? '' : `<span>HRV ${checkinValue(checkin.hrv)}</span>`}</div>${checkin.notes ? `<p class="profile-checkin-notes">${escapeHtml(checkin.notes)}</p>` : ''}</article>`;
+        }).join('');
+        const section = document.createElement('section');
+        section.className = 'profile-section profile-checkin-section';
+        section.innerHTML = `<div class="profile-section-head"><div><h4>المتابعة اليومية والاستشفاء</h4><small class="profile-section-description">نوم، إجهاد، ألم عضلي ومؤشرات تساعدك على ضبط الحمل التدريبي.</small></div><div class="profile-section-head-actions"><span>${number(totalCount, 0)} متابعة</span><button type="button" class="btn btn-light btn-small" data-checkin-action="new">+ إضافة متابعة</button></div></div><div class="profile-checkin-insight ${insight.tone}"><div class="profile-checkin-insight-copy"><strong>${insight.label}</strong><span>${insight.description}</span>${latest ? `<small>آخر متابعة: ${escapeHtml(latest.checkinDate)}</small>` : ''}</div><div class="profile-checkin-insight-score"><b>${latestReadiness == null ? '—' : `${number(latestReadiness, 0)}٪`}</b><small>مؤشر الجاهزية</small></div></div><div class="profile-checkin-trend">${renderCheckinTrend(checkins)}</div><div class="profile-checkin-grid">${cards || '<div class="profile-empty">لم يتم تسجيل متابعة يومية بعد.</div>'}</div>`;
+        const anchor = content.querySelector('.profile-progress-dashboard');
+        if (anchor) anchor.after(section);
+        else content.appendChild(section);
+    }
+
+    function renderProfileTrainingLoad(overview) {
+        const content = $('coachingProfileContent');
+        if (!content) return;
+        content.querySelector('.profile-training-load-section')?.remove();
+        const progress = overview.progress || {};
+        const section = document.createElement('section');
+        section.className = 'profile-section profile-training-load-section';
+        section.innerHTML = `<div class="profile-section-head"><div><h4>ملخص الحمل التدريبي</h4><small class="profile-section-description">الحجم الفعلي محسوب من الأوزان والتكرارات المسجلة في جلسات التدريب.</small></div><span>${number(progress.sessionCount, 0)} جلسة</span></div><div class="profile-training-load-grid"><article><span>الجلسات المكتملة</span><strong>${number(progress.completedSessions, 0)}</strong></article><article><span>المجموعات المسجلة</span><strong>${number(progress.loggedSetCount, 0)}</strong></article><article><span>التكرارات المسجلة</span><strong>${number(progress.loggedRepCount, 0)}</strong></article><article><span>حجم التدريب</span><strong>${number(progress.trainingVolumeKg, 1)} <small>كجم</small></strong></article></div>`;
+        const anchor = content.querySelector('.profile-checkin-section') || content.querySelector('.profile-progress-dashboard');
+        if (anchor) anchor.after(section);
+        else content.appendChild(section);
+    }
+
+    function renderProfileNutritionLoad(overview) {
+        const content = $('coachingProfileContent');
+        if (!content) return;
+        content.querySelector('.profile-nutrition-load-section')?.remove();
+        const progress = overview.progress || {};
+        const target = progress.nutritionTargetCalories;
+        const averageCalories = Number(progress.nutritionAverageDailyCalories || 0);
+        const calorieGap = target == null ? null : Math.round(averageCalories - Number(target));
+        const gapLabel = calorieGap == null || !progress.nutritionLoggedDays ? 'لا يوجد هدف محفوظ' : `${calorieGap > 0 ? '+' : ''}${number(calorieGap, 0)} سعرة عن الهدف`;
+        const section = document.createElement('section');
+        section.className = 'profile-section profile-nutrition-load-section';
+        section.innerHTML = `<div class="profile-section-head"><div><h4>ملخص التغذية المسجلة</h4><small class="profile-section-description">متوسط السعرات والماكروز محسوب من الوجبات التي تم تسجيلها فعليًا.</small></div><span>${number(progress.mealLogCount, 0)} وجبة</span></div><div class="profile-nutrition-load-grid"><article><span>أيام التسجيل</span><strong>${number(progress.nutritionLoggedDays, 0)}</strong></article><article><span>متوسط السعرات</span><strong>${number(averageCalories, 0)}</strong></article><article><span>الهدف اليومي</span><strong>${target == null ? '—' : number(target, 0)}</strong></article><article><span>الفرق عن الهدف</span><strong>${gapLabel}</strong></article></div><div class="profile-nutrition-macros"><span>بروتين <b>${number(progress.nutritionProteinTotal, 1)} جم</b></span><span>كربوهيدرات <b>${number(progress.nutritionCarbsTotal, 1)} جم</b></span><span>دهون <b>${number(progress.nutritionFatsTotal, 1)} جم</b></span></div>`;
+        const anchor = content.querySelector('.profile-training-load-section') || content.querySelector('.profile-checkin-section');
+        if (anchor) anchor.after(section);
+        else content.appendChild(section);
+    }
+
+    function dateKey(value) {
+        if (!value) return '';
+        const parsed = new Date(value);
+        return Number.isNaN(parsed.getTime()) ? String(value).slice(0, 10) : parsed.toISOString().slice(0, 10);
+    }
+
+    function dateDaysAgo(days) {
+        const value = new Date(`${today()}T00:00:00`);
+        value.setDate(value.getDate() - Number(days));
+        return value.toISOString().slice(0, 10);
+    }
+
+    function renderProfileWeeklySummary(overview) {
+        const content = $('coachingProfileContent');
+        if (!content) return;
+        content.querySelector('.profile-weekly-summary-section')?.remove();
+        const endDate = today();
+        const startDate = dateDaysAgo(6);
+        const inWeek = (value) => { const key = dateKey(value); return key >= startDate && key <= endDate; };
+        const sessions = (overview.workoutSessions || []).filter((session) => session.status === 'completed' && inWeek(session.startedAt));
+        const meals = (overview.mealLogs || []).filter((log) => inWeek(log.consumedAt));
+        const checkins = (overview.checkins || []).filter((checkin) => inWeek(checkin.checkinDate));
+        const mealDays = new Set(meals.map((meal) => dateKey(meal.consumedAt)).filter(Boolean));
+        const calories = meals.reduce((sum, meal) => sum + Number(meal.calories || 0), 0);
+        const averageCalories = mealDays.size ? calories / mealDays.size : 0;
+        const section = document.createElement('section');
+        section.className = 'profile-section profile-weekly-summary-section';
+        section.innerHTML = `<div class="profile-section-head"><div><h4>ملخص آخر 7 أيام</h4><small class="profile-section-description">صورة سريعة عن الالتزام الحالي بالتدريب والتغذية والمتابعة.</small></div><span dir="ltr">${escapeHtml(startDate)} — ${escapeHtml(endDate)}</span></div><div class="profile-weekly-summary-grid"><article><span>جلسات مكتملة</span><strong>${number(sessions.length, 0)}</strong><small>${number(sessions.reduce((sum, session) => sum + Number(session.setCount || 0), 0), 0)} مجموعة</small></article><article><span>وجبات مسجلة</span><strong>${number(meals.length, 0)}</strong><small>${number(mealDays.size, 0)} أيام تسجيل</small></article><article><span>متوسط السعرات</span><strong>${number(averageCalories, 0)}</strong><small>${overview.progress?.nutritionTargetCalories == null ? 'بدون هدف محفوظ' : `الهدف ${number(overview.progress.nutritionTargetCalories, 0)}`}</small></article><article><span>متابعات الاستشفاء</span><strong>${number(checkins.length, 0)}</strong><small>${checkins.length ? 'تم تسجيلها هذا الأسبوع' : 'لا توجد متابعة بعد'}</small></article></div>`;
+        const anchor = content.querySelector('.profile-nutrition-load-section') || content.querySelector('.profile-training-load-section');
+        if (anchor) anchor.after(section);
+        else content.appendChild(section);
+    }
+
+    function renderProfileActivity(activity = []) {
+        const content = $('coachingProfileContent');
+        if (!content) return;
+        content.querySelector('.profile-activity-section')?.remove();
+        const labels = {
+            workout_created: 'إنشاء برنامج تدريب',
+            workout_updated: 'تعديل برنامج تدريب',
+            workout_deleted: 'حذف برنامج تدريب',
+            workout_status_changed: 'تغيير حالة برنامج التدريب',
+            diet_created: 'إنشاء خطة تغذية',
+            diet_updated: 'تعديل خطة تغذية',
+            diet_deleted: 'حذف خطة تغذية',
+            diet_status_changed: 'تغيير حالة خطة التغذية',
+            measurement_created: 'إضافة قياس',
+            measurement_updated: 'تعديل قياس',
+            measurement_deleted: 'حذف قياس',
+            checkin_created: 'إضافة متابعة يومية',
+            checkin_updated: 'تعديل متابعة يومية',
+            checkin_deleted: 'حذف متابعة يومية',
+            workout_session_started: 'بدء جلسة تدريب',
+            workout_session_completed: 'إكمال جلسة تدريب',
+            workout_session_cancelled: 'إلغاء جلسة تدريب',
+            meal_logged: 'تسجيل وجبة'
+        };
+        const tones = {
+            workout_created: 'workout', workout_updated: 'workout', workout_deleted: 'danger', workout_status_changed: 'workout',
+            diet_created: 'diet', diet_updated: 'diet', diet_deleted: 'danger', diet_status_changed: 'diet',
+            measurement_created: 'measurement', measurement_updated: 'measurement', measurement_deleted: 'danger',
+            checkin_created: 'checkin', checkin_updated: 'checkin', checkin_deleted: 'danger',
+            workout_session_started: 'session', workout_session_completed: 'session', workout_session_cancelled: 'danger',
+            meal_logged: 'meal'
+        };
+        const icons = {
+            workout: '▦', diet: '◒', measurement: '◌', checkin: '✓', session: '▶', meal: '⌁', danger: '!'
+        };
+        const rows = activity.slice(0, 12).map((event) => {
+            const tone = tones[event.eventType] || 'neutral';
+            const label = labels[event.eventType] || 'تحديث على الملف';
+            const date = event.createdAt ? new Date(event.createdAt) : null;
+            const dateLabel = date && !Number.isNaN(date.getTime())
+                ? date.toLocaleString('ar-EG', { dateStyle: 'short', timeStyle: 'short' })
+                : 'وقت غير محدد';
+            return `<article class="profile-activity-item ${tone}"><span class="profile-activity-marker" aria-hidden="true">${icons[tone] || '•'}</span><div class="profile-activity-copy"><strong>${escapeHtml(label)}</strong><small>${escapeHtml(event.details || 'تم تحديث بيانات الملف.')}</small></div><time datetime="${escapeHtml(event.createdAt || '')}" dir="ltr">${escapeHtml(dateLabel)}</time></article>`;
+        }).join('');
+        const section = document.createElement('section');
+        section.className = 'profile-section profile-activity-section';
+        section.innerHTML = `<div class="profile-section-head"><div><h4>آخر نشاط</h4><small class="profile-section-description">سجل مختصر للتغييرات والتنفيذات التي تمت على ملف المتدرب.</small></div><span>${number(activity.length, 0)} عملية</span></div><div class="profile-activity-list">${rows || '<div class="profile-empty">لا توجد عمليات مسجلة على هذا الملف بعد.</div>'}</div>`;
+        const anchor = content.querySelector('.profile-weekly-summary-section') || content.querySelector('.profile-nutrition-load-section');
+        if (anchor) anchor.after(section);
+        else content.appendChild(section);
+    }
+
+    function renderProfileCoachingAlerts(overview) {
+        const content = $('coachingProfileContent');
+        if (!content) return;
+        content.querySelector('.profile-coaching-alerts-section')?.remove();
+        const endDate = today();
+        const startDate = dateDaysAgo(6);
+        const inWeek = (value) => { const key = dateKey(value); return key >= startDate && key <= endDate; };
+        const sessions = (overview.workoutSessions || []).filter((session) => session.status === 'completed' && inWeek(session.startedAt));
+        const meals = (overview.mealLogs || []).filter((log) => inWeek(log.consumedAt));
+        const activeWorkout = (overview.workoutPrograms || []).find((program) => program.status === 'active');
+        const activeDiet = (overview.dietPlans || []).find((plan) => plan.status === 'active');
+        const latestCheckin = overview.checkins?.[0];
+        const alerts = [];
+        if (activeWorkout && !sessions.length) alerts.push({ tone: 'warning', title: 'لا توجد جلسة مكتملة هذا الأسبوع', detail: `البرنامج «${activeWorkout.name}» نشط، لكن لم يتم تسجيل جلسة مكتملة خلال آخر 7 أيام.`, action: 'start-session', actionLabel: 'بدء جلسة' });
+        if (activeDiet && !meals.length) alerts.push({ tone: 'warning', title: 'لا توجد وجبات مسجلة هذا الأسبوع', detail: `الخطة «${activeDiet.name}» نشطة. تسجيل الوجبات يساعد على قياس الالتزام الفعلي.`, action: 'log-meal', actionLabel: 'تسجيل وجبة' });
+        if (latestCheckin && checkinInsight(latestCheckin).tone === 'alert') alerts.push({ tone: 'danger', title: 'مؤشر الاستشفاء يحتاج متابعة', detail: 'راجع شدة تمرين اليوم وتفاصيل النوم والإجهاد قبل بدء جلسة جديدة.', action: 'new-checkin', actionLabel: 'إضافة متابعة' });
+        const lastMeasurement = overview.measurements?.[0]?.measuredAt;
+        if (lastMeasurement && dateKey(lastMeasurement) < dateDaysAgo(30)) alerts.push({ tone: 'info', title: 'القياسات تحتاج تحديثًا', detail: `آخر قياس محفوظ بتاريخ ${lastMeasurement}. إضافة قياس جديد ستجعل متابعة التقدم أدق.`, action: 'new-measurement', actionLabel: 'إضافة قياس' });
+        const items = alerts.length ? alerts : [{ tone: 'success', title: 'لا توجد تنبيهات متابعة عاجلة', detail: 'البيانات الحالية لا تحتوي على حالة تحتاج إلى إجراء سريع.', action: '', actionLabel: '' }];
+        const section = document.createElement('section');
+        section.className = 'profile-section profile-coaching-alerts-section';
+        section.innerHTML = `<div class="profile-section-head"><div><h4>تنبيهات المتابعة</h4><small class="profile-section-description">إشارات عملية مبنية على الجلسات والوجبات والقياسات المسجلة.</small></div><span>${alerts.length ? `${number(alerts.length, 0)} تحتاج إجراء` : 'الحالة مستقرة'}</span></div><div class="profile-coaching-alerts-list">${items.map((item) => `<article class="profile-coaching-alert ${item.tone}"><span class="profile-coaching-alert-icon" aria-hidden="true">${item.tone === 'success' ? '✓' : item.tone === 'danger' ? '!' : 'i'}</span><div><strong>${escapeHtml(item.title)}</strong><small>${escapeHtml(item.detail)}</small></div>${item.action ? `<button type="button" class="btn btn-light btn-small" data-profile-action="${item.action === 'new-checkin' ? '' : item.action}" data-checkin-action="${item.action === 'new-checkin' ? 'new' : ''}">${escapeHtml(item.actionLabel)}</button>` : ''}</article>`).join('')}</div>`;
+        const anchor = content.querySelector('.profile-weekly-summary-section') || content.querySelector('.profile-nutrition-load-section');
+        if (anchor) anchor.after(section);
+        else content.appendChild(section);
     }
 
     function blankWorkout(memberId) {
@@ -504,13 +724,21 @@
 
     async function loadBuilderClients() {
         if (state.builderClients?.length) return state.builderClients;
+        if (state.builderClientsPromise) return state.builderClientsPromise;
+        state.builderClientsPromise = requestJson('/api/coaching/clients?limit=300')
+            .then((data) => {
+                state.builderClients = data.clients || [];
+                return state.builderClients;
+            })
+            .catch(() => {
+                state.builderClients = [];
+                return state.builderClients;
+            });
         try {
-            const data = await requestJson('/api/coaching/clients?limit=300');
-            state.builderClients = data.clients || [];
-        } catch (_) {
-            state.builderClients = [];
+            return await state.builderClientsPromise;
+        } finally {
+            state.builderClientsPromise = null;
         }
-        return state.builderClients;
     }
 
     function builderClientOptions(selectedId, memberName = '') {
@@ -573,6 +801,8 @@
                 repsMax: Number(builderValue(exerciseElement, '[data-exercise-field="repsMax"]')) || null,
                 weightKg: builderValue(exerciseElement, '[data-exercise-field="weightKg"]'),
                 restSeconds: Number(builderValue(exerciseElement, '[data-exercise-field="restSeconds"]')) || 0,
+                rir: builderValue(exerciseElement, '[data-exercise-field="rir"]') === '' ? null : Number(builderValue(exerciseElement, '[data-exercise-field="rir"]')),
+                rpe: builderValue(exerciseElement, '[data-exercise-field="rpe"]') === '' ? null : Number(builderValue(exerciseElement, '[data-exercise-field="rpe"]')),
                 tempo: builderValue(exerciseElement, '[data-exercise-field="tempo"]'),
                 supersetGroupId: builderValue(exerciseElement, '[data-exercise-field="supersetGroupId"]'),
                 notes: builderValue(exerciseElement, '[data-exercise-field="notes"]')
@@ -802,6 +1032,70 @@
         }
     }
 
+    function enhanceWorkoutIntensityFields() {
+        const content = $('coachingBuilderContent');
+        if (!content || !state.builder || state.builder.type !== 'workout' || state.builder.step !== 2) return;
+        content.querySelectorAll('.builder-exercise-table-head').forEach((head) => {
+            const emptyCell = head.lastElementChild;
+            if (!head.querySelector('[data-intensity-head="reps-max"]')) {
+                const repsHead = [...head.children].find((cell) => cell.textContent.trim() === 'Reps');
+                if (repsHead) {
+                    repsHead.textContent = 'Reps min';
+                    const repsMaxHead = document.createElement('span');
+                    repsMaxHead.dataset.intensityHead = 'reps-max';
+                    repsMaxHead.textContent = 'Reps max';
+                    repsHead.after(repsMaxHead);
+                }
+            }
+            [['rir', 'RIR'], ['rpe', 'RPE']].forEach(([key, label]) => {
+                if (head.querySelector(`[data-intensity-head="${key}"]`)) return;
+                const cell = document.createElement('span');
+                cell.dataset.intensityHead = key;
+                cell.textContent = label;
+                head.insertBefore(cell, emptyCell);
+            });
+        });
+        content.querySelectorAll('.builder-exercise-row[data-exercise-index]').forEach((row) => {
+            if (row.querySelector('[data-exercise-field="rir"]')) return;
+            const routineIndex = Number(row.closest('[data-routine-index]')?.dataset.routineIndex);
+            const exerciseIndex = Number(row.dataset.exerciseIndex);
+            const exercise = state.builder.draft.routines?.[routineIndex]?.exercises?.[exerciseIndex] || {};
+            [['rir', 'RIR', '0–10', '0', '10', '1'], ['rpe', 'RPE', '1–10', '1', '10', '0.5']].forEach(([key, label, placeholder, min, max, step]) => {
+                const field = document.createElement('label');
+                field.innerHTML = `<span>${label}</span><input type="number" min="${min}" max="${max}" step="${step}" data-exercise-field="${key}" placeholder="${placeholder}">`;
+                const input = field.querySelector('input');
+                input.value = exercise[key] == null ? '' : exercise[key];
+                row.insertBefore(field, row.querySelector('.row-delete-button'));
+            });
+        });
+    }
+
+    function enhanceWorkoutReviewIntensity() {
+        const content = $('coachingBuilderContent');
+        if (!content || !state.builder || state.builder.type !== 'workout' || state.builder.step !== 3) return;
+        const exercises = (state.builder.draft.routines || []).flatMap((routine) => routine.exercises || []);
+        let cursor = 0;
+        content.querySelectorAll('.builder-review-table').forEach((table) => {
+            if (table.dataset.intensityReview === 'true') return;
+            const headRow = table.querySelector('thead tr');
+            if (!headRow) return;
+            const rirHead = document.createElement('th');
+            rirHead.textContent = 'RIR';
+            const rpeHead = document.createElement('th');
+            rpeHead.textContent = 'RPE';
+            headRow.append(rirHead, rpeHead);
+            table.querySelectorAll('tbody tr').forEach((row) => {
+                const exercise = exercises[cursor++] || {};
+                const rirCell = document.createElement('td');
+                rirCell.textContent = exercise.rir == null ? '—' : exercise.rir;
+                const rpeCell = document.createElement('td');
+                rpeCell.textContent = exercise.rpe == null ? '—' : exercise.rpe;
+                row.append(rirCell, rpeCell);
+            });
+            table.dataset.intensityReview = 'true';
+        });
+    }
+
     let builderSearchDismissBound = false;
 
     function closeBuilderSearchSelects(except = null) {
@@ -818,6 +1112,8 @@
     function enhanceBuilderSearchSelects() {
         const content = $('coachingBuilderContent');
         if (!content) return;
+        enhanceWorkoutIntensityFields();
+        enhanceWorkoutReviewIntensity();
         if (!builderSearchDismissBound) {
             document.addEventListener('click', (event) => {
                 if (!event.target.closest('.builder-search-select')) closeBuilderSearchSelects();
@@ -965,6 +1261,17 @@
 
     function builderStepValid(step) {
         const draft = syncBuilderDraft();
+        if (draft.endDate && draft.startDate && draft.endDate < draft.startDate) {
+            notify('تاريخ النهاية يجب أن يكون بعد تاريخ البداية.', 'error');
+            return false;
+        }
+        if (step !== 1 && state.builder.type === 'workout') {
+            const invalidRange = draft.routines.some((routine) => routine.exercises.some((exercise) => Number(exercise.repsMin) > 0 && Number(exercise.repsMax) > 0 && Number(exercise.repsMax) < Number(exercise.repsMin)));
+            if (invalidRange) {
+                notify('نطاق التكرارات غير صحيح: الحد الأقصى يجب أن يكون أكبر من أو مساويًا للحد الأدنى.', 'error');
+                return false;
+            }
+        }
         if (step === 1) {
             if (!builderBasicComplete(draft)) { notify('أكمل العميل والاسم وتاريخ البداية أولاً.', 'error'); return false; }
             if (state.builder.type === 'diet' && (!(Number(draft.mealsPerDay) >= 3 && Number(draft.mealsPerDay) <= 6) || Number(draft.targetCalories) <= 0)) { notify('حدد عدد الوجبات وأدخل Target Calories صحيحًا.', 'error'); return false; }
@@ -1019,11 +1326,14 @@
         if (action === 'apply-calories') return applyDietCalories();
         if (action === 'select-routine') { state.builder.activeRoutine = index; return renderBuilderV2(); }
         if (state.builder.type === 'diet') {
+            if (action === 'add-meal' && draft.meals.length >= 6) { notify('يمكن أن تحتوي الخطة على 6 وجبات كحد أقصى.', 'error'); return; }
+            if (action === 'remove-meal' && draft.meals.length <= 3) { notify('يجب أن تحتوي الخطة على 3 وجبات على الأقل.', 'error'); return; }
             if (action === 'add-meal') draft.meals.push({ name: `وجبة ${draft.meals.length + 1}`, mealTime: '', sortOrder: draft.meals.length, notes: '', items: [{ foodId: state.catalog.foods[0]?.id || '', sortOrder: 0, assignedQuantity: 100, servingUnit: '', notes: '' }] });
             if (action === 'remove-meal') draft.meals.splice(index, 1);
             if (action === 'move-meal') { const target = button.dataset.direction === 'up' ? index - 1 : index + 1; if (draft.meals[target]) [draft.meals[index], draft.meals[target]] = [draft.meals[target], draft.meals[index]]; }
             if (action === 'add-food') draft.meals[Number(button.dataset.meal)]?.items.push({ foodId: state.catalog.foods[0]?.id || '', sortOrder: draft.meals[Number(button.dataset.meal)]?.items.length || 0, assignedQuantity: 100, servingUnit: '', notes: '' });
             if (action === 'remove-food') draft.meals[Number(button.dataset.meal)]?.items.splice(index, 1);
+            if (action === 'add-meal' || action === 'remove-meal') draft.mealsPerDay = draft.meals.length;
         } else {
             if (action === 'add-routine') { draft.routines.push({ name: `اليوم ${draft.routines.length + 1}`, dayOfWeek: Math.min(7, draft.routines.length + 1), sortOrder: draft.routines.length, notes: '', exercises: [{ exerciseId: state.catalog.exercises[0]?.id || '', sortOrder: 0, sets: 3, repsMin: 10, repsMax: 12, weightKg: '', restSeconds: 90, tempo: '', supersetGroupId: '', notes: '' }] }); state.builder.activeRoutine = draft.routines.length - 1; }
             if (action === 'remove-routine') { draft.routines.splice(index, 1); state.builder.activeRoutine = Math.max(0, Math.min(state.builder.activeRoutine, draft.routines.length - 1)); }
@@ -1062,9 +1372,9 @@
             const rows = (routine.exercises || []).map((exercise) => {
                 const item = state.catalog.exercises.find((candidate) => String(candidate.id) === String(exercise.exerciseId));
                 const reps = exercise.repsMax ? `${exercise.repsMin || '—'}–${exercise.repsMax}` : (exercise.repsMin || '—');
-                return `<tr><td>${escapeHtml(item ? itemName(item) : '—')}</td><td>${builderNum(exercise.sets, 0)}</td><td>${escapeHtml(String(reps))}</td><td>${builderNum(exercise.weightKg, 1) || '—'}</td><td>${builderNum(exercise.restSeconds, 0)}s</td><td>${escapeHtml(exercise.tempo || '—')}</td><td>${escapeHtml(exercise.supersetGroupId || '—')}</td></tr>`;
+                return `<tr><td>${escapeHtml(item ? itemName(item) : '—')}</td><td>${builderNum(exercise.sets, 0)}</td><td>${escapeHtml(String(reps))}</td><td>${builderNum(exercise.weightKg, 1) || '—'}</td><td>${builderNum(exercise.restSeconds, 0)}s</td><td>${exercise.rir == null ? '—' : exercise.rir}</td><td>${exercise.rpe == null ? '—' : exercise.rpe}</td><td>${escapeHtml(exercise.tempo || '—')}</td><td>${escapeHtml(exercise.supersetGroupId || '—')}</td></tr>`;
             }).join('');
-            return `<section><h2>${index + 1}. ${escapeHtml(routine.name)}</h2><table><thead><tr><th>Exercise</th><th>Sets</th><th>Reps</th><th>Weight</th><th>Rest</th><th>Tempo</th><th>Superset</th></tr></thead><tbody>${rows}</tbody></table></section>`;
+            return `<section><h2>${index + 1}. ${escapeHtml(routine.name)}</h2><table><thead><tr><th>Exercise</th><th>Sets</th><th>Reps</th><th>Weight</th><th>Rest</th><th>RIR</th><th>RPE</th><th>Tempo</th><th>Superset</th></tr></thead><tbody>${rows}</tbody></table></section>`;
         }).join('');
         const content = state.builder.type === 'diet'
             ? `<div class="print-summary"><b>Target calories:</b> ${builderNum(draft.targetCalories)} · <b>Protein:</b> ${builderNum(draft.targetProtein, 1)}g · <b>Carbs:</b> ${builderNum(draft.targetCarbs, 1)}g · <b>Fat:</b> ${builderNum(draft.targetFats, 1)}g</div>${dietSections}`
@@ -1188,6 +1498,57 @@
         } catch (error) { notify(error.message, 'error'); }
     }
 
+    function selectScaleOptions() {
+        return '<option value="">—</option><option value="1">1 — منخفض</option><option value="2">2</option><option value="3">3 — متوسط</option><option value="4">4</option><option value="5">5 — مرتفع</option>';
+    }
+
+    function ensureCheckinDialog() {
+        if ($('checkinDialog')) return $('checkinDialog');
+        const dialog = document.createElement('dialog');
+        dialog.id = 'checkinDialog';
+        dialog.className = 'coaching-small-dialog rounded-lg border-slate-200 shadow-lift';
+        dialog.innerHTML = `<form class="dialog-body" id="checkinForm"><div class="details-dialog-head"><div><h3 id="checkinTitle">إضافة متابعة يومية</h3><p>سجّل حالة المتدرب اليوم لموازنة الحمل التدريبي والاستشفاء.</p></div><button class="btn btn-light btn-small" type="button" data-close-checkin>إغلاق</button></div><input type="hidden" id="checkinId"><input type="hidden" id="checkinMemberId"><div class="checkin-field-grid"><label>التاريخ<input id="checkinDate" type="date" required></label><label>ساعات النوم<input id="checkinSleepHours" type="number" min="0" max="24" step="0.5" placeholder="7.5"></label><label>جودة النوم<select id="checkinSleepQuality">${selectScaleOptions()}</select></label><label>الإجهاد<select id="checkinFatigue">${selectScaleOptions()}</select></label><label>الألم العضلي<select id="checkinSoreness">${selectScaleOptions()}</select></label><label>الضغط النفسي<select id="checkinStress">${selectScaleOptions()}</select></label><label>المزاج<select id="checkinMood">${selectScaleOptions()}</select></label><label>نبض الراحة<input id="checkinRestingHr" type="number" min="20" max="250" step="1" placeholder="60"></label><label>HRV<input id="checkinHrv" type="number" min="0" max="500" step="0.1" placeholder="50"></label><label>الوزن كجم<input id="checkinBodyweight" type="number" min="0" max="1000" step="0.1"></label></div><label class="builder-wide-label">ملاحظات<textarea id="checkinNotes" rows="2" maxlength="1000" placeholder="كيف كان يوم المتدرب؟"></textarea></label><div class="dialog-actions"><button class="btn btn-light" type="button" data-close-checkin>إلغاء</button><button class="btn btn-primary" type="submit">حفظ المتابعة</button></div></form>`;
+        document.body.appendChild(dialog);
+        dialog.addEventListener('click', (event) => { if (event.target.matches('[data-close-checkin]')) closeDialog(dialog); });
+        dialog.querySelector('form').addEventListener('submit', saveCheckin);
+        return dialog;
+    }
+
+    function openCheckinDialog(memberId, checkin = null) {
+        ensureCheckinDialog();
+        $('checkinTitle').textContent = checkin ? 'تعديل المتابعة اليومية' : 'إضافة متابعة يومية';
+        $('checkinId').value = checkin?.id || '';
+        $('checkinMemberId').value = memberId;
+        $('checkinDate').value = checkin?.checkinDate || today();
+        [['checkinSleepHours', 'sleepHours'], ['checkinSleepQuality', 'sleepQuality'], ['checkinFatigue', 'fatigue'], ['checkinSoreness', 'soreness'], ['checkinStress', 'stress'], ['checkinMood', 'mood'], ['checkinRestingHr', 'restingHr'], ['checkinHrv', 'hrv'], ['checkinBodyweight', 'bodyweightKg'], ['checkinNotes', 'notes']].forEach(([field, key]) => { $(field).value = checkin?.[key] ?? ''; });
+        openDialog($('checkinDialog'));
+    }
+
+    async function saveCheckin(event) {
+        event.preventDefault();
+        const button = event.currentTarget.querySelector('button[type="submit"]');
+        const memberId = $('checkinMemberId').value;
+        const id = $('checkinId').value;
+        const body = { checkinDate: $('checkinDate').value, sleepHours: $('checkinSleepHours').value || null, sleepQuality: $('checkinSleepQuality').value || null, fatigue: $('checkinFatigue').value || null, soreness: $('checkinSoreness').value || null, stress: $('checkinStress').value || null, mood: $('checkinMood').value || null, restingHr: $('checkinRestingHr').value || null, hrv: $('checkinHrv').value || null, bodyweightKg: $('checkinBodyweight').value || null, notes: $('checkinNotes').value };
+        button.disabled = true;
+        try {
+            await requestJson(id ? `/api/clients/${memberId}/checkins/${id}` : `/api/clients/${memberId}/checkins`, { method: id ? 'PUT' : 'POST', body: JSON.stringify(body) });
+            closeDialog($('checkinDialog'));
+            notify(id ? 'تم تحديث المتابعة اليومية بنجاح.' : 'تم حفظ المتابعة اليومية بنجاح.');
+            if ($('coachingProfileDialog')?.open) await openProfile(memberId);
+        } catch (error) { notify(error.message, 'error'); }
+        finally { button.disabled = false; }
+    }
+
+    async function deleteCheckinFromProfile(memberId, checkinId) {
+        if (!window.confirm('هل تريد حذف هذه المتابعة اليومية؟')) return;
+        try {
+            await requestJson(`/api/clients/${memberId}/checkins/${checkinId}`, { method: 'DELETE' });
+            notify('تم حذف المتابعة اليومية.');
+            if ($('coachingProfileDialog')?.open) await openProfile(memberId);
+        } catch (error) { notify(error.message, 'error'); }
+    }
+
     function ensureSubscriptionDialog() {
         if ($('coachingSubscriptionDialog')) return $('coachingSubscriptionDialog');
         const dialog = document.createElement('dialog');
@@ -1284,6 +1645,7 @@
                 if (button.dataset.sessionAction === 'add-set') addExecutionSet();
             });
             $('executionSessionProgram')?.addEventListener('change', () => loadExecutionProgram($('executionSessionProgram').value));
+            $('executionSessionRoutine')?.addEventListener('change', renderExecutionExerciseOptions);
         }
         if (!$('coachingMealLogDialog')) {
             const dialog = document.createElement('dialog');
@@ -1294,6 +1656,15 @@
             dialog.querySelector('form').addEventListener('submit', saveExecutionMeal);
             dialog.addEventListener('click', (event) => { if (event.target.closest('[data-meal-action="close"]')) closeDialog(dialog); });
             $('executionMealPlan')?.addEventListener('change', renderExecutionMealItems);
+            $('executionMealItem')?.addEventListener('change', renderExecutionMealPreview);
+            const mealQuantity = dialog.querySelector('#executionMealQuantity');
+            const mealPreview = document.createElement('div');
+            mealPreview.id = 'executionMealNutritionPreview';
+            mealPreview.className = 'execution-nutrition-preview';
+            mealPreview.hidden = true;
+            mealPreview.setAttribute('aria-live', 'polite');
+            mealQuantity?.closest('label')?.after(mealPreview);
+            mealQuantity?.addEventListener('input', renderExecutionMealPreview);
         }
     }
 
@@ -1301,6 +1672,23 @@
         const date = new Date();
         const offset = date.getTimezoneOffset() * 60000;
         return new Date(date.getTime() - offset).toISOString().slice(0, 16);
+    }
+
+    function executionExercisesForSelectedRoutine() {
+        const program = state.execution?.program;
+        if (!program) return [];
+        const routineId = $('executionSessionRoutine')?.value;
+        if (!routineId) return (program.routines || []).flatMap((routine) => routine.exercises || []);
+        return (program.routines || []).find((routine) => String(routine.id) === String(routineId))?.exercises || [];
+    }
+
+    function renderExecutionExerciseOptions() {
+        const select = $('executionSetExercise');
+        if (!select) return;
+        const current = select.value;
+        const exercises = executionExercisesForSelectedRoutine();
+        select.innerHTML = exercises.map((exercise) => `<option value="${exercise.id}">${escapeHtml(exercise.nameAr || exercise.name || 'تمرين')}</option>`).join('');
+        if (exercises.some((exercise) => String(exercise.id) === String(current))) select.value = current;
     }
 
     async function openSessionDialog(memberId) {
@@ -1334,42 +1722,61 @@
     async function startExecutionSession(event) {
         event.preventDefault();
         if (state.execution?.session) return;
+        const startButton = $('executionSessionStart');
+        if (startButton?.disabled) return;
+        if (startButton) startButton.disabled = true;
         try {
-            const response = await requestJson('/api/workoutsessions/start', { method: 'POST', body: JSON.stringify({ memberId: Number($('executionSessionMemberId').value), programId: Number($('executionSessionProgram').value), routineId: $('executionSessionRoutine').value ? Number($('executionSessionRoutine').value) : null }) });
+            const selectedRoutineId = $('executionSessionRoutine').value ? Number($('executionSessionRoutine').value) : null;
+            const response = await requestJson('/api/workoutsessions/start', { method: 'POST', body: JSON.stringify({ memberId: Number($('executionSessionMemberId').value), programId: Number($('executionSessionProgram').value), routineId: selectedRoutineId }) });
             state.execution.session = response.session;
             $('executionSessionId').value = state.execution.session.id;
-            const exercises = (state.execution.program?.routines || []).flatMap((routine) => routine.exercises || []);
+            const exercises = executionExercisesForSelectedRoutine();
+            const routine = (state.execution.program?.routines || []).find((item) => String(item.id) === String(selectedRoutineId));
             $('executionSessionSetup').hidden = true;
             $('executionSessionStart').hidden = true;
             $('executionSessionEnd').hidden = false;
             $('executionSessionActive').hidden = false;
-            $('executionSessionActive').innerHTML = `<div class="execution-session-head"><strong>${escapeHtml(state.execution.program?.name || 'جلسة تدريب')}</strong><span>بدأت الآن</span></div><div class="field-grid"><label>التمرين<select id="executionSetExercise">${exercises.map((exercise) => `<option value="${exercise.id}">${escapeHtml(exercise.nameAr || exercise.name || 'تمرين')}</option>`).join('')}</select></label><label>رقم المجموعة<input id="executionSetNumber" type="number" min="1" value="1"></label><label>الوزن كجم<input id="executionSetWeight" type="number" min="0" step="0.5"></label><label>التكرارات<input id="executionSetReps" type="number" min="0"></label></div><button class="btn btn-light" type="button" data-session-action="add-set">حفظ المجموعة</button><div id="executionSetLog" class="execution-set-log"><div class="profile-empty">لم تُسجل مجموعات بعد.</div></div>`;
+            $('executionSessionActive').innerHTML = `<div class="execution-session-head"><strong>${escapeHtml(state.execution.program?.name || 'جلسة تدريب')}</strong><span>${escapeHtml(routine?.name || 'كل البرنامج')} · بدأت الآن</span></div><div class="field-grid"><label>التمرين<select id="executionSetExercise">${exercises.map((exercise) => `<option value="${exercise.id}">${escapeHtml(exercise.nameAr || exercise.name || 'تمرين')}</option>`).join('')}</select></label><label>رقم المجموعة<input id="executionSetNumber" type="number" min="1" value="1"></label><label>الوزن كجم<input id="executionSetWeight" type="number" min="0" step="0.5"></label><label>التكرارات<input id="executionSetReps" type="number" min="0"></label></div><button class="btn btn-light" type="button" data-session-action="add-set">حفظ المجموعة</button><div id="executionSetLog" class="execution-set-log"><div class="profile-empty">لم تُسجل مجموعات بعد.</div></div>`;
             notify('تم بدء جلسة التدريب.');
         } catch (error) { notify(error.message, 'error'); }
+        finally { if (startButton) startButton.disabled = false; }
     }
 
     async function addExecutionSet() {
         const sessionId = $('executionSessionId')?.value;
         if (!sessionId) return;
+        const addButton = document.querySelector('[data-session-action="add-set"]');
+        if (addButton?.disabled) return;
+        if (addButton) addButton.disabled = true;
+        const exerciseSelect = $('executionSetExercise');
+        const setNumber = Number($('executionSetNumber').value || 0);
+        const weight = $('executionSetWeight').value || null;
+        const reps = $('executionSetReps').value || null;
+        const exerciseLabel = exerciseSelect?.selectedOptions?.[0]?.textContent || 'تمرين';
         try {
-            const response = await requestJson(`/api/workoutsessions/${sessionId}/sets`, { method: 'POST', body: JSON.stringify({ workoutExerciseId: Number($('executionSetExercise').value), setNumber: Number($('executionSetNumber').value), weightKg: $('executionSetWeight').value || null, reps: $('executionSetReps').value || null }) });
+            await requestJson(`/api/workoutsessions/${sessionId}/sets`, { method: 'POST', body: JSON.stringify({ workoutExerciseId: Number(exerciseSelect.value), setNumber, weightKg: weight, reps }) });
             const log = $('executionSetLog');
             if (log.querySelector('.profile-empty')) log.innerHTML = '';
-            log.insertAdjacentHTML('beforeend', `<div class="execution-set-row"><span>مجموعة ${response.set?.id || ''}</span><b>${$('executionSetWeight').value || 0} كجم × ${$('executionSetReps').value || 0}</b></div>`);
-            $('executionSetNumber').value = Number($('executionSetNumber').value || 0) + 1;
+            log.insertAdjacentHTML('beforeend', `<div class="execution-set-row"><span>${escapeHtml(exerciseLabel)} · مجموعة ${setNumber}</span><b>${weight || 0} كجم × ${reps || 0}</b></div>`);
+            $('executionSetNumber').value = setNumber + 1;
             notify('تم حفظ المجموعة.');
         } catch (error) { notify(error.message, 'error'); }
+        finally { if (addButton) addButton.disabled = false; }
     }
 
     async function endExecutionSession() {
         const sessionId = $('executionSessionId')?.value;
         if (!sessionId) return;
+        const endButton = $('executionSessionEnd');
+        if (endButton?.disabled) return;
+        if (endButton) endButton.disabled = true;
         try {
             await requestJson(`/api/workoutsessions/${sessionId}/end`, { method: 'POST', body: JSON.stringify({ status: 'completed' }) });
             closeDialog($('coachingSessionDialog'));
             notify('تم إنهاء الجلسة وحفظ التقدم.');
             openProfile(Number($('executionSessionMemberId').value));
         } catch (error) { notify(error.message, 'error'); }
+        finally { if (endButton) endButton.disabled = false; }
     }
 
     async function openMealDialog(memberId) {
@@ -1379,7 +1786,11 @@
         const plans = state.profile?.dietPlans || [];
         if (!plans.length) return notify('أنشئ خطة تغذية أولًا قبل تسجيل وجبة.', 'warning');
         ensureExecutionDialogs();
-        state.executionMealPlans = await Promise.all(plans.map((plan) => requestJson(`/api/dietplans/${plan.id}`).then((response) => response.plan)));
+        try {
+            state.executionMealPlans = await Promise.all(plans.map((plan) => requestJson(`/api/dietplans/${plan.id}`).then((response) => response.plan)));
+        } catch (error) {
+            return notify(error.message, 'error');
+        }
         $('executionMealMemberId').value = memberId;
         $('executionMealPlan').innerHTML = state.executionMealPlans.map((plan) => `<option value="${plan.id}">${escapeHtml(plan.name)}</option>`).join('');
         $('executionMealAt').value = localDateTimeValue();
@@ -1393,16 +1804,36 @@
         const items = (plan?.meals || []).flatMap((meal) => (meal.items || []).map((item) => ({ ...item, mealName: meal.name })));
         $('executionMealItem').innerHTML = items.map((item) => `<option value="${item.id}" data-quantity="${item.assignedQuantity || 100}">${escapeHtml(item.mealName)} · ${escapeHtml(item.nameAr || item.nameEn || 'طعام')}</option>`).join('');
         $('executionMealQuantity').value = items[0]?.assignedQuantity || 100;
+        renderExecutionMealPreview();
+    }
+
+    function renderExecutionMealPreview() {
+        const preview = $('executionMealNutritionPreview');
+        if (!preview) return;
+        const plan = state.executionMealPlans?.find((item) => String(item.id) === String($('executionMealPlan')?.value));
+        const itemId = $('executionMealItem')?.value;
+        const item = (plan?.meals || []).flatMap((meal) => (meal.items || []).map((candidate) => ({ ...candidate, mealName: meal.name }))).find((candidate) => String(candidate.id) === String(itemId));
+        if (!item) { preview.hidden = true; preview.innerHTML = ''; return; }
+        const assignedQuantity = Number(item.assignedQuantity || 0);
+        const consumedQuantity = Number($('executionMealQuantity')?.value || 0);
+        const factor = assignedQuantity > 0 ? consumedQuantity / assignedQuantity : 0;
+        const value = (amount) => number(Number(amount || 0) * factor, 1);
+        preview.hidden = false;
+        preview.innerHTML = `<div class="execution-nutrition-preview-head"><strong>${escapeHtml(item.mealName || 'الوجبة')} · ${escapeHtml(item.nameAr || item.nameEn || 'طعام')}</strong><span>المخطط: ${number(assignedQuantity, 1)} ${escapeHtml(item.servingUnit || '')}</span></div><div class="execution-nutrition-preview-grid"><div><span>السعرات</span><b>${value(item.calories)}</b></div><div><span>Protein</span><b>${value(item.protein)}g</b></div><div><span>Carbs</span><b>${value(item.carbs)}g</b></div><div><span>Fat</span><b>${value(item.fats)}g</b></div></div>`;
     }
 
     async function saveExecutionMeal(event) {
         event.preventDefault();
+        const submitButton = event.currentTarget.querySelector('button[type="submit"]');
+        if (submitButton?.disabled) return;
+        if (submitButton) submitButton.disabled = true;
         try {
             await requestJson('/api/meal-logs', { method: 'POST', body: JSON.stringify({ memberId: Number($('executionMealMemberId').value), mealItemId: Number($('executionMealItem').value), consumedQuantity: Number($('executionMealQuantity').value), consumedAt: new Date($('executionMealAt').value).toISOString(), notes: $('executionMealNotes').value }) });
             closeDialog($('coachingMealLogDialog'));
             notify('تم تسجيل الوجبة وحفظ السعرات والماكروز.');
             openProfile(Number($('executionMealMemberId').value));
         } catch (error) { notify(error.message, 'error'); }
+        finally { if (submitButton) submitButton.disabled = false; }
     }
 
     async function handleProfileAction(action, id) {
@@ -1554,7 +1985,17 @@
             if (action === 'workout') openBuilder('workout', memberId, null, button.dataset.memberName || '');
             else if (action === 'diet') openBuilder('diet', memberId, null, button.dataset.memberName || '');
         });
-        $('coachingProfileContent')?.addEventListener('click', (event) => { const button = event.target.closest('[data-profile-action], [data-measurement-action]'); if (!button) return; const action = button.dataset.profileAction || (button.dataset.measurementAction === 'edit' ? 'edit-measurement' : 'delete-measurement'); handleProfileAction(action, button.dataset.id); });
+        $('coachingProfileContent')?.addEventListener('click', (event) => { const button = event.target.closest('[data-profile-action], [data-measurement-action]'); if (!button) return; const action = button.dataset.profileAction || (button.dataset.measurementAction === 'edit' ? 'edit-measurement' : 'delete-measurement'); if (!action) return; handleProfileAction(action, button.dataset.id); });
+        $('coachingProfileContent')?.addEventListener('click', (event) => {
+            const button = event.target.closest('[data-checkin-action]');
+            if (!button) return;
+            const memberId = state.profile?.member?.id;
+            if (!memberId) return;
+            const action = button.dataset.checkinAction;
+            if (action === 'new') openCheckinDialog(memberId);
+            if (action === 'edit') openCheckinDialog(memberId, (state.profile.checkins || []).find((item) => Number(item.id) === Number(button.dataset.id)));
+            if (action === 'delete') deleteCheckinFromProfile(memberId, button.dataset.id);
+        });
         window.addEventListener('topgym:tab-changed', (event) => { if (event.detail?.name === 'trainees') loadTrainees(); });
         window.addEventListener('topgym:member-details-opened', (event) => renderMemberTrainingPanel(event.detail?.member?.id || event.detail?.details?.member?.id));
         window.addEventListener('topgym:coaching-updated', (event) => { if (event.detail?.memberId && $('detailsDialog')?.open) renderMemberTrainingPanel(event.detail.memberId); });

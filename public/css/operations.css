@@ -29,6 +29,7 @@
 .report-kpi.red { border-color: #fecaca; background: linear-gradient(145deg, #fff1f2, #fff); }
 .report-kpi.teal { border-color: #a5f3fc; background: linear-gradient(145deg, #ecfeff, #fff); }
 .report-kpi.rose { border-color: #fecdd3; background: linear-gradient(145deg, #fff1f2, #fff); }
+.report-kpi.purple { border-color: #ddd6fe; background: linear-gradient(145deg, #f5f3ff, #fff); }
 .reports-grid { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(280px, .65fr); gap: 13px; padding: 0 18px 15px; }
 .report-card { min-width: 0; padding: 15px; border: 1px solid rgba(148, 163, 184, .17); border-radius: 16px; background: #fff; }
 .report-card-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
@@ -372,6 +373,7 @@
 .reports-kpis .report-kpi.teal .report-kpi-icon { color: #0f766e; }
 .reports-kpis .report-kpi.rose .report-kpi-icon { color: #e11d48; }
 .reports-kpis .report-kpi.indigo .report-kpi-icon { color: #4f46e5; }
+.reports-kpis .report-kpi.purple .report-kpi-icon { color: #7c3aed; }
 
 .report-card {
     padding: 14px;

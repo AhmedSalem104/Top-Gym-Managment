@@ -41,6 +41,8 @@ const BACKUP_TABLES = [
     { key: 'diet_meals', table: 'diet_meals' },
     { key: 'diet_meal_items', table: 'diet_meal_items' },
     { key: 'body_measurements', table: 'body_measurements' },
+    { key: 'athlete_checkins', table: 'athlete_checkins' },
+    { key: 'coaching_activity_events', table: 'coaching_activity_events' },
     { key: 'workout_sessions', table: 'workout_sessions' },
     { key: 'workout_set_logs', table: 'workout_set_logs' },
     { key: 'meal_logs', table: 'meal_logs' }

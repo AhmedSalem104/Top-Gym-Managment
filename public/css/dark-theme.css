@@ -487,6 +487,9 @@ body.gym-page-bg {
 .app-shell .analytics-kpi strong {
     color: #f8fafc !important;
 }
+.app-shell .reports-kpis .report-kpi.purple .report-kpi-icon {
+    color: #c4b5fd !important;
+}
 .app-shell .analytics-period-switch {
     border-color: var(--theme-line) !important;
     background: rgba(255, 255, 255, .07) !important;
@@ -906,6 +909,11 @@ body.gym-page-bg {
 .app-shell .profile-system-card { border-color: var(--theme-line); background: rgba(30, 41, 59, .62); }
 .app-shell .profile-chart-bars { border-color: var(--theme-line); }.app-shell .profile-chart-bar small { color: var(--theme-muted); }.app-shell .profile-progress-meters > div { color: var(--theme-text-soft); }.app-shell .profile-inline-progress,.app-shell .profile-progress-meters i { background: rgba(71, 85, 105, .55); }
 .app-shell .execution-session-head { border-color: rgba(96, 165, 250, .3); background: rgba(30, 64, 175, .24); }.app-shell .execution-session-head span { color: #6ee7b7; }
+.app-shell .execution-nutrition-preview { color: var(--theme-text); border-color: rgba(74, 222, 128, .3); background: rgba(20, 83, 45, .24); }
+.app-shell .execution-nutrition-preview-head strong { color: #86efac; }.app-shell .execution-nutrition-preview-head span,.app-shell .execution-nutrition-preview-grid span { color: var(--theme-text-soft); }
+.app-shell .execution-nutrition-preview-grid > div { border-color: rgba(74, 222, 128, .2); background: rgba(15, 23, 42, .38); }.app-shell .execution-nutrition-preview-grid b { color: #86efac; }
+.app-shell .execution-set-row b { color: #93c5fd; }
+.app-shell .profile-table td > small { color: var(--theme-muted); }
 .app-shell .backup-validation-error { color: #fca5a5; }.app-shell .backup-validation-loading { color: #93c5fd; }
 .app-shell .backup-history-table small { color: var(--theme-muted); }
 .app-shell .backup-management-panel .management-eyebrow { color: #93c5fd; }
@@ -1286,3 +1294,90 @@ body.gym-page-bg {
     .app-shell #dashboardSection .alert-card-detail,
     .app-shell #dashboardSection .alert-card-phone { font-size: 9px; }
 }
+
+.app-shell .profile-section-description { color: #a9a9a9 !important; }
+.app-shell .profile-checkin-card {
+    border-color: rgba(255, 255, 255, .12) !important;
+    background: rgba(255, 255, 255, .055) !important;
+}
+.app-shell .profile-checkin-card-head strong { color: #f7f7f7 !important; }
+.app-shell .profile-checkin-card-head span,
+.app-shell .profile-checkin-notes { color: #cbd5e1 !important; }
+.app-shell .profile-checkin-signals span {
+    border-color: rgba(255, 255, 255, .12) !important;
+    color: #e2e2e2 !important;
+    background: rgba(255, 255, 255, .07) !important;
+}
+.app-shell .profile-checkin-insight {
+    border-color: rgba(96, 165, 250, .28) !important;
+    background: rgba(59, 130, 246, .12) !important;
+}
+.app-shell .profile-checkin-insight-copy span,
+.app-shell .profile-checkin-insight-copy small,
+.app-shell .profile-checkin-insight-score small { color: #cbd5e1 !important; }
+.app-shell .profile-checkin-insight.good { border-color: rgba(74, 222, 128, .3) !important; background: rgba(22, 163, 74, .13) !important; }
+.app-shell .profile-checkin-insight.watch { border-color: rgba(250, 204, 21, .3) !important; background: rgba(202, 138, 4, .13) !important; }
+.app-shell .profile-checkin-insight.alert { border-color: rgba(248, 113, 113, .3) !important; background: rgba(185, 28, 28, .14) !important; }
+.app-shell .profile-checkin-trend {
+    border-color: rgba(255, 255, 255, .12) !important;
+    background: rgba(255, 255, 255, .045) !important;
+}
+.app-shell .profile-checkin-trend-head,
+.app-shell .profile-checkin-trend-empty,
+.app-shell .profile-checkin-trend-bar small { color: #a9a9a9 !important; }
+.app-shell .profile-checkin-trend-bar > span { background: linear-gradient(180deg, #60a5fa, #2563eb) !important; }
+.app-shell .profile-training-load-grid article {
+    border-color: rgba(255, 255, 255, .12) !important;
+    background: rgba(255, 255, 255, .055) !important;
+}
+.app-shell .profile-training-load-grid span { color: #a9a9a9 !important; }
+.app-shell .profile-training-load-grid strong { color: #93c5fd !important; }
+.app-shell .profile-training-load-grid strong small { color: #cbd5e1 !important; }
+.app-shell .profile-nutrition-load-grid article {
+    border-color: rgba(74, 222, 128, .22) !important;
+    background: rgba(22, 163, 74, .12) !important;
+}
+.app-shell .profile-nutrition-load-grid span { color: #86efac !important; }
+.app-shell .profile-nutrition-load-grid strong { color: #bbf7d0 !important; }
+.app-shell .profile-nutrition-macros { color: #cbd5e1 !important; }
+.app-shell .profile-nutrition-macros span { background: rgba(22, 163, 74, .16) !important; }
+.app-shell .profile-nutrition-macros b { color: #86efac !important; }
+.app-shell .profile-weekly-summary-grid article {
+    border-color: rgba(96, 165, 250, .22) !important;
+    background: rgba(59, 130, 246, .09) !important;
+}
+.app-shell .profile-weekly-summary-grid span,
+.app-shell .profile-weekly-summary-grid small { color: #cbd5e1 !important; }
+.app-shell .profile-weekly-summary-grid strong { color: #bfdbfe !important; }
+.app-shell .profile-activity-item {
+    border-color: rgba(255, 255, 255, .12) !important;
+    border-inline-start-color: rgba(148, 163, 184, .8) !important;
+    background: rgba(255, 255, 255, .055) !important;
+}
+.app-shell .profile-activity-copy strong { color: #f7f7f7 !important; }
+.app-shell .profile-activity-copy small { color: #cbd5e1 !important; }
+.app-shell .profile-activity-item time { color: #a9a9a9 !important; }
+.app-shell .profile-activity-marker { color: #e2e8f0 !important; background: rgba(255, 255, 255, .1) !important; }
+.app-shell .profile-activity-item.workout { border-inline-start-color: #a78bfa !important; }
+.app-shell .profile-activity-item.workout .profile-activity-marker { color: #c4b5fd !important; background: rgba(139, 92, 246, .2) !important; }
+.app-shell .profile-activity-item.diet { border-inline-start-color: #34d399 !important; }
+.app-shell .profile-activity-item.diet .profile-activity-marker { color: #86efac !important; background: rgba(16, 185, 129, .2) !important; }
+.app-shell .profile-activity-item.measurement { border-inline-start-color: #60a5fa !important; }
+.app-shell .profile-activity-item.measurement .profile-activity-marker { color: #bfdbfe !important; background: rgba(59, 130, 246, .2) !important; }
+.app-shell .profile-activity-item.checkin { border-inline-start-color: #fbbf24 !important; }
+.app-shell .profile-activity-item.checkin .profile-activity-marker { color: #fde68a !important; background: rgba(245, 158, 11, .2) !important; }
+.app-shell .profile-activity-item.session { border-inline-start-color: #22d3ee !important; }
+.app-shell .profile-activity-item.session .profile-activity-marker { color: #a5f3fc !important; background: rgba(8, 145, 178, .2) !important; }
+.app-shell .profile-activity-item.meal { border-inline-start-color: #4ade80 !important; }
+.app-shell .profile-activity-item.meal .profile-activity-marker { color: #bbf7d0 !important; background: rgba(22, 163, 74, .2) !important; }
+.app-shell .profile-activity-item.danger { border-inline-start-color: #f87171 !important; }
+.app-shell .profile-activity-item.danger .profile-activity-marker { color: #fecaca !important; background: rgba(185, 28, 28, .22) !important; }
+.app-shell .profile-coaching-alert {
+    border-color: rgba(96, 165, 250, .22) !important;
+    background: rgba(59, 130, 246, .08) !important;
+}
+.app-shell .profile-coaching-alert strong { color: #f7f7f7 !important; }
+.app-shell .profile-coaching-alert small { color: #cbd5e1 !important; }
+.app-shell .profile-coaching-alert.warning { border-color: rgba(250, 204, 21, .28) !important; border-inline-start-color: #f59e0b !important; background: rgba(202, 138, 4, .12) !important; }
+.app-shell .profile-coaching-alert.danger { border-color: rgba(248, 113, 113, .28) !important; border-inline-start-color: #ef4444 !important; background: rgba(185, 28, 28, .13) !important; }
+.app-shell .profile-coaching-alert.success { border-color: rgba(74, 222, 128, .28) !important; border-inline-start-color: #22c55e !important; background: rgba(22, 163, 74, .12) !important; }
