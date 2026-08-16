@@ -1210,16 +1210,37 @@
                     popover.hidden = !open;
                     if (open) {
                         const rect = trigger.getBoundingClientRect();
-                        const availableWidth = Math.max(180, window.innerWidth - 28);
+                        const dialogBody = trigger.closest('.coaching-builder-dialog')?.querySelector('.dialog-body') || trigger.closest('.dialog-body');
+                        const bodyRect = dialogBody?.getBoundingClientRect();
+                        const inset = 10;
+                        const bodyWidth = dialogBody?.clientWidth || window.innerWidth;
+                        const bodyHeight = dialogBody?.clientHeight || window.innerHeight;
+                        const bodyScrollTop = dialogBody?.scrollTop || 0;
+                        const bodyScrollLeft = dialogBody?.scrollLeft || 0;
+                        const bodyLeft = bodyRect?.left || 0;
+                        const bodyTop = bodyRect?.top || 0;
+                        const availableWidth = Math.max(180, bodyWidth - inset * 2);
                         const width = Math.min(Math.max(rect.width, 230), availableWidth);
-                        const left = Math.min(Math.max(rect.left, 14), Math.max(14, window.innerWidth - width - 14));
-                        const estimatedHeight = Math.min(360, window.innerHeight * .6);
-                        const top = rect.bottom + 6 + estimatedHeight > window.innerHeight - 14
-                            ? Math.max(14, rect.top - estimatedHeight - 6)
-                            : rect.bottom + 6;
+                        const rawLeft = rect.left - bodyLeft + bodyScrollLeft;
+                        const scrollWidth = Math.max(bodyWidth, dialogBody?.scrollWidth || bodyWidth);
+                        const left = Math.min(Math.max(rawLeft, inset), Math.max(inset, scrollWidth - width - inset));
+                        const triggerTop = rect.top - bodyTop + bodyScrollTop;
+                        const triggerBottom = rect.bottom - bodyTop + bodyScrollTop;
+                        const visibleTop = bodyScrollTop + inset;
+                        const visibleBottom = bodyScrollTop + bodyHeight - inset;
+                        const belowTop = triggerBottom + 6;
+                        const belowSpace = visibleBottom - belowTop;
+                        const aboveSpace = triggerTop - visibleTop - 6;
+                        const opensAbove = belowSpace < 180 && aboveSpace > belowSpace;
+                        const availableHeight = Math.max(96, Math.min(360, opensAbove ? aboveSpace : belowSpace));
+                        const top = opensAbove
+                            ? Math.max(visibleTop, triggerTop - availableHeight - 6)
+                            : belowTop;
                         popover.style.width = `${width}px`;
                         popover.style.left = `${left}px`;
                         popover.style.top = `${top}px`;
+                        popover.style.maxHeight = `${availableHeight}px`;
+                        options.style.maxHeight = `${Math.max(64, availableHeight - 58)}px`;
                         searchInput.value = '';
                         renderOptions();
                         window.requestAnimationFrame(() => searchInput.focus());

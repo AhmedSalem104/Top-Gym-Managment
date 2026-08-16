@@ -1053,7 +1053,23 @@
 }
 
 .coaching-builder-dialog .dialog-body {
+    position: relative;
     scrollbar-gutter: stable;
+    overflow-x: hidden;
+}
+
+/* Builder dropdowns stay inside the scrollable popup instead of escaping to the viewport. */
+.coaching-builder-dialog .builder-search-select {
+    position: static;
+}
+.coaching-builder-dialog .builder-search-popover {
+    position: absolute;
+    max-width: calc(100% - 20px);
+    overflow: hidden;
+    z-index: 50;
+}
+.coaching-builder-dialog .builder-search-options {
+    min-height: 0;
 }
 
 .coaching-builder-dialog .builder-stage,
