@@ -133,7 +133,7 @@
                     <section class="print-section"><div class="print-section-title"><div><span class="print-section-kicker">سجل النشاط</span><h2>كل العمليات المسجلة</h2></div></div><div class="print-table-wrap"><table class="print-table"><thead><tr><th>التاريخ</th><th>العملية</th><th>التفاصيل</th></tr></thead><tbody>${eventHistory(data)}</tbody></table></div></section>` : '';
                 const printHeader = `<header class="print-header"><div class="print-brand"><img class="print-logo" src="${assetUrl('/favicon.svg?v=2')}" alt=""><div class="print-brand-copy"><h1 class="print-brand-title">TOP GYM</h1></div></div><div class="print-document-meta"><strong>${escapeHtml(title)}</strong><span>رقم العضو: #${escapeHtml(member.id || '—')}</span><span>تاريخ الطباعة: ${escapeHtml(printDate(new Date()))}</span></div></header>`;
                 const printFooter = `<footer class="print-footer"><div class="print-footer-management"><strong>إدارة الجيم</strong><span>C/ Ahmed Abdel Hamid · C/ Karim Abdelhamid</span></div><span class="print-signature">اعتماد الإدارة</span></footer>`;
-                return `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${escapeHtml(title)} - TOP GYM</title><link rel="stylesheet" href="${assetUrl('/css/print.css?v=3')}"></head><body><main class="print-sheet">${printHeader}<div class="print-accent"></div>${memberInfo}${membershipInfo}${history}${printFooter}</main></body></html>`;
+                return `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${escapeHtml(title)} - TOP GYM</title><link rel="stylesheet" href="${assetUrl('/css/print.css?v=5')}"></head><body><main class="print-sheet">${printHeader}<div class="print-accent"></div>${memberInfo}${membershipInfo}${history}${printFooter}</main></body></html>`;
             }
 
             function buildPaymentReceiptDocument(data, payment) {
@@ -144,7 +144,7 @@
                 const memberInfo = `<section class="print-section"><div class="print-section-title"><div><span class="print-section-kicker">بيانات العميل</span><h2>إيصال استلام دفعة</h2></div><span class="print-receipt-id">${escapeHtml(payment.receiptNumber || '—')}</span></div><div class="print-member-hero"><span class="print-member-avatar">${escapeHtml(initials(member.fullName))}</span><div class="print-member-copy"><h2>${escapeHtml(member.fullName || 'عضو الجيم')}</h2><p>${escapeHtml(member.phone || '—')}</p></div></div><div class="print-info-grid" style="margin-top: 10px;">${infoItem('رقم العضو', `#${member.id || '—'}`)}${infoItem('تاريخ العملية', printDateTime(payment.transactionDate || payment.createdAt))}${infoItem('الباقة', planLabel(payment.plan))}${infoItem('النوع', typeLabel(payment.type))}</div></section>`;
                 const paymentInfo = `<section class="print-section"><div class="print-section-title"><div><span class="print-section-kicker">تفاصيل العملية</span><h2>${escapeHtml(PAYMENT_TRANSACTION_LABELS[payment.transactionType] || 'دفعة')}</h2></div></div><div class="print-info-grid">${infoItem('طريقة الدفع', paymentLabel(payment.paymentMethod))}${infoItem('تاريخ الاشتراك', printDate(membership?.startDate))}${infoItem('تاريخ الانتهاء', printDate(membership?.effectiveEndDate))}${infoItem('المستحق', money(payment.amountDue))}</div><div class="print-receipt-amount"><span>قيمة العملية</span><strong>${escapeHtml(money(payment.amountPaid))}</strong><small>الرصيد المتبقي بعد العملية: ${escapeHtml(money(payment.amountRemaining))}</small></div>${payment.notes ? `<p class="print-notes"><strong>ملاحظات:</strong> ${escapeHtml(payment.notes)}</p>` : ''}</section>`;
                 const printFooter = `<footer class="print-footer"><div class="print-footer-management"><strong>إدارة الجيم</strong><span>C/ Ahmed Abdel Hamid · C/ Karim Abdelhamid</span></div><span class="print-signature">اعتماد الإدارة</span></footer>`;
-                return `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${title} - TOP GYM</title><link rel="stylesheet" href="${assetUrl('/css/print.css?v=4')}"></head><body><main class="print-sheet">${printHeader}<div class="print-accent"></div>${memberInfo}${paymentInfo}${printFooter}</main></body></html>`;
+                return `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${title} - TOP GYM</title><link rel="stylesheet" href="${assetUrl('/css/print.css?v=5')}"></head><body><main class="print-sheet">${printHeader}<div class="print-accent"></div>${memberInfo}${paymentInfo}${printFooter}</main></body></html>`;
             }
 
             function writeWindow(printWindow, html) {
@@ -181,7 +181,7 @@
                 const parsed = new DOMParser().parseFromString(buildPrintDocument(data, mode), 'text/html');
                 const sheet = parsed.querySelector('.print-sheet');
                 if (!sheet) throw new Error('تعذر تجهيز قالب PDF.');
-                const cssResponse = await fetch(assetUrl('/css/print.css?v=3'));
+                const cssResponse = await fetch(assetUrl('/css/print.css?v=5'));
                 const cssText = await cssResponse.text();
                 const holder = document.createElement('div');
                 holder.dir = 'rtl';
@@ -207,20 +207,386 @@
                 }
             }
 
+            async function fetchPrintJson(url) {
+                const response = await fetch(url, { headers: { Accept: 'application/json' } });
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok) throw new Error(data.error || 'تعذر تجهيز بيانات الطباعة.');
+                return data;
+            }
+
+            function coachingNumber(value, digits = 0) {
+                const parsed = Number(value);
+                return Number.isFinite(parsed)
+                    ? parsed.toLocaleString('ar-EG', { maximumFractionDigits: digits, minimumFractionDigits: digits })
+                    : '—';
+            }
+
+            function coachingStatusLabel(value) {
+                return { active: 'نشطة', draft: 'مسودة', paused: 'متوقفة', completed: 'مكتملة', archived: 'مؤرشفة' }[value] || value || '—';
+            }
+
+            function coachingGoalLabel(value) {
+                return { lose: 'خسارة وزن', maintain: 'تثبيت الوزن', gain: 'زيادة وزن' }[value] || value || '—';
+            }
+
+            function coachingActivityLabel(value) {
+                return { sedentary: 'قليل جدًا', light: 'خفيف', moderate: 'متوسط', high: 'مرتفع', very_high: 'مرتفع جدًا' }[value] || value || '—';
+            }
+
+            function coachingValue(value, fallback = '—') {
+                return value === null || value === undefined || value === '' ? fallback : String(value);
+            }
+
+            function coachingList(value) {
+                if (Array.isArray(value)) return value.map((item) => String(item || '').trim()).filter(Boolean);
+                if (value === null || value === undefined || value === '') return [];
+                return [String(value).trim()].filter(Boolean);
+            }
+
+            function coachingListMarkup(value, emptyLabel = 'لا توجد بيانات مسجلة.') {
+                const values = coachingList(value);
+                if (!values.length) return '<span class="print-system-muted">' + escapeHtml(emptyLabel) + '</span>';
+                return '<ul class="print-system-list">' + values.map((item) => '<li>' + escapeHtml(item) + '</li>').join('') + '</ul>';
+            }
+
+            function coachingItemName(item) {
+                return item?.nameAr || item?.name || item?.nameEn || 'عنصر بدون اسم';
+            }
+
+            function coachingReps(exercise) {
+                const min = exercise?.repsMin;
+                const max = exercise?.repsMax;
+                if (min === null || min === undefined || min === '') return '—';
+                if (max === null || max === undefined || max === '' || Number(max) === Number(min)) return String(min);
+                return String(min) + '–' + String(max);
+            }
+
+            function normalizeCoachingDraft(draft, type, catalog = {}, clientLabel = '') {
+                const system = JSON.parse(JSON.stringify(draft || {}));
+                system.memberName = system.memberName || clientLabel || 'العميل المحدد';
+                if (type === 'workout') {
+                    const exercises = catalog.exercises || [];
+                    system.routines = (system.routines || []).map((routine) => ({
+                        ...routine,
+                        exercises: (routine.exercises || []).map((exercise) => {
+                            const libraryItem = exercises.find((item) => String(item.id) === String(exercise.exerciseId)) || {};
+                            return { ...exercise, ...libraryItem, exerciseId: exercise.exerciseId };
+                        })
+                    }));
+                    return { system, libraryItems: exercises };
+                }
+                const foods = catalog.foods || [];
+                system.meals = (system.meals || []).map((meal) => ({
+                    ...meal,
+                    items: (meal.items || []).map((item) => {
+                        const food = foods.find((candidate) => String(candidate.id) === String(item.foodId)) || {};
+                        const factor = Number(item.assignedQuantity || 0) / (Number(food.servingSize || 100) || 100);
+                        return {
+                            ...item,
+                            nameAr: food.nameAr || food.name,
+                            nameEn: food.nameEn,
+                            calories: Number(food.calories || 0) * factor,
+                            protein: Number(food.protein || 0) * factor,
+                            carbs: Number(food.carbs || 0) * factor,
+                            fats: Number(food.fat || food.fats || 0) * factor,
+                            servingUnit: item.servingUnit || food.servingUnit
+                        };
+                    })
+                }));
+                return { system, libraryItems: foods };
+            }
+
+            function coachingHeader(title, system) {
+                const memberName = system.memberName || system.fullName || 'العميل';
+                const memberPhone = system.memberPhone || system.phone || '—';
+                const documentId = system.id ? '#' + system.id : 'مسودة';
+                return '<header class="print-header"><div class="print-brand"><img class="print-logo" src="' + assetUrl('/favicon.svg?v=2') + '" alt=""><div class="print-brand-copy"><h1 class="print-brand-title">TOP GYM</h1><span class="print-brand-subtitle">إدارة التدريب والتغذية الرياضية</span></div></div><div class="print-document-meta"><strong>' + escapeHtml(title) + '</strong><span>' + escapeHtml(memberName) + ' · ' + escapeHtml(memberPhone) + '</span><span>' + escapeHtml(documentId) + ' · ' + escapeHtml(printDate(new Date())) + '</span></div></header>';
+            }
+
+            function coachingMemberHero(system, type) {
+                const memberName = system.memberName || system.fullName || 'العميل';
+                const memberPhone = system.memberPhone || system.phone || '—';
+                const title = type === 'diet' ? 'خطة التغذية المعتمدة' : 'برنامج التدريب المعتمد';
+                return '<section class="print-section print-system-hero"><div class="print-system-hero-copy"><span class="print-section-kicker">ملف العميل</span><h2>' + escapeHtml(memberName) + '</h2><p>' + escapeHtml(memberPhone) + (system.memberEmail ? ' · ' + escapeHtml(system.memberEmail) : '') + '</p></div><div class="print-system-hero-title"><span>' + escapeHtml(title) + '</span><strong>' + escapeHtml(system.name || 'نظام جديد') + '</strong></div></section>';
+            }
+
+            function coachingKpi(label, value, detail = '') {
+                return '<div class="print-system-kpi"><span>' + escapeHtml(label) + '</span><strong>' + escapeHtml(value) + '</strong>' + (detail ? '<small>' + escapeHtml(detail) + '</small>' : '') + '</div>';
+            }
+
+            function coachingInfo(label, value, className = '') {
+                return '<div class="print-system-info ' + className + '"><span>' + escapeHtml(label) + '</span><strong>' + escapeHtml(coachingValue(value)) + '</strong></div>';
+            }
+
+            function workoutPrintSections(system, libraryItems) {
+                const libraryById = new Map((libraryItems || []).map((item) => [String(item.id), item]));
+                const routines = Array.isArray(system.routines) ? system.routines : [];
+                const muscles = {};
+                let exerciseCount = 0;
+                let setCount = 0;
+                let volume = 0;
+                const detailFor = (exercise) => ({ ...(libraryById.get(String(exercise.exerciseId)) || {}), ...exercise });
+                routines.forEach((routine) => (routine.exercises || []).forEach((exercise) => {
+                    exerciseCount += 1;
+                    setCount += Number(exercise.sets || 0);
+                    const reps = ((Number(exercise.repsMin) || 0) + (Number(exercise.repsMax) || Number(exercise.repsMin) || 0)) / 2;
+                    volume += Number(exercise.sets || 0) * reps * Number(exercise.weightKg || 0);
+                    const detail = detailFor(exercise);
+                    const muscle = detail.targetMuscleNameAr || detail.targetMuscleName || (detail.targetMuscleId ? 'عضلة #' + detail.targetMuscleId : 'غير محددة');
+                    muscles[muscle] = (muscles[muscle] || 0) + Number(exercise.sets || 0);
+                }));
+                const muscleEntries = Object.entries(muscles).sort(([, first], [, second]) => second - first);
+                const maxMuscleSets = Math.max(1, ...muscleEntries.map(([, count]) => count));
+                const distribution = muscleEntries.length
+                    ? '<div class="print-system-distribution">' + muscleEntries.map(([name, count]) => '<div class="print-system-bar"><div><span>' + escapeHtml(name) + '</span><b>' + coachingNumber(count) + ' مجموعة</b></div><i><em style="width:' + Math.round((count / maxMuscleSets) * 100) + '%"></em></i></div>').join('') + '</div>'
+                    : '<div class="print-empty">لم يتم تحديد توزيع العضلات.</div>';
+                const routineSections = routines.length ? routines.map((routine, routineIndex) => {
+                    const rows = (routine.exercises || []).map((exercise) => {
+                        const detail = detailFor(exercise);
+                        const muscle = detail.targetMuscleNameAr || detail.targetMuscleName || (detail.targetMuscleId ? 'عضلة #' + detail.targetMuscleId : 'غير محددة');
+                        const intensity = [exercise.rir == null ? '' : 'RIR ' + exercise.rir, exercise.rpe == null ? '' : 'RPE ' + exercise.rpe].filter(Boolean).join(' · ');
+                        return '<tr><td><span class="print-table-main">' + escapeHtml(coachingItemName(detail)) + '</span>' + (exercise.notes ? '<span class="print-table-sub">' + escapeHtml(exercise.notes) + '</span>' : '') + '</td><td>' + escapeHtml(muscle) + '</td><td dir="ltr">' + coachingNumber(exercise.sets) + '</td><td dir="ltr">' + escapeHtml(coachingReps(exercise)) + '</td><td dir="ltr">' + (exercise.weightKg === null || exercise.weightKg === undefined || exercise.weightKg === '' ? '—' : coachingNumber(exercise.weightKg, 1) + ' kg') + '</td><td dir="ltr">' + (exercise.restSeconds == null ? '—' : coachingNumber(exercise.restSeconds) + ' ث') + '</td><td dir="ltr">' + escapeHtml(exercise.tempo || intensity || '—') + '</td><td dir="ltr">' + escapeHtml(exercise.supersetGroupId || '—') + '</td></tr>';
+                    }).join('');
+                    return '<section class="print-section print-system-routine"><div class="print-section-title"><div><span class="print-section-kicker">اليوم ' + coachingNumber(routineIndex + 1) + '</span><h2>' + escapeHtml(routine.name || 'اليوم ' + (routineIndex + 1)) + '</h2></div><span class="print-system-count">' + coachingNumber((routine.exercises || []).length) + ' تمرين · ' + coachingNumber((routine.exercises || []).reduce((sum, item) => sum + Number(item.sets || 0), 0)) + ' مجموعات</span></div>' + (routine.notes ? '<p class="print-notes print-system-note">' + escapeHtml(routine.notes) + '</p>' : '') + '<div class="print-table-wrap"><table class="print-table print-system-table"><thead><tr><th>التمرين</th><th>العضلة</th><th>مجموعات</th><th>تكرارات</th><th>الوزن</th><th>الراحة</th><th>Tempo / الجهد</th><th>Superset</th></tr></thead><tbody>' + (rows || '<tr><td colspan="8"><div class="print-empty">لا توجد تمارين.</div></td></tr>') + '</tbody></table></div></section>';
+                }).join('') : '<section class="print-section"><div class="print-empty">لا توجد أيام تدريب محفوظة.</div></section>';
+                const references = [];
+                const referenceKeys = new Set();
+                routines.forEach((routine) => (routine.exercises || []).forEach((exercise) => {
+                    const detail = detailFor(exercise);
+                    const key = String(exercise.exerciseId || detail.id || detail.name || '');
+                    if (!key || referenceKeys.has(key)) return;
+                    referenceKeys.add(key);
+                    references.push(detail);
+                }));
+                const referenceMarkup = references.length ? '<section class="print-section print-system-reference-section"><div class="print-section-title"><div><span class="print-section-kicker">مرجع الأداء</span><h2>تعليمات التمارين والنصائح</h2></div><span class="print-system-count">' + coachingNumber(references.length) + ' تمرين</span></div><div class="print-system-reference-grid">' + references.map((item) => '<article class="print-system-reference"><h3>' + escapeHtml(coachingItemName(item)) + '</h3><div class="print-system-reference-meta">' + escapeHtml(item.targetMuscleNameAr || item.targetMuscleName || 'عضلة غير محددة') + ' · ' + escapeHtml(item.equipment || 'معدات غير محددة') + ' · ' + escapeHtml(item.difficulty || 'مستوى غير محدد') + '</div><div class="print-system-reference-columns"><div><b>طريقة الأداء</b>' + coachingListMarkup(item.instructionsAr || item.instructions) + '</div><div><b>نصيحة</b>' + coachingListMarkup(item.tipsAr || item.tips) + '</div><div><b>أخطاء شائعة</b>' + coachingListMarkup(item.commonMistakesAr || item.commonMistakes) + '</div></div></article>').join('') + '</div></section>' : '';
+                return '<section class="print-section"><div class="print-section-title"><div><span class="print-section-kicker">ملخص البرنامج</span><h2>الحمل التدريبي وتوزيع العضلات</h2></div></div><div class="print-system-kpi-grid">' + coachingKpi('الأيام التدريبية', coachingNumber(routines.length)) + coachingKpi('إجمالي التمارين', coachingNumber(exerciseCount)) + coachingKpi('إجمالي المجموعات', coachingNumber(setCount)) + coachingKpi('الحجم التقريبي', coachingNumber(volume) + ' كجم', 'حسب الوزن والتكرارات المدخلة') + '</div><div class="print-system-overview-grid"><div><h3>البيانات الأساسية</h3><div class="print-system-info-grid">' + coachingInfo('الهدف', system.goal) + coachingInfo('المستوى', system.level) + coachingInfo('أيام أسبوعيًا', system.daysPerWeek) + coachingInfo('المدة', system.durationWeeks ? coachingNumber(system.durationWeeks) + ' أسبوع' : '—') + coachingInfo('البداية', printDate(system.startDate)) + coachingInfo('النهاية', printDate(system.endDate)) + coachingInfo('الحالة', coachingStatusLabel(system.status)) + coachingInfo('الإصدار', system.version) + '</div></div><div><h3>توزيع العضلات</h3>' + distribution + '</div></div>' + (system.description ? '<div class="print-system-callout"><b>وصف البرنامج</b><p>' + escapeHtml(system.description) + '</p></div>' : '') + '</section>' + routineSections + referenceMarkup + (system.notes ? '<section class="print-section"><div class="print-section-title"><div><span class="print-section-kicker">ملاحظات الإدارة</span><h2>ملاحظات البرنامج</h2></div></div><p class="print-notes">' + escapeHtml(system.notes) + '</p></section>' : '');
+            }
+
+            function dietPrintSections(system) {
+                const meals = Array.isArray(system.meals) ? system.meals : [];
+                const fallbackTotals = meals.reduce((total, meal) => (meal.items || []).reduce((sum, item) => {
+                    sum.calories += Number(item.calories || 0);
+                    sum.protein += Number(item.protein || 0);
+                    sum.carbs += Number(item.carbs || 0);
+                    sum.fats += Number(item.fats || 0);
+                    return sum;
+                }, total), { calories: 0, protein: 0, carbs: 0, fats: 0 });
+                const totals = system.totals || fallbackTotals;
+                const mealSections = meals.length ? meals.map((meal, mealIndex) => {
+                    const mealTotals = (meal.items || []).reduce((total, item) => {
+                        total.calories += Number(item.calories || 0);
+                        total.protein += Number(item.protein || 0);
+                        total.carbs += Number(item.carbs || 0);
+                        total.fats += Number(item.fats || 0);
+                        return total;
+                    }, { calories: 0, protein: 0, carbs: 0, fats: 0 });
+                    const rows = (meal.items || []).map((item) => '<tr><td><span class="print-table-main">' + escapeHtml(item.nameAr || item.nameEn || 'طعام غير محدد') + '</span>' + (item.notes ? '<span class="print-table-sub">' + escapeHtml(item.notes) + '</span>' : '') + '</td><td dir="ltr">' + coachingNumber(item.assignedQuantity, 1) + ' ' + escapeHtml(item.servingUnit || '') + '</td><td dir="ltr">' + coachingNumber(item.calories, 1) + '</td><td dir="ltr">' + coachingNumber(item.protein, 1) + ' ج</td><td dir="ltr">' + coachingNumber(item.carbs, 1) + ' ج</td><td dir="ltr">' + coachingNumber(item.fats, 1) + ' ج</td></tr>').join('');
+                    return '<section class="print-section print-system-routine"><div class="print-section-title"><div><span class="print-section-kicker">وجبة ' + coachingNumber(mealIndex + 1) + '</span><h2>' + escapeHtml(meal.name || 'وجبة ' + (mealIndex + 1)) + '</h2></div><span class="print-system-count">' + escapeHtml(meal.mealTime || 'بدون موعد') + ' · ' + coachingNumber(mealTotals.calories, 1) + ' سعر</span></div>' + (meal.notes ? '<p class="print-notes print-system-note">' + escapeHtml(meal.notes) + '</p>' : '') + '<div class="print-table-wrap"><table class="print-table print-system-table"><thead><tr><th>الطعام</th><th>الكمية</th><th>السعرات</th><th>Protein</th><th>Carbs</th><th>Fat</th></tr></thead><tbody>' + (rows || '<tr><td colspan="6"><div class="print-empty">لا توجد أطعمة.</div></td></tr>') + '</tbody></table></div></section>';
+                }).join('') : '<section class="print-section"><div class="print-empty">لا توجد وجبات محفوظة.</div></section>';
+                const calculator = system.calculator || {};
+                return '<section class="print-section"><div class="print-section-title"><div><span class="print-section-kicker">ملخص الخطة</span><h2>الأهداف الغذائية والقيم المحسوبة</h2></div></div><div class="print-system-kpi-grid">' + coachingKpi('السعرات المستهدفة', coachingNumber(system.targetCalories) + ' سعر') + coachingKpi('السعرات المحسوبة', coachingNumber(totals.calories, 1) + ' سعر') + coachingKpi('عدد الوجبات', coachingNumber(meals.length)) + coachingKpi('عدد الأطعمة', coachingNumber(meals.reduce((sum, meal) => sum + (meal.items || []).length, 0))) + '</div><div class="print-system-overview-grid"><div><h3>الأهداف اليومية</h3><div class="print-system-info-grid">' + coachingInfo('الهدف', coachingGoalLabel(system.calorieGoal)) + coachingInfo('تعديل السعرات', coachingNumber(system.calorieAdjustment) + ' سعر') + coachingInfo('البروتين المستهدف', coachingNumber(system.targetProtein, 1) + ' ج') + coachingInfo('الكربوهيدرات المستهدفة', coachingNumber(system.targetCarbs, 1) + ' ج') + coachingInfo('الدهون المستهدفة', coachingNumber(system.targetFats, 1) + ' ج') + coachingInfo('البداية', printDate(system.startDate)) + coachingInfo('النهاية', printDate(system.endDate)) + coachingInfo('الحالة', coachingStatusLabel(system.status)) + '</div></div><div><h3>حاسبة الاحتياج اليومي</h3><div class="print-system-info-grid">' + coachingInfo('الوزن', calculator.weightKg ? coachingNumber(calculator.weightKg, 1) + ' كجم' : '—') + coachingInfo('الطول', calculator.heightCm ? coachingNumber(calculator.heightCm, 1) + ' سم' : '—') + coachingInfo('العمر', calculator.age ? coachingNumber(calculator.age) + ' سنة' : '—') + coachingInfo('النوع', calculator.gender === 'female' ? 'أنثى' : calculator.gender === 'male' ? 'ذكر' : calculator.gender) + coachingInfo('النشاط', coachingActivityLabel(calculator.activity)) + coachingInfo('BMR', calculator.bmr ? coachingNumber(calculator.bmr) + ' سعر' : '—') + coachingInfo('TDEE', calculator.tdee ? coachingNumber(calculator.tdee) + ' سعر' : '—') + coachingInfo('الإصدار', system.version) + '</div></div></div>' + (system.description ? '<div class="print-system-callout"><b>وصف الخطة</b><p>' + escapeHtml(system.description) + '</p></div>' : '') + '<div class="print-system-total"><span>إجمالي الماكروز المحسوبة</span><strong>Protein ' + coachingNumber(totals.protein, 1) + ' ج · Carbs ' + coachingNumber(totals.carbs, 1) + ' ج · Fat ' + coachingNumber(totals.fats, 1) + ' ج</strong></div></section>' + mealSections + (system.notes ? '<section class="print-section"><div class="print-section-title"><div><span class="print-section-kicker">ملاحظات الإدارة</span><h2>ملاحظات الخطة</h2></div></div><p class="print-notes">' + escapeHtml(system.notes) + '</p></section>' : '');
+            }
+
+            function buildCoachingSystemDocument(system, type, libraryItems = []) {
+                const title = type === 'diet' ? 'خطة تغذية رياضية' : 'برنامج تدريب رياضي';
+                const content = type === 'diet' ? dietPrintSections(system) : workoutPrintSections(system, libraryItems);
+                const footer = '<footer class="print-footer"><div class="print-footer-management"><strong>إدارة الجيم</strong><span>C/ Ahmed Abdel Hamid · C/ Karim Abdelhamid</span></div><span class="print-signature">اعتماد الإدارة</span></footer>';
+                return '<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>' + escapeHtml(title) + ' - TOP GYM</title><link rel="stylesheet" href="' + assetUrl('/css/print.css?v=5') + '"></head><body><main class="print-sheet print-system-document">' + coachingHeader(title, system) + '<div class="print-accent"></div>' + coachingMemberHero(system, type) + content + footer + '</main></body></html>';
+            }
+
+            async function fetchCoachingSystem(id, type) {
+                const endpoint = type === 'diet' ? '/api/dietplans/' + encodeURIComponent(id) : '/api/workoutprograms/' + encodeURIComponent(id);
+                const response = await fetchPrintJson(endpoint);
+                const system = response.plan || response.program;
+                if (!system) throw new Error('لم يتم العثور على النظام المطلوب.');
+                if (type !== 'workout') return { system, libraryItems: [] };
+                const ids = [...new Set((system.routines || []).flatMap((routine) => (routine.exercises || []).map((exercise) => exercise.exerciseId)).filter(Boolean).map(String))];
+                const results = await Promise.allSettled(ids.map((exerciseId) => fetchPrintJson('/api/library/exercises/' + encodeURIComponent(exerciseId)).then((data) => data.item)));
+                return { system, libraryItems: results.filter((result) => result.status === 'fulfilled' && result.value).map((result) => result.value) };
+            }
+
+            function writePrintLoading(printWindow, label = 'جاري تجهيز مستند الطباعة…') {
+                writeWindow(printWindow, '<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><link rel="stylesheet" href="' + assetUrl('/css/print.css?v=5') + '"></head><body><div class="print-loading">' + escapeHtml(label) + '</div></body></html>');
+            }
+
+            function notifyPrint(message, type = 'success') {
+                if (typeof window.showToast === 'function') window.showToast(message, type === 'error', type);
+                else if (type === 'error') window.alert(message);
+            }
+
+            function coachingFilename(type, system) {
+                const label = String(system?.name || (type === 'diet' ? 'خطة-تغذية' : 'برنامج-تدريب')).replace(/[\\/:*?"<>|]+/g, '-').trim().slice(0, 70);
+                return 'TOP-GYM-' + (type === 'diet' ? 'Nutrition' : 'Workout') + '-' + (label || 'System') + '-' + (system?.id || 'draft') + '.pdf';
+            }
+
+            async function createPdfFromDocument(html, filename) {
+                await loadPdfLibrary();
+                const parsed = new DOMParser().parseFromString(html, 'text/html');
+                const sheet = parsed.querySelector('.print-sheet');
+                if (!sheet) throw new Error('تعذر تجهيز قالب PDF.');
+                const cssResponse = await fetch(assetUrl('/css/print.css?v=5'));
+                if (!cssResponse.ok) throw new Error('تعذر تحميل تنسيق ملف PDF.');
+                const cssText = await cssResponse.text();
+                const holder = document.createElement('div');
+                holder.dir = 'rtl';
+                holder.style.cssText = 'position:fixed;left:-100000px;top:0;width:190mm;min-height:1px;overflow:visible;background:#fff;z-index:-1;';
+                const style = document.createElement('style');
+                style.textContent = cssText;
+                holder.append(style, sheet);
+                document.body.append(holder);
+                try {
+                    if (document.fonts?.ready) await document.fonts.ready;
+                    await Promise.all([...holder.querySelectorAll('img')].map((image) => image.complete ? Promise.resolve() : new Promise((resolve) => { image.onload = resolve; image.onerror = resolve; })));
+                    return await window.html2pdf().set({
+                        margin: [8, 8, 8, 8],
+                        filename,
+                        image: { type: 'jpeg', quality: .98 },
+                        html2canvas: { scale: 2, useCORS: true, backgroundColor: '#fff', logging: false, letterRendering: true },
+                        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+                        pagebreak: { mode: ['css', 'legacy'] }
+                    }).from(sheet).outputPdf('blob');
+                } finally {
+                    holder.remove();
+                }
+            }
+
+            function downloadBlob(blob, filename) {
+                const url = URL.createObjectURL(blob);
+                const anchor = document.createElement('a');
+                anchor.href = url;
+                anchor.download = filename;
+                document.body.append(anchor);
+                anchor.click();
+                anchor.remove();
+                window.setTimeout(() => URL.revokeObjectURL(url), 1200);
+            }
+
+            async function downloadCoachingPdf(id, type) {
+                try {
+                    const result = await fetchCoachingSystem(id, type);
+                    const filename = coachingFilename(type, result.system);
+                    const blob = await createPdfFromDocument(buildCoachingSystemDocument(result.system, type, result.libraryItems), filename);
+                    downloadBlob(blob, filename);
+                    notifyPrint('تم تجهيز ملف PDF وتحميله بنجاح.');
+                } catch (error) {
+                    notifyPrint(error.message || 'تعذر إنشاء ملف PDF.', 'error');
+                }
+            }
+
+            async function printCoachingSystem(id, type, existingWindow = null) {
+                const printWindow = existingWindow || window.open('', '_blank', 'width=980,height=820');
+                if (!printWindow) {
+                    notifyPrint('يرجى السماح بالنوافذ المنبثقة لإتمام الطباعة.', 'error');
+                    return;
+                }
+                writePrintLoading(printWindow, 'جاري تجهيز النظام للطباعة…');
+                try {
+                    const result = await fetchCoachingSystem(id, type);
+                    writeWindow(printWindow, buildCoachingSystemDocument(result.system, type, result.libraryItems));
+                    printWindow.onafterprint = () => printWindow.close();
+                    window.setTimeout(() => { printWindow.focus(); printWindow.print(); }, 450);
+                } catch (error) {
+                    writeWindow(printWindow, '<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><link rel="stylesheet" href="' + assetUrl('/css/print.css?v=5') + '"></head><body><div class="print-error">' + escapeHtml(error.message || 'تعذر تجهيز مستند الطباعة.') + '</div></body></html>');
+                }
+            }
+
+            function writeCoachingDraft(printWindow, draft, type, catalog, clientLabel) {
+                const normalized = normalizeCoachingDraft(draft, type, catalog, clientLabel);
+                writeWindow(printWindow, buildCoachingSystemDocument(normalized.system, type, normalized.libraryItems));
+            }
+
+            function printCoachingDraft(draft, type, catalog = {}, clientLabel = '', existingWindow = null) {
+                const printWindow = existingWindow || window.open('', '_blank', 'width=980,height=820');
+                if (!printWindow) {
+                    notifyPrint('يرجى السماح بالنوافذ المنبثقة لإتمام الطباعة.', 'error');
+                    return;
+                }
+                try {
+                    writePrintLoading(printWindow, 'جاري تجهيز مسودة النظام للطباعة…');
+                    writeCoachingDraft(printWindow, draft, type, catalog, clientLabel);
+                    printWindow.onafterprint = () => printWindow.close();
+                    window.setTimeout(() => { printWindow.focus(); printWindow.print(); }, 450);
+                } catch (error) {
+                    writeWindow(printWindow, '<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><link rel="stylesheet" href="' + assetUrl('/css/print.css?v=5') + '"></head><body><div class="print-error">' + escapeHtml(error.message || 'تعذر تجهيز المسودة.') + '</div></body></html>');
+                }
+            }
+
+            async function downloadCoachingDraftPdf(draft, type, catalog = {}, clientLabel = '') {
+                try {
+                    const normalized = normalizeCoachingDraft(draft, type, catalog, clientLabel);
+                    const filename = coachingFilename(type, normalized.system);
+                    const blob = await createPdfFromDocument(buildCoachingSystemDocument(normalized.system, type, normalized.libraryItems), filename);
+                    downloadBlob(blob, filename);
+                    notifyPrint('تم تجهيز ملف PDF وتحميله بنجاح.');
+                } catch (error) {
+                    notifyPrint(error.message || 'تعذر إنشاء ملف PDF.', 'error');
+                }
+            }
+
+            function coachingOverviewTable(head, rows, emptyLabel = 'لا توجد بيانات مسجلة.') {
+                return '<div class="print-table-wrap"><table class="print-table"><thead><tr>' + head + '</tr></thead><tbody>' + (rows || '<tr><td colspan="4"><div class="print-empty">' + escapeHtml(emptyLabel) + '</div></td></tr>') + '</tbody></table></div>';
+            }
+
+            function buildCoachingOverviewDocument(overview) {
+                const member = overview.member || {};
+                const progress = overview.progress || {};
+                const workouts = overview.workoutPrograms || [];
+                const diets = overview.dietPlans || [];
+                const workoutRows = workouts.map((item) => '<tr><td><span class="print-table-main">' + escapeHtml(item.name) + '</span><span class="print-table-sub">' + escapeHtml(item.goal || '—') + ' · ' + escapeHtml(item.level || '—') + '</span></td><td>' + escapeHtml(printDate(item.startDate)) + '<span class="print-table-sub">حتى ' + escapeHtml(printDate(item.endDate)) + '</span></td><td>' + escapeHtml(coachingStatusLabel(item.status)) + '</td><td dir="ltr">' + coachingNumber(item.exerciseCount || item.exercises) + ' تمرين</td></tr>').join('');
+                const dietRows = diets.map((item) => '<tr><td><span class="print-table-main">' + escapeHtml(item.name) + '</span><span class="print-table-sub">' + coachingNumber(item.targetCalories) + ' سعر</span></td><td>' + escapeHtml(printDate(item.startDate)) + '<span class="print-table-sub">حتى ' + escapeHtml(printDate(item.endDate)) + '</span></td><td>' + escapeHtml(coachingStatusLabel(item.status)) + '</td><td dir="ltr">' + coachingNumber(item.mealsPerDay || item.mealCount) + ' وجبات</td></tr>').join('');
+                const measurementRows = (overview.measurements || []).map((item) => '<tr><td dir="ltr">' + escapeHtml(item.measuredAt || '—') + '</td><td dir="ltr">' + (item.weightKg == null ? '—' : coachingNumber(item.weightKg, 1) + ' كجم') + '</td><td dir="ltr">' + (item.heightCm == null ? '—' : coachingNumber(item.heightCm, 1) + ' سم') + '</td><td dir="ltr">' + (item.bodyFatPercent == null ? '—' : coachingNumber(item.bodyFatPercent, 1) + '%') + '</td></tr>').join('');
+                const sessionRows = (overview.workoutSessions || []).map((item) => '<tr><td>' + escapeHtml(item.programName || 'جلسة تدريب') + '</td><td>' + escapeHtml(item.routineName || '—') + '</td><td>' + escapeHtml(item.status === 'completed' ? 'مكتملة' : item.status || '—') + '</td><td dir="ltr">' + escapeHtml(item.startedAt || item.createdAt || '—') + '</td></tr>').join('');
+                const mealRows = (overview.mealLogs || []).map((item) => '<tr><td>' + escapeHtml(item.foodName || 'طعام') + '</td><td>' + escapeHtml(item.mealName || '—') + '</td><td dir="ltr">' + coachingNumber(item.calories, 1) + '</td><td dir="ltr">' + escapeHtml(item.consumedAt || '—') + '</td></tr>').join('');
+                const section = (kicker, title, head, rows, empty) => '<section class="print-section"><div class="print-section-title"><div><span class="print-section-kicker">' + kicker + '</span><h2>' + title + '</h2></div></div>' + coachingOverviewTable(head, rows, empty) + '</section>';
+                const system = { id: member.id, memberName: member.fullName, memberPhone: member.phone, name: 'ملف التدريب والتغذية' };
+                const hero = '<section class="print-section print-system-hero"><div class="print-system-hero-copy"><span class="print-section-kicker">ملف العميل</span><h2>' + escapeHtml(member.fullName || 'العميل') + '</h2><p>' + escapeHtml(member.phone || '—') + (member.email ? ' · ' + escapeHtml(member.email) : '') + '</p></div><div class="print-system-hero-title"><span>التنفيذ والمتابعة</span><strong>' + escapeHtml(member.registrationDate ? printDate(member.registrationDate) : 'ملف نشط') + '</strong></div></section>';
+                const footer = '<footer class="print-footer"><div class="print-footer-management"><strong>إدارة الجيم</strong><span>C/ Ahmed Abdel Hamid · C/ Karim Abdelhamid</span></div><span class="print-signature">اعتماد الإدارة</span></footer>';
+                return '<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>ملف التدريب والتغذية - TOP GYM</title><link rel="stylesheet" href="' + assetUrl('/css/print.css?v=5') + '"></head><body><main class="print-sheet print-system-document">' + coachingHeader('ملف التدريب والتغذية الكامل', system) + '<div class="print-accent"></div>' + hero + '<section class="print-section"><div class="print-system-kpi-grid">' + coachingKpi('برامج التدريب', coachingNumber(workouts.length)) + coachingKpi('خطط التغذية', coachingNumber(diets.length)) + coachingKpi('القياسات', coachingNumber((overview.measurements || []).length)) + coachingKpi('الجلسات المكتملة', coachingNumber(progress.completedSessions || progress.sessionCount)) + coachingKpi('تسجيلات الوجبات', coachingNumber(progress.mealLogCount)) + coachingKpi('الوزن الحالي', progress.currentWeight == null ? '—' : coachingNumber(progress.currentWeight, 1) + ' كجم') + '</div></section>' + section('الأنظمة المحفوظة', 'برامج التدريب', '<th>البرنامج والهدف</th><th>الفترة</th><th>الحالة</th><th>المحتوى</th>', workoutRows, 'لا توجد برامج تدريب.') + section('الأنظمة المحفوظة', 'خطط التغذية', '<th>الخطة والسعرات</th><th>الفترة</th><th>الحالة</th><th>المحتوى</th>', dietRows, 'لا توجد خطط تغذية.') + section('المتابعة البدنية', 'القياسات المسجلة', '<th>التاريخ</th><th>الوزن</th><th>الطول</th><th>نسبة الدهون</th>', measurementRows, 'لا توجد قياسات.') + section('التنفيذ', 'جلسات التدريب', '<th>البرنامج</th><th>اليوم</th><th>الحالة</th><th>وقت البدء</th>', sessionRows, 'لا توجد جلسات.') + section('التنفيذ', 'سجل الوجبات', '<th>الطعام</th><th>الوجبة</th><th>السعرات</th><th>وقت التسجيل</th>', mealRows, 'لا توجد وجبات مسجلة.') + (member.notes ? '<section class="print-section"><div class="print-section-title"><div><span class="print-section-kicker">ملاحظات العميل</span><h2>ملاحظات الملف</h2></div></div><p class="print-notes">' + escapeHtml(member.notes) + '</p></section>' : '') + footer + '</main></body></html>';
+            }
+
+            async function printCoachingOverview(memberId, existingWindow = null) {
+                const printWindow = existingWindow || window.open('', '_blank', 'width=980,height=820');
+                if (!printWindow) {
+                    notifyPrint('يرجى السماح بالنوافذ المنبثقة لإتمام الطباعة.', 'error');
+                    return;
+                }
+                writePrintLoading(printWindow, 'جاري تجهيز ملف التدريب والتغذية…');
+                try {
+                    const overview = await fetchPrintJson('/api/clients/' + encodeURIComponent(memberId) + '/training-overview');
+                    writeWindow(printWindow, buildCoachingOverviewDocument(overview));
+                    printWindow.onafterprint = () => printWindow.close();
+                    window.setTimeout(() => { printWindow.focus(); printWindow.print(); }, 450);
+                } catch (error) {
+                    writeWindow(printWindow, '<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><link rel="stylesheet" href="' + assetUrl('/css/print.css?v=5') + '"></head><body><div class="print-error">' + escapeHtml(error.message || 'تعذر تجهيز الملف.') + '</div></body></html>');
+                }
+            }
+
+            async function downloadCoachingOverviewPdf(memberId) {
+                try {
+                    const overview = await fetchPrintJson('/api/clients/' + encodeURIComponent(memberId) + '/training-overview');
+                    const filename = 'TOP-GYM-Coaching-Profile-' + memberId + '.pdf';
+                    const blob = await createPdfFromDocument(buildCoachingOverviewDocument(overview), filename);
+                    downloadBlob(blob, filename);
+                    notifyPrint('تم تجهيز ملف PDF وتحميله بنجاح.');
+                } catch (error) {
+                    notifyPrint(error.message || 'تعذر إنشاء ملف PDF.', 'error');
+                }
+            }
+
             async function printMember(memberId, mode = 'membership') {
                 const printWindow = window.open('', '_blank', 'width=980,height=820');
                 if (!printWindow) {
                     window.alert('يرجى السماح بالنوافذ المنبثقة لإتمام الطباعة.');
                     return;
                 }
-                writeWindow(printWindow, `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><link rel="stylesheet" href="${assetUrl('/css/print.css?v=3')}"></head><body><div class="print-loading">جاري تجهيز مستند الطباعة…</div></body></html>`);
+                writeWindow(printWindow, `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><link rel="stylesheet" href="${assetUrl('/css/print.css?v=5')}"></head><body><div class="print-loading">جاري تجهيز مستند الطباعة…</div></body></html>`);
                 try {
                     const data = await fetchMemberDetails(memberId);
                     writeWindow(printWindow, buildPrintDocument(data, mode));
                     printWindow.onafterprint = () => printWindow.close();
                     window.setTimeout(() => { printWindow.focus(); printWindow.print(); }, 450);
                 } catch (error) {
-                    writeWindow(printWindow, `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><link rel="stylesheet" href="${assetUrl('/css/print.css?v=3')}"></head><body><div class="print-error">${escapeHtml(error.message)}</div></body></html>`);
+                    writeWindow(printWindow, `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><link rel="stylesheet" href="${assetUrl('/css/print.css?v=5')}"></head><body><div class="print-error">${escapeHtml(error.message)}</div></body></html>`);
                 }
             }
 
@@ -230,7 +596,7 @@
                     window.alert('يرجى السماح بالنوافذ المنبثقة لإتمام طباعة الإيصال.');
                     return;
                 }
-                writeWindow(printWindow, `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><link rel="stylesheet" href="${assetUrl('/css/print.css?v=4')}"></head><body><div class="print-loading">جاري تجهيز الإيصال…</div></body></html>`);
+                writeWindow(printWindow, `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><link rel="stylesheet" href="${assetUrl('/css/print.css?v=5')}"></head><body><div class="print-loading">جاري تجهيز الإيصال…</div></body></html>`);
                 try {
                     const data = await fetchMemberDetails(memberId);
                     const payment = (data.payments || []).find((item) => Number(item.id) === Number(paymentId));
@@ -239,11 +605,23 @@
                     printWindow.onafterprint = () => printWindow.close();
                     window.setTimeout(() => { printWindow.focus(); printWindow.print(); }, 450);
                 } catch (error) {
-                    writeWindow(printWindow, `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><link rel="stylesheet" href="${assetUrl('/css/print.css?v=4')}"></head><body><div class="print-error">${escapeHtml(error.message)}</div></body></html>`);
+                    writeWindow(printWindow, `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><link rel="stylesheet" href="${assetUrl('/css/print.css?v=5')}"></head><body><div class="print-error">${escapeHtml(error.message)}</div></body></html>`);
                 }
             }
 
-            window.topGymPrint = { ...(window.topGymPrint || {}), printMember, printPaymentReceipt, createPdfFile };
+            window.topGymPrint = {
+                ...(window.topGymPrint || {}),
+                printMember,
+                printPaymentReceipt,
+                createPdfFile,
+                printCoachingSystem,
+                downloadCoachingPdf,
+                printCoachingDraft,
+                writeCoachingDraft,
+                downloadCoachingDraftPdf,
+                printCoachingOverview,
+                downloadCoachingOverviewPdf
+            };
 
             function ensurePrintActions() {
                 if (!list) return;

@@ -10,18 +10,18 @@
         members: {
             styles: [
                 '/css/attendance.css?v=5',
-                '/css/coaching.css?v=8'
+                '/css/coaching.css?v=9'
             ],
             scripts: [
                 '/js/action-menu.js?v=4',
-                '/js/print-enhancements.js?v=6',
+                '/js/print-enhancements.js?v=7',
                 '/js/attendance.js?v=8',
-                '/js/coaching.js?v=11'
+                '/js/coaching.js?v=12'
             ]
         },
         print: {
             styles: [],
-            scripts: ['/js/print-enhancements.js?v=6']
+            scripts: ['/js/print-enhancements.js?v=7']
         },
         expenses: {
             styles: ['/css/operations.css?v=6'],
@@ -29,7 +29,7 @@
         },
         reports: {
             styles: ['/css/operations.css?v=6'],
-            scripts: ['/js/reports.js?v=6']
+            scripts: ['/js/reports.js?v=7']
         },
         management: {
             styles: ['/css/operations.css?v=6'],
@@ -44,8 +44,8 @@
             scripts: ['/js/library.js?v=8']
         },
         trainees: {
-            styles: ['/css/coaching.css?v=8'],
-            scripts: ['/js/coaching.js?v=11']
+            styles: ['/css/coaching.css?v=9'],
+            scripts: ['/js/coaching.js?v=12']
         }
     };
 

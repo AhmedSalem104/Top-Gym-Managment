@@ -76,6 +76,46 @@
         notify.timer = window.setTimeout(() => { element.hidden = true; }, 4000);
     }
 
+    async function ensureCoachingPrintFeature() {
+        if (window.topGymPrint?.printCoachingSystem) return window.topGymPrint;
+        if (!window.topGymEnsureTab) throw new Error('أداة الطباعة غير جاهزة حاليًا.');
+        await window.topGymEnsureTab('print');
+        if (!window.topGymPrint?.printCoachingSystem) throw new Error('تعذر تحميل أداة الطباعة.');
+        return window.topGymPrint;
+    }
+
+    async function runCoachingPrintAction(action, id, type) {
+        const printWindow = action === 'print' ? window.open('', '_blank', 'width=980,height=820') : null;
+        if (action === 'print' && !printWindow) {
+            notify('يرجى السماح بالنوافذ المنبثقة لإتمام الطباعة.', 'error');
+            return;
+        }
+        try {
+            const printer = await ensureCoachingPrintFeature();
+            if (action === 'pdf') return printer.downloadCoachingPdf(id, type);
+            return printer.printCoachingSystem(id, type, printWindow);
+        } catch (error) {
+            printWindow?.close();
+            notify(error.message || 'تعذر تنفيذ الطباعة.', 'error');
+        }
+    }
+
+    async function runCoachingOverviewPrintAction(action, memberId) {
+        const printWindow = action === 'print' ? window.open('', '_blank', 'width=980,height=820') : null;
+        if (action === 'print' && !printWindow) {
+            notify('يرجى السماح بالنوافذ المنبثقة لإتمام الطباعة.', 'error');
+            return;
+        }
+        try {
+            const printer = await ensureCoachingPrintFeature();
+            if (action === 'pdf') return printer.downloadCoachingOverviewPdf(memberId);
+            return printer.printCoachingOverview(memberId, printWindow);
+        } catch (error) {
+            printWindow?.close();
+            notify(error.message || 'تعذر تنفيذ طباعة الملف.', 'error');
+        }
+    }
+
     function setLoading(element, message = 'جاري التحميل…') {
         if (element) element.innerHTML = `<div class="loading">${message}</div>`;
     }
@@ -331,6 +371,7 @@
         try {
             state.profile = await requestJson(`/api/clients/${memberId}/training-overview`);
             renderProfileEnhanced(state.profile);
+            decorateProfilePrintActions();
             renderProfileCheckins(state.profile.checkins || [], state.profile.progress?.checkinCount);
             renderProfileTrainingLoad(state.profile);
             renderProfileNutritionLoad(state.profile);
@@ -391,6 +432,40 @@
             <div class="profile-section"><div class="profile-section-head"><h4>الأنظمة الحالية</h4><span>${number(workouts.length + diets.length, 0)} نظام</span></div>${workoutCards || dietCards ? `${workoutCards}${dietCards}` : '<div class="profile-empty">لم يتم إنشاء نظام بعد.</div>'}</div>
             <div class="profile-section"><div class="profile-section-head"><h4>القياسات والمتابعة</h4><span>${number((overview.measurements || []).length, 0)} قياس</span></div>${measurements ? `<div class="profile-table-wrap"><table class="profile-table"><thead><tr><th>التاريخ</th><th>الوزن</th><th>الدهون</th><th>الإجراءات</th></tr></thead><tbody>${measurements}</tbody></table></div>` : '<div class="profile-empty">أضف أول قياس لمتابعة التقدم.</div>'}</div>
             <div class="profile-execution-grid"><section class="profile-section"><div class="profile-section-head"><h4>جلسات التدريب الأخيرة</h4><span>${number(overview.progress.sessionCount, 0)} إجمالي</span></div>${sessionRows ? `<div class="profile-table-wrap"><table class="profile-table"><thead><tr><th>البرنامج</th><th>اليوم</th><th>الحالة</th><th>المجموعات</th></tr></thead><tbody>${sessionRows}</tbody></table></div>` : '<div class="profile-empty">لم يتم تسجيل جلسات بعد.</div>'}</section><section class="profile-section"><div class="profile-section-head"><h4>سجل الوجبات</h4><span>${number(overview.progress.mealLogCount, 0)} إجمالي</span></div>${mealRows ? `<div class="profile-table-wrap"><table class="profile-table"><thead><tr><th>الطعام</th><th>الوجبة</th><th>السعرات</th><th>التاريخ</th></tr></thead><tbody>${mealRows}</tbody></table></div>` : '<div class="profile-empty">لم يتم تسجيل وجبات بعد.</div>'}</section></div>`;
+    }
+
+    function decorateProfilePrintActions() {
+        const content = $('coachingProfileContent');
+        if (!content) return;
+        const profileActions = content.querySelector('.profile-actions');
+        const profileMemberId = state.profile?.member?.id;
+        if (profileActions && profileMemberId && !profileActions.querySelector('[data-profile-action="print-overview"]')) {
+            [['print-overview', 'طباعة الملف'], ['pdf-overview', 'PDF الملف']].forEach(([action, label]) => {
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.className = 'btn btn-light';
+                button.dataset.profileAction = action;
+                button.dataset.id = profileMemberId;
+                button.textContent = label;
+                profileActions.append(button);
+            });
+        }
+        content.querySelectorAll('.profile-system-card').forEach((card) => {
+            const editButton = card.querySelector('[data-profile-action="edit-workout"], [data-profile-action="edit-diet"]');
+            const actions = editButton?.parentElement;
+            if (!editButton || !actions || actions.querySelector('[data-profile-action^="print-"]')) return;
+            const type = editButton.dataset.profileAction === 'edit-diet' ? 'diet' : 'workout';
+            [['print', 'طباعة'], ['pdf', 'PDF']].forEach(([action, label]) => {
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.className = 'btn btn-light btn-small profile-print-action';
+                button.dataset.profileAction = action + '-' + type;
+                button.dataset.id = editButton.dataset.id;
+                button.textContent = label;
+                button.title = label + (action === 'pdf' ? ' للنظام' : ' النظام');
+                actions.append(button);
+            });
+        });
     }
 
     function checkinReadiness(checkin) {
@@ -942,6 +1017,7 @@
         $('coachingBuilderBack').hidden = step === 1;
         $('coachingBuilderPreview').hidden = step !== 2;
         $('coachingBuilderPrint').hidden = step !== 3;
+        $('coachingBuilderPdf').hidden = step !== 3;
         $('coachingBuilderNext').hidden = step === 3;
         $('coachingBuilderSave').hidden = step !== 3;
         $('coachingBuilderNext').textContent = step === 1 ? 'التالي: بناء النظام' : 'التالي: المراجعة';
@@ -1121,7 +1197,9 @@
             document.addEventListener('keydown', (event) => {
                 if (event.key === 'Escape') closeBuilderSearchSelects();
             });
-            document.addEventListener('scroll', () => closeBuilderSearchSelects(), true);
+            // The popover now lives inside the builder dialog. Scrolling the dialog
+            // must not dismiss the user's search/selection context.
+            window.addEventListener('resize', () => closeBuilderSearchSelects());
             builderSearchDismissBound = true;
         }
 
@@ -1166,6 +1244,12 @@
                 options.className = 'builder-search-options';
                 options.setAttribute('role', 'listbox');
                 popover.append(searchLabel, options);
+                const optionRecords = [...select.options].map((option) => ({
+                    value: option.value,
+                    label: option.textContent.trim(),
+                    searchText: option.textContent.toLocaleLowerCase(),
+                    disabled: option.disabled
+                }));
 
                 const updateTrigger = () => {
                     const selected = select.selectedOptions?.[0];
@@ -1174,13 +1258,14 @@
                 };
                 const renderOptions = () => {
                     const query = searchInput.value.trim().toLocaleLowerCase();
-                    options.replaceChildren();
-                    const matchingOptions = [...select.options].filter((option) => !query || option.textContent.toLocaleLowerCase().includes(query));
+                    const matchingOptions = optionRecords.filter((option) => !query || option.searchText.includes(query));
+                    const fragment = document.createDocumentFragment();
                     if (!matchingOptions.length) {
                         const emptyState = document.createElement('div');
                         emptyState.className = 'builder-search-empty';
                         emptyState.textContent = empty;
-                        options.append(emptyState);
+                        fragment.append(emptyState);
+                        options.replaceChildren(fragment);
                         return;
                     }
                     matchingOptions.forEach((option) => {
@@ -1190,7 +1275,7 @@
                         optionButton.setAttribute('role', 'option');
                         optionButton.setAttribute('aria-selected', String(option.value === select.value));
                         optionButton.disabled = option.disabled;
-                        optionButton.textContent = option.value ? option.textContent.trim() : placeholder;
+                        optionButton.textContent = option.value ? option.label : placeholder;
                         optionButton.addEventListener('click', () => {
                             const previousValue = select.value;
                             select.value = option.value;
@@ -1199,8 +1284,9 @@
                             searchInput.value = '';
                             if (previousValue !== select.value) select.dispatchEvent(new Event('change', { bubbles: true }));
                         });
-                        options.append(optionButton);
+                        fragment.append(optionButton);
                     });
+                    options.replaceChildren(fragment);
                 };
                 const setOpen = (open) => {
                     if (select.disabled) return;
@@ -1409,9 +1495,28 @@
         if (!builderStructureComplete(state.builder.draft)) { notify('أكمل بناء النظام قبل الطباعة.', 'error'); return; }
         const printWindow = window.open('', '_blank', 'width=980,height=820');
         if (!printWindow) { notify('اسمح بالنوافذ المنبثقة لإتمام الطباعة.', 'error'); return; }
-        printWindow.document.open();
-        printWindow.document.write(buildBuilderPrintDocument());
-        printWindow.document.close();
+        const draft = state.builder.draft;
+        const type = state.builder.type;
+        const clientLabel = draft.memberName || (state.builderClients || []).find((client) => String(client.id) === String(draft.memberId))?.fullName || 'العميل المحدد';
+        ensureCoachingPrintFeature().then((printer) => {
+            printer.printCoachingDraft(draft, type, state.catalog, clientLabel, printWindow);
+        }).catch((error) => {
+            printWindow.close();
+            notify(error.message || 'تعذر تحميل أداة الطباعة.', 'error');
+        });
+    }
+
+    function downloadBuilderDraftPdf() {
+        if (!state.builder) return;
+        syncBuilderDraft();
+        if (!builderStructureComplete(state.builder.draft)) { notify('أكمل بناء النظام قبل إنشاء ملف PDF.', 'error'); return; }
+        const draft = state.builder.draft;
+        const type = state.builder.type;
+        const clientLabel = draft.memberName || (state.builderClients || []).find((client) => String(client.id) === String(draft.memberId))?.fullName || 'العميل المحدد';
+        ensureCoachingPrintFeature().then((printer) => {
+            if (!printer.downloadCoachingDraftPdf) throw new Error('أداة إنشاء PDF غير جاهزة.');
+            return printer.downloadCoachingDraftPdf(draft, type, state.catalog, clientLabel);
+        }).catch((error) => notify(error.message || 'تعذر إنشاء ملف PDF.', 'error'));
     }
 
     function refreshBuilderDerivedMetrics(draft = activeBuilderDraft()) {
@@ -1634,6 +1739,24 @@
         } catch (error) { notify(error.message, 'error'); }
     }
 
+    function decorateMemberTrainingPrintActions(panel, memberId) {
+        panel?.querySelectorAll('.member-training-systems > div').forEach((system) => {
+            const editButton = system.querySelector('[data-member-coaching-action="edit-workout"], [data-member-coaching-action="edit-diet"]');
+            if (!editButton || system.querySelector('[data-member-coaching-action^="print-"]')) return;
+            const type = editButton.dataset.memberCoachingAction === 'edit-diet' ? 'diet' : 'workout';
+            [['print', 'طباعة'], ['pdf', 'PDF']].forEach(([action, label]) => {
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.className = 'btn btn-light btn-small profile-print-action';
+                button.dataset.memberCoachingAction = action + '-' + type;
+                button.dataset.id = editButton.dataset.id;
+                button.dataset.memberId = memberId;
+                button.textContent = label;
+                system.append(button);
+            });
+        });
+    }
+
     function renderMemberTrainingPanel(memberId) {
         const content = $('detailsContent');
         if (!content || !memberId) return;
@@ -1643,6 +1766,11 @@
         panel.dataset.memberTrainingPanel = 'true';
         panel.innerHTML = '<div class="loading">جاري تحميل أنظمة التدريب والتغذية…</div>';
         content.appendChild(panel);
+        const printObserver = new MutationObserver(() => {
+            decorateMemberTrainingPrintActions(panel, memberId);
+            if (panel.querySelector('.member-training-systems')) printObserver.disconnect();
+        });
+        printObserver.observe(panel, { childList: true, subtree: true });
         requestJson(`/api/clients/${memberId}/training-overview`).then((overview) => {
             const workout = overview.workoutPrograms || [];
             const diets = overview.dietPlans || [];
@@ -1864,6 +1992,12 @@
         if (action === 'new-diet') return openBuilder('diet', memberId);
         if (action === 'edit-workout') return openBuilder('workout', memberId, id);
         if (action === 'edit-diet') return openBuilder('diet', memberId, id);
+        if (action === 'print-workout') return runCoachingPrintAction('print', id, 'workout');
+        if (action === 'pdf-workout') return runCoachingPrintAction('pdf', id, 'workout');
+        if (action === 'print-diet') return runCoachingPrintAction('print', id, 'diet');
+        if (action === 'pdf-diet') return runCoachingPrintAction('pdf', id, 'diet');
+        if (action === 'print-overview') return runCoachingOverviewPrintAction('print', id || memberId);
+        if (action === 'pdf-overview') return runCoachingOverviewPrintAction('pdf', id || memberId);
         if (action === 'delete-diet') return deleteDietPlan(id, memberId);
         if (action === 'new-measurement') return openMeasurementDialog(memberId);
         if (action === 'start-session') return openSessionDialog(memberId);
@@ -1890,6 +2024,10 @@
         else if (action === 'new-diet') openBuilder('diet', memberId);
         else if (action === 'edit-workout') openBuilder('workout', memberId, button.dataset.id);
         else if (action === 'edit-diet') openBuilder('diet', memberId, button.dataset.id);
+        else if (action === 'print-workout') runCoachingPrintAction('print', button.dataset.id, 'workout');
+        else if (action === 'pdf-workout') runCoachingPrintAction('pdf', button.dataset.id, 'workout');
+        else if (action === 'print-diet') runCoachingPrintAction('print', button.dataset.id, 'diet');
+        else if (action === 'pdf-diet') runCoachingPrintAction('pdf', button.dataset.id, 'diet');
         else if (action === 'delete-diet') deleteDietPlan(button.dataset.id, memberId);
         else if (action === 'start-session') openSessionDialog(memberId);
         else if (action === 'log-meal') openMealDialog(memberId);
@@ -1953,6 +2091,7 @@
         $('coachingBuilderNext')?.addEventListener('click', () => setBuilderStep((state.builder?.step || 1) + 1));
         $('coachingBuilderPreview')?.addEventListener('click', () => setBuilderStep(3));
         $('coachingBuilderPrint')?.addEventListener('click', printBuilderDraft);
+        $('coachingBuilderPdf')?.addEventListener('click', downloadBuilderDraftPdf);
         $('coachingBuilderStepper')?.addEventListener('click', (event) => {
             const button = event.target.closest('[data-builder-step-target]');
             if (button && !button.disabled) setBuilderStep(button.dataset.builderStepTarget);
@@ -1993,7 +2132,15 @@
             }
             if (state.builder.type === 'diet' && state.builder.step === 1) refreshDietEnergyPreview(draft);
             if (state.builder.type === 'diet' && state.builder.step === 2) refreshBuilderDerivedMetrics(draft);
-            if (state.builder.type === 'workout' && state.builder.step === 2 && target.matches('[data-exercise-field="exerciseId"]')) renderBuilderV2();
+            if (state.builder.type === 'workout' && state.builder.step === 2 && target.matches('[data-exercise-field="exerciseId"]')) {
+                const row = target.closest('.builder-exercise-row');
+                const routineIndex = Number(row?.closest('[data-routine-index]')?.dataset.routineIndex);
+                const exerciseIndex = Number(row?.dataset.exerciseIndex);
+                const selectedExercise = draft.routines?.[routineIndex]?.exercises?.[exerciseIndex];
+                const reference = row?.querySelector('.exercise-row-notes > div');
+                if (reference && selectedExercise) reference.innerHTML = exerciseReference(selectedExercise);
+                refreshBuilderDerivedMetrics(draft);
+            }
         });
         $('detailsContent')?.addEventListener('click', (event) => { const button = event.target.closest('[data-member-coaching-action]'); if (button) handleMemberCoachingAction(button); });
         $('membersList')?.addEventListener('click', (event) => {

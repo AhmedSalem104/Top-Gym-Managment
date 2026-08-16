@@ -141,6 +141,11 @@
                 downloadBackupArchive(backupButton.dataset.reportBackupId, backupButton);
                 return;
             }
+            const coachingPrintButton = event.target.closest('[data-report-coaching-action]');
+            if (coachingPrintButton) {
+                runReportCoachingPrintAction(coachingPrintButton.dataset.reportCoachingAction, coachingPrintButton.dataset.reportCoachingId, coachingPrintButton.dataset.reportCoachingType);
+                return;
+            }
             const dietDeleteButton = event.target.closest('[data-report-diet-id]');
             if (dietDeleteButton) {
                 deleteDietPlanFromReport(dietDeleteButton.dataset.reportDietId, dietDeleteButton.dataset.reportDietMemberId);
@@ -262,12 +267,70 @@
         }
     }
 
+    function decorateCoachingPrintActions() {
+        const view = $('reportsCoachingView');
+        if (!view || !state.data?.coaching) return;
+        const type = selected('reportsCoachingType', 'all');
+        const query = localFilterValue();
+        const status = selected('reportsCoachingStatus');
+        const matches = (item) => (!status || item.status === status) && (contains(item.fullName, query) || contains(item.phone, query) || contains(item.name, query));
+        const programs = (state.data.coaching.workoutPrograms || []).filter(matches);
+        const diets = (state.data.coaching.dietPlans || []).filter(matches);
+        const addActions = (section, items, systemType) => {
+            const rows = [...(section?.querySelectorAll('tbody tr') || [])];
+            rows.forEach((row, index) => {
+                const item = items[index];
+                const cell = row.lastElementChild;
+                if (!item || !cell || cell.querySelector('[data-report-coaching-action]')) return;
+                const actions = document.createElement('div');
+                actions.className = 'reports-debtor-actions reports-coaching-actions';
+                [['print', 'طباعة'], ['pdf', 'PDF']].forEach(([action, label]) => {
+                    const button = document.createElement('button');
+                    button.type = 'button';
+                    button.className = 'btn btn-light btn-small';
+                    button.dataset.reportCoachingAction = action;
+                    button.dataset.reportCoachingId = item.id;
+                    button.dataset.reportCoachingType = systemType;
+                    button.textContent = label;
+                    button.title = label + ' النظام';
+                    actions.append(button);
+                });
+                cell.append(actions);
+            });
+        };
+        const sections = [...view.querySelectorAll('.finance-detail-card')];
+        const workoutSection = sections.find((section) => section.textContent.includes('البرامج المنشأة'));
+        const dietSection = sections.find((section) => section.textContent.includes('خطط التغذية المنشأة'));
+        if (type !== 'diet') addActions(workoutSection, programs, 'workout');
+        if (type !== 'workout') addActions(dietSection, diets, 'diet');
+    }
+
+    async function runReportCoachingPrintAction(action, id, type) {
+        const printWindow = action === 'print' ? window.open('', '_blank', 'width=980,height=820') : null;
+        if (action === 'print' && !printWindow) {
+            window.showToast?.('يرجى السماح بالنوافذ المنبثقة لإتمام الطباعة.', true, 'error');
+            return;
+        }
+        try {
+            await window.topGymEnsureTab?.('print');
+            if (!window.topGymPrint) throw new Error('تعذر تحميل أداة الطباعة.');
+            if (action === 'pdf') return window.topGymPrint.downloadCoachingPdf(id, type);
+            return window.topGymPrint.printCoachingSystem(id, type, printWindow);
+        } catch (error) {
+            printWindow?.close();
+            window.showToast?.(error.message || 'تعذر تنفيذ الطباعة.', true, 'error');
+        }
+    }
+
     function renderActiveView() {
         if (!state.data && !['attendance', 'backups'].includes(state.activeTab)) return;
         if (state.activeTab === 'overview') renderOverview();
         if (state.activeTab === 'memberships') renderMemberships();
         if (state.activeTab === 'finance') renderFinance();
-        if (state.activeTab === 'coaching') renderCoaching();
+        if (state.activeTab === 'coaching') {
+            renderCoaching();
+            decorateCoachingPrintActions();
+        }
         if (state.activeTab === 'library') renderLibrary();
         if (state.activeTab === 'attendance' && state.attendance) renderAttendance();
         if (state.activeTab === 'backups' && state.backups) renderBackups();

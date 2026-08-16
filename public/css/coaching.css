@@ -1341,6 +1341,8 @@
 
 /* Daily readiness / recovery check-ins inside the client profile. */
 .profile-section-head > div:first-child { min-width: 0; }
+.profile-system-card .profile-print-action { min-width: 46px; padding-inline: 8px; }
+.member-training-systems > div .profile-print-action { min-width: 44px; padding-inline: 8px; }
 .profile-section-description {
     display: block;
     margin-top: 3px;
