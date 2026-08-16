@@ -135,7 +135,10 @@ function sensitiveRateLimit(request, response, next) {
     }
     return next();
 }
-app.use('/api', sensitiveRateLimit);
+app.use('/api', (request, response, next) => {
+    response.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    sensitiveRateLimit(request, response, next);
+});
 
 function asyncRoute(handler) {
     return (request, response, next) => Promise.resolve(handler(request, response, next)).catch(next);
@@ -308,7 +311,8 @@ app.post('/api/backup/inspect', backupUploadBody, asyncRoute(async (request, res
             compressedBytes: inspected.compressedBytes,
             jsonBytes: inspected.jsonBytes,
             rowCount: inspected.rowCount,
-            tableCounts: inspected.tableCounts
+            tableCounts: inspected.tableCounts,
+            integrity: inspected.integrity
         });
     } catch (error) {
         await recordBackupOperation({ operationType: 'inspect', fileName, status: 'failed', details: error.message }).catch((recordError) => console.warn('Unable to record failed backup inspection:', recordError.message));

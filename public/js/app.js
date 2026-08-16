@@ -250,7 +250,9 @@
 
         function renderDashboard() {
              const dashboard = state.dashboard || { stats: {}, alerts: [] }; $('statTotal').textContent = dashboard.stats.total || 0; $('statActive').textContent = dashboard.stats.active || 0; $('statExpiring').textContent = dashboard.stats.expiringSoon || 0; $('statExpired').textContent = dashboard.stats.expired || 0; $('statFrozen').textContent = dashboard.stats.frozen || 0;
-            const alerts = dashboard.alerts || [];
+            // Dashboard alerts are membership actions only. Keep this guard in
+            // the UI as a second line of defense for stale/legacy API payloads.
+            const alerts = (dashboard.alerts || []).filter((member) => member?.membership);
             $('alertsList').innerHTML = alerts.length ? alerts.map((member) => {
                 const sub = member.membership || {};
                 const kind = member.alertKind || 'membership';

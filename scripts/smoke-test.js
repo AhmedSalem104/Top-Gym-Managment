@@ -5,6 +5,7 @@ const { gzipSync } = require('node:zlib');
 const app = require('../server');
 const { closePool, getPool, initDatabase, sql } = require('../src/db');
 const { reconcileAutoCheckout } = require('../src/attendance-service');
+const { addDays, todayInTimeZone } = require('../src/date-utils');
 
 async function call(baseUrl, path, options = {}) {
     const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
@@ -20,6 +21,7 @@ async function call(baseUrl, path, options = {}) {
 (async () => {
     let server;
     let memberId;
+    let externalMemberId;
     let temporaryPlanCode;
     let temporaryTypeCode;
     try {
@@ -28,6 +30,9 @@ async function call(baseUrl, path, options = {}) {
         await new Promise((resolve) => server.once('listening', resolve));
         const baseUrl = `http://127.0.0.1:${server.address().port}`;
         const suffix = Date.now();
+        const testStartDate = todayInTimeZone();
+        const testHalfMonthEndDate = addDays(testStartDate, 14);
+        const testMonthlyEndDate = addDays(testStartDate, 29);
 
         const health = await call(baseUrl, '/api/health');
         assert.equal(health.database, 'connected');
@@ -58,6 +63,7 @@ async function call(baseUrl, path, options = {}) {
         const backupInspection = await backupInspectResponse.json();
         assert.equal(backupInspectResponse.status, 200);
         assert.equal(backupInspection.valid, true);
+        assert.equal(backupInspection.integrity.verified, true);
         assert.ok(Number(backupInspection.rowCount) >= 0);
         const backupHistory = await call(baseUrl, '/api/backup/history?limit=5');
         assert.ok(backupHistory.operations.some((item) => item.operationType === 'download'));
@@ -81,6 +87,17 @@ async function call(baseUrl, path, options = {}) {
         assert.ok(bootstrap.pagination && Number.isInteger(bootstrap.pagination.page));
         assert.equal(bootstrap.pricing.types.half_month.durationValue, 15);
         assert.equal(bootstrap.pricing.types.half_month.mode, 'days');
+        const externalTrainee = await call(baseUrl, '/api/external-trainees', {
+            method: 'POST',
+            body: JSON.stringify({
+                fullName: `External Smoke Test ${suffix}`,
+                phone: `011${String(suffix).slice(-8)}`,
+                registrationDate: testStartDate
+            })
+        });
+        externalMemberId = externalTrainee.member.id;
+        const dashboardWithoutExternal = await call(baseUrl, '/api/dashboard');
+        assert.equal(dashboardWithoutExternal.alerts.some((item) => Number(item.id) === Number(externalMemberId)), false);
         const dashboardAnalytics = await call(baseUrl, '/api/dashboard-analytics?period=month');
         assert.ok(dashboardAnalytics.attendance && dashboardAnalytics.attendance.kpis);
         assert.ok(Array.isArray(dashboardAnalytics.attendance.peakHours));
@@ -156,10 +173,10 @@ async function call(baseUrl, path, options = {}) {
             body: JSON.stringify({
                 fullName: `Smoke Test ${suffix}`,
                 phone: `010${String(suffix).slice(-8)}`,
-                registrationDate: '2026-08-08',
+                registrationDate: testStartDate,
                 membershipType: 'half_month',
                 membershipPlan: 'gym_only',
-                startDate: '2026-08-08',
+                startDate: testStartDate,
                 discountAmount: 5,
                 amountPaid: 50,
                 paymentMethod: 'cash'
@@ -171,7 +188,7 @@ async function call(baseUrl, path, options = {}) {
         assert.equal(qrPage.status, 200);
         assert.match(await qrPage.text(), /TOP GYM/);
         assert.equal(created.member.membership.status, 'active');
-        assert.equal(created.member.membership.endDate, '2026-08-22');
+        assert.equal(created.member.membership.endDate, testHalfMonthEndDate);
         assert.equal(created.member.membership.amountDue, gymOnlyHalfMonthPrice - 5);
         assert.equal(created.member.membership.discountAmount, 5);
         assert.equal(created.member.membership.amountRemaining, gymOnlyHalfMonthPrice - 55);
@@ -190,7 +207,7 @@ async function call(baseUrl, path, options = {}) {
                 phone: created.member.phone,
                 membershipType: 'monthly',
                 membershipPlan: 'gym_only',
-                startDate: '2026-08-08',
+                startDate: testStartDate,
                 amountPaid: 0,
                 paymentMethod: 'cash'
             })
@@ -208,11 +225,11 @@ async function call(baseUrl, path, options = {}) {
             body: JSON.stringify({
                 fullName: `Edited Smoke Test ${suffix}`,
                 phone: `010${String(suffix).slice(-8)}`,
-                registrationDate: '2026-08-08',
+                registrationDate: testStartDate,
                 membershipType: 'monthly',
                 membershipPlan: 'gym_only',
-                startDate: '2026-08-08',
-                endDate: '2026-09-07',
+                startDate: testStartDate,
+                endDate: testMonthlyEndDate,
                 discountAmount: 0,
                 amountPaid: 150,
                 paymentMethod: 'cash'
@@ -332,6 +349,12 @@ async function call(baseUrl, path, options = {}) {
             try {
                 const baseUrl = `http://127.0.0.1:${server.address().port}`;
                 await call(baseUrl, `/api/members/${memberId}`, { method: 'DELETE' });
+            } catch (_) { /* cleanup is best effort */ }
+        }
+        if (externalMemberId && server) {
+            try {
+                const baseUrl = `http://127.0.0.1:${server.address().port}`;
+                await call(baseUrl, `/api/members/${externalMemberId}`, { method: 'DELETE' });
             } catch (_) { /* cleanup is best effort */ }
         }
         if (temporaryPlanCode) {

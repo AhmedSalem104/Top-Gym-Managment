@@ -113,8 +113,11 @@
             .filter(([, count]) => Number(count) > 0)
             .map(([name, count]) => `<tr><td>${escapeHtml(name)}</td><td>${Number(count).toLocaleString('ar-EG')}</td></tr>`)
             .join('');
+        const integrityText = data.integrity?.verified
+            ? 'تم التحقق من بصمة سلامة الملف SHA-256.'
+            : 'تم التحقق من بنية النسخة القديمة.';
         validationBox.hidden = false;
-        validationBox.innerHTML = `<div class="backup-validation-success"><strong>تم التحقق من الملف ✅</strong><span>${escapeHtml(file?.name || 'النسخة')} · ${formatBytes(file?.size)} · ${Number(data.rowCount || 0).toLocaleString('ar-EG')} صف</span><small>تاريخ إنشاء النسخة: ${escapeHtml(formatDate(data.generatedAt))}</small></div><div class="backup-count-table-wrap"><table class="backup-count-table"><thead><tr><th>الجدول</th><th>الصفوف</th></tr></thead><tbody>${tableRows || '<tr><td colspan="2">لا توجد بيانات في النسخة.</td></tr>'}</tbody></table></div>`;
+        validationBox.innerHTML = `<div class="backup-validation-success"><strong>تم التحقق من الملف ✅</strong><span>${escapeHtml(file?.name || 'النسخة')} · ${formatBytes(file?.size)} · ${Number(data.rowCount || 0).toLocaleString('ar-EG')} صف</span><small>تاريخ إنشاء النسخة: ${escapeHtml(formatDate(data.generatedAt))}</small><small>${integrityText}</small></div><div class="backup-count-table-wrap"><table class="backup-count-table"><thead><tr><th>الجدول</th><th>الصفوف</th></tr></thead><tbody>${tableRows || '<tr><td colspan="2">لا توجد بيانات في النسخة.</td></tr>'}</tbody></table></div>`;
     }
 
     async function inspectFile(file) {

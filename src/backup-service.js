@@ -1,5 +1,6 @@
 const fs = require('node:fs');
 const path = require('node:path');
+const { createHash } = require('node:crypto');
 const { promisify } = require('node:util');
 const { gzip, gunzip } = require('node:zlib');
 const { getPool, sql } = require('./db');
@@ -163,6 +164,12 @@ function totalRows(tableCounts = {}) {
     return Object.values(tableCounts).reduce((sum, value) => sum + Number(value || 0), 0);
 }
 
+function backupTablesDigest(tables) {
+    return createHash('sha256')
+        .update(JSON.stringify(tables))
+        .digest('hex');
+}
+
 function validateBackupPayload(payload) {
     if (!payload || payload.format !== 'top-gym-json-backup') {
         throw backupInputError('ملف النسخة الاحتياطية غير صالح أو ليس من TOP GYM.');
@@ -188,7 +195,19 @@ function validateBackupPayload(payload) {
         rowCount += rows.length;
         if (rowCount > MAX_BACKUP_ROWS) throw backupInputError('حجم النسخة أكبر من الحد الآمن المسموح به.');
     }
-    return { tableCounts, rowCount };
+    let integrity = null;
+    if (payload.integrity !== undefined) {
+        const algorithm = String(payload.integrity?.algorithm || '').toLowerCase();
+        const digest = String(payload.integrity?.sha256 || '').toLowerCase();
+        if (algorithm !== 'sha256' || !/^[a-f0-9]{64}$/.test(digest)) {
+            throw backupInputError('بيانات سلامة النسخة الاحتياطية غير صالحة.');
+        }
+        if (backupTablesDigest(payload.tables) !== digest) {
+            throw backupInputError('تم تغيير محتوى النسخة أو تلفه بعد إنشائها.');
+        }
+        integrity = { algorithm, verified: true };
+    }
+    return { tableCounts, rowCount, integrity };
 }
 
 async function inspectBackupBuffer(input) {
@@ -219,7 +238,8 @@ async function inspectBackupBuffer(input) {
         compressedBytes: buffer.length,
         jsonBytes: jsonBuffer.length,
         rowCount: validation.rowCount,
-        tableCounts: validation.tableCounts
+        tableCounts: validation.tableCounts,
+        integrity: validation.integrity
     };
 }
 
@@ -495,9 +515,16 @@ async function restoreBackup(input, { fileName = 'uploaded-backup.json.gz' } = {
             fileName,
             sourceGeneratedAt: inspected.generatedAt,
             tableCounts: inspected.tableCounts,
-            details: 'تم استرجاع النسخة بعد التحقق من البنية والصفوف.'
+            details: inspected.integrity
+                ? 'تم استرجاع النسخة بعد التحقق من البنية والصفوف وبصمة SHA-256.'
+                : 'تم استرجاع النسخة بعد التحقق من البنية والصفوف.'
         }).catch((error) => console.warn('Unable to record backup restore:', error.message));
-        return { rowCount: inspected.rowCount, tableCounts: inspected.tableCounts, generatedAt: inspected.generatedAt };
+        return {
+            rowCount: inspected.rowCount,
+            tableCounts: inspected.tableCounts,
+            generatedAt: inspected.generatedAt,
+            integrity: inspected.integrity
+        };
     } finally {
         restoreInProgress = false;
     }
@@ -527,7 +554,11 @@ async function createBackup({ format = 'json.gz' } = {}) {
         generatedAt: generatedAt.toISOString(),
         timeZone,
         tables,
-        schemaSql
+        schemaSql,
+        integrity: {
+            algorithm: 'sha256',
+            sha256: backupTablesDigest(tables)
+        }
     };
     const json = JSON.stringify(payload, (_, value) => (
         typeof value === 'bigint' ? value.toString() : value

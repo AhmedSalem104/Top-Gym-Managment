@@ -1029,7 +1029,8 @@ async function getDashboard() {
                         amountRemaining, paymentMethod, paymentPaidAt,
                         computedStatus, daysRemaining
                     FROM member_rows
-                    WHERE computedStatus IN ('frozen', 'expiring_soon', 'expired')
+                    WHERE membershipId IS NOT NULL
+                      AND computedStatus IN ('frozen', 'expiring_soon', 'expired')
                     ORDER BY effectiveEndDate ASC, fullName ASC, id ASC
                     FOR JSON PATH
                 ) AS alertsJson
