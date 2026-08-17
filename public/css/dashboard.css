@@ -1961,6 +1961,7 @@
 
 #managementSection .backup-history-section-head > div { min-width: 0; }
 #managementSection .backup-history-section-head p { margin-bottom: 0; }
+#managementSection .backup-history-section-head .btn { min-height: 34px; }
 #managementSection .backup-history-list { min-width: 0; background: #fff; }
 #managementSection .backup-history-wrap { max-width: 100%; overflow-x: auto; }
 #managementSection .backup-history-block + .backup-history-block { border-top: 1px solid #e2e8f0; }
@@ -3888,4 +3889,27 @@ body.gym-page-bg {
     #membersSection .members-page-button .ui-icon { width: 15px; height: 15px; }
     #membersSection .members-page-size { margin-inline-start: 0; gap: 5px; font-size: 9px; }
     #membersSection .members-page-size select { width: 48px; min-height: 34px; padding: 0 4px; font-size: 10px; }
+}
+/* Pricing PDF action shared by the dashboard snapshot and the expenses view. */
+.monthly-finance-snapshot-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+.monthly-finance-snapshot-actions #dashboardPrintPricingButton {
+    min-height: 34px;
+    border-color: #bfdbfe;
+    color: #1d4ed8;
+    background: #eff6ff;
+}
+.monthly-finance-snapshot-actions #dashboardPrintPricingButton:hover {
+    border-color: #93c5fd;
+    color: #1e40af;
+    background: #dbeafe;
+}
+@media (max-width: 640px) {
+    .monthly-finance-snapshot-actions { width: 100%; justify-content: stretch; }
+    .monthly-finance-snapshot-actions .btn { flex: 1 1 150px; }
 }

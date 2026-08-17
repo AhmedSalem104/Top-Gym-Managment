@@ -424,7 +424,7 @@
                 const parsed = new DOMParser().parseFromString(html, 'text/html');
                 const sheet = parsed.querySelector('.print-sheet');
                 if (!sheet) throw new Error('تعذر تجهيز قالب PDF.');
-                const cssResponse = await fetch(assetUrl('/css/print.css?v=5'));
+                const cssResponse = await fetch(assetUrl('/css/print.css?v=6'));
                 if (!cssResponse.ok) throw new Error('تعذر تحميل تنسيق ملف PDF.');
                 const cssText = await cssResponse.text();
                 const holder = document.createElement('div');
@@ -459,6 +459,52 @@
                 anchor.click();
                 anchor.remove();
                 window.setTimeout(() => URL.revokeObjectURL(url), 1200);
+            }
+
+            function pricingDuration(type) {
+                const value = Number(type?.durationValue || 0);
+                const unit = type?.mode === 'days' ? 'يوم' : 'شهر';
+                return value ? `${coachingNumber(value)} ${unit}` : '—';
+            }
+
+            function buildPricingDocument(pricing = {}) {
+                const plans = Object.entries(pricing.plans || {}).sort(([, first], [, second]) => Number(first?.sortOrder || 0) - Number(second?.sortOrder || 0));
+                const types = Object.entries(pricing.types || {})
+                    .sort(([, first], [, second]) => Number(first?.sortOrder || 0) - Number(second?.sortOrder || 0));
+                const activeTypes = types.filter(([, type]) => type?.active !== false);
+                const planRows = plans.map(([code, plan]) => {
+                    const prices = pricing.prices?.[code] || {};
+                    const cells = activeTypes.map(([typeCode, type]) => {
+                        const configured = prices[typeCode];
+                        const fallback = Number(plan?.monthlyPrice || 0) * Number(type?.priceMultiplier || 1);
+                        return `<td dir="ltr">${escapeHtml(money(configured === undefined ? fallback : configured))}</td>`;
+                    }).join('');
+                    const status = plan?.active === false ? 'غير متاحة' : 'متاحة';
+                    return `<tr><td><span class="print-table-main">${escapeHtml(plan?.label || code)}</span><span class="print-table-sub">${escapeHtml(code)}</span></td><td dir="ltr">${escapeHtml(money(plan?.monthlyPrice))}</td>${cells}<td><span class="print-status ${plan?.active === false ? 'expired' : 'active'}">${status}</span></td></tr>`;
+                }).join('');
+                const typeRows = types.map(([code, type]) => `<tr><td><span class="print-table-main">${escapeHtml(type?.label || code)}</span><span class="print-table-sub">${escapeHtml(code)}</span></td><td dir="ltr">${escapeHtml(pricingDuration(type))}</td><td dir="ltr">${escapeHtml(coachingNumber(type?.priceMultiplier, 4))}</td><td><span class="print-status ${type?.active === false ? 'expired' : 'active'}">${type?.active === false ? 'غير ظاهر' : 'نشط'}</span></td></tr>`).join('');
+                const planHeaders = activeTypes.map(([, type]) => `<th>${escapeHtml(type?.label || 'سعر المدة')}<span class="print-table-sub">${escapeHtml(pricingDuration(type))}</span></th>`).join('');
+                const emptyPlanRows = `<tr><td colspan="${activeTypes.length + 3}"><div class="print-empty">لا توجد باقات مسجلة.</div></td></tr>`;
+                const emptyTypeRows = '<tr><td colspan="4"><div class="print-empty">لا توجد أنواع عضويات مسجلة.</div></td></tr>';
+                const generatedAt = printDate(new Date());
+                const printHeader = `<header class="print-header"><div class="print-brand"><img class="print-logo" src="${assetUrl('/favicon.svg?v=2')}" alt=""><div class="print-brand-copy"><span class="print-brand-kicker">إدارة العضويات</span><h1 class="print-brand-title">TOP GYM</h1></div></div><div class="print-document-meta"><strong>الاشتراكات والباقات</strong><span>بيان الأسعار والعضويات المعتمد</span><span>تاريخ الإصدار: ${escapeHtml(generatedAt)}</span></div></header>`;
+                const summary = `<section class="print-section"><div class="print-section-title"><div><span class="print-section-kicker">ملخص الملف</span><h2>دليل الاشتراكات والباقات</h2></div></div><div class="print-info-grid"><div class="print-info-item"><span>عدد الباقات</span><strong dir="ltr">${escapeHtml(coachingNumber(plans.length))}</strong></div><div class="print-info-item"><span>أنواع العضويات</span><strong dir="ltr">${escapeHtml(coachingNumber(types.length))}</strong></div><div class="print-info-item"><span>الأنواع المتاحة</span><strong dir="ltr">${escapeHtml(coachingNumber(activeTypes.length))}</strong></div><div class="print-info-item"><span>آخر تحديث للملف</span><strong>${escapeHtml(generatedAt)}</strong></div></div></section>`;
+                const plansSection = `<section class="print-section print-pricing-section"><div class="print-section-title"><div><span class="print-section-kicker">الأسعار</span><h2>مصفوفة أسعار الباقات</h2></div><span class="print-table-sub">الأسعار بالجنيه المصري</span></div><div class="print-table-wrap"><table class="print-table"><thead><tr><th>الباقة</th><th>السعر الشهري</th>${planHeaders}<th>الحالة</th></tr></thead><tbody>${planRows || emptyPlanRows}</tbody></table></div></section>`;
+                const typesSection = `<section class="print-section print-pricing-section"><div class="print-section-title"><div><span class="print-section-kicker">المدد</span><h2>أنواع العضويات وصلاحيتها</h2></div></div><div class="print-table-wrap"><table class="print-table"><thead><tr><th>نوع العضوية</th><th>مدة الصلاحية</th><th>معامل السعر</th><th>الحالة</th></tr></thead><tbody>${typeRows || emptyTypeRows}</tbody></table></div></section>`;
+                const footer = '<footer class="print-footer"><div class="print-footer-management"><strong>إدارة الجيم</strong><span>C/ Ahmed Abdel Hamid · C/ Karim Abdelhamid</span></div><span class="print-signature">اعتماد الإدارة</span></footer>';
+                return `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>الاشتراكات والباقات - TOP GYM</title><link rel="stylesheet" href="${assetUrl('/css/print.css?v=6')}"></head><body><main class="print-sheet print-pricing-document">${printHeader}<div class="print-accent"></div>${summary}${plansSection}${typesSection}${footer}</main></body></html>`;
+            }
+
+            async function downloadPricingPdf() {
+                try {
+                    const pricing = await fetchPrintJson('/api/pricing');
+                    const filename = `TOP-GYM-Subscriptions-Pricing-${new Date().toISOString().slice(0, 10)}.pdf`;
+                    const blob = await createPdfFromDocument(buildPricingDocument(pricing), filename);
+                    downloadBlob(blob, filename);
+                    notifyPrint('تم تجهيز ملف الاشتراكات والباقات وتحميله بنجاح.');
+                } catch (error) {
+                    notifyPrint(error.message || 'تعذر إنشاء ملف الاشتراكات والباقات.', 'error');
+                }
             }
 
             async function downloadCoachingPdf(id, type) {
@@ -616,6 +662,7 @@
                 createPdfFile,
                 printCoachingSystem,
                 downloadCoachingPdf,
+                downloadPricingPdf,
                 printCoachingDraft,
                 writeCoachingDraft,
                 downloadCoachingDraftPdf,

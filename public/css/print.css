@@ -140,6 +140,13 @@ body {
 .print-system-list { margin: 0; padding: 0 12px 0 0; color: #475569; font-size: 8px; }
 .print-system-list li { margin: 1px 0; }
 .print-system-muted { color: #94a3b8; font-size: 8px; }
+.print-pricing-document .print-pricing-section { break-inside: auto; }
+.print-pricing-document .print-table th,
+.print-pricing-document .print-table td { font-size: 8px; padding: 6px 7px; }
+.print-pricing-document .print-table th { color: #334155; background: #eff6ff; }
+.print-pricing-document .print-table th .print-table-sub { margin-top: 1px; color: #64748b; font-size: 7px; font-weight: 600; }
+.print-pricing-document .print-table td[dir="ltr"],
+.print-pricing-document .print-table th[dir="ltr"] { direction: ltr; text-align: right; }
 
 @media print {
     .print-section { box-shadow: none; }

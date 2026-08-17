@@ -9,19 +9,19 @@
     const features = {
         members: {
             styles: [
-                '/css/attendance.css?v=5',
+                '/css/attendance.css?v=6',
                 '/css/coaching.css?v=9'
             ],
             scripts: [
                 '/js/action-menu.js?v=4',
-                '/js/print-enhancements.js?v=7',
+                '/js/print-enhancements.js?v=8',
                 '/js/attendance.js?v=8',
                 '/js/coaching.js?v=12'
             ]
         },
         print: {
             styles: [],
-            scripts: ['/js/print-enhancements.js?v=7']
+            scripts: ['/js/print-enhancements.js?v=8']
         },
         expenses: {
             styles: ['/css/operations.css?v=6'],
@@ -36,7 +36,7 @@
             scripts: ['/js/backup-enhancements.js?v=8']
         },
         attendance: {
-            styles: ['/css/attendance.css?v=5'],
+            styles: ['/css/attendance.css?v=6'],
             scripts: ['/js/attendance.js?v=8']
         },
         library: {
@@ -176,16 +176,36 @@
         document.addEventListener('click', (event) => {
             const receiptButton = event.target.closest('[data-payment-receipt]');
             const memberPrintButton = event.target.closest('button[data-action="print"]');
-            const button = receiptButton || memberPrintButton;
+            const pricingPrintButton = event.target.closest('#dashboardPrintPricingButton');
+            const button = receiptButton || memberPrintButton || pricingPrintButton;
             const printReady = receiptButton
                 ? window.topGymPrint?.printPaymentReceipt
-                : window.topGymPrint?.printMember;
-            if (!button || printReady || button.dataset.topGymPrintLoading === 'true') return;
+                : memberPrintButton
+                    ? window.topGymPrint?.printMember
+                    : window.topGymPrint?.downloadPricingPdf;
+            if (!button || button.dataset.topGymPrintLoading === 'true') return;
+            if (pricingPrintButton && printReady) {
+                event.preventDefault();
+                event.stopImmediatePropagation();
+                button.dataset.topGymPrintLoading = 'true';
+                button.disabled = true;
+                Promise.resolve(printReady()).finally(() => {
+                    delete button.dataset.topGymPrintLoading;
+                    button.disabled = false;
+                });
+                return;
+            }
+            if (printReady) return;
             event.preventDefault();
             event.stopImmediatePropagation();
             button.dataset.topGymPrintLoading = 'true';
-            ensureTab('print').then(() => button.click())
-                .catch((error) => console.warn('[TOP GYM] Receipt print feature failed to load.', error))
+            ensureTab('print').then(() => pricingPrintButton
+                ? window.topGymPrint?.downloadPricingPdf?.()
+                : button.click())
+                .catch((error) => {
+                    console.warn('[TOP GYM] Receipt print feature failed to load.', error);
+                    window.showToast?.(error.message || 'تعذر تحميل أداة الطباعة.', true, 'error');
+                })
                 .finally(() => delete button.dataset.topGymPrintLoading);
         }, true);
     }
