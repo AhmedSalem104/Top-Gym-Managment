@@ -10,6 +10,11 @@
     "build:css": "tailwindcss -i ./src/tailwind.css -o ./public/tailwind.css --minify",
     "build": "npm run build:css",
     "test:smoke": "node scripts/smoke-test.js",
+    "test:e2e": "playwright test",
+    "test:e2e:headed": "playwright test --headed",
+    "qa:gate": "node scripts/qa-gate.js",
+    "qa:gate:smoke": "node scripts/qa-gate.js --build --smoke",
+    "qa:gate:browser": "node scripts/qa-gate.js --build --browser",
     "seed:performance": "node scripts/seed-performance-test-data.js",
     "sync:library": "node scripts/sync-library-data.js"
   },
@@ -22,6 +27,7 @@
     "mssql": "^11.0.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.1",
     "tailwindcss": "^3.4.17"
   }
 }

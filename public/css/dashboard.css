@@ -734,9 +734,12 @@
             .brand h1::after { font-size: 14px; letter-spacing: 1.5px; }
             .monthly-finance-head-actions { gap: 5px; }
             .monthly-finance-head-actions .monthly-finance-status { display: none; }
-            .header-backup { min-height: 31px; padding: 5px 7px; font-size: 9px; }
+            .header-backup { min-height: 36px !important; height: auto !important; padding: 6px 8px; font-size: 9px; }
             .header-backup .ui-icon { width: 14px; height: 14px; }
         }
+
+        /* Backup remains compact, but keeps the shared minimum touch target. */
+        .app-shell #backupButton.header-backup { min-height: 36px !important; height: auto !important; }
 
         /* Dashboard statistics: icon first, then the value and status label. */
         .overview-grid > .stats-grid .stat-card {

@@ -997,6 +997,16 @@
 #traineesSection .trainee-more-menu .trainee-diet-delete:active { background: #fff1f2; }
 #traineesSection .trainee-more-empty { display: block; padding: 8px 9px; color: #94a3b8; font-size: 9px; white-space: nowrap; }
 #traineesSection .trainee-diet-actions { display: none !important; }
+
+/* Keep the compact actions keyboard/touch friendly. This selector intentionally
+   comes after the row-density rules above so the menu trigger cannot collapse
+   to the 28px text-button height. */
+#traineesSection .external-trainee-actions-cell .trainee-actions > .trainee-more .trainee-more-toggle {
+    min-height: 36px !important;
+    height: auto !important;
+    padding: 6px 8px !important;
+    line-height: 1.2 !important;
+}
 #traineesSection .trainee-more-toggle:focus { outline: none; }
 #traineesSection .trainee-more-toggle:focus-visible { outline: 3px solid rgba(37, 99, 235, .22); outline-offset: 2px; }
 #traineesSection .coaching-skeleton-row > span { width: 42px; height: 42px; }

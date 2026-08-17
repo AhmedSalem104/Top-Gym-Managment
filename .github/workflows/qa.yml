@@ -1,0 +1,50 @@
+name: TOP GYM QA
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  static-and-contract-gate:
+    name: Static, contract and dependency QA
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run QA gate and build
+        run: npm run qa:gate -- --build
+
+      - name: Audit dependencies
+        run: npm audit --audit-level=high
+
+      - name: Install Chromium for browser QA
+        run: npx playwright install --with-deps chromium
+
+      - name: Run browser UI/UX QA
+        run: npm run qa:gate -- --build --browser
+
+      - name: Upload QA report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: top-gym-qa-report
+          path: |
+            qa/reports/*.json
+            qa/artifacts/
+          if-no-files-found: ignore

@@ -63,7 +63,7 @@
 .library-table-badge.positive { color: #047857; background: #ecfdf5; }
 .library-table-badge.warning { color: #b45309; background: #fef3c7; }
 .library-row-actions { display: flex; align-items: center; justify-content: flex-start; gap: 5px; }
-.library-row-actions .btn { min-height: 30px; padding: 4px 7px; font-size: 9px; }
+.library-row-actions .btn { min-height: 32px; padding: 5px 7px; font-size: 9px; }
 .library-row-actions .library-delete { color: #b91c1c; border-color: #fecaca; background: #fff; }
 .library-row-actions .library-delete:hover { color: #fff; background: #dc2626; }
 .library-empty { display: grid; place-items: center; min-height: 170px; padding: 22px; color: #64748b; border: 1px dashed #cbd5e1; border-radius: 14px; background: #f8fafc; font-size: 12px; }
@@ -157,7 +157,7 @@
     .library-table-icon { width: 29px; height: 29px; flex-basis: 29px; font-size: 15px; }
     .library-data-table th:last-child, .library-data-table td:last-child { width: 106px; }
     .library-row-actions { justify-content: center; gap: 3px; }
-    .library-row-actions .btn { display: grid; place-items: center; width: 29px; min-width: 29px; height: 29px; min-height: 29px; padding: 0; overflow: hidden; font-size: 0; }
+    .library-row-actions .btn { display: grid; place-items: center; width: 32px; min-width: 32px; height: 32px; min-height: 32px; padding: 0; overflow: hidden; font-size: 0; }
     .library-row-actions .btn::before { color: currentColor; font-size: 14px; line-height: 1; }
     .library-row-actions .btn[data-library-action="details"]::before { content: '⌕'; }
     .library-row-actions .btn[data-library-action="edit"]::before { content: '✎'; }
@@ -187,5 +187,5 @@
     .library-data-table th, .library-data-table td { padding: 5px 0; }
     .library-data-table td:not(:first-child):not(:last-child) { gap: 0 5px; font-size: 8px; }
     .library-data-table td:not(:first-child):not(:last-child)::before { font-size: 7px; }
-    .library-row-actions .btn { width: 27px; min-width: 27px; height: 27px; min-height: 27px; }
+    .library-row-actions .btn { width: 32px; min-width: 32px; height: 32px; min-height: 32px; }
 }
