@@ -14,14 +14,14 @@
             ],
             scripts: [
                 '/js/action-menu.js?v=4',
-                '/js/print-enhancements.js?v=8',
+                '/js/print-enhancements.js?v=9',
                 '/js/attendance.js?v=8',
                 '/js/coaching.js?v=12'
             ]
         },
         print: {
             styles: [],
-            scripts: ['/js/print-enhancements.js?v=8']
+            scripts: ['/js/print-enhancements.js?v=9']
         },
         expenses: {
             styles: ['/css/operations.css?v=6'],
@@ -171,7 +171,10 @@
     }
 
     function bindLazyPrintActions() {
-        const ensurePrint = () => ensureTab('print').catch((error) => console.warn('[TOP GYM] Print feature failed to load.', error));
+        const ensurePrint = () => ensureTab('print').catch((error) => {
+            console.warn('[TOP GYM] Print feature failed to load.', error);
+            throw error;
+        });
         window.addEventListener('topgym:member-details-opened', ensurePrint);
         document.addEventListener('click', (event) => {
             const receiptButton = event.target.closest('[data-payment-receipt]');
@@ -189,17 +192,27 @@
                 event.stopImmediatePropagation();
                 button.dataset.topGymPrintLoading = 'true';
                 button.disabled = true;
-                Promise.resolve(printReady()).finally(() => {
-                    delete button.dataset.topGymPrintLoading;
-                    button.disabled = false;
-                });
+                const label = button.querySelector('span:last-child');
+                const originalLabel = label?.textContent || '';
+                if (label) label.textContent = 'جاري تجهيز ملف PDF…';
+                Promise.resolve()
+                    .then(() => printReady())
+                    .catch((error) => {
+                        console.warn('[TOP GYM] Pricing PDF failed.', error);
+                        window.showToast?.(error.message || 'تعذر تنزيل ملف الاشتراكات والباقات.', true, 'error');
+                    })
+                    .finally(() => {
+                        delete button.dataset.topGymPrintLoading;
+                        button.disabled = false;
+                        if (label) label.textContent = originalLabel;
+                    });
                 return;
             }
             if (printReady) return;
             event.preventDefault();
             event.stopImmediatePropagation();
             button.dataset.topGymPrintLoading = 'true';
-            ensureTab('print').then(() => pricingPrintButton
+            ensurePrint().then(() => pricingPrintButton
                 ? window.topGymPrint?.downloadPricingPdf?.()
                 : button.click())
                 .catch((error) => {

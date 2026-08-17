@@ -96,15 +96,6 @@
             if (!metric.querySelector('.monthly-finance-snapshot-metric-icon')) metric.insertAdjacentHTML('afterbegin', metricIcons[index]);
         });
         overview.appendChild(snapshot);
-        const snapshotHead = snapshot.querySelector('.monthly-finance-snapshot-head');
-        const snapshotExpensesButton = snapshot.querySelector('.open-expenses-tab-button');
-        const pricingPrintButton = $('dashboardPrintPricingButton');
-        if (snapshotHead && snapshotExpensesButton && pricingPrintButton) {
-            const snapshotActions = document.createElement('div');
-            snapshotActions.className = 'monthly-finance-snapshot-actions';
-            snapshotExpensesButton.replaceWith(snapshotActions);
-            snapshotActions.append(pricingPrintButton, snapshotExpensesButton);
-        }
         const stats = overview.querySelector(':scope > .stats-grid');
         if (stats) {
             stats.classList.add('snapshot-membership-stats');

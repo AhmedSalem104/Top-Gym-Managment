@@ -39,6 +39,16 @@
         </nav>
 
         <main class="page max-w-7xl" id="dashboardSection">
+            <div class="dashboard-page-actions" aria-label="إجراءات لوحة التحكم">
+                <div class="dashboard-page-actions-copy">
+                    <span>لوحة التحكم</span>
+                    <strong>متابعة سريعة للنظام</strong>
+                </div>
+                <button class="btn btn-light btn-small dashboard-pricing-print-button" id="dashboardPrintPricingButton" type="button" title="إنشاء ملف PDF للاشتراكات والباقات" aria-label="طباعة الاشتراكات والباقات">
+                    <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9V3h12v6"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v7H6z"/><path d="M17 12h.01"/></svg>
+                    <span>طباعة الاشتراكات والباقات</span>
+                </button>
+            </div>
             <section class="overview-grid" aria-label="ملخص العضويات والتنبيهات">
             <section class="stats-grid" aria-label="ملخص العضويات">
                 <div class="stat-card bg-white border-slate-200 rounded-xl shadow-sm"><div class="stat-head"><span class="stat-label">إجمالي الأعضاء</span><span class="stat-icon rounded-lg" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></span></div><strong class="stat-value" id="statTotal">0</strong><span class="stat-caption">كل المشتركين</span></div>
@@ -60,7 +70,7 @@
                         <span class="monthly-finance-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V5"/><path d="M4 19h16"/><path d="m7 15 3-4 3 2 5-6"/></svg></span>
                         <div><span class="monthly-finance-eyebrow">الحسابات</span><h3 id="monthlyFinanceTitle">ملخص الشهر الحالي</h3><p id="monthlyFinancePeriod">جاري تحميل حسابات الشهر…</p></div>
                     </div>
-                    <div class="monthly-finance-head-actions"><span class="monthly-finance-status" id="monthlyFinanceStatus">تحديث تلقائي</span><div id="monthlyFinanceActions"><button class="btn btn-light btn-small dashboard-pricing-print-button" id="dashboardPrintPricingButton" type="button" title="إنشاء ملف PDF للاشتراكات والباقات" aria-label="طباعة الاشتراكات والباقات"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9V3h12v6"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v7H6z"/><path d="M17 12h.01"/></svg><span>طباعة الاشتراكات والباقات</span></button></div></div>
+                    <div class="monthly-finance-head-actions"><span class="monthly-finance-status" id="monthlyFinanceStatus">تحديث تلقائي</span><div id="monthlyFinanceActions"></div></div>
                 </div>
                 <div class="monthly-finance-metrics">
                     <article class="monthly-finance-metric subscriptions">
@@ -353,8 +363,8 @@
 
     <script defer src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script defer src="/js/app.js?v=feature-expansion5"></script>
-    <script defer src="/js/monthly-finance.js?v=12"></script>
-    <script defer src="/js/feature-loader.js?v=2"></script>
+    <script defer src="/js/monthly-finance.js?v=13"></script>
+    <script defer src="/js/feature-loader.js?v=3"></script>
     <script defer src="/js/page-tabs.js?v=6"></script>
     <script defer src="/js/button-loading.js"></script>
     <script defer src="/js/pagination.js"></script>

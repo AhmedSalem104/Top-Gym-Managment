@@ -419,7 +419,7 @@
                 return 'TOP-GYM-' + (type === 'diet' ? 'Nutrition' : 'Workout') + '-' + (label || 'System') + '-' + (system?.id || 'draft') + '.pdf';
             }
 
-            async function createPdfFromDocument(html, filename) {
+            async function createPdfFromDocument(html, filename, downloadMode = false) {
                 await loadPdfLibrary();
                 const parsed = new DOMParser().parseFromString(html, 'text/html');
                 const sheet = parsed.querySelector('.print-sheet');
@@ -437,14 +437,20 @@
                 try {
                     if (document.fonts?.ready) await document.fonts.ready;
                     await Promise.all([...holder.querySelectorAll('img')].map((image) => image.complete ? Promise.resolve() : new Promise((resolve) => { image.onload = resolve; image.onerror = resolve; })));
-                    return await window.html2pdf().set({
+                    const pdfOptions = {
                         margin: [8, 8, 8, 8],
                         filename,
                         image: { type: 'jpeg', quality: .98 },
                         html2canvas: { scale: 2, useCORS: true, backgroundColor: '#fff', logging: false, letterRendering: true },
                         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
                         pagebreak: { mode: ['css', 'legacy'] }
-                    }).from(sheet).outputPdf('blob');
+                    };
+                    const worker = window.html2pdf().set(pdfOptions).from(sheet);
+                    if (downloadMode) {
+                        await worker.save();
+                        return null;
+                    }
+                    return await worker.outputPdf('blob');
                 } finally {
                     holder.remove();
                 }
@@ -499,8 +505,7 @@
                 try {
                     const pricing = await fetchPrintJson('/api/pricing');
                     const filename = `TOP-GYM-Subscriptions-Pricing-${new Date().toISOString().slice(0, 10)}.pdf`;
-                    const blob = await createPdfFromDocument(buildPricingDocument(pricing), filename);
-                    downloadBlob(blob, filename);
+                    await createPdfFromDocument(buildPricingDocument(pricing), filename, true);
                     notifyPrint('تم تجهيز ملف الاشتراكات والباقات وتحميله بنجاح.');
                 } catch (error) {
                     notifyPrint(error.message || 'تعذر إنشاء ملف الاشتراكات والباقات.', 'error');

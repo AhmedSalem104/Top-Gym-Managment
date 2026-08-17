@@ -3913,3 +3913,65 @@ body.gym-page-bg {
     .monthly-finance-snapshot-actions { width: 100%; justify-content: stretch; }
     .monthly-finance-snapshot-actions .btn { flex: 1 1 150px; }
 }
+
+/* Keep the pricing PDF action anchored to the Dashboard itself. It must not
+   disappear when the detailed finance card is moved to the expenses tab. */
+#dashboardSection > .dashboard-page-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    min-height: 48px;
+    margin: 0 0 12px;
+    padding: 9px 12px;
+    border: 1px solid #dce7f5;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, .82);
+    box-shadow: 0 8px 20px rgba(15, 23, 42, .04);
+}
+#dashboardSection .dashboard-page-actions-copy {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 2px;
+}
+#dashboardSection .dashboard-page-actions-copy span {
+    color: #2563eb;
+    font-size: 9px;
+    font-weight: 800;
+}
+#dashboardSection .dashboard-page-actions-copy strong {
+    overflow: hidden;
+    color: #0f172a;
+    font-size: 12px;
+    font-weight: 800;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+#dashboardSection #dashboardPrintPricingButton {
+    display: inline-flex;
+    flex: 0 0 auto;
+    min-height: 34px;
+    align-items: center;
+    gap: 6px;
+    border-color: #bfdbfe;
+    color: #1d4ed8;
+    background: #eff6ff;
+}
+#dashboardSection #dashboardPrintPricingButton:hover {
+    border-color: #93c5fd;
+    color: #1e40af;
+    background: #dbeafe;
+}
+#dashboardSection #dashboardPrintPricingButton .ui-icon { width: 16px; height: 16px; }
+#dashboardSection #dashboardPrintPricingButton[disabled] { cursor: wait; opacity: .72; }
+@media (max-width: 640px) {
+    #dashboardSection > .dashboard-page-actions {
+        align-items: stretch;
+        flex-direction: column;
+        gap: 8px;
+        margin-bottom: 10px;
+        padding: 10px;
+    }
+    #dashboardSection #dashboardPrintPricingButton { width: 100%; justify-content: center; }
+}
