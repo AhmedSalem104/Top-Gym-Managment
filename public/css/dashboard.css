@@ -3436,10 +3436,12 @@
 /* Premium graphite canvas: CSS-only so the new visual identity adds no image
    request or decoding cost to the initial page load. */
 body.gym-page-bg {
-    background-color: #0b1220 !important;
+    /* Change these variables directly in the body style from DevTools to
+       preview background shades live without touching application logic. */
+    background-color: var(--top-gym-bg-color, #0b1220) !important;
     background-image:
         radial-gradient(52rem 30rem at 100% -12%, rgba(37, 99, 235, .28), transparent 70%),
         radial-gradient(42rem 28rem at -10% 92%, rgba(14, 165, 233, .16), transparent 72%),
-        linear-gradient(145deg, #0b1220 0%, #111827 48%, #0f172a 100%) !important;
+        linear-gradient(145deg, var(--top-gym-bg-color, #0b1220) 0%, var(--top-gym-bg-color-mid, #111827) 48%, var(--top-gym-bg-color-end, #0f172a) 100%) !important;
     background-attachment: scroll;
 }
