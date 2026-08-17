@@ -27,7 +27,8 @@
                     const avatar = document.createElement('span');
                     avatar.className = 'member-avatar';
                     avatar.setAttribute('aria-hidden', 'true');
-                    avatar.textContent = initials(name.textContent);
+                    const rowNumber = row.parentElement ? Array.from(row.parentElement.children).indexOf(row) + 1 : 0;
+                    avatar.textContent = rowNumber > 0 ? rowNumber.toLocaleString('ar-EG') : initials(name.textContent);
 
                     const copy = document.createElement('div');
                     copy.className = 'member-identity-copy';

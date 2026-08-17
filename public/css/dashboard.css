@@ -3604,3 +3604,288 @@ body.gym-page-bg {
     .analytics-smart-insight,
     .analytics-smart-health { transition: none; }
 }
+
+/* Members reference layout: wide desktop workspace, clear hierarchy, and a
+   compact action rail matching the supplied reference while preserving the
+   existing mobile card layout. */
+@media (min-width: 641px) {
+    main#dashboardSection:has(#membersSection:not([hidden])) {
+        width: calc(100vw - 80px);
+        max-width: 1600px;
+        padding: 40px 0 32px;
+    }
+
+    #membersSection {
+        overflow: visible;
+        border: 0;
+        border-radius: 0;
+        background: transparent;
+        box-shadow: none;
+    }
+    #membersSection > .panel-header {
+        min-height: 96px;
+        padding: 17px 0;
+        border: 0;
+        background: transparent;
+    }
+    #membersSection > .panel-header > div:first-child { padding-inline-end: 70px; }
+    #membersSection > .panel-header h3 {
+        color: #0f172a;
+        font-size: 28px;
+        font-weight: 900;
+        line-height: 1.2;
+    }
+    #membersSection > .panel-header p {
+        margin-top: 7px;
+        color: #8290a7;
+        font-size: 13px;
+    }
+    #membersSection > .panel-header .header-actions {
+        gap: 10px;
+        flex-wrap: nowrap;
+    }
+    #membersSection > .panel-header .header-actions .btn {
+        min-width: 190px;
+        min-height: 64px;
+        padding-inline: 22px;
+        border: 1px solid #e1e8f2;
+        border-radius: 12px !important;
+        color: #334155;
+        background: #f8fbff;
+        box-shadow: none;
+        font-size: 15px;
+        font-weight: 800;
+    }
+    #membersSection > .panel-header .header-actions .btn:hover {
+        border-color: #bfdbfe;
+        color: #1d4ed8;
+        background: #eff6ff;
+    }
+
+    #membersSection .members-toolbar {
+        padding: 21px 26px;
+        border: 1px solid #e1e8f2;
+        border-bottom-color: #e5eaf2;
+        border-radius: 14px 14px 0 0;
+        background: #fff;
+        box-shadow: 0 8px 22px rgba(15, 23, 42, .045);
+    }
+    #membersSection .members-toolbar-controls {
+        grid-template-columns: minmax(480px, 1fr) 230px 230px 193px;
+        gap: 16px;
+    }
+    #membersSection .members-search-field,
+    #membersSection .members-filter-field select,
+    #membersSection .members-toolbar-controls > #addMemberButton {
+        min-height: 60px;
+        height: 60px;
+        box-sizing: border-box;
+        border-radius: 10px;
+    }
+    #membersSection .members-search-field {
+        border-color: #dbe3ef;
+        background: #fff;
+    }
+    #membersSection .members-search-field input { height: 56px; font-size: 14px; }
+    #membersSection .members-filter-field select {
+        width: 100%;
+        padding-inline: 17px 38px;
+        border-color: #dbe3ef;
+        color: #334155;
+        background-color: #fff;
+        font-size: 14px;
+        font-weight: 700;
+    }
+    #membersSection .members-toolbar-controls > #addMemberButton {
+        width: 193px;
+        min-width: 193px;
+        padding-inline: 18px;
+        border-color: #2563eb;
+        color: #fff;
+        background: #2563eb;
+        font-size: 15px;
+        font-weight: 900;
+    }
+    #membersSection .members-toolbar-controls > #addMemberButton:hover {
+        border-color: #1d4ed8;
+        background: #1d4ed8;
+    }
+
+    #membersSection .members-list {
+        padding: 0;
+        border-inline: 1px solid #e1e8f2;
+        background: #fff;
+    }
+    #membersSection .members-table {
+        width: 100%;
+        min-width: 1040px;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+    #membersSection .members-table th {
+        height: 62px;
+        padding: 16px 20px;
+        border-bottom: 1px solid #e1e8f2;
+        color: #334155;
+        background: #f8fafc;
+        font-size: 14px;
+        font-weight: 900;
+        text-align: center;
+    }
+    #membersSection .members-table td {
+        height: 98px;
+        padding: 14px 20px;
+        border-bottom: 1px solid #edf1f6;
+        color: #334155;
+        font-size: 14px;
+        text-align: center;
+        vertical-align: middle;
+    }
+    #membersSection .members-table tbody tr { background: #fff; }
+    #membersSection .members-table tbody tr:hover td { background: #f8fbff; }
+    #membersSection .members-table tbody tr:last-child td { border-bottom: 0; }
+    #membersSection .member-identity {
+        min-width: 230px;
+        gap: 12px;
+        text-align: right;
+    }
+    #membersSection .member-avatar {
+        width: 54px;
+        height: 54px;
+        flex-basis: 54px;
+        border-color: #d5e2f5;
+        color: #2563eb;
+        background: #eff6ff;
+        font-size: 16px;
+    }
+    #membersSection .member-identity-copy .table-member-name {
+        color: #0f172a;
+        font-size: 16px;
+        font-weight: 900;
+    }
+    #membersSection .member-identity-copy .table-member-phone {
+        margin-top: 4px;
+        color: #64748b;
+        font-size: 13px;
+    }
+    #membersSection .member-identity-copy .table-sub { margin-top: 3px; font-size: 11px; }
+    #membersSection .table-main { color: #1e293b; font-size: 14px; font-weight: 800; }
+    #membersSection .table-sub { margin-top: 5px; color: #94a3b8; font-size: 11px; }
+    #membersSection .badge {
+        min-height: 40px;
+        padding-inline: 14px;
+        border-radius: 10px;
+        font-size: 13px;
+        font-weight: 800;
+    }
+    #membersSection .freeze-usage { min-width: 64px; gap: 4px; font-size: 12px; }
+    #membersSection .freeze-usage strong { font-size: 15px; text-align: center; }
+    #membersSection .freeze-usage span { font-size: 11px; }
+    #membersSection .table-money { color: #1e293b; font-size: 15px; font-weight: 900; }
+
+    #membersSection .member-action-row {
+        flex-wrap: nowrap;
+        justify-content: flex-start;
+        gap: 8px;
+    }
+    #membersSection .member-quick-actions { flex-wrap: nowrap; gap: 8px; }
+    #membersSection .member-quick-actions > .member-attendance-quick,
+    #membersSection .member-quick-actions > .member-attendance-status {
+        width: 80px !important;
+        min-width: 80px !important;
+        height: 40px !important;
+        min-height: 40px !important;
+        flex-basis: 80px !important;
+        justify-content: center;
+        padding-inline: 8px !important;
+        border-radius: 9px !important;
+        font-size: 12px;
+    }
+    #membersSection .member-action-row > .table-actions {
+        width: auto !important;
+        min-width: 0 !important;
+        flex: 0 0 auto !important;
+        flex-wrap: nowrap;
+        gap: 8px;
+    }
+    #membersSection .table-actions > .table-action-visible[data-action="details"],
+    #membersSection .table-actions > .coaching-table-action,
+    #membersSection .table-actions > .action-menu .action-menu-toggle {
+        width: 40px !important;
+        min-width: 40px !important;
+        height: 40px !important;
+        min-height: 40px !important;
+        flex-basis: 40px !important;
+        border-radius: 9px !important;
+    }
+    #membersSection .table-actions > .table-action-visible[data-action="renew"] {
+        width: 140px !important;
+        min-width: 140px !important;
+        height: 40px !important;
+        min-height: 40px !important;
+        flex-basis: 140px !important;
+        justify-content: center;
+        padding-inline: 12px !important;
+        font-size: 13px;
+    }
+    #membersSection .action-menu { flex: 0 0 40px; }
+    #membersSection .action-menu-panel { top: calc(100% + 7px); }
+
+    #membersSection .members-pagination {
+        min-height: 64px;
+        padding: 12px 26px;
+        border: 1px solid #e1e8f2;
+        border-top: 0;
+        border-radius: 0 0 14px 14px;
+        background: #fff;
+        box-shadow: 0 10px 24px rgba(15, 23, 42, .045);
+    }
+    #membersSection .members-pagination-info { color: #64748b; font-size: 13px; }
+    #membersSection .members-pagination-actions { gap: 7px; }
+    #membersSection .members-page-button {
+        display: inline-grid;
+        width: 40px;
+        min-width: 40px;
+        height: 40px;
+        min-height: 40px;
+        padding: 0 !important;
+        place-items: center;
+        border: 1px solid #dbe3ef;
+        border-radius: 9px !important;
+        box-shadow: none;
+    }
+    #membersSection .members-page-button .ui-icon { width: 17px; height: 17px; }
+    #membersSection .members-page-button.active { border-color: #2563eb; color: #fff; background: #2563eb; }
+    #membersSection .members-page-button:disabled { cursor: not-allowed; opacity: .45; }
+    #membersSection .members-page-size { display: inline-flex; align-items: center; gap: 7px; margin-inline-start: 8px; color: #64748b; font-size: 12px; font-weight: 700; }
+    #membersSection .members-page-size select { width: 72px; min-height: 40px; padding: 0 9px; border: 1px solid #dbe3ef; border-radius: 9px; color: #334155; background: #fff; font: inherit; text-align: center; }
+}
+
+@media (min-width: 641px) and (max-width: 1100px) {
+    main#dashboardSection:has(#membersSection:not([hidden])) {
+        width: calc(100vw - 32px);
+        padding: 24px 0 24px;
+    }
+    #membersSection > .panel-header { padding-inline: 18px; }
+    #membersSection > .panel-header .header-actions .btn { min-width: 145px; min-height: 50px; font-size: 13px; }
+    #membersSection .members-toolbar { padding-inline: 18px; }
+    #membersSection .members-toolbar-controls { grid-template-columns: minmax(0, 1fr) 180px; }
+    #membersSection .members-toolbar-controls > #addMemberButton { width: 100%; min-width: 0; }
+    #membersSection .members-table th,
+    #membersSection .members-table td { padding-inline: 14px; }
+}
+
+@media (max-width: 640px) {
+    #membersSection .members-pagination {
+        align-items: stretch;
+        flex-direction: column;
+        gap: 8px;
+        padding: 10px 12px;
+    }
+    #membersSection .members-pagination-info { text-align: center; }
+    #membersSection .members-pagination-actions { width: 100%; justify-content: space-between; gap: 4px; }
+    #membersSection .members-page-button { width: 34px; min-width: 34px; height: 34px; min-height: 34px; }
+    #membersSection .members-page-button .ui-icon { width: 15px; height: 15px; }
+    #membersSection .members-page-size { margin-inline-start: 0; gap: 5px; font-size: 9px; }
+    #membersSection .members-page-size select { width: 48px; min-height: 34px; padding: 0 4px; font-size: 10px; }
+}

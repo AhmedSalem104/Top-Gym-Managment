@@ -40,7 +40,7 @@
             scripts: ['/js/attendance.js?v=8']
         },
         library: {
-            styles: ['/css/library.css?v=7'],
+            styles: ['/css/library.css?v=8'],
             scripts: ['/js/library.js?v=8']
         },
         trainees: {
