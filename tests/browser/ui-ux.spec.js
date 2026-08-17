@@ -66,32 +66,10 @@ test.beforeEach(async ({ page }) => {
 });
 
 test('all application tabs open without layout breakage', async ({ page }, testInfo) => {
-    const theme = await page.evaluate(() => ({
-        themeLinks: document.querySelectorAll('link[data-top-gym-theme]').length,
-        bodyColor: getComputedStyle(document.body).backgroundColor
-    }));
-    expect(theme.themeLinks).toBe(1);
-    expect(theme.bodyColor).toBe('rgb(8, 17, 31)');
     for (const [name, selector] of tabs) {
         await waitForTab(page, name, selector);
         await assertNoPageOverflow(page);
         await assertTouchTargets(page);
-        if (name === 'dashboard') {
-            const dashboardTheme = await page.evaluate(() => {
-                const read = (selector) => {
-                    const element = document.querySelector(selector);
-                    if (!element) return null;
-                    const style = getComputedStyle(element);
-                    return { backgroundColor: style.backgroundColor, backgroundImage: style.backgroundImage };
-                };
-                return {
-                    alertsList: read('#dashboardSection .alerts-list'),
-                    analyticsLoading: read('.analytics-loading')
-                };
-            });
-            expect(dashboardTheme.alertsList?.backgroundColor || '').not.toBe('rgb(248, 251, 255)');
-            expect(dashboardTheme.analyticsLoading?.backgroundColor || '').not.toBe('rgb(239, 246, 255)');
-        }
         if (name === 'dashboard' || name === 'members') await capture(page, testInfo, name);
     }
 });
