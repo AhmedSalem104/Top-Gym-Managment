@@ -5,6 +5,7 @@
     const scriptPromises = new Map();
     const stylePromises = new Map();
     const featurePromises = new Map();
+    const globalThemeStyle = '/css/dark-theme.css?v=1';
 
     const features = {
         members: {
@@ -104,14 +105,26 @@
         return promise;
     }
 
+    async function keepGlobalThemeLast() {
+        const themeLink = await loadStyle(globalThemeStyle);
+        // Feature styles are injected after the initial document styles. Keep
+        // the shared theme last so lazy-loaded screens cannot switch surfaces
+        // back to the light defaults.
+        document.head.appendChild(themeLink);
+    }
+
     async function ensureTab(name) {
         const feature = features[name];
         if (!feature) return;
         if (featurePromises.has(name)) return featurePromises.get(name);
 
         const promise = (async () => {
-            await Promise.all((feature.styles || []).map(loadStyle));
+            await Promise.all([
+                loadStyle(globalThemeStyle),
+                ...(feature.styles || []).map(loadStyle)
+            ]);
             for (const source of feature.scripts || []) await loadScript(source);
+            await keepGlobalThemeLast();
         })();
         featurePromises.set(name, promise);
         try {
