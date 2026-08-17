@@ -3445,3 +3445,10 @@ body.gym-page-bg {
         linear-gradient(145deg, var(--top-gym-bg-color, #0b1220) 0%, var(--top-gym-bg-color-mid, #111827) 48%, var(--top-gym-bg-color-end, #0f172a) 100%) !important;
     background-attachment: scroll;
 }
+
+/* Keep the alert list's internal scroll area from extending the page height
+   when many daily alerts are rendered. */
+#dashboardSection .alerts-list,
+#dashboardSection .alerts-list.alerts-list-scroll {
+    contain: paint;
+}
