@@ -103,6 +103,9 @@ async function call(baseUrl, path, options = {}) {
         assert.ok(Array.isArray(dashboardAnalytics.attendance.peakHours));
         assert.ok(Array.isArray(dashboardAnalytics.attendance.topMembers));
         assert.ok(Array.isArray(dashboardAnalytics.attendance.inactiveMembers));
+        assert.ok(dashboardAnalytics.previous && dashboardAnalytics.previous.kpis);
+        assert.ok(dashboardAnalytics.comparisons && dashboardAnalytics.comparisons.collected);
+        assert.ok(['up', 'down', 'flat'].includes(dashboardAnalytics.comparisons.collected.direction));
         const firstPage = await call(baseUrl, '/api/members?page=1&pageSize=1');
         assert.ok(firstPage.pagination && firstPage.pagination.pageSize === 1);
         assert.ok(firstPage.members.length <= 1);

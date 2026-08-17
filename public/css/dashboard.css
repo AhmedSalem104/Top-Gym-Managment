@@ -3452,3 +3452,155 @@ body.gym-page-bg {
 #dashboardSection .alerts-list.alerts-list-scroll {
     contain: paint;
 }
+
+/* Keep a sparse alert state compact instead of stretching it to the height of
+   the finance snapshot beside it. Alerts still grow naturally when rows exist. */
+#dashboardSection .overview-grid { align-items: start; }
+#dashboardSection .overview-grid > .alerts-panel,
+#dashboardSection .overview-grid > #monthlyFinanceSnapshot,
+#dashboardSection .overview-grid > #monthlyFinanceCard { align-self: start; }
+
+/* Dashboard intelligence polish: compact hierarchy, real comparison affordances,
+   and predictable space usage on sparse as well as data-rich installations. */
+.dashboard-analytics {
+    margin-bottom: 14px;
+    border-radius: 16px;
+    box-shadow: 0 10px 24px rgba(15, 23, 42, .055);
+}
+.dashboard-analytics-head {
+    padding: 14px 18px;
+    background: linear-gradient(135deg, #fbfdff 0%, #f1f7ff 100%);
+}
+.dashboard-analytics-icon {
+    width: 40px;
+    height: 40px;
+    flex-basis: 40px;
+    border-radius: 11px;
+    box-shadow: none;
+}
+.dashboard-analytics-title h2 { font-size: 16px; }
+.dashboard-analytics-title p { margin-top: 2px; }
+.analytics-smart-strip {
+    grid-template-columns: minmax(230px, 1.35fr) repeat(3, minmax(0, 1fr));
+    gap: 8px;
+    padding: 12px 18px 2px;
+}
+.analytics-smart-health,
+.analytics-smart-insight {
+    min-height: 74px;
+    padding: 9px 10px;
+    border-radius: 11px;
+    box-shadow: none;
+}
+.analytics-smart-health { border-color: #c7d2fe; }
+.analytics-health-ring { width: 52px; height: 52px; flex-basis: 52px; }
+.analytics-health-ring::after { inset: 5px; }
+.analytics-smart-insight.green { border-color: #a7f3d0; background: #ecfdf5; }
+.analytics-smart-insight.green .analytics-smart-insight-icon { color: #059669; background: #d1fae5; }
+.analytics-smart-insight small { line-height: 1.3; }
+.analytics-smart-insight small .is-positive { color: #047857; font-weight: 900; }
+.analytics-smart-insight small .is-negative { color: #be123c; font-weight: 900; }
+.analytics-kpis {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 8px;
+    padding: 12px 18px 3px;
+}
+.analytics-kpi {
+    min-height: 82px;
+    padding: 9px 10px;
+    gap: 8px;
+    border-radius: 11px;
+    box-shadow: none;
+    transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+}
+.analytics-kpi-icon { width: 31px; height: 31px; flex-basis: 31px; border-radius: 9px; }
+.analytics-kpi-icon .ui-icon { width: 16px; height: 16px; }
+.analytics-kpi strong { font-size: 15px; }
+.analytics-kpi small { line-height: 1.25; }
+.analytics-kpi-delta {
+    display: block;
+    margin-top: 1px;
+    font-size: 8px !important;
+    font-weight: 900;
+}
+.analytics-kpi-delta.positive { color: #047857; }
+.analytics-kpi-delta.negative { color: #be123c; }
+.analytics-kpi-delta.neutral { color: #64748b; }
+.analytics-kpi-delta .is-positive { color: inherit; }
+.analytics-kpi-delta .is-negative { color: inherit; }
+.analytics-main-grid { gap: 10px; padding: 9px 18px 0; }
+.analytics-secondary-grid { gap: 10px; padding: 10px 18px 14px; }
+.analytics-card { border-radius: 11px; box-shadow: none; }
+.analytics-card-head { padding: 11px 12px 8px; }
+.analytics-card-head h3 { font-size: 12px; }
+.analytics-trend-wrap { min-height: 218px; padding: 0 7px 6px; }
+.analytics-trend-svg { height: 218px; }
+.analytics-bars { min-height: 132px; gap: 10px; padding: 2px 12px 12px; }
+.analytics-bars-empty,
+.analytics-chart-empty,
+.analytics-error { min-height: 86px; padding: 12px; }
+.analytics-activity-chart { min-height: 132px; padding: 2px 11px 11px; }
+.analytics-column-chart { height: 100px; }
+.analytics-column-pair { height: 83px; }
+.attendance-insights-card { margin: 0 18px 14px; }
+.attendance-insights-head { padding: 11px 12px 9px; }
+.attendance-insights-kpis { padding: 9px 12px 3px; }
+.attendance-insights-kpi { min-height: 64px; padding: 8px 9px; }
+.attendance-insights-grid { gap: 8px; padding: 7px 12px 12px; }
+.attendance-peak-list,
+.attendance-member-list { min-height: 106px; gap: 6px; padding: 7px 9px 9px; }
+.attendance-insights-empty { min-height: 76px; }
+
+@media (hover: hover) and (pointer: fine) {
+    .analytics-kpi:hover,
+    .analytics-smart-insight:hover,
+    .analytics-smart-health:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 7px 15px rgba(15, 23, 42, .06);
+    }
+}
+
+@media (max-width: 1120px) {
+    .analytics-kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+@media (max-width: 1000px) {
+    .analytics-smart-strip { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .analytics-smart-health { grid-column: 1 / -1; }
+    .analytics-kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .analytics-main-grid { grid-template-columns: 1fr; }
+    .analytics-secondary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 640px) {
+    .dashboard-analytics { border-radius: 13px; }
+    .dashboard-analytics-head { padding: 12px; }
+    .dashboard-analytics-icon { width: 36px; height: 36px; flex-basis: 36px; }
+    .dashboard-analytics-title h2 { font-size: 14px; }
+    .analytics-smart-strip,
+    .analytics-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; padding-inline: 10px; }
+    .analytics-smart-health { grid-column: 1 / -1; }
+    .analytics-smart-insight { min-height: 66px; padding: 8px; }
+    .analytics-kpis { padding-top: 10px; }
+    .analytics-kpi { min-height: 72px; padding: 8px; }
+    .analytics-kpi strong { font-size: 14px; }
+    .analytics-kpi-delta { font-size: 7px !important; }
+    .analytics-main-grid,
+    .analytics-secondary-grid { gap: 8px; padding-inline: 10px; }
+    .analytics-secondary-grid { grid-template-columns: 1fr; padding-bottom: 9px; }
+    .analytics-trend-wrap,
+    .analytics-trend-svg { min-height: 184px; height: 184px; }
+    .analytics-bars { min-height: 108px; }
+    .analytics-activity-chart { min-height: 108px; }
+    .analytics-column-chart { height: 78px; }
+    .analytics-column-pair { height: 62px; }
+    .attendance-insights-card { margin-inline: 10px; }
+    .attendance-insights-kpis { padding-inline: 10px; }
+    .attendance-insights-grid { padding-inline: 10px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .analytics-kpi,
+    .analytics-smart-insight,
+    .analytics-smart-health { transition: none; }
+}

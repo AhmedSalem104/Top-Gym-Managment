@@ -214,8 +214,46 @@ function createRangeRequest(pool, range) {
         .input('nextDate', sql.Date, toUtcDate(range.nextDate));
 }
 
+function getPreviousPeriodRange(range) {
+    const startDate = range.key === 'year'
+        ? `${Number(range.startDate.slice(0, 4)) - 1}-01-01`
+        : range.key === 'month'
+            ? addMonths(range.startDate, -1)
+            : addDays(range.startDate, -7);
+    const nextDate = range.startDate;
+
+    return {
+        key: range.key,
+        startDate,
+        endDate: addDays(nextDate, -1),
+        nextDate,
+        granularity: range.granularity
+    };
+}
+
+function roundAmount(value) {
+    return Math.round(Number(value || 0) * 100) / 100;
+}
+
+function buildComparison(currentValue, previousValue) {
+    const current = Number(currentValue || 0);
+    const previous = Number(previousValue || 0);
+    const change = roundAmount(current - previous);
+
+    return {
+        current,
+        previous,
+        change,
+        percent: previous === 0
+            ? (current === 0 ? 0 : null)
+            : Math.round((change / Math.abs(previous)) * 1000) / 10,
+        direction: change > 0 ? 'up' : change < 0 ? 'down' : 'flat'
+    };
+}
+
 async function getDashboardAnalytics(periodValue = 'month') {
     const range = getPeriodRange(periodValue);
+    const previousRange = getPreviousPeriodRange(range);
     const buckets = createBuckets(range);
     const today = todayInTimeZone();
     const inactiveSince = addDays(today, -7);
@@ -223,7 +261,7 @@ async function getDashboardAnalytics(periodValue = 'month') {
     await ensurePaymentTransactionsTable();
     const pool = await getPool();
 
-    const [dashboard, membersResult, membershipsResult, paymentsResult, expensesResult, attendanceResult, inactiveAttendanceResult, outstandingResult] = await Promise.all([
+    const [dashboard, membersResult, membershipsResult, paymentsResult, expensesResult, attendanceResult, inactiveAttendanceResult, outstandingResult, previousMembersResult, previousMembershipsResult, previousPaymentsResult, previousExpensesResult, previousAttendanceResult] = await Promise.all([
         getDashboard(),
         createRangeRequest(pool, range).query(`
             SELECT registration_date AS eventDate
@@ -295,6 +333,34 @@ async function getDashboardAnalytics(periodValue = 'month') {
             SELECT COUNT_BIG(CASE WHEN amount_remaining > 0 THEN 1 END) AS outstandingCount,
                    ISNULL(SUM(CASE WHEN amount_remaining > 0 THEN amount_remaining ELSE 0 END), 0) AS outstandingTotal
             FROM dbo.gym_payments;
+        `),
+        createRangeRequest(pool, previousRange).query(`
+            SELECT COUNT_BIG(*) AS total
+            FROM dbo.members
+            WHERE registration_date >= @startDate AND registration_date < @nextDate;
+        `),
+        createRangeRequest(pool, previousRange).query(`
+            SELECT COUNT_BIG(*) AS total
+            FROM dbo.memberships
+            WHERE start_date >= @startDate AND start_date < @nextDate;
+        `),
+        createRangeRequest(pool, previousRange).query(`
+            SELECT COUNT_BIG(*) AS total,
+                   ISNULL(SUM(amount_paid), 0) AS amount
+            FROM dbo.gym_payment_transactions
+            WHERE paid_at >= @startDate AND paid_at < @nextDate AND amount_paid > 0;
+        `),
+        createRangeRequest(pool, previousRange).query(`
+            SELECT COUNT_BIG(*) AS total,
+                   ISNULL(SUM(amount), 0) AS amount
+            FROM dbo.gym_expenses
+            WHERE expense_date >= @startDate AND expense_date < @nextDate;
+        `),
+        createRangeRequest(pool, previousRange).query(`
+            SELECT COUNT_BIG(*) AS visits,
+                   COUNT(DISTINCT member_id) AS uniqueMembers
+            FROM dbo.gym_attendance
+            WHERE attendance_date >= @startDate AND attendance_date < @nextDate;
         `)
     ]);
 
@@ -308,6 +374,38 @@ async function getDashboardAnalytics(periodValue = 'month') {
     const expenseTotal = expenseRows.reduce((sum, row) => sum + Number(row.amount || 0), 0);
     const statusStats = dashboard.stats || {};
     const outstanding = outstandingResult.recordset[0] || {};
+    const previousMembers = Number(previousMembersResult.recordset[0]?.total || 0);
+    const previousMemberships = Number(previousMembershipsResult.recordset[0]?.total || 0);
+    const previousPayments = previousPaymentsResult.recordset[0] || {};
+    const previousExpenses = previousExpensesResult.recordset[0] || {};
+    const previousAttendance = previousAttendanceResult.recordset[0] || {};
+    const previousCollected = roundAmount(previousPayments.amount);
+    const previousExpenseTotal = roundAmount(previousExpenses.amount);
+    const previousNet = roundAmount(previousCollected - previousExpenseTotal);
+    const attendance = buildAttendanceAnalytics(attendanceRows, inactiveAttendanceRows, buckets, range);
+    const currentKpis = {
+        newMembers: memberRows.length,
+        newMemberships: membershipRows.length,
+        paidTransactions: paymentRows.length,
+        collected: roundAmount(paymentTotal),
+        expenses: roundAmount(expenseTotal),
+        net: roundAmount(paymentTotal - expenseTotal),
+        visits: attendanceRows.length,
+        uniqueMembers: attendance.kpis.uniqueMembers
+    };
+    const previousKpis = {
+        newMembers: previousMembers,
+        newMemberships: previousMemberships,
+        paidTransactions: Number(previousPayments.total || 0),
+        collected: previousCollected,
+        expenses: previousExpenseTotal,
+        net: previousNet,
+        visits: Number(previousAttendance.visits || 0),
+        uniqueMembers: Number(previousAttendance.uniqueMembers || 0)
+    };
+    const comparisons = Object.fromEntries(Object.keys(currentKpis).map((key) => [key, buildComparison(currentKpis[key], previousKpis[key])]));
+    const currentMembers = Number(statusStats.total || 0);
+    const activeMembers = Number(statusStats.active || 0);
 
     return {
         period: {
@@ -316,19 +414,25 @@ async function getDashboardAnalytics(periodValue = 'month') {
             bucketCount: buckets.length,
             buckets
         },
+        previous: {
+            startDate: previousRange.startDate,
+            endDate: previousRange.endDate,
+            kpis: previousKpis
+        },
+        comparisons,
         kpis: {
-            currentMembers: Number(statusStats.total || 0),
-            activeMembers: Number(statusStats.active || 0),
+            currentMembers,
+            activeMembers,
             expiringSoon: Number(statusStats.expiringSoon || 0),
             expiredMembers: Number(statusStats.expired || 0),
             frozenMembers: Number(statusStats.frozen || 0),
-            newMembers: memberRows.length,
-            newMemberships: membershipRows.length,
-            paidTransactions: paymentRows.length,
-            collected: Math.round(paymentTotal * 100) / 100,
+            newMembers: currentKpis.newMembers,
+            newMemberships: currentKpis.newMemberships,
+            paidTransactions: currentKpis.paidTransactions,
+            collected: currentKpis.collected,
             expenseCount: expenseRows.length,
-            expenses: Math.round(expenseTotal * 100) / 100,
-            net: Math.round((paymentTotal - expenseTotal) * 100) / 100,
+            expenses: currentKpis.expenses,
+            net: currentKpis.net,
             outstandingCount: Number(outstanding.outstandingCount || 0),
             outstanding: Number(outstanding.outstandingTotal || 0),
             alertsCount: Array.isArray(dashboard.alerts) ? dashboard.alerts.length : 0
@@ -353,7 +457,7 @@ async function getDashboardAnalytics(periodValue = 'month') {
             types: distribution(membershipRows, 'typeCode'),
             paymentMethods: distribution(paymentRows, 'paymentMethod')
         },
-        attendance: buildAttendanceAnalytics(attendanceRows, inactiveAttendanceRows, buckets, range)
+        attendance
     };
 }
 
