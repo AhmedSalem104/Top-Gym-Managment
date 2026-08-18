@@ -11,13 +11,13 @@
             styles: [
                 '/css/attendance.css?v=6',
                 '/css/coaching.css?v=9',
-                '/css/muscle-assets.css?v=1'
+                '/css/muscle-assets.css?v=2'
             ],
             scripts: [
                 '/js/action-menu.js?v=4',
                 '/js/print-enhancements.js?v=10',
                 '/js/attendance.js?v=8',
-                '/js/muscle-assets.js?v=1',
+                '/js/muscle-assets.js?v=2',
                 '/js/coaching.js?v=12'
             ]
         },
@@ -34,7 +34,9 @@
             scripts: ['/js/reports.js?v=7']
         },
         management: {
-            styles: ['/css/operations.css?v=6', '/css/auth.css?v=1'],
+            // auth.css is a core stylesheet loaded in <head>; loading an older
+            // second copy here caused a visible style flash on Management.
+            styles: ['/css/operations.css?v=6'],
             scripts: ['/js/backup-enhancements.js?v=8', '/js/auth-users.js?v=1']
         },
         attendance: {
@@ -42,12 +44,12 @@
             scripts: ['/js/attendance.js?v=8']
         },
         library: {
-            styles: ['/css/library.css?v=10', '/css/muscle-assets.css?v=1'],
-            scripts: ['/js/muscle-assets.js?v=1', '/js/library.js?v=10']
+            styles: ['/css/library.css?v=10', '/css/muscle-assets.css?v=2'],
+            scripts: ['/js/muscle-assets.js?v=2', '/js/library.js?v=11']
         },
         trainees: {
-            styles: ['/css/coaching.css?v=9', '/css/muscle-assets.css?v=1'],
-            scripts: ['/js/muscle-assets.js?v=1', '/js/coaching.js?v=12']
+            styles: ['/css/coaching.css?v=9', '/css/muscle-assets.css?v=2'],
+            scripts: ['/js/muscle-assets.js?v=2', '/js/coaching.js?v=12']
         }
     };
 

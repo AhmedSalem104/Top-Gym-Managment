@@ -25,9 +25,7 @@ body.auth-pending .auth-screen {
     place-items: center;
     overflow: auto;
     padding: 24px;
-    background:
-        linear-gradient(135deg, rgba(15, 23, 42, .86), rgba(15, 23, 42, .56)),
-        url('/assets/gym-background.webp') center 45% / cover no-repeat;
+    background: #040a11;
     transition: opacity .16s ease, visibility .16s ease;
 }
 
@@ -275,9 +273,7 @@ body[data-top-gym-role='Assistant'] #refreshButton { display: none !important; }
 
 .auth-screen {
     padding: 30px;
-    background:
-        linear-gradient(135deg, rgba(3, 8, 15, .9), rgba(3, 8, 15, .78)),
-        url('/assets/gym-background.webp') center / cover no-repeat;
+    background: #040a11;
 }
 .auth-shell { width: min(1280px, calc(100vw - 80px)); height: min(900px, calc(100vh - 60px)); min-height: 680px; }
 .auth-card {

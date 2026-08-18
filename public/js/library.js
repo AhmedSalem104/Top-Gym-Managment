@@ -243,6 +243,9 @@
         if (state.activeType === 'exercises' && window.TopGymExerciseAssets?.load) {
             await window.TopGymExerciseAssets.load().catch(() => null);
         }
+        if (state.activeType === 'muscles' && window.TopGymMuscleAssets?.load) {
+            await window.TopGymMuscleAssets.load().catch(() => null);
+        }
         const filters = state.filters[state.activeType];
         const requestKey = JSON.stringify([state.activeType, state.page, state.search, filters]);
         if (!force && state.lastLoadedKey === requestKey && Date.now() - state.lastLoadedAt < 30000) {

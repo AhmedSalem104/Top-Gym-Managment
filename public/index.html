@@ -10,12 +10,22 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <title>إدارة عضويات الجيم</title>
+    <style id="top-gym-critical-styles">
+        /* Keep the first paint deterministic while the full design system and auth session initialize. */
+        html { max-width: 100%; overflow-x: hidden; }
+        body.auth-pending,
+        body.auth-locked { min-width: 320px; min-height: 100vh; background: #040a11 !important; }
+        body.auth-pending .app-shell,
+        body.auth-locked .app-shell { display: none !important; visibility: hidden !important; pointer-events: none !important; }
+        body.auth-pending #authScreen { visibility: hidden; opacity: 0; pointer-events: none; }
+        .auth-screen { background: #040a11; }
+    </style>
     <link rel="stylesheet" href="/css/base.css?v=5">
     <link rel="stylesheet" href="/tailwind.css">
     <link rel="stylesheet" href="/css/dashboard.css?v=35">
     <link rel="stylesheet" href="/css/design-system.css?v=1">
     <link rel="stylesheet" href="/css/exercise-assets.css?v=1">
-    <link rel="stylesheet" href="/css/auth.css?v=2">
+    <link rel="stylesheet" href="/css/auth.css?v=3">
 </head>
 <body class="auth-pending font-sans bg-slate-100 text-slate-900 gym-page-bg" style="--top-gym-bg-color: #e5edf7; --top-gym-bg-color-mid: #f4f7fb; --top-gym-bg-color-end: #dce8f5;">
     <section class="auth-screen" id="authScreen" aria-label="تسجيل الدخول">
@@ -160,7 +170,7 @@
                     <div class="backup-history-list" id="backupHistoryList"><div class="backup-history-loading">جاري تحميل سجل النسخ…</div></div>
                 </section>
                 <section class="auth-users-panel" id="authUsersPanel" hidden aria-labelledby="authUsersTitle">
-                    <div class="auth-users-head"><div><span class="management-eyebrow">صلاحيات النظام</span><h4 id="authUsersTitle">حسابات الإدارة</h4><p>أنشئ حسابات المساعدين وتحكم في حالتها دون مشاركة حساب المالك.</p></div><button class="btn btn-primary btn-small" id="authAddAssistantButton" type="button">+ إضافة مساعد</button></div>
+                    <div class="auth-users-head"><div><span class="management-eyebrow">صلاحيات النظام</span><h4 id="authUsersTitle">حسابات الإدارة والمساعدين</h4><p>يمكن للمالك إضافة حساب Assistant بصلاحيات تشغيلية محدودة والتحكم في حالته دون مشاركة حسابه.</p></div><button class="btn btn-primary btn-small" id="authAddAssistantButton" type="button">+ إضافة Assistant</button></div>
                     <div id="authUsersList"><div class="auth-users-loading">جاري تحميل حسابات الإدارة…</div></div>
                 </section>
             </section>
@@ -430,7 +440,7 @@
     <script defer src="/js/app.js?v=feature-expansion5"></script>
     <script defer src="/js/monthly-finance.js?v=13"></script>
     <script defer src="/js/exercise-assets.js?v=4"></script>
-    <script defer src="/js/feature-loader.js?v=3"></script>
+    <script defer src="/js/feature-loader.js?v=4"></script>
     <script defer src="/js/page-tabs.js?v=6"></script>
     <script defer src="/js/button-loading.js"></script>
     <script defer src="/js/pagination.js"></script>
