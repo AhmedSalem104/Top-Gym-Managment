@@ -62,6 +62,11 @@ function assertRequiredFiles() {
         'src/coaching-service.js',
         'src/backup-service.js',
         'src/report-service.js',
+        'src/auth-service.js',
+        'public/css/auth.css',
+        'public/js/auth-ui.js',
+        'public/js/auth-users.js',
+        'docs/AUTH.md',
         'qa/AGENT-CONTRACT.md'
     ];
     required.forEach((relativePath) => record(
@@ -92,6 +97,25 @@ function checkRouteSurface() {
     ));
 }
 
+function checkAuthSurface() {
+    const server = read('server.js');
+    const auth = read('src/auth-service.js');
+    const index = read('public/index.html');
+    const authCss = read('public/css/auth.css');
+    [
+        '/api/auth/session', '/api/auth/login', '/api/auth/logout', '/api/auth/users'
+    ].forEach((route) => record(
+        `AUTH-ROUTE-${route.replaceAll('/', '-')}`,
+        server.includes(route),
+        server.includes(route) ? 'authentication route is present' : 'authentication route is missing',
+        'P0'
+    ));
+    record('AUTH-BACKEND-MIDDLEWARE', server.includes('authApiMiddleware') && server.includes('canAccess(user, request)'), 'backend authentication and authorization middleware is present', 'P0');
+    record('AUTH-SCRYPT-HASHING', auth.includes('crypto.scrypt') && auth.includes('timingSafeEqual'), 'password hashing uses scrypt and timing-safe comparison', 'P0');
+    record('AUTH-HTTPONLY-SESSION', auth.includes('HttpOnly') && auth.includes('SameSite=Lax'), 'sessions use HttpOnly SameSite cookies', 'P0');
+    record('AUTH-LOGIN-SCREEN', index.includes('id="authScreen"') && authCss.includes('/assets/gym-background.webp'), 'login screen uses the existing gym background asset', 'P1');
+}
+
 function checkPrintAndLazyLoadingSurface() {
     const app = read('public/js/app.js');
     const loader = read('public/js/feature-loader.js');
@@ -116,6 +140,7 @@ function runOptionalCommand(label, command, commandArgs) {
 assertRequiredFiles();
 checkJavaScriptSyntax();
 checkRouteSurface();
+checkAuthSurface();
 checkPrintAndLazyLoadingSurface();
 checkTrackedSecrets();
 if (runBuild) runOptionalCommand('BUILD', 'npm', ['run', 'build']);

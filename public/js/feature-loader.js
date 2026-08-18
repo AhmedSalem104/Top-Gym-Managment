@@ -34,8 +34,8 @@
             scripts: ['/js/reports.js?v=7']
         },
         management: {
-            styles: ['/css/operations.css?v=6'],
-            scripts: ['/js/backup-enhancements.js?v=8']
+            styles: ['/css/operations.css?v=6', '/css/auth.css?v=1'],
+            scripts: ['/js/backup-enhancements.js?v=8', '/js/auth-users.js?v=1']
         },
         attendance: {
             styles: ['/css/attendance.css?v=6'],

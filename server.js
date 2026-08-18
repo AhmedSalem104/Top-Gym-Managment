@@ -49,6 +49,21 @@ const {
     updateMember
 } = require('./src/member-service');
 const {
+    appendCookie,
+    canAccess,
+    clearSessionCookie,
+    createAssistant,
+    ensureAuthReady,
+    getSessionUser,
+    listUsers,
+    login,
+    readSessionCookie,
+    revokeSession,
+    sessionCookie,
+    setAssistantStatus,
+    updateUser
+} = require('./src/auth-service');
+const {
     addWorkoutSet,
     createDietPlan,
     createExternalTrainee,
@@ -156,6 +171,57 @@ function isAuthorizedCronRequest(request) {
     return process.env.NODE_ENV !== 'production' && request.get('x-top-gym-cron-key') === 'daily-backup';
 }
 
+const loginAttempts = new Map();
+let loginAttemptsLastCleanup = 0;
+function allowLoginAttempt(request, email) {
+    const now = Date.now();
+    if (now - loginAttemptsLastCleanup > 300_000) {
+        for (const [key, entry] of loginAttempts) {
+            if (now - entry.startedAt >= 900_000) loginAttempts.delete(key);
+        }
+        loginAttemptsLastCleanup = now;
+    }
+    const key = `${request.ip || request.socket.remoteAddress || 'unknown'}:${String(email || '').trim().toLowerCase()}`;
+    const current = loginAttempts.get(key);
+    if (!current || now - current.startedAt >= 900_000) {
+        loginAttempts.set(key, { startedAt: now, count: 1 });
+        return true;
+    }
+    current.count += 1;
+    return current.count <= 10;
+}
+
+function isSameOriginRequest(request) {
+    const origin = String(request.get('origin') || '').trim();
+    if (!origin) return true;
+    try {
+        const originUrl = new URL(origin);
+        const host = String(request.get('host') || request.get('x-forwarded-host') || '').split(',')[0].trim();
+        return originUrl.host === host;
+    } catch (_) {
+        return false;
+    }
+}
+
+function authApiMiddleware(request, response, next) {
+    const publicPath = ['/health', '/auth/login', '/auth/session', '/auth/logout'].includes(request.path);
+    if (publicPath || (request.path === '/backup/daily' && isAuthorizedCronRequest(request))) return next();
+    if (!['GET', 'HEAD', 'OPTIONS'].includes(request.method) && !isSameOriginRequest(request)) {
+        return response.status(403).json({ error: 'الطلب غير مصرح به.' });
+    }
+    return ensureAuthReady()
+        .then(() => getSessionUser(readSessionCookie(request)))
+        .then((user) => {
+            if (!user) return response.status(401).json({ error: 'انتهت جلسة الدخول. سجّل الدخول مرة أخرى.', code: 'AUTH_REQUIRED' });
+            if (!canAccess(user, request)) return response.status(403).json({ error: 'ليس لديك صلاحية لتنفيذ هذا الإجراء.', code: 'FORBIDDEN' });
+            request.auth = user;
+            return next();
+        })
+        .catch(next);
+}
+
+app.use('/api', authApiMiddleware);
+
 function escapeHtml(value) {
     return String(value ?? '').replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[character]));
 }
@@ -236,6 +302,51 @@ app.get('/api/health', asyncRoute(async (request, response) => {
     const pool = await getPool();
     await pool.request().query('SELECT 1 AS ok;');
     response.json({ ok: true, database: 'connected' });
+}));
+
+app.get('/api/auth/session', asyncRoute(async (request, response) => {
+    const setup = await ensureAuthReady();
+    const user = await getSessionUser(readSessionCookie(request));
+    response.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    response.json({ authenticated: Boolean(user), user: user || null, setupRequired: Boolean(setup?.setupRequired) });
+}));
+
+app.post('/api/auth/login', asyncRoute(async (request, response) => {
+    if (!allowLoginAttempt(request, request.body?.email)) {
+        response.set('Retry-After', '900');
+        return response.status(429).json({ error: 'محاولات دخول كثيرة. حاول بعد قليل.', code: 'LOGIN_RATE_LIMITED' });
+    }
+    const result = await login(request.body || {}, request);
+    appendCookie(response, sessionCookie(result.token, result.expiresAt, request));
+    response.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    response.json({ user: result.user, expiresAt: result.expiresAt.toISOString() });
+}));
+
+app.post('/api/auth/logout', asyncRoute(async (request, response) => {
+    await revokeSession(readSessionCookie(request));
+    appendCookie(response, clearSessionCookie(request));
+    response.status(204).send();
+}));
+
+function ownerOnly(request, response, next) {
+    if (request.auth?.role !== 'Owner') return response.status(403).json({ error: 'هذا الإجراء متاح لمالك النظام فقط.', code: 'OWNER_REQUIRED' });
+    return next();
+}
+
+app.get('/api/auth/users', ownerOnly, asyncRoute(async (request, response) => {
+    response.json({ users: await listUsers() });
+}));
+
+app.post('/api/auth/users', ownerOnly, asyncRoute(async (request, response) => {
+    response.status(201).json({ user: await createAssistant(request.body || {}) });
+}));
+
+app.put('/api/auth/users/:id', ownerOnly, asyncRoute(async (request, response) => {
+    response.json({ user: await updateUser(request.params.id, request.body || {}) });
+}));
+
+app.patch('/api/auth/users/:id/status', ownerOnly, asyncRoute(async (request, response) => {
+    response.json({ user: await setAssistantStatus(request.params.id, request.body?.status) });
 }));
 
 app.get('/api/backup/daily', asyncRoute(async (request, response) => {
@@ -678,6 +789,7 @@ app.use((error, request, response, next) => {
 
 async function start() {
     await initDatabase();
+    await ensureAuthReady();
     await ensureLibraryData();
     await ensureCoachingTables();
     const port = Number(process.env.PORT || 3000);

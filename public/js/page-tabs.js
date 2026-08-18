@@ -11,7 +11,9 @@
     }
 
     function normalizeTab(name) {
-        return validTabs.has(name) ? name : 'dashboard';
+        if (!validTabs.has(name)) return 'dashboard';
+        if (window.topGymAuth?.isReady?.() && !window.topGymAuth.canAccessTab(name)) return 'members';
+        return name;
     }
 
     function renderTab(name) {

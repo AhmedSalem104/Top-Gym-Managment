@@ -13,6 +13,124 @@ BEGIN
     );
 END;
 
+-- Application authentication is intentionally separate from gym members.
+-- Passwords are stored as scrypt hashes and sessions as revocable token hashes.
+IF OBJECT_ID(N'dbo.gym_users', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.gym_users (
+        id INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_gym_users PRIMARY KEY,
+        full_name NVARCHAR(120) NOT NULL,
+        username NVARCHAR(254) NULL,
+        email NVARCHAR(254) NOT NULL,
+        email_normalized NVARCHAR(254) NOT NULL,
+        password_hash NVARCHAR(512) NOT NULL,
+        role VARCHAR(20) NOT NULL CONSTRAINT DF_gym_users_role DEFAULT ('Assistant'),
+        status VARCHAR(20) NOT NULL CONSTRAINT DF_gym_users_status DEFAULT ('Active'),
+        last_login_at DATETIME2(0) NULL,
+        created_at DATETIME2(0) NOT NULL CONSTRAINT DF_gym_users_created_at DEFAULT (SYSUTCDATETIME()),
+        updated_at DATETIME2(0) NOT NULL CONSTRAINT DF_gym_users_updated_at DEFAULT (SYSUTCDATETIME()),
+        CONSTRAINT UQ_gym_users_email UNIQUE (email_normalized),
+        CONSTRAINT CK_gym_users_role CHECK (role IN ('Owner', 'Assistant')),
+        CONSTRAINT CK_gym_users_status CHECK ((role = 'Owner' AND status = 'Active') OR (role = 'Assistant' AND status IN ('Active', 'Disabled')))
+    );
+END;
+
+-- Backward-compatible migration for an older gym_users table that used
+-- username/is_active. Existing rows are preserved and can be edited by Owner.
+IF OBJECT_ID(N'dbo.gym_users', N'U') IS NOT NULL
+BEGIN
+    IF COL_LENGTH(N'dbo.gym_users', N'username') IS NULL
+        EXEC(N'ALTER TABLE dbo.gym_users ADD username NVARCHAR(254) NULL;');
+    IF COL_LENGTH(N'dbo.gym_users', N'email') IS NULL
+        EXEC(N'ALTER TABLE dbo.gym_users ADD email NVARCHAR(254) NULL;');
+    IF COL_LENGTH(N'dbo.gym_users', N'email_normalized') IS NULL
+        EXEC(N'ALTER TABLE dbo.gym_users ADD email_normalized NVARCHAR(254) NULL;');
+    IF COL_LENGTH(N'dbo.gym_users', N'status') IS NULL
+        EXEC(N'ALTER TABLE dbo.gym_users ADD status VARCHAR(20) NULL;');
+    IF COL_LENGTH(N'dbo.gym_users', N'last_login_at') IS NULL
+        EXEC(N'ALTER TABLE dbo.gym_users ADD last_login_at DATETIME2(0) NULL;');
+
+    IF EXISTS (SELECT 1 FROM sys.check_constraints WHERE name = N'CK_gym_users_role' AND parent_object_id = OBJECT_ID(N'dbo.gym_users'))
+        EXEC(N'ALTER TABLE dbo.gym_users DROP CONSTRAINT CK_gym_users_role;');
+    IF EXISTS (SELECT 1 FROM sys.check_constraints WHERE name = N'CK_gym_users_status' AND parent_object_id = OBJECT_ID(N'dbo.gym_users'))
+        EXEC(N'ALTER TABLE dbo.gym_users DROP CONSTRAINT CK_gym_users_status;');
+
+    IF COL_LENGTH(N'dbo.gym_users', N'is_active') IS NOT NULL
+    BEGIN
+        EXEC(N'
+            UPDATE dbo.gym_users
+            SET role = CASE LOWER(LTRIM(RTRIM(role))) WHEN ''owner'' THEN ''Owner'' WHEN ''manager'' THEN ''Owner'' ELSE ''Assistant'' END;
+            UPDATE dbo.gym_users
+            SET email = COALESCE(NULLIF(LTRIM(RTRIM(email)), ''''), NULLIF(LTRIM(RTRIM(username)), ''''), CONCAT(''legacy-'', CONVERT(VARCHAR(20), id), ''@topgym.local''))
+            WHERE email IS NULL OR LTRIM(RTRIM(email)) = '''';
+            UPDATE dbo.gym_users
+            SET email_normalized = LOWER(LTRIM(RTRIM(email)))
+            WHERE email_normalized IS NULL OR LTRIM(RTRIM(email_normalized)) = '''';
+            UPDATE dbo.gym_users
+            SET status = CASE WHEN role = ''Owner'' OR ISNULL(is_active, 1) = 1 THEN ''Active'' ELSE ''Disabled'' END
+            WHERE status IS NULL OR LTRIM(RTRIM(status)) = '''';
+        ');
+    END
+    ELSE
+    BEGIN
+        EXEC(N'
+            UPDATE dbo.gym_users
+            SET role = CASE LOWER(LTRIM(RTRIM(role))) WHEN ''owner'' THEN ''Owner'' WHEN ''manager'' THEN ''Owner'' ELSE ''Assistant'' END;
+            UPDATE dbo.gym_users
+            SET email = COALESCE(NULLIF(LTRIM(RTRIM(email)), ''''), NULLIF(LTRIM(RTRIM(username)), ''''), CONCAT(''legacy-'', CONVERT(VARCHAR(20), id), ''@topgym.local''))
+            WHERE email IS NULL OR LTRIM(RTRIM(email)) = '''';
+            UPDATE dbo.gym_users
+            SET email_normalized = LOWER(LTRIM(RTRIM(email)))
+            WHERE email_normalized IS NULL OR LTRIM(RTRIM(email_normalized)) = '''';
+            UPDATE dbo.gym_users
+            SET status = ''Active''
+            WHERE status IS NULL OR LTRIM(RTRIM(status)) = '''';
+        ');
+    END;
+
+    EXEC(N'ALTER TABLE dbo.gym_users ALTER COLUMN email NVARCHAR(254) NOT NULL;');
+    EXEC(N'ALTER TABLE dbo.gym_users ALTER COLUMN email_normalized NVARCHAR(254) NOT NULL;');
+    EXEC(N'ALTER TABLE dbo.gym_users ALTER COLUMN status VARCHAR(20) NOT NULL;');
+    IF NOT EXISTS (SELECT 1 FROM sys.check_constraints WHERE name = N'CK_gym_users_role' AND parent_object_id = OBJECT_ID(N'dbo.gym_users'))
+        EXEC(N'ALTER TABLE dbo.gym_users ADD CONSTRAINT CK_gym_users_role CHECK (role IN (''Owner'', ''Assistant''));');
+    IF NOT EXISTS (SELECT 1 FROM sys.check_constraints WHERE name = N'CK_gym_users_status' AND parent_object_id = OBJECT_ID(N'dbo.gym_users'))
+        EXEC(N'ALTER TABLE dbo.gym_users ADD CONSTRAINT CK_gym_users_status CHECK ((role = ''Owner'' AND status = ''Active'') OR (role = ''Assistant'' AND status IN (''Active'', ''Disabled'')));');
+    IF NOT EXISTS (
+        SELECT 1 FROM sys.indexes
+        WHERE name = N'UQ_gym_users_email'
+          AND object_id = OBJECT_ID(N'dbo.gym_users')
+    )
+        EXEC(N'CREATE UNIQUE INDEX UQ_gym_users_email ON dbo.gym_users(email_normalized);');
+END;
+
+IF OBJECT_ID(N'dbo.gym_auth_sessions', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.gym_auth_sessions (
+        id UNIQUEIDENTIFIER NOT NULL CONSTRAINT PK_gym_auth_sessions PRIMARY KEY DEFAULT (NEWID()),
+        user_id INT NOT NULL,
+        token_hash CHAR(64) NOT NULL,
+        expires_at DATETIME2(0) NOT NULL,
+        revoked_at DATETIME2(0) NULL,
+        ip_address NVARCHAR(64) NULL,
+        user_agent NVARCHAR(512) NULL,
+        created_at DATETIME2(0) NOT NULL CONSTRAINT DF_gym_auth_sessions_created_at DEFAULT (SYSUTCDATETIME()),
+        last_seen_at DATETIME2(0) NOT NULL CONSTRAINT DF_gym_auth_sessions_last_seen_at DEFAULT (SYSUTCDATETIME()),
+        CONSTRAINT UQ_gym_auth_sessions_token UNIQUE (token_hash),
+        CONSTRAINT FK_gym_auth_sessions_user FOREIGN KEY (user_id)
+            REFERENCES dbo.gym_users(id) ON DELETE CASCADE
+    );
+END;
+
+IF NOT EXISTS (
+    SELECT 1 FROM sys.indexes
+    WHERE name = N'IX_gym_auth_sessions_user_expiry'
+      AND object_id = OBJECT_ID(N'dbo.gym_auth_sessions')
+)
+BEGIN
+    CREATE INDEX IX_gym_auth_sessions_user_expiry
+        ON dbo.gym_auth_sessions(user_id, expires_at DESC, revoked_at);
+END;
+
 IF OBJECT_ID(N'dbo.memberships', N'U') IS NULL
 BEGIN
     CREATE TABLE dbo.memberships (

@@ -1,0 +1,207 @@
+/* Authentication and account-management UI. The login uses the existing gym
+   background asset while the signed-in application keeps its current design system. */
+body.auth-pending .app-shell,
+body.auth-locked .app-shell {
+    visibility: hidden;
+    pointer-events: none;
+}
+
+.auth-screen {
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    display: grid;
+    place-items: center;
+    overflow: auto;
+    padding: 24px;
+    background:
+        linear-gradient(135deg, rgba(15, 23, 42, .86), rgba(15, 23, 42, .56)),
+        url('/assets/gym-background.webp') center 45% / cover no-repeat;
+}
+
+.auth-screen[hidden] { display: none; }
+
+.auth-shell {
+    width: min(440px, 100%);
+    margin: auto;
+}
+
+.auth-card {
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, .2);
+    border-radius: 22px;
+    color: #172033;
+    background: rgba(255, 255, 255, .96);
+    box-shadow: 0 28px 80px rgba(2, 6, 23, .34);
+    backdrop-filter: blur(14px);
+}
+
+.auth-brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 24px 24px 20px;
+    color: #fff;
+    background: linear-gradient(135deg, #0f172a, #1d4ed8 72%, #2563eb);
+}
+
+.auth-brand-mark {
+    display: grid;
+    place-items: center;
+    width: 48px;
+    height: 48px;
+    flex: 0 0 48px;
+    border: 1px solid rgba(255, 255, 255, .28);
+    border-radius: 14px;
+    background: rgba(255, 255, 255, .12);
+}
+
+.auth-brand-mark .ui-icon { width: 26px; height: 26px; }
+.auth-brand-copy { min-width: 0; }
+.auth-brand-copy strong { display: block; font-size: 20px; letter-spacing: 1px; }
+.auth-brand-copy span { display: block; margin-top: 3px; color: #bfdbfe; font-size: 11px; }
+
+.auth-form {
+    display: grid;
+    gap: 15px;
+    padding: 24px;
+}
+
+.auth-form-heading { margin-bottom: 2px; }
+.auth-form-heading h2 { margin: 0; color: #0f172a; font-size: 22px; line-height: 1.35; }
+.auth-form-heading p { margin: 6px 0 0; color: #64748b; font-size: 12px; line-height: 1.8; }
+
+.auth-field { display: grid; gap: 7px; }
+.auth-field label { color: #334155; font-size: 12px; font-weight: 800; }
+.auth-field input {
+    width: 100%;
+    min-height: 46px;
+    padding: 0 13px;
+    border: 1px solid #dbe3ef;
+    border-radius: 11px;
+    outline: 0;
+    color: #172033;
+    background: #f8fafc;
+    font: inherit;
+    font-size: 13px;
+    transition: border-color .18s ease, box-shadow .18s ease, background .18s ease;
+}
+.auth-field input:focus { border-color: #2563eb; background: #fff; box-shadow: 0 0 0 3px rgba(37, 99, 235, .13); }
+.auth-password-wrap { position: relative; }
+.auth-password-wrap input { padding-inline-end: 48px; }
+.auth-password-toggle {
+    position: absolute;
+    top: 50%;
+    inset-inline-end: 8px;
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    border: 0;
+    border-radius: 8px;
+    color: #64748b;
+    background: transparent;
+    cursor: pointer;
+    transform: translateY(-50%);
+}
+.auth-password-toggle:hover, .auth-password-toggle:focus-visible { color: #1d4ed8; background: #eff6ff; outline: 0; }
+.auth-password-toggle .ui-icon { width: 18px; height: 18px; }
+
+.auth-message {
+    margin: 0;
+    padding: 10px 12px;
+    border: 1px solid #fecaca;
+    border-radius: 10px;
+    color: #b91c1c;
+    background: #fff1f2;
+    font-size: 12px;
+    line-height: 1.7;
+}
+.auth-message[hidden] { display: none; }
+.auth-message.info { border-color: #bfdbfe; color: #1d4ed8; background: #eff6ff; }
+
+.auth-submit { width: 100%; min-height: 48px; justify-content: center; font-size: 14px; }
+.auth-submit[aria-busy='true'] { cursor: wait; opacity: .82; }
+.auth-submit .auth-spinner {
+    display: none;
+    width: 17px;
+    height: 17px;
+    border: 2px solid currentColor;
+    border-right-color: transparent;
+    border-radius: 50%;
+    animation: auth-spin .7s linear infinite;
+}
+.auth-submit[aria-busy='true'] .auth-spinner { display: inline-block; }
+.auth-submit[aria-busy='true'] .auth-submit-label { opacity: .76; }
+@keyframes auth-spin { to { transform: rotate(360deg); } }
+
+.auth-setup-note { margin: -4px 0 0; color: #64748b; font-size: 11px; line-height: 1.7; }
+
+.auth-users-panel {
+    display: grid;
+    gap: 14px;
+    margin-top: 18px;
+    padding: 18px;
+    border: 1px solid #dbe3ef;
+    border-radius: 15px;
+    background: rgba(248, 250, 252, .78);
+}
+.auth-users-panel[hidden] { display: none; }
+.auth-users-head { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+.auth-users-head h4 { margin: 0 0 4px; color: #1e3a8a; font-size: 15px; }
+.auth-users-head p { margin: 0; color: #64748b; font-size: 11px; line-height: 1.7; }
+.auth-users-table-wrap { overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 12px; background: #fff; }
+.auth-users-table { width: 100%; min-width: 650px; border-collapse: collapse; text-align: center; }
+.auth-users-table th, .auth-users-table td { padding: 10px 9px; border-bottom: 1px solid #eef2f7; vertical-align: middle; font-size: 11px; }
+.auth-users-table th { color: #475569; background: #f8fafc; font-weight: 800; }
+.auth-users-table tr:last-child td { border-bottom: 0; }
+.auth-users-table td:first-child { text-align: right; }
+.auth-user-primary { display: grid; gap: 2px; }
+.auth-user-primary strong { color: #172033; font-size: 12px; }
+.auth-user-primary small { color: #64748b; direction: ltr; font-size: 10px; text-align: right; }
+.auth-role-badge, .auth-status-badge { display: inline-flex; align-items: center; min-height: 25px; padding: 3px 9px; border-radius: 999px; font-size: 10px; font-weight: 800; white-space: nowrap; }
+.auth-role-badge.owner { color: #1d4ed8; background: #dbeafe; }
+.auth-role-badge.assistant { color: #6d28d9; background: #ede9fe; }
+.auth-status-badge.active { color: #047857; background: #d1fae5; }
+.auth-status-badge.disabled { color: #b91c1c; background: #fee2e2; }
+.auth-user-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 5px; }
+.auth-user-actions .btn { min-height: 34px; }
+.auth-user-actions .btn.auth-danger { color: #b91c1c; border-color: #fecaca; background: #fff1f2; }
+.auth-users-empty, .auth-users-loading, .auth-users-error { padding: 18px; color: #64748b; text-align: center; font-size: 12px; }
+.auth-users-error { color: #b91c1c; }
+
+.auth-user-dialog { width: min(520px, calc(100vw - 24px)); max-height: calc(100vh - 24px); overflow: hidden; }
+.auth-user-dialog .dialog-body { max-height: calc(100vh - 24px); overflow-y: auto; }
+.auth-user-dialog .auth-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.auth-user-dialog .auth-field.full { grid-column: 1 / -1; }
+.auth-user-dialog .auth-helper { margin: -6px 0 0; color: #64748b; font-size: 10px; line-height: 1.6; }
+
+body[data-top-gym-role='Assistant'] #managementSection,
+body[data-top-gym-role='Assistant'] #expensesSection,
+body[data-top-gym-role='Assistant'] #reportsSection,
+body[data-top-gym-role='Assistant'] #dashboardSection,
+body[data-top-gym-role='Assistant'] #dashboardAnalytics { display: none !important; }
+body[data-top-gym-role='Assistant'] #topPricingButton,
+body[data-top-gym-role='Assistant'] #backupButton,
+body[data-top-gym-role='Assistant'] #headerAlertsButton,
+body[data-top-gym-role='Assistant'] #refreshButton { display: none !important; }
+
+@media (max-width: 640px) {
+    .auth-screen { align-items: start; padding: 14px; }
+    .auth-card { margin: auto 0; border-radius: 17px; }
+    .auth-brand { padding: 19px 18px 17px; }
+    .auth-brand-mark { width: 42px; height: 42px; flex-basis: 42px; border-radius: 12px; }
+    .auth-brand-copy strong { font-size: 18px; }
+    .auth-form { gap: 13px; padding: 18px; }
+    .auth-form-heading h2 { font-size: 20px; }
+    .auth-user-dialog .auth-form-grid { grid-template-columns: 1fr; }
+    .auth-user-dialog .auth-field.full { grid-column: auto; }
+    .auth-users-panel { padding: 13px; }
+    .auth-users-head { align-items: stretch; flex-direction: column; }
+    .auth-users-head .btn { width: 100%; justify-content: center; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .auth-submit .auth-spinner { animation: none; }
+    .auth-field input, .auth-password-toggle { transition: none; }
+}

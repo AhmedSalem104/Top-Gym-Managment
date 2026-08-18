@@ -210,12 +210,15 @@
         async function loadData() {
             if (dataLoadPromise) return dataLoadPromise;
             const loadPromise = withLoader(async () => {
-                const dashboardRequest = api('/api/dashboard');
+                const isOwner = window.topGymAuth?.isOwner?.() === true;
+                const dashboardRequest = isOwner ? api('/api/dashboard') : Promise.resolve(null);
                 const pricingRequest = loadPricingCatalog(true);
                 try {
                     const [dashboard] = await Promise.all([dashboardRequest, pricingRequest]);
-                    state.dashboard = dashboard || null;
-                    renderDashboard();
+                    if (isOwner) {
+                        state.dashboard = dashboard || null;
+                        renderDashboard();
+                    }
                     updateFormPricing();
                     if (isMembersTabActive()) await loadMembersOnly();
                 } catch (error) {
@@ -517,5 +520,9 @@
             window.addEventListener('topgym:tab-changed', (event) => {
                 if (event.detail?.name === 'members') loadMembersOnly();
             });
-            loadData();
+            const loadAfterAuth = () => {
+                if (window.topGymAuth?.getUser?.()) void loadData();
+            };
+            if (window.topGymAuthReady) window.topGymAuthReady.then(loadAfterAuth).catch(() => {});
+            else loadAfterAuth();
         });

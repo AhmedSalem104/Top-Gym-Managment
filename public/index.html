@@ -15,8 +15,27 @@
     <link rel="stylesheet" href="/css/dashboard.css?v=35">
     <link rel="stylesheet" href="/css/design-system.css?v=1">
     <link rel="stylesheet" href="/css/exercise-assets.css?v=1">
+    <link rel="stylesheet" href="/css/auth.css?v=1">
 </head>
 <body class="font-sans bg-slate-100 text-slate-900 gym-page-bg" style="--top-gym-bg-color: #e5edf7; --top-gym-bg-color-mid: #f4f7fb; --top-gym-bg-color-end: #dce8f5;">
+    <section class="auth-screen" id="authScreen" aria-label="تسجيل الدخول">
+        <div class="auth-shell">
+            <div class="auth-card">
+                <header class="auth-brand">
+                    <span class="auth-brand-mark" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.8 19.5 7v10L12 21.2 4.5 17V7L12 2.8Z" fill="currentColor" opacity=".16"/><path d="m7.1 14.9 2.7-3 2.3 2.1 4.8-5.1"/><path d="M7.2 17.2h9.6" opacity=".65"/></svg></span>
+                    <span class="auth-brand-copy"><strong>TOP GYM</strong><span>نظام إدارة الجيم والتدريب</span></span>
+                </header>
+                <form class="auth-form" id="loginForm" novalidate>
+                    <div class="auth-form-heading"><h2>تسجيل الدخول</h2><p>استخدم بريدك الإلكتروني وكلمة المرور للوصول إلى لوحة الإدارة.</p></div>
+                    <div class="auth-field"><label for="loginEmail">البريد الإلكتروني</label><input id="loginEmail" type="email" autocomplete="username" inputmode="email" maxlength="254" required placeholder="name@example.com"></div>
+                    <div class="auth-field"><label for="loginPassword">كلمة المرور</label><div class="auth-password-wrap"><input id="loginPassword" type="password" autocomplete="current-password" maxlength="128" required placeholder="أدخل كلمة المرور"><button class="auth-password-toggle" id="loginPasswordToggle" type="button" aria-label="إظهار كلمة المرور"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 12s3.4-6 9.5-6 9.5 6 9.5 6-3.4 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="2.5"/></svg></button></div></div>
+                    <p class="auth-message" id="loginMessage" role="alert" hidden></p>
+                    <p class="auth-setup-note" id="loginSetupNote" hidden>لم يتم إعداد حساب المالك بعد. أضف AUTH_OWNER_EMAIL وAUTH_OWNER_PASSWORD في إعدادات الخادم ثم أعد المحاولة.</p>
+                    <button class="btn btn-primary auth-submit" id="loginSubmit" type="submit"><span class="auth-spinner" aria-hidden="true"></span><span class="auth-submit-label">تسجيل الدخول</span></button>
+                </form>
+            </div>
+        </div>
+    </section>
     <div class="app-shell">
         <header class="topbar bg-slate-950 border-b border-slate-800 gym-topbar-bg">
             <div class="topbar-inner max-w-7xl">
@@ -112,6 +131,10 @@
                 <section class="backup-history-section" aria-labelledby="backupHistoryTitle">
                     <div class="backup-history-section-head"><div><span class="management-eyebrow">متابعة تلقائية</span><h4 id="backupHistoryTitle">سجل النسخ</h4><p>تُنشأ النسخة اليومية الساعة 3:00 مساءً بتوقيت القاهرة، وتُحفظ لمدة يومين فقط.</p></div><button class="btn btn-light btn-small" id="backupHistoryRefresh" type="button">تحديث السجل</button></div>
                     <div class="backup-history-list" id="backupHistoryList"><div class="backup-history-loading">جاري تحميل سجل النسخ…</div></div>
+                </section>
+                <section class="auth-users-panel" id="authUsersPanel" hidden aria-labelledby="authUsersTitle">
+                    <div class="auth-users-head"><div><span class="management-eyebrow">صلاحيات النظام</span><h4 id="authUsersTitle">حسابات الإدارة</h4><p>أنشئ حسابات المساعدين وتحكم في حالتها دون مشاركة حساب المالك.</p></div><button class="btn btn-primary btn-small" id="authAddAssistantButton" type="button">+ إضافة مساعد</button></div>
+                    <div id="authUsersList"><div class="auth-users-loading">جاري تحميل حسابات الإدارة…</div></div>
                 </section>
             </section>
 
@@ -353,6 +376,18 @@
             <div class="dialog-actions builder-dialog-actions"><button class="btn btn-light" id="coachingBuilderCancel" type="button">إلغاء</button><button class="btn btn-light" id="coachingBuilderBack" type="button" hidden>السابق</button><button class="btn btn-light" id="coachingBuilderPreview" type="button" hidden>مراجعة</button><button class="btn btn-light" id="coachingBuilderPrint" type="button" hidden>طباعة</button><button class="btn btn-light" id="coachingBuilderPdf" type="button" hidden>PDF</button><button class="btn btn-primary" id="coachingBuilderNext" type="button">التالي</button><button class="btn btn-primary" id="coachingBuilderSave" type="submit" hidden>حفظ النظام</button></div>
         </form>
     </dialog>
+    <dialog id="authUserDialog" class="auth-user-dialog rounded-lg border-slate-200 shadow-lift">
+        <form class="dialog-body" id="authUserForm" novalidate>
+            <div class="details-dialog-head"><div><h3 id="authUserDialogTitle">إضافة مساعد</h3><p id="authUserDialogDescription">أنشئ حسابًا مساعدًا بصلاحيات تشغيلية محدودة.</p></div><button class="btn btn-light btn-small" id="authUserDialogClose" type="button">إغلاق</button></div>
+            <input type="hidden" id="authUserId">
+            <div class="auth-form-grid">
+                <div class="auth-field"><label for="authUserName">الاسم *</label><input id="authUserName" maxlength="120" required></div>
+                <div class="auth-field"><label for="authUserEmail">البريد الإلكتروني *</label><input id="authUserEmail" type="email" maxlength="254" inputmode="email" required></div>
+                <div class="auth-field full"><label for="authUserPassword">كلمة المرور <span id="authUserPasswordRequired">*</span></label><input id="authUserPassword" type="password" maxlength="128" autocomplete="new-password"><p class="auth-helper" id="authUserPasswordHint">يجب أن تكون 8 أحرف على الأقل. لا يتم عرضها أو إرسالها مرة أخرى بعد الحفظ.</p></div>
+            </div>
+            <div class="dialog-actions"><button class="btn btn-light" id="authUserDialogCancel" type="button">إلغاء</button><button class="btn btn-primary" id="authUserSave" type="submit">حفظ الحساب</button></div>
+        </form>
+    </dialog>
     <dialog id="backupRestoreDialog" class="backup-restore-dialog rounded-lg border-slate-200 shadow-lift">
         <form class="dialog-body" id="backupRestoreForm">
             <div class="details-dialog-head"><div><h3>استرجاع نسخة احتياطية</h3><p>اختر ملف TOP GYM المضغوط. سيتم فحصه أولًا ولن يبدأ الاسترجاع إلا بعد تأكيدك.</p></div><button class="btn btn-light btn-small" id="backupRestoreClose" type="button">إغلاق</button></div>
@@ -364,6 +399,7 @@
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
     <script defer src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script defer src="/js/auth-ui.js?v=1"></script>
     <script defer src="/js/app.js?v=feature-expansion5"></script>
     <script defer src="/js/monthly-finance.js?v=13"></script>
     <script defer src="/js/exercise-assets.js?v=4"></script>

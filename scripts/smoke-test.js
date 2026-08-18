@@ -7,8 +7,14 @@ const { closePool, getPool, initDatabase, sql } = require('../src/db');
 const { reconcileAutoCheckout } = require('../src/attendance-service');
 const { addDays, todayInTimeZone } = require('../src/date-utils');
 
+let sessionCookie = '';
+
+function withSessionHeaders(headers = {}) {
+    return sessionCookie ? { ...headers, Cookie: sessionCookie } : headers;
+}
+
 async function call(baseUrl, path, options = {}) {
-    const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
+    const headers = withSessionHeaders({ 'Content-Type': 'application/json', ...(options.headers || {}) });
     const response = await fetch(`${baseUrl}${path}`, {
         ...options,
         headers,
@@ -16,6 +22,10 @@ async function call(baseUrl, path, options = {}) {
     const body = response.status === 204 ? null : await response.json();
     if (!response.ok) throw new Error(`${response.status}: ${body?.error || 'request failed'}`);
     return body;
+}
+
+function fetchWithSession(baseUrl, path, options = {}) {
+    return fetch(`${baseUrl}${path}`, { ...options, headers: withSessionHeaders(options.headers || {}) });
 }
 
 (async () => {
@@ -29,6 +39,19 @@ async function call(baseUrl, path, options = {}) {
         server = app.listen(0);
         await new Promise((resolve) => server.once('listening', resolve));
         const baseUrl = `http://127.0.0.1:${server.address().port}`;
+        const authEmail = process.env.AUTH_TEST_OWNER_EMAIL || process.env.AUTH_OWNER_EMAIL;
+        const authPassword = process.env.AUTH_TEST_OWNER_PASSWORD || process.env.AUTH_OWNER_PASSWORD;
+        if (!authEmail || !authPassword) throw new Error('Smoke test requires AUTH_OWNER_EMAIL/AUTH_OWNER_PASSWORD (or AUTH_TEST_OWNER_EMAIL/AUTH_TEST_OWNER_PASSWORD).');
+        const authResponse = await fetch(`${baseUrl}/api/auth/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: authEmail, password: authPassword })
+        });
+        assert.equal(authResponse.status, 200, 'smoke test Owner login failed');
+        const authCookie = authResponse.headers.get('set-cookie') || '';
+        const authToken = authCookie.match(/topgym_session=([^;]+)/)?.[1];
+        assert.ok(authToken, 'smoke test did not receive a session cookie');
+        sessionCookie = `topgym_session=${authToken}`;
         const suffix = Date.now();
         const testStartDate = todayInTimeZone();
         const testHalfMonthEndDate = addDays(testStartDate, 14);
@@ -36,26 +59,26 @@ async function call(baseUrl, path, options = {}) {
 
         const health = await call(baseUrl, '/api/health');
         assert.equal(health.database, 'connected');
-        const backupResponse = await fetch(`${baseUrl}/api/backup/download`);
+        const backupResponse = await fetchWithSession(baseUrl, '/api/backup/download');
         assert.equal(backupResponse.status, 200);
         assert.equal(backupResponse.headers.get('content-type'), 'application/gzip');
         assert.match(backupResponse.headers.get('content-disposition') || '', /backup_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}\.json\.gz/);
         const backupBuffer = Buffer.from(await backupResponse.arrayBuffer());
         assert.ok(backupBuffer.byteLength > 20);
-        const bakResponse = await fetch(`${baseUrl}/api/backup/download?format=bak`);
+        const bakResponse = await fetchWithSession(baseUrl, '/api/backup/download?format=bak');
         assert.equal(bakResponse.status, 200);
         assert.equal(bakResponse.headers.get('content-type'), 'application/octet-stream');
         assert.match(bakResponse.headers.get('content-disposition') || '', /backup_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}\.bak/);
         const bakBuffer = Buffer.from(await bakResponse.arrayBuffer());
         assert.ok(bakBuffer.byteLength > 20);
-        const bakInspectResponse = await fetch(`${baseUrl}/api/backup/inspect`, {
+        const bakInspectResponse = await fetchWithSession(baseUrl, '/api/backup/inspect', {
             method: 'POST',
             headers: { 'Content-Type': 'application/octet-stream', 'X-Backup-Filename': 'smoke-backup.bak' },
             body: bakBuffer
         });
         assert.equal(bakInspectResponse.status, 200);
         assert.equal((await bakInspectResponse.json()).valid, true);
-        const backupInspectResponse = await fetch(`${baseUrl}/api/backup/inspect`, {
+        const backupInspectResponse = await fetchWithSession(baseUrl, '/api/backup/inspect', {
             method: 'POST',
             headers: { 'Content-Type': 'application/gzip', 'X-Backup-Filename': 'smoke-backup.json.gz' },
             body: backupBuffer
@@ -68,13 +91,13 @@ async function call(baseUrl, path, options = {}) {
         const backupHistory = await call(baseUrl, '/api/backup/history?limit=5');
         assert.ok(backupHistory.operations.some((item) => item.operationType === 'download'));
         assert.ok(backupHistory.operations.some((item) => item.operationType === 'inspect'));
-        const invalidBackupResponse = await fetch(`${baseUrl}/api/backup/inspect`, {
+        const invalidBackupResponse = await fetchWithSession(baseUrl, '/api/backup/inspect', {
             method: 'POST',
             headers: { 'Content-Type': 'application/gzip' },
             body: gzipSync(Buffer.from(JSON.stringify({ format: 'invalid', version: 1, tables: {} })))
         });
         assert.equal(invalidBackupResponse.status, 400);
-        const unconfirmedRestoreResponse = await fetch(`${baseUrl}/api/backup/restore`, {
+        const unconfirmedRestoreResponse = await fetchWithSession(baseUrl, '/api/backup/restore', {
             method: 'POST',
             headers: { 'Content-Type': 'application/gzip' },
             body: backupBuffer
@@ -202,7 +225,7 @@ async function call(baseUrl, path, options = {}) {
         assert.equal(trainingOverview.member.id, memberId);
         assert.ok(Array.isArray(trainingOverview.workoutSessions));
         assert.ok(Array.isArray(trainingOverview.mealLogs));
-        const duplicateResponse = await fetch(`${baseUrl}/api/members`, {
+        const duplicateResponse = await fetchWithSession(baseUrl, '/api/members', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
