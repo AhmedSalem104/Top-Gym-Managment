@@ -33,6 +33,8 @@ function parseConnectionString(connectionString) {
         database: databaseValue,
         user: userValue,
         password: passwordValue,
+        connectionTimeout: Number(process.env.MSSQL_CONNECTION_TIMEOUT || 30000),
+        requestTimeout: Number(process.env.MSSQL_REQUEST_TIMEOUT || 120000),
         options: {
             encrypt: parseBoolean(values.encrypt, true),
             trustServerCertificate: parseBoolean(values.trustservercertificate, false)

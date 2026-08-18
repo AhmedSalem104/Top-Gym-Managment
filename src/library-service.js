@@ -71,10 +71,16 @@ function parseArray(value, field, { object = false, maxItems = 100 } = {}) {
 }
 
 function parseSecondaryMuscles(value) {
-    return parseArray(value, 'العضلات الثانوية', { object: true, maxItems: 30 }).map((item) => ({
-        muscleId: ensureId(item.muscleId ?? item.muscle_id, 'معرّف العضلة الثانوية'),
-        contributionPercent: numberValue(item.contributionPercent ?? item.contribution_percent ?? 0, 'نسبة مساهمة العضلة', { min: 0, max: 100 })
-    }));
+    return parseArray(value, 'العضلات الثانوية', { object: true, maxItems: 30 }).map((item) => {
+        const rawContribution = item.contributionPercent ?? item.contribution_percent;
+        return {
+            muscleId: ensureId(item.muscleId ?? item.muscle_id, 'معرّف العضلة الثانوية'),
+            contributionPercent: rawContribution === undefined || rawContribution === null || rawContribution === ''
+                ? null
+                : numberValue(rawContribution, 'نسبة مساهمة العضلة', { min: 0, max: 100 }),
+            role: item.role === 'primary' ? 'primary' : 'secondary'
+        };
+    });
 }
 
 function jsonValue(value, fallback = {}) {
@@ -88,6 +94,22 @@ function jsonValue(value, fallback = {}) {
 function parseStoredJson(value, fallback) {
     if (!value) return fallback;
     try { return JSON.parse(value); } catch (_) { return fallback; }
+}
+
+function mapSecondaryMuscleDetails(value) {
+    return parseStoredJson(value, []).map((detail) => {
+        const rawMuscleId = detail.muscleId ?? detail.muscle_id;
+        const rawSourceId = detail.sourceId ?? detail.source_id;
+        const rawContribution = detail.contributionPercent ?? detail.contribution_percent;
+        return {
+            muscleId: rawMuscleId == null ? null : Number(rawMuscleId),
+            id: detail.id == null ? null : Number(detail.id),
+            sourceId: rawSourceId == null ? null : Number(rawSourceId),
+            name: detail.name || null,
+            nameAr: detail.nameAr ?? detail.name_ar ?? null,
+            contributionPercent: rawContribution == null ? null : Number(rawContribution)
+        };
+    });
 }
 
 function isoDateTime(value) {
@@ -146,6 +168,7 @@ function mapExercise(row) {
         targetMuscleName: row.target_muscle_name || null,
         targetMuscleNameAr: row.target_muscle_name_ar || null,
         secondaryMuscles: parseStoredJson(row.secondary_muscles_json, []),
+        secondaryMuscleDetails: mapSecondaryMuscleDetails(row.secondary_muscle_details_json),
         equipment: row.equipment,
         isHighImpact: Boolean(row.is_high_impact),
         difficulty: row.difficulty,
@@ -719,9 +742,29 @@ function listQuery(type, filters, { includeLegacy = false } = {}) {
                         e.tips_json, e.tips_ar_json, e.common_mistakes_json, e.common_mistakes_ar_json,
                         e.reps_range, e.sets_range, e.rest_seconds, e.tempo, e.icon, e.video_url,
                         e.metadata_json, e.created_at, e.updated_at,
-                        m.name AS target_muscle_name, m.name_ar AS target_muscle_name_ar
+                        m.name AS target_muscle_name, m.name_ar AS target_muscle_name_ar,
+                        secondary_details.secondary_muscle_details_json
                  FROM dbo.gym_exercises AS e
-                 LEFT JOIN dbo.gym_muscles AS m ON m.id = e.target_muscle_id`,
+                 LEFT JOIN dbo.gym_muscles AS m ON m.id = e.target_muscle_id
+                 OUTER APPLY (
+                     SELECT (
+                         SELECT TRY_CONVERT(INT, parsed.muscle_source_id) AS muscleId,
+                                secondary_muscle.id AS id,
+                                secondary_muscle.source_id AS sourceId,
+                                secondary_muscle.name AS name,
+                                secondary_muscle.name_ar AS nameAr,
+                                TRY_CONVERT(DECIMAL(12, 3), parsed.contribution_percent) AS contributionPercent
+                         FROM OPENJSON(CASE WHEN ISJSON(e.secondary_muscles_json) = 1 THEN e.secondary_muscles_json ELSE N'[]' END) AS secondary
+                         CROSS APPLY (VALUES (
+                             COALESCE(JSON_VALUE(secondary.[value], '$.muscleId'), JSON_VALUE(secondary.[value], '$.muscle_id')),
+                             COALESCE(JSON_VALUE(secondary.[value], '$.contributionPercent'), JSON_VALUE(secondary.[value], '$.contribution_percent'))
+                         )) AS parsed(muscle_source_id, contribution_percent)
+                         LEFT JOIN dbo.gym_muscles AS secondary_muscle
+                           ON secondary_muscle.source_id = TRY_CONVERT(INT, parsed.muscle_source_id)
+                         WHERE TRY_CONVERT(INT, parsed.muscle_source_id) IS NOT NULL
+                         FOR JSON PATH
+                     ) AS secondary_muscle_details_json
+                 ) AS secondary_details`,
         order: 'ORDER BY COALESCE(e.name_ar, e.name), e.name, e.id'
     };
 }

@@ -17,7 +17,12 @@
         abortController: null,
         searchTimer: null,
         lastLoadedKey: '',
-        lastLoadedAt: 0
+        lastLoadedAt: 0,
+        muscleCatalog: null,
+        muscleCatalogPromise: null,
+        detailsItem: null,
+        detailsType: null,
+        detailsRequestId: 0
     };
 
     const META = {
@@ -38,7 +43,30 @@
 
     function safeArray(value) { return Array.isArray(value) ? value : []; }
     function lineText(value) { return safeArray(value).filter(Boolean).join('\n'); }
-    function itemName(item) { return item?.nameAr || item?.name || item?.nameEn || 'عنصر بدون اسم'; }
+    function nonEmptyValue(...values) {
+        return values.find((value) => value !== undefined && value !== null && String(value).trim() !== '') ?? '';
+    }
+    function itemNames(item) {
+        return {
+            arabic: nonEmptyValue(item?.nameAr, item?.name_ar),
+            english: nonEmptyValue(item?.nameEn, item?.name, item?.name_en)
+        };
+    }
+    function itemName(item) {
+        const names = itemNames(item);
+        return names.arabic || names.english || 'عنصر بدون اسم';
+    }
+    function contentLines(value) {
+        if (Array.isArray(value)) {
+            return value.flatMap((entry) => {
+                if (entry === undefined || entry === null) return [];
+                if (typeof entry === 'string' || typeof entry === 'number') return String(entry).trim() ? [String(entry).trim()] : [];
+                const text = nonEmptyValue(entry.text, entry.value, entry.instruction, entry.description, entry.step);
+                return text ? [String(text).trim()] : [];
+            });
+        }
+        return typeof value === 'string' ? value.split(/\r?\n/).map((line) => line.trim()).filter(Boolean) : [];
+    }
 
     function exerciseImage(item, phase = 'main', options = {}) {
         if (window.TopGymExerciseAssets?.imageMarkup) return window.TopGymExerciseAssets.imageMarkup(item, phase, options);
@@ -46,10 +74,12 @@
     }
 
     function exerciseGallery(item) {
-        const match = window.TopGymExerciseAssets?.find(item);
-        const start = `<figure>${exerciseImage(item, 'start', { className: 'exercise-media-detail', alt: `${itemName(item)} - وضع البداية`, loading: 'eager' })}<figcaption>وضع البداية</figcaption></figure>`;
+        const match = window.TopGymExerciseAssets?.find(item) || item;
+        const names = itemNames(item);
+        const altName = names.arabic || names.english || 'التمرين';
+        const start = `<figure>${exerciseImage(item, 'start', { className: 'exercise-media-detail', alt: `${altName} - وضع البداية`, loading: 'eager' })}<figcaption>وضع البداية</figcaption></figure>`;
         const end = match?.imageAssets?.end
-            ? `<figure>${exerciseImage(item, 'end', { className: 'exercise-media-detail', alt: `${itemName(item)} - وضع النهاية`, loading: 'lazy' })}<figcaption>وضع النهاية</figcaption></figure>`
+            ? `<figure>${exerciseImage(item, 'end', { className: 'exercise-media-detail', alt: `${altName} - وضع النهاية`, loading: 'lazy' })}<figcaption>وضع النهاية</figcaption></figure>`
             : '';
         return `${start}${end}`;
     }
@@ -271,7 +301,13 @@
             return;
         }
         const muscles = (state.options?.filters?.muscles || []).map((muscle) => ({ value: muscle.id, label: muscle.nameAr || muscle.name }));
-        const secondary = safeArray(item.secondaryMuscles).map((entry) => `${entry.muscleId}, ${entry.contributionPercent}`).join('\n');
+        const secondary = safeArray(item.secondaryMuscles).map((entry) => {
+            const muscleId = entry?.muscleId ?? entry?.muscle_id ?? entry;
+            const contribution = entry?.contributionPercent ?? entry?.contribution_percent;
+            return contribution === undefined || contribution === null || contribution === ''
+                ? String(muscleId)
+                : `${muscleId}, ${contribution}`;
+        }).join('\n');
         fields.innerHTML = `<div class="library-form-grid"><div class="library-form-section-title">بيانات التمرين</div>${field('nameAr', 'اسم التمرين بالعربية', formValue(item, 'nameAr'), 'text', { required: true })}${field('name', 'الاسم بالإنجليزية', formValue(item, 'name'), 'text', { required: true })}${selectField('targetMuscleId', 'العضلة المستهدفة', formValue(item, 'targetMuscleId'), muscles, 'اختر العضلة')}${field('equipment', 'الأداة', formValue(item, 'equipment'))}${field('difficulty', 'المستوى', formValue(item, 'difficulty'))}${field('category', 'التصنيف', formValue(item, 'category'))}${field('movementPattern', 'نمط الحركة', formValue(item, 'movementPattern'))}${field('mechanic', 'الميكانيكية', formValue(item, 'mechanic'))}${field('force', 'نوع القوة', formValue(item, 'force'))}${field('icon', 'الأيقونة', formValue(item, 'icon'), 'text', { placeholder: '🏋️' })}${field('repsRange', 'مدى التكرارات', formValue(item, 'repsRange'), 'text', { placeholder: '8-12' })}${field('setsRange', 'مدى المجموعات', formValue(item, 'setsRange'), 'text', { placeholder: '3-4' })}${field('restSeconds', 'الراحة بالثواني', formValue(item, 'restSeconds'), 'number', { min: 0, step: 1 })}${field('tempo', 'الإيقاع', formValue(item, 'tempo'), 'text', { placeholder: '3-1-2-0' })}<div class="library-field checkbox"><input id="libraryField_isHighImpact" data-library-field="isHighImpact" type="checkbox"${item.isHighImpact ? ' checked' : ''}><label for="libraryField_isHighImpact">تمرين عالي المجهود</label></div>${field('videoUrl', 'رابط الفيديو', formValue(item, 'videoUrl'), 'url', { full: true })}${textareaField('descriptionAr', 'الوصف بالعربية', formValue(item, 'descriptionAr'), { full: true })}${textareaField('description', 'الوصف بالإنجليزية', formValue(item, 'description'), { full: true })}<div class="library-form-section-title">المحتوى التدريبي — اكتب كل نقطة في سطر</div>${textareaField('secondaryMuscles', 'العضلات الثانوية', secondary, { placeholder: 'رقم العضلة، نسبة المساهمة مثل: 35, 25' })}${textareaField('instructionsAr', 'التعليمات بالعربية', lineText(item.instructionsAr))}${textareaField('instructions', 'التعليمات بالإنجليزية', lineText(item.instructions))}${textareaField('tipsAr', 'النصائح بالعربية', lineText(item.tipsAr))}${textareaField('tips', 'النصائح بالإنجليزية', lineText(item.tips))}${textareaField('commonMistakesAr', 'الأخطاء الشائعة بالعربية', lineText(item.commonMistakesAr))}${textareaField('commonMistakes', 'الأخطاء الشائعة بالإنجليزية', lineText(item.commonMistakes))}</div>`;
     }
 
@@ -306,8 +342,10 @@
         return value.split(/\r?\n/).filter(Boolean).map((line) => {
             const parts = line.split(/[,،]/).map((part) => part.trim());
             const muscleId = Number(parts[0]);
-            const contributionPercent = Number(parts[1] || 0);
-            if (!Number.isInteger(muscleId) || muscleId < 1 || !Number.isFinite(contributionPercent)) throw new Error('صيغة العضلات الثانوية: رقم العضلة، النسبة.');
+            const contributionPercent = parts[1] === undefined || parts[1] === '' || parts[1].toLowerCase() === 'null'
+                ? null
+                : Number(parts[1]);
+            if (!Number.isInteger(muscleId) || muscleId < 1 || (contributionPercent !== null && !Number.isFinite(contributionPercent))) throw new Error('صيغة العضلات الثانوية: رقم العضلة، النسبة.');
             return { muscleId, contributionPercent };
         });
     }
@@ -323,37 +361,192 @@
         return { nameAr: readField(form, 'nameAr'), name: readField(form, 'name'), targetMuscleId: readField(form, 'targetMuscleId') || null, secondaryMuscles: readSecondary(form), equipment: readField(form, 'equipment'), isHighImpact: Boolean(form.querySelector('[data-library-field="isHighImpact"]')?.checked), difficulty: readField(form, 'difficulty'), category: readField(form, 'category'), movementPattern: readField(form, 'movementPattern'), mechanic: readField(form, 'mechanic'), force: readField(form, 'force'), icon: readField(form, 'icon'), repsRange: readField(form, 'repsRange'), setsRange: readField(form, 'setsRange'), restSeconds: readField(form, 'restSeconds') === '' ? null : Number(readField(form, 'restSeconds')), tempo: readField(form, 'tempo'), videoUrl: readField(form, 'videoUrl'), descriptionAr: readField(form, 'descriptionAr'), description: readField(form, 'description'), instructionsAr: readLines(form, 'instructionsAr'), instructions: readLines(form, 'instructions'), tipsAr: readLines(form, 'tipsAr'), tips: readLines(form, 'tips'), commonMistakesAr: readLines(form, 'commonMistakesAr'), commonMistakes: readLines(form, 'commonMistakes') };
     }
 
+    function normalizeMuscleEntry(entry) {
+        if (!entry) return null;
+        const source = typeof entry === 'object' ? entry : { id: entry };
+        const id = nonEmptyValue(source.id, source.muscleId, source.muscle_id);
+        const sourceId = nonEmptyValue(source.sourceId, source.source_id, source.muscleSourceId, source.muscle_source_id);
+        const nameAr = nonEmptyValue(source.nameAr, source.name_ar, source.muscleNameAr, source.muscle_name_ar);
+        const nameEn = nonEmptyValue(source.name, source.nameEn, source.name_en, source.muscleName, source.muscle_name);
+        if (!id && !sourceId && !nameAr && !nameEn) return null;
+        return { id, sourceId, nameAr, nameEn };
+    }
+
+    function buildMuscleCatalog() {
+        const entries = [];
+        const seen = new Set();
+        const add = (entry) => {
+            const normalized = normalizeMuscleEntry(entry);
+            if (!normalized) return;
+            const key = [normalized.id, normalized.sourceId, normalized.nameAr, normalized.nameEn].join('|');
+            if (seen.has(key)) return;
+            seen.add(key);
+            entries.push(normalized);
+        };
+        safeArray(state.options?.filters?.muscles).forEach(add);
+        safeArray(state.muscleCatalog).forEach(add);
+        return entries;
+    }
+
+    async function loadMuscleCatalog() {
+        if (state.muscleCatalog) return state.muscleCatalog;
+        if (state.muscleCatalogPromise) return state.muscleCatalogPromise;
+        const optionFallback = safeArray(state.options?.filters?.muscles).map(normalizeMuscleEntry).filter(Boolean);
+        state.muscleCatalogPromise = (async () => {
+            const firstPage = await requestJson('/api/library/muscles?page=1&pageSize=100');
+            const totalPages = Math.max(1, Number(firstPage?.pagination?.totalPages || 1));
+            const remainingPages = totalPages > 1
+                ? await Promise.all(Array.from({ length: totalPages - 1 }, (_, index) => requestJson(`/api/library/muscles?page=${index + 2}&pageSize=100`)))
+                : [];
+            state.muscleCatalog = [
+                ...optionFallback,
+                ...safeArray(firstPage?.items),
+                ...remainingPages.flatMap((page) => safeArray(page?.items))
+            ];
+            return state.muscleCatalog;
+        })().catch((error) => {
+            state.muscleCatalog = optionFallback;
+            throw error;
+        }).finally(() => {
+            state.muscleCatalogPromise = null;
+        });
+        return state.muscleCatalogPromise;
+    }
+
+    function resolveMuscle(reference, explicitNameAr = '', explicitNameEn = '') {
+        const source = reference && typeof reference === 'object' ? reference : {};
+        const sourceCandidates = [source.sourceId, source.source_id].filter((value) => value !== undefined && value !== null && value !== '');
+        // Older API payloads expose the catalog/source muscle number only as
+        // `muscleId`. Treat it as a DB id fallback as well; when both values
+        // exist, the explicit source-id match still wins below.
+        const idCandidates = [source.id, source.dbId, source.db_id, source.sourceId, source.source_id]
+            .filter((value) => value !== undefined && value !== null && value !== '');
+        if (!sourceCandidates.length && !idCandidates.length && reference !== undefined && reference !== null && reference !== '' && typeof reference !== 'object') sourceCandidates.push(reference);
+        const catalog = buildMuscleCatalog();
+        const matchBySource = catalog.find((entry) => sourceCandidates.some((candidate) => entry.sourceId !== '' && String(entry.sourceId) === String(candidate)));
+        const matchById = catalog.find((entry) => idCandidates.some((candidate) => entry.id !== '' && String(entry.id) === String(candidate)));
+        const match = matchBySource || matchById;
+        const nameAr = nonEmptyValue(explicitNameAr, source.nameAr, source.name_ar, source.muscleNameAr, source.muscle_name_ar, match?.nameAr);
+        const nameEn = nonEmptyValue(explicitNameEn, source.name, source.nameEn, source.name_en, source.muscleName, source.muscle_name, match?.nameEn);
+        return { nameAr, nameEn, matched: Boolean(match || nameAr || nameEn) };
+    }
+
+    function bilingualName(nameAr, nameEn, fallback = 'غير محددة') {
+        const arabic = String(nameAr || '').trim();
+        const english = String(nameEn || '').trim();
+        if (arabic && english && arabic.toLocaleLowerCase() !== english.toLocaleLowerCase()) return `${arabic} · ${english}`;
+        return arabic || english || fallback;
+    }
+
+    function contributionText(entry) {
+        const raw = nonEmptyValue(entry?.contributionPercent, entry?.contribution, entry?.percentage);
+        const percentage = Number(raw);
+        return Number.isFinite(percentage) && percentage > 0 ? ` — ${formatNumber(percentage, 1)}%` : '';
+    }
+
+    function secondaryMuscleLabels(item) {
+        const entries = safeArray(item?.secondaryMuscleDetails).length
+            ? item.secondaryMuscleDetails
+            : safeArray(item?.secondaryMuscles);
+        return entries.map((entry) => {
+            const source = entry && typeof entry === 'object' ? entry : { sourceId: entry };
+            const reference = source.id || source.dbId || source.db_id
+                ? source
+                : { ...source, sourceId: nonEmptyValue(source.sourceId, source.source_id, source.muscleId, source.muscle_id) };
+            const resolved = resolveMuscle(reference,
+                nonEmptyValue(source.nameAr, source.name_ar),
+                nonEmptyValue(source.name, source.nameEn, source.name_en));
+            return `${bilingualName(resolved.nameAr, resolved.nameEn, 'عضلة غير محددة')}${contributionText(entry)}`;
+        }).filter(Boolean);
+    }
+
+    const EXERCISE_VALUE_LABELS = {
+        difficulty: { beginner: 'مبتدئ', intermediate: 'متوسط', advanced: 'متقدم', expert: 'خبير' },
+        equipment: { 'body only': 'وزن الجسم', barbell: 'بار', dumbbell: 'دامبل', cable: 'كابل', kettlebells: 'كيتل بيل', machine: 'جهاز', bands: 'أشرطة مقاومة', 'e-z curl bar': 'بار EZ', other: 'أخرى' },
+        category: { strength: 'قوة', stretching: 'إطالة', plyometrics: 'تمارين انفجارية', cardio: 'كارديو', powerlifting: 'باور ليفتنج', olympic: 'أولمبي', strongman: 'سترونجمان' }
+    };
+
+    function exerciseValue(value, type) {
+        const raw = String(value || '').trim();
+        if (!raw) return 'غير محدد';
+        const translated = EXERCISE_VALUE_LABELS[type]?.[raw.toLowerCase()];
+        return translated && translated.toLocaleLowerCase() !== raw.toLocaleLowerCase() ? `${translated} · ${raw}` : translated || raw;
+    }
+
     function detailItem(label, value, full = false) {
-        return `<div class="library-detail-item${full ? ' full' : ''}"><span>${label}</span><strong>${escapeHtml(value || '—')}</strong></div>`;
+        const displayValue = value === 0 ? '0' : nonEmptyValue(value, 'غير متوفر في بيانات المصدر');
+        return `<div class="library-detail-item${full ? ' full' : ''}"><span>${escapeHtml(label)}</span><strong>${escapeHtml(displayValue)}</strong></div>`;
     }
 
-    function detailList(label, values) {
-        const list = safeArray(values);
-        return `<div class="library-detail-item full"><span>${label}</span>${list.length ? `<ol class="library-detail-list">${list.map((value) => `<li>${escapeHtml(value)}</li>`).join('')}</ol>` : '<strong>لا توجد بيانات</strong>'}</div>`;
+    function detailList(label, values, fallback = 'غير متوفر في بيانات المصدر') {
+        const list = contentLines(values);
+        return `<div class="library-detail-item full"><span>${escapeHtml(label)}</span>${list.length ? `<ol class="library-detail-list">${list.map((value) => `<li>${escapeHtml(value)}</li>`).join('')}</ol>` : `<strong>${escapeHtml(fallback)}</strong>`}</div>`;
     }
 
-    function showDetails(item) {
-        const type = state.activeType;
+    function renderDetailsContent(type, item) {
         const content = $('libraryDetailsContent');
-        if (!content) return;
+        if (!content || !item) return;
+        const names = itemNames(item);
         $('libraryDetailsTitle').textContent = `تفاصيل ${META[type].singular}`;
         $('libraryDetailsSubtitle').textContent = `${itemName(item)} · رقم ${item.id}`;
         if (type === 'muscles') {
-            content.innerHTML = `<div class="library-detail-hero"><span class="library-detail-hero-icon">${escapeHtml(item.icon || '💪')}</span><div><h4>${escapeHtml(itemName(item))}</h4><p>${escapeHtml(item.name || '')}</p></div></div><div class="library-detail-grid">${detailItem('منطقة الجسم', item.bodyPart)}${detailItem('المعرّف المصدر', item.sourceId)}${detailItem('الوصف بالعربية', item.descriptionAr, true)}${detailItem('الوصف بالإنجليزية', item.description, true)}</div>`;
+            content.innerHTML = `<div class="library-detail-hero"><span class="library-detail-hero-icon">${escapeHtml(item.icon || '💪')}</span><div><h4>${escapeHtml(itemName(item))}</h4><p>${escapeHtml(names.english || 'الاسم الإنجليزي غير متاح')}</p></div></div><div class="library-detail-grid">${detailItem('الاسم بالعربية', names.arabic || 'الاسم العربي غير متاح')}${detailItem('الاسم بالإنجليزية', names.english || 'الاسم الإنجليزي غير متاح')}${detailItem('منطقة الجسم', item.bodyPart)}${detailItem('المعرّف المصدر', item.sourceId)}${detailItem('الوصف بالعربية', item.descriptionAr, true)}${detailItem('الوصف بالإنجليزية', item.description, true)}</div>`;
         } else if (type === 'foods') {
-            content.innerHTML = `<div class="library-detail-hero"><span class="library-detail-hero-icon">🥗</span><div><h4>${escapeHtml(itemName(item))}</h4><p>${escapeHtml(item.nameEn || '')}</p></div></div><div class="library-detail-grid">${detailItem('التصنيف', item.category)}${detailItem('الحصة', `${formatNumber(item.servingSize, 1)} ${item.servingUnit || ''}`)}${detailItem('السعرات', formatNumber(item.calories, 1))}${detailItem('البروتين', `${formatNumber(item.protein, 1)} g`)}${detailItem('الكربوهيدرات', `${formatNumber(item.carbs, 1)} g`)}${detailItem('الدهون', `${formatNumber(item.fat, 1)} g`)}${detailItem('الألياف', `${formatNumber(item.fiber, 1)} g`)}${detailItem('السكريات', `${formatNumber(item.sugar, 1)} g`)}${detailItem('الصوديوم', `${formatNumber(item.sodium, 1)} mg`)}</div>`;
+            content.innerHTML = `<div class="library-detail-hero"><span class="library-detail-hero-icon">🥗</span><div><h4>${escapeHtml(itemName(item))}</h4><p>${escapeHtml(names.english || 'الاسم الإنجليزي غير متاح')}</p></div></div><div class="library-detail-grid">${detailItem('الاسم بالعربية', names.arabic || 'الاسم العربي غير متاح')}${detailItem('الاسم بالإنجليزية', names.english || 'الاسم الإنجليزي غير متاح')}${detailItem('التصنيف', item.category)}${detailItem('الحصة', `${formatNumber(item.servingSize, 1)} ${item.servingUnit || ''}`)}${detailItem('السعرات', formatNumber(item.calories, 1))}${detailItem('البروتين', `${formatNumber(item.protein, 1)} g`)}${detailItem('الكربوهيدرات', `${formatNumber(item.carbs, 1)} g`)}${detailItem('الدهون', `${formatNumber(item.fat, 1)} g`)}${detailItem('الألياف', `${formatNumber(item.fiber, 1)} g`)}${detailItem('السكريات', `${formatNumber(item.sugar, 1)} g`)}${detailItem('الصوديوم', `${formatNumber(item.sodium, 1)} mg`)}</div>`;
         } else {
-            const target = item.targetMuscleNameAr || item.targetMuscleName || 'غير محددة';
-            const secondary = safeArray(item.secondaryMuscles).map((entry) => `العضلة ${entry.muscleId} — ${entry.contributionPercent}%`);
-            content.innerHTML = `<div class="library-detail-hero"><span class="library-detail-hero-icon">${escapeHtml(item.icon || '🏋️')}</span><div><h4>${escapeHtml(itemName(item))}</h4><p>${escapeHtml(item.name || '')}</p></div></div><div class="library-detail-grid">${detailItem('العضلة المستهدفة', target)}${detailItem('المستوى', item.difficulty)}${detailItem('التصنيف', item.category)}${detailItem('الأداة', item.equipment)}${detailItem('نمط الحركة', item.movementPattern)}${detailItem('الميكانيكية', item.mechanic)}${detailItem('نوع القوة', item.force)}${detailItem('مدى التكرارات', item.repsRange)}${detailItem('مدى المجموعات', item.setsRange)}${detailItem('الراحة', item.restSeconds == null ? '—' : `${item.restSeconds} ثانية`)}${detailItem('التمرين عالي المجهود', item.isHighImpact ? 'نعم' : 'لا')}${detailItem('رابط الفيديو', item.videoUrl, true)}${detailItem('الوصف بالعربية', item.descriptionAr, true)}${detailItem('الوصف بالإنجليزية', item.description, true)}${detailList('العضلات الثانوية', secondary)}${detailList('التعليمات بالعربية', item.instructionsAr)}${detailList('التعليمات بالإنجليزية', item.instructions)}${detailList('النصائح بالعربية', item.tipsAr)}${detailList('النصائح بالإنجليزية', item.tips)}${detailList('الأخطاء الشائعة بالعربية', item.commonMistakesAr)}${detailList('الأخطاء الشائعة بالإنجليزية', item.commonMistakes)}</div>`;
-        }
-        if (type === 'exercises') {
+            const primary = resolveMuscle(item.targetMuscleId, item.targetMuscleNameAr, item.targetMuscleName);
+            const primaryLabel = bilingualName(primary.nameAr, primary.nameEn, 'العضلة الأساسية غير محددة');
+            const secondary = secondaryMuscleLabels(item);
+            const details = [
+                detailItem('الاسم بالعربية', names.arabic || 'الاسم العربي غير متاح', true),
+                detailItem('الاسم بالإنجليزية', names.english || 'الاسم الإنجليزي غير متاح', true),
+                detailItem('العضلة الأساسية', primaryLabel),
+                detailItem('المستوى', exerciseValue(item.difficulty, 'difficulty')),
+                detailItem('التصنيف', exerciseValue(item.category, 'category')),
+                detailItem('الأداة', exerciseValue(item.equipment, 'equipment')),
+                detailItem('نمط الحركة', item.movementPattern),
+                detailItem('الميكانيكية', item.mechanic),
+                detailItem('نوع القوة', item.force),
+                detailItem('مدى التكرارات', item.repsRange),
+                detailItem('مدى المجموعات', item.setsRange),
+                detailItem('الراحة', item.restSeconds == null ? 'غير محددة' : `${item.restSeconds} ثانية`),
+                detailItem('التمرين عالي المجهود', item.isHighImpact ? 'نعم' : 'لا'),
+                detailItem('رابط الفيديو', item.videoUrl, true),
+                detailItem('الوصف بالعربية', item.descriptionAr, true),
+                detailItem('الوصف بالإنجليزية', item.description, true),
+                detailList('العضلات الثانوية', secondary, 'لم تُسجل عضلات ثانوية في بيانات التمرين'),
+                detailList('التعليمات بالعربية', item.instructionsAr, 'الخطوات العربية غير متاحة في بيانات المصدر'),
+                detailList('التعليمات بالإنجليزية', item.instructions, 'الخطوات الإنجليزية غير متاحة في بيانات المصدر'),
+                detailList('النصائح بالعربية', item.tipsAr, 'النصائح العربية غير متاحة في بيانات المصدر'),
+                detailList('النصائح بالإنجليزية', item.tips, 'النصائح الإنجليزية غير متاحة في بيانات المصدر'),
+                detailList('الأخطاء الشائعة بالعربية', item.commonMistakesAr, 'الأخطاء الشائعة بالعربية غير متاحة في بيانات المصدر'),
+                detailList('الأخطاء الشائعة بالإنجليزية', item.commonMistakes, 'الأخطاء الشائعة بالإنجليزية غير متاحة في بيانات المصدر')
+            ];
+            content.innerHTML = `<div class="library-detail-hero"><span class="library-detail-hero-icon">${escapeHtml(item.icon || '🏋️')}</span><div><h4>${escapeHtml(names.arabic || names.english || 'تمرين بدون اسم')}</h4><p>${escapeHtml(names.english || 'الاسم الإنجليزي غير متاح')}</p></div></div><div class="library-detail-grid">${details.join('')}</div>`;
             const hero = content.querySelector('.library-detail-hero');
             const heroIcon = hero?.querySelector('.library-detail-hero-icon');
             if (heroIcon) heroIcon.outerHTML = `<div class="exercise-detail-gallery exercise-media-gallery">${exerciseGallery(item)}</div>`;
         }
         window.TopGymExerciseAssets?.hydrate(content);
+    }
+
+    async function showDetails(item) {
+        const type = state.activeType;
+        const content = $('libraryDetailsContent');
+        if (!content) return;
+        const requestId = ++state.detailsRequestId;
+        state.detailsItem = item;
+        state.detailsType = type;
+        renderDetailsContent(type, item);
         openDialog($('libraryDetailsDialog'));
+        if (type !== 'exercises') return;
+        const [latestResult] = await Promise.allSettled([
+            requestJson(`/api/library/exercises/${encodeURIComponent(item.id)}`),
+            loadMuscleCatalog()
+        ]);
+        if (requestId !== state.detailsRequestId || state.detailsType !== type) return;
+        if (latestResult.status === 'fulfilled' && latestResult.value?.item) state.detailsItem = latestResult.value.item;
+        renderDetailsContent(type, state.detailsItem);
     }
 
     async function confirmDelete(item) {
@@ -404,7 +597,7 @@
         if (!button) return;
         const item = state.items.find((entry) => String(entry.id) === String(button.dataset.id));
         if (!item) return;
-        if (button.dataset.libraryAction === 'details') showDetails(item);
+        if (button.dataset.libraryAction === 'details') await showDetails(item);
         if (button.dataset.libraryAction === 'edit') openForm(item);
         if (button.dataset.libraryAction === 'delete') await deleteItem(item);
     }
