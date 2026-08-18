@@ -129,6 +129,14 @@ body {
 .print-system-table th:nth-child(7), .print-system-table td:nth-child(7) { width: 15%; }
 .print-system-table th:nth-child(8), .print-system-table td:nth-child(8) { width: 9%; }
 .print-system-table .print-table-main { font-size: 8px; }
+.print-exercise-cell { display: flex; align-items: center; gap: 5px; min-width: 0; }
+.print-exercise-thumb { display: inline-flex; flex: 0 0 30px; width: 30px; height: 20px; object-fit: cover; border: 1px solid #dbeafe; border-radius: 4px; background: #f8fafc; color: #64748b; align-items: center; justify-content: center; overflow: hidden; font-size: 11px; }
+.print-exercise-cell > span { min-width: 0; }
+.print-exercise-fallback { font-size: 10px; }
+.print-exercise-gallery { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin: 6px 0; }
+.print-exercise-gallery figure { margin: 0; min-width: 0; text-align: center; }
+.print-exercise-detail-image { display: block; width: 100%; height: 48px; object-fit: cover; border: 1px solid #dbeafe; border-radius: 5px; background: #f8fafc; }
+.print-exercise-gallery figcaption { margin-top: 2px; color: #64748b; font-size: 7px; }
 .print-system-reference-section { break-inside: auto; }
 .print-system-reference-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
 .print-system-reference { min-width: 0; padding: 9px 10px; border: 1px solid #dbeafe; border-radius: 9px; background: #fbfdff; break-inside: avoid; }

@@ -24,6 +24,10 @@ SOURCE_REVISION = "b0eed061e1c832b3ed815fbaa4b45b3cdc14df49"
 SOURCE_LICENSE = "Unlicense (as declared by the upstream repository)"
 SOURCE_COMMIT_URL = f"https://github.com/{SOURCE_REPOSITORY}/tree/{SOURCE_REVISION}"
 TARGET_SIZE = (720, 480)
+# The SQL library previously derived source_id from the position in the
+# 265-item project seed.  Canonical upstream records use a separate namespace
+# so an additive sync can never overwrite an old row by position.
+CATALOG_SOURCE_ID_OFFSET = 100000
 
 
 def normalize(value: Any) -> str:
@@ -122,7 +126,9 @@ def muscle_id(muscle_name: Any, index: dict[str, int]) -> int | None:
     return index.get(normalize(muscle_name))
 
 
-def project_style_record(record: dict[str, Any], muscle_index: dict[str, int]) -> dict[str, Any]:
+def project_style_record(
+    record: dict[str, Any], muscle_index: dict[str, int], catalog_source_id: int
+) -> dict[str, Any]:
     primary = (record.get("primaryMuscles") or [None])[0]
     secondary = []
     for name in record.get("secondaryMuscles") or []:
@@ -130,6 +136,8 @@ def project_style_record(record: dict[str, Any], muscle_index: dict[str, int]) -
         if resolved:
             secondary.append({"muscleId": resolved, "contributionPercent": 0})
     return {
+        "sourceId": catalog_source_id,
+        "catalogVersion": 1,
         "name": record.get("name"),
         "nameAr": None,
         "description": None,
@@ -254,7 +262,10 @@ def main() -> None:
     records = build_upstream_records(source_root, assets_root, upstream)
     links = make_project_links(current, records, aliases)
     muscle_index = build_muscle_index(muscles)
-    project_style_records = [project_style_record(record, muscle_index) for record in records]
+    project_style_records = [
+        project_style_record(record, muscle_index, CATALOG_SOURCE_ID_OFFSET + index)
+        for index, record in enumerate(records, start=1)
+    ]
     counts: dict[str, int] = {}
     for link in links:
         counts[link["status"]] = counts.get(link["status"], 0) + 1
@@ -269,6 +280,7 @@ def main() -> None:
         "imageFormat": "webp",
         "imageSize": {"width": TARGET_SIZE[0], "height": TARGET_SIZE[1]},
         "imagePhases": {"main": "start", "start": "start", "end": "end"},
+        "catalogSourceIdOffset": CATALOG_SOURCE_ID_OFFSET,
     }
 
     # Keep the archive as a plain array, exactly like data/library/exercises.json.
@@ -277,6 +289,7 @@ def main() -> None:
     dataset_payload = project_style_records
     manifest_records = [
         {
+            "catalogSourceId": CATALOG_SOURCE_ID_OFFSET + index,
             "upstreamId": record["id"],
             "slug": record["slug"],
             "nameEn": record["name"],
@@ -288,10 +301,10 @@ def main() -> None:
             "imageAssets": record["imageAssets"],
             "imageAudit": record["imageAudit"],
         }
-        for record in records
+        for index, record in enumerate(records, start=1)
     ]
     manifest_payload = {
-        "manifestVersion": 1,
+        "manifestVersion": 2,
         "source": source_meta,
         "counts": {
             "datasetExercises": len(records),

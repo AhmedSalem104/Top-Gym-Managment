@@ -4,6 +4,8 @@ const { getPool, sql } = require('./db');
 
 const DATA_DIRECTORY = path.join(__dirname, '..', 'data', 'library');
 const LIBRARY_TYPES = new Set(['muscles', 'foods', 'exercises']);
+const EXERCISE_CATALOG_SOURCE_ID_OFFSET = 100000;
+const CANONICAL_EXERCISE_COUNT = 873;
 let libraryTablesPromise;
 let librarySeedPromise;
 
@@ -132,6 +134,7 @@ function mapFood(row) {
 
 function mapExercise(row) {
     if (!row) return null;
+    const metadata = parseStoredJson(row.metadata_json, {});
     return {
         id: Number(row.id),
         sourceId: row.source_id == null ? null : Number(row.source_id),
@@ -162,7 +165,14 @@ function mapExercise(row) {
         tempo: row.tempo,
         icon: row.icon,
         videoUrl: row.video_url,
-        metadata: parseStoredJson(row.metadata_json, {}),
+        upstreamId: metadata.upstreamId || null,
+        slug: metadata.slug || null,
+        catalogStatus: metadata.catalogStatus || null,
+        catalogSourceId: metadata.sourceId == null ? null : Number(metadata.sourceId),
+        sourceImagePaths: metadata.sourceImagePaths || [],
+        imageAssets: metadata.imageAssets || null,
+        imageAudit: metadata.imageAudit || null,
+        metadata,
         createdAt: isoDateTime(row.created_at),
         updatedAt: isoDateTime(row.updated_at)
     };
@@ -346,7 +356,7 @@ async function seedLibraryIfEmpty() {
                  movement_pattern, mechanic, force, instructions_json, instructions_ar_json,
                  tips_json, tips_ar_json, common_mistakes_json, common_mistakes_ar_json,
                  reps_range, sets_range, rest_seconds, tempo, icon, video_url, metadata_json)
-            SELECT TRY_CONVERT(INT, item.[key]) + 1, data.name, data.nameAr, data.description, data.descriptionAr,
+            SELECT COALESCE(data.sourceId, TRY_CONVERT(INT, item.[key]) + 1), data.name, data.nameAr, data.description, data.descriptionAr,
                    muscle.id,
                    CASE WHEN ISJSON(data.secondaryMuscles) = 1 THEN data.secondaryMuscles ELSE N'[]' END,
                    data.equipment, COALESCE(data.isHighImpact, 0), data.difficulty, data.category,
@@ -361,6 +371,7 @@ async function seedLibraryIfEmpty() {
             FROM OPENJSON(@exercisesJson) AS item
             CROSS APPLY OPENJSON(item.[value]) WITH (
                 name NVARCHAR(160) '$.name',
+                sourceId INT '$.sourceId',
                 nameAr NVARCHAR(160) '$.nameAr',
                 description NVARCHAR(2000) '$.description',
                 descriptionAr NVARCHAR(2000) '$.descriptionAr',
@@ -398,7 +409,27 @@ async function seedLibraryIfEmpty() {
 
 async function ensureLibraryData() {
     if (!librarySeedPromise) {
-        librarySeedPromise = seedLibraryIfEmpty().catch((error) => {
+        librarySeedPromise = (async () => {
+            await ensureLibraryTables();
+            const pool = await getPool();
+            const result = await pool.request().query(`
+                SELECT
+                    (SELECT COUNT_BIG(*) FROM dbo.gym_muscles) AS muscles,
+                    (SELECT COUNT_BIG(*) FROM dbo.gym_foods) AS foods,
+                    (SELECT COUNT_BIG(*) FROM dbo.gym_exercises) AS exercises,
+                    (SELECT COUNT_BIG(*) FROM dbo.gym_exercises
+                     WHERE source_id >= ${EXERCISE_CATALOG_SOURCE_ID_OFFSET + 1}
+                       AND source_id < ${EXERCISE_CATALOG_SOURCE_ID_OFFSET + CANONICAL_EXERCISE_COUNT + 1}
+                       AND JSON_VALUE(metadata_json, '$.catalogStatus') = N'active') AS canonicalExercises;
+            `);
+            const counts = result.recordset[0] || {};
+            const hasAnyData = Number(counts.muscles || 0) || Number(counts.foods || 0) || Number(counts.exercises || 0);
+            if (!hasAnyData) {
+                await seedLibraryIfEmpty();
+            } else if (Number(counts.canonicalExercises || 0) < CANONICAL_EXERCISE_COUNT) {
+                await syncLibraryData();
+            }
+        })().catch((error) => {
             librarySeedPromise = undefined;
             throw error;
         });
@@ -407,8 +438,9 @@ async function ensureLibraryData() {
 }
 
 // Synchronize the repository seed files with an existing database without
-// recreating rows. source_id is the stable position assigned by the original
-// seed process, so existing row ids remain unchanged for linked plans.
+// recreating rows. Canonical records carry an explicit sourceId in the
+// reserved catalog namespace; legacy source ids remain untouched so existing
+// workout plans keep resolving to the same exercise rows.
 async function syncLibraryData() {
     await ensureLibraryTables();
     const muscles = readSeedFile('muscles');
@@ -545,7 +577,7 @@ async function syncLibraryData() {
                      mechanic, force, instructions_json, instructions_ar_json, tips_json, tips_ar_json,
                      common_mistakes_json, common_mistakes_ar_json, reps_range, sets_range, rest_seconds, tempo,
                      icon, video_url, metadata_json)
-                SELECT TRY_CONVERT(INT, item.[key]) + 1, data.name, data.nameAr, data.description, data.descriptionAr,
+                SELECT COALESCE(data.sourceId, TRY_CONVERT(INT, item.[key]) + 1), data.name, data.nameAr, data.description, data.descriptionAr,
                        data.targetMuscleId,
                        CASE WHEN ISJSON(data.secondaryMuscles) = 1 THEN data.secondaryMuscles ELSE N'[]' END,
                        data.equipment, COALESCE(data.isHighImpact, 0), data.difficulty, data.category,
@@ -560,7 +592,7 @@ async function syncLibraryData() {
                        item.[value]
                 FROM OPENJSON(@exercisesJson) AS item
                 CROSS APPLY OPENJSON(item.[value]) WITH (
-                    name NVARCHAR(160) '$.name', nameAr NVARCHAR(160) '$.nameAr',
+                    name NVARCHAR(160) '$.name', sourceId INT '$.sourceId', nameAr NVARCHAR(160) '$.nameAr',
                     description NVARCHAR(2000) '$.description', descriptionAr NVARCHAR(2000) '$.descriptionAr',
                     targetMuscleId INT '$.targetMuscleId', secondaryMuscles NVARCHAR(MAX) '$.secondaryMuscles' AS JSON,
                     equipment NVARCHAR(100) '$.equipment', isHighImpact BIT '$.isHighImpact', difficulty NVARCHAR(60) '$.difficulty',
@@ -591,6 +623,18 @@ async function syncLibraryData() {
                 FROM dbo.gym_exercises AS target
                 INNER JOIN @seed_exercises AS source ON source.source_id = target.source_id
                 LEFT JOIN dbo.gym_muscles AS muscle ON muscle.source_id = source.target_muscle_source_id;
+                -- Keep every pre-catalog exercise row addressable for old
+                -- workout plans, but remove it from the canonical list. The
+                -- identity and source_id are never changed.
+                UPDATE target
+                SET target.metadata_json = JSON_MODIFY(
+                        JSON_MODIFY(CASE WHEN ISJSON(target.metadata_json) = 1 THEN target.metadata_json ELSE N'{}' END,
+                            '$.catalogStatus', N'legacy-compatibility'),
+                        '$.legacySourceId', target.source_id),
+                    target.updated_at = SYSUTCDATETIME()
+                FROM dbo.gym_exercises AS target
+                WHERE target.source_id IS NOT NULL
+                  AND NOT EXISTS (SELECT 1 FROM @seed_exercises AS source WHERE source.source_id = target.source_id);
                 INSERT INTO dbo.gym_exercises
                     (source_id, name, name_ar, description, description_ar, target_muscle_id, secondary_muscles_json,
                      equipment, is_high_impact, difficulty, category, movement_pattern, mechanic, force,
@@ -624,7 +668,7 @@ function pageValue(value, fallback, min, max) {
     return Math.min(max, Math.max(min, number));
 }
 
-function listQuery(type, filters) {
+function listQuery(type, filters, { includeLegacy = false } = {}) {
     const search = likeValue(filters.search);
     const searchEmpty = !String(filters.search || '').trim();
     const params = [
@@ -657,13 +701,18 @@ function listQuery(type, filters) {
             order: 'ORDER BY COALESCE(name_ar, name_en), name_en, id'
         };
     }
+    const canonicalFilter = includeLegacy
+        ? ''
+        : `AND (JSON_VALUE(e.metadata_json, '$.catalogStatus') IS NULL
+                OR JSON_VALUE(e.metadata_json, '$.catalogStatus') <> N'legacy-compatibility')`;
     return {
         params,
         where: `(@searchEmpty = 1 OR e.name LIKE @search OR e.name_ar LIKE @search OR e.description LIKE @search OR e.description_ar LIKE @search)
                 AND (@category = N'' OR e.category = @category)
                 AND (@difficulty = N'' OR e.difficulty = @difficulty)
                 AND (@equipment = N'' OR e.equipment = @equipment)
-                AND (@targetMuscleId IS NULL OR e.target_muscle_id = @targetMuscleId)`,
+                AND (@targetMuscleId IS NULL OR e.target_muscle_id = @targetMuscleId)
+                ${canonicalFilter}`,
         select: `SELECT e.id, e.source_id, e.name, e.name_ar, e.description, e.description_ar, e.target_muscle_id,
                         e.secondary_muscles_json, e.equipment, e.is_high_impact, e.difficulty, e.category,
                         e.movement_pattern, e.mechanic, e.force, e.instructions_json, e.instructions_ar_json,
@@ -713,12 +762,23 @@ async function getLibraryOptions() {
         SELECT
             (SELECT COUNT_BIG(*) FROM dbo.gym_muscles) AS muscles,
             (SELECT COUNT_BIG(*) FROM dbo.gym_foods) AS foods,
-            (SELECT COUNT_BIG(*) FROM dbo.gym_exercises) AS exercises;
+            (SELECT COUNT_BIG(*) FROM dbo.gym_exercises AS e
+             WHERE JSON_VALUE(e.metadata_json, '$.catalogStatus') IS NULL
+                OR JSON_VALUE(e.metadata_json, '$.catalogStatus') <> N'legacy-compatibility') AS exercises;
         SELECT DISTINCT body_part AS value FROM dbo.gym_muscles WHERE NULLIF(LTRIM(RTRIM(body_part)), N'') IS NOT NULL ORDER BY body_part;
         SELECT DISTINCT category AS value FROM dbo.gym_foods WHERE NULLIF(LTRIM(RTRIM(category)), N'') IS NOT NULL ORDER BY category;
-        SELECT DISTINCT category AS value FROM dbo.gym_exercises WHERE NULLIF(LTRIM(RTRIM(category)), N'') IS NOT NULL ORDER BY category;
-        SELECT DISTINCT difficulty AS value FROM dbo.gym_exercises WHERE NULLIF(LTRIM(RTRIM(difficulty)), N'') IS NOT NULL ORDER BY difficulty;
-        SELECT DISTINCT equipment AS value FROM dbo.gym_exercises WHERE NULLIF(LTRIM(RTRIM(equipment)), N'') IS NOT NULL ORDER BY equipment;
+        SELECT DISTINCT e.category AS value FROM dbo.gym_exercises AS e
+         WHERE NULLIF(LTRIM(RTRIM(e.category)), N'') IS NOT NULL
+           AND (JSON_VALUE(e.metadata_json, '$.catalogStatus') IS NULL OR JSON_VALUE(e.metadata_json, '$.catalogStatus') <> N'legacy-compatibility')
+         ORDER BY e.category;
+        SELECT DISTINCT e.difficulty AS value FROM dbo.gym_exercises AS e
+         WHERE NULLIF(LTRIM(RTRIM(e.difficulty)), N'') IS NOT NULL
+           AND (JSON_VALUE(e.metadata_json, '$.catalogStatus') IS NULL OR JSON_VALUE(e.metadata_json, '$.catalogStatus') <> N'legacy-compatibility')
+         ORDER BY e.difficulty;
+        SELECT DISTINCT e.equipment AS value FROM dbo.gym_exercises AS e
+         WHERE NULLIF(LTRIM(RTRIM(e.equipment)), N'') IS NOT NULL
+           AND (JSON_VALUE(e.metadata_json, '$.catalogStatus') IS NULL OR JSON_VALUE(e.metadata_json, '$.catalogStatus') <> N'legacy-compatibility')
+         ORDER BY e.equipment;
         SELECT id, name, name_ar FROM dbo.gym_muscles ORDER BY COALESCE(name_ar, name), name, id;
     `);
     const [counts = [], bodyParts = [], categories = [], exerciseCategories = [], difficulties = [], equipment = [], muscles = []] = result.recordsets || [];
@@ -740,7 +800,7 @@ async function getLibraryItem(typeValue, idValue) {
     const type = ensureType(typeValue);
     const id = ensureId(idValue);
     await ensureLibraryData();
-    const specification = listQuery(type, { search: '', category: '', bodyPart: '', difficulty: '', equipment: '', targetMuscleId: null });
+    const specification = listQuery(type, { search: '', category: '', bodyPart: '', difficulty: '', equipment: '', targetMuscleId: null }, { includeLegacy: true });
     const pool = await getPool();
     const request = addParams(pool.request(), specification.params).input('id', sql.Int, id);
     const tableAlias = type === 'exercises' ? 'e.id' : 'id';

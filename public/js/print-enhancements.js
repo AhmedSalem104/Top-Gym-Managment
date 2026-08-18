@@ -36,7 +36,9 @@
             }
 
             function assetUrl(path) {
-                return new URL(path, window.location.href).href;
+                const url = new URL(path, window.location.href);
+                if (url.pathname === '/css/print.css') url.searchParams.set('v', '7');
+                return url.href;
             }
 
             function planLabel(value) { return PLAN_LABELS[value] || value || '—'; }
@@ -147,7 +149,28 @@
                 return `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${title} - TOP GYM</title><link rel="stylesheet" href="${assetUrl('/css/print.css?v=5')}"></head><body><main class="print-sheet">${printHeader}<div class="print-accent"></div>${memberInfo}${paymentInfo}${printFooter}</main></body></html>`;
             }
 
+            function decoratePrintDocumentHtml(html) {
+                if (!String(html || '').includes('print-system-document')) return html;
+                const parsed = new DOMParser().parseFromString(html, 'text/html');
+                parsed.querySelectorAll('.print-system-table tbody tr').forEach((row) => {
+                    const cell = row.querySelector('td');
+                    const name = cell?.querySelector('.print-table-main')?.textContent?.trim();
+                    if (!cell || !name || cell.querySelector('.print-exercise-cell')) return;
+                    const item = window.TopGymExerciseAssets?.find?.({ name }) || { name };
+                    const content = cell.innerHTML;
+                    cell.innerHTML = '<div class="print-exercise-cell">' + exercisePrintImage({ name, ...item }) + '<span>' + content + '</span></div>';
+                });
+                parsed.querySelectorAll('.print-system-reference').forEach((card) => {
+                    if (card.querySelector('.print-exercise-gallery')) return;
+                    const name = card.querySelector('h3')?.textContent?.trim();
+                    const item = name ? window.TopGymExerciseAssets?.find?.({ name }) : null;
+                    if (item) card.querySelector('h3')?.insertAdjacentHTML('afterend', exercisePrintGallery({ name, ...item }));
+                });
+                return '<!doctype html>' + parsed.documentElement.outerHTML;
+            }
+
             function writeWindow(printWindow, html) {
+                html = decoratePrintDocumentHtml(html);
                 printWindow.document.open();
                 printWindow.document.write(html);
                 printWindow.document.close();
@@ -251,6 +274,46 @@
 
             function coachingItemName(item) {
                 return item?.nameAr || item?.name || item?.nameEn || 'عنصر بدون اسم';
+            }
+
+            function exercisePrintSource(item, phase = 'start') {
+                const metadata = item?.metadata && typeof item.metadata === 'object' ? item.metadata : {};
+                const match = window.TopGymExerciseAssets?.find?.(item);
+                const requestedPhase = phase === 'end' ? 'end' : 'start';
+                const source = match?.imageAssets?.[requestedPhase]
+                    || item?.imageAssets?.[requestedPhase]
+                    || metadata.imageAssets?.[requestedPhase];
+                return source ? assetUrl(source) : '';
+            }
+
+            function exercisePrintImage(item, phase = 'start', className = 'print-exercise-thumb', altSuffix = '') {
+                const source = exercisePrintSource(item, phase);
+                if (!source) return '<span class="print-exercise-thumb print-exercise-fallback" aria-hidden="true">&#127947;</span>';
+                return '<img class="' + escapeHtml(className) + '" src="' + escapeHtml(source) + '" alt="' + escapeHtml(coachingItemName(item) + (altSuffix ? ' - ' + altSuffix : '')) + '" width="720" height="480" loading="eager">';
+            }
+
+            function exercisePrintGallery(item) {
+                const start = exercisePrintSource(item, 'start');
+                const end = exercisePrintSource(item, 'end');
+                if (!start && !end) return '';
+                return '<div class="print-exercise-gallery">' + (start ? '<figure>' + exercisePrintImage(item, 'start', 'print-exercise-detail-image', 'Start') + '<figcaption>Start</figcaption></figure>' : '') + (end ? '<figure>' + exercisePrintImage(item, 'end', 'print-exercise-detail-image', 'End') + '<figcaption>End</figcaption></figure>' : '') + '</div>';
+            }
+
+            async function preloadPrintImages(items = []) {
+                if (window.TopGymExerciseAssets?.preloadItems) {
+                    await window.TopGymExerciseAssets.preloadItems(items, ['start', 'end']);
+                }
+            }
+
+            async function waitForPrintWindowImages(printWindow) {
+                if (!printWindow?.document) return;
+                if (window.TopGymExerciseAssets?.waitForImages) {
+                    await window.TopGymExerciseAssets.waitForImages(printWindow.document);
+                    return;
+                }
+                await Promise.all([...printWindow.document.images].map((image) => image.complete
+                    ? Promise.resolve()
+                    : new Promise((resolve) => { image.onload = resolve; image.onerror = resolve; })));
             }
 
             function coachingReps(exercise) {
@@ -400,9 +463,12 @@
                 const system = response.plan || response.program;
                 if (!system) throw new Error('لم يتم العثور على النظام المطلوب.');
                 if (type !== 'workout') return { system, libraryItems: [] };
+                await window.TopGymExerciseAssets?.load?.().catch(() => {});
                 const ids = [...new Set((system.routines || []).flatMap((routine) => (routine.exercises || []).map((exercise) => exercise.exerciseId)).filter(Boolean).map(String))];
                 const results = await Promise.allSettled(ids.map((exerciseId) => fetchPrintJson('/api/library/exercises/' + encodeURIComponent(exerciseId)).then((data) => data.item)));
-                return { system, libraryItems: results.filter((result) => result.status === 'fulfilled' && result.value).map((result) => result.value) };
+                const libraryItems = results.filter((result) => result.status === 'fulfilled' && result.value).map((result) => result.value);
+                await preloadPrintImages(libraryItems);
+                return { system, libraryItems };
             }
 
             function writePrintLoading(printWindow, label = 'جاري تجهيز مستند الطباعة…') {
@@ -420,6 +486,7 @@
             }
 
             async function createPdfFromDocument(html, filename, downloadMode = false) {
+                html = decoratePrintDocumentHtml(html);
                 await loadPdfLibrary();
                 const parsed = new DOMParser().parseFromString(html, 'text/html');
                 const sheet = parsed.querySelector('.print-sheet');
@@ -535,7 +602,7 @@
                     const result = await fetchCoachingSystem(id, type);
                     writeWindow(printWindow, buildCoachingSystemDocument(result.system, type, result.libraryItems));
                     printWindow.onafterprint = () => printWindow.close();
-                    window.setTimeout(() => { printWindow.focus(); printWindow.print(); }, 450);
+                    window.setTimeout(async () => { await waitForPrintWindowImages(printWindow); printWindow.focus(); printWindow.print(); }, 100);
                 } catch (error) {
                     writeWindow(printWindow, '<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><link rel="stylesheet" href="' + assetUrl('/css/print.css?v=5') + '"></head><body><div class="print-error">' + escapeHtml(error.message || 'تعذر تجهيز مستند الطباعة.') + '</div></body></html>');
                 }
@@ -556,7 +623,7 @@
                     writePrintLoading(printWindow, 'جاري تجهيز مسودة النظام للطباعة…');
                     writeCoachingDraft(printWindow, draft, type, catalog, clientLabel);
                     printWindow.onafterprint = () => printWindow.close();
-                    window.setTimeout(() => { printWindow.focus(); printWindow.print(); }, 450);
+                    window.setTimeout(async () => { await waitForPrintWindowImages(printWindow); printWindow.focus(); printWindow.print(); }, 100);
                 } catch (error) {
                     writeWindow(printWindow, '<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><link rel="stylesheet" href="' + assetUrl('/css/print.css?v=5') + '"></head><body><div class="print-error">' + escapeHtml(error.message || 'تعذر تجهيز المسودة.') + '</div></body></html>');
                 }
@@ -565,8 +632,9 @@
             async function downloadCoachingDraftPdf(draft, type, catalog = {}, clientLabel = '') {
                 try {
                     const normalized = normalizeCoachingDraft(draft, type, catalog, clientLabel);
-                    const filename = coachingFilename(type, normalized.system);
-                    const blob = await createPdfFromDocument(buildCoachingSystemDocument(normalized.system, type, normalized.libraryItems), filename);
+                const filename = coachingFilename(type, normalized.system);
+                if (type === 'workout') await preloadPrintImages(normalized.libraryItems);
+                const blob = await createPdfFromDocument(buildCoachingSystemDocument(normalized.system, type, normalized.libraryItems), filename);
                     downloadBlob(blob, filename);
                     notifyPrint('تم تجهيز ملف PDF وتحميله بنجاح.');
                 } catch (error) {

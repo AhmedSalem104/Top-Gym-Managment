@@ -5,15 +5,18 @@
         promise: null,
         manifest: null,
         byLegacySourceId: new Map(),
+        byCatalogSourceId: new Map(),
         byProjectName: new Map(),
-        byUpstreamId: new Map()
+        byUpstreamId: new Map(),
+        bySlug: new Map(),
+        byName: new Map()
     };
 
     const normalize = (value) => String(value || '')
         .normalize('NFKD')
         .toLowerCase()
         .replace(/&/g, ' and ')
-        .replace(/[^a-z0-9]+/g, ' ')
+        .replace(/[^\p{L}\p{N}]+/gu, ' ')
         .trim()
         .replace(/\s+/g, ' ');
 
@@ -34,13 +37,22 @@
                 .then((manifest) => {
                     state.manifest = manifest || {};
                     state.byLegacySourceId.clear();
+                    state.byCatalogSourceId.clear();
                     state.byProjectName.clear();
                     state.byUpstreamId.clear();
+                    state.bySlug.clear();
+                    state.byName.clear();
                     (state.manifest.projectLinks || []).forEach((link) => {
                         state.byLegacySourceId.set(String(link.legacySourceId), link);
                         if (link.projectNameEn) state.byProjectName.set(normalize(link.projectNameEn), link);
+                        if (link.projectNameAr) state.byProjectName.set(normalize(link.projectNameAr), link);
                     });
-                    (state.manifest.records || []).forEach((record) => state.byUpstreamId.set(String(record.upstreamId), record));
+                    (state.manifest.records || []).forEach((record) => {
+                        if (record.catalogSourceId != null) state.byCatalogSourceId.set(String(record.catalogSourceId), record);
+                        if (record.upstreamId) state.byUpstreamId.set(String(record.upstreamId), record);
+                        if (record.slug) state.bySlug.set(normalize(record.slug), record);
+                        if (record.nameEn) state.byName.set(normalize(record.nameEn), record);
+                    });
                     return state.manifest;
                 });
         }
@@ -54,14 +66,23 @@
 
     function find(item) {
         if (!state.manifest || !item) return null;
+        const metadata = item.metadata && typeof item.metadata === 'object' ? item.metadata : {};
         const sourceId = item.sourceId ?? item.legacySourceId;
-        const link = (sourceId != null ? state.byLegacySourceId.get(String(sourceId)) : null)
-            || state.byProjectName.get(normalize(item.name || item.nameEn));
-        if (!link || !['exact', 'alias'].includes(link.status) || !link.imageAssets?.start) return null;
+        const legacyLink = (sourceId != null ? state.byLegacySourceId.get(String(sourceId)) : null)
+            || state.byProjectName.get(normalize(item.name || item.nameEn || item.nameAr));
+        const directRecord = (sourceId != null ? state.byCatalogSourceId.get(String(sourceId)) : null)
+            || (item.upstreamId || metadata.upstreamId ? state.byUpstreamId.get(String(item.upstreamId || metadata.upstreamId)) : null)
+            || (item.slug || metadata.slug ? state.bySlug.get(normalize(item.slug || metadata.slug)) : null)
+            || state.byName.get(normalize(item.name || item.nameEn));
+        const record = directRecord || (legacyLink?.upstreamId ? state.byUpstreamId.get(String(legacyLink.upstreamId)) : null);
+        if (directRecord?.imageAssets?.start) {
+            return { ...directRecord, status: 'canonical', imageAssets: directRecord.imageAssets };
+        }
+        if (!legacyLink || !['exact', 'alias'].includes(legacyLink.status) || !legacyLink.imageAssets?.start) return null;
         return {
-            ...link,
-            record: state.byUpstreamId.get(String(link.upstreamId)) || null,
-            imageAssets: link.imageAssets
+            ...legacyLink,
+            record,
+            imageAssets: legacyLink.imageAssets
         };
     }
 
@@ -91,5 +112,36 @@
         });
     }
 
-    window.TopGymExerciseAssets = { load, find, imageMarkup, hydrate, normalize };
+    function preloadImage(source) {
+        if (!source) return Promise.resolve(false);
+        return new Promise((resolve) => {
+            const image = new Image();
+            image.onload = () => resolve(true);
+            image.onerror = () => resolve(false);
+            image.src = source;
+        });
+    }
+
+    async function preload(item, phases = ['start']) {
+        await load();
+        const match = find(item);
+        if (!match) return false;
+        const requested = Array.isArray(phases) ? phases : [phases];
+        await Promise.all(requested.map((phase) => preloadImage(match.imageAssets?.[phase === 'main' ? 'start' : phase])));
+        return true;
+    }
+
+    async function preloadItems(items = [], phases = ['start']) {
+        await Promise.all((Array.isArray(items) ? items : []).map((item) => preload(item, phases)));
+    }
+
+    async function waitForImages(root = document) {
+        const images = [...(root.querySelectorAll?.('img') || [])];
+        await Promise.all(images.map(async (image) => {
+            if (!image.complete) await new Promise((resolve) => { image.onload = resolve; image.onerror = resolve; });
+            if (typeof image.decode === 'function') await image.decode().catch(() => {});
+        }));
+    }
+
+    window.TopGymExerciseAssets = { load, find, imageMarkup, hydrate, normalize, preload, preloadItems, waitForImages };
 })();

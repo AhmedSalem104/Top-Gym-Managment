@@ -196,10 +196,15 @@ async function getReportData(query = {}) {
             SELECT
                 (SELECT COUNT_BIG(*) FROM dbo.gym_muscles) AS muscles,
                 (SELECT COUNT_BIG(*) FROM dbo.gym_foods) AS foods,
-                (SELECT COUNT_BIG(*) FROM dbo.gym_exercises) AS exercises,
+                (SELECT COUNT_BIG(*) FROM dbo.gym_exercises AS e
+                 WHERE JSON_VALUE(e.metadata_json, '$.catalogStatus') IS NULL
+                    OR JSON_VALUE(e.metadata_json, '$.catalogStatus') <> N'legacy-compatibility') AS exercises,
                 (SELECT COUNT_BIG(*) FROM dbo.gym_muscles WHERE created_at >= @fromDate AND created_at < @nextDate) AS new_muscles,
                 (SELECT COUNT_BIG(*) FROM dbo.gym_foods WHERE created_at >= @fromDate AND created_at < @nextDate) AS new_foods,
-                (SELECT COUNT_BIG(*) FROM dbo.gym_exercises WHERE created_at >= @fromDate AND created_at < @nextDate) AS new_exercises;
+                (SELECT COUNT_BIG(*) FROM dbo.gym_exercises AS e
+                 WHERE (JSON_VALUE(e.metadata_json, '$.catalogStatus') IS NULL
+                    OR JSON_VALUE(e.metadata_json, '$.catalogStatus') <> N'legacy-compatibility')
+                   AND e.created_at >= @fromDate AND e.created_at < @nextDate) AS new_exercises;
         `)
     ]);
 

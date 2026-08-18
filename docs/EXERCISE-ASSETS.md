@@ -63,4 +63,33 @@ python scripts/sync-exercise-assets.py --source-root C:\path\to\free-exercise-db
 python scripts/sync-exercise-assets.py --help
 ```
 
+## Operational catalog integration
+
+> The historical 265-record paragraph above is retained for provenance only.
+> The current operational catalog is the 873-record catalog described below;
+> the legacy file and compatibility rows exist only to preserve old program
+> references.
+
+The active library is now `data/library/exercises.json` with exactly **873**
+canonical records. Each record has a stable `sourceId` in the reserved
+`100001..100873` namespace, a unique `upstreamId`, a unique `slug`, and local
+`start`/`end` WebP assets.
+
+The original 265-record seed is preserved in
+`data/library/exercises-legacy.json`. Existing SQL rows are not deleted or
+re-keyed: they remain addressable for old workout programs and are marked
+`legacy-compatibility`, while the API list and library options expose the 873
+canonical records. The full mapping is in
+`data/library/exercise-catalog-mapping.json`.
+
+Run `npm run sync:library` after changing the catalog. The sync is additive for
+canonical records and keeps old `gym_exercises.id` and
+`workout_exercises.exercise_id` references intact. It is safe to run more than
+once.
+
+Print/PDF output uses the same local catalog. Workout rows receive a compact
+thumbnail and the exercise reference section includes start/end images when
+available. The print path waits for image loading before opening the browser
+print dialog or generating the PDF.
+
 عند تحديث المصدر، يجب تثبيت revision جديد عمدًا ثم مراجعة تقرير المطابقة قبل اعتماد الصور في الإنتاج.

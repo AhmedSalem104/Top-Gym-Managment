@@ -15,6 +15,7 @@
     "qa:gate": "node scripts/qa-gate.js",
     "qa:gate:smoke": "node scripts/qa-gate.js --build --smoke",
     "qa:gate:browser": "node scripts/qa-gate.js --build --browser",
+    "qa:exercise-catalog": "node scripts/validate-exercise-catalog.js",
     "seed:performance": "node scripts/seed-performance-test-data.js",
     "sync:library": "node scripts/sync-library-data.js"
   },

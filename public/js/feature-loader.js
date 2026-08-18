@@ -14,14 +14,14 @@
             ],
             scripts: [
                 '/js/action-menu.js?v=4',
-                '/js/print-enhancements.js?v=9',
+                '/js/print-enhancements.js?v=10',
                 '/js/attendance.js?v=8',
                 '/js/coaching.js?v=12'
             ]
         },
         print: {
             styles: [],
-            scripts: ['/js/print-enhancements.js?v=9']
+            scripts: ['/js/print-enhancements.js?v=10']
         },
         expenses: {
             styles: ['/css/operations.css?v=6'],
