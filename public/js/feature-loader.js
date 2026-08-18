@@ -24,7 +24,7 @@
             ]
         },
         coaching: {
-            styles: ['/css/coaching.css?v=9', '/css/muscle-assets.css?v=2'],
+            styles: ['/css/coaching.css?v=10', '/css/muscle-assets.css?v=2'],
             scripts: [
                 '/js/exercise-assets.js?v=5',
                 '/js/muscle-assets.js?v=3',

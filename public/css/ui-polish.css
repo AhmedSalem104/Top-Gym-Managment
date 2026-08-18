@@ -512,7 +512,7 @@ body.attendance-kiosk-mode .app-shell .btn { min-height: 52px !important; font-s
 /* ========================================================================
    FitMaker visual adaptation
    Source tokens: #1D1D1D charcoal, #D90A14 red, #CD4E17 orange,
-   Vazirmatn typography, rounded controls and restrained red shadows.
+   Cairo typography, rounded controls and restrained red shadows.
    The admin information architecture and all interactions remain unchanged.
    ======================================================================== */
 :root {
@@ -543,7 +543,7 @@ body,
 .app-shell input,
 .app-shell select,
 .app-shell textarea {
-    font-family: 'Vazirmatn', 'Cairo', Tahoma, Arial, sans-serif !important;
+    font-family: 'Cairo', Tahoma, Arial, sans-serif !important;
 }
 body.gym-page-bg {
     color: #fff !important;
@@ -1250,7 +1250,7 @@ dialog .dialog-body p,
     justify-content: center !important;
 }
 .swal2-container .swal2-title,
-.swal2-container .swal2-html-container { color: var(--ref-text) !important; font-family: 'Vazirmatn', 'Cairo', Tahoma, sans-serif !important; }
+.swal2-container .swal2-html-container { color: var(--ref-text) !important; font-family: 'Cairo', Tahoma, sans-serif !important; }
 .swal2-container .swal2-html-container { color: var(--ref-text-soft) !important; line-height: 1.8 !important; }
 .swal2-container .swal2-actions { justify-content: center !important; gap: 8px !important; margin: 17px auto 0 !important; }
 .swal2-container .swal2-confirm,
@@ -1260,7 +1260,7 @@ dialog .dialog-body p,
     margin: 0 !important;
     border-radius: 20px !important;
     padding: 8px 15px !important;
-    font-family: 'Vazirmatn', 'Cairo', Tahoma, sans-serif !important;
+    font-family: 'Cairo', Tahoma, sans-serif !important;
     font-weight: 800 !important;
     box-shadow: none !important;
 }

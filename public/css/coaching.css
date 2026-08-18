@@ -324,7 +324,7 @@
    gets its own compact row with an independent delete action. */
 @media (min-width: 761px) {
     .external-trainees-table {
-        min-width: 1180px;
+        min-width: 0;
     }
     .external-trainees-table th:nth-child(1),
     .external-trainees-table td:nth-child(1) { width: 22%; }
@@ -487,8 +487,9 @@
    above cannot re-introduce the wide, sparse layout. */
 #traineesSection.coaching-section {
     box-sizing: border-box;
-    width: min(100%, 1240px);
-    margin: 10px auto 0;
+    width: 100%;
+    max-width: none;
+    margin: 10px 0 0;
     gap: 12px;
     padding: 15px;
     direction: rtl;
@@ -607,6 +608,8 @@
 #traineesSection .coaching-inline-icon { display: block; }
 #traineesSection .external-trainees-table-wrap {
     overflow: hidden;
+    width: 100%;
+    max-width: none;
     border-color: #e5eaf2;
     border-radius: 13px;
     background: #fff;

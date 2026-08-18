@@ -31,6 +31,21 @@
     --ui-shadow-sm: 0 4px 12px rgba(15, 23, 42, .05);
     --ui-shadow-md: 0 12px 32px rgba(15, 23, 42, .08);
     --ui-content-max: 1380px;
+    --ui-font-family: 'Cairo', Tahoma, Arial, sans-serif;
+}
+
+/* One typography source for the complete UI. Technical code snippets keep
+   their monospace face because they are content, not interface text. */
+html,
+body,
+body *:not(code):not(pre) {
+    font-family: var(--ui-font-family) !important;
+}
+
+body pre,
+body code,
+body pre * {
+    font-family: Consolas, 'Courier New', monospace !important;
 }
 
 /*
