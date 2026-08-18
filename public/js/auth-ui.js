@@ -74,7 +74,9 @@
         document.body.dataset.topGymUserId = user?.id ? String(user.id) : '';
         document.querySelectorAll('[data-page-tab]').forEach((button) => {
             const allowed = tabs.includes(button.dataset.pageTab);
+            if (!allowed && button === document.activeElement) button.blur();
             button.hidden = !allowed;
+            button.toggleAttribute('inert', !allowed);
             button.setAttribute('aria-hidden', String(!allowed));
         });
         const managementPanel = $('authUsersPanel');
@@ -133,6 +135,12 @@
     }
 
     async function requestApi(path, options = {}) {
+        if (!state.ready) await ready.catch(() => null);
+        if (!state.user) {
+            const error = new Error('تحتاج إلى تسجيل الدخول أولًا.');
+            error.code = 'AUTH_REQUIRED';
+            throw error;
+        }
         const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
         const response = await nativeFetch(path, { ...options, credentials: 'same-origin', headers });
         if (response.status === 204) return null;
@@ -207,7 +215,7 @@
 
     window.topGymAuth = {
         api: requestApi,
-        canAccessTab: (tab) => state.user?.role === 'Owner' || assistantTabs.includes(tab),
+        canAccessTab: (tab) => state.user?.role === 'Owner' || (state.user?.role === 'Assistant' && assistantTabs.includes(tab)),
         getUser: () => state.user,
         isOwner: () => state.user?.role === 'Owner',
         isReady: () => state.ready,
@@ -220,6 +228,12 @@
         const url = String(typeof input === 'string' ? input : input?.url || '');
         const protectedApi = url.includes('/api/') && !url.includes('/api/auth/');
         if (protectedApi && !state.ready) await ready.catch(() => null);
+        if (protectedApi && !state.user) {
+            return new Response(JSON.stringify({ error: 'تحتاج إلى تسجيل الدخول أولًا.', code: 'AUTH_REQUIRED' }), {
+                status: 401,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
         const response = await nativeFetch(...args);
         if (response.status === 401 && state.user && url.includes('/api/') && !url.includes('/api/auth/')) showLogin('انتهت جلسة الدخول. سجّل الدخول مرة أخرى.');
         return response;

@@ -177,6 +177,7 @@
     }
 
     async function loadFinance() {
+        if (!window.topGymAuth?.isOwner?.()) return null;
         if (!$('monthlyFinanceCard')) return;
         if (financeRequest) return financeRequest;
         $('monthlyFinanceStatus').textContent = 'جاري التحديث…';
@@ -315,7 +316,9 @@
                 if (button.dataset.expenseAction === 'delete') deleteExpense(id);
             });
         }
-        loadFinance();
+        const startFinance = () => { if (window.topGymAuth?.isOwner?.()) void loadFinance(); };
+        if (window.topGymAuthReady) window.topGymAuthReady.then(startFinance).catch(() => {});
+        else startFinance();
     });
 
     window.topGymRefreshMonthlyFinance = loadFinance;

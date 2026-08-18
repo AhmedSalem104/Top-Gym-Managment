@@ -233,6 +233,7 @@
     }
 
     async function loadReport(force = false) {
+        if (!window.topGymAuth?.isOwner?.()) return;
         const panel = ensurePanel();
         if (!panel) return;
         const { from, to } = rangeValues();
@@ -578,6 +579,7 @@
     }
 
     function initializeReports() {
+        if (!window.topGymAuth?.isOwner?.()) return;
         ensurePanel();
         window.addEventListener('topgym:tab-changed', (event) => {
             if (event.detail?.name === 'reports') {

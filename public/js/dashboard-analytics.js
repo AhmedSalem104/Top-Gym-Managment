@@ -309,6 +309,7 @@
     }
 
     async function loadAnalytics(period = state.period) {
+        if (!window.topGymAuth?.isOwner?.()) return;
         const panel = ensurePanel();
         if (!panel) return;
         state.period = ['week', 'month', 'year'].includes(period) ? period : 'month';

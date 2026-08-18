@@ -31,13 +31,13 @@
         },
         reports: {
             styles: ['/css/operations.css?v=6'],
-            scripts: ['/js/reports.js?v=7']
+            scripts: ['/js/reports.js?v=8']
         },
         management: {
             // auth.css is a core stylesheet loaded in <head>; loading an older
             // second copy here caused a visible style flash on Management.
             styles: ['/css/operations.css?v=6'],
-            scripts: ['/js/backup-enhancements.js?v=8', '/js/auth-users.js?v=1']
+            scripts: ['/js/backup-enhancements.js?v=9', '/js/auth-users.js?v=1']
         },
         attendance: {
             styles: ['/css/attendance.css?v=6'],
@@ -140,23 +140,25 @@
         if (window.__topGymDashboardAnalyticsScheduled) return;
         if (!dashboardIsRequested()) return;
         window.__topGymDashboardAnalyticsScheduled = true;
-        const start = () => {
-            if (!dashboardIsRequested()) {
+        const start = async () => {
+            if (window.topGymAuthReady) await window.topGymAuthReady.catch(() => null);
+            if (!dashboardIsRequested() || !window.topGymAuth?.canAccessTab?.('dashboard')) {
                 window.__topGymDashboardAnalyticsScheduled = false;
                 return;
             }
-            loadScript('/js/dashboard-analytics.js?v=5', 'dashboard-analytics')
+            loadScript('/js/dashboard-analytics.js?v=6', 'dashboard-analytics')
                 .catch((error) => console.warn('[TOP GYM] Dashboard analytics failed to load.', error));
         };
-        if (immediate) start();
-        else if ('requestIdleCallback' in window) window.requestIdleCallback(start, { timeout: 1800 });
-        else window.setTimeout(start, 900);
+        if (immediate) void start();
+        else if ('requestIdleCallback' in window) window.requestIdleCallback(() => void start(), { timeout: 1800 });
+        else window.setTimeout(() => void start(), 900);
     }
 
     function bindLazyBackupAction() {
         document.addEventListener('click', (event) => {
             const button = event.target.closest('#backupButton');
             if (!button || button.dataset.topGymFeatureReady === 'management' || button.dataset.topGymFeatureLoading === 'true') return;
+            if (!window.topGymAuth?.isOwner?.()) return;
             event.preventDefault();
             event.stopImmediatePropagation();
             button.dataset.topGymFeatureLoading = 'true';

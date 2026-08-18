@@ -12,7 +12,10 @@
 
     function normalizeTab(name) {
         if (!validTabs.has(name)) return 'dashboard';
-        if (window.topGymAuth?.isReady?.() && !window.topGymAuth.canAccessTab(name)) return 'members';
+        if (window.topGymAuth?.isReady?.()) {
+            if (!window.topGymAuth.getUser?.()) return 'dashboard';
+            if (!window.topGymAuth.canAccessTab(name)) return 'members';
+        }
         return name;
     }
 
@@ -67,6 +70,7 @@
     }
 
     async function activateTab(rawName) {
+        if (window.topGymAuthReady) await window.topGymAuthReady.catch(() => null);
         const name = normalizeTab(rawName);
         const token = ++activationToken;
         if (name === activeTabName) return;

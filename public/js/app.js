@@ -208,6 +208,7 @@
         }
 
         async function loadData() {
+            if (!window.topGymAuth?.getUser?.()) return;
             if (dataLoadPromise) return dataLoadPromise;
             const loadPromise = withLoader(async () => {
                 const isOwner = window.topGymAuth?.isOwner?.() === true;
@@ -232,6 +233,7 @@
             return trackedPromise;
         }
         async function loadMembersOnly() {
+            if (!window.topGymAuth?.getUser?.()) return;
             const queryKey = JSON.stringify([$('searchInput')?.value.trim() || '', $('statusFilter')?.value || '', $('sortFilter')?.value || '']);
             if (membersLoadPromise && membersLoadKey === queryKey) return membersLoadPromise;
             if (membersAbortController) membersAbortController.abort();
