@@ -635,6 +635,14 @@ body.gym-page-bg {
     padding: 40px 0 64px !important;
 }
 
+/* Keep the external-trainees view on the exact same shell width as the
+   floating navigation, even when its feature stylesheet is loaded lazily. */
+.app-shell #dashboardSection.page.max-w-7xl > #traineesSection.coaching-section {
+    width: 100% !important;
+    max-width: none !important;
+    margin-inline: 0 !important;
+}
+
 .app-shell #dashboardSection > .dashboard-hero {
     position: relative;
     display: grid;
