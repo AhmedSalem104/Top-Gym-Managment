@@ -1,21 +1,6 @@
 /* Authentication and account-management UI. The login uses the existing gym
-   background asset while the signed-in application keeps its current design system. */
-body.auth-pending .app-shell,
-body.auth-locked .app-shell {
-    display: none;
-    visibility: hidden;
-    pointer-events: none;
-}
-body.auth-pending,
-body.auth-locked { min-height: 100vh; background: var(--auth-canvas, #040a11) !important; }
-
-/* Keep both shells quiet until the session check finishes. This class is
-   present on the initial body tag, so a refresh cannot flash the login card. */
-body.auth-pending .auth-screen {
-    visibility: hidden;
-    opacity: 0;
-    pointer-events: none;
-}
+   background asset while the signed-in application keeps its current design system.
+   Shell boot and shared navigation visibility live in design-system.css. */
 
 .auth-screen {
     position: fixed;
@@ -234,7 +219,6 @@ body[data-top-gym-role='Assistant'] #managementSection,
 body[data-top-gym-role='Assistant'] #expensesSection,
 body[data-top-gym-role='Assistant'] #reportsSection,
 body[data-top-gym-role='Assistant'] #dashboardAnalytics { display: none !important; }
-#pageTabs [data-page-tab][hidden] { display: none !important; }
 body[data-top-gym-role='Assistant'] #topPricingButton,
 body[data-top-gym-role='Assistant'] #backupButton,
 body[data-top-gym-role='Assistant'] #headerAlertsButton,
@@ -527,7 +511,6 @@ body[data-top-gym-role='Assistant'] #refreshButton { display: none !important; }
     background: linear-gradient(135deg, #eff6ff, #dbeafe);
     box-shadow: 0 5px 12px rgba(37, 99, 235, .12);
 }
-.app-shell .page-tabs .page-tab[hidden] { display: none !important; }
 .app-shell .page-tabs .auth-account-bar {
     margin: 0 auto 0 0;
     border-color: #dbe3ef;

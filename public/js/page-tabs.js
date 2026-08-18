@@ -73,7 +73,11 @@
         if (window.topGymAuthReady) await window.topGymAuthReady.catch(() => null);
         const name = normalizeTab(rawName);
         const token = ++activationToken;
-        if (name === activeTabName) return;
+        document.body.classList.add('top-gym-navigation-pending');
+        if (name === activeTabName) {
+            document.body.classList.remove('top-gym-navigation-pending');
+            return;
+        }
         document.documentElement.setAttribute('data-top-gym-loading-tab', name);
         try {
             await window.topGymEnsureTab?.(name);
@@ -86,6 +90,7 @@
         activeTabName = name;
         document.documentElement.dataset.topGymActiveTab = name;
         window.history.replaceState(null, '', `#${name}`);
+        document.body.classList.remove('top-gym-navigation-pending');
         document.documentElement.removeAttribute('data-top-gym-loading-tab');
         window.dispatchEvent(new CustomEvent('topgym:tab-changed', { detail: { name } }));
     }

@@ -10,22 +10,12 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <title>إدارة عضويات الجيم</title>
-    <style id="top-gym-critical-styles">
-        /* Keep the first paint deterministic while the full design system and auth session initialize. */
-        html { max-width: 100%; overflow-x: hidden; }
-        body.auth-pending,
-        body.auth-locked { min-width: 320px; min-height: 100vh; background: #040a11 !important; }
-        body.auth-pending .app-shell,
-        body.auth-locked .app-shell { display: none !important; visibility: hidden !important; pointer-events: none !important; }
-        body.auth-pending #authScreen { visibility: hidden; opacity: 0; pointer-events: none; }
-        .auth-screen { background: #040a11; }
-    </style>
     <link rel="stylesheet" href="/css/base.css?v=5">
     <link rel="stylesheet" href="/tailwind.css">
     <link rel="stylesheet" href="/css/dashboard.css?v=35">
-    <link rel="stylesheet" href="/css/design-system.css?v=1">
+    <link rel="stylesheet" href="/css/design-system.css?v=2">
     <link rel="stylesheet" href="/css/exercise-assets.css?v=1">
-    <link rel="stylesheet" href="/css/auth.css?v=4">
+    <link rel="stylesheet" href="/css/auth.css?v=6">
 </head>
 <body class="auth-pending font-sans bg-slate-100 text-slate-900 gym-page-bg" style="--top-gym-bg-color: #e5edf7; --top-gym-bg-color-mid: #f4f7fb; --top-gym-bg-color-end: #dce8f5;">
     <section class="auth-screen" id="authScreen" aria-label="تسجيل الدخول">
@@ -436,12 +426,12 @@
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
     <script defer src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script defer src="/js/auth-ui.js?v=3"></script>
+    <script defer src="/js/auth-ui.js?v=5"></script>
     <script defer src="/js/app.js?v=feature-expansion6"></script>
     <script defer src="/js/monthly-finance.js?v=14"></script>
     <script defer src="/js/exercise-assets.js?v=4"></script>
     <script defer src="/js/feature-loader.js?v=5"></script>
-    <script defer src="/js/page-tabs.js?v=7"></script>
+    <script defer src="/js/page-tabs.js?v=8"></script>
     <script defer src="/js/button-loading.js"></script>
     <script defer src="/js/pagination.js"></script>
     <script defer src="/js/whatsapp-enhancements.js?v=11"></script>

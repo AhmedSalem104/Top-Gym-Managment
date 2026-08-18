@@ -33,6 +33,52 @@
     --ui-content-max: 1380px;
 }
 
+/*
+ * Deterministic application boot.
+ *
+ * This is the single source for shell visibility and shared navigation
+ * states. Keeping it in the render-blocking design-system stylesheet avoids
+ * the old situation where the same rules lived in index.html and auth.css
+ * with different cascade priorities.
+ */
+html {
+    max-width: 100%;
+    overflow-x: hidden;
+}
+
+body.auth-pending,
+body.auth-locked {
+    min-width: 320px;
+    min-height: 100vh;
+    background: #040a11 !important;
+}
+
+body.auth-pending .app-shell,
+body.auth-locked .app-shell {
+    display: none !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+}
+
+body.top-gym-navigation-pending .app-shell {
+    visibility: hidden;
+    pointer-events: none;
+}
+
+body.auth-pending #authScreen {
+    visibility: hidden;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.auth-screen {
+    background: #040a11;
+}
+
+#pageTabs [data-page-tab][hidden] {
+    display: none !important;
+}
+
 html,
 body {
     max-width: 100%;

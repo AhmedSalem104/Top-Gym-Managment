@@ -107,18 +107,18 @@
     function showAuthenticated(user) {
         state.user = user;
         state.ready = true;
-        document.body.classList.remove('auth-pending', 'auth-locked');
         document.body.dataset.topGymAuthenticated = 'true';
+        document.body.classList.add('top-gym-navigation-pending');
+        applyNavigation(user);
         const screen = $('authScreen');
         if (screen) screen.hidden = true;
-        applyNavigation(user);
+        document.body.classList.remove('auth-pending', 'auth-locked');
     }
 
     function showLogin(message = '', setupRequired = false) {
         if (!state.ready && message && message.includes('انتهت جلسة')) return;
         state.user = null;
         state.ready = true;
-        document.body.classList.remove('auth-pending');
         document.body.classList.add('auth-locked');
         document.body.dataset.topGymAuthenticated = 'false';
         const screen = $('authScreen');
@@ -133,6 +133,7 @@
         ensureLogoutButton()?.setAttribute('hidden', '');
         const accountBar = $('authAccountBar');
         if (accountBar) accountBar.hidden = true;
+        document.body.classList.remove('auth-pending', 'top-gym-navigation-pending');
         window.setTimeout(() => $('loginEmail')?.focus(), 50);
     }
 
