@@ -42,15 +42,20 @@
     }
 
     function ensureLogoutButton() {
-        const actions = document.querySelector('.top-actions');
-        if (!actions || $('authLogoutButton')) return $('authLogoutButton');
-        const button = document.createElement('button');
-        button.id = 'authLogoutButton';
-        button.type = 'button';
-        button.className = 'btn btn-light btn-small auth-logout-button';
-        button.textContent = 'تسجيل الخروج';
-        button.hidden = true;
-        actions.appendChild(button);
+        const actions = document.querySelector('.auth-account-bar') || document.querySelector('.top-actions');
+        if (!actions) return null;
+        let button = $('authLogoutButton');
+        if (!button) {
+            button = document.createElement('button');
+            button.id = 'authLogoutButton';
+            button.type = 'button';
+            button.className = 'btn btn-light btn-small auth-logout-button';
+            button.textContent = 'تسجيل الخروج';
+            button.hidden = true;
+            actions.appendChild(button);
+        }
+        if (button.dataset.bound === 'true') return button;
+        button.dataset.bound = 'true';
         button.addEventListener('click', async () => {
             button.disabled = true;
             try {
@@ -82,6 +87,14 @@
         if (profileAvatar) profileAvatar.textContent = initials(user?.name);
         const logout = ensureLogoutButton();
         if (logout) logout.hidden = !user;
+        const accountBar = $('authAccountBar');
+        if (accountBar) accountBar.hidden = !user;
+        const accountName = $('authAccountName');
+        const accountEmail = $('authAccountEmail');
+        const accountAvatar = $('authAccountAvatar');
+        if (accountName) accountName.textContent = user?.name || 'TOP GYM';
+        if (accountEmail) accountEmail.textContent = user?.email || '—';
+        if (accountAvatar) accountAvatar.textContent = initials(user?.name);
         if (!isOwner && !assistantTabs.includes(window.location.hash.slice(1))) {
             window.location.hash = '#members';
         }
@@ -114,6 +127,8 @@
         clearMessage();
         if (message) showMessage(message);
         ensureLogoutButton()?.setAttribute('hidden', '');
+        const accountBar = $('authAccountBar');
+        if (accountBar) accountBar.hidden = true;
         window.setTimeout(() => $('loginEmail')?.focus(), 50);
     }
 
@@ -122,7 +137,7 @@
         const response = await nativeFetch(path, { ...options, credentials: 'same-origin', headers });
         if (response.status === 204) return null;
         const data = await response.json().catch(() => ({}));
-        if (response.status === 401 && state.ready) showLogin('انتهت جلسة الدخول. سجّل الدخول مرة أخرى.');
+        if (response.status === 401 && state.user) showLogin('انتهت جلسة الدخول. سجّل الدخول مرة أخرى.');
         if (!response.ok) {
             const error = new Error(data.error || 'تعذر تنفيذ الطلب.');
             error.code = data.code || null;
@@ -206,7 +221,7 @@
         const protectedApi = url.includes('/api/') && !url.includes('/api/auth/');
         if (protectedApi && !state.ready) await ready.catch(() => null);
         const response = await nativeFetch(...args);
-        if (response.status === 401 && state.ready && url.includes('/api/') && !url.includes('/api/auth/')) showLogin('انتهت جلسة الدخول. سجّل الدخول مرة أخرى.');
+        if (response.status === 401 && state.user && url.includes('/api/') && !url.includes('/api/auth/')) showLogin('انتهت جلسة الدخول. سجّل الدخول مرة أخرى.');
         return response;
     };
 
