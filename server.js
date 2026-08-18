@@ -2,6 +2,7 @@ require('dotenv').config();
 
 const express = require('express');
 const path = require('node:path');
+const compression = require('compression');
 const { getPool, initDatabase } = require('./src/db');
 const {
     createBackup,
@@ -116,6 +117,11 @@ app.use((request, response, next) => {
     next();
 });
 
+// Compress text assets and API payloads before they reach the browser. This
+// is especially important for the large shared dashboard stylesheet and the
+// library/coaching JSON responses on slower mobile connections.
+app.use(compression({ threshold: 1024 }));
+
 app.use(express.static(publicDirectory, {
     etag: true,
     lastModified: true,
@@ -125,7 +131,10 @@ app.use(express.static(publicDirectory, {
             return;
         }
         if (/\.(?:css|js|mjs|svg|webp|png|jpg|jpeg|woff2?)$/i.test(filePath)) {
-            response.setHeader('Cache-Control', 'public, max-age=86400, stale-while-revalidate=604800');
+            const versioned = String(response.req?.url || '').includes('?v=');
+            response.setHeader('Cache-Control', versioned
+                ? 'public, max-age=31536000, immutable'
+                : 'public, max-age=86400, stale-while-revalidate=604800');
         }
     }
 }));

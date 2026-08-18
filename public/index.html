@@ -3,17 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <meta name="theme-color" content="#0f172a">
+    <meta name="theme-color" content="#f7f9fc">
     <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2" sizes="any">
     <link rel="shortcut icon" type="image/svg+xml" href="/favicon.svg?v=2">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Keep the critical path self-contained. The UI falls back to the local
+         Arabic-capable system stack instead of waiting on a third-party font. -->
     <title>إدارة عضويات الجيم</title>
     <link rel="stylesheet" href="/css/base.css?v=5">
     <link rel="stylesheet" href="/tailwind.css">
     <link rel="stylesheet" href="/css/dashboard.css?v=35">
-    <link rel="stylesheet" href="/css/design-system.css?v=2">
+    <link rel="stylesheet" href="/css/design-system.css?v=3">
     <link rel="stylesheet" href="/css/exercise-assets.css?v=1">
     <link rel="stylesheet" href="/css/auth.css?v=6">
 </head>
@@ -27,7 +26,7 @@
                         <span class="auth-brand-copy"><strong><span>TOP</span> <b>GYM</b></strong><span>نظام إدارة الجيم والتدريب</span></span>
                     </div>
                     <div class="auth-hero-lines" aria-hidden="true"><i></i><i></i><i></i></div>
-                    <img class="auth-athlete" src="/assets/login-athlete.webp" width="716" height="1114" alt="" fetchpriority="high" decoding="async">
+                    <img class="auth-athlete" data-auth-lazy-src="/assets/login-athlete.webp" width="716" height="1114" alt="" loading="lazy" fetchpriority="auto" decoding="async">
                     <div class="auth-features">
                         <div class="auth-feature"><span class="auth-feature-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V5"/><path d="M4 19h16"/><path d="m7 15 3-4 3 2 5-6"/></svg></span><strong>تقارير ذكية</strong><small>لوحة تحكم متكاملة</small></div>
                         <span class="auth-feature-divider" aria-hidden="true"></span>
@@ -60,7 +59,7 @@
             </div>
         </header>
 
-        <nav class="page-tabs" id="pageTabs" role="tablist" aria-label="أقسام الإدارة">
+        <nav class="page-tabs topgym-nav" id="pageTabs" role="tablist" aria-label="أقسام الإدارة">
             <button class="page-tab active" type="button" data-page-tab="dashboard" aria-selected="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span>لوحة التحكم</span></button>
             <button class="page-tab" type="button" data-page-tab="members" aria-selected="false"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg><span>المشتركون</span></button>
                         <button class="page-tab" type="button" data-page-tab="trainees" aria-selected="false"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M3 20a6 6 0 0 1 12 0M16 4.5a3 3 0 0 1 0 6M17 14a4 4 0 0 1 4 4"/><path d="M18 8h3M19.5 6.5v3"/></svg><span>متدرب خارجى</span></button>
@@ -87,15 +86,37 @@
         </div>
 
         <main class="page max-w-7xl" id="dashboardSection">
-            <div class="dashboard-page-actions" aria-label="إجراءات لوحة التحكم">
-                <div class="dashboard-page-actions-copy">
-                    <span>لوحة التحكم</span>
-                    <strong>متابعة سريعة للنظام</strong>
+            <div class="dashboard-page-actions dashboard-hero" aria-label="إجراءات لوحة التحكم">
+                <div class="dashboard-hero-visual" aria-hidden="true">
+                    <span class="dashboard-hero-visual-ring dashboard-hero-visual-ring-one"></span>
+                    <span class="dashboard-hero-visual-ring dashboard-hero-visual-ring-two"></span>
+                    <span class="dashboard-hero-visual-logo"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.8 19.5 7v10L12 21.2 4.5 17V7L12 2.8Z" fill="currentColor" opacity=".14"/><path d="m7.1 14.9 2.7-3 2.3 2.1 4.8-5.1"/><path d="M7.2 17.2h9.6" opacity=".65"/></svg></span>
                 </div>
-                <button class="btn btn-light btn-small dashboard-pricing-print-button" id="dashboardPrintPricingButton" type="button" title="إنشاء ملف PDF للاشتراكات والباقات" aria-label="طباعة الاشتراكات والباقات">
+                <div class="dashboard-hero-stats" aria-label="مؤشرات لوحة التحكم">
+                    <article class="dashboard-hero-stat" data-dashboard-hero-source="statTotal">
+                        <span class="dashboard-hero-stat-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
+                        <span class="dashboard-hero-stat-copy"><small>إجمالي المشتركين</small><strong data-dashboard-hero-value>0</strong><em>كل المشتركين</em></span>
+                    </article>
+                    <article class="dashboard-hero-stat" data-dashboard-hero-source="statActive">
+                        <span class="dashboard-hero-stat-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8 12 2.5 2.5L16.5 9"/></svg></span>
+                        <span class="dashboard-hero-stat-copy"><small>الاشتراكات النشطة</small><strong data-dashboard-hero-value>0</strong><em>اشتراك ساري</em></span>
+                    </article>
+                    <article class="dashboard-hero-stat" data-dashboard-hero-source="statExpiring">
+                        <span class="dashboard-hero-stat-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg></span>
+                        <span class="dashboard-hero-stat-copy"><small>قريبة الانتهاء</small><strong data-dashboard-hero-value>0</strong><em>خلال 7 أيام</em></span>
+                    </article>
+                </div>
+                <div class="dashboard-hero-content">
+                    <div class="dashboard-page-actions-copy">
+                        <strong>لوحة التحكم</strong>
+                        <span>متابعة سريعة للنظام</span>
+                        <i class="dashboard-hero-pulse" aria-hidden="true"><b></b><b></b><b></b><b></b><b></b><b></b><b></b></i>
+                    </div>
+                    <button class="btn btn-light btn-small dashboard-pricing-print-button" id="dashboardPrintPricingButton" type="button" title="إنشاء ملف PDF للاشتراكات والباقات" aria-label="طباعة الاشتراكات والباقات">
                     <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9V3h12v6"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v7H6z"/><path d="M17 12h.01"/></svg>
                     <span>طباعة الاشتراكات والباقات</span>
-                </button>
+                    </button>
+                </div>
             </div>
             <section class="overview-grid" aria-label="ملخص العضويات والتنبيهات">
             <section class="stats-grid" aria-label="ملخص العضويات">
@@ -425,12 +446,10 @@
     </dialog>
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-    <script defer src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- SweetAlert2 is optional and loaded during idle time by feature-loader. -->
     <script defer src="/js/auth-ui.js?v=5"></script>
-    <script defer src="/js/app.js?v=feature-expansion6"></script>
-    <script defer src="/js/monthly-finance.js?v=14"></script>
-    <script defer src="/js/exercise-assets.js?v=4"></script>
-    <script defer src="/js/feature-loader.js?v=5"></script>
+    <script defer src="/js/app.js?v=feature-expansion8"></script>
+    <script defer src="/js/feature-loader.js?v=6"></script>
     <script defer src="/js/page-tabs.js?v=8"></script>
     <script defer src="/js/button-loading.js"></script>
     <script defer src="/js/pagination.js"></script>

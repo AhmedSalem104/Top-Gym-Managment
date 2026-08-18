@@ -27,6 +27,12 @@
         element.textContent = '';
     }
 
+    function loadAuthVisuals() {
+        document.querySelectorAll('[data-auth-lazy-src]').forEach((image) => {
+            if (!image.getAttribute('src')) image.setAttribute('src', image.dataset.authLazySrc);
+        });
+    }
+
     function setSubmitLoading(loading) {
         const button = $('loginSubmit');
         if (!button) return;
@@ -122,6 +128,7 @@
         document.body.classList.add('auth-locked');
         document.body.dataset.topGymAuthenticated = 'false';
         const screen = $('authScreen');
+        loadAuthVisuals();
         if (screen) screen.hidden = false;
         const form = $('loginForm');
         if (form) form.hidden = false;

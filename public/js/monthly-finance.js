@@ -12,11 +12,20 @@
         return /^\/api\/(members(?:\/|$)|memberships(?:\/|$)|expenses(?:\/|$))/.test(url);
     }
 
+    function isFinanceTabVisible() {
+        const activeTab = document.documentElement.dataset.topGymActiveTab
+            || window.location.hash.slice(1)
+            || 'dashboard';
+        return activeTab === 'dashboard' || activeTab === 'expenses';
+    }
+
     function queueRefresh() {
         window.clearTimeout(refreshTimer);
         refreshTimer = window.setTimeout(() => {
-            loadFinance();
-            window.topGymRefreshDashboardAnalytics?.();
+            if (window.topGymAuth?.isOwner?.() && isFinanceTabVisible()) {
+                loadFinance();
+                window.topGymRefreshDashboardAnalytics?.();
+            }
         }, 180);
     }
 
@@ -177,7 +186,7 @@
     }
 
     async function loadFinance() {
-        if (!window.topGymAuth?.isOwner?.()) return null;
+        if (!window.topGymAuth?.isOwner?.() || !isFinanceTabVisible()) return null;
         if (!$('monthlyFinanceCard')) return;
         if (financeRequest) return financeRequest;
         $('monthlyFinanceStatus').textContent = 'جاري التحديث…';
@@ -283,7 +292,7 @@
         }
     }
 
-    document.addEventListener('DOMContentLoaded', () => {
+    function initializeFinance() {
         const expenseDialog = $('expenseDialog');
         if (expenseDialog && expenseDialog.parentElement !== document.body) {
             document.body.appendChild(expenseDialog);
@@ -316,10 +325,21 @@
                 if (button.dataset.expenseAction === 'delete') deleteExpense(id);
             });
         }
-        const startFinance = () => { if (window.topGymAuth?.isOwner?.()) void loadFinance(); };
+        const startFinance = () => { if (window.topGymAuth?.isOwner?.() && isFinanceTabVisible()) void loadFinance(); };
         if (window.topGymAuthReady) window.topGymAuthReady.then(startFinance).catch(() => {});
         else startFinance();
-    });
+        window.addEventListener('topgym:tab-changed', (event) => {
+            if (['dashboard', 'expenses'].includes(event.detail?.name) && window.topGymAuth?.isOwner?.()) {
+                void loadFinance();
+            }
+        });
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initializeFinance, { once: true });
+    } else {
+        initializeFinance();
+    }
 
     window.topGymRefreshMonthlyFinance = loadFinance;
 })();

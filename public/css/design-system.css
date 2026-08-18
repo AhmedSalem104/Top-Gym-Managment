@@ -439,3 +439,467 @@ html[data-top-gym-active-tab]:not([data-top-gym-active-tab='dashboard'])
         transition-duration: .01ms !important;
     }
 }
+
+/* -------------------------------------------------------------------------
+ * TOP GYM dashboard shell
+ *
+ * The dashboard header is intentionally kept here, after the shared shell
+ * rules, so the navbar and hero use one visual language without touching the
+ * tab handlers, auth state, or page-specific feature styles.
+ * ------------------------------------------------------------------------- */
+:root {
+    --topgym-dashboard-bg: #f7f9fc;
+    --topgym-surface: #ffffff;
+    --topgym-primary: #2f6bff;
+    --topgym-primary-dark: #1d55f5;
+    --topgym-ink: #101b35;
+    --topgym-muted: #64748b;
+    --topgym-soft-line: #dce6f4;
+}
+
+body.gym-page-bg {
+    background: linear-gradient(180deg, #f8fafd 0%, var(--topgym-dashboard-bg) 100%) !important;
+}
+
+/* The old utility header remains in the DOM for its existing handlers. The
+   visible authenticated shell is the single floating tab bar below. */
+.app-shell > .topbar {
+    display: none !important;
+}
+
+.app-shell #pageTabs.topgym-nav {
+    position: relative;
+    z-index: 30;
+    display: flex !important;
+    align-items: center;
+    gap: 4px;
+    width: calc(100% - clamp(32px, 5vw, 80px)) !important;
+    max-width: 1900px !important;
+    min-height: 84px;
+    margin: 24px auto 0;
+    padding: 12px 14px !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    border: 1px solid rgba(210, 220, 235, .9);
+    border-radius: 20px;
+    background: rgba(255, 255, 255, .96);
+    box-shadow: 0 10px 30px rgba(30, 60, 100, .08);
+    direction: rtl;
+    scrollbar-width: none;
+}
+
+.app-shell #pageTabs.topgym-nav::-webkit-scrollbar { display: none; }
+
+.app-shell #pageTabs.topgym-nav .page-tab {
+    display: inline-flex !important;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 58px;
+    padding: 12px 15px;
+    border: 1px solid transparent;
+    border-radius: 12px;
+    color: #52637d;
+    background: transparent;
+    font-size: clamp(12px, .82vw, 15px);
+    font-weight: 700;
+    line-height: 1.25;
+    white-space: nowrap;
+    transition: color .2s ease, background-color .2s ease, border-color .2s ease, box-shadow .2s ease, transform .2s ease;
+}
+
+.app-shell #pageTabs.topgym-nav .page-tab .ui-icon {
+    width: 19px;
+    height: 19px;
+    flex: 0 0 19px;
+    color: #62738b;
+    stroke-width: 1.8;
+}
+
+.app-shell #pageTabs.topgym-nav .page-tab:hover:not(.active) {
+    color: #235ff5;
+    background: #f5f8fd;
+    border-color: #e5edf9;
+    transform: translateY(-1px);
+}
+
+.app-shell #pageTabs.topgym-nav .page-tab:hover:not(.active) .ui-icon { color: #235ff5; }
+
+.app-shell #pageTabs.topgym-nav .page-tab.active {
+    color: #ffffff;
+    background: linear-gradient(135deg, var(--topgym-primary), var(--topgym-primary-dark));
+    border-color: #2c66ff;
+    box-shadow: 0 8px 18px rgba(47, 107, 255, .2);
+}
+
+.app-shell #pageTabs.topgym-nav .page-tab.active .ui-icon { color: #ffffff; }
+
+.app-shell #pageTabs.topgym-nav .auth-account-bar:not([hidden]) {
+    order: 99;
+    display: flex !important;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    min-width: 270px;
+    min-height: 58px;
+    margin: 0 0 0 auto;
+    padding: 5px 7px 5px 8px;
+    border: 1px solid #d8e4f4;
+    border-radius: 13px;
+    background: #ffffff;
+    box-shadow: 0 4px 12px rgba(30, 60, 100, .04);
+    direction: rtl;
+}
+
+.app-shell #pageTabs.topgym-nav .auth-account-identity { min-width: 0; gap: 9px; }
+
+.app-shell #pageTabs.topgym-nav .auth-account-avatar {
+    position: relative;
+    width: 44px;
+    height: 44px;
+    flex-basis: 44px;
+    border: 1px solid #d5e2ff;
+    border-radius: 50%;
+    color: #2363f3;
+    background: #eff4ff;
+    font-size: 12px;
+}
+
+.app-shell #pageTabs.topgym-nav .auth-account-avatar::after {
+    position: absolute;
+    right: -1px;
+    bottom: -1px;
+    width: 8px;
+    height: 8px;
+    border: 2px solid #ffffff;
+    border-radius: 50%;
+    background: #22c55e;
+    content: '';
+}
+
+.app-shell #pageTabs.topgym-nav .auth-account-copy { gap: 2px; }
+
+.app-shell #pageTabs.topgym-nav .auth-account-copy strong {
+    max-width: 150px;
+    color: #111827;
+    font-size: 13px;
+    font-weight: 800;
+}
+
+.app-shell #pageTabs.topgym-nav .auth-account-copy small {
+    max-width: 150px;
+    color: #8390a5;
+    font-size: 11px;
+}
+
+.app-shell #pageTabs.topgym-nav .auth-logout-button {
+    min-height: 44px !important;
+    padding: 10px 13px !important;
+    border: 1px solid #ffe1e1 !important;
+    border-radius: 12px;
+    color: #e53e3e !important;
+    background: #fff5f5 !important;
+    font-size: 12px;
+    font-weight: 800;
+}
+
+.app-shell #pageTabs.topgym-nav .auth-logout-button:hover:not(:disabled) {
+    color: #c53030 !important;
+    background: #ffecec !important;
+    border-color: #ffcaca !important;
+}
+
+.app-shell #pageTabs.topgym-nav .auth-logout-button .ui-icon { width: 18px; height: 18px; }
+
+.app-shell #dashboardSection.page.max-w-7xl {
+    width: calc(100% - clamp(32px, 5vw, 80px));
+    max-width: 1900px !important;
+    margin-inline: auto;
+    padding: 40px 0 64px !important;
+}
+
+.app-shell #dashboardSection > .dashboard-hero {
+    position: relative;
+    display: grid;
+    grid-template-columns: 31% 39% 30%;
+    grid-template-areas: 'visual stats copy';
+    align-items: stretch;
+    width: 100%;
+    height: clamp(300px, 44vh, 430px);
+    min-height: 300px;
+    margin: 0 0 28px;
+    padding: 0;
+    overflow: hidden;
+    isolation: isolate;
+    border: 1px solid #cfe0ff;
+    border-radius: 26px;
+    background: linear-gradient(90deg, #f5f9ff 0%, #ffffff 55%, #f1f6ff 100%);
+    box-shadow: 0 18px 50px rgba(65, 100, 160, .08);
+    direction: ltr;
+}
+
+.app-shell #dashboardSection > .dashboard-hero::before {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    opacity: .62;
+    background-image: linear-gradient(rgba(47, 107, 255, .038) 1px, transparent 1px), linear-gradient(90deg, rgba(47, 107, 255, .038) 1px, transparent 1px);
+    background-size: 40px 40px;
+    content: '';
+    pointer-events: none;
+}
+
+.app-shell #dashboardSection > .dashboard-hero > .dashboard-hero-visual {
+    position: relative;
+    grid-area: visual;
+    min-width: 0;
+    overflow: hidden;
+    isolation: isolate;
+    background: linear-gradient(90deg, rgba(238, 246, 255, .12), rgba(245, 250, 255, .82)), url('/assets/gym-background.webp') center / cover no-repeat;
+    background-blend-mode: screen;
+}
+
+.app-shell #dashboardSection > .dashboard-hero > .dashboard-hero-visual::before {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: linear-gradient(90deg, rgba(247, 250, 255, .16), rgba(247, 250, 255, .78));
+    content: '';
+}
+
+.app-shell #dashboardSection > .dashboard-hero > .dashboard-hero-visual::after {
+    position: absolute;
+    inset: -25% -16% -25% auto;
+    width: 52%;
+    border-left: 1px solid rgba(47, 107, 255, .18);
+    background: rgba(255, 255, 255, .24);
+    content: '';
+    transform: skewX(-20deg);
+}
+
+.dashboard-hero-visual-ring {
+    position: absolute;
+    z-index: 1;
+    width: 220px;
+    height: 220px;
+    border: 1px solid rgba(47, 107, 255, .25);
+    border-radius: 50%;
+    inset: 50% auto auto 50%;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 0 0 20px rgba(47, 107, 255, .045), 0 0 0 42px rgba(47, 107, 255, .03);
+}
+
+.dashboard-hero-visual-ring-two { width: 165px; height: 165px; border-color: rgba(255, 255, 255, .75); box-shadow: none; }
+
+.dashboard-hero-visual-logo {
+    position: absolute;
+    z-index: 2;
+    display: grid;
+    width: 132px;
+    height: 132px;
+    place-items: center;
+    border: 1px solid rgba(255, 255, 255, .84);
+    border-radius: 50%;
+    color: #2f6bff;
+    background: rgba(255, 255, 255, .62);
+    box-shadow: 0 15px 45px rgba(37, 99, 235, .14), inset 0 1px 0 rgba(255, 255, 255, .9);
+    inset: 50% auto auto 50%;
+    transform: translate(-50%, -50%);
+    backdrop-filter: blur(8px);
+}
+
+.dashboard-hero-visual-logo .ui-icon { width: 64px; height: 64px; stroke-width: 1.5; }
+
+.app-shell #dashboardSection > .dashboard-hero > .dashboard-hero-stats {
+    display: grid;
+    grid-area: stats;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-self: center;
+    width: calc(100% - 40px);
+    min-width: 0;
+    margin: auto;
+    padding: 28px 20px;
+    border: 1px solid #dbe6f6;
+    border-radius: 20px;
+    background: rgba(255, 255, 255, .93);
+    box-shadow: 0 15px 40px rgba(72, 95, 130, .12);
+    direction: rtl;
+}
+
+.dashboard-hero-stat {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 12px;
+    padding: 0 20px;
+    direction: rtl;
+}
+
+.dashboard-hero-stat + .dashboard-hero-stat { border-inline-start: 1px solid #e5eaf2; }
+
+.dashboard-hero-stat-icon {
+    display: grid;
+    width: 50px;
+    height: 50px;
+    flex: 0 0 50px;
+    place-items: center;
+    border-radius: 14px;
+    color: #2f6bff;
+    background: #f0f5ff;
+}
+
+.dashboard-hero-stat:nth-child(2) .dashboard-hero-stat-icon { color: #16a34a; background: #effbf4; }
+.dashboard-hero-stat:nth-child(3) .dashboard-hero-stat-icon { color: #f59e0b; background: #fff8e7; }
+.dashboard-hero-stat-icon .ui-icon { width: 22px; height: 22px; }
+
+.dashboard-hero-stat-copy { display: flex; min-width: 0; flex-direction: column; gap: 3px; }
+
+.dashboard-hero-stat-copy small,
+.dashboard-hero-stat-copy em {
+    overflow: hidden;
+    color: #64748b;
+    font-size: clamp(10px, .72vw, 12px);
+    font-style: normal;
+    font-weight: 600;
+    line-height: 1.4;
+    text-overflow: ellipsis;
+    white-space: normal;
+}
+
+.dashboard-hero-stat-copy strong {
+    color: #14213d;
+    font-size: clamp(24px, 2vw, 34px);
+    font-weight: 800;
+    line-height: 1.05;
+    direction: ltr;
+    text-align: right;
+}
+
+.dashboard-hero-stat-copy em { color: #94a3b8; font-size: 11px; font-weight: 500; white-space: nowrap; }
+
+.app-shell #dashboardSection > .dashboard-hero > .dashboard-hero-content {
+    display: flex;
+    grid-area: copy;
+    min-width: 0;
+    flex-direction: column;
+    justify-content: center;
+    padding: 42px 50px 34px;
+    direction: rtl;
+    text-align: right;
+}
+
+.app-shell #dashboardSection > .dashboard-hero > .dashboard-hero-content > .dashboard-page-actions-copy {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 0;
+}
+
+.app-shell #dashboardSection > .dashboard-hero > .dashboard-hero-content .dashboard-page-actions-copy > span { margin-top: 9px; color: #64748b; font-size: clamp(17px, 1.45vw, 25px); font-weight: 500; line-height: 1.4; }
+
+.app-shell #dashboardSection > .dashboard-hero > .dashboard-hero-content .dashboard-page-actions-copy > strong {
+    margin-top: 0;
+    color: var(--topgym-ink);
+    font-size: clamp(34px, 3.25vw, 58px);
+    font-weight: 800;
+    line-height: 1.15;
+    white-space: nowrap;
+}
+
+.dashboard-hero-pulse {
+    display: flex;
+    width: min(100%, 320px);
+    height: 22px;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    margin: 16px 0 10px;
+    border-top: 1px solid #d7e4fa;
+    border-bottom: 1px solid #d7e4fa;
+}
+
+.dashboard-hero-pulse b { display: block; width: 2px; height: 5px; border-radius: 99px; background: #bfd3ff; }
+.dashboard-hero-pulse b:nth-child(3), .dashboard-hero-pulse b:nth-child(5) { height: 15px; background: #2f6bff; }
+.dashboard-hero-pulse b:nth-child(4) { height: 20px; background: #2f6bff; }
+
+.app-shell #dashboardSection > .dashboard-hero > .dashboard-hero-content > .dashboard-pricing-print-button {
+    align-self: stretch;
+    width: min(100%, 420px);
+    min-height: 64px;
+    margin: 24px 0 0;
+    padding: 15px 22px;
+    border: 1px solid #2c66ff;
+    border-radius: 14px;
+    color: #ffffff;
+    background: linear-gradient(135deg, #3474ff, #1e55f5);
+    box-shadow: 0 14px 30px rgba(43, 101, 246, .22);
+    font-size: clamp(14px, 1.15vw, 18px);
+    font-weight: 800;
+}
+
+.app-shell #dashboardSection > .dashboard-hero > .dashboard-hero-content > .dashboard-pricing-print-button:hover:not(:disabled) { background: linear-gradient(135deg, #4b83ff, #245df4); box-shadow: 0 16px 32px rgba(43, 101, 246, .27); transform: translateY(-2px); }
+.app-shell #dashboardSection > .dashboard-hero > .dashboard-hero-content > .dashboard-pricing-print-button .ui-icon { width: 23px; height: 23px; }
+
+/* The legacy dashboard rule targets the print button by ID, so keep this
+   equally specific override as the final visual authority for the hero CTA. */
+.app-shell #dashboardSection > .dashboard-hero > .dashboard-hero-content > #dashboardPrintPricingButton {
+    border-color: #2c66ff !important;
+    color: #ffffff !important;
+    background: linear-gradient(135deg, #3474ff, #1e55f5) !important;
+}
+
+.app-shell #dashboardSection > .dashboard-hero > .dashboard-hero-content > #dashboardPrintPricingButton:hover:not(:disabled) {
+    background: linear-gradient(135deg, #4b83ff, #245df4) !important;
+}
+
+@media (max-width: 1250px) {
+    .app-shell #pageTabs.topgym-nav .page-tab { padding-inline: 11px; font-size: 12px; }
+    .app-shell #pageTabs.topgym-nav .auth-account-bar:not([hidden]) { min-width: 245px; }
+    .app-shell #dashboardSection > .dashboard-hero { grid-template-columns: 28% 40% 32%; }
+    .app-shell #dashboardSection > .dashboard-hero > .dashboard-hero-content { padding-inline: 30px; }
+    .dashboard-hero-stat { gap: 8px; padding-inline: 10px; }
+    .dashboard-hero-stat-icon { width: 42px; height: 42px; flex-basis: 42px; }
+}
+
+@media (max-width: 900px) {
+    .app-shell #dashboardSection > .dashboard-hero { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-areas: 'copy copy' 'stats visual'; height: auto; min-height: 0; }
+    .app-shell #dashboardSection > .dashboard-hero > .dashboard-hero-content { min-height: 210px; padding: 30px 32px 28px; }
+    .app-shell #dashboardSection > .dashboard-hero > .dashboard-hero-stats { width: calc(100% - 28px); margin: 20px 14px; padding: 22px 12px; }
+    .app-shell #dashboardSection > .dashboard-hero > .dashboard-hero-visual { min-height: 220px; }
+    .dashboard-hero-visual-logo { width: 100px; height: 100px; }
+    .dashboard-hero-visual-logo .ui-icon { width: 48px; height: 48px; }
+}
+
+@media (max-width: 640px) {
+    .app-shell #pageTabs.topgym-nav { display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)); width: calc(100% - 24px) !important; min-height: 64px; margin-top: 12px; padding: 8px !important; border-radius: 16px; gap: 5px; overflow: visible !important; }
+    .app-shell #pageTabs.topgym-nav .page-tab { width: 100%; min-height: 46px; padding: 9px 8px; border-radius: 10px; font-size: 11px; }
+    .app-shell #pageTabs.topgym-nav .page-tab .ui-icon { width: 17px; height: 17px; flex-basis: 17px; }
+    .app-shell #pageTabs.topgym-nav .auth-account-bar:not([hidden]) { grid-column: 1 / -1; min-width: 0; width: 100%; min-height: 46px; margin: 0; padding: 4px 5px; gap: 7px; border-radius: 11px; }
+    .app-shell #pageTabs.topgym-nav .auth-account-avatar { width: 34px; height: 34px; flex-basis: 34px; font-size: 10px; }
+    .app-shell #pageTabs.topgym-nav .auth-account-copy strong { max-width: 106px; font-size: 10px; }
+    .app-shell #pageTabs.topgym-nav .auth-account-copy small { max-width: 106px; font-size: 9px; }
+    .app-shell #pageTabs.topgym-nav .auth-logout-button { min-height: 36px !important; padding: 7px 8px !important; font-size: 0; }
+    .app-shell #pageTabs.topgym-nav .auth-logout-button .ui-icon { width: 18px; height: 18px; }
+    .app-shell #dashboardSection.page.max-w-7xl { width: calc(100% - 24px); padding: 24px 0 44px !important; }
+    .app-shell #dashboardSection > .dashboard-hero { grid-template-columns: 1fr; grid-template-areas: 'copy' 'stats' 'visual'; margin-bottom: 18px; border-radius: 20px; }
+    .app-shell #dashboardSection > .dashboard-hero > .dashboard-hero-content { min-height: 0; padding: 28px 20px 22px; }
+    .app-shell #dashboardSection > .dashboard-hero > .dashboard-hero-content .dashboard-page-actions-copy > strong { font-size: clamp(31px, 10vw, 42px); white-space: normal; }
+    .dashboard-hero-pulse { width: min(100%, 250px); margin-block: 12px 4px; }
+    .app-shell #dashboardSection > .dashboard-hero > .dashboard-hero-content > .dashboard-pricing-print-button { align-self: stretch; width: 100%; min-height: 56px; margin-top: 18px; padding-inline: 15px; font-size: 14px; }
+    .app-shell #dashboardSection > .dashboard-hero > .dashboard-hero-stats { width: calc(100% - 24px); margin: 12px; padding: 14px 5px; border-radius: 15px; }
+    .dashboard-hero-stat { flex-direction: column; justify-content: center; gap: 5px; padding-inline: 5px; text-align: center; }
+    .dashboard-hero-stat + .dashboard-hero-stat { border-inline-start: 1px solid #e5eaf2; }
+    .dashboard-hero-stat-icon { width: 34px; height: 34px; flex-basis: 34px; border-radius: 10px; }
+    .dashboard-hero-stat-icon .ui-icon { width: 17px; height: 17px; }
+    .dashboard-hero-stat-copy { align-items: center; gap: 1px; }
+    .dashboard-hero-stat-copy small, .dashboard-hero-stat-copy em { max-width: 92px; font-size: 9px; text-align: center; }
+    .dashboard-hero-stat-copy strong { font-size: 22px; }
+    .app-shell #dashboardSection > .dashboard-hero > .dashboard-hero-visual { min-height: 154px; }
+    .dashboard-hero-visual-ring { width: 150px; height: 150px; }
+    .dashboard-hero-visual-ring-two { width: 112px; height: 112px; }
+    .dashboard-hero-visual-logo { width: 82px; height: 82px; }
+    .dashboard-hero-visual-logo .ui-icon { width: 40px; height: 40px; }
+}

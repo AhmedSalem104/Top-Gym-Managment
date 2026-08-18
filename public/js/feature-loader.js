@@ -7,25 +7,36 @@
     const featurePromises = new Map();
 
     const features = {
+        dashboard: {
+            dependencies: ['finance'],
+            styles: [],
+            scripts: []
+        },
+        finance: {
+            styles: [],
+            scripts: ['/js/monthly-finance.js?v=15']
+        },
         members: {
-            styles: [
-                '/css/attendance.css?v=6',
-                '/css/coaching.css?v=9',
-                '/css/muscle-assets.css?v=2'
-            ],
+            styles: ['/css/attendance.css?v=6'],
             scripts: [
                 '/js/action-menu.js?v=4',
-                '/js/print-enhancements.js?v=10',
-                '/js/attendance.js?v=8',
-                '/js/muscle-assets.js?v=2',
-                '/js/coaching.js?v=12'
+                '/js/attendance.js?v=8'
+            ]
+        },
+        coaching: {
+            styles: ['/css/coaching.css?v=9', '/css/muscle-assets.css?v=2'],
+            scripts: [
+                '/js/exercise-assets.js?v=5',
+                '/js/muscle-assets.js?v=3',
+                '/js/coaching.js?v=13'
             ]
         },
         print: {
             styles: [],
-            scripts: ['/js/print-enhancements.js?v=10']
+            scripts: ['/js/exercise-assets.js?v=5', '/js/print-enhancements.js?v=11']
         },
         expenses: {
+            dependencies: ['finance'],
             styles: ['/css/operations.css?v=6'],
             scripts: []
         },
@@ -45,17 +56,19 @@
         },
         library: {
             styles: ['/css/library.css?v=10', '/css/muscle-assets.css?v=2'],
-            scripts: ['/js/muscle-assets.js?v=2', '/js/library.js?v=11']
+            scripts: ['/js/exercise-assets.js?v=5', '/js/muscle-assets.js?v=3', '/js/library.js?v=12']
         },
         trainees: {
-            styles: ['/css/coaching.css?v=9', '/css/muscle-assets.css?v=2'],
-            scripts: ['/js/muscle-assets.js?v=2', '/js/coaching.js?v=12']
+            dependencies: ['coaching'],
+            styles: [],
+            scripts: []
         }
     };
 
     const externalAssets = {
         qrcode: 'https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js',
-        'html5-qrcode': 'https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js'
+        'html5-qrcode': 'https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js',
+        sweetalert: 'https://cdn.jsdelivr.net/npm/sweetalert2@11'
     };
 
     function loadScript(source, key = source) {
@@ -114,8 +127,11 @@
         if (featurePromises.has(name)) return featurePromises.get(name);
 
         const promise = (async () => {
+            for (const dependency of feature.dependencies || []) await ensureTab(dependency);
             await Promise.all((feature.styles || []).map(loadStyle));
-            for (const source of feature.scripts || []) await loadScript(source);
+            // Feature scripts are independent modules. Start them together so
+            // navigation pays one network round-trip instead of one per file.
+            await Promise.all((feature.scripts || []).map((source) => loadScript(source)));
         })();
         featurePromises.set(name, promise);
         try {
@@ -229,6 +245,59 @@
         }, true);
     }
 
+    function bindLazyCoachingActions() {
+        const ensureCoaching = () => ensureTab('coaching').catch((error) => {
+            console.warn('[TOP GYM] Coaching feature failed to load.', error);
+            window.showToast?.(error.message || 'تعذر تحميل أدوات التدريب والتغذية.', true, 'error');
+            throw error;
+        });
+
+        // Member details are opened by the core member module. Replay the event
+        // after the optional coaching module registers its listener so the
+        // existing details flow remains unchanged.
+        window.addEventListener('topgym:member-details-opened', (event) => {
+            if (event.detail?.__topGymCoachingReplay) return;
+            const detail = event.detail || {};
+            ensureCoaching().then(() => {
+                window.dispatchEvent(new CustomEvent('topgym:member-details-opened', {
+                    detail: { ...detail, __topGymCoachingReplay: true }
+                }));
+            }).catch(() => {});
+        });
+
+        // The table still renders the same training/diet actions, but the
+        // 221KB coaching module is fetched only when one of them is used.
+        document.addEventListener('click', (event) => {
+            const button = event.target.closest('[data-member-coaching-action]');
+            if (!button || window.__topGymCoachingLoaded || button.dataset.topGymFeatureLoading === 'true') return;
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            button.dataset.topGymFeatureLoading = 'true';
+            button.disabled = true;
+            ensureCoaching().then(() => {
+                // A disabled button does not dispatch a synthetic click in the
+                // browser. Re-enable it before replaying the user's action.
+                if (button.isConnected) {
+                    button.disabled = false;
+                    button.click();
+                }
+            }).catch(() => {}).finally(() => {
+                delete button.dataset.topGymFeatureLoading;
+                if (button.isConnected) button.disabled = false;
+            });
+        }, true);
+    }
+
+    function scheduleOptionalEnhancements() {
+        const load = () => loadExternalAsset('sweetalert').catch(() => null);
+        // Keep optional third-party UI out of the first interaction window.
+        // Native dialogs/toasts remain available until this enhancement loads.
+        window.setTimeout(() => {
+            if ('requestIdleCallback' in window) window.requestIdleCallback(load, { timeout: 3000 });
+            else load();
+        }, 4500);
+    }
+
     window.topGymEnsureTab = ensureTab;
     window.topGymLoadExternalAsset = loadExternalAsset;
     window.topGymLoadFeature = loadScript;
@@ -237,6 +306,8 @@
     });
     bindLazyBackupAction();
     bindLazyPrintActions();
+    bindLazyCoachingActions();
+    scheduleOptionalEnhancements();
 
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => {

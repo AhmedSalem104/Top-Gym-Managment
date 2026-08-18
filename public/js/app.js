@@ -207,16 +207,29 @@
             return document.querySelector('[data-page-tab="members"]')?.classList.contains('active');
         }
 
+        function requestedTab() {
+            return document.documentElement.dataset.topGymActiveTab
+                || window.location.hash.slice(1)
+                || 'dashboard';
+        }
+
         async function loadData() {
             if (!window.topGymAuth?.getUser?.()) return;
             if (dataLoadPromise) return dataLoadPromise;
             const loadPromise = withLoader(async () => {
                 const isOwner = window.topGymAuth?.isOwner?.() === true;
-                const dashboardRequest = isOwner ? api('/api/dashboard') : Promise.resolve(null);
-                const pricingRequest = loadPricingCatalog(true);
+                const activeTab = requestedTab();
+                const dashboardRequest = isOwner && activeTab === 'dashboard'
+                    ? api('/api/dashboard')
+                    : Promise.resolve(null);
+                // Pricing is needed by the members workspace and its dialogs,
+                // not by every route opened at boot.
+                const pricingRequest = activeTab === 'members'
+                    ? loadPricingCatalog(false)
+                    : Promise.resolve(state.pricing);
                 try {
                     const [dashboard] = await Promise.all([dashboardRequest, pricingRequest]);
-                    if (isOwner) {
+                    if (isOwner && activeTab === 'dashboard') {
                         state.dashboard = dashboard || null;
                         renderDashboard();
                     }
@@ -254,8 +267,19 @@
             return trackedPromise;
         }
 
+        function syncDashboardHeroStats() {
+            document.querySelectorAll('[data-dashboard-hero-source]').forEach((card) => {
+                const source = document.getElementById(card.dataset.dashboardHeroSource);
+                const value = card.querySelector('[data-dashboard-hero-value]');
+                if (!source || !value) return;
+                const raw = source.textContent.trim();
+                const number = Number(raw.replace(/[^\d.-]/g, ''));
+                value.textContent = raw && Number.isFinite(number) ? number.toLocaleString('en-US') : raw;
+            });
+        }
+
         function renderDashboard() {
-             const dashboard = state.dashboard || { stats: {}, alerts: [] }; $('statTotal').textContent = dashboard.stats.total || 0; $('statActive').textContent = dashboard.stats.active || 0; $('statExpiring').textContent = dashboard.stats.expiringSoon || 0; $('statExpired').textContent = dashboard.stats.expired || 0; $('statFrozen').textContent = dashboard.stats.frozen || 0;
+             const dashboard = state.dashboard || { stats: {}, alerts: [] }; $('statTotal').textContent = dashboard.stats.total || 0; $('statActive').textContent = dashboard.stats.active || 0; $('statExpiring').textContent = dashboard.stats.expiringSoon || 0; $('statExpired').textContent = dashboard.stats.expired || 0; $('statFrozen').textContent = dashboard.stats.frozen || 0; syncDashboardHeroStats();
             // Dashboard alerts are membership actions only. Keep this guard in
             // the UI as a second line of defense for stale/legacy API payloads.
             const alerts = (dashboard.alerts || []).filter((member) => member?.membership);
@@ -372,7 +396,17 @@
 
         function closeMemberDialog() { const dialog = $('memberDialog'); if (typeof dialog.close === 'function' && dialog.open) dialog.close(); else dialog.removeAttribute('open'); }
          function setFormDefaults(close = false) { const today = todayIso(); const defaultType = activeTypeEntries()[0]?.[0] || 'monthly'; $('memberId').value = ''; $('fullName').value = ''; $('phone').value = ''; $('email').value = ''; $('registrationDate').value = today; $('notes').value = ''; $('membershipType').value = defaultType; $('membershipPlan').value = 'gym_only'; $('startDate').value = today; $('endDate').value = calculatedEndDate(today, defaultType); $('membershipNotes').value = ''; $('discountAmount').value = '0'; $('amountPaid').value = ''; $('paymentMethod').value = 'cash'; $('sendWhatsAppAfterSave').checked = true; $('sendWhatsAppAfterSave').closest('.whatsapp-after-save')?.classList.remove('hidden'); state.editing = null; state.endDateManual = false; $('formTitle').textContent = 'إضافة عضو جديد'; $('saveButton').textContent = 'حفظ العضو'; $('cancelEditButton').classList.add('hidden'); $('resetButton').classList.add('hidden'); updateFormPricing(); if (close) closeMemberDialog(); }
-        function openMemberDialog(member = null) { if (member) editMember(member); else setFormDefaults(); const dialog = $('memberDialog'); if (typeof dialog.showModal === 'function') dialog.showModal(); else dialog.setAttribute('open', ''); }
+        async function openMemberDialog(member = null) {
+            try {
+                await loadPricingCatalog();
+                if (member) editMember(member); else setFormDefaults();
+                const dialog = $('memberDialog');
+                if (typeof dialog.showModal === 'function') dialog.showModal();
+                else dialog.setAttribute('open', '');
+            } catch (error) {
+                await notify(error.message, 'error');
+            }
+        }
         function editMember(member) { const sub = member.membership || {}; $('memberId').value = member.id; $('fullName').value = member.fullName || ''; $('phone').value = member.phone || ''; $('email').value = member.email || ''; $('registrationDate').value = member.registrationDate || todayIso(); $('notes').value = member.notes || ''; $('membershipType').value = resolvedTypeCode(sub.type || 'monthly'); $('membershipPlan').value = sub.plan || 'gym_only'; $('startDate').value = sub.startDate || todayIso(); $('endDate').value = sub.endDate || calculatedEndDate($('startDate').value, $('membershipType').value); $('membershipNotes').value = sub.notes || ''; $('discountAmount').value = String(sub.discountAmount || 0); $('amountPaid').value = String(sub.amountPaid || 0); $('paymentMethod').value = sub.paymentMethod || 'cash'; $('sendWhatsAppAfterSave').checked = false; $('sendWhatsAppAfterSave').closest('.whatsapp-after-save')?.classList.add('hidden'); state.editing = member; state.endDateManual = true; $('formTitle').textContent = 'تعديل بيانات العضو'; $('saveButton').textContent = 'حفظ التعديلات'; $('cancelEditButton').classList.remove('hidden'); $('resetButton').classList.remove('hidden'); updateFormPricing(); }
 
         function openDialog(action, member) {
@@ -520,7 +554,10 @@
                 }
             });
             window.addEventListener('topgym:tab-changed', (event) => {
-                if (event.detail?.name === 'members') loadMembersOnly();
+                if (event.detail?.name === 'members') {
+                    void loadPricingCatalog();
+                    void loadMembersOnly();
+                }
             });
             const loadAfterAuth = () => {
                 if (window.topGymAuth?.getUser?.()) void loadData();
