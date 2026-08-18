@@ -431,13 +431,24 @@ body[data-top-gym-role='Assistant'] #refreshButton { display: none !important; }
     .auth-shell { width: min(100%, 520px); height: auto; min-height: 0; }
     .auth-card { display: block; height: auto; border-radius: 24px; }
     .auth-card { direction: rtl; }
-    .auth-hero { min-height: 188px; border-inline-end: 0; border-bottom: 1px solid rgba(148, 163, 184, .18); }
+    .auth-hero { min-height: 230px; border-inline-end: 0; border-bottom: 1px solid rgba(148, 163, 184, .18); }
     .auth-hero-brand { gap: 8px; padding: 25px 20px 20px; }
     .auth-brand-mark { width: 56px; height: 56px; flex-basis: 56px; border-radius: 16px; }
     .auth-brand-mark .ui-icon { width: 30px; height: 30px; }
     .auth-brand-copy strong { font-size: 36px; }
     .auth-brand-copy > span { font-size: 13px; }
-    .auth-hero-lines, .auth-athlete, .auth-features { display: none; }
+    .auth-hero-lines { display: block; }
+    .auth-athlete {
+        display: block;
+        bottom: -8px;
+        left: 52%;
+        width: 145px;
+        height: 180px;
+        max-width: 46%;
+        max-height: none;
+        opacity: .78;
+    }
+    .auth-features { display: none; }
     .auth-form-panel { display: block; }
     .auth-form { width: auto; padding: 29px 22px 25px; }
     .auth-form-heading { margin-bottom: 34px; }

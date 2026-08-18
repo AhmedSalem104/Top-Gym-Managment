@@ -6,8 +6,11 @@
     <meta name="theme-color" content="#f7f9fc">
     <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2" sizes="any">
     <link rel="shortcut icon" type="image/svg+xml" href="/favicon.svg?v=2">
-    <!-- Keep the critical path self-contained. The UI falls back to the local
-         Arabic-capable system stack instead of waiting on a third-party font. -->
+    <!-- Cairo is loaded explicitly so the declared UI font is rendered as
+         Cairo instead of silently falling back to a different system face. -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&display=swap">
     <title>إدارة عضويات الجيم</title>
     <link rel="stylesheet" href="/css/base.css?v=5">
     <link rel="stylesheet" href="/tailwind.css">
@@ -26,7 +29,7 @@
                         <span class="auth-brand-copy"><strong><span>TOP</span> <b>GYM</b></strong><span>نظام إدارة الجيم والتدريب</span></span>
                     </div>
                     <div class="auth-hero-lines" aria-hidden="true"><i></i><i></i><i></i></div>
-                    <img class="auth-athlete" data-auth-lazy-src="/assets/login-athlete.webp" width="716" height="1114" alt="" loading="lazy" fetchpriority="auto" decoding="async">
+                    <img class="auth-athlete" src="/assets/login-athlete.webp" width="716" height="1114" alt="" loading="eager" fetchpriority="high" decoding="async">
                     <div class="auth-features">
                         <div class="auth-feature"><span class="auth-feature-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V5"/><path d="M4 19h16"/><path d="m7 15 3-4 3 2 5-6"/></svg></span><strong>تقارير ذكية</strong><small>لوحة تحكم متكاملة</small></div>
                         <span class="auth-feature-divider" aria-hidden="true"></span>
