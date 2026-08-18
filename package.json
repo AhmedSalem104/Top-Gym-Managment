@@ -17,6 +17,9 @@
     "qa:gate:browser": "node scripts/qa-gate.js --build --browser",
     "qa:exercise-catalog": "node scripts/validate-exercise-catalog.js",
     "qa:exercise-content": "node scripts/validate-exercise-content.js",
+    "qa:muscle-assets": "node scripts/validate-muscle-assets.js",
+    "build:muscle-mapping": "node scripts/build-muscle-mapping.js",
+    "sync:muscle-assets": "node scripts/build-muscle-mapping.js && python scripts/download-muscle-assets.py --workers 3",
     "enrich:exercise-content": "node scripts/enrich-exercise-data.js",
     "seed:performance": "node scripts/seed-performance-test-data.js",
     "sync:library": "node scripts/sync-library-data.js"

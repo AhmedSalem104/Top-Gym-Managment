@@ -10,12 +10,14 @@
         members: {
             styles: [
                 '/css/attendance.css?v=6',
-                '/css/coaching.css?v=9'
+                '/css/coaching.css?v=9',
+                '/css/muscle-assets.css?v=1'
             ],
             scripts: [
                 '/js/action-menu.js?v=4',
                 '/js/print-enhancements.js?v=10',
                 '/js/attendance.js?v=8',
+                '/js/muscle-assets.js?v=1',
                 '/js/coaching.js?v=12'
             ]
         },
@@ -40,12 +42,12 @@
             scripts: ['/js/attendance.js?v=8']
         },
         library: {
-            styles: ['/css/library.css?v=9'],
-            scripts: ['/js/library.js?v=9']
+            styles: ['/css/library.css?v=10', '/css/muscle-assets.css?v=1'],
+            scripts: ['/js/muscle-assets.js?v=1', '/js/library.js?v=10']
         },
         trainees: {
-            styles: ['/css/coaching.css?v=9'],
-            scripts: ['/js/coaching.js?v=12']
+            styles: ['/css/coaching.css?v=9', '/css/muscle-assets.css?v=1'],
+            scripts: ['/js/muscle-assets.js?v=1', '/js/coaching.js?v=12']
         }
     };
 

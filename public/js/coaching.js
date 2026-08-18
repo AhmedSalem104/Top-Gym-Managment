@@ -234,10 +234,16 @@
         return `<span class="exercise-media exercise-media-fallback ${escapeHtml(options.className || '')}" aria-hidden="true"><span class="exercise-media-fallback-icon">${escapeHtml(item?.icon || '🏋️')}</span></span>`;
     }
 
+    function muscleImage(item, options = {}) {
+        if (window.TopGymMuscleAssets?.imageMarkup) return window.TopGymMuscleAssets.imageMarkup(item, 'main', options);
+        return `<span class="muscle-media muscle-media-fallback ${escapeHtml(options.className || '')}" aria-hidden="true"><span class="muscle-media-fallback-icon">💪</span></span>`;
+    }
+
     async function loadCatalog() {
         const assetsPromise = window.TopGymExerciseAssets?.load ? window.TopGymExerciseAssets.load().catch(() => null) : Promise.resolve();
+        const muscleAssetsPromise = window.TopGymMuscleAssets?.load ? window.TopGymMuscleAssets.load().catch(() => null) : Promise.resolve();
         if (state.catalog.exercises.length && state.catalog.foods.length) {
-            await assetsPromise;
+            await Promise.all([assetsPromise, muscleAssetsPromise]);
             return state.catalog;
         }
         if (state.catalogPromise) return state.catalogPromise;
@@ -253,7 +259,7 @@
                     .filter((item, index, list) => list.findIndex((candidate) => candidate.id === item.id) === index);
             };
             [state.catalog.exercises, state.catalog.foods] = await Promise.all([loadCollection('exercises'), loadCollection('foods')]);
-            await assetsPromise;
+            await Promise.all([assetsPromise, muscleAssetsPromise]);
             return state.catalog;
         })();
         try {
@@ -1080,10 +1086,12 @@
         const item = state.catalog.exercises.find((candidate) => String(candidate.id) === String(exercise.exerciseId));
         if (!item) return '<span class="builder-reference-muted">اختر تمرينًا لعرض العضلة والتعليمات.</span>';
         const muscle = item.targetMuscleNameAr || item.targetMuscleName || 'غير محددة';
+        const muscleRef = { id: item.targetMuscleId, nameAr: item.targetMuscleNameAr, name: item.targetMuscleName };
+        const muscleVisual = `<span class="builder-reference-muscle">${muscleImage(muscleRef, { className: 'builder-reference-muscle-image', alt: muscle, icon: '💪' })}<b>${escapeHtml(muscle)}</b></span>`;
         const instruction = item.instructionsAr?.[0] || item.instructions?.[0] || item.descriptionAr || item.description || 'لا توجد تعليمات مسجلة.';
         const tip = item.tipsAr?.[0] || item.tips?.[0] || 'لا توجد نصائح مسجلة.';
         const mistake = item.commonMistakesAr?.[0] || item.commonMistakes?.[0] || 'لا توجد أخطاء شائعة مسجلة.';
-        return `<div class="builder-exercise-reference"><div class="builder-reference-media">${exerciseImage(item, 'main', { className: 'exercise-media-builder', alt: itemName(item) })}</div><div class="builder-reference-copy"><span>العضلة المستهدفة: <b>${escapeHtml(muscle)}</b></span><details><summary>التعليمات والنصائح</summary><p><b>التعليمات:</b> ${escapeHtml(instruction)}</p><p><b>نصيحة:</b> ${escapeHtml(tip)}</p><p><b>خطأ شائع:</b> ${escapeHtml(mistake)}</p></details></div></div>`;
+        return `<div class="builder-exercise-reference"><div class="builder-reference-media">${exerciseImage(item, 'main', { className: 'exercise-media-builder', alt: itemName(item) })}</div><div class="builder-reference-copy"><span>العضلة المستهدفة: ${muscleVisual}</span><details><summary>التعليمات والنصائح</summary><p><b>التعليمات:</b> ${escapeHtml(instruction)}</p><p><b>نصيحة:</b> ${escapeHtml(tip)}</p><p><b>خطأ شائع:</b> ${escapeHtml(mistake)}</p></details></div></div>`;
     }
 
     function renderWorkoutMetrics(draft) {

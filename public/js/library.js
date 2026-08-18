@@ -172,7 +172,10 @@
 
     function renderMuscleRow(item) {
         const title = item.nameAr || item.name || itemName(item);
-        return `<tr><td><div class="library-table-primary"><span class="library-table-icon">${escapeHtml(item.icon || '💪')}</span><div><strong title="${escapeHtml(title)}">${escapeHtml(title)}</strong><small>${escapeHtml(item.name || '')}</small></div></div></td><td>${item.bodyPart ? `<span class="library-table-badge muscles">${escapeHtml(item.bodyPart)}</span>` : '—'}</td><td>${item.descriptionAr || item.description ? '<span class="library-table-badge positive">وصف متاح</span>' : '—'}</td><td>${formatNumber(item.id)}</td><td>${tableActions(item.id)}</td></tr>`;
+        const muscleMedia = window.TopGymMuscleAssets?.imageMarkup
+            ? window.TopGymMuscleAssets.imageMarkup(item, 'main', { className: 'muscle-media-thumb', alt: title, icon: item.icon || '💪' })
+            : `<span class="muscle-media muscle-media-fallback"><span class="muscle-media-fallback-icon">${escapeHtml(item.icon || '💪')}</span></span>`;
+        return `<tr><td><div class="library-table-primary"><span class="library-table-icon muscle-table-icon">${muscleMedia}</span><div><strong title="${escapeHtml(title)}">${escapeHtml(title)}</strong><small>${escapeHtml(item.name || '')}</small></div></div></td><td>${item.bodyPart ? `<span class="library-table-badge muscles">${escapeHtml(item.bodyPart)}</span>` : '—'}</td><td>${item.descriptionAr || item.description ? '<span class="library-table-badge positive">وصف متاح</span>' : '—'}</td><td>${formatNumber(item.id)}</td><td>${tableActions(item.id)}</td></tr>`;
     }
 
     function renderFoodRow(item) {
@@ -202,6 +205,7 @@
                 : '<th>التمرين</th><th>العضلة المستهدفة</th><th>المستوى</th><th>الأداة</th><th>التصنيف</th><th>التنبيه</th><th>الإجراءات</th>';
         list.innerHTML = `<div class="library-table-wrap"><table class="library-data-table ${state.activeType}"><thead><tr>${headers}</tr></thead><tbody>${state.items.map(renderer).join('')}</tbody></table></div>`;
         window.TopGymExerciseAssets?.hydrate(list);
+        window.TopGymMuscleAssets?.hydrate(list);
         renderPagination();
     }
 
@@ -428,7 +432,7 @@
         const match = matchBySource || matchById;
         const nameAr = nonEmptyValue(explicitNameAr, source.nameAr, source.name_ar, source.muscleNameAr, source.muscle_name_ar, match?.nameAr);
         const nameEn = nonEmptyValue(explicitNameEn, source.name, source.nameEn, source.name_en, source.muscleName, source.muscle_name, match?.nameEn);
-        return { nameAr, nameEn, matched: Boolean(match || nameAr || nameEn) };
+        return { id: match?.id || source.id || '', sourceId: match?.sourceId || source.sourceId || '', nameAr, nameEn, matched: Boolean(match || nameAr || nameEn) };
     }
 
     function bilingualName(nameAr, nameEn, fallback = 'غير محددة') {
@@ -490,13 +494,19 @@
         $('libraryDetailsTitle').textContent = `تفاصيل ${META[type].singular}`;
         $('libraryDetailsSubtitle').textContent = `${itemName(item)} · رقم ${item.id}`;
         if (type === 'muscles') {
-            content.innerHTML = `<div class="library-detail-hero"><span class="library-detail-hero-icon">${escapeHtml(item.icon || '💪')}</span><div><h4>${escapeHtml(itemName(item))}</h4><p>${escapeHtml(names.english || 'الاسم الإنجليزي غير متاح')}</p></div></div><div class="library-detail-grid">${detailItem('الاسم بالعربية', names.arabic || 'الاسم العربي غير متاح')}${detailItem('الاسم بالإنجليزية', names.english || 'الاسم الإنجليزي غير متاح')}${detailItem('منطقة الجسم', item.bodyPart)}${detailItem('المعرّف المصدر', item.sourceId)}${detailItem('الوصف بالعربية', item.descriptionAr, true)}${detailItem('الوصف بالإنجليزية', item.description, true)}</div>`;
+            const muscleGallery = window.TopGymMuscleAssets?.galleryMarkup
+                ? window.TopGymMuscleAssets.galleryMarkup(item, { alt: itemName(item) })
+                : '';
+            content.innerHTML = `<div class="library-detail-hero"><span class="library-detail-hero-icon">${escapeHtml(item.icon || '💪')}</span><div><h4>${escapeHtml(itemName(item))}</h4><p>${escapeHtml(names.english || 'الاسم الإنجليزي غير متاح')}</p></div></div><div class="muscle-detail-visual">${muscleGallery}<small class="muscle-detail-source-note">الصور التشريحية من BodyParts3D / Anatomography بنفس الهوية البصرية. السجلات غير المطابقة تعرض fallback لحين المراجعة.</small></div><div class="library-detail-grid">${detailItem('الاسم بالعربية', names.arabic || 'الاسم العربي غير متاح')}${detailItem('الاسم بالإنجليزية', names.english || 'الاسم الإنجليزي غير متاح')}${detailItem('منطقة الجسم', item.bodyPart)}${detailItem('المعرّف المصدر', item.sourceId)}${detailItem('الوصف بالعربية', item.descriptionAr, true)}${detailItem('الوصف بالإنجليزية', item.description, true)}</div>`;
         } else if (type === 'foods') {
             content.innerHTML = `<div class="library-detail-hero"><span class="library-detail-hero-icon">🥗</span><div><h4>${escapeHtml(itemName(item))}</h4><p>${escapeHtml(names.english || 'الاسم الإنجليزي غير متاح')}</p></div></div><div class="library-detail-grid">${detailItem('الاسم بالعربية', names.arabic || 'الاسم العربي غير متاح')}${detailItem('الاسم بالإنجليزية', names.english || 'الاسم الإنجليزي غير متاح')}${detailItem('التصنيف', item.category)}${detailItem('الحصة', `${formatNumber(item.servingSize, 1)} ${item.servingUnit || ''}`)}${detailItem('السعرات', formatNumber(item.calories, 1))}${detailItem('البروتين', `${formatNumber(item.protein, 1)} g`)}${detailItem('الكربوهيدرات', `${formatNumber(item.carbs, 1)} g`)}${detailItem('الدهون', `${formatNumber(item.fat, 1)} g`)}${detailItem('الألياف', `${formatNumber(item.fiber, 1)} g`)}${detailItem('السكريات', `${formatNumber(item.sugar, 1)} g`)}${detailItem('الصوديوم', `${formatNumber(item.sodium, 1)} mg`)}</div>`;
         } else {
             const primary = resolveMuscle(item.targetMuscleId, item.targetMuscleNameAr, item.targetMuscleName);
             const primaryLabel = bilingualName(primary.nameAr, primary.nameEn, 'العضلة الأساسية غير محددة');
             const secondary = secondaryMuscleLabels(item);
+            const primaryMedia = window.TopGymMuscleAssets?.imageMarkup
+                ? `<div class="exercise-target-muscle-visual"><span>العضلة المستهدفة</span>${window.TopGymMuscleAssets.imageMarkup(primary, 'main', { className: 'exercise-target-muscle-image', alt: primaryLabel, icon: '💪' })}<strong>${escapeHtml(primaryLabel)}</strong></div>`
+                : '';
             const details = [
                 detailItem('الاسم بالعربية', names.arabic || 'الاسم العربي غير متاح', true),
                 detailItem('الاسم بالإنجليزية', names.english || 'الاسم الإنجليزي غير متاح', true),
@@ -526,7 +536,9 @@
             const hero = content.querySelector('.library-detail-hero');
             const heroIcon = hero?.querySelector('.library-detail-hero-icon');
             if (heroIcon) heroIcon.outerHTML = `<div class="exercise-detail-gallery exercise-media-gallery">${exerciseGallery(item)}</div>`;
+            if (primaryMedia) hero?.insertAdjacentHTML('afterend', primaryMedia);
         }
+        window.TopGymMuscleAssets?.hydrate(content);
         window.TopGymExerciseAssets?.hydrate(content);
     }
 
@@ -539,6 +551,11 @@
         state.detailsType = type;
         renderDetailsContent(type, item);
         openDialog($('libraryDetailsDialog'));
+        if (type === 'muscles') {
+            await window.TopGymMuscleAssets?.load?.().catch(() => null);
+            if (requestId === state.detailsRequestId && state.detailsType === type) renderDetailsContent(type, state.detailsItem);
+            return;
+        }
         if (type !== 'exercises') return;
         const [latestResult] = await Promise.allSettled([
             requestJson(`/api/library/exercises/${encodeURIComponent(item.id)}`),
