@@ -48,8 +48,20 @@
         document.querySelectorAll('[data-page-tab]').forEach((button) => {
             const active = button.dataset.pageTab === name;
             button.classList.toggle('active', active);
+            button.setAttribute('role', 'tab');
             button.setAttribute('aria-selected', String(active));
+            button.toggleAttribute('aria-current', active);
+            button.setAttribute('aria-controls', `${button.dataset.pageTab}Section`);
         });
+
+        // A direct link such as #library can activate a tab that is outside
+        // the initial RTL scroll position on tablet widths. Reveal it without
+        // changing the page's vertical scroll or the tab data flow.
+        const tabRail = document.getElementById('pageTabs');
+        const activeTab = tabRail?.querySelector(`[data-page-tab="${name}"]`);
+        if (tabRail && activeTab && tabRail.scrollWidth > tabRail.clientWidth) {
+            activeTab.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+        }
     }
 
     async function activateTab(rawName) {
@@ -66,12 +78,16 @@
         if (token !== activationToken) return;
         renderTab(name);
         activeTabName = name;
+        document.documentElement.dataset.topGymActiveTab = name;
         window.history.replaceState(null, '', `#${name}`);
         document.documentElement.removeAttribute('data-top-gym-loading-tab');
         window.dispatchEvent(new CustomEvent('topgym:tab-changed', { detail: { name } }));
     }
 
     document.addEventListener('DOMContentLoaded', () => {
+        document.querySelectorAll('[data-page-tab]').forEach((button) => {
+            button.setAttribute('role', 'tab');
+        });
         document.querySelectorAll('[data-page-tab]').forEach((button) => {
             button.addEventListener('click', () => { void activateTab(button.dataset.pageTab); });
         });

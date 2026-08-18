@@ -1,0 +1,395 @@
+/*
+ * TOP GYM shared UI foundation
+ *
+ * This layer is intentionally small and loaded after the page-specific CSS.
+ * It standardises the geometry, focus treatment and responsive boundaries of
+ * the existing screens without changing their data or business rules.
+ */
+:root {
+    --ui-bg: var(--bg, #f3f6fb);
+    --ui-surface: var(--surface, #ffffff);
+    --ui-surface-soft: var(--surface-soft, #f8fafc);
+    --ui-text: var(--text, #172033);
+    --ui-muted: var(--muted, #697386);
+    --ui-line: var(--line, #e5eaf2);
+    --ui-primary: var(--primary, #2563eb);
+    --ui-primary-strong: var(--primary-dark, #1d4ed8);
+    --ui-success: var(--green, #059669);
+    --ui-warning: var(--orange, #d97706);
+    --ui-danger: var(--red, #dc2626);
+    --ui-radius-sm: 10px;
+    --ui-radius-md: 14px;
+    --ui-radius-lg: 18px;
+    --ui-space-1: 4px;
+    --ui-space-2: 8px;
+    --ui-space-3: 12px;
+    --ui-space-4: 16px;
+    --ui-space-5: 24px;
+    --ui-space-6: 32px;
+    --ui-control-height: 42px;
+    --ui-focus-ring: 0 0 0 3px rgba(37, 99, 235, .16);
+    --ui-shadow-sm: 0 4px 12px rgba(15, 23, 42, .05);
+    --ui-shadow-md: 0 12px 32px rgba(15, 23, 42, .08);
+    --ui-content-max: 1380px;
+}
+
+html,
+body {
+    max-width: 100%;
+}
+
+html {
+    overflow-x: hidden;
+}
+
+body.gym-page-bg {
+    min-width: 320px;
+}
+
+.app-shell {
+    width: 100%;
+    min-width: 0;
+    max-width: 100vw;
+    overflow-x: clip;
+    isolation: isolate;
+}
+
+html[data-top-gym-active-tab]:not([data-top-gym-active-tab='dashboard'])
+    .app-shell .dashboard-page-actions {
+    display: none !important;
+}
+
+/* The primary navigation is intentionally scrollable on narrow/tablet widths
+   so its long Arabic labels never widen the document itself. */
+.app-shell .page-tabs {
+    display: flex !important;
+    width: 100% !important;
+    max-width: var(--ui-content-max) !important;
+    min-width: 0 !important;
+    box-sizing: border-box;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    overscroll-behavior-inline: contain;
+    scrollbar-width: none;
+}
+
+.app-shell .page-tabs::-webkit-scrollbar {
+    display: none;
+}
+
+.app-shell .page-tab {
+    flex: 0 0 auto;
+    white-space: nowrap;
+}
+
+.app-shell .page,
+.app-shell .page > section,
+.app-shell .panel,
+.app-shell .workspace,
+.app-shell .overview-grid,
+.app-shell .table-scroll,
+.app-shell .library-table-wrap,
+.app-shell .external-trainees-table-wrap,
+.app-shell .attendance-table-wrap,
+.app-shell .reports-section,
+.app-shell .management-tab-panel {
+    min-width: 0;
+    max-width: 100%;
+}
+
+/* Shared control geometry. Page-specific variants can still intentionally
+   opt into .btn-small or their existing compact table-action rules. */
+.app-shell .btn {
+    min-height: 40px;
+    border-radius: var(--ui-radius-sm);
+    line-height: 1.25;
+    transition: transform .16s ease, background-color .16s ease,
+        border-color .16s ease, box-shadow .16s ease, color .16s ease;
+}
+
+.app-shell .btn.btn-small {
+    min-height: 34px;
+}
+
+.app-shell #managementSection .backup-history-actions .btn,
+.app-shell #managementSection .backup-history-download {
+    min-height: 34px !important;
+}
+
+.app-shell .reports-table .btn {
+    min-height: 34px !important;
+}
+
+.app-shell .btn:not(:disabled):hover {
+    transform: translateY(-1px);
+}
+
+.app-shell .btn:active {
+    transform: translateY(0);
+}
+
+.app-shell .btn:disabled {
+    cursor: not-allowed;
+    opacity: .58;
+}
+
+.app-shell input:not([type='checkbox']):not([type='radio']),
+.app-shell select,
+.app-shell textarea {
+    min-height: var(--ui-control-height);
+    min-width: 0;
+    border-radius: var(--ui-radius-sm);
+}
+
+.app-shell textarea {
+    min-height: 82px;
+}
+
+.app-shell button:focus-visible,
+.app-shell a:focus-visible,
+.app-shell input:focus-visible,
+.app-shell select:focus-visible,
+.app-shell textarea:focus-visible {
+    outline: 2px solid rgba(37, 99, 235, .72);
+    outline-offset: 2px;
+}
+
+.app-shell input:not([type='checkbox']):not([type='radio']):focus,
+.app-shell select:focus,
+.app-shell textarea:focus {
+    outline: none;
+    box-shadow: var(--ui-focus-ring);
+}
+
+/* Keep the main surface vocabulary consistent while preserving each page's
+   existing colour treatment. */
+.app-shell .panel,
+.app-shell .library-section,
+.app-shell .attendance-section,
+.app-shell .coaching-section,
+.app-shell .reports-section,
+.app-shell .management-tab-panel,
+.app-shell .monthly-finance-card {
+    border-radius: var(--ui-radius-md);
+}
+
+.app-shell .table-scroll,
+.app-shell .history-scroll,
+.app-shell .pricing-table-scroll,
+.app-shell .library-table-wrap,
+.app-shell .external-trainees-table-wrap,
+.app-shell .attendance-table-wrap,
+.app-shell .profile-table-wrap,
+.app-shell .builder-review-table-wrap,
+.app-shell .backup-history-wrap {
+    max-width: 100%;
+    min-width: 0;
+    -webkit-overflow-scrolling: touch;
+}
+
+.app-shell table th,
+.app-shell table td {
+    vertical-align: middle;
+}
+
+.app-shell table tbody tr {
+    transition: background-color .16s ease;
+}
+
+.app-shell table tbody tr:hover td {
+    background: rgba(37, 99, 235, .045);
+}
+
+/* A bounded dialog body prevents long forms and validation summaries from
+   escaping the viewport on phones and short laptop screens. */
+.app-shell dialog {
+    max-width: calc(100vw - 24px);
+    max-height: calc(100dvh - 24px);
+    overflow: hidden;
+    border-radius: var(--ui-radius-lg);
+}
+
+.app-shell dialog .dialog-body {
+    min-width: 0;
+    max-height: calc(100dvh - 24px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+
+.app-shell dialog::backdrop {
+    background: rgba(15, 23, 42, .52);
+}
+
+/* Searchable selects and menus should stay above form content and scroll
+   inside their own bounded surface instead of closing on page scroll. */
+.app-shell .builder-search-popover,
+.app-shell .ui-dropdown,
+.app-shell [role='listbox'] {
+    max-height: min(300px, 55dvh);
+    overscroll-behavior: contain;
+}
+
+.app-shell .builder-search-popover {
+    z-index: 1200;
+}
+
+.app-shell .builder-search-options,
+.app-shell .ui-dropdown,
+.app-shell [role='listbox'] {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Accessible text that cannot create a second visual layout box. */
+.app-shell .alert-whatsapp-button > span {
+    position: absolute;
+    inset: 0 auto auto 0;
+    display: block;
+    width: 1px;
+    height: 1px;
+    margin: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+}
+
+.app-shell .alert-whatsapp-button > span > strong,
+.app-shell .alert-whatsapp-button > span > small {
+    display: block;
+    width: 1px;
+    max-width: 1px;
+    height: 1px;
+    overflow: hidden;
+}
+
+/* Consistent feedback surfaces. */
+.app-shell .loading,
+.app-shell .empty,
+.app-shell .history-empty,
+.app-shell .backup-history-loading,
+.app-shell .backup-history-empty,
+.app-shell .backup-history-error {
+    min-width: 0;
+    max-width: 100%;
+    line-height: 1.8;
+}
+
+.app-shell .toast {
+    z-index: 1200;
+    max-width: calc(100vw - 24px);
+}
+
+.swal2-container {
+    z-index: 2200 !important;
+}
+
+/* Tablet library tables remain readable inside their own scroller; this
+   replaces the earlier clipping rule that hid columns at 768px. */
+@media (min-width: 641px) and (max-width: 1024px) {
+    .app-shell .page-tabs {
+        padding-bottom: 4px;
+        scrollbar-width: thin;
+        scrollbar-color: #9dbdf8 transparent;
+    }
+
+    .app-shell .page-tabs::-webkit-scrollbar {
+        display: block;
+        height: 4px;
+    }
+
+    .app-shell .page-tabs::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    .app-shell .page-tabs::-webkit-scrollbar-thumb {
+        border-radius: 999px;
+        background: #9dbdf8;
+    }
+
+    #librarySection .library-table-wrap {
+        overflow-x: auto !important;
+        scrollbar-width: thin;
+        scrollbar-color: #9dbdf8 transparent;
+    }
+
+    #librarySection .library-table-wrap::-webkit-scrollbar {
+        height: 6px;
+    }
+
+    #librarySection .library-table-wrap::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    #librarySection .library-table-wrap::-webkit-scrollbar-thumb {
+        border-radius: 999px;
+        background: #9dbdf8;
+    }
+
+    #librarySection .library-data-table {
+        width: max-content !important;
+        min-width: 742px !important;
+        table-layout: auto !important;
+    }
+
+    #librarySection .library-data-table th:last-child,
+    #librarySection .library-data-table td:last-child {
+        position: sticky;
+        left: 0;
+        z-index: 2;
+        background: var(--ui-surface, #ffffff);
+        box-shadow: 4px 0 10px rgba(15, 23, 42, .08);
+    }
+
+    #librarySection .library-data-table th:last-child {
+        z-index: 3;
+    }
+}
+
+@media (max-width: 640px) {
+    .app-shell .page-tabs {
+        display: grid !important;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        width: 100% !important;
+        padding-inline: 10px;
+        gap: 7px !important;
+        overflow: visible !important;
+        border-bottom: 0;
+    }
+
+    .app-shell .page-tab {
+        width: 100%;
+        min-height: 42px;
+        justify-content: center;
+        padding-inline: 7px;
+        border-radius: var(--ui-radius-sm);
+    }
+
+    .app-shell .page {
+        padding-inline: 10px;
+    }
+
+    .app-shell dialog {
+        width: calc(100vw - 18px);
+        max-height: calc(100dvh - 18px);
+    }
+
+    .app-shell dialog .dialog-body {
+        max-height: calc(100dvh - 18px);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    html {
+        scroll-behavior: auto;
+    }
+
+    *,
+    *::before,
+    *::after {
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+        transition-duration: .01ms !important;
+    }
+}

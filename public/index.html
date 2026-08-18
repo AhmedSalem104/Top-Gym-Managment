@@ -13,6 +13,7 @@
     <link rel="stylesheet" href="/css/base.css?v=5">
     <link rel="stylesheet" href="/tailwind.css">
     <link rel="stylesheet" href="/css/dashboard.css?v=35">
+    <link rel="stylesheet" href="/css/design-system.css?v=1">
 </head>
 <body class="font-sans bg-slate-100 text-slate-900 gym-page-bg" style="--top-gym-bg-color: #e5edf7; --top-gym-bg-color-mid: #f4f7fb; --top-gym-bg-color-end: #dce8f5;">
     <div class="app-shell">
@@ -26,7 +27,7 @@
             </div>
         </header>
 
-        <nav class="page-tabs" id="pageTabs" aria-label="أقسام الإدارة">
+        <nav class="page-tabs" id="pageTabs" role="tablist" aria-label="أقسام الإدارة">
             <button class="page-tab active" type="button" data-page-tab="dashboard" aria-selected="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span>لوحة التحكم</span></button>
             <button class="page-tab" type="button" data-page-tab="members" aria-selected="false"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg><span>المشتركون</span></button>
                         <button class="page-tab" type="button" data-page-tab="trainees" aria-selected="false"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M3 20a6 6 0 0 1 12 0M16 4.5a3 3 0 0 1 0 6M17 14a4 4 0 0 1 4 4"/><path d="M18 8h3M19.5 6.5v3"/></svg><span>متدرب خارجى</span></button>
