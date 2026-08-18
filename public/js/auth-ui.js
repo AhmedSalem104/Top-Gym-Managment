@@ -72,6 +72,9 @@
         const tabs = isOwner ? allowedTabs : assistantTabs;
         document.body.dataset.topGymRole = user?.role || '';
         document.body.dataset.topGymUserId = user?.id ? String(user.id) : '';
+        const accountBar = $('authAccountBar');
+        const pageTabs = $('pageTabs');
+        if (accountBar && pageTabs && accountBar.parentElement !== pageTabs) pageTabs.appendChild(accountBar);
         document.querySelectorAll('[data-page-tab]').forEach((button) => {
             const allowed = tabs.includes(button.dataset.pageTab);
             if (!allowed && button === document.activeElement) button.blur();
@@ -89,7 +92,6 @@
         if (profileAvatar) profileAvatar.textContent = initials(user?.name);
         const logout = ensureLogoutButton();
         if (logout) logout.hidden = !user;
-        const accountBar = $('authAccountBar');
         if (accountBar) accountBar.hidden = !user;
         const accountName = $('authAccountName');
         const accountEmail = $('authAccountEmail');
