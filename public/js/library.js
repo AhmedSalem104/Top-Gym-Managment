@@ -40,6 +40,20 @@
     function lineText(value) { return safeArray(value).filter(Boolean).join('\n'); }
     function itemName(item) { return item?.nameAr || item?.name || item?.nameEn || 'عنصر بدون اسم'; }
 
+    function exerciseImage(item, phase = 'main', options = {}) {
+        if (window.TopGymExerciseAssets?.imageMarkup) return window.TopGymExerciseAssets.imageMarkup(item, phase, options);
+        return `<span class="exercise-media exercise-media-fallback ${escapeHtml(options.className || '')}" aria-hidden="true"><span class="exercise-media-fallback-icon">${escapeHtml(item?.icon || '🏋️')}</span></span>`;
+    }
+
+    function exerciseGallery(item) {
+        const match = window.TopGymExerciseAssets?.find(item);
+        const start = `<figure>${exerciseImage(item, 'start', { className: 'exercise-media-detail', alt: `${itemName(item)} - وضع البداية`, loading: 'eager' })}<figcaption>وضع البداية</figcaption></figure>`;
+        const end = match?.imageAssets?.end
+            ? `<figure>${exerciseImage(item, 'end', { className: 'exercise-media-detail', alt: `${itemName(item)} - وضع النهاية`, loading: 'lazy' })}<figcaption>وضع النهاية</figcaption></figure>`
+            : '';
+        return `${start}${end}`;
+    }
+
     async function requestJson(url, options = {}) {
         const response = await fetch(url, { ...options, headers: { 'Content-Type': 'application/json', ...(options.headers || {}) } });
         if (response.status === 204) return null;
@@ -139,7 +153,7 @@
     function renderExerciseRow(item) {
         const title = item.nameAr || item.name || itemName(item);
         const target = item.targetMuscleNameAr || item.targetMuscleName || 'غير محددة';
-        return `<tr><td><div class="library-table-primary"><span class="library-table-icon">${escapeHtml(item.icon || '🏋️')}</span><div><strong title="${escapeHtml(title)}">${escapeHtml(title)}</strong><small>${escapeHtml(item.name || '')}</small></div></div></td><td><span class="library-table-badge exercises">${escapeHtml(target)}</span></td><td>${item.difficulty ? escapeHtml(item.difficulty) : '—'}</td><td>${item.equipment ? escapeHtml(item.equipment) : '—'}</td><td>${item.category ? escapeHtml(item.category) : '—'}</td><td>${item.isHighImpact ? '<span class="library-table-badge warning">مجهود مرتفع</span>' : '—'}</td><td>${tableActions(item.id)}</td></tr>`;
+        return `<tr><td><div class="library-table-primary"><span class="library-table-icon exercise-table-icon">${exerciseImage(item, 'main', { className: 'exercise-media-thumb', alt: title })}</span><div><strong title="${escapeHtml(title)}">${escapeHtml(title)}</strong><small>${escapeHtml(item.name || '')}</small></div></div></td><td><span class="library-table-badge exercises">${escapeHtml(target)}</span></td><td>${item.difficulty ? escapeHtml(item.difficulty) : '—'}</td><td>${item.equipment ? escapeHtml(item.equipment) : '—'}</td><td>${item.category ? escapeHtml(item.category) : '—'}</td><td>${item.isHighImpact ? '<span class="library-table-badge warning">مجهود مرتفع</span>' : '—'}</td><td>${tableActions(item.id)}</td></tr>`;
     }
 
     function renderList() {
@@ -157,6 +171,7 @@
                 ? '<th>الطعام</th><th>التصنيف</th><th>السعرات</th><th>البروتين</th><th>الكربوهيدرات</th><th>الدهون</th><th>الحصة</th><th>الإجراءات</th>'
                 : '<th>التمرين</th><th>العضلة المستهدفة</th><th>المستوى</th><th>الأداة</th><th>التصنيف</th><th>التنبيه</th><th>الإجراءات</th>';
         list.innerHTML = `<div class="library-table-wrap"><table class="library-data-table ${state.activeType}"><thead><tr>${headers}</tr></thead><tbody>${state.items.map(renderer).join('')}</tbody></table></div>`;
+        window.TopGymExerciseAssets?.hydrate(list);
         renderPagination();
     }
 
@@ -191,6 +206,9 @@
 
     async function loadCollection(force = false) {
         if (!state.opened) return;
+        if (state.activeType === 'exercises' && window.TopGymExerciseAssets?.load) {
+            await window.TopGymExerciseAssets.load().catch(() => null);
+        }
         const filters = state.filters[state.activeType];
         const requestKey = JSON.stringify([state.activeType, state.page, state.search, filters]);
         if (!force && state.lastLoadedKey === requestKey && Date.now() - state.lastLoadedAt < 30000) {
@@ -329,6 +347,12 @@
             const secondary = safeArray(item.secondaryMuscles).map((entry) => `العضلة ${entry.muscleId} — ${entry.contributionPercent}%`);
             content.innerHTML = `<div class="library-detail-hero"><span class="library-detail-hero-icon">${escapeHtml(item.icon || '🏋️')}</span><div><h4>${escapeHtml(itemName(item))}</h4><p>${escapeHtml(item.name || '')}</p></div></div><div class="library-detail-grid">${detailItem('العضلة المستهدفة', target)}${detailItem('المستوى', item.difficulty)}${detailItem('التصنيف', item.category)}${detailItem('الأداة', item.equipment)}${detailItem('نمط الحركة', item.movementPattern)}${detailItem('الميكانيكية', item.mechanic)}${detailItem('نوع القوة', item.force)}${detailItem('مدى التكرارات', item.repsRange)}${detailItem('مدى المجموعات', item.setsRange)}${detailItem('الراحة', item.restSeconds == null ? '—' : `${item.restSeconds} ثانية`)}${detailItem('التمرين عالي المجهود', item.isHighImpact ? 'نعم' : 'لا')}${detailItem('رابط الفيديو', item.videoUrl, true)}${detailItem('الوصف بالعربية', item.descriptionAr, true)}${detailItem('الوصف بالإنجليزية', item.description, true)}${detailList('العضلات الثانوية', secondary)}${detailList('التعليمات بالعربية', item.instructionsAr)}${detailList('التعليمات بالإنجليزية', item.instructions)}${detailList('النصائح بالعربية', item.tipsAr)}${detailList('النصائح بالإنجليزية', item.tips)}${detailList('الأخطاء الشائعة بالعربية', item.commonMistakesAr)}${detailList('الأخطاء الشائعة بالإنجليزية', item.commonMistakes)}</div>`;
         }
+        if (type === 'exercises') {
+            const hero = content.querySelector('.library-detail-hero');
+            const heroIcon = hero?.querySelector('.library-detail-hero-icon');
+            if (heroIcon) heroIcon.outerHTML = `<div class="exercise-detail-gallery exercise-media-gallery">${exerciseGallery(item)}</div>`;
+        }
+        window.TopGymExerciseAssets?.hydrate(content);
         openDialog($('libraryDetailsDialog'));
     }
 

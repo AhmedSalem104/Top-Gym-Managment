@@ -229,8 +229,17 @@
 
     function itemName(item) { return item?.nameAr || item?.name || item?.nameEn || 'عنصر بدون اسم'; }
 
+    function exerciseImage(item, phase = 'main', options = {}) {
+        if (window.TopGymExerciseAssets?.imageMarkup) return window.TopGymExerciseAssets.imageMarkup(item, phase, options);
+        return `<span class="exercise-media exercise-media-fallback ${escapeHtml(options.className || '')}" aria-hidden="true"><span class="exercise-media-fallback-icon">${escapeHtml(item?.icon || '🏋️')}</span></span>`;
+    }
+
     async function loadCatalog() {
-        if (state.catalog.exercises.length && state.catalog.foods.length) return;
+        const assetsPromise = window.TopGymExerciseAssets?.load ? window.TopGymExerciseAssets.load().catch(() => null) : Promise.resolve();
+        if (state.catalog.exercises.length && state.catalog.foods.length) {
+            await assetsPromise;
+            return state.catalog;
+        }
         if (state.catalogPromise) return state.catalogPromise;
         state.catalogPromise = (async () => {
             const loadCollection = async (type) => {
@@ -244,6 +253,7 @@
                     .filter((item, index, list) => list.findIndex((candidate) => candidate.id === item.id) === index);
             };
             [state.catalog.exercises, state.catalog.foods] = await Promise.all([loadCollection('exercises'), loadCollection('foods')]);
+            await assetsPromise;
             return state.catalog;
         })();
         try {
@@ -1073,7 +1083,7 @@
         const instruction = item.instructionsAr?.[0] || item.instructions?.[0] || item.descriptionAr || item.description || 'لا توجد تعليمات مسجلة.';
         const tip = item.tipsAr?.[0] || item.tips?.[0] || 'لا توجد نصائح مسجلة.';
         const mistake = item.commonMistakesAr?.[0] || item.commonMistakes?.[0] || 'لا توجد أخطاء شائعة مسجلة.';
-        return `<div class="builder-exercise-reference"><span>العضلة المستهدفة: <b>${escapeHtml(muscle)}</b></span><details><summary>التعليمات والنصائح</summary><p><b>التعليمات:</b> ${escapeHtml(instruction)}</p><p><b>نصيحة:</b> ${escapeHtml(tip)}</p><p><b>خطأ شائع:</b> ${escapeHtml(mistake)}</p></details></div>`;
+        return `<div class="builder-exercise-reference"><div class="builder-reference-media">${exerciseImage(item, 'main', { className: 'exercise-media-builder', alt: itemName(item) })}</div><div class="builder-reference-copy"><span>العضلة المستهدفة: <b>${escapeHtml(muscle)}</b></span><details><summary>التعليمات والنصائح</summary><p><b>التعليمات:</b> ${escapeHtml(instruction)}</p><p><b>نصيحة:</b> ${escapeHtml(tip)}</p><p><b>خطأ شائع:</b> ${escapeHtml(mistake)}</p></details></div></div>`;
     }
 
     function renderWorkoutMetrics(draft) {
@@ -1103,7 +1113,7 @@
             $('coachingBuilderContent').innerHTML = `<section class="builder-stage builder-review"><div class="builder-stage-heading"><div><span>المرحلة الثالثة</span><h4>مراجعة خطة التغذية قبل الحفظ</h4><p>راجع بيانات العميل، الأهداف، والقيم الفعلية لكل وجبة.</p></div><span class="builder-ready-chip">جاهز للمراجعة</span></div><div class="review-identity"><strong>${escapeHtml(clientLabel)}</strong><span>${builderDate(draft.startDate)}${draft.endDate ? ` — ${builderDate(draft.endDate)}` : ''}</span></div><div class="review-summary-grid"><div><span>Target Calories</span><strong>${builderNum(draft.targetCalories)} سعرة</strong></div><div><span>Protein</span><strong>${builderNum(draft.targetProtein, 1)}g</strong></div><div><span>Carbs</span><strong>${builderNum(draft.targetCarbs, 1)}g</strong></div><div><span>Fat</span><strong>${builderNum(draft.targetFats, 1)}g</strong></div><div><span>القيم الحالية</span><strong>${builderNum(totals.calories)} سعرة</strong></div><div><span>الوجبات / الأطعمة</span><strong>${draft.meals.length} / ${draft.meals.reduce((sum, meal) => sum + meal.items.length, 0)}</strong></div></div><div class="review-note">الخطة: <b>${escapeHtml(draft.name)}</b> · الهدف: <b>${draft.calorieGoal === 'lose' ? 'خسارة وزن' : draft.calorieGoal === 'gain' ? 'زيادة وزن' : 'تثبيت'}</b> · BMR: <b>${draft.calculator?.bmr ? builderNum(draft.calculator.bmr) : '—'}</b> · TDEE: <b>${draft.calculator?.tdee ? builderNum(draft.calculator.tdee) : '—'}</b></div><div class="review-blocks">${mealRows}</div></section>`;
         } else {
             const stats = workoutStats(draft);
-            const routineRows = draft.routines.map((routine, index) => `<section class="review-block"><div class="review-block-head"><strong>${index + 1}. ${escapeHtml(routine.name)}</strong><span>${routine.exercises.length} تمارين · ${routine.exercises.reduce((sum, exercise) => sum + Number(exercise.sets || 0), 0)} مجموعات</span></div><table class="builder-review-table"><thead><tr><th>التمرين</th><th>Sets</th><th>Reps</th><th>Weight</th><th>Rest</th><th>Tempo</th><th>Superset</th></tr></thead><tbody>${routine.exercises.map((exercise) => { const item = state.catalog.exercises.find((candidate) => String(candidate.id) === String(exercise.exerciseId)); return `<tr><td>${escapeHtml(item ? itemName(item) : '—')}</td><td>${exercise.sets}</td><td>${exercise.repsMin || '—'}${exercise.repsMax ? `–${exercise.repsMax}` : ''}</td><td>${exercise.weightKg || '—'} kg</td><td>${exercise.restSeconds || 0}s</td><td>${escapeHtml(exercise.tempo || '—')}</td><td>${escapeHtml(exercise.supersetGroupId || '—')}</td></tr>`; }).join('')}</tbody></table></section>`).join('');
+            const routineRows = draft.routines.map((routine, index) => `<section class="review-block"><div class="review-block-head"><strong>${index + 1}. ${escapeHtml(routine.name)}</strong><span>${routine.exercises.length} تمارين · ${routine.exercises.reduce((sum, exercise) => sum + Number(exercise.sets || 0), 0)} مجموعات</span></div><table class="builder-review-table"><thead><tr><th>التمرين</th><th>Sets</th><th>Reps</th><th>Weight</th><th>Rest</th><th>Tempo</th><th>Superset</th></tr></thead><tbody>${routine.exercises.map((exercise) => { const item = state.catalog.exercises.find((candidate) => String(candidate.id) === String(exercise.exerciseId)); return `<tr><td><div class="builder-review-exercise">${item ? exerciseImage(item, 'main', { className: 'exercise-media-builder', alt: itemName(item) }) : ''}<span>${escapeHtml(item ? itemName(item) : '—')}</span></div></td><td>${exercise.sets}</td><td>${exercise.repsMin || '—'}${exercise.repsMax ? `–${exercise.repsMax}` : ''}</td><td>${exercise.weightKg || '—'} kg</td><td>${exercise.restSeconds || 0}s</td><td>${escapeHtml(exercise.tempo || '—')}</td><td>${escapeHtml(exercise.supersetGroupId || '—')}</td></tr>`; }).join('')}</tbody></table></section>`).join('');
             $('coachingBuilderContent').innerHTML = `<section class="builder-stage builder-review"><div class="builder-stage-heading"><div><span>المرحلة الثالثة</span><h4>مراجعة برنامج التدريب قبل الحفظ</h4><p>راجع الحمل التدريبي وتوزيع العضلات وتفاصيل كل يوم.</p></div><span class="builder-ready-chip">جاهز للمراجعة</span></div><div class="review-identity"><strong>${escapeHtml(clientLabel)}</strong><span>${builderDate(draft.startDate)}${draft.endDate ? ` — ${builderDate(draft.endDate)}` : ''}</span></div><div class="review-summary-grid"><div><span>البرنامج</span><strong>${escapeHtml(draft.name)}</strong></div><div><span>المدة</span><strong>${builderNum(draft.durationWeeks)} أسبوع</strong></div><div><span>الأيام</span><strong>${draft.routines.length}</strong></div><div><span>التمارين</span><strong>${stats.exercises}</strong></div><div><span>المجموعات</span><strong>${stats.sets}</strong></div><div><span>الحجم التقريبي</span><strong>${builderNum(stats.volume)} كجم</strong></div></div><div class="review-note">الهدف: <b>${escapeHtml(draft.goal)}</b> · المستوى: <b>${escapeHtml(draft.level)}</b> · أيام أسبوعيًا: <b>${draft.daysPerWeek}</b></div><div class="review-muscles">${Object.entries(stats.muscles).map(([name, count]) => `<span>${escapeHtml(name)} <b>${count}</b></span>`).join('') || '<span>لم يحدد توزيع بعد</span>'}</div><div class="review-blocks">${routineRows}</div></section>`;
         }
     }
@@ -1359,6 +1369,7 @@
         else if (state.builder.step === 2) state.builder.type === 'diet' ? renderDietStepTwo() : renderWorkoutStepTwo();
         else renderBuilderReview();
         enhanceBuilderSearchSelects();
+        window.TopGymExerciseAssets?.hydrate($('coachingBuilderContent'));
     }
 
     function syncBuilderDraft() {
@@ -1795,6 +1806,7 @@
             });
             $('executionSessionProgram')?.addEventListener('change', () => loadExecutionProgram($('executionSessionProgram').value));
             $('executionSessionRoutine')?.addEventListener('change', renderExecutionExerciseOptions);
+            dialog.addEventListener('change', (event) => { if (event.target.id === 'executionSetExercise') renderExecutionExercisePreview(); });
         }
         if (!$('coachingMealLogDialog')) {
             const dialog = document.createElement('dialog');
@@ -1838,6 +1850,30 @@
         const exercises = executionExercisesForSelectedRoutine();
         select.innerHTML = exercises.map((exercise) => `<option value="${exercise.id}">${escapeHtml(exercise.nameAr || exercise.name || 'تمرين')}</option>`).join('');
         if (exercises.some((exercise) => String(exercise.id) === String(current))) select.value = current;
+        renderExecutionExercisePreview();
+    }
+
+    function renderExecutionExercisePreview() {
+        const active = $('executionSessionActive');
+        const select = $('executionSetExercise');
+        if (!active || !select) return;
+        let preview = $('executionSetExercisePreview');
+        if (!preview) {
+            preview = document.createElement('div');
+            preview.id = 'executionSetExercisePreview';
+            preview.className = 'execution-exercise-preview';
+            preview.setAttribute('aria-live', 'polite');
+            active.querySelector('.field-grid')?.after(preview);
+        }
+        const exercise = executionExercisesForSelectedRoutine().find((item) => String(item.id) === String(select.value));
+        if (!exercise) {
+            preview.hidden = true;
+            preview.replaceChildren();
+            return;
+        }
+        preview.hidden = false;
+        preview.innerHTML = `${exerciseImage(exercise, 'main', { className: 'exercise-media-builder', alt: exercise.nameAr || exercise.name || 'تمرين' })}<div><strong>${escapeHtml(exercise.nameAr || exercise.name || 'تمرين')}</strong><small>صورة التمرين المرجعية</small></div>`;
+        window.TopGymExerciseAssets?.hydrate(preview);
     }
 
     async function openSessionDialog(memberId) {
@@ -1847,6 +1883,7 @@
         const programs = state.profile?.workoutPrograms || [];
         if (!programs.length) return notify('أنشئ برنامج تدريب أولًا قبل تسجيل جلسة.', 'warning');
         ensureExecutionDialogs();
+        await (window.TopGymExerciseAssets?.load ? window.TopGymExerciseAssets.load().catch(() => null) : Promise.resolve());
         state.execution = { memberId: Number(memberId), program: null, session: null };
         $('executionSessionMemberId').value = memberId;
         $('executionSessionId').value = '';
@@ -1886,6 +1923,7 @@
             $('executionSessionEnd').hidden = false;
             $('executionSessionActive').hidden = false;
             $('executionSessionActive').innerHTML = `<div class="execution-session-head"><strong>${escapeHtml(state.execution.program?.name || 'جلسة تدريب')}</strong><span>${escapeHtml(routine?.name || 'كل البرنامج')} · بدأت الآن</span></div><div class="field-grid"><label>التمرين<select id="executionSetExercise">${exercises.map((exercise) => `<option value="${exercise.id}">${escapeHtml(exercise.nameAr || exercise.name || 'تمرين')}</option>`).join('')}</select></label><label>رقم المجموعة<input id="executionSetNumber" type="number" min="1" value="1"></label><label>الوزن كجم<input id="executionSetWeight" type="number" min="0" step="0.5"></label><label>التكرارات<input id="executionSetReps" type="number" min="0"></label></div><button class="btn btn-light" type="button" data-session-action="add-set">حفظ المجموعة</button><div id="executionSetLog" class="execution-set-log"><div class="profile-empty">لم تُسجل مجموعات بعد.</div></div>`;
+            renderExecutionExercisePreview();
             notify('تم بدء جلسة التدريب.');
         } catch (error) { notify(error.message, 'error'); }
         finally { if (startButton) startButton.disabled = false; }
