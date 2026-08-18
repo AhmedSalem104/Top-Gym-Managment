@@ -233,7 +233,6 @@ body.auth-pending .auth-screen {
 body[data-top-gym-role='Assistant'] #managementSection,
 body[data-top-gym-role='Assistant'] #expensesSection,
 body[data-top-gym-role='Assistant'] #reportsSection,
-body[data-top-gym-role='Assistant'] #dashboardSection,
 body[data-top-gym-role='Assistant'] #dashboardAnalytics { display: none !important; }
 #pageTabs [data-page-tab][hidden] { display: none !important; }
 body[data-top-gym-role='Assistant'] #topPricingButton,
@@ -480,4 +479,96 @@ body[data-top-gym-role='Assistant'] #refreshButton { display: none !important; }
 
 @media (prefers-reduced-motion: reduce) {
     .auth-submit, .auth-field input { transition: none; }
+}
+
+/* Final navigation frame: compact, readable, and shared by Owner and Assistant. */
+.app-shell .page-tabs {
+    display: flex !important;
+    align-items: center;
+    gap: 7px;
+    width: min(100%, 1380px) !important;
+    max-width: 1380px !important;
+    margin: 0 auto;
+    padding: 9px clamp(12px, 2.5vw, 28px) !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    border: 1px solid #dbe7f5;
+    border-top: 0;
+    border-radius: 0 0 14px 14px;
+    background: rgba(255, 255, 255, .9);
+    box-shadow: 0 7px 18px rgba(15, 23, 42, .06);
+    scrollbar-width: none;
+}
+.app-shell .page-tabs::-webkit-scrollbar { display: none; }
+.app-shell .page-tabs .page-tab {
+    display: inline-flex !important;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    min-height: 39px;
+    padding: 7px 12px;
+    border: 1px solid transparent;
+    border-radius: 9px;
+    color: #64748b;
+    background: transparent;
+    font-size: 11px;
+    font-weight: 800;
+    white-space: nowrap;
+}
+.app-shell .page-tabs .page-tab:hover:not(.active) {
+    border-color: #bfdbfe;
+    color: #1d4ed8;
+    background: #eff6ff;
+}
+.app-shell .page-tabs .page-tab.active {
+    border-color: #93c5fd;
+    color: #1d4ed8;
+    background: linear-gradient(135deg, #eff6ff, #dbeafe);
+    box-shadow: 0 5px 12px rgba(37, 99, 235, .12);
+}
+.app-shell .page-tabs .page-tab[hidden] { display: none !important; }
+.app-shell .page-tabs .auth-account-bar {
+    margin: 0 auto 0 0;
+    border-color: #dbe3ef;
+    background: #f8fbff;
+}
+.app-shell .page-tabs .auth-account-bar .auth-account-copy strong { color: #0f172a; }
+.app-shell .page-tabs .auth-account-bar .auth-account-copy small { color: #64748b; }
+.app-shell .page-tabs .auth-account-bar .auth-account-avatar {
+    color: #1d4ed8;
+    border-color: #bfdbfe;
+    background: #eff6ff;
+}
+.app-shell .page-tabs .auth-account-bar .auth-logout-button {
+    color: #b91c1c !important;
+    border-color: #fecaca !important;
+    background: #fff1f2 !important;
+}
+.app-shell .page-tabs .auth-account-bar .auth-logout-button:hover:not(:disabled) {
+    color: #991b1b !important;
+    border-color: #fda4af !important;
+    background: #ffe4e6 !important;
+}
+
+@media (max-width: 640px) {
+    .app-shell .page-tabs {
+        display: grid !important;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 6px;
+        padding: 9px 10px !important;
+        overflow: visible !important;
+        border-radius: 0 0 12px 12px;
+    }
+    .app-shell .page-tabs .page-tab {
+        width: 100%;
+        min-height: 40px;
+        padding-inline: 7px;
+        font-size: 10px;
+    }
+    .app-shell .page-tabs .auth-account-bar {
+        grid-column: 1 / -1;
+        width: 100%;
+        margin: 0;
+    }
 }
