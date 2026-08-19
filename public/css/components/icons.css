@@ -1,0 +1,34 @@
+/* Shared vector icon contract. Keep visual sizes predictable across pages. */
+.ui-icon,
+.action-icon,
+.alert-status-icon,
+.coaching-inline-icon {
+  display: block;
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  overflow: visible;
+}
+
+.action-icon {
+  width: 17px;
+  height: 17px;
+}
+
+.alert-status {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  white-space: nowrap;
+}
+
+.alert-status-icon {
+  width: 16px;
+  height: 16px;
+  flex-basis: 16px;
+}
+
+.coaching-inline-icon {
+  width: 18px;
+  height: 18px;
+}
