@@ -13,13 +13,13 @@
         },
         finance: {
             styles: [],
-            scripts: ['/js/monthly-finance.js?v=15']
+            scripts: ['/js/pages/finance/monthly-finance.js?v=15']
         },
         members: {
             styles: [],
             scripts: [
-                '/js/action-menu.js?v=4',
-                '/js/attendance.js?v=8'
+                '/js/pages/members/action-menu.js?v=4',
+                '/js/pages/attendance/attendance.js?v=8'
             ]
         },
         coaching: {
@@ -27,12 +27,12 @@
             scripts: [
                 '/js/exercise-assets.js?v=5',
                 '/js/muscle-assets.js?v=3',
-                '/js/coaching.js?v=13'
+                '/js/pages/coaching/coaching.js?v=13'
             ]
         },
         print: {
             styles: [],
-            scripts: ['/js/exercise-assets.js?v=5', '/js/print-enhancements.js?v=11']
+            scripts: ['/js/exercise-assets.js?v=5', '/js/integrations/print-enhancements.js?v=11']
         },
         expenses: {
             dependencies: ['finance'],
@@ -41,19 +41,19 @@
         },
         reports: {
             styles: [],
-            scripts: ['/js/reports.js?v=8']
+            scripts: ['/js/pages/reports/reports.js?v=8']
         },
         management: {
             styles: [],
-            scripts: ['/js/backup-enhancements.js?v=9', '/js/auth-users.js?v=1']
+            scripts: ['/js/pages/management/backup.js?v=9', '/js/pages/management/auth-users.js?v=1']
         },
         attendance: {
             styles: [],
-            scripts: ['/js/attendance.js?v=8']
+            scripts: ['/js/pages/attendance/attendance.js?v=8']
         },
         library: {
             styles: [],
-            scripts: ['/js/exercise-assets.js?v=5', '/js/muscle-assets.js?v=3', '/js/library.js?v=12']
+            scripts: ['/js/exercise-assets.js?v=5', '/js/muscle-assets.js?v=3', '/js/pages/library/library.js?v=12']
         },
         trainees: {
             dependencies: ['coaching'],
@@ -134,7 +134,7 @@
                 window.__topGymDashboardAnalyticsScheduled = false;
                 return;
             }
-            loadScript('/js/dashboard-analytics.js?v=6', 'dashboard-analytics')
+            loadScript('/js/pages/dashboard/analytics.js?v=6', 'dashboard-analytics')
                 .catch((error) => console.warn('[TOP GYM] Dashboard analytics failed to load.', error));
         };
         if (immediate) void start();
