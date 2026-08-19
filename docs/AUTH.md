@@ -1,8 +1,31 @@
-# TOP GYM Authentication
+# Authentication and authorization
+
+## Flow
+
+```text
+POST /api/auth/login
+  -> validate email/password
+  -> scrypt verification
+  -> create random server-side session
+  -> store only SHA-256 token hash in SQL Server
+  -> send HttpOnly SameSite=Lax cookie
+```
+
+Every protected request passes through `src/middleware/auth.middleware.js`. The middleware loads the session from SQL Server, verifies expiry/revocation and active user status, then applies the centralized role rules. Logout revokes the session record and clears the cookie.
+
+## User model
+
+`dbo.gym_users` contains `id`, `full_name`, legacy `username`, `email`, unique `email_normalized`, `password_hash`, `role`, `status`, `last_login_at`, `created_at`, and `updated_at`.
+
+`dbo.gym_auth_sessions` contains the session id, user id, token hash, expiry, revocation time, request metadata, creation time and last-seen time.
+
+## Passwords
+
+Passwords are hashed with Node's built-in `crypto.scrypt` using a random 16-byte salt. The encoded value stores the algorithm parameters, salt and derived key. Comparisons use `crypto.timingSafeEqual`. Passwords and hashes are never returned to the browser.
 
 ## Bootstrap
 
-The first `Owner` account is created once when the authentication tables are ready. Set these server-side environment variables before the first deployment:
+Set these server-side variables before the first deployment if no Owner exists:
 
 ```text
 AUTH_OWNER_EMAIL=owner@example.com
@@ -11,31 +34,22 @@ AUTH_OWNER_PASSWORD=<long-random-password>
 AUTH_SESSION_DAYS=7
 ```
 
-The bootstrap password is only used to create the first account. It is never returned by an API and is stored only as a password hash.
+The bootstrap password is used only to create the first Owner hash. It is not an API response and should not be stored in source control.
 
-## Model
+## Repository boundaries
 
-Authentication uses two SQL Server tables:
+- `src/services/auth-service.js`: validation, hashing, login rules, safe user mapping, cookies and authorization facade.
+- `src/repositories/user.repository.js`: user SQL operations.
+- `src/repositories/session.repository.js`: session SQL operations.
+- `src/middleware/auth.middleware.js`: request authentication and same-origin checks.
+- `src/permissions/role-permissions.js`: role and route policy.
 
-- `dbo.gym_users`: `id`, `full_name`, `email`, `email_normalized`, `password_hash`, `role`, `status`, login timestamps.
-- `dbo.gym_auth_sessions`: a random session token hash, user id, expiry, revocation timestamp, and request metadata.
+## Security properties
 
-Supported roles are `Owner` and `Assistant`. Owners are always `Active`; assistants can be `Active` or `Disabled`.
-
-Passwords use Node.js built-in `crypto.scrypt` with a per-user random salt and a timing-safe comparison. The browser receives an `HttpOnly`, `SameSite=Lax` session cookie; it never receives a password, password hash, role token, or permission source of truth. Sessions are stored server-side, expire after `AUTH_SESSION_DAYS`, and are revoked on logout, assistant disable, and password reset.
-
-## Permissions
-
-- `Owner`: all eight application tabs plus account management.
-- `Assistant`: `المشتركون`, `متدرب خارجى`, `الحضور والانصراف`, and `المكتبة`, including the coaching operations attached to client records. Finance, dashboard analytics, pricing management, reports, backups, and user management are denied by the backend.
-
-The frontend hides unavailable tabs for usability only. Every protected API request is authorized again on the backend.
-
-## Endpoints
-
-- `GET /api/auth/session`
-- `POST /api/auth/login`
-- `POST /api/auth/logout`
-- Owner only: `GET/POST/PUT /api/auth/users` and `PATCH /api/auth/users/:id/status`
-
-Login failures use a generic message. Disabled accounts receive a dedicated disabled-account message. Login attempts are rate-limited per IP/email pair.
+- Generic invalid-credential message.
+- Disabled accounts are rejected.
+- Session cookie is `HttpOnly`, `SameSite=Lax`, and `Secure` in production.
+- Login and sensitive API rate limits are applied in middleware.
+- Non-safe cross-origin state-changing requests are rejected.
+- Assistant restrictions are enforced on the backend; hiding tabs is only UX.
+- Session tokens, passwords and secrets are not logged or returned.

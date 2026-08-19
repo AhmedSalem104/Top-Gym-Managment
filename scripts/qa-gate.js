@@ -72,8 +72,12 @@ function assertRequiredFiles() {
         'src/config/env.js',
         'src/database/pool.js',
         'src/database/transaction.js',
+        'src/database/index.js',
+        'src/utils/date.js',
         'src/repositories/member.repository.js',
         'src/repositories/expense.repository.js',
+        'src/repositories/user.repository.js',
+        'src/repositories/session.repository.js',
         'src/permissions/roles.js',
         'src/permissions/permissions.js',
         'src/permissions/role-permissions.js',
@@ -102,6 +106,12 @@ function assertRequiredFiles() {
         'src/routes/coaching.routes.js',
         'src/controllers/coaching.controller.js',
         'docs/AUTH.md',
+        'docs/ARCHITECTURE.md',
+        'docs/API.md',
+        'docs/PERMISSIONS.md',
+        'docs/DATABASE.md',
+        'docs/DEPLOYMENT.md',
+        'docs/BACKUP-RESTORE.md',
         'qa/AGENT-CONTRACT.md'
     ];
     required.forEach((relativePath) => record(
@@ -116,6 +126,31 @@ function checkJavaScriptSyntax() {
         const result = run(process.execPath, ['--check', relativePath]);
         record(`SYNTAX-${relativePath.replaceAll('/', '-')}`, result.status === 0, result.status === 0 ? 'node --check passed' : (result.stderr || 'syntax check failed').trim());
     }
+    for (const relativePath of jsFiles('src')) {
+        const result = run(process.execPath, ['--check', relativePath]);
+        record(`SYNTAX-${relativePath.replaceAll('/', '-')}`, result.status === 0, result.status === 0 ? 'node --check passed' : (result.stderr || 'syntax check failed').trim());
+    }
+}
+
+function checkModuleGraph() {
+    const modules = [
+        './server',
+        './src/services/auth-service',
+        './src/services/member-service',
+        './src/services/finance-service',
+        './src/services/attendance-service',
+        './src/services/coaching-service',
+        './src/services/library-service',
+        './src/services/analytics-service',
+        './src/services/report-service',
+        './src/services/backup-service',
+        './src/database',
+        './src/repositories/user.repository',
+        './src/repositories/session.repository'
+    ];
+    const source = `${modules.map((item) => `require(${JSON.stringify(item)});`).join('')}console.log('MODULE_GRAPH_OK');`;
+    const result = run(process.execPath, ['-e', source]);
+    record('MODULE-GRAPH', result.status === 0 && String(result.stdout || '').includes('MODULE_GRAPH_OK'), result.status === 0 ? 'backend module graph loads' : (result.stderr || 'backend module graph failed').trim(), 'P0');
 }
 
 function checkRouteSurface() {
@@ -190,6 +225,7 @@ function runOptionalCommand(label, command, commandArgs) {
 
 assertRequiredFiles();
 checkJavaScriptSyntax();
+checkModuleGraph();
 checkRouteSurface();
 checkAuthSurface();
 checkPrintAndLazyLoadingSurface();
