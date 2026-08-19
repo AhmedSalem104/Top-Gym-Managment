@@ -1,0 +1,150 @@
+.form-field,
+.field,
+.auth-field {
+  display: grid;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.form-field > label,
+.field > label,
+.auth-field > label,
+label.form-label {
+  color: var(--color-text-soft);
+  font-size: var(--font-sm);
+  font-weight: var(--weight-semibold);
+}
+
+input:not([type="checkbox"]):not([type="radio"]),
+select,
+textarea,
+.form-control,
+.search-input,
+.filter-input {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  outline: 0;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: var(--font-sm);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast), background-color var(--transition-fast);
+}
+
+input:not([type="checkbox"]):not([type="radio"]),
+select,
+.form-control,
+.search-input,
+.filter-input {
+  padding: 0 var(--space-3);
+}
+
+textarea {
+  min-height: 100px;
+  padding: var(--space-3);
+  resize: vertical;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--color-text-subtle);
+  opacity: 1;
+}
+
+input:not([type="checkbox"]):not([type="radio"]):hover,
+select:hover,
+textarea:hover {
+  border-color: var(--border-strong);
+}
+
+input:not([type="checkbox"]):not([type="radio"]):focus,
+select:focus,
+textarea:focus,
+.form-control:focus,
+.search-input:focus,
+.filter-input:focus {
+  border-color: var(--color-primary);
+  box-shadow: var(--focus-ring);
+}
+
+input[aria-invalid="true"],
+select[aria-invalid="true"],
+textarea[aria-invalid="true"],
+.is-invalid {
+  border-color: var(--color-danger);
+}
+
+.input-hint,
+.field-hint,
+.help-text {
+  color: var(--color-text-muted);
+  font-size: var(--font-xs);
+}
+
+.field-error,
+.input-error,
+.error-text {
+  color: var(--color-danger);
+  font-size: var(--font-xs);
+}
+
+.input-group,
+.input-with-icon,
+.auth-input-wrap {
+  position: relative;
+  min-width: 0;
+}
+
+.input-group > input,
+.input-with-icon > input,
+.auth-input-wrap > input {
+  padding-inline-start: var(--space-10);
+}
+
+.input-icon,
+.auth-input-icon {
+  position: absolute;
+  top: 50%;
+  left: var(--space-3);
+  z-index: var(--z-content);
+  width: 18px;
+  height: 18px;
+  color: var(--color-text-subtle);
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+
+.checkbox-field,
+.radio-field,
+.check-row {
+  display: inline-flex;
+  min-height: 40px;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-text-soft);
+  font-size: var(--font-sm);
+}
+
+input[type="checkbox"],
+input[type="radio"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--color-primary);
+}
+
+.search-field,
+.filter-field,
+.members-search-field {
+  min-width: 220px;
+  flex: 1 1 260px;
+}
+
+.filter-row,
+.filters-row,
+.members-toolbar-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: var(--space-3);
+}

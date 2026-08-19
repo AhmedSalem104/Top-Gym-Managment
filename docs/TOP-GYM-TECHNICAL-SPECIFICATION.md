@@ -128,7 +128,7 @@ TOP GYM هو تطبيق إدارة جيم عربي يعمل كصفحة SPA وا�
     express       HTTP server
     mssql         SQL Server driver
     dotenv        environment configuration
-    tailwindcss   build-time CSS utility generation
+    Vanilla CSS  centralized Design System with validated import graph
 
 لا توجد طبقة ORM، ولا migration framework مستقل، ولا Auth package، ولا React runtime.
 

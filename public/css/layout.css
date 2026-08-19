@@ -1,0 +1,146 @@
+body {
+  overflow-x: hidden;
+}
+
+.auth-screen {
+  min-height: 100vh;
+}
+
+.auth-pending .app-shell,
+.auth-locked .app-shell {
+  display: none;
+}
+
+.auth-pending .auth-screen,
+.auth-locked .auth-screen {
+  display: grid;
+}
+
+.top-gym-navigation-pending .page-tabs,
+.top-gym-navigation-pending .page {
+  visibility: hidden;
+}
+
+.app-shell {
+  min-height: 100vh;
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+.page {
+  width: min(1440px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: var(--space-8) 0 var(--space-12);
+}
+
+.workspace,
+.content-grid,
+.dashboard-section,
+.section-stack {
+  display: grid;
+  gap: var(--space-6);
+}
+
+.section-stack {
+  gap: var(--space-8);
+}
+
+.overview-grid,
+.stats-grid,
+.kpi-grid,
+.metrics-grid,
+.management-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+.two-column-grid,
+.content-grid-two,
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-5);
+}
+
+.three-column-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-5);
+}
+
+.page-header,
+.section-heading,
+.toolbar,
+.panel-header,
+.members-toolbar,
+.actions-row,
+.form-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.page-header,
+.section-heading {
+  flex-wrap: wrap;
+}
+
+.page-header-copy,
+.section-heading-copy,
+.members-toolbar-copy {
+  display: grid;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.toolbar,
+.actions-row,
+.form-actions {
+  flex-wrap: wrap;
+}
+
+.form-grid,
+.field-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+.field-span-2,
+.form-field-full {
+  grid-column: 1 / -1;
+}
+
+.table-scroll,
+.table-wrap,
+.data-table-wrap {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.stack-sm,
+.stack-md,
+.stack-lg {
+  display: grid;
+}
+
+.stack-sm { gap: var(--space-2); }
+.stack-md { gap: var(--space-4); }
+.stack-lg { gap: var(--space-6); }

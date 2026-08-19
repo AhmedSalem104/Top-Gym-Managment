@@ -52,6 +52,22 @@ function assertRequiredFiles() {
         'server.js',
         'package.json',
         'public/index.html',
+        'public/css/main.css',
+        'public/css/tokens.css',
+        'public/css/reset.css',
+        'public/css/layout.css',
+        'public/css/responsive.css',
+        'public/css/print.css',
+        'public/css/components/buttons.css',
+        'public/css/components/forms.css',
+        'public/css/components/cards.css',
+        'public/css/components/tables.css',
+        'public/css/components/modals.css',
+        'public/css/components/navbar.css',
+        'public/css/pages/login.css',
+        'public/css/pages/dashboard.css',
+        'public/css/pages/members.css',
+        'public/css/pages/attendance.css',
         'public/js/app.js',
         'public/js/core/api.js',
         'public/js/core/permissions.js',
@@ -68,6 +84,8 @@ function assertRequiredFiles() {
         'src/services/auth-service.js',
         'public/js/auth-ui.js',
         'public/js/pages/management/auth-users.js',
+        'scripts/validate-styles.js',
+        'scripts/qa-browser-style.js',
         'src/app.js',
         'src/config/env.js',
         'src/database/pool.js',
@@ -196,7 +214,20 @@ function checkAuthSurface() {
     record('AUTH-BACKEND-MIDDLEWARE', server.includes('createAuthApiMiddleware') && authMiddleware.includes('canAccess(user, request)'), 'backend authentication and authorization middleware is present', 'P0');
     record('AUTH-SCRYPT-HASHING', auth.includes('crypto.scrypt') && auth.includes('timingSafeEqual'), 'password hashing uses scrypt and timing-safe comparison', 'P0');
     record('AUTH-HTTPONLY-SESSION', auth.includes('HttpOnly') && auth.includes('SameSite=Lax'), 'sessions use HttpOnly SameSite cookies', 'P0');
-    record('AUTH-LOGIN-SCREEN', index.includes('id="authScreen"') && !/<link[^>]+rel=["']stylesheet["']/i.test(index), 'login screen structure is present without a linked stylesheet', 'P1');
+    record('AUTH-LOGIN-SCREEN', index.includes('id="authScreen"') && index.includes('/css/main.css'), 'login screen structure and central stylesheet are present', 'P1');
+}
+
+function checkStyleSurface() {
+    const index = read('public/index.html');
+    const main = read('public/css/main.css');
+    const tokens = read('public/css/tokens.css');
+    const print = read('public/css/print.css');
+    record('STYLE-CENTRAL-LINK', index.includes('/css/main.css'), 'index links one central application stylesheet');
+    record('STYLE-TOKENS', main.includes('./tokens.css') && tokens.includes('--color-primary') && tokens.includes('--space-4'), 'design tokens are centralized');
+    record('STYLE-PRINT', main.includes('./print.css') && print.includes('@media print'), 'print styles are included in the central stylesheet');
+    record('STYLE-CSS-VALIDATOR', fs.existsSync(path.join(root, 'scripts/validate-styles.js')), 'CSS validation script is present');
+    const validation = run(process.execPath, ['scripts/validate-styles.js']);
+    record('STYLE-INTEGRITY', validation.status === 0, validation.status === 0 ? 'CSS import, variable, brace, media-query and entrypoint checks passed' : (validation.stderr || validation.stdout || 'CSS integrity validation failed').trim(), 'P0');
 }
 
 function checkPrintAndLazyLoadingSurface() {
@@ -228,6 +259,7 @@ checkJavaScriptSyntax();
 checkModuleGraph();
 checkRouteSurface();
 checkAuthSurface();
+checkStyleSurface();
 checkPrintAndLazyLoadingSurface();
 checkTrackedSecrets();
 if (runBuild) runOptionalCommand('BUILD', 'npm', ['run', 'build']);

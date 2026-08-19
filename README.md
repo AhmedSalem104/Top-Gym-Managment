@@ -70,6 +70,12 @@ public/js/pages/            lazy page feature modules
 public/js/components/       reusable UI modules as extracted
 public/js/integrations/     printing and external browser integrations
 public/js/feature-loader.js on-demand feature loading
+public/css/main.css         single stylesheet entrypoint
+public/css/tokens.css       design tokens and theme variables
+public/css/components/      shared buttons, forms, cards, tables and overlays
+public/css/pages/           page-specific composition styles
+public/css/responsive.css   responsive breakpoints and reduced motion
+public/css/print.css        print/PDF presentation rules
 public/data/                frontend manifests and static reference data
 public/assets/              exercise, muscle, logo, and image assets
 ```
@@ -120,9 +126,11 @@ npm run qa:muscle-assets
 
 `qa:gate` performs required-file checks, JavaScript syntax checks, route-surface checks, auth-surface checks, frontend lazy-loading checks, and tracked-secret checks. Database-dependent smoke/E2E commands require a reachable test database and the appropriate environment.
 
-## Build and styling note
+## Build and styling
 
-The repository currently has no active stylesheet assets because a previous explicit maintenance change removed the styling layer. `npm run build` is therefore a safe no-op that reports `Styling layer disabled`. Any future Design System restoration must be a separate, intentional phase and must not be mixed with backend architecture changes.
+The application uses a structured Vanilla CSS Design System. `/css/main.css` is the only stylesheet linked by the HTML shell and imports tokens, reset, typography, layout, shared components, page styles, responsive rules, and print rules in that order. `npm run build:css` validates the import graph, detects circular imports, checks braces/media queries, verifies CSS variables, checks the single stylesheet entrypoint, and validates print coverage.
+
+See [docs/DESIGN-SYSTEM.md](docs/DESIGN-SYSTEM.md) for tokens, component usage, breakpoints, RTL/LTR rules, accessibility, and print guidance.
 
 ## Refactor status
 
@@ -135,12 +143,13 @@ Completed safely:
 - Roles and backend route authorization are centralized.
 - Frontend API, tab permissions, state and lazy feature paths are centralized.
 - Services are grouped under `src/services/` and shared date utilities under `src/utils/date.js`.
+- A single, documented CSS Design System is now active across login, dashboard, members, coaching, attendance, finance, library, reports, dialogs, and print views.
 
 Remaining deliberate technical debt:
 
 - `member-service.js`, `coaching-service.js`, and `library-service.js` still contain multiple related workflows and should be split incrementally behind compatibility exports.
 - Some dynamic schema creation remains inside services and should move to versioned migrations after a database review.
 - `public/js/app.js` is still the legacy shell for members/dashboard/pricing and should be split by behavior only after browser regression coverage is expanded.
-- The styling layer is intentionally disabled and is not claimed as part of this architecture refactor.
+- The legacy `public/js/app.js` shell remains intentionally compatible while page behaviors continue to be extracted incrementally.
 
 These items are documented so the next change can be scoped and tested rather than becoming a risky Big Bang rewrite.

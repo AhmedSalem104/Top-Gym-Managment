@@ -1,0 +1,114 @@
+@media print {
+  :root {
+    --color-bg: #fff;
+    --color-surface: #fff;
+    --color-text: #111827;
+    --color-text-muted: #4b5563;
+    --border-color: #d1d5db;
+  }
+
+  html,
+  body {
+    min-width: 0;
+    background: #fff !important;
+    color: #111827 !important;
+  }
+
+  .auth-screen,
+  .topbar,
+  .page-tabs,
+  .auth-account-bar,
+  .header-actions,
+  .top-actions,
+  .page-header-actions,
+  .dashboard-page-actions,
+  .dashboard-hero,
+  .btn,
+  button,
+  .modal-backdrop,
+  dialog,
+  .toast,
+  .pagination,
+  .members-pagination,
+  .library-pagination {
+    display: none !important;
+  }
+
+  .app-shell,
+  .page,
+  .panel,
+  .report-card,
+  .members-panel,
+  .library-section,
+  .attendance-section,
+  .coaching-section,
+  .reports-section {
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    border: 0 !important;
+    box-shadow: none !important;
+  }
+
+  .page {
+    padding: 0 !important;
+  }
+
+  .panel,
+  .report-card {
+    padding: 12px !important;
+  }
+
+  .table-scroll,
+  .table-wrap,
+  .data-table-wrap,
+  .reports-table-wrap,
+  .pricing-table-scroll {
+    overflow: visible !important;
+  }
+
+  table,
+  .data-table,
+  .reports-table {
+    min-width: 0 !important;
+    width: 100% !important;
+    font-size: 10pt;
+  }
+
+  th,
+  td {
+    padding: 6px 8px !important;
+  }
+
+  .overview-grid,
+  .reports-grid,
+  .reports-detail-grid,
+  .two-column-grid,
+  .three-column-grid {
+    display: block !important;
+  }
+
+  .overview-grid > *,
+  .reports-grid > *,
+  .reports-detail-grid > * {
+    margin-bottom: 16px;
+    break-inside: avoid;
+  }
+
+  img {
+    max-height: 180px;
+    break-inside: avoid;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+}
+
+.print-only {
+  display: none;
+}

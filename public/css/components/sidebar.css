@@ -1,0 +1,32 @@
+.sidebar,
+.app-sidebar {
+  width: 260px;
+  flex: 0 0 260px;
+  border-inline-end: 1px solid var(--border-color);
+  background: var(--color-surface);
+}
+
+.sidebar-nav,
+.sidebar-menu {
+  display: grid;
+  gap: var(--space-1);
+  padding: var(--space-4);
+}
+
+.sidebar-link {
+  display: flex;
+  min-height: 42px;
+  align-items: center;
+  gap: var(--space-2);
+  border-radius: var(--radius-md);
+  padding: 0 var(--space-3);
+  color: var(--color-text-muted);
+  font-size: var(--font-sm);
+  font-weight: var(--weight-semibold);
+}
+
+.sidebar-link:hover,
+.sidebar-link.active {
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+}

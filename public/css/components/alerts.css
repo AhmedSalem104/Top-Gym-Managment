@@ -1,0 +1,59 @@
+.alert,
+.notice,
+.auth-message,
+.error-message,
+.success-message,
+.info-message {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-surface-muted);
+  color: var(--color-text-soft);
+  font-size: var(--font-sm);
+}
+
+.alert-success,
+.success-message {
+  border-color: #bfead9;
+  background: var(--color-success-soft);
+  color: #087a55;
+}
+
+.alert-warning {
+  border-color: #f2d79b;
+  background: var(--color-warning-soft);
+  color: #986007;
+}
+
+.alert-danger,
+.error-message,
+.auth-message:not(.info) {
+  border-color: #f2c4c4;
+  background: var(--color-danger-soft);
+  color: #b82d35;
+}
+
+.alert-info,
+.info-message,
+.auth-message.info {
+  border-color: #c7dcff;
+  background: var(--color-info-soft);
+  color: #2256ad;
+}
+
+.alerts-panel,
+.alerts-list,
+.alerts-section {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.alerts-panel {
+  padding: var(--space-4);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+}

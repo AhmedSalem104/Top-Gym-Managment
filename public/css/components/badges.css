@@ -1,0 +1,66 @@
+.badge,
+.status-badge,
+.tag,
+.chip,
+.membership-badge,
+.role-badge {
+  display: inline-flex;
+  min-height: 26px;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  border: 1px solid transparent;
+  border-radius: var(--radius-pill);
+  padding: 3px var(--space-2);
+  background: var(--color-surface-muted);
+  color: var(--color-text-muted);
+  font-size: var(--font-xs);
+  font-weight: var(--weight-semibold);
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.badge::before,
+.status-badge::before {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  content: "";
+}
+
+.badge-success,
+.status-active,
+.status-present,
+.status-in,
+.status-badge.success {
+  border-color: #bfead9;
+  background: var(--color-success-soft);
+  color: var(--color-success);
+}
+
+.badge-warning,
+.status-near-expiry,
+.status-pending,
+.status-badge.warning {
+  border-color: #f2d79b;
+  background: var(--color-warning-soft);
+  color: var(--color-warning);
+}
+
+.badge-danger,
+.status-expired,
+.status-cancelled,
+.status-badge.danger {
+  border-color: #f2c4c4;
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+}
+
+.badge-info,
+.status-frozen,
+.status-badge.info {
+  border-color: #c7dcff;
+  background: var(--color-info-soft);
+  color: var(--color-info);
+}

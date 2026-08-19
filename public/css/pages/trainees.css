@@ -1,0 +1,79 @@
+.coaching-section {
+  min-width: 0;
+}
+
+.coaching-header,
+.coaching-toolbar,
+.coaching-heading,
+.coaching-toolbar-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.coaching-heading {
+  justify-content: flex-start;
+}
+
+.coaching-heading-icon,
+.library-heading-icon,
+.attendance-heading-icon {
+  display: grid;
+  width: 50px;
+  height: 50px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: var(--radius-lg);
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+
+.coaching-heading-icon svg,
+.library-heading-icon svg,
+.attendance-heading-icon svg { width: 24px; height: 24px; }
+
+.coaching-heading > div,
+.library-heading > div,
+.attendance-heading > div { display: grid; gap: var(--space-1); }
+
+.coaching-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: var(--space-3);
+}
+
+.coaching-summary-card,
+.coaching-stat,
+.trainee-stat-card {
+  display: grid;
+  gap: var(--space-1);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-muted);
+  padding: var(--space-4);
+}
+
+.coaching-summary-card strong,
+.coaching-stat strong,
+.trainee-stat-card strong { color: var(--color-text); font-family: var(--font-latin); font-size: 1.5rem; direction: ltr; }
+.coaching-summary-card span,
+.coaching-stat span,
+.trainee-stat-card span { color: var(--color-text-muted); font-size: var(--font-xs); }
+
+.coaching-toolbar { padding-block: var(--space-2); }
+.coaching-search { min-width: 220px; max-width: 520px; }
+.coaching-result-badge { color: var(--color-text-muted); font-size: var(--font-xs); }
+.coaching-message { margin-block: var(--space-2); }
+.external-trainees-list { display: grid; gap: var(--space-3); }
+.external-trainee-card { display: grid; gap: var(--space-4); border: 1px solid var(--border-color); border-radius: var(--radius-lg); background: var(--color-surface); padding: var(--space-4); }
+.external-trainee-card-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); }
+.external-trainee-card-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-3); }
+
+@media (max-width: 767px) {
+  .coaching-header,
+  .coaching-toolbar { align-items: stretch; flex-direction: column; }
+  .coaching-toolbar-actions { justify-content: space-between; }
+  .coaching-search { max-width: none; }
+  .external-trainee-card-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

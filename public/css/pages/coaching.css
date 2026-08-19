@@ -1,0 +1,44 @@
+.coaching-profile-content,
+.coaching-builder-content,
+.program-details,
+.workout-program,
+.diet-plan {
+  display: grid;
+  gap: var(--space-5);
+}
+
+.builder-stepper {
+  display: flex;
+  gap: var(--space-2);
+  overflow-x: auto;
+  padding-bottom: var(--space-1);
+}
+
+.builder-step {
+  display: inline-flex;
+  min-height: 34px;
+  align-items: center;
+  gap: var(--space-1);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-muted);
+  color: var(--color-text-muted);
+  padding: 0 var(--space-3);
+  font-size: var(--font-xs);
+  white-space: nowrap;
+}
+
+.builder-step.active { background: var(--color-primary); color: #fff; }
+.builder-progress { height: 5px; overflow: hidden; border-radius: var(--radius-pill); background: var(--color-bg-subtle); }
+.builder-progress-bar { height: 100%; border-radius: inherit; background: var(--color-primary); transition: width var(--transition-normal); }
+.builder-dialog-actions { position: sticky; bottom: calc(var(--space-5) * -1); z-index: var(--z-content); margin-inline: calc(var(--space-5) * -1); margin-bottom: calc(var(--space-5) * -1); background: var(--color-surface); }
+.exercise-selector,
+.meal-selector,
+.program-day-card,
+.meal-card { border: 1px solid var(--border-color); border-radius: var(--radius-lg); background: var(--color-surface-muted); padding: var(--space-4); }
+.exercise-image,
+.exercise-thumb,
+.food-image { width: 64px; height: 64px; object-fit: cover; border-radius: var(--radius-md); background: var(--color-bg-subtle); }
+.exercise-list,
+.meal-list,
+.program-days,
+.diet-meals { display: grid; gap: var(--space-3); }

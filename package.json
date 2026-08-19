@@ -7,11 +7,12 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch server.js",
-    "build:css": "node -e \"console.log('Styling layer disabled')\"",
+    "build:css": "node scripts/validate-styles.js",
     "build": "npm run build:css",
     "test:smoke": "node scripts/smoke-test.js",
     "test:e2e": "playwright test",
     "test:e2e:headed": "playwright test --headed",
+    "test:visual": "node scripts/qa-browser-style.js",
     "qa:gate": "node scripts/qa-gate.js",
     "qa:gate:smoke": "node scripts/qa-gate.js --build --smoke",
     "qa:gate:browser": "node scripts/qa-gate.js --build --browser",
@@ -34,7 +35,6 @@
     "mssql": "^11.0.1"
   },
   "devDependencies": {
-    "@playwright/test": "^1.62.1",
-    "tailwindcss": "^3.4.17"
+    "@playwright/test": "^1.62.1"
   }
 }
