@@ -1,5 +1,5 @@
-const { getPool, sql } = require('./db');
-const { addDays, differenceInDays, formatDateOnly, parseDateOnly, todayInTimeZone, toUtcDate } = require('./date-utils');
+const { getPool, sql } = require('../db');
+const { addDays, differenceInDays, formatDateOnly, parseDateOnly, todayInTimeZone, toUtcDate } = require('../date-utils');
 const { ensurePaymentTransactionsTable, getDashboard } = require('./member-service');
 const { ensureExpensesTable } = require('./finance-service');
 const { ensureCoachingTables } = require('./coaching-service');

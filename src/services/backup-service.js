@@ -3,13 +3,13 @@ const path = require('node:path');
 const { createHash } = require('node:crypto');
 const { promisify } = require('node:util');
 const { gzip, gunzip } = require('node:zlib');
-const { getPool, sql } = require('./db');
+const { getPool, sql } = require('../db');
 const { ensureExpensesTable } = require('./finance-service');
 const { ensurePaymentTransactionsTable } = require('./member-service');
 const { ensureAttendanceTable } = require('./attendance-service');
 const { ensureLibraryData } = require('./library-service');
 const { ensureCoachingTables } = require('./coaching-service');
-const { config } = require('./config/env');
+const { config } = require('../config/env');
 
 const gzipAsync = promisify(gzip);
 const gunzipAsync = promisify(gunzip);

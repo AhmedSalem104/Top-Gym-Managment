@@ -1,4 +1,4 @@
-const { getPool, sql } = require('./db');
+const { getPool, sql } = require('../db');
 const { ensureLibraryData } = require('./library-service');
 const {
     addDays,
@@ -7,7 +7,7 @@ const {
     parseDateOnly,
     todayInTimeZone,
     toUtcDate
-} = require('./date-utils');
+} = require('../date-utils');
 
 let coachingTablesPromise;
 let memberIdentityPromise;

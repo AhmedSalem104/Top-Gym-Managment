@@ -1,14 +1,14 @@
 'use strict';
 
 const crypto = require('node:crypto');
-const { getPool, sql } = require('./db');
-const { config, isProduction } = require('./config/env');
+const { getPool, sql } = require('../db');
+const { config, isProduction } = require('../config/env');
 const {
     ROLE_PERMISSIONS,
     assistantPathAllowed,
     canAccessRoleRequest,
     permissionsForRole
-} = require('./permissions/role-permissions');
+} = require('../permissions/role-permissions');
 
 const SESSION_COOKIE_NAME = 'topgym_session';
 const DEFAULT_SESSION_DAYS = 7;

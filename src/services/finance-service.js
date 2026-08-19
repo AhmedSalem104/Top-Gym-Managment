@@ -4,9 +4,9 @@ const {
     formatDateOnly,
     parseDateOnly,
     todayInTimeZone
-} = require('./date-utils');
+} = require('../date-utils');
 const { ensurePaymentTransactionsTable } = require('./member-service');
-const expenseRepository = require('./repositories/expense.repository');
+const expenseRepository = require('../repositories/expense.repository');
 
 function appError(message, statusCode = 400) {
     const error = new Error(message);

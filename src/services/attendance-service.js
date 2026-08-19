@@ -1,6 +1,6 @@
-const { getPool, sql } = require('./db');
-const { addDays, differenceInDays, formatDateOnly, parseDateOnly, todayInTimeZone, toUtcDate } = require('./date-utils');
-const { config } = require('./config/env');
+const { getPool, sql } = require('../db');
+const { addDays, differenceInDays, formatDateOnly, parseDateOnly, todayInTimeZone, toUtcDate } = require('../date-utils');
+const { config } = require('../config/env');
 
 const ATTENDANCE_SOURCES = new Set(['phone', 'qr', 'manual']);
 const DEFAULT_AUTO_CHECKOUT_MINUTES = 60;

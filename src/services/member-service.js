@@ -1,6 +1,6 @@
-const { getPool, sql } = require('./db');
-const { withTransaction } = require('./database/transaction');
-const memberRepository = require('./repositories/member.repository');
+const { getPool, sql } = require('../db');
+const { withTransaction } = require('../database/transaction');
+const memberRepository = require('../repositories/member.repository');
 const {
     addDays,
     addMonths,
@@ -9,7 +9,7 @@ const {
     parseDateOnly,
     todayInTimeZone,
     toUtcDate
-} = require('./date-utils');
+} = require('../date-utils');
 const { ensureAttendanceTable, getMemberAttendanceStatuses } = require('./attendance-service');
 
 const DEFAULT_MEMBERSHIP_PLANS = {
