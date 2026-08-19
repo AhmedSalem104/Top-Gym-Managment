@@ -7,6 +7,8 @@ const { config } = require('./src/config/env');
 const { asyncRoute } = require('./src/utils/async-route');
 const { registerAuthRoutes } = require('./src/routes/auth.routes');
 const { registerMembersRoutes } = require('./src/routes/members.routes');
+const { registerAttendanceRoutes } = require('./src/routes/attendance.routes');
+const { registerFinanceRoutes } = require('./src/routes/finance.routes');
 const { getPool, initDatabase } = require('./src/db');
 const {
     createBackup,
@@ -19,10 +21,10 @@ const {
     recordBackupOperation,
     restoreBackup
 } = require('./src/backup-service');
-const { createExpense, deleteExpense, getMonthlyFinance, updateExpense } = require('./src/finance-service');
+const financeService = require('./src/finance-service');
 const { getDashboardAnalytics } = require('./src/analytics-service');
 const { getReportData } = require('./src/report-service');
-const { checkIn, checkOut, getAttendanceReport, getMemberAttendance, getTodayAttendance } = require('./src/attendance-service');
+const attendanceService = require('./src/attendance-service');
 const {
     createLibraryItem,
     deleteLibraryItem,
@@ -328,24 +330,7 @@ app.post('/api/backup/restore', backupUploadBody, asyncRoute(async (request, res
     }
 }));
 
-app.get('/api/monthly-finance', asyncRoute(async (request, response) => {
-    response.json(await getMonthlyFinance());
-}));
-
-app.post('/api/expenses', asyncRoute(async (request, response) => {
-    const expense = await createExpense(request.body);
-    response.status(201).json({ expense });
-}));
-
-app.put('/api/expenses/:id', asyncRoute(async (request, response) => {
-    const expense = await updateExpense(request.params.id, request.body);
-    response.json({ expense });
-}));
-
-app.delete('/api/expenses/:id', asyncRoute(async (request, response) => {
-    await deleteExpense(request.params.id);
-    response.status(204).send();
-}));
+registerFinanceRoutes(app, { financeService, asyncRoute });
 
 app.get('/api/dashboard', asyncRoute(async (request, response) => {
     response.json(await getDashboard());
@@ -386,25 +371,7 @@ app.get('/api/reports', asyncRoute(async (request, response) => {
     response.json(await getReportData(request.query));
 }));
 
-app.get('/api/attendance', asyncRoute(async (request, response) => {
-    response.json(await getTodayAttendance({ date: request.query.date, search: request.query.search }));
-}));
-
-app.get('/api/attendance/report', asyncRoute(async (request, response) => {
-    response.json(await getAttendanceReport(request.query));
-}));
-
-app.get('/api/attendance/member/:id', asyncRoute(async (request, response) => {
-    response.json(await getMemberAttendance(request.params.id, request.query));
-}));
-
-app.post('/api/attendance/check-in', asyncRoute(async (request, response) => {
-    response.status(201).json(await checkIn(request.body));
-}));
-
-app.post('/api/attendance/check-out', asyncRoute(async (request, response) => {
-    response.json(await checkOut(request.body));
-}));
+registerAttendanceRoutes(app, { attendanceService, asyncRoute });
 
 app.get('/api/bootstrap', asyncRoute(async (request, response) => {
     response.json(await getBootstrap());
