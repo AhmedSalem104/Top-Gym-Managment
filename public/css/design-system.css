@@ -926,3 +926,131 @@ body.gym-page-bg {
     .dashboard-hero-visual-logo { width: 82px; height: 82px; }
     .dashboard-hero-visual-logo .ui-icon { width: 40px; height: 40px; }
 }
+
+/* -------------------------------------------------------------------------
+ * Premium navigation frame
+ * ------------------------------------------------------------------------- */
+.app-shell #pageTabs.topgym-nav {
+    min-height: 72px;
+    gap: 5px;
+    padding: 9px 11px !important;
+    border-radius: 17px;
+    background: rgba(255, 255, 255, .98);
+    box-shadow: 0 12px 28px rgba(30, 60, 100, .075);
+}
+
+.app-shell #pageTabs.topgym-nav .topgym-nav-brand {
+    display: flex;
+    flex: 0 0 148px;
+    align-items: center;
+    gap: 9px;
+    min-width: 0;
+    margin-inline-end: 3px;
+    padding-inline: 6px 11px;
+    border-inline-end: 1px solid #e6edf7;
+    direction: rtl;
+}
+
+.app-shell #pageTabs.topgym-nav .topgym-nav-brand-mark {
+    display: grid;
+    width: 38px;
+    height: 38px;
+    flex: 0 0 38px;
+    place-items: center;
+    border: 1px solid #bcd1ff;
+    border-radius: 11px;
+    color: #fff;
+    background: linear-gradient(135deg, #3474ff, #1e55f5);
+    box-shadow: 0 7px 14px rgba(47, 107, 255, .2);
+    font-size: 11px;
+    font-weight: 900;
+    letter-spacing: .4px;
+    line-height: 1;
+}
+
+.app-shell #pageTabs.topgym-nav .topgym-nav-brand-copy { display: grid; min-width: 0; gap: 2px; }
+.app-shell #pageTabs.topgym-nav .topgym-nav-brand-copy strong {
+    overflow: hidden;
+    color: #14213d;
+    font-size: 13px;
+    font-weight: 900;
+    letter-spacing: .35px;
+    line-height: 1.15;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.app-shell #pageTabs.topgym-nav .topgym-nav-brand-copy small { color: #8290a7; font-size: 9px; font-weight: 700; white-space: nowrap; }
+
+.app-shell #pageTabs.topgym-nav .page-tab {
+    min-height: 48px;
+    padding: 9px 12px;
+    border-color: transparent;
+    border-radius: 10px;
+    color: #52637d;
+    background: transparent;
+    font-size: clamp(11px, .76vw, 14px);
+    font-weight: 800;
+}
+.app-shell #pageTabs.topgym-nav .page-tab .ui-icon { width: 18px; height: 18px; flex-basis: 18px; }
+.app-shell #pageTabs.topgym-nav .page-tab:hover:not(.active) {
+    color: #1d55f5;
+    background: #f5f8fd;
+    border-color: #e3ebf8;
+    box-shadow: none;
+    transform: none;
+}
+.app-shell #pageTabs.topgym-nav .page-tab.active {
+    color: #1d55f5;
+    border-color: #cfe0ff;
+    background: linear-gradient(180deg, #f3f7ff, #eaf1ff);
+    box-shadow: inset 0 -3px 0 #2f6bff, 0 5px 12px rgba(47, 107, 255, .1);
+}
+.app-shell #pageTabs.topgym-nav .page-tab.active .ui-icon { color: #2f6bff; }
+
+.app-shell #pageTabs.topgym-nav .auth-account-bar:not([hidden]) {
+    min-width: 232px;
+    min-height: 48px;
+    gap: 9px;
+    padding: 4px 6px;
+    border-radius: 12px;
+    background: #f8fbff;
+    box-shadow: none;
+}
+.app-shell #pageTabs.topgym-nav .auth-account-avatar { width: 36px; height: 36px; flex-basis: 36px; font-size: 10px; }
+.app-shell #pageTabs.topgym-nav .auth-account-copy strong { max-width: 112px; font-size: 11px; }
+.app-shell #pageTabs.topgym-nav .auth-account-copy small { max-width: 112px; font-size: 9px; }
+.app-shell #pageTabs.topgym-nav .auth-logout-button { min-height: 36px !important; padding: 7px 10px !important; border-radius: 9px; font-size: 10px; }
+
+@media (max-width: 900px) {
+    .app-shell #pageTabs.topgym-nav .topgym-nav-brand { flex-basis: 132px; padding-inline-end: 8px; }
+    .app-shell #pageTabs.topgym-nav .topgym-nav-brand-mark { width: 34px; height: 34px; flex-basis: 34px; }
+    .app-shell #pageTabs.topgym-nav .topgym-nav-brand-copy strong { font-size: 11px; }
+    .app-shell #pageTabs.topgym-nav .topgym-nav-brand-copy small { font-size: 8px; }
+    .app-shell #pageTabs.topgym-nav .auth-account-bar:not([hidden]) { min-width: 215px; }
+}
+
+@media (max-width: 640px) {
+    .app-shell #pageTabs.topgym-nav {
+        display: flex !important;
+        width: calc(100% - 24px) !important;
+        min-height: 62px;
+        padding: 8px !important;
+        border-radius: 14px;
+        overflow-x: auto !important;
+        overflow-y: hidden !important;
+        scroll-padding-inline-start: 124px;
+    }
+    .app-shell #pageTabs.topgym-nav .topgym-nav-brand { flex: 0 0 124px; margin-inline-end: 1px; }
+    .app-shell #pageTabs.topgym-nav .topgym-nav-brand {
+        position: sticky;
+        inset-inline-start: 0;
+        z-index: 4;
+        margin-inline-start: -1px;
+        padding-inline-start: 4px;
+        background: #fff;
+        box-shadow: -8px 0 12px rgba(255, 255, 255, .94);
+    }
+    .app-shell #pageTabs.topgym-nav .page-tab { width: auto; min-width: max-content; min-height: 43px; padding: 8px 10px; border-radius: 9px; font-size: 10px; scroll-margin-inline-start: 124px; }
+    .app-shell #pageTabs.topgym-nav .auth-account-bar:not([hidden]) { width: 215px; min-width: 215px; min-height: 43px; }
+    .app-shell #pageTabs.topgym-nav .auth-logout-button { font-size: 0; }
+}
