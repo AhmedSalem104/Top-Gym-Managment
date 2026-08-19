@@ -155,14 +155,18 @@
      screens instead of hiding them in a horizontal rail. */
   .page-tabs {
     position: sticky;
+    top: 0;
+    z-index: var(--z-sticky);
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 6px;
     overflow: visible;
-    padding: 8px 8px 8px 58px;
+    padding: 10px 10px 10px 62px;
     direction: rtl;
     border-top: 0;
     border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+    background: #132238;
+    box-shadow: 0 8px 20px rgb(15 23 42 / 0.18);
   }
 
   .page-tab {
@@ -200,20 +204,39 @@
 
   .page-tabs > .auth-account-bar {
     position: absolute;
-    inset-inline-start: 8px;
-    top: 8px;
+    inset-inline-start: auto;
+    inset-inline-end: 10px;
+    top: 10px;
+    z-index: var(--z-dropdown);
     display: flex;
     margin: 0;
+    padding: 0;
   }
 
   .page-tabs > .auth-account-bar .auth-logout-button {
+    display: grid;
+    place-items: center;
     width: 42px;
     min-width: 42px;
     height: 42px;
     min-height: 42px;
-    border-color: rgb(255 255 255 / 0.2);
-    background: rgb(255 255 255 / 0.08);
-    color: #ffd2d2;
+    border: 1px solid rgb(255 184 184 / 0.42);
+    border-radius: var(--radius-md);
+    background: rgb(215 67 67 / 0.2);
+    color: #ffe0e0;
+    box-shadow: 0 4px 12px rgb(2 12 27 / 0.24);
+  }
+
+  .page-tabs > .auth-account-bar .auth-logout-button:hover:not(:disabled),
+  .page-tabs > .auth-account-bar .auth-logout-button:focus-visible {
+    border-color: #ffb5b5;
+    background: rgb(215 67 67 / 0.38);
+    color: #fff;
+  }
+
+  .page-tabs > .auth-account-bar .auth-logout-button .ui-icon {
+    width: 21px;
+    height: 21px;
   }
 
   .overview-grid,
@@ -260,6 +283,73 @@
   dialog {
     width: calc(100% - 24px);
     max-height: calc(100vh - 24px);
+  }
+}
+
+/* Keep the compact navigation usable on tablets as well. Four visible
+   columns avoid a hidden horizontal rail, while the logout action stays in
+   its own fixed slot at the left edge of the RTL navigation. */
+@media (min-width: 768px) and (max-width: 991px) {
+  .page-tabs {
+    position: sticky;
+    top: 0;
+    z-index: var(--z-sticky);
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: var(--space-2);
+    overflow: visible;
+    padding: 10px 10px 10px 64px;
+    direction: rtl;
+    background: #132238;
+  }
+
+  .page-tab {
+    min-width: 0;
+    min-height: 56px;
+    flex-direction: column;
+    gap: 4px;
+    border: 1px solid rgb(255 255 255 / 0.14);
+    border-radius: var(--radius-md);
+    padding: var(--space-2) var(--space-1);
+    font-size: var(--font-xs);
+    line-height: 1.3;
+    white-space: normal;
+    text-align: center;
+  }
+
+  .page-tab .ui-icon {
+    width: 19px;
+    height: 19px;
+  }
+
+  .page-tabs > .auth-account-bar {
+    position: absolute;
+    inset-inline-start: auto;
+    inset-inline-end: 10px;
+    top: 10px;
+    z-index: var(--z-dropdown);
+    display: flex;
+    margin: 0;
+    padding: 0;
+  }
+
+  .page-tabs > .auth-account-bar .auth-logout-button {
+    display: grid;
+    width: 44px;
+    min-width: 44px;
+    height: 44px;
+    min-height: 44px;
+    place-items: center;
+    border: 1px solid rgb(255 184 184 / 0.42);
+    border-radius: var(--radius-md);
+    background: rgb(215 67 67 / 0.2);
+    color: #ffe0e0;
+    box-shadow: 0 4px 12px rgb(2 12 27 / 0.24);
+  }
+
+  .page-tabs > .auth-account-bar .auth-logout-button .ui-icon {
+    width: 22px;
+    height: 22px;
   }
 }
 
