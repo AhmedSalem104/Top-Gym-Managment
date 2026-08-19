@@ -3,8 +3,7 @@
     window.__topGymAuthUiLoaded = true;
 
     const nativeFetch = window.fetch.bind(window);
-    const allowedTabs = ['dashboard', 'members', 'trainees', 'management', 'attendance', 'expenses', 'library', 'reports'];
-    const assistantTabs = ['members', 'trainees', 'attendance', 'library'];
+    const permissions = window.topGymPermissions;
     const state = { user: null, ready: false, redirecting: false };
 
     document.body.classList.add('auth-pending');
@@ -75,7 +74,7 @@
 
     function applyNavigation(user) {
         const isOwner = user?.role === 'Owner';
-        const tabs = isOwner ? allowedTabs : assistantTabs;
+        const tabs = permissions.tabsForUser(user);
         document.body.dataset.topGymRole = user?.role || '';
         document.body.dataset.topGymUserId = user?.id ? String(user.id) : '';
         const accountBar = $('authAccountBar');
@@ -105,7 +104,7 @@
         if (accountName) accountName.textContent = user?.name || 'TOP GYM';
         if (accountEmail) accountEmail.textContent = user?.email || '—';
         if (accountAvatar) accountAvatar.textContent = initials(user?.name);
-        if (!isOwner && !assistantTabs.includes(window.location.hash.slice(1))) {
+        if (!isOwner && !permissions.canAccessTab(user, window.location.hash.slice(1))) {
             window.location.hash = '#members';
         }
     }
@@ -225,7 +224,7 @@
 
     window.topGymAuth = {
         api: requestApi,
-        canAccessTab: (tab) => state.user?.role === 'Owner' || (state.user?.role === 'Assistant' && assistantTabs.includes(tab)),
+        canAccessTab: (tab) => permissions.canAccessTab(state.user, tab),
         getUser: () => state.user,
         isOwner: () => state.user?.role === 'Owner',
         isReady: () => state.ready,

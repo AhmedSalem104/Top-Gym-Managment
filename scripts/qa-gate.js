@@ -54,6 +54,8 @@ function assertRequiredFiles() {
         'public/index.html',
         'public/js/app.js',
         'public/js/core/api.js',
+        'public/js/core/permissions.js',
+        'public/js/core/state.js',
         'public/js/feature-loader.js',
         'public/js/print-enhancements.js',
         'src/db.js',
@@ -164,11 +166,13 @@ function checkAuthSurface() {
 
 function checkPrintAndLazyLoadingSurface() {
     const app = read('public/js/app.js');
+    const authUi = read('public/js/auth-ui.js');
     const loader = read('public/js/feature-loader.js');
     const index = read('public/index.html');
     record('UI-PRINT-MEMBER-ACTION', app.includes("actionButton('print'") && loader.includes('button[data-action="print"]'), 'member print action and lazy handler are present');
     record('UI-LAZY-FEATURES', loader.includes('async function ensureTab') && loader.includes("features ="), 'feature loader is present');
     record('UI-API-CORE', index.includes('/js/core/api.js') && app.includes('window.topGymApi.request'), 'frontend API client is centralized');
+    record('UI-PERMISSIONS-CORE', index.includes('/js/core/permissions.js') && authUi.includes('window.topGymPermissions'), 'frontend tab permissions are centralized');
     record('UI-CACHE-BUST', index.includes('app.js?v=feature-expansion'), 'frontend script cache-busting is present');
 }
 
