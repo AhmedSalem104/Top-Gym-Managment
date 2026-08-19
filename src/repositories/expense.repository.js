@@ -1,7 +1,7 @@
 'use strict';
 
 const { getPool, sql } = require('../database/pool');
-const { toUtcDate } = require('../date-utils');
+const { toUtcDate } = require('../utils/date');
 
 let expensesTablePromise;
 

@@ -2,7 +2,7 @@ require('dotenv').config();
 
 const { getPricingCatalog } = require('../src/services/member-service');
 const { closePool, getPool, initDatabase, sql } = require('../src/db');
-const { todayInTimeZone } = require('../src/date-utils');
+const { todayInTimeZone } = require('../src/utils/date');
 
 const DEFAULT_COUNT = 1000;
 const SEED_TAG = 'PERF_TEST_SEED';

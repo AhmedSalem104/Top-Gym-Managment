@@ -9,7 +9,7 @@ const {
     parseDateOnly,
     todayInTimeZone,
     toUtcDate
-} = require('../date-utils');
+} = require('../utils/date');
 const { ensureAttendanceTable, getMemberAttendanceStatuses } = require('./attendance-service');
 
 const DEFAULT_MEMBERSHIP_PLANS = {

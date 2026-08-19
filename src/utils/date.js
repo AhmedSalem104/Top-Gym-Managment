@@ -1,5 +1,5 @@
 const DAY_MS = 24 * 60 * 60 * 1000;
-const { config } = require('./config/env');
+const { config } = require('../config/env');
 
 function todayInTimeZone() {
     const timeZone = config.appTimeZone;

@@ -1,7 +1,7 @@
 'use strict';
 
 const { getPool, sql } = require('../database/pool');
-const { todayInTimeZone, toUtcDate } = require('../date-utils');
+const { todayInTimeZone, toUtcDate } = require('../utils/date');
 
 const MEMBER_ROWS_CTE = `
 WITH latest_membership AS (

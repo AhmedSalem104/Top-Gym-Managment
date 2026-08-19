@@ -5,7 +5,7 @@ const {
     formatDateOnly,
     toUtcDate,
     todayInTimeZone
-} = require('../date-utils');
+} = require('../utils/date');
 const { ensurePaymentTransactionsTable, getDashboard } = require('./member-service');
 const { ensureExpensesTable } = require('./finance-service');
 

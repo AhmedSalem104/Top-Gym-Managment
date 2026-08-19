@@ -7,7 +7,7 @@ const {
     parseDateOnly,
     todayInTimeZone,
     toUtcDate
-} = require('../date-utils');
+} = require('../utils/date');
 
 let coachingTablesPromise;
 let memberIdentityPromise;

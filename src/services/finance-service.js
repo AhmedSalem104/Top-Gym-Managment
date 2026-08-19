@@ -4,7 +4,7 @@ const {
     formatDateOnly,
     parseDateOnly,
     todayInTimeZone
-} = require('../date-utils');
+} = require('../utils/date');
 const { ensurePaymentTransactionsTable } = require('./member-service');
 const expenseRepository = require('../repositories/expense.repository');
 
