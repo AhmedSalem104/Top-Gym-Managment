@@ -42,7 +42,7 @@
         setHidden(overview, !isDashboard);
         setHidden(expensesSection, !isExpenses);
         setHidden(managementSection, !isManagement);
-        setHidden(analyticsSection, !isDashboard);
+        setHidden(analyticsSection, !isDashboard || !window.topGymAuth?.isOwner?.());
         setHidden(reportsSection, !isReports);
         setHidden(attendanceSection, !isAttendance);
         setHidden(librarySection, !isLibrary);

@@ -84,7 +84,28 @@
 
     function renderPagination() {
         pagination.replaceChildren();
-        pagination.hidden = true;
+        const total = alertsList.querySelectorAll('.alert-card').length;
+        if (total <= pageSize) {
+            alertsList.classList.remove('alerts-list-scroll', 'alerts-list-expanded');
+            pagination.hidden = true;
+            return;
+        }
+
+        const expanded = alertsList.classList.contains('alerts-list-expanded');
+        alertsList.classList.toggle('alerts-list-scroll', !expanded);
+        pagination.hidden = false;
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'alerts-view-all btn btn-light btn-small';
+        button.textContent = expanded
+            ? '\u0639\u0631\u0636 \u0623\u0642\u0644'
+            : '\u0639\u0631\u0636 \u0627\u0644\u0643\u0644 (' + total.toLocaleString('ar-EG') + ')';
+        button.setAttribute('aria-expanded', String(expanded));
+        button.addEventListener('click', () => {
+            alertsList.classList.toggle('alerts-list-expanded');
+            renderPagination();
+        });
+        pagination.appendChild(button);
     }
 
     function filterAlerts() {
@@ -140,7 +161,8 @@
 
         alertsList.querySelectorAll('.alert-whatsapp-button').forEach(prepareWhatsappButton);
         const count = alertsList.querySelectorAll('.alert-card').length;
-        alertsList.classList.toggle('alerts-list-scroll', count > pageSize);
+        if (count <= pageSize) alertsList.classList.remove('alerts-list-expanded');
+        alertsList.classList.toggle('alerts-list-scroll', count > pageSize && !alertsList.classList.contains('alerts-list-expanded'));
         const badge = document.getElementById('alertsCount');
         if (badge) badge.textContent = count ? count.toLocaleString('ar-EG') + ' ' + '\u062a\u0646\u0628\u064a\u0647' : '\u0644\u0627 \u062a\u0648\u062c\u062f \u062a\u0646\u0628\u064a\u0647\u0627\u062a';
         filterAlerts();

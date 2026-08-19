@@ -92,6 +92,93 @@ td small,
   min-width: 720px;
 }
 
+.table-scroll,
+.table-wrap,
+.data-table-wrap {
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-inline: contain;
+}
+
+.table-scroll > table,
+.table-wrap > table,
+.data-table-wrap > table {
+  border: 0;
+}
+
+.table-container > .table-scroll,
+.table-panel > .table-scroll,
+.members-panel > .table-scroll,
+.history-panel > .table-scroll {
+  border-top: 1px solid var(--border-color);
+}
+
+tbody td {
+  height: 68px;
+}
+
+tbody td:not(:last-child) {
+  max-width: 280px;
+}
+
+.table-main,
+.table-money,
+.table-member-name {
+  display: block;
+  overflow: hidden;
+  color: var(--color-text);
+  font-weight: var(--weight-bold);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.table-money {
+  font-family: var(--font-latin);
+  direction: ltr;
+  text-align: right;
+}
+
+.table-member-phone {
+  display: block;
+  width: fit-content;
+  max-width: 100%;
+  overflow: hidden;
+  color: var(--color-primary);
+  direction: ltr;
+  font-family: var(--font-latin);
+  font-size: var(--font-xs);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  unicode-bidi: isolate;
+}
+
+.table-sub {
+  display: block;
+  overflow: hidden;
+  color: var(--color-text-muted);
+  font-size: var(--font-xs);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.table-actions,
+.row-actions,
+.members-actions,
+.action-group {
+  min-width: max-content;
+  flex-wrap: nowrap;
+}
+
+.table-actions .btn,
+.row-actions .btn,
+.members-actions .btn,
+.action-group .btn {
+  flex: 0 0 auto;
+}
+
+
 .table-scroll::-webkit-scrollbar,
 .table-wrap::-webkit-scrollbar,
 .data-table-wrap::-webkit-scrollbar {

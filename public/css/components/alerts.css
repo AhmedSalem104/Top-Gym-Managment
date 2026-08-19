@@ -304,8 +304,40 @@
   white-space: nowrap;
 }
 
+.alerts-list-scroll {
+  max-height: 390px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-inline-end: var(--space-1);
+  scrollbar-color: var(--border-strong) transparent;
+  scrollbar-width: thin;
+}
+
+.alerts-list-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.alerts-list-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.alerts-list-scroll::-webkit-scrollbar-thumb {
+  border-radius: var(--radius-pill);
+  background: var(--border-strong);
+}
+
 .alerts-pagination:empty {
   display: none;
+}
+
+.alerts-pagination {
+  display: flex;
+  justify-content: center;
+  padding-top: var(--space-1);
+}
+
+.alerts-view-all {
+  min-width: 132px;
 }
 
 @media (max-width: 767px) {

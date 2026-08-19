@@ -54,6 +54,7 @@
     function ensurePanel() {
         const panel = $('dashboardAnalytics');
         if (!panel || panel.dataset.ready === 'true') return panel;
+        if (!window.topGymAuth?.isOwner?.()) panel.hidden = true;
         panel.dataset.ready = 'true';
         panel.innerHTML = `
             <div class="dashboard-analytics-head">
@@ -219,7 +220,7 @@
             const value = Number(item.value || 0);
             const width = Math.max(4, (value / max) * 100);
             const label = labels[item.key] || item.key;
-            return `<div class="analytics-bar-row"><div class="analytics-bar-label"><span>${escapeHtml(label)}</span><strong>${number(value)}</strong></div><div class="analytics-bar-track"><span></span></div></div>`;
+            return `<div class="analytics-bar-row"><div class="analytics-bar-label"><span>${escapeHtml(label)}</span><strong>${number(value)}</strong></div><div class="analytics-bar-track"><span style="width:${width.toFixed(2)}%"></span></div></div>`;
         }).join('');
     }
 
@@ -235,7 +236,7 @@
             return;
         }
         const step = members.length <= 12 ? 1 : Math.ceil(members.length / 8);
-        target.innerHTML = `<div class="analytics-activity-legend"><span><i class="members"></i>أعضاء جدد</span><span><i class="memberships"></i>اشتراكات</span></div><div class="analytics-column-chart">${members.map((value, index) => { const membershipValue = Number(memberships[index] || 0); const label = index % step === 0 || index === members.length - 1 ? bucketLabel((data.trend.labels || [])[index], data.period?.key) : ''; return `<div class="analytics-column-group"><div class="analytics-column-pair"><span class="analytics-column members" title="أعضاء جدد: ${number(value)}"></span><span class="analytics-column memberships" title="اشتراكات: ${number(membershipValue)}"></span></div><small>${escapeHtml(label)}</small></div>`; }).join('')}</div>`;
+        target.innerHTML = `<div class="analytics-activity-legend"><span><i class="members"></i>أعضاء جدد</span><span><i class="memberships"></i>اشتراكات</span></div><div class="analytics-column-chart">${members.map((value, index) => { const membershipValue = Number(memberships[index] || 0); const memberHeight = Math.max(4, (Number(value || 0) / max) * 100); const membershipHeight = Math.max(4, (membershipValue / max) * 100); const label = index % step === 0 || index === members.length - 1 ? bucketLabel((data.trend.labels || [])[index], data.period?.key) : ''; return `<div class="analytics-column-group"><div class="analytics-column-pair"><span class="analytics-column members" style="height:${memberHeight.toFixed(2)}%" title="أعضاء جدد: ${number(value)}"></span><span class="analytics-column memberships" style="height:${membershipHeight.toFixed(2)}%" title="اشتراكات: ${number(membershipValue)}"></span></div><small>${escapeHtml(label)}</small></div>`; }).join('')}</div>`;
     }
 
     function formatDateTime(value) {
@@ -269,7 +270,7 @@
             if (!peakRows.length) peakTarget.innerHTML = '<div class="attendance-insights-empty">لا توجد زيارات مسجلة في هذه الفترة.</div>';
             else {
                 const max = Math.max(1, ...peakRows.map((item) => Number(item.value || 0)));
-                peakTarget.innerHTML = peakRows.map((item) => { const value = Number(item.value || 0); return `<div class="attendance-peak-row"><div><span>${escapeHtml(item.label || '—')}</span><strong>${number(value)} زيارة</strong></div><div class="attendance-peak-track"><span></span></div></div>`; }).join('');
+                peakTarget.innerHTML = peakRows.map((item) => { const value = Number(item.value || 0); const width = Math.max(4, (value / max) * 100); return `<div class="attendance-peak-row"><div><span>${escapeHtml(item.label || '—')}</span><strong>${number(value)} زيارة</strong></div><div class="attendance-peak-track"><span style="width:${width.toFixed(2)}%"></span></div></div>`; }).join('');
             }
         }
 
@@ -309,9 +310,14 @@
     }
 
     async function loadAnalytics(period = state.period) {
-        if (!window.topGymAuth?.isOwner?.()) return;
+        const existingPanel = $('dashboardAnalytics');
+        if (!window.topGymAuth?.isOwner?.()) {
+            if (existingPanel) existingPanel.hidden = true;
+            return;
+        }
         const panel = ensurePanel();
         if (!panel) return;
+        panel.hidden = false;
         state.period = ['week', 'month', 'year'].includes(period) ? period : 'month';
         setActivePeriod(state.period);
         const requestId = ++state.requestId;
