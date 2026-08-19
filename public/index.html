@@ -15,7 +15,7 @@
     <link rel="stylesheet" href="/css/base.css?v=5">
     <link rel="stylesheet" href="/tailwind.css">
     <link rel="stylesheet" href="/css/dashboard.css?v=35">
-    <link rel="stylesheet" href="/css/design-system.css?v=7">
+    <link rel="stylesheet" href="/css/design-system.css?v=8">
     <link rel="stylesheet" href="/css/exercise-assets.css?v=1">
     <link rel="stylesheet" href="/css/auth.css?v=7">
 </head>
@@ -63,13 +63,6 @@
         </header>
 
         <nav class="page-tabs topgym-nav" id="pageTabs" role="tablist" aria-label="أقسام الإدارة">
-            <div class="topgym-nav-brand" aria-label="TOP GYM">
-                <span class="topgym-nav-brand-mark" aria-hidden="true">TG</span>
-                <span class="topgym-nav-brand-copy">
-                    <strong>TOP GYM</strong>
-                    <small>إدارة الجيم</small>
-                </span>
-            </div>
             <button class="page-tab active" type="button" data-page-tab="dashboard" aria-selected="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span>لوحة التحكم</span></button>
             <button class="page-tab" type="button" data-page-tab="members" aria-selected="false"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg><span>المشتركون</span></button>
                         <button class="page-tab" type="button" data-page-tab="trainees" aria-selected="false"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M3 20a6 6 0 0 1 12 0M16 4.5a3 3 0 0 1 0 6M17 14a4 4 0 0 1 4 4"/><path d="M18 8h3M19.5 6.5v3"/></svg><span>متدرب خارجى</span></button>
@@ -89,7 +82,7 @@
                     <small id="authAccountEmail" dir="ltr">—</small>
                 </span>
             </div>
-            <button class="btn btn-light btn-small auth-logout-button" id="authLogoutButton" type="button">
+            <button class="btn btn-light btn-small auth-logout-button" id="authLogoutButton" type="button" aria-label="تسجيل الخروج" title="تسجيل الخروج">
                 <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 17l5-5-5-5"/><path d="M15 12H3"/><path d="M21 19V5a2 2 0 0 0-2-2h-5"/></svg>
                 <span>تسجيل الخروج</span>
             </button>

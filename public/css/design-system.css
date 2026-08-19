@@ -1019,7 +1019,14 @@ body.gym-page-bg {
 .app-shell #pageTabs.topgym-nav .auth-account-avatar { width: 36px; height: 36px; flex-basis: 36px; font-size: 10px; }
 .app-shell #pageTabs.topgym-nav .auth-account-copy strong { max-width: 112px; font-size: 11px; }
 .app-shell #pageTabs.topgym-nav .auth-account-copy small { max-width: 112px; font-size: 9px; }
-.app-shell #pageTabs.topgym-nav .auth-logout-button { min-height: 36px !important; padding: 7px 10px !important; border-radius: 9px; font-size: 10px; }
+.app-shell #pageTabs.topgym-nav .auth-logout-button {
+    width: 38px;
+    min-width: 38px;
+    min-height: 36px !important;
+    padding: 7px !important;
+    border-radius: 9px;
+    font-size: 0;
+}
 
 @media (max-width: 900px) {
     .app-shell #pageTabs.topgym-nav .topgym-nav-brand { flex-basis: 132px; padding-inline-end: 8px; }
@@ -1031,26 +1038,17 @@ body.gym-page-bg {
 
 @media (max-width: 640px) {
     .app-shell #pageTabs.topgym-nav {
-        display: flex !important;
+        display: grid !important;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
         width: calc(100% - 24px) !important;
-        min-height: 62px;
+        min-height: 64px;
+        margin-top: 12px;
         padding: 8px !important;
         border-radius: 14px;
-        overflow-x: auto !important;
-        overflow-y: hidden !important;
-        scroll-padding-inline-start: 124px;
+        overflow: visible !important;
+        gap: 5px;
     }
-    .app-shell #pageTabs.topgym-nav .topgym-nav-brand { flex: 0 0 124px; margin-inline-end: 1px; }
-    .app-shell #pageTabs.topgym-nav .topgym-nav-brand {
-        position: sticky;
-        inset-inline-start: 0;
-        z-index: 4;
-        margin-inline-start: -1px;
-        padding-inline-start: 4px;
-        background: #fff;
-        box-shadow: -8px 0 12px rgba(255, 255, 255, .94);
-    }
-    .app-shell #pageTabs.topgym-nav .page-tab { width: auto; min-width: max-content; min-height: 43px; padding: 8px 10px; border-radius: 9px; font-size: 10px; scroll-margin-inline-start: 124px; }
-    .app-shell #pageTabs.topgym-nav .auth-account-bar:not([hidden]) { width: 215px; min-width: 215px; min-height: 43px; }
-    .app-shell #pageTabs.topgym-nav .auth-logout-button { font-size: 0; }
+    .app-shell #pageTabs.topgym-nav .topgym-nav-brand { display: none !important; }
+    .app-shell #pageTabs.topgym-nav .page-tab { width: 100%; min-width: 0; min-height: 46px; padding: 9px 8px; border-radius: 10px; font-size: 11px; }
+    .app-shell #pageTabs.topgym-nav .auth-account-bar:not([hidden]) { grid-column: 1 / -1; width: 100%; min-width: 0; min-height: 46px; }
 }
