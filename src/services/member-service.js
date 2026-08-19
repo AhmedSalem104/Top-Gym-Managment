@@ -1,6 +1,7 @@
 const { getPool, sql } = require('../database');
 const { withTransaction } = require('../database/transaction');
 const memberRepository = require('../repositories/member.repository');
+const { MEMBER_ROWS_CTE } = memberRepository;
 const {
     addDays,
     addMonths,
