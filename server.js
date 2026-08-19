@@ -6,6 +6,8 @@ const { config } = require('./src/config/env');
 const { asyncRoute } = require('./src/utils/async-route');
 const { registerRoutes } = require('./src/routes');
 const { isAuthorizedCronRequest } = require('./src/middleware/cron.middleware');
+const { createAuthApiMiddleware, ownerOnly } = require('./src/middleware/auth.middleware');
+const { createLoginAttemptGuard, createSensitiveRateLimit } = require('./src/middleware/rate-limit.middleware');
 const { getPool, initDatabase } = require('./src/db');
 const backupService = require('./src/backup-service');
 const financeService = require('./src/finance-service');
@@ -18,89 +20,18 @@ const memberService = require('./src/member-service');
 const pricingService = memberService;
 const coachingService = require('./src/coaching-service');
 const authService = require('./src/auth-service');
-const { canAccess, ensureAuthReady, getSessionUser, readSessionCookie } = authService;
+const { ensureAuthReady } = authService;
 
 const publicDirectory = path.join(__dirname, 'public');
 const app = createApp({ publicDirectory });
 
-const sensitiveWindow = new Map();
-let sensitiveWindowLastCleanup = 0;
-function sensitiveRateLimit(request, response, next) {
-    if (request.method === 'GET' || request.method === 'HEAD' || request.method === 'OPTIONS') return next();
-    const now = Date.now();
-    if (now - sensitiveWindowLastCleanup > 300_000) {
-        for (const [entryKey, entry] of sensitiveWindow) {
-            if (now - entry.startedAt >= 60_000) sensitiveWindow.delete(entryKey);
-        }
-        sensitiveWindowLastCleanup = now;
-    }
-    const key = request.ip || request.socket.remoteAddress || 'unknown';
-    const current = sensitiveWindow.get(key);
-    if (!current || now - current.startedAt >= 60_000) {
-        sensitiveWindow.set(key, { startedAt: now, count: 1 });
-        return next();
-    }
-    current.count += 1;
-    if (current.count > 120) {
-        response.set('Retry-After', '60');
-        return response.status(429).json({ error: 'تم تجاوز عدد العمليات المسموح به مؤقتًا. حاول بعد دقيقة.' });
-    }
-    return next();
-}
-app.use('/api', (request, response, next) => {
-    sensitiveRateLimit(request, response, next);
-});
-
-const loginAttempts = new Map();
-let loginAttemptsLastCleanup = 0;
-function allowLoginAttempt(request, email) {
-    const now = Date.now();
-    if (now - loginAttemptsLastCleanup > 300_000) {
-        for (const [key, entry] of loginAttempts) {
-            if (now - entry.startedAt >= 900_000) loginAttempts.delete(key);
-        }
-        loginAttemptsLastCleanup = now;
-    }
-    const key = `${request.ip || request.socket.remoteAddress || 'unknown'}:${String(email || '').trim().toLowerCase()}`;
-    const current = loginAttempts.get(key);
-    if (!current || now - current.startedAt >= 900_000) {
-        loginAttempts.set(key, { startedAt: now, count: 1 });
-        return true;
-    }
-    current.count += 1;
-    return current.count <= 10;
-}
-
-function isSameOriginRequest(request) {
-    const origin = String(request.get('origin') || '').trim();
-    if (!origin) return true;
-    try {
-        const originUrl = new URL(origin);
-        const host = String(request.get('host') || request.get('x-forwarded-host') || '').split(',')[0].trim();
-        return originUrl.host === host;
-    } catch (_) {
-        return false;
-    }
-}
-
-function authApiMiddleware(request, response, next) {
-    const publicPath = ['/health', '/auth/login', '/auth/session', '/auth/logout'].includes(request.path);
-    if (publicPath || (request.path === '/backup/daily' && isAuthorizedCronRequest(request))) return next();
-    if (!['GET', 'HEAD', 'OPTIONS'].includes(request.method) && !isSameOriginRequest(request)) {
-        return response.status(403).json({ error: 'الطلب غير مصرح به.' });
-    }
-    return ensureAuthReady()
-        .then(() => getSessionUser(readSessionCookie(request)))
-        .then((user) => {
-            if (!user) return response.status(401).json({ error: 'انتهت جلسة الدخول. سجّل الدخول مرة أخرى.', code: 'AUTH_REQUIRED' });
-            if (!canAccess(user, request)) return response.status(403).json({ error: 'ليس لديك صلاحية لتنفيذ هذا الإجراء.', code: 'FORBIDDEN' });
-            request.auth = user;
-            return next();
-        })
-        .catch(next);
-}
-
-app.use('/api', authApiMiddleware);
+const sensitiveRateLimit = createSensitiveRateLimit();
+const allowLoginAttempt = createLoginAttemptGuard();
+app.use('/api', sensitiveRateLimit);
+app.use('/api', createAuthApiMiddleware({
+    authService,
+    isAuthorizedCronRequest: (request) => isAuthorizedCronRequest(request, { config })
+}));
 
 function escapeHtml(value) {
     return String(value ?? '').replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[character]));
@@ -149,11 +80,6 @@ function renderQrMemberPage(member) {
     </main>
 </body>
 </html>`;
-}
-
-function ownerOnly(request, response, next) {
-    if (request.auth?.role !== 'Owner') return response.status(403).json({ error: 'هذا الإجراء متاح لمالك النظام فقط.', code: 'OWNER_REQUIRED' });
-    return next();
 }
 
 registerRoutes(app, {

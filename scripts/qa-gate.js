@@ -71,6 +71,9 @@ function assertRequiredFiles() {
         'src/database/transaction.js',
         'src/repositories/member.repository.js',
         'src/repositories/expense.repository.js',
+        'src/permissions/roles.js',
+        'src/permissions/permissions.js',
+        'src/permissions/role-permissions.js',
         'src/routes/index.js',
         'src/routes/auth.routes.js',
         'src/controllers/auth.controller.js',
@@ -89,6 +92,8 @@ function assertRequiredFiles() {
         'src/routes/backup.routes.js',
         'src/controllers/backup.controller.js',
         'src/middleware/cron.middleware.js',
+        'src/middleware/auth.middleware.js',
+        'src/middleware/rate-limit.middleware.js',
         'src/routes/pricing.routes.js',
         'src/controllers/pricing.controller.js',
         'src/routes/coaching.routes.js',
@@ -138,6 +143,7 @@ function checkRouteSurface() {
 
 function checkAuthSurface() {
     const server = read('server.js');
+    const authMiddleware = read('src/middleware/auth.middleware.js');
     const authRoutes = read('src/routes/auth.routes.js');
     const auth = read('src/auth-service.js');
     const index = read('public/index.html');
@@ -149,7 +155,7 @@ function checkAuthSurface() {
         server.includes(route) || authRoutes.includes(route) ? 'authentication route is present' : 'authentication route is missing',
         'P0'
     ));
-    record('AUTH-BACKEND-MIDDLEWARE', server.includes('authApiMiddleware') && server.includes('canAccess(user, request)'), 'backend authentication and authorization middleware is present', 'P0');
+    record('AUTH-BACKEND-MIDDLEWARE', server.includes('createAuthApiMiddleware') && authMiddleware.includes('canAccess(user, request)'), 'backend authentication and authorization middleware is present', 'P0');
     record('AUTH-SCRYPT-HASHING', auth.includes('crypto.scrypt') && auth.includes('timingSafeEqual'), 'password hashing uses scrypt and timing-safe comparison', 'P0');
     record('AUTH-HTTPONLY-SESSION', auth.includes('HttpOnly') && auth.includes('SameSite=Lax'), 'sessions use HttpOnly SameSite cookies', 'P0');
     record('AUTH-LOGIN-SCREEN', index.includes('id="authScreen"') && !/<link[^>]+rel=["']stylesheet["']/i.test(index), 'login screen structure is present without a linked stylesheet', 'P1');

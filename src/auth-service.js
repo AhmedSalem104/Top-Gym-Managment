@@ -3,7 +3,12 @@
 const crypto = require('node:crypto');
 const { getPool, sql } = require('./db');
 const { config, isProduction } = require('./config/env');
-const { ROLE_PERMISSIONS } = require('./config/constants');
+const {
+    ROLE_PERMISSIONS,
+    assistantPathAllowed,
+    canAccessRoleRequest,
+    permissionsForRole
+} = require('./permissions/role-permissions');
 
 const SESSION_COOKIE_NAME = 'topgym_session';
 const DEFAULT_SESSION_DAYS = 7;
@@ -422,35 +427,8 @@ async function setAssistantStatus(id, status) {
     return safeUser(updated.recordset[0]);
 }
 
-function permissionsForRole(role) {
-    return [...(ROLE_PERMISSIONS[role] || [])];
-}
-
-function assistantPathAllowed(request) {
-    const path = String(request.path || '');
-    const method = String(request.method || 'GET').toUpperCase();
-    if (/^\/pricing(?:\/|$)/.test(path)) return method === 'GET';
-    return [
-        /^\/members(?:\/|$)/,
-        /^\/memberships(?:\/|$)/,
-        /^\/external-trainees(?:\/|$)/,
-        /^\/coaching(?:\/|$)/,
-        /^\/clients(?:\/|$)/,
-        /^\/workoutprograms(?:\/|$)/,
-        /^\/workout-programs(?:\/|$)/,
-        /^\/dietplans(?:\/|$)/,
-        /^\/diet-plans(?:\/|$)/,
-        /^\/workoutsessions(?:\/|$)/,
-        /^\/meal-logs(?:\/|$)/,
-        /^\/attendance(?:\/|$)/,
-        /^\/library(?:\/|$)/
-    ].some((pattern) => pattern.test(path));
-}
-
 function canAccess(user, request) {
-    if (!user) return false;
-    if (user.role === 'Owner') return true;
-    return user.role === 'Assistant' && assistantPathAllowed(request);
+    return canAccessRoleRequest(user, request);
 }
 
 function sessionCookie(token, expiresAt, request) {
