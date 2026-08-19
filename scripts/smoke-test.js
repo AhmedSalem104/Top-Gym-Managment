@@ -4,7 +4,7 @@ const assert = require('node:assert/strict');
 const { gzipSync } = require('node:zlib');
 const app = require('../server');
 const { closePool, getPool, initDatabase, sql } = require('../src/db');
-const { reconcileAutoCheckout } = require('../src/attendance-service');
+const { reconcileAutoCheckout } = require('../src/services/attendance-service');
 const { addDays, todayInTimeZone } = require('../src/date-utils');
 
 let sessionCookie = '';

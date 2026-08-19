@@ -1,6 +1,6 @@
 require('dotenv').config();
 
-const { getPricingCatalog } = require('../src/member-service');
+const { getPricingCatalog } = require('../src/services/member-service');
 const { closePool, getPool, initDatabase, sql } = require('../src/db');
 const { todayInTimeZone } = require('../src/date-utils');
 

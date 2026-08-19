@@ -1,7 +1,7 @@
 require('dotenv').config();
 
 const { closePool } = require('../src/db');
-const { syncLibraryData } = require('../src/library-service');
+const { syncLibraryData } = require('../src/services/library-service');
 
 (async () => {
     try {

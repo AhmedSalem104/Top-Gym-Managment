@@ -59,13 +59,13 @@ function assertRequiredFiles() {
         'public/js/feature-loader.js',
         'public/js/integrations/print-enhancements.js',
         'src/db.js',
-        'src/member-service.js',
-        'src/finance-service.js',
-        'src/attendance-service.js',
-        'src/coaching-service.js',
-        'src/backup-service.js',
-        'src/report-service.js',
-        'src/auth-service.js',
+        'src/services/member-service.js',
+        'src/services/finance-service.js',
+        'src/services/attendance-service.js',
+        'src/services/coaching-service.js',
+        'src/services/backup-service.js',
+        'src/services/report-service.js',
+        'src/services/auth-service.js',
         'public/js/auth-ui.js',
         'public/js/pages/management/auth-users.js',
         'src/app.js',
@@ -148,7 +148,7 @@ function checkAuthSurface() {
     const server = read('server.js');
     const authMiddleware = read('src/middleware/auth.middleware.js');
     const authRoutes = read('src/routes/auth.routes.js');
-    const auth = read('src/auth-service.js');
+    const auth = read('src/services/auth-service.js');
     const index = read('public/index.html');
     [
         '/api/auth/session', '/api/auth/login', '/api/auth/logout', '/api/auth/users'
