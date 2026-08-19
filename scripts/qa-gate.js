@@ -88,6 +88,10 @@ function checkJavaScriptSyntax() {
 
 function checkRouteSurface() {
     const server = read('server.js');
+    const routeSurface = server + [
+        'src/routes/auth.routes.js',
+        'src/routes/members.routes.js'
+    ].filter((relativePath) => fs.existsSync(path.join(root, relativePath))).map(read).join('\n');
     const expectedRoutes = [
         '/api/members', '/api/expenses', '/api/attendance', '/api/reports',
         '/api/backup', '/api/library', '/api/external-trainees',
@@ -95,8 +99,8 @@ function checkRouteSurface() {
     ];
     expectedRoutes.forEach((route) => record(
         `ROUTE-${route.replaceAll('/', '-')}`,
-        server.includes(route),
-        server.includes(route) ? 'route surface is present' : 'expected route surface is missing'
+        routeSurface.includes(route),
+        routeSurface.includes(route) ? 'route surface is present' : 'expected route surface is missing'
     ));
 }
 

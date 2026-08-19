@@ -6,6 +6,7 @@ const { createApp } = require('./src/app');
 const { config } = require('./src/config/env');
 const { asyncRoute } = require('./src/utils/async-route');
 const { registerAuthRoutes } = require('./src/routes/auth.routes');
+const { registerMembersRoutes } = require('./src/routes/members.routes');
 const { getPool, initDatabase } = require('./src/db');
 const {
     createBackup,
@@ -31,27 +32,7 @@ const {
     getLibraryOptions,
     updateLibraryItem
 } = require('./src/library-service');
-const {
-    createMember,
-    deleteMember,
-    getBootstrap,
-    getDashboard,
-    getMemberById,
-    getMemberDetails,
-    getMembers,
-    getPricingCatalog,
-    createPricingPlan,
-    createMembershipType,
-    freezeMember,
-    recordPayment,
-    renewMember,
-    resumeMember,
-    updatePricingPlan,
-    updateMembershipType,
-    updatePricingCatalog,
-    updatePricing,
-    updateMember
-} = require('./src/member-service');
+const memberService = require('./src/member-service');
 const authService = require('./src/auth-service');
 const { canAccess, ensureAuthReady, getSessionUser, readSessionCookie } = authService;
 const {
@@ -598,63 +579,7 @@ app.get('/api/meal-logs', asyncRoute(async (request, response) => {
     response.json({ mealLogs: await getMealLogs(request.query.memberId || request.query.clientId, request.query) });
 }));
 
-app.get('/api/members', asyncRoute(async (request, response) => {
-    response.json(await getMembers({
-        search: request.query.search,
-        status: request.query.status,
-        sort: request.query.sort,
-        page: request.query.page,
-        pageSize: request.query.pageSize
-    }));
-}));
-
-app.get('/api/members/:id/details', asyncRoute(async (request, response) => {
-    response.json(await getMemberDetails(request.params.id));
-}));
-
-app.get('/api/members/:id', asyncRoute(async (request, response) => {
-    response.json({ member: await getMemberById(request.params.id) });
-}));
-
-app.post('/api/members', asyncRoute(async (request, response) => {
-    const member = await createMember(request.body);
-    response.status(201).json({ member });
-}));
-
-app.put('/api/members/:id', asyncRoute(async (request, response) => {
-    const member = await updateMember(request.params.id, request.body);
-    response.json({ member });
-}));
-
-app.post('/api/members/:id/freeze', asyncRoute(async (request, response) => {
-    const member = await freezeMember(request.params.id, request.body?.days, request.body?.reason);
-    response.json({ member });
-}));
-
-app.post('/api/members/:id/resume', asyncRoute(async (request, response) => {
-    const member = await resumeMember(request.params.id);
-    response.json({ member });
-}));
-
-app.post('/api/members/:id/renew', asyncRoute(async (request, response) => {
-    const member = await renewMember(request.params.id, request.body);
-    response.json({ member });
-}));
-
-app.post('/api/members/:id/memberships', asyncRoute(async (request, response) => {
-    const member = await renewMember(request.params.id, request.body);
-    response.status(201).json({ member });
-}));
-
-app.post('/api/memberships/:id/payments', asyncRoute(async (request, response) => {
-    const member = await recordPayment(request.params.id, request.body);
-    response.json({ member });
-}));
-
-app.delete('/api/members/:id', asyncRoute(async (request, response) => {
-    await deleteMember(request.params.id);
-    response.status(204).send();
-}));
+registerMembersRoutes(app, { memberService, asyncRoute });
 
 app.get('/qr/:id', asyncRoute(async (request, response) => {
     const member = await getMemberById(request.params.id);
