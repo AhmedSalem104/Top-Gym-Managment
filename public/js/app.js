@@ -137,18 +137,7 @@
         }
 
         async function api(path, options = {}) {
-            const response = await fetch(path, { ...options, headers: { 'Content-Type': 'application/json', ...(options.headers || {}) } });
-            if (response.status === 204) return null;
-            const data = await response.json().catch(() => ({}));
-            if (!response.ok) {
-                const error = new Error(data.error || 'تعذر تنفيذ الطلب.');
-                error.code = data.code || null;
-                error.field = data.field || null;
-                error.memberName = data.memberName || null;
-                error.attendance = data.attendance || null;
-                throw error;
-            }
-            return data;
+            return window.topGymApi.request(path, options);
         }
 
         function applyPricingCatalog(pricing) {

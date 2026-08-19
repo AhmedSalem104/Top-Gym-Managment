@@ -53,6 +53,7 @@ function assertRequiredFiles() {
         'package.json',
         'public/index.html',
         'public/js/app.js',
+        'public/js/core/api.js',
         'public/js/feature-loader.js',
         'public/js/print-enhancements.js',
         'src/db.js',
@@ -167,6 +168,7 @@ function checkPrintAndLazyLoadingSurface() {
     const index = read('public/index.html');
     record('UI-PRINT-MEMBER-ACTION', app.includes("actionButton('print'") && loader.includes('button[data-action="print"]'), 'member print action and lazy handler are present');
     record('UI-LAZY-FEATURES', loader.includes('async function ensureTab') && loader.includes("features ="), 'feature loader is present');
+    record('UI-API-CORE', index.includes('/js/core/api.js') && app.includes('window.topGymApi.request'), 'frontend API client is centralized');
     record('UI-CACHE-BUST', index.includes('app.js?v=feature-expansion'), 'frontend script cache-busting is present');
 }
 
