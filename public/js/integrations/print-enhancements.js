@@ -39,6 +39,10 @@
                 return new URL(path, window.location.href).href;
             }
 
+            function printStylesheetLink() {
+                return '<link rel="stylesheet" data-top-gym-print-styles href="' + assetUrl('/css/print.css?v=3') + '">';
+            }
+
             function planLabel(value) { return PLAN_LABELS[value] || value || '—'; }
             function typeLabel(value) { return TYPE_LABELS[value] || value || '—'; }
             function paymentLabel(value) { return PAYMENT_LABELS[value] || value || '—'; }
@@ -148,9 +152,8 @@
             }
 
             function decoratePrintDocumentHtml(html) {
-                if (!String(html || '').includes('print-system-document')) return html;
                 const parsed = new DOMParser().parseFromString(html, 'text/html');
-                parsed.querySelectorAll('.print-system-table tbody tr').forEach((row) => {
+                if (String(html || '').includes('print-system-document')) parsed.querySelectorAll('.print-system-table tbody tr').forEach((row) => {
                     const cell = row.querySelector('td');
                     const name = cell?.querySelector('.print-table-main')?.textContent?.trim();
                     if (!cell || !name || cell.querySelector('.print-exercise-cell')) return;
@@ -158,12 +161,15 @@
                     const content = cell.innerHTML;
                     cell.innerHTML = '<div class="print-exercise-cell">' + exercisePrintImage({ name, ...item }) + '<span>' + content + '</span></div>';
                 });
-                parsed.querySelectorAll('.print-system-reference').forEach((card) => {
+                if (String(html || '').includes('print-system-document')) parsed.querySelectorAll('.print-system-reference').forEach((card) => {
                     if (card.querySelector('.print-exercise-gallery')) return;
                     const name = card.querySelector('h3')?.textContent?.trim();
                     const item = name ? window.TopGymExerciseAssets?.find?.({ name }) : null;
                     if (item) card.querySelector('h3')?.insertAdjacentHTML('afterend', exercisePrintGallery({ name, ...item }));
                 });
+                if (parsed.head && !parsed.head.querySelector('[data-top-gym-print-styles]')) {
+                    parsed.head.insertAdjacentHTML('beforeend', printStylesheetLink());
+                }
                 return '<!doctype html>' + parsed.documentElement.outerHTML;
             }
 
@@ -199,7 +205,7 @@
             async function createPdfFile(memberId, mode = 'new') {
                 await loadPdfLibrary();
                 const data = await fetchMemberDetails(memberId);
-                const parsed = new DOMParser().parseFromString(buildPrintDocument(data, mode), 'text/html');
+                const parsed = new DOMParser().parseFromString(decoratePrintDocumentHtml(buildPrintDocument(data, mode)), 'text/html');
                 const sheet = parsed.querySelector('.print-sheet');
                 if (!sheet) throw new Error('تعذر تجهيز قالب PDF.');
                 const holder = document.createElement('div');

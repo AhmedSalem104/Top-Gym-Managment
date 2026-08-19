@@ -81,3 +81,346 @@
   .details-dialog-head,
   .pricing-section-head { align-items: stretch; flex-direction: column; }
 }
+
+/* Member details is a workspace, not a narrow alert. The content is built
+   dynamically by app.js, so the visual contract lives here and applies to
+   every member without changing the data flow. */
+.details-dialog,
+.coaching-profile-dialog,
+.coaching-builder-dialog {
+  width: min(1180px, calc(100% - 32px));
+}
+
+.coaching-builder-dialog {
+  max-height: calc(100vh - 32px);
+}
+
+/* The member form has its own shell (header outside the form). Keep the
+   header and action footer visible while only the form fields scroll. */
+.member-dialog {
+  max-height: calc(100vh - 32px);
+  overflow: hidden;
+  padding: 0;
+}
+
+.member-dialog > .form-panel {
+  display: grid;
+  width: 100%;
+  max-height: inherit;
+  min-height: 0;
+  grid-template-rows: auto minmax(0, 1fr);
+  overflow: hidden;
+  margin: 0;
+  border: 0;
+  border-radius: inherit;
+  box-shadow: none;
+}
+
+.member-dialog .section-heading {
+  position: relative;
+  z-index: var(--z-content);
+  display: flex;
+  min-height: 72px;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  border-bottom: 1px solid var(--border-color);
+  background: var(--color-surface);
+  padding: var(--space-4) var(--space-6);
+}
+
+.member-dialog .section-heading h3 {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-xl);
+}
+
+.member-dialog .dialog-heading-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.member-dialog .form-body {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+  gap: var(--space-4);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: var(--space-6);
+  scrollbar-color: var(--border-strong) transparent;
+  scrollbar-width: thin;
+}
+
+.member-dialog .form-body::-webkit-scrollbar {
+  width: 8px;
+}
+
+.member-dialog .form-body::-webkit-scrollbar-thumb {
+  border-radius: var(--radius-pill);
+  background: var(--border-strong);
+}
+
+.member-dialog .section-label {
+  margin-top: var(--space-2);
+  border-bottom: 1px solid var(--border-color);
+  color: var(--color-primary);
+  padding-bottom: var(--space-2);
+  font-size: var(--font-md);
+  font-weight: var(--weight-bold);
+}
+
+.member-dialog .field-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+.member-dialog .form-actions {
+  position: sticky;
+  bottom: calc(var(--space-6) * -1);
+  z-index: var(--z-content);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin: auto calc(var(--space-6) * -1) calc(var(--space-6) * -1);
+  border-top: 1px solid var(--border-color);
+  background: var(--color-surface);
+  padding: var(--space-4) var(--space-6);
+}
+
+.member-dialog .form-actions .btn {
+  min-width: 130px;
+}
+
+.details-dialog .dialog-body,
+.coaching-profile-dialog .dialog-body,
+.coaching-builder-dialog .dialog-body {
+  padding: var(--space-6);
+}
+
+.details-dialog-head {
+  align-items: center;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: var(--space-5);
+}
+
+.details-dialog-head > div:first-child {
+  min-width: 0;
+}
+
+.details-dialog-head h3 {
+  margin: 0;
+  line-height: 1.35;
+}
+
+.details-dialog-head p {
+  margin-top: var(--space-2);
+  line-height: 1.7;
+}
+
+#detailsContent,
+#coachingProfileContent {
+  display: grid;
+  gap: var(--space-5);
+  padding-top: var(--space-5);
+}
+
+.details-summary,
+.financial-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.details-summary-card,
+.financial-summary-card {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-1);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-muted);
+  padding: var(--space-4);
+  text-align: center;
+}
+
+.details-summary-card span,
+.financial-summary-card span {
+  color: var(--color-text-muted);
+  font-size: var(--font-xs);
+}
+
+.details-summary-card strong,
+.financial-summary-card strong {
+  color: var(--color-text);
+  font-family: var(--font-latin);
+  font-size: var(--font-lg);
+  font-variant-numeric: tabular-nums;
+}
+
+.details-summary-card .table-sub {
+  color: var(--color-success);
+}
+
+.financial-summary-card.paid strong {
+  color: var(--color-success);
+}
+
+.financial-summary-card.remaining {
+  border-color: #f2c4c4;
+  background: var(--color-danger-soft);
+}
+
+.financial-summary-card.remaining strong {
+  color: var(--color-danger);
+}
+
+.details-section {
+  display: grid;
+  gap: var(--space-3);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  padding: var(--space-5);
+  box-shadow: var(--shadow-xs);
+}
+
+.details-section > h4 {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-md);
+  font-weight: var(--weight-bold);
+}
+
+.details-section .history-scroll {
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+}
+
+.details-section .history-table {
+  min-width: 820px;
+}
+
+.event-list {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.event-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-muted);
+  padding: var(--space-3) var(--space-4);
+}
+
+.event-item > div {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-1);
+}
+
+.event-item strong {
+  color: var(--color-text);
+  font-size: var(--font-sm);
+}
+
+.event-item > div > span {
+  color: var(--color-text-muted);
+  font-size: var(--font-xs);
+  line-height: 1.7;
+}
+
+.event-date {
+  flex: 0 0 auto;
+  color: var(--color-text-subtle);
+  direction: ltr;
+  font-size: var(--font-xs);
+  white-space: nowrap;
+}
+
+.history-empty {
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-muted);
+  color: var(--color-text-muted);
+  padding: var(--space-6);
+  text-align: center;
+}
+
+@media (max-width: 767px) {
+  .member-dialog {
+    width: calc(100% - 20px);
+    max-height: calc(100vh - 20px);
+  }
+
+  .member-dialog .section-heading {
+    min-height: 64px;
+    align-items: flex-start;
+    flex-direction: column;
+    padding: var(--space-4);
+  }
+
+  .member-dialog .dialog-heading-actions {
+    width: 100%;
+  }
+
+  .member-dialog .dialog-heading-actions .btn {
+    flex: 1 1 120px;
+  }
+
+  .member-dialog .form-body {
+    padding: var(--space-4);
+  }
+
+  .member-dialog .field-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .member-dialog .form-actions {
+    bottom: calc(var(--space-4) * -1);
+    margin-inline: calc(var(--space-4) * -1);
+    margin-bottom: calc(var(--space-4) * -1);
+    padding: var(--space-3) var(--space-4);
+  }
+
+  .member-dialog .form-actions .btn {
+    flex: 1 1 140px;
+  }
+
+  .details-dialog,
+  .coaching-profile-dialog,
+  .coaching-builder-dialog {
+    width: calc(100% - 20px);
+  }
+
+  .details-dialog .dialog-body,
+  .coaching-profile-dialog .dialog-body,
+  .coaching-builder-dialog .dialog-body {
+    padding: var(--space-4);
+  }
+
+  .details-summary,
+  .financial-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .details-section {
+    padding: var(--space-4);
+  }
+
+  .event-item {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+
+  .event-date {
+    align-self: flex-start;
+  }
+}

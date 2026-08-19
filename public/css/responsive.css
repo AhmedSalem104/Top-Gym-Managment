@@ -151,6 +151,57 @@
     flex: 1 1 auto;
   }
 
+  /* Keep all permitted sections visible as compact navigation tabs on small
+     screens instead of hiding them in a horizontal rail. */
+  .page-tabs {
+    position: sticky;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 6px;
+    overflow: visible;
+    padding: 8px 8px 8px 58px;
+    direction: rtl;
+    border-top: 0;
+    border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+  }
+
+  .page-tab {
+    min-width: 0;
+    min-height: 56px;
+    flex-direction: column;
+    gap: 3px;
+    border: 1px solid transparent;
+    border-radius: var(--radius-md);
+    padding: 6px 3px;
+    font-size: 10px;
+    line-height: 1.25;
+    text-align: center;
+    white-space: normal;
+  }
+
+  .page-tab .ui-icon {
+    width: 18px;
+    height: 18px;
+  }
+
+  .page-tabs > .auth-account-bar {
+    position: absolute;
+    inset-inline-start: 8px;
+    top: 8px;
+    display: flex;
+    margin: 0;
+  }
+
+  .page-tabs > .auth-account-bar .auth-logout-button {
+    width: 42px;
+    min-width: 42px;
+    height: 42px;
+    min-height: 42px;
+    border-color: rgb(255 255 255 / 0.2);
+    background: rgb(255 255 255 / 0.08);
+    color: #ffd2d2;
+  }
+
   .overview-grid,
   .stats-grid,
   .kpi-grid,

@@ -18,6 +18,15 @@
   isolation: isolate;
 }
 
+.page-tabs::before {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(90deg, rgb(23 105 232 / 0.12), transparent 42%, rgb(23 105 232 / 0.08));
+  content: "";
+  pointer-events: none;
+}
+
 .page-tabs > .auth-account-bar {
   flex: 0 0 auto;
   margin-inline-start: auto;
@@ -56,6 +65,12 @@
   background: var(--color-primary);
   color: #fff;
   box-shadow: 0 5px 14px rgb(23 105 232 / 0.22);
+}
+
+.page-tab .ui-icon {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
 }
 
 .tabs-light .tab-button,

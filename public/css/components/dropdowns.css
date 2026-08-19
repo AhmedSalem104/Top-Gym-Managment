@@ -45,14 +45,21 @@
 .action-menu-panel.is-floating {
   position: fixed;
   inset: auto;
+  inset-inline-end: auto;
   max-height: min(360px, calc(100vh - 16px));
   overflow-y: auto;
   overscroll-behavior: contain;
 }
 
 .action-menu > .action-menu-toggle {
-  width: auto;
-  min-width: 76px;
+  width: 40px;
+  min-width: 40px;
+  padding-inline: 0;
+}
+
+.action-menu-toggle .action-menu-icon {
+  width: 18px;
+  height: 18px;
 }
 
 .dropdown-item,

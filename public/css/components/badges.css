@@ -74,3 +74,30 @@
   background: var(--color-info-soft);
   color: var(--color-info);
 }
+
+/* Membership status values are rendered as data-driven classes by the
+   members/details views. Keep their visual meaning consistent everywhere. */
+.badge.active {
+  border-color: #bfead9;
+  background: var(--color-success-soft);
+  color: var(--color-success);
+}
+
+.badge.expiring_soon {
+  border-color: #f2d79b;
+  background: var(--color-warning-soft);
+  color: var(--color-warning);
+}
+
+.badge.expired,
+.badge.cancelled {
+  border-color: #f2c4c4;
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+}
+
+.badge.frozen {
+  border-color: #c7dcff;
+  background: var(--color-info-soft);
+  color: var(--color-info);
+}
