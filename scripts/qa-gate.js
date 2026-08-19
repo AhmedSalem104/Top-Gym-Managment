@@ -69,6 +69,7 @@ function assertRequiredFiles() {
         'src/config/env.js',
         'src/database/pool.js',
         'src/database/transaction.js',
+        'src/repositories/member.repository.js',
         'src/routes/auth.routes.js',
         'src/controllers/auth.controller.js',
         'src/routes/members.routes.js',

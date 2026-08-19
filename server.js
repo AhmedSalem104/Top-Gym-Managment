@@ -197,7 +197,7 @@ registerCoachingRoutes(app, { coachingService, asyncRoute });
 registerMembersRoutes(app, { memberService, asyncRoute });
 
 app.get('/qr/:id', asyncRoute(async (request, response) => {
-    const member = await getMemberById(request.params.id);
+    const member = await memberService.getMemberById(request.params.id);
     response.set({
         'Cache-Control': 'no-store, no-cache, must-revalidate, private',
         'X-Robots-Tag': 'noindex, nofollow'

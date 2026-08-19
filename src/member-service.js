@@ -1,4 +1,6 @@
 const { getPool, sql } = require('./db');
+const { withTransaction } = require('./database/transaction');
+const memberRepository = require('./repositories/member.repository');
 const {
     addDays,
     addMonths,
@@ -564,115 +566,13 @@ function mapMember(row) {
     };
 }
 
-const MEMBER_ROWS_CTE = `
-WITH latest_membership AS (
-    SELECT
-        m.id AS membershipId,
-        m.member_id AS membershipMemberId,
-        m.membership_plan AS membershipPlan,
-        m.membership_type AS membershipType,
-        m.start_date AS startDate,
-        m.end_date AS endDate,
-        m.notes AS membershipNotes,
-        ROW_NUMBER() OVER (PARTITION BY m.member_id ORDER BY m.end_date DESC, m.id DESC) AS membershipRank
-    FROM dbo.memberships AS m
-),
-freeze_totals AS (
-    SELECT
-        f.membership_id AS freezeMembershipId,
-        SUM(CASE
-            WHEN f.resumed_date IS NULL THEN DATEDIFF(day, f.start_date, f.end_date) + 1
-            WHEN f.resumed_date <= f.start_date THEN 0
-            WHEN f.resumed_date < f.end_date THEN DATEDIFF(day, f.start_date, f.resumed_date)
-            ELSE DATEDIFF(day, f.start_date, f.end_date) + 1
-        END) AS freezeDays
-    FROM dbo.membership_freezes AS f
-    GROUP BY f.membership_id
-),
-freeze_counts AS (
-    SELECT
-        m.member_id AS freezeCountMemberId,
-        COUNT_BIG(*) AS freezeCount
-    FROM dbo.membership_freezes AS f
-    INNER JOIN dbo.memberships AS m ON m.id = f.membership_id
-    GROUP BY m.member_id
-),
-current_freeze AS (
-    SELECT membership_id AS currentFreezeMembershipId, id AS freezeId, start_date AS freezeStart,
-           end_date AS freezeEnd
-    FROM (
-        SELECT f.membership_id, f.id, f.start_date, f.end_date,
-               ROW_NUMBER() OVER (PARTITION BY f.membership_id ORDER BY f.start_date DESC, f.id DESC) AS freezeRank
-        FROM dbo.membership_freezes AS f
-        WHERE f.resumed_date IS NULL AND @today BETWEEN f.start_date AND f.end_date
-    ) AS active_freezes
-    WHERE freezeRank = 1
-),
-payment_summary AS (
-    SELECT membership_id AS paymentMembershipId, list_price AS listPrice, discount_amount AS discountAmount,
-           amount_due AS amountDue, amount_paid AS amountPaid,
-           amount_remaining AS amountRemaining, payment_method AS paymentMethod, paid_at AS paymentPaidAt
-    FROM dbo.gym_payments
-),
-member_rows AS (
-SELECT
-    b.id,
-    b.full_name AS fullName,
-    b.phone,
-    b.email,
-    b.registration_date AS registrationDate,
-    b.notes AS memberNotes,
-    b.created_at AS memberCreatedAt,
-    b.updated_at AS memberUpdatedAt,
-    lm.membershipId,
-    lm.membershipPlan,
-    lm.membershipType,
-    lm.startDate,
-    lm.endDate,
-    lm.membershipNotes,
-    DATEADD(day, ISNULL(ft.freezeDays, 0), lm.endDate) AS effectiveEndDate,
-    cf.freezeId,
-    cf.freezeStart,
-    cf.freezeEnd,
-    ISNULL(fc.freezeCount, 0) AS freezeCount,
-    ISNULL(ps.listPrice, 0) AS listPrice,
-    ISNULL(ps.discountAmount, 0) AS discountAmount,
-    ISNULL(ps.amountDue, 0) AS amountDue,
-    ISNULL(ps.amountPaid, 0) AS amountPaid,
-    ISNULL(ps.amountRemaining, 0) AS amountRemaining,
-    ps.paymentMethod,
-    ps.paymentPaidAt,
-    CASE
-        WHEN lm.membershipId IS NULL THEN 'expired'
-        WHEN cf.freezeId IS NOT NULL THEN 'frozen'
-        WHEN DATEADD(day, ISNULL(ft.freezeDays, 0), lm.endDate) < @today THEN 'expired'
-        WHEN DATEDIFF(day, @today, DATEADD(day, ISNULL(ft.freezeDays, 0), lm.endDate)) BETWEEN 0 AND 7 THEN 'expiring_soon'
-        ELSE 'active'
-    END AS computedStatus,
-    CASE WHEN lm.membershipId IS NULL THEN NULL
-         ELSE DATEDIFF(day, @today, DATEADD(day, ISNULL(ft.freezeDays, 0), lm.endDate)) END AS daysRemaining
-FROM dbo.members AS b
-LEFT JOIN latest_membership AS lm
-    ON lm.membershipMemberId = b.id AND lm.membershipRank = 1
-LEFT JOIN freeze_totals AS ft ON ft.freezeMembershipId = lm.membershipId
-LEFT JOIN freeze_counts AS fc ON fc.freezeCountMemberId = b.id
-LEFT JOIN current_freeze AS cf ON cf.currentFreezeMembershipId = lm.membershipId
-LEFT JOIN payment_summary AS ps ON ps.paymentMembershipId = lm.membershipId
-)
-`;
-
-const MEMBER_CTE = `${MEMBER_ROWS_CTE}
-SELECT *, COUNT(1) OVER() AS totalCount
-FROM member_rows
-`;
-
 async function getMemberById(id, connection = null) {
     const memberId = ensureId(id);
-    const pool = connection || await getPool();
-    const result = await pool.request()
-        .input('today', sql.Date, toUtcDate(todayInTimeZone()))
-        .input('id', sql.Int, memberId)
-        .query(`${MEMBER_CTE} WHERE id = @id;`);
+    const result = await memberRepository.findById({
+        id: memberId,
+        connection,
+        today: todayInTimeZone()
+    });
     if (!result.recordset[0]) throw appError('العضو غير موجود.', 404);
     return mapMember(result.recordset[0]);
 }
@@ -686,25 +586,14 @@ async function getMembers({ search = '', status = '', sort = 'expiry', page = 1,
     const currentPage = Number.isInteger(requestedPage) && requestedPage > 0 ? Math.min(requestedPage, 100000) : 1;
     const currentPageSize = Number.isInteger(requestedPageSize) && requestedPageSize > 0 ? Math.min(requestedPageSize, 50) : DEFAULT_MEMBER_PAGE_SIZE;
     const offset = (currentPage - 1) * currentPageSize;
-    const orderBy = normalizedSort === 'newest'
-        ? 'registrationDate DESC, id DESC'
-        : normalizedSort === 'remaining'
-            ? 'amountRemaining DESC, id ASC'
-            : 'effectiveEndDate ASC, fullName ASC, id ASC';
-    const pool = await getPool();
-    const result = await pool.request()
-        .input('today', sql.Date, toUtcDate(todayInTimeZone()))
-        .input('search', sql.NVarChar(100), normalizedSearch)
-        .input('pattern', sql.NVarChar(110), `%${normalizedSearch}%`)
-        .input('status', sql.VarChar(20), normalizedStatus)
-        .input('offset', sql.Int, offset)
-        .input('pageSize', sql.Int, currentPageSize)
-        .query(`${MEMBER_CTE}
-            WHERE (@search = N'' OR fullName LIKE @pattern OR phone LIKE @pattern OR ISNULL(email, N'') LIKE @pattern)
-              AND membershipId IS NOT NULL
-              AND (@status = '' OR computedStatus = @status)
-            ORDER BY ${orderBy}
-            OFFSET @offset ROWS FETCH NEXT @pageSize ROWS ONLY;`);
+    const result = await memberRepository.list({
+        search: normalizedSearch,
+        status: normalizedStatus,
+        sort: normalizedSort,
+        offset,
+        pageSize: currentPageSize,
+        today: todayInTimeZone()
+    });
     const mappedMembers = result.recordset.map(mapMember);
     const attendanceByMember = await getMemberAttendanceStatuses(mappedMembers.map((member) => member.id));
     const members = mappedMembers.map((member) => ({
@@ -1188,20 +1077,6 @@ async function addPaymentTransaction(connection, {
                 VALUES (@membershipId, @transactionType, @listPrice, @discountAmount, @amountDue,
                         @amountPaid, @amountRemaining, @paymentMethod, @paidAt, @notes, @sourcePaymentId);`);
     return Number(result.recordset[0].id);
-}
-
-async function withTransaction(work) {
-    const pool = await getPool();
-    const transaction = new sql.Transaction(pool);
-    await transaction.begin();
-    try {
-        const result = await work(transaction);
-        await transaction.commit();
-        return result;
-    } catch (error) {
-        try { await transaction.rollback(); } catch (_) { /* keep original error */ }
-        throw error;
-    }
 }
 
 async function createMember(body) {
