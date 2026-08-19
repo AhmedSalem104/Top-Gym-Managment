@@ -1,12 +1,13 @@
 const { getPool, sql } = require('./db');
 const { addDays, differenceInDays, formatDateOnly, parseDateOnly, todayInTimeZone, toUtcDate } = require('./date-utils');
+const { config } = require('./config/env');
 
 const ATTENDANCE_SOURCES = new Set(['phone', 'qr', 'manual']);
 const DEFAULT_AUTO_CHECKOUT_MINUTES = 60;
 let attendanceTablePromise;
 
 function getAutoCheckoutMinutes() {
-    const configured = Number.parseInt(process.env.ATTENDANCE_AUTO_CHECKOUT_MINUTES, 10);
+    const configured = Number.parseInt(config.attendanceAutoCheckoutMinutes, 10);
     return Number.isInteger(configured) && configured > 0 ? Math.min(configured, 1440) : DEFAULT_AUTO_CHECKOUT_MINUTES;
 }
 

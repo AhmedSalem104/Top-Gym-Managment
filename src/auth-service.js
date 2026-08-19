@@ -2,17 +2,14 @@
 
 const crypto = require('node:crypto');
 const { getPool, sql } = require('./db');
+const { config, isProduction } = require('./config/env');
+const { ROLE_PERMISSIONS } = require('./config/constants');
 
 const SESSION_COOKIE_NAME = 'topgym_session';
 const DEFAULT_SESSION_DAYS = 7;
 const PASSWORD_MIN_LENGTH = 8;
 const PASSWORD_MAX_LENGTH = 128;
 const SCRYPT_PARAMS = { N: 32768, r: 8, p: 1, keyLength: 64 };
-
-const ROLE_PERMISSIONS = Object.freeze({
-    Owner: Object.freeze(['*']),
-    Assistant: Object.freeze(['members', 'trainees', 'attendance', 'library'])
-});
 
 const AUTH_SCHEMA_SQL = `
 IF OBJECT_ID(N'dbo.gym_users', N'U') IS NULL
@@ -215,7 +212,7 @@ function tokenHash(token) {
 }
 
 function sessionDays() {
-    const value = Number(process.env.AUTH_SESSION_DAYS || DEFAULT_SESSION_DAYS);
+    const value = Number(config.authSessionDays || DEFAULT_SESSION_DAYS);
     return Number.isFinite(value) ? Math.min(30, Math.max(1, value)) : DEFAULT_SESSION_DAYS;
 }
 
@@ -244,8 +241,8 @@ async function ensureOwnerAccount() {
         .query("SELECT TOP (1) id FROM dbo.gym_users WHERE role = 'Owner';");
     if (existing.recordset[0]) return { created: false, setupRequired: false };
 
-    const email = process.env.AUTH_OWNER_EMAIL ? validateEmail(process.env.AUTH_OWNER_EMAIL) : '';
-    const password = process.env.AUTH_OWNER_PASSWORD ? validatePassword(process.env.AUTH_OWNER_PASSWORD) : '';
+    const email = config.authOwnerEmail ? validateEmail(config.authOwnerEmail) : '';
+    const password = config.authOwnerPassword ? validatePassword(config.authOwnerPassword) : '';
     if (!email || !password) {
         console.warn('[TOP GYM AUTH] No Owner account exists. Set AUTH_OWNER_EMAIL and AUTH_OWNER_PASSWORD to bootstrap the first Owner.');
         return { created: false, setupRequired: true };
@@ -254,7 +251,7 @@ async function ensureOwnerAccount() {
     const passwordHash = await hashPassword(password);
     try {
         await pool.request()
-            .input('fullName', sql.NVarChar(120), process.env.AUTH_OWNER_NAME || 'TOP GYM Owner')
+            .input('fullName', sql.NVarChar(120), config.authOwnerName)
             .input('email', sql.NVarChar(254), email)
             .input('emailNormalized', sql.NVarChar(254), email)
             .input('passwordHash', sql.NVarChar(512), passwordHash)
@@ -458,12 +455,12 @@ function canAccess(user, request) {
 
 function sessionCookie(token, expiresAt, request) {
     const maxAge = Math.max(1, Math.floor((new Date(expiresAt).getTime() - Date.now()) / 1000));
-    const secure = process.env.NODE_ENV === 'production' || String(request?.secure) === 'true';
+    const secure = isProduction() || String(request?.secure) === 'true';
     return `${SESSION_COOKIE_NAME}=${encodeURIComponent(token)}; Path=/; Max-Age=${maxAge}; HttpOnly; SameSite=Lax${secure ? '; Secure' : ''}`;
 }
 
 function clearSessionCookie(request) {
-    const secure = process.env.NODE_ENV === 'production' || String(request?.secure) === 'true';
+    const secure = isProduction() || String(request?.secure) === 'true';
     return `${SESSION_COOKIE_NAME}=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax${secure ? '; Secure' : ''}`;
 }
 

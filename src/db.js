@@ -1,6 +1,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const sql = require('mssql');
+const { config } = require('./config/env');
 
 let poolPromise;
 
@@ -33,8 +34,8 @@ function parseConnectionString(connectionString) {
         database: databaseValue,
         user: userValue,
         password: passwordValue,
-        connectionTimeout: Number(process.env.MSSQL_CONNECTION_TIMEOUT || 30000),
-        requestTimeout: Number(process.env.MSSQL_REQUEST_TIMEOUT || 120000),
+        connectionTimeout: config.mssqlConnectionTimeout,
+        requestTimeout: config.mssqlRequestTimeout,
         options: {
             encrypt: parseBoolean(values.encrypt, true),
             trustServerCertificate: parseBoolean(values.trustservercertificate, false)
@@ -47,8 +48,8 @@ function parseConnectionString(connectionString) {
 
 async function getPool() {
     if (!poolPromise) {
-        const config = parseConnectionString(process.env.MSSQL_CONNECTION_STRING || process.env.DATABASE_URL);
-        poolPromise = sql.connect(config).catch((error) => {
+        const connectionConfig = parseConnectionString(config.mssqlConnectionString);
+        poolPromise = sql.connect(connectionConfig).catch((error) => {
             poolPromise = undefined;
             throw error;
         });

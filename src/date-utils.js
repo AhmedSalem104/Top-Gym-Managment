@@ -1,7 +1,8 @@
 const DAY_MS = 24 * 60 * 60 * 1000;
+const { config } = require('./config/env');
 
 function todayInTimeZone() {
-    const timeZone = process.env.APP_TIMEZONE || 'Africa/Cairo';
+    const timeZone = config.appTimeZone;
     const parts = new Intl.DateTimeFormat('en-US', {
         timeZone,
         year: 'numeric',

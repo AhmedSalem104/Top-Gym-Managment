@@ -65,6 +65,10 @@ function assertRequiredFiles() {
         'src/auth-service.js',
         'public/js/auth-ui.js',
         'public/js/auth-users.js',
+        'src/app.js',
+        'src/config/env.js',
+        'src/routes/auth.routes.js',
+        'src/controllers/auth.controller.js',
         'docs/AUTH.md',
         'qa/AGENT-CONTRACT.md'
     ];
@@ -98,14 +102,15 @@ function checkRouteSurface() {
 
 function checkAuthSurface() {
     const server = read('server.js');
+    const authRoutes = read('src/routes/auth.routes.js');
     const auth = read('src/auth-service.js');
     const index = read('public/index.html');
     [
         '/api/auth/session', '/api/auth/login', '/api/auth/logout', '/api/auth/users'
     ].forEach((route) => record(
         `AUTH-ROUTE-${route.replaceAll('/', '-')}`,
-        server.includes(route),
-        server.includes(route) ? 'authentication route is present' : 'authentication route is missing',
+        server.includes(route) || authRoutes.includes(route),
+        server.includes(route) || authRoutes.includes(route) ? 'authentication route is present' : 'authentication route is missing',
         'P0'
     ));
     record('AUTH-BACKEND-MIDDLEWARE', server.includes('authApiMiddleware') && server.includes('canAccess(user, request)'), 'backend authentication and authorization middleware is present', 'P0');

@@ -2,7 +2,10 @@ require('dotenv').config();
 
 const express = require('express');
 const path = require('node:path');
-const compression = require('compression');
+const { createApp } = require('./src/app');
+const { config } = require('./src/config/env');
+const { asyncRoute } = require('./src/utils/async-route');
+const { registerAuthRoutes } = require('./src/routes/auth.routes');
 const { getPool, initDatabase } = require('./src/db');
 const {
     createBackup,
@@ -49,21 +52,8 @@ const {
     updatePricing,
     updateMember
 } = require('./src/member-service');
-const {
-    appendCookie,
-    canAccess,
-    clearSessionCookie,
-    createAssistant,
-    ensureAuthReady,
-    getSessionUser,
-    listUsers,
-    login,
-    readSessionCookie,
-    revokeSession,
-    sessionCookie,
-    setAssistantStatus,
-    updateUser
-} = require('./src/auth-service');
+const authService = require('./src/auth-service');
+const { canAccess, ensureAuthReady, getSessionUser, readSessionCookie } = authService;
 const {
     addWorkoutSet,
     createDietPlan,
@@ -100,44 +90,8 @@ const {
     updateWorkoutProgram
 } = require('./src/coaching-service');
 
-const app = express();
 const publicDirectory = path.join(__dirname, 'public');
-
-app.disable('x-powered-by');
-app.use(express.json({ limit: '1mb' }));
-
-// Baseline browser protections. Camera access remains available for the QR scanner.
-app.use((request, response, next) => {
-    response.set({
-        'X-Content-Type-Options': 'nosniff',
-        'X-Frame-Options': 'SAMEORIGIN',
-        'Referrer-Policy': 'strict-origin-when-cross-origin',
-        'Permissions-Policy': 'camera=(self), microphone=()'
-    });
-    next();
-});
-
-// Compress text assets and API payloads before they reach the browser. This
-// is especially important for the library/coaching JSON responses on slower
-// mobile connections.
-app.use(compression({ threshold: 1024 }));
-
-app.use(express.static(publicDirectory, {
-    etag: true,
-    lastModified: true,
-    setHeaders(response, filePath) {
-        if (path.extname(filePath).toLowerCase() === '.html') {
-            response.setHeader('Cache-Control', 'no-cache, must-revalidate');
-            return;
-        }
-        if (/\.(?:css|js|mjs|svg|webp|png|jpg|jpeg|woff2?)$/i.test(filePath)) {
-            const versioned = String(response.req?.url || '').includes('?v=');
-            response.setHeader('Cache-Control', versioned
-                ? 'public, max-age=31536000, immutable'
-                : 'public, max-age=86400, stale-while-revalidate=604800');
-        }
-    }
-}));
+const app = createApp({ publicDirectory });
 
 const sensitiveWindow = new Map();
 let sensitiveWindowLastCleanup = 0;
@@ -164,20 +118,15 @@ function sensitiveRateLimit(request, response, next) {
     return next();
 }
 app.use('/api', (request, response, next) => {
-    response.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
     sensitiveRateLimit(request, response, next);
 });
 
-function asyncRoute(handler) {
-    return (request, response, next) => Promise.resolve(handler(request, response, next)).catch(next);
-}
-
 function isAuthorizedCronRequest(request) {
-    const secret = String(process.env.CRON_SECRET || '').trim();
+    const secret = String(config.cronSecret || '').trim();
     const authorization = String(request.get('authorization') || '');
     if (secret) return authorization === `Bearer ${secret}`;
     if (String(request.get('user-agent') || '').toLowerCase() === 'vercel-cron/1.0') return true;
-    return process.env.NODE_ENV !== 'production' && request.get('x-top-gym-cron-key') === 'daily-backup';
+    return config.nodeEnv !== 'production' && request.get('x-top-gym-cron-key') === 'daily-backup';
 }
 
 const loginAttempts = new Map();
@@ -286,50 +235,17 @@ app.get('/api/health', asyncRoute(async (request, response) => {
     response.json({ ok: true, database: 'connected' });
 }));
 
-app.get('/api/auth/session', asyncRoute(async (request, response) => {
-    const setup = await ensureAuthReady();
-    const user = await getSessionUser(readSessionCookie(request));
-    response.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
-    response.json({ authenticated: Boolean(user), user: user || null, setupRequired: Boolean(setup?.setupRequired) });
-}));
-
-app.post('/api/auth/login', asyncRoute(async (request, response) => {
-    if (!allowLoginAttempt(request, request.body?.email)) {
-        response.set('Retry-After', '900');
-        return response.status(429).json({ error: 'محاولات دخول كثيرة. حاول بعد قليل.', code: 'LOGIN_RATE_LIMITED' });
-    }
-    const result = await login(request.body || {}, request);
-    appendCookie(response, sessionCookie(result.token, result.expiresAt, request));
-    response.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
-    response.json({ user: result.user, expiresAt: result.expiresAt.toISOString() });
-}));
-
-app.post('/api/auth/logout', asyncRoute(async (request, response) => {
-    await revokeSession(readSessionCookie(request));
-    appendCookie(response, clearSessionCookie(request));
-    response.status(204).send();
-}));
-
 function ownerOnly(request, response, next) {
     if (request.auth?.role !== 'Owner') return response.status(403).json({ error: 'هذا الإجراء متاح لمالك النظام فقط.', code: 'OWNER_REQUIRED' });
     return next();
 }
 
-app.get('/api/auth/users', ownerOnly, asyncRoute(async (request, response) => {
-    response.json({ users: await listUsers() });
-}));
-
-app.post('/api/auth/users', ownerOnly, asyncRoute(async (request, response) => {
-    response.status(201).json({ user: await createAssistant(request.body || {}) });
-}));
-
-app.put('/api/auth/users/:id', ownerOnly, asyncRoute(async (request, response) => {
-    response.json({ user: await updateUser(request.params.id, request.body || {}) });
-}));
-
-app.patch('/api/auth/users/:id/status', ownerOnly, asyncRoute(async (request, response) => {
-    response.json({ user: await setAssistantStatus(request.params.id, request.body?.status) });
-}));
+registerAuthRoutes(app, {
+    authService,
+    asyncRoute,
+    ownerOnly,
+    allowLoginAttempt
+});
 
 app.get('/api/backup/daily', asyncRoute(async (request, response) => {
     if (!isAuthorizedCronRequest(request)) return response.status(401).json({ error: 'طلب الجدولة غير مصرح به.' });
@@ -774,7 +690,7 @@ async function start() {
     await ensureAuthReady();
     await ensureLibraryData();
     await ensureCoachingTables();
-    const port = Number(process.env.PORT || 3000);
+    const port = config.port;
     app.listen(port, () => console.log(`Gym membership app is running on http://localhost:${port}`));
 }
 
