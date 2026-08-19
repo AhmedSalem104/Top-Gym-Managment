@@ -1,4 +1,4 @@
-const { getPool, sql } = require('../db');
+const { getPool, sql } = require('../database');
 const { withTransaction } = require('../database/transaction');
 const memberRepository = require('../repositories/member.repository');
 const {

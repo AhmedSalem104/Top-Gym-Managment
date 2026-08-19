@@ -1,4 +1,4 @@
-const { getPool, sql } = require('../db');
+const { getPool, sql } = require('../database');
 const { ensureLibraryData } = require('./library-service');
 const {
     addDays,

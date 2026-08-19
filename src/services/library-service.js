@@ -1,6 +1,6 @@
 const fs = require('node:fs');
 const path = require('node:path');
-const { getPool, sql } = require('../db');
+const { getPool, sql } = require('../database');
 
 const DATA_DIRECTORY = path.join(__dirname, '..', 'data', 'library');
 const LIBRARY_TYPES = new Set(['muscles', 'foods', 'exercises']);

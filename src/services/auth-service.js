@@ -1,7 +1,7 @@
 'use strict';
 
 const crypto = require('node:crypto');
-const { getPool, sql } = require('../db');
+const { getPool } = require('../database');
 const { config, isProduction } = require('../config/env');
 const {
     ROLE_PERMISSIONS,
@@ -9,6 +9,8 @@ const {
     canAccessRoleRequest,
     permissionsForRole
 } = require('../permissions/role-permissions');
+const userRepository = require('../repositories/user.repository');
+const sessionRepository = require('../repositories/session.repository');
 
 const SESSION_COOKIE_NAME = 'topgym_session';
 const DEFAULT_SESSION_DAYS = 7;
@@ -241,9 +243,7 @@ async function ensureAuthTables() {
 }
 
 async function ensureOwnerAccount() {
-    const pool = await getPool();
-    const existing = await pool.request()
-        .query("SELECT TOP (1) id FROM dbo.gym_users WHERE role = 'Owner';");
+    const existing = await userRepository.findOwner();
     if (existing.recordset[0]) return { created: false, setupRequired: false };
 
     const email = config.authOwnerEmail ? validateEmail(config.authOwnerEmail) : '';
@@ -255,12 +255,11 @@ async function ensureOwnerAccount() {
 
     const passwordHash = await hashPassword(password);
     try {
-        await pool.request()
-            .input('fullName', sql.NVarChar(120), config.authOwnerName)
-            .input('email', sql.NVarChar(254), email)
-            .input('emailNormalized', sql.NVarChar(254), email)
-            .input('passwordHash', sql.NVarChar(512), passwordHash)
-            .query("INSERT INTO dbo.gym_users (full_name, username, email, email_normalized, password_hash, role, status) VALUES (@fullName, @email, @email, @emailNormalized, @passwordHash, 'Owner', 'Active');");
+        await userRepository.createOwner({
+            fullName: config.authOwnerName,
+            email,
+            passwordHash
+        });
         console.log(`[TOP GYM AUTH] Bootstrapped Owner account ${email}.`);
         return { created: true, setupRequired: false };
     } catch (error) {
@@ -282,10 +281,7 @@ async function ensureAuthReady() {
 }
 
 async function getUserByEmail(email) {
-    const pool = await getPool();
-    const result = await pool.request()
-        .input('emailNormalized', sql.NVarChar(254), email)
-        .query('SELECT TOP (1) * FROM dbo.gym_users WHERE email_normalized = @emailNormalized;');
+    const result = await userRepository.findByEmail(email);
     return result.recordset[0] || null;
 }
 
@@ -305,53 +301,35 @@ async function login(body = {}, request) {
 
     const token = crypto.randomBytes(32).toString('hex');
     const expiresAt = new Date(Date.now() + sessionDays() * 24 * 60 * 60 * 1000);
-    const pool = await getPool();
-    await pool.request()
-        .input('userId', sql.Int, Number(user.id))
-        .input('tokenHash', sql.Char(64), tokenHash(token))
-        .input('expiresAt', sql.DateTime2(0), expiresAt)
-        .input('ipAddress', sql.NVarChar(64), String(request?.ip || request?.socket?.remoteAddress || '').slice(0, 64))
-        .input('userAgent', sql.NVarChar(512), String(request?.get?.('user-agent') || '').slice(0, 512))
-        .query('INSERT INTO dbo.gym_auth_sessions (user_id, token_hash, expires_at, ip_address, user_agent) VALUES (@userId, @tokenHash, @expiresAt, @ipAddress, @userAgent); UPDATE dbo.gym_users SET last_login_at = SYSUTCDATETIME(), updated_at = SYSUTCDATETIME() WHERE id = @userId;');
+    await sessionRepository.create({
+        userId: Number(user.id),
+        tokenHash: tokenHash(token),
+        expiresAt,
+        ipAddress: String(request?.ip || request?.socket?.remoteAddress || '').slice(0, 64),
+        userAgent: String(request?.get?.('user-agent') || '').slice(0, 512)
+    });
     return { token, expiresAt, user: safeUser(user) };
 }
 
 async function getSessionUser(token) {
     if (!token) return null;
     await ensureAuthReady();
-    const pool = await getPool();
-    const result = await pool.request()
-        .input('tokenHash', sql.Char(64), tokenHash(token))
-        .query(`SELECT TOP (1) u.id, u.full_name, u.email, u.role, u.status, u.last_login_at, s.id AS session_id
-                FROM dbo.gym_auth_sessions AS s
-                INNER JOIN dbo.gym_users AS u ON u.id = s.user_id
-                WHERE s.token_hash = @tokenHash
-                  AND s.revoked_at IS NULL
-                  AND s.expires_at > SYSUTCDATETIME()
-                  AND u.status = 'Active';`);
+    const result = await sessionRepository.findActiveWithUser(tokenHash(token));
     const row = result.recordset[0];
     if (!row) return null;
-    await pool.request()
-        .input('sessionId', sql.UniqueIdentifier, row.session_id)
-        .query('UPDATE dbo.gym_auth_sessions SET last_seen_at = SYSUTCDATETIME() WHERE id = @sessionId;')
-        .catch(() => {});
+    await sessionRepository.touch(row.session_id).catch(() => {});
     return safeUser(row);
 }
 
 async function revokeSession(token) {
     if (!token) return;
     await ensureAuthReady();
-    const pool = await getPool();
-    await pool.request()
-        .input('tokenHash', sql.Char(64), tokenHash(token))
-        .query('UPDATE dbo.gym_auth_sessions SET revoked_at = SYSUTCDATETIME() WHERE token_hash = @tokenHash AND revoked_at IS NULL;');
+    await sessionRepository.revokeByTokenHash(tokenHash(token));
 }
 
 async function listUsers() {
     await ensureAuthReady();
-    const pool = await getPool();
-    const result = await pool.request()
-        .query('SELECT id, full_name, email, role, status, last_login_at, created_at, updated_at FROM dbo.gym_users ORDER BY CASE WHEN role = \'Owner\' THEN 0 ELSE 1 END, full_name, id;');
+    const result = await userRepository.list();
     return result.recordset.map(safeUser);
 }
 
@@ -361,14 +339,8 @@ async function createAssistant(body = {}) {
     const email = validateEmail(body.email);
     const password = validatePassword(body.password);
     const passwordHash = await hashPassword(password);
-    const pool = await getPool();
     try {
-        const result = await pool.request()
-            .input('fullName', sql.NVarChar(120), name)
-            .input('email', sql.NVarChar(254), email)
-            .input('emailNormalized', sql.NVarChar(254), email)
-            .input('passwordHash', sql.NVarChar(512), passwordHash)
-            .query("INSERT INTO dbo.gym_users (full_name, username, email, email_normalized, password_hash, role, status) OUTPUT INSERTED.id, INSERTED.full_name, INSERTED.email, INSERTED.role, INSERTED.status, INSERTED.last_login_at VALUES (@fullName, @email, @email, @emailNormalized, @passwordHash, 'Assistant', 'Active');");
+        const result = await userRepository.createAssistant({ fullName: name, email, passwordHash });
         return safeUser(result.recordset[0]);
     } catch (error) {
         if (error.number === 2601 || error.number === 2627) throw authError('هذا البريد الإلكتروني مستخدم بالفعل.', 409, 'DUPLICATE_USER_EMAIL');
@@ -383,32 +355,20 @@ async function updateUser(id, body = {}) {
     const name = validateName(body.name || body.fullName);
     const email = validateEmail(body.email);
     const password = validatePassword(body.password, { required: false });
-    const pool = await getPool();
-    const current = await pool.request().input('id', sql.Int, userId).query('SELECT TOP (1) id, role FROM dbo.gym_users WHERE id=@id;');
+    const current = await userRepository.findRoleById(userId);
     if (!current.recordset[0]) throw authError('الحساب غير موجود.', 404, 'USER_NOT_FOUND');
     if (current.recordset[0].role !== 'Assistant') throw authError('\u062d\u0633\u0627\u0628 \u0627\u0644\u0645\u0627\u0644\u0643 \u0645\u062d\u0645\u064a \u0645\u0646 \u0627\u0644\u062a\u0639\u062f\u064a\u0644 \u0645\u0646 \u0647\u0630\u0647 \u0627\u0644\u0634\u0627\u0634\u0629.', 403, 'OWNER_ACCOUNT_PROTECTED');
     const passwordHash = password ? await hashPassword(password) : null;
     try {
-        const request = pool.request()
-            .input('id', sql.Int, userId)
-            .input('fullName', sql.NVarChar(120), name)
-            .input('email', sql.NVarChar(254), email)
-            .input('emailNormalized', sql.NVarChar(254), email)
-            .input('passwordHash', sql.NVarChar(512), passwordHash);
-        await request.query(`UPDATE dbo.gym_users
-            SET full_name=@fullName, email=@email, email_normalized=@emailNormalized,
-                password_hash=COALESCE(@passwordHash, password_hash), updated_at=SYSUTCDATETIME()
-            WHERE id=@id;`);
+        await userRepository.updateAssistant({ id: userId, fullName: name, email, passwordHash });
         if (passwordHash) {
-            await pool.request()
-                .input('id', sql.Int, userId)
-                .query('UPDATE dbo.gym_auth_sessions SET revoked_at=SYSUTCDATETIME() WHERE user_id=@id AND revoked_at IS NULL;');
+            await sessionRepository.revokeForUser(userId);
         }
     } catch (error) {
         if (error.number === 2601 || error.number === 2627) throw authError('هذا البريد الإلكتروني مستخدم بالفعل.', 409, 'DUPLICATE_USER_EMAIL');
         throw error;
     }
-    const updated = await pool.request().input('id', sql.Int, userId).query('SELECT TOP (1) id, full_name, email, role, status, last_login_at FROM dbo.gym_users WHERE id=@id;');
+    const updated = await userRepository.findPublicById(userId);
     return safeUser(updated.recordset[0]);
 }
 
@@ -417,13 +377,12 @@ async function setAssistantStatus(id, status) {
     const userId = Number(id);
     const nextStatus = String(status || '').trim();
     if (!Number.isInteger(userId) || userId <= 0 || !['Active', 'Disabled'].includes(nextStatus)) throw authError('بيانات حالة الحساب غير صحيحة.', 400, 'INVALID_USER_STATUS');
-    const pool = await getPool();
-    const result = await pool.request().input('id', sql.Int, userId).query('SELECT TOP (1) id, role FROM dbo.gym_users WHERE id=@id;');
+    const result = await userRepository.findRoleById(userId);
     const user = result.recordset[0];
     if (!user) throw authError('الحساب غير موجود.', 404, 'USER_NOT_FOUND');
     if (user.role !== 'Assistant') throw authError('لا يمكن تعطيل حساب المالك.', 400, 'OWNER_STATUS_PROTECTED');
-    await pool.request().input('id', sql.Int, userId).input('status', sql.VarChar(20), nextStatus).query('UPDATE dbo.gym_users SET status=@status, updated_at=SYSUTCDATETIME() WHERE id=@id; UPDATE dbo.gym_auth_sessions SET revoked_at=SYSUTCDATETIME() WHERE user_id=@id AND @status = \'Disabled\' AND revoked_at IS NULL;');
-    const updated = await pool.request().input('id', sql.Int, userId).query('SELECT TOP (1) id, full_name, email, role, status, last_login_at FROM dbo.gym_users WHERE id=@id;');
+    await userRepository.updateStatus({ id: userId, status: nextStatus });
+    const updated = await userRepository.findPublicById(userId);
     return safeUser(updated.recordset[0]);
 }
 

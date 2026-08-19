@@ -1,4 +1,4 @@
-const { getPool, sql } = require('../db');
+const { getPool, sql } = require('../database');
 const { addDays, differenceInDays, formatDateOnly, parseDateOnly, todayInTimeZone, toUtcDate } = require('../utils/date');
 const { ensurePaymentTransactionsTable, getDashboard } = require('./member-service');
 const { ensureExpensesTable } = require('./finance-service');
