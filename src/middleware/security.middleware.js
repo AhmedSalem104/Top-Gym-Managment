@@ -25,7 +25,7 @@ function staticHeaders(response, filePath) {
         response.setHeader('Cache-Control', 'no-cache, must-revalidate');
         return;
     }
-    if (/\.(?:js|mjs|svg|webp|png|jpg|jpeg|woff2?)$/i.test(filePath)) {
+    if (/\.(?:css|js|mjs|svg|webp|png|jpg|jpeg|woff2?)$/i.test(filePath)) {
         const versioned = String(response.req?.url || '').includes('?v=');
         response.setHeader('Cache-Control', versioned
             ? 'public, max-age=31536000, immutable'

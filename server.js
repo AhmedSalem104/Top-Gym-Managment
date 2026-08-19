@@ -9,6 +9,9 @@ const { registerAuthRoutes } = require('./src/routes/auth.routes');
 const { registerMembersRoutes } = require('./src/routes/members.routes');
 const { registerAttendanceRoutes } = require('./src/routes/attendance.routes');
 const { registerFinanceRoutes } = require('./src/routes/finance.routes');
+const { registerDashboardRoutes } = require('./src/routes/dashboard.routes');
+const { registerLibraryRoutes } = require('./src/routes/library.routes');
+const { registerReportsRoutes } = require('./src/routes/reports.routes');
 const { getPool, initDatabase } = require('./src/db');
 const {
     createBackup,
@@ -22,18 +25,11 @@ const {
     restoreBackup
 } = require('./src/backup-service');
 const financeService = require('./src/finance-service');
-const { getDashboardAnalytics } = require('./src/analytics-service');
-const { getReportData } = require('./src/report-service');
+const analyticsService = require('./src/analytics-service');
+const reportService = require('./src/report-service');
 const attendanceService = require('./src/attendance-service');
-const {
-    createLibraryItem,
-    deleteLibraryItem,
-    ensureLibraryData,
-    getLibraryCollection,
-    getLibraryItem,
-    getLibraryOptions,
-    updateLibraryItem
-} = require('./src/library-service');
+const libraryService = require('./src/library-service');
+const { ensureLibraryData } = libraryService;
 const memberService = require('./src/member-service');
 const authService = require('./src/auth-service');
 const { canAccess, ensureAuthReady, getSessionUser, readSessionCookie } = authService;
@@ -332,50 +328,11 @@ app.post('/api/backup/restore', backupUploadBody, asyncRoute(async (request, res
 
 registerFinanceRoutes(app, { financeService, asyncRoute });
 
-app.get('/api/dashboard', asyncRoute(async (request, response) => {
-    response.json(await getDashboard());
-}));
-
-app.get('/api/dashboard-analytics', asyncRoute(async (request, response) => {
-    response.json(await getDashboardAnalytics(request.query.period));
-}));
-
-app.get('/api/library/options', asyncRoute(async (request, response) => {
-    response.set('Cache-Control', 'private, max-age=20, stale-while-revalidate=60');
-    response.json(await getLibraryOptions());
-}));
-
-app.get('/api/library/:type', asyncRoute(async (request, response) => {
-    response.set('Cache-Control', 'private, max-age=20, stale-while-revalidate=60');
-    response.json(await getLibraryCollection(request.params.type, request.query));
-}));
-
-app.get('/api/library/:type/:id', asyncRoute(async (request, response) => {
-    response.json({ item: await getLibraryItem(request.params.type, request.params.id) });
-}));
-
-app.post('/api/library/:type', asyncRoute(async (request, response) => {
-    response.status(201).json({ item: await createLibraryItem(request.params.type, request.body) });
-}));
-
-app.put('/api/library/:type/:id', asyncRoute(async (request, response) => {
-    response.json({ item: await updateLibraryItem(request.params.type, request.params.id, request.body) });
-}));
-
-app.delete('/api/library/:type/:id', asyncRoute(async (request, response) => {
-    await deleteLibraryItem(request.params.type, request.params.id);
-    response.status(204).send();
-}));
-
-app.get('/api/reports', asyncRoute(async (request, response) => {
-    response.json(await getReportData(request.query));
-}));
+registerDashboardRoutes(app, { memberService, analyticsService, asyncRoute });
+registerLibraryRoutes(app, { libraryService, asyncRoute });
+registerReportsRoutes(app, { reportService, asyncRoute });
 
 registerAttendanceRoutes(app, { attendanceService, asyncRoute });
-
-app.get('/api/bootstrap', asyncRoute(async (request, response) => {
-    response.json(await getBootstrap());
-}));
 
 app.get('/api/pricing', asyncRoute(async (request, response) => {
     response.json(await getPricingCatalog());
