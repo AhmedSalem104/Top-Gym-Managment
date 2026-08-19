@@ -1,6 +1,7 @@
 require('dotenv').config();
 
 const path = require('node:path');
+const express = require('express');
 const { createApp } = require('./src/app');
 const { config } = require('./src/config/env');
 const { asyncRoute } = require('./src/utils/async-route');
@@ -23,7 +24,7 @@ const authService = require('./src/services/auth-service');
 const { ensureAuthReady } = authService;
 
 const publicDirectory = path.join(__dirname, 'public');
-const app = createApp({ publicDirectory });
+const app = createApp({ publicDirectory, expressFactory: express });
 
 const sensitiveRateLimit = createSensitiveRateLimit();
 const allowLoginAttempt = createLoginAttemptGuard();

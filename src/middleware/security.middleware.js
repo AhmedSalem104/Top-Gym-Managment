@@ -33,8 +33,8 @@ function staticHeaders(response, filePath) {
     }
 }
 
-function createBaseApp({ publicDirectory }) {
-    const app = express();
+function createBaseApp({ publicDirectory, expressFactory = express }) {
+    const app = expressFactory();
     app.disable('x-powered-by');
     app.use(express.json({ limit: '1mb' }));
     app.use(securityHeaders);

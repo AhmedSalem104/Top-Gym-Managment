@@ -210,12 +210,27 @@
   font-size: var(--font-sm);
 }
 
+.auth-form .auth-input-wrap > input:not([type="checkbox"]):not([type="radio"]) {
+  direction: ltr;
+  padding-right: var(--space-3);
+  padding-left: var(--space-10);
+  text-align: left;
+}
+
+.auth-form .auth-password-wrap > input:not([type="checkbox"]):not([type="radio"]) {
+  direction: rtl;
+  padding-right: 48px;
+  padding-left: var(--space-10);
+  text-align: right;
+}
+
 .auth-password-wrap {
   position: relative;
 }
 
-.auth-password-wrap input {
-  padding-inline-end: 48px;
+.auth-form .auth-input-icon {
+  left: var(--space-3);
+  right: auto;
 }
 
 .auth-password-toggle {
