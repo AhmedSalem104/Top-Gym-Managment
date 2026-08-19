@@ -8,8 +8,37 @@
                     const toggle = menu?.querySelector('[data-menu-toggle]');
                     if (menu !== except) {
                         panel.hidden = true;
+                        panel.classList.remove('is-floating');
+                        panel.style.removeProperty('top');
+                        panel.style.removeProperty('left');
                         toggle?.setAttribute('aria-expanded', 'false');
                     }
+                });
+            }
+
+            function positionFloatingMenu(menu, panel) {
+                if (!menu || !panel || panel.hidden) return;
+                const toggle = menu.querySelector('[data-menu-toggle]');
+                if (!toggle) return;
+                const toggleRect = toggle.getBoundingClientRect();
+                const panelWidth = panel.offsetWidth || 200;
+                const panelHeight = panel.offsetHeight || 240;
+                const viewportPadding = 8;
+                const left = Math.min(
+                    Math.max(viewportPadding, toggleRect.right - panelWidth),
+                    Math.max(viewportPadding, window.innerWidth - panelWidth - viewportPadding)
+                );
+                const opensDown = toggleRect.bottom + panelHeight + viewportPadding <= window.innerHeight;
+                const top = opensDown
+                    ? toggleRect.bottom + viewportPadding
+                    : Math.max(viewportPadding, toggleRect.top - panelHeight - viewportPadding);
+                panel.style.left = `${Math.round(left)}px`;
+                panel.style.top = `${Math.round(top)}px`;
+            }
+
+            function repositionOpenMenus() {
+                list.querySelectorAll('.action-menu-panel.is-floating:not([hidden])').forEach((panel) => {
+                    positionFloatingMenu(panel.closest('.action-menu'), panel);
                 });
             }
 
@@ -68,7 +97,9 @@
                     const shouldOpen = panel.hidden;
                     closeMenus(menu);
                     panel.hidden = !shouldOpen;
+                    panel.classList.toggle('is-floating', shouldOpen);
                     toggle.setAttribute('aria-expanded', String(shouldOpen));
+                    if (shouldOpen) positionFloatingMenu(menu, panel);
                     window.topGymStopButtonLoading?.(toggle);
                     return;
                 }
@@ -78,6 +109,9 @@
                 }
                 if (!event.target.closest('.action-menu')) closeMenus();
             });
+
+            window.addEventListener('scroll', repositionOpenMenus, { passive: true });
+            window.addEventListener('resize', repositionOpenMenus, { passive: true });
 
             new MutationObserver(compactActions).observe(list, { childList: true, subtree: true });
             function initializeActionMenu() {

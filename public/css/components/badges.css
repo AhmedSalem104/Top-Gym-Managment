@@ -29,6 +29,16 @@
   content: "";
 }
 
+.status-badge-with-icon::before {
+  display: none;
+}
+
+.status-badge-icon {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
+}
+
 .badge-success,
 .status-active,
 .status-present,

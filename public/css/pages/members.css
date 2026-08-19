@@ -176,11 +176,16 @@
 .members-table th:nth-child(6) { width: 13%; }
 .members-table th:nth-child(7) { width: 19%; }
 
+.members-table th:last-child,
+.members-table td:last-child {
+  min-width: 248px;
+}
+
 .members-table .table-actions {
   justify-content: flex-start;
   gap: var(--space-1);
-  min-width: 180px;
-  max-width: 240px;
+  min-width: 232px;
+  max-width: 280px;
   flex-wrap: wrap;
 }
 
@@ -190,7 +195,22 @@
 }
 
 .members-table .table-actions .btn-primary {
+  min-width: 116px;
   padding-inline: var(--space-3);
+}
+
+.members-table .table-action-label {
+  overflow: visible;
+  white-space: nowrap;
+}
+
+.members-table .table-sub.has-debt {
+  color: var(--color-danger);
+  font-weight: var(--weight-semibold);
+}
+
+.members-table .table-sub.is-settled {
+  color: var(--color-success);
 }
 
 @media (max-width: 991px) {

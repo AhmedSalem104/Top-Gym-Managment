@@ -18,7 +18,7 @@
         members: {
             styles: [],
             scripts: [
-                '/js/pages/members/action-menu.js?v=4',
+                '/js/pages/members/action-menu.js?v=5',
                 '/js/pages/attendance/attendance.js?v=8'
             ]
         },
