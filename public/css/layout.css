@@ -16,6 +16,42 @@ body {
   display: grid;
 }
 
+/* Session restoration happens before the application shell is released. Keep
+   the login form out of the first paint so an already-authenticated user does
+   not see it flash for a moment during refresh. */
+.auth-pending .auth-screen {
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+
+body.auth-pending::before {
+  position: fixed;
+  z-index: var(--z-overlay);
+  inset: 0;
+  background: var(--color-bg);
+  content: "";
+}
+
+body.auth-pending::after {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  z-index: var(--z-toast);
+  width: 30px;
+  height: 30px;
+  border: 3px solid var(--color-primary-soft);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  content: "";
+  transform: translate(-50%, -50%);
+  animation: auth-session-spinner 700ms linear infinite;
+}
+
+@keyframes auth-session-spinner {
+  to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
 .top-gym-navigation-pending .page-tabs,
 .top-gym-navigation-pending .page {
   visibility: hidden;

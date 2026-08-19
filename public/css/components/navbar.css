@@ -1,4 +1,8 @@
+/* The link navigation below is the only visible application navigation. Keep
+   the legacy utility bar mounted for its existing event hooks, but remove it
+   from the visual and accessibility tree. */
 .topbar {
+  display: none;
   position: sticky;
   top: 0;
   z-index: var(--z-sticky);
