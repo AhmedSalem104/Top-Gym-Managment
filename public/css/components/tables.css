@@ -191,3 +191,136 @@ tbody td:not(:last-child) {
   border-radius: var(--radius-pill);
   background: #c7d3e3;
 }
+
+/* Shared table contract for every data view. Page-specific files may tune a
+   column width, but the reading rhythm, scrolling behavior and action area
+   remain consistent across members, attendance, library, reports and dialogs. */
+table,
+.data-table,
+.members-table,
+.history-table,
+.attendance-table,
+.reports-table,
+.pricing-table,
+.membership-types-table,
+.library-data-table,
+.external-trainees-table,
+.profile-table,
+.backup-history-table,
+.backup-count-table,
+.builder-review-table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.table-scroll,
+.table-wrap,
+.data-table-wrap,
+.history-scroll,
+.reports-table-wrap,
+.pricing-table-scroll,
+.pricing-table-wrap,
+.library-table-wrap,
+.external-trainees-table-wrap,
+.profile-table-wrap,
+.backup-history-wrap,
+.backup-count-table-wrap,
+.attendance-table-wrap {
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-inline: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-color: var(--border-strong) transparent;
+  scrollbar-width: thin;
+}
+
+.table-scroll::-webkit-scrollbar,
+.table-wrap::-webkit-scrollbar,
+.data-table-wrap::-webkit-scrollbar,
+.history-scroll::-webkit-scrollbar,
+.reports-table-wrap::-webkit-scrollbar,
+.pricing-table-scroll::-webkit-scrollbar,
+.pricing-table-wrap::-webkit-scrollbar,
+.library-table-wrap::-webkit-scrollbar,
+.external-trainees-table-wrap::-webkit-scrollbar,
+.profile-table-wrap::-webkit-scrollbar,
+.backup-history-wrap::-webkit-scrollbar,
+.backup-count-table-wrap::-webkit-scrollbar,
+.attendance-table-wrap::-webkit-scrollbar {
+  height: 7px;
+}
+
+.table-scroll::-webkit-scrollbar-thumb,
+.table-wrap::-webkit-scrollbar-thumb,
+.data-table-wrap::-webkit-scrollbar-thumb,
+.history-scroll::-webkit-scrollbar-thumb,
+.reports-table-wrap::-webkit-scrollbar-thumb,
+.pricing-table-scroll::-webkit-scrollbar-thumb,
+.pricing-table-wrap::-webkit-scrollbar-thumb,
+.library-table-wrap::-webkit-scrollbar-thumb,
+.external-trainees-table-wrap::-webkit-scrollbar-thumb,
+.profile-table-wrap::-webkit-scrollbar-thumb,
+.backup-history-wrap::-webkit-scrollbar-thumb,
+.backup-count-table-wrap::-webkit-scrollbar-thumb,
+.attendance-table-wrap::-webkit-scrollbar-thumb {
+  border-radius: var(--radius-pill);
+  background: var(--border-strong);
+}
+
+thead th {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-content);
+  border-bottom: 1px solid var(--border-strong);
+  background: var(--color-surface-muted);
+  color: var(--color-text-soft);
+  letter-spacing: 0.01em;
+}
+
+tbody tr:nth-child(even) {
+  background: var(--color-surface-muted);
+}
+
+tbody tr:hover {
+  background: var(--color-primary-soft);
+}
+
+tbody td {
+  border-bottom-color: var(--border-color);
+  line-height: 1.45;
+}
+
+table td:first-child,
+table th:first-child {
+  padding-inline-start: var(--space-5);
+}
+
+table td:last-child,
+table th:last-child {
+  padding-inline-end: var(--space-5);
+}
+
+table .table-actions,
+table .row-actions,
+table .members-actions,
+table .action-group {
+  align-items: center;
+}
+
+@media (max-width: 767px) {
+  th,
+  td {
+    padding: var(--space-3);
+  }
+
+  table td:first-child,
+  table th:first-child {
+    padding-inline-start: var(--space-3);
+  }
+
+  table td:last-child,
+  table th:last-child {
+    padding-inline-end: var(--space-3);
+  }
+}

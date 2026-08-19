@@ -93,3 +93,159 @@ body.modal-open,
 body.dialog-open {
   overflow: hidden;
 }
+
+/* Native dialogs share one predictable shell even though their inner forms
+   are owned by different features. */
+dialog[open] {
+  display: block;
+}
+
+dialog > .dialog-body,
+dialog > form.dialog-body {
+  width: 100%;
+  max-width: 100%;
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-color: var(--border-strong) transparent;
+  scrollbar-width: thin;
+}
+
+dialog > .dialog-body::-webkit-scrollbar,
+dialog > form.dialog-body::-webkit-scrollbar {
+  width: 7px;
+}
+
+dialog > .dialog-body::-webkit-scrollbar-thumb,
+dialog > form.dialog-body::-webkit-scrollbar-thumb {
+  border-radius: var(--radius-pill);
+  background: var(--border-strong);
+}
+
+dialog .details-dialog-head {
+  position: sticky;
+  top: calc(var(--space-5) * -1);
+  z-index: var(--z-content);
+  padding-block: var(--space-1) var(--space-4);
+  background: var(--color-surface);
+}
+
+dialog .details-dialog-head h3,
+dialog .details-dialog-head h4 {
+  color: var(--color-text);
+}
+
+dialog .details-dialog-head p {
+  max-width: 70ch;
+  color: var(--color-text-muted);
+  line-height: 1.6;
+}
+
+dialog .dialog-actions {
+  align-items: center;
+  border-top: 1px solid var(--border-color);
+  padding-top: var(--space-4);
+}
+
+/* SweetAlert is loaded lazily, so these rules intentionally target both the
+   library defaults and the custom classes used by the application. */
+body .swal2-container {
+  z-index: calc(var(--z-modal) + 20);
+  font-family: var(--font-body);
+}
+
+body .swal2-popup,
+body .swal2-popup.top-gym-alert {
+  width: min(520px, calc(100vw - 32px));
+  max-width: calc(100vw - 32px);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: var(--shadow-lg);
+  font-family: var(--font-body);
+}
+
+body .swal2-popup.top-gym-toast {
+  width: min(430px, calc(100vw - 24px));
+  border-radius: var(--radius-lg);
+  padding: var(--space-4) var(--space-5);
+}
+
+body .swal2-title {
+  color: var(--color-text);
+  font-size: var(--font-xl);
+  font-weight: var(--weight-bold);
+  line-height: 1.4;
+}
+
+body .swal2-html-container,
+body .swal2-content {
+  color: var(--color-text-muted);
+  font-size: var(--font-sm);
+  line-height: 1.7;
+}
+
+body .swal2-actions {
+  gap: var(--space-2);
+  margin-top: var(--space-5);
+}
+
+body .swal2-actions .btn,
+body .swal2-styled {
+  min-height: 42px;
+  border-radius: var(--radius-md);
+  font-family: var(--font-body);
+  font-size: var(--font-sm);
+  font-weight: var(--weight-semibold);
+}
+
+body .swal2-actions .btn-primary,
+body .swal2-styled.swal2-confirm {
+  background: var(--color-primary);
+  color: #fff;
+}
+
+body .swal2-actions .btn-light,
+body .swal2-styled.swal2-cancel {
+  border: 1px solid var(--border-color);
+  background: var(--color-surface-muted);
+  color: var(--color-text-soft);
+}
+
+body .swal2-close {
+  color: var(--color-text-muted);
+}
+
+body .swal2-close:hover {
+  color: var(--color-danger);
+}
+
+@media (max-width: 600px) {
+  dialog,
+  .modal,
+  .modal-dialog,
+  [role="dialog"] {
+    width: calc(100% - 24px);
+    max-height: calc(100vh - 24px);
+    border-radius: var(--radius-lg);
+  }
+
+  dialog > .dialog-body,
+  dialog > form.dialog-body {
+    max-height: calc(100vh - 24px);
+    padding: var(--space-4);
+  }
+
+  dialog .details-dialog-head {
+    top: calc(var(--space-4) * -1);
+  }
+
+  dialog .dialog-actions {
+    flex-wrap: wrap;
+  }
+
+  dialog .dialog-actions > * {
+    flex: 1 1 140px;
+  }
+}

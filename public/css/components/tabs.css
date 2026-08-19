@@ -8,9 +8,20 @@
 }
 
 .page-tabs {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky);
   border-top: 1px solid rgb(255 255 255 / 0.08);
   background: #132238;
   padding: var(--space-2) max(16px, calc((100% - 1440px) / 2));
+  box-shadow: 0 8px 20px rgb(15 23 42 / 0.12);
+  isolation: isolate;
+}
+
+.page-tabs > .auth-account-bar {
+  flex: 0 0 auto;
+  margin-inline-start: auto;
+  direction: rtl;
 }
 
 .page-tab,
