@@ -4,16 +4,7 @@ const path = require('node:path');
 const { createApp } = require('./src/app');
 const { config } = require('./src/config/env');
 const { asyncRoute } = require('./src/utils/async-route');
-const { registerAuthRoutes } = require('./src/routes/auth.routes');
-const { registerMembersRoutes } = require('./src/routes/members.routes');
-const { registerAttendanceRoutes } = require('./src/routes/attendance.routes');
-const { registerFinanceRoutes } = require('./src/routes/finance.routes');
-const { registerDashboardRoutes } = require('./src/routes/dashboard.routes');
-const { registerLibraryRoutes } = require('./src/routes/library.routes');
-const { registerReportsRoutes } = require('./src/routes/reports.routes');
-const { registerBackupRoutes } = require('./src/routes/backup.routes');
-const { registerPricingRoutes } = require('./src/routes/pricing.routes');
-const { registerCoachingRoutes } = require('./src/routes/coaching.routes');
+const { registerRoutes } = require('./src/routes');
 const { isAuthorizedCronRequest } = require('./src/middleware/cron.middleware');
 const { getPool, initDatabase } = require('./src/db');
 const backupService = require('./src/backup-service');
@@ -160,41 +151,28 @@ function renderQrMemberPage(member) {
 </html>`;
 }
 
-app.get('/api/health', asyncRoute(async (request, response) => {
-    const pool = await getPool();
-    await pool.request().query('SELECT 1 AS ok;');
-    response.json({ ok: true, database: 'connected' });
-}));
-
 function ownerOnly(request, response, next) {
     if (request.auth?.role !== 'Owner') return response.status(403).json({ error: 'هذا الإجراء متاح لمالك النظام فقط.', code: 'OWNER_REQUIRED' });
     return next();
 }
 
-registerAuthRoutes(app, {
+registerRoutes(app, {
+    asyncRoute,
     authService,
-    asyncRoute,
     ownerOnly,
-    allowLoginAttempt
-});
-
-registerBackupRoutes(app, {
+    allowLoginAttempt,
     backupService,
-    asyncRoute,
-    isAuthorizedCronRequest: (request) => isAuthorizedCronRequest(request, { config })
+    isAuthorizedCronRequest: (request) => isAuthorizedCronRequest(request, { config }),
+    financeService,
+    analyticsService,
+    reportService,
+    attendanceService,
+    libraryService,
+    pricingService,
+    coachingService,
+    memberService,
+    getPool
 });
-
-registerFinanceRoutes(app, { financeService, asyncRoute });
-
-registerDashboardRoutes(app, { memberService, analyticsService, asyncRoute });
-registerLibraryRoutes(app, { libraryService, asyncRoute });
-registerReportsRoutes(app, { reportService, asyncRoute });
-
-registerAttendanceRoutes(app, { attendanceService, asyncRoute });
-registerPricingRoutes(app, { pricingService, asyncRoute });
-registerCoachingRoutes(app, { coachingService, asyncRoute });
-
-registerMembersRoutes(app, { memberService, asyncRoute });
 
 app.get('/qr/:id', asyncRoute(async (request, response) => {
     const member = await memberService.getMemberById(request.params.id);
