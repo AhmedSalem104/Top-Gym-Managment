@@ -158,7 +158,8 @@
             Array.from(actions.children).forEach((button) => {
                 const iconName = actionIcons[button.dataset.coachingAction];
                 if (!iconName || button.querySelector('.coaching-inline-icon')) return;
-                button.insertAdjacentHTML('afterbegin', coachingIcon(iconName));
+                button.classList.add('coaching-icon-action', `coaching-action-${iconName}`);
+                button.innerHTML = coachingIcon(iconName);
             });
             const legacyDeleteActions = cell.querySelector('.trainee-diet-actions');
             const menu = document.createElement('div');
@@ -172,7 +173,8 @@
             toggle.title = 'المزيد من الإجراءات';
             toggle.dataset.coachingAction = 'toggle-more';
             toggle.dataset.id = cell.closest('tr')?.dataset.traineeId || '';
-            toggle.innerHTML = `${coachingIcon('more')}<span>المزيد</span>`;
+            toggle.classList.add('coaching-icon-action', 'coaching-action-more');
+            toggle.innerHTML = coachingIcon('more');
 
             const panel = document.createElement('div');
             panel.className = 'trainee-more-menu action-menu-panel';

@@ -7,29 +7,386 @@
   gap: var(--space-5);
 }
 
-.builder-stepper {
-  display: flex;
-  gap: var(--space-2);
+/* External trainees ---------------------------------------------------- */
+.external-trainees-table-wrap {
+  width: 100%;
+  max-width: 100%;
   overflow-x: auto;
-  padding-bottom: var(--space-1);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  overscroll-behavior-inline: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
-.builder-step {
-  display: inline-flex;
-  min-height: 34px;
+.external-trainees-table {
+  width: 100%;
+  min-width: 980px;
+  table-layout: fixed;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.external-trainees-table th,
+.external-trainees-table td {
+  min-width: 0;
+  border-bottom: 1px solid var(--border-color);
+  padding: var(--space-3) var(--space-4);
+  text-align: center;
+  vertical-align: middle;
+}
+
+.external-trainees-table th {
+  background: var(--color-surface-muted);
+  color: var(--color-text-soft);
+  font-size: var(--font-xs);
+  font-weight: var(--weight-bold);
+  white-space: nowrap;
+}
+
+.external-trainees-table tbody tr {
+  min-height: 78px;
+  transition: background-color var(--transition-fast);
+}
+
+.external-trainees-table tbody tr:hover { background: var(--color-primary-soft); }
+.external-trainees-table tbody tr:last-child td { border-bottom: 0; }
+.external-trainees-table th:nth-child(1) { width: 23%; }
+.external-trainees-table th:nth-child(2) { width: 9%; }
+.external-trainees-table th:nth-child(3) { width: 28%; }
+.external-trainees-table th:nth-child(4) { width: 14%; }
+.external-trainees-table th:nth-child(5) { width: 12%; }
+.external-trainees-table th:nth-child(6) { width: 14%; }
+
+.external-trainee-primary {
+  display: flex;
+  min-width: 0;
   align-items: center;
-  gap: var(--space-1);
+  gap: var(--space-3);
+  text-align: start;
+}
+
+.external-trainee-primary > div:last-child {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.external-trainee-primary strong,
+.external-trainee-primary a,
+.external-trainee-primary small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.external-trainee-primary strong {
+  color: var(--color-text);
+  font-size: var(--font-sm);
+}
+
+.external-trainee-primary a {
+  color: var(--color-primary);
+  font-family: var(--font-latin);
+  font-size: var(--font-xs);
+}
+
+.external-trainee-primary small {
+  color: var(--color-text-muted);
+  font-family: var(--font-latin);
+  font-size: 11px;
+}
+
+.trainee-avatar {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid #c9dcff;
+  border-radius: 50%;
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+  font-weight: var(--weight-bold);
+}
+
+.trainee-badge {
+  display: inline-flex;
+  min-height: 28px;
+  align-items: center;
+  border: 1px solid #c9dcff;
   border-radius: var(--radius-pill);
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+  padding: 0 var(--space-3);
+  font-size: var(--font-xs);
+  font-weight: var(--weight-semibold);
+}
+
+.external-trainee-systems,
+.external-trainee-counts,
+.external-trainee-diet-list {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.external-trainee-counts {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.external-trainee-count {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
   background: var(--color-surface-muted);
   color: var(--color-text-muted);
-  padding: 0 var(--space-3);
+  padding: var(--space-2);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.external-trainee-count b {
+  color: var(--color-text);
+  font-family: var(--font-latin);
+  font-size: var(--font-sm);
+}
+
+.external-trainee-count.workout .external-trainee-count-icon { color: var(--color-primary); }
+.external-trainee-count.diet .external-trainee-count-icon { color: var(--color-success); }
+.external-trainee-count-icon .coaching-inline-icon { width: 16px; height: 16px; }
+.external-trainee-diet-list-title { color: var(--color-text-muted); font-size: 10px; }
+
+.external-trainee-diet-plan,
+.external-trainee-no-diet {
+  display: block;
+  overflow: hidden;
+  color: var(--color-text-soft);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.external-trainee-diet-plan small {
+  margin-inline-start: var(--space-1);
+  color: var(--color-text-muted);
+  font-family: var(--font-latin);
+}
+
+.external-trainee-no-diet { color: var(--color-text-subtle); }
+
+.external-trainee-compact-metric {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  color: var(--color-text-soft);
+}
+
+.external-trainee-compact-metric .coaching-inline-icon {
+  color: var(--color-primary);
+}
+
+.external-trainee-last-activity {
+  color: var(--color-text-soft);
+  font-family: var(--font-latin);
   font-size: var(--font-xs);
   white-space: nowrap;
 }
 
-.builder-step.active { background: var(--color-primary); color: #fff; }
-.builder-progress { height: 5px; overflow: hidden; border-radius: var(--radius-pill); background: var(--color-bg-subtle); }
-.builder-progress-bar { height: 100%; border-radius: inherit; background: var(--color-primary); transition: width var(--transition-normal); }
+.external-trainee-actions-cell { min-width: 0; }
+
+.trainee-actions {
+  display: inline-flex;
+  max-width: 100%;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  flex-wrap: nowrap;
+  white-space: nowrap;
+}
+
+.coaching-icon-action {
+  display: inline-grid;
+  width: 40px;
+  min-width: 40px;
+  height: 40px;
+  min-height: 40px;
+  place-items: center;
+  padding: 0;
+}
+
+.coaching-icon-action .coaching-inline-icon { width: 18px; height: 18px; }
+.coaching-action-workout { border-color: #c9dcff; background: var(--color-primary-soft); color: var(--color-primary); }
+.coaching-action-profile { border-color: var(--border-color); background: var(--color-surface-muted); color: var(--color-text-soft); }
+.coaching-action-diet { border-color: #b9e5d2; background: var(--color-success-soft); color: var(--color-success); }
+.coaching-action-more { border-color: var(--border-color); background: var(--color-surface); color: var(--color-text-muted); }
+.coaching-action-workout:hover:not(:disabled) { background: var(--color-primary); color: #fff; }
+.coaching-action-profile:hover:not(:disabled) { border-color: var(--border-focus); background: var(--color-primary-soft); color: var(--color-primary); }
+.coaching-action-diet:hover:not(:disabled) { background: var(--color-success); color: #fff; }
+.coaching-action-more:hover:not(:disabled) { border-color: var(--border-focus); background: var(--color-primary-soft); color: var(--color-primary); }
+
+.trainee-more {
+  position: relative;
+  display: inline-flex;
+  flex: 0 0 auto;
+}
+
+.trainee-more-menu {
+  top: calc(100% + var(--space-2));
+  inset-inline-end: 0;
+  min-width: 210px;
+  text-align: start;
+}
+
+.trainee-more-menu .trainee-diet-delete {
+  justify-content: flex-start;
+  text-align: start;
+}
+
+@media (max-width: 767px) {
+  .external-trainees-table {
+    min-width: 900px;
+  }
+
+  .external-trainees-table th,
+  .external-trainees-table td {
+    padding-inline: var(--space-3);
+  }
+}
+
+.builder-stepper {
+  display: flex;
+  gap: var(--space-2);
+  overflow-x: auto;
+  padding: var(--space-1) var(--space-1) var(--space-2);
+  scrollbar-width: thin;
+}
+
+.builder-step {
+  display: inline-flex;
+  min-width: 150px;
+  min-height: 34px;
+  align-items: center;
+  gap: var(--space-1);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  padding: 0 var(--space-3);
+  font-size: var(--font-xs);
+  font-weight: var(--weight-semibold);
+  white-space: nowrap;
+  transition: background-color var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.builder-step > span {
+  display: inline-grid;
+  width: 24px;
+  height: 24px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--color-bg-subtle);
+  color: var(--color-text-muted);
+  font-family: var(--font-latin);
+  font-size: var(--font-xs);
+}
+
+.builder-step:hover:not(:disabled) {
+  border-color: var(--border-focus);
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+
+.builder-step.active {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+  color: #fff;
+  box-shadow: 0 5px 14px rgb(23 105 232 / 0.18);
+}
+
+.builder-step.active > span,
+.builder-step.complete > span {
+  background: rgb(255 255 255 / 0.2);
+  color: inherit;
+}
+
+.builder-step.complete {
+  border-color: var(--color-success);
+  background: var(--color-success-soft);
+  color: var(--color-success);
+}
+
+.builder-step:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+/* The renderer supplies a labelled progress track. The old five-pixel bar
+   clipped these labels, which made the workflow stages appear missing. */
+.builder-progress {
+  min-height: 52px;
+  height: auto;
+  overflow: visible;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-muted);
+  padding: var(--space-3) var(--space-4);
+}
+
+.builder-progress-track {
+  display: grid;
+  grid-template-columns: auto minmax(28px, 1fr) auto minmax(28px, 1fr) auto;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.builder-progress-track > span {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  color: var(--color-text-muted);
+  font-size: var(--font-xs);
+  font-weight: var(--weight-semibold);
+  text-align: center;
+}
+
+.builder-progress-track > span.complete,
+.builder-progress-track > span.active {
+  color: var(--color-primary);
+}
+
+.builder-progress-track > span.complete { color: var(--color-success); }
+
+.builder-progress-track > span b {
+  overflow: hidden;
+  max-width: 180px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.builder-progress-track > i {
+  display: block;
+  height: 2px;
+  border-radius: var(--radius-pill);
+  background: var(--border-strong);
+}
+
+.builder-progress-track > i.complete { background: var(--color-success); }
+
+.builder-progress-bar {
+  height: 100%;
+  border-radius: inherit;
+  background: var(--color-primary);
+  transition: width var(--transition-normal);
+}
 .builder-dialog-actions { position: sticky; bottom: calc(var(--space-5) * -1); z-index: var(--z-content); margin-inline: calc(var(--space-5) * -1); margin-bottom: calc(var(--space-5) * -1); background: var(--color-surface); }
 .exercise-selector,
 .meal-selector,
@@ -642,6 +999,53 @@
 .builder-search-native { display: none; }
 
 @media (max-width: 767px) {
+  .builder-stepper {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--space-2);
+    overflow: visible;
+  }
+
+  .builder-step {
+    min-width: 0;
+    min-height: 68px;
+    flex-direction: column;
+    justify-content: center;
+    border-radius: var(--radius-md);
+    padding: var(--space-2);
+    text-align: center;
+    white-space: normal;
+  }
+
+  .builder-step strong {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-height: 1.35;
+  }
+
+  .builder-progress-track {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--space-1);
+  }
+
+  .builder-progress-track > i { display: none; }
+
+  .builder-progress-track > span {
+    min-height: 32px;
+    flex-direction: column;
+    border-radius: var(--radius-sm);
+    background: var(--color-surface);
+    padding: var(--space-1);
+    line-height: 1.25;
+  }
+
+  .builder-progress-track > span b {
+    max-width: 100%;
+    white-space: normal;
+  }
+
   .builder-dialog-actions { padding: var(--space-3) var(--space-4); }
   .builder-stage,
   .builder-calculator,

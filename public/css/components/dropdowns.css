@@ -90,6 +90,39 @@
   color: var(--color-primary);
 }
 
+/* Member advanced actions keep the same compact menu, but each operation has
+   a recognizable semantic accent without adding another row of buttons. */
+.action-menu-item[data-action="freeze"] .action-icon {
+  color: var(--color-warning);
+}
+
+.action-menu-item[data-action="payment"] .action-icon {
+  color: var(--color-success);
+}
+
+.action-menu-item[data-action="qr"] .action-icon {
+  color: var(--color-primary);
+}
+
+.action-menu-item[data-action="print"] .action-menu-print-icon {
+  color: #b86b16;
+}
+
+.action-menu-item[data-action="freeze"]:hover {
+  background: var(--color-warning-soft);
+  color: var(--color-warning);
+}
+
+.action-menu-item[data-action="payment"]:hover {
+  background: var(--color-success-soft);
+  color: var(--color-success);
+}
+
+.action-menu-item[data-action="qr"]:hover {
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+
 .dropdown-item.danger,
 .action-menu button.danger,
 .more-menu button.danger,

@@ -230,6 +230,135 @@
   padding-inline: var(--space-3);
 }
 
+.members-table .table-actions .icon-action[data-action="freeze"],
+.members-list .icon-action[data-action="freeze"] {
+  border-color: #f2d59b;
+  background: var(--color-warning-soft);
+  color: var(--color-warning);
+}
+
+.members-table .table-actions .icon-action[data-action="payment"],
+.members-list .icon-action[data-action="payment"] {
+  border-color: #b9e5d2;
+  background: var(--color-success-soft);
+  color: var(--color-success);
+}
+
+.members-table .table-actions .icon-action[data-action="qr"],
+.members-list .icon-action[data-action="qr"] {
+  border-color: #c4d7fb;
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+
+.members-table .table-actions .icon-action[data-action="freeze"]:hover:not(:disabled),
+.members-list .icon-action[data-action="freeze"]:hover:not(:disabled) {
+  border-color: var(--color-warning);
+  background: var(--color-warning);
+  color: #fff;
+}
+
+.members-table .table-actions .icon-action[data-action="payment"]:hover:not(:disabled),
+.members-list .icon-action[data-action="payment"]:hover:not(:disabled) {
+  border-color: var(--color-success);
+  background: var(--color-success);
+  color: #fff;
+}
+
+.members-table .table-actions .icon-action[data-action="qr"]:hover:not(:disabled),
+.members-list .icon-action[data-action="qr"]:hover:not(:disabled) {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+  color: #fff;
+}
+
+#actionDialog {
+  width: min(560px, calc(100% - 32px));
+}
+
+#actionDialog #dialogTitle {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-xl);
+  font-weight: var(--weight-extrabold);
+}
+
+#actionDialog #dialogDescription {
+  margin: calc(var(--space-2) * -1) 0 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-xs);
+  line-height: 1.7;
+}
+
+#dialogFields {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.freeze-limit-note,
+.payment-dialog-balance {
+  display: grid;
+  gap: var(--space-2);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-muted);
+  padding: var(--space-4);
+}
+
+.freeze-limit-note {
+  grid-template-columns: 42px minmax(0, 1fr);
+  align-items: center;
+  border-color: #f2d59b;
+  background: var(--color-warning-soft);
+}
+
+.freeze-limit-icon {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  border-radius: var(--radius-md);
+  background: rgb(245 158 11 / 0.16);
+  color: var(--color-warning);
+}
+
+.freeze-limit-icon .action-icon {
+  width: 21px;
+  height: 21px;
+}
+
+.freeze-limit-note strong,
+.payment-dialog-balance strong {
+  color: var(--color-text);
+  font-size: var(--font-md);
+}
+
+.freeze-limit-note div {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.freeze-limit-note div span,
+.payment-dialog-balance span {
+  color: var(--color-text-muted);
+  font-size: var(--font-xs);
+}
+
+.payment-dialog-balance {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: center;
+  text-align: center;
+}
+
+.payment-dialog-balance strong {
+  font-family: var(--font-latin);
+  font-variant-numeric: tabular-nums;
+}
+
+.payment-dialog-balance strong.has-debt {
+  color: var(--color-danger);
+}
+
 .members-table .table-action-label {
   overflow: visible;
   white-space: nowrap;

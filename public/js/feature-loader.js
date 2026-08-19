@@ -27,7 +27,7 @@
             scripts: [
                 '/js/exercise-assets.js?v=5',
                 '/js/muscle-assets.js?v=3',
-                '/js/pages/coaching/coaching.js?v=13'
+                '/js/pages/coaching/coaching.js?v=14'
             ]
         },
         print: {

@@ -167,16 +167,30 @@
 
   .page-tab {
     min-width: 0;
-    min-height: 56px;
+    min-height: 58px;
     flex-direction: column;
     gap: 3px;
-    border: 1px solid transparent;
+    border: 1px solid rgb(255 255 255 / 0.14);
     border-radius: var(--radius-md);
+    background: rgb(255 255 255 / 0.06);
     padding: 6px 3px;
     font-size: 10px;
     line-height: 1.25;
     text-align: center;
     white-space: normal;
+    box-shadow: 0 2px 6px rgb(2 12 27 / 0.16);
+  }
+
+  .page-tab:hover {
+    border-color: rgb(133 181 255 / 0.5);
+    background: rgb(255 255 255 / 0.12);
+  }
+
+  .page-tab.active,
+  .page-tab[aria-selected="true"] {
+    border-color: rgb(126 177 255 / 0.85);
+    background: var(--color-primary);
+    box-shadow: 0 5px 14px rgb(23 105 232 / 0.28);
   }
 
   .page-tab .ui-icon {
