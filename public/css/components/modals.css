@@ -102,6 +102,10 @@ dialog[open] {
 
 dialog > .dialog-body,
 dialog > form.dialog-body {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
   width: 100%;
   max-width: 100%;
   max-height: calc(100vh - 48px);
@@ -109,6 +113,33 @@ dialog > form.dialog-body {
   overscroll-behavior: contain;
   scrollbar-color: var(--border-strong) transparent;
   scrollbar-width: thin;
+}
+
+/* Every native dialog uses the same three visual zones. The body owns the
+   scroll, while the heading and actions remain readable above it instead of
+   covering fields when a form is taller than the viewport. */
+dialog > .dialog-body > .details-dialog-head,
+dialog > form.dialog-body > .details-dialog-head {
+  position: sticky;
+  top: calc(var(--space-5) * -1);
+  z-index: var(--z-content);
+  flex: 0 0 auto;
+  margin: calc(var(--space-5) * -1) calc(var(--space-5) * -1) 0;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--color-surface);
+  padding: var(--space-5) var(--space-5) var(--space-4);
+}
+
+dialog > .dialog-body > .dialog-actions,
+dialog > form.dialog-body > .dialog-actions {
+  position: sticky;
+  bottom: calc(var(--space-5) * -1);
+  z-index: var(--z-content);
+  flex: 0 0 auto;
+  margin: 0 calc(var(--space-5) * -1) calc(var(--space-5) * -1);
+  border-top: 1px solid var(--border-color);
+  background: var(--color-surface);
+  padding: var(--space-4) var(--space-5);
 }
 
 dialog > .dialog-body::-webkit-scrollbar,
@@ -235,6 +266,20 @@ body .swal2-close:hover {
   dialog > form.dialog-body {
     max-height: calc(100vh - 24px);
     padding: var(--space-4);
+  }
+
+  dialog > .dialog-body > .details-dialog-head,
+  dialog > form.dialog-body > .details-dialog-head {
+    top: calc(var(--space-4) * -1);
+    margin: calc(var(--space-4) * -1) calc(var(--space-4) * -1) 0;
+    padding: var(--space-4) var(--space-4) var(--space-3);
+  }
+
+  dialog > .dialog-body > .dialog-actions,
+  dialog > form.dialog-body > .dialog-actions {
+    bottom: calc(var(--space-4) * -1);
+    margin: 0 calc(var(--space-4) * -1) calc(var(--space-4) * -1);
+    padding: var(--space-3) var(--space-4);
   }
 
   dialog .details-dialog-head {

@@ -224,7 +224,6 @@
 #coachingProfileContent {
   display: grid;
   gap: var(--space-5);
-  padding-top: var(--space-5);
 }
 
 .details-summary,
