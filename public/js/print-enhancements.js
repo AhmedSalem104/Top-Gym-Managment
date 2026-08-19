@@ -36,9 +36,7 @@
             }
 
             function assetUrl(path) {
-                const url = new URL(path, window.location.href);
-                if (url.pathname === '/css/print.css') url.searchParams.set('v', '7');
-                return url.href;
+                return new URL(path, window.location.href).href;
             }
 
             function planLabel(value) { return PLAN_LABELS[value] || value || '—'; }
@@ -121,21 +119,21 @@
                 const memberInfo = `<section class="print-section">
                     <div class="print-section-title"><div><span class="print-section-kicker">بيانات العميل</span><h2>بيانات المشترك</h2></div></div>
                     <div class="print-member-hero"><span class="print-member-avatar">${escapeHtml(initials(memberName))}</span><div class="print-member-copy"><h2>${escapeHtml(memberName)}</h2><p>${escapeHtml(member.phone || '—')}${member.email ? ` · ${escapeHtml(member.email)}` : ''}</p></div></div>
-                    <div class="print-info-grid" style="margin-top: 10px;">${infoItem('رقم العضو', `#${member.id || '—'}`)}${infoItem('تاريخ التسجيل', printDate(member.registrationDate))}${infoItem('البريد الإلكتروني', member.email || '—')}${infoItem('ملاحظات العضو', member.notes || '—')}</div>
+                    <div class="print-info-grid">${infoItem('رقم العضو', `#${member.id || '—'}`)}${infoItem('تاريخ التسجيل', printDate(member.registrationDate))}${infoItem('البريد الإلكتروني', member.email || '—')}${infoItem('ملاحظات العضو', member.notes || '—')}</div>
                 </section>`;
                 const membershipInfo = membership ? `<section class="print-section">
                     <div class="print-section-title"><div><span class="print-section-kicker">تفاصيل العضوية</span><h2>${mode === 'new' ? 'تفاصيل الاشتراك الجديد' : 'الاشتراك الحالي'}</h2></div><span class="print-status ${escapeHtml(membership.status)}">${escapeHtml(statusLabel(membership.status))}</span></div>
                     <div class="print-info-grid">${infoItem('الباقة', planLabel(membership.plan))}${infoItem('نوع العضوية', typeLabel(membership.type))}${infoItem('تاريخ البداية', printDate(membership.startDate))}${infoItem('تاريخ الانتهاء', printDate(membership.effectiveEndDate))}${infoItem('الأيام المتبقية', membership.status === 'expired' ? `منتهية منذ ${Math.abs(Number(membership.daysRemaining || 0))} يوم` : `${Number(membership.daysRemaining || 0)} يوم`)}${infoItem('التجميد', `${Number(membership.freezeCount || 0)}/${Number(membership.freezeLimit || 3)}`)}${infoItem('تاريخ الدفع', printDate(membership.paidAt))}${infoItem('طريقة الدفع', paymentLabel(membership.paymentMethod))}</div>
-                    <div class="print-billing-grid" style="margin-top: 10px;">${billingItem('السعر الأساسي', money(membership.listPrice))}${billingItem('الخصم', money(membership.discountAmount))}${billingItem('المستحق', money(membership.amountDue))}${billingItem('المتبقي', money(membership.amountRemaining), 'remaining')}</div>
-                    ${membership.notes ? `<p class="print-notes" style="margin-top: 10px;"><strong>ملاحظات الاشتراك:</strong> ${escapeHtml(membership.notes)}</p>` : ''}
+                    <div class="print-billing-grid">${billingItem('السعر الأساسي', money(membership.listPrice))}${billingItem('الخصم', money(membership.discountAmount))}${billingItem('المستحق', money(membership.amountDue))}${billingItem('المتبقي', money(membership.amountRemaining), 'remaining')}</div>
+                    ${membership.notes ? `<p class="print-notes"><strong>ملاحظات الاشتراك:</strong> ${escapeHtml(membership.notes)}</p>` : ''}
                 </section>` : '<section class="print-section"><div class="print-empty">لا يوجد اشتراك مسجل لهذا العضو.</div></section>';
-                const history = mode === 'full' ? `<section class="print-section"><div class="print-section-title"><div><span class="print-section-kicker">السجل المالي</span><h2>سجل المدفوعات والإيصالات</h2></div></div><div class="print-billing-grid print-payment-summary">${billingItem('إجمالي المستحق', money(data.financialSummary?.totalDue))}${billingItem('إجمالي المدفوع', money(data.financialSummary?.totalPaid))}${billingItem('إجمالي المتبقي', money(data.financialSummary?.totalRemaining), 'remaining')}${billingItem('عدد الإيصالات', String(data.financialSummary?.paidTransactionCount || 0))}</div><div class="print-table-wrap" style="margin-top: 10px;"><table class="print-table"><thead><tr><th>رقم الإيصال</th><th>التاريخ</th><th>العملية</th><th>الاشتراك</th><th>قيمة العملية</th><th>المتبقي</th><th>طريقة الدفع</th><th>ملاحظات</th></tr></thead><tbody>${paymentHistory(data)}</tbody></table></div></section>
+                const history = mode === 'full' ? `<section class="print-section"><div class="print-section-title"><div><span class="print-section-kicker">السجل المالي</span><h2>سجل المدفوعات والإيصالات</h2></div></div><div class="print-billing-grid print-payment-summary">${billingItem('إجمالي المستحق', money(data.financialSummary?.totalDue))}${billingItem('إجمالي المدفوع', money(data.financialSummary?.totalPaid))}${billingItem('إجمالي المتبقي', money(data.financialSummary?.totalRemaining), 'remaining')}${billingItem('عدد الإيصالات', String(data.financialSummary?.paidTransactionCount || 0))}</div><div class="print-table-wrap"><table class="print-table"><thead><tr><th>رقم الإيصال</th><th>التاريخ</th><th>العملية</th><th>الاشتراك</th><th>قيمة العملية</th><th>المتبقي</th><th>طريقة الدفع</th><th>ملاحظات</th></tr></thead><tbody>${paymentHistory(data)}</tbody></table></div></section>
                     <section class="print-section"><div class="print-section-title"><div><span class="print-section-kicker">السجل الكامل</span><h2>سجل الاشتراكات والتجديدات</h2></div></div><div class="print-table-wrap"><table class="print-table"><thead><tr><th>الباقة والمدة</th><th>الفترة</th><th>الحالة</th><th>الحساب</th><th>الدفع</th></tr></thead><tbody>${membershipHistory(data)}</tbody></table></div></section>
                     <section class="print-section"><div class="print-section-title"><div><span class="print-section-kicker">سجل التجميد</span><h2>عمليات التجميد</h2></div></div><div class="print-table-wrap"><table class="print-table"><thead><tr><th>البداية</th><th>النهاية</th><th>الاستئناف</th><th>المدة</th><th>السبب</th></tr></thead><tbody>${freezeHistory(data)}</tbody></table></div></section>
                     <section class="print-section"><div class="print-section-title"><div><span class="print-section-kicker">سجل النشاط</span><h2>كل العمليات المسجلة</h2></div></div><div class="print-table-wrap"><table class="print-table"><thead><tr><th>التاريخ</th><th>العملية</th><th>التفاصيل</th></tr></thead><tbody>${eventHistory(data)}</tbody></table></div></section>` : '';
                 const printHeader = `<header class="print-header"><div class="print-brand"><img class="print-logo" src="${assetUrl('/favicon.svg?v=2')}" alt=""><div class="print-brand-copy"><h1 class="print-brand-title">TOP GYM</h1></div></div><div class="print-document-meta"><strong>${escapeHtml(title)}</strong><span>رقم العضو: #${escapeHtml(member.id || '—')}</span><span>تاريخ الطباعة: ${escapeHtml(printDate(new Date()))}</span></div></header>`;
                 const printFooter = `<footer class="print-footer"><div class="print-footer-management"><strong>إدارة الجيم</strong><span>C/ Ahmed Abdel Hamid · C/ Karim Abdelhamid</span></div><span class="print-signature">اعتماد الإدارة</span></footer>`;
-                return `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${escapeHtml(title)} - TOP GYM</title><link rel="stylesheet" href="${assetUrl('/css/print.css?v=5')}"></head><body><main class="print-sheet">${printHeader}<div class="print-accent"></div>${memberInfo}${membershipInfo}${history}${printFooter}</main></body></html>`;
+                return `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${escapeHtml(title)} - TOP GYM</title></head><body><main class="print-sheet">${printHeader}<div class="print-accent"></div>${memberInfo}${membershipInfo}${history}${printFooter}</main></body></html>`;
             }
 
             function buildPaymentReceiptDocument(data, payment) {
@@ -143,10 +141,10 @@
                 const membership = (data.memberships || []).find((item) => Number(item.id) === Number(payment.membershipId)) || currentMembership(data);
                 const title = 'إيصال دفع';
                 const printHeader = `<header class="print-header"><div class="print-brand"><img class="print-logo" src="${assetUrl('/favicon.svg?v=2')}" alt=""><div class="print-brand-copy"><h1 class="print-brand-title">TOP GYM</h1></div></div><div class="print-document-meta"><strong>${title}</strong><span>رقم الإيصال: ${escapeHtml(payment.receiptNumber || `TG-${String(payment.id).padStart(6, '0')}`)}</span><span>تاريخ الطباعة: ${escapeHtml(printDate(new Date()))}</span></div></header>`;
-                const memberInfo = `<section class="print-section"><div class="print-section-title"><div><span class="print-section-kicker">بيانات العميل</span><h2>إيصال استلام دفعة</h2></div><span class="print-receipt-id">${escapeHtml(payment.receiptNumber || '—')}</span></div><div class="print-member-hero"><span class="print-member-avatar">${escapeHtml(initials(member.fullName))}</span><div class="print-member-copy"><h2>${escapeHtml(member.fullName || 'عضو الجيم')}</h2><p>${escapeHtml(member.phone || '—')}</p></div></div><div class="print-info-grid" style="margin-top: 10px;">${infoItem('رقم العضو', `#${member.id || '—'}`)}${infoItem('تاريخ العملية', printDateTime(payment.transactionDate || payment.createdAt))}${infoItem('الباقة', planLabel(payment.plan))}${infoItem('النوع', typeLabel(payment.type))}</div></section>`;
+                const memberInfo = `<section class="print-section"><div class="print-section-title"><div><span class="print-section-kicker">بيانات العميل</span><h2>إيصال استلام دفعة</h2></div><span class="print-receipt-id">${escapeHtml(payment.receiptNumber || '—')}</span></div><div class="print-member-hero"><span class="print-member-avatar">${escapeHtml(initials(member.fullName))}</span><div class="print-member-copy"><h2>${escapeHtml(member.fullName || 'عضو الجيم')}</h2><p>${escapeHtml(member.phone || '—')}</p></div></div><div class="print-info-grid">${infoItem('رقم العضو', `#${member.id || '—'}`)}${infoItem('تاريخ العملية', printDateTime(payment.transactionDate || payment.createdAt))}${infoItem('الباقة', planLabel(payment.plan))}${infoItem('النوع', typeLabel(payment.type))}</div></section>`;
                 const paymentInfo = `<section class="print-section"><div class="print-section-title"><div><span class="print-section-kicker">تفاصيل العملية</span><h2>${escapeHtml(PAYMENT_TRANSACTION_LABELS[payment.transactionType] || 'دفعة')}</h2></div></div><div class="print-info-grid">${infoItem('طريقة الدفع', paymentLabel(payment.paymentMethod))}${infoItem('تاريخ الاشتراك', printDate(membership?.startDate))}${infoItem('تاريخ الانتهاء', printDate(membership?.effectiveEndDate))}${infoItem('المستحق', money(payment.amountDue))}</div><div class="print-receipt-amount"><span>قيمة العملية</span><strong>${escapeHtml(money(payment.amountPaid))}</strong><small>الرصيد المتبقي بعد العملية: ${escapeHtml(money(payment.amountRemaining))}</small></div>${payment.notes ? `<p class="print-notes"><strong>ملاحظات:</strong> ${escapeHtml(payment.notes)}</p>` : ''}</section>`;
                 const printFooter = `<footer class="print-footer"><div class="print-footer-management"><strong>إدارة الجيم</strong><span>C/ Ahmed Abdel Hamid · C/ Karim Abdelhamid</span></div><span class="print-signature">اعتماد الإدارة</span></footer>`;
-                return `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${title} - TOP GYM</title><link rel="stylesheet" href="${assetUrl('/css/print.css?v=5')}"></head><body><main class="print-sheet">${printHeader}<div class="print-accent"></div>${memberInfo}${paymentInfo}${printFooter}</main></body></html>`;
+                return `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${title} - TOP GYM</title></head><body><main class="print-sheet">${printHeader}<div class="print-accent"></div>${memberInfo}${paymentInfo}${printFooter}</main></body></html>`;
             }
 
             function decoratePrintDocumentHtml(html) {
@@ -204,14 +202,10 @@
                 const parsed = new DOMParser().parseFromString(buildPrintDocument(data, mode), 'text/html');
                 const sheet = parsed.querySelector('.print-sheet');
                 if (!sheet) throw new Error('تعذر تجهيز قالب PDF.');
-                const cssResponse = await fetch(assetUrl('/css/print.css?v=5'));
-                const cssText = await cssResponse.text();
                 const holder = document.createElement('div');
                 holder.dir = 'rtl';
                 holder.style.cssText = 'position:fixed;left:-100000px;top:0;width:190mm;min-height:1px;overflow:visible;background:#fff;z-index:-1;';
-                const style = document.createElement('style');
-                style.textContent = cssText;
-                holder.append(style, sheet);
+                holder.append(sheet);
                 document.body.append(holder);
                 try {
                     if (document.fonts?.ready) await document.fonts.ready;
@@ -401,7 +395,7 @@
                 const muscleEntries = Object.entries(muscles).sort(([, first], [, second]) => second - first);
                 const maxMuscleSets = Math.max(1, ...muscleEntries.map(([, count]) => count));
                 const distribution = muscleEntries.length
-                    ? '<div class="print-system-distribution">' + muscleEntries.map(([name, count]) => '<div class="print-system-bar"><div><span>' + escapeHtml(name) + '</span><b>' + coachingNumber(count) + ' مجموعة</b></div><i><em style="width:' + Math.round((count / maxMuscleSets) * 100) + '%"></em></i></div>').join('') + '</div>'
+                    ? '<div class="print-system-distribution">' + muscleEntries.map(([name, count]) => '<div class="print-system-bar"><div><span>' + escapeHtml(name) + '</span><b>' + coachingNumber(count) + ' مجموعة</b></div><i><em></em></i></div>').join('') + '</div>'
                     : '<div class="print-empty">لم يتم تحديد توزيع العضلات.</div>';
                 const routineSections = routines.length ? routines.map((routine, routineIndex) => {
                     const rows = (routine.exercises || []).map((exercise) => {
@@ -454,7 +448,7 @@
                 const title = type === 'diet' ? 'خطة تغذية رياضية' : 'برنامج تدريب رياضي';
                 const content = type === 'diet' ? dietPrintSections(system) : workoutPrintSections(system, libraryItems);
                 const footer = '<footer class="print-footer"><div class="print-footer-management"><strong>إدارة الجيم</strong><span>C/ Ahmed Abdel Hamid · C/ Karim Abdelhamid</span></div><span class="print-signature">اعتماد الإدارة</span></footer>';
-                return '<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>' + escapeHtml(title) + ' - TOP GYM</title><link rel="stylesheet" href="' + assetUrl('/css/print.css?v=5') + '"></head><body><main class="print-sheet print-system-document">' + coachingHeader(title, system) + '<div class="print-accent"></div>' + coachingMemberHero(system, type) + content + footer + '</main></body></html>';
+                return '<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>' + escapeHtml(title) + ' - TOP GYM</title></head><body><main class="print-sheet print-system-document">' + coachingHeader(title, system) + '<div class="print-accent"></div>' + coachingMemberHero(system, type) + content + footer + '</main></body></html>';
             }
 
             async function fetchCoachingSystem(id, type) {
@@ -472,7 +466,7 @@
             }
 
             function writePrintLoading(printWindow, label = 'جاري تجهيز مستند الطباعة…') {
-                writeWindow(printWindow, '<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><link rel="stylesheet" href="' + assetUrl('/css/print.css?v=5') + '"></head><body><div class="print-loading">' + escapeHtml(label) + '</div></body></html>');
+                writeWindow(printWindow, '<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"></head><body><div class="print-loading">' + escapeHtml(label) + '</div></body></html>');
             }
 
             function notifyPrint(message, type = 'success') {
@@ -491,15 +485,10 @@
                 const parsed = new DOMParser().parseFromString(html, 'text/html');
                 const sheet = parsed.querySelector('.print-sheet');
                 if (!sheet) throw new Error('تعذر تجهيز قالب PDF.');
-                const cssResponse = await fetch(assetUrl('/css/print.css?v=6'));
-                if (!cssResponse.ok) throw new Error('تعذر تحميل تنسيق ملف PDF.');
-                const cssText = await cssResponse.text();
                 const holder = document.createElement('div');
                 holder.dir = 'rtl';
                 holder.style.cssText = 'position:fixed;left:-100000px;top:0;width:190mm;min-height:1px;overflow:visible;background:#fff;z-index:-1;';
-                const style = document.createElement('style');
-                style.textContent = cssText;
-                holder.append(style, sheet);
+                holder.append(sheet);
                 document.body.append(holder);
                 try {
                     if (document.fonts?.ready) await document.fonts.ready;
@@ -565,7 +554,7 @@
                 const plansSection = `<section class="print-section print-pricing-section"><div class="print-section-title"><div><span class="print-section-kicker">الأسعار</span><h2>مصفوفة أسعار الباقات</h2></div><span class="print-table-sub">الأسعار بالجنيه المصري</span></div><div class="print-table-wrap"><table class="print-table"><thead><tr><th>الباقة</th><th>السعر الشهري</th>${planHeaders}<th>الحالة</th></tr></thead><tbody>${planRows || emptyPlanRows}</tbody></table></div></section>`;
                 const typesSection = `<section class="print-section print-pricing-section"><div class="print-section-title"><div><span class="print-section-kicker">المدد</span><h2>أنواع العضويات وصلاحيتها</h2></div></div><div class="print-table-wrap"><table class="print-table"><thead><tr><th>نوع العضوية</th><th>مدة الصلاحية</th><th>معامل السعر</th><th>الحالة</th></tr></thead><tbody>${typeRows || emptyTypeRows}</tbody></table></div></section>`;
                 const footer = '<footer class="print-footer"><div class="print-footer-management"><strong>إدارة الجيم</strong><span>C/ Ahmed Abdel Hamid · C/ Karim Abdelhamid</span></div><span class="print-signature">اعتماد الإدارة</span></footer>';
-                return `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>الاشتراكات والباقات - TOP GYM</title><link rel="stylesheet" href="${assetUrl('/css/print.css?v=6')}"></head><body><main class="print-sheet print-pricing-document">${printHeader}<div class="print-accent"></div>${summary}${plansSection}${typesSection}${footer}</main></body></html>`;
+                return `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>الاشتراكات والباقات - TOP GYM</title></head><body><main class="print-sheet print-pricing-document">${printHeader}<div class="print-accent"></div>${summary}${plansSection}${typesSection}${footer}</main></body></html>`;
             }
 
             async function downloadPricingPdf() {
@@ -604,7 +593,7 @@
                     printWindow.onafterprint = () => printWindow.close();
                     window.setTimeout(async () => { await waitForPrintWindowImages(printWindow); printWindow.focus(); printWindow.print(); }, 100);
                 } catch (error) {
-                    writeWindow(printWindow, '<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><link rel="stylesheet" href="' + assetUrl('/css/print.css?v=5') + '"></head><body><div class="print-error">' + escapeHtml(error.message || 'تعذر تجهيز مستند الطباعة.') + '</div></body></html>');
+                    writeWindow(printWindow, '<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"></head><body><div class="print-error">' + escapeHtml(error.message || 'تعذر تجهيز مستند الطباعة.') + '</div></body></html>');
                 }
             }
 
@@ -625,7 +614,7 @@
                     printWindow.onafterprint = () => printWindow.close();
                     window.setTimeout(async () => { await waitForPrintWindowImages(printWindow); printWindow.focus(); printWindow.print(); }, 100);
                 } catch (error) {
-                    writeWindow(printWindow, '<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><link rel="stylesheet" href="' + assetUrl('/css/print.css?v=5') + '"></head><body><div class="print-error">' + escapeHtml(error.message || 'تعذر تجهيز المسودة.') + '</div></body></html>');
+                    writeWindow(printWindow, '<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"></head><body><div class="print-error">' + escapeHtml(error.message || 'تعذر تجهيز المسودة.') + '</div></body></html>');
                 }
             }
 
@@ -660,7 +649,7 @@
                 const system = { id: member.id, memberName: member.fullName, memberPhone: member.phone, name: 'ملف التدريب والتغذية' };
                 const hero = '<section class="print-section print-system-hero"><div class="print-system-hero-copy"><span class="print-section-kicker">ملف العميل</span><h2>' + escapeHtml(member.fullName || 'العميل') + '</h2><p>' + escapeHtml(member.phone || '—') + (member.email ? ' · ' + escapeHtml(member.email) : '') + '</p></div><div class="print-system-hero-title"><span>التنفيذ والمتابعة</span><strong>' + escapeHtml(member.registrationDate ? printDate(member.registrationDate) : 'ملف نشط') + '</strong></div></section>';
                 const footer = '<footer class="print-footer"><div class="print-footer-management"><strong>إدارة الجيم</strong><span>C/ Ahmed Abdel Hamid · C/ Karim Abdelhamid</span></div><span class="print-signature">اعتماد الإدارة</span></footer>';
-                return '<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>ملف التدريب والتغذية - TOP GYM</title><link rel="stylesheet" href="' + assetUrl('/css/print.css?v=5') + '"></head><body><main class="print-sheet print-system-document">' + coachingHeader('ملف التدريب والتغذية الكامل', system) + '<div class="print-accent"></div>' + hero + '<section class="print-section"><div class="print-system-kpi-grid">' + coachingKpi('برامج التدريب', coachingNumber(workouts.length)) + coachingKpi('خطط التغذية', coachingNumber(diets.length)) + coachingKpi('القياسات', coachingNumber((overview.measurements || []).length)) + coachingKpi('الجلسات المكتملة', coachingNumber(progress.completedSessions || progress.sessionCount)) + coachingKpi('تسجيلات الوجبات', coachingNumber(progress.mealLogCount)) + coachingKpi('الوزن الحالي', progress.currentWeight == null ? '—' : coachingNumber(progress.currentWeight, 1) + ' كجم') + '</div></section>' + section('الأنظمة المحفوظة', 'برامج التدريب', '<th>البرنامج والهدف</th><th>الفترة</th><th>الحالة</th><th>المحتوى</th>', workoutRows, 'لا توجد برامج تدريب.') + section('الأنظمة المحفوظة', 'خطط التغذية', '<th>الخطة والسعرات</th><th>الفترة</th><th>الحالة</th><th>المحتوى</th>', dietRows, 'لا توجد خطط تغذية.') + section('المتابعة البدنية', 'القياسات المسجلة', '<th>التاريخ</th><th>الوزن</th><th>الطول</th><th>نسبة الدهون</th>', measurementRows, 'لا توجد قياسات.') + section('التنفيذ', 'جلسات التدريب', '<th>البرنامج</th><th>اليوم</th><th>الحالة</th><th>وقت البدء</th>', sessionRows, 'لا توجد جلسات.') + section('التنفيذ', 'سجل الوجبات', '<th>الطعام</th><th>الوجبة</th><th>السعرات</th><th>وقت التسجيل</th>', mealRows, 'لا توجد وجبات مسجلة.') + (member.notes ? '<section class="print-section"><div class="print-section-title"><div><span class="print-section-kicker">ملاحظات العميل</span><h2>ملاحظات الملف</h2></div></div><p class="print-notes">' + escapeHtml(member.notes) + '</p></section>' : '') + footer + '</main></body></html>';
+                return '<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>ملف التدريب والتغذية - TOP GYM</title></head><body><main class="print-sheet print-system-document">' + coachingHeader('ملف التدريب والتغذية الكامل', system) + '<div class="print-accent"></div>' + hero + '<section class="print-section"><div class="print-system-kpi-grid">' + coachingKpi('برامج التدريب', coachingNumber(workouts.length)) + coachingKpi('خطط التغذية', coachingNumber(diets.length)) + coachingKpi('القياسات', coachingNumber((overview.measurements || []).length)) + coachingKpi('الجلسات المكتملة', coachingNumber(progress.completedSessions || progress.sessionCount)) + coachingKpi('تسجيلات الوجبات', coachingNumber(progress.mealLogCount)) + coachingKpi('الوزن الحالي', progress.currentWeight == null ? '—' : coachingNumber(progress.currentWeight, 1) + ' كجم') + '</div></section>' + section('الأنظمة المحفوظة', 'برامج التدريب', '<th>البرنامج والهدف</th><th>الفترة</th><th>الحالة</th><th>المحتوى</th>', workoutRows, 'لا توجد برامج تدريب.') + section('الأنظمة المحفوظة', 'خطط التغذية', '<th>الخطة والسعرات</th><th>الفترة</th><th>الحالة</th><th>المحتوى</th>', dietRows, 'لا توجد خطط تغذية.') + section('المتابعة البدنية', 'القياسات المسجلة', '<th>التاريخ</th><th>الوزن</th><th>الطول</th><th>نسبة الدهون</th>', measurementRows, 'لا توجد قياسات.') + section('التنفيذ', 'جلسات التدريب', '<th>البرنامج</th><th>اليوم</th><th>الحالة</th><th>وقت البدء</th>', sessionRows, 'لا توجد جلسات.') + section('التنفيذ', 'سجل الوجبات', '<th>الطعام</th><th>الوجبة</th><th>السعرات</th><th>وقت التسجيل</th>', mealRows, 'لا توجد وجبات مسجلة.') + (member.notes ? '<section class="print-section"><div class="print-section-title"><div><span class="print-section-kicker">ملاحظات العميل</span><h2>ملاحظات الملف</h2></div></div><p class="print-notes">' + escapeHtml(member.notes) + '</p></section>' : '') + footer + '</main></body></html>';
             }
 
             async function printCoachingOverview(memberId, existingWindow = null) {
@@ -676,7 +665,7 @@
                     printWindow.onafterprint = () => printWindow.close();
                     window.setTimeout(() => { printWindow.focus(); printWindow.print(); }, 450);
                 } catch (error) {
-                    writeWindow(printWindow, '<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><link rel="stylesheet" href="' + assetUrl('/css/print.css?v=5') + '"></head><body><div class="print-error">' + escapeHtml(error.message || 'تعذر تجهيز الملف.') + '</div></body></html>');
+                    writeWindow(printWindow, '<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"></head><body><div class="print-error">' + escapeHtml(error.message || 'تعذر تجهيز الملف.') + '</div></body></html>');
                 }
             }
 
@@ -698,14 +687,14 @@
                     window.alert('يرجى السماح بالنوافذ المنبثقة لإتمام الطباعة.');
                     return;
                 }
-                writeWindow(printWindow, `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><link rel="stylesheet" href="${assetUrl('/css/print.css?v=5')}"></head><body><div class="print-loading">جاري تجهيز مستند الطباعة…</div></body></html>`);
+                writeWindow(printWindow, `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"></head><body><div class="print-loading">جاري تجهيز مستند الطباعة…</div></body></html>`);
                 try {
                     const data = await fetchMemberDetails(memberId);
                     writeWindow(printWindow, buildPrintDocument(data, mode));
                     printWindow.onafterprint = () => printWindow.close();
                     window.setTimeout(() => { printWindow.focus(); printWindow.print(); }, 450);
                 } catch (error) {
-                    writeWindow(printWindow, `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><link rel="stylesheet" href="${assetUrl('/css/print.css?v=5')}"></head><body><div class="print-error">${escapeHtml(error.message)}</div></body></html>`);
+                    writeWindow(printWindow, `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"></head><body><div class="print-error">${escapeHtml(error.message)}</div></body></html>`);
                 }
             }
 
@@ -715,7 +704,7 @@
                     window.alert('يرجى السماح بالنوافذ المنبثقة لإتمام طباعة الإيصال.');
                     return;
                 }
-                writeWindow(printWindow, `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><link rel="stylesheet" href="${assetUrl('/css/print.css?v=5')}"></head><body><div class="print-loading">جاري تجهيز الإيصال…</div></body></html>`);
+                writeWindow(printWindow, `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"></head><body><div class="print-loading">جاري تجهيز الإيصال…</div></body></html>`);
                 try {
                     const data = await fetchMemberDetails(memberId);
                     const payment = (data.payments || []).find((item) => Number(item.id) === Number(paymentId));
@@ -724,7 +713,7 @@
                     printWindow.onafterprint = () => printWindow.close();
                     window.setTimeout(() => { printWindow.focus(); printWindow.print(); }, 450);
                 } catch (error) {
-                    writeWindow(printWindow, `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><link rel="stylesheet" href="${assetUrl('/css/print.css?v=5')}"></head><body><div class="print-error">${escapeHtml(error.message)}</div></body></html>`);
+                    writeWindow(printWindow, `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"></head><body><div class="print-error">${escapeHtml(error.message)}</div></body></html>`);
                 }
             }
 

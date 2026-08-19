@@ -365,7 +365,7 @@
         const bars = rows.map((row) => {
             const collectedHeight = Math.max(row.collected ? 6 : 2, (Number(row.collected || 0) / max) * 100);
             const expenseHeight = Math.max(row.expenses ? 6 : 2, (Number(row.expenses || 0) / max) * 100);
-            return `<div class="reports-day"><div class="reports-day-bars"><span class="collected" style="height:${collectedHeight.toFixed(2)}%" title="تحصيل ${money(row.collected)}"></span><span class="expenses" style="height:${expenseHeight.toFixed(2)}%" title="مصروفات ${money(row.expenses)}"></span></div><small>${escapeHtml(dateOnly(row.date).replace(/\s*٢٠٢[٤-٦]/, ''))}</small><b>${number(Number(row.newMembers || 0) + Number(row.newMemberships || 0))}</b></div>`;
+            return `<div class="reports-day"><div class="reports-day-bars"><span class="collected" title="تحصيل ${money(row.collected)}"></span><span class="expenses" title="مصروفات ${money(row.expenses)}"></span></div><small>${escapeHtml(dateOnly(row.date).replace(/\s*٢٠٢[٤-٦]/, ''))}</small><b>${number(Number(row.newMembers || 0) + Number(row.newMemberships || 0))}</b></div>`;
         }).join('');
         return `<div class="reports-timeline-wrap"><div class="reports-mini-chart">${bars}</div><div class="reports-chart-legend"><span><i class="collected"></i>التحصيل</span><span><i class="expenses"></i>المصروفات</span><span>الرقم = أعضاء واشتراكات جديدة</span></div></div>`;
     }

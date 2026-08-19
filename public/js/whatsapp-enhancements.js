@@ -127,7 +127,7 @@
                     const appLink = document.createElement('a');
                     appLink.href = `whatsapp://send?phone=${phone}&text=${encodeURIComponent(message)}`;
                     appLink.setAttribute('aria-hidden', 'true');
-                    appLink.style.display = 'none';
+                    appLink.hidden = true;
                     document.body.append(appLink);
                     appLink.click();
                     appLink.remove();

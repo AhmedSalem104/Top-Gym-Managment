@@ -3,7 +3,6 @@
     window.__topGymFeatureLoaderLoaded = true;
 
     const scriptPromises = new Map();
-    const stylePromises = new Map();
     const featurePromises = new Map();
 
     const features = {
@@ -17,14 +16,14 @@
             scripts: ['/js/monthly-finance.js?v=15']
         },
         members: {
-            styles: ['/css/attendance.css?v=6'],
+            styles: [],
             scripts: [
                 '/js/action-menu.js?v=4',
                 '/js/attendance.js?v=8'
             ]
         },
         coaching: {
-            styles: ['/css/coaching.css?v=10', '/css/muscle-assets.css?v=2'],
+            styles: [],
             scripts: [
                 '/js/exercise-assets.js?v=5',
                 '/js/muscle-assets.js?v=3',
@@ -37,25 +36,23 @@
         },
         expenses: {
             dependencies: ['finance'],
-            styles: ['/css/operations.css?v=6'],
+            styles: [],
             scripts: []
         },
         reports: {
-            styles: ['/css/operations.css?v=6'],
+            styles: [],
             scripts: ['/js/reports.js?v=8']
         },
         management: {
-            // auth.css is a core stylesheet loaded in <head>; loading an older
-            // second copy here caused a visible style flash on Management.
-            styles: ['/css/operations.css?v=6'],
+            styles: [],
             scripts: ['/js/backup-enhancements.js?v=9', '/js/auth-users.js?v=1']
         },
         attendance: {
-            styles: ['/css/attendance.css?v=6'],
+            styles: [],
             scripts: ['/js/attendance.js?v=8']
         },
         library: {
-            styles: ['/css/library.css?v=10', '/css/muscle-assets.css?v=2'],
+            styles: [],
             scripts: ['/js/exercise-assets.js?v=5', '/js/muscle-assets.js?v=3', '/js/library.js?v=12']
         },
         trainees: {
@@ -97,30 +94,6 @@
         return promise;
     }
 
-    function loadStyle(source) {
-        if (stylePromises.has(source)) return stylePromises.get(source);
-        const promise = new Promise((resolve, reject) => {
-            const existing = [...document.querySelectorAll('link[data-top-gym-style]')]
-                .find((link) => link.dataset.topGymStyle === source);
-            if (existing) {
-                resolve(existing);
-                return;
-            }
-            const link = document.createElement('link');
-            link.rel = 'stylesheet';
-            link.href = source;
-            link.dataset.topGymStyle = source;
-            link.onload = () => resolve(link);
-            link.onerror = () => {
-                link.remove();
-                reject(new Error(`تعذر تحميل تنسيق الشاشة ${source}.`));
-            };
-            document.head.appendChild(link);
-        });
-        stylePromises.set(source, promise);
-        return promise;
-    }
-
     async function ensureTab(name) {
         const feature = features[name];
         if (!feature) return;
@@ -128,7 +101,6 @@
 
         const promise = (async () => {
             for (const dependency of feature.dependencies || []) await ensureTab(dependency);
-            await Promise.all((feature.styles || []).map(loadStyle));
             // Feature scripts are independent modules. Start them together so
             // navigation pays one network round-trip instead of one per file.
             await Promise.all((feature.scripts || []).map((source) => loadScript(source)));

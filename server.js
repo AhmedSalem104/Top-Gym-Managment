@@ -118,8 +118,8 @@ app.use((request, response, next) => {
 });
 
 // Compress text assets and API payloads before they reach the browser. This
-// is especially important for the large shared dashboard stylesheet and the
-// library/coaching JSON responses on slower mobile connections.
+// is especially important for the library/coaching JSON responses on slower
+// mobile connections.
 app.use(compression({ threshold: 1024 }));
 
 app.use(express.static(publicDirectory, {
@@ -260,33 +260,6 @@ function renderQrMemberPage(member) {
     <meta name="robots" content="noindex,nofollow">
     <meta name="theme-color" content="#0f172a">
     <title>بيانات عضوية ${escapeHtml(member.fullName)}</title>
-    <style>
-        * { box-sizing: border-box; }
-        body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 18px; color: #172033; background: radial-gradient(circle at 85% 5%, rgba(59,130,246,.2), transparent 32%), linear-gradient(135deg, #edf4fb, #f8fafc 52%, #e5edf7); font-family: Cairo, Tahoma, Arial, sans-serif; }
-        .card { width: min(520px, 100%); overflow: hidden; border: 1px solid #dbe3ef; border-radius: 22px; background: rgba(255,255,255,.96); box-shadow: 0 22px 60px rgba(15,23,42,.14); }
-        .head { padding: 22px 22px 18px; color: #fff; background: linear-gradient(120deg, #0f172a, #1e3a8a 64%, #155e75); }
-        .brand { color: #bfdbfe; font-size: 11px; font-weight: 900; letter-spacing: 2px; direction: ltr; }
-        h1 { margin: 7px 0 3px; font-size: 22px; line-height: 1.35; }
-        .subtitle { margin: 0; color: #cbd5e1; font-size: 11px; }
-        .body { padding: 18px; }
-        .member { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; padding: 12px 13px; border: 1px solid #dbeafe; border-radius: 13px; background: #f8fbff; }
-        .member strong { display: block; color: #0f172a; font-size: 16px; }
-        .member span { display: block; margin-top: 3px; color: #64748b; direction: ltr; font-size: 11px; text-align: right; }
-        .status { display: inline-flex; align-items: center; min-height: 27px; padding: 4px 9px; border-radius: 999px; font-size: 10px; font-weight: 900; white-space: nowrap; }
-        .status.active { color: #047857; background: #d1fae5; }
-        .status.expiring_soon { color: #b45309; background: #fef3c7; }
-        .status.expired { color: #b91c1c; background: #fee2e2; }
-        .status.frozen { color: #6d28d9; background: #ede9fe; }
-        .status.unknown { color: #64748b; background: #f1f5f9; }
-        .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-        .item { display: grid; gap: 3px; min-width: 0; padding: 10px; border: 1px solid #e2e8f0; border-radius: 10px; background: #f8fafc; }
-        .item span { color: #94a3b8; font-size: 10px; font-weight: 700; }
-        .item strong { overflow: hidden; color: #334155; font-size: 11px; font-weight: 900; text-overflow: ellipsis; white-space: nowrap; }
-        .item.balance { grid-column: 1 / -1; border-color: #fde68a; background: #fffbeb; }
-        .item.balance strong { color: #b45309; direction: ltr; text-align: right; }
-        .foot { padding: 12px 18px 16px; border-top: 1px solid #eef2f7; color: #94a3b8; font-size: 10px; text-align: center; }
-        @media (max-width: 420px) { body { padding: 10px; } .head { padding: 18px 16px 15px; } h1 { font-size: 18px; } .body { padding: 13px; } .member { padding: 10px; } .member strong { font-size: 14px; } .grid { gap: 6px; } .item { padding: 8px; } }
-    </style>
 </head>
 <body>
     <main class="card">
