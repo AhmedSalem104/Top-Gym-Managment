@@ -1,6 +1,5 @@
 require('dotenv').config();
 
-const express = require('express');
 const path = require('node:path');
 const { createApp } = require('./src/app');
 const { config } = require('./src/config/env');
@@ -12,18 +11,10 @@ const { registerFinanceRoutes } = require('./src/routes/finance.routes');
 const { registerDashboardRoutes } = require('./src/routes/dashboard.routes');
 const { registerLibraryRoutes } = require('./src/routes/library.routes');
 const { registerReportsRoutes } = require('./src/routes/reports.routes');
+const { registerBackupRoutes } = require('./src/routes/backup.routes');
+const { isAuthorizedCronRequest } = require('./src/middleware/cron.middleware');
 const { getPool, initDatabase } = require('./src/db');
-const {
-    createBackup,
-    createScheduledBackupArchive,
-    deleteBackupArchive,
-    getBackupArchive,
-    getBackupHistory,
-    getScheduledBackupHistory,
-    inspectBackupBuffer,
-    recordBackupOperation,
-    restoreBackup
-} = require('./src/backup-service');
+const backupService = require('./src/backup-service');
 const financeService = require('./src/finance-service');
 const analyticsService = require('./src/analytics-service');
 const reportService = require('./src/report-service');
@@ -99,14 +90,6 @@ function sensitiveRateLimit(request, response, next) {
 app.use('/api', (request, response, next) => {
     sensitiveRateLimit(request, response, next);
 });
-
-function isAuthorizedCronRequest(request) {
-    const secret = String(config.cronSecret || '').trim();
-    const authorization = String(request.get('authorization') || '');
-    if (secret) return authorization === `Bearer ${secret}`;
-    if (String(request.get('user-agent') || '').toLowerCase() === 'vercel-cron/1.0') return true;
-    return config.nodeEnv !== 'production' && request.get('x-top-gym-cron-key') === 'daily-backup';
-}
 
 const loginAttempts = new Map();
 let loginAttemptsLastCleanup = 0;
@@ -226,105 +209,11 @@ registerAuthRoutes(app, {
     allowLoginAttempt
 });
 
-app.get('/api/backup/daily', asyncRoute(async (request, response) => {
-    if (!isAuthorizedCronRequest(request)) return response.status(401).json({ error: 'طلب الجدولة غير مصرح به.' });
-    const result = await createScheduledBackupArchive({ format: 'bak' });
-    response.json({ ok: true, scheduled: true, ...result });
-}));
-
-app.get('/api/backup/download', asyncRoute(async (request, response) => {
-    const requestedFormat = String(request.query.format || 'json.gz').toLowerCase();
-    if (!['json.gz', 'bak'].includes(requestedFormat)) {
-        return response.status(400).json({ error: 'صيغة النسخة غير مدعومة. اختر .json.gz أو .bak.' });
-    }
-    const backup = await createBackup({ format: requestedFormat });
-    await recordBackupOperation({
-        operationType: 'download',
-        fileName: backup.filename,
-        sourceGeneratedAt: backup.generatedAt,
-        tableCounts: backup.rowCounts,
-        details: `تم إنشاء نسخة TOP GYM بصيغة .${backup.format} وتنزيلها على جهاز المستخدم.`
-    }).catch((error) => console.warn('Unable to record backup download:', error.message));
-    response.set({
-        'Cache-Control': 'no-store, no-cache, must-revalidate, private',
-        'Content-Type': backup.format === 'bak' ? 'application/octet-stream' : 'application/gzip',
-        'Content-Disposition': `attachment; filename="${backup.filename}"`,
-        'Content-Length': String(backup.buffer.length),
-        'X-Content-Type-Options': 'nosniff'
-    });
-    response.send(backup.buffer);
-}));
-
-const backupUploadBody = express.raw({
-    type: ['application/gzip', 'application/x-gzip', 'application/octet-stream'],
-    limit: '25mb'
+registerBackupRoutes(app, {
+    backupService,
+    asyncRoute,
+    isAuthorizedCronRequest: (request) => isAuthorizedCronRequest(request, { config })
 });
-
-app.get('/api/backup/history', asyncRoute(async (request, response) => {
-    const [operations, archives] = await Promise.all([
-        getBackupHistory(request.query.limit),
-        getScheduledBackupHistory(request.query.archiveLimit || 10)
-    ]);
-    response.json({ operations, archives });
-}));
-
-app.get('/api/backup/archives/:id', asyncRoute(async (request, response) => {
-    const archive = await getBackupArchive(request.params.id);
-    response.set({
-        'Cache-Control': 'no-store, no-cache, must-revalidate, private',
-        'Content-Type': archive.format === 'bak' ? 'application/octet-stream' : 'application/gzip',
-        'Content-Disposition': `attachment; filename="${archive.fileName}"`,
-        'Content-Length': String(archive.contentBytes),
-        'X-Content-Type-Options': 'nosniff'
-    });
-    response.send(archive.content);
-}));
-
-app.delete('/api/backup/archives/:id', asyncRoute(async (request, response) => {
-    await deleteBackupArchive(request.params.id);
-    response.status(204).send();
-}));
-
-app.post('/api/backup/inspect', backupUploadBody, asyncRoute(async (request, response) => {
-    const fileName = String(request.get('X-BACKUP-FILENAME') || 'uploaded-backup.json.gz').slice(0, 260);
-    try {
-        const inspected = await inspectBackupBuffer(request.body);
-        await recordBackupOperation({
-            operationType: 'inspect',
-            fileName,
-            sourceGeneratedAt: inspected.generatedAt,
-            tableCounts: inspected.tableCounts,
-            details: 'تم التحقق من ضغط النسخة وبنيتها قبل الاسترجاع.'
-        }).catch((error) => console.warn('Unable to record backup inspection:', error.message));
-        return response.json({
-            valid: true,
-            generatedAt: inspected.generatedAt,
-            timeZone: inspected.timeZone,
-            compressedBytes: inspected.compressedBytes,
-            jsonBytes: inspected.jsonBytes,
-            rowCount: inspected.rowCount,
-            tableCounts: inspected.tableCounts,
-            integrity: inspected.integrity
-        });
-    } catch (error) {
-        await recordBackupOperation({ operationType: 'inspect', fileName, status: 'failed', details: error.message }).catch((recordError) => console.warn('Unable to record failed backup inspection:', recordError.message));
-        throw error;
-    }
-}));
-
-app.post('/api/backup/restore', backupUploadBody, asyncRoute(async (request, response) => {
-    if (String(request.get('X-TOP-GYM-RESTORE-CONFIRM') || '').toUpperCase() !== 'RESTORE') {
-        return response.status(400).json({ error: 'يجب تأكيد عملية الاسترجاع من شاشة الإدارة.' });
-    }
-    const fileName = String(request.get('X-BACKUP-FILENAME') || 'uploaded-backup.json.gz').slice(0, 260);
-    try {
-        const result = await restoreBackup(request.body, { fileName });
-        return response.json({ restored: true, ...result });
-    } catch (error) {
-        await recordBackupOperation({ operationType: 'restore', fileName, status: 'failed', details: error.message }).catch((recordError) => console.warn('Unable to record failed backup restore:', recordError.message));
-        throw error;
-    }
-}));
 
 registerFinanceRoutes(app, { financeService, asyncRoute });
 

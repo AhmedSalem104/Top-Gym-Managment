@@ -81,6 +81,9 @@ function assertRequiredFiles() {
         'src/controllers/library.controller.js',
         'src/routes/reports.routes.js',
         'src/controllers/reports.controller.js',
+        'src/routes/backup.routes.js',
+        'src/controllers/backup.controller.js',
+        'src/middleware/cron.middleware.js',
         'docs/AUTH.md',
         'qa/AGENT-CONTRACT.md'
     ];
@@ -107,7 +110,8 @@ function checkRouteSurface() {
         'src/routes/finance.routes.js',
         'src/routes/dashboard.routes.js',
         'src/routes/library.routes.js',
-        'src/routes/reports.routes.js'
+        'src/routes/reports.routes.js',
+        'src/routes/backup.routes.js'
     ].filter((relativePath) => fs.existsSync(path.join(root, relativePath))).map(read).join('\n');
     const expectedRoutes = [
         '/api/members', '/api/expenses', '/api/attendance', '/api/reports',
