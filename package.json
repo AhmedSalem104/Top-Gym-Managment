@@ -7,7 +7,7 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch server.js",
-    "build:css": "tailwindcss -i ./src/tailwind.css -o ./public/tailwind.css --minify",
+    "build:css": "node -e \"console.log('Styling layer disabled')\"",
     "build": "npm run build:css",
     "test:smoke": "node scripts/smoke-test.js",
     "test:e2e": "playwright test",

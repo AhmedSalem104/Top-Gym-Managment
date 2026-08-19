@@ -63,7 +63,6 @@ function assertRequiredFiles() {
         'src/backup-service.js',
         'src/report-service.js',
         'src/auth-service.js',
-        'public/css/auth.css',
         'public/js/auth-ui.js',
         'public/js/auth-users.js',
         'docs/AUTH.md',
@@ -101,7 +100,6 @@ function checkAuthSurface() {
     const server = read('server.js');
     const auth = read('src/auth-service.js');
     const index = read('public/index.html');
-    const authCss = read('public/css/auth.css');
     [
         '/api/auth/session', '/api/auth/login', '/api/auth/logout', '/api/auth/users'
     ].forEach((route) => record(
@@ -113,7 +111,7 @@ function checkAuthSurface() {
     record('AUTH-BACKEND-MIDDLEWARE', server.includes('authApiMiddleware') && server.includes('canAccess(user, request)'), 'backend authentication and authorization middleware is present', 'P0');
     record('AUTH-SCRYPT-HASHING', auth.includes('crypto.scrypt') && auth.includes('timingSafeEqual'), 'password hashing uses scrypt and timing-safe comparison', 'P0');
     record('AUTH-HTTPONLY-SESSION', auth.includes('HttpOnly') && auth.includes('SameSite=Lax'), 'sessions use HttpOnly SameSite cookies', 'P0');
-    record('AUTH-LOGIN-SCREEN', index.includes('id="authScreen"') && authCss.includes('.auth-screen') && authCss.includes('.auth-card') && authCss.includes('background: #040a11'), 'login screen uses the dark split layout without a background image', 'P1');
+    record('AUTH-LOGIN-SCREEN', index.includes('id="authScreen"') && !/<link[^>]+rel=["']stylesheet["']/i.test(index), 'login screen structure is present without a linked stylesheet', 'P1');
 }
 
 function checkPrintAndLazyLoadingSurface() {

@@ -1,7 +1,0 @@
-@tailwind utilities;
-
-@layer utilities {
-    .gym-page-bg { background: #f1f5f9; }
-    .gym-topbar-bg { background: #020617; }
-    .gym-brand-bg { background: #2563eb; }
-}
