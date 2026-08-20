@@ -254,17 +254,14 @@
  * tables, but that behavior makes this already-visible column look like a
  * second layer over the rows on desktop.
  */
-@media (min-width: 1200px) {
-  .external-trainees-table-wrap {
-    overflow: visible;
-  }
-
+@media (min-width: 768px) {
   .external-trainees-table th:last-child,
   .external-trainees-table td:last-child {
     position: static;
+    inset-inline-end: auto;
     z-index: auto;
-    width: 230px;
-    min-width: 230px;
+    width: 248px;
+    min-width: 248px;
     background: transparent;
     box-shadow: none;
   }
@@ -278,11 +275,29 @@
     background: transparent;
   }
 
+  .external-trainees-table .trainee-actions {
+    gap: var(--space-1);
+  }
+}
+
+@media (min-width: 1200px) {
+  .external-trainees-table-wrap {
+    overflow-x: visible;
+    overflow-y: visible;
+  }
+
   .external-trainees-table .trainee-more-menu {
     position: absolute;
     top: calc(100% + var(--space-2));
     inset-inline-end: 0;
     z-index: var(--z-dropdown);
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1199px) {
+  .external-trainees-table-wrap {
+    overflow-x: auto;
+    overflow-y: hidden;
   }
 }
 
