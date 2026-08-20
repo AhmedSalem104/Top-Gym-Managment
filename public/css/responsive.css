@@ -1062,10 +1062,14 @@
   .members-table.table-card-layout > tbody > tr > td:nth-child(3) {
     grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
-    border: 1px solid var(--color-border-soft);
+    border: 0;
     border-radius: var(--radius-md);
     background: var(--color-surface-muted);
     padding: var(--space-3);
+  }
+
+  .members-table.table-card-layout > tbody > tr > td:nth-child(3) .badge {
+    border: 0;
   }
 
   .members-table.table-card-layout > tbody > tr > td:nth-child(3):has(.badge.expiring_soon) {
@@ -1137,6 +1141,10 @@
   .members-table.table-card-layout > tbody > tr > td:nth-child(2) > .table-main,
   .members-table.table-card-layout > tbody > tr > td:nth-child(4) > .table-main,
   .members-table.table-card-layout > tbody > tr > td:nth-child(6) > .table-money {
+    display: block;
+    justify-self: stretch;
+    inline-size: 100%;
+    max-inline-size: none;
     font-size: var(--font-md);
   }
 

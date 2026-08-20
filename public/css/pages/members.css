@@ -189,18 +189,18 @@
   min-height: 42px;
   align-items: center;
   justify-content: center;
-  border: 1px solid #b9e5d2;
+  border: 1px solid #c4d7fb;
   border-radius: var(--radius-md);
-  background: var(--color-success-soft);
-  color: var(--color-success);
+  background: var(--color-info-soft);
+  color: var(--color-info);
   font-weight: var(--weight-bold);
   padding: 0 var(--space-3);
 }
 
 .member-quick-actions .member-attendance-status.auto {
-  border-color: #c4d7fb;
-  background: var(--color-info-soft);
-  color: var(--color-info);
+  border-color: #ddd6fe;
+  background: #f5f3ff;
+  color: #7c3aed;
 }
 
 .member-quick-actions .member-attendance-status.unavailable {
