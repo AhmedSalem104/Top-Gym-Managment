@@ -894,14 +894,11 @@
   }
 }
 
-/* Unified mobile card surface. Keep each screen's content-specific layout,
-   but give application cards the same member-card visual rhythm on narrow
-   screens. Login and dialog cards intentionally keep their page-level style. */
+/* Unified mobile data-card surface. Apply the shared card rhythm only to
+   repeated content cards and table rows. Page shells such as .panel and
+   .content-card must keep their layout role and must not become oversized
+   nested cards on narrow screens. */
 @media (max-width: 767px) {
-  .panel,
-  .card,
-  .content-card,
-  .shadow-panel,
   .stat-card,
   .management-card,
   .library-card,
@@ -923,26 +920,6 @@
     box-shadow: 0 2px 4px rgb(15 23 42 / 0.025), 0 8px 24px rgb(15 23 42 / 0.045);
   }
 
-  .panel,
-  .card,
-  .content-card,
-  .shadow-panel,
-  .stat-card,
-  .management-card,
-  .library-card,
-  .finance-card,
-  .attendance-card,
-  .attendance-entry-card,
-  .attendance-summary-card,
-  .external-trainee-card,
-  .program-card,
-  .diet-card,
-  .exercise-card,
-  .food-card,
-  .muscle-card {
-    padding: var(--space-4);
-  }
-
   .card-grid,
   .library-grid,
   .exercise-grid,
@@ -958,6 +935,35 @@
   .table-card-layout > tbody > tr:hover {
     border-color: var(--border-focus);
     box-shadow: 0 4px 8px rgb(15 23 42 / 0.03), 0 12px 28px rgb(37 99 235 / 0.07);
+  }
+
+  /* Member rows have six compact data points. Keep the identity and action
+     areas full width, while arranging the remaining key/value pairs in two
+     columns so a mobile member card remains scannable without becoming
+     unnecessarily tall. */
+  .members-table.table-card-layout > tbody > tr {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: var(--space-3);
+    row-gap: 0;
+  }
+
+  .members-table.table-card-layout > tbody > tr > td:first-child,
+  .members-table.table-card-layout > tbody > tr > td:last-child {
+    grid-column: 1 / -1;
+  }
+
+  .members-table.table-card-layout > tbody > tr > td:not(:first-child):not(:last-child) {
+    grid-template-columns: minmax(64px, 42%) minmax(0, 1fr);
+    gap: var(--space-2);
+    align-items: center;
+  }
+
+  .members-table.table-card-layout > tbody > tr > td:last-child {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .members-table.table-card-layout .member-action-row {
+    gap: var(--space-2);
   }
 }
 
