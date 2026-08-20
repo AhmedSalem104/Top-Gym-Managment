@@ -61,7 +61,7 @@
 
   .table-card-layout > tbody {
     display: grid;
-    gap: 12px;
+    gap: var(--space-5);
   }
 
   .table-card-layout > tbody > tr {
@@ -1000,7 +1000,7 @@
       "freeze account"
       "actions actions";
     column-gap: var(--space-3);
-    row-gap: 0;
+    row-gap: var(--space-3);
   }
 
   .members-table.table-card-layout > tbody > tr > td:nth-child(1) { grid-area: identity; }
@@ -1014,7 +1014,7 @@
   .members-table.table-card-layout > tbody > tr > td:first-child {
     position: relative;
     display: block;
-    padding: var(--space-4) 0 var(--space-3);
+    padding: var(--space-7) 0 var(--space-3);
     border-bottom: 0;
     text-align: start;
   }
@@ -1042,12 +1042,15 @@
 
   .members-table.table-card-layout > tbody > tr > td:first-child .table-member-name {
     display: block;
-    max-width: calc(100% - 52px);
-    overflow: hidden;
-    font-size: var(--font-md);
+    max-width: 100%;
+    overflow: visible;
+    overflow-wrap: anywhere;
+    font-size: var(--font-lg);
+    font-weight: var(--weight-bold);
+    line-height: 1.55;
     text-align: start;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    text-overflow: clip;
+    white-space: normal;
   }
 
   .members-table.table-card-layout > tbody > tr > td:first-child .table-member-phone,
@@ -1124,8 +1127,10 @@
     min-width: 0;
     max-width: 100%;
     overflow-wrap: anywhere;
+    overflow: visible;
     white-space: normal;
     text-align: start;
+    text-overflow: clip;
     width: 100%;
   }
 
@@ -1163,11 +1168,36 @@
     direction: ltr;
     unicode-bidi: isolate;
     font-variant-numeric: tabular-nums;
+    overflow: visible;
     white-space: nowrap;
+    text-overflow: clip;
   }
 
   .members-table.table-card-layout > tbody > tr > td:nth-child(6) > .table-sub.has-debt {
+    overflow: visible;
     white-space: nowrap;
+    text-overflow: clip;
+  }
+
+  .members-table.table-card-layout > tbody > tr > td:nth-child(2)::before,
+  .members-table.table-card-layout > tbody > tr > td:nth-child(4)::before,
+  .members-table.table-card-layout > tbody > tr > td:nth-child(5)::before,
+  .members-table.table-card-layout > tbody > tr > td:nth-child(6)::before {
+    display: block;
+    color: var(--color-primary);
+    font-size: var(--font-xs);
+    font-weight: var(--weight-bold);
+    letter-spacing: 0.01em;
+    line-height: 1.35;
+  }
+
+  .members-table.table-card-layout > tbody > tr > td:nth-child(2) > .table-main,
+  .members-table.table-card-layout > tbody > tr > td:nth-child(4) > .table-main,
+  .members-table.table-card-layout > tbody > tr > td:nth-child(5) > .freeze-usage,
+  .members-table.table-card-layout > tbody > tr > td:nth-child(6) > .table-money {
+    color: var(--color-navy);
+    font-weight: var(--weight-bold);
+    line-height: 1.45;
   }
 
   .members-table.table-card-layout > tbody > tr > td:last-child {
