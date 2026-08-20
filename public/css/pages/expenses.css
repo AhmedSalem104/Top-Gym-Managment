@@ -42,7 +42,246 @@
 .expense-row-copy small { color: var(--color-text-muted); font-size: var(--font-xs); }
 .expense-amount { color: var(--color-danger); font-family: var(--font-latin); font-weight: var(--weight-bold); direction: ltr; }
 
+/* Expenses workspace ---------------------------------------------------- */
+.expenses-tab-panel {
+  display: grid;
+  gap: var(--space-5);
+  min-width: 0;
+}
+
+.expenses-tab-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-5);
+  border: 1px solid #f0d0d0;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, #fff8f8, var(--color-surface));
+  padding: var(--space-5);
+}
+
+.expenses-tab-heading-copy {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-1);
+}
+
+.expenses-tab-heading-copy > span {
+  color: var(--color-danger);
+  font-size: 10px;
+  font-weight: var(--weight-bold);
+}
+
+.expenses-tab-heading-copy h3 {
+  color: var(--color-text);
+  font-size: var(--font-xl);
+  font-weight: var(--weight-extrabold);
+}
+
+.expenses-tab-heading-copy p {
+  color: var(--color-text-muted);
+  font-size: var(--font-xs);
+}
+
+.expenses-tab-add-button {
+  flex: 0 0 auto;
+}
+
+.expenses-tab-panel #expensesTabHost {
+  display: grid;
+  min-width: 0;
+}
+
+.expenses-tab-panel .monthly-finance-card {
+  gap: var(--space-5);
+  border: 1px solid #f0d0d0;
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  padding: var(--space-5);
+  box-shadow: var(--shadow-sm);
+}
+
+.expenses-tab-panel .monthly-finance-head {
+  padding-bottom: var(--space-4);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.expenses-tab-panel .monthly-finance-metrics {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.expenses-tab-panel .monthly-finance-metric {
+  min-height: 112px;
+  align-content: start;
+  padding: var(--space-4);
+}
+
+.expenses-tab-panel .monthly-finance-metric.expenses {
+  border-color: #f0d0d0;
+  background: #fff8f8;
+}
+
+.expenses-tab-panel .monthly-finance-metric.expenses .monthly-finance-value,
+.expenses-tab-panel .monthly-expense-amount {
+  color: var(--color-danger);
+}
+
+.expenses-tab-panel .monthly-finance-metric.net .monthly-finance-value.negative {
+  color: var(--color-danger);
+}
+
+.expenses-tab-panel .monthly-expenses-list {
+  display: grid;
+  max-height: 430px;
+  overflow-y: auto;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-muted);
+  padding: 0 var(--space-4);
+  scrollbar-color: var(--border-strong) transparent;
+  scrollbar-width: thin;
+}
+
+.expenses-tab-panel .monthly-expenses-list-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: var(--space-4);
+  border-bottom: 1px solid var(--border-strong);
+  padding: var(--space-3) 0;
+  font-size: var(--font-xs);
+  font-weight: var(--weight-bold);
+}
+
+.expenses-tab-panel .monthly-expenses-list-head span {
+  color: var(--color-text-soft);
+  white-space: nowrap;
+}
+
+.expenses-tab-panel .monthly-expenses-list-head span:nth-child(2),
+.expenses-tab-panel .monthly-expenses-list-head span:nth-child(3) {
+  text-align: center;
+}
+
+.expenses-tab-panel .monthly-expense-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: var(--space-4);
+  min-width: 0;
+  border-bottom: 1px solid var(--border-color);
+  padding: var(--space-3) 0;
+}
+
+.expenses-tab-panel .monthly-expense-item:last-child {
+  border-bottom: 0;
+}
+
+.expenses-tab-panel .monthly-expense-item:hover {
+  background: #fff9f9;
+}
+
+.expenses-tab-panel .monthly-expense-copy {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.expenses-tab-panel .monthly-expense-copy strong {
+  overflow: hidden;
+  color: var(--color-text);
+  font-size: var(--font-sm);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.expenses-tab-panel .monthly-expense-copy span {
+  color: var(--color-text-muted);
+  direction: ltr;
+  font-family: var(--font-latin);
+  font-size: var(--font-xs);
+  text-align: start;
+}
+
+.expenses-tab-panel .monthly-expense-amount {
+  direction: ltr;
+  font-family: var(--font-latin);
+  font-size: var(--font-md);
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--weight-extrabold);
+  white-space: nowrap;
+}
+
+.expenses-tab-panel .monthly-expense-actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: var(--space-2);
+}
+
+.expenses-tab-panel .monthly-expense-action {
+  display: inline-grid;
+  width: 36px;
+  min-width: 36px;
+  height: 36px;
+  min-height: 36px;
+  place-items: center;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  padding: 0;
+}
+
+.expenses-tab-panel .monthly-expense-action svg {
+  width: 17px;
+  height: 17px;
+}
+
+.expenses-tab-panel .monthly-expense-action.edit:hover {
+  border-color: #c9dcff;
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+
+.expenses-tab-panel .monthly-expense-action.delete:hover {
+  border-color: #f0c0c0;
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+}
+
+.expenses-tab-panel .monthly-expenses-empty {
+  display: block;
+  padding: var(--space-8) var(--space-4);
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+#expenseDialog {
+  width: min(720px, calc(100% - 32px));
+  border-color: #f0d0d0;
+}
+
+#expenseDialog .details-dialog-head {
+  border: 1px solid #f0d0d0;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, #fff8f8, var(--color-surface));
+  padding: var(--space-4) var(--space-5);
+}
+
+#expenseDialog .expense-form-grid {
+  margin-top: 0;
+}
+
 @media (max-width: 767px) {
   .expenses-header,
-  .expense-toolbar { align-items: stretch; flex-direction: column; }
+  .expense-toolbar,
+  .expenses-tab-heading { align-items: stretch; flex-direction: column; }
+
+  .expenses-tab-add-button { width: 100%; }
+  .expenses-tab-panel .monthly-finance-card { padding: var(--space-4); }
+  .expenses-tab-panel .monthly-finance-metrics { grid-template-columns: 1fr; }
+  .expenses-tab-panel .monthly-expenses-list-head { grid-template-columns: minmax(0, 1fr) auto auto; gap: var(--space-2); }
+  .expenses-tab-panel .monthly-expense-item { grid-template-columns: minmax(0, 1fr) auto; gap: var(--space-2); }
+  .expenses-tab-panel .monthly-expense-actions { grid-column: 1 / -1; justify-content: flex-start; }
+  #expenseDialog { width: calc(100% - 20px); }
 }

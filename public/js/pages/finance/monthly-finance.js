@@ -181,7 +181,7 @@
         }
         const items = expenses.items || [];
         $('monthlyExpensesList').innerHTML = items.length
-            ? items.map((item) => `<article class="monthly-expense-item"><div class="monthly-expense-copy"><strong title="${escapeHtml(item.name)}">${escapeHtml(item.name)}</strong><span>${formatDate(item.expenseDate)}</span></div><span class="monthly-expense-amount">${money(item.amount)}</span></article>`).join('')
+            ? `<div class="monthly-expenses-list-head" aria-hidden="true"><span>البند والتاريخ</span><span>القيمة</span><span>الإجراءات</span></div>${items.map((item) => `<article class="monthly-expense-item"><div class="monthly-expense-copy"><strong title="${escapeHtml(item.name)}">${escapeHtml(item.name)}</strong><span>${formatDate(item.expenseDate)}</span></div><span class="monthly-expense-amount">${money(item.amount)}</span></article>`).join('')}`
             : '<span class="monthly-expenses-empty">لا توجد مصروفات مسجلة في الشهر الحالي.</span>';
     }
 

@@ -60,6 +60,279 @@
   font-weight: var(--weight-semibold);
 }
 
+/* Pricing and membership types are separate workspaces. Keeping their
+   visual language distinct prevents the two management tables from reading
+   like one mixed data set. */
+#managementSection .management-tab-header {
+  border: 1px solid #cfe0fa;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, var(--color-primary-soft), var(--color-surface));
+  padding: var(--space-5);
+}
+
+#managementSection .management-shortcuts {
+  position: relative;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  border-color: #d7e3f3;
+  background: var(--color-surface);
+  padding-top: calc(var(--space-5) + var(--space-2));
+}
+
+#managementSection .management-shortcuts::before {
+  position: absolute;
+  top: var(--space-3);
+  inset-inline-start: var(--space-5);
+  color: var(--color-text-muted);
+  content: 'إدارة الأسعار والعضويات';
+  font-size: var(--font-xs);
+  font-weight: var(--weight-bold);
+}
+
+#managementSection .management-shortcut {
+  min-height: 96px;
+  border-width: 1px;
+  box-shadow: var(--shadow-xs);
+}
+
+#managementSection .management-shortcut:first-of-type {
+  border-color: #c9dcff;
+  background: linear-gradient(135deg, #f5f9ff, var(--color-surface));
+}
+
+#managementSection .management-shortcut:last-of-type {
+  border-color: #c9ead8;
+  background: linear-gradient(135deg, #f4fcf8, var(--color-surface));
+}
+
+#managementSection .management-shortcut:last-of-type .management-shortcut-icon {
+  background: var(--color-success-soft);
+  color: var(--color-success);
+}
+
+#pricingDialog,
+#membershipTypesDialog {
+  max-height: calc(100vh - 32px);
+  overflow: hidden;
+}
+
+#pricingDialog {
+  width: min(1060px, calc(100% - 32px));
+  border-color: #c9dcff;
+}
+
+#membershipTypesDialog {
+  width: min(940px, calc(100% - 32px));
+  border-color: #c9ead8;
+}
+
+#pricingDialog > form.dialog-body,
+#membershipTypesDialog > .dialog-body {
+  gap: var(--space-5);
+  padding: var(--space-6);
+}
+
+#pricingDialog .details-dialog-head,
+#membershipTypesDialog .details-dialog-head {
+  align-items: center;
+  border-bottom: 0;
+  border-radius: var(--radius-lg);
+  padding: var(--space-4) var(--space-5);
+}
+
+#pricingDialog .details-dialog-head {
+  border: 1px solid #c9dcff;
+  background: linear-gradient(135deg, var(--color-primary-soft), var(--color-surface));
+}
+
+#membershipTypesDialog .details-dialog-head {
+  border: 1px solid #c9ead8;
+  background: linear-gradient(135deg, var(--color-success-soft), var(--color-surface));
+}
+
+#pricingDialog .details-dialog-head::before,
+#membershipTypesDialog .details-dialog-head::before {
+  display: inline-grid;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 11px;
+  font-family: var(--font-latin);
+  font-size: var(--font-xs);
+  font-weight: var(--weight-extrabold);
+}
+
+#pricingDialog .details-dialog-head::before {
+  background: var(--color-primary);
+  color: #fff;
+  content: '01';
+}
+
+#membershipTypesDialog .details-dialog-head::before {
+  background: var(--color-success);
+  color: #fff;
+  content: '02';
+}
+
+#pricingDialog .pricing-section-head,
+#membershipTypesDialog .pricing-section-head {
+  align-items: center;
+  border-radius: var(--radius-lg);
+  padding: var(--space-4) var(--space-5);
+}
+
+#pricingDialog .pricing-section-head {
+  border: 1px solid #d7e5ff;
+  border-inline-start: 4px solid var(--color-primary);
+  background: #f7faff;
+}
+
+#membershipTypesDialog .pricing-section-head {
+  border: 1px solid #d8eee1;
+  border-inline-start: 4px solid var(--color-success);
+  background: #f6fcf8;
+}
+
+#pricingDialog .pricing-section-head h4,
+#membershipTypesDialog .pricing-section-head h4 {
+  margin: 0;
+  font-size: var(--font-lg);
+}
+
+#pricingDialog .pricing-section-head p,
+#membershipTypesDialog .pricing-section-head p {
+  margin-top: var(--space-1);
+  line-height: 1.7;
+}
+
+#pricingDialog .pricing-table-scroll,
+#membershipTypesDialog .pricing-table-scroll {
+  padding: var(--space-2);
+  background: var(--color-surface-muted);
+}
+
+#pricingDialog .pricing-table-scroll { border-color: #cfe0fa; }
+#membershipTypesDialog .pricing-table-scroll { border-color: #c9ead8; }
+
+#pricingDialog .pricing-table,
+#membershipTypesDialog .membership-types-table {
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  table-layout: fixed;
+}
+
+#pricingDialog .pricing-table {
+  min-width: 820px;
+}
+
+#pricingDialog .pricing-table th,
+#pricingDialog .pricing-table td,
+#membershipTypesDialog .membership-types-table th,
+#membershipTypesDialog .membership-types-table td {
+  padding: var(--space-3) var(--space-4);
+  text-align: center;
+  vertical-align: middle;
+}
+
+#pricingDialog .pricing-table th {
+  background: #edf4ff;
+  color: #2454a6;
+}
+
+#pricingDialog .pricing-table th:nth-child(1) { width: 24%; text-align: start; }
+#pricingDialog .pricing-table th:nth-child(2) { width: 17%; }
+#pricingDialog .pricing-table th:nth-child(n + 3) { width: 19.66%; }
+
+#pricingDialog .pricing-table td:first-child {
+  background: #fbfdff;
+  text-align: start;
+}
+
+#pricingDialog .pricing-table tbody tr:hover td { background: #f1f6ff; }
+
+#pricingDialog .pricing-table input[type='text'],
+#pricingDialog .pricing-table input:not([type]) {
+  width: 100%;
+  min-height: 42px;
+  text-align: start;
+}
+
+#pricingDialog .pricing-table input[type='number'] {
+  width: 100%;
+  min-height: 42px;
+  direction: ltr;
+  text-align: center;
+  font-family: var(--font-latin);
+  font-variant-numeric: tabular-nums;
+}
+
+.pricing-column-hint {
+  display: block;
+  margin-top: 2px;
+  color: var(--color-text-muted);
+  font-size: 10px;
+  font-weight: var(--weight-regular);
+}
+
+#membershipTypesDialog .membership-types-table {
+  min-width: 700px;
+}
+
+#membershipTypesDialog .membership-types-table th {
+  background: #edf9f2;
+  color: #19744f;
+}
+
+#membershipTypesDialog .membership-types-table th:nth-child(1) { width: 29%; text-align: start; }
+#membershipTypesDialog .membership-types-table th:nth-child(2) { width: 18%; }
+#membershipTypesDialog .membership-types-table th:nth-child(3) { width: 20%; }
+#membershipTypesDialog .membership-types-table th:nth-child(4) { width: 17%; }
+#membershipTypesDialog .membership-types-table th:nth-child(5) { width: 16%; }
+
+#membershipTypesDialog .membership-types-table td:first-child { text-align: start; }
+#membershipTypesDialog .membership-types-table tbody tr:hover td { background: #f0fbf5; }
+
+.type-status {
+  display: inline-flex;
+  min-height: 28px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #a9ddc2;
+  border-radius: var(--radius-pill);
+  background: var(--color-success-soft);
+  color: #087749;
+  padding: 0 var(--space-3);
+  font-size: var(--font-xs);
+  font-weight: var(--weight-bold);
+  white-space: nowrap;
+}
+
+.type-status.off {
+  border-color: #f2d39b;
+  background: var(--color-warning-soft);
+  color: #9b6410;
+}
+
+.type-actions {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-2);
+}
+
+#membershipTypesDialog .type-actions .btn {
+  min-width: 82px;
+  border-color: #b9e5d2;
+  background: var(--color-success-soft);
+  color: #087749;
+}
+
+#membershipTypesDialog .type-actions .btn:hover:not(:disabled) {
+  background: var(--color-success);
+  color: #fff;
+}
+
 .auth-form-grid,
 .expense-form-grid {
   display: grid;
@@ -80,6 +353,28 @@
   .expense-notes-field { grid-column: auto; }
   .details-dialog-head,
   .pricing-section-head { align-items: stretch; flex-direction: column; }
+
+  #pricingDialog > form.dialog-body,
+  #membershipTypesDialog > .dialog-body { padding: var(--space-4); }
+
+  #pricingDialog .details-dialog-head,
+  #membershipTypesDialog .details-dialog-head,
+  #pricingDialog .pricing-section-head,
+  #membershipTypesDialog .pricing-section-head { align-items: stretch; }
+
+  #pricingDialog .details-dialog-head::before,
+  #membershipTypesDialog .details-dialog-head::before { align-self: flex-start; }
+
+  #pricingDialog .pricing-section-head .btn,
+  #membershipTypesDialog .pricing-section-head .btn { width: 100%; }
+}
+
+@media (max-width: 767px) {
+  #pricingDialog,
+  #membershipTypesDialog { width: calc(100% - 20px); }
+
+  #managementSection .management-shortcuts { grid-template-columns: 1fr; }
+  #managementSection .management-shortcut { min-height: 82px; }
 }
 
 /* Member details is a workspace, not a narrow alert. The content is built

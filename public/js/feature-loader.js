@@ -13,7 +13,7 @@
         },
         finance: {
             styles: [],
-            scripts: ['/js/pages/finance/monthly-finance.js?v=15']
+            scripts: ['/js/pages/finance/monthly-finance.js?v=16']
         },
         members: {
             styles: [],
