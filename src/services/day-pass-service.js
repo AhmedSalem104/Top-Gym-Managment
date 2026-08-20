@@ -170,12 +170,21 @@ async function listDayPasses(query = {}) {
     const typeCode = String(query.typeCode || '').trim();
     const paymentMethod = query.paymentMethod ? parsePaymentMethod(query.paymentMethod) : '';
     const search = String(query.search || '').trim().slice(0, 120);
-    return dayPassRepository.listSales({ ...range, typeCode, paymentMethod, search, page, pageSize, includeVoided: String(query.includeVoided) === 'true' });
+    return dayPassRepository.listSales({
+        fromDate: range.from,
+        nextDate: range.nextDate,
+        typeCode,
+        paymentMethod,
+        search,
+        page,
+        pageSize,
+        includeVoided: String(query.includeVoided) === 'true'
+    });
 }
 
 async function getSummary(query = {}) {
     const range = parseRange(query);
-    const result = await dayPassRepository.getRangeData(range);
+    const result = await dayPassRepository.getRangeData({ fromDate: range.from, nextDate: range.nextDate });
     const byType = result.records.reduce((summary, item) => {
         const key = item.passTypeCode;
         const current = summary[key] || { code: key, label: item.passTypeName, count: 0, amount: 0 };

@@ -179,11 +179,13 @@
 }
 
 .overview-grid > .alerts-panel {
-  grid-column: span 5;
+  grid-column: span 6;
+  grid-row: 2;
 }
 
 .overview-grid > .monthly-finance-card {
-  grid-column: span 7;
+  grid-column: 1 / -1;
+  grid-row: 3;
 }
 
 .overview-grid > .monthly-finance-snapshot {
@@ -545,8 +547,13 @@
   }
 
   .overview-grid > .alerts-panel,
+  .overview-grid > .dashboard-day-pass-card {
+    grid-column: span 6;
+    grid-row: 2;
+  }
   .overview-grid > .monthly-finance-snapshot {
     grid-column: 1 / -1;
+    grid-row: auto;
   }
 }
 
@@ -556,7 +563,11 @@
   }
   .overview-grid > .alerts-panel,
   .overview-grid > .monthly-finance-card,
-  .overview-grid > .monthly-finance-snapshot { grid-column: 1 / -1; }
+  .overview-grid > .monthly-finance-snapshot,
+  .overview-grid > .dashboard-day-pass-card {
+    grid-column: 1 / -1;
+    grid-row: auto;
+  }
   .snapshot-membership-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .dashboard-hero-stats { order: 2; }
   .dashboard-hero-content { order: 1; }
@@ -1310,7 +1321,8 @@
   display: grid;
   min-width: 0;
   gap: var(--space-5);
-  grid-column: 1 / -1;
+  grid-column: span 6;
+  grid-row: 2;
 }
 
 .dashboard-day-pass-head,
