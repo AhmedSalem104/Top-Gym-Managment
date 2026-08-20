@@ -132,6 +132,63 @@
         return [...state.records, ...state.dashboardRecords].find((item) => String(item.id) === String(id)) || null;
     }
 
+    function closeDayPassDialog() {
+        const dialog = $('dayPassDialog');
+        if (dialog?.close && dialog.open) dialog.close();
+        else dialog?.removeAttribute('open');
+    }
+
+    function arrangeDashboardSections() {
+        const overview = document.querySelector('.overview-grid');
+        const alerts = $('alertsSection');
+        const dayPassCard = $('dashboardDayPassCard');
+        const financeCard = $('monthlyFinanceCard');
+        if (!overview || !alerts || !dayPassCard || dayPassCard.parentElement !== overview) return;
+        if (financeCard && financeCard.parentElement === overview) overview.insertBefore(dayPassCard, financeCard);
+        else if (alerts.nextElementSibling !== dayPassCard) overview.insertBefore(dayPassCard, alerts.nextElementSibling);
+    }
+
+    function prepareDayPassDialog() {
+        const dialog = $('dayPassDialog');
+        const panel = $('dayPassPanel');
+        if (!dialog || !panel) return dialog;
+        if (panel.parentElement !== dialog) dialog.appendChild(panel);
+        if (!dialog.dataset.dayPassReady) {
+            const head = panel.querySelector('.day-pass-head');
+            const badge = $('dayPassTodayCount');
+            if (head && badge) {
+                const actions = document.createElement('div');
+                actions.className = 'day-pass-dialog-head-actions';
+                const closeButton = document.createElement('button');
+                closeButton.type = 'button';
+                closeButton.className = 'btn btn-light btn-small';
+                closeButton.dataset.dayPassDialogClose = 'true';
+                closeButton.setAttribute('aria-label', 'إغلاق نافذة الحصص اليومية');
+                closeButton.textContent = 'إغلاق';
+                actions.append(badge, closeButton);
+                head.append(actions);
+            }
+            dialog.addEventListener('cancel', (event) => {
+                event.preventDefault();
+                closeDayPassDialog();
+            });
+            dialog.addEventListener('close', () => resetEditForm());
+            dialog.dataset.dayPassReady = 'true';
+        }
+        return dialog;
+    }
+
+    function showDayPassDialog({ reset = true } = {}) {
+        const dialog = prepareDayPassDialog();
+        if (!dialog) return;
+        if (reset) resetEditForm();
+        if (typeof dialog.showModal === 'function' && !dialog.open) dialog.showModal();
+        else dialog.setAttribute('open', '');
+        void loadPricing();
+        void loadToday();
+        window.setTimeout(() => $('dayPassVisitorName')?.focus(), 120);
+    }
+
     function recordDisplayName(item) {
         return String(item?.visitorName || '').trim() || 'زائر';
     }
@@ -219,8 +276,7 @@
     }
 
     function openForm() {
-        window.topGymActivateTab?.('attendance');
-        window.setTimeout(() => $('dayPassVisitorName')?.focus(), 120);
+        showDayPassDialog();
     }
 
     function resetEditForm() {
@@ -234,7 +290,7 @@
     function editRecord(id) {
         const sale = getRecord(id);
         if (!sale) return;
-        openForm();
+        showDayPassDialog();
         state.editingId = String(id);
         $('dayPassVisitorName').value = recordDisplayName(sale) === 'زائر' ? '' : recordDisplayName(sale);
         $('dayPassVisitorPhone').value = sale.visitorPhone || '';
@@ -283,6 +339,7 @@
             const whatsappSent = shouldSend && result.whatsapp?.available && openWhatsapp(result.sale, result.whatsapp?.message || '', preparedWindow);
             if (!whatsappSent && preparedWindow && !preparedWindow.closed) preparedWindow.close();
             resetEditForm();
+            closeDayPassDialog();
             await Promise.all([loadToday(), loadDashboard()]);
             await notify(editingId ? 'تم تحديث سجل الحصة.' : (whatsappSent ? 'تم حفظ الحصة وتجهيز رسالة واتساب.' : 'تم حفظ الحصة وإضافتها للإيرادات.'));
             window.dispatchEvent(new CustomEvent('topgym:day-pass-created', { detail: result }));
@@ -326,6 +383,8 @@
     function initialize() {
         if (state.initialized) return;
         state.initialized = true;
+        arrangeDashboardSections();
+        prepareDayPassDialog();
         $('dayPassForm')?.addEventListener('submit', submitDayPass);
         $('dayPassType')?.addEventListener('change', updatePricePreview);
         $('dayPassRefreshButton')?.addEventListener('click', loadToday);
@@ -342,7 +401,10 @@
             if (voidButton) return voidDayPass(voidButton.dataset.dayPassVoid);
         });
         $('dashboardDayPassAdd')?.addEventListener('click', openForm);
-        $('dashboardDayPassManage')?.addEventListener('click', () => window.topGymActivateTab?.('attendance'));
+        $('dashboardDayPassManage')?.addEventListener('click', () => showDayPassDialog());
+        $('dayPassDialog')?.addEventListener('click', (event) => {
+            if (event.target.closest('[data-day-pass-dialog-close]')) closeDayPassDialog();
+        });
         $('dashboardDayPassTableWrap')?.addEventListener('click', (event) => {
             const whatsappButton = event.target.closest('[data-day-pass-whatsapp]');
             if (whatsappButton) return whatsappForRecord(whatsappButton.dataset.dayPassWhatsapp);
@@ -360,16 +422,11 @@
         const loadAfterAuth = () => {
             if (!isAuthenticated()) return;
             void loadPricing();
-            if (!$('attendanceSection')?.hidden) void loadToday();
             if (!$('dashboardSection')?.hidden) void loadDashboard();
         };
         if (window.topGymAuthReady) window.topGymAuthReady.then(loadAfterAuth).catch(() => {});
         else loadAfterAuth();
         document.addEventListener('topgym:tab-changed', (event) => {
-            if (event.detail?.name === 'attendance' && isAuthenticated()) {
-                void loadPricing();
-                void loadToday();
-            }
             if (event.detail?.name === 'dashboard' && isAuthenticated()) void loadDashboard();
         });
     }

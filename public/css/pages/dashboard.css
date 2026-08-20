@@ -1317,6 +1317,41 @@
 }
 
 /* Daily passes dashboard card ----------------------------------------- */
+.day-pass-dialog {
+  width: min(920px, calc(100% - 28px));
+  max-width: 920px;
+  max-height: calc(100dvh - 28px);
+}
+
+#attendanceSection > #dayPassPanel { display: none; }
+.day-pass-dialog > #dayPassPanel { display: grid; }
+
+.day-pass-dialog > .day-pass-panel {
+  max-height: calc(100dvh - 28px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border: 0;
+  border-radius: 0;
+  background: var(--color-surface);
+  box-shadow: none;
+  scrollbar-color: var(--border-strong) transparent;
+  scrollbar-width: thin;
+}
+
+.day-pass-dialog > .day-pass-panel::-webkit-scrollbar { width: 7px; }
+.day-pass-dialog > .day-pass-panel::-webkit-scrollbar-thumb { border-radius: var(--radius-pill); background: var(--border-strong); }
+.day-pass-dialog .day-pass-head {
+  position: sticky;
+  top: calc(var(--space-5) * -1);
+  z-index: var(--z-content);
+  margin: calc(var(--space-5) * -1) calc(var(--space-5) * -1) 0;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--color-surface);
+  padding: var(--space-5);
+}
+.day-pass-dialog-head-actions { display: flex; align-items: center; gap: var(--space-2); }
+.day-pass-dialog-head-actions .btn { min-height: 40px; white-space: nowrap; }
+
 .dashboard-day-pass-card {
   display: grid;
   min-width: 0;
@@ -1380,6 +1415,17 @@
 .dashboard-day-pass-table td small { color: var(--color-text-muted); font-family: var(--font-latin); font-size: var(--font-xs); }
 
 @media (max-width: 600px) {
+  .day-pass-dialog {
+    width: calc(100% - 20px);
+    max-height: calc(100dvh - 20px);
+  }
+  .day-pass-dialog > .day-pass-panel { max-height: calc(100dvh - 20px); padding: var(--space-4); }
+  .day-pass-dialog .day-pass-head {
+    top: calc(var(--space-4) * -1);
+    margin: calc(var(--space-4) * -1) calc(var(--space-4) * -1) 0;
+    padding: var(--space-4);
+  }
+  .day-pass-dialog-head-actions { align-self: stretch; justify-content: space-between; }
   .dashboard-day-pass-head { align-items: stretch; flex-direction: column; }
   .dashboard-day-pass-actions { justify-content: stretch; }
   .dashboard-day-pass-actions .btn { flex: 1 1 0; }
