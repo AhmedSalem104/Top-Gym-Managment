@@ -45,10 +45,18 @@
 .action-menu-panel.is-floating {
   position: fixed;
   inset: auto;
+  z-index: var(--z-modal);
   inset-inline-end: auto;
   max-height: min(360px, calc(100vh - 16px));
   overflow-y: auto;
   overscroll-behavior: contain;
+}
+
+/* Lift an open menu above adjacent table rows. Sticky action cells otherwise
+   create competing stacking contexts and can paint over the dropdown. */
+.action-menu.is-open {
+  position: relative;
+  z-index: var(--z-modal);
 }
 
 .action-menu > .action-menu-toggle {

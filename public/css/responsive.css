@@ -770,40 +770,83 @@
   }
 
   .table-card-layout .member-action-row {
-    display: grid;
+    display: flex;
     width: 100%;
     min-width: 0;
     max-width: 100%;
-    grid-template-columns: minmax(0, 1fr);
+    flex-direction: column;
     align-items: stretch;
     gap: var(--space-2);
     margin: 0;
   }
 
-  .table-card-layout .member-quick-actions,
-  .table-card-layout .member-action-row > .table-actions {
+  .table-card-layout .member-quick-actions {
     display: flex;
+    order: 2;
     width: 100%;
     min-width: 0;
     max-width: 100%;
     flex-wrap: wrap;
+    align-items: center;
+    justify-content: stretch;
+    gap: var(--space-2);
+    overflow: visible;
+  }
+
+  .table-card-layout .member-action-row > .table-actions {
+    display: flex;
+    order: 1;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    flex-wrap: nowrap;
     align-items: center;
     justify-content: flex-start;
     gap: var(--space-2);
     overflow: visible;
   }
 
-  .table-card-layout .member-quick-actions > *,
-  .table-card-layout .member-action-row > .table-actions > *,
+  .table-card-layout .member-quick-actions > .member-attendance-quick,
+  .table-card-layout .member-quick-actions > .member-attendance-status {
+    display: inline-flex;
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+    min-height: 44px;
+    align-items: center;
+    justify-content: center;
+    flex: 1 1 100%;
+    white-space: nowrap;
+  }
+
+  .table-card-layout .member-action-row > .table-actions > .table-action-visible,
   .table-card-layout .member-action-row > .table-actions .action-menu {
+    display: inline-grid;
+    width: 40px;
     min-width: 40px;
-    max-width: 100%;
-    flex: 0 1 auto;
+    height: 40px;
+    min-height: 40px;
+    max-width: 40px;
+    flex: 0 0 40px;
+    place-items: center;
+  }
+
+  .table-card-layout .member-action-row > .table-actions > .table-action-visible {
+    padding: 0;
+    font-size: 0;
+  }
+
+  .table-card-layout .member-action-row > .table-actions > .table-action-visible .action-icon {
+    width: 20px;
+    height: 20px;
+    flex: 0 0 auto;
   }
 
   .table-card-layout .member-action-row > .table-actions > .table-action-visible[data-action="renew"] {
-    min-width: 0;
-    flex: 1 1 132px;
+    width: 40px;
+    min-width: 40px;
+    max-width: 40px;
+    flex: 0 0 40px;
   }
 
   .table-card-layout .member-action-row > .table-actions .action-menu {
@@ -817,10 +860,7 @@
   }
 
   .table-card-layout .member-action-row > .table-actions .table-action-label {
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    display: none;
   }
 
   .table-card-layout .table-actions > .btn,
@@ -828,4 +868,36 @@
   .table-card-layout .action-group > .btn {
     max-width: 100%;
   }
+
+  /* Keep mobile cards compact: each data point stays a readable key/value
+     row instead of becoming a tall stack. Actions retain their own spacing. */
+  .table-card-layout > tbody > tr {
+    gap: 0;
+    padding: 10px 12px;
+  }
+
+  .table-card-layout > tbody > tr > td {
+    grid-template-columns: minmax(76px, 30%) minmax(0, 1fr);
+    align-items: center;
+    gap: var(--space-2);
+    padding: 7px 0;
+    line-height: 1.35;
+  }
+
+  .table-card-layout > tbody > tr > td::before {
+    line-height: 1.35;
+  }
+
+  .table-card-layout > tbody > tr > td:last-child {
+    align-items: start;
+    padding-top: 10px;
+  }
+}
+
+/* The navigation remains part of the document flow. It must not become a
+   fixed/sticky layer over page content while the user scrolls. */
+.page-tabs {
+  position: relative;
+  top: auto;
+  z-index: auto;
 }

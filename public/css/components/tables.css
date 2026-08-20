@@ -395,6 +395,12 @@ table .action-group {
   background: var(--color-primary-soft);
 }
 
+@media (min-width: 768px) {
+  .members-table td:last-child.has-open-action-menu {
+    z-index: var(--z-modal);
+  }
+}
+
 @media (max-width: 767px) {
   th,
   td {

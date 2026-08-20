@@ -9,6 +9,8 @@
                     if (menu !== except) {
                         panel.hidden = true;
                         panel.classList.remove('is-floating');
+                        menu.classList.remove('is-open');
+                        menu.closest('td')?.classList.remove('has-open-action-menu');
                         panel.style.removeProperty('top');
                         panel.style.removeProperty('left');
                         toggle?.setAttribute('aria-expanded', 'false');
@@ -98,6 +100,8 @@
                     closeMenus(menu);
                     panel.hidden = !shouldOpen;
                     panel.classList.toggle('is-floating', shouldOpen);
+                    menu.classList.toggle('is-open', shouldOpen);
+                    menu.closest('td')?.classList.toggle('has-open-action-menu', shouldOpen);
                     toggle.setAttribute('aria-expanded', String(shouldOpen));
                     if (shouldOpen) positionFloatingMenu(menu, panel);
                     window.topGymStopButtonLoading?.(toggle);
