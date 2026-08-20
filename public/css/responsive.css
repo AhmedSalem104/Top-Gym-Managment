@@ -1091,28 +1091,83 @@
     grid-column: 1 / -1;
   }
 
-  .members-table.table-card-layout > tbody > tr > td:not(:first-child):not(:last-child) {
-    grid-template-columns: minmax(72px, 38%) minmax(0, 1fr);
-    gap: var(--space-2);
-    align-items: center;
+  /* Each member datum is a compact information card, not an inline
+     key/value row. The label sits above the value and its supporting line,
+     matching the member-details visual language while keeping the existing
+     table data and event bindings unchanged. */
+  .members-table.table-card-layout > tbody > tr > td:nth-child(2),
+  .members-table.table-card-layout > tbody > tr > td:nth-child(4),
+  .members-table.table-card-layout > tbody > tr > td:nth-child(5),
+  .members-table.table-card-layout > tbody > tr > td:nth-child(6) {
+    grid-template-columns: minmax(0, 1fr);
+    align-content: center;
+    align-items: start;
+    min-height: 82px;
+    gap: var(--space-1);
+    border: 1px solid var(--color-border-soft);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+    box-shadow: 0 2px 8px rgb(15 23 42 / 0.035);
+    padding: var(--space-3);
+    text-align: start;
     white-space: normal;
   }
 
-  /* Subscription, expiry and account cells contain a main value plus a
-     secondary line. Explicitly place both in the value column; otherwise
-     CSS Grid auto-placement treats the secondary line as a new key and can
-     make the card look overlapped on narrow phones. */
-  .members-table.table-card-layout > tbody > tr > td:not(:first-child):not(:last-child) > .table-main,
-  .members-table.table-card-layout > tbody > tr > td:not(:first-child):not(:last-child) > .table-sub,
-  .members-table.table-card-layout > tbody > tr > td:not(:first-child):not(:last-child) > .table-money,
-  .members-table.table-card-layout > tbody > tr > td:not(:first-child):not(:last-child) > .freeze-usage,
-  .members-table.table-card-layout > tbody > tr > td:not(:first-child):not(:last-child) > .badge {
-    grid-column: 2;
+  .members-table.table-card-layout > tbody > tr > td:nth-child(2) > .table-main,
+  .members-table.table-card-layout > tbody > tr > td:nth-child(2) > .table-sub,
+  .members-table.table-card-layout > tbody > tr > td:nth-child(4) > .table-main,
+  .members-table.table-card-layout > tbody > tr > td:nth-child(4) > .table-sub,
+  .members-table.table-card-layout > tbody > tr > td:nth-child(5) > .freeze-usage,
+  .members-table.table-card-layout > tbody > tr > td:nth-child(6) > .table-money,
+  .members-table.table-card-layout > tbody > tr > td:nth-child(6) > .table-sub {
+    grid-column: 1;
     min-width: 0;
     max-width: 100%;
     overflow-wrap: anywhere;
     white-space: normal;
     text-align: start;
+    width: 100%;
+  }
+
+  .members-table.table-card-layout > tbody > tr > td:nth-child(2) > .table-main,
+  .members-table.table-card-layout > tbody > tr > td:nth-child(4) > .table-main,
+  .members-table.table-card-layout > tbody > tr > td:nth-child(6) > .table-money {
+    font-size: var(--font-md);
+  }
+
+  .members-table.table-card-layout > tbody > tr > td:nth-child(5) > .freeze-usage {
+    display: inline-flex;
+    width: 100%;
+    align-items: baseline;
+    gap: var(--space-2);
+    direction: ltr;
+    unicode-bidi: isolate;
+    white-space: nowrap;
+  }
+
+  .members-table.table-card-layout > tbody > tr > td:nth-child(5) > .freeze-usage > strong {
+    direction: ltr;
+    unicode-bidi: isolate;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  .members-table.table-card-layout > tbody > tr > td:nth-child(5) > .freeze-usage > span {
+    color: var(--color-text-muted);
+    direction: rtl;
+    unicode-bidi: isolate;
+    white-space: normal;
+  }
+
+  .members-table.table-card-layout > tbody > tr > td:nth-child(6) > .table-money {
+    direction: ltr;
+    unicode-bidi: isolate;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  .members-table.table-card-layout > tbody > tr > td:nth-child(6) > .table-sub.has-debt {
+    white-space: nowrap;
   }
 
   .members-table.table-card-layout > tbody > tr > td:last-child {
@@ -1124,9 +1179,8 @@
   }
 }
 
-/* Very narrow phones do not have enough room for two data cards side by
-   side. Keep the key/value rhythm, but give each member datum the full card
-   width so Arabic labels, dates and money never collide or break apart. */
+/* Very narrow phones do not have enough room for two data cards side by side.
+   Keep each datum as its own card and give it the full available width. */
 @media (max-width: 390px) {
   .members-table.table-card-layout > tbody > tr {
     grid-template-columns: minmax(0, 1fr);
@@ -1142,7 +1196,6 @@
 
   .members-table.table-card-layout > tbody > tr > td:not(:first-child):not(:last-child) {
     grid-column: 1;
-    grid-template-columns: minmax(88px, 34%) minmax(0, 1fr);
   }
 
   .members-table.table-card-layout > tbody > tr > td:nth-child(3) {
