@@ -286,8 +286,8 @@
 .day-pass-actions .btn { min-height: 36px; }
 .day-pass-action-button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; white-space: nowrap; }
 .day-pass-action-button .ui-icon { width: 16px; height: 16px; }
-.day-pass-action-button.is-compact { width: 36px; min-width: 36px; padding-inline: 0; }
-.day-pass-action-button.is-compact .ui-icon { width: 18px; height: 18px; }
+.day-pass-action-button.is-compact { width: 40px; min-width: 40px; min-height: 40px; padding-inline: 0; }
+.day-pass-action-button.is-compact .ui-icon { width: 19px; height: 19px; }
 .day-pass-no-phone { display: inline-flex; align-items: center; min-height: 30px; border-radius: var(--radius-pill); background: var(--color-surface-muted); color: var(--color-text-muted); padding-inline: var(--space-2); font-size: 10px; white-space: nowrap; }
 .day-pass-delete-button { color: var(--color-danger); }
 .day-pass-void-button { color: var(--color-danger); }

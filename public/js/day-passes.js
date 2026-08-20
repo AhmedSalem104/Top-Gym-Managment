@@ -143,9 +143,16 @@
         const alerts = $('alertsSection');
         const dayPassCard = $('dashboardDayPassCard');
         const financeCard = $('monthlyFinanceCard');
-        if (!overview || !alerts || !dayPassCard || dayPassCard.parentElement !== overview) return;
-        if (financeCard && financeCard.parentElement === overview) overview.insertBefore(dayPassCard, financeCard);
-        else if (alerts.nextElementSibling !== dayPassCard) overview.insertBefore(dayPassCard, alerts.nextElementSibling);
+        if (!overview || !dayPassCard || dayPassCard.parentElement !== overview) return;
+        const stats = overview.querySelector(':scope > .stats-grid');
+        const firstContentAfterStats = stats?.nextElementSibling || alerts || null;
+        if (dayPassCard !== firstContentAfterStats) overview.insertBefore(dayPassCard, firstContentAfterStats);
+        if (alerts && alerts.parentElement === overview && alerts !== dayPassCard.nextElementSibling) {
+            overview.insertBefore(alerts, dayPassCard.nextElementSibling || null);
+        }
+        if (financeCard && financeCard.parentElement === overview && alerts && alerts.parentElement === overview) {
+            overview.insertBefore(financeCard, alerts.nextElementSibling || null);
+        }
     }
 
     function prepareDayPassDialog() {
@@ -197,7 +204,7 @@
         return String(item?.visitorPhoneNormalized || item?.visitorPhone || '').trim();
     }
 
-    function renderRecordActions(item, { compact = false } = {}) {
+    function renderRecordActions(item, { compact = true } = {}) {
         const owner = window.topGymAuth?.isOwner?.() === true;
         const phone = recordPhone(item);
         const iconButton = (action, label, icon, extra = '') => `<button type="button" class="btn btn-light btn-small day-pass-action-button ${compact ? 'is-compact' : ''} ${extra}" data-day-pass-${action}="${item.id}" title="${label}" aria-label="${label}">${icon}${compact ? '' : `<span>${label}</span>`}</button>`;

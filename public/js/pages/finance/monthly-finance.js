@@ -104,7 +104,16 @@
         snapshot.querySelectorAll('.monthly-finance-snapshot-metric').forEach((metric, index) => {
             if (!metric.querySelector('.monthly-finance-snapshot-metric-icon')) metric.insertAdjacentHTML('afterbegin', metricIcons[index]);
         });
-        overview.appendChild(snapshot);
+        const dayPassCard = overview.querySelector(':scope > #dashboardDayPassCard');
+        const alerts = overview.querySelector(':scope > #alertsSection');
+        if (dayPassCard && alerts && dayPassCard.parentElement === overview && alerts.parentElement === overview) {
+            overview.insertBefore(dayPassCard, alerts);
+            alerts.insertAdjacentElement('afterend', snapshot);
+        } else if (alerts && alerts.parentElement === overview) {
+            alerts.insertAdjacentElement('afterend', snapshot);
+        } else {
+            overview.appendChild(snapshot);
+        }
         const stats = overview.querySelector(':scope > .stats-grid');
         if (stats) {
             stats.classList.add('snapshot-membership-stats');

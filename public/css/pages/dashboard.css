@@ -179,17 +179,18 @@
 }
 
 .overview-grid > .alerts-panel {
-  grid-column: span 6;
-  grid-row: 2;
+  grid-column: span 5;
+  grid-row: 3;
 }
 
 .overview-grid > .monthly-finance-card {
-  grid-column: 1 / -1;
+  grid-column: span 7;
   grid-row: 3;
 }
 
 .overview-grid > .monthly-finance-snapshot {
   grid-column: span 7;
+  grid-row: 3;
 }
 
 .alerts-panel-header,
@@ -546,14 +547,18 @@
     grid-template-columns: repeat(12, minmax(0, 1fr));
   }
 
-  .overview-grid > .alerts-panel,
-  .overview-grid > .dashboard-day-pass-card {
-    grid-column: span 6;
-    grid-row: 2;
+  .overview-grid > .alerts-panel {
+    grid-column: span 5;
+    grid-row: 3;
   }
+  .overview-grid > .monthly-finance-card,
   .overview-grid > .monthly-finance-snapshot {
+    grid-column: span 7;
+    grid-row: 3;
+  }
+  .overview-grid > .dashboard-day-pass-card {
     grid-column: 1 / -1;
-    grid-row: auto;
+    grid-row: 2;
   }
 }
 
@@ -1356,7 +1361,7 @@
   display: grid;
   min-width: 0;
   gap: var(--space-5);
-  grid-column: span 6;
+  grid-column: 1 / -1;
   grid-row: 2;
 }
 
