@@ -321,15 +321,16 @@
             $('attendanceTableWrap').innerHTML = `<div class="attendance-empty">${allRecords.length ? 'لا توجد سجلات مطابقة للفلاتر الحالية.' : 'لا توجد سجلات حضور اليوم حتى الآن.'}</div>`;
             return;
         }
-        $('attendanceTableWrap').innerHTML = `<table class="attendance-table"><thead><tr><th>المشترك</th><th>الباقة</th><th>الحضور</th><th>الانصراف</th><th>المدة</th><th>طريقة التسجيل</th><th>الحالة</th></tr></thead><tbody>${records.map((record) => `<tr><td><span class="attendance-member-name">${escapeHtml(record.memberName)}</span><span class="attendance-member-phone">${escapeHtml(record.phone)}</span></td><td>${escapeHtml(record.plan || '—')}<span class="table-sub">${escapeHtml(record.type || '')}</span></td><td><span class="attendance-time">${timeText(record.checkInAt)}</span></td><td><span class="attendance-time">${timeText(record.checkOutAt)}</span></td><td>${record.durationMinutes === null ? 'داخل الجيم' : `${record.durationMinutes} دقيقة`}</td><td><span class="attendance-source ${escapeHtml(record.checkInSource)}">${escapeHtml(SOURCE_LABELS[record.checkInSource] || record.checkInSource)}</span></td><td><span class="attendance-status${record.checkOutAt ? ' complete' : ''}">${record.checkOutAt ? (record.checkOutSource === 'auto' ? 'انصرف تلقائيًا' : 'انصرف') : 'داخل الجيم'}</span></td></tr>`).join('')}</tbody></table>`;
+        $('attendanceTableWrap').innerHTML = `<table class="attendance-table"><thead><tr><th>المشترك</th><th>الباقة</th><th>الحضور</th><th>الانصراف</th><th>المدة</th><th>طريقة التسجيل</th><th>الحالة</th><th>الإجراء</th></tr></thead><tbody>${records.map((record) => {
+            const planLabel = PLAN_LABELS[record.plan] || record.plan || '—';
+            const typeLabel = TYPE_LABELS[record.type] || record.type || '';
+            return `<tr><td><span class="attendance-member-name">${escapeHtml(record.memberName)}</span><span class="attendance-member-phone" dir="ltr">${escapeHtml(record.phone)}</span></td><td>${escapeHtml(planLabel)}<span class="table-sub">${escapeHtml(typeLabel)}</span></td><td><span class="attendance-time">${timeText(record.checkInAt)}</span></td><td><span class="attendance-time">${timeText(record.checkOutAt)}</span></td><td>${record.durationMinutes === null ? 'داخل الجيم' : `${record.durationMinutes} دقيقة`}</td><td><span class="attendance-source ${escapeHtml(record.checkInSource)}">${escapeHtml(SOURCE_LABELS[record.checkInSource] || record.checkInSource)}</span></td><td><span class="attendance-status${record.checkOutAt ? ' complete' : ''}">${record.checkOutAt ? (record.checkOutSource === 'auto' ? 'انصرف تلقائيًا' : 'انصرف') : 'داخل الجيم'}</span></td><td></td></tr>`;
+        }).join('')}</tbody></table>`;
     }
 
     function decorateAttendanceActions(records) {
         const table = $('attendanceTableWrap')?.querySelector('table');
         if (!table?.tHead || !table.tBodies[0]) return;
-        const header = document.createElement('th');
-        header.textContent = 'الإجراء';
-        table.tHead.rows[0].append(header);
         Array.from(table.tBodies[0].rows).forEach((row, index) => {
             const record = records[index];
             const cell = document.createElement('td');
@@ -348,7 +349,9 @@
                 button.textContent = 'تسجيل انصراف';
                 cell.append(button);
             }
-            row.append(cell);
+            const existingCell = row.lastElementChild;
+            if (existingCell) existingCell.replaceWith(cell);
+            else row.append(cell);
         });
     }
 

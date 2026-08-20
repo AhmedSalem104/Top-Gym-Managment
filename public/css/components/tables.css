@@ -239,6 +239,41 @@ table,
   scrollbar-width: thin;
 }
 
+/* Keep the horizontal scroll direction predictable in an RTL application.
+   The table keeps RTL column order, while the wrapper uses LTR scrolling so
+   the start/end edges do not hide the action column on narrow screens. */
+.table-scroll,
+.table-wrap,
+.data-table-wrap,
+.history-scroll,
+.reports-table-wrap,
+.pricing-table-scroll,
+.pricing-table-wrap,
+.library-table-wrap,
+.external-trainees-table-wrap,
+.profile-table-wrap,
+.backup-history-wrap,
+.backup-count-table-wrap,
+.attendance-table-wrap {
+  direction: ltr;
+}
+
+.table-scroll > table,
+.table-wrap > table,
+.data-table-wrap > table,
+.history-scroll > table,
+.reports-table-wrap > table,
+.pricing-table-scroll > table,
+.pricing-table-wrap > table,
+.library-table-wrap > table,
+.external-trainees-table-wrap > table,
+.profile-table-wrap > table,
+.backup-history-wrap > table,
+.backup-count-table-wrap > table,
+.attendance-table-wrap > table {
+  direction: rtl;
+}
+
 .table-scroll::-webkit-scrollbar,
 .table-wrap::-webkit-scrollbar,
 .data-table-wrap::-webkit-scrollbar,
@@ -312,6 +347,52 @@ table .action-group {
   align-items: center;
   justify-content: center;
   margin-inline: auto;
+}
+
+/* Action cells remain reachable while the data area scrolls. This is scoped
+   to data tables that actually expose row actions, so ordinary summary tables
+   are not forced into a sticky last column. */
+.members-table th:last-child,
+.members-table td:last-child,
+.attendance-table th:last-child,
+.attendance-table td:last-child,
+.external-trainees-table th:last-child,
+.external-trainees-table td:last-child,
+.library-data-table th:last-child,
+.library-data-table td:last-child,
+.backup-history-table th:last-child,
+.backup-history-table td:last-child {
+  position: sticky;
+  inset-inline-end: 0;
+  z-index: 2;
+  min-width: 132px;
+  background: var(--color-surface);
+  box-shadow: -8px 0 14px rgb(15 23 42 / 0.05);
+}
+
+.members-table thead th:last-child,
+.attendance-table thead th:last-child,
+.external-trainees-table thead th:last-child,
+.library-data-table thead th:last-child,
+.backup-history-table thead th:last-child {
+  z-index: 4;
+  background: var(--color-surface-muted);
+}
+
+.members-table tbody tr:nth-child(even) td:last-child,
+.attendance-table tbody tr:nth-child(even) td:last-child,
+.external-trainees-table tbody tr:nth-child(even) td:last-child,
+.library-data-table tbody tr:nth-child(even) td:last-child,
+.backup-history-table tbody tr:nth-child(even) td:last-child {
+  background: var(--color-surface-muted);
+}
+
+.members-table tbody tr:hover td:last-child,
+.attendance-table tbody tr:hover td:last-child,
+.external-trainees-table tbody tr:hover td:last-child,
+.library-data-table tbody tr:hover td:last-child,
+.backup-history-table tbody tr:hover td:last-child {
+  background: var(--color-primary-soft);
 }
 
 @media (max-width: 767px) {

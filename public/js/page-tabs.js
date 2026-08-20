@@ -21,6 +21,7 @@
 
     function renderTab(name) {
         const overview = document.querySelector('.overview-grid');
+        const dashboardHero = document.querySelector('.dashboard-page-actions');
         const workspace = document.querySelector('.workspace');
         const membersSection = document.getElementById('membersSection');
         const expensesSection = document.getElementById('expensesSection');
@@ -39,6 +40,7 @@
         const isLibrary = name === 'library';
         const isTrainees = name === 'trainees';
 
+        setHidden(dashboardHero, !isDashboard);
         setHidden(overview, !isDashboard);
         setHidden(expensesSection, !isExpenses);
         setHidden(managementSection, !isManagement);

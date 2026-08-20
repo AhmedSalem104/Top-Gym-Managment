@@ -19,7 +19,7 @@
             styles: [],
             scripts: [
                 '/js/pages/members/action-menu.js?v=6',
-                '/js/pages/attendance/attendance.js?v=8'
+                '/js/pages/attendance/attendance.js?v=9'
             ]
         },
         coaching: {
@@ -49,11 +49,11 @@
         },
         attendance: {
             styles: [],
-            scripts: ['/js/pages/attendance/attendance.js?v=8']
+            scripts: ['/js/pages/attendance/attendance.js?v=9']
         },
         library: {
             styles: [],
-            scripts: ['/js/exercise-assets.js?v=5', '/js/muscle-assets.js?v=3', '/js/pages/library/library.js?v=12']
+            scripts: ['/js/exercise-assets.js?v=5', '/js/muscle-assets.js?v=3', '/js/pages/library/library.js?v=13']
         },
         trainees: {
             dependencies: ['coaching'],

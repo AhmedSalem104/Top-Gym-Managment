@@ -99,7 +99,12 @@ textarea[aria-invalid="true"],
 .input-group > input,
 .input-with-icon > input,
 .auth-input-wrap > input {
-  padding-inline-start: var(--space-10);
+  /* These icons are physically anchored to the left. In RTL, reserving
+     inline-start would reserve the right side and make the icon collide with
+     the value/placeholder. Keep the logical side normal and reserve the
+     physical icon side explicitly. */
+  padding-inline-start: var(--space-3);
+  padding-left: var(--space-10);
 }
 
 .input-icon,

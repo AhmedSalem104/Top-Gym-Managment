@@ -175,18 +175,18 @@
         const muscleMedia = window.TopGymMuscleAssets?.imageMarkup
             ? window.TopGymMuscleAssets.imageMarkup(item, 'main', { className: 'muscle-media-thumb', alt: title, icon: item.icon || '💪' })
             : `<span class="muscle-media muscle-media-fallback"><span class="muscle-media-fallback-icon">${escapeHtml(item.icon || '💪')}</span></span>`;
-        return `<tr><td><div class="library-table-primary"><span class="library-table-icon muscle-table-icon">${muscleMedia}</span><div><strong title="${escapeHtml(title)}">${escapeHtml(title)}</strong><small>${escapeHtml(item.name || '')}</small></div></div></td><td>${item.bodyPart ? `<span class="library-table-badge muscles">${escapeHtml(item.bodyPart)}</span>` : '—'}</td><td>${item.descriptionAr || item.description ? '<span class="library-table-badge positive">وصف متاح</span>' : '—'}</td><td>${formatNumber(item.id)}</td><td>${tableActions(item.id)}</td></tr>`;
+        return `<tr><td><div class="library-table-primary"><span class="library-table-icon muscle-table-icon">${muscleMedia}</span><div><strong title="${escapeHtml(title)}">${escapeHtml(title)}</strong><small dir="ltr">${escapeHtml(item.name || '')}</small></div></div></td><td>${item.bodyPart ? `<span class="library-table-badge muscles">${escapeHtml(bodyPartLabel(item.bodyPart))}</span>` : '—'}</td><td>${item.descriptionAr || item.description ? '<span class="library-table-badge positive">وصف متاح</span>' : '—'}</td><td>${formatNumber(item.id)}</td><td>${tableActions(item.id)}</td></tr>`;
     }
 
     function renderFoodRow(item) {
         const title = item.nameAr || item.nameEn || itemName(item);
-        return `<tr><td><div class="library-table-primary"><span class="library-table-icon">🥗</span><div><strong title="${escapeHtml(title)}">${escapeHtml(title)}</strong><small>${escapeHtml(item.nameEn || '')}</small></div></div></td><td>${item.category ? `<span class="library-table-badge foods">${escapeHtml(item.category)}</span>` : '—'}</td><td><strong>${formatNumber(item.calories, 1)}</strong><small>سعرة</small></td><td><strong>${formatNumber(item.protein, 1)} g</strong><small>بروتين</small></td><td><strong>${formatNumber(item.carbs, 1)} g</strong><small>كارب</small></td><td><strong>${formatNumber(item.fat, 1)} g</strong><small>دهون</small></td><td>${formatNumber(item.servingSize, 1)} ${escapeHtml(item.servingUnit || '')}</td><td>${tableActions(item.id)}</td></tr>`;
+        return `<tr><td><div class="library-table-primary"><span class="library-table-icon">🥗</span><div><strong title="${escapeHtml(title)}">${escapeHtml(title)}</strong><small dir="ltr">${escapeHtml(item.nameEn || '')}</small></div></div></td><td>${item.category ? `<span class="library-table-badge foods">${escapeHtml(foodCategoryLabel(item.category))}</span>` : '—'}</td><td><strong>${formatNumber(item.calories, 1)}</strong><small>سعرة</small></td><td><strong>${formatNumber(item.protein, 1)} جرام</strong><small>بروتين</small></td><td><strong>${formatNumber(item.carbs, 1)} جرام</strong><small>كارب</small></td><td><strong>${formatNumber(item.fat, 1)} جرام</strong><small>دهون</small></td><td>${formatNumber(item.servingSize, 1)} ${escapeHtml(foodUnitLabel(item.servingUnit))}</td><td>${tableActions(item.id)}</td></tr>`;
     }
 
     function renderExerciseRow(item) {
         const title = item.nameAr || item.name || itemName(item);
         const target = item.targetMuscleNameAr || item.targetMuscleName || 'غير محددة';
-        return `<tr><td><div class="library-table-primary"><span class="library-table-icon exercise-table-icon">${exerciseImage(item, 'main', { className: 'exercise-media-thumb', alt: title })}</span><div><strong title="${escapeHtml(title)}">${escapeHtml(title)}</strong><small>${escapeHtml(item.name || '')}</small></div></div></td><td><span class="library-table-badge exercises">${escapeHtml(target)}</span></td><td>${item.difficulty ? escapeHtml(item.difficulty) : '—'}</td><td>${item.equipment ? escapeHtml(item.equipment) : '—'}</td><td>${item.category ? escapeHtml(item.category) : '—'}</td><td>${item.isHighImpact ? '<span class="library-table-badge warning">مجهود مرتفع</span>' : '—'}</td><td>${tableActions(item.id)}</td></tr>`;
+        return `<tr><td><div class="library-table-primary"><span class="library-table-icon exercise-table-icon">${exerciseImage(item, 'main', { className: 'exercise-media-thumb', alt: title })}</span><div><strong title="${escapeHtml(title)}">${escapeHtml(title)}</strong><small dir="ltr">${escapeHtml(item.name || '')}</small></div></div></td><td><span class="library-table-badge exercises">${escapeHtml(target)}</span></td><td>${item.difficulty ? escapeHtml(exerciseValue(item.difficulty, 'difficulty')) : '—'}</td><td>${item.equipment ? escapeHtml(exerciseValue(item.equipment, 'equipment')) : '—'}</td><td>${item.category ? escapeHtml(exerciseValue(item.category, 'category')) : '—'}</td><td>${item.isHighImpact ? '<span class="library-table-badge warning">مجهود مرتفع</span>' : '—'}</td><td>${tableActions(item.id)}</td></tr>`;
     }
 
     function renderList() {
@@ -473,21 +473,44 @@
         category: { strength: 'قوة', stretching: 'إطالة', plyometrics: 'تمارين انفجارية', cardio: 'كارديو', powerlifting: 'باور ليفتنج', olympic: 'أولمبي', strongman: 'سترونجمان' }
     };
 
+    const FOOD_CATEGORY_LABELS = {
+        meat: 'لحوم', poultry: 'دواجن', seafood: 'مأكولات بحرية', fish: 'أسماك', dairy: 'ألبان', eggs: 'بيض', grains: 'حبوب', cereals: 'حبوب',
+        fruits: 'فواكه', fruit: 'فواكه', vegetables: 'خضروات', vegetable: 'خضروات', legumes: 'بقوليات', nuts: 'مكسرات', oils: 'زيوت', beverages: 'مشروبات',
+        sweets: 'حلويات', snacks: 'وجبات خفيفة', supplements: 'مكملات', other: 'أخرى'
+    };
+
+    const BODY_PART_LABELS = {
+        'upper body': 'الجزء العلوي', 'lower body': 'الجزء السفلي', core: 'الجذع', neck: 'الرقبة', shoulders: 'الكتفان', arms: 'الذراعان', legs: 'الساقان', back: 'الظهر', chest: 'الصدر'
+    };
+
+    function translatedValue(value, labels, fallback = 'غير محدد') {
+        const raw = String(value || '').trim();
+        if (!raw) return fallback;
+        return labels[raw.toLowerCase()] || raw;
+    }
+
+    function foodCategoryLabel(value) { return translatedValue(value, FOOD_CATEGORY_LABELS); }
+    function bodyPartLabel(value) { return translatedValue(value, BODY_PART_LABELS); }
+    function foodUnitLabel(value) {
+        const raw = String(value || '').trim().toLowerCase();
+        return ({ gram: 'جرام', grams: 'جرام', g: 'جرام', kilogram: 'كجم', kg: 'كجم', milliliter: 'مل', ml: 'مل', serving: 'حصة', piece: 'قطعة' })[raw] || String(value || '').trim();
+    }
+
     function exerciseValue(value, type) {
         const raw = String(value || '').trim();
         if (!raw) return 'غير محدد';
         const translated = EXERCISE_VALUE_LABELS[type]?.[raw.toLowerCase()];
-        return translated && translated.toLocaleLowerCase() !== raw.toLocaleLowerCase() ? `${translated} · ${raw}` : translated || raw;
+        return translated || raw;
     }
 
     function detailItem(label, value, full = false) {
         const displayValue = value === 0 ? '0' : nonEmptyValue(value, 'غير متوفر في بيانات المصدر');
-        return `<div class="library-detail-item${full ? ' full' : ''}"><span>${escapeHtml(label)}</span><strong>${escapeHtml(displayValue)}</strong></div>`;
+        return `<div class="library-detail-item${full ? ' full' : ''}"><span>${escapeHtml(label)}</span><strong dir="auto">${escapeHtml(displayValue)}</strong></div>`;
     }
 
     function detailList(label, values, fallback = 'غير متوفر في بيانات المصدر') {
         const list = contentLines(values);
-        return `<div class="library-detail-item full"><span>${escapeHtml(label)}</span>${list.length ? `<ol class="library-detail-list">${list.map((value) => `<li>${escapeHtml(value)}</li>`).join('')}</ol>` : `<strong>${escapeHtml(fallback)}</strong>`}</div>`;
+        return `<div class="library-detail-item full"><span>${escapeHtml(label)}</span>${list.length ? `<ol class="library-detail-list" dir="auto">${list.map((value) => `<li>${escapeHtml(value)}</li>`).join('')}</ol>` : `<strong dir="auto">${escapeHtml(fallback)}</strong>`}</div>`;
     }
 
     function renderDetailsContent(type, item) {
@@ -502,7 +525,7 @@
                 : '';
             content.innerHTML = `<div class="library-detail-hero"><span class="library-detail-hero-icon">${escapeHtml(item.icon || '💪')}</span><div><h4>${escapeHtml(itemName(item))}</h4><p>${escapeHtml(names.english || 'الاسم الإنجليزي غير متاح')}</p></div></div><div class="muscle-detail-visual">${muscleGallery}<small class="muscle-detail-source-note">الصور التشريحية من BodyParts3D / Anatomography بنفس الهوية البصرية. السجلات غير المطابقة تعرض fallback لحين المراجعة.</small></div><div class="library-detail-grid">${detailItem('الاسم بالعربية', names.arabic || 'الاسم العربي غير متاح')}${detailItem('الاسم بالإنجليزية', names.english || 'الاسم الإنجليزي غير متاح')}${detailItem('منطقة الجسم', item.bodyPart)}${detailItem('المعرّف المصدر', item.sourceId)}${detailItem('الوصف بالعربية', item.descriptionAr, true)}${detailItem('الوصف بالإنجليزية', item.description, true)}</div>`;
         } else if (type === 'foods') {
-            content.innerHTML = `<div class="library-detail-hero"><span class="library-detail-hero-icon">🥗</span><div><h4>${escapeHtml(itemName(item))}</h4><p>${escapeHtml(names.english || 'الاسم الإنجليزي غير متاح')}</p></div></div><div class="library-detail-grid">${detailItem('الاسم بالعربية', names.arabic || 'الاسم العربي غير متاح')}${detailItem('الاسم بالإنجليزية', names.english || 'الاسم الإنجليزي غير متاح')}${detailItem('التصنيف', item.category)}${detailItem('الحصة', `${formatNumber(item.servingSize, 1)} ${item.servingUnit || ''}`)}${detailItem('السعرات', formatNumber(item.calories, 1))}${detailItem('البروتين', `${formatNumber(item.protein, 1)} g`)}${detailItem('الكربوهيدرات', `${formatNumber(item.carbs, 1)} g`)}${detailItem('الدهون', `${formatNumber(item.fat, 1)} g`)}${detailItem('الألياف', `${formatNumber(item.fiber, 1)} g`)}${detailItem('السكريات', `${formatNumber(item.sugar, 1)} g`)}${detailItem('الصوديوم', `${formatNumber(item.sodium, 1)} mg`)}</div>`;
+            content.innerHTML = `<div class="library-detail-hero"><span class="library-detail-hero-icon">🥗</span><div><h4>${escapeHtml(itemName(item))}</h4><p dir="auto">${escapeHtml(names.english || 'الاسم الإنجليزي غير متاح')}</p></div></div><div class="library-detail-grid">${detailItem('الاسم بالعربية', names.arabic || 'الاسم العربي غير متاح')}${detailItem('الاسم بالإنجليزية', names.english || 'الاسم الإنجليزي غير متاح')}${detailItem('التصنيف', foodCategoryLabel(item.category))}${detailItem('الحصة', `${formatNumber(item.servingSize, 1)} ${foodUnitLabel(item.servingUnit)}`)}${detailItem('السعرات', formatNumber(item.calories, 1))}${detailItem('البروتين', `${formatNumber(item.protein, 1)} جرام`)}${detailItem('الكربوهيدرات', `${formatNumber(item.carbs, 1)} جرام`)}${detailItem('الدهون', `${formatNumber(item.fat, 1)} جرام`)}${detailItem('الألياف', `${formatNumber(item.fiber, 1)} جرام`)}${detailItem('السكريات', `${formatNumber(item.sugar, 1)} جرام`)}${detailItem('الصوديوم', `${formatNumber(item.sodium, 1)} ملجم`)}</div>`;
         } else {
             const primary = resolveMuscle(item.targetMuscleId, item.targetMuscleNameAr, item.targetMuscleName);
             const primaryLabel = bilingualName(primary.nameAr, primary.nameEn, 'العضلة الأساسية غير محددة');

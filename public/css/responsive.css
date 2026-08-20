@@ -19,13 +19,14 @@
     justify-content: flex-start;
     overflow-x: auto;
     scrollbar-width: thin;
-    direction: ltr;
-    flex-direction: row-reverse;
+    direction: rtl;
+    flex-direction: row;
   }
 
   .page-tab {
     flex: 0 0 auto;
     direction: rtl;
+    min-width: max-content;
   }
 }
 
@@ -55,10 +56,13 @@
     justify-content: flex-start;
     overflow-x: auto;
     scrollbar-width: thin;
+    direction: rtl;
+    flex-direction: row;
   }
 
   .page-tab {
     flex: 0 0 auto;
+    min-width: max-content;
   }
 
   .dashboard-hero,
@@ -154,6 +158,8 @@
   /* Keep all permitted sections visible as compact navigation tabs on small
      screens instead of hiding them in a horizontal rail. */
   .page-tabs {
+    box-sizing: border-box;
+    width: 100%;
     position: sticky;
     top: 0;
     z-index: var(--z-sticky);
@@ -291,6 +297,8 @@
    its own fixed slot at the left edge of the RTL navigation. */
 @media (min-width: 768px) and (max-width: 991px) {
   .page-tabs {
+    box-sizing: border-box;
+    width: 100%;
     position: sticky;
     top: 0;
     z-index: var(--z-sticky);

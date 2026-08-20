@@ -88,7 +88,10 @@
   transform: translateY(-50%);
 }
 
-.members-search-field input { padding-inline-start: var(--space-9); }
+.members-search-field input {
+  padding-inline-start: var(--space-3);
+  padding-left: var(--space-9);
+}
 
 .members-list {
   min-width: 0;

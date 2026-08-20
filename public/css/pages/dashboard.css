@@ -301,7 +301,8 @@
 .alerts-search-field input,
 .attendance-search-wrap input,
 .coaching-search input {
-  padding-inline-start: var(--space-9);
+  padding-inline-start: var(--space-3);
+  padding-left: var(--space-9);
 }
 
 .monthly-finance-card {
@@ -490,6 +491,53 @@
 .backup-history-list,
 .auth-users-loading { color: var(--color-text-muted); font-size: var(--font-xs); }
 
+.backup-history-block {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  padding: var(--space-4);
+}
+
+.backup-history-block-head {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.backup-history-block-head strong { color: var(--color-text); font-size: var(--font-sm); }
+.backup-history-block-head span { color: var(--color-text-muted); font-size: var(--font-xs); }
+.backup-history-wrap { min-width: 0; overflow-x: auto; border: 1px solid var(--border-color); border-radius: var(--radius-md); }
+.backup-history-table { min-width: 680px; table-layout: fixed; }
+.backup-history-table th,
+.backup-history-table td { min-height: 60px; padding: var(--space-3); text-align: center; vertical-align: middle; }
+.backup-history-table td:first-child { text-align: start; }
+.backup-history-table td strong,
+.backup-history-table td small { display: block; min-width: 0; overflow-wrap: anywhere; }
+.backup-history-table td small { margin-top: 2px; }
+.backup-history-actions { display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2); white-space: nowrap; }
+.backup-history-status {
+  display: inline-flex;
+  min-width: 72px;
+  min-height: 28px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  border-radius: var(--radius-pill);
+  padding: 0 var(--space-2);
+  font-size: var(--font-xs);
+  font-weight: var(--weight-bold);
+}
+.backup-history-status.success { border-color: #a9ddc2; background: var(--color-success-soft); color: #087749; }
+.backup-history-status.error { border-color: #f2b8b8; background: var(--color-danger-soft); color: #b42323; }
+.auth-users-head > div { min-width: 0; }
+.auth-users-head > button { flex: 0 0 auto; min-width: 156px; }
+
 @media (max-width: 1199px) and (min-width: 992px) {
   .overview-grid {
     grid-template-columns: repeat(12, minmax(0, 1fr));
@@ -527,6 +575,10 @@
   .backup-management-panel,
   .backup-history-section-head,
   .auth-users-head { align-items: stretch; flex-direction: column; }
+
+  .backup-history-block-head { align-items: flex-start; flex-direction: column; }
+  .backup-history-actions { width: 100%; }
+  .backup-history-actions > .btn { flex: 1 1 0; }
 }
 
 /* Dashboard analytics: keep every chart inside its card and use the available width. */

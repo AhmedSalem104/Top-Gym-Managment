@@ -8,12 +8,22 @@
 }
 
 .page-tabs {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
   position: sticky;
   top: 0;
   z-index: var(--z-sticky);
   border-top: 1px solid rgb(255 255 255 / 0.08);
   background: #132238;
   padding: var(--space-2) max(16px, calc((100% - 1440px) / 2));
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-inline: contain;
+  scrollbar-color: rgb(255 255 255 / 0.28) transparent;
+  scrollbar-width: thin;
+  direction: rtl;
+  flex-wrap: nowrap;
   box-shadow: 0 8px 20px rgb(15 23 42 / 0.12);
   isolation: isolate;
 }
@@ -38,6 +48,8 @@
   position: relative;
   display: inline-flex;
   min-height: 42px;
+  min-width: max-content;
+  flex: 0 1 auto;
   align-items: center;
   justify-content: center;
   gap: var(--space-2);
@@ -71,6 +83,12 @@
   width: 18px;
   height: 18px;
   flex: 0 0 auto;
+}
+
+.page-tabs::-webkit-scrollbar { height: 6px; }
+.page-tabs::-webkit-scrollbar-thumb {
+  border-radius: var(--radius-pill);
+  background: rgb(255 255 255 / 0.28);
 }
 
 .tabs-light .tab-button,
