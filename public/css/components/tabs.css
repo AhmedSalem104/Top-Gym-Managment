@@ -202,25 +202,25 @@
   height: 44px;
   min-height: 44px;
   place-items: center;
-  border: 1px solid rgb(110 153 203 / 0.52);
+  border: 1px solid rgb(255 125 135 / 0.58);
   border-radius: 10px;
-  background: rgb(21 52 91 / 0.82);
-  color: #c6dcf8;
+  background: rgb(92 24 38 / 0.88);
+  color: #ffb8bf;
   box-shadow: inset 0 1px 0 rgb(221 239 255 / 0.08), 0 4px 12px rgb(2 12 27 / 0.2);
   transition: background-color var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast), transform var(--transition-fast);
 }
 
 .page-tabs > .auth-account-bar .auth-logout-button:hover:not(:disabled) {
-  border-color: rgb(115 181 255 / 0.82);
-  background: rgb(28 91 158 / 0.94);
+  border-color: rgb(255 169 176 / 0.9);
+  background: #c9364d;
   color: #fff;
   transform: translateY(-1px);
 }
 
 .page-tabs > .auth-account-bar .auth-logout-button .ui-icon {
-  width: 20px;
-  height: 20px;
-  stroke-width: 2;
+  width: 24px;
+  height: 24px;
+  stroke-width: 2.2;
 }
 
 .page-tabs::-webkit-scrollbar-thumb {
