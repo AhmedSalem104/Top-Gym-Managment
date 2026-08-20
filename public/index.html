@@ -10,7 +10,7 @@
     <link rel="preload" href="/assets/gym-background.webp" as="image" type="image/webp" fetchpriority="high">
     <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2" sizes="any">
     <link rel="shortcut icon" type="image/svg+xml" href="/favicon.svg?v=2">
-    <link rel="stylesheet" href="/css/main.css?v=7">
+    <link rel="stylesheet" href="/css/main.css?v=8">
     <title>إدارة عضويات الجيم</title>
 </head>
 <body class="auth-pending font-sans bg-slate-100 text-slate-900 gym-page-bg">
@@ -34,13 +34,15 @@
                 </aside>
                 <section class="auth-form-panel" aria-label="نموذج الدخول">
                     <form class="auth-form" id="loginForm" novalidate>
-                        <div class="auth-form-heading"><span class="auth-welcome">مرحباً بك في</span><h2>تسجيل الدخول</h2><p>يرجى إدخال بياناتك للمتابعة</p></div>
-                        <div class="auth-field"><label for="loginEmail">البريد الإلكتروني</label><div class="auth-input-wrap"><svg class="auth-input-icon ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg><input id="loginEmail" type="email" autocomplete="username" inputmode="email" maxlength="254" required placeholder="name@example.com"></div></div>
-                        <div class="auth-field"><label for="loginPassword">كلمة المرور</label><div class="auth-password-wrap"><svg class="auth-input-icon ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg><input id="loginPassword" type="password" autocomplete="current-password" maxlength="128" required placeholder="أدخل كلمة المرور"><button class="auth-password-toggle" id="loginPasswordToggle" type="button" aria-label="إظهار كلمة المرور"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 12s3.4-6 9.5-6 9.5 6 9.5 6-3.4 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="2.5"/></svg></button></div></div>
+                        <div class="auth-form-heading"><span class="auth-welcome">مرحباً بعودتك</span><h2>تسجيل الدخول</h2><p>أدخل بيانات حسابك للمتابعة</p></div>
+                        <div class="auth-field"><label for="loginEmail">البريد الإلكتروني</label><div class="auth-input-wrap"><svg class="auth-input-icon ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg><input id="loginEmail" dir="ltr" type="email" autocomplete="username" inputmode="email" maxlength="254" required placeholder="name@example.com"></div></div>
+                        <div class="auth-field"><label for="loginPassword">كلمة المرور</label><div class="auth-password-wrap"><svg class="auth-input-icon ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg><input id="loginPassword" dir="ltr" type="password" autocomplete="current-password" maxlength="128" required placeholder="أدخل كلمة المرور"><button class="auth-password-toggle" id="loginPasswordToggle" type="button" aria-label="إظهار كلمة المرور"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 12s3.4-6 9.5-6 9.5 6 9.5 6-3.4 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="2.5"/></svg></button></div></div>
+                        <label class="auth-remember" for="loginRememberMe"><input id="loginRememberMe" type="checkbox"><span>تذكرني</span></label>
                         <p class="auth-message" id="loginMessage" role="alert" hidden></p>
                         <p class="auth-setup-note" id="loginSetupNote" hidden>لم يتم إعداد حساب المالك بعد. أضف AUTH_OWNER_EMAIL وAUTH_OWNER_PASSWORD في إعدادات الخادم ثم أعد المحاولة.</p>
                         <button class="btn btn-primary auth-submit" id="loginSubmit" type="submit"><span class="auth-spinner" aria-hidden="true"></span><span class="auth-submit-label">تسجيل الدخول</span><svg class="auth-submit-arrow ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="m11 18-6-6 6-6"/></svg></button>
                     </form>
+                    <p class="auth-footer" dir="rtl">TOP GYM <span aria-hidden="true">•</span> إدارة أسهل، أداء أفضل</p>
                 </section>
             </div>
         </div>
@@ -378,7 +380,8 @@
     </dialog>
     <dialog id="detailsDialog" class="details-dialog rounded-lg border-slate-200 shadow-lift">
         <div class="dialog-body">
-            <div class="details-dialog-head"><div><h3 id="detailsTitle">تفاصيل العميل</h3><p id="detailsSubtitle"></p></div><button class="btn btn-light btn-small" id="detailsClose" type="button">إغلاق</button></div>
+            <div class="details-dialog-head member-details-head"><div class="member-details-head-content"><div class="member-profile-identity"><span class="member-profile-avatar" id="detailsAvatar" aria-hidden="true">م</span><span class="member-profile-copy"><span class="member-profile-name-row"><h3 id="detailsTitle">تفاصيل العميل</h3><span class="member-profile-badge" id="detailsMemberBadge">عضو</span></span><p id="detailsSubtitle" class="member-profile-phone" dir="ltr"></p><small id="detailsRegistration" class="member-profile-registration"></small></span></div></div><button class="btn btn-light btn-small" id="detailsClose" type="button">إغلاق</button></div>
+            <div class="member-expiry-banner" id="detailsExpiryBanner" hidden><span class="member-expiry-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span><span><strong id="detailsExpiryTitle">قريبة الانتهاء</strong><small id="detailsExpiryText">ينتهي الاشتراك قريبًا</small></span></div>
             <div id="detailsContent"><div class="loading">جاري تحميل التفاصيل…</div></div>
         </div>
     </dialog>
@@ -443,6 +446,31 @@
     </dialog>
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
+    <button class="smart-assistant-launcher" id="smartAssistantLauncher" type="button" hidden aria-label="فتح المساعد الذكي" aria-controls="smartAssistantPanel" aria-expanded="false" title="اسأل المساعد">
+        <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 13.7 8.3 19 10l-5.3 1.7L12 17l-1.7-5.3L5 10l5.3-1.7Z"/><path d="m19 16 .7 2.3L22 19l-2.3.7L19 22l-.7-2.3L16 19l2.3-.7Z"/></svg>
+        <span class="smart-assistant-launcher-label">اسأل المساعد</span>
+    </button>
+    <aside class="smart-assistant-panel" id="smartAssistantPanel" hidden aria-labelledby="smartAssistantTitle">
+        <header class="smart-assistant-header">
+            <div class="smart-assistant-brand">
+                <span class="smart-assistant-brand-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 13.7 8.3 19 10l-5.3 1.7L12 17l-1.7-5.3L5 10l5.3-1.7Z"/><path d="m19 16 .7 2.3L22 19l-2.3.7L19 22l-.7-2.3L16 19l2.3-.7Z"/></svg></span>
+                <span class="smart-assistant-brand-copy"><strong id="smartAssistantTitle">المساعد الذكي</strong><small id="smartAssistantScreenLabel">مساعدة TOP GYM</small></span>
+            </div>
+            <button class="smart-assistant-close" id="smartAssistantClose" type="button" aria-label="إغلاق المساعد" title="إغلاق المساعد"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
+        </header>
+        <div class="smart-assistant-tabs" role="tablist" aria-label="نوع المساعدة">
+            <button class="smart-assistant-tab" id="smartAssistantScreenTab" type="button" role="tab" aria-selected="true" data-assistant-mode="screen">مساعدة هذه الشاشة</button>
+            <button class="smart-assistant-tab" id="smartAssistantGeneralTab" type="button" role="tab" aria-selected="false" data-assistant-mode="general">اسأل النظام</button>
+        </div>
+        <div class="smart-assistant-context" id="smartAssistantContext" aria-live="polite"></div>
+        <div class="smart-assistant-quick-actions" id="smartAssistantQuickActions" aria-label="الإجراءات السريعة"></div>
+        <div class="smart-assistant-messages" id="smartAssistantMessages" role="log" aria-live="polite" aria-relevant="additions"></div>
+        <form class="smart-assistant-composer" id="smartAssistantForm">
+            <input class="smart-assistant-input" id="smartAssistantInput" type="text" autocomplete="off" maxlength="500" placeholder="اكتب سؤالك هنا..." aria-label="اكتب سؤالك للمساعد">
+            <button class="smart-assistant-submit" id="smartAssistantSubmit" type="submit" aria-label="إرسال السؤال" title="إرسال السؤال"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m4 4 16 8-16 8 3-8Z"/><path d="M7 12h13"/></svg></button>
+        </form>
+    </aside>
+
     <!-- SweetAlert2 is optional and loaded during idle time by feature-loader. -->
     <script defer src="/js/core/api.js?v=1"></script>
     <script defer src="/js/core/permissions.js?v=1"></script>
@@ -451,12 +479,14 @@
     <script defer src="/js/app.js?v=feature-expansion9"></script>
     <script defer src="/js/feature-loader.js?v=6"></script>
     <script defer src="/js/page-tabs.js?v=9"></script>
+    <script defer src="/js/smart-assistant.js?v=2"></script>
     <script defer src="/js/button-loading.js"></script>
     <script defer src="/js/pagination.js"></script>
     <script defer src="/js/table-cards.js?v=1"></script>
     <script defer src="/js/whatsapp-enhancements.js?v=11"></script>
     <script defer src="/js/design-enhancements.js?v=2"></script>
     <script defer src="/js/details-enhancements.js"></script>
+    <script defer src="/js/member-details-ui.js?v=1"></script>
     <script defer src="/js/alerts-enhancements.js?v=7"></script>
 </body>
 </html>

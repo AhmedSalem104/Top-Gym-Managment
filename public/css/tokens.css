@@ -22,6 +22,14 @@
   --color-danger-soft: #fff0f0;
   --color-info: #2563eb;
   --color-info-soft: #edf4ff;
+  /* Shared member-card and authentication semantic aliases. */
+  --color-page: #f8fafc;
+  --color-navy: #0f172a;
+  --color-pale-blue: #eff6ff;
+  --color-border-soft: #dce6f3;
+  --color-warning-strong: #d08700;
+  --color-warning-surface: #fff8e8;
+  --color-outstanding: #dc2626;
   --border-color: #e1e8f1;
   --border-strong: #cbd7e6;
   --border-focus: #8ab5ff;

@@ -15,6 +15,7 @@
 @import url("./components/sidebar.css");
 @import url("./components/navbar.css");
 @import url("./components/dropdowns.css");
+@import url("./components/assistant.css");
 @import url("./components/pagination.css");
 @import url("./components/loading.css");
 @import url("./components/empty-states.css");

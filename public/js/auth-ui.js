@@ -4,6 +4,7 @@
 
     const nativeFetch = window.fetch.bind(window);
     const permissions = window.topGymPermissions;
+    const rememberEmailKey = 'topgym.login.email';
     const state = { user: null, ready: false, redirecting: false };
 
     document.body.classList.add('auth-pending');
@@ -134,6 +135,8 @@
         if (screen) screen.hidden = false;
         const form = $('loginForm');
         if (form) form.hidden = false;
+        const heading = form?.querySelector('.auth-form-heading p');
+        if (heading) heading.textContent = 'أدخل بيانات حسابك للمتابعة';
         document.querySelector('.auth-loading')?.remove();
         const setupNote = $('loginSetupNote');
         if (setupNote) setupNote.hidden = !setupRequired;
@@ -185,6 +188,12 @@
             });
             const data = await response.json().catch(() => ({}));
             if (!response.ok) throw Object.assign(new Error(data.error || 'البريد الإلكتروني أو كلمة المرور غير صحيحة.'), { code: data.code });
+            try {
+                if ($('loginRememberMe')?.checked) localStorage.setItem(rememberEmailKey, email);
+                else localStorage.removeItem(rememberEmailKey);
+            } catch {
+                // Storage may be disabled; authentication must continue normally.
+            }
             window.location.reload();
         } catch (error) {
             showMessage(error.message || 'البريد الإلكتروني أو كلمة المرور غير صحيحة.');
@@ -197,6 +206,15 @@
         if (!form || form.dataset.bound) return;
         form.dataset.bound = 'true';
         form.hidden = true;
+        try {
+            const rememberedEmail = localStorage.getItem(rememberEmailKey);
+            if (rememberedEmail && !$('loginEmail')?.value) {
+                $('loginEmail').value = rememberedEmail;
+                if ($('loginRememberMe')) $('loginRememberMe').checked = true;
+            }
+        } catch {
+            // Storage may be disabled; leave the login form usable.
+        }
         const heading = form.querySelector('.auth-form-heading p');
         if (heading) heading.textContent = 'جاري التحقق من جلسة الدخول…';
         const loading = document.createElement('p');
