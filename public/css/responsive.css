@@ -68,6 +68,7 @@
     display: grid;
     grid-template-columns: minmax(0, 1fr);
     min-height: 0;
+    overflow: visible;
     border: 1px solid var(--border-color);
     border-radius: var(--radius-lg);
     background: var(--color-surface);
@@ -123,6 +124,24 @@
     border-bottom: 0;
     background: transparent !important;
     box-shadow: none !important;
+  }
+
+  /* Give every responsive table row the same independent card surface. The
+     cells remain key/value pairs, so no information or table interaction is
+     lost when the desktop table collapses on a phone. */
+  .table-card-layout > tbody > tr > td {
+    min-inline-size: 0;
+  }
+
+  .table-card-layout > tbody > tr > td:last-child .table-actions,
+  .table-card-layout > tbody > tr > td:last-child .row-actions,
+  .table-card-layout > tbody > tr > td:last-child .action-group,
+  .table-card-layout > tbody > tr > td:last-child .members-actions {
+    width: 100%;
+    min-width: 0;
+    align-items: center;
+    justify-content: flex-start;
+    flex-wrap: wrap;
   }
 
   .table-card-layout > tbody > tr > td[colspan] {
@@ -943,8 +962,97 @@
      unnecessarily tall. */
   .members-table.table-card-layout > tbody > tr {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-areas:
+      "identity identity"
+      "status status"
+      "subscription expiry"
+      "freeze account"
+      "actions actions";
     column-gap: var(--space-3);
     row-gap: 0;
+  }
+
+  .members-table.table-card-layout > tbody > tr > td:nth-child(1) { grid-area: identity; }
+  .members-table.table-card-layout > tbody > tr > td:nth-child(2) { grid-area: subscription; }
+  .members-table.table-card-layout > tbody > tr > td:nth-child(3) { grid-area: status; }
+  .members-table.table-card-layout > tbody > tr > td:nth-child(4) { grid-area: expiry; }
+  .members-table.table-card-layout > tbody > tr > td:nth-child(5) { grid-area: freeze; }
+  .members-table.table-card-layout > tbody > tr > td:nth-child(6) { grid-area: account; }
+  .members-table.table-card-layout > tbody > tr > td:nth-child(7) { grid-area: actions; }
+
+  .members-table.table-card-layout > tbody > tr > td:first-child {
+    position: relative;
+    display: block;
+    padding: var(--space-4) 0 var(--space-3);
+    border-bottom: 0;
+    text-align: start;
+  }
+
+  .members-table.table-card-layout > tbody > tr > td:first-child::before {
+    display: none;
+  }
+
+  .members-table.table-card-layout > tbody > tr > td:first-child::after {
+    position: absolute;
+    inset-block-start: var(--space-4);
+    inset-inline-end: 0;
+    display: inline-flex;
+    min-height: 24px;
+    align-items: center;
+    border: 1px solid #c7dcff;
+    border-radius: var(--radius-pill);
+    background: var(--color-primary-soft);
+    color: var(--color-primary);
+    content: "عضو";
+    font-size: var(--font-xs);
+    font-weight: var(--weight-bold);
+    padding: 2px var(--space-2);
+  }
+
+  .members-table.table-card-layout > tbody > tr > td:first-child .table-member-name {
+    display: block;
+    max-width: calc(100% - 52px);
+    overflow: hidden;
+    font-size: var(--font-md);
+    text-align: start;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .members-table.table-card-layout > tbody > tr > td:first-child .table-member-phone,
+  .members-table.table-card-layout > tbody > tr > td:first-child .table-sub {
+    margin-inline: 0;
+    text-align: start;
+  }
+
+  .members-table.table-card-layout > tbody > tr > td:nth-child(3) {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    border: 1px solid var(--color-border-soft);
+    border-radius: var(--radius-md);
+    background: var(--color-surface-muted);
+    padding: var(--space-3);
+  }
+
+  .members-table.table-card-layout > tbody > tr > td:nth-child(3):has(.badge.expiring_soon) {
+    border-color: #f2d79b;
+    background: var(--color-warning-soft);
+  }
+
+  .members-table.table-card-layout > tbody > tr > td:nth-child(3):has(.badge.active) {
+    border-color: #bfead9;
+    background: var(--color-success-soft);
+  }
+
+  .members-table.table-card-layout > tbody > tr > td:nth-child(3):has(.badge.expired),
+  .members-table.table-card-layout > tbody > tr > td:nth-child(3):has(.badge.cancelled) {
+    border-color: #f2c4c4;
+    background: var(--color-danger-soft);
+  }
+
+  .members-table.table-card-layout > tbody > tr > td:nth-child(3):has(.badge.frozen) {
+    border-color: #c7dcff;
+    background: var(--color-info-soft);
   }
 
   .members-table.table-card-layout > tbody > tr > td:first-child,
