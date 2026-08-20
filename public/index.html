@@ -146,6 +146,11 @@
                         <strong class="monthly-finance-value" id="monthlySubscriptionsTotal">0.00 ج.م</strong>
                         <small id="monthlySubscriptionsMeta">الاشتراكات المدفوعة خلال الشهر</small>
                     </article>
+                    <article class="monthly-finance-metric day-passes">
+                        <span class="monthly-finance-label">الحصص اليومية</span>
+                        <strong class="monthly-finance-value" id="monthlyDayPassesTotal">0.00 ج.م</strong>
+                        <small id="monthlyDayPassesMeta">لا توجد حصص مسجلة</small>
+                    </article>
                     <article class="monthly-finance-metric expenses">
                         <div class="monthly-finance-metric-top"><span class="monthly-finance-label">المصروفات</span><button class="btn btn-light btn-small add-expense-button" id="addExpenseButton" type="button"><span aria-hidden="true">+</span> إضافة مصروف</button></div>
                         <strong class="monthly-finance-value" id="monthlyExpensesTotal">0.00 ج.م</strong>
@@ -154,7 +159,7 @@
                     <article class="monthly-finance-metric net">
                         <span class="monthly-finance-label">المتبقي / صافي الشهر</span>
                         <strong class="monthly-finance-value" id="monthlyNetTotal">0.00 ج.م</strong>
-                        <small>إجمالي الاشتراكات − إجمالي المصروفات</small>
+                        <small>إجمالي الإيرادات − إجمالي المصروفات</small>
                     </article>
                 </div>
                 <div class="monthly-expenses-list" id="monthlyExpensesList"><span class="monthly-expenses-empty">جاري تحميل المصروفات…</span></div>
@@ -233,6 +238,21 @@
                 </div>
                 <div class="attendance-list-head"><div><h4>سجل اليوم</h4><p id="attendanceListMeta">جاري تحميل سجل الحضور…</p></div><div class="attendance-list-actions"><label class="attendance-search-wrap" for="attendanceSearch"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><span class="visually-hidden">بحث في الحضور</span><input class="attendance-search" id="attendanceSearch" placeholder="بحث بالاسم أو الهاتف" aria-label="بحث في الحضور"></label><select class="attendance-status-filter" id="attendanceStatusFilter" aria-label="فلترة حالة الحضور"><option value="all">كل الحالات</option><option value="inside">داخل الجيم</option><option value="checked_out">تم الانصراف</option></select><button class="btn btn-light btn-small" id="attendanceRefreshButton" type="button">تحديث</button></div></div>
                 <div class="attendance-table-wrap" id="attendanceTableWrap"><div class="loading">جاري تحميل سجل الحضور…</div></div>
+                <section class="day-pass-panel" id="dayPassPanel" aria-labelledby="dayPassTitle">
+                    <div class="day-pass-head">
+                        <div class="day-pass-heading"><span class="day-pass-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 9h10M7 13h5"/><path d="M16 13h.01"/></svg></span><div><span>دخول يومي</span><h3 id="dayPassTitle">الحصص اليومية</h3><p>سجّل زيارة الزائر مرة واحدة، واحصل على سجل مالي ورسالة واتساب جاهزة.</p></div></div><span class="day-pass-today-badge" id="dayPassTodayCount">0 حصة اليوم</span></div>
+                    <form class="day-pass-form" id="dayPassForm">
+                        <div class="field"><label for="dayPassVisitorName">اسم الزائر *</label><input id="dayPassVisitorName" maxlength="120" autocomplete="name" required placeholder="اكتب اسم الزائر"></div>
+                        <div class="field"><label for="dayPassVisitorPhone">رقم الهاتف *</label><input id="dayPassVisitorPhone" type="tel" inputmode="tel" maxlength="30" autocomplete="tel" dir="ltr" required placeholder="010XXXXXXXX"></div>
+                        <div class="field"><label for="dayPassType">نوع الحصة *</label><select id="dayPassType" required><option value="">جاري تحميل الأسعار…</option></select></div>
+                        <div class="field"><label for="dayPassPaymentMethod">طريقة الدفع</label><select id="dayPassPaymentMethod"><option value="cash">نقدي</option><option value="card">بطاقة</option><option value="transfer">تحويل</option><option value="other">أخرى</option></select></div>
+                        <div class="day-pass-price-box" id="dayPassPriceBox"><span>السعر المستحق</span><strong id="dayPassPrice">—</strong></div>
+                        <label class="checkbox-field day-pass-whatsapp-option"><input id="dayPassSendWhatsApp" type="checkbox" checked><span>فتح رسالة شكر على واتساب بعد الحفظ</span></label>
+                        <div class="day-pass-form-actions"><button class="btn btn-primary" type="submit" id="dayPassSaveButton">حفظ الحصة</button><button class="btn btn-light" type="button" id="dayPassRefreshButton">تحديث السجل</button></div>
+                    </form>
+                    <div class="day-pass-list-head"><div><h4>سجل حصص اليوم</h4><p id="dayPassListMeta">جاري تحميل السجل…</p></div><label class="day-pass-search"><span class="visually-hidden">بحث في الحصص</span><input id="dayPassSearch" type="search" placeholder="بحث بالاسم أو الهاتف"></label></div>
+                    <div class="day-pass-table-wrap" id="dayPassTableWrap"><div class="loading">جاري تحميل سجل الحصص…</div></div>
+                </section>
             </section>
 
             <section class="workspace">
@@ -330,6 +350,11 @@
             <div class="details-dialog-head"><div><h3>أسعار الباقات</h3><p>تحكم في أسعار الباقات، وتظهر قيمة كل مدة تلقائيًا.</p></div><button class="btn btn-light btn-small" id="pricingClose" type="button">إغلاق</button></div>
                 <div class="pricing-section-head"><div><h4>أسعار الباقات</h4><p>اضبط السعر الشهري وسعر كل مدة بشكل مستقل لكل باقة.</p></div><button class="btn btn-primary btn-small" id="addMembershipPlanButton" type="button">+ إضافة باقة جديدة</button></div>
             <div class="pricing-table-scroll" id="pricingTableContainer"><div class="loading">جاري تحميل الأسعار…</div></div>
+            <section class="day-pass-pricing-section" aria-labelledby="dayPassPricingTitle">
+                <div class="pricing-section-head"><div><h4 id="dayPassPricingTitle">أسعار الحصص اليومية</h4><p>اضبط سعر دخول اليوم الواحد بشكل مستقل عن اشتراكات الأعضاء.</p></div><span class="day-pass-pricing-note">إيراد مستقل</span></div>
+                <div class="pricing-table-scroll" id="dayPassPricingContainer"><div class="loading">جاري تحميل أسعار الحصص…</div></div>
+                <div class="day-pass-pricing-actions"><button class="btn btn-light btn-small" id="dayPassPricingSave" type="button">حفظ أسعار الحصص</button></div>
+            </section>
             <div class="dialog-actions"><button class="btn btn-primary" id="pricingSave" type="submit">حفظ أسعار الباقات</button></div>
         </form>
     </dialog>
@@ -488,5 +513,7 @@
     <script defer src="/js/details-enhancements.js"></script>
     <script defer src="/js/member-details-ui.js?v=2"></script>
     <script defer src="/js/alerts-enhancements.js?v=7"></script>
+    <script defer src="/js/day-passes.js?v=1"></script>
+    <script defer src="/js/day-pass-reports.js?v=1"></script>
 </body>
 </html>

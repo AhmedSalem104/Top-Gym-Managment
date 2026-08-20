@@ -4,6 +4,7 @@ const { ensurePaymentTransactionsTable, getDashboard } = require('./member-servi
 const { ensureExpensesTable } = require('./finance-service');
 const { ensureCoachingTables } = require('./coaching-service');
 const { ensureLibraryData } = require('./library-service');
+const dayPassRepository = require('../repositories/day-pass.repository');
 
 function appError(message, statusCode = 400) {
     const error = new Error(message);
@@ -50,9 +51,11 @@ async function getReportData(query = {}) {
         ensureExpensesTable(),
         ensurePaymentTransactionsTable(),
         ensureCoachingTables(),
-        ensureLibraryData()
+        ensureLibraryData(),
+        dayPassRepository.ensureDayPassTables()
     ]);
     const pool = await getPool();
+    const dayPassRangePromise = dayPassRepository.getRangeData({ fromDate: range.from, nextDate: range.nextDate });
     const baseRequest = () => pool.request()
         .input('fromDate', sql.Date, toUtcDate(range.from))
         .input('nextDate', sql.Date, toUtcDate(range.nextDate))
@@ -208,10 +211,12 @@ async function getReportData(query = {}) {
         `)
     ]);
 
+    const dayPassData = await dayPassRangePromise;
     const memberRows = membersResult.recordset || [];
     const membershipRows = membershipsResult.recordset || [];
     const paymentRows = paymentsResult.recordset || [];
     const expenseRows = expensesResult.recordset || [];
+    const dayPassRows = dayPassData.records || [];
     const debtorRows = debtorsResult.recordset || [];
     const coachingRecordsets = coachingResult.recordsets || [];
     const coachingStats = coachingRecordsets[0]?.[0] || {};
@@ -219,8 +224,25 @@ async function getReportData(query = {}) {
     const workoutProgramRows = coachingRecordsets[2] || [];
     const dietPlanRows = coachingRecordsets[3] || [];
     const libraryStats = libraryResult.recordset?.[0] || {};
-    const collected = roundMoney(paymentRows.reduce((sum, row) => sum + Number(row.amount || 0), 0));
+    const subscriptionCollected = roundMoney(paymentRows.reduce((sum, row) => sum + Number(row.amount || 0), 0));
+    const dayPassCollected = roundMoney(dayPassRows.reduce((sum, row) => sum + Number(row.amountPaid || 0), 0));
+    const collected = roundMoney(subscriptionCollected + dayPassCollected);
     const expenses = roundMoney(expenseRows.reduce((sum, row) => sum + Number(row.amount || 0), 0));
+    const paymentMethodTotals = new Map();
+    paymentMethodsResult.recordset.forEach((row) => {
+        const key = String(row.payment_method || 'other');
+        const current = paymentMethodTotals.get(key) || { key, count: 0, amount: 0 };
+        current.count += Number(row.count || 0);
+        current.amount += Number(row.amount || 0);
+        paymentMethodTotals.set(key, current);
+    });
+    dayPassRows.forEach((row) => {
+        const key = String(row.paymentMethod || 'other');
+        const current = paymentMethodTotals.get(key) || { key, count: 0, amount: 0 };
+        current.count += 1;
+        current.amount += Number(row.amountPaid || 0);
+        paymentMethodTotals.set(key, current);
+    });
     const timeline = emptyTimeline(range.from, range.to);
     const timelineByDate = new Map(timeline.map((row) => [row.date, row]));
     memberRows.forEach((row) => {
@@ -232,6 +254,7 @@ async function getReportData(query = {}) {
         if (target) target.newMemberships += 1;
         });
     addTimelineAmount(timelineByDate, paymentRows, 'event_date', 'collected');
+    addTimelineAmount(timelineByDate, dayPassRows, 'visitDate', 'amountPaid');
     addTimelineAmount(timelineByDate, expenseRows, 'event_date', 'expenses');
 
     const outstanding = membershipRows.reduce((sum, row) => sum + Number(row.amount_remaining || 0), 0);
@@ -252,7 +275,10 @@ async function getReportData(query = {}) {
         summary: {
             newMembers: memberRows.length,
             newMemberships: membershipRows.length,
-            paidTransactions: paymentRows.length,
+            paidTransactions: paymentRows.length + dayPassRows.length,
+            subscriptionPaidTransactions: paymentRows.length,
+            dayPassCount: dayPassRows.length,
+            dayPassCollected,
             collected,
             expenses,
             expensesCount: expenseRows.length,
@@ -268,11 +294,7 @@ async function getReportData(query = {}) {
         breakdown: {
             plans: Object.entries(plans).map(([key, value]) => ({ key, value })),
             statuses: Object.entries(statuses).map(([key, value]) => ({ key, value })),
-            paymentMethods: paymentMethodsResult.recordset.map((row) => ({
-                key: row.payment_method,
-                count: Number(row.count || 0),
-                amount: roundMoney(row.amount)
-            }))
+            paymentMethods: [...paymentMethodTotals.values()].map((row) => ({ ...row, amount: roundMoney(row.amount) }))
         },
         timeline,
         memberships: membershipRows.map((row) => ({
@@ -307,6 +329,21 @@ async function getReportData(query = {}) {
             paymentMethod: row.payment_method,
             notes: row.notes || null,
             createdAt: row.created_at
+        })),
+        dayPasses: dayPassRows.map((row) => ({
+            id: row.id,
+            visitorName: row.visitorName,
+            visitorPhone: row.visitorPhone,
+            passTypeCode: row.passTypeCode,
+            passTypeName: row.passTypeName,
+            date: row.visitDate,
+            amountDue: row.amountDue,
+            amountPaid: row.amountPaid,
+            paymentMethod: row.paymentMethod,
+            notes: row.notes,
+            status: row.status,
+            createdAt: row.createdAt,
+            whatsappOpenedAt: row.whatsappOpenedAt
         })),
         expenses: expenseRows.map((row) => ({
             id: Number(row.id),

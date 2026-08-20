@@ -9,6 +9,8 @@ const ROLE_PERMISSIONS = Object.freeze({
 
 const ASSISTANT_ROUTE_RULES = Object.freeze([
     { pattern: /^\/pricing(?:\/|$)/, methods: Object.freeze(['GET']) },
+    { pattern: /^\/day-passes\/pricing(?:\/|$)/, methods: Object.freeze(['GET']) },
+    { pattern: /^\/day-passes(?:\/|$)/ },
     { pattern: /^\/members(?:\/|$)/ },
     { pattern: /^\/memberships(?:\/|$)/ },
     { pattern: /^\/external-trainees(?:\/|$)/ },

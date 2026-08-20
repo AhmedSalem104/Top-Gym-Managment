@@ -7,6 +7,7 @@ const {
 } = require('../utils/date');
 const { ensurePaymentTransactionsTable } = require('./member-service');
 const expenseRepository = require('../repositories/expense.repository');
+const dayPassRepository = require('../repositories/day-pass.repository');
 
 function appError(message, statusCode = 400) {
     const error = new Error(message);
@@ -74,12 +75,19 @@ function mapExpense(row) {
 async function getMonthlyFinance() {
     await ensureExpensesTable();
     await ensurePaymentTransactionsTable();
+    await dayPassRepository.ensureDayPassTables();
     const range = currentMonthRange();
-    const [paymentsResult, expenseSummaryResult, expenseItemsResult] = await expenseRepository.getMonthlyData(range);
+    const [monthlyData, dayPassData] = await Promise.all([
+        expenseRepository.getMonthlyData(range),
+        dayPassRepository.getRangeSummary({ fromDate: range.startDate, nextDate: range.nextMonth })
+    ]);
 
-    const paymentSummary = paymentsResult.recordset[0] || {};
-    const expenseSummary = expenseSummaryResult.recordset[0] || {};
+    const [resolvedPaymentsResult, resolvedExpenseSummaryResult, resolvedExpenseItemsResult] = monthlyData;
+
+    const paymentSummary = resolvedPaymentsResult.recordset[0] || {};
+    const expenseSummary = resolvedExpenseSummaryResult.recordset[0] || {};
     const subscriptionsTotal = Number(paymentSummary.subscriptionsTotal || 0);
+    const dayPassesTotal = Number(dayPassData.amount || 0);
     const expensesTotal = Number(expenseSummary.expensesTotal || 0);
 
     return {
@@ -88,12 +96,17 @@ async function getMonthlyFinance() {
             total: subscriptionsTotal,
             count: Number(paymentSummary.paidTransactionCount || 0)
         },
+        dayPasses: {
+            total: dayPassesTotal,
+            count: Number(dayPassData.count || 0)
+        },
+        totalCollected: subscriptionsTotal + dayPassesTotal,
         expenses: {
             total: expensesTotal,
             count: Number(expenseSummary.expenseCount || 0),
-            items: expenseItemsResult.recordset.map(mapExpense)
+            items: resolvedExpenseItemsResult.recordset.map(mapExpense)
         },
-        net: subscriptionsTotal - expensesTotal
+        net: subscriptionsTotal + dayPassesTotal - expensesTotal
     };
 }
 

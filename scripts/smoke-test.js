@@ -32,6 +32,7 @@ function fetchWithSession(baseUrl, path, options = {}) {
     let server;
     let memberId;
     let externalMemberId;
+    let dayPassId;
     let temporaryPlanCode;
     let temporaryTypeCode;
     try {
@@ -151,6 +152,32 @@ function fetchWithSession(baseUrl, path, options = {}) {
             })
         });
         assert.deepEqual(pricingUpdate.plans, pricing.plans);
+
+        const dayPassPricing = await call(baseUrl, '/api/day-passes/pricing');
+        assert.ok(dayPassPricing.types.some((item) => item.code === 'day_gym'));
+        assert.ok(dayPassPricing.types.some((item) => item.code === 'day_gym_cardio'));
+        assert.equal(Number(dayPassPricing.types.find((item) => item.code === 'day_gym')?.price), 30);
+        assert.equal(Number(dayPassPricing.types.find((item) => item.code === 'day_gym_cardio')?.price), 40);
+        const dayPass = await call(baseUrl, '/api/day-passes', {
+            method: 'POST',
+            body: JSON.stringify({
+                visitorName: `Day Pass Smoke ${suffix}`,
+                visitorPhone: `011${String(suffix).slice(-8)}`,
+                passTypeCode: 'day_gym_cardio',
+                paymentMethod: 'cash',
+                visitDate: testStartDate
+            })
+        });
+        dayPassId = dayPass.sale.id;
+        assert.equal(dayPass.sale.passTypeCode, 'day_gym_cardio');
+        assert.equal(dayPass.sale.amountPaid, 40);
+        assert.match(dayPass.whatsapp.message, /TOP GYM/);
+        const listedDayPasses = await call(baseUrl, `/api/day-passes?from=${testStartDate}&to=${testStartDate}&page=1&pageSize=20`);
+        assert.ok(listedDayPasses.records.some((item) => item.id === dayPassId));
+        const dayPassSummary = await call(baseUrl, `/api/day-passes/summary?from=${testStartDate}&to=${testStartDate}`);
+        assert.ok(dayPassSummary.count >= 1);
+        assert.ok(dayPassSummary.amount >= 40);
+        await call(baseUrl, `/api/day-passes/${dayPassId}/whatsapp-opened`, { method: 'POST' });
 
         temporaryPlanCode = `smoke_plan_${String(Date.now()).slice(-14)}`;
         const createdPlan = await call(baseUrl, '/api/pricing-plans', {
@@ -381,6 +408,13 @@ function fetchWithSession(baseUrl, path, options = {}) {
             try {
                 const baseUrl = `http://127.0.0.1:${server.address().port}`;
                 await call(baseUrl, `/api/members/${externalMemberId}`, { method: 'DELETE' });
+            } catch (_) { /* cleanup is best effort */ }
+        }
+        if (dayPassId) {
+            try {
+                const pool = await getPool();
+                await pool.request().input('id', sql.Int, dayPassId)
+                    .query('DELETE FROM dbo.gym_day_pass_sales WHERE id = @id;');
             } catch (_) { /* cleanup is best effort */ }
         }
         if (temporaryPlanCode) {

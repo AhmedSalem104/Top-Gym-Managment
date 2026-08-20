@@ -107,7 +107,7 @@
 }
 
 .expenses-tab-panel .monthly-finance-metrics {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
 .expenses-tab-panel .monthly-finance-metric {
@@ -124,6 +124,13 @@
 .expenses-tab-panel .monthly-finance-metric.expenses .monthly-finance-value,
 .expenses-tab-panel .monthly-expense-amount {
   color: var(--color-danger);
+}
+.monthly-finance-metric.day-passes {
+  border-color: #c8ddff;
+  background: var(--color-info-soft);
+}
+.monthly-finance-metric.day-passes .monthly-finance-value {
+  color: var(--color-primary);
 }
 
 .expenses-tab-panel .monthly-finance-metric.net .monthly-finance-value.negative {
@@ -284,4 +291,8 @@
   .expenses-tab-panel .monthly-expense-item { grid-template-columns: minmax(0, 1fr) auto; gap: var(--space-2); }
   .expenses-tab-panel .monthly-expense-actions { grid-column: 1 / -1; justify-content: flex-start; }
   #expenseDialog { width: calc(100% - 20px); }
+}
+
+@media (max-width: 991px) and (min-width: 768px) {
+  .expenses-tab-panel .monthly-finance-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }

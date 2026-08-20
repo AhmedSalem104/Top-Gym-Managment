@@ -29,6 +29,31 @@ All application endpoints are under `/api`. Protected requests require the serve
 | POST | `/api/attendance/check-in` |
 | POST | `/api/attendance/check-out` |
 
+## Daily passes / day classes
+
+Daily passes are one-time visits and are intentionally stored separately from members and recurring memberships. They do not create a member record or change an existing subscription.
+
+| Method | Path | Access |
+|---|---|---|
+| GET | `/api/day-passes/pricing` | Authenticated Owner/Assistant read access |
+| PUT | `/api/day-passes/pricing` | Owner |
+| GET | `/api/day-passes` | Authenticated Owner/Assistant |
+| GET | `/api/day-passes/summary` | Authenticated Owner/Assistant |
+| POST | `/api/day-passes` | Authenticated Owner/Assistant |
+| POST | `/api/day-passes/:id/whatsapp-opened` | Authenticated Owner/Assistant |
+| POST | `/api/day-passes/:id/void` | Owner |
+
+Create a visit with the visitor name, phone, configured type and payment method. The server resolves the current price and returns a prepared Arabic WhatsApp message; the browser opens WhatsApp only after the operator confirms the action.
+
+```json
+{
+  "visitorName": "أحمد محمد",
+  "visitorPhone": "01012345678",
+  "passTypeCode": "day_gym_cardio",
+  "paymentMethod": "cash"
+}
+```
+
 ## Coaching and nutrition
 
 The coaching routes cover external trainees, clients, measurements, check-ins, workout programs, diet plans, workout sessions and meal logs. Both legacy program aliases remain supported:

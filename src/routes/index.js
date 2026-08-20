@@ -10,6 +10,7 @@ const { registerReportsRoutes } = require('./reports.routes');
 const { registerBackupRoutes } = require('./backup.routes');
 const { registerPricingRoutes } = require('./pricing.routes');
 const { registerCoachingRoutes } = require('./coaching.routes');
+const { registerDayPassRoutes } = require('./day-pass.routes');
 
 function registerRoutes(app, {
     asyncRoute,
@@ -25,6 +26,7 @@ function registerRoutes(app, {
     libraryService,
     pricingService,
     coachingService,
+    dayPassService,
     memberService,
     getPool
 }) {
@@ -43,6 +45,7 @@ function registerRoutes(app, {
     registerAttendanceRoutes(app, { attendanceService, asyncRoute });
     registerPricingRoutes(app, { pricingService, asyncRoute });
     registerCoachingRoutes(app, { coachingService, asyncRoute });
+    registerDayPassRoutes(app, { dayPassService, asyncRoute, ownerOnly });
     registerMembersRoutes(app, { memberService, asyncRoute });
 }
 

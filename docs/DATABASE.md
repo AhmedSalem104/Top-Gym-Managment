@@ -15,6 +15,8 @@ The project uses Microsoft SQL Server through the `mssql` package. `src/database
 - `gym_payments`, `gym_payment_transactions`: current payment summary and immutable payment events.
 - `gym_expenses`: expenses and monthly summaries.
 - `gym_attendance`: check-in/check-out records.
+- `gym_day_pass_types`: configurable one-day class/pass types. The initial seed is 30 EGP for gym-only and 40 EGP for gym plus cardio.
+- `gym_day_pass_sales`: one-time visitor sales, payment method, price snapshot, visit date and WhatsApp-open audit timestamp. These rows are separate from member subscriptions and are included in income/report calculations.
 - `membership_events`: membership audit events.
 - `gym_users`, `gym_auth_sessions`: authentication and sessions.
 - `gym_exercises`, `gym_foods`, `gym_muscles`: library catalogs.
@@ -28,6 +30,7 @@ The project uses Microsoft SQL Server through the `mssql` package. `src/database
 - Use parameterized SQL through `mssql` request inputs.
 - Do not concatenate user values into SQL.
 - Reuse the pool; do not connect per request.
+- Keep daily pass prices server-owned and resolve the amount from `gym_day_pass_types`; never trust a client-supplied amount.
 - Use a transaction for multi-table operations that must be atomic.
 - Add indexes only after reviewing query patterns and execution plans.
 - Keep existing table/column names unless a separate migration is approved.

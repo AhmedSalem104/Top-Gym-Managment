@@ -391,7 +391,7 @@
 
 .monthly-finance-metrics {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: var(--space-3);
 }
 
@@ -419,6 +419,7 @@
 }
 
 .monthly-finance-metric.subscriptions { border-top: 3px solid var(--color-primary); }
+.monthly-finance-metric.day-passes { border-top: 3px solid #5b8def; }
 .monthly-finance-metric.expenses { border-top: 3px solid var(--color-danger); }
 .monthly-finance-metric.net { border-top: 3px solid var(--color-success); }
 
@@ -560,6 +561,7 @@
   .dashboard-hero-stats { order: 2; }
   .dashboard-hero-content { order: 1; }
   .dashboard-hero-visual { order: 3; }
+  .monthly-finance-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 @media (max-width: 767px) {

@@ -93,6 +93,7 @@ function assertRequiredFiles() {
         'src/database/index.js',
         'src/utils/date.js',
         'src/repositories/member.repository.js',
+        'src/repositories/day-pass.repository.js',
         'src/repositories/expense.repository.js',
         'src/repositories/user.repository.js',
         'src/repositories/session.repository.js',
@@ -123,6 +124,11 @@ function assertRequiredFiles() {
         'src/controllers/pricing.controller.js',
         'src/routes/coaching.routes.js',
         'src/controllers/coaching.controller.js',
+        'src/routes/day-pass.routes.js',
+        'src/controllers/day-pass.controller.js',
+        'src/services/day-pass-service.js',
+        'public/js/day-passes.js',
+        'public/js/day-pass-reports.js',
         'docs/AUTH.md',
         'docs/ARCHITECTURE.md',
         'docs/API.md',
@@ -183,12 +189,13 @@ function checkRouteSurface() {
         'src/routes/reports.routes.js',
         'src/routes/backup.routes.js',
         'src/routes/pricing.routes.js',
-        'src/routes/coaching.routes.js'
+        'src/routes/coaching.routes.js',
+        'src/routes/day-pass.routes.js'
     ].filter((relativePath) => fs.existsSync(path.join(root, relativePath))).map(read).join('\n');
     const expectedRoutes = [
         '/api/members', '/api/expenses', '/api/attendance', '/api/reports',
         '/api/backup', '/api/library', '/api/external-trainees',
-        '/api/workoutprograms', '/api/dietplans', '/api/workoutsessions', '/api/meal-logs'
+        '/api/workoutprograms', '/api/dietplans', '/api/workoutsessions', '/api/meal-logs', '/api/day-passes'
     ];
     expectedRoutes.forEach((route) => record(
         `ROUTE-${route.replaceAll('/', '-')}`,

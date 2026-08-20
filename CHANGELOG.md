@@ -4,6 +4,8 @@
 
 ### Added
 
+- Added configurable one-time daily passes/classes for gym-only (30 EGP default) and gym plus cardio (40 EGP default), with visitor name/phone capture, payment ledger, WhatsApp thank-you message, reports and monthly finance totals.
+- Added separate `gym_day_pass_types` and `gym_day_pass_sales` storage, backup/restore coverage and Owner-only price editing/voiding.
 - Restored the TOP GYM Vanilla CSS Design System with one `main.css` entrypoint.
 - Added shared components, page layers, responsive rules, print rules, Cairo-first typography, and accessible focus states.
 - Added CSS integrity validation to `build:css` and the QA Gate.

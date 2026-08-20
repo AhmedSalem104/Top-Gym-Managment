@@ -4,6 +4,31 @@
   gap: var(--space-5);
 }
 
+.day-pass-report-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+.day-pass-report-summary article {
+  display: grid;
+  gap: var(--space-1);
+  border: 1px solid #c8ddff;
+  border-radius: var(--radius-lg);
+  background: var(--color-info-soft);
+  padding: var(--space-4);
+}
+.day-pass-report-summary span { color: var(--color-text-muted); font-size: var(--font-xs); }
+.day-pass-report-summary strong { color: var(--color-primary); font-family: var(--font-latin); font-size: var(--font-xl); }
+.day-pass-report-card .reports-table td:first-child strong,
+.day-pass-report-card .reports-table td:first-child small { display: block; }
+.day-pass-report-card .reports-table td:first-child small { color: var(--color-text-muted); font-family: var(--font-latin); font-size: var(--font-xs); }
+.day-pass-report-table .alert-whatsapp-button { width: 36px; height: 36px; }
+
+@media (max-width: 600px) {
+  .day-pass-report-summary { grid-template-columns: 1fr; }
+}
+
 .reports-section[hidden],
 .reports-view[hidden] { display: none; }
 

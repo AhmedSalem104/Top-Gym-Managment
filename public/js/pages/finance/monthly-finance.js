@@ -158,15 +158,18 @@
             year: 'numeric'
         }).format(periodDate);
         const subscriptions = data.subscriptions || {};
+        const dayPasses = data.dayPasses || {};
         const expenses = data.expenses || {};
         const net = Number(data.net || 0);
 
         $('monthlyFinancePeriod').textContent = periodLabel;
         $('monthlySubscriptionsTotal').textContent = money(subscriptions.total);
+        if ($('monthlyDayPassesTotal')) $('monthlyDayPassesTotal').textContent = money(dayPasses.total);
         $('monthlyExpensesTotal').textContent = money(expenses.total);
         $('monthlyNetTotal').textContent = money(net);
         $('monthlyNetTotal').classList.toggle('negative', net < 0);
         $('monthlySubscriptionsMeta').textContent = `${Number(subscriptions.count || 0).toLocaleString('ar-EG')} عملية تحصيل خلال الشهر`;
+        if ($('monthlyDayPassesMeta')) $('monthlyDayPassesMeta').textContent = dayPasses.count ? `${Number(dayPasses.count).toLocaleString('ar-EG')} حصة مسجلة خلال الشهر` : 'لا توجد حصص مسجلة';
         $('monthlyExpensesMeta').textContent = expenses.count
             ? `${Number(expenses.count).toLocaleString('ar-EG')} مصروف مسجل خلال الشهر`
             : 'لا توجد مصروفات مسجلة';

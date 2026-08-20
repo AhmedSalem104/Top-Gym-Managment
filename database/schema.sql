@@ -269,6 +269,64 @@ BEGIN
     );
 END;
 
+IF OBJECT_ID(N'dbo.gym_day_pass_types', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.gym_day_pass_types (
+        id INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_gym_day_pass_types PRIMARY KEY,
+        type_code VARCHAR(40) NOT NULL,
+        type_name NVARCHAR(120) NOT NULL,
+        price DECIMAL(12,2) NOT NULL,
+        is_active BIT NOT NULL CONSTRAINT DF_gym_day_pass_types_active DEFAULT (1),
+        sort_order INT NOT NULL CONSTRAINT DF_gym_day_pass_types_sort DEFAULT (0),
+        created_at DATETIME2(0) NOT NULL CONSTRAINT DF_gym_day_pass_types_created DEFAULT (SYSUTCDATETIME()),
+        updated_at DATETIME2(0) NOT NULL CONSTRAINT DF_gym_day_pass_types_updated DEFAULT (SYSUTCDATETIME()),
+        CONSTRAINT UQ_gym_day_pass_types_code UNIQUE (type_code),
+        CONSTRAINT CK_gym_day_pass_types_price CHECK (price > 0)
+    );
+END;
+
+IF NOT EXISTS (SELECT 1 FROM dbo.gym_day_pass_types WHERE type_code = 'day_gym')
+    INSERT INTO dbo.gym_day_pass_types (type_code, type_name, price, sort_order)
+    VALUES ('day_gym', N'حصة جيم فقط', 30, 1);
+
+IF NOT EXISTS (SELECT 1 FROM dbo.gym_day_pass_types WHERE type_code = 'day_gym_cardio')
+    INSERT INTO dbo.gym_day_pass_types (type_code, type_name, price, sort_order)
+    VALUES ('day_gym_cardio', N'حصة جيم وكارديو', 40, 2);
+
+IF OBJECT_ID(N'dbo.gym_day_pass_sales', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.gym_day_pass_sales (
+        id INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_gym_day_pass_sales PRIMARY KEY,
+        visitor_name NVARCHAR(120) NOT NULL,
+        visitor_phone NVARCHAR(30) NOT NULL,
+        visitor_phone_normalized NVARCHAR(30) NOT NULL,
+        pass_type_code VARCHAR(40) NOT NULL,
+        pass_type_name NVARCHAR(120) NOT NULL,
+        amount_due DECIMAL(12,2) NOT NULL,
+        amount_paid DECIMAL(12,2) NOT NULL,
+        payment_method VARCHAR(20) NOT NULL CONSTRAINT DF_gym_day_pass_sales_method DEFAULT ('cash'),
+        visit_date DATE NOT NULL,
+        notes NVARCHAR(500) NULL,
+        status VARCHAR(20) NOT NULL CONSTRAINT DF_gym_day_pass_sales_status DEFAULT ('completed'),
+        created_by_user_id INT NULL,
+        whatsapp_opened_at DATETIME2(0) NULL,
+        created_at DATETIME2(0) NOT NULL CONSTRAINT DF_gym_day_pass_sales_created DEFAULT (SYSUTCDATETIME()),
+        updated_at DATETIME2(0) NOT NULL CONSTRAINT DF_gym_day_pass_sales_updated DEFAULT (SYSUTCDATETIME()),
+        CONSTRAINT FK_gym_day_pass_sales_type FOREIGN KEY (pass_type_code)
+            REFERENCES dbo.gym_day_pass_types(type_code) ON DELETE NO ACTION,
+        CONSTRAINT CK_gym_day_pass_sales_amounts CHECK (amount_due > 0 AND amount_paid = amount_due),
+        CONSTRAINT CK_gym_day_pass_sales_method CHECK (payment_method IN ('cash', 'card', 'transfer', 'other')),
+        CONSTRAINT CK_gym_day_pass_sales_status CHECK (status IN ('completed', 'voided'))
+    );
+END;
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_gym_day_pass_sales_date' AND object_id = OBJECT_ID(N'dbo.gym_day_pass_sales'))
+    CREATE INDEX IX_gym_day_pass_sales_date ON dbo.gym_day_pass_sales(visit_date DESC, id DESC);
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_gym_day_pass_sales_type_date' AND object_id = OBJECT_ID(N'dbo.gym_day_pass_sales'))
+    CREATE INDEX IX_gym_day_pass_sales_type_date ON dbo.gym_day_pass_sales(pass_type_code, visit_date DESC, id DESC);
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_gym_day_pass_sales_phone' AND object_id = OBJECT_ID(N'dbo.gym_day_pass_sales'))
+    CREATE INDEX IX_gym_day_pass_sales_phone ON dbo.gym_day_pass_sales(visitor_phone_normalized, visit_date DESC, id DESC);
+
 IF COL_LENGTH(N'dbo.memberships', N'membership_type') IS NOT NULL
 BEGIN
     EXEC(N'ALTER TABLE dbo.memberships ALTER COLUMN membership_type VARCHAR(30) NOT NULL;');

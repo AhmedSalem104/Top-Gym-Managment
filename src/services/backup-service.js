@@ -9,6 +9,7 @@ const { ensurePaymentTransactionsTable } = require('./member-service');
 const { ensureAttendanceTable } = require('./attendance-service');
 const { ensureLibraryData } = require('./library-service');
 const { ensureCoachingTables } = require('./coaching-service');
+const { ensureDayPassTables } = require('../repositories/day-pass.repository');
 const { config } = require('../config/env');
 
 const gzipAsync = promisify(gzip);
@@ -26,6 +27,8 @@ const BACKUP_TABLES = [
     { key: 'membership_pricing', table: 'membership_pricing' },
     { key: 'membership_types', table: 'membership_types' },
     { key: 'membership_type_prices', table: 'membership_type_prices' },
+    { key: 'gym_day_pass_types', table: 'gym_day_pass_types' },
+    { key: 'gym_day_pass_sales', table: 'gym_day_pass_sales' },
     { key: 'membership_freezes', table: 'membership_freezes' },
     { key: 'gym_payments', table: 'gym_payments' },
     { key: 'gym_payment_transactions', table: 'gym_payment_transactions' },
@@ -492,6 +495,7 @@ async function restoreBackup(input, { fileName = 'uploaded-backup.json.gz' } = {
         await ensureAttendanceTable();
         await ensureLibraryData();
         await ensureCoachingTables();
+        await ensureDayPassTables();
         const pool = await getPool();
         const metadataEntries = await Promise.all(BACKUP_TABLES.map(async (item) => [item.table, await tableMetadata(pool, item.table)]));
         const metadata = new Map(metadataEntries);
@@ -540,6 +544,7 @@ async function createBackup({ format = 'json.gz' } = {}) {
     await ensureAttendanceTable();
     await ensureLibraryData();
     await ensureCoachingTables();
+    await ensureDayPassTables();
     const pool = await getPool();
     const generatedAt = new Date();
     const { timeZone, stamp } = getLocalTimeParts(generatedAt);
