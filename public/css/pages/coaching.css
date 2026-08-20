@@ -352,16 +352,18 @@
 }
 
 .coaching-icon-action {
-  width: 42px;
-  min-width: 42px;
-  height: 42px;
-  min-height: 42px;
+  width: 46px;
+  min-width: 46px;
+  height: 46px;
+  min-height: 46px;
   border-radius: var(--radius-md);
+  line-height: 0;
 }
 
 .coaching-icon-action .coaching-inline-icon {
-  width: 20px;
-  height: 20px;
+  width: 23px;
+  height: 23px;
+  max-width: none;
 }
 
 .trainee-more-menu.is-floating {

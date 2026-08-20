@@ -37,6 +37,7 @@
         users: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>',
         payment: '<path d="M4 7.5A2.5 2.5 0 0 1 6.5 5H20v14H6.5A2.5 2.5 0 0 1 4 16.5z"/><path d="M4 9h16M8 14h3"/>',
         debt: '<circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/>',
+        whatsapp: '<path d="M20 11.5a8 8 0 0 1-8 8 8.5 8.5 0 0 1-3.7-.85L4 20l1.35-4.05A8.5 8.5 0 1 1 20 11.5Z"/><path d="M8.7 9.1c.2-.45.4-.46.7-.47h.35c.2 0 .4.08.5.34l.65 1.5c.1.23.08.42-.08.62l-.42.52c.55 1.1 1.4 1.8 2.55 2.3l.45-.5c.17-.2.36-.23.6-.14l1.42.63c.25.12.34.3.31.55-.1.8-.68 1.35-1.47 1.4-2.3.12-5.98-3.5-6.1-6.75-.02-.01.17-.75.54-1.02Z"/>',
         measure: '<path d="m4 7 3-3 13 13-3 3z"/><path d="m8 8 2-2M11 11l2-2M14 14l2-2"/>',
         filter: '<path d="M4 6h16M7 12h10M10 18h4"/>',
         refresh: '<path d="M20 11a8 8 0 0 0-14.5-4L4 9"/><path d="M4 4v5h5"/><path d="M4 13a8 8 0 0 0 14.5 4L20 15"/><path d="M20 20v-5h-5"/>',
@@ -60,6 +61,12 @@
     function reportBadge(value, labels, prefix = '') {
         const token = String(value || 'unknown').toLowerCase().replace(/[^a-z0-9_-]/g, '-');
         return `<span class="reports-status-badge${prefix ? ` ${prefix}-badge` : ''} ${token}">${escapeHtml(label(labels, value))}</span>`;
+    }
+    function reportWhatsappButton(member) {
+        const memberId = member?.memberId || member?.id;
+        if (!memberId || !member.phone || Number(member.amountRemaining || 0) <= 0) return '';
+        const title = 'إرسال تذكير عبر واتساب';
+        return `<button type="button" class="alert-whatsapp-button reports-whatsapp-button" data-alert-whatsapp="debt" data-report-whatsapp="true" data-member-id="${escapeHtml(memberId)}" data-alert-name="${escapeHtml(member.fullName)}" data-alert-phone="${escapeHtml(member.phone)}" data-alert-status="${escapeHtml(member.status || '')}" data-alert-end="${escapeHtml(member.endDate || '')}" data-alert-remaining="${escapeHtml(member.amountRemaining)}" title="${title}" aria-label="${title}">${reportIcon('whatsapp')}</button>`;
     }
     function reportKpi(title, value, meta, tone, icon = 'chart') {
         return `<article class="report-kpi ${tone}"><div class="report-kpi-top"><span class="report-kpi-label">${title}</span><span class="report-kpi-icon">${reportIcon(icon)}</span></div><strong>${value}</strong><small>${meta}</small></article>`;
@@ -353,8 +360,8 @@
         const kpis = items.map(([title, value, meta, tone, icon]) => reportKpi(title, value, meta, tone, icon)).join('');
         const timeline = renderTimeline(data);
         const breakdown = renderBreakdown(data);
-        const debtors = (data.debtors || []).slice(0, 8);
-        const debtorsHtml = debtors.length ? `<table class="reports-table reports-debtors-table"><thead><tr><th>المشترك</th><th>الباقة</th><th>المتبقي</th><th>إجراء</th></tr></thead><tbody>${debtors.map((member) => `<tr><td><strong>${escapeHtml(member.fullName)}</strong><small>${escapeHtml(member.phone)}</small></td><td>${escapeHtml(label(PLAN_LABELS, member.plan))}</td><td class="has-debt">${money(member.amountRemaining)}</td><td><div class="reports-debtor-actions"><button class="btn btn-light btn-small" type="button" data-report-member-action="details" data-member-id="${member.id}">التفاصيل</button><button class="btn btn-primary btn-small" type="button" data-report-member-action="payment" data-member-id="${member.id}">تسجيل دفعة</button></div></td></tr>`).join('')}</tbody></table>` : '<div class="reports-empty-state">لا توجد مبالغ متبقية حاليًا.</div>';
+        const debtors = data.debtors || [];
+        const debtorsHtml = debtors.length ? `<table class="reports-table reports-debtors-table"><thead><tr><th>المشترك</th><th>الباقة</th><th>المتبقي</th><th>إجراء</th></tr></thead><tbody>${debtors.map((member) => `<tr><td><strong>${escapeHtml(member.fullName)}</strong><small>${escapeHtml(member.phone)}</small></td><td>${escapeHtml(label(PLAN_LABELS, member.plan))}</td><td class="has-debt">${money(member.amountRemaining)}</td><td><div class="reports-debtor-actions"><button class="btn btn-light btn-small" type="button" data-report-member-action="details" data-member-id="${member.id}">التفاصيل</button><button class="btn btn-primary btn-small" type="button" data-report-member-action="payment" data-member-id="${member.id}">تسجيل دفعة</button>${reportWhatsappButton(member)}</div></td></tr>`).join('')}</tbody></table>` : '<div class="reports-empty-state">لا توجد مبالغ متبقية حاليًا.</div>';
         view.innerHTML = `<div class="reports-kpis">${kpis}</div><div class="reports-grid"><section class="report-card"><div class="report-card-head"><div><span>التحليل الزمني</span><h3>الحركة اليومية</h3></div></div>${timeline}</section><section class="report-card"><div class="report-card-head"><div><span>التوزيع</span><h3>الباقات وطرق الدفع</h3></div></div>${breakdown}</section></div><section class="report-card reports-members-card"><div class="report-card-head"><div><span>أولوية التحصيل</span><h3>المشتركون عليهم مستحقات</h3></div><span class="reports-members-count">${number(summary.debtorsCount)} مشترك</span></div><div class="reports-table-wrap">${debtorsHtml}</div></section>`;
     }
 
@@ -365,7 +372,7 @@
         const bars = rows.map((row) => {
             const collectedHeight = Math.max(row.collected ? 6 : 2, (Number(row.collected || 0) / max) * 100);
             const expenseHeight = Math.max(row.expenses ? 6 : 2, (Number(row.expenses || 0) / max) * 100);
-            return `<div class="reports-day"><div class="reports-day-bars"><span class="collected" title="تحصيل ${money(row.collected)}"></span><span class="expenses" title="مصروفات ${money(row.expenses)}"></span></div><small>${escapeHtml(dateOnly(row.date).replace(/\s*٢٠٢[٤-٦]/, ''))}</small><b>${number(Number(row.newMembers || 0) + Number(row.newMemberships || 0))}</b></div>`;
+            return `<div class="reports-day"><div class="reports-day-bars"><span class="collected" style="height:${collectedHeight}%" title="تحصيل ${money(row.collected)}"></span><span class="expenses" style="height:${expenseHeight}%" title="مصروفات ${money(row.expenses)}"></span></div><small>${escapeHtml(dateOnly(row.date).replace(/\s*٢٠٢[٤-٦]/, ''))}</small><b>${number(Number(row.newMembers || 0) + Number(row.newMemberships || 0))}</b></div>`;
         }).join('');
         return `<div class="reports-timeline-wrap"><div class="reports-mini-chart">${bars}</div><div class="reports-chart-legend"><span><i class="collected"></i>التحصيل</span><span><i class="expenses"></i>المصروفات</span><span>الرقم = أعضاء واشتراكات جديدة</span></div></div>`;
     }
@@ -388,8 +395,8 @@
         const query = localFilterValue();
         const members = (data.memberships || data.members || []).filter((member) => (!status || member.status === status) && (!plan || member.plan === plan) && (!debtorsOnly || Number(member.amountRemaining) > 0) && (contains(member.fullName, query) || contains(member.phone, query)));
         const statuses = (data.breakdown?.statuses || []).map((item) => `<div class="report-summary-chip"><span>${escapeHtml(label(STATUS_LABELS, item.key))}</span><strong>${number(item.value)}</strong></div>`).join('');
-        const rows = members.map((member) => `<tr><td><strong>${escapeHtml(member.fullName)}</strong><small>${escapeHtml(member.phone)}</small></td><td>${escapeHtml(label(PLAN_LABELS, member.plan))}<small>${escapeHtml(label(TYPE_LABELS, member.type))}</small></td><td>${reportBadge(member.status, STATUS_LABELS)}</td><td>${dateOnly(member.startDate)}<small>حتى ${dateOnly(member.endDate)}</small></td><td>${money(member.amountDue)}<small>مدفوع ${money(member.amountPaid)}</small></td><td class="${Number(member.amountRemaining) > 0 ? 'has-debt' : 'paid'}">${money(member.amountRemaining)}</td></tr>`).join('');
-        view.innerHTML = `<div class="report-summary-strip">${statuses}<div class="report-summary-chip total"><span>في الفترة</span><strong>${number(members.length)}</strong></div></div><section class="report-card reports-members-card"><div class="report-card-head"><div><span>تفاصيل الفترة</span><h3>سجل الاشتراكات والعضويات</h3></div><span class="reports-members-count">${number(members.length)} نتيجة</span></div><div class="reports-table-wrap">${rows ? `<table class="reports-table"><thead><tr><th>المشترك</th><th>الباقة والنوع</th><th>الحالة</th><th>الفترة</th><th>الحساب</th><th>المتبقي</th></tr></thead><tbody>${rows}</tbody></table>` : '<div class="reports-empty-state">لا توجد نتائج مطابقة للفلاتر.</div>'}</div></section>`;
+        const rows = members.map((member) => `<tr><td><strong>${escapeHtml(member.fullName)}</strong><small>${escapeHtml(member.phone)}</small></td><td>${escapeHtml(label(PLAN_LABELS, member.plan))}<small>${escapeHtml(label(TYPE_LABELS, member.type))}</small></td><td>${reportBadge(member.status, STATUS_LABELS)}</td><td>${dateOnly(member.startDate)}<small>حتى ${dateOnly(member.endDate)}</small></td><td>${money(member.amountDue)}<small>مدفوع ${money(member.amountPaid)}</small></td><td class="${Number(member.amountRemaining) > 0 ? 'has-debt' : 'paid'}">${money(member.amountRemaining)}</td><td><div class="reports-debtor-actions">${reportWhatsappButton(member) || '<span class="reports-no-action">—</span>'}</div></td></tr>`).join('');
+        view.innerHTML = `<div class="report-summary-strip">${statuses}<div class="report-summary-chip total"><span>في الفترة</span><strong>${number(members.length)}</strong></div></div><section class="report-card reports-members-card"><div class="report-card-head"><div><span>تفاصيل الفترة</span><h3>سجل الاشتراكات والعضويات</h3></div><span class="reports-members-count">${number(members.length)} نتيجة</span></div><div class="reports-table-wrap">${rows ? `<table class="reports-table"><thead><tr><th>المشترك</th><th>الباقة والنوع</th><th>الحالة</th><th>الفترة</th><th>الحساب</th><th>المتبقي</th><th>تواصل</th></tr></thead><tbody>${rows}</tbody></table>` : '<div class="reports-empty-state">لا توجد نتائج مطابقة للفلاتر.</div>'}</div></section>`;
     }
 
     function renderFinance() {

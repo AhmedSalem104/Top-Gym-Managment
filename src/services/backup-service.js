@@ -547,8 +547,12 @@ async function createBackup({ format = 'json.gz' } = {}) {
         BACKUP_TABLES.map(async ({ key, table }) => [key, await readTable(pool, table)])
     );
     const tables = Object.fromEntries(tableRows);
+    // `backup-service.js` lives under `src/services`, while the canonical
+    // schema is kept at the repository root in `database/schema.sql`.
+    // Using only one `..` here made every manual and scheduled backup fail
+    // with ENOENT in production (`src/database/schema.sql` does not exist).
     const schemaSql = fs.readFileSync(
-        path.join(__dirname, '..', 'database', 'schema.sql'),
+        path.join(__dirname, '..', '..', 'database', 'schema.sql'),
         'utf8'
     );
     const payload = {
