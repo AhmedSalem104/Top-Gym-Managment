@@ -580,8 +580,8 @@
   }
 
   .page-tabs > .auth-account-bar .auth-logout-button .ui-icon {
-    width: 26px;
-    height: 26px;
-    stroke-width: 2.3;
+    width: 23px;
+    height: 23px;
+    stroke-width: 2.1;
   }
 }
