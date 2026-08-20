@@ -202,6 +202,7 @@
   height: 44px;
   min-height: 44px;
   place-items: center;
+  padding: 0;
   border: 1px solid rgb(255 125 135 / 0.58);
   border-radius: 10px;
   background: rgb(92 24 38 / 0.88);
@@ -218,9 +219,9 @@
 }
 
 .page-tabs > .auth-account-bar .auth-logout-button .ui-icon {
-  width: 24px;
-  height: 24px;
-  stroke-width: 2.2;
+  width: 26px;
+  height: 26px;
+  stroke-width: 2.3;
 }
 
 .page-tabs::-webkit-scrollbar-thumb {

@@ -488,17 +488,17 @@
     display: flex;
     margin: 0;
     align-items: center;
-    justify-content: flex-start;
+    justify-content: stretch;
     border-top: 1px solid rgb(101 146 198 / 0.28);
     padding: 6px 0 0;
     direction: ltr;
   }
 
   .page-tabs > .auth-account-bar .auth-logout-button {
-    width: 46px;
-    min-width: 46px;
-    height: 44px;
-    min-height: 44px;
+    width: 100%;
+    min-width: 0;
+    height: 46px;
+    min-height: 46px;
   }
 }
 
@@ -527,10 +527,10 @@
   }
 
   .page-tabs > .auth-account-bar .auth-logout-button {
-    width: 44px;
-    min-width: 44px;
-    height: 42px;
-    min-height: 42px;
+    width: 100%;
+    min-width: 0;
+    height: 44px;
+    min-height: 44px;
   }
 }
 
@@ -580,8 +580,8 @@
   }
 
   .page-tabs > .auth-account-bar .auth-logout-button .ui-icon {
-    width: 24px;
-    height: 24px;
-    stroke-width: 2.2;
+    width: 26px;
+    height: 26px;
+    stroke-width: 2.3;
   }
 }
