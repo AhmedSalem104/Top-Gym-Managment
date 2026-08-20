@@ -894,6 +894,73 @@
   }
 }
 
+/* Unified mobile card surface. Keep each screen's content-specific layout,
+   but give application cards the same member-card visual rhythm on narrow
+   screens. Login and dialog cards intentionally keep their page-level style. */
+@media (max-width: 767px) {
+  .panel,
+  .card,
+  .content-card,
+  .shadow-panel,
+  .stat-card,
+  .management-card,
+  .library-card,
+  .finance-card,
+  .attendance-card,
+  .attendance-entry-card,
+  .attendance-summary-card,
+  .external-trainee-card,
+  .program-card,
+  .diet-card,
+  .exercise-card,
+  .food-card,
+  .muscle-card,
+  .table-card-layout > tbody > tr {
+    min-width: 0;
+    border: 1px solid var(--color-border-soft);
+    border-radius: 20px;
+    background: var(--color-surface);
+    box-shadow: 0 2px 4px rgb(15 23 42 / 0.025), 0 8px 24px rgb(15 23 42 / 0.045);
+  }
+
+  .panel,
+  .card,
+  .content-card,
+  .shadow-panel,
+  .stat-card,
+  .management-card,
+  .library-card,
+  .finance-card,
+  .attendance-card,
+  .attendance-entry-card,
+  .attendance-summary-card,
+  .external-trainee-card,
+  .program-card,
+  .diet-card,
+  .exercise-card,
+  .food-card,
+  .muscle-card {
+    padding: var(--space-4);
+  }
+
+  .card-grid,
+  .library-grid,
+  .exercise-grid,
+  .food-grid,
+  .program-grid {
+    gap: var(--space-3);
+  }
+
+  .table-card-layout > tbody > tr {
+    padding: var(--space-4);
+  }
+
+  .table-card-layout > tbody > tr:hover {
+    border-color: var(--border-focus);
+    box-shadow: 0 4px 8px rgb(15 23 42 / 0.03), 0 12px 28px rgb(37 99 235 / 0.07);
+  }
+}
+
 /* The navigation remains part of the document flow. It must not become a
    fixed/sticky layer over page content while the user scrolls. */
 .page-tabs {
