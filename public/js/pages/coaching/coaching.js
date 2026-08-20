@@ -175,6 +175,15 @@
         });
     }
 
+    function shouldFloatTraineeMoreMenu() {
+        /*
+         * Keep the menu inside its action cell on wide tables. A fixed menu is
+         * useful only when the table is constrained by a viewport/scroll
+         * container; on desktop it creates a visual layer over adjacent rows.
+         */
+        return window.matchMedia('(max-width: 1199px)').matches;
+    }
+
     // The legacy delete action is kept intact and moved into a compact menu after
     // rendering, so its API contract and current delete handler remain unchanged.
     function enhanceTraineeActionMenus() {
@@ -2133,9 +2142,10 @@
                 const shouldOpen = panel.hidden;
                 closeTraineeMoreMenus();
                 panel.hidden = !shouldOpen;
-                panel.classList.toggle('is-floating', shouldOpen);
+                const shouldFloat = shouldOpen && shouldFloatTraineeMoreMenu();
+                panel.classList.toggle('is-floating', shouldFloat);
                 button.setAttribute('aria-expanded', String(shouldOpen));
-                if (shouldOpen) positionTraineeMoreMenu(menu, panel);
+                if (shouldFloat) positionTraineeMoreMenu(menu, panel);
             } else if (action === 'profile') openProfile(id);
             else if (action === 'workout') openBuilder('workout', id);
             else if (action === 'diet') openBuilder('diet', id);

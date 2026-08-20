@@ -248,6 +248,44 @@
   text-align: start;
 }
 
+/*
+ * On wide screens the action column participates in the table layout. The
+ * shared table stylesheet keeps action columns sticky for narrow scrollable
+ * tables, but that behavior makes this already-visible column look like a
+ * second layer over the rows on desktop.
+ */
+@media (min-width: 1200px) {
+  .external-trainees-table-wrap {
+    overflow: visible;
+  }
+
+  .external-trainees-table th:last-child,
+  .external-trainees-table td:last-child {
+    position: static;
+    z-index: auto;
+    width: 230px;
+    min-width: 230px;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .external-trainees-table thead th:last-child {
+    background: var(--color-surface-muted);
+  }
+
+  .external-trainees-table tbody tr:nth-child(even) td:last-child,
+  .external-trainees-table tbody tr:hover td:last-child {
+    background: transparent;
+  }
+
+  .external-trainees-table .trainee-more-menu {
+    position: absolute;
+    top: calc(100% + var(--space-2));
+    inset-inline-end: 0;
+    z-index: var(--z-dropdown);
+  }
+}
+
 /* External trainee dashboard -------------------------------------------- */
 .coaching-summary-card {
   position: relative;

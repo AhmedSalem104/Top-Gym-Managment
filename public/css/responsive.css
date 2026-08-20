@@ -956,6 +956,37 @@
     box-shadow: 0 4px 8px rgb(15 23 42 / 0.03), 0 12px 28px rgb(37 99 235 / 0.07);
   }
 
+  /* Match the member-details rhythm for every mobile table card: primary
+     content first, compact key/value cells in two columns, and actions in a
+     separate full-width area. */
+  .table-card-layout > tbody > tr {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: var(--space-3);
+    row-gap: 0;
+  }
+
+  .table-card-layout > tbody > tr > td.mobile-card-primary,
+  .table-card-layout > tbody > tr > td.mobile-card-actions,
+  .table-card-layout > tbody > tr > td:first-child,
+  .table-card-layout > tbody > tr > td[colspan] {
+    grid-column: 1 / -1;
+  }
+
+  .table-card-layout > tbody > tr > td:not(.mobile-card-primary):not(.mobile-card-actions):not([colspan]) {
+    grid-template-columns: minmax(64px, 42%) minmax(0, 1fr);
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  .table-card-layout > tbody > tr > td.mobile-card-actions {
+    grid-template-columns: minmax(0, 1fr);
+    padding-top: var(--space-3);
+  }
+
+  .table-card-layout > tbody > tr > td[colspan] {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
   /* Member rows have six compact data points. Keep the identity and action
      areas full width, while arranging the remaining key/value pairs in two
      columns so a mobile member card remains scannable without becoming

@@ -787,8 +787,20 @@ async function getLibraryCollection(typeValue, query = {}) {
     const dataRequest = addParams(pool.request(), specification.params)
         .input('offset', sql.Int, offset)
         .input('pageSize', sql.Int, pageSize);
+    /*
+     * Keep the count query independent from the projection used by the data
+     * query. The exercise projection contains LEFT JOIN/OUTER APPLY and a
+     * nested FOR JSON expression for secondary-muscle names. Deriving a
+     * COUNT(*) query by string-replacing that projection is fragile on SQL
+     * Server and caused large-page requests to fail with a 500.
+     */
+    const countFrom = type === 'exercises'
+        ? 'FROM dbo.gym_exercises AS e'
+        : type === 'foods'
+            ? 'FROM dbo.gym_foods'
+            : 'FROM dbo.gym_muscles';
     const [countResult, dataResult] = await Promise.all([
-        countRequest.query(`SELECT COUNT_BIG(*) AS total FROM (${specification.select.replace(/^SELECT[\s\S]*?FROM /, 'SELECT 1 AS row_marker FROM ')} WHERE ${specification.where}) AS records;`),
+        countRequest.query(`SELECT COUNT_BIG(*) AS total ${countFrom} WHERE ${specification.where};`),
         dataRequest.query(`${specification.select} WHERE ${specification.where} ${specification.order} OFFSET @offset ROWS FETCH NEXT @pageSize ROWS ONLY;`)
     ]);
     const total = Number(countResult.recordset[0]?.total || 0);

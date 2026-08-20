@@ -24,12 +24,18 @@
         table.dataset.responsiveCards = 'true';
         table.parentElement?.classList.add('table-cards-container');
 
+        const actionColumnIndex = headers.findIndex((header) =>
+            /إجراء|الإجراء|الإجراءات|تواصل|action/i.test(header)
+        );
+
         Array.from(table.tBodies).forEach((body) => {
             Array.from(body.rows).forEach((row) => {
                 Array.from(row.cells).forEach((cell, index) => {
                     if (cell.tagName !== 'TD') return;
                     const labelIndex = Math.min(index, headers.length - 1);
                     cell.dataset.label = headers[labelIndex];
+                    cell.classList.toggle('mobile-card-primary', index === 0);
+                    cell.classList.toggle('mobile-card-actions', index === actionColumnIndex);
                 });
             });
         });
