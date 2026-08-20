@@ -575,7 +575,7 @@
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 6px;
     overflow: visible;
-    padding: 8px 8px 8px 60px;
+    padding: 8px;
     border-radius: var(--radius-xl);
   }
 
@@ -605,21 +605,47 @@
   }
 
   .page-tabs > .auth-account-bar {
-    position: absolute;
-    inset-inline-end: 10px;
-    top: 10px;
+    position: static;
+    grid-column: 1 / -1;
+    width: 100%;
+    min-width: 0;
     z-index: var(--z-dropdown);
     display: flex;
     margin: 0;
+    align-items: stretch;
+    justify-content: stretch;
     border: 0;
-    padding: 0;
+    border-top: 1px solid var(--border-color);
+    padding: 6px 0 0;
+    direction: rtl;
   }
 
   .page-tabs > .auth-account-bar .auth-logout-button {
-    width: 42px;
-    min-width: 42px;
-    height: 42px;
-    min-height: 42px;
+    display: inline-flex;
+    width: 100%;
+    min-width: 0;
+    height: 46px;
+    min-height: 46px;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    padding: 0 var(--space-4);
+    border-color: rgb(215 67 67 / 0.22);
+    background: var(--color-danger-soft);
+    color: var(--color-danger);
+  }
+
+  .page-tabs > .auth-account-bar .auth-logout-button > span {
+    display: inline;
+    font-size: var(--font-sm);
+    font-weight: var(--weight-bold);
+  }
+
+  .page-tabs > .auth-account-bar .auth-logout-button .ui-icon {
+    width: 20px;
+    height: 20px;
+    flex: 0 0 auto;
+    stroke-width: 2;
   }
 }
 
@@ -627,7 +653,7 @@
   .page-tabs {
     width: calc(100% - 12px);
     gap: 4px;
-    padding: 6px 6px 6px 56px;
+    padding: 6px;
   }
 
   .page-tab {
@@ -643,15 +669,18 @@
   }
 
   .page-tabs > .auth-account-bar {
-    inset-inline-end: 7px;
-    top: 7px;
+    position: static;
+    grid-column: 1 / -1;
+    inset-inline-end: auto;
+    top: auto;
+    width: 100%;
   }
 
   .page-tabs > .auth-account-bar .auth-logout-button {
-    width: 40px;
-    min-width: 40px;
-    height: 40px;
-    min-height: 40px;
+    width: 100%;
+    min-width: 0;
+    height: 44px;
+    min-height: 44px;
   }
 }
 
@@ -731,5 +760,72 @@
     padding: 0;
     overflow: visible;
     direction: rtl;
+  }
+
+  /* Keep the actions area inside the card width. Member rows contain a
+     quick attendance action plus a compact action menu, so they need their
+     own full-width stack instead of inheriting desktop table widths. */
+  .table-card-layout > tbody > tr > td:last-child {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .table-card-layout .member-action-row {
+    display: grid;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: stretch;
+    gap: var(--space-2);
+    margin: 0;
+  }
+
+  .table-card-layout .member-quick-actions,
+  .table-card-layout .member-action-row > .table-actions {
+    display: flex;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-start;
+    gap: var(--space-2);
+    overflow: visible;
+  }
+
+  .table-card-layout .member-quick-actions > *,
+  .table-card-layout .member-action-row > .table-actions > *,
+  .table-card-layout .member-action-row > .table-actions .action-menu {
+    min-width: 40px;
+    max-width: 100%;
+    flex: 0 1 auto;
+  }
+
+  .table-card-layout .member-action-row > .table-actions > .table-action-visible[data-action="renew"] {
+    min-width: 0;
+    flex: 1 1 132px;
+  }
+
+  .table-card-layout .member-action-row > .table-actions .action-menu {
+    flex: 0 0 40px;
+  }
+
+  .table-card-layout .member-action-row > .table-actions .action-menu-toggle {
+    width: 40px;
+    min-width: 40px;
+    max-width: 40px;
+  }
+
+  .table-card-layout .member-action-row > .table-actions .table-action-label {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .table-card-layout .table-actions > .btn,
+  .table-card-layout .row-actions > .btn,
+  .table-card-layout .action-group > .btn {
+    max-width: 100%;
   }
 }
