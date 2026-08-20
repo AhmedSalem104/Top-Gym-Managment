@@ -109,23 +109,23 @@
    The legacy rules above remain compatible with generic tabs; these rules are
    the single visual contract for the primary page navigation. */
 .page-tabs {
-  width: min(1440px, calc(100% - 32px));
-  min-height: 72px;
-  margin: 12px auto 0;
-  top: 12px;
+  width: min(1440px, calc(100% - 24px));
+  min-height: 62px;
+  margin: 20px auto 0;
+  top: 14px;
   gap: 6px;
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-xl);
-  background: var(--color-surface-elevated);
+  border: 1px solid rgb(101 146 198 / 0.46);
+  border-radius: 12px;
+  background: #071a35;
   padding: 8px 10px;
-  box-shadow: var(--shadow-md);
-  scrollbar-color: var(--border-strong) transparent;
+  box-shadow: 0 12px 28px rgb(2 12 27 / 0.28), inset 0 1px 0 rgb(180 218 255 / 0.06);
+  scrollbar-color: rgb(93 133 181 / 0.7) transparent;
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
 }
 
 .page-tabs::before {
-  background: linear-gradient(90deg, rgb(23 105 232 / 0.07), transparent 44%, rgb(23 105 232 / 0.035));
+  background: linear-gradient(90deg, rgb(23 105 232 / 0.18), transparent 44%, rgb(23 105 232 / 0.08));
 }
 
 .page-tabs > .page-tab[hidden],
@@ -134,20 +134,22 @@
 }
 
 .page-tab {
-  min-height: 50px;
+  min-height: 42px;
   min-width: max-content;
-  border: 1px solid transparent;
-  border-radius: var(--radius-md);
-  color: var(--color-text-muted);
-  padding: 0 14px;
-  font-size: var(--font-sm);
+  border: 1px solid rgb(88 128 175 / 0.18);
+  border-radius: 10px;
+  background: rgb(12 36 67 / 0.68);
+  color: #a9bbd2;
+  padding: 0 13px;
+  font-size: 12px;
+  box-shadow: inset 0 1px 0 rgb(184 220 255 / 0.025);
   transition: background-color var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast), box-shadow var(--transition-fast), transform var(--transition-fast);
 }
 
 .page-tab:hover {
-  border-color: var(--border-color);
-  background: var(--color-primary-soft);
-  color: var(--color-primary);
+  border-color: rgb(122 169 222 / 0.44);
+  background: rgb(20 57 101 / 0.86);
+  color: #e6f1ff;
 }
 
 .page-tab:focus-visible,
@@ -158,10 +160,10 @@
 
 .page-tab.active,
 .page-tab[aria-selected="true"] {
-  border-color: rgb(23 105 232 / 0.2);
+  border-color: rgb(105 178 255 / 0.62);
   background: linear-gradient(135deg, var(--color-primary), var(--color-primary-hover));
   color: #fff;
-  box-shadow: 0 8px 18px rgb(23 105 232 / 0.2);
+  box-shadow: 0 8px 18px rgb(23 105 232 / 0.36), inset 0 1px 0 rgb(255 255 255 / 0.15);
 }
 
 .page-tab.active::after,
@@ -188,8 +190,8 @@
   flex: 0 0 auto;
   margin-inline-start: auto;
   margin-inline-end: 0;
-  border-inline-start: 1px solid var(--border-color);
-  padding-inline-start: 10px;
+  border-inline-start: 0;
+  padding-inline-start: 4px;
   direction: rtl;
 }
 
@@ -200,17 +202,17 @@
   height: 44px;
   min-height: 44px;
   place-items: center;
-  border: 1px solid rgb(215 67 67 / 0.18);
-  border-radius: var(--radius-md);
-  background: var(--color-danger-soft);
-  color: var(--color-danger);
-  box-shadow: none;
+  border: 1px solid rgb(110 153 203 / 0.52);
+  border-radius: 10px;
+  background: rgb(21 52 91 / 0.82);
+  color: #c6dcf8;
+  box-shadow: inset 0 1px 0 rgb(221 239 255 / 0.08), 0 4px 12px rgb(2 12 27 / 0.2);
   transition: background-color var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast), transform var(--transition-fast);
 }
 
 .page-tabs > .auth-account-bar .auth-logout-button:hover:not(:disabled) {
-  border-color: rgb(215 67 67 / 0.32);
-  background: var(--color-danger);
+  border-color: rgb(115 181 255 / 0.82);
+  background: rgb(28 91 158 / 0.94);
   color: #fff;
   transform: translateY(-1px);
 }
