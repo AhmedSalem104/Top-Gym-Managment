@@ -104,3 +104,123 @@
   color: var(--color-primary);
   box-shadow: none;
 }
+
+/* Unified TOP GYM application navigation.
+   The legacy rules above remain compatible with generic tabs; these rules are
+   the single visual contract for the primary page navigation. */
+.page-tabs {
+  width: min(1440px, calc(100% - 32px));
+  min-height: 72px;
+  margin: 12px auto 0;
+  top: 12px;
+  gap: 6px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  background: var(--color-surface-elevated);
+  padding: 8px 10px;
+  box-shadow: var(--shadow-md);
+  scrollbar-color: var(--border-strong) transparent;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.page-tabs::before {
+  background: linear-gradient(90deg, rgb(23 105 232 / 0.07), transparent 44%, rgb(23 105 232 / 0.035));
+}
+
+.page-tabs > .page-tab[hidden],
+.page-tabs > .auth-account-bar[hidden] {
+  display: none;
+}
+
+.page-tab {
+  min-height: 50px;
+  min-width: max-content;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  color: var(--color-text-muted);
+  padding: 0 14px;
+  font-size: var(--font-sm);
+  transition: background-color var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast), box-shadow var(--transition-fast), transform var(--transition-fast);
+}
+
+.page-tab:hover {
+  border-color: var(--border-color);
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+
+.page-tab:focus-visible,
+.auth-logout-button:focus-visible {
+  outline: 3px solid rgb(23 105 232 / 0.24);
+  outline-offset: 2px;
+}
+
+.page-tab.active,
+.page-tab[aria-selected="true"] {
+  border-color: rgb(23 105 232 / 0.2);
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-hover));
+  color: #fff;
+  box-shadow: 0 8px 18px rgb(23 105 232 / 0.2);
+}
+
+.page-tab.active::after,
+.page-tab[aria-selected="true"]::after {
+  position: absolute;
+  right: 18px;
+  bottom: 4px;
+  left: 18px;
+  height: 2px;
+  border-radius: var(--radius-pill);
+  background: rgb(255 255 255 / 0.78);
+  content: "";
+}
+
+.page-tab .ui-icon {
+  width: 19px;
+  height: 19px;
+  stroke-width: 1.9;
+}
+
+.page-tabs > .auth-account-bar {
+  position: relative;
+  z-index: 1;
+  flex: 0 0 auto;
+  margin-inline-start: auto;
+  margin-inline-end: 0;
+  border-inline-start: 1px solid var(--border-color);
+  padding-inline-start: 10px;
+  direction: rtl;
+}
+
+.page-tabs > .auth-account-bar .auth-logout-button {
+  display: grid;
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  min-height: 44px;
+  place-items: center;
+  border: 1px solid rgb(215 67 67 / 0.18);
+  border-radius: var(--radius-md);
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+  box-shadow: none;
+  transition: background-color var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast), transform var(--transition-fast);
+}
+
+.page-tabs > .auth-account-bar .auth-logout-button:hover:not(:disabled) {
+  border-color: rgb(215 67 67 / 0.32);
+  background: var(--color-danger);
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+.page-tabs > .auth-account-bar .auth-logout-button .ui-icon {
+  width: 20px;
+  height: 20px;
+  stroke-width: 2;
+}
+
+.page-tabs::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+}
