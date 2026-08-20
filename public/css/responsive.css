@@ -30,6 +30,129 @@
   }
 }
 
+/* Mobile data tables become readable cards. Column names are supplied by
+   table-cards.js through data-label, so this remains compatible with every
+   dynamically rendered table without duplicating markup in each page. */
+@media (max-width: 767px) {
+  html {
+    scroll-padding-top: 224px;
+  }
+
+  .table-cards-container {
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: visible;
+    direction: rtl;
+  }
+
+  .table-card-layout {
+    display: block;
+    width: 100%;
+    min-width: 0 !important;
+    table-layout: auto;
+    direction: rtl;
+  }
+
+  .table-card-layout > thead {
+    display: none;
+  }
+
+  .table-card-layout > tbody {
+    display: grid;
+    gap: 12px;
+  }
+
+  .table-card-layout > tbody > tr {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    min-height: 0;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    background: var(--color-surface);
+    padding: var(--space-3) var(--space-4);
+    box-shadow: var(--shadow-xs);
+  }
+
+  .table-card-layout > tbody > tr:nth-child(even),
+  .table-card-layout > tbody > tr:hover {
+    background: var(--color-surface);
+  }
+
+  .table-card-layout > tbody > tr:hover {
+    border-color: var(--border-focus);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .table-card-layout > tbody > tr > td {
+    display: grid;
+    grid-template-columns: minmax(88px, 34%) minmax(0, 1fr);
+    align-items: start;
+    gap: var(--space-3);
+    width: auto !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    height: auto !important;
+    min-height: 0;
+    border-bottom: 1px solid var(--border-color);
+    padding: 10px 0;
+    text-align: start;
+    overflow-wrap: anywhere;
+  }
+
+  .table-card-layout > tbody > tr > td::before {
+    min-width: 0;
+    color: var(--color-text-muted);
+    content: attr(data-label);
+    font-size: var(--font-xs);
+    font-weight: var(--weight-bold);
+    line-height: 1.5;
+    text-align: start;
+  }
+
+  .table-card-layout > tbody > tr > td > * {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .table-card-layout > tbody > tr > td:last-child {
+    position: static !important;
+    z-index: auto;
+    min-width: 0 !important;
+    border-bottom: 0;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  .table-card-layout > tbody > tr > td[colspan] {
+    grid-template-columns: minmax(0, 1fr);
+    text-align: center;
+  }
+
+  .table-card-layout > tbody > tr > td[colspan]::before {
+    display: none;
+  }
+
+  .table-card-layout .table-actions,
+  .table-card-layout .row-actions,
+  .table-card-layout .members-actions,
+  .table-card-layout .action-group,
+  .table-card-layout .library-row-actions {
+    min-width: 0;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+  }
+
+  .table-card-layout .table-actions .btn,
+  .table-card-layout .row-actions .btn,
+  .table-card-layout .members-actions .btn,
+  .table-card-layout .action-group .btn,
+  .table-card-layout .library-row-actions .btn {
+    flex: 0 0 auto;
+  }
+}
+
 @media (max-width: 991px) {
   .page {
     width: min(100% - 24px, 900px);
@@ -402,8 +525,8 @@
     box-sizing: border-box;
     width: calc(100% - 24px);
     min-height: 0;
-    margin: 12px auto 0;
-    top: 12px;
+    margin: 10px auto 0;
+    top: 10px;
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 6px;
@@ -446,14 +569,14 @@
     box-sizing: border-box;
     width: calc(100% - 16px);
     min-height: 0;
-    margin: 10px auto 0;
-    top: 10px;
+    margin: 8px auto 0;
+    top: 8px;
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 6px;
     overflow: visible;
-    padding: 8px;
-    border-radius: 12px;
+    padding: 8px 8px 8px 60px;
+    border-radius: var(--radius-xl);
   }
 
   .page-tab {
@@ -482,23 +605,21 @@
   }
 
   .page-tabs > .auth-account-bar {
-    position: static;
-    grid-column: 1 / -1;
-    width: 100%;
+    position: absolute;
+    inset-inline-end: 10px;
+    top: 10px;
+    z-index: var(--z-dropdown);
     display: flex;
     margin: 0;
-    align-items: center;
-    justify-content: stretch;
-    border-top: 1px solid rgb(101 146 198 / 0.28);
-    padding: 6px 0 0;
-    direction: ltr;
+    border: 0;
+    padding: 0;
   }
 
   .page-tabs > .auth-account-bar .auth-logout-button {
-    width: 100%;
-    min-width: 0;
-    height: 46px;
-    min-height: 46px;
+    width: 42px;
+    min-width: 42px;
+    height: 42px;
+    min-height: 42px;
   }
 }
 
@@ -506,7 +627,7 @@
   .page-tabs {
     width: calc(100% - 12px);
     gap: 4px;
-    padding: 6px;
+    padding: 6px 6px 6px 56px;
   }
 
   .page-tab {
@@ -527,10 +648,10 @@
   }
 
   .page-tabs > .auth-account-bar .auth-logout-button {
-    width: 100%;
-    min-width: 0;
-    height: 44px;
-    min-height: 44px;
+    width: 40px;
+    min-width: 40px;
+    height: 40px;
+    min-height: 40px;
   }
 }
 
@@ -539,49 +660,76 @@
    the mobile presentation cannot fall back to the old dark rail styles. */
 @media (max-width: 1199px) {
   .page-tabs {
-    border: 1px solid rgb(101 146 198 / 0.46);
-    background: #071a35;
-    box-shadow: 0 12px 28px rgb(2 12 27 / 0.28), inset 0 1px 0 rgb(180 218 255 / 0.06);
+    z-index: var(--z-dropdown);
+    border: 1px solid var(--border-color);
+    background: var(--color-surface-elevated);
+    box-shadow: var(--shadow-md);
   }
 
   .page-tab {
-    border-color: rgb(88 128 175 / 0.18);
-    background: rgb(12 36 67 / 0.68);
-    color: #a9bbd2;
-    box-shadow: inset 0 1px 0 rgb(184 220 255 / 0.025);
+    border-color: var(--border-color);
+    background: var(--color-surface-muted);
+    color: var(--color-text-muted);
+    box-shadow: var(--shadow-xs);
   }
 
   .page-tab:hover {
-    border-color: rgb(122 169 222 / 0.44);
-    background: rgb(20 57 101 / 0.86);
-    color: #e6f1ff;
+    border-color: rgb(23 105 232 / 0.22);
+    background: var(--color-primary-soft);
+    color: var(--color-primary);
   }
 
   .page-tab.active,
   .page-tab[aria-selected="true"] {
-    border-color: rgb(105 178 255 / 0.62);
+    border-color: rgb(23 105 232 / 0.2);
     background: linear-gradient(135deg, var(--color-primary), var(--color-primary-hover));
     color: #fff;
-    box-shadow: 0 8px 18px rgb(23 105 232 / 0.36), inset 0 1px 0 rgb(255 255 255 / 0.15);
+    box-shadow: 0 8px 18px rgb(23 105 232 / 0.2);
   }
 
   .page-tabs > .auth-account-bar .auth-logout-button {
-    border-color: rgb(255 125 135 / 0.58);
-    background: rgb(92 24 38 / 0.88);
-    color: #ffb8bf;
-    box-shadow: inset 0 1px 0 rgb(255 221 225 / 0.08), 0 4px 12px rgb(2 12 27 / 0.2);
+    border-color: rgb(215 67 67 / 0.18);
+    background: var(--color-danger-soft);
+    color: var(--color-danger);
+    box-shadow: none;
   }
 
   .page-tabs > .auth-account-bar .auth-logout-button:hover:not(:disabled),
   .page-tabs > .auth-account-bar .auth-logout-button:focus-visible {
-    border-color: rgb(255 169 176 / 0.9);
-    background: #c9364d;
+    border-color: rgb(215 67 67 / 0.32);
+    background: var(--color-danger);
     color: #fff;
   }
 
   .page-tabs > .auth-account-bar .auth-logout-button .ui-icon {
-    width: 23px;
-    height: 23px;
-    stroke-width: 2.1;
+    width: 20px;
+    height: 20px;
+    stroke-width: 2;
+  }
+}
+
+/* The table-card wrapper must override the legacy horizontal-scroll spacing
+   rules that are still useful for desktop tables. */
+@media (max-width: 767px) {
+  .table-cards-container,
+  .table-cards-container.table-scroll,
+  .table-cards-container.table-wrap,
+  .table-cards-container.data-table-wrap,
+  .table-cards-container.history-scroll,
+  .table-cards-container.reports-table-wrap,
+  .table-cards-container.pricing-table-scroll,
+  .table-cards-container.pricing-table-wrap,
+  .table-cards-container.library-table-wrap,
+  .table-cards-container.external-trainees-table-wrap,
+  .table-cards-container.profile-table-wrap,
+  .table-cards-container.backup-history-wrap,
+  .table-cards-container.backup-count-table-wrap,
+  .table-cards-container.attendance-table-wrap {
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: visible;
+    direction: rtl;
   }
 }

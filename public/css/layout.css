@@ -63,6 +63,10 @@ body.auth-pending::after {
   color: var(--color-text);
 }
 
+html {
+  scroll-padding-top: 104px;
+}
+
 .page {
   width: min(1440px, calc(100% - 32px));
   margin: 0 auto;
