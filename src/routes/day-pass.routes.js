@@ -9,6 +9,8 @@ function registerDayPassRoutes(app, { dayPassService, asyncRoute, ownerOnly }) {
     app.get('/api/day-passes', asyncRoute(controller.list));
     app.get('/api/day-passes/summary', asyncRoute(controller.summary));
     app.post('/api/day-passes', asyncRoute(controller.create));
+    app.put('/api/day-passes/:id', ownerOnly, asyncRoute(controller.update));
+    app.delete('/api/day-passes/:id', ownerOnly, asyncRoute(controller.remove));
     app.post('/api/day-passes/:id/whatsapp-opened', asyncRoute(controller.whatsappOpened));
     app.post('/api/day-passes/:id/void', ownerOnly, asyncRoute(controller.void));
 }

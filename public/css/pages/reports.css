@@ -23,7 +23,9 @@
 .day-pass-report-card .reports-table td:first-child strong,
 .day-pass-report-card .reports-table td:first-child small { display: block; }
 .day-pass-report-card .reports-table td:first-child small { color: var(--color-text-muted); font-family: var(--font-latin); font-size: var(--font-xs); }
+.day-pass-report-card .reports-table td:first-child small.day-pass-reference { color: var(--color-primary); font-size: 10px; font-weight: var(--weight-bold); }
 .day-pass-report-table .alert-whatsapp-button { width: 36px; height: 36px; }
+.reports-no-whatsapp { color: var(--color-text-muted); font-size: var(--font-xs); white-space: nowrap; }
 
 @media (max-width: 600px) {
   .day-pass-report-summary { grid-template-columns: 1fr; }

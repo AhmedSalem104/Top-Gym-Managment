@@ -164,6 +164,23 @@
                 </div>
                 <div class="monthly-expenses-list" id="monthlyExpensesList"><span class="monthly-expenses-empty">جاري تحميل المصروفات…</span></div>
             </section>
+            <section class="dashboard-day-pass-card panel" id="dashboardDayPassCard" aria-labelledby="dashboardDayPassTitle">
+                <div class="dashboard-day-pass-head">
+                    <div class="dashboard-day-pass-heading">
+                        <span class="dashboard-day-pass-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 9h10M7 13h5M16 13h.01"/></svg></span>
+                        <div><span>الإيراد اليومي</span><h3 id="dashboardDayPassTitle">الحصص اليومية</h3><p id="dashboardDayPassMonthMeta">ملخص الحصص المسجلة خلال الشهر الحالي</p></div>
+                    </div>
+                    <div class="dashboard-day-pass-actions">
+                        <button class="btn btn-primary btn-small" id="dashboardDayPassAdd" type="button"><span aria-hidden="true">+</span> إضافة حصة</button>
+                        <button class="btn btn-light btn-small" id="dashboardDayPassManage" type="button">إدارة السجل</button>
+                    </div>
+                </div>
+                <div class="dashboard-day-pass-kpis" aria-label="ملخص الحصص اليومية">
+                    <article class="dashboard-day-pass-kpi"><span>عدد الحصص هذا الشهر</span><strong id="dashboardDayPassCount">0</strong></article>
+                    <article class="dashboard-day-pass-kpi amount"><span>إيراد الحصص هذا الشهر</span><strong id="dashboardDayPassTotal">0.00 ج.م</strong></article>
+                </div>
+                <div class="dashboard-day-pass-table-wrap" id="dashboardDayPassTableWrap"><div class="loading">جاري تحميل سجل الحصص…</div></div>
+            </section>
             </section>
 
             <section class="dashboard-analytics panel" id="dashboardAnalytics" hidden aria-labelledby="dashboardAnalyticsTitle"></section>
@@ -242,13 +259,13 @@
                     <div class="day-pass-head">
                         <div class="day-pass-heading"><span class="day-pass-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 9h10M7 13h5"/><path d="M16 13h.01"/></svg></span><div><span>دخول يومي</span><h3 id="dayPassTitle">الحصص اليومية</h3><p>سجّل زيارة الزائر مرة واحدة، واحصل على سجل مالي ورسالة واتساب جاهزة.</p></div></div><span class="day-pass-today-badge" id="dayPassTodayCount">0 حصة اليوم</span></div>
                     <form class="day-pass-form" id="dayPassForm">
-                        <div class="field"><label for="dayPassVisitorName">اسم الزائر *</label><input id="dayPassVisitorName" maxlength="120" autocomplete="name" required placeholder="اكتب اسم الزائر"></div>
-                        <div class="field"><label for="dayPassVisitorPhone">رقم الهاتف *</label><input id="dayPassVisitorPhone" type="tel" inputmode="tel" maxlength="30" autocomplete="tel" dir="ltr" required placeholder="010XXXXXXXX"></div>
+                        <div class="field"><label for="dayPassVisitorName">اسم الزائر <span class="field-optional">اختياري</span></label><input id="dayPassVisitorName" maxlength="120" autocomplete="name" placeholder="اتركه فارغًا لتسجيل زائر"></div>
+                        <div class="field"><label for="dayPassVisitorPhone">رقم الهاتف <span class="field-optional">اختياري</span></label><input id="dayPassVisitorPhone" type="tel" inputmode="tel" maxlength="30" autocomplete="tel" dir="ltr" placeholder="اتركه فارغًا إذا لم يتوفر"></div>
                         <div class="field"><label for="dayPassType">نوع الحصة *</label><select id="dayPassType" required><option value="">جاري تحميل الأسعار…</option></select></div>
                         <div class="field"><label for="dayPassPaymentMethod">طريقة الدفع</label><select id="dayPassPaymentMethod"><option value="cash">نقدي</option><option value="card">بطاقة</option><option value="transfer">تحويل</option><option value="other">أخرى</option></select></div>
                         <div class="day-pass-price-box" id="dayPassPriceBox"><span>السعر المستحق</span><strong id="dayPassPrice">—</strong></div>
                         <label class="checkbox-field day-pass-whatsapp-option"><input id="dayPassSendWhatsApp" type="checkbox" checked><span>فتح رسالة شكر على واتساب بعد الحفظ</span></label>
-                        <div class="day-pass-form-actions"><button class="btn btn-primary" type="submit" id="dayPassSaveButton">حفظ الحصة</button><button class="btn btn-light" type="button" id="dayPassRefreshButton">تحديث السجل</button></div>
+                        <div class="day-pass-form-actions"><button class="btn btn-primary" type="submit" id="dayPassSaveButton">حفظ الحصة</button><button class="btn btn-light" type="button" id="dayPassCancelEditButton" hidden>إلغاء التعديل</button><button class="btn btn-light" type="button" id="dayPassRefreshButton">تحديث السجل</button></div>
                     </form>
                     <div class="day-pass-list-head"><div><h4>سجل حصص اليوم</h4><p id="dayPassListMeta">جاري تحميل السجل…</p></div><label class="day-pass-search"><span class="visually-hidden">بحث في الحصص</span><input id="dayPassSearch" type="search" placeholder="بحث بالاسم أو الهاتف"></label></div>
                     <div class="day-pass-table-wrap" id="dayPassTableWrap"><div class="loading">جاري تحميل سجل الحصص…</div></div>
@@ -513,7 +530,7 @@
     <script defer src="/js/details-enhancements.js"></script>
     <script defer src="/js/member-details-ui.js?v=2"></script>
     <script defer src="/js/alerts-enhancements.js?v=7"></script>
-    <script defer src="/js/day-passes.js?v=1"></script>
+    <script defer src="/js/day-passes.js?v=2"></script>
     <script defer src="/js/day-pass-reports.js?v=1"></script>
 </body>
 </html>

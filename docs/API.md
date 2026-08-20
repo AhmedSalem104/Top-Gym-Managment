@@ -40,6 +40,8 @@ Daily passes are one-time visits and are intentionally stored separately from me
 | GET | `/api/day-passes` | Authenticated Owner/Assistant |
 | GET | `/api/day-passes/summary` | Authenticated Owner/Assistant |
 | POST | `/api/day-passes` | Authenticated Owner/Assistant |
+| PUT | `/api/day-passes/:id` | Owner |
+| DELETE | `/api/day-passes/:id` | Owner |
 | POST | `/api/day-passes/:id/whatsapp-opened` | Authenticated Owner/Assistant |
 | POST | `/api/day-passes/:id/void` | Owner |
 

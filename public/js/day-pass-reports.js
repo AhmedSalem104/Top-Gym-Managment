@@ -25,7 +25,7 @@
     function filterRows(rows) {
         const method = $('reportsPaymentMethod')?.value || '';
         const query = String($('reportsLocalSearch')?.value || '').trim().toLocaleLowerCase('ar-EG');
-        return rows.filter((item) => (!method || item.paymentMethod === method) && (!query || `${item.visitorName} ${item.visitorPhone} ${item.passTypeName}`.toLocaleLowerCase('ar-EG').includes(query)));
+        return rows.filter((item) => (!method || item.paymentMethod === method) && (!query || `${item.reference} ${item.visitorName || 'زائر'} ${item.visitorPhone} ${item.passTypeName}`.toLocaleLowerCase('ar-EG').includes(query)));
     }
 
     async function load() {
@@ -56,7 +56,7 @@
             const card = document.createElement('section');
             card.id = 'dayPassReportCard';
             card.className = 'report-card finance-detail-card day-pass-report-card';
-            const body = rows.length ? `<table class="reports-table day-pass-report-table"><thead><tr><th>الزائر</th><th>نوع الحصة</th><th>التاريخ</th><th>طريقة الدفع</th><th>المبلغ</th><th>واتساب</th></tr></thead><tbody>${rows.map((item) => `<tr><td><strong>${escapeHtml(item.visitorName)}</strong><small dir="ltr">${escapeHtml(item.visitorPhone)}</small></td><td>${escapeHtml(item.passTypeName)}</td><td>${dateText(item.visitDate)}</td><td>${escapeHtml(paymentLabel(item.paymentMethod))}</td><td class="paid">${money(item.amountPaid)}</td><td><button type="button" class="alert-whatsapp-button reports-whatsapp-button" data-day-pass-report-whatsapp="${item.id}" data-phone="${escapeHtml(item.visitorPhoneNormalized || item.visitorPhone)}" data-name="${escapeHtml(item.visitorName)}" data-type="${escapeHtml(item.passTypeName)}" title="إرسال رسالة واتساب" aria-label="إرسال رسالة واتساب">◉</button></td></tr>`).join('')}</tbody></table>` : '<div class="reports-empty-state">لا توجد حصص يومية مطابقة للفلاتر.</div>';
+            const body = rows.length ? `<table class="reports-table day-pass-report-table"><thead><tr><th>الزائر</th><th>نوع الحصة</th><th>التاريخ</th><th>طريقة الدفع</th><th>المبلغ</th><th>واتساب</th></tr></thead><tbody>${rows.map((item) => { const phone = item.visitorPhoneNormalized || item.visitorPhone || ''; return `<tr><td><strong>${escapeHtml(item.visitorName || 'زائر')}</strong><small class="day-pass-reference" dir="ltr">${escapeHtml(item.reference || `VIS-${String(item.id).padStart(6, '0')}`)}</small><small dir="ltr">${escapeHtml(phone || 'بدون رقم')}</small></td><td>${escapeHtml(item.passTypeName)}</td><td>${dateText(item.visitDate)}</td><td>${escapeHtml(paymentLabel(item.paymentMethod))}</td><td class="paid">${money(item.amountPaid)}</td><td>${phone ? `<button type="button" class="alert-whatsapp-button reports-whatsapp-button" data-day-pass-report-whatsapp="${item.id}" data-phone="${escapeHtml(phone)}" data-name="${escapeHtml(item.visitorName || 'زائر')}" data-type="${escapeHtml(item.passTypeName)}" title="إرسال رسالة واتساب" aria-label="إرسال رسالة واتساب">◉</button>` : '<span class="reports-no-whatsapp">بدون رقم</span>'}</td></tr>`; }).join('')}</tbody></table>` : '<div class="reports-empty-state">لا توجد حصص يومية مطابقة للفلاتر.</div>';
             card.innerHTML = `<div class="report-card-head"><div><span>إيراد مستقل</span><h3>سجل الحصص اليومية</h3></div><span class="reports-members-count">${rows.length.toLocaleString('ar-EG')} نتيجة</span></div><div class="reports-table-wrap">${body}</div>`;
             const grid = view.querySelector('.reports-detail-grid');
             if (grid) grid.appendChild(card);
@@ -84,6 +84,7 @@
         if (button) openWhatsapp(button);
     });
     document.addEventListener('topgym:tab-changed', (event) => { if (event.detail?.name === 'reports') window.setTimeout(sync, 80); });
+    document.addEventListener('topgym:day-pass-created', () => { requestKey = ''; if (isFinanceView()) window.setTimeout(load, 80); });
     document.addEventListener('DOMContentLoaded', () => {
         const observer = new MutationObserver(() => window.setTimeout(sync, 0));
         const extra = $('reportsExtraFilters');

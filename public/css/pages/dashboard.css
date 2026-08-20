@@ -1304,3 +1304,72 @@
   .analytics-kpi { min-height: 82px; }
   .analytics-trend-wrap { height: 210px; }
 }
+
+/* Daily passes dashboard card ----------------------------------------- */
+.dashboard-day-pass-card {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-5);
+  grid-column: 1 / -1;
+}
+
+.dashboard-day-pass-head,
+.dashboard-day-pass-heading,
+.dashboard-day-pass-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.dashboard-day-pass-head { justify-content: space-between; }
+.dashboard-day-pass-heading { min-width: 0; }
+.dashboard-day-pass-heading > div { display: grid; min-width: 0; gap: 2px; }
+.dashboard-day-pass-heading > div > span { color: var(--color-primary); font-size: var(--font-xs); font-weight: var(--weight-bold); }
+.dashboard-day-pass-heading h3 { color: var(--color-text); font-size: var(--font-xl); font-weight: var(--weight-extrabold); }
+.dashboard-day-pass-heading p { color: var(--color-text-muted); font-size: var(--font-xs); }
+.dashboard-day-pass-icon {
+  display: grid;
+  width: 46px;
+  height: 46px;
+  flex: 0 0 46px;
+  place-items: center;
+  border-radius: 14px;
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+.dashboard-day-pass-icon .ui-icon { width: 23px; height: 23px; }
+.dashboard-day-pass-actions { flex-wrap: wrap; justify-content: flex-end; }
+.dashboard-day-pass-kpis { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); }
+.dashboard-day-pass-kpi {
+  display: grid;
+  gap: var(--space-2);
+  min-width: 0;
+  border: 1px solid var(--border-color);
+  border-top: 3px solid var(--color-primary);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-muted);
+  padding: var(--space-4);
+}
+.dashboard-day-pass-kpi.amount { border-top-color: var(--color-success); }
+.dashboard-day-pass-kpi span { color: var(--color-text-muted); font-size: var(--font-xs); }
+.dashboard-day-pass-kpi strong { color: var(--color-text); font-family: var(--font-latin); font-size: 1.35rem; font-weight: var(--weight-extrabold); direction: ltr; }
+.dashboard-day-pass-kpi.amount strong { color: var(--color-success); }
+.dashboard-day-pass-table-wrap { min-width: 0; overflow-x: auto; border: 1px solid var(--border-color); border-radius: var(--radius-md); background: var(--color-surface); }
+.dashboard-day-pass-table { min-width: 760px; table-layout: fixed; }
+.dashboard-day-pass-table th,
+.dashboard-day-pass-table td { padding: var(--space-3) var(--space-4); text-align: center; vertical-align: middle; }
+.dashboard-day-pass-table th { background: var(--color-surface-muted); color: var(--color-text-soft); font-size: var(--font-xs); font-weight: var(--weight-bold); }
+.dashboard-day-pass-table tbody tr + tr td { border-top: 1px solid var(--border-color); }
+.dashboard-day-pass-table tbody tr:hover td { background: var(--color-primary-soft); }
+.dashboard-day-pass-table td:first-child { text-align: start; }
+.dashboard-day-pass-table td strong,
+.dashboard-day-pass-table td small { display: block; }
+.dashboard-day-pass-table td strong { color: var(--color-text); font-size: var(--font-sm); }
+.dashboard-day-pass-table td small { color: var(--color-text-muted); font-family: var(--font-latin); font-size: var(--font-xs); }
+
+@media (max-width: 600px) {
+  .dashboard-day-pass-head { align-items: stretch; flex-direction: column; }
+  .dashboard-day-pass-actions { justify-content: stretch; }
+  .dashboard-day-pass-actions .btn { flex: 1 1 0; }
+  .dashboard-day-pass-kpis { grid-template-columns: 1fr; }
+}

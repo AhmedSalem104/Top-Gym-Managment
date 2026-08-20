@@ -16,6 +16,12 @@ function createDayPassController({ dayPassService }) {
         list: async (request, response) => {
             response.json(await dayPassService.listDayPasses(request.query));
         },
+        update: async (request, response) => {
+            response.json(await dayPassService.updateDayPass(request.params.id, request.body));
+        },
+        remove: async (request, response) => {
+            response.json(await dayPassService.deleteDayPass(request.params.id));
+        },
         summary: async (request, response) => {
             response.json(await dayPassService.getSummary(request.query));
         },

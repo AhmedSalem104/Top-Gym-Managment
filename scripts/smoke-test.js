@@ -178,6 +178,21 @@ function fetchWithSession(baseUrl, path, options = {}) {
         assert.ok(dayPassSummary.count >= 1);
         assert.ok(dayPassSummary.amount >= 40);
         await call(baseUrl, `/api/day-passes/${dayPassId}/whatsapp-opened`, { method: 'POST' });
+        const anonymousDayPass = await call(baseUrl, `/api/day-passes/${dayPassId}`, {
+            method: 'PUT',
+            body: JSON.stringify({
+                visitorName: '',
+                visitorPhone: '',
+                passTypeCode: 'day_gym',
+                paymentMethod: 'card',
+                visitDate: testStartDate
+            })
+        });
+        assert.equal(anonymousDayPass.sale.visitorName, 'زائر');
+        assert.equal(anonymousDayPass.sale.visitorPhone, '');
+        assert.equal(anonymousDayPass.whatsapp.available, false);
+        await call(baseUrl, `/api/day-passes/${dayPassId}`, { method: 'DELETE' });
+        dayPassId = null;
 
         temporaryPlanCode = `smoke_plan_${String(Date.now()).slice(-14)}`;
         const createdPlan = await call(baseUrl, '/api/pricing-plans', {

@@ -87,11 +87,13 @@ function mapType(row) {
 }
 
 function mapSale(row) {
+    const id = Number(row.id);
     return {
-        id: Number(row.id),
-        visitorName: row.visitor_name,
-        visitorPhone: row.visitor_phone,
-        visitorPhoneNormalized: row.visitor_phone_normalized,
+        id,
+        reference: id ? `VIS-${String(id).padStart(6, '0')}` : null,
+        visitorName: row.visitor_name || 'زائر',
+        visitorPhone: row.visitor_phone || '',
+        visitorPhoneNormalized: row.visitor_phone_normalized || '',
         passTypeCode: row.pass_type_code,
         passTypeName: row.pass_type_name,
         amountDue: Number(row.amount_due || 0),
@@ -145,6 +147,11 @@ async function updateTypes(items) {
 }
 
 async function findActiveType(code) {
+    const type = await findType(code);
+    return type?.active ? type : null;
+}
+
+async function findType(code) {
     await ensureDayPassTables();
     const pool = await getPool();
     const result = await pool.request()
@@ -152,7 +159,7 @@ async function findActiveType(code) {
         .query(`
             SELECT type_code, type_name, price, is_active, sort_order
             FROM dbo.gym_day_pass_types
-            WHERE type_code = @code AND is_active = 1;
+            WHERE type_code = @code;
         `);
     return result.recordset[0] ? mapType(result.recordset[0]) : null;
 }
@@ -184,6 +191,43 @@ async function createSale({ visitorName, visitorPhone, visitorPhoneNormalized, p
                     @amountDue, @amountPaid, @paymentMethod, @visitDate, @notes, @createdByUserId);
         `);
     return mapSale(result.recordset[0]);
+}
+
+async function updateSale({ id, visitorName, visitorPhone, visitorPhoneNormalized, passType, paymentMethod, visitDate, notes }) {
+    await ensureDayPassTables();
+    const pool = await getPool();
+    const result = await pool.request()
+        .input('id', sql.Int, id)
+        .input('visitorName', sql.NVarChar(120), visitorName)
+        .input('visitorPhone', sql.NVarChar(30), visitorPhone)
+        .input('visitorPhoneNormalized', sql.NVarChar(30), visitorPhoneNormalized)
+        .input('passTypeCode', sql.VarChar(40), passType.code)
+        .input('passTypeName', sql.NVarChar(120), passType.label)
+        .input('amountDue', sql.Decimal(12, 2), passType.price)
+        .input('amountPaid', sql.Decimal(12, 2), passType.price)
+        .input('paymentMethod', sql.VarChar(20), paymentMethod)
+        .input('visitDate', sql.Date, toUtcDate(visitDate))
+        .input('notes', sql.NVarChar(500), notes)
+        .query(`
+            UPDATE dbo.gym_day_pass_sales
+            SET visitor_name = @visitorName,
+                visitor_phone = @visitorPhone,
+                visitor_phone_normalized = @visitorPhoneNormalized,
+                pass_type_code = @passTypeCode,
+                pass_type_name = @passTypeName,
+                amount_due = @amountDue,
+                amount_paid = @amountPaid,
+                payment_method = @paymentMethod,
+                visit_date = @visitDate,
+                notes = @notes,
+                updated_at = SYSUTCDATETIME()
+            OUTPUT INSERTED.id, INSERTED.visitor_name, INSERTED.visitor_phone, INSERTED.visitor_phone_normalized,
+                   INSERTED.pass_type_code, INSERTED.pass_type_name, INSERTED.amount_due, INSERTED.amount_paid,
+                   INSERTED.payment_method, INSERTED.visit_date, INSERTED.notes, INSERTED.status,
+                   INSERTED.created_by_user_id, INSERTED.whatsapp_opened_at, INSERTED.created_at, INSERTED.updated_at
+            WHERE id = @id AND status = 'completed';
+        `);
+    return result.recordset[0] ? mapSale(result.recordset[0]) : null;
 }
 
 function addListFilters(request, { fromDate, nextDate, typeCode, paymentMethod, search, includeVoided = false }) {
@@ -282,16 +326,27 @@ async function voidSale(id) {
         .query("UPDATE dbo.gym_day_pass_sales SET status = 'voided', updated_at = SYSUTCDATETIME() WHERE id = @id AND status = 'completed';");
 }
 
+async function deleteSale(id) {
+    await ensureDayPassTables();
+    const pool = await getPool();
+    return pool.request()
+        .input('id', sql.Int, id)
+        .query('DELETE FROM dbo.gym_day_pass_sales WHERE id = @id;');
+}
+
 module.exports = {
     DEFAULT_DAY_PASS_TYPES,
     ensureDayPassTables,
+    deleteSale,
     findActiveType,
+    findType,
     createSale,
     getRangeData,
     getRangeSummary,
     listSales,
     listTypes,
     markWhatsappOpened,
+    updateSale,
     updateTypes,
     voidSale
 };

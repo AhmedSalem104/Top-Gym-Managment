@@ -278,13 +278,21 @@
 .day-pass-table td small { display: block; }
 .day-pass-table td strong { color: var(--color-text); font-size: var(--font-sm); }
 .day-pass-table td small { color: var(--color-text-muted); direction: ltr; font-family: var(--font-latin); font-size: var(--font-xs); }
+.day-pass-table td small.day-pass-reference { color: var(--color-primary); font-size: 10px; font-weight: var(--weight-bold); }
 .day-pass-type-badge { display: inline-flex; min-height: 28px; align-items: center; border-radius: var(--radius-pill); background: var(--color-primary-soft); color: var(--color-primary); padding: 0 var(--space-3); font-size: var(--font-xs); font-weight: var(--weight-bold); white-space: nowrap; }
 .day-pass-type-badge.day_gym_cardio { background: var(--color-warning-soft); color: var(--color-warning); }
 .day-pass-amount { direction: ltr; color: var(--color-success); font-family: var(--font-latin); font-weight: var(--weight-bold); }
 .day-pass-actions { justify-content: center; flex-wrap: wrap; }
 .day-pass-actions .btn { min-height: 36px; }
+.day-pass-action-button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; white-space: nowrap; }
+.day-pass-action-button .ui-icon { width: 16px; height: 16px; }
+.day-pass-action-button.is-compact { width: 36px; min-width: 36px; padding-inline: 0; }
+.day-pass-action-button.is-compact .ui-icon { width: 18px; height: 18px; }
+.day-pass-no-phone { display: inline-flex; align-items: center; min-height: 30px; border-radius: var(--radius-pill); background: var(--color-surface-muted); color: var(--color-text-muted); padding-inline: var(--space-2); font-size: 10px; white-space: nowrap; }
+.day-pass-delete-button { color: var(--color-danger); }
 .day-pass-void-button { color: var(--color-danger); }
 .day-pass-empty { color: var(--color-text-muted); padding: var(--space-8); text-align: center; }
+.field-optional { color: var(--color-text-muted); font-size: 11px; font-weight: var(--weight-regular); }
 
 @media (max-width: 991px) {
   .day-pass-form { grid-template-columns: repeat(2, minmax(0, 1fr)); }

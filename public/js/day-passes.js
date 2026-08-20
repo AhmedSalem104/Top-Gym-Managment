@@ -3,7 +3,7 @@
     window.__topGymDayPassesLoaded = true;
 
     const $ = (id) => document.getElementById(id);
-    const state = { pricing: [], records: [], initialized: false, loading: false };
+    const state = { pricing: [], records: [], dashboardRecords: [], initialized: false, loading: false, editingId: null, searchTimer: null };
 
     function escapeHtml(value) {
         return String(value ?? '').replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[character]));
@@ -128,19 +128,80 @@
         return Boolean(opened);
     }
 
+    function getRecord(id) {
+        return [...state.records, ...state.dashboardRecords].find((item) => String(item.id) === String(id)) || null;
+    }
+
+    function recordDisplayName(item) {
+        return String(item?.visitorName || '').trim() || 'زائر';
+    }
+
+    function recordPhone(item) {
+        return String(item?.visitorPhoneNormalized || item?.visitorPhone || '').trim();
+    }
+
+    function renderRecordActions(item, { compact = false } = {}) {
+        const owner = window.topGymAuth?.isOwner?.() === true;
+        const phone = recordPhone(item);
+        const iconButton = (action, label, icon, extra = '') => `<button type="button" class="btn btn-light btn-small day-pass-action-button ${compact ? 'is-compact' : ''} ${extra}" data-day-pass-${action}="${item.id}" title="${label}" aria-label="${label}">${icon}${compact ? '' : `<span>${label}</span>`}</button>`;
+        const whatsapp = phone
+            ? iconButton('whatsapp', 'واتساب', '<svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11.5a8 8 0 0 1-11.9 7L4 20l1.5-4.1A8 8 0 1 1 20 11.5Z"/><path d="M8.5 9.5c.3 1.5 1.5 2.7 3 3l1-.8c.2-.2.5-.2.7-.1l1.3.6c.3.1.4.5.3.8-.3.8-1 1.2-1.8 1.1-3.3-.5-5.3-2.5-5.8-5.8-.1-.8.3-1.5 1.1-1.8.3-.1.7 0 .8.3l.6 1.3c.1.2.1.5-.1.7Z"/></svg>')
+            : `<span class="day-pass-no-phone">بدون رقم</span>`;
+        const ownerActions = owner
+            ? `${iconButton('edit', 'تعديل', '<svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z"/></svg>')} ${iconButton('delete', 'حذف', '<svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>', 'day-pass-delete-button')}`
+            : '';
+        return `<div class="day-pass-actions">${whatsapp}${ownerActions}${owner && !compact ? iconButton('void', 'إلغاء', '<svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m9 9 6 6m0-6-6 6"/></svg>', 'day-pass-void-button') : ''}</div>`;
+    }
+
     function renderList() {
         const host = $('dayPassTableWrap');
         if (!host) return;
         const query = normalizeSearch($('dayPassSearch')?.value);
-        const records = state.records.filter((item) => !query || `${item.visitorName} ${item.visitorPhone} ${item.passTypeName}`.toLocaleLowerCase('ar-EG').includes(query));
-        const owner = window.topGymAuth?.isOwner?.() === true;
+        const records = state.records.filter((item) => !query || `${item.reference} ${recordDisplayName(item)} ${item.visitorPhone} ${item.passTypeName}`.toLocaleLowerCase('ar-EG').includes(query));
         if ($('dayPassTodayCount')) $('dayPassTodayCount').textContent = `${state.records.length.toLocaleString('ar-EG')} حصة اليوم`;
         if ($('dayPassListMeta')) $('dayPassListMeta').textContent = records.length ? `${records.length.toLocaleString('ar-EG')} سجل مكتمل` : 'لا توجد حصص مسجلة اليوم.';
         if (!records.length) {
             host.innerHTML = '<div class="day-pass-empty">لا توجد حصص مطابقة حتى الآن.</div>';
             return;
         }
-        host.innerHTML = `<table class="day-pass-table"><thead><tr><th>الزائر</th><th>نوع الحصة</th><th>المبلغ</th><th>طريقة الدفع</th><th>الوقت</th><th>الإجراءات</th></tr></thead><tbody>${records.map((item) => `<tr data-day-pass-id="${item.id}"><td><strong>${escapeHtml(item.visitorName)}</strong><small dir="ltr">${escapeHtml(item.visitorPhone)}</small></td><td><span class="day-pass-type-badge ${escapeHtml(item.passTypeCode)}">${escapeHtml(item.passTypeName)}</span></td><td class="day-pass-amount">${money(item.amountPaid)}</td><td>${escapeHtml(paymentLabel(item.paymentMethod))}</td><td dir="ltr">${new Intl.DateTimeFormat('ar-EG', { timeStyle: 'short' }).format(new Date(item.createdAt))}</td><td><div class="day-pass-actions"><button type="button" class="btn btn-light btn-small" data-day-pass-whatsapp="${item.id}" title="إرسال رسالة واتساب" aria-label="إرسال رسالة واتساب"><span aria-hidden="true">◉</span> واتساب</button>${owner ? `<button type="button" class="btn btn-light btn-small day-pass-void-button" data-day-pass-void="${item.id}" title="إلغاء الحصة" aria-label="إلغاء الحصة">إلغاء</button>` : ''}</div></td></tr>`).join('')}</tbody></table>`;
+        host.innerHTML = `<table class="day-pass-table"><thead><tr><th>الزائر</th><th>نوع الحصة</th><th>المبلغ</th><th>طريقة الدفع</th><th>الوقت</th><th>الإجراءات</th></tr></thead><tbody>${records.map((item) => `<tr data-day-pass-id="${item.id}"><td><strong>${escapeHtml(recordDisplayName(item))}</strong><small class="day-pass-reference" dir="ltr">${escapeHtml(item.reference || `VIS-${String(item.id).padStart(6, '0')}`)}</small><small dir="ltr">${escapeHtml(recordPhone(item) || 'بدون رقم')}</small></td><td><span class="day-pass-type-badge ${escapeHtml(item.passTypeCode)}">${escapeHtml(item.passTypeName)}</span></td><td class="day-pass-amount">${money(item.amountPaid)}</td><td>${escapeHtml(paymentLabel(item.paymentMethod))}</td><td dir="ltr">${new Intl.DateTimeFormat('ar-EG', { timeStyle: 'short' }).format(new Date(item.createdAt))}</td><td>${renderRecordActions(item)}</td></tr>`).join('')}</tbody></table>`;
+    }
+
+    function monthRange() {
+        const today = todayIso();
+        return { from: `${today.slice(0, 7)}-01`, to: today };
+    }
+
+    function renderDashboardList() {
+        const host = $('dashboardDayPassTableWrap');
+        if (!host) return;
+        if (!state.dashboardRecords.length) {
+            host.innerHTML = '<div class="day-pass-empty">لا توجد حصص مسجلة هذا الشهر.</div>';
+            return;
+        }
+        host.innerHTML = `<table class="dashboard-day-pass-table"><thead><tr><th>الزائر</th><th>نوع الحصة</th><th>التاريخ</th><th>المبلغ</th><th>الإجراءات</th></tr></thead><tbody>${state.dashboardRecords.map((item) => `<tr data-day-pass-id="${item.id}"><td><strong>${escapeHtml(recordDisplayName(item))}</strong><small dir="ltr">${escapeHtml(item.reference || '')} · ${escapeHtml(recordPhone(item) || 'بدون رقم')}</small></td><td><span class="day-pass-type-badge ${escapeHtml(item.passTypeCode)}">${escapeHtml(item.passTypeName)}</span></td><td dir="ltr">${escapeHtml(dateText(item.visitDate))}</td><td class="day-pass-amount">${money(item.amountPaid)}</td><td>${renderRecordActions(item, { compact: true })}</td></tr>`).join('')}</tbody></table>`;
+    }
+
+    async function loadDashboard() {
+        const host = $('dashboardDayPassTableWrap');
+        if (!host || !isAuthenticated()) return false;
+        const { from, to } = monthRange();
+        try {
+            const params = new URLSearchParams({ from, to, page: '1', pageSize: '5' });
+            const [list, summary] = await Promise.all([
+                request(`/api/day-passes?${params}`),
+                request(`/api/day-passes/summary?${new URLSearchParams({ from, to })}`)
+            ]);
+            state.dashboardRecords = Array.isArray(list?.records) ? list.records : [];
+            if ($('dashboardDayPassCount')) $('dashboardDayPassCount').textContent = Number(summary?.count || 0).toLocaleString('ar-EG');
+            if ($('dashboardDayPassTotal')) $('dashboardDayPassTotal').textContent = money(summary?.amount || 0);
+            if ($('dashboardDayPassMonthMeta')) $('dashboardDayPassMonthMeta').textContent = `ملخص ${new Intl.DateTimeFormat('ar-EG', { month: 'long', year: 'numeric' }).format(new Date(`${from}T00:00:00`))}`;
+            renderDashboardList();
+            return true;
+        } catch (error) {
+            host.innerHTML = `<div class="day-pass-empty">${escapeHtml(error.message || 'تعذر تحميل سجل الحصص.')}</div>`;
+            return false;
+        }
     }
 
     async function loadToday() {
@@ -150,21 +211,67 @@
             const response = await request(`/api/day-passes?${new URLSearchParams({ from: date, to: date, search, page: '1', pageSize: '100' })}`);
             state.records = response.records || [];
             renderList();
+            return true;
         } catch (error) {
             if ($('dayPassTableWrap')) $('dayPassTableWrap').innerHTML = `<div class="day-pass-empty">${escapeHtml(error.message || 'تعذر تحميل سجل الحصص.')}</div>`;
+            return false;
+        }
+    }
+
+    function openForm() {
+        window.topGymActivateTab?.('attendance');
+        window.setTimeout(() => $('dayPassVisitorName')?.focus(), 120);
+    }
+
+    function resetEditForm() {
+        state.editingId = null;
+        $('dayPassForm')?.reset();
+        renderPricingOptions();
+        if ($('dayPassSaveButton')) $('dayPassSaveButton').textContent = 'حفظ الحصة';
+        if ($('dayPassCancelEditButton')) $('dayPassCancelEditButton').hidden = true;
+    }
+
+    function editRecord(id) {
+        const sale = getRecord(id);
+        if (!sale) return;
+        openForm();
+        state.editingId = String(id);
+        $('dayPassVisitorName').value = recordDisplayName(sale) === 'زائر' ? '' : recordDisplayName(sale);
+        $('dayPassVisitorPhone').value = sale.visitorPhone || '';
+        $('dayPassType').value = sale.passTypeCode || '';
+        $('dayPassPaymentMethod').value = sale.paymentMethod || 'cash';
+        $('dayPassSendWhatsApp').checked = false;
+        updatePricePreview();
+        if ($('dayPassSaveButton')) $('dayPassSaveButton').textContent = 'حفظ التعديل';
+        if ($('dayPassCancelEditButton')) $('dayPassCancelEditButton').hidden = false;
+        window.setTimeout(() => $('dayPassForm')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 120);
+    }
+
+    async function deleteRecord(id) {
+        const sale = getRecord(id);
+        if (!sale || !window.confirm(`هل تريد حذف سجل ${recordDisplayName(sale)}؟ لا يمكن التراجع عن هذا الإجراء.`)) return;
+        try {
+            await request(`/api/day-passes/${encodeURIComponent(id)}`, { method: 'DELETE' });
+            if (String(state.editingId) === String(id)) resetEditForm();
+            await Promise.all([loadToday(), loadDashboard()]);
+            window.topGymRefreshMonthlyFinance?.();
+            await notify('تم حذف سجل الحصة.');
+        } catch (error) {
+            await notify(error.message || 'تعذر حذف سجل الحصة.', 'error');
         }
     }
 
     async function submitDayPass(event) {
         event.preventDefault();
         const visitorPhone = $('dayPassVisitorPhone').value.trim();
-        const shouldSend = Boolean($('dayPassSendWhatsApp')?.checked);
+        const shouldSend = Boolean($('dayPassSendWhatsApp')?.checked && visitorPhone);
         const preparedWindow = shouldSend ? window.topGymWhatsapp?.prepareWindow(visitorPhone) : null;
         const button = $('dayPassSaveButton');
         if (button) button.disabled = true;
         try {
-            const result = await request('/api/day-passes', {
-                method: 'POST',
+            const editingId = state.editingId;
+            const result = await request(editingId ? `/api/day-passes/${encodeURIComponent(editingId)}` : '/api/day-passes', {
+                method: editingId ? 'PUT' : 'POST',
                 body: JSON.stringify({
                     visitorName: $('dayPassVisitorName').value,
                     visitorPhone,
@@ -173,12 +280,11 @@
                     visitDate: todayIso()
                 })
             });
-            if (shouldSend) openWhatsapp(result.sale, result.whatsapp?.message || '', preparedWindow);
-            else if (preparedWindow && !preparedWindow.closed) preparedWindow.close();
-            $('dayPassForm').reset();
-            renderPricingOptions();
-            await loadToday();
-            await notify(shouldSend ? 'تم حفظ الحصة وتجهيز رسالة واتساب.' : 'تم حفظ الحصة وإضافتها للإيرادات.');
+            const whatsappSent = shouldSend && result.whatsapp?.available && openWhatsapp(result.sale, result.whatsapp?.message || '', preparedWindow);
+            if (!whatsappSent && preparedWindow && !preparedWindow.closed) preparedWindow.close();
+            resetEditForm();
+            await Promise.all([loadToday(), loadDashboard()]);
+            await notify(editingId ? 'تم تحديث سجل الحصة.' : (whatsappSent ? 'تم حفظ الحصة وتجهيز رسالة واتساب.' : 'تم حفظ الحصة وإضافتها للإيرادات.'));
             window.dispatchEvent(new CustomEvent('topgym:day-pass-created', { detail: result }));
             window.topGymRefreshMonthlyFinance?.();
         } catch (error) {
@@ -193,7 +299,8 @@
         if (!window.confirm('هل تريد إلغاء هذه الحصة؟ سيتم استبعادها من التقارير والإيرادات.')) return;
         try {
             await request(`/api/day-passes/${encodeURIComponent(id)}/void`, { method: 'POST' });
-            await loadToday();
+            await Promise.all([loadToday(), loadDashboard()]);
+            window.topGymRefreshMonthlyFinance?.();
             await notify('تم إلغاء الحصة.');
         } catch (error) {
             await notify(error.message || 'تعذر إلغاء الحصة.', 'error');
@@ -201,8 +308,9 @@
     }
 
     function whatsappForRecord(id) {
-        const sale = state.records.find((item) => String(item.id) === String(id));
+        const sale = getRecord(id);
         if (!sale) return;
+        if (!recordPhone(sale)) return notify('لا يوجد رقم هاتف مسجل لهذا الزائر.', 'warning');
         const message = `أهلًا ${sale.visitorName} 👋\n\nشكرًا لحضورك اليوم في TOP GYM، نورتنا جدًا 💙\n\nنوع الحصة: ${sale.passTypeName}\nنتمنى نشوفك دائمًا 💪`;
         openWhatsapp(sale, message);
     }
@@ -221,12 +329,27 @@
         $('dayPassForm')?.addEventListener('submit', submitDayPass);
         $('dayPassType')?.addEventListener('change', updatePricePreview);
         $('dayPassRefreshButton')?.addEventListener('click', loadToday);
+        $('dayPassCancelEditButton')?.addEventListener('click', resetEditForm);
         $('dayPassSearch')?.addEventListener('input', () => { window.clearTimeout(state.searchTimer); state.searchTimer = window.setTimeout(loadToday, 250); });
         $('dayPassTableWrap')?.addEventListener('click', (event) => {
             const whatsappButton = event.target.closest('[data-day-pass-whatsapp]');
             if (whatsappButton) return whatsappForRecord(whatsappButton.dataset.dayPassWhatsapp);
+            const editButton = event.target.closest('[data-day-pass-edit]');
+            if (editButton) return editRecord(editButton.dataset.dayPassEdit);
+            const deleteButton = event.target.closest('[data-day-pass-delete]');
+            if (deleteButton) return deleteRecord(deleteButton.dataset.dayPassDelete);
             const voidButton = event.target.closest('[data-day-pass-void]');
             if (voidButton) return voidDayPass(voidButton.dataset.dayPassVoid);
+        });
+        $('dashboardDayPassAdd')?.addEventListener('click', openForm);
+        $('dashboardDayPassManage')?.addEventListener('click', () => window.topGymActivateTab?.('attendance'));
+        $('dashboardDayPassTableWrap')?.addEventListener('click', (event) => {
+            const whatsappButton = event.target.closest('[data-day-pass-whatsapp]');
+            if (whatsappButton) return whatsappForRecord(whatsappButton.dataset.dayPassWhatsapp);
+            const editButton = event.target.closest('[data-day-pass-edit]');
+            if (editButton) return editRecord(editButton.dataset.dayPassEdit);
+            const deleteButton = event.target.closest('[data-day-pass-delete]');
+            if (deleteButton) return deleteRecord(deleteButton.dataset.dayPassDelete);
         });
         $('dayPassPricingSave')?.addEventListener('click', savePricing);
         document.addEventListener('click', (event) => {
@@ -238,6 +361,7 @@
             if (!isAuthenticated()) return;
             void loadPricing();
             if (!$('attendanceSection')?.hidden) void loadToday();
+            if (!$('dashboardSection')?.hidden) void loadDashboard();
         };
         if (window.topGymAuthReady) window.topGymAuthReady.then(loadAfterAuth).catch(() => {});
         else loadAfterAuth();
@@ -246,11 +370,12 @@
                 void loadPricing();
                 void loadToday();
             }
+            if (event.detail?.name === 'dashboard' && isAuthenticated()) void loadDashboard();
         });
     }
 
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initialize, { once: true });
     else initialize();
 
-    window.topGymDayPasses = Object.freeze({ loadPricing, loadToday });
+    window.topGymDayPasses = Object.freeze({ loadPricing, loadToday, loadDashboard, openForm });
 })();

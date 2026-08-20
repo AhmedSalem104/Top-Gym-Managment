@@ -44,6 +44,7 @@ function normalizePhone(value) {
     const arabicDigits = '٠١٢٣٤٥٦٧٨٩';
     const englishDigits = '0123456789';
     let phone = String(value ?? '').trim().replace(/[٠-٩]/gu, (digit) => englishDigits[arabicDigits.indexOf(digit)]);
+    if (!phone) return '';
     phone = phone.replace(/[^0-9]/g, '');
     if (phone.startsWith('00')) phone = phone.slice(2);
     if (phone.startsWith('20') && phone.length === 12) return phone;
@@ -60,8 +61,15 @@ function parsePaymentMethod(value) {
 
 function parseRange(query = {}) {
     const today = todayInTimeZone();
-    const from = parseDateOnly(query.from || `${today.slice(0, 7)}-01`, 'تاريخ البداية');
-    const to = parseDateOnly(query.to || today, 'تاريخ النهاية');
+    const normalizeQueryDate = (value, fallback, label) => {
+        const raw = String(value ?? '').trim();
+        if (!raw) return fallback;
+        // Accept date-only values and ISO date-time values without changing the API contract.
+        const dateOnly = raw.match(/^(\d{4}-\d{2}-\d{2})/u)?.[1] || raw;
+        return parseDateOnly(dateOnly, label);
+    };
+    const from = normalizeQueryDate(query.from, `${today.slice(0, 7)}-01`, 'تاريخ البداية');
+    const to = normalizeQueryDate(query.to, today, 'تاريخ النهاية');
     if (from > to) throw appError('تاريخ البداية يجب أن يسبق تاريخ النهاية.');
     if (differenceInDays(from, to) > 730) throw appError('أقصى فترة للعرض هي 730 يومًا.');
     return { from, to, nextDate: addDays(to, 1) };
@@ -94,8 +102,8 @@ async function updatePricing(body = {}) {
 }
 
 async function createDayPass(body = {}, { createdByUserId = null } = {}) {
-    const visitorName = requiredString(body.visitorName ?? body.name, 'اسم الزائر', 120);
-    const visitorPhone = requiredString(body.visitorPhone ?? body.phone, 'رقم الهاتف', 30);
+    const visitorName = optionalString(body.visitorName ?? body.name, 120) || 'زائر';
+    const visitorPhone = optionalString(body.visitorPhone ?? body.phone, 30) || '';
     const visitorPhoneNormalized = normalizePhone(visitorPhone);
     const passTypeCode = requiredString(body.passTypeCode ?? body.type, 'نوع الحصة', 40);
     const passType = await dayPassRepository.findActiveType(passTypeCode);
@@ -116,8 +124,41 @@ async function createDayPass(body = {}, { createdByUserId = null } = {}) {
     return {
         sale,
         whatsapp: {
-            phone: visitorPhoneNormalized,
-            message: `أهلًا ${visitorName} 👋\n\nشكرًا لحضورك اليوم في TOP GYM، نورتنا جدًا 💙\n\nنوع الحصة: ${passType.label}\nنتمنى نشوفك دائمًا 💪`
+            phone: visitorPhoneNormalized || null,
+            available: Boolean(visitorPhoneNormalized),
+            message: `أهلًا ${sale.visitorName} 👋\n\nشكرًا لحضورك اليوم في TOP GYM، نورتنا جدًا 💙\n\nرقم الزيارة: ${sale.reference}\nنوع الحصة: ${passType.label}\nنتمنى نشوفك دائمًا 💪`
+        }
+    };
+}
+
+async function updateDayPass(id, body = {}) {
+    const saleId = ensureId(id, 'معرّف الحصة');
+    const visitorName = optionalString(body.visitorName ?? body.name, 120) || 'زائر';
+    const visitorPhone = optionalString(body.visitorPhone ?? body.phone, 30) || '';
+    const visitorPhoneNormalized = normalizePhone(visitorPhone);
+    const passTypeCode = requiredString(body.passTypeCode ?? body.type, 'نوع الحصة', 40);
+    const passType = await dayPassRepository.findType(passTypeCode);
+    if (!passType || passType.active === false) throw appError('نوع الحصة غير متاح حاليًا.', 400, 'DAY_PASS_TYPE_UNAVAILABLE');
+    const paymentMethod = parsePaymentMethod(body.paymentMethod);
+    const visitDate = parseDateOnly(body.visitDate || todayInTimeZone(), 'تاريخ الحصة');
+    const notes = optionalString(body.notes, 500);
+    const sale = await dayPassRepository.updateSale({
+        id: saleId,
+        visitorName,
+        visitorPhone,
+        visitorPhoneNormalized,
+        passType,
+        paymentMethod,
+        visitDate,
+        notes
+    });
+    if (!sale) throw appError('الحصة غير موجودة أو تم إلغاؤها.', 404, 'DAY_PASS_NOT_FOUND');
+    return {
+        sale,
+        whatsapp: {
+            phone: sale.visitorPhoneNormalized || null,
+            available: Boolean(sale.visitorPhoneNormalized),
+            message: `أهلًا ${sale.visitorName} 👋\n\nشكرًا لحضورك اليوم في TOP GYM، نورتنا جدًا 💙\n\nرقم الزيارة: ${sale.reference}\nنوع الحصة: ${sale.passTypeName}\nنتمنى نشوفك دائمًا 💪`
         }
     };
 }
@@ -163,13 +204,21 @@ async function voidDayPass(id) {
     return { ok: true };
 }
 
+async function deleteDayPass(id) {
+    const result = await dayPassRepository.deleteSale(ensureId(id, 'معرّف الحصة'));
+    if (!result.rowsAffected[0]) throw appError('الحصة غير موجودة.', 404, 'DAY_PASS_NOT_FOUND');
+    return { ok: true };
+}
+
 module.exports = {
     createDayPass,
+    deleteDayPass,
     ensureDayPassTables: dayPassRepository.ensureDayPassTables,
     getPricing,
     getSummary,
     listDayPasses,
     markWhatsappOpened,
     updatePricing,
+    updateDayPass,
     voidDayPass
 };
