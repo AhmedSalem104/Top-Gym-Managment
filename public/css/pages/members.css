@@ -144,9 +144,9 @@
 
 .member-quick-actions .member-attendance-quick,
 .member-quick-actions .member-attendance-status {
-  width: 112px;
-  min-width: 112px;
-  flex: 0 0 112px;
+  width: 100px;
+  min-width: 100px;
+  flex: 0 0 100px;
   align-items: center;
   justify-content: center;
   white-space: nowrap;
