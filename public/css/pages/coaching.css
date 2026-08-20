@@ -248,6 +248,501 @@
   text-align: start;
 }
 
+/* External trainee dashboard -------------------------------------------- */
+.coaching-summary-card {
+  position: relative;
+  min-height: 112px;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-3);
+  overflow: hidden;
+  background: var(--color-surface);
+  box-shadow: var(--shadow-xs);
+}
+
+.coaching-summary-card::after {
+  position: absolute;
+  inset-inline-end: -24px;
+  bottom: -30px;
+  width: 92px;
+  height: 92px;
+  border-radius: 50%;
+  background: currentColor;
+  content: '';
+  opacity: 0.06;
+}
+
+.coaching-summary-icon {
+  position: relative;
+  display: inline-grid;
+  width: 48px;
+  height: 48px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid currentColor;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-primary);
+  isolation: isolate;
+}
+
+.coaching-summary-icon::before {
+  position: absolute;
+  inset: 0;
+  width: 48px;
+  height: 48px;
+  border-radius: inherit;
+  background: var(--color-primary-soft);
+  content: '';
+  z-index: 0;
+}
+
+.coaching-summary-icon .coaching-inline-icon {
+  position: relative;
+  width: 23px;
+  height: 23px;
+  z-index: 1;
+}
+
+.coaching-summary-copy {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.coaching-summary-copy > span {
+  overflow: hidden;
+  color: var(--color-text-soft);
+  font-size: var(--font-xs);
+  font-weight: var(--weight-semibold);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.coaching-summary-copy strong {
+  color: var(--color-text);
+  font-family: var(--font-latin);
+  font-size: 1.75rem;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.05;
+}
+
+.coaching-summary-copy small {
+  color: var(--color-text-muted);
+  font-size: 11px;
+}
+
+.coaching-summary-card.users { color: var(--color-primary); }
+.coaching-summary-card.workout { color: #7c3aed; }
+.coaching-summary-card.diet { color: var(--color-success); }
+.coaching-summary-card.progress { color: #d97706; }
+
+.coaching-summary-card.workout .coaching-summary-icon::before { background: #f3e8ff; }
+.coaching-summary-card.diet .coaching-summary-icon::before { background: var(--color-success-soft); }
+.coaching-summary-card.progress .coaching-summary-icon::before { background: var(--color-warning-soft); }
+
+/* The action column stays readable even when a table has long names. */
+.external-trainees-table-wrap {
+  overflow-y: visible;
+}
+
+.external-trainee-actions-cell,
+.trainee-actions {
+  overflow: visible;
+}
+
+.coaching-icon-action {
+  width: 42px;
+  min-width: 42px;
+  height: 42px;
+  min-height: 42px;
+  border-radius: var(--radius-md);
+}
+
+.coaching-icon-action .coaching-inline-icon {
+  width: 20px;
+  height: 20px;
+}
+
+.trainee-more-menu.is-floating {
+  position: fixed;
+  z-index: var(--z-dropdown);
+  max-height: min(360px, calc(100vh - 16px));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* Member details training/nutrition extension --------------------------- */
+.member-training-panel {
+  display: grid;
+  gap: var(--space-4);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-muted);
+  padding: var(--space-4);
+}
+
+.member-training-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  border: 1px solid #cfe0fa;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, var(--color-primary-soft), var(--color-surface));
+  padding: var(--space-4);
+}
+
+.member-training-head > div:first-child {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-1);
+}
+
+.member-training-head > div:first-child > span {
+  color: var(--color-primary);
+  font-size: 11px;
+  font-weight: var(--weight-bold);
+}
+
+.member-training-head h4 {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-lg);
+  font-weight: var(--weight-extrabold);
+}
+
+.member-training-head small {
+  max-width: 62ch;
+  color: var(--color-text-muted);
+  font-size: var(--font-xs);
+  line-height: 1.7;
+}
+
+.member-training-head > div:last-child {
+  display: flex;
+  max-width: 52%;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+.member-training-head > div:last-child .btn {
+  min-height: 38px;
+}
+
+.member-training-systems {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.member-training-systems > div:not(.profile-empty) {
+  display: grid;
+  min-width: 0;
+  align-content: start;
+  gap: var(--space-2);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  padding: var(--space-4);
+}
+
+.member-training-systems > div > strong {
+  overflow: hidden;
+  color: var(--color-text);
+  font-size: var(--font-sm);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.member-training-systems > div > small {
+  color: var(--color-text-muted);
+  font-size: var(--font-xs);
+}
+
+.member-training-systems > div > .btn {
+  justify-self: start;
+  margin-top: var(--space-1);
+}
+
+.system-type,
+.system-status {
+  display: inline-flex;
+  width: fit-content;
+  min-height: 26px;
+  align-items: center;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-pill);
+  padding: 0 var(--space-2);
+  font-size: 11px;
+  font-weight: var(--weight-bold);
+}
+
+.system-type.workout { border-color: #c9dcff; background: var(--color-primary-soft); color: var(--color-primary); }
+.system-type.diet { border-color: #b9e5d2; background: var(--color-success-soft); color: var(--color-success); }
+
+.member-progress-line {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+
+.member-progress-line > span {
+  display: grid;
+  gap: 2px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  padding: var(--space-3);
+  font-size: 11px;
+  text-align: center;
+}
+
+.member-progress-line b {
+  color: var(--color-primary);
+  font-family: var(--font-latin);
+  font-size: var(--font-md);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Coaching profile dialog ----------------------------------------------- */
+.coaching-profile-dialog {
+  width: min(1060px, calc(100% - 32px));
+}
+
+.coaching-profile-content {
+  min-width: 0;
+}
+
+.profile-hero {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-4);
+  border: 1px solid #cfe0fa;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, var(--color-primary-soft), var(--color-surface));
+  padding: var(--space-4);
+}
+
+.trainee-avatar.large {
+  width: 58px;
+  height: 58px;
+  border-color: #b9d1f8;
+  background: var(--color-primary);
+  color: #fff;
+  font-size: var(--font-lg);
+}
+
+.profile-hero > div:nth-child(2) {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.profile-hero > div:nth-child(2) strong {
+  overflow: hidden;
+  color: var(--color-text);
+  font-size: var(--font-lg);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.profile-hero > div:nth-child(2) span,
+.profile-hero > div:nth-child(2) small {
+  color: var(--color-text-muted);
+  font-size: var(--font-xs);
+}
+
+.profile-hero > div:nth-child(2) span { direction: ltr; text-align: start; }
+
+.profile-stats,
+.profile-progress-dashboard,
+.profile-execution-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.profile-stats > article,
+.profile-progress-card {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-1);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-muted);
+  padding: var(--space-4);
+  text-align: center;
+}
+
+.profile-stats > article span,
+.profile-progress-card .profile-section-head span {
+  color: var(--color-text-muted);
+  font-size: 11px;
+}
+
+.profile-stats > article strong {
+  color: var(--color-text);
+  font-family: var(--font-latin);
+  font-size: var(--font-lg);
+  font-variant-numeric: tabular-nums;
+}
+
+.profile-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-muted);
+  padding: var(--space-3);
+}
+
+.profile-actions .btn { min-height: 42px; }
+
+.profile-section {
+  display: grid;
+  gap: var(--space-3);
+  min-width: 0;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  padding: var(--space-4);
+  box-shadow: var(--shadow-xs);
+}
+
+.profile-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.profile-section-head h4 {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-md);
+  font-weight: var(--weight-bold);
+}
+
+.profile-section-head > span,
+.profile-section-description {
+  color: var(--color-text-muted);
+  font-size: var(--font-xs);
+}
+
+.profile-system-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-muted);
+  padding: var(--space-3) var(--space-4);
+}
+
+.profile-system-card > div:first-child {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-1);
+}
+
+.profile-system-card strong {
+  overflow: hidden;
+  color: var(--color-text);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.profile-system-card small { color: var(--color-text-muted); font-size: var(--font-xs); }
+.profile-system-card > div:last-child { display: flex; flex: 0 0 auto; align-items: center; gap: var(--space-2); }
+
+.system-status.active { border-color: #b9e5d2; background: var(--color-success-soft); color: var(--color-success); }
+.system-status.paused,
+.system-status.draft { border-color: #f2d39b; background: var(--color-warning-soft); color: #b86b16; }
+.system-status.completed { border-color: #c9dcff; background: var(--color-primary-soft); color: var(--color-primary); }
+
+.profile-table-wrap { border: 1px solid var(--border-color); border-radius: var(--radius-md); }
+.profile-table { width: 100%; min-width: 540px; }
+.profile-table th,
+.profile-table td { padding: var(--space-3); text-align: center; vertical-align: middle; }
+.profile-table td small { display: block; color: var(--color-text-muted); font-size: 11px; }
+
+.profile-empty,
+.coaching-empty {
+  display: grid;
+  min-height: 100px;
+  place-items: center;
+  gap: var(--space-2);
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-muted);
+  color: var(--color-text-muted);
+  padding: var(--space-5);
+  text-align: center;
+}
+
+.profile-empty { grid-column: 1 / -1; }
+.profile-empty strong,
+.coaching-empty strong { color: var(--color-text-soft); }
+
+.profile-progress-dashboard,
+.profile-execution-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.profile-progress-card { text-align: start; }
+.profile-progress-card .profile-section-head { align-items: flex-start; }
+
+.profile-progress-meters { display: grid; gap: var(--space-3); }
+.profile-progress-meters > div { display: grid; grid-template-columns: 1fr auto; gap: var(--space-1) var(--space-3); align-items: center; }
+.profile-progress-meters > div > span { color: var(--color-text-soft); font-size: var(--font-xs); }
+.profile-progress-meters > div > b { color: var(--color-primary); font-family: var(--font-latin); font-variant-numeric: tabular-nums; }
+.profile-progress-meters > div > i { grid-column: 1 / -1; height: 8px; overflow: hidden; border-radius: var(--radius-pill); background: var(--color-bg-subtle); }
+.profile-progress-meters > div > i em { display: block; width: 0; height: 100%; border-radius: inherit; background: var(--color-primary); }
+.profile-progress-meters > div:nth-child(2) > i em { background: var(--color-success); }
+
+/* Builder stages are intentionally in normal flow below the sticky heading.
+   This prevents the step buttons/progress labels from being painted under it. */
+.coaching-builder-dialog > form.dialog-body {
+  gap: 0;
+  padding: 0;
+  scroll-padding-block: var(--space-6);
+}
+
+.coaching-builder-dialog > form.dialog-body > .details-dialog-head {
+  top: 0;
+  margin: 0;
+  padding: var(--space-5) var(--space-6) var(--space-4);
+}
+
+.coaching-builder-dialog > form.dialog-body > #coachingBuilderStepper,
+.coaching-builder-dialog > form.dialog-body > #coachingBuilderProgress,
+.coaching-builder-dialog > form.dialog-body > #coachingBuilderContent {
+  position: relative;
+  z-index: 0;
+  margin-inline: var(--space-6);
+}
+
+.coaching-builder-dialog > form.dialog-body > #coachingBuilderStepper,
+.coaching-builder-dialog > form.dialog-body > #coachingBuilderProgress {
+  flex: 0 0 auto;
+}
+
+.coaching-builder-dialog > form.dialog-body > #coachingBuilderStepper {
+  min-height: 46px;
+  margin-top: var(--space-4);
+}
+.coaching-builder-dialog > form.dialog-body > #coachingBuilderContent { margin-top: var(--space-4); padding-bottom: var(--space-5); }
+
+.coaching-builder-dialog > form.dialog-body > .builder-dialog-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: var(--z-content);
+  margin: 0;
+}
+
 @media (max-width: 767px) {
   .external-trainees-table {
     min-width: 900px;
@@ -1076,4 +1571,31 @@
   .builder-exercise-reference { align-items: flex-start; }
   .builder-meal-row-summary { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .builder-dialog-actions > button { flex: 1 1 140px; }
+
+  .coaching-summary-card { min-height: 100px; padding: var(--space-3); }
+  .coaching-summary-icon { width: 42px; height: 42px; }
+  .coaching-summary-icon::before { width: 42px; height: 42px; }
+  .coaching-summary-icon .coaching-inline-icon { width: 20px; height: 20px; }
+  .coaching-summary-copy strong { font-size: 1.45rem; }
+
+  .member-training-head,
+  .profile-hero,
+  .profile-system-card { align-items: stretch; flex-direction: column; }
+  .member-training-head > div:last-child { max-width: none; justify-content: stretch; }
+  .member-training-head > div:last-child .btn { flex: 1 1 130px; }
+  .member-training-systems { grid-template-columns: 1fr; }
+  .member-progress-line { grid-template-columns: 1fr; }
+  .profile-hero { display: grid; grid-template-columns: auto minmax(0, 1fr); }
+  .profile-hero > .btn { grid-column: 1 / -1; }
+  .profile-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .profile-actions .btn { flex: 1 1 140px; }
+  .profile-system-card > div:last-child { justify-content: space-between; }
+  .profile-progress-dashboard,
+  .profile-execution-grid { grid-template-columns: 1fr; }
+  .coaching-builder-dialog > form.dialog-body > .details-dialog-head { padding: var(--space-4) var(--space-4) var(--space-3); }
+  .coaching-builder-dialog > form.dialog-body > #coachingBuilderStepper,
+  .coaching-builder-dialog > form.dialog-body > #coachingBuilderProgress,
+  .coaching-builder-dialog > form.dialog-body > #coachingBuilderContent { margin-inline: var(--space-4); }
+  .coaching-builder-dialog > form.dialog-body > #coachingBuilderStepper { min-height: 90px; margin-top: var(--space-3); }
+  .coaching-builder-dialog > form.dialog-body > #coachingBuilderContent { margin-top: var(--space-3); }
 }

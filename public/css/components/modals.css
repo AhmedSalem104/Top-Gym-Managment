@@ -218,30 +218,63 @@ body .swal2-content {
 }
 
 body .swal2-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
   gap: var(--space-2);
   margin-top: var(--space-5);
 }
 
-body .swal2-actions .btn,
-body .swal2-styled {
+body .swal2-popup .swal2-actions > button.swal2-styled,
+body .swal2-popup .swal2-actions > button.btn,
+body .swal2-popup .swal2-actions > a.btn {
+  display: inline-flex !important;
+  min-width: 118px;
   min-height: 42px;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  border: 1px solid transparent !important;
   border-radius: var(--radius-md);
+  padding: 0 var(--space-4) !important;
   font-family: var(--font-body);
   font-size: var(--font-sm);
   font-weight: var(--weight-semibold);
+  line-height: 1.2;
+  box-shadow: none;
+  cursor: pointer;
 }
 
-body .swal2-actions .btn-primary,
-body .swal2-styled.swal2-confirm {
-  background: var(--color-primary);
-  color: #fff;
+body .swal2-popup .swal2-actions > button.swal2-confirm,
+body .swal2-popup .swal2-actions > button.btn-primary,
+body .swal2-popup .swal2-actions > button.btn-danger {
+  background: var(--color-primary) !important;
+  color: #fff !important;
 }
 
-body .swal2-actions .btn-light,
-body .swal2-styled.swal2-cancel {
-  border: 1px solid var(--border-color);
-  background: var(--color-surface-muted);
-  color: var(--color-text-soft);
+body .swal2-popup .swal2-actions > button.btn-danger {
+  background: var(--color-danger) !important;
+}
+
+body .swal2-popup .swal2-actions > button.swal2-cancel,
+body .swal2-popup .swal2-actions > button.btn-light {
+  border-color: var(--border-color) !important;
+  background: var(--color-surface-muted) !important;
+  color: var(--color-text-soft) !important;
+}
+
+body .swal2-popup .swal2-actions > button.swal2-confirm:hover,
+body .swal2-popup .swal2-actions > button.btn-primary:hover,
+body .swal2-popup .swal2-actions > button.btn-danger:hover {
+  filter: brightness(0.94);
+}
+
+body .swal2-popup .swal2-actions > button.swal2-cancel:hover,
+body .swal2-popup .swal2-actions > button.btn-light:hover {
+  border-color: var(--border-focus) !important;
+  background: var(--color-primary-soft) !important;
+  color: var(--color-primary) !important;
 }
 
 body .swal2-close {
@@ -291,6 +324,13 @@ body .swal2-close:hover {
   }
 
   dialog .dialog-actions > * {
+    flex: 1 1 140px;
+  }
+
+  body .swal2-popup .swal2-actions > button.swal2-styled,
+  body .swal2-popup .swal2-actions > button.btn,
+  body .swal2-popup .swal2-actions > a.btn {
+    min-width: 0;
     flex: 1 1 140px;
   }
 }

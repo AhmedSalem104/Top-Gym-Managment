@@ -142,7 +142,36 @@
     function closeTraineeMoreMenus() {
         document.querySelectorAll('#externalTraineesList .trainee-more-menu:not([hidden])').forEach((panel) => {
             panel.hidden = true;
+            panel.classList.remove('is-floating');
+            panel.style.removeProperty('top');
+            panel.style.removeProperty('left');
             panel.closest('.trainee-more')?.querySelector('[data-coaching-action="toggle-more"]')?.setAttribute('aria-expanded', 'false');
+        });
+    }
+
+    function positionTraineeMoreMenu(menu, panel) {
+        if (!menu || !panel || panel.hidden) return;
+        const toggle = menu.querySelector('[data-coaching-action="toggle-more"]');
+        if (!toggle) return;
+        const toggleRect = toggle.getBoundingClientRect();
+        const panelWidth = panel.offsetWidth || 210;
+        const panelHeight = panel.offsetHeight || 180;
+        const padding = 8;
+        const left = Math.min(
+            Math.max(padding, toggleRect.right - panelWidth),
+            Math.max(padding, window.innerWidth - panelWidth - padding)
+        );
+        const opensDown = toggleRect.bottom + panelHeight + padding <= window.innerHeight;
+        const top = opensDown
+            ? toggleRect.bottom + padding
+            : Math.max(padding, toggleRect.top - panelHeight - padding);
+        panel.style.left = `${Math.round(left)}px`;
+        panel.style.top = `${Math.round(top)}px`;
+    }
+
+    function repositionTraineeMoreMenus() {
+        document.querySelectorAll('#externalTraineesList .trainee-more-menu.is-floating:not([hidden])').forEach((panel) => {
+            positionTraineeMoreMenu(panel.closest('.trainee-more'), panel);
         });
     }
 
@@ -2104,7 +2133,9 @@
                 const shouldOpen = panel.hidden;
                 closeTraineeMoreMenus();
                 panel.hidden = !shouldOpen;
+                panel.classList.toggle('is-floating', shouldOpen);
                 button.setAttribute('aria-expanded', String(shouldOpen));
+                if (shouldOpen) positionTraineeMoreMenu(menu, panel);
             } else if (action === 'profile') openProfile(id);
             else if (action === 'workout') openBuilder('workout', id);
             else if (action === 'diet') openBuilder('diet', id);
@@ -2129,6 +2160,8 @@
             if (event.key !== 'Escape') return;
             closeTraineeMoreMenus();
         });
+        window.addEventListener('scroll', repositionTraineeMoreMenus, { passive: true });
+        window.addEventListener('resize', repositionTraineeMoreMenus, { passive: true });
         $('externalTraineesPagination')?.addEventListener('click', (event) => { const button = event.target.closest('[data-coaching-page]'); if (!button || button.disabled) return; state.page += button.dataset.coachingPage === 'next' ? 1 : -1; state.loaded = false; loadTrainees(true); });
         $('coachingProfileClose')?.addEventListener('click', () => closeDialog($('coachingProfileDialog')));
         $('coachingBuilderClose')?.addEventListener('click', () => closeDialog($('coachingBuilderDialog')));

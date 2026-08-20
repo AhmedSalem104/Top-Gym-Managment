@@ -53,6 +53,98 @@
 .attendance-member-copy strong { color: var(--color-text); font-size: var(--font-sm); }
 .attendance-member-copy small { color: var(--color-text-muted); font-size: var(--font-xs); }
 
+/* QR dialogs ------------------------------------------------------------- */
+.qr-reader-dialog,
+.member-qr-dialog {
+  width: min(560px, calc(100% - 32px));
+}
+
+.member-qr-dialog {
+  width: min(520px, calc(100% - 32px));
+}
+
+.member-qr-dialog .dialog-body,
+.qr-reader-dialog .dialog-body {
+  align-items: stretch;
+}
+
+.member-qr-card {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-2);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(145deg, var(--color-primary-soft), var(--color-surface));
+  padding: var(--space-5);
+  text-align: center;
+}
+
+.member-qr-card canvas {
+  display: block;
+  width: min(250px, 100%);
+  height: auto;
+  aspect-ratio: 1;
+  border: 8px solid #fff;
+  border-radius: var(--radius-md);
+  background: #fff;
+  box-shadow: var(--shadow-sm);
+  image-rendering: pixelated;
+}
+
+.member-qr-card strong {
+  max-width: 100%;
+  color: var(--color-text);
+  font-size: var(--font-md);
+  font-weight: var(--weight-bold);
+  overflow-wrap: anywhere;
+}
+
+.member-qr-card span {
+  direction: ltr;
+  color: var(--color-text-muted);
+  font-family: var(--font-latin);
+  font-size: var(--font-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.member-qr-dialog .dialog-actions {
+  justify-content: center;
+}
+
+.member-qr-dialog .dialog-actions .btn {
+  min-width: 190px;
+}
+
+#qrReader {
+  display: grid;
+  width: min(390px, 100%);
+  min-height: 300px;
+  align-self: center;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  background: var(--color-bg-subtle);
+}
+
+#qrReader video,
+#qrReader canvas {
+  display: block;
+  width: 100% !important;
+  max-width: 100%;
+  height: auto !important;
+  border-radius: calc(var(--radius-lg) - 2px);
+}
+
+.qr-reader-note {
+  max-width: 48ch;
+  align-self: center;
+  color: var(--color-text-muted);
+  font-size: var(--font-xs);
+  line-height: 1.7;
+  text-align: center;
+}
+
 @media (max-width: 991px) {
   .attendance-control-panel { grid-template-columns: 1fr; }
 }
@@ -67,4 +159,11 @@
   .attendance-summary { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .attendance-list-actions { width: 100%; }
   .attendance-list-actions > * { flex: 1 1 0; }
+
+  .qr-reader-dialog,
+  .member-qr-dialog { width: calc(100% - 24px); }
+
+  #qrReader { min-height: min(300px, 68vw); }
+  .member-qr-card { padding: var(--space-4); }
+  .member-qr-dialog .dialog-actions .btn { width: 100%; }
 }
