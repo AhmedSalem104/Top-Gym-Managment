@@ -4,11 +4,16 @@
 
 ### Owner
 
-The Owner can access all eight application areas: `dashboard`, `members`, `trainees`, `management`, `attendance`, `expenses`, `library`, and `reports`. The Owner can also manage pricing, backups/restores, finance and Assistant accounts.
+The Owner can access all application areas, including the Owner-only `feedback` screen for member ratings. The Owner can also manage pricing, backups/restores, finance and Assistant accounts.
 
 ### Assistant
 
-The Assistant can access `members`, `trainees`, `attendance`, and `library`. Coaching operations attached to client/external-trainee records remain available because they are part of the permitted operational paths. Finance, analytics, reports, backups and user management are denied.
+The Assistant can access `members`, `trainees`, `attendance`, and `library`. Coaching operations attached to client/external-trainee records remain available because they are part of the permitted operational paths. Finance, analytics, reports, backups, user management and member feedback are denied.
+
+Member feedback is Owner-only: the Assistant tab is hidden and every request to
+`GET /api/member-feedback` is rejected server-side with `403`. The public portal
+submission endpoint accepts a membership code only and never grants the
+Assistant or any session user access to the feedback list.
 
 ## Enforcement
 

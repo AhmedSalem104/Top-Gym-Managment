@@ -6,7 +6,7 @@
     <meta name="robots" content="noindex,nofollow">
     <meta name="theme-color" content="#0f172a">
     <title>بيانات عضويتي | TOP GYM</title>
-    <link rel="stylesheet" href="/css/main.css?v=24">
+    <link rel="stylesheet" href="/css/main.css?v=26">
 </head>
 <body class="member-portal-page">
     <main class="portal-shell">
@@ -18,10 +18,14 @@
             <form id="portalLookupForm" class="portal-lookup-form" novalidate>
                 <label for="membershipCodeInput">كود العضوية</label>
                 <input id="membershipCodeInput" name="membershipCode" type="text" inputmode="text" autocomplete="one-time-code" autocapitalize="characters" spellcheck="false" placeholder="TG-XXXX-XXXX-XXXX-XXXX" maxlength="24" required>
-                <p class="portal-field-hint">أدخل الكود كما استلمته من إدارة TOP GYM.</p>
+                <div class="portal-security-note" role="note">
+                    <span class="portal-security-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 20 6v5c0 5-3.4 8.3-8 10-4.6-1.7-8-5-8-10V6l8-3Z"/><path d="m9 12 2 2 4-4"/></svg></span>
+                    <span><strong>دخول آمن</strong><small>أدخل الكود كما استلمته من إدارة TOP GYM، ولا تشاركه مع أي شخص.</small></span>
+                </div>
                 <button class="btn btn-primary portal-submit" id="portalSubmitButton" type="submit"><span>عرض بياناتي</span><span class="portal-spinner" aria-hidden="true"></span></button>
                 <p class="portal-error" id="portalError" role="alert" hidden></p>
             </form>
+            <a class="portal-contact-link" href="mailto:admin@topgym.com">تحتاج مساعدة؟ تواصل مع إدارة TOP GYM</a>
         </section>
 
         <section class="portal-result" id="portalResult" hidden aria-live="polite">
@@ -38,6 +42,32 @@
                 </div>
             </header>
             <div id="portalReportContent" class="portal-report-content"></div>
+            <section class="portal-feedback" id="portalFeedbackSection" data-no-print aria-labelledby="portalFeedbackTitle" hidden>
+                <div class="portal-feedback-head">
+                    <div>
+                        <p class="portal-eyebrow">رأيك يهمنا</p>
+                        <h3 id="portalFeedbackTitle">قيّم تجربتك</h3>
+                        <p>شاركنا رأيك في الجيم والمدربين، وأخبرنا بما يمكننا تحسينه.</p>
+                    </div>
+                    <span class="portal-feedback-icon" aria-hidden="true">★</span>
+                </div>
+                <form class="portal-feedback-form" id="portalFeedbackForm" novalidate>
+                    <fieldset class="portal-rating-field">
+                        <legend>كيف تقيّم تجربتك؟</legend>
+                        <div class="portal-stars" id="portalFeedbackStars" role="radiogroup" aria-label="تقييم التجربة من نجمة إلى خمس نجوم">
+                            <button type="button" data-feedback-rating="1" role="radio" aria-checked="false" aria-label="نجمة واحدة">★</button>
+                            <button type="button" data-feedback-rating="2" role="radio" aria-checked="false" aria-label="نجمتان">★</button>
+                            <button type="button" data-feedback-rating="3" role="radio" aria-checked="false" aria-label="ثلاث نجوم">★</button>
+                            <button type="button" data-feedback-rating="4" role="radio" aria-checked="false" aria-label="أربع نجوم">★</button>
+                            <button type="button" data-feedback-rating="5" role="radio" aria-checked="false" aria-label="خمس نجوم">★</button>
+                        </div>
+                        <input id="portalFeedbackRating" type="hidden" value="">
+                    </fieldset>
+                    <label for="portalFeedbackType">نوع الملاحظة<select id="portalFeedbackType" required><option value="">اختر نوع الملاحظة</option><option value="general">رأي عام</option><option value="problem">مشكلة</option><option value="complaint">شكوى</option><option value="suggestion">اقتراح</option><option value="feature_request">إضافة يحتاجها الجيم</option></select></label>
+                    <label for="portalFeedbackMessage">ملاحظتك<textarea id="portalFeedbackMessage" rows="5" maxlength="4000" required placeholder="اكتب رأيك في الجيم والمدربين والإيجابيات والسلبيات أو أي اقتراح لديك..."></textarea></label>
+                    <div class="portal-feedback-actions"><button class="btn btn-primary" id="portalFeedbackSubmit" type="submit"><span>إرسال التقييم</span><span class="portal-spinner" aria-hidden="true"></span></button><p class="portal-feedback-message" id="portalFeedbackError" role="alert" hidden></p><p class="portal-feedback-message success" id="portalFeedbackSuccess" role="status" hidden>تم حفظ تقييمك بنجاح، شكرًا لمشاركتنا رأيك.</p></div>
+                </form>
+            </section>
             <footer class="portal-report-signatures">
                 <p>صادر من إدارة TOP GYM</p>
                 <div><span>ك/ أحمد عبد الحميد</span><span>ك/ كريم عبد الحميد</span></div>
@@ -45,6 +75,6 @@
         </section>
         <footer class="portal-ui-footer" data-no-print>TOP GYM · إدارة أسهل، أداء أفضل</footer>
     </main>
-    <script defer src="/js/member-portal.js?v=1"></script>
+    <script defer src="/js/member-portal.js?v=2"></script>
 </body>
 </html>

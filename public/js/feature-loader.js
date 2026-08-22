@@ -43,6 +43,10 @@
             styles: [],
             scripts: ['/js/pages/reports/reports.js?v=9']
         },
+        feedback: {
+            styles: [],
+            scripts: ['/js/pages/management/member-feedback.js?v=1']
+        },
         management: {
             styles: [],
             scripts: ['/js/pages/management/backup.js?v=9', '/js/pages/management/auth-users.js?v=1']

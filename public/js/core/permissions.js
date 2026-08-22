@@ -1,7 +1,7 @@
 (() => {
     if (window.topGymPermissions) return;
 
-    const OWNER_TABS = Object.freeze(['dashboard', 'members', 'trainees', 'management', 'attendance', 'expenses', 'library', 'reports']);
+    const OWNER_TABS = Object.freeze(['dashboard', 'members', 'trainees', 'management', 'attendance', 'expenses', 'library', 'reports', 'feedback']);
     const ASSISTANT_TABS = Object.freeze(['members', 'trainees', 'attendance', 'library']);
 
     function tabsForUser(user) {

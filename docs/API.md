@@ -111,6 +111,39 @@ Workout session paths are under `/api/workoutsessions`; meal logs are under `/ap
 | GET | `/api/dashboard-analytics` |
 | GET | `/api/bootstrap` |
 
+## Member portal and feedback
+
+The portal is public and does not use the administration session. A member must
+present the active membership code in the request body; the server hashes the
+code, resolves `member_id`, and returns only that member's sanitized portal
+data.
+
+| Method | Path | Access |
+|---|---|---|
+| POST | `/api/member-portal/lookup` | Public; active membership code required |
+| POST | `/api/member-portal/feedback` | Public; active membership code required; rate limited |
+| GET | `/api/member-feedback` | Owner only |
+
+Submit a portal rating:
+
+```http
+POST /api/member-portal/feedback
+Content-Type: application/json
+
+{
+  "membershipCode": "TG-XXXX-XXXX-XXXX-XXXX",
+  "rating": 5,
+  "noteType": "suggestion",
+  "message": "التجربة ممتازة ونقترح إضافة حصة صباحية."
+}
+```
+
+`noteType` is one of `general`, `problem`, `complaint`, `suggestion`, or
+`feature_request`. The Owner list supports `rating`, `noteType`, `from`, `to`,
+`search`, `page`, and `pageSize` query filters. The feedback table stores only
+`member_id`, rating, type, message, and UTC submission time; it does not store
+the membership code.
+
 ## Backup
 
 | Method | Path | Access |

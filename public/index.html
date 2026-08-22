@@ -10,7 +10,7 @@
     <link rel="preload" href="/assets/gym-background.webp" as="image" type="image/webp" fetchpriority="high">
     <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2" sizes="any">
     <link rel="shortcut icon" type="image/svg+xml" href="/favicon.svg?v=2">
-    <link rel="stylesheet" href="/css/main.css?v=24">
+    <link rel="stylesheet" href="/css/main.css?v=26">
     <title>إدارة عضويات الجيم</title>
 </head>
 <body class="auth-pending font-sans bg-slate-100 text-slate-900 gym-page-bg">
@@ -53,6 +53,7 @@
             <button class="page-tab" type="button" data-page-tab="library" aria-selected="false"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v16H6.5A2.5 2.5 0 0 0 4 21.5z"/><path d="M4 5.5v16M8 7h8M8 11h6"/></svg><span>المكتبة</span></button>
             <button class="page-tab" type="button" data-page-tab="reports" aria-selected="false"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19V5"/><path d="M4 19h16"/><path d="m7 15 3-4 3 2 5-6"/></svg><span>التقارير</span></button>
 
+            <button class="page-tab" type="button" data-page-tab="feedback" aria-selected="false"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-2.9-5.6 2.9 1.1-6.2L3 9.6l6.2-.9L12 3Z"/></svg><span>تقييمات المشتركين</span></button>
         </nav>
 
         <div class="auth-account-bar" id="authAccountBar" hidden aria-label="حساب المستخدم الحالي">
@@ -171,6 +172,27 @@
             <section class="dashboard-analytics panel" id="dashboardAnalytics" hidden aria-labelledby="dashboardAnalyticsTitle"></section>
 
             <section class="reports-section panel" id="reportsSection" hidden aria-labelledby="reportsTitle"></section>
+
+            <section class="member-feedback-section panel" id="feedbackSection" hidden aria-labelledby="memberFeedbackTitle">
+                <header class="member-feedback-header">
+                    <div class="member-feedback-heading">
+                        <span class="member-feedback-heading-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-2.9-5.6 2.9 1.1-6.2L3 9.6l6.2-.9L12 3Z"/></svg></span>
+                        <div><span class="member-feedback-kicker">صوت المشتركين</span><h3 id="memberFeedbackTitle">تقييمات المشتركين</h3><p>راجع آراء الأعضاء ومشكلاتهم واقتراحاتهم لتحسين تجربة TOP GYM.</p></div>
+                    </div>
+                    <button class="btn btn-light btn-small" id="memberFeedbackRefresh" type="button">تحديث التقييمات</button>
+                </header>
+                <form class="member-feedback-filters" id="memberFeedbackFilters">
+                    <label>التقييم<select id="memberFeedbackRatingFilter"><option value="">كل التقييمات</option><option value="5">5 نجوم</option><option value="4">4 نجوم</option><option value="3">3 نجوم</option><option value="2">نجمتان</option><option value="1">نجمة واحدة</option></select></label>
+                    <label>نوع الملاحظة<select id="memberFeedbackTypeFilter"><option value="">كل الملاحظات</option><option value="general">رأي عام</option><option value="problem">مشكلة</option><option value="complaint">شكوى</option><option value="suggestion">اقتراح</option><option value="feature_request">إضافة يحتاجها الجيم</option></select></label>
+                    <label>من تاريخ<input id="memberFeedbackFromFilter" type="date"></label>
+                    <label>إلى تاريخ<input id="memberFeedbackToFilter" type="date"></label>
+                    <label class="member-feedback-search">بحث عن مشترك<input id="memberFeedbackSearch" type="search" placeholder="الاسم أو رقم الهاتف"></label>
+                    <button class="btn btn-light" id="memberFeedbackReset" type="button">إعادة تعيين</button>
+                </form>
+                <div class="member-feedback-meta" id="memberFeedbackMeta" aria-live="polite"></div>
+                <div class="member-feedback-table-wrap" id="memberFeedbackList"><div class="loading">جاري تحميل تقييمات المشتركين…</div></div>
+                <div class="member-feedback-pagination" id="memberFeedbackPagination" hidden></div>
+            </section>
 
             <section class="management-tab-panel panel" id="managementSection" hidden>
                 <div class="panel-header management-tab-header"><div><span class="management-eyebrow">إدارة النظام</span><h3>الأسعار والعضويات</h3><p>تحكم في الباقات وأنواع العضويات من مكان واحد.</p></div></div>

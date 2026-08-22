@@ -2,7 +2,7 @@
     if (window.__topGymPageTabsLoaded) return;
     window.__topGymPageTabsLoaded = true;
 
-    const validTabs = new Set(['dashboard', 'members', 'expenses', 'reports', 'management', 'attendance', 'library', 'trainees']);
+    const validTabs = new Set(['dashboard', 'members', 'expenses', 'reports', 'management', 'attendance', 'library', 'trainees', 'feedback']);
     let activationToken = 0;
     let activeTabName = null;
 
@@ -28,6 +28,7 @@
         const managementSection = document.getElementById('managementSection');
         const analyticsSection = document.getElementById('dashboardAnalytics');
         const reportsSection = document.getElementById('reportsSection');
+        const feedbackSection = document.getElementById('feedbackSection');
         const attendanceSection = document.getElementById('attendanceSection');
         const librarySection = document.getElementById('librarySection');
         const traineesSection = document.getElementById('traineesSection');
@@ -36,6 +37,7 @@
         const isExpenses = name === 'expenses';
         const isManagement = name === 'management';
         const isReports = name === 'reports';
+        const isFeedback = name === 'feedback';
         const isAttendance = name === 'attendance';
         const isLibrary = name === 'library';
         const isTrainees = name === 'trainees';
@@ -46,10 +48,11 @@
         setHidden(managementSection, !isManagement);
         setHidden(analyticsSection, !isDashboard || !window.topGymAuth?.isOwner?.());
         setHidden(reportsSection, !isReports);
+        setHidden(feedbackSection, !isFeedback);
         setHidden(attendanceSection, !isAttendance);
         setHidden(librarySection, !isLibrary);
         setHidden(traineesSection, !isTrainees);
-        setHidden(workspace, isDashboard || isExpenses || isReports || isManagement || isAttendance || isLibrary || isTrainees);
+        setHidden(workspace, isDashboard || isExpenses || isReports || isManagement || isAttendance || isLibrary || isTrainees || isFeedback);
         setHidden(membersSection, !isMembers);
 
         document.querySelectorAll('[data-page-tab]').forEach((button) => {

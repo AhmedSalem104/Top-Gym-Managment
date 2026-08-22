@@ -9,6 +9,15 @@
   const loginPanel = $('portalLoginPanel');
   const resultPanel = $('portalResult');
   const reportContent = $('portalReportContent');
+  const feedbackSection = $('portalFeedbackSection');
+  const feedbackForm = $('portalFeedbackForm');
+  const feedbackSubmit = $('portalFeedbackSubmit');
+  const feedbackRating = $('portalFeedbackRating');
+  const feedbackType = $('portalFeedbackType');
+  const feedbackMessage = $('portalFeedbackMessage');
+  const feedbackError = $('portalFeedbackError');
+  const feedbackSuccess = $('portalFeedbackSuccess');
+  let portalMembershipCode = '';
 
   const escapeHtml = (value) => String(value ?? '').replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[character]));
   const number = (value) => Number.isFinite(Number(value)) ? Number(value) : 0;
@@ -40,6 +49,35 @@
     errorBox.hidden = !message;
   }
 
+  function setFeedbackBusy(value) {
+    if (!feedbackSubmit) return;
+    feedbackSubmit.disabled = value;
+    feedbackSubmit.setAttribute('aria-busy', String(value));
+  }
+
+  function showFeedbackError(message) {
+    if (!feedbackError) return;
+    feedbackError.textContent = message || '';
+    feedbackError.hidden = !message;
+  }
+
+  function setRating(value) {
+    const rating = Number(value) || 0;
+    if (feedbackRating) feedbackRating.value = rating ? String(rating) : '';
+    document.querySelectorAll('[data-feedback-rating]').forEach((button) => {
+      const active = Number(button.dataset.feedbackRating) <= rating;
+      button.classList.toggle('is-selected', active);
+      button.setAttribute('aria-checked', String(Number(button.dataset.feedbackRating) === rating));
+    });
+  }
+
+  function resetFeedback() {
+    feedbackForm?.reset();
+    setRating(0);
+    showFeedbackError('');
+    if (feedbackSuccess) feedbackSuccess.hidden = true;
+  }
+
   function table(title, headers, rows, emptyText = 'لا توجد بيانات مسجلة.') {
     return `<section class="portal-section"><h3>${title}</h3>${rows.length ? `<div class="portal-table-wrap"><table class="portal-table"><thead><tr>${headers.map((header) => `<th>${header}</th>`).join('')}</tr></thead><tbody>${rows.join('')}</tbody></table></div>` : `<div class="portal-empty">${emptyText}</div>`}</section>`;
   }
@@ -63,6 +101,8 @@
       ${table('سجل الحضور والزيارات', ['التاريخ', 'الحضور', 'الانصراف', 'المدة'], attendanceRows)}
       ${freezeRows.length ? table('حالات التجميد أو الإيقاف', ['البداية', 'النهاية', 'الاستئناف', 'المدة'], freezeRows) : ''}`;
     $('portalIssueMeta').textContent = `رقم التقرير: ${data.reportNumber || '—'} · تاريخ الإصدار: ${dateTimeText(data.issuedAt)}`;
+    if (feedbackSection) feedbackSection.hidden = false;
+    resetFeedback();
   }
 
   async function lookup(code) {
@@ -90,6 +130,7 @@
     try {
       const data = await lookup(code);
       render(data);
+      portalMembershipCode = code;
       input.value = '';
       loginPanel.hidden = true;
       resultPanel.hidden = false;
@@ -100,5 +141,35 @@
   });
   $('portalPrintButton')?.addEventListener('click', printReport);
   $('portalPdfButton')?.addEventListener('click', printReport);
-  $('portalResetButton')?.addEventListener('click', () => { resultPanel.hidden = true; loginPanel.hidden = false; input.focus(); });
+  document.querySelectorAll('[data-feedback-rating]').forEach((button) => {
+    button.addEventListener('click', () => setRating(button.dataset.feedbackRating));
+  });
+  feedbackForm?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    showFeedbackError('');
+    if (feedbackSuccess) feedbackSuccess.hidden = true;
+    const rating = Number(feedbackRating?.value || 0);
+    const noteType = String(feedbackType?.value || '');
+    const message = String(feedbackMessage?.value || '').trim();
+    if (!portalMembershipCode) { showFeedbackError('أعد إدخال كود العضوية لفتح البوابة.'); return; }
+    if (!rating) { showFeedbackError('اختر تقييمًا من نجمة إلى 5 نجوم.'); return; }
+    if (!noteType) { showFeedbackError('اختر نوع الملاحظة.'); feedbackType?.focus(); return; }
+    if (message.length < 3) { showFeedbackError('اكتب ملاحظتك قبل إرسال التقييم.'); feedbackMessage?.focus(); return; }
+    setFeedbackBusy(true);
+    try {
+      const response = await fetch('/api/member-portal/feedback', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({ membershipCode: portalMembershipCode, rating, noteType, message })
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(response.status === 429 ? payload.error : payload.error || 'تعذر حفظ التقييم. حاول مرة أخرى.');
+      resetFeedback();
+      if (feedbackSuccess) feedbackSuccess.hidden = false;
+    } catch (error) {
+      showFeedbackError(error.message || 'تعذر حفظ التقييم.');
+    } finally { setFeedbackBusy(false); }
+  });
+  $('portalResetButton')?.addEventListener('click', () => { portalMembershipCode = ''; resetFeedback(); if (feedbackSection) feedbackSection.hidden = true; resultPanel.hidden = true; loginPanel.hidden = false; input.focus(); });
 })();

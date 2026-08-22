@@ -14,7 +14,8 @@ const PERMISSIONS = Object.freeze({
     DAY_PASSES_READ: 'day_passes.read',
     DAY_PASSES_MANAGE: 'day_passes.manage',
     DAY_PASS_PRICING_MANAGE: 'day_passes.pricing.manage',
-    DAY_PASSES_VOID: 'day_passes.void'
+    DAY_PASSES_VOID: 'day_passes.void',
+    MEMBER_FEEDBACK_READ: 'member_feedback.read'
 });
 
 module.exports = { PERMISSIONS };

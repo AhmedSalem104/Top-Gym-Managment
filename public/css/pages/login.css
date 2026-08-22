@@ -9,11 +9,7 @@
   padding: clamp(12px, 2.2vw, 24px);
   isolation: isolate;
   background-color: #020817;
-  background-image:
-    linear-gradient(112deg, rgb(1 7 19 / 0.56) 0%, rgb(2 16 38 / 0.46) 45%, rgb(4 32 72 / 0.38) 100%),
-    radial-gradient(circle at 12% 18%, rgb(37 99 235 / 0.13), transparent 34%),
-    radial-gradient(circle at 88% 82%, rgb(14 165 233 / 0.09), transparent 31%),
-    url("/assets/gym-background.webp");
+  background-image: linear-gradient(180deg, rgb(2 10 25 / 0.68), rgb(2 10 25 / 0.78)), url("/assets/gym-background.webp");
   background-position: center;
   background-size: cover;
   background-repeat: no-repeat;
@@ -45,47 +41,36 @@
   min-height: 0;
   overflow: hidden;
   border: 1px solid rgb(148 163 184 / 0.32);
-  border-radius: 20px;
-  background: #f8fbff;
-  box-shadow: 0 32px 82px rgb(0 0 0 / 0.42), 0 0 0 1px rgb(96 165 250 / 0.1);
+  border-radius: 24px;
+  background: #fff;
+  box-shadow: 0 22px 56px rgb(0 0 0 / 0.28);
 }
 
 .auth-form-panel {
   position: relative;
   display: block;
   min-width: 0;
-  padding: 28px 30px 24px;
-  background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
-}
-
-.auth-form-panel::before {
-  position: absolute;
-  top: 0;
-  right: 12%;
-  left: 12%;
-  height: 3px;
-  border-radius: 0 0 999px 999px;
-  background: linear-gradient(90deg, #2563eb, #38bdf8);
-  content: "";
+  padding: 36px 40px 30px;
+  background: #fff;
 }
 
 .auth-form {
   display: grid;
   width: 100%;
-  gap: var(--space-3);
+  gap: var(--space-4);
   margin-inline: auto;
 }
 
 .auth-form-heading {
   display: grid;
   gap: 4px;
-  margin-bottom: var(--space-2);
+  margin-bottom: var(--space-3);
   text-align: center;
 }
 
 .auth-form-heading h2 {
   color: #0f172a;
-  font-size: 30px;
+  font-size: 32px;
   font-weight: var(--weight-extrabold);
   line-height: 1.25;
 }
@@ -114,7 +99,7 @@
   min-height: 54px;
   border: 1px solid #d7e3f2;
   border-radius: 12px;
-  background: #fafdff;
+  background: #fff;
   color: #0f172a;
   font-family: var(--font-body);
   font-size: var(--font-md);
@@ -136,14 +121,14 @@
 
 .auth-form .auth-input-wrap > input:not([type="checkbox"]):not([type="radio"]) {
   direction: ltr;
-  padding: 0 54px 0 16px;
+  padding: 0 16px;
   text-align: left;
   unicode-bidi: plaintext;
 }
 
 .auth-form .auth-password-wrap > input:not([type="checkbox"]):not([type="radio"]) {
   direction: ltr;
-  padding: 0 54px;
+  padding: 0 16px 0 54px;
   text-align: left;
   unicode-bidi: plaintext;
 }
@@ -154,10 +139,7 @@
   right: 16px;
   z-index: var(--z-content);
   left: auto;
-  width: 20px;
-  height: 20px;
-  color: #64748b;
-  pointer-events: none;
+  display: none;
   transform: translateY(-50%);
 }
 
@@ -227,14 +209,14 @@
   width: 100%;
   min-height: 54px;
   border-radius: 12px;
-  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-  box-shadow: 0 12px 26px rgb(37 99 235 / 0.24), inset 0 1px 0 rgb(255 255 255 / 0.16);
+  background: #2563eb;
+  box-shadow: 0 10px 22px rgb(37 99 235 / 0.2);
   font-size: var(--font-lg);
 }
 
 .auth-submit:hover:not(:disabled) {
-  background: linear-gradient(135deg, #3478f6 0%, #1d4ed8 100%);
-  box-shadow: 0 15px 30px rgb(37 99 235 / 0.3), inset 0 1px 0 rgb(255 255 255 / 0.18);
+  background: #1d4ed8;
+  box-shadow: 0 12px 24px rgb(37 99 235 / 0.24);
 }
 
 .auth-submit:active:not(:disabled) {
@@ -252,15 +234,7 @@
 }
 
 .auth-submit-arrow {
-  position: absolute;
-  left: 18px;
-  width: 20px;
-  height: 20px;
-  transition: transform var(--transition-fast);
-}
-
-.auth-submit:hover .auth-submit-arrow {
-  transform: translateX(-3px);
+  display: none;
 }
 
 .auth-submit[aria-busy="true"] .auth-submit-arrow,
@@ -292,17 +266,17 @@
   }
 
   .auth-form-panel {
-    padding: 22px 18px 20px;
+    padding: 28px 20px 24px;
   }
 
   .auth-form-heading h2 {
-    font-size: 27px;
+    font-size: 29px;
   }
 
   .auth-form .auth-input-wrap > input:not([type="checkbox"]):not([type="radio"]),
   .auth-form .auth-password-wrap > input:not([type="checkbox"]):not([type="radio"]),
   .auth-submit {
-    min-height: 52px;
+    min-height: 56px;
   }
 }
 

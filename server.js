@@ -23,6 +23,7 @@ const coachingService = require('./src/services/coaching-service');
 const dayPassService = require('./src/services/day-pass-service');
 const membershipCodeService = require('./src/services/membership-code-service');
 const memberPortalService = require('./src/services/member-portal-service');
+const memberFeedbackService = require('./src/services/member-feedback-service');
 const authService = require('./src/services/auth-service');
 const { ensureAuthReady } = authService;
 
@@ -33,7 +34,7 @@ const sensitiveRateLimit = createSensitiveRateLimit();
 const membershipPortalRateLimit = createMembershipPortalRateLimit();
 const allowLoginAttempt = createLoginAttemptGuard();
 app.use('/api', sensitiveRateLimit);
-app.use('/api/member-portal/lookup', membershipPortalRateLimit);
+app.use('/api/member-portal', membershipPortalRateLimit);
 app.use('/api', createAuthApiMiddleware({
     authService,
     isAuthorizedCronRequest: (request) => isAuthorizedCronRequest(request, { config })
@@ -106,6 +107,7 @@ registerRoutes(app, {
     memberService,
     membershipCodeService,
     portalService: memberPortalService,
+    feedbackService: memberFeedbackService,
     getPool
 });
 
@@ -149,6 +151,7 @@ async function start() {
     await coachingService.ensureCoachingTables();
     await dayPassService.ensureDayPassTables();
     await membershipCodeService.ensureMembershipCodeStorage();
+    await memberFeedbackService.ensureMemberFeedbackTable();
     const port = config.port;
     app.listen(port, () => console.log(`Gym membership app is running on http://localhost:${port}`));
 }

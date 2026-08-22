@@ -127,8 +127,15 @@ function assertRequiredFiles() {
         'src/routes/day-pass.routes.js',
         'src/controllers/day-pass.controller.js',
         'src/services/day-pass-service.js',
+        'src/services/member-feedback-service.js',
+        'src/routes/member-feedback.routes.js',
+        'src/controllers/member-feedback.controller.js',
+        'database/migrations/005-member-feedback.sql',
         'public/js/day-passes.js',
         'public/js/day-pass-reports.js',
+        'public/js/member-portal.js',
+        'public/js/pages/management/member-feedback.js',
+        'public/css/pages/member-feedback.css',
         'docs/AUTH.md',
         'docs/ARCHITECTURE.md',
         'docs/API.md',
@@ -190,12 +197,13 @@ function checkRouteSurface() {
         'src/routes/backup.routes.js',
         'src/routes/pricing.routes.js',
         'src/routes/coaching.routes.js',
-        'src/routes/day-pass.routes.js'
+        'src/routes/day-pass.routes.js',
+        'src/routes/member-feedback.routes.js'
     ].filter((relativePath) => fs.existsSync(path.join(root, relativePath))).map(read).join('\n');
     const expectedRoutes = [
         '/api/members', '/api/expenses', '/api/attendance', '/api/reports',
         '/api/backup', '/api/library', '/api/external-trainees',
-        '/api/workoutprograms', '/api/dietplans', '/api/workoutsessions', '/api/meal-logs', '/api/day-passes'
+        '/api/workoutprograms', '/api/dietplans', '/api/workoutsessions', '/api/meal-logs', '/api/day-passes', '/api/member-feedback', '/api/member-portal/feedback'
     ];
     expectedRoutes.forEach((route) => record(
         `ROUTE-${route.replaceAll('/', '-')}`,
@@ -222,6 +230,11 @@ function checkAuthSurface() {
     record('AUTH-SCRYPT-HASHING', auth.includes('crypto.scrypt') && auth.includes('timingSafeEqual'), 'password hashing uses scrypt and timing-safe comparison', 'P0');
     record('AUTH-HTTPONLY-SESSION', auth.includes('HttpOnly') && auth.includes('SameSite=Lax'), 'sessions use HttpOnly SameSite cookies', 'P0');
     record('AUTH-LOGIN-SCREEN', index.includes('id="authScreen"') && index.includes('/css/main.css'), 'login screen structure and central stylesheet are present', 'P1');
+    const feedbackRoute = read('src/routes/member-feedback.routes.js');
+    const feedbackService = read('src/services/member-feedback-service.js');
+    record('FEEDBACK-OWNER-API', feedbackRoute.includes("'/api/member-feedback'") && feedbackRoute.includes('ownerOnly'), 'member feedback administration API is Owner-protected', 'P0');
+    record('FEEDBACK-PORTAL-LINK', authMiddleware.includes("'/member-portal/feedback'") && feedbackService.includes('findMemberIdByCode'), 'portal feedback is public only through membership-code resolution', 'P0');
+    record('FEEDBACK-NO-CODE-STORAGE', feedbackService.includes('member_id, rating, note_type, message') && !feedbackService.includes('membership_code'), 'feedback storage keeps member_id and does not persist the membership code', 'P0');
 }
 
 function checkStyleSurface() {
