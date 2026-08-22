@@ -6,6 +6,7 @@ const path = require('node:path');
 const root = path.resolve(__dirname, '..');
 const cssRoot = path.join(root, 'public', 'css');
 const entry = path.join(cssRoot, 'main.css');
+const sourceEntry = path.join(cssRoot, 'main.source.css');
 const errors = [];
 const warnings = [];
 const allowedImportantFiles = new Set([
@@ -18,13 +19,21 @@ function read(file) {
   return fs.readFileSync(file, 'utf8');
 }
 
+function withoutComments(source) {
+  return source.replace(/\/\*[\s\S]*?\*\//g, '');
+}
+
+function importsFrom(source) {
+  return [...withoutComments(source).matchAll(/@import\s+(?:url\()?['"]([^'"]+)['"]\)?\s*;/g)];
+}
+
 function checkCss(file) {
   const source = read(file);
   const withoutComments = source.replace(/\/\*[\s\S]*?\*\//g, '');
   const opens = (withoutComments.match(/{/g) || []).length;
   const closes = (withoutComments.match(/}/g) || []).length;
   if (opens !== closes) errors.push(`${path.relative(root, file)} has unbalanced braces`);
-  for (const importPath of source.matchAll(/@import\s+(?:url\()?['"]([^'"]+)['"]\)?\s*;/g)) {
+  for (const importPath of importsFrom(source)) {
     const target = path.resolve(path.dirname(file), importPath[1]);
     if (!fs.existsSync(target)) errors.push(`${path.relative(root, file)} imports missing ${importPath[1]}`);
   }
@@ -49,7 +58,7 @@ for (const file of cssFiles) checkCss(file);
 const graph = new Map();
 for (const file of cssFiles) {
   const source = read(file);
-  graph.set(file, [...source.matchAll(/@import\s+(?:url\()?['"]([^'"]+)['"]\)?\s*;/g)]
+  graph.set(file, importsFrom(source)
     .map((match) => path.resolve(path.dirname(file), match[1]))
     .filter((target) => fs.existsSync(target)));
 }
@@ -67,7 +76,7 @@ function visit(file, chain = []) {
   visiting.delete(file);
   visited.add(file);
 }
-if (fs.existsSync(entry)) visit(entry);
+if (fs.existsSync(sourceEntry)) visit(sourceEntry);
 
 const definitions = new Map();
 const uses = new Set();
@@ -79,7 +88,7 @@ for (const file of cssFiles) {
     definitions.get(name).push(file);
   }
   for (const match of source.matchAll(/var\(\s*(--[A-Za-z0-9_-]+)/g)) uses.add(match[1]);
-  if (!allowedImportantFiles.has(file) && source.includes('!important')) {
+  if (!allowedImportantFiles.has(file) && file !== entry && source.includes('!important')) {
     warnings.push(`${path.relative(root, file)} uses !important; review if it is required`);
   }
 }
@@ -87,7 +96,7 @@ for (const name of uses) if (!definitions.has(name)) errors.push(`undefined CSS 
 
 const tokenFile = path.join(cssRoot, 'tokens.css');
 for (const [name, files] of definitions) {
-  const nonTokenFiles = files.filter((file) => file !== tokenFile);
+  const nonTokenFiles = files.filter((file) => file !== tokenFile && file !== entry);
   if (nonTokenFiles.length > 1) warnings.push(`CSS variable ${name} is defined outside tokens.css more than once`);
 }
 
@@ -95,7 +104,9 @@ const index = read(path.join(root, 'public', 'index.html'));
 if (!index.includes('/css/main.css')) errors.push('public/index.html does not link the central stylesheet');
 const stylesheetLinks = index.match(/<link\b[^>]*rel=["']stylesheet["'][^>]*>/gi) || [];
 if (stylesheetLinks.length !== 1) errors.push(`expected one linked stylesheet, found ${stylesheetLinks.length}`);
-if (!read(entry).includes('./tokens.css')) errors.push('main.css does not import tokens.css');
+if (!fs.existsSync(sourceEntry)) errors.push('public/css/main.source.css is missing');
+else if (!read(sourceEntry).includes('./tokens.css')) errors.push('main.source.css does not import tokens.css');
+if (fs.existsSync(entry) && importsFrom(read(entry)).length) errors.push('main.css production bundle still contains active @import rules');
 if (!read(path.join(cssRoot, 'print.css')).includes('@media print')) errors.push('print.css has no print media block');
 if (read(path.join(root, 'package.json')).includes(['Styling', 'layer', 'disabled'].join(' '))) errors.push('stale disabled styling build remains in package.json');
 

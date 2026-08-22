@@ -53,6 +53,7 @@ function assertRequiredFiles() {
         'package.json',
         'public/index.html',
         'public/css/main.css',
+        'public/css/main.source.css',
         'public/css/tokens.css',
         'public/css/reset.css',
         'public/css/layout.css',
@@ -261,11 +262,12 @@ function checkAuthSurface() {
 function checkStyleSurface() {
     const index = read('public/index.html');
     const main = read('public/css/main.css');
+    const mainSource = read('public/css/main.source.css');
     const tokens = read('public/css/tokens.css');
     const print = read('public/css/print.css');
     record('STYLE-CENTRAL-LINK', index.includes('/css/main.css'), 'index links one central application stylesheet');
-    record('STYLE-TOKENS', main.includes('./tokens.css') && tokens.includes('--color-primary') && tokens.includes('--space-4'), 'design tokens are centralized');
-    record('STYLE-PRINT', main.includes('./print.css') && print.includes('@media print'), 'print styles are included in the central stylesheet');
+    record('STYLE-TOKENS', mainSource.includes('./tokens.css') && main.includes('--color-primary') && tokens.includes('--color-primary') && tokens.includes('--space-4'), 'design tokens are centralized in the source graph and production bundle');
+    record('STYLE-PRINT', mainSource.includes('./print.css') && main.includes('TOP GYM layer: public/css/print.css') && print.includes('@media print'), 'print styles are included in the production stylesheet bundle');
     record('STYLE-CSS-VALIDATOR', fs.existsSync(path.join(root, 'scripts/validate-styles.js')), 'CSS validation script is present');
     const validation = run(process.execPath, ['scripts/validate-styles.js']);
     record('STYLE-INTEGRITY', validation.status === 0, validation.status === 0 ? 'CSS import, variable, brace, media-query and entrypoint checks passed' : (validation.stderr || validation.stdout || 'CSS integrity validation failed').trim(), 'P0');
@@ -276,8 +278,12 @@ function checkPrintAndLazyLoadingSurface() {
     const authUi = read('public/js/auth-ui.js');
     const loader = read('public/js/feature-loader.js');
     const index = read('public/index.html');
+    const main = read('public/css/main.css');
     record('UI-PRINT-MEMBER-ACTION', app.includes("actionButton('print'") && loader.includes('button[data-action="print"]'), 'member print action and lazy handler are present');
-    record('UI-LAZY-FEATURES', loader.includes('async function ensureTab') && loader.includes("features ="), 'feature loader is present');
+    record('UI-LAZY-FEATURES', loader.includes('async function ensureTab') && loader.includes("features =") && loader.includes("'dashboard-enhancements'") && loader.includes("'smart-assistant'"), 'feature loader maps deferred dashboard and assistant features');
+    const optionalScripts = ['/js/smart-assistant.js', '/js/day-passes.js', '/js/alerts-enhancements.js', '/js/member-details-ui.js', '/js/member-portal-admin.js', '/js/day-pass-reports.js'];
+    record('UI-NO-EAGER-OPTIONALS', optionalScripts.every((source) => !index.includes(source)), 'optional feature scripts are not duplicated in the initial HTML shell');
+    record('CSS-PRODUCTION-BUNDLE', !/\/\*@import|@import\s/.test(main.replace(/\/\*[\s\S]*?\*\//g, '')), 'production CSS bundle has no active blocking imports');
     record('UI-API-CORE', index.includes('/js/core/api.js') && app.includes('window.topGymApi.request'), 'frontend API client is centralized');
     record('UI-PERMISSIONS-CORE', index.includes('/js/core/permissions.js') && authUi.includes('window.topGymPermissions'), 'frontend tab permissions are centralized');
     record('UI-CACHE-BUST', index.includes('app.js?v=feature-expansion'), 'frontend script cache-busting is present');

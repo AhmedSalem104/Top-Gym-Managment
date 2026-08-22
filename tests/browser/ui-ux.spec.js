@@ -140,8 +140,10 @@ test('initial dashboard load keeps heavy feature scripts lazy and stable', async
     });
     console.log(`[PERF][${testInfo.project.name}] ${JSON.stringify({ ...metrics, resourceNames: undefined })}`);
     const resources = metrics.resourceNames;
-    expect(resources.some((resource) => /\/js\/coaching\.js/.test(resource))).toBe(false);
-    expect(resources.some((resource) => /\/js\/reports\.js/.test(resource))).toBe(false);
+    expect(resources.some((resource) => /\/js\/(?:pages\/)?coaching\/coaching\.js/.test(resource))).toBe(false);
+    expect(resources.some((resource) => /\/js\/(?:pages\/)?reports\/reports\.js/.test(resource))).toBe(false);
+    expect(resources.some((resource) => /\/js\/(?:pages\/)?library\/library\.js/.test(resource))).toBe(false);
+    expect(metrics.stylesheetCount).toBe(1);
     expect(metrics.domContentLoadedMs).toBeGreaterThan(0);
     expect(metrics.domContentLoadedMs).toBeLessThan(5_000);
     expect(metrics.cumulativeLayoutShift).toBeLessThan(0.25);

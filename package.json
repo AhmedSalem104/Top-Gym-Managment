@@ -7,7 +7,7 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch server.js",
-    "build:css": "node scripts/validate-styles.js",
+    "build:css": "node scripts/build-css.js && node scripts/validate-styles.js",
     "build": "npm run build:css",
     "test:smoke": "node scripts/smoke-test.js",
     "test:e2e": "playwright test",

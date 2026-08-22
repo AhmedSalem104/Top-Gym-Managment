@@ -9,10 +9,15 @@
   padding: clamp(12px, 2.2vw, 24px);
   isolation: isolate;
   background-color: #020817;
-  background-image: linear-gradient(180deg, rgb(2 10 25 / 0.68), rgb(2 10 25 / 0.78)), url("/assets/gym-background.webp");
   background-position: center;
   background-size: cover;
   background-repeat: no-repeat;
+}
+
+/* Do not fetch the login-only hero while the session is being restored or
+   while the authenticated application is already visible. */
+body.auth-locked .auth-screen {
+  background-image: linear-gradient(180deg, rgb(2 10 25 / 0.68), rgb(2 10 25 / 0.78)), url("/assets/gym-background.webp");
 }
 
 .auth-screen::before {

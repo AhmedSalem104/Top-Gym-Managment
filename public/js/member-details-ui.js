@@ -1,9 +1,12 @@
 (() => {
   'use strict';
 
+  if (window.__topGymMemberDetailsUiLoaded) return;
+
   const dialog = document.getElementById('detailsDialog');
   const content = document.getElementById('detailsContent');
   if (!dialog || !content) return;
+  window.__topGymMemberDetailsUiLoaded = true;
 
   const planLabels = { gym_only: 'جيم فقط', gym_cardio: 'جيم وكارديو' };
   const typeLabels = {

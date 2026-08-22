@@ -46,6 +46,7 @@
                 enhanceMemberIdentity();
             }
 
-            document.addEventListener('DOMContentLoaded', enhanceLayout);
+            if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', enhanceLayout, { once: true });
+            else enhanceLayout();
             new MutationObserver(enhanceLayout).observe(list, { childList: true, subtree: true });
         })();

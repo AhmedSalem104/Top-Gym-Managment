@@ -888,10 +888,10 @@ curl -b cookies.txt -X DELETE http://localhost:3000/api/backup/archives/3
 
 ### CSS architecture
 
-نقطة الدخول الوحيدة public/css/main.css وترتيبها:
+نقطة الدخول الوحيدة التي يحمّلها المتصفح هي public/css/main.css. ملفات الطبقات القابلة للتعديل موجودة في public/css/main.source.css، ويحوّلها build:css إلى ملف إنتاج واحد:
 
 ~~~text
-main.css
+main.source.css
   -> tokens.css
   -> reset.css
   -> typography.css
@@ -901,7 +901,10 @@ main.css
   -> pages/*
   -> responsive.css
   -> print.css
+  -> main.css (production bundle)
 ~~~
+
+لا تعدّل main.css يدويًا؛ عدّل الطبقة المناسبة ثم شغّل `npm run build:css`. هذا يقلل طلبات CSS من سلسلة imports متعددة إلى طلب واحد مع الحفاظ على تنظيم الطبقات.
 
 ### Design tokens والألوان
 
@@ -1100,6 +1103,8 @@ CRON_SECRET، ولا تجعل endpoint عامًا.
 - Pagination وserver-side search عند الحاجة.
 - Debounce وAbort للبحث.
 - Lazy feature scripts مع caching.
+- التحميل الأولي يقتصر على 12 ملف JavaScript وملف CSS إنتاجي واحد؛ dashboard enhancements وملفات الشاشات الثقيلة تُحمّل عند الحاجة أو في وقت الخمول.
+- صورة خلفية تسجيل الدخول لا تُطلب للمستخدم المسجّل؛ تُفعّل فقط عند ظهور شاشة الدخول.
 - Cache للبيانات المرجعية شبه الثابتة فقط.
 - صور WebP محلية وlazy loading.
 - CSS entrypoint واحد.
@@ -1182,7 +1187,8 @@ Pagination يقبل pageSize حتى 100. استعلام COUNT منفصل عن Pr
 ### CSS لا يظهر أو يظهر بعد ثانية
 
 افتح /css/main.css وتحقق من 200، شغّل npm run build:css، وتأكد أن index.html
-يربط main.css مرة واحدة وأن كل imports موجودة. لا تضف Inline override كحل مؤقت.
+يربط main.css مرة واحدة وأن imports موجودة في main.source.css ولا توجد imports فعالة
+داخل bundle. لا تضف Inline override كحل مؤقت.
 
 ### الجداول لا تتحول إلى Cards
 

@@ -1,11 +1,11 @@
 # TOP GYM Design System
 
-The UI uses one Vanilla CSS entrypoint: `public/css/main.css`. The HTML shell links this file once in `<head>` so authenticated and unauthenticated states receive the same deterministic style surface without JavaScript-injected CSS.
+The UI uses one Vanilla CSS production entrypoint: `public/css/main.css`. The HTML shell links this file once in `<head>` so authenticated and unauthenticated states receive the same deterministic style surface without JavaScript-injected CSS. The editable layer graph lives in `public/css/main.source.css`; the build expands it into one browser asset.
 
 ## Load order
 
 ```text
-main.css
+main.source.css
   -> tokens.css
   -> reset.css
   -> typography.css
@@ -15,9 +15,10 @@ main.css
   -> pages/*
   -> responsive.css
   -> print.css
+  -> build output: main.css (one browser request)
 ```
 
-`build:css` validates the import graph and fails on missing files, circular imports, unbalanced braces, empty media queries, undefined custom properties, duplicate stylesheet links, or missing print coverage.
+`build:css` validates the import graph and generates the production bundle, then fails on missing files, circular imports, unbalanced braces, empty media queries, undefined custom properties, active imports left in the bundle, duplicate stylesheet links, or missing print coverage. Edit the layer files, not the generated `main.css` artifact.
 
 ## Visual language
 
@@ -74,6 +75,18 @@ The shell is `dir="rtl"`. Email, phone, dates, IDs, URLs, and currency calculati
 ## Loading, empty, and error states
 
 Use `.loading`/`.skeleton` for content that is not ready, `.empty-state` for valid empty results, and `.alert-danger` or `.error-message` for recoverable failures. Keep the component height close to the expected content height to avoid layout jumps.
+
+## Performance and lazy loading
+
+The initial shell loads only the core authentication, routing, state, API, global interaction and WhatsApp support. In browser QA this is 12 JavaScript requests and one flattened CSS request before deferred dashboard work starts. Feature modules are loaded once by `feature-loader.js`:
+
+- Dashboard finance, daily passes, alerts and analytics are scheduled after the first dashboard paint.
+- Member details and attendance modules load when the members workspace is opened; the member-details event has a replay-safe fallback.
+- Reports, library, coaching, print and permissions modules load only when their tab or action is used.
+- The smart assistant loads after authentication and the first interaction window, without changing its permission checks.
+- The login-only gym background is applied only after the session is known to be unauthenticated, so authenticated refreshes do not download it.
+
+Use versioned script and stylesheet URLs so Vercel can safely cache immutable assets. Avoid adding a direct `<script>` for a module already registered in `feature-loader.js`.
 
 ## Print
 

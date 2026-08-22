@@ -54,6 +54,8 @@
         let membersAbortController = null;
         let membersLoadPromise = null;
         let membersLoadKey = '';
+        let membersLastLoadedKey = '';
+        let membersLastLoadedAt = 0;
         let dataLoadPromise = null;
         let pricingRequestPromise = null;
          const PRICING_CACHE_TTL_MS = 5 * 60 * 1000;
@@ -247,6 +249,7 @@
             if (!window.topGymAuth?.getUser?.()) return;
             const queryKey = JSON.stringify([$('searchInput')?.value.trim() || '', $('statusFilter')?.value || '', $('sortFilter')?.value || '']);
             if (membersLoadPromise && membersLoadKey === queryKey) return membersLoadPromise;
+            if (!membersLoadPromise && membersLastLoadedKey === queryKey && Date.now() - membersLastLoadedAt < 750) return;
             if (membersAbortController) membersAbortController.abort();
             membersAbortController = new AbortController();
             const controller = membersAbortController;
@@ -255,7 +258,7 @@
                 state.pagination = null;
                 if ($('membersPagination')) $('membersPagination').hidden = true;
                 $('membersList').innerHTML = '<div class="loading">جاري تحديث القائمة…</div>';
-                 try { const params = new URLSearchParams({ search: $('searchInput').value.trim(), status: $('statusFilter').value, sort: $('sortFilter').value, page: '1', pageSize: String(state.membersPageSize || 5) }); const response = await api(`/api/members?${params}`, { signal: controller.signal }); state.members = response.members || []; state.pagination = response.pagination || null; state.detailsCache = new Map(); renderMembers(); }
+                 try { const params = new URLSearchParams({ search: $('searchInput').value.trim(), status: $('statusFilter').value, sort: $('sortFilter').value, page: '1', pageSize: String(state.membersPageSize || 5) }); const response = await api(`/api/members?${params}`, { signal: controller.signal }); state.members = response.members || []; state.pagination = response.pagination || null; state.detailsCache = new Map(); renderMembers(); membersLastLoadedKey = queryKey; membersLastLoadedAt = Date.now(); }
                 catch (error) { if (error.name !== 'AbortError') { $('membersList').innerHTML = `<div class="empty">${escapeHtml(error.message)}</div>`; await notify(error.message, 'error'); } }
             }, 'جاري تحديث قائمة TOP GYM…');
             const trackedPromise = loadPromise.finally(() => {

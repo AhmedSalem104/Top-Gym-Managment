@@ -66,7 +66,7 @@ The route domains are auth, members, attendance, finance, dashboard, library, re
 
 ## Frontend map
 
-The browser still uses one stable HTML shell and hash navigation. `public/js/core/api.js` is the shared fetch boundary for new code. `public/js/core/permissions.js` controls tab visibility, while the backend remains the security authority. Feature scripts are loaded once by `feature-loader.js` and grouped under `public/js/pages/` and `public/js/integrations/`.
+The browser still uses one stable HTML shell and hash navigation. `public/js/core/api.js` is the shared fetch boundary for new code. `public/js/core/permissions.js` controls tab visibility, while the backend remains the security authority. Feature scripts are loaded once by `feature-loader.js` and grouped under `public/js/pages/` and `public/js/integrations/`; dashboard enhancements, member details, reports and the smart assistant are intentionally deferred until their screen or interaction is relevant.
 
 The member/dashboard/pricing legacy shell remains in `public/js/app.js`. It should be split by behavior only with browser coverage for dialogs and event delegation; moving it mechanically would create more risk than value.
 

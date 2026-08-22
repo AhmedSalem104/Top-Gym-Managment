@@ -7,17 +7,34 @@
 
     const features = {
         dashboard: {
-            dependencies: ['finance'],
+            dependencies: [],
             styles: [],
             scripts: []
+        },
+        'dashboard-enhancements': {
+            dependencies: ['finance'],
+            styles: [],
+            scripts: [
+                '/js/day-passes.js?v=5',
+                '/js/alerts-enhancements.js?v=9'
+            ]
         },
         finance: {
             styles: [],
             scripts: ['/js/pages/finance/monthly-finance.js?v=17']
         },
-        members: {
+        'member-details': {
             styles: [],
             scripts: [
+                '/js/member-details-ui.js?v=3',
+                '/js/member-portal-admin.js?v=2'
+            ]
+        },
+        members: {
+            dependencies: [],
+            styles: [],
+            scripts: [
+                '/js/design-enhancements.js?v=3',
                 '/js/pages/members/action-menu.js?v=7',
                 '/js/pages/attendance/attendance.js?v=9'
             ]
@@ -41,7 +58,7 @@
         },
         reports: {
             styles: [],
-            scripts: ['/js/pages/reports/reports.js?v=9']
+            scripts: ['/js/pages/reports/reports.js?v=9', '/js/day-pass-reports.js?v=2']
         },
         feedback: {
             styles: [],
@@ -67,6 +84,10 @@
             dependencies: ['coaching'],
             styles: [],
             scripts: []
+        },
+        'smart-assistant': {
+            styles: [],
+            scripts: ['/js/smart-assistant.js?v=4']
         }
     };
 
@@ -145,9 +166,82 @@
             loadScript('/js/pages/dashboard/analytics.js?v=8', 'dashboard-analytics')
                 .catch((error) => console.warn('[TOP GYM] Dashboard analytics failed to load.', error));
         };
-        if (immediate) void start();
-        else if ('requestIdleCallback' in window) window.requestIdleCallback(() => void start(), { timeout: 1800 });
-        else window.setTimeout(() => void start(), 900);
+        const delay = immediate ? 250 : 1100;
+        window.setTimeout(() => {
+            if ('requestIdleCallback' in window) window.requestIdleCallback(() => void start(), { timeout: 1200 });
+            else void start();
+        }, delay);
+    }
+
+    function scheduleDashboardEnhancements(immediate = false) {
+        if (window.__topGymDashboardEnhancementsScheduled || !dashboardIsRequested()) return;
+        window.__topGymDashboardEnhancementsScheduled = true;
+        const start = async () => {
+            if (window.topGymAuthReady) await window.topGymAuthReady.catch(() => null);
+            if (!dashboardIsRequested() || !window.topGymAuth?.getUser?.() || !window.topGymAuth?.canAccessTab?.('dashboard')) {
+                window.__topGymDashboardEnhancementsScheduled = false;
+                return;
+            }
+            ensureTab('dashboard-enhancements').catch((error) => {
+                window.__topGymDashboardEnhancementsScheduled = false;
+                console.warn('[TOP GYM] Dashboard enhancements failed to load.', error);
+            });
+        };
+        const delay = immediate ? 180 : 900;
+        window.setTimeout(() => {
+            if ('requestIdleCallback' in window) window.requestIdleCallback(() => void start(), { timeout: 1100 });
+            else void start();
+        }, delay);
+    }
+
+    function bindLazyDashboardActions() {
+        document.addEventListener('click', (event) => {
+            const button = event.target.closest('#dashboardDayPassAdd, #dashboardDayPassManage');
+            if (!button || window.__topGymDayPassesLoaded || button.dataset.topGymFeatureLoading === 'true') return;
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            button.dataset.topGymFeatureLoading = 'true';
+            button.disabled = true;
+            ensureTab('dashboard-enhancements').then(() => {
+                button.dataset.topGymFeatureReady = 'dashboard-enhancements';
+                if (button.isConnected) {
+                    button.disabled = false;
+                    button.click();
+                }
+            }).catch((error) => {
+                console.warn('[TOP GYM] Day-pass feature failed to load.', error);
+                window.showToast?.(error.message || 'تعذر تحميل الحصص اليومية.', true, 'error');
+            }).finally(() => {
+                delete button.dataset.topGymFeatureLoading;
+                if (button.isConnected && button.dataset.topGymFeatureReady !== 'dashboard-enhancements') button.disabled = false;
+            });
+        }, true);
+    }
+
+    function bindLazyMemberDetails() {
+        const requestedDetails = new WeakSet();
+        window.addEventListener('topgym:member-details-opened', (event) => {
+            const detail = event.detail;
+            if (!detail || detail.__topGymMemberDetailsReplay || window.__topGymMemberDetailsUiLoaded || requestedDetails.has(detail)) return;
+            requestedDetails.add(detail);
+            ensureTab('member-details').then(() => {
+                window.dispatchEvent(new CustomEvent('topgym:member-details-opened', {
+                    detail: { ...detail, __topGymMemberDetailsReplay: true }
+                }));
+            }).catch((error) => console.warn('[TOP GYM] Member details feature failed to load.', error));
+        });
+    }
+
+    function scheduleSmartAssistant() {
+        const start = async () => {
+            if (window.topGymAuthReady) await window.topGymAuthReady.catch(() => null);
+            if (!window.topGymAuth?.getUser?.()) return;
+            ensureTab('smart-assistant').catch((error) => console.warn('[TOP GYM] Smart assistant failed to load.', error));
+        };
+        window.setTimeout(() => {
+            if ('requestIdleCallback' in window) window.requestIdleCallback(() => void start(), { timeout: 1800 });
+            else void start();
+        }, 2200);
     }
 
     function bindLazyBackupAction() {
@@ -282,18 +376,26 @@
     window.topGymLoadExternalAsset = loadExternalAsset;
     window.topGymLoadFeature = loadScript;
     window.addEventListener('topgym:tab-changed', (event) => {
-        if (event.detail?.name === 'dashboard') scheduleDashboardAnalytics(true);
+        if (event.detail?.name === 'dashboard') {
+            scheduleDashboardEnhancements();
+            scheduleDashboardAnalytics(true);
+        }
     });
     bindLazyBackupAction();
     bindLazyPrintActions();
     bindLazyCoachingActions();
+    bindLazyDashboardActions();
+    bindLazyMemberDetails();
     scheduleOptionalEnhancements();
+    scheduleSmartAssistant();
 
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => {
+            scheduleDashboardEnhancements();
             scheduleDashboardAnalytics();
         }, { once: true });
     } else {
+        scheduleDashboardEnhancements();
         scheduleDashboardAnalytics();
     }
 })();

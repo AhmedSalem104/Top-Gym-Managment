@@ -41,6 +41,12 @@ function prepareShell(page, target) {
 }
 
 async function checkPage(page, target, viewport, saveScreenshot) {
+  const requiredFeature = target === 'expensesSection' ? 'finance' : null;
+  if (requiredFeature) {
+    await page.evaluate(async (feature) => {
+      await window.topGymEnsureTab?.(feature);
+    }, requiredFeature);
+  }
   await prepareShell(page, target);
   const result = await page.evaluate((targetId) => ({
     target: targetId,
