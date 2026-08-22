@@ -99,6 +99,8 @@
     function selected(id, fallback = '') { return $(id)?.value || fallback; }
     function localFilterValue() { return selected('reportsLocalSearch').trim().toLocaleLowerCase('ar-EG'); }
     function contains(value, query) { return !query || String(value || '').toLocaleLowerCase('ar-EG').includes(query); }
+    function canReadFinance() { return window.topGymAuth?.isOwner?.() === true || window.topGymAuth?.hasPermission?.('finance.read') === true; }
+    function canExportReports() { return window.topGymAuth?.isOwner?.() === true || window.topGymAuth?.hasPermission?.('reports.export') === true; }
     function activeViewId() { const tab = state.activeTab; return `reports${tab[0].toUpperCase()}${tab.slice(1)}View`; }
 
     function ensurePanel() {
@@ -175,7 +177,11 @@
     function renderReportTabs() {
         const tabs = $('reportsTabs');
         if (!tabs) return;
-        tabs.innerHTML = REPORT_TABS.map(([id, text, icon]) => `<button class="reports-tab${id === state.activeTab ? ' active' : ''}" type="button" role="tab" aria-selected="${id === state.activeTab}" data-report-tab="${id}"><span class="reports-tab-icon">${reportIcon(icon)}</span><span class="reports-tab-label">${text}</span></button>`).join('');
+        const canViewFinance = canReadFinance();
+        const canViewBackups = window.topGymAuth?.isOwner?.() === true;
+        tabs.innerHTML = REPORT_TABS
+            .filter(([id]) => (id !== 'finance' || canViewFinance) && (id !== 'backups' || canViewBackups))
+            .map(([id, text, icon]) => `<button class="reports-tab${id === state.activeTab ? ' active' : ''}" type="button" role="tab" aria-selected="${id === state.activeTab}" data-report-tab="${id}"><span class="reports-tab-icon">${reportIcon(icon)}</span><span class="reports-tab-label">${text}</span></button>`).join('');
     }
 
     function renderExtraFilters() {
@@ -193,6 +199,10 @@
 
     function activateReportTab(tab) {
         if (!REPORT_TABS.some(([id]) => id === tab)) return;
+        if (tab === 'finance' && !canReadFinance()) {
+            tab = 'overview';
+        }
+        if (tab === 'backups' && window.topGymAuth?.isOwner?.() !== true) tab = 'overview';
         state.activeTab = tab;
         renderReportTabs();
         renderExtraFilters();
@@ -248,7 +258,7 @@
     }
 
     async function loadReport(force = false) {
-        if (!window.topGymAuth?.isOwner?.()) return;
+        if (!window.topGymAuth?.isOwner?.() && !window.topGymAuth?.hasPermission?.('reports.read')) return;
         const panel = ensurePanel();
         if (!panel) return;
         const { from, to } = rangeValues();
@@ -357,6 +367,7 @@
         if (!view || !state.data) return;
         const data = state.data;
         const summary = data.summary || {};
+        const financeAllowed = canReadFinance();
         const items = [
             ['الأعضاء الجدد', number(summary.newMembers), 'خلال الفترة', 'blue', 'users'],
             ['الاشتراكات الجديدة', number(summary.newMemberships), 'اشتراك مسجل', 'indigo', 'card'],
@@ -365,17 +376,21 @@
             ['صافي الفترة', money(summary.net), summary.net < 0 ? 'يحتاج مراجعة' : 'الصافي موجب', summary.net < 0 ? 'red' : 'teal', 'chart'],
             ['المبالغ المتبقية', money(summary.outstanding), `${number(summary.outstandingCount)} اشتراك`, 'rose', 'debt']
         ];
-        const kpis = items.map(([title, value, meta, tone, icon]) => reportKpi(title, value, meta, tone, icon)).join('');
-        const timeline = renderTimeline(data);
-        const breakdown = renderBreakdown(data);
-        const debtors = data.debtors || [];
+        const kpis = items.slice(0, financeAllowed ? items.length : 2).map(([title, value, meta, tone, icon]) => reportKpi(title, value, meta, tone, icon)).join('');
+        const timeline = renderTimeline(data, financeAllowed);
+        const breakdown = renderBreakdown(data, financeAllowed);
+        const debtors = financeAllowed ? (data.debtors || []) : [];
         const debtorsHtml = debtors.length ? `<table class="reports-table reports-debtors-table"><thead><tr><th>المشترك</th><th>الباقة</th><th>المتبقي</th><th>إجراء</th></tr></thead><tbody>${debtors.map((member) => `<tr><td><strong>${escapeHtml(member.fullName)}</strong><small>${escapeHtml(member.phone)}</small></td><td>${escapeHtml(label(PLAN_LABELS, member.plan))}</td><td class="has-debt">${money(member.amountRemaining)}</td><td><div class="reports-debtor-actions">${alertContactMarkup(member.alertContact)}<button class="btn btn-light btn-small" type="button" data-report-member-action="details" data-member-id="${member.id}">التفاصيل</button><button class="btn btn-primary btn-small" type="button" data-report-member-action="payment" data-member-id="${member.id}">تسجيل دفعة</button>${reportWhatsappButton(member)}</div></td></tr>`).join('')}</tbody></table>` : '<div class="reports-empty-state">لا توجد مبالغ متبقية حاليًا.</div>';
-        view.innerHTML = `<div class="reports-kpis">${kpis}</div><div class="reports-grid"><section class="report-card"><div class="report-card-head"><div><span>التحليل الزمني</span><h3>الحركة اليومية</h3></div></div>${timeline}</section><section class="report-card"><div class="report-card-head"><div><span>التوزيع</span><h3>الباقات وطرق الدفع</h3></div></div>${breakdown}</section></div><section class="report-card reports-members-card"><div class="report-card-head"><div><span>أولوية التحصيل</span><h3>المشتركون عليهم مستحقات</h3></div><span class="reports-members-count">${number(summary.debtorsCount)} مشترك</span></div><div class="reports-table-wrap">${debtorsHtml}</div></section>`;
+        view.innerHTML = `<div class="reports-kpis">${kpis}</div><div class="reports-grid"><section class="report-card"><div class="report-card-head"><div><span>التحليل الزمني</span><h3>الحركة اليومية</h3></div></div>${timeline}</section><section class="report-card"><div class="report-card-head"><div><span>التوزيع</span><h3>الباقات وطرق الدفع</h3></div></div>${breakdown}</section></div><section class="report-card reports-members-card"${financeAllowed ? '' : ' hidden aria-hidden="true"'}><div class="report-card-head"><div><span>أولوية التحصيل</span><h3>المشتركون عليهم مستحقات</h3></div><span class="reports-members-count">${number(summary.debtorsCount)} مشترك</span></div><div class="reports-table-wrap">${debtorsHtml}</div></section>`;
     }
 
-    function renderTimeline(data) {
+    function renderTimeline(data, includeFinance = true) {
         const rows = data.timeline || [];
         if (!rows.length) return '<div class="reports-empty-state">لا توجد بيانات في الفترة المحددة.</div>';
+        if (!includeFinance) {
+            const enrollmentRows = rows.map((row) => `<div class="reports-day"><div class="reports-day-bars"><span class="collected" style="height:${Math.max(2, Number(row.newMembers || 0) * 10)}%" title="أعضاء جدد"></span><span class="expenses" style="height:${Math.max(2, Number(row.newMemberships || 0) * 10)}%" title="اشتراكات جديدة"></span></div><small>${escapeHtml(dateOnly(row.date))}</small><b>${number(Number(row.newMembers || 0) + Number(row.newMemberships || 0))}</b></div>`).join('');
+            return `<div class="reports-timeline-wrap"><div class="reports-mini-chart">${enrollmentRows}</div><div class="reports-chart-legend"><span><i class="collected"></i>أعضاء جدد</span><span><i class="expenses"></i>اشتراكات جديدة</span></div></div>`;
+        }
         const max = Math.max(1, ...rows.map((item) => Math.max(Number(item.collected || 0), Number(item.expenses || 0))));
         const bars = rows.map((row) => {
             const collectedHeight = Math.max(row.collected ? 6 : 2, (Number(row.collected || 0) / max) * 100);
@@ -385,26 +400,30 @@
         return `<div class="reports-timeline-wrap"><div class="reports-mini-chart">${bars}</div><div class="reports-chart-legend"><span><i class="collected"></i>التحصيل</span><span><i class="expenses"></i>المصروفات</span><span>الرقم = أعضاء واشتراكات جديدة</span></div></div>`;
     }
 
-    function renderBreakdown(data) {
+    function renderBreakdown(data, includeFinance = true) {
         const breakdown = data.breakdown || {};
         const planRows = (breakdown.plans || []).map((item) => `<div class="breakdown-row"><span>${escapeHtml(label(PLAN_LABELS, item.key))}</span><strong>${number(item.value)}</strong></div>`).join('');
         const paymentRows = (breakdown.paymentMethods || []).map((item) => `<div class="breakdown-row"><span>${escapeHtml(label(PAYMENT_LABELS, item.key))}</span><strong>${money(item.amount)} <small>(${number(item.count)})</small></strong></div>`).join('');
         const statusRows = (breakdown.statuses || []).map((item) => `<div class="breakdown-row"><span>${escapeHtml(label(STATUS_LABELS, item.key))}</span><strong>${number(item.value)}</strong></div>`).join('');
-        return `<div class="reports-breakdown"><div class="breakdown-group"><h4>الباقات</h4>${planRows || '<span class="reports-empty">لا توجد بيانات.</span>'}</div><div class="breakdown-group"><h4>طرق الدفع</h4>${paymentRows || '<span class="reports-empty">لا توجد مدفوعات.</span>'}</div><div class="breakdown-group"><h4>الحالات الحالية</h4>${statusRows || '<span class="reports-empty">لا توجد بيانات.</span>'}</div></div>`;
+        return `<div class="reports-breakdown"><div class="breakdown-group"><h4>الباقات</h4>${planRows || '<span class="reports-empty">لا توجد بيانات.</span>'}</div>${includeFinance ? `<div class="breakdown-group"><h4>طرق الدفع</h4>${paymentRows || '<span class="reports-empty">لا توجد مدفوعات.</span>'}</div>` : ''}<div class="breakdown-group"><h4>الحالات الحالية</h4>${statusRows || '<span class="reports-empty">لا توجد بيانات.</span>'}</div></div>`;
     }
 
     function renderMemberships() {
         const view = $('reportsMembershipsView');
         const data = state.data;
         if (!view || !data) return;
+        const financeAllowed = canReadFinance();
         const status = selected('reportsMembershipStatus');
         const plan = selected('reportsMembershipPlan');
-        const debtorsOnly = Boolean($('reportsDebtorsOnly')?.checked);
+        const debtorsOnly = financeAllowed && Boolean($('reportsDebtorsOnly')?.checked);
         const query = localFilterValue();
         const members = (data.memberships || data.members || []).filter((member) => (!status || member.status === status) && (!plan || member.plan === plan) && (!debtorsOnly || Number(member.amountRemaining) > 0) && (contains(member.fullName, query) || contains(member.phone, query)));
         const statuses = (data.breakdown?.statuses || []).map((item) => `<div class="report-summary-chip"><span>${escapeHtml(label(STATUS_LABELS, item.key))}</span><strong>${number(item.value)}</strong></div>`).join('');
         const rows = members.map((member) => `<tr><td><strong>${escapeHtml(member.fullName)}</strong><small>${escapeHtml(member.phone)}</small></td><td>${escapeHtml(label(PLAN_LABELS, member.plan))}<small>${escapeHtml(label(TYPE_LABELS, member.type))}</small></td><td>${reportBadge(member.status, STATUS_LABELS)}</td><td>${dateOnly(member.startDate)}<small>حتى ${dateOnly(member.endDate)}</small></td><td>${money(member.amountDue)}<small>مدفوع ${money(member.amountPaid)}</small></td><td class="${Number(member.amountRemaining) > 0 ? 'has-debt' : 'paid'}">${money(member.amountRemaining)}</td><td><div class="reports-debtor-actions">${member.alertContact ? alertContactMarkup(member.alertContact) : ''}${reportWhatsappButton(member) || '<span class="reports-no-action">—</span>'}</div></td></tr>`).join('');
         view.innerHTML = `<div class="report-summary-strip">${statuses}<div class="report-summary-chip total"><span>في الفترة</span><strong>${number(members.length)}</strong></div></div><section class="report-card reports-members-card"><div class="report-card-head"><div><span>تفاصيل الفترة</span><h3>سجل الاشتراكات والعضويات</h3></div><span class="reports-members-count">${number(members.length)} نتيجة</span></div><div class="reports-table-wrap">${rows ? `<table class="reports-table"><thead><tr><th>المشترك</th><th>الباقة والنوع</th><th>الحالة</th><th>الفترة</th><th>الحساب</th><th>المتبقي</th><th>تواصل</th></tr></thead><tbody>${rows}</tbody></table>` : '<div class="reports-empty-state">لا توجد نتائج مطابقة للفلاتر.</div>'}</div></section>`;
+        if (!financeAllowed) {
+            view.querySelectorAll('.reports-table tr').forEach((row) => [6, 5, 4].forEach((index) => row.children[index]?.remove()));
+        }
     }
 
     function renderFinance() {
@@ -552,7 +571,8 @@
     }
 
     function exportCurrentReport() {
-        if (!state.data) return;
+        if (!state.data || !canExportReports()) return;
+        if (state.activeTab === 'finance' && !canReadFinance()) return;
         const rows = [['تقرير TOP GYM', state.activeTab], ['من', rangeValues().from], ['إلى', rangeValues().to], []];
         if (state.activeTab === 'finance') {
             rows.push(['النوع', 'الاسم', 'التاريخ', 'المبلغ', 'طريقة الدفع']);

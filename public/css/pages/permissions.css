@@ -1,0 +1,154 @@
+.permissions-section {
+  display: grid;
+  gap: var(--space-5);
+  padding: clamp(20px, 3vw, 32px);
+}
+
+.permissions-header,
+.permissions-editor-head,
+.permissions-subheading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.permissions-heading {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+.permissions-heading-icon {
+  display: grid;
+  width: 52px;
+  height: 52px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: var(--radius-lg);
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+
+.permissions-heading-icon .ui-icon { width: 25px; height: 25px; }
+.permissions-kicker,
+.permissions-editor-kicker {
+  display: block;
+  color: var(--color-primary);
+  font-size: var(--font-xs);
+  font-weight: var(--weight-bold);
+}
+
+.permissions-heading h3,
+.permissions-editor-head h4,
+.permissions-subheading h4 {
+  margin: 3px 0 0;
+  color: var(--color-text);
+}
+
+.permissions-heading h3 { font-size: clamp(22px, 3vw, 30px); }
+.permissions-heading p,
+.permissions-editor-head p {
+  max-width: 720px;
+  margin: 7px 0 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-sm);
+}
+
+.permissions-owner-badge,
+.permissions-readonly-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  flex: 0 0 auto;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-muted);
+  color: var(--color-text-muted);
+  padding: 0 12px;
+  font-size: var(--font-xs);
+  font-weight: var(--weight-semibold);
+}
+
+.permissions-layout {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.75fr) minmax(0, 2fr);
+  gap: var(--space-4);
+  align-items: start;
+}
+
+.permissions-users-panel,
+.permissions-editor-panel {
+  min-width: 0;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.permissions-users-panel { padding: var(--space-4); }
+.permissions-editor-panel { padding: clamp(16px, 2.5vw, 24px); }
+.permissions-subheading { align-items: center; padding-bottom: var(--space-3); border-bottom: 1px solid var(--border-color); }
+.permissions-subheading span:first-child { color: var(--color-text-muted); font-size: var(--font-xs); }
+.permissions-users-count { display: grid; min-width: 30px; height: 30px; place-items: center; border-radius: var(--radius-pill); background: var(--color-primary-soft); color: var(--color-primary); font-weight: var(--weight-bold); }
+
+.permissions-user-list { display: grid; gap: var(--space-2); padding-top: var(--space-3); }
+.permissions-user-button {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-text);
+  padding: 10px;
+  text-align: start;
+}
+.permissions-user-button:hover { border-color: var(--border-color); background: var(--color-primary-soft); }
+.permissions-user-button.active { border-color: rgb(23 105 232 / 0.22); background: var(--color-primary-soft); color: var(--color-primary); }
+.permissions-user-avatar { display: grid; width: 36px; height: 36px; place-items: center; border-radius: 50%; background: var(--color-primary-soft); color: var(--color-primary); font-weight: var(--weight-bold); }
+.permissions-user-copy { display: grid; min-width: 0; gap: 2px; }
+.permissions-user-copy strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--font-sm); }
+.permissions-user-copy small { overflow: hidden; color: var(--color-text-muted); text-overflow: ellipsis; white-space: nowrap; font-size: var(--font-xs); direction: ltr; text-align: start; }
+.permissions-user-status { width: 8px; height: 8px; border-radius: 50%; background: var(--color-success); }
+.permissions-user-status.disabled { background: var(--color-danger); }
+
+.permissions-editor-head { align-items: center; padding-bottom: var(--space-4); border-bottom: 1px solid var(--border-color); }
+.permissions-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); padding: var(--space-4) 0; }
+.permission-group-card { min-width: 0; overflow: hidden; border: 1px solid var(--border-color); border-radius: var(--radius-md); background: var(--color-surface-elevated); }
+.permission-group-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); border-bottom: 1px solid var(--border-color); background: var(--color-surface-muted); padding: 11px 13px; }
+.permission-group-head strong { color: var(--color-text); font-size: var(--font-sm); }
+.permission-group-readonly { color: var(--color-text-muted); font-size: 11px; }
+.permission-option { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: start; gap: 9px; padding: 11px 13px; cursor: pointer; }
+.permission-option + .permission-option { border-top: 1px solid var(--border-color); }
+.permission-option input { width: 18px; height: 18px; margin: 2px 0 0; accent-color: var(--color-primary); }
+.permission-option-copy { display: grid; gap: 3px; min-width: 0; }
+.permission-option-copy strong { color: var(--color-text); font-size: var(--font-xs); }
+.permission-option-copy small { color: var(--color-text-muted); font-size: 11px; line-height: 1.5; }
+.permission-option:has(input:checked) { background: rgb(23 105 232 / 0.055); }
+.permissions-editor-footer { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--space-4); align-items: end; padding-top: var(--space-4); border-top: 1px solid var(--border-color); }
+.permissions-reason-field { display: grid; gap: 7px; color: var(--color-text-muted); font-size: var(--font-xs); font-weight: var(--weight-semibold); }
+.permissions-reason-field textarea { min-height: 66px; resize: vertical; }
+.permissions-form-actions { display: flex; align-items: center; gap: var(--space-2); }
+.permissions-form-actions .btn { min-height: 44px; white-space: nowrap; }
+.permissions-status { margin: var(--space-3) 0 0; border-radius: var(--radius-md); padding: 10px 12px; font-size: var(--font-xs); }
+.permissions-status.success { background: var(--color-success-soft); color: var(--color-success); }
+.permissions-status.error { background: var(--color-danger-soft); color: var(--color-danger); }
+.permissions-empty-state { grid-column: 1 / -1; border: 1px dashed var(--border-color); border-radius: var(--radius-md); color: var(--color-text-muted); padding: 32px 16px; text-align: center; }
+
+@media (max-width: 900px) {
+  .permissions-layout { grid-template-columns: 1fr; }
+  .permissions-user-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 620px) {
+  .permissions-header,
+  .permissions-editor-head { flex-direction: column; }
+  .permissions-grid { grid-template-columns: 1fr; }
+  .permissions-editor-footer { grid-template-columns: 1fr; }
+  .permissions-form-actions { justify-content: stretch; }
+  .permissions-form-actions .btn { flex: 1; }
+  .permissions-user-list { grid-template-columns: 1fr; }
+}

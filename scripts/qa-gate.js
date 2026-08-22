@@ -100,6 +100,13 @@ function assertRequiredFiles() {
         'src/permissions/roles.js',
         'src/permissions/permissions.js',
         'src/permissions/role-permissions.js',
+        'src/permissions/route-permissions.js',
+        'src/services/permission-service.js',
+        'src/middleware/permission.middleware.js',
+        'src/middleware/financial-data.middleware.js',
+        'database/migrations/006-permissions.sql',
+        'public/js/pages/management/permissions.js',
+        'public/css/pages/permissions.css',
         'src/routes/index.js',
         'src/routes/auth.routes.js',
         'src/controllers/auth.controller.js',
@@ -177,7 +184,10 @@ function checkModuleGraph() {
         './src/services/backup-service',
         './src/database',
         './src/repositories/user.repository',
-        './src/repositories/session.repository'
+        './src/repositories/session.repository',
+        './src/services/permission-service',
+        './src/middleware/permission.middleware',
+        './src/middleware/financial-data.middleware'
     ];
     const source = `${modules.map((item) => `require(${JSON.stringify(item)});`).join('')}console.log('MODULE_GRAPH_OK');`;
     const result = run(process.execPath, ['-e', source]);
@@ -226,7 +236,7 @@ function checkAuthSurface() {
         server.includes(route) || authRoutes.includes(route) ? 'authentication route is present' : 'authentication route is missing',
         'P0'
     ));
-    record('AUTH-BACKEND-MIDDLEWARE', server.includes('createAuthApiMiddleware') && authMiddleware.includes('canAccess(user, request)'), 'backend authentication and authorization middleware is present', 'P0');
+    record('AUTH-BACKEND-MIDDLEWARE', server.includes('createAuthApiMiddleware') && authMiddleware.includes('authorizeRequest(user, request)'), 'backend authentication and centralized authorization middleware is present', 'P0');
     record('AUTH-SCRYPT-HASHING', auth.includes('crypto.scrypt') && auth.includes('timingSafeEqual'), 'password hashing uses scrypt and timing-safe comparison', 'P0');
     record('AUTH-HTTPONLY-SESSION', auth.includes('HttpOnly') && auth.includes('SameSite=Lax'), 'sessions use HttpOnly SameSite cookies', 'P0');
     record('AUTH-LOGIN-SCREEN', index.includes('id="authScreen"') && index.includes('/css/main.css'), 'login screen structure and central stylesheet are present', 'P1');
@@ -235,6 +245,17 @@ function checkAuthSurface() {
     record('FEEDBACK-OWNER-API', feedbackRoute.includes("'/api/member-feedback'") && feedbackRoute.includes('ownerOnly'), 'member feedback administration API is Owner-protected', 'P0');
     record('FEEDBACK-PORTAL-LINK', authMiddleware.includes("'/member-portal/feedback'") && feedbackService.includes('findMemberIdByCode'), 'portal feedback is public only through membership-code resolution', 'P0');
     record('FEEDBACK-NO-CODE-STORAGE', feedbackService.includes('member_id, rating, note_type, message') && !feedbackService.includes('membership_code'), 'feedback storage keeps member_id and does not persist the membership code', 'P0');
+    const permissions = read('src/permissions/permissions.js');
+    const routePermissions = read('src/permissions/route-permissions.js');
+    const permissionService = read('src/services/permission-service.js');
+    const permissionsUi = read('public/js/pages/management/permissions.js');
+    record('PERMISSIONS-CATALOG', permissions.includes('members.read') && permissions.includes('payments.create') && permissions.includes('finance.read'), 'resource.action permission catalog is present', 'P0');
+    record('PERMISSIONS-ROUTE-RESOLVER', routePermissions.includes('permissionForRequest') && authMiddleware.includes('permission.middleware'), 'all API authorization resolves through the centralized route permission resolver', 'P0');
+    record('PERMISSIONS-DB-AUDIT', permissionService.includes('gym_user_permissions') && permissionService.includes('gym_permission_audit') && permissionService.includes('withTransaction'), 'permission state and audit are persisted transactionally', 'P0');
+    record('PERMISSIONS-OWNER-API', authRoutes.includes('/api/auth/permissions/catalog') && authRoutes.includes('/api/auth/users/:id/permissions') && authRoutes.includes('ownerOnly'), 'Owner-only permission management APIs are present', 'P0');
+    record('PERMISSIONS-OWNER-UI', index.includes('data-page-tab="permissions"') && index.includes('id="permissionsSection"') && permissionsUi.includes('/permissions'), 'Owner permissions screen is present', 'P1');
+    record('PERMISSIONS-SESSION-INVALIDATION', permissionService.includes('revokeForUser'), 'permission updates invalidate the target Assistant sessions', 'P0');
+    record('FINANCE-FIELD-GUARD', fs.existsSync(path.join(root, 'src/middleware/financial-data.middleware.js')) && authMiddleware.includes('protectFinancialResponse'), 'financial response fields are filtered when finance.read is disabled', 'P0');
 }
 
 function checkStyleSurface() {

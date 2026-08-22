@@ -1076,6 +1076,9 @@
         $('coachingBuilderPdf').hidden = step !== 3;
         $('coachingBuilderNext').hidden = step === 3;
         $('coachingBuilderSave').hidden = step !== 3;
+        if ($('coachingBuilderSave')) $('coachingBuilderSave').dataset.requiredPermission = state.builder.id ? 'coaching.update' : 'coaching.create';
+        if ($('coachingBuilderPrint')) $('coachingBuilderPrint').dataset.requiredPermission = 'coaching.read';
+        if ($('coachingBuilderPdf')) $('coachingBuilderPdf').dataset.requiredPermission = 'coaching.read';
         $('coachingBuilderNext').textContent = step === 1 ? 'التالي: بناء النظام' : 'التالي: المراجعة';
     }
 

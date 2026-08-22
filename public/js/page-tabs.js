@@ -2,7 +2,7 @@
     if (window.__topGymPageTabsLoaded) return;
     window.__topGymPageTabsLoaded = true;
 
-    const validTabs = new Set(['dashboard', 'members', 'expenses', 'reports', 'management', 'attendance', 'library', 'trainees', 'feedback']);
+    const validTabs = new Set(['dashboard', 'members', 'expenses', 'reports', 'management', 'permissions', 'attendance', 'library', 'trainees', 'feedback']);
     let activationToken = 0;
     let activeTabName = null;
 
@@ -14,7 +14,7 @@
         if (!validTabs.has(name)) return 'dashboard';
         if (window.topGymAuth?.isReady?.()) {
             if (!window.topGymAuth.getUser?.()) return 'dashboard';
-            if (!window.topGymAuth.canAccessTab(name)) return 'members';
+            if (!window.topGymAuth.canAccessTab(name)) return window.topGymPermissions?.firstAccessibleTab?.(window.topGymAuth.getUser?.()) || 'members';
         }
         return name;
     }
@@ -29,6 +29,7 @@
         const analyticsSection = document.getElementById('dashboardAnalytics');
         const reportsSection = document.getElementById('reportsSection');
         const feedbackSection = document.getElementById('feedbackSection');
+        const permissionsSection = document.getElementById('permissionsSection');
         const attendanceSection = document.getElementById('attendanceSection');
         const librarySection = document.getElementById('librarySection');
         const traineesSection = document.getElementById('traineesSection');
@@ -36,6 +37,7 @@
         const isMembers = name === 'members';
         const isExpenses = name === 'expenses';
         const isManagement = name === 'management';
+        const isPermissions = name === 'permissions';
         const isReports = name === 'reports';
         const isFeedback = name === 'feedback';
         const isAttendance = name === 'attendance';
@@ -49,10 +51,11 @@
         setHidden(analyticsSection, !isDashboard || !window.topGymAuth?.isOwner?.());
         setHidden(reportsSection, !isReports);
         setHidden(feedbackSection, !isFeedback);
+        setHidden(permissionsSection, !isPermissions);
         setHidden(attendanceSection, !isAttendance);
         setHidden(librarySection, !isLibrary);
         setHidden(traineesSection, !isTrainees);
-        setHidden(workspace, isDashboard || isExpenses || isReports || isManagement || isAttendance || isLibrary || isTrainees || isFeedback);
+        setHidden(workspace, isDashboard || isExpenses || isReports || isManagement || isPermissions || isAttendance || isLibrary || isTrainees || isFeedback);
         setHidden(membersSection, !isMembers);
 
         document.querySelectorAll('[data-page-tab]').forEach((button) => {

@@ -27,6 +27,117 @@
         element.textContent = '';
     }
 
+    function permissionValueAllowed(user, value) {
+        const required = String(value || '').split(',').map((item) => item.trim()).filter(Boolean);
+        return !required.length || required.every((code) => permissions.hasPermission(user, code));
+    }
+
+    function annotatePermissionControls() {
+        const idPermissions = {
+            topAddMemberButton: 'members.create,memberships.create,payments.create',
+            addMemberButton: 'members.create,memberships.create,payments.create',
+            topPricingButton: 'pricing.read',
+            pricingButton: 'pricing.read',
+            membershipTypesButton: 'pricing.read',
+            libraryAddButton: 'library.create',
+            attendanceCheckInButton: 'attendance.check_in',
+            attendanceCheckOutButton: 'attendance.check_out',
+            dayPassSaveButton: 'day_passes.create,payments.create',
+            dashboardDayPassAdd: 'day_passes.create,payments.create',
+            dashboardDayPassManage: 'day_passes.read',
+            addExpenseButton: 'finance.create',
+            expenseSave: 'finance.create',
+            addMembershipPlanButton: 'pricing.create',
+            addMembershipTypeButton: 'pricing.create',
+            pricingSave: 'pricing.update',
+            dayPassPricingSave: 'pricing.update',
+            dashboardPrintPricingButton: 'pricing.read',
+            reportsExportButton: 'reports.export',
+            backupButton: 'management.backup.create',
+            addExpenseFromTabButton: 'finance.create'
+        };
+        Object.entries(idPermissions).forEach(([id, code]) => {
+            const element = $(id);
+            if (element && !element.dataset.requiredPermission) element.dataset.requiredPermission = code;
+        });
+        const setPermission = (element, code) => {
+            if (element && code && !element.dataset.requiredPermission) element.dataset.requiredPermission = code;
+        };
+        document.querySelectorAll('[data-member-coaching-action]').forEach((element) => {
+            const action = element.dataset.memberCoachingAction || '';
+            const permission = action === 'profile' || action.startsWith('print-') || action.startsWith('pdf-')
+                ? 'coaching.read'
+                : action.startsWith('edit-') ? 'coaching.update'
+                    : action.startsWith('delete-') ? 'coaching.delete'
+                        : action === 'delete' ? 'coaching.delete' : 'coaching.create';
+            setPermission(element, permission);
+        });
+        document.querySelectorAll('[data-coaching-action]').forEach((element) => {
+            const action = element.dataset.coachingAction || '';
+            const permission = action === 'profile' || action === 'toggle-more'
+                ? 'coaching.read'
+                : action === 'delete-diet' ? 'coaching.delete'
+                    : ['workout', 'diet'].includes(action) ? 'coaching.create' : '';
+            setPermission(element, permission);
+        });
+        document.querySelectorAll('[data-profile-action], [data-measurement-action], [data-checkin-action]').forEach((element) => {
+            const action = element.dataset.profileAction || element.dataset.measurementAction || element.dataset.checkinAction || '';
+            const permission = action === 'subscribe'
+                ? 'memberships.create,payments.create'
+                : action === 'edit-client'
+                    ? 'coaching.update'
+                    : action === 'profile' || action.startsWith('print-') || action.startsWith('pdf-')
+                        ? 'coaching.read'
+                    : ['delete', 'delete-diet', 'delete-measurement'].includes(action)
+                        ? 'coaching.delete'
+                        : ['edit', 'edit-workout', 'edit-diet', 'edit-measurement'].includes(action)
+                            ? 'coaching.update' : 'coaching.create';
+            setPermission(element, permission);
+        });
+        document.querySelectorAll('[data-builder-action]').forEach((element) => setPermission(element, 'coaching.update'));
+        document.querySelectorAll('[data-expense-action="edit"]').forEach((element) => setPermission(element, 'finance.update'));
+        document.querySelectorAll('[data-expense-action="delete"]').forEach((element) => setPermission(element, 'finance.delete'));
+        document.querySelectorAll('[data-library-action="details"]').forEach((element) => setPermission(element, 'library.read'));
+        document.querySelectorAll('[data-library-action="edit"]').forEach((element) => setPermission(element, 'library.update'));
+        document.querySelectorAll('[data-library-action="delete"]').forEach((element) => setPermission(element, 'library.delete'));
+        document.querySelectorAll('[data-day-pass-whatsapp]').forEach((element) => setPermission(element, 'day_passes.whatsapp'));
+        document.querySelectorAll('[data-day-pass-edit]').forEach((element) => setPermission(element, 'day_passes.update'));
+        document.querySelectorAll('[data-day-pass-delete], [data-day-pass-void]').forEach((element) => setPermission(element, 'day_passes.delete'));
+        document.querySelectorAll('[data-alert-whatsapp], [data-report-whatsapp]').forEach((element) => setPermission(element, 'members.alerts'));
+        document.querySelectorAll('[data-day-pass-report-whatsapp]').forEach((element) => setPermission(element, 'day_passes.whatsapp'));
+        document.querySelectorAll('[data-report-member-action="details"]').forEach((element) => setPermission(element, 'members.read'));
+        document.querySelectorAll('[data-report-member-action="payment"]').forEach((element) => setPermission(element, 'payments.create'));
+        document.querySelectorAll('[data-report-diet-id]').forEach((element) => setPermission(element, 'coaching.delete'));
+        document.querySelectorAll('[data-report-coaching-action]').forEach((element) => setPermission(element, 'coaching.read'));
+        document.querySelectorAll('[data-report-backup-id]').forEach((element) => setPermission(element, 'management.backup.read'));
+        document.querySelectorAll('[data-report-backup-delete-id]').forEach((element) => setPermission(element, 'management.backup.delete'));
+    }
+
+    function applyPermissionControls(user) {
+        annotatePermissionControls();
+        document.querySelectorAll('[data-required-permission]').forEach((element) => {
+            const allowed = user?.role === 'Owner' || permissionValueAllowed(user, element.dataset.requiredPermission);
+            element.hidden = !allowed;
+            element.toggleAttribute('aria-hidden', !allowed);
+            if (!allowed && 'disabled' in element) element.disabled = true;
+        });
+        document.querySelectorAll('[data-financial-data]').forEach((element) => {
+            const allowed = user?.role === 'Owner' || permissions.hasPermission(user, 'finance.read');
+            element.hidden = !allowed;
+            element.toggleAttribute('aria-hidden', !allowed);
+        });
+        const financeAllowed = user?.role === 'Owner' || permissions.hasPermission(user, 'finance.read');
+        [
+            $('dashboardDayPassTotal')?.closest('.dashboard-day-pass-kpi'),
+            $('dayPassPriceBox'),
+            $('dayPassTableWrap'),
+            $('dashboardDayPassTableWrap')
+        ].filter(Boolean).forEach((element) => {
+            element.hidden = !financeAllowed;
+            element.toggleAttribute('aria-hidden', !financeAllowed);
+        });
+    }
+
     function loadAuthVisuals() {
         document.querySelectorAll('[data-auth-lazy-src]').forEach((image) => {
             if (!image.getAttribute('src')) image.setAttribute('src', image.dataset.authLazySrc);
@@ -81,6 +192,7 @@
         const tabs = permissions.tabsForUser(user);
         document.body.dataset.topGymRole = user?.role || '';
         document.body.dataset.topGymUserId = user?.id ? String(user.id) : '';
+        document.body.dataset.topGymFinanceVisible = String(permissions.hasPermission(user, 'finance.read'));
         const accountBar = $('authAccountBar');
         const pageTabs = $('pageTabs');
         if (accountBar && pageTabs && accountBar.parentElement !== pageTabs) pageTabs.appendChild(accountBar);
@@ -109,8 +221,9 @@
         if (accountEmail) accountEmail.textContent = user?.email || '—';
         if (accountAvatar) accountAvatar.textContent = initials(user?.name);
         if (!isOwner && !permissions.canAccessTab(user, window.location.hash.slice(1))) {
-            window.location.hash = '#members';
+            window.location.hash = `#${permissions.firstAccessibleTab(user)}`;
         }
+        applyPermissionControls(user);
     }
 
     function showAuthenticated(user) {
@@ -246,12 +359,19 @@
     window.topGymAuth = {
         api: requestApi,
         canAccessTab: (tab) => permissions.canAccessTab(state.user, tab),
+        hasPermission: (code) => permissions.hasPermission(state.user, code),
+        getPermissions: () => [...(state.user?.permissions || [])],
         getUser: () => state.user,
         isOwner: () => state.user?.role === 'Owner',
         isReady: () => state.ready,
         logout: () => $('authLogoutButton')?.click(),
         refresh: checkSession
     };
+
+    const permissionObserver = new MutationObserver(() => {
+        if (state.ready) applyPermissionControls(state.user);
+    });
+    permissionObserver.observe(document.body, { childList: true, subtree: true });
 
     window.fetch = async (...args) => {
         const input = args[0];

@@ -345,6 +345,7 @@
                 button.type = 'button';
                 button.className = 'btn btn-small attendance-checkout-button';
                 button.dataset.attendanceCheckout = 'true';
+                button.dataset.requiredPermission = 'attendance.check_out';
                 button.dataset.phone = record?.phone || '';
                 button.textContent = 'تسجيل انصراف';
                 cell.append(button);

@@ -311,7 +311,7 @@
 
     async function loadAnalytics(period = state.period) {
         const existingPanel = $('dashboardAnalytics');
-        if (!window.topGymAuth?.isOwner?.()) {
+        if (!window.topGymAuth?.isOwner?.() || !window.topGymAuth?.hasPermission?.('finance.read')) {
             if (existingPanel) existingPanel.hidden = true;
             return;
         }

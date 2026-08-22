@@ -48,6 +48,7 @@
             <button class="page-tab" type="button" data-page-tab="members" aria-selected="false"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg><span>المشتركون</span></button>
                         <button class="page-tab" type="button" data-page-tab="trainees" aria-selected="false"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M3 20a6 6 0 0 1 12 0M16 4.5a3 3 0 0 1 0 6M17 14a4 4 0 0 1 4 4"/><path d="M18 8h3M19.5 6.5v3"/></svg><span>متدرب خارجى</span></button>
             <button class="page-tab" type="button" data-page-tab="management" aria-selected="false"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v18M3 12h18"/><circle cx="12" cy="12" r="9"/></svg><span>الأسعار والعضويات</span></button>
+            <button class="page-tab" type="button" data-page-tab="permissions" aria-selected="false"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 20 6v5c0 5-3.4 8.5-8 10-4.6-1.5-8-5-8-10V6l8-3Z"/><path d="m9 12 2 2 4-4"/></svg><span>صلاحيات الحسابات</span></button>
             <button class="page-tab" type="button" data-page-tab="attendance" aria-selected="false"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h8M8 11h3M8 15h8"/><path d="m14 11 1.5 1.5L18 10"/></svg><span>الحضور والانصراف</span></button>
             <button class="page-tab" type="button" data-page-tab="expenses" aria-selected="false"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 9h10M7 13h5"/></svg><span>المصروفات</span></button>
             <button class="page-tab" type="button" data-page-tab="library" aria-selected="false"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v16H6.5A2.5 2.5 0 0 0 4 21.5z"/><path d="M4 5.5v16M8 7h8M8 11h6"/></svg><span>المكتبة</span></button>
@@ -118,7 +119,7 @@
                 <div class="alerts-list" id="alertsList"><div class="empty">جاري تحميل التنبيهات…</div></div>
             </section>
 
-            <section class="monthly-finance-card panel" id="monthlyFinanceCard" aria-labelledby="monthlyFinanceTitle">
+            <section class="monthly-finance-card panel" id="monthlyFinanceCard" data-financial-data="true" aria-labelledby="monthlyFinanceTitle">
                 <div class="monthly-finance-head">
                     <div class="monthly-finance-heading">
                         <span class="monthly-finance-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V5"/><path d="M4 19h16"/><path d="m7 15 3-4 3 2 5-6"/></svg></span>
@@ -132,17 +133,17 @@
                         <strong class="monthly-finance-value" id="monthlySubscriptionsTotal">0.00 ج.م</strong>
                         <small id="monthlySubscriptionsMeta">الاشتراكات المدفوعة خلال الشهر</small>
                     </article>
-                    <article class="monthly-finance-metric day-passes">
+                    <article class="monthly-finance-metric day-passes" data-financial-data="true">
                         <span class="monthly-finance-label">الحصص اليومية</span>
                         <strong class="monthly-finance-value" id="monthlyDayPassesTotal">0.00 ج.م</strong>
                         <small id="monthlyDayPassesMeta">لا توجد حصص مسجلة</small>
                     </article>
-                    <article class="monthly-finance-metric expenses">
+                    <article class="monthly-finance-metric expenses" data-financial-data="true">
                         <div class="monthly-finance-metric-top"><span class="monthly-finance-label">المصروفات</span><button class="btn btn-light btn-small add-expense-button" id="addExpenseButton" type="button"><span aria-hidden="true">+</span> إضافة مصروف</button></div>
                         <strong class="monthly-finance-value" id="monthlyExpensesTotal">0.00 ج.م</strong>
                         <small id="monthlyExpensesMeta">لا توجد مصروفات مسجلة</small>
                     </article>
-                    <article class="monthly-finance-metric net">
+                    <article class="monthly-finance-metric net" data-financial-data="true">
                         <span class="monthly-finance-label">المتبقي / صافي الشهر</span>
                         <strong class="monthly-finance-value" id="monthlyNetTotal">0.00 ج.م</strong>
                         <small>إجمالي الإيرادات − إجمالي المصروفات</small>
@@ -169,7 +170,7 @@
             </section>
             </section>
 
-            <section class="dashboard-analytics panel" id="dashboardAnalytics" hidden aria-labelledby="dashboardAnalyticsTitle"></section>
+            <section class="dashboard-analytics panel" id="dashboardAnalytics" data-financial-data="true" hidden aria-labelledby="dashboardAnalyticsTitle"></section>
 
             <section class="reports-section panel" id="reportsSection" hidden aria-labelledby="reportsTitle"></section>
 
@@ -192,6 +193,33 @@
                 <div class="member-feedback-meta" id="memberFeedbackMeta" aria-live="polite"></div>
                 <div class="member-feedback-table-wrap" id="memberFeedbackList"><div class="loading">جاري تحميل تقييمات المشتركين…</div></div>
                 <div class="member-feedback-pagination" id="memberFeedbackPagination" hidden></div>
+            </section>
+
+            <section class="permissions-section panel" id="permissionsSection" hidden aria-labelledby="permissionsTitle">
+                <header class="permissions-header">
+                    <div class="permissions-heading">
+                        <span class="permissions-heading-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 20 6v5c0 5-3.4 8.5-8 10-4.6-1.5-8-5-8-10V6l8-3Z"/><path d="m9 12 2 2 4-4"/></svg></span>
+                        <div><span class="permissions-kicker">Owner فقط</span><h3 id="permissionsTitle">صلاحيات حسابات Assistant</h3><p id="permissionsDescription">تحكم في فتح كل شاشة والعمليات المتاحة لكل حساب بشكل مستقل.</p></div>
+                    </div>
+                    <span class="permissions-owner-badge">لا يمكن تعديل صلاحيات Owner</span>
+                </header>
+                <div class="permissions-layout">
+                    <aside class="permissions-users-panel" aria-labelledby="permissionsUsersTitle">
+                        <div class="permissions-subheading"><div><span>الحسابات</span><h4 id="permissionsUsersTitle">اختر Assistant</h4></div><span class="permissions-users-count" id="permissionsUsersCount">0</span></div>
+                        <div class="permissions-user-list" id="permissionsUserList"><div class="loading">جاري تحميل الحسابات…</div></div>
+                    </aside>
+                    <section class="permissions-editor-panel" aria-labelledby="permissionsSelectedUser">
+                        <div class="permissions-editor-head"><div><span class="permissions-editor-kicker">مصفوفة الوصول</span><h4 id="permissionsSelectedUser">اختر حسابًا لعرض صلاحياته</h4><p id="permissionsSelectedMeta">كل تعديل يُسجل في سجل التدقيق ويُلغي جلسة الحساب المستهدف.</p></div><span class="permissions-readonly-badge" id="permissionsReadonlyBadge" hidden>قراءة فقط</span></div>
+                        <form id="permissionsForm" novalidate>
+                            <div class="permissions-grid" id="permissionsGrid"><div class="permissions-empty-state" id="permissionsEmpty">لا توجد حسابات Assistant متاحة.</div></div>
+                            <div class="permissions-editor-footer">
+                                <label class="permissions-reason-field" for="permissionsReason"><span>سبب التعديل *</span><textarea id="permissionsReason" rows="2" maxlength="500" required placeholder="مثال: منح صلاحية التقارير لمتابعة الحضور الأسبوعي"></textarea></label>
+                                <div class="permissions-form-actions"><button class="btn btn-light" id="permissionsReset" type="button">استعادة الافتراضي</button><button class="btn btn-primary" id="permissionsSave" type="submit" disabled>حفظ الصلاحيات</button></div>
+                            </div>
+                            <p class="permissions-status" id="permissionsStatus" role="status" aria-live="polite" hidden></p>
+                        </form>
+                    </section>
+                </div>
             </section>
 
             <section class="management-tab-panel panel" id="managementSection" hidden>
@@ -523,13 +551,13 @@
 
     <!-- SweetAlert2 is optional and loaded during idle time by feature-loader. -->
     <script defer src="/js/core/api.js?v=1"></script>
-    <script defer src="/js/core/permissions.js?v=1"></script>
+    <script defer src="/js/core/permissions.js?v=2"></script>
     <script defer src="/js/core/state.js?v=1"></script>
-    <script defer src="/js/auth-ui.js?v=6"></script>
+    <script defer src="/js/auth-ui.js?v=7"></script>
     <script defer src="/js/app.js?v=feature-expansion10-alert-contact"></script>
     <script defer src="/js/feature-loader.js?v=6"></script>
     <script defer src="/js/page-tabs.js?v=9"></script>
-    <script defer src="/js/smart-assistant.js?v=2"></script>
+    <script defer src="/js/smart-assistant.js?v=3"></script>
     <script defer src="/js/button-loading.js"></script>
     <script defer src="/js/pagination.js"></script>
     <script defer src="/js/table-cards.js?v=2"></script>

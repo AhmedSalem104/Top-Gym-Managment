@@ -1,6 +1,6 @@
 'use strict';
 
-function createAuthController({ authService, allowLoginAttempt }) {
+function createAuthController({ authService, permissionService, allowLoginAttempt }) {
     return {
         session: async (request, response) => {
             const setup = await authService.ensureAuthReady();
@@ -40,6 +40,41 @@ function createAuthController({ authService, allowLoginAttempt }) {
 
         setStatus: async (request, response) => {
             response.json({ user: await authService.setAssistantStatus(request.params.id, request.body?.status) });
+        },
+
+        permissionsCatalog: async (_request, response) => {
+            response.json({ permissions: permissionService.catalog() });
+        },
+
+        userPermissions: async (request, response) => {
+            response.json(await permissionService.getUserPermissionState(request.params.id));
+        },
+
+        updateUserPermissions: async (request, response) => {
+            const result = await permissionService.updateUserPermissions(
+                request.params.id,
+                request.auth.id,
+                request.body?.permissions,
+                {
+                    reason: request.body?.reason,
+                    ipAddress: request.ip || request.socket?.remoteAddress,
+                    userAgent: request.get('user-agent')
+                }
+            );
+            response.json(result);
+        },
+
+        resetUserPermissions: async (request, response) => {
+            const result = await permissionService.resetUserPermissions(
+                request.params.id,
+                request.auth.id,
+                {
+                    reason: request.body?.reason,
+                    ipAddress: request.ip || request.socket?.remoteAddress,
+                    userAgent: request.get('user-agent')
+                }
+            );
+            response.json(result);
         }
     };
 }

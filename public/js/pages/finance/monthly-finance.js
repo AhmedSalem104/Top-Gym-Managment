@@ -7,6 +7,10 @@
     let financeRequest = null;
     let financeData = null;
 
+    function canReadFinance() {
+        return window.topGymAuth?.isOwner?.() === true || window.topGymAuth?.hasPermission?.('finance.read') === true;
+    }
+
     function isFinanceMutation(url, method) {
         if (method === 'GET' || method === 'HEAD') return false;
         return /^\/api\/(members(?:\/|$)|memberships(?:\/|$)|expenses(?:\/|$))/.test(url);
@@ -22,7 +26,7 @@
     function queueRefresh() {
         window.clearTimeout(refreshTimer);
         refreshTimer = window.setTimeout(() => {
-            if (window.topGymAuth?.isOwner?.() && isFinanceTabVisible()) {
+            if (canReadFinance() && isFinanceTabVisible()) {
                 loadFinance();
                 window.topGymRefreshDashboardAnalytics?.();
             }
@@ -84,7 +88,7 @@
             const item = items[index];
             if (!item) return;
             article.dataset.expenseId = String(item.id);
-            article.insertAdjacentHTML('beforeend', `<div class="monthly-expense-actions"><button class="monthly-expense-action edit" type="button" data-expense-action="edit" data-expense-id="${item.id}" title="تعديل المصروف" aria-label="تعديل المصروف"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z"/></svg></button><button class="monthly-expense-action delete" type="button" data-expense-action="delete" data-expense-id="${item.id}" title="حذف المصروف" aria-label="حذف المصروف"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg></button></div>`);
+            article.insertAdjacentHTML('beforeend', `<div class="monthly-expense-actions"><button class="monthly-expense-action edit" type="button" data-expense-action="edit" data-required-permission="finance.update" data-expense-id="${item.id}" title="تعديل المصروف" aria-label="تعديل المصروف"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z"/></svg></button><button class="monthly-expense-action delete" type="button" data-expense-action="delete" data-required-permission="finance.delete" data-expense-id="${item.id}" title="حذف المصروف" aria-label="حذف المصروف"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg></button></div>`);
         });
     }
 
@@ -198,7 +202,7 @@
     }
 
     async function loadFinance() {
-        if (!window.topGymAuth?.isOwner?.() || !isFinanceTabVisible()) return null;
+        if (!canReadFinance() || !isFinanceTabVisible()) return null;
         if (!$('monthlyFinanceCard')) return;
         if (financeRequest) return financeRequest;
         $('monthlyFinanceStatus').textContent = 'جاري التحديث…';
@@ -337,11 +341,11 @@
                 if (button.dataset.expenseAction === 'delete') deleteExpense(id);
             });
         }
-        const startFinance = () => { if (window.topGymAuth?.isOwner?.() && isFinanceTabVisible()) void loadFinance(); };
+        const startFinance = () => { if (canReadFinance() && isFinanceTabVisible()) void loadFinance(); };
         if (window.topGymAuthReady) window.topGymAuthReady.then(startFinance).catch(() => {});
         else startFinance();
         window.addEventListener('topgym:tab-changed', (event) => {
-            if (['dashboard', 'expenses'].includes(event.detail?.name) && window.topGymAuth?.isOwner?.()) {
+            if (['dashboard', 'expenses'].includes(event.detail?.name) && canReadFinance()) {
                 void loadFinance();
             }
         });

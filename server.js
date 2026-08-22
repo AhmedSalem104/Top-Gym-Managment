@@ -25,6 +25,7 @@ const membershipCodeService = require('./src/services/membership-code-service');
 const memberPortalService = require('./src/services/member-portal-service');
 const memberFeedbackService = require('./src/services/member-feedback-service');
 const authService = require('./src/services/auth-service');
+const permissionService = require('./src/services/permission-service');
 const { ensureAuthReady } = authService;
 
 const publicDirectory = path.join(__dirname, 'public');
@@ -37,6 +38,7 @@ app.use('/api', sensitiveRateLimit);
 app.use('/api/member-portal', membershipPortalRateLimit);
 app.use('/api', createAuthApiMiddleware({
     authService,
+    permissionService,
     isAuthorizedCronRequest: (request) => isAuthorizedCronRequest(request, { config })
 }));
 
@@ -92,6 +94,7 @@ function renderQrMemberPage(member) {
 registerRoutes(app, {
     asyncRoute,
     authService,
+    permissionService,
     ownerOnly,
     allowLoginAttempt,
     backupService,

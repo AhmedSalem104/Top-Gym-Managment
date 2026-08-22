@@ -9,6 +9,7 @@ const {
     canAccessRoleRequest,
     permissionsForRole
 } = require('../permissions/role-permissions');
+const permissionService = require('./permission-service');
 const userRepository = require('../repositories/user.repository');
 const sessionRepository = require('../repositories/session.repository');
 
@@ -237,6 +238,13 @@ function safeUser(row) {
     };
 }
 
+async function safeUserWithPermissions(row) {
+    const user = safeUser(row);
+    if (!user) return null;
+    user.permissions = await permissionService.getEffectivePermissions(user.id, user.role);
+    return user;
+}
+
 async function ensureAuthTables() {
     const pool = await getPool();
     await pool.request().batch(AUTH_SCHEMA_SQL);
@@ -272,6 +280,10 @@ async function ensureAuthReady() {
     if (!authReadyPromise) {
         authReadyPromise = ensureAuthTables()
             .then(ensureOwnerAccount)
+            .then(async (setup) => {
+                await permissionService.ensurePermissionTables();
+                return setup;
+            })
             .catch((error) => {
                 authReadyPromise = null;
                 throw error;
@@ -308,7 +320,7 @@ async function login(body = {}, request) {
         ipAddress: String(request?.ip || request?.socket?.remoteAddress || '').slice(0, 64),
         userAgent: String(request?.get?.('user-agent') || '').slice(0, 512)
     });
-    return { token, expiresAt, user: safeUser(user) };
+    return { token, expiresAt, user: await safeUserWithPermissions(user) };
 }
 
 async function getSessionUser(token) {
@@ -318,7 +330,7 @@ async function getSessionUser(token) {
     const row = result.recordset[0];
     if (!row) return null;
     await sessionRepository.touch(row.session_id).catch(() => {});
-    return safeUser(row);
+    return safeUserWithPermissions(row);
 }
 
 async function revokeSession(token) {
@@ -330,7 +342,7 @@ async function revokeSession(token) {
 async function listUsers() {
     await ensureAuthReady();
     const result = await userRepository.list();
-    return result.recordset.map(safeUser);
+    return Promise.all(result.recordset.map(safeUserWithPermissions));
 }
 
 async function createAssistant(body = {}) {
@@ -341,7 +353,8 @@ async function createAssistant(body = {}) {
     const passwordHash = await hashPassword(password);
     try {
         const result = await userRepository.createAssistant({ fullName: name, email, passwordHash });
-        return safeUser(result.recordset[0]);
+        await permissionService.seedAssistantPermissions(result.recordset[0].id);
+        return safeUserWithPermissions(result.recordset[0]);
     } catch (error) {
         if (error.number === 2601 || error.number === 2627) throw authError('هذا البريد الإلكتروني مستخدم بالفعل.', 409, 'DUPLICATE_USER_EMAIL');
         throw error;
@@ -369,7 +382,7 @@ async function updateUser(id, body = {}) {
         throw error;
     }
     const updated = await userRepository.findPublicById(userId);
-    return safeUser(updated.recordset[0]);
+    return safeUserWithPermissions(updated.recordset[0]);
 }
 
 async function setAssistantStatus(id, status) {
@@ -383,7 +396,7 @@ async function setAssistantStatus(id, status) {
     if (user.role !== 'Assistant') throw authError('لا يمكن تعطيل حساب المالك.', 400, 'OWNER_STATUS_PROTECTED');
     await userRepository.updateStatus({ id: userId, status: nextStatus });
     const updated = await userRepository.findPublicById(userId);
-    return safeUser(updated.recordset[0]);
+    return safeUserWithPermissions(updated.recordset[0]);
 }
 
 function canAccess(user, request) {

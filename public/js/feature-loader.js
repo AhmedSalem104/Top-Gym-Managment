@@ -51,6 +51,10 @@
             styles: [],
             scripts: ['/js/pages/management/backup.js?v=9', '/js/pages/management/auth-users.js?v=1']
         },
+        permissions: {
+            styles: [],
+            scripts: ['/js/pages/management/permissions.js?v=1']
+        },
         attendance: {
             styles: [],
             scripts: ['/js/pages/attendance/attendance.js?v=9']
@@ -134,7 +138,7 @@
         window.__topGymDashboardAnalyticsScheduled = true;
         const start = async () => {
             if (window.topGymAuthReady) await window.topGymAuthReady.catch(() => null);
-            if (!dashboardIsRequested() || !window.topGymAuth?.canAccessTab?.('dashboard')) {
+            if (!dashboardIsRequested() || !window.topGymAuth?.canAccessTab?.('dashboard') || (!window.topGymAuth?.isOwner?.() && !window.topGymAuth?.hasPermission?.('finance.read'))) {
                 window.__topGymDashboardAnalyticsScheduled = false;
                 return;
             }

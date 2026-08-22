@@ -17,6 +17,7 @@ const { registerMemberFeedbackRoutes } = require('./member-feedback.routes');
 function registerRoutes(app, {
     asyncRoute,
     authService,
+    permissionService,
     ownerOnly,
     allowLoginAttempt,
     backupService,
@@ -41,7 +42,7 @@ function registerRoutes(app, {
         response.json({ ok: true, database: 'connected' });
     }));
 
-    registerAuthRoutes(app, { authService, asyncRoute, ownerOnly, allowLoginAttempt });
+    registerAuthRoutes(app, { authService, permissionService, asyncRoute, ownerOnly, allowLoginAttempt });
     registerBackupRoutes(app, { backupService, asyncRoute, isAuthorizedCronRequest });
     registerFinanceRoutes(app, { financeService, asyncRoute });
     registerDashboardRoutes(app, { memberService, analyticsService, asyncRoute });

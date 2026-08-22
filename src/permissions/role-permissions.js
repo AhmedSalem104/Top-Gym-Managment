@@ -1,6 +1,8 @@
 'use strict';
 
 const { ROLES } = require('./roles');
+const { hasPermission, permissionsForRole: defaultPermissionsForRole } = require('./permissions');
+const { permissionForRequest } = require('./route-permissions');
 
 const ROLE_PERMISSIONS = Object.freeze({
     [ROLES.OWNER]: Object.freeze(['*']),
@@ -33,13 +35,17 @@ function assistantPathAllowed(request) {
 }
 
 function permissionsForRole(role) {
-    return [...(ROLE_PERMISSIONS[role] || [])];
+    if (role === ROLES.OWNER) return ['*'];
+    return defaultPermissionsForRole(role);
 }
 
 function canAccessRoleRequest(user, request) {
     if (!user) return false;
     if (user.role === ROLES.OWNER) return true;
-    return user.role === ROLES.ASSISTANT && assistantPathAllowed(request);
+    if (user.role !== ROLES.ASSISTANT) return false;
+    const requirement = permissionForRequest(request);
+    if (!requirement || requirement.ownerOnly) return false;
+    return requirement.all.every((permission) => hasPermission(user, permission));
 }
 
 module.exports = {

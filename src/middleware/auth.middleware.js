@@ -1,5 +1,8 @@
 'use strict';
 
+const { authorizeRequest, requirePermission } = require('./permission.middleware');
+const { protectFinancialResponse } = require('./financial-data.middleware');
+
 function isSameOriginRequest(request) {
     const origin = String(request.get('origin') || '').trim();
     if (!origin) return true;
@@ -13,7 +16,7 @@ function isSameOriginRequest(request) {
 }
 
 function createAuthApiMiddleware({ authService, isAuthorizedCronRequest }) {
-    const { canAccess, ensureAuthReady, getSessionUser, readSessionCookie } = authService;
+    const { ensureAuthReady, getSessionUser, readSessionCookie } = authService;
     return (request, response, next) => {
         const publicPath = ['/health', '/auth/login', '/auth/session', '/auth/logout', '/member-portal/lookup', '/member-portal/feedback'].includes(request.path);
         if (publicPath || (request.path === '/backup/daily' && isAuthorizedCronRequest(request))) return next();
@@ -24,8 +27,14 @@ function createAuthApiMiddleware({ authService, isAuthorizedCronRequest }) {
             .then(() => getSessionUser(readSessionCookie(request)))
             .then((user) => {
                 if (!user) return response.status(401).json({ error: 'انتهت جلسة الدخول. سجّل الدخول مرة أخرى.', code: 'AUTH_REQUIRED' });
-                if (!canAccess(user, request)) return response.status(403).json({ error: 'ليس لديك صلاحية لتنفيذ هذا الإجراء.', code: 'FORBIDDEN' });
+                if (!authorizeRequest(user, request)) {
+                    return response.status(403).json({ error: 'ليس لديك صلاحية لتنفيذ هذا الإجراء.', code: 'FORBIDDEN' });
+                }
                 request.auth = user;
+                // Field-level protection complements the route-level
+                // permission. A permitted screen cannot leak balances or
+                // payment data when finance.read is disabled.
+                protectFinancialResponse(request, response);
                 return next();
             })
             .catch(next);
@@ -33,8 +42,7 @@ function createAuthApiMiddleware({ authService, isAuthorizedCronRequest }) {
 }
 
 function ownerOnly(request, response, next) {
-    if (request.auth?.role !== 'Owner') return response.status(403).json({ error: 'هذا الإجراء متاح لمالك النظام فقط.', code: 'OWNER_REQUIRED' });
-    return next();
+    return requirePermission('__owner_only__', { ownerOnly: true })(request, response, next);
 }
 
-module.exports = { createAuthApiMiddleware, isSameOriginRequest, ownerOnly };
+module.exports = { createAuthApiMiddleware, isSameOriginRequest, ownerOnly, requirePermission };
