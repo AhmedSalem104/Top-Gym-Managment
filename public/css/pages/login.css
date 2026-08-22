@@ -6,13 +6,13 @@
   min-height: 100dvh;
   place-items: center;
   overflow: hidden;
-  padding: clamp(14px, 3vw, 32px);
+  padding: clamp(12px, 2.2vw, 24px);
   isolation: isolate;
   background-color: #020817;
   background-image:
-    linear-gradient(112deg, rgb(1 7 19 / 0.96) 0%, rgb(2 16 38 / 0.9) 45%, rgb(4 32 72 / 0.82) 100%),
-    radial-gradient(circle at 12% 18%, rgb(37 99 235 / 0.3), transparent 34%),
-    radial-gradient(circle at 88% 82%, rgb(14 165 233 / 0.18), transparent 31%),
+    linear-gradient(112deg, rgb(1 7 19 / 0.56) 0%, rgb(2 16 38 / 0.46) 45%, rgb(4 32 72 / 0.38) 100%),
+    radial-gradient(circle at 12% 18%, rgb(37 99 235 / 0.13), transparent 34%),
+    radial-gradient(circle at 88% 82%, rgb(14 165 233 / 0.09), transparent 31%),
     url("/assets/gym-background.webp");
   background-position: center;
   background-size: cover;
@@ -24,18 +24,18 @@
   inset: -4%;
   z-index: 0;
   background:
-    linear-gradient(90deg, rgb(1 7 19 / 0.22), transparent 48%, rgb(2 15 35 / 0.2)),
-    radial-gradient(circle at 50% 0%, rgb(96 165 250 / 0.1), transparent 42%);
+    linear-gradient(90deg, rgb(1 7 19 / 0.08), transparent 48%, rgb(2 15 35 / 0.06)),
+    radial-gradient(circle at 50% 0%, rgb(96 165 250 / 0.07), transparent 42%);
   content: "";
-  filter: blur(3px);
+  filter: none;
   pointer-events: none;
-  transform: scale(1.03);
+  transform: none;
 }
 
 .auth-shell {
   position: relative;
   z-index: var(--z-content);
-  width: min(520px, 100%);
+  width: min(460px, 100%);
   margin: auto;
 }
 
@@ -45,7 +45,7 @@
   min-height: 0;
   overflow: hidden;
   border: 1px solid rgb(148 163 184 / 0.32);
-  border-radius: 24px;
+  border-radius: 20px;
   background: #f8fbff;
   box-shadow: 0 32px 82px rgb(0 0 0 / 0.42), 0 0 0 1px rgb(96 165 250 / 0.1);
 }
@@ -84,26 +84,26 @@
   z-index: var(--z-content);
   display: grid;
   justify-items: center;
-  gap: var(--space-2);
-  padding: 44px 32px 38px;
+  gap: 6px;
+  padding: 30px 24px 26px;
   text-align: center;
 }
 
 .auth-brand-mark {
   display: grid;
-  width: 72px;
-  height: 72px;
+  width: 60px;
+  height: 60px;
   place-items: center;
   border: 1px solid rgb(191 219 254 / 0.42);
-  border-radius: 18px;
+  border-radius: 16px;
   background: linear-gradient(145deg, #3b82f6, #1d4ed8);
   color: #fff;
   box-shadow: 0 14px 32px rgb(37 99 235 / 0.34), inset 0 1px 0 rgb(255 255 255 / 0.22);
 }
 
 .auth-brand-mark svg {
-  width: 36px;
-  height: 36px;
+  width: 30px;
+  height: 30px;
 }
 
 .auth-brand-copy {
@@ -115,7 +115,7 @@
   direction: ltr;
   color: #fff;
   font-family: var(--font-latin);
-  font-size: 2rem;
+  font-size: 1.75rem;
   font-weight: var(--weight-extrabold);
   letter-spacing: 0.04em;
 }
@@ -130,14 +130,14 @@
 
 .auth-brand-copy > span {
   color: #c5d3e7;
-  font-size: var(--font-sm);
+  font-size: var(--font-xs);
 }
 
 .auth-form-panel {
   position: relative;
   display: block;
   min-width: 0;
-  padding: 36px 40px 32px;
+  padding: 28px 30px 24px;
   background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
 }
 
@@ -155,14 +155,14 @@
 .auth-form {
   display: grid;
   width: 100%;
-  gap: var(--space-4);
+  gap: var(--space-3);
   margin-inline: auto;
 }
 
 .auth-form-heading {
   display: grid;
   gap: 4px;
-  margin-bottom: var(--space-3);
+  margin-bottom: var(--space-2);
   text-align: right;
 }
 
@@ -174,7 +174,7 @@
 
 .auth-form-heading h2 {
   color: #0f172a;
-  font-size: 36px;
+  font-size: 30px;
   font-weight: var(--weight-extrabold);
   line-height: 1.25;
 }
@@ -206,7 +206,7 @@
 .auth-form .auth-input-wrap > input:not([type="checkbox"]):not([type="radio"]),
 .auth-form .auth-password-wrap > input:not([type="checkbox"]):not([type="radio"]) {
   box-sizing: border-box;
-  min-height: 58px;
+  min-height: 54px;
   border: 1px solid #d7e3f2;
   border-radius: 12px;
   background: #fafdff;
@@ -320,7 +320,7 @@
 .auth-submit {
   position: relative;
   width: 100%;
-  min-height: 58px;
+  min-height: 54px;
   border-radius: 12px;
   background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
   box-shadow: 0 12px 26px rgb(37 99 235 / 0.24), inset 0 1px 0 rgb(255 255 255 / 0.16);
@@ -364,7 +364,7 @@
 }
 
 .auth-footer {
-  margin: var(--space-5) 0 0;
+  margin: var(--space-3) 0 0;
   color: var(--color-text-muted);
   font-family: var(--font-body);
   font-size: 13px;
@@ -379,7 +379,7 @@
 @media (max-width: 600px) {
   .auth-screen {
     place-items: center;
-    padding: 18px 14px;
+    padding: 14px 12px;
   }
 
   .auth-card {
@@ -410,17 +410,17 @@
   }
 
   .auth-form-panel {
-    padding: 28px 20px 24px;
+    padding: 22px 18px 20px;
   }
 
   .auth-form-heading h2 {
-    font-size: 29px;
+    font-size: 27px;
   }
 
   .auth-form .auth-input-wrap > input:not([type="checkbox"]):not([type="radio"]),
   .auth-form .auth-password-wrap > input:not([type="checkbox"]):not([type="radio"]),
   .auth-submit {
-    min-height: 56px;
+    min-height: 52px;
   }
 }
 
