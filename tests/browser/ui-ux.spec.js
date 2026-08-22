@@ -7,6 +7,7 @@ const tabs = [
     ['members', '#membersSection'],
     ['trainees', '#traineesSection'],
     ['management', '#managementSection'],
+    ['permissions', '#permissionsSection'],
     ['attendance', '#attendanceSection'],
     ['expenses', '#expensesSection'],
     ['library', '#librarySection'],

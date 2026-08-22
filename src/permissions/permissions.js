@@ -189,7 +189,7 @@ const TAB_PERMISSION_CODES = Object.freeze({
     library: PERMISSIONS.LIBRARY_READ,
     reports: PERMISSIONS.REPORTS_READ,
     feedback: PERMISSIONS.FEEDBACK_READ,
-    management: 'management.users.read',
+    management: 'pricing.read',
     permissions: PERMISSIONS.PERMISSIONS_MANAGE
 });
 

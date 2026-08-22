@@ -6,7 +6,7 @@
         dashboard: 'dashboard.read',
         members: ['members.read', 'memberships.read'],
         trainees: 'trainees.read',
-        management: 'management.users.read',
+        management: 'pricing.read',
         permissions: 'permissions.manage',
         attendance: 'attendance.read',
         expenses: 'finance.read',
@@ -14,12 +14,7 @@
         reports: 'reports.read',
         feedback: 'feedback.read'
     });
-    const TAB_PERMISSION_ALTERNATIVES = Object.freeze({
-        // The management screen contains both pricing controls and the
-        // Owner-only user/backup panels. An Assistant with pricing access
-        // must still be able to open the pricing part of the screen.
-        management: ['pricing.read', 'management.users.read']
-    });
+    const TAB_PERMISSION_ALTERNATIVES = Object.freeze({});
     const LEGACY_GROUPS = Object.freeze({
         members: 'members.read',
         trainees: 'trainees.read',

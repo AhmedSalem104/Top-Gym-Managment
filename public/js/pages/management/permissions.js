@@ -89,11 +89,18 @@
             grid.innerHTML = '<div class="permissions-empty-state">اختر حساب Assistant لعرض مصفوفة الصلاحيات.</div>';
             return;
         }
-        grid.innerHTML = groupItems().map(([group, items]) => {
+        grid.innerHTML = groupItems().map(([group, items], index) => {
             const readonly = groupIsReadOnly(items);
             const options = items.map((item) => `<label class="permission-option"><input type="checkbox" data-permission-code="${escapeHtml(item.code)}"${state.grants.has(item.code) ? ' checked' : ''}><span class="permission-option-copy"><strong>${escapeHtml(item.label)}</strong><small>${escapeHtml(item.description || '')}</small></span></label>`).join('');
             const hasRead = items.some((item) => item.code.endsWith('.read'));
-            return `<section class="permission-group-card" data-permission-group="${escapeHtml(group)}"><header class="permission-group-head"><strong>${escapeHtml(GROUP_LABELS[group] || group)}</strong>${hasRead ? `<label class="permission-readonly-toggle"><input type="checkbox" data-readonly-group="${escapeHtml(group)}"${readonly ? ' checked' : ''}><span>قراءة فقط</span></label>` : '<span class="permission-group-readonly">صلاحيات مستقلة</span>'}</header>${options}</section>`;
+            const granted = items.filter((item) => state.grants.has(item.code)).length;
+            const control = hasRead
+                ? `<label class="permission-readonly-toggle"><input type="checkbox" data-readonly-group="${escapeHtml(group)}"${readonly ? ' checked' : ''}><span>قراءة فقط</span></label>`
+                : '<span class="permission-group-readonly">صلاحيات مستقلة</span>';
+            const summaryControl = hasRead
+                ? `<span class="permission-readonly-summary">${readonly ? 'قراءة فقط' : 'عمليات قابلة للتخصيص'}</span>`
+                : '<span class="permission-group-readonly">صلاحيات مستقلة</span>';
+            return `<details class="permission-group-card" data-permission-group="${escapeHtml(group)}"${index === 0 ? ' open' : ''}><summary class="permission-group-head"><span class="permission-group-title"><strong>${escapeHtml(GROUP_LABELS[group] || group)}</strong><small>${granted} من ${items.length} صلاحية مفعلة</small></span><span class="permission-group-summary"><span>${summaryControl}</span><span class="permission-group-chevron" aria-hidden="true">⌄</span></span></summary><div class="permission-group-body">${hasRead ? `<div class="permission-group-controls">${control}</div>` : ''}${options}</div></details>`;
         }).join('');
     }
 
@@ -151,6 +158,17 @@
         const read = inputs.find((input) => input.dataset.permissionCode.endsWith('.read'));
         if (read) read.checked = true;
         inputs.filter((input) => input !== read).forEach((input) => { input.checked = !enabled && input.checked; if (enabled) input.checked = false; });
+        updateGroupSummary(card);
+    }
+
+    function updateGroupSummary(card) {
+        if (!card) return;
+        const inputs = [...card.querySelectorAll('[data-permission-code]')];
+        const summary = card.querySelector('.permission-group-title small');
+        if (summary) summary.textContent = `${inputs.filter((input) => input.checked).length} من ${inputs.length} صلاحية مفعلة`;
+        const readonly = card.querySelector('[data-readonly-group]')?.checked;
+        const readonlySummary = card.querySelector('.permission-readonly-summary');
+        if (readonlySummary) readonlySummary.textContent = readonly ? 'قراءة فقط' : 'عمليات قابلة للتخصيص';
     }
 
     async function save(event) {
@@ -205,29 +223,19 @@
         }
     }
 
-    async function openManagement(openAssistant = false) {
-        if (typeof window.topGymActivateTab === 'function') {
-            await window.topGymActivateTab('management');
-            if (openAssistant) $('authAddAssistantButton')?.click();
-            return;
-        }
-        window.location.hash = '#management';
-    }
-
     function bindEvents() {
         const form = $('permissionsForm');
         if (!form || form.dataset.permissionsBound === 'true') return;
         form.dataset.permissionsBound = 'true';
         form.addEventListener('submit', save);
         $('permissionsReset')?.addEventListener('click', reset);
-        $('permissionsOpenManagement')?.addEventListener('click', () => void openManagement());
-        $('permissionsAddAssistant')?.addEventListener('click', () => void openManagement(true));
         $('permissionsUserList')?.addEventListener('click', (event) => {
             const button = event.target.closest('[data-permission-user]');
             if (button) void loadSelectedPermissions(button.dataset.permissionUser);
         });
         $('permissionsGrid')?.addEventListener('change', (event) => {
             if (event.target.matches('[data-readonly-group]')) applyReadOnly(event.target.dataset.readonlyGroup, event.target.checked);
+            updateGroupSummary(event.target.closest('[data-permission-group]'));
         });
     }
 

@@ -43,11 +43,11 @@
         },
         management: {
             tab: 'management',
-            permissionAny: ['pricing.read', 'management.users.read'],
+            permission: 'pricing.read',
             title: 'الأسعار والعضويات',
-            description: 'إدارة الباقات وأنواع العضويات، وتظهر أدوات الحسابات والنسخ للمالك فقط.',
-            help: 'تستطيع مراجعة الباقات وأنواع العضويات إذا كانت صلاحية pricing.read متاحة. إدارة حسابات Assistant والنسخ الاحتياطية لا تظهر إلا للمالك.',
-            actions: ['add-plan', 'add-membership-type', 'add-assistant', 'open-backups']
+            description: 'إدارة الباقات وأنواع العضويات والنسخ الاحتياطية حسب الصلاحيات الممنوحة.',
+            help: 'تستطيع مراجعة الباقات وأنواع العضويات إذا كانت صلاحية pricing.read متاحة. إدارة حسابات Assistant موجودة حصريًا في شاشة الصلاحيات.',
+            actions: ['add-plan', 'add-membership-type', 'open-backups']
         },
         attendance: {
             tab: 'attendance',
@@ -85,9 +85,9 @@
             tab: 'permissions',
             permission: 'permissions.manage',
             title: 'صلاحيات الحسابات',
-            description: 'مصفوفة Owner للتحكم في صلاحيات حسابات Assistant وتسجيل سبب التعديل.',
-            help: 'هذه الشاشة للمالك فقط. اختر Assistant، فعّل صلاحيات القراءة والعمليات الفعلية، اكتب سبب التعديل ثم احفظ. الحفظ يلغي جلسة الحساب المستهدف ويسجل التدقيق.',
-            actions: ['open-management']
+            description: 'إدارة حسابات Assistant وصلاحيات كل شاشة وعملياتها من مكان واحد.',
+            help: 'هذه الشاشة للمالك فقط. أنشئ أو عدّل أو عطّل حساب Assistant من قسم الحسابات، ثم اختر الحساب وخصص صلاحياته من بطاقات الشاشات. الحفظ يلغي جلسة الحساب المستهدف ويسجل التدقيق.',
+            actions: ['add-assistant']
         },
         feedback: {
             tab: 'feedback',
@@ -121,8 +121,8 @@
         'open-trainees': { label: 'فتح المتدربين الخارجيين', icon: 'users', type: 'navigate', tab: 'trainees', permission: 'trainees.read', success: 'فتحت شاشة المتدربين الخارجيين.' },
         'add-plan': { label: 'إضافة باقة', icon: 'plus', type: 'click', selector: '#addMembershipPlanButton', tab: 'management', permission: 'pricing.create', success: 'فتحت نموذج إضافة باقة.' },
         'add-membership-type': { label: 'إضافة نوع عضوية', icon: 'plus', type: 'click', selector: '#addMembershipTypeButton', tab: 'management', permission: 'pricing.create', success: 'فتحت نموذج إضافة نوع عضوية.' },
-        'add-assistant': { label: 'إضافة Assistant', icon: 'user-plus', type: 'click', selector: '#authAddAssistantButton', tab: 'management', permission: 'management.users.create', success: 'فتحت نموذج إضافة Assistant.' },
-        'open-management': { label: 'فتح الأسعار والإدارة', icon: 'settings', type: 'navigate', tab: 'management', permissionAny: ['pricing.read', 'management.users.read'], success: 'فتحت شاشة الأسعار والعضويات.' },
+        'add-assistant': { label: 'إضافة Assistant', icon: 'user-plus', type: 'click', selector: '#authAddAssistantButton', tab: 'permissions', permission: 'permissions.manage', success: 'فتحت نموذج إضافة Assistant من شاشة الصلاحيات.' },
+        'open-management': { label: 'فتح الأسعار والعضويات', icon: 'settings', type: 'navigate', tab: 'management', permission: 'pricing.read', success: 'فتحت شاشة الأسعار والعضويات.' },
         'open-permissions': { label: 'فتح الصلاحيات', icon: 'shield', type: 'navigate', tab: 'permissions', permission: 'permissions.manage', success: 'فتحت شاشة إدارة صلاحيات Assistant.' },
         'open-backups': { label: 'فتح النسخ الاحتياطية', icon: 'archive', type: 'navigate-click', tab: 'management', selector: '#backupButton', permission: 'management.backup.read', success: 'فتحت أدوات النسخ الاحتياطية المتاحة للمالك.' },
         'attendance-phone': { label: 'تسجيل بالهاتف', icon: 'phone', type: 'click', selector: '#attendancePhoneModeButton', tab: 'attendance', permission: 'attendance.check_in', success: 'فعّلت التسجيل برقم الهاتف.' },

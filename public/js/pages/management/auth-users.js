@@ -154,10 +154,10 @@
             if (button.dataset.authUserAction === 'delete') void deleteUser(user);
         });
         window.addEventListener('topgym:tab-changed', (event) => {
-            if (event.detail?.name === 'management') void loadUsers();
+            if (event.detail?.name === 'permissions') void loadUsers();
         });
     }
 
     bind();
-    if (document.querySelector('[data-page-tab="management"]')?.classList.contains('active')) void loadUsers();
+    if (document.querySelector('[data-page-tab="permissions"]')?.classList.contains('active')) void loadUsers();
 })();

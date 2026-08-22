@@ -311,7 +311,7 @@
 
     async function loadAnalytics(period = state.period) {
         const existingPanel = $('dashboardAnalytics');
-        if (!window.topGymAuth?.isOwner?.() || !window.topGymAuth?.hasPermission?.('finance.read')) {
+        if (!isDashboardActive() || !window.topGymAuth?.isOwner?.() || !window.topGymAuth?.hasPermission?.('finance.read')) {
             if (existingPanel) existingPanel.hidden = true;
             return;
         }
@@ -361,5 +361,5 @@
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initialize, { once: true });
     else initialize();
 
-    window.topGymRefreshDashboardAnalytics = () => loadAnalytics(state.period);
+    window.topGymRefreshDashboardAnalytics = () => isDashboardActive() ? loadAnalytics(state.period) : Promise.resolve();
 })();

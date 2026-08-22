@@ -49,11 +49,11 @@
         },
         management: {
             styles: [],
-            scripts: ['/js/pages/management/backup.js?v=9', '/js/pages/management/auth-users.js?v=2']
+            scripts: ['/js/pages/management/backup.js?v=9']
         },
         permissions: {
             styles: [],
-            scripts: ['/js/pages/management/permissions.js?v=2']
+            scripts: ['/js/pages/management/permissions.js?v=3', '/js/pages/management/auth-users.js?v=3']
         },
         attendance: {
             styles: [],
@@ -142,7 +142,7 @@
                 window.__topGymDashboardAnalyticsScheduled = false;
                 return;
             }
-            loadScript('/js/pages/dashboard/analytics.js?v=6', 'dashboard-analytics')
+            loadScript('/js/pages/dashboard/analytics.js?v=7', 'dashboard-analytics')
                 .catch((error) => console.warn('[TOP GYM] Dashboard analytics failed to load.', error));
         };
         if (immediate) void start();

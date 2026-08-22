@@ -48,7 +48,9 @@
         setHidden(overview, !isDashboard);
         setHidden(expensesSection, !isExpenses);
         setHidden(managementSection, !isManagement);
-        setHidden(analyticsSection, !isDashboard || !window.topGymAuth?.isOwner?.());
+        const hideAnalytics = !isDashboard || !window.topGymAuth?.isOwner?.();
+        setHidden(analyticsSection, hideAnalytics);
+        analyticsSection?.setAttribute('aria-hidden', String(hideAnalytics));
         setHidden(reportsSection, !isReports);
         setHidden(feedbackSection, !isFeedback);
         setHidden(permissionsSection, !isPermissions);

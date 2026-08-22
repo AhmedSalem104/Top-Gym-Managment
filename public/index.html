@@ -207,17 +207,17 @@
                     <div class="permissions-account-copy">
                         <span class="permissions-kicker">إدارة الحسابات</span>
                         <h4 id="permissionsAccountsTitle">حسابات الإدارة والمساعدين</h4>
-                        <p>أضف مساعدًا أو انتقل إلى إدارة الحسابات لتعديل بياناته وحالته، ثم خصص صلاحياته من هذه الشاشة.</p>
-                    </div>
-                    <div class="permissions-account-actions">
-                        <button class="btn btn-light btn-small" id="permissionsOpenManagement" type="button">إدارة الحسابات</button>
-                        <button class="btn btn-primary btn-small" id="permissionsAddAssistant" type="button">+ إضافة Assistant</button>
+                        <p>أنشئ حسابات Assistant وعدّل حالتها وبياناتها من القسم التالي، ثم خصص صلاحيات كل حساب من بطاقات الشاشات.</p>
                     </div>
                     <div class="permissions-account-metrics" aria-label="ملخص حسابات المساعدين">
                         <div class="permissions-account-metric"><span>إجمالي المساعدين</span><strong id="permissionsAssistantsTotal">0</strong></div>
                         <div class="permissions-account-metric success"><span>حسابات نشطة</span><strong id="permissionsAssistantsActive">0</strong></div>
                         <div class="permissions-account-metric muted"><span>حسابات معطلة</span><strong id="permissionsAssistantsDisabled">0</strong></div>
                     </div>
+                </section>
+                <section class="auth-users-panel permissions-auth-users-panel" id="authUsersPanel" hidden aria-labelledby="authUsersTitle">
+                    <div class="auth-users-head"><div><span class="permissions-kicker">إدارة الحسابات</span><h4 id="authUsersTitle">حسابات الإدارة والمساعدين</h4><p>أنشئ حساب Assistant أو عدّل بياناته وحالته وأعد تعيين كلمة مروره من شاشة الصلاحيات فقط.</p></div><button class="btn btn-primary btn-small" id="authAddAssistantButton" type="button">+ إضافة Assistant</button></div>
+                    <div id="authUsersList"><div class="auth-users-loading">جاري تحميل حسابات الإدارة…</div></div>
                 </section>
                 <div class="permissions-layout">
                     <aside class="permissions-users-panel" aria-labelledby="permissionsUsersTitle">
@@ -251,10 +251,6 @@
                 <section class="backup-history-section" aria-labelledby="backupHistoryTitle">
                     <div class="backup-history-section-head"><div><span class="management-eyebrow">متابعة تلقائية</span><h4 id="backupHistoryTitle">سجل النسخ</h4><p>تُنشأ النسخة اليومية الساعة 3:00 مساءً بتوقيت القاهرة، وتُحفظ لمدة يومين فقط.</p></div><button class="btn btn-light btn-small" id="backupHistoryRefresh" type="button">تحديث السجل</button></div>
                     <div class="backup-history-list" id="backupHistoryList"><div class="backup-history-loading">جاري تحميل سجل النسخ…</div></div>
-                </section>
-                <section class="auth-users-panel" id="authUsersPanel" hidden aria-labelledby="authUsersTitle">
-                    <div class="auth-users-head"><div><span class="management-eyebrow">صلاحيات النظام</span><h4 id="authUsersTitle">حسابات الإدارة والمساعدين</h4><p>يمكن للمالك إضافة حساب Assistant بصلاحيات تشغيلية محدودة والتحكم في حالته دون مشاركة حسابه.</p></div><button class="btn btn-primary btn-small" id="authAddAssistantButton" type="button">+ إضافة Assistant</button></div>
-                    <div id="authUsersList"><div class="auth-users-loading">جاري تحميل حسابات الإدارة…</div></div>
                 </section>
             </section>
 
