@@ -8,9 +8,11 @@
   overflow: hidden;
   padding: clamp(14px, 3vw, 32px);
   isolation: isolate;
-  background-color: #071426;
+  background-color: #020817;
   background-image:
-    linear-gradient(135deg, rgb(2 10 25 / 0.9), rgb(4 17 40 / 0.84)),
+    linear-gradient(112deg, rgb(1 7 19 / 0.96) 0%, rgb(2 16 38 / 0.9) 45%, rgb(4 32 72 / 0.82) 100%),
+    radial-gradient(circle at 12% 18%, rgb(37 99 235 / 0.3), transparent 34%),
+    radial-gradient(circle at 88% 82%, rgb(14 165 233 / 0.18), transparent 31%),
     url("/assets/gym-background.webp");
   background-position: center;
   background-size: cover;
@@ -19,15 +21,20 @@
 
 .auth-screen::before {
   position: absolute;
-  inset: -3%;
-  z-index: -1;
-  background: rgb(2 10 25 / 0.12);
+  inset: -4%;
+  z-index: 0;
+  background:
+    linear-gradient(90deg, rgb(1 7 19 / 0.22), transparent 48%, rgb(2 15 35 / 0.2)),
+    radial-gradient(circle at 50% 0%, rgb(96 165 250 / 0.1), transparent 42%);
   content: "";
-  filter: blur(2px);
+  filter: blur(3px);
   pointer-events: none;
+  transform: scale(1.03);
 }
 
 .auth-shell {
+  position: relative;
+  z-index: var(--z-content);
   width: min(520px, 100%);
   margin: auto;
 }
@@ -37,10 +44,10 @@
   width: 100%;
   min-height: 0;
   overflow: hidden;
-  border: 1px solid rgb(147 197 253 / 0.34);
+  border: 1px solid rgb(148 163 184 / 0.32);
   border-radius: 24px;
-  background: #fff;
-  box-shadow: 0 28px 72px rgb(0 0 0 / 0.32), 0 0 0 1px rgb(2 10 25 / 0.12);
+  background: #f8fbff;
+  box-shadow: 0 32px 82px rgb(0 0 0 / 0.42), 0 0 0 1px rgb(96 165 250 / 0.1);
 }
 
 /* Existing hero markup is kept for backward compatibility; visually it is a
@@ -51,11 +58,21 @@
   min-width: 0;
   min-height: 0;
   overflow: hidden;
-  background: #071426;
+  background:
+    linear-gradient(145deg, #061326 0%, #08244a 54%, #051326 100%);
   color: #fff;
 }
 
-.auth-hero::after,
+.auth-hero::after {
+  position: absolute;
+  inset: 0;
+  background:
+    repeating-linear-gradient(132deg, transparent 0 42px, rgb(147 197 253 / 0.045) 43px, transparent 44px),
+    radial-gradient(circle at 50% 15%, rgb(59 130 246 / 0.22), transparent 43%);
+  content: "";
+  pointer-events: none;
+}
+
 .auth-hero-lines,
 .auth-athlete,
 .auth-features {
@@ -77,11 +94,11 @@
   width: 72px;
   height: 72px;
   place-items: center;
-  border: 1px solid rgb(147 197 253 / 0.35);
+  border: 1px solid rgb(191 219 254 / 0.42);
   border-radius: 18px;
-  background: var(--color-primary);
+  background: linear-gradient(145deg, #3b82f6, #1d4ed8);
   color: #fff;
-  box-shadow: 0 12px 26px rgb(37 99 235 / 0.24);
+  box-shadow: 0 14px 32px rgb(37 99 235 / 0.34), inset 0 1px 0 rgb(255 255 255 / 0.22);
 }
 
 .auth-brand-mark svg {
@@ -104,7 +121,7 @@
 }
 
 .auth-brand-copy strong span {
-  color: var(--color-primary);
+  color: #60a5fa;
 }
 
 .auth-brand-copy strong b {
@@ -117,10 +134,22 @@
 }
 
 .auth-form-panel {
+  position: relative;
   display: block;
   min-width: 0;
   padding: 36px 40px 32px;
-  background: #fff;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+}
+
+.auth-form-panel::before {
+  position: absolute;
+  top: 0;
+  right: 12%;
+  left: 12%;
+  height: 3px;
+  border-radius: 0 0 999px 999px;
+  background: linear-gradient(90deg, #2563eb, #38bdf8);
+  content: "";
 }
 
 .auth-form {
@@ -144,7 +173,7 @@
 }
 
 .auth-form-heading h2 {
-  color: var(--color-navy);
+  color: #0f172a;
   font-size: 36px;
   font-weight: var(--weight-extrabold);
   line-height: 1.25;
@@ -163,7 +192,7 @@
 
 .auth-form .auth-field > label {
   display: block;
-  color: var(--color-navy);
+  color: #172033;
   font-size: var(--font-sm);
   font-weight: var(--weight-bold);
 }
@@ -178,10 +207,10 @@
 .auth-form .auth-password-wrap > input:not([type="checkbox"]):not([type="radio"]) {
   box-sizing: border-box;
   min-height: 58px;
-  border: 1px solid var(--color-border-soft);
+  border: 1px solid #d7e3f2;
   border-radius: 12px;
-  background: #fff;
-  color: var(--color-navy);
+  background: #fafdff;
+  color: #0f172a;
   font-family: var(--font-body);
   font-size: var(--font-md);
   outline: 0;
@@ -190,8 +219,8 @@
 
 .auth-form .auth-input-wrap > input:not([type="checkbox"]):not([type="radio"]):hover,
 .auth-form .auth-password-wrap > input:not([type="checkbox"]):not([type="radio"]):hover {
-  border-color: #a8c5ed;
-  background: #fbfdff;
+  border-color: #93b4e6;
+  background: #fff;
 }
 
 .auth-form .auth-input-wrap > input:not([type="checkbox"]):not([type="radio"]):focus,
@@ -293,13 +322,14 @@
   width: 100%;
   min-height: 58px;
   border-radius: 12px;
-  background: #2563eb;
-  box-shadow: 0 10px 22px rgb(37 99 235 / 0.18);
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  box-shadow: 0 12px 26px rgb(37 99 235 / 0.24), inset 0 1px 0 rgb(255 255 255 / 0.16);
   font-size: var(--font-lg);
 }
 
 .auth-submit:hover:not(:disabled) {
-  background: #1d4ed8;
+  background: linear-gradient(135deg, #3478f6 0%, #1d4ed8 100%);
+  box-shadow: 0 15px 30px rgb(37 99 235 / 0.3), inset 0 1px 0 rgb(255 255 255 / 0.18);
 }
 
 .auth-submit:active:not(:disabled) {
