@@ -87,7 +87,7 @@ Route → Controller → Service → Repository
 
 الشاشة Owner-only وتحتوي على:
 
-1. قائمة حسابات Assistant فقط.
+1. قائمة حسابات Assistant فقط مع مؤشرات النشطة والمعطلة وروابط إدارة الحسابات.
 2. مصفوفة مجمعة حسب الشاشة/المورد.
 3. Checkbox لكل عملية فعلية.
 4. خيار `قراءة فقط` للمجموعات التي لديها `*.read`؛ يبقي العرض ويمسح عمليات الكتابة.
@@ -104,6 +104,7 @@ Route → Controller → Service → Repository
 | `GET` | `/api/auth/users/:id/permissions` | جلب حالة Assistant |
 | `PUT` | `/api/auth/users/:id/permissions` | استبدال حالة الصلاحيات مع `reason` |
 | `POST` | `/api/auth/users/:id/permissions/reset` | استعادة الافتراضي الآمن مع `reason` |
+| `DELETE` | `/api/auth/users/:id` | حذف Assistant نهائيًا وإلغاء جلساته وصلاحياته؛ Owner فقط |
 
 صيغة التحديث:
 

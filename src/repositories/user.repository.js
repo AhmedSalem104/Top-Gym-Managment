@@ -83,9 +83,17 @@ async function updateStatus({ id, status }) {
         .query("UPDATE dbo.gym_users SET status=@status, updated_at=SYSUTCDATETIME() WHERE id=@id; UPDATE dbo.gym_auth_sessions SET revoked_at=SYSUTCDATETIME() WHERE user_id=@id AND @status = 'Disabled' AND revoked_at IS NULL;");
 }
 
+async function deleteAssistant(id) {
+    const pool = await getPool();
+    return pool.request()
+        .input('id', sql.Int, id)
+        .query("DELETE FROM dbo.gym_users OUTPUT DELETED.id WHERE id=@id AND role='Assistant';");
+}
+
 module.exports = {
     createAssistant,
     createOwner,
+    deleteAssistant,
     findByEmail,
     findOwner,
     findPublicById,

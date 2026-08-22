@@ -34,8 +34,14 @@
     function renderUsers() {
         const host = $('permissionsUserList');
         const count = $('permissionsUsersCount');
+        const total = $('permissionsAssistantsTotal');
+        const active = $('permissionsAssistantsActive');
+        const disabled = $('permissionsAssistantsDisabled');
         if (!host) return;
         if (count) count.textContent = String(state.users.length);
+        if (total) total.textContent = String(state.users.length);
+        if (active) active.textContent = String(state.users.filter((user) => user.status === 'Active').length);
+        if (disabled) disabled.textContent = String(state.users.filter((user) => user.status === 'Disabled').length);
         if (!state.users.length) {
             host.innerHTML = '<div class="permissions-empty-state">لا توجد حسابات Assistant حتى الآن.</div>';
             state.selectedId = null;
@@ -65,7 +71,12 @@
         const selected = state.users.find((user) => Number(user.id) === Number(state.selectedId));
         const title = $('permissionsSelectedUser');
         const meta = $('permissionsSelectedMeta');
+        const badge = $('permissionsReadonlyBadge');
         if (title) title.textContent = selected ? selected.name : 'اختر حسابًا لعرض صلاحياته';
+        if (badge) {
+            badge.hidden = !selected;
+            badge.textContent = selected ? 'تعديل موثق' : '';
+        }
         if (meta) {
             const audit = state.lastModified;
             const auditDate = audit?.at ? new Intl.DateTimeFormat('ar-EG', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(audit.at)) : '';
@@ -194,9 +205,23 @@
         }
     }
 
-    document.addEventListener('DOMContentLoaded', () => {
-        $('permissionsForm')?.addEventListener('submit', save);
+    async function openManagement(openAssistant = false) {
+        if (typeof window.topGymActivateTab === 'function') {
+            await window.topGymActivateTab('management');
+            if (openAssistant) $('authAddAssistantButton')?.click();
+            return;
+        }
+        window.location.hash = '#management';
+    }
+
+    function bindEvents() {
+        const form = $('permissionsForm');
+        if (!form || form.dataset.permissionsBound === 'true') return;
+        form.dataset.permissionsBound = 'true';
+        form.addEventListener('submit', save);
         $('permissionsReset')?.addEventListener('click', reset);
+        $('permissionsOpenManagement')?.addEventListener('click', () => void openManagement());
+        $('permissionsAddAssistant')?.addEventListener('click', () => void openManagement(true));
         $('permissionsUserList')?.addEventListener('click', (event) => {
             const button = event.target.closest('[data-permission-user]');
             if (button) void loadSelectedPermissions(button.dataset.permissionUser);
@@ -204,7 +229,10 @@
         $('permissionsGrid')?.addEventListener('change', (event) => {
             if (event.target.matches('[data-readonly-group]')) applyReadOnly(event.target.dataset.readonlyGroup, event.target.checked);
         });
-    });
+    }
+
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bindEvents, { once: true });
+    else bindEvents();
 
     window.addEventListener('topgym:tab-changed', (event) => {
         if (event.detail?.name === 'permissions') void load();

@@ -14,6 +14,7 @@ All application endpoints are under `/api`. Protected requests require the serve
 | POST | `/api/auth/users` | Owner |
 | PUT | `/api/auth/users/:id` | Owner |
 | PATCH | `/api/auth/users/:id/status` | Owner |
+| DELETE | `/api/auth/users/:id` | Owner; يحذف Assistant فقط ويلغي جلساته وصلاحياته |
 
 ## Members and membership
 

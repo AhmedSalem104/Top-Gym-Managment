@@ -541,6 +541,33 @@
 .backup-history-status.error { border-color: #f2b8b8; background: var(--color-danger-soft); color: #b42323; }
 .auth-users-head > div { min-width: 0; }
 .auth-users-head > button { flex: 0 0 auto; min-width: 156px; }
+.auth-user-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-2); }
+.auth-user-actions .btn { min-width: 66px; }
+.auth-user-actions .auth-delete { border-color: rgb(215 67 67 / 0.3); color: var(--color-danger); }
+.auth-user-actions .auth-delete:hover:not(:disabled) { border-color: var(--color-danger); background: var(--color-danger-soft); color: var(--color-danger); }
+.auth-users-table-wrap { min-width: 0; overflow-x: auto; border: 1px solid var(--border-color); border-radius: var(--radius-md); background: var(--color-surface); }
+.auth-users-table { width: 100%; min-width: 720px; border-collapse: separate; border-spacing: 0; table-layout: fixed; }
+.auth-users-table th,
+.auth-users-table td { min-height: 64px; border-bottom: 1px solid var(--border-color); padding: var(--space-3); text-align: center; vertical-align: middle; }
+.auth-users-table th { background: var(--color-surface-muted); color: var(--color-text-muted); font-size: var(--font-xs); font-weight: var(--weight-bold); white-space: nowrap; }
+.auth-users-table th:first-child,
+.auth-users-table td:first-child { width: 32%; text-align: start; }
+.auth-users-table th:last-child,
+.auth-users-table td:last-child { width: 30%; }
+.auth-users-table tbody tr:last-child td { border-bottom: 0; }
+.auth-users-table tbody tr:hover td { background: var(--color-primary-soft); }
+.auth-user-primary { display: grid; min-width: 0; gap: 2px; }
+.auth-user-primary strong { overflow: hidden; color: var(--color-text); text-overflow: ellipsis; white-space: nowrap; font-size: var(--font-sm); }
+.auth-user-primary small { overflow-wrap: anywhere; color: var(--color-text-muted); font-size: var(--font-xs); }
+.auth-role-badge,
+.auth-status-badge { display: inline-flex; min-height: 28px; align-items: center; justify-content: center; border-radius: var(--radius-pill); padding: 0 10px; font-size: var(--font-xs); font-weight: var(--weight-bold); white-space: nowrap; }
+.auth-role-badge.owner { background: var(--color-primary-soft); color: var(--color-primary); }
+.auth-role-badge.assistant { background: var(--color-surface-muted); color: var(--color-secondary); }
+.auth-status-badge.active { background: var(--color-success-soft); color: var(--color-success); }
+.auth-status-badge.disabled { background: var(--color-danger-soft); color: var(--color-danger); }
+.auth-users-empty,
+.auth-users-error { border: 1px dashed var(--border-color); border-radius: var(--radius-md); color: var(--color-text-muted); padding: var(--space-8) var(--space-4); text-align: center; }
+.auth-users-error { background: var(--color-danger-soft); color: var(--color-danger); }
 
 @media (max-width: 1199px) and (min-width: 992px) {
   .overview-grid {

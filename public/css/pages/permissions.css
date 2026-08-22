@@ -70,6 +70,29 @@
   font-weight: var(--weight-semibold);
 }
 
+.permissions-account-strip {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--space-4);
+  align-items: center;
+  border: 1px solid rgb(23 105 232 / 0.16);
+  border-radius: var(--radius-lg);
+  background: var(--color-primary-soft);
+  padding: var(--space-5);
+}
+
+.permissions-account-copy { min-width: 0; }
+.permissions-account-copy h4 { margin: 4px 0 0; color: var(--color-text); font-size: var(--font-lg); }
+.permissions-account-copy p { max-width: 760px; margin: 6px 0 0; color: var(--color-text-muted); font-size: var(--font-xs); line-height: 1.7; }
+.permissions-account-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); justify-content: flex-end; }
+.permissions-account-actions .btn { min-height: 42px; white-space: nowrap; }
+.permissions-account-metrics { display: grid; grid-column: 1 / -1; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-2); }
+.permissions-account-metric { display: grid; gap: 3px; min-width: 0; border: 1px solid var(--border-color); border-radius: var(--radius-md); background: var(--color-surface); padding: 10px 12px; }
+.permissions-account-metric span { color: var(--color-text-muted); font-size: 11px; }
+.permissions-account-metric strong { color: var(--color-primary); font-size: var(--font-lg); line-height: 1; }
+.permissions-account-metric.success strong { color: var(--color-success); }
+.permissions-account-metric.muted strong { color: var(--color-text-muted); }
+
 .permissions-layout {
   display: grid;
   grid-template-columns: minmax(220px, 0.75fr) minmax(0, 2fr);
@@ -139,6 +162,8 @@
 .permissions-empty-state { grid-column: 1 / -1; border: 1px dashed var(--border-color); border-radius: var(--radius-md); color: var(--color-text-muted); padding: 32px 16px; text-align: center; }
 
 @media (max-width: 900px) {
+  .permissions-account-strip { grid-template-columns: 1fr; }
+  .permissions-account-actions { justify-content: flex-start; }
   .permissions-layout { grid-template-columns: 1fr; }
   .permissions-user-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
@@ -147,6 +172,9 @@
   .permissions-header,
   .permissions-editor-head { flex-direction: column; }
   .permissions-grid { grid-template-columns: 1fr; }
+  .permissions-account-actions { display: grid; grid-template-columns: 1fr 1fr; }
+  .permissions-account-actions .btn { width: 100%; }
+  .permissions-account-metrics { grid-template-columns: 1fr; }
   .permissions-editor-footer { grid-template-columns: 1fr; }
   .permissions-form-actions { justify-content: stretch; }
   .permissions-form-actions .btn { flex: 1; }

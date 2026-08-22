@@ -203,6 +203,22 @@
                     </div>
                     <span class="permissions-owner-badge">لا يمكن تعديل صلاحيات Owner</span>
                 </header>
+                <section class="permissions-account-strip" aria-labelledby="permissionsAccountsTitle">
+                    <div class="permissions-account-copy">
+                        <span class="permissions-kicker">إدارة الحسابات</span>
+                        <h4 id="permissionsAccountsTitle">حسابات الإدارة والمساعدين</h4>
+                        <p>أضف مساعدًا أو انتقل إلى إدارة الحسابات لتعديل بياناته وحالته، ثم خصص صلاحياته من هذه الشاشة.</p>
+                    </div>
+                    <div class="permissions-account-actions">
+                        <button class="btn btn-light btn-small" id="permissionsOpenManagement" type="button">إدارة الحسابات</button>
+                        <button class="btn btn-primary btn-small" id="permissionsAddAssistant" type="button">+ إضافة Assistant</button>
+                    </div>
+                    <div class="permissions-account-metrics" aria-label="ملخص حسابات المساعدين">
+                        <div class="permissions-account-metric"><span>إجمالي المساعدين</span><strong id="permissionsAssistantsTotal">0</strong></div>
+                        <div class="permissions-account-metric success"><span>حسابات نشطة</span><strong id="permissionsAssistantsActive">0</strong></div>
+                        <div class="permissions-account-metric muted"><span>حسابات معطلة</span><strong id="permissionsAssistantsDisabled">0</strong></div>
+                    </div>
+                </section>
                 <div class="permissions-layout">
                     <aside class="permissions-users-panel" aria-labelledby="permissionsUsersTitle">
                         <div class="permissions-subheading"><div><span>الحسابات</span><h4 id="permissionsUsersTitle">اختر Assistant</h4></div><span class="permissions-users-count" id="permissionsUsersCount">0</span></div>

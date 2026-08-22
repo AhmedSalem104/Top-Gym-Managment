@@ -399,6 +399,20 @@ async function setAssistantStatus(id, status) {
     return safeUserWithPermissions(updated.recordset[0]);
 }
 
+async function deleteAssistant(id) {
+    await ensureAuthReady();
+    const userId = Number(id);
+    if (!Number.isInteger(userId) || userId <= 0) throw authError('معرّف الحساب غير صحيح.', 400, 'INVALID_USER_ID');
+    const current = await userRepository.findRoleById(userId);
+    const user = current.recordset[0];
+    if (!user) throw authError('الحساب غير موجود.', 404, 'USER_NOT_FOUND');
+    if (user.role !== 'Assistant') throw authError('لا يمكن حذف حساب المالك.', 403, 'OWNER_ACCOUNT_PROTECTED');
+    await sessionRepository.revokeForUser(userId);
+    const result = await userRepository.deleteAssistant(userId);
+    if (!result.recordset?.length) throw authError('تعذر حذف حساب المساعد.', 409, 'ASSISTANT_DELETE_FAILED');
+    return { id: userId };
+}
+
 function canAccess(user, request) {
     return canAccessRoleRequest(user, request);
 }
@@ -433,6 +447,7 @@ module.exports = {
     canAccess,
     clearSessionCookie,
     createAssistant,
+    deleteAssistant,
     ensureAuthReady,
     ensureAuthTables,
     ensureOwnerAccount,

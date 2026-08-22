@@ -11,6 +11,7 @@ function registerAuthRoutes(app, { authService, permissionService, asyncRoute, o
     app.post('/api/auth/users', ownerOnly, asyncRoute(controller.createAssistant));
     app.put('/api/auth/users/:id', ownerOnly, asyncRoute(controller.updateUser));
     app.patch('/api/auth/users/:id/status', ownerOnly, asyncRoute(controller.setStatus));
+    app.delete('/api/auth/users/:id', ownerOnly, asyncRoute(controller.deleteUser));
     app.get('/api/auth/permissions/catalog', ownerOnly, asyncRoute(controller.permissionsCatalog));
     app.get('/api/auth/users/:id/permissions', ownerOnly, asyncRoute(controller.userPermissions));
     app.put('/api/auth/users/:id/permissions', ownerOnly, asyncRoute(controller.updateUserPermissions));

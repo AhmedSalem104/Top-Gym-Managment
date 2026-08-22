@@ -48,7 +48,7 @@
         const rows = state.users.map((user) => {
             const assistant = user.role === 'Assistant';
             const action = assistant
-                ? `<button class="btn btn-light btn-small" type="button" data-auth-user-action="edit" data-id="${user.id}">تعديل</button><button class="btn btn-light btn-small${user.status === 'Active' ? ' auth-danger' : ''}" type="button" data-auth-user-action="status" data-id="${user.id}" data-status="${user.status === 'Active' ? 'Disabled' : 'Active'}">${user.status === 'Active' ? 'تعطيل' : 'تفعيل'}</button>`
+                ? `<button class="btn btn-light btn-small" type="button" data-auth-user-action="edit" data-id="${user.id}">تعديل</button><button class="btn btn-light btn-small${user.status === 'Active' ? ' auth-danger' : ''}" type="button" data-auth-user-action="status" data-id="${user.id}" data-status="${user.status === 'Active' ? 'Disabled' : 'Active'}">${user.status === 'Active' ? 'تعطيل' : 'تفعيل'}</button><button class="btn btn-light btn-small auth-delete" type="button" data-auth-user-action="delete" data-id="${user.id}" aria-label="حذف ${escapeHtml(user.name)}">حذف</button>`
                 : '<span class="table-sub">الحساب الرئيسي</span>';
             return `<tr><td><div class="auth-user-primary"><strong>${escapeHtml(user.name)}</strong><small dir="ltr">${escapeHtml(user.email)}</small></div></td><td><span class="auth-role-badge ${assistant ? 'assistant' : 'owner'}">${roleLabel(user.role)}</span></td><td><span class="auth-status-badge ${user.status === 'Disabled' ? 'disabled' : 'active'}">${statusLabel(user.status)}</span></td><td dir="ltr">${escapeHtml(dateLabel(user.lastLoginAt))}</td><td><div class="auth-user-actions">${action}</div></td></tr>`;
         }).join('');
@@ -106,6 +106,35 @@
         }
     }
 
+    async function deleteUser(user) {
+        let confirmed = false;
+        if (window.Swal) {
+            const result = await window.Swal.fire({
+                position: 'center',
+                backdrop: 'rgba(15, 23, 42, .52)',
+                icon: 'warning',
+                title: 'تأكيد حذف حساب المساعد',
+                text: `سيتم حذف حساب ${user.name} نهائيًا وإلغاء جلساته وصلاحياته. لا يمكن التراجع عن هذه العملية.`,
+                showCancelButton: true,
+                confirmButtonText: 'نعم، احذف الحساب',
+                cancelButtonText: 'إلغاء',
+                buttonsStyling: false,
+                customClass: { popup: 'delete-confirm-alert', confirmButton: 'btn btn-danger', cancelButton: 'btn btn-light' }
+            });
+            confirmed = Boolean(result.isConfirmed);
+        } else {
+            confirmed = window.confirm(`سيتم حذف حساب ${user.name} نهائيًا وإلغاء جلساته وصلاحياته. لا يمكن التراجع عن هذه العملية. هل تريد المتابعة؟`);
+        }
+        if (!confirmed) return;
+        try {
+            await window.topGymAuth.api(`/api/auth/users/${user.id}`, { method: 'DELETE' });
+            await loadUsers();
+            notify('تم حذف حساب المساعد نهائيًا.');
+        } catch (error) {
+            notify(error.message || 'تعذر حذف حساب المساعد.', true);
+        }
+    }
+
     function bind() {
         if ($('authUsersPanel')?.dataset.bound) return;
         const panel = $('authUsersPanel');
@@ -122,6 +151,7 @@
             if (!user) return;
             if (button.dataset.authUserAction === 'edit') openDialog(user);
             if (button.dataset.authUserAction === 'status') void toggleStatus(user, button.dataset.status);
+            if (button.dataset.authUserAction === 'delete') void deleteUser(user);
         });
         window.addEventListener('topgym:tab-changed', (event) => {
             if (event.detail?.name === 'management') void loadUsers();

@@ -34,3 +34,11 @@ test('finance.read removes financial fields from a permitted response', () => {
 test('unmapped assistant routes are denied instead of falling back to role checks', () => {
     assert.equal(canAccessRoleRequest({ role: 'Assistant', permissions: ['*'] }, { path: '/internal-secret', method: 'GET' }), false);
 });
+
+test('assistant deletion is an Owner-only resolved operation', () => {
+    const request = { path: '/auth/users/12', method: 'DELETE' };
+    assert.deepEqual(permissionForRequest(request).all, ['management.users.delete']);
+    assert.equal(permissionForRequest(request).ownerOnly, true);
+    assert.equal(canAccessRoleRequest({ role: 'Owner', permissions: [] }, request), true);
+    assert.equal(canAccessRoleRequest({ role: 'Assistant', permissions: ['management.users.delete'] }, request), false);
+});

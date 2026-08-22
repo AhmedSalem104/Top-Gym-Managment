@@ -42,6 +42,10 @@ function createAuthController({ authService, permissionService, allowLoginAttemp
             response.json({ user: await authService.setAssistantStatus(request.params.id, request.body?.status) });
         },
 
+        deleteUser: async (request, response) => {
+            response.json(await authService.deleteAssistant(request.params.id));
+        },
+
         permissionsCatalog: async (_request, response) => {
             response.json({ permissions: permissionService.catalog() });
         },

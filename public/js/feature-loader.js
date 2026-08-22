@@ -49,11 +49,11 @@
         },
         management: {
             styles: [],
-            scripts: ['/js/pages/management/backup.js?v=9', '/js/pages/management/auth-users.js?v=1']
+            scripts: ['/js/pages/management/backup.js?v=9', '/js/pages/management/auth-users.js?v=2']
         },
         permissions: {
             styles: [],
-            scripts: ['/js/pages/management/permissions.js?v=1']
+            scripts: ['/js/pages/management/permissions.js?v=2']
         },
         attendance: {
             styles: [],

@@ -4,11 +4,12 @@ const { PERMISSIONS } = require('./permissions');
 
 const ROUTE_PERMISSION_RULES = Object.freeze([
     { pattern: /^\/auth\/permissions(?:\/|$)/, methods: ['GET', 'PUT', 'POST'], all: [PERMISSIONS.PERMISSIONS_MANAGE], ownerOnly: true },
-    { pattern: /^\/auth\/users(?:\/|$)/, methods: ['GET', 'POST', 'PUT', 'PATCH'], ownerOnly: true, byMethod: {
+    { pattern: /^\/auth\/users(?:\/|$)/, methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'], ownerOnly: true, byMethod: {
         GET: [PERMISSIONS.MANAGEMENT_USERS_READ],
         POST: [PERMISSIONS.MANAGEMENT_USERS_CREATE],
         PUT: [PERMISSIONS.MANAGEMENT_USERS_UPDATE],
-        PATCH: [PERMISSIONS.MANAGEMENT_USERS_STATUS]
+        PATCH: [PERMISSIONS.MANAGEMENT_USERS_STATUS],
+        DELETE: [PERMISSIONS.MANAGEMENT_USERS_DELETE]
     } },
     { pattern: /^\/members\/\d+\/membership-code$/, methods: ['GET'], ownerOnly: true, all: [PERMISSIONS.MEMBERSHIP_CODES_READ] },
     { pattern: /^\/members\/\d+\/membership-code\/reveal$/, methods: ['POST'], ownerOnly: true, all: [PERMISSIONS.MEMBERSHIP_CODES_REVEAL] },
