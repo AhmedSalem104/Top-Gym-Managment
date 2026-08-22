@@ -35,7 +35,7 @@
 .auth-shell {
   position: relative;
   z-index: var(--z-content);
-  width: min(460px, 100%);
+  width: min(440px, 100%);
   margin: auto;
 }
 
@@ -48,89 +48,6 @@
   border-radius: 20px;
   background: #f8fbff;
   box-shadow: 0 32px 82px rgb(0 0 0 / 0.42), 0 0 0 1px rgb(96 165 250 / 0.1);
-}
-
-/* Existing hero markup is kept for backward compatibility; visually it is a
-   compact brand header in the new login composition. */
-.auth-hero {
-  position: relative;
-  display: block;
-  min-width: 0;
-  min-height: 0;
-  overflow: hidden;
-  background:
-    linear-gradient(145deg, #061326 0%, #08244a 54%, #051326 100%);
-  color: #fff;
-}
-
-.auth-hero::after {
-  position: absolute;
-  inset: 0;
-  background:
-    repeating-linear-gradient(132deg, transparent 0 42px, rgb(147 197 253 / 0.045) 43px, transparent 44px),
-    radial-gradient(circle at 50% 15%, rgb(59 130 246 / 0.22), transparent 43%);
-  content: "";
-  pointer-events: none;
-}
-
-.auth-hero-lines,
-.auth-athlete,
-.auth-features {
-  display: none;
-}
-
-.auth-hero-brand {
-  position: relative;
-  z-index: var(--z-content);
-  display: grid;
-  justify-items: center;
-  gap: 6px;
-  padding: 30px 24px 26px;
-  text-align: center;
-}
-
-.auth-brand-mark {
-  display: grid;
-  width: 60px;
-  height: 60px;
-  place-items: center;
-  border: 1px solid rgb(191 219 254 / 0.42);
-  border-radius: 16px;
-  background: linear-gradient(145deg, #3b82f6, #1d4ed8);
-  color: #fff;
-  box-shadow: 0 14px 32px rgb(37 99 235 / 0.34), inset 0 1px 0 rgb(255 255 255 / 0.22);
-}
-
-.auth-brand-mark svg {
-  width: 30px;
-  height: 30px;
-}
-
-.auth-brand-copy {
-  display: grid;
-  gap: 4px;
-}
-
-.auth-brand-copy strong {
-  direction: ltr;
-  color: #fff;
-  font-family: var(--font-latin);
-  font-size: 1.75rem;
-  font-weight: var(--weight-extrabold);
-  letter-spacing: 0.04em;
-}
-
-.auth-brand-copy strong span {
-  color: #60a5fa;
-}
-
-.auth-brand-copy strong b {
-  font-weight: inherit;
-}
-
-.auth-brand-copy > span {
-  color: #c5d3e7;
-  font-size: var(--font-xs);
 }
 
 .auth-form-panel {
@@ -163,13 +80,7 @@
   display: grid;
   gap: 4px;
   margin-bottom: var(--space-2);
-  text-align: right;
-}
-
-.auth-welcome {
-  color: var(--color-primary);
-  font-size: var(--font-md);
-  font-weight: var(--weight-bold);
+  text-align: center;
 }
 
 .auth-form-heading h2 {
@@ -177,12 +88,6 @@
   font-size: 30px;
   font-weight: var(--weight-extrabold);
   line-height: 1.25;
-}
-
-.auth-form-heading p {
-  color: var(--color-secondary);
-  font-size: var(--font-sm);
-  line-height: 1.7;
 }
 
 .auth-field {
@@ -384,29 +289,6 @@
 
   .auth-card {
     border-radius: 20px;
-  }
-
-  .auth-hero-brand {
-    padding: 30px 24px 26px;
-  }
-
-  .auth-brand-mark {
-    width: 60px;
-    height: 60px;
-    border-radius: 16px;
-  }
-
-  .auth-brand-mark svg {
-    width: 30px;
-    height: 30px;
-  }
-
-  .auth-brand-copy strong {
-    font-size: 25px;
-  }
-
-  .auth-brand-copy > span {
-    font-size: 12px;
   }
 
   .auth-form-panel {
