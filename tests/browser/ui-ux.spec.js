@@ -71,6 +71,7 @@ test('all application tabs open without layout breakage', async ({ page }, testI
         await waitForTab(page, name, selector);
         await assertNoPageOverflow(page);
         await assertTouchTargets(page);
+        if (name !== 'dashboard') await expect(page.locator('#dashboardAnalytics')).toBeHidden();
         if (name === 'dashboard' || name === 'members') await capture(page, testInfo, name);
     }
 });

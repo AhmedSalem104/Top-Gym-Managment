@@ -309,15 +309,30 @@
         renderAttendanceInsights(data);
     }
 
+    function hidePanel() {
+        state.requestId += 1;
+        state.abortController?.abort();
+        state.abortController = null;
+        const panel = $('dashboardAnalytics');
+        if (panel) {
+            panel.hidden = true;
+            panel.setAttribute('aria-hidden', 'true');
+            panel.toggleAttribute('inert', true);
+        }
+        const loading = $('dashboardAnalyticsLoading');
+        if (loading) loading.hidden = true;
+    }
+
     async function loadAnalytics(period = state.period) {
-        const existingPanel = $('dashboardAnalytics');
         if (!isDashboardActive() || !window.topGymAuth?.isOwner?.() || !window.topGymAuth?.hasPermission?.('finance.read')) {
-            if (existingPanel) existingPanel.hidden = true;
+            hidePanel();
             return;
         }
         const panel = ensurePanel();
         if (!panel) return;
         panel.hidden = false;
+        panel.setAttribute('aria-hidden', 'false');
+        panel.toggleAttribute('inert', false);
         state.period = ['week', 'month', 'year'].includes(period) ? period : 'month';
         setActivePeriod(state.period);
         const requestId = ++state.requestId;
@@ -353,7 +368,12 @@
             if (event.detail?.name === 'dashboard') {
                 ensurePanel();
                 loadAnalytics(state.period);
+            } else {
+                hidePanel();
             }
+        });
+        window.addEventListener('hashchange', () => {
+            if ((window.location.hash.slice(1) || 'dashboard') !== 'dashboard') hidePanel();
         });
         if (isDashboardActive()) loadAnalytics('month');
     }
@@ -361,5 +381,9 @@
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initialize, { once: true });
     else initialize();
 
-    window.topGymRefreshDashboardAnalytics = () => isDashboardActive() ? loadAnalytics(state.period) : Promise.resolve();
+    window.topGymRefreshDashboardAnalytics = () => {
+        if (isDashboardActive()) return loadAnalytics(state.period);
+        hidePanel();
+        return Promise.resolve();
+    };
 })();

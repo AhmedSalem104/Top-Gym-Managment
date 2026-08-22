@@ -89,6 +89,10 @@
             return;
         }
         document.documentElement.setAttribute('data-top-gym-loading-tab', name);
+        // Hide the previous screen immediately. Optional feature scripts can
+        // take a round-trip to load, but dashboard-only content must never
+        // remain visible while the next tab is being prepared.
+        renderTab(name);
         try {
             await window.topGymEnsureTab?.(name);
         } catch (error) {

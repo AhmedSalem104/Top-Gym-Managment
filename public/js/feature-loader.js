@@ -142,7 +142,7 @@
                 window.__topGymDashboardAnalyticsScheduled = false;
                 return;
             }
-            loadScript('/js/pages/dashboard/analytics.js?v=7', 'dashboard-analytics')
+            loadScript('/js/pages/dashboard/analytics.js?v=8', 'dashboard-analytics')
                 .catch((error) => console.warn('[TOP GYM] Dashboard analytics failed to load.', error));
         };
         if (immediate) void start();
