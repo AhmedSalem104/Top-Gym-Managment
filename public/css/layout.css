@@ -57,6 +57,13 @@ body.auth-pending::after {
   visibility: hidden;
 }
 
+/* Dashboard analytics is dashboard-only. Keep this invariant in the layout
+   layer as a second guard for late feature responses or cached scripts. */
+html[data-top-gym-active-tab]:not([data-top-gym-active-tab="dashboard"]) #dashboardAnalytics,
+html[data-top-gym-loading-tab]:not([data-top-gym-loading-tab="dashboard"]) #dashboardAnalytics {
+  display: none;
+}
+
 .app-shell {
   min-height: 100vh;
   background: var(--color-bg);
