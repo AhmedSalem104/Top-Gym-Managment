@@ -11,6 +11,7 @@ const { registerBackupRoutes } = require('./backup.routes');
 const { registerPricingRoutes } = require('./pricing.routes');
 const { registerCoachingRoutes } = require('./coaching.routes');
 const { registerDayPassRoutes } = require('./day-pass.routes');
+const { registerMemberPortalRoutes } = require('./member-portal.routes');
 
 function registerRoutes(app, {
     asyncRoute,
@@ -28,6 +29,8 @@ function registerRoutes(app, {
     coachingService,
     dayPassService,
     memberService,
+    membershipCodeService,
+    portalService,
     getPool
 }) {
     app.get('/api/health', asyncRoute(async (_request, response) => {
@@ -46,6 +49,7 @@ function registerRoutes(app, {
     registerPricingRoutes(app, { pricingService, asyncRoute });
     registerCoachingRoutes(app, { coachingService, asyncRoute });
     registerDayPassRoutes(app, { dayPassService, asyncRoute, ownerOnly });
+    registerMemberPortalRoutes(app, { membershipCodeService, portalService, asyncRoute, ownerOnly });
     registerMembersRoutes(app, { memberService, asyncRoute });
 }
 

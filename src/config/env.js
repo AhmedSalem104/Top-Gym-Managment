@@ -19,6 +19,8 @@ const config = Object.freeze({
     authOwnerName: getEnv('AUTH_OWNER_NAME', 'TOP GYM Owner'),
     authOwnerPassword: getEnv('AUTH_OWNER_PASSWORD'),
     cronSecret: getEnv('CRON_SECRET'),
+    publicAppUrl: getEnv('PUBLIC_APP_URL'),
+    membershipCodeSecret: getEnv('MEMBERSHIP_CODE_SECRET'),
     attendanceAutoCheckoutMinutes: getNumberEnv('ATTENDANCE_AUTO_CHECKOUT_MINUTES', 0),
     mssqlConnectionString: getEnv('MSSQL_CONNECTION_STRING') || getEnv('DATABASE_URL'),
     mssqlConnectionTimeout: getNumberEnv('MSSQL_CONNECTION_TIMEOUT', 30_000),

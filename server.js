@@ -8,7 +8,7 @@ const { asyncRoute } = require('./src/utils/async-route');
 const { registerRoutes } = require('./src/routes');
 const { isAuthorizedCronRequest } = require('./src/middleware/cron.middleware');
 const { createAuthApiMiddleware, ownerOnly } = require('./src/middleware/auth.middleware');
-const { createLoginAttemptGuard, createSensitiveRateLimit } = require('./src/middleware/rate-limit.middleware');
+const { createLoginAttemptGuard, createSensitiveRateLimit, createMembershipPortalRateLimit } = require('./src/middleware/rate-limit.middleware');
 const { getPool, initDatabase } = require('./src/database');
 const backupService = require('./src/services/backup-service');
 const financeService = require('./src/services/finance-service');
@@ -21,6 +21,8 @@ const memberService = require('./src/services/member-service');
 const pricingService = memberService;
 const coachingService = require('./src/services/coaching-service');
 const dayPassService = require('./src/services/day-pass-service');
+const membershipCodeService = require('./src/services/membership-code-service');
+const memberPortalService = require('./src/services/member-portal-service');
 const authService = require('./src/services/auth-service');
 const { ensureAuthReady } = authService;
 
@@ -28,8 +30,10 @@ const publicDirectory = path.join(__dirname, 'public');
 const app = createApp({ publicDirectory, expressFactory: express });
 
 const sensitiveRateLimit = createSensitiveRateLimit();
+const membershipPortalRateLimit = createMembershipPortalRateLimit();
 const allowLoginAttempt = createLoginAttemptGuard();
 app.use('/api', sensitiveRateLimit);
+app.use('/api/member-portal/lookup', membershipPortalRateLimit);
 app.use('/api', createAuthApiMiddleware({
     authService,
     isAuthorizedCronRequest: (request) => isAuthorizedCronRequest(request, { config })
@@ -100,6 +104,8 @@ registerRoutes(app, {
     coachingService,
     dayPassService,
     memberService,
+    membershipCodeService,
+    portalService: memberPortalService,
     getPool
 });
 
@@ -111,6 +117,10 @@ app.get('/qr/:id', asyncRoute(async (request, response) => {
     });
     response.type('html').send(renderQrMemberPage(member));
 }));
+
+app.get('/member-portal', (_request, response) => {
+    response.sendFile(path.join(publicDirectory, 'member-portal.html'));
+});
 
 app.get('*', (request, response) => {
     response.sendFile(path.join(publicDirectory, 'index.html'));
@@ -138,6 +148,7 @@ async function start() {
     await ensureLibraryData();
     await coachingService.ensureCoachingTables();
     await dayPassService.ensureDayPassTables();
+    await membershipCodeService.ensureMembershipCodeStorage();
     const port = config.port;
     app.listen(port, () => console.log(`Gym membership app is running on http://localhost:${port}`));
 }

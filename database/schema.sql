@@ -8,9 +8,61 @@ BEGIN
         email NVARCHAR(254) NULL,
         registration_date DATE NOT NULL,
         notes NVARCHAR(1000) NULL,
+        membership_code_hash CHAR(64) NULL,
+        membership_code_ciphertext NVARCHAR(512) NULL,
+        membership_code_version INT NOT NULL CONSTRAINT DF_members_membership_code_version DEFAULT (1),
+        membership_code_issued_at DATETIME2(0) NULL,
+        membership_code_revoked_at DATETIME2(0) NULL,
         created_at DATETIME2(0) NOT NULL CONSTRAINT DF_members_created_at DEFAULT (SYSUTCDATETIME()),
         updated_at DATETIME2(0) NOT NULL CONSTRAINT DF_members_updated_at DEFAULT (SYSUTCDATETIME())
     );
+END;
+
+IF COL_LENGTH(N'dbo.members', N'membership_code_hash') IS NULL
+    EXEC(N'ALTER TABLE dbo.members ADD membership_code_hash CHAR(64) NULL;');
+IF COL_LENGTH(N'dbo.members', N'membership_code_ciphertext') IS NULL
+    EXEC(N'ALTER TABLE dbo.members ADD membership_code_ciphertext NVARCHAR(512) NULL;');
+IF COL_LENGTH(N'dbo.members', N'membership_code_version') IS NULL
+    EXEC(N'ALTER TABLE dbo.members ADD membership_code_version INT NOT NULL CONSTRAINT DF_members_membership_code_version_migration DEFAULT (1);');
+IF COL_LENGTH(N'dbo.members', N'membership_code_issued_at') IS NULL
+    EXEC(N'ALTER TABLE dbo.members ADD membership_code_issued_at DATETIME2(0) NULL;');
+IF COL_LENGTH(N'dbo.members', N'membership_code_revoked_at') IS NULL
+    EXEC(N'ALTER TABLE dbo.members ADD membership_code_revoked_at DATETIME2(0) NULL;');
+IF NOT EXISTS (
+    SELECT 1 FROM sys.indexes
+    WHERE name = N'UX_members_membership_code_hash'
+      AND object_id = OBJECT_ID(N'dbo.members')
+)
+BEGIN
+    CREATE UNIQUE INDEX UX_members_membership_code_hash
+        ON dbo.members(membership_code_hash)
+        WHERE membership_code_hash IS NOT NULL;
+END;
+
+IF OBJECT_ID(N'dbo.gym_membership_code_audit', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.gym_membership_code_audit (
+        id INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_gym_membership_code_audit PRIMARY KEY,
+        member_id INT NOT NULL,
+        action VARCHAR(30) NOT NULL,
+        actor_user_id INT NULL,
+        ip_address VARCHAR(64) NULL,
+        user_agent NVARCHAR(512) NULL,
+        created_at DATETIME2(0) NOT NULL CONSTRAINT DF_gym_membership_code_audit_created DEFAULT (SYSUTCDATETIME()),
+        CONSTRAINT FK_gym_membership_code_audit_member FOREIGN KEY (member_id)
+            REFERENCES dbo.members(id) ON DELETE CASCADE,
+        CONSTRAINT CK_gym_membership_code_audit_action CHECK (action IN ('issued', 'viewed', 'whatsapp_sent', 'rotated', 'portal_viewed'))
+    );
+END;
+
+IF NOT EXISTS (
+    SELECT 1 FROM sys.indexes
+    WHERE name = N'IX_gym_membership_code_audit_member_date'
+      AND object_id = OBJECT_ID(N'dbo.gym_membership_code_audit')
+)
+BEGIN
+    CREATE INDEX IX_gym_membership_code_audit_member_date
+        ON dbo.gym_membership_code_audit(member_id, created_at DESC, id DESC);
 END;
 
 -- Application authentication is intentionally separate from gym members.

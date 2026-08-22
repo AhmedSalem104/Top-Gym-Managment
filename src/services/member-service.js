@@ -2,6 +2,7 @@ const { getPool, sql } = require('../database');
 const { withTransaction } = require('../database/transaction');
 const memberRepository = require('../repositories/member.repository');
 const alertContactService = require('./alert-contact-service');
+const membershipCodeService = require('./membership-code-service');
 const { MEMBER_ROWS_CTE } = memberRepository;
 const {
     addDays,
@@ -576,7 +577,9 @@ async function getMemberById(id, connection = null) {
         today: todayInTimeZone()
     });
     if (!result.recordset[0]) throw appError('العضو غير موجود.', 404);
-    return mapMember(result.recordset[0]);
+    const member = mapMember(result.recordset[0]);
+    if (!connection) member.membershipCode = await membershipCodeService.getPreview(memberId);
+    return member;
 }
 
 async function getMembers({ search = '', status = '', sort = 'expiry', page = 1, pageSize = DEFAULT_MEMBER_PAGE_SIZE } = {}) {
@@ -597,9 +600,11 @@ async function getMembers({ search = '', status = '', sort = 'expiry', page = 1,
         today: todayInTimeZone()
     });
     const mappedMembers = result.recordset.map(mapMember);
+    const membershipCodePreviews = await membershipCodeService.getPreviews(mappedMembers.map((member) => member.id));
     const attendanceByMember = await getMemberAttendanceStatuses(mappedMembers.map((member) => member.id));
     const members = mappedMembers.map((member) => ({
         ...member,
+        membershipCode: membershipCodePreviews.get(member.id) || { active: false, maskedCode: null, issuedAt: null, version: 0 },
         attendance: attendanceByMember.get(member.id) || null
     }));
     const total = result.recordset[0]?.totalCount === undefined
@@ -1099,6 +1104,8 @@ async function createMember(body) {
     const amountPaid = data.amountPaid ?? 0;
     await ensureMemberIdentityFields();
     await ensurePaymentTransactionsTable();
+    await membershipCodeService.ensureMembershipCodeStorage();
+    let issuedMembershipCode = null;
     const memberId = await withTransaction(async (transaction) => {
         await assertNoDuplicateMember(transaction, data.phoneNormalized, data.email);
         const pricing = await calculatePricing(data.membershipType, data.membershipPlan, data.discountAmount, transaction);
@@ -1116,6 +1123,7 @@ async function createMember(body) {
                     OUTPUT INSERTED.id
                     VALUES (@fullName, @phone, @phoneNormalized, @email, @registrationDate, @notes);`);
         const id = Number(memberResult.recordset[0].id);
+        issuedMembershipCode = await membershipCodeService.issueForMember(id, transaction, { action: 'issued' });
         const membershipResult = await transaction.request()
             .input('memberId', sql.Int, id)
             .input('membershipPlan', sql.VarChar(30), data.membershipPlan)
@@ -1164,7 +1172,12 @@ async function createMember(body) {
         });
         return id;
     });
-    return getMemberById(memberId);
+    const member = await getMemberById(memberId);
+    return {
+        ...member,
+        membershipCode: issuedMembershipCode,
+        membershipCodePortalUrl: membershipCodeService.getPortalUrl()
+    };
 }
 
 async function updateMember(id, body) {
@@ -1663,6 +1676,7 @@ async function getMemberDetails(id) {
     ]);
 
     const memberRow = memberResult.recordset[0];
+    const membershipCode = await membershipCodeService.getPreview(memberId);
     if (!memberRow) throw appError('العضو غير موجود.', 404);
 
     const freezeRows = freezesResult.recordset.map((row) => {
@@ -1758,7 +1772,8 @@ async function getMemberDetails(id) {
             registrationDate: formatDateOnly(memberRow.registration_date),
             notes: memberRow.notes,
             createdAt: memberRow.created_at,
-            updatedAt: memberRow.updated_at
+            updatedAt: memberRow.updated_at,
+            membershipCode
         },
         memberships,
         freezes: freezeRows,

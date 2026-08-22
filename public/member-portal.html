@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex,nofollow">
+    <meta name="theme-color" content="#0f172a">
+    <title>بيانات عضويتي | TOP GYM</title>
+    <link rel="stylesheet" href="/css/main.css?v=24">
+</head>
+<body class="member-portal-page">
+    <main class="portal-shell">
+        <section class="portal-login" id="portalLoginPanel" aria-labelledby="portalTitle">
+            <div class="portal-brand-mark" aria-hidden="true">TG</div>
+            <p class="portal-eyebrow">TOP GYM</p>
+            <h1 id="portalTitle">بيانات عضويتي</h1>
+            <p class="portal-intro">تابع اشتراكك وحضورك ومدفوعاتك باستخدام كود العضوية الخاص بك.</p>
+            <form id="portalLookupForm" class="portal-lookup-form" novalidate>
+                <label for="membershipCodeInput">كود العضوية</label>
+                <input id="membershipCodeInput" name="membershipCode" type="text" inputmode="text" autocomplete="one-time-code" autocapitalize="characters" spellcheck="false" placeholder="TG-XXXX-XXXX-XXXX-XXXX" maxlength="24" required>
+                <p class="portal-field-hint">أدخل الكود كما استلمته من إدارة TOP GYM.</p>
+                <button class="btn btn-primary portal-submit" id="portalSubmitButton" type="submit"><span>عرض بياناتي</span><span class="portal-spinner" aria-hidden="true"></span></button>
+                <p class="portal-error" id="portalError" role="alert" hidden></p>
+            </form>
+        </section>
+
+        <section class="portal-result" id="portalResult" hidden aria-live="polite">
+            <header class="portal-result-header">
+                <div>
+                    <p class="portal-eyebrow">TOP GYM</p>
+                    <h2>تقرير حالة العضوية</h2>
+                    <p id="portalIssueMeta"></p>
+                </div>
+                <div class="portal-actions" data-no-print>
+                    <button class="btn btn-light" id="portalPrintButton" type="button">طباعة التقرير</button>
+                    <button class="btn btn-primary" id="portalPdfButton" type="button">تنزيل PDF</button>
+                    <button class="btn btn-light" id="portalResetButton" type="button">كود آخر</button>
+                </div>
+            </header>
+            <div id="portalReportContent" class="portal-report-content"></div>
+            <footer class="portal-report-signatures">
+                <p>صادر من إدارة TOP GYM</p>
+                <div><span>ك/ أحمد عبد الحميد</span><span>ك/ كريم عبد الحميد</span></div>
+            </footer>
+        </section>
+        <footer class="portal-ui-footer" data-no-print>TOP GYM · إدارة أسهل، أداء أفضل</footer>
+    </main>
+    <script defer src="/js/member-portal.js?v=1"></script>
+</body>
+</html>

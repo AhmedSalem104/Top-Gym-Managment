@@ -258,6 +258,42 @@
   min-width: 1120px;
 }
 
+.membership-portal-code-card {
+  display: grid;
+  gap: var(--space-4);
+  margin-bottom: var(--space-5);
+  padding: var(--space-5);
+  border: 1px solid #bfd5ff;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, #f7faff, #eef5ff);
+}
+
+.membership-portal-code-head,
+.membership-portal-code-value,
+.membership-portal-code-actions { display: flex; align-items: center; gap: var(--space-3); }
+.membership-portal-code-head { justify-content: space-between; }
+.membership-portal-code-kicker { display: block; margin-bottom: 2px; color: var(--color-primary); font-size: var(--font-xs); font-weight: var(--weight-bold); }
+.membership-portal-code-head h4 { margin: 0; color: var(--color-text); font-size: var(--font-lg); }
+.membership-portal-code-head p { margin: 3px 0 0; color: var(--color-text-muted); font-size: var(--font-xs); }
+.membership-portal-code-status { padding: 5px 10px; border-radius: 999px; font-size: var(--font-xs); font-weight: var(--weight-bold); }
+.membership-portal-code-status.active { background: var(--color-success-soft); color: var(--color-success); }
+.membership-portal-code-status.inactive { background: var(--color-danger-soft); color: var(--color-danger); }
+.membership-portal-code-value { justify-content: space-between; padding: var(--space-4); border: 1px dashed #9dbcf7; border-radius: var(--radius-md); background: #fff; }
+.membership-portal-code-value code { color: #1749b7; font: 800 1.2rem/1.3 Inter, "Cairo", sans-serif; letter-spacing: .08em; }
+.membership-portal-code-value span { color: var(--color-text-muted); font-size: var(--font-xs); }
+.membership-portal-code-actions { flex-wrap: wrap; }
+.membership-portal-code-actions .btn { min-height: 42px; }
+.member-code-preview { display: block; color: var(--color-primary); }
+.member-code-preview b { font-family: Inter, "Cairo", sans-serif; font-weight: var(--weight-bold); letter-spacing: .04em; }
+
+@media (max-width: 640px) {
+  .membership-portal-code-card { padding: var(--space-4); }
+  .membership-portal-code-head { align-items: flex-start; }
+  .membership-portal-code-value { align-items: flex-start; flex-direction: column; }
+  .membership-portal-code-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .membership-portal-code-actions .btn:last-child { grid-column: 1 / -1; }
+}
+
 .members-table th,
 .members-table td {
   white-space: nowrap;

@@ -76,6 +76,9 @@
                 const payload = detail.payload || {};
                 const membership = member.membership || {};
                 const labels = detail.labels || {};
+                const rawMembershipCode = detail.membershipCode || member.membershipCode;
+                const membershipCode = typeof rawMembershipCode === 'string' ? rawMembershipCode : '';
+                const portalUrl = detail.portalUrl || member.membershipCodePortalUrl || `${window.location.origin}/member-portal`;
                 const name = inlineText(member.fullName || payload.fullName, 'عضو TOP GYM');
                 const greetingName = name;
                 const plan = inlineText(labels.plan || membership.plan || payload.membershipPlan);
@@ -95,6 +98,9 @@
                 ];
                 if (remainingAmount > 0) accountLines.push('• المتبقي: *' + money(remainingAmount) + '*');
                 accountLines.push('• طريقة الدفع: *' + paymentMethod + '*');
+                if (membershipCode) {
+                    accountLines.push('', '*كود العضوية الخاص بك لبوابة المشترك:*', `*${membershipCode}*`, '', '*رابط بوابة المشترك:*', portalUrl, 'لا تشارك الكود مع أي شخص.');
+                }
                 return messageFrame('TOP GYM', [
                     `السلام عليكم يا *${greetingName}*`,
                     '',
@@ -178,6 +184,16 @@
                 }).then((result) => {
                     if (result.isConfirmed) openWhatsappChat(phone, message);
                 });
+            }
+
+            function sendMembershipPortalInvite(detail = {}) {
+                const member = detail.member || {};
+                const phone = normalizeEgyptianPhone(detail.phone || member.phone);
+                if (!phone) throw new Error('رقم هاتف المشترك غير صالح لفتح واتساب.');
+                const message = buildMessage({ ...detail, member, portalUrl: detail.portalUrl || `${window.location.origin}/member-portal` });
+                const opened = openWhatsappChat(phone, message);
+                showWhatsappStatus(phone, message, opened);
+                return opened;
             }
 
             function sendWhatsappMessage(detail) {
@@ -403,7 +419,8 @@
             window.topGymWhatsapp = {
                 prepareWindow: prepareWhatsappWindow,
                 closeWindow: closeWhatsappWindow,
-                sendAlert: sendAlertWhatsapp
+                sendAlert: sendAlertWhatsapp,
+                sendMembershipPortalInvite
             };
 
             window.addEventListener('topgym:member-created', (event) => {
