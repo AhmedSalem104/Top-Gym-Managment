@@ -7,6 +7,7 @@ function registerMembersRoutes(app, { memberService, asyncRoute }) {
     app.get('/api/members', asyncRoute(controller.list));
     app.get('/api/members/:id/details', asyncRoute(controller.details));
     app.get('/api/members/:id', asyncRoute(controller.getById));
+    app.post('/api/members/:id/alert-communications', asyncRoute(controller.markAlertCommunication));
     app.post('/api/members', asyncRoute(controller.create));
     app.put('/api/members/:id', asyncRoute(controller.update));
     app.post('/api/members/:id/freeze', asyncRoute(controller.freeze));

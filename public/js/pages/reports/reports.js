@@ -66,7 +66,7 @@
         const memberId = member?.memberId || member?.id;
         if (!memberId || !member.phone || Number(member.amountRemaining || 0) <= 0) return '';
         const title = 'إرسال تذكير عبر واتساب';
-        return `<button type="button" class="alert-whatsapp-button reports-whatsapp-button" data-alert-whatsapp="debt" data-report-whatsapp="true" data-member-id="${escapeHtml(memberId)}" data-alert-name="${escapeHtml(member.fullName)}" data-alert-phone="${escapeHtml(member.phone)}" data-alert-status="${escapeHtml(member.status || '')}" data-alert-end="${escapeHtml(member.endDate || '')}" data-alert-remaining="${escapeHtml(member.amountRemaining)}" title="${title}" aria-label="${title}">${reportIcon('whatsapp')}</button>`;
+        return `<button type="button" class="alert-whatsapp-button reports-whatsapp-button" data-alert-whatsapp="debt" data-report-whatsapp="true" data-member-id="${escapeHtml(memberId)}" data-alert-key="${escapeHtml(member.alertKey || '')}" data-alert-name="${escapeHtml(member.fullName)}" data-alert-phone="${escapeHtml(member.phone)}" data-alert-status="${escapeHtml(member.status || '')}" data-alert-end="${escapeHtml(member.endDate || '')}" data-alert-remaining="${escapeHtml(member.amountRemaining)}" title="${title}" aria-label="${title}">${reportIcon('whatsapp')}</button>`;
     }
     function reportKpi(title, value, meta, tone, icon = 'chart') {
         return `<article class="report-kpi ${tone}"><div class="report-kpi-top"><span class="report-kpi-label">${title}</span><span class="report-kpi-icon">${reportIcon(icon)}</span></div><strong>${value}</strong><small>${meta}</small></article>`;
@@ -81,6 +81,14 @@
         if (!value) return '—';
         const date = new Date(value);
         return Number.isNaN(date.getTime()) ? String(value) : new Intl.DateTimeFormat('ar-EG', { dateStyle: 'medium', timeStyle: 'short' }).format(date);
+    }
+    function alertContactMarkup(contact) {
+        if (!contact?.status) return '';
+        const sent = contact.status === 'sent';
+        const labelText = sent ? 'تم التواصل' : 'تم فتح واتساب';
+        const timestamp = sent ? contact.sentAt : contact.openedAt;
+        const title = timestamp ? `${labelText} — ${dateTime(timestamp)}` : labelText;
+        return `<span class="alert-contact-state ${sent ? 'sent' : 'opened'}" title="${escapeHtml(title)}"><span class="alert-contact-dot" aria-hidden="true"></span>${labelText}</span>`;
     }
     function todayIso() {
         const date = new Date();
@@ -361,7 +369,7 @@
         const timeline = renderTimeline(data);
         const breakdown = renderBreakdown(data);
         const debtors = data.debtors || [];
-        const debtorsHtml = debtors.length ? `<table class="reports-table reports-debtors-table"><thead><tr><th>المشترك</th><th>الباقة</th><th>المتبقي</th><th>إجراء</th></tr></thead><tbody>${debtors.map((member) => `<tr><td><strong>${escapeHtml(member.fullName)}</strong><small>${escapeHtml(member.phone)}</small></td><td>${escapeHtml(label(PLAN_LABELS, member.plan))}</td><td class="has-debt">${money(member.amountRemaining)}</td><td><div class="reports-debtor-actions"><button class="btn btn-light btn-small" type="button" data-report-member-action="details" data-member-id="${member.id}">التفاصيل</button><button class="btn btn-primary btn-small" type="button" data-report-member-action="payment" data-member-id="${member.id}">تسجيل دفعة</button>${reportWhatsappButton(member)}</div></td></tr>`).join('')}</tbody></table>` : '<div class="reports-empty-state">لا توجد مبالغ متبقية حاليًا.</div>';
+        const debtorsHtml = debtors.length ? `<table class="reports-table reports-debtors-table"><thead><tr><th>المشترك</th><th>الباقة</th><th>المتبقي</th><th>إجراء</th></tr></thead><tbody>${debtors.map((member) => `<tr><td><strong>${escapeHtml(member.fullName)}</strong><small>${escapeHtml(member.phone)}</small></td><td>${escapeHtml(label(PLAN_LABELS, member.plan))}</td><td class="has-debt">${money(member.amountRemaining)}</td><td><div class="reports-debtor-actions">${alertContactMarkup(member.alertContact)}<button class="btn btn-light btn-small" type="button" data-report-member-action="details" data-member-id="${member.id}">التفاصيل</button><button class="btn btn-primary btn-small" type="button" data-report-member-action="payment" data-member-id="${member.id}">تسجيل دفعة</button>${reportWhatsappButton(member)}</div></td></tr>`).join('')}</tbody></table>` : '<div class="reports-empty-state">لا توجد مبالغ متبقية حاليًا.</div>';
         view.innerHTML = `<div class="reports-kpis">${kpis}</div><div class="reports-grid"><section class="report-card"><div class="report-card-head"><div><span>التحليل الزمني</span><h3>الحركة اليومية</h3></div></div>${timeline}</section><section class="report-card"><div class="report-card-head"><div><span>التوزيع</span><h3>الباقات وطرق الدفع</h3></div></div>${breakdown}</section></div><section class="report-card reports-members-card"><div class="report-card-head"><div><span>أولوية التحصيل</span><h3>المشتركون عليهم مستحقات</h3></div><span class="reports-members-count">${number(summary.debtorsCount)} مشترك</span></div><div class="reports-table-wrap">${debtorsHtml}</div></section>`;
     }
 
@@ -395,7 +403,7 @@
         const query = localFilterValue();
         const members = (data.memberships || data.members || []).filter((member) => (!status || member.status === status) && (!plan || member.plan === plan) && (!debtorsOnly || Number(member.amountRemaining) > 0) && (contains(member.fullName, query) || contains(member.phone, query)));
         const statuses = (data.breakdown?.statuses || []).map((item) => `<div class="report-summary-chip"><span>${escapeHtml(label(STATUS_LABELS, item.key))}</span><strong>${number(item.value)}</strong></div>`).join('');
-        const rows = members.map((member) => `<tr><td><strong>${escapeHtml(member.fullName)}</strong><small>${escapeHtml(member.phone)}</small></td><td>${escapeHtml(label(PLAN_LABELS, member.plan))}<small>${escapeHtml(label(TYPE_LABELS, member.type))}</small></td><td>${reportBadge(member.status, STATUS_LABELS)}</td><td>${dateOnly(member.startDate)}<small>حتى ${dateOnly(member.endDate)}</small></td><td>${money(member.amountDue)}<small>مدفوع ${money(member.amountPaid)}</small></td><td class="${Number(member.amountRemaining) > 0 ? 'has-debt' : 'paid'}">${money(member.amountRemaining)}</td><td><div class="reports-debtor-actions">${reportWhatsappButton(member) || '<span class="reports-no-action">—</span>'}</div></td></tr>`).join('');
+        const rows = members.map((member) => `<tr><td><strong>${escapeHtml(member.fullName)}</strong><small>${escapeHtml(member.phone)}</small></td><td>${escapeHtml(label(PLAN_LABELS, member.plan))}<small>${escapeHtml(label(TYPE_LABELS, member.type))}</small></td><td>${reportBadge(member.status, STATUS_LABELS)}</td><td>${dateOnly(member.startDate)}<small>حتى ${dateOnly(member.endDate)}</small></td><td>${money(member.amountDue)}<small>مدفوع ${money(member.amountPaid)}</small></td><td class="${Number(member.amountRemaining) > 0 ? 'has-debt' : 'paid'}">${money(member.amountRemaining)}</td><td><div class="reports-debtor-actions">${member.alertContact ? alertContactMarkup(member.alertContact) : ''}${reportWhatsappButton(member) || '<span class="reports-no-action">—</span>'}</div></td></tr>`).join('');
         view.innerHTML = `<div class="report-summary-strip">${statuses}<div class="report-summary-chip total"><span>في الفترة</span><strong>${number(members.length)}</strong></div></div><section class="report-card reports-members-card"><div class="report-card-head"><div><span>تفاصيل الفترة</span><h3>سجل الاشتراكات والعضويات</h3></div><span class="reports-members-count">${number(members.length)} نتيجة</span></div><div class="reports-table-wrap">${rows ? `<table class="reports-table"><thead><tr><th>المشترك</th><th>الباقة والنوع</th><th>الحالة</th><th>الفترة</th><th>الحساب</th><th>المتبقي</th><th>تواصل</th></tr></thead><tbody>${rows}</tbody></table>` : '<div class="reports-empty-state">لا توجد نتائج مطابقة للفلاتر.</div>'}</div></section>`;
     }
 

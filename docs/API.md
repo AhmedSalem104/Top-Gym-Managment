@@ -19,6 +19,29 @@ All application endpoints are under `/api`. Protected requests require the serve
 
 `/api/members` supports list, details, single-member reads, create, update, freeze, resume, renew, membership creation and delete. The payment path is `/api/memberships/:id/payments`.
 
+### Alert communication state
+
+The WhatsApp reminder button records its workflow without claiming that the
+external WhatsApp client confirmed delivery. The first request records that
+WhatsApp was opened; the operator can then confirm that the message was sent.
+
+```http
+POST /api/members/:id/alert-communications
+Content-Type: application/json
+
+{
+  "alertKind": "debt",
+  "alertKey": "debt:3812:150.00",
+  "status": "opened"
+}
+```
+
+`alertKind` is one of `membership`, `debt`, or `inactive`; `status` is
+`opened` or `sent`. Dashboard alerts and report tables return the same
+`alertKey` plus `alertContact.status`, `openedAt`, `sentAt`, and `sendCount`.
+The key stays stable while the underlying alert reason is unchanged, so a
+reminder is not shown as new every day.
+
 ## Attendance
 
 | Method | Path |

@@ -41,7 +41,7 @@
         },
         reports: {
             styles: [],
-            scripts: ['/js/pages/reports/reports.js?v=8']
+            scripts: ['/js/pages/reports/reports.js?v=9']
         },
         management: {
             styles: [],

@@ -4,6 +4,7 @@ const { ensurePaymentTransactionsTable, getDashboard } = require('./member-servi
 const { ensureExpensesTable } = require('./finance-service');
 const { ensureCoachingTables } = require('./coaching-service');
 const { ensureLibraryData } = require('./library-service');
+const alertContactService = require('./alert-contact-service');
 const dayPassRepository = require('../repositories/day-pass.repository');
 
 function appError(message, statusCode = 400) {
@@ -224,6 +225,47 @@ async function getReportData(query = {}) {
     const workoutProgramRows = coachingRecordsets[2] || [];
     const dietPlanRows = coachingRecordsets[3] || [];
     const libraryStats = libraryResult.recordset?.[0] || {};
+    const debtAlertRowsByIdentity = new Map();
+    [
+        ...debtorRows.map((row) => ({ ...row, member_id: row.member_id || row.id })),
+        ...membershipRows.map((row) => ({ ...row, membership_id: row.membership_id || row.id }))
+    ]
+        .filter((row) => Number(row.amount_remaining || 0) > 0 && row.membership_id && row.member_id)
+        .forEach((row) => debtAlertRowsByIdentity.set(`${row.member_id}:${row.membership_id}`, row));
+    const debtAlertRows = [...debtAlertRowsByIdentity.values()];
+    const debtAlertSnapshots = debtAlertRows.map((row) => ({
+        id: Number(row.member_id),
+        alertKind: 'debt',
+        membership: {
+            id: Number(row.membership_id),
+            amountRemaining: Number(row.amount_remaining || 0),
+            endDate: formatDateOnly(row.end_date),
+            effectiveEndDate: formatDateOnly(row.end_date)
+        }
+    }));
+    const debtAlertContacts = await alertContactService.getLatestForAlerts(debtAlertSnapshots);
+    function debtAlertState(row) {
+        const memberId = row.member_id || (row.membership_id ? row.id : null);
+        const membershipId = row.membership_id || (row.member_id ? row.id : null);
+        if (Number(row.amount_remaining || 0) <= 0 || !memberId || !membershipId) {
+            return { alertKey: null, alertContact: null };
+        }
+        const alert = {
+            id: Number(memberId),
+            alertKind: 'debt',
+            membership: {
+                id: Number(membershipId),
+                amountRemaining: Number(row.amount_remaining || 0),
+                endDate: formatDateOnly(row.end_date),
+                effectiveEndDate: formatDateOnly(row.end_date)
+            }
+        };
+        const alertKey = alertContactService.buildAlertKey(alert);
+        return {
+            alertKey,
+            alertContact: debtAlertContacts.get(alertContactService.compositeKey(alert.id, alert.alertKind, alertKey)) || null
+        };
+    }
     const subscriptionCollected = roundMoney(paymentRows.reduce((sum, row) => sum + Number(row.amount || 0), 0));
     const dayPassCollected = roundMoney(dayPassRows.reduce((sum, row) => sum + Number(row.amountPaid || 0), 0));
     const collected = roundMoney(subscriptionCollected + dayPassCollected);
@@ -310,7 +352,8 @@ async function getReportData(query = {}) {
             amountDue: Number(row.amount_due || 0),
             amountPaid: Number(row.amount_paid || 0),
             amountRemaining: Number(row.amount_remaining || 0),
-            status: row.membership_status || 'active'
+            status: row.membership_status || 'active',
+            ...debtAlertState(row)
         })),
         payments: paymentRows.map((row) => ({
             id: Number(row.id),
@@ -391,6 +434,7 @@ async function getReportData(query = {}) {
         },
         debtors: debtorRows.map((row) => ({
             id: Number(row.id),
+            memberId: Number(row.id),
             membershipId: Number(row.membership_id),
             fullName: row.full_name,
             phone: row.phone,
@@ -401,7 +445,8 @@ async function getReportData(query = {}) {
             endDate: formatDateOnly(row.end_date),
             amountDue: Number(row.amount_due || 0),
             amountPaid: Number(row.amount_paid || 0),
-            amountRemaining: Number(row.amount_remaining || 0)
+            amountRemaining: Number(row.amount_remaining || 0),
+            ...debtAlertState({ ...row, member_id: row.id })
         })),
         members: memberRows.map((row) => ({
             id: Number(row.id),

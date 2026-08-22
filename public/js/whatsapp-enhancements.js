@@ -289,6 +289,73 @@
                 ]).join('\n');
             }
 
+            function formatContactDate(value) {
+                if (!value) return '';
+                const date = new Date(value);
+                return Number.isNaN(date.getTime()) ? '' : new Intl.DateTimeFormat('ar-EG', { dateStyle: 'medium', timeStyle: 'short' }).format(date);
+            }
+
+            function updateAlertContactState(button, contact) {
+                if (!button || !contact?.status) return;
+                const host = button.closest('.alert-card-actions, .reports-debtor-actions');
+                if (!host) return;
+                host.querySelectorAll(':scope > .alert-contact-state').forEach((item) => item.remove());
+                const state = document.createElement('span');
+                state.className = `alert-contact-state ${contact.status === 'sent' ? 'sent' : 'opened'}`;
+                const label = contact.status === 'sent' ? 'تم التواصل' : 'تم فتح واتساب';
+                const timestamp = contact.status === 'sent' ? contact.sentAt : contact.openedAt;
+                const formatted = formatContactDate(timestamp);
+                state.title = formatted ? `${label} — ${formatted}` : label;
+                state.innerHTML = `<span class="alert-contact-dot" aria-hidden="true"></span>${label}`;
+                host.insertBefore(state, button);
+            }
+
+            async function recordAlertCommunication(memberId, kind, status, button) {
+                const alertKey = button?.dataset.alertKey || '';
+                if (!memberId || !kind || !alertKey) return null;
+                const response = await fetch(`/api/members/${encodeURIComponent(memberId)}/alert-communications`, {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ alertKind: kind, alertKey, status })
+                });
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok) throw new Error(data.error || 'تعذر حفظ حالة التواصل.');
+                return data.contact || null;
+            }
+
+            async function markAlertOpened(memberId, kind, button) {
+                let contact = null;
+                try {
+                    contact = await recordAlertCommunication(memberId, kind, 'opened', button);
+                    updateAlertContactState(button, contact);
+                } catch (_) {
+                    if (window.Swal) window.Swal.fire({ toast: true, position: 'top-start', icon: 'warning', title: 'تم فتح واتساب', text: 'تعذر حفظ حالة التواصل في النظام.', showConfirmButton: false, timer: 3800, customClass: { popup: 'top-gym-alert top-gym-toast' } });
+                }
+
+                if (!window.Swal || !button?.dataset.alertKey) return contact;
+                const result = await window.Swal.fire({
+                    icon: 'question',
+                    title: 'هل تم إرسال الرسالة؟',
+                    text: 'تم فتح واتساب والرسالة جاهزة. لا يستطيع النظام معرفة الإرسال تلقائيًا، لذلك أكّد الحالة يدويًا.',
+                    showCancelButton: true,
+                    confirmButtonText: 'تم الإرسال',
+                    cancelButtonText: 'لم أرسل بعد',
+                    buttonsStyling: false,
+                    customClass: { popup: 'top-gym-alert', confirmButton: 'btn btn-primary', cancelButton: 'btn btn-light' }
+                });
+                if (!result.isConfirmed) return contact;
+
+                try {
+                    contact = await recordAlertCommunication(memberId, kind, 'sent', button);
+                    updateAlertContactState(button, contact);
+                    window.Swal.fire({ toast: true, position: 'top-start', icon: 'success', title: 'تم تسجيل التواصل ✅', text: 'لن يظهر التنبيه كغير متواصل حتى تتغير حالته.', showConfirmButton: false, timer: 3600, customClass: { popup: 'top-gym-alert top-gym-toast' } });
+                } catch (_) {
+                    window.Swal.fire({ toast: true, position: 'top-start', icon: 'warning', title: 'تم فتح واتساب', text: 'تعذر تسجيل تأكيد الإرسال.', showConfirmButton: false, timer: 3800, customClass: { popup: 'top-gym-alert top-gym-toast' } });
+                }
+                return contact;
+            }
+
             async function sendAlertWhatsapp(memberId, kind, button = null) {
                 if (button) button.disabled = true;
                 const fallbackPhone = normalizeEgyptianPhone(button?.dataset.alertPhone);
@@ -307,7 +374,7 @@
                 if (fallbackPhone && !isMobileDevice()) preparedWindow = prepareWhatsappWindow(fallbackPhone);
                 if (fallbackPhone && isMobileDevice()) {
                     const opened = openWhatsappChat(fallbackPhone, buildAlertMessage(fallbackMember, kind));
-                    if (opened && window.Swal) window.Swal.fire({ toast: true, position: 'top-start', icon: 'success', title: 'واتساب جاهز للإرسال ✅', text: 'الإرسال يدوي بعد مراجعة الرسالة.', showConfirmButton: false, timer: 3200, customClass: { popup: 'top-gym-alert top-gym-toast' } });
+                    if (opened) await markAlertOpened(memberId, kind, button);
                     if (button) button.disabled = false;
                     return;
                 }
@@ -321,7 +388,7 @@
                     const message = buildAlertMessage(member, kind);
                     const opened = openWhatsappChat(phone, message, preparedWindow);
                     if (opened) {
-                        if (window.Swal) window.Swal.fire({ toast: true, position: 'top-start', icon: 'success', title: 'واتساب جاهز للإرسال ✅', text: 'الإرسال يدوي بعد مراجعة الرسالة.', showConfirmButton: false, timer: 3200, customClass: { popup: 'top-gym-alert top-gym-toast' } });
+                        await markAlertOpened(memberId, kind, button);
                     } else {
                         showWhatsappStatus(phone, message, null);
                     }

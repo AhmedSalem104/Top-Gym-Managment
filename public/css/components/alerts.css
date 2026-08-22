@@ -251,6 +251,36 @@
   font-weight: var(--weight-bold);
 }
 
+.alert-contact-state {
+  display: inline-flex;
+  min-height: 28px;
+  align-items: center;
+  gap: 5px;
+  border-radius: var(--radius-pill);
+  padding: 0 var(--space-2);
+  font-size: var(--font-xs);
+  font-weight: var(--weight-semibold);
+  white-space: nowrap;
+}
+
+.alert-contact-state.opened {
+  background: var(--color-warning-soft);
+  color: var(--color-warning);
+}
+
+.alert-contact-state.sent {
+  background: var(--color-success-soft);
+  color: var(--color-success);
+}
+
+.alert-contact-dot {
+  width: 6px;
+  height: 6px;
+  flex: 0 0 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
 .alert-card.active .alert-status {
   border-color: var(--color-success);
   background: var(--color-success-soft);

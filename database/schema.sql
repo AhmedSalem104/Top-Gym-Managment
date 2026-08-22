@@ -1073,3 +1073,44 @@ BEGIN
 END;
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_gym_backup_archives_created' AND object_id = OBJECT_ID(N'dbo.gym_backup_archives'))
     CREATE INDEX IX_gym_backup_archives_created ON dbo.gym_backup_archives(created_at DESC, id DESC);
+
+-- Contact state for recurring member alerts. The alert key is a stable snapshot
+-- of the reason for the alert, so the UI can distinguish new alerts from a
+-- reminder that was already opened or confirmed as sent.
+IF OBJECT_ID(N'dbo.gym_alert_communications', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.gym_alert_communications (
+        id INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_gym_alert_communications PRIMARY KEY,
+        member_id INT NOT NULL,
+        channel VARCHAR(20) NOT NULL CONSTRAINT DF_gym_alert_communications_channel DEFAULT ('whatsapp'),
+        alert_kind VARCHAR(20) NOT NULL,
+        alert_key NVARCHAR(255) NOT NULL,
+        status VARCHAR(20) NOT NULL CONSTRAINT DF_gym_alert_communications_status DEFAULT ('opened'),
+        opened_at DATETIME2(0) NULL,
+        sent_at DATETIME2(0) NULL,
+        send_count INT NOT NULL CONSTRAINT DF_gym_alert_communications_send_count DEFAULT (0),
+        created_by_user_id INT NULL,
+        last_action_user_id INT NULL,
+        created_at DATETIME2(0) NOT NULL CONSTRAINT DF_gym_alert_communications_created DEFAULT (SYSUTCDATETIME()),
+        updated_at DATETIME2(0) NOT NULL CONSTRAINT DF_gym_alert_communications_updated DEFAULT (SYSUTCDATETIME()),
+        CONSTRAINT FK_gym_alert_communications_member FOREIGN KEY (member_id)
+            REFERENCES dbo.members(id) ON DELETE CASCADE,
+        CONSTRAINT CK_gym_alert_communications_channel CHECK (channel IN ('whatsapp')),
+        CONSTRAINT CK_gym_alert_communications_kind CHECK (alert_kind IN ('membership', 'debt', 'inactive')),
+        CONSTRAINT CK_gym_alert_communications_status CHECK (status IN ('opened', 'sent'))
+    );
+END;
+IF NOT EXISTS (
+    SELECT 1 FROM sys.indexes
+    WHERE name = N'UQ_gym_alert_communications_identity'
+      AND object_id = OBJECT_ID(N'dbo.gym_alert_communications')
+)
+    CREATE UNIQUE INDEX UQ_gym_alert_communications_identity
+        ON dbo.gym_alert_communications(member_id, channel, alert_kind, alert_key);
+IF NOT EXISTS (
+    SELECT 1 FROM sys.indexes
+    WHERE name = N'IX_gym_alert_communications_member_updated'
+      AND object_id = OBJECT_ID(N'dbo.gym_alert_communications')
+)
+    CREATE INDEX IX_gym_alert_communications_member_updated
+        ON dbo.gym_alert_communications(member_id, updated_at DESC, id DESC);

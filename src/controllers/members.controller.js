@@ -20,6 +20,16 @@ function createMembersController({ memberService }) {
             response.json({ member: await memberService.getMemberById(request.params.id) });
         },
 
+        markAlertCommunication: async (request, response) => {
+            response.json({
+                ...await memberService.markAlertCommunication(
+                    request.params.id,
+                    request.body || {},
+                    request.auth?.id
+                )
+            });
+        },
+
         create: async (request, response) => {
             response.status(201).json({ member: await memberService.createMember(request.body) });
         },

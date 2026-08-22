@@ -1,6 +1,7 @@
 const { getPool, sql } = require('../database');
 const { withTransaction } = require('../database/transaction');
 const memberRepository = require('../repositories/member.repository');
+const alertContactService = require('./alert-contact-service');
 const { MEMBER_ROWS_CTE } = memberRepository;
 const {
     addDays,
@@ -965,6 +966,15 @@ async function getDashboard() {
     }));
     const alerts = [...membershipAlerts, ...debtAlerts, ...inactiveAlerts]
         .filter((item, index, list) => list.findIndex((candidate) => `${candidate.alertKind}:${candidate.id}` === `${item.alertKind}:${item.id}`) === index);
+    const alertContacts = await alertContactService.getLatestForAlerts(alerts);
+    const alertsWithContactState = alerts.map((alert) => {
+        const alertKey = alertContactService.buildAlertKey(alert);
+        return {
+            ...alert,
+            alertKey,
+            alertContact: alertContacts.get(alertContactService.compositeKey(alert.id, alert.alertKind, alertKey)) || null
+        };
+    });
     return {
         today,
         stats: {
@@ -974,8 +984,12 @@ async function getDashboard() {
             expired: Number(row.expired || 0),
             frozen: Number(row.frozen || 0)
         },
-        alerts
+        alerts: alertsWithContactState
     };
+}
+
+async function markAlertCommunication(memberId, payload = {}, userId = null) {
+    return alertContactService.mark(memberId, payload, userId);
 }
 
 async function getRawMember(connection, id) {
@@ -1776,6 +1790,7 @@ module.exports = {
     getMemberDetails,
     ensurePaymentTransactionsTable,
     getMembers,
+    markAlertCommunication,
     getPricingCatalog,
     createPricingPlan,
     createMembershipType,

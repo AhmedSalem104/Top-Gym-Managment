@@ -19,6 +19,14 @@
                 : ALERT_ICON_PATHS[kind] || ALERT_ICON_PATHS[status] || ALERT_ICON_PATHS.expiring_soon;
             return `<span class="alert-status"><svg class="alert-status-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${path}</svg><span>${escapeHtml(label)}</span></span>`;
         }
+        function alertContactMarkup(contact) {
+            if (!contact?.status) return '';
+            const sent = contact.status === 'sent';
+            const label = sent ? 'تم التواصل' : 'تم فتح واتساب';
+            const timestamp = sent ? contact.sentAt : contact.openedAt;
+            const title = timestamp ? `${label} — ${formatDateTime(timestamp)}` : label;
+            return `<span class="alert-contact-state ${sent ? 'sent' : 'opened'}" title="${escapeHtml(title)}"><span class="alert-contact-dot" aria-hidden="true"></span>${label}</span>`;
+        }
         const PAYMENT_LABELS = { cash: 'نقدي', card: 'بطاقة', transfer: 'تحويل', other: 'أخرى' };
         const PAYMENT_TRANSACTION_LABELS = { subscription: 'اشتراك', payment: 'دفعة', adjustment: 'تسوية' };
          const EVENT_LABELS = { created: 'إضافة اشتراك', updated: 'تعديل بيانات', renewed: 'تجديد اشتراك', frozen: 'تجميد العضوية', resumed: 'استئناف العضوية', payment_updated: 'تحديث الدفع' };
@@ -289,11 +297,13 @@
                 const label = kind === 'debt' ? 'عليه مستحقات' : kind === 'inactive' ? 'غياب طويل' : (STATUS_LABELS[status] || status);
                 const whatsappTitle = status === 'expired' && kind === 'membership' ? 'رسالة تجديد' : 'واتساب يدوي';
                 const whatsappHint = status === 'expired' && kind === 'membership' ? 'إرسال رسالة التجديد' : 'تواصل الآن عبر واتساب';
+                const alertContact = member.alertContact || null;
+                const alertKey = member.alertKey || '';
                 const alertAction = member.id
-                    ? `<button type="button" class="alert-whatsapp-button" data-alert-whatsapp="${escapeHtml(kind)}" data-member-id="${escapeHtml(member.id)}" data-alert-name="${escapeHtml(member.fullName)}" data-alert-phone="${escapeHtml(member.phone)}" data-alert-status="${escapeHtml(status)}" data-alert-end="${escapeHtml(sub.effectiveEndDate || sub.endDate || '')}" data-alert-freeze-end="${escapeHtml(sub.freezeEnd || '')}" data-alert-remaining="${escapeHtml(sub.amountRemaining ?? '')}" data-alert-days="${escapeHtml(member.daysSinceLastVisit ?? '')}">${ALERT_WHATSAPP_ICON}<span><strong>${whatsappTitle}</strong><small>${whatsappHint}</small></span></button>`
+                    ? `<button type="button" class="alert-whatsapp-button" data-alert-whatsapp="${escapeHtml(kind)}" data-member-id="${escapeHtml(member.id)}" data-alert-key="${escapeHtml(alertKey)}" data-alert-name="${escapeHtml(member.fullName)}" data-alert-phone="${escapeHtml(member.phone)}" data-alert-status="${escapeHtml(status)}" data-alert-end="${escapeHtml(sub.effectiveEndDate || sub.endDate || '')}" data-alert-freeze-end="${escapeHtml(sub.freezeEnd || '')}" data-alert-remaining="${escapeHtml(sub.amountRemaining ?? '')}" data-alert-days="${escapeHtml(member.daysSinceLastVisit ?? '')}">${ALERT_WHATSAPP_ICON}<span><strong>${whatsappTitle}</strong><small>${whatsappHint}</small></span></button>`
                     : '';
                 const phone = String(member.phone || '');
-                return `<article class="alert-card ${status}" data-alert-enhanced="true" data-alert-kind="${escapeHtml(kind)}" data-member-id="${escapeHtml(member.id || '')}" data-alert-name="${escapeHtml(member.fullName)}" data-alert-phone="${escapeHtml(member.phone)}" data-alert-status="${escapeHtml(status)}" data-alert-end="${escapeHtml(sub.effectiveEndDate || sub.endDate || '')}" data-alert-freeze-end="${escapeHtml(sub.freezeEnd || '')}" data-alert-remaining="${escapeHtml(sub.amountRemaining ?? '')}" data-alert-days="${escapeHtml(member.daysSinceLastVisit ?? '')}">${alertIconMarkup(kind, status)}<div class="alert-card-body"><strong class="alert-card-name">${escapeHtml(member.fullName)}</strong><span class="alert-card-detail">${escapeHtml(detail)}</span><a class="alert-card-phone" href="tel:${escapeHtml(phone.replace(/\s+/g, ''))}">${escapeHtml(phone)}</a></div>${alertStatusMarkup(kind, status, label)}${alertAction}</article>`;
+                return `<article class="alert-card ${status}" data-alert-enhanced="true" data-alert-kind="${escapeHtml(kind)}" data-member-id="${escapeHtml(member.id || '')}" data-alert-name="${escapeHtml(member.fullName)}" data-alert-phone="${escapeHtml(member.phone)}" data-alert-status="${escapeHtml(status)}" data-alert-end="${escapeHtml(sub.effectiveEndDate || sub.endDate || '')}" data-alert-freeze-end="${escapeHtml(sub.freezeEnd || '')}" data-alert-remaining="${escapeHtml(sub.amountRemaining ?? '')}" data-alert-days="${escapeHtml(member.daysSinceLastVisit ?? '')}" data-alert-key="${escapeHtml(alertKey)}">${alertIconMarkup(kind, status)}<div class="alert-card-body"><div class="alert-card-content"><div class="alert-card-head"><strong class="alert-card-name">${escapeHtml(member.fullName)}</strong></div><span class="alert-card-detail">${escapeHtml(detail)}</span><a class="alert-card-phone" href="tel:${escapeHtml(phone.replace(/\s+/g, ''))}">${escapeHtml(phone)}</a></div><div class="alert-card-actions">${alertStatusMarkup(kind, status, label)}${alertContactMarkup(alertContact)}${alertAction}</div></div></article>`;
             }).join('') : '<div class="empty">لا توجد تنبيهات اليوم.</div>';
             const headerAlertCount = $('headerAlertCount'); if (headerAlertCount) headerAlertCount.textContent = alerts.length.toLocaleString('ar-EG');
         }
