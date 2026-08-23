@@ -2,7 +2,8 @@
    from page-specific layouts so it can follow the user across hash tabs. */
 .smart-assistant-launcher {
   position: fixed;
-  inset-inline-start: 24px;
+  left: 24px;
+  right: auto;
   bottom: 24px;
   z-index: var(--z-toast);
   display: inline-flex;
@@ -47,7 +48,8 @@
 
 .smart-assistant-panel {
   position: fixed;
-  inset-inline-start: 24px;
+  left: 24px;
+  right: auto;
   bottom: 88px;
   z-index: var(--z-toast);
   display: grid;
@@ -354,7 +356,8 @@
 
 @media (max-width: 767px) {
   .smart-assistant-launcher {
-    inset-inline-start: 16px;
+    left: 16px;
+    right: auto;
     bottom: max(16px, env(safe-area-inset-bottom, 0px));
     width: 52px;
     padding: 0;

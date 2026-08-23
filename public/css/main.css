@@ -2967,7 +2967,8 @@ body .swal2-close:hover {
    from page-specific layouts so it can follow the user across hash tabs. */
 .smart-assistant-launcher {
   position: fixed;
-  inset-inline-start: 24px;
+  left: 24px;
+  right: auto;
   bottom: 24px;
   z-index: var(--z-toast);
   display: inline-flex;
@@ -3012,7 +3013,8 @@ body .swal2-close:hover {
 
 .smart-assistant-panel {
   position: fixed;
-  inset-inline-start: 24px;
+  left: 24px;
+  right: auto;
   bottom: 88px;
   z-index: var(--z-toast);
   display: grid;
@@ -3319,7 +3321,8 @@ body .swal2-close:hover {
 
 @media (max-width: 767px) {
   .smart-assistant-launcher {
-    inset-inline-start: 16px;
+    left: 16px;
+    right: auto;
     bottom: max(16px, env(safe-area-inset-bottom, 0px));
     width: 52px;
     padding: 0;
@@ -13777,13 +13780,13 @@ body.auth-locked .auth-screen {
     width: 82px;
     min-width: 82px;
     overflow-x: hidden;
-    transition: width 180ms ease, box-shadow 180ms ease;
+    will-change: width;
+    transition: width 260ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 220ms ease;
   }
 
   .app-shell > .page-tabs:hover,
   .app-shell > .page-tabs.is-pinned {
     width: var(--desktop-sidebar-width, 272px);
-    min-width: var(--desktop-sidebar-width, 272px);
     box-shadow: 8px 0 32px rgb(30 61 104 / 0.12);
   }
 
@@ -13802,6 +13805,7 @@ body.auth-locked .auth-screen {
   .app-shell > .page-tabs:hover > .auth-account-bar .auth-logout-button > span,
   .app-shell > .page-tabs.is-pinned > .auth-account-bar .auth-logout-button > span {
     display: inline;
+    animation: sidebar-tab-label-in 160ms ease 90ms both;
   }
 
   .app-shell > .page-tabs:not(:hover):not(.is-pinned) > .auth-account-bar {
@@ -13854,6 +13858,17 @@ body.auth-locked .auth-screen {
   .sidebar-pin-button:focus-visible {
     outline: 2px solid rgb(23 105 232 / 0.28);
     outline-offset: 2px;
+  }
+
+  @keyframes sidebar-tab-label-in {
+    from {
+      opacity: 0;
+      transform: translateX(6px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
   }
 }
 
