@@ -1,5 +1,5 @@
 const { getPool, sql } = require('../database');
-const { ensureLibraryData } = require('./library-service');
+const { ensureLibraryData, ensureLibraryTables } = require('./library-service');
 const {
     addDays,
     differenceInDays,
@@ -95,10 +95,13 @@ function withTransaction(work) {
     });
 }
 
-async function ensureCoachingTables() {
+async function ensureCoachingTables({ seedLibrary = true } = {}) {
     if (!coachingTablesPromise) {
         coachingTablesPromise = (async () => {
-            await ensureLibraryData();
+            // The coaching schema only needs the library tables to exist. The
+            // large catalog seed is deferred until a feature actually needs
+            // exercise/food options (builder or library screen).
+            await ensureLibraryTables();
             const pool = await getPool();
             await pool.request().batch(`
                 IF OBJECT_ID(N'dbo.workout_programs', N'U') IS NULL
@@ -411,6 +414,8 @@ async function ensureCoachingTables() {
             throw error;
         });
     }
+    await coachingTablesPromise;
+    if (seedLibrary) await ensureLibraryData();
     return coachingTablesPromise;
 }
 
@@ -712,6 +717,44 @@ async function getClientOptions({ search = '', limit = 100 } = {}) {
                 WHERE (@search = N'' OR full_name LIKE @pattern OR phone LIKE @pattern OR ISNULL(email, N'') LIKE @pattern)
                 ORDER BY full_name ASC, id ASC;`);
     return result.recordset.map((row) => ({ id: Number(row.id), fullName: row.full_name, phone: row.phone, email: row.email }));
+}
+
+async function getBuilderCatalog() {
+    await ensureCoachingTables();
+    const pool = await getPool();
+    const result = await pool.request().batch(`
+        SELECT id, name, name_ar, target_muscle_id, difficulty, equipment
+        FROM dbo.gym_exercises
+        WHERE JSON_VALUE(metadata_json, '$.catalogStatus') IS NULL
+           OR JSON_VALUE(metadata_json, '$.catalogStatus') <> N'legacy-compatibility'
+        ORDER BY COALESCE(name_ar, name), name, id;
+
+        SELECT id, name_ar, name_en, serving_size, serving_unit,
+               calories, protein, carbs, fat
+        FROM dbo.gym_foods
+        ORDER BY COALESCE(name_ar, name_en), name_en, id;
+    `);
+    return {
+        exercises: (result.recordsets?.[0] || []).map((row) => ({
+            id: Number(row.id),
+            name: row.name,
+            nameAr: row.name_ar,
+            targetMuscleId: row.target_muscle_id == null ? null : Number(row.target_muscle_id),
+            difficulty: row.difficulty,
+            equipment: row.equipment
+        })),
+        foods: (result.recordsets?.[1] || []).map((row) => ({
+            id: Number(row.id),
+            nameAr: row.name_ar,
+            nameEn: row.name_en,
+            servingSize: Number(row.serving_size || 0),
+            servingUnit: row.serving_unit,
+            calories: Number(row.calories || 0),
+            protein: Number(row.protein || 0),
+            carbs: Number(row.carbs || 0),
+            fat: Number(row.fat || 0)
+        }))
+    };
 }
 
 function normalizeWorkoutPayload(body = {}, { requireStructure = true } = {}) {
@@ -1461,6 +1504,55 @@ async function getTrainingExecutionSummary(memberId) {
     };
 }
 
+async function getTrainingSummary(memberId) {
+    await ensureCoachingTables({ seedLibrary: false });
+    const id = ensureId(memberId, 'معرّف العميل');
+    const pool = await getPool();
+    const result = await pool.request()
+        .input('memberId', sql.Int, id)
+        .batch(`
+            SELECT p.id, p.name, p.status,
+                   (SELECT COUNT_BIG(*) FROM dbo.workout_exercises e
+                    INNER JOIN dbo.workout_routines r ON r.id = e.routine_id
+                    WHERE r.program_id = p.id) AS exercise_count
+            FROM dbo.workout_programs AS p
+            WHERE p.member_id = @memberId AND p.status <> 'archived'
+            ORDER BY p.updated_at DESC, p.id DESC;
+
+            SELECT p.id, p.name, p.status,
+                   (SELECT COUNT_BIG(*) FROM dbo.diet_meal_items i
+                    INNER JOIN dbo.diet_meals m ON m.id = i.meal_id
+                    WHERE m.diet_plan_id = p.id) AS item_count
+            FROM dbo.diet_plans AS p
+            WHERE p.member_id = @memberId AND p.status <> 'archived'
+            ORDER BY p.updated_at DESC, p.id DESC;
+
+            SELECT
+                (SELECT COUNT_BIG(*) FROM dbo.body_measurements WHERE member_id = @memberId) AS measurement_count,
+                (SELECT COUNT_BIG(*) FROM dbo.workout_sessions WHERE member_id = @memberId AND status = 'completed') AS completed_sessions,
+                (SELECT COUNT_BIG(*) FROM dbo.meal_logs WHERE member_id = @memberId) AS meal_log_count;
+        `);
+    const [workoutRows = [], dietRows = [], countRows = []] = result.recordsets || [];
+    const counts = countRows[0] || {};
+    return {
+        workoutPrograms: workoutRows.map((row) => ({
+            id: Number(row.id),
+            name: row.name,
+            status: row.status,
+            exerciseCount: Number(row.exercise_count || 0)
+        })),
+        dietPlans: dietRows.map((row) => ({
+            id: Number(row.id),
+            name: row.name,
+            status: row.status,
+            itemCount: Number(row.item_count || 0)
+        })),
+        measurementCount: Number(counts.measurement_count || 0),
+        completedSessions: Number(counts.completed_sessions || 0),
+        mealLogCount: Number(counts.meal_log_count || 0)
+    };
+}
+
 async function getTrainingOverview(memberId) {
     const id = ensureId(memberId, 'معرّف العميل');
     await ensureReady();
@@ -1698,12 +1790,14 @@ module.exports = {
     ensureCoachingTables,
     getClientBase,
     getClientOptions,
+    getBuilderCatalog,
     getDietPlan,
     getDietPlans,
     getExternalTrainees,
     getCheckins,
     getMealLogs,
     getMeasurements,
+    getTrainingSummary,
     getTrainingOverview,
     getWorkoutProgram,
     getWorkoutPrograms,

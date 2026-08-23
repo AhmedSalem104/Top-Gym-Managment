@@ -39,7 +39,7 @@ const ROUTE_PERMISSION_RULES = Object.freeze([
 
     { pattern: /^\/external-trainees(?:\/|$)/, methods: ['GET'], all: [PERMISSIONS.TRAINEES_READ] },
     { pattern: /^\/external-trainees(?:\/|$)/, methods: ['POST'], all: [PERMISSIONS.TRAINEES_CREATE] },
-    { pattern: /^\/(?:coaching\/clients|clients\/\d+\/training-overview)(?:\/|$)/, methods: ['GET'], all: [PERMISSIONS.COACHING_READ] },
+    { pattern: /^\/(?:coaching\/clients|coaching\/catalog|clients\/\d+\/(?:coaching-summary|training-overview))(?:\/|$)/, methods: ['GET'], all: [PERMISSIONS.COACHING_READ] },
     { pattern: /^\/clients\/\d+$/, methods: ['PUT'], all: [PERMISSIONS.COACHING_UPDATE] },
     { pattern: /^\/clients\/\d+\/(?:measurements|checkins)(?:\/|$)/, methods: ['GET'], all: [PERMISSIONS.COACHING_READ] },
     { pattern: /^\/clients\/\d+\/(?:measurements|checkins)(?:\/|$)/, methods: ['POST'], all: [PERMISSIONS.COACHING_CREATE] },

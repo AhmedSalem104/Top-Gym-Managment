@@ -15,8 +15,16 @@ function createCoachingController({ coachingService }) {
         clients: async (request, response) => {
             response.json({ clients: await coachingService.getClientOptions({ search: request.query.search, limit: request.query.limit }) });
         },
+        builderCatalog: async (_request, response) => {
+            response.set('Cache-Control', 'private, max-age=120, stale-while-revalidate=300');
+            response.json(await coachingService.getBuilderCatalog());
+        },
         trainingOverview: async (request, response) => {
             response.json(await coachingService.getTrainingOverview(request.params.id));
+        },
+        trainingSummary: async (request, response) => {
+            response.set('Cache-Control', 'private, max-age=15, stale-while-revalidate=60');
+            response.json(await coachingService.getTrainingSummary(request.params.id));
         },
         updateClient: async (request, response) => {
             response.json({ member: await coachingService.updateClientBasic(request.params.id, request.body) });

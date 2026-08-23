@@ -9,6 +9,8 @@ function registerCoachingRoutes(app, { coachingService, asyncRoute }) {
     app.post('/api/external-trainees', asyncRoute(controller.createExternalTrainee));
 
     app.get('/api/coaching/clients', asyncRoute(controller.clients));
+    app.get('/api/coaching/catalog', asyncRoute(controller.builderCatalog));
+    app.get('/api/clients/:id/coaching-summary', asyncRoute(controller.trainingSummary));
     app.get('/api/clients/:id/training-overview', asyncRoute(controller.trainingOverview));
     app.put('/api/clients/:id', asyncRoute(controller.updateClient));
     app.get('/api/clients/:id/measurements', asyncRoute(controller.measurements));

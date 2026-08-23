@@ -280,26 +280,14 @@
     }
 
     async function loadCatalog() {
-        const assetsPromise = window.TopGymExerciseAssets?.load ? window.TopGymExerciseAssets.load().catch(() => null) : Promise.resolve();
-        const muscleAssetsPromise = window.TopGymMuscleAssets?.load ? window.TopGymMuscleAssets.load().catch(() => null) : Promise.resolve();
         if (state.catalog.exercises.length && state.catalog.foods.length) {
-            await Promise.all([assetsPromise, muscleAssetsPromise]);
             return state.catalog;
         }
         if (state.catalogPromise) return state.catalogPromise;
         state.catalogPromise = (async () => {
-            const loadCollection = async (type) => {
-                const firstPage = await requestJson(`/api/library/${type}?page=1&pageSize=100`);
-                const totalPages = Math.min(50, Math.max(1, Number(firstPage.pagination?.totalPages) || 1));
-                const remainingPages = totalPages > 1
-                    ? await Promise.all(Array.from({ length: totalPages - 1 }, (_, index) => requestJson(`/api/library/${type}?page=${index + 2}&pageSize=100`)))
-                    : [];
-                return [firstPage, ...remainingPages]
-                    .flatMap((page) => page.items || [])
-                    .filter((item, index, list) => list.findIndex((candidate) => candidate.id === item.id) === index);
-            };
-            [state.catalog.exercises, state.catalog.foods] = await Promise.all([loadCollection('exercises'), loadCollection('foods')]);
-            await Promise.all([assetsPromise, muscleAssetsPromise]);
+            const catalog = await requestJson('/api/coaching/catalog');
+            state.catalog.exercises = catalog.exercises || [];
+            state.catalog.foods = catalog.foods || [];
             return state.catalog;
         })();
         try {

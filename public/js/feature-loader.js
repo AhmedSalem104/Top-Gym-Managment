@@ -27,7 +27,8 @@
             styles: [],
             scripts: [
                 '/js/member-details-ui.js?v=3',
-                '/js/member-portal-admin.js?v=2'
+                '/js/member-portal-admin.js?v=2',
+                '/js/member-coaching-summary.js?v=1'
             ]
         },
         members: {
@@ -44,7 +45,7 @@
             scripts: [
                 '/js/exercise-assets.js?v=5',
                 '/js/muscle-assets.js?v=3',
-                '/js/pages/coaching/coaching.js?v=14'
+                '/js/pages/coaching/coaching.js?v=15'
             ]
         },
         print: {
@@ -232,16 +233,112 @@
         });
     }
 
-    function scheduleSmartAssistant() {
-        const start = async () => {
-            if (window.topGymAuthReady) await window.topGymAuthReady.catch(() => null);
-            if (!window.topGymAuth?.getUser?.()) return;
-            ensureTab('smart-assistant').catch((error) => console.warn('[TOP GYM] Smart assistant failed to load.', error));
+    function bindLazySmartAssistant() {
+        const launcher = document.getElementById('smartAssistantLauncher');
+        if (!launcher) return;
+
+        const syncVisibility = () => {
+            if (window.__topGymSmartAssistantLoaded) return;
+            const authenticated = Boolean(
+                document.body.dataset.topGymAuthenticated === 'true'
+                && window.topGymAuth?.getUser?.()
+            );
+            launcher.hidden = !authenticated;
         };
-        window.setTimeout(() => {
-            if ('requestIdleCallback' in window) window.requestIdleCallback(() => void start(), { timeout: 1800 });
-            else void start();
-        }, 2200);
+
+        const loadAssistant = () => ensureTab('smart-assistant').catch((error) => {
+            console.warn('[TOP GYM] Smart assistant failed to load.', error);
+            window.showToast?.(error.message || 'تعذر تحميل المساعد الذكي.', true, 'error');
+            throw error;
+        });
+
+        // The launcher stays available after authentication, but the 38KB
+        // assistant bundle is fetched only when the user actually opens it.
+        launcher.addEventListener('click', (event) => {
+            if (window.__topGymSmartAssistantLoaded || launcher.dataset.topGymFeatureLoading === 'true') return;
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            launcher.dataset.topGymFeatureLoading = 'true';
+            launcher.disabled = true;
+            launcher.setAttribute('aria-busy', 'true');
+            loadAssistant().then(() => {
+                if (launcher.isConnected) {
+                    launcher.disabled = false;
+                    launcher.removeAttribute('aria-busy');
+                    launcher.click();
+                }
+            }).catch(() => {
+                launcher.disabled = false;
+                launcher.removeAttribute('aria-busy');
+            }).finally(() => {
+                delete launcher.dataset.topGymFeatureLoading;
+            });
+        }, true);
+
+        const authReady = window.topGymAuthReady;
+        if (authReady) authReady.then(syncVisibility).catch(syncVisibility);
+        else syncVisibility();
+        new MutationObserver(syncVisibility).observe(document.body, {
+            attributes: true,
+            attributeFilter: ['class', 'data-top-gym-authenticated']
+        });
+    }
+
+    function bindLazyWhatsapp() {
+        const source = '/js/whatsapp-enhancements.js?v=13';
+        const key = 'whatsapp-enhancements';
+        const ensureWhatsapp = () => loadScript(source, key);
+        const actionSelector = '[data-alert-whatsapp], [data-report-whatsapp], [data-day-pass-whatsapp], [data-day-pass-report-whatsapp], [data-portal-code-action="whatsapp"]';
+
+        document.addEventListener('click', (event) => {
+            const button = event.target.closest?.(actionSelector);
+            if (!button || window.__topGymWhatsappEnhancementsLoaded || button.dataset.topGymWhatsappLoading === 'true') return;
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            button.dataset.topGymWhatsappLoading = 'true';
+            button.disabled = true;
+            ensureWhatsapp().then(() => {
+                if (button.isConnected) {
+                    button.dataset.topGymWhatsappReady = 'true';
+                    button.disabled = false;
+                    button.click();
+                }
+            }).catch((error) => {
+                console.warn('[TOP GYM] WhatsApp feature failed to load.', error);
+                window.showToast?.(error.message || 'تعذر تحميل أداة واتساب.', true, 'error');
+            }).finally(() => {
+                delete button.dataset.topGymWhatsappLoading;
+                delete button.dataset.topGymWhatsappReady;
+                if (button.isConnected) button.disabled = false;
+            });
+        }, true);
+
+        document.addEventListener('submit', (event) => {
+            const form = event.target;
+            if (!(form instanceof HTMLFormElement) || window.__topGymWhatsappEnhancementsLoaded) return;
+            const memberSubmit = form.id === 'memberForm' && document.getElementById('sendWhatsAppAfterSave')?.checked;
+            const dayPassSubmit = form.id === 'dayPassForm' && document.getElementById('dayPassSendWhatsApp')?.checked;
+            if ((!memberSubmit && !dayPassSubmit) || form.dataset.topGymWhatsappLoading === 'true') return;
+            if (form.dataset.topGymWhatsappReady === 'true') {
+                delete form.dataset.topGymWhatsappReady;
+                return;
+            }
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            form.dataset.topGymWhatsappLoading = 'true';
+            const submitter = event.submitter;
+            ensureWhatsapp().then(() => {
+                if (!form.isConnected) return;
+                form.dataset.topGymWhatsappReady = 'true';
+                if (typeof form.requestSubmit === 'function') form.requestSubmit(submitter || undefined);
+                else form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+            }).catch((error) => {
+                console.warn('[TOP GYM] WhatsApp feature failed to load.', error);
+                window.showToast?.(error.message || 'تعذر تحميل أداة واتساب.', true, 'error');
+            }).finally(() => {
+                delete form.dataset.topGymWhatsappLoading;
+            });
+        }, true);
     }
 
     function bindLazyBackupAction() {
@@ -271,7 +368,6 @@
             console.warn('[TOP GYM] Print feature failed to load.', error);
             throw error;
         });
-        window.addEventListener('topgym:member-details-opened', ensurePrint);
         document.addEventListener('click', (event) => {
             const receiptButton = event.target.closest('[data-payment-receipt]');
             const memberPrintButton = event.target.closest('button[data-action="print"]');
@@ -326,21 +422,10 @@
             throw error;
         });
 
-        // Member details are opened by the core member module. Replay the event
-        // after the optional coaching module registers its listener so the
-        // existing details flow remains unchanged.
-        window.addEventListener('topgym:member-details-opened', (event) => {
-            if (event.detail?.__topGymCoachingReplay) return;
-            const detail = event.detail || {};
-            ensureCoaching().then(() => {
-                window.dispatchEvent(new CustomEvent('topgym:member-details-opened', {
-                    detail: { ...detail, __topGymCoachingReplay: true }
-                }));
-            }).catch(() => {});
-        });
-
-        // The table still renders the same training/diet actions, but the
-        // 221KB coaching module is fetched only when one of them is used.
+        // The coaching module is intentionally not loaded when a member details
+        // dialog opens. The dialog has a lightweight coaching summary now, and
+        // the full module is fetched only when the user starts a coaching action.
+        // This keeps the common "view member" path small and responsive.
         document.addEventListener('click', (event) => {
             const button = event.target.closest('[data-member-coaching-action]');
             if (!button || window.__topGymCoachingLoaded || button.dataset.topGymFeatureLoading === 'true') return;
@@ -386,8 +471,9 @@
     bindLazyCoachingActions();
     bindLazyDashboardActions();
     bindLazyMemberDetails();
+    bindLazyWhatsapp();
     scheduleOptionalEnhancements();
-    scheduleSmartAssistant();
+    bindLazySmartAssistant();
 
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => {
