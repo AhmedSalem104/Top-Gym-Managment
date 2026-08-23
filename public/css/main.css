@@ -11888,6 +11888,15 @@ body.auth-locked .auth-screen {
     overflow: visible;
   }
 
+  /* The shared table-actions rule above is intentionally broad and has a
+     stronger selector. Override it specifically for member cards so the
+     attendance control and member actions remain on one compact line. */
+  .table-card-layout > tbody > tr > td:last-child .member-action-row > .table-actions {
+    width: auto;
+    flex: 1 1 auto;
+    flex-wrap: nowrap;
+  }
+
   .table-card-layout .member-quick-actions > .member-attendance-quick,
   .table-card-layout .member-quick-actions > .member-attendance-status {
     display: inline-flex;
