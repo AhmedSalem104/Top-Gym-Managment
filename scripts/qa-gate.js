@@ -308,7 +308,7 @@ function checkPrintAndLazyLoadingSurface() {
     const memberPortalScript = read('public/js/member-portal.js');
     const memberPortalLibrary = read('public/js/member-portal-library.js');
     record('PORTAL-MEMBER-HUB', memberPortal.includes('data-portal-tool="exercises"') && memberPortal.includes('data-portal-tool="foods"') && memberPortalScript.includes('ensureLibraryFeature'), 'member portal exposes four service cards and lazy-loads the library guide');
-    record('PORTAL-ANATOMY-EXPLORER', memberPortalLibrary.includes('data-anatomy-zone') && memberPortalLibrary.includes('/api/member-portal/library/') && memberPortalLibrary.includes('activeType'), 'member portal library includes interactive anatomy zones and exercise/food search');
+    record('PORTAL-LIBRARY-FILTERS', memberPortalLibrary.includes('portalLibrarySearch') && memberPortalLibrary.includes('portalExerciseDifficulty') && memberPortalLibrary.includes('portalExerciseEquipment') && memberPortalLibrary.includes('/api/member-portal/library/') && !memberPortalLibrary.includes('targetMuscleId'), 'member portal exercise guide uses name, difficulty and equipment filters without a body-region constraint');
 }
 
 function checkAnatomyAsset() {

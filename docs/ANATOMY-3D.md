@@ -1,9 +1,10 @@
 # TOP GYM Anatomy Explorer
 
-The member portal contains a lazy-loaded anatomy explorer. The Three.js
-viewer is model-provider agnostic: the model can be replaced by regenerating
-the same GLB path and mapping manifest without changing the portal APIs or
-business logic.
+The repository contains an optional, model-provider-agnostic Three.js anatomy
+engine. The current member-portal exercise screen intentionally does not expose
+body-region or muscle selection; it loads exercises through name, difficulty,
+and equipment filters only. The engine and asset remain documented here so the
+feature can be re-enabled later without changing portal APIs or business logic.
 
 ## Current production asset
 
@@ -51,16 +52,14 @@ Official sources:
 ## Architecture
 
 ```text
-Member Portal
-└── member-portal-library.js
-    ├── existing image/anatomy fallback
-    └── lazy load → member-portal-anatomy.js
-        └── AnatomyViewer
-            ├── AnatomyModelLoader (GLB + Meshopt/Draco support)
-            ├── CameraController (orbit, zoom, pan, presets, focus)
-            ├── MuscleSelector (mouse and touch raycasting)
-            ├── MuscleHighlighter (selected mesh + dimmed peers)
-            └── MuscleMapping (mesh → gym_muscles.id)
+Optional Anatomy Module
+└── member-portal-anatomy.js
+    └── AnatomyViewer
+        ├── AnatomyModelLoader (GLB + Meshopt/Draco support)
+        ├── CameraController (orbit, zoom, pan, presets, focus)
+        ├── MuscleSelector (mouse and touch raycasting)
+        ├── MuscleHighlighter (selected mesh + dimmed peers)
+        └── MuscleMapping (mesh → gym_muscles.id)
 ```
 
 The viewer requests the existing public library APIs only:

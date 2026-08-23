@@ -7,8 +7,6 @@
 
   const state = {
     activeType: 'exercises',
-    zone: 'all',
-    selectedMuscleId: '',
     options: null,
     items: [],
     pagination: null,
@@ -20,21 +18,8 @@
     requestId: 0,
     abortController: null,
     searchTimer: null,
-    detailsRequestId: 0,
-    anatomyLoaderPromise: null,
-    anatomyViewer: null,
-    anatomyStatus: 'idle'
+    detailsRequestId: 0
   };
-
-  const ZONES = [
-    { key: 'all', label: 'كل الجسم', icon: '✦' },
-    { key: 'chest', label: 'الصدر', icon: '◈', keywords: ['صدر', 'chest', 'pectoral'] },
-    { key: 'back', label: 'الظهر', icon: '◇', keywords: ['ظهر', 'back', 'lats', 'rhomboid', 'traps', 'ترابيس', 'مجنص'] },
-    { key: 'shoulders', label: 'الأكتاف', icon: '◌', keywords: ['كتف', 'shoulder', 'deltoid', 'أكتاف'] },
-    { key: 'arms', label: 'الذراعان', icon: '◍', bodyParts: ['Arms'] },
-    { key: 'core', label: 'البطن والجذع', icon: '◎', bodyParts: ['Core'] },
-    { key: 'legs', label: 'الأرجل', icon: '◒', bodyParts: ['Lower Body'], keywords: ['فخذ', 'ساق', 'مؤخرة', 'glute', 'quad', 'hamstring', 'calf', 'thigh', 'leg'] }
-  ];
 
   const labels = {
     difficulty: { beginner: 'مبتدئ', intermediate: 'متوسط', advanced: 'متقدم', expert: 'خبير' },
@@ -50,8 +35,6 @@
   const nameOf = (item) => textValue(item?.nameAr, item?.name, item?.nameEn) || 'بدون اسم';
   const englishName = (item) => textValue(item?.name, item?.nameEn);
   const translate = (value, type) => labels[type]?.[String(value || '').toLowerCase()] || value || 'غير محدد';
-  const normalize = (value) => String(value || '').normalize('NFKD').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
-  const bodyPartLabel = (value) => ({ 'Upper Body': 'الجزء العلوي', Arms: 'الذراعان', Core: 'الجذع', 'Lower Body': 'الجزء السفلي' }[value] || value || '');
 
   function requestJson(url, options = {}) {
     return fetch(url, { ...options, headers: { Accept: 'application/json', ...(options.headers || {}) } }).then(async (response) => {
@@ -67,51 +50,6 @@
     return `<img class="${className}" src="${escapeHtml(source)}" alt="${escapeHtml(nameOf(item))}" loading="lazy" width="720" height="480" data-portal-library-image>`;
   }
 
-  function currentZone() { return ZONES.find((zone) => zone.key === state.zone) || ZONES[0]; }
-
-  function musclesForZone() {
-    const muscles = state.options?.filters?.muscles || [];
-    const zone = currentZone();
-    if (zone.key === 'all') return muscles;
-    return muscles.filter((muscle) => {
-      const broadMatch = zone.bodyParts?.includes(muscle.bodyPart);
-      const name = normalize(`${muscle.nameAr || ''} ${muscle.name || ''}`);
-      const keywordMatch = (zone.keywords || []).some((keyword) => name.includes(normalize(keyword)));
-      return broadMatch || keywordMatch;
-    });
-  }
-
-  function renderAnatomy() {
-    const zone = currentZone();
-    const hotspots = [
-      ['chest', 50, 27], ['back', 50, 27], ['shoulders', 35, 28], ['shoulders', 65, 28],
-      ['arms', 27, 40], ['arms', 73, 40], ['core', 50, 40], ['legs', 43, 68], ['legs', 57, 68]
-    ];
-    return `<div class="portal-anatomy-card">
-      <div class="portal-anatomy-head"><div><span class="portal-library-kicker">ANATOMY EXPLORER</span><h4>اختر منطقة الجسم</h4><p>اضغط على المنطقة للوصول إلى العضلات والتمارين المرتبطة بها.</p></div><span class="portal-anatomy-selected">${escapeHtml(zone.label)}</span></div>
-      <div class="portal-anatomy-3d-shell" id="portalAnatomy3DMount" aria-label="عارض Anatomy ثلاثي الأبعاد"><div class="portal-anatomy-3d-stage" id="portalAnatomy3DStage"><div class="portal-anatomy-3d-placeholder"><span class="portal-anatomy-3d-badge">3D</span><strong>Premium Anatomy Viewer</strong><span>جاري تجهيز العارض التشريحي التفاعلي...</span></div></div><div class="portal-anatomy-3d-controls"><button type="button" data-anatomy-preset="front">أمام</button><button type="button" data-anatomy-preset="back">خلف</button><button type="button" data-anatomy-preset="left">يسار</button><button type="button" data-anatomy-preset="right">يمين</button><button type="button" data-anatomy-preset="reset">إعادة</button></div></div>
-      <div class="portal-anatomy-view portal-anatomy-fallback-view" aria-label="خريطة تشريحية تفاعلية">
-        <div class="portal-anatomy-glow"></div>
-        <svg class="portal-anatomy-silhouette" viewBox="0 0 300 620" role="img" aria-label="مجسم تشريحي مبسط">
-          <defs><linearGradient id="portalBodyGradient" x1="0" x2="1"><stop offset="0" stop-color="#b8c9e3"/><stop offset=".5" stop-color="#eef5ff"/><stop offset="1" stop-color="#91a8ca"/></linearGradient></defs>
-          <circle cx="150" cy="48" r="30" fill="url(#portalBodyGradient)"/>
-          <path d="M129 83c-10 12-16 28-17 51l-8 42 20 8 8-29v112l-21 119 24 5 15-82 15 82 24-5-21-119V155l8 29 20-8-8-42c-1-23-7-39-17-51l-22 10z" fill="url(#portalBodyGradient)"/>
-          <path d="M108 92 70 124 39 207l19 8 39-64 22-25M192 92l38 32 31 83-19 8-39-64-22-25" fill="none" stroke="#a8bbd8" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="m127 354-27 116 18 4 32-113m-5-7 27 116-18 4-32-113" fill="none" stroke="#a8bbd8" stroke-width="23" stroke-linecap="round"/>
-          <path d="m111 473-13 114m91-114 13 114" fill="none" stroke="#9aafd0" stroke-width="17" stroke-linecap="round"/>
-          <path d="M120 164c20 12 40 12 60 0M124 226c17 8 35 8 52 0M126 258c16 7 32 7 48 0" fill="none" stroke="#7f98bd" stroke-width="3" opacity=".55"/>
-        </svg>
-        ${hotspots.map(([key, left, top], index) => `<button class="portal-anatomy-hotspot${state.zone === key ? ' is-active' : ''}" style="--hotspot-left:${left}%;--hotspot-top:${top}%" type="button" data-anatomy-zone="${key}" aria-label="${escapeHtml(ZONES.find((item) => item.key === key)?.label || 'منطقة الجسم')}"><span>${index + 1}</span></button>`).join('')}
-      </div>
-      <div class="portal-anatomy-zone-list">${ZONES.map((item) => `<button type="button" class="portal-anatomy-zone${state.zone === item.key ? ' is-active' : ''}" data-anatomy-zone="${item.key}"><span>${item.icon}</span>${escapeHtml(item.label)}</button>`).join('')}</div>
-    </div>`;
-  }
-
-  function renderMusclePicker() {
-    const muscles = musclesForZone();
-    if (!muscles.length) return '<div class="portal-library-state"><strong>لا توجد عضلات مرتبطة بهذه المنطقة.</strong><span>اختر منطقة أخرى للمتابعة.</span></div>';
-    return `<div class="portal-muscle-picker"><div class="portal-library-subhead"><div><strong>اختر العضلة المستهدفة</strong><span>${number(muscles.length)} عضلة متاحة</span></div><span class="portal-library-selection">${state.selectedMuscleId ? 'تم اختيار عضلة' : 'لم يتم الاختيار بعد'}</span></div><div class="portal-muscle-chips">${muscles.slice(0, 48).map((muscle) => `<button type="button" class="portal-muscle-chip${String(state.selectedMuscleId) === String(muscle.id) ? ' is-active' : ''}" data-muscle-id="${muscle.id}"><span>${escapeHtml(muscle.nameAr || muscle.name)}</span><small>${escapeHtml(muscle.name || '')}</small></button>`).join('')}</div></div>`;
-  }
 
   function renderExerciseCard(item) {
     const title = nameOf(item);
@@ -139,11 +77,6 @@
   }
 
   function renderCurrent() {
-    if (state.anatomyViewer) {
-      state.anatomyViewer.dispose?.();
-      state.anatomyViewer = null;
-      state.anatomyStatus = 'idle';
-    }
     const content = $('portalLibraryContent');
     if (!content) return;
     document.querySelectorAll('[data-library-tab]').forEach((button) => {
@@ -152,7 +85,7 @@
       button.setAttribute('aria-selected', String(active));
     });
     if (state.activeType === 'exercises') {
-      content.innerHTML = `<div class="portal-exercise-explorer"><div class="portal-explorer-grid"><aside>${renderAnatomy()}</aside><div class="portal-exercise-results">${renderFilters()}${renderMusclePicker()}<div class="portal-library-results-head"><div><h4>${state.selectedMuscleId ? 'تمارين العضلة المختارة' : 'كل التمارين'}</h4><span>${state.pagination ? `${number(state.pagination.totalItems)} نتيجة` : 'اختر منطقة أو ابحث عن تمرين'}</span></div></div><div class="portal-exercise-grid">${state.items.length ? state.items.map(renderExerciseCard).join('') : `<div class="portal-library-state portal-library-state-wide"><strong>${state.selectedMuscleId || state.search ? 'لا توجد تمارين مطابقة' : 'ابدأ باختيار عضلة أو اكتب اسم تمرين'}</strong><span>ستظهر النتائج هنا مع صور التمرينات وتعليماتها.</span></div>`}</div>${renderPagination()}</div></div></div>`;
+      content.innerHTML = `<div class="portal-exercise-results">${renderFilters()}<div class="portal-library-results-head"><div><h4>التمارين المتاحة</h4><span>${state.pagination ? `${number(state.pagination.totalItems)} نتيجة` : 'استخدم البحث أو الفلاتر للوصول إلى التمرين المطلوب'}</span></div></div><div class="portal-exercise-grid">${state.items.length ? state.items.map(renderExerciseCard).join('') : `<div class="portal-library-state portal-library-state-wide"><strong>${state.search || state.difficulty || state.equipment ? 'لا توجد تمارين مطابقة' : 'لا توجد تمارين متاحة'}</strong><span>جرّب اسمًا مختلفًا أو غيّر أحد الفلاتر.</span></div>`}</div>${renderPagination()}</div>`;
     } else {
       content.innerHTML = `<div class="portal-food-explorer">${renderFilters()}<div class="portal-library-results-head"><div><h4>الأطعمة والقيم الغذائية</h4><span>${state.pagination ? `${number(state.pagination.totalItems)} طعام متاح` : 'ابحث عن طعام لمعرفة تفاصيله'}</span></div></div><div class="portal-food-grid">${state.items.length ? state.items.map(renderFoodCard).join('') : `<div class="portal-library-state portal-library-state-wide"><strong>${state.search ? 'لا توجد أطعمة مطابقة' : 'اكتب اسم الطعام للبدء'}</strong><span>ستظهر السعرات والماكروز لكل حصة.</span></div>`}</div>${renderPagination()}</div>`;
     }
@@ -162,7 +95,7 @@
   function renderExerciseResults() {
     const results = document.querySelector('.portal-exercise-results');
     if (!results || state.activeType !== 'exercises') return;
-    results.innerHTML = `${renderFilters()}${renderMusclePicker()}<div class="portal-library-results-head"><div><h4>${state.selectedMuscleId ? 'تمارين العضلة المختارة' : 'كل التمارين'}</h4><span>${state.pagination ? `${number(state.pagination.totalItems)} نتيجة` : 'اختر منطقة أو ابحث عن تمرين'}</span></div></div><div class="portal-exercise-grid">${state.items.length ? state.items.map(renderExerciseCard).join('') : `<div class="portal-library-state portal-library-state-wide"><strong>${state.selectedMuscleId || state.search ? 'لا توجد تمارين مطابقة' : 'ابدأ باختيار عضلة أو اكتب اسم تمرين'}</strong><span>ستظهر النتائج هنا مع صور التمرينات وتعليماتها.</span></div>`}</div>${renderPagination()}`;
+    results.innerHTML = `${renderFilters()}<div class="portal-library-results-head"><div><h4>التمارين المتاحة</h4><span>${state.pagination ? `${number(state.pagination.totalItems)} نتيجة` : 'استخدم البحث أو الفلاتر للوصول إلى التمرين المطلوب'}</span></div></div><div class="portal-exercise-grid">${state.items.length ? state.items.map(renderExerciseCard).join('') : `<div class="portal-library-state portal-library-state-wide"><strong>${state.search || state.difficulty || state.equipment ? 'لا توجد تمارين مطابقة' : 'لا توجد تمارين متاحة'}</strong><span>جرّب اسمًا مختلفًا أو غيّر أحد الفلاتر.</span></div>`}</div>${renderPagination()}`;
     bindDynamicControls();
   }
 
@@ -182,7 +115,6 @@
     if (state.activeType === 'foods') {
       if (state.category) params.set('category', state.category);
     } else {
-      if (state.selectedMuscleId) params.set('targetMuscleId', state.selectedMuscleId);
       if (state.difficulty) params.set('difficulty', state.difficulty);
       if (state.equipment) params.set('equipment', state.equipment);
     }
@@ -254,19 +186,8 @@
       window.dispatchEvent(new CustomEvent('topgym:portal-library-close'));
       return;
     }
-    const preset = event.target.closest('[data-anatomy-preset]');
-    if (preset && state.anatomyViewer) {
-      const view = preset.dataset.anatomyPreset;
-      if (view === 'reset') state.anatomyViewer.reset?.();
-      else state.anatomyViewer.preset?.(view);
-      return;
-    }
     const tab = event.target.closest('[data-library-tab]');
     if (tab) { state.activeType = tab.dataset.libraryTab; state.page = 1; state.items = []; state.pagination = null; renderCurrent(); void loadCollection(); return; }
-    const zone = event.target.closest('[data-anatomy-zone]');
-    if (zone) { state.zone = zone.dataset.anatomyZone; state.selectedMuscleId = ''; state.page = 1; state.items = []; state.pagination = null; renderCurrent(); void mountPremiumAnatomy(); return; }
-    const muscle = event.target.closest('[data-muscle-id]');
-    if (muscle) { state.selectedMuscleId = muscle.dataset.muscleId; state.activeType = 'exercises'; state.page = 1; renderExerciseResults(); void loadCollection(); return; }
     const details = event.target.closest('[data-library-details]');
     if (details) { void showDetails(details.dataset.libraryDetails, details.dataset.libraryId); return; }
     if (event.target.closest('[data-library-modal-close]') || event.target === $('portalLibraryModal')) { $('portalLibraryModal').hidden = true; return; }
@@ -275,60 +196,16 @@
     if (event.target.closest('[data-library-retry]')) void loadCollection();
   });
 
-  function ensureAnatomyEngine() {
-    if (window.TopGymAnatomy) return Promise.resolve(window.TopGymAnatomy);
-    if (state.anatomyLoaderPromise) return state.anatomyLoaderPromise;
-    state.anatomyLoaderPromise = new Promise((resolve, reject) => {
-      const script = document.createElement('script');
-      script.src = '/js/member-portal-anatomy.js?v=1';
-      script.async = true;
-      script.onload = () => window.TopGymAnatomy ? resolve(window.TopGymAnatomy) : reject(new Error('Anatomy engine did not initialize.'));
-      script.onerror = () => reject(new Error('تعذر تحميل محرك Anatomy ثلاثي الأبعاد.'));
-      document.body.appendChild(script);
-    });
-    return state.anatomyLoaderPromise;
-  }
-
-  async function mountPremiumAnatomy() {
-    if (state.activeType !== 'exercises' || state.anatomyStatus !== 'idle') return;
-    const stage = $('portalAnatomy3DStage');
-    if (!stage) return;
-    state.anatomyStatus = 'loading';
-    stage.innerHTML = '<div class="portal-anatomy-3d-placeholder"><span class="portal-anatomy-3d-badge">3D</span><strong>Premium Anatomy Viewer</strong><span>جاري تحميل العارض التفاعلي...</span><div class="portal-anatomy-progress"><i style="width:8%"></i></div></div>';
-    try {
-      const engine = await ensureAnatomyEngine();
-      const viewer = await engine.mount(stage, {
-        maxPixelRatio: 1.6,
-        onProgress: (progress) => {
-          const bar = stage.querySelector('.portal-anatomy-progress i');
-          if (bar) bar.style.width = `${Math.max(8, progress)}%`;
-        },
-        onMuscleSelected: (muscle) => {
-          if (!muscle?.id) return;
-          state.selectedMuscleId = String(muscle.id);
-          renderExerciseResults();
-          void loadCollection();
-        }
-      });
-      state.anatomyViewer = viewer;
-      state.anatomyStatus = 'ready';
-      document.querySelector('.portal-anatomy-fallback-view')?.setAttribute('hidden', 'true');
-    } catch (_error) {
-      state.anatomyStatus = 'unavailable';
-      stage.innerHTML = '<div class="portal-anatomy-3d-placeholder portal-anatomy-3d-unavailable"><span class="portal-anatomy-3d-badge">3D</span><strong>العارض الاحترافي جاهز للتركيب</strong><span>سيتم تفعيل المجسم ثلاثي الأبعاد بعد إضافة ملف Anatomy GLB المرخص. يمكنك استخدام الخريطة التفاعلية الحالية الآن.</span></div>';
-    }
-  }
-
   async function open(type = 'exercises') {
     state.activeType = type === 'foods' ? 'foods' : 'exercises';
     renderLibraryShell();
     renderCurrent();
-    try { await loadOptions(); renderCurrent(); if (state.activeType === 'exercises') void mountPremiumAnatomy(); if (state.activeType === 'foods' || state.search) await loadCollection(); } catch (error) {
+    try { await loadOptions(); renderCurrent(); await loadCollection(); } catch (error) {
       mount.innerHTML = `<div class="portal-library-state portal-library-error"><strong>تعذر تجهيز الدليل</strong><span>${escapeHtml(error.message || 'حاول مرة أخرى.')}</span></div>`;
     }
   }
 
-  function close() { state.anatomyViewer?.dispose?.(); state.anatomyViewer = null; mount.innerHTML = ''; }
+  function close() { state.abortController?.abort?.(); clearTimeout(state.searchTimer); mount.innerHTML = ''; }
 
   window.topGymMemberPortalLibrary = { open, close };
 })();
