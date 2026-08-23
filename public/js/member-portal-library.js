@@ -130,7 +130,7 @@
   }
 
   function renderLibraryShell() {
-    mount.innerHTML = `<div class="portal-library-head"><div><span class="portal-library-kicker">TOP GYM MEMBER HUB</span><h3 id="portalLibraryTitle">دليل التمارين والتغذية</h3><p>اكتشف التمرين المناسب لجسمك وتعرّف على القيمة الغذائية للأطعمة.</p></div><button type="button" class="btn btn-light" data-library-close>إخفاء الدليل</button></div><div class="portal-library-tabs" role="tablist" aria-label="دليل العضو"><button type="button" role="tab" data-library-tab="exercises">التمارين</button><button type="button" role="tab" data-library-tab="foods">التغذية</button></div><div id="portalLibraryContent"></div><div class="portal-library-modal" id="portalLibraryModal" role="dialog" aria-modal="true" aria-labelledby="portalLibraryModalTitle" hidden><div class="portal-library-modal-card"><header><div><span class="portal-library-kicker">TOP GYM GUIDE</span><h3 id="portalLibraryModalTitle">التفاصيل</h3></div><button type="button" class="portal-library-modal-close" data-library-modal-close aria-label="إغلاق">×</button></header><div id="portalLibraryModalContent"></div></div></div>`;
+    mount.innerHTML = `<div class="portal-library-head"><div><span class="portal-library-kicker">TOP GYM MEMBER HUB</span><h3 id="portalLibraryTitle">دليل التمارين والتغذية</h3><p>اكتشف التمرين المناسب لجسمك وتعرّف على القيمة الغذائية للأطعمة.</p></div><button type="button" class="btn btn-light" data-library-close>العودة للخدمات</button></div><div class="portal-library-tabs" role="tablist" aria-label="دليل العضو"><button type="button" role="tab" data-library-tab="exercises">التمارين</button><button type="button" role="tab" data-library-tab="foods">التغذية</button></div><div id="portalLibraryContent"></div><div class="portal-library-modal" id="portalLibraryModal" role="dialog" aria-modal="true" aria-labelledby="portalLibraryModalTitle" hidden><div class="portal-library-modal-card"><header><div><span class="portal-library-kicker">TOP GYM GUIDE</span><h3 id="portalLibraryModalTitle">التفاصيل</h3></div><button type="button" class="portal-library-modal-close" data-library-modal-close aria-label="إغلاق">×</button></header><div id="portalLibraryModalContent"></div></div></div>`;
   }
 
   function renderFilters() {
@@ -250,6 +250,10 @@
   }
 
   mount.addEventListener('click', (event) => {
+    if (event.target.closest('[data-library-close]')) {
+      window.dispatchEvent(new CustomEvent('topgym:portal-library-close'));
+      return;
+    }
     const preset = event.target.closest('[data-anatomy-preset]');
     if (preset && state.anatomyViewer) {
       const view = preset.dataset.anatomyPreset;

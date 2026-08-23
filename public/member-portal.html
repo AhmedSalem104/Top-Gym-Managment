@@ -31,16 +31,17 @@
             <header class="portal-result-header">
                 <div>
                     <p class="portal-eyebrow">TOP GYM</p>
-                    <h2>تقرير حالة العضوية</h2>
-                    <p id="portalIssueMeta"></p>
+                    <h2 id="portalResultTitle">بوابة عضويتي</h2>
+                    <p id="portalIssueMeta">اختر الخدمة التي تريد استخدامها</p>
                 </div>
                 <div class="portal-actions" data-no-print>
-                    <button class="btn btn-light" id="portalPrintButton" type="button">طباعة التقرير</button>
-                    <button class="btn btn-primary" id="portalPdfButton" type="button">تنزيل PDF</button>
+                    <button class="btn btn-light" id="portalPrintButton" type="button" hidden>طباعة التقرير</button>
+                    <button class="btn btn-primary" id="portalPdfButton" type="button" hidden>تنزيل PDF</button>
                     <button class="btn btn-light" id="portalResetButton" type="button">كود آخر</button>
                 </div>
             </header>
-            <section class="portal-tool-grid" data-no-print aria-label="خدمات العضو">
+            <div class="portal-home-view" id="portalHomeView">
+              <section class="portal-tool-grid" data-no-print aria-label="خدمات العضو">
                 <button class="portal-tool-card portal-tool-card-print" type="button" data-portal-tool="print">
                     <span class="portal-tool-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V3h12v6"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v7H6z"/></svg></span>
                     <span><strong>بياناتي وطباعتها</strong><small>عرض التقرير وتنزيله بصيغة PDF</small></span>
@@ -61,8 +62,17 @@
                     <span><strong>دليل التغذية</strong><small>السعرات والماكروز لكل طعام</small></span>
                     <span class="portal-tool-arrow" aria-hidden="true">←</span>
                 </button>
+              </section>
+            </div>
+            <section class="portal-view-toolbar" id="portalViewToolbar" data-no-print hidden aria-live="polite">
+                <button class="btn btn-light portal-back-button" type="button" data-portal-back aria-label="العودة إلى خدمات العضو">→ <span>العودة للخدمات</span></button>
+                <div>
+                    <p class="portal-eyebrow">TOP GYM MEMBER HUB</p>
+                    <h3 id="portalViewTitle"></h3>
+                    <p id="portalViewDescription"></p>
+                </div>
             </section>
-            <div id="portalReportContent" class="portal-report-content"></div>
+            <div id="portalReportContent" class="portal-report-content" hidden></div>
             <section class="portal-library-section" id="portalLibrarySection" data-no-print hidden aria-labelledby="portalLibraryTitle">
                 <div id="portalLibraryMount"></div>
             </section>
@@ -99,6 +109,6 @@
         </section>
         <footer class="portal-ui-footer" data-no-print>TOP GYM · إدارة أسهل، أداء أفضل</footer>
     </main>
-    <script defer src="/js/member-portal.js?v=2"></script>
+    <script defer src="/js/member-portal.js?v=3"></script>
 </body>
 </html>

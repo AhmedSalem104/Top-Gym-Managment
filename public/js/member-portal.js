@@ -8,6 +8,11 @@
   const errorBox = $('portalError');
   const loginPanel = $('portalLoginPanel');
   const resultPanel = $('portalResult');
+  const homeView = $('portalHomeView');
+  const viewToolbar = $('portalViewToolbar');
+  const viewTitle = $('portalViewTitle');
+  const viewDescription = $('portalViewDescription');
+  const resultTitle = $('portalResultTitle');
   const reportContent = $('portalReportContent');
   const librarySection = $('portalLibrarySection');
   const feedbackSection = $('portalFeedbackSection');
@@ -19,7 +24,16 @@
   const feedbackError = $('portalFeedbackError');
   const feedbackSuccess = $('portalFeedbackSuccess');
   let portalMembershipCode = '';
+  let portalReportMeta = '';
   let libraryLoaderPromise = null;
+
+  const portalViews = Object.freeze({
+    home: { title: 'بوابة عضويتي', description: 'اختر الخدمة التي تريد استخدامها' },
+    report: { title: 'بياناتي وطباعتها', description: 'عرض حالة العضوية والاشتراكات والمدفوعات والحضور.' },
+    feedback: { title: 'قيّم تجربتي', description: 'شاركنا رأيك في الجيم والمدربين.' },
+    exercises: { title: 'دليل التمارين', description: 'اختر منطقة الجسم أو ابحث عن تمرين مناسب.' },
+    foods: { title: 'دليل التغذية', description: 'ابحث عن الطعام وتعرّف على السعرات والماكروز.' }
+  });
 
   const escapeHtml = (value) => String(value ?? '').replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[character]));
   const number = (value) => Number.isFinite(Number(value)) ? Number(value) : 0;
@@ -80,12 +94,33 @@
     if (feedbackSuccess) feedbackSuccess.hidden = true;
   }
 
+  function setPortalView(view = 'home') {
+    const nextView = portalViews[view] ? view : 'home';
+    const metadata = portalViews[nextView];
+    const isHome = nextView === 'home';
+    const isReport = nextView === 'report';
+    const isLibrary = nextView === 'exercises' || nextView === 'foods';
+
+    if (!isLibrary) window.topGymMemberPortalLibrary?.close?.();
+    if (homeView) homeView.hidden = !isHome;
+    if (viewToolbar) viewToolbar.hidden = isHome;
+    if (viewTitle) viewTitle.textContent = metadata.title;
+    if (viewDescription) viewDescription.textContent = metadata.description;
+    if (resultTitle) resultTitle.textContent = metadata.title;
+    if (reportContent) reportContent.hidden = !isReport;
+    if (librarySection) librarySection.hidden = !isLibrary;
+    if (feedbackSection) feedbackSection.hidden = nextView !== 'feedback';
+    if ($('portalPrintButton')) $('portalPrintButton').hidden = !isReport;
+    if ($('portalPdfButton')) $('portalPdfButton').hidden = !isReport;
+    if ($('portalIssueMeta')) $('portalIssueMeta').textContent = isReport ? portalReportMeta : metadata.description;
+  }
+
   function ensureLibraryFeature() {
     if (window.topGymMemberPortalLibrary) return Promise.resolve(window.topGymMemberPortalLibrary);
     if (libraryLoaderPromise) return libraryLoaderPromise;
     libraryLoaderPromise = new Promise((resolve, reject) => {
       const script = document.createElement('script');
-      script.src = '/js/member-portal-library.js?v=1';
+      script.src = '/js/member-portal-library.js?v=2';
       script.async = true;
       script.onload = () => window.topGymMemberPortalLibrary ? resolve(window.topGymMemberPortalLibrary) : reject(new Error('Library feature did not initialize.'));
       script.onerror = () => reject(new Error('تعذر تحميل دليل التمارين والتغذية.'));
@@ -96,8 +131,8 @@
 
   async function openLibrary(type) {
     if (!librarySection) return;
-    librarySection.hidden = false;
-    librarySection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    setPortalView(type);
+    viewToolbar?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     try {
       const feature = await ensureLibraryFeature();
       feature.open(type);
@@ -129,10 +164,9 @@
       ${table('سجل المدفوعات والإيصالات', ['الإيصال', 'التاريخ', 'العملية', 'المدفوع', 'المتبقي', 'طريقة الدفع'], paymentRows)}
       ${table('سجل الحضور والزيارات', ['التاريخ', 'الحضور', 'الانصراف', 'المدة'], attendanceRows)}
       ${freezeRows.length ? table('حالات التجميد أو الإيقاف', ['البداية', 'النهاية', 'الاستئناف', 'المدة'], freezeRows) : ''}`;
-    $('portalIssueMeta').textContent = `رقم التقرير: ${data.reportNumber || '—'} · تاريخ الإصدار: ${dateTimeText(data.issuedAt)}`;
-    if (librarySection) librarySection.hidden = true;
-    if (feedbackSection) feedbackSection.hidden = false;
+    portalReportMeta = `رقم التقرير: ${data.reportNumber || '—'} · تاريخ الإصدار: ${dateTimeText(data.issuedAt)}`;
     resetFeedback();
+    setPortalView('home');
   }
 
   async function lookup(code) {
@@ -172,15 +206,25 @@
   $('portalPrintButton')?.addEventListener('click', printReport);
   $('portalPdfButton')?.addEventListener('click', printReport);
   resultPanel?.addEventListener('click', (event) => {
+    if (event.target.closest('[data-portal-back]')) {
+      setPortalView('home');
+      resultPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return;
+    }
     const tool = event.target.closest('[data-portal-tool]');
     if (!tool) return;
     const action = tool.dataset.portalTool;
-    if (action === 'print') return printReport();
+    if (action === 'print') { setPortalView('report'); return; }
     if (action === 'feedback') {
-      feedbackSection?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      setPortalView('feedback');
+      viewToolbar?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       return;
     }
     if (action === 'exercises' || action === 'foods') void openLibrary(action);
+  });
+  window.addEventListener('topgym:portal-library-close', () => {
+    setPortalView('home');
+    resultPanel?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
   document.querySelectorAll('[data-feedback-rating]').forEach((button) => {
     button.addEventListener('click', () => setRating(button.dataset.feedbackRating));
@@ -212,5 +256,13 @@
       showFeedbackError(error.message || 'تعذر حفظ التقييم.');
     } finally { setFeedbackBusy(false); }
   });
-  $('portalResetButton')?.addEventListener('click', () => { portalMembershipCode = ''; resetFeedback(); if (feedbackSection) feedbackSection.hidden = true; if (librarySection) librarySection.hidden = true; resultPanel.hidden = true; loginPanel.hidden = false; input.focus(); });
+  $('portalResetButton')?.addEventListener('click', () => {
+    portalMembershipCode = '';
+    portalReportMeta = '';
+    setPortalView('home');
+    resetFeedback();
+    resultPanel.hidden = true;
+    loginPanel.hidden = false;
+    input.focus();
+  });
 })();
