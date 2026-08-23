@@ -1276,7 +1276,31 @@
    must never become an extra flex row. Keep it anchored inside the navbar. */
 @media (min-width: 1200px) {
   .page-tabs {
-    padding-inline-start: 72px;
+    flex-wrap: nowrap;
+    gap: 3px;
+    padding-inline-start: 56px;
+  }
+
+  .page-tabs > .page-tab {
+    min-width: 0;
+    flex: 1 1 0;
+    gap: 3px;
+    padding-inline: 3px;
+    font-size: clamp(11px, 0.85vw, 13px);
+    line-height: 1.2;
+    text-align: center;
+    white-space: normal;
+  }
+
+  .page-tabs > .page-tab .ui-icon {
+    width: 17px;
+    height: 17px;
+  }
+
+  .page-tabs > .page-tab > span {
+    min-width: 0;
+    white-space: normal;
+    text-align: center;
   }
 
   .page-tabs > .auth-account-bar {
