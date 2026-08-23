@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-18T13:25:36.360Z",
+  "generatedAt": "2026-08-23T12:30:31.129Z",
   "source": {
     "provider": "BodyParts3D / Anatomography",
     "datasetVersion": "LATEST (BodyParts3D 4.0 API kit)",
@@ -12,17 +12,50 @@
     "attribution": "BodyParts3D, Copyright 2008 Life Science Integrated Database Center, licensed under CC BY-SA 2.1 Japan."
   },
   "imageStyle": {
-    "width": 320,
-    "height": 420,
+    "width": 480,
+    "height": 630,
     "format": "webp",
     "background": "#F8FAFC",
-    "neutralColor": "#CBD5E1",
-    "highlightColor": "#E06A2B",
+    "neutralColor": "#B8C2D1",
+    "highlightColor": "#2563EB",
     "views": [
       "front",
       "back",
       "side"
     ]
+  },
+  "modernization": {
+    "status": "partial-migration",
+    "renderer": "Three.js 0.185.1 with headless Chromium",
+    "modelProvider": "Z-Anatomy / BodyParts3D (via a CC BY-SA 4.0 GLB derivative)",
+    "modelSource": "https://github.com/DrMuratAltun/anatomi-simulatoru/blob/main/systems/kas.glb",
+    "upstreamModelSource": "https://github.com/Z-Anatomy/Models-of-human-anatomy",
+    "modelLicense": "CC BY-SA 4.0",
+    "attribution": "BodyParts3D, DBCLS, CC BY-SA 2.1 Japan; Z-Anatomy, CC BY-SA 4.0.",
+    "modernizedAssetCount": 169,
+    "legacyFallbackAssetCount": 19,
+    "legacyFallbackAssetSlugs": [
+      "hypothenar-muscle",
+      "intrinsic-muscle-of-foot",
+      "intrinsic-muscle-of-hand",
+      "levator-veli-palatini",
+      "muscle-of-forearm",
+      "muscle-of-neck",
+      "muscle-of-pelvis",
+      "perineal-muscle",
+      "plantar-interosseous-of-foot",
+      "posterior-suboccipital-muscle-anterior-suboccipital-muscle",
+      "puborectalis",
+      "salpingopharyngeus",
+      "semispinalis-capitis",
+      "set-of-palmar-interossei-of-hand",
+      "superficial-perineal-muscle",
+      "tensor-veli-palatini",
+      "thenar-muscle",
+      "vocalis",
+      "zone-of-levator-ani"
+    ],
+    "fallback": "BodyParts3D / Anatomography assets remain active for the listed fallback records."
   },
   "stats": {
     "systemRecordsReviewed": 297,

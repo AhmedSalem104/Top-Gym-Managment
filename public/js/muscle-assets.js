@@ -90,8 +90,8 @@
         const alt = options.alt || item?.nameAr || item?.name || item?.nameEn || 'عضلة';
         const icon = options.icon || item?.icon || '💪';
         if (!source) return fallbackMarkup(icon, className, item);
-        const width = Number(options.width || state.manifest?.imageStyle?.width || 320);
-        const height = Number(options.height || state.manifest?.imageStyle?.height || 420);
+        const width = Number(options.width || state.manifest?.imageStyle?.width || 480);
+        const height = Number(options.height || state.manifest?.imageStyle?.height || 630);
         return `<span class="muscle-media ${escapeAttribute(className)}" data-muscle-media><img src="${escapeAttribute(source)}" alt="${escapeAttribute(alt)}" loading="${options.loading || 'lazy'}" width="${width}" height="${height}" data-muscle-image><span class="muscle-media-fallback-icon" aria-hidden="true">${escapeHtml(icon)}</span></span>`;
     }
 
@@ -121,8 +121,8 @@
                 image.src = source;
                 image.alt = item.nameAr || 'عضلة';
                 image.loading = 'lazy';
-                image.width = Number(state.manifest?.imageStyle?.width || 320);
-                image.height = Number(state.manifest?.imageStyle?.height || 420);
+                image.width = Number(state.manifest?.imageStyle?.width || 480);
+                image.height = Number(state.manifest?.imageStyle?.height || 630);
                 image.dataset.muscleImage = 'true';
                 image.addEventListener('error', () => { image.hidden = true; container.classList.add('is-fallback'); }, { once: true });
                 container.classList.remove('muscle-media-fallback');

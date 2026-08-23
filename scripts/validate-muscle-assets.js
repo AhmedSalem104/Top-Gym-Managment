@@ -38,6 +38,16 @@ const physicalDirectories = fs.existsSync(path.join(root, 'public', 'assets', 'm
 const imageSlugs = new Set(mappedWithImages.map((record) => record.assetSlug));
 if (physicalDirectories.length !== imageSlugs.size) errors.push(`physical muscle asset directories ${physicalDirectories.length} != manifest slugs ${imageSlugs.size}`);
 
+const modernization = manifest.modernization || {};
+const fallbackSlugs = new Set(modernization.legacyFallbackAssetSlugs || []);
+if (modernization.modernizedAssetCount != null && modernization.legacyFallbackAssetCount != null) {
+    const expected = Number(modernization.modernizedAssetCount) + Number(modernization.legacyFallbackAssetCount);
+    if (expected !== imageSlugs.size) errors.push(`modernization counts ${expected} != unique asset slugs ${imageSlugs.size}`);
+}
+for (const slug of fallbackSlugs) {
+    if (!imageSlugs.has(slug)) errors.push(`modernization fallback slug is not mapped: ${slug}`);
+}
+
 console.log(`MUSCLE_ASSET_QA records=${records.length} mapped=${mapped.length} mappedWithImages=${mappedWithImages.length} manualReview=${manualReview.length} uniqueCanonical=${manifest.stats?.uniqueCanonicalStructures || 0} physicalDirectories=${physicalDirectories.length}`);
 if (errors.length) {
     console.error(`MUSCLE_ASSET_QA_FAILED count=${errors.length}`);

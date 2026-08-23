@@ -21,6 +21,7 @@
     "qa:muscle-assets": "node scripts/validate-muscle-assets.js",
     "build:muscle-mapping": "node scripts/build-muscle-mapping.js",
     "sync:muscle-assets": "node scripts/build-muscle-mapping.js && python scripts/download-muscle-assets.py --workers 3",
+    "render:muscle-assets": "node scripts/render-muscle-assets.js",
     "enrich:exercise-content": "node scripts/enrich-exercise-data.js",
     "seed:performance": "node scripts/seed-performance-test-data.js",
     "sync:library": "node scripts/sync-library-data.js"
@@ -35,6 +36,7 @@
     "mssql": "^11.0.1"
   },
   "devDependencies": {
-    "@playwright/test": "^1.62.1"
+    "@playwright/test": "^1.62.1",
+    "three": "^0.185.1"
   }
 }
