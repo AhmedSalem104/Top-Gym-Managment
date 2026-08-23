@@ -1673,8 +1673,7 @@
   display: block;
 }
 
-.app-shell > .topbar,
-.app-shell > .page-tabs {
+.app-shell > .topbar {
   display: none;
 }
 
@@ -1684,6 +1683,33 @@
   max-width: none;
   margin-inline: auto;
   padding-top: 32px;
+}
+
+/* Keep the slide-tab navigation as the only visible navigation. On wide
+   screens it remains the side rail, while the existing responsive rules keep
+   it as the compact tab set on tablet and mobile. */
+@media (min-width: 1200px) {
+  .app-shell {
+    display: grid;
+    grid-template-columns: var(--desktop-sidebar-width, 272px) minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
+    min-height: 100vh;
+  }
+
+  .app-shell > .topbar {
+    display: none;
+  }
+
+  .app-shell > .page-tabs {
+    display: flex;
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .app-shell > main.page {
+    grid-column: 2;
+    grid-row: 1;
+  }
 }
 
 .smart-assistant-launcher,
