@@ -17,13 +17,9 @@
   border-top: 1px solid rgb(255 255 255 / 0.08);
   background: #132238;
   padding: var(--space-2) max(16px, calc((100% - 1440px) / 2));
-  overflow-x: auto;
-  overflow-y: hidden;
-  overscroll-behavior-inline: contain;
-  scrollbar-color: rgb(255 255 255 / 0.28) transparent;
-  scrollbar-width: thin;
+  overflow: visible;
   direction: rtl;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   box-shadow: 0 8px 20px rgb(15 23 42 / 0.12);
   isolation: isolate;
 }
@@ -85,12 +81,6 @@
   flex: 0 0 auto;
 }
 
-.page-tabs::-webkit-scrollbar { height: 6px; }
-.page-tabs::-webkit-scrollbar-thumb {
-  border-radius: var(--radius-pill);
-  background: rgb(255 255 255 / 0.28);
-}
-
 .tabs-light .tab-button,
 .tabs-light .page-tab {
   color: var(--color-text-muted);
@@ -120,7 +110,6 @@
   background: var(--color-surface-elevated);
   padding: 8px 10px;
   box-shadow: var(--shadow-md);
-  scrollbar-color: var(--border-strong) transparent;
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   isolation: isolate;
@@ -167,18 +156,6 @@
   box-shadow: var(--nav-active-shadow);
 }
 
-.page-tab.active::after,
-.page-tab[aria-selected="true"]::after {
-  position: absolute;
-  right: 18px;
-  bottom: 4px;
-  left: 18px;
-  height: 3px;
-  border-radius: var(--radius-pill);
-  background: currentColor;
-  content: "";
-}
-
 .page-tab .ui-icon {
   width: 19px;
   height: 19px;
@@ -223,8 +200,4 @@
   width: 20px;
   height: 20px;
   stroke-width: 2;
-}
-
-.page-tabs::-webkit-scrollbar-thumb {
-  background: var(--border-strong);
 }

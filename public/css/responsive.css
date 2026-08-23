@@ -17,8 +17,6 @@
 
   .page-tabs {
     justify-content: flex-start;
-    overflow-x: auto;
-    scrollbar-width: thin;
     direction: rtl;
     flex-direction: row;
   }
@@ -196,8 +194,6 @@
 
   .page-tabs {
     justify-content: flex-start;
-    overflow-x: auto;
-    scrollbar-width: thin;
     direction: rtl;
     flex-direction: row;
   }
@@ -566,13 +562,6 @@
     text-align: center;
   }
 
-  .page-tab.active::after,
-  .page-tab[aria-selected="true"]::after {
-    right: 12px;
-    bottom: 4px;
-    left: 12px;
-  }
-
   .page-tabs > .auth-account-bar {
     position: absolute;
     inset-inline-end: 10px;
@@ -615,13 +604,6 @@
   .page-tab .ui-icon {
     width: 19px;
     height: 19px;
-  }
-
-  .page-tab.active::after,
-  .page-tab[aria-selected="true"]::after {
-    right: 10px;
-    bottom: 4px;
-    left: 10px;
   }
 
   .page-tabs > .auth-account-bar {
