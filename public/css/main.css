@@ -11685,35 +11685,39 @@ body.auth-locked .auth-screen {
 
   .page-tabs > .auth-account-bar {
     position: static;
-    grid-column: auto;
-    grid-row: auto;
-    width: auto;
+    grid-column: 1 / -1;
+    width: 100%;
     min-width: 0;
     z-index: var(--z-dropdown);
     display: flex;
     margin: 0;
-    align-items: center;
-    justify-content: center;
+    align-items: stretch;
+    justify-content: stretch;
     border: 0;
-    padding: 0;
+    border-top: 1px solid var(--border-color);
+    padding: 6px 0 0;
     direction: rtl;
   }
 
   .page-tabs > .auth-account-bar .auth-logout-button {
-    display: grid;
-    width: 44px;
-    min-width: 44px;
-    height: 44px;
-    min-height: 44px;
-    place-items: center;
-    padding: 0;
+    display: inline-flex;
+    width: 100%;
+    min-width: 0;
+    height: 46px;
+    min-height: 46px;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    padding: 0 var(--space-4);
     border-color: rgb(215 67 67 / 0.22);
     background: var(--color-danger-soft);
     color: var(--color-danger);
   }
 
   .page-tabs > .auth-account-bar .auth-logout-button > span {
-    display: none;
+    display: inline;
+    font-size: var(--font-sm);
+    font-weight: var(--weight-bold);
   }
 
   .page-tabs > .auth-account-bar .auth-logout-button .ui-icon {
@@ -11745,18 +11749,17 @@ body.auth-locked .auth-screen {
 
   .page-tabs > .auth-account-bar {
     position: static;
-    grid-column: auto;
-    grid-row: auto;
+    grid-column: 1 / -1;
     inset-inline-end: auto;
     top: auto;
-    width: auto;
+    width: 100%;
   }
 
   .page-tabs > .auth-account-bar .auth-logout-button {
-    width: 42px;
-    min-width: 42px;
-    height: 42px;
-    min-height: 42px;
+    width: 100%;
+    min-width: 0;
+    height: 44px;
+    min-height: 44px;
   }
 }
 
@@ -12344,6 +12347,26 @@ body.auth-locked .auth-screen {
   position: relative;
   top: auto;
   z-index: auto;
+}
+
+/* On wide screens the navigation can wrap its links, but the logout action
+   must never become an extra flex row. Keep it anchored inside the navbar. */
+@media (min-width: 1200px) {
+  .page-tabs {
+    padding-inline-start: 72px;
+  }
+
+  .page-tabs > .auth-account-bar {
+    position: absolute;
+    inset-inline-start: 10px;
+    inset-inline-end: auto;
+    top: 50%;
+    z-index: var(--z-dropdown);
+    margin: 0;
+    border: 0;
+    padding: 0;
+    transform: translateY(-50%);
+  }
 }
 
 /* END TOP GYM layer */
