@@ -11841,9 +11841,9 @@ body.auth-locked .auth-screen {
     direction: rtl;
   }
 
-  /* Keep the actions area inside the card width. Member rows contain a
-     quick attendance action plus a compact action menu, so they need their
-     own full-width stack instead of inheriting desktop table widths. */
+  /* Keep the quick attendance action beside the compact member actions on
+     mobile cards. The row stays within the card instead of creating a second
+     action line for attendance. */
   .table-card-layout > tbody > tr > td:last-child {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -11853,48 +11853,51 @@ body.auth-locked .auth-screen {
     width: 100%;
     min-width: 0;
     max-width: 100%;
-    flex-direction: column;
-    align-items: stretch;
-    gap: var(--space-2);
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: nowrap;
+    gap: var(--space-1);
     margin: 0;
   }
 
   .table-card-layout .member-quick-actions {
     display: flex;
-    order: 2;
-    width: 100%;
+    order: 1;
+    width: auto;
     min-width: 0;
     max-width: 100%;
-    flex-wrap: wrap;
+    flex: 0 1 100px;
+    flex-wrap: nowrap;
     align-items: center;
-    justify-content: stretch;
-    gap: var(--space-2);
+    justify-content: flex-start;
+    gap: var(--space-1);
     overflow: visible;
   }
 
   .table-card-layout .member-action-row > .table-actions {
     display: flex;
-    order: 1;
-    width: 100%;
+    order: 2;
+    width: auto;
     min-width: 0;
     max-width: 100%;
+    flex: 1 1 auto;
     flex-wrap: nowrap;
     align-items: center;
     justify-content: flex-start;
-    gap: var(--space-2);
+    gap: var(--space-1);
     overflow: visible;
   }
 
   .table-card-layout .member-quick-actions > .member-attendance-quick,
   .table-card-layout .member-quick-actions > .member-attendance-status {
     display: inline-flex;
-    width: 100%;
-    min-width: 0;
-    max-width: none;
+    width: 100px;
+    min-width: 90px;
+    max-width: 110px;
     min-height: 44px;
     align-items: center;
     justify-content: center;
-    flex: 1 1 100%;
+    flex: 1 1 100px;
     white-space: nowrap;
   }
 
@@ -11970,6 +11973,34 @@ body.auth-locked .auth-screen {
   .table-card-layout > tbody > tr > td:last-child {
     align-items: start;
     padding-top: 10px;
+  }
+}
+
+@media (max-width: 390px) {
+  .table-card-layout .member-action-row {
+    gap: 4px;
+  }
+
+  .table-card-layout .member-quick-actions,
+  .table-card-layout .member-action-row > .table-actions {
+    gap: 4px;
+  }
+
+  .table-card-layout .member-quick-actions > .member-attendance-quick,
+  .table-card-layout .member-quick-actions > .member-attendance-status {
+    width: 84px;
+    min-width: 78px;
+    max-width: 90px;
+    flex-basis: 84px;
+  }
+
+  .table-card-layout .member-action-row > .table-actions > .table-action-visible,
+  .table-card-layout .member-action-row > .table-actions .action-menu,
+  .table-card-layout .member-action-row > .table-actions .action-menu-toggle {
+    width: 36px;
+    min-width: 36px;
+    max-width: 36px;
+    flex-basis: 36px;
   }
 }
 
