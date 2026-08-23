@@ -289,7 +289,8 @@ async function getDashboardAnalytics(periodValue = 'month') {
         createRangeRequest(pool, range).query(`
             SELECT expense_date AS eventDate, amount
             FROM dbo.gym_expenses
-            WHERE expense_date >= @startDate AND expense_date < @nextDate;
+            WHERE expense_date >= @startDate AND expense_date < @nextDate
+              AND ISNULL(is_voided, 0) = 0;
         `),
         createRangeRequest(pool, range).query(`
             SELECT a.attendance_date AS eventDate, a.member_id AS memberId,
@@ -369,7 +370,8 @@ async function getDashboardAnalytics(periodValue = 'month') {
             SELECT COUNT_BIG(*) AS total,
                    ISNULL(SUM(amount), 0) AS amount
             FROM dbo.gym_expenses
-            WHERE expense_date >= @startDate AND expense_date < @nextDate;
+            WHERE expense_date >= @startDate AND expense_date < @nextDate
+              AND ISNULL(is_voided, 0) = 0;
         `),
         createRangeRequest(pool, previousRange).query(`
             SELECT COUNT_BIG(*) AS visits,

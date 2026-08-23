@@ -279,8 +279,23 @@
             });
         }
 
-        function renderDashboard() {
+         function renderDashboard() {
              const dashboard = state.dashboard || { stats: {}, alerts: [] }; $('statTotal').textContent = dashboard.stats.total || 0; $('statActive').textContent = dashboard.stats.active || 0; $('statExpiring').textContent = dashboard.stats.expiringSoon || 0; $('statExpired').textContent = dashboard.stats.expired || 0; $('statFrozen').textContent = dashboard.stats.frozen || 0; syncDashboardHeroStats();
+             const store = dashboard.store;
+             const storeSummary = $('dashboardStoreSummary');
+             if (storeSummary) {
+                 storeSummary.hidden = !store;
+                 if (store) {
+                     const summary = store.summary || {};
+                     const profit = store.profit || {};
+                     $('dashboardStoreTodaySales').textContent = money(store.today?.revenue || store.todaySales || 0);
+                     $('dashboardStoreRevenue').textContent = money(summary.revenue || 0);
+                     $('dashboardStoreLowStock').textContent = Number((store.alerts?.lowStock || []).length).toLocaleString('ar-EG');
+                     $('dashboardStoreExpenses').textContent = money(profit.expenses || 0);
+                     $('dashboardStoreNetProfit').textContent = money(profit.netProfit || 0);
+                     storeSummary.querySelectorAll('[data-store-profit-only]').forEach((element) => { element.hidden = !window.topGymAuth?.isOwner?.() && !window.topGymAuth?.hasPermission?.('store.profit.view'); });
+                 }
+             }
             // Dashboard alerts are membership actions only. Keep this guard in
             // the UI as a second line of defense for stale/legacy API payloads.
             const alerts = (dashboard.alerts || []).filter((member) => member?.membership);

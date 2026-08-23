@@ -10,6 +10,7 @@ const { ensureAttendanceTable } = require('./attendance-service');
 const { ensureLibraryData } = require('./library-service');
 const { ensureCoachingTables } = require('./coaching-service');
 const { ensureDayPassTables } = require('../repositories/day-pass.repository');
+const { ensureStoreTables } = require('./store-service');
 const { config } = require('../config/env');
 
 const gzipAsync = promisify(gzip);
@@ -33,6 +34,23 @@ const BACKUP_TABLES = [
     { key: 'gym_payments', table: 'gym_payments' },
     { key: 'gym_payment_transactions', table: 'gym_payment_transactions' },
     { key: 'gym_expenses', table: 'gym_expenses' },
+    { key: 'gym_store_categories', table: 'gym_store_categories' },
+    { key: 'gym_store_suppliers', table: 'gym_store_suppliers' },
+    { key: 'gym_store_products', table: 'gym_store_products' },
+    { key: 'gym_store_product_variants', table: 'gym_store_product_variants' },
+    { key: 'gym_store_customers', table: 'gym_store_customers' },
+    { key: 'gym_store_purchases', table: 'gym_store_purchases' },
+    { key: 'gym_store_purchase_items', table: 'gym_store_purchase_items' },
+    { key: 'gym_store_purchase_payments', table: 'gym_store_purchase_payments' },
+    { key: 'gym_store_inventory_balances', table: 'gym_store_inventory_balances' },
+    { key: 'gym_store_inventory_batches', table: 'gym_store_inventory_batches' },
+    { key: 'gym_store_stock_movements', table: 'gym_store_stock_movements' },
+    { key: 'gym_store_sales', table: 'gym_store_sales' },
+    { key: 'gym_store_sale_items', table: 'gym_store_sale_items' },
+    { key: 'gym_store_sale_payments', table: 'gym_store_sale_payments' },
+    { key: 'gym_store_returns', table: 'gym_store_returns' },
+    { key: 'gym_store_return_items', table: 'gym_store_return_items' },
+    { key: 'gym_store_audit_log', table: 'gym_store_audit_log' },
     { key: 'gym_attendance', table: 'gym_attendance' },
     { key: 'membership_events', table: 'membership_events' },
     { key: 'gym_muscles', table: 'gym_muscles' },
@@ -496,6 +514,7 @@ async function restoreBackup(input, { fileName = 'uploaded-backup.json.gz' } = {
         await ensureLibraryData();
         await ensureCoachingTables();
         await ensureDayPassTables();
+        await ensureStoreTables();
         const pool = await getPool();
         const metadataEntries = await Promise.all(BACKUP_TABLES.map(async (item) => [item.table, await tableMetadata(pool, item.table)]));
         const metadata = new Map(metadataEntries);
@@ -545,6 +564,7 @@ async function createBackup({ format = 'json.gz' } = {}) {
     await ensureLibraryData();
     await ensureCoachingTables();
     await ensureDayPassTables();
+    await ensureStoreTables();
     const pool = await getPool();
     const generatedAt = new Date();
     const { timeZone, stamp } = getLocalTimeParts(generatedAt);

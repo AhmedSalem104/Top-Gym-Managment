@@ -1,7 +1,7 @@
 (() => {
     if (window.topGymPermissions) return;
 
-    const OWNER_TABS = Object.freeze(['dashboard', 'members', 'trainees', 'management', 'permissions', 'attendance', 'expenses', 'library', 'reports', 'feedback']);
+    const OWNER_TABS = Object.freeze(['dashboard', 'members', 'trainees', 'management', 'permissions', 'attendance', 'expenses', 'library', 'reports', 'feedback', 'store']);
     const TAB_PERMISSION_CODES = Object.freeze({
         dashboard: 'dashboard.read',
         members: ['members.read', 'memberships.read'],
@@ -12,7 +12,8 @@
         expenses: 'finance.read',
         library: 'library.read',
         reports: 'reports.read',
-        feedback: 'feedback.read'
+        feedback: 'feedback.read',
+        store: 'store.view'
     });
     const TAB_PERMISSION_ALTERNATIVES = Object.freeze({});
     const LEGACY_GROUPS = Object.freeze({

@@ -92,7 +92,37 @@ const ROUTE_PERMISSION_RULES = Object.freeze([
     { pattern: /^\/library\/(?:foods|exercises|muscles)(?:\/\d+)?$/, methods: ['GET'], all: [PERMISSIONS.LIBRARY_READ] },
     { pattern: /^\/library\/(?:foods|exercises|muscles)$/, methods: ['POST'], all: [PERMISSIONS.LIBRARY_CREATE] },
     { pattern: /^\/library\/(?:foods|exercises|muscles)\/\d+$/, methods: ['PUT'], all: [PERMISSIONS.LIBRARY_UPDATE] },
-    { pattern: /^\/library\/(?:foods|exercises|muscles)\/\d+$/, methods: ['DELETE'], all: [PERMISSIONS.LIBRARY_DELETE] }
+    { pattern: /^\/library\/(?:foods|exercises|muscles)\/\d+$/, methods: ['DELETE'], all: [PERMISSIONS.LIBRARY_DELETE] },
+
+    { pattern: /^\/members\/\d+\/store-purchases$/, methods: ['GET'], all: [PERMISSIONS.MEMBERS_READ, PERMISSIONS.STORE_SALES_VIEW] },
+    { pattern: /^\/store\/bootstrap$/, methods: ['GET'], all: [PERMISSIONS.STORE_VIEW] },
+    { pattern: /^\/store\/dashboard$/, methods: ['GET'], all: [PERMISSIONS.STORE_VIEW] },
+    { pattern: /^\/store\/reports$/, methods: ['GET'], all: [PERMISSIONS.STORE_REPORTS_VIEW] },
+    { pattern: /^\/store\/categories$/, methods: ['GET'], all: [PERMISSIONS.STORE_VIEW] },
+    { pattern: /^\/store\/categories$/, methods: ['POST'], all: [PERMISSIONS.STORE_PRODUCTS_MANAGE] },
+    { pattern: /^\/store\/categories\/\d+$/, methods: ['PUT'], all: [PERMISSIONS.STORE_PRODUCTS_MANAGE] },
+    { pattern: /^\/store\/products$/, methods: ['GET'], all: [PERMISSIONS.STORE_VIEW] },
+    { pattern: /^\/store\/products\/\d+$/, methods: ['GET'], all: [PERMISSIONS.STORE_VIEW] },
+    { pattern: /^\/store\/products$/, methods: ['POST'], all: [PERMISSIONS.STORE_PRODUCTS_MANAGE] },
+    { pattern: /^\/store\/products\/\d+$/, methods: ['PUT', 'DELETE'], all: [PERMISSIONS.STORE_PRODUCTS_MANAGE] },
+    { pattern: /^\/store\/products\/\d+\/variants$/, methods: ['POST'], all: [PERMISSIONS.STORE_PRODUCTS_MANAGE] },
+    { pattern: /^\/store\/products\/\d+\/variants\/\d+$/, methods: ['PUT', 'DELETE'], all: [PERMISSIONS.STORE_PRODUCTS_MANAGE] },
+    { pattern: /^\/store\/suppliers$/, methods: ['GET'], all: [PERMISSIONS.STORE_VIEW] },
+    { pattern: /^\/store\/suppliers$/, methods: ['POST'], all: [PERMISSIONS.STORE_SUPPLIERS_MANAGE] },
+    { pattern: /^\/store\/suppliers\/\d+$/, methods: ['PUT'], all: [PERMISSIONS.STORE_SUPPLIERS_MANAGE] },
+    { pattern: /^\/store\/inventory$/, methods: ['GET'], all: [PERMISSIONS.STORE_INVENTORY_VIEW] },
+    { pattern: /^\/store\/inventory\/movements$/, methods: ['GET'], all: [PERMISSIONS.STORE_INVENTORY_VIEW] },
+    { pattern: /^\/store\/inventory\/adjustments$/, methods: ['POST'], all: [PERMISSIONS.STORE_INVENTORY_ADJUST] },
+    { pattern: /^\/store\/customers\/search$/, methods: ['GET'], all: [PERMISSIONS.STORE_SALES_CREATE] },
+    { pattern: /^\/store\/purchases$/, methods: ['GET'], all: [PERMISSIONS.STORE_PURCHASES_MANAGE] },
+    { pattern: /^\/store\/purchases\/\d+$/, methods: ['GET'], all: [PERMISSIONS.STORE_PURCHASES_MANAGE] },
+    { pattern: /^\/store\/purchases$/, methods: ['POST'], all: [PERMISSIONS.STORE_PURCHASES_MANAGE] },
+    { pattern: /^\/store\/sales$/, methods: ['GET'], all: [PERMISSIONS.STORE_SALES_VIEW] },
+    { pattern: /^\/store\/sales\/\d+$/, methods: ['GET'], all: [PERMISSIONS.STORE_SALES_VIEW] },
+    { pattern: /^\/store\/sales$/, methods: ['POST'], all: [PERMISSIONS.STORE_SALES_CREATE] },
+    { pattern: /^\/store\/sales\/\d+\/returns$/, methods: ['POST'], all: [PERMISSIONS.STORE_RETURNS_MANAGE] },
+    { pattern: /^\/store\/expenses$/, methods: ['GET', 'POST'], all: [PERMISSIONS.STORE_EXPENSES_MANAGE] },
+    { pattern: /^\/store\/expenses\/\d+$/, methods: ['PUT', 'DELETE'], all: [PERMISSIONS.STORE_EXPENSES_MANAGE] }
 ]);
 
 function requirementForRule(rule, method) {

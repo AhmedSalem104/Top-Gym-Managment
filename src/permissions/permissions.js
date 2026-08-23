@@ -77,7 +77,20 @@ const PERMISSIONS = Object.freeze({
     MANAGEMENT_BACKUP_DELETE: 'management.backup.delete',
 
     FEEDBACK_READ: 'feedback.read',
-    PERMISSIONS_MANAGE: 'permissions.manage'
+    PERMISSIONS_MANAGE: 'permissions.manage',
+
+    STORE_VIEW: 'store.view',
+    STORE_PRODUCTS_MANAGE: 'store.products.manage',
+    STORE_INVENTORY_VIEW: 'store.inventory.view',
+    STORE_INVENTORY_ADJUST: 'store.inventory.adjust',
+    STORE_SALES_CREATE: 'store.sales.create',
+    STORE_SALES_VIEW: 'store.sales.view',
+    STORE_RETURNS_MANAGE: 'store.returns.manage',
+    STORE_PURCHASES_MANAGE: 'store.purchases.manage',
+    STORE_SUPPLIERS_MANAGE: 'store.suppliers.manage',
+    STORE_EXPENSES_MANAGE: 'store.expenses.manage',
+    STORE_REPORTS_VIEW: 'store.reports.view',
+    STORE_PROFIT_VIEW: 'store.profit.view'
 });
 
 const CATALOG_DEFINITIONS = [
@@ -136,7 +149,19 @@ const CATALOG_DEFINITIONS = [
     ['management.backup.restore', 'استعادة نسخة احتياطية', 'استعادة نسخة إلى قاعدة البيانات.', 'management', 'عملية خاصة', true],
     ['management.backup.delete', 'حذف نسخة احتياطية', 'حذف أرشيف نسخة احتياطية.', 'management', 'حذف', true],
     ['feedback.read', 'تقييمات المشتركين', 'عرض تقييمات المشتركين.', 'feedback', 'عرض', true],
-    ['permissions.manage', 'إدارة الصلاحيات', 'إدارة صلاحيات حسابات Assistant فقط.', 'permissions', 'إدارة', true]
+    ['permissions.manage', 'إدارة الصلاحيات', 'إدارة صلاحيات حسابات Assistant فقط.', 'permissions', 'إدارة', true],
+    ['store.view', 'المتجر ونقطة البيع', 'عرض مساحة المتجر ونقطة البيع.', 'store', 'عرض'],
+    ['store.products.manage', 'منتجات المتجر', 'إضافة وتعديل وإيقاف المنتجات والتصنيفات.', 'store', 'إدارة'],
+    ['store.inventory.view', 'عرض المخزون', 'عرض الأرصدة والتنبيهات الخاصة بالمخزون.', 'store', 'عرض'],
+    ['store.inventory.adjust', 'تسويات المخزون', 'تسجيل تسويات مخزون قابلة للتدقيق.', 'store', 'إدارة'],
+    ['store.sales.create', 'إنشاء مبيعات المتجر', 'إتمام مبيعات POS للأعضاء والزوار.', 'store', 'إضافة'],
+    ['store.sales.view', 'عرض مبيعات المتجر', 'عرض الفواتير وسجل المبيعات.', 'store', 'عرض'],
+    ['store.returns.manage', 'مرتجعات المتجر', 'إدارة المرتجعات والاستردادات.', 'store', 'إدارة'],
+    ['store.purchases.manage', 'مشتريات المتجر', 'استلام مشتريات الموردين وتحديث المخزون.', 'store', 'إدارة'],
+    ['store.suppliers.manage', 'موردو المتجر', 'إدارة بيانات الموردين.', 'store', 'إدارة'],
+    ['store.expenses.manage', 'مصروفات المتجر', 'إدارة المصروفات التابعة لمركز تكلفة المتجر.', 'store', 'إدارة'],
+    ['store.reports.view', 'تقارير المتجر', 'عرض تقارير المبيعات والمخزون والتشغيل.', 'store', 'عرض'],
+    ['store.profit.view', 'ربحية المتجر', 'عرض التكلفة وCOGS والربح الإجمالي والصافي.', 'store', 'حساس']
 ];
 
 const PERMISSION_CATALOG = Object.freeze(CATALOG_DEFINITIONS.map(([code, label, description, group, operation, ownerOnly = false]) => Object.freeze({
@@ -190,6 +215,7 @@ const TAB_PERMISSION_CODES = Object.freeze({
     reports: PERMISSIONS.REPORTS_READ,
     feedback: PERMISSIONS.FEEDBACK_READ,
     management: 'pricing.read',
+    store: PERMISSIONS.STORE_VIEW,
     permissions: PERMISSIONS.PERMISSIONS_MANAGE
 });
 

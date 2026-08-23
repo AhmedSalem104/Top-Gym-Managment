@@ -134,6 +134,7 @@ async function getReportData(query = {}) {
             SELECT id, expense_name, expense_date AS event_date, amount, notes, created_at
             FROM dbo.gym_expenses
             WHERE expense_date >= @fromDate AND expense_date < @nextDate
+              AND ISNULL(is_voided, 0) = 0
             ORDER BY expense_date DESC, id DESC;
         `),
         baseRequest().query(`

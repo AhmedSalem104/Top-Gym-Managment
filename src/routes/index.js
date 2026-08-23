@@ -13,6 +13,7 @@ const { registerCoachingRoutes } = require('./coaching.routes');
 const { registerDayPassRoutes } = require('./day-pass.routes');
 const { registerMemberPortalRoutes } = require('./member-portal.routes');
 const { registerMemberFeedbackRoutes } = require('./member-feedback.routes');
+const { registerStoreRoutes } = require('./store.routes');
 
 function registerRoutes(app, {
     asyncRoute,
@@ -34,6 +35,7 @@ function registerRoutes(app, {
     membershipCodeService,
     portalService,
     feedbackService,
+    storeService,
     getPool
 }) {
     app.get('/api/health', asyncRoute(async (_request, response) => {
@@ -45,15 +47,16 @@ function registerRoutes(app, {
     registerAuthRoutes(app, { authService, permissionService, asyncRoute, ownerOnly, allowLoginAttempt });
     registerBackupRoutes(app, { backupService, asyncRoute, isAuthorizedCronRequest });
     registerFinanceRoutes(app, { financeService, asyncRoute });
-    registerDashboardRoutes(app, { memberService, analyticsService, asyncRoute });
+    registerDashboardRoutes(app, { memberService, analyticsService, storeService, asyncRoute });
     registerLibraryRoutes(app, { libraryService, asyncRoute });
-    registerReportsRoutes(app, { reportService, asyncRoute });
+    registerReportsRoutes(app, { reportService, storeService, asyncRoute });
     registerAttendanceRoutes(app, { attendanceService, asyncRoute });
     registerPricingRoutes(app, { pricingService, asyncRoute });
     registerCoachingRoutes(app, { coachingService, asyncRoute });
     registerDayPassRoutes(app, { dayPassService, asyncRoute, ownerOnly });
     registerMemberPortalRoutes(app, { membershipCodeService, portalService, libraryService, asyncRoute, ownerOnly });
     registerMemberFeedbackRoutes(app, { feedbackService, asyncRoute, ownerOnly });
+    registerStoreRoutes(app, { storeService, asyncRoute });
     registerMembersRoutes(app, { memberService, asyncRoute });
 }
 

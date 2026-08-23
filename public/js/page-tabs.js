@@ -2,7 +2,7 @@
     if (window.__topGymPageTabsLoaded) return;
     window.__topGymPageTabsLoaded = true;
 
-    const validTabs = new Set(['dashboard', 'members', 'expenses', 'reports', 'management', 'permissions', 'attendance', 'library', 'trainees', 'feedback']);
+    const validTabs = new Set(['dashboard', 'members', 'expenses', 'reports', 'management', 'permissions', 'attendance', 'library', 'trainees', 'feedback', 'store']);
     let activationToken = 0;
     let activeTabName = null;
 
@@ -27,12 +27,14 @@
         const expensesSection = document.getElementById('expensesSection');
         const managementSection = document.getElementById('managementSection');
         const analyticsSection = document.getElementById('dashboardAnalytics');
+        const dashboardStoreSummary = document.getElementById('dashboardStoreSummary');
         const reportsSection = document.getElementById('reportsSection');
         const feedbackSection = document.getElementById('feedbackSection');
         const permissionsSection = document.getElementById('permissionsSection');
         const attendanceSection = document.getElementById('attendanceSection');
         const librarySection = document.getElementById('librarySection');
         const traineesSection = document.getElementById('traineesSection');
+        const storeSection = document.getElementById('storeSection');
         const isDashboard = name === 'dashboard';
         const isMembers = name === 'members';
         const isExpenses = name === 'expenses';
@@ -43,6 +45,7 @@
         const isAttendance = name === 'attendance';
         const isLibrary = name === 'library';
         const isTrainees = name === 'trainees';
+        const isStore = name === 'store';
 
         setHidden(dashboardHero, !isDashboard);
         setHidden(overview, !isDashboard);
@@ -50,6 +53,7 @@
         setHidden(managementSection, !isManagement);
         const hideAnalytics = !isDashboard || !window.topGymAuth?.isOwner?.();
         setHidden(analyticsSection, hideAnalytics);
+        setHidden(dashboardStoreSummary, !isDashboard);
         analyticsSection?.setAttribute('aria-hidden', String(hideAnalytics));
         setHidden(reportsSection, !isReports);
         setHidden(feedbackSection, !isFeedback);
@@ -57,7 +61,8 @@
         setHidden(attendanceSection, !isAttendance);
         setHidden(librarySection, !isLibrary);
         setHidden(traineesSection, !isTrainees);
-        setHidden(workspace, isDashboard || isExpenses || isReports || isManagement || isPermissions || isAttendance || isLibrary || isTrainees || isFeedback);
+        setHidden(storeSection, !isStore);
+        setHidden(workspace, isDashboard || isExpenses || isReports || isManagement || isPermissions || isAttendance || isLibrary || isTrainees || isFeedback || isStore);
         setHidden(membersSection, !isMembers);
 
         document.querySelectorAll('[data-page-tab]').forEach((button) => {
@@ -115,6 +120,9 @@
         });
         document.querySelectorAll('[data-page-tab]').forEach((button) => {
             button.addEventListener('click', () => { void activateTab(button.dataset.pageTab); });
+        });
+        document.querySelectorAll('[data-page-tab-link]').forEach((button) => {
+            button.addEventListener('click', () => { void activateTab(button.dataset.pageTabLink); });
         });
         document.querySelectorAll('[data-open-dialog-button]').forEach((button) => {
             button.addEventListener('click', () => {

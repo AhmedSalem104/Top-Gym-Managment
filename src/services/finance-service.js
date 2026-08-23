@@ -67,6 +67,9 @@ function mapExpense(row) {
         name: row.expense_name,
         amount: Number(row.amount || 0),
         expenseDate: formatDateOnly(row.expense_date),
+        source: row.expense_source || 'gym',
+        category: row.expense_category || null,
+        paymentMethod: row.payment_method || null,
         notes: row.notes || null,
         createdAt: row.created_at
     };
@@ -116,7 +119,7 @@ async function createExpense(body = {}) {
     const expenseDate = parseDateOnly(body.expenseDate || todayInTimeZone(), 'تاريخ المصروف');
     const notes = optionalString(body.notes, 500);
     await ensureExpensesTable();
-    const result = await expenseRepository.create({ name, amount, expenseDate, notes });
+    const result = await expenseRepository.create({ name, amount, expenseDate, notes, source: 'gym' });
 
     return mapExpense(result.recordset[0]);
 }
@@ -128,7 +131,7 @@ async function updateExpense(id, body = {}) {
     const expenseDate = parseDateOnly(body.expenseDate, 'تاريخ المصروف');
     const notes = optionalString(body.notes, 500);
     await ensureExpensesTable();
-    const result = await expenseRepository.update({ id: expenseId, name, amount, expenseDate, notes });
+    const result = await expenseRepository.update({ id: expenseId, name, amount, expenseDate, notes, source: 'gym' });
     if (!result.recordset[0]) throw appError('المصروف غير موجود.', 404);
     return mapExpense(result.recordset[0]);
 }

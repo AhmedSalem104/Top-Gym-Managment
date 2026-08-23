@@ -108,6 +108,7 @@ function assertRequiredFiles() {
         'database/migrations/006-permissions.sql',
         'public/js/pages/management/permissions.js',
         'public/css/pages/permissions.css',
+        'public/css/pages/store.css',
         'src/routes/index.js',
         'src/routes/auth.routes.js',
         'src/controllers/auth.controller.js',
@@ -134,6 +135,10 @@ function assertRequiredFiles() {
         'src/controllers/coaching.controller.js',
         'src/routes/day-pass.routes.js',
         'src/controllers/day-pass.controller.js',
+        'src/services/store-service.js',
+        'src/routes/store.routes.js',
+        'src/controllers/store.controller.js',
+        'database/migrations/007-store.sql',
         'src/services/day-pass-service.js',
         'src/services/member-feedback-service.js',
         'src/routes/member-feedback.routes.js',
@@ -223,12 +228,13 @@ function checkRouteSurface() {
         'src/routes/pricing.routes.js',
         'src/routes/coaching.routes.js',
         'src/routes/day-pass.routes.js',
-        'src/routes/member-feedback.routes.js'
+        'src/routes/member-feedback.routes.js',
+        'src/routes/store.routes.js'
     ].filter((relativePath) => fs.existsSync(path.join(root, relativePath))).map(read).join('\n');
     const expectedRoutes = [
         '/api/members', '/api/expenses', '/api/attendance', '/api/reports',
         '/api/backup', '/api/library', '/api/external-trainees',
-        '/api/workoutprograms', '/api/dietplans', '/api/workoutsessions', '/api/meal-logs', '/api/day-passes', '/api/member-feedback', '/api/member-portal/feedback'
+        '/api/workoutprograms', '/api/dietplans', '/api/workoutsessions', '/api/meal-logs', '/api/day-passes', '/api/member-feedback', '/api/member-portal/feedback', '/api/store/products', '/api/store/sales', '/api/store/inventory'
     ];
     expectedRoutes.forEach((route) => record(
         `ROUTE-${route.replaceAll('/', '-')}`,
@@ -302,6 +308,8 @@ function checkPrintAndLazyLoadingSurface() {
     record('UI-NO-EAGER-OPTIONALS', optionalScripts.every((source) => !index.includes(source)), 'optional feature scripts are not duplicated in the initial HTML shell');
     record('CSS-PRODUCTION-BUNDLE', !/\/\*@import|@import\s/.test(main.replace(/\/\*[\s\S]*?\*\//g, '')), 'production CSS bundle has no active blocking imports');
     record('UI-API-CORE', index.includes('/js/core/api.js') && app.includes('window.topGymApi.request'), 'frontend API client is centralized');
+    const store = read('public/js/pages/store/store.js');
+    record('STORE-MODULE', index.includes('data-page-tab="store"') && index.includes('id="storeSection"') && loader.includes("'/js/pages/store/store.js") && store.includes('/api/store/sales') && store.includes('/api/store/customers/search'), 'Store/POS module is wired through lazy loading and member lookup');
     record('UI-PERMISSIONS-CORE', index.includes('/js/core/permissions.js') && authUi.includes('window.topGymPermissions'), 'frontend tab permissions are centralized');
     record('UI-CACHE-BUST', index.includes('app.js?v=feature-expansion'), 'frontend script cache-busting is present');
     const memberPortal = read('public/member-portal.html');

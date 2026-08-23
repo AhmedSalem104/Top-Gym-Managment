@@ -26,7 +26,7 @@ function prepareShell(page, target) {
   return page.evaluate((targetId) => {
     document.body.classList.remove('auth-pending', 'auth-locked', 'top-gym-navigation-pending');
     document.getElementById('authScreen').hidden = true;
-    document.querySelector('.app-shell').style.display = 'block';
+    document.querySelector('.app-shell').style.removeProperty('display');
     const root = document.getElementById('dashboardSection');
     if (!targetId || targetId === 'dashboardSection') return;
     [...root.children].forEach((child) => {

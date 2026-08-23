@@ -23,6 +23,20 @@ async function ensureExpensesTable() {
                         CONSTRAINT CK_gym_expenses_amount_runtime CHECK (amount > 0)
                     );
                 END;
+                IF COL_LENGTH(N'dbo.gym_expenses', N'expense_source') IS NULL
+                    ALTER TABLE dbo.gym_expenses ADD expense_source VARCHAR(20) NOT NULL CONSTRAINT DF_gym_expenses_source_runtime DEFAULT ('gym');
+                IF COL_LENGTH(N'dbo.gym_expenses', N'expense_category') IS NULL
+                    ALTER TABLE dbo.gym_expenses ADD expense_category NVARCHAR(80) NULL;
+                IF COL_LENGTH(N'dbo.gym_expenses', N'payment_method') IS NULL
+                    ALTER TABLE dbo.gym_expenses ADD payment_method VARCHAR(20) NULL;
+                IF COL_LENGTH(N'dbo.gym_expenses', N'created_by_user_id') IS NULL
+                    ALTER TABLE dbo.gym_expenses ADD created_by_user_id INT NULL;
+                IF COL_LENGTH(N'dbo.gym_expenses', N'is_voided') IS NULL
+                    ALTER TABLE dbo.gym_expenses ADD is_voided BIT NOT NULL CONSTRAINT DF_gym_expenses_voided_runtime DEFAULT (0);
+                IF COL_LENGTH(N'dbo.gym_expenses', N'voided_at') IS NULL
+                    ALTER TABLE dbo.gym_expenses ADD voided_at DATETIME2(0) NULL;
+                IF COL_LENGTH(N'dbo.gym_expenses', N'voided_by_user_id') IS NULL
+                    ALTER TABLE dbo.gym_expenses ADD voided_by_user_id INT NULL;
                 IF NOT EXISTS (
                     SELECT 1 FROM sys.indexes
                     WHERE name = N'IX_gym_expenses_date' AND object_id = OBJECT_ID(N'dbo.gym_expenses')
@@ -65,50 +79,62 @@ async function getMonthlyData(range) {
                    ISNULL(SUM(amount), 0) AS expensesTotal
             FROM dbo.gym_expenses
             WHERE expense_date >= @monthStart
-              AND expense_date < @nextMonth;
+              AND expense_date < @nextMonth
+              AND ISNULL(is_voided, 0) = 0;
         `),
         expenseItemsRequest.query(`
-            SELECT id, expense_name, amount, expense_date, notes, created_at
+            SELECT id, expense_name, amount, expense_date, expense_source, expense_category, payment_method, notes, created_at
             FROM dbo.gym_expenses
             WHERE expense_date >= @monthStart
               AND expense_date < @nextMonth
+              AND ISNULL(is_voided, 0) = 0
             ORDER BY expense_date DESC, id DESC;
         `)
     ]);
 }
 
-async function create({ name, amount, expenseDate, notes }) {
+async function create({ name, amount, expenseDate, notes, source = 'gym', category = null, paymentMethod = null, createdByUserId = null }) {
     const pool = await getPool();
     return pool.request()
         .input('name', sql.NVarChar(120), name)
         .input('amount', sql.Decimal(12, 2), amount)
         .input('expenseDate', sql.Date, toUtcDate(expenseDate))
+        .input('source', sql.VarChar(20), source)
+        .input('category', sql.NVarChar(80), category)
+        .input('paymentMethod', sql.VarChar(20), paymentMethod)
+        .input('createdByUserId', sql.Int, createdByUserId)
         .input('notes', sql.NVarChar(500), notes)
         .query(`
-            INSERT INTO dbo.gym_expenses (expense_name, amount, expense_date, notes)
-            OUTPUT INSERTED.id, INSERTED.expense_name, INSERTED.amount,
-                   INSERTED.expense_date, INSERTED.notes, INSERTED.created_at
-            VALUES (@name, @amount, @expenseDate, @notes);
+            INSERT INTO dbo.gym_expenses (expense_name, amount, expense_date, expense_source, expense_category, payment_method, created_by_user_id, notes)
+            OUTPUT INSERTED.id, INSERTED.expense_name, INSERTED.amount, INSERTED.expense_date,
+                   INSERTED.expense_source, INSERTED.expense_category, INSERTED.payment_method, INSERTED.notes, INSERTED.created_at
+            VALUES (@name, @amount, @expenseDate, @source, @category, @paymentMethod, @createdByUserId, @notes);
         `);
 }
 
-async function update({ id, name, amount, expenseDate, notes }) {
+async function update({ id, name, amount, expenseDate, notes, source = null, category = null, paymentMethod = null }) {
     const pool = await getPool();
     return pool.request()
         .input('id', sql.Int, id)
         .input('name', sql.NVarChar(120), name)
         .input('amount', sql.Decimal(12, 2), amount)
         .input('expenseDate', sql.Date, toUtcDate(expenseDate))
+        .input('source', sql.VarChar(20), source)
+        .input('category', sql.NVarChar(80), category)
+        .input('paymentMethod', sql.VarChar(20), paymentMethod)
         .input('notes', sql.NVarChar(500), notes)
         .query(`
             UPDATE dbo.gym_expenses
             SET expense_name = @name,
                 amount = @amount,
                 expense_date = @expenseDate,
+                expense_source = COALESCE(@source, expense_source),
+                expense_category = @category,
+                payment_method = @paymentMethod,
                 notes = @notes,
                 updated_at = SYSUTCDATETIME()
-            OUTPUT INSERTED.id, INSERTED.expense_name, INSERTED.amount,
-                   INSERTED.expense_date, INSERTED.notes, INSERTED.created_at
+            OUTPUT INSERTED.id, INSERTED.expense_name, INSERTED.amount, INSERTED.expense_date,
+                   INSERTED.expense_source, INSERTED.expense_category, INSERTED.payment_method, INSERTED.notes, INSERTED.created_at
             WHERE id = @id;
         `);
 }

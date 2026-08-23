@@ -34,6 +34,8 @@
   const escapeHtml = (value) => String(value ?? '').replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[character]));
   const number = (value) => Number.isFinite(Number(value)) ? Number(value) : 0;
   const money = (value) => `${number(value).toLocaleString('ar-EG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ج.م`;
+  const paymentLabels = { cash: 'نقدي', card: 'بطاقة', transfer: 'تحويل', wallet: 'محفظة', other: 'أخرى' };
+  let storePurchasesRequestId = 0;
 
   function dateText(value) {
     if (!value) return '—';
@@ -142,6 +144,37 @@
     content.prepend(overview);
   }
 
+  function renderStorePurchases(purchases, loading = false) {
+    content.querySelector('[data-member-store-purchases]')?.remove();
+    const section = document.createElement('section');
+    section.className = 'details-section member-store-purchases';
+    section.dataset.memberStorePurchases = 'true';
+    if (loading) {
+      section.innerHTML = '<h4>مشتريات المتجر</h4><div class="history-empty">جاري تحميل مشتريات العضو…</div>';
+      content.append(section);
+      return;
+    }
+    const rows = (purchases || []).map((item) => `<tr><td><strong dir="ltr">${escapeHtml(item.saleNumber || '—')}</strong><span class="table-sub">${escapeHtml(dateText(item.saleDate))}</span></td><td>${escapeHtml(item.items || '—')}</td><td><strong class="member-ltr-value">${escapeHtml(money(item.totalAmount))}</strong><span class="table-sub">مدفوع ${escapeHtml(money(item.paidAmount))} · متبقي ${escapeHtml(money(item.remainingAmount))}</span></td><td>${escapeHtml(paymentLabels[item.paymentMethod] || item.paymentMethod || '—')}</td><td><span class="badge ${escapeHtml(item.status || 'completed')}">${item.status === 'cancelled' ? 'ملغاة' : 'مكتملة'}</span></td></tr>`).join('');
+    section.innerHTML = `<div class="member-store-purchases-head"><div><span class="member-store-purchases-kicker">مبيعات منفصلة عن العضوية</span><h4>مشتريات المتجر</h4><p>سجل مشتريات العضو من متجر TOP GYM دون خلطها باشتراك العضوية.</p></div><strong>${number((purchases || []).length)} فاتورة</strong></div><div class="history-scroll">${rows ? `<table class="history-table member-store-purchases-table"><thead><tr><th>الفاتورة والتاريخ</th><th>المنتجات</th><th>الإجمالي</th><th>طريقة الدفع</th><th>الحالة</th></tr></thead><tbody>${rows}</tbody></table>` : '<div class="history-empty">لا توجد مشتريات متجر مسجلة لهذا العضو.</div>'}</div>`;
+    content.append(section);
+  }
+
+  async function loadStorePurchases(member) {
+    const canView = window.topGymAuth?.isOwner?.() === true || window.topGymAuth?.hasPermission?.('store.sales.view') === true;
+    if (!canView || !member?.id || !window.topGymApi?.get) return;
+    const requestId = ++storePurchasesRequestId;
+    renderStorePurchases([], true);
+    try {
+      const data = await window.topGymApi.get(`/api/members/${encodeURIComponent(member.id)}/store-purchases`);
+      if (requestId !== storePurchasesRequestId || !dialog.open) return;
+      renderStorePurchases(data.purchases || []);
+    } catch (error) {
+      if (requestId !== storePurchasesRequestId || error?.status === 401 || error?.status === 403) return;
+      const section = content.querySelector('[data-member-store-purchases]');
+      if (section) section.innerHTML = '<h4>مشتريات المتجر</h4><div class="history-empty">تعذر تحميل مشتريات المتجر حاليًا.</div>';
+    }
+  }
+
   content.addEventListener('click', (event) => {
     const button = event.target.closest('[data-member-detail-action]');
     if (!button) return;
@@ -163,5 +196,6 @@
     if (!member || !details || !dialog.open) return;
     updateHeader(member, details);
     renderOverview(member, details);
+    void loadStorePurchases(member);
   });
 })();

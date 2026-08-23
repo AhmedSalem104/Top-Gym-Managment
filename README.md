@@ -16,6 +16,7 @@ Microservices، ويحافظ على REST APIs الحالية وHash Navigation �
 
 - [نظرة سريعة](#نظرة-سريعة)
 - [المميزات](#المميزات)
+- [المتجر وPOS والمخزون](#المتجر-وpos-والمخزون)
 - [المتطلبات](#المتطلبات)
 - [التثبيت والتشغيل](#التثبيت-والتشغيل)
 - [إعداد قاعدة البيانات](#إعداد-قاعدة-البيانات)
@@ -109,6 +110,15 @@ Microservices، ويحافظ على REST APIs الحالية وHash Navigation �
   والتاريخ والبحث وإمكانية فتح تفاصيل العضو.
 - تقييمات البوابة مرتبطة بـ`member_id` في SQL Server ولا تخزن كود العضوية.
 
+### المتجر وPOS والمخزون
+
+- شاشة `#store` مستقلة بنقطة بيع سريعة، كتالوج منتجات، مخزون، مشتريات، مبيعات، موردين، مصروفات وتقارير.
+- عند اختيار عضو من البحث يُستخدم `member_id` وبياناته الحالية من `members` مباشرة؛ لا يتم إنشاء عميل مكرر.
+- الزائر يمكنه إتمام الشراء دون عضوية، مع حفظ الاسم والهاتف اختياريًا كـWalk-in.
+- كل استلام أو بيع أو مرتجع أو تسوية يكتب حركة في `gym_store_stock_movements` داخل Transaction، مع سجل حركات قابل للعرض وتقارير حسب المنتج والتصنيف والعميل واليوم.
+- التكلفة تستخدم Weighted Average، وتفصل مصروفات المتجر عن مصروفات الجيم عبر `expense_source='store'`. إلغاء مصروف المتجر Soft Void قابل للتدقيق ولا يحذف السجل المالي.
+- صلاحيات المتجر مستقلة، وMigration المتجر idempotent وتدخل جداول المتجر في النسخ الاحتياطي.
+
 ## المتطلبات
 
 1. Node.js متوافق مع engines.node الحالية: 24.x.
@@ -194,6 +204,7 @@ curl http://localhost:3000/api/health
 | التجميد والمدفوعات | membership_freezes, gym_payments, gym_payment_transactions |
 | الحضور والعمليات | gym_attendance, membership_events |
 | المصروفات | gym_expenses |
+| المتجر والبيع | gym_store_categories, gym_store_products, gym_store_product_variants, gym_store_suppliers, gym_store_customers, gym_store_purchases, gym_store_purchase_items, gym_store_purchase_payments, gym_store_inventory_balances, gym_store_inventory_batches, gym_store_stock_movements, gym_store_sales, gym_store_sale_items, gym_store_sale_payments, gym_store_returns, gym_store_return_items, gym_store_audit_log |
 | المصادقة | gym_users, gym_auth_sessions |
 | المكتبات | gym_exercises, gym_foods, gym_muscles |
 | التدريب | workout_programs, workout_routines, workout_exercises, workout_sessions, workout_set_logs |

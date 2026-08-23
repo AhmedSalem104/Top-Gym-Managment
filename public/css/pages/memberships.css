@@ -1124,6 +1124,55 @@
   background: var(--color-surface);
 }
 
+#detailsDialog .member-store-purchases {
+  gap: var(--space-3);
+  border-color: #dbeafe;
+  background: #fbfdff;
+}
+
+#detailsDialog .member-store-purchases-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+#detailsDialog .member-store-purchases-head h4,
+#detailsDialog .member-store-purchases-head p {
+  margin: 0;
+}
+
+#detailsDialog .member-store-purchases-head p {
+  margin-top: 4px;
+  color: var(--color-text-muted);
+  font-size: var(--font-sm);
+}
+
+#detailsDialog .member-store-purchases-head > strong {
+  flex: 0 0 auto;
+  color: var(--color-primary);
+  font-size: var(--font-sm);
+  white-space: nowrap;
+}
+
+#detailsDialog .member-store-purchases-kicker {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--color-primary);
+  font-size: var(--font-xs);
+  font-weight: var(--weight-bold);
+}
+
+#detailsDialog .member-store-purchases-table {
+  min-width: 760px;
+}
+
+#detailsDialog .member-store-purchases-table td:nth-child(2) {
+  max-width: 300px;
+  white-space: normal;
+  line-height: 1.7;
+}
+
 #detailsDialog .history-table th,
 #detailsDialog .history-table td {
   text-align: center;
@@ -1210,6 +1259,10 @@
   #detailsDialog .member-details-more-menu {
     right: 0;
     left: auto;
+  }
+
+  #detailsDialog .member-store-purchases-head {
+    flex-direction: column;
   }
 }
 

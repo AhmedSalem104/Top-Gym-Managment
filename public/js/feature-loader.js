@@ -86,6 +86,10 @@
             styles: [],
             scripts: []
         },
+        store: {
+            styles: [],
+            scripts: ['/js/pages/store/store.js?v=1']
+        },
         'smart-assistant': {
             styles: [],
             scripts: ['/js/smart-assistant.js?v=4']
