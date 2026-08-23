@@ -13732,8 +13732,8 @@ body.auth-locked .auth-screen {
 
 .smart-assistant-launcher,
 .smart-assistant-panel {
-  right: 24px;
-  left: auto;
+  left: 24px;
+  right: auto;
   inset-inline-start: auto;
   inset-inline-end: auto;
 }
@@ -13753,7 +13753,8 @@ body.auth-locked .auth-screen {
   }
 
   .smart-assistant-launcher {
-    right: 16px;
+    left: 16px;
+    right: auto;
     bottom: max(16px, env(safe-area-inset-bottom, 0px));
   }
 
@@ -13761,6 +13762,104 @@ body.auth-locked .auth-screen {
     right: 10px;
     left: 10px;
     bottom: max(78px, calc(62px + env(safe-area-inset-bottom, 0px)));
+  }
+}
+
+/* Desktop slide-tab behavior: keep the rail compact until the pointer enters
+   it, then expand it over the content. The pin button lets each user keep it
+   open without changing the main content grid. */
+@media (min-width: 1200px) {
+  .app-shell {
+    grid-template-columns: 82px minmax(0, 1fr);
+  }
+
+  .app-shell > .page-tabs {
+    width: 82px;
+    min-width: 82px;
+    overflow-x: hidden;
+    transition: width 180ms ease, box-shadow 180ms ease;
+  }
+
+  .app-shell > .page-tabs:hover,
+  .app-shell > .page-tabs.is-pinned {
+    width: var(--desktop-sidebar-width, 272px);
+    min-width: var(--desktop-sidebar-width, 272px);
+    box-shadow: 8px 0 32px rgb(30 61 104 / 0.12);
+  }
+
+  .app-shell > .page-tabs:not(:hover):not(.is-pinned) > .page-tab {
+    justify-content: center;
+    padding-inline: 0;
+  }
+
+  .app-shell > .page-tabs:not(:hover):not(.is-pinned) > .page-tab > span,
+  .app-shell > .page-tabs:not(:hover):not(.is-pinned) > .auth-account-bar .auth-logout-button > span {
+    display: none;
+  }
+
+  .app-shell > .page-tabs:hover > .page-tab > span,
+  .app-shell > .page-tabs.is-pinned > .page-tab > span,
+  .app-shell > .page-tabs:hover > .auth-account-bar .auth-logout-button > span,
+  .app-shell > .page-tabs.is-pinned > .auth-account-bar .auth-logout-button > span {
+    display: inline;
+  }
+
+  .app-shell > .page-tabs:not(:hover):not(.is-pinned) > .auth-account-bar {
+    justify-content: center;
+  }
+
+  .app-shell > .page-tabs::before {
+    white-space: nowrap;
+  }
+
+  .app-shell > .page-tabs:not(:hover):not(.is-pinned)::before {
+    content: "TG";
+    font-size: 16px;
+  }
+
+  .sidebar-pin-control {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    z-index: var(--z-dropdown);
+    display: block;
+  }
+
+  .sidebar-pin-button {
+    display: grid;
+    width: 40px;
+    height: 40px;
+    place-items: center;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    background: var(--color-surface-muted);
+    color: var(--color-text-muted);
+    cursor: pointer;
+    transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease;
+  }
+
+  .sidebar-pin-button .ui-icon {
+    width: 18px;
+    height: 18px;
+  }
+
+  .sidebar-pin-button:hover,
+  .sidebar-pin-button:focus-visible,
+  .sidebar-pin-button[aria-pressed="true"] {
+    border-color: var(--border-focus);
+    background: var(--color-primary-soft);
+    color: var(--color-primary);
+  }
+
+  .sidebar-pin-button:focus-visible {
+    outline: 2px solid rgb(23 105 232 / 0.28);
+    outline-offset: 2px;
+  }
+}
+
+@media (max-width: 1199px) {
+  .sidebar-pin-control {
+    display: none;
   }
 }
 

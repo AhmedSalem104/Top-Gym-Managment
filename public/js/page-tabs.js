@@ -5,9 +5,42 @@
     const validTabs = new Set(['dashboard', 'members', 'expenses', 'reports', 'management', 'permissions', 'attendance', 'library', 'trainees', 'feedback', 'store']);
     let activationToken = 0;
     let activeTabName = null;
+    const SIDEBAR_PIN_STORAGE_KEY = 'topgym.sidebar.pinned';
 
     function setHidden(element, hidden) {
         if (element) element.hidden = hidden;
+    }
+
+    function initSidebarPin() {
+        const rail = document.getElementById('pageTabs');
+        const pinButton = document.getElementById('sidebarPinButton');
+        if (!rail || !pinButton) return;
+
+        let pinned = false;
+        try {
+            pinned = window.localStorage.getItem(SIDEBAR_PIN_STORAGE_KEY) === 'true';
+        } catch {
+            pinned = false;
+        }
+
+        const applyPinnedState = (nextPinned) => {
+            pinned = Boolean(nextPinned);
+            rail.classList.toggle('is-pinned', pinned);
+            pinButton.setAttribute('aria-pressed', String(pinned));
+            const label = pinned ? 'إلغاء تثبيت القائمة الجانبية' : 'تثبيت القائمة الجانبية';
+            pinButton.setAttribute('aria-label', label);
+            pinButton.setAttribute('title', label);
+        };
+
+        applyPinnedState(pinned);
+        pinButton.addEventListener('click', () => {
+            applyPinnedState(!pinned);
+            try {
+                window.localStorage.setItem(SIDEBAR_PIN_STORAGE_KEY, String(pinned));
+            } catch {
+                // The sidebar remains usable when storage is unavailable.
+            }
+        });
     }
 
     function normalizeTab(name) {
@@ -115,6 +148,7 @@
     }
 
     document.addEventListener('DOMContentLoaded', () => {
+        initSidebarPin();
         document.querySelectorAll('[data-page-tab]').forEach((button) => {
             button.setAttribute('role', 'tab');
         });
