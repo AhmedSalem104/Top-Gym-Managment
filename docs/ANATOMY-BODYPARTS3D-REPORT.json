@@ -1,0 +1,2089 @@
+{
+  "generatedAt": "2026-08-23T14:36:32.728Z",
+  "source": {
+    "provider": "BodyParts3D / Database Center for Life Science (DBCLS)",
+    "dataset": "BodyParts3D 4.0, LATEST official OBJ archive, ISA representation, 99% polygon reduction",
+    "archiveUrl": "https://dbarchive.biosciencedbc.jp/data/bodyparts3d/LATEST/isa_BP3D_4.0_obj_99.zip",
+    "downloadPage": "https://dbarchive.biosciencedbc.jp/en/bodyparts3d/download.html",
+    "licensePage": "https://dbarchive.biosciencedbc.jp/en/bodyparts3d/lic.html",
+    "license": "Creative Commons Attribution 4.0 International (CC BY 4.0), per the current official BodyParts3D license page updated 2025-02-27",
+    "attribution": "BodyParts3D, © The Database Center for Life Science licensed under CC Attribution 4.0 International",
+    "historicalNotice": "The OBJ headers in the archive contain the historical CC BY-SA 2.1 Japan notice. The current official license page is authoritative for the current archive; this historical notice is retained in project documentation for provenance."
+  },
+  "input": {
+    "archive": "isa_BP3D_4.0_obj_99.fresh.zip",
+    "elementMap": "isa_element_parts.txt",
+    "officialArchiveEntriesUsed": 194
+  },
+  "output": {
+    "glb": "C:\\Users\\B-SMART\\gym-membership-app\\public\\assets\\anatomy\\top-gym-anatomy.glb",
+    "publicPath": "/assets/anatomy/top-gym-anatomy.glb",
+    "bytes": 23248356,
+    "beforeBytes": 92846680,
+    "afterBytes": 23248356,
+    "meshCount": 194,
+    "nodeCount": 195,
+    "materialCount": 1,
+    "vertices": 3861216,
+    "triangles": 1287156,
+    "meshopt": true
+  },
+  "mapping": {
+    "mappedSystemMuscles": 132,
+    "mappedMeshes": 194,
+    "ambiguousElements": 9,
+    "unmappedSystemMuscles": 165,
+    "beforeBytes": 92846680,
+    "afterBytes": 23248356,
+    "meshCount": 194,
+    "nodeCount": 195,
+    "materialCount": 1,
+    "vertices": 3861216,
+    "triangles": 1287156,
+    "meshopt": true
+  },
+  "unmapped": [
+    {
+      "systemMuscleId": 1,
+      "systemName": "Chest",
+      "systemNameAr": "صدر",
+      "mappingMethod": "unmatched",
+      "sourceAnatomyIds": [],
+      "sourceRepresentationIds": [],
+      "reason": "No documented BodyParts3D mapping in the existing catalog."
+    },
+    {
+      "systemMuscleId": 2,
+      "systemName": "Upper Chest",
+      "systemNameAr": "صدر علوي",
+      "mappingMethod": "documented-group-alias",
+      "sourceAnatomyIds": [
+        "FMA34687"
+      ],
+      "sourceRepresentationIds": [
+        "BP9096"
+      ],
+      "reason": "All candidate elements were ambiguous or were not present in the official ISA element map."
+    },
+    {
+      "systemMuscleId": 3,
+      "systemName": "Lower Chest",
+      "systemNameAr": "صدر سفلي",
+      "mappingMethod": "documented-group-alias",
+      "sourceAnatomyIds": [
+        "FMA34696"
+      ],
+      "sourceRepresentationIds": [
+        "BP8324"
+      ],
+      "reason": "All candidate elements were ambiguous or were not present in the official ISA element map."
+    },
+    {
+      "systemMuscleId": 4,
+      "systemName": "Inner Chest",
+      "systemNameAr": "صدر داخلي",
+      "mappingMethod": "unmatched",
+      "sourceAnatomyIds": [],
+      "sourceRepresentationIds": [],
+      "reason": "No documented BodyParts3D mapping in the existing catalog."
+    },
+    {
+      "systemMuscleId": 5,
+      "systemName": "Outer Chest",
+      "systemNameAr": "صدر خارجي",
+      "mappingMethod": "unmatched",
+      "sourceAnatomyIds": [],
+      "sourceRepresentationIds": [],
+      "reason": "No documented BodyParts3D mapping in the existing catalog."
+    },
+    {
+      "systemMuscleId": 7,
+      "systemName": "Back",
+      "systemNameAr": "ظهر",
+      "mappingMethod": "unmatched",
+      "sourceAnatomyIds": [],
+      "sourceRepresentationIds": [],
+      "reason": "No documented BodyParts3D mapping in the existing catalog."
+    },
+    {
+      "systemMuscleId": 8,
+      "systemName": "Upper Back",
+      "systemNameAr": "ظهر علوي",
+      "mappingMethod": "unmatched",
+      "sourceAnatomyIds": [],
+      "sourceRepresentationIds": [],
+      "reason": "No documented BodyParts3D mapping in the existing catalog."
+    },
+    {
+      "systemMuscleId": 9,
+      "systemName": "Middle Back",
+      "systemNameAr": "ظهر أوسط",
+      "mappingMethod": "unmatched",
+      "sourceAnatomyIds": [],
+      "sourceRepresentationIds": [],
+      "reason": "No documented BodyParts3D mapping in the existing catalog."
+    },
+    {
+      "systemMuscleId": 10,
+      "systemName": "Lats",
+      "systemNameAr": "مجنص",
+      "mappingMethod": "unmatched",
+      "sourceAnatomyIds": [],
+      "sourceRepresentationIds": [],
+      "reason": "No documented BodyParts3D mapping in the existing catalog."
+    },
+    {
+      "systemMuscleId": 11,
+      "systemName": "Rhomboids",
+      "systemNameAr": "العضلة المعينية",
+      "mappingMethod": "documented-group-alias",
+      "sourceAnatomyIds": [
+        "FMA13379",
+        "FMA13380"
+      ],
+      "sourceRepresentationIds": [
+        "BP9246",
+        "BP8586"
+      ],
+      "reason": "All candidate elements were ambiguous or were not present in the official ISA element map."
+    },
+    {
+      "systemMuscleId": 17,
+      "systemName": "Traps",
+      "systemNameAr": "ترابيس",
+      "mappingMethod": "documented-group-alias",
+      "sourceAnatomyIds": [
+        "FMA32529"
+      ],
+      "sourceRepresentationIds": [
+        "BP8254"
+      ],
+      "reason": "All candidate elements were ambiguous or were not present in the official ISA element map."
+    },
+    {
+      "systemMuscleId": 18,
+      "systemName": "Upper Traps",
+      "systemNameAr": "ترابيس علوي",
+      "mappingMethod": "documented-group-alias",
+      "sourceAnatomyIds": [
+        "FMA32555"
+      ],
+      "sourceRepresentationIds": [
+        "BP8226"
+      ],
+      "reason": "All candidate elements were ambiguous or were not present in the official ISA element map."
+    },
+    {
+      "systemMuscleId": 19,
+      "systemName": "Middle Traps",
+      "systemNameAr": "ترابيس أوسط",
+      "mappingMethod": "documented-group-alias",
+      "sourceAnatomyIds": [
+        "FMA32556"
+      ],
+      "sourceRepresentationIds": [
+        "BP8253"
+      ],
+      "reason": "All candidate elements were ambiguous or were not present in the official ISA element map."
+    },
+    {
+      "systemMuscleId": 20,
+      "systemName": "Lower Traps",
+      "systemNameAr": "ترابيس سفلي",
+      "mappingMethod": "documented-group-alias",
+      "sourceAnatomyIds": [
+        "FMA32557"
+      ],
+      "sourceRepresentationIds": [
+        "BP8268"
+      ],
+      "reason": "All candidate elements were ambiguous or were not present in the official ISA element map."
+    },
+    {
+      "systemMuscleId": 21,
+      "systemName": "Shoulders",
+      "systemNameAr": "أكتاف",
+      "mappingMethod": "documented-group-alias",
+      "sourceAnatomyIds": [
+        "FMA33531"
+      ],
+      "sourceRepresentationIds": [
+        "BP8217"
+      ],
+      "reason": "All candidate elements were ambiguous or were not present in the official ISA element map."
+    },
+    {
+      "systemMuscleId": 22,
+      "systemName": "Front Deltoid",
+      "systemNameAr": "كتف أمامي",
+      "mappingMethod": "documented-group-alias",
+      "sourceAnatomyIds": [
+        "FMA34677"
+      ],
+      "sourceRepresentationIds": [
+        "BP8260"
+      ],
+      "reason": "All candidate elements were ambiguous or were not present in the official ISA element map."
+    },
+    {
+      "systemMuscleId": 23,
+      "systemName": "Side Deltoid",
+      "systemNameAr": "كتف جانبي",
+      "mappingMethod": "documented-group-alias",
+      "sourceAnatomyIds": [
+        "FMA34678"
+      ],
+      "sourceRepresentationIds": [
+        "BP9076"
+      ],
+      "reason": "All candidate elements were ambiguous or were not present in the official ISA element map."
+    },
+    {
+      "systemMuscleId": 24,
+      "systemName": "Rear Deltoid",
+      "systemNameAr": "كتف خلفي",
+      "mappingMethod": "documented-group-alias",
+      "sourceAnatomyIds": [
+        "FMA34679"
+      ],
+      "sourceRepresentationIds": [
+        "BP8152"
+      ],
+      "reason": "All candidate elements were ambiguous or were not present in the official ISA element map."
+    },
+    {
+      "systemMuscleId": 25,
+      "systemName": "Rotator Cuff",
+      "systemNameAr": "الكفة المدورة",
+      "mappingMethod": "documented-alias",
+      "sourceAnatomyIds": [
+        "FMA23081"
+      ],
+      "sourceRepresentationIds": [
+        "BP8399"
+      ],
+      "reason": "All candidate elements were ambiguous or were not present in the official ISA element map."
+    },
+    {
+      "systemMuscleId": 29,
+      "systemName": "Biceps",
+      "systemNameAr": "باي",
+      "mappingMethod": "documented-group-alias",
+      "sourceAnatomyIds": [
+        "FMA37683",
+        "FMA37682"
+      ],
+      "sourceRepresentationIds": [
+        "BP8817",
+        "BP9154"
+      ],
+      "reason": "All candidate elements were ambiguous or were not present in the official ISA element map."
+    },
+    {
+      "systemMuscleId": 30,
+      "systemName": "Long Head Biceps",
+      "systemNameAr": "باي طويل",
+      "mappingMethod": "documented-group-alias",
+      "sourceAnatomyIds": [
+        "FMA37683"
+      ],
+      "sourceRepresentationIds": [
+        "BP8817"
+      ],
+      "reason": "All candidate elements were ambiguous or were not present in the official ISA element map."
+    },
+    {
+      "systemMuscleId": 31,
+      "systemName": "Short Head Biceps",
+      "systemNameAr": "باي قصير",
+      "mappingMethod": "documented-group-alias",
+      "sourceAnatomyIds": [
+        "FMA37682"
+      ],
+      "sourceRepresentationIds": [
+        "BP9154"
+      ],
+      "reason": "All candidate elements were ambiguous or were not present in the official ISA element map."
+    },
+    {
+      "systemMuscleId": 35,
+      "systemName": "Triceps",
+      "systemNameAr": "تراي",
+      "mappingMethod": "documented-group-alias",
+      "sourceAnatomyIds": [
+        "FMA37692",
+        "FMA37693",
+        "FMA37694"
+      ],
+      "sourceRepresentationIds": [
+        "BP8345",
+        "BP8258",
+        "BP8526"
+      ],
+      "reason": "All candidate elements were ambiguous or were not present in the official ISA element map."
+    },
+    {
+      "systemMuscleId": 36,
+      "systemName": "Long Head Triceps",
+      "systemNameAr": "تراي طويل",
+      "mappingMethod": "documented-group-alias",
+      "sourceAnatomyIds": [
+        "FMA37692"
+      ],
+      "sourceRepresentationIds": [
+        "BP8345"
+      ],
+      "reason": "All candidate elements were ambiguous or were not present in the official ISA element map."
+    },
+    {
+      "systemMuscleId": 37,
+      "systemName": "Lateral Head Triceps",
+      "systemNameAr": "تراي جانبي",
+      "mappingMethod": "documented-group-alias",
+      "sourceAnatomyIds": [
+        "FMA37694"
+      ],
+      "sourceRepresentationIds": [
+        "BP8526"
+      ],
+      "reason": "All candidate elements were ambiguous or were not present in the official ISA element map."
+    },
+    {
+      "systemMuscleId": 38,
+      "systemName": "Medial Head Triceps",
+      "systemNameAr": "تراي داخلي",
+      "mappingMethod": "documented-group-alias",
+      "sourceAnatomyIds": [
+        "FMA37693"
+      ],
+      "sourceRepresentationIds": [
+        "BP8258"
+      ],
+      "reason": "All candidate elements were ambiguous or were not present in the official ISA element map."
+    },
+    {
+      "systemMuscleId": 40,
+      "systemName": "Forearms",
+      "systemNameAr": "ساعد",
+      "mappingMethod": "documented-group-alias",
+      "sourceAnatomyIds": [
+        "FMA37371"
+      ],
+      "sourceRepresentationIds": [
+        "BP7785"
+      ],
+      "reason": "All candidate elements were ambiguous or were not present in the official ISA element map."
+    },
+    {
+      "systemMuscleId": 41,
+      "systemName": "Wrist Flexors",
+      "systemNameAr": "عضلات ثني الرسغ",
+      "mappingMethod": "unmatched",
+      "sourceAnatomyIds": [],
+      "sourceRepresentationIds": [],
+      "reason": "No documented BodyParts3D mapping in the existing catalog."
+    },
+    {
+      "systemMuscleId": 42,
+      "systemName": "Wrist Extensors",
+      "systemNameAr": "عضلات بسط الرسغ",
+      "mappingMethod": "unmatched",
+      "sourceAnatomyIds": [],
+      "sourceRepresentationIds": [],
+      "reason": "No documented BodyParts3D mapping in the existing catalog."
+    },
+    {
+      "systemMuscleId": 43,
+      "systemName": "Pronator Teres",
+      "systemNameAr": "الكابة المدورة",
+      "mappingMethod": "unmatched",
+      "sourceAnatomyIds": [],
+      "sourceRepresentationIds": [],
+      "reason": "No documented BodyParts3D mapping in the existing catalog."
+    },
+    {
+      "systemMuscleId": 45,
+      "systemName": "Finger Flexors",
+      "systemNameAr": "عضلات ثني الأصابع",
+      "mappingMethod": "unmatched",
+      "sourceAnatomyIds": [],
+      "sourceRepresentationIds": [],
+      "reason": "No documented BodyParts3D mapping in the existing catalog."
+    },
+    {
+      "systemMuscleId": 46,
+      "systemName": "Finger Extensors",
+      "systemNameAr": "عضلات بسط الأصابع",
+      "mappingMethod": "unmatched",
+      "sourceAnatomyIds": [],
+      "sourceRepresentationIds": [],
+      "reason": "No documented BodyParts3D mapping in the existing catalog."
+    },
+    {
+      "systemMuscleId": 47,
+      "systemName": "Grip Muscles",
+      "systemNameAr": "عضلات القبضة",
+      "mappingMethod": "unmatched",
+      "sourceAnatomyIds": [],
+      "sourceRepresentationIds": [],
+      "reason": "No documented BodyParts3D mapping in the existing catalog."
+    },
+    {
+      "systemMuscleId": 48,
+      "systemName": "Thenar Muscles",
+      "systemNameAr": "عضلات الإبهام",
+      "mappingMethod": "documented-alias",
+      "sourceAnatomyIds": [
+        "FMA64916"
+      ],
+      "sourceRepresentationIds": [
+        "BP8598"
+      ],
+      "reason": "All candidate elements were ambiguous or were not present in the official ISA element map."
+    },
+    {
+      "systemMuscleId": 49,
+      "systemName": "Hypothenar Muscles",
+      "systemNameAr": "عضلات الخنصر",
+      "mappingMethod": "documented-alias",
+      "sourceAnatomyIds": [
+        "FMA64917"
+      ],
+      "sourceRepresentationIds": [
+        "BP8206"
+      ],
+      "reason": "All candidate elements were ambiguous or were not present in the official ISA element map."
+    },
+    {
+      "systemMuscleId": 50,
+      "systemName": "Abs",
+      "systemNameAr": "بطن",
+      "mappingMethod": "documented-group-alias",
+      "sourceAnatomyIds": [
+        "FMA9620"
+      ],
+      "sourceRepresentationIds": [
+        "BP8157"
+      ],
+      "reason": "All candidate elements were ambiguous or were not present in the official ISA element map."
+    },
+    {
+      "systemMuscleId": 51,
+      "systemName": "Upper Abs",
+      "systemNameAr": "بطن علوي",
+      "mappingMethod": "documented-group-alias",
+      "sourceAnatomyIds": [
+        "FMA9620"
+      ],
+      "sourceRepresentationIds": [
+        "BP8157"
+      ],
+      "reason": "All candidate elements were ambiguous or were not present in the official ISA element map."
+    },
+    {
+      "systemMuscleId": 52,
+      "systemName": "Lower Abs",
+      "systemNameAr": "بطن سفلي",
+      "mappingMethod": "documented-group-alias",
+      "sourceAnatomyIds": [
+        "FMA9620"
+      ],
+      "sourceRepresentationIds": [
+        "BP8157"
+      ],
+      "reason": "All candidate elements were ambiguous or were not present in the official ISA element map."
+    },
+    {
+      "systemMuscleId": 53,
+      "systemName": "Rectus Abdominis",
+      "systemNameAr": "المستقيمة البطنية",
+      "mappingMethod": "unmatched",
+      "sourceAnatomyIds": [],
+      "sourceRepresentationIds": [],
+      "reason": "No documented BodyParts3D mapping in the existing catalog."
+    },
+    {
+      "systemMuscleId": 54,
+      "systemName": "Obliques",
+      "systemNameAr": "جوانب البطن",
+      "mappingMethod": "unmatched",
+      "sourceAnatomyIds": [],
+      "sourceRepresentationIds": [],
+      "reason": "No documented BodyParts3D mapping in the existing catalog."
+    },
+    {
+      "systemMuscleId": 56,
+      "systemName": "Internal Obliques",
+      "systemNameAr": "المائلة الداخلية",
+      "mappingMethod": "unmatched",
+      "sourceAnatomyIds": [],
+      "sourceRepresentationIds": [],
+      "reason": "No documented BodyParts3D mapping in the existing catalog."
+    },
+    {
+      "systemMuscleId": 57,
+      "systemName": "Transverse Abdominis",
+      "systemNameAr": "البطن المستعرضة",
+      "mappingMethod": "unmatched",
+      "sourceAnatomyIds": [],
+      "sourceRepresentationIds": [],
+      "reason": "No documented BodyParts3D mapping in the existing catalog."
+    },
+    {
+      "systemMuscleId": 58,
+      "systemName": "Lower Back",
+      "systemNameAr": "أسفل الظهر",
+      "mappingMethod": "unmatched",
+      "sourceAnatomyIds": [],
+      "sourceRepresentationIds": [],
+      "reason": "No documented BodyParts3D mapping in the existing catalog."
+    },
+    {
+      "systemMuscleId": 59,
+      "systemName": "Erector Spinae",
+      "systemNameAr": "العضلة الناصبة للفقار",
+      "mappingMethod": "unmatched",
+      "sourceAnatomyIds": [],
+      "sourceRepresentationIds": [],
+      "reason": "No documented BodyParts3D mapping in the existing catalog."
+    },
+    {
+      "systemMuscleId": 63,
+      "systemName": "Quadratus Lumborum",
+      "systemNameAr": "المربعة القطنية",
+      "mappingMethod": "unmatched",
+      "sourceAnatomyIds": [],
+      "sourceRepresentationIds": [],
+      "reason": "No documented BodyParts3D mapping in the existing catalog."
+    },
+    {
+      "systemMuscleId": 64,
+      "systemName": "Multifidus",
+      "systemNameAr": "متعددة الفلح",
+      "mappingMethod": "unmatched",
+      "sourceAnatomyIds": [],
+      "sourceRepresentationIds": [],
+      "reason": "No documented BodyParts3D mapping in the existing catalog."
+    },
+    {
+      "systemMuscleId": 67,
+      "systemName": "Hip Flexors",
+      "systemNameAr": "عضلات ثني الورك",
+      "mappingMethod": "unmatched",
+      "sourceAnatomyIds": [],
+      "sourceRepresentationIds": [],
+      "reason": "No documented BodyParts3D mapping in the existing catalog."
+    },
+    {
+      "systemMuscleId": 68,
+      "systemName": "Pelvic Floor",
+      "systemNameAr": "قاع الحوض",
+      "mappingMethod": "unmatched",
+      "sourceAnatomyIds": [],
+      "sourceRepresentationIds": [],
+      "reason": "No documented BodyParts3D mapping in the existing catalog."
+    },
+    {
+      "systemMuscleId": 71,
+      "systemName": "External Intercostals",
+      "systemNameAr": "الوربية الخارجية",
+      "mappingMethod": "documented-alias",
+      "sourceAnatomyIds": [
+        "FMA9756"
+      ],
+      "sourceRepresentationIds": [
+        "BP8306"
+      ],
+      "reason": "All candidate elements were ambiguous or were not present in the official ISA element map."
+    },
+    {
+      "systemMuscleId": 72,
+      "systemName": "Internal Intercostals",
+      "systemNameAr": "الوربية الداخلية",
+      "mappingMethod": "documented-alias",
+      "sourceAnatomyIds": [
+        "FMA9757"
+      ],
+      "sourceRepresentationIds": [
+        "BP8018"
+      ],
+      "reason": "All candidate elements were ambiguous or were not present in the official ISA element map."
+    },
+    {
+      "systemMuscleId": 73,
+      "systemName": "Quadriceps",
+      "systemNameAr": "فخذ أمامي",
+      "mappingMethod": "documented-group-alias",
+      "sourceAnatomyIds": [
+        "FMA22429"
+      ],
+      "sourceRepresentationIds": [
+        "BP8096"
+      ],
+      "reason": "All candidate elements were ambiguous or were not present in the official ISA element map."
+    },
+    {
+      "systemMuscleId": 78,
+      "systemName": "Hamstrings",
+      "systemNameAr": "فخذ خلفي",
+      "mappingMethod": "documented-group-alias",
+      "sourceAnatomyIds": [
+        "FMA22427"
+      ],
+      "sourceRepresentationIds": [
+        "BP7831"
+      ],
+      "reason": "All candidate elements were ambiguous or were not present in the official ISA element map."
+    },
+    {
+      "systemMuscleId": 79,
+      "systemName": "Biceps Femoris",
+      "systemNameAr": "ذات الرأسين الفخذية",
+      "mappingMethod": "documented-group-alias",
+      "sourceAnatomyIds": [
+        "FMA45881"
+      ],
+      "sourceRepresentationIds": [
+        "BP8333"
+      ],
+      "reason": "All candidate elements were ambiguous or were not present in the official ISA element map."
+    },
+    {
+      "systemMuscleId": 82,
+      "systemName": "Glutes",
+      "systemNameAr": "مؤخرة",
+      "mappingMethod": "documented-alias",
+      "sourceAnatomyIds": [
+        "FMA64922"
+      ],
+      "sourceRepresentationIds": [
+        "BP7989"
+      ],
+      "reason": "All candidate elements were ambiguous or were not present in the official ISA element map."
+    },
+    {
+      "systemMuscleId": 88,
+      "systemName": "Adductors",
+      "systemNameAr": "العضلات المقربة",
+      "mappingMethod": "documented-group-alias",
+      "sourceAnatomyIds": [
+        "FMA22439"
+      ],
+      "sourceRepresentationIds": [
+        "BP8606"
+      ],
+      "reason": "All candidate elements were ambiguous or were not present in the official ISA element map."
+    },
+    {
+      "systemMuscleId": 94,
+      "systemName": "Abductors",
+      "systemNameAr": "العضلات المبعدة",
+      "mappingMethod": "unmatched",
+      "sourceAnatomyIds": [],
+      "sourceRepresentationIds": [],
+      "reason": "No documented BodyParts3D mapping in the existing catalog."
+    },
+    {
+      "systemMuscleId": 96,
+      "systemName": "Calves",
+      "systemNameAr": "سمانة",
+      "mappingMethod": "documented-group-alias",
+      "sourceAnatomyIds": [
+        "FMA65004"
+      ],
+      "sourceRepresentationIds": [
+        "BP8821"
+      ],
+      "reason": "All candidate elements were ambiguous or were not present in the official ISA element map."
+    },
+    {
+      "systemMuscleId": 97,
+      "systemName": "Gastrocnemius",
+      "systemNameAr": "بطن الساق",
+      "mappingMethod": "documented-group-alias",
+      "sourceAnatomyIds": [
+        "FMA45950"
+      ],
+      "sourceRepresentationIds": [
+        "BP7941"
+      ],
+      "reason": "All candidate elements were ambiguous or were not present in the official ISA element map."
+    },
+    {
+      "systemMuscleId": 102,
+      "systemName": "Peroneus Longus",
+      "systemNameAr": "الشظوية الطويلة",
+      "mappingMethod": "exact-name",
+      "sourceAnatomyIds": [
+        "FMA22539"
+      ],
+      "sourceRepresentationIds": [
+        "BP8847"
+      ],
+      "reason": "All candidate elements were ambiguous or were not present in the official ISA element map."
+    },
+    {
+      "systemMuscleId": 103,
+      "systemName": "Peroneus Brevis",
+      "systemNameAr": "الشظوية القصيرة",
+      "mappingMethod": "exact-name",
+      "sourceAnatomyIds": [
+        "FMA22540"
+      ],
+      "sourceRepresentationIds": [
+        "BP8978"
+      ],
+      "reason": "All candidate elements were ambiguous or were not present in the official ISA element map."
+    },
+    {
+      "systemMuscleId": 104,
+      "systemName": "Peroneus Tertius",
+      "systemNameAr": "الشظوية الثالثة",
+      "mappingMethod": "exact-name",
+      "sourceAnatomyIds": [
+        "FMA22538"
+      ],
+      "sourceRepresentationIds": [
+        "BP9229"
+      ],
+      "reason": "All candidate elements were ambiguous or were not present in the official ISA element map."
+    },
+    {
+      "systemMuscleId": 106,
+      "systemName": "Foot Intrinsics",
+      "systemNameAr": "عضلات القدم الداخلية",
+      "mappingMethod": "documented-group-alias",
+      "sourceAnatomyIds": [
+        "FMA65020"
+      ],
+      "sourceRepresentationIds": [
+        "BP8068"
+      ],
+      "reason": "All candidate elements were ambiguous or were not present in the official ISA element map."
+    },
+    {
+      "systemMuscleId": 107,
+      "systemName": "Toe Flexors",
+      "systemNameAr": "عضلات ثني أصابع القدم",
+      "mappingMethod": "unmatched",
+      "sourceAnatomyIds": [],
+      "sourceRepresentationIds": [],
+      "reason": "No documented BodyParts3D mapping in the existing catalog."
+    },
+    {
+      "systemMuscleId": 108,
+      "systemName": "Toe Extensors",
+      "systemNameAr": "عضلات بسط أصابع القدم",
+      "mappingMethod": "unmatched",
+      "sourceAnatomyIds": [],
+      "sourceRepresentationIds": [],
+      "reason": "No documented BodyParts3D mapping in the existing catalog."
+    },
+    {
+      "systemMuscleId": 112,
+      "systemName": "Neck",
+      "systemNameAr": "رقبة",
+      "mappingMethod": "documented-group-alias",
+      "sourceAnatomyIds": [
+        "FMA9617"
+      ],
+      "sourceRepresentationIds": [
+        "BP7805"
+      ],
+      "reason": "All candidate elements were ambiguous or were not present in the official ISA element map."
+    },
+    {
+      "systemMuscleId": 118,
+      "systemName": "Longus Colli",
+      "systemNameAr": "الطويلة العنقية",
+      "mappingMethod": "unmatched",
+      "sourceAnatomyIds": [],
+      "sourceRepresentationIds": [],
+      "reason": "No documented BodyParts3D mapping in the existing catalog."
+    },
+    {
+      "systemMuscleId": 121,
+      "systemName": "Suboccipitals",
+      "systemNameAr": "تحت القذالية",
+      "mappingMethod": "documented-group-alias",
+      "sourceAnatomyIds": [
+        "FMA32582",
+        "FMA64875"
+      ],
+      "sourceRepresentationIds": [
+        "BP4732",
+        "BP4704"
+      ],
+      "reason": "All candidate elements were ambiguous or were not present in the official ISA element map."
+    },
+    {
+      "systemMuscleId": 123,
+      "systemName": "Deep Hip Rotators",
+      "systemNameAr": "مدورات الورك العميقة",
+      "mappingMethod": "documented-group-alias",
+      "sourceAnatomyIds": [
+        "FMA19086"
+      ],
+      "sourceRepresentationIds": [
+        "BP8117"
+      ],
+      "reason": "All candidate elements were ambiguous or were not present in the official ISA element map."
+    },
+    {
+      "systemMuscleId": 131,
+      "systemName": "Rotatores",
+      "systemNameAr": "الدوارات",
+      "mappingMethod": "documented-alias",
+      "sourceAnatomyIds": [
+        "FMA23081"
+      ],
+      "sourceRepresentationIds": [
+        "BP8399"
+      ],
+      "reason": "All candidate elements were ambiguous or were not present in the official ISA element map."
+    },
+    {
+      "systemMuscleId": 134,
+      "systemName": "Pyramidalis",
+      "systemNameAr": "الهرمية",
+      "mappingMethod": "unmatched",
+      "sourceAnatomyIds": [],
+      "sourceRepresentationIds": [],
+      "reason": "No documented BodyParts3D mapping in the existing catalog."
+    },
+    {
+      "systemMuscleId": 135,
+      "systemName": "Cremaster",
+      "systemNameAr": "المشمرة",
+      "mappingMethod": "unmatched",
+      "sourceAnatomyIds": [],
+      "sourceRepresentationIds": [],
+      "reason": "No documented BodyParts3D mapping in the existing catalog."
+    },
+    {
+      "systemMuscleId": 136,
+      "systemName": "Frontalis",
+      "systemNameAr": "الجبهية",
+      "mappingMethod": "unmatched",
+      "sourceAnatomyIds": [],
+      "sourceRepresentationIds": [],
+      "reason": "No documented BodyParts3D mapping in the existing catalog."
+    },
+    {
+      "systemMuscleId": 137,
+      "systemName": "Occipitalis",
+      "systemNameAr": "القذالية",
+      "mappingMethod": "unmatched",
+      "sourceAnatomyIds": [],
+      "sourceRepresentationIds": [],
+      "reason": "No documented BodyParts3D mapping in the existing catalog."
+    },
+    {
+      "systemMuscleId": 138,
+      "systemName": "Temporoparietalis",
+      "systemNameAr": "الصدغية الجدارية",
+      "mappingMethod": "unmatched",
+      "sourceAnatomyIds": [],
+      "sourceRepresentationIds": [],
+      "reason": "No documented BodyParts3D mapping in the existing catalog."
+    },
+    {
+      "systemMuscleId": 139,
+      "systemName": "Auricularis Anterior",
+      "systemNameAr": "الأذنية الأمامية",
+      "mappingMethod": "unmatched",
+      "sourceAnatomyIds": [],
+      "sourceRepresentationIds": [],
+      "reason": "No documented BodyParts3D mapping in the existing catalog."
+    },
+    {
+      "systemMuscleId": 140,
+      "systemName": "Auricularis Superior",
+      "systemNameAr": "الأذنية العلوية",
+      "mappingMethod": "unmatched",
+      "sourceAnatomyIds": [],
+      "sourceRepresentationIds": [],
+      "reason": "No documented BodyParts3D mapping in the existing catalog."
+    },
+    {
+      "systemMuscleId": 141,
+      "systemName": "Auricularis Posterior",
+      "systemNameAr": "الأذنية الخلفية",
+      "mappingMethod": "unmatched",
+      "sourceAnatomyIds": [],
+      "sourceRepresentationIds": [],
+      "reason": "No documented BodyParts3D mapping in the existing catalog."
+    },
+    {
+      "systemMuscleId": 142,
+      "systemName": "Orbicularis Oculi",
+      "systemNameAr": "الدائرية العينية",
+      "mappingMethod": "unmatched",
+      "sourceAnatomyIds": [],
+      "sourceRepresentationIds": [],
+      "reason": "No documented BodyParts3D mapping in the existing catalog."
+    },
+    {
+      "systemMuscleId": 143,
+      "systemName": "Corrugator Supercilii",
+      "systemNameAr": "المجعّدة للحاجب",
+      "mappingMethod": "unmatched",
+      "sourceAnatomyIds": [],
+      "sourceRepresentationIds": [],
+      "reason": "No documented BodyParts3D mapping in the existing catalog."
+    },
+    {
+      "systemMuscleId": 144,
+      "systemName": "Procerus",
+      "systemNameAr": "الهرمية الأنفية",
+      "mappingMethod": "unmatched",
+      "sourceAnatomyIds": [],
+      "sourceRepresentationIds": [],
+      "reason": "No documented BodyParts3D mapping in the existing catalog."
+    },
+    {
+      "systemMuscleId": 145,
+      "systemName": "Nasalis",
+      "systemNameAr": "الأنفية",
+      "mappingMethod": "unmatched",
+      "sourceAnatomyIds": [],
+      "sourceRepresentationIds": [],
+      "reason": "No documented BodyParts3D mapping in the existing catalog."
+    },
+    {
+      "systemMuscleId": 146,
+      "systemName": "Depressor Septi Nasi",
+      "systemNameAr": "خافضة حاجز الأنف",
+      "mappingMethod": "unmatched",
+      "sourceAnatomyIds": [],
+      "sourceRepresentationIds": [],
+      "reason": "No documented BodyParts3D mapping in the existing catalog."
+    },
+    {
+      "systemMuscleId": 147,
+      "systemName": "Levator Labii Superioris Alaeque Nasi",
+      "systemNameAr": "رافعة الشفة العليا وجناح الأنف",
+      "mappingMethod": "unmatched",
+      "sourceAnatomyIds": [],
+      "sourceRepresentationIds": [],
+      "reason": "No documented BodyParts3D mapping in the existing catalog."
+    },
+    {
+      "systemMuscleId": 148,
+      "systemName": "Levator Labii Superioris",
+      "systemNameAr": "رافعة الشفة العليا",
+      "mappingMethod": "unmatched",
+      "sourceAnatomyIds": [],
+      "sourceRepresentationIds": [],
+      "reason": "No documented BodyParts3D mapping in the existing catalog."
+    },
+    {
+      "systemMuscleId": 149,
+      "systemName": "Zygomaticus Major",
+      "systemNameAr": "الوجنية الكبرى",
+      "mappingMethod": "unmatched",
+      "sourceAnatomyIds": [],
+      "sourceRepresentationIds": [],
+      "reason": "No documented BodyParts3D mapping in the existing catalog."
+    },
+    {
+      "systemMuscleId": 150,
+      "systemName": "Zygomaticus Minor",
+      "systemNameAr": "الوجنية الصغرى",
+      "mappingMethod": "unmatched",
+      "sourceAnatomyIds": [],
+      "sourceRepresentationIds": [],
+      "reason": "No documented BodyParts3D mapping in the existing catalog."
+    },
+    {
+      "systemMuscleId": 151,
+      "systemName": "Levator Anguli Oris",
+      "systemNameAr": "رافعة زاوية الفم",
+      "mappingMethod": "unmatched",
+      "sourceAnatomyIds": [],
+      "sourceRepresentationIds": [],
+      "reason": "No documented BodyParts3D mapping in the existing catalog."
+    },
+    {
+      "systemMuscleId": 152,
+      "systemName": "Risorius",
+      "systemNameAr": "الضحكية",
+      "mappingMethod": "unmatched",
+      "sourceAnatomyIds": [],
+      "sourceRepresentationIds": [],
+      "reason": "No documented BodyParts3D mapping in the existing catalog."
+    },
+    {
+      "systemMuscleId": 153,
+      "systemName": "Buccinator",
+      "systemNameAr": "المبوقة",
+      "mappingMethod": "unmatched",
+      "sourceAnatomyIds": [],
+      "sourceRepresentationIds": [],
+      "reason": "No documented BodyParts3D mapping in the existing catalog."
+    },
+    {
+      "systemMuscleId": 154,
+      "systemName": "Orbicularis Oris",
+      "systemNameAr": "الدائرية الفموية",
+      "mappingMethod": "unmatched",
+      "sourceAnatomyIds": [],
+      "sourceRepresentationIds": [],
+      "reason": "No documented BodyParts3D mapping in the existing catalog."
+    },
+    {
+      "systemMuscleId": 155,
+      "systemName": "Depressor Anguli Oris",
+      "systemNameAr": "خافضة زاوية الفم",
+      "mappingMethod": "unmatched",
+      "sourceAnatomyIds": [],
+      "sourceRepresentationIds": [],
+      "reason": "No documented BodyParts3D mapping in the existing catalog."
+    },
+    {
+      "systemMuscleId": 156,
+      "systemName": "Depressor Labii Inferioris",
+      "systemNameAr": "خافضة الشفة السفلى",
+      "mappingMethod": "unmatched",
+      "sourceAnatomyIds": [],
+      "sourceRepresentationIds": [],
+      "reason": "No documented BodyParts3D mapping in the existing catalog."
+    },
+    {
+      "systemMuscleId": 157,
+      "systemName": "Mentalis",
+      "systemNameAr": "الذقنية",
+      "mappingMethod": "unmatched",
+      "sourceAnatomyIds": [],
+      "sourceRepresentationIds": [],
+      "reason": "No documented BodyParts3D mapping in the existing catalog."
+    },
+    {
+      "systemMuscleId": 158,
+      "systemName": "Masseter",
+      "systemNameAr": "الماضغة",
+      "mappingMethod": "unmatched",
+      "sourceAnatomyIds": [],
+      "sourceRepresentationIds": [],
+      "reason": "No documented BodyParts3D mapping in the existing catalog."
+    },
+    {
+      "systemMuscleId": 159,
+      "systemName": "Temporalis",
+      "systemNameAr": "الصدغية",
+      "mappingMethod": "unmatched",
+      "sourceAnatomyIds": [],
+      "sourceRepresentationIds": [],
+      "reason": "No documented BodyParts3D mapping in the existing catalog."
+    },
+    {
+      "systemMuscleId": 160,
+      "systemName": "Medial Pterygoid",
+      "systemNameAr": "الجناحية الإنسية",
+      "mappingMethod": "unmatched",
+      "sourceAnatomyIds": [],
+      "sourceRepresentationIds": [],
+      "reason": "No documented BodyParts3D mapping in the existing catalog."
+    },
+    {
+      "systemMuscleId": 161,
+      "systemName": "Lateral Pterygoid",
+      "systemNameAr": "الجناحية الوحشية",
+      "mappingMethod": "unmatched",
+      "sourceAnatomyIds": [],
+      "sourceRepresentationIds": [],
+      "reason": "No documented BodyParts3D mapping in the existing catalog."
+    },
+    {
+      "systemMuscleId": 171,
+      "systemName": "Styloglossus",
+      "systemNameAr": "الإبرية اللسانية",
+      "mappingMethod": "unmatched",
+      "sourceAnatomyIds": [],
+      "sourceRepresentationIds": [],
+      "reason": "No documented BodyParts3D mapping in the existing catalog."
+    },
+    {
+      "systemMuscleId": 172,
+      "systemName": "Palatoglossus",
+      "systemNameAr": "الحنكية اللسانية",
+      "mappingMethod": "unmatched",
+      "sourceAnatomyIds": [],
+      "sourceRepresentationIds": [],
+      "reason": "No documented BodyParts3D mapping in the existing catalog."
+    },
+    {
+      "systemMuscleId": 173,
+      "systemName": "Superior Longitudinal Tongue",
+      "systemNameAr": "الطولية العلوية للسان",
+      "mappingMethod": "unmatched",
+      "sourceAnatomyIds": [],
+      "sourceRepresentationIds": [],
+      "reason": "No documented BodyParts3D mapping in the existing catalog."
+    },
+    {
+      "systemMuscleId": 174,
+      "systemName": "Inferior Longitudinal Tongue",
+      "systemNameAr": "الطولية السفلية للسان",
+      "mappingMethod": "unmatched",
+      "sourceAnatomyIds": [],
+      "sourceRepresentationIds": [],
+      "reason": "No documented BodyParts3D mapping in the existing catalog."
+    },
+    {
+      "systemMuscleId": 175,
+      "systemName": "Transverse Tongue",
+      "systemNameAr": "المستعرضة للسان",
+      "mappingMethod": "unmatched",
+      "sourceAnatomyIds": [],
+      "sourceRepresentationIds": [],
+      "reason": "No documented BodyParts3D mapping in the existing catalog."
+    },
+    {
+      "systemMuscleId": 176,
+      "systemName": "Vertical Tongue",
+      "systemNameAr": "العمودية للسان",
+      "mappingMethod": "unmatched",
+      "sourceAnatomyIds": [],
+      "sourceRepresentationIds": [],
+      "reason": "No documented BodyParts3D mapping in the existing catalog."
+    },
+    {
+      "systemMuscleId": 179,
+      "systemName": "Musculus Uvulae",
+      "systemNameAr": "عضلة اللهاة",
+      "mappingMethod": "unmatched",
+      "sourceAnatomyIds": [],
+      "sourceRepresentationIds": [],
+      "reason": "No documented BodyParts3D mapping in the existing catalog."
+    },
+    {
+      "systemMuscleId": 186,
+      "systemName": "Cricothyroid",
+      "systemNameAr": "الحلقية الدرقية",
+      "mappingMethod": "unmatched",
+      "sourceAnatomyIds": [],
+      "sourceRepresentationIds": [],
+      "reason": "No documented BodyParts3D mapping in the existing catalog."
+    },
+    {
+      "systemMuscleId": 187,
+      "systemName": "Posterior Cricoarytenoid",
+      "systemNameAr": "الحلقية الطرجهالية الخلفية",
+      "mappingMethod": "unmatched",
+      "sourceAnatomyIds": [],
+      "sourceRepresentationIds": [],
+      "reason": "No documented BodyParts3D mapping in the existing catalog."
+    },
+    {
+      "systemMuscleId": 188,
+      "systemName": "Lateral Cricoarytenoid",
+      "systemNameAr": "الحلقية الطرجهالية الوحشية",
+      "mappingMethod": "unmatched",
+      "sourceAnatomyIds": [],
+      "sourceRepresentationIds": [],
+      "reason": "No documented BodyParts3D mapping in the existing catalog."
+    },
+    {
+      "systemMuscleId": 191,
+      "systemName": "Thyroarytenoid",
+      "systemNameAr": "الدرقية الطرجهالية",
+      "mappingMethod": "unmatched",
+      "sourceAnatomyIds": [],
+      "sourceRepresentationIds": [],
+      "reason": "No documented BodyParts3D mapping in the existing catalog."
+    },
+    {
+      "systemMuscleId": 209,
+      "systemName": "Multifidus Cervicis",
+      "systemNameAr": "متعددة الفلح العنقية",
+      "mappingMethod": "unmatched",
+      "sourceAnatomyIds": [],
+      "sourceRepresentationIds": [],
+      "reason": "No documented BodyParts3D mapping in the existing catalog."
+    },
+    {
+      "systemMuscleId": 210,
+      "systemName": "Multifidus Thoracis",
+      "systemNameAr": "متعددة الفلح الصدرية",
+      "mappingMethod": "unmatched",
+      "sourceAnatomyIds": [],
+      "sourceRepresentationIds": [],
+      "reason": "No documented BodyParts3D mapping in the existing catalog."
+    },
+    {
+      "systemMuscleId": 211,
+      "systemName": "Multifidus Lumborum",
+      "systemNameAr": "متعددة الفلح القطنية",
+      "mappingMethod": "unmatched",
+      "sourceAnatomyIds": [],
+      "sourceRepresentationIds": [],
+      "reason": "No documented BodyParts3D mapping in the existing catalog."
+    },
+    {
+      "systemMuscleId": 212,
+      "systemName": "Rotatores Breves",
+      "systemNameAr": "الدوارات القصيرة",
+      "mappingMethod": "unmatched",
+      "sourceAnatomyIds": [],
+      "sourceRepresentationIds": [],
+      "reason": "No documented BodyParts3D mapping in the existing catalog."
+    },
+    {
+      "systemMuscleId": 213,
+      "systemName": "Rotatores Longi",
+      "systemNameAr": "الدوارات الطويلة",
+      "mappingMethod": "unmatched",
+      "sourceAnatomyIds": [],
+      "sourceRepresentationIds": [],
+      "reason": "No documented BodyParts3D mapping in the existing catalog."
+    },
+    {
+      "systemMuscleId": 215,
+      "systemName": "Subcostales",
+      "systemNameAr": "تحت الضلعية",
+      "mappingMethod": "unmatched",
+      "sourceAnatomyIds": [],
+      "sourceRepresentationIds": [],
+      "reason": "No documented BodyParts3D mapping in the existing catalog."
+    },
+    {
+      "systemMuscleId": 216,
+      "systemName": "Innermost Intercostals",
+      "systemNameAr": "الوربية الأعمق",
+      "mappingMethod": "documented-alias",
+      "sourceAnatomyIds": [
+        "FMA9758"
+      ],
+      "sourceRepresentationIds": [
+        "BP9146"
+      ],
+      "reason": "All candidate elements were ambiguous or were not present in the official ISA element map."
+    },
+    {
+      "systemMuscleId": 217,
+      "systemName": "Pectoralis Major Clavicular Head",
+      "systemNameAr": "الرأس الترقوي للصدرية الكبرى",
+      "mappingMethod": "documented-group-alias",
+      "sourceAnatomyIds": [
+        "FMA34687"
+      ],
+      "sourceRepresentationIds": [
+        "BP9096"
+      ],
+      "reason": "All candidate elements were ambiguous or were not present in the official ISA element map."
+    },
+    {
+      "systemMuscleId": 218,
+      "systemName": "Pectoralis Major Sternocostal Head",
+      "systemNameAr": "الرأس القصي الضلعي للصدرية الكبرى",
+      "mappingMethod": "documented-group-alias",
+      "sourceAnatomyIds": [
+        "FMA34696"
+      ],
+      "sourceRepresentationIds": [
+        "BP8324"
+      ],
+      "reason": "All candidate elements were ambiguous or were not present in the official ISA element map."
+    },
+    {
+      "systemMuscleId": 219,
+      "systemName": "Deltoid Anterior Fibers",
+      "systemNameAr": "ألياف الدالية الأمامية",
+      "mappingMethod": "documented-group-alias",
+      "sourceAnatomyIds": [
+        "FMA34677"
+      ],
+      "sourceRepresentationIds": [
+        "BP8260"
+      ],
+      "reason": "All candidate elements were ambiguous or were not present in the official ISA element map."
+    },
+    {
+      "systemMuscleId": 220,
+      "systemName": "Deltoid Middle Fibers",
+      "systemNameAr": "ألياف الدالية الوسطى",
+      "mappingMethod": "documented-group-alias",
+      "sourceAnatomyIds": [
+        "FMA34678"
+      ],
+      "sourceRepresentationIds": [
+        "BP9076"
+      ],
+      "reason": "All candidate elements were ambiguous or were not present in the official ISA element map."
+    },
+    {
+      "systemMuscleId": 221,
+      "systemName": "Deltoid Posterior Fibers",
+      "systemNameAr": "ألياف الدالية الخلفية",
+      "mappingMethod": "documented-group-alias",
+      "sourceAnatomyIds": [
+        "FMA34679"
+      ],
+      "sourceRepresentationIds": [
+        "BP8152"
+      ],
+      "reason": "All candidate elements were ambiguous or were not present in the official ISA element map."
+    },
+    {
+      "systemMuscleId": 222,
+      "systemName": "Triceps Brachii Long Head",
+      "systemNameAr": "الرأس الطويل للعضلة ثلاثية الرؤوس العضدية",
+      "mappingMethod": "documented-group-alias",
+      "sourceAnatomyIds": [
+        "FMA37692"
+      ],
+      "sourceRepresentationIds": [
+        "BP8345"
+      ],
+      "reason": "All candidate elements were ambiguous or were not present in the official ISA element map."
+    },
+    {
+      "systemMuscleId": 223,
+      "systemName": "Triceps Brachii Lateral Head",
+      "systemNameAr": "الرأس الوحشي للعضلة ثلاثية الرؤوس العضدية",
+      "mappingMethod": "documented-group-alias",
+      "sourceAnatomyIds": [
+        "FMA37694"
+      ],
+      "sourceRepresentationIds": [
+        "BP8526"
+      ],
+      "reason": "All candidate elements were ambiguous or were not present in the official ISA element map."
+    },
+    {
+      "systemMuscleId": 224,
+      "systemName": "Triceps Brachii Medial Head",
+      "systemNameAr": "الرأس الإنسي للعضلة ثلاثية الرؤوس العضدية",
+      "mappingMethod": "documented-group-alias",
+      "sourceAnatomyIds": [
+        "FMA37693"
+      ],
+      "sourceRepresentationIds": [
+        "BP8258"
+      ],
+      "reason": "All candidate elements were ambiguous or were not present in the official ISA element map."
+    },
+    {
+      "systemMuscleId": 226,
+      "systemName": "Flexor Carpi Ulnaris",
+      "systemNameAr": "القابضة الزندية للرسغ",
+      "mappingMethod": "unmatched",
+      "sourceAnatomyIds": [],
+      "sourceRepresentationIds": [],
+      "reason": "No documented BodyParts3D mapping in the existing catalog."
+    },
+    {
+      "systemMuscleId": 244,
+      "systemName": "Adductor Pollicis",
+      "systemNameAr": "مقربة الإبهام",
+      "mappingMethod": "documented-group-alias",
+      "sourceAnatomyIds": [
+        "FMA46119",
+        "FMA46120"
+      ],
+      "sourceRepresentationIds": [
+        "BP8249",
+        "BP8886"
+      ],
+      "reason": "All candidate elements were ambiguous or were not present in the official ISA element map."
+    },
+    {
+      "systemMuscleId": 245,
+      "systemName": "Palmaris Brevis",
+      "systemNameAr": "الراحية القصيرة",
+      "mappingMethod": "documented-group-alias",
+      "sourceAnatomyIds": [
+        "FMA42380"
+      ],
+      "sourceRepresentationIds": [
+        "BP8207"
+      ],
+      "reason": "All candidate elements were ambiguous or were not present in the official ISA element map."
+    },
+    {
+      "systemMuscleId": 246,
+      "systemName": "Abductor Digiti Minimi Hand",
+      "systemNameAr": "مبعدة الخنصر في اليد",
+      "mappingMethod": "documented-alias",
+      "sourceAnatomyIds": [
+        "FMA37382"
+      ],
+      "sourceRepresentationIds": [
+        "BP8738"
+      ],
+      "reason": "All candidate elements were ambiguous or were not present in the official ISA element map."
+    },
+    {
+      "systemMuscleId": 247,
+      "systemName": "Flexor Digiti Minimi Brevis Hand",
+      "systemNameAr": "قابضة الخنصر القصيرة في اليد",
+      "mappingMethod": "documented-alias",
+      "sourceAnatomyIds": [
+        "FMA37383"
+      ],
+      "sourceRepresentationIds": [
+        "BP8517"
+      ],
+      "reason": "All candidate elements were ambiguous or were not present in the official ISA element map."
+    },
+    {
+      "systemMuscleId": 248,
+      "systemName": "Opponens Digiti Minimi",
+      "systemNameAr": "مقابلة الخنصر",
+      "mappingMethod": "documented-alias",
+      "sourceAnatomyIds": [
+        "FMA37384"
+      ],
+      "sourceRepresentationIds": [
+        "BP8205"
+      ],
+      "reason": "All candidate elements were ambiguous or were not present in the official ISA element map."
+    },
+    {
+      "systemMuscleId": 249,
+      "systemName": "Lumbricals Hand",
+      "systemNameAr": "الدودية في اليد",
+      "mappingMethod": "documented-group-alias",
+      "sourceAnatomyIds": [
+        "FMA71318"
+      ],
+      "sourceRepresentationIds": [
+        "BP8054"
+      ],
+      "reason": "All candidate elements were ambiguous or were not present in the official ISA element map."
+    },
+    {
+      "systemMuscleId": 250,
+      "systemName": "Palmar Interossei Hand",
+      "systemNameAr": "بين العظمية الراحية",
+      "mappingMethod": "documented-group-alias",
+      "sourceAnatomyIds": [
+        "FMA71320"
+      ],
+      "sourceRepresentationIds": [
+        "BP8247"
+      ],
+      "reason": "All candidate elements were ambiguous or were not present in the official ISA element map."
+    },
+    {
+      "systemMuscleId": 251,
+      "systemName": "Dorsal Interossei Hand",
+      "systemNameAr": "بين العظمية الظهرية",
+      "mappingMethod": "documented-group-alias",
+      "sourceAnatomyIds": [
+        "FMA71319"
+      ],
+      "sourceRepresentationIds": [
+        "BP8037"
+      ],
+      "reason": "All candidate elements were ambiguous or were not present in the official ISA element map."
+    },
+    {
+      "systemMuscleId": 252,
+      "systemName": "Rectus Abdominis Upper Region",
+      "systemNameAr": "الجزء العلوي من المستقيمة البطنية",
+      "mappingMethod": "unmatched",
+      "sourceAnatomyIds": [],
+      "sourceRepresentationIds": [],
+      "reason": "No documented BodyParts3D mapping in the existing catalog."
+    },
+    {
+      "systemMuscleId": 253,
+      "systemName": "Rectus Abdominis Lower Region",
+      "systemNameAr": "الجزء السفلي من المستقيمة البطنية",
+      "mappingMethod": "unmatched",
+      "sourceAnatomyIds": [],
+      "sourceRepresentationIds": [],
+      "reason": "No documented BodyParts3D mapping in the existing catalog."
+    },
+    {
+      "systemMuscleId": 254,
+      "systemName": "Pyramidalis Abdominis",
+      "systemNameAr": "الهرمية البطنية",
+      "mappingMethod": "unmatched",
+      "sourceAnatomyIds": [],
+      "sourceRepresentationIds": [],
+      "reason": "No documented BodyParts3D mapping in the existing catalog."
+    },
+    {
+      "systemMuscleId": 255,
+      "systemName": "Levator Ani",
+      "systemNameAr": "رافعة الشرج",
+      "mappingMethod": "documented-group-alias",
+      "sourceAnatomyIds": [
+        "FMA19089"
+      ],
+      "sourceRepresentationIds": [
+        "BP7793"
+      ],
+      "reason": "All candidate elements were ambiguous or were not present in the official ISA element map."
+    },
+    {
+      "systemMuscleId": 261,
+      "systemName": "External Urethral Sphincter",
+      "systemNameAr": "المصرة الإحليلية الخارجية",
+      "mappingMethod": "documented-alias",
+      "sourceAnatomyIds": [
+        "FMA9623"
+      ],
+      "sourceRepresentationIds": [
+        "BP8936"
+      ],
+      "reason": "All candidate elements were ambiguous or were not present in the official ISA element map."
+    },
+    {
+      "systemMuscleId": 262,
+      "systemName": "Bulbospongiosus",
+      "systemNameAr": "البصلية الإسفنجية",
+      "mappingMethod": "unmatched",
+      "sourceAnatomyIds": [],
+      "sourceRepresentationIds": [],
+      "reason": "No documented BodyParts3D mapping in the existing catalog."
+    },
+    {
+      "systemMuscleId": 263,
+      "systemName": "Ischiocavernosus",
+      "systemNameAr": "الإسكية الكهفية",
+      "mappingMethod": "unmatched",
+      "sourceAnatomyIds": [],
+      "sourceRepresentationIds": [],
+      "reason": "No documented BodyParts3D mapping in the existing catalog."
+    },
+    {
+      "systemMuscleId": 264,
+      "systemName": "Superficial Transverse Perineal",
+      "systemNameAr": "المستعرضة السطحية للعجان",
+      "mappingMethod": "documented-alias",
+      "sourceAnatomyIds": [
+        "FMA19728"
+      ],
+      "sourceRepresentationIds": [
+        "BP8935"
+      ],
+      "reason": "All candidate elements were ambiguous or were not present in the official ISA element map."
+    },
+    {
+      "systemMuscleId": 265,
+      "systemName": "Deep Transverse Perineal",
+      "systemNameAr": "المستعرضة العميقة للعجان",
+      "mappingMethod": "documented-alias",
+      "sourceAnatomyIds": [
+        "FMA9623"
+      ],
+      "sourceRepresentationIds": [
+        "BP8936"
+      ],
+      "reason": "All candidate elements were ambiguous or were not present in the official ISA element map."
+    },
+    {
+      "systemMuscleId": 266,
+      "systemName": "Psoas Minor",
+      "systemNameAr": "القطنية الصغرى",
+      "mappingMethod": "unmatched",
+      "sourceAnatomyIds": [],
+      "sourceRepresentationIds": [],
+      "reason": "No documented BodyParts3D mapping in the existing catalog."
+    },
+    {
+      "systemMuscleId": 267,
+      "systemName": "Iliopsoas",
+      "systemNameAr": "الحرقفية القطنية",
+      "mappingMethod": "documented-group-alias",
+      "sourceAnatomyIds": [
+        "FMA18060",
+        "FMA22310"
+      ],
+      "sourceRepresentationIds": [
+        "BP8374",
+        "BP8313"
+      ],
+      "reason": "All candidate elements were ambiguous or were not present in the official ISA element map."
+    },
+    {
+      "systemMuscleId": 268,
+      "systemName": "Gemellus Superior Hip",
+      "systemNameAr": "التوأمية العلوية للورك",
+      "mappingMethod": "documented-alias",
+      "sourceAnatomyIds": [
+        "FMA22318"
+      ],
+      "sourceRepresentationIds": [
+        "BP8029"
+      ],
+      "reason": "All candidate elements were ambiguous or were not present in the official ISA element map."
+    },
+    {
+      "systemMuscleId": 269,
+      "systemName": "Gemellus Inferior Hip",
+      "systemNameAr": "التوأمية السفلية للورك",
+      "mappingMethod": "documented-alias",
+      "sourceAnatomyIds": [
+        "FMA22320"
+      ],
+      "sourceRepresentationIds": [
+        "BP8455"
+      ],
+      "reason": "All candidate elements were ambiguous or were not present in the official ISA element map."
+    },
+    {
+      "systemMuscleId": 270,
+      "systemName": "Obturator Internus Hip",
+      "systemNameAr": "السدادة الداخلية للورك",
+      "mappingMethod": "documented-alias",
+      "sourceAnatomyIds": [
+        "FMA22298"
+      ],
+      "sourceRepresentationIds": [
+        "BP7987"
+      ],
+      "reason": "All candidate elements were ambiguous or were not present in the official ISA element map."
+    },
+    {
+      "systemMuscleId": 271,
+      "systemName": "Obturator Externus Hip",
+      "systemNameAr": "السدادة الخارجية للورك",
+      "mappingMethod": "documented-alias",
+      "sourceAnatomyIds": [
+        "FMA22299"
+      ],
+      "sourceRepresentationIds": [
+        "BP8507"
+      ],
+      "reason": "All candidate elements were ambiguous or were not present in the official ISA element map."
+    },
+    {
+      "systemMuscleId": 272,
+      "systemName": "Quadratus Femoris Hip",
+      "systemNameAr": "المربعة الفخذية للورك",
+      "mappingMethod": "documented-alias",
+      "sourceAnatomyIds": [
+        "FMA22321"
+      ],
+      "sourceRepresentationIds": [
+        "BP8662"
+      ],
+      "reason": "All candidate elements were ambiguous or were not present in the official ISA element map."
+    },
+    {
+      "systemMuscleId": 274,
+      "systemName": "Adductor Magnus Adductor Part",
+      "systemNameAr": "الجزء المقرب من المقربة الكبرى",
+      "mappingMethod": "documented-alias",
+      "sourceAnatomyIds": [
+        "FMA22443"
+      ],
+      "sourceRepresentationIds": [
+        "BP8973"
+      ],
+      "reason": "All candidate elements were ambiguous or were not present in the official ISA element map."
+    },
+    {
+      "systemMuscleId": 275,
+      "systemName": "Adductor Magnus Hamstring Part",
+      "systemNameAr": "الجزء الهامسترنجي من المقربة الكبرى",
+      "mappingMethod": "documented-alias",
+      "sourceAnatomyIds": [
+        "FMA22443"
+      ],
+      "sourceRepresentationIds": [
+        "BP8973"
+      ],
+      "reason": "All candidate elements were ambiguous or were not present in the official ISA element map."
+    },
+    {
+      "systemMuscleId": 276,
+      "systemName": "Biceps Femoris Long Head",
+      "systemNameAr": "الرأس الطويل لذات الرأسين الفخذية",
+      "mappingMethod": "documented-group-alias",
+      "sourceAnatomyIds": [
+        "FMA45887"
+      ],
+      "sourceRepresentationIds": [
+        "BP8332"
+      ],
+      "reason": "All candidate elements were ambiguous or were not present in the official ISA element map."
+    },
+    {
+      "systemMuscleId": 277,
+      "systemName": "Biceps Femoris Short Head",
+      "systemNameAr": "الرأس القصير لذات الرأسين الفخذية",
+      "mappingMethod": "documented-group-alias",
+      "sourceAnatomyIds": [
+        "FMA45890"
+      ],
+      "sourceRepresentationIds": [
+        "BP8617"
+      ],
+      "reason": "All candidate elements were ambiguous or were not present in the official ISA element map."
+    },
+    {
+      "systemMuscleId": 279,
+      "systemName": "Fibularis Longus",
+      "systemNameAr": "الشظوية الطويلة",
+      "mappingMethod": "exact-name",
+      "sourceAnatomyIds": [
+        "FMA22539"
+      ],
+      "sourceRepresentationIds": [
+        "BP8847"
+      ],
+      "reason": "All candidate elements were ambiguous or were not present in the official ISA element map."
+    },
+    {
+      "systemMuscleId": 280,
+      "systemName": "Fibularis Brevis",
+      "systemNameAr": "الشظوية القصيرة",
+      "mappingMethod": "exact-name",
+      "sourceAnatomyIds": [
+        "FMA22540"
+      ],
+      "sourceRepresentationIds": [
+        "BP8978"
+      ],
+      "reason": "All candidate elements were ambiguous or were not present in the official ISA element map."
+    },
+    {
+      "systemMuscleId": 281,
+      "systemName": "Fibularis Tertius",
+      "systemNameAr": "الشظوية الثالثة",
+      "mappingMethod": "exact-name",
+      "sourceAnatomyIds": [
+        "FMA22538"
+      ],
+      "sourceRepresentationIds": [
+        "BP9229"
+      ],
+      "reason": "All candidate elements were ambiguous or were not present in the official ISA element map."
+    },
+    {
+      "systemMuscleId": 282,
+      "systemName": "Flexor Hallucis Longus Foot",
+      "systemNameAr": "القابضة الطويلة لإبهام القدم",
+      "mappingMethod": "documented-alias",
+      "sourceAnatomyIds": [
+        "FMA22593"
+      ],
+      "sourceRepresentationIds": [
+        "BP7950"
+      ],
+      "reason": "All candidate elements were ambiguous or were not present in the official ISA element map."
+    },
+    {
+      "systemMuscleId": 283,
+      "systemName": "Extensor Digitorum Longus Foot",
+      "systemNameAr": "الباسطة الطويلة لأصابع القدم",
+      "mappingMethod": "documented-alias",
+      "sourceAnatomyIds": [
+        "FMA22534"
+      ],
+      "sourceRepresentationIds": [
+        "BP8163"
+      ],
+      "reason": "All candidate elements were ambiguous or were not present in the official ISA element map."
+    },
+    {
+      "systemMuscleId": 284,
+      "systemName": "Gastrocnemius Medial Head",
+      "systemNameAr": "الرأس الإنسي لبطن الساق",
+      "mappingMethod": "documented-group-alias",
+      "sourceAnatomyIds": [
+        "FMA45956"
+      ],
+      "sourceRepresentationIds": [
+        "BP9218"
+      ],
+      "reason": "All candidate elements were ambiguous or were not present in the official ISA element map."
+    },
+    {
+      "systemMuscleId": 285,
+      "systemName": "Gastrocnemius Lateral Head",
+      "systemNameAr": "الرأس الوحشي لبطن الساق",
+      "mappingMethod": "documented-group-alias",
+      "sourceAnatomyIds": [
+        "FMA45959"
+      ],
+      "sourceRepresentationIds": [
+        "BP7940"
+      ],
+      "reason": "All candidate elements were ambiguous or were not present in the official ISA element map."
+    },
+    {
+      "systemMuscleId": 286,
+      "systemName": "Extensor Digitorum Brevis",
+      "systemNameAr": "الباسطة القصيرة لأصابع القدم",
+      "mappingMethod": "unmatched",
+      "sourceAnatomyIds": [],
+      "sourceRepresentationIds": [],
+      "reason": "No documented BodyParts3D mapping in the existing catalog."
+    },
+    {
+      "systemMuscleId": 291,
+      "systemName": "Quadratus Plantae",
+      "systemNameAr": "المربعة الأخمصية",
+      "mappingMethod": "unmatched",
+      "sourceAnatomyIds": [],
+      "sourceRepresentationIds": [],
+      "reason": "No documented BodyParts3D mapping in the existing catalog."
+    },
+    {
+      "systemMuscleId": 292,
+      "systemName": "Lumbricals Foot",
+      "systemNameAr": "الدودية في القدم",
+      "mappingMethod": "documented-group-alias",
+      "sourceAnatomyIds": [
+        "FMA65020"
+      ],
+      "sourceRepresentationIds": [
+        "BP8068"
+      ],
+      "reason": "All candidate elements were ambiguous or were not present in the official ISA element map."
+    },
+    {
+      "systemMuscleId": 293,
+      "systemName": "Flexor Hallucis Brevis",
+      "systemNameAr": "القابضة القصيرة لإبهام القدم",
+      "mappingMethod": "unmatched",
+      "sourceAnatomyIds": [],
+      "sourceRepresentationIds": [],
+      "reason": "No documented BodyParts3D mapping in the existing catalog."
+    },
+    {
+      "systemMuscleId": 294,
+      "systemName": "Adductor Hallucis",
+      "systemNameAr": "مقربة إبهام القدم",
+      "mappingMethod": "unmatched",
+      "sourceAnatomyIds": [],
+      "sourceRepresentationIds": [],
+      "reason": "No documented BodyParts3D mapping in the existing catalog."
+    },
+    {
+      "systemMuscleId": 297,
+      "systemName": "Dorsal Interossei Foot",
+      "systemNameAr": "بين العظمية الظهرية للقدم",
+      "mappingMethod": "documented-group-alias",
+      "sourceAnatomyIds": [
+        "FMA65020"
+      ],
+      "sourceRepresentationIds": [
+        "BP8068"
+      ],
+      "reason": "All candidate elements were ambiguous or were not present in the official ISA element map."
+    }
+  ],
+  "ambiguous": [
+    {
+      "elementId": "FJ1522",
+      "owner": null,
+      "reason": "ambiguous BodyParts3D element; candidates were intentionally not guessed",
+      "candidates": [
+        {
+          "systemMuscleId": 25,
+          "systemName": "Rotator Cuff",
+          "mappingMethod": "documented-alias",
+          "sourceAnatomyIds": [
+            "FMA23081"
+          ]
+        },
+        {
+          "systemMuscleId": 131,
+          "systemName": "Rotatores",
+          "mappingMethod": "documented-alias",
+          "sourceAnatomyIds": [
+            "FMA23081"
+          ]
+        }
+      ]
+    },
+    {
+      "elementId": "FJ1524",
+      "owner": null,
+      "reason": "ambiguous BodyParts3D element; candidates were intentionally not guessed",
+      "candidates": [
+        {
+          "systemMuscleId": 25,
+          "systemName": "Rotator Cuff",
+          "mappingMethod": "documented-alias",
+          "sourceAnatomyIds": [
+            "FMA23081"
+          ]
+        },
+        {
+          "systemMuscleId": 131,
+          "systemName": "Rotatores",
+          "mappingMethod": "documented-alias",
+          "sourceAnatomyIds": [
+            "FMA23081"
+          ]
+        }
+      ]
+    },
+    {
+      "elementId": "FJ1525",
+      "owner": null,
+      "reason": "ambiguous BodyParts3D element; candidates were intentionally not guessed",
+      "candidates": [
+        {
+          "systemMuscleId": 25,
+          "systemName": "Rotator Cuff",
+          "mappingMethod": "documented-alias",
+          "sourceAnatomyIds": [
+            "FMA23081"
+          ]
+        },
+        {
+          "systemMuscleId": 131,
+          "systemName": "Rotatores",
+          "mappingMethod": "documented-alias",
+          "sourceAnatomyIds": [
+            "FMA23081"
+          ]
+        }
+      ]
+    },
+    {
+      "elementId": "FJ1466",
+      "owner": null,
+      "reason": "ambiguous BodyParts3D element; candidates were intentionally not guessed",
+      "candidates": [
+        {
+          "systemMuscleId": 49,
+          "systemName": "Hypothenar Muscles",
+          "mappingMethod": "documented-alias",
+          "sourceAnatomyIds": [
+            "FMA64917"
+          ]
+        },
+        {
+          "systemMuscleId": 246,
+          "systemName": "Abductor Digiti Minimi Hand",
+          "mappingMethod": "documented-alias",
+          "sourceAnatomyIds": [
+            "FMA37382"
+          ]
+        }
+      ]
+    },
+    {
+      "elementId": "FJ1470",
+      "owner": null,
+      "reason": "ambiguous BodyParts3D element; candidates were intentionally not guessed",
+      "candidates": [
+        {
+          "systemMuscleId": 49,
+          "systemName": "Hypothenar Muscles",
+          "mappingMethod": "documented-alias",
+          "sourceAnatomyIds": [
+            "FMA64917"
+          ]
+        },
+        {
+          "systemMuscleId": 247,
+          "systemName": "Flexor Digiti Minimi Brevis Hand",
+          "mappingMethod": "documented-alias",
+          "sourceAnatomyIds": [
+            "FMA37383"
+          ]
+        }
+      ]
+    },
+    {
+      "elementId": "FJ1482",
+      "owner": null,
+      "reason": "ambiguous BodyParts3D element; candidates were intentionally not guessed",
+      "candidates": [
+        {
+          "systemMuscleId": 49,
+          "systemName": "Hypothenar Muscles",
+          "mappingMethod": "documented-alias",
+          "sourceAnatomyIds": [
+            "FMA64917"
+          ]
+        },
+        {
+          "systemMuscleId": 248,
+          "systemName": "Opponens Digiti Minimi",
+          "mappingMethod": "documented-alias",
+          "sourceAnatomyIds": [
+            "FMA37384"
+          ]
+        }
+      ]
+    },
+    {
+      "elementId": "FJ1410",
+      "owner": null,
+      "reason": "ambiguous BodyParts3D element; candidates were intentionally not guessed",
+      "candidates": [
+        {
+          "systemMuscleId": 102,
+          "systemName": "Peroneus Longus",
+          "mappingMethod": "exact-name",
+          "sourceAnatomyIds": [
+            "FMA22539"
+          ]
+        },
+        {
+          "systemMuscleId": 279,
+          "systemName": "Fibularis Longus",
+          "mappingMethod": "exact-name",
+          "sourceAnatomyIds": [
+            "FMA22539"
+          ]
+        }
+      ]
+    },
+    {
+      "elementId": "FJ1409",
+      "owner": null,
+      "reason": "ambiguous BodyParts3D element; candidates were intentionally not guessed",
+      "candidates": [
+        {
+          "systemMuscleId": 103,
+          "systemName": "Peroneus Brevis",
+          "mappingMethod": "exact-name",
+          "sourceAnatomyIds": [
+            "FMA22540"
+          ]
+        },
+        {
+          "systemMuscleId": 280,
+          "systemName": "Fibularis Brevis",
+          "mappingMethod": "exact-name",
+          "sourceAnatomyIds": [
+            "FMA22540"
+          ]
+        }
+      ]
+    },
+    {
+      "elementId": "FJ1411",
+      "owner": null,
+      "reason": "ambiguous BodyParts3D element; candidates were intentionally not guessed",
+      "candidates": [
+        {
+          "systemMuscleId": 104,
+          "systemName": "Peroneus Tertius",
+          "mappingMethod": "exact-name",
+          "sourceAnatomyIds": [
+            "FMA22538"
+          ]
+        },
+        {
+          "systemMuscleId": 281,
+          "systemName": "Fibularis Tertius",
+          "mappingMethod": "exact-name",
+          "sourceAnatomyIds": [
+            "FMA22538"
+          ]
+        }
+      ]
+    }
+  ],
+  "qualityGate": {
+    "policy": "The asset is accepted only as an official BodyParts3D-derived, separate-mesh web model. Anatomical completeness is reported through unmapped/ambiguous lists; no guessed mappings are included.",
+    "sourceArchiveReduction": "99% polygon-reduced official archive; inspect the rendered model before presenting it as a clinical/anatomical reference.",
+    "runtimeMaterialIsolation": "The GLB intentionally deduplicates its single PBR material for size; AnatomyViewer clones materials per mesh before highlighting.",
+    "passed": true
+  }
+}

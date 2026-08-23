@@ -40,7 +40,32 @@
                     <button class="btn btn-light" id="portalResetButton" type="button">كود آخر</button>
                 </div>
             </header>
+            <section class="portal-tool-grid" data-no-print aria-label="خدمات العضو">
+                <button class="portal-tool-card portal-tool-card-print" type="button" data-portal-tool="print">
+                    <span class="portal-tool-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V3h12v6"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v7H6z"/></svg></span>
+                    <span><strong>بياناتي وطباعتها</strong><small>عرض التقرير وتنزيله بصيغة PDF</small></span>
+                    <span class="portal-tool-arrow" aria-hidden="true">←</span>
+                </button>
+                <button class="portal-tool-card portal-tool-card-feedback" type="button" data-portal-tool="feedback">
+                    <span class="portal-tool-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-2.9-5.6 2.9 1.1-6.2L3 9.6l6.2-.9L12 3Z"/></svg></span>
+                    <span><strong>قيّم تجربتي</strong><small>شاركنا رأيك في الجيم والمدربين</small></span>
+                    <span class="portal-tool-arrow" aria-hidden="true">←</span>
+                </button>
+                <button class="portal-tool-card portal-tool-card-exercises" type="button" data-portal-tool="exercises">
+                    <span class="portal-tool-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4v16M18 4v16M3 8v8M21 8v8M6 12h12"/></svg></span>
+                    <span><strong>دليل التمارين</strong><small>اختر منطقة الجسم وشاهد التمارين المناسبة</small></span>
+                    <span class="portal-tool-arrow" aria-hidden="true">←</span>
+                </button>
+                <button class="portal-tool-card portal-tool-card-foods" type="button" data-portal-tool="foods">
+                    <span class="portal-tool-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3v8M4 3v5a3 3 0 0 0 6 0V3M7 11v10M17 3v18M14 3h6v5h-6"/></svg></span>
+                    <span><strong>دليل التغذية</strong><small>السعرات والماكروز لكل طعام</small></span>
+                    <span class="portal-tool-arrow" aria-hidden="true">←</span>
+                </button>
+            </section>
             <div id="portalReportContent" class="portal-report-content"></div>
+            <section class="portal-library-section" id="portalLibrarySection" data-no-print hidden aria-labelledby="portalLibraryTitle">
+                <div id="portalLibraryMount"></div>
+            </section>
             <section class="portal-feedback" id="portalFeedbackSection" data-no-print aria-labelledby="portalFeedbackTitle" hidden>
                 <div class="portal-feedback-head">
                     <div>

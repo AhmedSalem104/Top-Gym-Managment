@@ -5,4 +5,5 @@ npm-debug.log*
 .vercel/
 qa/reports/*.json
 qa/artifacts/
+.tmp/
 __pycache__/

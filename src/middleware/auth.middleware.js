@@ -18,7 +18,9 @@ function isSameOriginRequest(request) {
 function createAuthApiMiddleware({ authService, isAuthorizedCronRequest }) {
     const { ensureAuthReady, getSessionUser, readSessionCookie } = authService;
     return (request, response, next) => {
-        const publicPath = ['/health', '/auth/login', '/auth/session', '/auth/logout', '/member-portal/lookup', '/member-portal/feedback'].includes(request.path);
+        const publicPath = ['/health', '/auth/login', '/auth/session', '/auth/logout', '/member-portal/lookup', '/member-portal/feedback'].includes(request.path)
+            || request.path === '/member-portal/library/options'
+            || request.path.startsWith('/member-portal/library/');
         if (publicPath || (request.path === '/backup/daily' && isAuthorizedCronRequest(request))) return next();
         if (!['GET', 'HEAD', 'OPTIONS'].includes(request.method) && !isSameOriginRequest(request)) {
             return response.status(403).json({ error: 'الطلب غير مصرح به.' });

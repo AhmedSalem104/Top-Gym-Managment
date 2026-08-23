@@ -8,7 +8,10 @@
     "start": "node server.js",
     "dev": "node --watch server.js",
     "build:css": "node scripts/build-css.js && node scripts/validate-styles.js",
-    "build": "npm run build:css",
+    "check:anatomy": "tsc --noEmit -p tsconfig.anatomy.json",
+    "build:anatomy": "npm run check:anatomy && node scripts/build-anatomy.js",
+    "build:anatomy:bodyparts3d": "node scripts/build-bodyparts3d-anatomy.mjs",
+    "build": "npm run build:css && npm run build:anatomy",
     "test:smoke": "node scripts/smoke-test.js",
     "test:e2e": "playwright test",
     "test:e2e:headed": "playwright test --headed",
@@ -36,7 +39,14 @@
     "mssql": "^11.0.1"
   },
   "devDependencies": {
+    "@gltf-transform/core": "^4.4.2",
+    "@gltf-transform/extensions": "^4.4.2",
+    "@gltf-transform/functions": "^4.4.2",
     "@playwright/test": "^1.62.1",
-    "three": "^0.185.1"
+    "@types/three": "^0.185.4",
+    "esbuild": "^0.28.2",
+    "meshoptimizer": "^1.2.0",
+    "three": "^0.185.1",
+    "typescript": "^7.0.2"
   }
 }

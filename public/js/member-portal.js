@@ -9,6 +9,7 @@
   const loginPanel = $('portalLoginPanel');
   const resultPanel = $('portalResult');
   const reportContent = $('portalReportContent');
+  const librarySection = $('portalLibrarySection');
   const feedbackSection = $('portalFeedbackSection');
   const feedbackForm = $('portalFeedbackForm');
   const feedbackSubmit = $('portalFeedbackSubmit');
@@ -18,6 +19,7 @@
   const feedbackError = $('portalFeedbackError');
   const feedbackSuccess = $('portalFeedbackSuccess');
   let portalMembershipCode = '';
+  let libraryLoaderPromise = null;
 
   const escapeHtml = (value) => String(value ?? '').replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[character]));
   const number = (value) => Number.isFinite(Number(value)) ? Number(value) : 0;
@@ -78,6 +80,33 @@
     if (feedbackSuccess) feedbackSuccess.hidden = true;
   }
 
+  function ensureLibraryFeature() {
+    if (window.topGymMemberPortalLibrary) return Promise.resolve(window.topGymMemberPortalLibrary);
+    if (libraryLoaderPromise) return libraryLoaderPromise;
+    libraryLoaderPromise = new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = '/js/member-portal-library.js?v=1';
+      script.async = true;
+      script.onload = () => window.topGymMemberPortalLibrary ? resolve(window.topGymMemberPortalLibrary) : reject(new Error('Library feature did not initialize.'));
+      script.onerror = () => reject(new Error('تعذر تحميل دليل التمارين والتغذية.'));
+      document.body.appendChild(script);
+    });
+    return libraryLoaderPromise;
+  }
+
+  async function openLibrary(type) {
+    if (!librarySection) return;
+    librarySection.hidden = false;
+    librarySection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    try {
+      const feature = await ensureLibraryFeature();
+      feature.open(type);
+    } catch (error) {
+      const mount = $('portalLibraryMount');
+      if (mount) mount.innerHTML = `<div class="portal-library-state portal-library-error"><strong>تعذر فتح الدليل</strong><span>${escapeHtml(error.message || 'حاول مرة أخرى.')}</span></div>`;
+    }
+  }
+
   function table(title, headers, rows, emptyText = 'لا توجد بيانات مسجلة.') {
     return `<section class="portal-section"><h3>${title}</h3>${rows.length ? `<div class="portal-table-wrap"><table class="portal-table"><thead><tr>${headers.map((header) => `<th>${header}</th>`).join('')}</tr></thead><tbody>${rows.join('')}</tbody></table></div>` : `<div class="portal-empty">${emptyText}</div>`}</section>`;
   }
@@ -101,6 +130,7 @@
       ${table('سجل الحضور والزيارات', ['التاريخ', 'الحضور', 'الانصراف', 'المدة'], attendanceRows)}
       ${freezeRows.length ? table('حالات التجميد أو الإيقاف', ['البداية', 'النهاية', 'الاستئناف', 'المدة'], freezeRows) : ''}`;
     $('portalIssueMeta').textContent = `رقم التقرير: ${data.reportNumber || '—'} · تاريخ الإصدار: ${dateTimeText(data.issuedAt)}`;
+    if (librarySection) librarySection.hidden = true;
     if (feedbackSection) feedbackSection.hidden = false;
     resetFeedback();
   }
@@ -141,6 +171,17 @@
   });
   $('portalPrintButton')?.addEventListener('click', printReport);
   $('portalPdfButton')?.addEventListener('click', printReport);
+  resultPanel?.addEventListener('click', (event) => {
+    const tool = event.target.closest('[data-portal-tool]');
+    if (!tool) return;
+    const action = tool.dataset.portalTool;
+    if (action === 'print') return printReport();
+    if (action === 'feedback') {
+      feedbackSection?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return;
+    }
+    if (action === 'exercises' || action === 'foods') void openLibrary(action);
+  });
   document.querySelectorAll('[data-feedback-rating]').forEach((button) => {
     button.addEventListener('click', () => setRating(button.dataset.feedbackRating));
   });
@@ -171,5 +212,5 @@
       showFeedbackError(error.message || 'تعذر حفظ التقييم.');
     } finally { setFeedbackBusy(false); }
   });
-  $('portalResetButton')?.addEventListener('click', () => { portalMembershipCode = ''; resetFeedback(); if (feedbackSection) feedbackSection.hidden = true; resultPanel.hidden = true; loginPanel.hidden = false; input.focus(); });
+  $('portalResetButton')?.addEventListener('click', () => { portalMembershipCode = ''; resetFeedback(); if (feedbackSection) feedbackSection.hidden = true; if (librarySection) librarySection.hidden = true; resultPanel.hidden = true; loginPanel.hidden = false; input.focus(); });
 })();

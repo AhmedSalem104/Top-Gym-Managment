@@ -142,6 +142,20 @@ function assertRequiredFiles() {
         'public/js/day-passes.js',
         'public/js/day-pass-reports.js',
         'public/js/member-portal.js',
+        'public/js/member-portal-library.js',
+        'public/js/member-portal-anatomy.js',
+        'public/data/anatomy-muscle-mapping.json',
+        'public/assets/anatomy/top-gym-anatomy.glb',
+        'public/assets/anatomy/README.md',
+        'src/client/anatomy/index.ts',
+        'src/client/anatomy/anatomy-viewer.ts',
+        'src/client/anatomy/camera-controller.ts',
+        'src/client/anatomy/muscle-mapping.ts',
+        'scripts/build-anatomy.js',
+        'scripts/build-bodyparts3d-anatomy.mjs',
+        'docs/ANATOMY-3D.md',
+        'docs/ANATOMY-BODYPARTS3D-REPORT.json',
+        'tsconfig.anatomy.json',
         'public/js/pages/management/member-feedback.js',
         'public/css/pages/member-feedback.css',
         'docs/AUTH.md',
@@ -246,6 +260,9 @@ function checkAuthSurface() {
     record('FEEDBACK-OWNER-API', feedbackRoute.includes("'/api/member-feedback'") && feedbackRoute.includes('ownerOnly'), 'member feedback administration API is Owner-protected', 'P0');
     record('FEEDBACK-PORTAL-LINK', authMiddleware.includes("'/member-portal/feedback'") && feedbackService.includes('findMemberIdByCode'), 'portal feedback is public only through membership-code resolution', 'P0');
     record('FEEDBACK-NO-CODE-STORAGE', feedbackService.includes('member_id, rating, note_type, message') && !feedbackService.includes('membership_code'), 'feedback storage keeps member_id and does not persist the membership code', 'P0');
+    const memberPortalRoutes = read('src/routes/member-portal.routes.js');
+    record('PORTAL-LIBRARY-API', memberPortalRoutes.includes('/api/member-portal/library/options') && memberPortalRoutes.includes('/api/member-portal/library/:type/:id'), 'member portal library read-only API surface is present', 'P1');
+    record('PORTAL-LIBRARY-PUBLIC', authMiddleware.includes("request.path === '/member-portal/library/options'") && authMiddleware.includes("request.path.startsWith('/member-portal/library/')"), 'member portal library endpoints are explicitly public and do not bypass other API protection', 'P0');
     const permissions = read('src/permissions/permissions.js');
     const routePermissions = read('src/permissions/route-permissions.js');
     const permissionService = read('src/services/permission-service.js');
@@ -287,6 +304,28 @@ function checkPrintAndLazyLoadingSurface() {
     record('UI-API-CORE', index.includes('/js/core/api.js') && app.includes('window.topGymApi.request'), 'frontend API client is centralized');
     record('UI-PERMISSIONS-CORE', index.includes('/js/core/permissions.js') && authUi.includes('window.topGymPermissions'), 'frontend tab permissions are centralized');
     record('UI-CACHE-BUST', index.includes('app.js?v=feature-expansion'), 'frontend script cache-busting is present');
+    const memberPortal = read('public/member-portal.html');
+    const memberPortalScript = read('public/js/member-portal.js');
+    const memberPortalLibrary = read('public/js/member-portal-library.js');
+    record('PORTAL-MEMBER-HUB', memberPortal.includes('data-portal-tool="exercises"') && memberPortal.includes('data-portal-tool="foods"') && memberPortalScript.includes('ensureLibraryFeature'), 'member portal exposes four service cards and lazy-loads the library guide');
+    record('PORTAL-ANATOMY-EXPLORER', memberPortalLibrary.includes('data-anatomy-zone') && memberPortalLibrary.includes('/api/member-portal/library/') && memberPortalLibrary.includes('activeType'), 'member portal library includes interactive anatomy zones and exercise/food search');
+}
+
+function checkAnatomyAsset() {
+    const assetPath = path.join(root, 'public', 'assets', 'anatomy', 'top-gym-anatomy.glb');
+    const mappingPath = path.join(root, 'public', 'data', 'anatomy-muscle-mapping.json');
+    const reportPath = path.join(root, 'docs', 'ANATOMY-BODYPARTS3D-REPORT.json');
+    let asset = Buffer.alloc(0);
+    try { asset = fs.readFileSync(assetPath); } catch (_) { /* required-file check reports the missing asset */ }
+    let mapping = null;
+    let report = null;
+    try { mapping = JSON.parse(fs.readFileSync(mappingPath, 'utf8')); } catch (_) { /* reported below */ }
+    try { report = JSON.parse(fs.readFileSync(reportPath, 'utf8')); } catch (_) { /* reported below */ }
+    const isGlb = asset.length >= 12 && asset.subarray(0, 4).toString('ascii') === 'glTF' && asset.readUInt32LE(4) === 2;
+    record('ANATOMY-GLB-INTEGRITY', isGlb && asset.length > 1024, isGlb ? `valid GLB v2 (${asset.length} bytes)` : 'anatomy GLB header or size is invalid', 'P0');
+    const mapped = Number(mapping?.stats?.mappedMeshes || Object.keys(mapping?.mappings || {}).length);
+    record('ANATOMY-MAPPING-MANIFEST', mapping?.schemaVersion >= 2 && mapping?.modelAsset === '/assets/anatomy/top-gym-anatomy.glb' && mapped > 0, `mapping manifest contains ${mapped} explicit mesh mappings`);
+    record('ANATOMY-BODYPARTS3D-REPORT', report?.source?.archiveUrl?.includes('bodyparts3d') && report?.qualityGate?.passed === true && Number(report?.output?.triangles) > 0, 'official source, quality gate, and triangle metrics are recorded');
 }
 
 function checkTrackedSecrets() {
@@ -308,6 +347,7 @@ checkRouteSurface();
 checkAuthSurface();
 checkStyleSurface();
 checkPrintAndLazyLoadingSurface();
+checkAnatomyAsset();
 checkTrackedSecrets();
 if (runBuild) runOptionalCommand('BUILD', 'npm', ['run', 'build']);
 if (runSmoke) runOptionalCommand('SMOKE', 'npm', ['run', 'test:smoke']);
