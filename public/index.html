@@ -60,6 +60,10 @@
                     <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 17v5"/><path d="M5 4h14l-1 7-3 3v3H9v-3l-3-3-1-7Z"/></svg>
                 </button>
             </div>
+            <button class="smart-assistant-launcher" id="smartAssistantLauncher" type="button" hidden aria-label="فتح المساعد الذكي" aria-controls="smartAssistantPanel" aria-expanded="false" title="اسأل المساعد">
+                <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 13.7 8.3 19 10l-5.3 1.7L12 17l-1.7-5.3L5 10l5.3-1.7Z"/><path d="m19 16 .7 2.3L22 19l-2.3.7L19 22l-.7-2.3L16 19l2.3-.7Z"/></svg>
+                <span class="smart-assistant-launcher-label">اسأل المساعد</span>
+            </button>
             <div class="auth-account-bar" id="authAccountBar" hidden aria-label="حساب المستخدم الحالي">
             <div class="auth-account-identity">
                 <span class="auth-account-avatar" id="authAccountAvatar" aria-hidden="true">TG</span>
@@ -585,10 +589,6 @@
     </dialog>
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-    <button class="smart-assistant-launcher" id="smartAssistantLauncher" type="button" hidden aria-label="فتح المساعد الذكي" aria-controls="smartAssistantPanel" aria-expanded="false" title="اسأل المساعد">
-        <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 13.7 8.3 19 10l-5.3 1.7L12 17l-1.7-5.3L5 10l5.3-1.7Z"/><path d="m19 16 .7 2.3L22 19l-2.3.7L19 22l-.7-2.3L16 19l2.3-.7Z"/></svg>
-        <span class="smart-assistant-launcher-label">اسأل المساعد</span>
-    </button>
     <aside class="smart-assistant-panel" id="smartAssistantPanel" hidden aria-labelledby="smartAssistantTitle">
         <header class="smart-assistant-header">
             <div class="smart-assistant-brand">
