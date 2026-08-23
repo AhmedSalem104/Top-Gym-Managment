@@ -608,39 +608,35 @@
 
   .page-tabs > .auth-account-bar {
     position: static;
-    grid-column: 1 / -1;
-    width: 100%;
+    grid-column: auto;
+    grid-row: auto;
+    width: auto;
     min-width: 0;
     z-index: var(--z-dropdown);
     display: flex;
     margin: 0;
-    align-items: stretch;
-    justify-content: stretch;
+    align-items: center;
+    justify-content: center;
     border: 0;
-    border-top: 1px solid var(--border-color);
-    padding: 6px 0 0;
+    padding: 0;
     direction: rtl;
   }
 
   .page-tabs > .auth-account-bar .auth-logout-button {
-    display: inline-flex;
-    width: 100%;
-    min-width: 0;
-    height: 46px;
-    min-height: 46px;
-    align-items: center;
-    justify-content: center;
-    gap: var(--space-2);
-    padding: 0 var(--space-4);
+    display: grid;
+    width: 44px;
+    min-width: 44px;
+    height: 44px;
+    min-height: 44px;
+    place-items: center;
+    padding: 0;
     border-color: rgb(215 67 67 / 0.22);
     background: var(--color-danger-soft);
     color: var(--color-danger);
   }
 
   .page-tabs > .auth-account-bar .auth-logout-button > span {
-    display: inline;
-    font-size: var(--font-sm);
-    font-weight: var(--weight-bold);
+    display: none;
   }
 
   .page-tabs > .auth-account-bar .auth-logout-button .ui-icon {
@@ -672,17 +668,18 @@
 
   .page-tabs > .auth-account-bar {
     position: static;
-    grid-column: 1 / -1;
+    grid-column: auto;
+    grid-row: auto;
     inset-inline-end: auto;
     top: auto;
-    width: 100%;
+    width: auto;
   }
 
   .page-tabs > .auth-account-bar .auth-logout-button {
-    width: 100%;
-    min-width: 0;
-    height: 44px;
-    min-height: 44px;
+    width: 42px;
+    min-width: 42px;
+    height: 42px;
+    min-height: 42px;
   }
 }
 
