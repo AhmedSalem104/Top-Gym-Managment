@@ -1665,3 +1665,57 @@
     color: #fff;
   }
 }
+
+/* The administrative navbar is intentionally hidden from the visual layer.
+   Its DOM remains mounted so existing hash navigation, permissions and event
+   bindings continue to work without a second navigation implementation. */
+.app-shell {
+  display: block;
+}
+
+.app-shell > .topbar,
+.app-shell > .page-tabs {
+  display: none;
+}
+
+.app-shell > main.page {
+  box-sizing: border-box;
+  width: min(1520px, calc(100% - 48px));
+  max-width: none;
+  margin-inline: auto;
+  padding-top: 32px;
+}
+
+.smart-assistant-launcher,
+.smart-assistant-panel {
+  right: 24px;
+  left: auto;
+  inset-inline-start: auto;
+  inset-inline-end: auto;
+}
+
+.smart-assistant-launcher {
+  bottom: 24px;
+}
+
+.smart-assistant-panel {
+  bottom: 88px;
+}
+
+@media (max-width: 767px) {
+  .app-shell > main.page {
+    width: calc(100% - 24px);
+    padding-top: 18px;
+  }
+
+  .smart-assistant-launcher {
+    right: 16px;
+    bottom: max(16px, env(safe-area-inset-bottom, 0px));
+  }
+
+  .smart-assistant-panel {
+    right: 10px;
+    left: 10px;
+    bottom: max(78px, calc(62px + env(safe-area-inset-bottom, 0px)));
+  }
+}
