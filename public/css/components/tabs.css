@@ -160,10 +160,11 @@
 
 .page-tab.active,
 .page-tab[aria-selected="true"] {
-  border-color: rgb(23 105 232 / 0.2);
-  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-hover));
-  color: #fff;
-  box-shadow: 0 8px 18px rgb(23 105 232 / 0.2);
+  border-color: var(--nav-active-border);
+  background: var(--nav-active-bg);
+  color: var(--nav-active-text);
+  font-weight: var(--weight-bold);
+  box-shadow: var(--nav-active-shadow);
 }
 
 .page-tab.active::after,
@@ -172,9 +173,9 @@
   right: 18px;
   bottom: 4px;
   left: 18px;
-  height: 2px;
+  height: 3px;
   border-radius: var(--radius-pill);
-  background: rgb(255 255 255 / 0.78);
+  background: currentColor;
   content: "";
 }
 

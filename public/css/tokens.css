@@ -22,6 +22,10 @@
   --color-danger-soft: #fff0f0;
   --color-info: #2563eb;
   --color-info-soft: #edf4ff;
+  --nav-active-bg: #eff6ff;
+  --nav-active-text: #1769e8;
+  --nav-active-border: rgb(23 105 232 / 0.24);
+  --nav-active-shadow: 0 6px 16px rgb(23 105 232 / 0.12);
   /* Shared member-card and authentication semantic aliases. */
   --color-page: #f8fafc;
   --color-navy: #0f172a;
@@ -109,6 +113,10 @@ body[data-theme="dark"] {
   --color-warning-soft: #4b3711;
   --color-danger-soft: #4a2025;
   --color-info-soft: #173b70;
+  --nav-active-bg: #173b70;
+  --nav-active-text: #dbeafe;
+  --nav-active-border: #3d70b6;
+  --nav-active-shadow: 0 6px 16px rgb(0 0 0 / 0.24);
   --shadow-sm: 0 4px 14px rgb(0 0 0 / 0.18);
   --shadow-md: 0 10px 28px rgb(0 0 0 / 0.22);
   --shadow-lg: 0 18px 48px rgb(0 0 0 / 0.28);

@@ -340,9 +340,10 @@
 
   .page-tab.active,
   .page-tab[aria-selected="true"] {
-    border-color: rgb(126 177 255 / 0.85);
-    background: var(--color-primary);
-    box-shadow: 0 5px 14px rgb(23 105 232 / 0.28);
+    border-color: var(--nav-active-border);
+    background: var(--nav-active-bg);
+    color: var(--nav-active-text);
+    box-shadow: var(--nav-active-shadow);
   }
 
   .page-tab .ui-icon {
@@ -729,10 +730,10 @@
 
   .page-tab.active,
   .page-tab[aria-selected="true"] {
-    border-color: rgb(23 105 232 / 0.2);
-    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-hover));
-    color: #fff;
-    box-shadow: 0 8px 18px rgb(23 105 232 / 0.2);
+    border-color: var(--nav-active-border);
+    background: var(--nav-active-bg);
+    color: var(--nav-active-text);
+    box-shadow: var(--nav-active-shadow);
   }
 
   .page-tabs > .auth-account-bar .auth-logout-button {

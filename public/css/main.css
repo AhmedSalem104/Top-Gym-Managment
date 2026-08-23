@@ -27,6 +27,10 @@
   --color-danger-soft: #fff0f0;
   --color-info: #2563eb;
   --color-info-soft: #edf4ff;
+  --nav-active-bg: #eff6ff;
+  --nav-active-text: #1769e8;
+  --nav-active-border: rgb(23 105 232 / 0.24);
+  --nav-active-shadow: 0 6px 16px rgb(23 105 232 / 0.12);
   /* Shared member-card and authentication semantic aliases. */
   --color-page: #f8fafc;
   --color-navy: #0f172a;
@@ -114,6 +118,10 @@ body[data-theme="dark"] {
   --color-warning-soft: #4b3711;
   --color-danger-soft: #4a2025;
   --color-info-soft: #173b70;
+  --nav-active-bg: #173b70;
+  --nav-active-text: #dbeafe;
+  --nav-active-border: #3d70b6;
+  --nav-active-shadow: 0 6px 16px rgb(0 0 0 / 0.24);
   --shadow-sm: 0 4px 14px rgb(0 0 0 / 0.18);
   --shadow-md: 0 10px 28px rgb(0 0 0 / 0.22);
   --shadow-lg: 0 18px 48px rgb(0 0 0 / 0.28);
@@ -2001,10 +2009,11 @@ body .swal2-close:hover {
 
 .page-tab.active,
 .page-tab[aria-selected="true"] {
-  border-color: rgb(23 105 232 / 0.2);
-  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-hover));
-  color: #fff;
-  box-shadow: 0 8px 18px rgb(23 105 232 / 0.2);
+  border-color: var(--nav-active-border);
+  background: var(--nav-active-bg);
+  color: var(--nav-active-text);
+  font-weight: var(--weight-bold);
+  box-shadow: var(--nav-active-shadow);
 }
 
 .page-tab.active::after,
@@ -2013,9 +2022,9 @@ body .swal2-close:hover {
   right: 18px;
   bottom: 4px;
   left: 18px;
-  height: 2px;
+  height: 3px;
   border-radius: var(--radius-pill);
-  background: rgb(255 255 255 / 0.78);
+  background: currentColor;
   content: "";
 }
 
@@ -11435,9 +11444,10 @@ body.auth-locked .auth-screen {
 
   .page-tab.active,
   .page-tab[aria-selected="true"] {
-    border-color: rgb(126 177 255 / 0.85);
-    background: var(--color-primary);
-    box-shadow: 0 5px 14px rgb(23 105 232 / 0.28);
+    border-color: var(--nav-active-border);
+    background: var(--nav-active-bg);
+    color: var(--nav-active-text);
+    box-shadow: var(--nav-active-shadow);
   }
 
   .page-tab .ui-icon {
@@ -11824,10 +11834,10 @@ body.auth-locked .auth-screen {
 
   .page-tab.active,
   .page-tab[aria-selected="true"] {
-    border-color: rgb(23 105 232 / 0.2);
-    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-hover));
-    color: #fff;
-    box-shadow: 0 8px 18px rgb(23 105 232 / 0.2);
+    border-color: var(--nav-active-border);
+    background: var(--nav-active-bg);
+    color: var(--nav-active-text);
+    box-shadow: var(--nav-active-shadow);
   }
 
   .page-tabs > .auth-account-bar .auth-logout-button {
