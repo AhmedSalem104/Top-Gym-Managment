@@ -31,8 +31,8 @@
     home: { title: 'بوابة عضويتي', description: 'اختر الخدمة التي تريد استخدامها' },
     report: { title: 'بياناتي وطباعتها', description: 'عرض حالة العضوية والاشتراكات والمدفوعات والحضور.' },
     feedback: { title: 'قيّم تجربتي', description: 'شاركنا رأيك في الجيم والمدربين.' },
-    exercises: { title: 'دليل التمارين', description: 'اختر منطقة الجسم أو ابحث عن تمرين مناسب.' },
-    foods: { title: 'دليل التغذية', description: 'ابحث عن الطعام وتعرّف على السعرات والماكروز.' }
+    exercises: { title: 'دليل التمارين', description: 'ابحث عن التمرين بالاسم وحدد المستوى والأداة المناسبة.' },
+    foods: { title: 'دليل التغذية', description: 'ابحث عن الطعام وتعرّف على السعرات والماكروز لكل حصة.' }
   });
 
   const escapeHtml = (value) => String(value ?? '').replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[character]));
@@ -120,7 +120,7 @@
     if (libraryLoaderPromise) return libraryLoaderPromise;
     libraryLoaderPromise = new Promise((resolve, reject) => {
       const script = document.createElement('script');
-      script.src = '/js/member-portal-library.js?v=3';
+      script.src = '/js/member-portal-library.js?v=4';
       script.async = true;
       script.onload = () => window.topGymMemberPortalLibrary ? resolve(window.topGymMemberPortalLibrary) : reject(new Error('Library feature did not initialize.'));
       script.onerror = () => reject(new Error('تعذر تحميل دليل التمارين والتغذية.'));

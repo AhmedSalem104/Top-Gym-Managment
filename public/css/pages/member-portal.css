@@ -280,11 +280,6 @@
 .portal-library-head h3 { margin: 4px 0; color: #0f172a; font-size: 1.45rem; }
 .portal-library-head p { margin: 0; color: #64748b; font-size: 13px; }
 .portal-library-kicker { display: block; color: #2563eb; font-size: 10px; font-weight: 800; letter-spacing: .14em; direction: ltr; }
-.portal-library-tabs { display: flex; gap: 8px; margin: 18px 0; }
-.portal-library-tabs button { min-height: 44px; padding: 0 20px; border: 1px solid #dce6f3; border-radius: 11px; background: #fff; color: #64748b; font-weight: 800; cursor: pointer; }
-.portal-library-tabs button:hover, .portal-library-tabs button:focus-visible { border-color: #9bbcf0; color: #2563eb; }
-.portal-library-tabs button.is-active { border-color: #2563eb; background: #eff6ff; color: #1d4ed8; }
-.portal-library-tabs button:focus-visible { outline: 3px solid rgb(37 99 235 / .16); outline-offset: 2px; }
 
 .portal-explorer-grid { display: grid; grid-template-columns: minmax(290px, .78fr) minmax(0, 1.55fr); gap: 20px; align-items: start; }
 .portal-anatomy-card { position: sticky; top: 18px; overflow: hidden; border: 1px solid #dce6f3; border-radius: 18px; background: #f7fbff; }
@@ -424,8 +419,6 @@
   .portal-tool-card { min-height: 92px; padding: 14px; }
   .portal-library-head { display: grid; }
   .portal-library-head .btn { width: 100%; justify-content: center; }
-  .portal-library-tabs { display: grid; grid-template-columns: 1fr 1fr; }
-  .portal-library-tabs button { width: 100%; padding: 0 10px; }
   .portal-library-filter-bar { display: grid; grid-template-columns: 1fr 1fr; }
   .portal-library-filter-bar label, .portal-library-filter-bar label:first-child { min-width: 0; }
   .portal-library-filter-bar label:first-child { grid-column: 1 / -1; }

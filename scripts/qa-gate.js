@@ -309,6 +309,7 @@ function checkPrintAndLazyLoadingSurface() {
     const memberPortalLibrary = read('public/js/member-portal-library.js');
     record('PORTAL-MEMBER-HUB', memberPortal.includes('data-portal-tool="exercises"') && memberPortal.includes('data-portal-tool="foods"') && memberPortalScript.includes('ensureLibraryFeature'), 'member portal exposes four service cards and lazy-loads the library guide');
     record('PORTAL-LIBRARY-FILTERS', memberPortalLibrary.includes('portalLibrarySearch') && memberPortalLibrary.includes('portalExerciseDifficulty') && memberPortalLibrary.includes('portalExerciseEquipment') && memberPortalLibrary.includes('/api/member-portal/library/') && !memberPortalLibrary.includes('targetMuscleId'), 'member portal exercise guide uses name, difficulty and equipment filters without a body-region constraint');
+    record('PORTAL-LIBRARY-SCOPED-VIEW', memberPortalLibrary.includes('data-library-type') && !memberPortalLibrary.includes('data-library-tab'), 'exercise and nutrition guides render as separate scoped views without internal cross-category tabs');
 }
 
 function checkAnatomyAsset() {

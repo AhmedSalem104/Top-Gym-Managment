@@ -68,7 +68,12 @@
   }
 
   function renderLibraryShell() {
-    mount.innerHTML = `<div class="portal-library-head"><div><span class="portal-library-kicker">TOP GYM MEMBER HUB</span><h3 id="portalLibraryTitle">دليل التمارين والتغذية</h3><p>اكتشف التمرين المناسب لجسمك وتعرّف على القيمة الغذائية للأطعمة.</p></div><button type="button" class="btn btn-light" data-library-close>العودة للخدمات</button></div><div class="portal-library-tabs" role="tablist" aria-label="دليل العضو"><button type="button" role="tab" data-library-tab="exercises">التمارين</button><button type="button" role="tab" data-library-tab="foods">التغذية</button></div><div id="portalLibraryContent"></div><div class="portal-library-modal" id="portalLibraryModal" role="dialog" aria-modal="true" aria-labelledby="portalLibraryModalTitle" hidden><div class="portal-library-modal-card"><header><div><span class="portal-library-kicker">TOP GYM GUIDE</span><h3 id="portalLibraryModalTitle">التفاصيل</h3></div><button type="button" class="portal-library-modal-close" data-library-modal-close aria-label="إغلاق">×</button></header><div id="portalLibraryModalContent"></div></div></div>`;
+    const isFoods = state.activeType === 'foods';
+    const title = isFoods ? 'دليل التغذية' : 'دليل التمارين';
+    const description = isFoods
+      ? 'ابحث عن الطعام وتعرّف على السعرات والماكروز لكل حصة.'
+      : 'ابحث عن التمرين بالاسم وحدد المستوى والأداة المناسبة.';
+    mount.innerHTML = `<div class="portal-library-head" data-library-type="${state.activeType}"><div><span class="portal-library-kicker">TOP GYM MEMBER HUB</span><h3 id="portalLibraryTitle">${title}</h3><p>${description}</p></div><button type="button" class="btn btn-light" data-library-close>العودة للخدمات</button></div><div id="portalLibraryContent"></div><div class="portal-library-modal" id="portalLibraryModal" role="dialog" aria-modal="true" aria-labelledby="portalLibraryModalTitle" hidden><div class="portal-library-modal-card"><header><div><span class="portal-library-kicker">TOP GYM GUIDE</span><h3 id="portalLibraryModalTitle">التفاصيل</h3></div><button type="button" class="portal-library-modal-close" data-library-modal-close aria-label="إغلاق">×</button></header><div id="portalLibraryModalContent"></div></div></div>`;
   }
 
   function renderFilters() {
@@ -79,23 +84,11 @@
   function renderCurrent() {
     const content = $('portalLibraryContent');
     if (!content) return;
-    document.querySelectorAll('[data-library-tab]').forEach((button) => {
-      const active = button.dataset.libraryTab === state.activeType;
-      button.classList.toggle('is-active', active);
-      button.setAttribute('aria-selected', String(active));
-    });
     if (state.activeType === 'exercises') {
       content.innerHTML = `<div class="portal-exercise-results">${renderFilters()}<div class="portal-library-results-head"><div><h4>التمارين المتاحة</h4><span>${state.pagination ? `${number(state.pagination.totalItems)} نتيجة` : 'استخدم البحث أو الفلاتر للوصول إلى التمرين المطلوب'}</span></div></div><div class="portal-exercise-grid">${state.items.length ? state.items.map(renderExerciseCard).join('') : `<div class="portal-library-state portal-library-state-wide"><strong>${state.search || state.difficulty || state.equipment ? 'لا توجد تمارين مطابقة' : 'لا توجد تمارين متاحة'}</strong><span>جرّب اسمًا مختلفًا أو غيّر أحد الفلاتر.</span></div>`}</div>${renderPagination()}</div>`;
     } else {
       content.innerHTML = `<div class="portal-food-explorer">${renderFilters()}<div class="portal-library-results-head"><div><h4>الأطعمة والقيم الغذائية</h4><span>${state.pagination ? `${number(state.pagination.totalItems)} طعام متاح` : 'ابحث عن طعام لمعرفة تفاصيله'}</span></div></div><div class="portal-food-grid">${state.items.length ? state.items.map(renderFoodCard).join('') : `<div class="portal-library-state portal-library-state-wide"><strong>${state.search ? 'لا توجد أطعمة مطابقة' : 'اكتب اسم الطعام للبدء'}</strong><span>ستظهر السعرات والماكروز لكل حصة.</span></div>`}</div>${renderPagination()}</div>`;
     }
-    bindDynamicControls();
-  }
-
-  function renderExerciseResults() {
-    const results = document.querySelector('.portal-exercise-results');
-    if (!results || state.activeType !== 'exercises') return;
-    results.innerHTML = `${renderFilters()}<div class="portal-library-results-head"><div><h4>التمارين المتاحة</h4><span>${state.pagination ? `${number(state.pagination.totalItems)} نتيجة` : 'استخدم البحث أو الفلاتر للوصول إلى التمرين المطلوب'}</span></div></div><div class="portal-exercise-grid">${state.items.length ? state.items.map(renderExerciseCard).join('') : `<div class="portal-library-state portal-library-state-wide"><strong>${state.search || state.difficulty || state.equipment ? 'لا توجد تمارين مطابقة' : 'لا توجد تمارين متاحة'}</strong><span>جرّب اسمًا مختلفًا أو غيّر أحد الفلاتر.</span></div>`}</div>${renderPagination()}`;
     bindDynamicControls();
   }
 
@@ -125,8 +118,7 @@
       if (requestId !== state.requestId) return;
       state.items = result.items || [];
       state.pagination = result.pagination || null;
-      if (state.activeType === 'exercises' && document.querySelector('.portal-exercise-results')) renderExerciseResults();
-      else renderCurrent();
+      renderCurrent();
     } catch (error) {
       if (error.name === 'AbortError') return;
       if (content) content.innerHTML = `<div class="portal-library-state portal-library-error"><strong>تعذر تحميل الدليل</strong><span>${escapeHtml(error.message || 'حاول مرة أخرى.')}</span><button type="button" class="btn btn-light" data-library-retry>إعادة المحاولة</button></div>`;
@@ -186,8 +178,6 @@
       window.dispatchEvent(new CustomEvent('topgym:portal-library-close'));
       return;
     }
-    const tab = event.target.closest('[data-library-tab]');
-    if (tab) { state.activeType = tab.dataset.libraryTab; state.page = 1; state.items = []; state.pagination = null; renderCurrent(); void loadCollection(); return; }
     const details = event.target.closest('[data-library-details]');
     if (details) { void showDetails(details.dataset.libraryDetails, details.dataset.libraryId); return; }
     if (event.target.closest('[data-library-modal-close]') || event.target === $('portalLibraryModal')) { $('portalLibraryModal').hidden = true; return; }
@@ -198,6 +188,16 @@
 
   async function open(type = 'exercises') {
     state.activeType = type === 'foods' ? 'foods' : 'exercises';
+    state.abortController?.abort?.();
+    clearTimeout(state.searchTimer);
+    state.page = 1;
+    state.items = [];
+    state.pagination = null;
+    state.search = '';
+    state.category = '';
+    state.difficulty = '';
+    state.equipment = '';
+    state.detailsRequestId += 1;
     renderLibraryShell();
     renderCurrent();
     try { await loadOptions(); renderCurrent(); await loadCollection(); } catch (error) {
