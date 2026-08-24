@@ -33,19 +33,6 @@
         return { from: fromDate.toISOString().slice(0, 10), to };
     }
 
-    function renderKpis(data = {}) {
-        const summary = data.summary || {};
-        const profit = data.profit || {};
-        const cards = [
-            ['مبيعات اليوم', money(data.today?.revenue || data.todaySales || 0), 'store-kpi-sales'],
-            ['مبيعات الشهر', money(summary.revenue), 'store-kpi-revenue'],
-            ['عدد الفواتير', Number(summary.orders || 0).toLocaleString('ar-EG'), 'store-kpi-orders'],
-            ['تنبيهات المخزون', Number((data.alerts?.lowStock || []).length || 0).toLocaleString('ar-EG'), 'store-kpi-stock']
-        ];
-        if (can('store.profit.view')) cards.push(['صافي الربح', money(profit.netProfit), 'store-kpi-profit']);
-        $('storeKpiGrid').innerHTML = cards.map(([label, value, key]) => `<article class="store-kpi" data-kpi="${key}"><span>${label}</span><strong>${esc(value)}</strong></article>`).join('');
-    }
-
     function flattenVariants() {
         return state.products.flatMap((product) => (product.variants || []).filter((variant) => variant.active !== false).map((variant) => ({
             ...variant,
@@ -119,7 +106,6 @@
     async function loadDashboard() {
         const range = queryRange();
         const data = await api.request(`/api/store/dashboard?${new URLSearchParams(range)}`);
-        renderKpis(data);
         renderDashboardStore(data);
     }
 
@@ -379,6 +365,26 @@
             storeAddSupplier: 'store.suppliers.manage',
             storeAddExpense: 'store.expenses.manage'
         };
+        const storeViewIds = {
+            pos: 'storePosView',
+            products: 'storeProductsView',
+            inventory: 'storeInventoryView',
+            purchases: 'storePurchasesView',
+            sales: 'storeSalesView',
+            suppliers: 'storeSuppliersView',
+            expenses: 'storeExpensesView',
+            reports: 'storeReportsView'
+        };
+        document.querySelectorAll('[data-store-view-panel]').forEach((panel) => {
+            const id = storeViewIds[panel.dataset.storeViewPanel];
+            if (!id) return;
+            panel.id = id;
+            panel.setAttribute('role', 'tabpanel');
+        });
+        document.querySelectorAll('.store-subnav-button').forEach((button) => {
+            const id = storeViewIds[button.dataset.storeView];
+            if (id) button.setAttribute('aria-controls', id);
+        });
         Object.entries(permissionControls).forEach(([id, permission]) => { if ($(id)) $(id).hidden = !can(permission); });
         document.querySelectorAll('[data-store-view="reports"]').forEach((button) => { button.hidden = !can('store.reports.view'); });
         document.querySelectorAll('[data-store-view="purchases"]').forEach((button) => { button.hidden = !can('store.purchases.manage'); });
