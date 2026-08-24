@@ -5472,6 +5472,14 @@ body.auth-locked .auth-screen {
   gap: var(--space-2);
 }
 
+/* Pricing and membership configuration lives in its own Owner-only tab. */
+#topPricingButton,
+#dashboardPrintPricingButton,
+#pricingButton,
+#membershipTypesButton {
+  display: none;
+}
+
 .members-toolbar {
   align-items: flex-end;
   padding: var(--space-4) 0;

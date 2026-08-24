@@ -261,7 +261,7 @@
                 state.pagination = null;
                 if ($('membersPagination')) $('membersPagination').hidden = true;
                 $('membersList').innerHTML = '<div class="loading">جاري تحديث القائمة…</div>';
-                 try { const params = new URLSearchParams({ search: $('searchInput').value.trim(), status: $('statusFilter').value, sort: $('sortFilter').value, page: '1', pageSize: String(state.membersPageSize || 5) }); const response = await api(`/api/members?${params}`, { signal: controller.signal }); state.members = response.members || []; state.pagination = response.pagination || null; state.detailsCache = new Map(); renderMembers(); membersLastLoadedKey = queryKey; membersLastLoadedAt = Date.now(); }
+                 try { const params = new URLSearchParams({ search: $('searchInput').value.trim(), status: $('statusFilter').value, sort: $('sortFilter').value, page: '1', pageSize: String(state.membersPageSize || 5) }); const response = await api(`/api/members?${params}`, { signal: controller.signal }); state.members = response.members || []; state.pagination = response.pagination || null; state.detailsCache = new Map(); renderMembers(); await hydrateMemberPortalCodes(state.members); membersLastLoadedKey = queryKey; membersLastLoadedAt = Date.now(); }
                 catch (error) { if (error.name !== 'AbortError') { $('membersList').innerHTML = `<div class="empty">${escapeHtml(error.message)}</div>`; await notify(error.message, 'error'); } }
             }, 'جاري تحديث قائمة TOP GYM…');
             const trackedPromise = loadPromise.finally(() => {
@@ -399,10 +399,28 @@
             });
         }
 
+        function canViewPortalCode() {
+            return window.topGymAuth?.isOwner?.() === true;
+        }
         function memberPortalCodeMarkup(member) {
+            if (!canViewPortalCode()) return '';
             const preview = member.membershipCode?.maskedCode;
             return `<span class="table-sub member-code-preview">كود البوابة: ${preview ? `<b dir="ltr">${escapeHtml(preview)}</b>` : '<span>غير مُصدر</span>'}</span>`;
         }
+        async function hydrateMemberPortalCodes(members = []) {
+            if (!canViewPortalCode()) return;
+            const pending = members.filter((member) => member?.id && !member.membershipCode?.maskedCode);
+            if (!pending.length) return;
+            await Promise.all(pending.map(async (member) => {
+                try {
+                    member.membershipCode = await api(`/api/members/${encodeURIComponent(member.id)}/membership-code`);
+                } catch (error) {
+                    if (![401, 403].includes(Number(error.status))) console.warn('[TOP GYM] Portal code preview failed.', error);
+                }
+            }));
+            renderMembers();
+        }
+        window.hydrateMemberPortalCodes = hydrateMemberPortalCodes;
         function memberTableRow(member) {
             const sub = member.membership;
             if (!sub) return `<tr data-member-id="${member.id}"><td><span class="table-member-name">${escapeHtml(member.fullName)}</span><a class="table-member-phone" href="tel:${escapeHtml(member.phone)}">${escapeHtml(member.phone)}</a><span class="table-sub">تسجيل: ${formatDate(member.registrationDate)}</span>${memberPortalCodeMarkup(member)}</td><td>—</td><td>${memberStatusBadge('expired', 'بدون اشتراك')}</td><td>—</td><td>—</td><td>—</td><td><div class="table-actions">${actionButton('details', member.id, 'btn btn-details btn-small')}${actionButton('edit', member.id)}${actionButton('print', member.id)}${actionButton('delete', member.id, 'btn btn-danger btn-small')}</div></td></tr>`;

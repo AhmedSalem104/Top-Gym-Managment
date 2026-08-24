@@ -39,6 +39,7 @@
                     const response = await api(`/api/members?${params}`, { signal: pageController.signal });
                     state.members = response.members || [];
                     state.pagination = response.pagination || null;
+                    if (typeof window.hydrateMemberPortalCodes === 'function') await window.hydrateMemberPortalCodes(state.members);
                     renderMembers();
                     renderPagination();
                 } catch (error) {
