@@ -7,6 +7,53 @@
   gap: var(--space-5);
 }
 
+.coaching-builder-ai-tools {
+  display: grid;
+  grid-template-columns: minmax(0, .7fr) minmax(0, 1.3fr);
+  gap: var(--space-3);
+  align-items: center;
+  margin: var(--space-4) 0 0;
+  padding: var(--space-3);
+  border: 1px solid #ddd6fe;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, #faf5ff, #fff);
+}
+
+.coaching-builder-ai-tools > div:first-child span,
+.coaching-builder-ai-tools > div:first-child small {
+  display: block;
+}
+
+.coaching-builder-ai-tools > div:first-child span {
+  color: #6d28d9;
+  font-size: .82rem;
+  font-weight: 800;
+}
+
+.coaching-builder-ai-tools > div:first-child small {
+  margin-top: .25rem;
+  color: var(--color-text-muted);
+  font-size: .72rem;
+  line-height: 1.6;
+}
+
+.coaching-builder-ai-controls {
+  display: flex;
+  align-items: stretch;
+  gap: var(--space-2);
+}
+
+.coaching-builder-ai-controls textarea {
+  min-height: 2.6rem;
+  flex: 1 1 auto;
+  resize: vertical;
+}
+
+@media (max-width: 720px) {
+  .coaching-builder-ai-tools { grid-template-columns: 1fr; }
+  .coaching-builder-ai-controls { flex-direction: column; }
+}
+
 /* External trainees ---------------------------------------------------- */
 .external-trainees-table-wrap {
   width: 100%;

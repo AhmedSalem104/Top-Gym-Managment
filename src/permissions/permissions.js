@@ -79,6 +79,9 @@ const PERMISSIONS = Object.freeze({
     FEEDBACK_READ: 'feedback.read',
     PERMISSIONS_MANAGE: 'permissions.manage',
 
+    INTELLIGENCE_READ: 'intelligence.read',
+    INTELLIGENCE_GENERATE: 'intelligence.generate',
+
     STORE_VIEW: 'store.view',
     STORE_PRODUCTS_MANAGE: 'store.products.manage',
     STORE_INVENTORY_VIEW: 'store.inventory.view',
@@ -161,7 +164,9 @@ const CATALOG_DEFINITIONS = [
     ['store.suppliers.manage', 'موردو المتجر', 'إدارة بيانات الموردين.', 'store', 'إدارة'],
     ['store.expenses.manage', 'مصروفات المتجر', 'إدارة المصروفات التابعة لمركز تكلفة المتجر.', 'store', 'إدارة'],
     ['store.reports.view', 'تقارير المتجر', 'عرض تقارير المبيعات والمخزون والتشغيل.', 'store', 'عرض'],
-    ['store.profit.view', 'ربحية المتجر', 'عرض التكلفة وCOGS والربح الإجمالي والصافي.', 'store', 'حساس']
+    ['store.profit.view', 'ربحية المتجر', 'عرض التكلفة وCOGS والربح الإجمالي والصافي.', 'store', 'حساس'],
+    ['intelligence.read', 'عرض الذكاء التشغيلي', 'عرض ملخصات TOP GYM Intelligence وتحليل الأعضاء.', 'intelligence', 'عرض'],
+    ['intelligence.generate', 'توليد اقتراحات الذكاء', 'إنشاء أو تعديل اقتراحات التدريب والتغذية بواسطة الذكاء الاصطناعي.', 'intelligence', 'إنشاء']
 ];
 
 const PERMISSION_CATALOG = Object.freeze(CATALOG_DEFINITIONS.map(([code, label, description, group, operation, ownerOnly = false]) => Object.freeze({
@@ -186,7 +191,8 @@ const LEGACY_ASSISTANT_DEFAULT_PERMISSIONS = Object.freeze([
     'attendance.read', 'attendance.check_in', 'attendance.check_out', 'attendance.report',
     'pricing.read',
     'day_passes.read', 'day_passes.create', 'day_passes.update', 'day_passes.delete', 'day_passes.whatsapp',
-    'library.read', 'library.create', 'library.update', 'library.delete'
+    'library.read', 'library.create', 'library.update', 'library.delete',
+    'intelligence.read', 'intelligence.generate'
 ]);
 
 // New Assistant accounts start with the operational read/create/update path;
@@ -200,7 +206,8 @@ const SAFE_ASSISTANT_DEFAULT_PERMISSIONS = Object.freeze([
     'attendance.read', 'attendance.check_in', 'attendance.check_out', 'attendance.report',
     'pricing.read',
     'day_passes.read',
-    'library.read'
+    'library.read',
+    'intelligence.read', 'intelligence.generate'
 ]);
 
 const OWNER_ONLY_PERMISSION_CODES = new Set(PERMISSION_CATALOG.filter((item) => item.ownerOnly).map((item) => item.code));
@@ -216,7 +223,8 @@ const TAB_PERMISSION_CODES = Object.freeze({
     feedback: PERMISSIONS.FEEDBACK_READ,
     management: 'pricing.read',
     store: PERMISSIONS.STORE_VIEW,
-    permissions: PERMISSIONS.PERMISSIONS_MANAGE
+    permissions: PERMISSIONS.PERMISSIONS_MANAGE,
+    intelligence: PERMISSIONS.INTELLIGENCE_READ
 });
 
 function permissionsForRole(role) {

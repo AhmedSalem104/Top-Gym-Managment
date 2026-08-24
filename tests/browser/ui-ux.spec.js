@@ -6,6 +6,7 @@ const tabs = [
     ['dashboard', '#dashboardAnalytics'],
     ['members', '#membersSection'],
     ['trainees', '#traineesSection'],
+    ['intelligence', '#intelligenceSection'],
     ['management', '#managementSection'],
     ['permissions', '#permissionsSection'],
     ['attendance', '#attendanceSection'],

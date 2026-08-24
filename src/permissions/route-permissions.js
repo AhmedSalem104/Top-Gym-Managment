@@ -88,6 +88,10 @@ const ROUTE_PERMISSION_RULES = Object.freeze([
     { pattern: /^\/day-passes\/\d+\/void$/, methods: ['POST'], ownerOnly: true, all: [PERMISSIONS.DAY_PASSES_DELETE] },
     { pattern: /^\/day-passes\/\d+\/whatsapp-opened$/, methods: ['POST'], all: [PERMISSIONS.DAY_PASSES_WHATSAPP] },
 
+    { pattern: /^\/intelligence\/(?:overview|churn)$/, methods: ['GET'], all: [PERMISSIONS.INTELLIGENCE_READ] },
+    { pattern: /^\/intelligence\/query$/, methods: ['POST'], all: [PERMISSIONS.INTELLIGENCE_READ] },
+    { pattern: /^\/intelligence\/(?:workout-suggestions|diet-suggestions|refine)$/, methods: ['POST'], all: [PERMISSIONS.INTELLIGENCE_GENERATE] },
+
     { pattern: /^\/library\/options$/, methods: ['GET'], all: [PERMISSIONS.LIBRARY_READ] },
     { pattern: /^\/library\/(?:foods|exercises|muscles)(?:\/\d+)?$/, methods: ['GET'], all: [PERMISSIONS.LIBRARY_READ] },
     { pattern: /^\/library\/(?:foods|exercises|muscles)$/, methods: ['POST'], all: [PERMISSIONS.LIBRARY_CREATE] },

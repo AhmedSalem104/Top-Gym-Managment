@@ -9,7 +9,7 @@
     <link rel="preload" href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap" as="style" onload="this.onload=null;this.rel='sty'+'lesheet'">
     <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2" sizes="any">
     <link rel="shortcut icon" type="image/svg+xml" href="/favicon.svg?v=2">
-    <link rel="stylesheet" href="/css/main.css?v=28">
+    <link rel="stylesheet" href="/css/main.css?v=29">
     <title>إدارة عضويات الجيم</title>
 </head>
 <body class="auth-pending font-sans bg-slate-100 text-slate-900 gym-page-bg">
@@ -45,7 +45,8 @@
         <nav class="page-tabs topgym-nav" id="pageTabs" role="tablist" aria-label="أقسام الإدارة">
             <button class="page-tab active" type="button" data-page-tab="dashboard" aria-selected="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span>لوحة التحكم</span></button>
             <button class="page-tab" type="button" data-page-tab="members" aria-selected="false"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg><span>المشتركون</span></button>
-                        <button class="page-tab" type="button" data-page-tab="trainees" aria-selected="false"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M3 20a6 6 0 0 1 12 0M16 4.5a3 3 0 0 1 0 6M17 14a4 4 0 0 1 4 4"/><path d="M18 8h3M19.5 6.5v3"/></svg><span>متدرب خارجى</span></button>
+            <button class="page-tab" type="button" data-page-tab="trainees" aria-selected="false"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M3 20a6 6 0 0 1 12 0M16 4.5a3 3 0 0 1 0 6M17 14a4 4 0 0 1 4 4"/><path d="M18 8h3M19.5 6.5v3"/></svg><span>متدرب خارجى</span></button>
+            <button class="page-tab page-tab-intelligence" type="button" data-page-tab="intelligence" aria-selected="false"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 13.7 8.3 19 10l-5.3 1.7L12 17l-1.7-5.3L5 10l5.3-1.7Z"/><path d="m19 16 .7 2.3L22 19l-2.3.7L19 22l-.7-2.3L16 19l2.3-.7Z"/></svg><span>الذكاء التشغيلي</span></button>
             <button class="page-tab" type="button" data-page-tab="management" aria-selected="false"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v18M3 12h18"/><circle cx="12" cy="12" r="9"/></svg><span>الأسعار والعضويات</span></button>
             <button class="page-tab" type="button" data-page-tab="permissions" aria-selected="false"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 20 6v5c0 5-3.4 8.5-8 10-4.6-1.5-8-5-8-10V6l8-3Z"/><path d="m9 12 2 2 4-4"/></svg><span>صلاحيات الحسابات</span></button>
             <button class="page-tab" type="button" data-page-tab="attendance" aria-selected="false"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h8M8 11h3M8 15h8"/><path d="m14 11 1.5 1.5L18 10"/></svg><span>الحضور والانصراف</span></button>
@@ -452,6 +453,21 @@
                 <div class="external-trainees-list" id="externalTraineesList"><div class="loading">افتح تبويب المتدربين لتحميل البيانات…</div></div>
                 <div class="coaching-pagination" id="externalTraineesPagination" hidden></div>
             </section>
+
+            <section class="intelligence-section panel" id="intelligenceSection" hidden aria-labelledby="intelligenceTitle">
+                <div class="intelligence-page-header">
+                    <div class="intelligence-page-heading"><span class="intelligence-page-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 13.7 8.3 19 10l-5.3 1.7L12 17l-1.7-5.3L5 10l5.3-1.7Z"/><path d="m19 16 .7 2.3L22 19l-2.3.7L19 22l-.7-2.3L16 19l2.3-.7Z"/></svg></span><div><span class="intelligence-kicker">TOP GYM INTELLIGENCE</span><h3 id="intelligenceTitle">مركز القرار الذكي</h3><p>ملخص تشغيلي، توقع مبكر للتوقف، واقتراحات تدريب وتغذية قابلة للمراجعة.</p></div></div>
+                    <div class="intelligence-header-actions"><span class="intelligence-engine-badge" id="intelligenceEngineBadge">Hybrid intelligence</span><button class="btn btn-light" type="button" id="intelligenceRefreshButton">تحديث التحليل</button></div>
+                </div>
+                <div class="intelligence-message" id="intelligenceMessage" role="status" aria-live="polite" hidden></div>
+                <div class="intelligence-stats-grid" id="intelligenceStats"><div class="loading">جاري تجهيز التحليل…</div></div>
+                <div class="intelligence-dashboard-grid">
+                    <section class="intelligence-card intelligence-priorities-card"><div class="intelligence-card-head"><div><span>أهم الإشارات</span><h4>ماذا يحتاج انتباهك الآن؟</h4></div><span class="intelligence-card-mark">01</span></div><div class="intelligence-priorities" id="intelligencePriorities"><div class="loading">جاري التحليل…</div></div></section>
+                    <section class="intelligence-card intelligence-query-card"><div class="intelligence-card-head"><div><span>اسأل النظام</span><h4>مساعد المدير الذكي</h4></div><span class="intelligence-card-mark">02</span></div><form id="intelligenceQueryForm" class="intelligence-query-form"><label for="intelligenceQuery">اكتب سؤالك بلغة طبيعية<input id="intelligenceQuery" maxlength="500" placeholder="مثال: اعرض الأعضاء المعرضين للتوقف" autocomplete="off"></label><button class="btn btn-primary" type="submit">تحليل السؤال</button></form><div class="intelligence-answer" id="intelligenceAnswer" hidden></div><div class="intelligence-prompt-list" id="intelligencePromptList"></div></section>
+                </div>
+                <section class="intelligence-card intelligence-churn-card"><div class="intelligence-card-head"><div><span>الاحتفاظ بالمشتركين</span><h4>الأعضاء المعرضون للتوقف</h4><p>النتيجة مؤشر تشغيلي للمساعدة في ترتيب المتابعة، وليست حكمًا نهائيًا على العضو.</p></div><div class="intelligence-churn-legend"><span class="risk-high">مرتفع</span><span class="risk-medium">متوسط</span><span class="risk-low">منخفض</span></div></div><div class="intelligence-churn-table-wrap" id="intelligenceChurnTable"><div class="loading">جاري تحميل الحالات…</div></div></section>
+                <section class="intelligence-card intelligence-plans-card"><div class="intelligence-card-head"><div><span>المدرب الذكي</span><h4>إنشاء خطة ثم تعديلها بالتعليمات</h4><p>اكتب مثلًا: «أضف تمرين ضغط صدر»، «بدّل الأرز بالبطاطس»، أو «اجعلها 5 وجبات».</p></div><span class="intelligence-card-mark">03 / 04</span></div><div class="intelligence-plan-layout"><form class="intelligence-plan-form" id="intelligencePlanForm"><div class="intelligence-plan-type" role="tablist" aria-label="نوع الخطة"><button type="button" class="is-active" data-intelligence-type="workout" role="tab" aria-selected="true">خطة تدريب</button><button type="button" data-intelligence-type="diet" role="tab" aria-selected="false">خطة تغذية</button></div><label>العميل<select id="intelligenceMemberId" required><option value="">جاري تحميل العملاء…</option></select></label><label>الهدف<select id="intelligenceGoal"><option value="hypertrophy">بناء العضلات</option><option value="strength">زيادة القوة</option><option value="fat_loss">خسارة الدهون</option><option value="weight_gain">زيادة الكتلة</option><option value="general">لياقة عامة</option></select></label><div class="intelligence-workout-fields" id="intelligenceWorkoutFields"><label>المستوى<select id="intelligenceLevel"><option value="beginner">مبتدئ</option><option value="intermediate">متوسط</option><option value="advanced">متقدم</option></select></label><label>أيام أسبوعيًا<input id="intelligenceDays" type="number" min="2" max="6" value="3"></label><label>المدة بالأسابيع<input id="intelligenceDuration" type="number" min="1" max="52" value="4"></label><label>تمارين مستبعدة أو قيود<input id="intelligenceLimitations" maxlength="300" placeholder="مثال: بدون ركبة أو بار"></label></div><div class="intelligence-diet-fields" id="intelligenceDietFields" hidden><label>عدد الوجبات<input id="intelligenceMeals" type="number" min="3" max="6" value="4"></label><label>السعرات المستهدفة<input id="intelligenceCalories" type="number" min="0" placeholder="اختياري"></label><label>حساسية أو أطعمة ممنوعة<input id="intelligenceAllergies" maxlength="300" placeholder="مثال: لبن، فول سوداني"></label><label>النشاط<select id="intelligenceActivity"><option value="moderate">متوسط</option><option value="sedentary">قليل جدًا</option><option value="light">خفيف</option><option value="high">مرتفع</option></select></label></div><button class="btn btn-primary intelligence-generate-button" type="submit">إنشاء اقتراح ذكي</button></form><div class="intelligence-plan-result" id="intelligencePlanResult"><div class="intelligence-empty-result"><span>✦</span><strong>اختر عميلًا وابدأ الاقتراح</strong><small>النتيجة ستظهر كمسودة، ويمكن تعديلها قبل الحفظ.</small></div></div></div></section>
+            </section>
         </main>
     </div>
 
@@ -563,6 +579,7 @@
             <div class="builder-stepper" id="coachingBuilderStepper" aria-label="مراحل إنشاء النظام"></div>
             <div class="builder-progress" id="coachingBuilderProgress"></div>
             <div id="coachingBuilderContent"></div>
+            <section class="coaching-builder-ai-tools" id="coachingBuilderAiTools" hidden aria-label="أدوات الذكاء الاصطناعي"><div><span>تعديل سريع بالذكاء الاصطناعي</span><small>اترك الإنشاء اليدوي متاحًا، أو اطلب تعديلًا على المسودة الحالية.</small></div><div class="coaching-builder-ai-controls"><textarea id="coachingBuilderAiInstruction" rows="2" maxlength="500" placeholder="مثال: أضف تمرين ضغط صدر 4 مجموعات أو بدّل الأرز بالبطاطس"></textarea><button class="btn btn-light btn-small" id="coachingBuilderAiRefine" type="button">تطبيق التعديل</button></div></section>
             <div class="dialog-actions builder-dialog-actions"><button class="btn btn-light" id="coachingBuilderCancel" type="button">إلغاء</button><button class="btn btn-light" id="coachingBuilderBack" type="button" hidden>السابق</button><button class="btn btn-light" id="coachingBuilderPreview" type="button" hidden>مراجعة</button><button class="btn btn-light" id="coachingBuilderPrint" type="button" hidden>طباعة</button><button class="btn btn-light" id="coachingBuilderPdf" type="button" hidden>PDF</button><button class="btn btn-primary" id="coachingBuilderNext" type="button">التالي</button><button class="btn btn-primary" id="coachingBuilderSave" type="submit" hidden>حفظ النظام</button></div>
         </form>
     </dialog>
@@ -611,12 +628,12 @@
 
     <!-- SweetAlert2 is optional and loaded during idle time by feature-loader. -->
     <script defer src="/js/core/api.js?v=1"></script>
-    <script defer src="/js/core/permissions.js?v=2"></script>
+    <script defer src="/js/core/permissions.js?v=3"></script>
     <script defer src="/js/core/state.js?v=1"></script>
     <script defer src="/js/auth-ui.js?v=7"></script>
     <script defer src="/js/app.js?v=feature-expansion10-alert-contact"></script>
-    <script defer src="/js/feature-loader.js?v=9"></script>
-    <script defer src="/js/page-tabs.js?v=11"></script>
+    <script defer src="/js/feature-loader.js?v=10"></script>
+    <script defer src="/js/page-tabs.js?v=12"></script>
     <script defer src="/js/button-loading.js"></script>
     <script defer src="/js/pagination.js"></script>
     <script defer src="/js/table-cards.js?v=2"></script>

@@ -25,6 +25,7 @@ const membershipCodeService = require('./src/services/membership-code-service');
 const memberPortalService = require('./src/services/member-portal-service');
 const memberFeedbackService = require('./src/services/member-feedback-service');
 const storeService = require('./src/services/store-service');
+const intelligenceService = require('./src/services/intelligence-service');
 const authService = require('./src/services/auth-service');
 const permissionService = require('./src/services/permission-service');
 const { ensureAuthReady } = authService;
@@ -113,6 +114,7 @@ registerRoutes(app, {
     portalService: memberPortalService,
     feedbackService: memberFeedbackService,
     storeService,
+    intelligenceService,
     getPool
 });
 
@@ -158,6 +160,7 @@ async function start() {
     await membershipCodeService.ensureMembershipCodeStorage();
     await memberFeedbackService.ensureMemberFeedbackTable();
     await storeService.ensureStoreTables();
+    await intelligenceService.ensureIntelligenceTables();
     const port = config.port;
     app.listen(port, () => console.log(`Gym membership app is running on http://localhost:${port}`));
 }

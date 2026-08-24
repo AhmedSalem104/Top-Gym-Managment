@@ -1068,6 +1068,9 @@
         if ($('coachingBuilderPrint')) $('coachingBuilderPrint').dataset.requiredPermission = 'coaching.read';
         if ($('coachingBuilderPdf')) $('coachingBuilderPdf').dataset.requiredPermission = 'coaching.read';
         $('coachingBuilderNext').textContent = step === 1 ? 'التالي: بناء النظام' : 'التالي: المراجعة';
+        const canUseIntelligence = window.topGymAuth?.isOwner?.() || window.topGymAuth?.hasPermission?.('intelligence.generate');
+        const aiTools = $('coachingBuilderAiTools');
+        if (aiTools) aiTools.hidden = !canUseIntelligence;
     }
 
     function renderBuilderClientField(draft, locked = false) {
@@ -1473,6 +1476,50 @@
             renderBuilderV2();
             openDialog($('coachingBuilderDialog'));
         } catch (error) { notify(error.message, 'error'); }
+    }
+
+    async function openBuilderFromAiDraft(detail = {}) {
+        const type = detail.type === 'diet' ? 'diet' : 'workout';
+        if (!detail.draft || !Number(detail.draft.memberId)) {
+            notify('مسودة الذكاء الاصطناعي غير مكتملة.', 'error');
+            return;
+        }
+        try {
+            await Promise.all([loadCatalog(), loadBuilderClients()]);
+            const draft = JSON.parse(JSON.stringify(detail.draft));
+            if (type === 'workout') {
+                draft.level = ({ beginner: 'مبتدئ', intermediate: 'متوسط', advanced: 'متقدم' })[draft.level] || draft.level || 'مبتدئ';
+            }
+            state.builder = { type, memberId: Number(draft.memberId), id: null, draft, step: 1, activeRoutine: 0 };
+            $('coachingBuilderId').value = '';
+            $('coachingBuilderMemberId').value = state.builder.memberId;
+            $('coachingBuilderTitle').textContent = `مراجعة مسودة AI — ${type === 'workout' ? 'برنامج تدريب' : 'خطة تغذية'}`;
+            $('coachingBuilderSubtitle').textContent = `العميل: ${draft.memberName || detail.memberName || 'العميل المحدد'} · عدّل يدويًا أو اطلب تعديلًا إضافيًا بالتعليمات.`;
+            if ($('coachingBuilderAiInstruction')) $('coachingBuilderAiInstruction').value = '';
+            renderBuilderV2();
+            openDialog($('coachingBuilderDialog'));
+            notify('تم فتح المسودة داخل المحرر اليدوي. يمكنك تعديل أي حقل قبل الحفظ.');
+        } catch (error) { notify(error.message || 'تعذر فتح مسودة الذكاء الاصطناعي.', 'error'); }
+    }
+
+    async function refineBuilderWithAi() {
+        if (!state.builder) return;
+        const instructionInput = $('coachingBuilderAiInstruction');
+        const instruction = String(instructionInput?.value || '').trim();
+        if (!instruction) { notify('اكتب التعديل المطلوب أولًا.', 'error'); return; }
+        const button = $('coachingBuilderAiRefine');
+        if (button) button.disabled = true;
+        try {
+            const draft = syncBuilderDraft();
+            const result = await requestJson('/api/intelligence/refine', { method: 'POST', body: JSON.stringify({ type: state.builder.type, memberId: state.builder.memberId, draft, instruction }) });
+            state.builder.draft = result.draft;
+            state.builder.step = 1;
+            state.builder.activeRoutine = 0;
+            if (instructionInput) instructionInput.value = '';
+            renderBuilderV2();
+            notify((result.changes || []).join(' · ') || 'تم تطبيق التعديل على المسودة.');
+        } catch (error) { notify(error.message || 'تعذر تطبيق تعديل الذكاء الاصطناعي.', 'error'); }
+        finally { if (button) button.disabled = false; }
     }
 
     function handleBuilderActionV2(button) {
@@ -2168,6 +2215,7 @@
         $('coachingBuilderClose')?.addEventListener('click', () => closeDialog($('coachingBuilderDialog')));
         $('coachingBuilderCancel')?.addEventListener('click', () => closeDialog($('coachingBuilderDialog')));
         $('coachingBuilderForm')?.addEventListener('submit', saveBuilder);
+        $('coachingBuilderAiRefine')?.addEventListener('click', () => { void refineBuilderWithAi(); });
         $('coachingBuilderContent')?.addEventListener('click', (event) => { const button = event.target.closest('[data-builder-action]'); if (button) handleBuilderAction(button); });
         $('coachingBuilderBack')?.addEventListener('click', () => setBuilderStep((state.builder?.step || 1) - 1));
         $('coachingBuilderNext')?.addEventListener('click', () => setBuilderStep((state.builder?.step || 1) + 1));
@@ -2247,6 +2295,7 @@
             if (action === 'delete') deleteCheckinFromProfile(memberId, button.dataset.id);
         });
         window.addEventListener('topgym:tab-changed', (event) => { if (event.detail?.name === 'trainees') loadTrainees(); });
+        window.addEventListener('topgym:ai-draft-ready', (event) => { void openBuilderFromAiDraft(event.detail || {}); });
         window.addEventListener('topgym:member-details-opened', (event) => renderMemberTrainingPanel(event.detail?.member?.id || event.detail?.details?.member?.id));
         window.addEventListener('topgym:coaching-updated', (event) => { if (event.detail?.memberId && $('detailsDialog')?.open) renderMemberTrainingPanel(event.detail.memberId); });
         window.addEventListener('topgym:coaching-data-changed', (event) => {

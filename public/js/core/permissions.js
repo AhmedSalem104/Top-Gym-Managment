@@ -1,11 +1,12 @@
 (() => {
     if (window.topGymPermissions) return;
 
-    const OWNER_TABS = Object.freeze(['dashboard', 'members', 'trainees', 'management', 'permissions', 'attendance', 'expenses', 'library', 'reports', 'feedback', 'store']);
+    const OWNER_TABS = Object.freeze(['dashboard', 'members', 'trainees', 'intelligence', 'management', 'permissions', 'attendance', 'expenses', 'library', 'reports', 'feedback', 'store']);
     const TAB_PERMISSION_CODES = Object.freeze({
         dashboard: 'dashboard.read',
         members: ['members.read', 'memberships.read'],
         trainees: 'trainees.read',
+        intelligence: 'intelligence.read',
         management: 'pricing.read',
         permissions: 'permissions.manage',
         attendance: 'attendance.read',
@@ -67,7 +68,9 @@
         'library.read': 'عرض المكتبة',
         'library.create': 'إضافة عنصر للمكتبة',
         'library.update': 'تعديل عنصر المكتبة',
-        'library.delete': 'حذف عنصر المكتبة'
+        'library.delete': 'حذف عنصر المكتبة',
+        'intelligence.read': 'عرض الذكاء التشغيلي',
+        'intelligence.generate': 'توليد اقتراحات التدريب والتغذية بالذكاء'
     });
 
     function grantedSet(user) {

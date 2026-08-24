@@ -2,7 +2,7 @@
     if (window.__topGymPageTabsLoaded) return;
     window.__topGymPageTabsLoaded = true;
 
-    const validTabs = new Set(['dashboard', 'members', 'expenses', 'reports', 'management', 'permissions', 'attendance', 'library', 'trainees', 'feedback', 'store']);
+    const validTabs = new Set(['dashboard', 'members', 'expenses', 'reports', 'management', 'permissions', 'attendance', 'library', 'trainees', 'intelligence', 'feedback', 'store']);
     let activationToken = 0;
     let activeTabName = null;
     const SIDEBAR_PIN_STORAGE_KEY = 'topgym.sidebar.pinned';
@@ -67,6 +67,7 @@
         const attendanceSection = document.getElementById('attendanceSection');
         const librarySection = document.getElementById('librarySection');
         const traineesSection = document.getElementById('traineesSection');
+        const intelligenceSection = document.getElementById('intelligenceSection');
         const storeSection = document.getElementById('storeSection');
         const isDashboard = name === 'dashboard';
         const isMembers = name === 'members';
@@ -78,6 +79,7 @@
         const isAttendance = name === 'attendance';
         const isLibrary = name === 'library';
         const isTrainees = name === 'trainees';
+        const isIntelligence = name === 'intelligence';
         const isStore = name === 'store';
 
         setHidden(dashboardHero, !isDashboard);
@@ -94,8 +96,9 @@
         setHidden(attendanceSection, !isAttendance);
         setHidden(librarySection, !isLibrary);
         setHidden(traineesSection, !isTrainees);
+        setHidden(intelligenceSection, !isIntelligence);
         setHidden(storeSection, !isStore);
-        setHidden(workspace, isDashboard || isExpenses || isReports || isManagement || isPermissions || isAttendance || isLibrary || isTrainees || isFeedback || isStore);
+        setHidden(workspace, isDashboard || isExpenses || isReports || isManagement || isPermissions || isAttendance || isLibrary || isTrainees || isIntelligence || isFeedback || isStore);
         setHidden(membersSection, !isMembers);
 
         document.querySelectorAll('[data-page-tab]').forEach((button) => {

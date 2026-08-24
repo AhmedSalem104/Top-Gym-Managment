@@ -14,6 +14,7 @@ const { registerDayPassRoutes } = require('./day-pass.routes');
 const { registerMemberPortalRoutes } = require('./member-portal.routes');
 const { registerMemberFeedbackRoutes } = require('./member-feedback.routes');
 const { registerStoreRoutes } = require('./store.routes');
+const { registerIntelligenceRoutes } = require('./intelligence.routes');
 
 function registerRoutes(app, {
     asyncRoute,
@@ -36,6 +37,7 @@ function registerRoutes(app, {
     portalService,
     feedbackService,
     storeService,
+    intelligenceService,
     getPool
 }) {
     app.get('/api/health', asyncRoute(async (_request, response) => {
@@ -57,6 +59,7 @@ function registerRoutes(app, {
     registerMemberPortalRoutes(app, { membershipCodeService, portalService, libraryService, asyncRoute, ownerOnly });
     registerMemberFeedbackRoutes(app, { feedbackService, asyncRoute, ownerOnly });
     registerStoreRoutes(app, { storeService, asyncRoute });
+    registerIntelligenceRoutes(app, { intelligenceService, asyncRoute });
     registerMembersRoutes(app, { memberService, asyncRoute });
 }
 

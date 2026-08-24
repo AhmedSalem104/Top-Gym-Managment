@@ -80,6 +80,7 @@ function assertRequiredFiles() {
         'src/services/finance-service.js',
         'src/services/attendance-service.js',
         'src/services/coaching-service.js',
+        'src/services/intelligence-service.js',
         'src/services/backup-service.js',
         'src/services/report-service.js',
         'src/services/auth-service.js',
@@ -133,6 +134,8 @@ function assertRequiredFiles() {
         'src/controllers/pricing.controller.js',
         'src/routes/coaching.routes.js',
         'src/controllers/coaching.controller.js',
+        'src/routes/intelligence.routes.js',
+        'src/controllers/intelligence.controller.js',
         'src/routes/day-pass.routes.js',
         'src/controllers/day-pass.controller.js',
         'src/services/store-service.js',
@@ -227,6 +230,7 @@ function checkRouteSurface() {
         'src/routes/backup.routes.js',
         'src/routes/pricing.routes.js',
         'src/routes/coaching.routes.js',
+        'src/routes/intelligence.routes.js',
         'src/routes/day-pass.routes.js',
         'src/routes/member-feedback.routes.js',
         'src/routes/store.routes.js'
@@ -234,7 +238,7 @@ function checkRouteSurface() {
     const expectedRoutes = [
         '/api/members', '/api/expenses', '/api/attendance', '/api/reports',
         '/api/backup', '/api/library', '/api/external-trainees',
-        '/api/workoutprograms', '/api/dietplans', '/api/workoutsessions', '/api/meal-logs', '/api/day-passes', '/api/member-feedback', '/api/member-portal/feedback', '/api/store/products', '/api/store/sales', '/api/store/inventory'
+        '/api/workoutprograms', '/api/dietplans', '/api/workoutsessions', '/api/meal-logs', '/api/intelligence/overview', '/api/intelligence/refine', '/api/day-passes', '/api/member-feedback', '/api/member-portal/feedback', '/api/store/products', '/api/store/sales', '/api/store/inventory'
     ];
     expectedRoutes.forEach((route) => record(
         `ROUTE-${route.replaceAll('/', '-')}`,

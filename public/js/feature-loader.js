@@ -45,7 +45,7 @@
             scripts: [
                 '/js/exercise-assets.js?v=5',
                 '/js/muscle-assets.js?v=3',
-                '/js/pages/coaching/coaching.js?v=15'
+                '/js/pages/coaching/coaching.js?v=16'
             ]
         },
         print: {
@@ -85,6 +85,10 @@
             dependencies: ['coaching'],
             styles: [],
             scripts: []
+        },
+        intelligence: {
+            styles: [],
+            scripts: ['/js/pages/intelligence/intelligence.js?v=1']
         },
         store: {
             styles: [],
