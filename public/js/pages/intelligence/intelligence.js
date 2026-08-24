@@ -58,18 +58,20 @@
 
     function renderStats(stats = {}) {
         const cards = [
-            ['الأعضاء', stats.totalMembers, 'إجمالي الملفات', 'members'],
-            ['اشتراكات نشطة', stats.activeMemberships, 'تحتاج متابعة مستمرة', 'active'],
-            ['قريبة الانتهاء', stats.expiringMemberships, 'خلال الفترة القريبة', 'warning'],
             ['خطر توقف مرتفع', stats.highRiskMembers, 'أولوية تواصل اليوم', 'danger'],
+            ['قريبة الانتهاء', stats.expiringMemberships, 'تحتاج متابعة قريبة', 'warning'],
+            ['اشتراكات نشطة', stats.activeMemberships, 'تحتاج متابعة مستمرة', 'active'],
             ['برامج تدريب نشطة', stats.activeWorkoutPrograms, 'خطة قيد التنفيذ', 'workout'],
-            ['خطط تغذية نشطة', stats.activeDietPlans, 'خطة قابلة للقياس', 'diet']
+            ['خطط تغذية نشطة', stats.activeDietPlans, 'خطة قابلة للقياس', 'diet'],
+            ['الأعضاء', stats.totalMembers, 'إجمالي الملفات', 'members']
         ];
         $('intelligenceStats').innerHTML = cards.map(([label, value, caption, tone]) => `<article class="intelligence-stat-card ${tone}"><span>${escapeHtml(label)}</span><strong>${number(value)}</strong><small>${escapeHtml(caption)}</small></article>`).join('');
     }
 
     function renderPriorities(items = []) {
-        $('intelligencePriorities').innerHTML = items.map((item) => `<article class="intelligence-priority ${escapeHtml(item.tone || 'info')}"><span class="intelligence-priority-dot" aria-hidden="true"></span><div><strong>${escapeHtml(item.title)}</strong><small>${escapeHtml(item.action)}</small></div></article>`).join('') || '<div class="intelligence-empty-line">لا توجد إشارات تحتاج تدخلاً الآن.</div>';
+        const priorityOrder = { danger: 0, warning: 1, info: 2, success: 3 };
+        const orderedItems = [...items].sort((left, right) => (priorityOrder[left.tone] ?? 9) - (priorityOrder[right.tone] ?? 9));
+        $('intelligencePriorities').innerHTML = orderedItems.map((item) => `<article class="intelligence-priority ${escapeHtml(item.tone || 'info')}"><span class="intelligence-priority-dot" aria-hidden="true"></span><div><strong>${escapeHtml(item.title)}</strong><small>${escapeHtml(item.action)}</small></div></article>`).join('') || '<div class="intelligence-empty-line">لا توجد إشارات تحتاج تدخلاً الآن.</div>';
     }
 
     function riskLabel(level) {

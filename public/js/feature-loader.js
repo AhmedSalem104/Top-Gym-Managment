@@ -88,7 +88,7 @@
         },
         intelligence: {
             styles: [],
-            scripts: ['/js/pages/intelligence/intelligence.js?v=1']
+            scripts: ['/js/pages/intelligence/intelligence.js?v=2']
         },
         store: {
             styles: [],

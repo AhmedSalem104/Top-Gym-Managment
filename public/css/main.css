@@ -12296,6 +12296,17 @@ body.auth-locked .auth-screen {
     gap: var(--space-5);
 }
 
+/* The operational screen is intentionally ordered by action: urgent signals,
+   retention follow-up, questions, then plan execution. */
+.intelligence-section > .intelligence-dashboard-grid { display: contents; }
+.intelligence-priorities-card { order: 1; border-color: #fed7aa; box-shadow: 0 14px 32px rgba(234, 88, 12, .07); }
+.intelligence-stats-grid { order: 2; }
+.intelligence-churn-card { order: 3; }
+.intelligence-query-card { order: 4; }
+.intelligence-plans-card { order: 5; }
+.intelligence-card-mark-critical { color: #c2410c; border-color: #fed7aa; background: #fff7ed; }
+.intelligence-card-head-actions { display: flex; align-items: flex-start; justify-content: flex-end; gap: .55rem; flex-wrap: wrap; }
+
 .intelligence-card {
     min-width: 0;
     padding: clamp(1rem, 2vw, 1.35rem);
