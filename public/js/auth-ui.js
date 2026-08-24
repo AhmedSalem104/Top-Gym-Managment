@@ -77,6 +77,9 @@
             const permission = action === 'profile' || action === 'toggle-more'
                 ? 'coaching.read'
                 : action === 'delete-diet' ? 'coaching.delete'
+                    : action.startsWith('print-') || action.startsWith('pdf-') ? 'coaching.read'
+                        : action.startsWith('edit-') ? 'coaching.update'
+                            : action.startsWith('delete-') ? 'coaching.delete'
                     : ['workout', 'diet'].includes(action) ? 'coaching.create' : '';
             setPermission(element, permission);
         });

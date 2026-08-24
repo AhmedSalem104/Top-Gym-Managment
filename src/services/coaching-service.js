@@ -635,7 +635,16 @@ async function getExternalTrainees({ search = '', page = 1, pageSize = 12 } = {}
                     m.created_at, m.updated_at,
                     ISNULL(program_stats.workout_count, 0) AS workout_count,
                     ISNULL(diet_stats.diet_count, 0) AS diet_count,
-                    JSON_QUERY((SELECT p.id, p.name, p.status, p.target_calories
+                    JSON_QUERY((SELECT p.id, p.name, p.status, p.goal, p.level, p.duration_weeks, p.days_per_week,
+                                       (SELECT COUNT(1) FROM dbo.workout_routines AS r WHERE r.program_id = p.id) AS routine_count,
+                                       (SELECT COUNT(1) FROM dbo.workout_exercises AS e INNER JOIN dbo.workout_routines AS r ON r.id = e.routine_id WHERE r.program_id = p.id) AS exercise_count
+                        FROM dbo.workout_programs AS p
+                        WHERE p.member_id = m.id AND p.status <> 'archived'
+                        ORDER BY p.updated_at DESC, p.id DESC
+                        FOR JSON PATH)) AS workout_plans_json,
+                    JSON_QUERY((SELECT p.id, p.name, p.status, p.target_calories,
+                                       (SELECT COUNT(1) FROM dbo.diet_meals AS dm WHERE dm.diet_plan_id = p.id) AS meal_count,
+                                       (SELECT COUNT(1) FROM dbo.diet_meal_items AS di INNER JOIN dbo.diet_meals AS dm ON dm.id = di.meal_id WHERE dm.diet_plan_id = p.id) AS item_count
                         FROM dbo.diet_plans AS p
                         WHERE p.member_id = m.id AND p.status <> 'archived'
                         ORDER BY p.updated_at DESC, p.id DESC
@@ -676,13 +685,31 @@ async function getExternalTrainees({ search = '', page = 1, pageSize = 12 } = {}
 }
 
 function mapExternalTrainee(row) {
+    let workoutPlans = [];
     let dietPlans = [];
+    try {
+        workoutPlans = JSON.parse(row.workout_plans_json || '[]').map((program) => ({
+            id: Number(program.id),
+            name: program.name,
+            status: program.status,
+            goal: program.goal,
+            level: program.level,
+            durationWeeks: program.duration_weeks == null ? null : Number(program.duration_weeks),
+            daysPerWeek: program.days_per_week == null ? null : Number(program.days_per_week),
+            routines: Number(program.routine_count || 0),
+            exerciseCount: Number(program.exercise_count || 0)
+        }));
+    } catch (_) {
+        workoutPlans = [];
+    }
     try {
         dietPlans = JSON.parse(row.diet_plans_json || '[]').map((plan) => ({
             id: Number(plan.id),
             name: plan.name,
             status: plan.status,
-            targetCalories: plan.target_calories == null ? null : Number(plan.target_calories)
+            targetCalories: plan.target_calories == null ? null : Number(plan.target_calories),
+            meals: Number(plan.meal_count || 0),
+            itemCount: Number(plan.item_count || 0)
         }));
     } catch (_) {
         dietPlans = [];
@@ -696,6 +723,7 @@ function mapExternalTrainee(row) {
         notes: row.notes,
         workoutCount: Number(row.workout_count || 0),
         dietCount: Number(row.diet_count || 0),
+        workoutPlans,
         dietPlans,
         measurementCount: Number(row.measurement_count || 0),
         lastActivity: row.last_activity || null,

@@ -130,9 +130,10 @@ body > .print-sheet,
   background: #fff;
   color: #172033;
   direction: rtl;
-  font-family: Cairo, Tahoma, Arial, sans-serif;
+  font-family: "Cairo", "Noto Naskh Arabic", Tahoma, Arial, sans-serif;
   font-size: 10pt;
   line-height: 1.65;
+  text-rendering: optimizeLegibility;
 }
 
 .print-sheet *,
@@ -419,6 +420,8 @@ body > .print-sheet,
   padding: 6px;
   font-weight: 700;
   text-align: center;
+  direction: rtl;
+  unicode-bidi: isolate;
 }
 
 .print-table td {
@@ -428,6 +431,14 @@ body > .print-sheet,
   text-align: center;
   vertical-align: middle;
   overflow-wrap: anywhere;
+  direction: rtl;
+  unicode-bidi: isolate;
+}
+
+.print-table [dir="ltr"] {
+  direction: ltr;
+  unicode-bidi: isolate;
+  text-align: center;
 }
 
 .print-table tbody tr:nth-child(even) td { background: #f8fafc; }

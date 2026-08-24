@@ -8098,7 +8098,7 @@ body.auth-locked .auth-screen {
 
 .external-trainee-systems,
 .external-trainee-counts,
-.external-trainee-diet-list {
+.external-trainee-system-list {
   display: grid;
   gap: var(--space-2);
 }
@@ -8131,9 +8131,6 @@ body.auth-locked .auth-screen {
 .external-trainee-count.workout .external-trainee-count-icon { color: var(--color-primary); }
 .external-trainee-count.diet .external-trainee-count-icon { color: var(--color-success); }
 .external-trainee-count-icon .coaching-inline-icon { width: 16px; height: 16px; }
-.external-trainee-diet-list-title { color: var(--color-text-muted); font-size: 10px; }
-
-.external-trainee-diet-plan,
 .external-trainee-no-diet {
   display: block;
   overflow: hidden;
@@ -8143,13 +8140,58 @@ body.auth-locked .auth-screen {
   white-space: nowrap;
 }
 
-.external-trainee-diet-plan small {
-  margin-inline-start: var(--space-1);
-  color: var(--color-text-muted);
-  font-family: var(--font-latin);
+.external-trainee-no-diet { color: var(--color-text-subtle); }
+
+.external-trainee-system-item {
+  display: grid;
+  gap: var(--space-2);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  padding: var(--space-2);
 }
 
-.external-trainee-no-diet { color: var(--color-text-subtle); }
+.external-trainee-system-copy {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.external-trainee-system-copy .system-type {
+  min-height: 22px;
+  padding-inline: var(--space-2);
+  font-size: 10px;
+}
+
+.external-trainee-system-copy strong {
+  overflow: hidden;
+  color: var(--color-text);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.external-trainee-system-copy small {
+  overflow: hidden;
+  color: var(--color-text-muted);
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.external-trainee-system-actions,
+.member-training-system-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+.external-trainee-system-actions .btn,
+.member-training-system-actions .btn {
+  min-height: 30px;
+  padding-inline: var(--space-2);
+  font-size: 10px;
+}
 
 .external-trainee-compact-metric {
   display: inline-flex;
@@ -8491,6 +8533,12 @@ body.auth-locked .auth-screen {
 
 .member-training-systems > div > .btn {
   justify-self: start;
+  margin-top: var(--space-1);
+}
+
+.member-training-systems > div > .member-training-system-actions {
+  display: flex;
+  justify-self: stretch;
   margin-top: var(--space-1);
 }
 
@@ -10837,7 +10885,8 @@ body.auth-locked .auth-screen {
 
 .reports-actions,
 .reports-debtor-actions,
-.reports-coaching-actions { display: inline-flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: var(--space-2); }
+.reports-coaching-actions { display: inline-flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: var(--space-2); min-width: 188px; }
+.reports-coaching-actions .btn { min-width: 54px; }
 .reports-actions { flex: 0 0 auto; }
 .reports-button-icon { display: inline-flex; }
 .reports-button-icon .ui-icon { width: 17px; height: 17px; }
@@ -15179,9 +15228,10 @@ body > .print-sheet,
   background: #fff;
   color: #172033;
   direction: rtl;
-  font-family: Cairo, Tahoma, Arial, sans-serif;
+  font-family: "Cairo", "Noto Naskh Arabic", Tahoma, Arial, sans-serif;
   font-size: 10pt;
   line-height: 1.65;
+  text-rendering: optimizeLegibility;
 }
 
 .print-sheet *,
@@ -15468,6 +15518,8 @@ body > .print-sheet,
   padding: 6px;
   font-weight: 700;
   text-align: center;
+  direction: rtl;
+  unicode-bidi: isolate;
 }
 
 .print-table td {
@@ -15477,6 +15529,14 @@ body > .print-sheet,
   text-align: center;
   vertical-align: middle;
   overflow-wrap: anywhere;
+  direction: rtl;
+  unicode-bidi: isolate;
+}
+
+.print-table [dir="ltr"] {
+  direction: ltr;
+  unicode-bidi: isolate;
+  text-align: center;
 }
 
 .print-table tbody tr:nth-child(even) td { background: #f8fafc; }

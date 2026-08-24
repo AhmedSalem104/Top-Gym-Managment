@@ -28,7 +28,7 @@
             scripts: [
                 '/js/member-details-ui.js?v=3',
                 '/js/member-portal-admin.js?v=2',
-                '/js/member-coaching-summary.js?v=1'
+                '/js/member-coaching-summary.js?v=2'
             ]
         },
         members: {
@@ -45,12 +45,12 @@
             scripts: [
                 '/js/exercise-assets.js?v=5',
                 '/js/muscle-assets.js?v=3',
-                '/js/pages/coaching/coaching.js?v=17'
+                '/js/pages/coaching/coaching.js?v=18'
             ]
         },
         print: {
             styles: [],
-            scripts: ['/js/exercise-assets.js?v=5', '/js/integrations/print-enhancements.js?v=11']
+            scripts: ['/js/exercise-assets.js?v=5', '/js/integrations/print-enhancements.js?v=12']
         },
         expenses: {
             dependencies: ['finance'],
@@ -59,7 +59,7 @@
         },
         reports: {
             styles: [],
-            scripts: ['/js/pages/reports/reports.js?v=9', '/js/day-pass-reports.js?v=2']
+            scripts: ['/js/pages/reports/reports.js?v=10', '/js/day-pass-reports.js?v=2']
         },
         feedback: {
             styles: [],
@@ -88,7 +88,7 @@
         },
         intelligence: {
             styles: [],
-            scripts: ['/js/pages/intelligence/intelligence.js?v=2']
+            scripts: ['/js/pages/intelligence/intelligence.js?v=3']
         },
         store: {
             styles: [],

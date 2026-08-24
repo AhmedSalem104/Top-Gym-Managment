@@ -307,16 +307,23 @@
             rows.forEach((row, index) => {
                 const item = items[index];
                 const cell = row.lastElementChild;
-                if (!item || !cell || cell.querySelector('[data-report-coaching-action]')) return;
-                const actions = document.createElement('div');
+                if (!item || !cell) return;
+                const actions = cell.querySelector('.reports-coaching-actions') || document.createElement('div');
+                if (actions.children.length) return;
                 actions.className = 'reports-debtor-actions reports-coaching-actions';
-                [['print', 'طباعة'], ['pdf', 'PDF']].forEach(([action, label]) => {
+                [['edit', 'تعديل', 'light'], ['print', 'طباعة', 'light'], ['pdf', 'PDF', 'light'], ['delete', 'حذف', 'danger']].forEach(([action, label, tone]) => {
                     const button = document.createElement('button');
                     button.type = 'button';
-                    button.className = 'btn btn-light btn-small';
-                    button.dataset.reportCoachingAction = action;
-                    button.dataset.reportCoachingId = item.id;
-                    button.dataset.reportCoachingType = systemType;
+                    button.className = `btn btn-${tone} btn-small`;
+                    if (action === 'edit' || action === 'delete') {
+                        button.dataset.memberCoachingAction = `${action}-${systemType}`;
+                        button.dataset.memberId = item.memberId;
+                        button.dataset.id = item.id;
+                    } else {
+                        button.dataset.reportCoachingAction = action;
+                        button.dataset.reportCoachingId = item.id;
+                        button.dataset.reportCoachingType = systemType;
+                    }
                     button.textContent = label;
                     button.title = label + ' النظام';
                     actions.append(button);
@@ -456,10 +463,10 @@
         const stats = data.summary || {};
         const executionKpis = `<div class="reports-kpis reports-kpis-coaching reports-kpis-secondary">${reportKpi('حجم التدريب', `${number(stats.workoutVolumeInPeriod, 0)} كجم`, 'من الأوزان والتكرارات', 'teal', 'chart')}${reportKpi('السعرات المسجلة', number(stats.mealCaloriesInPeriod, 0), `P ${number(stats.mealProteinInPeriod, 0)} · C ${number(stats.mealCarbsInPeriod, 0)} · F ${number(stats.mealFatsInPeriod, 0)}`, 'amber', 'food')}${reportKpi('المتابعات اليومية', number(stats.checkinsInPeriod, 0), 'استشفاء خلال الفترة', 'purple', 'measure')}</div>`;
         const kpis = `<div class="reports-kpis reports-kpis-coaching">${reportKpi('برامج التدريب', number(stats.totalWorkoutPrograms), `${number(stats.activeWorkoutPrograms)} نشطة`, 'blue', 'program')}${reportKpi('خطط التغذية', number(stats.totalDietPlans), `${number(stats.activeDietPlans)} نشطة`, 'indigo', 'food')}${reportKpi('جلسات التمرين', number(stats.workoutSessionsInPeriod), `${number(stats.completedWorkoutSessions)} مكتملة`, 'green', 'attendance')}${reportKpi('سجل الوجبات', number(stats.mealLogsInPeriod), 'خلال الفترة', 'amber', 'food')}${reportKpi('القياسات', number(stats.measurementsInPeriod), 'مضافة خلال الفترة', 'teal', 'measure')}</div>`;
-        const workoutRows = programs.map((item) => `<tr><td><strong>${escapeHtml(item.name)}</strong><small>${escapeHtml(item.fullName)} · ${escapeHtml(item.phone)}</small></td><td>${dateOnly(item.startDate)}<small>حتى ${dateOnly(item.endDate)}</small></td><td>${reportBadge(item.status, COACHING_STATUS_LABELS)}</td><td>${number(item.routines)} أيام</td><td>${number(item.exercises)} تمارين</td></tr>`).join('');
-        const dietRows = diets.map((item) => `<tr><td><strong>${escapeHtml(item.name)}</strong><small>${escapeHtml(item.fullName)} · ${escapeHtml(item.phone)}</small></td><td>${dateOnly(item.startDate)}<small>حتى ${dateOnly(item.endDate)}</small></td><td>${reportBadge(item.status, COACHING_STATUS_LABELS)}</td><td>${number(item.targetCalories)} سعر</td><td>${number(item.meals)} وجبات · ${number(item.foods)} أطعمة</td><td><button type="button" class="btn btn-danger btn-small" data-report-diet-id="${item.id}" data-report-diet-member-id="${item.memberId}">حذف</button></td></tr>`).join('');
-        const workoutTable = `<section class="report-card finance-detail-card"><div class="report-card-head"><div><span>التدريب</span><h3>البرامج المنشأة خلال الفترة</h3></div><span class="reports-members-count">${number(programs.length)}</span></div><div class="reports-table-wrap">${workoutRows ? `<table class="reports-table"><thead><tr><th>البرنامج والمتدرب</th><th>الفترة</th><th>الحالة</th><th>الأيام</th><th>التمارين</th></tr></thead><tbody>${workoutRows}</tbody></table>` : '<div class="reports-empty-state">لا توجد برامج مطابقة.</div>'}</div></section>`;
-        const dietTable = `<section class="report-card finance-detail-card"><div class="report-card-head"><div><span>التغذية</span><h3>خطط التغذية المنشأة خلال الفترة</h3></div><span class="reports-members-count">${number(diets.length)}</span></div><div class="reports-table-wrap">${dietRows ? `<table class="reports-table"><thead><tr><th>الخطة والمتدرب</th><th>الفترة</th><th>الحالة</th><th>السعرات</th><th>المحتوى</th><th>الإجراء</th></tr></thead><tbody>${dietRows}</tbody></table>` : '<div class="reports-empty-state">لا توجد خطط مطابقة.</div>'}</div></section>`;
+        const workoutRows = programs.map((item) => `<tr><td><strong>${escapeHtml(item.name)}</strong><small>${escapeHtml(item.fullName)} · ${escapeHtml(item.phone)}</small></td><td>${dateOnly(item.startDate)}<small>حتى ${dateOnly(item.endDate)}</small></td><td>${reportBadge(item.status, COACHING_STATUS_LABELS)}</td><td>${number(item.routines)} أيام</td><td>${number(item.exercises)} تمارين</td><td><div class="reports-coaching-actions"></div></td></tr>`).join('');
+        const dietRows = diets.map((item) => `<tr><td><strong>${escapeHtml(item.name)}</strong><small>${escapeHtml(item.fullName)} · ${escapeHtml(item.phone)}</small></td><td>${dateOnly(item.startDate)}<small>حتى ${dateOnly(item.endDate)}</small></td><td>${reportBadge(item.status, COACHING_STATUS_LABELS)}</td><td>${number(item.targetCalories)} سعر</td><td>${number(item.meals)} وجبات · ${number(item.foods)} أطعمة</td><td><div class="reports-coaching-actions"></div></td></tr>`).join('');
+        const workoutTable = `<section class="report-card finance-detail-card"><div class="report-card-head"><div><span>التدريب</span><h3>البرامج المنشأة خلال الفترة</h3></div><span class="reports-members-count">${number(programs.length)}</span></div><div class="reports-table-wrap">${workoutRows ? `<table class="reports-table"><thead><tr><th>البرنامج والمتدرب</th><th>الفترة</th><th>الحالة</th><th>الأيام</th><th>التمارين</th><th>الإجراءات</th></tr></thead><tbody>${workoutRows}</tbody></table>` : '<div class="reports-empty-state">لا توجد برامج مطابقة.</div>'}</div></section>`;
+        const dietTable = `<section class="report-card finance-detail-card"><div class="report-card-head"><div><span>التغذية</span><h3>خطط التغذية المنشأة خلال الفترة</h3></div><span class="reports-members-count">${number(diets.length)}</span></div><div class="reports-table-wrap">${dietRows ? `<table class="reports-table"><thead><tr><th>الخطة والمتدرب</th><th>الفترة</th><th>الحالة</th><th>السعرات</th><th>المحتوى</th><th>الإجراءات</th></tr></thead><tbody>${dietRows}</tbody></table>` : '<div class="reports-empty-state">لا توجد خطط مطابقة.</div>'}</div></section>`;
         view.innerHTML = `${kpis}${executionKpis}<div class="reports-detail-grid">${type === 'workout' ? workoutTable : type === 'diet' ? dietTable : workoutTable + dietTable}</div>`;
     }
 

@@ -24,6 +24,10 @@
         return `<button class="${className}" type="button" data-member-coaching-action="${actionName}" data-member-id="${memberId}"${entityAttribute} aria-label="${label}" title="${label}">${label}</button>`;
     }
 
+    function systemActions(type, memberId, entityId) {
+        return `<div class="member-training-system-actions">${action(`edit-${type}`, 'تعديل', memberId, 'btn btn-light btn-small', entityId)}${action(`print-${type}`, 'طباعة', memberId, 'btn btn-light btn-small', entityId)}${action(`pdf-${type}`, 'PDF', memberId, 'btn btn-light btn-small', entityId)}${action(`delete-${type}`, 'حذف', memberId, 'btn btn-danger btn-small', entityId)}</div>`;
+    }
+
     function renderPanel(memberId, data) {
         const content = document.getElementById('detailsContent');
         if (!content || !document.getElementById('detailsDialog')?.open) return;
@@ -33,8 +37,8 @@
         const workouts = data.workoutPrograms || [];
         const diets = data.dietPlans || [];
         const systems = [
-            ...workouts.map((item) => `<div class="member-training-system"><span class="system-type workout">${icon} تدريب</span><strong>${escapeHtml(item.name)}</strong><small>${number(item.exerciseCount)} تمرين · ${escapeHtml(statusLabels[item.status] || item.status || 'غير محددة')}</small>${action('edit-workout', 'تعديل', memberId, 'btn btn-light btn-small', item.id)}</div>`),
-            ...diets.map((item) => `<div class="member-training-system"><span class="system-type diet">${icon} تغذية</span><strong>${escapeHtml(item.name)}</strong><small>${number(item.itemCount)} طعام · ${escapeHtml(statusLabels[item.status] || item.status || 'غير محددة')}</small>${action('edit-diet', 'تعديل', memberId, 'btn btn-light btn-small', item.id)}</div>`)
+            ...workouts.map((item) => `<div class="member-training-system"><span class="system-type workout">${icon} تدريب</span><strong>${escapeHtml(item.name)}</strong><small>${number(item.exerciseCount)} تمرين · ${escapeHtml(statusLabels[item.status] || item.status || 'غير محددة')}</small>${systemActions('workout', memberId, item.id)}</div>`),
+            ...diets.map((item) => `<div class="member-training-system"><span class="system-type diet">${icon} تغذية</span><strong>${escapeHtml(item.name)}</strong><small>${number(item.itemCount)} طعام · ${escapeHtml(statusLabels[item.status] || item.status || 'غير محددة')}</small>${systemActions('diet', memberId, item.id)}</div>`)
         ].join('');
         panel.innerHTML = `<div class="member-training-head"><div><span>امتداد ملف العميل</span><h4>التدريب والتغذية</h4><small>ملخص سريع، وتُحمّل أدوات الإدارة الكاملة عند طلبها فقط.</small></div><div class="member-training-actions">${action('profile', 'فتح المتابعة', memberId)}${action('new-workout', '+ تدريب', memberId, 'btn btn-primary btn-small')}${action('new-diet', '+ تغذية', memberId)}</div></div><div class="member-training-systems">${systems || '<div class="profile-empty">لا توجد أنظمة مرتبطة بهذا العميل حتى الآن.</div>'}</div><div class="member-progress-line"><span>القياسات: <b>${number(data.measurementCount)}</b></span><span>الجلسات المكتملة: <b>${number(data.completedSessions)}</b></span><span>تسجيلات الوجبات: <b>${number(data.mealLogCount)}</b></span></div>`;
         if (!panel.isConnected) content.appendChild(panel);

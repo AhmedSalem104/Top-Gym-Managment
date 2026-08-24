@@ -13,6 +13,7 @@
         catalog: { exercises: [], foods: [] },
         plan: null
     };
+    const SYSTEM_NAME_SUFFIX = 'From TOP GYM System';
 
     function escapeHtml(value) {
         return String(value ?? '').replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[character]));
@@ -44,6 +45,22 @@
 
     function selectedClient() {
         return state.clients.find((client) => String(client.id) === String($('intelligenceMemberId')?.value)) || null;
+    }
+
+    function generatedSystemName(type, memberName = '') {
+        const prefix = type === 'diet' ? 'خطة تغذية' : 'برنامج تدريب';
+        const suffix = ` · ${SYSTEM_NAME_SUFFIX}`;
+        const label = String(memberName || 'العميل المحدد').trim() || 'العميل المحدد';
+        const availableLabelLength = Math.max(12, 160 - prefix.length - suffix.length - 3);
+        return `${prefix} - ${label.slice(0, availableLabelLength)}${suffix}`;
+    }
+
+    function normalizeGeneratedPlan(draft, type, memberName = '') {
+        const normalized = JSON.parse(JSON.stringify(draft || {}));
+        const clientLabel = normalized.memberName || memberName || 'العميل المحدد';
+        normalized.memberName = normalized.memberName || memberName || clientLabel;
+        normalized.name = generatedSystemName(type, clientLabel);
+        return normalized;
     }
 
     function exerciseLabel(id) {
@@ -129,7 +146,10 @@
     }
 
     function renderPlanResult(result, changes = []) {
-        state.plan = { type: result.type, memberId: result.memberId || result.suggestion?.memberId, draft: result.suggestion || result.draft, warnings: result.warnings || [], explanation: result.explanation || [], changes };
+        const type = result.type === 'diet' ? 'diet' : 'workout';
+        const memberId = result.memberId || result.suggestion?.memberId || result.draft?.memberId;
+        const member = state.clients.find((client) => String(client.id) === String(memberId));
+        state.plan = { type, memberId, draft: normalizeGeneratedPlan(result.suggestion || result.draft, type, member?.fullName), warnings: result.warnings || [], explanation: result.explanation || [], changes };
         const plan = state.plan.draft;
         const warningMarkup = state.plan.warnings.map((warning) => `<li>${escapeHtml(warning)}</li>`).join('');
         const changeMarkup = changes.map((change) => `<li>${escapeHtml(change)}</li>`).join('');
@@ -226,6 +246,8 @@
         if (!state.plan?.draft) return;
         try {
             const endpoint = state.plan.type === 'workout' ? '/api/workoutprograms' : '/api/dietplans';
+            const member = state.clients.find((client) => String(client.id) === String(state.plan.memberId));
+            state.plan.draft = normalizeGeneratedPlan(state.plan.draft, state.plan.type, member?.fullName);
             await api.post(endpoint, { ...state.plan.draft, status: 'draft' });
             notify('تم حفظ المسودة داخل التدريب والتغذية. يمكنك فتحها وتعديلها يدويًا.');
             window.dispatchEvent(new CustomEvent('topgym:coaching-data-changed', { detail: { memberId: state.plan.memberId } }));

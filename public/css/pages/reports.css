@@ -58,7 +58,8 @@
 
 .reports-actions,
 .reports-debtor-actions,
-.reports-coaching-actions { display: inline-flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: var(--space-2); }
+.reports-coaching-actions { display: inline-flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: var(--space-2); min-width: 188px; }
+.reports-coaching-actions .btn { min-width: 54px; }
 .reports-actions { flex: 0 0 auto; }
 .reports-button-icon { display: inline-flex; }
 .reports-button-icon .ui-icon { width: 17px; height: 17px; }
