@@ -21,6 +21,7 @@
 
                     const phone = cell.querySelector('.table-member-phone');
                     const registration = cell.querySelector('.table-sub');
+                    const portalCode = cell.querySelector('.member-code-preview');
                     const identity = document.createElement('div');
                     identity.className = 'member-identity';
 
@@ -35,6 +36,7 @@
                     copy.append(name);
                     if (phone) copy.append(phone);
                     if (registration) copy.append(registration);
+                    if (portalCode) copy.append(portalCode);
                     identity.append(avatar, copy);
                     cell.replaceChildren(identity);
                     cell.dataset.identityEnhanced = 'true';

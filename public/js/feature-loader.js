@@ -35,7 +35,7 @@
             dependencies: [],
             styles: [],
             scripts: [
-                '/js/design-enhancements.js?v=3',
+                '/js/design-enhancements.js?v=4',
                 '/js/pages/members/action-menu.js?v=7',
                 '/js/pages/attendance/attendance.js?v=9'
             ]
