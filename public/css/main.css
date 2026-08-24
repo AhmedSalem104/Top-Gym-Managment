@@ -6435,6 +6435,8 @@ body.auth-locked .auth-screen {
 }
 
 .coaching-builder-dialog {
+  width: min(1080px, calc(100% - 32px));
+  max-width: 1080px;
   max-height: calc(100vh - 32px);
 }
 
@@ -9624,6 +9626,283 @@ body.auth-locked .auth-screen {
   .coaching-builder-dialog > form.dialog-body > #coachingBuilderContent { margin-inline: var(--space-4); }
   .coaching-builder-dialog > form.dialog-body > #coachingBuilderStepper { min-height: 90px; margin-top: var(--space-3); }
   .coaching-builder-dialog > form.dialog-body > #coachingBuilderContent { margin-top: var(--space-3); }
+}
+
+/* Builder clarity layer --------------------------------------------------
+   Keep the workflow compact and give each plan type its own visual language. */
+.coaching-builder-dialog {
+  width: min(1080px, calc(100vw - 32px));
+  max-width: 1080px;
+  max-height: calc(100vh - 24px);
+}
+
+.coaching-builder-dialog > form.dialog-body {
+  overflow-x: hidden;
+}
+
+.coaching-builder-dialog.builder-mode-diet {
+  --builder-accent: #0f766e;
+  --builder-accent-strong: #0d9488;
+  --builder-soft: #ecfdf5;
+  --builder-border: #99f6e4;
+  --builder-stage-bg: #f0fdfa;
+}
+
+.coaching-builder-dialog.builder-mode-workout {
+  --builder-accent: #1d4ed8;
+  --builder-accent-strong: #2563eb;
+  --builder-soft: #eff6ff;
+  --builder-border: #bfdbfe;
+  --builder-stage-bg: #f8fbff;
+}
+
+.coaching-builder-dialog.builder-mode-diet > form.dialog-body > .details-dialog-head {
+  border-bottom: 3px solid var(--builder-accent);
+  background: linear-gradient(135deg, #f0fdfa, #ffffff 68%);
+}
+
+.coaching-builder-dialog.builder-mode-workout > form.dialog-body > .details-dialog-head {
+  border-bottom: 3px solid var(--builder-accent);
+  background: linear-gradient(135deg, #eff6ff, #ffffff 68%);
+}
+
+.builder-mode-diet .builder-step.active,
+.builder-mode-diet .builder-step:hover:not(:disabled) {
+  border-color: var(--builder-accent);
+  background: var(--builder-accent);
+  color: #fff;
+}
+
+.builder-mode-workout .builder-step.active,
+.builder-mode-workout .builder-step:hover:not(:disabled) {
+  border-color: var(--builder-accent);
+  background: var(--builder-accent);
+  color: #fff;
+}
+
+.builder-mode-diet .builder-step.complete,
+.builder-mode-diet .builder-progress-track > span.active,
+.builder-mode-diet .builder-progress-track > span.complete,
+.builder-mode-diet .builder-switch > span:first-child,
+.builder-mode-diet .builder-stage-heading > div > span,
+.builder-mode-diet .builder-builder-head > div > span,
+.builder-mode-diet .builder-section-title > div > span {
+  color: var(--builder-accent);
+}
+
+.builder-mode-workout .builder-step.complete,
+.builder-mode-workout .builder-progress-track > span.active,
+.builder-mode-workout .builder-progress-track > span.complete,
+.builder-mode-workout .builder-switch > span:first-child,
+.builder-mode-workout .builder-stage-heading > div > span,
+.builder-mode-workout .builder-builder-head > div > span,
+.builder-mode-workout .builder-section-title > div > span {
+  color: var(--builder-accent);
+}
+
+.builder-mode-diet .builder-progress-track > i.complete,
+.builder-mode-workout .builder-progress-track > i.complete {
+  background: var(--builder-accent);
+}
+
+.builder-mode-diet .builder-stage,
+.builder-mode-workout .builder-stage {
+  border-color: var(--builder-border);
+  background: var(--builder-stage-bg);
+}
+
+.builder-mode-diet .builder-stage-heading,
+.builder-mode-diet .builder-builder-head,
+.builder-mode-diet .builder-calculator,
+.builder-mode-diet .builder-target-panel,
+.builder-mode-diet .builder-meal-row {
+  border-inline-start: 4px solid var(--builder-accent);
+}
+
+.builder-mode-workout .builder-stage-heading,
+.builder-mode-workout .builder-builder-head,
+.builder-mode-workout .builder-day-panel {
+  border-inline-start: 4px solid var(--builder-accent);
+}
+
+.builder-mode-diet .builder-calculator,
+.builder-mode-diet .builder-target-panel,
+.builder-mode-diet .diet-live-summary {
+  border-color: var(--builder-border);
+  background: var(--builder-soft);
+}
+
+.builder-mode-workout .builder-workout-metrics,
+.builder-mode-workout .builder-day-tabs {
+  border-color: var(--builder-border);
+}
+
+.builder-mode-diet .builder-meal-title > span,
+.builder-mode-diet .builder-meal-row-summary span {
+  background: var(--builder-soft);
+  color: var(--builder-accent);
+  border-color: var(--builder-border);
+}
+
+.builder-mode-workout .builder-day-tab.active {
+  border-color: var(--builder-accent);
+  background: var(--builder-soft);
+  color: var(--builder-accent);
+  box-shadow: 0 4px 12px rgb(37 99 235 / 0.12);
+}
+
+.builder-mode-workout .builder-day-tab.active b {
+  color: var(--builder-accent);
+}
+
+.builder-mode-diet .nutrition-total-progress i,
+.builder-mode-diet .nutrition-macro-grid i b {
+  background: var(--builder-accent);
+}
+
+.builder-mode-workout .builder-workout-metrics > article {
+  border-color: var(--builder-border);
+  background: var(--builder-soft);
+}
+
+.builder-mode-workout .builder-workout-metrics strong,
+.builder-mode-diet .nutrition-summary-head b {
+  color: var(--builder-accent);
+}
+
+.builder-basic-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.builder-basic-grid .builder-client-field {
+  grid-column: 1 / -1;
+}
+
+.calculator-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.target-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.builder-dialog-actions {
+  align-items: center;
+  background: var(--color-surface);
+}
+
+.builder-dialog-actions::before {
+  flex: 1 1 240px;
+  color: var(--color-text-muted);
+  content: attr(data-builder-action-hint);
+  font-size: var(--font-xs);
+  font-weight: var(--weight-semibold);
+  line-height: 1.5;
+}
+
+.builder-dialog-actions #coachingBuilderBack,
+.builder-dialog-actions #coachingBuilderPreview,
+.builder-dialog-actions #coachingBuilderPrint,
+.builder-dialog-actions #coachingBuilderPdf {
+  border-color: var(--builder-border, var(--border-color));
+}
+
+.builder-dialog-actions #coachingBuilderNext,
+.builder-dialog-actions #coachingBuilderSave {
+  min-width: 210px;
+  background: var(--builder-accent, var(--color-primary));
+  border-color: var(--builder-accent, var(--color-primary));
+}
+
+.builder-dialog-actions #coachingBuilderNext:hover,
+.builder-dialog-actions #coachingBuilderSave:hover {
+  background: var(--builder-accent-strong, var(--color-primary));
+  border-color: var(--builder-accent-strong, var(--color-primary));
+}
+
+.builder-exercise-table-head,
+.builder-exercise-row {
+  min-width: 850px;
+}
+
+.builder-exercise-table-head {
+  grid-template-columns: 28px minmax(170px, 2fr) repeat(9, minmax(54px, 1fr)) 60px;
+}
+
+.builder-exercise-row {
+  grid-template-columns: 28px minmax(170px, 2fr) repeat(9, minmax(54px, 1fr)) 60px;
+}
+
+.builder-food-table-head,
+.builder-food-row {
+  min-width: 700px;
+}
+
+.builder-food-table-head {
+  grid-template-columns: minmax(170px, 2fr) repeat(6, minmax(58px, 1fr)) 60px;
+}
+
+.builder-food-row {
+  grid-template-columns: minmax(170px, 2fr) repeat(6, minmax(58px, 1fr)) 60px;
+}
+
+.builder-review-table table {
+  min-width: 680px;
+}
+
+@media (max-width: 767px) {
+  .coaching-builder-dialog {
+    width: calc(100vw - 20px);
+    max-width: none;
+  }
+
+  .builder-basic-grid,
+  .calculator-grid,
+  .target-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .builder-basic-grid .builder-client-field {
+    grid-column: auto;
+  }
+
+  .builder-dialog-actions::before {
+    flex-basis: 100%;
+    order: -1;
+  }
+
+  .builder-dialog-actions #coachingBuilderNext,
+  .builder-dialog-actions #coachingBuilderSave {
+    min-width: 0;
+  }
+
+  .builder-exercise-table-head,
+  .builder-food-table-head {
+    display: none;
+  }
+
+  .builder-exercise-row,
+  .builder-food-row {
+    min-width: 0;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: stretch;
+  }
+
+  .builder-exercise-row .exercise-row-number,
+  .builder-exercise-row .exercise-select-field,
+  .builder-exercise-row .exercise-row-notes,
+  .builder-food-row > label:first-child {
+    grid-column: 1 / -1;
+  }
+
+  .builder-exercise-row .row-delete-button,
+  .builder-food-row .row-delete-button {
+    justify-self: start;
+  }
+
+  .exercise-row-notes {
+    padding-top: var(--space-2);
+  }
 }
 
 /* END TOP GYM layer */

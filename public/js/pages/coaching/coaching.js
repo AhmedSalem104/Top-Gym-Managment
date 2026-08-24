@@ -1051,23 +1051,47 @@
 
     function renderBuilderChrome() {
         const step = state.builder.step;
+        const mode = state.builder.type === 'diet' ? 'diet' : 'workout';
+        const dialog = $('coachingBuilderDialog');
+        dialog?.classList.remove('builder-mode-diet', 'builder-mode-workout', 'builder-step-1', 'builder-step-2', 'builder-step-3');
+        dialog?.classList.add(`builder-mode-${mode}`, `builder-step-${step}`);
+        if (dialog) {
+            dialog.dataset.builderType = mode;
+            dialog.dataset.builderStep = String(step);
+        }
         const steps = state.builder.type === 'diet' ? ['المعلومات وحساب السعرات', 'بناء الوجبات', 'المراجعة والحفظ'] : ['بيانات البرنامج', 'بناء الأيام والتمارين', 'المراجعة والحفظ'];
-        $('coachingBuilderStepper').innerHTML = steps.map((label, index) => { const number = index + 1; return `<button type="button" class="builder-step ${number === step ? 'active' : ''} ${number < step ? 'complete' : ''}" data-builder-step-target="${number}" ${number > step ? 'disabled' : ''}><span>${number}</span><strong>${label}</strong></button>`; }).join('');
+        $('coachingBuilderStepper').innerHTML = steps.map((label, index) => { const number = index + 1; return `<button type="button" class="builder-step ${number === step ? 'active' : ''} ${number < step ? 'complete' : ''}" data-builder-step-target="${number}" ${number > step ? 'disabled' : ''}${number === step ? ' aria-current="step"' : ''}><span>${number}</span><strong>${label}</strong></button>`; }).join('');
         const draft = state.builder.draft;
         const basicDone = builderBasicComplete(draft);
         const structureDone = builderStructureComplete(draft);
         const structureCount = state.builder.type === 'diet' ? `${draft.meals.length} وجبات · ${draft.meals.reduce((sum, meal) => sum + meal.items.length, 0)} أطعمة` : `${draft.routines.length} أيام · ${workoutStats(draft).exercises} تمارين`;
         $('coachingBuilderProgress').innerHTML = `<div class="builder-progress-track"><span class="${basicDone ? 'complete' : ''}">١ <b>البيانات الأساسية</b></span><i class="${basicDone ? 'complete' : ''}"></i><span class="${structureDone ? 'complete' : ''}">٢ <b>${structureCount}</b></span><i class="${structureDone ? 'complete' : ''}"></i><span class="${step === 3 ? 'active' : ''}">٣ <b>مراجعة قبل الحفظ</b></span></div>`;
         $('coachingBuilderBack').hidden = step === 1;
-        $('coachingBuilderPreview').hidden = step !== 2;
+        // The primary next action already validates and opens the review step;
+        // keep the legacy preview hook available in the DOM without showing a
+        // duplicate action that makes the sequence look ambiguous.
+        $('coachingBuilderPreview').hidden = true;
         $('coachingBuilderPrint').hidden = step !== 3;
         $('coachingBuilderPdf').hidden = step !== 3;
         $('coachingBuilderNext').hidden = step === 3;
         $('coachingBuilderSave').hidden = step !== 3;
+        const actionHints = state.builder.type === 'diet'
+            ? { 1: '١/٣ — بيانات العميل والسعرات', 2: '٢/٣ — ترتيب الوجبات والأطعمة', 3: '٣/٣ — مراجعة واعتماد الخطة' }
+            : { 1: '١/٣ — بيانات البرنامج والهدف', 2: '٢/٣ — بناء الأيام والتمارين', 3: '٣/٣ — مراجعة واعتماد البرنامج' };
+        const actionBar = document.querySelector('.builder-dialog-actions');
+        if (actionBar) {
+            actionBar.dataset.builderActionHint = actionHints[step];
+            actionBar.dataset.builderStep = String(step);
+        }
         if ($('coachingBuilderSave')) $('coachingBuilderSave').dataset.requiredPermission = state.builder.id ? 'coaching.update' : 'coaching.create';
         if ($('coachingBuilderPrint')) $('coachingBuilderPrint').dataset.requiredPermission = 'coaching.read';
         if ($('coachingBuilderPdf')) $('coachingBuilderPdf').dataset.requiredPermission = 'coaching.read';
-        $('coachingBuilderNext').textContent = step === 1 ? 'التالي: بناء النظام' : 'التالي: المراجعة';
+        $('coachingBuilderBack').textContent = step === 2 ? 'السابق: البيانات الأساسية' : 'السابق: بناء المحتوى';
+        $('coachingBuilderPreview').textContent = 'مراجعة سريعة';
+        $('coachingBuilderNext').textContent = state.builder.type === 'diet'
+            ? (step === 1 ? 'التالي: بناء الوجبات' : 'التالي: مراجعة الخطة')
+            : (step === 1 ? 'التالي: بناء الأيام' : 'التالي: مراجعة البرنامج');
+        $('coachingBuilderSave').textContent = state.builder.id ? 'حفظ التعديلات' : 'اعتماد وحفظ النظام';
         const canUseIntelligence = window.topGymAuth?.isOwner?.() || window.topGymAuth?.hasPermission?.('intelligence.generate');
         const aiTools = $('coachingBuilderAiTools');
         if (aiTools) aiTools.hidden = !canUseIntelligence;
@@ -1221,6 +1245,48 @@
                 row.append(rirCell, rpeCell);
             });
             table.dataset.intensityReview = 'true';
+        });
+    }
+
+    function localizeBuilderLabels() {
+        const content = $('coachingBuilderContent');
+        if (!content) return;
+        const labels = {
+            Food: 'الطعام',
+            Protein: 'بروتين',
+            Carbs: 'كربوهيدرات',
+            Fat: 'دهون',
+            Calories: 'السعرات',
+            Target: 'المستهدف',
+            Exercise: 'التمرين',
+            Sets: 'المجموعات',
+            'Reps min': 'التكرارات من',
+            'Reps max': 'التكرارات إلى',
+            'Weight kg': 'الوزن كجم',
+            Weight: 'الوزن',
+            'Rest sec': 'الراحة (ث)',
+            Rest: 'الراحة',
+            Tempo: 'الإيقاع',
+            Superset: 'سوبر سيت',
+            'Live Nutrition Totals': 'الإجمالي الغذائي الحالي',
+            'Target Calories': 'السعرات المستهدفة',
+            'Protein (g)': 'البروتين (جم)',
+            'Carbs (g)': 'الكربوهيدرات (جم)',
+            'Fat (g)': 'الدهون (جم)',
+            'Target Calories & Macros': 'السعرات والماكروز المستهدفة',
+            'Workout Builder': 'بناء الأيام والتمارين',
+            '+ إضافة Food': '+ إضافة طعام'
+        };
+        content.querySelectorAll('h4, th, span, small, button').forEach((element) => {
+            if (element.children.length) return;
+            const key = element.textContent.trim();
+            if (labels[key]) element.textContent = labels[key];
+        });
+        content.querySelectorAll('label').forEach((label) => {
+            const textNode = [...label.childNodes].find((node) => node.nodeType === Node.TEXT_NODE && node.textContent.trim());
+            if (!textNode) return;
+            const key = textNode.textContent.trim();
+            if (labels[key]) textNode.textContent = textNode.textContent.replace(key, labels[key]);
         });
     }
 
@@ -1411,6 +1477,7 @@
         else if (state.builder.step === 2) state.builder.type === 'diet' ? renderDietStepTwo() : renderWorkoutStepTwo();
         else renderBuilderReview();
         enhanceBuilderSearchSelects();
+        localizeBuilderLabels();
         window.TopGymExerciseAssets?.hydrate($('coachingBuilderContent'));
     }
 

@@ -411,6 +411,8 @@
 }
 
 .coaching-builder-dialog {
+  width: min(1080px, calc(100% - 32px));
+  max-width: 1080px;
   max-height: calc(100vh - 32px);
 }
 
