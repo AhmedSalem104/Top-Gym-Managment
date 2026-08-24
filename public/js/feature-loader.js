@@ -27,7 +27,7 @@
             styles: [],
             scripts: [
                 '/js/member-details-ui.js?v=3',
-                '/js/member-portal-admin.js?v=2',
+                '/js/member-portal-admin.js?v=3',
                 '/js/member-coaching-summary.js?v=2'
             ]
         },
@@ -45,7 +45,7 @@
             scripts: [
                 '/js/exercise-assets.js?v=5',
                 '/js/muscle-assets.js?v=3',
-                '/js/pages/coaching/coaching.js?v=18'
+                '/js/pages/coaching/coaching.js?v=19'
             ]
         },
         print: {
@@ -155,7 +155,9 @@
     async function loadExternalAsset(name) {
         const source = externalAssets[name];
         if (!source) throw new Error(`مكتبة ${name} غير معروفة.`);
-        return loadScript(source, `external-${name}`);
+        const script = await loadScript(source, `external-${name}`);
+        if (name === 'sweetalert') window.topGymPatchSweetAlertDialogs?.();
+        return script;
     }
 
     function dashboardIsRequested() {

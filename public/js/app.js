@@ -114,7 +114,8 @@
         window.topGymDialogTarget = getTopLayerDialog;
         window.topGymShowDialogValidation = showDialogValidation;
         document.querySelectorAll('dialog').forEach((dialog) => dialog.addEventListener('close', () => clearDialogValidation(dialog)));
-        if (window.Swal && !window.Swal.__topGymDialogPatched) {
+        function patchSweetAlertDialogTarget() {
+            if (!window.Swal || window.Swal.__topGymDialogPatched) return;
             const originalSweetAlertFire = window.Swal.fire.bind(window.Swal);
             window.Swal.fire = (...args) => {
                 if (args.length === 1 && args[0] && typeof args[0] === 'object' && !args[0].target) {
@@ -125,6 +126,8 @@
             };
             window.Swal.__topGymDialogPatched = true;
         }
+        window.topGymPatchSweetAlertDialogs = patchSweetAlertDialogTarget;
+        patchSweetAlertDialogTarget();
 
         const baseShowToast = showToast;
         showToast = function(message, error = false, type = '') {

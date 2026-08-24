@@ -199,6 +199,14 @@ body .swal2-container {
   font-family: var(--font-body);
 }
 
+dialog .swal2-container {
+  position: absolute;
+  inset: 0;
+  z-index: calc(var(--z-content) + 20);
+  width: 100%;
+  height: 100%;
+}
+
 body .swal2-popup,
 body .swal2-popup.top-gym-alert {
   width: min(520px, calc(100vw - 32px));

@@ -20,6 +20,8 @@
     return payload;
   };
 
+  const canViewPortalCode = () => window.topGymAuth?.isOwner?.() === true;
+
   function codeMarkup() {
     const code = codeState?.fullCode || codeState?.maskedCode || 'غير متاح';
     const stateLabel = codeState?.active === false ? 'غير نشط' : 'نشط';
@@ -27,12 +29,25 @@
   }
 
   function renderCard() {
+    if (!canViewPortalCode()) {
+      content.querySelector('[data-portal-code-card]')?.remove();
+      return;
+    }
     content.querySelector('[data-portal-code-card]')?.remove();
     const overview = content.querySelector('.member-details-overview');
     const wrapper = document.createElement('div');
     wrapper.innerHTML = codeMarkup();
     const card = wrapper.firstElementChild;
     if (overview) overview.after(card); else content.prepend(card);
+  }
+
+  function applyPreview(preview) {
+    if (!canViewPortalCode()) {
+      content.querySelector('[data-portal-code-card]')?.remove();
+      return;
+    }
+    codeState = { active: false, maskedCode: null, ...(preview || {}), fullCode: null };
+    renderCard();
   }
 
   async function loadCode(memberId) {
@@ -96,7 +111,9 @@
   window.addEventListener('topgym:member-details-opened', (event) => {
     currentMember = event.detail?.member || event.detail?.details?.member || null;
     codeState = null;
-    if (currentMember?.id) window.setTimeout(() => loadCode(currentMember.id), 0);
+    const preview = event.detail?.details?.member?.membershipCode || currentMember?.membershipCode;
+    if (currentMember?.id && preview) applyPreview(preview);
+    else if (currentMember?.id) void loadCode(currentMember.id);
   });
 
   const decorateMemberRows = async () => {

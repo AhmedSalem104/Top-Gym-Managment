@@ -251,6 +251,7 @@
         if (window.Swal) {
             const result = await window.Swal.fire({
                 position: 'center',
+                target: window.topGymDialogTarget?.() || undefined,
                 icon: 'warning',
                 title,
                 text,
@@ -2011,6 +2012,10 @@
             const workout = overview.workoutPrograms || [];
             const diets = overview.dietPlans || [];
             panel.innerHTML = `<div class="member-training-head"><div><span>امتداد ملف العميل</span><h4>التدريب والتغذية</h4><small>يمكن إنشاء الأنظمة للمشترك بدون تغيير نظام العضوية الحالي.</small></div><div><button class="btn btn-light btn-small" data-member-coaching-action="profile" data-id="${memberId}">فتح المتابعة</button><button class="btn btn-primary btn-small" data-member-coaching-action="new-workout" data-id="${memberId}">+ تدريب</button><button class="btn btn-light btn-small" data-member-coaching-action="new-diet" data-id="${memberId}">+ تغذية</button><button class="btn btn-light btn-small" data-member-coaching-action="start-session" data-id="${memberId}">بدء جلسة</button><button class="btn btn-light btn-small" data-member-coaching-action="log-meal" data-id="${memberId}">تسجيل وجبة</button><button class="btn btn-light btn-small" data-member-coaching-action="new-measurement" data-id="${memberId}">+ قياس</button></div></div><div class="member-training-systems">${[...workout.map((item) => `<div><span class="system-type workout">تدريب</span><strong>${escapeHtml(item.name)}</strong><small>${number(item.exerciseCount, 0)} تمرين · ${STATUS_LABELS[item.status] || item.status}</small><button class="btn btn-light btn-small" data-member-coaching-action="edit-workout" data-id="${item.id}" data-member-id="${memberId}">تعديل</button></div>`), ...diets.map((item) => `<div><span class="system-type diet">تغذية</span><strong>${escapeHtml(item.name)}</strong><small>${number(item.itemCount, 0)} طعام · ${STATUS_LABELS[item.status] || item.status}</small><button class="btn btn-light btn-small" data-member-coaching-action="edit-diet" data-id="${item.id}" data-member-id="${memberId}">تعديل</button><button class="btn btn-danger btn-small" data-member-coaching-action="delete-diet" data-id="${item.id}" data-member-id="${memberId}">حذف</button></div>`)].join('') || '<div class="profile-empty">لا توجد أنظمة مرتبطة بهذا العميل حتى الآن.</div>'}</div><div class="member-progress-line"><span>القياسات: <b>${number(overview.measurements?.length, 0)}</b></span><span>الجلسات المكتملة: <b>${number(overview.progress.completedSessions, 0)}</b></span><span>تسجيلات الوجبات: <b>${number(overview.progress.mealLogCount, 0)}</b></span></div>`;
+            // Apply the complete action set synchronously after the full panel redraw.
+            // This prevents the legacy edit/delete markup from being visible without
+            // the print and PDF actions during the lazy module handoff.
+            decorateMemberTrainingPrintActions(panel, memberId);
         }).catch((error) => { panel.innerHTML = `<div class="coaching-empty error">${escapeHtml(error.message)}</div>`; });
     }
 
