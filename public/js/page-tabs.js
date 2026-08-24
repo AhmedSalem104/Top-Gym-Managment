@@ -47,6 +47,7 @@
         if (!validTabs.has(name)) return 'dashboard';
         if (window.topGymAuth?.isReady?.()) {
             if (!window.topGymAuth.getUser?.()) return 'dashboard';
+            if (name === 'management' && !window.topGymAuth.isOwner?.()) return window.topGymPermissions?.firstAccessibleTab?.(window.topGymAuth.getUser?.()) || 'members';
             if (!window.topGymAuth.canAccessTab(name)) return window.topGymPermissions?.firstAccessibleTab?.(window.topGymAuth.getUser?.()) || 'members';
         }
         return name;

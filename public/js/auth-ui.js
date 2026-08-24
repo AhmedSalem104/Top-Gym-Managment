@@ -118,6 +118,14 @@
 
     function applyPermissionControls(user) {
         annotatePermissionControls();
+        document.querySelectorAll('[data-owner-only]').forEach((element) => {
+            const allowed = user?.role === 'Owner';
+            element.hidden = !allowed;
+            element.toggleAttribute('aria-hidden', !allowed);
+            element.toggleAttribute('inert', !allowed);
+            if ('disabled' in element) element.disabled = !allowed;
+            if (!allowed && element.matches('dialog[open]')) element.close();
+        });
         document.querySelectorAll('[data-required-permission]').forEach((element) => {
             const allowed = user?.role === 'Owner' || permissionValueAllowed(user, element.dataset.requiredPermission);
             element.hidden = !allowed;
@@ -200,7 +208,7 @@
         const pageTabs = $('pageTabs');
         if (accountBar && pageTabs && accountBar.parentElement !== pageTabs) pageTabs.appendChild(accountBar);
         document.querySelectorAll('[data-page-tab]').forEach((button) => {
-            const allowed = tabs.includes(button.dataset.pageTab);
+            const allowed = button.hasAttribute('data-owner-only') ? isOwner : tabs.includes(button.dataset.pageTab);
             if (!allowed && button === document.activeElement) button.blur();
             button.hidden = !allowed;
             button.toggleAttribute('inert', !allowed);

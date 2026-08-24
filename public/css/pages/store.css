@@ -634,16 +634,30 @@
     }
 
     .store-subnav {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        display: flex;
+        align-items: stretch;
+        justify-content: flex-start;
+        gap: var(--space-2, 8px);
+        overflow-x: auto;
+        overflow-y: hidden;
+        overscroll-behavior-inline: contain;
+        scrollbar-color: var(--store-primary) transparent;
+        scrollbar-width: thin;
     }
 
     .store-subnav-button {
-        width: 100%;
+        width: 124px;
+        min-width: 124px;
+        flex: 0 0 124px;
         min-height: 62px;
         flex-direction: column;
         gap: 4px;
         padding: var(--space-2, 8px);
+        border-color: var(--store-border);
+        border-radius: 14px;
+        background: #fff;
+        box-shadow: 0 4px 12px rgb(15 23 42 / 0.05);
+        scroll-snap-align: start;
     }
 
     .store-tab-icon {
@@ -668,10 +682,6 @@
     .store-form-grid label:has(textarea),
     .store-form-grid .store-form-actions {
         grid-column: auto;
-    }
-
-    .store-subnav {
-        grid-template-columns: 1fr;
     }
 
     .store-cart-line {

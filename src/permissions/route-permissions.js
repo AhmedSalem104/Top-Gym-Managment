@@ -72,11 +72,11 @@ const ROUTE_PERMISSION_RULES = Object.freeze([
     { pattern: /^\/reports$/, methods: ['GET'], all: [PERMISSIONS.REPORTS_READ] },
 
     { pattern: /^\/pricing$/, methods: ['GET'], all: [PERMISSIONS.PRICING_READ] },
-    { pattern: /^\/pricing(?:\/[^/]+)?$/, methods: ['PUT'], all: [PERMISSIONS.PRICING_UPDATE] },
-    { pattern: /^\/pricing-plans$/, methods: ['POST'], all: [PERMISSIONS.PRICING_CREATE] },
-    { pattern: /^\/pricing-plans\/[^/]+$/, methods: ['PUT'], all: [PERMISSIONS.PRICING_UPDATE] },
-    { pattern: /^\/membership-types$/, methods: ['POST'], all: [PERMISSIONS.PRICING_CREATE] },
-    { pattern: /^\/membership-types\/[^/]+$/, methods: ['PUT'], all: [PERMISSIONS.PRICING_UPDATE] },
+    { pattern: /^\/pricing(?:\/[^/]+)?$/, methods: ['PUT'], ownerOnly: true, all: [PERMISSIONS.PRICING_UPDATE] },
+    { pattern: /^\/pricing-plans$/, methods: ['POST'], ownerOnly: true, all: [PERMISSIONS.PRICING_CREATE] },
+    { pattern: /^\/pricing-plans\/[^/]+$/, methods: ['PUT'], ownerOnly: true, all: [PERMISSIONS.PRICING_UPDATE] },
+    { pattern: /^\/membership-types$/, methods: ['POST'], ownerOnly: true, all: [PERMISSIONS.PRICING_CREATE] },
+    { pattern: /^\/membership-types\/[^/]+$/, methods: ['PUT'], ownerOnly: true, all: [PERMISSIONS.PRICING_UPDATE] },
 
     { pattern: /^\/day-passes\/pricing$/, methods: ['GET'], all: [PERMISSIONS.DAY_PASSES_READ] },
     { pattern: /^\/day-passes\/pricing$/, methods: ['PUT'], ownerOnly: true, all: [PERMISSIONS.PRICING_UPDATE] },

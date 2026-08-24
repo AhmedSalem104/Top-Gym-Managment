@@ -42,3 +42,23 @@ test('assistant deletion is an Owner-only resolved operation', () => {
     assert.equal(canAccessRoleRequest({ role: 'Owner', permissions: [] }, request), true);
     assert.equal(canAccessRoleRequest({ role: 'Assistant', permissions: ['management.users.delete'] }, request), false);
 });
+
+test('pricing catalog stays readable while pricing configuration is Owner-only', () => {
+    const assistant = { role: 'Assistant', permissions: ['pricing.read', 'pricing.create', 'pricing.update'] };
+    const readRequest = { path: '/pricing', method: 'GET' };
+    const writeRequests = [
+        { path: '/pricing', method: 'PUT' },
+        { path: '/pricing-plans', method: 'POST' },
+        { path: '/pricing-plans/gym_only', method: 'PUT' },
+        { path: '/membership-types', method: 'POST' },
+        { path: '/membership-types/monthly', method: 'PUT' }
+    ];
+
+    assert.equal(permissionForRequest(readRequest).ownerOnly, false);
+    assert.equal(canAccessRoleRequest(assistant, readRequest), true);
+    writeRequests.forEach((request) => {
+        assert.equal(permissionForRequest(request).ownerOnly, true);
+        assert.equal(canAccessRoleRequest({ role: 'Owner', permissions: [] }, request), true);
+        assert.equal(canAccessRoleRequest(assistant, request), false);
+    });
+});

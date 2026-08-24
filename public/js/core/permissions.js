@@ -87,7 +87,7 @@
 
     function tabsForUser(user) {
         if (user?.role === 'Owner') return [...OWNER_TABS];
-        return OWNER_TABS.filter((tab) => TAB_PERMISSION_ALTERNATIVES[tab]
+        return OWNER_TABS.filter((tab) => tab === 'management' ? false : TAB_PERMISSION_ALTERNATIVES[tab]
             ? TAB_PERMISSION_ALTERNATIVES[tab].some((code) => hasPermission(user, code))
             : hasPermission(user, TAB_PERMISSION_CODES[tab]));
     }
