@@ -116,21 +116,4 @@
     else if (currentMember?.id) void loadCode(currentMember.id);
   });
 
-  const decorateMemberRows = async () => {
-    const rows = [...document.querySelectorAll('#membersList tr[data-member-id]')];
-    await Promise.all(rows.map(async (row) => {
-      if (row.dataset.portalPreviewReady === 'true') return;
-      row.dataset.portalPreviewReady = 'true';
-      try {
-        const payload = await request(`/api/members/${encodeURIComponent(row.dataset.memberId)}`);
-        const preview = payload.member?.membershipCode?.maskedCode;
-        if (!preview) return;
-        const cell = row.querySelector('td:first-child');
-        if (cell && !cell.querySelector('.member-code-preview')) cell.insertAdjacentHTML('beforeend', `<span class="table-sub member-code-preview">كود البوابة: <b dir="ltr">${escapeHtml(preview)}</b></span>`);
-      } catch (_) { /* The preview is optional UX; keep the member table usable. */ }
-    }));
-  };
-  const observer = new MutationObserver(() => window.setTimeout(decorateMemberRows, 0));
-  const membersList = document.getElementById('membersList');
-  if (membersList) { observer.observe(membersList, { childList: true, subtree: true }); decorateMemberRows(); }
 })();
