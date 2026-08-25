@@ -1558,6 +1558,18 @@
   box-shadow: var(--shadow-card);
 }
 
+.dashboard-initial-skeleton { display: none; }
+
+#dashboardSection.data-loading .dashboard-initial-skeleton {
+  display: block;
+  margin-top: var(--space-6);
+}
+
+#dashboardSection.data-loading > .dashboard-hero,
+#dashboardSection.data-loading > .overview-grid {
+  display: none;
+}
+
 .dashboard-hero::after {
   position: absolute;
   top: 0;

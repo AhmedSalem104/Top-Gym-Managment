@@ -32,6 +32,33 @@
         if (state.label) state.label.textContent = label;
     }
 
+    function skeletonCardsMarkup() {
+        return Array.from({ length: 3 }, () => '<span class="skeleton-card"><span class="skeleton-card-head"><i class="skeleton-block skeleton-avatar"></i><i class="skeleton-block skeleton-chip"></i></span><i class="skeleton-block skeleton-title"></i><i class="skeleton-block skeleton-line"></i><i class="skeleton-block skeleton-line is-short"></i></span>').join('');
+    }
+
+    function skeletonTableMarkup() {
+        const cells = (className = '') => Array.from({ length: 4 }, () => `<i class="skeleton-block skeleton-table-cell ${className}"></i>`).join('');
+        return `<span class="skeleton-table"><span class="skeleton-table-head">${cells('is-head')}</span>${Array.from({ length: 5 }, () => `<span class="skeleton-table-row">${cells()}</span>`).join('')}</span>`;
+    }
+
+    function enhanceSkeletons(scope = document) {
+        const candidates = [];
+        if (scope?.nodeType === 1 && scope.matches?.('div.loading, div.loading-state, div.page-loading')) candidates.push(scope);
+        scope?.querySelectorAll?.('div.loading, div.loading-state, div.page-loading').forEach((element) => candidates.push(element));
+        candidates.forEach((element) => {
+            if (element.dataset.skeletonEnhanced === 'true') return;
+            if (element.closest('[hidden]')) return;
+            const label = element.textContent.trim();
+            const context = `${element.id} ${element.parentElement?.id || ''} ${element.className}`.toLowerCase();
+            const isTable = /table|history|attendance|memberslist|daypasstable|pricing/.test(context);
+            element.dataset.skeletonEnhanced = 'true';
+            element.classList.add('skeleton-loading-host');
+            element.setAttribute('role', 'status');
+            if (label) element.setAttribute('aria-label', label);
+            element.innerHTML = isTable ? skeletonTableMarkup() : `<span class="skeleton-cards">${skeletonCardsMarkup()}</span>`;
+        });
+    }
+
     function startTask(label = '') {
         ensureRoot();
         state.activeTasks += 1;
@@ -109,6 +136,18 @@
     }
 
     if (document.body) {
+        enhanceSkeletons();
+        new MutationObserver((records) => {
+            records.forEach((record) => {
+                if (record.type === 'attributes') {
+                    if (!record.target.hidden) enhanceSkeletons(record.target);
+                    return;
+                }
+                record.addedNodes.forEach((node) => {
+                    if (node.nodeType === 1) enhanceSkeletons(node);
+                });
+            });
+        }).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['hidden'] });
         new MutationObserver(syncAuthPendingState).observe(document.body, {
             attributes: true,
             attributeFilter: ['class']

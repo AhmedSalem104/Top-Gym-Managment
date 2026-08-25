@@ -19,7 +19,7 @@
     <link rel="preload" href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap" as="style" onload="this.onload=null;this.rel='sty'+'lesheet'">
     <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2" sizes="any">
     <link rel="shortcut icon" type="image/svg+xml" href="/favicon.svg?v=2">
-    <link rel="stylesheet" href="/css/main.css?v=46">
+    <link rel="stylesheet" href="/css/main.css?v=47">
     <title>إدارة عضويات الجيم</title>
 </head>
 <body class="auth-pending font-sans bg-slate-100 text-slate-900 gym-page-bg">
@@ -102,7 +102,7 @@
             </button>
         </nav>
 
-        <main class="page max-w-7xl" id="dashboardSection">
+        <main class="page max-w-7xl data-loading" id="dashboardSection" aria-busy="true">
             <div class="dashboard-section-heading" aria-label="نظرة عامة على الجيم">
                 <div class="dashboard-section-heading-copy">
                     <span class="dashboard-section-eyebrow">مركز القيادة</span>
@@ -114,6 +114,7 @@
                     <span class="dashboard-section-meta-note">متابعة اليوم</span>
                 </div>
             </div>
+            <div class="loading dashboard-initial-skeleton" id="dashboardInitialSkeleton">جاري تجهيز مؤشرات لوحة التحكم…</div>
             <div class="dashboard-page-actions dashboard-hero" aria-label="إجراءات لوحة التحكم">
                 <div class="dashboard-hero-visual" aria-hidden="true">
                     <span class="dashboard-hero-visual-ring dashboard-hero-visual-ring-one"></span>
@@ -676,9 +677,9 @@
     <script defer src="/js/core/api.js?v=1"></script>
     <script defer src="/js/core/permissions.js?v=4"></script>
     <script defer src="/js/core/state.js?v=1"></script>
-    <script defer src="/js/performance-loader.js?v=1"></script>
+    <script defer src="/js/performance-loader.js?v=2"></script>
     <script defer src="/js/auth-ui.js?v=8"></script>
-    <script defer src="/js/app.js?v=feature-expansion10-alert-contact-member-detail-layers-member-table-portal-initial-code-hydration-progressive-performance"></script>
+    <script defer src="/js/app.js?v=feature-expansion10-alert-contact-member-detail-layers-member-table-portal-initial-code-hydration-progressive-performance-skeleton"></script>
     <script defer src="/js/feature-loader.js?v=14"></script>
     <script defer src="/js/page-tabs.js?v=14"></script>
     <script defer src="/js/button-loading.js"></script>

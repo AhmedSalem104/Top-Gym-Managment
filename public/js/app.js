@@ -230,6 +230,12 @@
                 const pricingRequest = activeTab === 'members'
                     ? loadPricingCatalog(false)
                     : Promise.resolve(state.pricing);
+                const showDashboardSkeleton = activeTab === 'dashboard' && !state.dashboard;
+                const dashboardSection = document.getElementById('dashboardSection');
+                if (showDashboardSkeleton) {
+                    dashboardSection?.classList.add('data-loading');
+                    dashboardSection?.setAttribute('aria-busy', 'true');
+                }
                 try {
                     const [dashboard] = await Promise.all([dashboardRequest, pricingRequest]);
                     if (isOwner && activeTab === 'dashboard') {
@@ -240,6 +246,11 @@
                     if (isMembersTabActive()) await loadMembersOnly();
                 } catch (error) {
                     await notify(error.message, 'error');
+                } finally {
+                    if (showDashboardSkeleton) {
+                        dashboardSection?.classList.remove('data-loading');
+                        dashboardSection?.setAttribute('aria-busy', 'false');
+                    }
                 }
             }, 'جاري تحميل بيانات TOP GYM…');
             const trackedPromise = loadPromise.finally(() => {
@@ -602,6 +613,7 @@
                     void loadPricingCatalog();
                     void loadMembersOnly();
                 }
+                if (event.detail?.name === 'dashboard' && !state.dashboard && window.topGymAuth?.isOwner?.()) void loadData();
             });
             const loadAfterAuth = () => {
                 if (window.topGymAuth?.getUser?.()) void loadData();
