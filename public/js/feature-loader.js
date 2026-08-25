@@ -15,7 +15,7 @@
             dependencies: ['finance'],
             styles: [],
             scripts: [
-                '/js/day-passes.js?v=6',
+                '/js/day-passes.js?v=7',
                 '/js/alerts-enhancements.js?v=9'
             ]
         },

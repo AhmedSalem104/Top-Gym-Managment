@@ -276,12 +276,25 @@
         if (!host || !isAuthenticated()) return false;
         const { from, to } = monthRange();
         try {
-            const params = new URLSearchParams({ from, to, page: '1', pageSize: '6' });
+            const pageSize = 100;
+            const params = new URLSearchParams({ from, to, page: '1', pageSize: String(pageSize) });
             const [list, summary] = await Promise.all([
                 request(`/api/day-passes?${params}`),
                 request(`/api/day-passes/summary?${new URLSearchParams({ from, to })}`)
             ]);
-            state.dashboardRecords = Array.isArray(list?.records) ? list.records : [];
+            let dashboardRecords = Array.isArray(list?.records) ? list.records : [];
+            const totalRecords = Number(list?.pagination?.total || dashboardRecords.length);
+            const totalPages = Math.ceil(totalRecords / pageSize);
+            if (totalPages > 1) {
+                const remainingPages = await Promise.all(
+                    Array.from({ length: totalPages - 1 }, (_, index) => {
+                        const pageParams = new URLSearchParams({ from, to, page: String(index + 2), pageSize: String(pageSize) });
+                        return request(`/api/day-passes?${pageParams}`);
+                    })
+                );
+                dashboardRecords = dashboardRecords.concat(remainingPages.flatMap((page) => Array.isArray(page?.records) ? page.records : []));
+            }
+            state.dashboardRecords = dashboardRecords;
             if ($('dashboardDayPassCount')) $('dashboardDayPassCount').textContent = Number(summary?.count || 0).toLocaleString('ar-EG');
             if ($('dashboardDayPassTotal')) $('dashboardDayPassTotal').textContent = money(summary?.amount || 0);
             if ($('dashboardDayPassMonthMeta')) $('dashboardDayPassMonthMeta').textContent = `ملخص ${new Intl.DateTimeFormat('ar-EG', { month: 'long', year: 'numeric' }).format(new Date(`${from}T00:00:00`))}`;
