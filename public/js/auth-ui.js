@@ -206,7 +206,9 @@
         document.body.dataset.topGymFinanceVisible = String(permissions.hasPermission(user, 'finance.read'));
         const accountBar = $('authAccountBar');
         const pageTabs = $('pageTabs');
-        if (accountBar && pageTabs && accountBar.parentElement !== pageTabs) pageTabs.appendChild(accountBar);
+        const topbarControls = document.querySelector('.topbar-controls');
+        const accountHost = topbarControls || pageTabs;
+        if (accountBar && accountHost && accountBar.parentElement !== accountHost) accountHost.appendChild(accountBar);
         document.querySelectorAll('[data-page-tab]').forEach((button) => {
             const allowed = button.hasAttribute('data-owner-only') ? isOwner : tabs.includes(button.dataset.pageTab);
             if (!allowed && button === document.activeElement) button.blur();
@@ -222,6 +224,10 @@
         if (profileName) profileName.textContent = user?.name || 'TOP GYM';
         if (profileRole) profileRole.textContent = roleLabel(user?.role);
         if (profileAvatar) profileAvatar.textContent = initials(user?.name);
+        const welcomeName = $('topbarWelcomeName');
+        const welcomeContext = $('topbarWelcomeContext');
+        if (welcomeName) welcomeName.textContent = user?.name || 'مدير TOP GYM';
+        if (welcomeContext) welcomeContext.textContent = user ? `${roleLabel(user.role)} · جاهز لمتابعة يومك التشغيلي` : 'إليك ملخص يومك التشغيلي في مكان واحد';
         const logout = ensureLogoutButton();
         if (logout) logout.hidden = !user;
         if (accountBar) accountBar.hidden = !user;

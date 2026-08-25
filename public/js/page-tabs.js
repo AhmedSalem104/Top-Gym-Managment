@@ -56,6 +56,7 @@
     function renderTab(name) {
         const overview = document.querySelector('.overview-grid');
         const dashboardHero = document.querySelector('.dashboard-page-actions');
+        const dashboardSectionHeading = document.querySelector('.dashboard-section-heading');
         const workspace = document.querySelector('.workspace');
         const membersSection = document.getElementById('membersSection');
         const expensesSection = document.getElementById('expensesSection');
@@ -84,6 +85,7 @@
         const isStore = name === 'store';
 
         setHidden(dashboardHero, !isDashboard);
+        setHidden(dashboardSectionHeading, !isDashboard);
         setHidden(overview, !isDashboard);
         setHidden(expensesSection, !isExpenses);
         setHidden(managementSection, !isManagement);
