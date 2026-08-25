@@ -60,6 +60,7 @@
         const workspace = document.querySelector('.workspace');
         const membersSection = document.getElementById('membersSection');
         const expensesSection = document.getElementById('expensesSection');
+        const monthlyFinanceSnapshot = document.getElementById('monthlyFinanceSnapshot');
         const managementSection = document.getElementById('managementSection');
         const analyticsSection = document.getElementById('dashboardAnalytics');
         const dashboardStoreSummary = document.getElementById('dashboardStoreSummary');
@@ -87,6 +88,7 @@
         setHidden(dashboardHero, !isDashboard);
         setHidden(dashboardSectionHeading, !isDashboard);
         setHidden(overview, !isDashboard);
+        setHidden(monthlyFinanceSnapshot, !isDashboard);
         setHidden(expensesSection, !isExpenses);
         setHidden(managementSection, !isManagement);
         const hideAnalytics = !isDashboard || !window.topGymAuth?.isOwner?.();

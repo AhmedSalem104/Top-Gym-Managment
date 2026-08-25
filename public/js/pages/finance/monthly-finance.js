@@ -23,6 +23,13 @@
         return activeTab === 'dashboard' || activeTab === 'expenses';
     }
 
+    function isDashboardTabVisible() {
+        const activeTab = document.documentElement.dataset.topGymActiveTab
+            || window.location.hash.slice(1)
+            || 'dashboard';
+        return activeTab === 'dashboard';
+    }
+
     function queueRefresh() {
         window.clearTimeout(refreshTimer);
         refreshTimer = window.setTimeout(() => {
@@ -98,6 +105,7 @@
         const snapshot = document.createElement('section');
         snapshot.className = 'monthly-finance-snapshot panel';
         snapshot.id = 'monthlyFinanceSnapshot';
+        snapshot.hidden = !isDashboardTabVisible();
         snapshot.setAttribute('aria-labelledby', 'monthlyFinanceSnapshotTitle');
         snapshot.innerHTML = `<div class="monthly-finance-snapshot-head"><div class="monthly-finance-heading"><span class="monthly-finance-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V5"/><path d="M4 19h16"/><path d="m7 15 3-4 3 2 5-6"/></svg></span><div><span class="monthly-finance-eyebrow">الحسابات</span><h3 id="monthlyFinanceSnapshotTitle">ملخص الشهر الحالي</h3><p id="monthlyFinanceSnapshotPeriod">جاري تحميل حسابات الشهر…</p></div></div><button class="btn btn-light btn-small open-expenses-tab-button" id="openExpensesTabButton" type="button">إدارة المصروفات</button></div><div class="monthly-finance-snapshot-metrics"><article class="monthly-finance-snapshot-metric subscriptions"><span>إجمالي الاشتراكات</span><strong id="monthlySubscriptionsSnapshotTotal">0.00 ج.م</strong></article><article class="monthly-finance-snapshot-metric expenses"><span>المصروفات</span><strong id="monthlyExpensesSnapshotTotal">0.00 ج.م</strong></article><article class="monthly-finance-snapshot-metric net"><span>المتبقي / صافي الشهر</span><strong id="monthlyNetSnapshotTotal">0.00 ج.م</strong></article></div>`;
         const metricIcons = [

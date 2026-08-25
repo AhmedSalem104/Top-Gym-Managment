@@ -21,7 +21,7 @@
         },
         finance: {
             styles: [],
-            scripts: ['/js/pages/finance/monthly-finance.js?v=18']
+            scripts: ['/js/pages/finance/monthly-finance.js?v=19']
         },
         'member-details': {
             styles: [],

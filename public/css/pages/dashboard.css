@@ -1433,18 +1433,52 @@
 .dashboard-day-pass-kpi span { color: var(--color-text-muted); font-size: var(--font-xs); }
 .dashboard-day-pass-kpi strong { color: var(--color-text); font-family: var(--font-latin); font-size: 1.35rem; font-weight: var(--weight-extrabold); direction: ltr; }
 .dashboard-day-pass-kpi.amount strong { color: var(--color-success); }
-.dashboard-day-pass-table-wrap { min-width: 0; overflow-x: auto; border: 1px solid var(--border-color); border-radius: var(--radius-md); background: var(--color-surface); }
-.dashboard-day-pass-table { min-width: 760px; table-layout: fixed; }
+.dashboard-day-pass-table-wrap {
+  min-width: 0;
+  max-height: 218px;
+  overflow-x: auto;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  scrollbar-color: var(--border-strong) transparent;
+  scrollbar-width: thin;
+}
+.dashboard-day-pass-table-wrap::-webkit-scrollbar { width: 6px; height: 6px; }
+.dashboard-day-pass-table-wrap::-webkit-scrollbar-track { background: transparent; }
+.dashboard-day-pass-table-wrap::-webkit-scrollbar-thumb { border-radius: var(--radius-pill); background: var(--border-strong); }
+.dashboard-day-pass-table { width: 100%; min-width: 760px; table-layout: fixed; border-spacing: 0; }
 .dashboard-day-pass-table th,
-.dashboard-day-pass-table td { padding: var(--space-3) var(--space-4); text-align: center; vertical-align: middle; }
-.dashboard-day-pass-table th { background: var(--color-surface-muted); color: var(--color-text-soft); font-size: var(--font-xs); font-weight: var(--weight-bold); }
+.dashboard-day-pass-table td { padding: var(--space-3) var(--space-4); text-align: center; vertical-align: middle; white-space: nowrap; }
+.dashboard-day-pass-table th { position: sticky; top: 0; z-index: 1; background: var(--color-surface-muted); color: var(--color-text-soft); font-size: var(--font-xs); font-weight: var(--weight-bold); white-space: nowrap; }
+.dashboard-day-pass-table tbody tr { min-height: 0; height: 48px; }
+.dashboard-day-pass-table tbody td { height: 48px; }
 .dashboard-day-pass-table tbody tr + tr td { border-top: 1px solid var(--border-color); }
 .dashboard-day-pass-table tbody tr:hover td { background: var(--color-primary-soft); }
-.dashboard-day-pass-table td:first-child { text-align: start; }
+.dashboard-day-pass-table td:first-child { overflow: hidden; text-align: start; text-overflow: ellipsis; }
 .dashboard-day-pass-table td strong,
-.dashboard-day-pass-table td small { display: block; }
-.dashboard-day-pass-table td strong { color: var(--color-text); font-size: var(--font-sm); }
+.dashboard-day-pass-table td small {
+  display: inline-block;
+  max-width: 56%;
+  overflow: hidden;
+  margin-inline-start: 6px;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+.dashboard-day-pass-table td strong {
+  display: inline-block;
+  max-width: 42%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+  white-space: nowrap;
+  color: var(--color-text);
+  font-size: var(--font-sm);
+}
 .dashboard-day-pass-table td small { color: var(--color-text-muted); font-family: var(--font-latin); font-size: var(--font-xs); }
+.dashboard-day-pass-table .day-pass-actions { flex-wrap: nowrap; gap: 4px; }
 
 /* Dashboard command-center hierarchy ----------------------------------- */
 .dashboard-section-heading {
@@ -1673,6 +1707,8 @@
     padding: 9px 7px;
     font-size: var(--font-xs);
   }
+
+  .dashboard-day-pass-table-wrap { max-height: 218px; }
 
   .dashboard-day-pass-table th:nth-child(1) { width: 30%; }
   .dashboard-day-pass-table th:nth-child(2) { width: 18%; }
