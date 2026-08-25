@@ -65,6 +65,11 @@
         return `${window.location.origin}/qr/${encodeURIComponent(Number(member.id))}`;
     }
 
+    function memberInitials(name) {
+        const parts = String(name || '').trim().split(/\s+/).filter(Boolean);
+        return (parts.slice(0, 2).map((part) => part.charAt(0)).join('') || 'TG').toUpperCase();
+    }
+
     async function showQrMemberPreview(member, action = 'checkin') {
         const membership = member.membership || {};
         const status = String(membership.status || '').toLowerCase();
@@ -73,22 +78,37 @@
         const statusLabel = STATUS_LABELS[status] || 'بدون اشتراك';
         const planLabel = PLAN_LABELS[membership.plan] || membership.plan || '—';
         const typeLabel = TYPE_LABELS[membership.type] || membership.type || '—';
+        const operationLabel = isCheckout ? 'تسجيل الانصراف' : eligible ? 'تسجيل الحضور' : 'الحضور غير متاح';
+        const operationHint = isCheckout
+            ? 'المشترك مسجل داخل الجيم حاليًا'
+            : eligible
+                ? 'العضوية صالحة لتسجيل الحضور'
+                : 'لا يمكن تسجيل الحضور بهذه العضوية';
         if (!window.Swal) return eligible;
         const result = await window.Swal.fire({
             position: 'center',
             icon: isCheckout ? 'success' : eligible ? 'info' : 'warning',
-            title: 'بيانات المشترك',
+            title: eligible ? `تأكيد ${operationLabel}` : 'بيانات المشترك',
             html: `<div class="qr-member-preview">
-                <div class="qr-member-preview-head">
-                    <div><strong>${escapeHtml(member.fullName || '—')}</strong><span dir="ltr">${escapeHtml(member.phone || '—')}</span></div>
-                    <b class="qr-member-preview-status ${qrStatusClass(status)}">${escapeHtml(statusLabel)}</b>
+                <div class="qr-member-preview-identity">
+                    <span class="qr-member-preview-avatar" aria-hidden="true">${escapeHtml(memberInitials(member.fullName))}</span>
+                    <div class="qr-member-preview-identity-copy">
+                        <strong>${escapeHtml(member.fullName || '—')}</strong>
+                        <span dir="ltr">${escapeHtml(member.phone || '—')}</span>
+                    </div>
+                    <b class="qr-member-preview-status ${qrStatusClass(status)}"><span class="qr-member-preview-status-dot" aria-hidden="true"></span>${escapeHtml(statusLabel)}</b>
+                </div>
+                <div class="qr-member-preview-context">
+                    <span class="qr-member-preview-kicker">QR Code</span>
+                    <strong>${escapeHtml(operationLabel)}</strong>
+                    <small>${escapeHtml(operationHint)}</small>
                 </div>
                 <div class="qr-member-preview-grid">
-                    <div><span>الباقة</span><strong>${escapeHtml(planLabel)}</strong></div>
-                    <div><span>النوع</span><strong>${escapeHtml(typeLabel)}</strong></div>
-                    <div><span>تاريخ البداية</span><strong>${escapeHtml(dateText(membership.startDate))}</strong></div>
-                    <div><span>تاريخ الانتهاء</span><strong>${escapeHtml(dateText(membership.effectiveEndDate || membership.endDate))}</strong></div>
-                    ${membership.amountRemaining > 0 ? `<div class="qr-member-preview-balance"><span>المتبقي</span><strong>${Number(membership.amountRemaining).toLocaleString('ar-EG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ج.م</strong></div>` : ''}
+                    <div class="qr-member-preview-field"><span>الباقة</span><strong>${escapeHtml(planLabel)}</strong></div>
+                    <div class="qr-member-preview-field"><span>النوع</span><strong>${escapeHtml(typeLabel)}</strong></div>
+                    <div class="qr-member-preview-field"><span>تاريخ البداية</span><strong>${escapeHtml(dateText(membership.startDate))}</strong></div>
+                    <div class="qr-member-preview-field"><span>تاريخ الانتهاء</span><strong>${escapeHtml(dateText(membership.effectiveEndDate || membership.endDate))}</strong></div>
+                    ${Number(membership.amountRemaining || 0) > 0 ? `<div class="qr-member-preview-field qr-member-preview-balance"><span>المتبقي</span><strong>${Number(membership.amountRemaining).toLocaleString('ar-EG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ج.م</strong></div>` : ''}
                 </div>
             </div>`,
             showCancelButton: eligible,
@@ -96,8 +116,8 @@
             cancelButtonText: 'إلغاء',
             buttonsStyling: false,
             customClass: {
-                popup: 'top-gym-alert qr-member-preview-alert',
-                confirmButton: 'duplicate-phone-alert-confirm',
+                popup: `top-gym-alert qr-member-preview-alert qr-member-preview-alert-${isCheckout ? 'checkout' : eligible ? 'checkin' : 'blocked'}`,
+                confirmButton: 'qr-member-preview-confirm',
                 cancelButton: 'qr-member-preview-cancel'
             }
         });

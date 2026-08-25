@@ -1657,6 +1657,145 @@ html[data-theme="dark"] .qr-member-page .theme-toggle-button {
   }
 }
 
+/* Dark table action contract -------------------------------------------
+   Row actions used to inherit different page-level button rules. Keep one
+   compact control language across members, attendance, day passes, library
+   and store tables while retaining a semantic accent for risky operations. */
+html[data-theme="dark"] .table-actions,
+html[data-theme="dark"] .row-actions,
+html[data-theme="dark"] .members-actions,
+html[data-theme="dark"] .action-group,
+html[data-theme="dark"] .library-row-actions,
+html[data-theme="dark"] .store-row-actions,
+html[data-theme="dark"] .day-pass-actions,
+html[data-theme="dark"] .attendance-row-actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: max-content;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+}
+
+html[data-theme="dark"] .table-actions > .btn,
+html[data-theme="dark"] .row-actions > .btn,
+html[data-theme="dark"] .members-actions > .btn,
+html[data-theme="dark"] .action-group > .btn,
+html[data-theme="dark"] .library-row-actions > .btn,
+html[data-theme="dark"] .store-row-actions > .btn,
+html[data-theme="dark"] .day-pass-actions > .btn,
+html[data-theme="dark"] .attendance-row-actions > .btn {
+  box-sizing: border-box;
+  min-height: 36px;
+  height: 36px;
+  border: 1px solid var(--border-primary);
+  border-radius: 10px;
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  box-shadow: none;
+}
+
+html[data-theme="dark"] .table-actions > .icon-action:not([data-action="renew"]),
+html[data-theme="dark"] .table-actions > .table-action-visible:not([data-action="renew"]),
+html[data-theme="dark"] .action-menu > .action-menu-toggle,
+html[data-theme="dark"] .library-row-actions > .library-action-button,
+html[data-theme="dark"] .day-pass-actions > .day-pass-action-button.is-compact {
+  width: 36px;
+  min-width: 36px;
+  height: 36px;
+  min-height: 36px;
+  padding: 0;
+}
+
+html[data-theme="dark"] .table-actions > .icon-action[data-action="renew"],
+html[data-theme="dark"] .table-actions > .table-action-visible[data-action="renew"] {
+  min-width: 96px;
+  padding-inline: 10px;
+}
+
+html[data-theme="dark"] .attendance-row-actions > .btn {
+  min-width: 118px;
+  padding-inline: 10px;
+}
+
+html[data-theme="dark"] .table-actions > .btn:hover:not(:disabled),
+html[data-theme="dark"] .row-actions > .btn:hover:not(:disabled),
+html[data-theme="dark"] .members-actions > .btn:hover:not(:disabled),
+html[data-theme="dark"] .action-group > .btn:hover:not(:disabled),
+html[data-theme="dark"] .library-row-actions > .btn:hover:not(:disabled),
+html[data-theme="dark"] .store-row-actions > .btn:hover:not(:disabled),
+html[data-theme="dark"] .day-pass-actions > .btn:hover:not(:disabled),
+html[data-theme="dark"] .attendance-row-actions > .btn:hover:not(:disabled),
+html[data-theme="dark"] .action-menu > .action-menu-toggle:hover:not(:disabled) {
+  border-color: var(--primary-border);
+  background: var(--primary-soft);
+  color: var(--text-primary-soft);
+  transform: translateY(-1px);
+}
+
+html[data-theme="dark"] .table-actions > [data-action="renew"],
+html[data-theme="dark"] .table-actions > [data-member-coaching-action="workout"],
+html[data-theme="dark"] .coaching-table-action.workout {
+  border-color: var(--primary-border);
+  background: var(--primary-soft);
+  color: var(--primary-hover);
+}
+
+html[data-theme="dark"] .table-actions > [data-action="payment"] {
+  border-color: var(--success-border);
+  background: var(--success-soft);
+  color: var(--success-text);
+}
+
+html[data-theme="dark"] .table-actions > [data-action="freeze"],
+html[data-theme="dark"] .attendance-row-actions > .attendance-checkout-button,
+html[data-theme="dark"] .day-pass-actions > .day-pass-void-button,
+html[data-theme="dark"] .store-row-actions > [data-store-deactivate-product] {
+  border-color: var(--warning-border);
+  background: var(--warning-soft);
+  color: var(--warning-text);
+}
+
+html[data-theme="dark"] .table-actions > [data-action="delete"],
+html[data-theme="dark"] .library-row-actions > .library-delete,
+html[data-theme="dark"] .day-pass-actions > .day-pass-delete-button,
+html[data-theme="dark"] .store-row-actions > [data-store-delete-expense] {
+  border-color: var(--danger-border);
+  background: var(--danger-soft);
+  color: var(--danger-text);
+}
+
+html[data-theme="dark"] .table-actions > [data-action="payment"]:hover:not(:disabled) {
+  border-color: var(--success);
+  background: var(--success);
+  color: var(--text-on-primary);
+}
+
+html[data-theme="dark"] .table-actions > [data-action="freeze"]:hover:not(:disabled),
+html[data-theme="dark"] .attendance-row-actions > .attendance-checkout-button:hover:not(:disabled),
+html[data-theme="dark"] .store-row-actions > [data-store-deactivate-product]:hover:not(:disabled) {
+  border-color: var(--warning);
+  background: var(--warning);
+  color: var(--text-on-primary);
+}
+
+html[data-theme="dark"] .table-actions > [data-action="delete"]:hover:not(:disabled),
+html[data-theme="dark"] .library-row-actions > .library-delete:hover:not(:disabled),
+html[data-theme="dark"] .day-pass-actions > .day-pass-delete-button:hover:not(:disabled),
+html[data-theme="dark"] .day-pass-actions > .day-pass-void-button:hover:not(:disabled),
+html[data-theme="dark"] .store-row-actions > [data-store-delete-expense]:hover:not(:disabled) {
+  border-color: var(--danger);
+  background: var(--danger);
+  color: var(--text-on-primary);
+}
+
+html[data-theme="dark"] .member-quick-actions .member-attendance-quick,
+html[data-theme="dark"] .member-quick-actions .member-attendance-status {
+  min-height: 36px;
+  border-radius: 10px;
+}
+
 /* Keep the printed plan/report a readable paper document. The print layer is
    intentionally isolated from the on-screen theme and is validated separately. */
 
@@ -1881,6 +2020,39 @@ html[data-theme="dark"] .qr-member-page .theme-toggle-button {
   border-color: var(--primary-border);
   background: var(--primary-soft);
   color: var(--text-on-primary);
+}
+
+/* Keep the light-mode theme control visibly separate from the dark navy
+   navigation surface. The previous translucent treatment was too subtle
+   against the navbar, especially on smaller screens. */
+html[data-theme="light"] .theme-toggle-button {
+  border-color: var(--primary-border);
+  background: var(--primary-soft);
+  color: var(--primary);
+  box-shadow: 0 4px 12px rgb(23 105 232 / 0.12);
+}
+
+html[data-theme="light"] .theme-toggle-button:hover,
+html[data-theme="light"] .theme-toggle-button:focus-visible {
+  border-color: var(--primary);
+  background: var(--primary);
+  color: var(--text-on-primary);
+  box-shadow: var(--shadow-primary);
+}
+
+html[data-theme="light"] .topbar-theme-toggle {
+  border-color: var(--primary);
+  background: linear-gradient(135deg, var(--primary), var(--primary-hover));
+  color: var(--text-on-primary);
+  box-shadow: var(--shadow-primary);
+}
+
+html[data-theme="light"] .topbar-theme-toggle:hover,
+html[data-theme="light"] .topbar-theme-toggle:focus-visible {
+  border-color: var(--primary-hover);
+  background: var(--primary-hover);
+  color: var(--text-on-primary);
+  box-shadow: var(--shadow-primary-strong);
 }
 
 .topbar-controls > .auth-account-bar {

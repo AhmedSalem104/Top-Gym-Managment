@@ -37,7 +37,7 @@
             scripts: [
                 '/js/design-enhancements.js?v=4',
                 '/js/pages/members/action-menu.js?v=7',
-                '/js/pages/attendance/attendance.js?v=9'
+                '/js/pages/attendance/attendance.js?v=10'
             ]
         },
         coaching: {
@@ -75,7 +75,7 @@
         },
         attendance: {
             styles: [],
-            scripts: ['/js/pages/attendance/attendance.js?v=9']
+            scripts: ['/js/pages/attendance/attendance.js?v=10']
         },
         library: {
             styles: [],

@@ -202,6 +202,257 @@
   text-align: center;
 }
 
+/* The QR scan confirmation is a data card, not a loose text block. Keep the
+   identity, operation and membership facts in a predictable reading order so
+   the same dialog remains clear in both themes and on small screens. */
+body .swal2-popup.qr-member-preview-alert {
+  width: min(560px, calc(100vw - 32px));
+  max-height: min(760px, calc(100vh - 24px));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: var(--space-5) 0 0;
+}
+
+.qr-member-preview-alert .swal2-icon {
+  width: 42px;
+  height: 42px;
+  margin: 0 auto var(--space-2);
+  font-size: 1.65rem;
+}
+
+.qr-member-preview-alert .swal2-title {
+  margin: 0;
+  padding-inline: var(--space-5);
+  font-size: var(--font-lg);
+}
+
+.qr-member-preview-alert .swal2-html-container {
+  width: auto;
+  margin: var(--space-4) 0 0;
+  padding: 0 var(--space-5);
+  overflow: visible;
+  text-align: start;
+}
+
+.qr-member-preview {
+  display: grid;
+  gap: var(--space-3);
+  min-width: 0;
+  direction: rtl;
+  text-align: start;
+}
+
+.qr-member-preview-identity {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+  padding: var(--space-3);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, var(--color-primary-soft), var(--color-surface));
+}
+
+.qr-member-preview-avatar {
+  display: grid;
+  width: 46px;
+  height: 46px;
+  flex: 0 0 46px;
+  place-items: center;
+  border: 1px solid var(--primary-border);
+  border-radius: 14px;
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+  font-family: var(--font-latin);
+  font-size: var(--font-md);
+  font-weight: var(--weight-extrabold);
+  direction: ltr;
+}
+
+.qr-member-preview-identity-copy {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.qr-member-preview-identity-copy strong {
+  overflow: hidden;
+  color: var(--color-text);
+  font-size: var(--font-md);
+  font-weight: var(--weight-bold);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.qr-member-preview-identity-copy span {
+  color: var(--color-text-muted);
+  font-family: var(--font-latin);
+  font-size: var(--font-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+.qr-member-preview-status {
+  display: inline-flex;
+  min-height: 28px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-muted);
+  color: var(--color-text-muted);
+  padding: 0 var(--space-3);
+  font-size: var(--font-xs);
+  font-weight: var(--weight-bold);
+  white-space: nowrap;
+}
+
+.qr-member-preview-status-dot {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.qr-member-preview-status.active,
+.qr-member-preview-status.expiring_soon {
+  border-color: var(--success-border);
+  background: var(--color-success-soft);
+  color: var(--success-text);
+}
+
+.qr-member-preview-status.expired {
+  border-color: var(--danger-border);
+  background: var(--color-danger-soft);
+  color: var(--danger-text);
+}
+
+.qr-member-preview-status.frozen {
+  border-color: var(--warning-border);
+  background: var(--color-warning-soft);
+  color: var(--warning-text);
+}
+
+.qr-member-preview-context {
+  display: grid;
+  gap: 1px;
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--primary-border);
+  border-inline-start: 3px solid var(--color-primary);
+  border-radius: var(--radius-md);
+  background: var(--color-primary-soft);
+}
+
+.qr-member-preview-kicker {
+  color: var(--color-primary);
+  font-family: var(--font-latin);
+  font-size: 10px;
+  font-weight: var(--weight-bold);
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+.qr-member-preview-context strong {
+  color: var(--color-text);
+  font-size: var(--font-sm);
+  font-weight: var(--weight-bold);
+}
+
+.qr-member-preview-context small {
+  color: var(--color-text-muted);
+  font-size: var(--font-xs);
+}
+
+.qr-member-preview-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+
+.qr-member-preview-field {
+  display: grid;
+  min-width: 0;
+  min-height: 58px;
+  align-content: center;
+  gap: 2px;
+  padding: var(--space-3);
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-muted);
+}
+
+.qr-member-preview-field span {
+  color: var(--color-text-muted);
+  font-size: 10px;
+}
+
+.qr-member-preview-field strong {
+  overflow: hidden;
+  color: var(--color-text);
+  font-size: var(--font-sm);
+  font-weight: var(--weight-bold);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.qr-member-preview-field.qr-member-preview-balance {
+  grid-column: 1 / -1;
+  border-color: var(--success-border);
+  background: var(--color-success-soft);
+}
+
+.qr-member-preview-balance strong {
+  color: var(--success-text);
+  direction: ltr;
+  text-align: start;
+}
+
+.qr-member-preview-alert .swal2-actions {
+  width: auto;
+  margin: var(--space-5) 0 0;
+  padding: 0 var(--space-5) var(--space-5);
+}
+
+body .swal2-popup.qr-member-preview-alert .swal2-actions > button.qr-member-preview-confirm,
+body .swal2-popup.qr-member-preview-alert .swal2-actions > button.qr-member-preview-cancel {
+  min-width: 138px;
+  min-height: 42px;
+  border-radius: var(--radius-md);
+  font-family: var(--font-body);
+  font-size: var(--font-sm);
+  font-weight: var(--weight-bold);
+  transition: background-color var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast), box-shadow var(--transition-fast), transform var(--transition-fast);
+}
+
+body .swal2-popup.qr-member-preview-alert .swal2-actions > button.qr-member-preview-confirm {
+  border: 1px solid var(--primary) !important;
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-hover)) !important;
+  color: var(--text-on-primary) !important;
+  box-shadow: var(--shadow-primary);
+}
+
+body .swal2-popup.qr-member-preview-alert .swal2-actions > button.qr-member-preview-confirm:hover:not(:disabled) {
+  border-color: var(--color-primary-hover) !important;
+  background: var(--color-primary-hover) !important;
+  box-shadow: var(--shadow-primary-strong);
+  transform: translateY(-1px);
+}
+
+body .swal2-popup.qr-member-preview-alert .swal2-actions > button.qr-member-preview-cancel {
+  border: 1px solid var(--border-primary) !important;
+  background: var(--color-surface-muted) !important;
+  color: var(--color-text-soft) !important;
+}
+
+body .swal2-popup.qr-member-preview-alert .swal2-actions > button.qr-member-preview-cancel:hover:not(:disabled) {
+  border-color: var(--primary-border) !important;
+  background: var(--color-primary-soft) !important;
+  color: var(--color-primary) !important;
+  transform: translateY(-1px);
+}
+
 @media (max-width: 991px) {
   .attendance-control-panel { grid-template-columns: 1fr; }
   .attendance-list-actions { flex-basis: 100%; }
@@ -226,6 +477,17 @@
   #qrReader { min-height: min(300px, 68vw); }
   .member-qr-card { padding: var(--space-4); }
   .member-qr-dialog .dialog-actions .btn { width: 100%; }
+  body .swal2-popup.qr-member-preview-alert {
+    width: calc(100vw - 24px);
+    max-height: calc(100vh - 16px);
+    padding-top: var(--space-4);
+  }
+  .qr-member-preview-alert .swal2-title,
+  .qr-member-preview-alert .swal2-html-container,
+  .qr-member-preview-alert .swal2-actions { padding-inline: var(--space-4); }
+  .qr-member-preview-grid { grid-template-columns: 1fr; }
+  .qr-member-preview-field.qr-member-preview-balance { grid-column: auto; }
+  .qr-member-preview-alert .swal2-actions > button { flex: 1 1 140px; }
 }
 
 /* Day passes ------------------------------------------------------------ */
