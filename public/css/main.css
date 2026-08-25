@@ -1712,6 +1712,46 @@ dialog {
   padding: 0;
 }
 
+/* One predictable close affordance for every native popup. It stays in the
+   upper-left corner in RTL as part of the popup shell, not inside the
+   scrolling content. */
+dialog > .dialog-close-button {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: calc(var(--z-modal) + 2);
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  background: var(--color-surface-muted);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: border-color var(--transition-fast), background var(--transition-fast), color var(--transition-fast), transform var(--transition-fast);
+}
+
+dialog > .dialog-close-button:hover,
+dialog > .dialog-close-button:focus-visible {
+  border-color: var(--danger-border);
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+  transform: translateY(-1px);
+}
+
+dialog > .dialog-close-button .ui-icon {
+  width: 16px;
+  height: 16px;
+}
+
+dialog:has(> .dialog-close-button) .dialog-header,
+dialog:has(> .dialog-close-button) .details-dialog-head,
+dialog:has(> .dialog-close-button) .member-details-head,
+dialog:has(> .dialog-close-button) .section-heading {
+  padding-left: 56px;
+}
+
 dialog::backdrop,
 .modal-backdrop,
 .modal-overlay {
@@ -5758,13 +5798,91 @@ body.auth-locked .auth-screen {
   .dashboard-day-pass-kpis { grid-template-columns: 1fr; }
 }
 
-/* Keep the daily-pass workspace compact on wide dashboards and use the
-   adjacent column for the alerts that need attention alongside it. */
+/* Keep the dashboard command center compact: alerts stay on the right,
+   daily passes use the left column, and the monthly summary gets the full
+   width below them. RTL grid lines start from the right side. */
 @media (min-width: 1200px) {
-  .overview-grid > .alerts-panel,
-  .overview-grid > .dashboard-day-pass-card {
-    grid-column: span 6;
+  .overview-grid {
+    column-gap: var(--space-4);
+    row-gap: var(--space-4);
+  }
+
+  .overview-grid > .alerts-panel {
+    grid-column: 1 / span 6;
     grid-row: 2;
+  }
+
+  .overview-grid > .dashboard-day-pass-card {
+    grid-column: 7 / span 6;
+    grid-row: 2;
+  }
+
+  .overview-grid > .monthly-finance-card,
+  .overview-grid > .monthly-finance-snapshot {
+    grid-column: 1 / -1;
+    grid-row: 3;
+  }
+
+  .monthly-finance-card,
+  .dashboard-day-pass-card,
+  .alerts-panel {
+    gap: var(--space-4);
+  }
+
+  .monthly-finance-metric,
+  .dashboard-day-pass-kpi {
+    padding: var(--space-3);
+  }
+}
+
+@media (min-width: 1200px) {
+  .dashboard-day-pass-table-wrap {
+    overflow-x: hidden;
+  }
+
+  .dashboard-day-pass-table {
+    width: 100%;
+    min-width: 0;
+    table-layout: fixed;
+  }
+
+  .dashboard-day-pass-table th,
+  .dashboard-day-pass-table td {
+    padding: 9px 7px;
+    font-size: var(--font-xs);
+  }
+
+  .dashboard-day-pass-table th:nth-child(1) { width: 30%; }
+  .dashboard-day-pass-table th:nth-child(2) { width: 18%; }
+  .dashboard-day-pass-table th:nth-child(3) { width: 17%; }
+  .dashboard-day-pass-table th:nth-child(4) { width: 15%; }
+  .dashboard-day-pass-table th:nth-child(5) { width: 20%; }
+
+  .dashboard-day-pass-table td strong,
+  .dashboard-day-pass-table td small {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .dashboard-day-pass-table .day-pass-type-badge {
+    max-width: 100%;
+    overflow: hidden;
+    padding-inline: 6px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .dashboard-day-pass-table .day-pass-action-button.is-compact {
+    width: 30px;
+    min-width: 30px;
+    height: 30px;
+    min-height: 30px;
+  }
+
+  .dashboard-day-pass-table .day-pass-action-button.is-compact .ui-icon {
+    width: 15px;
+    height: 15px;
   }
 }
 
@@ -7797,6 +7915,110 @@ body.auth-locked .auth-screen {
 #detailsDialog .print-dialog-actions {
     display: none;
   }
+}
+
+/* Compact management workspace ----------------------------------------- */
+#managementSection {
+  gap: var(--space-3);
+  padding: var(--space-4);
+}
+
+#managementSection .management-tab-header {
+  padding: var(--space-4);
+}
+
+#managementSection .management-tab-header h3 {
+  font-size: var(--font-lg);
+}
+
+#managementSection .management-tab-header p {
+  margin-top: 4px;
+  line-height: 1.55;
+}
+
+#managementSection .management-shortcuts {
+  gap: var(--space-3);
+  padding: calc(var(--space-4) + 18px) var(--space-4) var(--space-4);
+}
+
+#managementSection .management-shortcut {
+  min-height: 70px;
+  gap: var(--space-2);
+  padding: var(--space-3);
+}
+
+#managementSection .management-shortcut-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+}
+
+#managementSection .management-shortcut-icon .ui-icon {
+  width: 17px;
+  height: 17px;
+}
+
+#managementSection .management-shortcut-arrow { width: 16px; }
+
+#managementSection .backup-management-panel,
+#managementSection .backup-history-section {
+  gap: var(--space-3);
+  padding: var(--space-4);
+}
+
+#managementSection .backup-management-panel h4,
+#managementSection .backup-history-section h4 {
+  font-size: var(--font-md);
+}
+
+#managementSection .backup-management-panel p,
+#managementSection .backup-history-section p {
+  line-height: 1.55;
+}
+
+#managementSection .backup-management-actions { gap: 6px; }
+
+#managementSection .backup-management-actions .btn {
+  min-height: 36px;
+  padding-inline: 10px;
+  font-size: var(--font-xs);
+}
+
+#managementSection .backup-history-block {
+  margin-top: var(--space-3);
+  padding: var(--space-3);
+}
+
+/* Both management dialogs share the same width and scroll contract. The
+   content area owns vertical scrolling, while wide tables can scroll only
+   horizontally inside their own wrapper when the viewport is narrow. */
+#pricingDialog,
+#membershipTypesDialog {
+  width: min(1060px, calc(100% - 32px));
+}
+
+#pricingDialog .pricing-table-scroll,
+#membershipTypesDialog .pricing-table-scroll {
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+#pricingDialog .pricing-table,
+#membershipTypesDialog .membership-types-table {
+  margin: 0;
+}
+
+@media (min-width: 992px) {
+  #managementSection .backup-management-panel {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+  }
+}
+
+@media (max-width: 767px) {
+  #managementSection .management-shortcut { min-height: 82px; }
 }
 
 /* END TOP GYM layer */
@@ -17917,6 +18139,77 @@ html[data-theme="dark"] .qr-member-page .theme-toggle-button {
 
   .topbar-welcome strong {
     font-size: var(--font-xs);
+  }
+}
+
+/* Desktop shell polish --------------------------------------------------
+   Keep the global header and slide rail on one clean grid edge. The pin is
+   available while the rail is being used, but stays out of the collapsed
+   navigation surface until hover/focus or an explicit pinned state. */
+@media (min-width: 1200px) {
+  .app-shell > .topbar {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    border-bottom-color: var(--sidebar-divider);
+    box-shadow: 0 1px 0 rgba(148, 163, 184, .04);
+    isolation: isolate;
+  }
+
+  .app-shell > .page-tabs {
+    grid-column: 1;
+    grid-row: 2;
+    overflow-x: hidden;
+    overflow-y: auto;
+    border-inline-end: 1px solid var(--sidebar-divider);
+    box-shadow: inset -1px 0 0 rgba(148, 163, 184, .04);
+    isolation: isolate;
+  }
+
+  .app-shell > main.page {
+    position: relative;
+    z-index: 0;
+    grid-column: 2;
+    grid-row: 2;
+  }
+
+  .app-shell > .page-tabs > .sidebar-pin-control {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transform: translateY(-4px);
+    transition: opacity 160ms ease, visibility 160ms ease, transform 160ms ease;
+  }
+
+  .app-shell > .page-tabs:hover > .sidebar-pin-control,
+  .app-shell > .page-tabs.is-pinned > .sidebar-pin-control,
+  .app-shell > .page-tabs:focus-within > .sidebar-pin-control {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: none;
+  }
+
+  .app-shell > .page-tabs > .sidebar-pin-control .sidebar-pin-button {
+    width: 34px;
+    height: 34px;
+    border-color: var(--sidebar-divider);
+    border-radius: 10px;
+    background: var(--bg-elevated);
+    color: var(--sidebar-text-muted);
+    box-shadow: var(--shadow-xs);
+  }
+
+  .app-shell > .page-tabs > .sidebar-pin-control .sidebar-pin-button .ui-icon {
+    width: 17px;
+    height: 17px;
+  }
+
+  .app-shell > .page-tabs > .sidebar-pin-control .sidebar-pin-button:hover,
+  .app-shell > .page-tabs > .sidebar-pin-control .sidebar-pin-button:focus-visible,
+  .app-shell > .page-tabs > .sidebar-pin-control .sidebar-pin-button[aria-pressed="true"] {
+    border-color: var(--primary-border);
+    background: var(--primary-soft);
+    color: var(--text-primary);
   }
 }
 

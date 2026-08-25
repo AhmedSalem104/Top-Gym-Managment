@@ -1608,12 +1608,90 @@
   .dashboard-day-pass-kpis { grid-template-columns: 1fr; }
 }
 
-/* Keep the daily-pass workspace compact on wide dashboards and use the
-   adjacent column for the alerts that need attention alongside it. */
+/* Keep the dashboard command center compact: alerts stay on the right,
+   daily passes use the left column, and the monthly summary gets the full
+   width below them. RTL grid lines start from the right side. */
 @media (min-width: 1200px) {
-  .overview-grid > .alerts-panel,
-  .overview-grid > .dashboard-day-pass-card {
-    grid-column: span 6;
+  .overview-grid {
+    column-gap: var(--space-4);
+    row-gap: var(--space-4);
+  }
+
+  .overview-grid > .alerts-panel {
+    grid-column: 1 / span 6;
     grid-row: 2;
+  }
+
+  .overview-grid > .dashboard-day-pass-card {
+    grid-column: 7 / span 6;
+    grid-row: 2;
+  }
+
+  .overview-grid > .monthly-finance-card,
+  .overview-grid > .monthly-finance-snapshot {
+    grid-column: 1 / -1;
+    grid-row: 3;
+  }
+
+  .monthly-finance-card,
+  .dashboard-day-pass-card,
+  .alerts-panel {
+    gap: var(--space-4);
+  }
+
+  .monthly-finance-metric,
+  .dashboard-day-pass-kpi {
+    padding: var(--space-3);
+  }
+}
+
+@media (min-width: 1200px) {
+  .dashboard-day-pass-table-wrap {
+    overflow-x: hidden;
+  }
+
+  .dashboard-day-pass-table {
+    width: 100%;
+    min-width: 0;
+    table-layout: fixed;
+  }
+
+  .dashboard-day-pass-table th,
+  .dashboard-day-pass-table td {
+    padding: 9px 7px;
+    font-size: var(--font-xs);
+  }
+
+  .dashboard-day-pass-table th:nth-child(1) { width: 30%; }
+  .dashboard-day-pass-table th:nth-child(2) { width: 18%; }
+  .dashboard-day-pass-table th:nth-child(3) { width: 17%; }
+  .dashboard-day-pass-table th:nth-child(4) { width: 15%; }
+  .dashboard-day-pass-table th:nth-child(5) { width: 20%; }
+
+  .dashboard-day-pass-table td strong,
+  .dashboard-day-pass-table td small {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .dashboard-day-pass-table .day-pass-type-badge {
+    max-width: 100%;
+    overflow: hidden;
+    padding-inline: 6px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .dashboard-day-pass-table .day-pass-action-button.is-compact {
+    width: 30px;
+    min-width: 30px;
+    height: 30px;
+    min-height: 30px;
+  }
+
+  .dashboard-day-pass-table .day-pass-action-button.is-compact .ui-icon {
+    width: 15px;
+    height: 15px;
   }
 }

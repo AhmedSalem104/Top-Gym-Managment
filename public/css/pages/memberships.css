@@ -1429,3 +1429,107 @@
     display: none;
   }
 }
+
+/* Compact management workspace ----------------------------------------- */
+#managementSection {
+  gap: var(--space-3);
+  padding: var(--space-4);
+}
+
+#managementSection .management-tab-header {
+  padding: var(--space-4);
+}
+
+#managementSection .management-tab-header h3 {
+  font-size: var(--font-lg);
+}
+
+#managementSection .management-tab-header p {
+  margin-top: 4px;
+  line-height: 1.55;
+}
+
+#managementSection .management-shortcuts {
+  gap: var(--space-3);
+  padding: calc(var(--space-4) + 18px) var(--space-4) var(--space-4);
+}
+
+#managementSection .management-shortcut {
+  min-height: 70px;
+  gap: var(--space-2);
+  padding: var(--space-3);
+}
+
+#managementSection .management-shortcut-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+}
+
+#managementSection .management-shortcut-icon .ui-icon {
+  width: 17px;
+  height: 17px;
+}
+
+#managementSection .management-shortcut-arrow { width: 16px; }
+
+#managementSection .backup-management-panel,
+#managementSection .backup-history-section {
+  gap: var(--space-3);
+  padding: var(--space-4);
+}
+
+#managementSection .backup-management-panel h4,
+#managementSection .backup-history-section h4 {
+  font-size: var(--font-md);
+}
+
+#managementSection .backup-management-panel p,
+#managementSection .backup-history-section p {
+  line-height: 1.55;
+}
+
+#managementSection .backup-management-actions { gap: 6px; }
+
+#managementSection .backup-management-actions .btn {
+  min-height: 36px;
+  padding-inline: 10px;
+  font-size: var(--font-xs);
+}
+
+#managementSection .backup-history-block {
+  margin-top: var(--space-3);
+  padding: var(--space-3);
+}
+
+/* Both management dialogs share the same width and scroll contract. The
+   content area owns vertical scrolling, while wide tables can scroll only
+   horizontally inside their own wrapper when the viewport is narrow. */
+#pricingDialog,
+#membershipTypesDialog {
+  width: min(1060px, calc(100% - 32px));
+}
+
+#pricingDialog .pricing-table-scroll,
+#membershipTypesDialog .pricing-table-scroll {
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+#pricingDialog .pricing-table,
+#membershipTypesDialog .membership-types-table {
+  margin: 0;
+}
+
+@media (min-width: 992px) {
+  #managementSection .backup-management-panel {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+  }
+}
+
+@media (max-width: 767px) {
+  #managementSection .management-shortcut { min-height: 82px; }
+}

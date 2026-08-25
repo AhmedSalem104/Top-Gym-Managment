@@ -18,6 +18,46 @@ dialog {
   padding: 0;
 }
 
+/* One predictable close affordance for every native popup. It stays in the
+   upper-left corner in RTL as part of the popup shell, not inside the
+   scrolling content. */
+dialog > .dialog-close-button {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: calc(var(--z-modal) + 2);
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  background: var(--color-surface-muted);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: border-color var(--transition-fast), background var(--transition-fast), color var(--transition-fast), transform var(--transition-fast);
+}
+
+dialog > .dialog-close-button:hover,
+dialog > .dialog-close-button:focus-visible {
+  border-color: var(--danger-border);
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+  transform: translateY(-1px);
+}
+
+dialog > .dialog-close-button .ui-icon {
+  width: 16px;
+  height: 16px;
+}
+
+dialog:has(> .dialog-close-button) .dialog-header,
+dialog:has(> .dialog-close-button) .details-dialog-head,
+dialog:has(> .dialog-close-button) .member-details-head,
+dialog:has(> .dialog-close-button) .section-heading {
+  padding-left: 56px;
+}
+
 dialog::backdrop,
 .modal-backdrop,
 .modal-overlay {

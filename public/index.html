@@ -19,7 +19,7 @@
     <link rel="preload" href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap" as="style" onload="this.onload=null;this.rel='sty'+'lesheet'">
     <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2" sizes="any">
     <link rel="shortcut icon" type="image/svg+xml" href="/favicon.svg?v=2">
-    <link rel="stylesheet" href="/css/main.css?v=38">
+    <link rel="stylesheet" href="/css/main.css?v=39">
     <title>إدارة عضويات الجيم</title>
 </head>
 <body class="auth-pending font-sans bg-slate-100 text-slate-900 gym-page-bg">
@@ -55,17 +55,15 @@
                         <div class="brand-copy"><span class="brand-kicker">TOP GYM</span><h1>TOP GYM</h1><p>لوحة الإدارة الذكية</p></div>
                     </div>
                 </div>
-                <div class="topbar-welcome" aria-live="polite">
+                <div class="topbar-welcome" aria-label="مرحبًا بعودتك">
                     <span class="topbar-welcome-kicker">مرحبًا بعودتك</span>
-                    <strong id="topbarWelcomeName">مدير TOP GYM</strong>
-                    <span id="topbarWelcomeContext">إليك ملخص يومك التشغيلي في مكان واحد</span>
                 </div>
                 <div class="topbar-controls">
                     <div class="top-actions topbar-quick-actions">
                         <button class="btn btn-primary btn-small" id="topAddMemberButton" hidden>إضافة مشترك</button>
                         <button class="btn btn-light btn-small" id="topPricingButton" data-owner-only>الأسعار</button>
                         <button class="btn btn-light btn-small header-backup" id="backupButton" type="button" title="تحميل نسخة احتياطية" aria-label="تحميل نسخة احتياطية"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v11"/><path d="m7 10 5 5 5-5"/><path d="M5 20h14"/></svg><span>تحميل نسخة احتياطية</span></button>
-                        <button class="btn btn-light btn-small header-refresh" id="refreshButton" type="button"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 0 0-14.8-4L3 10"/><path d="M3 5v5h5"/><path d="M4 13a8 8 0 0 0 14.8 4L21 14"/><path d="M21 19v-5h-5"/></svg><span>تحديث البيانات</span></button>
+                        <button class="btn btn-light btn-small header-refresh" id="refreshButton" type="button" hidden><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 0 0-14.8-4L3 10"/><path d="M3 5v5h5"/><path d="M4 13a8 8 0 0 0 14.8 4L21 14"/><path d="M21 19v-5h-5"/></svg><span>تحديث البيانات</span></button>
                     </div>
                     <button class="topbar-theme-toggle theme-toggle-button" id="themeToggleButton" type="button" data-theme-toggle aria-pressed="false" title="تفعيل الوضع الداكن" aria-label="تفعيل الوضع الداكن">
                         <svg class="ui-icon theme-toggle-icon theme-toggle-icon-dark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 15.2A8.5 8.5 0 0 1 8.8 3.5 8.5 8.5 0 1 0 20.5 15.2Z"/></svg>
@@ -98,7 +96,7 @@
             <button class="page-tab" type="button" data-page-tab="feedback" aria-selected="false"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-2.9-5.6 2.9 1.1-6.2L3 9.6l6.2-.9L12 3Z"/></svg><span>تقييمات المشتركين</span></button>
             <div class="sidebar-pin-control" role="presentation">
                 <button class="sidebar-pin-button" id="sidebarPinButton" type="button" aria-label="تثبيت القائمة الجانبية" title="تثبيت القائمة الجانبية" aria-pressed="false">
-                    <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 17v5"/><path d="M5 4h14l-1 7-3 3v3H9v-3l-3-3-1-7Z"/></svg>
+                    <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14.5 4.5 5 5-3.5 1.2-3.6 3.6v3.2H9.6v-3.2L6 10.7 3.5 9.5l6-6h5Z"/><path d="m10.4 17.5-4 4"/></svg>
                 </button>
             </div>
             <button class="smart-assistant-launcher" id="smartAssistantLauncher" type="button" hidden aria-label="فتح المساعد الذكي" aria-controls="smartAssistantPanel" aria-expanded="false" title="اسأل المساعد">
@@ -686,6 +684,7 @@
     <script defer src="/js/feature-loader.js?v=13"></script>
     <script defer src="/js/page-tabs.js?v=13"></script>
     <script defer src="/js/button-loading.js"></script>
+    <script defer src="/js/dialog-enhancements.js?v=1"></script>
     <script defer src="/js/pagination.js?v=2"></script>
     <script defer src="/js/table-cards.js?v=2"></script>
 </body>
