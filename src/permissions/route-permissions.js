@@ -27,6 +27,8 @@ const ROUTE_PERMISSION_RULES = Object.freeze([
     { pattern: /^\/dashboard(?:-analytics)?(?:\/|$)/, methods: ['GET'], all: [PERMISSIONS.DASHBOARD_READ] },
     { pattern: /^\/bootstrap(?:\/|$)/, methods: ['GET'], all: [PERMISSIONS.DASHBOARD_READ] },
 
+    { pattern: /^\/members\/\d+\/refund-preview$/, methods: ['GET'], ownerOnly: true, all: [PERMISSIONS.PAYMENTS_REFUND] },
+    { pattern: /^\/members\/\d+\/refund$/, methods: ['POST'], ownerOnly: true, all: [PERMISSIONS.PAYMENTS_REFUND] },
     { pattern: /^\/members(?:\/|$)/, methods: ['GET'], all: [PERMISSIONS.MEMBERS_READ, PERMISSIONS.MEMBERSHIPS_READ] },
     { pattern: /^\/members(?:\/|$)/, methods: ['POST'], all: [PERMISSIONS.MEMBERS_CREATE, PERMISSIONS.MEMBERSHIPS_CREATE, PERMISSIONS.PAYMENTS_CREATE] },
     { pattern: /^\/members\/\d+\/alert-communications$/, methods: ['POST'], all: [PERMISSIONS.MEMBERS_ALERTS] },

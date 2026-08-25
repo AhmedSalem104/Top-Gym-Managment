@@ -67,13 +67,14 @@ async function getReportData(query = {}) {
             SELECT TOP (1000) m.id, m.full_name, m.phone, m.email, m.registration_date,
                    ms.membership_plan, ms.membership_type, ms.start_date, ms.end_date,
                    CASE WHEN ms.id IS NULL THEN 'none'
+                        WHEN ms.cancelled_at IS NOT NULL THEN 'cancelled'
                         WHEN ms.start_date > @todayDate THEN 'upcoming'
                         WHEN ms.end_date < @todayDate THEN 'expired'
                         ELSE 'active' END AS membership_status,
                    p.amount_due, p.amount_paid, p.amount_remaining
             FROM dbo.members AS m
             OUTER APPLY (
-                SELECT TOP (1) x.id, x.membership_plan, x.membership_type, x.start_date, x.end_date
+                SELECT TOP (1) x.id, x.membership_plan, x.membership_type, x.start_date, x.end_date, x.cancelled_at
                 FROM dbo.memberships AS x
                 WHERE x.member_id = m.id
                 ORDER BY x.end_date DESC, x.id DESC
@@ -90,7 +91,8 @@ async function getReportData(query = {}) {
         baseRequest().query(`
             SELECT m.id, m.member_id, b.full_name, b.phone, b.email,
                    m.membership_plan, m.membership_type, m.start_date, m.end_date,
-                   CASE WHEN freeze.id IS NOT NULL THEN 'frozen'
+                   CASE WHEN m.cancelled_at IS NOT NULL THEN 'cancelled'
+                        WHEN freeze.id IS NOT NULL THEN 'frozen'
                         WHEN DATEADD(day, ISNULL(freeze_totals.freeze_days, 0), m.end_date) < @todayDate THEN 'expired'
                         WHEN DATEDIFF(day, @todayDate, DATEADD(day, ISNULL(freeze_totals.freeze_days, 0), m.end_date)) BETWEEN 0 AND 7 THEN 'expiring_soon'
                         ELSE 'active' END AS membership_status,
@@ -127,7 +129,7 @@ async function getReportData(query = {}) {
             FROM dbo.gym_payment_transactions AS t
             INNER JOIN dbo.memberships AS ms ON ms.id = t.membership_id
             INNER JOIN dbo.members AS m ON m.id = ms.member_id
-            WHERE t.paid_at >= @fromDate AND t.paid_at < @nextDate AND t.amount_paid > 0
+            WHERE t.paid_at >= @fromDate AND t.paid_at < @nextDate AND t.amount_paid <> 0
             ORDER BY t.paid_at DESC, t.id DESC;
         `),
         baseRequest().query(`
@@ -140,7 +142,7 @@ async function getReportData(query = {}) {
         baseRequest().query(`
             SELECT payment_method, COUNT(*) AS count, ISNULL(SUM(amount_paid), 0) AS amount
             FROM dbo.gym_payment_transactions
-            WHERE paid_at >= @fromDate AND paid_at < @nextDate AND amount_paid > 0
+            WHERE paid_at >= @fromDate AND paid_at < @nextDate AND amount_paid <> 0
             GROUP BY payment_method ORDER BY amount DESC;
         `),
         getDashboard(),

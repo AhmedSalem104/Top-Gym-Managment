@@ -33,6 +33,7 @@ const BACKUP_TABLES = [
     { key: 'membership_freezes', table: 'membership_freezes' },
     { key: 'gym_payments', table: 'gym_payments' },
     { key: 'gym_payment_transactions', table: 'gym_payment_transactions' },
+    { key: 'gym_subscription_refunds', table: 'gym_subscription_refunds' },
     { key: 'gym_expenses', table: 'gym_expenses' },
     { key: 'gym_store_categories', table: 'gym_store_categories' },
     { key: 'gym_store_suppliers', table: 'gym_store_suppliers' },

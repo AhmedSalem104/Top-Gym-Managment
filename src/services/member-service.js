@@ -27,7 +27,7 @@ const DEFAULT_MEMBERSHIP_TYPES = {
     annual: { label: 'سنوية', mode: 'months', durationValue: 12, priceMultiplier: 12, active: true, sortOrder: 5 }
 };
 const PAYMENT_METHODS = ['cash', 'card', 'transfer', 'other'];
-const MEMBER_STATUSES = ['active', 'expiring_soon', 'expired', 'frozen'];
+const MEMBER_STATUSES = ['active', 'expiring_soon', 'expired', 'frozen', 'cancelled'];
 const MEMBERSHIP_FREEZE_LIMIT = 3;
 const DEFAULT_MEMBER_PAGE_SIZE = 5;
 const PRICING_CACHE_TTL_MS = 30_000;
@@ -36,6 +36,7 @@ let pricingCatalogCache = null;
 let pricingCatalogCachedAt = 0;
 let memberIdentityPromise;
 let paymentTransactionsTablePromise;
+let subscriptionRefundsTablePromise;
 
 function appError(message, statusCode = 400) {
     const error = new Error(message);
@@ -148,6 +149,54 @@ async function ensurePaymentTransactionsTable() {
         });
     }
     return paymentTransactionsTablePromise;
+}
+
+async function ensureSubscriptionRefundsTable() {
+    if (!subscriptionRefundsTablePromise) {
+        subscriptionRefundsTablePromise = (async () => {
+            await ensurePaymentTransactionsTable();
+            const pool = await getPool();
+            await pool.request().batch(`
+                IF COL_LENGTH(N'dbo.memberships', N'cancelled_at') IS NULL
+                    ALTER TABLE dbo.memberships ADD cancelled_at DATETIME2(0) NULL;
+                IF COL_LENGTH(N'dbo.memberships', N'cancelled_by_user_id') IS NULL
+                    ALTER TABLE dbo.memberships ADD cancelled_by_user_id INT NULL;
+                IF COL_LENGTH(N'dbo.memberships', N'cancellation_reason') IS NULL
+                    ALTER TABLE dbo.memberships ADD cancellation_reason NVARCHAR(500) NULL;
+                IF OBJECT_ID(N'dbo.gym_subscription_refunds', N'U') IS NULL
+                BEGIN
+                    CREATE TABLE dbo.gym_subscription_refunds (
+                        id INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_gym_subscription_refunds_runtime PRIMARY KEY,
+                        membership_id INT NOT NULL,
+                        amount_refunded DECIMAL(12,2) NOT NULL,
+                        refund_method VARCHAR(20) NOT NULL CONSTRAINT DF_gym_subscription_refunds_method_runtime DEFAULT ('cash'),
+                        reason NVARCHAR(500) NOT NULL,
+                        notes NVARCHAR(1000) NULL,
+                        refund_date DATE NOT NULL,
+                        created_by_user_id INT NULL,
+                        created_at DATETIME2(0) NOT NULL CONSTRAINT DF_gym_subscription_refunds_created_runtime DEFAULT (SYSUTCDATETIME()),
+                        CONSTRAINT FK_gym_subscription_refunds_membership_runtime FOREIGN KEY (membership_id)
+                            REFERENCES dbo.memberships(id) ON DELETE CASCADE,
+                        CONSTRAINT CK_gym_subscription_refunds_amount_runtime CHECK (amount_refunded > 0),
+                        CONSTRAINT CK_gym_subscription_refunds_method_runtime CHECK (refund_method IN ('cash', 'card', 'transfer', 'other'))
+                    );
+                END;
+                IF NOT EXISTS (
+                    SELECT 1 FROM sys.indexes
+                    WHERE name = N'IX_gym_subscription_refunds_membership_date'
+                      AND object_id = OBJECT_ID(N'dbo.gym_subscription_refunds')
+                )
+                BEGIN
+                    CREATE INDEX IX_gym_subscription_refunds_membership_date
+                        ON dbo.gym_subscription_refunds(membership_id, refund_date DESC, id DESC);
+                END;
+            `);
+        })().catch((error) => {
+            subscriptionRefundsTablePromise = undefined;
+            throw error;
+        });
+    }
+    return subscriptionRefundsTablePromise;
 }
 
 function requiredString(value, fieldName, maxLength) {
@@ -550,6 +599,8 @@ function mapMember(row) {
             endDate: formatDateOnly(row.endDate),
             effectiveEndDate: formatDateOnly(row.effectiveEndDate),
             status: row.computedStatus,
+            cancelledAt: row.cancelledAt ? formatDateOnly(row.cancelledAt) : null,
+            cancellationReason: row.cancellationReason || null,
             daysRemaining: row.daysRemaining === null ? null : Number(row.daysRemaining),
             notes: row.membershipNotes,
             freezeId: row.freezeId ? Number(row.freezeId) : null,
@@ -1008,9 +1059,10 @@ async function getRawMember(connection, id) {
 async function getRawMembership(connection, memberId) {
     const result = await connection.request()
         .input('memberId', sql.Int, ensureId(memberId))
-        .query(`SELECT TOP 1 id, member_id, membership_plan, membership_type, start_date, end_date, notes
+        .query(`SELECT TOP 1 id, member_id, membership_plan, membership_type, start_date, end_date, notes,
+                       cancelled_at, cancelled_by_user_id, cancellation_reason
                 FROM dbo.memberships WITH (UPDLOCK, HOLDLOCK) WHERE member_id = @memberId
-                ORDER BY end_date DESC, id DESC;`);
+                ORDER BY CASE WHEN cancelled_at IS NULL THEN 0 ELSE 1 END, end_date DESC, id DESC;`);
     return result.recordset[0] || null;
 }
 
@@ -1053,6 +1105,110 @@ async function getActiveFreeze(connection, membershipId, today) {
                   AND @today BETWEEN start_date AND end_date
                 ORDER BY start_date DESC, id DESC;`);
     return result.recordset[0] || null;
+}
+
+function roundMoney(value) {
+    return Math.round(Number(value || 0) * 100) / 100;
+}
+
+function buildSubscriptionRefundPreview({ membership, payment, refundedAmount = 0, freezeDays = 0, today }) {
+    const amountPaid = roundMoney(payment?.amount_paid);
+    const amountDue = roundMoney(payment?.amount_due);
+    const alreadyRefunded = roundMoney(refundedAmount);
+    if (!membership) {
+        return {
+            eligible: false,
+            message: '\u0644\u0627 \u064a\u0648\u062c\u062f \u0627\u0634\u062a\u0631\u0627\u0643 \u0645\u0633\u062c\u0644 \u0644\u0647\u0630\u0627 \u0627\u0644\u0639\u0636\u0648.',
+            policy: 'not_available',
+            amountPaid,
+            amountDue,
+            alreadyRefunded,
+            refundableAmount: 0,
+            remainingDays: 0,
+            totalDays: 0,
+            membership: null,
+            payment: payment ? { id: Number(payment.id), paymentMethod: payment.payment_method } : null
+        };
+    }
+
+    const startDate = formatDateOnly(membership.start_date);
+    const endDate = formatDateOnly(membership.end_date);
+    const effectiveEndDate = addDays(endDate, Math.max(0, Number(freezeDays || 0)));
+    const totalDays = Math.max(1, differenceInDays(startDate, effectiveEndDate) + 1);
+    const remainingDays = today < startDate
+        ? totalDays
+        : Math.max(0, Math.min(totalDays, differenceInDays(today, effectiveEndDate) + 1));
+    const grossPaid = roundMoney(amountPaid + alreadyRefunded);
+    const entitlement = roundMoney(grossPaid * (remainingDays / totalDays));
+    const refundableAmount = roundMoney(Math.min(amountPaid, Math.max(0, entitlement - alreadyRefunded)));
+    const policy = today < startDate
+        ? 'full_before_start'
+        : remainingDays > 0
+            ? 'prorated_remaining_days'
+            : 'expired_no_refund';
+    let message = '';
+    if (membership.cancelled_at) message = '\u062a\u0645 \u0625\u0644\u063a\u0627\u0621 \u0647\u0630\u0627 \u0627\u0644\u0627\u0634\u062a\u0631\u0627\u0643 \u0645\u0633\u0628\u0642\u064b\u0627.';
+    else if (!payment || amountPaid <= 0) message = '\u0644\u0627 \u064a\u0648\u062c\u062f \u0645\u0628\u0644\u063a \u0645\u062f\u0641\u0648\u0639 \u0642\u0627\u0628\u0644 \u0644\u0644\u0627\u0633\u062a\u0631\u062c\u0627\u0639.';
+    else if (refundableAmount <= 0) message = '\u0644\u0627 \u064a\u0648\u062c\u062f \u0645\u0628\u0644\u063a \u0642\u0627\u0628\u0644 \u0644\u0644\u0627\u0633\u062a\u0631\u062c\u0627\u0639 \u0648\u0641\u0642\u064b\u0627 \u0644\u0644\u0633\u064a\u0627\u0633\u0629.';
+    return {
+        eligible: !membership.cancelled_at && Boolean(payment) && amountPaid > 0 && refundableAmount > 0,
+        message,
+        policy,
+        amountPaid,
+        amountDue,
+        alreadyRefunded,
+        refundableAmount,
+        remainingDays,
+        totalDays,
+        grossPaid,
+        startDate,
+        endDate,
+        effectiveEndDate,
+        membership: {
+            id: Number(membership.id),
+            startDate,
+            endDate,
+            effectiveEndDate,
+            cancelledAt: membership.cancelled_at ? formatDateOnly(membership.cancelled_at) : null,
+            cancellationReason: membership.cancellation_reason || null
+        },
+        payment: payment ? {
+            id: Number(payment.id),
+            amountPaid,
+            amountDue,
+            amountRemaining: roundMoney(payment.amount_remaining),
+            paymentMethod: payment.payment_method || 'cash'
+        } : null
+    };
+}
+
+async function getSubscriptionRefundState(connection, memberId) {
+    const membership = await getRawMembership(connection, memberId);
+    if (!membership) return { membership: null, payment: null, refundedAmount: 0, freezeDays: 0 };
+    const payment = await getRawPayment(connection, membership.id);
+    const refundsResult = await connection.request()
+        .input('membershipId', sql.Int, ensureId(membership.id, '\u0645\u0639\u0631\u0651\u0641 \u0627\u0644\u0627\u0634\u062a\u0631\u0627\u0643'))
+        .query(`SELECT COALESCE(SUM(amount_refunded), 0) AS refundedAmount
+                FROM dbo.gym_subscription_refunds
+                WHERE membership_id = @membershipId;`);
+    const freezeUsage = await getFreezeUsage(connection, memberId, membership.id);
+    return {
+        membership,
+        payment,
+        refundedAmount: Number(refundsResult.recordset[0]?.refundedAmount || 0),
+        freezeDays: freezeUsage.freezeDays
+    };
+}
+
+async function getSubscriptionRefundPreview(id) {
+    const memberId = ensureId(id);
+    await ensureSubscriptionRefundsTable();
+    const pool = await getPool();
+    const state = await getSubscriptionRefundState(pool, memberId);
+    return {
+        memberId,
+        ...buildSubscriptionRefundPreview({ ...state, today: todayInTimeZone() })
+    };
 }
 
 async function addEvent(connection, memberId, membershipId, eventType, details) {
@@ -1357,7 +1513,7 @@ async function activateMembership(id, body = {}) {
         const member = await getRawMember(transaction, memberId);
         if (!member) throw appError('العضو غير موجود.', 404);
         const existing = await getRawMembership(transaction, memberId);
-        if (existing) throw appError('يوجد اشتراك مسجل لهذا العضو بالفعل. استخدم التجديد.', 409);
+        if (existing && !existing.cancelled_at) throw appError('يوجد اشتراك مسجل لهذا العضو بالفعل. استخدم التجديد.', 409);
         const membershipPlan = body.membershipPlan || 'gym_only';
         const pricing = await calculatePricing(membershipType, membershipPlan, money(body.discountAmount, 'الخصم', 0), transaction);
         const resolvedMembershipType = pricing.typeCode || membershipType;
@@ -1429,6 +1585,7 @@ async function freezeMember(id, days, reason) {
     const freezeReason = optionalString(reason, 500);
     const frozenId = await withTransaction(async (transaction) => {
         const membership = await getRawMembership(transaction, memberId);
+        if (membership?.cancelled_at) throw appError('لا يمكن تنفيذ هذا الإجراء على اشتراك ملغى.');
         if (!membership) throw appError('لا يوجد اشتراك لهذا العضو.', 400);
         if (await getActiveFreeze(transaction, membership.id, today)) throw appError('العضوية مجمدة بالفعل.');
         const freezeUsage = await getFreezeUsage(transaction, memberId, membership.id);
@@ -1457,6 +1614,7 @@ async function resumeMember(id) {
     const today = todayInTimeZone();
     const resumedId = await withTransaction(async (transaction) => {
         const membership = await getRawMembership(transaction, memberId);
+        if (membership?.cancelled_at) throw appError('لا يمكن تنفيذ هذا الإجراء على اشتراك ملغى.');
         if (!membership) throw appError('لا يوجد اشتراك لهذا العضو.', 400);
         const activeFreeze = await getActiveFreeze(transaction, membership.id, today);
         if (!activeFreeze) throw appError('لا يوجد تجميد نشط حالياً.');
@@ -1483,6 +1641,7 @@ async function renewMember(id, body = {}) {
     const pool = await getPool();
     const existingMembership = await getRawMembership(pool, memberId);
     if (!existingMembership) return activateMembership(memberId, body);
+    if (existingMembership.cancelled_at) return activateMembership(memberId, body);
     const renewedId = await withTransaction(async (transaction) => {
         const current = await getRawMembership(transaction, memberId);
         if (!current) throw appError('لا يوجد اشتراك لهذا العضو.', 400);
@@ -1552,9 +1711,10 @@ async function recordPayment(membershipId, body = {}) {
     const memberId = await withTransaction(async (transaction) => {
         const membershipResult = await transaction.request()
             .input('membershipId', sql.Int, id)
-            .query('SELECT member_id FROM dbo.memberships WHERE id = @membershipId;');
+            .query('SELECT member_id, cancelled_at FROM dbo.memberships WHERE id = @membershipId;');
         const membership = membershipResult.recordset[0];
         if (!membership) throw appError('الاشتراك غير موجود.', 404);
+        if (membership.cancelled_at) throw appError('لا يمكن تسجيل دفعة على اشتراك ملغى.');
         const current = await getRawPayment(transaction, id);
         const previousAmountPaid = Number(current?.amount_paid || 0);
         const paymentBody = has(body, 'paymentAmount')
@@ -1617,6 +1777,109 @@ async function recordPayment(membershipId, body = {}) {
     return getMemberById(memberId);
 }
 
+async function refundSubscription(id, body = {}, userId = null) {
+    const memberId = ensureId(id);
+    await ensureSubscriptionRefundsTable();
+    const reason = requiredString(
+        body.reason ?? body.refundReason,
+        '\u0633\u0628\u0628 \u0627\u0644\u0627\u0633\u062a\u0631\u062c\u0627\u0639',
+        500
+    );
+    const notes = optionalString(body.notes, 1000);
+    const result = await withTransaction(async (transaction) => {
+        const state = await getSubscriptionRefundState(transaction, memberId);
+        const preview = buildSubscriptionRefundPreview({ ...state, today: todayInTimeZone() });
+        if (!preview.eligible) throw appError(preview.message || 'لا يمكن تنفيذ استرجاع لهذا الاشتراك.');
+
+        const requestedAmount = has(body, 'refundAmount') && body.refundAmount !== ''
+            ? money(body.refundAmount, '\u0645\u0628\u0644\u063a \u0627\u0644\u0627\u0633\u062a\u0631\u062c\u0627\u0639')
+            : preview.refundableAmount;
+        if (requestedAmount <= 0) throw appError('\u0645\u0628\u0644\u063a \u0627\u0644\u0627\u0633\u062a\u0631\u062c\u0627\u0639 \u064a\u062c\u0628 \u0623\u0646 \u064a\u0643\u0648\u0646 \u0623\u0643\u0628\u0631 \u0645\u0646 \u0635\u0641\u0631.');
+        if (requestedAmount > preview.refundableAmount + 0.01) {
+            throw appError(`\u0627\u0644\u0645\u0628\u0644\u063a \u0627\u0644\u0623\u0642\u0635\u0649 \u0627\u0644\u0645\u0633\u0645\u0648\u062d \u0628\u0647 \u0647\u0648 ${preview.refundableAmount}.`);
+        }
+        const refundMethod = parsePaymentMethod(
+            body.refundMethod ?? body.paymentMethod,
+            state.payment?.payment_method || 'cash'
+        );
+        const amountPaid = roundMoney(state.payment.amount_paid);
+        const amountDue = roundMoney(state.payment.amount_due);
+        const newAmountPaid = roundMoney(amountPaid - requestedAmount);
+        const newAmountRemaining = roundMoney(amountDue - newAmountPaid);
+        const refundDate = todayInTimeZone();
+        const refundResult = await transaction.request()
+            .input('membershipId', sql.Int, Number(state.membership.id))
+            .input('amountRefunded', sql.Decimal(12, 2), requestedAmount)
+            .input('refundMethod', sql.VarChar(20), refundMethod)
+            .input('reason', sql.NVarChar(500), reason)
+            .input('notes', sql.NVarChar(1000), notes)
+            .input('refundDate', sql.Date, toUtcDate(refundDate))
+            .input('createdByUserId', sql.Int, userId || null)
+            .query(`INSERT INTO dbo.gym_subscription_refunds
+                        (membership_id, amount_refunded, refund_method, reason, notes, refund_date, created_by_user_id)
+                    OUTPUT INSERTED.id
+                    VALUES (@membershipId, @amountRefunded, @refundMethod, @reason, @notes, @refundDate, @createdByUserId);`);
+        const refundId = Number(refundResult.recordset[0].id);
+        const refundNote = `\u0627\u0633\u062a\u0631\u062c\u0627\u0639 \u0627\u0634\u062a\u0631\u0627\u0643: ${reason}${notes ? ` · ${notes}` : ''}`;
+        const transactionId = await addPaymentTransaction(transaction, {
+            membershipId: Number(state.membership.id),
+            transactionType: 'adjustment',
+            listPrice: state.payment.list_price,
+            discountAmount: state.payment.discount_amount,
+            amountDue,
+            amountPaid: -requestedAmount,
+            amountRemaining: newAmountRemaining,
+            paymentMethod: refundMethod,
+            paidAt: refundDate,
+            notes: refundNote
+        });
+        await transaction.request()
+            .input('paymentId', sql.Int, Number(state.payment.id))
+            .input('amountPaid', sql.Decimal(12, 2), newAmountPaid)
+            .query(`UPDATE dbo.gym_payments
+                    SET amount_paid = @amountPaid, updated_at = SYSUTCDATETIME()
+                    WHERE id = @paymentId;`);
+
+        const fullRefund = requestedAmount >= preview.amountPaid - 0.01;
+        if (fullRefund) {
+            await transaction.request()
+                .input('membershipId', sql.Int, Number(state.membership.id))
+                .input('actorUserId', sql.Int, userId || null)
+                .input('cancellationReason', sql.NVarChar(500), reason)
+                .query(`UPDATE dbo.memberships
+                        SET cancelled_at = SYSUTCDATETIME(),
+                            cancelled_by_user_id = @actorUserId,
+                            cancellation_reason = @cancellationReason,
+                            updated_at = SYSUTCDATETIME()
+                        WHERE id = @membershipId;`);
+        }
+        await addEvent(transaction, memberId, Number(state.membership.id), 'subscription_refunded', {
+            refundId,
+            transactionId,
+            amountRefunded: requestedAmount,
+            refundMethod,
+            reason,
+            notes,
+            refundDate,
+            remainingAmountPaid: newAmountPaid,
+            remainingAmount: newAmountRemaining,
+            cancelled: fullRefund
+        });
+        return {
+            id: refundId,
+            transactionId,
+            membershipId: Number(state.membership.id),
+            amountRefunded: requestedAmount,
+            refundMethod,
+            reason,
+            notes,
+            refundDate,
+            cancelled: fullRefund
+        };
+    });
+    return { refund: result, member: await getMemberById(memberId) };
+}
+
 function parseEventDetails(value) {
     if (!value) return {};
     try { return JSON.parse(value); } catch (_) { return { text: String(value) }; }
@@ -1642,6 +1905,7 @@ async function getMemberDetails(id) {
         pool.request()
             .input('memberId', sql.Int, memberId)
             .query(`SELECT m.id, m.membership_plan, m.membership_type, m.start_date, m.end_date, m.notes,
+                           m.cancelled_at, m.cancellation_reason,
                            p.list_price, p.discount_amount, p.amount_due, p.amount_paid,
                            p.amount_remaining, p.payment_method, p.paid_at, p.notes AS payment_notes
                     FROM dbo.memberships AS m
@@ -1706,7 +1970,9 @@ async function getMemberDetails(id) {
         const effectiveEndDate = addDays(endDate, freezeDays);
         const activeFreeze = membershipFreezes.find((freeze) => freeze.active);
         const daysRemaining = differenceInDays(today, effectiveEndDate);
-        const status = activeFreeze
+        const status = row.cancelled_at
+            ? 'cancelled'
+            : activeFreeze
             ? 'frozen'
             : effectiveEndDate < today
                 ? 'expired'
@@ -1722,6 +1988,8 @@ async function getMemberDetails(id) {
             endDate,
             effectiveEndDate,
             status,
+            cancelledAt: row.cancelled_at ? formatDateOnly(row.cancelled_at) : null,
+            cancellationReason: row.cancellation_reason || null,
             daysRemaining,
             notes: row.notes,
             freezeDays,
@@ -1745,7 +2013,9 @@ async function getMemberDetails(id) {
         id: Number(row.id),
         membershipId: Number(row.membership_id),
         receiptNumber: `TG-${String(row.id).padStart(6, '0')}`,
-        transactionType: row.transaction_type || 'payment',
+        transactionType: row.transaction_type === 'adjustment' && String(row.notes || '').startsWith('\u0627\u0633\u062a\u0631\u062c\u0627\u0639 \u0627\u0634\u062a\u0631\u0627\u0643')
+            ? 'refund'
+            : (row.transaction_type || 'payment'),
         plan: row.membership_plan || 'gym_only',
         type: row.membership_type,
         listPrice: Number(row.list_price || 0),
@@ -1804,6 +2074,8 @@ module.exports = {
     getMemberById,
     getMemberDetails,
     ensurePaymentTransactionsTable,
+    ensureSubscriptionRefundsTable,
+    getSubscriptionRefundPreview,
     getMembers,
     markAlertCommunication,
     getPricingCatalog,
@@ -1811,6 +2083,7 @@ module.exports = {
     createMembershipType,
     freezeMember,
     recordPayment,
+    refundSubscription,
     renewMember,
     resumeMember,
     updateMembershipType,

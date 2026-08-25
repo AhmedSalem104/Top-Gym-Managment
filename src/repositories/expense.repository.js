@@ -67,12 +67,12 @@ async function getMonthlyData(range) {
 
     return Promise.all([
         paymentRequest.query(`
-            SELECT COUNT(*) AS paidTransactionCount,
+            SELECT COUNT(CASE WHEN amount_paid > 0 THEN 1 END) AS paidTransactionCount,
                    ISNULL(SUM(amount_paid), 0) AS subscriptionsTotal
             FROM dbo.gym_payment_transactions
             WHERE paid_at >= @monthStart
               AND paid_at < @nextMonth
-              AND amount_paid > 0;
+              AND amount_paid <> 0;
         `),
         expenseSummaryRequest.query(`
             SELECT COUNT(*) AS expenseCount,

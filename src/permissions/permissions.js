@@ -29,6 +29,7 @@ const PERMISSIONS = Object.freeze({
     MEMBERSHIP_CODES_ROTATE: 'membership_codes.rotate',
 
     PAYMENTS_CREATE: 'payments.create',
+    PAYMENTS_REFUND: 'payments.refund',
 
     TRAINEES_READ: 'trainees.read',
     TRAINEES_CREATE: 'trainees.create',
@@ -168,6 +169,12 @@ const CATALOG_DEFINITIONS = [
     ['intelligence.read', 'عرض الذكاء التشغيلي', 'عرض ملخصات TOP GYM Intelligence وتحليل الأعضاء.', 'intelligence', 'عرض'],
     ['intelligence.generate', 'توليد اقتراحات الذكاء', 'إنشاء أو تعديل اقتراحات التدريب والتغذية بواسطة الذكاء الاصطناعي.', 'intelligence', 'إنشاء']
 ];
+
+CATALOG_DEFINITIONS.splice(
+    CATALOG_DEFINITIONS.findIndex((item) => item[0] === 'trainees.read'),
+    0,
+    ['payments.refund', '\u0627\u0633\u062a\u0631\u062c\u0627\u0639 \u0627\u0634\u062a\u0631\u0627\u0643', '\u062a\u0633\u062c\u064a\u0644 \u0627\u0633\u062a\u0631\u062c\u0627\u0639 \u0645\u0628\u0644\u063a \u0627\u0644\u0627\u0634\u062a\u0631\u0627\u0643 \u0648\u062a\u062d\u062f\u064a\u062b \u0631\u0635\u064a\u062f \u0627\u0644\u0639\u0636\u0648.', 'payments', '\u0639\u0645\u0644\u064a\u0629 \u062e\u0627\u0635\u0629', true]
+);
 
 const PERMISSION_CATALOG = Object.freeze(CATALOG_DEFINITIONS.map(([code, label, description, group, operation, ownerOnly = false]) => Object.freeze({
     code,

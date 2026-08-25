@@ -384,6 +384,22 @@
   color: var(--text-on-primary);
 }
 
+.members-table .table-actions .icon-action[data-action="refund"],
+.members-list .icon-action[data-action="refund"],
+.action-menu-item[data-action="refund"] .action-icon {
+  border-color: var(--danger-border);
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+}
+
+.members-table .table-actions .icon-action[data-action="refund"]:hover:not(:disabled),
+.members-list .icon-action[data-action="refund"]:hover:not(:disabled),
+.action-menu-item[data-action="refund"]:hover {
+  border-color: var(--color-danger);
+  background: var(--color-danger);
+  color: var(--text-on-primary);
+}
+
 #actionDialog {
   width: min(560px, calc(100% - 32px));
 }
@@ -405,6 +421,73 @@
 #dialogFields {
   display: grid;
   gap: var(--space-4);
+}
+
+.refund-loading-note,
+.refund-policy-note,
+.refund-unavailable-note {
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-muted);
+  color: var(--color-text-muted);
+  padding: var(--space-4);
+  line-height: 1.8;
+}
+
+.refund-policy-note {
+  border-color: var(--warning-border);
+  background: var(--color-warning-soft);
+  color: var(--color-warning);
+  font-weight: var(--weight-semibold);
+}
+
+.refund-unavailable-note {
+  border-color: var(--danger-border);
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+}
+
+.refund-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.refund-summary-grid > div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-muted);
+  padding: var(--space-3);
+}
+
+.refund-summary-grid span {
+  color: var(--color-text-muted);
+  font-size: var(--font-xs);
+}
+
+.refund-summary-grid strong {
+  overflow: hidden;
+  color: var(--color-text);
+  font-size: var(--font-md);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.refund-summary-grid .refund-highlight {
+  color: var(--color-danger);
+}
+
+.refund-confirm-alert .swal2-title {
+  color: var(--color-danger);
+}
+
+@media (max-width: 520px) {
+  .refund-summary-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .freeze-limit-note,

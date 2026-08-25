@@ -227,6 +227,9 @@ BEGIN
         start_date DATE NOT NULL,
         end_date DATE NOT NULL,
         notes NVARCHAR(1000) NULL,
+        cancelled_at DATETIME2(0) NULL,
+        cancelled_by_user_id INT NULL,
+        cancellation_reason NVARCHAR(500) NULL,
         created_at DATETIME2(0) NOT NULL CONSTRAINT DF_memberships_created_at DEFAULT (SYSUTCDATETIME()),
         updated_at DATETIME2(0) NOT NULL CONSTRAINT DF_memberships_updated_at DEFAULT (SYSUTCDATETIME()),
         CONSTRAINT FK_memberships_member FOREIGN KEY (member_id)
@@ -234,6 +237,13 @@ BEGIN
         CONSTRAINT CK_memberships_dates CHECK (end_date >= start_date)
     );
 END;
+
+IF COL_LENGTH(N'dbo.memberships', N'cancelled_at') IS NULL
+    ALTER TABLE dbo.memberships ADD cancelled_at DATETIME2(0) NULL;
+IF COL_LENGTH(N'dbo.memberships', N'cancelled_by_user_id') IS NULL
+    ALTER TABLE dbo.memberships ADD cancelled_by_user_id INT NULL;
+IF COL_LENGTH(N'dbo.memberships', N'cancellation_reason') IS NULL
+    ALTER TABLE dbo.memberships ADD cancellation_reason NVARCHAR(500) NULL;
 
 IF OBJECT_ID(N'dbo.membership_pricing', N'U') IS NULL
 BEGIN
@@ -683,6 +693,35 @@ BEGIN
         CONSTRAINT FK_membership_events_membership FOREIGN KEY (membership_id)
             REFERENCES dbo.memberships(id) ON DELETE NO ACTION
     );
+END;
+
+IF OBJECT_ID(N'dbo.gym_subscription_refunds', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.gym_subscription_refunds (
+        id INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_gym_subscription_refunds PRIMARY KEY,
+        membership_id INT NOT NULL,
+        amount_refunded DECIMAL(12,2) NOT NULL,
+        refund_method VARCHAR(20) NOT NULL CONSTRAINT DF_gym_subscription_refunds_method DEFAULT ('cash'),
+        reason NVARCHAR(500) NOT NULL,
+        notes NVARCHAR(1000) NULL,
+        refund_date DATE NOT NULL,
+        created_by_user_id INT NULL,
+        created_at DATETIME2(0) NOT NULL CONSTRAINT DF_gym_subscription_refunds_created DEFAULT (SYSUTCDATETIME()),
+        CONSTRAINT FK_gym_subscription_refunds_membership FOREIGN KEY (membership_id)
+            REFERENCES dbo.memberships(id) ON DELETE CASCADE,
+        CONSTRAINT CK_gym_subscription_refunds_amount CHECK (amount_refunded > 0),
+        CONSTRAINT CK_gym_subscription_refunds_method CHECK (refund_method IN ('cash', 'card', 'transfer', 'other'))
+    );
+END;
+
+IF NOT EXISTS (
+    SELECT 1 FROM sys.indexes
+    WHERE name = N'IX_gym_subscription_refunds_membership_date'
+      AND object_id = OBJECT_ID(N'dbo.gym_subscription_refunds')
+)
+BEGIN
+    CREATE INDEX IX_gym_subscription_refunds_membership_date
+        ON dbo.gym_subscription_refunds(membership_id, refund_date DESC, id DESC);
 END;
 
 IF NOT EXISTS (

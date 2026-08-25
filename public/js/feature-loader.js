@@ -26,7 +26,7 @@
         'member-details': {
             styles: [],
             scripts: [
-                '/js/member-details-ui.js?v=3',
+                '/js/member-details-ui.js?v=4',
                 '/js/member-portal-admin.js?v=4',
                 '/js/member-coaching-summary.js?v=2'
             ]

@@ -27,7 +27,8 @@
     print: '<path d="M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v7H6z"/>',
     more: '<circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/>',
     payment: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M7 15h3"/>',
-    qr: '<rect x="4" y="4" width="6" height="6"/><rect x="14" y="4" width="6" height="6"/><rect x="4" y="14" width="6" height="6"/><path d="M14 14h2v2h-2zM18 18h2v2h-2zM18 14h2"/>'
+    qr: '<rect x="4" y="4" width="6" height="6"/><rect x="14" y="4" width="6" height="6"/><rect x="4" y="14" width="6" height="6"/><path d="M14 14h2v2h-2zM18 18h2v2h-2zM18 14h2"/>',
+    refund: '<path d="M4 7h11a5 5 0 1 1 0 10H8"/><path d="m7 4-3 3 3 3"/><path d="M12 12h.01"/>'
   };
 
   const icon = (name) => `<svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icons[name] || icons.view}</svg>`;
@@ -58,8 +59,13 @@
     return Math.ceil((end.getTime() - Date.now()) / 86400000);
   }
 
+  function resolveSubscription(member, details) {
+    const memberships = Array.isArray(details?.memberships) ? details.memberships : [];
+    return member?.membership || memberships.find((item) => item?.status !== 'cancelled') || memberships[memberships.length - 1] || null;
+  }
+
   function updateHeader(member, details) {
-    const subscription = details?.memberships?.[0] || member?.membership || null;
+    const subscription = resolveSubscription(member, details);
     const avatar = document.getElementById('detailsAvatar');
     const subtitle = document.getElementById('detailsSubtitle');
     const registration = document.getElementById('detailsRegistration');
@@ -121,11 +127,16 @@
 
   function renderOverview(member, details) {
     content.querySelector('.member-details-overview')?.remove();
-    const subscription = details?.memberships?.[0] || member?.membership || {};
+    const subscription = resolveSubscription(member, details) || {};
     const freezeLimit = number(subscription.freezeLimit || 3);
     const freezeCount = number(subscription.freezeCount ?? details?.freezes?.length);
     const days = remainingDays(subscription);
     const remaining = number(subscription.amountRemaining);
+    const isCancelled = subscription.status === 'cancelled';
+    const freezeAction = isCancelled ? '' : actionButton('freeze', 'تجميد', 'member-details-action-secondary');
+    const paymentAction = isCancelled ? '' : '<button type="button" data-member-detail-action="payment">' + icon('payment') + '<span>تسجيل دفعة</span></button>';
+    const canRefund = window.topGymAuth?.isOwner?.() === true && number(subscription.amountPaid) > 0;
+    const refundAction = canRefund ? '<button type="button" data-member-detail-action="refund">' + icon('refund') + '<span>استرجاع الاشتراك</span></button>' : '';
     const overview = document.createElement('div');
     overview.className = 'member-details-overview';
     overview.innerHTML = `<div class="member-details-stats" aria-label="ملخص الاشتراك">
@@ -138,8 +149,8 @@
       ${actionButton('renew', 'تجديد', 'member-details-action-primary member-details-action-renew')}
       ${actionButton('view', 'عرض', 'member-details-action-secondary')}
       ${actionButton('print', 'طباعة', 'member-details-action-secondary')}
-      ${actionButton('freeze', 'تجميد', 'member-details-action-secondary')}
-      <span class="member-details-more"><button class="member-details-action member-details-action-more" type="button" data-member-detail-action="more" aria-expanded="false" aria-controls="memberDetailsMoreMenu" aria-label="المزيد" title="المزيد">${icon('more')}</button><span class="member-details-more-menu" id="memberDetailsMoreMenu" hidden><button type="button" data-member-detail-action="payment">${icon('payment')}<span>تسجيل دفعة</span></button><button type="button" data-member-detail-action="qr">${icon('qr')}<span>عرض QR</span></button><button type="button" data-member-detail-action="edit">${icon('view')}<span>تعديل البيانات</span></button></span></span>
+       ${freezeAction}
+       <span class="member-details-more"><button class="member-details-action member-details-action-more" type="button" data-member-detail-action="more" aria-expanded="false" aria-controls="memberDetailsMoreMenu" aria-label="المزيد" title="المزيد">${icon('more')}</button><span class="member-details-more-menu" id="memberDetailsMoreMenu" hidden>${paymentAction}<button type="button" data-member-detail-action="qr">${icon('qr')}<span>عرض QR</span></button><button type="button" data-member-detail-action="edit">${icon('view')}<span>تعديل البيانات</span></button>${refundAction}</span></span>
     </div></section>`;
     content.prepend(overview);
   }

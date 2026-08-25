@@ -278,7 +278,7 @@ async function getDashboardAnalytics(periodValue = 'month') {
         createRangeRequest(pool, range).query(`
             SELECT paid_at AS eventDate, amount_paid AS amount, payment_method AS paymentMethod
             FROM dbo.gym_payment_transactions
-            WHERE paid_at >= @startDate AND paid_at < @nextDate AND amount_paid > 0;
+            WHERE paid_at >= @startDate AND paid_at < @nextDate AND amount_paid <> 0;
         `),
         createRangeRequest(pool, range).query(`
             SELECT visit_date AS eventDate, amount_paid AS amount, payment_method AS paymentMethod
@@ -357,7 +357,7 @@ async function getDashboardAnalytics(periodValue = 'month') {
             SELECT COUNT_BIG(*) AS total,
                    ISNULL(SUM(amount_paid), 0) AS amount
             FROM dbo.gym_payment_transactions
-            WHERE paid_at >= @startDate AND paid_at < @nextDate AND amount_paid > 0;
+            WHERE paid_at >= @startDate AND paid_at < @nextDate AND amount_paid <> 0;
         `),
         createRangeRequest(pool, previousRange).query(`
             SELECT COUNT_BIG(*) AS total,

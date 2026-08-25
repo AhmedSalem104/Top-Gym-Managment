@@ -241,7 +241,8 @@ async function getChurnRisks({ limit = 20, actorUserId = null } = {}) {
         .input('limit', sql.Int, currentLimit)
         .query(`
             WITH current_membership AS (
-                SELECT id, member_id, end_date, ROW_NUMBER() OVER (PARTITION BY member_id ORDER BY end_date DESC, id DESC) AS row_number
+                SELECT id, member_id, end_date, cancelled_at,
+                       ROW_NUMBER() OVER (PARTITION BY member_id ORDER BY CASE WHEN cancelled_at IS NULL THEN 0 ELSE 1 END, end_date DESC, id DESC) AS row_number
                 FROM dbo.memberships
             )
             SELECT TOP (@limit)
@@ -271,6 +272,7 @@ async function getChurnRisks({ limit = 20, actorUserId = null } = {}) {
                 WHERE attendance.member_id = m.id
             ) AS visits
             WHERE membership.end_date >= @today
+              AND membership.cancelled_at IS NULL
             ORDER BY
                 CASE WHEN visits.last_visit_date IS NULL THEN 0 ELSE 1 END,
                 visits.last_visit_date ASC,

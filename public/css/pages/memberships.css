@@ -1268,6 +1268,16 @@
   outline: 0;
 }
 
+#detailsDialog .member-details-more-menu button[data-member-detail-action="refund"] {
+  color: var(--color-danger);
+}
+
+#detailsDialog .member-details-more-menu button[data-member-detail-action="refund"]:hover,
+#detailsDialog .member-details-more-menu button[data-member-detail-action="refund"]:focus-visible {
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+}
+
 #detailsDialog .member-details-more-menu .ui-icon {
   width: 18px;
   height: 18px;

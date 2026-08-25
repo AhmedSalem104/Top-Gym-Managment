@@ -13,7 +13,9 @@ WITH latest_membership AS (
         m.start_date AS startDate,
         m.end_date AS endDate,
         m.notes AS membershipNotes,
-        ROW_NUMBER() OVER (PARTITION BY m.member_id ORDER BY m.end_date DESC, m.id DESC) AS membershipRank
+        m.cancelled_at AS cancelledAt,
+        m.cancellation_reason AS cancellationReason,
+        ROW_NUMBER() OVER (PARTITION BY m.member_id ORDER BY CASE WHEN m.cancelled_at IS NULL THEN 0 ELSE 1 END, m.end_date DESC, m.id DESC) AS membershipRank
     FROM dbo.memberships AS m
 ),
 freeze_totals AS (
@@ -69,6 +71,8 @@ SELECT
     lm.startDate,
     lm.endDate,
     lm.membershipNotes,
+    lm.cancelledAt,
+    lm.cancellationReason,
     DATEADD(day, ISNULL(ft.freezeDays, 0), lm.endDate) AS effectiveEndDate,
     cf.freezeId,
     cf.freezeStart,
@@ -83,6 +87,7 @@ SELECT
     ps.paymentPaidAt,
     CASE
         WHEN lm.membershipId IS NULL THEN 'expired'
+        WHEN lm.cancelledAt IS NOT NULL THEN 'cancelled'
         WHEN cf.freezeId IS NOT NULL THEN 'frozen'
         WHEN DATEADD(day, ISNULL(ft.freezeDays, 0), lm.endDate) < @today THEN 'expired'
         WHEN DATEDIFF(day, @today, DATEADD(day, ISNULL(ft.freezeDays, 0), lm.endDate)) BETWEEN 0 AND 7 THEN 'expiring_soon'

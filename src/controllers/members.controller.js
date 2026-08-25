@@ -16,6 +16,10 @@ function createMembersController({ memberService }) {
             response.json(await memberService.getMemberDetails(request.params.id));
         },
 
+        refundPreview: async (request, response) => {
+            response.json(await memberService.getSubscriptionRefundPreview(request.params.id));
+        },
+
         getById: async (request, response) => {
             response.json({ member: await memberService.getMemberById(request.params.id) });
         },
@@ -56,6 +60,14 @@ function createMembersController({ memberService }) {
 
         payment: async (request, response) => {
             response.json({ member: await memberService.recordPayment(request.params.id, request.body) });
+        },
+
+        refund: async (request, response) => {
+            response.json(await memberService.refundSubscription(
+                request.params.id,
+                request.body || {},
+                request.auth?.id
+            ));
         },
 
         remove: async (request, response) => {

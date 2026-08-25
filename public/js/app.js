@@ -44,6 +44,13 @@
              delete: '<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>'
          };
          function actionIcon(action) { return `<svg class="action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ACTION_ICONS[action] || ''}</svg>`; }
+         STATUS_LABELS.cancelled = '\u0627\u0644\u063a\u0627\u0621 \u0627\u0644\u0627\u0634\u062a\u0631\u0627\u0643';
+         ALERT_ICON_PATHS.cancelled = '<path d="M12 3 2.5 20h19L12 3Z"/><path d="m9 9 6 6M15 9l-6 6"/>';
+         ACTION_LABELS.refund = '\u0627\u0633\u062a\u0631\u062c\u0627\u0639 \u0627\u0644\u0627\u0634\u062a\u0631\u0627\u0643';
+         ACTION_ICONS.refund = '<path d="M4 7h11a5 5 0 1 1 0 10H8"/><path d="m7 4-3 3 3 3"/><path d="M12 12h.01"/>';
+         PAYMENT_TRANSACTION_LABELS.refund = '\u0627\u0633\u062a\u0631\u062c\u0627\u0639';
+         EVENT_LABELS.subscription_refunded = '\u0627\u0633\u062a\u0631\u062c\u0627\u0639 \u0627\u0634\u062a\u0631\u0627\u0643';
+         function refundActionButton(memberId) { const label = ACTION_LABELS.refund; return `<button class="btn btn-light btn-small icon-action rounded-lg shadow-none transition-colors refund-action" data-action="refund" data-required-permission="payments.refund" data-label="${label}" data-id="${memberId}" aria-label="${label}" title="${label}" type="button">${actionIcon('refund')}</button>`; }
          const COACHING_ACTION_LABELS = { workout: '\u0625\u0646\u0634\u0627\u0621 \u0628\u0631\u0646\u0627\u0645\u062c \u062a\u062f\u0631\u064a\u0628', diet: '\u0625\u0646\u0634\u0627\u0621 \u062e\u0637\u0629 \u062a\u063a\u0630\u064a\u0629' };
          const COACHING_ACTION_ICONS = { workout: '<path d="M6 8v8M18 8v8M3 11h18M8 5h8v14H8z"/>', diet: '<path d="M12 21c-4-2-7-5.5-7-10a5 5 0 0 1 7-4.6A5 5 0 0 1 19 11c0 4.5-3 7.8-7 10Z"/><path d="M12 7c0 4-2 6-5 7"/>' };
          function actionButton(action, memberId, classes = 'btn btn-light btn-small', extra = '') { const label = ACTION_LABELS[action] || action; const requiredPermission = { details: 'members.read', edit: 'members.update,memberships.update', renew: 'memberships.renew,payments.create', freeze: 'memberships.freeze', resume: 'memberships.freeze', payment: 'payments.create', print: 'members.print', qr: 'members.read', delete: 'members.delete' }[action] || ''; return `<button class="${classes} icon-action rounded-lg shadow-none transition-colors" data-action="${action}" data-required-permission="${requiredPermission}" data-label="${label}" data-id="${memberId}" aria-label="${label}" title="${label}" type="button" ${extra}>${actionIcon(action)}</button>`; }
@@ -401,6 +408,15 @@
                         tableActions.insertAdjacentHTML('beforeend', actionButton('qr', member.id));
                     }
                 }
+                if (tableActions && !tableActions.querySelector('[data-action="refund"]') && Number(member.membership?.amountPaid || 0) > 0 && window.topGymAuth?.isOwner?.()) {
+                    const refundMenuItem = `<button class="action-menu-item" type="button" data-action="refund" data-required-permission="payments.refund" data-id="${member.id}" aria-label="${ACTION_LABELS.refund}" title="${ACTION_LABELS.refund}">${actionIcon('refund')}<span>${escapeHtml(ACTION_LABELS.refund)}</span></button>`;
+                    const menuPanel = tableActions.querySelector('.action-menu-panel');
+                    if (menuPanel) menuPanel.insertAdjacentHTML('beforeend', refundMenuItem);
+                    else tableActions.insertAdjacentHTML('beforeend', refundActionButton(member.id));
+                }
+                if (member.membership?.status === 'cancelled') {
+                    tableActions?.querySelectorAll('[data-action="freeze"], [data-action="payment"]').forEach((button) => button.remove());
+                }
                 const actionRow = document.createElement('div');
                 actionRow.className = 'member-action-row';
                 actionRow.append(quickActions);
@@ -471,7 +487,108 @@
             if (action === 'renew' || action === 'payment') { const plan = sub.plan || 'gym_only'; const type = sub.type || activeTypeEntries()[0]?.[0] || 'monthly'; const discount = sub.discountAmount || 0; const paidDefault = 0; const planOptions = Object.entries(state.pricing.plans).map(([code, item]) => `<option value="${escapeHtml(code)}">${escapeHtml(item.label)}</option>`).join(''); const typeOptions = activeTypeEntries().map(([code, item]) => `<option value="${escapeHtml(code)}">${escapeHtml(item.label)}</option>`).join(''); const paymentHint = action === 'payment' ? `<div class="payment-dialog-balance"><span>المدفوع حتى الآن</span><strong>${money(sub.amountPaid)}</strong><span>المتبقي الحالي</span><strong class="has-debt">${money(sub.amountRemaining)}</strong></div>` : ''; fields.innerHTML = `<div class="field-grid"><div class="field"><label for="dialogPlan">الباقة</label><select id="dialogPlan">${planOptions}</select></div><div class="field"><label for="dialogType">نوع العضوية</label><select id="dialogType">${typeOptions}</select></div></div><div class="field-grid"><div class="field"><label for="dialogDiscount">الخصم</label><input id="dialogDiscount" type="number" min="0" step="0.01" value="${discount}"></div><div class="field"><label for="dialogDue">المستحق بعد الخصم</label><input id="dialogDue" type="number" readonly></div></div><div class="pricing-summary" id="dialogPricing"></div>${paymentHint}<div class="field"><label for="dialogPaid">${action === 'payment' ? 'قيمة الدفعة الجديدة' : 'المبلغ المدفوع'}</label><input id="dialogPaid" type="number" min="0" step="0.01" value="${paidDefault}" required></div><div class="field"><label for="dialogMethod">طريقة الدفع</label><select id="dialogMethod"><option value="cash">نقدي</option><option value="card">بطاقة</option><option value="transfer">تحويل</option><option value="other">أخرى</option></select></div>`; $('dialogPlan').value = plan; $('dialogType').value = type; $('dialogMethod').value = sub.paymentMethod || 'cash'; updateDialogPricing(); $('dialogPlan').addEventListener('change', updateDialogPricing); $('dialogType').addEventListener('change', updateDialogPricing); $('dialogDiscount').addEventListener('input', updateDialogPricing); }
             const dialog = $('actionDialog'); if (typeof dialog.showModal === 'function') dialog.showModal(); else dialog.setAttribute('open', '');
         }
-        function closeDialog() { const dialog = $('actionDialog'); if (typeof dialog.close === 'function' && dialog.open) dialog.close(); else dialog.removeAttribute('open'); state.dialogAction = null; state.dialogMember = null; }
+        async function openRefundDialog(member) {
+            state.dialogAction = 'refund';
+            state.dialogMember = member;
+            state.refundPreview = null;
+            $('dialogTitle').textContent = '\u0627\u0633\u062a\u0631\u062c\u0627\u0639 \u0627\u0644\u0627\u0634\u062a\u0631\u0627\u0643';
+            $('dialogDescription').textContent = `${member.fullName} · ${member.phone}`;
+            $('dialogFields').innerHTML = '<div class="refund-loading-note">\u062c\u0627\u0631\u064a \u062d\u0633\u0627\u0628 \u0627\u0644\u0645\u0628\u0644\u063a \u0627\u0644\u0642\u0627\u0628\u0644 \u0644\u0644\u0627\u0633\u062a\u0631\u062c\u0627\u0639...</div>';
+            $('dialogSubmit').textContent = '\u062a\u0646\u0641\u064a\u0630 \u0627\u0644\u0627\u0633\u062a\u0631\u062c\u0627\u0639';
+            $('dialogSubmit').disabled = true;
+            const dialog = $('actionDialog');
+            if (typeof dialog.showModal === 'function') dialog.showModal(); else dialog.setAttribute('open', '');
+            try {
+                const preview = await api(`/api/members/${member.id}/refund-preview`);
+                if (state.dialogAction !== 'refund' || state.dialogMember?.id !== member.id) return;
+                state.refundPreview = preview;
+                const maxAmount = Number(preview.refundableAmount || 0);
+                const policyText = preview.policy === 'full_before_start'
+                    ? '\u0627\u0633\u062a\u0631\u062c\u0627\u0639 \u0643\u0627\u0645\u0644 \u0642\u0628\u0644 \u0628\u062f\u0627\u064a\u0629 \u0627\u0644\u0627\u0634\u062a\u0631\u0627\u0643.'
+                    : preview.policy === 'prorated_remaining_days'
+                        ? `\u0627\u0633\u062a\u0631\u062c\u0627\u0639 \u062c\u0632\u0626\u064a \u062d\u0633\u0628 \u0627\u0644\u0645\u062f\u0629 \u0627\u0644\u0645\u062a\u0628\u0642\u064a\u0629: ${preview.remainingDays} \u0645\u0646 \u0623\u0635\u0644 ${preview.totalDays} \u064a\u0648\u0645\u064b\u0627.`
+                        : '\u0644\u0627 \u064a\u0648\u062c\u062f \u0645\u0628\u0644\u063a \u0642\u0627\u0628\u0644 \u0644\u0644\u0627\u0633\u062a\u0631\u062c\u0627\u0639.';
+                $('dialogFields').innerHTML = `<div class="refund-policy-note">${escapeHtml(policyText)}</div><div class="refund-summary-grid"><div><span>\u0627\u0644\u0645\u062f\u0641\u0648\u0639 \u0627\u0644\u062d\u0627\u0644\u064a</span><strong>${money(preview.amountPaid)}</strong></div><div><span>\u0627\u0644\u0627\u0633\u062a\u0631\u062c\u0627\u0639 \u0627\u0644\u0633\u0627\u0628\u0642</span><strong>${money(preview.alreadyRefunded)}</strong></div><div><span>\u0627\u0644\u0645\u0628\u0644\u063a \u0627\u0644\u0645\u0642\u062a\u0631\u062d</span><strong class="refund-highlight">${money(maxAmount)}</strong></div><div><span>\u0627\u0644\u0627\u0646\u062a\u0647\u0627\u0621 \u0627\u0644\u0641\u0639\u0644\u064a</span><strong>${formatDate(preview.effectiveEndDate)}</strong></div></div>${preview.eligible ? `<div class="field-grid"><div class="field"><label for="refundAmount">\u0645\u0628\u0644\u063a \u0627\u0644\u0627\u0633\u062a\u0631\u062c\u0627\u0639</label><input id="refundAmount" type="number" min="0.01" max="${maxAmount.toFixed(2)}" step="0.01" value="${maxAmount.toFixed(2)}" required><small class="field-hint">\u0627\u0644\u062d\u062f \u0627\u0644\u0623\u0642\u0635\u0649 \u0648\u0641\u0642\u064b\u0627 \u0644\u0644\u0633\u064a\u0627\u0633\u0629.</small></div><div class="field"><label for="refundMethod">\u0637\u0631\u064a\u0642\u0629 \u0627\u0644\u0625\u0631\u062c\u0627\u0639</label><select id="refundMethod"><option value="cash">\u0646\u0642\u062f\u064a</option><option value="card">\u0628\u0637\u0627\u0642\u0629</option><option value="transfer">\u062a\u062d\u0648\u064a\u0644</option><option value="other">\u0623\u062e\u0631\u0649</option></select></div></div><div class="field"><label for="refundReason">\u0633\u0628\u0628 \u0627\u0644\u0627\u0633\u062a\u0631\u062c\u0627\u0639</label><textarea id="refundReason" maxlength="500" required placeholder="\u0627\u0643\u062a\u0628 \u0633\u0628\u0628 \u0648\u0627\u0636\u062d\u064b\u0627 \u0644\u0644\u0639\u0645\u0644\u064a\u0629"></textarea></div><div class="field"><label for="refundNotes">\u0645\u0644\u0627\u062d\u0638\u0627\u062a \u0625\u0636\u0627\u0641\u064a\u0629 (\u0627\u062e\u062a\u064a\u0627\u0631\u064a)</label><textarea id="refundNotes" maxlength="1000"></textarea></div>` : `<div class="refund-unavailable-note">${escapeHtml(preview.message || '\u0644\u0627 \u064a\u0645\u0643\u0646 \u062a\u0646\u0641\u064a\u0630 \u0627\u0644\u0627\u0633\u062a\u0631\u062c\u0627\u0639.')}</div>`}`;
+                const refundMethod = $('refundMethod');
+                if (refundMethod) refundMethod.value = preview.payment?.paymentMethod || 'cash';
+                $('dialogSubmit').disabled = !preview.eligible;
+            } catch (error) {
+                if (state.dialogAction === 'refund') {
+                    $('dialogFields').innerHTML = `<div class="refund-unavailable-note">${escapeHtml(error.message)}</div>`;
+                    await notify(error.message, 'error');
+                }
+            }
+        }
+        function closeDialog() { const dialog = $('actionDialog'); if (typeof dialog.close === 'function' && dialog.open) dialog.close(); else dialog.removeAttribute('open'); state.dialogAction = null; state.dialogMember = null; state.refundPreview = null; $('dialogSubmit').disabled = false; $('dialogSubmit').textContent = '\u062a\u0623\u0643\u064a\u062f'; }
+
+        async function confirmRefund(name, amount) {
+            if (window.Swal) {
+                const result = await window.Swal.fire({
+                    position: 'center',
+                    backdrop: window.topGymThemeValue('--overlay'),
+                    icon: 'warning',
+                    title: '\u062a\u0623\u0643\u064a\u062f \u0627\u0633\u062a\u0631\u062c\u0627\u0639 \u0627\u0644\u0627\u0634\u062a\u0631\u0627\u0643',
+                    text: `\u0633\u064a\u062a\u0645 \u0625\u0631\u062c\u0627\u0639 ${money(amount)} \u0644\u0644\u0645\u0634\u062a\u0631\u0643 ${name}.`,
+                    showCancelButton: true,
+                    confirmButtonText: '\u0646\u0639\u0645\u060c \u0646\u0641\u0651\u0630 \u0627\u0644\u0627\u0633\u062a\u0631\u062c\u0627\u0639',
+                    cancelButtonText: '\u0625\u0644\u063a\u0627\u0621',
+                    buttonsStyling: false,
+                    customClass: { popup: 'refund-confirm-alert' }
+                });
+                return result.isConfirmed;
+            }
+            return window.confirm(`\u0647\u0644 \u062a\u0631\u064a\u062f \u0625\u0631\u062c\u0627\u0639 ${money(amount)} \u0644\u0644\u0645\u0634\u062a\u0631\u0643 ${name}\u061f`);
+        }
+
+        async function submitRefundDialog(event) {
+            event.preventDefault();
+            const member = state.dialogMember;
+            const preview = state.refundPreview;
+            if (!member || !preview?.eligible) return;
+            const amount = Number($('refundAmount')?.value || 0);
+            const reason = $('refundReason')?.value?.trim() || '';
+            if (!amount || amount <= 0 || !reason) {
+                await notify('\u0623\u062f\u062e\u0644 \u0645\u0628\u0644\u063a \u0627\u0644\u0627\u0633\u062a\u0631\u062c\u0627\u0639 \u0648\u0633\u0628\u0628 \u0627\u0644\u0639\u0645\u0644\u064a\u0629.', 'warning');
+                return;
+            }
+            if (amount > Number(preview.refundableAmount || 0) + 0.01) {
+                await notify(`\u0627\u0644\u062d\u062f \u0627\u0644\u0623\u0642\u0635\u0649 \u0644\u0644\u0627\u0633\u062a\u0631\u062c\u0627\u0639 ${money(preview.refundableAmount)}.`, 'warning');
+                return;
+            }
+            if (!(await confirmRefund(member.fullName, amount))) return;
+            const submitButton = $('dialogSubmit');
+            submitButton.disabled = true;
+            try {
+                await withLoader(() => api(`/api/members/${member.id}/refund`, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        membershipId: preview.membership?.id,
+                        refundAmount: amount,
+                        refundMethod: $('refundMethod')?.value || preview.payment?.paymentMethod || 'cash',
+                        reason,
+                        notes: $('refundNotes')?.value || ''
+                    })
+                }), '\u062c\u0627\u0631\u064a \u062a\u0633\u062c\u064a\u0644 \u0627\u0633\u062a\u0631\u062c\u0627\u0639 \u0627\u0644\u0627\u0634\u062a\u0631\u0627\u0643...');
+                state.detailsCache?.delete(member.id);
+                closeDialog();
+                await refreshAfterAction('\u062a\u0645 \u062a\u0633\u062c\u064a\u0644 \u0627\u0633\u062a\u0631\u062c\u0627\u0639 \u0627\u0644\u0627\u0634\u062a\u0631\u0627\u0643 \u0648\u062a\u062d\u062f\u064a\u062b \u0627\u0644\u0631\u0635\u064a\u062f.');
+            } catch (error) {
+                submitButton.disabled = false;
+                await notify(error.message, 'error');
+            }
+        }
+
+        const baseSubmitDialog = submitDialog;
+        submitDialog = async function(event) {
+            if (state.dialogAction === 'refund') return submitRefundDialog(event);
+            return baseSubmitDialog(event);
+        };
+        const baseOpenDialog = openDialog;
+        openDialog = function(action, member) {
+            $('dialogSubmit').disabled = false;
+            $('dialogSubmit').textContent = '\u062a\u0623\u0643\u064a\u062f';
+            return baseOpenDialog(action, member);
+        };
 
         async function submitDialog(event) { event.preventDefault(); const action = state.dialogAction; const member = state.dialogMember; if (!action || !member) return; if (action === 'freeze' && Number(member.membership?.freezeCount || 0) >= Number(member.membership?.freezeLimit || FREEZE_LIMIT)) { await notify(`تم استهلاك الحد الأقصى للتجميد (${FREEZE_LIMIT} مرات) لهذا العضو.`, 'warning'); return; } try { await withLoader(async () => { if (action === 'freeze') await api(`/api/members/${member.id}/freeze`, { method: 'POST', body: JSON.stringify({ days: Number($('dialogDays').value), reason: $('dialogReason').value }) }); if (action === 'renew') await api(`/api/members/${member.id}/renew`, { method: 'POST', body: JSON.stringify({ membershipType: $('dialogType').value, membershipPlan: $('dialogPlan').value, discountAmount: Number($('dialogDiscount').value || 0), amountPaid: Number($('dialogPaid').value || 0), paymentMethod: $('dialogMethod').value }) }); if (action === 'payment') { const pricing = calculateClientPricing($('dialogType').value, $('dialogPlan').value, $('dialogDiscount').value); await api(`/api/memberships/${member.membership.id}/payments`, { method: 'POST', body: JSON.stringify({ listPrice: pricing.listPrice, discountAmount: pricing.discountAmount, amountDue: pricing.amountDue, paymentAmount: Number($('dialogPaid').value || 0), paymentMethod: $('dialogMethod').value }) }); } }, 'جاري تنفيذ الإجراء…'); closeDialog(); await refreshAfterAction(action === 'freeze' ? 'تم تجميد العضوية.' : action === 'renew' ? 'تم تجديد العضوية.' : 'تم تسجيل الدفعة وإضافة الإيصال للسجل المالي.'); } catch (error) { await notify(error.message, 'error'); } }
 
@@ -574,6 +691,18 @@
         document.addEventListener('DOMContentLoaded', () => {
              setFormDefaults(); $('memberForm').addEventListener('submit', submitMember); $('refreshButton').addEventListener('click', loadData); $('topAddMemberButton').addEventListener('click', () => openMemberDialog()); $('addMemberButton').addEventListener('click', () => openMemberDialog()); $('topPricingButton').addEventListener('click', openPricingDialog); $('pricingButton').addEventListener('click', openPricingDialog); $('membershipTypesButton').addEventListener('click', openMembershipTypesDialog); $('memberDialogClose').addEventListener('click', closeMemberDialog); $('cancelEditButton').addEventListener('click', () => setFormDefaults(true)); $('resetButton').addEventListener('click', () => setFormDefaults(true)); $('actionForm').addEventListener('submit', submitDialog); $('dialogCancel').addEventListener('click', closeDialog); $('pricingForm').addEventListener('submit', savePricing); $('pricingClose').addEventListener('click', closePricingDialog); $('membershipTypesClose').addEventListener('click', closeMembershipTypesDialog); $('detailsClose').addEventListener('click', closeDetails); $('detailsContent').addEventListener('click', (event) => { const button = event.target.closest('[data-payment-receipt]'); if (!button) return; window.topGymPrint?.printPaymentReceipt(button.dataset.memberId, button.dataset.paymentId); }); $('addMembershipTypeButton').addEventListener('click', () => openMembershipTypeDialog()); $('membershipTypeDialogClose').addEventListener('click', closeMembershipTypeDialog); $('membershipTypeCancel').addEventListener('click', closeMembershipTypeDialog); $('membershipTypeForm').addEventListener('submit', submitMembershipType); ['membershipTypeName', 'membershipTypeMode', 'membershipTypeDuration', 'membershipTypeMultiplier'].forEach((id) => $(id).addEventListener('input', updateMembershipTypePreview)); $('membershipTypeMode').addEventListener('change', updateMembershipTypePreview); $('membershipTypesTableContainer').addEventListener('click', (event) => { const button = event.target.closest('[data-type-action="edit"]'); if (button) openMembershipTypeDialog(button.dataset.code); }); $('membershipType').addEventListener('change', () => { if (!state.endDateManual) $('endDate').value = calculatedEndDate($('startDate').value, $('membershipType').value); updateFormPricing(); }); $('membershipPlan').addEventListener('change', updateFormPricing); $('discountAmount').addEventListener('input', updateFormPricing); $('startDate').addEventListener('change', () => { if (!state.endDateManual) $('endDate').value = calculatedEndDate($('startDate').value, $('membershipType').value); }); $('endDate').addEventListener('input', () => { state.endDateManual = true; }); let timer; $('searchInput').addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(loadMembersOnly, 300); }); $('statusFilter').addEventListener('change', loadMembersOnly);
             $('membersList').addEventListener('click', async (event) => { const button = event.target.closest('button[data-action]'); if (!button) return; const id = button.dataset.id || button.closest('[data-member-id]')?.dataset.memberId; const member = state.members.find((item) => String(item.id) === String(id)); if (!member) { await notify('تعذر تحديد العضو. حدّث الصفحة وحاول مرة أخرى.', 'error'); return; } const action = button.dataset.action; if (action === 'details') { await openDetails(member); return; } if (action === 'edit') { openMemberDialog(member); return; } if (action === 'freeze' || action === 'renew' || action === 'payment') { openDialog(action, member); return; } if (action === 'resume') { try { await withLoader(() => api(`/api/members/${member.id}/resume`, { method: 'POST' }), 'جاري استئناف العضوية…'); await refreshAfterAction('تم استئناف العضوية.'); } catch (error) { await notify(error.message, 'error'); } return; } if (action === 'delete' && await confirmDelete(member.fullName)) { try { await withLoader(() => api(`/api/members/${member.id}`, { method: 'DELETE' }), 'جاري حذف العضو…'); if (String($('memberId').value) === String(member.id)) setFormDefaults(true); await refreshAfterAction('تم حذف العضو.'); } catch (error) { await notify(error.message, 'error'); } } });
+            $('membersList').addEventListener('click', async (event) => {
+                const button = event.target.closest('button[data-action="refund"]');
+                if (!button) return;
+                event.preventDefault();
+                const id = button.dataset.id || button.closest('[data-member-id]')?.dataset.memberId;
+                const member = state.members.find((item) => String(item.id) === String(id));
+                if (!member) {
+                    await notify('تعذر تحديد العضو. حدّث الصفحة وحاول مرة أخرى.', 'error');
+                    return;
+                }
+                await openRefundDialog(member);
+            });
             const membersQuickActionsObserver = new MutationObserver(() => decorateMemberQuickActions());
             membersQuickActionsObserver.observe($('membersList'), { childList: true, subtree: true });
             window.addEventListener('topgym:attendance-updated', () => loadMembersOnly());
