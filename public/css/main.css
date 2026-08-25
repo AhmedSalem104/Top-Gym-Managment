@@ -14237,6 +14237,69 @@ body .swal2-popup.qr-member-preview-alert .swal2-actions > button.qr-member-prev
   .table-card-layout .library-row-actions .btn {
     flex: 0 0 auto;
   }
+
+  /* Daily passes use denser desktop rows, so reset their fixed row heights
+     before applying the shared mobile card surface. */
+  .table-card-layout.dashboard-day-pass-table > tbody > tr,
+  .table-card-layout.day-pass-table > tbody > tr {
+    height: auto !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .table-card-layout.dashboard-day-pass-table > tbody > tr > td:first-child,
+  .table-card-layout.day-pass-table > tbody > tr > td:first-child,
+  .table-card-layout.dashboard-day-pass-table > tbody > tr > td:last-child,
+  .table-card-layout.day-pass-table > tbody > tr > td:last-child {
+    grid-column: 1 / -1;
+  }
+
+  .table-card-layout.dashboard-day-pass-table > tbody > tr > td:first-child,
+  .table-card-layout.day-pass-table > tbody > tr > td:first-child {
+    display: block;
+    padding-block: var(--space-3);
+    border-bottom: 0;
+    text-align: start;
+  }
+
+  .table-card-layout.dashboard-day-pass-table > tbody > tr > td:first-child::before,
+  .table-card-layout.day-pass-table > tbody > tr > td:first-child::before,
+  .table-card-layout.dashboard-day-pass-table > tbody > tr > td:last-child::before,
+  .table-card-layout.day-pass-table > tbody > tr > td:last-child::before {
+    display: none;
+  }
+
+  .table-card-layout.dashboard-day-pass-table > tbody > tr > td:first-child strong,
+  .table-card-layout.dashboard-day-pass-table > tbody > tr > td:first-child small,
+  .table-card-layout.day-pass-table > tbody > tr > td:first-child strong,
+  .table-card-layout.day-pass-table > tbody > tr > td:first-child small {
+    display: block;
+    max-width: 100%;
+    margin-inline-start: 0;
+    overflow: visible;
+    text-overflow: clip;
+    white-space: normal;
+  }
+
+  .table-card-layout.dashboard-day-pass-table > tbody > tr > td:last-child,
+  .table-card-layout.day-pass-table > tbody > tr > td:last-child {
+    display: block;
+    padding-top: var(--space-3);
+  }
+
+  .table-card-layout.dashboard-day-pass-table .day-pass-actions,
+  .table-card-layout.day-pass-table .day-pass-actions {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    justify-content: flex-start;
+    gap: var(--space-2);
+    flex-wrap: wrap;
+  }
+
+  .table-card-layout.dashboard-day-pass-table .day-pass-action-button,
+  .table-card-layout.day-pass-table .day-pass-action-button {
+    flex: 0 0 auto;
+  }
 }
 
 @media (max-width: 991px) {
