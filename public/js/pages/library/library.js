@@ -595,7 +595,7 @@
     async function confirmDelete(item) {
         const name = itemName(item);
         if (window.Swal) {
-            const result = await window.Swal.fire({ position: 'center', backdrop: 'rgba(15, 23, 42, .52)', icon: 'warning', title: 'تأكيد الحذف', text: `هل تريد حذف ${name}؟`, showCancelButton: true, confirmButtonText: 'نعم، احذف', cancelButtonText: 'إلغاء', buttonsStyling: false, customClass: { popup: 'delete-confirm-alert', confirmButton: 'btn btn-primary', cancelButton: 'btn btn-light' } });
+            const result = await window.Swal.fire({ position: 'center', backdrop: window.topGymThemeValue('--overlay'), icon: 'warning', title: 'تأكيد الحذف', text: `هل تريد حذف ${name}؟`, showCancelButton: true, confirmButtonText: 'نعم، احذف', cancelButtonText: 'إلغاء', buttonsStyling: false, customClass: { popup: 'delete-confirm-alert', confirmButton: 'btn btn-primary', cancelButton: 'btn btn-light' } });
             return result.isConfirmed;
         }
         return window.confirm(`هل تريد حذف ${name}؟`);

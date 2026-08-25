@@ -5,7 +5,6 @@
     const state = { period: 'month', requestId: 0, abortController: null };
     const PERIOD_LABELS = { week: 'هذا الأسبوع', month: 'هذا الشهر', year: 'هذه السنة' };
     const STATUS_LABELS = { active: 'نشطة', expiring_soon: 'قريبة الانتهاء', expired: 'منتهية', frozen: 'مجمدة' };
-    const STATUS_COLORS = { active: '#10b981', expiring_soon: '#f59e0b', expired: '#ef4444', frozen: '#8b5cf6' };
     const PLAN_LABELS = { gym_only: 'جيم فقط', gym_cardio: 'جيم وكارديو' };
     const TYPE_LABELS = { monthly: 'شهرية', half_month: 'نصف شهر', quarterly: 'ربع سنوية', semiannual: 'نصف سنوية', annual: 'سنوية', 'two month': 'شهرين', custom_mslzyl8m: 'شهرين' };
     const PAYMENT_LABELS = { cash: 'نقدي', card: 'بطاقة', transfer: 'تحويل', other: 'أخرى' };
@@ -207,7 +206,7 @@
         target.innerHTML = `<svg class="analytics-trend-svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="رسم التحصيل والمصروفات"><g>${yTicks}</g><polyline points="${collectedPoints}" class="analytics-line collected-line"/><polyline points="${expensePoints}" class="analytics-line expenses-line"/><g class="analytics-points collected-points">${collected.map((value, index) => `<circle cx="${x(index)}" cy="${y(value)}" r="3.5"><title>${bucketLabel(labels[index], data.period?.key)}: ${money(value)}</title></circle>`).join('')}</g><g class="analytics-points expenses-points">${expenses.map((value, index) => `<circle cx="${x(index)}" cy="${y(value)}" r="3.5"><title>${bucketLabel(labels[index], data.period?.key)}: ${money(value)}</title></circle>`).join('')}</g><g>${xLabels}</g></svg>`;
     }
 
-    function renderBars(targetId, items, labels, color, emptyText = 'لا توجد بيانات خلال الفترة.') {
+    function renderBars(targetId, items, labels, emptyText = 'لا توجد بيانات خلال الفترة.') {
         const target = $(targetId);
         if (!target) return;
         const rows = (items || []).filter((item) => Number(item.value || 0) > 0);
@@ -300,11 +299,11 @@
         renderSmartStrip(data);
         renderKpis(data);
         renderTrend(data);
-        renderBars('analyticsStatusChart', data.distributions?.statuses, STATUS_LABELS, '#2563eb', 'لا توجد حالات مسجلة.');
+        renderBars('analyticsStatusChart', data.distributions?.statuses, STATUS_LABELS, 'لا توجد حالات مسجلة.');
         const membershipItems = [...(data.distributions?.plans || []), ...(data.distributions?.types || [])];
         const membershipLabels = { ...PLAN_LABELS, ...TYPE_LABELS };
-        renderBars('analyticsMembershipChart', membershipItems, membershipLabels, '#7c3aed');
-        renderBars('analyticsPaymentChart', data.distributions?.paymentMethods, PAYMENT_LABELS, '#059669');
+        renderBars('analyticsMembershipChart', membershipItems, membershipLabels);
+        renderBars('analyticsPaymentChart', data.distributions?.paymentMethods, PAYMENT_LABELS);
         renderActivity(data);
         renderAttendanceInsights(data);
     }

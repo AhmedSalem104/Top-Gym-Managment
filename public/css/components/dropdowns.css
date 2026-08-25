@@ -113,7 +113,7 @@
 }
 
 .action-menu-item[data-action="print"] .action-menu-print-icon {
-  color: #b86b16;
+  color: var(--color-warning);
 }
 
 .action-menu-item[data-action="freeze"]:hover {

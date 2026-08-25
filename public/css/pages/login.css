@@ -8,7 +8,7 @@
   overflow: hidden;
   padding: clamp(12px, 2.2vw, 24px);
   isolation: isolate;
-  background-color: #020817;
+  background-color: var(--bg-app);
   background-position: center;
   background-size: cover;
   background-repeat: no-repeat;
@@ -17,7 +17,7 @@
 /* Do not fetch the login-only hero while the session is being restored or
    while the authenticated application is already visible. */
 body.auth-locked .auth-screen {
-  background-image: linear-gradient(180deg, rgb(2 10 25 / 0.68), rgb(2 10 25 / 0.78)), url("/assets/gym-background.webp");
+  background-image: linear-gradient(180deg, var(--overlay), var(--overlay)), url("/assets/gym-background.webp");
 }
 
 .auth-screen::before {
@@ -25,8 +25,8 @@ body.auth-locked .auth-screen {
   inset: -4%;
   z-index: 0;
   background:
-    linear-gradient(90deg, rgb(1 7 19 / 0.08), transparent 48%, rgb(2 15 35 / 0.06)),
-    radial-gradient(circle at 50% 0%, rgb(96 165 250 / 0.07), transparent 42%);
+    linear-gradient(90deg, var(--primary-soft), transparent 48%, var(--primary-soft)),
+    radial-gradient(circle at 50% 0%, var(--primary-soft), transparent 42%);
   content: "";
   filter: none;
   pointer-events: none;
@@ -45,10 +45,10 @@ body.auth-locked .auth-screen {
   width: 100%;
   min-height: 0;
   overflow: hidden;
-  border: 1px solid rgb(148 163 184 / 0.32);
+  border: 1px solid var(--border-primary);
   border-radius: 24px;
-  background: #fff;
-  box-shadow: 0 22px 56px rgb(0 0 0 / 0.28);
+  background: var(--bg-card);
+  box-shadow: var(--shadow-popup);
 }
 
 .auth-form-panel {
@@ -56,7 +56,7 @@ body.auth-locked .auth-screen {
   display: block;
   min-width: 0;
   padding: 36px 40px 30px;
-  background: #fff;
+  background: var(--bg-card);
 }
 
 .auth-form {
@@ -74,7 +74,7 @@ body.auth-locked .auth-screen {
 }
 
 .auth-form-heading h2 {
-  color: #0f172a;
+  color: var(--text-primary);
   font-size: 32px;
   font-weight: var(--weight-extrabold);
   line-height: 1.25;
@@ -87,7 +87,7 @@ body.auth-locked .auth-screen {
 
 .auth-form .auth-field > label {
   display: block;
-  color: #172033;
+  color: var(--text-primary);
   font-size: var(--font-sm);
   font-weight: var(--weight-bold);
 }
@@ -102,10 +102,10 @@ body.auth-locked .auth-screen {
 .auth-form .auth-password-wrap > input:not([type="checkbox"]):not([type="radio"]) {
   box-sizing: border-box;
   min-height: 54px;
-  border: 1px solid #d7e3f2;
+  border: 1px solid var(--border-primary);
   border-radius: 12px;
-  background: #fff;
-  color: #0f172a;
+  background: var(--bg-input);
+  color: var(--text-primary);
   font-family: var(--font-body);
   font-size: var(--font-md);
   outline: 0;
@@ -114,14 +114,14 @@ body.auth-locked .auth-screen {
 
 .auth-form .auth-input-wrap > input:not([type="checkbox"]):not([type="radio"]):hover,
 .auth-form .auth-password-wrap > input:not([type="checkbox"]):not([type="radio"]):hover {
-  border-color: #93b4e6;
-  background: #fff;
+  border-color: var(--border-hover);
+  background: var(--bg-card);
 }
 
 .auth-form .auth-input-wrap > input:not([type="checkbox"]):not([type="radio"]):focus,
 .auth-form .auth-password-wrap > input:not([type="checkbox"]):not([type="radio"]):focus {
-  border-color: #2563eb;
-  box-shadow: 0 0 0 3px rgb(37 99 235 / 0.12);
+  border-color: var(--primary);
+  box-shadow: var(--focus-ring);
 }
 
 .auth-form .auth-input-wrap > input:not([type="checkbox"]):not([type="radio"]) {
@@ -160,7 +160,7 @@ body.auth-locked .auth-screen {
   border: 0;
   border-radius: 10px;
   background: transparent;
-  color: #64748b;
+  color: var(--text-muted);
   transform: translateY(-50%);
 }
 
@@ -214,23 +214,23 @@ body.auth-locked .auth-screen {
   width: 100%;
   min-height: 54px;
   border-radius: 12px;
-  background: #2563eb;
-  box-shadow: 0 10px 22px rgb(37 99 235 / 0.2);
+  background: var(--primary);
+  box-shadow: var(--shadow-primary);
   font-size: var(--font-lg);
 }
 
 .auth-submit:hover:not(:disabled) {
-  background: #1d4ed8;
-  box-shadow: 0 12px 24px rgb(37 99 235 / 0.24);
+  background: var(--primary-hover);
+  box-shadow: var(--shadow-primary-strong);
 }
 
 .auth-submit:active:not(:disabled) {
-  background: #1e40af;
+  background: var(--primary-active);
 }
 
 .auth-submit:disabled,
 .auth-submit[aria-busy="true"] {
-  background: #93b4ef;
+  background: var(--text-disabled);
   box-shadow: none;
 }
 

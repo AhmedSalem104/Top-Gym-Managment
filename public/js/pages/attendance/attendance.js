@@ -498,7 +498,10 @@
             $('memberQrPhone').textContent = member.phone || '—';
             const canvas = $('memberQrCanvas');
             if (!window.QRCode || !canvas) throw new Error('أداة إنشاء QR Code غير متاحة حالياً.');
-            await window.QRCode.toCanvas(canvas, qrPayload(member), { width: 210, margin: 1, color: { dark: '#0f172a', light: '#ffffff' } });
+            const styles = getComputedStyle(document.documentElement);
+            const qrInk = styles.getPropertyValue('--qr-ink').trim();
+            const qrPaper = styles.getPropertyValue('--qr-paper').trim();
+            await window.QRCode.toCanvas(canvas, qrPayload(member), { width: 210, margin: 1, color: { dark: qrInk, light: qrPaper } });
             const dialog = $('memberQrDialog');
             if (dialog?.showModal) dialog.showModal(); else dialog?.setAttribute('open', '');
         } catch (error) {

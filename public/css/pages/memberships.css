@@ -51,7 +51,7 @@
 
 .pricing-summary,
 .type-preview {
-  border: 1px solid #cfe0fa;
+  border: 1px solid var(--border-primary);
   border-radius: var(--radius-md);
   background: var(--color-primary-soft);
   color: var(--color-primary-hover);
@@ -64,7 +64,7 @@
    visual language distinct prevents the two management tables from reading
    like one mixed data set. */
 #managementSection .management-tab-header {
-  border: 1px solid #cfe0fa;
+  border: 1px solid var(--border-primary);
   border-radius: var(--radius-lg);
   background: linear-gradient(135deg, var(--color-primary-soft), var(--color-surface));
   padding: var(--space-5);
@@ -73,7 +73,7 @@
 #managementSection .management-shortcuts {
   position: relative;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  border-color: #d7e3f3;
+  border-color: var(--border-secondary);
   background: var(--color-surface);
   padding-top: calc(var(--space-5) + var(--space-2));
 }
@@ -95,13 +95,13 @@
 }
 
 #managementSection .management-shortcut:first-of-type {
-  border-color: #c9dcff;
-  background: linear-gradient(135deg, #f5f9ff, var(--color-surface));
+  border-color: var(--primary-border);
+  background: linear-gradient(135deg, var(--primary-soft), var(--color-surface));
 }
 
 #managementSection .management-shortcut:last-of-type {
-  border-color: #c9ead8;
-  background: linear-gradient(135deg, #f4fcf8, var(--color-surface));
+  border-color: var(--success-border);
+  background: linear-gradient(135deg, var(--success-soft), var(--color-surface));
 }
 
 #managementSection .management-shortcut:last-of-type .management-shortcut-icon {
@@ -117,12 +117,12 @@
 
 #pricingDialog {
   width: min(1060px, calc(100% - 32px));
-  border-color: #c9dcff;
+  border-color: var(--primary-border);
 }
 
 #membershipTypesDialog {
   width: min(940px, calc(100% - 32px));
-  border-color: #c9ead8;
+  border-color: var(--success-border);
 }
 
 #pricingDialog > form.dialog-body,
@@ -140,12 +140,12 @@
 }
 
 #pricingDialog .details-dialog-head {
-  border: 1px solid #c9dcff;
+  border: 1px solid var(--primary-border);
   background: linear-gradient(135deg, var(--color-primary-soft), var(--color-surface));
 }
 
 #membershipTypesDialog .details-dialog-head {
-  border: 1px solid #c9ead8;
+  border: 1px solid var(--success-border);
   background: linear-gradient(135deg, var(--color-success-soft), var(--color-surface));
 }
 
@@ -164,13 +164,13 @@
 
 #pricingDialog .details-dialog-head::before {
   background: var(--color-primary);
-  color: #fff;
+  color: var(--text-on-primary);
   content: '01';
 }
 
 #membershipTypesDialog .details-dialog-head::before {
   background: var(--color-success);
-  color: #fff;
+  color: var(--text-on-primary);
   content: '02';
 }
 
@@ -182,15 +182,15 @@
 }
 
 #pricingDialog .pricing-section-head {
-  border: 1px solid #d7e5ff;
+  border: 1px solid var(--primary-border);
   border-inline-start: 4px solid var(--color-primary);
-  background: #f7faff;
+  background: var(--bg-card-hover);
 }
 
 #membershipTypesDialog .pricing-section-head {
-  border: 1px solid #d8eee1;
+  border: 1px solid var(--success-border);
   border-inline-start: 4px solid var(--color-success);
-  background: #f6fcf8;
+  background: var(--success-soft);
 }
 
 #pricingDialog .pricing-section-head h4,
@@ -211,8 +211,8 @@
   background: var(--color-surface-muted);
 }
 
-#pricingDialog .pricing-table-scroll { border-color: #cfe0fa; }
-#membershipTypesDialog .pricing-table-scroll { border-color: #c9ead8; }
+#pricingDialog .pricing-table-scroll { border-color: var(--border-primary); }
+#membershipTypesDialog .pricing-table-scroll { border-color: var(--success-border); }
 
 #pricingDialog .pricing-table,
 #membershipTypesDialog .membership-types-table {
@@ -237,8 +237,8 @@
 }
 
 #pricingDialog .pricing-table th {
-  background: #edf4ff;
-  color: #2454a6;
+  background: var(--info-soft);
+  color: var(--info-text);
 }
 
 #pricingDialog .pricing-table th:nth-child(1) { width: 24%; text-align: start; }
@@ -246,11 +246,11 @@
 #pricingDialog .pricing-table th:nth-child(n + 3) { width: 19.66%; }
 
 #pricingDialog .pricing-table td:first-child {
-  background: #fbfdff;
+  background: var(--bg-card-hover);
   text-align: start;
 }
 
-#pricingDialog .pricing-table tbody tr:hover td { background: #f1f6ff; }
+#pricingDialog .pricing-table tbody tr:hover td { background: var(--bg-card-hover); }
 
 #pricingDialog .pricing-table input[type='text'],
 #pricingDialog .pricing-table input:not([type]) {
@@ -281,8 +281,8 @@
 }
 
 #membershipTypesDialog .membership-types-table th {
-  background: #edf9f2;
-  color: #19744f;
+  background: var(--success-soft);
+  color: var(--success-text);
 }
 
 #membershipTypesDialog .membership-types-table th:nth-child(1) { width: 29%; text-align: start; }
@@ -292,17 +292,17 @@
 #membershipTypesDialog .membership-types-table th:nth-child(5) { width: 16%; }
 
 #membershipTypesDialog .membership-types-table td:first-child { text-align: start; }
-#membershipTypesDialog .membership-types-table tbody tr:hover td { background: #f0fbf5; }
+#membershipTypesDialog .membership-types-table tbody tr:hover td { background: var(--bg-card-hover); }
 
 .type-status {
   display: inline-flex;
   min-height: 28px;
   align-items: center;
   justify-content: center;
-  border: 1px solid #a9ddc2;
+  border: 1px solid var(--success-border);
   border-radius: var(--radius-pill);
   background: var(--color-success-soft);
-  color: #087749;
+  color: var(--success-text);
   padding: 0 var(--space-3);
   font-size: var(--font-xs);
   font-weight: var(--weight-bold);
@@ -310,9 +310,9 @@
 }
 
 .type-status.off {
-  border-color: #f2d39b;
+  border-color: var(--warning-border);
   background: var(--color-warning-soft);
-  color: #9b6410;
+  color: var(--warning-text);
 }
 
 .type-actions {
@@ -323,14 +323,14 @@
 
 #membershipTypesDialog .type-actions .btn {
   min-width: 82px;
-  border-color: #b9e5d2;
+  border-color: var(--success-border);
   background: var(--color-success-soft);
-  color: #087749;
+  color: var(--success-text);
 }
 
 #membershipTypesDialog .type-actions .btn:hover:not(:disabled) {
   background: var(--color-success);
-  color: #fff;
+  color: var(--text-on-primary);
 }
 
 .auth-form-grid,
@@ -381,7 +381,7 @@
   display: grid;
   gap: var(--space-3);
   margin-top: var(--space-5);
-  border: 1px solid #d9e6f8;
+  border: 1px solid var(--info-border);
   border-radius: var(--radius-lg);
   background: var(--color-info-soft);
   padding: var(--space-4);
@@ -391,7 +391,7 @@
 .day-pass-pricing-table { width: 100%; min-width: 500px; }
 .day-pass-pricing-table th,
 .day-pass-pricing-table td { padding: var(--space-3); text-align: center; vertical-align: middle; }
-.day-pass-pricing-table th { background: rgb(255 255 255 / 0.7); color: var(--color-text-soft); font-size: var(--font-xs); }
+.day-pass-pricing-table th { background: var(--table-header-bg); color: var(--color-text-soft); font-size: var(--font-xs); }
 .day-pass-pricing-table td { border-top: 1px solid var(--border-color); }
 .day-pass-pricing-table td:first-child { text-align: start; }
 .day-pass-pricing-table strong,
@@ -589,7 +589,7 @@
 }
 
 .financial-summary-card.remaining {
-  border-color: #f2c4c4;
+  border-color: var(--danger-border);
   background: var(--color-danger-soft);
 }
 
@@ -789,7 +789,7 @@
   height: 72px;
   flex: 0 0 auto;
   place-items: center;
-  border: 1px solid #cfe0fa;
+  border: 1px solid var(--border-primary);
   border-radius: 50%;
   background: var(--color-pale-blue);
   color: var(--color-primary);
@@ -820,7 +820,7 @@
   display: inline-flex;
   min-height: 28px;
   align-items: center;
-  border: 1px solid #9ec2f7;
+  border: 1px solid var(--primary-border);
   border-radius: var(--radius-pill);
   background: var(--color-surface);
   color: var(--color-primary);
@@ -860,7 +860,7 @@
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  border: 1px solid #f1d08a;
+  border: 1px solid var(--warning-border);
   border-radius: 16px;
   background: var(--color-warning-surface);
   padding: 18px 20px;
@@ -868,13 +868,13 @@
 }
 
 #detailsDialog .member-expiry-banner[data-tone="danger"] {
-  border-color: #fecaca;
-  background: #fef2f2;
+  border-color: var(--danger-border);
+  background: var(--danger-soft);
   color: var(--color-outstanding);
 }
 
 #detailsDialog .member-expiry-banner[data-tone="info"] {
-  border-color: #bfdbfe;
+  border-color: var(--info-border);
   background: var(--color-pale-blue);
   color: var(--color-primary);
 }
@@ -886,15 +886,15 @@
   flex: 0 0 auto;
   place-items: center;
   border-radius: 50%;
-  background: rgb(208 135 0 / 0.12);
+  background: var(--warning-soft);
 }
 
 #detailsDialog .member-expiry-banner[data-tone="danger"] .member-expiry-icon {
-  background: rgb(220 38 38 / 0.1);
+  background: var(--danger-soft);
 }
 
 #detailsDialog .member-expiry-banner[data-tone="info"] .member-expiry-icon {
-  background: rgb(37 99 235 / 0.1);
+  background: var(--info-soft);
 }
 
 #detailsDialog .member-expiry-banner > span:last-child {
@@ -937,7 +937,7 @@
 }
 
 #detailsDialog .member-detail-stat.has-outstanding {
-  border-color: #fecaca;
+  border-color: var(--danger-border);
 }
 
 #detailsDialog .member-detail-stat-icon {
@@ -1019,7 +1019,7 @@
   align-items: center;
   justify-content: center;
   gap: var(--space-2);
-  border: 1px solid #bcd5f7;
+  border: 1px solid var(--primary-border);
   border-radius: 12px;
   background: var(--color-surface);
   color: var(--color-primary);
@@ -1055,13 +1055,13 @@
 #detailsDialog .member-details-action-primary {
   border-color: var(--color-primary);
   background: var(--color-primary);
-  color: #fff;
+  color: var(--text-on-primary);
 }
 
 #detailsDialog .member-details-action-primary:hover:not(:disabled) {
-  border-color: #1d4ed8;
-  background: #1d4ed8;
-  color: #fff;
+  border-color: var(--primary-active);
+  background: var(--primary-active);
+  color: var(--text-on-primary);
 }
 
 #detailsDialog .member-details-action-more {
@@ -1128,8 +1128,8 @@
 
 #detailsDialog .member-store-purchases {
   gap: var(--space-3);
-  border-color: #dbeafe;
-  background: #fbfdff;
+  border-color: var(--info-border);
+  background: var(--bg-card-hover);
 }
 
 #detailsDialog .member-store-purchases-head {

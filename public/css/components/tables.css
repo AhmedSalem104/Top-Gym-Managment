@@ -30,7 +30,7 @@ thead,
 th,
 td {
   padding: var(--space-3) var(--space-4);
-  border-bottom: 1px solid #edf1f6;
+  border-bottom: 1px solid var(--border-secondary);
   text-align: center;
   vertical-align: middle;
 }
@@ -48,7 +48,7 @@ tbody tr {
 }
 
 tbody tr:hover {
-  background: #fbfdff;
+  background: var(--bg-card-hover);
 }
 
 tbody tr:last-child td {
@@ -193,7 +193,7 @@ tbody td:not(:last-child) {
 .table-wrap::-webkit-scrollbar-thumb,
 .data-table-wrap::-webkit-scrollbar-thumb {
   border-radius: var(--radius-pill);
-  background: #c7d3e3;
+  background: var(--border-strong);
 }
 
 /* Shared table contract for every data view. Page-specific files may tune a
@@ -367,7 +367,7 @@ table .action-group {
   z-index: 2;
   min-width: 132px;
   background: var(--color-surface);
-  box-shadow: -8px 0 14px rgb(15 23 42 / 0.05);
+  box-shadow: var(--shadow-sm);
 }
 
 .members-table thead th:last-child,

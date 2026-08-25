@@ -4,18 +4,18 @@
 .bg-slate-100,
 .gym-page-bg { background: var(--color-bg); }
 .bg-slate-900,
-.bg-slate-950 { background: #132238; }
+.bg-slate-950 { background: var(--bg-header); }
 .text-slate-900 { color: var(--color-text); }
 .text-slate-700 { color: var(--color-text-soft); }
 .text-slate-600 { color: var(--color-text-muted); }
 .text-slate-500 { color: var(--color-text-subtle); }
-.text-white { color: #fff; }
+.text-white { color: var(--text-on-primary); }
 .text-blue-600 { color: var(--color-primary); }
 .text-green-600 { color: var(--color-success); }
 .text-red-600 { color: var(--color-danger); }
 .border-slate-200 { border-color: var(--border-color); }
-.border-slate-800 { border-color: rgb(255 255 255 / 0.12); }
-.border-blue-200 { border-color: #c8dcff; }
+.border-slate-800 { border-color: var(--border-primary); }
+.border-blue-200 { border-color: var(--info-border); }
 .rounded,
 .rounded-lg,
 .rounded-xl,
@@ -51,5 +51,5 @@
 }
 
 .gym-brand-bg {
-  background: linear-gradient(135deg, var(--color-primary), #2d8cff);
+  background: linear-gradient(135deg, var(--color-primary), var(--primary-hover));
 }

@@ -71,24 +71,41 @@ function renderQrMemberPage(member) {
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="robots" content="noindex,nofollow">
-    <meta name="theme-color" content="#0f172a">
+    <meta name="theme-color" content="#f5f7fb">
+    <script>
+        (function () {
+            try {
+                var savedTheme = window.localStorage.getItem('topgym-theme');
+                document.documentElement.dataset.theme = savedTheme === 'dark' || savedTheme === 'light' ? savedTheme : 'light';
+            } catch (error) {
+                document.documentElement.dataset.theme = 'light';
+            }
+        }());
+    </script>
+    <link rel="stylesheet" href="/css/main.css?v=37">
     <title>بيانات عضوية ${escapeHtml(member.fullName)}</title>
 </head>
-<body>
-    <main class="card">
-        <header class="head"><div class="brand">TOP GYM</div><h1>بيانات العضوية</h1><p class="subtitle">تم التعرف على رمز المشترك بنجاح</p></header>
-        <section class="body">
-            <div class="member"><div><strong>${escapeHtml(member.fullName || '—')}</strong><span>${escapeHtml(member.phone || '—')}</span></div><b class="status ${statusClass}">${escapeHtml(statusLabel)}</b></div>
-            <div class="grid">
-                <div class="item"><span>الباقة</span><strong>${escapeHtml(planLabel)}</strong></div>
-                <div class="item"><span>النوع</span><strong>${escapeHtml(typeLabel)}</strong></div>
-                <div class="item"><span>تاريخ البداية</span><strong>${escapeHtml(qrPageDate(membership.startDate))}</strong></div>
-                <div class="item"><span>تاريخ الانتهاء</span><strong>${escapeHtml(qrPageDate(membership.effectiveEndDate || membership.endDate))}</strong></div>
-                ${remaining > 0 ? `<div class="item balance"><span>المبلغ المتبقي</span><strong>${remaining.toFixed(2)} ج.م</strong></div>` : ''}
+<body class="qr-member-page">
+    <main class="qr-member-shell">
+        <button class="theme-toggle-button" type="button" data-theme-toggle aria-pressed="false" title="تفعيل الوضع الداكن">
+            <span aria-hidden="true">◐</span><span data-theme-toggle-label>الوضع الداكن</span>
+        </button>
+        <section class="qr-member-card">
+            <header class="qr-member-head"><div class="qr-member-brand">TOP GYM</div><h1>بيانات العضوية</h1><p>تم التعرف على رمز المشترك بنجاح</p></header>
+            <section class="qr-member-body">
+                <div class="qr-member-identity"><div><strong>${escapeHtml(member.fullName || '—')}</strong><span>${escapeHtml(member.phone || '—')}</span></div><b class="qr-member-status ${statusClass}">${escapeHtml(statusLabel)}</b></div>
+            <div class="qr-member-grid">
+                <div class="qr-member-item"><span>الباقة</span><strong>${escapeHtml(planLabel)}</strong></div>
+                <div class="qr-member-item"><span>النوع</span><strong>${escapeHtml(typeLabel)}</strong></div>
+                <div class="qr-member-item"><span>تاريخ البداية</span><strong>${escapeHtml(qrPageDate(membership.startDate))}</strong></div>
+                <div class="qr-member-item"><span>تاريخ الانتهاء</span><strong>${escapeHtml(qrPageDate(membership.effectiveEndDate || membership.endDate))}</strong></div>
+                ${remaining > 0 ? `<div class="qr-member-item"><span>المبلغ المتبقي</span><strong>${remaining.toFixed(2)} ج.م</strong></div>` : ''}
             </div>
         </section>
-        <footer class="foot">نتمنى لك تجربة تدريب مميزة — TOP GYM</footer>
+            <footer class="qr-member-foot">نتمنى لك تجربة تدريب مميزة — TOP GYM</footer>
+        </section>
     </main>
+    <script defer src="/js/theme.js?v=1"></script>
 </body>
 </html>`;
 }

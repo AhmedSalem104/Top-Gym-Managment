@@ -309,8 +309,8 @@
     direction: rtl;
     border-top: 0;
     border-radius: 0 0 var(--radius-lg) var(--radius-lg);
-    background: #132238;
-    box-shadow: 0 8px 20px rgb(15 23 42 / 0.18);
+    background: var(--bg-sidebar);
+    box-shadow: var(--shadow-card);
   }
 
   .page-tab {
@@ -318,20 +318,20 @@
     min-height: 58px;
     flex-direction: column;
     gap: 3px;
-    border: 1px solid rgb(255 255 255 / 0.14);
+    border: 1px solid var(--border-secondary);
     border-radius: var(--radius-md);
-    background: rgb(255 255 255 / 0.06);
+    background: var(--primary-soft);
     padding: 6px 3px;
     font-size: 10px;
     line-height: 1.25;
     text-align: center;
     white-space: normal;
-    box-shadow: 0 2px 6px rgb(2 12 27 / 0.16);
+    box-shadow: var(--shadow-sm);
   }
 
   .page-tab:hover {
-    border-color: rgb(133 181 255 / 0.5);
-    background: rgb(255 255 255 / 0.12);
+    border-color: var(--border-hover);
+    background: var(--primary-soft);
   }
 
   .page-tab.active,
@@ -365,18 +365,18 @@
     min-width: 42px;
     height: 42px;
     min-height: 42px;
-    border: 1px solid rgb(255 184 184 / 0.42);
+    border: 1px solid var(--danger-border);
     border-radius: var(--radius-md);
-    background: rgb(215 67 67 / 0.2);
-    color: #ffe0e0;
-    box-shadow: 0 4px 12px rgb(2 12 27 / 0.24);
+    background: var(--danger-soft);
+    color: var(--danger-text);
+    box-shadow: var(--shadow-popup);
   }
 
   .page-tabs > .auth-account-bar .auth-logout-button:hover:not(:disabled),
   .page-tabs > .auth-account-bar .auth-logout-button:focus-visible {
-    border-color: #ffb5b5;
-    background: rgb(215 67 67 / 0.38);
-    color: #fff;
+    border-color: var(--danger-border);
+    background: var(--danger);
+    color: var(--text-on-primary);
   }
 
   .page-tabs > .auth-account-bar .auth-logout-button .ui-icon {
@@ -447,7 +447,7 @@
     overflow: visible;
     padding: 10px 10px 10px 64px;
     direction: rtl;
-    background: #132238;
+    background: var(--bg-sidebar);
   }
 
   .page-tab {
@@ -455,7 +455,7 @@
     min-height: 56px;
     flex-direction: column;
     gap: 4px;
-    border: 1px solid rgb(255 255 255 / 0.14);
+    border: 1px solid var(--border-secondary);
     border-radius: var(--radius-md);
     padding: var(--space-2) var(--space-1);
     font-size: var(--font-xs);
@@ -487,11 +487,11 @@
     height: 44px;
     min-height: 44px;
     place-items: center;
-    border: 1px solid rgb(255 184 184 / 0.42);
+    border: 1px solid var(--danger-border);
     border-radius: var(--radius-md);
-    background: rgb(215 67 67 / 0.2);
-    color: #ffe0e0;
-    box-shadow: 0 4px 12px rgb(2 12 27 / 0.24);
+    background: var(--danger-soft);
+    color: var(--danger-text);
+    box-shadow: var(--shadow-popup);
   }
 
   .page-tabs > .auth-account-bar .auth-logout-button .ui-icon {
@@ -632,7 +632,7 @@
     justify-content: center;
     gap: var(--space-2);
     padding: 0 var(--space-4);
-    border-color: rgb(215 67 67 / 0.22);
+    border-color: var(--danger-border);
     background: var(--color-danger-soft);
     color: var(--color-danger);
   }
@@ -705,7 +705,7 @@
   }
 
   .page-tab:hover {
-    border-color: rgb(23 105 232 / 0.22);
+    border-color: var(--primary-border);
     background: var(--color-primary-soft);
     color: var(--color-primary);
   }
@@ -719,7 +719,7 @@
   }
 
   .page-tabs > .auth-account-bar .auth-logout-button {
-    border-color: rgb(215 67 67 / 0.18);
+    border-color: var(--danger-border);
     background: var(--color-danger-soft);
     color: var(--color-danger);
     box-shadow: none;
@@ -727,9 +727,9 @@
 
   .page-tabs > .auth-account-bar .auth-logout-button:hover:not(:disabled),
   .page-tabs > .auth-account-bar .auth-logout-button:focus-visible {
-    border-color: rgb(215 67 67 / 0.32);
+    border-color: var(--danger-border);
     background: var(--color-danger);
-    color: #fff;
+    color: var(--text-on-primary);
   }
 
   .page-tabs > .auth-account-bar .auth-logout-button .ui-icon {
@@ -761,9 +761,9 @@
     top: 0;
     z-index: var(--z-sticky);
     border-bottom: 1px solid var(--border-color);
-    background: rgb(255 255 255 / 0.94);
+    background: var(--bg-surface);
     color: var(--color-text);
-    box-shadow: 0 4px 18px rgb(30 61 104 / 0.05);
+    box-shadow: var(--shadow-sm);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
   }
@@ -791,7 +791,7 @@
     height: 44px;
     border-radius: 14px;
     background: var(--color-primary);
-    box-shadow: 0 8px 18px rgb(23 105 232 / 0.2);
+    box-shadow: 0 8px 18px var(--primary-soft);
   }
 
   .app-shell > .topbar .top-actions {
@@ -856,7 +856,7 @@
     border-radius: 0;
     background: var(--color-surface);
     padding: 86px 14px 18px;
-    box-shadow: 8px 0 28px rgb(30 61 104 / 0.04);
+    box-shadow: var(--shadow-sm);
     direction: rtl;
   }
 
@@ -937,7 +937,7 @@
     align-items: center;
     justify-content: center;
     gap: 8px;
-    border: 1px solid rgb(215 67 67 / 0.16);
+    border: 1px solid var(--danger-border);
     border-radius: 12px;
     background: var(--color-danger-soft);
     color: var(--color-danger);
@@ -957,9 +957,9 @@
 
   .app-shell > .page-tabs > .auth-account-bar .auth-logout-button:hover:not(:disabled),
   .app-shell > .page-tabs > .auth-account-bar .auth-logout-button:focus-visible {
-    border-color: rgb(215 67 67 / 0.35);
+    border-color: var(--danger-border);
     background: var(--color-danger);
-    color: #fff;
+    color: var(--text-on-primary);
   }
 
   .app-shell > main.page {
@@ -975,7 +975,7 @@
   .app-shell > main.page .panel,
   .app-shell > main.page .store-card,
   .app-shell > main.page .dashboard-store-summary {
-    box-shadow: 0 8px 24px rgb(30 61 104 / 0.045);
+    box-shadow: var(--shadow-card);
   }
 }
 
@@ -1241,7 +1241,7 @@
     border: 1px solid var(--color-border-soft);
     border-radius: 20px;
     background: var(--color-surface);
-    box-shadow: 0 2px 4px rgb(15 23 42 / 0.025), 0 8px 24px rgb(15 23 42 / 0.045);
+    box-shadow: var(--shadow-sm);
   }
 
   .card-grid,
@@ -1258,7 +1258,7 @@
 
   .table-card-layout > tbody > tr:hover {
     border-color: var(--border-focus);
-    box-shadow: 0 4px 8px rgb(15 23 42 / 0.03), 0 12px 28px rgb(37 99 235 / 0.07);
+    box-shadow: var(--shadow-primary);
   }
 
   /* Match the member-details rhythm for every mobile table card: primary
@@ -1335,7 +1335,7 @@
     display: inline-flex;
     min-height: 24px;
     align-items: center;
-    border: 1px solid #c7dcff;
+    border: 1px solid var(--primary-border);
     border-radius: var(--radius-pill);
     background: var(--color-primary-soft);
     color: var(--color-primary);
@@ -1378,23 +1378,23 @@
   }
 
   .members-table.table-card-layout > tbody > tr > td:nth-child(3):has(.badge.expiring_soon) {
-    border-color: #f2d79b;
+    border-color: var(--warning-border);
     background: var(--color-warning-soft);
   }
 
   .members-table.table-card-layout > tbody > tr > td:nth-child(3):has(.badge.active) {
-    border-color: #bfead9;
+    border-color: var(--success-border);
     background: var(--color-success-soft);
   }
 
   .members-table.table-card-layout > tbody > tr > td:nth-child(3):has(.badge.expired),
   .members-table.table-card-layout > tbody > tr > td:nth-child(3):has(.badge.cancelled) {
-    border-color: #f2c4c4;
+    border-color: var(--danger-border);
     background: var(--color-danger-soft);
   }
 
   .members-table.table-card-layout > tbody > tr > td:nth-child(3):has(.badge.frozen) {
-    border-color: #c7dcff;
+    border-color: var(--primary-border);
     background: var(--color-info-soft);
   }
 
@@ -1419,7 +1419,7 @@
     border: 1px solid var(--color-border-soft);
     border-radius: var(--radius-md);
     background: var(--color-surface);
-    box-shadow: 0 2px 8px rgb(15 23 42 / 0.035);
+    box-shadow: var(--shadow-sm);
     padding: var(--space-3);
     text-align: start;
     white-space: normal;
@@ -1578,7 +1578,7 @@
     border-radius: 0;
     background: var(--color-surface);
     padding: 86px 14px 18px;
-    box-shadow: 8px 0 28px rgb(30 61 104 / 0.04);
+    box-shadow: var(--shadow-sm);
     direction: rtl;
   }
 
@@ -1641,7 +1641,7 @@
     align-items: center;
     justify-content: center;
     gap: 8px;
-    border: 1px solid rgb(215 67 67 / 0.16);
+    border: 1px solid var(--danger-border);
     border-radius: 12px;
     background: var(--color-danger-soft);
     color: var(--color-danger);
@@ -1660,9 +1660,9 @@
 
   .page-tabs > .auth-account-bar .auth-logout-button:hover:not(:disabled),
   .page-tabs > .auth-account-bar .auth-logout-button:focus-visible {
-    border-color: rgb(215 67 67 / 0.35);
+    border-color: var(--danger-border);
     background: var(--color-danger);
-    color: #fff;
+    color: var(--text-on-primary);
   }
 }
 
@@ -1766,7 +1766,7 @@
   .app-shell > .page-tabs:hover,
   .app-shell > .page-tabs.is-pinned {
     width: var(--desktop-sidebar-width, 272px);
-    box-shadow: 8px 0 32px rgb(30 61 104 / 0.12);
+    box-shadow: var(--shadow-md);
   }
 
   .app-shell > .page-tabs:not(:hover):not(.is-pinned) > .page-tab {
@@ -1835,7 +1835,7 @@
   }
 
   .sidebar-pin-button:focus-visible {
-    outline: 2px solid rgb(23 105 232 / 0.28);
+    outline: 2px solid var(--primary-border);
     outline-offset: 2px;
   }
 
@@ -1890,7 +1890,7 @@
   .app-shell > .page-tabs > .smart-assistant-launcher:focus-visible {
     border-color: var(--border-focus);
     background: var(--color-primary);
-    color: #fff;
+    color: var(--text-on-primary);
     box-shadow: none;
     transform: none;
   }
@@ -1969,7 +1969,7 @@
     border-bottom: 0;
     border-radius: 0;
     background: var(--sidebar-bg);
-    box-shadow: 12px 0 34px rgb(7 23 44 / 0.16);
+    box-shadow: var(--shadow-popup);
     color: var(--sidebar-text);
     transition: width 420ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 320ms ease, background-color 220ms ease;
     will-change: width;
@@ -1988,7 +1988,7 @@
     line-height: 62px;
     opacity: 1;
     text-align: center;
-    text-shadow: 0 4px 16px rgb(0 0 0 / 0.24);
+    text-shadow: var(--text-shadow-soft);
     white-space: nowrap;
   }
 
@@ -2034,7 +2034,7 @@
 
   .app-shell > .page-tabs > .page-tab.active,
   .app-shell > .page-tabs > .page-tab[aria-selected="true"] {
-    border-color: rgb(255 255 255 / 0.12);
+    border-color: var(--primary-soft);
     background: var(--sidebar-active-bg);
     color: var(--sidebar-active-text);
     box-shadow: var(--sidebar-active-shadow);
@@ -2049,7 +2049,7 @@
     left: 6px;
     width: 3px;
     border-radius: var(--radius-pill);
-    background: rgb(255 255 255 / 0.9);
+    background: var(--bg-surface);
     content: "";
   }
 
@@ -2078,7 +2078,7 @@
   .app-shell > .page-tabs.is-pinned,
   .app-shell > .page-tabs:focus-within {
     width: var(--sidebar-width-expanded);
-    box-shadow: 18px 0 44px rgb(7 23 44 / 0.24);
+    box-shadow: var(--shadow-popup);
   }
 
   .app-shell > .page-tabs:not(:hover):not(.is-pinned):not(:focus-within) > .page-tab,
@@ -2144,7 +2144,7 @@
     place-items: center;
     border: 1px solid var(--sidebar-border);
     border-radius: 11px;
-    background: rgb(255 255 255 / 0.07);
+    background: var(--primary-soft);
     color: var(--sidebar-text-muted);
     transition: background-color 180ms ease, border-color 180ms ease, color 180ms ease, transform 220ms ease;
   }
@@ -2152,14 +2152,14 @@
   .app-shell > .page-tabs > .sidebar-pin-control .sidebar-pin-button:hover,
   .app-shell > .page-tabs > .sidebar-pin-control .sidebar-pin-button:focus-visible,
   .app-shell > .page-tabs > .sidebar-pin-control .sidebar-pin-button[aria-pressed="true"] {
-    border-color: rgb(151 198 255 / 0.5);
-    background: rgb(23 105 232 / 0.52);
-    color: #fff;
+    border-color: var(--border-hover);
+    background: var(--primary);
+    color: var(--text-on-primary);
     transform: translateY(-1px);
   }
 
   .app-shell > .page-tabs > .sidebar-pin-control .sidebar-pin-button:focus-visible {
-    outline: 2px solid rgb(151 198 255 / 0.72);
+    outline: 2px solid var(--border-hover);
     outline-offset: 3px;
   }
 
@@ -2177,19 +2177,19 @@
     width: 100%;
     min-width: 0;
     min-height: 46px;
-    border: 1px solid rgb(255 166 166 / 0.24);
+    border: 1px solid var(--danger-border);
     border-radius: 12px;
-    background: rgb(215 67 67 / 0.13);
-    color: #ffbaba;
+    background: var(--danger-soft);
+    color: var(--danger-text);
     box-shadow: none;
     transition: width 360ms cubic-bezier(0.22, 1, 0.36, 1), background-color 180ms ease, border-color 180ms ease, color 180ms ease;
   }
 
   .app-shell > .page-tabs > .auth-account-bar .auth-logout-button:hover:not(:disabled),
   .app-shell > .page-tabs > .auth-account-bar .auth-logout-button:focus-visible {
-    border-color: rgb(255 184 184 / 0.58);
+    border-color: var(--danger-border);
     background: var(--color-danger);
-    color: #fff;
+    color: var(--text-on-primary);
     transform: none;
   }
 
@@ -2217,18 +2217,18 @@
     min-height: 46px;
     justify-content: flex-start;
     margin-top: 8px;
-    border-color: rgb(100 177 255 / 0.24);
+    border-color: var(--info-border);
     border-radius: 12px;
-    background: rgb(23 105 232 / 0.18);
-    color: #bfe0ff;
+    background: var(--primary-soft);
+    color: var(--info-text);
     box-shadow: none;
   }
 
   .app-shell > .page-tabs > .smart-assistant-launcher:hover:not(:disabled),
   .app-shell > .page-tabs > .smart-assistant-launcher:focus-visible {
-    border-color: rgb(151 198 255 / 0.6);
+    border-color: var(--border-hover);
     background: var(--sidebar-active-bg);
-    color: #fff;
+    color: var(--text-on-primary);
     transform: translateX(2px);
   }
 
@@ -2242,5 +2242,195 @@
 
   .app-shell > .page-tabs > .smart-assistant-launcher[hidden] {
     display: none;
+  }
+}
+
+/* Large-screen sidebar refinement.
+   Keep the compact rail fast to scan, give the expanded state a clear
+   identity header, and keep the account actions anchored at the bottom.
+   This block intentionally starts at 1200px so tablet and mobile navigation
+   retain their existing card/grid presentation. */
+@media (min-width: 1200px) {
+  .app-shell > .page-tabs {
+    background:
+      radial-gradient(circle at 50% -8%, var(--info-soft), transparent 30%),
+      linear-gradient(180deg, var(--sidebar-bg) 0%, var(--sidebar-bg-deep) 100%);
+    border-inline-end-color: var(--sidebar-divider);
+    box-shadow: var(--shadow-popup);
+    scrollbar-color: var(--scrollbar-thumb) transparent;
+    scrollbar-width: thin;
+  }
+
+  .app-shell > .page-tabs::-webkit-scrollbar {
+    width: 5px;
+  }
+
+  .app-shell > .page-tabs::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .app-shell > .page-tabs::-webkit-scrollbar-thumb {
+    border-radius: var(--radius-pill);
+    background: var(--scrollbar-thumb);
+  }
+
+  .app-shell > .page-tabs::before {
+    z-index: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 14px;
+    background: linear-gradient(135deg, var(--info-soft), var(--primary-soft));
+    box-shadow: inset 0 1px 0 var(--primary-soft);
+    text-shadow: var(--text-shadow-strong);
+  }
+
+  .app-shell > .page-tabs::after {
+    z-index: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--sidebar-divider), transparent);
+  }
+
+  .app-shell > .page-tabs > .page-tab {
+    min-height: 50px;
+    gap: 12px;
+    border-radius: 14px;
+    padding-inline: 13px;
+  }
+
+  .app-shell > .page-tabs > .page-tab .ui-icon {
+    width: 30px;
+    height: 30px;
+    padding: 5px;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    transition: background-color 180ms ease, border-color 180ms ease, color 180ms ease;
+  }
+
+  .app-shell > .page-tabs > .page-tab:hover .ui-icon,
+  .app-shell > .page-tabs > .page-tab:focus-visible .ui-icon {
+    border-color: var(--sidebar-border);
+    background: var(--primary-soft);
+  }
+
+  .app-shell > .page-tabs > .page-tab.active,
+  .app-shell > .page-tabs > .page-tab[aria-selected="true"] {
+    border-color: var(--primary-border);
+    background: linear-gradient(100deg, var(--primary-active) 0%, var(--primary-hover) 100%);
+    box-shadow: var(--shadow-primary-strong), inset 0 1px 0 var(--primary-soft);
+  }
+
+  .app-shell > .page-tabs > .page-tab.active .ui-icon,
+  .app-shell > .page-tabs > .page-tab[aria-selected="true"] .ui-icon {
+    border-color: var(--border-secondary);
+    background: var(--primary-soft);
+  }
+
+  .app-shell > .page-tabs > .page-tab.active::after,
+  .app-shell > .page-tabs > .page-tab[aria-selected="true"]::after {
+    top: 9px;
+    bottom: 9px;
+    left: 5px;
+    width: 4px;
+    background: var(--primary-border);
+    box-shadow: 0 0 12px var(--primary-border);
+  }
+
+  .app-shell > .page-tabs > .page-tab:nth-child(6)::before,
+  .app-shell > .page-tabs > .page-tab:nth-child(9)::before,
+  .app-shell > .page-tabs > .page-tab:nth-child(11)::before {
+    position: absolute;
+    top: -7px;
+    right: 0;
+    left: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--sidebar-divider), transparent);
+    content: "";
+    pointer-events: none;
+  }
+
+  .app-shell > .page-tabs > .auth-account-bar {
+    gap: 10px;
+    border-top-color: var(--border-secondary);
+  }
+
+  .app-shell > .page-tabs > .auth-account-bar .auth-account-identity {
+    display: flex;
+    min-width: 0;
+    max-width: 220px;
+    align-items: center;
+    gap: 10px;
+    overflow: hidden;
+    opacity: 1;
+    transition: max-width 360ms cubic-bezier(0.22, 1, 0.36, 1), opacity 180ms ease, transform 260ms ease;
+  }
+
+  .app-shell > .page-tabs > .auth-account-bar .auth-account-avatar {
+    width: 38px;
+    height: 38px;
+    flex: 0 0 38px;
+    border: 1px solid var(--primary-border);
+    background: var(--info-soft);
+    color: var(--text-secondary);
+  }
+
+  .app-shell > .page-tabs > .auth-account-bar .auth-account-copy {
+    min-width: 0;
+  }
+
+  .app-shell > .page-tabs > .auth-account-bar .auth-account-copy strong {
+    color: var(--sidebar-text);
+    font-size: var(--font-xs);
+  }
+
+  .app-shell > .page-tabs > .auth-account-bar .auth-account-copy small {
+    color: var(--sidebar-text-muted);
+    font-size: 10px;
+  }
+
+  .app-shell > .page-tabs > .auth-account-bar .auth-logout-button {
+    flex: 0 0 46px;
+    width: 46px;
+    min-width: 46px;
+    height: 46px;
+    min-height: 46px;
+    border-color: var(--danger-border);
+    background: var(--danger-soft);
+  }
+
+  .app-shell > .page-tabs:not(:hover):not(.is-pinned):not(:focus-within)::before {
+    top: 16px;
+    right: 4px;
+    left: auto;
+    width: 30px;
+    height: 30px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, var(--primary-hover), var(--primary-active));
+    font-size: 14px;
+    line-height: 30px;
+    text-shadow: none;
+  }
+
+  .app-shell > .page-tabs:not(:hover):not(.is-pinned):not(:focus-within)::after {
+    top: 70px;
+    right: 12px;
+    left: 12px;
+  }
+
+  .app-shell > .page-tabs:not(:hover):not(.is-pinned):not(:focus-within) > .page-tab .ui-icon {
+    width: 32px;
+    height: 32px;
+    padding: 6px;
+  }
+
+  .app-shell > .page-tabs:not(:hover):not(.is-pinned):not(:focus-within) > .auth-account-bar .auth-account-identity {
+    max-width: 0;
+    opacity: 0;
+    transform: translateX(8px);
+    pointer-events: none;
+  }
+
+  .app-shell > .page-tabs:not(:hover):not(.is-pinned):not(:focus-within) > .auth-account-bar .auth-logout-button {
+    flex-basis: 46px;
   }
 }

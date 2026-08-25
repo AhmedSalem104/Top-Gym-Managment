@@ -17,31 +17,31 @@
 
 .alert-success,
 .success-message {
-  border-color: #bfead9;
+  border-color: var(--success-border);
   background: var(--color-success-soft);
-  color: #087a55;
+  color: var(--color-success);
 }
 
 .alert-warning {
-  border-color: #f2d79b;
+  border-color: var(--warning-border);
   background: var(--color-warning-soft);
-  color: #986007;
+  color: var(--color-warning);
 }
 
 .alert-danger,
 .error-message,
 .auth-message:not(.info) {
-  border-color: #f2c4c4;
+  border-color: var(--danger-border);
   background: var(--color-danger-soft);
-  color: #b82d35;
+  color: var(--color-danger);
 }
 
 .alert-info,
 .info-message,
 .auth-message.info {
-  border-color: #c7dcff;
+  border-color: var(--info-border);
   background: var(--color-info-soft);
-  color: #2256ad;
+  color: var(--color-info);
 }
 
 .alerts-panel,

@@ -21,7 +21,7 @@ dialog {
 dialog::backdrop,
 .modal-backdrop,
 .modal-overlay {
-  background: rgb(15 23 42 / 0.48);
+  background: var(--overlay);
   backdrop-filter: blur(2px);
 }
 
@@ -272,7 +272,7 @@ body .swal2-popup .swal2-actions > button.swal2-confirm,
 body .swal2-popup .swal2-actions > button.btn-primary,
 body .swal2-popup .swal2-actions > button.btn-danger {
   background: var(--color-primary) !important;
-  color: #fff !important;
+  color: var(--text-on-primary) !important;
 }
 
 body .swal2-popup .swal2-actions > button.btn-danger {

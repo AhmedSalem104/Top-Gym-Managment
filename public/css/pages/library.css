@@ -111,7 +111,7 @@
 
 .library-type-tab.active,
 .library-type-tab[aria-selected="true"] {
-  border-color: rgb(23 105 232 / 0.24);
+  border-color: var(--primary-border);
   background: var(--color-surface);
   color: var(--color-primary);
   box-shadow: var(--shadow-xs);
@@ -245,13 +245,13 @@
 }
 
 .library-message.success {
-  border-color: rgb(15 159 110 / 0.24);
+  border-color: var(--success-border);
   background: var(--color-success-soft);
   color: var(--color-success);
 }
 
 .library-message.error {
-  border-color: rgb(215 67 67 / 0.24);
+  border-color: var(--danger-border);
   background: var(--color-danger-soft);
   color: var(--color-danger);
 }
@@ -462,20 +462,20 @@
 
 .library-table-badge.muscles,
 .library-table-badge.exercises {
-  border-color: rgb(120 79 224 / 0.14);
-  background: #f1eaff;
-  color: #7447d2;
+  border-color: var(--primary-border);
+  background: var(--primary-soft);
+  color: var(--text-primary-soft);
 }
 
 .library-table-badge.foods,
 .library-table-badge.positive {
-  border-color: rgb(15 159 110 / 0.16);
+  border-color: var(--success-border);
   background: var(--color-success-soft);
   color: var(--color-success);
 }
 
 .library-table-badge.warning {
-  border-color: rgb(189 118 4 / 0.2);
+  border-color: var(--warning-border);
   background: var(--color-warning-soft);
   color: var(--color-warning);
 }
@@ -513,15 +513,15 @@
 }
 
 .library-row-actions .library-delete {
-  border-color: rgb(215 67 67 / 0.2);
+  border-color: var(--danger-border);
   background: var(--color-danger-soft);
   color: var(--color-danger);
 }
 
 .library-row-actions .library-delete:hover:not(:disabled) {
-  border-color: rgb(215 67 67 / 0.42);
+  border-color: var(--danger);
   background: var(--color-danger);
-  color: #fff;
+  color: var(--text-on-primary);
 }
 
 /* Details dialogs ------------------------------------------------------- */
@@ -543,7 +543,7 @@
   grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
   gap: var(--space-4);
-  border: 1px solid #cfe0fa;
+  border: 1px solid var(--border-primary);
   border-radius: var(--radius-lg);
   background: linear-gradient(135deg, var(--color-primary-soft), var(--color-surface));
   padding: var(--space-4);
@@ -671,7 +671,7 @@
 .exercise-detail-gallery .exercise-media-detail { height: 210px; object-fit: cover; }
 
 .library-row-actions .library-delete {
-  border-color: rgb(215 67 67 / 0.2);
+  border-color: var(--danger-border);
   background: var(--color-danger-soft);
   color: var(--color-danger);
 }
@@ -679,7 +679,7 @@
 .library-row-actions .library-delete:hover {
   border-color: var(--color-danger);
   background: var(--color-danger);
-  color: #fff;
+  color: var(--text-on-primary);
 }
 
 .library-empty,

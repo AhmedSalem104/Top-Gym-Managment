@@ -7,6 +7,11 @@
             const PLAN_LABELS = { gym_only: 'جيم فقط', gym_cardio: 'جيم وكارديو' };
             const TYPE_LABELS = { monthly: 'شهرية', half_month: 'نصف شهر', quarterly: 'ربع سنوية', semiannual: 'نصف سنوية', annual: 'سنوية', 'two month': 'شهرين', custom_mslzyl8m: 'شهرين' };
 
+            function printPaperColor() {
+                return window.topGymThemeValue?.('--qr-paper')
+                    || getComputedStyle(document.documentElement).getPropertyValue('--bg-surface').trim();
+            }
+
             function escapeHtml(value) {
                 return String(value ?? '').replace(/[&<>'"]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[char]));
             }
@@ -218,7 +223,7 @@
                 if (!sheet) throw new Error('تعذر تجهيز قالب PDF.');
                 const holder = document.createElement('div');
                 holder.dir = 'rtl';
-                holder.style.cssText = 'position:fixed;left:-100000px;top:0;width:190mm;min-height:1px;overflow:visible;background:#fff;z-index:-1;';
+                holder.style.cssText = `position:fixed;left:-100000px;top:0;width:190mm;min-height:1px;overflow:visible;background:${printPaperColor()};z-index:-1;`;
                 holder.append(sheet);
                 document.body.append(holder);
                 try {
@@ -227,7 +232,7 @@
                     const blob = await window.html2pdf().set({
                         margin: [8, 8, 8, 8],
                         image: { type: 'jpeg', quality: .98 },
-                        html2canvas: { scale: 2, useCORS: true, backgroundColor: '#fff', logging: false, letterRendering: true },
+                        html2canvas: { scale: 2, useCORS: true, backgroundColor: printPaperColor(), logging: false, letterRendering: true },
                         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
                         pagebreak: { mode: ['css', 'legacy'] }
                     }).from(sheet).outputPdf('blob');
@@ -506,7 +511,7 @@
                 if (!sheet) throw new Error('تعذر تجهيز قالب PDF.');
                 const holder = document.createElement('div');
                 holder.dir = 'rtl';
-                holder.style.cssText = 'position:fixed;left:-100000px;top:0;width:190mm;min-height:1px;overflow:visible;background:#fff;z-index:-1;';
+                holder.style.cssText = `position:fixed;left:-100000px;top:0;width:190mm;min-height:1px;overflow:visible;background:${printPaperColor()};z-index:-1;`;
                 holder.append(sheet);
                 document.body.append(holder);
                 try {
@@ -516,7 +521,7 @@
                         margin: [8, 8, 8, 8],
                         filename,
                         image: { type: 'jpeg', quality: .98 },
-                        html2canvas: { scale: 2, useCORS: true, backgroundColor: '#fff', logging: false, letterRendering: true },
+                        html2canvas: { scale: 2, useCORS: true, backgroundColor: printPaperColor(), logging: false, letterRendering: true },
                         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
                         pagebreak: { mode: ['css', 'legacy'] }
                     };

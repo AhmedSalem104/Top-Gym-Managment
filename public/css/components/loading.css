@@ -14,7 +14,7 @@
 .loading-spinner {
   width: 20px;
   height: 20px;
-  border: 2px solid rgb(23 105 232 / 0.18);
+  border: 2px solid var(--primary-border);
   border-top-color: var(--color-primary);
   border-radius: 50%;
   animation: top-gym-spin 0.75s linear infinite;
@@ -35,7 +35,7 @@ button[aria-busy="true"] .loading-spinner {
 .skeleton-row,
 .skeleton-line {
   border-radius: var(--radius-sm);
-  background: linear-gradient(90deg, #eef2f7 25%, #f8fafc 50%, #eef2f7 75%);
+  background: linear-gradient(90deg, var(--bg-card) 25%, var(--bg-card-hover) 50%, var(--bg-card) 75%);
   background-size: 200% 100%;
   animation: top-gym-skeleton 1.2s ease-in-out infinite;
 }

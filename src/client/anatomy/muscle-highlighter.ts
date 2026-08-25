@@ -4,7 +4,18 @@ type MaterialState = { opacity: number; transparent: boolean; color?: Color; emi
 
 export class MuscleHighlighter {
   private readonly original = new Map<Mesh, MaterialState[]>();
-  private readonly selectedColor = new Color('#2563eb');
+  private readonly selectedColor = new Color();
+  private readonly themeListener = (): void => this.syncThemeColor();
+
+  constructor() {
+    this.syncThemeColor();
+    window.addEventListener('topgym:themechange', this.themeListener);
+  }
+
+  private syncThemeColor(): void {
+    const value = window.getComputedStyle(document.documentElement).getPropertyValue('--anatomy-selection').trim();
+    if (value) this.selectedColor.set(value);
+  }
 
   private materials(mesh: Mesh): any[] { return (Array.isArray(mesh.material) ? mesh.material : [mesh.material]).filter(Boolean) as any[]; }
 
@@ -63,5 +74,8 @@ export class MuscleHighlighter {
     });
   }
 
-  dispose(): void { this.original.clear(); }
+  dispose(): void {
+    window.removeEventListener('topgym:themechange', this.themeListener);
+    this.original.clear();
+  }
 }

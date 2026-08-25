@@ -75,7 +75,7 @@
   grid-template-columns: 1fr;
   gap: var(--space-4);
   align-items: center;
-  border: 1px solid rgb(23 105 232 / 0.16);
+  border: 1px solid var(--primary-border);
   border-radius: var(--radius-lg);
   background: var(--color-primary-soft);
   padding: var(--space-5);
@@ -128,7 +128,7 @@
   text-align: start;
 }
 .permissions-user-button:hover { border-color: var(--border-color); background: var(--color-primary-soft); }
-.permissions-user-button.active { border-color: rgb(23 105 232 / 0.22); background: var(--color-primary-soft); color: var(--color-primary); }
+.permissions-user-button.active { border-color: var(--primary-border); background: var(--color-primary-soft); color: var(--color-primary); }
 .permissions-user-avatar { display: grid; width: 36px; height: 36px; place-items: center; border-radius: 50%; background: var(--color-primary-soft); color: var(--color-primary); font-weight: var(--weight-bold); }
 .permissions-user-copy { display: grid; min-width: 0; gap: 2px; }
 .permissions-user-copy strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--font-sm); }
@@ -149,7 +149,7 @@
 .permission-group-title small { color: var(--color-text-muted); font-size: 11px; font-weight: var(--weight-regular); }
 .permission-group-summary { flex: 0 0 auto; color: var(--color-text-muted); font-size: 11px; }
 .permission-group-chevron { display: grid; width: 26px; height: 26px; place-items: center; border-radius: 50%; background: var(--color-surface); color: var(--color-primary); font-size: 18px; line-height: 1; transition: transform var(--transition-fast), background-color var(--transition-fast); }
-.permission-group-card[open] .permission-group-chevron { transform: rotate(180deg); background: var(--color-primary); color: #fff; }
+.permission-group-card[open] .permission-group-chevron { transform: rotate(180deg); background: var(--color-primary); color: var(--text-on-primary); }
 .permission-readonly-summary { color: var(--color-primary); font-size: 11px; font-weight: var(--weight-semibold); white-space: nowrap; }
 .permission-group-body { background: var(--color-surface-elevated); }
 .permission-group-controls { border-bottom: 1px solid var(--border-color); padding: 9px 13px; }
@@ -163,7 +163,7 @@
 .permission-option-copy { display: grid; gap: 3px; min-width: 0; }
 .permission-option-copy strong { color: var(--color-text); font-size: var(--font-xs); }
 .permission-option-copy small { color: var(--color-text-muted); font-size: 11px; line-height: 1.5; }
-.permission-option:has(input:checked) { background: rgb(23 105 232 / 0.055); }
+.permission-option:has(input:checked) { background: var(--primary-soft); }
 .permissions-editor-footer { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--space-4); align-items: end; padding-top: var(--space-4); border-top: 1px solid var(--border-color); }
 .permissions-reason-field { display: grid; gap: 7px; color: var(--color-text-muted); font-size: var(--font-xs); font-weight: var(--weight-semibold); }
 .permissions-reason-field textarea { min-height: 66px; resize: vertical; }

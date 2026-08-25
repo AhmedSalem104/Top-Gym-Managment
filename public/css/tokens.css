@@ -1,57 +1,121 @@
 :root {
   color-scheme: light;
 
-  --color-bg: #f5f7fb;
+  /* Core surfaces. Components should consume these semantic roles rather
+     than choosing a color for a page or state themselves. */
+  --bg-app: #f5f7fb;
+  --bg-sidebar: #132238;
+  --bg-header: #132238;
+  --bg-surface: #ffffff;
+  --bg-card: #ffffff;
+  --bg-card-hover: #f8fbff;
+  --bg-elevated: #ffffff;
+  --bg-input: #ffffff;
+
+  /* Borders and brand. */
+  --border-primary: #d9e2ef;
+  --border-secondary: #e7edf5;
+  --border-hover: #b9d1f8;
+  --primary: #1769e8;
+  --primary-hover: #0f56c9;
+  --primary-active: #0d47a1;
+  --primary-soft: rgb(23 105 232 / 0.1);
+  --primary-border: rgb(23 105 232 / 0.24);
+
+  /* Text hierarchy. */
+  --text-primary: #172033;
+  --text-secondary: #41516a;
+  --text-muted: #718096;
+  --text-disabled: #98a3b5;
+  --text-on-primary: #ffffff;
+  --text-primary-soft: #6d28d9;
+  --success-text: #0f7a57;
+  --danger-text: #b42323;
+  --warning-text: #9b6410;
+  --info-text: #2454a6;
+  --table-header-bg: #f1f5f9;
+  --scrollbar-track: #eef3f9;
+  --scrollbar-thumb: #cbd7e6;
+
+  /* Semantic status roles. */
+  --success: #0f9f6e;
+  --success-soft: rgb(15 159 110 / 0.1);
+  --success-border: rgb(15 159 110 / 0.25);
+  --danger: #d74343;
+  --danger-soft: rgb(215 67 67 / 0.1);
+  --danger-border: rgb(215 67 67 / 0.25);
+  --warning: #bd7604;
+  --warning-soft: rgb(189 118 4 / 0.1);
+  --warning-border: rgb(189 118 4 / 0.25);
+  --info: #2563eb;
+  --info-soft: rgb(37 99 235 / 0.1);
+  --info-border: rgb(37 99 235 / 0.25);
+
+  --overlay: rgb(2 6 23 / 0.58);
+  --shadow-card: 0 8px 24px rgb(15 23 42 / 0.06);
+  --shadow-popup: 0 20px 50px rgb(15 23 42 / 0.2);
+  --shadow-primary: 0 8px 20px rgb(23 105 232 / 0.18);
+  --shadow-primary-strong: 0 8px 20px rgb(23 105 232 / 0.22);
+  --text-shadow-soft: 0 4px 16px rgb(0 0 0 / 0.24);
+  --text-shadow-strong: 0 5px 18px rgb(0 0 0 / 0.3);
+
+  /* Backward-compatible semantic aliases used by existing page layers. */
+  --color-bg: var(--bg-app);
   --color-bg-subtle: #eef3f9;
-  --color-surface: #ffffff;
-  --color-surface-elevated: #ffffff;
-  --color-surface-muted: #f8fafc;
-  --color-primary: #1769e8;
-  --color-primary-hover: #0f56c9;
-  --color-primary-soft: #eaf2ff;
-  --color-secondary: #42526b;
-  --color-text: #172033;
-  --color-text-soft: #41516a;
-  --color-text-muted: #718096;
-  --color-text-subtle: #98a3b5;
-  --color-success: #0f9f6e;
-  --color-success-soft: #e8f8f1;
-  --color-warning: #bd7604;
-  --color-warning-soft: #fff5df;
-  --color-danger: #d74343;
-  --color-danger-soft: #fff0f0;
-  --color-info: #2563eb;
-  --color-info-soft: #edf4ff;
-  --nav-active-bg: #eff6ff;
-  --nav-active-text: #1769e8;
-  --nav-active-border: rgb(23 105 232 / 0.24);
+  --color-surface: var(--bg-surface);
+  --color-surface-elevated: var(--bg-elevated);
+  --color-surface-muted: var(--bg-card-hover);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-soft: var(--primary-soft);
+  --color-secondary: var(--text-secondary);
+  --color-text: var(--text-primary);
+  --color-text-soft: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+  --color-text-subtle: var(--text-disabled);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+  --nav-active-bg: var(--primary-soft);
+  --nav-active-text: var(--primary);
+  --nav-active-border: var(--primary-border);
   --nav-active-shadow: 0 6px 16px rgb(23 105 232 / 0.12);
 
-  /* Sidebar palette: intentionally distinct from the light application
-     surface so the primary navigation is easy to locate at a glance. */
-  --sidebar-bg: #0b1f3a;
-  --sidebar-bg-deep: #07172c;
+  /* Sidebar roles. The navigation remains a dark anchor in both themes. */
+  --sidebar-bg: var(--bg-sidebar);
+  --sidebar-bg-deep: #0b1a2e;
   --sidebar-text: #e6f0ff;
-  --sidebar-text-muted: #9eb2cd;
+  --sidebar-text-muted: #aebed3;
   --sidebar-border: rgb(166 198 239 / 0.18);
   --sidebar-divider: rgb(166 198 239 / 0.14);
-  --sidebar-hover-bg: rgb(255 255 255 / 0.095);
-  --sidebar-active-bg: #1769e8;
-  --sidebar-active-text: #ffffff;
-  --sidebar-active-shadow: 0 10px 24px rgb(23 105 232 / 0.3);
+  --sidebar-hover-bg: rgb(255 255 255 / 0.08);
+  --sidebar-active-bg: var(--primary);
+  --sidebar-active-text: var(--text-on-primary);
+  --sidebar-active-shadow: 0 10px 24px rgb(23 105 232 / 0.22);
   --sidebar-width-collapsed: 84px;
   --sidebar-width-expanded: 292px;
-  /* Shared member-card and authentication semantic aliases. */
-  --color-page: #f8fafc;
-  --color-navy: #0f172a;
-  --color-pale-blue: #eff6ff;
-  --color-border-soft: #dce6f3;
-  --color-warning-strong: #d08700;
-  --color-warning-surface: #fff8e8;
-  --color-outstanding: #dc2626;
-  --border-color: #e1e8f1;
+
+  /* Shared member-card and authentication aliases. */
+  --color-page: var(--bg-app);
+  --color-navy: var(--bg-header);
+  --color-pale-blue: var(--primary-soft);
+  --color-border-soft: var(--border-secondary);
+  --color-warning-strong: var(--warning);
+  --color-warning-surface: var(--warning-soft);
+  --color-outstanding: var(--danger);
+  --border-color: var(--border-primary);
   --border-strong: #cbd7e6;
   --border-focus: #8ab5ff;
+  --store-primary: var(--primary);
+  --store-primary-dark: var(--primary-hover);
+  --store-border: var(--border-primary);
+  --store-muted: var(--text-muted);
+  --store-text: var(--text-primary);
 
   --radius-xs: 6px;
   --radius-sm: 8px;
@@ -95,6 +159,32 @@
   --shadow-md: 0 10px 28px rgb(30 61 104 / 0.08);
   --shadow-lg: 0 18px 48px rgb(30 61 104 / 0.12);
   --focus-ring: 0 0 0 3px rgb(23 105 232 / 0.18);
+  --anatomy-canvas-bg: #fafdff;
+  --anatomy-selection: #2563eb;
+  --anatomy-key-light: #ffffff;
+  --anatomy-fill-light: #9fc4ff;
+  --anatomy-rim-light: #b8d5ff;
+  /* QR modules require a high-contrast paper/ink pair for reliable scans. */
+  --qr-ink: #0f172a;
+  --qr-paper: #ffffff;
+
+  /* Guided builder accents. The page chooses a mode; the theme owns the
+     actual palette so the workflow stays readable in both themes. */
+  --builder-diet-accent: #0f766e;
+  --builder-diet-accent-strong: #0d9488;
+  --builder-diet-soft: rgb(15 159 110 / 0.1);
+  --builder-diet-border: rgb(15 159 110 / 0.25);
+  --builder-diet-stage-bg: #f0fdfa;
+  --builder-workout-accent: #1d4ed8;
+  --builder-workout-accent-strong: #2563eb;
+  --builder-workout-soft: rgb(37 99 235 / 0.1);
+  --builder-workout-border: rgb(37 99 235 / 0.25);
+  --builder-workout-stage-bg: #f8fbff;
+  --builder-accent: var(--builder-diet-accent);
+  --builder-accent-strong: var(--builder-diet-accent-strong);
+  --builder-soft: var(--builder-diet-soft);
+  --builder-border: var(--builder-diet-border);
+  --builder-stage-bg: var(--builder-diet-stage-bg);
 
   --transition-fast: 150ms ease;
   --transition-normal: 220ms ease;
@@ -112,37 +202,122 @@
 html[data-theme="dark"],
 body[data-theme="dark"] {
   color-scheme: dark;
-  --color-bg: #0d1522;
-  --color-bg-subtle: #111d2d;
-  --color-surface: #152235;
-  --color-surface-elevated: #1b2b42;
-  --color-surface-muted: #122033;
-  --color-text: #eef5ff;
-  --color-text-soft: #c5d3e7;
-  --color-text-muted: #9aacc3;
-  --color-text-subtle: #7f93ae;
-  --border-color: #2b405b;
-  --border-strong: #3c5574;
-  --color-primary-soft: #173b70;
-  --color-success-soft: #123e35;
-  --color-warning-soft: #4b3711;
-  --color-danger-soft: #4a2025;
-  --color-info-soft: #173b70;
-  --nav-active-bg: #173b70;
-  --nav-active-text: #dbeafe;
-  --nav-active-border: #3d70b6;
-  --nav-active-shadow: 0 6px 16px rgb(0 0 0 / 0.24);
-  --sidebar-bg: #09182d;
-  --sidebar-bg-deep: #061225;
-  --sidebar-text: #f1f6ff;
-  --sidebar-text-muted: #a7bad4;
-  --sidebar-border: rgb(166 198 239 / 0.22);
-  --sidebar-divider: rgb(166 198 239 / 0.18);
-  --sidebar-hover-bg: rgb(255 255 255 / 0.12);
-  --sidebar-active-bg: #2e7ff0;
+  /* Dark Navy + Purple system. Keep enough surface separation to preserve
+     depth between the app canvas, cards and overlays. */
+  --bg-app: #070d16;
+  --bg-sidebar: #09111d;
+  --bg-header: #0c1421;
+  --bg-surface: #0f1826;
+  --bg-card: #111c2b;
+  --bg-card-hover: #162235;
+  --bg-elevated: #182437;
+  --bg-input: #0b1522;
+  --border-primary: #243247;
+  --border-secondary: #1b293b;
+  --border-hover: #35465e;
+  --primary: #7c3aed;
+  --primary-hover: #8b5cf6;
+  --primary-active: #6d28d9;
+  --primary-soft: rgb(124 58 237 / 0.14);
+  --primary-border: rgb(139 92 246 / 0.3);
+  --text-primary: #f8fafc;
+  --text-secondary: #cbd5e1;
+  --text-muted: #94a3b8;
+  --text-disabled: #64748b;
+  --text-on-primary: #ffffff;
+  --text-primary-soft: #c4b5fd;
+  --success-text: #4ade80;
+  --danger-text: #fb7185;
+  --warning-text: #fbbf24;
+  --info-text: #60a5fa;
+  --table-header-bg: #0c1624;
+  --scrollbar-track: #09111d;
+  --scrollbar-thumb: #35465e;
+  --success: #22c55e;
+  --success-soft: rgb(34 197 94 / 0.13);
+  --success-border: rgb(34 197 94 / 0.25);
+  --danger: #f43f5e;
+  --danger-soft: rgb(244 63 94 / 0.13);
+  --danger-border: rgb(244 63 94 / 0.3);
+  --warning: #f59e0b;
+  --warning-soft: rgb(245 158 11 / 0.13);
+  --warning-border: rgb(245 158 11 / 0.25);
+  --info: #3b82f6;
+  --info-soft: rgb(59 130 246 / 0.13);
+  --info-border: rgb(59 130 246 / 0.25);
+  --overlay: rgb(2 6 23 / 0.75);
+  --shadow-card: 0 8px 24px rgb(0 0 0 / 0.18);
+  --shadow-popup: 0 20px 50px rgb(0 0 0 / 0.4);
+  --shadow-primary: 0 8px 20px rgb(124 58 237 / 0.18);
+  --shadow-primary-strong: 0 8px 20px rgb(124 58 237 / 0.22);
+  --text-shadow-soft: 0 4px 16px rgb(0 0 0 / 0.4);
+  --text-shadow-strong: 0 5px 18px rgb(0 0 0 / 0.5);
+
+  --color-bg: var(--bg-app);
+  --color-bg-subtle: var(--bg-surface);
+  --color-surface: var(--bg-surface);
+  --color-surface-elevated: var(--bg-elevated);
+  --color-surface-muted: var(--bg-card);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-soft: var(--primary-soft);
+  --color-secondary: var(--text-secondary);
+  --color-text: var(--text-primary);
+  --color-text-soft: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+  --color-text-subtle: var(--text-disabled);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+  --nav-active-bg: var(--primary-soft);
+  --nav-active-text: #c4b5fd;
+  --nav-active-border: var(--primary-border);
+  --nav-active-shadow: 0 8px 20px rgb(124 58 237 / 0.18);
+  --sidebar-bg: var(--bg-sidebar);
+  --sidebar-bg-deep: #070d16;
+  --sidebar-text: #f8fafc;
+  --sidebar-text-muted: #94a3b8;
+  --sidebar-border: var(--border-primary);
+  --sidebar-divider: var(--border-secondary);
+  --sidebar-hover-bg: rgb(124 58 237 / 0.1);
+  --sidebar-active-bg: var(--primary);
   --sidebar-active-text: #ffffff;
-  --sidebar-active-shadow: 0 10px 24px rgb(0 0 0 / 0.28);
+  --sidebar-active-shadow: 0 8px 20px rgb(124 58 237 / 0.18);
+  --builder-diet-accent: var(--success);
+  --builder-diet-accent-strong: var(--success);
+  --builder-diet-soft: var(--success-soft);
+  --builder-diet-border: var(--success-border);
+  --builder-diet-stage-bg: var(--bg-card);
+  --builder-workout-accent: var(--primary);
+  --builder-workout-accent-strong: var(--primary-hover);
+  --builder-workout-soft: var(--primary-soft);
+  --builder-workout-border: var(--primary-border);
+  --builder-workout-stage-bg: var(--bg-card);
+  --color-page: var(--bg-app);
+  --color-navy: var(--bg-header);
+  --color-pale-blue: var(--primary-soft);
+  --color-border-soft: var(--border-secondary);
+  --color-warning-strong: var(--warning);
+  --color-warning-surface: var(--warning-soft);
+  --color-outstanding: var(--danger);
+  --border-color: var(--border-primary);
+  --border-strong: var(--border-hover);
+  --border-focus: var(--primary-hover);
+  --shadow-xs: 0 1px 2px rgb(0 0 0 / 0.14);
   --shadow-sm: 0 4px 14px rgb(0 0 0 / 0.18);
-  --shadow-md: 0 10px 28px rgb(0 0 0 / 0.22);
-  --shadow-lg: 0 18px 48px rgb(0 0 0 / 0.28);
+  --shadow-md: 0 10px 28px rgb(0 0 0 / 0.24);
+  --shadow-lg: var(--shadow-popup);
+  --focus-ring: 0 0 0 3px rgb(124 58 237 / 0.18);
+  --anatomy-canvas-bg: #0b1522;
+  --anatomy-selection: #a78bfa;
+  --anatomy-key-light: #f8fafc;
+  --anatomy-fill-light: #a78bfa;
+  --anatomy-rim-light: #7c3aed;
+  --qr-ink: #0f172a;
+  --qr-paper: #ffffff;
 }

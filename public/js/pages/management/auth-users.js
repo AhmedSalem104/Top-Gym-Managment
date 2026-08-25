@@ -111,7 +111,7 @@
         if (window.Swal) {
             const result = await window.Swal.fire({
                 position: 'center',
-                backdrop: 'rgba(15, 23, 42, .52)',
+                backdrop: window.topGymThemeValue('--overlay'),
                 icon: 'warning',
                 title: 'تأكيد حذف حساب المساعد',
                 text: `سيتم حذف حساب ${user.name} نهائيًا وإلغاء جلساته وصلاحياته. لا يمكن التراجع عن هذه العملية.`,

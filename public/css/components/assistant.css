@@ -12,18 +12,18 @@
   align-items: center;
   justify-content: center;
   gap: var(--space-2);
-  border: 1px solid rgb(255 255 255 / 0.32);
+  border: 1px solid var(--primary-border);
   border-radius: 17px;
   background: linear-gradient(135deg, var(--color-primary), var(--color-primary-hover));
-  box-shadow: 0 14px 28px rgb(23 105 232 / 0.26);
-  color: #fff;
+  box-shadow: 0 14px 28px var(--primary-border);
+  color: var(--text-on-primary);
   padding: 0 var(--space-3);
   transition: transform var(--transition-fast), box-shadow var(--transition-fast), background-color var(--transition-fast);
 }
 
 .smart-assistant-launcher:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 18px 34px rgb(23 105 232 / 0.32);
+  box-shadow: 0 18px 34px var(--primary-border);
 }
 
 .smart-assistant-launcher:focus-visible,
@@ -31,7 +31,7 @@
 .smart-assistant-tab:focus-visible,
 .smart-assistant-quick-action:focus-visible,
 .smart-assistant-submit:focus-visible {
-  outline: 3px solid rgb(23 105 232 / 0.28);
+  outline: 3px solid var(--primary-border);
   outline-offset: 2px;
 }
 
@@ -60,7 +60,7 @@
   border: 1px solid var(--border-color);
   border-radius: 20px;
   background: var(--color-surface-elevated);
-  box-shadow: 0 24px 64px rgb(15 23 42 / 0.2), 0 6px 20px rgb(15 23 42 / 0.08);
+  box-shadow: var(--shadow-popup), var(--shadow-sm);
   color: var(--color-text);
   animation: smart-assistant-enter 180ms ease both;
 }
@@ -95,8 +95,8 @@
   place-items: center;
   border-radius: 12px;
   background: var(--color-primary);
-  color: #fff;
-  box-shadow: 0 8px 16px rgb(23 105 232 / 0.18);
+  color: var(--text-on-primary);
+  box-shadow: 0 8px 16px var(--primary-border);
 }
 
 .smart-assistant-brand-icon .ui-icon {
@@ -264,7 +264,7 @@
 
 .smart-assistant-message.user {
   justify-self: end;
-  border-color: rgb(23 105 232 / 0.2);
+  border-color: var(--primary-border);
   background: var(--color-primary-soft);
   color: var(--color-text);
 }
@@ -326,7 +326,7 @@
   border: 0;
   border-radius: 12px;
   background: var(--color-primary);
-  color: #fff;
+  color: var(--text-on-primary);
 }
 
 .smart-assistant-submit:hover:not(:disabled) {

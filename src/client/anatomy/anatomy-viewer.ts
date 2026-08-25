@@ -20,6 +20,11 @@ export class AnatomyViewer {
   private resizeObserver: ResizeObserver | null = null;
   private frame = 0;
   private selected: Mesh | null = null;
+  private ambientLight: AmbientLight | null = null;
+  private keyLight: DirectionalLight | null = null;
+  private fillLight: DirectionalLight | null = null;
+  private rimLight: DirectionalLight | null = null;
+  private readonly themeListener = (): void => this.syncTheme();
 
   constructor(container: HTMLElement, options: AnatomyViewerOptions = {}) {
     this.container = container;
@@ -27,19 +32,40 @@ export class AnatomyViewer {
     this.camera = new PerspectiveCamera(35, 1, 0.01, 100);
     this.renderer = new WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, options.maxPixelRatio || 1.75));
-    this.renderer.setClearColor(new Color('#edf4ff'), 0);
+    this.renderer.setClearColor(new Color(), 0);
     this.renderer.domElement.className = 'portal-anatomy-canvas';
     this.renderer.domElement.setAttribute('aria-label', 'عارض تشريحي ثلاثي الأبعاد');
     this.container.replaceChildren(this.renderer.domElement);
     this.cameraController = new CameraController(this.camera, this.renderer.domElement);
     this.addStudioLighting();
+    this.syncTheme();
+    window.addEventListener('topgym:themechange', this.themeListener);
   }
 
   private addStudioLighting(): void {
-    this.scene.add(new AmbientLight('#ffffff', 2.1));
-    const key = new DirectionalLight('#ffffff', 3.2); key.position.set(3, 5, 4); this.scene.add(key);
-    const fill = new DirectionalLight('#9fc4ff', 1.5); fill.position.set(-4, 2, 2); this.scene.add(fill);
-    const rim = new DirectionalLight('#b8d5ff', 2); rim.position.set(0, 3, -5); this.scene.add(rim);
+    this.ambientLight = new AmbientLight(new Color(), 2.1);
+    this.keyLight = new DirectionalLight(new Color(), 3.2);
+    this.keyLight.position.set(3, 5, 4);
+    this.fillLight = new DirectionalLight(new Color(), 1.5);
+    this.fillLight.position.set(-4, 2, 2);
+    this.rimLight = new DirectionalLight(new Color(), 2);
+    this.rimLight.position.set(0, 3, -5);
+    this.scene.add(this.ambientLight, this.keyLight, this.fillLight, this.rimLight);
+  }
+
+  private syncTheme(): void {
+    const styles = getComputedStyle(document.documentElement);
+    const canvasBackground = styles.getPropertyValue('--anatomy-canvas-bg').trim();
+    const keyLight = styles.getPropertyValue('--anatomy-key-light').trim();
+    const fillLight = styles.getPropertyValue('--anatomy-fill-light').trim();
+    const rimLight = styles.getPropertyValue('--anatomy-rim-light').trim();
+    if (canvasBackground) this.renderer.setClearColor(new Color(canvasBackground), 0);
+    if (keyLight) {
+      this.ambientLight?.color.set(keyLight);
+      this.keyLight?.color.set(keyLight);
+    }
+    if (fillLight) this.fillLight?.color.set(fillLight);
+    if (rimLight) this.rimLight?.color.set(rimLight);
   }
 
   async mount(): Promise<void> {
@@ -118,6 +144,7 @@ export class AnatomyViewer {
 
   dispose(): void {
     if (this.frame) window.cancelAnimationFrame(this.frame);
+    window.removeEventListener('topgym:themechange', this.themeListener);
     this.resizeObserver?.disconnect();
     this.selector?.dispose();
     this.cameraController.dispose();

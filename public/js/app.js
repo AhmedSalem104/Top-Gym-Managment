@@ -146,7 +146,7 @@
              try { await notify(message, icon); } finally { await refreshPromise; }
          }
          async function confirmDelete(name) {
-            if (window.Swal) { const result = await window.Swal.fire({ position: 'center', backdrop: 'rgba(15, 23, 42, .52)', icon: 'warning', title: 'تأكيد الحذف', text: `هل تريد حذف العضو ${name}؟`, showCancelButton: true, confirmButtonText: 'نعم، احذف', cancelButtonText: 'إلغاء', buttonsStyling: false, customClass: { popup: 'delete-confirm-alert' } }); return result.isConfirmed; }
+            if (window.Swal) { const result = await window.Swal.fire({ position: 'center', backdrop: window.topGymThemeValue('--overlay'), icon: 'warning', title: 'تأكيد الحذف', text: `هل تريد حذف العضو ${name}؟`, showCancelButton: true, confirmButtonText: 'نعم، احذف', cancelButtonText: 'إلغاء', buttonsStyling: false, customClass: { popup: 'delete-confirm-alert' } }); return result.isConfirmed; }
             return window.confirm(`هل تريد حذف العضو ${name}؟`);
         }
 
@@ -177,7 +177,7 @@
             if (window.Swal) {
                 await window.Swal.fire({
                     position: 'center',
-                    backdrop: 'rgba(15, 23, 42, .58)',
+                    backdrop: window.topGymThemeValue('--overlay'),
                     icon: 'warning',
                     title: 'رقم الهاتف مستخدم بالفعل',
                     html: `<div class="duplicate-phone-alert-content"><p>هذا الرقم مسجل من قبل لدى المشترك:</p><strong>${escapeHtml(memberName)}</strong><small>راجع الرقم أو افتح بيانات المشترك الحالي.</small></div>`,

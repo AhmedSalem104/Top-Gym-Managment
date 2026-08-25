@@ -44,7 +44,7 @@
 .status-present,
 .status-in,
 .status-badge.success {
-  border-color: #bfead9;
+  border-color: var(--success-border);
   background: var(--color-success-soft);
   color: var(--color-success);
 }
@@ -53,7 +53,7 @@
 .status-near-expiry,
 .status-pending,
 .status-badge.warning {
-  border-color: #f2d79b;
+  border-color: var(--warning-border);
   background: var(--color-warning-soft);
   color: var(--color-warning);
 }
@@ -62,7 +62,7 @@
 .status-expired,
 .status-cancelled,
 .status-badge.danger {
-  border-color: #f2c4c4;
+  border-color: var(--danger-border);
   background: var(--color-danger-soft);
   color: var(--color-danger);
 }
@@ -70,7 +70,7 @@
 .badge-info,
 .status-frozen,
 .status-badge.info {
-  border-color: #c7dcff;
+  border-color: var(--info-border);
   background: var(--color-info-soft);
   color: var(--color-info);
 }
@@ -78,26 +78,26 @@
 /* Membership status values are rendered as data-driven classes by the
    members/details views. Keep their visual meaning consistent everywhere. */
 .badge.active {
-  border-color: #bfead9;
+  border-color: var(--success-border);
   background: var(--color-success-soft);
   color: var(--color-success);
 }
 
 .badge.expiring_soon {
-  border-color: #f2d79b;
+  border-color: var(--warning-border);
   background: var(--color-warning-soft);
   color: var(--color-warning);
 }
 
 .badge.expired,
 .badge.cancelled {
-  border-color: #f2c4c4;
+  border-color: var(--danger-border);
   background: var(--color-danger-soft);
   color: var(--color-danger);
 }
 
 .badge.frozen {
-  border-color: #c7dcff;
+  border-color: var(--info-border);
   background: var(--color-info-soft);
   color: var(--color-info);
 }

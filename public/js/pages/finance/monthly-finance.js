@@ -279,7 +279,7 @@
         if (window.Swal) {
             const result = await window.Swal.fire({
                 position: 'center',
-                backdrop: 'rgba(15, 23, 42, .52)',
+                backdrop: window.topGymThemeValue('--overlay'),
                 icon: 'warning',
                 title: 'تأكيد حذف المصروف',
                 text: `هل تريد حذف المصروف «${name}»؟`,

@@ -93,8 +93,8 @@
 .pagination-page.active {
   border-color: var(--color-primary);
   background: var(--color-primary);
-  color: #fff;
-  box-shadow: 0 5px 14px rgb(23 105 232 / 0.2);
+  color: var(--text-on-primary);
+  box-shadow: 0 5px 14px var(--primary-border);
 }
 
 .members-pagination button:disabled,

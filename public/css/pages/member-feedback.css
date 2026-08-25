@@ -38,7 +38,7 @@
 .feedback-type-problem { background: var(--color-warning-soft); color: var(--color-warning); }
 .feedback-type-complaint { background: var(--color-danger-soft); color: var(--color-danger); }
 .feedback-type-suggestion { background: var(--color-success-soft); color: var(--color-success); }
-.feedback-type-feature_request { background: #f1eaff; color: #7048b6; }
+.feedback-type-feature_request { background: var(--primary-soft); color: var(--text-primary-soft); }
 .feedback-message-cell { max-height: 88px; margin: 0; overflow: auto; color: var(--color-text-soft); font-size: var(--font-sm); line-height: 1.7; text-align: right; white-space: pre-wrap; overflow-wrap: anywhere; }
 .feedback-date { color: var(--color-text-muted); font-size: var(--font-xs); white-space: nowrap; }
 .feedback-details-button { white-space: nowrap; }

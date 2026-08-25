@@ -54,9 +54,9 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--space-5);
-  border: 1px solid #f0d0d0;
+  border: 1px solid var(--danger-border);
   border-radius: var(--radius-lg);
-  background: linear-gradient(135deg, #fff8f8, var(--color-surface));
+  background: linear-gradient(135deg, var(--danger-soft), var(--color-surface));
   padding: var(--space-5);
 }
 
@@ -94,7 +94,7 @@
 
 .expenses-tab-panel .monthly-finance-card {
   gap: var(--space-5);
-  border: 1px solid #f0d0d0;
+  border: 1px solid var(--danger-border);
   border-radius: var(--radius-lg);
   background: var(--color-surface);
   padding: var(--space-5);
@@ -117,8 +117,8 @@
 }
 
 .expenses-tab-panel .monthly-finance-metric.expenses {
-  border-color: #f0d0d0;
-  background: #fff8f8;
+  border-color: var(--danger-border);
+  background: var(--danger-soft);
 }
 
 .expenses-tab-panel .monthly-finance-metric.expenses .monthly-finance-value,
@@ -126,7 +126,7 @@
   color: var(--color-danger);
 }
 .monthly-finance-metric.day-passes {
-  border-color: #c8ddff;
+  border-color: var(--info-border);
   background: var(--color-info-soft);
 }
 .monthly-finance-metric.day-passes .monthly-finance-value {
@@ -185,7 +185,7 @@
 }
 
 .expenses-tab-panel .monthly-expense-item:hover {
-  background: #fff9f9;
+  background: var(--danger-soft);
 }
 
 .expenses-tab-panel .monthly-expense-copy {
@@ -245,13 +245,13 @@
 }
 
 .expenses-tab-panel .monthly-expense-action.edit:hover {
-  border-color: #c9dcff;
+  border-color: var(--primary-border);
   background: var(--color-primary-soft);
   color: var(--color-primary);
 }
 
 .expenses-tab-panel .monthly-expense-action.delete:hover {
-  border-color: #f0c0c0;
+  border-color: var(--danger-border);
   background: var(--color-danger-soft);
   color: var(--color-danger);
 }
@@ -265,13 +265,13 @@
 
 #expenseDialog {
   width: min(720px, calc(100% - 32px));
-  border-color: #f0d0d0;
+  border-color: var(--danger-border);
 }
 
 #expenseDialog .details-dialog-head {
-  border: 1px solid #f0d0d0;
+  border: 1px solid var(--danger-border);
   border-radius: var(--radius-lg);
-  background: linear-gradient(135deg, #fff8f8, var(--color-surface));
+  background: linear-gradient(135deg, var(--danger-soft), var(--color-surface));
   padding: var(--space-4) var(--space-5);
 }
 

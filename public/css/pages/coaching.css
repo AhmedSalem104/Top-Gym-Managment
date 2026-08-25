@@ -14,9 +14,9 @@
   align-items: center;
   margin: var(--space-4) 0 0;
   padding: var(--space-3);
-  border: 1px solid #ddd6fe;
+  border: 1px solid var(--primary-border);
   border-radius: var(--radius-lg);
-  background: linear-gradient(135deg, #faf5ff, #fff);
+  background: linear-gradient(135deg, var(--primary-soft), var(--bg-card));
 }
 
 .coaching-builder-ai-tools > div:first-child span,
@@ -25,7 +25,7 @@
 }
 
 .coaching-builder-ai-tools > div:first-child span {
-  color: #6d28d9;
+  color: var(--primary-active);
   font-size: .82rem;
   font-weight: 800;
 }
@@ -150,7 +150,7 @@
   height: 42px;
   flex: 0 0 auto;
   place-items: center;
-  border: 1px solid #c9dcff;
+  border: 1px solid var(--primary-border);
   border-radius: 50%;
   background: var(--color-primary-soft);
   color: var(--color-primary);
@@ -161,7 +161,7 @@
   display: inline-flex;
   min-height: 28px;
   align-items: center;
-  border: 1px solid #c9dcff;
+  border: 1px solid var(--primary-border);
   border-radius: var(--radius-pill);
   background: var(--color-primary-soft);
   color: var(--color-primary);
@@ -310,13 +310,13 @@
 }
 
 .coaching-icon-action .coaching-inline-icon { width: 18px; height: 18px; }
-.coaching-action-workout { border-color: #c9dcff; background: var(--color-primary-soft); color: var(--color-primary); }
+.coaching-action-workout { border-color: var(--primary-border); background: var(--color-primary-soft); color: var(--color-primary); }
 .coaching-action-profile { border-color: var(--border-color); background: var(--color-surface-muted); color: var(--color-text-soft); }
-.coaching-action-diet { border-color: #b9e5d2; background: var(--color-success-soft); color: var(--color-success); }
+.coaching-action-diet { border-color: var(--success-border); background: var(--color-success-soft); color: var(--color-success); }
 .coaching-action-more { border-color: var(--border-color); background: var(--color-surface); color: var(--color-text-muted); }
-.coaching-action-workout:hover:not(:disabled) { background: var(--color-primary); color: #fff; }
+.coaching-action-workout:hover:not(:disabled) { background: var(--color-primary); color: var(--text-on-primary); }
 .coaching-action-profile:hover:not(:disabled) { border-color: var(--border-focus); background: var(--color-primary-soft); color: var(--color-primary); }
-.coaching-action-diet:hover:not(:disabled) { background: var(--color-success); color: #fff; }
+.coaching-action-diet:hover:not(:disabled) { background: var(--color-success); color: var(--text-on-primary); }
 .coaching-action-more:hover:not(:disabled) { border-color: var(--border-focus); background: var(--color-primary-soft); color: var(--color-primary); }
 
 .trainee-more {
@@ -475,11 +475,11 @@
 }
 
 .coaching-summary-card.users { color: var(--color-primary); }
-.coaching-summary-card.workout { color: #7c3aed; }
+.coaching-summary-card.workout { color: var(--primary); }
 .coaching-summary-card.diet { color: var(--color-success); }
-.coaching-summary-card.progress { color: #d97706; }
+.coaching-summary-card.progress { color: var(--warning); }
 
-.coaching-summary-card.workout .coaching-summary-icon::before { background: #f3e8ff; }
+.coaching-summary-card.workout .coaching-summary-icon::before { background: var(--primary-soft); }
 .coaching-summary-card.diet .coaching-summary-icon::before { background: var(--color-success-soft); }
 .coaching-summary-card.progress .coaching-summary-icon::before { background: var(--color-warning-soft); }
 
@@ -531,7 +531,7 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: var(--space-4);
-  border: 1px solid #cfe0fa;
+  border: 1px solid var(--border-primary);
   border-radius: var(--radius-lg);
   background: linear-gradient(135deg, var(--color-primary-soft), var(--color-surface));
   padding: var(--space-4);
@@ -629,8 +629,8 @@
   font-weight: var(--weight-bold);
 }
 
-.system-type.workout { border-color: #c9dcff; background: var(--color-primary-soft); color: var(--color-primary); }
-.system-type.diet { border-color: #b9e5d2; background: var(--color-success-soft); color: var(--color-success); }
+.system-type.workout { border-color: var(--primary-border); background: var(--color-primary-soft); color: var(--color-primary); }
+.system-type.diet { border-color: var(--success-border); background: var(--color-success-soft); color: var(--color-success); }
 
 .member-progress-line {
   display: grid;
@@ -671,7 +671,7 @@
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: var(--space-4);
-  border: 1px solid #cfe0fa;
+  border: 1px solid var(--border-primary);
   border-radius: var(--radius-lg);
   background: linear-gradient(135deg, var(--color-primary-soft), var(--color-surface));
   padding: var(--space-4);
@@ -680,9 +680,9 @@
 .trainee-avatar.large {
   width: 58px;
   height: 58px;
-  border-color: #b9d1f8;
+  border-color: var(--border-hover);
   background: var(--color-primary);
-  color: #fff;
+  color: var(--text-on-primary);
   font-size: var(--font-lg);
 }
 
@@ -811,10 +811,10 @@
 .profile-system-card small { color: var(--color-text-muted); font-size: var(--font-xs); }
 .profile-system-card > div:last-child { display: flex; flex: 0 0 auto; align-items: center; gap: var(--space-2); }
 
-.system-status.active { border-color: #b9e5d2; background: var(--color-success-soft); color: var(--color-success); }
+.system-status.active { border-color: var(--success-border); background: var(--color-success-soft); color: var(--color-success); }
 .system-status.paused,
-.system-status.draft { border-color: #f2d39b; background: var(--color-warning-soft); color: #b86b16; }
-.system-status.completed { border-color: #c9dcff; background: var(--color-primary-soft); color: var(--color-primary); }
+.system-status.draft { border-color: var(--warning-border); background: var(--color-warning-soft); color: var(--warning-text); }
+.system-status.completed { border-color: var(--primary-border); background: var(--color-primary-soft); color: var(--color-primary); }
 
 .profile-table-wrap { border: 1px solid var(--border-color); border-radius: var(--radius-md); }
 .profile-table { width: 100%; min-width: 540px; }
@@ -951,13 +951,13 @@
 .builder-step.active {
   border-color: var(--color-primary);
   background: var(--color-primary);
-  color: #fff;
-  box-shadow: 0 5px 14px rgb(23 105 232 / 0.18);
+  color: var(--text-on-primary);
+  box-shadow: var(--shadow-primary);
 }
 
 .builder-step.active > span,
 .builder-step.complete > span {
-  background: rgb(255 255 255 / 0.2);
+  background: var(--primary-soft);
   color: inherit;
 }
 
@@ -1762,44 +1762,36 @@
   overflow-x: hidden;
 }
 
-.coaching-builder-dialog.builder-mode-diet {
-  --builder-accent: #0f766e;
-  --builder-accent-strong: #0d9488;
-  --builder-soft: #ecfdf5;
-  --builder-border: #99f6e4;
-  --builder-stage-bg: #f0fdfa;
-}
-
 .coaching-builder-dialog.builder-mode-workout {
-  --builder-accent: #1d4ed8;
-  --builder-accent-strong: #2563eb;
-  --builder-soft: #eff6ff;
-  --builder-border: #bfdbfe;
-  --builder-stage-bg: #f8fbff;
+  --builder-accent: var(--builder-workout-accent);
+  --builder-accent-strong: var(--builder-workout-accent-strong);
+  --builder-soft: var(--builder-workout-soft);
+  --builder-border: var(--builder-workout-border);
+  --builder-stage-bg: var(--builder-workout-stage-bg);
 }
 
 .coaching-builder-dialog.builder-mode-diet > form.dialog-body > .details-dialog-head {
   border-bottom: 3px solid var(--builder-accent);
-  background: linear-gradient(135deg, #f0fdfa, #ffffff 68%);
+  background: linear-gradient(135deg, var(--builder-stage-bg), var(--bg-card) 68%);
 }
 
 .coaching-builder-dialog.builder-mode-workout > form.dialog-body > .details-dialog-head {
   border-bottom: 3px solid var(--builder-accent);
-  background: linear-gradient(135deg, #eff6ff, #ffffff 68%);
+  background: linear-gradient(135deg, var(--builder-stage-bg), var(--bg-card) 68%);
 }
 
 .builder-mode-diet .builder-step.active,
 .builder-mode-diet .builder-step:hover:not(:disabled) {
   border-color: var(--builder-accent);
   background: var(--builder-accent);
-  color: #fff;
+  color: var(--text-on-primary);
 }
 
 .builder-mode-workout .builder-step.active,
 .builder-mode-workout .builder-step:hover:not(:disabled) {
   border-color: var(--builder-accent);
   background: var(--builder-accent);
-  color: #fff;
+  color: var(--text-on-primary);
 }
 
 .builder-mode-diet .builder-step.complete,
@@ -1870,7 +1862,7 @@
   border-color: var(--builder-accent);
   background: var(--builder-soft);
   color: var(--builder-accent);
-  box-shadow: 0 4px 12px rgb(37 99 235 / 0.12);
+  box-shadow: var(--shadow-primary);
 }
 
 .builder-mode-workout .builder-day-tab.active b {
