@@ -1435,7 +1435,7 @@
 .dashboard-day-pass-kpi.amount strong { color: var(--color-success); }
 .dashboard-day-pass-table-wrap {
   min-width: 0;
-  max-height: 218px;
+  max-height: 390px;
   overflow-x: auto;
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -1708,7 +1708,7 @@
     font-size: var(--font-xs);
   }
 
-  .dashboard-day-pass-table-wrap { max-height: 218px; }
+  .dashboard-day-pass-table-wrap { max-height: 390px; }
 
   .dashboard-day-pass-table th:nth-child(1) { width: 30%; }
   .dashboard-day-pass-table th:nth-child(2) { width: 18%; }
