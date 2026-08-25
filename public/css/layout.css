@@ -33,28 +33,11 @@ body.auth-pending::before {
   content: "";
 }
 
-body.auth-pending::after {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  z-index: var(--z-toast);
-  width: 30px;
-  height: 30px;
-  border: 3px solid var(--color-primary-soft);
-  border-top-color: var(--color-primary);
-  border-radius: 50%;
-  content: "";
-  transform: translate(-50%, -50%);
-  animation: auth-session-spinner 700ms linear infinite;
-}
-
-@keyframes auth-session-spinner {
-  to { transform: translate(-50%, -50%) rotate(360deg); }
-}
-
 .top-gym-navigation-pending .page-tabs,
 .top-gym-navigation-pending .page {
-  visibility: hidden;
+  pointer-events: none;
+  opacity: .72;
+  transition: opacity 160ms ease;
 }
 
 /* Dashboard analytics is dashboard-only. Keep this invariant in the layout

@@ -9,6 +9,57 @@
   color: var(--color-text-muted);
 }
 
+.top-progress {
+  position: fixed;
+  top: 0;
+  inset-inline: 0;
+  z-index: var(--z-toast);
+  height: 3px;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 160ms ease;
+}
+
+.top-progress.is-visible { opacity: 1; }
+
+.top-progress-track {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+}
+
+.top-progress-bar {
+  display: block;
+  width: 38%;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, transparent, var(--color-primary), var(--primary-hover), transparent);
+  box-shadow: 0 0 12px var(--primary-border);
+  transform: translateX(-140%);
+  animation: top-gym-progress-slide 1.15s cubic-bezier(.4, 0, .2, 1) infinite;
+}
+
+.top-progress.is-completing .top-progress-bar {
+  width: 100%;
+  transform: translateX(0);
+  animation: none;
+  transition: width 180ms ease, transform 180ms ease;
+}
+
+.top-progress-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 .spinner,
 .auth-spinner,
 .loading-spinner {
@@ -51,4 +102,17 @@ button[aria-busy="true"] .loading-spinner {
 
 @keyframes top-gym-skeleton {
   to { background-position: -200% 0; }
+}
+
+@keyframes top-gym-progress-slide {
+  0% { transform: translateX(-140%); }
+  55% { transform: translateX(145%); }
+  100% { transform: translateX(320%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .top-progress-bar,
+  .skeleton,
+  .skeleton-row,
+  .skeleton-line { animation-duration: 1.8s; }
 }

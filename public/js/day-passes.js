@@ -271,6 +271,13 @@
         host.innerHTML = `<table class="dashboard-day-pass-table"><thead><tr><th>الزائر</th><th>نوع الحصة</th><th>التاريخ</th><th>المبلغ</th><th>الإجراءات</th></tr></thead><tbody>${state.dashboardRecords.map((item) => `<tr data-day-pass-id="${item.id}"><td><strong>${escapeHtml(recordDisplayName(item))}</strong><small dir="ltr">${escapeHtml(item.reference || '')} · ${escapeHtml(recordPhone(item) || 'بدون رقم')}</small></td><td><span class="day-pass-type-badge ${escapeHtml(item.passTypeCode)}">${escapeHtml(item.passTypeName)}</span></td><td dir="ltr">${escapeHtml(dateText(item.visitDate))}</td><td class="day-pass-amount">${money(item.amountPaid)}</td><td>${renderRecordActions(item, { compact: true })}</td></tr>`).join('')}</tbody></table>`;
     }
 
+    function yieldToBrowser() {
+        return new Promise((resolve) => {
+            if (typeof window.requestIdleCallback === 'function') window.requestIdleCallback(() => resolve(), { timeout: 120 });
+            else window.setTimeout(resolve, 0);
+        });
+    }
+
     async function loadDashboard() {
         const host = $('dashboardDayPassTableWrap');
         if (!host || !isAuthenticated()) return false;
@@ -285,20 +292,37 @@
             let dashboardRecords = Array.isArray(list?.records) ? list.records : [];
             const totalRecords = Number(list?.pagination?.total || dashboardRecords.length);
             const totalPages = Math.ceil(totalRecords / pageSize);
-            if (totalPages > 1) {
-                const remainingPages = await Promise.all(
-                    Array.from({ length: totalPages - 1 }, (_, index) => {
-                        const pageParams = new URLSearchParams({ from, to, page: String(index + 2), pageSize: String(pageSize) });
-                        return request(`/api/day-passes?${pageParams}`);
-                    })
-                );
-                dashboardRecords = dashboardRecords.concat(remainingPages.flatMap((page) => Array.isArray(page?.records) ? page.records : []));
-            }
             state.dashboardRecords = dashboardRecords;
             if ($('dashboardDayPassCount')) $('dashboardDayPassCount').textContent = Number(summary?.count || 0).toLocaleString('ar-EG');
             if ($('dashboardDayPassTotal')) $('dashboardDayPassTotal').textContent = money(summary?.amount || 0);
             if ($('dashboardDayPassMonthMeta')) $('dashboardDayPassMonthMeta').textContent = `ملخص ${new Intl.DateTimeFormat('ar-EG', { month: 'long', year: 'numeric' }).format(new Date(`${from}T00:00:00`))}`;
             renderDashboardList();
+
+            if (totalPages > 1) {
+                const releaseProgress = window.topGymPerformance?.startTask?.('جاري استكمال سجل الحصص…');
+                try {
+                    const chunkSize = 2;
+                    for (let firstPage = 2; firstPage <= totalPages; firstPage += chunkSize) {
+                        const pages = await Promise.all(
+                            Array.from({ length: Math.min(chunkSize, totalPages - firstPage + 1) }, (_, index) => {
+                                const page = firstPage + index;
+                                const pageParams = new URLSearchParams({ from, to, page: String(page), pageSize: String(pageSize) });
+                                return request(`/api/day-passes?${pageParams}`);
+                            })
+                        );
+                        const nextRecords = pages.flatMap((page) => Array.isArray(page?.records) ? page.records : []);
+                        if (nextRecords.length) {
+                            state.dashboardRecords.push(...nextRecords);
+                            renderDashboardList();
+                        }
+                        await yieldToBrowser();
+                    }
+                } catch (error) {
+                    console.warn('[TOP GYM] Remaining day-pass pages failed to load.', error);
+                } finally {
+                    releaseProgress?.();
+                }
+            }
             return true;
         } catch (error) {
             host.innerHTML = `<div class="day-pass-empty">${escapeHtml(error.message || 'تعذر تحميل سجل الحصص.')}</div>`;

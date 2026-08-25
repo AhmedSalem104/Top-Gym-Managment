@@ -82,7 +82,7 @@ function renderQrMemberPage(member) {
             }
         }());
     </script>
-    <link rel="stylesheet" href="/css/main.css?v=45">
+    <link rel="stylesheet" href="/css/main.css?v=46">
     <title>بيانات عضوية ${escapeHtml(member.fullName)}</title>
 </head>
 <body class="qr-member-page">

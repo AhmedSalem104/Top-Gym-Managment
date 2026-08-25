@@ -139,11 +139,14 @@
         // take a round-trip to load, but dashboard-only content must never
         // remain visible while the next tab is being prepared.
         renderTab(name);
+        const releaseProgress = window.topGymPerformance?.startTask?.('جاري تجهيز الشاشة…');
         try {
             await window.topGymEnsureTab?.(name);
         } catch (error) {
             // The section still opens so one unavailable optional feature cannot lock navigation.
             console.warn(`[TOP GYM] Failed to load the ${name} feature.`, error);
+        } finally {
+            releaseProgress?.();
         }
         if (token !== activationToken) return;
         renderTab(name);

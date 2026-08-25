@@ -75,7 +75,7 @@
         function planLabel(plan) { return state.pricing.plans[plan]?.label || DEFAULT_PRICING.plans[plan]?.label || plan || 'جيم فقط'; }
          function calculateClientPricing(type, plan, discount) { const monthlyPrice = Number(state.pricing.plans[plan]?.monthlyPrice || DEFAULT_PRICING.plans[plan]?.monthlyPrice || 0); const code = resolvedTypeCode(type); const config = typeConfig(code); const configuredPrice = state.pricing.prices?.[plan]?.[code]; const listPrice = configuredPrice === undefined ? monthlyPrice * Number(config.priceMultiplier || 1) : Number(configuredPrice); const discountAmount = Math.max(0, Number(discount) || 0); return { listPrice, discountAmount, amountDue: Math.max(0, listPrice - discountAmount) }; }
 
-         async function withLoader(task) { return task(); }
+         async function withLoader(task, message = '') { return window.topGymPerformance?.withLoader ? window.topGymPerformance.withLoader(task, { label: message }) : task(); }
 
         function showToast(message, error = false, type = '') { const toast = $('toast'); if (!toast) return; const kind = ['success', 'error', 'warning', 'info'].includes(type) ? type : (error ? 'error' : 'success'); const icons = { info: '<svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7h.01"/></svg>', warning: '<svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 2.5 20h19L12 3Z"/><path d="M12 9v4M12 17h.01"/></svg>', error: '<svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m9 9 6 6M15 9l-6 6"/></svg>', success: '<svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>' }; const item = document.createElement('div'); item.className = `toast-item ${kind}`; item.setAttribute('role', kind === 'error' ? 'alert' : 'status'); item.innerHTML = `<span class="toast-icon" aria-hidden="true">${icons[kind]}</span><span class="toast-message">${escapeHtml(message)}</span><button class="toast-close" type="button" aria-label="إغلاق">×</button>`; toast.appendChild(item); toast.className = 'toast show'; const close = () => { if (item.dataset.closed) return; item.dataset.closed = 'true'; item.classList.add('is-leaving'); window.setTimeout(() => { item.remove(); if (!toast.children.length) toast.className = 'toast'; }, 180); }; item.querySelector('.toast-close')?.addEventListener('click', close); window.setTimeout(close, kind === 'error' ? 5000 : 3000); }
         function getTopLayerDialog() {
@@ -411,14 +411,13 @@
             if (!canViewPortalCode()) return;
             const pending = members.filter((member) => member?.id && !member.membershipCode?.maskedCode);
             if (!pending.length) return;
-            await Promise.all(pending.map(async (member) => {
+            void Promise.all(pending.map(async (member) => {
                 try {
                     member.membershipCode = await api(`/api/members/${encodeURIComponent(member.id)}/membership-code`);
                 } catch (error) {
                     if (![401, 403].includes(Number(error.status))) console.warn('[TOP GYM] Portal code preview failed.', error);
                 }
-            }));
-            renderMembers();
+            })).then(() => renderMembers());
         }
         window.hydrateMemberPortalCodes = hydrateMemberPortalCodes;
         function memberTableRow(member) {

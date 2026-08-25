@@ -168,10 +168,21 @@
         filterAlerts();
     }
 
-    new MutationObserver(enhanceDailyAlerts).observe(alertsList, { childList: true, subtree: true });
+    let enhanceFrame = 0;
+    const scheduleEnhance = () => {
+        if (enhanceFrame) return;
+        const run = () => {
+            enhanceFrame = 0;
+            enhanceDailyAlerts();
+        };
+        enhanceFrame = typeof window.requestAnimationFrame === 'function'
+            ? window.requestAnimationFrame(run)
+            : window.setTimeout(run, 0);
+    };
+    new MutationObserver(scheduleEnhance).observe(alertsList, { childList: true, subtree: true });
     alertsSearch?.addEventListener('input', () => {
         currentPage = 1;
         filterAlerts();
     });
-    enhanceDailyAlerts();
+    scheduleEnhance();
 })();

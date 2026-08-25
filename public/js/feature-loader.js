@@ -15,8 +15,8 @@
             dependencies: ['finance'],
             styles: [],
             scripts: [
-                '/js/day-passes.js?v=7',
-                '/js/alerts-enhancements.js?v=9'
+                '/js/day-passes.js?v=8',
+                '/js/alerts-enhancements.js?v=10'
             ]
         },
         finance: {
@@ -117,12 +117,17 @@
         }
 
         const promise = new Promise((resolve, reject) => {
+            const releaseProgress = window.topGymPerformance?.startTask?.('جاري تجهيز مكونات الشاشة…');
             const script = document.createElement('script');
             script.src = source;
             script.async = false;
             script.dataset.topGymAsset = key;
-            script.onload = () => resolve(script);
+            script.onload = () => {
+                releaseProgress?.();
+                resolve(script);
+            };
             script.onerror = () => {
+                releaseProgress?.();
                 script.remove();
                 reject(new Error(`تعذر تحميل مكوّن ${key}.`));
             };
