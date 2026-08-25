@@ -333,6 +333,159 @@
   color: var(--text-on-primary);
 }
 
+/* Pricing management dialogs use three independent zones: the header and
+   footer stay in place while only the content region scrolls. This prevents
+   sticky layers from covering fields or table rows when the catalog grows. */
+#pricingDialog,
+#membershipTypesDialog {
+  height: min(820px, calc(100dvh - 32px));
+  max-height: calc(100dvh - 32px);
+  overflow: hidden;
+  padding: 0;
+}
+
+#pricingDialog > form.dialog-body,
+#membershipTypesDialog > .dialog-body {
+  box-sizing: border-box;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 0;
+  height: 100%;
+  max-height: none;
+  overflow: hidden;
+  padding: 0;
+}
+
+.management-dialog-header {
+  align-items: center;
+  flex: 0 0 auto;
+  min-width: 0;
+  padding: var(--space-5) var(--space-6);
+  border-bottom: 1px solid var(--border-color);
+  background: var(--color-surface);
+}
+
+.management-dialog-heading {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-1);
+}
+
+.management-dialog-eyebrow {
+  color: var(--color-primary);
+  font-size: var(--font-xs);
+  font-weight: var(--weight-bold);
+}
+
+.management-dialog-heading h3 {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-xl);
+  font-weight: var(--weight-extrabold);
+}
+
+.management-dialog-heading p {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-xs);
+  line-height: 1.7;
+}
+
+.management-dialog-mark {
+  display: inline-grid;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid var(--primary-border);
+  border-radius: 12px;
+  background: var(--primary-soft);
+  color: var(--color-primary-hover);
+  font-family: var(--font-latin);
+  font-size: var(--font-xs);
+  font-weight: var(--weight-extrabold);
+}
+
+.management-dialog-mark-success {
+  border-color: var(--success-border);
+  background: var(--success-soft);
+  color: var(--success-text);
+}
+
+.dialog-scroll-content {
+  display: grid;
+  min-height: 0;
+  align-content: start;
+  gap: var(--space-5);
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: var(--space-5) var(--space-6);
+  scrollbar-color: var(--border-strong) transparent;
+  scrollbar-width: thin;
+}
+
+.dialog-scroll-content::-webkit-scrollbar { width: 7px; }
+.dialog-scroll-content::-webkit-scrollbar-track { background: transparent; }
+.dialog-scroll-content::-webkit-scrollbar-thumb {
+  border-radius: var(--radius-pill);
+  background: var(--border-strong);
+}
+
+#pricingDialog .dialog-scroll-content .day-pass-pricing-section {
+  margin-top: 0;
+}
+
+#pricingDialog .dialog-footer,
+#membershipTypesDialog .dialog-footer {
+  position: static;
+  z-index: auto;
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: flex-start;
+  gap: var(--space-2);
+  margin: 0;
+  border-top: 1px solid var(--border-color);
+  background: var(--color-surface);
+  box-shadow: none;
+  padding: var(--space-4) var(--space-6);
+}
+
+#pricingDialog .dialog-footer .btn,
+#membershipTypesDialog .dialog-footer .btn {
+  min-width: 112px;
+}
+
+@media (max-width: 600px) {
+  #pricingDialog,
+  #membershipTypesDialog {
+    width: calc(100% - 20px);
+    height: calc(100dvh - 20px);
+    max-height: calc(100dvh - 20px);
+  }
+
+  .management-dialog-header {
+    padding: var(--space-4);
+  }
+
+  .dialog-scroll-content {
+    gap: var(--space-4);
+    padding: var(--space-4);
+  }
+
+  #pricingDialog .dialog-footer,
+  #membershipTypesDialog .dialog-footer {
+    flex-wrap: wrap;
+    padding: var(--space-3) var(--space-4);
+  }
+
+  #pricingDialog .dialog-footer .btn,
+  #membershipTypesDialog .dialog-footer .btn {
+    flex: 1 1 150px;
+  }
+}
+
 .auth-form-grid,
 .expense-form-grid {
   display: grid;

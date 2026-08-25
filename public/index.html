@@ -54,8 +54,6 @@
                         <div class="brand-mark rounded-lg bg-blue-600 gym-brand-bg" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.8 19.5 7v10L12 21.2 4.5 17V7L12 2.8Z" fill="currentColor" opacity=".16"/><path d="m7.1 14.9 2.7-3 2.3 2.1 4.8-5.1"/><path d="M7.2 17.2h9.6" opacity=".65"/></svg></div>
                         <div class="brand-copy"><span class="brand-kicker">TOP GYM</span><h1>TOP GYM</h1><p>لوحة الإدارة الذكية</p></div>
                     </div>
-                    <span class="topbar-brand-divider" aria-hidden="true"></span>
-                    <div class="topbar-section-context"><span>مركز الإدارة</span><strong>لوحة التحكم</strong></div>
                 </div>
                 <div class="topbar-welcome" aria-live="polite">
                     <span class="topbar-welcome-kicker">مرحبًا بعودتك</span>
@@ -64,10 +62,8 @@
                 </div>
                 <div class="topbar-controls">
                     <div class="top-actions topbar-quick-actions">
-                        <button class="header-search" id="headerSearchButton" type="button"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><span>بحث سريع</span><kbd>/</kbd></button>
-                        <button class="btn btn-primary btn-small" id="topAddMemberButton">إضافة مشترك</button>
+                        <button class="btn btn-primary btn-small" id="topAddMemberButton" hidden>إضافة مشترك</button>
                         <button class="btn btn-light btn-small" id="topPricingButton" data-owner-only>الأسعار</button>
-                        <button class="header-notification" id="headerAlertsButton" type="button" aria-label="عرض التنبيهات"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg><span class="header-notification-count" id="headerAlertCount">0</span></button>
                         <button class="btn btn-light btn-small header-backup" id="backupButton" type="button" title="تحميل نسخة احتياطية" aria-label="تحميل نسخة احتياطية"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v11"/><path d="m7 10 5 5 5-5"/><path d="M5 20h14"/></svg><span>تحميل نسخة احتياطية</span></button>
                         <button class="btn btn-light btn-small header-refresh" id="refreshButton" type="button"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 0 0-14.8-4L3 10"/><path d="M3 5v5h5"/><path d="M4 13a8 8 0 0 0 14.8 4L21 14"/><path d="M21 19v-5h-5"/></svg><span>تحديث البيانات</span></button>
                     </div>
@@ -77,13 +73,6 @@
                         <span class="visually-hidden" data-theme-toggle-label>الوضع الداكن</span>
                     </button>
                     <div class="auth-account-bar" id="authAccountBar" hidden aria-label="حساب المستخدم الحالي">
-                        <div class="auth-account-identity">
-                            <span class="auth-account-avatar" id="authAccountAvatar" aria-hidden="true">TG</span>
-                            <span class="auth-account-copy">
-                                <strong id="authAccountName">TOP GYM</strong>
-                                <small id="authAccountEmail" dir="ltr">—</small>
-                            </span>
-                        </div>
                         <button class="btn btn-light btn-small auth-logout-button" id="authLogoutButton" type="button" aria-label="تسجيل الخروج" title="تسجيل الخروج">
                             <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 17l5-5-5-5"/><path d="M15 12H3"/><path d="M21 19V5a2 2 0 0 0-2-2h-5"/></svg>
                             <span>تسجيل الخروج</span>
@@ -528,24 +517,35 @@
         </form>
     </dialog>
     <dialog id="dayPassDialog" class="day-pass-dialog rounded-lg border-slate-200 shadow-lift"></dialog>
-    <dialog id="pricingDialog" class="pricing-dialog rounded-lg border-slate-200 shadow-lift" data-owner-only>
+    <dialog id="pricingDialog" class="pricing-dialog rounded-lg border-slate-200 shadow-lift" data-owner-only aria-labelledby="pricingDialogTitle">
         <form class="dialog-body" id="pricingForm">
-            <div class="details-dialog-head"><div><h3>أسعار الباقات</h3><p>تحكم في أسعار الباقات، وتظهر قيمة كل مدة تلقائيًا.</p></div><button class="btn btn-light btn-small" id="pricingClose" type="button">إغلاق</button></div>
+            <header class="dialog-header management-dialog-header">
+                <div class="management-dialog-heading"><span class="management-dialog-eyebrow">إدارة الإيرادات</span><h3 id="pricingDialogTitle">أسعار الباقات</h3><p>تحكم في أسعار الباقات وقيمة كل مدة من مساحة واحدة.</p></div>
+                <span class="management-dialog-mark" aria-hidden="true">01</span>
+            </header>
+            <div class="dialog-scroll-content">
                 <div class="pricing-section-head"><div><h4>أسعار الباقات</h4><p>اضبط السعر الشهري وسعر كل مدة بشكل مستقل لكل باقة.</p></div><button class="btn btn-primary btn-small" id="addMembershipPlanButton" data-owner-only type="button">+ إضافة باقة جديدة</button></div>
-            <div class="pricing-table-scroll" id="pricingTableContainer"><div class="loading">جاري تحميل الأسعار…</div></div>
-            <section class="day-pass-pricing-section" aria-labelledby="dayPassPricingTitle">
-                <div class="pricing-section-head"><div><h4 id="dayPassPricingTitle">أسعار الحصص اليومية</h4><p>اضبط سعر دخول اليوم الواحد بشكل مستقل عن اشتراكات الأعضاء.</p></div><span class="day-pass-pricing-note">إيراد مستقل</span></div>
-                <div class="pricing-table-scroll" id="dayPassPricingContainer"><div class="loading">جاري تحميل أسعار الحصص…</div></div>
-                <div class="day-pass-pricing-actions"><button class="btn btn-light btn-small" id="dayPassPricingSave" data-owner-only type="button">حفظ أسعار الحصص</button></div>
-            </section>
-            <div class="dialog-actions"><button class="btn btn-primary" id="pricingSave" data-owner-only type="submit">حفظ أسعار الباقات</button></div>
+                <div class="pricing-table-scroll" id="pricingTableContainer"><div class="loading">جاري تحميل الأسعار…</div></div>
+                <section class="day-pass-pricing-section" aria-labelledby="dayPassPricingTitle">
+                    <div class="pricing-section-head"><div><h4 id="dayPassPricingTitle">أسعار الحصص اليومية</h4><p>اضبط سعر دخول اليوم الواحد بشكل مستقل عن اشتراكات الأعضاء.</p></div><span class="day-pass-pricing-note">إيراد مستقل</span></div>
+                    <div class="pricing-table-scroll" id="dayPassPricingContainer"><div class="loading">جاري تحميل أسعار الحصص…</div></div>
+                    <div class="day-pass-pricing-actions"><button class="btn btn-light btn-small" id="dayPassPricingSave" data-owner-only type="button">حفظ أسعار الحصص</button></div>
+                </section>
+            </div>
+            <div class="dialog-actions dialog-footer"><button class="btn btn-light" id="pricingClose" type="button">إغلاق</button><button class="btn btn-primary" id="pricingSave" data-owner-only type="submit">حفظ أسعار الباقات</button></div>
         </form>
     </dialog>
-    <dialog id="membershipTypesDialog" class="pricing-dialog rounded-lg border-slate-200 shadow-lift" data-owner-only>
+    <dialog id="membershipTypesDialog" class="pricing-dialog rounded-lg border-slate-200 shadow-lift" data-owner-only aria-labelledby="membershipTypesDialogTitle">
         <div class="dialog-body">
-            <div class="details-dialog-head"><div><h3>أنواع العضويات</h3><p>أضف أو عدّل مدد العضويات ومعاملات أسعارها بشكل مستقل.</p></div><button class="btn btn-light btn-small" id="membershipTypesClose" type="button">إغلاق</button></div>
-            <div class="pricing-section-head"><div><h4>أنواع العضويات</h4><p>مثل نصف الشهر، الشهرية، الربع سنوية وباقي المدد.</p></div><button class="btn btn-primary btn-small" id="addMembershipTypeButton" data-owner-only type="button">+ إضافة نوع جديد</button></div>
-            <div class="pricing-table-scroll" id="membershipTypesTableContainer"><div class="loading">جاري تحميل أنواع العضويات…</div></div>
+            <header class="dialog-header management-dialog-header">
+                <div class="management-dialog-heading"><span class="management-dialog-eyebrow">إدارة الاشتراكات</span><h3 id="membershipTypesDialogTitle">أنواع العضويات</h3><p>أضف أو عدّل مدد العضويات ومعاملات أسعارها بشكل مستقل.</p></div>
+                <span class="management-dialog-mark management-dialog-mark-success" aria-hidden="true">02</span>
+            </header>
+            <div class="dialog-scroll-content">
+                <div class="pricing-section-head"><div><h4>أنواع العضويات</h4><p>مثل نصف الشهر، الشهرية، الربع سنوية وباقي المدد.</p></div><button class="btn btn-primary btn-small" id="addMembershipTypeButton" data-owner-only type="button">+ إضافة نوع جديد</button></div>
+                <div class="pricing-table-scroll" id="membershipTypesTableContainer"><div class="loading">جاري تحميل أنواع العضويات…</div></div>
+            </div>
+            <div class="dialog-actions dialog-footer"><button class="btn btn-light" id="membershipTypesClose" type="button">إغلاق</button></div>
         </div>
     </dialog>
     <dialog id="membershipPlanDialog" class="type-dialog rounded-lg border-slate-200 shadow-lift" data-owner-only>

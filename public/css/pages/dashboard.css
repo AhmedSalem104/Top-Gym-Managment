@@ -1607,3 +1607,13 @@
   .dashboard-day-pass-actions .btn { flex: 1 1 0; }
   .dashboard-day-pass-kpis { grid-template-columns: 1fr; }
 }
+
+/* Keep the daily-pass workspace compact on wide dashboards and use the
+   adjacent column for the alerts that need attention alongside it. */
+@media (min-width: 1200px) {
+  .overview-grid > .alerts-panel,
+  .overview-grid > .dashboard-day-pass-card {
+    grid-column: span 6;
+    grid-row: 2;
+  }
+}
