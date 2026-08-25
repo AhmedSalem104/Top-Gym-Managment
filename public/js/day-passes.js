@@ -39,6 +39,30 @@
         return Promise.resolve();
     }
 
+    async function confirmDeleteRecord(sale) {
+        if (!window.Swal && window.topGymLoadExternalAsset) {
+            await window.topGymLoadExternalAsset('sweetalert').catch(() => null);
+        }
+        if (!window.Swal) return window.confirm(`هل تريد حذف سجل ${recordDisplayName(sale)}؟ لا يمكن التراجع عن هذا الإجراء.`);
+        const result = await window.Swal.fire({
+            position: 'center',
+            backdrop: window.topGymThemeValue?.('--overlay') || 'rgba(2, 6, 23, .75)',
+            icon: 'warning',
+            title: 'تأكيد حذف الحصة',
+            text: `هل تريد حذف سجل ${recordDisplayName(sale)}؟ لا يمكن التراجع عن هذا الإجراء.`,
+            showCancelButton: true,
+            confirmButtonText: 'نعم، احذف الحصة',
+            cancelButtonText: 'إلغاء',
+            buttonsStyling: false,
+            customClass: {
+                popup: 'delete-confirm-alert',
+                confirmButton: 'btn btn-danger',
+                cancelButton: 'btn btn-light'
+            }
+        });
+        return result.isConfirmed;
+    }
+
     async function request(path, options = {}) {
         return window.topGymApi.request(path, options);
     }
@@ -252,7 +276,7 @@
         if (!host || !isAuthenticated()) return false;
         const { from, to } = monthRange();
         try {
-            const params = new URLSearchParams({ from, to, page: '1', pageSize: '5' });
+            const params = new URLSearchParams({ from, to, page: '1', pageSize: '6' });
             const [list, summary] = await Promise.all([
                 request(`/api/day-passes?${params}`),
                 request(`/api/day-passes/summary?${new URLSearchParams({ from, to })}`)
@@ -313,7 +337,7 @@
 
     async function deleteRecord(id) {
         const sale = getRecord(id);
-        if (!sale || !window.confirm(`هل تريد حذف سجل ${recordDisplayName(sale)}؟ لا يمكن التراجع عن هذا الإجراء.`)) return;
+        if (!sale || !(await confirmDeleteRecord(sale))) return;
         try {
             await request(`/api/day-passes/${encodeURIComponent(id)}`, { method: 'DELETE' });
             if (String(state.editingId) === String(id)) resetEditForm();

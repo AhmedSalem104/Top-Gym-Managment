@@ -15,13 +15,13 @@
             dependencies: ['finance'],
             styles: [],
             scripts: [
-                '/js/day-passes.js?v=5',
+                '/js/day-passes.js?v=6',
                 '/js/alerts-enhancements.js?v=9'
             ]
         },
         finance: {
             styles: [],
-            scripts: ['/js/pages/finance/monthly-finance.js?v=17']
+            scripts: ['/js/pages/finance/monthly-finance.js?v=18']
         },
         'member-details': {
             styles: [],

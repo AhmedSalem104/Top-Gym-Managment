@@ -110,9 +110,13 @@
         });
         const dayPassCard = overview.querySelector(':scope > #dashboardDayPassCard');
         const alerts = overview.querySelector(':scope > #alertsSection');
+        const analytics = $('dashboardAnalytics');
+        const main = overview.parentElement;
         if (dayPassCard && alerts && dayPassCard.parentElement === overview && alerts.parentElement === overview) {
             overview.insertBefore(dayPassCard, alerts);
-            alerts.insertAdjacentElement('afterend', snapshot);
+        }
+        if (analytics && main === analytics.parentElement) {
+            main.insertBefore(snapshot, analytics);
         } else if (alerts && alerts.parentElement === overview) {
             alerts.insertAdjacentElement('afterend', snapshot);
         } else {

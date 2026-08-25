@@ -1646,8 +1646,20 @@
 }
 
 @media (min-width: 1200px) {
+  .overview-grid > .alerts-panel,
+  .overview-grid > .dashboard-day-pass-card {
+    align-self: stretch;
+    min-height: 0;
+  }
+
+  .dashboard-day-pass-card {
+    grid-template-rows: auto auto minmax(0, 1fr);
+  }
+
   .dashboard-day-pass-table-wrap {
+    min-height: 0;
     overflow-x: hidden;
+    overflow-y: auto;
   }
 
   .dashboard-day-pass-table {
@@ -1694,4 +1706,16 @@
     width: 15px;
     height: 15px;
   }
+}
+
+/* The finance snapshot is a priority summary: keep it immediately before
+   performance analytics instead of letting it disappear below the charts. */
+.monthly-finance-snapshot {
+  box-sizing: border-box;
+  width: 100%;
+  margin-top: var(--space-4);
+}
+
+.dashboard-analytics {
+  margin-top: var(--space-4);
 }

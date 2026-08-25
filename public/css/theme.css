@@ -1689,7 +1689,7 @@ html[data-theme="dark"] .qr-member-page .theme-toggle-button {
   display: grid;
   width: min(100% - 48px, 1520px);
   min-height: 80px;
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
   gap: var(--space-6);
   margin: 0 auto;
@@ -1829,7 +1829,7 @@ html[data-theme="dark"] .qr-member-page .theme-toggle-button {
 
 .topbar-controls {
   min-width: 0;
-  justify-content: flex-start;
+  justify-content: flex-end;
   gap: var(--space-2);
   direction: rtl;
 }
@@ -2040,7 +2040,7 @@ html[data-theme="dark"] .qr-member-page .theme-toggle-button {
   .topbar-inner {
     width: calc(100% - 20px);
     min-height: 68px;
-    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-columns: auto minmax(0, 1fr);
     gap: var(--space-2);
     padding: 10px 0;
   }
