@@ -18636,6 +18636,14 @@ html[data-theme="light"] .topbar-theme-toggle:focus-visible {
   }
 }
 
+/* Keep the command navbar anchored to the same dark navy surface as the
+   slide menu. The content depth still comes from cards and borders, not from
+   a second header shade. */
+html[data-theme="dark"] .topbar,
+html[data-theme="dark"] .topbar.gym-topbar-bg {
+  background: var(--bg-sidebar);
+}
+
 /* Desktop shell polish --------------------------------------------------
    Keep the global header and slide rail on one clean grid edge. The pin is
    available while the rail is being used, but stays out of the collapsed
