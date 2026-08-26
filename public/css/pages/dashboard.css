@@ -495,7 +495,6 @@
 .backup-history-list,
 .auth-users-loading { color: var(--color-text-muted); font-size: var(--font-xs); }
 
-#managementSection > .backup-history-section { display: none; }
 .backup-history-page { min-width: 0; }
 .backup-history-page-head { align-items: center; }
 .backup-history-page-heading { display: grid; min-width: 0; gap: var(--space-1); }

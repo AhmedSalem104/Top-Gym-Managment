@@ -21,7 +21,7 @@
         },
         finance: {
             styles: [],
-            scripts: ['/js/pages/finance/monthly-finance.js?v=19']
+            scripts: ['/js/pages/finance/monthly-finance.js?v=20']
         },
         'member-details': {
             styles: [],
@@ -67,12 +67,12 @@
         },
         management: {
             styles: [],
-            scripts: ['/js/pages/management/backup.js?v=10']
+            scripts: []
         },
         'backup-history': {
-            dependencies: ['management'],
+            dependencies: [],
             styles: [],
-            scripts: []
+            scripts: ['/js/pages/management/backup.js?v=11']
         },
         permissions: {
             styles: [],
@@ -101,7 +101,7 @@
         },
         'smart-assistant': {
             styles: [],
-            scripts: ['/js/smart-assistant.js?v=4']
+            scripts: ['/js/smart-assistant.js?v=5']
         }
     };
 
@@ -361,28 +361,6 @@
         }, true);
     }
 
-    function bindLazyBackupAction() {
-        document.addEventListener('click', (event) => {
-            const button = event.target.closest('#backupButton');
-            if (!button || button.dataset.topGymFeatureReady === 'management' || button.dataset.topGymFeatureLoading === 'true') return;
-            if (!window.topGymAuth?.isOwner?.()) return;
-            event.preventDefault();
-            event.stopImmediatePropagation();
-            button.dataset.topGymFeatureLoading = 'true';
-            button.disabled = true;
-            ensureTab('management').then(() => {
-                button.dataset.topGymFeatureReady = 'management';
-                button.click();
-            }).catch((error) => {
-                console.warn('[TOP GYM] Backup feature failed to load.', error);
-                window.showToast?.(error.message, true, 'error');
-            }).finally(() => {
-                delete button.dataset.topGymFeatureLoading;
-                button.disabled = false;
-            });
-        }, true);
-    }
-
     function bindLazyPrintActions() {
         const ensurePrint = () => ensureTab('print').catch((error) => {
             console.warn('[TOP GYM] Print feature failed to load.', error);
@@ -486,7 +464,6 @@
             scheduleDashboardAnalytics(true);
         }
     });
-    bindLazyBackupAction();
     bindLazyPrintActions();
     bindLazyCoachingActions();
     bindLazyDashboardActions();

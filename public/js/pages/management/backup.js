@@ -3,12 +3,9 @@
     window.__topGymBackupEnhancementsLoaded = true;
 
     const $ = (id) => document.getElementById(id);
-    const downloadButton = $('backupButton');
     const jsonDownloadButton = $('backupJsonButton');
     const bakDownloadButton = $('backupBakButton');
     const restoreButton = $('restoreBackupButton');
-    const historyButton = $('backupHistoryButton');
-    document.querySelector('#managementSection > .backup-history-section')?.remove();
     const historyRefreshButton = $('backupHistoryRefresh');
     const historyList = $('backupHistoryList');
     const restoreDialog = $('backupRestoreDialog');
@@ -57,7 +54,7 @@
         return match?.[1] || fallback;
     }
 
-    async function downloadBackup(format = 'json.gz', trigger = downloadButton) {
+    async function downloadBackup(format = 'json.gz', trigger) {
         const normalizedFormat = format === 'bak' ? 'bak' : 'json.gz';
         if (!trigger || trigger.dataset.backupBusy === 'true') return;
         trigger.dataset.backupBusy = 'true';
@@ -275,19 +272,9 @@
         }
     }
 
-    downloadButton?.addEventListener('click', () => downloadBackup('json.gz', downloadButton));
     jsonDownloadButton?.addEventListener('click', () => downloadBackup('json.gz', jsonDownloadButton));
     bakDownloadButton?.addEventListener('click', () => downloadBackup('bak', bakDownloadButton));
     restoreButton?.addEventListener('click', () => { resetRestore(); openDialog(restoreDialog); });
-    function openHistoryScreen() {
-        if (window.topGymActivateTab) {
-            void window.topGymActivateTab('backup-history');
-            return;
-        }
-        void showHistory();
-    }
-
-    historyButton?.addEventListener('click', openHistoryScreen);
     historyRefreshButton?.addEventListener('click', showHistory);
     window.addEventListener('topgym:tab-changed', (event) => {
         if (event.detail?.name === 'backup-history') void showHistory();

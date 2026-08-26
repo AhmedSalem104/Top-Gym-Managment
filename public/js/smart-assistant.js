@@ -45,9 +45,17 @@
             tab: 'management',
             permission: 'pricing.read',
             title: 'الأسعار والعضويات',
-            description: 'إدارة الباقات وأنواع العضويات والنسخ الاحتياطية حسب الصلاحيات الممنوحة.',
+            description: 'إدارة الباقات وأنواع العضويات وأسعارها من مساحة واحدة حسب الصلاحيات الممنوحة.',
             help: 'تستطيع مراجعة الباقات وأنواع العضويات إذا كانت صلاحية pricing.read متاحة. إدارة حسابات Assistant موجودة حصريًا في شاشة الصلاحيات.',
-            actions: ['add-plan', 'add-membership-type', 'open-backups']
+            actions: ['add-plan', 'add-membership-type']
+        },
+        'backup-history': {
+            tab: 'backup-history',
+            permission: 'management.backup.read',
+            title: 'حماية البيانات',
+            description: 'إنشاء النسخ الاحتياطية وفحصها واسترجاعها ومراجعة سجل العمليات الحساسة.',
+            help: 'من شاشة حماية البيانات يمكنك تنزيل نسخة .json.gz أو .bak، فحص ملف قبل الاسترجاع، ومراجعة النسخ المحفوظة وسجل العمليات. هذه الأدوات مخصصة للOwner.',
+            actions: []
         },
         attendance: {
             tab: 'attendance',
@@ -124,7 +132,7 @@
         'add-assistant': { label: 'إضافة Assistant', icon: 'user-plus', type: 'click', selector: '#authAddAssistantButton', tab: 'permissions', permission: 'permissions.manage', success: 'فتحت نموذج إضافة Assistant من شاشة الصلاحيات.' },
         'open-management': { label: 'فتح الأسعار والعضويات', icon: 'settings', type: 'navigate', tab: 'management', permission: 'pricing.read', success: 'فتحت شاشة الأسعار والعضويات.' },
         'open-permissions': { label: 'فتح الصلاحيات', icon: 'shield', type: 'navigate', tab: 'permissions', permission: 'permissions.manage', success: 'فتحت شاشة إدارة صلاحيات Assistant.' },
-        'open-backups': { label: 'فتح النسخ الاحتياطية', icon: 'archive', type: 'navigate-click', tab: 'management', selector: '#backupButton', permission: 'management.backup.read', success: 'فتحت أدوات النسخ الاحتياطية المتاحة للمالك.' },
+        'open-backups': { label: 'فتح النسخ الاحتياطية', icon: 'archive', type: 'navigate', tab: 'backup-history', permission: 'management.backup.read', success: 'فتحت شاشة حماية البيانات وسجل النسخ الاحتياطية.' },
         'attendance-phone': { label: 'تسجيل بالهاتف', icon: 'phone', type: 'click', selector: '#attendancePhoneModeButton', tab: 'attendance', permission: 'attendance.check_in', success: 'فعّلت التسجيل برقم الهاتف.' },
         'attendance-scan': { label: 'مسح QR Code', icon: 'qr', type: 'click', selector: '#attendanceScanButton', tab: 'attendance', permission: 'attendance.check_in', success: 'فتحت قارئ QR Code.' },
         'attendance-refresh': { label: 'تحديث سجل الحضور', icon: 'refresh', type: 'click', selector: '#attendanceRefreshButton', tab: 'attendance', permission: 'attendance.read', success: 'حدّثت سجل الحضور.' },
@@ -378,7 +386,7 @@
             { pattern: /(مكتبة|طعام|عضلة)/, screen: 'library', action: 'open-library', text: '«المكتبة» تحتوي على التمارين والأطعمة والعضلات. استخدم البحث والتصفية والتفاصيل، وتظهر الإضافة والتعديل والحذف فقط عند امتلاك صلاحياتها.' },
             { pattern: /(صلاحية|صلاحيات|مساعد|assistant|حسابات الإدارة)/, screen: 'permissions', action: 'open-permissions', text: 'إدارة صلاحيات Assistant ومصفوفة القراءة والعمليات متاحة للOwner فقط. لا يستطيع المساعد تعديل صلاحياته أو رؤية شاشة الإدارة إذا لم تُمنح له.' },
             { pattern: /(تقييم|شكوى|اقتراح|رأي المشترك)/, screen: 'feedback', action: 'open-feedback', text: '«تقييمات المشتركين» تعرض تقييمات وآراء ومشكلات واقتراحات بوابة المشترك، وهي شاشة Owner-only مع فلاتر للتقييم والنوع والتاريخ.' },
-            { pattern: /(نسخة احتياطية|باك اب|backup|استعادة)/, screen: 'management', action: 'open-backups', permission: 'management.backup.read', text: 'النسخ الاحتياطية وإجراءات الإنشاء والاستعادة والحذف مخصصة للOwner، وتُسجل العمليات الحساسة في التدقيق.' },
+            { pattern: /(نسخة احتياطية|باك اب|backup|استعادة)/, screen: 'backup-history', action: 'open-backups', permission: 'management.backup.read', text: 'النسخ الاحتياطية وإجراءات الإنشاء والاستعادة والحذف مخصصة للOwner، وتُسجل العمليات الحساسة في التدقيق داخل شاشة حماية البيانات.' },
             { pattern: /(تسجيل الدخول|جلسة|كلمة المرور|خروج)/, screen: null, action: null, text: 'تسجيل الدخول يعتمد على جلسة آمنة. عند انتهاء الجلسة سيطلب النظام تسجيل الدخول مرة أخرى، ولا يعرض المساعد كلمات المرور أو رموز الجلسات.' },
             { pattern: /(مساعد ذكي|كيف تستخدم|ماذا تستطيع|مساعدة)/, screen: null, action: null, text: 'أشرح لك الشاشة الحالية وكل الإجراءات التي تسمح بها صلاحياتك، وأستطيع فتح الشاشة المناسبة أو تنفيذ الإجراء السريع المتاح. لا أقترح ولا أنفذ عملية محجوبة.' }
         ];

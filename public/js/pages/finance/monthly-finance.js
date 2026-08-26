@@ -332,9 +332,6 @@
         if (monthlyFinanceCard && expensesTabHost && monthlyFinanceCard.parentElement !== expensesTabHost) {
             expensesTabHost.appendChild(monthlyFinanceCard);
         }
-        const backupButton = $('backupButton');
-        const monthlyFinanceActions = $('monthlyFinanceActions');
-        if (backupButton && monthlyFinanceActions) monthlyFinanceActions.appendChild(backupButton);
         $('addExpenseButton')?.addEventListener('click', openExpenseDialog);
         $('addExpenseFromTabButton')?.addEventListener('click', openExpenseDialog);
         $('expenseDialogClose')?.addEventListener('click', closeExpenseDialog);

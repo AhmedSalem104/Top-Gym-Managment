@@ -53,7 +53,6 @@
             dayPassPricingSave: 'pricing.update',
             dashboardPrintPricingButton: 'pricing.read',
             reportsExportButton: 'reports.export',
-            backupButton: 'management.backup.create',
             addExpenseFromTabButton: 'finance.create'
         };
         Object.entries(idPermissions).forEach(([id, code]) => {

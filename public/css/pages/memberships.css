@@ -1516,35 +1516,6 @@
 
 #managementSection .management-shortcut-arrow { width: 16px; }
 
-#managementSection .backup-management-panel,
-#managementSection .backup-history-section {
-  gap: var(--space-3);
-  padding: var(--space-4);
-}
-
-#managementSection .backup-management-panel h4,
-#managementSection .backup-history-section h4 {
-  font-size: var(--font-md);
-}
-
-#managementSection .backup-management-panel p,
-#managementSection .backup-history-section p {
-  line-height: 1.55;
-}
-
-#managementSection .backup-management-actions { gap: 6px; }
-
-#managementSection .backup-management-actions .btn {
-  min-height: 36px;
-  padding-inline: 10px;
-  font-size: var(--font-xs);
-}
-
-#managementSection .backup-history-block {
-  margin-top: var(--space-3);
-  padding: var(--space-3);
-}
-
 /* Both management dialogs share the same width and scroll contract. The
    content area owns vertical scrolling, while wide tables can scroll only
    horizontally inside their own wrapper when the viewport is narrow. */
@@ -1563,14 +1534,6 @@
 #pricingDialog .pricing-table,
 #membershipTypesDialog .membership-types-table {
   margin: 0;
-}
-
-@media (min-width: 992px) {
-  #managementSection .backup-management-panel {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: center;
-  }
 }
 
 @media (max-width: 767px) {
