@@ -2345,6 +2345,26 @@ html[data-theme="light"] .topbar-theme-toggle:focus-visible {
 /* Keep the command navbar anchored to the same dark navy surface as the
    slide menu. The content depth still comes from cards and borders, not from
    a second header shade. */
+html[data-theme="light"] .topbar,
+html[data-theme="light"] .topbar.gym-topbar-bg,
+html[data-theme="light"] .app-shell > .topbar {
+  border-bottom-color: var(--sidebar-divider);
+  background: var(--bg-sidebar);
+  color: var(--sidebar-text);
+}
+
+html[data-theme="light"] .app-shell > .topbar .brand-copy h1,
+html[data-theme="light"] .app-shell > .topbar .header-profile-copy strong,
+html[data-theme="light"] .app-shell > .topbar .auth-account-copy strong {
+  color: var(--sidebar-text);
+}
+
+html[data-theme="light"] .app-shell > .topbar .brand-copy p,
+html[data-theme="light"] .app-shell > .topbar .header-profile-copy small,
+html[data-theme="light"] .app-shell > .topbar .auth-account-copy small {
+  color: var(--sidebar-text-muted);
+}
+
 html[data-theme="dark"] .topbar,
 html[data-theme="dark"] .topbar.gym-topbar-bg {
   background: var(--bg-sidebar);
