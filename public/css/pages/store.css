@@ -216,7 +216,8 @@
 .store-checkout-form input,
 .store-checkout-form select,
 .store-checkout-form textarea,
-.store-report-filters input {
+.store-report-filters input,
+.store-report-filters select {
     width: 100%;
     min-height: 44px;
     box-sizing: border-box;
@@ -229,7 +230,8 @@
 
 .store-search-field input,
 .store-customer-picker input,
-.store-report-filters input {
+.store-report-filters input,
+.store-report-filters select {
     padding: 9px 12px;
 }
 
@@ -422,7 +424,9 @@
 .store-checkout-form textarea,
 .store-form-grid input,
 .store-form-grid select,
-.store-form-grid textarea {
+.store-form-grid textarea,
+.store-report-filters input,
+.store-report-filters select {
     padding: 9px 11px;
 }
 
@@ -447,25 +451,28 @@
 
 .store-form-card {
     margin-top: 18px;
-    padding: 16px;
+    padding: 20px;
     border: 1px solid var(--border-secondary);
+    border-top: 3px solid var(--store-primary);
     border-radius: 14px;
     background: var(--bg-card-hover);
 }
 
 .store-form-grid {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    align-items: end;
     gap: 12px;
 }
 
 .store-form-grid label {
     min-width: 0;
+    gap: 8px;
 }
 
 .store-form-grid label:has(textarea),
 .store-form-grid .store-form-actions {
-    grid-column: span 3;
+    grid-column: 1 / -1;
 }
 
 .store-form-grid .store-check-field {
@@ -475,6 +482,44 @@
     gap: 8px;
     align-self: end;
     min-height: 44px;
+}
+
+.store-form-grid input,
+.store-form-grid select,
+.store-form-grid textarea,
+.store-checkout-form input,
+.store-checkout-form select,
+.store-checkout-form textarea,
+.store-report-filters input,
+.store-report-filters select {
+    outline: 0;
+    transition: border-color 160ms ease, background-color 160ms ease, box-shadow 160ms ease;
+}
+
+.store-form-grid input:focus,
+.store-form-grid select:focus,
+.store-form-grid textarea:focus,
+.store-checkout-form input:focus,
+.store-checkout-form select:focus,
+.store-checkout-form textarea:focus,
+.store-report-filters input:focus,
+.store-report-filters select:focus {
+    border-color: var(--border-focus);
+    box-shadow: var(--focus-ring);
+}
+
+.store-form-grid .store-form-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 10px;
+    margin-top: 4px;
+    border-top: 1px solid var(--border-secondary);
+    padding-top: 14px;
+}
+
+.store-form-grid .store-form-actions .btn {
+    min-width: 128px;
 }
 
 .store-table-wrap {
@@ -511,7 +556,8 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    flex-wrap: wrap;
+    min-width: max-content;
+    flex-wrap: nowrap;
     gap: 6px;
 }
 
@@ -523,7 +569,12 @@
 }
 
 .store-table tbody tr:hover {
-    background: var(--bg-card-hover);
+    background: var(--color-primary-soft);
+}
+
+.store-report-filters label {
+    min-width: 150px;
+    flex: 1 1 170px;
 }
 
 .store-status {

@@ -15,20 +15,21 @@
 .member-feedback-filters .member-feedback-search { min-width: 180px; }
 .member-feedback-meta { color: var(--color-text-muted); font-size: var(--font-sm); font-weight: var(--weight-semibold); }
 .member-feedback-table-wrap { min-width: 0; overflow: hidden; border: 1px solid var(--border-color); border-radius: var(--radius-lg); background: var(--color-surface); }
-.member-feedback-table-scroll { overflow-x: auto; }
-.member-feedback-table { width: 100%; min-width: 920px; border-collapse: collapse; table-layout: fixed; }
+.member-feedback-table-scroll { max-width: 100%; overflow-x: auto; direction: ltr; scrollbar-color: var(--border-strong) transparent; scrollbar-width: thin; }
+.member-feedback-table { width: 100%; min-width: 980px; border-collapse: separate; border-spacing: 0; table-layout: fixed; direction: rtl; }
 .member-feedback-table th,
-.member-feedback-table td { padding: var(--space-4); border-bottom: 1px solid var(--border-color); text-align: center; vertical-align: middle; }
+.member-feedback-table td { height: 72px; padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--border-color); text-align: center; vertical-align: middle; }
+.member-feedback-table th { padding: var(--space-3) var(--space-4); text-align: center; vertical-align: middle; }
 .member-feedback-table th { background: var(--color-surface-muted); color: var(--color-text-soft); font-size: var(--font-xs); font-weight: var(--weight-bold); white-space: nowrap; }
 .member-feedback-table th:nth-child(1) { width: 17%; }
-.member-feedback-table th:nth-child(2) { width: 15%; }
-.member-feedback-table th:nth-child(3) { width: 17%; }
-.member-feedback-table th:nth-child(4) { width: 28%; }
-.member-feedback-table th:nth-child(5) { width: 15%; }
-.member-feedback-table th:nth-child(6) { width: 8%; }
+.member-feedback-table th:nth-child(2) { width: 14%; }
+.member-feedback-table th:nth-child(3) { width: 16%; }
+.member-feedback-table th:nth-child(4) { width: 25%; }
+.member-feedback-table th:nth-child(5) { width: 14%; }
+.member-feedback-table th:nth-child(6) { width: 14%; }
 .member-feedback-table tbody tr:last-child td { border-bottom: 0; }
-.member-feedback-table tbody tr:hover { background: var(--color-info-soft); }
-.feedback-member-cell { display: grid; gap: 3px; text-align: right; }
+.member-feedback-table tbody tr:hover { background: var(--color-primary-soft); }
+.feedback-member-cell { display: grid; justify-items: center; gap: 3px; text-align: center; }
 .feedback-member-cell strong { color: var(--color-text); font-size: var(--font-sm); }
 .feedback-phone { color: var(--color-text-muted); font-size: var(--font-xs); }
 .feedback-stars { display: inline-flex; direction: ltr; gap: 2px; color: var(--border-strong); font: 800 17px/1 Arial, sans-serif; }
@@ -39,9 +40,9 @@
 .feedback-type-complaint { background: var(--color-danger-soft); color: var(--color-danger); }
 .feedback-type-suggestion { background: var(--color-success-soft); color: var(--color-success); }
 .feedback-type-feature_request { background: var(--primary-soft); color: var(--text-primary-soft); }
-.feedback-message-cell { max-height: 88px; margin: 0; overflow: auto; color: var(--color-text-soft); font-size: var(--font-sm); line-height: 1.7; text-align: right; white-space: pre-wrap; overflow-wrap: anywhere; }
+.feedback-message-cell { max-height: 88px; margin: 0; overflow: auto; color: var(--color-text-soft); font-size: var(--font-sm); line-height: 1.7; text-align: center; white-space: pre-wrap; overflow-wrap: anywhere; }
 .feedback-date { color: var(--color-text-muted); font-size: var(--font-xs); white-space: nowrap; }
-.feedback-details-button { white-space: nowrap; }
+.feedback-details-button { min-width: 110px; white-space: nowrap; }
 .member-feedback-pagination { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); padding-top: var(--space-2); color: var(--color-text-muted); font-size: var(--font-sm); }
 .feedback-pagination-actions { display: flex; align-items: center; gap: var(--space-3); }
 .feedback-pagination-actions strong { color: var(--color-text-soft); font-size: var(--font-xs); }

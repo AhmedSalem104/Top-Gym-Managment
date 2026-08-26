@@ -51,6 +51,12 @@ dialog > .dialog-close-button .ui-icon {
   height: 16px;
 }
 
+/* Legacy dialogs still keep their IDs for backwards-compatible event
+   bindings, but the shared shell exposes one close control only: the X. */
+button.legacy-dialog-close {
+  display: none !important;
+}
+
 dialog:has(> .dialog-close-button) .dialog-header,
 dialog:has(> .dialog-close-button) .details-dialog-head,
 dialog:has(> .dialog-close-button) .member-details-head,

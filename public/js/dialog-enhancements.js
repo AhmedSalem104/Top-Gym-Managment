@@ -14,8 +14,21 @@
         dialog.hidden = true;
     }
 
+    function hideLegacyCloseButtons(dialog) {
+        if (!dialog) return;
+        dialog.querySelectorAll('button').forEach((button) => {
+            if (button.classList.contains('dialog-close-button') || button.hasAttribute('data-dialog-close')) return;
+            if (button.textContent.trim() !== 'إغلاق') return;
+            button.classList.add('legacy-dialog-close');
+            button.setAttribute('aria-hidden', 'true');
+            button.tabIndex = -1;
+        });
+    }
+
     function ensureCloseButton(dialog) {
-        if (!dialog || dialog.dataset.dialogCloseReady === 'true') return;
+        if (!dialog) return;
+        hideLegacyCloseButtons(dialog);
+        if (dialog.dataset.dialogCloseReady === 'true') return;
         if (dialog.querySelector(':scope > .dialog-close-button, :scope > [data-dialog-close]')) {
             dialog.dataset.dialogCloseReady = 'true';
             return;

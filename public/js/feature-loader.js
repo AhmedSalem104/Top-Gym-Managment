@@ -71,7 +71,7 @@
         },
         permissions: {
             styles: [],
-            scripts: ['/js/pages/management/permissions.js?v=3', '/js/pages/management/auth-users.js?v=3']
+            scripts: ['/js/pages/management/permissions.js?v=4', '/js/pages/management/auth-users.js?v=3']
         },
         attendance: {
             styles: [],

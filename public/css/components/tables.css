@@ -170,16 +170,33 @@ tbody td:not(:last-child) {
 .table-actions,
 .row-actions,
 .members-actions,
-.action-group {
+.action-group,
+.library-row-actions,
+.store-row-actions,
+.day-pass-actions,
+.attendance-row-actions,
+.reports-debtor-actions,
+.reports-coaching-actions,
+.type-actions {
   min-width: max-content;
   flex-wrap: nowrap;
+  align-items: center;
+  white-space: nowrap;
 }
 
 .table-actions .btn,
 .row-actions .btn,
 .members-actions .btn,
-.action-group .btn {
+.action-group .btn,
+.library-row-actions .btn,
+.store-row-actions .btn,
+.day-pass-actions .btn,
+.attendance-row-actions .btn,
+.reports-debtor-actions .btn,
+.reports-coaching-actions .btn,
+.type-actions .btn {
   flex: 0 0 auto;
+  min-height: 36px;
 }
 
 
@@ -393,6 +410,40 @@ table .action-group {
 .library-data-table tbody tr:hover td:last-child,
 .backup-history-table tbody tr:hover td:last-child {
   background: var(--color-primary-soft);
+}
+
+/* One interaction contract for every data table. Page-specific files may
+   keep semantic colors for dangerous/success actions, but the row hover and
+   action wrapping stay identical everywhere. */
+table tbody tr:hover > td,
+table tbody tr:hover > th {
+  background: var(--color-primary-soft);
+}
+
+.reports-table td:last-child,
+.member-feedback-table td:last-child,
+.day-pass-table td:last-child,
+.dashboard-day-pass-table td:last-child,
+.store-table td:last-child,
+.table-actions > .btn,
+.row-actions > .btn,
+.members-actions > .btn,
+.action-group > .btn,
+.library-row-actions > .btn,
+.store-row-actions > .btn,
+.day-pass-actions > .btn,
+.attendance-row-actions > .btn,
+.reports-debtor-actions > .btn,
+.reports-coaching-actions > .btn,
+.type-actions > .btn {
+  white-space: nowrap;
+}
+
+table td:last-child > .btn,
+table td:last-child > .icon-action,
+table td:last-child > .action-button {
+  min-height: 36px;
+  white-space: nowrap;
 }
 
 @media (min-width: 768px) {

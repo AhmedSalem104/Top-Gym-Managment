@@ -348,7 +348,7 @@ html[data-theme="dark"] .table-row {
 html[data-theme="dark"] tbody tr:hover,
 html[data-theme="dark"] .table-row:hover,
 html[data-theme="dark"] .member-feedback-table tbody tr:hover {
-  background: var(--bg-card-hover);
+  background: var(--primary-soft);
 }
 
 html[data-theme="dark"] .table-main,
@@ -912,7 +912,7 @@ html[data-theme="dark"] #membershipTypesDialog .membership-types-table th {
 
 html[data-theme="dark"] #pricingDialog .pricing-table tbody tr:hover td,
 html[data-theme="dark"] #membershipTypesDialog .membership-types-table tbody tr:hover td {
-  background: var(--bg-card-hover);
+  background: var(--primary-soft);
 }
 
 html[data-theme="dark"] .type-status,
@@ -953,7 +953,7 @@ html[data-theme="dark"] .store-customer-result:hover,
 html[data-theme="dark"] .store-customer-result:focus-visible,
 html[data-theme="dark"] .store-table tbody tr:hover {
   border-color: var(--border-hover);
-  background: var(--bg-card-hover);
+  background: var(--primary-soft);
 }
 
 html[data-theme="dark"] .store-subnav-button.is-active,
@@ -1668,7 +1668,10 @@ html[data-theme="dark"] .action-group,
 html[data-theme="dark"] .library-row-actions,
 html[data-theme="dark"] .store-row-actions,
 html[data-theme="dark"] .day-pass-actions,
-html[data-theme="dark"] .attendance-row-actions {
+html[data-theme="dark"] .attendance-row-actions,
+html[data-theme="dark"] .reports-debtor-actions,
+html[data-theme="dark"] .reports-coaching-actions,
+html[data-theme="dark"] .type-actions {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1685,7 +1688,10 @@ html[data-theme="dark"] .action-group > .btn,
 html[data-theme="dark"] .library-row-actions > .btn,
 html[data-theme="dark"] .store-row-actions > .btn,
 html[data-theme="dark"] .day-pass-actions > .btn,
-html[data-theme="dark"] .attendance-row-actions > .btn {
+html[data-theme="dark"] .attendance-row-actions > .btn,
+html[data-theme="dark"] .reports-debtor-actions > .btn,
+html[data-theme="dark"] .reports-coaching-actions > .btn,
+html[data-theme="dark"] .type-actions > .btn {
   box-sizing: border-box;
   min-height: 36px;
   height: 36px;
@@ -1727,6 +1733,9 @@ html[data-theme="dark"] .library-row-actions > .btn:hover:not(:disabled),
 html[data-theme="dark"] .store-row-actions > .btn:hover:not(:disabled),
 html[data-theme="dark"] .day-pass-actions > .btn:hover:not(:disabled),
 html[data-theme="dark"] .attendance-row-actions > .btn:hover:not(:disabled),
+html[data-theme="dark"] .reports-debtor-actions > .btn:hover:not(:disabled),
+html[data-theme="dark"] .reports-coaching-actions > .btn:hover:not(:disabled),
+html[data-theme="dark"] .type-actions > .btn:hover:not(:disabled),
 html[data-theme="dark"] .action-menu > .action-menu-toggle:hover:not(:disabled) {
   border-color: var(--primary-border);
   background: var(--primary-soft);
@@ -1755,6 +1764,18 @@ html[data-theme="dark"] .store-row-actions > [data-store-deactivate-product] {
   border-color: var(--warning-border);
   background: var(--warning-soft);
   color: var(--warning-text);
+}
+
+html[data-theme="dark"] .reports-debtor-actions > .reports-whatsapp-button {
+  border-color: var(--success-border);
+  background: var(--success-soft);
+  color: var(--success-text);
+}
+
+html[data-theme="dark"] .reports-debtor-actions > .reports-whatsapp-button:hover:not(:disabled) {
+  border-color: var(--success);
+  background: var(--success);
+  color: var(--text-on-primary);
 }
 
 html[data-theme="dark"] .table-actions > [data-action="delete"],

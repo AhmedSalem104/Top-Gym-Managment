@@ -100,7 +100,7 @@
             const summaryControl = hasRead
                 ? `<span class="permission-readonly-summary">${readonly ? 'قراءة فقط' : 'عمليات قابلة للتخصيص'}</span>`
                 : '<span class="permission-group-readonly">صلاحيات مستقلة</span>';
-            return `<details class="permission-group-card" data-permission-group="${escapeHtml(group)}"${index === 0 ? ' open' : ''}><summary class="permission-group-head"><span class="permission-group-title"><strong>${escapeHtml(GROUP_LABELS[group] || group)}</strong><small>${granted} من ${items.length} صلاحية مفعلة</small></span><span class="permission-group-summary"><span>${summaryControl}</span><span class="permission-group-chevron" aria-hidden="true">⌄</span></span></summary><div class="permission-group-body">${hasRead ? `<div class="permission-group-controls">${control}</div>` : ''}${options}</div></details>`;
+            return `<details class="permission-group-card" data-permission-group="${escapeHtml(group)}"${index === 0 ? ' open' : ''}><summary class="permission-group-head"><span class="permission-group-title"><strong>${escapeHtml(GROUP_LABELS[group] || group)}</strong><small>${granted} من ${items.length} صلاحية مفعلة</small></span><span class="permission-group-summary"><span>${summaryControl}</span><span class="permission-group-chevron" aria-hidden="true"><svg class="permission-group-chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m7 9 5 5 5-5"/></svg></span></span></summary><div class="permission-group-body">${hasRead ? `<div class="permission-group-controls">${control}</div>` : ''}${options}</div></details>`;
         }).join('');
     }
 
