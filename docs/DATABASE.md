@@ -40,3 +40,17 @@ The project uses Microsoft SQL Server through the `mssql` package. `src/database
 ## Repository status
 
 Current explicit repository boundaries are member list/details reads, expenses/monthly finance, authentication users and authentication sessions. Large legacy services still contain SQL for their own domain and are the next incremental extraction targets.
+
+## Multi-tenant foundation
+
+The application now uses `gym_tenants` as the gym/organization record and `gym_user_tenants` as the account-to-gym membership map. The existing installation was bootstrapped as:
+
+- name: `Top Gym`
+- slug: `top-gym`
+- status: `active`
+
+All current operational rows are assigned to this tenant through a non-null `tenant_id`. Credentials and sessions remain global so the server can resolve the account before applying the gym context.
+
+`src/tenancy/tenant-context.js` stores the request tenant with `AsyncLocalStorage`. `src/database/pool.js` writes that context to SQL Server `SESSION_CONTEXT` before every query/batch, and `tenant-service.js` installs a SQL Server Row-Level Security policy over every tenant-owned table. This protects reads, updates and inserts even where legacy services do not yet include an explicit `tenant_id` predicate.
+
+Run `npm run migrate:tenancy` to apply the idempotent bootstrap/migration manually, and `npm run qa:tenancy` to verify table coverage, unassigned rows, Top Gym ownership and cross-tenant read/write blocking.

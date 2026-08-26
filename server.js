@@ -29,6 +29,8 @@ const intelligenceService = require('./src/services/intelligence-service');
 const brandingService = require('./src/services/branding-service');
 const authService = require('./src/services/auth-service');
 const permissionService = require('./src/services/permission-service');
+const tenantService = require('./src/services/tenant-service');
+const { runTenantContext } = require('./src/tenancy/tenant-context');
 const { ensureAuthReady } = authService;
 
 const publicDirectory = path.join(__dirname, 'public');
@@ -42,6 +44,7 @@ app.use('/api/member-portal', membershipPortalRateLimit);
 app.use('/api', createAuthApiMiddleware({
     authService,
     permissionService,
+    tenantService,
     isAuthorizedCronRequest: (request) => isAuthorizedCronRequest(request, { config })
 }));
 
@@ -140,7 +143,9 @@ registerRoutes(app, {
 });
 
 app.get('/qr/:id', asyncRoute(async (request, response) => {
-    const member = await memberService.getMemberById(request.params.id);
+    const tenant = await tenantService.resolvePublicTenant(request.query?.tenant || request.get('x-gym-slug') || '');
+    if (!tenant) return response.status(404).send('Gym not found.');
+    const member = await runTenantContext({ tenantId: tenant.id, mode: 'public' }, () => memberService.getMemberById(request.params.id));
     response.set({
         'Cache-Control': 'no-store, no-cache, must-revalidate, private',
         'X-Robots-Tag': 'noindex, nofollow'
@@ -173,16 +178,21 @@ app.use((error, request, response, next) => {
 });
 
 async function start() {
-    await initDatabase();
-    await ensureAuthReady();
-    await ensureLibraryData();
-    await coachingService.ensureCoachingTables();
-    await dayPassService.ensureDayPassTables();
-    await membershipCodeService.ensureMembershipCodeStorage();
-    await memberFeedbackService.ensureMemberFeedbackTable();
-    await storeService.ensureStoreTables();
-    await intelligenceService.ensureIntelligenceTables();
-    await brandingService.ensureBrandingTables();
+    await runTenantContext({ mode: 'platform', tenantId: 1 }, () => initDatabase());
+    await runTenantContext({ mode: 'platform', tenantId: 1 }, () => tenantService.ensureTenantTables());
+    const bootstrapTenant = await runTenantContext({ mode: 'platform', tenantId: 1 }, () => tenantService.ensureBootstrapTenant());
+    await runTenantContext({ mode: 'tenant', tenantId: bootstrapTenant.id }, async () => {
+        await ensureAuthReady();
+        await ensureLibraryData();
+        await coachingService.ensureCoachingTables();
+        await dayPassService.ensureDayPassTables();
+        await membershipCodeService.ensureMembershipCodeStorage();
+        await memberFeedbackService.ensureMemberFeedbackTable();
+        await storeService.ensureStoreTables();
+        await intelligenceService.ensureIntelligenceTables();
+        await brandingService.ensureBrandingTables();
+    });
+    await runTenantContext({ mode: 'platform', tenantId: bootstrapTenant.id }, () => tenantService.ensureTenantColumnsAndRls(bootstrapTenant.id));
     const port = config.port;
     app.listen(port, () => console.log(`Gym membership app is running on http://localhost:${port}`));
 }

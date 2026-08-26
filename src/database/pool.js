@@ -2,8 +2,93 @@
 
 const sql = require('mssql');
 const { config: appConfig } = require('../config/env');
+const { getTenantContext } = require('../tenancy/tenant-context');
 
 let poolPromise;
+let tenantAwarePool;
+let tenantAwarePoolTarget;
+
+const TENANT_ID_PARAMETER = '__topgym_tenant_id';
+const TENANT_MODE_PARAMETER = '__topgym_tenant_mode';
+
+function sqlTenantContext() {
+    const context = getTenantContext();
+    const mode = context?.mode || 'deny';
+    const configuredTenantId = Number(context?.tenantId);
+    // Platform/startup work is intentionally associated with the bootstrap
+    // tenant when it inserts legacy/default rows. RLS still bypasses filters
+    // in platform mode, while tenant requests always use their own id.
+    const tenantId = Number.isInteger(configuredTenantId) && configuredTenantId > 0
+        ? configuredTenantId
+        : mode === 'platform' ? 1 : null;
+    return { tenantId, mode, skipSessionContext: Boolean(context?.skipSessionContext) };
+}
+
+function decorateRequest(request) {
+    let proxy;
+    const handler = {
+        get(target, property) {
+            const value = target[property];
+            if (property === 'query' || property === 'batch') {
+                return (command, ...rest) => {
+                    const context = sqlTenantContext();
+                    if (context.skipSessionContext) return value.call(target, command, ...rest);
+                    target.input(TENANT_ID_PARAMETER, sql.Int, context.tenantId);
+                    target.input(TENANT_MODE_PARAMETER, sql.VarChar(20), context.mode);
+                    const guardedCommand = `EXEC sys.sp_set_session_context @key=N'tenant_id', @value=@${TENANT_ID_PARAMETER}; EXEC sys.sp_set_session_context @key=N'tenant_mode', @value=@${TENANT_MODE_PARAMETER}; ${String(command || '')}`;
+                    return value.call(target, guardedCommand, ...rest);
+                };
+            }
+            if (typeof value !== 'function') return value;
+            return (...args) => {
+                const result = value.apply(target, args);
+                // mssql's input/output helpers return the original request so
+                // fluent chains keep working through the proxy.
+                return result === target ? proxy : result;
+            };
+        }
+    };
+    proxy = new Proxy(request, handler);
+    return proxy;
+}
+
+function decorateTransaction(transaction) {
+    let proxy;
+    const handler = {
+        get(target, property) {
+            const value = target[property];
+            if (property === 'request') return (...args) => decorateRequest(value.apply(target, args));
+            if (typeof value !== 'function') return value;
+            return (...args) => {
+                const result = value.apply(target, args);
+                return result === target ? proxy : result;
+            };
+        }
+    };
+    proxy = new Proxy(transaction, handler);
+    return proxy;
+}
+
+function decoratePool(pool) {
+    let proxy;
+    const handler = {
+        get(target, property) {
+            const value = target[property];
+            if (property === 'request') return (...args) => decorateRequest(value.apply(target, args));
+            if (property === 'transaction') return (...args) => decorateTransaction(value.apply(target, args));
+            if (property === 'query' || property === 'batch') {
+                return (command, ...rest) => decorateRequest(target.request())[property](command, ...rest);
+            }
+            if (typeof value !== 'function') return value;
+            return (...args) => {
+                const result = value.apply(target, args);
+                return result === target ? proxy : result;
+            };
+        }
+    };
+    proxy = new Proxy(pool, handler);
+    return proxy;
+}
 
 function parseBoolean(value, fallback) {
     if (value === undefined || value === '') return fallback;
@@ -51,16 +136,25 @@ async function getPool() {
         const connectionConfig = parseConnectionString(appConfig.mssqlConnectionString);
         poolPromise = sql.connect(connectionConfig).catch((error) => {
             poolPromise = undefined;
+            tenantAwarePool = undefined;
+            tenantAwarePoolTarget = undefined;
             throw error;
         });
     }
-    return poolPromise;
+    const pool = await poolPromise;
+    if (!tenantAwarePool || tenantAwarePoolTarget !== pool) {
+        tenantAwarePool = decoratePool(pool);
+        tenantAwarePoolTarget = pool;
+    }
+    return tenantAwarePool;
 }
 
 async function closePool() {
     if (!poolPromise) return;
     const pool = await poolPromise;
     poolPromise = undefined;
+    tenantAwarePool = undefined;
+    tenantAwarePoolTarget = undefined;
     await pool.close();
 }
 

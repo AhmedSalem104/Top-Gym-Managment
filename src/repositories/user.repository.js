@@ -28,7 +28,7 @@ async function createOwner({ fullName, email, passwordHash }) {
         .input('email', sql.NVarChar(254), email)
         .input('emailNormalized', sql.NVarChar(254), email)
         .input('passwordHash', sql.NVarChar(512), passwordHash)
-        .query("INSERT INTO dbo.gym_users (full_name, username, email, email_normalized, password_hash, role, status) VALUES (@fullName, @email, @email, @emailNormalized, @passwordHash, 'Owner', 'Active');");
+        .query("INSERT INTO dbo.gym_users (full_name, username, email, email_normalized, password_hash, role, status) OUTPUT INSERTED.id VALUES (@fullName, @email, @email, @emailNormalized, @passwordHash, 'Owner', 'Active');");
 }
 
 async function list() {

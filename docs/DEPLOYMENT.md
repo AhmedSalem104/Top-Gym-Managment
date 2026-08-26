@@ -25,11 +25,12 @@ Never commit real values. SQL Server must accept encrypted connections from the 
 
 1. Install with the lockfile.
 2. Configure SQL Server connectivity and auth bootstrap values.
-3. Run `npm run qa:gate` and `npm run build`.
-4. Run database-dependent smoke/E2E checks against a safe test database.
-5. Deploy.
-6. Verify `/api/health`, login, Owner/Assistant access and one read-only domain flow.
-7. Verify that the cron backup is authorized and recorded.
+3. Run `npm run migrate:tenancy` once against the target database, then verify with `npm run qa:tenancy`.
+4. Run `npm run qa:gate` and `npm run build`.
+5. Run database-dependent smoke/E2E checks against a safe test database.
+6. Deploy.
+7. Verify `/api/health`, login, Owner/Assistant access and one read-only domain flow.
+8. Verify that the cron backup is authorized and recorded.
 
 ## Serverless constraints
 

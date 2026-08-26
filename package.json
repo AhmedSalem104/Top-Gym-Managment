@@ -16,6 +16,8 @@
     "test:e2e": "playwright test",
     "test:e2e:headed": "playwright test --headed",
     "test:visual": "node scripts/qa-browser-style.js",
+    "migrate:tenancy": "node scripts/migrate-tenancy.js",
+    "qa:tenancy": "node scripts/verify-tenancy.js",
     "qa:gate": "node scripts/qa-gate.js",
     "qa:gate:smoke": "node scripts/qa-gate.js --build --smoke",
     "qa:gate:browser": "node scripts/qa-gate.js --build --browser",

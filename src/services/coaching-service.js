@@ -82,7 +82,7 @@ function normalizePhone(value) {
 
 function withTransaction(work) {
     return getPool().then(async (pool) => {
-        const transaction = new sql.Transaction(pool);
+        const transaction = pool.transaction();
         await transaction.begin();
         try {
             const result = await work(transaction);

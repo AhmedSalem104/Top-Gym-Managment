@@ -10,6 +10,7 @@ const {
     permissionsForRole
 } = require('../permissions/role-permissions');
 const permissionService = require('./permission-service');
+const tenantService = require('./tenant-service');
 const userRepository = require('../repositories/user.repository');
 const sessionRepository = require('../repositories/session.repository');
 
@@ -241,6 +242,11 @@ function safeUser(row) {
 async function safeUserWithPermissions(row) {
     const user = safeUser(row);
     if (!user) return null;
+    return withPermissions(user);
+}
+
+async function withPermissions(user) {
+    if (!user) return null;
     user.permissions = await permissionService.getEffectivePermissions(user.id, user.role);
     return user;
 }
@@ -252,7 +258,10 @@ async function ensureAuthTables() {
 
 async function ensureOwnerAccount() {
     const existing = await userRepository.findOwner();
-    if (existing.recordset[0]) return { created: false, setupRequired: false };
+    if (existing.recordset[0]) {
+        await tenantService.assignUserToTenant(existing.recordset[0].id, undefined, 'Owner');
+        return { created: false, setupRequired: false };
+    }
 
     const email = config.authOwnerEmail ? validateEmail(config.authOwnerEmail) : '';
     const password = config.authOwnerPassword ? validatePassword(config.authOwnerPassword) : '';
@@ -263,11 +272,12 @@ async function ensureOwnerAccount() {
 
     const passwordHash = await hashPassword(password);
     try {
-        await userRepository.createOwner({
+        const result = await userRepository.createOwner({
             fullName: config.authOwnerName,
             email,
             passwordHash
         });
+        await tenantService.assignUserToTenant(result.recordset[0]?.id, undefined, 'Owner');
         console.log(`[TOP GYM AUTH] Bootstrapped Owner account ${email}.`);
         return { created: true, setupRequired: false };
     } catch (error) {
@@ -323,14 +333,15 @@ async function login(body = {}, request) {
     return { token, expiresAt, user: await safeUserWithPermissions(user) };
 }
 
-async function getSessionUser(token) {
+async function getSessionUser(token, { includePermissions = true } = {}) {
     if (!token) return null;
     await ensureAuthReady();
     const result = await sessionRepository.findActiveWithUser(tokenHash(token));
     const row = result.recordset[0];
     if (!row) return null;
     await sessionRepository.touch(row.session_id).catch(() => {});
-    return safeUserWithPermissions(row);
+    const user = safeUser(row);
+    return includePermissions ? withPermissions(user) : user;
 }
 
 async function revokeSession(token) {
@@ -353,6 +364,7 @@ async function createAssistant(body = {}) {
     const passwordHash = await hashPassword(password);
     try {
         const result = await userRepository.createAssistant({ fullName: name, email, passwordHash });
+        await tenantService.assignUserToTenant(result.recordset[0].id, undefined, 'Assistant');
         await permissionService.seedAssistantPermissions(result.recordset[0].id);
         return safeUserWithPermissions(result.recordset[0]);
     } catch (error) {
@@ -459,6 +471,7 @@ module.exports = {
     readSessionCookie,
     revokeSession,
     safeUser,
+    withPermissions,
     sessionCookie,
     setAssistantStatus,
     updateUser,

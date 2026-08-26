@@ -391,7 +391,7 @@ async function createScheduledBackupArchive({ format = 'bak' } = {}) {
     await ensureBackupArchivesTable();
     const backup = await createBackup({ format });
     const pool = await getPool();
-    const transaction = new sql.Transaction(pool);
+    const transaction = pool.transaction();
     await transaction.begin();
     let archive;
     let created = false;
@@ -525,7 +525,7 @@ async function restoreBackup(input, { fileName = 'uploaded-backup.json.gz' } = {
         const pool = await getPool();
         const metadataEntries = await Promise.all(BACKUP_TABLES.map(async (item) => [item.table, await tableMetadata(pool, item.table)]));
         const metadata = new Map(metadataEntries);
-        const transaction = new sql.Transaction(pool);
+        const transaction = pool.transaction();
         await transaction.begin();
         try {
             for (const item of [...BACKUP_TABLES].reverse()) {
