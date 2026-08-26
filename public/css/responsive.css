@@ -1609,6 +1609,168 @@
   }
 }
 
+/* Daily-pass cards -----------------------------------------------------
+   A pass record has a small identity header, readable full-width details,
+   and an isolated action footer on phones. Keeping the values on their own
+   rows avoids the cramped two-column cells used by wider data tables. */
+@media (max-width: 767px) {
+  .table-card-layout.day-pass-table > tbody,
+  .table-card-layout.dashboard-day-pass-table > tbody {
+    gap: var(--space-3);
+  }
+
+  .table-card-layout.day-pass-table > tbody > tr,
+  .table-card-layout.dashboard-day-pass-table > tbody > tr {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+    min-width: 0;
+    padding: 0;
+    overflow: hidden;
+    border: 1px solid var(--color-border-soft);
+    border-radius: var(--radius-lg);
+    background: var(--color-surface);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .table-card-layout.day-pass-table > tbody > tr:hover,
+  .table-card-layout.dashboard-day-pass-table > tbody > tr:hover {
+    border-color: var(--border-focus);
+    background: var(--color-surface);
+    box-shadow: var(--shadow-primary);
+    transform: translateY(-1px);
+  }
+
+  .table-card-layout.day-pass-table > tbody > tr > td,
+  .table-card-layout.dashboard-day-pass-table > tbody > tr > td {
+    display: grid;
+    grid-column: 1 / -1;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: var(--space-3);
+    width: auto !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    min-height: 42px;
+    border-bottom: 1px solid var(--color-border-soft);
+    padding: 9px var(--space-4);
+    text-align: start;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .table-card-layout.day-pass-table > tbody > tr > td::before,
+  .table-card-layout.dashboard-day-pass-table > tbody > tr > td::before {
+    display: block;
+    min-width: 0;
+    color: var(--color-text-muted);
+    content: attr(data-label);
+    font-size: var(--font-xs);
+    font-weight: var(--weight-bold);
+    line-height: 1.4;
+    text-align: start;
+  }
+
+  .table-card-layout.day-pass-table > tbody > tr > td > *,
+  .table-card-layout.dashboard-day-pass-table > tbody > tr > td > * {
+    min-width: 0;
+    max-width: 100%;
+    justify-self: end;
+  }
+
+  .table-card-layout.day-pass-table > tbody > tr > td:first-child,
+  .table-card-layout.dashboard-day-pass-table > tbody > tr > td:first-child {
+    position: relative;
+    display: block;
+    min-height: 0;
+    border-bottom-color: var(--primary-border);
+    border-inline-start: 3px solid var(--color-primary);
+    background: linear-gradient(180deg, var(--color-surface-muted), var(--color-surface));
+    padding: var(--space-4);
+    text-align: start;
+  }
+
+  .table-card-layout.day-pass-table > tbody > tr > td:first-child::before,
+  .table-card-layout.dashboard-day-pass-table > tbody > tr > td:first-child::before {
+    display: none;
+  }
+
+  .table-card-layout.day-pass-table > tbody > tr > td:first-child strong,
+  .table-card-layout.dashboard-day-pass-table > tbody > tr > td:first-child strong {
+    display: block;
+    max-width: 100%;
+    color: var(--color-text);
+    font-size: var(--font-md);
+    font-weight: var(--weight-extrabold);
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+  }
+
+  .table-card-layout.day-pass-table > tbody > tr > td:first-child small,
+  .table-card-layout.dashboard-day-pass-table > tbody > tr > td:first-child small {
+    display: block;
+    max-width: 100%;
+    margin-top: 3px;
+    overflow: visible;
+    text-overflow: clip;
+    white-space: normal;
+  }
+
+  .table-card-layout.day-pass-table > tbody > tr > td:nth-child(2) .day-pass-type-badge,
+  .table-card-layout.dashboard-day-pass-table > tbody > tr > td:nth-child(2) .day-pass-type-badge {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .table-card-layout.day-pass-table > tbody > tr > td.day-pass-amount,
+  .table-card-layout.dashboard-day-pass-table > tbody > tr > td.day-pass-amount {
+    color: var(--color-success);
+    font-size: var(--font-md);
+    font-weight: var(--weight-extrabold);
+    white-space: nowrap;
+  }
+
+  .table-card-layout.day-pass-table > tbody > tr > td:last-child,
+  .table-card-layout.dashboard-day-pass-table > tbody > tr > td:last-child {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+    min-height: 0;
+    border-bottom: 0;
+    background: var(--color-surface-muted) !important;
+    padding: var(--space-3) var(--space-4);
+  }
+
+  .table-card-layout.day-pass-table > tbody > tr > td:last-child::before,
+  .table-card-layout.dashboard-day-pass-table > tbody > tr > td:last-child::before {
+    display: block;
+    color: var(--color-primary);
+    font-size: var(--font-xs);
+    font-weight: var(--weight-bold);
+  }
+
+  .table-card-layout.day-pass-table .day-pass-actions,
+  .table-card-layout.dashboard-day-pass-table .day-pass-actions {
+    display: flex;
+    width: 100%;
+    min-width: 0;
+    align-items: center;
+    justify-content: flex-start;
+    gap: var(--space-2);
+    flex-wrap: nowrap;
+  }
+
+  .table-card-layout.day-pass-table .day-pass-action-button,
+  .table-card-layout.dashboard-day-pass-table .day-pass-action-button {
+    width: 40px;
+    min-width: 40px;
+    height: 40px;
+    min-height: 40px;
+    flex: 0 0 40px;
+  }
+}
+
 /* The navigation remains part of the document flow. It must not become a
    fixed/sticky layer over page content while the user scrolls. */
 .page-tabs {
