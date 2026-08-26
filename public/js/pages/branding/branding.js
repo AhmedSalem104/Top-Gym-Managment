@@ -301,7 +301,7 @@
         if (name) name.textContent = current.identity?.brandName || 'الجيم';
         if (welcome) welcome.textContent = current.identity?.welcomeSubtitle || 'إدارة أذكى لجيم أقوى.';
         const logoShell = document.querySelector('[data-branding-preview-logo]');
-        const logo = current.assets?.compactLogo?.url || current.assets?.primaryLogo?.url || DEFAULT_LOGO_URL;
+        const logo = current.assets?.primaryLogo?.url || current.assets?.horizontalLogo?.url || current.assets?.compactLogo?.url || DEFAULT_LOGO_URL;
         if (logoShell) {
             if (logo) logoShell.innerHTML = `<img src="${escapeHtml(logo)}" alt="${escapeHtml(current.identity?.brandName || 'الجيم')}">`;
             else logoShell.textContent = current.identity?.shortName?.trim()?.charAt(0) || 'ج';

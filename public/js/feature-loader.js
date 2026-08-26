@@ -72,7 +72,7 @@
         branding: {
             dependencies: [],
             styles: [],
-            scripts: ['/js/pages/branding/branding.js?v=1']
+            scripts: ['/js/pages/branding/branding.js?v=2']
         },
         'backup-history': {
             dependencies: [],

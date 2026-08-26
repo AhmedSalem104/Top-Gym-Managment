@@ -102,6 +102,16 @@
         appIcon: '/assets/gym-brand.svg?v=1',
         printLogo: '/assets/gym-brand-horizontal.svg?v=1'
     });
+    const ASSET_FALLBACK_KEYS = Object.freeze({
+        primaryLogo: ['primaryLogo', 'horizontalLogo', 'lightLogo', 'darkLogo', 'compactLogo'],
+        horizontalLogo: ['horizontalLogo', 'primaryLogo', 'lightLogo', 'darkLogo', 'compactLogo'],
+        lightLogo: ['lightLogo', 'primaryLogo', 'horizontalLogo', 'compactLogo'],
+        darkLogo: ['darkLogo', 'primaryLogo', 'horizontalLogo', 'compactLogo'],
+        compactLogo: ['compactLogo', 'lightLogo', 'darkLogo', 'primaryLogo', 'horizontalLogo'],
+        favicon: ['favicon', 'compactLogo', 'primaryLogo', 'horizontalLogo'],
+        appIcon: ['appIcon', 'compactLogo', 'primaryLogo', 'horizontalLogo'],
+        printLogo: ['printLogo', 'horizontalLogo', 'primaryLogo', 'lightLogo', 'darkLogo', 'compactLogo']
+    });
 
     let branding = merge(FALLBACK, readCache()?.branding || {});
     let version = readCache()?.version || 1;
@@ -216,7 +226,14 @@
         target.dataset.brandSidebarStyle = interfaceOptions.sidebar || 'brand';
     }
 
-    function assetUrl(key) { return branding.assets?.[key]?.url || DEFAULT_ASSET_URLS[key] || ''; }
+    function assetUrl(key) {
+        const candidates = ASSET_FALLBACK_KEYS[key] || [key];
+        for (const candidate of candidates) {
+            const url = branding.assets?.[candidate]?.url;
+            if (url) return url;
+        }
+        return DEFAULT_ASSET_URLS[key] || '';
+    }
     function textValue(key) {
         if (key === 'footer') return branding.documents?.footer || FALLBACK.documents.footer;
         if (TEXT_FIELDS.has(key)) return branding.identity?.[key] || FALLBACK.identity[key] || '';
