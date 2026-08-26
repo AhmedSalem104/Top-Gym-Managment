@@ -2480,9 +2480,7 @@
    retain their existing card/grid presentation. */
 @media (min-width: 1200px) {
   .app-shell > .page-tabs {
-    background:
-      radial-gradient(circle at 50% -8%, var(--info-soft), transparent 30%),
-      linear-gradient(180deg, var(--sidebar-bg) 0%, var(--sidebar-bg-deep) 100%);
+    background: var(--sidebar-bg);
     border-inline-end-color: var(--sidebar-divider);
     box-shadow: var(--shadow-popup);
     scrollbar-color: var(--scrollbar-thumb) transparent;
