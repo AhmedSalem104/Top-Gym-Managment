@@ -3,6 +3,9 @@
     window.__topGymSmartAssistantLoaded = true;
 
     const $ = (id) => document.getElementById(id);
+    function brandName() {
+        return String(window.topGymBranding?.get?.().identity?.brandName || 'الجيم').trim() || 'الجيم';
+    }
     const state = {
         mode: 'screen',
         screen: 'dashboard',
@@ -291,7 +294,7 @@
             const article = document.createElement('article');
             article.className = `smart-assistant-message ${message.role}`;
             const text = document.createElement('div');
-            text.textContent = message.text;
+            text.textContent = String(message.text || '').replaceAll('TOP GYM', () => brandName());
             article.append(text);
             if (message.actions?.length) {
                 const actions = document.createElement('div');
@@ -472,6 +475,7 @@
         if (event.key === 'Escape' && !panel.hidden) close();
     });
     window.addEventListener('topgym:tab-changed', (event) => syncScreen(event.detail?.name || currentScreen()));
+    window.addEventListener('topgym:brandingchange', () => renderMessages());
     window.addEventListener('topgym:member-details-opened', (event) => {
         state.selectedLabel = event.detail?.member?.fullName || event.detail?.member?.name || '';
         renderContext();

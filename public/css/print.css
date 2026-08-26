@@ -116,6 +116,16 @@
 /* Standalone A4 document system. These rules are intentionally outside the
    print media query because html2pdf renders the document in the screen
    context before converting it to a PDF. */
+:root {
+  --print-brand-primary: #1769e8;
+  --print-brand-primary-hover: #0f56c9;
+  --print-brand-text: #172033;
+  --print-brand-muted: #718096;
+  --print-brand-border: #d9e2ef;
+  --print-brand-surface: #f5f9ff;
+  --print-brand-border-soft: #e7edf5;
+}
+
 @page {
   size: A4;
   margin: 12mm;
@@ -128,7 +138,7 @@ body > .print-sheet,
   max-width: 100%;
   margin: 0 auto;
   background: #fff;
-  color: #172033;
+  color: var(--print-brand-text);
   direction: rtl;
   font-family: "Cairo", "Noto Naskh Arabic", Tahoma, Arial, sans-serif;
   font-size: 10pt;
@@ -147,7 +157,7 @@ body > .print-sheet,
   align-items: flex-start;
   justify-content: space-between;
   gap: 20px;
-  border-bottom: 1px solid #d9e2ef;
+  border-bottom: 1px solid var(--print-brand-border);
   padding: 4px 0 14px;
 }
 
@@ -182,7 +192,7 @@ body > .print-sheet,
 
 .print-brand-title {
   margin: 0;
-  color: #1769e8;
+  color: var(--print-brand-primary);
   font-family: Arial, sans-serif;
   font-size: 24pt;
   font-weight: 800;
@@ -193,7 +203,7 @@ body > .print-sheet,
 .print-brand-kicker,
 .print-brand-subtitle,
 .print-section-kicker {
-  color: #718096;
+  color: var(--print-brand-muted);
   font-size: 8pt;
   font-weight: 700;
 }
@@ -201,13 +211,13 @@ body > .print-sheet,
 .print-document-meta {
   display: grid;
   gap: 2px;
-  color: #64748b;
+  color: var(--print-brand-muted);
   font-size: 8.5pt;
   text-align: left;
 }
 
 .print-document-meta strong {
-  color: #172033;
+  color: var(--print-brand-text);
   font-size: 12pt;
 }
 
@@ -215,7 +225,7 @@ body > .print-sheet,
   height: 4px;
   margin: 12px 0 16px;
   border-radius: 99px;
-  background: linear-gradient(90deg, #1769e8, #86b3ff);
+  background: linear-gradient(90deg, var(--print-brand-primary), var(--print-brand-primary-hover));
 }
 
 .print-section {
@@ -230,7 +240,7 @@ body > .print-sheet,
   justify-content: space-between;
   gap: 12px;
   margin-bottom: 8px;
-  border-bottom: 2px solid #1769e8;
+  border-bottom: 2px solid var(--print-brand-primary);
   padding-bottom: 5px;
 }
 
@@ -238,7 +248,7 @@ body > .print-sheet,
 .print-section-title h3,
 .print-section h3 {
   margin: 1px 0 0;
-  color: #172033;
+  color: var(--print-brand-text);
   font-size: 13pt;
   font-weight: 800;
   line-height: 1.35;
@@ -255,9 +265,9 @@ body > .print-sheet,
   align-items: center;
   justify-content: space-between;
   gap: 14px;
-  border: 1px solid #d9e7fb;
+  border: 1px solid var(--print-brand-border);
   border-radius: 10px;
-  background: #f5f9ff;
+  background: var(--print-brand-surface);
   padding: 12px;
 }
 
@@ -272,7 +282,7 @@ body > .print-sheet,
   flex: 0 0 auto;
   place-items: center;
   border-radius: 50%;
-  background: #1769e8;
+  background: var(--print-brand-primary);
   color: #fff;
   font-family: Arial, sans-serif;
   font-weight: 800;
@@ -287,14 +297,14 @@ body > .print-sheet,
 .print-member-copy h2,
 .print-system-hero h2 {
   margin: 0;
-  color: #172033;
+  color: var(--print-brand-text);
   font-size: 14pt;
 }
 
 .print-member-copy p,
 .print-system-hero p {
   margin: 0;
-  color: #64748b;
+  color: var(--print-brand-muted);
   font-size: 9pt;
 }
 
@@ -305,13 +315,13 @@ body > .print-sheet,
 }
 
 .print-system-hero-title span {
-  color: #1769e8;
+  color: var(--print-brand-primary);
   font-size: 8.5pt;
   font-weight: 700;
 }
 
 .print-system-hero-title strong {
-  color: #172033;
+  color: var(--print-brand-text);
   font-size: 12pt;
 }
 
@@ -335,7 +345,7 @@ body > .print-sheet,
 .print-system-info {
   display: grid;
   gap: 1px;
-  border: 1px solid #dfe7f0;
+  border: 1px solid var(--print-brand-border-soft);
   border-radius: 7px;
   background: #fbfcfe;
   padding: 7px 9px;
@@ -345,7 +355,7 @@ body > .print-sheet,
 .print-billing-item span,
 .print-system-kpi span,
 .print-system-info span {
-  color: #718096;
+  color: var(--print-brand-muted);
   font-size: 8pt;
 }
 
@@ -353,19 +363,19 @@ body > .print-sheet,
 .print-billing-item strong,
 .print-system-kpi strong,
 .print-system-info strong {
-  color: #172033;
+  color: var(--print-brand-text);
   font-size: 9.5pt;
   font-variant-numeric: tabular-nums;
 }
 
 .print-system-kpi {
-  border-color: #cfe0fa;
-  background: #f5f9ff;
+  border-color: var(--print-brand-border);
+  background: var(--print-brand-surface);
   text-align: center;
 }
 
 .print-system-kpi strong {
-  color: #1769e8;
+  color: var(--print-brand-primary);
   font-size: 14pt;
 }
 
@@ -373,7 +383,7 @@ body > .print-sheet,
 .print-table-sub,
 .print-system-count {
   display: block;
-  color: #718096;
+  color: var(--print-brand-muted);
   font-size: 7.5pt;
 }
 
@@ -396,7 +406,7 @@ body > .print-sheet,
 }
 
 .print-system-overview-grid > div {
-  border: 1px solid #dfe7f0;
+  border: 1px solid var(--print-brand-border-soft);
   border-radius: 8px;
   padding: 9px;
 }
@@ -442,7 +452,7 @@ body > .print-sheet,
 }
 
 .print-table tbody tr:nth-child(even) td { background: #f8fafc; }
-.print-table-main { display: block; color: #172033; font-weight: 700; }
+.print-table-main { display: block; color: var(--print-brand-text); font-weight: 700; }
 .print-status { display: inline-flex; border-radius: 99px; padding: 2px 7px; font-size: 7.5pt; font-weight: 700; }
 .print-status.active { background: #e8f8f1; color: #087f5b; }
 .print-status.expiring_soon { background: #fff5df; color: #a15c00; }
@@ -455,14 +465,14 @@ body > .print-sheet,
 .print-notes,
 .print-receipt-amount {
   margin-top: 9px;
-  border: 1px solid #cfe0fa;
+  border: 1px solid var(--print-brand-border);
   border-radius: 8px;
-  background: #f5f9ff;
+  background: var(--print-brand-surface);
   padding: 9px 11px;
 }
 
 .print-system-total { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-.print-system-total strong { color: #1769e8; font-size: 10pt; }
+.print-system-total strong { color: var(--print-brand-primary); font-size: 10pt; }
 .print-notes { color: #475569; }
 .print-notes strong,
 .print-system-callout b { color: #17304f; }
@@ -472,33 +482,33 @@ body > .print-sheet,
 .print-system-bar { display: grid; gap: 3px; }
 .print-system-bar > div { display: flex; justify-content: space-between; gap: 8px; font-size: 8pt; }
 .print-system-bar i { display: block; height: 6px; overflow: hidden; border-radius: 99px; background: #e8eef7; }
-.print-system-bar i em { display: block; width: 70%; height: 100%; border-radius: inherit; background: #1769e8; }
+.print-system-bar i em { display: block; width: 70%; height: 100%; border-radius: inherit; background: var(--print-brand-primary); }
 
 .print-system-reference-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-.print-system-reference { border: 1px solid #dfe7f0; border-radius: 8px; padding: 9px; break-inside: avoid; page-break-inside: avoid; }
+.print-system-reference { border: 1px solid var(--print-brand-border-soft); border-radius: 8px; padding: 9px; break-inside: avoid; page-break-inside: avoid; }
 .print-system-reference h3 { margin: 0; }
-.print-system-reference-meta { color: #718096; font-size: 7.5pt; }
+.print-system-reference-meta { color: var(--print-brand-muted); font-size: 7.5pt; }
 .print-system-reference-columns { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; margin-top: 7px; }
 .print-system-reference-columns > div { color: #475569; font-size: 7.5pt; }
 .print-system-reference-columns b { display: block; color: #17304f; margin-bottom: 2px; }
 .print-system-list { margin: 0; padding: 0 14px 0 0; }
 .print-system-list li { margin: 2px 0; }
 .print-system-muted,
-.print-empty { color: #718096; font-size: 8.5pt; }
+.print-empty { color: var(--print-brand-muted); font-size: 8.5pt; }
 
 .print-exercise-cell { display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
 .print-exercise-thumb { display: inline-block; width: 30px; height: 22px; object-fit: cover; border-radius: 4px; background: #edf2f7; vertical-align: middle; }
-.print-exercise-fallback { color: #1769e8; font-size: 14px; text-align: center; }
+.print-exercise-fallback { color: var(--print-brand-primary); font-size: 14px; text-align: center; }
 .print-exercise-gallery { display: flex; gap: 8px; margin: 7px 0; }
 .print-exercise-gallery figure { margin: 0; text-align: center; }
 .print-exercise-detail-image { width: 78px; height: 52px; object-fit: cover; border-radius: 5px; }
-.print-exercise-gallery figcaption { color: #718096; font-size: 7pt; }
+.print-exercise-gallery figcaption { color: var(--print-brand-muted); font-size: 7pt; }
 
 .print-receipt-amount { display: grid; gap: 2px; text-align: center; }
-.print-receipt-amount span { color: #718096; font-size: 8pt; }
+.print-receipt-amount span { color: var(--print-brand-muted); font-size: 8pt; }
 .print-receipt-amount strong { font-size: 20pt; }
-.print-receipt-amount small { color: #718096; font-size: 8pt; }
-.print-receipt-id { color: #1769e8; font-family: Arial, sans-serif; font-size: 11pt; font-weight: 800; }
+.print-receipt-amount small { color: var(--print-brand-muted); font-size: 8pt; }
+.print-receipt-id { color: var(--print-brand-primary); font-family: Arial, sans-serif; font-size: 11pt; font-weight: 800; }
 
 .print-footer {
   display: flex;
@@ -506,15 +516,15 @@ body > .print-sheet,
   justify-content: space-between;
   gap: 20px;
   margin-top: 22px;
-  border-top: 1px solid #d9e2ef;
+  border-top: 1px solid var(--print-brand-border);
   padding-top: 9px;
-  color: #718096;
+  color: var(--print-brand-muted);
   font-size: 8pt;
 }
 
 .print-footer-management { display: grid; gap: 1px; }
-.print-footer-management strong { color: #17304f; }
-.print-signature { min-width: 120px; border-top: 1px solid #718096; padding-top: 4px; text-align: center; }
+.print-footer-management strong { color: var(--print-brand-text); }
+.print-signature { min-width: 120px; border-top: 1px solid var(--print-brand-muted); padding-top: 4px; text-align: center; }
 .print-loading,
 .print-error { padding: 40px; color: #17304f; font-family: Cairo, Tahoma, sans-serif; text-align: center; }
 

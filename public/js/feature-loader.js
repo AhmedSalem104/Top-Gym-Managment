@@ -69,6 +69,11 @@
             styles: [],
             scripts: []
         },
+        branding: {
+            dependencies: [],
+            styles: [],
+            scripts: ['/js/pages/branding/branding.js?v=1']
+        },
         'backup-history': {
             dependencies: [],
             styles: [],

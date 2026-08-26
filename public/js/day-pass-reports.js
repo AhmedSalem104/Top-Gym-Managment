@@ -6,6 +6,10 @@
     let requestKey = '';
     let requestPromise = null;
 
+    function brandName() {
+        return String(window.topGymBranding?.get?.().identity?.brandName || 'الجيم').trim() || 'الجيم';
+    }
+
     function escapeHtml(value) { return String(value ?? '').replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[character])); }
     function money(value) { return `${Number(value || 0).toLocaleString('ar-EG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ج.م`; }
     function dateText(value) { const raw = String(value || '').slice(0, 10); const date = new Date(`${raw}T00:00:00`); return Number.isNaN(date.getTime()) ? raw || '—' : new Intl.DateTimeFormat('ar-EG', { dateStyle: 'medium' }).format(date); }
@@ -67,7 +71,7 @@
 
     function openWhatsapp(button) {
         const phone = button.dataset.phone;
-        const message = `أهلًا ${button.dataset.name} 👋\n\nشكرًا لحضورك اليوم في TOP GYM، نورتنا جدًا 💙\n\nنوع الحصة: ${button.dataset.type}\nنتمنى نشوفك دائمًا 💪`;
+        const message = `أهلًا ${button.dataset.name} 👋\n\nشكرًا لحضورك اليوم في ${brandName()}، نورتنا جدًا 💙\n\nنوع الحصة: ${button.dataset.type}\nنتمنى نشوفك دائمًا 💪`;
         const opened = window.open(`https://wa.me/${encodeURIComponent(phone)}?text=${encodeURIComponent(message)}`, 'topGymDayPassWhatsapp', 'popup=yes,width=480,height=760,resizable=yes,scrollbars=yes');
         if (opened) void window.topGymApi.request(`/api/day-passes/${encodeURIComponent(button.dataset.dayPassReportWhatsapp)}/whatsapp-opened`, { method: 'POST' }).catch(() => {});
     }

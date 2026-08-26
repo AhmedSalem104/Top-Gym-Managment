@@ -15,7 +15,8 @@
             }
         }());
     </script>
-    <title>بيانات عضويتي | TOP GYM</title>
+    <title>بيانات عضويتي | الجيم</title>
+    <link rel="icon" type="image/svg+xml" href="/assets/gym-brand.svg?v=1" sizes="any">
     <link rel="stylesheet" href="/css/main.css?v=53">
 </head>
 <body class="member-portal-page">
@@ -26,8 +27,8 @@
             <span data-theme-toggle-label>الوضع الداكن</span>
         </button>
         <section class="portal-login" id="portalLoginPanel" aria-labelledby="portalTitle">
-            <div class="portal-brand-mark" aria-hidden="true">TG</div>
-            <p class="portal-eyebrow">TOP GYM</p>
+            <div class="portal-brand-mark" data-brand-logo-shell aria-hidden="true"><img data-brand-logo="compactLogo" alt="" hidden><span data-brand-logo-fallback>ج</span></div>
+            <p class="portal-eyebrow" data-brand-text="brandName">الجيم</p>
             <h1 id="portalTitle">بيانات عضويتي</h1>
             <p class="portal-intro">تابع اشتراكك وحضورك ومدفوعاتك باستخدام كود العضوية الخاص بك.</p>
             <form id="portalLookupForm" class="portal-lookup-form" novalidate>
@@ -35,7 +36,7 @@
                 <input id="membershipCodeInput" name="membershipCode" type="text" inputmode="text" autocomplete="one-time-code" autocapitalize="characters" spellcheck="false" placeholder="TG-XXXX-XXXX-XXXX-XXXX" maxlength="24" required>
                 <div class="portal-security-note" role="note">
                     <span class="portal-security-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 20 6v5c0 5-3.4 8.3-8 10-4.6-1.7-8-5-8-10V6l8-3Z"/><path d="m9 12 2 2 4-4"/></svg></span>
-                    <span><strong>دخول آمن</strong><small>أدخل الكود كما استلمته من إدارة TOP GYM، ولا تشاركه مع أي شخص.</small></span>
+                    <span><strong>دخول آمن</strong><small data-brand-template="portalSecurityDescription">أدخل الكود كما استلمته من إدارة الجيم، ولا تشاركه مع أي شخص.</small></span>
                 </div>
                 <button class="btn btn-primary portal-submit" id="portalSubmitButton" type="submit"><span>عرض بياناتي</span><span class="portal-spinner" aria-hidden="true"></span></button>
                 <p class="portal-error" id="portalError" role="alert" hidden></p>
@@ -45,7 +46,7 @@
         <section class="portal-result" id="portalResult" hidden aria-live="polite">
             <header class="portal-result-header">
                 <div>
-                    <p class="portal-eyebrow">TOP GYM</p>
+                    <p class="portal-eyebrow" data-brand-text="brandName">الجيم</p>
                     <h2 id="portalResultTitle">بوابة عضويتي</h2>
                     <p id="portalIssueMeta">اختر الخدمة التي تريد استخدامها</p>
                 </div>
@@ -64,7 +65,7 @@
                 </button>
                 <button class="portal-tool-card portal-tool-card-feedback" type="button" data-portal-tool="feedback">
                     <span class="portal-tool-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-2.9-5.6 2.9 1.1-6.2L3 9.6l6.2-.9L12 3Z"/></svg></span>
-                    <span><strong>قيّم تجربتي</strong><small>شاركنا رأيك في الجيم والمدربين</small></span>
+                    <span><strong>قيّم تجربتي</strong><small data-brand-template="portalFeedbackCardDescription">شاركنا رأيك في الجيم والمدربين</small></span>
                     <span class="portal-tool-arrow" aria-hidden="true">←</span>
                 </button>
                 <button class="portal-tool-card portal-tool-card-exercises" type="button" data-portal-tool="exercises">
@@ -82,7 +83,7 @@
             <section class="portal-view-toolbar" id="portalViewToolbar" data-no-print hidden aria-live="polite">
                 <button class="btn btn-light portal-back-button" type="button" data-portal-back aria-label="العودة إلى خدمات العضو">→ <span>العودة للخدمات</span></button>
                 <div>
-                    <p class="portal-eyebrow">TOP GYM MEMBER HUB</p>
+                    <p class="portal-eyebrow"><span data-brand-text="englishBrandName">ELGYM</span> MEMBER HUB</p>
                     <h3 id="portalViewTitle"></h3>
                     <p id="portalViewDescription"></p>
                 </div>
@@ -96,7 +97,7 @@
                     <div>
                         <p class="portal-eyebrow">رأيك يهمنا</p>
                         <h3 id="portalFeedbackTitle">قيّم تجربتك</h3>
-                        <p>شاركنا رأيك في الجيم والمدربين، وأخبرنا بما يمكننا تحسينه.</p>
+                        <p data-brand-template="portalFeedbackDescription">شاركنا رأيك في الجيم والمدربين، وأخبرنا بما يمكننا تحسينه.</p>
                     </div>
                     <span class="portal-feedback-icon" aria-hidden="true">★</span>
                 </div>
@@ -112,19 +113,20 @@
                         </div>
                         <input id="portalFeedbackRating" type="hidden" value="">
                     </fieldset>
-                    <label for="portalFeedbackType">نوع الملاحظة<select id="portalFeedbackType" required><option value="">اختر نوع الملاحظة</option><option value="general">رأي عام</option><option value="problem">مشكلة</option><option value="complaint">شكوى</option><option value="suggestion">اقتراح</option><option value="feature_request">إضافة يحتاجها الجيم</option></select></label>
-                    <label for="portalFeedbackMessage">ملاحظتك<textarea id="portalFeedbackMessage" rows="5" maxlength="4000" required placeholder="اكتب رأيك في الجيم والمدربين والإيجابيات والسلبيات أو أي اقتراح لديك..."></textarea></label>
+                    <label for="portalFeedbackType">نوع الملاحظة<select id="portalFeedbackType" required><option value="">اختر نوع الملاحظة</option><option value="general">رأي عام</option><option value="problem">مشكلة</option><option value="complaint">شكوى</option><option value="suggestion">اقتراح</option><option value="feature_request" data-brand-template="portalFeedbackFeatureOption">إضافة يحتاجها الجيم</option></select></label>
+                    <label for="portalFeedbackMessage">ملاحظتك<textarea id="portalFeedbackMessage" rows="5" maxlength="4000" required data-brand-placeholder="portalFeedbackPlaceholder" placeholder="اكتب رأيك في الجيم والمدربين والإيجابيات والسلبيات أو أي اقتراح لديك..."></textarea></label>
                     <div class="portal-feedback-actions"><button class="btn btn-primary" id="portalFeedbackSubmit" type="submit"><span>إرسال التقييم</span><span class="portal-spinner" aria-hidden="true"></span></button><p class="portal-feedback-message" id="portalFeedbackError" role="alert" hidden></p><p class="portal-feedback-message success" id="portalFeedbackSuccess" role="status" hidden>تم حفظ تقييمك بنجاح، شكرًا لمشاركتنا رأيك.</p></div>
                 </form>
             </section>
             <footer class="portal-report-signatures">
-                <p>صادر من إدارة TOP GYM</p>
+                <p>صادر من إدارة <span data-brand-text="companyName">الجيم</span></p>
                 <div><span>ك/ أحمد عبد الحميد</span><span>ك/ كريم عبد الحميد</span></div>
             </footer>
         </section>
-        <footer class="portal-ui-footer" data-no-print>TOP GYM · إدارة أسهل، أداء أفضل</footer>
+        <footer class="portal-ui-footer" data-no-print><span data-brand-text="brandName">الجيم</span> · <span data-brand-text="footer">إدارة أذكى، أداء أفضل.</span></footer>
     </main>
     <script defer src="/js/theme.js?v=1"></script>
+    <script defer src="/js/branding.js?v=1"></script>
     <script defer src="/js/member-portal.js?v=6"></script>
 </body>
 </html>

@@ -16,6 +16,8 @@
         feature_request: 'إضافة يحتاجها الجيم'
     };
     const state = { page: 1, pageSize: 10, controller: null, loading: false };
+    const brandName = () => String(window.topGymBranding?.get?.().identity?.brandName || 'الجيم').trim() || 'الجيم';
+    const typeLabel = (value) => value === 'feature_request' ? `إضافة يحتاجها ${brandName()}` : typeLabels[value] || value || '—';
 
     const escapeHtml = (value) => String(value ?? '').replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[character]));
     const formatNumber = (value) => Number(value || 0).toLocaleString('ar-EG');
@@ -51,7 +53,7 @@
         const rows = items.map((item) => `<tr>
             <td><div class="feedback-member-cell"><strong>${escapeHtml(item.memberName || '—')}</strong><span class="feedback-phone" dir="ltr">${escapeHtml(item.phone || '—')}</span></div></td>
             <td>${stars(item.rating)}</td>
-            <td><span class="feedback-type feedback-type-${escapeHtml(item.noteType)}">${escapeHtml(typeLabels[item.noteType] || item.noteType || '—')}</span></td>
+            <td><span class="feedback-type feedback-type-${escapeHtml(item.noteType)}">${escapeHtml(typeLabel(item.noteType))}</span></td>
             <td><p class="feedback-message-cell">${escapeHtml(item.message)}</p></td>
             <td class="feedback-date" dir="ltr">${escapeHtml(formatDateTime(item.submittedAt))}</td>
             <td><button class="btn btn-light btn-small feedback-details-button" type="button" data-feedback-action="details" data-member-id="${Number(item.memberId) || 0}">تفاصيل العضو</button></td>
@@ -133,6 +135,9 @@
     window.topGymFeedbackRefresh = load;
     window.addEventListener('topgym:tab-changed', (event) => {
         if (event.detail?.name === 'feedback') void load();
+    });
+    window.addEventListener('topgym:brandingchange', () => {
+        if (document.querySelector('[data-page-tab="feedback"]')?.classList.contains('active')) void load();
     });
     if (document.querySelector('[data-page-tab="feedback"]')?.classList.contains('active')) void load();
 })();

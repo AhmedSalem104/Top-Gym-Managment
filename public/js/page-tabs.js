@@ -2,7 +2,7 @@
     if (window.__topGymPageTabsLoaded) return;
     window.__topGymPageTabsLoaded = true;
 
-    const validTabs = new Set(['dashboard', 'members', 'expenses', 'reports', 'management', 'backup-history', 'permissions', 'attendance', 'library', 'trainees', 'intelligence', 'feedback', 'store']);
+    const validTabs = new Set(['dashboard', 'members', 'expenses', 'reports', 'management', 'branding', 'backup-history', 'permissions', 'attendance', 'library', 'trainees', 'intelligence', 'feedback', 'store']);
     let activationToken = 0;
     let activeTabName = null;
     const SIDEBAR_PIN_STORAGE_KEY = 'topgym.sidebar.pinned';
@@ -70,7 +70,7 @@
         if (!validTabs.has(name)) return 'dashboard';
         if (window.topGymAuth?.isReady?.()) {
             if (!window.topGymAuth.getUser?.()) return 'dashboard';
-            if ((name === 'management' || name === 'backup-history') && !window.topGymAuth.isOwner?.()) return window.topGymPermissions?.firstAccessibleTab?.(window.topGymAuth.getUser?.()) || 'members';
+            if ((name === 'management' || name === 'branding' || name === 'backup-history') && !window.topGymAuth.isOwner?.()) return window.topGymPermissions?.firstAccessibleTab?.(window.topGymAuth.getUser?.()) || 'members';
             if (!window.topGymAuth.canAccessTab(name)) return window.topGymPermissions?.firstAccessibleTab?.(window.topGymAuth.getUser?.()) || 'members';
         }
         return name;
@@ -85,6 +85,7 @@
         const expensesSection = document.getElementById('expensesSection');
         const monthlyFinanceSnapshot = document.getElementById('monthlyFinanceSnapshot');
         const managementSection = document.getElementById('managementSection');
+        const brandingSection = document.getElementById('brandingSection');
         const backupHistorySection = document.getElementById('backupHistorySection');
         const analyticsSection = document.getElementById('dashboardAnalytics');
         const dashboardStoreSummary = document.getElementById('dashboardStoreSummary');
@@ -100,6 +101,7 @@
         const isMembers = name === 'members';
         const isExpenses = name === 'expenses';
         const isManagement = name === 'management';
+        const isBranding = name === 'branding';
         const isBackupHistory = name === 'backup-history';
         const isPermissions = name === 'permissions';
         const isReports = name === 'reports';
@@ -116,6 +118,7 @@
         setHidden(monthlyFinanceSnapshot, !isDashboard);
         setHidden(expensesSection, !isExpenses);
         setHidden(managementSection, !isManagement);
+        setHidden(brandingSection, !isBranding);
         setHidden(backupHistorySection, !isBackupHistory);
         const hideAnalytics = !isDashboard || !window.topGymAuth?.isOwner?.();
         setHidden(analyticsSection, hideAnalytics);
@@ -129,7 +132,7 @@
         setHidden(traineesSection, !isTrainees);
         setHidden(intelligenceSection, !isIntelligence);
         setHidden(storeSection, !isStore);
-        setHidden(workspace, isDashboard || isExpenses || isReports || isManagement || isBackupHistory || isPermissions || isAttendance || isLibrary || isTrainees || isIntelligence || isFeedback || isStore);
+        setHidden(workspace, isDashboard || isExpenses || isReports || isManagement || isBranding || isBackupHistory || isPermissions || isAttendance || isLibrary || isTrainees || isIntelligence || isFeedback || isStore);
         setHidden(membersSection, !isMembers);
 
         document.querySelectorAll('[data-page-tab]').forEach((button) => {
@@ -153,6 +156,10 @@
 
     async function activateTab(rawName) {
         if (window.topGymAuthReady) await window.topGymAuthReady.catch(() => null);
+        if (activeTabName === 'branding' && rawName !== 'branding' && window.topGymBrandingEditor?.confirmLeave) {
+            const canLeave = await window.topGymBrandingEditor.confirmLeave();
+            if (!canLeave) return;
+        }
         const name = normalizeTab(rawName);
         const token = ++activationToken;
         document.body.classList.add('top-gym-navigation-pending');

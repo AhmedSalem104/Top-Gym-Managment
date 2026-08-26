@@ -13,7 +13,13 @@
         catalog: { exercises: [], foods: [] },
         plan: null
     };
-    const SYSTEM_NAME_SUFFIX = 'From TOP GYM System';
+    function brandName() {
+        return String(window.topGymBranding?.get?.().identity?.brandName || 'الجيم').trim() || 'الجيم';
+    }
+
+    function brandText(value) {
+        return String(value ?? '').replaceAll('TOP GYM', () => brandName());
+    }
 
     function escapeHtml(value) {
         return String(value ?? '').replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[character]));
@@ -49,7 +55,7 @@
 
     function generatedSystemName(type, memberName = '') {
         const prefix = type === 'diet' ? 'خطة تغذية' : 'برنامج تدريب';
-        const suffix = ` · ${SYSTEM_NAME_SUFFIX}`;
+        const suffix = ` · From ${brandName()} System`;
         const label = String(memberName || 'العميل المحدد').trim() || 'العميل المحدد';
         const availableLabelLength = Math.max(12, 160 - prefix.length - suffix.length - 3);
         return `${prefix} - ${label.slice(0, availableLabelLength)}${suffix}`;
@@ -111,7 +117,7 @@
         renderChurn(data.churn || []);
         renderPrompts(data.prompts || []);
         const badge = $('intelligenceEngineBadge');
-        if (badge) badge.textContent = data.mode === 'hybrid-rules' ? 'Hybrid intelligence · مراجعة بشرية' : (data.engine || 'TOP GYM Intelligence');
+        if (badge) badge.textContent = data.mode === 'hybrid-rules' ? 'Hybrid intelligence · مراجعة بشرية' : brandText(data.engine || `${brandName()} Intelligence`);
     }
 
     function renderClients() {
@@ -126,7 +132,7 @@
         const answer = $('intelligenceAnswer');
         if (!answer) return;
         answer.hidden = false;
-        answer.innerHTML = `<span class="intelligence-answer-label">تحليل النظام</span><p>${escapeHtml(data.answer || '')}</p>`;
+        answer.innerHTML = `<span class="intelligence-answer-label">تحليل النظام</span><p>${escapeHtml(brandText(data.answer || ''))}</p>`;
     }
 
     function planSummary(plan, type) {
@@ -151,8 +157,8 @@
         const member = state.clients.find((client) => String(client.id) === String(memberId));
         state.plan = { type, memberId, draft: normalizeGeneratedPlan(result.suggestion || result.draft, type, member?.fullName), warnings: result.warnings || [], explanation: result.explanation || [], changes };
         const plan = state.plan.draft;
-        const warningMarkup = state.plan.warnings.map((warning) => `<li>${escapeHtml(warning)}</li>`).join('');
-        const changeMarkup = changes.map((change) => `<li>${escapeHtml(change)}</li>`).join('');
+        const warningMarkup = state.plan.warnings.map((warning) => `<li>${escapeHtml(brandText(warning))}</li>`).join('');
+        const changeMarkup = changes.map((change) => `<li>${escapeHtml(brandText(change))}</li>`).join('');
         $('intelligencePlanResult').innerHTML = `<div class="intelligence-result-head"><div><span class="intelligence-result-kicker">مسودة قابلة للمراجعة</span><h4>${escapeHtml(plan.name || 'اقتراح ذكي')}</h4><p>${escapeHtml(plan.description || '')}</p></div><span class="intelligence-draft-badge">Draft</span></div>${planSummary(plan, state.plan.type)}${planPreview(plan, state.plan.type)}${changeMarkup ? `<div class="intelligence-result-notice success"><strong>تم تطبيق التعديل</strong><ul>${changeMarkup}</ul></div>` : ''}${warningMarkup ? `<div class="intelligence-result-notice warning"><strong>مراجعة ضرورية قبل الاعتماد</strong><ul>${warningMarkup}</ul></div>` : ''}<form class="intelligence-refine-form" id="intelligenceRefineForm"><label>اكتب تعديلك على المسودة<textarea id="intelligenceRefineInstruction" rows="2" maxlength="500" placeholder="مثال: احذف تمرين السكوات وأضف جهاز الرجلين"></textarea></label><button class="btn btn-light" type="submit">إعادة إنشاء بالتعليمات</button></form><div class="intelligence-result-actions"><button class="btn btn-primary" type="button" data-intelligence-save>حفظ كمسودة في النظام</button><button class="btn btn-light" type="button" data-intelligence-manual>فتح في المحرر اليدوي</button></div><small class="intelligence-human-review-note">لن يتم نشر الخطة كخطة معتمدة تلقائيًا؛ راجعها واحفظها أو عدّلها يدويًا.</small>`;
     }
 
@@ -287,6 +293,7 @@
             if (event.target.closest('[data-intelligence-manual]')) void openManualEditor();
         });
         window.addEventListener('topgym:tab-changed', (event) => { if (event.detail?.name === 'intelligence') void loadBaseData(); });
+        window.addEventListener('topgym:brandingchange', () => { if (state.overview) renderOverview(state.overview); });
     }
 
     bindEvents();

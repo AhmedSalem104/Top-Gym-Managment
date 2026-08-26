@@ -80,6 +80,11 @@ const PERMISSIONS = Object.freeze({
     FEEDBACK_READ: 'feedback.read',
     PERMISSIONS_MANAGE: 'permissions.manage',
 
+    BRANDING_VIEW: 'branding.view',
+    BRANDING_EDIT: 'branding.edit',
+    BRANDING_PUBLISH: 'branding.publish',
+    BRANDING_RESET: 'branding.reset',
+
     INTELLIGENCE_READ: 'intelligence.read',
     INTELLIGENCE_GENERATE: 'intelligence.generate',
 
@@ -154,6 +159,10 @@ const CATALOG_DEFINITIONS = [
     ['management.backup.delete', 'حذف نسخة احتياطية', 'حذف أرشيف نسخة احتياطية.', 'management', 'حذف', true],
     ['feedback.read', 'تقييمات المشتركين', 'عرض تقييمات المشتركين.', 'feedback', 'عرض', true],
     ['permissions.manage', 'إدارة الصلاحيات', 'إدارة صلاحيات حسابات Assistant فقط.', 'permissions', 'إدارة', true],
+    ['branding.view', 'عرض تخصيص الهوية', 'عرض إعدادات الهوية ومعاينتها.', 'branding', 'عرض', true],
+    ['branding.edit', 'تعديل الهوية', 'تعديل النصوص والألوان والأصول كمسودة.', 'branding', 'تعديل', true],
+    ['branding.publish', 'نشر الهوية', 'نشر الهوية المعتمدة على كامل المنصة.', 'branding', 'نشر', true],
+    ['branding.reset', 'استعادة الهوية الافتراضية', 'استعادة مسودة الهوية إلى الجيم.', 'branding', 'إدارة', true],
     ['store.view', 'المتجر ونقطة البيع', 'عرض مساحة المتجر ونقطة البيع.', 'store', 'عرض'],
     ['store.products.manage', 'منتجات المتجر', 'إضافة وتعديل وإيقاف المنتجات والتصنيفات.', 'store', 'إدارة'],
     ['store.inventory.view', 'عرض المخزون', 'عرض الأرصدة والتنبيهات الخاصة بالمخزون.', 'store', 'عرض'],
@@ -166,7 +175,7 @@ const CATALOG_DEFINITIONS = [
     ['store.expenses.manage', 'مصروفات المتجر', 'إدارة المصروفات التابعة لمركز تكلفة المتجر.', 'store', 'إدارة'],
     ['store.reports.view', 'تقارير المتجر', 'عرض تقارير المبيعات والمخزون والتشغيل.', 'store', 'عرض'],
     ['store.profit.view', 'ربحية المتجر', 'عرض التكلفة وCOGS والربح الإجمالي والصافي.', 'store', 'حساس'],
-    ['intelligence.read', 'عرض الذكاء التشغيلي', 'عرض ملخصات TOP GYM Intelligence وتحليل الأعضاء.', 'intelligence', 'عرض'],
+    ['intelligence.read', 'عرض الذكاء التشغيلي', 'عرض ملخصات الذكاء التشغيلي وتحليل الأعضاء.', 'intelligence', 'عرض'],
     ['intelligence.generate', 'توليد اقتراحات الذكاء', 'إنشاء أو تعديل اقتراحات التدريب والتغذية بواسطة الذكاء الاصطناعي.', 'intelligence', 'إنشاء']
 ];
 

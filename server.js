@@ -26,6 +26,7 @@ const memberPortalService = require('./src/services/member-portal-service');
 const memberFeedbackService = require('./src/services/member-feedback-service');
 const storeService = require('./src/services/store-service');
 const intelligenceService = require('./src/services/intelligence-service');
+const brandingService = require('./src/services/branding-service');
 const authService = require('./src/services/auth-service');
 const permissionService = require('./src/services/permission-service');
 const { ensureAuthReady } = authService;
@@ -83,7 +84,8 @@ function renderQrMemberPage(member) {
         }());
     </script>
     <link rel="stylesheet" href="/css/main.css?v=53">
-    <title>بيانات عضوية ${escapeHtml(member.fullName)}</title>
+    <link rel="icon" type="image/svg+xml" href="/assets/gym-brand.svg?v=1" sizes="any">
+    <title>بيانات عضوية ${escapeHtml(member.fullName)} | الجيم</title>
 </head>
 <body class="qr-member-page">
     <main class="qr-member-shell">
@@ -91,7 +93,7 @@ function renderQrMemberPage(member) {
             <span aria-hidden="true">◐</span><span data-theme-toggle-label>الوضع الداكن</span>
         </button>
         <section class="qr-member-card">
-            <header class="qr-member-head"><div class="qr-member-brand">TOP GYM</div><h1>بيانات العضوية</h1><p>تم التعرف على رمز المشترك بنجاح</p></header>
+            <header class="qr-member-head"><div class="qr-member-brand" data-brand-text="brandName">الجيم</div><h1>بيانات العضوية</h1><p>تم التعرف على رمز المشترك بنجاح</p></header>
             <section class="qr-member-body">
                 <div class="qr-member-identity"><div><strong>${escapeHtml(member.fullName || '—')}</strong><span>${escapeHtml(member.phone || '—')}</span></div><b class="qr-member-status ${statusClass}">${escapeHtml(statusLabel)}</b></div>
             <div class="qr-member-grid">
@@ -102,10 +104,11 @@ function renderQrMemberPage(member) {
                 ${remaining > 0 ? `<div class="qr-member-item"><span>المبلغ المتبقي</span><strong>${remaining.toFixed(2)} ج.م</strong></div>` : ''}
             </div>
         </section>
-            <footer class="qr-member-foot">نتمنى لك تجربة تدريب مميزة — TOP GYM</footer>
+            <footer class="qr-member-foot">نتمنى لك تجربة تدريب مميزة — <span data-brand-text="brandName">الجيم</span></footer>
         </section>
     </main>
     <script defer src="/js/theme.js?v=1"></script>
+    <script defer src="/js/branding.js?v=1"></script>
 </body>
 </html>`;
 }
@@ -132,6 +135,7 @@ registerRoutes(app, {
     feedbackService: memberFeedbackService,
     storeService,
     intelligenceService,
+    brandingService,
     getPool
 });
 
@@ -178,6 +182,7 @@ async function start() {
     await memberFeedbackService.ensureMemberFeedbackTable();
     await storeService.ensureStoreTables();
     await intelligenceService.ensureIntelligenceTables();
+    await brandingService.ensureBrandingTables();
     const port = config.port;
     app.listen(port, () => console.log(`Gym membership app is running on http://localhost:${port}`));
 }

@@ -146,6 +146,9 @@ function assertRequiredFiles() {
         'src/services/member-feedback-service.js',
         'src/routes/member-feedback.routes.js',
         'src/controllers/member-feedback.controller.js',
+        'src/services/branding-service.js',
+        'src/routes/branding.routes.js',
+        'src/controllers/branding.controller.js',
         'database/migrations/005-member-feedback.sql',
         'public/js/day-passes.js',
         'public/js/day-pass-reports.js',
@@ -166,6 +169,13 @@ function assertRequiredFiles() {
         'tsconfig.anatomy.json',
         'public/js/pages/management/member-feedback.js',
         'public/css/pages/member-feedback.css',
+        'public/css/pages/branding.css',
+        'public/js/branding.js',
+        'public/js/pages/branding/branding.js',
+        'public/assets/gym-brand.svg',
+        'public/assets/gym-brand-horizontal.svg',
+        'public/assets/gym-brand-light.svg',
+        'public/assets/gym-brand-dark.svg',
         'docs/AUTH.md',
         'docs/ARCHITECTURE.md',
         'docs/API.md',
@@ -205,6 +215,7 @@ function checkModuleGraph() {
         './src/services/analytics-service',
         './src/services/report-service',
         './src/services/backup-service',
+        './src/services/branding-service',
         './src/database',
         './src/repositories/user.repository',
         './src/repositories/session.repository',
@@ -233,12 +244,13 @@ function checkRouteSurface() {
         'src/routes/intelligence.routes.js',
         'src/routes/day-pass.routes.js',
         'src/routes/member-feedback.routes.js',
-        'src/routes/store.routes.js'
+        'src/routes/store.routes.js',
+        'src/routes/branding.routes.js'
     ].filter((relativePath) => fs.existsSync(path.join(root, relativePath))).map(read).join('\n');
     const expectedRoutes = [
         '/api/members', '/api/expenses', '/api/attendance', '/api/reports',
         '/api/backup', '/api/library', '/api/external-trainees',
-        '/api/workoutprograms', '/api/dietplans', '/api/workoutsessions', '/api/meal-logs', '/api/intelligence/overview', '/api/intelligence/refine', '/api/day-passes', '/api/member-feedback', '/api/member-portal/feedback', '/api/store/products', '/api/store/sales', '/api/store/inventory'
+        '/api/workoutprograms', '/api/dietplans', '/api/workoutsessions', '/api/meal-logs', '/api/intelligence/overview', '/api/intelligence/refine', '/api/day-passes', '/api/member-feedback', '/api/member-portal/feedback', '/api/store/products', '/api/store/sales', '/api/store/inventory', '/api/branding', '/api/branding/publish'
     ];
     expectedRoutes.forEach((route) => record(
         `ROUTE-${route.replaceAll('/', '-')}`,
@@ -284,6 +296,13 @@ function checkAuthSurface() {
     record('PERMISSIONS-OWNER-UI', index.includes('data-page-tab="permissions"') && index.includes('id="permissionsSection"') && permissionsUi.includes('/permissions'), 'Owner permissions screen is present', 'P1');
     record('PERMISSIONS-SESSION-INVALIDATION', permissionService.includes('revokeForUser'), 'permission updates invalidate the target Assistant sessions', 'P0');
     record('FINANCE-FIELD-GUARD', fs.existsSync(path.join(root, 'src/middleware/financial-data.middleware.js')) && authMiddleware.includes('protectFinancialResponse'), 'financial response fields are filtered when finance.read is disabled', 'P0');
+    const brandingRoutes = read('src/routes/branding.routes.js');
+    const brandingService = read('src/services/branding-service.js');
+    const brandingClient = read('public/js/branding.js');
+    record('BRANDING-OWNER-API', brandingRoutes.includes('/api/branding/settings') && brandingRoutes.includes('branding.publish') && brandingRoutes.includes('ownerOnly'), 'custom branding settings and publish APIs are Owner-protected', 'P0');
+    record('BRANDING-FALLBACK', brandingService.includes('DEFAULT_BRANDING') && brandingService.includes('getPublicBrandName'), 'default branding and safe fallback resolver are present', 'P0');
+    record('BRANDING-DESIGN-TOKENS', brandingClient.includes('TOKEN_ALIASES') && brandingClient.includes('topgym:brandingchange'), 'resolved branding is applied through centralized runtime design tokens', 'P1');
+    record('BRANDING-UI', index.includes('data-page-tab="branding"') && index.includes('id="brandingSection"') && index.includes('/js/branding.js'), 'Owner custom branding editor and runtime loader are present', 'P1');
 }
 
 function checkStyleSurface() {

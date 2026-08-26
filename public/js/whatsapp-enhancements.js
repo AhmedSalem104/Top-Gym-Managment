@@ -57,14 +57,19 @@
                 return text || fallback;
             }
 
+            function brandName() {
+                return String(window.topGymBranding?.get?.().identity?.brandName || 'الجيم').trim() || 'الجيم';
+            }
+
             function messageFrame(title, lines) {
+                const resolvedBrand = brandName();
                 return [
                     '╭────────────────────────────╮',
                     `│  ${title}`,
                     '├────────────────────────────┤',
                     ...lines.map((line) => line ? `│  ${line}` : '│'),
                     '╰────────────────────────────╯'
-                ];
+                ].map((line) => String(line).replaceAll('TOP GYM', () => resolvedBrand));
             }
 
             function isMobileDevice() {

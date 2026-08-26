@@ -16,7 +16,7 @@ const config = Object.freeze({
     appTimeZone: getEnv('APP_TIMEZONE', 'Africa/Cairo'),
     authSessionDays: getNumberEnv('AUTH_SESSION_DAYS', 7),
     authOwnerEmail: getEnv('AUTH_OWNER_EMAIL'),
-    authOwnerName: getEnv('AUTH_OWNER_NAME', 'TOP GYM Owner'),
+    authOwnerName: getEnv('AUTH_OWNER_NAME', 'مالك النظام'),
     authOwnerPassword: getEnv('AUTH_OWNER_PASSWORD'),
     cronSecret: getEnv('CRON_SECRET'),
     publicAppUrl: getEnv('PUBLIC_APP_URL'),

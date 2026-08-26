@@ -28,6 +28,8 @@
   };
 
   const $ = (id) => document.getElementById(id);
+  const brandName = () => window.topGymBranding?.get?.().identity?.brandName || 'الجيم';
+  const englishBrandName = () => window.topGymBranding?.get?.().identity?.englishBrandName || 'ELGYM';
   const escapeHtml = (value) => String(value ?? '').replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[character]));
   const number = (value, digits = 0) => Number.isFinite(Number(value)) ? Number(value).toLocaleString('ar-EG', { maximumFractionDigits: digits }) : '—';
   const safeArray = (value) => Array.isArray(value) ? value.filter(Boolean) : [];
@@ -73,7 +75,7 @@
     const description = isFoods
       ? 'ابحث عن الطعام وتعرّف على السعرات والماكروز لكل حصة.'
       : 'ابحث عن التمرين بالاسم وحدد المستوى والأداة المناسبة.';
-    mount.innerHTML = `<div class="portal-library-head" data-library-type="${state.activeType}"><div><span class="portal-library-kicker">TOP GYM MEMBER HUB</span><h3 id="portalLibraryTitle">${title}</h3><p>${description}</p></div><button type="button" class="btn btn-light" data-library-close>العودة للخدمات</button></div><div id="portalLibraryContent"></div><div class="portal-library-modal" id="portalLibraryModal" role="dialog" aria-modal="true" aria-labelledby="portalLibraryModalTitle" hidden><div class="portal-library-modal-card"><header><div><span class="portal-library-kicker">TOP GYM GUIDE</span><h3 id="portalLibraryModalTitle">التفاصيل</h3></div><button type="button" class="portal-library-modal-close" data-library-modal-close aria-label="إغلاق">×</button></header><div id="portalLibraryModalContent"></div></div></div>`;
+    mount.innerHTML = `<div class="portal-library-head" data-library-type="${state.activeType}"><div><span class="portal-library-kicker">${escapeHtml(englishBrandName())} MEMBER HUB</span><h3 id="portalLibraryTitle">${title}</h3><p>${description}</p></div><button type="button" class="btn btn-light" data-library-close>العودة للخدمات</button></div><div id="portalLibraryContent"></div><div class="portal-library-modal" id="portalLibraryModal" role="dialog" aria-modal="true" aria-labelledby="portalLibraryModalTitle" hidden><div class="portal-library-modal-card"><header><div><span class="portal-library-kicker">${escapeHtml(brandName())} GUIDE</span><h3 id="portalLibraryModalTitle">التفاصيل</h3></div><button type="button" class="portal-library-modal-close" data-library-modal-close aria-label="إغلاق">×</button></header><div id="portalLibraryModalContent"></div></div></div>`;
   }
 
   function renderFilters() {

@@ -26,6 +26,9 @@
   let portalMembershipCode = '';
   let portalReportMeta = '';
   let libraryLoaderPromise = null;
+  let activePortalView = 'home';
+
+  const brandName = () => String(window.topGymBranding?.get?.().identity?.brandName || 'الجيم').trim() || 'الجيم';
 
   const portalViews = Object.freeze({
     home: { title: 'بوابة عضويتي', description: 'اختر الخدمة التي تريد استخدامها' },
@@ -96,7 +99,9 @@
 
   function setPortalView(view = 'home') {
     const nextView = portalViews[view] ? view : 'home';
-    const metadata = portalViews[nextView];
+    const metadata = { ...portalViews[nextView] };
+    if (nextView === 'feedback') metadata.description = `شاركنا رأيك في ${brandName()} والمدربين.`;
+    activePortalView = nextView;
     const isHome = nextView === 'home';
     const isReport = nextView === 'report';
     const isLibrary = nextView === 'exercises' || nextView === 'foods';
@@ -155,7 +160,7 @@
     const remainingClass = number(summary.totalRemaining) > 0 ? 'portal-outstanding' : '';
     const membershipRows = (data.memberships || []).map((item) => `<tr><td>${escapeHtml(planLabel(item.plan))}<small>${escapeHtml(typeLabel(item.type))}</small></td><td class="portal-ltr">${dateText(item.startDate)}<br>حتى ${dateText(item.effectiveEndDate || item.endDate)}</td><td><span class="portal-status ${escapeHtml(item.status || '')}">${escapeHtml(statusLabel(item.status))}</span></td><td class="portal-money">${money(item.amountDue)}<br><small>مدفوع ${money(item.amountPaid)} · متبقي ${money(item.amountRemaining)}</small></td></tr>`);
     const paymentRows = (data.payments || []).map((item) => `<tr><td class="portal-ltr">${escapeHtml(item.receiptNumber || '—')}</td><td>${dateTimeText(item.transactionDate || item.createdAt)}</td><td>${escapeHtml(item.transactionType === 'subscription' ? 'اشتراك' : item.transactionType === 'adjustment' ? 'تسوية' : 'دفعة')}</td><td class="portal-money">${money(item.amountPaid)}</td><td class="portal-money ${number(item.amountRemaining) > 0 ? 'portal-debt' : ''}">${money(item.amountRemaining)}</td><td>${escapeHtml(paymentLabel(item.paymentMethod))}</td></tr>`);
-    const attendanceRows = (data.attendance || []).map((item) => `<tr><td class="portal-ltr">${dateText(item.attendanceDate)}</td><td>${dateTimeText(item.checkInAt)}</td><td>${item.checkOutAt ? dateTimeText(item.checkOutAt) : 'داخل الجيم'}</td><td>${item.durationMinutes == null ? '—' : `${number(item.durationMinutes)} دقيقة`}</td></tr>`);
+    const attendanceRows = (data.attendance || []).map((item) => `<tr><td class="portal-ltr">${dateText(item.attendanceDate)}</td><td>${dateTimeText(item.checkInAt)}</td><td>${item.checkOutAt ? dateTimeText(item.checkOutAt) : `داخل ${escapeHtml(brandName())}`}</td><td>${item.durationMinutes == null ? '—' : `${number(item.durationMinutes)} دقيقة`}</td></tr>`);
     const freezeRows = (data.freezes || []).map((item) => `<tr><td>${dateText(item.startDate)}</td><td>${dateText(item.endDate)}</td><td>${item.resumedDate ? dateText(item.resumedDate) : 'مستمر'}</td><td>${number(item.days)} يوم</td></tr>`);
     reportContent.innerHTML = `
       <section class="portal-member-identity"><span class="portal-member-avatar" aria-hidden="true">${escapeHtml(initials(member.fullName))}</span><div><h3>${escapeHtml(member.fullName || '—')}</h3><p class="portal-ltr">${escapeHtml(member.phone || '—')}</p><p>${member.email ? escapeHtml(member.email) : `تاريخ أول انضمام: ${dateText(firstJoin)}`}</p></div><span class="portal-status ${escapeHtml(status)}">${escapeHtml(statusLabel(status))}</span></section>
@@ -225,6 +230,9 @@
   window.addEventListener('topgym:portal-library-close', () => {
     setPortalView('home');
     resultPanel?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+  window.addEventListener('topgym:brandingchange', () => {
+    if (activePortalView === 'feedback') setPortalView(activePortalView);
   });
   document.querySelectorAll('[data-feedback-rating]').forEach((button) => {
     button.addEventListener('click', () => setRating(button.dataset.feedbackRating));

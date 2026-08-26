@@ -6,6 +6,7 @@
     const permissions = window.topGymPermissions;
     const rememberEmailKey = 'topgym.login.email';
     const state = { user: null, ready: false, redirecting: false };
+    const brandName = () => window.topGymBranding?.get?.().identity?.brandName || 'الجيم';
 
     document.body.classList.add('auth-pending');
 
@@ -53,7 +54,10 @@
             dayPassPricingSave: 'pricing.update',
             dashboardPrintPricingButton: 'pricing.read',
             reportsExportButton: 'reports.export',
-            addExpenseFromTabButton: 'finance.create'
+            addExpenseFromTabButton: 'finance.create',
+            brandingSaveDraftButton: 'branding.edit',
+            brandingPublishButton: 'branding.publish',
+            brandingResetButton: 'branding.reset'
         };
         Object.entries(idPermissions).forEach(([id, code]) => {
             const element = $(id);
@@ -232,12 +236,12 @@
         const profileName = document.querySelector('.header-profile-copy strong');
         const profileRole = document.querySelector('.header-profile-copy small');
         const profileAvatar = document.querySelector('.profile-avatar');
-        if (profileName) profileName.textContent = user?.name || 'TOP GYM';
+        if (profileName) profileName.textContent = user?.name || brandName();
         if (profileRole) profileRole.textContent = roleLabel(user?.role);
         if (profileAvatar) profileAvatar.textContent = initials(user?.name);
         const welcomeName = $('topbarWelcomeName');
         const welcomeContext = $('topbarWelcomeContext');
-        if (welcomeName) welcomeName.textContent = user?.name || 'مدير TOP GYM';
+        if (welcomeName) welcomeName.textContent = user?.name || `مدير ${brandName()}`;
         if (welcomeContext) welcomeContext.textContent = user ? `${roleLabel(user.role)} · جاهز لمتابعة يومك التشغيلي` : 'إليك ملخص يومك التشغيلي في مكان واحد';
         const logout = ensureLogoutButton();
         if (logout) logout.hidden = !user;
@@ -245,7 +249,7 @@
         const accountName = $('authAccountName');
         const accountEmail = $('authAccountEmail');
         const accountAvatar = $('authAccountAvatar');
-        if (accountName) accountName.textContent = user?.name || 'TOP GYM';
+        if (accountName) accountName.textContent = user?.name || brandName();
         if (accountEmail) accountEmail.textContent = user?.email || '—';
         if (accountAvatar) accountAvatar.textContent = initials(user?.name);
         if (!isOwner && !permissions.canAccessTab(user, window.location.hash.slice(1))) {

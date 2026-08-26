@@ -11,6 +11,7 @@ const { ensureLibraryData } = require('./library-service');
 const { ensureCoachingTables } = require('./coaching-service');
 const { ensureDayPassTables } = require('../repositories/day-pass.repository');
 const { ensureStoreTables } = require('./store-service');
+const { ensureBrandingTables } = require('./branding-service');
 const { config } = require('../config/env');
 
 const gzipAsync = promisify(gzip);
@@ -68,7 +69,10 @@ const BACKUP_TABLES = [
     { key: 'coaching_activity_events', table: 'coaching_activity_events' },
     { key: 'workout_sessions', table: 'workout_sessions' },
     { key: 'workout_set_logs', table: 'workout_set_logs' },
-    { key: 'meal_logs', table: 'meal_logs' }
+    { key: 'meal_logs', table: 'meal_logs' },
+    { key: 'gym_branding_config', table: 'gym_branding_config' },
+    { key: 'gym_branding_assets', table: 'gym_branding_assets' },
+    { key: 'gym_branding_audit', table: 'gym_branding_audit' }
 ];
 
 const BACKUP_TABLE_BY_KEY = new Map(BACKUP_TABLES.map((item) => [item.key, item]));
@@ -466,6 +470,7 @@ async function tableMetadata(pool, table) {
 function restoreValue(value) {
     if (value === undefined) return undefined;
     if (value === null || typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') return value;
+    if (value && value.type === 'Buffer' && Array.isArray(value.data)) return Buffer.from(value.data);
     throw backupInputError('النسخة تحتوي على قيمة غير مدعومة.');
 }
 
@@ -516,6 +521,7 @@ async function restoreBackup(input, { fileName = 'uploaded-backup.json.gz' } = {
         await ensureCoachingTables();
         await ensureDayPassTables();
         await ensureStoreTables();
+        await ensureBrandingTables();
         const pool = await getPool();
         const metadataEntries = await Promise.all(BACKUP_TABLES.map(async (item) => [item.table, await tableMetadata(pool, item.table)]));
         const metadata = new Map(metadataEntries);
@@ -566,6 +572,7 @@ async function createBackup({ format = 'json.gz' } = {}) {
     await ensureCoachingTables();
     await ensureDayPassTables();
     await ensureStoreTables();
+    await ensureBrandingTables();
     const pool = await getPool();
     const generatedAt = new Date();
     const { timeZone, stamp } = getLocalTimeParts(generatedAt);

@@ -1,13 +1,14 @@
 (() => {
     if (window.topGymPermissions) return;
 
-    const OWNER_TABS = Object.freeze(['dashboard', 'members', 'trainees', 'intelligence', 'management', 'backup-history', 'permissions', 'attendance', 'expenses', 'library', 'reports', 'feedback', 'store']);
+    const OWNER_TABS = Object.freeze(['dashboard', 'members', 'trainees', 'intelligence', 'management', 'branding', 'backup-history', 'permissions', 'attendance', 'expenses', 'library', 'reports', 'feedback', 'store']);
     const TAB_PERMISSION_CODES = Object.freeze({
         dashboard: 'dashboard.read',
         members: ['members.read', 'memberships.read'],
         trainees: 'trainees.read',
         intelligence: 'intelligence.read',
         management: 'pricing.read',
+        branding: 'branding.view',
         'backup-history': 'management.backup.read',
         permissions: 'permissions.manage',
         attendance: 'attendance.read',
@@ -88,7 +89,7 @@
 
     function tabsForUser(user) {
         if (user?.role === 'Owner') return [...OWNER_TABS];
-        return OWNER_TABS.filter((tab) => tab === 'management' || tab === 'backup-history' ? false : TAB_PERMISSION_ALTERNATIVES[tab]
+        return OWNER_TABS.filter((tab) => ['management', 'branding', 'backup-history'].includes(tab) ? false : TAB_PERMISSION_ALTERNATIVES[tab]
             ? TAB_PERMISSION_ALTERNATIVES[tab].some((code) => hasPermission(user, code))
             : hasPermission(user, TAB_PERMISSION_CODES[tab]));
     }

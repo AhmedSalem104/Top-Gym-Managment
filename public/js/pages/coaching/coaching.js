@@ -21,11 +21,11 @@
     };
 
     const STATUS_LABELS = { active: 'نشط', draft: 'مسودة', paused: 'متوقف', completed: 'مكتمل', archived: 'مؤرشف' };
-    const SYSTEM_NAME_SUFFIX = 'From TOP GYM System';
+    const brandName = () => window.topGymBranding?.get?.().identity?.brandName || 'الجيم';
 
     function generatedSystemName(type, memberName = '') {
         const prefix = type === 'diet' ? 'خطة تغذية' : 'برنامج تدريب';
-        const suffix = ` · ${SYSTEM_NAME_SUFFIX}`;
+        const suffix = ` · From ${brandName()} System`;
         const label = String(memberName || 'العميل المحدد').trim() || 'العميل المحدد';
         const availableLabelLength = Math.max(12, 160 - prefix.length - suffix.length - 3);
         return `${prefix} - ${label.slice(0, availableLabelLength)}${suffix}`;
@@ -1706,6 +1706,11 @@
         return `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><link rel="stylesheet" href="/css/main.css?v=37"><title>${title} - TOP GYM</title><style>@page{size:A4;margin:14mm}*{box-sizing:border-box}body{font-family:Cairo,Tahoma,Arial,sans-serif;color:var(--text-primary);margin:0;line-height:1.6}header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:4px solid var(--primary);padding-bottom:12px;margin-bottom:18px}h1{font-size:27px;margin:0;color:var(--primary-hover);letter-spacing:2px}header p{margin:2px 0;color:var(--text-muted);font-size:11px}.meta{text-align:left;color:var(--text-secondary);font-size:11px}h2{font-size:15px;margin:16px 0 7px;padding:7px 10px;border-right:4px solid var(--primary);background:var(--primary-soft)}h2 small{float:left;color:var(--text-muted);font-size:10px;font-weight:400}table{width:100%;border-collapse:collapse;font-size:10px}th{background:var(--text-primary);color:var(--text-on-primary);text-align:right;padding:7px}td{border:1px solid var(--border-secondary);padding:7px}tr:nth-child(even) td{background:var(--bg-elevated)}.print-summary{padding:10px 12px;border:1px solid var(--primary-border);background:var(--bg-card-hover);border-radius:8px;font-size:11px}footer{margin-top:25px;border-top:1px solid var(--border-secondary);padding-top:10px;color:var(--text-muted);font-size:10px;display:flex;justify-content:space-between}</style></head><body><header><div><h1>TOP GYM</h1><p>${title}</p></div><div class="meta"><b>${escapeHtml(clientLabel)}</b><br>${builderDate(draft.startDate)}${draft.endDate ? ` — ${builderDate(draft.endDate)}` : ''}</div></header>${content}<footer><b>Gym management</b><span>TOP GYM · ${new Date().toLocaleDateString('ar-EG')}</span></footer><script>window.onload=()=>setTimeout(()=>window.print(),350);<\/script></body></html>`;
     }
 
+    const buildBuilderPrintDocumentLegacy = buildBuilderPrintDocument;
+    buildBuilderPrintDocument = function brandedBuilderPrintDocument() {
+        return buildBuilderPrintDocumentLegacy().replaceAll('TOP GYM', () => escapeHtml(brandName()));
+    };
+
     function printBuilderDraft() {
         if (!state.builder) return;
         syncBuilderDraft();
@@ -2457,6 +2462,7 @@
             if (action === 'delete') deleteCheckinFromProfile(memberId, button.dataset.id);
         });
         window.addEventListener('topgym:tab-changed', (event) => { if (event.detail?.name === 'trainees') loadTrainees(); });
+        window.addEventListener('topgym:brandingchange', () => { if (state.builder) renderBuilder(); });
         window.addEventListener('topgym:ai-draft-ready', (event) => { void openBuilderFromAiDraft(event.detail || {}); });
         window.addEventListener('topgym:member-details-opened', (event) => renderMemberTrainingPanel(event.detail?.member?.id || event.detail?.details?.member?.id));
         window.addEventListener('topgym:coaching-updated', (event) => { if (event.detail?.memberId && $('detailsDialog')?.open) renderMemberTrainingPanel(event.detail.memberId); });

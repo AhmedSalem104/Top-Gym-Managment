@@ -44,16 +44,45 @@
                 return new URL(path, window.location.href).href;
             }
 
+            function branding() {
+                return window.topGymBranding?.get?.() || {};
+            }
+
+            function brandName() {
+                return branding().identity?.brandName || 'الجيم';
+            }
+
+            function safeBrandHex(value, fallback) {
+                return /^#[\da-f]{6}$/i.test(String(value || '')) ? String(value).toUpperCase() : fallback;
+            }
+
+            function printBrandVariables() {
+                const config = branding();
+                const theme = config.themes?.light || {};
+                const primary = safeBrandHex(theme.primary, '#7C3AED');
+                const hover = safeBrandHex(theme.primaryHover, '#6D28D9');
+                const text = safeBrandHex(theme.textPrimary, '#172033');
+                const muted = safeBrandHex(theme.textMuted, '#718096');
+                const border = safeBrandHex(theme.border, '#D9E2EF');
+                const surface = safeBrandHex(theme.card, '#F5F9FF');
+                const borderSoft = safeBrandHex(theme.borderSecondary, '#E7EDF5');
+                return `<style data-top-gym-print-brand>:root{--print-brand-primary:${primary};--print-brand-primary-hover:${hover};--print-brand-text:${text};--print-brand-muted:${muted};--print-brand-border:${border};--print-brand-surface:${surface};--print-brand-border-soft:${borderSoft};}</style>`;
+            }
+
             function printStylesheetLink() {
-                return '<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" data-top-gym-print-fonts href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap"><link rel="stylesheet" data-top-gym-print-styles href="' + assetUrl('/css/print.css?v=4') + '">';
+                return '<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" data-top-gym-print-fonts href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap"><link rel="stylesheet" data-top-gym-print-styles href="' + assetUrl('/css/print.css?v=5') + '">' + printBrandVariables();
             }
 
             function printBrandMarkup(subtitle = 'إدارة الجيم') {
-                return '<div class="print-brand"><img class="print-logo" src="' + assetUrl('/favicon.svg?v=2') + '" alt="TOP GYM"><div class="print-brand-copy"><h1 class="print-brand-title">TOP GYM</h1><span class="print-brand-subtitle">' + escapeHtml(subtitle) + '</span></div></div>';
+                const config = branding();
+                const logo = config.assets?.printLogo?.url || config.assets?.primaryLogo?.url || '/assets/gym-brand.svg?v=1';
+                return '<div class="print-brand"><img class="print-logo" src="' + assetUrl(logo) + '" alt="' + escapeHtml(brandName()) + '"><div class="print-brand-copy"><h1 class="print-brand-title">' + escapeHtml(brandName()) + '</h1><span class="print-brand-subtitle">' + escapeHtml(subtitle) + '</span></div></div>';
             }
 
             function printFooterMarkup(context = 'إدارة الجيم', generatedSystem = false) {
-                return '<footer class="print-footer"><div class="print-footer-management"><strong>TOP GYM</strong><span>' + escapeHtml(context) + ' · ' + (generatedSystem ? 'From TOP GYM System' : 'TOP GYM') + '</span></div><span class="print-signature">اعتماد الإدارة</span></footer>';
+                const config = branding();
+                const footer = config.documents?.footer || 'إدارة أذكى، أداء أفضل.';
+                return '<footer class="print-footer"><div class="print-footer-management"><strong>' + escapeHtml(config.identity?.companyName || brandName()) + '</strong><span>' + escapeHtml(context) + ' · ' + escapeHtml(generatedSystem ? `From ${brandName()} System` : footer) + '</span></div><span class="print-signature">اعتماد الإدارة</span></footer>';
             }
 
             function planLabel(value) { return PLAN_LABELS[value] || value || '—'; }
@@ -150,7 +179,7 @@
                     <section class="print-section"><div class="print-section-title"><div><span class="print-section-kicker">سجل النشاط</span><h2>كل العمليات المسجلة</h2></div></div><div class="print-table-wrap"><table class="print-table"><thead><tr><th>التاريخ</th><th>العملية</th><th>التفاصيل</th></tr></thead><tbody>${eventHistory(data)}</tbody></table></div></section>` : '';
                 const printHeader = `<header class="print-header">${printBrandMarkup('إدارة العضويات والاشتراكات')}<div class="print-document-meta"><strong>${escapeHtml(title)}</strong><span>رقم العضو: #${escapeHtml(member.id || '—')}</span><span>تاريخ الطباعة: ${escapeHtml(printDate(new Date()))}</span></div></header>`;
                 const printFooter = printFooterMarkup('إدارة العضويات والاشتراكات');
-                return `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${escapeHtml(title)} - TOP GYM</title></head><body><main class="print-sheet">${printHeader}<div class="print-accent"></div>${memberInfo}${membershipInfo}${history}${printFooter}</main></body></html>`;
+                return `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${escapeHtml(title)} - ${escapeHtml(brandName())}</title></head><body><main class="print-sheet">${printHeader}<div class="print-accent"></div>${memberInfo}${membershipInfo}${history}${printFooter}</main></body></html>`;
             }
 
             function buildPaymentReceiptDocument(data, payment) {
@@ -161,7 +190,7 @@
                 const memberInfo = `<section class="print-section"><div class="print-section-title"><div><span class="print-section-kicker">بيانات العميل</span><h2>إيصال استلام دفعة</h2></div><span class="print-receipt-id">${escapeHtml(payment.receiptNumber || '—')}</span></div><div class="print-member-hero"><span class="print-member-avatar">${escapeHtml(initials(member.fullName))}</span><div class="print-member-copy"><h2>${escapeHtml(member.fullName || 'عضو الجيم')}</h2><p>${escapeHtml(member.phone || '—')}</p></div></div><div class="print-info-grid">${infoItem('رقم العضو', `#${member.id || '—'}`)}${infoItem('تاريخ العملية', printDateTime(payment.transactionDate || payment.createdAt))}${infoItem('الباقة', planLabel(payment.plan))}${infoItem('النوع', typeLabel(payment.type))}</div></section>`;
                 const paymentInfo = `<section class="print-section"><div class="print-section-title"><div><span class="print-section-kicker">تفاصيل العملية</span><h2>${escapeHtml(PAYMENT_TRANSACTION_LABELS[payment.transactionType] || 'دفعة')}</h2></div></div><div class="print-info-grid">${infoItem('طريقة الدفع', paymentLabel(payment.paymentMethod))}${infoItem('تاريخ الاشتراك', printDate(membership?.startDate))}${infoItem('تاريخ الانتهاء', printDate(membership?.effectiveEndDate))}${infoItem('المستحق', money(payment.amountDue))}</div><div class="print-receipt-amount"><span>قيمة العملية</span><strong>${escapeHtml(money(payment.amountPaid))}</strong><small>الرصيد المتبقي بعد العملية: ${escapeHtml(money(payment.amountRemaining))}</small></div>${payment.notes ? `<p class="print-notes"><strong>ملاحظات:</strong> ${escapeHtml(payment.notes)}</p>` : ''}</section>`;
                 const printFooter = printFooterMarkup('إدارة العضويات والاشتراكات');
-                return `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${title} - TOP GYM</title></head><body><main class="print-sheet">${printHeader}<div class="print-accent"></div>${memberInfo}${paymentInfo}${printFooter}</main></body></html>`;
+                return `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${title} - ${escapeHtml(brandName())}</title></head><body><main class="print-sheet">${printHeader}<div class="print-accent"></div>${memberInfo}${paymentInfo}${printFooter}</main></body></html>`;
             }
 
             function decoratePrintDocumentHtml(html) {
@@ -236,7 +265,7 @@
                         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
                         pagebreak: { mode: ['css', 'legacy'] }
                     }).from(sheet).outputPdf('blob');
-                    const filename = `TOP-GYM-${String(data.member?.id || memberId)}-${mode}.pdf`;
+                    const filename = `${String(brandName()).replace(/[^\p{L}\p{N}]+/gu, '-').replace(/^-+|-+$/g, '').slice(0, 30) || 'Gym'}-${String(data.member?.id || memberId)}-${mode}.pdf`;
                     return { data, file: new File([blob], filename, { type: 'application/pdf' }) };
                 } finally {
                     holder.remove();
@@ -344,7 +373,7 @@
             function normalizeCoachingDraft(draft, type, catalog = {}, clientLabel = '') {
                 const system = JSON.parse(JSON.stringify(draft || {}));
                 system.memberName = system.memberName || clientLabel || 'العميل المحدد';
-                system.name = system.name || `${type === 'diet' ? 'خطة تغذية' : 'برنامج تدريب'} - ${system.memberName} · From TOP GYM System`;
+                system.name = system.name || `${type === 'diet' ? 'خطة تغذية' : 'برنامج تدريب'} - ${system.memberName} · From ${brandName()} System`;
                 if (type === 'workout') {
                     const exercises = catalog.exercises || [];
                     system.routines = (system.routines || []).map((routine) => ({
@@ -472,7 +501,7 @@
                 const title = type === 'diet' ? 'خطة تغذية رياضية' : 'برنامج تدريب رياضي';
                 const content = type === 'diet' ? dietPrintSections(system) : workoutPrintSections(system, libraryItems);
                 const footer = printFooterMarkup('إدارة التدريب والتغذية الرياضية', true);
-                return '<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>' + escapeHtml(title) + ' - TOP GYM</title></head><body><main class="print-sheet print-system-document">' + coachingHeader(title, system) + '<div class="print-accent"></div>' + coachingMemberHero(system, type) + content + footer + '</main></body></html>';
+                return '<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>' + escapeHtml(title) + ' - ' + escapeHtml(brandName()) + '</title></head><body><main class="print-sheet print-system-document">' + coachingHeader(title, system) + '<div class="print-accent"></div>' + coachingMemberHero(system, type) + content + footer + '</main></body></html>';
             }
 
             async function fetchCoachingSystem(id, type) {
@@ -500,7 +529,8 @@
 
             function coachingFilename(type, system) {
                 const label = String(system?.name || (type === 'diet' ? 'خطة-تغذية' : 'برنامج-تدريب')).replace(/[\\/:*?"<>|]+/g, '-').trim().slice(0, 70);
-                return 'TOP-GYM-' + (type === 'diet' ? 'Nutrition' : 'Workout') + '-' + (label || 'System') + '-' + (system?.id || 'draft') + '.pdf';
+                const prefix = String(brandName()).replace(/[^\p{L}\p{N}]+/gu, '-').replace(/^-+|-+$/g, '').slice(0, 30) || 'Gym';
+                return prefix + '-' + (type === 'diet' ? 'Nutrition' : 'Workout') + '-' + (label || 'System') + '-' + (system?.id || 'draft') + '.pdf';
             }
 
             async function createPdfFromDocument(html, filename, downloadMode = false) {
@@ -578,13 +608,13 @@
                 const plansSection = `<section class="print-section print-pricing-section"><div class="print-section-title"><div><span class="print-section-kicker">الأسعار</span><h2>مصفوفة أسعار الباقات</h2></div><span class="print-table-sub">الأسعار بالجنيه المصري</span></div><div class="print-table-wrap"><table class="print-table"><thead><tr><th>الباقة</th><th>السعر الشهري</th>${planHeaders}<th>الحالة</th></tr></thead><tbody>${planRows || emptyPlanRows}</tbody></table></div></section>`;
                 const typesSection = `<section class="print-section print-pricing-section"><div class="print-section-title"><div><span class="print-section-kicker">المدد</span><h2>أنواع العضويات وصلاحيتها</h2></div></div><div class="print-table-wrap"><table class="print-table"><thead><tr><th>نوع العضوية</th><th>مدة الصلاحية</th><th>معامل السعر</th><th>الحالة</th></tr></thead><tbody>${typeRows || emptyTypeRows}</tbody></table></div></section>`;
                 const footer = printFooterMarkup('إدارة العضويات');
-                return `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>الاشتراكات والباقات - TOP GYM</title></head><body><main class="print-sheet print-pricing-document">${printHeader}<div class="print-accent"></div>${summary}${plansSection}${typesSection}${footer}</main></body></html>`;
+                return `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>الاشتراكات والباقات - ${escapeHtml(brandName())}</title></head><body><main class="print-sheet print-pricing-document">${printHeader}<div class="print-accent"></div>${summary}${plansSection}${typesSection}${footer}</main></body></html>`;
             }
 
             async function downloadPricingPdf() {
                 try {
                     const pricing = await fetchPrintJson('/api/pricing');
-                    const filename = `TOP-GYM-Subscriptions-Pricing-${new Date().toISOString().slice(0, 10)}.pdf`;
+                    const filename = `${String(brandName()).replace(/[^\p{L}\p{N}]+/gu, '-').replace(/^-+|-+$/g, '').slice(0, 30) || 'Gym'}-Subscriptions-Pricing-${new Date().toISOString().slice(0, 10)}.pdf`;
                     await createPdfFromDocument(buildPricingDocument(pricing), filename, true);
                     notifyPrint('تم تجهيز ملف الاشتراكات والباقات وتحميله بنجاح.');
                 } catch (error) {
@@ -673,7 +703,7 @@
                 const system = { id: member.id, memberName: member.fullName, memberPhone: member.phone, name: 'ملف التدريب والتغذية' };
                 const hero = '<section class="print-section print-system-hero"><div class="print-system-hero-copy"><span class="print-section-kicker">ملف العميل</span><h2>' + escapeHtml(member.fullName || 'العميل') + '</h2><p>' + escapeHtml(member.phone || '—') + (member.email ? ' · ' + escapeHtml(member.email) : '') + '</p></div><div class="print-system-hero-title"><span>التنفيذ والمتابعة</span><strong>' + escapeHtml(member.registrationDate ? printDate(member.registrationDate) : 'ملف نشط') + '</strong></div></section>';
                 const footer = printFooterMarkup('إدارة التدريب والتغذية الرياضية', true);
-                return '<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>ملف التدريب والتغذية - TOP GYM</title></head><body><main class="print-sheet print-system-document">' + coachingHeader('ملف التدريب والتغذية الكامل', system) + '<div class="print-accent"></div>' + hero + '<section class="print-section"><div class="print-system-kpi-grid">' + coachingKpi('برامج التدريب', coachingNumber(workouts.length)) + coachingKpi('خطط التغذية', coachingNumber(diets.length)) + coachingKpi('القياسات', coachingNumber((overview.measurements || []).length)) + coachingKpi('الجلسات المكتملة', coachingNumber(progress.completedSessions || progress.sessionCount)) + coachingKpi('تسجيلات الوجبات', coachingNumber(progress.mealLogCount)) + coachingKpi('الوزن الحالي', progress.currentWeight == null ? '—' : coachingNumber(progress.currentWeight, 1) + ' كجم') + '</div></section>' + section('الأنظمة المحفوظة', 'برامج التدريب', '<th>البرنامج والهدف</th><th>الفترة</th><th>الحالة</th><th>المحتوى</th>', workoutRows, 'لا توجد برامج تدريب.') + section('الأنظمة المحفوظة', 'خطط التغذية', '<th>الخطة والسعرات</th><th>الفترة</th><th>الحالة</th><th>المحتوى</th>', dietRows, 'لا توجد خطط تغذية.') + section('المتابعة البدنية', 'القياسات المسجلة', '<th>التاريخ</th><th>الوزن</th><th>الطول</th><th>نسبة الدهون</th>', measurementRows, 'لا توجد قياسات.') + section('التنفيذ', 'جلسات التدريب', '<th>البرنامج</th><th>اليوم</th><th>الحالة</th><th>وقت البدء</th>', sessionRows, 'لا توجد جلسات.') + section('التنفيذ', 'سجل الوجبات', '<th>الطعام</th><th>الوجبة</th><th>السعرات</th><th>وقت التسجيل</th>', mealRows, 'لا توجد وجبات مسجلة.') + (member.notes ? '<section class="print-section"><div class="print-section-title"><div><span class="print-section-kicker">ملاحظات العميل</span><h2>ملاحظات الملف</h2></div></div><p class="print-notes">' + escapeHtml(member.notes) + '</p></section>' : '') + footer + '</main></body></html>';
+                return '<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>ملف التدريب والتغذية - ' + escapeHtml(brandName()) + '</title></head><body><main class="print-sheet print-system-document">' + coachingHeader('ملف التدريب والتغذية الكامل', system) + '<div class="print-accent"></div>' + hero + '<section class="print-section"><div class="print-system-kpi-grid">' + coachingKpi('برامج التدريب', coachingNumber(workouts.length)) + coachingKpi('خطط التغذية', coachingNumber(diets.length)) + coachingKpi('القياسات', coachingNumber((overview.measurements || []).length)) + coachingKpi('الجلسات المكتملة', coachingNumber(progress.completedSessions || progress.sessionCount)) + coachingKpi('تسجيلات الوجبات', coachingNumber(progress.mealLogCount)) + coachingKpi('الوزن الحالي', progress.currentWeight == null ? '—' : coachingNumber(progress.currentWeight, 1) + ' كجم') + '</div></section>' + section('الأنظمة المحفوظة', 'برامج التدريب', '<th>البرنامج والهدف</th><th>الفترة</th><th>الحالة</th><th>المحتوى</th>', workoutRows, 'لا توجد برامج تدريب.') + section('الأنظمة المحفوظة', 'خطط التغذية', '<th>الخطة والسعرات</th><th>الفترة</th><th>الحالة</th><th>المحتوى</th>', dietRows, 'لا توجد خطط تغذية.') + section('المتابعة البدنية', 'القياسات المسجلة', '<th>التاريخ</th><th>الوزن</th><th>الطول</th><th>نسبة الدهون</th>', measurementRows, 'لا توجد قياسات.') + section('التنفيذ', 'جلسات التدريب', '<th>البرنامج</th><th>اليوم</th><th>الحالة</th><th>وقت البدء</th>', sessionRows, 'لا توجد جلسات.') + section('التنفيذ', 'سجل الوجبات', '<th>الطعام</th><th>الوجبة</th><th>السعرات</th><th>وقت التسجيل</th>', mealRows, 'لا توجد وجبات مسجلة.') + (member.notes ? '<section class="print-section"><div class="print-section-title"><div><span class="print-section-kicker">ملاحظات العميل</span><h2>ملاحظات الملف</h2></div></div><p class="print-notes">' + escapeHtml(member.notes) + '</p></section>' : '') + footer + '</main></body></html>';
             }
 
             async function printCoachingOverview(memberId, existingWindow = null) {
@@ -696,7 +726,7 @@
             async function downloadCoachingOverviewPdf(memberId) {
                 try {
                     const overview = await fetchPrintJson('/api/clients/' + encodeURIComponent(memberId) + '/training-overview');
-                    const filename = 'TOP-GYM-Coaching-Profile-' + memberId + '.pdf';
+                    const filename = String(brandName()).replace(/[^\p{L}\p{N}]+/gu, '-').replace(/^-+|-+$/g, '').slice(0, 30) + '-Coaching-Profile-' + memberId + '.pdf';
                     const blob = await createPdfFromDocument(buildCoachingOverviewDocument(overview), filename);
                     downloadBlob(blob, filename);
                     notifyPrint('تم تجهيز ملف PDF وتحميله بنجاح.');

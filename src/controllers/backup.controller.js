@@ -1,6 +1,6 @@
 'use strict';
 
-function createBackupController({ backupService, isAuthorizedCronRequest }) {
+function createBackupController({ backupService, brandingService, isAuthorizedCronRequest }) {
     const {
         createBackup,
         createScheduledBackupArchive,
@@ -25,12 +25,13 @@ function createBackupController({ backupService, isAuthorizedCronRequest }) {
                 return response.status(400).json({ error: 'صيغة النسخة غير مدعومة. اختر .json.gz أو .bak.' });
             }
             const backup = await createBackup({ format: requestedFormat });
+            const brandName = brandingService ? await brandingService.getPublicBrandName('الجيم') : 'الجيم';
             await recordBackupOperation({
                 operationType: 'download',
                 fileName: backup.filename,
                 sourceGeneratedAt: backup.generatedAt,
                 tableCounts: backup.rowCounts,
-                details: `تم إنشاء نسخة TOP GYM بصيغة .${backup.format} وتنزيلها على جهاز المستخدم.`
+                details: `تم إنشاء نسخة ${brandName} بصيغة .${backup.format} وتنزيلها على جهاز المستخدم.`
             }).catch((error) => console.warn('Unable to record backup download:', error.message));
             response.set({
                 'Cache-Control': 'no-store, no-cache, must-revalidate, private',

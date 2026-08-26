@@ -3,8 +3,8 @@
 const express = require('express');
 const { createBackupController } = require('../controllers/backup.controller');
 
-function registerBackupRoutes(app, { backupService, asyncRoute, isAuthorizedCronRequest }) {
-    const controller = createBackupController({ backupService, isAuthorizedCronRequest });
+function registerBackupRoutes(app, { backupService, brandingService, asyncRoute, isAuthorizedCronRequest }) {
+    const controller = createBackupController({ backupService, brandingService, isAuthorizedCronRequest });
     const backupUploadBody = express.raw({
         type: ['application/gzip', 'application/x-gzip', 'application/octet-stream'],
         limit: '25mb'

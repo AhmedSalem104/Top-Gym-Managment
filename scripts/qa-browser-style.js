@@ -15,7 +15,7 @@ const viewports = [
   { name: '1440', width: 1440, height: 900 },
   { name: '1920', width: 1920, height: 1080 }
 ];
-const screenIds = ['dashboardSection', 'membersSection', 'traineesSection', 'managementSection', 'backupHistorySection', 'attendanceSection', 'expensesSection', 'librarySection', 'reportsSection'];
+const screenIds = ['dashboardSection', 'membersSection', 'traineesSection', 'managementSection', 'backupHistorySection', 'attendanceSection', 'expensesSection', 'librarySection', 'reportsSection', 'brandingSection', 'permissionsSection', 'intelligenceSection', 'feedbackSection', 'storeSection'];
 const dialogIds = ['actionDialog', 'pricingDialog', 'membershipTypesDialog', 'membershipPlanDialog', 'membershipTypeDialog', 'detailsDialog', 'qrReaderDialog', 'memberQrDialog', 'libraryFormDialog', 'libraryDetailsDialog', 'externalTraineeDialog', 'coachingProfileDialog', 'coachingBuilderDialog', 'authUserDialog', 'backupRestoreDialog', 'expenseDialog', 'memberDialog'];
 
 function assert(condition, message) {
@@ -72,8 +72,20 @@ async function main() {
       const consoleErrors = [];
       const badResponses = [];
       page.on('pageerror', (error) => pageErrors.push(error.message));
-      page.on('console', (message) => { if (message.type() === 'error') consoleErrors.push(message.text()); });
-      page.on('response', (response) => { if (response.status() >= 400) badResponses.push(`${response.status()} ${response.url()}`); });
+      page.on('console', (message) => {
+        if (message.type() !== 'error') return;
+        // Optional third-party font/CDN failures must not mask application
+        // errors in an offline QA environment; app-origin errors are still
+        // collected by the response assertion below.
+        if (message.text().includes('net::ERR_NAME_NOT_RESOLVED')) return;
+        consoleErrors.push(message.text());
+      });
+      page.on('response', (response) => {
+        if (response.status() < 400) return;
+        try {
+          if (new URL(response.url()).origin === new URL(baseUrl).origin) badResponses.push(`${response.status()} ${response.url()}`);
+        } catch (_) { badResponses.push(`${response.status()} ${response.url()}`); }
+      });
       await page.goto(`${baseUrl}/`, { waitUntil: 'networkidle' });
       const login = await page.evaluate(() => ({
         overflow: document.documentElement.scrollWidth > window.innerWidth,
@@ -113,6 +125,40 @@ async function main() {
       }
       summary.push(`Dialogs ${width}: PASS`);
       await page.close();
+    }
+
+    for (const theme of ['light', 'dark']) {
+      for (const viewport of [{ name: '430', width: 430, height: 900 }, { name: '1440', width: 1440, height: 900 }]) {
+        const page = await browser.newPage({ viewport: { width: viewport.width, height: viewport.height } });
+        await page.addInitScript((savedTheme) => {
+          window.localStorage.setItem('topgym-theme', savedTheme);
+        }, theme);
+        await page.goto(`${baseUrl}/member-portal`, { waitUntil: 'networkidle' });
+        const portal = await page.evaluate(() => {
+          const visibleSurfaces = [...document.querySelectorAll('.portal-login, .portal-result, .portal-tool-card, input, textarea, select')]
+            .filter((element) => !element.hidden && getComputedStyle(element).display !== 'none');
+          const whiteSurfaces = visibleSurfaces.filter((element) => getComputedStyle(element).backgroundColor === 'rgb(255, 255, 255)').length;
+          return {
+            theme: document.documentElement.dataset.theme,
+            overflow: document.documentElement.scrollWidth > window.innerWidth,
+            scrollWidth: document.documentElement.scrollWidth,
+            viewport: window.innerWidth,
+            stylesheetCount: [...document.styleSheets].filter((sheet) => sheet.href?.includes('/css/main.css')).length,
+            brandingLoaded: Boolean(window.topGymBranding?.get),
+            brandName: document.querySelector('[data-brand-text="brandName"]')?.textContent?.trim() || '',
+            appBackground: getComputedStyle(document.documentElement).getPropertyValue('--bg-app').trim(),
+            whiteSurfaces
+          };
+        });
+        assert(portal.theme === theme, `member portal did not load ${theme} theme at ${viewport.name}px`);
+        assert(!portal.overflow, `member portal overflows at ${theme}/${viewport.name}px (${portal.scrollWidth}/${portal.viewport})`);
+        assert(portal.stylesheetCount === 1, `member portal loads main.css more than once at ${theme}/${viewport.name}px`);
+        assert(portal.brandingLoaded && portal.brandName, `member portal branding did not load at ${theme}/${viewport.name}px`);
+        if (theme === 'dark') assert(portal.whiteSurfaces === 0, `member portal exposes ${portal.whiteSurfaces} white surface(s) in dark mode at ${viewport.name}px`);
+        if (viewport.name === '430') await page.screenshot({ path: path.join(artifacts, `member-portal-${theme}-${viewport.name}.png`), fullPage: true });
+        summary.push(`Member portal ${theme} ${viewport.name}: PASS (${portal.scrollWidth}px, ${portal.appBackground})`);
+        await page.close();
+      }
     }
 
     const printPage = await browser.newPage({ viewport: { width: 1440, height: 900 } });

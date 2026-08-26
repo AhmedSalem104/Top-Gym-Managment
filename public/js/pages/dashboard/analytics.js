@@ -10,6 +10,7 @@
     const PAYMENT_LABELS = { cash: 'نقدي', card: 'بطاقة', transfer: 'تحويل', other: 'أخرى' };
 
     function $(id) { return document.getElementById(id); }
+    function brandName() { return String(window.topGymBranding?.get?.().identity?.brandName || 'الجيم').trim() || 'الجيم'; }
     function number(value) { return Number(value || 0).toLocaleString('ar-EG'); }
     function money(value) { return `${Number(value || 0).toLocaleString('ar-EG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ج.م`; }
     function escapeHtml(value) { return String(value ?? '').replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[character])); }
@@ -59,7 +60,7 @@
             <div class="dashboard-analytics-head">
                 <div class="dashboard-analytics-title">
                     <span class="dashboard-analytics-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V5"/><path d="M4 19h16"/><path d="m7 15 3-4 3 2 5-6"/></svg></span>
-                    <div><span class="dashboard-analytics-eyebrow">تحليلات TOP GYM</span><h2 id="dashboardAnalyticsTitle">مؤشرات الأداء والرسومات البيانية</h2><p id="dashboardAnalyticsPeriod">جاري تحميل التحليلات…</p></div>
+                    <div><span class="dashboard-analytics-eyebrow">تحليلات ${brandName()}</span><h2 id="dashboardAnalyticsTitle">مؤشرات الأداء والرسومات البيانية</h2><p id="dashboardAnalyticsPeriod">جاري تحميل التحليلات…</p></div>
                 </div>
                 <div class="analytics-period-switch" role="tablist" aria-label="الفترة الزمنية للتحليلات">
                     <button type="button" data-analytics-period="week" role="tab" aria-selected="false">أسبوعي</button>
@@ -370,6 +371,10 @@
             } else {
                 hidePanel();
             }
+        });
+        window.addEventListener('topgym:brandingchange', () => {
+            const eyebrow = document.querySelector('.dashboard-analytics-eyebrow');
+            if (eyebrow) eyebrow.textContent = `تحليلات ${brandName()}`;
         });
         window.addEventListener('hashchange', () => {
             if ((window.location.hash.slice(1) || 'dashboard') !== 'dashboard') hidePanel();

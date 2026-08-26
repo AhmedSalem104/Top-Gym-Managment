@@ -1,9 +1,14 @@
 'use strict';
 
 const dayPassRepository = require('../repositories/day-pass.repository');
+const brandingService = require('./branding-service');
 const { addDays, differenceInDays, parseDateOnly, todayInTimeZone } = require('../utils/date');
 
 const PAYMENT_METHODS = ['cash', 'card', 'transfer', 'other'];
+
+async function currentBrandName() {
+    return brandingService.getPublicBrandName('الجيم');
+}
 
 function appError(message, statusCode = 400, code = null) {
     const error = new Error(message);
@@ -121,12 +126,13 @@ async function createDayPass(body = {}, { createdByUserId = null } = {}) {
         notes,
         createdByUserId
     });
+    const brandName = await currentBrandName();
     return {
         sale,
         whatsapp: {
             phone: visitorPhoneNormalized || null,
             available: Boolean(visitorPhoneNormalized),
-            message: `أهلًا ${sale.visitorName} 👋\n\nشكرًا لحضورك اليوم في TOP GYM، نورتنا جدًا 💙\n\nرقم الزيارة: ${sale.reference}\nنوع الحصة: ${passType.label}\nنتمنى نشوفك دائمًا 💪`
+            message: `أهلًا ${sale.visitorName} 👋\n\nشكرًا لحضورك اليوم في ${brandName}، نورتنا جدًا 💙\n\nرقم الزيارة: ${sale.reference}\nنوع الحصة: ${passType.label}\nنتمنى نشوفك دائمًا 💪`
         }
     };
 }
@@ -153,12 +159,13 @@ async function updateDayPass(id, body = {}) {
         notes
     });
     if (!sale) throw appError('الحصة غير موجودة أو تم إلغاؤها.', 404, 'DAY_PASS_NOT_FOUND');
+    const brandName = await currentBrandName();
     return {
         sale,
         whatsapp: {
             phone: sale.visitorPhoneNormalized || null,
             available: Boolean(sale.visitorPhoneNormalized),
-            message: `أهلًا ${sale.visitorName} 👋\n\nشكرًا لحضورك اليوم في TOP GYM، نورتنا جدًا 💙\n\nرقم الزيارة: ${sale.reference}\nنوع الحصة: ${sale.passTypeName}\nنتمنى نشوفك دائمًا 💪`
+            message: `أهلًا ${sale.visitorName} 👋\n\nشكرًا لحضورك اليوم في ${brandName}، نورتنا جدًا 💙\n\nرقم الزيارة: ${sale.reference}\nنوع الحصة: ${sale.passTypeName}\nنتمنى نشوفك دائمًا 💪`
         }
     };
 }

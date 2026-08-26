@@ -3,6 +3,7 @@
     window.__topGymLibraryLoaded = true;
 
     const $ = (id) => document.getElementById(id);
+    const brandName = () => String(window.topGymBranding?.get?.().identity?.brandName || 'الجيم').trim() || 'الجيم';
     const state = {
         activeType: 'foods',
         opened: false,
@@ -523,7 +524,7 @@
             const muscleGallery = window.TopGymMuscleAssets?.galleryMarkup
                 ? window.TopGymMuscleAssets.galleryMarkup(item, { alt: itemName(item) })
                 : '';
-            content.innerHTML = `<div class="library-detail-hero"><span class="library-detail-hero-icon">${escapeHtml(item.icon || '💪')}</span><div><h4>${escapeHtml(itemName(item))}</h4><p>${escapeHtml(names.english || 'الاسم الإنجليزي غير متاح')}</p></div></div><div class="muscle-detail-visual">${muscleGallery}<small class="muscle-detail-source-note">الصور التشريحية من Z-Anatomy / BodyParts3D بهوية TOP GYM الحديثة. السجلات غير المطابقة تعرض fallback لحين المراجعة.</small></div><div class="library-detail-grid">${detailItem('الاسم بالعربية', names.arabic || 'الاسم العربي غير متاح')}${detailItem('الاسم بالإنجليزية', names.english || 'الاسم الإنجليزي غير متاح')}${detailItem('منطقة الجسم', item.bodyPart)}${detailItem('المعرّف المصدر', item.sourceId)}${detailItem('الوصف بالعربية', item.descriptionAr, true)}${detailItem('الوصف بالإنجليزية', item.description, true)}</div>`;
+            content.innerHTML = `<div class="library-detail-hero"><span class="library-detail-hero-icon">${escapeHtml(item.icon || '💪')}</span><div><h4>${escapeHtml(itemName(item))}</h4><p>${escapeHtml(names.english || 'الاسم الإنجليزي غير متاح')}</p></div></div><div class="muscle-detail-visual">${muscleGallery}<small class="muscle-detail-source-note">الصور التشريحية من Z-Anatomy / BodyParts3D بهوية ${escapeHtml(brandName())} الحديثة. السجلات غير المطابقة تعرض fallback لحين المراجعة.</small></div><div class="library-detail-grid">${detailItem('الاسم بالعربية', names.arabic || 'الاسم العربي غير متاح')}${detailItem('الاسم بالإنجليزية', names.english || 'الاسم الإنجليزي غير متاح')}${detailItem('منطقة الجسم', item.bodyPart)}${detailItem('المعرّف المصدر', item.sourceId)}${detailItem('الوصف بالعربية', item.descriptionAr, true)}${detailItem('الوصف بالإنجليزية', item.description, true)}</div>`;
         } else if (type === 'foods') {
             content.innerHTML = `<div class="library-detail-hero"><span class="library-detail-hero-icon">🥗</span><div><h4>${escapeHtml(itemName(item))}</h4><p dir="auto">${escapeHtml(names.english || 'الاسم الإنجليزي غير متاح')}</p></div></div><div class="library-detail-grid">${detailItem('الاسم بالعربية', names.arabic || 'الاسم العربي غير متاح')}${detailItem('الاسم بالإنجليزية', names.english || 'الاسم الإنجليزي غير متاح')}${detailItem('التصنيف', foodCategoryLabel(item.category))}${detailItem('الحصة', `${formatNumber(item.servingSize, 1)} ${foodUnitLabel(item.servingUnit)}`)}${detailItem('السعرات', formatNumber(item.calories, 1))}${detailItem('البروتين', `${formatNumber(item.protein, 1)} جرام`)}${detailItem('الكربوهيدرات', `${formatNumber(item.carbs, 1)} جرام`)}${detailItem('الدهون', `${formatNumber(item.fat, 1)} جرام`)}${detailItem('الألياف', `${formatNumber(item.fiber, 1)} جرام`)}${detailItem('السكريات', `${formatNumber(item.sugar, 1)} جرام`)}${detailItem('الصوديوم', `${formatNumber(item.sodium, 1)} ملجم`)}</div>`;
         } else {

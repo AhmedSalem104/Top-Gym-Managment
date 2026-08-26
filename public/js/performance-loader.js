@@ -11,6 +11,10 @@
         label: null
     };
 
+    function brandName() {
+        return String(window.topGymBranding?.get?.().identity?.brandName || 'الجيم').trim() || 'الجيم';
+    }
+
     function ensureRoot() {
         if (state.root?.isConnected) return;
         const root = document.createElement('div');
@@ -128,7 +132,7 @@
     function syncAuthPendingState() {
         const pending = document.body?.classList.contains('auth-pending');
         if (pending && !state.authTaskRelease) {
-            state.authTaskRelease = startTask('جاري استعادة جلسة TOP GYM…');
+            state.authTaskRelease = startTask(`جاري استعادة جلسة ${brandName()}…`);
         } else if (!pending && state.authTaskRelease) {
             state.authTaskRelease();
             state.authTaskRelease = null;

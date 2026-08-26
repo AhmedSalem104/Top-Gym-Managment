@@ -6,6 +6,19 @@ textarea {
   font-family: var(--font-body);
 }
 
+body {
+  font-size: var(--brand-base-font-size, 16px);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-heading, var(--font-body));
+}
+
 .ltr,
 [dir="ltr"],
 input[type="email"],

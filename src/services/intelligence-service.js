@@ -4,6 +4,7 @@ const { getPool, sql } = require('../database');
 const { addDays, formatDateOnly, todayInTimeZone, toUtcDate } = require('../utils/date');
 const memberService = require('./member-service');
 const coachingService = require('./coaching-service');
+const brandingService = require('./branding-service');
 
 function appError(message, statusCode = 400, code = null) {
     const error = new Error(message);
@@ -340,15 +341,16 @@ function buildPriorities(dashboard, churn, coaching) {
 }
 
 async function getOverview({ actorUserId = null } = {}) {
-    const [dashboard, churn, coaching] = await Promise.all([
+    const [dashboard, churn, coaching, brandName] = await Promise.all([
         memberService.getDashboard(),
         getChurnRisks({ limit: 20 }),
-        getCoachingMetrics()
+        getCoachingMetrics(),
+        brandingService.getPublicBrandName('الجيم')
     ]);
     const priorities = buildPriorities(dashboard, churn, coaching);
     const response = {
         generatedAt: new Date().toISOString(),
-        engine: 'TOP GYM Intelligence',
+        engine: `${brandName} Intelligence`,
         mode: 'hybrid-rules',
         summary: `تم تحليل حالة الجيم: ${Number(dashboard.stats?.active || 0)} اشتراك نشط، و${churn.totals.high} عضو يحتاج متابعة عاجلة.`,
         stats: {
@@ -491,6 +493,7 @@ async function generateWorkoutSuggestion(body = {}, { actorUserId = null } = {})
     const exerciseCount = daysPerWeek <= 2 ? 6 : 5;
     const excluded = Array.isArray(body.excludedExercises) ? body.excludedExercises : tokens(body.limitations || '');
     const config = workoutRepConfig(goal);
+    const brandName = await brandingService.getPublicBrandName('الجيم');
     const dayNames = ['اليوم الأول', 'اليوم الثاني', 'اليوم الثالث', 'اليوم الرابع', 'اليوم الخامس', 'اليوم السادس'];
     const routines = Array.from({ length: daysPerWeek }, (_, index) => {
         const exercises = chooseExercises(catalog, { level, excluded, count: exerciseCount, offset: index * exerciseCount });
@@ -517,7 +520,7 @@ async function generateWorkoutSuggestion(body = {}, { actorUserId = null } = {})
     });
     const suggestion = {
         memberId,
-        name: `اقتراح ذكي — ${goalLabel(goal)}`,
+        name: `اقتراح ذكي — ${goalLabel(goal)} · From ${brandName} System`,
         description: `برنامج ${goalLabel(goal)} لمدة ${durationWeeks} أسابيع، مبني على مستوى ${level === 'beginner' ? 'مبتدئ' : level === 'intermediate' ? 'متوسط' : 'متقدم'} و${daysPerWeek} أيام تدريب أسبوعيًا.`,
         startDate: todayDate(),
         endDate: addDays(todayDate(), durationWeeks * 7 - 1),
@@ -526,7 +529,7 @@ async function generateWorkoutSuggestion(body = {}, { actorUserId = null } = {})
         level,
         daysPerWeek,
         status: 'draft',
-        notes: 'تم إنشاء الاقتراح بواسطة TOP GYM Intelligence. راجع الإصابات والقدرة التدريبية واعتمد الخطة قبل نشرها.',
+        notes: `تم إنشاء الاقتراح بواسطة ${brandName} Intelligence. راجع الإصابات والقدرة التدريبية واعتمد الخطة قبل نشرها.`,
         version: null,
         routines
     };
@@ -612,6 +615,7 @@ async function generateDietSuggestion(body = {}, { actorUserId = null } = {}) {
     const gender = text(body.gender, 'male', 10) || 'male';
     const activity = ['sedentary', 'light', 'moderate', 'high'].includes(body.activity) ? body.activity : 'moderate';
     const calculation = dietCalories({ weightKg, heightCm, age, gender, activity, goal, explicit: body.targetCalories });
+    const brandName = await brandingService.getPublicBrandName('الجيم');
     const targetCalories = calculation.calories;
     const targetProtein = Math.round((weightKg || 75) * (goal === 'fat_loss' ? 1.9 : 1.6));
     const targetFats = Math.round((targetCalories * 0.27) / 9);
@@ -636,7 +640,7 @@ async function generateDietSuggestion(body = {}, { actorUserId = null } = {}) {
     }
     const suggestion = {
         memberId,
-        name: `اقتراح ذكي — ${goal === 'fat_loss' ? 'خسارة الدهون' : goal === 'weight_gain' ? 'زيادة الكتلة' : 'توازن غذائي'}`,
+        name: `اقتراح ذكي — ${goal === 'fat_loss' ? 'خسارة الدهون' : goal === 'weight_gain' ? 'زيادة الكتلة' : 'توازن غذائي'} · From ${brandName} System`,
         description: `خطة تغذية مقترحة من ${mealsPerDay} وجبات يومية بمتوسط ${targetCalories} سعر حراري.`,
         startDate: todayDate(),
         endDate: null,
@@ -649,7 +653,7 @@ async function generateDietSuggestion(body = {}, { actorUserId = null } = {}) {
         calorieAdjustment: goal === 'fat_loss' ? -400 : goal === 'weight_gain' ? 300 : 0,
         calculator: { weightKg, heightCm, age, gender, activity, bmr: calculation.bmr, tdee: calculation.tdee },
         status: 'draft',
-        notes: 'تم إنشاء الاقتراح بواسطة TOP GYM Intelligence. راجع الحساسية والحالة الصحية واعتمد الخطة مع المختص قبل نشرها.',
+        notes: `تم إنشاء الاقتراح بواسطة ${brandName} Intelligence. راجع الحساسية والحالة الصحية واعتمد الخطة مع المختص قبل نشرها.`,
         version: null,
         meals
     };

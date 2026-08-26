@@ -4,6 +4,13 @@ const { PERMISSIONS } = require('./permissions');
 
 const ROUTE_PERMISSION_RULES = Object.freeze([
     { pattern: /^\/auth\/permissions(?:\/|$)/, methods: ['GET', 'PUT', 'POST'], all: [PERMISSIONS.PERMISSIONS_MANAGE], ownerOnly: true },
+    { pattern: /^\/branding\/settings$/, methods: ['GET'], all: [PERMISSIONS.BRANDING_VIEW], ownerOnly: true },
+    { pattern: /^\/branding\/draft-assets\/[^/]+$/, methods: ['GET'], all: [PERMISSIONS.BRANDING_VIEW], ownerOnly: true },
+    { pattern: /^\/branding\/draft$/, methods: ['PUT'], all: [PERMISSIONS.BRANDING_EDIT], ownerOnly: true },
+    { pattern: /^\/branding\/publish$/, methods: ['POST'], all: [PERMISSIONS.BRANDING_PUBLISH], ownerOnly: true },
+    { pattern: /^\/branding\/reset$/, methods: ['POST'], all: [PERMISSIONS.BRANDING_RESET], ownerOnly: true },
+    { pattern: /^\/branding\/assets$/, methods: ['POST'], all: [PERMISSIONS.BRANDING_EDIT], ownerOnly: true },
+    { pattern: /^\/branding\/assets\/[^/]+$/, methods: ['DELETE'], all: [PERMISSIONS.BRANDING_EDIT], ownerOnly: true },
     { pattern: /^\/auth\/users(?:\/|$)/, methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'], ownerOnly: true, byMethod: {
         GET: [PERMISSIONS.MANAGEMENT_USERS_READ],
         POST: [PERMISSIONS.MANAGEMENT_USERS_CREATE],

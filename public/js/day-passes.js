@@ -5,6 +5,10 @@
     const $ = (id) => document.getElementById(id);
     const state = { pricing: [], records: [], dashboardRecords: [], initialized: false, loading: false, editingId: null, searchTimer: null };
 
+    function brandName() {
+        return String(window.topGymBranding?.get?.().identity?.brandName || 'الجيم').trim() || 'الجيم';
+    }
+
     function escapeHtml(value) {
         return String(value ?? '').replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[character]));
     }
@@ -437,7 +441,7 @@
         const sale = getRecord(id);
         if (!sale) return;
         if (!recordPhone(sale)) return notify('لا يوجد رقم هاتف مسجل لهذا الزائر.', 'warning');
-        const message = `أهلًا ${sale.visitorName} 👋\n\nشكرًا لحضورك اليوم في TOP GYM، نورتنا جدًا 💙\n\nنوع الحصة: ${sale.passTypeName}\nنتمنى نشوفك دائمًا 💪`;
+        const message = `أهلًا ${sale.visitorName} 👋\n\nشكرًا لحضورك اليوم في ${brandName()}، نورتنا جدًا 💙\n\nنوع الحصة: ${sale.passTypeName}\nنتمنى نشوفك دائمًا 💪`;
         openWhatsapp(sale, message);
     }
 

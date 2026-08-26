@@ -15,6 +15,7 @@ const { registerMemberPortalRoutes } = require('./member-portal.routes');
 const { registerMemberFeedbackRoutes } = require('./member-feedback.routes');
 const { registerStoreRoutes } = require('./store.routes');
 const { registerIntelligenceRoutes } = require('./intelligence.routes');
+const { registerBrandingRoutes } = require('./branding.routes');
 
 function registerRoutes(app, {
     asyncRoute,
@@ -38,6 +39,7 @@ function registerRoutes(app, {
     feedbackService,
     storeService,
     intelligenceService,
+    brandingService,
     getPool
 }) {
     app.get('/api/health', asyncRoute(async (_request, response) => {
@@ -47,7 +49,7 @@ function registerRoutes(app, {
     }));
 
     registerAuthRoutes(app, { authService, permissionService, asyncRoute, ownerOnly, allowLoginAttempt });
-    registerBackupRoutes(app, { backupService, asyncRoute, isAuthorizedCronRequest });
+    registerBackupRoutes(app, { backupService, brandingService, asyncRoute, isAuthorizedCronRequest });
     registerFinanceRoutes(app, { financeService, asyncRoute });
     registerDashboardRoutes(app, { memberService, analyticsService, storeService, asyncRoute });
     registerLibraryRoutes(app, { libraryService, asyncRoute });
@@ -60,6 +62,7 @@ function registerRoutes(app, {
     registerMemberFeedbackRoutes(app, { feedbackService, asyncRoute, ownerOnly });
     registerStoreRoutes(app, { storeService, asyncRoute });
     registerIntelligenceRoutes(app, { intelligenceService, asyncRoute });
+    registerBrandingRoutes(app, { brandingService, asyncRoute });
     registerMembersRoutes(app, { memberService, asyncRoute });
 }
 

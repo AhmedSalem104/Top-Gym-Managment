@@ -1,4 +1,5 @@
         const TYPE_LABELS = { monthly: 'شهرية', quarterly: 'ربع سنوية', semiannual: 'نصف سنوية', annual: 'سنوية' };
+        const brandName = () => String(window.topGymBranding?.get?.().identity?.brandName || 'الجيم').trim() || 'الجيم';
         const STATUS_LABELS = { active: 'نشطة', expiring_soon: 'قريبة الانتهاء', expired: 'منتهية', frozen: 'مجمدة' };
         const ALERT_ICON_PATHS = {
             active: '<path d="m5 12 4 4L19 6"/>',
@@ -259,7 +260,7 @@
                         dashboardSection?.setAttribute('aria-busy', 'false');
                     }
                 }
-            }, 'جاري تحميل بيانات TOP GYM…');
+            }, `جاري تحميل بيانات ${brandName()}…`);
             const trackedPromise = loadPromise.finally(() => {
                 if (dataLoadPromise === trackedPromise) dataLoadPromise = null;
             });
@@ -281,7 +282,7 @@
                 $('membersList').innerHTML = '<div class="loading">جاري تحديث القائمة…</div>';
                  try { const params = new URLSearchParams({ search: $('searchInput').value.trim(), status: $('statusFilter').value, sort: $('sortFilter').value, page: '1', pageSize: String(state.membersPageSize || 5) }); const response = await api(`/api/members?${params}`, { signal: controller.signal }); state.members = response.members || []; state.pagination = response.pagination || null; state.detailsCache = new Map(); renderMembers(); await hydrateMemberPortalCodes(state.members); membersLastLoadedKey = queryKey; membersLastLoadedAt = Date.now(); }
                 catch (error) { if (error.name !== 'AbortError') { $('membersList').innerHTML = `<div class="empty">${escapeHtml(error.message)}</div>`; await notify(error.message, 'error'); } }
-            }, 'جاري تحديث قائمة TOP GYM…');
+            }, `جاري تحديث قائمة ${brandName()}…`);
             const trackedPromise = loadPromise.finally(() => {
                 if (membersLoadPromise === trackedPromise) membersLoadPromise = null;
             });
@@ -598,7 +599,7 @@
          async function openMembershipTypesDialog() { try { await loadPricingCatalog(); syncPlanOptions(); renderMembershipTypesTable(); const dialog = $('membershipTypesDialog'); if (typeof dialog.showModal === 'function') dialog.showModal(); else dialog.setAttribute('open', ''); } catch (error) { await notify(error.message, 'error'); } }
          function closePricingDialog() { const dialog = $('pricingDialog'); if (typeof dialog.close === 'function' && dialog.open) dialog.close(); else dialog.removeAttribute('open'); }
          function closeMembershipTypesDialog() { const dialog = $('membershipTypesDialog'); if (typeof dialog.close === 'function' && dialog.open) dialog.close(); else dialog.removeAttribute('open'); }
-         async function savePricing(event) { event.preventDefault(); const rows = [...$('pricingTableContainer').querySelectorAll('tr[data-plan]')]; const saveButton = $('pricingSave'); saveButton.disabled = true; try { await withLoader(async () => { const plans = rows.map((row) => ({ planCode: row.dataset.plan, planName: row.querySelector('[data-field="planName"]').value, monthlyPrice: Number(row.querySelector('[data-field="monthlyPrice"]').value || 0), prices: Object.fromEntries([...row.querySelectorAll('[data-field="typePrice"]')].map((input) => [input.dataset.typeCode, Number(input.value || 0)])) })); applyPricingCatalog(await api('/api/pricing', { method: 'PUT', body: JSON.stringify({ plans }) })); }, 'جاري حفظ أسعار TOP GYM…'); closePricingDialog(); await notify('تم حفظ أسعار الاشتراكات.'); } catch (error) { await notify(error.message, 'error'); } finally { saveButton.disabled = false; } }
+         async function savePricing(event) { event.preventDefault(); const rows = [...$('pricingTableContainer').querySelectorAll('tr[data-plan]')]; const saveButton = $('pricingSave'); saveButton.disabled = true; try { await withLoader(async () => { const plans = rows.map((row) => ({ planCode: row.dataset.plan, planName: row.querySelector('[data-field="planName"]').value, monthlyPrice: Number(row.querySelector('[data-field="monthlyPrice"]').value || 0), prices: Object.fromEntries([...row.querySelectorAll('[data-field="typePrice"]')].map((input) => [input.dataset.typeCode, Number(input.value || 0)])) })); applyPricingCatalog(await api('/api/pricing', { method: 'PUT', body: JSON.stringify({ plans }) })); }, `جاري حفظ أسعار ${brandName()}…`); closePricingDialog(); await notify('تم حفظ أسعار الاشتراكات.'); } catch (error) { await notify(error.message, 'error'); } finally { saveButton.disabled = false; } }
 
          function updateMembershipTypePreview() { const mode = $('membershipTypeMode').value; const duration = Number($('membershipTypeDuration').value || 0); const multiplier = Number($('membershipTypeMultiplier').value || 0); const name = $('membershipTypeName').value.trim() || 'نوع جديد'; const unit = mode === 'days' ? 'يوم' : 'شهر'; const monthlyPrice = Number(state.pricing.plans.gym_only?.monthlyPrice || 0); $('membershipTypePreview').textContent = `${name} · ${duration || '—'} ${unit} · السعر المتوقع لجيم فقط: ${money(monthlyPrice * multiplier)}`; }
          function openMembershipTypeDialog(code = '') { const type = code ? state.pricing.types?.[code] : null; const generatedCode = `custom_${Date.now().toString(36)}`; $('editingMembershipTypeCode').value = type ? code : ''; $('membershipTypeDialogTitle').textContent = type ? 'تعديل نوع العضوية' : 'إضافة نوع عضوية جديد'; $('membershipTypeDialogDescription').textContent = type ? 'يمكنك تعديل المدة أو السعر أو إخفاء النوع من قوائم الاشتراك.' : 'أدخل بيانات النوع الجديد ليظهر مباشرة عند إضافة أو تجديد الاشتراك.'; $('membershipTypeCode').value = type ? code : generatedCode; $('membershipTypeCode').readOnly = Boolean(type); $('membershipTypeName').value = type?.label || ''; $('membershipTypeMode').value = type?.mode || 'days'; $('membershipTypeDuration').value = type?.durationValue ?? (type ? '' : 15); $('membershipTypeMultiplier').value = type?.priceMultiplier ?? (type ? '' : 0.5); $('membershipTypeSortOrder').value = type?.sortOrder ?? (Object.keys(state.pricing.types || {}).length + 1); $('membershipTypeActive').checked = type?.active !== false; updateMembershipTypePreview(); const dialog = $('membershipTypeDialog'); if (typeof dialog.showModal === 'function') dialog.showModal(); else dialog.setAttribute('open', ''); }
@@ -670,7 +671,7 @@
             button.disabled = true;
             const whatsappWindow = shouldSendWhatsApp ? window.topGymWhatsapp?.prepareWindow(body.phone) : null;
             try {
-                const saved = await withLoader(() => api(id ? `/api/members/${id}` : '/api/members', { method: id ? 'PUT' : 'POST', body: JSON.stringify(body) }), 'جاري حفظ بيانات TOP GYM…');
+                const saved = await withLoader(() => api(id ? `/api/members/${id}` : '/api/members', { method: id ? 'PUT' : 'POST', body: JSON.stringify(body) }), `جاري حفظ بيانات ${brandName()}…`);
                 setFormDefaults(true);
                 if (shouldSendWhatsApp) {
                     await loadData();

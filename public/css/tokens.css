@@ -148,6 +148,50 @@
      tabular figures through typography rules, without switching font family. */
   --font-body: "Cairo", "Tahoma", sans-serif;
   --font-latin: "Cairo", "Tahoma", sans-serif;
+  --font-heading: var(--font-body);
+  --brand-base-font-size: 16px;
+  --brand-radius-base: var(--radius-lg);
+  --brand-surface-secondary: var(--bg-surface);
+  --brand-login-background: var(--bg-app);
+  --brand-login-gradient-start: var(--primary);
+  --brand-login-gradient-end: var(--bg-app);
+  --brand-login-overlay-opacity: 0.72;
+  --brand-login-image: url("/assets/gym-background.webp");
+  --brand-name: "الجيم";
+
+  /* Public brand contract. Runtime branding overrides these once and the
+     existing component aliases keep every page on the same token graph. */
+  --brand-primary: var(--primary);
+  --brand-primary-hover: var(--primary-hover);
+  --brand-primary-active: var(--primary-active);
+  --brand-primary-soft: var(--primary-soft);
+  --brand-primary-border: var(--primary-border);
+  --brand-on-primary: var(--text-on-primary);
+  --brand-secondary: var(--text-secondary);
+  --brand-accent: var(--primary);
+  --brand-background: var(--bg-app);
+  --brand-surface: var(--bg-surface);
+  --brand-surface-secondary: var(--color-bg-subtle);
+  --brand-card-background: var(--bg-card);
+  --brand-card-hover: var(--bg-card-hover);
+  --brand-elevated: var(--bg-elevated);
+  --brand-sidebar: var(--bg-sidebar);
+  --brand-header: var(--bg-header);
+  --brand-text-primary: var(--text-primary);
+  --brand-text-secondary: var(--text-secondary);
+  --brand-text-muted: var(--text-muted);
+  --brand-text-disabled: var(--text-disabled);
+  --brand-border: var(--border-primary);
+  --brand-border-secondary: var(--border-secondary);
+  --brand-border-hover: var(--border-hover);
+  --brand-input-background: var(--bg-input);
+  --brand-table-header: var(--table-header-bg);
+  --brand-success: var(--success);
+  --brand-warning: var(--warning);
+  --brand-danger: var(--danger);
+  --brand-info: var(--info);
+  --brand-overlay: var(--overlay);
+  --brand-focus-ring: var(--focus-ring);
   --weight-regular: 400;
   --weight-medium: 500;
   --weight-semibold: 600;

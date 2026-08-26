@@ -53,6 +53,7 @@
     const TRANSACTION_LABELS = { subscription: 'اشتراك', payment: 'دفعة', adjustment: 'تسوية' };
 
     function $(id) { return document.getElementById(id); }
+    function brandName() { return String(window.topGymBranding?.get?.().identity?.brandName || 'الجيم').trim() || 'الجيم'; }
     function escapeHtml(value) { return String(value ?? '').replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[character])); }
     function number(value) { return Number(value || 0).toLocaleString('ar-EG'); }
     function money(value) { return `${Number(value || 0).toLocaleString('ar-EG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ج.م`; }
@@ -109,7 +110,7 @@
         panel.dataset.ready = 'true';
         panel.innerHTML = `
             <div class="reports-header">
-                <div class="reports-heading"><span class="reports-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V5"/><path d="M4 19h16"/><path d="m7 15 3-4 3 2 5-6"/></svg></span><div><span class="reports-eyebrow">مركز التقارير</span><h2 id="reportsTitle">تقارير TOP GYM</h2><p id="reportsPeriod">اختر التقرير والفترة لعرض بيانات دقيقة وقابلة للمتابعة.</p></div></div>
+                <div class="reports-heading"><span class="reports-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V5"/><path d="M4 19h16"/><path d="m7 15 3-4 3 2 5-6"/></svg></span><div><span class="reports-eyebrow">مركز التقارير</span><h2 id="reportsTitle">تقارير ${brandName()}</h2><p id="reportsPeriod">اختر التقرير والفترة لعرض بيانات دقيقة وقابلة للمتابعة.</p></div></div>
                 <div class="reports-actions"><button class="btn btn-light btn-small" id="reportsExportButton" type="button"><span class="reports-button-icon">${reportIcon('export')}</span><span>تصدير CSV</span></button><button class="btn btn-primary btn-small" id="reportsRefreshButton" type="button"><span class="reports-button-icon">${reportIcon('refresh')}</span><span>تحديث البيانات</span></button></div>
             </div>
             <nav class="reports-tabs" id="reportsTabs" role="tablist" aria-label="أنواع التقارير"></nav>
@@ -580,7 +581,7 @@
     function exportCurrentReport() {
         if (!state.data || !canExportReports()) return;
         if (state.activeTab === 'finance' && !canReadFinance()) return;
-        const rows = [['تقرير TOP GYM', state.activeTab], ['من', rangeValues().from], ['إلى', rangeValues().to], []];
+        const rows = [[`تقرير ${brandName()}`, state.activeTab], ['من', rangeValues().from], ['إلى', rangeValues().to], []];
         if (state.activeTab === 'finance') {
             rows.push(['النوع', 'الاسم', 'التاريخ', 'المبلغ', 'طريقة الدفع']);
             (state.data.payments || []).forEach((item) => rows.push(['تحصيل', item.fullName, item.date, item.amountPaid, label(PAYMENT_LABELS, item.paymentMethod)]));
@@ -628,6 +629,10 @@
                 ensurePanel();
                 loadReport();
             }
+        });
+        window.addEventListener('topgym:brandingchange', () => {
+            const title = $('reportsTitle');
+            if (title) title.textContent = `تقارير ${brandName()}`;
         });
         if (document.querySelector('[data-page-tab="reports"]')?.classList.contains('active')) loadReport();
     }

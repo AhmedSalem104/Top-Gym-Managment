@@ -8,6 +8,8 @@
   if (!dialog || !content) return;
   window.__topGymMemberDetailsUiLoaded = true;
 
+  const brandName = () => String(window.topGymBranding?.get?.().identity?.brandName || 'الجيم').trim() || 'الجيم';
+
   const planLabels = { gym_only: 'جيم فقط', gym_cardio: 'جيم وكارديو' };
   const typeLabels = {
     monthly: 'شهرية',
@@ -166,7 +168,7 @@
       return;
     }
     const rows = (purchases || []).map((item) => `<tr><td><strong dir="ltr">${escapeHtml(item.saleNumber || '—')}</strong><span class="table-sub">${escapeHtml(dateText(item.saleDate))}</span></td><td>${escapeHtml(item.items || '—')}</td><td><strong class="member-ltr-value">${escapeHtml(money(item.totalAmount))}</strong><span class="table-sub">مدفوع ${escapeHtml(money(item.paidAmount))} · متبقي ${escapeHtml(money(item.remainingAmount))}</span></td><td>${escapeHtml(paymentLabels[item.paymentMethod] || item.paymentMethod || '—')}</td><td><span class="badge ${escapeHtml(item.status || 'completed')}">${item.status === 'cancelled' ? 'ملغاة' : 'مكتملة'}</span></td></tr>`).join('');
-    section.innerHTML = `<div class="member-store-purchases-head"><div><span class="member-store-purchases-kicker">مبيعات منفصلة عن العضوية</span><h4>مشتريات المتجر</h4><p>سجل مشتريات العضو من متجر TOP GYM دون خلطها باشتراك العضوية.</p></div><strong>${number((purchases || []).length)} فاتورة</strong></div><div class="history-scroll">${rows ? `<table class="history-table member-store-purchases-table"><thead><tr><th>الفاتورة والتاريخ</th><th>المنتجات</th><th>الإجمالي</th><th>طريقة الدفع</th><th>الحالة</th></tr></thead><tbody>${rows}</tbody></table>` : '<div class="history-empty">لا توجد مشتريات متجر مسجلة لهذا العضو.</div>'}</div>`;
+    section.innerHTML = `<div class="member-store-purchases-head"><div><span class="member-store-purchases-kicker">مبيعات منفصلة عن العضوية</span><h4>مشتريات المتجر</h4><p>سجل مشتريات العضو من متجر ${brandName()} دون خلطها باشتراك العضوية.</p></div><strong>${number((purchases || []).length)} فاتورة</strong></div><div class="history-scroll">${rows ? `<table class="history-table member-store-purchases-table"><thead><tr><th>الفاتورة والتاريخ</th><th>المنتجات</th><th>الإجمالي</th><th>طريقة الدفع</th><th>الحالة</th></tr></thead><tbody>${rows}</tbody></table>` : '<div class="history-empty">لا توجد مشتريات متجر مسجلة لهذا العضو.</div>'}</div>`;
     content.append(section);
   }
 
