@@ -19,7 +19,7 @@
     <link rel="preload" href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap" as="style" onload="this.onload=null;this.rel='sty'+'lesheet'">
     <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2" sizes="any">
     <link rel="shortcut icon" type="image/svg+xml" href="/favicon.svg?v=2">
-    <link rel="stylesheet" href="/css/main.css?v=51">
+    <link rel="stylesheet" href="/css/main.css?v=52">
     <title>إدارة عضويات الجيم</title>
 </head>
 <body class="auth-pending font-sans bg-slate-100 text-slate-900 gym-page-bg">
@@ -103,24 +103,8 @@
         </nav>
 
         <main class="page max-w-7xl data-loading" id="dashboardSection" aria-busy="true">
-            <div class="dashboard-section-heading" aria-label="نظرة عامة على الجيم">
-                <div class="dashboard-section-heading-copy">
-                    <span class="dashboard-section-eyebrow">مركز القيادة</span>
-                    <h2>نظرة عامة على أداء الجيم</h2>
-                    <p>مؤشرات واضحة تساعدك على اتخاذ القرار ومتابعة التشغيل من شاشة واحدة.</p>
-                </div>
-                <div class="dashboard-section-heading-meta">
-                    <span class="dashboard-live-status"><i aria-hidden="true"></i> بيانات مباشرة</span>
-                    <span class="dashboard-section-meta-note">متابعة اليوم</span>
-                </div>
-            </div>
             <div class="loading dashboard-initial-skeleton" id="dashboardInitialSkeleton">جاري تجهيز مؤشرات لوحة التحكم…</div>
             <div class="dashboard-page-actions dashboard-hero" aria-label="إجراءات لوحة التحكم">
-                <div class="dashboard-hero-visual" aria-hidden="true">
-                    <span class="dashboard-hero-visual-ring dashboard-hero-visual-ring-one"></span>
-                    <span class="dashboard-hero-visual-ring dashboard-hero-visual-ring-two"></span>
-                    <span class="dashboard-hero-visual-logo"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.8 19.5 7v10L12 21.2 4.5 17V7L12 2.8Z" fill="currentColor" opacity=".14"/><path d="m7.1 14.9 2.7-3 2.3 2.1 4.8-5.1"/><path d="M7.2 17.2h9.6" opacity=".65"/></svg></span>
-                </div>
                 <div class="dashboard-hero-stats" aria-label="مؤشرات لوحة التحكم">
                     <article class="dashboard-hero-stat" data-dashboard-hero-source="statTotal">
                         <span class="dashboard-hero-stat-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
@@ -136,11 +120,6 @@
                     </article>
                 </div>
                 <div class="dashboard-hero-content">
-                    <div class="dashboard-page-actions-copy">
-                        <strong>لوحة التحكم</strong>
-                        <span>متابعة سريعة للنظام</span>
-                        <i class="dashboard-hero-pulse" aria-hidden="true"><b></b><b></b><b></b><b></b><b></b><b></b><b></b></i>
-                    </div>
                     <button class="btn btn-light btn-small dashboard-pricing-print-button" id="dashboardPrintPricingButton" data-owner-only type="button" title="إنشاء ملف PDF للاشتراكات والباقات" aria-label="طباعة الاشتراكات والباقات">
                     <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9V3h12v6"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v7H6z"/><path d="M17 12h.01"/></svg>
                     <span>طباعة الاشتراكات والباقات</span>
