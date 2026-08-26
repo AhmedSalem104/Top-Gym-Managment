@@ -4925,6 +4925,14 @@ body.auth-locked .auth-screen {
 .backup-history-list,
 .auth-users-loading { color: var(--color-text-muted); font-size: var(--font-xs); }
 
+#managementSection > .backup-history-section { display: none; }
+.backup-history-page { min-width: 0; }
+.backup-history-page-head { align-items: center; }
+.backup-history-page-heading { display: grid; min-width: 0; gap: var(--space-1); }
+.backup-history-page-heading h3 { margin: 0; color: var(--color-text); font-size: var(--font-xl); }
+.backup-history-page-heading p { margin: 0; color: var(--color-text-muted); font-size: var(--font-xs); line-height: 1.7; }
+.backup-history-page-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: var(--space-2); }
+
 .backup-history-block {
   display: grid;
   min-width: 0;
@@ -5054,6 +5062,8 @@ body.auth-locked .auth-screen {
   .backup-history-block-head { align-items: flex-start; flex-direction: column; }
   .backup-history-actions { width: 100%; }
   .backup-history-actions > .btn { flex: 1 1 0; }
+  .backup-history-page-actions { width: 100%; }
+  .backup-history-page-actions > .btn { flex: 1 1 160px; }
 }
 
 /* Dashboard analytics: keep every chart inside its card and use the available width. */
@@ -8461,6 +8471,410 @@ body.auth-locked .auth-screen {
 
 @media (max-width: 767px) {
   #managementSection .management-shortcut { min-height: 82px; }
+}
+
+/* Pricing catalogs are edited as cards so every price keeps a readable label
+   and a comfortable input width without forcing the dialog into a wide table. */
+#pricingDialog .pricing-table-scroll,
+#membershipTypesDialog .pricing-table-scroll {
+  max-height: none;
+  overflow: visible;
+}
+
+#pricingDialog #pricingTableContainer,
+#pricingDialog #dayPassPricingContainer,
+#membershipTypesDialog #membershipTypesTableContainer {
+  width: 100%;
+  min-width: 0;
+}
+
+.pricing-plan-grid,
+.membership-type-card-grid,
+.day-pass-pricing-card-grid {
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  gap: var(--space-4);
+}
+
+.pricing-plan-grid {
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+}
+
+.membership-type-card-grid {
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+.day-pass-pricing-card-grid {
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.pricing-plan-card,
+.membership-type-card,
+.day-pass-pricing-card {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-4);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  background: var(--bg-card);
+  box-shadow: var(--shadow-card);
+  padding: var(--space-4);
+  transition: background-color 180ms ease, border-color 180ms ease, transform 180ms ease;
+}
+
+.pricing-plan-card:hover,
+.membership-type-card:hover,
+.day-pass-pricing-card:hover {
+  border-color: var(--border-hover);
+  background: var(--bg-card-hover);
+  transform: translateY(-1px);
+}
+
+.pricing-plan-card-header,
+.membership-type-card-header,
+.day-pass-pricing-card-header,
+.pricing-card-section-heading,
+.membership-type-card-actions {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.pricing-plan-card-header,
+.membership-type-card-header,
+.day-pass-pricing-card-header {
+  border-bottom: 1px solid var(--border-secondary);
+  padding-bottom: var(--space-3);
+}
+
+.pricing-plan-card-heading,
+.membership-type-card-heading,
+.day-pass-pricing-card-heading {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.pricing-card-eyebrow {
+  color: var(--color-primary);
+  font-size: var(--font-xs);
+  font-weight: var(--weight-bold);
+}
+
+.pricing-plan-card-code,
+.membership-type-card-heading strong,
+.day-pass-pricing-card-heading strong {
+  overflow: hidden;
+  color: var(--color-text);
+  font-size: var(--font-md);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.membership-type-card-heading strong,
+.day-pass-pricing-card-heading strong {
+  font-size: var(--font-lg);
+}
+
+.membership-type-card-code,
+.day-pass-pricing-card-code {
+  color: var(--color-text-muted);
+  direction: ltr;
+  font-family: var(--font-latin);
+  font-size: var(--font-xs);
+  text-align: start;
+}
+
+.pricing-card-index {
+  display: inline-grid;
+  min-width: 34px;
+  height: 28px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid var(--primary-border);
+  border-radius: var(--radius-pill);
+  background: var(--primary-soft);
+  color: var(--color-primary);
+  direction: ltr;
+  font-family: var(--font-latin);
+  font-size: var(--font-xs);
+  font-weight: var(--weight-bold);
+}
+
+.pricing-card-base-fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(170px, .75fr);
+  gap: var(--space-3);
+}
+
+.pricing-card-field {
+  display: grid;
+  min-width: 0;
+  align-content: start;
+  gap: 7px;
+  color: var(--color-text);
+  text-align: start;
+}
+
+.pricing-card-field-label {
+  display: flex;
+  min-width: 0;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+  color: var(--color-text-soft);
+  font-size: var(--font-xs);
+  font-weight: var(--weight-bold);
+}
+
+.pricing-card-field-hint {
+  color: var(--color-text-muted);
+  font-size: 10px;
+  font-weight: var(--weight-regular);
+  white-space: nowrap;
+}
+
+.pricing-card-input,
+.pricing-card-input-shell {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: 46px;
+}
+
+.pricing-card-input {
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--bg-input);
+  color: var(--color-text);
+  padding: 0 var(--space-3);
+  transition: border-color 180ms ease, box-shadow 180ms ease, background-color 180ms ease;
+}
+
+.pricing-card-input:hover {
+  border-color: var(--border-hover);
+}
+
+.pricing-card-input:focus {
+  border-color: var(--color-primary);
+  outline: none;
+  box-shadow: 0 0 0 3px var(--primary-soft);
+}
+
+.pricing-card-input[type='number'] {
+  direction: ltr;
+  font-family: var(--font-latin);
+  font-variant-numeric: tabular-nums;
+  text-align: start;
+}
+
+.pricing-card-input-shell {
+  display: flex;
+  align-items: stretch;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--bg-input);
+  direction: ltr;
+  transition: border-color 180ms ease, box-shadow 180ms ease, background-color 180ms ease;
+}
+
+.pricing-card-input-shell:focus-within {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--primary-soft);
+}
+
+.pricing-card-input-shell .pricing-card-input {
+  min-width: 0;
+  flex: 1 1 auto;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.pricing-card-currency {
+  display: inline-flex;
+  min-width: 48px;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  border-inline-start: 1px solid var(--border-secondary);
+  color: var(--color-primary);
+  font-family: var(--font-latin);
+  font-size: var(--font-xs);
+  font-weight: var(--weight-bold);
+}
+
+.pricing-card-duration-section {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-3);
+  border-top: 1px solid var(--border-secondary);
+  padding-top: var(--space-3);
+}
+
+.pricing-plan-card-actions {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  border-top: 1px solid var(--border-secondary);
+  padding-top: var(--space-3);
+}
+
+.pricing-plan-card-actions .pricing-card-action {
+  min-width: 96px;
+  border-color: var(--primary-border);
+  background: var(--primary-soft);
+  color: var(--color-primary);
+}
+
+.pricing-plan-card-actions .pricing-card-action:hover:not(:disabled) {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+  color: var(--text-on-primary);
+}
+
+.pricing-card-section-heading strong {
+  color: var(--color-text);
+  font-size: var(--font-sm);
+}
+
+.pricing-card-section-heading > span {
+  color: var(--color-text-muted);
+  font-size: var(--font-xs);
+}
+
+.pricing-duration-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: var(--space-3);
+}
+
+.pricing-cards-muted,
+.pricing-cards-empty {
+  color: var(--color-text-muted);
+  font-size: var(--font-sm);
+  line-height: 1.7;
+}
+
+.pricing-cards-empty {
+  display: grid;
+  min-height: 120px;
+  place-items: center;
+  grid-column: 1 / -1;
+  border: 1px dashed var(--border-color);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-muted);
+  padding: var(--space-5);
+  text-align: center;
+}
+
+.membership-type-card-header .type-status,
+.day-pass-pricing-card-header .day-pass-type-status {
+  flex: 0 0 auto;
+}
+
+.membership-type-info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.membership-type-info {
+  display: grid;
+  min-width: 0;
+  gap: 5px;
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-muted);
+  padding: var(--space-3);
+}
+
+.membership-type-info-emphasis {
+  border-color: var(--primary-border);
+  background: var(--primary-soft);
+}
+
+.membership-type-info-label {
+  color: var(--color-text-muted);
+  font-size: var(--font-xs);
+}
+
+.membership-type-info-value {
+  overflow: hidden;
+  color: var(--color-text);
+  font-family: var(--font-latin);
+  font-size: var(--font-md);
+  font-variant-numeric: tabular-nums;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.membership-type-card-actions {
+  border-top: 1px solid var(--border-secondary);
+  padding-top: var(--space-3);
+}
+
+.membership-type-card-actions .pricing-card-action {
+  min-width: 96px;
+  border-color: var(--success-border);
+  background: var(--color-success-soft);
+  color: var(--success-text);
+}
+
+.membership-type-card-actions .pricing-card-action:hover:not(:disabled) {
+  border-color: var(--color-success);
+  background: var(--color-success);
+  color: var(--text-on-primary);
+}
+
+.day-pass-pricing-card {
+  align-content: start;
+}
+
+.day-pass-pricing-card .pricing-card-field {
+  gap: 8px;
+}
+
+.day-pass-pricing-card .pricing-card-index {
+  justify-self: start;
+}
+
+@media (max-width: 700px) {
+  .pricing-plan-grid,
+  .membership-type-card-grid,
+  .day-pass-pricing-card-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .pricing-card-base-fields {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 420px) {
+  .pricing-plan-card,
+  .membership-type-card,
+  .day-pass-pricing-card {
+    padding: var(--space-3);
+  }
+
+  .pricing-duration-grid,
+  .membership-type-info-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .pricing-card-field-label {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 2px;
+  }
 }
 
 /* END TOP GYM layer */

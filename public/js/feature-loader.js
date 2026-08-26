@@ -67,7 +67,12 @@
         },
         management: {
             styles: [],
-            scripts: ['/js/pages/management/backup.js?v=9']
+            scripts: ['/js/pages/management/backup.js?v=10']
+        },
+        'backup-history': {
+            dependencies: ['management'],
+            styles: [],
+            scripts: []
         },
         permissions: {
             styles: [],

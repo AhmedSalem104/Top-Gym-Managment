@@ -495,6 +495,14 @@
 .backup-history-list,
 .auth-users-loading { color: var(--color-text-muted); font-size: var(--font-xs); }
 
+#managementSection > .backup-history-section { display: none; }
+.backup-history-page { min-width: 0; }
+.backup-history-page-head { align-items: center; }
+.backup-history-page-heading { display: grid; min-width: 0; gap: var(--space-1); }
+.backup-history-page-heading h3 { margin: 0; color: var(--color-text); font-size: var(--font-xl); }
+.backup-history-page-heading p { margin: 0; color: var(--color-text-muted); font-size: var(--font-xs); line-height: 1.7; }
+.backup-history-page-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: var(--space-2); }
+
 .backup-history-block {
   display: grid;
   min-width: 0;
@@ -624,6 +632,8 @@
   .backup-history-block-head { align-items: flex-start; flex-direction: column; }
   .backup-history-actions { width: 100%; }
   .backup-history-actions > .btn { flex: 1 1 0; }
+  .backup-history-page-actions { width: 100%; }
+  .backup-history-page-actions > .btn { flex: 1 1 160px; }
 }
 
 /* Dashboard analytics: keep every chart inside its card and use the available width. */

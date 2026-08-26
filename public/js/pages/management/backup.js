@@ -8,6 +8,7 @@
     const bakDownloadButton = $('backupBakButton');
     const restoreButton = $('restoreBackupButton');
     const historyButton = $('backupHistoryButton');
+    document.querySelector('#managementSection > .backup-history-section')?.remove();
     const historyRefreshButton = $('backupHistoryRefresh');
     const historyList = $('backupHistoryList');
     const restoreDialog = $('backupRestoreDialog');
@@ -278,8 +279,19 @@
     jsonDownloadButton?.addEventListener('click', () => downloadBackup('json.gz', jsonDownloadButton));
     bakDownloadButton?.addEventListener('click', () => downloadBackup('bak', bakDownloadButton));
     restoreButton?.addEventListener('click', () => { resetRestore(); openDialog(restoreDialog); });
-    historyButton?.addEventListener('click', showHistory);
+    function openHistoryScreen() {
+        if (window.topGymActivateTab) {
+            void window.topGymActivateTab('backup-history');
+            return;
+        }
+        void showHistory();
+    }
+
+    historyButton?.addEventListener('click', openHistoryScreen);
     historyRefreshButton?.addEventListener('click', showHistory);
+    window.addEventListener('topgym:tab-changed', (event) => {
+        if (event.detail?.name === 'backup-history') void showHistory();
+    });
     historyList?.addEventListener('click', (event) => {
         const button = event.target.closest('[data-backup-archive-id]');
         if (button) {
@@ -293,5 +305,5 @@
     $('backupRestoreCancel')?.addEventListener('click', () => closeDialog(restoreDialog));
     fileInput?.addEventListener('change', () => inspectFile(fileInput.files?.[0]));
     restoreForm?.addEventListener('submit', restoreBackup);
-    if (historyList) showHistory();
+    if (historyList && document.documentElement.dataset.topGymActiveTab === 'backup-history') showHistory();
 })();

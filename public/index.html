@@ -19,7 +19,7 @@
     <link rel="preload" href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap" as="style" onload="this.onload=null;this.rel='sty'+'lesheet'">
     <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2" sizes="any">
     <link rel="shortcut icon" type="image/svg+xml" href="/favicon.svg?v=2">
-    <link rel="stylesheet" href="/css/main.css?v=53">
+    <link rel="stylesheet" href="/css/main.css?v=54">
     <title>إدارة عضويات الجيم</title>
 </head>
 <body class="auth-pending font-sans bg-slate-100 text-slate-900 gym-page-bg">
@@ -312,13 +312,24 @@
                     <button class="management-shortcut" type="button" data-open-dialog-button="membershipTypesButton" data-owner-only><span class="management-shortcut-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span><span><strong>أنواع العضويات</strong><small>إدارة المدد ومعاملات الأسعار.</small></span><svg class="management-shortcut-arrow ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></button>
                 </div>
                 <section class="backup-management-panel" aria-labelledby="backupManagementTitle">
-                    <div><span class="management-eyebrow">حماية البيانات</span><h4 id="backupManagementTitle">النسخ الاحتياطية والاسترجاع</h4><p>أنشئ نسخة TOP GYM المحمولة بصيغة .json.gz أو .bak، ثم افحصها واسترجعها بأمان من نفس الشاشة.</p></div>
+                    <div><span class="management-eyebrow">حماية البيانات</span><h4 id="backupManagementTitle">النسخ الاحتياطية والاسترجاع</h4><p>أنشئ نسخة TOP GYM المحمولة بصيغة .json.gz أو .bak، ثم افحصها واسترجعها بأمان من أدوات النسخ.</p></div>
                     <div class="backup-management-actions"><button class="btn btn-primary" id="backupJsonButton" type="button">تحميل .json.gz</button><button class="btn btn-light" id="backupBakButton" type="button">تحميل .bak</button><button class="btn btn-light" id="restoreBackupButton" type="button">استرجاع نسخة</button><button class="btn btn-light" id="backupHistoryButton" type="button">سجل النسخ</button></div>
                 </section>
-                <section class="backup-history-section" aria-labelledby="backupHistoryTitle">
-                    <div class="backup-history-section-head"><div><span class="management-eyebrow">متابعة تلقائية</span><h4 id="backupHistoryTitle">سجل النسخ</h4><p>تُنشأ النسخة اليومية الساعة 3:00 مساءً بتوقيت القاهرة، وتُحفظ لمدة يومين فقط.</p></div><button class="btn btn-light btn-small" id="backupHistoryRefresh" type="button">تحديث السجل</button></div>
-                    <div class="backup-history-list" id="backupHistoryList"><div class="backup-history-loading">جاري تحميل سجل النسخ…</div></div>
-                </section>
+            </section>
+
+            <section class="backup-history-section backup-history-page panel" id="backupHistorySection" hidden data-owner-only aria-labelledby="backupHistoryPageTitle">
+                <header class="backup-history-section-head backup-history-page-head">
+                    <div class="backup-history-page-heading">
+                        <span class="management-eyebrow">حماية البيانات</span>
+                        <h3 id="backupHistoryPageTitle">سجل النسخ الاحتياطية</h3>
+                        <p>راجع النسخ اليومية المحفوظة وعمليات التنزيل والفحص والاسترجاع من شاشة مستقلة.</p>
+                    </div>
+                    <div class="backup-history-page-actions">
+                        <button class="btn btn-light btn-small" type="button" data-page-tab-link="management">إدارة النسخ</button>
+                        <button class="btn btn-primary btn-small" id="backupHistoryRefresh" type="button">تحديث السجل</button>
+                    </div>
+                </header>
+                <div class="backup-history-list" id="backupHistoryList"><div class="backup-history-loading">جاري تحميل سجل النسخ…</div></div>
             </section>
 
             <section class="library-section panel" id="librarySection" hidden aria-labelledby="libraryTitle">
@@ -654,16 +665,17 @@
     <!-- SweetAlert2 is optional and loaded during idle time by feature-loader. -->
     <script defer src="/js/theme.js?v=1"></script>
     <script defer src="/js/core/api.js?v=1"></script>
-    <script defer src="/js/core/permissions.js?v=4"></script>
+    <script defer src="/js/core/permissions.js?v=5"></script>
     <script defer src="/js/core/state.js?v=1"></script>
     <script defer src="/js/performance-loader.js?v=2"></script>
     <script defer src="/js/auth-ui.js?v=8"></script>
     <script defer src="/js/app.js?v=feature-expansion10-alert-contact-member-detail-layers-member-table-portal-initial-code-hydration-progressive-performance-skeleton-refund"></script>
-    <script defer src="/js/feature-loader.js?v=14"></script>
-    <script defer src="/js/page-tabs.js?v=14"></script>
+    <script defer src="/js/feature-loader.js?v=15"></script>
+    <script defer src="/js/page-tabs.js?v=15"></script>
     <script defer src="/js/button-loading.js"></script>
     <script defer src="/js/dialog-enhancements.js?v=2"></script>
     <script defer src="/js/pagination.js?v=2"></script>
     <script defer src="/js/table-cards.js?v=2"></script>
+    <script defer src="/js/pricing-cards.js?v=1"></script>
 </body>
 </html>

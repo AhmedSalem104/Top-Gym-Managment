@@ -2,10 +2,28 @@
     if (window.__topGymPageTabsLoaded) return;
     window.__topGymPageTabsLoaded = true;
 
-    const validTabs = new Set(['dashboard', 'members', 'expenses', 'reports', 'management', 'permissions', 'attendance', 'library', 'trainees', 'intelligence', 'feedback', 'store']);
+    const validTabs = new Set(['dashboard', 'members', 'expenses', 'reports', 'management', 'backup-history', 'permissions', 'attendance', 'library', 'trainees', 'intelligence', 'feedback', 'store']);
     let activationToken = 0;
     let activeTabName = null;
     const SIDEBAR_PIN_STORAGE_KEY = 'topgym.sidebar.pinned';
+
+    function ensureBackupHistoryTab() {
+        const rail = document.getElementById('pageTabs');
+        if (!rail || rail.querySelector('[data-page-tab="backup-history"]')) return;
+
+        const button = document.createElement('button');
+        button.className = 'page-tab page-tab-backup-history';
+        button.type = 'button';
+        button.dataset.pageTab = 'backup-history';
+        button.dataset.ownerOnly = '';
+        button.setAttribute('aria-selected', 'false');
+        button.innerHTML = '<svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7.5A2.5 2.5 0 0 1 6.5 5H20v14H6.5A2.5 2.5 0 0 0 4 21.5z"/><path d="M4 7.5v14M8 9h7M8 13h8"/><path d="M17 16h.01"/></svg><span>\u0633\u062c\u0644 \u0627\u0644\u0646\u0633\u062e</span>';
+
+        const feedbackTab = rail.querySelector('[data-page-tab="feedback"]');
+        rail.insertBefore(button, feedbackTab || null);
+    }
+
+    ensureBackupHistoryTab();
 
     function setHidden(element, hidden) {
         if (element) element.hidden = hidden;
@@ -47,7 +65,7 @@
         if (!validTabs.has(name)) return 'dashboard';
         if (window.topGymAuth?.isReady?.()) {
             if (!window.topGymAuth.getUser?.()) return 'dashboard';
-            if (name === 'management' && !window.topGymAuth.isOwner?.()) return window.topGymPermissions?.firstAccessibleTab?.(window.topGymAuth.getUser?.()) || 'members';
+            if ((name === 'management' || name === 'backup-history') && !window.topGymAuth.isOwner?.()) return window.topGymPermissions?.firstAccessibleTab?.(window.topGymAuth.getUser?.()) || 'members';
             if (!window.topGymAuth.canAccessTab(name)) return window.topGymPermissions?.firstAccessibleTab?.(window.topGymAuth.getUser?.()) || 'members';
         }
         return name;
@@ -62,6 +80,7 @@
         const expensesSection = document.getElementById('expensesSection');
         const monthlyFinanceSnapshot = document.getElementById('monthlyFinanceSnapshot');
         const managementSection = document.getElementById('managementSection');
+        const backupHistorySection = document.getElementById('backupHistorySection');
         const analyticsSection = document.getElementById('dashboardAnalytics');
         const dashboardStoreSummary = document.getElementById('dashboardStoreSummary');
         const reportsSection = document.getElementById('reportsSection');
@@ -76,6 +95,7 @@
         const isMembers = name === 'members';
         const isExpenses = name === 'expenses';
         const isManagement = name === 'management';
+        const isBackupHistory = name === 'backup-history';
         const isPermissions = name === 'permissions';
         const isReports = name === 'reports';
         const isFeedback = name === 'feedback';
@@ -91,6 +111,7 @@
         setHidden(monthlyFinanceSnapshot, !isDashboard);
         setHidden(expensesSection, !isExpenses);
         setHidden(managementSection, !isManagement);
+        setHidden(backupHistorySection, !isBackupHistory);
         const hideAnalytics = !isDashboard || !window.topGymAuth?.isOwner?.();
         setHidden(analyticsSection, hideAnalytics);
         setHidden(dashboardStoreSummary, !isDashboard);
@@ -103,7 +124,7 @@
         setHidden(traineesSection, !isTrainees);
         setHidden(intelligenceSection, !isIntelligence);
         setHidden(storeSection, !isStore);
-        setHidden(workspace, isDashboard || isExpenses || isReports || isManagement || isPermissions || isAttendance || isLibrary || isTrainees || isIntelligence || isFeedback || isStore);
+        setHidden(workspace, isDashboard || isExpenses || isReports || isManagement || isBackupHistory || isPermissions || isAttendance || isLibrary || isTrainees || isIntelligence || isFeedback || isStore);
         setHidden(membersSection, !isMembers);
 
         document.querySelectorAll('[data-page-tab]').forEach((button) => {
@@ -159,6 +180,7 @@
     }
 
     document.addEventListener('DOMContentLoaded', () => {
+        ensureBackupHistoryTab();
         initSidebarPin();
         document.querySelectorAll('[data-page-tab]').forEach((button) => {
             button.setAttribute('role', 'tab');
