@@ -119,6 +119,18 @@
         annotatePermissionControls();
         document.querySelectorAll('[data-owner-only]').forEach((element) => {
             const allowed = user?.role === 'Owner';
+            const tabManagedPanel = element.hasAttribute('data-page-tab-panel');
+            if (tabManagedPanel) {
+                // The tab router owns visibility for page panels. Permission
+                // checks may close access, but an allowed Owner panel must not
+                // be unhidden here or it will appear on every tab.
+                if (!allowed) {
+                    element.hidden = true;
+                    element.setAttribute('aria-hidden', 'true');
+                    element.toggleAttribute('inert', true);
+                }
+                return;
+            }
             element.hidden = !allowed;
             element.toggleAttribute('aria-hidden', !allowed);
             element.toggleAttribute('inert', !allowed);

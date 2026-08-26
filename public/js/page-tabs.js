@@ -26,7 +26,12 @@
     ensureBackupHistoryTab();
 
     function setHidden(element, hidden) {
-        if (element) element.hidden = hidden;
+        if (!element) return;
+        element.hidden = hidden;
+        if (element.hasAttribute('data-page-tab-panel')) {
+            element.setAttribute('aria-hidden', String(hidden));
+            element.toggleAttribute('inert', hidden);
+        }
     }
 
     function initSidebarPin() {
