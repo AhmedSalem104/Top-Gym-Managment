@@ -6,6 +6,7 @@
     const permissions = window.topGymPermissions;
     const rememberEmailKey = 'topgym.login.email';
     const state = { user: null, ready: false, redirecting: false };
+    let tenantWelcomeTimer;
     const brandName = () => window.topGymBranding?.get?.().identity?.brandName || 'الجيم';
 
     document.body.classList.add('auth-pending');
@@ -170,6 +171,59 @@
         });
     }
 
+    function setAuthStage(stage = 'gateway') {
+        const normalizedStage = stage === 'login' ? 'login' : 'gateway';
+        const screen = $('authScreen');
+        const entry = $('saasEntryCard');
+        const card = $('authLoginCard');
+        if (screen) screen.dataset.authStage = normalizedStage;
+        if (entry) entry.hidden = normalizedStage !== 'gateway';
+        if (card) card.hidden = normalizedStage !== 'login';
+        if (normalizedStage === 'login') {
+            const form = $('loginForm');
+            if (form) form.hidden = false;
+        }
+    }
+
+    function hasTenantWelcomeFlag() {
+        try { return new URLSearchParams(window.location.search).get('welcome') === '1'; } catch (_) { return false; }
+    }
+
+    function clearTenantWelcomeFlag() {
+        try {
+            const url = new URL(window.location.href);
+            if (url.searchParams.get('welcome') !== '1') return;
+            url.searchParams.delete('welcome');
+            window.history.replaceState({}, document.title, `${url.pathname}${url.search}${url.hash}`);
+        } catch (_) {
+            // A browser that does not expose History API must still finish login.
+        }
+    }
+
+    async function refreshTenantBranding(user) {
+        if (!user || user.role === 'PlatformAdmin') return;
+        const brandingApi = window.topGymBranding;
+        if (typeof brandingApi?.refresh !== 'function') return;
+        await brandingApi.refresh({ scope: 'tenant' });
+    }
+
+    function showTenantWelcome() {
+        const layer = $('tenantWelcomeLayer');
+        if (!layer) return;
+        const name = brandName();
+        const nameElement = $('tenantWelcomeName');
+        if (nameElement) nameElement.textContent = name;
+        clearTimeout(tenantWelcomeTimer);
+        layer.hidden = false;
+        layer.classList.remove('is-visible');
+        window.requestAnimationFrame(() => layer.classList.add('is-visible'));
+        clearTenantWelcomeFlag();
+        tenantWelcomeTimer = window.setTimeout(() => {
+            layer.classList.remove('is-visible');
+            window.setTimeout(() => { layer.hidden = true; }, 240);
+        }, 1450);
+    }
+
     function setSubmitLoading(loading) {
         const button = $('loginSubmit');
         if (!button) return;
@@ -261,7 +315,7 @@
         applyPermissionControls(user);
     }
 
-    function showAuthenticated(user) {
+    function showAuthenticated(user, options = {}) {
         state.user = user;
         state.ready = true;
         document.body.dataset.topGymAuthenticated = 'true';
@@ -270,6 +324,7 @@
         const screen = $('authScreen');
         if (screen) screen.hidden = true;
         document.body.classList.remove('auth-pending', 'auth-locked');
+        if (options.showWelcome && user?.role !== 'PlatformAdmin') showTenantWelcome();
     }
 
     function showLogin(message = '', setupRequired = false) {
@@ -279,8 +334,10 @@
         document.body.classList.add('auth-locked');
         document.body.dataset.topGymAuthenticated = 'false';
         const screen = $('authScreen');
+        window.topGymBranding?.apply?.(window.topGymBranding.fallback?.() || {}, 1);
         loadAuthVisuals();
         if (screen) screen.hidden = false;
+        setAuthStage(message ? 'login' : 'gateway');
         const form = $('loginForm');
         if (form) form.hidden = false;
         const heading = form?.querySelector('.auth-form-heading p');
@@ -350,7 +407,9 @@
             } catch {
                 // Storage may be disabled; authentication must continue normally.
             }
-            window.location.reload();
+            const nextUrl = new URL(window.location.href);
+            nextUrl.searchParams.set('welcome', '1');
+            window.location.assign(nextUrl.toString());
         } catch (error) {
             showMessage(error.message || 'البريد الإلكتروني أو كلمة المرور غير صحيحة.');
             setSubmitLoading(false);
@@ -362,6 +421,7 @@
         if (!form || form.dataset.bound) return;
         form.dataset.bound = 'true';
         form.hidden = true;
+        setAuthStage('gateway');
         try {
             const rememberedEmail = localStorage.getItem(rememberEmailKey);
             if (rememberedEmail && !$('loginEmail')?.value) {
@@ -385,6 +445,15 @@
             input.type = visible ? 'password' : 'text';
             $('loginPasswordToggle').setAttribute('aria-label', visible ? 'إظهار كلمة المرور' : 'إخفاء كلمة المرور');
         });
+        const entryButton = $('saasEntryContinue');
+        if (entryButton && !entryButton.dataset.bound) {
+            entryButton.dataset.bound = 'true';
+            entryButton.addEventListener('click', () => {
+                setAuthStage('login');
+                clearMessage();
+                window.setTimeout(() => $('loginEmail')?.focus(), 0);
+            });
+        }
     }
 
     async function checkSession() {
@@ -392,7 +461,11 @@
             const response = await nativeFetch('/api/auth/session', { credentials: 'same-origin', cache: 'no-store' });
             const data = await response.json().catch(() => ({}));
             if (!response.ok) throw new Error(data.error || 'تعذر التحقق من جلسة الدخول.');
-            if (data.authenticated && data.user) showAuthenticated(data.user);
+            if (data.authenticated && data.user) {
+                if (data.user.role === 'PlatformAdmin') window.topGymBranding?.apply?.(window.topGymBranding.fallback?.() || {}, 1);
+                else await refreshTenantBranding(data.user);
+                showAuthenticated(data.user, { showWelcome: hasTenantWelcomeFlag() });
+            }
             else showLogin('', Boolean(data.setupRequired));
         } catch (error) {
             showLogin('تعذر الاتصال بخدمة تسجيل الدخول. حاول مرة أخرى.');
@@ -420,7 +493,11 @@
     window.fetch = async (...args) => {
         const input = args[0];
         const url = String(typeof input === 'string' ? input : input?.url || '');
-        const protectedApi = url.includes('/api/') && !url.includes('/api/auth/');
+        // Branding is intentionally public for the SaaS gateway and must stay
+        // reachable before auth is ready; treating it as protected here would
+        // deadlock the post-login tenant-brand refresh on the auth bootstrap.
+        const publicApi = url.includes('/api/branding');
+        const protectedApi = url.includes('/api/') && !url.includes('/api/auth/') && !publicApi;
         if (protectedApi && !state.ready) await ready.catch(() => null);
         if (protectedApi && !state.user) {
             return new Response(JSON.stringify({ error: 'تحتاج إلى تسجيل الدخول أولًا.', code: 'AUTH_REQUIRED' }), {

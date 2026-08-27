@@ -325,10 +325,19 @@
         window.dispatchEvent(new CustomEvent('topgym:brandingchange', { detail: { branding: clone(branding), version } }));
     }
 
-    async function refresh() {
+    function requestedScope(options = {}) {
+        const explicitScope = String(options?.scope || '').trim().toLowerCase();
+        if (explicitScope === 'platform' || explicitScope === 'tenant') return explicitScope;
+        return document.body?.dataset?.brandingEntry === 'saas' ? 'platform' : 'tenant';
+    }
+
+    async function refresh(options = {}) {
+        const scope = requestedScope(options);
         try {
-            const hint = tenantHint();
-            const endpoint = hint ? `/api/branding?tenant=${encodeURIComponent(hint)}` : '/api/branding';
+            const hint = scope === 'tenant' ? tenantHint() : '';
+            const endpoint = scope === 'platform'
+                ? '/api/branding?scope=platform'
+                : hint ? `/api/branding?tenant=${encodeURIComponent(hint)}` : '/api/branding';
             const response = await window.fetch(endpoint, { credentials: 'same-origin', cache: 'no-store' });
             if (!response.ok) throw new Error(`Branding request failed (${response.status})`);
             const data = await response.json();
@@ -336,9 +345,12 @@
                 apply(data.branding, data.version || 1);
             }
         } catch (_) {
-            apply(branding, version);
+            // Never keep a previous tenant's identity as the anonymous/platform
+            // fallback. A failed platform request must remain on the safe
+            // default until the authenticated tenant is resolved.
+            apply(scope === 'platform' ? FALLBACK : branding, scope === 'platform' ? 1 : version);
         }
-        return { branding: clone(branding), version };
+        return { branding: clone(branding), version, scope };
     }
 
     window.topGymBranding = Object.freeze({

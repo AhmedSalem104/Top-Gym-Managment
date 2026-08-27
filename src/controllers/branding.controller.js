@@ -2,8 +2,11 @@
 
 function createBrandingController({ brandingService }) {
     return {
-        publicBranding: async (_request, response) => {
-            const result = await brandingService.getPublicBranding();
+        publicBranding: async (request, response) => {
+            const platformScope = String(request.query?.scope || '').trim().toLowerCase() === 'platform';
+            const result = platformScope
+                ? brandingService.getPlatformBranding()
+                : await brandingService.getPublicBranding();
             response.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
             response.json(result);
         },

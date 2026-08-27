@@ -31,6 +31,8 @@ function createAuthApiMiddleware({ authService, isAuthorizedCronRequest, tenantS
         const authPublicPath = ['/auth/login', '/auth/session', '/auth/logout'].includes(request.path);
         const tenantBrandingPath = request.method === 'GET'
             && (request.path === '/branding' || request.path.startsWith('/branding/assets/'));
+        const platformBrandingRequest = tenantBrandingPath
+            && String(request.query?.scope || '').trim().toLowerCase() === 'platform';
         const publicPath = ['/health', '/member-portal/lookup', '/member-portal/feedback', '/branding'].includes(request.path)
             || request.path === '/member-portal/library/options'
             || request.path.startsWith('/member-portal/library/')
@@ -51,6 +53,7 @@ function createAuthApiMiddleware({ authService, isAuthorizedCronRequest, tenantS
         // Resolving it through the public fallback would make every logged-in
         // gym temporarily inherit Top Gym's identity and assets.
         if (tenantBrandingPath) {
+            if (platformBrandingRequest) return runTenantContext({ tenantId: null, mode: 'platform' }, next);
             return ensureAuthReady()
                 .then(() => getSessionUser(readSessionCookie(request), { includePermissions: false }))
                 .then((user) => {

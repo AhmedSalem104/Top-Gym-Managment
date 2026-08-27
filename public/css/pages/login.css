@@ -292,3 +292,404 @@ body.auth-locked .auth-screen {
     transition: none;
   }
 }
+
+/* SaaS entry gateway -----------------------------------------------------
+   The first screen is intentionally a platform-level introduction. It must
+   not inherit a tenant's custom identity before authentication resolves. */
+.auth-screen[data-auth-stage="gateway"] {
+  overflow: auto;
+  align-items: center;
+}
+
+.auth-screen[data-auth-stage="gateway"] .auth-shell {
+  width: min(1040px, 100%);
+}
+
+.auth-screen[data-auth-stage="login"] .auth-shell {
+  width: min(440px, 100%);
+}
+
+.auth-screen[data-auth-stage="login"] .saas-entry-card {
+  display: none;
+}
+
+.auth-screen[data-auth-stage="gateway"] .auth-card {
+  display: none;
+}
+
+.saas-entry-card {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--border-primary);
+  border-radius: 28px;
+  background: var(--bg-card);
+  box-shadow: var(--shadow-popup);
+  isolation: isolate;
+}
+
+.saas-entry-card::before {
+  position: absolute;
+  z-index: -1;
+  inset: auto -12% -54% 32%;
+  height: 78%;
+  border-radius: 50%;
+  background: var(--primary-soft);
+  content: "";
+  filter: blur(8px);
+  opacity: .9;
+  pointer-events: none;
+}
+
+.saas-entry-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: clamp(20px, 3vw, 30px) clamp(22px, 4vw, 44px) 0;
+}
+
+.saas-entry-mark {
+  display: grid;
+  width: 52px;
+  height: 52px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid var(--primary-border);
+  border-radius: 16px;
+  background: var(--primary);
+  color: var(--text-on-primary);
+  box-shadow: var(--shadow-primary);
+}
+
+.saas-entry-mark .ui-icon {
+  width: 27px;
+  height: 27px;
+}
+
+.saas-entry-brand-copy {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+
+.saas-entry-brand-copy > span,
+.saas-entry-eyebrow,
+.saas-entry-action-label,
+.tenant-welcome-eyebrow {
+  color: var(--primary);
+  font-size: 11px;
+  font-weight: var(--weight-extrabold);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.saas-entry-brand-copy strong {
+  color: var(--text-primary);
+  font-size: 23px;
+  font-weight: var(--weight-extrabold);
+  line-height: 1.1;
+}
+
+.saas-entry-brand-copy small {
+  color: var(--text-muted);
+  font-size: var(--font-xs);
+  line-height: 1.6;
+}
+
+.saas-entry-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(260px, .85fr);
+  gap: clamp(22px, 4vw, 58px);
+  align-items: stretch;
+  padding: clamp(26px, 4vw, 48px) clamp(22px, 4vw, 44px) clamp(24px, 4vw, 42px);
+}
+
+.saas-entry-copy {
+  display: grid;
+  align-content: center;
+  min-width: 0;
+  padding-block: 8px;
+}
+
+.saas-entry-copy h1 {
+  max-width: 680px;
+  margin: 10px 0 12px;
+  color: var(--text-primary);
+  font-size: clamp(29px, 4.2vw, 49px);
+  font-weight: var(--weight-extrabold);
+  letter-spacing: -.03em;
+  line-height: 1.16;
+}
+
+.saas-entry-copy > p {
+  max-width: 620px;
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: clamp(var(--font-sm), 1.5vw, var(--font-md));
+  line-height: 1.9;
+}
+
+.saas-entry-features {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: clamp(24px, 4vw, 38px);
+}
+
+.saas-entry-features article {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  padding: 15px 13px;
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-lg);
+  background: var(--bg-surface);
+}
+
+.saas-entry-feature-icon {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border-radius: 10px;
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+
+.saas-entry-feature-icon .ui-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.saas-entry-features article > span:last-child {
+  display: grid;
+  gap: 3px;
+}
+
+.saas-entry-features strong {
+  overflow: hidden;
+  color: var(--text-primary);
+  font-size: var(--font-sm);
+  font-weight: var(--weight-bold);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.saas-entry-features small {
+  color: var(--text-muted);
+  font-size: 11px;
+  line-height: 1.65;
+}
+
+.saas-entry-action {
+  display: grid;
+  align-content: center;
+  min-width: 0;
+  padding: clamp(20px, 3vw, 30px);
+  border: 1px solid var(--primary-border);
+  border-radius: 22px;
+  background: var(--bg-elevated);
+}
+
+.saas-entry-action-icon {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  margin-bottom: 14px;
+  place-items: center;
+  border: 1px solid var(--border-primary);
+  border-radius: 13px;
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+
+.saas-entry-action-icon .ui-icon {
+  width: 22px;
+  height: 22px;
+}
+
+.saas-entry-action h2 {
+  margin: 9px 0 8px;
+  color: var(--text-primary);
+  font-size: clamp(22px, 2.5vw, 28px);
+  font-weight: var(--weight-extrabold);
+}
+
+.saas-entry-action p {
+  margin: 0 0 22px;
+  color: var(--text-secondary);
+  font-size: var(--font-sm);
+  line-height: 1.85;
+}
+
+.saas-entry-continue {
+  width: 100%;
+  min-height: 52px;
+  border-radius: var(--radius-md);
+  font-size: var(--font-md);
+}
+
+.saas-entry-continue .ui-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.saas-entry-action > small {
+  margin-top: 13px;
+  color: var(--text-muted);
+  font-size: 11px;
+  line-height: 1.6;
+  text-align: center;
+}
+
+.tenant-welcome-layer {
+  position: fixed;
+  z-index: var(--z-modal);
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: var(--overlay);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 220ms ease;
+}
+
+.tenant-welcome-layer.is-visible {
+  opacity: 1;
+}
+
+.tenant-welcome-card {
+  display: grid;
+  width: min(470px, 100%);
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 16px;
+  align-items: center;
+  padding: 24px;
+  border: 1px solid var(--primary-border);
+  border-radius: 22px;
+  background: var(--bg-card);
+  box-shadow: var(--shadow-popup);
+  transform: translateY(8px) scale(.98);
+  transition: transform 240ms ease;
+}
+
+.tenant-welcome-layer.is-visible .tenant-welcome-card {
+  transform: translateY(0) scale(1);
+}
+
+.tenant-welcome-mark {
+  display: grid;
+  width: 58px;
+  height: 58px;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid var(--primary-border);
+  border-radius: 17px;
+  background: var(--primary-soft);
+  color: var(--primary);
+  font-size: 25px;
+  font-weight: var(--weight-extrabold);
+}
+
+.tenant-welcome-mark img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 7px;
+}
+
+.tenant-welcome-copy {
+  min-width: 0;
+}
+
+.tenant-welcome-copy h2 {
+  margin: 7px 0 4px;
+  color: var(--text-primary);
+  font-size: clamp(20px, 3vw, 26px);
+  font-weight: var(--weight-extrabold);
+}
+
+.tenant-welcome-copy h2 strong {
+  color: var(--primary);
+}
+
+.tenant-welcome-copy p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--font-sm);
+  line-height: 1.7;
+}
+
+.tenant-welcome-progress {
+  grid-column: 1 / -1;
+  height: 3px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--border-secondary);
+}
+
+.tenant-welcome-progress span {
+  display: block;
+  width: 42%;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--primary);
+  animation: tenant-welcome-progress 1.35s ease-in-out forwards;
+}
+
+@keyframes tenant-welcome-progress {
+  from { width: 0; }
+  to { width: 100%; }
+}
+
+@media (max-width: 760px) {
+  .saas-entry-layout {
+    grid-template-columns: 1fr;
+    gap: 22px;
+  }
+
+  .saas-entry-features {
+    grid-template-columns: 1fr;
+  }
+
+  .saas-entry-features article {
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+  }
+
+  .saas-entry-feature-icon {
+    grid-row: span 2;
+  }
+}
+
+@media (max-width: 420px) {
+  .saas-entry-brand {
+    padding-inline: 18px;
+  }
+
+  .saas-entry-layout {
+    padding-inline: 18px;
+  }
+
+  .saas-entry-copy h1 {
+    font-size: 30px;
+  }
+
+  .tenant-welcome-card {
+    grid-template-columns: 1fr;
+    text-align: center;
+  }
+
+  .tenant-welcome-mark {
+    margin-inline: auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tenant-welcome-layer,
+  .tenant-welcome-card,
+  .tenant-welcome-progress span {
+    animation: none;
+    transition: none;
+  }
+}

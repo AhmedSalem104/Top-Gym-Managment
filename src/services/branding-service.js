@@ -537,6 +537,13 @@ async function getPublicBranding() {
     return clone(result);
 }
 
+// The unauthenticated SaaS gateway belongs to the platform, not to any Gym.
+// Keep it tenant-neutral so a public fallback can never leak Top Gym (or a
+// previous tenant) before the authenticated user's tenant is resolved.
+function getPlatformBranding() {
+    return { branding: clone(DEFAULT_BRANDING), version: 1, publishedAt: null };
+}
+
 async function getPublicBrandName(fallback = 'الجيم') {
     try {
         const result = await getPublicBranding();
@@ -639,6 +646,7 @@ module.exports = {
     DEFAULT_BRANDING,
     MAX_ASSET_BYTES,
     ensureBrandingTables,
+    getPlatformBranding,
     getPublicBranding,
     getPublicBrandName,
     latestAudit,
