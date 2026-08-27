@@ -978,9 +978,9 @@ async function createTenantWithOwner(body = {}, actorUserId, authService) {
     await ensureSaasTables();
     if (!authService) throw saasError('خدمة الحسابات غير متاحة.', 500, 'AUTH_SERVICE_REQUIRED');
     const tenant = normalizeTenantInput(body);
-    const ownerName = authService.validateName(body.ownerName || body.ownerFullName);
-    const ownerEmail = authService.validateEmail(body.ownerEmail);
-    const ownerPassword = authService.validatePassword(body.ownerPassword);
+    const ownerName = authService.validateName(body.ownerName || body.ownerFullName, 'ownerName');
+    const ownerEmail = authService.validateEmail(body.ownerEmail, 'ownerEmail');
+    const ownerPassword = authService.validatePassword(body.ownerPassword, { field: 'ownerPassword' });
     await authService.ensureAuthReady();
     const plan = await getPlan({ code: String(body.trialPlanCode || 'starter').toLowerCase(), includeInactive: false });
     if (!plan) throw saasError('باقة التجربة غير متاحة.', 409, 'TRIAL_PLAN_NOT_FOUND');
