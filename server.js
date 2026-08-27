@@ -55,6 +55,25 @@ function escapeHtml(value) {
     return String(value ?? '').replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[character]));
 }
 
+function normalizedHost(value) {
+    return String(value || '')
+        .trim()
+        .toLowerCase()
+        .replace(/^https?:\/\//, '')
+        .split('/')[0]
+        .split(':')[0];
+}
+
+function isPlatformAdminHost(request) {
+    const configuredHosts = String(config.platformAdminHost || '')
+        .split(',')
+        .map(normalizedHost)
+        .filter(Boolean);
+    if (!configuredHosts.length) return false;
+    const requestHost = normalizedHost(request.hostname || request.get('host'));
+    return configuredHosts.includes(requestHost);
+}
+
 function qrPageDate(value) {
     if (!value) return '—';
     const [year, month, day] = String(value).slice(0, 10).split('-');
@@ -158,15 +177,18 @@ app.get('/qr/:id', asyncRoute(async (request, response) => {
     response.type('html').send(renderQrMemberPage(member));
 }));
 
-app.get(['/platform-admin', '/platform-admin/'], asyncRoute(async (request, response) => {
+async function sendPlatformAdminPage(request, response) {
     const user = await authService.getSessionUser(authService.readSessionCookie(request), { includePermissions: false });
     if (user && user.role !== 'PlatformAdmin') {
         return response.status(403).sendFile(path.join(publicDirectory, 'platform-admin-forbidden.html'));
     }
     return response.sendFile(path.join(publicDirectory, 'platform-admin.html'));
-}));
+}
+
+app.get(['/platform-admin', '/platform-admin/'], asyncRoute(sendPlatformAdminPage));
 
 app.get('/', asyncRoute(async (request, response, next) => {
+    if (isPlatformAdminHost(request)) return sendPlatformAdminPage(request, response);
     const user = await authService.getSessionUser(authService.readSessionCookie(request), { includePermissions: false });
     if (user?.role === 'PlatformAdmin') return response.redirect('/platform-admin');
     return next();

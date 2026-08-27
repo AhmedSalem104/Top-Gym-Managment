@@ -21,6 +21,7 @@ const config = Object.freeze({
     authPlatformAdminEmail: getEnv('AUTH_PLATFORM_ADMIN_EMAIL'),
     authPlatformAdminName: getEnv('AUTH_PLATFORM_ADMIN_NAME', 'Platform Admin'),
     authPlatformAdminPassword: getEnv('AUTH_PLATFORM_ADMIN_PASSWORD'),
+    platformAdminHost: getEnv('PLATFORM_ADMIN_HOST', 'admin.voltyks.app'),
     defaultTenantSlug: getEnv('DEFAULT_TENANT_SLUG', 'top-gym'),
     cronSecret: getEnv('CRON_SECRET'),
     publicAppUrl: getEnv('PUBLIC_APP_URL'),
