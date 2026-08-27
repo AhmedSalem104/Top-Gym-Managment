@@ -146,11 +146,12 @@ END;
 let authReadyPromise;
 let dummyPasswordHashPromise;
 
-function authError(message, statusCode = 400, code = null) {
+function authError(message, statusCode = 400, code = null, field = null) {
     const error = new Error(message);
     error.statusCode = statusCode;
     error.expose = true;
     error.code = code;
+    if (field) error.field = field;
     return error;
 }
 
@@ -158,25 +159,25 @@ function normalizeEmail(value) {
     return String(value ?? '').trim().toLowerCase();
 }
 
-function validateEmail(value) {
+function validateEmail(value, field = null) {
     const email = normalizeEmail(value);
     if (!email || email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-        throw authError('أدخل بريدًا إلكترونيًا صحيحًا.', 400, 'INVALID_EMAIL');
+        throw authError('أدخل بريدًا إلكترونيًا صحيحًا.', 400, 'INVALID_EMAIL', field);
     }
     return email;
 }
 
-function validateName(value) {
+function validateName(value, field = null) {
     const name = String(value ?? '').trim();
-    if (name.length < 2 || name.length > 120) throw authError('أدخل اسمًا صحيحًا.', 400, 'INVALID_NAME');
+    if (name.length < 2 || name.length > 120) throw authError('أدخل اسمًا صحيحًا.', 400, 'INVALID_NAME', field);
     return name;
 }
 
-function validatePassword(value, { required = true } = {}) {
+function validatePassword(value, { required = true, field = null } = {}) {
     const password = String(value ?? '');
     if (!required && !password) return '';
     if (password.length < PASSWORD_MIN_LENGTH || password.length > PASSWORD_MAX_LENGTH) {
-        throw authError(`كلمة المرور يجب أن تكون بين ${PASSWORD_MIN_LENGTH} و${PASSWORD_MAX_LENGTH} حرفًا.`, 400, 'INVALID_PASSWORD');
+        throw authError(`كلمة المرور يجب أن تكون بين ${PASSWORD_MIN_LENGTH} و${PASSWORD_MAX_LENGTH} حرفًا.`, 400, 'INVALID_PASSWORD', field);
     }
     return password;
 }
@@ -510,6 +511,7 @@ module.exports = {
     sessionCookie,
     setAssistantStatus,
     updateUser,
+    validateName,
     validateEmail,
     validatePassword
 };

@@ -69,6 +69,63 @@
         toastTimer = setTimeout(() => element.classList.remove('show'), 3800);
     }
 
+    const dialogValidationMessages = Object.freeze({
+        name: 'اكتب اسم الجيم (حرفان على الأقل).',
+        slug: 'اكتب معرفًا مختصرًا من حروف إنجليزية صغيرة وأرقام وشرطات فقط، مثل: fit-zone.',
+        ownerName: 'اكتب اسم المالك بشكل صحيح.',
+        ownerEmail: 'اكتب بريدًا إلكترونيًا صحيحًا للمالك.',
+        ownerPassword: 'كلمة مرور المالك يجب ألا تقل عن 8 أحرف.'
+    });
+
+    const apiErrorMessages = Object.freeze({
+        INVALID_TENANT_NAME: 'اسم الجيم غير صحيح. أدخل اسمًا من حرفين على الأقل.',
+        INVALID_TENANT_SLUG: 'المعرف المختصر غير صحيح. استخدم حروفًا إنجليزية صغيرة وأرقامًا وشرطات فقط، ويجب أن يكون 3 أحرف على الأقل.',
+        DUPLICATE_TENANT_SLUG: 'هذا المعرف المختصر مستخدم بالفعل. اختر معرفًا آخر.',
+        DUPLICATE_TENANT_OWNER: 'البريد الإلكتروني للمالك مستخدم بالفعل. استخدم بريدًا آخر.',
+        INVALID_NAME: 'الاسم غير صحيح. أدخل اسمًا من حرفين إلى 120 حرفًا.',
+        INVALID_EMAIL: 'البريد الإلكتروني غير صحيح.',
+        INVALID_PASSWORD: 'كلمة المرور يجب أن تكون بين 8 و128 حرفًا.',
+        TRIAL_PLAN_NOT_FOUND: 'باقة التجربة غير متاحة حاليًا. راجع باقات المنصة ثم حاول مرة أخرى.',
+        AUTH_SERVICE_REQUIRED: 'خدمة الحسابات غير متاحة حاليًا. أعد المحاولة بعد قليل.'
+    });
+
+    function clearDialogError() {
+        const element = $('#platformDialogError');
+        if (element) {
+            element.textContent = '';
+            element.hidden = true;
+            delete element.dataset.code;
+        }
+        $$('[aria-invalid="true"]', dialogForm).forEach((field) => field.removeAttribute('aria-invalid'));
+    }
+
+    function showDialogError(message, code = '', field = '') {
+        const element = $('#platformDialogError');
+        if (!element) return;
+        element.textContent = message || 'راجع البيانات وحاول مرة أخرى.';
+        element.hidden = false;
+        if (code) element.dataset.code = code;
+        $$('[aria-invalid="true"]', dialogForm).forEach((input) => input.removeAttribute('aria-invalid'));
+        const invalidField = field ? dialogForm.elements.namedItem(field) : null;
+        if (invalidField && typeof invalidField.setAttribute === 'function') invalidField.setAttribute('aria-invalid', 'true');
+    }
+
+    function getApiErrorMessage(error) {
+        if (error?.code && apiErrorMessages[error.code]) return apiErrorMessages[error.code];
+        if (Number(error?.status) >= 500) return 'تعذر إتمام العملية بسبب مشكلة في الخادم. لم يتم حفظ أي بيانات؛ حاول مرة أخرى، وإذا استمر الخطأ راجع سجلات الخادم.';
+        return error?.message || 'تعذر تنفيذ العملية. راجع البيانات وحاول مرة أخرى.';
+    }
+
+    function validateDialogForm() {
+        if (dialogForm.checkValidity()) return true;
+        const invalidField = dialogForm.querySelector(':invalid');
+        const message = dialogValidationMessages[invalidField?.name] || 'راجع الحقول المطلوبة والبيانات المدخلة.';
+        showDialogError(message, 'CLIENT_VALIDATION', invalidField?.name || '');
+        invalidField?.focus();
+        dialogForm.reportValidity();
+        return false;
+    }
+
     async function api(path, options = {}) {
         const headers = { Accept: 'application/json', ...(options.body ? { 'Content-Type': 'application/json' } : {}), ...(options.headers || {}) };
         const response = await fetch(path, { credentials: 'same-origin', ...options, headers });
@@ -79,6 +136,8 @@
         if (!response.ok) {
             const error = new Error(data?.error || 'حدث خطأ أثناء تنفيذ الطلب.');
             error.status = response.status;
+            error.code = data?.code || null;
+            error.field = data?.field || null;
             error.payload = data;
             throw error;
         }
@@ -340,6 +399,7 @@
     function openDialog(type, payload = {}) {
         const profile = state.profile;
         const tenant = profile?.tenant || {};
+        clearDialogError();
         let title = 'إجراء إداري';
         let body = '';
         let action = type;
@@ -363,8 +423,8 @@
             title = 'إعادة تعيين كلمة المرور';
             body = `<p>سيتم إبطال الجلسات الحالية للمستخدم بعد التغيير.</p>${dialogField('كلمة المرور المؤقتة الجديدة','newPassword','password','','minlength="8" required')}${dialogField('تأكيد كلمة المرور','confirmPassword','password','','minlength="8" required')}`;
         } else if (type === 'new-tenant') {
-            title = 'إضافة Gym جديد';
-            body = `<div class="dialog-grid">${dialogField('اسم الجيم','name','text','','required')}${dialogField('Slug','slug','text','','pattern="[a-z0-9]+(?:-[a-z0-9]+)*" required')}${dialogField('اسم الـOwner','ownerName','text','','required')}${dialogField('بريد الـOwner','ownerEmail','email','','required')}${dialogField('كلمة مرور الـOwner','ownerPassword','password','','minlength="8" required')}${dialogSelect('باقة التجربة','trialPlanCode',planOptions())}</div>`;
+            title = 'إضافة جيم جديد';
+            body = `<div class="dialog-grid">${dialogField('اسم الجيم','name','text','','minlength="2" maxlength="160" required')}${dialogField('المعرف المختصر','slug','text','','pattern="[a-z0-9]+(?:-[a-z0-9]+)*" minlength="3" maxlength="80" required')}${dialogField('اسم المالك','ownerName','text','','minlength="2" maxlength="120" required')}${dialogField('بريد المالك','ownerEmail','email','','required')}${dialogField('كلمة مرور المالك','ownerPassword','password','','minlength="8" maxlength="128" required')}${dialogSelect('باقة التجربة','trialPlanCode',planOptions())}</div>`;
         } else if (type === 'owner') {
             title = 'إضافة أو تغيير Owner';
             body = `<p>مع تفعيل الاستبدال سيتم تحويل الـOwner الحالي إلى Assistant وإبطال جلساته.</p><div class="dialog-grid">${dialogField('الاسم','name','text','','required')}${dialogField('البريد','email','email','','required')}${dialogField('كلمة المرور','password','password','','minlength="8" required')}</div><label class="dialog-check"><input name="replaceExisting" type="checkbox"> استبدال الـOwner الحالي</label>${dialogField('السبب','reason','text','')}`;
@@ -396,6 +456,8 @@
     async function handleDialogSubmit(event) {
         event.preventDefault();
         if (event.submitter?.value === 'cancel') { dialog.close(); return; }
+        if (!validateDialogForm()) return;
+        clearDialogError();
         const action = dialogForm.dataset.action;
         const payload = JSON.parse(dialogForm.dataset.payload || '{}');
         const values = formObject(dialogForm);
@@ -434,7 +496,11 @@
                 await api(`/api/platform-admin/subscription-requests/${payload.requestId}/reject`, { method: 'POST', body: JSON.stringify({ reason: values.reason }) });
                 showToast('تم رفض الطلب وتسجيل السبب.'); dialog.close(); await loadRequests();
             }
-        } catch (error) { showToast(error.message, true); } finally { setLoading(submit, false); }
+        } catch (error) {
+            const message = getApiErrorMessage(error);
+            showDialogError(message, error.code || '', error.field || '');
+            showToast(message, true);
+        } finally { setLoading(submit, false); }
     }
 
     async function refreshProfile() {
@@ -478,6 +544,7 @@
         $('#platformMobileMenu').addEventListener('click', () => $('.platform-sidebar').classList.toggle('open'));
         $('#platformMobileMenu').addEventListener('keydown', (event) => { if (event.key === 'Enter' || event.key === ' ') $('.platform-sidebar').classList.toggle('open'); });
         dialogForm.addEventListener('submit', handleDialogSubmit);
+        dialogForm.addEventListener('input', () => { if (!$('#platformDialogError')?.hidden) clearDialogError(); });
         document.addEventListener('click', async (event) => {
             const platformAction = event.target.closest('[data-platform-action]');
             if (platformAction?.dataset.platformAction === 'new-tenant') { openDialog('new-tenant'); return; }

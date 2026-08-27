@@ -961,8 +961,16 @@ async function rejectRequest(requestId, actorUserId, reviewNotes = '') {
 function normalizeTenantInput(body = {}) {
     const name = text(body.name || body.tenantName, '', 160);
     const slug = text(body.slug || body.tenantSlug, '', 80).toLowerCase();
-    if (name.length < 2) throw saasError('اسم الجيم مطلوب.', 400, 'INVALID_TENANT_NAME');
-    if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug) || slug.length < 3) throw saasError('الـSlug يجب أن يحتوي على حروف وأرقام وشرطات فقط.', 400, 'INVALID_TENANT_SLUG');
+    if (name.length < 2) {
+        const error = saasError('اسم الجيم مطلوب.', 400, 'INVALID_TENANT_NAME');
+        error.field = 'name';
+        throw error;
+    }
+    if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug) || slug.length < 3) {
+        const error = saasError('المعرف المختصر يجب أن يحتوي على حروف إنجليزية صغيرة وأرقام وشرطات فقط، ويكون 3 أحرف على الأقل.', 400, 'INVALID_TENANT_SLUG');
+        error.field = 'slug';
+        throw error;
+    }
     return { name, slug };
 }
 
@@ -978,7 +986,11 @@ async function createTenantWithOwner(body = {}, actorUserId, authService) {
     if (!plan) throw saasError('باقة التجربة غير متاحة.', 409, 'TRIAL_PLAN_NOT_FOUND');
     const existingTenant = await getPool();
     const conflict = await existingTenant.request().input('slug', sql.VarChar(80), tenant.slug).query('SELECT TOP (1) id FROM dbo.gym_tenants WHERE slug=@slug;');
-    if (conflict.recordset[0]) throw saasError('هذا الـSlug مستخدم بالفعل.', 409, 'DUPLICATE_TENANT_SLUG');
+    if (conflict.recordset[0]) {
+        const error = saasError('هذا المعرف المختصر مستخدم بالفعل. اختر معرفًا آخر.', 409, 'DUPLICATE_TENANT_SLUG');
+        error.field = 'slug';
+        throw error;
+    }
     const passwordHash = await authService.hashPassword(ownerPassword);
     const startsAt = new Date();
     const expiresAt = new Date(startsAt.getTime() + TRIAL_DAYS * 86400000);
@@ -999,7 +1011,11 @@ async function createTenantWithOwner(body = {}, actorUserId, authService) {
             await recordAudit({ tenantId, actorUserId: actorUserId == null ? null : Number(actorUserId), action: 'tenant_created', entityType: 'tenant', entityId: tenantId, details: `تم إنشاء ${tenant.name} مع Owner أولي وباقة تجربة.`, executor: transaction });
         });
     } catch (error) {
-        if (error.number === 2601 || error.number === 2627) throw saasError('البريد الإلكتروني أو الـSlug مستخدم بالفعل.', 409, 'DUPLICATE_TENANT_OWNER');
+        if (error.number === 2601 || error.number === 2627) {
+            const duplicateError = saasError('البريد الإلكتروني للمالك مستخدم بالفعل. استخدم بريدًا آخر.', 409, 'DUPLICATE_TENANT_OWNER');
+            duplicateError.field = 'ownerEmail';
+            throw duplicateError;
+        }
         throw error;
     }
     return { tenant: { id: tenantId, name: tenant.name, slug: tenant.slug, status: 'trial' }, owner: { id: ownerId, name: ownerName, email: ownerEmail }, subscription: await getCurrentSubscription(tenantId) };

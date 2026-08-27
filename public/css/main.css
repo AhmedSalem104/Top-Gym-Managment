@@ -16419,6 +16419,8 @@ body.auth-locked .auth-screen {
 .platform-dialog footer { justify-content: flex-start; border-top: 1px solid var(--border-secondary); }
 .dialog-close { display: grid; width: 31px; height: 31px; place-items: center; border: 1px solid var(--platform-border); border-radius: 8px; background: var(--platform-surface-2); color: var(--text-muted); font-size: 1.15rem; line-height: 1; }
 .dialog-close:hover { border-color: var(--danger-border); background: var(--danger-soft); color: var(--danger-text); }
+.platform-dialog-error { margin: 14px 20px 0; padding: 11px 13px; border: 1px solid var(--danger-border); border-radius: 10px; background: var(--danger-soft); color: var(--danger-text); font-size: .78rem; line-height: 1.6; }
+.platform-dialog-error[hidden] { display: none; }
 .dialog-body { display: grid; gap: 14px; max-height: 56vh; overflow: auto; padding: 20px; }
 .dialog-body p { color: var(--text-muted); font-size: .78rem; }
 .dialog-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
