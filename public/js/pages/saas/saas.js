@@ -86,7 +86,10 @@
     async function uploadProof(requestId, file) {
         return window.topGymAuth.api(`/api/saas/subscription-requests/${requestId}/proof`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/octet-stream', 'X-Payment-Proof-Mime': file.type, 'X-Payment-Proof-Name': file.name },
+            // HTTP header values are restricted to ISO-8859-1 by the browser.
+            // Encode the user-facing filename before sending it in a header so
+            // Arabic filenames do not make fetch fail before the request starts.
+            headers: { 'Content-Type': 'application/octet-stream', 'X-Payment-Proof-Mime': file.type, 'X-Payment-Proof-Name-Encoded': encodeURIComponent(file.name) },
             body: file
         });
     }

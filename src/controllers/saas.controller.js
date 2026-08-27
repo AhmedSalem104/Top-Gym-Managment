@@ -1,5 +1,17 @@
 'use strict';
 
+function decodeHeaderFilename(value) {
+    const encoded = String(value || '');
+    if (!encoded) return '';
+    try {
+        return decodeURIComponent(encoded);
+    } catch (_) {
+        // Keep compatibility with older clients that sent an unencoded ASCII
+        // filename or a malformed value; the service sanitizes it afterward.
+        return encoded;
+    }
+}
+
 function createSaasController({ saasService }) {
     return {
         subscription: async (request, response) => {
@@ -31,7 +43,9 @@ function createSaasController({ saasService }) {
                 requestId: request.params.id,
                 buffer: request.body,
                 mimeType: request.get('x-payment-proof-mime') || request.get('content-type'),
-                fileName: request.get('x-payment-proof-name')
+                fileName: request.get('x-payment-proof-name-encoded')
+                    ? decodeHeaderFilename(request.get('x-payment-proof-name-encoded'))
+                    : request.get('x-payment-proof-name')
             }) });
         },
 
