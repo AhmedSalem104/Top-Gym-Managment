@@ -4,6 +4,7 @@ const { getPool, sql } = require('../database');
 const { withTransaction } = require('../database/transaction');
 const userRepository = require('../repositories/user.repository');
 const sessionRepository = require('../repositories/session.repository');
+const { runTenantContext } = require('../tenancy/tenant-context');
 const { ROLES } = require('../permissions/roles');
 const {
     KNOWN_PERMISSION_CODES,
@@ -148,11 +149,29 @@ async function seedAssistantPermissions(userId, defaults = SAFE_ASSISTANT_DEFAUL
 
 async function seedExistingAssistants() {
     const pool = await getPool();
-    const result = await pool.request().query("SELECT id FROM dbo.gym_users WHERE role = 'Assistant' ORDER BY id;");
+    const tenantTable = await pool.request().query("SELECT OBJECT_ID(N'dbo.gym_user_tenants', N'U') AS object_id;");
+    if (!tenantTable.recordset[0]?.object_id) {
+        const legacyResult = await pool.request().query("SELECT id FROM dbo.gym_users WHERE role = 'Assistant' ORDER BY id;");
+        for (const row of legacyResult.recordset) {
+            // Legacy installations do not have tenant membership metadata yet.
+            await seedAssistantPermissions(row.id, LEGACY_ASSISTANT_DEFAULT_PERMISSIONS);
+        }
+        return;
+    }
+
+    const result = await pool.request().query(`
+        SELECT DISTINCT u.id, ut.tenant_id
+        FROM dbo.gym_users u
+        INNER JOIN dbo.gym_user_tenants ut ON ut.user_id=u.id
+        WHERE u.role='Assistant' AND ut.status='active'
+        ORDER BY u.id, ut.tenant_id;
+    `);
     for (const row of result.recordset) {
         // Existing accounts retain every route that was available before the
-        // migration. New accounts use the safer default above.
-        await seedAssistantPermissions(row.id, LEGACY_ASSISTANT_DEFAULT_PERMISSIONS);
+        // migration. New accounts use the safer default above. The nested
+        // tenant context is required when the permissions table has already
+        // been upgraded with a non-null tenant_id column.
+        await runTenantContext({ tenantId: Number(row.tenant_id), mode: 'tenant' }, () => seedAssistantPermissions(row.id, LEGACY_ASSISTANT_DEFAULT_PERMISSIONS));
     }
 }
 
