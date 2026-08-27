@@ -269,6 +269,7 @@
 .platform-forbidden-card { display: grid; max-width: 480px; justify-items: center; gap: 12px; padding: 40px; border: 1px solid var(--platform-border); border-radius: 18px; background: var(--platform-surface); box-shadow: var(--shadow-popup); text-align: center; }
 .platform-forbidden-card h1 { color: var(--text-primary); font-size: 1.35rem; }
 .platform-forbidden-card p { color: var(--text-muted); font-size: .82rem; }
+.platform-forbidden-actions { display: grid; width: min(100%, 340px); gap: 10px; }
 
 @media (max-width: 1280px) {
     .platform-kpi-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
