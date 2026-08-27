@@ -52,7 +52,7 @@
     }
 
     function statusLabel(value) {
-        return ({ active: 'Active', trial: 'Trial', suspended: 'Suspended', expired: 'Expired', archived: 'Archived', cancelled: 'Cancelled', pending: 'Pending', approved: 'Approved', rejected: 'Rejected' })[String(value || '').toLowerCase()] || value || '—';
+        return ({ active: 'نشط', trial: 'تجريبي', suspended: 'موقوف', expired: 'منتهي', archived: 'مؤرشف', cancelled: 'ملغي', pending: 'قيد المراجعة', approved: 'مقبول', rejected: 'مرفوض' })[String(value || '').toLowerCase()] || value || '—';
     }
 
     function statusPill(value) {
@@ -124,7 +124,7 @@
         state.view = view;
         $$('[data-platform-view]').forEach((button) => button.classList.toggle('active', button.dataset.platformView === view));
         $$('[data-platform-panel]').forEach((panel) => panel.classList.toggle('active', panel.dataset.platformPanel === view));
-        const titles = { dashboard: 'لوحة المنصة', gyms: 'الجيمات / Tenants', requests: 'طلبات الاشتراك', plans: 'الباقات', audit: 'سجل المنصة', settings: 'إعدادات المنصة' };
+        const titles = { dashboard: 'لوحة المنصة', gyms: 'الجيمات', requests: 'طلبات الاشتراك', plans: 'الباقات', audit: 'سجل المنصة', settings: 'إعدادات المنصة' };
         $('#platformPageTitle').textContent = titles[view] || 'إدارة المنصة';
         $('.platform-sidebar')?.classList.remove('open');
         if (view === 'dashboard') loadDashboard();
@@ -137,13 +137,13 @@
     function renderKpis(metrics) {
         const gyms = metrics.gyms || {};
         const items = [
-            ['إجمالي الجيمات', gyms.total, 'كل Tenants المسجلة', '▦', ''],
-            ['Active Gyms', gyms.active, 'جيمات تعمل الآن', '✓', 'kpi-success'],
-            ['Trial Gyms', gyms.trial, 'في فترة التجربة', '◌', 'kpi-info'],
-            ['طلبات Pending', metrics.pendingRequests, 'تحتاج مراجعة', '◷', 'kpi-warning'],
+            ['إجمالي الجيمات', gyms.total, 'كل الجيمات المسجلة', '▦', ''],
+            ['الجيمات النشطة', gyms.active, 'تعمل الآن', '✓', 'kpi-success'],
+            ['جيمات تجريبية', gyms.trial, 'في فترة التجربة', '◌', 'kpi-info'],
+            ['طلبات قيد المراجعة', metrics.pendingRequests, 'تحتاج إلى إجراء', '◷', 'kpi-warning'],
             ['تنتهي قريبًا', metrics.expiringSubscriptions, 'خلال 30 يومًا', '!', 'kpi-danger'],
             ['إجمالي المشتركين', metrics.members, 'في كل الجيمات', '◉', ''],
-            ['مستخدمو النظام', metrics.users, 'Owners و Assistants', '◎', ''],
+            ['مستخدمو النظام', metrics.users, 'الملاك والمساعدون', '◎', ''],
             ['استخدام AI', metrics.aiGenerations, 'هذا الشهر', '✦', 'kpi-info'],
             ['التخزين', formatBytes(metrics.storageBytes), 'ملفات المنصة والجيمات', '▤', 'kpi-warning'],
             ['جيمات جديدة', metrics.newGyms, 'خلال الفترة المحددة', '+', 'kpi-success']
@@ -160,9 +160,9 @@
         const statusItems = [['active', gyms.active], ['trial', gyms.trial], ['suspended', gyms.suspended], ['expired', gyms.expired], ['archived', gyms.archived]];
         $('#platformStatusGrid').innerHTML = statusItems.map(([status, count]) => `<div class="status-tile ${status}"><strong>${Number(count || 0)}</strong><span>${escapeHtml(statusLabel(status))}</span></div>`).join('');
         const recent = data.recentGyms || [];
-        $('#recentTenants').innerHTML = recent.length ? recent.map((tenant) => `<button class="mini-tenant" type="button" data-open-tenant="${tenant.id}"><span class="mini-tenant-main"><strong>${escapeHtml(tenant.name)}</strong><small>${escapeHtml(tenant.slug)} · ${escapeHtml(tenant.owner?.name || 'بدون Owner')}</small></span>${statusPill(tenant.status)}</button>`).join('') : '<div class="empty-inline">لا توجد جيمات مضافة بعد.</div>';
+        $('#recentTenants').innerHTML = recent.length ? recent.map((tenant) => `<button class="mini-tenant" type="button" data-open-tenant="${tenant.id}"><span class="mini-tenant-main"><strong>${escapeHtml(tenant.name)}</strong><small>${escapeHtml(tenant.slug)} · ${escapeHtml(tenant.owner?.name || 'بدون مالك')}</small></span>${statusPill(tenant.status)}</button>`).join('') : '<div class="empty-inline">لا توجد جيمات مضافة بعد.</div>';
         const activity = data.recentActivity || [];
-        $('#recentActivity').innerHTML = activity.length ? activity.map((item) => `<div class="mini-activity"><span class="mini-activity-main"><strong>${escapeHtml(item.action || 'عملية')}</strong><small>${escapeHtml(item.actorName || 'System')} · ${escapeHtml(item.details || '')}</small></span><small>${escapeHtml(formatDateTime(item.createdAt))}</small></div>`).join('') : '<div class="empty-inline">لا توجد عمليات مسجلة.</div>';
+        $('#recentActivity').innerHTML = activity.length ? activity.map((item) => `<div class="mini-activity"><span class="mini-activity-main"><strong>${escapeHtml(item.action || 'عملية')}</strong><small>${escapeHtml(item.actorName || 'النظام')} · ${escapeHtml(item.details || '')}</small></span><small>${escapeHtml(formatDateTime(item.createdAt))}</small></div>`).join('') : '<div class="empty-inline">لا توجد عمليات مسجلة.</div>';
     }
 
     async function loadDashboard() {
@@ -211,7 +211,7 @@
         const health = profile.health || {};
         const plan = subscription?.plan;
         const actions = tenant.status === 'suspended' ? profileActionButton('إعادة التفعيل', 'activate', 'primary') : tenant.status === 'archived' ? profileActionButton('استعادة الجيم', 'restore', 'primary') : profileActionButton('إيقاف الجيم', 'suspend', 'danger');
-        $('#tenantProfile').innerHTML = `<div class="profile-head"><div class="profile-heading"><span class="profile-logo">ج</span><div><h2>${escapeHtml(tenant.name)}</h2><p>${escapeHtml(tenant.slug)} · Tenant #${tenant.id}</p><div class="profile-status-line">${statusPill(tenant.status)}<span class="table-secondary">${escapeHtml(tenant.contactEmail || 'لا يوجد بريد اتصال')}</span></div></div></div><div class="profile-actions"><button class="platform-btn ghost" type="button" data-profile-action="back">← كل الجيمات</button>${actions}${profileActionButton('الاشتراك', 'subscription')}${profileActionButton('تغيير الباقة', 'plan')}${profileActionButton('تمديد', 'extend', 'primary')}<button class="platform-btn ghost" type="button" data-profile-action="more">المزيد</button></div></div><div class="profile-tabs" role="tablist">${[['overview','نظرة عامة'],['subscription','الاشتراك'],['usage','الاستخدام والحدود'],['users','Owner والمستخدمون'],['data','بيانات الجيم'],['payments','المدفوعات'],['health','Health'],['audit','Audit Log'],['notes','ملاحظات داخلية']].map(([id,label]) => `<button class="profile-tab ${state.profileTab === id ? 'active' : ''}" type="button" data-profile-tab="${id}">${label}</button>`).join('')}</div><div class="profile-panel-wrap">${profileOverviewPanel(profile)}${profileSubscriptionPanel(profile)}${profileUsagePanel(profile)}${profileUsersPanel(profile)}${profileDataPanel(profile)}${profilePaymentsPanel(profile)}${profileHealthPanel(profile)}${profileAuditPanel(profile)}${profileNotesPanel(profile)}</div>`;
+        $('#tenantProfile').innerHTML = `<div class="profile-head"><div class="profile-heading"><span class="profile-logo">ج</span><div><h2>${escapeHtml(tenant.name)}</h2><p>${escapeHtml(tenant.slug)} · معرف الجيم #${tenant.id}</p><div class="profile-status-line">${statusPill(tenant.status)}<span class="table-secondary">${escapeHtml(tenant.contactEmail || 'لا يوجد بريد اتصال')}</span></div></div></div><div class="profile-actions"><button class="platform-btn ghost" type="button" data-profile-action="back">← كل الجيمات</button>${actions}${profileActionButton('الاشتراك', 'subscription')}${profileActionButton('تغيير الباقة', 'plan')}${profileActionButton('تمديد', 'extend', 'primary')}<button class="platform-btn ghost" type="button" data-profile-action="more">المزيد</button></div></div><div class="profile-tabs" role="tablist">${[['overview','نظرة عامة'],['subscription','الاشتراك'],['usage','الاستخدام والحدود'],['users','المالك والمستخدمون'],['data','بيانات الجيم'],['payments','المدفوعات'],['health','الحالة الفنية'],['audit','سجل العمليات'],['notes','ملاحظات داخلية']].map(([id,label]) => `<button class="profile-tab ${state.profileTab === id ? 'active' : ''}" type="button" data-profile-tab="${id}">${label}</button>`).join('')}</div><div class="profile-panel-wrap">${profileOverviewPanel(profile)}${profileSubscriptionPanel(profile)}${profileUsagePanel(profile)}${profileUsersPanel(profile)}${profileDataPanel(profile)}${profilePaymentsPanel(profile)}${profileHealthPanel(profile)}${profileAuditPanel(profile)}${profileNotesPanel(profile)}</div>`;
         $('#tenantDirectory').hidden = true;
         $('.platform-view[data-platform-panel="gyms"] > .platform-page-head').hidden = true;
         $('#tenantProfile').hidden = false;
@@ -228,32 +228,32 @@
         const tenant = profile.tenant || {};
         const sub = profile.subscription;
         const stats = profile.stats || {};
-        return profilePanel('overview', `<div class="profile-grid">${stat('المشتركون', stats.members ?? 0)}${stat('عضويات نشطة', stats.activeMemberships ?? 0)}${stat('حضور اليوم', stats.attendanceToday ?? 0)}${stat('إيراد الشهر', formatMoney(stats.revenueMonth ?? 0))}</div><div class="profile-section-grid"><article class="profile-section"><h3>بيانات الجيم</h3>${detailRows([['Tenant ID', tenant.id],['Slug', tenant.slug],['الحالة', statusLabel(tenant.status)],['تاريخ الإنشاء', formatDate(tenant.createdAt)],['آخر تحديث', formatDateTime(tenant.updatedAt)],['هاتف الاتصال', tenant.contactPhone]])}</article><article class="profile-section"><h3>Owner والاشتراك</h3>${detailRows([['Owner', tenant.owner?.name],['البريد', tenant.owner?.email],['آخر دخول', formatDateTime(tenant.owner?.lastLoginAt)],['الباقة', sub?.plan?.name],['حالة الاشتراك', statusLabel(sub?.status)],['ينتهي في', sub?.expiresAt ? `${formatDate(sub.expiresAt)} (${sub.daysRemaining} يوم)` : 'Lifetime']])}</article></div>`);
+        return profilePanel('overview', `<div class="profile-grid">${stat('المشتركون', stats.members ?? 0)}${stat('عضويات نشطة', stats.activeMemberships ?? 0)}${stat('حضور اليوم', stats.attendanceToday ?? 0)}${stat('إيراد الشهر', formatMoney(stats.revenueMonth ?? 0))}</div><div class="profile-section-grid"><article class="profile-section"><h3>بيانات الجيم</h3>${detailRows([['معرف الجيم', tenant.id],['المعرف المختصر', tenant.slug],['الحالة', statusLabel(tenant.status)],['تاريخ الإنشاء', formatDate(tenant.createdAt)],['آخر تحديث', formatDateTime(tenant.updatedAt)],['هاتف الاتصال', tenant.contactPhone]])}</article><article class="profile-section"><h3>المالك والاشتراك</h3>${detailRows([['المالك', tenant.owner?.name],['البريد', tenant.owner?.email],['آخر دخول', formatDateTime(tenant.owner?.lastLoginAt)],['الباقة', sub?.plan?.name],['حالة الاشتراك', statusLabel(sub?.status)],['ينتهي في', sub?.expiresAt ? `${formatDate(sub.expiresAt)} (${sub.daysRemaining} يوم)` : 'مدى الحياة']])}</article></div>`);
     }
 
     function profileSubscriptionPanel(profile) {
         const sub = profile.subscription;
         const changes = profile.scheduledChanges || [];
         const plan = sub?.plan;
-        return profilePanel('subscription', `<div class="profile-grid">${stat('الباقة الحالية', plan?.name || '—')}${stat('الحالة', statusLabel(sub?.status))}${stat('الأيام المتبقية', sub?.daysRemaining ?? '∞')}${stat('السعر المثبت', formatMoney(sub?.priceSnapshot ?? plan?.price ?? 0, sub?.currencySnapshot || plan?.currency))}</div><div class="profile-section-grid"><article class="profile-section"><h3>تفاصيل الاشتراك</h3>${detailRows([['البداية', formatDate(sub?.startsAt)],['النهاية', sub?.expiresAt ? formatDate(sub.expiresAt) : 'Lifetime'],['المصدر', sub?.source],['التجديد', sub?.renewalStatus],['ملاحظات', sub?.notes]])}<div class="profile-actions" style="margin-top:16px">${profileActionButton('تفعيل / Trial إلى Paid','subscription')}${profileActionButton('منح Lifetime','lifetime')}${profileActionButton('إيقاف الاشتراك','subscription-suspend','danger')}</div></article><article class="profile-section"><h3>تغييرات مجدولة</h3>${changes.length ? `<div class="note-list">${changes.map((change) => `<div class="note-item"><p>${escapeHtml(change.plan?.name)} · ${escapeHtml(statusLabel(change.status))}</p><small>${escapeHtml(formatDate(change.effectiveAt))} · ${escapeHtml(change.reason)}</small></div>`).join('')}</div>` : '<div class="empty-inline">لا توجد تغييرات مجدولة.</div>'}</article></div>`);
+        return profilePanel('subscription', `<div class="profile-grid">${stat('الباقة الحالية', plan?.name || '—')}${stat('الحالة', statusLabel(sub?.status))}${stat('الأيام المتبقية', sub?.daysRemaining ?? '∞')}${stat('السعر المثبت', formatMoney(sub?.priceSnapshot ?? plan?.price ?? 0, sub?.currencySnapshot || plan?.currency))}</div><div class="profile-section-grid"><article class="profile-section"><h3>تفاصيل الاشتراك</h3>${detailRows([['البداية', formatDate(sub?.startsAt)],['النهاية', sub?.expiresAt ? formatDate(sub.expiresAt) : 'مدى الحياة'],['المصدر', sub?.source],['التجديد', sub?.renewalStatus],['ملاحظات', sub?.notes]])}<div class="profile-actions" style="margin-top:16px">${profileActionButton('تفعيل / تحويل التجربة إلى مدفوع','subscription')}${profileActionButton('منح اشتراك مدى الحياة','lifetime')}${profileActionButton('إيقاف الاشتراك','subscription-suspend','danger')}</div></article><article class="profile-section"><h3>تغييرات مجدولة</h3>${changes.length ? `<div class="note-list">${changes.map((change) => `<div class="note-item"><p>${escapeHtml(change.plan?.name)} · ${escapeHtml(statusLabel(change.status))}</p><small>${escapeHtml(formatDate(change.effectiveAt))} · ${escapeHtml(change.reason)}</small></div>`).join('')}</div>` : '<div class="empty-inline">لا توجد تغييرات مجدولة.</div>'}</article></div>`);
     }
 
     function profileUsagePanel(profile) {
         const usage = profile.tenant?.usage || {};
         const entitlements = profile.entitlements || {};
         const rows = usage.rows || [];
-        const featureNames = { intelligence: 'الذكاء التشغيلي', coaching: 'التدريب والتغذية', store: 'المتجر', reports: 'التقارير', portal: 'بوابة المشترك', prioritySupport: 'دعم أولوية' };
+        const featureNames = { intelligence: 'الذكاء التشغيلي', coaching: 'التدريب والتغذية', store: 'المتجر', reports: 'التقارير', portal: 'بوابة المشترك', prioritySupport: 'دعم بأولوية' };
         return profilePanel('usage', `<div class="profile-section-grid"><article class="profile-section"><h3>الاستهلاك مقابل الحدود</h3><div class="limit-list">${rows.map((row) => `<div class="limit-row ${row.percent >= 100 ? 'reached' : row.percent >= 80 ? 'near' : ''}"><div class="limit-row-head"><span>${escapeHtml(row.label)}</span><b>${escapeHtml(row.key === 'storage' ? formatBytes(row.used) : row.used)} / ${escapeHtml(row.max == null ? '∞' : row.key === 'storage' ? formatBytes(row.max) : row.max)}</b></div><span class="progress-track"><i style="width:${row.percent}%"></i></span></div>`).join('')}</div></article><article class="profile-section"><div class="card-heading"><h3>المزايا الفعالة</h3>${profileActionButton('إضافة Override','override')}</div><div class="feature-list">${Object.entries(featureNames).map(([key,label]) => `<span class="feature-chip ${entitlements.features?.[key] === false ? 'off' : ''}">${entitlements.features?.[key] === false ? '×' : '✓'} ${escapeHtml(label)}</span>`).join('')}</div><div style="margin-top:18px">${detailRows([['الباقة الأساسية', entitlements.plan?.name || profile.subscription?.plan?.name],['استثناءات مخصصة', entitlements.overrides ? 'مفعلة' : 'لا توجد'],['ملاحظات الاستثناء', entitlements.overrides?.notes || '—']])}</div></article></div>`);
     }
 
     function profileUsersPanel(profile) {
         const users = profile.users || [];
-        return profilePanel('users', `<div class="profile-section profile-wide"><div class="card-heading"><div><h3>Owner والمستخدمون</h3><p>يمكن تعطيل حساب مستخدم أو إبطال جلساته دون تعديل بيانات الجيم التشغيلية.</p></div>${profileActionButton('تغيير / إضافة Owner','owner','primary')}</div><div class="table-scroll"><table class="profile-table"><thead><tr><th>المستخدم</th><th>الدور</th><th>الحالة</th><th>آخر دخول</th><th>إجراء</th></tr></thead><tbody>${users.length ? users.map((user) => `<tr><td><strong>${escapeHtml(user.name)}</strong><br><small>${escapeHtml(user.email)}</small></td><td>${escapeHtml(user.role)}</td><td>${statusPill(user.status === 'active' ? 'active' : user.status)}</td><td>${escapeHtml(formatDateTime(user.lastLoginAt))}</td><td><button class="table-action" type="button" data-user-action="${user.status === 'Disabled' ? 'enable' : 'disable'}" data-user-id="${user.id}">${user.status === 'Disabled' ? 'تفعيل' : 'تعطيل'}</button> <button class="table-action" type="button" data-user-action="reset" data-user-id="${user.id}">Reset Password</button></td></tr>`).join('') : '<tr><td colspan="5">لا يوجد مستخدمون.</td></tr>'}</tbody></table></div></div>`);
+        return profilePanel('users', `<div class="profile-section profile-wide"><div class="card-heading"><div><h3>المالك والمستخدمون</h3><p>يمكن تعطيل حساب مستخدم أو إبطال جلساته دون تعديل بيانات الجيم التشغيلية.</p></div>${profileActionButton('تغيير / إضافة مالك','owner','primary')}</div><div class="table-scroll"><table class="profile-table"><thead><tr><th>المستخدم</th><th>الدور</th><th>الحالة</th><th>آخر دخول</th><th>إجراء</th></tr></thead><tbody>${users.length ? users.map((user) => `<tr><td><strong>${escapeHtml(user.name)}</strong><br><small>${escapeHtml(user.email)}</small></td><td>${escapeHtml(user.role === 'Owner' ? 'مالك' : user.role === 'Assistant' ? 'مساعد' : user.role)}</td><td>${statusPill(user.status === 'active' ? 'active' : user.status)}</td><td>${escapeHtml(formatDateTime(user.lastLoginAt))}</td><td><button class="table-action" type="button" data-user-action="${user.status === 'Disabled' ? 'enable' : 'disable'}" data-user-id="${user.id}">${user.status === 'Disabled' ? 'تفعيل' : 'تعطيل'}</button> <button class="table-action" type="button" data-user-action="reset" data-user-id="${user.id}">إعادة تعيين كلمة المرور</button></td></tr>`).join('') : '<tr><td colspan="5">لا يوجد مستخدمون.</td></tr>'}</tbody></table></div></div>`);
     }
 
     function profileDataPanel(profile) {
         const stats = profile.stats || {};
-        return profilePanel('data', `<div class="profile-grid">${stat('إجمالي المشتركين', stats.members ?? 0)}${stat('عضويات منتهية', stats.expiredMemberships ?? 0)}${stat('حضور الشهر', stats.attendanceMonth ?? 0)}${stat('مصروفات الشهر', formatMoney(stats.expensesMonth ?? 0))}${stat('مبيعات المتجر', stats.storeSalesMonth ?? 0)}${stat('المنتجات', stats.products ?? 0)}${stat('برامج التدريب', stats.workoutPrograms ?? 0)}${stat('خطط التغذية', stats.dietPlans ?? 0)}</div><div class="profile-section-grid"><article class="profile-section"><h3>ملخص مالي</h3>${detailRows([['إيراد الشهر', formatMoney(stats.revenueMonth)],['مصروفات الشهر', formatMoney(stats.expensesMonth)],['صافي تقريبي', formatMoney(Number(stats.revenueMonth || 0) - Number(stats.expensesMonth || 0))]])}</article><article class="profile-section"><h3>نشاط البوابة</h3>${detailRows([['تقييمات / Feedback', stats.portalFeedback],['حضور اليوم', stats.attendanceToday],['حضور الشهر', stats.attendanceMonth]])}</article></div>`);
+        return profilePanel('data', `<div class="profile-grid">${stat('إجمالي المشتركين', stats.members ?? 0)}${stat('عضويات منتهية', stats.expiredMemberships ?? 0)}${stat('حضور الشهر', stats.attendanceMonth ?? 0)}${stat('مصروفات الشهر', formatMoney(stats.expensesMonth ?? 0))}${stat('مبيعات المتجر', stats.storeSalesMonth ?? 0)}${stat('المنتجات', stats.products ?? 0)}${stat('برامج التدريب', stats.workoutPrograms ?? 0)}${stat('خطط التغذية', stats.dietPlans ?? 0)}</div><div class="profile-section-grid"><article class="profile-section"><h3>ملخص مالي</h3>${detailRows([['إيراد الشهر', formatMoney(stats.revenueMonth)],['مصروفات الشهر', formatMoney(stats.expensesMonth)],['صافي تقريبي', formatMoney(Number(stats.revenueMonth || 0) - Number(stats.expensesMonth || 0))]])}</article><article class="profile-section"><h3>نشاط البوابة</h3>${detailRows([['تقييمات المشتركين', stats.portalFeedback],['حضور اليوم', stats.attendanceToday],['حضور الشهر', stats.attendanceMonth]])}</article></div>`);
     }
 
     function profilePaymentsPanel(profile) {
@@ -264,25 +264,25 @@
     function profileHealthPanel(profile) {
         const health = profile.health || {};
         const accessDetails = detailRows([
-            ['Database', health.database?.status],
-            ['RLS', health.rls?.status],
-            ['سياسة RLS', `${health.rls?.enabled || 0} / ${health.rls?.policies || 0}`],
-            ['Last successful request', formatDateTime(health.lastSuccessfulRequest)],
-            ['Last login', formatDateTime(health.lastLogin)]
+            ['قاعدة البيانات', health.database?.status],
+            ['عزل البيانات RLS', health.rls?.status],
+            ['سياسات العزل', `${health.rls?.enabled || 0} / ${health.rls?.policies || 0}`],
+            ['آخر طلب ناجح', formatDateTime(health.lastSuccessfulRequest)],
+            ['آخر دخول', formatDateTime(health.lastLogin)]
         ]);
         const assetDetails = detailRows([
-            ['Last backup', formatDateTime(health.lastBackup)],
-            ['Storage', `${formatBytes(health.storage?.usedBytes)} / ${health.storage?.maxBytes ? formatBytes(health.storage.maxBytes) : '∞'}`],
-            ['AI', `${health.ai?.used || 0} / ${health.ai?.max ?? '∞'}`],
+            ['آخر نسخة احتياطية', formatDateTime(health.lastBackup)],
+            ['التخزين', `${formatBytes(health.storage?.usedBytes)} / ${health.storage?.maxBytes ? formatBytes(health.storage.maxBytes) : '∞'}`],
+            ['الذكاء الاصطناعي', `${health.ai?.used || 0} / ${health.ai?.max ?? '∞'}`],
             ['حالة التخزين', health.storage?.status],
-            ['حالة AI', health.ai?.status]
+            ['حالة الذكاء الاصطناعي', health.ai?.status]
         ]);
-        return profilePanel('health', `<div class="profile-grid">${stat('Database', health.database?.status || '—')}${stat('RLS', health.rls?.status || '—')}${stat('Subscription', health.subscriptionEnforcement?.status || '—')}${stat('أخطاء 24 ساعة', health.errorsLast24Hours ?? 0)}</div><div class="profile-section-grid"><article class="profile-section"><h3>صحة الوصول والبنية</h3>${accessDetails}</article><article class="profile-section"><h3>التخزين والنسخ والذكاء</h3>${assetDetails}</article></div>`);
+        return profilePanel('health', `<div class="profile-grid">${stat('قاعدة البيانات', health.database?.status || '—')}${stat('عزل البيانات', health.rls?.status || '—')}${stat('تطبيق الاشتراك', health.subscriptionEnforcement?.status || '—')}${stat('أخطاء 24 ساعة', health.errorsLast24Hours ?? 0)}</div><div class="profile-section-grid"><article class="profile-section"><h3>صحة الوصول والبنية</h3>${accessDetails}</article><article class="profile-section"><h3>التخزين والنسخ والذكاء</h3>${assetDetails}</article></div>`);
     }
 
     function profileAuditPanel(profile) {
         const audit = profile.audit || [];
-        return profilePanel('audit', `<div class="profile-section profile-wide"><h3>سجل الجيم</h3><div class="audit-list">${audit.length ? audit.map((item) => `<div class="audit-item"><p>${escapeHtml(item.action)} · ${escapeHtml(item.details)}</p><small>${escapeHtml(item.actorName || 'System')} · ${escapeHtml(formatDateTime(item.createdAt))}${item.reason ? ` · السبب: ${escapeHtml(item.reason)}` : ''}</small></div>`).join('') : '<div class="empty-inline">لا توجد عمليات مسجلة.</div>'}</div></div>`);
+        return profilePanel('audit', `<div class="profile-section profile-wide"><h3>سجل الجيم</h3><div class="audit-list">${audit.length ? audit.map((item) => `<div class="audit-item"><p>${escapeHtml(item.action)} · ${escapeHtml(item.details)}</p><small>${escapeHtml(item.actorName || 'النظام')} · ${escapeHtml(formatDateTime(item.createdAt))}${item.reason ? ` · السبب: ${escapeHtml(item.reason)}` : ''}</small></div>`).join('') : '<div class="empty-inline">لا توجد عمليات مسجلة.</div>'}</div></div>`);
     }
 
     function profileNotesPanel(profile) {
@@ -324,7 +324,7 @@
     }
 
     function renderPlans() {
-        const featureNames = { intelligence: 'AI', coaching: 'Training & Nutrition', store: 'Store', reports: 'Reports', portal: 'Portal' };
+        const featureNames = { intelligence: 'الذكاء التشغيلي', coaching: 'التدريب والتغذية', store: 'المتجر', reports: 'التقارير', portal: 'بوابة المشترك' };
         $('#plansGrid').innerHTML = state.plans.length ? state.plans.map((plan, index) => `<article class="plan-card ${index === 1 ? 'featured' : ''}"><div class="card-heading"><div><span class="eyebrow">${escapeHtml(plan.code)}</span><h3>${escapeHtml(plan.name)}</h3></div>${plan.isActive ? statusPill('active') : statusPill('archived')}</div><p>${escapeHtml(plan.description || 'باقة SaaS لمنصة الجيم.')}</p><div class="plan-price">${escapeHtml(formatMoney(plan.price, plan.currency))}<small> / ${escapeHtml(plan.billingPeriod === 'yearly' ? 'سنة' : 'شهر')}</small></div><div class="plan-limits"><span>المشتركون <b>${escapeHtml(plan.maxMembers ?? '∞')}</b></span><span>المستخدمون <b>${escapeHtml(plan.maxUsers ?? '∞')}</b></span><span>AI شهريًا <b>${escapeHtml(plan.maxAiGenerations ?? '∞')}</b></span><span>التخزين <b>${escapeHtml(plan.maxStorageMb ? `${plan.maxStorageMb} MB` : '∞')}</b></span></div><div class="plan-features">${Object.entries(featureNames).map(([key,label]) => `<span class="feature-chip ${plan.features?.[key] === false ? 'off' : ''}">${plan.features?.[key] === false ? '×' : '✓'} ${label}</span>`).join('')}</div><button class="platform-btn ghost plan-edit" type="button" data-plan-edit="${plan.id}">تعديل الباقة</button></article>`).join('') : '<div class="empty-inline">لا توجد باقات.</div>';
     }
 
