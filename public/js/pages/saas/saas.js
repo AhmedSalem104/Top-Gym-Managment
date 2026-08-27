@@ -46,11 +46,17 @@
     function renderPlans(plans) {
         const host = $('saasPlansList');
         const select = $('saasPlanSelect');
-        if (select) select.innerHTML = plans.map((plan) => `<option value="${plan.id}">${escapeHtml(plan.name)} — ${money(plan.price, plan.currency)} / ${plan.billingPeriod === 'yearly' ? 'سنة' : 'شهر'}</option>`).join('');
+        const availablePlans = (plans || []).filter((plan) => plan.isActive !== false);
+        const currentPlanId = state.billing?.subscription?.plan?.id;
+        if (select) {
+            select.innerHTML = availablePlans.map((plan) => `<option value="${plan.id}">${escapeHtml(plan.name)} — ${money(plan.price, plan.currency)} / ${plan.billingPeriod === 'yearly' ? 'سنة' : 'شهر'}</option>`).join('');
+            select.disabled = !availablePlans.length;
+        }
         if (!host) return;
-        if (!plans.length) { host.innerHTML = '<div class="saas-empty">لا توجد باقات متاحة حاليًا.</div>'; return; }
-        host.innerHTML = plans.map((plan, index) => `<article class="saas-plan-card ${index === 0 ? 'is-selected' : ''}" data-saas-plan-card="${plan.id}"><div><h5>${escapeHtml(plan.name)}</h5><span class="saas-muted">${escapeHtml(plan.description || '')}</span></div><div class="saas-plan-price">${money(plan.price, plan.currency)} <small>/ ${plan.billingPeriod === 'yearly' ? 'سنة' : 'شهر'}</small></div><ul class="saas-plan-limits"><li><span>الأعضاء</span><strong>${limit(plan.maxMembers)}</strong></li><li><span>المستخدمون</span><strong>${limit(plan.maxUsers)}</strong></li><li><span>AI شهريًا</span><strong>${limit(plan.maxAiGenerations)}</strong></li><li><span>التخزين</span><strong>${limit(plan.maxStorageMb)} MB</strong></li></ul><button class="btn btn-light btn-small" type="button" data-saas-select-plan="${plan.id}">اختيار الباقة</button></article>`).join('');
-        if (select && plans[0]) select.value = String(plans[0].id);
+        if (!availablePlans.length) { host.innerHTML = '<div class="saas-empty">لا توجد باقات مفعّلة حاليًا. راجع مدير المنصة.</div>'; return; }
+        const selectedId = availablePlans.some((plan) => String(plan.id) === String(currentPlanId)) ? currentPlanId : availablePlans[0].id;
+        host.innerHTML = availablePlans.map((plan) => `<article class="saas-plan-card ${String(plan.id) === String(selectedId) ? 'is-selected' : ''} ${String(plan.id) === String(currentPlanId) ? 'is-current' : ''}" data-saas-plan-card="${plan.id}"><div><h5>${escapeHtml(plan.name)}</h5><span class="saas-muted">${escapeHtml(plan.description || '')}</span></div><div class="saas-plan-price">${money(plan.price, plan.currency)} <small>/ ${plan.billingPeriod === 'yearly' ? 'سنة' : 'شهر'}</small></div><ul class="saas-plan-limits"><li><span>الأعضاء</span><strong>${limit(plan.maxMembers)}</strong></li><li><span>المستخدمون</span><strong>${limit(plan.maxUsers)}</strong></li><li><span>AI شهريًا</span><strong>${limit(plan.maxAiGenerations)}</strong></li><li><span>التخزين</span><strong>${limit(plan.maxStorageMb)} MB</strong></li></ul><button class="btn btn-light btn-small" type="button" data-saas-select-plan="${plan.id}">${String(plan.id) === String(currentPlanId) ? 'الباقة الحالية' : 'اختيار الباقة'}</button></article>`).join('');
+        if (select) select.value = String(selectedId);
     }
 
     function renderRequests(requests) {

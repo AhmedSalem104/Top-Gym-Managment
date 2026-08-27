@@ -26,7 +26,9 @@ function registerPlatformAdminRoutes(app, { platformAdminService, saasService, a
     app.get('/api/platform-admin/tenants/:tenantId/notes', platformOnly, asyncRoute(controller.notes));
     app.post('/api/platform-admin/tenants/:tenantId/notes', platformOnly, asyncRoute(controller.notes));
     app.get('/api/platform-admin/plans', platformOnly, asyncRoute(controller.plans));
+    app.post('/api/platform-admin/plans', platformOnly, asyncRoute(controller.createPlan));
     app.patch('/api/platform-admin/plans/:planId', platformOnly, asyncRoute(controller.updatePlan));
+    app.delete('/api/platform-admin/plans/:planId', platformOnly, asyncRoute(controller.deletePlan));
     app.get('/api/platform-admin/subscription-requests', platformOnly, asyncRoute(controller.requests));
     app.post('/api/platform-admin/subscription-requests/:requestId/approve', platformOnly, asyncRoute(controller.approveRequest));
     app.post('/api/platform-admin/subscription-requests/:requestId/reject', platformOnly, asyncRoute(controller.rejectRequest));

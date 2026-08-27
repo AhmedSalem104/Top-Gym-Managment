@@ -17,7 +17,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preload" href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
-    <link rel="stylesheet" href="/css/main.css?v=61">
+    <link rel="stylesheet" href="/css/main.css?v=62">
     <link rel="icon" type="image/svg+xml" href="/assets/gym-brand.svg?v=1">
     <title>إدارة المنصة | الجيم</title>
 </head>
@@ -105,7 +105,7 @@
                 </section>
 
                 <section class="platform-view" data-platform-panel="plans">
-                    <div class="platform-page-head"><div><span class="eyebrow">باقات المنصة</span><h2>الباقات والحدود</h2><p>إدارة أسعار الباقات والمزايا التي يتم تطبيقها مركزيًا.</p></div></div><div class="plan-grid" id="plansGrid"></div>
+                    <div class="platform-page-head"><div><span class="eyebrow">باقات المنصة</span><h2>الباقات والحدود</h2><p>إدارة أسعار الباقات والمزايا التي يتم تطبيقها مركزيًا.</p></div><button class="platform-btn primary" type="button" data-platform-action="new-plan">+ إضافة باقة</button></div><div class="plan-grid" id="plansGrid"></div>
                 </section>
 
                 <section class="platform-view" data-platform-panel="audit">
@@ -117,8 +117,8 @@
         </section>
     </div>
 
-    <dialog class="platform-dialog" id="platformActionDialog"><form method="dialog" id="platformActionForm"><header><div><span class="eyebrow">إجراء آمن</span><h3 id="platformDialogTitle">إجراء إداري</h3></div><button class="dialog-close" value="cancel" type="submit" aria-label="إغلاق">×</button></header><div class="platform-dialog-error" id="platformDialogError" role="alert" hidden></div><div class="dialog-body" id="platformDialogBody"></div><footer><button class="platform-btn ghost" value="cancel" type="submit">إلغاء</button><button class="platform-btn primary" id="platformDialogSubmit" value="default" type="submit">تأكيد الإجراء</button></footer></form></dialog>
+    <dialog class="platform-dialog" id="platformActionDialog"><form method="dialog" id="platformActionForm"><header><div><span class="eyebrow">إجراء آمن</span><h3 id="platformDialogTitle">إجراء إداري</h3></div><button class="dialog-close" data-dialog-cancel type="button" aria-label="إغلاق">×</button></header><div class="platform-dialog-error" id="platformDialogError" role="alert" hidden></div><div class="dialog-body" id="platformDialogBody"></div><footer><button class="platform-btn ghost" data-dialog-cancel type="button">إلغاء</button><button class="platform-btn primary" id="platformDialogSubmit" value="default" type="submit">تأكيد الإجراء</button></footer></form></dialog>
     <div class="platform-toast" id="platformToast" role="status" aria-live="polite"></div>
-    <script defer src="/js/platform-admin.js?v=3"></script>
+    <script defer src="/js/platform-admin.js?v=4"></script>
 </body>
 </html>

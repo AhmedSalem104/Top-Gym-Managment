@@ -85,6 +85,14 @@
         INVALID_NAME: 'الاسم غير صحيح. أدخل اسمًا من حرفين إلى 120 حرفًا.',
         INVALID_EMAIL: 'البريد الإلكتروني غير صحيح.',
         INVALID_PASSWORD: 'كلمة المرور يجب أن تكون بين 8 و128 حرفًا.',
+        INVALID_PLAN_CODE: 'معرف الباقة غير صحيح. استخدم حروفًا إنجليزية صغيرة وأرقامًا وشرطات فقط.',
+        DUPLICATE_PLAN_CODE: 'معرف الباقة مستخدم بالفعل. اختر معرفًا آخر.',
+        INVALID_PLAN_NAME: 'اسم الباقة مطلوب.',
+        INVALID_PLAN_PRICE: 'سعر الباقة غير صحيح.',
+        INVALID_PLAN_PERIOD: 'دورة الفوترة غير صحيحة.',
+        INVALID_PLAN_CURRENCY: 'عملة الباقة يجب أن تكون رمزًا من 3 أحرف.',
+        LAST_ACTIVE_PLAN: 'لا يمكن إيقاف آخر باقة مفعّلة؛ اترك باقة واحدة متاحة على الأقل.',
+        REASON_REQUIRED: 'سبب هذا الإجراء مطلوب.',
         TRIAL_PLAN_NOT_FOUND: 'باقة التجربة غير متاحة حاليًا. راجع باقات المنصة ثم حاول مرة أخرى.',
         AUTH_SERVICE_REQUIRED: 'خدمة الحسابات غير متاحة حاليًا. أعد المحاولة بعد قليل.'
     });
@@ -383,18 +391,33 @@
     }
 
     function renderPlans() {
-        const featureNames = { intelligence: 'الذكاء التشغيلي', coaching: 'التدريب والتغذية', store: 'المتجر', reports: 'التقارير', portal: 'بوابة المشترك' };
-        $('#plansGrid').innerHTML = state.plans.length ? state.plans.map((plan, index) => `<article class="plan-card ${index === 1 ? 'featured' : ''}"><div class="card-heading"><div><span class="eyebrow">${escapeHtml(plan.code)}</span><h3>${escapeHtml(plan.name)}</h3></div>${plan.isActive ? statusPill('active') : statusPill('archived')}</div><p>${escapeHtml(plan.description || 'باقة SaaS لمنصة الجيم.')}</p><div class="plan-price">${escapeHtml(formatMoney(plan.price, plan.currency))}<small> / ${escapeHtml(plan.billingPeriod === 'yearly' ? 'سنة' : 'شهر')}</small></div><div class="plan-limits"><span>المشتركون <b>${escapeHtml(plan.maxMembers ?? '∞')}</b></span><span>المستخدمون <b>${escapeHtml(plan.maxUsers ?? '∞')}</b></span><span>AI شهريًا <b>${escapeHtml(plan.maxAiGenerations ?? '∞')}</b></span><span>التخزين <b>${escapeHtml(plan.maxStorageMb ? `${plan.maxStorageMb} MB` : '∞')}</b></span></div><div class="plan-features">${Object.entries(featureNames).map(([key,label]) => `<span class="feature-chip ${plan.features?.[key] === false ? 'off' : ''}">${plan.features?.[key] === false ? '×' : '✓'} ${label}</span>`).join('')}</div><button class="platform-btn ghost plan-edit" type="button" data-plan-edit="${plan.id}">تعديل الباقة</button></article>`).join('') : '<div class="empty-inline">لا توجد باقات.</div>';
+        const featureNames = { intelligence: 'الذكاء التشغيلي', coaching: 'التدريب والتغذية', store: 'المتجر', reports: 'التقارير', portal: 'بوابة المشترك', prioritySupport: 'دعم بأولوية' };
+        $('#plansGrid').innerHTML = state.plans.length ? state.plans.map((plan) => `<article class="plan-card ${plan.code === 'pro' && plan.isActive ? 'featured' : ''} ${plan.isActive ? '' : 'is-inactive'}"><div class="card-heading"><div><span class="eyebrow">${escapeHtml(plan.code)}</span><h3>${escapeHtml(plan.name)}</h3></div>${plan.isActive ? statusPill('active') : statusPill('archived')}</div><p>${escapeHtml(plan.description || 'باقة SaaS لمنصة الجيم.')}</p><div class="plan-price">${escapeHtml(formatMoney(plan.price, plan.currency))}<small> / ${escapeHtml(plan.billingPeriod === 'yearly' ? 'سنة' : 'شهر')}</small></div><div class="plan-limits"><span>المشتركون <b>${escapeHtml(plan.maxMembers ?? '∞')}</b></span><span>المستخدمون <b>${escapeHtml(plan.maxUsers ?? '∞')}</b></span><span>AI شهريًا <b>${escapeHtml(plan.maxAiGenerations ?? '∞')}</b></span><span>التخزين <b>${escapeHtml(plan.maxStorageMb ? `${plan.maxStorageMb} MB` : '∞')}</b></span></div><div class="plan-features">${Object.entries(featureNames).map(([key,label]) => `<span class="feature-chip ${plan.features?.[key] === false ? 'off' : ''}">${plan.features?.[key] === false ? '×' : '✓'} ${label}</span>`).join('')}</div><div class="plan-card-actions"><button class="platform-btn ghost plan-edit" type="button" data-plan-edit="${plan.id}">تعديل الباقة</button><button class="platform-btn danger plan-delete" type="button" data-plan-delete="${plan.id}" ${plan.isActive && state.plans.filter((item) => item.isActive).length <= 1 ? 'disabled title="يجب إبقاء باقة مفعّلة"' : ''}>حذف</button></div></article>`).join('') : '<div class="empty-inline">لا توجد باقات.</div>';
     }
 
     async function loadAudit() {
         try { state.audit = (await api('/api/platform-admin/audit?limit=200')).audit || []; $('#auditTableBody').innerHTML = state.audit.length ? state.audit.map((item) => `<tr><td>${escapeHtml(formatDateTime(item.createdAt))}</td><td>${escapeHtml(item.actorName || 'System')}</td><td>${escapeHtml(item.action)}</td><td>${escapeHtml(item.tenantId || 'Platform')}</td><td>${escapeHtml(item.reason || '—')}</td><td>${escapeHtml(item.details || '')}</td></tr>`).join('') : '<tr><td colspan="6"><div class="empty-inline">لا توجد عمليات.</div></td></tr>'; } catch (error) { showToast(error.message, true); }
     }
 
-    function planOptions(selected = '') { return state.plans.map((plan) => `<option value="${plan.id}" ${String(plan.id) === String(selected) ? 'selected' : ''}>${escapeHtml(plan.name)} — ${escapeHtml(formatMoney(plan.price, plan.currency))}</option>`).join(''); }
+    function planOptions(selected = '') {
+        return state.plans.filter((plan) => plan.isActive || String(plan.id) === String(selected)).map((plan) => `<option value="${plan.id}" ${String(plan.id) === String(selected) ? 'selected' : ''}>${escapeHtml(plan.name)} — ${escapeHtml(formatMoney(plan.price, plan.currency))}</option>`).join('');
+    }
+
+    function trialPlanOptions(selected = '') {
+        const plans = state.plans.filter((plan) => plan.isActive);
+        return plans.map((plan) => `<option value="${escapeHtml(plan.code)}" ${String(plan.code) === String(selected) ? 'selected' : ''}>${escapeHtml(plan.name)} — ${escapeHtml(formatMoney(plan.price, plan.currency))}</option>`).join('');
+    }
+
+    function planFeatureFields(features = {}) {
+        const labels = { intelligence: 'الذكاء التشغيلي', coaching: 'التدريب والتغذية', store: 'المتجر', reports: 'التقارير', portal: 'بوابة المشترك', prioritySupport: 'دعم بأولوية' };
+        return `<div class="dialog-feature-grid full">${Object.entries(labels).map(([key, label]) => `<label class="dialog-check"><input name="feature_${key}" type="checkbox" ${features[key] === true ? 'checked' : ''}> ${escapeHtml(label)}</label>`).join('')}</div>`;
+    }
+
+    function numberOrNull(value) { return value === '' || value == null ? null : Number(value); }
 
     function dialogField(label, name, type = 'text', value = '', extra = '') { return `<label class="dialog-label"><span>${escapeHtml(label)}</span><input name="${escapeHtml(name)}" type="${type}" value="${escapeHtml(value)}" ${extra}></label>`; }
     function dialogSelect(label, name, options, extraClass = '') { return `<label class="dialog-label ${extraClass}"><span>${escapeHtml(label)}</span><select name="${escapeHtml(name)}">${options}</select></label>`; }
+    function dialogTextarea(label, name, value = '', extra = '') { return `<label class="dialog-label full"><span>${escapeHtml(label)}</span><textarea name="${escapeHtml(name)}" ${extra}>${escapeHtml(value)}</textarea></label>`; }
 
     function openDialog(type, payload = {}) {
         const profile = state.profile;
@@ -424,15 +447,22 @@
             body = `<p>سيتم إبطال الجلسات الحالية للمستخدم بعد التغيير.</p>${dialogField('كلمة المرور المؤقتة الجديدة','newPassword','password','','minlength="8" required')}${dialogField('تأكيد كلمة المرور','confirmPassword','password','','minlength="8" required')}`;
         } else if (type === 'new-tenant') {
             title = 'إضافة جيم جديد';
-            body = `<div class="dialog-grid">${dialogField('اسم الجيم','name','text','','minlength="2" maxlength="160" required')}${dialogField('المعرف المختصر','slug','text','','pattern="[a-z0-9]+(?:-[a-z0-9]+)*" minlength="3" maxlength="80" required')}${dialogField('اسم المالك','ownerName','text','','minlength="2" maxlength="120" required')}${dialogField('بريد المالك','ownerEmail','email','','required')}${dialogField('كلمة مرور المالك','ownerPassword','password','','minlength="8" maxlength="128" required')}${dialogSelect('باقة التجربة','trialPlanCode',planOptions())}</div>`;
+            body = `<div class="dialog-grid">${dialogField('اسم الجيم','name','text','','minlength="2" maxlength="160" required')}${dialogField('المعرف المختصر','slug','text','','pattern="[a-z0-9]+(?:-[a-z0-9]+)*" minlength="3" maxlength="80" required')}${dialogField('اسم المالك','ownerName','text','','minlength="2" maxlength="120" required')}${dialogField('بريد المالك','ownerEmail','email','','required')}${dialogField('كلمة مرور المالك','ownerPassword','password','','minlength="8" maxlength="128" required')}${dialogSelect('باقة التجربة','trialPlanCode',trialPlanOptions())}</div><p class="dialog-hint">سيبدأ الجيم بفترة تجربة 14 يومًا على الباقة المفعّلة المختارة.</p>`;
         } else if (type === 'owner') {
             title = 'إضافة أو تغيير Owner';
             body = `<p>مع تفعيل الاستبدال سيتم تحويل الـOwner الحالي إلى Assistant وإبطال جلساته.</p><div class="dialog-grid">${dialogField('الاسم','name','text','','required')}${dialogField('البريد','email','email','','required')}${dialogField('كلمة المرور','password','password','','minlength="8" required')}</div><label class="dialog-check"><input name="replaceExisting" type="checkbox"> استبدال الـOwner الحالي</label>${dialogField('السبب','reason','text','')}`;
-        } else if (type === 'plan-edit') {
+        } else if (type === 'plan-create' || type === 'plan-edit') {
+            const plan = type === 'plan-edit' ? (state.plans.find((item) => String(item.id) === String(payload.planId)) || {}) : {};
+            title = type === 'plan-edit' ? `تعديل باقة ${plan.name || ''}` : 'إضافة باقة جديدة';
+            body = `<div class="dialog-grid">${type === 'plan-create' ? dialogField('معرف الباقة','code','text','','pattern="[a-z0-9]+(?:-[a-z0-9]+)*" minlength="2" maxlength="40" required') : dialogField('معرف الباقة','code','text',plan.code || '','readonly')}${dialogField('اسم الباقة','name','text',plan.name || '','maxlength="120" required')}${dialogField('السعر','price','number',plan.price ?? 0,'min="0" step="0.01" required')}${dialogSelect('الفترة','billingPeriod',`<option value="monthly" ${plan.billingPeriod === 'monthly' || !plan.billingPeriod ? 'selected' : ''}>شهري</option><option value="yearly" ${plan.billingPeriod === 'yearly' ? 'selected' : ''}>سنوي</option>`)}${dialogField('العملة','currency','text',plan.currency || 'EGP','pattern="[A-Za-z]{3}" minlength="3" maxlength="3" required')}${dialogField('ترتيب الظهور','sortOrder','number',plan.sortOrder ?? 0,'min="0" step="1" required')}${dialogField('حد المشتركين','maxMembers','number',plan.maxMembers ?? '')}${dialogField('حد المستخدمين','maxUsers','number',plan.maxUsers ?? '')}${dialogField('حد AI الشهري','maxAiGenerations','number',plan.maxAiGenerations ?? '')}${dialogField('التخزين MB','maxStorageMb','number',plan.maxStorageMb ?? '')}</div>${dialogTextarea('وصف الباقة','description',plan.description || '','maxlength="500" rows="3"')}${planFeatureFields(plan.features || {})}<label class="dialog-check"><input name="isActive" type="checkbox" ${plan.isActive !== false ? 'checked' : ''}> الباقة مفعلة للاشتراكات الجديدة</label>${dialogField(type === 'plan-edit' ? 'سبب تعديل الباقة' : 'سبب إنشاء الباقة', 'reason', 'text', '', 'required')}`;
+        } else if (type === 'plan-delete') {
             const plan = state.plans.find((item) => String(item.id) === String(payload.planId)) || {};
-            title = `تعديل باقة ${plan.name || ''}`;
-            body = `<div class="dialog-grid">${dialogField('اسم الباقة','name','text',plan.name || '','required')}${dialogField('السعر','price','number',plan.price || 0,'min="0" step="0.01" required')}${dialogSelect('الفترة','billingPeriod',`<option value="monthly" ${plan.billingPeriod === 'monthly' ? 'selected' : ''}>شهري</option><option value="yearly" ${plan.billingPeriod === 'yearly' ? 'selected' : ''}>سنوي</option>`)}${dialogField('حد المشتركين','maxMembers','number',plan.maxMembers || '')}${dialogField('حد المستخدمين','maxUsers','number',plan.maxUsers || '')}${dialogField('حد AI','maxAiGenerations','number',plan.maxAiGenerations || '')}${dialogField('التخزين MB','maxStorageMb','number',plan.maxStorageMb || '')}</div><label class="dialog-check"><input name="isActive" type="checkbox" ${plan.isActive ? 'checked' : ''}> الباقة مفعلة للاشتراكات الجديدة</label>`;
-            body += dialogField('سبب تعديل الباقة', 'reason', 'text', '', 'required');
+            title = `حذف باقة ${plan.name || ''}`;
+            body = `<p>سيتم إخفاء الباقة من الاشتراكات الجديدة مع الحفاظ على الاشتراكات والتقارير القديمة. لا يتم حذف البيانات التاريخية.</p>${dialogField('سبب الحذف','reason','text','','maxlength="1000" required')}`;
+        } else if (type === 'approve') {
+            const request = state.requests.find((item) => String(item.id) === String(payload.requestId));
+            title = 'قبول طلب الاشتراك';
+            body = `<p>سيتم تفعيل اشتراك الجيم على باقة <strong>${escapeHtml(request?.plan?.name || 'المختارة')}</strong> بعد التحقق من إثبات الدفع. ستُحفظ العملية في سجل المنصة.</p>${request?.proof ? `<p class="dialog-hint">الإثبات المرفق: ${escapeHtml(request.proof.fileName || 'ملف مرفق')}</p>` : '<p class="dialog-hint">لا يوجد إثبات دفع مرفق؛ لن يقبل الخادم الطلب قبل رفعه.</p>'}${dialogTextarea('ملاحظات المراجعة','reviewNotes','','maxlength="1000" rows="3" placeholder="اختياري"')}`;
         } else if (type === 'reject') {
             title = 'رفض طلب الاشتراك';
             body = `${dialogField('سبب الرفض','reason','text','','required')}`;
@@ -441,6 +471,7 @@
         $('#platformDialogBody').innerHTML = body;
         dialogForm.dataset.action = action;
         dialogForm.dataset.payload = JSON.stringify(payload);
+        if (dialog.open) dialog.close();
         dialog.showModal();
     }
 
@@ -489,9 +520,22 @@
             } else if (action === 'owner') {
                 await api(`/api/platform-admin/tenants/${state.profile.tenant.id}/owner`, { method: 'POST', body: JSON.stringify(values) });
                 showToast('تم تحديث Owner الجيم.'); dialog.close(); await refreshProfile();
+            } else if (action === 'plan-create') {
+                const features = {};
+                ['intelligence','coaching','store','reports','portal','prioritySupport'].forEach((key) => { features[key] = Boolean(values[`feature_${key}`]); });
+                await api('/api/platform-admin/plans', { method: 'POST', body: JSON.stringify({ code: values.code, name: values.name, description: values.description, price: values.price, currency: values.currency, billingPeriod: values.billingPeriod, sortOrder: values.sortOrder, maxMembers: numberOrNull(values.maxMembers), maxUsers: numberOrNull(values.maxUsers), maxAiGenerations: numberOrNull(values.maxAiGenerations), maxStorageMb: numberOrNull(values.maxStorageMb), isActive: values.isActive, features, reason: values.reason }) });
+                showToast('تم إنشاء الباقة بنجاح.'); dialog.close(); await loadPlans();
             } else if (action === 'plan-edit') {
-                await api(`/api/platform-admin/plans/${payload.planId}`, { method: 'PATCH', body: JSON.stringify({ name: values.name, price: values.price, billingPeriod: values.billingPeriod, maxMembers: values.maxMembers || null, maxUsers: values.maxUsers || null, maxAiGenerations: values.maxAiGenerations || null, maxStorageMb: values.maxStorageMb || null, isActive: values.isActive, reason: values.reason }) });
+                const features = {};
+                ['intelligence','coaching','store','reports','portal','prioritySupport'].forEach((key) => { features[key] = Boolean(values[`feature_${key}`]); });
+                await api(`/api/platform-admin/plans/${payload.planId}`, { method: 'PATCH', body: JSON.stringify({ name: values.name, description: values.description, price: values.price, currency: values.currency, billingPeriod: values.billingPeriod, sortOrder: values.sortOrder, maxMembers: numberOrNull(values.maxMembers), maxUsers: numberOrNull(values.maxUsers), maxAiGenerations: numberOrNull(values.maxAiGenerations), maxStorageMb: numberOrNull(values.maxStorageMb), isActive: values.isActive, features, reason: values.reason }) });
                 showToast('تم تحديث الباقة.'); dialog.close(); await loadPlans();
+            } else if (action === 'plan-delete') {
+                await api(`/api/platform-admin/plans/${payload.planId}`, { method: 'DELETE', body: JSON.stringify({ reason: values.reason }) });
+                showToast('تم حذف الباقة من الاشتراكات الجديدة مع الحفاظ على السجل.'); dialog.close(); await loadPlans();
+            } else if (action === 'approve') {
+                await api(`/api/platform-admin/subscription-requests/${payload.requestId}/approve`, { method: 'POST', body: JSON.stringify({ reviewNotes: values.reviewNotes || '' }) });
+                showToast('تم قبول الطلب وتفعيل الاشتراك.'); dialog.close(); await loadRequests(); loadDashboard(); if (state.profile) await refreshProfile();
             } else if (action === 'reject') {
                 await api(`/api/platform-admin/subscription-requests/${payload.requestId}/reject`, { method: 'POST', body: JSON.stringify({ reason: values.reason }) });
                 showToast('تم رفض الطلب وتسجيل السبب.'); dialog.close(); await loadRequests();
@@ -512,12 +556,7 @@
     async function handleRequestAction(action, requestId) {
         try {
             if (action === 'reject') { openDialog('reject', { requestId }); return; }
-            if (!window.confirm('سيتم تفعيل الاشتراك بعد قبول إثبات الدفع. هل تريد المتابعة؟')) return;
-            await api(`/api/platform-admin/subscription-requests/${requestId}/approve`, { method: 'POST', body: JSON.stringify({ reviewNotes: 'تمت الموافقة من لوحة المنصة.' }) });
-            showToast('تم قبول الطلب وتفعيل الاشتراك.');
-            if (state.view === 'requests') await loadRequests();
-            if (state.profile) await refreshProfile();
-            loadDashboard();
+            if (action === 'approve') { openDialog('approve', { requestId }); return; }
         } catch (error) { showToast(error.message, true); }
     }
 
@@ -545,9 +584,13 @@
         $('#platformMobileMenu').addEventListener('keydown', (event) => { if (event.key === 'Enter' || event.key === ' ') $('.platform-sidebar').classList.toggle('open'); });
         dialogForm.addEventListener('submit', handleDialogSubmit);
         dialogForm.addEventListener('input', () => { if (!$('#platformDialogError')?.hidden) clearDialogError(); });
+        $$('[data-dialog-cancel]', dialog).forEach((button) => button.addEventListener('click', () => dialog.close()));
+        dialog.addEventListener('click', (event) => { if (event.target === dialog) dialog.close(); });
+        dialog.addEventListener('close', clearDialogError);
         document.addEventListener('click', async (event) => {
             const platformAction = event.target.closest('[data-platform-action]');
             if (platformAction?.dataset.platformAction === 'new-tenant') { openDialog('new-tenant'); return; }
+            if (platformAction?.dataset.platformAction === 'new-plan') { openDialog('plan-create'); return; }
             const openButton = event.target.closest('[data-open-tenant]');
             if (openButton) { setView('gyms'); await openTenant(openButton.dataset.openTenant); return; }
             const pageButton = event.target.closest('[data-tenant-page]');
@@ -580,6 +623,8 @@
             if (requestAction) await handleRequestAction(requestAction.dataset.requestAction, requestAction.dataset.requestId);
             const planEdit = event.target.closest('[data-plan-edit]');
             if (planEdit) openDialog('plan-edit', { planId: planEdit.dataset.planEdit });
+            const planDelete = event.target.closest('[data-plan-delete]');
+            if (planDelete && !planDelete.disabled) openDialog('plan-delete', { planId: planDelete.dataset.planDelete });
         });
     }
 

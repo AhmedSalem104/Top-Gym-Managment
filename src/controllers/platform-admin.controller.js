@@ -105,8 +105,16 @@ function createPlatformAdminController({ platformAdminService, saasService, auth
             response.json({ plans: await saasService.getPlans({ includeInactive: true }) });
         },
 
+        createPlan: async (request, response) => {
+            response.status(201).json({ plan: await saasService.createPlan(request.body || {}, request.auth?.id, meta(request)) });
+        },
+
         updatePlan: async (request, response) => {
             response.json({ plan: await saasService.updatePlan(request.params.planId, request.body || {}, request.auth?.id, meta(request)) });
+        },
+
+        deletePlan: async (request, response) => {
+            response.json({ plan: await saasService.deletePlan(request.params.planId, request.auth?.id, request.body?.reason, meta(request)) });
         },
 
         requests: async (request, response) => {

@@ -201,3 +201,26 @@
   height: 20px;
   stroke-width: 2;
 }
+
+/* Daily gym workflow order on the desktop slide menu. Configuration and
+   account-level screens stay below the operational screens, while the
+   dynamically injected backup tab keeps the same low-priority position. */
+@media (min-width: 1200px) {
+  #pageTabs > [data-page-tab="dashboard"] { order: 1; }
+  #pageTabs > [data-page-tab="members"] { order: 2; }
+  #pageTabs > [data-page-tab="attendance"] { order: 3; }
+  #pageTabs > [data-page-tab="intelligence"] { order: 4; }
+  #pageTabs > [data-page-tab="trainees"] { order: 5; }
+  #pageTabs > [data-page-tab="store"] { order: 6; }
+  #pageTabs > [data-page-tab="expenses"] { order: 7; }
+  #pageTabs > [data-page-tab="reports"] { order: 8; }
+  #pageTabs > [data-page-tab="library"] { order: 9; }
+  #pageTabs > [data-page-tab="feedback"] { order: 10; }
+  #pageTabs > [data-page-tab="management"] { order: 11; }
+  #pageTabs > [data-page-tab="branding"] { order: 12; }
+  #pageTabs > [data-page-tab="permissions"] { order: 13; }
+  #pageTabs > [data-page-tab="saas-billing"] { order: 14; }
+  #pageTabs > [data-page-tab="backup-history"] { order: 15; }
+  #pageTabs > .sidebar-pin-control { order: 98; }
+  #pageTabs > .smart-assistant-launcher { order: 99; }
+}

@@ -319,6 +319,31 @@ function parseFeatures(value) {
     }
 }
 
+const PLAN_FEATURE_KEYS = Object.freeze(['intelligence', 'coaching', 'store', 'reports', 'portal', 'prioritySupport']);
+
+function planFieldError(message, code, field, statusCode = 400) {
+    const error = saasError(message, statusCode, code);
+    if (field) error.field = field;
+    return error;
+}
+
+function normalizePlanFeatures(value) {
+    const features = parseFeatures(value);
+    return Object.fromEntries(PLAN_FEATURE_KEYS.map((key) => [
+        key,
+        features[key] === true || features[key] === 1 || String(features[key]).toLowerCase() === 'true'
+    ]));
+}
+
+function normalizePlanCode(value, { required = true } = {}) {
+    const code = text(value, '', 40).toLowerCase();
+    if (!code && !required) return '';
+    if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(code) || code.length < 2) {
+        throw planFieldError('معرف الباقة يجب أن يحتوي على حروف إنجليزية صغيرة وأرقام وشرطات فقط، ويكون حرفين على الأقل.', 'INVALID_PLAN_CODE', 'code');
+    }
+    return code;
+}
+
 function planFromRow(row) {
     if (!row) return null;
     return {
@@ -436,7 +461,7 @@ async function seedPlans(pool) {
             .input('description', sql.NVarChar(500), plan.description)
             .input('billingPeriod', sql.VarChar(20), plan.billingPeriod)
             .input('price', sql.Decimal(12, 2), plan.price)
-            .input('currency', sql.Char(3), 'EGP')
+            .input('currency', sql.VarChar(3), 'EGP')
             .input('maxMembers', sql.Int, plan.maxMembers)
             .input('maxUsers', sql.Int, plan.maxUsers)
             .input('maxAiGenerations', sql.Int, plan.maxAiGenerations)
@@ -822,7 +847,7 @@ async function ensureBootstrapSubscription(tenantId) {
     const startsAt = new Date();
     const snapshot = snapshotForPlan(plan);
     await pool.request().input('tenantId', sql.Int, id).input('planId', sql.Int, plan.id).input('startsAt', sql.DateTime2(0), startsAt).query("INSERT INTO dbo.saas_tenant_subscriptions (tenant_id,plan_id,status,starts_at,expires_at,source,notes) VALUES (@tenantId,@planId,'active',@startsAt,NULL,'bootstrap',N'اشتراك تأسيسي لبيانات Top Gym الحالية.'); UPDATE dbo.gym_tenants SET status='active', updated_at=SYSUTCDATETIME() WHERE id=@tenantId;");
-    await pool.request().input('tenantId', sql.Int, id).input('billingPeriodSnapshot', sql.VarChar(20), snapshot.billingPeriod).input('priceSnapshot', sql.Decimal(12, 2), snapshot.price).input('currencySnapshot', sql.Char(3), snapshot.currency).input('maxMembersSnapshot', sql.Int, snapshot.maxMembers).input('maxUsersSnapshot', sql.Int, snapshot.maxUsers).input('maxAiGenerationsSnapshot', sql.Int, snapshot.maxAiGenerations).input('maxStorageMbSnapshot', sql.Int, snapshot.maxStorageMb).input('featuresSnapshotJson', sql.NVarChar(sql.MAX), JSON.stringify(snapshot.features)).query(`UPDATE dbo.saas_tenant_subscriptions
+    await pool.request().input('tenantId', sql.Int, id).input('billingPeriodSnapshot', sql.VarChar(20), snapshot.billingPeriod).input('priceSnapshot', sql.Decimal(12, 2), snapshot.price).input('currencySnapshot', sql.VarChar(3), snapshot.currency).input('maxMembersSnapshot', sql.Int, snapshot.maxMembers).input('maxUsersSnapshot', sql.Int, snapshot.maxUsers).input('maxAiGenerationsSnapshot', sql.Int, snapshot.maxAiGenerations).input('maxStorageMbSnapshot', sql.Int, snapshot.maxStorageMb).input('featuresSnapshotJson', sql.NVarChar(sql.MAX), JSON.stringify(snapshot.features)).query(`UPDATE dbo.saas_tenant_subscriptions
         SET billing_period_snapshot=@billingPeriodSnapshot,price_snapshot=@priceSnapshot,currency_snapshot=@currencySnapshot,max_members_snapshot=@maxMembersSnapshot,max_users_snapshot=@maxUsersSnapshot,max_ai_generations_snapshot=@maxAiGenerationsSnapshot,max_storage_mb_snapshot=@maxStorageMbSnapshot,features_snapshot_json=@featuresSnapshotJson
         WHERE id=(SELECT TOP (1) id FROM dbo.saas_tenant_subscriptions WHERE tenant_id=@tenantId ORDER BY id DESC);`);
     await recordAudit({ tenantId: id, action: 'bootstrap_subscription', entityType: 'subscription', details: 'تم تجهيز اشتراك تأسيسي غير منتهٍ لـ Top Gym.' });
@@ -860,7 +885,7 @@ async function createSubscriptionRequest({ tenantId = currentTenantId({ required
         .input('planId', sql.Int, plan.id)
         .input('userId', sql.Int, actorId)
         .input('amount', sql.Decimal(12, 2), plan.price)
-        .input('currency', sql.Char(3), plan.currency)
+        .input('currency', sql.VarChar(3), plan.currency)
         .input('notes', sql.NVarChar(1000), text(notes, '', 1000) || null)
         .query('INSERT INTO dbo.saas_subscription_requests (tenant_id,plan_id,requested_by_user_id,amount_snapshot,currency,notes) OUTPUT INSERTED.id VALUES (@tenantId,@planId,@userId,@amount,@currency,@notes);');
     const requestId = Number(result.recordset[0].id);
@@ -937,7 +962,7 @@ async function approveRequest(requestId, actorUserId, reviewNotes = '') {
         const snapshot = snapshotForPlan(planFromRow(request));
         await transaction.request().input('requestId', sql.BigInt, id).input('actorId', sql.Int, actorId).input('reviewNotes', sql.NVarChar(1000), text(reviewNotes, '', 1000) || null).query("UPDATE dbo.saas_subscription_requests SET status='approved',reviewed_by_user_id=@actorId,reviewed_at=SYSUTCDATETIME(),review_notes=@reviewNotes,updated_at=SYSUTCDATETIME() WHERE id=@requestId;");
         await transaction.request().input('tenantId', sql.Int, tenantId).query("UPDATE dbo.saas_tenant_subscriptions SET status='expired',updated_at=SYSUTCDATETIME() WHERE tenant_id=@tenantId AND status IN ('trial','active');");
-        await transaction.request().input('tenantId', sql.Int, tenantId).input('planId', sql.Int, Number(request.plan_id)).input('startsAt', sql.DateTime2(0), now).input('expiresAt', sql.DateTime2(0), expiresAt).input('actorId', sql.Int, actorId).input('notes', sql.NVarChar(1000), text(reviewNotes, '', 1000) || null).input('billingPeriodSnapshot', sql.VarChar(20), snapshot.billingPeriod).input('priceSnapshot', sql.Decimal(12, 2), snapshot.price).input('currencySnapshot', sql.Char(3), snapshot.currency).input('maxMembersSnapshot', sql.Int, snapshot.maxMembers).input('maxUsersSnapshot', sql.Int, snapshot.maxUsers).input('maxAiGenerationsSnapshot', sql.Int, snapshot.maxAiGenerations).input('maxStorageMbSnapshot', sql.Int, snapshot.maxStorageMb).input('featuresSnapshotJson', sql.NVarChar(sql.MAX), JSON.stringify(snapshot.features)).query("INSERT INTO dbo.saas_tenant_subscriptions (tenant_id,plan_id,status,starts_at,expires_at,source,approved_by_user_id,approved_at,notes,billing_period_snapshot,price_snapshot,currency_snapshot,max_members_snapshot,max_users_snapshot,max_ai_generations_snapshot,max_storage_mb_snapshot,features_snapshot_json) VALUES (@tenantId,@planId,'active',@startsAt,@expiresAt,'manual',@actorId,SYSUTCDATETIME(),@notes,@billingPeriodSnapshot,@priceSnapshot,@currencySnapshot,@maxMembersSnapshot,@maxUsersSnapshot,@maxAiGenerationsSnapshot,@maxStorageMbSnapshot,@featuresSnapshotJson); UPDATE dbo.gym_tenants SET status='active',updated_at=SYSUTCDATETIME() WHERE id=@tenantId;");
+        await transaction.request().input('tenantId', sql.Int, tenantId).input('planId', sql.Int, Number(request.plan_id)).input('startsAt', sql.DateTime2(0), now).input('expiresAt', sql.DateTime2(0), expiresAt).input('actorId', sql.Int, actorId).input('notes', sql.NVarChar(1000), text(reviewNotes, '', 1000) || null).input('billingPeriodSnapshot', sql.VarChar(20), snapshot.billingPeriod).input('priceSnapshot', sql.Decimal(12, 2), snapshot.price).input('currencySnapshot', sql.VarChar(3), snapshot.currency).input('maxMembersSnapshot', sql.Int, snapshot.maxMembers).input('maxUsersSnapshot', sql.Int, snapshot.maxUsers).input('maxAiGenerationsSnapshot', sql.Int, snapshot.maxAiGenerations).input('maxStorageMbSnapshot', sql.Int, snapshot.maxStorageMb).input('featuresSnapshotJson', sql.NVarChar(sql.MAX), JSON.stringify(snapshot.features)).query("INSERT INTO dbo.saas_tenant_subscriptions (tenant_id,plan_id,status,starts_at,expires_at,source,approved_by_user_id,approved_at,notes,billing_period_snapshot,price_snapshot,currency_snapshot,max_members_snapshot,max_users_snapshot,max_ai_generations_snapshot,max_storage_mb_snapshot,features_snapshot_json) VALUES (@tenantId,@planId,'active',@startsAt,@expiresAt,'manual',@actorId,SYSUTCDATETIME(),@notes,@billingPeriodSnapshot,@priceSnapshot,@currencySnapshot,@maxMembersSnapshot,@maxUsersSnapshot,@maxAiGenerationsSnapshot,@maxStorageMbSnapshot,@featuresSnapshotJson); UPDATE dbo.gym_tenants SET status='active',updated_at=SYSUTCDATETIME() WHERE id=@tenantId;");
         await recordAudit({ tenantId, actorUserId: actorId, action: 'subscription_approved', entityType: 'subscription_request', entityId: id, details: `تم قبول طلب الاشتراك وإنشاء اشتراك ${request.code}.`, executor: transaction });
     });
     return { request: (await listPlatformRequests()).find((item) => item.id === id) || null, subscription: await getCurrentSubscription(tenantId) };
@@ -982,7 +1007,22 @@ async function createTenantWithOwner(body = {}, actorUserId, authService) {
     const ownerEmail = authService.validateEmail(body.ownerEmail, 'ownerEmail');
     const ownerPassword = authService.validatePassword(body.ownerPassword, { field: 'ownerPassword' });
     await authService.ensureAuthReady();
-    const plan = await getPlan({ code: String(body.trialPlanCode || 'starter').toLowerCase(), includeInactive: false });
+    // The admin UI historically posted the plan id in `trialPlanCode`, while
+    // the first implementation treated the value as a textual plan code. Be
+    // liberal at this boundary so both the current UI and API clients remain
+    // compatible, while still resolving only active plans.
+    const requestedTrialPlan = String(body.trialPlanCode || body.trialPlanId || 'starter').trim().toLowerCase();
+    const requestedTrialPlanId = /^\d+$/.test(requestedTrialPlan) ? Number(requestedTrialPlan) : null;
+    let plan = await getPlan({
+        id: requestedTrialPlanId,
+        code: requestedTrialPlanId ? null : requestedTrialPlan,
+        includeInactive: false
+    });
+    // If the default Starter plan was archived, use the first active plan so
+    // onboarding cannot fail merely because an admin reordered the catalog.
+    if (!plan && requestedTrialPlan === 'starter') {
+        plan = (await getPlans()).find((item) => item.isActive) || null;
+    }
     if (!plan) throw saasError('باقة التجربة غير متاحة.', 409, 'TRIAL_PLAN_NOT_FOUND');
     const existingTenant = await getPool();
     const conflict = await existingTenant.request().input('slug', sql.VarChar(80), tenant.slug).query('SELECT TOP (1) id FROM dbo.gym_tenants WHERE slug=@slug;');
@@ -1005,7 +1045,7 @@ async function createTenantWithOwner(body = {}, actorUserId, authService) {
             ownerId = Number(ownerResult.recordset[0].id);
             await transaction.request().input('userId', sql.Int, ownerId).input('tenantId', sql.Int, tenantId).query("INSERT INTO dbo.gym_user_tenants (user_id,tenant_id,role,status,is_primary) VALUES (@userId,@tenantId,'Owner','active',1);");
             await transaction.request().input('tenantId', sql.Int, tenantId).input('planId', sql.Int, plan.id).input('startsAt', sql.DateTime2(0), startsAt).input('expiresAt', sql.DateTime2(0), expiresAt).query("INSERT INTO dbo.saas_tenant_subscriptions (tenant_id,plan_id,status,starts_at,expires_at,source,notes) VALUES (@tenantId,@planId,'trial',@startsAt,@expiresAt,'trial',N'فترة تجربة مجانية.');");
-            await transaction.request().input('tenantId', sql.Int, tenantId).input('billingPeriodSnapshot', sql.VarChar(20), snapshot.billingPeriod).input('priceSnapshot', sql.Decimal(12, 2), snapshot.price).input('currencySnapshot', sql.Char(3), snapshot.currency).input('maxMembersSnapshot', sql.Int, snapshot.maxMembers).input('maxUsersSnapshot', sql.Int, snapshot.maxUsers).input('maxAiGenerationsSnapshot', sql.Int, snapshot.maxAiGenerations).input('maxStorageMbSnapshot', sql.Int, snapshot.maxStorageMb).input('featuresSnapshotJson', sql.NVarChar(sql.MAX), JSON.stringify(snapshot.features)).query(`UPDATE dbo.saas_tenant_subscriptions
+            await transaction.request().input('tenantId', sql.Int, tenantId).input('billingPeriodSnapshot', sql.VarChar(20), snapshot.billingPeriod).input('priceSnapshot', sql.Decimal(12, 2), snapshot.price).input('currencySnapshot', sql.VarChar(3), snapshot.currency).input('maxMembersSnapshot', sql.Int, snapshot.maxMembers).input('maxUsersSnapshot', sql.Int, snapshot.maxUsers).input('maxAiGenerationsSnapshot', sql.Int, snapshot.maxAiGenerations).input('maxStorageMbSnapshot', sql.Int, snapshot.maxStorageMb).input('featuresSnapshotJson', sql.NVarChar(sql.MAX), JSON.stringify(snapshot.features)).query(`UPDATE dbo.saas_tenant_subscriptions
                 SET billing_period_snapshot=@billingPeriodSnapshot,price_snapshot=@priceSnapshot,currency_snapshot=@currencySnapshot,max_members_snapshot=@maxMembersSnapshot,max_users_snapshot=@maxUsersSnapshot,max_ai_generations_snapshot=@maxAiGenerationsSnapshot,max_storage_mb_snapshot=@maxStorageMbSnapshot,features_snapshot_json=@featuresSnapshotJson
                 WHERE id=(SELECT TOP (1) id FROM dbo.saas_tenant_subscriptions WHERE tenant_id=@tenantId ORDER BY id DESC);`);
             await recordAudit({ tenantId, actorUserId: actorUserId == null ? null : Number(actorUserId), action: 'tenant_created', entityType: 'tenant', entityId: tenantId, details: `تم إنشاء ${tenant.name} مع Owner أولي وباقة تجربة.`, executor: transaction });
@@ -1021,29 +1061,123 @@ async function createTenantWithOwner(body = {}, actorUserId, authService) {
     return { tenant: { id: tenantId, name: tenant.name, slug: tenant.slug, status: 'trial' }, owner: { id: ownerId, name: ownerName, email: ownerEmail }, subscription: await getCurrentSubscription(tenantId) };
 }
 
+function booleanValue(value, fallback = false) {
+    if (value === undefined || value === null || value === '') return fallback;
+    return value === true || value === 1 || ['true', '1', 'yes', 'on'].includes(String(value).trim().toLowerCase());
+}
+
+function normalizePlanValues(body = {}, current = null) {
+    const code = current?.code || normalizePlanCode(body.code);
+    const name = body.name === undefined ? current?.name || '' : text(body.name, '', 120);
+    if (!name) throw planFieldError('اسم الباقة مطلوب.', 'INVALID_PLAN_NAME', 'name');
+
+    const price = body.price === undefined ? Number(current?.price || 0) : Number(body.price);
+    if (!Number.isFinite(price) || price < 0) throw planFieldError('سعر الباقة غير صحيح.', 'INVALID_PLAN_PRICE', 'price');
+
+    const billingPeriod = body.billingPeriod === undefined
+        ? current?.billingPeriod || 'monthly'
+        : String(body.billingPeriod).trim().toLowerCase();
+    if (!['monthly', 'yearly'].includes(billingPeriod)) throw planFieldError('دورة فوترة الباقة غير صحيحة.', 'INVALID_PLAN_PERIOD', 'billingPeriod');
+
+    const currency = text(body.currency === undefined ? current?.currency || 'EGP' : body.currency, 'EGP', 3).toUpperCase();
+    if (!/^[A-Z]{3}$/.test(currency)) throw planFieldError('عملة الباقة يجب أن تكون رمزًا من 3 أحرف.', 'INVALID_PLAN_CURRENCY', 'currency');
+
+    const maxMembers = body.maxMembers === undefined ? current?.maxMembers ?? null : integerOrNull(body.maxMembers, 'حد الأعضاء');
+    const maxUsers = body.maxUsers === undefined ? current?.maxUsers ?? null : integerOrNull(body.maxUsers, 'حد المستخدمين');
+    const maxAiGenerations = body.maxAiGenerations === undefined ? current?.maxAiGenerations ?? null : integerOrNull(body.maxAiGenerations, 'حد استخدام AI');
+    const maxStorageMb = body.maxStorageMb === undefined ? current?.maxStorageMb ?? null : integerOrNull(body.maxStorageMb, 'حد التخزين');
+    const sortOrder = body.sortOrder === undefined ? Number(current?.sortOrder || 0) : Number(body.sortOrder);
+    if (!Number.isInteger(sortOrder) || sortOrder < 0) throw planFieldError('ترتيب الباقة غير صحيح.', 'INVALID_PLAN_SORT_ORDER', 'sortOrder');
+    const isActive = body.isActive === undefined ? current?.isActive !== false : booleanValue(body.isActive);
+    const features = normalizePlanFeatures(body.features === undefined ? current?.features : body.features);
+
+    return {
+        code,
+        name,
+        description: body.description === undefined ? current?.description || '' : text(body.description, '', 500),
+        billingPeriod,
+        price,
+        currency,
+        maxMembers,
+        maxUsers,
+        maxAiGenerations,
+        maxStorageMb,
+        features,
+        isActive,
+        sortOrder
+    };
+}
+
+async function assertActivePlanRemains(excludedPlanId = null) {
+    const pool = await getPool();
+    const result = await pool.request()
+        .input('excludedPlanId', sql.Int, excludedPlanId == null ? null : Number(excludedPlanId))
+        .query('SELECT COUNT_BIG(*) AS total FROM dbo.saas_plans WHERE is_active=1 AND (@excludedPlanId IS NULL OR id<>@excludedPlanId);');
+    if (Number(result.recordset[0]?.total || 0) < 1) {
+        throw saasError('لا يمكن إيقاف آخر باقة مفعّلة؛ يجب إبقاء باقة واحدة متاحة للتجربة والاشتراك.', 409, 'LAST_ACTIVE_PLAN');
+    }
+}
+
+async function createPlan(body = {}, actorUserId, meta = {}) {
+    await ensureSaasTables();
+    const values = normalizePlanValues(body);
+    const pool = await getPool();
+    const duplicate = await pool.request().input('code', sql.VarChar(40), values.code).query('SELECT TOP (1) id FROM dbo.saas_plans WHERE code=@code;');
+    if (duplicate.recordset[0]) throw planFieldError('معرف الباقة مستخدم بالفعل. اختر معرفًا آخر.', 'DUPLICATE_PLAN_CODE', 'code', 409);
+    let created;
+    try {
+        const result = await pool.request()
+            .input('code', sql.VarChar(40), values.code)
+            .input('name', sql.NVarChar(120), values.name)
+            .input('description', sql.NVarChar(500), values.description || null)
+            .input('billingPeriod', sql.VarChar(20), values.billingPeriod)
+            .input('price', sql.Decimal(12, 2), values.price)
+            .input('currency', sql.VarChar(3), values.currency)
+            .input('maxMembers', sql.Int, values.maxMembers)
+            .input('maxUsers', sql.Int, values.maxUsers)
+            .input('maxAiGenerations', sql.Int, values.maxAiGenerations)
+            .input('maxStorageMb', sql.Int, values.maxStorageMb)
+            .input('features', sql.NVarChar(sql.MAX), JSON.stringify(values.features))
+            .input('isActive', sql.Bit, values.isActive ? 1 : 0)
+            .input('sortOrder', sql.Int, values.sortOrder)
+            .query(`INSERT INTO dbo.saas_plans (code,name,description,billing_period,price,currency,max_members,max_users,max_ai_generations,max_storage_mb,features_json,is_active,sort_order)
+                OUTPUT INSERTED.id
+                VALUES (@code,@name,@description,@billingPeriod,@price,@currency,@maxMembers,@maxUsers,@maxAiGenerations,@maxStorageMb,@features,@isActive,@sortOrder);`);
+        created = await getPlan({ id: Number(result.recordset[0]?.id), includeInactive: true });
+    } catch (error) {
+        if (error.number === 2601 || error.number === 2627) throw planFieldError('معرف الباقة مستخدم بالفعل. اختر معرفًا آخر.', 'DUPLICATE_PLAN_CODE', 'code', 409);
+        throw error;
+    }
+    await recordAudit({ actorUserId: actorUserId == null ? null : Number(actorUserId), action: 'plan_created', entityType: 'saas_plan', entityId: created?.id, details: `تم إنشاء الباقة ${values.code}.`, after: created, ...meta });
+    return created;
+}
+
 async function updatePlan(planId, body = {}, actorUserId, meta = {}) {
     const id = Number(planId);
     if (!Number.isInteger(id) || id <= 0) throw saasError('الباقة غير صحيحة.', 400, 'INVALID_PLAN');
     const current = await getPlan({ id, includeInactive: true });
     if (!current) throw saasError('الباقة غير موجودة.', 404, 'SAAS_PLAN_NOT_FOUND');
-    const price = body.price === undefined ? current.price : Number(body.price);
-    if (!Number.isFinite(price) || price < 0) throw saasError('سعر الباقة غير صحيح.', 400, 'INVALID_PLAN_PRICE');
-    const maxMembers = body.maxMembers === undefined ? current.maxMembers : integerOrNull(body.maxMembers, 'حد الأعضاء');
-    const maxUsers = body.maxUsers === undefined ? current.maxUsers : integerOrNull(body.maxUsers, 'حد المستخدمين');
-    const maxAiGenerations = body.maxAiGenerations === undefined ? current.maxAiGenerations : integerOrNull(body.maxAiGenerations, 'حد استخدام AI');
-    const maxStorageMb = body.maxStorageMb === undefined ? current.maxStorageMb : integerOrNull(body.maxStorageMb, 'حد التخزين');
-    const name = body.name === undefined ? current.name : text(body.name, current.name, 120);
-    if (!name) throw saasError('اسم الباقة مطلوب.', 400, 'INVALID_PLAN_NAME');
-    const billingPeriod = body.billingPeriod === undefined ? current.billingPeriod : String(body.billingPeriod).trim().toLowerCase();
-    if (!['monthly', 'yearly'].includes(billingPeriod)) throw saasError('دورة فوترة الباقة غير صحيحة.', 400, 'INVALID_PLAN_PERIOD');
-    const isActive = body.isActive === undefined ? current.isActive : ['true', '1', 'yes', 'on'].includes(String(body.isActive).trim().toLowerCase()) || body.isActive === true || body.isActive === 1;
-    const features = body.features === undefined ? current.features : { ...current.features, ...parseFeatures(body.features) };
-    const featureKeys = ['intelligence', 'coaching', 'store', 'reports', 'portal', 'prioritySupport'];
-    const normalizedFeatures = Object.fromEntries(featureKeys.map((key) => [key, features[key] === true || features[key] === 1 || String(features[key]).toLowerCase() === 'true']));
+    const values = normalizePlanValues(body, current);
+    if (current.isActive && !values.isActive) await assertActivePlanRemains(id);
     const pool = await getPool();
-    await pool.request().input('id', sql.Int, id).input('name', sql.NVarChar(120), name).input('description', sql.NVarChar(500), body.description === undefined ? current.description : text(body.description, '', 500)).input('billingPeriod', sql.VarChar(20), billingPeriod).input('price', sql.Decimal(12, 2), price).input('maxMembers', sql.Int, maxMembers).input('maxUsers', sql.Int, maxUsers).input('maxAiGenerations', sql.Int, maxAiGenerations).input('maxStorageMb', sql.Int, maxStorageMb).input('features', sql.NVarChar(sql.MAX), JSON.stringify(normalizedFeatures)).input('isActive', sql.Bit, isActive ? 1 : 0).query('UPDATE dbo.saas_plans SET name=@name,description=@description,billing_period=@billingPeriod,price=@price,max_members=@maxMembers,max_users=@maxUsers,max_ai_generations=@maxAiGenerations,max_storage_mb=@maxStorageMb,features_json=@features,is_active=@isActive,updated_at=SYSUTCDATETIME() WHERE id=@id;');
+    await pool.request().input('id', sql.Int, id).input('name', sql.NVarChar(120), values.name).input('description', sql.NVarChar(500), values.description || null).input('billingPeriod', sql.VarChar(20), values.billingPeriod).input('price', sql.Decimal(12, 2), values.price).input('currency', sql.VarChar(3), values.currency).input('maxMembers', sql.Int, values.maxMembers).input('maxUsers', sql.Int, values.maxUsers).input('maxAiGenerations', sql.Int, values.maxAiGenerations).input('maxStorageMb', sql.Int, values.maxStorageMb).input('features', sql.NVarChar(sql.MAX), JSON.stringify(values.features)).input('isActive', sql.Bit, values.isActive ? 1 : 0).input('sortOrder', sql.Int, values.sortOrder).query('UPDATE dbo.saas_plans SET name=@name,description=@description,billing_period=@billingPeriod,price=@price,currency=@currency,max_members=@maxMembers,max_users=@maxUsers,max_ai_generations=@maxAiGenerations,max_storage_mb=@maxStorageMb,features_json=@features,is_active=@isActive,sort_order=@sortOrder,updated_at=SYSUTCDATETIME() WHERE id=@id;');
     const updated = await getPlan({ id, includeInactive: true });
     await recordAudit({ actorUserId: actorUserId == null ? null : Number(actorUserId), action: 'plan_updated', entityType: 'saas_plan', entityId: id, details: `تم تحديث الباقة ${current.code}.`, reason: text(body.reason, '', 1000), before: current, after: updated, ...meta });
+    return updated;
+}
+
+async function deletePlan(planId, actorUserId, reason = '', meta = {}) {
+    const id = Number(planId);
+    if (!Number.isInteger(id) || id <= 0) throw saasError('الباقة غير صحيحة.', 400, 'INVALID_PLAN');
+    const current = await getPlan({ id, includeInactive: true });
+    if (!current) throw saasError('الباقة غير موجودة.', 404, 'SAAS_PLAN_NOT_FOUND');
+    const normalizedReason = text(reason, '', 1000);
+    if (!normalizedReason) throw saasError('سبب حذف الباقة مطلوب.', 400, 'REASON_REQUIRED');
+    if (current.isActive) await assertActivePlanRemains(id);
+    const pool = await getPool();
+    await pool.request().input('id', sql.Int, id).query("UPDATE dbo.saas_plans SET is_active=0,updated_at=SYSUTCDATETIME() WHERE id=@id;");
+    const updated = await getPlan({ id, includeInactive: true });
+    await recordAudit({ actorUserId: actorUserId == null ? null : Number(actorUserId), action: 'plan_deleted', entityType: 'saas_plan', entityId: id, details: `تم إخفاء الباقة ${current.code} من الاشتراكات الجديدة مع الحفاظ على السجل.`, reason: normalizedReason, before: current, after: updated, ...meta });
     return updated;
 }
 
@@ -1113,6 +1247,7 @@ module.exports = {
     SAAS_TABLES,
     approveRequest,
     applyScheduledSubscriptionChanges,
+    createPlan,
     createSubscriptionRequest,
     createTenantWithOwner,
     enforceRequestLimit,
@@ -1131,6 +1266,7 @@ module.exports = {
     listPlatformRequests,
     listTenantRequests,
     listTenants,
+    deletePlan,
     rejectRequest,
     syncExpiredTenants,
     updatePlan,
