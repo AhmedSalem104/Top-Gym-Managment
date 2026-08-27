@@ -40,6 +40,12 @@ DEFAULT_TENANT_SLUG=top-gym
 
 The bootstrap password is used only to create the first Owner hash. It is not an API response and should not be stored in source control.
 
+Platform Admin signs in separately at `/platform-admin`. Its session and login
+endpoints are tenant-neutral; `DEFAULT_TENANT_SLUG` is not used to grant a
+PlatformAdmin access to Top Gym data. Tenant actions from the platform console
+always include an explicit tenant id and pass through the server-side
+`PlatformAdmin` guard.
+
 ## Repository boundaries
 
 - `src/services/auth-service.js`: validation, hashing, login rules, safe user mapping, cookies and authorization facade.

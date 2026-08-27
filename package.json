@@ -19,6 +19,7 @@
     "migrate:tenancy": "node scripts/migrate-tenancy.js",
     "qa:tenancy": "node scripts/verify-tenancy.js",
     "qa:gate": "node scripts/qa-gate.js",
+    "qa:platform-admin": "node scripts/qa-platform-admin.js",
     "qa:gate:smoke": "node scripts/qa-gate.js --build --smoke",
     "qa:gate:browser": "node scripts/qa-gate.js --build --browser",
     "qa:exercise-catalog": "node scripts/validate-exercise-catalog.js",

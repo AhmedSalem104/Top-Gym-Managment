@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#f5f7fb">
+    <script>
+        (function () {
+            try {
+                var savedTheme = window.localStorage.getItem('topgym-theme');
+                document.documentElement.dataset.theme = savedTheme === 'dark' || savedTheme === 'light' ? savedTheme : 'light';
+            } catch (_) {
+                document.documentElement.dataset.theme = 'light';
+            }
+        }());
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <link rel="stylesheet" href="/css/main.css?v=59">
+    <link rel="icon" type="image/svg+xml" href="/assets/gym-brand.svg?v=1">
+    <title>إدارة المنصة | الجيم</title>
+</head>
+<body class="platform-admin-page">
+    <section class="platform-login-screen" id="platformAdminLoginScreen" aria-label="تسجيل دخول إدارة المنصة" hidden>
+        <div class="platform-login-glow" aria-hidden="true"></div>
+        <div class="platform-login-card">
+            <div class="platform-login-brand">
+                <span class="platform-brand-mark" aria-hidden="true">ج</span>
+                <div><strong>منصة الجيم</strong><small>إدارة SaaS المركزية</small></div>
+            </div>
+            <div class="platform-login-heading">
+                <span class="eyebrow">PLATFORM CONTROL PLANE</span>
+                <h1>مرحبًا بك في إدارة المنصة</h1>
+                <p>سجّل دخولك لإدارة الجيمات والاشتراكات بأمان من مساحة مستقلة.</p>
+            </div>
+            <form id="platformAdminLoginForm" class="platform-form" novalidate>
+                <label class="platform-field"><span>البريد الإلكتروني</span><input id="platformAdminEmail" dir="ltr" type="email" autocomplete="username" required placeholder="admin@example.com"></label>
+                <label class="platform-field"><span>كلمة المرور</span><input id="platformAdminPassword" dir="ltr" type="password" autocomplete="current-password" required placeholder="أدخل كلمة المرور"></label>
+                <p class="platform-form-message" id="platformAdminLoginMessage" role="alert" hidden></p>
+                <button class="platform-btn primary full" id="platformAdminLoginButton" type="submit"><span>دخول لوحة المنصة</span><span class="button-arrow" aria-hidden="true">←</span></button>
+            </form>
+            <p class="platform-login-foot">الوصول مخصص لحساب PlatformAdmin فقط</p>
+        </div>
+    </section>
+
+    <div class="platform-shell" id="platformAdminApp" hidden>
+        <aside class="platform-sidebar" aria-label="تنقل إدارة المنصة">
+            <div class="platform-sidebar-brand">
+                <span class="platform-brand-mark">ج</span>
+                <div><strong>منصة الجيم</strong><small>SAAS CONTROL PLANE</small></div>
+            </div>
+            <div class="platform-sidebar-caption">إدارة المنصة</div>
+            <nav class="platform-nav" id="platformNav">
+                <button class="platform-nav-item active" type="button" data-platform-view="dashboard"><span class="nav-icon">⌂</span><span>لوحة المنصة</span></button>
+                <button class="platform-nav-item" type="button" data-platform-view="gyms"><span class="nav-icon">▦</span><span>الجيمات / Tenants</span><b class="nav-count" id="navGymsCount">0</b></button>
+                <button class="platform-nav-item" type="button" data-platform-view="requests"><span class="nav-icon">◌</span><span>طلبات الاشتراك</span><b class="nav-count" id="navRequestsCount">0</b></button>
+                <button class="platform-nav-item" type="button" data-platform-view="plans"><span class="nav-icon">◇</span><span>الباقات</span></button>
+                <button class="platform-nav-item" type="button" data-platform-view="audit"><span class="nav-icon">≡</span><span>سجل المنصة</span></button>
+                <button class="platform-nav-item" type="button" data-platform-view="settings"><span class="nav-icon">⚙</span><span>إعدادات المنصة</span></button>
+            </nav>
+            <div class="platform-sidebar-footer">
+                <div class="platform-scope-card"><span class="scope-dot"></span><div><strong>Platform Scope</strong><small>بدون Tenant افتراضي</small></div></div>
+                <button class="platform-nav-item logout-link" id="platformAdminLogoutButton" type="button"><span class="nav-icon">↪</span><span>تسجيل الخروج</span></button>
+            </div>
+        </aside>
+
+        <section class="platform-main">
+            <header class="platform-topbar">
+                <div class="platform-topbar-title"><span class="mobile-menu-button" id="platformMobileMenu" role="button" tabindex="0" aria-label="فتح القائمة">☰</span><div><span class="eyebrow">TOP GYM PLATFORM</span><h1 id="platformPageTitle">لوحة المنصة</h1></div></div>
+                <div class="platform-topbar-actions">
+                    <label class="platform-global-search"><span aria-hidden="true">⌕</span><input id="platformGlobalSearch" type="search" placeholder="ابحث عن جيم أو مالك..."></label>
+                    <button class="platform-icon-btn" id="platformThemeToggle" type="button" aria-label="تغيير المظهر" title="تغيير المظهر">◐</button>
+                    <div class="platform-admin-identity"><span class="admin-avatar">P</span><div><strong id="platformAdminName">Platform Admin</strong><small>مدير المنصة</small></div></div>
+                </div>
+            </header>
+
+            <main class="platform-content">
+                <section class="platform-view active" data-platform-panel="dashboard">
+                    <div class="platform-page-head"><div><span class="eyebrow">OVERVIEW</span><h2>صورة المنصة اليوم</h2><p>تابع حالة الجيمات والاشتراكات والاستخدام من مكان واحد.</p></div><button class="platform-btn primary" type="button" data-platform-action="refresh-dashboard">تحديث البيانات</button></div>
+                    <div class="platform-kpi-grid" id="platformKpis"></div>
+                    <div class="platform-dashboard-grid">
+                        <article class="platform-card status-overview-card"><div class="card-heading"><div><span class="eyebrow">TENANT HEALTH</span><h3>توزيع حالات الجيمات</h3></div><button class="platform-link-btn" type="button" data-platform-view-target="gyms">عرض الكل</button></div><div class="status-grid" id="platformStatusGrid"></div></article>
+                        <article class="platform-card quick-actions-card"><div class="card-heading"><div><span class="eyebrow">QUICK ACTIONS</span><h3>إجراءات المنصة</h3></div></div><div class="quick-actions"><button type="button" data-platform-view-target="gyms"><span>▦</span><b>إدارة الجيمات</b><small>فتح ملف أي Tenant</small></button><button type="button" data-platform-view-target="requests"><span>◌</span><b>مراجعة الطلبات</b><small>الدفع والاشتراكات</small></button><button type="button" data-platform-view-target="plans"><span>◇</span><b>ضبط الباقات</b><small>الحدود والمزايا</small></button></div></article>
+                    </div>
+                    <div class="platform-dashboard-grid lower-grid">
+                        <article class="platform-card"><div class="card-heading"><div><span class="eyebrow">RECENT TENANTS</span><h3>آخر الجيمات المضافة</h3></div><button class="platform-link-btn" type="button" data-platform-view-target="gyms">إدارة الجيمات</button></div><div class="mini-tenant-list" id="recentTenants"></div></article>
+                        <article class="platform-card"><div class="card-heading"><div><span class="eyebrow">AUDIT TRAIL</span><h3>آخر الأنشطة</h3></div><button class="platform-link-btn" type="button" data-platform-view-target="audit">السجل الكامل</button></div><div class="mini-activity-list" id="recentActivity"></div></article>
+                    </div>
+                </section>
+
+                <section class="platform-view" data-platform-panel="gyms">
+                    <div class="platform-page-head"><div><span class="eyebrow">TENANT DIRECTORY</span><h2>كل الجيمات</h2><p>إدارة آمنة ومباشرة لكل Tenant دون الدخول إلى حساب الـOwner.</p></div><button class="platform-btn primary" type="button" data-platform-action="new-tenant">+ إضافة Gym جديد</button></div>
+                    <div class="platform-card directory-card" id="tenantDirectory">
+                        <div class="directory-toolbar"><label class="platform-search-field"><span>⌕</span><input id="tenantSearch" type="search" placeholder="ابحث بالاسم أو الـSlug أو Owner..."></label><select id="tenantStatusFilter"><option value="">كل الحالات</option><option value="active">Active</option><option value="trial">Trial</option><option value="suspended">Suspended</option><option value="expired">Expired</option><option value="archived">Archived</option></select><select id="tenantPlanFilter"><option value="">كل الباقات</option></select><select id="tenantExpiryFilter"><option value="0">كل المواعيد</option><option value="7">تنتهي خلال 7 أيام</option><option value="30">تنتهي خلال 30 يومًا</option></select></div>
+                        <div class="table-scroll"><table class="platform-table"><thead><tr><th>الجيم</th><th>Owner</th><th>الباقة</th><th>الحالة</th><th>الاشتراك</th><th>الاستخدام</th><th>آخر نشاط</th><th></th></tr></thead><tbody id="tenantsTableBody"></tbody></table></div>
+                        <div class="directory-footer"><span id="tenantResultsSummary">—</span><div class="pagination" id="tenantPagination"></div></div>
+                    </div>
+                    <div class="tenant-profile" id="tenantProfile" hidden></div>
+                </section>
+
+                <section class="platform-view" data-platform-panel="requests">
+                    <div class="platform-page-head"><div><span class="eyebrow">MANUAL BILLING</span><h2>طلبات الاشتراك</h2><p>راجع إثباتات الدفع وفعّل اشتراك الجيم يدويًا بعد التحقق.</p></div><button class="platform-btn ghost" type="button" data-platform-action="refresh-requests">تحديث الطلبات</button></div>
+                    <div class="platform-card"><div class="directory-toolbar compact"><select id="requestStatusFilter"><option value="">كل الطلبات</option><option value="pending">Pending</option><option value="approved">Approved</option><option value="rejected">Rejected</option></select></div><div class="table-scroll"><table class="platform-table"><thead><tr><th>الجيم</th><th>الباقة</th><th>المبلغ</th><th>إثبات الدفع</th><th>الحالة</th><th>التاريخ</th><th>الإجراء</th></tr></thead><tbody id="requestsTableBody"></tbody></table></div></div>
+                </section>
+
+                <section class="platform-view" data-platform-panel="plans">
+                    <div class="platform-page-head"><div><span class="eyebrow">SAAS CATALOG</span><h2>الباقات والحدود</h2><p>إدارة أسعار الباقات والمزايا التي يتم تطبيقها مركزيًا.</p></div></div><div class="plan-grid" id="plansGrid"></div>
+                </section>
+
+                <section class="platform-view" data-platform-panel="audit">
+                    <div class="platform-page-head"><div><span class="eyebrow">AUDIT LOG</span><h2>سجل عمليات المنصة</h2><p>كل قرار إداري محفوظ مع الممثل والوقت والسبب والتغيير.</p></div></div><div class="platform-card"><div class="table-scroll"><table class="platform-table audit-table"><thead><tr><th>الوقت</th><th>الممثل</th><th>العملية</th><th>الجيم</th><th>السبب</th><th>التفاصيل</th></tr></thead><tbody id="auditTableBody"></tbody></table></div></div>
+                </section>
+
+                <section class="platform-view" data-platform-panel="settings"><div class="platform-page-head"><div><span class="eyebrow">PLATFORM SETTINGS</span><h2>إعدادات المنصة</h2><p>مساحة مخصصة لإعدادات التشغيل العامة، مع إبقاء إعدادات كل Gym داخل ملفه.</p></div></div><div class="platform-card settings-placeholder"><span class="placeholder-icon">⚙</span><h3>إعدادات المنصة الأساسية</h3><p>سيتم توصيل إعدادات النطاق والبريد والدعم والفوترة من هذه المساحة دون التأثير على إعدادات الجيمات.</p></div></section>
+            </main>
+        </section>
+    </div>
+
+    <dialog class="platform-dialog" id="platformActionDialog"><form method="dialog" id="platformActionForm"><header><div><span class="eyebrow">SECURE ACTION</span><h3 id="platformDialogTitle">إجراء إداري</h3></div><button class="dialog-close" value="cancel" type="submit" aria-label="إغلاق">×</button></header><div class="dialog-body" id="platformDialogBody"></div><footer><button class="platform-btn ghost" value="cancel" type="submit">إلغاء</button><button class="platform-btn primary" id="platformDialogSubmit" value="default" type="submit">تأكيد الإجراء</button></footer></form></dialog>
+    <div class="platform-toast" id="platformToast" role="status" aria-live="polite"></div>
+    <script defer src="/js/platform-admin.js?v=1"></script>
+</body>
+</html>

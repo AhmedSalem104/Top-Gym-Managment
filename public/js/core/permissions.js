@@ -2,7 +2,7 @@
     if (window.topGymPermissions) return;
 
     const OWNER_TABS = Object.freeze(['dashboard', 'members', 'trainees', 'intelligence', 'management', 'branding', 'saas-billing', 'backup-history', 'permissions', 'attendance', 'expenses', 'library', 'reports', 'feedback', 'store']);
-    const PLATFORM_TABS = Object.freeze(['platform']);
+    const PLATFORM_TABS = Object.freeze([]);
     const TAB_PERMISSION_CODES = Object.freeze({
         dashboard: 'dashboard.read',
         members: ['members.read', 'memberships.read'],

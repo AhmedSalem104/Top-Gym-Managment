@@ -152,9 +152,16 @@ function assertRequiredFiles() {
         'src/services/saas-service.js',
         'src/routes/platform.routes.js',
         'src/controllers/platform.controller.js',
+        'src/routes/platform-admin.routes.js',
+        'src/controllers/platform-admin.controller.js',
+        'src/services/platform-admin-service.js',
         'src/routes/saas.routes.js',
         'src/controllers/saas.controller.js',
         'src/middleware/platform.middleware.js',
+        'public/platform-admin.html',
+        'public/platform-admin-forbidden.html',
+        'public/js/platform-admin.js',
+        'public/css/pages/platform-admin.css',
         'public/js/pages/platform/platform.js',
         'public/js/pages/saas/saas.js',
         'public/css/pages/saas.css',
@@ -226,6 +233,7 @@ function checkModuleGraph() {
         './src/services/backup-service',
         './src/services/branding-service',
         './src/services/saas-service',
+        './src/services/platform-admin-service',
         './src/database',
         './src/repositories/user.repository',
         './src/repositories/session.repository',
@@ -257,12 +265,13 @@ function checkRouteSurface() {
         'src/routes/store.routes.js',
         'src/routes/branding.routes.js',
         'src/routes/platform.routes.js',
+        'src/routes/platform-admin.routes.js',
         'src/routes/saas.routes.js'
     ].filter((relativePath) => fs.existsSync(path.join(root, relativePath))).map(read).join('\n');
     const expectedRoutes = [
         '/api/members', '/api/expenses', '/api/attendance', '/api/reports',
         '/api/backup', '/api/library', '/api/external-trainees',
-        '/api/workoutprograms', '/api/dietplans', '/api/workoutsessions', '/api/meal-logs', '/api/intelligence/overview', '/api/intelligence/refine', '/api/day-passes', '/api/member-feedback', '/api/member-portal/feedback', '/api/store/products', '/api/store/sales', '/api/store/inventory', '/api/branding', '/api/branding/publish', '/api/platform/overview', '/api/platform/tenants', '/api/saas/subscription', '/api/saas/subscription-requests'
+        '/api/workoutprograms', '/api/dietplans', '/api/workoutsessions', '/api/meal-logs', '/api/intelligence/overview', '/api/intelligence/refine', '/api/day-passes', '/api/member-feedback', '/api/member-portal/feedback', '/api/store/products', '/api/store/sales', '/api/store/inventory', '/api/branding', '/api/branding/publish', '/api/platform/overview', '/api/platform/tenants', '/api/platform-admin/dashboard', '/api/platform-admin/tenants', '/api/platform-admin/tenants/:tenantId', '/api/platform-admin/tenants/:tenantId/subscription', '/api/platform-admin/tenants/:tenantId/usage', '/api/saas/subscription', '/api/saas/subscription-requests'
     ];
     expectedRoutes.forEach((route) => record(
         `ROUTE-${route.replaceAll('/', '-')}`,
@@ -319,12 +328,37 @@ function checkAuthSurface() {
     const platformRoutes = read('src/routes/platform.routes.js');
     const saasRoutes = read('src/routes/saas.routes.js');
     const platformUi = read('public/js/pages/platform/platform.js');
+    const platformAdminPage = read('public/platform-admin.html');
     const saasUi = read('public/js/pages/saas/saas.js');
     record('SAAS-PLATFORM-ROLE', auth.includes('PlatformAdmin') && authMiddleware.includes('PLATFORM_ADMIN_REQUIRED') && platformRoutes.includes('platformOnly'), 'PlatformAdmin account and server-side platform boundary are present', 'P0');
     record('SAAS-SCHEMA', saasService.includes('saas_plans') && saasService.includes('saas_tenant_subscriptions') && saasService.includes('saas_subscription_requests') && saasService.includes('saas_payment_proofs'), 'SaaS plans, subscriptions, manual requests and payment proofs have separate tables', 'P0');
     record('SAAS-WORKFLOW', saasRoutes.includes('/api/saas/subscription-requests/:id/proof') && platformRoutes.includes('/api/platform/subscription-requests/:id/approve') && platformRoutes.includes('/api/platform/subscription-requests/:id/reject'), 'manual payment-proof review workflow is wired', 'P0');
     record('SAAS-ENFORCEMENT', authMiddleware.includes('enforceTenantAccess') && authMiddleware.includes('enforceRequestLimit') && saasService.includes('SAAS_PLAN_LIMIT_REACHED'), 'tenant expiration, feature and plan limits are enforced before domain handlers', 'P0');
-    record('SAAS-UI', index.includes('data-page-tab="platform"') && index.includes('data-page-tab="saas-billing"') && platformUi.includes('/api/platform/tenants') && saasUi.includes('/api/saas/subscription'), 'Platform Admin and tenant billing screens are present and lazy-loaded', 'P1');
+    record('SAAS-UI', platformAdminPage.includes('platformAdminLoginScreen') && platformAdminPage.includes('platformAdminApp') && index.includes('data-page-tab="saas-billing"') && platformUi.includes('/api/platform/tenants') && saasUi.includes('/api/saas/subscription'), 'Platform Admin has an independent shell and tenant billing remains available to gym owners', 'P1');
+}
+
+function checkPlatformAdminSurface() {
+    const server = read('server.js');
+    const middleware = read('src/middleware/auth.middleware.js');
+    const routes = read('src/routes/platform-admin.routes.js');
+    const platformMiddleware = read('src/middleware/platform.middleware.js');
+    const service = read('src/services/platform-admin-service.js');
+    const saasService = read('src/services/saas-service.js');
+    const controller = read('src/controllers/platform-admin.controller.js');
+    const page = read('public/platform-admin.html');
+    const forbidden = read('public/platform-admin-forbidden.html');
+    const client = read('public/js/platform-admin.js');
+
+    record('PLATFORM-ADMIN-PAGE', (server.includes("app.get('/platform-admin'") || server.includes("app.get(['/platform-admin'")) && page.includes('platformAdminLoginScreen') && page.includes('platformAdminApp'), 'Platform Admin has an independent route and login shell', 'P0');
+    record('PLATFORM-ADMIN-FORBIDDEN', server.includes('response.status(403).sendFile') && forbidden.includes('platform-forbidden-page'), 'non-PlatformAdmin users receive a dedicated forbidden response', 'P0');
+    record('PLATFORM-ADMIN-ROLE-GUARD', middleware.includes("request.path.startsWith('/platform-admin/')") && middleware.includes('tenantId: null') && platformMiddleware.includes('ROLES.PLATFORM_ADMIN'), 'PlatformAdmin role is checked server-side without a fallback tenant context', 'P0');
+    record('PLATFORM-ADMIN-API-NAMESPACE', routes.includes('/api/platform-admin/dashboard') && routes.includes('platformOnly') && routes.includes('/api/platform-admin/tenants/:tenantId/usage'), 'Platform control-plane APIs use a protected platform-admin namespace', 'P0');
+    record('PLATFORM-ADMIN-CONTROL-PLANE', service.includes('getTenantProfile') && service.includes('updateTenantStatus') && service.includes('updateTenantSubscription') && service.includes('updateOverrides') && service.includes('getTenantHealth'), 'Tenant profile, status, subscription, overrides and health services are present', 'P0');
+    record('PLATFORM-ADMIN-SCHEDULED-PLAN', service.includes("when === 'renewal'") && saasService.includes('applyScheduledSubscriptionChanges') && saasService.includes("status='applied'"), 'plan changes can be scheduled for renewal and applied by the subscription synchronizer', 'P1');
+    record('PLATFORM-ADMIN-AUDIT', service.includes('recordAudit') && service.includes('before') && service.includes('after') && routes.includes('/api/platform-admin/audit'), 'platform administrative changes retain reason and before/after audit data', 'P0');
+    record('PLATFORM-ADMIN-CLIENT', client.includes('/api/platform-admin/dashboard') && client.includes('/api/platform-admin/tenants/') && client.includes('data-profile-tab'), 'independent client renders dashboard, tenant profile tabs and actions', 'P1');
+    record('PLATFORM-ADMIN-NO-GYM-SHELL', !page.includes('/js/app.js') && !page.includes('data-page-tab="members"') && !page.includes('data-page-tab="attendance"'), 'Platform Admin page does not load the Gym Owner application shell', 'P0');
+    record('PLATFORM-ADMIN-EXPLICIT-TENANT', service.includes('WHERE t.id=@tenantId') && service.includes('target_tenant_id') === false, 'platform service uses explicit tenant ids for tenant-scoped operations', 'P0');
 }
 
 function checkStyleSurface() {
@@ -399,6 +433,7 @@ checkJavaScriptSyntax();
 checkModuleGraph();
 checkRouteSurface();
 checkAuthSurface();
+checkPlatformAdminSurface();
 checkStyleSurface();
 checkPrintAndLazyLoadingSurface();
 checkAnatomyAsset();

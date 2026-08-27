@@ -66,8 +66,11 @@ const TENANT_TABLES = Object.freeze([
     'membership_types',
     'memberships',
     'saas_payment_proofs',
+    'saas_platform_notes',
     'saas_subscription_requests',
+    'saas_subscription_changes',
     'saas_tenant_subscriptions',
+    'saas_tenant_overrides',
     'workout_exercises',
     'workout_programs',
     'workout_routines',
@@ -83,6 +86,14 @@ BEGIN
         name NVARCHAR(160) NOT NULL,
         slug VARCHAR(80) NOT NULL,
         status VARCHAR(20) NOT NULL CONSTRAINT DF_gym_tenants_status DEFAULT ('active'),
+        contact_phone NVARCHAR(40) NULL,
+        contact_email NVARCHAR(254) NULL,
+        suspension_reason NVARCHAR(1000) NULL,
+        suspended_at DATETIME2(0) NULL,
+        suspend_until DATETIME2(0) NULL,
+        suspension_billing_only BIT NOT NULL CONSTRAINT DF_gym_tenants_suspension_billing_only DEFAULT (1),
+        archived_at DATETIME2(0) NULL,
+        archived_by_user_id INT NULL,
         created_at DATETIME2(0) NOT NULL CONSTRAINT DF_gym_tenants_created DEFAULT (SYSUTCDATETIME()),
         updated_at DATETIME2(0) NOT NULL CONSTRAINT DF_gym_tenants_updated DEFAULT (SYSUTCDATETIME()),
         CONSTRAINT UQ_gym_tenants_slug UNIQUE (slug),
@@ -165,6 +176,23 @@ async function ensureTenantTables() {
                     WHERE name=N'CK_gym_tenants_status' AND parent_object_id=OBJECT_ID(N'dbo.gym_tenants')
                 )
                     ALTER TABLE dbo.gym_tenants ADD CONSTRAINT CK_gym_tenants_status CHECK (status IN ('trial', 'active', 'suspended', 'expired', 'archived'));
+
+                IF COL_LENGTH(N'dbo.gym_tenants', N'contact_phone') IS NULL
+                    ALTER TABLE dbo.gym_tenants ADD contact_phone NVARCHAR(40) NULL;
+                IF COL_LENGTH(N'dbo.gym_tenants', N'contact_email') IS NULL
+                    ALTER TABLE dbo.gym_tenants ADD contact_email NVARCHAR(254) NULL;
+                IF COL_LENGTH(N'dbo.gym_tenants', N'suspension_reason') IS NULL
+                    ALTER TABLE dbo.gym_tenants ADD suspension_reason NVARCHAR(1000) NULL;
+                IF COL_LENGTH(N'dbo.gym_tenants', N'suspended_at') IS NULL
+                    ALTER TABLE dbo.gym_tenants ADD suspended_at DATETIME2(0) NULL;
+                IF COL_LENGTH(N'dbo.gym_tenants', N'suspend_until') IS NULL
+                    ALTER TABLE dbo.gym_tenants ADD suspend_until DATETIME2(0) NULL;
+                IF COL_LENGTH(N'dbo.gym_tenants', N'suspension_billing_only') IS NULL
+                    ALTER TABLE dbo.gym_tenants ADD suspension_billing_only BIT NOT NULL CONSTRAINT DF_gym_tenants_suspension_billing_only DEFAULT (1);
+                IF COL_LENGTH(N'dbo.gym_tenants', N'archived_at') IS NULL
+                    ALTER TABLE dbo.gym_tenants ADD archived_at DATETIME2(0) NULL;
+                IF COL_LENGTH(N'dbo.gym_tenants', N'archived_by_user_id') IS NULL
+                    ALTER TABLE dbo.gym_tenants ADD archived_by_user_id INT NULL;
             `);
         })().catch((error) => {
             tenantSchemaPromise = null;
@@ -198,8 +226,8 @@ async function ensureBootstrapTenant() {
               AND NOT EXISTS (
                 SELECT 1 FROM dbo.gym_user_tenants existing
                 WHERE existing.user_id=u.id AND existing.tenant_id=@tenantId
-            );
-        `);
+                );
+            `);
     return tenant;
 }
 

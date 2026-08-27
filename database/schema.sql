@@ -117,7 +117,7 @@ BEGIN
         updated_at DATETIME2(0) NOT NULL CONSTRAINT DF_gym_users_updated_at DEFAULT (SYSUTCDATETIME()),
         CONSTRAINT UQ_gym_users_email UNIQUE (email_normalized),
         CONSTRAINT CK_gym_users_role CHECK (role IN ('Owner', 'Assistant', 'PlatformAdmin')),
-        CONSTRAINT CK_gym_users_status CHECK ((role IN ('Owner', 'PlatformAdmin') AND status = 'Active') OR (role = 'Assistant' AND status IN ('Active', 'Disabled')))
+        CONSTRAINT CK_gym_users_status CHECK (role IN ('Owner', 'Assistant', 'PlatformAdmin') AND status IN ('Active', 'Disabled'))
     );
 END;
 
@@ -180,7 +180,7 @@ BEGIN
     IF NOT EXISTS (SELECT 1 FROM sys.check_constraints WHERE name = N'CK_gym_users_role' AND parent_object_id = OBJECT_ID(N'dbo.gym_users'))
         EXEC(N'ALTER TABLE dbo.gym_users ADD CONSTRAINT CK_gym_users_role CHECK (role IN (''Owner'', ''Assistant'', ''PlatformAdmin''));');
     IF NOT EXISTS (SELECT 1 FROM sys.check_constraints WHERE name = N'CK_gym_users_status' AND parent_object_id = OBJECT_ID(N'dbo.gym_users'))
-        EXEC(N'ALTER TABLE dbo.gym_users ADD CONSTRAINT CK_gym_users_status CHECK ((role IN (''Owner'', ''PlatformAdmin'') AND status = ''Active'') OR (role = ''Assistant'' AND status IN (''Active'', ''Disabled'')));');
+        EXEC(N'ALTER TABLE dbo.gym_users ADD CONSTRAINT CK_gym_users_status CHECK (role IN (''Owner'', ''Assistant'', ''PlatformAdmin'') AND status IN (''Active'', ''Disabled''));');
     IF NOT EXISTS (
         SELECT 1 FROM sys.indexes
         WHERE name = N'UQ_gym_users_email'

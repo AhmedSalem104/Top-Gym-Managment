@@ -79,11 +79,6 @@
             styles: [],
             scripts: ['/js/pages/saas/saas.js?v=1']
         },
-        platform: {
-            dependencies: [],
-            styles: [],
-            scripts: ['/js/pages/platform/platform.js?v=1']
-        },
         'backup-history': {
             dependencies: [],
             styles: [],

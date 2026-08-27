@@ -28,12 +28,21 @@ function requestedTenantSlug(request) {
 function createAuthApiMiddleware({ authService, isAuthorizedCronRequest, tenantService, saasService }) {
     const { ensureAuthReady, getSessionUser, readSessionCookie } = authService;
     return (request, response, next) => {
-        const publicPath = ['/health', '/auth/login', '/auth/session', '/auth/logout', '/member-portal/lookup', '/member-portal/feedback', '/branding'].includes(request.path)
+        const authPublicPath = ['/auth/login', '/auth/session', '/auth/logout'].includes(request.path);
+        const publicPath = ['/health', '/member-portal/lookup', '/member-portal/feedback', '/branding'].includes(request.path)
             || request.path === '/member-portal/library/options'
             || request.path.startsWith('/member-portal/library/')
             || (request.method === 'GET' && request.path.startsWith('/branding/assets/'));
         const cronRequest = request.path === '/backup/daily' && isAuthorizedCronRequest(request);
-        const platformPath = request.path.startsWith('/platform/');
+        const platformPath = request.path.startsWith('/platform/') || request.path.startsWith('/platform-admin/');
+
+        // Authentication endpoints do not read tenant data. Keeping their
+        // context tenant-neutral is important for PlatformAdmin: the
+        // platform account must not depend on Top Gym or any other fallback
+        // tenant just to create/read a session.
+        if (authPublicPath) {
+            return runTenantContext({ tenantId: null, mode: 'public' }, next);
+        }
 
         if (publicPath || cronRequest) {
             return tenantService.resolvePublicTenant(requestedTenantSlug(request))
@@ -56,7 +65,7 @@ function createAuthApiMiddleware({ authService, isAuthorizedCronRequest, tenantS
                     if (user.role !== ROLES.PLATFORM_ADMIN) {
                         return response.status(403).json({ error: 'هذه المساحة مخصصة لمدير المنصة فقط.', code: 'PLATFORM_ADMIN_REQUIRED' });
                     }
-                    return runTenantContext({ tenantId: 1, userId: user.id, mode: 'platform' }, async () => {
+                    return runTenantContext({ tenantId: null, userId: user.id, mode: 'platform' }, async () => {
                         request.auth = await authService.withPermissions(user);
                         return next();
                     });

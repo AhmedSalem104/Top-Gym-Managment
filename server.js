@@ -31,6 +31,7 @@ const authService = require('./src/services/auth-service');
 const permissionService = require('./src/services/permission-service');
 const tenantService = require('./src/services/tenant-service');
 const saasService = require('./src/services/saas-service');
+const platformAdminService = require('./src/services/platform-admin-service');
 const { runTenantContext } = require('./src/tenancy/tenant-context');
 const { ensureAuthReady } = authService;
 
@@ -142,6 +143,7 @@ registerRoutes(app, {
     intelligenceService,
     brandingService,
     saasService,
+    platformAdminService,
     getPool
 });
 
@@ -154,6 +156,20 @@ app.get('/qr/:id', asyncRoute(async (request, response) => {
         'X-Robots-Tag': 'noindex, nofollow'
     });
     response.type('html').send(renderQrMemberPage(member));
+}));
+
+app.get(['/platform-admin', '/platform-admin/'], asyncRoute(async (request, response) => {
+    const user = await authService.getSessionUser(authService.readSessionCookie(request), { includePermissions: false });
+    if (user && user.role !== 'PlatformAdmin') {
+        return response.status(403).sendFile(path.join(publicDirectory, 'platform-admin-forbidden.html'));
+    }
+    return response.sendFile(path.join(publicDirectory, 'platform-admin.html'));
+}));
+
+app.get('/', asyncRoute(async (request, response, next) => {
+    const user = await authService.getSessionUser(authService.readSessionCookie(request), { includePermissions: false });
+    if (user?.role === 'PlatformAdmin') return response.redirect('/platform-admin');
+    return next();
 }));
 
 app.get('/member-portal', (_request, response) => {

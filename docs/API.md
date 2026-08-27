@@ -173,6 +173,25 @@ variables. For API clients that can access more than one gym, send
 | POST | `/api/saas/subscription-requests` | Tenant Owner |
 | POST | `/api/saas/subscription-requests/:id/proof` | Tenant Owner; raw image/PDF up to 4 MB |
 | GET | `/api/saas/payment-proofs/:id/file` | Tenant Owner |
+| GET | `/api/platform-admin/dashboard` | PlatformAdmin |
+| GET/POST | `/api/platform-admin/tenants` | PlatformAdmin |
+| GET/PATCH | `/api/platform-admin/tenants/:tenantId` | PlatformAdmin |
+| GET/PATCH | `/api/platform-admin/tenants/:tenantId/subscription` | PlatformAdmin |
+| PATCH | `/api/platform-admin/tenants/:tenantId/status` | PlatformAdmin |
+| PATCH | `/api/platform-admin/tenants/:tenantId/plan` | PlatformAdmin |
+| GET/PUT | `/api/platform-admin/tenants/:tenantId/overrides` | PlatformAdmin |
+| GET | `/api/platform-admin/tenants/:tenantId/usage` | PlatformAdmin |
+| GET | `/api/platform-admin/tenants/:tenantId/users` | PlatformAdmin |
+| GET | `/api/platform-admin/tenants/:tenantId/health` | PlatformAdmin |
+| GET | `/api/platform-admin/tenants/:tenantId/audit` | PlatformAdmin |
+| GET/POST | `/api/platform-admin/tenants/:tenantId/notes` | PlatformAdmin |
+| GET | `/api/platform-admin/plans` | PlatformAdmin |
+| PATCH | `/api/platform-admin/plans/:planId` | PlatformAdmin |
+| GET | `/api/platform-admin/subscription-requests` | PlatformAdmin |
+| POST | `/api/platform-admin/subscription-requests/:id/approve` | PlatformAdmin |
+| POST | `/api/platform-admin/subscription-requests/:id/reject` | PlatformAdmin |
+| GET | `/api/platform-admin/payment-proofs/:id/file` | PlatformAdmin; private inline response |
+| GET | `/api/platform-admin/audit` | PlatformAdmin |
 | GET | `/api/platform/overview` | PlatformAdmin |
 | GET/POST | `/api/platform/tenants` | PlatformAdmin |
 | GET/PATCH | `/api/platform/plans` and `/api/platform/plans/:id` | PlatformAdmin |

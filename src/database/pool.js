@@ -15,12 +15,12 @@ function sqlTenantContext() {
     const context = getTenantContext();
     const mode = context?.mode || 'deny';
     const configuredTenantId = Number(context?.tenantId);
-    // Platform/startup work is intentionally associated with the bootstrap
-    // tenant when it inserts legacy/default rows. RLS still bypasses filters
-    // in platform mode, while tenant requests always use their own id.
+    // Platform scope is deliberately tenant-less. Any operation that needs a
+    // tenant must pass its target tenant explicitly; never silently fall back
+    // to Top Gym while running as PlatformAdmin.
     const tenantId = Number.isInteger(configuredTenantId) && configuredTenantId > 0
         ? configuredTenantId
-        : mode === 'platform' ? 1 : null;
+        : null;
     return { tenantId, mode, skipSessionContext: Boolean(context?.skipSessionContext) };
 }
 

@@ -22,11 +22,14 @@ HTTP request
 `server.js` is the composition root. `src/app.js` creates the Express application and infrastructure middleware. `src/routes/index.js` composes domain route modules. Controllers do not own SQL or business calculations.
 
 The SaaS control plane is deliberately separated from gym operations. A
-`PlatformAdmin` session can access only `/api/platform/*`; a gym Owner uses
-`/api/saas/*` for that tenant's plan requests. `saas-service.js` owns plan
-limits, trial/expiry state, manual payment-proof review and the platform
-audit log. Tenant requests resolve a slug or authenticated membership to a
-tenant context before SQL Server RLS is applied.
+`PlatformAdmin` signs in through `/platform-admin` and can access the protected
+`/api/platform-admin/*` namespace; the older `/api/platform/*` routes remain
+compatibility aliases. A gym Owner uses `/api/saas/*` for that tenant's plan
+requests. Platform operations run without a default tenant context and must
+provide an explicit `tenant_id` for every tenant-scoped action. `saas-service.js`
+owns plan limits, trial/expiry state, manual payment-proof review, scheduled
+plan changes and the platform audit log. Tenant requests resolve a slug or
+authenticated membership to a tenant context before SQL Server RLS is applied.
 
 ## Layer rules
 
