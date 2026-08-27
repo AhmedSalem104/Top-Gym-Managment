@@ -170,7 +170,7 @@ async function ensurePermissionTables() {
 }
 
 async function getEffectivePermissions(userId, role) {
-    if (role === ROLES.OWNER) return ['*'];
+    if (role === ROLES.OWNER || role === ROLES.PLATFORM_ADMIN) return ['*'];
     await ensurePermissionTables();
     const result = await getPool().then((pool) => pool.request()
         .input('userId', sql.Int, normalizeUserId(userId))

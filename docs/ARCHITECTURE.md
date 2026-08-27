@@ -21,6 +21,13 @@ HTTP request
 
 `server.js` is the composition root. `src/app.js` creates the Express application and infrastructure middleware. `src/routes/index.js` composes domain route modules. Controllers do not own SQL or business calculations.
 
+The SaaS control plane is deliberately separated from gym operations. A
+`PlatformAdmin` session can access only `/api/platform/*`; a gym Owner uses
+`/api/saas/*` for that tenant's plan requests. `saas-service.js` owns plan
+limits, trial/expiry state, manual payment-proof review and the platform
+audit log. Tenant requests resolve a slug or authenticated membership to a
+tenant context before SQL Server RLS is applied.
+
 ## Layer rules
 
 ### Routes
@@ -62,7 +69,7 @@ src/
   utils/
 ```
 
-The route domains are auth, members, attendance, finance, dashboard, library, reports, pricing, coaching and backup. Public route names remain unchanged.
+  The route domains are auth, members, attendance, finance, dashboard, library, reports, pricing, coaching, backup and the SaaS control plane (platform onboarding plus tenant billing). Public route names remain unchanged.
 
 ## Frontend map
 

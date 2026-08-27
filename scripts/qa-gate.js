@@ -149,6 +149,15 @@ function assertRequiredFiles() {
         'src/services/branding-service.js',
         'src/routes/branding.routes.js',
         'src/controllers/branding.controller.js',
+        'src/services/saas-service.js',
+        'src/routes/platform.routes.js',
+        'src/controllers/platform.controller.js',
+        'src/routes/saas.routes.js',
+        'src/controllers/saas.controller.js',
+        'src/middleware/platform.middleware.js',
+        'public/js/pages/platform/platform.js',
+        'public/js/pages/saas/saas.js',
+        'public/css/pages/saas.css',
         'database/migrations/005-member-feedback.sql',
         'public/js/day-passes.js',
         'public/js/day-pass-reports.js',
@@ -216,6 +225,7 @@ function checkModuleGraph() {
         './src/services/report-service',
         './src/services/backup-service',
         './src/services/branding-service',
+        './src/services/saas-service',
         './src/database',
         './src/repositories/user.repository',
         './src/repositories/session.repository',
@@ -245,12 +255,14 @@ function checkRouteSurface() {
         'src/routes/day-pass.routes.js',
         'src/routes/member-feedback.routes.js',
         'src/routes/store.routes.js',
-        'src/routes/branding.routes.js'
+        'src/routes/branding.routes.js',
+        'src/routes/platform.routes.js',
+        'src/routes/saas.routes.js'
     ].filter((relativePath) => fs.existsSync(path.join(root, relativePath))).map(read).join('\n');
     const expectedRoutes = [
         '/api/members', '/api/expenses', '/api/attendance', '/api/reports',
         '/api/backup', '/api/library', '/api/external-trainees',
-        '/api/workoutprograms', '/api/dietplans', '/api/workoutsessions', '/api/meal-logs', '/api/intelligence/overview', '/api/intelligence/refine', '/api/day-passes', '/api/member-feedback', '/api/member-portal/feedback', '/api/store/products', '/api/store/sales', '/api/store/inventory', '/api/branding', '/api/branding/publish'
+        '/api/workoutprograms', '/api/dietplans', '/api/workoutsessions', '/api/meal-logs', '/api/intelligence/overview', '/api/intelligence/refine', '/api/day-passes', '/api/member-feedback', '/api/member-portal/feedback', '/api/store/products', '/api/store/sales', '/api/store/inventory', '/api/branding', '/api/branding/publish', '/api/platform/overview', '/api/platform/tenants', '/api/saas/subscription', '/api/saas/subscription-requests'
     ];
     expectedRoutes.forEach((route) => record(
         `ROUTE-${route.replaceAll('/', '-')}`,
@@ -303,6 +315,16 @@ function checkAuthSurface() {
     record('BRANDING-FALLBACK', brandingService.includes('DEFAULT_BRANDING') && brandingService.includes('getPublicBrandName'), 'default branding and safe fallback resolver are present', 'P0');
     record('BRANDING-DESIGN-TOKENS', brandingClient.includes('TOKEN_ALIASES') && brandingClient.includes('topgym:brandingchange'), 'resolved branding is applied through centralized runtime design tokens', 'P1');
     record('BRANDING-UI', index.includes('data-page-tab="branding"') && index.includes('id="brandingSection"') && index.includes('/js/branding.js'), 'Owner custom branding editor and runtime loader are present', 'P1');
+    const saasService = read('src/services/saas-service.js');
+    const platformRoutes = read('src/routes/platform.routes.js');
+    const saasRoutes = read('src/routes/saas.routes.js');
+    const platformUi = read('public/js/pages/platform/platform.js');
+    const saasUi = read('public/js/pages/saas/saas.js');
+    record('SAAS-PLATFORM-ROLE', auth.includes('PlatformAdmin') && authMiddleware.includes('PLATFORM_ADMIN_REQUIRED') && platformRoutes.includes('platformOnly'), 'PlatformAdmin account and server-side platform boundary are present', 'P0');
+    record('SAAS-SCHEMA', saasService.includes('saas_plans') && saasService.includes('saas_tenant_subscriptions') && saasService.includes('saas_subscription_requests') && saasService.includes('saas_payment_proofs'), 'SaaS plans, subscriptions, manual requests and payment proofs have separate tables', 'P0');
+    record('SAAS-WORKFLOW', saasRoutes.includes('/api/saas/subscription-requests/:id/proof') && platformRoutes.includes('/api/platform/subscription-requests/:id/approve') && platformRoutes.includes('/api/platform/subscription-requests/:id/reject'), 'manual payment-proof review workflow is wired', 'P0');
+    record('SAAS-ENFORCEMENT', authMiddleware.includes('enforceTenantAccess') && authMiddleware.includes('enforceRequestLimit') && saasService.includes('SAAS_PLAN_LIMIT_REACHED'), 'tenant expiration, feature and plan limits are enforced before domain handlers', 'P0');
+    record('SAAS-UI', index.includes('data-page-tab="platform"') && index.includes('data-page-tab="saas-billing"') && platformUi.includes('/api/platform/tenants') && saasUi.includes('/api/saas/subscription'), 'Platform Admin and tenant billing screens are present and lazy-loaded', 'P1');
 }
 
 function checkStyleSurface() {

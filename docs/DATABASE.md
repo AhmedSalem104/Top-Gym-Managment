@@ -54,3 +54,26 @@ All current operational rows are assigned to this tenant through a non-null `ten
 `src/tenancy/tenant-context.js` stores the request tenant with `AsyncLocalStorage`. `src/database/pool.js` writes that context to SQL Server `SESSION_CONTEXT` before every query/batch, and `tenant-service.js` installs a SQL Server Row-Level Security policy over every tenant-owned table. This protects reads, updates and inserts even where legacy services do not yet include an explicit `tenant_id` predicate.
 
 Run `npm run migrate:tenancy` to apply the idempotent bootstrap/migration manually, and `npm run qa:tenancy` to verify table coverage, unassigned rows, Top Gym ownership and cross-tenant read/write blocking.
+
+## SaaS control plane
+
+SaaS billing is a separate domain from gym-member memberships. The platform
+uses these independent tables:
+
+- `saas_plans`: platform plans such as Starter, Pro and Enterprise.
+- `saas_tenant_subscriptions`: the active/trial subscription owned by a gym tenant.
+- `saas_subscription_requests`: manual upgrade/renewal requests.
+- `saas_payment_proofs`: one image/PDF proof per request, limited to 4 MB.
+- `saas_audit_log`: platform onboarding, review, activation and status events.
+
+`saas_plans` and `saas_audit_log` are platform-scoped. The other SaaS tables
+are tenant-scoped and covered by the same SQL Server RLS policy. The runtime
+schema is idempotently provisioned by `src/services/saas-service.js` and by
+`npm run migrate:tenancy`.
+
+The default Top Gym tenant receives an Enterprise bootstrap subscription so
+the existing installation remains available. New tenants receive a 14-day
+Starter trial, an Owner account and an isolated tenant context. When a trial
+or subscription expires, access is blocked at the authentication middleware;
+the billing/recovery endpoints remain available so the Owner can submit a new
+manual payment request without deleting gym data.

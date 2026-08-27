@@ -85,6 +85,9 @@ const PERMISSIONS = Object.freeze({
     BRANDING_PUBLISH: 'branding.publish',
     BRANDING_RESET: 'branding.reset',
 
+    SAAS_SUBSCRIPTION_READ: 'saas.subscription.read',
+    SAAS_SUBSCRIPTION_REQUEST: 'saas.subscription.request',
+
     INTELLIGENCE_READ: 'intelligence.read',
     INTELLIGENCE_GENERATE: 'intelligence.generate',
 
@@ -179,6 +182,11 @@ const CATALOG_DEFINITIONS = [
     ['intelligence.generate', 'توليد اقتراحات الذكاء', 'إنشاء أو تعديل اقتراحات التدريب والتغذية بواسطة الذكاء الاصطناعي.', 'intelligence', 'إنشاء']
 ];
 
+CATALOG_DEFINITIONS.push(
+    ['saas.subscription.read', 'اشتراك المنصة', 'عرض حالة اشتراك الجيم في منصة الجيم والخطط المتاحة.', 'saas', 'عرض', true],
+    ['saas.subscription.request', 'طلب اشتراك المنصة', 'إنشاء طلب اشتراك ورفع إثبات الدفع للمراجعة.', 'saas', 'إدارة', true]
+);
+
 CATALOG_DEFINITIONS.splice(
     CATALOG_DEFINITIONS.findIndex((item) => item[0] === 'trainees.read'),
     0,
@@ -251,7 +259,7 @@ function permissionsForRole(role) {
 function hasPermission(user, permission) {
     if (!user) return false;
     if (Array.isArray(permission)) return permission.every((item) => hasPermission(user, item));
-    if (user.role === ROLES.OWNER) return true;
+    if (user.role === ROLES.OWNER || user.role === ROLES.PLATFORM_ADMIN) return true;
     const granted = new Set(Array.isArray(user.permissions) ? user.permissions : []);
     return granted.has('*') || granted.has(permission);
 }

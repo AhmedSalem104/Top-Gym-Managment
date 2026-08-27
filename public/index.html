@@ -81,6 +81,8 @@
         </header>
 
         <nav class="page-tabs topgym-nav" id="pageTabs" role="tablist" aria-label="أقسام الإدارة">
+            <button class="page-tab page-tab-platform" type="button" data-page-tab="platform" data-platform-only aria-selected="false"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h16"/><path d="M6 20V9h12v11"/><path d="M9 9V5h6v4"/><path d="M9 13h.01M12 13h.01M15 13h.01M9 16h.01M12 16h.01M15 16h.01"/></svg><span>إدارة المنصة</span></button>
+            <button class="page-tab page-tab-saas" type="button" data-page-tab="saas-billing" data-owner-only aria-selected="false"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M7 15h3"/><path d="M15 14v4M13 16h4"/></svg><span>اشتراك المنصة</span></button>
             <button class="page-tab active" type="button" data-page-tab="dashboard" aria-selected="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span>لوحة التحكم</span></button>
             <button class="page-tab" type="button" data-page-tab="members" aria-selected="false"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg><span>المشتركون</span></button>
             <button class="page-tab" type="button" data-page-tab="trainees" aria-selected="false"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M3 20a6 6 0 0 1 12 0M16 4.5a3 3 0 0 1 0 6M17 14a4 4 0 0 1 4 4"/><path d="M18 8h3M19.5 6.5v3"/></svg><span>متدرب خارجى</span></button>
@@ -478,6 +480,66 @@
                     <div class="backup-management-actions"><button class="btn btn-primary" id="backupJsonButton" type="button">تحميل .json.gz</button><button class="btn btn-light" id="backupBakButton" type="button">تحميل .bak</button><button class="btn btn-light" id="restoreBackupButton" type="button">استرجاع نسخة</button></div>
                 </section>
                 <div class="backup-history-list" id="backupHistoryList"><div class="backup-history-loading">جاري تحميل سجل النسخ…</div></div>
+            </section>
+
+            <section class="saas-page platform-page panel" id="platformSection" hidden data-platform-only data-page-tab-panel="platform" aria-labelledby="platformPageTitle">
+                <header class="saas-page-header">
+                    <div class="saas-page-heading">
+                        <span class="saas-eyebrow">CONTROL PLANE</span>
+                        <h3 id="platformPageTitle">إدارة المنصة والجيمات</h3>
+                        <p>أنشئ Tenant جديد، راجع طلبات الاشتراك، وفعّل الباقات من مكان واحد مع سجل تدقيق كامل.</p>
+                    </div>
+                    <button class="btn btn-light btn-small" id="platformRefresh" type="button">تحديث البيانات</button>
+                </header>
+                <div class="saas-kpi-grid platform-kpis" aria-label="مؤشرات المنصة">
+                    <article class="saas-kpi"><span class="saas-kpi-icon saas-kpi-purple"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h16"/><path d="M6 20V9h12v11"/><path d="M9 9V5h6v4"/><path d="M9 13h.01M12 13h.01M15 13h.01M9 16h.01M12 16h.01M15 16h.01"/></svg></span><span><small>إجمالي الجيمات</small><strong id="platformTotalTenants">0</strong></span></article>
+                    <article class="saas-kpi"><span class="saas-kpi-icon saas-kpi-green"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m8 12 2.5 2.5L16 9"/></svg></span><span><small>جيمات تعمل</small><strong id="platformLiveTenants">0</strong></span></article>
+                    <article class="saas-kpi"><span class="saas-kpi-icon saas-kpi-orange"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span><span><small>طلبات قيد المراجعة</small><strong id="platformPendingRequests">0</strong></span></article>
+                    <article class="saas-kpi"><span class="saas-kpi-icon saas-kpi-red"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 20 6v5c0 5-3.4 8.5-8 10-4.6-1.5-8-5-8-10V6l8-3Z"/><path d="M12 8v5M12 16h.01"/></svg></span><span><small>منتهية أو موقوفة</small><strong id="platformExpiredTenants">0</strong></span></article>
+                </div>
+                <div class="platform-grid">
+                    <section class="saas-panel platform-create-panel" aria-labelledby="platformCreateTitle">
+                        <div class="saas-panel-head"><div><span class="saas-eyebrow">ONBOARDING</span><h4 id="platformCreateTitle">إضافة جيم جديد</h4><p>ينشئ النظام Tenant وOwner وفترة تجريبية تلقائيًا.</p></div></div>
+                        <form class="saas-form-grid" id="platformTenantForm" novalidate>
+                            <div class="field"><label for="platformTenantName">اسم الجيم *</label><input id="platformTenantName" name="name" required maxlength="160" placeholder="مثال: Fit House"></div>
+                            <div class="field"><label for="platformTenantSlug">Slug *</label><input id="platformTenantSlug" name="slug" dir="ltr" required maxlength="80" pattern="[a-z0-9]+(?:-[a-z0-9]+)*" placeholder="fit-house"></div>
+                            <div class="field"><label for="platformOwnerName">اسم الـOwner *</label><input id="platformOwnerName" name="ownerName" required maxlength="120"></div>
+                            <div class="field"><label for="platformOwnerEmail">بريد الـOwner *</label><input id="platformOwnerEmail" name="ownerEmail" type="email" dir="ltr" required maxlength="254"></div>
+                            <div class="field"><label for="platformOwnerPassword">كلمة مرور مؤقتة *</label><input id="platformOwnerPassword" name="ownerPassword" type="password" dir="ltr" required minlength="8" maxlength="128" autocomplete="new-password"></div>
+                            <div class="field"><label for="platformTrialPlan">باقة التجربة</label><select id="platformTrialPlan" name="trialPlanCode"><option value="starter">Starter</option><option value="pro">Pro</option><option value="enterprise">Enterprise</option></select></div>
+                            <div class="saas-form-actions field-full"><button class="btn btn-primary" id="platformCreateTenant" type="submit">إنشاء الجيم والـOwner</button></div>
+                        </form>
+                    </section>
+                    <section class="saas-panel platform-requests-panel" aria-labelledby="platformRequestsTitle">
+                        <div class="saas-panel-head saas-panel-head-inline"><div><span class="saas-eyebrow">REVIEW QUEUE</span><h4 id="platformRequestsTitle">طلبات الاشتراك</h4><p>راجع إثبات الدفع ثم فعّل الاشتراك.</p></div><select id="platformRequestStatus" aria-label="حالة الطلب"><option value="">كل الطلبات</option><option value="pending">قيد المراجعة</option><option value="approved">مقبول</option><option value="rejected">مرفوض</option></select></div>
+                        <div class="saas-table-wrap"><table class="saas-table"><thead><tr><th>الجيم</th><th>الباقة</th><th>المبلغ</th><th>الإثبات</th><th>الحالة</th><th>الإجراء</th></tr></thead><tbody id="platformRequestsList"><tr><td colspan="6"><div class="saas-empty">جارٍ تحميل الطلبات…</div></td></tr></tbody></table></div>
+                    </section>
+                    <section class="saas-panel platform-tenants-panel" aria-labelledby="platformTenantsTitle">
+                        <div class="saas-panel-head"><div><span class="saas-eyebrow">TENANTS</span><h4 id="platformTenantsTitle">الجيمات المسجلة</h4><p>الحالة والاستخدام والباقة الحالية.</p></div></div>
+                        <div class="saas-table-wrap"><table class="saas-table"><thead><tr><th>الجيم</th><th>Owner</th><th>الحالة</th><th>الباقة</th><th>الاستخدام</th><th>إجراء</th></tr></thead><tbody id="platformTenantsList"><tr><td colspan="6"><div class="saas-empty">جارٍ تحميل الجيمات…</div></td></tr></tbody></table></div>
+                    </section>
+                    <section class="saas-panel platform-plans-panel" aria-labelledby="platformPlansTitle">
+                        <div class="saas-panel-head"><div><span class="saas-eyebrow">SAAS PLANS</span><h4 id="platformPlansTitle">باقات المنصة</h4><p>عدّل السعر والحدود دون المساس بعضويات عملاء الجيم.</p></div></div>
+                        <div class="saas-plan-list" id="platformPlansList"><div class="saas-empty">جارٍ تحميل الباقات…</div></div>
+                    </section>
+                    <section class="saas-panel platform-audit-panel" aria-labelledby="platformAuditTitle">
+                        <div class="saas-panel-head"><div><span class="saas-eyebrow">AUDIT LOG</span><h4 id="platformAuditTitle">سجل عمليات المنصة</h4><p>تسجيل الإنشاء والمراجعة والتفعيل وتغيير الحالات.</p></div></div>
+                        <div class="saas-audit-list" id="platformAuditList"><div class="saas-empty">جارٍ تحميل السجل…</div></div>
+                    </section>
+                </div>
+            </section>
+
+            <section class="saas-page saas-billing-page panel" id="saasBillingSection" hidden data-owner-only data-page-tab-panel="saas-billing" aria-labelledby="saasBillingTitle">
+                <header class="saas-page-header">
+                    <div class="saas-page-heading"><span class="saas-eyebrow">PLATFORM SUBSCRIPTION</span><h3 id="saasBillingTitle">اشتراك الجيم في المنصة</h3><p>اختر الباقة، ارفع إثبات الدفع، وتابع حالة المراجعة يدويًا.</p></div>
+                    <span class="saas-status-pill" id="saasSubscriptionStatus">جارٍ التحميل…</span>
+                </header>
+                <section class="saas-subscription-summary" id="saasSubscriptionSummary"><div class="saas-loading-block">جارٍ تحميل بيانات الاشتراك…</div></section>
+                <div class="saas-billing-grid">
+                    <section class="saas-panel" aria-labelledby="saasPlansTitle"><div class="saas-panel-head"><div><span class="saas-eyebrow">PLANS</span><h4 id="saasPlansTitle">الباقات المتاحة</h4><p>هذه باقات المنصة فقط، وليست عضويات مشتركي الجيم.</p></div></div><div class="saas-plan-list saas-owner-plan-list" id="saasPlansList"><div class="saas-empty">جارٍ تحميل الباقات…</div></div></section>
+                    <section class="saas-panel" aria-labelledby="saasRequestTitle"><div class="saas-panel-head"><div><span class="saas-eyebrow">MANUAL REVIEW</span><h4 id="saasRequestTitle">طلب اشتراك جديد</h4><p>بعد إرسال الطلب ارفع صورة أو PDF لإثبات الدفع.</p></div></div><form class="saas-form-grid" id="saasSubscriptionForm" novalidate><div class="field field-full"><label for="saasPlanSelect">الباقة *</label><select id="saasPlanSelect" required></select></div><div class="field field-full"><label for="saasRequestNotes">ملاحظات</label><textarea id="saasRequestNotes" rows="3" maxlength="1000" placeholder="اكتب أي تفاصيل تساعد المراجعة"></textarea></div><div class="field field-full"><label for="saasPaymentProof">إثبات الدفع <span class="saas-muted">PNG / JPG / WebP / PDF حتى 4MB</span></label><input id="saasPaymentProof" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" required></div><div class="saas-form-actions field-full"><button class="btn btn-primary" id="saasSubscriptionSubmit" type="submit">إرسال الطلب وإثبات الدفع</button></div></form><div class="saas-inline-message" id="saasSubscriptionMessage" role="status" aria-live="polite" hidden></div></section>
+                </div>
+                <section class="saas-panel saas-requests-panel" aria-labelledby="saasRequestsTitle"><div class="saas-panel-head"><div><span class="saas-eyebrow">REQUEST HISTORY</span><h4 id="saasRequestsTitle">طلبات الجيم السابقة</h4></div></div><div class="saas-table-wrap"><table class="saas-table"><thead><tr><th>التاريخ</th><th>الباقة</th><th>المبلغ</th><th>الحالة</th><th>الإثبات</th><th>ملاحظات المراجعة</th></tr></thead><tbody id="saasRequestsList"><tr><td colspan="6"><div class="saas-empty">جارٍ تحميل الطلبات…</div></td></tr></tbody></table></div></section>
             </section>
 
             <section class="library-section panel" id="librarySection" hidden aria-labelledby="libraryTitle">

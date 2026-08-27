@@ -16,6 +16,8 @@ const { registerMemberFeedbackRoutes } = require('./member-feedback.routes');
 const { registerStoreRoutes } = require('./store.routes');
 const { registerIntelligenceRoutes } = require('./intelligence.routes');
 const { registerBrandingRoutes } = require('./branding.routes');
+const { registerPlatformRoutes } = require('./platform.routes');
+const { registerSaasRoutes } = require('./saas.routes');
 
 function registerRoutes(app, {
     asyncRoute,
@@ -40,6 +42,7 @@ function registerRoutes(app, {
     storeService,
     intelligenceService,
     brandingService,
+    saasService,
     getPool
 }) {
     app.get('/api/health', asyncRoute(async (_request, response) => {
@@ -63,6 +66,8 @@ function registerRoutes(app, {
     registerStoreRoutes(app, { storeService, asyncRoute });
     registerIntelligenceRoutes(app, { intelligenceService, asyncRoute });
     registerBrandingRoutes(app, { brandingService, asyncRoute });
+    registerPlatformRoutes(app, { saasService, authService, asyncRoute });
+    registerSaasRoutes(app, { saasService, asyncRoute, ownerOnly });
     registerMembersRoutes(app, { memberService, asyncRoute });
 }
 

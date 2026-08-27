@@ -2,6 +2,7 @@
 
 const { getPool, sql } = require('../database');
 const { currentTenantId } = require('../tenancy/tenant-context');
+const { config } = require('../config/env');
 
 const BOOTSTRAP_TENANT_SLUG = 'top-gym';
 const BOOTSTRAP_TENANT_NAME = 'Top Gym';
@@ -64,6 +65,9 @@ const TENANT_TABLES = Object.freeze([
     'membership_type_prices',
     'membership_types',
     'memberships',
+    'saas_payment_proofs',
+    'saas_subscription_requests',
+    'saas_tenant_subscriptions',
     'workout_exercises',
     'workout_programs',
     'workout_routines',
@@ -82,7 +86,7 @@ BEGIN
         created_at DATETIME2(0) NOT NULL CONSTRAINT DF_gym_tenants_created DEFAULT (SYSUTCDATETIME()),
         updated_at DATETIME2(0) NOT NULL CONSTRAINT DF_gym_tenants_updated DEFAULT (SYSUTCDATETIME()),
         CONSTRAINT UQ_gym_tenants_slug UNIQUE (slug),
-        CONSTRAINT CK_gym_tenants_status CHECK (status IN ('active', 'suspended', 'archived'))
+        CONSTRAINT CK_gym_tenants_status CHECK (status IN ('trial', 'active', 'suspended', 'expired', 'archived'))
     );
 END;
 
@@ -150,6 +154,18 @@ async function ensureTenantTables() {
         tenantSchemaPromise = (async () => {
             const pool = await getPool();
             await pool.request().batch(TENANT_SCHEMA_SQL);
+            await pool.request().batch(`
+                IF EXISTS (
+                    SELECT 1 FROM sys.check_constraints
+                    WHERE name=N'CK_gym_tenants_status' AND parent_object_id=OBJECT_ID(N'dbo.gym_tenants')
+                )
+                    ALTER TABLE dbo.gym_tenants DROP CONSTRAINT CK_gym_tenants_status;
+                IF NOT EXISTS (
+                    SELECT 1 FROM sys.check_constraints
+                    WHERE name=N'CK_gym_tenants_status' AND parent_object_id=OBJECT_ID(N'dbo.gym_tenants')
+                )
+                    ALTER TABLE dbo.gym_tenants ADD CONSTRAINT CK_gym_tenants_status CHECK (status IN ('trial', 'active', 'suspended', 'expired', 'archived'));
+            `);
         })().catch((error) => {
             tenantSchemaPromise = null;
             throw error;
@@ -178,7 +194,8 @@ async function ensureBootstrapTenant() {
             INSERT INTO dbo.gym_user_tenants(user_id, tenant_id, role, is_primary)
             SELECT u.id, @tenantId, u.role, CASE WHEN u.role='Owner' THEN 1 ELSE 0 END
             FROM dbo.gym_users u
-            WHERE NOT EXISTS (
+            WHERE u.role IN ('Owner', 'Assistant')
+              AND NOT EXISTS (
                 SELECT 1 FROM dbo.gym_user_tenants existing
                 WHERE existing.user_id=u.id AND existing.tenant_id=@tenantId
             );
@@ -222,7 +239,7 @@ async function resolveTenantForUser(userId, requestedSlug = '') {
             INNER JOIN dbo.gym_tenants t ON t.id=ut.tenant_id
             WHERE ut.user_id=@userId
               AND ut.status='active'
-              AND t.status='active'
+              AND t.status IN ('trial', 'active', 'suspended', 'expired')
               AND (@slug='' OR t.slug=@slug)
             ORDER BY ut.is_primary DESC, t.id ASC;
         `);
@@ -231,11 +248,11 @@ async function resolveTenantForUser(userId, requestedSlug = '') {
 
 async function resolvePublicTenant(requestedSlug = '') {
     await ensureTenantTables();
-    const normalizedSlug = normalizeTenantSlug(requestedSlug) || BOOTSTRAP_TENANT_SLUG;
+    const normalizedSlug = normalizeTenantSlug(requestedSlug) || normalizeTenantSlug(config.defaultTenantSlug) || BOOTSTRAP_TENANT_SLUG;
     const pool = await getPool();
     const result = await pool.request()
         .input('slug', sql.VarChar(80), normalizedSlug)
-        .query("SELECT TOP (1) id, name, slug, status FROM dbo.gym_tenants WHERE slug=@slug AND status='active';");
+        .query("SELECT TOP (1) id, name, slug, status FROM dbo.gym_tenants WHERE slug=@slug AND status IN ('trial', 'active');");
     const tenant = tenantRecord(result.recordset[0]);
     // This keeps the app shell and isolated test boots safe when the base
     // schema exists but the tenancy bootstrap has not run yet.
@@ -297,10 +314,19 @@ function tenantColumnMigrationSql(table) {
 }
 
 async function ensureBrandingKeyCompatibility(pool) {
-    // The legacy branding row keeps its primary key for backward compatibility.
-    // tenant_id below is the actual isolation key; a later branding migration
-    // can widen the legacy id without affecting tenant isolation.
+    // Branding used to be a single global row. Keep the stable row id for
+    // compatibility, but widen its key so every tenant can own id=1 safely.
     await pool.request().batch(`
+        IF OBJECT_ID(N'dbo.gym_branding_config', N'U') IS NOT NULL
+           AND COL_LENGTH(N'dbo.gym_branding_config', N'tenant_id') IS NOT NULL
+           AND EXISTS (SELECT 1 FROM sys.key_constraints WHERE name=N'PK_gym_branding_config' AND parent_object_id=OBJECT_ID(N'dbo.gym_branding_config'))
+            ALTER TABLE dbo.gym_branding_config DROP CONSTRAINT PK_gym_branding_config;
+
+        IF OBJECT_ID(N'dbo.gym_branding_config', N'U') IS NOT NULL
+           AND COL_LENGTH(N'dbo.gym_branding_config', N'tenant_id') IS NOT NULL
+           AND NOT EXISTS (SELECT 1 FROM sys.key_constraints WHERE type='PK' AND parent_object_id=OBJECT_ID(N'dbo.gym_branding_config'))
+            ALTER TABLE dbo.gym_branding_config ADD CONSTRAINT PK_gym_branding_config PRIMARY KEY (tenant_id, id);
+
         IF OBJECT_ID(N'dbo.gym_branding_assets', N'U') IS NOT NULL
            AND EXISTS (SELECT 1 FROM sys.key_constraints WHERE name=N'UQ_gym_branding_assets_scope_key' AND parent_object_id=OBJECT_ID(N'dbo.gym_branding_assets'))
             ALTER TABLE dbo.gym_branding_assets DROP CONSTRAINT UQ_gym_branding_assets_scope_key;
@@ -324,7 +350,7 @@ async function recreateTenantSecurityPolicy(pool, tables) {
             RETURNS TABLE WITH SCHEMABINDING
             AS
             RETURN SELECT 1 AS allowed
-            WHERE CONVERT(NVARCHAR(20), SESSION_CONTEXT(N''tenant_mode'')) IN (N''platform'', N''public'')
+            WHERE CONVERT(NVARCHAR(20), SESSION_CONTEXT(N''tenant_mode'')) = N''platform''
                OR @tenant_id = TRY_CONVERT(INT, SESSION_CONTEXT(N''tenant_id''));
         ');
     `);
@@ -346,13 +372,13 @@ async function ensureTenantColumnsAndRls(tenantId) {
     const pool = await getPool();
     const tables = await existingTenantTables(pool);
     await dropTenantSecurityPolicy(pool);
-    await ensureBrandingKeyCompatibility(pool);
 
     for (const table of tables) {
         await pool.request()
             .input('tenantId', sql.Int, normalizedTenantId)
             .batch(tenantColumnMigrationSql(table));
     }
+    await ensureBrandingKeyCompatibility(pool);
 
     if (tables.includes('gym_branding_config')) {
         await pool.request().batch(`

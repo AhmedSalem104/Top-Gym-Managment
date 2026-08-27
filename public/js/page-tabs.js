@@ -2,7 +2,7 @@
     if (window.__topGymPageTabsLoaded) return;
     window.__topGymPageTabsLoaded = true;
 
-    const validTabs = new Set(['dashboard', 'members', 'expenses', 'reports', 'management', 'branding', 'backup-history', 'permissions', 'attendance', 'library', 'trainees', 'intelligence', 'feedback', 'store']);
+    const validTabs = new Set(['dashboard', 'members', 'expenses', 'reports', 'management', 'branding', 'saas-billing', 'platform', 'backup-history', 'permissions', 'attendance', 'library', 'trainees', 'intelligence', 'feedback', 'store']);
     let activationToken = 0;
     let activeTabName = null;
     const SIDEBAR_PIN_STORAGE_KEY = 'topgym.sidebar.pinned';
@@ -70,7 +70,8 @@
         if (!validTabs.has(name)) return 'dashboard';
         if (window.topGymAuth?.isReady?.()) {
             if (!window.topGymAuth.getUser?.()) return 'dashboard';
-            if ((name === 'management' || name === 'branding' || name === 'backup-history') && !window.topGymAuth.isOwner?.()) return window.topGymPermissions?.firstAccessibleTab?.(window.topGymAuth.getUser?.()) || 'members';
+            if (name === 'platform' && !window.topGymAuth.isPlatformAdmin?.()) return window.topGymPermissions?.firstAccessibleTab?.(window.topGymAuth.getUser?.()) || 'members';
+            if ((name === 'management' || name === 'branding' || name === 'saas-billing' || name === 'backup-history') && !window.topGymAuth.isOwner?.()) return window.topGymPermissions?.firstAccessibleTab?.(window.topGymAuth.getUser?.()) || 'members';
             if (!window.topGymAuth.canAccessTab(name)) return window.topGymPermissions?.firstAccessibleTab?.(window.topGymAuth.getUser?.()) || 'members';
         }
         return name;
@@ -86,6 +87,8 @@
         const monthlyFinanceSnapshot = document.getElementById('monthlyFinanceSnapshot');
         const managementSection = document.getElementById('managementSection');
         const brandingSection = document.getElementById('brandingSection');
+        const saasBillingSection = document.getElementById('saasBillingSection');
+        const platformSection = document.getElementById('platformSection');
         const backupHistorySection = document.getElementById('backupHistorySection');
         const analyticsSection = document.getElementById('dashboardAnalytics');
         const dashboardStoreSummary = document.getElementById('dashboardStoreSummary');
@@ -102,6 +105,8 @@
         const isExpenses = name === 'expenses';
         const isManagement = name === 'management';
         const isBranding = name === 'branding';
+        const isSaasBilling = name === 'saas-billing';
+        const isPlatform = name === 'platform';
         const isBackupHistory = name === 'backup-history';
         const isPermissions = name === 'permissions';
         const isReports = name === 'reports';
@@ -119,6 +124,8 @@
         setHidden(expensesSection, !isExpenses);
         setHidden(managementSection, !isManagement);
         setHidden(brandingSection, !isBranding);
+        setHidden(saasBillingSection, !isSaasBilling);
+        setHidden(platformSection, !isPlatform);
         setHidden(backupHistorySection, !isBackupHistory);
         const hideAnalytics = !isDashboard || !window.topGymAuth?.isOwner?.();
         setHidden(analyticsSection, hideAnalytics);
@@ -132,16 +139,17 @@
         setHidden(traineesSection, !isTrainees);
         setHidden(intelligenceSection, !isIntelligence);
         setHidden(storeSection, !isStore);
-        setHidden(workspace, isDashboard || isExpenses || isReports || isManagement || isBranding || isBackupHistory || isPermissions || isAttendance || isLibrary || isTrainees || isIntelligence || isFeedback || isStore);
+        setHidden(workspace, isDashboard || isExpenses || isReports || isManagement || isBranding || isSaasBilling || isPlatform || isBackupHistory || isPermissions || isAttendance || isLibrary || isTrainees || isIntelligence || isFeedback || isStore);
         setHidden(membersSection, !isMembers);
 
+        const tabPanelIds = { 'saas-billing': 'saasBillingSection', platform: 'platformSection', 'backup-history': 'backupHistorySection' };
         document.querySelectorAll('[data-page-tab]').forEach((button) => {
             const active = button.dataset.pageTab === name;
             button.classList.toggle('active', active);
             button.setAttribute('role', 'tab');
             button.setAttribute('aria-selected', String(active));
             button.toggleAttribute('aria-current', active);
-            button.setAttribute('aria-controls', `${button.dataset.pageTab}Section`);
+            button.setAttribute('aria-controls', tabPanelIds[button.dataset.pageTab] || `${button.dataset.pageTab}Section`);
         });
 
         // A direct link such as #library can activate a tab that is outside

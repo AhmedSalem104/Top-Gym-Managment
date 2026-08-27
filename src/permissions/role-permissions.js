@@ -6,7 +6,8 @@ const { permissionForRequest } = require('./route-permissions');
 
 const ROLE_PERMISSIONS = Object.freeze({
     [ROLES.OWNER]: Object.freeze(['*']),
-    [ROLES.ASSISTANT]: Object.freeze(['members', 'trainees', 'attendance', 'library'])
+    [ROLES.ASSISTANT]: Object.freeze(['members', 'trainees', 'attendance', 'library']),
+    [ROLES.PLATFORM_ADMIN]: Object.freeze(['*'])
 });
 
 const ASSISTANT_ROUTE_RULES = Object.freeze([
@@ -35,13 +36,14 @@ function assistantPathAllowed(request) {
 }
 
 function permissionsForRole(role) {
-    if (role === ROLES.OWNER) return ['*'];
+    if (role === ROLES.OWNER || role === ROLES.PLATFORM_ADMIN) return ['*'];
     return defaultPermissionsForRole(role);
 }
 
 function canAccessRoleRequest(user, request) {
     if (!user) return false;
     if (user.role === ROLES.OWNER) return true;
+    if (user.role === ROLES.PLATFORM_ADMIN) return false;
     if (user.role !== ROLES.ASSISTANT) return false;
     const requirement = permissionForRequest(request);
     if (!requirement || requirement.ownerOnly) return false;

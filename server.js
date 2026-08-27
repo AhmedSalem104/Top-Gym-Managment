@@ -30,6 +30,7 @@ const brandingService = require('./src/services/branding-service');
 const authService = require('./src/services/auth-service');
 const permissionService = require('./src/services/permission-service');
 const tenantService = require('./src/services/tenant-service');
+const saasService = require('./src/services/saas-service');
 const { runTenantContext } = require('./src/tenancy/tenant-context');
 const { ensureAuthReady } = authService;
 
@@ -45,6 +46,7 @@ app.use('/api', createAuthApiMiddleware({
     authService,
     permissionService,
     tenantService,
+    saasService,
     isAuthorizedCronRequest: (request) => isAuthorizedCronRequest(request, { config })
 }));
 
@@ -139,6 +141,7 @@ registerRoutes(app, {
     storeService,
     intelligenceService,
     brandingService,
+    saasService,
     getPool
 });
 
@@ -173,7 +176,8 @@ app.use((error, request, response, next) => {
         field: error.field || null,
         memberName: error.memberName || null,
         memberId: error.memberId || null,
-        attendance: error.attendance || null
+        attendance: error.attendance || null,
+        saas: error.saas || null
     });
 });
 
@@ -181,6 +185,7 @@ async function start() {
     await runTenantContext({ mode: 'platform', tenantId: 1 }, () => initDatabase());
     await runTenantContext({ mode: 'platform', tenantId: 1 }, () => tenantService.ensureTenantTables());
     const bootstrapTenant = await runTenantContext({ mode: 'platform', tenantId: 1 }, () => tenantService.ensureBootstrapTenant());
+    await runTenantContext({ mode: 'platform', tenantId: bootstrapTenant.id }, () => saasService.ensureSaasTables());
     await runTenantContext({ mode: 'tenant', tenantId: bootstrapTenant.id }, async () => {
         await ensureAuthReady();
         await ensureLibraryData();
@@ -193,6 +198,7 @@ async function start() {
         await brandingService.ensureBrandingTables();
     });
     await runTenantContext({ mode: 'platform', tenantId: bootstrapTenant.id }, () => tenantService.ensureTenantColumnsAndRls(bootstrapTenant.id));
+    await runTenantContext({ mode: 'platform', tenantId: bootstrapTenant.id }, () => saasService.ensureBootstrapSubscription(bootstrapTenant.id));
     const port = config.port;
     app.listen(port, () => console.log(`Gym membership app is running on http://localhost:${port}`));
 }

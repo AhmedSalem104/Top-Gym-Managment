@@ -177,7 +177,7 @@
         button.setAttribute('aria-busy', String(Boolean(loading)));
     }
 
-    function roleLabel(role) { return role === 'Owner' ? 'مالك النظام' : 'مساعد الإدارة'; }
+    function roleLabel(role) { return role === 'Owner' ? 'مالك النظام' : role === 'PlatformAdmin' ? 'مدير المنصة' : 'مساعد الإدارة'; }
 
     function initials(name) {
         const parts = String(name || 'TG').trim().split(/\s+/).filter(Boolean);
@@ -215,6 +215,7 @@
 
     function applyNavigation(user) {
         const isOwner = user?.role === 'Owner';
+        const isPlatformAdmin = user?.role === 'PlatformAdmin';
         const tabs = permissions.tabsForUser(user);
         document.body.dataset.topGymRole = user?.role || '';
         document.body.dataset.topGymUserId = user?.id ? String(user.id) : '';
@@ -225,7 +226,9 @@
         const accountHost = topbarControls || pageTabs;
         if (accountBar && accountHost && accountBar.parentElement !== accountHost) accountHost.appendChild(accountBar);
         document.querySelectorAll('[data-page-tab]').forEach((button) => {
-            const allowed = button.hasAttribute('data-owner-only') ? isOwner : tabs.includes(button.dataset.pageTab);
+            const allowed = button.hasAttribute('data-platform-only')
+                ? isPlatformAdmin
+                : button.hasAttribute('data-owner-only') ? isOwner : tabs.includes(button.dataset.pageTab);
             if (!allowed && button === document.activeElement) button.blur();
             button.hidden = !allowed;
             button.toggleAttribute('inert', !allowed);
@@ -252,7 +255,7 @@
         if (accountName) accountName.textContent = user?.name || brandName();
         if (accountEmail) accountEmail.textContent = user?.email || '—';
         if (accountAvatar) accountAvatar.textContent = initials(user?.name);
-        if (!isOwner && !permissions.canAccessTab(user, window.location.hash.slice(1))) {
+        if (!permissions.canAccessTab(user, window.location.hash.slice(1))) {
             window.location.hash = `#${permissions.firstAccessibleTab(user)}`;
         }
         applyPermissionControls(user);
@@ -301,12 +304,20 @@
             error.code = 'AUTH_REQUIRED';
             throw error;
         }
-        const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
+        const isFormDataBody = typeof FormData !== 'undefined' && options.body instanceof FormData;
+        const isBinaryBody = (typeof Blob !== 'undefined' && options.body instanceof Blob)
+            || options.body instanceof ArrayBuffer
+            || (typeof ArrayBuffer !== 'undefined' && ArrayBuffer.isView(options.body));
+        const headers = { ...(options.headers || {}) };
+        if (!isFormDataBody && !isBinaryBody && !headers['Content-Type']) headers['Content-Type'] = 'application/json';
         const response = await nativeFetch(path, { ...options, credentials: 'same-origin', headers });
         if (response.status === 204) return null;
         const data = await response.json().catch(() => ({}));
         if (response.status === 401 && state.user) showLogin('انتهت جلسة الدخول. سجّل الدخول مرة أخرى.');
         if (!response.ok) {
+            if (state.user?.role === 'Owner' && ['SAAS_SUBSCRIPTION_REQUIRED', 'TENANT_NOT_ACTIVE', 'TENANT_ARCHIVED'].includes(data.code)) {
+                window.setTimeout(() => window.topGymActivateTab?.('saas-billing'), 0);
+            }
             const error = new Error(data.error || 'تعذر تنفيذ الطلب.');
             error.code = data.code || null;
             throw error;
@@ -395,6 +406,7 @@
         getPermissions: () => [...(state.user?.permissions || [])],
         getUser: () => state.user,
         isOwner: () => state.user?.role === 'Owner',
+        isPlatformAdmin: () => state.user?.role === 'PlatformAdmin',
         isReady: () => state.ready,
         logout: () => $('authLogoutButton')?.click(),
         refresh: checkSession

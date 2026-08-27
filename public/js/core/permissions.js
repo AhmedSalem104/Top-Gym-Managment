@@ -1,7 +1,8 @@
 (() => {
     if (window.topGymPermissions) return;
 
-    const OWNER_TABS = Object.freeze(['dashboard', 'members', 'trainees', 'intelligence', 'management', 'branding', 'backup-history', 'permissions', 'attendance', 'expenses', 'library', 'reports', 'feedback', 'store']);
+    const OWNER_TABS = Object.freeze(['dashboard', 'members', 'trainees', 'intelligence', 'management', 'branding', 'saas-billing', 'backup-history', 'permissions', 'attendance', 'expenses', 'library', 'reports', 'feedback', 'store']);
+    const PLATFORM_TABS = Object.freeze(['platform']);
     const TAB_PERMISSION_CODES = Object.freeze({
         dashboard: 'dashboard.read',
         members: ['members.read', 'memberships.read'],
@@ -9,6 +10,7 @@
         intelligence: 'intelligence.read',
         management: 'pricing.read',
         branding: 'branding.view',
+        'saas-billing': 'saas.subscription.read',
         'backup-history': 'management.backup.read',
         permissions: 'permissions.manage',
         attendance: 'attendance.read',
@@ -80,7 +82,7 @@
     }
 
     function hasPermission(user, code) {
-        if (user?.role === 'Owner') return true;
+        if (user?.role === 'Owner' || user?.role === 'PlatformAdmin') return true;
         if (Array.isArray(code)) return code.every((item) => hasPermission(user, item));
         const granted = grantedSet(user);
         const resource = String(code || '').split('.')[0];
@@ -88,8 +90,9 @@
     }
 
     function tabsForUser(user) {
+        if (user?.role === 'PlatformAdmin') return [...PLATFORM_TABS];
         if (user?.role === 'Owner') return [...OWNER_TABS];
-        return OWNER_TABS.filter((tab) => ['management', 'branding', 'backup-history'].includes(tab) ? false : TAB_PERMISSION_ALTERNATIVES[tab]
+        return OWNER_TABS.filter((tab) => ['management', 'branding', 'saas-billing', 'backup-history'].includes(tab) ? false : TAB_PERMISSION_ALTERNATIVES[tab]
             ? TAB_PERMISSION_ALTERNATIVES[tab].some((code) => hasPermission(user, code))
             : hasPermission(user, TAB_PERMISSION_CODES[tab]));
     }
@@ -100,6 +103,7 @@
 
     window.topGymPermissions = Object.freeze({
         ownerTabs: OWNER_TABS,
+        platformTabs: PLATFORM_TABS,
         tabPermissionCodes: TAB_PERMISSION_CODES,
         tabPermissionAlternatives: TAB_PERMISSION_ALTERNATIVES,
         permissionLabels: PERMISSION_LABELS,

@@ -17,6 +17,10 @@ AUTH_OWNER_EMAIL=...
 AUTH_OWNER_NAME=TOP GYM Owner
 AUTH_OWNER_PASSWORD=...
 AUTH_SESSION_DAYS=7
+AUTH_PLATFORM_ADMIN_EMAIL=platform-admin@example.com
+AUTH_PLATFORM_ADMIN_NAME=Platform Admin
+AUTH_PLATFORM_ADMIN_PASSWORD=...
+DEFAULT_TENANT_SLUG=top-gym
 ```
 
 Never commit real values. SQL Server must accept encrypted connections from the deployment environment.

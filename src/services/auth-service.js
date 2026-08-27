@@ -1,7 +1,7 @@
 'use strict';
 
 const crypto = require('node:crypto');
-const { getPool } = require('../database');
+const { getPool, sql } = require('../database');
 const { config, isProduction } = require('../config/env');
 const {
     ROLE_PERMISSIONS,
@@ -36,8 +36,8 @@ BEGIN
         created_at DATETIME2(0) NOT NULL CONSTRAINT DF_gym_users_created_at DEFAULT (SYSUTCDATETIME()),
         updated_at DATETIME2(0) NOT NULL CONSTRAINT DF_gym_users_updated_at DEFAULT (SYSUTCDATETIME()),
         CONSTRAINT UQ_gym_users_email UNIQUE (email_normalized),
-        CONSTRAINT CK_gym_users_role CHECK (role IN ('Owner', 'Assistant')),
-        CONSTRAINT CK_gym_users_status CHECK ((role = 'Owner' AND status = 'Active') OR (role = 'Assistant' AND status IN ('Active', 'Disabled')))
+        CONSTRAINT CK_gym_users_role CHECK (role IN ('Owner', 'Assistant', 'PlatformAdmin')),
+        CONSTRAINT CK_gym_users_status CHECK ((role IN ('Owner', 'PlatformAdmin') AND status = 'Active') OR (role = 'Assistant' AND status IN ('Active', 'Disabled')))
     );
 END;
 
@@ -70,7 +70,7 @@ BEGIN
     BEGIN
         EXEC(N'
             UPDATE dbo.gym_users
-            SET role = CASE LOWER(LTRIM(RTRIM(role))) WHEN ''owner'' THEN ''Owner'' WHEN ''manager'' THEN ''Owner'' ELSE ''Assistant'' END;
+            SET role = CASE LOWER(LTRIM(RTRIM(role))) WHEN ''owner'' THEN ''Owner'' WHEN ''platformadmin'' THEN ''PlatformAdmin'' WHEN ''platform_admin'' THEN ''PlatformAdmin'' WHEN ''manager'' THEN ''Owner'' ELSE ''Assistant'' END;
             UPDATE dbo.gym_users
             SET email = COALESCE(NULLIF(LTRIM(RTRIM(email)), ''''), NULLIF(LTRIM(RTRIM(username)), ''''), CONCAT(''legacy-'', CONVERT(VARCHAR(20), id), ''@topgym.local''))
             WHERE email IS NULL OR LTRIM(RTRIM(email)) = '''';
@@ -86,7 +86,7 @@ BEGIN
     BEGIN
         EXEC(N'
             UPDATE dbo.gym_users
-            SET role = CASE LOWER(LTRIM(RTRIM(role))) WHEN ''owner'' THEN ''Owner'' WHEN ''manager'' THEN ''Owner'' ELSE ''Assistant'' END;
+            SET role = CASE LOWER(LTRIM(RTRIM(role))) WHEN ''owner'' THEN ''Owner'' WHEN ''platformadmin'' THEN ''PlatformAdmin'' WHEN ''platform_admin'' THEN ''PlatformAdmin'' WHEN ''manager'' THEN ''Owner'' ELSE ''Assistant'' END;
             UPDATE dbo.gym_users
             SET email = COALESCE(NULLIF(LTRIM(RTRIM(email)), ''''), NULLIF(LTRIM(RTRIM(username)), ''''), CONCAT(''legacy-'', CONVERT(VARCHAR(20), id), ''@topgym.local''))
             WHERE email IS NULL OR LTRIM(RTRIM(email)) = '''';
@@ -103,9 +103,9 @@ BEGIN
     EXEC(N'ALTER TABLE dbo.gym_users ALTER COLUMN email_normalized NVARCHAR(254) NOT NULL;');
     EXEC(N'ALTER TABLE dbo.gym_users ALTER COLUMN status VARCHAR(20) NOT NULL;');
     IF NOT EXISTS (SELECT 1 FROM sys.check_constraints WHERE name = N'CK_gym_users_role' AND parent_object_id = OBJECT_ID(N'dbo.gym_users'))
-        EXEC(N'ALTER TABLE dbo.gym_users ADD CONSTRAINT CK_gym_users_role CHECK (role IN (''Owner'', ''Assistant''));');
+        EXEC(N'ALTER TABLE dbo.gym_users ADD CONSTRAINT CK_gym_users_role CHECK (role IN (''Owner'', ''Assistant'', ''PlatformAdmin''));');
     IF NOT EXISTS (SELECT 1 FROM sys.check_constraints WHERE name = N'CK_gym_users_status' AND parent_object_id = OBJECT_ID(N'dbo.gym_users'))
-        EXEC(N'ALTER TABLE dbo.gym_users ADD CONSTRAINT CK_gym_users_status CHECK ((role = ''Owner'' AND status = ''Active'') OR (role = ''Assistant'' AND status IN (''Active'', ''Disabled'')));');
+        EXEC(N'ALTER TABLE dbo.gym_users ADD CONSTRAINT CK_gym_users_status CHECK ((role IN (''Owner'', ''PlatformAdmin'') AND status = ''Active'') OR (role = ''Assistant'' AND status IN (''Active'', ''Disabled'')));');
     IF NOT EXISTS (
         SELECT 1 FROM sys.indexes
         WHERE name = N'UQ_gym_users_email'
@@ -286,13 +286,44 @@ async function ensureOwnerAccount() {
     }
 }
 
+async function ensurePlatformAdminAccount() {
+    const email = config.authPlatformAdminEmail ? validateEmail(config.authPlatformAdminEmail) : '';
+    const password = config.authPlatformAdminPassword ? validatePassword(config.authPlatformAdminPassword) : '';
+    if (!email || !password) return { created: false, setupRequired: false };
+
+    const existingByEmail = await getUserByEmail(email);
+    if (existingByEmail) {
+        if (String(existingByEmail.role) !== 'PlatformAdmin') {
+            throw authError('بريد Platform Admin مستخدم لحساب من نوع آخر.', 409, 'PLATFORM_ADMIN_EMAIL_CONFLICT');
+        }
+        return { created: false, setupRequired: false };
+    }
+
+    const passwordHash = await hashPassword(password);
+    const pool = await getPool();
+    try {
+        await pool.request()
+            .input('fullName', sql.NVarChar(120), config.authPlatformAdminName)
+            .input('email', sql.NVarChar(254), email)
+            .input('emailNormalized', sql.NVarChar(254), email)
+            .input('passwordHash', sql.NVarChar(512), passwordHash)
+            .query("INSERT INTO dbo.gym_users (full_name, username, email, email_normalized, password_hash, role, status) VALUES (@fullName, @email, @email, @emailNormalized, @passwordHash, 'PlatformAdmin', 'Active');");
+        console.log(`[TOP GYM AUTH] Bootstrapped Platform Admin account ${email}.`);
+        return { created: true, setupRequired: false };
+    } catch (error) {
+        if (error.number === 2601 || error.number === 2627) return { created: false, setupRequired: false };
+        throw error;
+    }
+}
+
 async function ensureAuthReady() {
     if (!authReadyPromise) {
         authReadyPromise = ensureAuthTables()
             .then(ensureOwnerAccount)
             .then(async (setup) => {
+                const platform = await ensurePlatformAdminAccount();
                 await permissionService.ensurePermissionTables();
-                return setup;
+                return { ...setup, platform };
             })
             .catch((error) => {
                 authReadyPromise = null;

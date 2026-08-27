@@ -157,6 +157,35 @@ the membership code.
 | POST | `/api/backup/inspect` | Owner; raw upload |
 | POST | `/api/backup/restore` | Owner; raw upload |
 
+## SaaS control plane
+
+SaaS subscriptions are separate from the memberships sold by each gym to its
+members. Tenant requests use the authenticated Owner session; platform routes
+use a separate `PlatformAdmin` account created from the platform environment
+variables. For API clients that can access more than one gym, send
+`X-Gym-Slug` so the server resolves `slug -> tenant_id -> RLS context`.
+
+| Method | Path | Access |
+|---|---|---|
+| GET | `/api/saas/subscription` | Tenant Owner |
+| GET | `/api/saas/plans` | Tenant Owner |
+| GET | `/api/saas/subscription-requests` | Tenant Owner |
+| POST | `/api/saas/subscription-requests` | Tenant Owner |
+| POST | `/api/saas/subscription-requests/:id/proof` | Tenant Owner; raw image/PDF up to 4 MB |
+| GET | `/api/saas/payment-proofs/:id/file` | Tenant Owner |
+| GET | `/api/platform/overview` | PlatformAdmin |
+| GET/POST | `/api/platform/tenants` | PlatformAdmin |
+| GET/PATCH | `/api/platform/plans` and `/api/platform/plans/:id` | PlatformAdmin |
+| GET | `/api/platform/subscription-requests` | PlatformAdmin |
+| POST | `/api/platform/subscription-requests/:id/approve` | PlatformAdmin |
+| POST | `/api/platform/subscription-requests/:id/reject` | PlatformAdmin |
+| GET | `/api/platform/payment-proofs/:id/file` | PlatformAdmin |
+| GET | `/api/platform/audit` | PlatformAdmin |
+
+When a trial or paid SaaS subscription expires, tenant APIs return
+`402 SAAS_SUBSCRIPTION_REQUIRED` while the subscription/recovery endpoints
+remain available. Existing tenant data is retained.
+
 ## Error behavior
 
 Authentication and authorization retain `401` for missing/expired sessions and `403` for forbidden actions. Do not expose SQL, stack traces, credentials or connection strings in production responses.

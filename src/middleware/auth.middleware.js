@@ -3,6 +3,7 @@
 const { authorizeRequest, requirePermission } = require('./permission.middleware');
 const { protectFinancialResponse } = require('./financial-data.middleware');
 const { runTenantContext } = require('../tenancy/tenant-context');
+const { ROLES } = require('../permissions/roles');
 
 function isSameOriginRequest(request) {
     const origin = String(request.get('origin') || '').trim();
@@ -24,7 +25,7 @@ function requestedTenantSlug(request) {
         || '';
 }
 
-function createAuthApiMiddleware({ authService, isAuthorizedCronRequest, tenantService }) {
+function createAuthApiMiddleware({ authService, isAuthorizedCronRequest, tenantService, saasService }) {
     const { ensureAuthReady, getSessionUser, readSessionCookie } = authService;
     return (request, response, next) => {
         const publicPath = ['/health', '/auth/login', '/auth/session', '/auth/logout', '/member-portal/lookup', '/member-portal/feedback', '/branding'].includes(request.path)
@@ -32,6 +33,7 @@ function createAuthApiMiddleware({ authService, isAuthorizedCronRequest, tenantS
             || request.path.startsWith('/member-portal/library/')
             || (request.method === 'GET' && request.path.startsWith('/branding/assets/'));
         const cronRequest = request.path === '/backup/daily' && isAuthorizedCronRequest(request);
+        const platformPath = request.path.startsWith('/platform/');
 
         if (publicPath || cronRequest) {
             return tenantService.resolvePublicTenant(requestedTenantSlug(request))
@@ -50,11 +52,28 @@ function createAuthApiMiddleware({ authService, isAuthorizedCronRequest, tenantS
             .then(() => getSessionUser(readSessionCookie(request), { includePermissions: false }))
             .then((user) => {
                 if (!user) return response.status(401).json({ error: 'انتهت جلسة الدخول. سجّل الدخول مرة أخرى.', code: 'AUTH_REQUIRED' });
+                if (platformPath) {
+                    if (user.role !== ROLES.PLATFORM_ADMIN) {
+                        return response.status(403).json({ error: 'هذه المساحة مخصصة لمدير المنصة فقط.', code: 'PLATFORM_ADMIN_REQUIRED' });
+                    }
+                    return runTenantContext({ tenantId: 1, userId: user.id, mode: 'platform' }, async () => {
+                        request.auth = await authService.withPermissions(user);
+                        return next();
+                    });
+                }
                 return tenantService.resolveTenantForUser(user.id, requestedTenantSlug(request)).then((tenant) => {
                     if (!tenant) return response.status(403).json({ error: 'لا يوجد اشتراك نشط لهذا الحساب في الجيم المطلوب.', code: 'TENANT_ACCESS_REQUIRED' });
                     request.tenant = tenant;
                     return runTenantContext({ tenantId: tenant.id, userId: user.id, mode: 'tenant' }, async () => {
                         user = await authService.withPermissions(user);
+                        if (saasService) {
+                            request.saas = await saasService.enforceTenantAccess(tenant.id, { path: request.path, method: request.method });
+                            await saasService.enforceRequestLimit(tenant.id, {
+                                path: request.path,
+                                method: request.method,
+                                incomingBytes: request.get('content-length')
+                            });
+                        }
                         if (!authorizeRequest(user, request)) {
                             return response.status(403).json({ error: 'ليس لديك صلاحية لتنفيذ هذا الإجراء.', code: 'FORBIDDEN' });
                         }

@@ -32,6 +32,10 @@ AUTH_OWNER_EMAIL=owner@example.com
 AUTH_OWNER_NAME=TOP GYM Owner
 AUTH_OWNER_PASSWORD=<long-random-password>
 AUTH_SESSION_DAYS=7
+AUTH_PLATFORM_ADMIN_EMAIL=platform-admin@example.com
+AUTH_PLATFORM_ADMIN_NAME=Platform Admin
+AUTH_PLATFORM_ADMIN_PASSWORD=<long-random-platform-password>
+DEFAULT_TENANT_SLUG=top-gym
 ```
 
 The bootstrap password is used only to create the first Owner hash. It is not an API response and should not be stored in source control.
