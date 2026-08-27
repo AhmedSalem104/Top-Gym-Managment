@@ -5,7 +5,6 @@
     window.__topGymBrandingLoaded = true;
 
     const root = document.documentElement;
-    const CACHE_KEY = 'topgym-branding-cache';
     const FALLBACK = {
         schemaVersion: 1,
         identity: {
@@ -113,8 +112,11 @@
         printLogo: ['printLogo', 'horizontalLogo', 'primaryLogo', 'lightLogo', 'darkLogo', 'compactLogo']
     });
 
-    let branding = merge(FALLBACK, readCache()?.branding || {});
-    let version = readCache()?.version || 1;
+    // Branding is tenant-specific. Do not hydrate the UI from a global
+    // localStorage entry: the previous tenant's logo/name could briefly (or
+    // permanently, after an API failure) appear for the next tenant.
+    let branding = merge(FALLBACK, {});
+    let version = 1;
 
     function clone(value) { return JSON.parse(JSON.stringify(value)); }
     function isObject(value) { return Boolean(value) && typeof value === 'object' && !Array.isArray(value); }
@@ -127,13 +129,13 @@
         }
         return result;
     }
-    function readCache() {
-        try { return JSON.parse(window.localStorage.getItem(CACHE_KEY) || 'null'); } catch (_) { return null; }
-    }
-    function writeCache(value) {
-        try { window.localStorage.setItem(CACHE_KEY, JSON.stringify(value)); } catch (_) { /* Storage is optional. */ }
-    }
     function currentTheme() { return root.dataset.theme === 'dark' ? 'dark' : 'light'; }
+
+    function tenantHint() {
+        const fromBody = document.body?.dataset?.brandingTenant || '';
+        if (fromBody) return String(fromBody).trim().toLowerCase();
+        try { return String(new URLSearchParams(window.location.search).get('tenant') || '').trim().toLowerCase(); } catch (_) { return ''; }
+    }
 
     function loadFont(name) {
         const href = FONT_URLS[name];
@@ -325,11 +327,12 @@
 
     async function refresh() {
         try {
-            const response = await window.fetch('/api/branding', { credentials: 'same-origin', cache: 'no-store' });
+            const hint = tenantHint();
+            const endpoint = hint ? `/api/branding?tenant=${encodeURIComponent(hint)}` : '/api/branding';
+            const response = await window.fetch(endpoint, { credentials: 'same-origin', cache: 'no-store' });
             if (!response.ok) throw new Error(`Branding request failed (${response.status})`);
             const data = await response.json();
             if (data?.branding) {
-                writeCache({ branding: data.branding, version: data.version || 1 });
                 apply(data.branding, data.version || 1);
             }
         } catch (_) {

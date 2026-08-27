@@ -225,7 +225,22 @@ async function ensureBootstrapTenant() {
             WHERE u.role IN ('Owner', 'Assistant')
               AND NOT EXISTS (
                 SELECT 1 FROM dbo.gym_user_tenants existing
-                WHERE existing.user_id=u.id AND existing.tenant_id=@tenantId
+                WHERE existing.user_id=u.id
+                );
+
+            -- Older boots attached every Owner/Assistant to Top Gym. Keep
+            -- that legacy membership available for migration, but never let
+            -- it win tenant resolution when the account already belongs to a
+            -- different gym.
+            UPDATE bootstrapMembership
+            SET is_primary=0, updated_at=SYSUTCDATETIME()
+            FROM dbo.gym_user_tenants bootstrapMembership
+            WHERE bootstrapMembership.tenant_id=@tenantId
+              AND EXISTS (
+                SELECT 1 FROM dbo.gym_user_tenants otherMembership
+                WHERE otherMembership.user_id=bootstrapMembership.user_id
+                  AND otherMembership.tenant_id<>@tenantId
+                  AND otherMembership.status='active'
                 );
             `);
     return tenant;
@@ -261,15 +276,16 @@ async function resolveTenantForUser(userId, requestedSlug = '') {
     const result = await pool.request()
         .input('userId', sql.Int, Number(userId))
         .input('slug', sql.VarChar(80), normalizedSlug)
+        .input('bootstrapSlug', sql.VarChar(80), BOOTSTRAP_TENANT_SLUG)
         .query(`
             SELECT TOP (1) t.id, t.name, t.slug, t.status, ut.role, ut.is_primary
             FROM dbo.gym_user_tenants ut
             INNER JOIN dbo.gym_tenants t ON t.id=ut.tenant_id
             WHERE ut.user_id=@userId
               AND ut.status='active'
-              AND t.status IN ('trial', 'active', 'suspended', 'expired')
+              AND t.status IN ('trial', 'active', 'suspended', 'expired', 'archived')
               AND (@slug='' OR t.slug=@slug)
-            ORDER BY ut.is_primary DESC, t.id ASC;
+            ORDER BY ut.is_primary DESC, CASE WHEN t.slug=@bootstrapSlug THEN 1 ELSE 0 END, t.id ASC;
         `);
     return tenantRecord(result.recordset[0]);
 }

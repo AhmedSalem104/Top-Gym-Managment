@@ -144,6 +144,46 @@ function brandingTenantId() {
     return currentTenantId({ required: true });
 }
 
+async function defaultBrandingForTenant(executor = null) {
+    const tenantId = brandingTenantId();
+    const database = executor || await getPool();
+    const result = await database.request()
+        .input('tenantId', sql.Int, tenantId)
+        .query('SELECT TOP (1) name FROM dbo.gym_tenants WHERE id=@tenantId;');
+    const tenantName = cleanText(result.recordset[0]?.name, '', 120);
+    const defaults = clone(DEFAULT_BRANDING);
+    if (tenantName) {
+        defaults.identity.brandName = tenantName;
+        defaults.identity.shortName = tenantName.slice(0, 30);
+        defaults.identity.companyName = tenantName;
+    }
+    return defaults;
+}
+
+async function brandingTenantSlug(executor = null) {
+    const tenantId = brandingTenantId();
+    const database = executor || await getPool();
+    const result = await database.request()
+        .input('tenantId', sql.Int, tenantId)
+        .query('SELECT TOP (1) slug FROM dbo.gym_tenants WHERE id=@tenantId;');
+    return cleanText(result.recordset[0]?.slug, '', 80).toLowerCase();
+}
+
+function applyTenantIdentity(config, tenantName) {
+    const result = clone(config);
+    const name = cleanText(tenantName, '', 120);
+    const identity = result.identity || {};
+    const isUncustomized = identity.brandName === DEFAULT_BRANDING.identity.brandName
+        && identity.shortName === DEFAULT_BRANDING.identity.shortName
+        && identity.companyName === DEFAULT_BRANDING.identity.companyName;
+    if (name && isUncustomized) {
+        result.identity.brandName = name;
+        result.identity.shortName = name.slice(0, 30);
+        result.identity.companyName = name;
+    }
+    return result;
+}
+
 function clone(value) {
     return JSON.parse(JSON.stringify(value));
 }
@@ -370,8 +410,8 @@ function validateAsset({ key, mimeType, fileName, buffer, width, height }) {
 async function ensureTenantDefaultRow(pool = null) {
     const tenantId = currentTenantId({ required: false });
     if (!tenantId || brandingTenantRows.has(tenantId)) return;
-    const defaultJson = JSON.stringify(DEFAULT_BRANDING);
     const executor = pool || await getPool();
+    const defaultJson = JSON.stringify(await defaultBrandingForTenant(executor));
     const request = executor.request()
         .input('brandingId', sql.TinyInt, BRANDING_ID)
         .input('draftConfig', sql.NVarChar(sql.MAX), defaultJson)
@@ -433,7 +473,7 @@ async function assetMetadata(scope) {
     return new Map(result.recordset.map((row) => [String(row.asset_key), { key: String(row.asset_key), mimeType: row.mime_type, fileName: row.file_name, width: Number(row.width || 0), height: Number(row.height || 0), updatedAt: row.updated_at }]));
 }
 
-function decorateConfig(config, scope, version, metadata) {
+function decorateConfig(config, scope, version, metadata, tenantSlug = '') {
     const result = clone(config);
     result.assets = Object.fromEntries(ASSET_KEYS.map((key) => {
         const reference = config.assets[key];
@@ -441,7 +481,9 @@ function decorateConfig(config, scope, version, metadata) {
         if (!meta) return [key, null];
         const basePath = scope === 'draft' ? '/api/branding/draft-assets/' : '/api/branding/assets/';
         const assetVersion = Number(reference?.revision || 0) || (meta.updatedAt ? new Date(meta.updatedAt).getTime() : version);
-        return [key, { ...meta, url: `${basePath}${encodeURIComponent(meta.key)}?v=${encodeURIComponent(`${version}-${assetVersion || 0}`)}` }];
+        const query = new URLSearchParams({ v: `${version}-${assetVersion || 0}` });
+        if (tenantSlug) query.set('tenant', tenantSlug);
+        return [key, { ...meta, url: `${basePath}${encodeURIComponent(meta.key)}?${query.toString()}` }];
     }));
     return result;
 }
@@ -460,12 +502,14 @@ async function latestAudit() {
 async function ownerResponse() {
     await ensureBrandingTables();
     const row = await readRow();
-    const draft = parseStoredConfig(row?.draft_config);
-    const published = parseStoredConfig(row?.published_config);
+    const defaults = await defaultBrandingForTenant();
+    const tenantSlug = await brandingTenantSlug();
+    const draft = applyTenantIdentity(parseStoredConfig(row?.draft_config), defaults.identity.brandName);
+    const published = applyTenantIdentity(parseStoredConfig(row?.published_config), defaults.identity.brandName);
     const [draftAssets, publishedAssets] = await Promise.all([assetMetadata('draft'), assetMetadata('published')]);
     return {
-        draft: decorateConfig(draft, 'draft', row?.version || 1, draftAssets),
-        published: decorateConfig(published, 'published', row?.version || 1, publishedAssets),
+        draft: decorateConfig(draft, 'draft', row?.version || 1, draftAssets, tenantSlug),
+        published: decorateConfig(published, 'published', row?.version || 1, publishedAssets, tenantSlug),
         version: Number(row?.version || 1),
         metadata: {
             updatedAt: row?.updated_at || null, updatedByUserId: row?.updated_by_user_id == null ? null : Number(row.updated_by_user_id),
@@ -485,8 +529,10 @@ async function getPublicBranding() {
     const cached = publicCache.get(tenantId);
     if (cached && cached.expiresAt > Date.now()) return clone(cached.value);
     const row = await readRow();
-    const published = parseStoredConfig(row?.published_config);
-    const result = { branding: decorateConfig(published, 'published', row?.version || 1, await assetMetadata('published')), version: Number(row?.version || 1), publishedAt: row?.published_at || null };
+    const defaults = await defaultBrandingForTenant();
+    const tenantSlug = await brandingTenantSlug();
+    const published = applyTenantIdentity(parseStoredConfig(row?.published_config), defaults.identity.brandName);
+    const result = { branding: decorateConfig(published, 'published', row?.version || 1, await assetMetadata('published'), tenantSlug), version: Number(row?.version || 1), publishedAt: row?.published_at || null };
     publicCache.set(tenantId, { value: result, expiresAt: Date.now() + 30_000 });
     return clone(result);
 }
@@ -502,7 +548,8 @@ async function getPublicBrandName(fallback = 'الجيم') {
 
 async function saveDraft(input, actorUserId) {
     await ensureBrandingTables();
-    const config = normalizeConfig(input);
+    const defaults = await defaultBrandingForTenant();
+    const config = applyTenantIdentity(normalizeConfig(input), defaults.identity.brandName);
     const validation = validateConfig(config);
     if (validation.errors.length) throw brandingError('لا يمكن حفظ المسودة قبل إصلاح مشاكل الهوية.', validation);
     const pool = await getPool();
@@ -516,10 +563,11 @@ async function publish(actorUserId) {
     await ensureBrandingTables();
     let publishedVersion = 1;
     const tenantId = brandingTenantId();
+    const defaults = await defaultBrandingForTenant();
     await withTransaction(async (transaction) => {
         const rowResult = await transaction.request().input('brandingId', sql.TinyInt, BRANDING_ID).input('tenantId', sql.Int, tenantId).query('SELECT TOP (1) * FROM dbo.gym_branding_config WITH (UPDLOCK, HOLDLOCK) WHERE id=@brandingId AND tenant_id=@tenantId;');
         const row = rowResult.recordset[0];
-        const config = normalizeConfig(parseStoredConfig(row?.draft_config));
+        const config = applyTenantIdentity(normalizeConfig(parseStoredConfig(row?.draft_config)), defaults.identity.brandName);
         const validation = validateConfig(config);
         if (validation.errors.length) throw brandingError('لا يمكن نشر الهوية قبل إصلاح مشاكل التباين أو البيانات.', validation);
         publishedVersion = Number(row?.version || 1) + 1;
@@ -540,7 +588,8 @@ async function publish(actorUserId) {
 async function resetDraft(actorUserId) {
     await ensureBrandingTables();
     const pool = await getPool();
-    await pool.request().input('brandingId', sql.TinyInt, BRANDING_ID).input('tenantId', sql.Int, brandingTenantId()).input('config', sql.NVarChar(sql.MAX), JSON.stringify(DEFAULT_BRANDING)).input('actorUserId', sql.Int, actorUserId || null).query('UPDATE dbo.gym_branding_config SET draft_config=@config, updated_by_user_id=@actorUserId, updated_at=SYSUTCDATETIME() WHERE id=@brandingId AND tenant_id=@tenantId; DELETE FROM dbo.gym_branding_assets WHERE scope=\'draft\' AND tenant_id=@tenantId;');
+    const defaults = await defaultBrandingForTenant(pool);
+    await pool.request().input('brandingId', sql.TinyInt, BRANDING_ID).input('tenantId', sql.Int, brandingTenantId()).input('config', sql.NVarChar(sql.MAX), JSON.stringify(defaults)).input('actorUserId', sql.Int, actorUserId || null).query('UPDATE dbo.gym_branding_config SET draft_config=@config, updated_by_user_id=@actorUserId, updated_at=SYSUTCDATETIME() WHERE id=@brandingId AND tenant_id=@tenantId; DELETE FROM dbo.gym_branding_assets WHERE scope=\'draft\' AND tenant_id=@tenantId;');
     const row = await readRow();
     await audit('reset', actorUserId, Number(row?.version || 1), 'تمت استعادة المسودة إلى الهوية الافتراضية الجيم.');
     return ownerResponse();
@@ -552,7 +601,8 @@ async function uploadDraftAsset(input, actorUserId) {
     const pool = await getPool();
     await pool.request().input('tenantId', sql.Int, brandingTenantId()).input('assetKey', sql.VarChar(40), asset.key).input('mimeType', sql.VarChar(80), asset.mimeType).input('fileName', sql.NVarChar(255), asset.fileName).input('content', sql.VarBinary(sql.MAX), asset.buffer).input('width', sql.Int, asset.width).input('height', sql.Int, asset.height).input('actorUserId', sql.Int, actorUserId || null).query("UPDATE dbo.gym_branding_assets SET mime_type=@mimeType, file_name=@fileName, content=@content, width=@width, height=@height, updated_by_user_id=@actorUserId, updated_at=SYSUTCDATETIME() WHERE scope='draft' AND asset_key=@assetKey AND tenant_id=@tenantId; IF @@ROWCOUNT=0 INSERT INTO dbo.gym_branding_assets(tenant_id,asset_key,scope,mime_type,file_name,content,width,height,updated_by_user_id) VALUES(@tenantId,@assetKey,'draft',@mimeType,@fileName,@content,@width,@height,@actorUserId);");
     const row = await readRow();
-    const config = parseStoredConfig(row?.draft_config);
+    const defaults = await defaultBrandingForTenant(pool);
+    const config = applyTenantIdentity(parseStoredConfig(row?.draft_config), defaults.identity.brandName);
     const revision = Date.now();
     config.assets[asset.key] = { key: asset.key, revision };
     await pool.request().input('brandingId', sql.TinyInt, BRANDING_ID).input('tenantId', sql.Int, brandingTenantId()).input('config', sql.NVarChar(sql.MAX), JSON.stringify(config)).query('UPDATE dbo.gym_branding_config SET draft_config=@config, updated_at=SYSUTCDATETIME() WHERE id=@brandingId AND tenant_id=@tenantId;');
@@ -566,7 +616,8 @@ async function removeDraftAsset(key, actorUserId) {
     const pool = await getPool();
     await pool.request().input('tenantId', sql.Int, brandingTenantId()).input('assetKey', sql.VarChar(40), assetKey).query("DELETE FROM dbo.gym_branding_assets WHERE scope='draft' AND asset_key=@assetKey AND tenant_id=@tenantId;");
     const row = await readRow();
-    const config = parseStoredConfig(row?.draft_config);
+    const defaults = await defaultBrandingForTenant(pool);
+    const config = applyTenantIdentity(parseStoredConfig(row?.draft_config), defaults.identity.brandName);
     config.assets[assetKey] = null;
     await pool.request().input('brandingId', sql.TinyInt, BRANDING_ID).input('tenantId', sql.Int, brandingTenantId()).input('config', sql.NVarChar(sql.MAX), JSON.stringify(config)).query('UPDATE dbo.gym_branding_config SET draft_config=@config, updated_at=SYSUTCDATETIME() WHERE id=@brandingId AND tenant_id=@tenantId;');
     await audit('asset_removed', actorUserId, Number(row?.version || 1), `تم حذف أصل الهوية: ${assetKey}.`);

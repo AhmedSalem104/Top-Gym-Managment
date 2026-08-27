@@ -29,6 +29,8 @@ function createAuthApiMiddleware({ authService, isAuthorizedCronRequest, tenantS
     const { ensureAuthReady, getSessionUser, readSessionCookie } = authService;
     return (request, response, next) => {
         const authPublicPath = ['/auth/login', '/auth/session', '/auth/logout'].includes(request.path);
+        const tenantBrandingPath = request.method === 'GET'
+            && (request.path === '/branding' || request.path.startsWith('/branding/assets/'));
         const publicPath = ['/health', '/member-portal/lookup', '/member-portal/feedback', '/branding'].includes(request.path)
             || request.path === '/member-portal/library/options'
             || request.path.startsWith('/member-portal/library/')
@@ -42,6 +44,30 @@ function createAuthApiMiddleware({ authService, isAuthorizedCronRequest, tenantS
         // tenant just to create/read a session.
         if (authPublicPath) {
             return runTenantContext({ tenantId: null, mode: 'public' }, next);
+        }
+
+        // Branding is public for the login screen, but an authenticated gym
+        // user must receive the branding of a tenant they actually belong to.
+        // Resolving it through the public fallback would make every logged-in
+        // gym temporarily inherit Top Gym's identity and assets.
+        if (tenantBrandingPath) {
+            return ensureAuthReady()
+                .then(() => getSessionUser(readSessionCookie(request), { includePermissions: false }))
+                .then((user) => {
+                    if (user && user.role !== ROLES.PLATFORM_ADMIN) {
+                        return tenantService.resolveTenantForUser(user.id, requestedTenantSlug(request)).then((tenant) => {
+                            if (!tenant) return response.status(403).json({ error: 'Tenant access is required for this branding request.', code: 'TENANT_ACCESS_REQUIRED' });
+                            request.tenant = tenant;
+                            return runTenantContext({ tenantId: tenant.id, userId: user.id, mode: 'tenant' }, next);
+                        });
+                    }
+                    return tenantService.resolvePublicTenant(requestedTenantSlug(request)).then((tenant) => {
+                        if (!tenant) return response.status(404).json({ error: 'Gym not found.', code: 'TENANT_NOT_FOUND' });
+                        request.tenant = tenant;
+                        return runTenantContext({ tenantId: tenant.id, mode: 'public' }, next);
+                    });
+                })
+                .catch(next);
         }
 
         if (publicPath || cronRequest) {

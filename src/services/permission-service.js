@@ -4,7 +4,7 @@ const { getPool, sql } = require('../database');
 const { withTransaction } = require('../database/transaction');
 const userRepository = require('../repositories/user.repository');
 const sessionRepository = require('../repositories/session.repository');
-const { runTenantContext } = require('../tenancy/tenant-context');
+const { currentTenantId, runTenantContext } = require('../tenancy/tenant-context');
 const { ROLES } = require('../permissions/roles');
 const {
     KNOWN_PERMISSION_CODES,
@@ -212,7 +212,7 @@ function publicUser(row, permissions = []) {
 
 async function getAssistant(id) {
     const userId = normalizeUserId(id);
-    const result = await userRepository.findPublicById(userId);
+    const result = await userRepository.findPublicById(userId, currentTenantId({ required: true }));
     const user = result.recordset[0];
     if (!user) throw permissionError('الحساب غير موجود.', 404, 'USER_NOT_FOUND');
     if (user.role !== ROLES.ASSISTANT) throw permissionError('لا يمكن تعديل صلاحيات حساب Owner.', 403, 'OWNER_ACCOUNT_PROTECTED');
@@ -264,7 +264,7 @@ async function getUserPermissionState(id) {
 async function updateUserPermissions(id, actorUserId, requested, options = {}) {
     const target = await getAssistant(id);
     const actorId = normalizeUserId(actorUserId);
-    const actorResult = await userRepository.findPublicById(actorId);
+    const actorResult = await userRepository.findPublicById(actorId, currentTenantId({ required: true }));
     const actor = actorResult.recordset[0];
     if (!actor || actor.role !== ROLES.OWNER) {
         throw permissionError('يجب أن يكون منفذ تعديل الصلاحيات Owner.', 403, 'OWNER_REQUIRED');

@@ -80,7 +80,7 @@ function qrPageDate(value) {
     return year && month && day ? `${day}/${month}/${year}` : String(value);
 }
 
-function renderQrMemberPage(member) {
+function renderQrMemberPage(member, tenantSlug = '') {
     const membership = member.membership || {};
     const status = String(membership.status || '').toLowerCase();
     const statusLabels = { active: 'نشطة', expiring_soon: 'قريبة الانتهاء', expired: 'منتهية', frozen: 'مجمدة' };
@@ -112,7 +112,7 @@ function renderQrMemberPage(member) {
     <link rel="icon" type="image/svg+xml" href="/assets/gym-brand.svg?v=1" sizes="any">
     <title>بيانات عضوية ${escapeHtml(member.fullName)} | الجيم</title>
 </head>
-<body class="qr-member-page">
+<body class="qr-member-page" data-branding-tenant="${escapeHtml(tenantSlug)}">
     <main class="qr-member-shell">
         <button class="theme-toggle-button" type="button" data-theme-toggle aria-pressed="false" title="تفعيل الوضع الداكن">
             <span aria-hidden="true">◐</span><span data-theme-toggle-label>الوضع الداكن</span>
@@ -133,7 +133,7 @@ function renderQrMemberPage(member) {
         </section>
     </main>
     <script defer src="/js/theme.js?v=1"></script>
-    <script defer src="/js/branding.js?v=1"></script>
+    <script defer src="/js/branding.js?v=3"></script>
 </body>
 </html>`;
 }
@@ -174,7 +174,7 @@ app.get('/qr/:id', asyncRoute(async (request, response) => {
         'Cache-Control': 'no-store, no-cache, must-revalidate, private',
         'X-Robots-Tag': 'noindex, nofollow'
     });
-    response.type('html').send(renderQrMemberPage(member));
+    response.type('html').send(renderQrMemberPage(member, tenant.slug));
 }));
 
 async function sendPlatformAdminPage(request, response) {

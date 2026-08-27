@@ -309,6 +309,8 @@ function checkAuthSurface() {
     const permissions = read('src/permissions/permissions.js');
     const routePermissions = read('src/permissions/route-permissions.js');
     const permissionService = read('src/services/permission-service.js');
+    const userRepository = read('src/repositories/user.repository.js');
+    const tenantService = read('src/services/tenant-service.js');
     const permissionsUi = read('public/js/pages/management/permissions.js');
     record('PERMISSIONS-CATALOG', permissions.includes('members.read') && permissions.includes('payments.create') && permissions.includes('finance.read'), 'resource.action permission catalog is present', 'P0');
     record('PERMISSIONS-ROUTE-RESOLVER', routePermissions.includes('permissionForRequest') && authMiddleware.includes('permission.middleware'), 'all API authorization resolves through the centralized route permission resolver', 'P0');
@@ -316,6 +318,8 @@ function checkAuthSurface() {
     record('PERMISSIONS-OWNER-API', authRoutes.includes('/api/auth/permissions/catalog') && authRoutes.includes('/api/auth/users/:id/permissions') && authRoutes.includes('ownerOnly'), 'Owner-only permission management APIs are present', 'P0');
     record('PERMISSIONS-OWNER-UI', index.includes('data-page-tab="permissions"') && index.includes('id="permissionsSection"') && permissionsUi.includes('/permissions'), 'Owner permissions screen is present', 'P1');
     record('PERMISSIONS-SESSION-INVALIDATION', permissionService.includes('revokeForUser'), 'permission updates invalidate the target Assistant sessions', 'P0');
+    record('TENANT-USER-SCOPE', auth.includes('currentTenantId({ required: true })') && userRepository.includes("ut.status='active'") && permissionService.includes('currentTenantId({ required: true })'), 'account and permission lists/actions are scoped to the active tenant', 'P0');
+    record('TENANT-BOOTSTRAP-SAFETY', tenantService.includes('bootstrapMembership') && tenantService.includes('otherMembership.tenant_id<>@tenantId'), 'legacy Top Gym bootstrap mapping cannot override another gym membership', 'P0');
     record('FINANCE-FIELD-GUARD', fs.existsSync(path.join(root, 'src/middleware/financial-data.middleware.js')) && authMiddleware.includes('protectFinancialResponse'), 'financial response fields are filtered when finance.read is disabled', 'P0');
     const brandingRoutes = read('src/routes/branding.routes.js');
     const brandingService = read('src/services/branding-service.js');
@@ -323,6 +327,7 @@ function checkAuthSurface() {
     record('BRANDING-OWNER-API', brandingRoutes.includes('/api/branding/settings') && brandingRoutes.includes('branding.publish') && brandingRoutes.includes('ownerOnly'), 'custom branding settings and publish APIs are Owner-protected', 'P0');
     record('BRANDING-FALLBACK', brandingService.includes('DEFAULT_BRANDING') && brandingService.includes('getPublicBrandName'), 'default branding and safe fallback resolver are present', 'P0');
     record('BRANDING-DESIGN-TOKENS', brandingClient.includes('TOKEN_ALIASES') && brandingClient.includes('topgym:brandingchange'), 'resolved branding is applied through centralized runtime design tokens', 'P1');
+    record('BRANDING-TENANT-CONTEXT', authMiddleware.includes('tenantBrandingPath') && brandingService.includes('defaultBrandingForTenant') && brandingClient.includes('tenantHint') && !brandingClient.includes('topgym-branding-cache'), 'branding identity and assets resolve per tenant without a shared browser cache', 'P0');
     record('BRANDING-UI', index.includes('data-page-tab="branding"') && index.includes('id="brandingSection"') && index.includes('/js/branding.js'), 'Owner custom branding editor and runtime loader are present', 'P1');
     const saasService = read('src/services/saas-service.js');
     const platformRoutes = read('src/routes/platform.routes.js');
@@ -334,6 +339,7 @@ function checkAuthSurface() {
     record('SAAS-SCHEMA', saasService.includes('saas_plans') && saasService.includes('saas_tenant_subscriptions') && saasService.includes('saas_subscription_requests') && saasService.includes('saas_payment_proofs'), 'SaaS plans, subscriptions, manual requests and payment proofs have separate tables', 'P0');
     record('SAAS-WORKFLOW', saasRoutes.includes('/api/saas/subscription-requests/:id/proof') && platformRoutes.includes('/api/platform/subscription-requests/:id/approve') && platformRoutes.includes('/api/platform/subscription-requests/:id/reject'), 'manual payment-proof review workflow is wired', 'P0');
     record('SAAS-ENFORCEMENT', authMiddleware.includes('enforceTenantAccess') && authMiddleware.includes('enforceRequestLimit') && saasService.includes('SAAS_PLAN_LIMIT_REACHED'), 'tenant expiration, feature and plan limits are enforced before domain handlers', 'P0');
+    record('SAAS-CURRENCY-SNAPSHOT', saasService.includes('currency_snapshot=(SELECT TOP (1) currency FROM dbo.saas_plans WHERE id=@planId)') && !saasService.includes("input('currencySnapshot', sql.VarChar(3)"), 'subscription snapshots use the plan currency in SQL and avoid the production TDS metadata failure', 'P0');
     record('SAAS-UI', platformAdminPage.includes('platformAdminLoginScreen') && platformAdminPage.includes('platformAdminApp') && index.includes('data-page-tab="saas-billing"') && platformUi.includes('/api/platform/tenants') && saasUi.includes('/api/saas/subscription'), 'Platform Admin has an independent shell and tenant billing remains available to gym owners', 'P1');
 }
 

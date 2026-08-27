@@ -13,6 +13,7 @@ const permissionService = require('./permission-service');
 const tenantService = require('./tenant-service');
 const userRepository = require('../repositories/user.repository');
 const sessionRepository = require('../repositories/session.repository');
+const { currentTenantId } = require('../tenancy/tenant-context');
 
 const SESSION_COOKIE_NAME = 'topgym_session';
 const DEFAULT_SESSION_DAYS = 7;
@@ -388,7 +389,7 @@ async function revokeSession(token) {
 
 async function listUsers() {
     await ensureAuthReady();
-    const result = await userRepository.list();
+    const result = await userRepository.list(currentTenantId({ required: true }));
     return Promise.all(result.recordset.map(safeUserWithPermissions));
 }
 
@@ -411,17 +412,18 @@ async function createAssistant(body = {}) {
 
 async function updateUser(id, body = {}) {
     await ensureAuthReady();
+    const tenantId = currentTenantId({ required: true });
     const userId = Number(id);
     if (!Number.isInteger(userId) || userId <= 0) throw authError('معرّف الحساب غير صحيح.', 400, 'INVALID_USER_ID');
     const name = validateName(body.name || body.fullName);
     const email = validateEmail(body.email);
     const password = validatePassword(body.password, { required: false });
-    const current = await userRepository.findRoleById(userId);
+    const current = await userRepository.findRoleById(userId, tenantId);
     if (!current.recordset[0]) throw authError('الحساب غير موجود.', 404, 'USER_NOT_FOUND');
     if (current.recordset[0].role !== 'Assistant') throw authError('\u062d\u0633\u0627\u0628 \u0627\u0644\u0645\u0627\u0644\u0643 \u0645\u062d\u0645\u064a \u0645\u0646 \u0627\u0644\u062a\u0639\u062f\u064a\u0644 \u0645\u0646 \u0647\u0630\u0647 \u0627\u0644\u0634\u0627\u0634\u0629.', 403, 'OWNER_ACCOUNT_PROTECTED');
     const passwordHash = password ? await hashPassword(password) : null;
     try {
-        await userRepository.updateAssistant({ id: userId, fullName: name, email, passwordHash });
+        await userRepository.updateAssistant({ id: userId, fullName: name, email, passwordHash, tenantId });
         if (passwordHash) {
             await sessionRepository.revokeForUser(userId);
         }
@@ -429,34 +431,36 @@ async function updateUser(id, body = {}) {
         if (error.number === 2601 || error.number === 2627) throw authError('هذا البريد الإلكتروني مستخدم بالفعل.', 409, 'DUPLICATE_USER_EMAIL');
         throw error;
     }
-    const updated = await userRepository.findPublicById(userId);
+    const updated = await userRepository.findPublicById(userId, tenantId);
     return safeUserWithPermissions(updated.recordset[0]);
 }
 
 async function setAssistantStatus(id, status) {
     await ensureAuthReady();
+    const tenantId = currentTenantId({ required: true });
     const userId = Number(id);
     const nextStatus = String(status || '').trim();
     if (!Number.isInteger(userId) || userId <= 0 || !['Active', 'Disabled'].includes(nextStatus)) throw authError('بيانات حالة الحساب غير صحيحة.', 400, 'INVALID_USER_STATUS');
-    const result = await userRepository.findRoleById(userId);
+    const result = await userRepository.findRoleById(userId, tenantId);
     const user = result.recordset[0];
     if (!user) throw authError('الحساب غير موجود.', 404, 'USER_NOT_FOUND');
     if (user.role !== 'Assistant') throw authError('لا يمكن تعطيل حساب المالك.', 400, 'OWNER_STATUS_PROTECTED');
-    await userRepository.updateStatus({ id: userId, status: nextStatus });
-    const updated = await userRepository.findPublicById(userId);
+    await userRepository.updateStatus({ id: userId, status: nextStatus, tenantId });
+    const updated = await userRepository.findPublicById(userId, tenantId);
     return safeUserWithPermissions(updated.recordset[0]);
 }
 
 async function deleteAssistant(id) {
     await ensureAuthReady();
+    const tenantId = currentTenantId({ required: true });
     const userId = Number(id);
     if (!Number.isInteger(userId) || userId <= 0) throw authError('معرّف الحساب غير صحيح.', 400, 'INVALID_USER_ID');
-    const current = await userRepository.findRoleById(userId);
+    const current = await userRepository.findRoleById(userId, tenantId);
     const user = current.recordset[0];
     if (!user) throw authError('الحساب غير موجود.', 404, 'USER_NOT_FOUND');
     if (user.role !== 'Assistant') throw authError('لا يمكن حذف حساب المالك.', 403, 'OWNER_ACCOUNT_PROTECTED');
     await sessionRepository.revokeForUser(userId);
-    const result = await userRepository.deleteAssistant(userId);
+    const result = await userRepository.deleteAssistant(userId, tenantId);
     if (!result.recordset?.length) throw authError('تعذر حذف حساب المساعد.', 409, 'ASSISTANT_DELETE_FAILED');
     return { id: userId };
 }
