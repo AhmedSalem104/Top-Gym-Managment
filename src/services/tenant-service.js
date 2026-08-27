@@ -233,14 +233,14 @@ async function ensureBootstrapTenant() {
             -- it win tenant resolution when the account already belongs to a
             -- different gym.
             UPDATE bootstrapMembership
-            SET is_primary=0, updated_at=SYSUTCDATETIME()
+            SET is_primary=0, status='disabled', updated_at=SYSUTCDATETIME()
             FROM dbo.gym_user_tenants bootstrapMembership
             WHERE bootstrapMembership.tenant_id=@tenantId
               AND EXISTS (
                 SELECT 1 FROM dbo.gym_user_tenants otherMembership
                 WHERE otherMembership.user_id=bootstrapMembership.user_id
                   AND otherMembership.tenant_id<>@tenantId
-                  AND otherMembership.status='active'
+                  AND otherMembership.status IN ('active', 'disabled')
                 );
             `);
     return tenant;
@@ -285,6 +285,11 @@ async function resolveTenantForUser(userId, requestedSlug = '') {
               AND ut.status='active'
               AND t.status IN ('trial', 'active', 'suspended', 'expired', 'archived')
               AND (@slug='' OR t.slug=@slug)
+              AND (t.slug<>@bootstrapSlug OR NOT EXISTS (
+                  SELECT 1 FROM dbo.gym_user_tenants otherMembership
+                  WHERE otherMembership.user_id=@userId
+                    AND otherMembership.tenant_id<>t.id
+                  ))
             ORDER BY ut.is_primary DESC, CASE WHEN t.slug=@bootstrapSlug THEN 1 ELSE 0 END, t.id ASC;
         `);
     return tenantRecord(result.recordset[0]);
