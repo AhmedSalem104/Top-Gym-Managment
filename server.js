@@ -185,7 +185,7 @@ async function sendPlatformAdminPage(request, response) {
     return response.sendFile(path.join(publicDirectory, 'platform-admin.html'));
 }
 
-app.get(['/platform-admin', '/platform-admin/'], asyncRoute(sendPlatformAdminPage));
+app.get(['/platform-admin', '/platform-admin/', '/admin-panel', '/admin-panel/'], asyncRoute(sendPlatformAdminPage));
 
 app.get('/', asyncRoute(async (request, response, next) => {
     if (isPlatformAdminHost(request)) return sendPlatformAdminPage(request, response);
