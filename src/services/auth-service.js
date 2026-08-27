@@ -257,9 +257,13 @@ async function ensureAuthTables() {
 }
 
 async function ensureOwnerAccount() {
+    // Auth/session requests can run in a tenant-neutral context on Vercel.
+    // Resolve the bootstrap tenant explicitly instead of letting
+    // assignUserToTenant read a missing AsyncLocalStorage tenant id.
+    const bootstrapTenant = await tenantService.ensureBootstrapTenant();
     const existing = await userRepository.findOwner();
     if (existing.recordset[0]) {
-        await tenantService.assignUserToTenant(existing.recordset[0].id, undefined, 'Owner');
+        await tenantService.assignUserToTenant(existing.recordset[0].id, bootstrapTenant.id, 'Owner');
         return { created: false, setupRequired: false };
     }
 
@@ -277,7 +281,7 @@ async function ensureOwnerAccount() {
             email,
             passwordHash
         });
-        await tenantService.assignUserToTenant(result.recordset[0]?.id, undefined, 'Owner');
+        await tenantService.assignUserToTenant(result.recordset[0]?.id, bootstrapTenant.id, 'Owner');
         console.log(`[TOP GYM AUTH] Bootstrapped Owner account ${email}.`);
         return { created: true, setupRequired: false };
     } catch (error) {
