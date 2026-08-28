@@ -263,117 +263,106 @@ async function getDashboardAnalytics(periodValue = 'month') {
     await dayPassRepository.ensureDayPassTables();
     const pool = await getPool();
 
-    const [dashboard, membersResult, membershipsResult, paymentsResult, dayPassesResult, expensesResult, attendanceResult, inactiveAttendanceResult, outstandingResult, previousMembersResult, previousMembershipsResult, previousPaymentsResult, previousDayPassesResult, previousExpensesResult, previousAttendanceResult] = await Promise.all([
+    const currentRequest = createRangeRequest(pool, range)
+        .input('today', sql.Date, toUtcDate(today))
+        .input('inactiveSince', sql.Date, toUtcDate(inactiveSince));
+    const previousRequest = createRangeRequest(pool, previousRange);
+    const [dashboard, currentResult, previousResult] = await Promise.all([
         getDashboard(),
-        createRangeRequest(pool, range).query(`
+        currentRequest.batch(`
             SELECT registration_date AS eventDate
             FROM dbo.members
             WHERE registration_date >= @startDate AND registration_date < @nextDate;
-        `),
-        createRangeRequest(pool, range).query(`
+
             SELECT start_date AS eventDate, membership_plan AS planCode, membership_type AS typeCode
             FROM dbo.memberships
             WHERE start_date >= @startDate AND start_date < @nextDate;
-        `),
-        createRangeRequest(pool, range).query(`
+
             SELECT paid_at AS eventDate, amount_paid AS amount, payment_method AS paymentMethod
             FROM dbo.gym_payment_transactions
             WHERE paid_at >= @startDate AND paid_at < @nextDate AND amount_paid <> 0;
-        `),
-        createRangeRequest(pool, range).query(`
+
             SELECT visit_date AS eventDate, amount_paid AS amount, payment_method AS paymentMethod
             FROM dbo.gym_day_pass_sales
             WHERE visit_date >= @startDate AND visit_date < @nextDate
               AND status = 'completed' AND amount_paid > 0;
-        `),
-        createRangeRequest(pool, range).query(`
+
             SELECT expense_date AS eventDate, amount
             FROM dbo.gym_expenses
             WHERE expense_date >= @startDate AND expense_date < @nextDate
               AND ISNULL(is_voided, 0) = 0;
-        `),
-        createRangeRequest(pool, range).query(`
+
             SELECT a.attendance_date AS eventDate, a.member_id AS memberId,
                    a.check_in_at AS checkInAt, a.check_out_at AS checkOutAt,
                    m.full_name AS fullName, m.phone
             FROM dbo.gym_attendance AS a
             INNER JOIN dbo.members AS m ON m.id = a.member_id
             WHERE a.attendance_date >= @startDate AND a.attendance_date < @nextDate;
-        `),
-        pool.request()
-            .input('today', sql.Date, toUtcDate(today))
-            .input('inactiveSince', sql.Date, toUtcDate(inactiveSince))
-            .query(`
-                WITH ranked_memberships AS (
-                    SELECT m.id AS membershipId, m.member_id AS memberId,
-                           m.start_date AS membershipStartDate, m.end_date AS membershipEndDate,
-                           ROW_NUMBER() OVER (PARTITION BY m.member_id ORDER BY m.end_date DESC, m.id DESC) AS membershipRank
-                    FROM dbo.memberships AS m
-                ), eligible_members AS (
-                    SELECT b.id AS memberId, b.full_name AS fullName, b.phone,
-                           lm.membershipId, lm.membershipEndDate
-                    FROM dbo.members AS b
-                    INNER JOIN ranked_memberships AS lm
-                        ON lm.memberId = b.id AND lm.membershipRank = 1
-                    WHERE lm.membershipStartDate <= @today
-                      AND lm.membershipEndDate >= @today
-                      AND NOT EXISTS (
-                          SELECT 1 FROM dbo.membership_freezes AS f
-                          WHERE f.membership_id = lm.membershipId AND f.resumed_date IS NULL
-                      )
-                )
-                SELECT TOP (12)
-                       em.memberId, em.fullName, em.phone, em.membershipEndDate,
-                       lastVisit.lastVisitDate,
-                       DATEDIFF(day, lastVisit.lastVisitDate, @today) AS daysSinceLastVisit,
-                       COUNT(1) OVER() AS inactiveTotal
-                FROM eligible_members AS em
-                OUTER APPLY (
-                    SELECT TOP (1) a.attendance_date AS lastVisitDate
-                    FROM dbo.gym_attendance AS a
-                    WHERE a.member_id = em.memberId
-                    ORDER BY a.attendance_date DESC, a.check_in_at DESC, a.id DESC
-                ) AS lastVisit
-                WHERE lastVisit.lastVisitDate IS NULL OR lastVisit.lastVisitDate < @inactiveSince
-                ORDER BY CASE WHEN lastVisit.lastVisitDate IS NULL THEN 0 ELSE 1 END,
-                         lastVisit.lastVisitDate ASC, em.fullName ASC;
-            `),
-        pool.request().query(`
+
+            WITH ranked_memberships AS (
+                SELECT m.id AS membershipId, m.member_id AS memberId,
+                       m.start_date AS membershipStartDate, m.end_date AS membershipEndDate,
+                       ROW_NUMBER() OVER (PARTITION BY m.member_id ORDER BY m.end_date DESC, m.id DESC) AS membershipRank
+                FROM dbo.memberships AS m
+            ), eligible_members AS (
+                SELECT b.id AS memberId, b.full_name AS fullName, b.phone,
+                       lm.membershipId, lm.membershipEndDate
+                FROM dbo.members AS b
+                INNER JOIN ranked_memberships AS lm
+                    ON lm.memberId = b.id AND lm.membershipRank = 1
+                WHERE lm.membershipStartDate <= @today
+                  AND lm.membershipEndDate >= @today
+                  AND NOT EXISTS (
+                      SELECT 1 FROM dbo.membership_freezes AS f
+                      WHERE f.membership_id = lm.membershipId AND f.resumed_date IS NULL
+                  )
+            )
+            SELECT TOP (12)
+                   em.memberId, em.fullName, em.phone, em.membershipEndDate,
+                   lastVisit.lastVisitDate,
+                   DATEDIFF(day, lastVisit.lastVisitDate, @today) AS daysSinceLastVisit,
+                   COUNT(1) OVER() AS inactiveTotal
+            FROM eligible_members AS em
+            OUTER APPLY (
+                SELECT TOP (1) a.attendance_date AS lastVisitDate
+                FROM dbo.gym_attendance AS a
+                WHERE a.member_id = em.memberId
+                ORDER BY a.attendance_date DESC, a.check_in_at DESC, a.id DESC
+            ) AS lastVisit
+            WHERE lastVisit.lastVisitDate IS NULL OR lastVisit.lastVisitDate < @inactiveSince
+            ORDER BY CASE WHEN lastVisit.lastVisitDate IS NULL THEN 0 ELSE 1 END,
+                     lastVisit.lastVisitDate ASC, em.fullName ASC;
+
             SELECT COUNT_BIG(CASE WHEN amount_remaining > 0 THEN 1 END) AS outstandingCount,
                    ISNULL(SUM(CASE WHEN amount_remaining > 0 THEN amount_remaining ELSE 0 END), 0) AS outstandingTotal
             FROM dbo.gym_payments;
         `),
-        createRangeRequest(pool, previousRange).query(`
+        previousRequest.batch(`
             SELECT COUNT_BIG(*) AS total
             FROM dbo.members
             WHERE registration_date >= @startDate AND registration_date < @nextDate;
-        `),
-        createRangeRequest(pool, previousRange).query(`
+
             SELECT COUNT_BIG(*) AS total
             FROM dbo.memberships
             WHERE start_date >= @startDate AND start_date < @nextDate;
-        `),
-        createRangeRequest(pool, previousRange).query(`
+
             SELECT COUNT_BIG(*) AS total,
                    ISNULL(SUM(amount_paid), 0) AS amount
             FROM dbo.gym_payment_transactions
             WHERE paid_at >= @startDate AND paid_at < @nextDate AND amount_paid <> 0;
-        `),
-        createRangeRequest(pool, previousRange).query(`
+
             SELECT COUNT_BIG(*) AS total,
                    ISNULL(SUM(amount_paid), 0) AS amount
             FROM dbo.gym_day_pass_sales
             WHERE visit_date >= @startDate AND visit_date < @nextDate
               AND status = 'completed' AND amount_paid > 0;
-        `),
-        createRangeRequest(pool, previousRange).query(`
+
             SELECT COUNT_BIG(*) AS total,
                    ISNULL(SUM(amount), 0) AS amount
             FROM dbo.gym_expenses
             WHERE expense_date >= @startDate AND expense_date < @nextDate
               AND ISNULL(is_voided, 0) = 0;
-        `),
-        createRangeRequest(pool, previousRange).query(`
+
             SELECT COUNT_BIG(*) AS visits,
                    COUNT(DISTINCT member_id) AS uniqueMembers
             FROM dbo.gym_attendance
@@ -381,26 +370,28 @@ async function getDashboardAnalytics(periodValue = 'month') {
         `)
     ]);
 
-    const memberRows = membersResult.recordset || [];
-    const membershipRows = membershipsResult.recordset || [];
-    const paymentRows = paymentsResult.recordset || [];
-    const dayPassRows = dayPassesResult.recordset || [];
-    const expenseRows = expensesResult.recordset || [];
-    const attendanceRows = attendanceResult.recordset || [];
-    const inactiveAttendanceRows = inactiveAttendanceResult.recordset || [];
+    const currentRecordsets = currentResult.recordsets || [];
+    const previousRecordsets = previousResult.recordsets || [];
+    const memberRows = currentRecordsets[0] || [];
+    const membershipRows = currentRecordsets[1] || [];
+    const paymentRows = currentRecordsets[2] || [];
+    const dayPassRows = currentRecordsets[3] || [];
+    const expenseRows = currentRecordsets[4] || [];
+    const attendanceRows = currentRecordsets[5] || [];
+    const inactiveAttendanceRows = currentRecordsets[6] || [];
     const paymentTotal = paymentRows.reduce((sum, row) => sum + Number(row.amount || 0), 0);
     const dayPassTotal = dayPassRows.reduce((sum, row) => sum + Number(row.amount || 0), 0);
     const collectedRows = [...paymentRows, ...dayPassRows];
     const collectedTotal = paymentTotal + dayPassTotal;
     const expenseTotal = expenseRows.reduce((sum, row) => sum + Number(row.amount || 0), 0);
     const statusStats = dashboard.stats || {};
-    const outstanding = outstandingResult.recordset[0] || {};
-    const previousMembers = Number(previousMembersResult.recordset[0]?.total || 0);
-    const previousMemberships = Number(previousMembershipsResult.recordset[0]?.total || 0);
-    const previousPayments = previousPaymentsResult.recordset[0] || {};
-    const previousDayPasses = previousDayPassesResult.recordset[0] || {};
-    const previousExpenses = previousExpensesResult.recordset[0] || {};
-    const previousAttendance = previousAttendanceResult.recordset[0] || {};
+    const outstanding = currentRecordsets[7]?.[0] || {};
+    const previousMembers = Number(previousRecordsets[0]?.[0]?.total || 0);
+    const previousMemberships = Number(previousRecordsets[1]?.[0]?.total || 0);
+    const previousPayments = previousRecordsets[2]?.[0] || {};
+    const previousDayPasses = previousRecordsets[3]?.[0] || {};
+    const previousExpenses = previousRecordsets[4]?.[0] || {};
+    const previousAttendance = previousRecordsets[5]?.[0] || {};
     const previousCollected = roundAmount(Number(previousPayments.amount || 0) + Number(previousDayPasses.amount || 0));
     const previousExpenseTotal = roundAmount(previousExpenses.amount);
     const previousNet = roundAmount(previousCollected - previousExpenseTotal);

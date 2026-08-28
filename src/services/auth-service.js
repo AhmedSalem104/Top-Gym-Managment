@@ -146,6 +146,31 @@ END;
 
 let authReadyPromise;
 let dummyPasswordHashPromise;
+const sessionTouchAt = new Map();
+
+function touchIntervalMs() {
+    const value = Number(config.authSessionTouchIntervalMs);
+    return Number.isFinite(value) ? Math.max(0, value) : 60_000;
+}
+
+function scheduleSessionTouch(sessionId) {
+    const id = String(sessionId || '');
+    if (!id) return;
+    const now = Date.now();
+    const interval = touchIntervalMs();
+    const previous = sessionTouchAt.get(id);
+    if (interval > 0 && previous && now - previous < interval) return;
+    sessionTouchAt.set(id, now);
+    // last_seen_at is observability metadata, not an authentication decision.
+    // Keep it off the critical request path and avoid a write on every API call.
+    void sessionRepository.touch(id).catch(() => {
+        if (sessionTouchAt.get(id) === now) sessionTouchAt.delete(id);
+    });
+    if (sessionTouchAt.size > 10_000) {
+        const oldest = sessionTouchAt.keys().next().value;
+        if (oldest) sessionTouchAt.delete(oldest);
+    }
+}
 
 function authError(message, statusCode = 400, code = null, field = null) {
     const error = new Error(message);
@@ -394,7 +419,7 @@ async function getSessionUser(token, { includePermissions = true } = {}) {
     const result = await sessionRepository.findActiveWithUser(tokenHash(token));
     const row = result.recordset[0];
     if (!row) return null;
-    await sessionRepository.touch(row.session_id).catch(() => {});
+    scheduleSessionTouch(row.session_id);
     const user = safeUser(row);
     return includePermissions ? withPermissions(user) : user;
 }

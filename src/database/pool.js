@@ -3,6 +3,7 @@
 const sql = require('mssql');
 const { config: appConfig } = require('../config/env');
 const { getTenantContext } = require('../tenancy/tenant-context');
+const { recordDatabaseQuery } = require('../middleware/performance-metrics');
 
 let poolPromise;
 let tenantAwarePool;
@@ -32,11 +33,23 @@ function decorateRequest(request) {
             if (property === 'query' || property === 'batch') {
                 return (command, ...rest) => {
                     const context = sqlTenantContext();
-                    if (context.skipSessionContext) return value.call(target, command, ...rest);
-                    target.input(TENANT_ID_PARAMETER, sql.Int, context.tenantId);
-                    target.input(TENANT_MODE_PARAMETER, sql.VarChar(20), context.mode);
-                    const guardedCommand = `EXEC sys.sp_set_session_context @key=N'tenant_id', @value=@${TENANT_ID_PARAMETER}; EXEC sys.sp_set_session_context @key=N'tenant_mode', @value=@${TENANT_MODE_PARAMETER}; ${String(command || '')}`;
-                    return value.call(target, guardedCommand, ...rest);
+                    const startedAt = process.hrtime.bigint();
+                    let result;
+                    if (context.skipSessionContext) {
+                        result = value.call(target, command, ...rest);
+                    } else {
+                        target.input(TENANT_ID_PARAMETER, sql.Int, context.tenantId);
+                        target.input(TENANT_MODE_PARAMETER, sql.VarChar(20), context.mode);
+                        const guardedCommand = `EXEC sys.sp_set_session_context @key=N'tenant_id', @value=@${TENANT_ID_PARAMETER}; EXEC sys.sp_set_session_context @key=N'tenant_mode', @value=@${TENANT_MODE_PARAMETER}; ${String(command || '')}`;
+                        result = value.call(target, guardedCommand, ...rest);
+                    }
+                    return Promise.resolve(result).then((response) => {
+                        recordDatabaseQuery(Number(process.hrtime.bigint() - startedAt) / 1_000_000, property);
+                        return response;
+                    }, (error) => {
+                        recordDatabaseQuery(Number(process.hrtime.bigint() - startedAt) / 1_000_000, property);
+                        throw error;
+                    });
                 };
             }
             if (typeof value !== 'function') return value;

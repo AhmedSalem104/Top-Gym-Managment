@@ -812,8 +812,14 @@ async function getDashboard({ from, to, includeProfit = false } = {}) {
         .input('fromDate', sql.Date, toUtcDate(currentDay))
         .input('nextDate', sql.Date, toUtcDate(todayNext))
         .query("SELECT COUNT(*) AS orders, ISNULL(SUM(total_amount),0) AS revenue FROM dbo.gym_store_sales WHERE status='completed' AND sale_date>=@fromDate AND sale_date<@nextDate;"));
-    const inventory = await listInventory({ lowStockOnly: true });
-    const expiring = await listInventory({ expiryOnly: true });
+    // getReports already loads the complete active inventory. Reuse it for
+    // dashboard alerts instead of issuing two more grouped inventory queries.
+    // The filtering mirrors listInventory's HAVING clauses and keeps the
+    // dashboard response shape unchanged.
+    const inventory = report.inventory || [];
+    const expiryLimit = addDays(currentDay, 30);
+    const lowStock = inventory.filter((item) => item.lowStock);
+    const expiring = inventory.filter((item) => item.nearestExpiry && item.nearestExpiry <= expiryLimit);
     const todaySummary = todayResult.recordset[0] || {};
     return {
         period: range,
@@ -823,7 +829,7 @@ async function getDashboard({ from, to, includeProfit = false } = {}) {
         bestSelling: report.bestSelling,
         byCategory: report.byCategory,
         today: { orders: Number(todaySummary.orders || 0), revenue: Number(todaySummary.revenue || 0) },
-        alerts: { lowStock: inventory.slice(0, 12), expiring: expiring.slice(0, 12) }
+        alerts: { lowStock: lowStock.slice(0, 12), expiring: expiring.slice(0, 12) }
     };
 }
 

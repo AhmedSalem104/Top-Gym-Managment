@@ -10,6 +10,11 @@ function getNumberEnv(name, fallback) {
     return Number.isFinite(value) ? value : fallback;
 }
 
+function getBooleanEnv(name, fallback = false) {
+    const value = getEnv(name, fallback ? 'true' : 'false').trim().toLowerCase();
+    return ['true', '1', 'yes', 'on'].includes(value);
+}
+
 const config = Object.freeze({
     nodeEnv: getEnv('NODE_ENV', 'development'),
     port: getNumberEnv('PORT', 3000),
@@ -23,6 +28,10 @@ const config = Object.freeze({
     authPlatformAdminPassword: getEnv('AUTH_PLATFORM_ADMIN_PASSWORD'),
     platformAdminHost: getEnv('PLATFORM_ADMIN_HOST', 'admin.voltyks.app'),
     defaultTenantSlug: getEnv('DEFAULT_TENANT_SLUG', 'top-gym'),
+    authSessionTouchIntervalMs: getNumberEnv('AUTH_SESSION_TOUCH_INTERVAL_MS', 60_000),
+    saasSyncIntervalMs: getNumberEnv('SAAS_SYNC_INTERVAL_MS', 30_000),
+    performanceMetricsEnabled: getBooleanEnv('PERFORMANCE_METRICS', false)
+        && getEnv('NODE_ENV', 'development').trim().toLowerCase() !== 'production',
     cronSecret: getEnv('CRON_SECRET'),
     publicAppUrl: getEnv('PUBLIC_APP_URL'),
     membershipCodeSecret: getEnv('MEMBERSHIP_CODE_SECRET'),
@@ -36,4 +45,4 @@ function isProduction() {
     return config.nodeEnv === 'production';
 }
 
-module.exports = { config, getEnv, getNumberEnv, isProduction };
+module.exports = { config, getBooleanEnv, getEnv, getNumberEnv, isProduction };

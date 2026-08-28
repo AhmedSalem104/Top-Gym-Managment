@@ -109,7 +109,8 @@ function createAuthApiMiddleware({ authService, isAuthorizedCronRequest, tenantS
                             await saasService.enforceRequestLimit(tenant.id, {
                                 path: request.path,
                                 method: request.method,
-                                incomingBytes: request.get('content-length')
+                                incomingBytes: request.get('content-length'),
+                                access: request.saas
                             });
                         }
                         if (!authorizeRequest(user, request)) {

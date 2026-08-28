@@ -34,9 +34,11 @@ const saasService = require('./src/services/saas-service');
 const platformAdminService = require('./src/services/platform-admin-service');
 const { runTenantContext } = require('./src/tenancy/tenant-context');
 const { ensureAuthReady } = authService;
+const { createPerformanceMetrics } = require('./src/middleware/performance-metrics');
 
 const publicDirectory = path.join(__dirname, 'public');
 const app = createApp({ publicDirectory, expressFactory: express });
+app.use(createPerformanceMetrics({ enabled: config.performanceMetricsEnabled }));
 
 const sensitiveRateLimit = createSensitiveRateLimit();
 const membershipPortalRateLimit = createMembershipPortalRateLimit();

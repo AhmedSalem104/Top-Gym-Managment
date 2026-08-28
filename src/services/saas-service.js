@@ -4,6 +4,7 @@ const crypto = require('node:crypto');
 const { getPool, sql } = require('../database');
 const { withTransaction } = require('../database/transaction');
 const { currentTenantId, getTenantContext } = require('../tenancy/tenant-context');
+const { config } = require('../config/env');
 
 const TRIAL_DAYS = 14;
 const MAX_PROOF_BYTES = 4 * 1024 * 1024;
@@ -289,6 +290,20 @@ IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name=N'IX_saas_platform_notes_ten
 `;
 
 let readyPromise;
+const syncStates = new Map();
+
+function syncScopeKey() {
+    const context = getTenantContext();
+    if (context?.mode && context.mode !== 'platform') {
+        return `tenant:${tenantIdValue(context.tenantId)}`;
+    }
+    return 'platform';
+}
+
+function syncIntervalMs() {
+    const value = Number(config.saasSyncIntervalMs);
+    return Number.isFinite(value) ? Math.max(1_000, value) : 30_000;
+}
 
 function saasError(message, statusCode = 400, code = 'SAAS_ERROR', details = null) {
     const error = new Error(message);
@@ -605,45 +620,61 @@ async function applyScheduledSubscriptionChanges() {
     }));
 }
 
-async function syncExpiredTenants() {
-    await ensureSaasTables();
-    await applyScheduledSubscriptionChanges();
-    const pool = await getPool();
-    const context = getTenantContext();
-    if (context?.mode && context.mode !== 'platform') {
-        const tenantId = tenantIdValue(context.tenantId);
-        await pool.request().input('tenantId', sql.Int, tenantId).batch(`
+async function syncExpiredTenants({ force = false } = {}) {
+    const key = syncScopeKey();
+    const current = syncStates.get(key);
+    const now = Date.now();
+    if (current?.promise) return current.promise;
+    if (!force && current?.completedAt && now - current.completedAt < syncIntervalMs()) return;
+
+    const promise = (async () => {
+        await ensureSaasTables();
+        await applyScheduledSubscriptionChanges();
+        const pool = await getPool();
+        const context = getTenantContext();
+        if (context?.mode && context.mode !== 'platform') {
+            const tenantId = tenantIdValue(context.tenantId);
+            await pool.request().input('tenantId', sql.Int, tenantId).batch(`
+                UPDATE dbo.saas_tenant_subscriptions
+                SET status='expired', updated_at=SYSUTCDATETIME()
+                WHERE tenant_id=@tenantId AND status IN ('trial','active') AND expires_at IS NOT NULL AND expires_at <= SYSUTCDATETIME();
+
+                UPDATE t
+                SET status='expired', updated_at=SYSUTCDATETIME()
+                FROM dbo.gym_tenants t
+                WHERE t.id=@tenantId AND t.status IN ('trial','active')
+                  AND NOT EXISTS (
+                      SELECT 1 FROM dbo.saas_tenant_subscriptions s
+                      WHERE s.tenant_id=@tenantId AND s.status IN ('trial','active')
+                        AND (s.expires_at IS NULL OR s.expires_at > SYSUTCDATETIME())
+                  );
+            `);
+            return;
+        }
+        await pool.request().batch(`
             UPDATE dbo.saas_tenant_subscriptions
             SET status='expired', updated_at=SYSUTCDATETIME()
-            WHERE tenant_id=@tenantId AND status IN ('trial','active') AND expires_at IS NOT NULL AND expires_at <= SYSUTCDATETIME();
+            WHERE status IN ('trial','active') AND expires_at IS NOT NULL AND expires_at <= SYSUTCDATETIME();
 
             UPDATE t
             SET status='expired', updated_at=SYSUTCDATETIME()
             FROM dbo.gym_tenants t
-            WHERE t.id=@tenantId AND t.status IN ('trial','active')
+            WHERE t.status IN ('trial','active')
               AND NOT EXISTS (
                   SELECT 1 FROM dbo.saas_tenant_subscriptions s
-                  WHERE s.tenant_id=@tenantId AND s.status IN ('trial','active')
+                  WHERE s.tenant_id=t.id AND s.status IN ('trial','active')
                     AND (s.expires_at IS NULL OR s.expires_at > SYSUTCDATETIME())
               );
         `);
-        return;
+    })();
+    syncStates.set(key, { promise });
+    try {
+        await promise;
+        syncStates.set(key, { completedAt: Date.now() });
+    } catch (error) {
+        syncStates.delete(key);
+        throw error;
     }
-    await pool.request().batch(`
-        UPDATE dbo.saas_tenant_subscriptions
-        SET status='expired', updated_at=SYSUTCDATETIME()
-        WHERE status IN ('trial','active') AND expires_at IS NOT NULL AND expires_at <= SYSUTCDATETIME();
-
-        UPDATE t
-        SET status='expired', updated_at=SYSUTCDATETIME()
-        FROM dbo.gym_tenants t
-        WHERE t.status IN ('trial','active')
-          AND NOT EXISTS (
-              SELECT 1 FROM dbo.saas_tenant_subscriptions s
-              WHERE s.tenant_id=t.id AND s.status IN ('trial','active')
-                AND (s.expires_at IS NULL OR s.expires_at > SYSUTCDATETIME())
-          );
-    `);
 }
 
 async function getCurrentSubscription(tenantId = currentTenantId({ required: true })) {
@@ -804,7 +835,7 @@ async function getUsage(tenantId = currentTenantId({ required: true })) {
     };
 }
 
-async function enforceRequestLimit(tenantId, { path = '', method = 'GET', incomingBytes = 0 } = {}) {
+async function enforceRequestLimit(tenantId, { path = '', method = 'GET', incomingBytes = 0, access = null } = {}) {
     const normalizedPath = String(path || '');
     const normalizedMethod = String(method || 'GET').toUpperCase();
     if (normalizedMethod !== 'POST') return null;
@@ -815,25 +846,25 @@ async function enforceRequestLimit(tenantId, { path = '', method = 'GET', incomi
         || normalizedPath === '/backup/restore'
         || /^\/saas\/subscription-requests\/\d+\/proof$/.test(normalizedPath);
     if (!resource && !isStorageUpload) return null;
-    const access = await enforceTenantAccess(tenantId, { path, method });
-    if (access.recovery) return null;
+    const tenantAccess = access || await enforceTenantAccess(tenantId, { path, method });
+    if (tenantAccess.recovery) return null;
     const usage = await getUsage(tenantId);
     if (resource) {
         const limitKey = resource === 'members' ? 'maxMembers' : resource === 'users' ? 'maxUsers' : 'maxAiGenerations';
-        const max = access.entitlements?.limits?.[limitKey];
+        const max = tenantAccess.entitlements?.limits?.[limitKey];
         if (max != null && usage[resource] >= max) {
-            throw saasError('تم الوصول إلى حد الباقة الحالي. يمكنك ترقية الباقة من اشتراك المنصة.', 409, 'SAAS_PLAN_LIMIT_REACHED', { resource, used: usage[resource], max, plan: access.subscription.plan.code });
+            throw saasError('تم الوصول إلى حد الباقة الحالي. يمكنك ترقية الباقة من اشتراك المنصة.', 409, 'SAAS_PLAN_LIMIT_REACHED', { resource, used: usage[resource], max, plan: tenantAccess.subscription.plan.code });
         }
     }
     if (isStorageUpload) {
-        const maxStorageMb = access.entitlements?.limits?.maxStorageMb;
+        const maxStorageMb = tenantAccess.entitlements?.limits?.maxStorageMb;
         const requestedBytes = Math.max(0, Number(incomingBytes) || 0);
         const maxStorageBytes = maxStorageMb == null ? null : Number(maxStorageMb) * 1024 * 1024;
         if (maxStorageBytes != null && usage.storageBytes + requestedBytes > maxStorageBytes) {
-            throw saasError('لا توجد مساحة كافية في باقة الجيم الحالية لرفع هذا الملف.', 409, 'SAAS_STORAGE_LIMIT_REACHED', { usedBytes: usage.storageBytes, incomingBytes: requestedBytes, maxBytes: maxStorageBytes, plan: access.subscription.plan.code });
+            throw saasError('لا توجد مساحة كافية في باقة الجيم الحالية لرفع هذا الملف.', 409, 'SAAS_STORAGE_LIMIT_REACHED', { usedBytes: usage.storageBytes, incomingBytes: requestedBytes, maxBytes: maxStorageBytes, plan: tenantAccess.subscription.plan.code });
         }
     }
-    return { resource, used: resource ? usage[resource] : null, storageBytes: usage.storageBytes, maxStorageMb: access.entitlements?.limits?.maxStorageMb ?? null };
+    return { resource, used: resource ? usage[resource] : null, storageBytes: usage.storageBytes, maxStorageMb: tenantAccess.entitlements?.limits?.maxStorageMb ?? null };
 }
 
 async function ensureBootstrapSubscription(tenantId) {

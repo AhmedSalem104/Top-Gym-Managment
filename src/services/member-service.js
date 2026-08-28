@@ -14,6 +14,7 @@ const {
     toUtcDate
 } = require('../utils/date');
 const { ensureAttendanceTable, getMemberAttendanceStatuses } = require('./attendance-service');
+const { currentTenantId } = require('../tenancy/tenant-context');
 
 const DEFAULT_MEMBERSHIP_PLANS = {
     gym_only: { label: 'جيم فقط', monthlyPrice: 305, active: true, sortOrder: 1 },
@@ -32,8 +33,7 @@ const MEMBERSHIP_FREEZE_LIMIT = 3;
 const DEFAULT_MEMBER_PAGE_SIZE = 5;
 const PRICING_CACHE_TTL_MS = 30_000;
 let pricingOverridesPromise;
-let pricingCatalogCache = null;
-let pricingCatalogCachedAt = 0;
+const pricingCatalogCache = new Map();
 let memberIdentityPromise;
 let paymentTransactionsTablePromise;
 let subscriptionRefundsTablePromise;
@@ -296,8 +296,10 @@ function has(body, key) {
 }
 
 async function getPricingCatalog(connection = null) {
-    if (!connection && pricingCatalogCache && Date.now() - pricingCatalogCachedAt < PRICING_CACHE_TTL_MS) {
-        return pricingCatalogCache;
+    const cacheKey = currentTenantId() || 'unscoped';
+    const cached = pricingCatalogCache.get(cacheKey);
+    if (!connection && cached && Date.now() - cached.cachedAt < PRICING_CACHE_TTL_MS) {
+        return cached.catalog;
     }
     await ensurePricingOverrides();
     const pool = connection || await getPool();
@@ -402,15 +404,15 @@ async function getPricingCatalog(connection = null) {
         durations: Object.fromEntries(Object.entries(types).map(([key, value]) => [key, value.mode === 'months' ? value.durationValue : null]))
     };
     if (!connection) {
-        pricingCatalogCache = catalog;
-        pricingCatalogCachedAt = Date.now();
+        pricingCatalogCache.set(cacheKey, { catalog, cachedAt: Date.now() });
     }
     return catalog;
 }
 
 function invalidatePricingCatalog() {
-    pricingCatalogCache = null;
-    pricingCatalogCachedAt = 0;
+    const tenantId = currentTenantId();
+    if (tenantId) pricingCatalogCache.delete(tenantId);
+    else pricingCatalogCache.clear();
 }
 
 async function ensurePricingOverrides() {
@@ -651,8 +653,11 @@ async function getMembers({ search = '', status = '', sort = 'expiry', page = 1,
         today: todayInTimeZone()
     });
     const mappedMembers = result.recordset.map(mapMember);
-    const membershipCodePreviews = await membershipCodeService.getPreviews(mappedMembers.map((member) => member.id));
-    const attendanceByMember = await getMemberAttendanceStatuses(mappedMembers.map((member) => member.id));
+    const memberIds = mappedMembers.map((member) => member.id);
+    const [membershipCodePreviews, attendanceByMember] = await Promise.all([
+        membershipCodeService.getPreviews(memberIds),
+        getMemberAttendanceStatuses(memberIds)
+    ]);
     const members = mappedMembers.map((member) => ({
         ...member,
         membershipCode: membershipCodePreviews.get(member.id) || { active: false, maskedCode: null, issuedAt: null, version: 0 },
@@ -957,9 +962,12 @@ async function getDashboard() {
     await ensureAttendanceTable();
     const pool = await getPool();
     const today = todayInTimeZone();
-    const baseRequest = pool.request().input('today', sql.Date, toUtcDate(today));
-    const [result, debtResult, inactiveResult] = await Promise.all([
-        baseRequest.query(`${MEMBER_ROWS_CTE}
+    const result = await pool.request()
+        .input('today', sql.Date, toUtcDate(today))
+        .input('inactiveSince', sql.Date, toUtcDate(addDays(today, -7)))
+        .batch(`${MEMBER_ROWS_CTE}
+            SELECT * INTO #member_rows FROM member_rows;
+
             SELECT
                 COUNT(1) AS total,
                 SUM(CASE WHEN computedStatus = 'active' THEN 1 ELSE 0 END) AS active,
@@ -975,46 +983,45 @@ async function getDashboard() {
                         listPrice, discountAmount, amountDue, amountPaid,
                         amountRemaining, paymentMethod, paymentPaidAt,
                         computedStatus, daysRemaining
-                    FROM member_rows
+                    FROM #member_rows
                     WHERE membershipId IS NOT NULL
                       AND computedStatus IN ('frozen', 'expiring_soon', 'expired')
                     ORDER BY effectiveEndDate ASC, fullName ASC, id ASC
                     FOR JSON PATH
                 ) AS alertsJson
-            FROM member_rows
-            WHERE membershipId IS NOT NULL;`),
-        pool.request().input('today', sql.Date, toUtcDate(today)).query(`${MEMBER_ROWS_CTE}
-            SELECT TOP (50) * FROM member_rows
+            FROM #member_rows
+            WHERE membershipId IS NOT NULL;
+
+            SELECT TOP (50) * FROM #member_rows
             WHERE membershipId IS NOT NULL AND amountRemaining > 0
-            ORDER BY amountRemaining DESC, effectiveEndDate ASC, fullName ASC;`),
-        pool.request()
-            .input('today', sql.Date, toUtcDate(today))
-            .input('inactiveSince', sql.Date, toUtcDate(addDays(today, -7)))
-            .query(`${MEMBER_ROWS_CTE}
-                SELECT TOP (50) member_rows.*,
-                       last_visit.lastVisitDate,
-                       DATEDIFF(day, last_visit.lastVisitDate, @today) AS daysSinceLastVisit
-                FROM member_rows
-                OUTER APPLY (
-                    SELECT TOP (1) a.attendance_date AS lastVisitDate
-                    FROM dbo.gym_attendance AS a
-                    WHERE a.member_id = member_rows.id
-                    ORDER BY a.attendance_date DESC, a.check_in_at DESC, a.id DESC
-                ) AS last_visit
-                WHERE member_rows.computedStatus = 'active'
-                  AND (
-                      (last_visit.lastVisitDate IS NULL
-                       AND (member_rows.registrationDate < @inactiveSince OR member_rows.startDate < @inactiveSince))
-                      OR last_visit.lastVisitDate < @inactiveSince
-                  )
-                ORDER BY CASE WHEN last_visit.lastVisitDate IS NULL THEN 0 ELSE 1 END,
-                         last_visit.lastVisitDate ASC, member_rows.fullName ASC;`)
-    ]);
-    const row = result.recordset[0] || {};
+            ORDER BY amountRemaining DESC, effectiveEndDate ASC, fullName ASC;
+
+            SELECT TOP (50) member_rows.*,
+                   last_visit.lastVisitDate,
+                   DATEDIFF(day, last_visit.lastVisitDate, @today) AS daysSinceLastVisit
+            FROM #member_rows AS member_rows
+            OUTER APPLY (
+                SELECT TOP (1) a.attendance_date AS lastVisitDate
+                FROM dbo.gym_attendance AS a
+                WHERE a.member_id = member_rows.id
+                ORDER BY a.attendance_date DESC, a.check_in_at DESC, a.id DESC
+            ) AS last_visit
+            WHERE member_rows.computedStatus = 'active'
+              AND (
+                  (last_visit.lastVisitDate IS NULL
+                   AND (member_rows.registrationDate < @inactiveSince OR member_rows.startDate < @inactiveSince))
+                  OR last_visit.lastVisitDate < @inactiveSince
+              )
+            ORDER BY CASE WHEN last_visit.lastVisitDate IS NULL THEN 0 ELSE 1 END,
+                     last_visit.lastVisitDate ASC, member_rows.fullName ASC;
+
+            DROP TABLE #member_rows;`);
+    const recordsets = result.recordsets || [];
+    const row = recordsets[0]?.[0] || {};
     const alertRows = row.alertsJson ? JSON.parse(row.alertsJson) : [];
     const membershipAlerts = alertRows.map((item) => ({ ...mapMember(item), alertKind: 'membership' }));
-    const debtAlerts = debtResult.recordset.map((item) => ({ ...mapMember(item), alertKind: 'debt' }));
-    const inactiveAlerts = inactiveResult.recordset.map((item) => ({
+    const debtAlerts = (recordsets[1] || []).map((item) => ({ ...mapMember(item), alertKind: 'debt' }));
+    const inactiveAlerts = (recordsets[2] || []).map((item) => ({
         ...mapMember(item),
         alertKind: 'inactive',
         lastVisitDate: formatDateOnly(item.lastVisitDate),
