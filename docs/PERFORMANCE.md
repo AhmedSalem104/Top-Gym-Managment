@@ -4,7 +4,16 @@
 
 ## Local baseline
 
-Use a session cookie from an already-running local/staging browser session. Do not place the value in Git or a committed `.env` file.
+Start a prepared local/staging server separately with instrumentation enabled, then use a session cookie from an existing browser session. The runner requires `QA_BASE_URL`, never starts the application, and never bootstraps or migrates a database. Do not place the cookie in Git or a committed `.env` file.
+
+```powershell
+$env:NODE_ENV = 'development'
+$env:PERFORMANCE_METRICS = 'true'
+$env:PORT = '3010'
+npm start
+```
+
+In a second terminal:
 
 ```powershell
 $env:PERF_BASELINE_ENV = 'local'

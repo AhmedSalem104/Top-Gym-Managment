@@ -8,6 +8,7 @@ const {
     aggregate,
     compareValue,
     parseServerTiming,
+    requireTargetUrl,
     runRoutes,
     validateTarget
 } = require('../../scripts/performance-baseline');
@@ -144,6 +145,11 @@ test('target guard is evaluated before an unauthenticated run can be skipped', (
     withEnvironment({ PERF_BASELINE_ENV: 'staging', PERF_BASELINE_CONFIRM: 'staging', PERF_BASELINE_ALLOWED_HOSTS: 'app.logicfit.example', VERCEL_ENV: 'production', QA_BASE_URL: 'https://app.logicfit.example' }, () => {
         assert.throws(() => validateTarget(process.env.QA_BASE_URL), /Production-like/);
     });
+});
+
+test('an authenticated baseline requires an explicit prepared target URL', () => {
+    assert.equal(requireTargetUrl('', false), '');
+    assert.throws(() => requireTargetUrl('', true), /QA_BASE_URL is required/);
 });
 
 test('comparison marks small changes as statistically insignificant for baseline purposes', () => {

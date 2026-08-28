@@ -10,8 +10,6 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { execFileSync } = require('node:child_process');
 const { performance } = require('node:perf_hooks');
-const app = require('../server');
-const { closePool } = require('../src/database');
 const { todayInTimeZone } = require('../src/utils/date');
 
 const LOCAL_HOST_PATTERN = /^https?:\/\/(?:127\.0\.0\.1|localhost)(?::\d+)?$/i;
@@ -394,6 +392,14 @@ function validateTarget(baseUrl) {
     return { target, environment };
 }
 
+function requireTargetUrl(baseUrl, requiresAuthenticatedTarget) {
+    const normalized = String(baseUrl || '').replace(/\/$/, '');
+    if (requiresAuthenticatedTarget && !normalized) {
+        throw new Error('QA_BASE_URL is required when a session is provided. Start a prepared local/staging server separately; the runner never bootstraps a database.');
+    }
+    return normalized;
+}
+
 function printHumanReport(report) {
     console.log('\nPERFORMANCE BASELINE (READ-ONLY)');
     console.log(`Environment: ${report.environment} | Host: ${report.targetHost} | Commit: ${report.gitCommit}`);
@@ -439,85 +445,73 @@ async function main() {
     const requestBudget = expectedRoutes * (samples + warmups);
     if (requestBudget > 1_000) throw new Error('Baseline request budget exceeds the safe 1,000-request cap.');
 
-    let server;
-    let baseUrl = configuredBaseUrl;
-
-    try {
-        if (!baseUrl) {
-            server = app.listen(0);
-            await new Promise((resolve) => server.once('listening', resolve));
-            baseUrl = `http://127.0.0.1:${server.address().port}`;
+    const baseUrl = requireTargetUrl(configuredBaseUrl, Boolean(tenantCookie || platformCookie));
+    const targetInfo = validateTarget(baseUrl);
+    const options = { samples, warmups, concurrency, timeoutMs, delayMs };
+    const profiles = [];
+    let measuredRequests = 0;
+    let warmupRequests = 0;
+    if (tenantCookie) {
+        const tenantHeaders = {};
+        const tenantSlug = String(process.env.PERF_TENANT_SLUG || '').trim();
+        if (tenantSlug) tenantHeaders['X-Gym-Slug'] = tenantSlug;
+        const tenantRun = await runRoutes(baseUrl, tenantCookie, createTenantRoutes(tenantHeaders), options);
+        const memberId = Number(process.env.PERF_MEMBER_ID || tenantRun.fixtures.members || 0);
+        if (memberId > 0) {
+            const detailRun = await runRoutes(baseUrl, tenantCookie, memberRoutes(memberId).map((route) => ({ ...route, headers: tenantHeaders })), options);
+            tenantRun.results.push(...detailRun.results);
         }
-        const targetInfo = validateTarget(baseUrl);
-        const options = { samples, warmups, concurrency, timeoutMs, delayMs };
-        const profiles = [];
-        let measuredRequests = 0;
-        let warmupRequests = 0;
-        if (tenantCookie) {
-            const tenantHeaders = {};
-            const tenantSlug = String(process.env.PERF_TENANT_SLUG || '').trim();
-            if (tenantSlug) tenantHeaders['X-Gym-Slug'] = tenantSlug;
-            const tenantRun = await runRoutes(baseUrl, tenantCookie, createTenantRoutes(tenantHeaders), options);
-            const memberId = Number(process.env.PERF_MEMBER_ID || tenantRun.fixtures.members || 0);
-            if (memberId > 0) {
-                const detailRun = await runRoutes(baseUrl, tenantCookie, memberRoutes(memberId).map((route) => ({ ...route, headers: tenantHeaders })), options);
-                tenantRun.results.push(...detailRun.results);
-            }
-            profiles.push({ name: 'tenant', routes: tenantRun.results });
-        }
-        if (platformCookie) {
-            const platformRun = await runRoutes(baseUrl, platformCookie, createPlatformRoutes(), options);
-            profiles.push({ name: 'platform', routes: platformRun.results });
-        }
-        profiles.forEach((profile) => profile.routes.forEach((route) => {
-            measuredRequests += route.totalRequests;
-            warmupRequests += route.warmup.totalRequests;
-        }));
-        const label = String(process.env.PERF_BASELINE_LABEL || 'current').trim().replace(/[^a-z0-9_-]/gi, '-') || 'current';
-        const outputFile = path.resolve(process.env.PERF_OUTPUT_FILE || path.join('qa', 'reports', `baseline-${label}.json`));
-        const report = {
-            generatedAt: new Date().toISOString(),
-            gitCommit: gitCommit(),
-            environment: targetInfo.environment,
-            targetHost: targetInfo.target.host,
-            nodeVersion: process.version,
-            readOnly: true,
-            requestMethods: ['GET'],
-            measuredRequests,
-            warmupRequests,
-            totalRequests: measuredRequests + warmupRequests,
-            concurrency,
-            timeoutMs,
-            delayMs,
-            profiles,
-            comparison: null
-        };
-        const compareFile = process.env.PERF_COMPARE_FILE
-            ? path.resolve(process.env.PERF_COMPARE_FILE)
-            : label === 'after' ? path.resolve('qa', 'reports', 'baseline-before.json') : null;
-        const beforeReport = loadComparison(compareFile);
-        if (beforeReport) {
-            report.comparison = {
-                source: compareFile,
-                routes: compareReports(beforeReport, report)
-            };
-        }
-        fs.mkdirSync(path.dirname(outputFile), { recursive: true });
-        fs.writeFileSync(outputFile, `${JSON.stringify(report, null, 2)}\n`, 'utf8');
-        printHumanReport(report);
-        console.log(`\nMachine-readable report: ${outputFile}`);
-        if (report.profiles.some((profile) => profile.routes.some((route) => route.errors.length))) process.exitCode = 1;
-    } finally {
-        if (server) await new Promise((resolve) => server.close(resolve));
-        await closePool().catch(() => {});
+        profiles.push({ name: 'tenant', routes: tenantRun.results });
     }
+    if (platformCookie) {
+        const platformRun = await runRoutes(baseUrl, platformCookie, createPlatformRoutes(), options);
+        profiles.push({ name: 'platform', routes: platformRun.results });
+    }
+    profiles.forEach((profile) => profile.routes.forEach((route) => {
+        measuredRequests += route.totalRequests;
+        warmupRequests += route.warmup.totalRequests;
+    }));
+    const label = String(process.env.PERF_BASELINE_LABEL || 'current').trim().replace(/[^a-z0-9_-]/gi, '-') || 'current';
+    const outputFile = path.resolve(process.env.PERF_OUTPUT_FILE || path.join('qa', 'reports', `baseline-${label}.json`));
+    const report = {
+        generatedAt: new Date().toISOString(),
+        gitCommit: gitCommit(),
+        environment: targetInfo.environment,
+        targetHost: targetInfo.target.host,
+        nodeVersion: process.version,
+        readOnly: true,
+        requestMethods: ['GET'],
+        measuredRequests,
+        warmupRequests,
+        totalRequests: measuredRequests + warmupRequests,
+        concurrency,
+        timeoutMs,
+        delayMs,
+        profiles,
+        comparison: null
+    };
+    const compareFile = process.env.PERF_COMPARE_FILE
+        ? path.resolve(process.env.PERF_COMPARE_FILE)
+        : label === 'after' ? path.resolve('qa', 'reports', 'baseline-before.json') : null;
+    const beforeReport = loadComparison(compareFile);
+    if (beforeReport) {
+        report.comparison = {
+            source: compareFile,
+            routes: compareReports(beforeReport, report)
+        };
+    }
+    fs.mkdirSync(path.dirname(outputFile), { recursive: true });
+    fs.writeFileSync(outputFile, `${JSON.stringify(report, null, 2)}\n`, 'utf8');
+    printHumanReport(report);
+    console.log(`\nMachine-readable report: ${outputFile}`);
+    if (report.profiles.some((profile) => profile.routes.some((route) => route.errors.length))) process.exitCode = 1;
 }
 
 if (require.main === module) {
     main().catch((error) => {
         console.error(`PERF_BASELINE_FAILED - ${error.message}`);
         process.exitCode = 1;
-    }).finally(() => closePool().catch(() => {}));
+    });
 }
 
 module.exports = {
@@ -526,6 +520,7 @@ module.exports = {
     compareValue,
     parseServerTiming,
     runRoutes,
+    requireTargetUrl,
     safeRoutePath,
     validateTarget
 };
