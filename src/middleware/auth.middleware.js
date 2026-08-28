@@ -45,7 +45,7 @@ function createAuthApiMiddleware({ authService, isAuthorizedCronRequest, tenantS
         // platform account must not depend on Top Gym or any other fallback
         // tenant just to create/read a session.
         if (authPublicPath) {
-            return runTenantContext({ tenantId: null, mode: 'public' }, next);
+            return runTenantContext({ tenantId: null, mode: 'public', readOnlyBaseline: request.readOnlyBaseline }, next);
         }
 
         // Branding is public for the login screen, but an authenticated gym
@@ -53,32 +53,33 @@ function createAuthApiMiddleware({ authService, isAuthorizedCronRequest, tenantS
         // Resolving it through the public fallback would make every logged-in
         // gym temporarily inherit Top Gym's identity and assets.
         if (tenantBrandingPath) {
-            if (platformBrandingRequest) return runTenantContext({ tenantId: null, mode: 'platform' }, next);
-            return ensureAuthReady()
-                .then(() => getSessionUser(readSessionCookie(request), { includePermissions: false }))
+            if (platformBrandingRequest) return runTenantContext({ tenantId: null, mode: 'platform', readOnlyBaseline: request.readOnlyBaseline }, next);
+            const readOnlyOptions = { includePermissions: false, ensureReady: !request.readOnlyBaseline, touch: !request.readOnlyBaseline };
+            return (request.readOnlyBaseline ? Promise.resolve() : ensureAuthReady())
+                .then(() => getSessionUser(readSessionCookie(request), { ...readOnlyOptions, readOnly: request.readOnlyBaseline }))
                 .then((user) => {
                     if (user && user.role !== ROLES.PLATFORM_ADMIN) {
-                        return tenantService.resolveTenantForUser(user.id, requestedTenantSlug(request)).then((tenant) => {
+                        return tenantService.resolveTenantForUser(user.id, requestedTenantSlug(request), { readOnly: request.readOnlyBaseline }).then((tenant) => {
                             if (!tenant) return response.status(403).json({ error: 'Tenant access is required for this branding request.', code: 'TENANT_ACCESS_REQUIRED' });
                             request.tenant = tenant;
-                            return runTenantContext({ tenantId: tenant.id, userId: user.id, mode: 'tenant' }, next);
+                            return runTenantContext({ tenantId: tenant.id, userId: user.id, mode: 'tenant', readOnlyBaseline: request.readOnlyBaseline }, next);
                         });
                     }
-                    return tenantService.resolvePublicTenant(requestedTenantSlug(request)).then((tenant) => {
+                    return tenantService.resolvePublicTenant(requestedTenantSlug(request), { readOnly: request.readOnlyBaseline }).then((tenant) => {
                         if (!tenant) return response.status(404).json({ error: 'Gym not found.', code: 'TENANT_NOT_FOUND' });
                         request.tenant = tenant;
-                        return runTenantContext({ tenantId: tenant.id, mode: 'public' }, next);
+                        return runTenantContext({ tenantId: tenant.id, mode: 'public', readOnlyBaseline: request.readOnlyBaseline }, next);
                     });
                 })
                 .catch(next);
         }
 
         if (publicPath || cronRequest) {
-            return tenantService.resolvePublicTenant(requestedTenantSlug(request))
+            return tenantService.resolvePublicTenant(requestedTenantSlug(request), { readOnly: request.readOnlyBaseline })
                 .then((tenant) => {
                     if (!tenant) return response.status(404).json({ error: 'الجيم المطلوب غير موجود.', code: 'TENANT_NOT_FOUND' });
                     request.tenant = tenant;
-                    return runTenantContext({ tenantId: tenant.id, mode: cronRequest ? 'platform' : 'public' }, next);
+                    return runTenantContext({ tenantId: tenant.id, mode: cronRequest ? 'platform' : 'public', readOnlyBaseline: request.readOnlyBaseline }, next);
                 })
                 .catch(next);
         }
@@ -86,26 +87,27 @@ function createAuthApiMiddleware({ authService, isAuthorizedCronRequest, tenantS
             return response.status(403).json({ error: 'الطلب غير مصرح به.' });
         }
 
-        return ensureAuthReady()
-            .then(() => getSessionUser(readSessionCookie(request), { includePermissions: false }))
+        const readOnlyOptions = { includePermissions: false, ensureReady: !request.readOnlyBaseline, touch: !request.readOnlyBaseline };
+        return (request.readOnlyBaseline ? Promise.resolve() : ensureAuthReady())
+            .then(() => getSessionUser(readSessionCookie(request), { ...readOnlyOptions, readOnly: request.readOnlyBaseline }))
             .then((user) => {
                 if (!user) return response.status(401).json({ error: 'انتهت جلسة الدخول. سجّل الدخول مرة أخرى.', code: 'AUTH_REQUIRED' });
                 if (platformPath) {
                     if (user.role !== ROLES.PLATFORM_ADMIN) {
                         return response.status(403).json({ error: 'هذه المساحة مخصصة لمدير المنصة فقط.', code: 'PLATFORM_ADMIN_REQUIRED' });
                     }
-                    return runTenantContext({ tenantId: null, userId: user.id, mode: 'platform' }, async () => {
-                        request.auth = await authService.withPermissions(user);
+                    return runTenantContext({ tenantId: null, userId: user.id, mode: 'platform', readOnlyBaseline: request.readOnlyBaseline }, async () => {
+                        request.auth = await authService.withPermissions(user, { readOnly: request.readOnlyBaseline });
                         return next();
                     });
                 }
-                return tenantService.resolveTenantForUser(user.id, requestedTenantSlug(request)).then((tenant) => {
+                return tenantService.resolveTenantForUser(user.id, requestedTenantSlug(request), { readOnly: request.readOnlyBaseline }).then((tenant) => {
                     if (!tenant) return response.status(403).json({ error: 'لا يوجد اشتراك نشط لهذا الحساب في الجيم المطلوب.', code: 'TENANT_ACCESS_REQUIRED' });
                     request.tenant = tenant;
-                    return runTenantContext({ tenantId: tenant.id, userId: user.id, mode: 'tenant' }, async () => {
-                        user = await authService.withPermissions(user);
+                    return runTenantContext({ tenantId: tenant.id, userId: user.id, mode: 'tenant', readOnlyBaseline: request.readOnlyBaseline }, async () => {
+                        user = await authService.withPermissions(user, { readOnly: request.readOnlyBaseline });
                         if (saasService) {
-                            request.saas = await saasService.enforceTenantAccess(tenant.id, { path: request.path, method: request.method });
+                            request.saas = await saasService.enforceTenantAccess(tenant.id, { path: request.path, method: request.method, readOnly: request.readOnlyBaseline });
                             await saasService.enforceRequestLimit(tenant.id, {
                                 path: request.path,
                                 method: request.method,

@@ -16,7 +16,8 @@ function normalizeContext(input = {}) {
         tenantId: normalizeTenantId(input.tenantId),
         userId: normalizeTenantId(input.userId),
         mode,
-        skipSessionContext: Boolean(input.skipSessionContext)
+        skipSessionContext: Boolean(input.skipSessionContext),
+        readOnlyBaseline: Boolean(input.readOnlyBaseline)
     });
 }
 

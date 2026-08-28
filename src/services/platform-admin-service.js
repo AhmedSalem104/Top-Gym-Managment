@@ -158,13 +158,13 @@ function usageDto(usage, entitlements) {
     return { ...usage, limits, rows };
 }
 
-async function ensureReady() {
-    await saasService.ensureSaasTables();
+async function ensureReady({ readOnly = false } = {}) {
+    await saasService.ensureSaasTables({ readOnly });
 }
 
-async function getDashboard({ from = null, to = null } = {}) {
-    await ensureReady();
-    await saasService.syncExpiredTenants();
+async function getDashboard({ from = null, to = null, readOnly = false } = {}) {
+    await ensureReady({ readOnly });
+    if (!readOnly) await saasService.syncExpiredTenants();
     const pool = await getPool();
     const start = dateValue(from, 'From date') || new Date(new Date().getUTCFullYear(), new Date().getUTCMonth(), 1);
     const end = dateValue(to, 'To date') || new Date();
@@ -201,7 +201,7 @@ async function getDashboard({ from = null, to = null } = {}) {
             OUTER APPLY (SELECT ISNULL((SELECT SUM(CONVERT(BIGINT,DATALENGTH(content))) FROM dbo.gym_branding_assets a WHERE a.tenant_id=t.id),0)+ISNULL((SELECT SUM(CONVERT(BIGINT,content_bytes)) FROM dbo.gym_backup_archives b WHERE b.tenant_id=t.id),0)+ISNULL((SELECT SUM(CONVERT(BIGINT,file_size)) FROM dbo.saas_payment_proofs sp WHERE sp.tenant_id=t.id),0) AS storage_bytes) storage
             OUTER APPLY (SELECT MAX(ses.last_seen_at) AS last_activity_at FROM dbo.gym_auth_sessions ses INNER JOIN dbo.gym_user_tenants ut2 ON ut2.user_id=ses.user_id WHERE ut2.tenant_id=t.id) last_activity
             ORDER BY t.created_at DESC,t.id DESC;`),
-        saasService.listAudit({ limit: 12 })
+        saasService.listAudit({ limit: 12, readOnly })
     ]);
     const row = counts.recordset[0] || {};
     const usageRow = usage.recordset[0] || {};
@@ -245,9 +245,9 @@ function tenantListWhere() {
         AND (@expiringDays=0 OR (s.expires_at IS NOT NULL AND s.expires_at > SYSUTCDATETIME() AND s.expires_at <= DATEADD(day,@expiringDays,SYSUTCDATETIME())))`;
 }
 
-async function listTenants({ search = '', status = '', plan = '', sort = 'createdAt', direction = 'desc', page = 1, pageSize = 20, expiringDays = 0 } = {}) {
-    await ensureReady();
-    await saasService.syncExpiredTenants();
+async function listTenants({ search = '', status = '', plan = '', sort = 'createdAt', direction = 'desc', page = 1, pageSize = 20, expiringDays = 0, readOnly = false } = {}) {
+    await ensureReady({ readOnly });
+    if (!readOnly) await saasService.syncExpiredTenants();
     const normalizedPage = Math.max(1, Number(page) || 1);
     const normalizedPageSize = Math.min(100, Math.max(5, Number(pageSize) || 20));
     const normalizedSearch = text(search, '', 120);

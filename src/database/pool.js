@@ -4,6 +4,7 @@ const sql = require('mssql');
 const { config: appConfig } = require('../config/env');
 const { getTenantContext } = require('../tenancy/tenant-context');
 const { recordDatabaseQuery } = require('../middleware/performance-metrics');
+const { performance } = require('node:perf_hooks');
 
 let poolPromise;
 let tenantAwarePool;
@@ -22,7 +23,98 @@ function sqlTenantContext() {
     const tenantId = Number.isInteger(configuredTenantId) && configuredTenantId > 0
         ? configuredTenantId
         : null;
-    return { tenantId, mode, skipSessionContext: Boolean(context?.skipSessionContext) };
+    return {
+        tenantId,
+        mode,
+        skipSessionContext: Boolean(context?.skipSessionContext),
+        readOnlyBaseline: Boolean(context?.readOnlyBaseline)
+    };
+}
+
+function stripSqlCommentsAndLiterals(command) {
+    const source = String(command || '');
+    let output = '';
+    let index = 0;
+    let inString = false;
+    let inLineComment = false;
+    let inBlockComment = false;
+    while (index < source.length) {
+        const current = source[index];
+        const next = source[index + 1];
+        if (inLineComment) {
+            if (current === '\\n' || current === '\\r') inLineComment = false;
+            output += ' ';
+            index += 1;
+            continue;
+        }
+        if (inBlockComment) {
+            if (current === '*' && next === '/') {
+                output += '  ';
+                index += 2;
+                inBlockComment = false;
+            } else {
+                output += ' ';
+                index += 1;
+            }
+            continue;
+        }
+        if (inString) {
+            if (current === "'" && next === "'") {
+                output += '  ';
+                index += 2;
+            } else if (current === "'") {
+                output += ' ';
+                index += 1;
+                inString = false;
+            } else {
+                output += ' ';
+                index += 1;
+            }
+            continue;
+        }
+        if (current === '-' && next === '-') {
+            output += '  ';
+            index += 2;
+            inLineComment = true;
+            continue;
+        }
+        if (current === '/' && next === '*') {
+            output += '  ';
+            index += 2;
+            inBlockComment = true;
+            continue;
+        }
+        if (current === "'") {
+            output += ' ';
+            index += 1;
+            inString = true;
+            continue;
+        }
+        output += current;
+        index += 1;
+    }
+    return output;
+}
+
+function hasPersistentSqlMutation(command) {
+    const normalized = stripSqlCommentsAndLiterals(command);
+    if (/\b(?:EXEC(?:UTE)?|BULK\s+INSERT|DBCC|GRANT|DENY|REVOKE)\b/i.test(normalized)) return true;
+    if (/\b(?:INSERT\s+INTO|UPDATE|DELETE\s+FROM|MERGE\s+INTO|TRUNCATE\s+TABLE)\s+(?![#@])/i.test(normalized)) return true;
+    if (/\b(?:CREATE|ALTER|DROP)\s+TABLE\s+(?![#@])/i.test(normalized)) return true;
+    if (/\b(?:CREATE\s+(?:UNIQUE\s+)?INDEX|DROP\s+INDEX)\b[\s\S]*?\bON\s+(?![#@])/i.test(normalized)) return true;
+    if (/\bCREATE\s+(?:VIEW|PROCEDURE|FUNCTION|TRIGGER|SCHEMA|DATABASE)\b/i.test(normalized)) return true;
+    if (/\bSELECT\b[\s\S]*?\bINTO\s+(?![#@])/i.test(normalized)) return true;
+    if (/\bSET\s+IDENTITY_INSERT\b/i.test(normalized)) return true;
+    return false;
+}
+
+function assertReadOnlySql(command, context) {
+    if (!context.readOnlyBaseline || !hasPersistentSqlMutation(command)) return;
+    const error = new Error('Baseline requests may execute read-only SQL only.');
+    error.statusCode = 405;
+    error.expose = true;
+    error.code = 'BASELINE_SQL_WRITE_BLOCKED';
+    throw error;
 }
 
 function decorateRequest(request) {
@@ -34,6 +126,8 @@ function decorateRequest(request) {
                 return (command, ...rest) => {
                     const context = sqlTenantContext();
                     const startedAt = process.hrtime.bigint();
+                    const startedAtMonotonic = performance.now();
+                    assertReadOnlySql(command, context);
                     let result;
                     if (context.skipSessionContext) {
                         result = value.call(target, command, ...rest);
@@ -44,10 +138,12 @@ function decorateRequest(request) {
                         result = value.call(target, guardedCommand, ...rest);
                     }
                     return Promise.resolve(result).then((response) => {
-                        recordDatabaseQuery(Number(process.hrtime.bigint() - startedAt) / 1_000_000, property);
+                        const endedAtMonotonic = performance.now();
+                        recordDatabaseQuery(Number(process.hrtime.bigint() - startedAt) / 1_000_000, property, startedAtMonotonic, endedAtMonotonic);
                         return response;
                     }, (error) => {
-                        recordDatabaseQuery(Number(process.hrtime.bigint() - startedAt) / 1_000_000, property);
+                        const endedAtMonotonic = performance.now();
+                        recordDatabaseQuery(Number(process.hrtime.bigint() - startedAt) / 1_000_000, property, startedAtMonotonic, endedAtMonotonic);
                         throw error;
                     });
                 };
@@ -171,4 +267,4 @@ async function closePool() {
     await pool.close();
 }
 
-module.exports = { closePool, getPool, parseConnectionString, sql };
+module.exports = { assertReadOnlySql, closePool, getPool, hasPersistentSqlMutation, parseConnectionString, sql };

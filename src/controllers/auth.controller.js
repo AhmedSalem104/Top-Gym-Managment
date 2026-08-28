@@ -3,8 +3,13 @@
 function createAuthController({ authService, permissionService, allowLoginAttempt }) {
     return {
         session: async (request, response) => {
-            const setup = await authService.ensureAuthReady();
-            const user = await authService.getSessionUser(authService.readSessionCookie(request));
+            const readOnly = Boolean(request.readOnlyBaseline);
+            const setup = readOnly ? { setupRequired: false } : await authService.ensureAuthReady();
+            const user = await authService.getSessionUser(authService.readSessionCookie(request), {
+                ensureReady: !readOnly,
+                touch: !readOnly,
+                readOnly
+            });
             response.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
             response.json({ authenticated: Boolean(user), user: user || null, setupRequired: Boolean(setup?.setupRequired) });
         },

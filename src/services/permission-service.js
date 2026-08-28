@@ -175,7 +175,9 @@ async function seedExistingAssistants() {
     }
 }
 
-async function ensurePermissionTables() {
+async function ensurePermissionTables({ readOnly = false } = {}) {
+    // A baseline read must not create schema objects or seed permission rows.
+    if (readOnly) return;
     if (!permissionReadyPromise) {
         permissionReadyPromise = (async () => {
             await createTables();
@@ -188,9 +190,9 @@ async function ensurePermissionTables() {
     return permissionReadyPromise;
 }
 
-async function getEffectivePermissions(userId, role) {
+async function getEffectivePermissions(userId, role, { readOnly = false } = {}) {
     if (role === ROLES.OWNER || role === ROLES.PLATFORM_ADMIN) return ['*'];
-    await ensurePermissionTables();
+    await ensurePermissionTables({ readOnly });
     const result = await getPool().then((pool) => pool.request()
         .input('userId', sql.Int, normalizeUserId(userId))
         .query('SELECT permission_code FROM dbo.gym_user_permissions WHERE user_id=@userId AND is_granted=1 ORDER BY permission_code;'));

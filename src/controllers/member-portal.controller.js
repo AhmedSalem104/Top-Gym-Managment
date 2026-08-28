@@ -82,9 +82,9 @@ function createMemberPortalController({ membershipCodeService, portalService, li
             response.json(await portalService.lookupByCode(request.body?.membershipCode, request));
         },
 
-        libraryOptions: async (_request, response) => {
+        libraryOptions: async (request, response) => {
             response.set('Cache-Control', 'public, max-age=120, stale-while-revalidate=600');
-            const options = await libraryService.getLibraryOptions();
+            const options = await libraryService.getLibraryOptions({ readOnly: request.readOnlyBaseline });
             response.json({
                 counts: options.counts,
                 filters: {
@@ -102,7 +102,7 @@ function createMemberPortalController({ membershipCodeService, portalService, li
             const type = String(request.params.type || '').toLowerCase();
             if (!LIBRARY_TYPES.has(type)) return response.status(404).json({ error: 'Library type not found.' });
             const query = { ...request.query, pageSize: Math.min(Number(request.query.pageSize) || 18, 24) };
-            const result = await libraryService.getLibraryCollection(type, query);
+            const result = await libraryService.getLibraryCollection(type, query, { readOnly: request.readOnlyBaseline });
             response.set('Cache-Control', 'public, max-age=120, stale-while-revalidate=600');
             response.json({
                 items: result.items.map((item) => publicLibraryItem(type, item)),
@@ -113,7 +113,7 @@ function createMemberPortalController({ membershipCodeService, portalService, li
         libraryItem: async (request, response) => {
             const type = String(request.params.type || '').toLowerCase();
             if (!LIBRARY_TYPES.has(type)) return response.status(404).json({ error: 'Library type not found.' });
-            const item = await libraryService.getLibraryItem(type, request.params.id);
+            const item = await libraryService.getLibraryItem(type, request.params.id, { readOnly: request.readOnlyBaseline });
             response.set('Cache-Control', 'public, max-age=300, stale-while-revalidate=900');
             response.json({ item: publicLibraryItem(type, item, true) });
         },

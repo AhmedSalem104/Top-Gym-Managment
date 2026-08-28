@@ -3,7 +3,7 @@ const { addDays, differenceInDays, formatDateOnly, parseDateOnly, todayInTimeZon
 const { ensurePaymentTransactionsTable, getDashboard } = require('./member-service');
 const { ensureExpensesTable } = require('./finance-service');
 const { ensureCoachingTables } = require('./coaching-service');
-const { ensureLibraryData } = require('./library-service');
+const { ensureLibraryData, ensureLibraryTables } = require('./library-service');
 const alertContactService = require('./alert-contact-service');
 const dayPassRepository = require('../repositories/day-pass.repository');
 
@@ -48,11 +48,12 @@ function addTimelineAmount(timelineByDate, rows, dateField, amountField) {
 
 async function getReportData(query = {}) {
     const range = normalizeRange(query);
+    const readOnly = Boolean(query.readOnly);
     await Promise.all([
         ensureExpensesTable(),
         ensurePaymentTransactionsTable(),
         ensureCoachingTables(),
-        ensureLibraryData(),
+        readOnly ? ensureLibraryTables() : ensureLibraryData(),
         dayPassRepository.ensureDayPassTables()
     ]);
     const pool = await getPool();

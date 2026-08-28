@@ -4,7 +4,7 @@ function createPlatformAdminController({ platformAdminService, saasService, auth
     const meta = (request) => platformAdminService.requestMeta(request);
     return {
         dashboard: async (request, response) => {
-            response.json(await platformAdminService.getDashboard({ from: request.query?.from, to: request.query?.to }));
+            response.json(await platformAdminService.getDashboard({ from: request.query?.from, to: request.query?.to, readOnly: request.readOnlyBaseline }));
         },
 
         tenants: async (request, response) => {
@@ -16,7 +16,8 @@ function createPlatformAdminController({ platformAdminService, saasService, auth
                 direction: request.query?.direction,
                 page: request.query?.page,
                 pageSize: request.query?.pageSize,
-                expiringDays: request.query?.expiringDays
+                expiringDays: request.query?.expiringDays,
+                readOnly: request.readOnlyBaseline
             }));
         },
 
@@ -101,8 +102,8 @@ function createPlatformAdminController({ platformAdminService, saasService, auth
             return response.status(201).json({ note: await platformAdminService.addNote(request.params.tenantId, request.body?.note, request.auth?.id, meta(request)) });
         },
 
-        plans: async (_request, response) => {
-            response.json({ plans: await saasService.getPlans({ includeInactive: true }) });
+        plans: async (request, response) => {
+            response.json({ plans: await saasService.getPlans({ includeInactive: true, readOnly: request.readOnlyBaseline }) });
         },
 
         createPlan: async (request, response) => {
@@ -118,7 +119,7 @@ function createPlatformAdminController({ platformAdminService, saasService, auth
         },
 
         requests: async (request, response) => {
-            response.json({ requests: await saasService.listPlatformRequests({ status: request.query?.status || '' }) });
+            response.json({ requests: await saasService.listPlatformRequests({ status: request.query?.status || '', readOnly: request.readOnlyBaseline }) });
         },
 
         approveRequest: async (request, response) => {

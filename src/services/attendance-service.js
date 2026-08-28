@@ -219,19 +219,10 @@ async function getTodayAttendance(options = {}) {
     const pool = await getPool();
     const date = parseDateOnly(options.date || todayInTimeZone(), 'تاريخ الحضور');
     const search = String(options.search || '').trim();
-    const result = await pool.request()
+    const request = pool.request()
         .input('attendanceDate', sql.Date, toUtcDate(date))
-        .input('search', sql.NVarChar(120), search ? `%${search}%` : null)
-        .input('autoMinutes', sql.Int, getAutoCheckoutMinutes())
-        .batch(`UPDATE dbo.gym_attendance
-                SET check_out_at = DATEADD(minute, @autoMinutes, check_in_at),
-                    check_out_source = 'auto',
-                    updated_at = SYSUTCDATETIME()
-                WHERE check_out_at IS NULL
-                  AND DATEADD(minute, @autoMinutes, check_in_at) <= SYSUTCDATETIME();
-                SELECT @@ROWCOUNT AS autoClosed;
-
-                SELECT a.id, a.member_id, a.membership_id, a.attendance_date,
+        .input('search', sql.NVarChar(120), search ? `%${search}%` : null);
+    const selectQuery = `SELECT a.id, a.member_id, a.membership_id, a.attendance_date,
                        a.check_in_at, a.check_out_at, a.check_in_source, a.check_out_source,
                        a.notes, m.full_name, m.phone,
                        ms.membership_plan, ms.membership_type
@@ -244,9 +235,22 @@ async function getTodayAttendance(options = {}) {
                 ) AS ms
                 WHERE a.attendance_date = @attendanceDate
                   AND (@search IS NULL OR m.full_name LIKE @search OR m.phone LIKE @search)
-                ORDER BY a.check_in_at DESC, a.id DESC;`);
-    const autoClosed = Number(result.recordsets?.[0]?.[0]?.autoClosed || 0);
-    const records = (result.recordsets?.[1] || []).map(mapAttendance);
+                ORDER BY a.check_in_at DESC, a.id DESC;`;
+    const result = options.readOnly
+        ? await request.query(selectQuery)
+        : await request
+            .input('autoMinutes', sql.Int, getAutoCheckoutMinutes())
+            .batch(`UPDATE dbo.gym_attendance
+                SET check_out_at = DATEADD(minute, @autoMinutes, check_in_at),
+                    check_out_source = 'auto',
+                    updated_at = SYSUTCDATETIME()
+                WHERE check_out_at IS NULL
+                  AND DATEADD(minute, @autoMinutes, check_in_at) <= SYSUTCDATETIME();
+                SELECT @@ROWCOUNT AS autoClosed;
+
+                ${selectQuery}`);
+    const autoClosed = options.readOnly ? 0 : Number(result.recordsets?.[0]?.[0]?.autoClosed || 0);
+    const records = (options.readOnly ? result.recordset : result.recordsets?.[1] || []).map(mapAttendance);
     return {
         date,
         autoClosed,
@@ -278,27 +282,19 @@ async function getAttendanceRecordForDate(pool, memberId, date) {
     return result.recordset[0] ? mapAttendance(result.recordset[0]) : null;
 }
 
-async function getMemberAttendanceStatuses(memberIds = [], date = todayInTimeZone()) {
+async function getMemberAttendanceStatuses(memberIds = [], date = todayInTimeZone(), options = {}) {
     await ensureAttendanceTable();
     const pool = await getPool();
     const ids = [...new Set(memberIds.map((value) => Number(value)).filter((value) => Number.isInteger(value) && value > 0))];
     if (!ids.length) return new Map();
     const request = pool.request()
-        .input('attendanceDate', sql.Date, toUtcDate(parseDateOnly(date, 'تاريخ الحضور')))
-        .input('autoMinutes', sql.Int, getAutoCheckoutMinutes());
+        .input('attendanceDate', sql.Date, toUtcDate(parseDateOnly(date, 'تاريخ الحضور')));
     const placeholders = ids.map((id, index) => {
         const name = `memberId${index}`;
         request.input(name, sql.Int, id);
         return `@${name}`;
     });
-    const result = await request.batch(`UPDATE dbo.gym_attendance
-                       SET check_out_at = DATEADD(minute, @autoMinutes, check_in_at),
-                           check_out_source = 'auto',
-                           updated_at = SYSUTCDATETIME()
-                       WHERE check_out_at IS NULL
-                         AND DATEADD(minute, @autoMinutes, check_in_at) <= SYSUTCDATETIME();
-
-                       SELECT a.id, a.member_id, a.membership_id, a.attendance_date,
+    const selectQuery = `SELECT a.id, a.member_id, a.membership_id, a.attendance_date,
                        a.check_in_at, a.check_out_at, a.check_in_source, a.check_out_source,
                        a.notes, m.full_name, m.phone,
                        ms.membership_plan, ms.membership_type
@@ -310,8 +306,21 @@ async function getMemberAttendanceStatuses(memberIds = [], date = todayInTimeZon
                     WHERE x.id = a.membership_id
                 ) AS ms
                 WHERE a.attendance_date = @attendanceDate
-                  AND a.member_id IN (${placeholders.join(', ')});`);
-    return new Map((result.recordsets?.[0] || []).map((row) => [Number(row.member_id), mapAttendance(row)]));
+                  AND a.member_id IN (${placeholders.join(', ')});`;
+    const result = options.readOnly
+        ? await request.query(selectQuery)
+        : await request
+            .input('autoMinutes', sql.Int, getAutoCheckoutMinutes())
+            .batch(`UPDATE dbo.gym_attendance
+                       SET check_out_at = DATEADD(minute, @autoMinutes, check_in_at),
+                           check_out_source = 'auto',
+                           updated_at = SYSUTCDATETIME()
+                       WHERE check_out_at IS NULL
+                         AND DATEADD(minute, @autoMinutes, check_in_at) <= SYSUTCDATETIME();
+
+                       ${selectQuery}`);
+    const rows = options.readOnly ? result.recordset : result.recordsets?.[0] || [];
+    return new Map(rows.map((row) => [Number(row.member_id), mapAttendance(row)]));
 }
 
 async function checkIn(body = {}) {
@@ -362,7 +371,7 @@ async function checkOut(body = {}) {
 
 async function getMemberAttendance(memberId, options = {}) {
     await ensureAttendanceTable();
-    await reconcileAutoCheckout();
+    if (!options.readOnly) await reconcileAutoCheckout();
     const id = ensureId(memberId, 'معرّف العضو');
     const pool = await getPool();
     const from = parseDateOnly(options.from || `${todayInTimeZone().slice(0, 7)}-01`, 'تاريخ البداية');
@@ -389,7 +398,7 @@ async function getMemberAttendance(memberId, options = {}) {
 async function getAttendanceReport(options = {}) {
     await ensureAttendanceTable();
     const pool = await getPool();
-    await reconcileAutoCheckout(pool);
+    if (!options.readOnly) await reconcileAutoCheckout(pool);
     const today = todayInTimeZone();
     const from = parseDateOnly(options.from || addDays(today, -29), 'تاريخ البداية');
     const to = parseDateOnly(options.to || today, 'تاريخ النهاية');

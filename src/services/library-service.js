@@ -460,6 +460,12 @@ async function ensureLibraryData() {
     return librarySeedPromise;
 }
 
+async function prepareLibraryData({ readOnly = false } = {}) {
+    // A baseline request must never seed or synchronize catalog rows. The
+    // normal application path keeps its existing lazy initialization behavior.
+    return readOnly ? ensureLibraryTables() : ensureLibraryData();
+}
+
 // Synchronize the repository seed files with an existing database without
 // recreating rows. Canonical records carry an explicit sourceId in the
 // reserved catalog namespace; legacy source ids remain untouched so existing
@@ -774,9 +780,9 @@ function addParams(request, params) {
     return request;
 }
 
-async function getLibraryCollection(typeValue, query = {}) {
+async function getLibraryCollection(typeValue, query = {}, { readOnly = false } = {}) {
     const type = ensureType(typeValue);
-    await ensureLibraryData();
+    await prepareLibraryData({ readOnly });
     const page = pageValue(query.page, 1, 1, 1000000);
     const pageSize = pageValue(query.pageSize, 12, 5, 100);
     const offset = (page - 1) * pageSize;
@@ -810,8 +816,8 @@ async function getLibraryCollection(typeValue, query = {}) {
     };
 }
 
-async function getLibraryOptions() {
-    await ensureLibraryData();
+async function getLibraryOptions({ readOnly = false } = {}) {
+    await prepareLibraryData({ readOnly });
     const pool = await getPool();
     const result = await pool.request().batch(`
         SELECT
@@ -851,10 +857,10 @@ async function getLibraryOptions() {
     };
 }
 
-async function getLibraryItem(typeValue, idValue) {
+async function getLibraryItem(typeValue, idValue, { readOnly = false } = {}) {
     const type = ensureType(typeValue);
     const id = ensureId(idValue);
-    await ensureLibraryData();
+    await prepareLibraryData({ readOnly });
     const specification = listQuery(type, { search: '', category: '', bodyPart: '', difficulty: '', equipment: '', targetMuscleId: null }, { includeLegacy: true });
     const pool = await getPool();
     const request = addParams(pool.request(), specification.params).input('id', sql.Int, id);

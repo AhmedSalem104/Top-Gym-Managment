@@ -635,7 +635,7 @@ async function getMemberById(id, connection = null) {
     return member;
 }
 
-async function getMembers({ search = '', status = '', sort = 'expiry', page = 1, pageSize = DEFAULT_MEMBER_PAGE_SIZE } = {}) {
+async function getMembers({ search = '', status = '', sort = 'expiry', page = 1, pageSize = DEFAULT_MEMBER_PAGE_SIZE, readOnly = false } = {}) {
     const normalizedSearch = String(search || '').trim().slice(0, 100);
     const normalizedStatus = ensureStatus(status);
     const normalizedSort = ensureMemberSort(sort);
@@ -656,7 +656,7 @@ async function getMembers({ search = '', status = '', sort = 'expiry', page = 1,
     const memberIds = mappedMembers.map((member) => member.id);
     const [membershipCodePreviews, attendanceByMember] = await Promise.all([
         membershipCodeService.getPreviews(memberIds),
-        getMemberAttendanceStatuses(memberIds)
+        getMemberAttendanceStatuses(memberIds, undefined, { readOnly })
     ]);
     const members = mappedMembers.map((member) => ({
         ...member,
@@ -707,9 +707,9 @@ function dashboardFromMembers(members, today = todayInTimeZone()) {
     };
 }
 
-async function getBootstrap() {
+async function getBootstrap({ readOnly = false } = {}) {
     const [memberPage, dashboard, pricing] = await Promise.all([
-        getMembers({ page: 1, pageSize: DEFAULT_MEMBER_PAGE_SIZE, sort: 'expiry' }),
+        getMembers({ page: 1, pageSize: DEFAULT_MEMBER_PAGE_SIZE, sort: 'expiry', readOnly }),
         getDashboard(),
         getPricingCatalog()
     ]);

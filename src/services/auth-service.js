@@ -272,7 +272,7 @@ async function safeUserWithPermissions(row) {
     return withPermissions(user);
 }
 
-async function withPermissions(user) {
+async function withPermissions(user, { readOnly = false } = {}) {
     if (!user) return null;
     const activeTenantId = currentTenantId() || null;
 
@@ -284,15 +284,15 @@ async function withPermissions(user) {
     // bootstrap; normal API requests already run inside their resolved
     // tenant context.
     if (user.role === 'Assistant' && !activeTenantId) {
-        const tenant = await tenantService.resolveTenantForUser(user.id);
+        const tenant = await tenantService.resolveTenantForUser(user.id, '', { readOnly });
         if (tenant?.id) {
             return runTenantContext(
-                { tenantId: tenant.id, userId: user.id, mode: 'tenant' },
-                () => withPermissions(user)
+                { tenantId: tenant.id, userId: user.id, mode: 'tenant', readOnlyBaseline: readOnly },
+                () => withPermissions(user, { readOnly })
             );
         }
     }
-    user.permissions = await permissionService.getEffectivePermissions(user.id, user.role);
+    user.permissions = await permissionService.getEffectivePermissions(user.id, user.role, { readOnly });
     return user;
 }
 
@@ -413,15 +413,15 @@ async function login(body = {}, request) {
     return { token, expiresAt, user: await safeUserWithPermissions(user) };
 }
 
-async function getSessionUser(token, { includePermissions = true } = {}) {
+async function getSessionUser(token, { includePermissions = true, ensureReady = true, touch = true, readOnly = false } = {}) {
     if (!token) return null;
-    await ensureAuthReady();
+    if (ensureReady) await ensureAuthReady();
     const result = await sessionRepository.findActiveWithUser(tokenHash(token));
     const row = result.recordset[0];
     if (!row) return null;
-    scheduleSessionTouch(row.session_id);
+    if (touch) scheduleSessionTouch(row.session_id);
     const user = safeUser(row);
-    return includePermissions ? withPermissions(user) : user;
+    return includePermissions ? withPermissions(user, { readOnly }) : user;
 }
 
 async function revokeSession(token) {

@@ -269,8 +269,8 @@ async function assignUserToTenant(userId, tenantId = currentTenantId({ required:
     return true;
 }
 
-async function resolveTenantForUser(userId, requestedSlug = '') {
-    await ensureTenantTables();
+async function resolveTenantForUser(userId, requestedSlug = '', { readOnly = false } = {}) {
+    if (!readOnly) await ensureTenantTables();
     const normalizedSlug = normalizeTenantSlug(requestedSlug);
     const pool = await getPool();
     const result = await pool.request()
@@ -295,8 +295,8 @@ async function resolveTenantForUser(userId, requestedSlug = '') {
     return tenantRecord(result.recordset[0]);
 }
 
-async function resolvePublicTenant(requestedSlug = '') {
-    await ensureTenantTables();
+async function resolvePublicTenant(requestedSlug = '', { readOnly = false } = {}) {
+    if (!readOnly) await ensureTenantTables();
     const normalizedSlug = normalizeTenantSlug(requestedSlug) || normalizeTenantSlug(config.defaultTenantSlug) || BOOTSTRAP_TENANT_SLUG;
     const pool = await getPool();
     const result = await pool.request()
@@ -305,7 +305,7 @@ async function resolvePublicTenant(requestedSlug = '') {
     const tenant = tenantRecord(result.recordset[0]);
     // This keeps the app shell and isolated test boots safe when the base
     // schema exists but the tenancy bootstrap has not run yet.
-    return tenant || (normalizedSlug === BOOTSTRAP_TENANT_SLUG ? ensureBootstrapTenant() : null);
+    return tenant || (normalizedSlug === BOOTSTRAP_TENANT_SLUG && !readOnly ? ensureBootstrapTenant() : null);
 }
 
 async function existingTenantTables(pool) {

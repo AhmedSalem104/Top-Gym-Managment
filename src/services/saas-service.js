@@ -491,7 +491,10 @@ async function seedPlans(pool) {
     }
 }
 
-async function ensureSaasTables() {
+async function ensureSaasTables({ readOnly = false } = {}) {
+    // Read-only baseline requests must fail on an unprepared database rather
+    // than seed plans or run compatibility updates as a side effect.
+    if (readOnly) return;
     if (!readyPromise) {
         readyPromise = (async () => {
             const pool = await getPool();
@@ -523,8 +526,8 @@ async function recordAudit({ tenantId = null, actorUserId = null, action, entity
                 VALUES (@tenantId,@actorUserId,@action,@entityType,@entityId,@details,@reason,@beforeJson,@afterJson,@ipAddress,@userAgent);`);
 }
 
-async function getPlans({ includeInactive = false } = {}) {
-    await ensureSaasTables();
+async function getPlans({ includeInactive = false, readOnly = false } = {}) {
+    await ensureSaasTables({ readOnly });
     const pool = await getPool();
     const result = await pool.request()
         .input('includeInactive', sql.Bit, includeInactive ? 1 : 0)
@@ -677,8 +680,8 @@ async function syncExpiredTenants({ force = false } = {}) {
     }
 }
 
-async function getCurrentSubscription(tenantId = currentTenantId({ required: true })) {
-    await ensureSaasTables();
+async function getCurrentSubscription(tenantId = currentTenantId({ required: true }), { readOnly = false } = {}) {
+    if (!readOnly) await ensureSaasTables();
     const id = tenantIdValue(tenantId);
     const pool = await getPool();
     const result = await pool.request()
@@ -691,7 +694,7 @@ async function getCurrentSubscription(tenantId = currentTenantId({ required: tru
                 WHERE s.tenant_id=@tenantId
                 ORDER BY CASE s.status WHEN 'active' THEN 0 WHEN 'trial' THEN 1 WHEN 'expired' THEN 2 WHEN 'suspended' THEN 3 ELSE 4 END, s.updated_at DESC,s.id DESC;`);
     const subscription = subscriptionFromRow(result.recordset[0]);
-    if (subscription && ['active', 'trial'].includes(subscription.status) && subscription.expiresAt && new Date(subscription.expiresAt).getTime() <= Date.now()) {
+    if (!readOnly && subscription && ['active', 'trial'].includes(subscription.status) && subscription.expiresAt && new Date(subscription.expiresAt).getTime() <= Date.now()) {
         await pool.request().input('id', sql.BigInt, subscription.id).query("UPDATE dbo.saas_tenant_subscriptions SET status='expired', updated_at=SYSUTCDATETIME() WHERE id=@id AND status IN ('trial','active');");
         await pool.request().input('tenantId', sql.Int, id).query("UPDATE dbo.gym_tenants SET status='expired', updated_at=SYSUTCDATETIME() WHERE id=@tenantId AND status IN ('trial','active');");
         subscription.status = 'expired';
@@ -700,9 +703,9 @@ async function getCurrentSubscription(tenantId = currentTenantId({ required: tru
     return subscription;
 }
 
-async function getTenantOverrides(tenantId = currentTenantId({ required: true })) {
+async function getTenantOverrides(tenantId = currentTenantId({ required: true }), { readOnly = false } = {}) {
     const id = tenantIdValue(tenantId);
-    await ensureSaasTables();
+    if (!readOnly) await ensureSaasTables();
     const pool = await getPool();
     const result = await pool.request().input('tenantId', sql.Int, id).query(`SELECT TOP (1) id,tenant_id,max_members,max_users,max_ai_generations,max_storage_mb,features_json,notes,created_by_user_id,updated_by_user_id,created_at,updated_at
         FROM dbo.saas_tenant_overrides WHERE tenant_id=@tenantId;`);
@@ -724,12 +727,12 @@ async function getTenantOverrides(tenantId = currentTenantId({ required: true })
     };
 }
 
-async function getEffectiveEntitlements(tenantId = currentTenantId({ required: true }), subscription = null) {
+async function getEffectiveEntitlements(tenantId = currentTenantId({ required: true }), subscription = null, { readOnly = false } = {}) {
     const id = tenantIdValue(tenantId);
-    const current = subscription || await getCurrentSubscription(id);
+    const current = subscription || await getCurrentSubscription(id, { readOnly });
     const base = current?.limitsSnapshot || {};
     const baseFeatures = current?.featuresSnapshot || current?.plan?.features || {};
-    const overrides = await getTenantOverrides(id);
+    const overrides = await getTenantOverrides(id, { readOnly });
     const limits = {
         maxMembers: overrides?.maxMembers ?? base.maxMembers ?? null,
         maxUsers: overrides?.maxUsers ?? base.maxUsers ?? null,
@@ -786,17 +789,17 @@ function requiredFeature(path) {
     return null;
 }
 
-async function enforceTenantAccess(tenantId, { path = '', method = 'GET' } = {}) {
+async function enforceTenantAccess(tenantId, { path = '', method = 'GET', readOnly = false } = {}) {
     const id = tenantIdValue(tenantId);
-    await syncExpiredTenants();
+    if (!readOnly) await syncExpiredTenants();
     const pool = await getPool();
     const tenantResult = await pool.request().input('tenantId', sql.Int, id).query('SELECT TOP (1) id,status FROM dbo.gym_tenants WHERE id=@tenantId;');
     const tenant = tenantResult.recordset[0];
     if (!tenant) throw saasError('الجيم المطلوب غير موجود.', 404, 'TENANT_NOT_FOUND');
     if (String(tenant.status) === 'archived') throw saasError('هذا الجيم مؤرشف ولا يمكن الدخول إليه.', 403, 'TENANT_ARCHIVED');
 
-    const subscription = await getCurrentSubscription(id);
-    const entitlements = await getEffectiveEntitlements(id, subscription);
+    const subscription = await getCurrentSubscription(id, { readOnly });
+    const entitlements = await getEffectiveEntitlements(id, subscription, { readOnly });
     const canRecover = recoveryRequest(path, method);
     if (!subscription || !['active', 'trial'].includes(subscription.status) || (subscription.expiresAt && new Date(subscription.expiresAt).getTime() <= Date.now())) {
         if (canRecover) return { tenantStatus: tenant.status, subscription, recovery: true };
@@ -948,8 +951,8 @@ async function uploadPaymentProof({ tenantId = currentTenantId({ required: true 
     return (await listTenantRequests(id)).find((item) => item.id === requestNumber) || { id: requestNumber, proof: { fileName: proof.fileName, mimeType: proof.mimeType, fileSize: proof.buffer.length } };
 }
 
-async function listPlatformRequests({ status = '' } = {}) {
-    await ensureSaasTables();
+async function listPlatformRequests({ status = '', readOnly = false } = {}) {
+    await ensureSaasTables({ readOnly });
     const pool = await getPool();
     const result = await pool.request().input('status', sql.VarChar(20), text(status, '', 20).toLowerCase()).query(`SELECT r.id,r.tenant_id,r.status,r.amount_snapshot,r.currency,r.notes,r.review_notes,r.requested_by_user_id,r.reviewed_by_user_id,r.reviewed_at,r.created_at,
                        t.name AS tenant_name,t.slug AS tenant_slug,u.full_name AS requested_by_name,
@@ -1262,8 +1265,8 @@ async function getPlatformOverview() {
     return { tenants: { total: Number(row.total_tenants || 0), live: Number(row.live_tenants || 0), trial: Number(row.trial_tenants || 0), expired: Number(row.expired_tenants || 0), suspended: Number(row.suspended_tenants || 0) }, pendingRequests: Number(pending.recordset[0]?.total || 0), recentRequests: recent.recordset.map(requestFromRow) };
 }
 
-async function listAudit({ tenantId = null, limit = 50 } = {}) {
-    await ensureSaasTables();
+async function listAudit({ tenantId = null, limit = 50, readOnly = false } = {}) {
+    await ensureSaasTables({ readOnly });
     const pool = await getPool();
     const safeLimit = Math.min(200, Math.max(1, Number(limit) || 50));
     const result = await pool.request().input('tenantId', sql.Int, tenantId == null ? null : Number(tenantId)).query(`SELECT TOP (${safeLimit}) a.id,a.tenant_id,a.actor_user_id,a.action,a.entity_type,a.entity_id,a.details,a.reason,a.before_json,a.after_json,a.ip_address,a.user_agent,a.created_at,u.full_name AS actor_name FROM dbo.saas_audit_log a LEFT JOIN dbo.gym_users u ON u.id=a.actor_user_id WHERE @tenantId IS NULL OR a.tenant_id=@tenantId ORDER BY a.created_at DESC,a.id DESC;`);

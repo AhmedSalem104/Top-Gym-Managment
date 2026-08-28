@@ -8,7 +8,8 @@ function createMembersController({ memberService }) {
                 status: request.query.status,
                 sort: request.query.sort,
                 page: request.query.page,
-                pageSize: request.query.pageSize
+                pageSize: request.query.pageSize,
+                readOnly: request.readOnlyBaseline
             }));
         },
 

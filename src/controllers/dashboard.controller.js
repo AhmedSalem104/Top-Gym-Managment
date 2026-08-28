@@ -16,8 +16,8 @@ function createDashboardController({ memberService, analyticsService, storeServi
         analytics: async (request, response) => {
             response.json(await analyticsService.getDashboardAnalytics(request.query.period));
         },
-        bootstrap: async (_request, response) => {
-            response.json(await memberService.getBootstrap());
+        bootstrap: async (request, response) => {
+            response.json(await memberService.getBootstrap({ readOnly: request.readOnlyBaseline }));
         }
     };
 }
