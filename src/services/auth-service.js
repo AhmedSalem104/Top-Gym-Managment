@@ -13,7 +13,7 @@ const permissionService = require('./permission-service');
 const tenantService = require('./tenant-service');
 const userRepository = require('../repositories/user.repository');
 const sessionRepository = require('../repositories/session.repository');
-const { currentTenantId } = require('../tenancy/tenant-context');
+const { currentTenantId, runTenantContext } = require('../tenancy/tenant-context');
 
 const SESSION_COOKIE_NAME = 'topgym_session';
 const DEFAULT_SESSION_DAYS = 7;
@@ -249,6 +249,24 @@ async function safeUserWithPermissions(row) {
 
 async function withPermissions(user) {
     if (!user) return null;
+    const activeTenantId = currentTenantId() || null;
+
+    // The login and session endpoints run before the request middleware has
+    // resolved a tenant. Permission rows are tenant-protected by RLS, so an
+    // Assistant would otherwise receive an empty permission list on the
+    // client, hide every navigation item, and never load the first allowed
+    // screen. Resolve the user's primary tenant only for this pre-context
+    // bootstrap; normal API requests already run inside their resolved
+    // tenant context.
+    if (user.role === 'Assistant' && !activeTenantId) {
+        const tenant = await tenantService.resolveTenantForUser(user.id);
+        if (tenant?.id) {
+            return runTenantContext(
+                { tenantId: tenant.id, userId: user.id, mode: 'tenant' },
+                () => withPermissions(user)
+            );
+        }
+    }
     user.permissions = await permissionService.getEffectivePermissions(user.id, user.role);
     return user;
 }
