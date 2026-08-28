@@ -28,8 +28,8 @@
   };
 
   const $ = (id) => document.getElementById(id);
-  const brandName = () => window.topGymBranding?.get?.().identity?.brandName || 'الجيم';
-  const englishBrandName = () => window.topGymBranding?.get?.().identity?.englishBrandName || 'ELGYM';
+  const brandName = () => window.topGymBranding?.get?.().identity?.brandName || 'Logic Fit';
+  const englishBrandName = () => window.topGymBranding?.get?.().identity?.englishBrandName || 'LOGIC FIT';
   const escapeHtml = (value) => String(value ?? '').replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[character]));
   const number = (value, digits = 0) => Number.isFinite(Number(value)) ? Number(value).toLocaleString('ar-EG', { maximumFractionDigits: digits }) : '—';
   const safeArray = (value) => Array.isArray(value) ? value.filter(Boolean) : [];

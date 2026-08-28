@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title desc">
-  <title id="title">الجيم</title>
-  <desc id="desc">رمز هندسي لمنصة الجيم</desc>
+  <title id="title">Logic Fit</title>
+  <desc id="desc">رمز هندسي لمنصة Logic Fit</desc>
   <defs>
     <linearGradient id="gymBrandGradient" x1="7" y1="7" x2="58" y2="58" gradientUnits="userSpaceOnUse">
       <stop stop-color="#8B5CF6"/>

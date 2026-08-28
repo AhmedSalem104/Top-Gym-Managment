@@ -16,7 +16,7 @@
         feature_request: 'إضافة يحتاجها الجيم'
     };
     const state = { page: 1, pageSize: 10, controller: null, loading: false };
-    const brandName = () => String(window.topGymBranding?.get?.().identity?.brandName || 'الجيم').trim() || 'الجيم';
+    const brandName = () => String(window.topGymBranding?.get?.().identity?.brandName || 'Logic Fit').trim() || 'Logic Fit';
     const typeLabel = (value) => value === 'feature_request' ? `إضافة يحتاجها ${brandName()}` : typeLabels[value] || value || '—';
 
     const escapeHtml = (value) => String(value ?? '').replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[character]));

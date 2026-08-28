@@ -10,7 +10,7 @@
     const PAYMENT_LABELS = { cash: 'نقدي', card: 'بطاقة', transfer: 'تحويل', other: 'أخرى' };
 
     function $(id) { return document.getElementById(id); }
-    function brandName() { return String(window.topGymBranding?.get?.().identity?.brandName || 'الجيم').trim() || 'الجيم'; }
+    function brandName() { return String(window.topGymBranding?.get?.().identity?.brandName || 'Logic Fit').trim() || 'Logic Fit'; }
     function number(value) { return Number(value || 0).toLocaleString('ar-EG'); }
     function money(value) { return `${Number(value || 0).toLocaleString('ar-EG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ج.م`; }
     function escapeHtml(value) { return String(value ?? '').replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[character])); }

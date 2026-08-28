@@ -14,7 +14,7 @@
         plan: null
     };
     function brandName() {
-        return String(window.topGymBranding?.get?.().identity?.brandName || 'الجيم').trim() || 'الجيم';
+        return String(window.topGymBranding?.get?.().identity?.brandName || 'Logic Fit').trim() || 'Logic Fit';
     }
 
     function brandText(value) {

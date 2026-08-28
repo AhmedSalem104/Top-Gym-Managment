@@ -933,7 +933,7 @@
     height: 58px;
     background: none;
     color: var(--color-navy);
-    content: var(--brand-name, "الجيم");
+    content: var(--brand-name, "Logic Fit");
     font-family: var(--font-latin);
     font-size: 20px;
     font-weight: var(--weight-extrabold);
@@ -2208,7 +2208,7 @@
     display: block;
     height: 62px;
     color: var(--sidebar-text);
-    content: var(--brand-name, "الجيم");
+    content: var(--brand-name, "Logic Fit");
     font-family: var(--font-latin);
     font-size: 20px;
     font-weight: var(--weight-extrabold);

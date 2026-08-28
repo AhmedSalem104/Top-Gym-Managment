@@ -8,7 +8,7 @@
   if (!dialog || !content) return;
   window.__topGymMemberDetailsUiLoaded = true;
 
-  const brandName = () => String(window.topGymBranding?.get?.().identity?.brandName || 'الجيم').trim() || 'الجيم';
+  const brandName = () => String(window.topGymBranding?.get?.().identity?.brandName || 'Logic Fit').trim() || 'Logic Fit';
 
   const planLabels = { gym_only: 'جيم فقط', gym_cardio: 'جيم وكارديو' };
   const typeLabels = {

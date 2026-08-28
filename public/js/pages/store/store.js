@@ -279,8 +279,8 @@
         const popup = window.open('', '_blank', 'width=420,height=680');
         if (!popup) return;
         const branding = window.topGymBranding?.get?.() || {};
-        const brandName = branding.identity?.brandName || 'الجيم';
-        const logo = branding.assets?.printLogo?.url || branding.assets?.primaryLogo?.url || '/assets/gym-brand.svg?v=1';
+        const brandName = branding.identity?.brandName || 'Logic Fit';
+        const logo = branding.assets?.printLogo?.url || branding.assets?.primaryLogo?.url || '/assets/gym-brand.svg?v=2';
         const lines = (sale.items || []).map((item) => `<tr><td>${esc(item.productName)}<br><small>${esc(item.variantName)}</small></td><td>${esc(item.quantity)}</td><td>${money(item.lineTotal)}</td></tr>`).join('');
         popup.document.write(`<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><link rel="stylesheet" href="/css/main.css?v=37"><title>${esc(sale.saleNumber)} | ${esc(brandName)}</title><style>body{font-family:Cairo,Arial,sans-serif;padding:24px;color:var(--text-primary)}.receipt-brand{display:grid;justify-items:center;gap:6px}.receipt-brand img{width:48px;height:48px;object-fit:contain}.receipt-brand h1{text-align:center;color:var(--primary);margin:0}.receipt-brand p{margin:0;color:var(--text-muted)}table{width:100%;border-collapse:collapse;margin-top:20px}th,td{padding:8px;border-bottom:1px solid var(--border-secondary);text-align:center}.total{display:flex;justify-content:space-between;font-weight:700;font-size:18px;margin-top:18px}@media print{button{display:none}}</style></head><body><div class="receipt-brand"><img src="${esc(logo)}" alt="${esc(brandName)}"><h1>${esc(brandName)}</h1><p>إيصال مبيعات: ${esc(sale.saleNumber)}</p></div><table><thead><tr><th>المنتج</th><th>الكمية</th><th>الإجمالي</th></tr></thead><tbody>${lines}</tbody></table><div class="total"><span>الإجمالي</span><span>${money(sale.totalAmount)}</span></div><p>شكرًا لزيارتكم</p><script>window.onload=()=>window.print();</script></body></html>`);
         popup.document.close();

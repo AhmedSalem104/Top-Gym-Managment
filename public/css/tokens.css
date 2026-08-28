@@ -157,7 +157,7 @@
   --brand-login-gradient-end: var(--bg-app);
   --brand-login-overlay-opacity: 0.72;
   --brand-login-image: url("/assets/gym-background.webp");
-  --brand-name: "الجيم";
+  --brand-name: "Logic Fit";
 
   /* Public brand contract. Runtime branding overrides these once and the
      existing component aliases keep every page on the same token graph. */

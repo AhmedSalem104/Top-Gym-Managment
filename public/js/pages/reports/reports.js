@@ -53,7 +53,7 @@
     const TRANSACTION_LABELS = { subscription: 'اشتراك', payment: 'دفعة', adjustment: 'تسوية' };
 
     function $(id) { return document.getElementById(id); }
-    function brandName() { return String(window.topGymBranding?.get?.().identity?.brandName || 'الجيم').trim() || 'الجيم'; }
+    function brandName() { return String(window.topGymBranding?.get?.().identity?.brandName || 'Logic Fit').trim() || 'Logic Fit'; }
     function escapeHtml(value) { return String(value ?? '').replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[character])); }
     function number(value) { return Number(value || 0).toLocaleString('ar-EG'); }
     function money(value) { return `${Number(value || 0).toLocaleString('ar-EG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ج.م`; }

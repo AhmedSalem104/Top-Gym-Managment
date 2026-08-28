@@ -90,16 +90,16 @@
         ['watermark', 'Watermark', 'علامة مائية اختيارية للمستندات.']
     ];
     const AUDIT_LABELS = { draft_saved: 'حفظ مسودة', published: 'نشر الهوية', reset: 'استعادة الافتراضي', asset_uploaded: 'رفع أصل', asset_removed: 'إزالة أصل' };
-    const DEFAULT_LOGO_URL = '/assets/gym-brand.svg?v=1';
+    const DEFAULT_LOGO_URL = '/assets/gym-brand.svg?v=2';
     const DEFAULT_ASSET_URLS = {
-        primaryLogo: '/assets/gym-brand-horizontal.svg?v=1',
-        horizontalLogo: '/assets/gym-brand-horizontal.svg?v=1',
-        lightLogo: '/assets/gym-brand-light.svg?v=1',
-        darkLogo: '/assets/gym-brand-dark.svg?v=1',
+        primaryLogo: '/assets/gym-brand-horizontal.svg?v=2',
+        horizontalLogo: '/assets/gym-brand-horizontal.svg?v=2',
+        lightLogo: '/assets/gym-brand-light.svg?v=2',
+        darkLogo: '/assets/gym-brand-dark.svg?v=2',
         compactLogo: DEFAULT_LOGO_URL,
         favicon: DEFAULT_LOGO_URL,
         appIcon: DEFAULT_LOGO_URL,
-        printLogo: '/assets/gym-brand-horizontal.svg?v=1'
+        printLogo: '/assets/gym-brand-horizontal.svg?v=2'
     };
 
     function clone(value) {
@@ -298,12 +298,12 @@
         frame.dataset.previewTheme = state.previewTheme;
         const name = $('brandingPreviewName');
         const welcome = $('brandingPreviewWelcome');
-        if (name) name.textContent = current.identity?.brandName || 'الجيم';
+        if (name) name.textContent = current.identity?.brandName || 'Logic Fit';
         if (welcome) welcome.textContent = current.identity?.welcomeSubtitle || 'إدارة أذكى لجيم أقوى.';
         const logoShell = document.querySelector('[data-branding-preview-logo]');
         const logo = current.assets?.primaryLogo?.url || current.assets?.horizontalLogo?.url || current.assets?.compactLogo?.url || DEFAULT_LOGO_URL;
         if (logoShell) {
-            if (logo) logoShell.innerHTML = `<img src="${escapeHtml(logo)}" alt="${escapeHtml(current.identity?.brandName || 'الجيم')}">`;
+            if (logo) logoShell.innerHTML = `<img src="${escapeHtml(logo)}" alt="${escapeHtml(current.identity?.brandName || 'Logic Fit')}">`;
             else logoShell.textContent = current.identity?.shortName?.trim()?.charAt(0) || 'ج';
         }
         document.querySelectorAll('[data-branding-preview-theme]').forEach((button) => button.classList.toggle('active', button.dataset.brandingPreviewTheme === state.previewTheme));
@@ -326,7 +326,7 @@
         renderAudit();
         updateVersionMeta();
         renderPreview();
-        setStatus(state.dirty ? 'مسودة الهوية بها تغييرات جديدة' : state.pendingPublish ? `مسودة محفوظة: ${config().identity?.brandName || 'الجيم'}` : `الهوية المنشورة: ${config().identity?.brandName || 'الجيم'}`, state.dirty || state.pendingPublish);
+        setStatus(state.dirty ? 'مسودة الهوية بها تغييرات جديدة' : state.pendingPublish ? `مسودة محفوظة: ${config().identity?.brandName || 'Logic Fit'}` : `الهوية المنشورة: ${config().identity?.brandName || 'Logic Fit'}`, state.dirty || state.pendingPublish);
     }
 
     async function readError(response) {
@@ -544,9 +544,9 @@
         if (state.busy) return;
         let confirmed = false;
         if (window.Swal) {
-            const result = await window.Swal.fire({ position: 'center', icon: 'warning', title: 'استعادة الهوية الافتراضية؟', html: '<p>سيتم استبدال المسودة الحالية بهوية «الجيم» وحذف أصول المسودة. لن تتغير الهوية المنشورة إلا بعد الضغط على «نشر الهوية».</p>', showCancelButton: true, confirmButtonText: 'استعادة «الجيم»', cancelButtonText: 'إلغاء', buttonsStyling: false, customClass: { popup: 'top-gym-alert', confirmButton: 'btn btn-danger', cancelButton: 'btn btn-light' } });
+            const result = await window.Swal.fire({ position: 'center', icon: 'warning', title: 'استعادة الهوية الافتراضية؟', html: '<p>سيتم استبدال المسودة الحالية بهوية «Logic Fit» وحذف أصول المسودة. لن تتغير الهوية المنشورة إلا بعد الضغط على «نشر الهوية».</p>', showCancelButton: true, confirmButtonText: 'استعادة «Logic Fit»', cancelButtonText: 'إلغاء', buttonsStyling: false, customClass: { popup: 'top-gym-alert', confirmButton: 'btn btn-danger', cancelButton: 'btn btn-light' } });
             confirmed = result.isConfirmed;
-        } else confirmed = window.confirm('استعادة الهوية الافتراضية «الجيم»؟');
+        } else confirmed = window.confirm('استعادة الهوية الافتراضية «Logic Fit»؟');
         if (!confirmed) return;
         const button = $('brandingResetButton');
         state.busy = true;
@@ -562,7 +562,7 @@
             state.dirty = true;
             state.pendingPublish = true;
             renderAll(result.validation || null);
-            setStatus('تمت استعادة «الجيم» كمسودة — انشرها لتطبيقها', true);
+            setStatus('تمت استعادة «Logic Fit» كمسودة — انشرها لتطبيقها', true);
             showToast('success', 'تمت استعادة الافتراضي', 'يمكنك مراجعة المعاينة قبل النشر.');
         } catch (error) {
             showToast('error', 'تعذر استعادة الهوية', error.message || 'حاول مرة أخرى.');

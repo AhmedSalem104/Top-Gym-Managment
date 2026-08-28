@@ -25,7 +25,7 @@ function createBackupController({ backupService, brandingService, isAuthorizedCr
                 return response.status(400).json({ error: 'صيغة النسخة غير مدعومة. اختر .json.gz أو .bak.' });
             }
             const backup = await createBackup({ format: requestedFormat });
-            const brandName = brandingService ? await brandingService.getPublicBrandName('الجيم') : 'الجيم';
+            const brandName = brandingService ? await brandingService.getPublicBrandName('Logic Fit') : 'Logic Fit';
             await recordBackupOperation({
                 operationType: 'download',
                 fileName: backup.filename,

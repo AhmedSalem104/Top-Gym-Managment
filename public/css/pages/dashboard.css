@@ -1780,3 +1780,237 @@
 .dashboard-analytics {
   margin-top: var(--space-4);
 }
+
+/* Logic Fit command center -------------------------------------------------
+   The dashboard keeps the existing data hooks and feature boundaries, while
+   presenting one clear SaaS-style entry point instead of duplicating KPI
+   values inside the hero. */
+.dashboard-hero {
+  grid-template-columns: minmax(0, 1.45fr) minmax(250px, .72fr);
+  min-height: 214px;
+  gap: 0;
+  background:
+    radial-gradient(circle at 10% 15%, var(--primary-soft), transparent 34%),
+    linear-gradient(125deg, var(--bg-card-hover), var(--bg-card) 58%, var(--bg-elevated));
+}
+
+.dashboard-hero-content {
+  display: grid;
+  align-content: center;
+  gap: var(--space-4);
+  min-width: 0;
+  padding: clamp(var(--space-5), 3vw, var(--space-7));
+}
+
+.dashboard-hero-topline,
+.dashboard-hero-meta,
+.dashboard-hero-buttons {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.dashboard-hero-topline { justify-content: space-between; }
+
+.dashboard-hero-kicker {
+  overflow: hidden;
+  color: var(--color-primary);
+  font-family: var(--font-latin);
+  font-size: 0.68rem;
+  font-weight: var(--weight-extrabold);
+  letter-spacing: .12em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dashboard-hero-heading {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.dashboard-hero-brand-mark {
+  display: grid;
+  width: 62px;
+  height: 62px;
+  flex: 0 0 62px;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid var(--primary-border);
+  border-radius: var(--radius-lg);
+  background: var(--primary-soft);
+  color: var(--color-primary);
+  box-shadow: var(--shadow-xs);
+  font-family: var(--font-latin);
+  font-size: 1.55rem;
+  font-weight: var(--weight-extrabold);
+}
+
+.dashboard-hero-brand-mark img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.dashboard-hero-heading-copy {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.dashboard-hero-eyebrow,
+.dashboard-hero-action-copy span {
+  color: var(--color-text-muted);
+  font-size: var(--font-xs);
+  font-weight: var(--weight-bold);
+}
+
+.dashboard-hero-heading h2 {
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: var(--color-text);
+  font-size: clamp(1.35rem, 2.5vw, 2.05rem);
+  font-weight: var(--weight-extrabold);
+  line-height: 1.25;
+}
+
+.dashboard-hero-heading h2 strong { color: var(--color-primary); }
+
+.dashboard-hero-heading-copy p {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-sm);
+}
+
+.dashboard-hero-meta {
+  flex-wrap: wrap;
+  color: var(--color-text-muted);
+  font-size: var(--font-xs);
+}
+
+.dashboard-hero-meta span {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 6px;
+}
+
+.dashboard-hero-meta span + span::before {
+  width: 4px;
+  height: 4px;
+  margin-inline: 3px;
+  border-radius: 50%;
+  background: var(--border-hover);
+  content: "";
+}
+
+.dashboard-hero-meta .ui-icon { width: 15px; height: 15px; color: var(--color-primary); }
+
+.dashboard-hero-actions {
+  display: grid;
+  align-content: center;
+  gap: var(--space-3);
+  min-width: 0;
+  border-inline-start: 1px solid var(--border-secondary);
+  background: color-mix(in srgb, var(--bg-elevated) 68%, transparent);
+  padding: var(--space-5);
+}
+
+.dashboard-hero-action-copy { display: grid; gap: 3px; }
+
+.dashboard-hero-action-copy small {
+  color: var(--color-text-muted);
+  font-size: var(--font-xs);
+  line-height: 1.7;
+}
+
+.dashboard-hero-buttons { flex-wrap: wrap; }
+.dashboard-hero-buttons .btn { flex: 1 1 150px; justify-content: center; min-height: 40px; }
+.dashboard-hero-buttons .ui-icon { width: 16px; height: 16px; }
+
+.overview-grid > .stats-grid { align-items: stretch; }
+
+.overview-grid > .stats-grid .stat-card {
+  position: relative;
+  min-height: 142px;
+  overflow: hidden;
+  border-color: var(--border-primary);
+  background: var(--bg-card);
+  box-shadow: var(--shadow-card);
+}
+
+.overview-grid > .stats-grid .stat-card::before {
+  position: absolute;
+  top: 0;
+  right: var(--space-4);
+  left: var(--space-4);
+  height: 3px;
+  border-radius: 0 0 var(--radius-pill) var(--radius-pill);
+  background: var(--primary);
+  content: "";
+  opacity: .78;
+}
+
+.overview-grid > .stats-grid .stat-card.active::before { background: var(--success); }
+.overview-grid > .stats-grid .stat-card.warning::before { background: var(--warning); }
+.overview-grid > .stats-grid .stat-card.danger::before { background: var(--danger); }
+.overview-grid > .stats-grid .stat-card.frozen::before { background: var(--info); }
+
+.overview-grid > .stats-grid .stat-card:hover {
+  border-color: var(--border-hover);
+  background: var(--bg-card-hover);
+  transform: translateY(-1px);
+}
+
+.overview-grid > .stats-grid .stat-head { align-items: flex-start; }
+.overview-grid > .stats-grid .stat-label { color: var(--color-text-soft); }
+.overview-grid > .stats-grid .stat-value { text-align: start; }
+.overview-grid > .stats-grid .stat-caption { text-align: start; }
+.overview-grid > .stats-grid .stat-card.active .stat-icon { background: var(--success-soft); color: var(--success); }
+.overview-grid > .stats-grid .stat-card.frozen .stat-icon { background: var(--info-soft); color: var(--info); }
+
+@media (min-width: 992px) and (max-width: 1199px) {
+  .overview-grid > .alerts-panel {
+    grid-column: 1 / span 6;
+    grid-row: 2;
+  }
+
+  .overview-grid > .dashboard-day-pass-card {
+    grid-column: 7 / span 6;
+    grid-row: 2;
+  }
+
+  .overview-grid > .monthly-finance-card,
+  .overview-grid > .monthly-finance-snapshot {
+    grid-column: 1 / -1;
+    grid-row: 3;
+  }
+}
+
+@media (max-width: 991px) {
+  .dashboard-hero {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-hero-actions {
+    border-top: 1px solid var(--border-secondary);
+    border-inline-start: 0;
+  }
+
+  .overview-grid > .stats-grid .stat-card { min-height: 132px; }
+}
+
+@media (max-width: 600px) {
+  .dashboard-hero-content { gap: var(--space-3); padding: var(--space-4); }
+  .dashboard-hero-actions { padding: var(--space-4); }
+  .dashboard-hero-topline { align-items: flex-start; flex-direction: column; }
+  .dashboard-hero-heading { align-items: flex-start; gap: var(--space-3); }
+  .dashboard-hero-brand-mark { width: 50px; height: 50px; flex-basis: 50px; border-radius: var(--radius-md); }
+  .dashboard-hero-heading h2 { font-size: 1.25rem; }
+  .dashboard-hero-meta { display: grid; gap: 5px; }
+  .dashboard-hero-meta span + span::before { display: none; }
+  .dashboard-hero-buttons { display: grid; grid-template-columns: 1fr; }
+  .dashboard-hero-buttons .btn { width: 100%; }
+}

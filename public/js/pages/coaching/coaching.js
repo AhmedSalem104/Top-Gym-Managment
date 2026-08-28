@@ -21,7 +21,7 @@
     };
 
     const STATUS_LABELS = { active: 'نشط', draft: 'مسودة', paused: 'متوقف', completed: 'مكتمل', archived: 'مؤرشف' };
-    const brandName = () => window.topGymBranding?.get?.().identity?.brandName || 'الجيم';
+    const brandName = () => window.topGymBranding?.get?.().identity?.brandName || 'Logic Fit';
 
     function generatedSystemName(type, memberName = '') {
         const prefix = type === 'diet' ? 'خطة تغذية' : 'برنامج تدريب';

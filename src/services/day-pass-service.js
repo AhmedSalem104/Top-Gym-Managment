@@ -7,7 +7,7 @@ const { addDays, differenceInDays, parseDateOnly, todayInTimeZone } = require('.
 const PAYMENT_METHODS = ['cash', 'card', 'transfer', 'other'];
 
 async function currentBrandName() {
-    return brandingService.getPublicBrandName('الجيم');
+    return brandingService.getPublicBrandName('Logic Fit');
 }
 
 function appError(message, statusCode = 400, code = null) {

@@ -57,14 +57,14 @@ const DEFAULT_DARK_TOKENS = Object.freeze({
 const DEFAULT_BRANDING = Object.freeze({
     schemaVersion: 1,
     identity: {
-        brandName: 'الجيم',
-        englishBrandName: 'ELGYM',
-        shortName: 'الجيم',
+        brandName: 'Logic Fit',
+        englishBrandName: 'LOGIC FIT',
+        shortName: 'Logic Fit',
         description: 'منصة الإدارة الذكية للجيم واللياقة.',
         welcomeTitle: 'كل تمرينة تقرّبك لهدفك.',
         welcomeSubtitle: 'إدارة أذكى لجيم أقوى.',
-        companyName: 'الجيم',
-        copyrightText: '© الجيم — إدارة أذكى، أداء أفضل',
+        companyName: 'Logic Fit',
+        copyrightText: '© Logic Fit — Smart management, better performance',
         phone: '',
         address: '',
         email: '',
@@ -544,7 +544,7 @@ function getPlatformBranding() {
     return { branding: clone(DEFAULT_BRANDING), version: 1, publishedAt: null };
 }
 
-async function getPublicBrandName(fallback = 'الجيم') {
+async function getPublicBrandName(fallback = 'Logic Fit') {
     try {
         const result = await getPublicBranding();
         return String(result?.branding?.identity?.brandName || fallback).trim() || fallback;
@@ -598,7 +598,7 @@ async function resetDraft(actorUserId) {
     const defaults = await defaultBrandingForTenant(pool);
     await pool.request().input('brandingId', sql.TinyInt, BRANDING_ID).input('tenantId', sql.Int, brandingTenantId()).input('config', sql.NVarChar(sql.MAX), JSON.stringify(defaults)).input('actorUserId', sql.Int, actorUserId || null).query('UPDATE dbo.gym_branding_config SET draft_config=@config, updated_by_user_id=@actorUserId, updated_at=SYSUTCDATETIME() WHERE id=@brandingId AND tenant_id=@tenantId; DELETE FROM dbo.gym_branding_assets WHERE scope=\'draft\' AND tenant_id=@tenantId;');
     const row = await readRow();
-    await audit('reset', actorUserId, Number(row?.version || 1), 'تمت استعادة المسودة إلى الهوية الافتراضية الجيم.');
+    await audit('reset', actorUserId, Number(row?.version || 1), 'تمت استعادة المسودة إلى الهوية الافتراضية Logic Fit.');
     return ownerResponse();
 }
 

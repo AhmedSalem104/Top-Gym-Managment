@@ -28,7 +28,7 @@
   let libraryLoaderPromise = null;
   let activePortalView = 'home';
 
-  const brandName = () => String(window.topGymBranding?.get?.().identity?.brandName || 'الجيم').trim() || 'الجيم';
+  const brandName = () => String(window.topGymBranding?.get?.().identity?.brandName || 'Logic Fit').trim() || 'Logic Fit';
 
   const portalViews = Object.freeze({
     home: { title: 'بوابة عضويتي', description: 'اختر الخدمة التي تريد استخدامها' },

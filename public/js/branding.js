@@ -8,10 +8,10 @@
     const FALLBACK = {
         schemaVersion: 1,
         identity: {
-            brandName: 'الجيم', englishBrandName: 'ELGYM', shortName: 'الجيم',
+            brandName: 'Logic Fit', englishBrandName: 'LOGIC FIT', shortName: 'Logic Fit',
             description: 'منصة الإدارة الذكية للجيم واللياقة.',
             welcomeTitle: 'كل تمرينة تقرّبك لهدفك.', welcomeSubtitle: 'إدارة أذكى لجيم أقوى.',
-            companyName: 'الجيم', copyrightText: '© الجيم — إدارة أذكى، أداء أفضل',
+            companyName: 'Logic Fit', copyrightText: '© Logic Fit — Smart management, better performance',
             phone: '', address: '', email: '', website: ''
         },
         assets: {},
@@ -92,14 +92,14 @@
         'IBM Plex Sans Arabic': 'https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap'
     };
     const DEFAULT_ASSET_URLS = Object.freeze({
-        primaryLogo: '/assets/gym-brand-horizontal.svg?v=1',
-        horizontalLogo: '/assets/gym-brand-horizontal.svg?v=1',
-        lightLogo: '/assets/gym-brand-light.svg?v=1',
-        darkLogo: '/assets/gym-brand-dark.svg?v=1',
-        compactLogo: '/assets/gym-brand.svg?v=1',
-        favicon: '/assets/gym-brand.svg?v=1',
-        appIcon: '/assets/gym-brand.svg?v=1',
-        printLogo: '/assets/gym-brand-horizontal.svg?v=1'
+        primaryLogo: '/assets/gym-brand-horizontal.svg?v=2',
+        horizontalLogo: '/assets/gym-brand-horizontal.svg?v=2',
+        lightLogo: '/assets/gym-brand-light.svg?v=2',
+        darkLogo: '/assets/gym-brand-dark.svg?v=2',
+        compactLogo: '/assets/gym-brand.svg?v=2',
+        favicon: '/assets/gym-brand.svg?v=2',
+        appIcon: '/assets/gym-brand.svg?v=2',
+        printLogo: '/assets/gym-brand-horizontal.svg?v=2'
     });
     const ASSET_FALLBACK_KEYS = Object.freeze({
         primaryLogo: ['primaryLogo', 'horizontalLogo', 'lightLogo', 'darkLogo', 'compactLogo'],
@@ -297,12 +297,12 @@
             }
         });
         document.querySelectorAll('[data-brand-logo-fallback]').forEach((element) => {
-            element.textContent = (branding.identity?.shortName || FALLBACK.identity.shortName).trim().charAt(0) || 'ج';
+            element.textContent = (branding.identity?.shortName || FALLBACK.identity.shortName).trim().charAt(0) || 'L';
             const shell = element.closest('[data-brand-logo-shell]');
             const image = shell?.querySelector('img[data-brand-logo]');
             if (image) element.hidden = Boolean(image.src && !image.hidden && image.dataset.brandLoadedUrl);
         });
-        document.title = `${brandName} | إدارة الجيم`;
+        document.title = `${brandName} | Gym Management`;
         document.querySelectorAll('.auth-branding-copy').forEach((element) => { element.hidden = branding.login?.showBrandCopy === false; });
         root.style.setProperty('--brand-login-background', branding.login?.backgroundColor || FALLBACK.login.backgroundColor);
         root.style.setProperty('--brand-login-gradient-start', branding.login?.gradientStart || FALLBACK.login.gradientStart);

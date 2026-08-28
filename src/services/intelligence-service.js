@@ -345,7 +345,7 @@ async function getOverview({ actorUserId = null } = {}) {
         memberService.getDashboard(),
         getChurnRisks({ limit: 20 }),
         getCoachingMetrics(),
-        brandingService.getPublicBrandName('الجيم')
+        brandingService.getPublicBrandName('Logic Fit')
     ]);
     const priorities = buildPriorities(dashboard, churn, coaching);
     const response = {
@@ -493,7 +493,7 @@ async function generateWorkoutSuggestion(body = {}, { actorUserId = null } = {})
     const exerciseCount = daysPerWeek <= 2 ? 6 : 5;
     const excluded = Array.isArray(body.excludedExercises) ? body.excludedExercises : tokens(body.limitations || '');
     const config = workoutRepConfig(goal);
-    const brandName = await brandingService.getPublicBrandName('الجيم');
+    const brandName = await brandingService.getPublicBrandName('Logic Fit');
     const dayNames = ['اليوم الأول', 'اليوم الثاني', 'اليوم الثالث', 'اليوم الرابع', 'اليوم الخامس', 'اليوم السادس'];
     const routines = Array.from({ length: daysPerWeek }, (_, index) => {
         const exercises = chooseExercises(catalog, { level, excluded, count: exerciseCount, offset: index * exerciseCount });
@@ -615,7 +615,7 @@ async function generateDietSuggestion(body = {}, { actorUserId = null } = {}) {
     const gender = text(body.gender, 'male', 10) || 'male';
     const activity = ['sedentary', 'light', 'moderate', 'high'].includes(body.activity) ? body.activity : 'moderate';
     const calculation = dietCalories({ weightKg, heightCm, age, gender, activity, goal, explicit: body.targetCalories });
-    const brandName = await brandingService.getPublicBrandName('الجيم');
+    const brandName = await brandingService.getPublicBrandName('Logic Fit');
     const targetCalories = calculation.calories;
     const targetProtein = Math.round((weightKg || 75) * (goal === 'fat_loss' ? 1.9 : 1.6));
     const targetFats = Math.round((targetCalories * 0.27) / 9);

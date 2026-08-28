@@ -108,9 +108,9 @@ function renderQrMemberPage(member, tenantSlug = '') {
             }
         }());
     </script>
-    <link rel="stylesheet" href="/css/main.css?v=53">
-    <link rel="icon" type="image/svg+xml" href="/assets/gym-brand.svg?v=1" sizes="any">
-    <title>بيانات عضوية ${escapeHtml(member.fullName)} | الجيم</title>
+    <link rel="stylesheet" href="/css/main.css?v=64">
+    <link rel="icon" type="image/svg+xml" href="/assets/gym-brand.svg?v=2" sizes="any">
+    <title>بيانات عضوية ${escapeHtml(member.fullName)} | Logic Fit</title>
 </head>
 <body class="qr-member-page" data-branding-tenant="${escapeHtml(tenantSlug)}">
     <main class="qr-member-shell">
@@ -118,7 +118,7 @@ function renderQrMemberPage(member, tenantSlug = '') {
             <span aria-hidden="true">◐</span><span data-theme-toggle-label>الوضع الداكن</span>
         </button>
         <section class="qr-member-card">
-            <header class="qr-member-head"><div class="qr-member-brand" data-brand-text="brandName">الجيم</div><h1>بيانات العضوية</h1><p>تم التعرف على رمز المشترك بنجاح</p></header>
+            <header class="qr-member-head"><div class="qr-member-brand" data-brand-text="brandName">Logic Fit</div><h1>بيانات العضوية</h1><p>تم التعرف على رمز المشترك بنجاح</p></header>
             <section class="qr-member-body">
                 <div class="qr-member-identity"><div><strong>${escapeHtml(member.fullName || '—')}</strong><span>${escapeHtml(member.phone || '—')}</span></div><b class="qr-member-status ${statusClass}">${escapeHtml(statusLabel)}</b></div>
             <div class="qr-member-grid">
@@ -129,11 +129,11 @@ function renderQrMemberPage(member, tenantSlug = '') {
                 ${remaining > 0 ? `<div class="qr-member-item"><span>المبلغ المتبقي</span><strong>${remaining.toFixed(2)} ج.م</strong></div>` : ''}
             </div>
         </section>
-            <footer class="qr-member-foot">نتمنى لك تجربة تدريب مميزة — <span data-brand-text="brandName">الجيم</span></footer>
+            <footer class="qr-member-foot">نتمنى لك تجربة تدريب مميزة — <span data-brand-text="brandName">Logic Fit</span></footer>
         </section>
     </main>
     <script defer src="/js/theme.js?v=1"></script>
-    <script defer src="/js/branding.js?v=3"></script>
+    <script defer src="/js/branding.js?v=4"></script>
 </body>
 </html>`;
 }

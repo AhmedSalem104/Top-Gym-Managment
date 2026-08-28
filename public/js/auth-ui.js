@@ -7,7 +7,7 @@
     const rememberEmailKey = 'topgym.login.email';
     const state = { user: null, ready: false, redirecting: false };
     let tenantWelcomeTimer;
-    const brandName = () => window.topGymBranding?.get?.().identity?.brandName || 'الجيم';
+    const brandName = () => window.topGymBranding?.get?.().identity?.brandName || 'Logic Fit';
 
     document.body.classList.add('auth-pending');
 

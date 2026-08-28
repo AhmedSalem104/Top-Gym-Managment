@@ -3,7 +3,7 @@
     window.__topGymLibraryLoaded = true;
 
     const $ = (id) => document.getElementById(id);
-    const brandName = () => String(window.topGymBranding?.get?.().identity?.brandName || 'الجيم').trim() || 'الجيم';
+    const brandName = () => String(window.topGymBranding?.get?.().identity?.brandName || 'Logic Fit').trim() || 'Logic Fit';
     const state = {
         activeType: 'foods',
         opened: false,
