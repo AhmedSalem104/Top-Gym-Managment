@@ -149,6 +149,7 @@ function assertRequiredFiles() {
         'src/services/branding-service.js',
         'src/routes/branding.routes.js',
         'src/controllers/branding.controller.js',
+        'src/services/object-storage-service.js',
         'src/services/saas-service.js',
         'src/routes/platform.routes.js',
         'src/controllers/platform.controller.js',
@@ -372,6 +373,16 @@ function checkPlatformAdminSurface() {
     record('SAAS-TRIAL-PLAN-RESOLUTION', saasService.includes('requestedTrialPlanId') && saasService.includes('body.trialPlanId') && client.includes('function trialPlanOptions') && client.includes("value=\"${escapeHtml(plan.code)}\""), 'tenant onboarding accepts both legacy plan ids and plan codes while the UI posts the active plan code', 'P0');
 }
 
+function checkProductionClosureContracts() {
+    const storage = read('src/services/object-storage-service.js');
+    const rateLimit = read('src/middleware/rate-limit.middleware.js');
+    record('SEC-PRIVATE-OBJECT-CONTRACT', storage.includes('tenants/${normalizedTenantId}/private') && storage.includes('assertPrivateObjectKey') && storage.includes('tenantId'), 'private object keys are tenant-scoped and validated before provider access', 'P0');
+    record('SEC-PRIVATE-OBJECT-NO-PUBLIC-URL', storage.includes('PRIVATE_OBJECT_PUBLIC_URL_FORBIDDEN') && storage.includes('getPublicUrl()'), 'private storage contract rejects public URL exposure', 'P0');
+    record('SEC-PRIVATE-OBJECT-FAIL-CLOSED', storage.includes('OBJECT_STORAGE_PROVIDER_NOT_CONFIGURED') && storage.includes('assertAdapter'), 'storage operations fail closed until an approved provider adapter is configured', 'P0');
+    record('SEC-RATE-LIMIT-POLICY-BACKEND-SEAM', rateLimit.includes('createMemoryRateLimitStore') && rateLimit.includes('store = null') && rateLimit.includes('fallbackStore = null') && rateLimit.includes('incrementWithFallback'), 'rate-limit policy accepts an injectable atomic backend while retaining the bounded local adapter', 'P1');
+    record('SEC-RATE-LIMIT-FAIL-CLOSED', rateLimit.includes('RATE_LIMIT_UNAVAILABLE') && rateLimit.includes('Number.MAX_SAFE_INTEGER'), 'rate-limit backend and fallback failures fail closed instead of bypassing protection', 'P0');
+}
+
 function checkStyleSurface() {
     const index = read('public/index.html');
     const main = read('public/css/main.css');
@@ -445,6 +456,7 @@ checkModuleGraph();
 checkRouteSurface();
 checkAuthSurface();
 checkPlatformAdminSurface();
+checkProductionClosureContracts();
 checkStyleSurface();
 checkPrintAndLazyLoadingSurface();
 checkAnatomyAsset();

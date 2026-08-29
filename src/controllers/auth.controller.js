@@ -15,7 +15,7 @@ function createAuthController({ authService, permissionService, allowLoginAttemp
         },
 
         login: async (request, response) => {
-            if (!allowLoginAttempt(request, request.body?.email)) {
+            if (!await allowLoginAttempt(request, request.body?.email)) {
                 response.set('Retry-After', '900');
                 return response.status(429).json({ error: 'محاولات دخول كثيرة. حاول بعد قليل.', code: 'LOGIN_RATE_LIMITED' });
             }

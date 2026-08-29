@@ -16,52 +16,103 @@ function setBoundedEntry(map, key, entry, maxEntries) {
     trimMap(map, maxEntries);
 }
 
-function createSensitiveRateLimit({ windowMs = 60_000, max = 120, cleanupMs = 300_000, maxEntries = 10_000 } = {}) {
-    const windows = new Map();
+/**
+ * Rate-limit policy uses an atomic increment contract instead of knowing how
+ * counters are stored. A future shared adapter can implement the same method
+ * with an atomic INCR + TTL operation. The local adapter remains the default
+ * until an approved distributed backend is configured.
+ */
+function createMemoryRateLimitStore({ cleanupMs = 300_000, maxEntries = 10_000 } = {}) {
+    const entries = new Map();
     let lastCleanup = 0;
-    return (request, response, next) => {
-        if (request.method === 'GET' || request.method === 'HEAD' || request.method === 'OPTIONS') return next();
-        const now = Date.now();
-        if (now - lastCleanup > cleanupMs) {
-            for (const [key, entry] of windows) {
-                if (now - entry.startedAt >= windowMs) windows.delete(key);
+    return {
+        increment(key, { windowMs = 60_000, now = Date.now() } = {}) {
+            const normalizedKey = String(key || 'unknown').slice(0, 512);
+            if (now - lastCleanup > cleanupMs) {
+                for (const [entryKey, entry] of entries) {
+                    if (now - entry.startedAt >= entry.windowMs) entries.delete(entryKey);
+                }
+                lastCleanup = now;
             }
-            lastCleanup = now;
+            const current = entries.get(normalizedKey);
+            if (!current || now - current.startedAt >= current.windowMs) {
+                const entry = { startedAt: now, windowMs, count: 1 };
+                setBoundedEntry(entries, normalizedKey, entry, maxEntries);
+                return { count: 1, resetAt: now + windowMs };
+            }
+            current.count += 1;
+            return { count: current.count, resetAt: current.startedAt + current.windowMs };
+        },
+        size() {
+            return entries.size;
+        },
+        clear() {
+            entries.clear();
         }
-        const key = request.ip || request.socket.remoteAddress || 'unknown';
-        const current = windows.get(key);
-        if (!current || now - current.startedAt >= windowMs) {
-            setBoundedEntry(windows, key, { startedAt: now, count: 1 }, maxEntries);
-            return next();
-        }
-        current.count += 1;
-        if (current.count > max) {
-            response.set('Retry-After', String(Math.ceil(windowMs / 1000)));
-            return response.status(429).json({ error: 'تم تجاوز عدد العمليات المسموح به مؤقتًا. حاول بعد دقيقة.' });
-        }
-        return next();
     };
 }
 
-function createLoginAttemptGuard({ windowMs = 900_000, max = 10, cleanupMs = 300_000, maxEntries = 20_000 } = {}) {
-    const attempts = new Map();
-    let lastCleanup = 0;
-    return (request, email) => {
-        const now = Date.now();
-        if (now - lastCleanup > cleanupMs) {
-            for (const [key, entry] of attempts) {
-                if (now - entry.startedAt >= windowMs) attempts.delete(key);
+function normalizeStoreResult(result, windowMs) {
+    const count = Number(result?.count);
+    const resetAt = Number(result?.resetAt);
+    if (!Number.isFinite(count) || count < 0 || !Number.isFinite(resetAt)) {
+        throw new Error('Rate-limit store returned an invalid counter result.');
+    }
+    return { count, resetAt: Math.max(Date.now() + windowMs, resetAt) };
+}
+
+async function incrementWithFallback(store, fallbackStore, key, options = {}) {
+    const windowMs = Number(options.windowMs) > 0 ? Number(options.windowMs) : 60_000;
+    try {
+        return normalizeStoreResult(await store.increment(key, { ...options, windowMs }), windowMs);
+    } catch (_) {
+        if (fallbackStore && fallbackStore !== store) {
+            try {
+                return normalizeStoreResult(await fallbackStore.increment(key, { ...options, windowMs }), windowMs);
+            } catch (_) {
+                // Fail closed if both the configured backend and its local
+                // fallback are unavailable. Never bypass a security policy.
             }
-            lastCleanup = now;
         }
-        const key = `${request.ip || request.socket.remoteAddress || 'unknown'}:${String(email || '').trim().toLowerCase()}`;
-        const current = attempts.get(key);
-        if (!current || now - current.startedAt >= windowMs) {
-            setBoundedEntry(attempts, key, { startedAt: now, count: 1 }, maxEntries);
-            return true;
-        }
-        current.count += 1;
-        return current.count <= max;
+        return { count: Number.MAX_SAFE_INTEGER, resetAt: Date.now() + windowMs, unavailable: true };
+    }
+}
+
+function rateLimitUnavailable(response) {
+    response.set('Retry-After', '30');
+    return response.status(503).json({ error: 'خدمة الحماية المؤقتة غير متاحة. حاول مرة أخرى بعد قليل.', code: 'RATE_LIMIT_UNAVAILABLE' });
+}
+
+function requestIp(request) {
+    return request.ip || request.socket?.remoteAddress || 'unknown';
+}
+
+function createSensitiveRateLimit({ windowMs = 60_000, max = 120, cleanupMs = 300_000, maxEntries = 10_000, store = null, fallbackStore = null } = {}) {
+    const primaryStore = store || createMemoryRateLimitStore({ cleanupMs, maxEntries });
+    const safeFallbackStore = fallbackStore || createMemoryRateLimitStore({ cleanupMs, maxEntries });
+    return (request, response, next) => {
+        if (request.method === 'GET' || request.method === 'HEAD' || request.method === 'OPTIONS') return next();
+        const key = `sensitive:ip:${requestIp(request)}`;
+        return incrementWithFallback(primaryStore, safeFallbackStore, key, { windowMs })
+            .then((result) => {
+                if (result.unavailable) return rateLimitUnavailable(response);
+                if (result.count > max) {
+                    response.set('Retry-After', String(Math.max(1, Math.ceil((result.resetAt - Date.now()) / 1000))));
+                    return response.status(429).json({ error: 'تم تجاوز عدد العمليات المسموح به مؤقتًا. حاول بعد دقيقة.' });
+                }
+                return next();
+            });
+    };
+}
+
+function createLoginAttemptGuard({ windowMs = 900_000, max = 10, cleanupMs = 300_000, maxEntries = 20_000, store = null, fallbackStore = null } = {}) {
+    const primaryStore = store || createMemoryRateLimitStore({ cleanupMs, maxEntries });
+    const safeFallbackStore = fallbackStore || createMemoryRateLimitStore({ cleanupMs, maxEntries });
+    return async (request, email) => {
+        const normalizedEmail = String(email || '').trim().toLowerCase().slice(0, 254);
+        const key = `login:${requestIp(request)}:${normalizedEmail}`;
+        const result = await incrementWithFallback(primaryStore, safeFallbackStore, key, { windowMs });
+        return !result.unavailable && result.count <= max;
     };
 }
 
@@ -76,37 +127,40 @@ function createMembershipPortalRateLimit({
     codeWindowMs = 900_000,
     codeMax = 8,
     cleanupMs = 300_000,
-    maxEntries = 20_000
+    maxEntries = 20_000,
+    store = null,
+    fallbackStore = null
 } = {}) {
-    const ipWindows = new Map();
-    const codeWindows = new Map();
-    let lastCleanup = 0;
+    const primaryStore = store || createMemoryRateLimitStore({ cleanupMs, maxEntries });
+    const safeFallbackStore = fallbackStore || createMemoryRateLimitStore({ cleanupMs, maxEntries });
     return (request, response, next) => {
         if (request.method === 'GET' || request.method === 'HEAD' || request.method === 'OPTIONS') return next();
-        const now = Date.now();
-        if (now - lastCleanup > cleanupMs) {
-            for (const [key, entry] of ipWindows) if (now - entry.startedAt >= ipWindowMs) ipWindows.delete(key);
-            for (const [key, entry] of codeWindows) if (now - entry.startedAt >= codeWindowMs) codeWindows.delete(key);
-            lastCleanup = now;
-        }
-        const ip = request.ip || request.socket.remoteAddress || 'unknown';
+        const ip = requestIp(request);
         const code = String(request.body?.membershipCode || '').trim().toUpperCase().replace(/[\s-]/g, '');
         const codeDigest = crypto.createHash('sha256').update(code || 'missing').digest('hex');
-        const ipEntry = ipWindows.get(ip);
-        if (!ipEntry || now - ipEntry.startedAt >= ipWindowMs) setBoundedEntry(ipWindows, ip, { startedAt: now, count: 1 }, maxEntries);
-        else ipEntry.count += 1;
-        const codeKey = `${ip}:${codeDigest}`;
-        const codeEntry = codeWindows.get(codeKey);
-        if (!codeEntry || now - codeEntry.startedAt >= codeWindowMs) setBoundedEntry(codeWindows, codeKey, { startedAt: now, count: 1 }, maxEntries);
-        else codeEntry.count += 1;
-        const ipBlocked = ipWindows.get(ip)?.count > ipMax;
-        const codeBlocked = codeWindows.get(codeKey)?.count > codeMax;
-        if (ipBlocked || codeBlocked) {
-            response.set('Retry-After', String(Math.ceil(Math.max(ipWindowMs, codeWindowMs) / 1000)));
-            return response.status(429).json({ error: 'تم تجاوز عدد المحاولات المسموح بها مؤقتًا. حاول لاحقًا.' });
-        }
-        return next();
+        const ipKey = `portal:ip:${ip}`;
+        const codeKey = `portal:code:${ip}:${codeDigest}`;
+        return Promise.all([
+            incrementWithFallback(primaryStore, safeFallbackStore, ipKey, { windowMs: ipWindowMs }),
+            incrementWithFallback(primaryStore, safeFallbackStore, codeKey, { windowMs: codeWindowMs })
+        ]).then(([ipResult, codeResult]) => {
+            if (ipResult.unavailable || codeResult.unavailable) return rateLimitUnavailable(response);
+            const ipBlocked = ipResult.count > ipMax;
+            const codeBlocked = codeResult.count > codeMax;
+            if (ipBlocked || codeBlocked) {
+                const resetAt = Math.max(ipResult.resetAt, codeResult.resetAt);
+                response.set('Retry-After', String(Math.max(1, Math.ceil((resetAt - Date.now()) / 1000))));
+                return response.status(429).json({ error: 'تم تجاوز عدد المحاولات المسموح بها مؤقتًا. حاول لاحقًا.' });
+            }
+            return next();
+        });
     };
 }
 
-module.exports = { createLoginAttemptGuard, createSensitiveRateLimit, createMembershipPortalRateLimit, trimMap };
+module.exports = {
+    createLoginAttemptGuard,
+    createMemoryRateLimitStore,
+    createSensitiveRateLimit,
+    createMembershipPortalRateLimit,
+    trimMap
+};

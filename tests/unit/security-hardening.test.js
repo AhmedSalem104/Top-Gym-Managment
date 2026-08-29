@@ -5,6 +5,7 @@ const test = require('node:test');
 
 const {
     createLoginAttemptGuard,
+    createMemoryRateLimitStore,
     createSensitiveRateLimit,
     trimMap
 } = require('../../src/middleware/rate-limit.middleware');
@@ -54,28 +55,53 @@ test('bounded in-memory stores evict oldest keys instead of growing without a ca
     assert.deepEqual([...map.keys()], ['second', 'third']);
 });
 
-test('sensitive rate limiter bounds unique key memory', () => {
+test('sensitive rate limiter bounds unique key memory', async () => {
     const limiter = createSensitiveRateLimit({ windowMs: 60_000, max: 1, cleanupMs: Number.POSITIVE_INFINITY, maxEntries: 2 });
     let nextCalls = 0;
     const next = () => { nextCalls += 1; };
 
-    limiter(requestFor('ip-a'), responseDouble(), next);
-    limiter(requestFor('ip-b'), responseDouble(), next);
-    limiter(requestFor('ip-c'), responseDouble(), next);
+    await limiter(requestFor('ip-a'), responseDouble(), next);
+    await limiter(requestFor('ip-b'), responseDouble(), next);
+    await limiter(requestFor('ip-c'), responseDouble(), next);
 
     const evictedKeyResponse = responseDouble();
-    limiter(requestFor('ip-a'), evictedKeyResponse, next);
+    await limiter(requestFor('ip-a'), evictedKeyResponse, next);
     assert.equal(evictedKeyResponse.statusCode, 200);
     assert.equal(nextCalls, 4);
 });
 
-test('login attempt guard bounds unique key memory', () => {
+test('login attempt guard bounds unique key memory', async () => {
     const guard = createLoginAttemptGuard({ windowMs: 60_000, max: 1, cleanupMs: Number.POSITIVE_INFINITY, maxEntries: 2 });
     const attempt = (ip) => guard(requestFor(ip), 'owner@example.com');
-    assert.equal(attempt('ip-a'), true);
-    assert.equal(attempt('ip-b'), true);
-    assert.equal(attempt('ip-c'), true);
-    assert.equal(attempt('ip-a'), true);
+    assert.equal(await attempt('ip-a'), true);
+    assert.equal(await attempt('ip-b'), true);
+    assert.equal(await attempt('ip-c'), true);
+    assert.equal(await attempt('ip-a'), true);
+});
+
+test('rate-limit policy accepts an async atomic store without changing local semantics', async () => {
+    const calls = [];
+    const store = {
+        increment: async (key, options) => {
+            calls.push({ key, windowMs: options.windowMs });
+            return { count: 1, resetAt: Date.now() + options.windowMs };
+        }
+    };
+    const limiter = createSensitiveRateLimit({ max: 1, store, fallbackStore: createMemoryRateLimitStore() });
+    let nextCalls = 0;
+    await limiter(requestFor('ip-async'), responseDouble(), () => { nextCalls += 1; });
+    assert.equal(nextCalls, 1);
+    assert.equal(calls.length, 1);
+    assert.match(calls[0].key, /^sensitive:ip:/);
+});
+
+test('rate-limit policy fails closed when configured and fallback stores fail', async () => {
+    const unavailable = { increment: async () => { throw new Error('backend unavailable'); } };
+    const response = responseDouble();
+    const limiter = createSensitiveRateLimit({ store: unavailable, fallbackStore: unavailable });
+    await limiter(requestFor('ip-failure'), response, () => { throw new Error('must not bypass'); });
+    assert.equal(response.statusCode, 503);
+    assert.equal(response.body.code, 'RATE_LIMIT_UNAVAILABLE');
 });
 
 test('malformed session cookies fail closed without throwing', () => {
