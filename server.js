@@ -36,7 +36,7 @@ const { runTenantContext } = require('./src/tenancy/tenant-context');
 const { ensureAuthReady } = authService;
 const { createPerformanceMetrics } = require('./src/middleware/performance-metrics');
 const { readOnlyBaselineGuard } = require('./src/middleware/read-only-baseline.middleware');
-const { getSafeErrorMessage, isPublicClientError } = require('./src/utils/error-response');
+const { getClientErrorCode, getSafeErrorMessage, isPublicClientError, safeErrorCode } = require('./src/utils/error-response');
 
 const publicDirectory = path.join(__dirname, 'public');
 const app = createApp({ publicDirectory, expressFactory: express });
@@ -210,22 +210,23 @@ app.get('*', (request, response) => {
 app.use((error, request, response, next) => {
     const statusCode = Number.isInteger(error.statusCode) ? error.statusCode : 500;
     const requestId = request.requestId || null;
+    const publicError = isPublicClientError(error, statusCode);
+    const clientErrorCode = getClientErrorCode(error, statusCode);
     console.error('[ERROR]', JSON.stringify({
         timestamp: new Date().toISOString(),
         requestId,
         method: request.method,
         path: request.path,
         statusCode,
-        code: error.code || null,
+        code: safeErrorCode(error, null),
         category: statusCode >= 500 ? 'internal_error' : 'request_error'
     }));
     const message = statusCode < 500 && error.expose === true
         ? error.message
         : 'حدث خطأ في الخادم. حاول مرة أخرى.';
-    const publicError = isPublicClientError(error, statusCode);
     response.status(statusCode).json({
         error: getSafeErrorMessage(error, statusCode) || message,
-        code: error.code || null,
+        code: clientErrorCode,
         field: publicError ? error.field || null : null,
         memberName: publicError ? error.memberName || null : null,
         memberId: publicError ? error.memberId || null : null,
@@ -260,7 +261,7 @@ async function start() {
 if (require.main === module) {
     start().catch((error) => {
         console.error('[STARTUP_ERROR]', JSON.stringify({
-            code: error.code || null,
+            code: safeErrorCode(error, null),
             category: 'startup_failure'
         }));
         process.exitCode = 1;

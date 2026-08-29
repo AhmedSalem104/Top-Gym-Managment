@@ -20,6 +20,10 @@ function safeErrorCode(error, fallback = 'operation_failed') {
     return /^[A-Za-z0-9][A-Za-z0-9_.:-]{0,63}$/.test(code) ? code : fallback;
 }
 
+function getClientErrorCode(error, statusCode) {
+    return isPublicClientError(error, statusCode) ? safeErrorCode(error, null) : null;
+}
+
 function getSafeErrorMessage(error, statusCode) {
     return isPublicClientError(error, statusCode)
         ? sanitizePublicErrorMessage(error.message)
@@ -28,6 +32,7 @@ function getSafeErrorMessage(error, statusCode) {
 
 module.exports = {
     DEFAULT_INTERNAL_ERROR_MESSAGE,
+    getClientErrorCode,
     getSafeErrorMessage,
     isPublicClientError,
     safeErrorCode,

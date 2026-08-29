@@ -5,6 +5,7 @@ const test = require('node:test');
 
 const {
     DEFAULT_INTERNAL_ERROR_MESSAGE,
+    getClientErrorCode,
     getSafeErrorMessage,
     isPublicClientError,
     safeErrorCode
@@ -43,4 +44,11 @@ test('safe error codes are bounded and never include raw error details', () => {
     assert.equal(safeErrorCode({ code: 'EREQUEST' }), 'EREQUEST');
     assert.equal(safeErrorCode({ code: 'SQL password=secret' }), 'operation_failed');
     assert.equal(safeErrorCode(new Error('SQL password=secret'), 'db_operation_failed'), 'db_operation_failed');
+});
+
+test('internal error codes are withheld from clients while public codes remain stable', () => {
+    const internal = Object.assign(new Error('database failure'), { code: 'EREQUEST', expose: true });
+    const publicError = Object.assign(new Error('بيانات غير صالحة.'), { code: 'INVALID_INPUT', expose: true });
+    assert.equal(getClientErrorCode(internal, 500), null);
+    assert.equal(getClientErrorCode(publicError, 400), 'INVALID_INPUT');
 });
