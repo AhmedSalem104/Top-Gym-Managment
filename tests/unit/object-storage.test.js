@@ -13,6 +13,8 @@ const {
     createObjectStorageService,
     preparePrivateObject
 } = require('../../src/services/object-storage-service');
+const { createS3CompatiblePrivateStorageAdapter } = require('../../src/services/s3-compatible-private-storage-adapter');
+const { isVercelRuntime } = require('../../src/services/local-private-storage-adapter');
 
 test('private object keys are tenant-scoped and do not contain the original filename', () => {
     const key = buildPrivateObjectKey({
@@ -101,6 +103,78 @@ test('local private storage cannot be enabled in production or staging', () => {
         () => createConfiguredObjectStorageService({ driver: 'local', nodeEnv: 'staging', rootDir: path.join(os.tmpdir(), 'logic-fit-staging-storage') }),
         { code: 'LOCAL_STORAGE_FORBIDDEN' }
     );
+    assert.throws(
+        () => createConfiguredObjectStorageService({ driver: 'local', nodeEnv: 'development', isVercel: true, rootDir: path.join(os.tmpdir(), 'logic-fit-vercel-storage') }),
+        { code: 'LOCAL_STORAGE_FORBIDDEN' }
+    );
+    assert.equal(isVercelRuntime('preview'), true);
+    assert.equal(isVercelRuntime('local'), false);
+});
+
+test('s3 driver wires the production adapter without activating local storage', () => {
+    const storage = createConfiguredObjectStorageService({
+        driver: 's3',
+        endpoint: 'https://objects.example.test',
+        bucket: 'logic-fit-private',
+        region: 'auto',
+        accessKeyId: 'access-key-for-test',
+        secretAccessKey: 'secret-key-for-test'
+    });
+
+    assert.equal(storage.providerStatus, 'configured');
+    assert.equal(storage.isConfigured, true);
+    assert.equal(typeof storage.getPublicUrl, 'function');
+    assert.throws(() => storage.getPublicUrl(), { code: 'PRIVATE_OBJECT_PUBLIC_URL_FORBIDDEN' });
+});
+
+test('s3-compatible production adapter signs private tenant requests without public URLs', async () => {
+    const calls = [];
+    const fixedDate = new Date('2026-08-30T12:34:56.000Z');
+    const adapter = createS3CompatiblePrivateStorageAdapter({
+        endpoint: 'https://objects.example.test',
+        bucket: 'logic-fit-private',
+        region: 'auto',
+        accessKeyId: 'access-key-for-test',
+        secretAccessKey: 'secret-key-for-test',
+        clock: () => fixedDate,
+        fetchImpl: async (url, options) => {
+            calls.push({ url: String(url), options });
+            return new Response(null, { status: options.method === 'HEAD' ? 200 : 204, headers: { 'content-length': '14' } });
+        }
+    });
+    const body = Buffer.from('synthetic backup');
+    await adapter.putPrivateObject({
+        tenantId: 7,
+        scope: 'tenant',
+        key: 'tenants/7/private/backups/abcdefghijklmnop.gz',
+        contentType: 'application/gzip',
+        body,
+        checksum: require('node:crypto').createHash('sha256').update(body).digest('hex')
+    });
+    const signed = await adapter.createSignedDownload({
+        tenantId: 7,
+        scope: 'tenant',
+        key: 'tenants/7/private/backups/abcdefghijklmnop.gz'
+    });
+    assert.match(calls[0].url, /objects\.example\.test\/logic-fit-private\/tenants\/7\/private\/backups\//);
+    assert.match(calls[0].options.headers.Authorization, /Credential=access-key-for-test\//);
+    assert.doesNotMatch(calls[0].options.headers.Authorization, /secret-key-for-test/);
+    assert.match(signed.url, /^https:\/\//);
+    assert.match(signed.url, /X-Amz-SignedHeaders=host/);
+    assert.doesNotMatch(signed.url, /secret-key-for-test/);
+    await assert.rejects(
+        adapter.getPrivateObject({ tenantId: 8, scope: 'tenant', key: 'tenants/7/private/backups/abcdefghijklmnop.gz' }),
+        { code: 'STORAGE_TENANT_KEY_MISMATCH' }
+    );
+});
+
+test('s3-compatible production adapter requires complete private credentials', () => {
+    assert.throws(() => createS3CompatiblePrivateStorageAdapter({
+        endpoint: 'https://objects.example.test',
+        bucket: 'logic-fit-private',
+        accessKeyId: 'access-key-for-test',
+        secretAccessKey: ''
+    }), { code: 'OBJECT_STORAGE_CONFIGURATION_INVALID' });
 });
 
 test('returned private objects must keep the requested key and integrity', async () => {

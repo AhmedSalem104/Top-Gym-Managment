@@ -2,7 +2,8 @@
 
 const crypto = require('node:crypto');
 const path = require('node:path');
-const { createLocalPrivateStorageAdapter } = require('./local-private-storage-adapter');
+const { createLocalPrivateStorageAdapter, isVercelRuntime } = require('./local-private-storage-adapter');
+const { createS3CompatiblePrivateStorageAdapter } = require('./s3-compatible-private-storage-adapter');
 
 const MAX_PRIVATE_OBJECT_BYTES = 25 * 1024 * 1024;
 const OBJECT_KEY_PATTERN = /^tenants\/(\d+)\/private\/([a-z0-9][a-z0-9_-]{0,63})\/([A-Za-z0-9_-]{16,128})(?:\.([A-Za-z0-9]{1,12}))?$/;
@@ -355,15 +356,37 @@ function createObjectStorageService({ adapter = null, maxBytes = MAX_PRIVATE_OBJ
 function createConfiguredObjectStorageService({
     driver = process.env.BACKUP_STORAGE_DRIVER || 'none',
     rootDir = process.env.BACKUP_STORAGE_PATH || path.join(process.cwd(), '.local-private-storage'),
-    nodeEnv = process.env.NODE_ENV
+    nodeEnv = process.env.NODE_ENV,
+    endpoint = process.env.BACKUP_STORAGE_ENDPOINT,
+    bucket = process.env.BACKUP_STORAGE_BUCKET,
+    region = process.env.BACKUP_STORAGE_REGION || 'auto',
+    accessKeyId = process.env.BACKUP_STORAGE_ACCESS_KEY_ID,
+    secretAccessKey = process.env.BACKUP_STORAGE_SECRET_ACCESS_KEY,
+    sessionToken = process.env.BACKUP_STORAGE_SESSION_TOKEN || '',
+    forcePathStyle = process.env.BACKUP_STORAGE_FORCE_PATH_STYLE,
+    requestTimeoutMs = process.env.BACKUP_STORAGE_REQUEST_TIMEOUT_MS,
+    isVercel = isVercelRuntime()
 } = {}) {
     const normalizedDriver = String(driver || 'none').trim().toLowerCase();
     if (!normalizedDriver || normalizedDriver === 'none' || normalizedDriver === 'disabled') {
         return createObjectStorageService();
     }
     if (normalizedDriver === 'local') {
-        const adapter = createLocalPrivateStorageAdapter({ rootDir, nodeEnv });
+        const adapter = createLocalPrivateStorageAdapter({ rootDir, nodeEnv, isVercel });
         return createObjectStorageService({ adapter, providerStatus: 'local_development' });
+    }
+    if (normalizedDriver === 's3' || normalizedDriver === 's3-compatible') {
+        const adapter = createS3CompatiblePrivateStorageAdapter({
+            endpoint,
+            bucket,
+            region,
+            accessKeyId,
+            secretAccessKey,
+            sessionToken,
+            forcePathStyle: forcePathStyle === undefined ? true : forcePathStyle,
+            requestTimeoutMs
+        });
+        return createObjectStorageService({ adapter, providerStatus: 'configured' });
     }
     throw storageError('The configured private storage driver is not supported.', 500, 'OBJECT_STORAGE_DRIVER_UNSUPPORTED');
 }

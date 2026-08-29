@@ -495,6 +495,20 @@
 .backup-history-list,
 .auth-users-loading { color: var(--color-text-muted); font-size: var(--font-xs); }
 
+.backup-storage-warning {
+  display: grid;
+  gap: var(--space-1);
+  margin-bottom: var(--space-4);
+  border: 1px solid var(--warning-border);
+  border-radius: var(--radius-md);
+  background: var(--warning-soft);
+  padding: var(--space-3) var(--space-4);
+  color: var(--warning-text);
+}
+
+.backup-storage-warning strong { color: var(--warning-text); font-size: var(--font-sm); }
+.backup-storage-warning p { margin: 0; color: var(--text-secondary); font-size: var(--font-xs); line-height: 1.8; }
+
 .backup-history-page { min-width: 0; }
 .backup-history-page-head { align-items: center; }
 .backup-history-page-heading { display: grid; min-width: 0; gap: var(--space-1); }

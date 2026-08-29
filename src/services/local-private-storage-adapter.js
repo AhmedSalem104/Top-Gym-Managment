@@ -5,6 +5,7 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 
 const LOCAL_STORAGE_ENVIRONMENTS = new Set(['local', 'development', 'test']);
+const VERCEL_ENVIRONMENT_SIGNALS = new Set(['1', 'true', 'yes', 'on', 'production', 'preview', 'development']);
 const SAFE_KEY_PATTERN = /^(?:tenants\/\d+\/private\/|platform\/private\/)[A-Za-z0-9_./-]+$/;
 
 function localStorageError(message, statusCode = 500, code = 'LOCAL_STORAGE_ERROR') {
@@ -15,11 +16,16 @@ function localStorageError(message, statusCode = 500, code = 'LOCAL_STORAGE_ERRO
     return error;
 }
 
-function assertLocalEnvironment(nodeEnv) {
+function isVercelRuntime(value = null) {
+    const signals = value == null ? [process.env.VERCEL, process.env.VERCEL_ENV] : [value];
+    return signals.some((signal) => VERCEL_ENVIRONMENT_SIGNALS.has(String(signal || '').trim().toLowerCase()));
+}
+
+function assertLocalEnvironment(nodeEnv, { isVercel = isVercelRuntime() } = {}) {
     const environment = String(nodeEnv || '').trim().toLowerCase();
-    if (!LOCAL_STORAGE_ENVIRONMENTS.has(environment)) {
+    if (isVercel || !LOCAL_STORAGE_ENVIRONMENTS.has(environment)) {
         throw localStorageError(
-            'The local private storage adapter is allowed only in local, development or test environments.',
+            'The local private storage adapter is forbidden on Vercel and allowed only in local, development or test environments.',
             500,
             'LOCAL_STORAGE_FORBIDDEN'
         );
@@ -94,8 +100,8 @@ async function writeAtomic(filePath, body, mode = 0o600) {
     }
 }
 
-function createLocalPrivateStorageAdapter({ rootDir, nodeEnv = process.env.NODE_ENV } = {}) {
-    assertLocalEnvironment(nodeEnv);
+function createLocalPrivateStorageAdapter({ rootDir, nodeEnv = process.env.NODE_ENV, isVercel = isVercelRuntime() } = {}) {
+    assertLocalEnvironment(nodeEnv, { isVercel });
     const root = normalizeRootDir(rootDir || path.join(process.cwd(), '.local-private-storage'));
 
     async function resolveObjectPath(key) {
@@ -186,6 +192,7 @@ function createLocalPrivateStorageAdapter({ rootDir, nodeEnv = process.env.NODE_
 module.exports = {
     LOCAL_STORAGE_ENVIRONMENTS,
     createLocalPrivateStorageAdapter,
+    isVercelRuntime,
     normalizeKey,
     normalizeRootDir
 };

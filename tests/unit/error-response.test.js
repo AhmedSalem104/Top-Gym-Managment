@@ -52,3 +52,15 @@ test('internal error codes are withheld from clients while public codes remain s
     assert.equal(getClientErrorCode(internal, 500), null);
     assert.equal(getClientErrorCode(publicError, 400), 'INVALID_INPUT');
 });
+
+test('missing private backup storage exposes only a safe remediation message', () => {
+    const error = Object.assign(new Error('S3 secret and internal bucket path'), {
+        statusCode: 503,
+        code: 'OBJECT_STORAGE_PROVIDER_NOT_CONFIGURED',
+        expose: false
+    });
+    const message = getSafeErrorMessage(error, 503);
+    assert.equal(getClientErrorCode(error, 503), 'BACKUP_STORAGE_NOT_CONFIGURED');
+    assert.match(message, /التخزين الخاص/);
+    assert.doesNotMatch(message, /S3|secret|bucket|path/i);
+});

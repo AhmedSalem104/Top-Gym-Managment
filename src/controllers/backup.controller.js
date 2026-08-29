@@ -41,6 +41,13 @@ function requestReason(request, fallback = '') {
     return String(request.get?.('x-backup-reason') || request.body?.reason || fallback).trim().slice(0, 1000);
 }
 
+function backupStorageView(recovery) {
+    return {
+        status: recovery?.providerStatus || 'not_configured',
+        configured: Boolean(recovery?.isStorageConfigured)
+    };
+}
+
 function createBackupController({ backupService, backupRecoveryService, brandingService, isAuthorizedCronRequest }) {
     const {
         createBackup,
@@ -90,7 +97,8 @@ function createBackupController({ backupService, backupRecoveryService, branding
                 records,
                 audit,
                 lastAutomatic: records.find((record) => record.backupType === 'tenant_daily') || null,
-                retention: recovery.getRetentionPolicy()
+                retention: recovery.getRetentionPolicy(),
+                storage: backupStorageView(recovery)
             });
         },
 
@@ -124,7 +132,8 @@ function createBackupController({ backupService, backupRecoveryService, branding
                 archives: records.map(legacyArchiveView),
                 records,
                 audit,
-                retention: recovery.getRetentionPolicy()
+                retention: recovery.getRetentionPolicy(),
+                storage: backupStorageView(recovery)
             });
         },
 

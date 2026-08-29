@@ -2,6 +2,24 @@
 
 const DEFAULT_INTERNAL_ERROR_MESSAGE = 'حدث خطأ في الخادم. حاول مرة أخرى.';
 
+// A small, explicit allow-list for operational failures that have a safe,
+// actionable explanation. Other 5xx errors remain intentionally generic so
+// database/provider internals cannot leak through the API response.
+const SAFE_OPERATIONAL_FAILURES = Object.freeze({
+    OBJECT_STORAGE_PROVIDER_NOT_CONFIGURED: Object.freeze({
+        code: 'BACKUP_STORAGE_NOT_CONFIGURED',
+        message: 'التخزين الخاص للنسخ الاحتياطية غير مهيأ حاليًا. أضف مزود تخزين خاصًا معتمدًا قبل إنشاء نسخة محفوظة.'
+    }),
+    OBJECT_STORAGE_PROVIDER_UNAVAILABLE: Object.freeze({
+        code: 'BACKUP_STORAGE_UNAVAILABLE',
+        message: 'التخزين الخاص للنسخ الاحتياطية غير متاح حاليًا. حاول مرة أخرى بعد التحقق من إعدادات مزود التخزين.'
+    }),
+    OBJECT_STORAGE_PROVIDER_REQUEST_FAILED: Object.freeze({
+        code: 'BACKUP_STORAGE_UNAVAILABLE',
+        message: 'تعذر الوصول إلى التخزين الخاص للنسخ الاحتياطية حاليًا. حاول مرة أخرى بعد قليل.'
+    })
+});
+
 function isPublicClientError(error, statusCode) {
     return Number.isInteger(statusCode)
         && statusCode >= 400
@@ -20,11 +38,21 @@ function safeErrorCode(error, fallback = 'operation_failed') {
     return /^[A-Za-z0-9][A-Za-z0-9_.:-]{0,63}$/.test(code) ? code : fallback;
 }
 
+function safeOperationalFailure(error, statusCode) {
+    if (Number(statusCode) !== 503) return null;
+    const code = typeof error?.code === 'string' ? error.code.trim() : '';
+    return SAFE_OPERATIONAL_FAILURES[code] || null;
+}
+
 function getClientErrorCode(error, statusCode) {
+    const operationalFailure = safeOperationalFailure(error, statusCode);
+    if (operationalFailure) return operationalFailure.code;
     return isPublicClientError(error, statusCode) ? safeErrorCode(error, null) : null;
 }
 
 function getSafeErrorMessage(error, statusCode) {
+    const operationalFailure = safeOperationalFailure(error, statusCode);
+    if (operationalFailure) return operationalFailure.message;
     return isPublicClientError(error, statusCode)
         ? sanitizePublicErrorMessage(error.message)
         : DEFAULT_INTERNAL_ERROR_MESSAGE;
@@ -32,9 +60,11 @@ function getSafeErrorMessage(error, statusCode) {
 
 module.exports = {
     DEFAULT_INTERNAL_ERROR_MESSAGE,
+    SAFE_OPERATIONAL_FAILURES,
     getClientErrorCode,
     getSafeErrorMessage,
     isPublicClientError,
+    safeOperationalFailure,
     safeErrorCode,
     sanitizePublicErrorMessage
 };

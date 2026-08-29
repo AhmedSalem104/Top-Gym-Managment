@@ -155,6 +155,7 @@ function assertRequiredFiles() {
         'src/routes/branding.routes.js',
         'src/controllers/branding.controller.js',
         'src/services/object-storage-service.js',
+        'src/services/s3-compatible-private-storage-adapter.js',
         'src/services/saas-service.js',
         'src/routes/platform.routes.js',
         'src/controllers/platform.controller.js',
@@ -381,6 +382,7 @@ function checkPlatformAdminSurface() {
 
 function checkProductionClosureContracts() {
     const storage = read('src/services/object-storage-service.js');
+    const s3Storage = read('src/services/s3-compatible-private-storage-adapter.js');
     const rateLimit = read('src/middleware/rate-limit.middleware.js');
     const authMiddleware = read('src/middleware/auth.middleware.js');
     const backupService = read('src/services/backup-service.js');
@@ -391,6 +393,7 @@ function checkProductionClosureContracts() {
     record('SEC-PRIVATE-OBJECT-CONTRACT', storage.includes('tenants/${normalizedTenantId}/private') && storage.includes('assertPrivateObjectKey') && storage.includes('tenantId'), 'private object keys are tenant-scoped and validated before provider access', 'P0');
     record('SEC-PRIVATE-OBJECT-NO-PUBLIC-URL', storage.includes('PRIVATE_OBJECT_PUBLIC_URL_FORBIDDEN') && storage.includes('getPublicUrl()'), 'private storage contract rejects public URL exposure', 'P0');
     record('SEC-PRIVATE-OBJECT-FAIL-CLOSED', storage.includes('OBJECT_STORAGE_PROVIDER_NOT_CONFIGURED') && storage.includes('assertAdapter'), 'storage operations fail closed until an approved provider adapter is configured', 'P0');
+    record('SEC-PRIVATE-S3-ADAPTER', s3Storage.includes('AWS4-HMAC-SHA256') && s3Storage.includes('createSignedDownload') && s3Storage.includes("endpoint.protocol !== 'https:'") && s3Storage.includes('STORAGE_TENANT_KEY_MISMATCH'), 'the optional production adapter uses HTTPS, private signed access and tenant-scoped object keys', 'P1');
     record('SEC-RATE-LIMIT-POLICY-BACKEND-SEAM', rateLimit.includes('createMemoryRateLimitStore') && rateLimit.includes('store = null') && rateLimit.includes('fallbackStore = null') && rateLimit.includes('incrementWithFallback'), 'rate-limit policy accepts an injectable atomic backend while retaining the bounded local adapter', 'P1');
     record('SEC-RATE-LIMIT-FAIL-CLOSED', rateLimit.includes('RATE_LIMIT_UNAVAILABLE') && rateLimit.includes('Number.MAX_SAFE_INTEGER'), 'rate-limit backend and fallback failures fail closed instead of bypassing protection', 'P0');
     record('SEC-BACKUP-ACTION-RATE-LIMIT', rateLimit.includes('createBackupActionRateLimit') && rateLimit.includes('backup-action:') && backupRoutes.includes('backupActionRateLimit'), 'expensive backup actions have a tenant/user-scoped abuse budget', 'P1');

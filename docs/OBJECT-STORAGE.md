@@ -53,6 +53,46 @@ The runtime currently exposes the local adapter only through the explicit
 `BACKUP_STORAGE_DRIVER=local` development/test switch. Unknown drivers fail at
 startup instead of silently falling back to a public or ephemeral location.
 
+## Production adapter preparation
+
+The repository also includes a provider-neutral S3-compatible adapter. It uses
+HTTPS, private bucket/object keys, AWS Signature V4 requests and short-lived
+signed GET URLs; it does not create public URLs. It is selected only when the
+deployment explicitly sets `BACKUP_STORAGE_DRIVER=s3` (or
+`s3-compatible`). Configure these values in the deployment secret store, never
+in Git:
+
+```text
+BACKUP_STORAGE_DRIVER=s3
+BACKUP_STORAGE_ENDPOINT=https://<private-s3-endpoint>
+BACKUP_STORAGE_BUCKET=<private-bucket>
+BACKUP_STORAGE_REGION=auto
+BACKUP_STORAGE_ACCESS_KEY_ID=<secret-store-value>
+BACKUP_STORAGE_SECRET_ACCESS_KEY=<secret-store-value>
+BACKUP_STORAGE_SESSION_TOKEN=<optional-secret-store-value>
+BACKUP_STORAGE_FORCE_PATH_STYLE=true
+BACKUP_STORAGE_REQUEST_TIMEOUT_MS=30000
+```
+
+The adapter is configuration-ready but not active in the current deployment.
+Until an approved provider is selected and its credentials are added to the
+Vercel environment, the application deliberately returns a safe `503` with
+`BACKUP_STORAGE_NOT_CONFIGURED`. Any claimed backup record is finalized as
+`FAILED`; it is never marked `VERIFIED` without a successful upload, checksum
+validation and read-back verification.
+
+After configuring a provider, deploy and verify in this order:
+
+1. Confirm `/api/health` reports storage as configured without exposing secrets.
+2. Create one manual tenant backup with a reason.
+3. Confirm the record is `VERIFIED`, has a checksum and a positive size.
+4. Download it through the authenticated application route and verify the
+   tenant ownership check.
+5. Repeat the same checks from Platform Admin for a platform backup.
+
+`BACKUP_STORAGE_DRIVER=local` remains limited to isolated local/development/test
+rehearsals and must not be used on Vercel, staging or production.
+
 ## Planned mapping
 
 | Current/private domain | Category | Activation state |

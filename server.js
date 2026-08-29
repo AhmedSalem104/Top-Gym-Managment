@@ -43,7 +43,15 @@ const { getClientErrorCode, getSafeErrorMessage, isPublicClientError, safeErrorC
 const objectStorageService = createConfiguredObjectStorageService({
     driver: config.backupStorageDriver,
     rootDir: config.backupStoragePath,
-    nodeEnv: config.nodeEnv
+    nodeEnv: config.nodeEnv,
+    endpoint: config.backupStorageEndpoint,
+    bucket: config.backupStorageBucket,
+    region: config.backupStorageRegion,
+    accessKeyId: config.backupStorageAccessKeyId,
+    secretAccessKey: config.backupStorageSecretAccessKey,
+    sessionToken: config.backupStorageSessionToken,
+    forcePathStyle: config.backupStorageForcePathStyle,
+    requestTimeoutMs: config.backupStorageRequestTimeoutMs
 });
 const backupRecoveryService = createBackupRecoveryService({ storageService: objectStorageService });
 

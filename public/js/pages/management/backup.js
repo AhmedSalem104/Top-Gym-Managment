@@ -67,9 +67,21 @@
         if (!response.ok) {
             const error = new Error(data.error || fallbackMessage);
             error.code = data.code;
+            error.status = response.status;
             throw error;
         }
         return data;
+    }
+
+    const BACKUP_ERROR_MESSAGES = Object.freeze({
+        BACKUP_STORAGE_NOT_CONFIGURED: 'التخزين الخاص للنسخ الاحتياطية غير مهيأ حاليًا. يجب على مدير المنصة ربط مزود تخزين خاص معتمد قبل إنشاء نسخة محفوظة.',
+        BACKUP_STORAGE_UNAVAILABLE: 'التخزين الخاص للنسخ الاحتياطية غير متاح حاليًا. حاول مرة أخرى بعد التحقق من إعدادات مزود التخزين.'
+    });
+
+    function backupErrorMessage(error, fallback) {
+        if (BACKUP_ERROR_MESSAGES[error?.code]) return BACKUP_ERROR_MESSAGES[error.code];
+        if (Number(error?.status) === 503) return 'خدمة النسخ الاحتياطي غير متاحة حاليًا. حاول مرة أخرى بعد قليل.';
+        return error?.message || fallback;
     }
 
     async function askReason(title, confirmText = 'تأكيد') {
@@ -112,7 +124,7 @@
             showToast('success', data.idempotent ? 'النسخة اليومية موجودة بالفعل ✅' : 'تم إنشاء النسخة المحفوظة والتحقق منها ✅');
             await showHistory();
         } catch (error) {
-            showToast('error', 'تعذر إنشاء النسخة المحفوظة', error.message || 'حاول مرة أخرى.');
+            showToast('error', 'تعذر إنشاء النسخة المحفوظة', backupErrorMessage(error, 'حاول مرة أخرى.'));
         } finally {
             delete manualBackupButton.dataset.backupBusy;
             manualBackupButton.disabled = false;
@@ -127,7 +139,10 @@
             const response = await fetch('/api/backup/download', { method: 'GET', cache: 'no-store', headers: { Accept: 'application/gzip' } });
             if (!response.ok) {
                 const body = await response.json().catch(() => ({}));
-                throw new Error(body.error || 'تعذر إنشاء النسخة الاحتياطية.');
+                const error = new Error(body.error || 'تعذر إنشاء النسخة الاحتياطية.');
+                error.code = body.code;
+                error.status = response.status;
+                throw error;
             }
             const blob = await response.blob();
             const objectUrl = URL.createObjectURL(blob);
@@ -141,7 +156,7 @@
             window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1500);
             showToast('success', 'تم تنزيل النسخة الاحتياطية ✅', 'تم إنشاء نسخة لحظية وحفظها على جهازك فقط.');
         } catch (error) {
-            showToast('error', 'تعذر تحميل النسخة الاحتياطية', error.message || 'حاول مرة أخرى.');
+            showToast('error', 'تعذر تحميل النسخة الاحتياطية', backupErrorMessage(error, 'حاول مرة أخرى.'));
         } finally {
             delete trigger.dataset.backupBusy;
         }
@@ -246,7 +261,7 @@
             showToast('success', 'تم استرجاع النسخة بنجاح ✅', 'سيتم تحديث بيانات النظام الآن.');
             window.setTimeout(() => window.location.reload(), 1200);
         } catch (error) {
-            showToast('error', 'فشل استرجاع النسخة', error.message || 'لم يتم تغيير البيانات.');
+            showToast('error', 'فشل استرجاع النسخة', backupErrorMessage(error, 'لم يتم تغيير البيانات.'));
         } finally {
             busy = false;
             if (restoreSubmit) { restoreSubmit.disabled = !inspected; restoreSubmit.textContent = 'استرجاع بعد التحقق'; }
@@ -291,7 +306,10 @@
             return `<tr><td><strong>${escapeHtml(item.fileName || '—')}</strong><small>${escapeHtml(formatDate(item.createdAt || item.generatedAt))}</small></td><td>${escapeHtml(recoveryTypeLabel(item.backupType || item.format))}</td><td>${recoveryStatusMarkup(status)}</td><td>${Number(item.rowCount || 0).toLocaleString('ar-EG')} صف</td><td>${formatBytes(item.sizeBytes ?? item.contentBytes)}</td><td>${escapeHtml(formatDate(item.verifiedAt))}</td><td><div class="backup-history-actions">${actions}${canDelete ? `<button type="button" class="btn btn-danger btn-small backup-history-delete" data-backup-record-delete-id="${id}">حذف</button>` : ''}${actions || canDelete ? '' : '—'}</div></td></tr>`;
         }).join('');
         const auditRows = audit.slice(0, 8).map((item) => `<tr><td>${escapeHtml(formatDate(item.createdAt))}</td><td>${escapeHtml(auditEventLabel(item.eventType || item.operationType))}</td><td>${recoveryStatusMarkup(item.result === 'success' ? 'VERIFIED' : item.result)}</td><td>${escapeHtml(item.reason || item.fileName || '—')}</td></tr>`).join('');
-        return `<div class="backup-history-block"><div class="backup-history-block-head"><strong>النسخ المحفوظة للجيم</strong><span>النسخ اليومية تحتفظ بها المنصة ${retentionDays} يومًا</span></div><div class="backup-history-wrap"><table class="backup-history-table backup-archive-table"><thead><tr><th>الملف</th><th>النوع</th><th>الحالة</th><th>البيانات</th><th>الحجم</th><th>آخر تحقق</th><th>الإجراءات</th></tr></thead><tbody>${rows || '<tr><td colspan="7">لا توجد نسخ محفوظة لهذا الجيم حتى الآن.</td></tr>'}</tbody></table></div></div><div class="backup-history-block"><div class="backup-history-block-head"><strong>سجل التدقيق</strong><span>${audit.slice(0, 8).length.toLocaleString('ar-EG')} عمليات معروضة</span></div><div class="backup-history-wrap"><table class="backup-history-table backup-operations-table"><thead><tr><th>التاريخ</th><th>العملية</th><th>النتيجة</th><th>السبب</th></tr></thead><tbody>${auditRows || '<tr><td colspan="4">لا يوجد سجل عمليات حتى الآن.</td></tr>'}</tbody></table></div></div>`;
+        const storageNotice = data.storage && data.storage.configured !== true
+            ? `<div class="backup-storage-warning" role="status"><strong>التخزين الخاص غير مهيأ</strong><p>لن يتم اعتماد أي نسخة محفوظة حتى يربط مدير المنصة مزود تخزين خاصًا. النسخة الفاشلة تظل مسجلة بحالة «فشل» ولا تتحول إلى نسخة موثقة.</p></div>`
+            : '';
+        return `${storageNotice}<div class="backup-history-block"><div class="backup-history-block-head"><strong>النسخ المحفوظة للجيم</strong><span>النسخ اليومية تحتفظ بها المنصة ${retentionDays} يومًا</span></div><div class="backup-history-wrap"><table class="backup-history-table backup-archive-table"><thead><tr><th>الملف</th><th>النوع</th><th>الحالة</th><th>البيانات</th><th>الحجم</th><th>آخر تحقق</th><th>الإجراءات</th></tr></thead><tbody>${rows || '<tr><td colspan="7">لا توجد نسخ محفوظة لهذا الجيم حتى الآن.</td></tr>'}</tbody></table></div></div><div class="backup-history-block"><div class="backup-history-block-head"><strong>سجل التدقيق</strong><span>${audit.slice(0, 8).length.toLocaleString('ar-EG')} عمليات معروضة</span></div><div class="backup-history-wrap"><table class="backup-history-table backup-operations-table"><thead><tr><th>التاريخ</th><th>العملية</th><th>النتيجة</th><th>السبب</th></tr></thead><tbody>${auditRows || '<tr><td colspan="4">لا يوجد سجل عمليات حتى الآن.</td></tr>'}</tbody></table></div></div>`;
     }
 
     async function downloadArchive(id, trigger) {
@@ -315,7 +333,7 @@
             window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1500);
             showToast('success', 'تم تحميل النسخة المحفوظة ✅');
         } catch (error) {
-            showToast('error', 'تعذر تحميل النسخة المحفوظة', error.message || 'حاول مرة أخرى.');
+            showToast('error', 'تعذر تحميل النسخة المحفوظة', backupErrorMessage(error, 'حاول مرة أخرى.'));
         } finally {
             delete trigger.dataset.backupBusy;
         }
@@ -346,7 +364,7 @@
             showToast('success', 'تم استرجاع النسخة بنجاح ✅');
             window.setTimeout(() => window.location.reload(), 1200);
         } catch (error) {
-            showToast('error', 'فشل استرجاع النسخة', error.message || 'لم يتم تغيير البيانات.');
+            showToast('error', 'فشل استرجاع النسخة', backupErrorMessage(error, 'لم يتم تغيير البيانات.'));
         } finally { delete trigger.dataset.backupBusy; }
     }
 
@@ -375,7 +393,7 @@
             showToast('success', 'تم حذف النسخة الاحتياطية ✅');
             await showHistory();
         } catch (error) {
-            showToast('error', 'تعذر حذف النسخة الاحتياطية', error.message || 'حاول مرة أخرى.');
+            showToast('error', 'تعذر حذف النسخة الاحتياطية', backupErrorMessage(error, 'حاول مرة أخرى.'));
         } finally {
             delete trigger.dataset.backupBusy;
         }
@@ -385,7 +403,20 @@
         try {
             const response = await fetch('/api/backup/history?limit=30&auditLimit=50', { cache: 'no-store' });
             const data = await response.json().catch(() => ({}));
-            if (!response.ok) throw new Error(data.error || 'تعذر تحميل سجل النسخ.');
+            if (!response.ok) {
+                const error = new Error(data.error || 'تعذر تحميل سجل النسخ.');
+                error.code = data.code;
+                error.status = response.status;
+                throw error;
+            }
+            if (manualBackupButton && data.storage) {
+                const storageConfigured = data.storage.configured === true;
+                manualBackupButton.disabled = !storageConfigured;
+                manualBackupButton.title = storageConfigured
+                    ? ''
+                    : 'التخزين الخاص للنسخ الاحتياطية غير مهيأ حاليًا';
+                manualBackupButton.setAttribute('aria-disabled', String(!storageConfigured));
+            }
             if (historyList) {
                 historyList.innerHTML = renderVisibleHistory(data);
                 return;
@@ -394,8 +425,8 @@
                 await window.Swal.fire({ position: 'center', title: 'سجل النسخ الاحتياطية', html: renderHistory(data.operations), confirmButtonText: 'إغلاق', buttonsStyling: false, customClass: { popup: 'top-gym-alert backup-history-alert', confirmButton: 'btn btn-primary' } });
             }
         } catch (error) {
-            if (historyList) historyList.innerHTML = `<div class="backup-history-error">${escapeHtml(error.message || 'تعذر تحميل سجل النسخ.')}</div>`;
-            showToast('error', 'تعذر تحميل سجل النسخ', error.message);
+            if (historyList) historyList.innerHTML = `<div class="backup-history-error">${escapeHtml(backupErrorMessage(error, 'تعذر تحميل سجل النسخ.'))}</div>`;
+            showToast('error', 'تعذر تحميل سجل النسخ', backupErrorMessage(error, 'حاول مرة أخرى.'));
         }
     }
 
