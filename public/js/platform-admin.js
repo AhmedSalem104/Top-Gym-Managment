@@ -13,6 +13,7 @@
         audit: [],
         profile: null,
         profileTab: 'overview',
+        profilePaymentsPage: 1,
         tenantPage: 1,
         tenantFilters: { search: '', status: '', plan: '', expiringDays: '0' }
     };
@@ -286,6 +287,7 @@
         $('.platform-view[data-platform-panel="gyms"] > .platform-page-head').hidden = true;
         $('#tenantProfile').hidden = false;
         activateProfileTab(state.profileTab);
+        renderProfilePaymentsPagination(profile);
     }
 
     function profilePanel(id, content) { return `<section class="profile-panel" data-profile-panel="${id}">${content}</section>`; }
@@ -331,6 +333,24 @@
         return profilePanel('payments', `<div class="profile-section profile-wide"><h3>طلبات الاشتراك وإثباتات الدفع</h3><div class="table-scroll"><table class="profile-table"><thead><tr><th>الباقة</th><th>المبلغ</th><th>الحالة</th><th>الإثبات</th><th>التاريخ</th><th></th></tr></thead><tbody>${requests.length ? requests.map((request) => `<tr><td>${escapeHtml(request.plan?.name || '—')}</td><td>${escapeHtml(formatMoney(request.amount, request.currency))}</td><td>${statusPill(request.status)}</td><td>${request.proof ? `<a class="table-action" target="_blank" rel="noreferrer" href="/api/platform-admin/payment-proofs/${request.proof.id}/file">معاينة آمنة</a><br><small>${escapeHtml(request.proof.fileName)}</small>` : '—'}</td><td>${escapeHtml(formatDate(request.createdAt))}</td><td>${request.status === 'pending' ? `<button class="table-action" type="button" data-request-action="approve" data-request-id="${request.id}">قبول</button> <button class="table-action" type="button" data-request-action="reject" data-request-id="${request.id}">رفض</button>` : ''}</td></tr>`).join('') : '<tr><td colspan="6">لا توجد طلبات اشتراك.</td></tr>'}</tbody></table></div></div>`);
     }
 
+    function renderProfilePaymentsPagination(profile) {
+        const panel = $('#tenantProfile [data-profile-panel="payments"]');
+        if (!panel) return;
+        let footer = panel.querySelector('.profile-payments-footer');
+        if (!footer) {
+            footer = document.createElement('div');
+            footer.className = 'directory-footer profile-payments-footer';
+            footer.innerHTML = '<span id="profilePaymentsSummary" class="table-summary"></span><div id="profilePaymentsPagination" class="pagination" aria-label="Tenant payment history pagination"></div>';
+            (panel.querySelector('.profile-section') || panel).appendChild(footer);
+        }
+        const pagination = profile.paymentsPagination || {};
+        const total = Number(pagination.total || 0);
+        const page = Number(pagination.page || state.profilePaymentsPage || 1);
+        const pages = Number(pagination.pages || 1);
+        $('#profilePaymentsSummary').textContent = total ? `عرض ${(profile.payments || []).length} من ${total} طلب` : 'لا توجد طلبات';
+        $('#profilePaymentsPagination').innerHTML = pages > 1 ? Array.from({ length: pages }, (_, index) => index + 1).map((number) => `<button type="button" class="${number === page ? 'active' : ''}" data-profile-payments-page="${number}">${number}</button>`).join('') : '';
+    }
+
     function profileHealthPanel(profile) {
         const health = profile.health || {};
         const accessDetails = detailRows([
@@ -366,10 +386,16 @@
         $$('[data-profile-panel]').forEach((panel) => panel.classList.toggle('active', panel.dataset.profilePanel === tab));
     }
 
-    async function openTenant(id) {
+    async function openTenant(id, { resetTab = true, paymentsPage = state.profilePaymentsPage } = {}) {
         try {
-            state.profileTab = 'overview';
-            renderProfile(await api(`/api/platform-admin/tenants/${id}`));
+            if (resetTab) {
+                state.profileTab = 'overview';
+                state.profilePaymentsPage = 1;
+            } else {
+                state.profilePaymentsPage = Number(paymentsPage) || 1;
+            }
+            const params = new URLSearchParams({ paymentsPage: state.profilePaymentsPage, paymentsPageSize: 25 });
+            renderProfile(await api(`/api/platform-admin/tenants/${id}?${params}`));
         } catch (error) { showToast(error.message, true); }
     }
 
@@ -566,7 +592,7 @@
 
     async function refreshProfile() {
         if (!state.profile?.tenant?.id) return;
-        await openTenant(state.profile.tenant.id);
+        await openTenant(state.profile.tenant.id, { resetTab: false, paymentsPage: state.profilePaymentsPage });
         loadDashboard();
     }
 
@@ -614,6 +640,13 @@
             if (pageButton) { state.tenantPage = Number(pageButton.dataset.tenantPage); loadTenants(); return; }
             const requestPageButton = event.target.closest('[data-request-page]');
             if (requestPageButton) { state.requestPage = Number(requestPageButton.dataset.requestPage); loadRequests(); return; }
+            const profilePaymentsPageButton = event.target.closest('[data-profile-payments-page]');
+            if (profilePaymentsPageButton && state.profile?.tenant?.id) {
+                state.profilePaymentsPage = Number(profilePaymentsPageButton.dataset.profilePaymentsPage) || 1;
+                await openTenant(state.profile.tenant.id, { resetTab: false, paymentsPage: state.profilePaymentsPage });
+                activateProfileTab('payments');
+                return;
+            }
             const tab = event.target.closest('[data-profile-tab]');
             if (tab) { activateProfileTab(tab.dataset.profileTab); return; }
             const profileAction = event.target.closest('[data-profile-action]');

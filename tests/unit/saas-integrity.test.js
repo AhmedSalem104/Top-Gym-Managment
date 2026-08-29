@@ -63,6 +63,9 @@ test('tenant subscription history uses bounded server-side pagination', () => {
     const serviceSource = fs.readFileSync(path.join(__dirname, '../../src/services/saas-service.js'), 'utf8');
     const controllerSource = fs.readFileSync(path.join(__dirname, '../../src/controllers/saas.controller.js'), 'utf8');
     const clientSource = fs.readFileSync(path.join(__dirname, '../../public/js/pages/saas/saas.js'), 'utf8');
+    const platformServiceSource = fs.readFileSync(path.join(__dirname, '../../src/services/platform-admin-service.js'), 'utf8');
+    const platformControllerSource = fs.readFileSync(path.join(__dirname, '../../src/controllers/platform-admin.controller.js'), 'utf8');
+    const platformClientSource = fs.readFileSync(path.join(__dirname, '../../public/js/platform-admin.js'), 'utf8');
 
     assert.match(serviceSource, /async function listTenantRequests\(tenantId = currentTenantId\(\{ required: true \}\), \{ readOnly = false, page = 1, pageSize = 25, requestId = null, includePagination = false \} = \{\}\)/);
     assert.match(serviceSource, /listTenantRequests\(id, \{ readOnly, page, pageSize, includePagination: true \}\)/);
@@ -73,4 +76,10 @@ test('tenant subscription history uses bounded server-side pagination', () => {
     assert.match(controllerSource, /includePagination: true/);
     assert.match(clientSource, /saas\/subscription\?page=\$\{state\.requestPage\}&pageSize=25/);
     assert.match(clientSource, /data-saas-request-page/);
+    assert.match(platformServiceSource, /async function getTenantProfile\(tenantId, \{ readOnly = false, paymentsPage = 1, paymentsPageSize = 25 \} = \{\}\)/);
+    assert.match(platformServiceSource, /listTenantRequests\(id, \{ readOnly, page: paymentsPage, pageSize: paymentsPageSize, includePagination: true \}\)/);
+    assert.match(platformServiceSource, /paymentsPagination: requests\.pagination/);
+    assert.match(platformControllerSource, /paymentsPage: request\.query\?\.paymentsPage/);
+    assert.match(platformClientSource, /profilePaymentsPage: 1/);
+    assert.match(platformClientSource, /data-profile-payments-page/);
 });

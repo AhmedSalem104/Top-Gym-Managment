@@ -354,7 +354,7 @@ async function getTenantChanges(tenantId) {
     return result.recordset.map((row) => ({ id: Number(row.id), tenantId: Number(row.tenant_id), subscriptionId: row.subscription_id == null ? null : Number(row.subscription_id), plan: { id: Number(row.new_plan_id), code: row.plan_code, name: row.plan_name }, effectiveAt: row.effective_at, status: row.status, reason: row.reason, requestedByUserId: row.requested_by_user_id == null ? null : Number(row.requested_by_user_id), requestedByName: row.requested_by_name || null, appliedAt: row.applied_at || null, createdAt: row.created_at }));
 }
 
-async function getTenantProfile(tenantId, { readOnly = false } = {}) {
+async function getTenantProfile(tenantId, { readOnly = false, paymentsPage = 1, paymentsPageSize = 25 } = {}) {
     const id = idValue(tenantId, 'Tenant id');
     await ensureReady({ readOnly });
     if (!readOnly) await saasService.syncExpiredTenants();
@@ -370,7 +370,7 @@ async function getTenantProfile(tenantId, { readOnly = false } = {}) {
         saasService.getEffectiveEntitlements(id, subscription, { readOnly }),
         getTenantUsers(id),
         getTenantStats(id),
-        saasService.listTenantRequests(id, { readOnly }),
+        saasService.listTenantRequests(id, { readOnly, page: paymentsPage, pageSize: paymentsPageSize, includePagination: true }),
         saasService.listAudit({ tenantId: id, limit: 100, readOnly }),
         getTenantNotes(id),
         getTenantChanges(id)
@@ -384,7 +384,8 @@ async function getTenantProfile(tenantId, { readOnly = false } = {}) {
         entitlements: { limits: entitlements.limits, features: entitlements.features, overrides: entitlements.overrides },
         users,
         stats,
-        payments: requests,
+        payments: requests.requests,
+        paymentsPagination: requests.pagination,
         health: finalHealth,
         audit,
         notes,

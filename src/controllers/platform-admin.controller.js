@@ -26,7 +26,11 @@ function createPlatformAdminController({ platformAdminService, saasService, auth
         },
 
         tenant: async (request, response) => {
-            response.json(await platformAdminService.getTenantProfile(request.params.tenantId, { readOnly: request.readOnlyBaseline }));
+            response.json(await platformAdminService.getTenantProfile(request.params.tenantId, {
+                paymentsPage: request.query?.paymentsPage,
+                paymentsPageSize: request.query?.paymentsPageSize,
+                readOnly: request.readOnlyBaseline
+            }));
         },
 
         updateTenant: async (request, response) => {
