@@ -2,7 +2,7 @@
 
 ## Operations
 
-The backup service supports create, inspect/validate, download/archive, history, restore and archive deletion. Routes are under `/api/backup`. The daily cron route is separately authorized; interactive download, inspect and restore are Owner-only.
+The backup service supports create, inspect/validate, download/archive, history, restore and archive deletion. Routes are under `/api/backup`. The daily cron route is separately authorized; interactive download, inspect and restore are Owner-only. Production scheduled backups require `CRON_SECRET`; a caller-controlled User-Agent is never accepted as a Production authenticator.
 
 ## Safety rules
 

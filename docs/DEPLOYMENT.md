@@ -4,6 +4,11 @@
 
 The project deploys as a zero-config Express application using `server.js`. The entrypoint imports Express directly so Vercel can detect the framework, while `public/**` is served by Vercel's static asset CDN. The application reads `database/**` and `data/**` at runtime for SQL schema and library initialization. The Vercel cron configuration triggers `GET /api/backup/daily` at `0 12 * * *`. The endpoint must verify the configured cron authorization before performing a backup.
 
+`CRON_SECRET` is mandatory for Production scheduled backups. The Vercel
+cron User-Agent and `x-top-gym-cron-key` fallback are development-only
+conveniences; a Production request without the configured Bearer secret is
+rejected.
+
 ## Required environment
 
 Use the variables listed in `.env.example`, including:
