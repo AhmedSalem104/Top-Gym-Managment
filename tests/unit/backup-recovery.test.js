@@ -9,6 +9,7 @@ const {
     getScheduledPlatformBackupTypes,
     inspectTenantBackupBuffer,
     mapWithConcurrency,
+    normalizeRetryCount,
     validateTenantBackupPayload
 } = require('../../src/services/backup-recovery-service');
 const { createObjectStorageService } = require('../../src/services/object-storage-service');
@@ -87,6 +88,29 @@ test('daily scheduler selects weekly and monthly platform snapshots by UTC calen
     assert.deepEqual(getScheduledPlatformBackupTypes(new Date('2026-11-01T12:00:00.000Z')), ['platform_monthly', 'platform_weekly']);
     assert.deepEqual(getScheduledPlatformBackupTypes(new Date('2026-11-01T12:00:00.000Z'), { weekly: false }), ['platform_monthly']);
     assert.deepEqual(getScheduledPlatformBackupTypes(new Date('2026-11-01T12:00:00.000Z'), { monthly: false }), ['platform_weekly']);
+});
+
+test('scheduler retry count preserves an explicit zero retry policy', () => {
+    assert.equal(normalizeRetryCount(0, 1, 3), 0);
+    assert.equal(normalizeRetryCount(5, 1, 3), 3);
+    assert.equal(normalizeRetryCount('invalid', 1, 3), 1);
+});
+
+test('stored backup verification hashes returned bytes instead of trusting metadata', async () => {
+    const expected = require('node:crypto').createHash('sha256').update(Buffer.from('expected')).digest('hex');
+    const storage = {
+        async headPrivateObject() { return { size: 8, checksum: expected }; },
+        async getPrivateObject() { return { body: Buffer.from('tampered'), size: 8, checksum: expected }; }
+    };
+    await assert.rejects(
+        require('../../src/services/backup-recovery-service').verifyStoredTenantObject(storage, {
+            tenantId: 7,
+            key: 'tenants/7/private/backups/abcdefghijklmnop.json.gz',
+            expectedSize: 8,
+            expectedChecksum: expected
+        }),
+        { code: 'BACKUP_ARTIFACT_CHECKSUM_MISMATCH' }
+    );
 });
 
 test('platform private storage uses a separate scope and rejects tenant-key confusion', async () => {

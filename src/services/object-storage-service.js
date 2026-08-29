@@ -109,6 +109,21 @@ function normalizeMimeType(value) {
     return mimeType;
 }
 
+function bodyChecksum(body) {
+    return crypto.createHash('sha256').update(body).digest('hex');
+}
+
+function normalizeAndVerifyChecksum(value, body) {
+    const checksum = value == null ? bodyChecksum(body) : String(value).trim().toLowerCase();
+    if (!CHECKSUM_PATTERN.test(checksum)) {
+        throw storageError('The private object checksum is invalid.', 400, 'INVALID_STORAGE_CHECKSUM');
+    }
+    if (checksum !== bodyChecksum(body)) {
+        throw storageError('The private object checksum does not match its content.', 400, 'STORAGE_CHECKSUM_MISMATCH');
+    }
+    return checksum;
+}
+
 function preparePrivateObject(input = {}, { maxBytes = MAX_PRIVATE_OBJECT_BYTES } = {}) {
     const tenantId = normalizeTenantId(input.tenantId);
     const body = Buffer.isBuffer(input.body) ? input.body : Buffer.from(input.body || '');
@@ -125,12 +140,7 @@ function preparePrivateObject(input = {}, { maxBytes = MAX_PRIVATE_OBJECT_BYTES 
             objectId: input.objectId,
             idFactory: input.idFactory
         });
-    const checksum = input.checksum
-        ? String(input.checksum).trim().toLowerCase()
-        : crypto.createHash('sha256').update(body).digest('hex');
-    if (!CHECKSUM_PATTERN.test(checksum)) {
-        throw storageError('The private object checksum is invalid.', 400, 'INVALID_STORAGE_CHECKSUM');
-    }
+    const checksum = normalizeAndVerifyChecksum(input.checksum, body);
     return {
         tenantId,
         scope: 'tenant',
@@ -157,12 +167,7 @@ function preparePrivatePlatformObject(input = {}, { maxBytes = MAX_PRIVATE_OBJEC
             objectId: input.objectId,
             idFactory: input.idFactory
         });
-    const checksum = input.checksum
-        ? String(input.checksum).trim().toLowerCase()
-        : crypto.createHash('sha256').update(body).digest('hex');
-    if (!CHECKSUM_PATTERN.test(checksum)) {
-        throw storageError('The private object checksum is invalid.', 400, 'INVALID_STORAGE_CHECKSUM');
-    }
+    const checksum = normalizeAndVerifyChecksum(input.checksum, body);
     return {
         tenantId: null,
         scope: 'platform',
@@ -189,8 +194,36 @@ function validateReturnedObject(object, tenantId, key, expectedScope = 'tenant')
     if (object.scope && object.scope !== expectedScope) {
         throw storageError('The private object scope is invalid.', 403, 'STORAGE_SCOPE_MISMATCH');
     }
-    if (object.key) assertPrivateObjectKey(tenantId, object.key);
+    if (object.key) {
+        const returnedKey = expectedScope === 'platform'
+            ? assertPrivatePlatformObjectKey(object.key)
+            : assertPrivateObjectKey(tenantId, object.key);
+        if (returnedKey !== key) {
+            throw storageError('The private object key does not match the requested object.', 403, 'STORAGE_OBJECT_KEY_MISMATCH');
+        }
+    }
+    if (expectedScope === 'platform' && object.tenantId != null) {
+        throw storageError('The private platform object cannot belong to a tenant.', 403, 'STORAGE_SCOPE_MISMATCH');
+    }
+    if (Buffer.isBuffer(object.body)) {
+        if (object.size != null && Number(object.size) !== object.body.length) {
+            throw storageError('The private object size does not match its content.', 503, 'STORAGE_SIZE_MISMATCH');
+        }
+        if (object.checksum != null) normalizeAndVerifyChecksum(object.checksum, object.body);
+    }
     return object;
+}
+
+function validateSignedDownload(result) {
+    if (!result || typeof result.url !== 'string' || !result.url) {
+        throw storageError('The storage provider returned an invalid private download.', 503, 'INVALID_SIGNED_DOWNLOAD');
+    }
+    let url;
+    try { url = new URL(result.url); } catch (_) { url = null; }
+    if (!url || url.protocol !== 'https:') {
+        throw storageError('The storage provider returned an unsafe private download.', 503, 'INVALID_SIGNED_DOWNLOAD');
+    }
+    return { url: result.url, expiresAt: result.expiresAt || null };
 }
 
 function createObjectStorageService({ adapter = null, maxBytes = MAX_PRIVATE_OBJECT_BYTES, providerStatus = null, offsiteStatus = 'not_configured' } = {}) {
@@ -253,10 +286,7 @@ function createObjectStorageService({ adapter = null, maxBytes = MAX_PRIVATE_OBJ
                 key: normalizedKey,
                 expiresInSeconds: expiry
             });
-            if (!result || typeof result.url !== 'string' || !result.url) {
-                throw storageError('The storage provider returned an invalid private download.', 503, 'INVALID_SIGNED_DOWNLOAD');
-            }
-            return { url: result.url, expiresInSeconds: expiry, expiresAt: result.expiresAt || null };
+            return { ...validateSignedDownload(result), expiresInSeconds: expiry };
         },
         async putPrivatePlatformObject(input = {}) {
             const object = preparePrivatePlatformObject(input, { maxBytes });
@@ -275,40 +305,39 @@ function createObjectStorageService({ adapter = null, maxBytes = MAX_PRIVATE_OBJ
             const normalizedKey = assertPrivatePlatformObjectKey(key);
             assertAdapter(adapter, 'getPrivateObject');
             const object = await adapter.getPrivateObject({ tenantId: null, scope: 'platform', key: normalizedKey });
-            if (object?.scope && object.scope !== 'platform') throw storageError('The private object scope is invalid.', 403, 'STORAGE_SCOPE_MISMATCH');
-            if (object?.key) assertPrivatePlatformObjectKey(object.key);
-            return object || null;
+            return validateReturnedObject(object, null, normalizedKey, 'platform');
         },
         async headPrivatePlatformObject({ key } = {}) {
             const normalizedKey = assertPrivatePlatformObjectKey(key);
             if (adapter && typeof adapter.headPrivateObject === 'function') {
-                const object = await adapter.headPrivateObject({ tenantId: null, scope: 'platform', key: normalizedKey });
-                if (object?.scope && object.scope !== 'platform') throw storageError('The private object scope is invalid.', 403, 'STORAGE_SCOPE_MISMATCH');
-                if (object?.key) assertPrivatePlatformObjectKey(object.key);
-                return object || null;
+                return validateReturnedObject(
+                    await adapter.headPrivateObject({ tenantId: null, scope: 'platform', key: normalizedKey }),
+                    null,
+                    normalizedKey,
+                    'platform'
+                );
             }
             return this.getPrivatePlatformObject({ key: normalizedKey });
         },
         async deletePrivatePlatformObject({ key } = {}) {
             const normalizedKey = assertPrivatePlatformObjectKey(key);
             assertAdapter(adapter, 'deletePrivateObject');
-            await adapter.deletePrivateObject({ tenantId: null, scope: 'platform', key: normalizedKey });
-            return true;
+            const result = await adapter.deletePrivateObject({ tenantId: null, scope: 'platform', key: normalizedKey });
+            return result !== false;
         },
         async createSignedPlatformDownload({ key, expiresInSeconds = 300 } = {}) {
             const normalizedKey = assertPrivatePlatformObjectKey(key);
             assertAdapter(adapter, 'createSignedDownload');
             const expiry = Math.min(900, Math.max(60, Number(expiresInSeconds) || 300));
             const result = await adapter.createSignedDownload({ scope: 'platform', tenantId: null, key: normalizedKey, expiresInSeconds: expiry });
-            if (!result || typeof result.url !== 'string' || !result.url) throw storageError('The storage provider returned an invalid private download.', 503, 'INVALID_SIGNED_DOWNLOAD');
-            return { url: result.url, expiresInSeconds: expiry, expiresAt: result.expiresAt || null };
+            return { ...validateSignedDownload(result), expiresInSeconds: expiry };
         },
         async deletePrivateObject({ tenantId, key } = {}) {
             const normalizedTenantId = normalizeTenantId(tenantId);
             const normalizedKey = assertPrivateObjectKey(normalizedTenantId, key);
             assertAdapter(adapter, 'deletePrivateObject');
-            await adapter.deletePrivateObject({ tenantId: normalizedTenantId, key: normalizedKey });
-            return true;
+            const result = await adapter.deletePrivateObject({ tenantId: normalizedTenantId, key: normalizedKey });
+            return result !== false;
         },
         getPublicUrl() {
             throw storageError('Private objects do not expose public URLs.', 400, 'PRIVATE_OBJECT_PUBLIC_URL_FORBIDDEN');

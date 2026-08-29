@@ -50,6 +50,14 @@ test('private object preparation validates size, MIME and checksum without retai
     assert.match(object.checksum, /^[a-f0-9]{64}$/);
     assert.equal(Object.hasOwn(object, 'url'), false);
     assert.throws(() => preparePrivateObject({ ...object, contentType: 'text/plain', body: Buffer.alloc(2048) }, { maxBytes: 1024 }), { code: 'INVALID_STORAGE_SIZE' });
+    assert.throws(() => preparePrivateObject({
+        tenantId: 7,
+        category: 'branding',
+        objectName: 'logo.svg',
+        contentType: 'image/svg+xml',
+        body: Buffer.from('<svg></svg>'),
+        checksum: 'a'.repeat(64)
+    }), { code: 'STORAGE_CHECKSUM_MISMATCH' });
 });
 
 test('storage operations fail closed until an approved provider is configured', async () => {
@@ -92,6 +100,32 @@ test('local private storage cannot be enabled in production or staging', () => {
     assert.throws(
         () => createConfiguredObjectStorageService({ driver: 'local', nodeEnv: 'staging', rootDir: path.join(os.tmpdir(), 'logic-fit-staging-storage') }),
         { code: 'LOCAL_STORAGE_FORBIDDEN' }
+    );
+});
+
+test('returned private objects must keep the requested key and integrity', async () => {
+    const service = createObjectStorageService({
+        adapter: {
+            async getPrivateObject() {
+                return { key: 'tenants/7/private/backups/another-object-0001', body: Buffer.from('data'), checksum: require('node:crypto').createHash('sha256').update('data').digest('hex'), size: 4 };
+            }
+        }
+    });
+    await assert.rejects(
+        service.getPrivateObject({ tenantId: 7, key: 'tenants/7/private/backups/abcdefghijklmnop' }),
+        { code: 'STORAGE_OBJECT_KEY_MISMATCH' }
+    );
+});
+
+test('signed private downloads must be HTTPS URLs', async () => {
+    const service = createObjectStorageService({
+        adapter: {
+            async createSignedDownload() { return { url: 'http://storage.invalid/private/object' }; }
+        }
+    });
+    await assert.rejects(
+        service.createSignedDownload({ tenantId: 7, key: 'tenants/7/private/backups/abcdefghijklmnop' }),
+        { code: 'INVALID_SIGNED_DOWNLOAD' }
     );
 });
 
