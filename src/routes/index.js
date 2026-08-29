@@ -21,7 +21,7 @@ const { registerPlatformRoutes } = require('./platform.routes');
 const { registerPlatformAdminRoutes } = require('./platform-admin.routes');
 const { registerSaasRoutes } = require('./saas.routes');
 
-function createHealthHandler({ getPool, now = performance.now } = {}) {
+function createHealthHandler({ getPool, now = () => performance.now() } = {}) {
     return async (request, response) => {
         const startedAt = now();
         try {

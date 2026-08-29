@@ -57,6 +57,21 @@ test('health handler reports safe application and database status', async () => 
     });
 });
 
+test('health handler can use the default monotonic timer without losing performance context', async () => {
+    const response = responseDouble();
+    const handler = createHealthHandler({
+        getPool: async () => ({ request: () => ({ query: async () => ({ recordset: [{ ok: 1 }] }) }) })
+    });
+
+    await handler({ requestId: 'health-default-timer-test' }, response);
+
+    assert.equal(response.statusCode, 200);
+    assert.equal(response.body.status, 'healthy');
+    assert.equal(response.body.database, 'connected');
+    assert.equal(response.body.checks.database.status, 'healthy');
+    assert.equal(Number.isFinite(response.body.checks.database.durationMs), true);
+});
+
 test('health handler returns 503 without exposing database errors', async () => {
     const response = responseDouble();
     let tick = 100;
