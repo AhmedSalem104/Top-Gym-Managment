@@ -161,6 +161,38 @@ async function main() {
       }
     }
 
+    for (const theme of ['light', 'dark']) {
+      for (const viewport of [{ name: '430', width: 430, height: 900 }, { name: '1440', width: 1440, height: 900 }]) {
+        const gatewayPage = await browser.newPage({ viewport: { width: viewport.width, height: viewport.height } });
+        await gatewayPage.addInitScript((savedTheme) => {
+          window.localStorage.setItem('topgym-theme', savedTheme);
+        }, theme);
+        await gatewayPage.goto(`${baseUrl}/`, { waitUntil: 'networkidle' });
+        const gateway = await gatewayPage.evaluate(() => {
+          const surfaces = [...document.querySelectorAll('.saas-entry-preview-window, .saas-entry-preview-welcome, .saas-entry-preview-kpis article, .saas-entry-preview-chart, .saas-entry-preview-activity, .saas-entry-action')]
+            .filter((element) => !element.hidden && getComputedStyle(element).display !== 'none');
+          const whiteSurfaces = surfaces.filter((element) => getComputedStyle(element).backgroundColor === 'rgb(255, 255, 255)').length;
+          return {
+            theme: document.documentElement.dataset.theme,
+            overflow: document.documentElement.scrollWidth > window.innerWidth,
+            scrollWidth: document.documentElement.scrollWidth,
+            viewport: window.innerWidth,
+            stage: document.getElementById('authScreen')?.dataset.authStage || '',
+            entryVisible: Boolean(document.getElementById('saasEntryCard') && !document.getElementById('saasEntryCard').hidden),
+            previewVisible: Boolean(document.querySelector('.saas-entry-preview')),
+            whiteSurfaces
+          };
+        });
+        assert(gateway.theme === theme, `pre-login gateway did not load ${theme} theme at ${viewport.name}px`);
+        assert(!gateway.overflow, `pre-login gateway overflows at ${theme}/${viewport.name}px (${gateway.scrollWidth}/${gateway.viewport})`);
+        assert(gateway.stage === 'gateway' && gateway.entryVisible && gateway.previewVisible, `pre-login gateway is not visible at ${theme}/${viewport.name}px`);
+        if (theme === 'dark') assert(gateway.whiteSurfaces === 0, `pre-login gateway exposes ${gateway.whiteSurfaces} white surface(s) in dark mode at ${viewport.name}px`);
+        if (viewport.name === '430') await gatewayPage.screenshot({ path: path.join(artifacts, `login-gateway-${theme}-${viewport.name}.png`), fullPage: true });
+        summary.push(`Pre-login gateway ${theme} ${viewport.name}: PASS (${gateway.scrollWidth}px)`);
+        await gatewayPage.close();
+      }
+    }
+
     const printPage = await browser.newPage({ viewport: { width: 1440, height: 900 } });
     await printPage.goto(`${baseUrl}/`, { waitUntil: 'networkidle' });
     await prepareShell(printPage, 'dashboardSection');
