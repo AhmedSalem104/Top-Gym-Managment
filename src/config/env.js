@@ -10,6 +10,10 @@ function getNumberEnv(name, fallback) {
     return Number.isFinite(value) ? value : fallback;
 }
 
+function getBoundedNumberEnv(name, fallback, minimum, maximum) {
+    return Math.min(maximum, Math.max(minimum, getNumberEnv(name, fallback)));
+}
+
 function getBooleanEnv(name, fallback = false) {
     const value = getEnv(name, fallback ? 'true' : 'false').trim().toLowerCase();
     return ['true', '1', 'yes', 'on'].includes(value);
@@ -38,11 +42,16 @@ const config = Object.freeze({
     attendanceAutoCheckoutMinutes: getNumberEnv('ATTENDANCE_AUTO_CHECKOUT_MINUTES', 0),
     mssqlConnectionString: getEnv('MSSQL_CONNECTION_STRING') || getEnv('DATABASE_URL'),
     mssqlConnectionTimeout: getNumberEnv('MSSQL_CONNECTION_TIMEOUT', 30_000),
-    mssqlRequestTimeout: getNumberEnv('MSSQL_REQUEST_TIMEOUT', 120_000)
+    mssqlRequestTimeout: getNumberEnv('MSSQL_REQUEST_TIMEOUT', 120_000),
+    // These limits apply per Node/Vercel instance. Keep the defaults stable;
+    // operators can tune them for a known database capacity after measurement.
+    mssqlPoolMax: getBoundedNumberEnv('MSSQL_POOL_MAX', 10, 1, 100),
+    mssqlPoolMin: getBoundedNumberEnv('MSSQL_POOL_MIN', 0, 0, 100),
+    mssqlPoolIdleTimeoutMs: getBoundedNumberEnv('MSSQL_POOL_IDLE_TIMEOUT_MS', 30_000, 1_000, 600_000)
 });
 
 function isProduction() {
     return config.nodeEnv === 'production';
 }
 
-module.exports = { config, getBooleanEnv, getEnv, getNumberEnv, isProduction };
+module.exports = { config, getBooleanEnv, getEnv, getNumberEnv, getBoundedNumberEnv, isProduction };

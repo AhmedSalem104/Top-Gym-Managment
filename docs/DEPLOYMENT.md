@@ -26,6 +26,29 @@ DEFAULT_TENANT_SLUG=top-gym
 
 Never commit real values. SQL Server must accept encrypted connections from the deployment environment.
 
+### SQL pool settings
+
+`src/database/pool.js` creates one reusable `mssql` pool per Node/Vercel
+instance. The defaults are intentionally conservative:
+
+```text
+MSSQL_CONNECTION_TIMEOUT=30000
+MSSQL_REQUEST_TIMEOUT=120000
+MSSQL_POOL_MAX=10
+MSSQL_POOL_MIN=0
+MSSQL_POOL_IDLE_TIMEOUT_MS=30000
+```
+
+Pool limits are per serverless instance, not a global connection budget. Do not
+increase `MSSQL_POOL_MAX` until Staging/Production workload evidence confirms
+that the SQL host can absorb the additional concurrency. `MSSQL_POOL_MIN=0`
+allows idle instances to release connections; the application still reuses one
+pool within a warm instance.
+
+The repository does not claim live connection capacity or timeout behavior from
+these configuration values. Those require a safe Staging/Production check and
+remain in `docs/PRODUCTION-VERIFICATION-DEBT.md`.
+
 ## Deployment checklist
 
 1. Install with the lockfile.

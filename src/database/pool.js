@@ -234,7 +234,11 @@ function parseConnectionString(connectionString) {
             encrypt: parseBoolean(values.encrypt, true),
             trustServerCertificate: parseBoolean(values.trustservercertificate, false)
         },
-        pool: { max: 10, min: 0, idleTimeoutMillis: 30000 }
+        pool: {
+            max: appConfig.mssqlPoolMax,
+            min: Math.min(appConfig.mssqlPoolMin, appConfig.mssqlPoolMax),
+            idleTimeoutMillis: appConfig.mssqlPoolIdleTimeoutMs
+        }
     };
     if (serverParts[1]) connectionConfig.port = Number(serverParts[1]);
     return connectionConfig;

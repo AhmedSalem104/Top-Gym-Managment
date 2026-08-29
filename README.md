@@ -227,6 +227,9 @@ curl http://localhost:3000/api/health
 | DATABASE_URL | بديل | بديل لـMSSQL_CONNECTION_STRING |
 | MSSQL_CONNECTION_TIMEOUT | لا | الافتراضي 30000ms |
 | MSSQL_REQUEST_TIMEOUT | لا | الافتراضي 120000ms |
+| MSSQL_POOL_MAX | لا | الحد الأقصى للـpool لكل instance، الافتراضي 10 |
+| MSSQL_POOL_MIN | لا | الحد الأدنى للـpool لكل instance، الافتراضي 0 |
+| MSSQL_POOL_IDLE_TIMEOUT_MS | لا | مهلة الخمول للـpool، الافتراضي 30000ms |
 | APP_TIMEZONE | لا | الافتراضي Africa/Cairo |
 | ATTENDANCE_AUTO_CHECKOUT_MINUTES | لا | Auto checkout؛ الافتراضي البرمجي 0 |
 | CRON_SECRET | للإنتاج | سر حماية النسخة اليومية |
