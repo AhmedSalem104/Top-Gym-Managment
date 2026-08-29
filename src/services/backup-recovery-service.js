@@ -34,7 +34,7 @@ const PLATFORM_SENSITIVE_COLUMNS = new Set([
     'api_key',
     'secret'
 ]);
-const SENSITIVE_COLUMN_PATTERN = /(^|_)(?:password|salt|token|secret|api_key|private_key|encryption_key|credential|credentials|otp)(?:_|$)/i;
+const SENSITIVE_COLUMN_PATTERN = /(^|_)(?:password|token|secret|api_key|private_key|encryption_key|credential|credentials|otp)(?:_|$)/i;
 
 let recoverySchemaPromise;
 

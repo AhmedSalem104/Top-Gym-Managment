@@ -87,6 +87,15 @@ test('tenant backup validation rejects sensitive credential fields', () => {
     assert.throws(() => validateTenantBackupPayload(payload), { code: 'BACKUP_SENSITIVE_COLUMN' });
 });
 
+test('tenant backup validation keeps nutritional salt data', () => {
+    const payload = samplePayload();
+    payload.tables.gym_foods = [{ id: 21, tenant_id: 7, salt: 0.4 }];
+    payload.manifest.tableCounts.gym_foods = 1;
+    payload.manifest.rowCount = 3;
+    payload.integrity.sha256 = payloadDigest(payload.tables);
+    assert.doesNotThrow(() => validateTenantBackupPayload(payload));
+});
+
 test('tenant backup validation requires the declared backup type and complete manifest', () => {
     const wrongType = structuredClone(samplePayload());
     wrongType.backupType = 'platform-disaster-recovery';
