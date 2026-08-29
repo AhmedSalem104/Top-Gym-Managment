@@ -6,7 +6,7 @@ stop safe implementation elsewhere, but a Critical item remains a Go-Live
 gate.
 
 Last reviewed: 2026-08-29  
-Implementation revision covered: `24c6fb0 saas: make subscription rejection atomic`
+Implementation revision covered: `cd9eda0 ci: standardize Node 24 verification workflow`
 
 ## Status vocabulary
 
@@ -123,6 +123,8 @@ claims to Production evidence. Those items remain listed above exactly once.
   still requires deployment verification.
 - `/api/health/live` is a local/source-verified tenant-neutral liveness probe;
   provider routing and alerting still require deployment verification.
+- GitHub Actions now has a read-only verification workflow pinned to Node 24;
+  provider-side execution and Vercel runtime behavior remain deployment debt.
 
 These local results do not close the authenticated baseline, live execution
 plans, Staging/Production capacity, restore, or pilot evidence items above.
