@@ -113,8 +113,11 @@ claims to Production evidence. Those items remain listed above exactly once.
 - `npm run build`: passed; only the repository's existing `!important` review
   warnings remain.
 - `npm run qa:gate`: passed.
-- `npm run qa:tenancy`: passed with 63/63 protected tables,
-  `unassignedRows=0`, and `crossTenantWriteBlocked=true`.
+- `npm run qa:tenancy`: the current rerun failed closed before database access
+  because `QA_TENANCY_ENV` was not explicitly configured. The previously
+  recorded local evidence remains 63/63 protected tables,
+  `unassignedRows=0`, and `crossTenantWriteBlocked=true`; a fresh run requires
+  an explicitly confirmed local/staging target.
 - `npm run qa:database`: passed with guarded/non-destructive migrations,
   runner/pool/transaction checks, runtime schema checks and SaaS integrity
   checks; live schema rehearsal remains pending.
