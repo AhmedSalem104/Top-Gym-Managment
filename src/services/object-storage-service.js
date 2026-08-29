@@ -130,6 +130,15 @@ function assertAdapter(adapter, method) {
     }
 }
 
+function validateReturnedObject(object, tenantId, key) {
+    if (!object) return null;
+    if (object.tenantId != null && Number(object.tenantId) !== tenantId) {
+        throw storageError('The private object does not belong to this tenant.', 403, 'STORAGE_TENANT_KEY_MISMATCH');
+    }
+    if (object.key) assertPrivateObjectKey(tenantId, object.key);
+    return object;
+}
+
 function createObjectStorageService({ adapter = null, maxBytes = MAX_PRIVATE_OBJECT_BYTES } = {}) {
     const service = {
         providerStatus: adapter ? 'configured' : 'not_configured',
@@ -156,12 +165,39 @@ function createObjectStorageService({ adapter = null, maxBytes = MAX_PRIVATE_OBJ
             const normalizedKey = assertPrivateObjectKey(normalizedTenantId, key);
             assertAdapter(adapter, 'getPrivateObject');
             const object = await adapter.getPrivateObject({ tenantId: normalizedTenantId, key: normalizedKey });
-            if (!object) return null;
-            if (object.tenantId != null && Number(object.tenantId) !== normalizedTenantId) {
-                throw storageError('The private object does not belong to this tenant.', 403, 'STORAGE_TENANT_KEY_MISMATCH');
+            return validateReturnedObject(object, normalizedTenantId, normalizedKey);
+        },
+        async headPrivateObject({ tenantId, key } = {}) {
+            const normalizedTenantId = normalizeTenantId(tenantId);
+            const normalizedKey = assertPrivateObjectKey(normalizedTenantId, key);
+            if (adapter && typeof adapter.headPrivateObject === 'function') {
+                return validateReturnedObject(
+                    await adapter.headPrivateObject({ tenantId: normalizedTenantId, key: normalizedKey }),
+                    normalizedTenantId,
+                    normalizedKey
+                );
             }
-            if (object.key) assertPrivateObjectKey(normalizedTenantId, object.key);
-            return object;
+            // Adapters that only expose GET remain compatible. The adapter
+            // may omit the body from the returned metadata; verification code
+            // only relies on key/size/checksum.
+            assertAdapter(adapter, 'getPrivateObject');
+            const object = await adapter.getPrivateObject({ tenantId: normalizedTenantId, key: normalizedKey });
+            return validateReturnedObject(object, normalizedTenantId, normalizedKey);
+        },
+        async createSignedDownload({ tenantId, key, expiresInSeconds = 300 } = {}) {
+            const normalizedTenantId = normalizeTenantId(tenantId);
+            const normalizedKey = assertPrivateObjectKey(normalizedTenantId, key);
+            assertAdapter(adapter, 'createSignedDownload');
+            const expiry = Math.min(900, Math.max(60, Number(expiresInSeconds) || 300));
+            const result = await adapter.createSignedDownload({
+                tenantId: normalizedTenantId,
+                key: normalizedKey,
+                expiresInSeconds: expiry
+            });
+            if (!result || typeof result.url !== 'string' || !result.url) {
+                throw storageError('The storage provider returned an invalid private download.', 503, 'INVALID_SIGNED_DOWNLOAD');
+            }
+            return { url: result.url, expiresInSeconds: expiry, expiresAt: result.expiresAt || null };
         },
         async deletePrivateObject({ tenantId, key } = {}) {
             const normalizedTenantId = normalizeTenantId(tenantId);

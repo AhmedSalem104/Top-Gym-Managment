@@ -24,6 +24,8 @@ const TENANT_TABLES = Object.freeze([
     'gym_attendance',
     'gym_backup_archives',
     'gym_backup_operations',
+    'gym_backup_records',
+    'gym_backup_audit_log',
     'gym_branding_assets',
     'gym_branding_audit',
     'gym_branding_config',
