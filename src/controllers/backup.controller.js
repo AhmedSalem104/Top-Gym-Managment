@@ -1,29 +1,69 @@
 'use strict';
 
-function createBackupController({ backupService, brandingService, isAuthorizedCronRequest }) {
+const { currentTenantId } = require('../tenancy/tenant-context');
+
+function sendBackupDownload(response, backup) {
+    response.set({
+        'Cache-Control': 'no-store, no-cache, must-revalidate, private',
+        'Content-Type': backup.contentType || (backup.format === 'bak' ? 'application/octet-stream' : 'application/gzip'),
+        'Content-Disposition': `attachment; filename="${String(backup.fileName || backup.filename || 'logic-fit-backup.json.gz').replace(/["\\\r\n]/g, '')}"`,
+        'Content-Length': String(backup.body?.length ?? backup.buffer?.length ?? 0),
+        'X-Content-Type-Options': 'nosniff'
+    });
+    return response.send(backup.body || backup.buffer);
+}
+
+function legacyArchiveView(record) {
+    return {
+        id: record.id,
+        backupDay: record.backupDay,
+        fileName: record.fileName,
+        format: record.format,
+        generatedAt: record.completedAt || record.createdAt,
+        contentBytes: record.sizeBytes || 0,
+        rowCount: record.rowCount,
+        tableCounts: record.tableCounts,
+        status: record.status,
+        verifiedAt: record.verifiedAt,
+        expiresAt: record.expiresAt,
+        createdAt: record.createdAt
+    };
+}
+
+function requestReason(request, fallback = '') {
+    const encoded = String(request.get?.('x-backup-reason-b64') || '').trim();
+    if (encoded && encoded.length <= 4096 && /^[A-Za-z0-9_-]+$/.test(encoded)) {
+        try {
+            const decoded = Buffer.from(encoded, 'base64url').toString('utf8').trim();
+            if (decoded) return decoded.slice(0, 1000);
+        } catch (_) { /* fall through to the JSON/header reason */ }
+    }
+    return String(request.get?.('x-backup-reason') || request.body?.reason || fallback).trim().slice(0, 1000);
+}
+
+function createBackupController({ backupService, backupRecoveryService, brandingService, isAuthorizedCronRequest }) {
     const {
         createBackup,
-        createScheduledBackupArchive,
-        deleteBackupArchive,
-        getBackupArchive,
-        getBackupHistory,
-        getScheduledBackupHistory,
-        inspectBackupBuffer,
         recordBackupOperation,
-        restoreBackup,
         safeOperationalError
     } = backupService;
+    const recovery = backupRecoveryService;
 
     return {
         daily: async (request, response) => {
-            if (!isAuthorizedCronRequest(request)) return response.status(401).json({ error: 'طلب الجدولة غير مصرح به.' });
-            const result = await createScheduledBackupArchive({ format: 'bak' });
+            if (!isAuthorizedCronRequest(request)) return response.status(401).json({ error: 'The scheduled backup request is not authorized.' });
+            if (!recovery) return response.status(503).json({ error: 'Backup recovery service is not configured.', code: 'BACKUP_RECOVERY_NOT_CONFIGURED' });
+            const result = await recovery.runDailyBackupCycle({});
             response.json({ ok: true, scheduled: true, ...result });
         },
+
+        // This route remains a read-only, on-demand export for compatibility
+        // with the existing Owner UI. Persistent automatic backups use the
+        // private storage-backed records below.
         download: async (request, response) => {
             const requestedFormat = String(request.query.format || 'json.gz').toLowerCase();
             if (!['json.gz', 'bak'].includes(requestedFormat)) {
-                return response.status(400).json({ error: 'صيغة النسخة غير مدعومة. اختر .json.gz أو .bak.' });
+                return response.status(400).json({ error: 'Unsupported backup format. Choose .json.gz or .bak.' });
             }
             const backup = await createBackup({ format: requestedFormat, readOnly: request.readOnlyRequest });
             const brandName = brandingService ? await brandingService.getPublicBrandName('Logic Fit', { readOnly: request.readOnlyRequest }) : 'Logic Fit';
@@ -33,81 +73,127 @@ function createBackupController({ backupService, brandingService, isAuthorizedCr
                 sourceGeneratedAt: backup.generatedAt,
                 tableCounts: backup.rowCounts,
                 readOnly: request.readOnlyRequest,
-                details: `تم إنشاء نسخة ${brandName} بصيغة .${backup.format} وتنزيلها على جهاز المستخدم.`
-            }).catch((error) => console.warn('Unable to record backup download:', error.code || 'recording_failed'));
-            response.set({
-                'Cache-Control': 'no-store, no-cache, must-revalidate, private',
-                'Content-Type': backup.format === 'bak' ? 'application/octet-stream' : 'application/gzip',
-                'Content-Disposition': `attachment; filename="${backup.filename}"`,
-                'Content-Length': String(backup.buffer.length),
-                'X-Content-Type-Options': 'nosniff'
-            });
-            response.send(backup.buffer);
+                details: `On-demand ${brandName} tenant export downloaded.`
+            }).catch(() => {});
+            return sendBackupDownload(response, { ...backup, fileName: backup.filename });
         },
-        history: async (request, response) => {
-            const [operations, archives] = await Promise.all([
-                getBackupHistory(request.query.limit, { readOnly: request.readOnlyRequest }),
-                getScheduledBackupHistory(request.query.archiveLimit || 10, { readOnly: request.readOnlyRequest })
+
+        status: async (request, response) => {
+            const [records, audit] = await Promise.all([
+                recovery.getTenantBackupHistory({ limit: request.query.limit, readOnly: request.readOnlyRequest }),
+                recovery.getTenantBackupAudit({ limit: request.query.auditLimit, readOnly: request.readOnlyRequest })
             ]);
-            response.json({ operations, archives });
-        },
-        archive: async (request, response) => {
-            const archive = await getBackupArchive(request.params.id, { readOnly: request.readOnlyRequest });
-            response.set({
-                'Cache-Control': 'no-store, no-cache, must-revalidate, private',
-                'Content-Type': archive.format === 'bak' ? 'application/octet-stream' : 'application/gzip',
-                'Content-Disposition': `attachment; filename="${archive.fileName}"`,
-                'Content-Length': String(archive.contentBytes),
-                'X-Content-Type-Options': 'nosniff'
+            response.json({
+                records,
+                audit,
+                lastAutomatic: records.find((record) => record.backupType === 'tenant_daily') || null,
+                retention: recovery.getRetentionPolicy()
             });
-            response.send(archive.content);
         },
-        deleteArchive: async (request, response) => {
-            await deleteBackupArchive(request.params.id);
-            response.status(204).send();
-        },
-        inspect: async (request, response) => {
-            const fileName = String(request.get('X-BACKUP-FILENAME') || 'uploaded-backup.json.gz').slice(0, 260);
-            try {
-                const inspected = await inspectBackupBuffer(request.body);
-                await recordBackupOperation({
-                    operationType: 'inspect',
-                    fileName,
-                    sourceGeneratedAt: inspected.generatedAt,
-                    tableCounts: inspected.tableCounts,
-                    details: 'تم التحقق من ضغط النسخة وبنيتها قبل الاسترجاع.'
-                }).catch((error) => console.warn('Unable to record backup inspection:', error.code || 'recording_failed'));
-                return response.json({
-                    valid: true,
-                    generatedAt: inspected.generatedAt,
-                    timeZone: inspected.timeZone,
-                    compressedBytes: inspected.compressedBytes,
-                    jsonBytes: inspected.jsonBytes,
-                    rowCount: inspected.rowCount,
-                    tableCounts: inspected.tableCounts,
-                    integrity: inspected.integrity
-                });
-            } catch (error) {
-                await recordBackupOperation({ operationType: 'inspect', fileName, status: 'failed', details: safeOperationalError(error, 'Backup inspection failed.') })
-                    .catch((recordError) => console.warn('Unable to record failed backup inspection:', recordError.code || 'recording_failed'));
-                throw error;
+
+        create: async (request, response) => {
+            const reason = requestReason(request);
+            if (!reason) {
+                return response.status(400).json({ error: 'A reason is required before starting a manual backup.', code: 'BACKUP_REASON_REQUIRED' });
             }
+            const result = await recovery.createTenantBackup({
+                backupType: 'tenant_manual',
+                actorUserId: request.auth?.id,
+                reason,
+                format: String(request.body?.format || 'json.gz').toLowerCase()
+            });
+            response.status(result.idempotent ? 200 : 201).json(result);
         },
+
+        history: async (request, response) => {
+            const [records, audit] = await Promise.all([
+                recovery.getTenantBackupHistory({ limit: request.query.limit, readOnly: request.readOnlyRequest }),
+                recovery.getTenantBackupAudit({ limit: request.query.auditLimit, readOnly: request.readOnlyRequest })
+            ]);
+            response.json({
+                operations: audit.map((item) => ({
+                    operationType: item.eventType,
+                    fileName: item.metadata?.fileName || null,
+                    rowCount: item.metadata?.rowCount || 0,
+                    status: item.result,
+                    createdAt: item.createdAt
+                })),
+                archives: records.map(legacyArchiveView),
+                records,
+                audit,
+                retention: recovery.getRetentionPolicy()
+            });
+        },
+
+        archive: async (request, response) => {
+            const archive = await recovery.downloadTenantBackup(request.params.id, {
+                readOnly: request.readOnlyRequest,
+                actorUserId: request.auth?.id,
+                auditDownload: true
+            });
+            return sendBackupDownload(response, archive);
+        },
+
+        recordDownload: async (request, response) => {
+            const backup = await recovery.downloadTenantBackup(request.params.id, {
+                readOnly: request.readOnlyRequest,
+                actorUserId: request.auth?.id,
+                auditDownload: true
+            });
+            return sendBackupDownload(response, backup);
+        },
+
+        deleteArchive: async (request, response) => {
+            const result = await recovery.deleteTenantBackup(request.params.id, {
+                actorUserId: request.auth?.id,
+                reason: requestReason(request),
+                storageService: undefined
+            });
+            response.json(result);
+        },
+
+        inspect: async (request, response) => {
+            const inspected = await recovery.inspectTenantBackupBuffer(request.body, { expectedTenantId: currentTenantId({ required: true }) });
+            response.json({
+                valid: true,
+                generatedAt: inspected.generatedAt,
+                compressedBytes: inspected.compressedBytes,
+                jsonBytes: inspected.jsonBytes,
+                rowCount: inspected.rowCount,
+                tableCounts: inspected.tableCounts,
+                integrity: inspected.integrity
+            });
+        },
+
         restore: async (request, response) => {
             if (String(request.get('X-TOP-GYM-RESTORE-CONFIRM') || '').toUpperCase() !== 'RESTORE') {
-                return response.status(400).json({ error: 'يجب تأكيد عملية الاسترجاع من شاشة الإدارة.' });
+                return response.status(400).json({ error: 'Restore must be explicitly confirmed from the administration screen.', code: 'RESTORE_CONFIRMATION_REQUIRED' });
             }
-            const fileName = String(request.get('X-BACKUP-FILENAME') || 'uploaded-backup.json.gz').slice(0, 260);
-            try {
-                const result = await restoreBackup(request.body, { fileName });
-                return response.json({ restored: true, ...result });
-            } catch (error) {
-                await recordBackupOperation({ operationType: 'restore', fileName, status: 'failed', details: safeOperationalError(error, 'Backup restore failed.') })
-                    .catch((recordError) => console.warn('Unable to record failed backup restore:', recordError.code || 'recording_failed'));
-                throw error;
+            const fileName = String(request.get('X-BACKUP-FILENAME') || 'tenant-backup.json.gz').slice(0, 260);
+            const result = await recovery.restoreTenantBackup(request.body, {
+                actorUserId: request.auth?.id,
+                reason: requestReason(request),
+                fileName
+            });
+            return response.json(result);
+        },
+
+        restoreRecord: async (request, response) => {
+            if (String(request.get('X-TOP-GYM-RESTORE-CONFIRM') || '').toUpperCase() !== 'RESTORE') {
+                return response.status(400).json({ error: 'Restore must be explicitly confirmed from the administration screen.', code: 'RESTORE_CONFIRMATION_REQUIRED' });
             }
-        }
+            const result = await recovery.restoreTenantBackupRecord(request.params.id, {
+                actorUserId: request.auth?.id,
+                reason: requestReason(request)
+            });
+            return response.json(result);
+        },
+
+        // Kept as a narrow compatibility surface for callers that still
+        // import the old controller. New errors are intentionally safe and
+        // never include SQL, storage paths, or stack traces.
+        safeError: (error) => safeOperationalError(error, 'Backup operation failed.')
     };
 }
 
-module.exports = { createBackupController };
+module.exports = { createBackupController, legacyArchiveView, sendBackupDownload };

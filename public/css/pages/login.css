@@ -735,15 +735,13 @@ body.auth-locked .auth-screen[data-auth-stage="gateway"] {
   padding: 0 0 clamp(22px, 3vw, 34px);
 }
 
-.auth-screen[data-auth-stage="gateway"] .saas-entry-layout {
-  direction: ltr;
-  grid-template-columns: minmax(0, 1.18fr) minmax(320px, .82fr);
-  grid-template-areas:
-    "preview copy"
-    "preview action";
-  gap: clamp(24px, 5vw, 72px);
-  padding: 0;
-}
+  .auth-screen[data-auth-stage="gateway"] .saas-entry-layout {
+    direction: ltr;
+    grid-template-columns: minmax(0, 1.18fr) minmax(320px, .82fr);
+    grid-template-areas: "preview copy";
+    gap: clamp(24px, 5vw, 72px);
+    padding: 0;
+  }
 
 .auth-screen[data-auth-stage="gateway"] .saas-entry-copy,
 .auth-screen[data-auth-stage="gateway"] .saas-entry-action,
@@ -751,11 +749,13 @@ body.auth-locked .auth-screen[data-auth-stage="gateway"] {
   direction: rtl;
 }
 
-.auth-screen[data-auth-stage="gateway"] .saas-entry-copy {
-  grid-area: copy;
-  align-content: end;
-  padding: clamp(12px, 2vw, 24px) 0 0;
-}
+  .auth-screen[data-auth-stage="gateway"] .saas-entry-copy {
+    grid-area: copy;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: clamp(12px, 2vw, 24px) 0 0;
+  }
 
 .auth-screen[data-auth-stage="gateway"] .saas-entry-copy h1 {
   max-width: 580px;
@@ -776,14 +776,16 @@ body.auth-locked .auth-screen[data-auth-stage="gateway"] {
   margin-top: clamp(20px, 3vw, 30px);
 }
 
-.auth-screen[data-auth-stage="gateway"] .saas-entry-features article {
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: center;
-  gap: 11px;
-  padding: 11px 12px;
-  border-color: var(--border-secondary);
-  background: var(--bg-surface);
-}
+  .auth-screen[data-auth-stage="gateway"] .saas-entry-features article {
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 11px;
+    padding: 9px 0 9px 12px;
+    border: 0;
+    border-inline-start: 2px solid var(--primary-border);
+    border-radius: 0;
+    background: transparent;
+  }
 
 .auth-screen[data-auth-stage="gateway"] .saas-entry-feature-icon {
   width: 31px;
@@ -798,27 +800,46 @@ body.auth-locked .auth-screen[data-auth-stage="gateway"] {
   font-size: 10px;
 }
 
-.auth-screen[data-auth-stage="gateway"] .saas-entry-action {
-  grid-area: action;
-  align-self: start;
-  padding: clamp(18px, 2.5vw, 26px);
-  border-color: var(--primary-border);
-  background: var(--bg-elevated);
-  box-shadow: var(--shadow-card);
-}
+  .auth-screen[data-auth-stage="gateway"] .saas-entry-action {
+    grid-area: auto;
+    align-self: start;
+    width: min(100%, 430px);
+    margin-top: clamp(22px, 3vw, 30px);
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
 
-.auth-screen[data-auth-stage="gateway"] .saas-entry-action h2 {
-  font-size: clamp(21px, 2.2vw, 27px);
-}
+  .saas-entry-action-heading {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
 
-.auth-screen[data-auth-stage="gateway"] .saas-entry-action p {
-  margin-bottom: 18px;
-  line-height: 1.75;
-}
+  .auth-screen[data-auth-stage="gateway"] .saas-entry-action-icon {
+    width: 40px;
+    height: 40px;
+    margin-bottom: 0;
+    border-radius: 12px;
+  }
 
-.auth-screen[data-auth-stage="gateway"] .saas-entry-continue {
-  min-height: 50px;
-}
+  .auth-screen[data-auth-stage="gateway"] .saas-entry-action h2 {
+    margin: 4px 0 0;
+    font-size: clamp(19px, 2vw, 23px);
+  }
+
+  .auth-screen[data-auth-stage="gateway"] .saas-entry-action p {
+    max-width: 390px;
+    margin: 11px 0 16px;
+    line-height: 1.75;
+  }
+
+  .auth-screen[data-auth-stage="gateway"] .saas-entry-continue {
+    min-height: 50px;
+    width: min(100%, 360px);
+  }
 
 .saas-entry-preview {
   position: relative;
@@ -1264,6 +1285,10 @@ body.auth-locked .auth-screen[data-auth-stage="gateway"] {
     order: 6;
     width: 100%;
     margin-top: 0;
+  }
+
+  .auth-screen[data-auth-stage="gateway"] .saas-entry-continue {
+    width: 100%;
   }
 
   .saas-entry-preview-layer-back {

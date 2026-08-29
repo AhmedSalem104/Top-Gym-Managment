@@ -116,7 +116,13 @@ function registerRoutes(app, {
     registerIntelligenceRoutes(app, { intelligenceService, asyncRoute });
     registerBrandingRoutes(app, { brandingService, asyncRoute });
     registerPlatformRoutes(app, { saasService, authService, asyncRoute });
-    registerPlatformAdminRoutes(app, { platformAdminService, saasService, authService, asyncRoute });
+    registerPlatformAdminRoutes(app, {
+        platformAdminService,
+        saasService,
+        authService,
+        backupRecoveryService,
+        asyncRoute
+    });
     registerSaasRoutes(app, { saasService, asyncRoute, ownerOnly });
     registerMembersRoutes(app, { memberService, asyncRoute });
 }

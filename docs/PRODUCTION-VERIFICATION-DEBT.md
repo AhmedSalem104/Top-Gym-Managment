@@ -6,7 +6,7 @@ stop safe implementation elsewhere, but a Critical item remains a Go-Live
 gate.
 
 Last reviewed: 2026-08-29  
-Implementation revision covered: `72e96d8 security: enforce same-origin checks on public writes`
+Implementation revision covered: `45ccd8e` plus the current Backup/DR closure changes
 
 ## Status vocabulary
 
@@ -98,6 +98,12 @@ claims to Production evidence. Those items remain listed above exactly once.
   transitions, expiry/recovery guards, limits and overrides. End-to-end
   authenticated lifecycle and concurrent database behavior remain Staging
   evidence.
+- Backup/DR: tenant registry coverage, versioned logical artifacts, checksum and
+  manifest validation, private-key enforcement, bounded daily orchestration,
+  retention reconciliation, tenant restore safety gates and audit contracts are
+  `VERIFIED` locally. A real private provider, native/full platform backup,
+  isolated restore rehearsal and deployed scheduler remain external evidence
+  gates; see `docs/BACKUP-DISASTER-RECOVERY.md`.
 
 ## Latest local verification evidence
 
@@ -109,7 +115,7 @@ claims to Production evidence. Those items remain listed above exactly once.
 - `npm run qa:database`: passed with guarded/non-destructive migrations,
   runner/pool/transaction checks, runtime schema checks and SaaS integrity
   checks; live schema rehearsal remains pending.
-- `npm run test:unit`: passed 89/89, including safe internal-error logging,
+- `npm run test:unit`: passed 121/121, including safe internal-error logging,
   baseline safety, pool/transaction behavior, SaaS duplicate-request guards
   and atomic subscription rejection coverage.
 - Platform subscription request reads are now bounded and server-paginated;

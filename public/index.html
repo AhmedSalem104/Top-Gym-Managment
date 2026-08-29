@@ -93,6 +93,15 @@
                         <span class="saas-entry-eyebrow">مساحة تشغيل آمنة وذكية</span>
                         <h1 id="saasEntryTitle">أدر جيمك بذكاء، من مكان واحد.</h1>
                         <p>كل ما تحتاجه لتشغيل الجيم، متابعة المشتركين، وتحسين الأداء في تجربة واحدة مصممة لكل جيم.</p>
+                        <div class="saas-entry-action">
+                            <div class="saas-entry-action-heading">
+                                <div class="saas-entry-action-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/><path d="M5 5v14"/></svg></div>
+                                <div><span class="saas-entry-action-label">بوابة الجيم</span><h2>جاهز تبدأ يومك؟</h2></div>
+                            </div>
+                            <p>سجّل دخولك للانتقال إلى مساحة الجيم الخاصة بك وهوية منشأتك.</p>
+                            <button class="btn btn-primary saas-entry-continue" id="saasEntryContinue" type="button">الدخول إلى مساحة الجيم <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="m11 18-6-6 6-6"/></svg></button>
+                            <small>تجربة موحدة · هوية مستقلة · تشغيل آمن</small>
+                        </div>
                         <div class="saas-entry-features" aria-label="مزايا منصة الجيم">
                             <article>
                                 <span class="saas-entry-feature-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V5"/><path d="M4 19h16"/><path d="m7 15 3-4 3 2 5-6"/></svg></span>
@@ -107,14 +116,6 @@
                                 <span><strong>ذكاء تشغيلي</strong><small>اقتراحات عملية تدعم قرار المدرب.</small></span>
                             </article>
                         </div>
-                    </div>
-                    <div class="saas-entry-action">
-                        <div class="saas-entry-action-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/><path d="M5 5v14"/></svg></div>
-                        <span class="saas-entry-action-label">بوابة الجيم</span>
-                        <h2>جاهز تبدأ يومك؟</h2>
-                        <p>سجّل دخولك للانتقال إلى مساحة الجيم الخاصة بك وهوية منشأتك.</p>
-                        <button class="btn btn-primary saas-entry-continue" id="saasEntryContinue" type="button">الدخول إلى مساحة الجيم <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="m11 18-6-6 6-6"/></svg></button>
-                        <small>تجربة موحدة · هوية مستقلة · تشغيل آمن</small>
                     </div>
                 </div>
             </section>
@@ -576,8 +577,8 @@
                     </div>
                 </header>
                 <section class="backup-management-panel backup-history-tools" aria-labelledby="backupToolsTitle">
-                    <div><span class="management-eyebrow">حماية البيانات</span><h4 id="backupToolsTitle">أدوات النسخ والاسترجاع</h4><p data-brand-template="backupDescription">أنشئ نسخة الجيم بصيغة .json.gz أو .bak، ثم افحصها واسترجعها بأمان من هذه الشاشة.</p></div>
-                    <div class="backup-management-actions"><button class="btn btn-primary" id="backupJsonButton" type="button">تحميل .json.gz</button><button class="btn btn-light" id="backupBakButton" type="button">تحميل .bak</button><button class="btn btn-light" id="restoreBackupButton" type="button">استرجاع نسخة</button></div>
+                    <div><span class="management-eyebrow">حماية البيانات</span><h4 id="backupToolsTitle">أدوات النسخ والاسترجاع</h4><p data-brand-template="backupDescription">أنشئ نسخة محفوظة للجيم، أو نزّل نسخة لحظية، ثم افحص أي ملف واسترجعه بأمان.</p></div>
+                    <div class="backup-management-actions"><button class="btn btn-primary" id="backupManualButton" type="button">إنشاء نسخة محفوظة</button><button class="btn btn-light" id="backupJsonButton" type="button">تحميل لحظي .json.gz</button><button class="btn btn-light" id="backupBakButton" type="button">تحميل لحظي .bak</button><button class="btn btn-light" id="restoreBackupButton" type="button">استرجاع ملف</button></div>
                 </section>
                 <div class="backup-history-list" id="backupHistoryList"><div class="backup-history-loading">جاري تحميل سجل النسخ…</div></div>
             </section>
@@ -950,6 +951,7 @@
         <form class="dialog-body" id="backupRestoreForm">
             <div class="details-dialog-head"><div><h3>استرجاع نسخة احتياطية</h3><p data-brand-template="backupRestoreDescription">اختر ملف الجيم المضغوط. سيتم فحصه أولًا ولن يبدأ الاسترجاع إلا بعد تأكيدك.</p></div><button class="btn btn-light btn-small" id="backupRestoreClose" type="button">إغلاق</button></div>
             <label class="backup-file-field" for="backupFileInput"><span>ملف النسخة الاحتياطية (.json.gz أو .bak)</span><input id="backupFileInput" type="file" accept=".gz,.bak,application/gzip,application/x-gzip,application/octet-stream" required></label>
+            <label class="backup-reason-field" for="backupRestoreReason"><span>سبب الاسترجاع *</span><textarea id="backupRestoreReason" maxlength="1000" rows="2" placeholder="اكتب سبب استرجاع النسخة" required></textarea></label>
             <div class="backup-validation-box" id="backupValidationBox" hidden></div>
             <div class="dialog-actions"><button class="btn btn-light" id="backupRestoreCancel" type="button">إلغاء</button><button class="btn btn-primary" id="backupRestoreSubmit" type="submit" disabled>استرجاع بعد التحقق</button></div>
         </form>

@@ -41,6 +41,7 @@ test('private object preparation validates size, MIME and checksum without retai
     }, { maxBytes: 1024 });
 
     assert.equal(object.tenantId, 7);
+    assert.equal(object.scope, 'tenant');
     assert.equal(object.size, 11);
     assert.match(object.checksum, /^[a-f0-9]{64}$/);
     assert.equal(Object.hasOwn(object, 'url'), false);
@@ -92,5 +93,20 @@ test('provider cannot return an object owned by another tenant', async () => {
     await assert.rejects(
         service.getPrivateObject({ tenantId: 7, key: 'tenants/7/private/payment-proofs/abcdefghijklmnop.jpg' }),
         { code: 'STORAGE_TENANT_KEY_MISMATCH', statusCode: 403 }
+    );
+});
+
+test('tenant object reads reject a provider scope mismatch', async () => {
+    const service = createObjectStorageService({
+        adapter: {
+            async getPrivateObject() {
+                return { tenantId: 7, scope: 'platform', key: 'tenants/7/private/payment-proofs/abcdefghijklmnop.jpg' };
+            }
+        }
+    });
+
+    await assert.rejects(
+        service.getPrivateObject({ tenantId: 7, key: 'tenants/7/private/payment-proofs/abcdefghijklmnop.jpg' }),
+        { code: 'STORAGE_SCOPE_MISMATCH', statusCode: 403 }
     );
 });

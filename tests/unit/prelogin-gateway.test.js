@@ -23,7 +23,8 @@ test('pre-login gateway keeps the auth entry point and product preview together'
 test('pre-login gateway layout is theme-token based and preserves desktop/mobile intent', () => {
     const styles = read('public/css/pages/login.css');
 
-    assert.match(styles, /grid-template-areas:\s*[\s\S]*"preview copy"\s*[\s\S]*"preview action"/);
+    assert.match(styles, /grid-template-areas:\s*"preview copy"/);
+    assert.doesNotMatch(styles, /grid-template-areas:[\s\S]*"preview action"/);
     assert.match(styles, /\.saas-entry-preview\s*\{[\s\S]*grid-area: preview/);
     assert.match(styles, /@media \(max-width: 760px\)[\s\S]*\.saas-entry-copy\s*\{[\s\S]*display: contents/);
     assert.match(styles, /\.saas-entry-preview\s*\{[\s\S]*background: var\(--bg/);

@@ -15,7 +15,10 @@
         profileTab: 'overview',
         profilePaymentsPage: 1,
         tenantPage: 1,
-        tenantFilters: { search: '', status: '', plan: '', expiringDays: '0' }
+        tenantFilters: { search: '', status: '', plan: '', expiringDays: '0' },
+        backupHealth: null,
+        backups: [],
+        backupAudit: []
     };
 
     const $ = (selector, root = document) => root.querySelector(selector);
@@ -195,12 +198,13 @@
         state.view = view;
         $$('[data-platform-view]').forEach((button) => button.classList.toggle('active', button.dataset.platformView === view));
         $$('[data-platform-panel]').forEach((panel) => panel.classList.toggle('active', panel.dataset.platformPanel === view));
-        const titles = { dashboard: 'لوحة المنصة', gyms: 'الجيمات', requests: 'طلبات الاشتراك', plans: 'الباقات', audit: 'سجل المنصة', settings: 'إعدادات المنصة' };
+        const titles = { dashboard: 'لوحة المنصة', gyms: 'الجيمات', requests: 'طلبات الاشتراك', backups: 'النسخ والتعافي', plans: 'الباقات', audit: 'سجل المنصة', settings: 'إعدادات المنصة' };
         $('#platformPageTitle').textContent = titles[view] || 'إدارة المنصة';
         $('.platform-sidebar')?.classList.remove('open');
         if (view === 'dashboard') loadDashboard();
         if (view === 'gyms') loadTenants();
         if (view === 'requests') loadRequests();
+        if (view === 'backups') loadBackups();
         if (view === 'plans') loadPlans();
         if (view === 'audit') loadAudit();
     }
@@ -282,7 +286,7 @@
         const health = profile.health || {};
         const plan = subscription?.plan;
         const actions = tenant.status === 'suspended' ? profileActionButton('إعادة التفعيل', 'activate', 'primary') : tenant.status === 'archived' ? profileActionButton('استعادة الجيم', 'restore', 'primary') : profileActionButton('إيقاف الجيم', 'suspend', 'danger');
-        $('#tenantProfile').innerHTML = `<div class="profile-head"><div class="profile-heading"><span class="profile-logo">ج</span><div><h2>${escapeHtml(tenant.name)}</h2><p>${escapeHtml(tenant.slug)} · معرف الجيم #${tenant.id}</p><div class="profile-status-line">${statusPill(tenant.status)}<span class="table-secondary">${escapeHtml(tenant.contactEmail || 'لا يوجد بريد اتصال')}</span></div></div></div><div class="profile-actions"><button class="platform-btn ghost" type="button" data-profile-action="back">← كل الجيمات</button>${actions}${profileActionButton('الاشتراك', 'subscription')}${profileActionButton('تغيير الباقة', 'plan')}${profileActionButton('تمديد', 'extend', 'primary')}<button class="platform-btn ghost" type="button" data-profile-action="more">المزيد</button></div></div><div class="profile-tabs" role="tablist">${[['overview','نظرة عامة'],['subscription','الاشتراك'],['usage','الاستخدام والحدود'],['users','المالك والمستخدمون'],['data','بيانات الجيم'],['payments','المدفوعات'],['health','الحالة الفنية'],['audit','سجل العمليات'],['notes','ملاحظات داخلية']].map(([id,label]) => `<button class="profile-tab ${state.profileTab === id ? 'active' : ''}" type="button" data-profile-tab="${id}">${label}</button>`).join('')}</div><div class="profile-panel-wrap">${profileOverviewPanel(profile)}${profileSubscriptionPanel(profile)}${profileUsagePanel(profile)}${profileUsersPanel(profile)}${profileDataPanel(profile)}${profilePaymentsPanel(profile)}${profileHealthPanel(profile)}${profileAuditPanel(profile)}${profileNotesPanel(profile)}</div>`;
+        $('#tenantProfile').innerHTML = `<div class="profile-head"><div class="profile-heading"><span class="profile-logo">ج</span><div><h2>${escapeHtml(tenant.name)}</h2><p>${escapeHtml(tenant.slug)} · معرف الجيم #${tenant.id}</p><div class="profile-status-line">${statusPill(tenant.status)}<span class="table-secondary">${escapeHtml(tenant.contactEmail || 'لا يوجد بريد اتصال')}</span></div></div></div><div class="profile-actions"><button class="platform-btn ghost" type="button" data-profile-action="back">← كل الجيمات</button>${actions}${profileActionButton('الاشتراك', 'subscription')}${profileActionButton('تغيير الباقة', 'plan')}${profileActionButton('تمديد', 'extend', 'primary')}<button class="platform-btn ghost" type="button" data-profile-action="more">المزيد</button></div></div><div class="profile-tabs" role="tablist">${[['overview','نظرة عامة'],['subscription','الاشتراك'],['usage','الاستخدام والحدود'],['users','المالك والمستخدمون'],['data','بيانات الجيم'],['payments','المدفوعات'],['health','الحالة الفنية'],['backups','النسخ الاحتياطي'],['audit','سجل العمليات'],['notes','ملاحظات داخلية']].map(([id,label]) => `<button class="profile-tab ${state.profileTab === id ? 'active' : ''}" type="button" data-profile-tab="${id}">${label}</button>`).join('')}</div><div class="profile-panel-wrap">${profileOverviewPanel(profile)}${profileSubscriptionPanel(profile)}${profileUsagePanel(profile)}${profileUsersPanel(profile)}${profileDataPanel(profile)}${profilePaymentsPanel(profile)}${profileHealthPanel(profile)}${profileBackupsPanel(profile)}${profileAuditPanel(profile)}${profileNotesPanel(profile)}</div>`;
         $('#tenantDirectory').hidden = true;
         $('.platform-view[data-platform-panel="gyms"] > .platform-page-head').hidden = true;
         $('#tenantProfile').hidden = false;
@@ -375,6 +379,15 @@
         return profilePanel('audit', `<div class="profile-section profile-wide"><h3>سجل الجيم</h3><div class="audit-list">${audit.length ? audit.map((item) => `<div class="audit-item"><p>${escapeHtml(item.action)} · ${escapeHtml(item.details)}</p><small>${escapeHtml(item.actorName || 'النظام')} · ${escapeHtml(formatDateTime(item.createdAt))}${item.reason ? ` · السبب: ${escapeHtml(item.reason)}` : ''}</small></div>`).join('') : '<div class="empty-inline">لا توجد عمليات مسجلة.</div>'}</div></div>`);
     }
 
+    function profileBackupsPanel(profile) {
+        const backups = profile.backups || [];
+        const audit = profile.backupAudit || [];
+        const latest = backups.find((item) => item.status === 'VERIFIED') || backups[0];
+        const tableRows = backups.length ? backups.map((backup) => `<tr><td>${escapeHtml(backupTypeLabel(backup.backupType))}</td><td>${backupStatusPill(backup.status)}</td><td>${escapeHtml(formatDate(backup.backupDay))}</td><td>${escapeHtml(backup.sizeBytes == null ? '—' : formatBytes(backup.sizeBytes))}</td><td>${escapeHtml(formatDateTime(backup.verifiedAt))}</td><td>${backup.status === 'VERIFIED' ? `<a class="table-action" href="/api/platform-admin/tenants/${encodeURIComponent(profile.tenant.id)}/backups/${encodeURIComponent(backup.id)}/download">تنزيل</a>` : '—'}</td></tr>`).join('') : '<tr><td colspan="6"><div class="empty-inline">لا توجد نسخ احتياطية لهذا الجيم بعد.</div></td></tr>';
+        const auditRows = audit.length ? audit.map((item) => `<div class="audit-item"><p>${escapeHtml(item.eventType || 'عملية نسخ')} · ${escapeHtml(item.result || '')}</p><small>${escapeHtml(item.reason || 'بدون سبب مسجل')} · ${escapeHtml(formatDateTime(item.createdAt))}</small></div>`).join('') : '<div class="empty-inline">لا توجد عمليات نسخ مسجلة.</div>';
+        return profilePanel('backups', `<div class="profile-section-grid"><article class="profile-section"><div class="card-heading"><div><span class="eyebrow">Tenant Backup</span><h3>حالة النسخ</h3></div><button class="platform-btn primary" type="button" data-profile-action="tenant-backup">إنشاء نسخة الآن</button></div>${detailRows([['آخر نسخة تم التحقق منها', latest ? formatDateTime(latest.verifiedAt || latest.createdAt) : 'لا توجد'],['الحالة', latest ? statusLabel(latest.status) : 'لم تبدأ'],['الحجم', latest?.sizeBytes == null ? '—' : formatBytes(latest.sizeBytes)],['تنتهي في', latest ? formatDate(latest.expiresAt) : '—']])}<p class="profile-section-note">النسخ خاصة بهذا الجيم فقط، ولا يمكنها قراءة بيانات أي Tenant آخر.</p></article><article class="profile-section"><div class="card-heading"><div><span class="eyebrow">Recovery policy</span><h3>قواعد التعافي</h3></div></div>${detailRows([['النسخ اليومية','مفعلة للجيمات التجريبية والنشطة'],['التحقق','Checksum + manifest قبل الاعتماد'],['الاستعادة','Owner فقط مع نسخة أمان قبل التنفيذ'],['التخزين','خاص؛ لا توجد روابط عامة']])}</article></div><article class="profile-section profile-wide backup-table-card"><div class="card-heading"><div><span class="eyebrow">History</span><h3>سجل نسخ الجيم</h3></div></div><div class="table-scroll"><table class="profile-table"><thead><tr><th>النوع</th><th>الحالة</th><th>اليوم</th><th>الحجم</th><th>آخر تحقق</th><th>الإجراء</th></tr></thead><tbody>${tableRows}</tbody></table></div></article><article class="profile-section profile-wide"><div class="card-heading"><div><span class="eyebrow">Audit</span><h3>سجل عمليات النسخ</h3></div></div><div class="audit-list">${auditRows}</div></article>`);
+    }
+
     function profileNotesPanel(profile) {
         const notes = profile.notes || [];
         return profilePanel('notes', `<div class="profile-section profile-wide"><div class="card-heading"><h3>ملاحظات داخلية</h3>${profileActionButton('+ إضافة ملاحظة','add-note','primary')}</div><div class="note-list">${notes.length ? notes.map((note) => `<div class="note-item"><p>${escapeHtml(note.note)}</p><small>${escapeHtml(note.createdByName || 'Platform Admin')} · ${escapeHtml(formatDateTime(note.createdAt))}</small></div>`).join('') : '<div class="empty-inline">لا توجد ملاحظات داخلية.</div>'}</div></div>`);
@@ -395,7 +408,13 @@
                 state.profilePaymentsPage = Number(paymentsPage) || 1;
             }
             const params = new URLSearchParams({ paymentsPage: state.profilePaymentsPage, paymentsPageSize: 25 });
-            renderProfile(await api(`/api/platform-admin/tenants/${id}?${params}`));
+            const [profileResult, backupsResult] = await Promise.allSettled([
+                api(`/api/platform-admin/tenants/${id}?${params}`),
+                api(`/api/platform-admin/tenants/${id}/backups?limit=100&auditLimit=100`)
+            ]);
+            if (profileResult.status === 'rejected') throw profileResult.reason;
+            const backupData = backupsResult.status === 'fulfilled' ? backupsResult.value : { backups: [], audit: [] };
+            renderProfile({ ...profileResult.value, backups: backupData.backups || [], backupAudit: backupData.audit || [] });
         } catch (error) { showToast(error.message, true); }
     }
 
@@ -427,6 +446,78 @@
         const pages = Number(pagination.pages || 1);
         summary.textContent = total ? `عرض ${state.requests.length} من ${total} طلب` : 'لا توجد نتائج';
         host.innerHTML = pages > 1 ? Array.from({ length: pages }, (_, index) => index + 1).map((number) => `<button type="button" class="${number === page ? 'active' : ''}" data-request-page="${number}">${number}</button>`).join('') : '';
+    }
+
+    function backupStatusLabel(value) {
+        return ({
+            pending: 'قيد الانتظار',
+            running: 'جارٍ التنفيذ',
+            uploaded: 'تم الرفع',
+            verifying: 'جارٍ التحقق',
+            verified: 'تم التحقق',
+            failed: 'فشل',
+            expired: 'منتهية',
+            deleted: 'محذوفة'
+        })[String(value || '').toLowerCase()] || value || '—';
+    }
+
+    function backupTypeLabel(value) {
+        return ({
+            platform_daily: 'نسخة يومية للمنصة',
+            platform_weekly: 'نسخة أسبوعية للمنصة',
+            platform_monthly: 'نسخة شهرية للمنصة',
+            platform_manual: 'نسخة يدوية للمنصة',
+            tenant_daily: 'نسخة يومية للجيم',
+            tenant_manual: 'نسخة يدوية للجيم',
+            tenant_pre_restore: 'نسخة أمان قبل الاستعادة'
+        })[String(value || '').toLowerCase()] || value || '—';
+    }
+
+    function backupStatusPill(value) {
+        const normalized = String(value || '').toLowerCase();
+        const className = ['verified', 'failed', 'running', 'pending', 'expired', 'deleted'].includes(normalized) ? normalized : '';
+        return `<span class="status-pill backup-status ${className}">${escapeHtml(backupStatusLabel(value))}</span>`;
+    }
+
+    function backupHealthStat(label, value, caption, className = '') {
+        return `<article class="platform-kpi backup-health-stat ${className}"><span class="platform-kpi-label">${escapeHtml(label)}</span><strong class="platform-kpi-value">${escapeHtml(value)}</strong><small class="platform-kpi-caption">${escapeHtml(caption)}</small></article>`;
+    }
+
+    function renderBackupHealth(data) {
+        state.backupHealth = data || {};
+        const summary = data?.summary || {};
+        const providerStatus = data?.providerStatus === 'configured' ? 'متصل' : 'غير مهيأ';
+        const providerCaption = data?.providerStatus === 'configured'
+            ? 'التخزين الخاص جاهز للتحقق والرفع.'
+            : 'يلزم ربط مزود تخزين خاص قبل التشغيل الفعلي.';
+        $('#platformBackupHealthKpis').innerHTML = [
+            backupHealthStat('الجيمات المستحقة اليوم', summary.eligibleTenants ?? 0, summary.backupDay || 'اليوم'),
+            backupHealthStat('نسخ تم التحقق منها', summary.verifiedToday ?? 0, 'نسخ يومية سليمة', 'kpi-success'),
+            backupHealthStat('نسخ فشلت', summary.failedToday ?? 0, 'تحتاج مراجعة أو إعادة محاولة', 'kpi-danger'),
+            backupHealthStat('نسخ مفقودة اليوم', summary.missingToday ?? 0, 'لم تُنشأ بعد', 'kpi-warning')
+        ].join('');
+        $('#platformBackupHealthSummary').innerHTML = `<div class="backup-summary-row"><span>اليوم</span><strong>${escapeHtml(summary.backupDay || '—')}</strong></div><div class="backup-summary-row"><span>تم التحقق</span><strong>${escapeHtml(`${summary.verifiedToday ?? 0} / ${summary.eligibleTenants ?? 0}`)}</strong></div><div class="backup-summary-row"><span>مفقود أو فاشل</span><strong>${escapeHtml(Number(summary.missingToday || 0) + Number(summary.failedToday || 0))}</strong></div>`;
+        $('#platformBackupProviderState').innerHTML = `<div class="backup-provider-badge ${data?.providerStatus === 'configured' ? 'ready' : 'pending'}"><span class="scope-dot"></span><strong>${escapeHtml(providerStatus)}</strong></div><p>${escapeHtml(providerCaption)}</p><small>لا يتم عرض مسارات التخزين أو روابط عامة للملفات الخاصة.</small>`;
+        const tenantRows = data?.tenantDaily || [];
+        $('#tenantBackupsHealthTableBody').innerHTML = tenantRows.length ? tenantRows.map((row) => `<tr><td><span class="tenant-cell"><strong>${escapeHtml(row.slug || `Tenant #${row.tenantId}`)}</strong><small>#${escapeHtml(row.tenantId)}</small></span></td><td>${backupStatusPill(row.status)}</td><td>${escapeHtml(formatDate(row.backupDay))}</td><td>${escapeHtml(row.sizeBytes == null ? '—' : formatBytes(row.sizeBytes))}</td><td>${escapeHtml(formatDateTime(row.verifiedAt))}</td><td>${row.id && row.status === 'VERIFIED' ? `<a class="table-action" href="/api/platform-admin/tenants/${encodeURIComponent(row.tenantId)}/backups/${encodeURIComponent(row.id)}/download">تنزيل</a>` : '—'}</td></tr>`).join('') : '<tr><td colspan="6"><div class="empty-inline">لا توجد بيانات نسخ للجيمات بعد.</div></td></tr>';
+    }
+
+    function renderBackupHistory(data) {
+        state.backups = data?.backups || [];
+        state.backupAudit = data?.audit || [];
+        $('#platformBackupsTableBody').innerHTML = state.backups.length ? state.backups.map((backup) => `<tr><td>${escapeHtml(backupTypeLabel(backup.backupType))}</td><td>${backupStatusPill(backup.status)}</td><td>${escapeHtml(formatDate(backup.backupDay))}</td><td>${escapeHtml(backup.sizeBytes == null ? '—' : formatBytes(backup.sizeBytes))}</td><td>${escapeHtml(formatDateTime(backup.verifiedAt))}</td><td>${backup.status === 'VERIFIED' ? `<a class="table-action" href="/api/platform-admin/backups/${encodeURIComponent(backup.id)}/download">تنزيل</a>` : '—'}</td></tr>`).join('') : '<tr><td colspan="6"><div class="empty-inline">لم تُنشأ نسخ للمنصة بعد.</div></td></tr>';
+        $('#platformBackupAuditTableBody').innerHTML = state.backupAudit.length ? state.backupAudit.map((item) => `<tr><td>${escapeHtml(formatDateTime(item.createdAt))}</td><td>${escapeHtml(item.eventType || '—')}</td><td>${escapeHtml(item.backupId || '—')}</td><td>${backupStatusPill(item.result === 'success' ? 'verified' : item.result)}</td><td>${escapeHtml(item.reason || '—')}</td></tr>`).join('') : '<tr><td colspan="5"><div class="empty-inline">لا توجد عمليات نسخ مسجلة.</div></td></tr>';
+    }
+
+    async function loadBackups() {
+        try {
+            const [health, history] = await Promise.all([
+                api('/api/platform-admin/backups/health?limit=100'),
+                api('/api/platform-admin/backups?limit=100&auditLimit=100')
+            ]);
+            renderBackupHealth(health);
+            renderBackupHistory(history);
+        } catch (error) { showToast(error.message, true); }
     }
 
     async function loadPlans() {
@@ -509,6 +600,15 @@
         } else if (type === 'reject') {
             title = 'رفض طلب الاشتراك';
             body = `${dialogField('سبب الرفض','reason','text','','required')}`;
+        } else if (type === 'platform-backup') {
+            title = 'إنشاء نسخة احتياطية للمنصة';
+            body = `<p class="dialog-hint">سيتم إنشاء نسخة DR من بيانات التحكم والمنشآت في التخزين الخاص. لا تُعتبر النسخة جاهزة إلا بعد التحقق من سلامة checksum.</p>${dialogField('سبب الإنشاء','reason','text','','maxlength="1000" required')}`;
+        } else if (type === 'backup-retention') {
+            title = 'تنظيف النسخ المنتهية';
+            body = `<p class="dialog-hint">سيتم حذف artifacts التي انتهت مدة الاحتفاظ بها فقط، مع إبقاء السجل الإداري وقابلية إعادة المحاولة عند فشل التخزين.</p>${dialogField('سبب التنظيف','reason','text','','maxlength="1000" required')}`;
+        } else if (type === 'tenant-backup') {
+            title = `إنشاء نسخة احتياطية — ${tenant.name || 'الجيم'}`;
+            body = `<p class="dialog-hint">سيتم حفظ نسخة من بيانات هذا الجيم فقط داخل التخزين الخاص، ثم التحقق من سلامة checksum قبل اعتمادها.</p>${dialogField('سبب الإنشاء','reason','text','','maxlength="1000" required')}`;
         }
         $('#platformDialogTitle').textContent = title;
         $('#platformDialogBody').innerHTML = body;
@@ -582,6 +682,15 @@
             } else if (action === 'reject') {
                 await api(`/api/platform-admin/subscription-requests/${payload.requestId}/reject`, { method: 'POST', body: JSON.stringify({ reason: values.reason }) });
                 showToast('تم رفض الطلب وتسجيل السبب.'); dialog.close(); await loadRequests();
+            } else if (action === 'platform-backup') {
+                await api('/api/platform-admin/backups/run', { method: 'POST', body: JSON.stringify({ backupType: 'platform_manual', reason: values.reason }) });
+                showToast('تم بدء نسخة المنصة والتحقق منها.'); dialog.close(); await loadBackups();
+            } else if (action === 'backup-retention') {
+                await api('/api/platform-admin/backups/retention', { method: 'POST', body: JSON.stringify({ reason: values.reason }) });
+                showToast('تم تنفيذ سياسة الاحتفاظ.'); dialog.close(); await loadBackups();
+            } else if (action === 'tenant-backup') {
+                await api(`/api/platform-admin/tenants/${state.profile.tenant.id}/backups`, { method: 'POST', body: JSON.stringify({ reason: values.reason }) });
+                showToast('تم إنشاء نسخة الجيم والتحقق منها.'); dialog.close(); await refreshProfile();
             }
         } catch (error) {
             const message = getApiErrorMessage(error);
@@ -623,6 +732,7 @@
         $('#platformGlobalSearch').addEventListener('input', (event) => { if (state.view !== 'gyms') setView('gyms'); $('#tenantSearch').value = event.target.value; state.tenantFilters.search = event.target.value; state.tenantPage = 1; clearTimeout(searchTimer); searchTimer = setTimeout(loadTenants, 260); });
         $('[data-platform-action="refresh-dashboard"]').addEventListener('click', loadDashboard);
         $('[data-platform-action="refresh-requests"]').addEventListener('click', loadRequests);
+        $('[data-platform-action="refresh-backups"]').addEventListener('click', loadBackups);
         $('#platformMobileMenu').addEventListener('click', () => $('.platform-sidebar').classList.toggle('open'));
         $('#platformMobileMenu').addEventListener('keydown', (event) => { if (event.key === 'Enter' || event.key === ' ') $('.platform-sidebar').classList.toggle('open'); });
         dialogForm.addEventListener('submit', handleDialogSubmit);
@@ -634,6 +744,8 @@
             const platformAction = event.target.closest('[data-platform-action]');
             if (platformAction?.dataset.platformAction === 'new-tenant') { openDialog('new-tenant'); return; }
             if (platformAction?.dataset.platformAction === 'new-plan') { openDialog('plan-create'); return; }
+            if (platformAction?.dataset.platformAction === 'run-platform-backup') { openDialog('platform-backup'); return; }
+            if (platformAction?.dataset.platformAction === 'cleanup-backups') { openDialog('backup-retention'); return; }
             const openButton = event.target.closest('[data-open-tenant]');
             if (openButton) { setView('gyms'); await openTenant(openButton.dataset.openTenant); return; }
             const pageButton = event.target.closest('[data-tenant-page]');
@@ -663,6 +775,7 @@
                 if (action === 'override') { openDialog('override'); return; }
                 if (action === 'add-note') { openDialog('note'); return; }
                 if (action === 'owner') { openDialog('owner'); return; }
+                if (action === 'tenant-backup') { openDialog('tenant-backup'); return; }
                 if (action === 'more') { openDialog('status', { status: 'archived' }); return; }
             }
             const userAction = event.target.closest('[data-user-action]');

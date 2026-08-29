@@ -524,7 +524,7 @@
 .backup-history-block-head strong { color: var(--color-text); font-size: var(--font-sm); }
 .backup-history-block-head span { color: var(--color-text-muted); font-size: var(--font-xs); }
 .backup-history-wrap { min-width: 0; overflow-x: auto; border: 1px solid var(--border-color); border-radius: var(--radius-md); }
-.backup-history-table { min-width: 680px; table-layout: fixed; }
+.backup-history-table { min-width: 900px; table-layout: fixed; }
 .backup-history-table th,
 .backup-history-table td { min-height: 60px; padding: var(--space-3); text-align: center; vertical-align: middle; }
 .backup-history-table td:first-child { text-align: start; }
@@ -546,6 +546,16 @@
 }
 .backup-history-status.success { border-color: var(--success-border); background: var(--color-success-soft); color: var(--success-text); }
 .backup-history-status.error { border-color: var(--danger-border); background: var(--color-danger-soft); color: var(--danger-text); }
+.backup-history-status.verified { border-color: var(--success-border); background: var(--color-success-soft); color: var(--success-text); }
+.backup-history-status.failed { border-color: var(--danger-border); background: var(--color-danger-soft); color: var(--danger-text); }
+.backup-history-status.pending,
+.backup-history-status.running,
+.backup-history-status.uploaded,
+.backup-history-status.verifying { border-color: var(--border-hover); background: var(--color-surface-muted); color: var(--color-secondary); }
+.backup-history-status.expired,
+.backup-history-status.deleted { border-color: var(--border-color); background: var(--color-surface-muted); color: var(--color-text-muted); }
+.backup-reason-field { display: grid; gap: var(--space-2); margin-top: var(--space-4); }
+.backup-reason-field span { color: var(--color-text); font-size: var(--font-sm); font-weight: var(--weight-bold); }
 .auth-users-head > div { min-width: 0; }
 .auth-users-head > button { flex: 0 0 auto; min-width: 156px; }
 .auth-user-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-2); }

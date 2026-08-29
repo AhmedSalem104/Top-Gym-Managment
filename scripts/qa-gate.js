@@ -82,6 +82,8 @@ function assertRequiredFiles() {
         'src/services/coaching-service.js',
         'src/services/intelligence-service.js',
         'src/services/backup-service.js',
+        'src/services/backup-recovery-service.js',
+        'src/services/backup-registry.js',
         'src/services/report-service.js',
         'src/services/auth-service.js',
         'public/js/auth-ui.js',
@@ -143,6 +145,8 @@ function assertRequiredFiles() {
         'src/routes/store.routes.js',
         'src/controllers/store.controller.js',
         'database/migrations/007-store.sql',
+        'database/migrations/008-backup-recovery.sql',
+        'database/migrations/009-platform-backup-audit.sql',
         'src/services/day-pass-service.js',
         'src/services/member-feedback-service.js',
         'src/routes/member-feedback.routes.js',
@@ -201,6 +205,7 @@ function assertRequiredFiles() {
         'docs/DATABASE.md',
         'docs/DEPLOYMENT.md',
         'docs/BACKUP-RESTORE.md',
+        'docs/BACKUP-DISASTER-RECOVERY.md',
         'qa/AGENT-CONTRACT.md'
     ];
     required.forEach((relativePath) => record(
@@ -378,12 +383,21 @@ function checkProductionClosureContracts() {
     const storage = read('src/services/object-storage-service.js');
     const rateLimit = read('src/middleware/rate-limit.middleware.js');
     const authMiddleware = read('src/middleware/auth.middleware.js');
+    const backupRecovery = read('src/services/backup-recovery-service.js');
+    const backupRegistry = read('src/services/backup-registry.js');
+    const backupRoutes = read('src/routes/backup.routes.js');
+    const platformRoutes = read('src/routes/platform-admin.routes.js');
     record('SEC-PRIVATE-OBJECT-CONTRACT', storage.includes('tenants/${normalizedTenantId}/private') && storage.includes('assertPrivateObjectKey') && storage.includes('tenantId'), 'private object keys are tenant-scoped and validated before provider access', 'P0');
     record('SEC-PRIVATE-OBJECT-NO-PUBLIC-URL', storage.includes('PRIVATE_OBJECT_PUBLIC_URL_FORBIDDEN') && storage.includes('getPublicUrl()'), 'private storage contract rejects public URL exposure', 'P0');
     record('SEC-PRIVATE-OBJECT-FAIL-CLOSED', storage.includes('OBJECT_STORAGE_PROVIDER_NOT_CONFIGURED') && storage.includes('assertAdapter'), 'storage operations fail closed until an approved provider adapter is configured', 'P0');
     record('SEC-RATE-LIMIT-POLICY-BACKEND-SEAM', rateLimit.includes('createMemoryRateLimitStore') && rateLimit.includes('store = null') && rateLimit.includes('fallbackStore = null') && rateLimit.includes('incrementWithFallback'), 'rate-limit policy accepts an injectable atomic backend while retaining the bounded local adapter', 'P1');
     record('SEC-RATE-LIMIT-FAIL-CLOSED', rateLimit.includes('RATE_LIMIT_UNAVAILABLE') && rateLimit.includes('Number.MAX_SAFE_INTEGER'), 'rate-limit backend and fallback failures fail closed instead of bypassing protection', 'P0');
     record('SEC-GET-READONLY-CONTEXT', authMiddleware.includes('READ_ONLY_METHODS.has(request.method) && !cronRequest') && authMiddleware.includes('request.readOnlyRequest = readOnlyRequest') && authMiddleware.includes('touch: !readOnlyRequest'), 'normal GET requests use a read-only context while the authorized backup cron remains explicit', 'P0');
+    record('BACKUP-TENANT-REGISTRY', backupRegistry.includes('TENANT_BACKUP_TABLES') && backupRegistry.includes('getTenantBackupCoverage') && backupRecovery.includes('requireCompleteRegistry'), 'tenant backup coverage is registry-driven and restore rejects incomplete artifacts', 'P0');
+    record('BACKUP-INTEGRITY', backupRecovery.includes('sha256') && backupRecovery.includes('BACKUP_CHECKSUM_MISMATCH') && backupRecovery.includes("status: 'VERIFYING'") && backupRecovery.includes("status: 'VERIFIED'"), 'backup artifacts are checksum-verified before they become downloadable', 'P0');
+    record('BACKUP-RESTORE-SAFETY', backupRecovery.includes('tenant_pre_restore') && backupRecovery.includes('sp_getapplock') && backupRecovery.includes('BACKUP_TENANT_BUSY'), 'tenant restore requires a safety copy and database-level recovery coordination', 'P0');
+    record('BACKUP-PLATFORM-SEPARATION', backupRecovery.includes('createPlatformBackup') && backupRecovery.includes('platform-disaster-recovery') && platformRoutes.includes('/api/platform-admin/backups/health'), 'platform disaster-recovery artifacts and administration routes are separate from tenant backups', 'P0');
+    record('BACKUP-ROUTE-SAFETY', backupRoutes.includes('/api/backup/records/:id/download') && backupRoutes.includes('/api/backup/records/:id/restore') && backupRoutes.includes("app.get('/api/backup/daily'") && backupRecovery.includes('runDailyBackupCycle'), 'tenant backup history/download/restore and authorized daily orchestration are wired', 'P0');
 }
 
 function checkStyleSurface() {

@@ -12,9 +12,14 @@ function registerBackupRoutes(app, { backupService, backupRecoveryService, brand
 
     app.get('/api/backup/daily', asyncRoute(controller.daily));
     app.get('/api/backup/download', asyncRoute(controller.download));
+    app.get('/api/backup/status', asyncRoute(controller.status));
+    app.post('/api/backup/records', asyncRoute(controller.create));
     app.get('/api/backup/history', asyncRoute(controller.history));
     app.get('/api/backup/archives/:id', asyncRoute(controller.archive));
+    app.get('/api/backup/records/:id/download', asyncRoute(controller.recordDownload));
     app.delete('/api/backup/archives/:id', asyncRoute(controller.deleteArchive));
+    app.delete('/api/backup/records/:id', asyncRoute(controller.deleteArchive));
+    app.post('/api/backup/records/:id/restore', asyncRoute(controller.restoreRecord));
     app.post('/api/backup/inspect', backupUploadBody, asyncRoute(controller.inspect));
     app.post('/api/backup/restore', backupUploadBody, asyncRoute(controller.restore));
 }

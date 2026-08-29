@@ -91,7 +91,6 @@ const TENANT_BACKUP_EXCLUDED_TABLES = Object.freeze([
 const PLATFORM_GLOBAL_BACKUP_TABLES = Object.freeze([
     Object.freeze({ key: 'gym_tenants', table: 'gym_tenants' }),
     Object.freeze({ key: 'gym_users', table: 'gym_users' }),
-    Object.freeze({ key: 'gym_user_tenants', table: 'gym_user_tenants' }),
     Object.freeze({ key: 'saas_plans', table: 'saas_plans' }),
     Object.freeze({ key: 'saas_tenant_subscriptions', table: 'saas_tenant_subscriptions' }),
     Object.freeze({ key: 'saas_subscription_requests', table: 'saas_subscription_requests' }),

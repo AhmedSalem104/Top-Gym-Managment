@@ -3,6 +3,7 @@
     window.__topGymBackupEnhancementsLoaded = true;
 
     const $ = (id) => document.getElementById(id);
+    const manualBackupButton = $('backupManualButton');
     const jsonDownloadButton = $('backupJsonButton');
     const bakDownloadButton = $('backupBakButton');
     const restoreButton = $('restoreBackupButton');
@@ -13,6 +14,7 @@
     const fileInput = $('backupFileInput');
     const validationBox = $('backupValidationBox');
     const restoreSubmit = $('backupRestoreSubmit');
+    const restoreReason = $('backupRestoreReason');
     let inspected = null;
     let busy = false;
 
@@ -52,6 +54,71 @@
         const disposition = response.headers.get('Content-Disposition') || '';
         const match = disposition.match(/filename="([^"]+)"/i);
         return match?.[1] || fallback;
+    }
+
+    function encodeReasonHeader(value) {
+        const bytes = new TextEncoder().encode(String(value || ''));
+        let binary = '';
+        bytes.forEach((byte) => { binary += String.fromCharCode(byte); });
+        return btoa(binary).replaceAll('+', '-').replaceAll('/', '_').replaceAll('=', '');
+    }
+
+    async function readJsonResponse(response, fallbackMessage) {
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            const error = new Error(data.error || fallbackMessage);
+            error.code = data.code;
+            throw error;
+        }
+        return data;
+    }
+
+    async function askReason(title, confirmText = 'تأكيد') {
+        if (window.Swal) {
+            const result = await window.Swal.fire({
+                position: 'center',
+                title,
+                input: 'textarea',
+                inputLabel: 'سبب العملية *',
+                inputPlaceholder: 'اكتب سببًا واضحًا للاحتفاظ به في سجل التدقيق',
+                inputAttributes: { maxlength: 1000, 'aria-label': 'سبب العملية' },
+                showCancelButton: true,
+                confirmButtonText: confirmText,
+                cancelButtonText: 'إلغاء',
+                buttonsStyling: false,
+                customClass: { popup: 'top-gym-alert backup-reason-alert', confirmButton: 'btn btn-primary', cancelButton: 'btn btn-light' },
+                inputValidator: (value) => String(value || '').trim() ? undefined : 'سبب العملية مطلوب.'
+            });
+            return result.isConfirmed ? String(result.value || '').trim().slice(0, 1000) : null;
+        }
+        const value = window.prompt(`${title}\nاكتب سبب العملية:`);
+        return value ? value.trim().slice(0, 1000) : null;
+    }
+
+    async function createManualBackup() {
+        if (!manualBackupButton || manualBackupButton.dataset.backupBusy === 'true') return;
+        const reason = await askReason('إنشاء نسخة محفوظة للجيم', 'إنشاء النسخة');
+        if (!reason) return;
+        manualBackupButton.dataset.backupBusy = 'true';
+        manualBackupButton.disabled = true;
+        const originalText = manualBackupButton.textContent;
+        manualBackupButton.textContent = 'جاري الإنشاء…';
+        try {
+            const response = await fetch('/api/backup/records', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+                body: JSON.stringify({ format: 'json.gz', reason })
+            });
+            const data = await readJsonResponse(response, 'تعذر إنشاء النسخة المحفوظة.');
+            showToast('success', data.idempotent ? 'النسخة اليومية موجودة بالفعل ✅' : 'تم إنشاء النسخة المحفوظة والتحقق منها ✅');
+            await showHistory();
+        } catch (error) {
+            showToast('error', 'تعذر إنشاء النسخة المحفوظة', error.message || 'حاول مرة أخرى.');
+        } finally {
+            delete manualBackupButton.dataset.backupBusy;
+            manualBackupButton.disabled = false;
+            manualBackupButton.textContent = originalText;
+        }
     }
 
     async function downloadBackup(format = 'json.gz', trigger) {
@@ -103,6 +170,7 @@
             validationBox.innerHTML = '';
         }
         if (restoreSubmit) restoreSubmit.disabled = true;
+        if (restoreReason) restoreReason.value = '';
     }
 
     function renderInspection(data, file) {
@@ -142,6 +210,12 @@
         event.preventDefault();
         const file = fileInput?.files?.[0];
         if (!file || !inspected || busy) return;
+        const reason = String(restoreReason?.value || '').trim();
+        if (!reason) {
+            showToast('warning', 'سبب الاسترجاع مطلوب', 'اكتب سبب العملية قبل المتابعة.');
+            restoreReason?.focus();
+            return;
+        }
         let confirmation = { isConfirmed: true };
         if (window.Swal) {
             confirmation = await window.Swal.fire({
@@ -166,11 +240,11 @@
                 headers: {
                     'Content-Type': 'application/gzip',
                     'X-TOP-GYM-RESTORE-CONFIRM': 'RESTORE',
+                    'X-Backup-Reason-B64': encodeReasonHeader(reason),
                     'X-Backup-Filename': file.name
                 }
             });
-            const data = await response.json().catch(() => ({}));
-            if (!response.ok) throw new Error(data.error || 'تعذر استرجاع النسخة.');
+            await readJsonResponse(response, 'تعذر استرجاع النسخة.');
             closeDialog(restoreDialog);
             showToast('success', 'تم استرجاع النسخة بنجاح ✅', 'سيتم تحديث بيانات النظام الآن.');
             window.setTimeout(() => window.location.reload(), 1200);
@@ -188,20 +262,46 @@
         return `<div class="backup-history-wrap"><table class="backup-history-table"><thead><tr><th>العملية</th><th>التاريخ</th><th>الصفوف</th><th>الحالة</th></tr></thead><tbody>${rows || '<tr><td colspan="4">لا يوجد سجل نسخ حتى الآن.</td></tr>'}</tbody></table></div>`;
     }
 
+    function recoveryStatusLabel(value) {
+        return ({ PENDING: 'قيد الانتظار', RUNNING: 'جارٍ التنفيذ', UPLOADED: 'تم الرفع', VERIFYING: 'جارٍ التحقق', VERIFIED: 'تم التحقق', FAILED: 'فشل', EXPIRED: 'منتهية', DELETED: 'محذوفة' })[String(value || '').toUpperCase()] || value || '—';
+    }
+
+    function recoveryStatusMarkup(value) {
+        const status = String(value || '').toLowerCase();
+        const className = ['pending', 'running', 'uploaded', 'verifying', 'verified', 'failed', 'expired', 'deleted'].includes(status) ? status : '';
+        return `<span class="backup-history-status ${className}">${escapeHtml(recoveryStatusLabel(value))}</span>`;
+    }
+
+    function recoveryTypeLabel(value) {
+        return ({ tenant_daily: 'نسخة يومية', tenant_manual: 'نسخة يدوية', tenant_pre_restore: 'نسخة أمان قبل الاسترجاع' })[String(value || '').toLowerCase()] || value || '—';
+    }
+
+    function auditEventLabel(value) {
+        return ({ BACKUP_CREATED: 'إنشاء نسخة', BACKUP_VERIFIED: 'تحقق من النسخة', BACKUP_DOWNLOADED: 'تنزيل نسخة', BACKUP_DELETED: 'حذف نسخة', RESTORE_REQUESTED: 'طلب استرجاع', RESTORE_STARTED: 'بدء الاسترجاع', RESTORE_COMPLETED: 'اكتمال الاسترجاع', RESTORE_FAILED: 'فشل الاسترجاع' })[String(value || '').toUpperCase()] || value || 'عملية نسخ';
+    }
+
     function renderVisibleHistory(data = {}) {
-        const archives = Array.isArray(data.archives) ? data.archives : [];
-        const operations = Array.isArray(data.operations) ? data.operations : [];
-        const visibleOperations = operations.slice(0, 3);
-        const archiveRows = archives.map((item) => `<tr><td><strong>${escapeHtml(item.fileName || '—')}</strong><small>${escapeHtml(formatDate(item.generatedAt || item.createdAt))}</small></td><td>${escapeHtml(String(item.format || 'bak').toUpperCase())}</td><td>${Number(item.rowCount || 0).toLocaleString('ar-EG')} صف</td><td>${formatBytes(item.contentBytes)}</td><td><div class="backup-history-actions"><button type="button" class="btn btn-light btn-small backup-history-download" data-backup-archive-id="${escapeHtml(item.id)}">تحميل</button><button type="button" class="btn btn-danger btn-small backup-history-delete" data-backup-archive-delete-id="${escapeHtml(item.id)}">حذف</button></div></td></tr>`).join('');
-        const operationRows = visibleOperations.map((item) => `<tr><td><strong>${escapeHtml(HISTORY_LABELS[item.operationType] || item.operationType)}</strong><small>${escapeHtml(item.fileName || '—')}</small></td><td>${escapeHtml(formatDate(item.createdAt))}</td><td>${Number(item.rowCount || 0).toLocaleString('ar-EG')}</td><td><span class="backup-history-status ${item.status === 'success' ? 'success' : 'error'}">${item.status === 'success' ? 'ناجحة' : 'فاشلة'}</span></td></tr>`).join('');
-        return `<div class="backup-history-block"><div class="backup-history-block-head"><strong>النسخ اليومية المحفوظة</strong><span>يوميًا 3:00 م · احتفاظ يومين</span></div><div class="backup-history-wrap"><table class="backup-history-table backup-archive-table"><thead><tr><th>الملف</th><th>الامتداد</th><th>البيانات</th><th>الحجم</th><th>الإجراء</th></tr></thead><tbody>${archiveRows || '<tr><td colspan="5">لا توجد نسخ تلقائية محفوظة حتى الآن.</td></tr>'}</tbody></table></div></div><div class="backup-history-block"><div class="backup-history-block-head"><strong>آخر 3 عمليات</strong><span>${visibleOperations.length.toLocaleString('ar-EG')} معروضة</span></div><div class="backup-history-wrap"><table class="backup-history-table backup-operations-table"><thead><tr><th>العملية</th><th>التاريخ</th><th>الصفوف</th><th>الحالة</th></tr></thead><tbody>${operationRows || '<tr><td colspan="4">لا يوجد سجل عمليات حتى الآن.</td></tr>'}</tbody></table></div></div>`;
+        const records = Array.isArray(data.records) ? data.records : (Array.isArray(data.archives) ? data.archives : []);
+        const audit = Array.isArray(data.audit) ? data.audit : (Array.isArray(data.operations) ? data.operations : []);
+        const retentionDays = Number(data.retention?.tenant_daily || 30);
+        const rows = records.map((item) => {
+            const status = String(item.status || '').toUpperCase();
+            const id = escapeHtml(item.id);
+            const actions = status === 'VERIFIED'
+                ? `<button type="button" class="btn btn-light btn-small backup-history-download" data-backup-record-id="${id}">تحميل</button><button type="button" class="btn btn-light btn-small backup-history-restore" data-backup-record-restore-id="${id}">استرجاع</button>`
+                : '';
+            const canDelete = !['RUNNING', 'UPLOADED', 'VERIFYING', 'DELETED'].includes(status);
+            return `<tr><td><strong>${escapeHtml(item.fileName || '—')}</strong><small>${escapeHtml(formatDate(item.createdAt || item.generatedAt))}</small></td><td>${escapeHtml(recoveryTypeLabel(item.backupType || item.format))}</td><td>${recoveryStatusMarkup(status)}</td><td>${Number(item.rowCount || 0).toLocaleString('ar-EG')} صف</td><td>${formatBytes(item.sizeBytes ?? item.contentBytes)}</td><td>${escapeHtml(formatDate(item.verifiedAt))}</td><td><div class="backup-history-actions">${actions}${canDelete ? `<button type="button" class="btn btn-danger btn-small backup-history-delete" data-backup-record-delete-id="${id}">حذف</button>` : ''}${actions || canDelete ? '' : '—'}</div></td></tr>`;
+        }).join('');
+        const auditRows = audit.slice(0, 8).map((item) => `<tr><td>${escapeHtml(formatDate(item.createdAt))}</td><td>${escapeHtml(auditEventLabel(item.eventType || item.operationType))}</td><td>${recoveryStatusMarkup(item.result === 'success' ? 'VERIFIED' : item.result)}</td><td>${escapeHtml(item.reason || item.fileName || '—')}</td></tr>`).join('');
+        return `<div class="backup-history-block"><div class="backup-history-block-head"><strong>النسخ المحفوظة للجيم</strong><span>النسخ اليومية تحتفظ بها المنصة ${retentionDays} يومًا</span></div><div class="backup-history-wrap"><table class="backup-history-table backup-archive-table"><thead><tr><th>الملف</th><th>النوع</th><th>الحالة</th><th>البيانات</th><th>الحجم</th><th>آخر تحقق</th><th>الإجراءات</th></tr></thead><tbody>${rows || '<tr><td colspan="7">لا توجد نسخ محفوظة لهذا الجيم حتى الآن.</td></tr>'}</tbody></table></div></div><div class="backup-history-block"><div class="backup-history-block-head"><strong>سجل التدقيق</strong><span>${audit.slice(0, 8).length.toLocaleString('ar-EG')} عمليات معروضة</span></div><div class="backup-history-wrap"><table class="backup-history-table backup-operations-table"><thead><tr><th>التاريخ</th><th>العملية</th><th>النتيجة</th><th>السبب</th></tr></thead><tbody>${auditRows || '<tr><td colspan="4">لا يوجد سجل عمليات حتى الآن.</td></tr>'}</tbody></table></div></div>`;
     }
 
     async function downloadArchive(id, trigger) {
         if (!id || !trigger || trigger.dataset.backupBusy === 'true') return;
         trigger.dataset.backupBusy = 'true';
         try {
-            const response = await fetch(`/api/backup/archives/${encodeURIComponent(id)}`, { cache: 'no-store', headers: { Accept: 'application/octet-stream' } });
+            const response = await fetch(`/api/backup/records/${encodeURIComponent(id)}/download`, { cache: 'no-store', headers: { Accept: 'application/octet-stream' } });
             if (!response.ok) {
                 const body = await response.json().catch(() => ({}));
                 throw new Error(body.error || 'تعذر تحميل النسخة المحفوظة.');
@@ -224,14 +324,45 @@
         }
     }
 
+    async function restoreStoredRecord(id, trigger) {
+        if (!id || !trigger || trigger.dataset.backupBusy === 'true') return;
+        const reason = await askReason('استرجاع النسخة المحفوظة', 'استرجاع النسخة');
+        if (!reason) return;
+        if (window.Swal) {
+            const confirmation = await window.Swal.fire({
+                position: 'center',
+                icon: 'warning',
+                title: 'تأكيد الاسترجاع',
+                text: 'سيتم إنشاء نسخة أمان تلقائيًا ثم استبدال بيانات الجيم بهذه النسخة.',
+                showCancelButton: true,
+                confirmButtonText: 'متابعة الاسترجاع',
+                cancelButtonText: 'إلغاء',
+                buttonsStyling: false,
+                customClass: { popup: 'top-gym-alert backup-restore-confirm', confirmButton: 'btn btn-danger', cancelButton: 'btn btn-light' }
+            });
+            if (!confirmation.isConfirmed) return;
+        }
+        trigger.dataset.backupBusy = 'true';
+        try {
+            const response = await fetch(`/api/backup/records/${encodeURIComponent(id)}/restore`, { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-TOP-GYM-RESTORE-CONFIRM': 'RESTORE' }, body: JSON.stringify({ reason }) });
+            await readJsonResponse(response, 'تعذر استرجاع النسخة المحفوظة.');
+            showToast('success', 'تم استرجاع النسخة بنجاح ✅');
+            window.setTimeout(() => window.location.reload(), 1200);
+        } catch (error) {
+            showToast('error', 'فشل استرجاع النسخة', error.message || 'لم يتم تغيير البيانات.');
+        } finally { delete trigger.dataset.backupBusy; }
+    }
+
     async function deleteArchive(id, trigger) {
         if (!id || !trigger || trigger.dataset.backupBusy === 'true') return;
+        const reason = await askReason('حذف النسخة الاحتياطية', 'متابعة الحذف');
+        if (!reason) return;
         if (window.Swal) {
             const result = await window.Swal.fire({
                 position: 'center',
                 icon: 'warning',
                 title: 'تأكيد حذف النسخة الاحتياطية',
-                text: 'سيتم حذف النسخة المحفوظة من السيرفر نهائيًا، ولن يؤثر ذلك على بيانات النظام الحالية.',
+                text: 'سيتم حذف النسخة المحفوظة من التخزين الخاص، ولن يؤثر ذلك على بيانات النظام الحالية.',
                 showCancelButton: true,
                 confirmButtonText: 'نعم، احذف',
                 cancelButtonText: 'إلغاء',
@@ -242,9 +373,8 @@
         } else if (!window.confirm('هل تريد حذف النسخة الاحتياطية المحفوظة؟')) return;
         trigger.dataset.backupBusy = 'true';
         try {
-            const response = await fetch(`/api/backup/archives/${encodeURIComponent(id)}`, { method: 'DELETE' });
-            const data = await response.json().catch(() => ({}));
-            if (!response.ok) throw new Error(data.error || 'تعذر حذف النسخة الاحتياطية.');
+            const response = await fetch(`/api/backup/records/${encodeURIComponent(id)}`, { method: 'DELETE', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify({ reason }) });
+            await readJsonResponse(response, 'تعذر حذف النسخة الاحتياطية.');
             showToast('success', 'تم حذف النسخة الاحتياطية ✅');
             await showHistory();
         } catch (error) {
@@ -256,7 +386,7 @@
 
     async function showHistory() {
         try {
-            const response = await fetch('/api/backup/history?limit=3&archiveLimit=10', { cache: 'no-store' });
+            const response = await fetch('/api/backup/history?limit=30&auditLimit=50', { cache: 'no-store' });
             const data = await response.json().catch(() => ({}));
             if (!response.ok) throw new Error(data.error || 'تعذر تحميل سجل النسخ.');
             if (historyList) {
@@ -272,6 +402,7 @@
         }
     }
 
+    manualBackupButton?.addEventListener('click', createManualBackup);
     jsonDownloadButton?.addEventListener('click', () => downloadBackup('json.gz', jsonDownloadButton));
     bakDownloadButton?.addEventListener('click', () => downloadBackup('bak', bakDownloadButton));
     restoreButton?.addEventListener('click', () => { resetRestore(); openDialog(restoreDialog); });
@@ -280,13 +411,18 @@
         if (event.detail?.name === 'backup-history') void showHistory();
     });
     historyList?.addEventListener('click', (event) => {
-        const button = event.target.closest('[data-backup-archive-id]');
+        const button = event.target.closest('[data-backup-record-id], [data-backup-archive-id]');
         if (button) {
-            downloadArchive(button.dataset.backupArchiveId, button);
+            downloadArchive(button.dataset.backupRecordId || button.dataset.backupArchiveId, button);
             return;
         }
-        const deleteButton = event.target.closest('[data-backup-archive-delete-id]');
-        if (deleteButton) deleteArchive(deleteButton.dataset.backupArchiveDeleteId, deleteButton);
+        const restoreButton = event.target.closest('[data-backup-record-restore-id]');
+        if (restoreButton) {
+            restoreStoredRecord(restoreButton.dataset.backupRecordRestoreId, restoreButton);
+            return;
+        }
+        const deleteButton = event.target.closest('[data-backup-record-delete-id], [data-backup-archive-delete-id]');
+        if (deleteButton) deleteArchive(deleteButton.dataset.backupRecordDeleteId || deleteButton.dataset.backupArchiveDeleteId, deleteButton);
     });
     $('backupRestoreClose')?.addEventListener('click', () => closeDialog(restoreDialog));
     $('backupRestoreCancel')?.addEventListener('click', () => closeDialog(restoreDialog));

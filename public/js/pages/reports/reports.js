@@ -243,6 +243,28 @@
         return window.confirm(`${title}\n${text}`);
     }
 
+    async function requestBackupDeleteReason() {
+        if (window.Swal) {
+            const result = await window.Swal.fire({
+                position: 'center',
+                icon: 'info',
+                title: 'سبب حذف النسخة',
+                input: 'textarea',
+                inputLabel: 'سبب الحذف مطلوب للتدقيق',
+                inputPlaceholder: 'اكتب سبب حذف النسخة المحفوظة…',
+                inputAttributes: { maxlength: 1000, 'aria-label': 'سبب حذف النسخة الاحتياطية' },
+                showCancelButton: true,
+                confirmButtonText: 'متابعة الحذف',
+                cancelButtonText: 'إلغاء',
+                buttonsStyling: false,
+                customClass: { popup: 'top-gym-alert delete-confirm-alert', confirmButton: 'btn btn-danger', cancelButton: 'btn btn-light' },
+                inputValidator: (value) => String(value || '').trim() ? undefined : 'اكتب سبب الحذف أولًا.'
+            });
+            return result.isConfirmed ? String(result.value || '').trim() : '';
+        }
+        return String(window.prompt('اكتب سبب حذف النسخة الاحتياطية:') || '').trim();
+    }
+
     async function deleteDietPlanFromReport(id, memberId) {
         if (!id) return;
         if (!await confirmDelete('تأكيد حذف خطة التغذية', 'سيتم حذف الخطة ووجباتها وتسجيلاتها المرتبطة بها نهائيًا.')) return;
@@ -563,9 +585,11 @@
     async function deleteBackupArchiveFromReport(id, trigger) {
         if (!id || trigger?.dataset.busy === 'true') return;
         if (!await confirmDelete('تأكيد حذف النسخة الاحتياطية', 'سيتم حذف النسخة المحفوظة من السيرفر نهائيًا، ولن يؤثر ذلك على بيانات النظام الحالية.')) return;
+        const reason = await requestBackupDeleteReason();
+        if (!reason) return;
         if (trigger) trigger.dataset.busy = 'true';
         try {
-            const response = await fetch(`/api/backup/archives/${encodeURIComponent(id)}`, { method: 'DELETE' });
+            const response = await fetch(`/api/backup/archives/${encodeURIComponent(id)}`, { method: 'DELETE', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify({ reason }) });
             const data = await response.json().catch(() => ({}));
             if (!response.ok) throw new Error(data.error || 'تعذر حذف النسخة الاحتياطية.');
             if (window.Swal) window.Swal.fire({ toast: true, position: 'top-start', icon: 'success', title: 'تم حذف النسخة الاحتياطية ✅', showConfirmButton: false, timer: 2600, customClass: { popup: 'top-gym-alert top-gym-toast' } });

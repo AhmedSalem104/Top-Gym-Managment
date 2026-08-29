@@ -55,6 +55,7 @@
                 <button class="platform-nav-item active" type="button" data-platform-view="dashboard"><span class="nav-icon">⌂</span><span>لوحة المنصة</span></button>
                 <button class="platform-nav-item" type="button" data-platform-view="gyms"><span class="nav-icon">▦</span><span>الجيمات</span><b class="nav-count" id="navGymsCount">0</b></button>
                 <button class="platform-nav-item" type="button" data-platform-view="requests"><span class="nav-icon">◌</span><span>طلبات الاشتراك</span><b class="nav-count" id="navRequestsCount">0</b></button>
+                <button class="platform-nav-item" type="button" data-platform-view="backups"><span class="nav-icon">▣</span><span>النسخ والتعافي</span></button>
                 <button class="platform-nav-item" type="button" data-platform-view="plans"><span class="nav-icon">◇</span><span>الباقات</span></button>
                 <button class="platform-nav-item" type="button" data-platform-view="audit"><span class="nav-icon">≡</span><span>سجل المنصة</span></button>
                 <button class="platform-nav-item" type="button" data-platform-view="settings"><span class="nav-icon">⚙</span><span>إعدادات المنصة</span></button>
@@ -106,6 +107,18 @@
 
                 <section class="platform-view" data-platform-panel="plans">
                     <div class="platform-page-head"><div><span class="eyebrow">باقات المنصة</span><h2>الباقات والحدود</h2><p>إدارة أسعار الباقات والمزايا التي يتم تطبيقها مركزيًا.</p></div><button class="platform-btn primary" type="button" data-platform-action="new-plan">+ إضافة باقة</button></div><div class="plan-grid" id="plansGrid"></div>
+                </section>
+
+                <section class="platform-view" data-platform-panel="backups">
+                    <div class="platform-page-head"><div><span class="eyebrow">حماية المنصة</span><h2>النسخ الاحتياطي والتعافي</h2><p>تابع نسخ الجيمات والمنصة، وتحقق من سلامة آخر نسخة قبل الاعتماد عليها.</p></div><div class="platform-page-actions"><button class="platform-btn ghost" type="button" data-platform-action="cleanup-backups">تنظيف المنتهية</button><button class="platform-btn primary" type="button" data-platform-action="run-platform-backup">إنشاء نسخة للمنصة</button></div></div>
+                    <div class="platform-kpi-grid backup-health-grid" id="platformBackupHealthKpis"></div>
+                    <div class="platform-dashboard-grid">
+                        <article class="platform-card"><div class="card-heading"><div><span class="eyebrow">صحة النسخ</span><h3>ملخص النسخ اليومية</h3></div><button class="platform-link-btn" type="button" data-platform-action="refresh-backups">تحديث</button></div><div class="backup-health-summary" id="platformBackupHealthSummary"></div></article>
+                        <article class="platform-card"><div class="card-heading"><div><span class="eyebrow">استعادة المنصة</span><h3>حالة التخزين الخاص</h3></div></div><div class="backup-provider-state" id="platformBackupProviderState"></div></article>
+                    </div>
+                    <article class="platform-card backup-table-card"><div class="card-heading"><div><span class="eyebrow">Platform DR</span><h3>نسخ المنصة</h3></div></div><div class="table-scroll"><table class="platform-table"><thead><tr><th>النوع</th><th>الحالة</th><th>التاريخ</th><th>الحجم</th><th>التحقق</th><th>الإجراء</th></tr></thead><tbody id="platformBackupsTableBody"></tbody></table></div></article>
+                    <article class="platform-card backup-table-card"><div class="card-heading"><div><span class="eyebrow">Tenant Backups</span><h3>آخر نسخة لكل جيم</h3></div></div><div class="table-scroll"><table class="platform-table"><thead><tr><th>الجيم</th><th>الحالة</th><th>يوم النسخة</th><th>الحجم</th><th>آخر تحقق</th><th>الإجراء</th></tr></thead><tbody id="tenantBackupsHealthTableBody"></tbody></table></div></article>
+                    <article class="platform-card backup-table-card"><div class="card-heading"><div><span class="eyebrow">سجل النسخ</span><h3>أحدث عمليات Backup/DR</h3></div></div><div class="table-scroll"><table class="platform-table audit-table"><thead><tr><th>الوقت</th><th>العملية</th><th>النسخة</th><th>النتيجة</th><th>السبب</th></tr></thead><tbody id="platformBackupAuditTableBody"></tbody></table></div></article>
                 </section>
 
                 <section class="platform-view" data-platform-panel="audit">

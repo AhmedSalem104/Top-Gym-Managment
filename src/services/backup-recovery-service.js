@@ -7,6 +7,7 @@ const { getPool, sql } = require('../database');
 const { currentTenantId, getTenantContext, runTenantContext } = require('../tenancy/tenant-context');
 const { config } = require('../config/env');
 const { createObjectStorageService } = require('./object-storage-service');
+const { safeErrorCode } = require('../utils/error-response');
 const {
     PLATFORM_GLOBAL_BACKUP_TABLES,
     TENANT_BACKUP_REGISTRY_VERSION,
@@ -23,6 +24,14 @@ const MAX_BACKUP_ROWS = 150000;
 const BACKUP_CATEGORY = 'backups';
 const ACTIVE_TENANT_STATUSES = Object.freeze(['trial', 'active']);
 const RECOVERY_STATUSES = Object.freeze(['PENDING', 'RUNNING', 'UPLOADED', 'VERIFYING', 'VERIFIED', 'FAILED', 'EXPIRED', 'DELETED']);
+const PLATFORM_SENSITIVE_COLUMNS = new Set([
+    'password_hash',
+    'password_salt',
+    'session_token',
+    'token_hash',
+    'api_key',
+    'secret'
+]);
 
 let recoverySchemaPromise;
 
@@ -32,6 +41,10 @@ function backupError(message, statusCode = 500, code = 'BACKUP_OPERATION_FAILED'
     error.expose = statusCode < 500;
     error.code = code;
     return error;
+}
+
+function recoveryErrorCode(error, fallback) {
+    return safeErrorCode(error, fallback);
 }
 
 function normalizePositiveInteger(value, fallback, maximum = Number.MAX_SAFE_INTEGER) {
@@ -86,7 +99,7 @@ function normalizedTableMap(value) {
     return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
 }
 
-function validateTenantBackupPayload(payload, { expectedTenantId = null } = {}) {
+function validateTenantBackupPayload(payload, { expectedTenantId = null, requireCompleteRegistry = false } = {}) {
     if (!payload || payload.format !== 'logic-fit-tenant-backup') {
         throw backupError('The uploaded file is not a Logic Fit tenant backup.', 400, 'BACKUP_FORMAT_UNSUPPORTED');
     }
@@ -104,17 +117,26 @@ function validateTenantBackupPayload(payload, { expectedTenantId = null } = {}) 
     const knownKeys = new Set(TENANT_BACKUP_TABLES.map((item) => item.key));
     const unknownTables = Object.keys(tables).filter((key) => !knownKeys.has(key));
     if (unknownTables.length) throw backupError('The backup contains an unknown table.', 400, 'BACKUP_TABLE_NOT_ALLOWED');
+    if (requireCompleteRegistry) {
+        const missingTables = TENANT_BACKUP_TABLES.map((item) => item.key).filter((key) => !Object.prototype.hasOwnProperty.call(tables, key));
+        if (missingTables.length) throw backupError('The backup is incomplete for the current tenant registry.', 400, 'BACKUP_REGISTRY_INCOMPLETE');
+    }
     if (!Array.isArray(tables.members)) throw backupError('The backup members table is missing.', 400, 'BACKUP_MEMBERS_TABLE_MISSING');
 
     const counts = {};
     let rowCount = 0;
     for (const [key, rows] of Object.entries(tables)) {
+        const definition = TENANT_BACKUP_TABLES.find((item) => item.key === key);
+        if (!definition) throw backupError('The backup table is not registered.', 400, 'BACKUP_TABLE_NOT_ALLOWED');
         if (!Array.isArray(rows)) throw backupError('A backup table has an invalid shape.', 400, 'BACKUP_TABLE_INVALID');
         if (rows.some((row) => !row || typeof row !== 'object' || Array.isArray(row))) {
             throw backupError('A backup row has an invalid shape.', 400, 'BACKUP_ROW_INVALID');
         }
         const tableRows = rows.map((row) => {
             const tenantKey = Object.keys(row).find((name) => name.toLowerCase() === 'tenant_id');
+            if (definition.tenantScoped && tenantKey === undefined) {
+                throw backupError('The backup contains a row without tenant ownership.', 400, 'BACKUP_TENANT_COLUMN_MISSING');
+            }
             if (tenantKey !== undefined && Number(row[tenantKey]) !== tenantId) {
                 throw backupError('The backup contains records from another gym.', 403, 'BACKUP_CROSS_TENANT_RECORD');
             }
@@ -123,6 +145,21 @@ function validateTenantBackupPayload(payload, { expectedTenantId = null } = {}) 
         counts[key] = tableRows.length;
         rowCount += tableRows.length;
         if (rowCount > MAX_BACKUP_ROWS) throw backupError('The backup exceeds the safe row limit.', 400, 'BACKUP_ROW_LIMIT_EXCEEDED');
+    }
+
+    if (payload.manifest?.registryVersion != null && Number(payload.manifest.registryVersion) !== TENANT_BACKUP_REGISTRY_VERSION) {
+        throw backupError('The backup registry version is not supported.', 400, 'BACKUP_REGISTRY_VERSION_UNSUPPORTED');
+    }
+    if (payload.manifest?.tableCounts && typeof payload.manifest.tableCounts === 'object' && !Array.isArray(payload.manifest.tableCounts)) {
+        for (const [key, count] of Object.entries(counts)) {
+            if (Object.prototype.hasOwnProperty.call(payload.manifest.tableCounts, key)
+                && Number(payload.manifest.tableCounts[key]) !== Number(count)) {
+                throw backupError('The backup manifest counts do not match its records.', 400, 'BACKUP_MANIFEST_INVALID');
+            }
+        }
+        if (payload.manifest.rowCount != null && Number(payload.manifest.rowCount) !== rowCount) {
+            throw backupError('The backup manifest row count is invalid.', 400, 'BACKUP_MANIFEST_INVALID');
+        }
     }
 
     const digest = String(payload.integrity?.sha256 || '').toLowerCase();
@@ -187,7 +224,8 @@ async function loadTableMetadata(pool, definitions) {
     if (!names.length) return new Map();
     const literals = names.map((name) => `N'${name.replaceAll("'", "''")}'`).join(',');
     const result = await pool.request().query(`
-        SELECT t.name AS table_name, c.name, c.is_identity AS isIdentity, c.is_computed AS isComputed
+        SELECT t.name AS table_name, c.name, c.is_identity AS isIdentity, c.is_computed AS isComputed,
+               CASE WHEN c.system_type_id = 189 THEN 1 ELSE 0 END AS isRowVersion
         FROM sys.columns AS c
         INNER JOIN sys.tables AS t ON t.object_id=c.object_id
         INNER JOIN sys.schemas AS s ON s.schema_id=t.schema_id
@@ -200,24 +238,26 @@ async function loadTableMetadata(pool, definitions) {
         if (metadata.has(table)) metadata.get(table).push({
             name: String(row.name),
             isIdentity: Boolean(row.isIdentity),
-            isComputed: Boolean(row.isComputed)
+            isComputed: Boolean(row.isComputed),
+            isRowVersion: Boolean(row.isRowVersion)
         });
     }
     return metadata;
 }
 
-function metadataColumns(metadata, table) {
+function metadataColumns(metadata, table, { excludeSensitive = false } = {}) {
     const columns = metadata.get(table) || [];
     if (!columns.length) throw backupError('A required backup table is missing.', 503, 'BACKUP_TABLE_MISSING');
-    return columns.filter((column) => !column.isComputed);
+    return columns.filter((column) => !column.isComputed && !column.isRowVersion
+        && (!excludeSensitive || !PLATFORM_SENSITIVE_COLUMNS.has(String(column.name).toLowerCase())));
 }
 
 function hasTenantColumn(columns) {
     return columns.some((column) => column.name.toLowerCase() === 'tenant_id');
 }
 
-async function readTableRows(pool, definition, metadata, { tenantId = null, allTenants = false } = {}) {
-    const columns = metadataColumns(metadata, definition.table);
+async function readTableRows(pool, definition, metadata, { tenantId = null, allTenants = false, excludeSensitive = false } = {}) {
+    const columns = metadataColumns(metadata, definition.table, { excludeSensitive });
     if (definition.tenantScoped && !hasTenantColumn(columns)) {
         throw backupError('A backup table is not tenant-scoped yet.', 503, 'BACKUP_TABLE_NOT_TENANT_SCOPED');
     }
@@ -482,9 +522,9 @@ function safeJson(value, fallback = {}) {
     try { return JSON.parse(value || ''); } catch (_) { return fallback; }
 }
 
-function mapRecord(row, scope = 'tenant') {
+function mapRecord(row, scope = 'tenant', { includeStorageKey = false } = {}) {
     if (!row) return null;
-    return {
+    const mapped = {
         id: Number(row.id),
         tenantId: row.tenant_id == null ? null : Number(row.tenant_id),
         backupType: row.backup_type,
@@ -510,10 +550,12 @@ function mapRecord(row, scope = 'tenant') {
         updatedAt: row.updated_at,
         scope
     };
+    if (includeStorageKey) mapped.storageKey = row.storage_key || null;
+    return mapped;
 }
 
 function recordColumnList(scope = 'tenant') {
-    return `${scope === 'tenant' ? 'id,tenant_id,' : 'id,'}backup_type,backup_day,status,backup_version,schema_version,backup_format,file_name,content_type,size_bytes,checksum_sha256,manifest_json,row_count,table_counts_json,attempt_count,error_code,started_at,completed_at,verified_at,expires_at,created_at,updated_at`;
+    return `${scope === 'tenant' ? 'id,tenant_id,' : 'id,'}backup_type,backup_day,status,backup_version,schema_version,backup_format,file_name,storage_key,content_type,size_bytes,checksum_sha256,manifest_json,row_count,table_counts_json,attempt_count,error_code,started_at,completed_at,verified_at,expires_at,created_at,updated_at`;
 }
 
 function recordSelect(scope = 'tenant') {
@@ -682,9 +724,28 @@ async function verifyStoredTenantObject(storage, { tenantId, key, expectedSize, 
     return { checksum: actualChecksum, size: actualSize };
 }
 
+async function verifyStoredPlatformObject(storage, { key, expectedSize, expectedChecksum } = {}) {
+    const head = await storage.headPrivatePlatformObject({ key });
+    if (!head) throw backupError('The stored platform backup artifact is missing.', 503, 'BACKUP_ARTIFACT_MISSING');
+    let actualChecksum = String(head.checksum || '').toLowerCase();
+    let actualSize = Number(head.size);
+    if (!/^[a-f0-9]{64}$/.test(actualChecksum) || !Number.isFinite(actualSize)) {
+        const object = await storage.getPrivatePlatformObject({ key });
+        if (!object || !Buffer.isBuffer(object.body)) throw backupError('The storage provider cannot verify the platform backup artifact.', 503, 'BACKUP_ARTIFACT_UNVERIFIABLE');
+        actualChecksum = crypto.createHash('sha256').update(object.body).digest('hex');
+        actualSize = object.body.length;
+    }
+    if (actualChecksum !== String(expectedChecksum).toLowerCase() || actualSize !== Number(expectedSize)) {
+        throw backupError('The stored platform backup checksum does not match.', 503, 'BACKUP_ARTIFACT_CHECKSUM_MISMATCH');
+    }
+    return { checksum: actualChecksum, size: actualSize };
+}
+
 async function createTenantBackup({ tenantId = null, backupType = 'tenant_manual', format = 'json.gz', actorUserId = null, reason = '', now = new Date(), concurrency = 2, storageService = null } = {}) {
     const trustedTenantId = tenantScopeId(tenantId);
     if (!['tenant_daily', 'tenant_manual', 'tenant_pre_restore'].includes(backupType)) throw backupError('The tenant backup type is invalid.', 400, 'BACKUP_TYPE_INVALID');
+    const normalizedReason = String(reason || '').trim().slice(0, 1000);
+    if (backupType === 'tenant_manual' && !normalizedReason) throw backupError('A reason is required before starting a manual backup.', 400, 'BACKUP_REASON_REQUIRED');
     await ensureRecoveryTables();
     const normalizedFormat = String(format).toLowerCase() === 'bak' ? 'bak' : 'json.gz';
     const backupDay = backupDayKey(now);
@@ -701,17 +762,18 @@ async function createTenantBackup({ tenantId = null, backupType = 'tenant_manual
     if (!claim.claimed) return { idempotent: true, record: claim.record, providerStatus: 'not_requested' };
 
     const storage = storageService || createObjectStorageService();
+    let stored = null;
     try {
         await writeTenantBackupAudit({
             tenantId: trustedTenantId,
             backupId: claim.record.id,
             eventType: 'BACKUP_CREATED',
             actorUserId,
-            reason,
+            reason: normalizedReason,
             metadata: { backupType, format: normalizedFormat }
         });
         const backup = await buildTenantBackupArtifact({ tenantId: trustedTenantId, format: normalizedFormat, now, concurrency });
-        const stored = await storage.putPrivateObject({
+        stored = await storage.putPrivateObject({
             tenantId: trustedTenantId,
             category: BACKUP_CATEGORY,
             objectName: fileName,
@@ -746,20 +808,32 @@ async function createTenantBackup({ tenantId = null, backupType = 'tenant_manual
             backupId: claim.record.id,
             eventType: 'BACKUP_VERIFIED',
             actorUserId,
-            reason,
+            reason: normalizedReason,
             metadata: { sizeBytes: backup.buffer.length, rowCount: backup.rowCount, checksumVerified: true }
         });
         return { idempotent: false, record: { ...claim.record, status: 'VERIFIED', storageKey: undefined, sizeBytes: backup.buffer.length, checksum: backup.checksum }, providerStatus: storage.providerStatus };
     } catch (error) {
-        await updateTenantRecord(trustedTenantId, claim.record.id, { status: 'FAILED', errorCode: String(error.code || 'BACKUP_STORAGE_FAILED').slice(0, 100), completedAt: new Date(now) }).catch(() => {});
+        const errorCode = recoveryErrorCode(error, 'BACKUP_STORAGE_FAILED');
+        let artifactCleanup = 'not_needed';
+        if (stored?.key) {
+            try {
+                await storage.deletePrivateObject({ tenantId: trustedTenantId, key: stored.key });
+                artifactCleanup = 'completed';
+            } catch (_) {
+                artifactCleanup = 'pending';
+            }
+        }
+        const failureValues = { status: 'FAILED', errorCode, completedAt: new Date(now) };
+        if (stored?.key && artifactCleanup === 'completed') failureValues.storageKey = null;
+        await updateTenantRecord(trustedTenantId, claim.record.id, failureValues).catch(() => {});
         await writeTenantBackupAudit({
             tenantId: trustedTenantId,
             backupId: claim.record.id,
             eventType: 'BACKUP_FAILED',
             actorUserId,
-            reason,
+            reason: normalizedReason,
             result: 'failed',
-            metadata: { errorCode: String(error.code || 'BACKUP_STORAGE_FAILED').slice(0, 100) }
+            metadata: { errorCode, artifactCleanup }
         }).catch(() => {});
         throw error;
     }
@@ -773,25 +847,288 @@ async function getTenantBackupHistory({ tenantId = null, limit = 30, readOnly = 
     return result.recordset.map((row) => mapRecord(row));
 }
 
-async function getTenantBackupRecord(id, { tenantId = null, readOnly = false } = {}) {
+async function getTenantBackupRecord(id, { tenantId = null, readOnly = false, includeStorageKey = false } = {}) {
     const trustedTenantId = tenantScopeId(tenantId);
     const normalizedId = Number(id);
     if (!Number.isInteger(normalizedId) || normalizedId <= 0) throw backupError('The backup id is invalid.', 400, 'INVALID_BACKUP_ID');
     await ensureRecoveryTables({ readOnly });
     const result = await (await getPool()).request().input('id', sql.BigInt, normalizedId).input('tenantId', sql.Int, trustedTenantId).query(`${recordSelect('tenant')} WHERE id=@id AND tenant_id=@tenantId;`);
-    return mapRecord(result.recordset[0]);
+    return mapRecord(result.recordset[0], 'tenant', { includeStorageKey });
 }
 
-async function downloadTenantBackup(id, { tenantId = null, readOnly = false, storageService = null } = {}) {
+async function getTenantBackupAudit({ tenantId = null, limit = 50, readOnly = false } = {}) {
     const trustedTenantId = tenantScopeId(tenantId);
-    const record = await getTenantBackupRecord(id, { tenantId: trustedTenantId, readOnly });
+    await ensureRecoveryTables({ readOnly });
+    const safeLimit = normalizePositiveInteger(limit, 50, 200);
+    const result = await (await getPool()).request()
+        .input('tenantId', sql.Int, trustedTenantId)
+        .input('limit', sql.Int, safeLimit)
+        .query(`SELECT TOP (@limit) id,backup_id,event_type,actor_user_id,reason,result,safe_metadata_json,created_at
+                FROM dbo.gym_backup_audit_log
+                WHERE tenant_id=@tenantId ORDER BY created_at DESC,id DESC;`);
+    return result.recordset.map((row) => ({
+        id: Number(row.id),
+        backupId: row.backup_id == null ? null : Number(row.backup_id),
+        eventType: row.event_type,
+        actorUserId: row.actor_user_id == null ? null : Number(row.actor_user_id),
+        reason: row.reason || '',
+        result: row.result,
+        metadata: safeJson(row.safe_metadata_json),
+        createdAt: row.created_at
+    }));
+}
+
+async function downloadTenantBackup(id, { tenantId = null, readOnly = false, actorUserId = null, auditDownload = false, storageService = null } = {}) {
+    const trustedTenantId = tenantScopeId(tenantId);
+    const record = await getTenantBackupRecord(id, { tenantId: trustedTenantId, readOnly, includeStorageKey: true });
     if (!record) throw backupError('The requested backup is not available.', 404, 'BACKUP_NOT_FOUND');
     if (record.status !== 'VERIFIED') throw backupError('Only verified backups can be downloaded.', 409, 'BACKUP_NOT_VERIFIED');
     const raw = await (storageService || createObjectStorageService()).getPrivateObject({ tenantId: trustedTenantId, key: record.storageKey });
     if (!raw || !Buffer.isBuffer(raw.body)) throw backupError('The backup artifact is not available.', 404, 'BACKUP_ARTIFACT_MISSING');
     const checksum = crypto.createHash('sha256').update(raw.body).digest('hex');
     if (checksum !== String(record.checksum || '').toLowerCase()) throw backupError('The backup artifact failed integrity verification.', 503, 'BACKUP_ARTIFACT_CHECKSUM_MISMATCH');
+    if (auditDownload) {
+        // Ordinary GETs run in a read-only context. A download is an explicit
+        // user action, so its audit insert is isolated in a write-enabled
+        // tenant context without changing the data-read path itself.
+        await runTenantContext({ tenantId: trustedTenantId, userId: actorUserId, mode: 'tenant', readOnlyBaseline: false }, () => writeTenantBackupAudit({
+            tenantId: trustedTenantId,
+            backupId: record.id,
+            eventType: 'BACKUP_DOWNLOADED',
+            actorUserId,
+            metadata: { sizeBytes: raw.body.length, checksumVerified: true }
+        }));
+    }
     return { record, body: raw.body, contentType: raw.contentType || 'application/gzip', fileName: record.fileName };
+}
+
+function restoreScalar(value) {
+    if (value === undefined || value === null || typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') return value;
+    if (value && value.type === 'Buffer' && Array.isArray(value.data)) return Buffer.from(value.data);
+    throw backupError('The backup contains an unsupported value.', 400, 'BACKUP_VALUE_INVALID');
+}
+
+async function loadRestoreOrder(pool, definitions) {
+    const names = safeTableNames(definitions);
+    if (!names.length) return [];
+    const literals = names.map((name) => `N'${name.replaceAll("'", "''")}'`).join(',');
+    const result = await pool.request().query(`
+        SELECT childTable.name AS child_table, parentTable.name AS parent_table
+        FROM sys.foreign_keys AS foreignKey
+        INNER JOIN sys.tables AS childTable ON childTable.object_id=foreignKey.parent_object_id
+        INNER JOIN sys.tables AS parentTable ON parentTable.object_id=foreignKey.referenced_object_id
+        INNER JOIN sys.schemas AS childSchema ON childSchema.schema_id=childTable.schema_id
+        INNER JOIN sys.schemas AS parentSchema ON parentSchema.schema_id=parentTable.schema_id
+        WHERE childSchema.name=N'dbo' AND parentSchema.name=N'dbo'
+          AND childTable.name IN (${literals}) AND parentTable.name IN (${literals});
+    `);
+    const definitionByTable = new Map(definitions.map((item) => [item.table, item]));
+    const adjacency = new Map(definitions.map((item) => [item.table, new Set()]));
+    const indegree = new Map(definitions.map((item) => [item.table, 0]));
+    for (const row of result.recordset) {
+        const child = String(row.child_table);
+        const parent = String(row.parent_table);
+        if (child === parent || !definitionByTable.has(child) || !definitionByTable.has(parent)) continue;
+        const children = adjacency.get(parent);
+        if (children.has(child)) continue;
+        children.add(child);
+        indegree.set(child, indegree.get(child) + 1);
+    }
+    const queue = definitions.filter((item) => indegree.get(item.table) === 0).map((item) => item.table);
+    const ordered = [];
+    while (queue.length) {
+        const table = queue.shift();
+        ordered.push(definitionByTable.get(table));
+        for (const child of adjacency.get(table) || []) {
+            indegree.set(child, indegree.get(child) - 1);
+            if (indegree.get(child) === 0) queue.push(child);
+        }
+    }
+    // Self-references/cycles are rare in the tenant catalog. Preserve the
+    // registry order for any cycle so the operation remains deterministic;
+    // the transaction will roll back if the database cannot accept it.
+    for (const definition of definitions) if (!ordered.includes(definition)) ordered.push(definition);
+    return ordered;
+}
+
+async function acquireTenantRecoveryLock(transaction, tenantId) {
+    const result = await transaction.request()
+        .input('lockResource', sql.NVarChar(255), `logic-fit:tenant-recovery:${tenantId}`)
+        .query(`
+            DECLARE @lockResult INT;
+            EXEC @lockResult = sys.sp_getapplock
+                @Resource=@lockResource,
+                @LockMode='Exclusive',
+                @LockOwner='Transaction',
+                @LockTimeout=0;
+            SELECT @lockResult AS lock_result;
+        `);
+    if (Number(result.recordset[0]?.lock_result) < 0) {
+        throw backupError('Another backup or restore is using this gym. Try again shortly.', 409, 'BACKUP_TENANT_BUSY');
+    }
+}
+
+async function insertTenantRows(transaction, definition, rows, metadata) {
+    if (!rows.length) return;
+    const columns = metadataColumns(metadata, definition.table);
+    const insertColumns = columns.filter((column) => rows.some((row) => Object.prototype.hasOwnProperty.call(row, column.name)
+        || Object.prototype.hasOwnProperty.call(row, column.name.toLowerCase())));
+    if (!insertColumns.length) return;
+    const quotedTable = `dbo.${quoteIdentifier(definition.table)}`;
+    const quotedColumns = insertColumns.map((column) => quoteIdentifier(column.name)).join(', ');
+    const usesIdentity = insertColumns.some((column) => column.isIdentity);
+    if (usesIdentity) await transaction.request().query(`SET IDENTITY_INSERT ${quotedTable} ON;`);
+    try {
+        for (let rowIndex = 0; rowIndex < rows.length; rowIndex += 1) {
+            const row = rows[rowIndex];
+            const request = transaction.request();
+            const values = insertColumns.map((column, columnIndex) => {
+                const sourceKey = Object.keys(row).find((key) => key.toLowerCase() === column.name.toLowerCase());
+                const value = restoreScalar(sourceKey === undefined ? null : row[sourceKey]);
+                const parameter = `restore_${rowIndex}_${columnIndex}`;
+                if (value === null) request.input(parameter, sql.NVarChar(1), null);
+                else request.input(parameter, value);
+                return `@${parameter}`;
+            });
+            await request.query(`INSERT INTO ${quotedTable} (${quotedColumns}) VALUES (${values.join(', ')});`);
+        }
+    } finally {
+        if (usesIdentity) await transaction.request().query(`SET IDENTITY_INSERT ${quotedTable} OFF;`).catch(() => {});
+    }
+}
+
+async function verifyRestoredTenantCounts(transaction, definitions, payload, tenantId) {
+    const verifiedCounts = {};
+    for (const definition of definitions) {
+        if (!Object.prototype.hasOwnProperty.call(payload.tables, definition.key)) continue;
+        const result = await transaction.request()
+            .input('tenantId', sql.Int, tenantId)
+            .query(`SELECT COUNT_BIG(*) AS total FROM dbo.${quoteIdentifier(definition.table)} WHERE [tenant_id]=@tenantId;`);
+        const actual = Number(result.recordset[0]?.total || 0);
+        const expected = Number(payload.manifest?.tableCounts?.[definition.key] || 0);
+        if (actual !== expected) throw backupError('The restored gym data failed integrity validation.', 503, 'RESTORE_COUNT_MISMATCH');
+        verifiedCounts[definition.key] = actual;
+    }
+    return verifiedCounts;
+}
+
+async function restoreTenantBackup(input, {
+    tenantId = null,
+    actorUserId = null,
+    reason = '',
+    fileName = 'tenant-backup.json.gz',
+    storageService = null
+} = {}) {
+    const trustedTenantId = tenantScopeId(tenantId);
+    const normalizedReason = String(reason || '').trim().slice(0, 1000);
+    if (!normalizedReason) throw backupError('A reason is required before restoring a gym backup.', 400, 'BACKUP_RESTORE_REASON_REQUIRED');
+    const inspected = input?.payload
+        ? input
+        : await inspectTenantBackupBuffer(input, { expectedTenantId: trustedTenantId });
+    validateTenantBackupPayload(inspected.payload, { expectedTenantId: trustedTenantId, requireCompleteRegistry: true });
+    await ensureRecoveryTables();
+    await writeTenantBackupAudit({
+        tenantId: trustedTenantId,
+        eventType: 'RESTORE_REQUESTED',
+        actorUserId,
+        reason: normalizedReason,
+        metadata: { fileName: String(fileName || '').slice(0, 260), rowCount: inspected.rowCount }
+    });
+
+    // A restore is blocked unless a verified pre-restore copy can be stored.
+    // This prevents a failed logical restore from becoming an irreversible
+    // destructive action when private storage is not configured.
+    const safetyBackup = await createTenantBackup({
+        tenantId: trustedTenantId,
+        backupType: 'tenant_pre_restore',
+        actorUserId,
+        reason: `Pre-restore safety copy: ${normalizedReason}`,
+        storageService
+    });
+
+    const pool = await getPool();
+    const transaction = pool.transaction();
+    let committed = false;
+    try {
+        await transaction.begin();
+        await acquireTenantRecoveryLock(transaction, trustedTenantId);
+        const metadata = await loadTableMetadata(pool, TENANT_BACKUP_TABLES);
+        const order = await loadRestoreOrder(pool, TENANT_BACKUP_TABLES);
+        for (const definition of [...order].reverse()) {
+            if (!Object.prototype.hasOwnProperty.call(inspected.payload.tables, definition.key)) continue;
+            const columns = metadataColumns(metadata, definition.table);
+            if (!hasTenantColumn(columns)) throw backupError('A restore table is not tenant-scoped.', 503, 'RESTORE_TABLE_NOT_TENANT_SCOPED');
+            await transaction.request()
+                .input('tenantId', sql.Int, trustedTenantId)
+                .query(`DELETE FROM dbo.${quoteIdentifier(definition.table)} WHERE [tenant_id]=@tenantId;`);
+        }
+        for (const definition of order) {
+            const rows = inspected.payload.tables[definition.key];
+            if (!rows) continue;
+            await insertTenantRows(transaction, definition, rows, metadata);
+        }
+        const verifiedCounts = await verifyRestoredTenantCounts(transaction, order, inspected.payload, trustedTenantId);
+        await transaction.commit();
+        committed = true;
+        await writeTenantBackupAudit({
+            tenantId: trustedTenantId,
+            backupId: safetyBackup.record?.id || null,
+            eventType: 'RESTORE_COMPLETED',
+            actorUserId,
+            reason: normalizedReason,
+            metadata: { rowCount: inspected.rowCount, verifiedCounts, safetyBackupId: safetyBackup.record?.id || null }
+        });
+        return {
+            restored: true,
+            tenantId: trustedTenantId,
+            rowCount: inspected.rowCount,
+            tableCounts: verifiedCounts,
+            generatedAt: inspected.generatedAt,
+            safetyBackupId: safetyBackup.record?.id || null,
+            integrity: inspected.integrity
+        };
+    } catch (error) {
+        if (!committed) {
+            try { await transaction.rollback(); } catch (_) { /* preserve original restore failure */ }
+        }
+        await writeTenantBackupAudit({
+            tenantId: trustedTenantId,
+            backupId: safetyBackup.record?.id || null,
+            eventType: 'RESTORE_FAILED',
+            actorUserId,
+            reason: normalizedReason,
+            result: 'failed',
+            metadata: { errorCode: recoveryErrorCode(error, 'RESTORE_FAILED'), safetyBackupId: safetyBackup.record?.id || null }
+        }).catch(() => {});
+        throw error;
+    }
+}
+
+async function restoreTenantBackupRecord(id, options = {}) {
+    const downloaded = await downloadTenantBackup(id, options);
+    return restoreTenantBackup(downloaded.body, {
+        ...options,
+        tenantId: options.tenantId,
+        fileName: downloaded.fileName
+    });
+}
+
+async function deleteTenantBackup(id, { tenantId = null, actorUserId = null, reason = '', storageService = null } = {}) {
+    const trustedTenantId = tenantScopeId(tenantId);
+    const normalizedReason = String(reason || '').trim().slice(0, 1000);
+    if (!normalizedReason) throw backupError('A reason is required before deleting a backup.', 400, 'BACKUP_DELETE_REASON_REQUIRED');
+    const record = await getTenantBackupRecord(id, { tenantId: trustedTenantId, includeStorageKey: true });
+    if (!record) throw backupError('The requested backup is not available.', 404, 'BACKUP_NOT_FOUND');
+    if (['RUNNING', 'UPLOADED', 'VERIFYING'].includes(record.status)) throw backupError('This backup is still being processed.', 409, 'BACKUP_BUSY');
+    const storage = storageService || createObjectStorageService();
+    if (record.storageKey) await storage.deletePrivateObject({ tenantId: trustedTenantId, key: record.storageKey });
+    const result = await (await getPool()).request()
+        .input('id', sql.BigInt, Number(id))
+        .input('tenantId', sql.Int, trustedTenantId)
+        .query(`UPDATE dbo.gym_backup_records SET status='DELETED',updated_at=SYSUTCDATETIME() WHERE id=@id AND tenant_id=@tenantId AND status NOT IN ('RUNNING','UPLOADED','VERIFYING');`);
+    if (!result.rowsAffected.some((count) => Number(count) > 0)) throw backupError('The backup could not be deleted.', 409, 'BACKUP_DELETE_CONFLICT');
+    await writeTenantBackupAudit({ tenantId: trustedTenantId, backupId: Number(id), eventType: 'BACKUP_DELETED', actorUserId, reason: normalizedReason });
+    return { id: Number(id), deleted: true };
 }
 
 async function claimPlatformRecord({ backupType, backupDay, fileName, format, actorUserId = null, backupVersion = BACKUP_VERSION, schemaVersion = SCHEMA_VERSION, expiresAt = null } = {}) {
@@ -799,6 +1136,7 @@ async function claimPlatformRecord({ backupType, backupDay, fileName, format, ac
     const transaction = pool.transaction();
     await transaction.begin();
     try {
+        const deduplicateByDay = ['platform_daily', 'platform_weekly', 'platform_monthly'].includes(backupType);
         const result = await transaction.request()
             .input('backupType', sql.VarChar(32), backupType)
             .input('backupDay', sql.Date, dateValue(backupDay))
@@ -810,8 +1148,8 @@ async function claimPlatformRecord({ backupType, backupDay, fileName, format, ac
             .input('expiresAt', sql.DateTime2(0), expiresAt)
             .query(`
                 DECLARE @id BIGINT=NULL; DECLARE @claimed BIT=0;
-                SELECT TOP (1) @id=id FROM dbo.gym_platform_backup_records WITH (UPDLOCK,HOLDLOCK)
-                WHERE backup_type=@backupType AND backup_day=@backupDay;
+                ${deduplicateByDay ? `SELECT TOP (1) @id=id FROM dbo.gym_platform_backup_records WITH (UPDLOCK,HOLDLOCK)
+                WHERE backup_type=@backupType AND backup_day=@backupDay;` : ''}
                 IF @id IS NULL
                 BEGIN
                     INSERT INTO dbo.gym_platform_backup_records
@@ -848,7 +1186,7 @@ async function buildPlatformBackupArtifact({ format = 'json.gz', now = new Date(
     const tenantMetadata = await loadTableMetadata(pool, TENANT_BACKUP_TABLES);
     const globalRows = await mapWithConcurrency(PLATFORM_GLOBAL_BACKUP_TABLES, async (definition) => [
         definition.key,
-        await readTableRows(pool, { ...definition, tenantScoped: false }, globalMetadata)
+        await readTableRows(pool, { ...definition, tenantScoped: false }, globalMetadata, { excludeSensitive: true })
     ], concurrency);
     const tenantRows = await mapWithConcurrency(TENANT_BACKUP_TABLES, async (definition) => [
         definition.key,
@@ -903,6 +1241,8 @@ async function buildPlatformBackupArtifact({ format = 'json.gz', now = new Date(
 async function createPlatformBackup({ backupType = 'platform_daily', format = 'json.gz', actorUserId = null, reason = '', now = new Date(), concurrency = 2, storageService = null } = {}) {
     assertPlatformScope();
     if (!['platform_daily', 'platform_weekly', 'platform_monthly', 'platform_manual'].includes(backupType)) throw backupError('The platform backup type is invalid.', 400, 'BACKUP_TYPE_INVALID');
+    const normalizedReason = String(reason || '').trim().slice(0, 1000);
+    if (backupType === 'platform_manual' && !normalizedReason) throw backupError('A reason is required before starting a manual platform backup.', 400, 'BACKUP_REASON_REQUIRED');
     await ensureRecoveryTables();
     const normalizedFormat = String(format).toLowerCase() === 'bak' ? 'bak' : 'json.gz';
     const backupDay = backupDayKey(now);
@@ -917,16 +1257,17 @@ async function createPlatformBackup({ backupType = 'platform_daily', format = 'j
     });
     if (!claim.claimed) return { idempotent: true, record: claim.record, providerStatus: 'not_requested' };
     const storage = storageService || createObjectStorageService();
+    let stored = null;
     try {
         await writePlatformBackupAudit({
             backupId: claim.record.id,
             eventType: 'PLATFORM_BACKUP_STARTED',
             actorUserId,
-            reason,
+            reason: normalizedReason,
             metadata: { backupType, format: normalizedFormat }
         });
         const backup = await buildPlatformBackupArtifact({ format: normalizedFormat, now, concurrency });
-        const stored = await storage.putPrivatePlatformObject({
+        stored = await storage.putPrivatePlatformObject({
             category: BACKUP_CATEGORY,
             objectName: backup.filename,
             contentType: 'application/gzip',
@@ -944,29 +1285,167 @@ async function createPlatformBackup({ backupType = 'platform_daily', format = 'j
             tableCountsJson: jsonStringify(backup.rowCounts)
         });
         await updatePlatformRecord(claim.record.id, { status: 'VERIFYING' });
-        const head = await storage.headPrivatePlatformObject({ key: stored.key });
-        if (!head || String(head.checksum || '').toLowerCase() !== backup.checksum || Number(head.size) !== backup.buffer.length) throw backupError('The platform backup artifact failed verification.', 503, 'BACKUP_ARTIFACT_CHECKSUM_MISMATCH');
+        await verifyStoredPlatformObject(storage, {
+            key: stored.key,
+            expectedSize: backup.buffer.length,
+            expectedChecksum: backup.checksum
+        });
         await updatePlatformRecord(claim.record.id, { status: 'VERIFIED', completedAt: new Date(now), verifiedAt: new Date(now) });
         await writePlatformBackupAudit({
             backupId: claim.record.id,
             eventType: 'PLATFORM_BACKUP_COMPLETED',
             actorUserId,
-            reason,
+            reason: normalizedReason,
             metadata: { sizeBytes: backup.buffer.length, rowCount: backup.rowCount, checksumVerified: true }
         });
         return { idempotent: false, record: { ...claim.record, status: 'VERIFIED', sizeBytes: backup.buffer.length, checksum: backup.checksum }, providerStatus: storage.providerStatus };
     } catch (error) {
-        await updatePlatformRecord(claim.record.id, { status: 'FAILED', errorCode: String(error.code || 'BACKUP_STORAGE_FAILED').slice(0, 100), completedAt: new Date(now) }).catch(() => {});
+        const errorCode = recoveryErrorCode(error, 'BACKUP_STORAGE_FAILED');
+        let artifactCleanup = 'not_needed';
+        if (stored?.key) {
+            try {
+                await storage.deletePrivatePlatformObject({ key: stored.key });
+                artifactCleanup = 'completed';
+            } catch (_) {
+                artifactCleanup = 'pending';
+            }
+        }
+        const failureValues = { status: 'FAILED', errorCode, completedAt: new Date(now) };
+        if (stored?.key && artifactCleanup === 'completed') failureValues.storageKey = null;
+        await updatePlatformRecord(claim.record.id, failureValues).catch(() => {});
         await writePlatformBackupAudit({
             backupId: claim.record.id,
             eventType: 'PLATFORM_BACKUP_FAILED',
             actorUserId,
-            reason,
+            reason: normalizedReason,
             result: 'failed',
-            metadata: { errorCode: String(error.code || 'BACKUP_STORAGE_FAILED').slice(0, 100) }
+            metadata: { errorCode, artifactCleanup }
         }).catch(() => {});
         throw error;
     }
+}
+
+async function getPlatformBackupHistory({ limit = 30, readOnly = false } = {}) {
+    assertPlatformScope();
+    await ensureRecoveryTables({ readOnly });
+    const safeLimit = normalizePositiveInteger(limit, 30, 100);
+    const result = await (await getPool()).request()
+        .input('limit', sql.Int, safeLimit)
+        .query(`${recordSelect('platform')} ORDER BY created_at DESC,id DESC OFFSET 0 ROWS FETCH NEXT @limit ROWS ONLY;`);
+    return result.recordset.map((row) => mapRecord(row, 'platform'));
+}
+
+async function getPlatformBackupRecord(id, { readOnly = false, includeStorageKey = false } = {}) {
+    assertPlatformScope();
+    const normalizedId = Number(id);
+    if (!Number.isInteger(normalizedId) || normalizedId <= 0) throw backupError('The platform backup id is invalid.', 400, 'INVALID_BACKUP_ID');
+    await ensureRecoveryTables({ readOnly });
+    const result = await (await getPool()).request()
+        .input('id', sql.BigInt, normalizedId)
+        .query(`${recordSelect('platform')} WHERE id=@id;`);
+    return mapRecord(result.recordset[0], 'platform', { includeStorageKey });
+}
+
+async function getPlatformBackupAudit({ limit = 50, readOnly = false } = {}) {
+    assertPlatformScope();
+    await ensureRecoveryTables({ readOnly });
+    const safeLimit = normalizePositiveInteger(limit, 50, 200);
+    const result = await (await getPool()).request()
+        .input('limit', sql.Int, safeLimit)
+        .query(`SELECT TOP (@limit) id,backup_id,event_type,actor_user_id,reason,result,safe_metadata_json,created_at
+                FROM dbo.gym_platform_backup_audit_log ORDER BY created_at DESC,id DESC;`);
+    return result.recordset.map((row) => ({
+        id: Number(row.id),
+        backupId: row.backup_id == null ? null : Number(row.backup_id),
+        eventType: row.event_type,
+        actorUserId: row.actor_user_id == null ? null : Number(row.actor_user_id),
+        reason: row.reason || '',
+        result: row.result,
+        metadata: safeJson(row.safe_metadata_json),
+        createdAt: row.created_at
+    }));
+}
+
+async function downloadPlatformBackup(id, { readOnly = false, actorUserId = null, auditDownload = false, storageService = null } = {}) {
+    const record = await getPlatformBackupRecord(id, { readOnly, includeStorageKey: true });
+    if (!record) throw backupError('The requested platform backup is not available.', 404, 'BACKUP_NOT_FOUND');
+    if (record.status !== 'VERIFIED') throw backupError('Only verified backups can be downloaded.', 409, 'BACKUP_NOT_VERIFIED');
+    const storage = storageService || createObjectStorageService();
+    const raw = await storage.getPrivatePlatformObject({ key: record.storageKey });
+    if (!raw || !Buffer.isBuffer(raw.body)) throw backupError('The platform backup artifact is not available.', 404, 'BACKUP_ARTIFACT_MISSING');
+    const checksum = crypto.createHash('sha256').update(raw.body).digest('hex');
+    if (checksum !== String(record.checksum || '').toLowerCase()) throw backupError('The platform backup artifact failed integrity verification.', 503, 'BACKUP_ARTIFACT_CHECKSUM_MISMATCH');
+    if (auditDownload) {
+        // Platform download routes are normal GETs and therefore inherit a
+        // read-only request context. Audit the deliberate download in an
+        // explicit platform context rather than mutating the read path.
+        await runTenantContext({ tenantId: null, userId: actorUserId, mode: 'platform', readOnlyBaseline: false }, () => writePlatformBackupAudit({
+            backupId: record.id,
+            eventType: 'PLATFORM_BACKUP_DOWNLOADED',
+            actorUserId,
+            metadata: { sizeBytes: raw.body.length, checksumVerified: true }
+        }));
+    }
+    return { record, body: raw.body, contentType: raw.contentType || 'application/gzip', fileName: record.fileName };
+}
+
+async function cleanupExpiredBackups({ now = new Date(), concurrency = 2, storageService = null, limit = 200, actorUserId = null, reason = '' } = {}) {
+    assertPlatformScope();
+    await ensureRecoveryTables();
+    const storage = storageService || createObjectStorageService();
+    const safeLimit = normalizePositiveInteger(limit, 200, 500);
+    const pool = await getPool();
+    const [tenantResult, platformResult] = await Promise.all([
+        pool.request().input('now', sql.DateTime2(0), now).input('limit', sql.Int, safeLimit).query(`
+            SELECT TOP (@limit) id,tenant_id,status,storage_key,checksum_sha256,size_bytes
+            FROM dbo.gym_backup_records
+            WHERE expires_at IS NOT NULL AND expires_at <= @now AND status IN ('VERIFIED','FAILED','EXPIRED')
+            ORDER BY expires_at,id;`),
+        pool.request().input('now', sql.DateTime2(0), now).input('limit', sql.Int, safeLimit).query(`
+            SELECT TOP (@limit) id,status,storage_key,checksum_sha256,size_bytes
+            FROM dbo.gym_platform_backup_records
+            WHERE expires_at IS NOT NULL AND expires_at <= @now AND status IN ('VERIFIED','FAILED','EXPIRED')
+            ORDER BY expires_at,id;`)
+    ]);
+    const tenantResults = await mapWithConcurrency(tenantResult.recordset, async (row) => {
+        const tenantId = Number(row.tenant_id);
+        const id = Number(row.id);
+        try {
+            if (['VERIFIED', 'FAILED'].includes(String(row.status))) {
+                await pool.request().input('id', sql.BigInt, id).input('tenantId', sql.Int, tenantId).query("UPDATE dbo.gym_backup_records SET status='EXPIRED',updated_at=SYSUTCDATETIME() WHERE id=@id AND tenant_id=@tenantId AND status IN ('VERIFIED','FAILED');");
+            }
+            if (row.storage_key) await storage.deletePrivateObject({ tenantId, key: row.storage_key });
+            await pool.request().input('id', sql.BigInt, id).input('tenantId', sql.Int, tenantId).query("UPDATE dbo.gym_backup_records SET status='DELETED',updated_at=SYSUTCDATETIME() WHERE id=@id AND tenant_id=@tenantId AND status='EXPIRED';");
+            await writeTenantBackupAudit({ tenantId, backupId: id, eventType: 'BACKUP_DELETED', actorUserId, reason, metadata: { retention: true } });
+            return { id, tenantId, status: 'deleted' };
+        } catch (error) {
+            const errorCode = recoveryErrorCode(error, 'RETENTION_DELETE_FAILED');
+            await pool.request().input('id', sql.BigInt, id).input('tenantId', sql.Int, tenantId).input('errorCode', sql.VarChar(100), errorCode).query("UPDATE dbo.gym_backup_records SET status='EXPIRED',error_code=@errorCode,updated_at=SYSUTCDATETIME() WHERE id=@id AND tenant_id=@tenantId;").catch(() => {});
+            await writeTenantBackupAudit({ tenantId, backupId: id, eventType: 'BACKUP_DELETED', actorUserId, reason, result: 'failed', metadata: { retention: true, errorCode } }).catch(() => {});
+            return { id, tenantId, status: 'failed', errorCode };
+        }
+    }, concurrency);
+    const platformResults = await mapWithConcurrency(platformResult.recordset, async (row) => {
+        const id = Number(row.id);
+        try {
+            if (['VERIFIED', 'FAILED'].includes(String(row.status))) await pool.request().input('id', sql.BigInt, id).query("UPDATE dbo.gym_platform_backup_records SET status='EXPIRED',updated_at=SYSUTCDATETIME() WHERE id=@id AND status IN ('VERIFIED','FAILED');");
+            if (row.storage_key) await storage.deletePrivatePlatformObject({ key: row.storage_key });
+            await pool.request().input('id', sql.BigInt, id).query("UPDATE dbo.gym_platform_backup_records SET status='DELETED',updated_at=SYSUTCDATETIME() WHERE id=@id AND status='EXPIRED';");
+            await writePlatformBackupAudit({ backupId: id, eventType: 'PLATFORM_BACKUP_DELETED', actorUserId, reason, metadata: { retention: true } });
+            return { id, status: 'deleted' };
+        } catch (error) {
+            const errorCode = recoveryErrorCode(error, 'RETENTION_DELETE_FAILED');
+            await pool.request().input('id', sql.BigInt, id).input('errorCode', sql.VarChar(100), errorCode).query("UPDATE dbo.gym_platform_backup_records SET status='EXPIRED',error_code=@errorCode,updated_at=SYSUTCDATETIME() WHERE id=@id;").catch(() => {});
+            await writePlatformBackupAudit({ backupId: id, eventType: 'PLATFORM_BACKUP_DELETED', actorUserId, reason, result: 'failed', metadata: { retention: true, errorCode } }).catch(() => {});
+            return { id, status: 'failed', errorCode };
+        }
+    }, concurrency);
+    return {
+        tenant: tenantResults,
+        platform: platformResults,
+        deleted: tenantResults.filter((item) => item.status === 'deleted').length + platformResults.filter((item) => item.status === 'deleted').length,
+        failed: tenantResults.filter((item) => item.status === 'failed').length + platformResults.filter((item) => item.status === 'failed').length
+    };
 }
 
 async function runDailyBackupCycle({ storageService = null, now = new Date(), concurrency = 2, retryCount = 1 } = {}) {
@@ -994,14 +1473,21 @@ async function runDailyBackupCycle({ storageService = null, now = new Date(), co
                 if (error.code === 'OBJECT_STORAGE_PROVIDER_NOT_CONFIGURED' || error.code === 'BACKUP_STORAGE_NOT_CONFIGURED') break;
             }
         }
-        return { tenantId: tenant.id, slug: tenant.slug, status: 'failed', errorCode: String(lastError?.code || 'BACKUP_FAILED').slice(0, 100) };
+        return { tenantId: tenant.id, slug: tenant.slug, status: 'failed', errorCode: recoveryErrorCode(lastError, 'BACKUP_FAILED') };
     }, concurrency);
     let platform = null;
     try {
         platform = await createPlatformBackup({ backupType: 'platform_daily', now, concurrency, storageService: storage });
     } catch (error) {
-        platform = { status: 'failed', errorCode: String(error.code || 'PLATFORM_BACKUP_FAILED').slice(0, 100) };
+        platform = { status: 'failed', errorCode: recoveryErrorCode(error, 'PLATFORM_BACKUP_FAILED') };
     }
+    const retention = await cleanupExpiredBackups({ now, concurrency, storageService: storage }).catch((error) => ({
+        tenant: [],
+        platform: [],
+        deleted: 0,
+        failed: 1,
+        errorCode: recoveryErrorCode(error, 'RETENTION_CLEANUP_FAILED')
+    }));
     return {
         backupDay: backupDayKey(now),
         eligibleTenants: tenants.length,
@@ -1009,27 +1495,52 @@ async function runDailyBackupCycle({ storageService = null, now = new Date(), co
         tenantSucceeded: tenantResults.filter((item) => item.status === 'success').length,
         tenantFailed: tenantResults.filter((item) => item.status === 'failed').length,
         platform,
+        retention,
         providerStatus: storage.providerStatus
     };
 }
 
-async function getPlatformBackupHealth({ readOnly = false, limit = 20, storageService = null } = {}) {
+async function getPlatformBackupHealth({ readOnly = false, limit = 20, now = new Date(), storageService = null } = {}) {
     assertPlatformScope();
     await ensureRecoveryTables({ readOnly });
     const safeLimit = normalizePositiveInteger(limit, 20, 100);
     const pool = await getPool();
-    const [tenantSummary, platformSummary, recentFailures] = await Promise.all([
+    const backupDay = backupDayKey(now);
+    const [tenantSummary, tenantLatest, platformSummary, recentFailures] = await Promise.all([
+        pool.request().input('backupDay', sql.Date, dateValue(backupDay)).query(`
+            SELECT COUNT_BIG(*) AS eligible_tenants,
+                   SUM(CASE WHEN r.id IS NOT NULL AND r.status='VERIFIED' THEN 1 ELSE 0 END) AS verified_today,
+                   SUM(CASE WHEN r.id IS NOT NULL AND r.status='FAILED' THEN 1 ELSE 0 END) AS failed_today,
+                   SUM(CASE WHEN r.id IS NULL THEN 1 ELSE 0 END) AS missing_today
+            FROM dbo.gym_tenants t
+            LEFT JOIN dbo.gym_backup_records r
+              ON r.tenant_id=t.id AND r.backup_type='tenant_daily' AND r.backup_day=@backupDay
+            WHERE t.status IN ('trial','active');
+        `),
         pool.request().input('limit', sql.Int, safeLimit).query(`
-            SELECT TOP (@limit) r.tenant_id,r.status,r.backup_day,r.size_bytes,r.verified_at,r.created_at,t.slug
-            FROM dbo.gym_backup_records r INNER JOIN dbo.gym_tenants t ON t.id=r.tenant_id
-            WHERE r.backup_type='tenant_daily' ORDER BY r.backup_day DESC,r.tenant_id,r.id DESC;
+            WITH ranked AS (
+                SELECT r.id,r.tenant_id,r.status,r.backup_day,r.size_bytes,r.verified_at,r.created_at,t.slug,
+                       ROW_NUMBER() OVER (PARTITION BY r.tenant_id ORDER BY r.backup_day DESC,r.id DESC) AS row_number
+                FROM dbo.gym_backup_records r INNER JOIN dbo.gym_tenants t ON t.id=r.tenant_id
+                WHERE r.backup_type='tenant_daily'
+            )
+            SELECT id,tenant_id,status,backup_day,size_bytes,verified_at,created_at,slug
+            FROM ranked WHERE row_number=1 ORDER BY backup_day DESC,tenant_id OFFSET 0 ROWS FETCH NEXT @limit ROWS ONLY;
         `),
         pool.request().query(`SELECT TOP (1) id,backup_type,backup_day,status,size_bytes,verified_at,created_at FROM dbo.gym_platform_backup_records ORDER BY created_at DESC,id DESC;`),
         pool.request().query(`SELECT TOP (20) id,tenant_id,status,error_code,created_at FROM dbo.gym_backup_records WHERE status='FAILED' ORDER BY created_at DESC,id DESC;`)
     ]);
+    const summary = tenantSummary.recordset[0] || {};
     return {
         providerStatus: storageService?.providerStatus || 'not_configured',
-        tenantDaily: tenantSummary.recordset.map((row) => ({ tenantId: Number(row.tenant_id), slug: row.slug, status: row.status, backupDay: row.backup_day, sizeBytes: row.size_bytes == null ? null : Number(row.size_bytes), verifiedAt: row.verified_at, createdAt: row.created_at })),
+        summary: {
+            eligibleTenants: Number(summary.eligible_tenants || 0),
+            verifiedToday: Number(summary.verified_today || 0),
+            failedToday: Number(summary.failed_today || 0),
+            missingToday: Number(summary.missing_today || 0),
+            backupDay
+        },
+        tenantDaily: tenantLatest.recordset.map((row) => ({ id: Number(row.id), tenantId: Number(row.tenant_id), slug: row.slug, status: row.status, backupDay: row.backup_day, sizeBytes: row.size_bytes == null ? null : Number(row.size_bytes), verifiedAt: row.verified_at, createdAt: row.created_at })),
         lastPlatformBackup: mapRecord(platformSummary.recordset[0], 'platform'),
         recentFailures: recentFailures.recordset.map((row) => ({ id: Number(row.id), tenantId: Number(row.tenant_id), status: row.status, errorCode: row.error_code, createdAt: row.created_at }))
     };
@@ -1048,7 +1559,16 @@ function createBackupRecoveryService({ storageService = createObjectStorageServi
         runDailyBackupCycle: (options = {}) => runDailyBackupCycle({ ...options, storageService }),
         getTenantBackupHistory,
         getTenantBackupRecord,
+        getTenantBackupAudit,
         downloadTenantBackup: (id, options = {}) => downloadTenantBackup(id, { ...options, storageService }),
+        deleteTenantBackup: (id, options = {}) => deleteTenantBackup(id, { ...options, storageService }),
+        restoreTenantBackup: (input, options = {}) => restoreTenantBackup(input, { ...options, storageService }),
+        restoreTenantBackupRecord: (id, options = {}) => restoreTenantBackupRecord(id, { ...options, storageService }),
+        getPlatformBackupHistory,
+        getPlatformBackupRecord,
+        getPlatformBackupAudit,
+        downloadPlatformBackup: (id, options = {}) => downloadPlatformBackup(id, { ...options, storageService }),
+        cleanupExpiredBackups: (options = {}) => cleanupExpiredBackups({ ...options, storageService }),
         getPlatformBackupHealth: (options = {}) => getPlatformBackupHealth({ ...options, storageService }),
         getRetentionPolicy
     };
@@ -1068,15 +1588,24 @@ module.exports = {
     createTenantBackup,
     ensureRecoveryTables,
     getPlatformBackupHealth,
+    getPlatformBackupHistory,
+    getPlatformBackupRecord,
+    getPlatformBackupAudit,
+    downloadPlatformBackup,
+    cleanupExpiredBackups,
     getRetentionPolicy,
     getTenantBackupHistory,
     getTenantBackupRecord,
+    getTenantBackupAudit,
     inspectTenantBackupBuffer,
     mapWithConcurrency,
     payloadDigest,
     runDailyBackupCycle,
     validateTenantBackupPayload,
     downloadTenantBackup,
+    deleteTenantBackup,
+    restoreTenantBackup,
+    restoreTenantBackupRecord,
     writeTenantBackupAudit,
     writePlatformBackupAudit
 };

@@ -43,6 +43,11 @@ test('tenant backup validation rejects cross-tenant rows and tampering', () => {
     assert.throws(() => validateTenantBackupPayload(tampered), { code: 'BACKUP_CHECKSUM_MISMATCH' });
 });
 
+test('tenant restore rejects an artifact that does not cover the current registry', () => {
+    const payload = samplePayload();
+    assert.throws(() => validateTenantBackupPayload(payload, { expectedTenantId: 7, requireCompleteRegistry: true }), { code: 'BACKUP_REGISTRY_INCOMPLETE' });
+});
+
 test('backup inspector accepts gzip artifacts and does not expose credentials or sessions', async () => {
     const payload = samplePayload();
     const gzip = require('node:zlib').gzipSync(Buffer.from(JSON.stringify(payload), 'utf8'));

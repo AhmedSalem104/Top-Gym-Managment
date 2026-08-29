@@ -1,6 +1,21 @@
 'use strict';
 
-function createPlatformAdminController({ platformAdminService, saasService, authService }) {
+function sendBackupDownload(response, backup) {
+    response.set({
+        'Cache-Control': 'no-store, no-cache, must-revalidate, private',
+        'Content-Type': backup.contentType || 'application/gzip',
+        'Content-Disposition': `attachment; filename="${String(backup.fileName || 'logic-fit-backup.json.gz').replace(/["\\\r\n]/g, '')}"`,
+        'Content-Length': String(backup.body?.length || 0),
+        'X-Content-Type-Options': 'nosniff'
+    });
+    return response.send(backup.body);
+}
+
+function requiredReason(request) {
+    return String(request.body?.reason || request.get?.('x-backup-reason') || '').trim().slice(0, 1000);
+}
+
+function createPlatformAdminController({ platformAdminService, saasService, authService, backupRecoveryService }) {
     const meta = (request) => platformAdminService.requestMeta(request);
     return {
         dashboard: async (request, response) => {
@@ -154,8 +169,89 @@ function createPlatformAdminController({ platformAdminService, saasService, auth
 
         auditAll: async (request, response) => {
             response.json({ audit: await saasService.listAudit({ limit: request.query?.limit, readOnly: request.readOnlyRequest }) });
+        },
+
+        backupHealth: async (request, response) => {
+            if (!backupRecoveryService) return response.status(503).json({ error: 'Backup recovery service is not configured.', code: 'BACKUP_RECOVERY_NOT_CONFIGURED' });
+            response.json(await backupRecoveryService.getPlatformBackupHealth({
+                limit: request.query?.limit,
+                readOnly: request.readOnlyRequest
+            }));
+        },
+
+        backupHistory: async (request, response) => {
+            if (!backupRecoveryService) return response.status(503).json({ error: 'Backup recovery service is not configured.', code: 'BACKUP_RECOVERY_NOT_CONFIGURED' });
+            const [backups, audit] = await Promise.all([
+                backupRecoveryService.getPlatformBackupHistory({ limit: request.query?.limit, readOnly: request.readOnlyRequest }),
+                backupRecoveryService.getPlatformBackupAudit({ limit: request.query?.auditLimit, readOnly: request.readOnlyRequest })
+            ]);
+            response.json({ backups, audit });
+        },
+
+        runPlatformBackup: async (request, response) => {
+            if (!backupRecoveryService) return response.status(503).json({ error: 'Backup recovery service is not configured.', code: 'BACKUP_RECOVERY_NOT_CONFIGURED' });
+            const backupType = String(request.body?.backupType || 'platform_manual').trim().toLowerCase();
+            const reason = requiredReason(request);
+            if (backupType === 'platform_manual' && !reason) return response.status(400).json({ error: 'A reason is required before starting a platform backup.', code: 'BACKUP_REASON_REQUIRED' });
+            const result = await backupRecoveryService.createPlatformBackup({
+                backupType,
+                format: 'json.gz',
+                actorUserId: request.auth?.id,
+                reason
+            });
+            response.status(result.idempotent ? 200 : 201).json(result);
+        },
+
+        runTenantBackup: async (request, response) => {
+            if (!backupRecoveryService) return response.status(503).json({ error: 'Backup recovery service is not configured.', code: 'BACKUP_RECOVERY_NOT_CONFIGURED' });
+            const reason = requiredReason(request);
+            if (!reason) return response.status(400).json({ error: 'A reason is required before starting a tenant backup.', code: 'BACKUP_REASON_REQUIRED' });
+            const result = await backupRecoveryService.createTenantBackup({
+                tenantId: request.params.tenantId,
+                backupType: 'tenant_manual',
+                format: 'json.gz',
+                actorUserId: request.auth?.id,
+                reason
+            });
+            response.status(result.idempotent ? 200 : 201).json(result);
+        },
+
+        tenantBackups: async (request, response) => {
+            if (!backupRecoveryService) return response.status(503).json({ error: 'Backup recovery service is not configured.', code: 'BACKUP_RECOVERY_NOT_CONFIGURED' });
+            const [backups, audit] = await Promise.all([
+                backupRecoveryService.getTenantBackupHistory({ tenantId: request.params.tenantId, limit: request.query?.limit, readOnly: request.readOnlyRequest }),
+                backupRecoveryService.getTenantBackupAudit({ tenantId: request.params.tenantId, limit: request.query?.auditLimit, readOnly: request.readOnlyRequest })
+            ]);
+            response.json({ backups, audit });
+        },
+
+        downloadPlatformBackup: async (request, response) => {
+            if (!backupRecoveryService) return response.status(503).json({ error: 'Backup recovery service is not configured.', code: 'BACKUP_RECOVERY_NOT_CONFIGURED' });
+            return sendBackupDownload(response, await backupRecoveryService.downloadPlatformBackup(request.params.backupId, { readOnly: request.readOnlyRequest, actorUserId: request.auth?.id, auditDownload: true }));
+        },
+
+        downloadTenantBackup: async (request, response) => {
+            if (!backupRecoveryService) return response.status(503).json({ error: 'Backup recovery service is not configured.', code: 'BACKUP_RECOVERY_NOT_CONFIGURED' });
+            return sendBackupDownload(response, await backupRecoveryService.downloadTenantBackup(request.params.backupId, {
+                tenantId: request.params.tenantId,
+                readOnly: request.readOnlyRequest,
+                actorUserId: request.auth?.id,
+                auditDownload: true
+            }));
+        },
+
+        cleanupBackups: async (request, response) => {
+            if (!backupRecoveryService) return response.status(503).json({ error: 'Backup recovery service is not configured.', code: 'BACKUP_RECOVERY_NOT_CONFIGURED' });
+            const reason = requiredReason(request);
+            if (!reason) return response.status(400).json({ error: 'A reason is required before running retention cleanup.', code: 'BACKUP_REASON_REQUIRED' });
+            response.json(await backupRecoveryService.cleanupExpiredBackups({
+                limit: request.body?.limit,
+                concurrency: request.body?.concurrency,
+                actorUserId: request.auth?.id,
+                reason
+            }));
         }
     };
 }
 
-module.exports = { createPlatformAdminController };
+module.exports = { createPlatformAdminController, sendBackupDownload };

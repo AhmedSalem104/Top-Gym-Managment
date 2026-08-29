@@ -12,6 +12,7 @@ function source(relativePath) {
 test('read-only feedback and backup paths do not initialize schema', () => {
     const feedback = source('src/services/member-feedback-service.js');
     const backup = source('src/services/backup-service.js');
+    const recovery = source('src/services/backup-recovery-service.js');
     const feedbackController = source('src/controllers/member-feedback.controller.js');
     const backupController = source('src/controllers/backup.controller.js');
 
@@ -27,10 +28,28 @@ test('read-only feedback and backup paths do not initialize schema', () => {
     assert.match(library, /async function ensureLibraryTables\(\{ readOnly = false \} = \{\}\) \{\s*if \(readOnly \|\| getTenantContext\(\)\?\.readOnlyBaseline\) return;/);
     assert.match(library, /async function prepareLibraryData\(\{ readOnly = false \} = \{\}\)/);
     assert.match(library, /prepareLibraryData,/);
-    assert.match(backupController, /getBackupHistory\(request\.query\.limit, \{ readOnly: request\.readOnlyRequest \}\)/);
-    assert.match(backupController, /getBackupArchive\(request\.params\.id, \{ readOnly: request\.readOnlyRequest \}\)/);
+    assert.match(backupController, /recovery\.getTenantBackupHistory\(\{ limit: request\.query\.limit, readOnly: request\.readOnlyRequest \}\)/);
+    assert.match(backupController, /recovery\.downloadTenantBackup\(request\.params\.id, \{[\s\S]*?readOnly: request\.readOnlyRequest/);
     assert.match(backupController, /createBackup\(\{ format: requestedFormat, readOnly: request\.readOnlyRequest \}\)/);
     assert.match(backupController, /tableCounts: backup\.rowCounts,[\s\S]*?readOnly: request\.readOnlyRequest,/);
+    assert.match(recovery, /if \(auditDownload\)[\s\S]*?eventType: 'BACKUP_DOWNLOADED'/);
+    assert.match(recovery, /eventType: 'PLATFORM_BACKUP_DOWNLOADED'/);
+    assert.match(recovery, /excludeSensitive: true/);
+    assert.match(recovery, /function recoveryErrorCode\(error, fallback\) \{\s*return safeErrorCode\(error, fallback\);/);
+    assert.match(recovery, /verifyStoredPlatformObject/);
+    assert.match(recovery, /status IN \('VERIFIED','FAILED','EXPIRED'\)/);
+    assert.match(recovery, /artifactCleanup/);
+});
+
+test('backup actions expose tenant-scoped record routes and reason-safe restore input', () => {
+    const routes = source('src/routes/backup.routes.js');
+    const controller = source('src/controllers/backup.controller.js');
+    assert.match(routes, /\/api\/backup\/records', asyncRoute\(controller\.create\)/);
+    assert.match(routes, /\/api\/backup\/records\/:id\/download', asyncRoute\(controller\.recordDownload\)/);
+    assert.match(routes, /\/api\/backup\/records\/:id\/restore', asyncRoute\(controller\.restoreRecord\)/);
+    assert.match(controller, /x-backup-reason-b64/);
+    assert.match(controller, /Buffer\.from\(encoded, 'base64url'\)/);
+    assert.match(controller, /const reason = requestReason\(request\);[\s\S]*?BACKUP_REASON_REQUIRED/);
 });
 
 test('read-only intelligence paths skip generation audit and resolve branding safely', () => {
