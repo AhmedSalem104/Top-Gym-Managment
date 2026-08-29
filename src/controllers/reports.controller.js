@@ -3,7 +3,9 @@
 function createReportsController({ reportService, storeService, hasPermission }) {
     return {
         list: async (request, response) => {
-            const report = await reportService.getReportData(request.query);
+            const report = await reportService.getReportData(request.query, {
+                readOnly: request.readOnlyBaseline
+            });
             if (storeService && hasPermission(request.auth, 'store.reports.view')) {
                 const canViewProfit = hasPermission(request.auth, 'store.profit.view');
                 report.store = await storeService.getReports({ ...request.query, includeProfit: canViewProfit, readOnly: request.readOnlyBaseline });

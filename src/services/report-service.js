@@ -46,9 +46,9 @@ function addTimelineAmount(timelineByDate, rows, dateField, amountField) {
     });
 }
 
-async function getReportData(query = {}) {
+async function getReportData(query = {}, options = {}) {
     const range = normalizeRange(query);
-    const readOnly = Boolean(query.readOnly);
+    const readOnly = Boolean(options.readOnly);
     if (!readOnly) {
         await Promise.all([
             ensureExpensesTable(),
