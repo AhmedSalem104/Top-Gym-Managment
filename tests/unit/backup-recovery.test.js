@@ -16,6 +16,7 @@ const {
     normalizeBackupFormat,
     normalizeRetryCount,
     payloadDigest,
+    metadataColumns,
     validatePlatformBackupPayload,
     validateTenantBackupPayload,
     verifyStoredTenantObject
@@ -122,6 +123,23 @@ test('platform backup validation checks scope, manifest completeness and credent
     unknownTenant.tables.tenant.members[0].tenant_id = 8;
     unknownTenant.integrity.sha256 = payloadDigest(unknownTenant.tables);
     assert.throws(() => validatePlatformBackupPayload(unknownTenant, { requireCompleteRegistry: false }), { code: 'PLATFORM_BACKUP_TENANT_REFERENCE_INVALID' });
+
+    const unknownControlPlaneTenant = structuredClone(payload);
+    unknownControlPlaneTenant.tables.global.saas_tenant_subscriptions = [{ id: 1, tenant_id: 8 }];
+    unknownControlPlaneTenant.manifest.tableCounts.global.saas_tenant_subscriptions = 1;
+    unknownControlPlaneTenant.manifest.rowCount = 3;
+    unknownControlPlaneTenant.integrity.sha256 = payloadDigest(unknownControlPlaneTenant.tables);
+    assert.throws(() => validatePlatformBackupPayload(unknownControlPlaneTenant, { requireCompleteRegistry: false }), { code: 'PLATFORM_BACKUP_TENANT_REFERENCE_INVALID' });
+});
+
+test('backup projections exclude secret-like columns without dropping nutritional salt', () => {
+    const metadata = new Map([['gym_foods', [
+        { name: 'salt', isComputed: false, isRowVersion: false },
+        { name: 'refresh_token', isComputed: false, isRowVersion: false },
+        { name: 'password_hash', isComputed: false, isRowVersion: false },
+        { name: 'calories', isComputed: false, isRowVersion: false }
+    ]]]);
+    assert.deepEqual(metadataColumns(metadata, 'gym_foods', { excludeSensitive: true }).map((column) => column.name), ['salt', 'calories']);
 });
 
 test('tenant restore rejects an artifact that does not cover the current registry', () => {

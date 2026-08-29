@@ -253,6 +253,9 @@ function validatePlatformBackupPayload(payload, { requireCompleteRegistry = true
     const tables = normalizedTableMap(payload.tables);
     const globalTables = normalizedTableMap(tables.global);
     const tenantTables = normalizedTableMap(tables.tenant);
+    const tenantIds = new Set((Array.isArray(globalTables.gym_tenants) ? globalTables.gym_tenants : [])
+        .map((row) => Number(row.id))
+        .filter((id) => Number.isInteger(id) && id > 0));
     const knownGlobalKeys = new Set(PLATFORM_GLOBAL_BACKUP_TABLES.map((item) => item.key));
     const knownTenantKeys = new Set(TENANT_BACKUP_TABLES.map((item) => item.key));
     const unknownGlobal = Object.keys(globalTables).filter((key) => !knownGlobalKeys.has(key));
@@ -323,10 +326,7 @@ function validatePlatformBackupPayload(payload, { requireCompleteRegistry = true
     if (Number(manifest.rowCount) !== rowCount) {
         throw backupError('The platform backup manifest row count is invalid.', 400, 'PLATFORM_BACKUP_MANIFEST_INVALID');
     }
-    const tenantIds = new Set((Array.isArray(globalTables.gym_tenants) ? globalTables.gym_tenants : [])
-        .map((row) => Number(row.id))
-        .filter((id) => Number.isInteger(id) && id > 0));
-    for (const rows of Object.values(tenantTables)) {
+    for (const rows of [...Object.values(globalTables), ...Object.values(tenantTables)]) {
         for (const row of rows) {
             const tenantKey = Object.keys(row).find((column) => column.toLowerCase() === 'tenant_id');
             if (tenantKey && !tenantIds.has(Number(row[tenantKey]))) {
@@ -418,7 +418,7 @@ function metadataColumns(metadata, table, { excludeSensitive = false } = {}) {
     const columns = metadata.get(table) || [];
     if (!columns.length) throw backupError('A required backup table is missing.', 503, 'BACKUP_TABLE_MISSING');
     return columns.filter((column) => !column.isComputed && !column.isRowVersion
-        && (!excludeSensitive || !PLATFORM_SENSITIVE_COLUMNS.has(String(column.name).toLowerCase())));
+        && (!excludeSensitive || !isSensitiveColumn(column.name)));
 }
 
 function hasTenantColumn(columns) {
@@ -2173,6 +2173,7 @@ module.exports = {
     getTenantBackupAudit,
     inspectTenantBackupBuffer,
     mapWithConcurrency,
+    metadataColumns,
     normalizeBackupFormat,
     normalizeRetryCount,
     payloadDigest,
