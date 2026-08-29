@@ -6,7 +6,7 @@ stop safe implementation elsewhere, but a Critical item remains a Go-Live
 gate.
 
 Last reviewed: 2026-08-29  
-Implementation revision covered: `43b96dd security: redact background operation logs`
+Implementation revision covered: `038e4ed perf: paginate platform subscription requests`
 
 ## Status vocabulary
 
@@ -85,8 +85,11 @@ claims to Production evidence. Those items remain listed above exactly once.
 - `npm run qa:database`: passed with guarded/non-destructive migrations,
   runner/pool/transaction checks, runtime schema checks and SaaS integrity
   checks; live schema rehearsal remains pending.
-- `npm run test:unit`: passed 61/61, including safe internal-error logging,
+- `npm run test:unit`: passed 65/65, including safe internal-error logging,
   baseline safety, pool/transaction behavior and SaaS duplicate-request guards.
+- Platform subscription request reads are now bounded and server-paginated;
+  Platform Admin can move through the queue without loading the full request
+  history into one response.
 - `npm run test:visual` against a temporary local QA server: passed for all
   tested desktop/mobile viewports, dialogs, themes and print media.
 - `npm run qa:platform-admin`: safely skipped live authentication because no

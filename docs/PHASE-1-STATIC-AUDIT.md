@@ -12,7 +12,7 @@ Staging session cookie. No login or auto-login path is used.
 
 **Audit date:** 2026-08-29
 
-**Code revision audited:** `21c69ec perf: keep report reads baseline-safe`
+**Code revision audited:** `038e4ed perf: paginate platform subscription requests`
 
 This document records findings that can be established from source and schema
 inspection without inventing latency numbers or touching the live database.
@@ -39,6 +39,8 @@ The following facts are static evidence, not runtime benchmarks:
 - Member list enrichment uses two batched reads (`membership code previews` and
   `attendance statuses`); no per-member read loop was found there.
 - Platform tenant lists and library lists use server-side pagination.
+- Platform subscription request queues use bounded server-side pagination and
+  return page metadata to the Platform Admin UI.
 - The reusable SQL pool is process-scoped and reset after a failed connection.
 - The transaction helper commits on success and attempts rollback on failure.
 - The static index declaration inventory contains **61 declarations / 59 unique
@@ -65,7 +67,7 @@ The following facts are static evidence, not runtime benchmarks:
 | Attendance | `attendance-service.js` | Today reads are bounded by the route; report reads are bounded to 366 days but do not expose a detailed-row page size. Read paths can also run table-ensure code unless the prepared read-only path is used. | Payload and table-initialization behavior require authenticated baseline verification. |
 | Reports | `report-service.js` | Multiple independent queries run in parallel, but period detail rows and debtor rows are bounded by `TOP (1000)` rather than an explicit report pagination contract. Other period detail queries are range-bounded but not row-paginated. | High payload/latency risk; execution plans and representative date ranges are required. |
 | POS / Store | `store-service.js` | Product, purchase, sale and movement lists paginate; inventory and store-expense reads can be unbounded. Product pagination is applied to joined product/variant rows, so one product's variants can be split between pages. | High correctness/performance candidate; preserve response contract while redesigning only after baseline. |
-| Platform Admin | `platform-admin-service.js` | Tenant list and several nested lists are paginated; dashboard intentionally fans out several independent read queries. | Requires authenticated PlatformAdmin baseline to rank. |
+| Platform Admin | `platform-admin-service.js`, `saas-service.js` | Tenant list, subscription request queue and several nested lists are paginated; dashboard intentionally fans out several independent read queries. | Requires authenticated PlatformAdmin baseline to rank. |
 | Member Portal | `library-service.js` and portal routes | Library list reads use page/size parameters and a capped page size. | Safe static result; real portal latency remains pending. |
 
 ## Findings by priority
@@ -100,6 +102,12 @@ The following facts are static evidence, not runtime benchmarks:
    server and the read-only guards prevent those schema writes during the runner;
    moving all schema work into reviewed migrations remains a production
    hardening item.
+
+6. **Platform subscription requests were previously unbounded.** The review
+   queue now applies a bounded page size and `OFFSET/FETCH`, while preserving
+   the existing `requests` response field and adding pagination metadata. The
+   queue's real latency and plan quality still require an authenticated
+   PlatformAdmin baseline.
 
 ### Medium — proven code-shape improvements, not yet benchmarked
 
