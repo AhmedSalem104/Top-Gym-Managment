@@ -121,6 +121,30 @@ test('state-changing cross-site Fetch Metadata requests fail closed', () => {
     assert.equal(isSameOriginRequest(request({})), true);
 });
 
+test('public state-changing routes enforce the same-origin boundary before allow-listing', async () => {
+    const middleware = createAuthApiMiddleware({
+        authService: {},
+        tenantService: {
+            resolvePublicTenant: async () => { throw new Error('public route must be rejected before tenant resolution'); }
+        },
+        isAuthorizedCronRequest: () => false
+    });
+    const request = {
+        method: 'POST',
+        path: '/member-portal/lookup',
+        query: {},
+        body: {},
+        get: (name) => String(name).toLowerCase() === 'sec-fetch-site' ? 'cross-site' : ''
+    };
+    const response = responseDouble();
+    let nextCalled = false;
+    await middleware(request, response, () => { nextCalled = true; });
+
+    assert.equal(response.statusCode, 403);
+    assert.equal(response.body.code, 'CROSS_ORIGIN_REQUEST');
+    assert.equal(nextCalled, false);
+});
+
 test('normal GET requests use a read-only tenant context and do not touch sessions', async () => {
     const observed = {};
     const middleware = createAuthApiMiddleware({

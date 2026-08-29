@@ -54,6 +54,16 @@ function createAuthApiMiddleware({ authService, isAuthorizedCronRequest, tenantS
             || (READ_ONLY_METHODS.has(request.method) && !cronRequest);
         request.readOnlyRequest = readOnlyRequest;
 
+        // Apply the same-origin boundary before public POST endpoints as well
+        // as authenticated routes. Public routes do not carry an authenticated
+        // tenant session, but cross-site writes could still be abused for
+        // login/logout confusion, portal lookup/feedback spam, or future
+        // allow-listed public mutations. The authorized backup cron is the
+        // only intentional automation exception.
+        if (!READ_ONLY_METHODS.has(request.method) && !cronRequest && !isSameOriginRequest(request)) {
+            return response.status(403).json({ error: 'The request origin is not allowed.', code: 'CROSS_ORIGIN_REQUEST' });
+        }
+
         // Authentication endpoints do not read tenant data. Keeping their
         // context tenant-neutral is important for PlatformAdmin: the
         // platform account must not depend on Top Gym or any other fallback
@@ -104,10 +114,6 @@ function createAuthApiMiddleware({ authService, isAuthorizedCronRequest, tenantS
                 })
                 .catch(next);
         }
-        if (!['GET', 'HEAD', 'OPTIONS'].includes(request.method) && !isSameOriginRequest(request)) {
-            return response.status(403).json({ error: 'الطلب غير مصرح به.' });
-        }
-
         const readOnlyOptions = { includePermissions: false, ensureReady: !readOnlyRequest, touch: !readOnlyRequest };
         return (readOnlyRequest ? Promise.resolve() : ensureAuthReady())
             .then(() => getSessionUser(readSessionCookie(request), { ...readOnlyOptions, readOnly: readOnlyRequest }))
