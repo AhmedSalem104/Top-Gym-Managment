@@ -291,6 +291,20 @@ IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name=N'IX_saas_platform_notes_ten
 
 let readyPromise;
 const syncStates = new Map();
+const MAX_SYNC_STATE_ENTRIES = 10_000;
+
+function pruneSyncStates(map, now = Date.now(), maxEntries = MAX_SYNC_STATE_ENTRIES, staleAfterMs = syncIntervalMs() * 2) {
+    for (const [key, entry] of map) {
+        if (!entry?.promise && Number.isFinite(entry?.completedAt) && now - entry.completedAt >= staleAfterMs) map.delete(key);
+    }
+    if (map.size <= maxEntries) return;
+    for (const [key, entry] of map) {
+        if (map.size <= maxEntries) break;
+        // Never evict a running promise; an eviction here could start a
+        // duplicate lifecycle sync while the original operation is active.
+        if (!entry?.promise) map.delete(key);
+    }
+}
 
 function syncScopeKey() {
     const context = getTenantContext();
@@ -625,8 +639,9 @@ async function applyScheduledSubscriptionChanges() {
 
 async function syncExpiredTenants({ force = false } = {}) {
     const key = syncScopeKey();
-    const current = syncStates.get(key);
     const now = Date.now();
+    pruneSyncStates(syncStates, now);
+    const current = syncStates.get(key);
     if (current?.promise) return current.promise;
     if (!force && current?.completedAt && now - current.completedAt < syncIntervalMs()) return;
 
@@ -671,6 +686,7 @@ async function syncExpiredTenants({ force = false } = {}) {
         `);
     })();
     syncStates.set(key, { promise });
+    pruneSyncStates(syncStates, now);
     try {
         await promise;
         syncStates.set(key, { completedAt: Date.now() });
@@ -1322,6 +1338,7 @@ module.exports = {
     uploadPaymentProof,
     validateProof,
     hasExpectedProofSignature,
+    pruneSyncStates,
     recordAudit,
     snapshotForPlan
 };
