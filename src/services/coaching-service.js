@@ -666,7 +666,10 @@ async function getExternalTrainees({ search = '', page = 1, pageSize = 12 } = {}
                   AND (ISNULL(program_stats.workout_count, 0) > 0 OR ISNULL(diet_stats.diet_count, 0) > 0)
                   AND active_memberships.member_id IS NULL
             )
-            SELECT *, COUNT(1) OVER() AS total_count
+            SELECT id, full_name, phone, email, registration_date, notes,
+                   created_at, updated_at, workout_count, diet_count,
+                   workout_plans_json, diet_plans_json, measurement_count,
+                   last_activity, COUNT(1) OVER() AS total_count
             FROM candidates
             ORDER BY last_activity DESC, full_name ASC, id ASC
             OFFSET @offset ROWS FETCH NEXT @pageSize ROWS ONLY;
@@ -1299,7 +1302,13 @@ function mapMeasurement(row) {
 async function getMeasurements(memberId) {
     await ensureCoachingTables();
     const pool = await getPool();
-    const result = await pool.request().input('memberId', sql.Int, ensureId(memberId, 'معرّف العميل')).query('SELECT * FROM dbo.body_measurements WHERE member_id=@memberId ORDER BY measured_at DESC,id DESC;');
+    const result = await pool.request().input('memberId', sql.Int, ensureId(memberId, 'معرّف العميل')).query(`SELECT id, member_id, measured_at,
+                       weight_kg, height_cm, body_fat_percent, chest_cm,
+                       waist_cm, hips_cm, arms_cm, thighs_cm, notes,
+                       created_at, updated_at
+                FROM dbo.body_measurements
+                WHERE member_id=@memberId
+                ORDER BY measured_at DESC,id DESC;`);
     return result.recordset.map(mapMeasurement);
 }
 
@@ -1740,10 +1749,17 @@ async function startWorkoutSession(body = {}) {
 async function getWorkoutSession(id) {
     await ensureCoachingTables();
     const pool = await getPool();
-    const result = await pool.request().input('id', sql.Int, ensureId(id, 'معرّف الجلسة')).query('SELECT * FROM dbo.workout_sessions WHERE id=@id;');
+    const result = await pool.request().input('id', sql.Int, ensureId(id, 'معرّف الجلسة')).query(`SELECT id, member_id, program_id, routine_id,
+                       started_at, ended_at, status, notes
+                FROM dbo.workout_sessions
+                WHERE id=@id;`);
     const row = result.recordset[0];
     if (!row) throw appError('جلسة التمرين غير موجودة.', 404);
-    const sets = await pool.request().input('sessionId', sql.Int, Number(row.id)).query('SELECT * FROM dbo.workout_set_logs WHERE session_id=@sessionId ORDER BY id;');
+    const sets = await pool.request().input('sessionId', sql.Int, Number(row.id)).query(`SELECT id, workout_exercise_id,
+                       set_number, weight_kg, reps, completed_at, notes
+                FROM dbo.workout_set_logs
+                WHERE session_id=@sessionId
+                ORDER BY id;`);
     const mappedSets = sets.recordset.map((item) => ({ id: Number(item.id), workoutExerciseId: item.workout_exercise_id == null ? null : Number(item.workout_exercise_id), setNumber: Number(item.set_number), weightKg: item.weight_kg == null ? null : Number(item.weight_kg), reps: item.reps == null ? null : Number(item.reps), completedAt: item.completed_at, notes: item.notes }));
     return { id: Number(row.id), memberId: Number(row.member_id), programId: row.program_id == null ? null : Number(row.program_id), routineId: row.routine_id == null ? null : Number(row.routine_id), startedAt: row.started_at, endedAt: row.ended_at, status: row.status, notes: row.notes, volumeKg: mappedSets.reduce((sum, item) => sum + Number(item.weightKg || 0) * Number(item.reps || 0), 0), repCount: mappedSets.reduce((sum, item) => sum + Number(item.reps || 0), 0), sets: mappedSets };
 }

@@ -97,14 +97,15 @@ The following facts are static evidence, not runtime benchmarks:
 
 ### Medium — proven code-shape improvements, not yet benchmarked
 
-1. `member.repository.js` uses `SELECT *` when projecting the already-explicit
-   `member_rows` CTE. The consumer uses a known set of fields; replacing this
-   with an explicit projection reduces accidental payload expansion risk.
+1. Training reads previously used `SELECT *` for external trainees,
+   measurements, workout sessions and workout sets. Those reads now project
+   only the fields consumed by their mappers; the response contract is
+   unchanged.
 
-2. `member-service.js:getDashboard` uses `SELECT *` for the temporary member
-   table and its debt-alert result. The dashboard mapping already names the
-   required fields. Explicit projection is a safe maintainability/payload
-   improvement, provided the response contract is regression-tested.
+2. `member-service.js:getDashboard` uses an explicit member projection for the
+   temporary table and alert rows. The generic backup exporter remains an
+   intentional `SELECT *` because a backup must preserve the complete row
+   shape.
 
 3. `store-service.js:bootstrap` calls three independent read services
    sequentially. It is a safe `Promise.all` candidate after read-only table
@@ -122,9 +123,9 @@ The following facts are static evidence, not runtime benchmarks:
    backup must preserve the complete row shape. It should not be replaced with
    a hand-written projection.
 
-2. `SELECT *` also occurs in several update transactions and coaching detail
-   reads. These are not automatically performance bugs; each requires a response
-   contract review before modification.
+2. Any remaining wildcard reads in write-side locking/compatibility paths are
+   not automatically performance bugs; each requires a response-contract and
+   transaction review before modification.
 
 3. Correlated `OUTER APPLY` and scalar subqueries in reports/coaching are SQL
    operators inside one request, not application-level N+1 round trips. Their
