@@ -9,6 +9,10 @@ const {
     auditMigrationText,
     parseMigrationVersion
 } = require('../../scripts/audit-database-readiness');
+const { assertMigrationTarget } = require('../../scripts/migrate-tenancy');
+
+const connectionString = 'Server=localhost,1433;Database=logic_fit_test;User Id=test-user;Password=test-password;Encrypt=True;TrustServerCertificate=True;';
+const externalConnectionString = 'Server=sql.staging.example,1433;Database=logic_fit_test;User Id=test-user;Password=test-password;Encrypt=True;TrustServerCertificate=False;';
 
 test('database readiness audit finds the canonical migration set safe at source level', () => {
     const report = auditDatabaseReadiness({ rootDir: path.join(__dirname, '..', '..') });
@@ -50,4 +54,29 @@ test('migration versions are parsed without treating arbitrary SQL files as migr
     assert.equal(parseMigrationVersion('007-store.sql'), 7);
     assert.equal(parseMigrationVersion('readme.sql'), null);
     assert.equal(parseMigrationVersion('8.sql'), null);
+});
+
+test('migration target guard fails closed for unidentified external targets', () => {
+    assert.deepEqual(assertMigrationTarget({ connectionString }), { environment: 'local', localTarget: true });
+    assert.throws(
+        () => assertMigrationTarget({ connectionString: externalConnectionString }),
+        /MIGRATION_ENV must explicitly identify/i
+    );
+    assert.throws(
+        () => assertMigrationTarget({ connectionString: externalConnectionString, environment: 'development' }),
+        /NON_PRODUCTION_CONFIRM/i
+    );
+});
+
+test('migration target guard requires explicit production confirmation', () => {
+    assert.deepEqual(assertMigrationTarget({ connectionString: externalConnectionString, environment: 'staging' }), { environment: 'staging', localTarget: false });
+    assert.throws(
+        () => assertMigrationTarget({ connectionString: externalConnectionString, environment: 'production' }),
+        /PRODUCTION_CONFIRM/i
+    );
+    assert.deepEqual(assertMigrationTarget({
+        connectionString: externalConnectionString,
+        environment: 'production',
+        productionConfirmation: 'I_UNDERSTAND_PRODUCTION_MIGRATION'
+    }), { environment: 'production', localTarget: false });
 });
