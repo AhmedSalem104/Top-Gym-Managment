@@ -20,6 +20,8 @@ const DEFAULT_SESSION_DAYS = 7;
 const PASSWORD_MIN_LENGTH = 8;
 const PASSWORD_MAX_LENGTH = 128;
 const SCRYPT_PARAMS = { N: 32768, r: 8, p: 1, keyLength: 64 };
+const SCRYPT_VERIFY_MAX_MEMORY = 64 * 1024 * 1024;
+const SCRYPT_VERIFY_MAX_N = 65_536;
 
 const AUTH_SCHEMA_SQL = `
 IF OBJECT_ID(N'dbo.gym_users', N'U') IS NULL
@@ -225,19 +227,34 @@ async function hashPassword(password) {
     return `scrypt$${SCRYPT_PARAMS.N}$${SCRYPT_PARAMS.r}$${SCRYPT_PARAMS.p}$${salt.toString('base64url')}$${derivedKey.toString('base64url')}`;
 }
 
+function parseScryptHash(encodedHash) {
+    const [algorithm, nText, rText, pText, saltText, hashText] = String(encodedHash || '').split('$');
+    if (algorithm !== 'scrypt' || !saltText || !hashText) return null;
+    if (!/^[A-Za-z0-9_-]+$/.test(saltText) || !/^[A-Za-z0-9_-]+$/.test(hashText)) return null;
+    const N = Number(nText);
+    const r = Number(rText);
+    const p = Number(pText);
+    if (!Number.isSafeInteger(N) || N < 1_024 || N > SCRYPT_VERIFY_MAX_N || (N & (N - 1)) !== 0) return null;
+    if (!Number.isSafeInteger(r) || r < 1 || r > 16) return null;
+    if (!Number.isSafeInteger(p) || p < 1 || p > 4) return null;
+    if (128 * N * r > SCRYPT_VERIFY_MAX_MEMORY) return null;
+    const salt = Buffer.from(saltText, 'base64url');
+    const expected = Buffer.from(hashText, 'base64url');
+    if (salt.length < 8 || salt.length > 64 || expected.length < 16 || expected.length > 128) return null;
+    return { N, r, p, salt, expected };
+}
+
 async function verifyPassword(password, encodedHash) {
     try {
-        const [algorithm, n, r, p, saltText, hashText] = String(encodedHash || '').split('$');
-        if (algorithm !== 'scrypt' || !saltText || !hashText) return false;
-        const salt = Buffer.from(saltText, 'base64url');
-        const expected = Buffer.from(hashText, 'base64url');
-        const derived = await scryptAsync(String(password || ''), salt, {
-            N: Number(n),
-            r: Number(r),
-            p: Number(p),
-            keyLength: expected.length || SCRYPT_PARAMS.keyLength
+        const parsed = parseScryptHash(encodedHash);
+        if (!parsed) return false;
+        const derived = await scryptAsync(String(password || ''), parsed.salt, {
+            N: parsed.N,
+            r: parsed.r,
+            p: parsed.p,
+            keyLength: parsed.expected.length
         });
-        return expected.length === derived.length && crypto.timingSafeEqual(expected, derived);
+        return parsed.expected.length === derived.length && crypto.timingSafeEqual(parsed.expected, derived);
     } catch (_) {
         return false;
     }
@@ -396,6 +413,7 @@ async function login(body = {}, request) {
     await ensureAuthReady();
     const email = normalizeEmail(body.email);
     const password = String(body.password ?? '');
+    if (password.length > PASSWORD_MAX_LENGTH) throw authError('Ø§Ù„Ø¨Ø±ÙŠØ¯ Ø§Ù„Ø¥Ù„ÙƒØªØ±ÙˆÙ†ÙŠ Ø£Ùˆ ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ± ØºÙŠØ± ØµØ­ÙŠØ­Ø©.', 401, 'INVALID_CREDENTIALS');
     const user = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? await getUserByEmail(email) : null;
     const validPassword = await verifyPassword(password, user?.password_hash || await getDummyPasswordHash());
     if (!user || !validPassword) throw authError('البريد الإلكتروني أو كلمة المرور غير صحيحة.', 401, 'INVALID_CREDENTIALS');
@@ -559,6 +577,7 @@ module.exports = {
     hashPassword,
     listUsers,
     login,
+    parseScryptHash,
     permissionsForRole,
     readSessionCookie,
     revokeSession,
@@ -569,5 +588,6 @@ module.exports = {
     updateUser,
     validateName,
     validateEmail,
-    validatePassword
+    validatePassword,
+    verifyPassword
 };

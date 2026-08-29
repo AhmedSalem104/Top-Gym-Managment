@@ -8,7 +8,7 @@ const {
     createSensitiveRateLimit,
     trimMap
 } = require('../../src/middleware/rate-limit.middleware');
-const { readSessionCookie } = require('../../src/services/auth-service');
+const { parseScryptHash, readSessionCookie, verifyPassword } = require('../../src/services/auth-service');
 const { isAuthorizedCronRequest } = require('../../src/middleware/cron.middleware');
 
 function requestFor(ip, body = {}) {
@@ -83,4 +83,18 @@ test('cron authorization accepts the configured secret and rejects near matches'
     assert.equal(isAuthorizedCronRequest(request('Bearer safe-test-secret'), { config }), true);
     assert.equal(isAuthorizedCronRequest(request('Bearer safe-test-secreT'), { config }), false);
     assert.equal(isAuthorizedCronRequest(request('vercel-cron/1.0'), { config }), false);
+});
+
+test('password verification accepts the current scrypt format and rejects unsafe parameters', async () => {
+    const encoded = 'scrypt$32768$8$1$c2FsdC1mb3ItdGVzdA$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+    assert.deepEqual(parseScryptHash(encoded), {
+        N: 32768,
+        r: 8,
+        p: 1,
+        salt: Buffer.from('salt-for-test'),
+        expected: Buffer.alloc(64)
+    });
+    assert.equal(parseScryptHash('scrypt$16777216$8$1$c2FsdC1mb3ItdGVzdA$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'), null);
+    assert.equal(parseScryptHash('scrypt$32768$8$1$%%%$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'), null);
+    assert.equal(await verifyPassword('not-the-password', encoded), false);
 });
