@@ -354,24 +354,24 @@ async function getTenantChanges(tenantId) {
     return result.recordset.map((row) => ({ id: Number(row.id), tenantId: Number(row.tenant_id), subscriptionId: row.subscription_id == null ? null : Number(row.subscription_id), plan: { id: Number(row.new_plan_id), code: row.plan_code, name: row.plan_name }, effectiveAt: row.effective_at, status: row.status, reason: row.reason, requestedByUserId: row.requested_by_user_id == null ? null : Number(row.requested_by_user_id), requestedByName: row.requested_by_name || null, appliedAt: row.applied_at || null, createdAt: row.created_at }));
 }
 
-async function getTenantProfile(tenantId) {
+async function getTenantProfile(tenantId, { readOnly = false } = {}) {
     const id = idValue(tenantId, 'Tenant id');
-    await ensureReady();
-    await saasService.syncExpiredTenants();
+    await ensureReady({ readOnly });
+    if (!readOnly) await saasService.syncExpiredTenants();
     const pool = await getPool();
     const tenantResult = await pool.request().input('tenantId', sql.Int, id).query(`SELECT TOP (1) t.id,t.name,t.slug,t.status,t.contact_phone,t.contact_email,t.suspension_reason,t.suspended_at,t.suspend_until,t.suspension_billing_only,t.archived_at,t.created_at,t.updated_at,
         owner.id AS owner_id,owner.full_name AS owner_name,owner.email AS owner_email,owner.status AS owner_status,owner.last_login_at AS owner_last_login_at
         FROM dbo.gym_tenants t OUTER APPLY (SELECT TOP (1) u.id,u.full_name,u.email,u.status,u.last_login_at FROM dbo.gym_user_tenants ut INNER JOIN dbo.gym_users u ON u.id=ut.user_id WHERE ut.tenant_id=t.id AND ut.role='Owner' ORDER BY ut.is_primary DESC,ut.status,u.id) owner WHERE t.id=@tenantId;`);
     if (!tenantResult.recordset[0]) throw platformError('Gym was not found.', 404, 'TENANT_NOT_FOUND');
     const tenant = tenantDto(tenantResult.recordset[0]);
-    const subscription = await saasService.getCurrentSubscription(id);
+    const subscription = await saasService.getCurrentSubscription(id, { readOnly });
     const [usage, entitlements, users, stats, requests, audit, notes, changes] = await Promise.all([
-        saasService.getUsage(id),
-        saasService.getEffectiveEntitlements(id, subscription),
+        saasService.getUsage(id, { readOnly }),
+        saasService.getEffectiveEntitlements(id, subscription, { readOnly }),
         getTenantUsers(id),
         getTenantStats(id),
-        saasService.listTenantRequests(id),
-        saasService.listAudit({ tenantId: id, limit: 100 }),
+        saasService.listTenantRequests(id, { readOnly }),
+        saasService.listAudit({ tenantId: id, limit: 100, readOnly }),
         getTenantNotes(id),
         getTenantChanges(id)
     ]);

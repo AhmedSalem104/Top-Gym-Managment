@@ -749,17 +749,17 @@ async function getEffectiveEntitlements(tenantId = currentTenantId({ required: t
     };
 }
 
-async function getTenantBilling(tenantId = currentTenantId({ required: true })) {
+async function getTenantBilling(tenantId = currentTenantId({ required: true }), { readOnly = false } = {}) {
     const id = tenantIdValue(tenantId);
-    await ensureSaasTables();
+    await ensureSaasTables({ readOnly });
     const pool = await getPool();
     const [tenantResult, subscription, requests, plans] = await Promise.all([
         pool.request().input('tenantId', sql.Int, id).query('SELECT TOP (1) id,name,slug,status,created_at,updated_at FROM dbo.gym_tenants WHERE id=@tenantId;'),
-        getCurrentSubscription(id),
-        listTenantRequests(id),
-        getPlans()
+        getCurrentSubscription(id, { readOnly }),
+        listTenantRequests(id, { readOnly }),
+        getPlans({ readOnly })
     ]);
-    const entitlements = await getEffectiveEntitlements(id, subscription);
+    const entitlements = await getEffectiveEntitlements(id, subscription, { readOnly });
     const tenant = tenantResult.recordset[0];
     return {
         tenant: tenant ? { id: Number(tenant.id), name: tenant.name, slug: tenant.slug, status: tenant.status, createdAt: tenant.created_at, updatedAt: tenant.updated_at } : null,
@@ -817,9 +817,9 @@ async function enforceTenantAccess(tenantId, { path = '', method = 'GET', readOn
     return { tenantStatus: tenant.status, subscription, entitlements, recovery: false };
 }
 
-async function getUsage(tenantId = currentTenantId({ required: true })) {
+async function getUsage(tenantId = currentTenantId({ required: true }), { readOnly = false } = {}) {
     const id = tenantIdValue(tenantId);
-    await ensureSaasTables();
+    await ensureSaasTables({ readOnly });
     const pool = await getPool();
     const [members, users, ai, storage] = await Promise.all([
         pool.request().input('tenantId', sql.Int, id).query('SELECT COUNT_BIG(*) AS total FROM dbo.members WHERE tenant_id=@tenantId;'),
@@ -888,9 +888,9 @@ async function ensureBootstrapSubscription(tenantId) {
     return getCurrentSubscription(id);
 }
 
-async function listTenantRequests(tenantId = currentTenantId({ required: true })) {
+async function listTenantRequests(tenantId = currentTenantId({ required: true }), { readOnly = false } = {}) {
     const id = tenantIdValue(tenantId);
-    await ensureSaasTables();
+    await ensureSaasTables({ readOnly });
     const pool = await getPool();
     const result = await pool.request().input('tenantId', sql.Int, id).query(`SELECT r.id,r.tenant_id,r.status,r.amount_snapshot,r.currency,r.notes,r.review_notes,r.requested_by_user_id,r.reviewed_by_user_id,r.reviewed_at,r.created_at,
                        t.name AS tenant_name,t.slug AS tenant_slug,u.full_name AS requested_by_name,

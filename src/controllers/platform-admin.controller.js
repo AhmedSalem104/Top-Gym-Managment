@@ -26,7 +26,7 @@ function createPlatformAdminController({ platformAdminService, saasService, auth
         },
 
         tenant: async (request, response) => {
-            response.json(await platformAdminService.getTenantProfile(request.params.tenantId));
+            response.json(await platformAdminService.getTenantProfile(request.params.tenantId, { readOnly: request.readOnlyBaseline }));
         },
 
         updateTenant: async (request, response) => {
@@ -49,10 +49,10 @@ function createPlatformAdminController({ platformAdminService, saasService, auth
 
         usage: async (request, response) => {
             const tenantId = request.params.tenantId;
-            const subscription = await saasService.getCurrentSubscription(tenantId);
+            const subscription = await saasService.getCurrentSubscription(tenantId, { readOnly: request.readOnlyBaseline });
             const [usage, entitlements] = await Promise.all([
-                saasService.getUsage(tenantId),
-                saasService.getEffectiveEntitlements(tenantId, subscription)
+                saasService.getUsage(tenantId, { readOnly: request.readOnlyBaseline }),
+                saasService.getEffectiveEntitlements(tenantId, subscription, { readOnly: request.readOnlyBaseline })
             ]);
             response.json({ usage, entitlements });
         },
@@ -85,16 +85,16 @@ function createPlatformAdminController({ platformAdminService, saasService, auth
 
         health: async (request, response) => {
             const tenantId = request.params.tenantId;
-            const subscription = await saasService.getCurrentSubscription(tenantId);
+            const subscription = await saasService.getCurrentSubscription(tenantId, { readOnly: request.readOnlyBaseline });
             const [usage, entitlements] = await Promise.all([
-                saasService.getUsage(tenantId),
-                saasService.getEffectiveEntitlements(tenantId, subscription)
+                saasService.getUsage(tenantId, { readOnly: request.readOnlyBaseline }),
+                saasService.getEffectiveEntitlements(tenantId, subscription, { readOnly: request.readOnlyBaseline })
             ]);
             response.json(await platformAdminService.getTenantHealth(tenantId, { subscription, usage, entitlements }));
         },
 
         audit: async (request, response) => {
-            response.json({ audit: await saasService.listAudit({ tenantId: request.params.tenantId, limit: request.query?.limit }) });
+            response.json({ audit: await saasService.listAudit({ tenantId: request.params.tenantId, limit: request.query?.limit, readOnly: request.readOnlyBaseline }) });
         },
 
         notes: async (request, response) => {

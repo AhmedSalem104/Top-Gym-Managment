@@ -15,15 +15,15 @@ function decodeHeaderFilename(value) {
 function createSaasController({ saasService }) {
     return {
         subscription: async (request, response) => {
-            response.json(await saasService.getTenantBilling(request.tenant?.id));
+            response.json(await saasService.getTenantBilling(request.tenant?.id, { readOnly: request.readOnlyBaseline }));
         },
 
-        plans: async (_request, response) => {
-            response.json({ plans: await saasService.getPlans() });
+        plans: async (request, response) => {
+            response.json({ plans: await saasService.getPlans({ readOnly: request.readOnlyBaseline }) });
         },
 
         requests: async (request, response) => {
-            response.json({ requests: await saasService.listTenantRequests(request.tenant?.id) });
+            response.json({ requests: await saasService.listTenantRequests(request.tenant?.id, { readOnly: request.readOnlyBaseline }) });
         },
 
         createRequest: async (request, response) => {
