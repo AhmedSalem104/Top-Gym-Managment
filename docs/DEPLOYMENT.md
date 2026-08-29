@@ -114,7 +114,7 @@ function lifecycle still requires provider-side verification.
 4. Run `npm run qa:gate` and `npm run build`.
 5. Run database-dependent smoke/E2E checks against a safe test database.
 6. Deploy.
-7. Verify `/api/health`, login, Owner/Assistant access and one read-only domain flow.
+7. Verify `/api/health/live`, `/api/health`, login, Owner/Assistant access and one read-only domain flow.
 8. Verify that the cron backup is authorized and recorded.
 
 ## Serverless constraints

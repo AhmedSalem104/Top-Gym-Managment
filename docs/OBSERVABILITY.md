@@ -28,6 +28,10 @@ accident.
 
 ## Health endpoint
 
+`GET /api/health/live` is a tenant-neutral liveness probe. It checks only that
+the application route is running and does not open a SQL connection, resolve a
+tenant or require a session. It is suitable for a lightweight platform probe.
+
 `GET /api/health` is tenant-neutral and verifies application routing and SQL
 connectivity. It reports safe application/database/storage states and a
 monotonic database-check duration; a database failure returns `503` without

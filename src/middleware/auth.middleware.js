@@ -38,8 +38,8 @@ function createAuthApiMiddleware({ authService, isAuthorizedCronRequest, tenantS
             && (request.path === '/branding' || request.path.startsWith('/branding/assets/'));
         const platformBrandingRequest = tenantBrandingPath
             && String(request.query?.scope || '').trim().toLowerCase() === 'platform';
-        const healthPath = request.path === '/health';
-        const publicPath = ['/health', '/member-portal/lookup', '/member-portal/feedback', '/branding'].includes(request.path)
+        const healthPath = ['/health', '/health/live'].includes(request.path);
+        const publicPath = ['/health', '/health/live', '/member-portal/lookup', '/member-portal/feedback', '/branding'].includes(request.path)
             || request.path === '/member-portal/library/options'
             || request.path.startsWith('/member-portal/library/')
             || (request.method === 'GET' && request.path.startsWith('/branding/assets/'));

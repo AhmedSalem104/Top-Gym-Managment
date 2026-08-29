@@ -3,7 +3,7 @@
 const assert = require('node:assert/strict');
 const test = require('node:test');
 
-const { createHealthHandler } = require('../../src/routes');
+const { createHealthHandler, createLivenessHandler } = require('../../src/routes');
 
 function responseDouble() {
     return {
@@ -19,6 +19,19 @@ function responseDouble() {
         }
     };
 }
+
+test('liveness handler is tenant-neutral and does not require a database', async () => {
+    const response = responseDouble();
+    const handler = createLivenessHandler();
+    await handler({ requestId: 'live-test' }, response);
+    assert.equal(response.statusCode, 200);
+    assert.deepEqual(response.body, {
+        ok: true,
+        status: 'alive',
+        checks: { application: { status: 'healthy' } },
+        requestId: 'live-test'
+    });
+});
 
 test('health handler reports safe application and database status', async () => {
     const response = responseDouble();

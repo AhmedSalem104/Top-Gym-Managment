@@ -56,6 +56,15 @@ function createHealthHandler({ getPool, now = performance.now } = {}) {
     };
 }
 
+function createLivenessHandler() {
+    return async (request, response) => response.json({
+        ok: true,
+        status: 'alive',
+        checks: { application: { status: 'healthy' } },
+        requestId: request.requestId || null
+    });
+}
+
 function registerRoutes(app, {
     asyncRoute,
     authService,
@@ -83,6 +92,7 @@ function registerRoutes(app, {
     platformAdminService,
     getPool
 }) {
+    app.get('/api/health/live', asyncRoute(createLivenessHandler()));
     app.get('/api/health', asyncRoute(createHealthHandler({ getPool })));
 
     registerAuthRoutes(app, { authService, permissionService, asyncRoute, ownerOnly, allowLoginAttempt });
@@ -106,4 +116,4 @@ function registerRoutes(app, {
     registerMembersRoutes(app, { memberService, asyncRoute });
 }
 
-module.exports = { createHealthHandler, registerRoutes };
+module.exports = { createHealthHandler, createLivenessHandler, registerRoutes };

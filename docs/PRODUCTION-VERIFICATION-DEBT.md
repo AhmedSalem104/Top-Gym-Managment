@@ -117,6 +117,8 @@ claims to Production evidence. Those items remain listed above exactly once.
   for a full security sign-off.
 - HTTPS security headers include conditional HSTS; actual proxy/TLS behavior
   still requires deployment verification.
+- `/api/health/live` is a local/source-verified tenant-neutral liveness probe;
+  provider routing and alerting still require deployment verification.
 
 These local results do not close the authenticated baseline, live execution
 plans, Staging/Production capacity, restore, or pilot evidence items above.

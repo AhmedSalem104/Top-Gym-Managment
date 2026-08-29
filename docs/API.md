@@ -6,6 +6,7 @@ All application endpoints are under `/api`. Protected requests require the serve
 
 | Method | Path | Access |
 |---|---|---|
+| GET | `/api/health/live` | Public liveness probe; no database access |
 | GET | `/api/health` | Public health check; database connectivity is verified |
 | GET | `/api/auth/session` | Public session probe |
 | POST | `/api/auth/login` | Public; email and password |
