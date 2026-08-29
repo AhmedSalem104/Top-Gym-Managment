@@ -37,8 +37,8 @@ function normalizePhone(value) {
     return normalized;
 }
 
-async function ensureAttendanceTable() {
-    if (getTenantContext()?.readOnlyBaseline) return;
+async function ensureAttendanceTable({ readOnly = false } = {}) {
+    if (readOnly || getTenantContext()?.readOnlyBaseline) return;
     if (!attendanceTablePromise) {
         attendanceTablePromise = (async () => {
             const pool = await getPool();

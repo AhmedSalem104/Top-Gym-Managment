@@ -20,8 +20,17 @@ test('read-only feedback and backup paths do not initialize schema', () => {
     assert.match(feedbackController, /feedbackService\.list\(request\.query, \{ readOnly: request\.readOnlyRequest \}\)/);
     assert.match(backup, /async function ensureBackupOperationsTable\(\{ readOnly = false \} = \{\}\) \{\s*if \(readOnly \|\| getTenantContext\(\)\?\.readOnlyBaseline\) return;/);
     assert.match(backup, /async function ensureBackupArchivesTable\(\{ readOnly = false \} = \{\}\) \{\s*if \(readOnly \|\| getTenantContext\(\)\?\.readOnlyBaseline\) return;/);
+    assert.match(backup, /async function recordBackupOperation\(\{[\s\S]*?readOnly = false[\s\S]*?\} = \{\}\) \{[\s\S]*?if \(readOnly \|\| getTenantContext\(\)\?\.readOnlyBaseline\) return false;/);
+    assert.match(backup, /const \{ prepareLibraryData \} = require\('\.\/library-service'\);/);
+    assert.match(backup, /async function createBackup\(\{ format = 'json\.gz', readOnly = false \} = \{\}\) \{[\s\S]*?await prepareLibraryData\(\{ readOnly \}\);[\s\S]*?await ensureBrandingTables\(\{ readOnly \}\);/);
+    const library = source('src/services/library-service.js');
+    assert.match(library, /async function ensureLibraryTables\(\{ readOnly = false \} = \{\}\) \{\s*if \(readOnly \|\| getTenantContext\(\)\?\.readOnlyBaseline\) return;/);
+    assert.match(library, /async function prepareLibraryData\(\{ readOnly = false \} = \{\}\)/);
+    assert.match(library, /prepareLibraryData,/);
     assert.match(backupController, /getBackupHistory\(request\.query\.limit, \{ readOnly: request\.readOnlyRequest \}\)/);
     assert.match(backupController, /getBackupArchive\(request\.params\.id, \{ readOnly: request\.readOnlyRequest \}\)/);
+    assert.match(backupController, /createBackup\(\{ format: requestedFormat, readOnly: request\.readOnlyRequest \}\)/);
+    assert.match(backupController, /tableCounts: backup\.rowCounts,[\s\S]*?readOnly: request\.readOnlyRequest,/);
 });
 
 test('read-only intelligence paths skip generation audit and resolve branding safely', () => {

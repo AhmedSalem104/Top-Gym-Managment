@@ -45,8 +45,8 @@ function appError(message, statusCode = 400) {
     return error;
 }
 
-async function ensurePaymentTransactionsTable() {
-    if (getTenantContext()?.readOnlyBaseline) return;
+async function ensurePaymentTransactionsTable({ readOnly = false } = {}) {
+    if (readOnly || getTenantContext()?.readOnlyBaseline) return;
     if (!paymentTransactionsTablePromise) {
         paymentTransactionsTablePromise = (async () => {
             const pool = await getPool();

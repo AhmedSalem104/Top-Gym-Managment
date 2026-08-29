@@ -91,8 +91,8 @@ function normalizePhone(value) {
     return phone || null;
 }
 
-async function ensureStoreTables() {
-    if (getTenantContext()?.readOnlyBaseline) return;
+async function ensureStoreTables({ readOnly = false } = {}) {
+    if (readOnly || getTenantContext()?.readOnlyBaseline) return;
     if (!storeTablesPromise) {
         storeTablesPromise = (async () => {
             const schema = fs.readFileSync(STORE_SCHEMA_PATH, 'utf8');

@@ -12,8 +12,8 @@ const DEFAULT_DAY_PASS_TYPES = Object.freeze([
 
 let tablePromise;
 
-async function ensureDayPassTables() {
-    if (getTenantContext()?.readOnlyBaseline) return;
+async function ensureDayPassTables({ readOnly = false } = {}) {
+    if (readOnly || getTenantContext()?.readOnlyBaseline) return;
     if (!tablePromise) {
         tablePromise = (async () => {
             const pool = await getPool();

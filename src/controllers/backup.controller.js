@@ -25,13 +25,14 @@ function createBackupController({ backupService, brandingService, isAuthorizedCr
             if (!['json.gz', 'bak'].includes(requestedFormat)) {
                 return response.status(400).json({ error: 'صيغة النسخة غير مدعومة. اختر .json.gz أو .bak.' });
             }
-            const backup = await createBackup({ format: requestedFormat });
+            const backup = await createBackup({ format: requestedFormat, readOnly: request.readOnlyRequest });
             const brandName = brandingService ? await brandingService.getPublicBrandName('Logic Fit', { readOnly: request.readOnlyRequest }) : 'Logic Fit';
             await recordBackupOperation({
                 operationType: 'download',
                 fileName: backup.filename,
                 sourceGeneratedAt: backup.generatedAt,
                 tableCounts: backup.rowCounts,
+                readOnly: request.readOnlyRequest,
                 details: `تم إنشاء نسخة ${brandName} بصيغة .${backup.format} وتنزيلها على جهاز المستخدم.`
             }).catch((error) => console.warn('Unable to record backup download:', error.code || 'recording_failed'));
             response.set({

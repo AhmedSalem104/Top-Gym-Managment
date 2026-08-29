@@ -97,8 +97,8 @@ function withTransaction(work) {
     });
 }
 
-async function ensureCoachingTables({ seedLibrary = true } = {}) {
-    if (getTenantContext()?.readOnlyBaseline) return;
+async function ensureCoachingTables({ seedLibrary = true, readOnly = false } = {}) {
+    if (readOnly || getTenantContext()?.readOnlyBaseline) return;
     if (!coachingTablesPromise) {
         coachingTablesPromise = (async () => {
             // The coaching schema only needs the library tables to exist. The

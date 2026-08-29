@@ -208,8 +208,8 @@ function mapItem(type, row) {
     return mapExercise(row);
 }
 
-async function ensureLibraryTables() {
-    if (getTenantContext()?.readOnlyBaseline) return;
+async function ensureLibraryTables({ readOnly = false } = {}) {
+    if (readOnly || getTenantContext()?.readOnlyBaseline) return;
     if (!libraryTablesPromise) {
         libraryTablesPromise = (async () => {
             const pool = await getPool();
@@ -465,7 +465,7 @@ async function ensureLibraryData() {
 async function prepareLibraryData({ readOnly = false } = {}) {
     // A baseline request must never seed or synchronize catalog rows. The
     // normal application path keeps its existing lazy initialization behavior.
-    return readOnly ? ensureLibraryTables() : ensureLibraryData();
+    return readOnly ? ensureLibraryTables({ readOnly: true }) : ensureLibraryData();
 }
 
 // Synchronize the repository seed files with an existing database without
@@ -1177,6 +1177,7 @@ module.exports = {
     getLibraryCollection,
     getLibraryItem,
     getLibraryOptions,
+    prepareLibraryData,
     syncLibraryData,
     updateLibraryItem
 };

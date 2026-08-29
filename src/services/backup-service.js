@@ -7,7 +7,7 @@ const { getPool, sql } = require('../database');
 const { ensureExpensesTable } = require('./finance-service');
 const { ensurePaymentTransactionsTable } = require('./member-service');
 const { ensureAttendanceTable } = require('./attendance-service');
-const { ensureLibraryData } = require('./library-service');
+const { prepareLibraryData } = require('./library-service');
 const { ensureCoachingTables } = require('./coaching-service');
 const { ensureDayPassTables } = require('../repositories/day-pass.repository');
 const { ensureStoreTables } = require('./store-service');
@@ -284,7 +284,10 @@ async function inspectBackupBuffer(input) {
     };
 }
 
-async function recordBackupOperation({ operationType, fileName = null, sourceGeneratedAt = null, tableCounts = {}, status = 'success', details = null } = {}) {
+async function recordBackupOperation({ operationType, fileName = null, sourceGeneratedAt = null, tableCounts = {}, status = 'success', details = null, readOnly = false } = {}) {
+    // Manual backup downloads are read operations. They must not create the
+    // audit table or insert an audit row as a side effect of a GET request.
+    if (readOnly || getTenantContext()?.readOnlyBaseline) return false;
     await ensureBackupOperationsTable();
     const pool = await getPool();
     const sourceDate = sourceGeneratedAt ? new Date(sourceGeneratedAt) : null;
@@ -529,7 +532,7 @@ async function restoreBackup(input, { fileName = 'uploaded-backup.json.gz' } = {
         await ensureExpensesTable();
         await ensurePaymentTransactionsTable();
         await ensureAttendanceTable();
-        await ensureLibraryData();
+        await prepareLibraryData();
         await ensureCoachingTables();
         await ensureDayPassTables();
         await ensureStoreTables();
@@ -575,16 +578,16 @@ async function restoreBackup(input, { fileName = 'uploaded-backup.json.gz' } = {
     }
 }
 
-async function createBackup({ format = 'json.gz' } = {}) {
+async function createBackup({ format = 'json.gz', readOnly = false } = {}) {
     const backupFormat = String(format).toLowerCase() === 'bak' ? 'bak' : 'json.gz';
-    await ensureExpensesTable();
-    await ensurePaymentTransactionsTable();
-    await ensureAttendanceTable();
-    await ensureLibraryData();
-    await ensureCoachingTables();
-    await ensureDayPassTables();
-    await ensureStoreTables();
-    await ensureBrandingTables();
+    await ensureExpensesTable({ readOnly });
+    await ensurePaymentTransactionsTable({ readOnly });
+    await ensureAttendanceTable({ readOnly });
+    await prepareLibraryData({ readOnly });
+    await ensureCoachingTables({ readOnly });
+    await ensureDayPassTables({ readOnly });
+    await ensureStoreTables({ readOnly });
+    await ensureBrandingTables({ readOnly });
     const pool = await getPool();
     const generatedAt = new Date();
     const { timeZone, stamp } = getLocalTimeParts(generatedAt);
