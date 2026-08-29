@@ -3,6 +3,8 @@
     window.__topGymCoachingLoaded = true;
 
     const $ = (id) => document.getElementById(id);
+    const can = (permission) => window.topGymAuth?.isOwner?.() === true
+        || window.topGymAuth?.hasPermission?.(permission) === true;
     const state = {
         trainees: [],
         pagination: null,
@@ -268,6 +270,10 @@
 
     async function deleteDietPlan(planId, memberId = state.profile?.member?.id) {
         if (!planId) return;
+        if (!can('coaching.delete')) {
+            notify('لا تملك صلاحية حذف خطة التغذية.', 'error');
+            return;
+        }
         const confirmed = await confirmAction('تأكيد حذف خطة التغذية', 'سيتم حذف الخطة ووجباتها وتسجيلاتها المرتبطة بها نهائيًا.');
         if (!confirmed) return;
         try {
@@ -281,6 +287,10 @@
 
     async function deleteWorkoutProgram(programId, memberId = state.profile?.member?.id) {
         if (!programId) return;
+        if (!can('coaching.delete')) {
+            notify('لا تملك صلاحية حذف برنامج التدريب.', 'error');
+            return;
+        }
         const confirmed = await confirmAction('تأكيد حذف برنامج التدريب', 'سيتم حذف البرنامج وأيامه وتفاصيل تمارينه نهائيًا.');
         if (!confirmed) return;
         try {
@@ -1566,6 +1576,10 @@
     }
 
     async function openBuilderV2(type, memberId, id = null, memberName = '') {
+        if (!can(id ? 'coaching.update' : 'coaching.create') || !can('coaching.read')) {
+            notify(id ? 'لا تملك صلاحية تعديل النظام التدريبي أو الغذائي.' : 'لا تملك صلاحية إنشاء نظام تدريبي أو غذائي.', 'error');
+            return;
+        }
         try {
             await Promise.all([loadCatalog(), loadBuilderClients()]);
             const resolvedMemberName = memberName
@@ -1599,6 +1613,10 @@
 
     async function openBuilderFromAiDraft(detail = {}) {
         const type = detail.type === 'diet' ? 'diet' : 'workout';
+        if (!can('coaching.create') || !can('coaching.read')) {
+            notify('لا تملك صلاحية فتح محرر التدريب والتغذية.', 'error');
+            return;
+        }
         if (!detail.draft || !Number(detail.draft.memberId)) {
             notify('مسودة الذكاء الاصطناعي غير مكتملة.', 'error');
             return;
@@ -1624,6 +1642,10 @@
 
     async function refineBuilderWithAi() {
         if (!state.builder) return;
+        if (!can('intelligence.generate')) {
+            notify('لا تملك صلاحية تعديل المسودة بالذكاء الاصطناعي.', 'error');
+            return;
+        }
         const instructionInput = $('coachingBuilderAiInstruction');
         const instruction = String(instructionInput?.value || '').trim();
         if (!instruction) { notify('اكتب التعديل المطلوب أولًا.', 'error'); return; }
@@ -1780,6 +1802,10 @@
     async function saveBuilderV2(event) {
         event.preventDefault();
         if (!state.builder) return;
+        if (!can(state.builder.id ? 'coaching.update' : 'coaching.create')) {
+            notify(state.builder.id ? 'لا تملك صلاحية تعديل النظام.' : 'لا تملك صلاحية إنشاء النظام.', 'error');
+            return;
+        }
         if (state.builder.step !== 3) { setBuilderStep(state.builder.step + 1); return; }
         const draft = syncBuilderDraft();
         if (!builderStepValid(2)) return;
@@ -1824,6 +1850,10 @@
     }
 
     function openMeasurementDialog(memberId, measurement = null) {
+        if (!can(measurement ? 'coaching.update' : 'coaching.create')) {
+            notify(measurement ? 'لا تملك صلاحية تعديل القياس.' : 'لا تملك صلاحية إضافة قياس.', 'error');
+            return;
+        }
         ensureMeasurementDialog();
         $('measurementTitle').textContent = measurement ? 'تعديل القياس' : 'إضافة قياس';
         $('measurementId').value = measurement?.id || '';
@@ -1837,6 +1867,10 @@
         event.preventDefault();
         const memberId = $('measurementMemberId').value;
         const id = $('measurementId').value;
+        if (!can(id ? 'coaching.update' : 'coaching.create')) {
+            notify(id ? 'لا تملك صلاحية تعديل القياس.' : 'لا تملك صلاحية إضافة قياس.', 'error');
+            return;
+        }
         const body = { measuredAt: $('measurementDate').value, weightKg: $('measurementWeight').value || null, heightCm: $('measurementHeight').value || null, bodyFatPercent: $('measurementFat').value || null, chestCm: $('measurementChest').value || null, waistCm: $('measurementWaist').value || null, hipsCm: $('measurementHips').value || null, armsCm: $('measurementArms').value || null, thighsCm: $('measurementThighs').value || null, notes: $('measurementNotes').value };
         try {
             await requestJson(id ? `/api/clients/${memberId}/measurements/${id}` : `/api/clients/${memberId}/measurements`, { method: id ? 'PUT' : 'POST', body: JSON.stringify(body) });
@@ -1863,6 +1897,10 @@
     }
 
     function openCheckinDialog(memberId, checkin = null) {
+        if (!can(checkin ? 'coaching.update' : 'coaching.create')) {
+            notify(checkin ? 'لا تملك صلاحية تعديل المتابعة اليومية.' : 'لا تملك صلاحية إضافة متابعة يومية.', 'error');
+            return;
+        }
         ensureCheckinDialog();
         $('checkinTitle').textContent = checkin ? 'تعديل المتابعة اليومية' : 'إضافة متابعة يومية';
         $('checkinId').value = checkin?.id || '';
@@ -1877,6 +1915,10 @@
         const button = event.currentTarget.querySelector('button[type="submit"]');
         const memberId = $('checkinMemberId').value;
         const id = $('checkinId').value;
+        if (!can(id ? 'coaching.update' : 'coaching.create')) {
+            notify(id ? 'لا تملك صلاحية تعديل المتابعة اليومية.' : 'لا تملك صلاحية إضافة متابعة يومية.', 'error');
+            return;
+        }
         const body = { checkinDate: $('checkinDate').value, sleepHours: $('checkinSleepHours').value || null, sleepQuality: $('checkinSleepQuality').value || null, fatigue: $('checkinFatigue').value || null, soreness: $('checkinSoreness').value || null, stress: $('checkinStress').value || null, mood: $('checkinMood').value || null, restingHr: $('checkinRestingHr').value || null, hrv: $('checkinHrv').value || null, bodyweightKg: $('checkinBodyweight').value || null, notes: $('checkinNotes').value };
         button.disabled = true;
         try {
@@ -1889,6 +1931,10 @@
     }
 
     async function deleteCheckinFromProfile(memberId, checkinId) {
+        if (!can('coaching.delete')) {
+            notify('لا تملك صلاحية حذف المتابعة اليومية.', 'error');
+            return;
+        }
         if (!window.confirm('هل تريد حذف هذه المتابعة اليومية؟')) return;
         try {
             await requestJson(`/api/clients/${memberId}/checkins/${checkinId}`, { method: 'DELETE' });
@@ -1922,6 +1968,10 @@
     }
 
     function openClientEditDialog(member) {
+        if (!can('coaching.update')) {
+            notify('لا تملك صلاحية تعديل بيانات العميل.', 'error');
+            return;
+        }
         ensureClientEditDialog();
         $('coachingEditMemberId').value = member.id;
         $('coachingEditName').value = member.fullName || '';
@@ -1933,6 +1983,10 @@
 
     async function saveClientEdit(event) {
         event.preventDefault();
+        if (!can('coaching.update')) {
+            notify('لا تملك صلاحية تعديل بيانات العميل.', 'error');
+            return;
+        }
         const memberId = $('coachingEditMemberId').value;
         try {
             const data = await requestJson(`/api/clients/${memberId}`, { method: 'PUT', body: JSON.stringify({ fullName: $('coachingEditName').value, phone: $('coachingEditPhone').value, email: $('coachingEditEmail').value, notes: $('coachingEditNotes').value }) });
@@ -1944,10 +1998,23 @@
         } catch (error) { notify(error.message, 'error'); }
     }
 
-    function openSubscriptionDialog(memberId) { ensureSubscriptionDialog(); $('subscriptionMemberId').value = memberId; $('subscriptionStart').value = today(); openDialog($('coachingSubscriptionDialog')); }
+    function openSubscriptionDialog(memberId) {
+        if (!can('memberships.create') || !can('payments.create')) {
+            notify('لا تملك صلاحية إضافة اشتراك أو تسجيل قيمته المالية.', 'error');
+            return;
+        }
+        ensureSubscriptionDialog();
+        $('subscriptionMemberId').value = memberId;
+        $('subscriptionStart').value = today();
+        openDialog($('coachingSubscriptionDialog'));
+    }
 
     async function saveSubscription(event) {
         event.preventDefault();
+        if (!can('memberships.create') || !can('payments.create')) {
+            notify('لا تملك صلاحية إضافة اشتراك أو تسجيل قيمته المالية.', 'error');
+            return;
+        }
         try {
             const memberId = $('subscriptionMemberId').value;
             await requestJson(`/api/members/${memberId}/memberships`, { method: 'POST', body: JSON.stringify({ membershipPlan: $('subscriptionPlan').value, membershipType: $('subscriptionType').value, startDate: $('subscriptionStart').value, amountPaid: Number($('subscriptionPaid').value || 0), discountAmount: Number($('subscriptionDiscount').value || 0), paymentMethod: 'cash' }) });
@@ -2112,6 +2179,10 @@
     }
 
     async function openSessionDialog(memberId) {
+        if (!can('coaching.create') || !can('coaching.read')) {
+            notify('لا تملك صلاحية تسجيل جلسات التدريب.', 'error');
+            return;
+        }
         if (state.profile?.member?.id !== Number(memberId)) {
             try { state.profile = await requestJson(`/api/clients/${memberId}/training-overview`); } catch (error) { return notify(error.message, 'error'); }
         }
@@ -2142,6 +2213,10 @@
 
     async function startExecutionSession(event) {
         event.preventDefault();
+        if (!can('coaching.create')) {
+            notify('لا تملك صلاحية بدء جلسة تدريب.', 'error');
+            return;
+        }
         if (state.execution?.session) return;
         const startButton = $('executionSessionStart');
         if (startButton?.disabled) return;
@@ -2165,6 +2240,10 @@
     }
 
     async function addExecutionSet() {
+        if (!can('coaching.create')) {
+            notify('لا تملك صلاحية حفظ مجموعات التدريب.', 'error');
+            return;
+        }
         const sessionId = $('executionSessionId')?.value;
         if (!sessionId) return;
         const addButton = document.querySelector('[data-session-action="add-set"]');
@@ -2187,6 +2266,10 @@
     }
 
     async function endExecutionSession() {
+        if (!can('coaching.update')) {
+            notify('لا تملك صلاحية إنهاء جلسة التدريب.', 'error');
+            return;
+        }
         const sessionId = $('executionSessionId')?.value;
         if (!sessionId) return;
         const endButton = $('executionSessionEnd');
@@ -2202,6 +2285,10 @@
     }
 
     async function openMealDialog(memberId) {
+        if (!can('coaching.create') || !can('coaching.read')) {
+            notify('لا تملك صلاحية تسجيل الوجبات.', 'error');
+            return;
+        }
         if (state.profile?.member?.id !== Number(memberId)) {
             try { state.profile = await requestJson(`/api/clients/${memberId}/training-overview`); } catch (error) { return notify(error.message, 'error'); }
         }
@@ -2246,6 +2333,10 @@
 
     async function saveExecutionMeal(event) {
         event.preventDefault();
+        if (!can('coaching.create')) {
+            notify('لا تملك صلاحية حفظ تسجيل الوجبة.', 'error');
+            return;
+        }
         const submitButton = event.currentTarget.querySelector('button[type="submit"]');
         if (submitButton?.disabled) return;
         if (submitButton) submitButton.disabled = true;
@@ -2284,6 +2375,10 @@
             return openMeasurementDialog(memberId, item);
         }
         if (action === 'delete-measurement') {
+            if (!can('coaching.delete')) {
+                notify('لا تملك صلاحية حذف القياس.', 'error');
+                return;
+            }
             if (!window.confirm('هل تريد حذف هذا القياس؟')) return;
             try { await requestJson(`/api/clients/${memberId}/measurements/${id}`, { method: 'DELETE' }); notify('تم حذف القياس.'); openProfile(memberId); } catch (error) { notify(error.message, 'error'); }
         }

@@ -40,6 +40,12 @@
   const paymentLabels = { cash: 'نقدي', card: 'بطاقة', transfer: 'تحويل', wallet: 'محفظة', other: 'أخرى' };
   let storePurchasesRequestId = 0;
 
+  function hasRequiredPermissions(value) {
+    const required = String(value || '').split(',').map((item) => item.trim()).filter(Boolean);
+    if (!required.length || window.topGymAuth?.isOwner?.() === true) return true;
+    return required.every((permission) => window.topGymAuth?.hasPermission?.(permission) === true);
+  }
+
   function dateText(value) {
     if (!value) return '—';
     const date = new Date(`${String(value).slice(0, 10)}T00:00:00`);
@@ -119,12 +125,25 @@
     }
     const source = action === 'print' ? document.querySelector('#detailsDialog .print-details-button') || findSourceButton('print') : findSourceButton(action);
     if (!source) return;
+    if (!hasRequiredPermissions(source.dataset.requiredPermission)) return;
     if (typeof dialog.close === 'function' && dialog.open) dialog.close();
     window.requestAnimationFrame(() => source.click());
   }
 
+  const actionPermissions = Object.freeze({
+    renew: 'memberships.renew,payments.create',
+    view: 'members.read,memberships.read',
+    print: 'members.print,members.read,memberships.read',
+    freeze: 'memberships.freeze',
+    payment: 'payments.create',
+    qr: 'members.read,memberships.read',
+    edit: 'members.update',
+    refund: 'payments.refund'
+  });
+
   function actionButton(action, label, className = '') {
-    return `<button class="member-details-action ${className}" type="button" data-member-detail-action="${action}" aria-label="${label}" title="${label}">${icon(action)}<span>${label}</span></button>`;
+    const requiredPermission = actionPermissions[action] || '';
+    return `<button class="member-details-action ${className}" type="button" data-member-detail-action="${action}"${requiredPermission ? ` data-required-permission="${requiredPermission}"` : ''} aria-label="${label}" title="${label}">${icon(action)}<span>${label}</span></button>`;
   }
 
   function renderOverview(member, details) {
@@ -136,9 +155,9 @@
     const remaining = number(subscription.amountRemaining);
     const isCancelled = subscription.status === 'cancelled';
     const freezeAction = isCancelled ? '' : actionButton('freeze', 'تجميد', 'member-details-action-secondary');
-    const paymentAction = isCancelled ? '' : '<button type="button" data-member-detail-action="payment">' + icon('payment') + '<span>تسجيل دفعة</span></button>';
+    const paymentAction = isCancelled ? '' : '<button type="button" data-member-detail-action="payment" data-required-permission="payments.create">' + icon('payment') + '<span>تسجيل دفعة</span></button>';
     const canRefund = window.topGymAuth?.isOwner?.() === true && number(subscription.amountPaid) > 0;
-    const refundAction = canRefund ? '<button type="button" data-member-detail-action="refund">' + icon('refund') + '<span>استرجاع الاشتراك</span></button>' : '';
+    const refundAction = canRefund ? '<button type="button" data-member-detail-action="refund" data-owner-only>' + icon('refund') + '<span>استرجاع الاشتراك</span></button>' : '';
     const overview = document.createElement('div');
     overview.className = 'member-details-overview';
     overview.innerHTML = `<div class="member-details-stats" aria-label="ملخص الاشتراك">
@@ -152,7 +171,7 @@
       ${actionButton('view', 'عرض', 'member-details-action-secondary')}
       ${actionButton('print', 'طباعة', 'member-details-action-secondary')}
        ${freezeAction}
-       <span class="member-details-more"><button class="member-details-action member-details-action-more" type="button" data-member-detail-action="more" aria-expanded="false" aria-controls="memberDetailsMoreMenu" aria-label="المزيد" title="المزيد">${icon('more')}</button><span class="member-details-more-menu" id="memberDetailsMoreMenu" hidden>${paymentAction}<button type="button" data-member-detail-action="qr">${icon('qr')}<span>عرض QR</span></button><button type="button" data-member-detail-action="edit">${icon('view')}<span>تعديل البيانات</span></button>${refundAction}</span></span>
+       <span class="member-details-more"><button class="member-details-action member-details-action-more" type="button" data-member-detail-action="more" aria-expanded="false" aria-controls="memberDetailsMoreMenu" aria-label="المزيد" title="المزيد">${icon('more')}</button><span class="member-details-more-menu" id="memberDetailsMoreMenu" hidden>${paymentAction}<button type="button" data-member-detail-action="qr" data-required-permission="members.read,memberships.read">${icon('qr')}<span>عرض QR</span></button><button type="button" data-member-detail-action="edit" data-required-permission="members.update">${icon('view')}<span>تعديل البيانات</span></button>${refundAction}</span></span>
     </div></section>`;
     content.prepend(overview);
   }
@@ -173,7 +192,9 @@
   }
 
   async function loadStorePurchases(member) {
-    const canView = window.topGymAuth?.isOwner?.() === true || window.topGymAuth?.hasPermission?.('store.sales.view') === true;
+    const canView = window.topGymAuth?.isOwner?.() === true
+      || (window.topGymAuth?.hasPermission?.('members.read') === true
+        && window.topGymAuth?.hasPermission?.('store.sales.view') === true);
     if (!canView || !member?.id || !window.topGymApi?.get) return;
     const requestId = ++storePurchasesRequestId;
     renderStorePurchases([], true);
@@ -191,6 +212,7 @@
   content.addEventListener('click', (event) => {
     const button = event.target.closest('[data-member-detail-action]');
     if (!button) return;
+    if (!hasRequiredPermissions(button.dataset.requiredPermission)) return;
     const action = button.dataset.memberDetailAction;
     if (action === 'more') {
       const menu = document.getElementById('memberDetailsMoreMenu');

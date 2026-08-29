@@ -19,11 +19,60 @@ test('Assistant read-only permissions allow GET and reject writes', () => {
     assert.equal(canAccessRoleRequest(user, { path: '/members', method: 'POST' }), false);
 });
 
+test('member registration is available with members.create while paid onboarding stays financial-permission protected', () => {
+    const unpaidRequest = {
+        path: '/members',
+        method: 'POST',
+        body: {
+            fullName: 'Synthetic Member',
+            membershipType: 'monthly',
+            membershipPlan: 'gym_only',
+            amountPaid: 0,
+            discountAmount: 0,
+            paymentMethod: 'cash'
+        }
+    };
+    const memberCreator = { role: 'Assistant', permissions: ['members.create'] };
+
+    assert.deepEqual(permissionForRequest(unpaidRequest).all, ['members.create']);
+    assert.equal(canAccessRoleRequest(memberCreator, unpaidRequest), true);
+
+    const paidRequest = { ...unpaidRequest, body: { ...unpaidRequest.body, amountPaid: 100 } };
+    assert.deepEqual(permissionForRequest(paidRequest).all, ['members.create', 'payments.create']);
+    assert.equal(canAccessRoleRequest(memberCreator, paidRequest), false);
+    assert.equal(canAccessRoleRequest({ ...memberCreator, permissions: ['members.create', 'payments.create'] }, paidRequest), true);
+
+    const discountedRequest = { ...unpaidRequest, body: { ...unpaidRequest.body, discountAmount: 25 } };
+    assert.deepEqual(permissionForRequest(discountedRequest).all, ['members.create', 'payments.create']);
+});
+
 test('Payment and renewal require both membership and payment permissions', () => {
     const request = { path: '/members/7/renew', method: 'POST' };
     assert.deepEqual(permissionForRequest(request).all, ['memberships.renew', 'payments.create']);
     assert.equal(canAccessRoleRequest({ role: 'Assistant', permissions: ['memberships.renew'] }, request), false);
     assert.equal(canAccessRoleRequest({ role: 'Assistant', permissions: ['memberships.renew', 'payments.create'] }, request), true);
+});
+
+test('member updates require only the permissions represented by the submitted fields', () => {
+    const memberFields = { fullName: 'Updated Member', phone: '01000000000' };
+    assert.deepEqual(
+        permissionForRequest({ path: '/members/7', method: 'PUT', body: memberFields }).all,
+        ['members.update']
+    );
+    assert.deepEqual(
+        permissionForRequest({ path: '/members/7', method: 'PUT', body: { ...memberFields, startDate: '2026-08-30' } }).all,
+        ['members.update', 'memberships.update']
+    );
+    assert.deepEqual(
+        permissionForRequest({ path: '/members/7', method: 'PUT', body: { ...memberFields, amountPaid: 100 } }).all,
+        ['members.update', 'payments.create']
+    );
+    assert.deepEqual(
+        permissionForRequest({ path: '/members/7', method: 'PUT', body: { ...memberFields, membershipPlan: 'gym_only' } }).all,
+        ['members.update', 'memberships.update', 'payments.create']
+    );
+    assert.equal(canAccessRoleRequest({ role: 'Assistant', permissions: ['members.update'] }, { path: '/members/7', method: 'PUT', body: memberFields }), true);
+    assert.equal(canAccessRoleRequest({ role: 'Assistant', permissions: ['members.update'] }, { path: '/members/7', method: 'PUT', body: { ...memberFields, startDate: '2026-08-30' } }), false);
 });
 
 test('finance.read removes financial fields from a permitted response', () => {

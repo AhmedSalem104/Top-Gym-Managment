@@ -4,6 +4,8 @@
 
     const $ = (id) => document.getElementById(id);
     const api = window.topGymApi;
+    const can = (permission) => window.topGymAuth?.isOwner?.() === true
+        || window.topGymAuth?.hasPermission?.(permission) === true;
     const state = {
         loaded: false,
         loading: false,
@@ -102,7 +104,7 @@
     }
 
     function renderChurn(items = []) {
-        const rows = items.map((item) => `<tr><td><div class="intelligence-member-cell"><span class="intelligence-member-avatar">${escapeHtml((item.fullName || 'م').trim().slice(0, 1))}</span><div><strong>${escapeHtml(item.fullName)}</strong><small dir="ltr">${escapeHtml(item.phone || 'بدون هاتف')}</small></div></div></td><td><span class="intelligence-risk-badge ${escapeHtml(item.level)}">${riskLabel(item.level)} · ${number(item.score)}%</span></td><td>${item.daysSinceLastVisit == null ? 'لا يوجد حضور' : `منذ ${number(item.daysSinceLastVisit)} يوم`}</td><td>${item.daysToExpiry == null ? '—' : item.daysToExpiry < 0 ? 'منتهية' : `${number(item.daysToExpiry)} يوم`}</td><td><small>${escapeHtml(item.reasons?.[0] || 'مؤشر يحتاج مراجعة')}</small></td><td><button class="btn btn-light btn-small" type="button" data-intelligence-member="${escapeHtml(item.id)}">فتح ملف</button></td></tr>`).join('');
+        const rows = items.map((item) => `<tr><td><div class="intelligence-member-cell"><span class="intelligence-member-avatar">${escapeHtml((item.fullName || 'م').trim().slice(0, 1))}</span><div><strong>${escapeHtml(item.fullName)}</strong><small dir="ltr">${escapeHtml(item.phone || 'بدون هاتف')}</small></div></div></td><td><span class="intelligence-risk-badge ${escapeHtml(item.level)}">${riskLabel(item.level)} · ${number(item.score)}%</span></td><td>${item.daysSinceLastVisit == null ? 'لا يوجد حضور' : `منذ ${number(item.daysSinceLastVisit)} يوم`}</td><td>${item.daysToExpiry == null ? '—' : item.daysToExpiry < 0 ? 'منتهية' : `${number(item.daysToExpiry)} يوم`}</td><td><small>${escapeHtml(item.reasons?.[0] || 'مؤشر يحتاج مراجعة')}</small></td><td><button class="btn btn-light btn-small" type="button" data-required-permission="members.read,memberships.read" data-intelligence-member="${escapeHtml(item.id)}">فتح ملف</button></td></tr>`).join('');
         $('intelligenceChurnTable').innerHTML = rows ? `<table class="intelligence-table"><thead><tr><th>المشترك</th><th>المؤشر</th><th>آخر حضور</th><th>الانتهاء</th><th>السبب الأبرز</th><th>الإجراء</th></tr></thead><tbody>${rows}</tbody></table>` : '<div class="intelligence-empty-line">لا توجد عضويات نشطة في نطاق التحليل.</div>';
     }
 
@@ -159,18 +161,23 @@
         const plan = state.plan.draft;
         const warningMarkup = state.plan.warnings.map((warning) => `<li>${escapeHtml(brandText(warning))}</li>`).join('');
         const changeMarkup = changes.map((change) => `<li>${escapeHtml(brandText(change))}</li>`).join('');
-        $('intelligencePlanResult').innerHTML = `<div class="intelligence-result-head"><div><span class="intelligence-result-kicker">مسودة قابلة للمراجعة</span><h4>${escapeHtml(plan.name || 'اقتراح ذكي')}</h4><p>${escapeHtml(plan.description || '')}</p></div><span class="intelligence-draft-badge">Draft</span></div>${planSummary(plan, state.plan.type)}${planPreview(plan, state.plan.type)}${changeMarkup ? `<div class="intelligence-result-notice success"><strong>تم تطبيق التعديل</strong><ul>${changeMarkup}</ul></div>` : ''}${warningMarkup ? `<div class="intelligence-result-notice warning"><strong>مراجعة ضرورية قبل الاعتماد</strong><ul>${warningMarkup}</ul></div>` : ''}<form class="intelligence-refine-form" id="intelligenceRefineForm"><label>اكتب تعديلك على المسودة<textarea id="intelligenceRefineInstruction" rows="2" maxlength="500" placeholder="مثال: احذف تمرين السكوات وأضف جهاز الرجلين"></textarea></label><button class="btn btn-light" type="submit">إعادة إنشاء بالتعليمات</button></form><div class="intelligence-result-actions"><button class="btn btn-primary" type="button" data-intelligence-save>حفظ كمسودة في النظام</button><button class="btn btn-light" type="button" data-intelligence-manual>فتح في المحرر اليدوي</button></div><small class="intelligence-human-review-note">لن يتم نشر الخطة كخطة معتمدة تلقائيًا؛ راجعها واحفظها أو عدّلها يدويًا.</small>`;
+        $('intelligencePlanResult').innerHTML = `<div class="intelligence-result-head"><div><span class="intelligence-result-kicker">مسودة قابلة للمراجعة</span><h4>${escapeHtml(plan.name || 'اقتراح ذكي')}</h4><p>${escapeHtml(plan.description || '')}</p></div><span class="intelligence-draft-badge">Draft</span></div>${planSummary(plan, state.plan.type)}${planPreview(plan, state.plan.type)}${changeMarkup ? `<div class="intelligence-result-notice success"><strong>تم تطبيق التعديل</strong><ul>${changeMarkup}</ul></div>` : ''}${warningMarkup ? `<div class="intelligence-result-notice warning"><strong>مراجعة ضرورية قبل الاعتماد</strong><ul>${warningMarkup}</ul></div>` : ''}<form class="intelligence-refine-form" id="intelligenceRefineForm"><label>اكتب تعديلك على المسودة<textarea id="intelligenceRefineInstruction" rows="2" maxlength="500" placeholder="مثال: احذف تمرين السكوات وأضف جهاز الرجلين"></textarea></label><button class="btn btn-light" type="submit" data-required-permission="intelligence.generate">إعادة إنشاء بالتعليمات</button></form><div class="intelligence-result-actions"><button class="btn btn-primary" type="button" data-required-permission="coaching.create" data-intelligence-save>حفظ كمسودة في النظام</button><button class="btn btn-light" type="button" data-required-permission="coaching.create,coaching.read" data-intelligence-manual>فتح في المحرر اليدوي</button></div><small class="intelligence-human-review-note">لن يتم نشر الخطة كخطة معتمدة تلقائيًا؛ راجعها واحفظها أو عدّلها يدويًا.</small>`;
     }
 
     async function loadBaseData() {
         if (state.loaded || state.loading) return;
         state.loading = true;
         try {
-            const [overview, clients, catalog] = await Promise.all([
+            const [overview, coachingData] = await Promise.all([
                 api.get('/api/intelligence/overview'),
-                api.get('/api/coaching/clients?limit=300'),
-                api.get('/api/coaching/catalog')
+                can('coaching.read')
+                    ? Promise.all([
+                        api.get('/api/coaching/clients?limit=300'),
+                        api.get('/api/coaching/catalog')
+                    ])
+                    : Promise.resolve([{ clients: [] }, { exercises: [], foods: [] }])
             ]);
+            const [clients, catalog] = coachingData;
             state.clients = clients.clients || [];
             state.catalog = { exercises: catalog.exercises || [], foods: catalog.foods || [] };
             renderOverview(overview);
@@ -185,6 +192,10 @@
     }
 
     async function refresh() {
+        if (!can('intelligence.read')) {
+            setMessage('لا تملك صلاحية عرض مركز الذكاء.', 'error');
+            return;
+        }
         state.loaded = false;
         await loadBaseData();
         notify('تم تحديث التحليل الذكي.');
@@ -192,6 +203,10 @@
 
     async function submitQuestion(event) {
         event.preventDefault();
+        if (!can('intelligence.read')) {
+            setMessage('لا تملك صلاحية استخدام المساعد الذكي.', 'error');
+            return;
+        }
         const input = $('intelligenceQuery');
         const question = input?.value.trim();
         if (!question) return setMessage('اكتب سؤالًا للمساعد أولًا.', 'warning');
@@ -217,6 +232,10 @@
 
     async function generatePlan(event) {
         event.preventDefault();
+        if (!can('intelligence.generate')) {
+            setMessage('لا تملك صلاحية إنشاء اقتراحات الذكاء.', 'error');
+            return;
+        }
         const memberId = $('intelligenceMemberId')?.value;
         if (!memberId) return setMessage('اختر العميل قبل إنشاء الاقتراح.', 'warning');
         const button = event.currentTarget.querySelector('button[type="submit"]');
@@ -235,6 +254,10 @@
 
     async function refinePlan(event) {
         event.preventDefault();
+        if (!can('intelligence.generate')) {
+            setMessage('لا تملك صلاحية تعديل اقتراحات الذكاء.', 'error');
+            return;
+        }
         if (!state.plan) return;
         const instruction = $('intelligenceRefineInstruction')?.value.trim();
         if (!instruction) return setMessage('اكتب التعديل المطلوب على المسودة.', 'warning');
@@ -249,6 +272,10 @@
     }
 
     async function savePlan() {
+        if (!can('coaching.create')) {
+            notify('لا تملك صلاحية حفظ خطة التدريب أو التغذية.', 'error');
+            return;
+        }
         if (!state.plan?.draft) return;
         try {
             const endpoint = state.plan.type === 'workout' ? '/api/workoutprograms' : '/api/dietplans';
@@ -261,6 +288,10 @@
     }
 
     async function openManualEditor() {
+        if (!can('coaching.create') || !can('coaching.read')) {
+            notify('لا تملك صلاحية فتح محرر التدريب والتغذية.', 'error');
+            return;
+        }
         if (!state.plan?.draft) return;
         const member = state.clients.find((client) => String(client.id) === String(state.plan.memberId));
         try {

@@ -36,8 +36,8 @@
 
     function annotatePermissionControls() {
         const idPermissions = {
-            topAddMemberButton: 'members.create,memberships.create,payments.create',
-            addMemberButton: 'members.create,memberships.create,payments.create',
+            topAddMemberButton: 'members.create',
+            addMemberButton: 'members.create',
             topPricingButton: 'pricing.read',
             pricingButton: 'pricing.read',
             membershipTypesButton: 'pricing.read',
@@ -56,9 +56,16 @@
             dashboardPrintPricingButton: 'pricing.read',
             reportsExportButton: 'reports.export',
             addExpenseFromTabButton: 'finance.create',
+            addExternalTraineeButton: 'trainees.create',
             brandingSaveDraftButton: 'branding.edit',
             brandingPublishButton: 'branding.publish',
-            brandingResetButton: 'branding.reset'
+            brandingResetButton: 'branding.reset',
+            intelligenceRefreshButton: 'intelligence.read',
+            intelligenceQueryForm: 'intelligence.read',
+            intelligencePlanForm: 'intelligence.generate',
+            coachingBuilderAiRefine: 'intelligence.generate',
+            executionSessionStart: 'coaching.create',
+            executionSessionEnd: 'coaching.update'
         };
         Object.entries(idPermissions).forEach(([id, code]) => {
             const element = $(id);
@@ -71,20 +78,24 @@
             const action = element.dataset.memberCoachingAction || '';
             const permission = action === 'profile' || action.startsWith('print-') || action.startsWith('pdf-')
                 ? 'coaching.read'
-                : action.startsWith('edit-') ? 'coaching.update'
+                : action.startsWith('edit-') ? 'coaching.update,coaching.read'
                     : action.startsWith('delete-') ? 'coaching.delete'
-                        : action === 'delete' ? 'coaching.delete' : 'coaching.create';
+                        : ['new-workout', 'new-diet', 'start-session', 'log-meal'].includes(action)
+                            ? 'coaching.create,coaching.read'
+                            : action === 'delete' ? 'coaching.delete' : 'coaching.create';
             setPermission(element, permission);
         });
         document.querySelectorAll('[data-coaching-action]').forEach((element) => {
             const action = element.dataset.coachingAction || '';
             const permission = action === 'profile' || action === 'toggle-more'
                 ? 'coaching.read'
+                : ['clear-search', 'retry'].includes(action)
+                    ? ''
                 : action === 'delete-diet' ? 'coaching.delete'
                     : action.startsWith('print-') || action.startsWith('pdf-') ? 'coaching.read'
-                        : action.startsWith('edit-') ? 'coaching.update'
+                        : action.startsWith('edit-') ? 'coaching.update,coaching.read'
                             : action.startsWith('delete-') ? 'coaching.delete'
-                    : ['workout', 'diet'].includes(action) ? 'coaching.create' : '';
+                    : ['workout', 'diet'].includes(action) ? 'coaching.create,coaching.read' : '';
             setPermission(element, permission);
         });
         document.querySelectorAll('[data-profile-action], [data-measurement-action], [data-checkin-action]').forEach((element) => {
@@ -93,15 +104,21 @@
                 ? 'memberships.create,payments.create'
                 : action === 'edit-client'
                     ? 'coaching.update'
+                : action === 'edit' && (element.dataset.measurementAction || element.dataset.checkinAction)
+                    ? 'coaching.update'
                     : action === 'profile' || action.startsWith('print-') || action.startsWith('pdf-')
                         ? 'coaching.read'
                     : ['delete', 'delete-diet', 'delete-measurement'].includes(action)
                         ? 'coaching.delete'
-                        : ['edit', 'edit-workout', 'edit-diet', 'edit-measurement'].includes(action)
-                            ? 'coaching.update' : 'coaching.create';
+                        : ['edit-workout', 'edit-diet'].includes(action)
+                            ? 'coaching.update,coaching.read'
+                            : action === 'edit-measurement'
+                                ? 'coaching.update'
+                                : ['new-workout', 'new-diet', 'start-session', 'log-meal'].includes(action)
+                                    ? 'coaching.create,coaching.read'
+                                    : 'coaching.create';
             setPermission(element, permission);
         });
-        document.querySelectorAll('[data-builder-action]').forEach((element) => setPermission(element, 'coaching.update'));
         document.querySelectorAll('[data-expense-action="edit"]').forEach((element) => setPermission(element, 'finance.update'));
         document.querySelectorAll('[data-expense-action="delete"]').forEach((element) => setPermission(element, 'finance.delete'));
         document.querySelectorAll('[data-library-action="details"]').forEach((element) => setPermission(element, 'library.read'));
@@ -112,8 +129,8 @@
         document.querySelectorAll('[data-day-pass-delete], [data-day-pass-void]').forEach((element) => setPermission(element, 'day_passes.delete'));
         document.querySelectorAll('[data-alert-whatsapp], [data-report-whatsapp]').forEach((element) => setPermission(element, 'members.alerts'));
         document.querySelectorAll('[data-day-pass-report-whatsapp]').forEach((element) => setPermission(element, 'day_passes.whatsapp'));
-        document.querySelectorAll('[data-report-member-action="details"]').forEach((element) => setPermission(element, 'members.read'));
-        document.querySelectorAll('[data-report-member-action="payment"]').forEach((element) => setPermission(element, 'payments.create'));
+        document.querySelectorAll('[data-report-member-action="details"]').forEach((element) => setPermission(element, 'members.read,memberships.read'));
+        document.querySelectorAll('[data-report-member-action="payment"]').forEach((element) => setPermission(element, 'members.read,memberships.read,payments.create'));
         document.querySelectorAll('[data-report-diet-id]').forEach((element) => setPermission(element, 'coaching.delete'));
         document.querySelectorAll('[data-report-coaching-action]').forEach((element) => setPermission(element, 'coaching.read'));
         document.querySelectorAll('[data-report-backup-id]').forEach((element) => setPermission(element, 'management.backup.read'));
@@ -148,6 +165,12 @@
             element.toggleAttribute('aria-hidden', !allowed);
             if (!allowed && 'disabled' in element) element.disabled = true;
         });
+        const memberPaymentNote = $('memberPaymentPermissionNote');
+        if (memberPaymentNote) {
+            const allowed = user?.role === 'Owner' || permissions.hasPermission(user, 'payments.create');
+            memberPaymentNote.hidden = allowed;
+            memberPaymentNote.toggleAttribute('aria-hidden', !allowed);
+        }
         document.querySelectorAll('[data-financial-data]').forEach((element) => {
             const allowed = user?.role === 'Owner' || permissions.hasPermission(user, 'finance.read');
             element.hidden = !allowed;

@@ -161,7 +161,7 @@
                 </div>
                 <div class="topbar-controls">
                     <div class="top-actions topbar-quick-actions">
-                        <button class="btn btn-primary btn-small" id="topAddMemberButton" hidden>إضافة مشترك</button>
+                        <button class="btn btn-primary btn-small" id="topAddMemberButton" data-required-permission="members.create" hidden>إضافة مشترك</button>
                         <button class="btn btn-light btn-small" id="topPricingButton" data-owner-only>الأسعار</button>
                         <button class="btn btn-light btn-small header-refresh" id="refreshButton" type="button" hidden><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 0 0-14.8-4L3 10"/><path d="M3 5v5h5"/><path d="M4 13a8 8 0 0 0 14.8 4L21 14"/><path d="M21 19v-5h-5"/></svg><span>تحديث البيانات</span></button>
                     </div>
@@ -755,13 +755,14 @@
                         <div class="field"><label for="membershipNotes">ملاحظات الاشتراك</label><input id="membershipNotes" maxlength="1000" placeholder="اختياري"></div>
 
                         <div class="section-label">الدفع</div>
+                        <div class="permission-note" id="memberPaymentPermissionNote" hidden>يمكنك إضافة المشترك والعضوية بدون تحصيل دفعة. لتسجيل مبلغ مدفوع أو خصم، فعّل للمساعد صلاحية «تسجيل دفعة».</div>
                         <div class="field-grid">
                             <div class="field"><label for="amountDue">المستحق بعد الخصم</label><input id="amountDue" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0.00" readonly></div>
-                            <div class="field"><label for="discountAmount">الخصم</label><input id="discountAmount" type="number" min="0" step="0.01" inputmode="decimal" value="0" placeholder="0.00"></div>
+                            <div class="field" data-required-permission="payments.create"><label for="discountAmount">الخصم</label><input id="discountAmount" type="number" min="0" step="0.01" inputmode="decimal" value="0" placeholder="0.00"></div>
                         </div>
-                        <div class="field"><label for="amountPaid">المبلغ المدفوع</label><input id="amountPaid" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0.00"></div>
+                        <div class="field" data-required-permission="payments.create"><label for="amountPaid">المبلغ المدفوع</label><input id="amountPaid" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0.00"></div>
                         <div class="pricing-summary" id="pricingSummary">السعر الأساسي: —</div>
-                        <div class="field"><label for="paymentMethod">طريقة الدفع</label><select id="paymentMethod"><option value="cash">نقدي</option><option value="card">بطاقة</option><option value="transfer">تحويل</option><option value="other">أخرى</option></select></div>
+                        <div class="field" data-required-permission="payments.create"><label for="paymentMethod">طريقة الدفع</label><select id="paymentMethod"><option value="cash">نقدي</option><option value="card">بطاقة</option><option value="transfer">تحويل</option><option value="other">أخرى</option></select></div>
                         <label class="checkbox-field whatsapp-after-save"><input id="sendWhatsAppAfterSave" type="checkbox" checked><span>📱 إرسال رسالة تفاصيل الاشتراك على واتساب بعد حفظ المشترك الجديد</span></label>
                         <div class="form-actions"><button class="btn btn-primary" id="saveButton" type="submit">حفظ العضو</button><button class="btn btn-light hidden" id="resetButton" type="button">تفريغ</button></div>
                     </form>
@@ -769,7 +770,7 @@
                 </dialog>
 
                 <section class="panel members-panel bg-white border-slate-200 rounded-xl shadow-panel" id="membersSection">
-                    <div class="panel-header bg-slate-50"><div><h3>المشتركون</h3><p id="membersCount">—</p></div><div class="header-actions"><button class="btn btn-primary btn-small rounded-lg shadow-sm" id="addMemberButton" type="button">+ إضافة مشترك</button><button class="btn btn-light btn-small rounded-lg shadow-none" id="pricingButton" data-owner-only type="button">أسعار الباقات</button><button class="btn btn-light btn-small rounded-lg shadow-none" id="membershipTypesButton" data-owner-only type="button">أنواع العضويات</button></div></div>
+                    <div class="panel-header bg-slate-50"><div><h3>المشتركون</h3><p id="membersCount">—</p></div><div class="header-actions"><button class="btn btn-primary btn-small rounded-lg shadow-sm" id="addMemberButton" data-required-permission="members.create" type="button">+ إضافة مشترك</button><button class="btn btn-light btn-small rounded-lg shadow-none" id="pricingButton" data-owner-only type="button">أسعار الباقات</button><button class="btn btn-light btn-small rounded-lg shadow-none" id="membershipTypesButton" data-owner-only type="button">أنواع العضويات</button></div></div>
                     <div class="members-toolbar" aria-label="البحث وتصفية المشتركين">
                         <div class="members-toolbar-copy"><span class="members-toolbar-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg></span><div><strong>بحث المشتركين</strong><span>الوصول السريع إلى بيانات الاسم أو الهاتف</span></div></div>
                         <div class="members-toolbar-controls">
@@ -798,7 +799,7 @@
             <section class="intelligence-section panel" id="intelligenceSection" hidden aria-labelledby="intelligenceTitle">
                 <div class="intelligence-page-header">
                     <div class="intelligence-page-heading"><span class="intelligence-page-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 13.7 8.3 19 10l-5.3 1.7L12 17l-1.7-5.3L5 10l5.3-1.7Z"/><path d="m19 16 .7 2.3L22 19l-.7-2.3L19 22l-.7-2.3L16 19l2.3-.7Z"/></svg></span><div><span class="intelligence-kicker" data-brand-template="intelligenceKicker">LOGIC FIT INTELLIGENCE</span><h3 id="intelligenceTitle">مركز القرار الذكي</h3><p>ابدأ بالأهم: التدخلات العاجلة، ثم الاحتفاظ بالمشتركين، ثم تنفيذ الخطط.</p></div></div>
-                    <div class="intelligence-header-actions"><span class="intelligence-engine-badge" id="intelligenceEngineBadge">Hybrid intelligence</span><button class="btn btn-light" type="button" id="intelligenceRefreshButton">تحديث التحليل</button></div>
+                    <div class="intelligence-header-actions"><span class="intelligence-engine-badge" id="intelligenceEngineBadge">Hybrid intelligence</span><button class="btn btn-light" type="button" id="intelligenceRefreshButton" data-required-permission="intelligence.read">تحديث التحليل</button></div>
                 </div>
                 <div class="intelligence-message" id="intelligenceMessage" role="status" aria-live="polite" hidden></div>
                 <div class="intelligence-stats-grid" id="intelligenceStats"><div class="loading">جاري تجهيز التحليل…</div></div>

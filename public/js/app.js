@@ -54,7 +54,7 @@
          function refundActionButton(memberId) { const label = ACTION_LABELS.refund; return `<button class="btn btn-light btn-small icon-action rounded-lg shadow-none transition-colors refund-action" data-action="refund" data-required-permission="payments.refund" data-label="${label}" data-id="${memberId}" aria-label="${label}" title="${label}" type="button">${actionIcon('refund')}</button>`; }
          const COACHING_ACTION_LABELS = { workout: '\u0625\u0646\u0634\u0627\u0621 \u0628\u0631\u0646\u0627\u0645\u062c \u062a\u062f\u0631\u064a\u0628', diet: '\u0625\u0646\u0634\u0627\u0621 \u062e\u0637\u0629 \u062a\u063a\u0630\u064a\u0629' };
          const COACHING_ACTION_ICONS = { workout: '<path d="M6 8v8M18 8v8M3 11h18M8 5h8v14H8z"/>', diet: '<path d="M12 21c-4-2-7-5.5-7-10a5 5 0 0 1 7-4.6A5 5 0 0 1 19 11c0 4.5-3 7.8-7 10Z"/><path d="M12 7c0 4-2 6-5 7"/>' };
-         function actionButton(action, memberId, classes = 'btn btn-light btn-small', extra = '') { const label = ACTION_LABELS[action] || action; const requiredPermission = { details: 'members.read', edit: 'members.update,memberships.update', renew: 'memberships.renew,payments.create', freeze: 'memberships.freeze', resume: 'memberships.freeze', payment: 'payments.create', print: 'members.print', qr: 'members.read', delete: 'members.delete' }[action] || ''; return `<button class="${classes} icon-action rounded-lg shadow-none transition-colors" data-action="${action}" data-required-permission="${requiredPermission}" data-label="${label}" data-id="${memberId}" aria-label="${label}" title="${label}" type="button" ${extra}>${actionIcon(action)}</button>`; }
+         function actionButton(action, memberId, classes = 'btn btn-light btn-small', extra = '') { const label = ACTION_LABELS[action] || action; const requiredPermission = { details: 'members.read,memberships.read', edit: 'members.update', renew: 'memberships.renew,payments.create', freeze: 'memberships.freeze', resume: 'memberships.freeze', payment: 'payments.create', print: 'members.print,members.read,memberships.read', qr: 'members.read,memberships.read', delete: 'members.delete' }[action] || ''; return `<button class="${classes} icon-action rounded-lg shadow-none transition-colors" data-action="${action}" data-required-permission="${requiredPermission}" data-label="${label}" data-id="${memberId}" aria-label="${label}" title="${label}" type="button" ${extra}>${actionIcon(action)}</button>`; }
          function memberStatusBadge(status, label = STATUS_LABELS[status] || status) { const path = ALERT_ICON_PATHS[status] || ALERT_ICON_PATHS.inactive; return `<span class="badge ${escapeHtml(status || 'unknown')} status-badge-with-icon"><svg class="status-badge-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${path}</svg><span>${escapeHtml(label)}</span></span>`; }
          const DEFAULT_PRICING = { plans: { gym_only: { label: 'جيم فقط', monthlyPrice: 305, active: true, sortOrder: 1 }, gym_cardio: { label: 'جيم وكارديو', monthlyPrice: 400, active: true, sortOrder: 2 } }, types: { monthly: { label: 'شهرية', mode: 'months', durationValue: 1, priceMultiplier: 1, active: true, sortOrder: 1 }, half_month: { label: 'نصف شهر', mode: 'days', durationValue: 15, priceMultiplier: .5, active: true, sortOrder: 2 }, quarterly: { label: 'ربع سنوية', mode: 'months', durationValue: 3, priceMultiplier: 3, active: true, sortOrder: 3 }, semiannual: { label: 'نصف سنوية', mode: 'months', durationValue: 6, priceMultiplier: 6, active: true, sortOrder: 4 }, annual: { label: 'سنوية', mode: 'months', durationValue: 12, priceMultiplier: 12, active: true, sortOrder: 5 } }, durations: { monthly: 1, quarterly: 3, semiannual: 6, annual: 12 } };
          const state = { members: [], dashboard: null, pricing: DEFAULT_PRICING, pricingLoadedAt: 0, editing: null, dialogAction: null, dialogMember: null, endDateManual: false, membersPageSize: 5 };
@@ -235,7 +235,7 @@
                     : Promise.resolve(null);
                 // Pricing is needed by the members workspace and its dialogs,
                 // not by every route opened at boot.
-                const pricingRequest = activeTab === 'members'
+                const pricingRequest = activeTab === 'members' && canReadPricing()
                     ? loadPricingCatalog(false)
                     : Promise.resolve(state.pricing);
                 const showDashboardSkeleton = activeTab === 'dashboard' && !state.dashboard;
@@ -365,6 +365,7 @@
                     button.className = 'btn member-attendance-quick checkout';
                     button.type = 'button';
                     button.dataset.attendanceAction = 'checkout';
+                    button.dataset.requiredPermission = 'attendance.check_out';
                     button.dataset.id = String(member.id);
                     button.dataset.phone = member.phone || '';
                     button.textContent = 'انصراف';
@@ -381,6 +382,7 @@
                     button.className = 'btn member-attendance-quick check-in';
                     button.type = 'button';
                     button.dataset.attendanceAction = 'checkin';
+                    button.dataset.requiredPermission = 'attendance.check_in';
                     button.dataset.id = String(member.id);
                     button.dataset.phone = member.phone || '';
                     button.textContent = 'حضور';
@@ -404,7 +406,7 @@
                 if (tableActions && !tableActions.querySelector('[data-action="qr"]')) {
                     const menuPanel = tableActions.querySelector('.action-menu-panel');
                     if (menuPanel) {
-                        menuPanel.insertAdjacentHTML('beforeend', `<button class="action-menu-item" type="button" data-action="qr" data-id="${member.id}" aria-label="${ACTION_LABELS.qr}" title="${ACTION_LABELS.qr}">${actionIcon('qr')}<span>${escapeHtml(ACTION_LABELS.qr)}</span></button>`);
+                        menuPanel.insertAdjacentHTML('beforeend', `<button class="action-menu-item" type="button" data-action="qr" data-required-permission="members.read,memberships.read" data-id="${member.id}" aria-label="${ACTION_LABELS.qr}" title="${ACTION_LABELS.qr}">${actionIcon('qr')}<span>${escapeHtml(ACTION_LABELS.qr)}</span></button>`);
                     } else {
                         tableActions.insertAdjacentHTML('beforeend', actionButton('qr', member.id));
                     }
@@ -467,10 +469,88 @@
         function renderMembers() { $('membersCount').textContent = `${state.members.length} عضو ظاهر`; $('membersList').innerHTML = state.members.length ? `<div class="table-scroll"><table class="members-table"><thead><tr><th>العضو</th><th>الاشتراك</th><th>الحالة</th><th>الانتهاء</th><th>التجميد</th><th>الحساب</th><th>الإجراءات</th></tr></thead><tbody>${state.members.map(memberTableRow).join('')}</tbody></table></div>` : '<div class="empty">لا يوجد أعضاء مطابقون للبحث.</div>'; }
 
         function closeMemberDialog() { const dialog = $('memberDialog'); if (typeof dialog.close === 'function' && dialog.open) dialog.close(); else dialog.removeAttribute('open'); }
-         function setFormDefaults(close = false) { const today = todayIso(); const defaultType = activeTypeEntries()[0]?.[0] || 'monthly'; $('memberId').value = ''; $('fullName').value = ''; $('phone').value = ''; $('email').value = ''; $('registrationDate').value = today; $('notes').value = ''; $('membershipType').value = defaultType; $('membershipPlan').value = 'gym_only'; $('startDate').value = today; $('endDate').value = calculatedEndDate(today, defaultType); $('membershipNotes').value = ''; $('discountAmount').value = '0'; $('amountPaid').value = ''; $('paymentMethod').value = 'cash'; $('sendWhatsAppAfterSave').checked = true; $('sendWhatsAppAfterSave').closest('.whatsapp-after-save')?.classList.remove('hidden'); state.editing = null; state.endDateManual = false; $('formTitle').textContent = 'إضافة عضو جديد'; $('saveButton').textContent = 'حفظ العضو'; $('cancelEditButton').classList.add('hidden'); $('resetButton').classList.add('hidden'); updateFormPricing(); if (close) closeMemberDialog(); }
+        function canCreateMember() {
+            return window.topGymAuth?.isOwner?.() === true
+                || window.topGymAuth?.hasPermission?.('members.create') === true;
+        }
+
+        function canUpdateMember() {
+            return window.topGymAuth?.isOwner?.() === true
+                || window.topGymAuth?.hasPermission?.('members.update') === true;
+        }
+
+        function canReadPricing() {
+            return window.topGymAuth?.isOwner?.() === true
+                || window.topGymAuth?.hasPermission?.('pricing.read') === true;
+        }
+
+        function hasRequiredPermissions(value) {
+            const required = String(value || '').split(',').map((item) => item.trim()).filter(Boolean);
+            if (!required.length) return true;
+            if (window.topGymAuth?.isOwner?.() === true) return true;
+            return required.every((permission) => window.topGymAuth?.hasPermission?.(permission) === true);
+        }
+
+        function canRecordMemberPayment() {
+            return window.topGymAuth?.isOwner?.() === true
+                || window.topGymAuth?.hasPermission?.('payments.create') === true;
+        }
+
+        function canUpdateMemberMembership() {
+            return window.topGymAuth?.isOwner?.() === true
+                || window.topGymAuth?.hasPermission?.('memberships.update') === true;
+        }
+
+        function syncMemberPermissionFields() {
+            const paymentAllowed = canRecordMemberPayment();
+            const editing = Boolean($('memberId')?.value);
+            const membershipAllowed = !editing || canUpdateMemberMembership();
+            const pricingAllowed = !editing || (membershipAllowed && paymentAllowed);
+            ['discountAmount', 'amountPaid', 'paymentMethod'].forEach((id) => {
+                const input = $(id);
+                if (!input) return;
+                input.disabled = !paymentAllowed;
+                input.closest('.field')?.classList.toggle('permission-restricted', !paymentAllowed);
+            });
+            ['membershipType', 'membershipPlan'].forEach((id) => {
+                const input = $(id);
+                if (!input) return;
+                const restricted = editing && !pricingAllowed;
+                input.disabled = restricted;
+                input.closest('.field')?.classList.toggle('permission-restricted', restricted);
+                if (restricted) input.title = !membershipAllowed
+                    ? 'تعديل بيانات العضوية يحتاج صلاحية تعديل العضوية.'
+                    : 'تعديل الباقة أو نوع العضوية يحتاج صلاحية تسجيل دفعة.';
+                else input.removeAttribute('title');
+            });
+            ['startDate', 'endDate', 'membershipNotes'].forEach((id) => {
+                const input = $(id);
+                if (!input) return;
+                const restricted = editing && !membershipAllowed;
+                input.disabled = restricted;
+                input.closest('.field')?.classList.toggle('permission-restricted', restricted);
+                if (restricted) input.title = 'تعديل بيانات العضوية يحتاج صلاحية تعديل العضوية.';
+                else input.removeAttribute('title');
+            });
+            const note = $('memberPaymentPermissionNote');
+            if (note) note.hidden = paymentAllowed;
+        }
+
+        function setFormDefaults(close = false) { const today = todayIso(); const defaultType = activeTypeEntries()[0]?.[0] || 'monthly'; $('memberId').value = ''; $('fullName').value = ''; $('phone').value = ''; $('email').value = ''; $('registrationDate').value = today; $('notes').value = ''; $('membershipType').value = defaultType; $('membershipPlan').value = 'gym_only'; $('startDate').value = today; $('endDate').value = calculatedEndDate(today, defaultType); $('membershipNotes').value = ''; $('discountAmount').value = '0'; $('amountPaid').value = ''; $('paymentMethod').value = 'cash'; $('sendWhatsAppAfterSave').checked = true; $('sendWhatsAppAfterSave').closest('.whatsapp-after-save')?.classList.remove('hidden'); state.editing = null; state.endDateManual = false; $('formTitle').textContent = 'إضافة عضو جديد'; $('saveButton').textContent = 'حفظ العضو'; $('cancelEditButton').classList.add('hidden'); $('resetButton').classList.add('hidden'); syncMemberPermissionFields(); updateFormPricing(); if (close) closeMemberDialog(); }
         async function openMemberDialog(member = null) {
             try {
-                await loadPricingCatalog();
+                if (member && !canUpdateMember()) {
+                    await notify('لا تملك صلاحية تعديل بيانات المشترك. اطلب من مالك النظام تفعيلها.', 'error');
+                    return;
+                }
+                if (!member && !canCreateMember()) {
+                    await notify('لا تملك صلاحية إضافة مشترك. اطلب من مالك النظام تفعيلها.', 'error');
+                    return;
+                }
+                // Reading the members workspace must not depend on pricing.read.
+                // Use the cached/default catalog when the Assistant can create
+                // a member but is not allowed to browse pricing configuration.
+                if (canReadPricing()) await loadPricingCatalog();
                 if (member) editMember(member); else setFormDefaults();
                 const dialog = $('memberDialog');
                 if (typeof dialog.showModal === 'function') dialog.showModal();
@@ -479,7 +559,7 @@
                 await notify(error.message, 'error');
             }
         }
-        function editMember(member) { const sub = member.membership || {}; $('memberId').value = member.id; $('fullName').value = member.fullName || ''; $('phone').value = member.phone || ''; $('email').value = member.email || ''; $('registrationDate').value = member.registrationDate || todayIso(); $('notes').value = member.notes || ''; $('membershipType').value = resolvedTypeCode(sub.type || 'monthly'); $('membershipPlan').value = sub.plan || 'gym_only'; $('startDate').value = sub.startDate || todayIso(); $('endDate').value = sub.endDate || calculatedEndDate($('startDate').value, $('membershipType').value); $('membershipNotes').value = sub.notes || ''; $('discountAmount').value = String(sub.discountAmount || 0); $('amountPaid').value = String(sub.amountPaid || 0); $('paymentMethod').value = sub.paymentMethod || 'cash'; $('sendWhatsAppAfterSave').checked = false; $('sendWhatsAppAfterSave').closest('.whatsapp-after-save')?.classList.add('hidden'); state.editing = member; state.endDateManual = true; $('formTitle').textContent = 'تعديل بيانات العضو'; $('saveButton').textContent = 'حفظ التعديلات'; $('cancelEditButton').classList.remove('hidden'); $('resetButton').classList.remove('hidden'); updateFormPricing(); }
+        function editMember(member) { const sub = member.membership || {}; $('memberId').value = member.id; $('fullName').value = member.fullName || ''; $('phone').value = member.phone || ''; $('email').value = member.email || ''; $('registrationDate').value = member.registrationDate || todayIso(); $('notes').value = member.notes || ''; $('membershipType').value = resolvedTypeCode(sub.type || 'monthly'); $('membershipPlan').value = sub.plan || 'gym_only'; $('startDate').value = sub.startDate || todayIso(); $('endDate').value = sub.endDate || calculatedEndDate($('startDate').value, $('membershipType').value); $('membershipNotes').value = sub.notes || ''; $('discountAmount').value = String(sub.discountAmount || 0); $('amountPaid').value = String(sub.amountPaid || 0); $('paymentMethod').value = sub.paymentMethod || 'cash'; $('sendWhatsAppAfterSave').checked = false; $('sendWhatsAppAfterSave').closest('.whatsapp-after-save')?.classList.add('hidden'); state.editing = member; state.endDateManual = true; $('formTitle').textContent = 'تعديل بيانات العضو'; $('saveButton').textContent = 'حفظ التعديلات'; $('cancelEditButton').classList.remove('hidden'); $('resetButton').classList.remove('hidden'); syncMemberPermissionFields(); updateFormPricing(); }
 
         function openDialog(action, member) {
              state.dialogAction = action; state.dialogMember = member; const sub = member.membership || {}; const fields = $('dialogFields'); const freezeLimit = Number(sub.freezeLimit || FREEZE_LIMIT); const freezeCount = Number(sub.freezeCount || 0); $('dialogTitle').textContent = action === 'freeze' ? 'تجميد العضوية' : action === 'renew' ? 'تجديد العضوية' : 'تسجيل دفعة'; $('dialogDescription').textContent = `${member.fullName} · ${member.phone}`;
@@ -650,23 +730,49 @@
             event.preventDefault();
             const id = $('memberId').value;
             const isNewMember = !id;
+            const memberPermissionAllowed = isNewMember ? canCreateMember() : canUpdateMember();
+            if (!memberPermissionAllowed) {
+                await notify(isNewMember
+                    ? 'لا تملك صلاحية إضافة مشترك. اطلب من مالك النظام تفعيلها، ثم سجّل الخروج والدخول مرة أخرى.'
+                    : 'لا تملك صلاحية تعديل بيانات المشترك. اطلب من مالك النظام تفعيلها، ثم سجّل الخروج والدخول مرة أخرى.', 'error');
+                return;
+            }
             const shouldSendWhatsApp = isNewMember && Boolean($('sendWhatsAppAfterSave')?.checked);
+            const paymentAllowed = canRecordMemberPayment();
+            const membershipAllowed = isNewMember || canUpdateMemberMembership();
+            const pricingAllowed = isNewMember || (membershipAllowed && paymentAllowed);
             const body = {
                 fullName: $('fullName').value,
                 phone: $('phone').value,
                 email: $('email').value,
                 registrationDate: $('registrationDate').value,
-                notes: $('notes').value,
-                membershipType: $('membershipType').value,
-                membershipPlan: $('membershipPlan').value,
-                startDate: $('startDate').value,
-                endDate: $('endDate').value,
-                membershipNotes: $('membershipNotes').value,
-                discountAmount: Number($('discountAmount').value || 0),
-                amountDue: Number($('amountDue').value || 0),
-                amountPaid: Number($('amountPaid').value || 0),
-                paymentMethod: $('paymentMethod').value
+                notes: $('notes').value
             };
+            // A new member always receives the initial membership atomically.
+            // Existing-member edits send only the domains the Assistant is
+            // allowed to change, so a profile edit cannot become an accidental
+            // membership or financial update.
+            if (isNewMember) {
+                body.startDate = $('startDate').value;
+                body.endDate = $('endDate').value;
+                body.membershipNotes = $('membershipNotes').value;
+                body.membershipType = $('membershipType').value;
+                body.membershipPlan = $('membershipPlan').value;
+            } else if (membershipAllowed) {
+                body.startDate = $('startDate').value;
+                body.endDate = $('endDate').value;
+                body.membershipNotes = $('membershipNotes').value;
+                if (pricingAllowed) {
+                    body.membershipType = $('membershipType').value;
+                    body.membershipPlan = $('membershipPlan').value;
+                }
+            }
+            if (paymentAllowed) {
+                body.discountAmount = Number($('discountAmount').value || 0);
+                body.amountDue = Number($('amountDue').value || 0);
+                body.amountPaid = Number($('amountPaid').value || 0);
+                body.paymentMethod = $('paymentMethod').value;
+            }
             const button = $('saveButton');
             button.disabled = true;
             const whatsappWindow = shouldSendWhatsApp ? window.topGymWhatsapp?.prepareWindow(body.phone) : null;
@@ -691,7 +797,7 @@
 
         document.addEventListener('DOMContentLoaded', () => {
              setFormDefaults(); $('memberForm').addEventListener('submit', submitMember); $('refreshButton').addEventListener('click', loadData); $('topAddMemberButton').addEventListener('click', () => openMemberDialog()); $('addMemberButton').addEventListener('click', () => openMemberDialog()); $('topPricingButton').addEventListener('click', openPricingDialog); $('pricingButton').addEventListener('click', openPricingDialog); $('membershipTypesButton').addEventListener('click', openMembershipTypesDialog); $('memberDialogClose').addEventListener('click', closeMemberDialog); $('cancelEditButton').addEventListener('click', () => setFormDefaults(true)); $('resetButton').addEventListener('click', () => setFormDefaults(true)); $('actionForm').addEventListener('submit', submitDialog); $('dialogCancel').addEventListener('click', closeDialog); $('pricingForm').addEventListener('submit', savePricing); $('pricingClose').addEventListener('click', closePricingDialog); $('membershipTypesClose').addEventListener('click', closeMembershipTypesDialog); $('detailsClose').addEventListener('click', closeDetails); $('detailsContent').addEventListener('click', (event) => { const button = event.target.closest('[data-payment-receipt]'); if (!button) return; window.topGymPrint?.printPaymentReceipt(button.dataset.memberId, button.dataset.paymentId); }); $('addMembershipTypeButton').addEventListener('click', () => openMembershipTypeDialog()); $('membershipTypeDialogClose').addEventListener('click', closeMembershipTypeDialog); $('membershipTypeCancel').addEventListener('click', closeMembershipTypeDialog); $('membershipTypeForm').addEventListener('submit', submitMembershipType); ['membershipTypeName', 'membershipTypeMode', 'membershipTypeDuration', 'membershipTypeMultiplier'].forEach((id) => $(id).addEventListener('input', updateMembershipTypePreview)); $('membershipTypeMode').addEventListener('change', updateMembershipTypePreview); $('membershipTypesTableContainer').addEventListener('click', (event) => { const button = event.target.closest('[data-type-action="edit"]'); if (button) openMembershipTypeDialog(button.dataset.code); }); $('membershipType').addEventListener('change', () => { if (!state.endDateManual) $('endDate').value = calculatedEndDate($('startDate').value, $('membershipType').value); updateFormPricing(); }); $('membershipPlan').addEventListener('change', updateFormPricing); $('discountAmount').addEventListener('input', updateFormPricing); $('startDate').addEventListener('change', () => { if (!state.endDateManual) $('endDate').value = calculatedEndDate($('startDate').value, $('membershipType').value); }); $('endDate').addEventListener('input', () => { state.endDateManual = true; }); let timer; $('searchInput').addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(loadMembersOnly, 300); }); $('statusFilter').addEventListener('change', loadMembersOnly);
-            $('membersList').addEventListener('click', async (event) => { const button = event.target.closest('button[data-action]'); if (!button) return; const id = button.dataset.id || button.closest('[data-member-id]')?.dataset.memberId; const member = state.members.find((item) => String(item.id) === String(id)); if (!member) { await notify('تعذر تحديد العضو. حدّث الصفحة وحاول مرة أخرى.', 'error'); return; } const action = button.dataset.action; if (action === 'details') { await openDetails(member); return; } if (action === 'edit') { openMemberDialog(member); return; } if (action === 'freeze' || action === 'renew' || action === 'payment') { openDialog(action, member); return; } if (action === 'resume') { try { await withLoader(() => api(`/api/members/${member.id}/resume`, { method: 'POST' }), 'جاري استئناف العضوية…'); await refreshAfterAction('تم استئناف العضوية.'); } catch (error) { await notify(error.message, 'error'); } return; } if (action === 'delete' && await confirmDelete(member.fullName)) { try { await withLoader(() => api(`/api/members/${member.id}`, { method: 'DELETE' }), 'جاري حذف العضو…'); if (String($('memberId').value) === String(member.id)) setFormDefaults(true); await refreshAfterAction('تم حذف العضو.'); } catch (error) { await notify(error.message, 'error'); } } });
+            $('membersList').addEventListener('click', async (event) => { const button = event.target.closest('button[data-action]'); if (!button) return; if (!hasRequiredPermissions(button.dataset.requiredPermission)) { await notify('لا تملك صلاحية تنفيذ هذا الإجراء. إذا تم تفعيلها حديثًا، سجّل الخروج ثم ادخل مرة أخرى.', 'error'); return; } const id = button.dataset.id || button.closest('[data-member-id]')?.dataset.memberId; const member = state.members.find((item) => String(item.id) === String(id)); if (!member) { await notify('تعذر تحديد العضو. حدّث الصفحة وحاول مرة أخرى.', 'error'); return; } const action = button.dataset.action; if (action === 'details') { await openDetails(member); return; } if (action === 'edit') { openMemberDialog(member); return; } if (action === 'freeze' || action === 'renew' || action === 'payment') { openDialog(action, member); return; } if (action === 'resume') { try { await withLoader(() => api(`/api/members/${member.id}/resume`, { method: 'POST' }), 'جاري استئناف العضوية…'); await refreshAfterAction('تم استئناف العضوية.'); } catch (error) { await notify(error.message, 'error'); } return; } if (action === 'delete' && await confirmDelete(member.fullName)) { try { await withLoader(() => api(`/api/members/${member.id}`, { method: 'DELETE' }), 'جاري حذف العضو…'); if (String($('memberId').value) === String(member.id)) setFormDefaults(true); await refreshAfterAction('تم حذف العضو.'); } catch (error) { await notify(error.message, 'error'); } } });
             $('membersList').addEventListener('click', async (event) => {
                 const button = event.target.closest('button[data-action="refund"]');
                 if (!button) return;

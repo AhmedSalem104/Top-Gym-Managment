@@ -1401,15 +1401,23 @@ async function updateMember(id, body) {
             .query(`UPDATE dbo.members SET full_name = @fullName, phone = @phone, phone_normalized = @phoneNormalized, email = @email,
                     registration_date = @registrationDate, notes = @notes, updated_at = SYSUTCDATETIME()
                     WHERE id = @id;`);
-        await transaction.request()
-            .input('id', sql.Int, currentMembership.id)
-            .input('membershipPlan', sql.VarChar(30), membershipData.plan)
-            .input('membershipType', sql.VarChar(30), membershipData.type)
-            .input('startDate', sql.Date, toUtcDate(membershipData.startDate))
-            .input('endDate', sql.Date, toUtcDate(membershipData.endDate))
-            .input('notes', sql.NVarChar(1000), membershipData.notes)
-            .query(`UPDATE dbo.memberships SET membership_plan = @membershipPlan, membership_type = @membershipType, start_date = @startDate,
-                    end_date = @endDate, notes = @notes, updated_at = SYSUTCDATETIME() WHERE id = @id;`);
+        // A profile-only edit must not write to the membership domain. Apart
+        // from avoiding an unnecessary UPDATE, this keeps the service aligned
+        // with the route-level permission split: members.update is enough for
+        // profile fields, while membership changes require memberships.update.
+        const membershipChanged = ['membershipPlan', 'membershipType', 'startDate', 'endDate', 'membershipNotes']
+            .some((field) => has(body, field));
+        if (membershipChanged) {
+            await transaction.request()
+                .input('id', sql.Int, currentMembership.id)
+                .input('membershipPlan', sql.VarChar(30), membershipData.plan)
+                .input('membershipType', sql.VarChar(30), membershipData.type)
+                .input('startDate', sql.Date, toUtcDate(membershipData.startDate))
+                .input('endDate', sql.Date, toUtcDate(membershipData.endDate))
+                .input('notes', sql.NVarChar(1000), membershipData.notes)
+                .query(`UPDATE dbo.memberships SET membership_plan = @membershipPlan, membership_type = @membershipType, start_date = @startDate,
+                        end_date = @endDate, notes = @notes, updated_at = SYSUTCDATETIME() WHERE id = @id;`);
+        }
 
         let payment = null;
         const previousAmountPaid = Number(currentPayment?.amount_paid || 0);

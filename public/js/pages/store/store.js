@@ -17,6 +17,7 @@
 
     const api = window.topGymApi;
     const can = (permission) => window.topGymAuth?.isOwner?.() || window.topGymAuth?.hasPermission?.(permission);
+    const canCreateSale = () => Boolean(can('store.sales.create'));
     const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[character]));
     const money = (value) => `${Number(value || 0).toLocaleString('ar-EG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ج.م`;
     const paymentLabels = { cash: 'نقدي', card: 'بطاقة', transfer: 'تحويل', wallet: 'محفظة', other: 'أخرى' };
@@ -46,7 +47,8 @@
     function renderProductCatalog() {
         const search = String($('storePosSearch')?.value || '').trim().toLowerCase();
         const variants = flattenVariants().filter((item) => !search || [item.productName, item.variantName, item.sku, item.barcode].some((value) => String(value || '').toLowerCase().includes(search)));
-        $('storeProductCatalog').innerHTML = variants.length ? variants.map((item) => `<button class="store-product-card" type="button" data-store-add-variant="${esc(item.id)}"><span><strong>${esc(item.productName)}</strong><small>${esc(item.variantName)} · ${esc(item.sku)}</small></span><span class="store-product-price">${money(item.discountPrice ?? item.sellingPrice)}</span></button>`).join('') : '<div class="empty">لا توجد منتجات مطابقة للبحث.</div>';
+        const salesAllowed = canCreateSale();
+        $('storeProductCatalog').innerHTML = variants.length ? variants.map((item) => `<button class="store-product-card" type="button" data-store-add-variant="${esc(item.id)}"${salesAllowed ? '' : ' disabled'} aria-disabled="${String(!salesAllowed)}"><span><strong>${esc(item.productName)}</strong><small>${esc(item.variantName)} · ${esc(item.sku)}</small></span><span class="store-product-price">${money(item.discountPrice ?? item.sellingPrice)}</span></button>`).join('') : '<div class="empty">لا توجد منتجات مطابقة للبحث.</div>';
     }
 
     function cartTotals() {
@@ -64,10 +66,41 @@
         const paid = $('storeSalePaid');
         if (paid && !paid.value) paid.placeholder = totals.total.toFixed(2);
         const submit = $('storeCompleteSale');
-        if (submit) submit.disabled = !state.cart.length || !can('store.sales.create');
+        if (submit) submit.disabled = !state.cart.length || !canCreateSale();
+    }
+
+    function syncSalesPermissionUi() {
+        const allowed = canCreateSale();
+        const picker = document.querySelector('.store-customer-picker');
+        const customerSearch = $('storeCustomerSearch');
+        const results = $('storeCustomerResults');
+        const checkout = $('storeCheckoutForm');
+        const clearCart = $('storeCartClear');
+
+        if (picker) {
+            picker.hidden = !allowed;
+            picker.setAttribute('aria-hidden', String(!allowed));
+        }
+        if (customerSearch) customerSearch.disabled = !allowed;
+        if (!allowed && results) {
+            results.hidden = true;
+            results.innerHTML = '';
+        }
+        if (checkout) {
+            checkout.classList.toggle('permission-restricted', !allowed);
+            checkout.querySelectorAll('input, select, textarea').forEach((control) => { control.disabled = !allowed; });
+        }
+        if (clearCart) clearCart.disabled = !allowed;
+        document.querySelectorAll('[data-store-add-variant]').forEach((button) => {
+            button.disabled = !allowed;
+            button.setAttribute('aria-disabled', String(!allowed));
+        });
+        const submit = $('storeCompleteSale');
+        if (submit) submit.disabled = !allowed || !state.cart.length;
     }
 
     function selectCustomer(customer) {
+        if (!canCreateSale()) return;
         state.customer = customer;
         $('storeCustomerResults').hidden = true;
         $('storeCustomerSearch').value = '';
@@ -94,6 +127,7 @@
             renderCategoryOptions();
             renderSupplierOptions();
             renderCart();
+            syncSalesPermissionUi();
             await loadDashboard();
             await loadView(state.activeView);
         } catch (error) {
@@ -242,6 +276,7 @@
     }
 
     function addVariant(variantId) {
+        if (!canCreateSale()) return;
         const item = flattenVariants().find((variant) => String(variant.id) === String(variantId));
         if (!item) return;
         const existing = state.cart.find((line) => String(line.variantId) === String(item.id));
@@ -252,6 +287,10 @@
 
     async function completeSale(event) {
         event.preventDefault();
+        if (!canCreateSale()) {
+            notify('لا تملك صلاحية إنشاء مبيعات المتجر.', 'error');
+            return;
+        }
         if (!state.cart.length) return;
         const totals = cartTotals();
         const payload = { memberId: state.customer?.type === 'member' ? state.customer.id : undefined, customerName: state.customer?.type === 'member' ? undefined : state.customer?.name, customerPhone: state.customer?.type === 'member' ? undefined : state.customer?.phone, items: state.cart.map((line) => ({ variantId: line.variantId, quantity: line.quantity })), discountAmount: totals.discount, taxAmount: totals.tax, paidAmount: $('storeSalePaid').value === '' ? totals.total : Number($('storeSalePaid').value), paymentMethod: $('storeSalePaymentMethod').value, notes: $('storeSaleNotes').value.trim() };
@@ -287,6 +326,10 @@
     }
 
     async function searchCustomer() {
+        if (!canCreateSale()) {
+            $('storeCustomerResults').hidden = true;
+            return;
+        }
         const term = $('storeCustomerSearch').value.trim();
         const results = $('storeCustomerResults');
         if (term.length < 2) { results.hidden = true; return; }
@@ -394,6 +437,7 @@
         document.querySelectorAll('[data-store-view="suppliers"]').forEach((button) => { button.hidden = !can('store.suppliers.manage'); });
         document.querySelectorAll('[data-store-view="expenses"]').forEach((button) => { button.hidden = !can('store.expenses.manage'); });
         document.querySelectorAll('[data-store-profit-only]').forEach((element) => { element.hidden = !can('store.profit.view'); });
+        syncSalesPermissionUi();
         document.querySelectorAll('[data-store-view]').forEach((button) => button.addEventListener('click', () => void loadView(button.dataset.storeView)));
         $('storeRefreshButton')?.addEventListener('click', () => void loadBootstrap());
         $('storePosSearch')?.addEventListener('input', renderProductCatalog);

@@ -823,6 +823,7 @@
                 const printButton = document.createElement('button');
                 printButton.className = 'btn btn-light btn-small print-details-button';
                 printButton.type = 'button';
+                printButton.dataset.requiredPermission = 'members.print,members.read,memberships.read';
                 printButton.textContent = 'طباعة الملف الكامل';
                 printButton.addEventListener('click', () => {
                     const memberId = dialog.dataset.memberId;

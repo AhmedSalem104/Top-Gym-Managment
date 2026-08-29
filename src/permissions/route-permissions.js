@@ -47,7 +47,10 @@ const ROUTE_PERMISSION_RULES = Object.freeze([
     { pattern: /^\/members\/\d+\/refund-preview$/, methods: ['GET'], ownerOnly: true, all: [PERMISSIONS.PAYMENTS_REFUND] },
     { pattern: /^\/members\/\d+\/refund$/, methods: ['POST'], ownerOnly: true, all: [PERMISSIONS.PAYMENTS_REFUND] },
     { pattern: /^\/members(?:\/|$)/, methods: ['GET'], all: [PERMISSIONS.MEMBERS_READ, PERMISSIONS.MEMBERSHIPS_READ] },
-    { pattern: /^\/members(?:\/|$)/, methods: ['POST'], all: [PERMISSIONS.MEMBERS_CREATE, PERMISSIONS.MEMBERSHIPS_CREATE, PERMISSIONS.PAYMENTS_CREATE] },
+    // Registering a new member is one operational action. The initial
+    // membership is created as part of that atomic onboarding flow, while
+    // collecting money remains conditional on payments.create below.
+    { pattern: /^\/members(?:\/|$)/, methods: ['POST'], all: [PERMISSIONS.MEMBERS_CREATE] },
     { pattern: /^\/members\/\d+\/alert-communications$/, methods: ['POST'], all: [PERMISSIONS.MEMBERS_ALERTS] },
     { pattern: /^\/members\/\d+\/(?:freeze|resume)$/, methods: ['POST'], all: [PERMISSIONS.MEMBERSHIPS_FREEZE] },
     { pattern: /^\/members\/\d+\/renew$/, methods: ['POST'], all: [PERMISSIONS.MEMBERSHIPS_RENEW, PERMISSIONS.PAYMENTS_CREATE] },
@@ -153,17 +156,48 @@ function requirementForRule(rule, method) {
     return { all: rule.all || [], ownerOnly: Boolean(rule.ownerOnly) };
 }
 
+function memberCreateRequiresPaymentPermission(request) {
+    const body = request?.body && typeof request.body === 'object' ? request.body : {};
+    const amountPaid = Number(body.amountPaid);
+    const discountAmount = Number(body.discountAmount);
+    const paymentMethod = String(body.paymentMethod || 'cash').trim().toLowerCase();
+    const paymentNotes = String(body.paymentNotes || '').trim();
+
+    // Empty values and the default cash method represent an unpaid initial
+    // membership. They must not force a financial permission just because
+    // the browser serializes optional form fields.
+    return (Number.isFinite(amountPaid) && amountPaid > 0)
+        || (Number.isFinite(discountAmount) && discountAmount > 0)
+        || Boolean(paymentNotes)
+        || (paymentMethod && paymentMethod !== 'cash');
+}
+
 function permissionForRequest(request) {
     const path = String(request?.path || '');
     const method = String(request?.method || 'GET').toUpperCase();
+    if (method === 'POST' && /^\/members\/?$/.test(path)) {
+        return {
+            all: [
+                PERMISSIONS.MEMBERS_CREATE,
+                ...(memberCreateRequiresPaymentPermission(request) ? [PERMISSIONS.PAYMENTS_CREATE] : [])
+            ],
+            ownerOnly: false
+        };
+    }
     if (method === 'PUT' && /^\/members\/\d+$/.test(path)) {
         const body = request?.body && typeof request.body === 'object' ? request.body : {};
-        const paymentFields = ['membershipPlan', 'membershipType', 'discountAmount', 'amountDue', 'amountPaid', 'paymentMethod', 'paymentNotes'];
-        const changesPayment = paymentFields.some((field) => Object.prototype.hasOwnProperty.call(body, field));
+        const hasField = (field) => Object.prototype.hasOwnProperty.call(body, field);
+        const membershipFields = ['membershipPlan', 'membershipType', 'startDate', 'endDate', 'membershipNotes'];
+        // Changing the plan/type or discount recalculates the payment snapshot
+        // in member-service, so those fields need the financial permission too.
+        const pricingFields = ['membershipPlan', 'membershipType', 'discountAmount'];
+        const paymentFields = ['amountDue', 'amountPaid', 'paymentMethod', 'paymentNotes'];
+        const changesMembership = membershipFields.some(hasField);
+        const changesPayment = [...pricingFields, ...paymentFields].some(hasField);
         return {
             all: [
                 PERMISSIONS.MEMBERS_UPDATE,
-                PERMISSIONS.MEMBERSHIPS_UPDATE,
+                ...(changesMembership ? [PERMISSIONS.MEMBERSHIPS_UPDATE] : []),
                 ...(changesPayment ? [PERMISSIONS.PAYMENTS_CREATE] : [])
             ],
             ownerOnly: false

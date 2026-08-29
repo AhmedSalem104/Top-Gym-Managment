@@ -3,6 +3,9 @@
     window.__topGymAttendanceLoaded = true;
 
     const $ = (id) => document.getElementById(id);
+    const can = (permission) => window.topGymAuth?.isOwner?.() === true
+        || window.topGymAuth?.hasPermission?.(permission) === true;
+    const canReadMember = () => can('members.read') && can('memberships.read');
     const SOURCE_LABELS = { phone: 'بالهاتف', qr: 'QR Code', manual: 'يدوي', auto: 'تلقائي' };
     let scanner = null;
     let scannerRunning = false;
@@ -207,8 +210,8 @@
         const checkInButton = $('attendanceCheckInButton');
         const checkOutButton = $('attendanceCheckOutButton');
         if (!checkInButton || !checkOutButton) return;
-        checkInButton.disabled = false;
-        checkOutButton.disabled = false;
+        checkInButton.disabled = !can('attendance.check_in');
+        checkOutButton.disabled = !can('attendance.check_out');
         checkInButton.textContent = 'تسجيل حضور';
         checkOutButton.textContent = 'تسجيل انصراف';
         checkInButton.classList.remove('is-suggested');
@@ -226,9 +229,9 @@
         const checkInButton = $('attendanceCheckInButton');
         const checkOutButton = $('attendanceCheckOutButton');
         if (!checkInButton || !checkOutButton) return;
-        const canCheckIn = state.eligible && !state.inside && !state.checkedOut;
-        checkInButton.disabled = state.inside || state.checkedOut || !state.eligible;
-        checkOutButton.disabled = !state.inside;
+        const canCheckIn = can('attendance.check_in') && state.eligible && !state.inside && !state.checkedOut;
+        checkInButton.disabled = !can('attendance.check_in') || state.inside || state.checkedOut || !state.eligible;
+        checkOutButton.disabled = !can('attendance.check_out') || !state.inside;
         checkInButton.textContent = canCheckIn ? 'تسجيل حضور' : state.inside ? 'الحضور مسجل' : 'الحضور غير متاح';
         checkOutButton.textContent = state.inside ? 'تسجيل انصراف' : 'لا يوجد انصراف مطلوب';
         checkInButton.classList.toggle('is-suggested', canCheckIn);
@@ -406,6 +409,10 @@
     }
 
     async function checkIn(payload = null) {
+        if (!can('attendance.check_in')) {
+            await showMessage('لا تملك صلاحية تسجيل الحضور.', 'error');
+            return;
+        }
         const body = payload || currentInput();
         if (!body) return;
         try {
@@ -424,6 +431,10 @@
     }
 
     async function checkOut(payload = null) {
+        if (!can('attendance.check_out')) {
+            await showMessage('لا تملك صلاحية تسجيل الانصراف.', 'error');
+            return;
+        }
         const body = payload || currentInput();
         if (!body) return;
         try {
@@ -458,6 +469,10 @@
     async function handleQrScan(decodedText) {
         const memberId = qrMemberId(decodedText);
         if (!memberId) {
+            await checkIn({ qrToken: decodedText });
+            return;
+        }
+        if (!canReadMember()) {
             await checkIn({ qrToken: decodedText });
             return;
         }
@@ -508,6 +523,10 @@
     }
 
     async function openMemberQr(memberId) {
+        if (!canReadMember()) {
+            await showMessage('لا تملك صلاحية عرض بيانات المشترك أو رمز QR.', 'error');
+            return;
+        }
         try {
             const qrLibrary = window.topGymLoadExternalAsset?.('qrcode');
             const response = await request(`/api/members/${encodeURIComponent(memberId)}`);
