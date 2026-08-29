@@ -105,8 +105,41 @@ LEFT JOIN payment_summary AS ps ON ps.paymentMembershipId = lm.membershipId
 )
 `;
 
+const MEMBER_ROW_COLUMNS = [
+    'id',
+    'fullName',
+    'phone',
+    'email',
+    'registrationDate',
+    'memberNotes',
+    'memberCreatedAt',
+    'memberUpdatedAt',
+    'membershipId',
+    'membershipPlan',
+    'membershipType',
+    'startDate',
+    'endDate',
+    'membershipNotes',
+    'cancelledAt',
+    'cancellationReason',
+    'effectiveEndDate',
+    'freezeId',
+    'freezeStart',
+    'freezeEnd',
+    'freezeCount',
+    'listPrice',
+    'discountAmount',
+    'amountDue',
+    'amountPaid',
+    'amountRemaining',
+    'paymentMethod',
+    'paymentPaidAt',
+    'computedStatus',
+    'daysRemaining'
+].join(', ');
+
 const MEMBER_CTE = `${MEMBER_ROWS_CTE}
-SELECT *, COUNT(1) OVER() AS totalCount
+SELECT ${MEMBER_ROW_COLUMNS}, COUNT(1) OVER() AS totalCount
 FROM member_rows
 `;
 
@@ -141,4 +174,4 @@ async function list({ search = '', status = '', sort = 'expiry', offset = 0, pag
             OFFSET @offset ROWS FETCH NEXT @pageSize ROWS ONLY;`);
 }
 
-module.exports = { findById, list, MEMBER_CTE, MEMBER_ROWS_CTE };
+module.exports = { findById, list, MEMBER_CTE, MEMBER_ROW_COLUMNS, MEMBER_ROWS_CTE };

@@ -10,15 +10,20 @@ function createStoreController({ storeService, hasPermission }) {
     return {
         bootstrap: async (request, response) => {
             const includeCost = Boolean(hasPermission(request.auth, 'store.profit.view'));
-            response.json({ categories: await storeService.listCategories(), products: await storeService.listProducts({ page: 1, pageSize: 100, includeCost }), suppliers: await storeService.listSuppliers(), canViewProfit: includeCost });
+            const [categories, products, suppliers] = await Promise.all([
+                storeService.listCategories(),
+                storeService.listProducts({ page: 1, pageSize: 100, includeCost }),
+                storeService.listSuppliers()
+            ]);
+            response.json({ categories, products, suppliers, canViewProfit: includeCost });
         },
         dashboard: async (request, response) => {
             const canViewProfit = financialView(request);
-            response.json(redactProfitData(await storeService.getDashboard({ ...request.query, includeProfit: canViewProfit }), canViewProfit));
+            response.json(redactProfitData(await storeService.getDashboard({ ...request.query, includeProfit: canViewProfit, readOnly: request.readOnlyBaseline }), canViewProfit));
         },
         reports: async (request, response) => {
             const canViewProfit = financialView(request);
-            response.json(redactProfitData(await storeService.getReports({ ...request.query, includeProfit: canViewProfit }), canViewProfit));
+            response.json(redactProfitData(await storeService.getReports({ ...request.query, includeProfit: canViewProfit, readOnly: request.readOnlyBaseline }), canViewProfit));
         },
         categories: async (request, response) => response.json(await storeService.listCategories({ includeInactive: request.query.includeInactive === 'true' })),
         createCategory: async (request, response) => response.status(201).json({ category: await storeService.createCategory(request.body, options(request)) }),

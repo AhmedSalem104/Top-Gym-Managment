@@ -3,6 +3,7 @@
 const { getPool, sql } = require('../database');
 const { withTransaction } = require('../database/transaction');
 const { toUtcDate } = require('../utils/date');
+const { getTenantContext } = require('../tenancy/tenant-context');
 
 const DEFAULT_DAY_PASS_TYPES = Object.freeze([
     { code: 'day_gym', label: 'حصة جيم فقط', price: 30, sortOrder: 1 },
@@ -12,6 +13,7 @@ const DEFAULT_DAY_PASS_TYPES = Object.freeze([
 let tablePromise;
 
 async function ensureDayPassTables() {
+    if (getTenantContext()?.readOnlyBaseline) return;
     if (!tablePromise) {
         tablePromise = (async () => {
             const pool = await getPool();

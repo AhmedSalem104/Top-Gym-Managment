@@ -3,7 +3,7 @@ const { addDays, differenceInDays, formatDateOnly, parseDateOnly, todayInTimeZon
 const { ensurePaymentTransactionsTable, getDashboard } = require('./member-service');
 const { ensureExpensesTable } = require('./finance-service');
 const { ensureCoachingTables } = require('./coaching-service');
-const { ensureLibraryData, ensureLibraryTables } = require('./library-service');
+const { ensureLibraryData } = require('./library-service');
 const alertContactService = require('./alert-contact-service');
 const dayPassRepository = require('../repositories/day-pass.repository');
 
@@ -49,13 +49,15 @@ function addTimelineAmount(timelineByDate, rows, dateField, amountField) {
 async function getReportData(query = {}) {
     const range = normalizeRange(query);
     const readOnly = Boolean(query.readOnly);
-    await Promise.all([
-        ensureExpensesTable(),
-        ensurePaymentTransactionsTable(),
-        ensureCoachingTables(),
-        readOnly ? ensureLibraryTables() : ensureLibraryData(),
-        dayPassRepository.ensureDayPassTables()
-    ]);
+    if (!readOnly) {
+        await Promise.all([
+            ensureExpensesTable(),
+            ensurePaymentTransactionsTable(),
+            ensureCoachingTables(),
+            ensureLibraryData(),
+            dayPassRepository.ensureDayPassTables()
+        ]);
+    }
     const pool = await getPool();
     const dayPassRangePromise = dayPassRepository.getRangeData({ fromDate: range.from, nextDate: range.nextDate });
     const baseRequest = () => pool.request()
@@ -146,7 +148,7 @@ async function getReportData(query = {}) {
             WHERE paid_at >= @fromDate AND paid_at < @nextDate AND amount_paid <> 0
             GROUP BY payment_method ORDER BY amount DESC;
         `),
-        getDashboard(),
+        getDashboard({ readOnly }),
         pool.request().query(`
             SELECT TOP (1000)
                    m.id, m.full_name, m.phone, m.email,

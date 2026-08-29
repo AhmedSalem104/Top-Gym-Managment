@@ -252,15 +252,17 @@ function buildComparison(currentValue, previousValue) {
     };
 }
 
-async function getDashboardAnalytics(periodValue = 'month') {
+async function getDashboardAnalytics(periodValue = 'month', { readOnly = false } = {}) {
     const range = getPeriodRange(periodValue);
     const previousRange = getPreviousPeriodRange(range);
     const buckets = createBuckets(range);
     const today = todayInTimeZone();
     const inactiveSince = addDays(today, -7);
-    await ensureExpensesTable();
-    await ensurePaymentTransactionsTable();
-    await dayPassRepository.ensureDayPassTables();
+    if (!readOnly) {
+        await ensureExpensesTable();
+        await ensurePaymentTransactionsTable();
+        await dayPassRepository.ensureDayPassTables();
+    }
     const pool = await getPool();
 
     const currentRequest = createRangeRequest(pool, range)
@@ -268,7 +270,7 @@ async function getDashboardAnalytics(periodValue = 'month') {
         .input('inactiveSince', sql.Date, toUtcDate(inactiveSince));
     const previousRequest = createRangeRequest(pool, previousRange);
     const [dashboard, currentResult, previousResult] = await Promise.all([
-        getDashboard(),
+        getDashboard({ readOnly }),
         currentRequest.batch(`
             SELECT registration_date AS eventDate
             FROM dbo.members

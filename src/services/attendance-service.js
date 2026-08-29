@@ -1,6 +1,7 @@
 const { getPool, sql } = require('../database');
 const { addDays, differenceInDays, formatDateOnly, parseDateOnly, todayInTimeZone, toUtcDate } = require('../utils/date');
 const { config } = require('../config/env');
+const { getTenantContext } = require('../tenancy/tenant-context');
 
 const ATTENDANCE_SOURCES = new Set(['phone', 'qr', 'manual']);
 const DEFAULT_AUTO_CHECKOUT_MINUTES = 60;
@@ -37,6 +38,7 @@ function normalizePhone(value) {
 }
 
 async function ensureAttendanceTable() {
+    if (getTenantContext()?.readOnlyBaseline) return;
     if (!attendanceTablePromise) {
         attendanceTablePromise = (async () => {
             const pool = await getPool();

@@ -2,10 +2,12 @@
 
 const { getPool, sql } = require('../database/pool');
 const { toUtcDate } = require('../utils/date');
+const { getTenantContext } = require('../tenancy/tenant-context');
 
 let expensesTablePromise;
 
 async function ensureExpensesTable() {
+    if (getTenantContext()?.readOnlyBaseline) return;
     if (!expensesTablePromise) {
         expensesTablePromise = (async () => {
             const pool = await getPool();

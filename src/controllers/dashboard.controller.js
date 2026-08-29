@@ -5,16 +5,16 @@ function createDashboardController({ memberService, analyticsService, storeServi
         dashboard: async (request, response) => {
             const canViewStore = Boolean(storeService && hasPermission(request.auth, 'store.view'));
             const [dashboard, store] = await Promise.all([
-                memberService.getDashboard(),
+                memberService.getDashboard({ readOnly: request.readOnlyBaseline }),
                 canViewStore
-                    ? storeService.getDashboard({ includeProfit: hasPermission(request.auth, 'store.profit.view') })
+                    ? storeService.getDashboard({ includeProfit: hasPermission(request.auth, 'store.profit.view'), readOnly: request.readOnlyBaseline })
                     : Promise.resolve(null)
             ]);
             dashboard.store = store;
             response.json(dashboard);
         },
         analytics: async (request, response) => {
-            response.json(await analyticsService.getDashboardAnalytics(request.query.period));
+            response.json(await analyticsService.getDashboardAnalytics(request.query.period, { readOnly: request.readOnlyBaseline }));
         },
         bootstrap: async (request, response) => {
             response.json(await memberService.getBootstrap({ readOnly: request.readOnlyBaseline }));

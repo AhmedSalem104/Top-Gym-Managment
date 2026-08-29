@@ -6,6 +6,7 @@ const { randomUUID } = require('node:crypto');
 const { getPool, sql } = require('../database');
 const { withTransaction } = require('../database/transaction');
 const { addDays, formatDateOnly, parseDateOnly, todayInTimeZone, toUtcDate } = require('../utils/date');
+const { getTenantContext } = require('../tenancy/tenant-context');
 
 const PAYMENT_METHODS = new Set(['cash', 'card', 'transfer', 'wallet', 'other']);
 const MOVEMENT_TYPES = new Set(['purchase', 'sale', 'sale_return', 'purchase_return', 'adjustment', 'damaged', 'expired', 'manual']);
@@ -91,6 +92,7 @@ function normalizePhone(value) {
 }
 
 async function ensureStoreTables() {
+    if (getTenantContext()?.readOnlyBaseline) return;
     if (!storeTablesPromise) {
         storeTablesPromise = (async () => {
             const schema = fs.readFileSync(STORE_SCHEMA_PATH, 'utf8');
@@ -802,10 +804,10 @@ async function adjustInventory(body = {}, options = {}) {
     });
 }
 
-async function getDashboard({ from, to, includeProfit = false } = {}) {
+async function getDashboard({ from, to, includeProfit = false, readOnly = false } = {}) {
     await ensureStoreTables();
     const range = rangeFromQuery({ from, to });
-    const report = await getReports({ from: range.from, to: range.to, includeProfit });
+    const report = await getReports({ from: range.from, to: range.to, includeProfit, readOnly });
     const currentDay = todayInTimeZone();
     const todayNext = addDays(currentDay, 1);
     const todayResult = await getPool().then((pool) => pool.request()
@@ -833,7 +835,7 @@ async function getDashboard({ from, to, includeProfit = false } = {}) {
     };
 }
 
-async function getReports({ from, to, includeProfit = false } = {}) {
+async function getReports({ from, to, includeProfit = false, readOnly = false } = {}) {
     await ensureStoreTables();
     const range = rangeFromQuery({ from, to });
     const pool = await getPool();
@@ -857,7 +859,7 @@ async function getReports({ from, to, includeProfit = false } = {}) {
     `),
         base().input('source', sql.VarChar(20), 'store').query(`SELECT COUNT(*) expense_count, ISNULL(SUM(amount),0) amount FROM dbo.gym_expenses WHERE expense_source=@source AND ISNULL(is_voided,0)=0 AND expense_date>=@fromDate AND expense_date<@nextDate;`),
         base().query(`SELECT p.id,p.invoice_number,p.purchase_date,s.supplier_name,p.total_amount,p.paid_amount,p.remaining_amount,p.payment_method,p.status,(SELECT COUNT(*) FROM dbo.gym_store_purchase_items i WHERE i.purchase_id=p.id) item_count FROM dbo.gym_store_purchases p LEFT JOIN dbo.gym_store_suppliers s ON s.id=p.supplier_id WHERE p.status='received' AND p.purchase_date>=@fromDate AND p.purchase_date<@nextDate ORDER BY p.purchase_date DESC,p.id DESC;`),
-        listInventory()
+        listInventory({ readOnly })
     ]);
     const summary = sales.recordsets[0]?.[0] || {}; const returns = sales.recordsets[3]?.[0] || {}; const storeExpenses = Number(expense.recordset[0]?.amount || 0);
     const revenue = Number(summary.revenue || 0) - Number(returns.refunds || 0);

@@ -1,6 +1,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { getPool, sql } = require('../database');
+const { getTenantContext } = require('../tenancy/tenant-context');
 
 const DATA_DIRECTORY = path.join(__dirname, '..', 'data', 'library');
 const LIBRARY_TYPES = new Set(['muscles', 'foods', 'exercises']);
@@ -208,6 +209,7 @@ function mapItem(type, row) {
 }
 
 async function ensureLibraryTables() {
+    if (getTenantContext()?.readOnlyBaseline) return;
     if (!libraryTablesPromise) {
         libraryTablesPromise = (async () => {
             const pool = await getPool();

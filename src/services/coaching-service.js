@@ -1,5 +1,6 @@
 const { getPool, sql } = require('../database');
 const { ensureLibraryData, ensureLibraryTables } = require('./library-service');
+const { getTenantContext } = require('../tenancy/tenant-context');
 const {
     addDays,
     differenceInDays,
@@ -96,6 +97,7 @@ function withTransaction(work) {
 }
 
 async function ensureCoachingTables({ seedLibrary = true } = {}) {
+    if (getTenantContext()?.readOnlyBaseline) return;
     if (!coachingTablesPromise) {
         coachingTablesPromise = (async () => {
             // The coaching schema only needs the library tables to exist. The

@@ -3,7 +3,7 @@ const { withTransaction } = require('../database/transaction');
 const memberRepository = require('../repositories/member.repository');
 const alertContactService = require('./alert-contact-service');
 const membershipCodeService = require('./membership-code-service');
-const { MEMBER_ROWS_CTE } = memberRepository;
+const { MEMBER_ROW_COLUMNS, MEMBER_ROWS_CTE } = memberRepository;
 const {
     addDays,
     addMonths,
@@ -14,7 +14,7 @@ const {
     toUtcDate
 } = require('../utils/date');
 const { ensureAttendanceTable, getMemberAttendanceStatuses } = require('./attendance-service');
-const { currentTenantId } = require('../tenancy/tenant-context');
+const { currentTenantId, getTenantContext } = require('../tenancy/tenant-context');
 
 const DEFAULT_MEMBERSHIP_PLANS = {
     gym_only: { label: 'جيم فقط', monthlyPrice: 305, active: true, sortOrder: 1 },
@@ -46,6 +46,7 @@ function appError(message, statusCode = 400) {
 }
 
 async function ensurePaymentTransactionsTable() {
+    if (getTenantContext()?.readOnlyBaseline) return;
     if (!paymentTransactionsTablePromise) {
         paymentTransactionsTablePromise = (async () => {
             const pool = await getPool();
@@ -152,6 +153,7 @@ async function ensurePaymentTransactionsTable() {
 }
 
 async function ensureSubscriptionRefundsTable() {
+    if (getTenantContext()?.readOnlyBaseline) return;
     if (!subscriptionRefundsTablePromise) {
         subscriptionRefundsTablePromise = (async () => {
             await ensurePaymentTransactionsTable();
@@ -416,6 +418,7 @@ function invalidatePricingCatalog() {
 }
 
 async function ensurePricingOverrides() {
+    if (getTenantContext()?.readOnlyBaseline) return;
     if (!pricingOverridesPromise) {
         pricingOverridesPromise = (async () => {
             const pool = await getPool();
@@ -710,7 +713,7 @@ function dashboardFromMembers(members, today = todayInTimeZone()) {
 async function getBootstrap({ readOnly = false } = {}) {
     const [memberPage, dashboard, pricing] = await Promise.all([
         getMembers({ page: 1, pageSize: DEFAULT_MEMBER_PAGE_SIZE, sort: 'expiry', readOnly }),
-        getDashboard(),
+        getDashboard({ readOnly }),
         getPricingCatalog()
     ]);
     return {
@@ -958,15 +961,15 @@ async function updateMembershipType(typeCodeValue, body = {}) {
     return getPricingCatalog();
 }
 
-async function getDashboard() {
-    await ensureAttendanceTable();
+async function getDashboard({ readOnly = false } = {}) {
+    if (!readOnly) await ensureAttendanceTable();
     const pool = await getPool();
     const today = todayInTimeZone();
     const result = await pool.request()
         .input('today', sql.Date, toUtcDate(today))
         .input('inactiveSince', sql.Date, toUtcDate(addDays(today, -7)))
         .batch(`${MEMBER_ROWS_CTE}
-            SELECT * INTO #member_rows FROM member_rows;
+            SELECT ${MEMBER_ROW_COLUMNS} INTO #member_rows FROM member_rows;
 
             SELECT
                 COUNT(1) AS total,
@@ -992,11 +995,11 @@ async function getDashboard() {
             FROM #member_rows
             WHERE membershipId IS NOT NULL;
 
-            SELECT TOP (50) * FROM #member_rows
+            SELECT TOP (50) ${MEMBER_ROW_COLUMNS} FROM #member_rows
             WHERE membershipId IS NOT NULL AND amountRemaining > 0
             ORDER BY amountRemaining DESC, effectiveEndDate ASC, fullName ASC;
 
-            SELECT TOP (50) member_rows.*,
+            SELECT TOP (50) ${MEMBER_ROW_COLUMNS},
                    last_visit.lastVisitDate,
                    DATEDIFF(day, last_visit.lastVisitDate, @today) AS daysSinceLastVisit
             FROM #member_rows AS member_rows
