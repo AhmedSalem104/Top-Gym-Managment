@@ -15,6 +15,7 @@ const storeService = require('../src/services/store-service');
 const intelligenceService = require('../src/services/intelligence-service');
 const brandingService = require('../src/services/branding-service');
 const saasService = require('../src/services/saas-service');
+const { safeErrorCode } = require('../src/utils/error-response');
 
 async function migrate() {
     await runTenantContext({ mode: 'platform', tenantId: 1 }, () => initDatabase());
@@ -39,7 +40,7 @@ async function migrate() {
 
 migrate()
     .catch((error) => {
-        console.error('Tenancy migration failed:', error.message);
+        console.error('TENANCY_MIGRATION_FAILED', safeErrorCode(error, 'migration_failed'));
         process.exitCode = 1;
     })
     .finally(() => closePool().catch(() => {}));

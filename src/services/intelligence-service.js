@@ -5,6 +5,7 @@ const { addDays, formatDateOnly, todayInTimeZone, toUtcDate } = require('../util
 const memberService = require('./member-service');
 const coachingService = require('./coaching-service');
 const brandingService = require('./branding-service');
+const { safeErrorCode } = require('../utils/error-response');
 
 function appError(message, statusCode = 400, code = null) {
     const error = new Error(message);
@@ -124,7 +125,7 @@ async function logGeneration({ actorUserId = null, memberId = null, feature, act
     } catch (error) {
         // Intelligence should never make an otherwise valid read/generation
         // fail because its optional audit table is temporarily unavailable.
-        console.warn('[TOP GYM] Intelligence audit was not recorded:', error.message);
+        console.warn('[intelligence-audit] not recorded:', safeErrorCode(error, 'audit_recording_failed'));
     }
 }
 

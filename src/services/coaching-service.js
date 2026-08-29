@@ -1,6 +1,7 @@
 const { getPool, sql } = require('../database');
 const { ensureLibraryData, ensureLibraryTables } = require('./library-service');
 const { getTenantContext } = require('../tenancy/tenant-context');
+const { safeErrorCode } = require('../utils/error-response');
 const {
     addDays,
     differenceInDays,
@@ -445,7 +446,7 @@ async function recordCoachingEvent(memberId, eventType, { entityType = null, ent
             .query('INSERT INTO dbo.coaching_activity_events (member_id, event_type, entity_type, entity_id, details) VALUES (@memberId, @eventType, @entityType, @entityId, @details);');
     } catch (error) {
         // Activity history is supplementary; a logging failure must not break a completed coaching operation.
-        console.warn(`[coaching-activity] ${error.message}`);
+        console.warn('[coaching-activity]', safeErrorCode(error, 'activity_recording_failed'));
     }
 }
 

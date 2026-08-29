@@ -6,7 +6,8 @@ const test = require('node:test');
 const {
     DEFAULT_INTERNAL_ERROR_MESSAGE,
     getSafeErrorMessage,
-    isPublicClientError
+    isPublicClientError,
+    safeErrorCode
 } = require('../../src/utils/error-response');
 const { safeOperationalError } = require('../../src/services/backup-service');
 
@@ -36,4 +37,10 @@ test('backup audit details keep internal failures generic', () => {
         expose: true
     });
     assert.equal(safeOperationalError(internal, 'Backup inspection failed.'), 'Backup inspection failed.');
+});
+
+test('safe error codes are bounded and never include raw error details', () => {
+    assert.equal(safeErrorCode({ code: 'EREQUEST' }), 'EREQUEST');
+    assert.equal(safeErrorCode({ code: 'SQL password=secret' }), 'operation_failed');
+    assert.equal(safeErrorCode(new Error('SQL password=secret'), 'db_operation_failed'), 'db_operation_failed');
 });

@@ -15,6 +15,11 @@ function sanitizePublicErrorMessage(message) {
         .slice(0, 1000);
 }
 
+function safeErrorCode(error, fallback = 'operation_failed') {
+    const code = typeof error?.code === 'string' ? error.code.trim() : '';
+    return /^[A-Za-z0-9][A-Za-z0-9_.:-]{0,63}$/.test(code) ? code : fallback;
+}
+
 function getSafeErrorMessage(error, statusCode) {
     return isPublicClientError(error, statusCode)
         ? sanitizePublicErrorMessage(error.message)
@@ -25,5 +30,6 @@ module.exports = {
     DEFAULT_INTERNAL_ERROR_MESSAGE,
     getSafeErrorMessage,
     isPublicClientError,
+    safeErrorCode,
     sanitizePublicErrorMessage
 };
