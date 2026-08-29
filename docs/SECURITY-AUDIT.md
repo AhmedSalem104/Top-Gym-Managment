@@ -21,6 +21,8 @@ penetration test and does not replace authenticated Staging verification.
   passwords, cookies, tokens, SQL text or driver messages.
 - Platform routes have a server-side `PlatformAdmin` boundary; tenant routes
   continue through tenant resolution, permissions and RLS context.
+- HTTPS responses include HSTS with subdomain coverage; local HTTP responses do
+  not set the policy accidentally.
 - Tracked-environment and dependency checks pass locally.
 
 ## Findings and gates

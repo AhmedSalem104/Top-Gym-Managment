@@ -115,6 +115,8 @@ claims to Production evidence. Those items remain listed above exactly once.
 - State-changing requests reject browser Fetch Metadata marked as
   `cross-site`; Origin/SameSite and external CSRF verification remain required
   for a full security sign-off.
+- HTTPS security headers include conditional HSTS; actual proxy/TLS behavior
+  still requires deployment verification.
 
 These local results do not close the authenticated baseline, live execution
 plans, Staging/Production capacity, restore, or pilot evidence items above.

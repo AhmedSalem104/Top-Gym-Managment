@@ -9,6 +9,7 @@ const {
     trimMap
 } = require('../../src/middleware/rate-limit.middleware');
 const { isSameOriginRequest } = require('../../src/middleware/auth.middleware');
+const { securityHeaders } = require('../../src/middleware/security.middleware');
 const { parseScryptHash, readSessionCookie, verifyPassword } = require('../../src/services/auth-service');
 const { isAuthorizedCronRequest } = require('../../src/middleware/cron.middleware');
 
@@ -31,6 +32,17 @@ function responseDouble() {
         },
         json(value) {
             this.body = value;
+            return this;
+        }
+    };
+}
+
+function headerResponseDouble() {
+    return {
+        headers: {},
+        set(values, value) {
+            if (typeof values === 'string') this.headers[values] = value;
+            else Object.assign(this.headers, values);
             return this;
         }
     };
@@ -80,6 +92,16 @@ test('state-changing cross-site Fetch Metadata requests fail closed', () => {
     assert.equal(isSameOriginRequest(request({ 'sec-fetch-site': 'cross-site' })), false);
     assert.equal(isSameOriginRequest(request({ 'sec-fetch-site': 'same-origin' })), true);
     assert.equal(isSameOriginRequest(request({})), true);
+});
+
+test('HSTS is emitted only for confirmed HTTPS requests', () => {
+    const secure = headerResponseDouble();
+    securityHeaders({ secure: true }, secure, () => {});
+    assert.equal(secure.headers['Strict-Transport-Security'], 'max-age=31536000; includeSubDomains');
+
+    const local = headerResponseDouble();
+    securityHeaders({ secure: false }, local, () => {});
+    assert.equal(local.headers['Strict-Transport-Security'], undefined);
 });
 
 test('production cron requests fail closed when the secret is missing', () => {

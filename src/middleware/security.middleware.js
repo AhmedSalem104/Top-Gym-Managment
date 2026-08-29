@@ -12,6 +12,12 @@ function securityHeaders(request, response, next) {
         'Referrer-Policy': 'strict-origin-when-cross-origin',
         'Permissions-Policy': 'camera=(self), microphone=()'
     });
+    // Emit HSTS only after Express has positively identified an HTTPS request
+    // (including a trusted reverse-proxy signal). Local HTTP development must
+    // not pin a browser to HTTPS accidentally.
+    if (request.secure === true) {
+        response.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+    }
     next();
 }
 
