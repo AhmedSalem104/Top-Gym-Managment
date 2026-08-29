@@ -16,6 +16,7 @@ const { assertReadOnlySql, hasPersistentSqlMutation } = require('../../src/datab
 const { readOnlyBaselineGuard } = require('../../src/middleware/read-only-baseline.middleware');
 const { runTenantContext } = require('../../src/tenancy/tenant-context');
 const { ensureMembershipCodeStorage } = require('../../src/services/membership-code-service');
+const { ensureAlertContactTables } = require('../../src/services/alert-contact-service');
 
 function withEnvironment(values, callback) {
     const previous = new Map(Object.keys(values).map((key) => [key, process.env[key]]));
@@ -132,6 +133,11 @@ test('database guard blocks persistent SQL mutations but permits temporary query
 
 test('membership-code storage setup is skipped in a read-only tenant context', async () => {
     const result = await runTenantContext({ tenantId: 1, mode: 'tenant', readOnlyBaseline: true }, () => ensureMembershipCodeStorage());
+    assert.equal(result, undefined);
+});
+
+test('alert-contact storage setup is skipped in a read-only tenant context', async () => {
+    const result = await runTenantContext({ tenantId: 1, mode: 'tenant', readOnlyBaseline: true }, () => ensureAlertContactTables());
     assert.equal(result, undefined);
 });
 

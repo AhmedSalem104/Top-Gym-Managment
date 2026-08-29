@@ -1032,7 +1032,7 @@ async function getDashboard({ readOnly = false } = {}) {
     }));
     const alerts = [...membershipAlerts, ...debtAlerts, ...inactiveAlerts]
         .filter((item, index, list) => list.findIndex((candidate) => `${candidate.alertKind}:${candidate.id}` === `${item.alertKind}:${item.id}`) === index);
-    const alertContacts = await alertContactService.getLatestForAlerts(alerts);
+    const alertContacts = await alertContactService.getLatestForAlerts(alerts, { readOnly });
     const alertsWithContactState = alerts.map((alert) => {
         const alertKey = alertContactService.buildAlertKey(alert);
         return {

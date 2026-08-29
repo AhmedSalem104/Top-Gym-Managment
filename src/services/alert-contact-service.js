@@ -1,6 +1,7 @@
 'use strict';
 
 const { getPool, sql } = require('../database');
+const { getTenantContext } = require('../tenancy/tenant-context');
 
 const ALERT_KINDS = new Set(['membership', 'debt', 'inactive']);
 const CONTACT_STATUSES = new Set(['opened', 'sent']);
@@ -90,7 +91,11 @@ function mapContact(row) {
     };
 }
 
-async function ensureAlertContactTables() {
+async function ensureAlertContactTables({ readOnly = false } = {}) {
+    // Alert state is read by dashboards, but table creation belongs to the
+    // migration/startup path. A baseline read must never create the table or
+    // indexes as a side effect of loading dashboard data.
+    if (readOnly || getTenantContext()?.readOnlyBaseline) return;
     if (!alertContactTablesPromise) {
         alertContactTablesPromise = (async () => {
             const pool = await getPool();
@@ -145,8 +150,8 @@ async function ensureAlertContactTables() {
     return alertContactTablesPromise;
 }
 
-async function getLatestForAlerts(alerts = []) {
-    await ensureAlertContactTables();
+async function getLatestForAlerts(alerts = [], { readOnly = false } = {}) {
+    await ensureAlertContactTables({ readOnly });
     const normalizedAlerts = Array.isArray(alerts) ? alerts : [];
     const memberIds = [...new Set(normalizedAlerts.map((alert) => {
         try { return ensurePositiveId(alert?.id || alert?.memberId); } catch (_) { return null; }

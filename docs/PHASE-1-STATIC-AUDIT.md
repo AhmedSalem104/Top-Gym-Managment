@@ -50,6 +50,9 @@ The following facts are static evidence, not runtime benchmarks:
 - Member-list/detail reads skip membership-code schema setup and backfill in
   the read-only baseline context; the prepared database remains a prerequisite
   for those columns and tables.
+- Dashboard alert-state reads also skip alert-contact table/index creation in
+  the read-only baseline context; the baseline therefore measures prepared
+  dashboard storage instead of silently mutating schema state.
 
 ## Domain inventory
 
