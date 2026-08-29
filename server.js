@@ -11,7 +11,7 @@ const { createAuthApiMiddleware, ownerOnly } = require('./src/middleware/auth.mi
 const { createLoginAttemptGuard, createSensitiveRateLimit, createMembershipPortalRateLimit } = require('./src/middleware/rate-limit.middleware');
 const { closePool, getPool, initDatabase } = require('./src/database');
 const backupService = require('./src/services/backup-service');
-const { createObjectStorageService } = require('./src/services/object-storage-service');
+const { createConfiguredObjectStorageService } = require('./src/services/object-storage-service');
 const { createBackupRecoveryService } = require('./src/services/backup-recovery-service');
 const financeService = require('./src/services/finance-service');
 const analyticsService = require('./src/services/analytics-service');
@@ -40,7 +40,11 @@ const { createPerformanceMetrics } = require('./src/middleware/performance-metri
 const { READ_ONLY_METHODS, readOnlyBaselineGuard } = require('./src/middleware/read-only-baseline.middleware');
 const { getClientErrorCode, getSafeErrorMessage, isPublicClientError, safeErrorCode } = require('./src/utils/error-response');
 
-const objectStorageService = createObjectStorageService();
+const objectStorageService = createConfiguredObjectStorageService({
+    driver: config.backupStorageDriver,
+    rootDir: config.backupStoragePath,
+    nodeEnv: config.nodeEnv
+});
 const backupRecoveryService = createBackupRecoveryService({ storageService: objectStorageService });
 
 let httpServer;

@@ -11,6 +11,13 @@ available.
 This is an architecture seam, not a claim that Object Storage is active in
 Production.
 
+For isolated local/test recovery rehearsals, set `BACKUP_STORAGE_DRIVER=local`
+and optionally `BACKUP_STORAGE_PATH` while `NODE_ENV` is `local`,
+`development` or `test`. The adapter writes private files and metadata with
+atomic filesystem operations under a tenant/platform-scoped key. It is
+explicitly rejected in `staging` and `production`, and it is not a substitute
+for durable or off-site production storage.
+
 ## Safety contract
 
 - Every key is generated under `tenants/{tenantId}/private/{category}/`.
@@ -41,6 +48,10 @@ The adapter must keep objects private, preserve the tenant prefix, enforce
 server-side authorization, and return only a temporary signed response when
 the application explicitly needs file access. Public permanent URLs are not
 part of the contract.
+
+The runtime currently exposes the local adapter only through the explicit
+`BACKUP_STORAGE_DRIVER=local` development/test switch. Unknown drivers fail at
+startup instead of silently falling back to a public or ephemeral location.
 
 ## Planned mapping
 

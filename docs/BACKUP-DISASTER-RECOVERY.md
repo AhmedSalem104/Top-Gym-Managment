@@ -19,6 +19,9 @@ Current implementation status:
   staging requirement.
 - Private object-storage contract: `VERIFIED` locally; provider activation is
   `BLOCKED` until an approved private provider and credentials are supplied.
+- Local private filesystem adapter: `IMPLEMENTED` for isolated
+  `local`/`development`/`test` rehearsals only. It is never accepted in
+  `staging` or `production` and is not durable off-site storage.
 - Tenant restore: `IMPLEMENTED` with checksum/manifest validation, a mandatory
   pre-restore safety backup and transactional tenant-scoped writes; a real
   isolated restore rehearsal is `BLOCKED` pending a safe environment.
@@ -160,9 +163,12 @@ Default retention is configurable through environment variables:
 
 Retention cleanup first marks an eligible artifact expired, deletes the private
 object, verifies the database transition, and leaves a retryable `EXPIRED`
-record when storage/database steps partially fail. Weekly/monthly scheduling
-is not claimed merely because retention values exist; only the daily cycle is
-currently wired to the existing scheduler.
+record when storage/database steps partially fail. The daily Vercel invocation
+also schedules `platform_weekly` on UTC Sundays and `platform_monthly` on the
+first UTC day of the month. Both are configurable through
+`BACKUP_ENABLE_PLATFORM_WEEKLY` and `BACKUP_ENABLE_PLATFORM_MONTHLY`, are
+database-idempotent, and run sequentially after the daily platform snapshot to
+avoid an avoidable burst against SQL Server.
 
 ## Tenant restore runbook
 

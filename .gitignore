@@ -6,4 +6,5 @@ npm-debug.log*
 qa/reports/*.json
 qa/artifacts/
 .tmp/
+.local-private-storage/
 __pycache__/

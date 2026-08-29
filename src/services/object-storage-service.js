@@ -1,6 +1,8 @@
 'use strict';
 
 const crypto = require('node:crypto');
+const path = require('node:path');
+const { createLocalPrivateStorageAdapter } = require('./local-private-storage-adapter');
 
 const MAX_PRIVATE_OBJECT_BYTES = 25 * 1024 * 1024;
 const OBJECT_KEY_PATTERN = /^tenants\/(\d+)\/private\/([a-z0-9][a-z0-9_-]{0,63})\/([A-Za-z0-9_-]{16,128})(?:\.([A-Za-z0-9]{1,12}))?$/;
@@ -191,9 +193,9 @@ function validateReturnedObject(object, tenantId, key, expectedScope = 'tenant')
     return object;
 }
 
-function createObjectStorageService({ adapter = null, maxBytes = MAX_PRIVATE_OBJECT_BYTES } = {}) {
+function createObjectStorageService({ adapter = null, maxBytes = MAX_PRIVATE_OBJECT_BYTES, providerStatus = null } = {}) {
     const service = {
-        providerStatus: adapter ? 'configured' : 'not_configured',
+        providerStatus: providerStatus || (adapter ? 'configured' : 'not_configured'),
         isConfigured: Boolean(adapter),
         maxBytes: normalizeMaxBytes(maxBytes),
         buildPrivateObjectKey,
@@ -314,12 +316,35 @@ function createObjectStorageService({ adapter = null, maxBytes = MAX_PRIVATE_OBJ
     return service;
 }
 
+/**
+ * Runtime wiring deliberately keeps Production fail-closed. The local
+ * adapter is useful for isolated development/test backup rehearsals only; it
+ * is never selected implicitly and cannot be enabled in Production or
+ * Staging by accident.
+ */
+function createConfiguredObjectStorageService({
+    driver = process.env.BACKUP_STORAGE_DRIVER || 'none',
+    rootDir = process.env.BACKUP_STORAGE_PATH || path.join(process.cwd(), '.local-private-storage'),
+    nodeEnv = process.env.NODE_ENV
+} = {}) {
+    const normalizedDriver = String(driver || 'none').trim().toLowerCase();
+    if (!normalizedDriver || normalizedDriver === 'none' || normalizedDriver === 'disabled') {
+        return createObjectStorageService();
+    }
+    if (normalizedDriver === 'local') {
+        const adapter = createLocalPrivateStorageAdapter({ rootDir, nodeEnv });
+        return createObjectStorageService({ adapter, providerStatus: 'local_development' });
+    }
+    throw storageError('The configured private storage driver is not supported.', 500, 'OBJECT_STORAGE_DRIVER_UNSUPPORTED');
+}
+
 module.exports = {
     MAX_PRIVATE_OBJECT_BYTES,
     assertPrivateObjectKey,
     assertPrivatePlatformObjectKey,
     buildPrivateObjectKey,
     buildPrivatePlatformObjectKey,
+    createConfiguredObjectStorageService,
     createObjectStorageService,
     normalizeCategory,
     normalizeObjectName,

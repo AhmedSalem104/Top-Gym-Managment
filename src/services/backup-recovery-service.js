@@ -79,6 +79,20 @@ function backupDayKey(value = new Date()) {
     return date.toISOString().slice(0, 10);
 }
 
+function getScheduledPlatformBackupTypes(now = new Date(), {
+    weekly = config.backupEnablePlatformWeekly,
+    monthly = config.backupEnablePlatformMonthly
+} = {}) {
+    const date = new Date(now);
+    if (Number.isNaN(date.getTime())) throw backupError('Backup date is invalid.', 400, 'INVALID_BACKUP_DATE');
+    const types = [];
+    // Vercel cron schedules are UTC based. Keeping the calendar rule in UTC
+    // makes retries deterministic regardless of server region or DST.
+    if (Boolean(monthly) && date.getUTCDate() === 1) types.push('platform_monthly');
+    if (Boolean(weekly) && date.getUTCDay() === 0) types.push('platform_weekly');
+    return types;
+}
+
 function dateValue(day) {
     return new Date(`${day}T00:00:00.000Z`);
 }
@@ -1448,7 +1462,14 @@ async function cleanupExpiredBackups({ now = new Date(), concurrency = 2, storag
     };
 }
 
-async function runDailyBackupCycle({ storageService = null, now = new Date(), concurrency = 2, retryCount = 1 } = {}) {
+async function runDailyBackupCycle({
+    storageService = null,
+    now = new Date(),
+    concurrency = config.backupSchedulerConcurrency,
+    retryCount = config.backupSchedulerRetryCount,
+    scheduleWeekly = config.backupEnablePlatformWeekly,
+    scheduleMonthly = config.backupEnablePlatformMonthly
+} = {}) {
     assertPlatformScope();
     await ensureRecoveryTables();
     const pool = await getPool();
@@ -1481,6 +1502,23 @@ async function runDailyBackupCycle({ storageService = null, now = new Date(), co
     } catch (error) {
         platform = { status: 'failed', errorCode: recoveryErrorCode(error, 'PLATFORM_BACKUP_FAILED') };
     }
+    const scheduledPlatform = [];
+    for (const backupType of getScheduledPlatformBackupTypes(now, { weekly: scheduleWeekly, monthly: scheduleMonthly })) {
+        try {
+            scheduledPlatform.push({
+                backupType,
+                ...(await createPlatformBackup({ backupType, now, concurrency, storageService: storage }))
+            });
+        } catch (error) {
+            // A weekly/monthly snapshot must not turn a successful daily run
+            // into a global failure. The failed day remains retryable.
+            scheduledPlatform.push({
+                backupType,
+                status: 'failed',
+                errorCode: recoveryErrorCode(error, 'PLATFORM_BACKUP_FAILED')
+            });
+        }
+    }
     const retention = await cleanupExpiredBackups({ now, concurrency, storageService: storage }).catch((error) => ({
         tenant: [],
         platform: [],
@@ -1495,6 +1533,7 @@ async function runDailyBackupCycle({ storageService = null, now = new Date(), co
         tenantSucceeded: tenantResults.filter((item) => item.status === 'success').length,
         tenantFailed: tenantResults.filter((item) => item.status === 'failed').length,
         platform,
+        scheduledPlatform,
         retention,
         providerStatus: storage.providerStatus
     };
@@ -1594,6 +1633,7 @@ module.exports = {
     downloadPlatformBackup,
     cleanupExpiredBackups,
     getRetentionPolicy,
+    getScheduledPlatformBackupTypes,
     getTenantBackupHistory,
     getTenantBackupRecord,
     getTenantBackupAudit,

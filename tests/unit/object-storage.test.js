@@ -1,11 +1,15 @@
 'use strict';
 
 const assert = require('node:assert/strict');
+const fs = require('node:fs/promises');
+const os = require('node:os');
+const path = require('node:path');
 const test = require('node:test');
 
 const {
     assertPrivateObjectKey,
     buildPrivateObjectKey,
+    createConfiguredObjectStorageService,
     createObjectStorageService,
     preparePrivateObject
 } = require('../../src/services/object-storage-service');
@@ -55,6 +59,40 @@ test('storage operations fail closed until an approved provider is configured', 
         { code: 'OBJECT_STORAGE_PROVIDER_NOT_CONFIGURED' }
     );
     assert.throws(() => storage.getPublicUrl(), { code: 'PRIVATE_OBJECT_PUBLIC_URL_FORBIDDEN' });
+});
+
+test('local private storage is explicit, isolated and usable only outside production', async () => {
+    const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), 'logic-fit-private-storage-'));
+    try {
+        const storage = createConfiguredObjectStorageService({ driver: 'local', nodeEnv: 'test', rootDir });
+        const stored = await storage.putPrivateObject({
+            tenantId: 7,
+            category: 'backups',
+            objectName: 'gym-a.json.gz',
+            contentType: 'application/gzip',
+            body: Buffer.from('synthetic-backup')
+        });
+        assert.equal(storage.providerStatus, 'local_development');
+        assert.match(stored.key, /^tenants\/7\/private\/backups\//);
+        assert.equal((await storage.headPrivateObject({ tenantId: 7, key: stored.key })).size, 16);
+        assert.equal((await storage.getPrivateObject({ tenantId: 7, key: stored.key })).body.toString(), 'synthetic-backup');
+        await assert.rejects(storage.getPrivateObject({ tenantId: 8, key: stored.key }), { code: 'STORAGE_TENANT_KEY_MISMATCH' });
+        assert.equal(await storage.deletePrivateObject({ tenantId: 7, key: stored.key }), true);
+        assert.equal(await storage.getPrivateObject({ tenantId: 7, key: stored.key }), null);
+    } finally {
+        await fs.rm(rootDir, { recursive: true, force: true });
+    }
+});
+
+test('local private storage cannot be enabled in production or staging', () => {
+    assert.throws(
+        () => createConfiguredObjectStorageService({ driver: 'local', nodeEnv: 'production', rootDir: path.join(os.tmpdir(), 'logic-fit-prod-storage') }),
+        { code: 'LOCAL_STORAGE_FORBIDDEN' }
+    );
+    assert.throws(
+        () => createConfiguredObjectStorageService({ driver: 'local', nodeEnv: 'staging', rootDir: path.join(os.tmpdir(), 'logic-fit-staging-storage') }),
+        { code: 'LOCAL_STORAGE_FORBIDDEN' }
+    );
 });
 
 test('storage adapter receives a tenant-safe private key and no public URL', async () => {

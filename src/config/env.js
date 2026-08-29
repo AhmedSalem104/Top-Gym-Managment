@@ -45,6 +45,12 @@ const config = Object.freeze({
         && (getEnv('NODE_ENV', 'development').trim().toLowerCase() !== 'production'
             || getBooleanEnv('PERFORMANCE_METRICS_PRODUCTION', false)),
     cronSecret: getEnv('CRON_SECRET'),
+    backupStorageDriver: getEnv('BACKUP_STORAGE_DRIVER', 'none'),
+    backupStoragePath: getEnv('BACKUP_STORAGE_PATH'),
+    backupSchedulerConcurrency: getBoundedNumberEnv('BACKUP_SCHEDULER_CONCURRENCY', 2, 1, 8),
+    backupSchedulerRetryCount: getBoundedNumberEnv('BACKUP_SCHEDULER_RETRY_COUNT', 1, 0, 3),
+    backupEnablePlatformWeekly: getBooleanEnv('BACKUP_ENABLE_PLATFORM_WEEKLY', true),
+    backupEnablePlatformMonthly: getBooleanEnv('BACKUP_ENABLE_PLATFORM_MONTHLY', true),
     publicAppUrl: getEnv('PUBLIC_APP_URL'),
     membershipCodeSecret: getEnv('MEMBERSHIP_CODE_SECRET'),
     attendanceAutoCheckoutMinutes: getNumberEnv('ATTENDANCE_AUTO_CHECKOUT_MINUTES', 0),

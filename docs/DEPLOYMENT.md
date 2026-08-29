@@ -9,6 +9,13 @@ cron User-Agent and `x-top-gym-cron-key` fallback are development-only
 conveniences; a Production request without the configured Bearer secret is
 rejected.
 
+Backup storage is fail-closed by default. Production must use an approved
+private storage adapter configured outside Git; `BACKUP_STORAGE_DRIVER=local`
+is reserved for isolated local/development/test rehearsals and is rejected in
+Staging and Production. The daily invocation also creates the weekly snapshot
+on UTC Sunday and the monthly snapshot on the first UTC day when their flags
+are enabled.
+
 The Express app trusts one reverse-proxy hop on Production by default because
 the deployment target is Vercel. `TRUST_PROXY_HOPS=1` makes `request.ip` and
 forwarded host/protocol handling reflect the original client behind that
@@ -24,6 +31,11 @@ NODE_ENV=production
 MSSQL_CONNECTION_STRING=...
 APP_TIMEZONE=Africa/Cairo
 CRON_SECRET=...
+BACKUP_STORAGE_DRIVER=approved-provider
+BACKUP_SCHEDULER_CONCURRENCY=2
+BACKUP_SCHEDULER_RETRY_COUNT=1
+BACKUP_ENABLE_PLATFORM_WEEKLY=true
+BACKUP_ENABLE_PLATFORM_MONTHLY=true
 AUTH_OWNER_EMAIL=...
 AUTH_OWNER_NAME=TOP GYM Owner
 AUTH_OWNER_PASSWORD=...

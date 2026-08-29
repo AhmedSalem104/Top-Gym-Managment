@@ -6,6 +6,7 @@ const test = require('node:test');
 const {
     buildTenantBackupPayload,
     getRetentionPolicy,
+    getScheduledPlatformBackupTypes,
     inspectTenantBackupBuffer,
     mapWithConcurrency,
     validateTenantBackupPayload
@@ -78,6 +79,14 @@ test('retention defaults are configurable and never include an unlimited value',
     assert.equal(policy.tenant_daily, 30);
     assert.equal(policy.platform_weekly, 84);
     assert.ok(Object.values(policy).every((days) => Number.isInteger(days) && days > 0));
+});
+
+test('daily scheduler selects weekly and monthly platform snapshots by UTC calendar rules', () => {
+    assert.deepEqual(getScheduledPlatformBackupTypes(new Date('2026-08-30T12:00:00.000Z')), ['platform_weekly']);
+    assert.deepEqual(getScheduledPlatformBackupTypes(new Date('2026-08-01T12:00:00.000Z')), ['platform_monthly']);
+    assert.deepEqual(getScheduledPlatformBackupTypes(new Date('2026-11-01T12:00:00.000Z')), ['platform_monthly', 'platform_weekly']);
+    assert.deepEqual(getScheduledPlatformBackupTypes(new Date('2026-11-01T12:00:00.000Z'), { weekly: false }), ['platform_monthly']);
+    assert.deepEqual(getScheduledPlatformBackupTypes(new Date('2026-11-01T12:00:00.000Z'), { monthly: false }), ['platform_weekly']);
 });
 
 test('platform private storage uses a separate scope and rejects tenant-key confusion', async () => {
