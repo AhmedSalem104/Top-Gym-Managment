@@ -117,6 +117,7 @@
     // permanently, after an API failure) appear for the next tenant.
     let branding = merge(FALLBACK, {});
     let version = 1;
+    let refreshSequence = 0;
 
     function clone(value) { return JSON.parse(JSON.stringify(value)); }
     function isObject(value) { return Boolean(value) && typeof value === 'object' && !Array.isArray(value); }
@@ -334,6 +335,8 @@
     async function refresh(options = {}) {
         const scope = requestedScope(options);
         const resetOnFailure = options?.resetOnFailure === true;
+        const sequence = ++refreshSequence;
+        let loaded = false;
         try {
             const hint = scope === 'tenant' ? tenantHint() : '';
             const endpoint = scope === 'platform'
@@ -342,8 +345,12 @@
             const response = await window.fetch(endpoint, { credentials: 'same-origin', cache: 'no-store' });
             if (!response.ok) throw new Error(`Branding request failed (${response.status})`);
             const data = await response.json();
-            if (data?.branding) {
+            // The public portal starts with a platform refresh. Ignore a late
+            // platform response once a membership code has resolved a tenant,
+            // so one identity can never overwrite the other.
+            if (data?.branding && sequence === refreshSequence) {
                 apply(data.branding, data.version || 1);
+                loaded = true;
             }
         } catch (_) {
             // Never keep a previous tenant's identity as the anonymous/platform
@@ -352,9 +359,11 @@
             // switch tenant identity (the public member portal) can opt into
             // the same safe reset rather than leaving the previous gym's name
             // visible after a failed refresh.
-            apply(scope === 'platform' || resetOnFailure ? FALLBACK : branding, scope === 'platform' || resetOnFailure ? 1 : version);
+            if (sequence === refreshSequence) {
+                apply(scope === 'platform' || resetOnFailure ? FALLBACK : branding, scope === 'platform' || resetOnFailure ? 1 : version);
+            }
         }
-        return { branding: clone(branding), version, scope };
+        return { branding: clone(branding), version, scope, loaded };
     }
 
     window.topGymBranding = Object.freeze({

@@ -198,18 +198,42 @@
     try { return String(new URLSearchParams(window.location.search).get('tenant') || '').trim().toLowerCase(); } catch (_) { return ''; }
   }
 
-  function applyPortalTenant(tenant) {
+  function applyTenantBrandingFallback(tenant) {
+    const name = String(tenant?.name || '').trim().slice(0, 120);
+    const brandingApi = window.topGymBranding;
+    if (!name || typeof brandingApi?.fallback !== 'function' || typeof brandingApi?.apply !== 'function') return;
+    const fallback = brandingApi.fallback();
+    fallback.identity = {
+      ...(fallback.identity || {}),
+      brandName: name,
+      shortName: name.slice(0, 30),
+      companyName: name
+    };
+    brandingApi.apply(fallback, 1);
+  }
+
+  async function applyPortalTenant(tenant) {
     const slug = String(tenant?.slug || '').trim().toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 80);
-    if (!slug) return;
+    if (!slug) return { loaded: false };
     document.body.dataset.brandingTenant = slug;
     const refresh = window.topGymBranding?.refresh;
-    if (typeof refresh === 'function') void refresh.call(window.topGymBranding, { scope: 'tenant', resetOnFailure: true });
+    if (typeof refresh !== 'function') {
+      applyTenantBrandingFallback(tenant);
+      return { loaded: false };
+    }
+    const result = await refresh.call(window.topGymBranding, { scope: 'tenant', resetOnFailure: true });
+    if (!result?.loaded) applyTenantBrandingFallback(tenant);
+    return result;
   }
 
   function resetPortalTenant() {
     delete document.body.dataset.brandingTenant;
-    const refresh = window.topGymBranding?.refresh;
-    if (typeof refresh === 'function') void refresh.call(window.topGymBranding, { scope: 'tenant', resetOnFailure: true });
+    const brandingApi = window.topGymBranding;
+    if (typeof brandingApi?.fallback === 'function' && typeof brandingApi?.apply === 'function') {
+      brandingApi.apply(brandingApi.fallback(), 1);
+    }
+    const refresh = brandingApi?.refresh;
+    if (typeof refresh === 'function') void refresh.call(brandingApi, { scope: 'platform', resetOnFailure: true });
   }
 
   async function lookup(code) {
@@ -236,8 +260,8 @@
     setLoading(true);
     try {
       const data = await lookup(code);
+      await applyPortalTenant(data.tenant);
       render(data);
-      applyPortalTenant(data.tenant);
       portalMembershipCode = code;
       input.value = '';
       loginPanel.hidden = true;

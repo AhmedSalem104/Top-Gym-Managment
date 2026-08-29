@@ -12,6 +12,8 @@ const membershipCodeServiceSource = fs.readFileSync(path.join(root, 'src/service
 const portalServiceSource = fs.readFileSync(path.join(root, 'src/services/member-portal-service.js'), 'utf8');
 const feedbackServiceSource = fs.readFileSync(path.join(root, 'src/services/member-feedback-service.js'), 'utf8');
 const portalUiSource = fs.readFileSync(path.join(root, 'public/js/member-portal.js'), 'utf8');
+const portalHtmlSource = fs.readFileSync(path.join(root, 'public/member-portal.html'), 'utf8');
+const brandingUiSource = fs.readFileSync(path.join(root, 'public/js/branding.js'), 'utf8');
 
 test('member portal links can be pinned to a tenant without exposing the membership code', () => {
     assert.equal(
@@ -42,4 +44,12 @@ test('member portal UI keeps one member record and each ledger row isolated on s
     assert.match(portalUiSource, /portal-membership-history/);
     assert.match(portalUiSource, /data-label="\$\{escapeHtml\(label\)\}/);
     assert.match(portalUiSource, /resetOnFailure: true/);
+});
+
+test('public portal starts with platform branding and switches safely to the resolved gym branding', () => {
+    assert.match(portalHtmlSource, /<body class="member-portal-page" data-branding-entry="saas">/);
+    assert.match(portalUiSource, /await applyPortalTenant\(data\.tenant\)/);
+    assert.match(portalUiSource, /scope: 'platform'/);
+    assert.match(portalUiSource, /applyTenantBrandingFallback/);
+    assert.match(brandingUiSource, /let refreshSequence = 0/);
 });

@@ -147,7 +147,7 @@ function renderQrMemberPage(member, tenantSlug = '') {
         </section>
     </main>
     <script defer src="/js/theme.js?v=1"></script>
-    <script defer src="/js/branding.js?v=4"></script>
+    <script defer src="/js/branding.js?v=5"></script>
 </body>
 </html>`;
 }
