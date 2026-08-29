@@ -6,7 +6,7 @@ stop safe implementation elsewhere, but a Critical item remains a Go-Live
 gate.
 
 Last reviewed: 2026-08-29  
-Implementation revision covered: `4e342b1 infra: avoid redundant tenant schema DDL`
+Implementation revision covered: `ac230b3 security: redact internal operation errors`
 
 ## Status vocabulary
 
@@ -83,6 +83,10 @@ claims to Production evidence. Those items remain listed above exactly once.
   tested desktop/mobile viewports, dialogs, themes and print media.
 - `npm run qa:platform-admin`: safely skipped live authentication because no
   PlatformAdmin credentials are configured in this environment.
+- `node --test tests/unit/error-response.test.js tests/unit/health.test.js
+  tests/unit/file-upload-validation.test.js tests/unit/branding-upload-security.test.js`:
+  passed; 5xx responses and backup audit details no longer expose internal
+  operation messages.
 - Targeted report/baseline tests: passed; the report read-only flag is now
   supplied outside user query parameters.
 
