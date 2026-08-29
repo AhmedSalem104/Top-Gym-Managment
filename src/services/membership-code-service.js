@@ -3,7 +3,7 @@
 const crypto = require('node:crypto');
 const { getPool, sql } = require('../database');
 const { config } = require('../config/env');
-const { getTenantContext } = require('../tenancy/tenant-context');
+const { getTenantContext, runTenantContext } = require('../tenancy/tenant-context');
 
 const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const CODE_PATTERN = /^TG[A-HJ-NP-Z2-9]{16}$/;
@@ -350,29 +350,77 @@ async function rotateForMember(memberId, { userId = null, request = null } = {})
     return { membershipCode: formatCode(compact), maskedCode: maskCode(compact), issuedAt: new Date().toISOString() };
 }
 
-async function findMemberIdByCode(value, { request = null } = {}) {
-    await ensureMembershipCodeStorage();
-    let compact;
-    try { compact = normalizeCode(value); } catch (_) { return null; }
-    const pool = await getPool();
-    const result = await pool.request()
-        .input('hash', sql.Char(64), hashCode(compact))
-        .query(`SELECT TOP 1 id FROM dbo.members
-                WHERE membership_code_hash = @hash
-                  AND membership_code_revoked_at IS NULL;`);
-    const memberId = result.recordset[0] ? Number(result.recordset[0].id) : null;
-    if (memberId) await audit(memberId, 'portal_viewed', { request });
-    return memberId;
+function requestedTenantSlug(request) {
+    const raw = request?.get?.('x-gym-slug')
+        || request?.query?.tenant
+        || request?.body?.tenantSlug
+        || '';
+    return String(raw).trim().toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 80);
 }
 
-function getPortalUrl(origin = '') {
+/**
+ * Resolve the member-code capability to its owning tenant before reading the
+ * portal data. The lookup intentionally runs in a short platform context and
+ * returns only the member/tenant identity; all member data is fetched again
+ * inside the resolved public tenant context by the portal service.
+ *
+ * This is required because a public portal request has no authenticated gym
+ * session. Falling back to Top Gym for every request made other tenants'
+ * members unusable, while reading member details in a global context would
+ * weaken the RLS boundary. The HMAC is the capability, the second scoped read
+ * is the isolation boundary.
+ */
+async function findMemberContextByCode(value, { request = null, auditAction = 'portal_viewed' } = {}) {
+    const callerContext = getTenantContext();
+    const readOnlyBaseline = Boolean(callerContext?.readOnlyBaseline);
+    await ensureMembershipCodeStorage({ readOnly: readOnlyBaseline });
+    let compact;
+    try { compact = normalizeCode(value); } catch (_) { return null; }
+
+    const tenantSlug = requestedTenantSlug(request);
+    const result = await runTenantContext({ tenantId: null, mode: 'platform', readOnlyBaseline }, async () => {
+        const pool = await getPool();
+        return pool.request()
+            .input('hash', sql.Char(64), hashCode(compact))
+            .input('tenantSlug', sql.VarChar(80), tenantSlug)
+            .query(`SELECT TOP (1) m.id, m.tenant_id, t.name AS tenant_name, t.slug AS tenant_slug
+                    FROM dbo.members AS m
+                    INNER JOIN dbo.gym_tenants AS t ON t.id = m.tenant_id
+                    WHERE m.membership_code_hash = @hash
+                      AND m.membership_code_revoked_at IS NULL
+                      AND t.status IN ('trial', 'active')
+                      AND (@tenantSlug = '' OR t.slug = @tenantSlug);`);
+    });
+    const row = result.recordset[0];
+    if (!row) return null;
+
+    const memberContext = {
+        memberId: Number(row.id),
+        tenantId: Number(row.tenant_id),
+        tenantName: String(row.tenant_name || ''),
+        tenantSlug: String(row.tenant_slug || '').toLowerCase()
+    };
+    if (auditAction && !readOnlyBaseline) {
+        await runTenantContext({ tenantId: memberContext.tenantId, mode: 'public' }, () => audit(memberContext.memberId, auditAction, { request }));
+    }
+    return memberContext;
+}
+
+async function findMemberIdByCode(value, options = {}) {
+    const memberContext = await findMemberContextByCode(value, options);
+    return memberContext?.memberId || null;
+}
+
+function getPortalUrl(origin = '', tenantSlug = '') {
     const configured = String(config.publicAppUrl || '').trim().replace(/\/+$/, '');
     const base = configured || String(origin || '').trim().replace(/\/+$/, '');
-    return base ? `${base}/member-portal` : '';
+    const normalizedSlug = String(tenantSlug || '').trim().toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 80);
+    return base ? `${base}/member-portal${normalizedSlug ? `?tenant=${encodeURIComponent(normalizedSlug)}` : ''}` : '';
 }
 
 module.exports = {
     ensureMembershipCodeStorage,
+    findMemberContextByCode,
     findMemberIdByCode,
     formatCode,
     getForMember,

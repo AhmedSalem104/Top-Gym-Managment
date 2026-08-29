@@ -36,7 +36,7 @@ function createMembersController({ memberService }) {
         },
 
         create: async (request, response) => {
-            response.status(201).json({ member: await memberService.createMember(request.body) });
+            response.status(201).json({ member: await memberService.createMember(request.body, { tenantSlug: request.tenant?.slug }) });
         },
 
         update: async (request, response) => {

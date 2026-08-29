@@ -1,0 +1,37 @@
+'use strict';
+
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const test = require('node:test');
+
+const membershipCodeService = require('../../src/services/membership-code-service');
+
+const root = path.resolve(__dirname, '../..');
+const portalServiceSource = fs.readFileSync(path.join(root, 'src/services/member-portal-service.js'), 'utf8');
+const feedbackServiceSource = fs.readFileSync(path.join(root, 'src/services/member-feedback-service.js'), 'utf8');
+const portalUiSource = fs.readFileSync(path.join(root, 'public/js/member-portal.js'), 'utf8');
+
+test('member portal links can be pinned to a tenant without exposing the membership code', () => {
+    assert.equal(
+        membershipCodeService.getPortalUrl('https://logicfit.example', 'Power-Gym'),
+        'https://logicfit.example/member-portal?tenant=power-gym'
+    );
+    assert.doesNotMatch(membershipCodeService.getPortalUrl('https://logicfit.example', 'power gym'), /power%20gym/);
+    assert.doesNotMatch(membershipCodeService.getPortalUrl('https://logicfit.example', 'power-gym'), /TG-|membershipCode/i);
+});
+
+test('portal reads are scoped to the member-code tenant before returning report data', () => {
+    assert.match(portalServiceSource, /findMemberContextByCode\(code, \{ request \}\)/);
+    assert.match(portalServiceSource, /runTenantContext\(\{ tenantId: memberContext\.tenantId, mode: 'public'/);
+    assert.match(portalServiceSource, /tenant:\s*\{\s*name: memberContext\.tenantName/);
+    assert.match(feedbackServiceSource, /findMemberContextByCode\(membershipCode, \{ request \}\)/);
+    assert.match(feedbackServiceSource, /runTenantContext\(\{ tenantId: memberContext\.tenantId, mode: 'public'/);
+});
+
+test('member portal UI keeps one member record and each ledger row isolated on small screens', () => {
+    assert.match(portalUiSource, /portal-membership-overview/);
+    assert.match(portalUiSource, /portal-membership-history/);
+    assert.match(portalUiSource, /data-label="\$\{escapeHtml\(label\)\}/);
+    assert.match(portalUiSource, /resetOnFailure: true/);
+});

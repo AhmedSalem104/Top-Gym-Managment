@@ -333,6 +333,7 @@
 
     async function refresh(options = {}) {
         const scope = requestedScope(options);
+        const resetOnFailure = options?.resetOnFailure === true;
         try {
             const hint = scope === 'tenant' ? tenantHint() : '';
             const endpoint = scope === 'platform'
@@ -347,8 +348,11 @@
         } catch (_) {
             // Never keep a previous tenant's identity as the anonymous/platform
             // fallback. A failed platform request must remain on the safe
-            // default until the authenticated tenant is resolved.
-            apply(scope === 'platform' ? FALLBACK : branding, scope === 'platform' ? 1 : version);
+            // default until the authenticated tenant is resolved. Callers that
+            // switch tenant identity (the public member portal) can opt into
+            // the same safe reset rather than leaving the previous gym's name
+            // visible after a failed refresh.
+            apply(scope === 'platform' || resetOnFailure ? FALLBACK : branding, scope === 'platform' || resetOnFailure ? 1 : version);
         }
         return { branding: clone(branding), version, scope };
     }

@@ -303,7 +303,7 @@ function checkAuthSurface() {
     const feedbackRoute = read('src/routes/member-feedback.routes.js');
     const feedbackService = read('src/services/member-feedback-service.js');
     record('FEEDBACK-OWNER-API', feedbackRoute.includes("'/api/member-feedback'") && feedbackRoute.includes('ownerOnly'), 'member feedback administration API is Owner-protected', 'P0');
-    record('FEEDBACK-PORTAL-LINK', authMiddleware.includes("'/member-portal/feedback'") && feedbackService.includes('findMemberIdByCode'), 'portal feedback is public only through membership-code resolution', 'P0');
+    record('FEEDBACK-PORTAL-LINK', authMiddleware.includes("'/member-portal/feedback'") && (feedbackService.includes('findMemberIdByCode') || feedbackService.includes('findMemberContextByCode')), 'portal feedback is public only through membership-code resolution', 'P0');
     record('FEEDBACK-NO-CODE-STORAGE', feedbackService.includes('member_id, rating, note_type, message') && !feedbackService.includes('membership_code'), 'feedback storage keeps member_id and does not persist the membership code', 'P0');
     const memberPortalRoutes = read('src/routes/member-portal.routes.js');
     record('PORTAL-LIBRARY-API', memberPortalRoutes.includes('/api/member-portal/library/options') && memberPortalRoutes.includes('/api/member-portal/library/:type/:id'), 'member portal library read-only API surface is present', 'P1');

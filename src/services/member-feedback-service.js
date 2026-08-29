@@ -3,7 +3,7 @@
 const { getPool, sql } = require('../database');
 const membershipCodeService = require('./membership-code-service');
 const { addDays, parseDateOnly, toUtcDate } = require('../utils/date');
-const { getTenantContext } = require('../tenancy/tenant-context');
+const { getTenantContext, runTenantContext } = require('../tenancy/tenant-context');
 
 const NOTE_TYPES = Object.freeze({
     GENERAL: 'general',
@@ -123,32 +123,35 @@ async function submitFromPortal({ membershipCode, rating, noteType, message, req
     const normalizedRating = normalizeRating(rating);
     const normalizedNoteType = normalizeNoteType(noteType);
     const normalizedMessage = normalizeMessage(message);
-    const memberId = await membershipCodeService.findMemberIdByCode(membershipCode, { request });
-    if (!memberId) {
+    const memberContext = await membershipCodeService.findMemberContextByCode(membershipCode, { request });
+    if (!memberContext) {
         throw appError('كود العضوية غير صحيح أو منتهي الصلاحية.', 404, 'MEMBERSHIP_PORTAL_CODE_INVALID');
     }
 
-    const pool = await getPool();
-    const result = await pool.request()
-        .input('memberId', sql.Int, memberId)
-        .input('rating', sql.TinyInt, normalizedRating)
-        .input('noteType', sql.VarChar(32), normalizedNoteType)
-        .input('message', sql.NVarChar(4000), normalizedMessage)
-        .query(`
-            INSERT INTO dbo.gym_member_feedback (member_id, rating, note_type, message)
-            OUTPUT INSERTED.id, INSERTED.rating, INSERTED.note_type, INSERTED.submitted_at
-            VALUES (@memberId, @rating, @noteType, @message);
-        `);
-    const row = result.recordset[0];
-    return {
-        success: true,
-        feedback: {
-            id: Number(row.id),
-            rating: Number(row.rating),
-            noteType: row.note_type,
-            submittedAt: row.submitted_at
-        }
-    };
+    const readOnlyBaseline = Boolean(getTenantContext()?.readOnlyBaseline);
+    return runTenantContext({ tenantId: memberContext.tenantId, mode: 'public', readOnlyBaseline }, async () => {
+        const pool = await getPool();
+        const result = await pool.request()
+            .input('memberId', sql.Int, memberContext.memberId)
+            .input('rating', sql.TinyInt, normalizedRating)
+            .input('noteType', sql.VarChar(32), normalizedNoteType)
+            .input('message', sql.NVarChar(4000), normalizedMessage)
+            .query(`
+                INSERT INTO dbo.gym_member_feedback (member_id, rating, note_type, message)
+                OUTPUT INSERTED.id, INSERTED.rating, INSERTED.note_type, INSERTED.submitted_at
+                VALUES (@memberId, @rating, @noteType, @message);
+            `);
+        const row = result.recordset[0];
+        return {
+            success: true,
+            feedback: {
+                id: Number(row.id),
+                rating: Number(row.rating),
+                noteType: row.note_type,
+                submittedAt: row.submitted_at
+            }
+        };
+    });
 }
 
 function normalizeFilters(query = {}) {

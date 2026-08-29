@@ -147,8 +147,16 @@
     }
   }
 
-  function table(title, headers, rows, emptyText = 'لا توجد بيانات مسجلة.') {
-    return `<section class="portal-section"><h3>${title}</h3>${rows.length ? `<div class="portal-table-wrap"><table class="portal-table"><thead><tr>${headers.map((header) => `<th>${header}</th>`).join('')}</tr></thead><tbody>${rows.join('')}</tbody></table></div>` : `<div class="portal-empty">${emptyText}</div>`}</section>`;
+  function tableCell(label, value, className = '') {
+    const classAttribute = className ? ` class="${className}"` : '';
+    const valueClass = ['portal-table-cell-value', className].filter(Boolean).join(' ');
+    return `<td${classAttribute} data-label="${escapeHtml(label)}"><span class="${valueClass}">${value}</span></td>`;
+  }
+
+  function table(title, headers, rows, emptyText = 'لا توجد بيانات مسجلة.', className = '') {
+    const sectionClass = ['portal-section', className].filter(Boolean).join(' ');
+    const countLabel = rows.length ? `${rows.length.toLocaleString('ar-EG')} ${rows.length === 1 ? 'سجل' : 'سجلات'}` : 'لا توجد سجلات';
+    return `<section class="${sectionClass}" aria-label="${escapeHtml(title)}"><div class="portal-section-heading"><div><span class="portal-section-kicker">سجل العضوية</span><h3>${escapeHtml(title)}</h3></div><span class="portal-section-count">${countLabel}</span></div>${rows.length ? `<div class="portal-table-wrap"><table class="portal-table"><thead><tr>${headers.map((header) => `<th>${escapeHtml(header)}</th>`).join('')}</tr></thead><tbody>${rows.join('')}</tbody></table></div>` : `<div class="portal-empty">${escapeHtml(emptyText)}</div>`}</section>`;
   }
 
   function render(data) {
@@ -158,20 +166,50 @@
     const summary = data.financialSummary || {};
     const firstJoin = data.firstJoinDate || member.registrationDate;
     const remainingClass = number(summary.totalRemaining) > 0 ? 'portal-outstanding' : '';
-    const membershipRows = (data.memberships || []).map((item) => `<tr><td>${escapeHtml(planLabel(item.plan))}<small>${escapeHtml(typeLabel(item.type))}</small></td><td class="portal-ltr">${dateText(item.startDate)}<br>حتى ${dateText(item.effectiveEndDate || item.endDate)}</td><td><span class="portal-status ${escapeHtml(item.status || '')}">${escapeHtml(statusLabel(item.status))}</span></td><td class="portal-money">${money(item.amountDue)}<br><small>مدفوع ${money(item.amountPaid)} · متبقي ${money(item.amountRemaining)}</small></td></tr>`);
-    const paymentRows = (data.payments || []).map((item) => `<tr><td class="portal-ltr">${escapeHtml(item.receiptNumber || '—')}</td><td>${dateTimeText(item.transactionDate || item.createdAt)}</td><td>${escapeHtml(item.transactionType === 'subscription' ? 'اشتراك' : item.transactionType === 'adjustment' ? 'تسوية' : 'دفعة')}</td><td class="portal-money">${money(item.amountPaid)}</td><td class="portal-money ${number(item.amountRemaining) > 0 ? 'portal-debt' : ''}">${money(item.amountRemaining)}</td><td>${escapeHtml(paymentLabel(item.paymentMethod))}</td></tr>`);
-    const attendanceRows = (data.attendance || []).map((item) => `<tr><td class="portal-ltr">${dateText(item.attendanceDate)}</td><td>${dateTimeText(item.checkInAt)}</td><td>${item.checkOutAt ? dateTimeText(item.checkOutAt) : `داخل ${escapeHtml(brandName())}`}</td><td>${item.durationMinutes == null ? '—' : `${number(item.durationMinutes)} دقيقة`}</td></tr>`);
-    const freezeRows = (data.freezes || []).map((item) => `<tr><td>${dateText(item.startDate)}</td><td>${dateText(item.endDate)}</td><td>${item.resumedDate ? dateText(item.resumedDate) : 'مستمر'}</td><td>${number(item.days)} يوم</td></tr>`);
+    const membershipRows = (data.memberships || []).map((item) => `<tr>${tableCell('الباقة والمدة', `${escapeHtml(planLabel(item.plan))}<small>${escapeHtml(typeLabel(item.type))}</small>`)}${tableCell('الفترة', `${dateText(item.startDate)}<br>حتى ${dateText(item.effectiveEndDate || item.endDate)}`, 'portal-ltr')}${tableCell('الحالة', `<span class="portal-status ${escapeHtml(item.status || '')}">${escapeHtml(statusLabel(item.status))}</span>`)}${tableCell('الحساب', `${money(item.amountDue)}<br><small>مدفوع ${money(item.amountPaid)} · متبقي ${money(item.amountRemaining)}</small>`, 'portal-money')}</tr>`);
+    const paymentRows = (data.payments || []).map((item) => `<tr>${tableCell('الإيصال', escapeHtml(item.receiptNumber || '—'), 'portal-ltr')}${tableCell('التاريخ', dateTimeText(item.transactionDate || item.createdAt))}${tableCell('العملية', escapeHtml(item.transactionType === 'subscription' ? 'اشتراك' : item.transactionType === 'adjustment' ? 'تسوية' : 'دفعة'))}${tableCell('المدفوع', money(item.amountPaid), 'portal-money')}${tableCell('المتبقي', money(item.amountRemaining), `portal-money ${number(item.amountRemaining) > 0 ? 'portal-debt' : ''}`)}${tableCell('طريقة الدفع', escapeHtml(paymentLabel(item.paymentMethod)))}</tr>`);
+    const attendanceRows = (data.attendance || []).map((item) => `<tr>${tableCell('التاريخ', dateText(item.attendanceDate), 'portal-ltr')}${tableCell('الحضور', dateTimeText(item.checkInAt))}${tableCell('الانصراف', item.checkOutAt ? dateTimeText(item.checkOutAt) : `داخل ${escapeHtml(brandName())}`)}${tableCell('المدة', item.durationMinutes == null ? '—' : `${number(item.durationMinutes)} دقيقة`)}</tr>`);
+    const freezeRows = (data.freezes || []).map((item) => `<tr>${tableCell('البداية', dateText(item.startDate))}${tableCell('النهاية', dateText(item.endDate))}${tableCell('الاستئناف', item.resumedDate ? dateText(item.resumedDate) : 'مستمر')}${tableCell('المدة', `${number(item.days)} يوم`)}</tr>`);
+    const currentEndDate = current.effectiveEndDate || current.endDate;
+    const daysRemaining = current.daysRemaining == null ? '—' : current.daysRemaining >= 0 ? `${number(current.daysRemaining)} يوم` : 'منتهية';
+    const tenantName = String(data.tenant?.name || brandName()).trim() || brandName();
     reportContent.innerHTML = `
-      <section class="portal-member-identity"><span class="portal-member-avatar" aria-hidden="true">${escapeHtml(initials(member.fullName))}</span><div><h3>${escapeHtml(member.fullName || '—')}</h3><p class="portal-ltr">${escapeHtml(member.phone || '—')}</p><p>${member.email ? escapeHtml(member.email) : `تاريخ أول انضمام: ${dateText(firstJoin)}`}</p></div><span class="portal-status ${escapeHtml(status)}">${escapeHtml(statusLabel(status))}</span></section>
-      <section class="portal-stat-grid"><article class="portal-stat"><span>الاشتراك الحالي</span><strong>${escapeHtml(planLabel(current.plan))}</strong><small>${escapeHtml(typeLabel(current.type))}</small></article><article class="portal-stat"><span>تاريخ الانتهاء</span><strong class="portal-ltr">${dateText(current.effectiveEndDate || current.endDate)}</strong><small>${current.daysRemaining == null ? '—' : current.daysRemaining >= 0 ? `${number(current.daysRemaining)} يوم متبقي` : 'منتهية'}</small></article><article class="portal-stat"><span>إجمالي الزيارات</span><strong>${number(data.attendanceSummary?.totalVisits).toLocaleString('ar-EG')}</strong><small>سجل حضور كامل</small></article><article class="portal-stat"><span>المبلغ المتبقي</span><strong class="${remainingClass}">${money(summary.totalRemaining)}</strong><small>من إجمالي ${money(summary.totalDue)}</small></article></section>
-      ${table('الاشتراكات والتجديدات', ['الباقة والمدة', 'الفترة', 'الحالة', 'الحساب'], membershipRows)}
-      ${table('سجل المدفوعات والإيصالات', ['الإيصال', 'التاريخ', 'العملية', 'المدفوع', 'المتبقي', 'طريقة الدفع'], paymentRows)}
-      ${table('سجل الحضور والزيارات', ['التاريخ', 'الحضور', 'الانصراف', 'المدة'], attendanceRows)}
-      ${freezeRows.length ? table('حالات التجميد أو الإيقاف', ['البداية', 'النهاية', 'الاستئناف', 'المدة'], freezeRows) : ''}`;
+      <section class="portal-member-identity">
+        <div class="portal-member-primary"><span class="portal-member-avatar" aria-hidden="true">${escapeHtml(initials(member.fullName))}</span><div class="portal-member-copy"><h3>${escapeHtml(member.fullName || '—')}</h3><p class="portal-member-contact"><span>الهاتف</span><b class="portal-ltr">${escapeHtml(member.phone || '—')}</b></p><p class="portal-member-contact"><span>البريد الإلكتروني</span><b>${escapeHtml(member.email || '—')}</b></p></div></div>
+        <div class="portal-member-status-block"><span>حالة العضوية</span><span class="portal-status ${escapeHtml(status)}">${escapeHtml(statusLabel(status))}</span></div>
+      </section>
+      <section class="portal-membership-overview" aria-labelledby="portalMembershipOverviewTitle">
+        <header class="portal-membership-overview-head"><div><span class="portal-section-kicker">MEMBERSHIP PROFILE</span><h3 id="portalMembershipOverviewTitle">ملخص العضوية</h3><p>بيانات العضوية الحالية لهذا المشترك فقط</p></div><span class="portal-membership-scope"><span aria-hidden="true">⌂</span>${escapeHtml(tenantName)}</span></header>
+        <div class="portal-membership-facts"><article class="portal-membership-fact portal-membership-fact-featured"><span>الباقة</span><strong>${escapeHtml(planLabel(current.plan))}</strong><small>${escapeHtml(typeLabel(current.type))}</small></article><article class="portal-membership-fact"><span>تاريخ البداية</span><strong class="portal-ltr">${dateText(current.startDate)}</strong><small>بداية الاشتراك الحالي</small></article><article class="portal-membership-fact"><span>تاريخ الانتهاء</span><strong class="portal-ltr">${dateText(currentEndDate)}</strong><small>${escapeHtml(daysRemaining)} ${current.daysRemaining == null || current.daysRemaining < 0 ? '' : 'متبقي'}</small></article><article class="portal-membership-fact"><span>أول انضمام</span><strong class="portal-ltr">${dateText(firstJoin)}</strong><small>تاريخ بداية الملف</small></article></div>
+      </section>
+      <section class="portal-stat-grid portal-financial-grid" aria-label="ملخص الزيارات والحساب"><article class="portal-stat"><span>إجمالي الزيارات</span><strong>${number(data.attendanceSummary?.totalVisits).toLocaleString('ar-EG')}</strong><small>سجل حضور كامل</small></article><article class="portal-stat"><span>إجمالي المستحق</span><strong>${money(summary.totalDue)}</strong><small>قيمة الاشتراكات</small></article><article class="portal-stat"><span>إجمالي المدفوع</span><strong>${money(summary.totalPaid)}</strong><small>المدفوع حتى الآن</small></article><article class="portal-stat"><span>المبلغ المتبقي</span><strong class="${remainingClass}">${money(summary.totalRemaining)}</strong><small>الرصيد الحالي</small></article></section>
+      ${table('الاشتراكات والتجديدات', ['الباقة والمدة', 'الفترة', 'الحالة', 'الحساب'], membershipRows, 'لا توجد اشتراكات مسجلة.', 'portal-membership-history')}
+      ${table('سجل المدفوعات والإيصالات', ['الإيصال', 'التاريخ', 'العملية', 'المدفوع', 'المتبقي', 'طريقة الدفع'], paymentRows, 'لا توجد مدفوعات مسجلة.', 'portal-payments-history')}
+      ${table('سجل الحضور والزيارات', ['التاريخ', 'الحضور', 'الانصراف', 'المدة'], attendanceRows, 'لا توجد زيارات مسجلة.', 'portal-attendance-history')}
+      ${freezeRows.length ? table('حالات التجميد أو الإيقاف', ['البداية', 'النهاية', 'الاستئناف', 'المدة'], freezeRows, 'لا توجد حالات تجميد.', 'portal-freeze-history') : ''}`;
     portalReportMeta = `رقم التقرير: ${data.reportNumber || '—'} · تاريخ الإصدار: ${dateTimeText(data.issuedAt)}`;
     resetFeedback();
     setPortalView('home');
+  }
+
+  function portalTenantSlug() {
+    const bodyTenant = String(document.body?.dataset?.brandingTenant || '').trim().toLowerCase();
+    if (bodyTenant) return bodyTenant;
+    try { return String(new URLSearchParams(window.location.search).get('tenant') || '').trim().toLowerCase(); } catch (_) { return ''; }
+  }
+
+  function applyPortalTenant(tenant) {
+    const slug = String(tenant?.slug || '').trim().toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 80);
+    if (!slug) return;
+    document.body.dataset.brandingTenant = slug;
+    const refresh = window.topGymBranding?.refresh;
+    if (typeof refresh === 'function') void refresh.call(window.topGymBranding, { scope: 'tenant', resetOnFailure: true });
+  }
+
+  function resetPortalTenant() {
+    delete document.body.dataset.brandingTenant;
+    const refresh = window.topGymBranding?.refresh;
+    if (typeof refresh === 'function') void refresh.call(window.topGymBranding, { scope: 'tenant', resetOnFailure: true });
   }
 
   async function lookup(code) {
@@ -179,7 +217,7 @@
       method: 'POST',
       credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-      body: JSON.stringify({ membershipCode: code })
+      body: JSON.stringify({ membershipCode: code, tenantSlug: portalTenantSlug() || undefined })
     });
     const payload = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(response.status === 429 ? payload.error : 'تعذر عرض بيانات العضوية. تأكد من الكود وحاول مرة أخرى.');
@@ -199,6 +237,7 @@
     try {
       const data = await lookup(code);
       render(data);
+      applyPortalTenant(data.tenant);
       portalMembershipCode = code;
       input.value = '';
       loginPanel.hidden = true;
@@ -254,7 +293,7 @@
         method: 'POST',
         credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify({ membershipCode: portalMembershipCode, rating, noteType, message })
+        body: JSON.stringify({ membershipCode: portalMembershipCode, tenantSlug: portalTenantSlug() || undefined, rating, noteType, message })
       });
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(response.status === 429 ? payload.error : payload.error || 'تعذر حفظ التقييم. حاول مرة أخرى.');
@@ -267,6 +306,7 @@
   $('portalResetButton')?.addEventListener('click', () => {
     portalMembershipCode = '';
     portalReportMeta = '';
+    resetPortalTenant();
     setPortalView('home');
     resetFeedback();
     resultPanel.hidden = true;

@@ -137,7 +137,7 @@ function createMemberPortalController({ membershipCodeService, portalService, li
                     request,
                     action: 'whatsapp_sent'
                 }),
-                portalUrl: membershipCodeService.getPortalUrl(`${request.protocol}://${request.get('host')}`)
+                portalUrl: membershipCodeService.getPortalUrl(`${request.protocol}://${request.get('host')}`, request.tenant?.slug)
             });
         },
 
@@ -147,7 +147,7 @@ function createMemberPortalController({ membershipCodeService, portalService, li
                     userId: request.auth?.id,
                     request
                 }),
-                portalUrl: membershipCodeService.getPortalUrl(`${request.protocol}://${request.get('host')}`)
+                portalUrl: membershipCodeService.getPortalUrl(`${request.protocol}://${request.get('host')}`, request.tenant?.slug)
             });
         }
     };

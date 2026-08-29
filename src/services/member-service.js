@@ -1265,7 +1265,7 @@ async function addPaymentTransaction(connection, {
     return Number(result.recordset[0].id);
 }
 
-async function createMember(body) {
+async function createMember(body, { tenantSlug = '' } = {}) {
     const data = normalizePayload(body);
     const amountPaid = data.amountPaid ?? 0;
     await ensureMemberIdentityFields();
@@ -1342,7 +1342,7 @@ async function createMember(body) {
     return {
         ...member,
         membershipCode: issuedMembershipCode,
-        membershipCodePortalUrl: membershipCodeService.getPortalUrl()
+        membershipCodePortalUrl: membershipCodeService.getPortalUrl('', tenantSlug)
     };
 }
 
