@@ -21,6 +21,7 @@ test('database readiness audit finds the canonical migration set safe at source 
     assert.deepEqual(report.migrationFindings, []);
     assert.equal(report.schemaReview.status, 'REQUIRES STAGING VERIFICATION');
     assert.equal(report.liveVerification, 'REQUIRES STAGING/PRODUCTION VERIFICATION');
+    assert.equal(report.runtimeSchemaChecks.tenantStatusConstraintOnlyReplacedWhenOutdated, true);
 });
 
 test('database readiness audit requires guards for additive migration operations', () => {

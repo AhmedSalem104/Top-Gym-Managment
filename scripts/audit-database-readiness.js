@@ -209,6 +209,7 @@ function auditDatabaseReadiness({ rootDir = ROOT } = {}) {
     const runnerSource = fs.readFileSync(path.join(rootDir, 'scripts', 'migrate-tenancy.js'), 'utf8');
     const poolSource = fs.readFileSync(path.join(rootDir, 'src', 'database', 'pool.js'), 'utf8');
     const transactionSource = fs.readFileSync(path.join(rootDir, 'src', 'database', 'transaction.js'), 'utf8');
+    const tenantServiceSource = fs.readFileSync(path.join(rootDir, 'src', 'services', 'tenant-service.js'), 'utf8');
     const runnerChecks = {
         initializesCanonicalSchema: /initDatabase\s*\(/.test(runnerSource),
         ensuresTenantMetadata: /ensureTenantTables\s*\(/.test(runnerSource),
@@ -228,6 +229,9 @@ function auditDatabaseReadiness({ rootDir = ROOT } = {}) {
         rollsBackOnlyAfterBegin: /started\s*=\s*true[\s\S]*if\s*\(started\s+&&\s*!committed\)/.test(transactionSource),
         preservesOriginalFailure: /throw\s+error/.test(transactionSource)
     };
+    const runtimeSchemaChecks = {
+        tenantStatusConstraintOnlyReplacedWhenOutdated: /definition\s+IS\s+NULL[\s\S]*definition\s+NOT\s+LIKE[\s\S]*ALTER\s+TABLE\s+dbo\.gym_tenants\s+DROP\s+CONSTRAINT\s+CK_gym_tenants_status/i.test(tenantServiceSource)
+    };
     const schemaSource = fs.readFileSync(path.join(rootDir, 'database', 'schema.sql'), 'utf8');
     const schemaMasked = maskSql(schemaSource);
     const schemaReview = {
@@ -240,7 +244,8 @@ function auditDatabaseReadiness({ rootDir = ROOT } = {}) {
         !migrationFindings.some((finding) => finding.severity === 'CRITICAL' || finding.severity === 'ERROR'),
         Object.values(runnerChecks).every(Boolean),
         Object.values(poolChecks).every(Boolean),
-        Object.values(transactionChecks).every(Boolean)
+        Object.values(transactionChecks).every(Boolean),
+        Object.values(runtimeSchemaChecks).every(Boolean)
     ];
     return {
         generatedAt: new Date().toISOString(),
@@ -251,6 +256,7 @@ function auditDatabaseReadiness({ rootDir = ROOT } = {}) {
         runnerChecks,
         poolChecks,
         transactionChecks,
+        runtimeSchemaChecks,
         schemaReview,
         staticStatus: staticChecks.every(Boolean) ? 'PASS' : 'FAIL',
         liveVerification: 'REQUIRES STAGING/PRODUCTION VERIFICATION'
@@ -266,6 +272,7 @@ function formatReport(report) {
         `RUNNER: ${Object.values(report.runnerChecks).every(Boolean) ? 'PASS' : 'REVIEW_REQUIRED'}`,
         `POOL: ${Object.values(report.poolChecks).every(Boolean) ? 'PASS' : 'REVIEW_REQUIRED'}`,
         `TRANSACTIONS: ${Object.values(report.transactionChecks).every(Boolean) ? 'PASS' : 'REVIEW_REQUIRED'}`,
+        `RUNTIME_SCHEMA_SETUP: ${Object.values(report.runtimeSchemaChecks).every(Boolean) ? 'PASS' : 'REVIEW_REQUIRED'}`,
         `SCHEMA_REHEARSAL: ${report.schemaReview.status}`,
         `LIVE_DATABASE_EVIDENCE: ${report.liveVerification}`
     ];

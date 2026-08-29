@@ -168,7 +168,16 @@ async function ensureTenantTables() {
             await pool.request().batch(`
                 IF EXISTS (
                     SELECT 1 FROM sys.check_constraints
-                    WHERE name=N'CK_gym_tenants_status' AND parent_object_id=OBJECT_ID(N'dbo.gym_tenants')
+                    WHERE name=N'CK_gym_tenants_status'
+                      AND parent_object_id=OBJECT_ID(N'dbo.gym_tenants')
+                      AND (
+                          definition IS NULL
+                          OR definition NOT LIKE N'%trial%'
+                          OR definition NOT LIKE N'%active%'
+                          OR definition NOT LIKE N'%suspended%'
+                          OR definition NOT LIKE N'%expired%'
+                          OR definition NOT LIKE N'%archived%'
+                      )
                 )
                     ALTER TABLE dbo.gym_tenants DROP CONSTRAINT CK_gym_tenants_status;
                 IF NOT EXISTS (
