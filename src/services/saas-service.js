@@ -177,6 +177,19 @@ IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name=N'IX_saas_requests_tenant_st
     CREATE INDEX IX_saas_requests_tenant_status ON dbo.saas_subscription_requests(tenant_id, status, created_at DESC, id DESC);
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name=N'IX_saas_requests_review_queue' AND object_id=OBJECT_ID(N'dbo.saas_subscription_requests'))
     CREATE INDEX IX_saas_requests_review_queue ON dbo.saas_subscription_requests(status, created_at DESC, id DESC);
+IF OBJECT_ID(N'dbo.saas_subscription_requests', N'U') IS NOT NULL
+BEGIN
+    IF EXISTS (
+        SELECT tenant_id
+        FROM dbo.saas_subscription_requests
+        WHERE status='pending'
+        GROUP BY tenant_id
+        HAVING COUNT_BIG(*) > 1
+    )
+        ;THROW 51008, 'Duplicate pending SaaS subscription requests must be reconciled before enforcing uniqueness.', 1;
+    IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name=N'UQ_saas_requests_pending_tenant' AND object_id=OBJECT_ID(N'dbo.saas_subscription_requests'))
+        CREATE UNIQUE INDEX UQ_saas_requests_pending_tenant ON dbo.saas_subscription_requests(tenant_id) WHERE status='pending';
+END;
 
 IF OBJECT_ID(N'dbo.saas_payment_proofs', N'U') IS NULL
 BEGIN
@@ -326,6 +339,10 @@ function saasError(message, statusCode = 400, code = 'SAAS_ERROR', details = nul
     error.code = code;
     if (details) error.saas = details;
     return error;
+}
+
+function isDuplicateSqlError(error) {
+    return Number(error?.number) === 2601 || Number(error?.number) === 2627;
 }
 
 function integerOrNull(value, label) {
@@ -929,8 +946,12 @@ async function createSubscriptionRequest({ tenantId = currentTenantId({ required
     if (!plan) throw saasError('الباقة المطلوبة غير متاحة.', 404, 'SAAS_PLAN_NOT_FOUND');
     const pool = await getPool();
     const pending = await pool.request().input('tenantId', sql.Int, id).query("SELECT TOP (1) id FROM dbo.saas_subscription_requests WHERE tenant_id=@tenantId AND status='pending' ORDER BY created_at DESC,id DESC;");
+    // The filtered unique index is the final race-safe guard; translate its
+    // duplicate-key result into the same domain error as the pre-check.
     if (pending.recordset[0]) throw saasError('لديك طلب اشتراك قيد المراجعة بالفعل.', 409, 'SAAS_REQUEST_ALREADY_PENDING');
-    const result = await pool.request()
+    let result;
+    try {
+        result = await pool.request()
         .input('tenantId', sql.Int, id)
         .input('planId', sql.Int, plan.id)
         .input('userId', sql.Int, actorId)
@@ -938,6 +959,12 @@ async function createSubscriptionRequest({ tenantId = currentTenantId({ required
         .input('currency', sql.VarChar(3), plan.currency)
         .input('notes', sql.NVarChar(1000), text(notes, '', 1000) || null)
         .query('INSERT INTO dbo.saas_subscription_requests (tenant_id,plan_id,requested_by_user_id,amount_snapshot,currency,notes) OUTPUT INSERTED.id VALUES (@tenantId,@planId,@userId,@amount,@currency,@notes);');
+    } catch (error) {
+        if (isDuplicateSqlError(error)) {
+            throw saasError('\u0644\u062F\u064A\u0643 \u0637\u0644\u0628 \u0627\u0634\u062A\u0631\u0627\u0643 \u0642\u064A\u062F \u0627\u0644\u0645\u0631\u0627\u062C\u0639\u0629 \u0628\u0627\u0644\u0641\u0639\u0644.', 409, 'SAAS_REQUEST_ALREADY_PENDING');
+        }
+        throw error;
+    }
     const requestId = Number(result.recordset[0].id);
     await recordAudit({ tenantId: id, actorUserId: actorId, action: 'subscription_requested', entityType: 'subscription_request', entityId: requestId, details: `تم طلب باقة ${plan.code}.` });
     return (await listTenantRequests(id)).find((item) => item.id === requestId) || { id: requestId, plan, status: 'pending' };
@@ -1323,6 +1350,7 @@ module.exports = {
     getPaymentProofFile,
     getPlatformOverview,
     getPlans,
+    isDuplicateSqlError,
     getTenantBilling,
     getUsage,
     getTenantOverrides,

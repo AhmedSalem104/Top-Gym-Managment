@@ -210,6 +210,7 @@ function auditDatabaseReadiness({ rootDir = ROOT } = {}) {
     const poolSource = fs.readFileSync(path.join(rootDir, 'src', 'database', 'pool.js'), 'utf8');
     const transactionSource = fs.readFileSync(path.join(rootDir, 'src', 'database', 'transaction.js'), 'utf8');
     const tenantServiceSource = fs.readFileSync(path.join(rootDir, 'src', 'services', 'tenant-service.js'), 'utf8');
+    const saasServiceSource = fs.readFileSync(path.join(rootDir, 'src', 'services', 'saas-service.js'), 'utf8');
     const runnerChecks = {
         initializesCanonicalSchema: /initDatabase\s*\(/.test(runnerSource),
         ensuresTenantMetadata: /ensureTenantTables\s*\(/.test(runnerSource),
@@ -232,6 +233,11 @@ function auditDatabaseReadiness({ rootDir = ROOT } = {}) {
     const runtimeSchemaChecks = {
         tenantStatusConstraintOnlyReplacedWhenOutdated: /definition\s+IS\s+NULL[\s\S]*definition\s+NOT\s+LIKE[\s\S]*ALTER\s+TABLE\s+dbo\.gym_tenants\s+DROP\s+CONSTRAINT\s+CK_gym_tenants_status/i.test(tenantServiceSource)
     };
+    const saasIntegrityChecks = {
+        pendingRequestDuplicatePreflight: /HAVING\s+COUNT_BIG\(\*\)\s*>\s*1[\s\S]*?THROW\s+51008/i.test(saasServiceSource),
+        pendingRequestUniqueGuard: /IF\s+NOT\s+EXISTS[\s\S]*?UQ_saas_requests_pending_tenant[\s\S]*?CREATE\s+UNIQUE\s+INDEX\s+UQ_saas_requests_pending_tenant[\s\S]*?WHERE\s+status='pending'/i.test(saasServiceSource),
+        duplicateRequestErrorMapping: /isDuplicateSqlError\(error\)[\s\S]*?SAAS_REQUEST_ALREADY_PENDING/.test(saasServiceSource)
+    };
     const schemaSource = fs.readFileSync(path.join(rootDir, 'database', 'schema.sql'), 'utf8');
     const schemaMasked = maskSql(schemaSource);
     const schemaReview = {
@@ -245,7 +251,8 @@ function auditDatabaseReadiness({ rootDir = ROOT } = {}) {
         Object.values(runnerChecks).every(Boolean),
         Object.values(poolChecks).every(Boolean),
         Object.values(transactionChecks).every(Boolean),
-        Object.values(runtimeSchemaChecks).every(Boolean)
+        Object.values(runtimeSchemaChecks).every(Boolean),
+        Object.values(saasIntegrityChecks).every(Boolean)
     ];
     return {
         generatedAt: new Date().toISOString(),
@@ -257,6 +264,7 @@ function auditDatabaseReadiness({ rootDir = ROOT } = {}) {
         poolChecks,
         transactionChecks,
         runtimeSchemaChecks,
+        saasIntegrityChecks,
         schemaReview,
         staticStatus: staticChecks.every(Boolean) ? 'PASS' : 'FAIL',
         liveVerification: 'REQUIRES STAGING/PRODUCTION VERIFICATION'
@@ -273,6 +281,7 @@ function formatReport(report) {
         `POOL: ${Object.values(report.poolChecks).every(Boolean) ? 'PASS' : 'REVIEW_REQUIRED'}`,
         `TRANSACTIONS: ${Object.values(report.transactionChecks).every(Boolean) ? 'PASS' : 'REVIEW_REQUIRED'}`,
         `RUNTIME_SCHEMA_SETUP: ${Object.values(report.runtimeSchemaChecks).every(Boolean) ? 'PASS' : 'REVIEW_REQUIRED'}`,
+        `SAAS_INTEGRITY: ${Object.values(report.saasIntegrityChecks).every(Boolean) ? 'PASS' : 'REVIEW_REQUIRED'}`,
         `SCHEMA_REHEARSAL: ${report.schemaReview.status}`,
         `LIVE_DATABASE_EVIDENCE: ${report.liveVerification}`
     ];
