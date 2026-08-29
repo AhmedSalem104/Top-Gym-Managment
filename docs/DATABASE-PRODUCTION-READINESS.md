@@ -6,15 +6,37 @@ This is a source/configuration audit. It is not a live SQL Server capacity or
 execution-plan result; those require a disposable Staging database with
 representative data.
 
+## Repeatable local safety gate
+
+Run `npm run qa:database` for the repository-level check. It writes only the
+ignored report `qa/reports/database-readiness-latest.json`; it does not connect
+to SQL Server and it does not execute a migration. The check currently covers:
+
+- Numeric migration ordering and duplicate-version detection.
+- `OBJECT_ID` guards for `CREATE TABLE`.
+- `COL_LENGTH`/existence guards for additive columns.
+- `sys.indexes` guards for indexes.
+- Existence guards for seed inserts.
+- Rejection of destructive migration statements and unsupported `GO` batches.
+- Migration-runner error/cleanup wiring.
+- Pool reuse, bounded timeout wiring and pool close handling.
+- Transaction begin/work/commit/rollback ordering.
+
+The current local result is `PASS` for the three files under
+`database/migrations/` (`005`, `006`, `007`). This is a source-level safety
+result, not proof that an existing production database will migrate cleanly.
+
 ## Verified from the repository
 
 - `src/database/pool.js` reuses one `mssql` pool per warm Node instance and
   resets the cached promise after a failed connection attempt.
 - Connection timeout, request timeout, pool max/min and idle timeout are
   bounded configuration values. Defaults remain conservative (`30s`, `120s`,
-  `10`, `0`, `30s`).
+  `10`, `0`, `30s`); connection/request values are clamped to `1s..300s` and
+  `1s..600s` respectively.
 - `src/database/transaction.js` commits only after the callback succeeds and
-  attempts rollback while preserving the original error.
+  attempts rollback only after a successful `begin`, while preserving the
+  original error if rollback itself fails.
 - `database/schema.sql`, `database/migrations/005-member-feedback.sql`,
   `006-permissions.sql` and `007-store.sql` use existence/column/index guards
   for their additive objects. No `DROP TABLE`, `TRUNCATE` or mass data delete
@@ -61,8 +83,9 @@ maintenance window and rollback decision.
 
 | Area | Status |
 | --- | --- |
-| Pool reuse and bounded configuration | `IMPLEMENTED` / locally tested |
-| Transaction rollback path | `IMPLEMENTED` by code review; live failure rehearsal pending |
+| Pool reuse, close lifecycle and bounded configuration | `VERIFIED` locally; live saturation/recovery pending |
+| Transaction begin/commit/rollback path | `VERIFIED` locally with failure doubles; live failure rehearsal pending |
+| Static migration safety gate | `VERIFIED` locally (`npm run qa:database`) |
 | Additive migration guards | `IMPLEMENTED` by source audit |
 | Migration repeatability on real data | `REQUIRES STAGING VERIFICATION` |
 | Live DB capacity and workload | `REQUIRES STAGING/PRODUCTION VERIFICATION` |

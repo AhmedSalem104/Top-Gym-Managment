@@ -6,7 +6,7 @@ stop safe implementation elsewhere, but a Critical item remains a Go-Live
 gate.
 
 Last reviewed: 2026-08-29  
-Implementation revision covered: `21c69ec perf: keep report reads baseline-safe`
+Implementation revision covered: `4e342b1 infra: avoid redundant tenant schema DDL`
 
 ## Status vocabulary
 
@@ -57,6 +57,20 @@ Implementation revision covered: `21c69ec perf: keep report reads baseline-safe`
 - Authenticated real baseline: pending.
 - `baseline-before.json`: **not produced**.
 - Execution Plans/index changes: intentionally deferred.
+
+## Current Phase 2 truth
+
+- Static migration safety gate: `VERIFIED` locally with `npm run qa:database`.
+- Pool timeout bounds, stale-pool recovery and close coordination: `VERIFIED`
+  by unit/source checks; live database saturation and reconnect behavior remain
+  environment evidence.
+- Transaction cleanup ordering: `VERIFIED` with begin/callback/commit/rollback
+  failure tests; a real database failure rehearsal remains pending.
+- Migration idempotency on an existing database, schema diff, and rollback via
+  restore: `REQUIRES STAGING VERIFICATION`.
+
+The Phase 2 local work does not promote migration, capacity, timeout or restore
+claims to Production evidence. Those items remain listed above exactly once.
 
 ## Latest local verification evidence
 
