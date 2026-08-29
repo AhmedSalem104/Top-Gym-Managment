@@ -16,9 +16,11 @@ const {
     normalizeBackupFormat,
     normalizeRetryCount,
     validatePlatformBackupPayload,
-    validateTenantBackupPayload
+    validateTenantBackupPayload,
+    verifyStoredTenantObject
 } = require('../../src/services/backup-recovery-service');
 const { createObjectStorageService } = require('../../src/services/object-storage-service');
+const { TENANT_BACKUP_TABLES } = require('../../src/services/backup-registry');
 
 function samplePayload() {
     return buildTenantBackupPayload({
@@ -173,6 +175,25 @@ test('stored backup verification hashes returned bytes instead of trusting metad
         }),
         { code: 'BACKUP_ARTIFACT_CHECKSUM_MISMATCH' }
     );
+});
+
+test('stored tenant verification also validates the complete manifest after upload', async () => {
+    const tables = Object.fromEntries(TENANT_BACKUP_TABLES.map((definition) => [definition.key, []]));
+    const payload = buildTenantBackupPayload({ tenant: { id: 7, slug: 'gym-a', name: 'Gym A' }, tables });
+    const body = require('node:zlib').gzipSync(Buffer.from(JSON.stringify(payload), 'utf8'));
+    const checksum = require('node:crypto').createHash('sha256').update(body).digest('hex');
+    const storage = {
+        async headPrivateObject() { return { size: body.length }; },
+        async getPrivateObject() { return { body, contentType: 'application/gzip' }; }
+    };
+    const verified = await verifyStoredTenantObject(storage, {
+        tenantId: 7,
+        key: 'tenants/7/private/backups/abcdefghijklmnop.json.gz',
+        expectedSize: body.length,
+        expectedChecksum: checksum
+    });
+    assert.equal(verified.rowCount, 0);
+    assert.equal(verified.checksum, checksum);
 });
 
 test('artifact deletion is confirmed before backup metadata can be finalized', async () => {

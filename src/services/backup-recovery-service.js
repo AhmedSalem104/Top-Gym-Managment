@@ -1135,11 +1135,7 @@ async function downloadTenantBackup(id, { tenantId = null, readOnly = false, act
         expectedChecksum: record.checksum,
         returnBody: true
     });
-    const inspected = await inspectTenantBackupBuffer(verified.body, {
-        expectedTenantId: trustedTenantId,
-        requireCompleteRegistry: true
-    });
-    if (record.rowCount != null && Number(record.rowCount) !== Number(inspected.rowCount)) {
+    if (record.rowCount != null && Number(record.rowCount) !== Number(verified.rowCount)) {
         throw backupError('The backup metadata does not match its verified artifact.', 503, 'BACKUP_METADATA_MISMATCH');
     }
     if (auditDownload) {
@@ -1312,13 +1308,26 @@ async function restoreTenantBackup(input, {
     // A restore is blocked unless a verified pre-restore copy can be stored.
     // This prevents a failed logical restore from becoming an irreversible
     // destructive action when private storage is not configured.
-    const safetyBackup = await createTenantBackup({
-        tenantId: trustedTenantId,
-        backupType: 'tenant_pre_restore',
-        actorUserId,
-        reason: `Pre-restore safety copy: ${normalizedReason}`,
-        storageService
-    });
+    let safetyBackup;
+    try {
+        safetyBackup = await createTenantBackup({
+            tenantId: trustedTenantId,
+            backupType: 'tenant_pre_restore',
+            actorUserId,
+            reason: `Pre-restore safety copy: ${normalizedReason}`,
+            storageService
+        });
+    } catch (error) {
+        await writeTenantBackupAudit({
+            tenantId: trustedTenantId,
+            eventType: 'RESTORE_FAILED',
+            actorUserId,
+            reason: normalizedReason,
+            result: 'failed',
+            metadata: { errorCode: recoveryErrorCode(error, 'RESTORE_SAFETY_BACKUP_FAILED') }
+        }).catch(() => {});
+        throw error;
+    }
 
     const pool = await getPool();
     const transaction = pool.transaction();
