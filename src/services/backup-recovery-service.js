@@ -147,6 +147,9 @@ function validateTenantBackupPayload(payload, { expectedTenantId = null, require
     if (!payload || payload.format !== 'logic-fit-tenant-backup') {
         throw backupError('The uploaded file is not a Logic Fit tenant backup.', 400, 'BACKUP_FORMAT_UNSUPPORTED');
     }
+    if (payload.backupType !== 'tenant') {
+        throw backupError('The tenant backup type is invalid.', 400, 'BACKUP_TYPE_INVALID');
+    }
     if (Number(payload.version) !== BACKUP_VERSION) {
         throw backupError('The backup version is not supported.', 400, 'BACKUP_VERSION_UNSUPPORTED');
     }
@@ -156,6 +159,15 @@ function validateTenantBackupPayload(payload, { expectedTenantId = null, require
     }
     if (expectedTenantId != null && tenantId !== Number(expectedTenantId)) {
         throw backupError('The backup belongs to another gym.', 403, 'BACKUP_TENANT_MISMATCH');
+    }
+    const manifest = payload.manifest;
+    if (!manifest || typeof manifest !== 'object' || Array.isArray(manifest)
+        || Number(manifest.registryVersion) !== TENANT_BACKUP_REGISTRY_VERSION
+        || Number(manifest.tenantId) !== tenantId
+        || !Number.isInteger(Number(manifest.rowCount))
+        || Number(manifest.rowCount) < 0
+        || !manifest.tableCounts || typeof manifest.tableCounts !== 'object' || Array.isArray(manifest.tableCounts)) {
+        throw backupError('The backup manifest is incomplete or unsafe.', 400, 'BACKUP_MANIFEST_INVALID');
     }
     const tables = normalizedTableMap(payload.tables);
     const knownKeys = new Set(TENANT_BACKUP_TABLES.map((item) => item.key));
@@ -194,17 +206,19 @@ function validateTenantBackupPayload(payload, { expectedTenantId = null, require
         if (rowCount > MAX_BACKUP_ROWS) throw backupError('The backup exceeds the safe row limit.', 400, 'BACKUP_ROW_LIMIT_EXCEEDED');
     }
 
-    if (payload.manifest?.registryVersion != null && Number(payload.manifest.registryVersion) !== TENANT_BACKUP_REGISTRY_VERSION) {
-        throw backupError('The backup registry version is not supported.', 400, 'BACKUP_REGISTRY_VERSION_UNSUPPORTED');
+    if (requireCompleteRegistry) {
+        const missingCounts = TENANT_BACKUP_TABLES.map((item) => item.key)
+            .filter((key) => !Object.prototype.hasOwnProperty.call(manifest.tableCounts, key));
+        if (missingCounts.length) throw backupError('The backup manifest does not cover the current tenant registry.', 400, 'BACKUP_REGISTRY_INCOMPLETE');
     }
-    if (payload.manifest?.tableCounts && typeof payload.manifest.tableCounts === 'object' && !Array.isArray(payload.manifest.tableCounts)) {
+    {
         for (const [key, count] of Object.entries(counts)) {
-            if (Object.prototype.hasOwnProperty.call(payload.manifest.tableCounts, key)
-                && Number(payload.manifest.tableCounts[key]) !== Number(count)) {
+            if (!Object.prototype.hasOwnProperty.call(manifest.tableCounts, key)
+                || Number(manifest.tableCounts[key]) !== Number(count)) {
                 throw backupError('The backup manifest counts do not match its records.', 400, 'BACKUP_MANIFEST_INVALID');
             }
         }
-        if (payload.manifest.rowCount != null && Number(payload.manifest.rowCount) !== rowCount) {
+        if (Number(manifest.rowCount) !== rowCount) {
             throw backupError('The backup manifest row count is invalid.', 400, 'BACKUP_MANIFEST_INVALID');
         }
     }
@@ -216,15 +230,15 @@ function validateTenantBackupPayload(payload, { expectedTenantId = null, require
     if (payloadDigest(tables) !== digest) {
         throw backupError('The backup content failed its integrity check.', 400, 'BACKUP_CHECKSUM_MISMATCH');
     }
-    if (payload.manifest?.tenantId != null && Number(payload.manifest.tenantId) !== tenantId) {
-        throw backupError('The backup manifest tenant does not match its records.', 400, 'BACKUP_MANIFEST_INVALID');
-    }
     return { tenantId, tableCounts: counts, rowCount, integrity: { algorithm: 'sha256', verified: true } };
 }
 
 function validatePlatformBackupPayload(payload, { requireCompleteRegistry = true } = {}) {
     if (!payload || payload.format !== 'logic-fit-platform-backup') {
         throw backupError('The uploaded file is not a Logic Fit platform backup.', 400, 'PLATFORM_BACKUP_FORMAT_UNSUPPORTED');
+    }
+    if (payload.backupType !== 'platform-disaster-recovery') {
+        throw backupError('The platform backup type is invalid.', 400, 'PLATFORM_BACKUP_TYPE_INVALID');
     }
     if (Number(payload.version) !== BACKUP_VERSION) {
         throw backupError('The platform backup version is not supported.', 400, 'PLATFORM_BACKUP_VERSION_UNSUPPORTED');
@@ -285,6 +299,19 @@ function validatePlatformBackupPayload(payload, { requireCompleteRegistry = true
     }
     if (rowCount > MAX_BACKUP_ROWS) throw backupError('The platform backup exceeds the safe row limit.', 400, 'BACKUP_ROW_LIMIT_EXCEEDED');
     const manifestCounts = normalizedTableMap(manifest.tableCounts);
+    if (!manifestCounts.global || typeof manifestCounts.global !== 'object' || Array.isArray(manifestCounts.global)
+        || !manifestCounts.tenant || typeof manifestCounts.tenant !== 'object' || Array.isArray(manifestCounts.tenant)) {
+        throw backupError('The platform backup table counts are incomplete.', 400, 'PLATFORM_BACKUP_MANIFEST_INVALID');
+    }
+    if (requireCompleteRegistry) {
+        const missingGlobalCounts = PLATFORM_GLOBAL_BACKUP_TABLES.map((item) => item.key)
+            .filter((key) => !Object.prototype.hasOwnProperty.call(manifestCounts.global, key));
+        const missingTenantCounts = TENANT_BACKUP_TABLES.map((item) => item.key)
+            .filter((key) => !Object.prototype.hasOwnProperty.call(manifestCounts.tenant, key));
+        if (missingGlobalCounts.length || missingTenantCounts.length) {
+            throw backupError('The platform backup manifest does not cover the current registry.', 400, 'PLATFORM_BACKUP_REGISTRY_INCOMPLETE');
+        }
+    }
     for (const scope of ['global', 'tenant']) {
         const expectedCounts = normalizedTableMap(manifestCounts[scope]);
         for (const [key, count] of Object.entries(counts[scope])) {
@@ -295,6 +322,17 @@ function validatePlatformBackupPayload(payload, { requireCompleteRegistry = true
     }
     if (Number(manifest.rowCount) !== rowCount) {
         throw backupError('The platform backup manifest row count is invalid.', 400, 'PLATFORM_BACKUP_MANIFEST_INVALID');
+    }
+    const tenantIds = new Set((Array.isArray(globalTables.gym_tenants) ? globalTables.gym_tenants : [])
+        .map((row) => Number(row.id))
+        .filter((id) => Number.isInteger(id) && id > 0));
+    for (const rows of Object.values(tenantTables)) {
+        for (const row of rows) {
+            const tenantKey = Object.keys(row).find((column) => column.toLowerCase() === 'tenant_id');
+            if (tenantKey && !tenantIds.has(Number(row[tenantKey]))) {
+                throw backupError('The platform backup contains a row for an unknown gym.', 400, 'PLATFORM_BACKUP_TENANT_REFERENCE_INVALID');
+            }
+        }
     }
     const digest = String(payload.integrity?.sha256 || '').toLowerCase();
     if (String(payload.integrity?.algorithm || '').toLowerCase() !== 'sha256' || !/^[a-f0-9]{64}$/.test(digest)) {
@@ -1287,9 +1325,11 @@ async function restoreTenantBackup(input, {
     actorUserId = null,
     reason = '',
     fileName = 'tenant-backup.json.gz',
+    sourceBackupId = null,
     storageService = null
 } = {}) {
     const trustedTenantId = tenantScopeId(tenantId);
+    const normalizedSourceBackupId = Number.isInteger(Number(sourceBackupId)) && Number(sourceBackupId) > 0 ? Number(sourceBackupId) : null;
     const normalizedReason = String(reason || '').trim().slice(0, 1000);
     if (!normalizedReason) throw backupError('A reason is required before restoring a gym backup.', 400, 'BACKUP_RESTORE_REASON_REQUIRED');
     const inspected = input?.payload
@@ -1299,6 +1339,7 @@ async function restoreTenantBackup(input, {
     await ensureRecoveryTables();
     await writeTenantBackupAudit({
         tenantId: trustedTenantId,
+        backupId: normalizedSourceBackupId,
         eventType: 'RESTORE_REQUESTED',
         actorUserId,
         reason: normalizedReason,
@@ -1320,6 +1361,7 @@ async function restoreTenantBackup(input, {
     } catch (error) {
         await writeTenantBackupAudit({
             tenantId: trustedTenantId,
+            backupId: normalizedSourceBackupId,
             eventType: 'RESTORE_FAILED',
             actorUserId,
             reason: normalizedReason,
@@ -1355,7 +1397,7 @@ async function restoreTenantBackup(input, {
         committed = true;
         await writeTenantBackupAudit({
             tenantId: trustedTenantId,
-            backupId: safetyBackup.record?.id || null,
+            backupId: normalizedSourceBackupId,
             eventType: 'RESTORE_COMPLETED',
             actorUserId,
             reason: normalizedReason,
@@ -1376,7 +1418,7 @@ async function restoreTenantBackup(input, {
         }
         await writeTenantBackupAudit({
             tenantId: trustedTenantId,
-            backupId: safetyBackup.record?.id || null,
+            backupId: normalizedSourceBackupId,
             eventType: 'RESTORE_FAILED',
             actorUserId,
             reason: normalizedReason,
@@ -1392,7 +1434,8 @@ async function restoreTenantBackupRecord(id, options = {}) {
     return restoreTenantBackup(downloaded.body, {
         ...options,
         tenantId: options.tenantId,
-        fileName: downloaded.fileName
+        fileName: downloaded.fileName,
+        sourceBackupId: id
     });
 }
 

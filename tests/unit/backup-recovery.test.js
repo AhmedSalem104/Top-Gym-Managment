@@ -15,6 +15,7 @@ const {
     mapWithConcurrency,
     normalizeBackupFormat,
     normalizeRetryCount,
+    payloadDigest,
     validatePlatformBackupPayload,
     validateTenantBackupPayload,
     verifyStoredTenantObject
@@ -86,6 +87,16 @@ test('tenant backup validation rejects sensitive credential fields', () => {
     assert.throws(() => validateTenantBackupPayload(payload), { code: 'BACKUP_SENSITIVE_COLUMN' });
 });
 
+test('tenant backup validation requires the declared backup type and complete manifest', () => {
+    const wrongType = structuredClone(samplePayload());
+    wrongType.backupType = 'platform-disaster-recovery';
+    assert.throws(() => validateTenantBackupPayload(wrongType), { code: 'BACKUP_TYPE_INVALID' });
+
+    const missingManifest = structuredClone(samplePayload());
+    delete missingManifest.manifest;
+    assert.throws(() => validateTenantBackupPayload(missingManifest), { code: 'BACKUP_MANIFEST_INVALID' });
+});
+
 test('platform backup validation checks scope, manifest completeness and credential exclusion', async () => {
     const payload = samplePlatformPayload();
     const validation = validatePlatformBackupPayload(payload, { requireCompleteRegistry: false });
@@ -97,6 +108,11 @@ test('platform backup validation checks scope, manifest completeness and credent
     const secretPayload = structuredClone(payload);
     secretPayload.tables.global.gym_tenants[0].password_hash = 'must-not-export';
     assert.throws(() => validatePlatformBackupPayload(secretPayload, { requireCompleteRegistry: false }), { code: 'PLATFORM_BACKUP_SECRET_COLUMN' });
+
+    const unknownTenant = structuredClone(payload);
+    unknownTenant.tables.tenant.members[0].tenant_id = 8;
+    unknownTenant.integrity.sha256 = payloadDigest(unknownTenant.tables);
+    assert.throws(() => validatePlatformBackupPayload(unknownTenant, { requireCompleteRegistry: false }), { code: 'PLATFORM_BACKUP_TENANT_REFERENCE_INVALID' });
 });
 
 test('tenant restore rejects an artifact that does not cover the current registry', () => {
