@@ -372,7 +372,7 @@ async function checkOut(body = {}) {
 }
 
 async function getMemberAttendance(memberId, options = {}) {
-    await ensureAttendanceTable();
+    await ensureAttendanceTable({ readOnly: Boolean(options.readOnly) });
     if (!options.readOnly) await reconcileAutoCheckout();
     const id = ensureId(memberId, 'معرّف العضو');
     const pool = await getPool();

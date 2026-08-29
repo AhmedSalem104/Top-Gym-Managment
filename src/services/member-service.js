@@ -1902,9 +1902,9 @@ function freezeDaysFromDates(startDate, endDate, resumedDate) {
     return differenceInDays(startDate, endDate) + 1;
 }
 
-async function getMemberDetails(id) {
+async function getMemberDetails(id, { readOnly = false } = {}) {
     const memberId = ensureId(id);
-    await ensurePaymentTransactionsTable();
+    await ensurePaymentTransactionsTable({ readOnly });
     const pool = await getPool();
     const today = todayInTimeZone();
     const [memberResult, membershipsResult, freezesResult, eventsResult, paymentsResult] = await Promise.all([

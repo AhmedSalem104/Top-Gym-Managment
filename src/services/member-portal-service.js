@@ -94,10 +94,13 @@ async function lookupByCode(code, request) {
     // the shared portal URL is opened without a tenant query string.
     const readOnlyBaseline = Boolean(getTenantContext()?.readOnlyBaseline);
     return runTenantContext({ tenantId: memberContext.tenantId, mode: 'public', readOnlyBaseline }, async () => {
-        const details = await getMemberDetails(memberContext.memberId);
+        // Portal lookup is a read report even though it uses POST to keep the
+        // membership code out of the URL. Do not auto-checkout attendance or
+        // initialize schema while assembling the report.
+        const details = await getMemberDetails(memberContext.memberId, { readOnly: true });
         const today = todayInTimeZone();
         const from = details.member.registrationDate || `${today.slice(0, 7)}-01`;
-        const attendance = await attendanceService.getMemberAttendance(memberContext.memberId, { from, to: today });
+        const attendance = await attendanceService.getMemberAttendance(memberContext.memberId, { from, to: today, readOnly: true });
         const memberships = (details.memberships || []).map(sanitizeMembership);
         const current = currentMembership(memberships);
         return {

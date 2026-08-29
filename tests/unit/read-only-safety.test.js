@@ -48,6 +48,18 @@ test('read-only intelligence paths skip generation audit and resolve branding sa
     assert.match(branding, /getPublicBranding\(\{ readOnly \}\)/);
 });
 
+test('member portal lookup keeps report reads from triggering maintenance writes', () => {
+    const portal = source('src/services/member-portal-service.js');
+    const members = source('src/services/member-service.js');
+    const attendance = source('src/services/attendance-service.js');
+
+    assert.match(portal, /getMemberDetails\(memberContext\.memberId, \{ readOnly: true \}\)/);
+    assert.match(portal, /getMemberAttendance\(memberContext\.memberId, \{ from, to: today, readOnly: true \}\)/);
+    assert.match(members, /async function getMemberDetails\(id, \{ readOnly = false \} = \{\}\)/);
+    assert.match(members, /async function getMemberDetails\(id, \{ readOnly = false \} = \{\}\) \{[\s\S]*?ensurePaymentTransactionsTable\(\{ readOnly \}\)/);
+    assert.match(attendance, /async function getMemberAttendance\(memberId, options = \{\}\) \{\s*await ensureAttendanceTable\(\{ readOnly: Boolean\(options\.readOnly\) \}\);\s*if \(!options\.readOnly\) await reconcileAutoCheckout\(\);/);
+});
+
 test('non-API read pages carry the read-only context to avoid session/schema writes', () => {
     const server = source('server.js');
     assert.match(server, /function isReadOnlyRequest\(request\)/);
