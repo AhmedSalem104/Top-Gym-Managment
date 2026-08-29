@@ -18,12 +18,12 @@ function createSaasController({ saasService }) {
             response.json(await saasService.getTenantBilling(request.tenant?.id, {
                 page: request.query?.page,
                 pageSize: request.query?.pageSize,
-                readOnly: request.readOnlyBaseline
+                readOnly: request.readOnlyRequest
             }));
         },
 
         plans: async (request, response) => {
-            response.json({ plans: await saasService.getPlans({ readOnly: request.readOnlyBaseline }) });
+            response.json({ plans: await saasService.getPlans({ readOnly: request.readOnlyRequest }) });
         },
 
         requests: async (request, response) => {
@@ -31,7 +31,7 @@ function createSaasController({ saasService }) {
                 ...await saasService.listTenantRequests(request.tenant?.id, {
                     page: request.query?.page,
                     pageSize: request.query?.pageSize,
-                    readOnly: request.readOnlyBaseline,
+                    readOnly: request.readOnlyRequest,
                     includePagination: true
                 })
             });
@@ -61,7 +61,7 @@ function createSaasController({ saasService }) {
         },
 
         paymentProof: async (request, response) => {
-            const proof = await saasService.getPaymentProofFile(request.params.id, request.tenant?.id, { readOnly: request.readOnlyBaseline });
+            const proof = await saasService.getPaymentProofFile(request.params.id, request.tenant?.id, { readOnly: request.readOnlyRequest });
             if (!proof) return response.status(404).end();
             response.set({
                 'Cache-Control': 'no-store, no-cache, must-revalidate, private',

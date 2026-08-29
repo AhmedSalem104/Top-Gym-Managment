@@ -3,11 +3,11 @@
 function createPlatformController({ saasService, authService }) {
     return {
         overview: async (request, response) => {
-            response.json(await saasService.getPlatformOverview({ readOnly: request.readOnlyBaseline }));
+            response.json(await saasService.getPlatformOverview({ readOnly: request.readOnlyRequest }));
         },
 
         tenants: async (request, response) => {
-            response.json({ tenants: await saasService.listTenants({ readOnly: request.readOnlyBaseline }) });
+            response.json({ tenants: await saasService.listTenants({ readOnly: request.readOnlyRequest }) });
         },
 
         createTenant: async (request, response) => {
@@ -19,7 +19,7 @@ function createPlatformController({ saasService, authService }) {
         },
 
         plans: async (request, response) => {
-            response.json({ plans: await saasService.getPlans({ includeInactive: true, readOnly: request.readOnlyBaseline }) });
+            response.json({ plans: await saasService.getPlans({ includeInactive: true, readOnly: request.readOnlyRequest }) });
         },
 
         updatePlan: async (request, response) => {
@@ -27,7 +27,7 @@ function createPlatformController({ saasService, authService }) {
         },
 
         requests: async (request, response) => {
-            response.json(await saasService.listPlatformRequests({ status: request.query?.status || '', page: request.query?.page, pageSize: request.query?.pageSize, readOnly: request.readOnlyBaseline, includePagination: true }));
+            response.json(await saasService.listPlatformRequests({ status: request.query?.status || '', page: request.query?.page, pageSize: request.query?.pageSize, readOnly: request.readOnlyRequest, includePagination: true }));
         },
 
         approveRequest: async (request, response) => {
@@ -39,7 +39,7 @@ function createPlatformController({ saasService, authService }) {
         },
 
         paymentProof: async (request, response) => {
-            const proof = await saasService.getPaymentProofFile(request.params.id, null, { readOnly: request.readOnlyBaseline });
+            const proof = await saasService.getPaymentProofFile(request.params.id, null, { readOnly: request.readOnlyRequest });
             if (!proof) return response.status(404).end();
             response.set({
                 'Cache-Control': 'no-store, no-cache, must-revalidate, private',
@@ -50,7 +50,7 @@ function createPlatformController({ saasService, authService }) {
         },
 
         audit: async (request, response) => {
-            response.json({ audit: await saasService.listAudit({ limit: request.query?.limit, readOnly: request.readOnlyBaseline }) });
+            response.json({ audit: await saasService.listAudit({ limit: request.query?.limit, readOnly: request.readOnlyRequest }) });
         }
     };
 }

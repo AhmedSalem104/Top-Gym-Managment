@@ -25,4 +25,4 @@ function readOnlyBaselineGuard(request, response, next) {
     return next();
 }
 
-module.exports = { BASELINE_HEADER, BASELINE_VALUE, readOnlyBaselineGuard };
+module.exports = { BASELINE_HEADER, BASELINE_VALUE, READ_ONLY_METHODS, readOnlyBaselineGuard };

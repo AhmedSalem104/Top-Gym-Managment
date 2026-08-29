@@ -4,14 +4,14 @@ function createLibraryController({ libraryService }) {
     return {
         options: async (request, response) => {
             response.set('Cache-Control', 'private, max-age=20, stale-while-revalidate=60');
-            response.json(await libraryService.getLibraryOptions({ readOnly: request.readOnlyBaseline }));
+            response.json(await libraryService.getLibraryOptions({ readOnly: request.readOnlyRequest }));
         },
         collection: async (request, response) => {
             response.set('Cache-Control', 'private, max-age=20, stale-while-revalidate=60');
-            response.json(await libraryService.getLibraryCollection(request.params.type, request.query, { readOnly: request.readOnlyBaseline }));
+            response.json(await libraryService.getLibraryCollection(request.params.type, request.query, { readOnly: request.readOnlyRequest }));
         },
         item: async (request, response) => {
-            response.json({ item: await libraryService.getLibraryItem(request.params.type, request.params.id, { readOnly: request.readOnlyBaseline }) });
+            response.json({ item: await libraryService.getLibraryItem(request.params.type, request.params.id, { readOnly: request.readOnlyRequest }) });
         },
         create: async (request, response) => {
             response.status(201).json({ item: await libraryService.createLibraryItem(request.params.type, request.body) });

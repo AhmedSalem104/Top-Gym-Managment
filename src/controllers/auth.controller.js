@@ -3,7 +3,7 @@
 function createAuthController({ authService, permissionService, allowLoginAttempt }) {
     return {
         session: async (request, response) => {
-            const readOnly = Boolean(request.readOnlyBaseline);
+            const readOnly = Boolean(request.readOnlyRequest);
             const setup = readOnly ? { setupRequired: false } : await authService.ensureAuthReady();
             const user = await authService.getSessionUser(authService.readSessionCookie(request), {
                 ensureReady: !readOnly,

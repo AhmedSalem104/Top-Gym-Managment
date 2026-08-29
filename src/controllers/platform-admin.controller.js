@@ -4,7 +4,7 @@ function createPlatformAdminController({ platformAdminService, saasService, auth
     const meta = (request) => platformAdminService.requestMeta(request);
     return {
         dashboard: async (request, response) => {
-            response.json(await platformAdminService.getDashboard({ from: request.query?.from, to: request.query?.to, readOnly: request.readOnlyBaseline }));
+            response.json(await platformAdminService.getDashboard({ from: request.query?.from, to: request.query?.to, readOnly: request.readOnlyRequest }));
         },
 
         tenants: async (request, response) => {
@@ -17,7 +17,7 @@ function createPlatformAdminController({ platformAdminService, saasService, auth
                 page: request.query?.page,
                 pageSize: request.query?.pageSize,
                 expiringDays: request.query?.expiringDays,
-                readOnly: request.readOnlyBaseline
+                readOnly: request.readOnlyRequest
             }));
         },
 
@@ -29,7 +29,7 @@ function createPlatformAdminController({ platformAdminService, saasService, auth
             response.json(await platformAdminService.getTenantProfile(request.params.tenantId, {
                 paymentsPage: request.query?.paymentsPage,
                 paymentsPageSize: request.query?.paymentsPageSize,
-                readOnly: request.readOnlyBaseline
+                readOnly: request.readOnlyRequest
             }));
         },
 
@@ -44,7 +44,7 @@ function createPlatformAdminController({ platformAdminService, saasService, auth
         subscription: async (request, response) => {
             const tenantId = request.params.tenantId;
             if (request.method === 'GET') {
-                const readOnly = request.readOnlyBaseline;
+                const readOnly = request.readOnlyRequest;
                 const subscription = await saasService.getCurrentSubscription(tenantId, { readOnly });
                 const entitlements = await saasService.getEffectiveEntitlements(tenantId, subscription, { readOnly });
                 return response.json({ subscription, entitlements });
@@ -54,10 +54,10 @@ function createPlatformAdminController({ platformAdminService, saasService, auth
 
         usage: async (request, response) => {
             const tenantId = request.params.tenantId;
-            const subscription = await saasService.getCurrentSubscription(tenantId, { readOnly: request.readOnlyBaseline });
+            const subscription = await saasService.getCurrentSubscription(tenantId, { readOnly: request.readOnlyRequest });
             const [usage, entitlements] = await Promise.all([
-                saasService.getUsage(tenantId, { readOnly: request.readOnlyBaseline }),
-                saasService.getEffectiveEntitlements(tenantId, subscription, { readOnly: request.readOnlyBaseline })
+                saasService.getUsage(tenantId, { readOnly: request.readOnlyRequest }),
+                saasService.getEffectiveEntitlements(tenantId, subscription, { readOnly: request.readOnlyRequest })
             ]);
             response.json({ usage, entitlements });
         },
@@ -69,7 +69,7 @@ function createPlatformAdminController({ platformAdminService, saasService, auth
         overrides: async (request, response) => {
             const tenantId = request.params.tenantId;
             if (request.method === 'GET') {
-                const readOnly = request.readOnlyBaseline;
+                const readOnly = request.readOnlyRequest;
                 return response.json({
                     overrides: await saasService.getTenantOverrides(tenantId, { readOnly }),
                     entitlements: await saasService.getEffectiveEntitlements(tenantId, null, { readOnly })
@@ -96,16 +96,16 @@ function createPlatformAdminController({ platformAdminService, saasService, auth
 
         health: async (request, response) => {
             const tenantId = request.params.tenantId;
-            const subscription = await saasService.getCurrentSubscription(tenantId, { readOnly: request.readOnlyBaseline });
+            const subscription = await saasService.getCurrentSubscription(tenantId, { readOnly: request.readOnlyRequest });
             const [usage, entitlements] = await Promise.all([
-                saasService.getUsage(tenantId, { readOnly: request.readOnlyBaseline }),
-                saasService.getEffectiveEntitlements(tenantId, subscription, { readOnly: request.readOnlyBaseline })
+                saasService.getUsage(tenantId, { readOnly: request.readOnlyRequest }),
+                saasService.getEffectiveEntitlements(tenantId, subscription, { readOnly: request.readOnlyRequest })
             ]);
             response.json(await platformAdminService.getTenantHealth(tenantId, { subscription, usage, entitlements }));
         },
 
         audit: async (request, response) => {
-            response.json({ audit: await saasService.listAudit({ tenantId: request.params.tenantId, limit: request.query?.limit, readOnly: request.readOnlyBaseline }) });
+            response.json({ audit: await saasService.listAudit({ tenantId: request.params.tenantId, limit: request.query?.limit, readOnly: request.readOnlyRequest }) });
         },
 
         notes: async (request, response) => {
@@ -114,7 +114,7 @@ function createPlatformAdminController({ platformAdminService, saasService, auth
         },
 
         plans: async (request, response) => {
-            response.json({ plans: await saasService.getPlans({ includeInactive: true, readOnly: request.readOnlyBaseline }) });
+            response.json({ plans: await saasService.getPlans({ includeInactive: true, readOnly: request.readOnlyRequest }) });
         },
 
         createPlan: async (request, response) => {
@@ -130,7 +130,7 @@ function createPlatformAdminController({ platformAdminService, saasService, auth
         },
 
         requests: async (request, response) => {
-            response.json(await saasService.listPlatformRequests({ status: request.query?.status || '', page: request.query?.page, pageSize: request.query?.pageSize, readOnly: request.readOnlyBaseline, includePagination: true }));
+            response.json(await saasService.listPlatformRequests({ status: request.query?.status || '', page: request.query?.page, pageSize: request.query?.pageSize, readOnly: request.readOnlyRequest, includePagination: true }));
         },
 
         approveRequest: async (request, response) => {
@@ -142,7 +142,7 @@ function createPlatformAdminController({ platformAdminService, saasService, auth
         },
 
         paymentProof: async (request, response) => {
-            const proof = await saasService.getPaymentProofFile(request.params.proofId, null, { readOnly: request.readOnlyBaseline });
+            const proof = await saasService.getPaymentProofFile(request.params.proofId, null, { readOnly: request.readOnlyRequest });
             if (!proof) return response.status(404).end();
             response.set({
                 'Cache-Control': 'no-store, no-cache, must-revalidate, private',
@@ -153,7 +153,7 @@ function createPlatformAdminController({ platformAdminService, saasService, auth
         },
 
         auditAll: async (request, response) => {
-            response.json({ audit: await saasService.listAudit({ limit: request.query?.limit, readOnly: request.readOnlyBaseline }) });
+            response.json({ audit: await saasService.listAudit({ limit: request.query?.limit, readOnly: request.readOnlyRequest }) });
         }
     };
 }

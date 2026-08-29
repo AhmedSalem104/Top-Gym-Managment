@@ -9,10 +9,11 @@ const {
     createSensitiveRateLimit,
     trimMap
 } = require('../../src/middleware/rate-limit.middleware');
-const { isSameOriginRequest } = require('../../src/middleware/auth.middleware');
+const { createAuthApiMiddleware, isSameOriginRequest } = require('../../src/middleware/auth.middleware');
 const { securityHeaders } = require('../../src/middleware/security.middleware');
 const { parseScryptHash, readSessionCookie, verifyPassword } = require('../../src/services/auth-service');
 const { isAuthorizedCronRequest } = require('../../src/middleware/cron.middleware');
+const { getTenantContext } = require('../../src/tenancy/tenant-context');
 
 function requestFor(ip, body = {}) {
     return { method: 'POST', ip, socket: { remoteAddress: ip }, body };
@@ -118,6 +119,95 @@ test('state-changing cross-site Fetch Metadata requests fail closed', () => {
     assert.equal(isSameOriginRequest(request({ 'sec-fetch-site': 'cross-site' })), false);
     assert.equal(isSameOriginRequest(request({ 'sec-fetch-site': 'same-origin' })), true);
     assert.equal(isSameOriginRequest(request({})), true);
+});
+
+test('normal GET requests use a read-only tenant context and do not touch sessions', async () => {
+    const observed = {};
+    const middleware = createAuthApiMiddleware({
+        authService: {
+            ensureAuthReady: async () => { observed.ensureAuthReady = true; },
+            readSessionCookie: () => 'session-token',
+            getSessionUser: async (token, options) => {
+                observed.session = { token, options };
+                return { id: 17, role: 'Owner' };
+            },
+            withPermissions: async (user, options) => {
+                observed.permissions = options;
+                return user;
+            }
+        },
+        tenantService: {
+            resolveTenantForUser: async (userId, slug, options) => {
+                observed.tenant = { userId, slug, options };
+                return { id: 23, status: 'active' };
+            }
+        },
+        saasService: {
+            enforceTenantAccess: async (tenantId, options) => {
+                observed.saas = { tenantId, options };
+                return { subscription: { status: 'active' }, entitlements: { features: {} } };
+            },
+            enforceRequestLimit: async () => {}
+        },
+        isAuthorizedCronRequest: () => false
+    });
+    const request = {
+        method: 'GET',
+        path: '/members',
+        query: {},
+        body: {},
+        ip: '127.0.0.1',
+        get: () => '',
+        socket: { remoteAddress: '127.0.0.1' }
+    };
+    const response = responseDouble();
+    let nextContext;
+    await middleware(request, response, () => {
+        nextContext = getTenantContext();
+    });
+
+    assert.equal(request.readOnlyRequest, true);
+    assert.equal(observed.ensureAuthReady, undefined);
+    assert.deepEqual(observed.session.options, {
+        includePermissions: false,
+        ensureReady: false,
+        touch: false,
+        readOnly: true
+    });
+    assert.deepEqual(observed.tenant.options, { readOnly: true });
+    assert.equal(observed.saas.options.readOnly, true);
+    assert.equal(observed.permissions.readOnly, true);
+    assert.equal(nextContext.readOnlyBaseline, true);
+});
+
+test('the authorized backup cron remains the explicit state-changing GET exception', async () => {
+    let tenantOptions;
+    let context;
+    const middleware = createAuthApiMiddleware({
+        authService: {},
+        tenantService: {
+            resolvePublicTenant: async (slug, options) => {
+                tenantOptions = { slug, options };
+                return { id: 1, status: 'active' };
+            }
+        },
+        isAuthorizedCronRequest: () => true
+    });
+    const request = {
+        method: 'GET',
+        path: '/backup/daily',
+        query: {},
+        body: {},
+        get: () => '',
+        socket: { remoteAddress: '127.0.0.1' }
+    };
+    await middleware(request, responseDouble(), () => {
+        context = getTenantContext();
+    });
+
+    assert.equal(request.readOnlyRequest, false);
+    assert.deepEqual(tenantOptions.options, { readOnly: false });
+    assert.equal(context.readOnlyBaseline, false);
 });
 
 test('HSTS is emitted only for confirmed HTTPS requests', () => {

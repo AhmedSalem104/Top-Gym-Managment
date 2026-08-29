@@ -9,7 +9,7 @@ function createMembersController({ memberService }) {
                 sort: request.query.sort,
                 page: request.query.page,
                 pageSize: request.query.pageSize,
-                readOnly: request.readOnlyBaseline
+                readOnly: request.readOnlyRequest
             }));
         },
 

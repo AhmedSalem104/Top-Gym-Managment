@@ -19,11 +19,11 @@ function createStoreController({ storeService, hasPermission }) {
         },
         dashboard: async (request, response) => {
             const canViewProfit = financialView(request);
-            response.json(redactProfitData(await storeService.getDashboard({ ...request.query, includeProfit: canViewProfit, readOnly: request.readOnlyBaseline }), canViewProfit));
+            response.json(redactProfitData(await storeService.getDashboard({ ...request.query, includeProfit: canViewProfit, readOnly: request.readOnlyRequest }), canViewProfit));
         },
         reports: async (request, response) => {
             const canViewProfit = financialView(request);
-            response.json(redactProfitData(await storeService.getReports({ ...request.query, includeProfit: canViewProfit, readOnly: request.readOnlyBaseline }), canViewProfit));
+            response.json(redactProfitData(await storeService.getReports({ ...request.query, includeProfit: canViewProfit, readOnly: request.readOnlyRequest }), canViewProfit));
         },
         categories: async (request, response) => response.json(await storeService.listCategories({ includeInactive: request.query.includeInactive === 'true' })),
         createCategory: async (request, response) => response.status(201).json({ category: await storeService.createCategory(request.body, options(request)) }),

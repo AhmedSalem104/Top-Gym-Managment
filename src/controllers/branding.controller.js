@@ -6,13 +6,13 @@ function createBrandingController({ brandingService }) {
             const platformScope = String(request.query?.scope || '').trim().toLowerCase() === 'platform';
             const result = platformScope
                 ? brandingService.getPlatformBranding()
-                : await brandingService.getPublicBranding({ readOnly: request.readOnlyBaseline });
+                : await brandingService.getPublicBranding({ readOnly: request.readOnlyRequest });
             response.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
             response.json(result);
         },
 
         settings: async (request, response) => {
-            response.json(await brandingService.ownerResponse({ readOnly: request.readOnlyBaseline }));
+            response.json(await brandingService.ownerResponse({ readOnly: request.readOnlyRequest }));
         },
 
         saveDraft: async (request, response) => {
@@ -44,7 +44,7 @@ function createBrandingController({ brandingService }) {
         },
 
         publishedAsset: async (request, response) => {
-            const asset = await brandingService.readAsset(request.params.key, 'published', { readOnly: request.readOnlyBaseline });
+            const asset = await brandingService.readAsset(request.params.key, 'published', { readOnly: request.readOnlyRequest });
             if (!asset) return response.status(404).end();
             response.set({
                 'Cache-Control': 'public, max-age=31536000, immutable',
@@ -55,7 +55,7 @@ function createBrandingController({ brandingService }) {
         },
 
         draftAsset: async (request, response) => {
-            const asset = await brandingService.readAsset(request.params.key, 'draft', { readOnly: request.readOnlyBaseline });
+            const asset = await brandingService.readAsset(request.params.key, 'draft', { readOnly: request.readOnlyRequest });
             if (!asset) return response.status(404).end();
             response.set({
                 'Cache-Control': 'no-store, no-cache, must-revalidate, private',

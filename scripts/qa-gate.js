@@ -130,6 +130,7 @@ function assertRequiredFiles() {
         'src/middleware/cron.middleware.js',
         'src/middleware/auth.middleware.js',
         'src/middleware/rate-limit.middleware.js',
+        'src/middleware/read-only-baseline.middleware.js',
         'src/routes/pricing.routes.js',
         'src/controllers/pricing.controller.js',
         'src/routes/coaching.routes.js',
@@ -376,11 +377,13 @@ function checkPlatformAdminSurface() {
 function checkProductionClosureContracts() {
     const storage = read('src/services/object-storage-service.js');
     const rateLimit = read('src/middleware/rate-limit.middleware.js');
+    const authMiddleware = read('src/middleware/auth.middleware.js');
     record('SEC-PRIVATE-OBJECT-CONTRACT', storage.includes('tenants/${normalizedTenantId}/private') && storage.includes('assertPrivateObjectKey') && storage.includes('tenantId'), 'private object keys are tenant-scoped and validated before provider access', 'P0');
     record('SEC-PRIVATE-OBJECT-NO-PUBLIC-URL', storage.includes('PRIVATE_OBJECT_PUBLIC_URL_FORBIDDEN') && storage.includes('getPublicUrl()'), 'private storage contract rejects public URL exposure', 'P0');
     record('SEC-PRIVATE-OBJECT-FAIL-CLOSED', storage.includes('OBJECT_STORAGE_PROVIDER_NOT_CONFIGURED') && storage.includes('assertAdapter'), 'storage operations fail closed until an approved provider adapter is configured', 'P0');
     record('SEC-RATE-LIMIT-POLICY-BACKEND-SEAM', rateLimit.includes('createMemoryRateLimitStore') && rateLimit.includes('store = null') && rateLimit.includes('fallbackStore = null') && rateLimit.includes('incrementWithFallback'), 'rate-limit policy accepts an injectable atomic backend while retaining the bounded local adapter', 'P1');
     record('SEC-RATE-LIMIT-FAIL-CLOSED', rateLimit.includes('RATE_LIMIT_UNAVAILABLE') && rateLimit.includes('Number.MAX_SAFE_INTEGER'), 'rate-limit backend and fallback failures fail closed instead of bypassing protection', 'P0');
+    record('SEC-GET-READONLY-CONTEXT', authMiddleware.includes('READ_ONLY_METHODS.has(request.method) && !cronRequest') && authMiddleware.includes('request.readOnlyRequest = readOnlyRequest') && authMiddleware.includes('touch: !readOnlyRequest'), 'normal GET requests use a read-only context while the authorized backup cron remains explicit', 'P0');
 }
 
 function checkStyleSurface() {

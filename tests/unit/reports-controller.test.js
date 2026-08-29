@@ -5,7 +5,7 @@ const test = require('node:test');
 
 const { createReportsController } = require('../../src/controllers/reports.controller');
 
-test('reports controller passes baseline read-only mode outside user query parameters', async () => {
+test('reports controller passes request read-only mode outside user query parameters', async () => {
     const calls = [];
     const reportService = {
         async getReportData(query, options) {
@@ -26,7 +26,7 @@ test('reports controller passes baseline read-only mode outside user query param
 
     await controller.list({
         query: { from: '2026-08-01', readOnly: 'false' },
-        readOnlyBaseline: true,
+        readOnlyRequest: true,
         auth: null
     }, response);
 
