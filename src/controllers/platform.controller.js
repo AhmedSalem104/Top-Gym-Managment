@@ -2,12 +2,12 @@
 
 function createPlatformController({ saasService, authService }) {
     return {
-        overview: async (_request, response) => {
-            response.json(await saasService.getPlatformOverview());
+        overview: async (request, response) => {
+            response.json(await saasService.getPlatformOverview({ readOnly: request.readOnlyBaseline }));
         },
 
-        tenants: async (_request, response) => {
-            response.json({ tenants: await saasService.listTenants() });
+        tenants: async (request, response) => {
+            response.json({ tenants: await saasService.listTenants({ readOnly: request.readOnlyBaseline }) });
         },
 
         createTenant: async (request, response) => {
@@ -18,8 +18,8 @@ function createPlatformController({ saasService, authService }) {
             response.json(await saasService.updateTenantStatus(request.params.id, request.body?.status, request.auth?.id, request.body?.notes));
         },
 
-        plans: async (_request, response) => {
-            response.json({ plans: await saasService.getPlans({ includeInactive: true }) });
+        plans: async (request, response) => {
+            response.json({ plans: await saasService.getPlans({ includeInactive: true, readOnly: request.readOnlyBaseline }) });
         },
 
         updatePlan: async (request, response) => {
@@ -50,7 +50,7 @@ function createPlatformController({ saasService, authService }) {
         },
 
         audit: async (request, response) => {
-            response.json({ audit: await saasService.listAudit({ limit: request.query?.limit }) });
+            response.json({ audit: await saasService.listAudit({ limit: request.query?.limit, readOnly: request.readOnlyBaseline }) });
         }
     };
 }

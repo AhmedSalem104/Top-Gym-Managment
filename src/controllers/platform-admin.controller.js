@@ -149,7 +149,7 @@ function createPlatformAdminController({ platformAdminService, saasService, auth
         },
 
         auditAll: async (request, response) => {
-            response.json({ audit: await saasService.listAudit({ limit: request.query?.limit }) });
+            response.json({ audit: await saasService.listAudit({ limit: request.query?.limit, readOnly: request.readOnlyBaseline }) });
         }
     };
 }

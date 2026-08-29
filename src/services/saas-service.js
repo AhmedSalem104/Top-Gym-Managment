@@ -1283,8 +1283,8 @@ async function updateTenantStatus(tenantId, status, actorUserId, notes = '') {
     return { id, name: result.recordset[0].name, slug: result.recordset[0].slug, status: result.recordset[0].status };
 }
 
-async function listTenants() {
-    await syncExpiredTenants();
+async function listTenants({ readOnly = false } = {}) {
+    if (!readOnly) await syncExpiredTenants();
     const pool = await getPool();
     const result = await pool.request().query(`SELECT t.id,t.name,t.slug,t.status,t.created_at,t.updated_at,
         owner.id AS owner_id,owner.full_name AS owner_name,owner.email AS owner_email,
@@ -1306,8 +1306,8 @@ async function listTenants() {
     }));
 }
 
-async function getPlatformOverview() {
-    await syncExpiredTenants();
+async function getPlatformOverview({ readOnly = false } = {}) {
+    if (!readOnly) await syncExpiredTenants();
     const pool = await getPool();
     const [counts, pending, recent] = await Promise.all([
         pool.request().query(`SELECT COUNT_BIG(*) AS total_tenants, SUM(CASE WHEN status IN ('trial','active') THEN 1 ELSE 0 END) AS live_tenants, SUM(CASE WHEN status='trial' THEN 1 ELSE 0 END) AS trial_tenants, SUM(CASE WHEN status='expired' THEN 1 ELSE 0 END) AS expired_tenants, SUM(CASE WHEN status='suspended' THEN 1 ELSE 0 END) AS suspended_tenants FROM dbo.gym_tenants;`),

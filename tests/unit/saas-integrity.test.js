@@ -28,3 +28,16 @@ test('payment-proof reads propagate read-only mode to schema readiness', () => {
     assert.match(source, /async function getPaymentProofFile\(proofId, tenantId = null, \{ readOnly = false \} = \{\}\)/);
     assert.match(source, /async function getPaymentProofFile[\s\S]*?ensureSaasTables\(\{ readOnly \}\)/);
 });
+
+test('legacy platform reads skip subscription expiry writes in read-only mode', () => {
+    const serviceSource = fs.readFileSync(path.join(__dirname, '../../src/services/saas-service.js'), 'utf8');
+    const platformController = fs.readFileSync(path.join(__dirname, '../../src/controllers/platform.controller.js'), 'utf8');
+    const platformAdminController = fs.readFileSync(path.join(__dirname, '../../src/controllers/platform-admin.controller.js'), 'utf8');
+
+    assert.match(serviceSource, /async function listTenants\(\{ readOnly = false \} = \{\}\) \{\s*if \(!readOnly\) await syncExpiredTenants\(\);/);
+    assert.match(serviceSource, /async function getPlatformOverview\(\{ readOnly = false \} = \{\}\) \{\s*if \(!readOnly\) await syncExpiredTenants\(\);/);
+    assert.match(platformController, /getPlatformOverview\(\{ readOnly: request\.readOnlyBaseline \}\)/);
+    assert.match(platformController, /listTenants\(\{ readOnly: request\.readOnlyBaseline \}\)/);
+    assert.match(platformController, /listAudit\(\{ limit: request\.query\?\.limit, readOnly: request\.readOnlyBaseline \}\)/);
+    assert.match(platformAdminController, /listAudit\(\{ limit: request\.query\?\.limit, readOnly: request\.readOnlyBaseline \}\)/);
+});
