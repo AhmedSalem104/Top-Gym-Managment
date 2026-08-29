@@ -6,7 +6,7 @@ stop safe implementation elsewhere, but a Critical item remains a Go-Live
 gate.
 
 Last reviewed: 2026-08-29  
-Current revision: `a2eb225cf1c95907046f5476cef226fd9015d177`
+Implementation revision covered: `21c69ec perf: keep report reads baseline-safe`
 
 ## Status vocabulary
 
@@ -57,6 +57,23 @@ Current revision: `a2eb225cf1c95907046f5476cef226fd9015d177`
 - Authenticated real baseline: pending.
 - `baseline-before.json`: **not produced**.
 - Execution Plans/index changes: intentionally deferred.
+
+## Latest local verification evidence
+
+- `npm run build`: passed; only the repository's existing `!important` review
+  warnings remain.
+- `npm run qa:gate`: passed.
+- `npm run qa:tenancy`: passed with 63/63 protected tables,
+  `unassignedRows=0`, and `crossTenantWriteBlocked=true`.
+- `npm run test:visual` against a temporary local QA server: passed for all
+  tested desktop/mobile viewports, dialogs, themes and print media.
+- `npm run qa:platform-admin`: safely skipped live authentication because no
+  PlatformAdmin credentials are configured in this environment.
+- Targeted report/baseline tests: passed; the report read-only flag is now
+  supplied outside user query parameters.
+
+These local results do not close the authenticated baseline, live execution
+plans, Staging/Production capacity, restore, or pilot evidence items above.
 
 ## Go-Live rule
 
