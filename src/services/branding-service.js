@@ -382,7 +382,7 @@ function imageDimensions(buffer, mimeType, declaredWidth, declaredHeight) {
     }
     if (mimeType === 'image/svg+xml') {
         const source = buffer.toString('utf8');
-        if (/<script\b|\bon[a-z]+\s*=|javascript:/i.test(source)) throw brandingError('ملف SVG يحتوي على تعليمات غير آمنة.');
+        if (!isSafeSvgMarkup(source)) throw brandingError('ملف SVG يحتوي على تعليمات أو روابط غير آمنة.');
         if (!/<svg\b[^>]*>/i.test(source)) throw brandingError('ملف SVG غير صالح أو لا يطابق نوعه المعلن.');
         const viewBox = source.match(/viewBox\s*=\s*["']\s*[-+\d.]+\s+[-+\d.]+\s+([\d.]+)\s+([\d.]+)\s*["']/i);
         const width = Number(source.match(/\bwidth\s*=\s*["']([\d.]+)/i)?.[1] || declaredWidth || 0);
@@ -394,6 +394,19 @@ function imageDimensions(buffer, mimeType, declaredWidth, declaredHeight) {
     const height = Number(declaredHeight || 0);
     if (width > 0 && height > 0) return { width, height };
     throw brandingError('تعذر قراءة أبعاد الصورة. ارفع ملفًا صالحًا أو جرّب PNG/WebP/SVG آخر.');
+}
+
+function isSafeSvgMarkup(source) {
+    const markup = String(source || '');
+    return ![
+        /<!DOCTYPE\b/i,
+        /<!ENTITY\b/i,
+        /<\s*(?:script|foreignObject|iframe|object|embed|audio|video)\b/i,
+        /\bon[a-z]+\s*=/i,
+        /\b(?:xlink:)?href\s*=\s*["'][^"']*(?:javascript:|data:|https?:|\/\/)/i,
+        /\b(?:src|action)\s*=\s*["'][^"']*(?:javascript:|data:|https?:|\/\/)/i,
+        /url\(\s*["']?(?:javascript:|data:|https?:|\/\/)/i
+    ].some((pattern) => pattern.test(markup));
 }
 
 function validateAsset({ key, mimeType, fileName, buffer, width, height }) {
@@ -657,5 +670,7 @@ module.exports = {
     resetDraft,
     saveDraft,
     uploadDraftAsset,
-    validateConfig
+    validateAsset,
+    validateConfig,
+    isSafeSvgMarkup
 };
