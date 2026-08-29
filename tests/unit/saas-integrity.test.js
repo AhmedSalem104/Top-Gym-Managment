@@ -58,3 +58,19 @@ test('platform subscription requests use bounded server-side pagination', () => 
     assert.match(platformAdminClient, /requestPage: 1/);
     assert.match(platformAdminClient, /data-request-page/);
 });
+
+test('tenant subscription history uses bounded server-side pagination', () => {
+    const serviceSource = fs.readFileSync(path.join(__dirname, '../../src/services/saas-service.js'), 'utf8');
+    const controllerSource = fs.readFileSync(path.join(__dirname, '../../src/controllers/saas.controller.js'), 'utf8');
+    const clientSource = fs.readFileSync(path.join(__dirname, '../../public/js/pages/saas/saas.js'), 'utf8');
+
+    assert.match(serviceSource, /async function listTenantRequests\(tenantId = currentTenantId\(\{ required: true \}\), \{ readOnly = false, page = 1, pageSize = 25, requestId = null, includePagination = false \} = \{\}\)/);
+    assert.match(serviceSource, /listTenantRequests\(id, \{ readOnly, page, pageSize, includePagination: true \}\)/);
+    assert.match(serviceSource, /WHERE r\.tenant_id=@tenantId AND \(@requestId IS NULL OR r\.id=@requestId\)/);
+    assert.match(serviceSource, /OFFSET @offset ROWS FETCH NEXT @pageSize ROWS ONLY/);
+    assert.match(serviceSource, /requestsPagination: requestPage\.pagination/);
+    assert.match(controllerSource, /page: request\.query\?\.page/);
+    assert.match(controllerSource, /includePagination: true/);
+    assert.match(clientSource, /saas\/subscription\?page=\$\{state\.requestPage\}&pageSize=25/);
+    assert.match(clientSource, /data-saas-request-page/);
+});

@@ -15,7 +15,11 @@ function decodeHeaderFilename(value) {
 function createSaasController({ saasService }) {
     return {
         subscription: async (request, response) => {
-            response.json(await saasService.getTenantBilling(request.tenant?.id, { readOnly: request.readOnlyBaseline }));
+            response.json(await saasService.getTenantBilling(request.tenant?.id, {
+                page: request.query?.page,
+                pageSize: request.query?.pageSize,
+                readOnly: request.readOnlyBaseline
+            }));
         },
 
         plans: async (request, response) => {
@@ -23,7 +27,14 @@ function createSaasController({ saasService }) {
         },
 
         requests: async (request, response) => {
-            response.json({ requests: await saasService.listTenantRequests(request.tenant?.id, { readOnly: request.readOnlyBaseline }) });
+            response.json({
+                ...await saasService.listTenantRequests(request.tenant?.id, {
+                    page: request.query?.page,
+                    pageSize: request.query?.pageSize,
+                    readOnly: request.readOnlyBaseline,
+                    includePagination: true
+                })
+            });
         },
 
         createRequest: async (request, response) => {

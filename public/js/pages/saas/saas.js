@@ -6,7 +6,7 @@
     const escapeHtml = (value) => String(value ?? '').replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[character]));
     const dateFormatter = new Intl.DateTimeFormat('ar-EG', { dateStyle: 'medium' });
     const numberFormatter = new Intl.NumberFormat('ar-EG');
-    const state = { billing: null, plans: [], requests: [], loaded: false, loading: false };
+    const state = { billing: null, plans: [], requests: [], requestsPagination: {}, requestPage: 1, loaded: false, loading: false };
 
     function notify(message, error = false, type = '') {
         if (typeof window.showToast === 'function') window.showToast(message, error, type || (error ? 'error' : 'success'));
@@ -66,17 +66,43 @@
         host.innerHTML = requests.map((request) => `<tr><td>${escapeHtml(date(request.createdAt))}</td><td>${escapeHtml(request.plan?.name || '—')}</td><td>${money(request.amount, request.currency)}</td><td>${statusMarkup(request.status)}</td><td>${request.proof ? `<a class="btn btn-light btn-small" href="/api/saas/payment-proofs/${request.proof.id}/file" target="_blank" rel="noreferrer">عرض الإثبات</a>` : '<span class="saas-muted">غير مرفق</span>'}</td><td><span class="saas-muted">${escapeHtml(request.reviewNotes || 'لا توجد ملاحظات')}</span></td></tr>`).join('');
     }
 
+    function ensureRequestPagination() {
+        const panel = $('saasRequestsList')?.closest('.saas-requests-panel');
+        if (!panel) return { summary: null, host: null };
+        let footer = panel.querySelector('.saas-request-footer');
+        if (!footer) {
+            footer = document.createElement('div');
+            footer.className = 'directory-footer saas-request-footer';
+            footer.innerHTML = '<span id="saasRequestsSummary" class="table-summary"></span><div id="saasRequestsPagination" class="pagination" aria-label="Subscription request pagination"></div>';
+            panel.appendChild(footer);
+        }
+        return { summary: $('saasRequestsSummary'), host: $('saasRequestsPagination') };
+    }
+
+    function renderRequestPagination() {
+        const { summary, host } = ensureRequestPagination();
+        if (!summary || !host) return;
+        const pagination = state.requestsPagination || {};
+        const total = Number(pagination.total || 0);
+        const page = Number(pagination.page || state.requestPage || 1);
+        const pages = Number(pagination.pages || 1);
+        summary.textContent = total ? `عرض ${state.requests.length} من ${total} طلب` : 'لا توجد طلبات';
+        host.innerHTML = pages > 1 ? Array.from({ length: pages }, (_, index) => index + 1).map((number) => `<button type="button" class="${number === page ? 'active' : ''}" data-saas-request-page="${number}">${number}</button>`).join('') : '';
+    }
+
     async function load() {
         if (state.loading || !window.topGymAuth?.isOwner?.()) return;
         state.loading = true;
         try {
-            const data = await window.topGymAuth.api('/api/saas/subscription');
+            const data = await window.topGymAuth.api(`/api/saas/subscription?page=${state.requestPage}&pageSize=25`);
             state.billing = data;
             state.plans = data.plans || [];
             state.requests = data.requests || [];
+            state.requestsPagination = data.requestsPagination || {};
             renderSummary(data);
             renderPlans(state.plans);
             renderRequests(state.requests);
+            renderRequestPagination();
             state.loaded = true;
         } catch (error) {
             showMessage(error.message || 'تعذر تحميل اشتراك المنصة.', true);
@@ -136,6 +162,12 @@
         $('saasPlansList')?.addEventListener('click', (event) => {
             const button = event.target.closest('[data-saas-select-plan]');
             if (button) selectPlan(button.dataset.saasSelectPlan);
+        });
+        document.addEventListener('click', (event) => {
+            const button = event.target.closest('[data-saas-request-page]');
+            if (!button) return;
+            state.requestPage = Number(button.dataset.saasRequestPage) || 1;
+            void load();
         });
     }
 
