@@ -6,6 +6,11 @@ const { runTenantContext } = require('../tenancy/tenant-context');
 const { ROLES } = require('../permissions/roles');
 
 function isSameOriginRequest(request) {
+    // Fetch Metadata gives browsers an additional signal for state-changing
+    // requests. Reject an explicitly cross-site request even when an Origin
+    // header is omitted; SameSite cookies remain a second boundary.
+    const fetchSite = String(request.get?.('sec-fetch-site') || '').trim().toLowerCase();
+    if (fetchSite === 'cross-site') return false;
     const origin = String(request.get('origin') || '').trim();
     if (!origin) return true;
     try {

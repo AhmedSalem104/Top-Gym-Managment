@@ -37,6 +37,29 @@ TRUST_PROXY_HOPS=1
 ```
 
 Never commit real values. SQL Server must accept encrypted connections from the deployment environment.
+Production should use `TrustServerCertificate=False`; the example connection
+string intentionally does not trust an unverified server certificate.
+
+`MEMBERSHIP_CODE_SECRET` must be a long random value in Production. The
+membership-code service retains compatibility fallbacks for existing
+installations, but a Production deployment without the explicit secret is a
+security finding and requires a planned key/reissue rollout before Go-Live.
+
+### Migration target guard
+
+`npm run migrate:tenancy` fails closed before opening the database when the
+target is ambiguous:
+
+- A localhost SQL Server may use `MIGRATION_ENV=local` (or the local default).
+- An external Staging target must use `MIGRATION_ENV=staging`.
+- Production requires `MIGRATION_ENV=production` and the exact value
+  `MIGRATION_PRODUCTION_CONFIRM=I_UNDERSTAND_PRODUCTION_MIGRATION`.
+- External `development`/`test` targets additionally require
+  `MIGRATION_NON_PRODUCTION_CONFIRM=I_UNDERSTAND_NON_PRODUCTION_TARGET`.
+
+The migration runner never prints the connection string or its credentials.
+Do not put confirmation values in Git or reuse a Production value in a local
+shell profile.
 
 ### SQL pool settings
 
@@ -75,6 +98,13 @@ rate-limit guards also cap their in-memory key stores as a local memory-safety
 fallback. They do not provide a global quota across Vercel instances; a shared
 rate-limit backend still requires a separate production decision and
 verification.
+
+### Standalone process shutdown
+
+The standalone `node server.js` process closes its HTTP listener and SQL pool
+on `SIGTERM`/`SIGINT`, and also closes the pool after startup failure. Vercel
+imports the Express app and does not use the standalone `listen` path; its
+function lifecycle still requires provider-side verification.
 
 ## Deployment checklist
 

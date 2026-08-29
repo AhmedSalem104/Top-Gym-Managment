@@ -6,7 +6,7 @@ stop safe implementation elsewhere, but a Critical item remains a Go-Live
 gate.
 
 Last reviewed: 2026-08-29  
-Implementation revision covered: `286a7a5 perf: paginate platform tenant payment history`
+Implementation revision covered: `4f8dab8 security: guard migration target environment`
 
 ## Status vocabulary
 
@@ -69,6 +69,9 @@ Implementation revision covered: `286a7a5 perf: paginate platform tenant payment
   environment evidence.
 - Transaction cleanup ordering: `VERIFIED` with begin/callback/commit/rollback
   failure tests; a real database failure rehearsal remains pending.
+- Migration target safety: `VERIFIED` locally; ambiguous external targets fail
+  before database access, staging is explicit, and Production requires an exact
+  confirmation value. Provider-side migration rehearsal remains pending.
 - Migration idempotency on an existing database, schema diff, and rollback via
   restore: `REQUIRES STAGING VERIFICATION`.
 
@@ -106,6 +109,12 @@ claims to Production evidence. Those items remain listed above exactly once.
 - Background operation logs now retain only bounded error codes; raw SQL,
   filesystem and driver messages are not emitted by the audited coaching,
   intelligence and tenancy migration paths.
+- Standalone server lifecycle: `VERIFIED` by source/unit checks for HTTP
+  listener and SQL-pool shutdown; Vercel lifecycle behavior remains a
+  production verification item.
+- State-changing requests reject browser Fetch Metadata marked as
+  `cross-site`; Origin/SameSite and external CSRF verification remain required
+  for a full security sign-off.
 
 These local results do not close the authenticated baseline, live execution
 plans, Staging/Production capacity, restore, or pilot evidence items above.

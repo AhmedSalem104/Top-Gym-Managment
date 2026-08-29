@@ -8,6 +8,7 @@ const {
     createSensitiveRateLimit,
     trimMap
 } = require('../../src/middleware/rate-limit.middleware');
+const { isSameOriginRequest } = require('../../src/middleware/auth.middleware');
 const { parseScryptHash, readSessionCookie, verifyPassword } = require('../../src/services/auth-service');
 const { isAuthorizedCronRequest } = require('../../src/middleware/cron.middleware');
 
@@ -70,6 +71,15 @@ test('malformed session cookies fail closed without throwing', () => {
     assert.equal(readSessionCookie(request('topgym_session=%ZZ')), '');
     assert.equal(readSessionCookie(request('topgym_session=' + 'x'.repeat(513))), '');
     assert.equal(readSessionCookie(request('topgym_session=abc%2D123')), 'abc-123');
+});
+
+test('state-changing cross-site Fetch Metadata requests fail closed', () => {
+    const request = (headers) => ({
+        get: (name) => headers[String(name).toLowerCase()] || ''
+    });
+    assert.equal(isSameOriginRequest(request({ 'sec-fetch-site': 'cross-site' })), false);
+    assert.equal(isSameOriginRequest(request({ 'sec-fetch-site': 'same-origin' })), true);
+    assert.equal(isSameOriginRequest(request({})), true);
 });
 
 test('production cron requests fail closed when the secret is missing', () => {

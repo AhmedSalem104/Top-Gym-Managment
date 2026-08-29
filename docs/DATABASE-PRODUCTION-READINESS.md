@@ -47,6 +47,12 @@ result, not proof that an existing production database will migrate cleanly.
   SaaS objects, runtime feature tables and RLS. `npm run migrate:tenancy` is
   repeatable at the object-creation level.
 - CI, `package.json` and `.nvmrc` now target Node 24.
+- `scripts/migrate-tenancy.js` fails closed before any database operation when
+  an external target has no explicit environment, and requires an exact
+  confirmation value for Production migrations.
+- The standalone server closes its HTTP listener and cached SQL pool on
+  shutdown signals; this is process-lifecycle hardening, not a claim about
+  Vercel function shutdown semantics.
 
 ## Findings and boundaries
 
