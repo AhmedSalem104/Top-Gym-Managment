@@ -308,8 +308,8 @@ function readSeedFile(type) {
         const parsed = JSON.parse(fs.readFileSync(filePath, 'utf8'));
         if (!Array.isArray(parsed)) throw new Error('Seed file must contain an array.');
         return parsed;
-    } catch (error) {
-        throw appError(`تعذر قراءة بيانات ${type} من ملفات النظام: ${error.message}`, 500, 'LIBRARY_SEED_READ_FAILED');
+    } catch (_) {
+        throw appError(`تعذر قراءة بيانات ${type} من ملفات النظام`, 500, 'LIBRARY_SEED_READ_FAILED');
     }
 }
 

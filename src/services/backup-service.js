@@ -13,6 +13,7 @@ const { ensureDayPassTables } = require('../repositories/day-pass.repository');
 const { ensureStoreTables } = require('./store-service');
 const { ensureBrandingTables } = require('./branding-service');
 const { config } = require('../config/env');
+const { getSafeErrorMessage } = require('../utils/error-response');
 
 const gzipAsync = promisify(gzip);
 const gunzipAsync = promisify(gunzip);
@@ -20,6 +21,14 @@ const MAX_BACKUP_UPLOAD_BYTES = 25 * 1024 * 1024;
 const MAX_BACKUP_JSON_BYTES = 80 * 1024 * 1024;
 const MAX_BACKUP_ROWS = 150000;
 const DAILY_BACKUP_RETENTION_DAYS = 2;
+
+function safeOperationalError(error, fallback = 'Backup operation failed.') {
+    const statusCode = Number(error?.statusCode);
+    if (statusCode >= 400 && statusCode < 500 && error?.expose === true) {
+        return getSafeErrorMessage(error, statusCode);
+    }
+    return fallback;
+}
 
 // Keep the backup limited to the tables owned by this application. The shared
 // database also contains dbo.Payments, which belongs to another system.
@@ -445,7 +454,7 @@ async function createScheduledBackupArchive({ format = 'bak' } = {}) {
             sourceGeneratedAt: backup.generatedAt,
             tableCounts: backup.rowCounts,
             details: `تم حفظ النسخة اليومية تلقائيًا بصيغة .${backup.format}. مدة الاحتفاظ: يومان.`
-        }).catch((error) => console.warn('Unable to record scheduled backup:', error.message));
+        }).catch((error) => console.warn('Unable to record scheduled backup:', error.code || 'recording_failed'));
     }
     return {
         created,
@@ -551,7 +560,7 @@ async function restoreBackup(input, { fileName = 'uploaded-backup.json.gz' } = {
             details: inspected.integrity
                 ? 'تم استرجاع النسخة بعد التحقق من البنية والصفوف وبصمة SHA-256.'
                 : 'تم استرجاع النسخة بعد التحقق من البنية والصفوف.'
-        }).catch((error) => console.warn('Unable to record backup restore:', error.message));
+        }).catch((error) => console.warn('Unable to record backup restore:', error.code || 'recording_failed'));
         return {
             rowCount: inspected.rowCount,
             tableCounts: inspected.tableCounts,
@@ -628,5 +637,6 @@ module.exports = {
     getScheduledBackupHistory,
     inspectBackupBuffer,
     recordBackupOperation,
-    restoreBackup
+    restoreBackup,
+    safeOperationalError
 };

@@ -36,6 +36,7 @@ const { runTenantContext } = require('./src/tenancy/tenant-context');
 const { ensureAuthReady } = authService;
 const { createPerformanceMetrics } = require('./src/middleware/performance-metrics');
 const { readOnlyBaselineGuard } = require('./src/middleware/read-only-baseline.middleware');
+const { getSafeErrorMessage, isPublicClientError } = require('./src/utils/error-response');
 
 const publicDirectory = path.join(__dirname, 'public');
 const app = createApp({ publicDirectory, expressFactory: express });
@@ -218,17 +219,18 @@ app.use((error, request, response, next) => {
         code: error.code || null,
         category: statusCode >= 500 ? 'internal_error' : 'request_error'
     }));
-    const message = error.expose || statusCode < 500
+    const message = statusCode < 500 && error.expose === true
         ? error.message
         : 'حدث خطأ في الخادم. حاول مرة أخرى.';
+    const publicError = isPublicClientError(error, statusCode);
     response.status(statusCode).json({
-        error: message,
+        error: getSafeErrorMessage(error, statusCode) || message,
         code: error.code || null,
-        field: error.field || null,
-        memberName: error.memberName || null,
-        memberId: error.memberId || null,
-        attendance: error.attendance || null,
-        saas: error.saas || null,
+        field: publicError ? error.field || null : null,
+        memberName: publicError ? error.memberName || null : null,
+        memberId: publicError ? error.memberId || null : null,
+        attendance: publicError ? error.attendance || null : null,
+        saas: publicError ? error.saas || null : null,
         requestId
     });
 });

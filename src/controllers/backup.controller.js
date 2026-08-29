@@ -10,7 +10,8 @@ function createBackupController({ backupService, brandingService, isAuthorizedCr
         getScheduledBackupHistory,
         inspectBackupBuffer,
         recordBackupOperation,
-        restoreBackup
+        restoreBackup,
+        safeOperationalError
     } = backupService;
 
     return {
@@ -32,7 +33,7 @@ function createBackupController({ backupService, brandingService, isAuthorizedCr
                 sourceGeneratedAt: backup.generatedAt,
                 tableCounts: backup.rowCounts,
                 details: `تم إنشاء نسخة ${brandName} بصيغة .${backup.format} وتنزيلها على جهاز المستخدم.`
-            }).catch((error) => console.warn('Unable to record backup download:', error.message));
+            }).catch((error) => console.warn('Unable to record backup download:', error.code || 'recording_failed'));
             response.set({
                 'Cache-Control': 'no-store, no-cache, must-revalidate, private',
                 'Content-Type': backup.format === 'bak' ? 'application/octet-stream' : 'application/gzip',
@@ -74,7 +75,7 @@ function createBackupController({ backupService, brandingService, isAuthorizedCr
                     sourceGeneratedAt: inspected.generatedAt,
                     tableCounts: inspected.tableCounts,
                     details: 'تم التحقق من ضغط النسخة وبنيتها قبل الاسترجاع.'
-                }).catch((error) => console.warn('Unable to record backup inspection:', error.message));
+                }).catch((error) => console.warn('Unable to record backup inspection:', error.code || 'recording_failed'));
                 return response.json({
                     valid: true,
                     generatedAt: inspected.generatedAt,
@@ -86,8 +87,8 @@ function createBackupController({ backupService, brandingService, isAuthorizedCr
                     integrity: inspected.integrity
                 });
             } catch (error) {
-                await recordBackupOperation({ operationType: 'inspect', fileName, status: 'failed', details: error.message })
-                    .catch((recordError) => console.warn('Unable to record failed backup inspection:', recordError.message));
+                await recordBackupOperation({ operationType: 'inspect', fileName, status: 'failed', details: safeOperationalError(error, 'Backup inspection failed.') })
+                    .catch((recordError) => console.warn('Unable to record failed backup inspection:', recordError.code || 'recording_failed'));
                 throw error;
             }
         },
@@ -100,8 +101,8 @@ function createBackupController({ backupService, brandingService, isAuthorizedCr
                 const result = await restoreBackup(request.body, { fileName });
                 return response.json({ restored: true, ...result });
             } catch (error) {
-                await recordBackupOperation({ operationType: 'restore', fileName, status: 'failed', details: error.message })
-                    .catch((recordError) => console.warn('Unable to record failed backup restore:', recordError.message));
+                await recordBackupOperation({ operationType: 'restore', fileName, status: 'failed', details: safeOperationalError(error, 'Backup restore failed.') })
+                    .catch((recordError) => console.warn('Unable to record failed backup restore:', recordError.code || 'recording_failed'));
                 throw error;
             }
         }
