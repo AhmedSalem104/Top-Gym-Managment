@@ -31,7 +31,8 @@ NODE_ENV=production
 MSSQL_CONNECTION_STRING=...
 APP_TIMEZONE=Africa/Cairo
 CRON_SECRET=...
-BACKUP_STORAGE_DRIVER=approved-provider
+# Keep disabled until a registered private provider adapter is configured.
+BACKUP_STORAGE_DRIVER=none
 BACKUP_SCHEDULER_CONCURRENCY=2
 BACKUP_SCHEDULER_RETRY_COUNT=1
 BACKUP_ENABLE_PLATFORM_WEEKLY=true

@@ -45,8 +45,8 @@ test('backup actions expose tenant-scoped record routes and reason-safe restore 
     const routes = source('src/routes/backup.routes.js');
     const controller = source('src/controllers/backup.controller.js');
     assert.match(routes, /\/api\/backup\/records', asyncRoute\(controller\.create\)/);
-    assert.match(routes, /\/api\/backup\/records\/:id\/download', asyncRoute\(controller\.recordDownload\)/);
-    assert.match(routes, /\/api\/backup\/records\/:id\/restore', asyncRoute\(controller\.restoreRecord\)/);
+    assert.match(routes, /\/api\/backup\/records\/:id\/download', backupActionRateLimit, asyncRoute\(controller\.recordDownload\)/);
+    assert.match(routes, /\/api\/backup\/records\/:id\/restore', backupActionRateLimit, asyncRoute\(controller\.restoreRecord\)/);
     assert.match(controller, /x-backup-reason-b64/);
     assert.match(controller, /Buffer\.from\(encoded, 'base64url'\)/);
     assert.match(controller, /const reason = requestReason\(request\);[\s\S]*?BACKUP_REASON_REQUIRED/);
