@@ -410,10 +410,10 @@ async function getDummyPasswordHash() {
 }
 
 async function login(body = {}, request) {
-    await ensureAuthReady();
     const email = normalizeEmail(body.email);
     const password = String(body.password ?? '');
     if (password.length > PASSWORD_MAX_LENGTH) throw authError('Ø§Ù„Ø¨Ø±ÙŠØ¯ Ø§Ù„Ø¥Ù„ÙƒØªØ±ÙˆÙ†ÙŠ Ø£Ùˆ ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ± ØºÙŠØ± ØµØ­ÙŠØ­Ø©.', 401, 'INVALID_CREDENTIALS');
+    await ensureAuthReady();
     const user = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? await getUserByEmail(email) : null;
     const validPassword = await verifyPassword(password, user?.password_hash || await getDummyPasswordHash());
     if (!user || !validPassword) throw authError('البريد الإلكتروني أو كلمة المرور غير صحيحة.', 401, 'INVALID_CREDENTIALS');
