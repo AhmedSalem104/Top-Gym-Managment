@@ -1,6 +1,6 @@
 # Security audit — static/local evidence
 
-Last reviewed: 2026-08-29
+Last reviewed: 2026-08-29 (`2fdd80a`)
 
 This is an engineering audit of the repository and local tests. It is not a
 penetration test and does not replace authenticated Staging verification.

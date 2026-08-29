@@ -6,7 +6,7 @@ stop safe implementation elsewhere, but a Critical item remains a Go-Live
 gate.
 
 Last reviewed: 2026-08-29  
-Implementation revision covered: `4f8dab8 security: guard migration target environment`
+Implementation revision covered: `2fdd80a observability: add tenant-neutral liveness probe`
 
 ## Status vocabulary
 
@@ -88,7 +88,7 @@ claims to Production evidence. Those items remain listed above exactly once.
 - `npm run qa:database`: passed with guarded/non-destructive migrations,
   runner/pool/transaction checks, runtime schema checks and SaaS integrity
   checks; live schema rehearsal remains pending.
-- `npm run test:unit`: passed 66/66, including safe internal-error logging,
+- `npm run test:unit`: passed 72/72, including safe internal-error logging,
   baseline safety, pool/transaction behavior and SaaS duplicate-request guards.
 - Platform subscription request reads are now bounded and server-paginated;
   Platform Admin can move through the queue without loading the full request

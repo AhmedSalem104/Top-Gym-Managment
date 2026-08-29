@@ -12,7 +12,7 @@ Staging session cookie. No login or auto-login path is used.
 
 **Audit date:** 2026-08-29
 
-**Code revision audited:** `286a7a5 perf: paginate platform tenant payment history`
+**Code revision audited:** `2fdd80a observability: add tenant-neutral liveness probe`
 
 This document records findings that can be established from source and schema
 inspection without inventing latency numbers or touching the live database.
