@@ -27,7 +27,7 @@ function createPlatformController({ saasService, authService }) {
         },
 
         requests: async (request, response) => {
-            response.json({ requests: await saasService.listPlatformRequests({ status: request.query?.status || '' }) });
+            response.json(await saasService.listPlatformRequests({ status: request.query?.status || '', page: request.query?.page, pageSize: request.query?.pageSize, readOnly: request.readOnlyBaseline, includePagination: true }));
         },
 
         approveRequest: async (request, response) => {

@@ -41,3 +41,20 @@ test('legacy platform reads skip subscription expiry writes in read-only mode', 
     assert.match(platformController, /listAudit\(\{ limit: request\.query\?\.limit, readOnly: request\.readOnlyBaseline \}\)/);
     assert.match(platformAdminController, /listAudit\(\{ limit: request\.query\?\.limit, readOnly: request\.readOnlyBaseline \}\)/);
 });
+
+test('platform subscription requests use bounded server-side pagination', () => {
+    const serviceSource = fs.readFileSync(path.join(__dirname, '../../src/services/saas-service.js'), 'utf8');
+    const platformController = fs.readFileSync(path.join(__dirname, '../../src/controllers/platform.controller.js'), 'utf8');
+    const platformAdminController = fs.readFileSync(path.join(__dirname, '../../src/controllers/platform-admin.controller.js'), 'utf8');
+    const platformAdminClient = fs.readFileSync(path.join(__dirname, '../../public/js/platform-admin.js'), 'utf8');
+
+    assert.match(serviceSource, /async function listPlatformRequests\(\{ status = '', page = 1, pageSize = 25, requestId = null, readOnly = false, includePagination = false \} = \{\}\)/);
+    assert.match(serviceSource, /COUNT_BIG\(\*\) OVER\(\) AS total_count/);
+    assert.match(serviceSource, /OFFSET @offset ROWS FETCH NEXT @pageSize ROWS ONLY/);
+    assert.match(serviceSource, /const normalizedPageSize = Math\.min\(100, Math\.max\(1, Number\(pageSize\) \|\| 25\)\)/);
+    assert.match(serviceSource, /listPlatformRequests\(\{ requestId: id \}\)/);
+    assert.match(platformController, /includePagination: true/);
+    assert.match(platformAdminController, /includePagination: true/);
+    assert.match(platformAdminClient, /requestPage: 1/);
+    assert.match(platformAdminClient, /data-request-page/);
+});

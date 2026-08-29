@@ -8,6 +8,8 @@
         tenants: { tenants: [], pagination: {} },
         plans: [],
         requests: [],
+        requestPage: 1,
+        requestPagination: {},
         audit: [],
         profile: null,
         profileTab: 'overview',
@@ -380,11 +382,25 @@
 
     async function loadRequests() {
         const status = $('#requestStatusFilter')?.value || '';
-        try { state.requests = (await api(`/api/platform-admin/subscription-requests${status ? `?status=${encodeURIComponent(status)}` : ''}`)).requests || []; renderRequests(); } catch (error) { showToast(error.message, true); }
+        const params = new URLSearchParams({ page: state.requestPage, pageSize: 25 });
+        if (status) params.set('status', status);
+        try { const data = await api(`/api/platform-admin/subscription-requests?${params}`); state.requests = data.requests || []; state.requestPagination = data.pagination || {}; renderRequests(); renderRequestPagination(); } catch (error) { showToast(error.message, true); }
     }
 
     function renderRequests() {
         $('#requestsTableBody').innerHTML = state.requests.length ? state.requests.map((request) => `<tr><td><span class="tenant-cell"><strong>${escapeHtml(request.tenantName || '—')}</strong><small>${escapeHtml(request.tenantSlug || '')}</small></span></td><td>${escapeHtml(request.plan?.name || '—')}</td><td>${escapeHtml(formatMoney(request.amount, request.currency))}</td><td>${request.proof ? `<a class="table-action" target="_blank" rel="noreferrer" href="/api/platform-admin/payment-proofs/${request.proof.id}/file">معاينة</a>` : 'لم يرفع'}</td><td>${statusPill(request.status)}</td><td>${escapeHtml(formatDate(request.createdAt))}</td><td>${request.status === 'pending' ? `<button class="table-action" data-request-action="approve" data-request-id="${request.id}" type="button">قبول</button> <button class="table-action" data-request-action="reject" data-request-id="${request.id}" type="button">رفض</button>` : '—'}</td></tr>`).join('') : '<tr><td colspan="7"><div class="empty-inline">لا توجد طلبات.</div></td></tr>';
+    }
+
+    function renderRequestPagination() {
+        const summary = $('#requestResultsSummary');
+        const host = $('#requestPagination');
+        if (!summary || !host) return;
+        const pagination = state.requestPagination || {};
+        const total = Number(pagination.total || 0);
+        const page = Number(pagination.page || state.requestPage || 1);
+        const pages = Number(pagination.pages || 1);
+        summary.textContent = total ? `عرض ${state.requests.length} من ${total} طلب` : 'لا توجد نتائج';
+        host.innerHTML = pages > 1 ? Array.from({ length: pages }, (_, index) => index + 1).map((number) => `<button type="button" class="${number === page ? 'active' : ''}" data-request-page="${number}">${number}</button>`).join('') : '';
     }
 
     async function loadPlans() {
@@ -577,7 +593,7 @@
         });
         $('#tenantSearch').addEventListener('input', (event) => { clearTimeout(searchTimer); state.tenantFilters.search = event.target.value; state.tenantPage = 1; searchTimer = setTimeout(loadTenants, 260); });
         [['tenantStatusFilter','status'],['tenantPlanFilter','plan'],['tenantExpiryFilter','expiringDays']].forEach(([id,key]) => $(`#${id}`).addEventListener('change', (event) => { state.tenantFilters[key] = event.target.value; state.tenantPage = 1; loadTenants(); }));
-        $('#requestStatusFilter').addEventListener('change', loadRequests);
+        $('#requestStatusFilter').addEventListener('change', () => { state.requestPage = 1; loadRequests(); });
         $('#platformGlobalSearch').addEventListener('input', (event) => { if (state.view !== 'gyms') setView('gyms'); $('#tenantSearch').value = event.target.value; state.tenantFilters.search = event.target.value; state.tenantPage = 1; clearTimeout(searchTimer); searchTimer = setTimeout(loadTenants, 260); });
         $('[data-platform-action="refresh-dashboard"]').addEventListener('click', loadDashboard);
         $('[data-platform-action="refresh-requests"]').addEventListener('click', loadRequests);
@@ -596,6 +612,8 @@
             if (openButton) { setView('gyms'); await openTenant(openButton.dataset.openTenant); return; }
             const pageButton = event.target.closest('[data-tenant-page]');
             if (pageButton) { state.tenantPage = Number(pageButton.dataset.tenantPage); loadTenants(); return; }
+            const requestPageButton = event.target.closest('[data-request-page]');
+            if (requestPageButton) { state.requestPage = Number(requestPageButton.dataset.requestPage); loadRequests(); return; }
             const tab = event.target.closest('[data-profile-tab]');
             if (tab) { activateProfileTab(tab.dataset.profileTab); return; }
             const profileAction = event.target.closest('[data-profile-action]');

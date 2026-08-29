@@ -1004,20 +1004,31 @@ async function uploadPaymentProof({ tenantId = currentTenantId({ required: true 
     return (await listTenantRequests(id)).find((item) => item.id === requestNumber) || { id: requestNumber, proof: { fileName: proof.fileName, mimeType: proof.mimeType, fileSize: proof.buffer.length } };
 }
 
-async function listPlatformRequests({ status = '', readOnly = false } = {}) {
+async function listPlatformRequests({ status = '', page = 1, pageSize = 25, requestId = null, readOnly = false, includePagination = false } = {}) {
     await ensureSaasTables({ readOnly });
     const pool = await getPool();
-    const result = await pool.request().input('status', sql.VarChar(20), text(status, '', 20).toLowerCase()).query(`SELECT r.id,r.tenant_id,r.status,r.amount_snapshot,r.currency,r.notes,r.review_notes,r.requested_by_user_id,r.reviewed_by_user_id,r.reviewed_at,r.created_at,
+    const normalizedPage = Math.min(100000, Math.max(1, Number(page) || 1));
+    const normalizedPageSize = Math.min(100, Math.max(1, Number(pageSize) || 25));
+    const normalizedRequestId = requestId == null || requestId === '' ? null : Number(requestId);
+    if (normalizedRequestId !== null && (!Number.isInteger(normalizedRequestId) || normalizedRequestId <= 0)) throw saasError('Ø·Ù„Ø¨ Ø§Ù„Ø§Ø´ØªØ±Ø§Ùƒ ØºÙŠØ± ØµØ­ÙŠØ­.', 400, 'INVALID_SUBSCRIPTION_REQUEST');
+    const offset = (normalizedPage - 1) * normalizedPageSize;
+    const result = await pool.request().input('status', sql.VarChar(20), text(status, '', 20).toLowerCase()).input('requestId', sql.BigInt, normalizedRequestId).input('offset', sql.Int, offset).input('pageSize', sql.Int, normalizedPageSize).query(`SELECT r.id,r.tenant_id,r.status,r.amount_snapshot,r.currency,r.notes,r.review_notes,r.requested_by_user_id,r.reviewed_by_user_id,r.reviewed_at,r.created_at,
                        t.name AS tenant_name,t.slug AS tenant_slug,u.full_name AS requested_by_name,
                        p.id AS plan_id,p.code,p.name,p.description,p.billing_period,p.price,p.currency AS plan_currency,p.max_members,p.max_users,p.max_ai_generations,p.max_storage_mb,p.features_json,p.is_active,p.sort_order,p.updated_at AS plan_updated_at,
-                       proof.id AS proof_id,proof.file_name AS proof_file_name,proof.mime_type AS proof_mime_type,proof.file_size AS proof_file_size,proof.uploaded_at AS proof_uploaded_at
+                       proof.id AS proof_id,proof.file_name AS proof_file_name,proof.mime_type AS proof_mime_type,proof.file_size AS proof_file_size,proof.uploaded_at AS proof_uploaded_at,
+                       COUNT_BIG(*) OVER() AS total_count
                 FROM dbo.saas_subscription_requests r
                 INNER JOIN dbo.gym_tenants t ON t.id=r.tenant_id
                 INNER JOIN dbo.saas_plans p ON p.id=r.plan_id
                 LEFT JOIN dbo.gym_users u ON u.id=r.requested_by_user_id
                 LEFT JOIN dbo.saas_payment_proofs proof ON proof.request_id=r.id
-                WHERE (@status='' OR r.status=@status) ORDER BY CASE WHEN r.status='pending' THEN 0 ELSE 1 END,r.created_at DESC,r.id DESC;`);
-    return result.recordset.map(requestFromRow);
+                WHERE (@status='' OR r.status=@status) AND (@requestId IS NULL OR r.id=@requestId)
+                ORDER BY CASE WHEN r.status='pending' THEN 0 ELSE 1 END,r.created_at DESC,r.id DESC
+                OFFSET @offset ROWS FETCH NEXT @pageSize ROWS ONLY;`);
+    const requests = result.recordset.map(requestFromRow);
+    if (!includePagination) return requests;
+    const total = Number(result.recordset[0]?.total_count || 0);
+    return { requests, pagination: { page: normalizedPage, pageSize: normalizedPageSize, total, pages: Math.max(1, Math.ceil(total / normalizedPageSize)) } };
 }
 
 async function getPaymentProofFile(proofId, tenantId = null, { readOnly = false } = {}) {
@@ -1056,7 +1067,7 @@ async function approveRequest(requestId, actorUserId, reviewNotes = '') {
         await transaction.request().input('tenantId', sql.Int, tenantId).input('planId', sql.Int, planId).input('startsAt', sql.DateTime2(0), now).input('expiresAt', sql.DateTime2(0), expiresAt).input('actorId', sql.Int, actorId).input('notes', sql.NVarChar(1000), text(reviewNotes, '', 1000) || null).input('billingPeriodSnapshot', sql.VarChar(20), snapshot.billingPeriod).input('priceSnapshot', sql.Decimal(12, 2), snapshot.price).input('maxMembersSnapshot', sql.Int, snapshot.maxMembers).input('maxUsersSnapshot', sql.Int, snapshot.maxUsers).input('maxAiGenerationsSnapshot', sql.Int, snapshot.maxAiGenerations).input('maxStorageMbSnapshot', sql.Int, snapshot.maxStorageMb).input('featuresSnapshotJson', sql.NVarChar(sql.MAX), JSON.stringify(snapshot.features)).query("INSERT INTO dbo.saas_tenant_subscriptions (tenant_id,plan_id,status,starts_at,expires_at,source,approved_by_user_id,approved_at,notes,billing_period_snapshot,price_snapshot,currency_snapshot,max_members_snapshot,max_users_snapshot,max_ai_generations_snapshot,max_storage_mb_snapshot,features_snapshot_json) VALUES (@tenantId,@planId,'active',@startsAt,@expiresAt,'manual',@actorId,SYSUTCDATETIME(),@notes,@billingPeriodSnapshot,@priceSnapshot,(SELECT TOP (1) currency FROM dbo.saas_plans WHERE id=@planId),@maxMembersSnapshot,@maxUsersSnapshot,@maxAiGenerationsSnapshot,@maxStorageMbSnapshot,@featuresSnapshotJson); UPDATE dbo.gym_tenants SET status='active',updated_at=SYSUTCDATETIME() WHERE id=@tenantId;");
         await recordAudit({ tenantId, actorUserId: actorId, action: 'subscription_approved', entityType: 'subscription_request', entityId: id, details: `تم قبول طلب الاشتراك وإنشاء اشتراك ${request.code}.`, executor: transaction });
     });
-    return { request: (await listPlatformRequests()).find((item) => item.id === id) || null, subscription: await getCurrentSubscription(tenantId) };
+    return { request: (await listPlatformRequests({ requestId: id }))[0] || null, subscription: await getCurrentSubscription(tenantId) };
 }
 
 async function rejectRequest(requestId, actorUserId, reviewNotes = '') {
@@ -1071,7 +1082,7 @@ async function rejectRequest(requestId, actorUserId, reviewNotes = '') {
     if (request.status !== 'pending') throw saasError('تمت مراجعة طلب الاشتراك من قبل.', 409, 'SAAS_REQUEST_ALREADY_REVIEWED');
     await pool.request().input('requestId', sql.BigInt, id).input('actorId', sql.Int, Number(actorUserId)).input('notes', sql.NVarChar(1000), notes).query("UPDATE dbo.saas_subscription_requests SET status='rejected',reviewed_by_user_id=@actorId,reviewed_at=SYSUTCDATETIME(),review_notes=@notes,updated_at=SYSUTCDATETIME() WHERE id=@requestId;");
     await recordAudit({ tenantId: Number(request.tenant_id), actorUserId: Number(actorUserId), action: 'subscription_rejected', entityType: 'subscription_request', entityId: id, details: notes });
-    return (await listPlatformRequests()).find((item) => item.id === id) || null;
+    return (await listPlatformRequests({ requestId: id }))[0] || null;
 }
 
 function normalizeTenantInput(body = {}) {

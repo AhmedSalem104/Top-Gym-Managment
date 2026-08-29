@@ -126,7 +126,7 @@ function createPlatformAdminController({ platformAdminService, saasService, auth
         },
 
         requests: async (request, response) => {
-            response.json({ requests: await saasService.listPlatformRequests({ status: request.query?.status || '', readOnly: request.readOnlyBaseline }) });
+            response.json(await saasService.listPlatformRequests({ status: request.query?.status || '', page: request.query?.page, pageSize: request.query?.pageSize, readOnly: request.readOnlyBaseline, includePagination: true }));
         },
 
         approveRequest: async (request, response) => {
