@@ -33,6 +33,7 @@ function createAuthApiMiddleware({ authService, isAuthorizedCronRequest, tenantS
             && (request.path === '/branding' || request.path.startsWith('/branding/assets/'));
         const platformBrandingRequest = tenantBrandingPath
             && String(request.query?.scope || '').trim().toLowerCase() === 'platform';
+        const healthPath = request.path === '/health';
         const publicPath = ['/health', '/member-portal/lookup', '/member-portal/feedback', '/branding'].includes(request.path)
             || request.path === '/member-portal/library/options'
             || request.path.startsWith('/member-portal/library/')
@@ -46,6 +47,13 @@ function createAuthApiMiddleware({ authService, isAuthorizedCronRequest, tenantS
         // tenant just to create/read a session.
         if (authPublicPath) {
             return runTenantContext({ tenantId: null, mode: 'public', readOnlyBaseline: request.readOnlyBaseline }, next);
+        }
+
+        // Health probes must be tenant-neutral and strictly read-only. In
+        // particular, do not resolve the fallback tenant here because that
+        // path may bootstrap schema on an uninitialized environment.
+        if (healthPath) {
+            return runTenantContext({ tenantId: null, mode: 'platform', readOnlyBaseline: request.readOnlyBaseline }, next);
         }
 
         // Branding is public for the login screen, but an authenticated gym

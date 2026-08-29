@@ -21,9 +21,11 @@ Each request receives a safe correlation identifier from
 
 ## Health endpoint
 
-`GET /api/health` verifies application routing and SQL connectivity. It is a
-read-only connectivity check, not proof of capacity, RLS correctness, storage
-availability or backup recoverability.
+`GET /api/health` is tenant-neutral and verifies application routing and SQL
+connectivity. It reports safe application/database/storage states and a
+monotonic database-check duration; a database failure returns `503` without
+exposing driver details. It is a read-only connectivity check, not proof of
+capacity, RLS correctness, storage availability or backup recoverability.
 
 ## Verification boundary
 

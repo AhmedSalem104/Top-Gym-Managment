@@ -1,5 +1,6 @@
 'use strict';
 
+const { performance } = require('node:perf_hooks');
 const { registerAuthRoutes } = require('./auth.routes');
 const { registerMembersRoutes } = require('./members.routes');
 const { registerAttendanceRoutes } = require('./attendance.routes');
@@ -19,6 +20,41 @@ const { registerBrandingRoutes } = require('./branding.routes');
 const { registerPlatformRoutes } = require('./platform.routes');
 const { registerPlatformAdminRoutes } = require('./platform-admin.routes');
 const { registerSaasRoutes } = require('./saas.routes');
+
+function createHealthHandler({ getPool, now = performance.now } = {}) {
+    return async (request, response) => {
+        const startedAt = now();
+        try {
+            const pool = await getPool();
+            await pool.request().query('SELECT 1 AS ok;');
+            const databaseDurationMs = Math.round((now() - startedAt) * 100) / 100;
+            return response.json({
+                ok: true,
+                status: 'healthy',
+                database: 'connected',
+                checks: {
+                    application: { status: 'healthy' },
+                    database: { status: 'healthy', durationMs: databaseDurationMs },
+                    storage: { status: 'not_configured' }
+                },
+                requestId: request.requestId || null
+            });
+        } catch (_) {
+            const databaseDurationMs = Math.round((now() - startedAt) * 100) / 100;
+            return response.status(503).json({
+                ok: false,
+                status: 'degraded',
+                database: 'unavailable',
+                checks: {
+                    application: { status: 'healthy' },
+                    database: { status: 'unhealthy', durationMs: databaseDurationMs },
+                    storage: { status: 'not_configured' }
+                },
+                requestId: request.requestId || null
+            });
+        }
+    };
+}
 
 function registerRoutes(app, {
     asyncRoute,
@@ -47,11 +83,7 @@ function registerRoutes(app, {
     platformAdminService,
     getPool
 }) {
-    app.get('/api/health', asyncRoute(async (_request, response) => {
-        const pool = await getPool();
-        await pool.request().query('SELECT 1 AS ok;');
-        response.json({ ok: true, database: 'connected' });
-    }));
+    app.get('/api/health', asyncRoute(createHealthHandler({ getPool })));
 
     registerAuthRoutes(app, { authService, permissionService, asyncRoute, ownerOnly, allowLoginAttempt });
     registerBackupRoutes(app, { backupService, brandingService, asyncRoute, isAuthorizedCronRequest });
@@ -74,4 +106,4 @@ function registerRoutes(app, {
     registerMembersRoutes(app, { memberService, asyncRoute });
 }
 
-module.exports = { registerRoutes };
+module.exports = { createHealthHandler, registerRoutes };
