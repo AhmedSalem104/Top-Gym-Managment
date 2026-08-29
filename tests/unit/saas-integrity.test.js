@@ -98,3 +98,40 @@ test('subscription rejection updates the request and audit atomically', () => {
     assert.match(block, /WHERE id=@requestId AND status='pending'/);
     assert.match(block, /executor: transaction/);
 });
+
+test('subscription approval locks the request and commits the state transition atomically', () => {
+    const source = fs.readFileSync(path.join(__dirname, '../../src/services/saas-service.js'), 'utf8');
+    const start = source.indexOf('async function approveRequest');
+    const end = source.indexOf('\nasync function rejectRequest', start);
+    const block = source.slice(start, end);
+
+    assert.notEqual(start, -1);
+    assert.notEqual(end, -1);
+    assert.match(block, /await withTransaction\(async \(transaction\)/);
+    assert.match(block, /FROM dbo\.saas_subscription_requests r WITH \(UPDLOCK,HOLDLOCK\)/);
+    assert.match(block, /if \(request\.status !== 'pending'\)/);
+    assert.match(block, /if \(!request\.proof_id\)/);
+    assert.match(block, /status='approved'/);
+    assert.match(block, /saas_tenant_subscriptions SET status='expired'/);
+    assert.match(block, /INSERT INTO dbo\.saas_tenant_subscriptions/);
+    assert.match(block, /UPDATE dbo\.gym_tenants SET status='active'/);
+    assert.match(block, /action: 'subscription_approved'/);
+    assert.match(block, /executor: transaction/);
+});
+
+test('subscription lifecycle and enforcement have explicit expiry, recovery and limit guards', () => {
+    const source = fs.readFileSync(path.join(__dirname, '../../src/services/saas-service.js'), 'utf8');
+
+    assert.match(source, /async function syncExpiredTenants\(\{ force = false \} = \{\}\)/);
+    assert.match(source, /status='expired', updated_at=SYSUTCDATETIME\(\)/);
+    assert.match(source, /async function getCurrentSubscription\(tenantId = currentTenantId\(\{ required: true \}\), \{ readOnly = false \} = \{\}\)/);
+    assert.match(source, /async function enforceTenantAccess\(tenantId, \{ path = '', method = 'GET', readOnly = false \} = \{\}\)/);
+    assert.match(source, /if \(!subscription \|\| !\['active', 'trial'\]\.includes\(subscription\.status\)/);
+    assert.match(source, /if \(canRecover\) return \{ tenantStatus: tenant\.status, subscription, recovery: true \}/);
+    assert.match(source, /async function enforceRequestLimit\(tenantId, \{ path = '', method = 'GET', incomingBytes = 0, access = null \} = \{\}\)/);
+    assert.match(source, /usage\[resource\] >= max/);
+    assert.match(source, /SAAS_PLAN_LIMIT_REACHED/);
+    assert.match(source, /SAAS_STORAGE_LIMIT_REACHED/);
+    assert.match(source, /overrides\?\.maxMembers \?\? base\.maxMembers/);
+    assert.match(source, /features = \{ \.\.\.baseFeatures, \.\.\.\(overrides\?\.features \|\| \{\}\) \}/);
+});
