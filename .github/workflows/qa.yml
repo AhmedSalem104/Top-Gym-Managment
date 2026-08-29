@@ -30,6 +30,9 @@ jobs:
       - name: Run QA gate and build
         run: npm run qa:gate -- --build
 
+      - name: Run unit tests
+        run: npm run test:unit
+
       - name: Audit dependencies
         run: npm audit --audit-level=high
 
