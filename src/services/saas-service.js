@@ -1020,8 +1020,8 @@ async function listPlatformRequests({ status = '', readOnly = false } = {}) {
     return result.recordset.map(requestFromRow);
 }
 
-async function getPaymentProofFile(proofId, tenantId = null) {
-    await ensureSaasTables();
+async function getPaymentProofFile(proofId, tenantId = null, { readOnly = false } = {}) {
+    await ensureSaasTables({ readOnly });
     const id = Number(proofId);
     if (!Number.isInteger(id) || id <= 0) throw saasError('إثبات الدفع غير صحيح.', 400, 'INVALID_PAYMENT_PROOF');
     const pool = await getPool();

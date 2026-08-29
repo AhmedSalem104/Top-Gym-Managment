@@ -50,7 +50,7 @@ function createSaasController({ saasService }) {
         },
 
         paymentProof: async (request, response) => {
-            const proof = await saasService.getPaymentProofFile(request.params.id, request.tenant?.id);
+            const proof = await saasService.getPaymentProofFile(request.params.id, request.tenant?.id, { readOnly: request.readOnlyBaseline });
             if (!proof) return response.status(404).end();
             response.set({
                 'Cache-Control': 'no-store, no-cache, must-revalidate, private',
