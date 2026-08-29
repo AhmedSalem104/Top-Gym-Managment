@@ -84,6 +84,7 @@ function createPerformanceMetrics({ enabled = false, logger = console } = {}) {
                 const durationMs = performance.now() - metrics.startedAt;
                 const dbWallMs = databaseWallTime(metrics);
                 logger.info('[PERF]', JSON.stringify({
+                    requestId: request.requestId || null,
                     method: request.method,
                     path: request.path,
                     status: response.statusCode,

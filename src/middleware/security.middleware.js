@@ -3,6 +3,7 @@
 const path = require('node:path');
 const compression = require('compression');
 const express = require('express');
+const { requestIdMiddleware } = require('./request-id.middleware');
 
 function securityHeaders(request, response, next) {
     response.set({
@@ -36,6 +37,7 @@ function staticHeaders(response, filePath) {
 function createBaseApp({ publicDirectory, expressFactory = express }) {
     const app = expressFactory();
     app.disable('x-powered-by');
+    app.use(requestIdMiddleware);
     app.use(express.json({ limit: '1mb' }));
     app.use(securityHeaders);
     app.use(compression({ threshold: 1024 }));

@@ -207,8 +207,17 @@ app.get('*', (request, response) => {
 });
 
 app.use((error, request, response, next) => {
-    console.error(`[${new Date().toISOString()}]`, error);
     const statusCode = Number.isInteger(error.statusCode) ? error.statusCode : 500;
+    const requestId = request.requestId || null;
+    console.error('[ERROR]', JSON.stringify({
+        timestamp: new Date().toISOString(),
+        requestId,
+        method: request.method,
+        path: request.path,
+        statusCode,
+        code: error.code || null,
+        category: statusCode >= 500 ? 'internal_error' : 'request_error'
+    }));
     const message = error.expose || statusCode < 500
         ? error.message
         : 'حدث خطأ في الخادم. حاول مرة أخرى.';
@@ -219,7 +228,8 @@ app.use((error, request, response, next) => {
         memberName: error.memberName || null,
         memberId: error.memberId || null,
         attendance: error.attendance || null,
-        saas: error.saas || null
+        saas: error.saas || null,
+        requestId
     });
 });
 
@@ -247,7 +257,10 @@ async function start() {
 
 if (require.main === module) {
     start().catch((error) => {
-        console.error('Unable to start the application:', error.message);
+        console.error('[STARTUP_ERROR]', JSON.stringify({
+            code: error.code || null,
+            category: 'startup_failure'
+        }));
         process.exitCode = 1;
     });
 }
