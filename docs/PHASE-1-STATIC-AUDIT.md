@@ -12,7 +12,7 @@ Staging session cookie. No login or auto-login path is used.
 
 **Audit date:** 2026-08-29
 
-**Code revision audited:** `038e4ed perf: paginate platform subscription requests`
+**Code revision audited:** `286a7a5 perf: paginate platform tenant payment history`
 
 This document records findings that can be established from source and schema
 inspection without inventing latency numbers or touching the live database.
@@ -39,8 +39,8 @@ The following facts are static evidence, not runtime benchmarks:
 - Member list enrichment uses two batched reads (`membership code previews` and
   `attendance statuses`); no per-member read loop was found there.
 - Platform tenant lists and library lists use server-side pagination.
-- Platform subscription request queues use bounded server-side pagination and
-  return page metadata to the Platform Admin UI.
+- Platform subscription request queues and tenant-profile payment history use
+  bounded server-side pagination and return page metadata to their UIs.
 - The reusable SQL pool is process-scoped and reset after a failed connection.
 - The transaction helper commits on success and attempts rollback on failure.
 - The static index declaration inventory contains **61 declarations / 59 unique
@@ -103,11 +103,12 @@ The following facts are static evidence, not runtime benchmarks:
    moving all schema work into reviewed migrations remains a production
    hardening item.
 
-6. **Platform subscription requests were previously unbounded.** The review
-   queue now applies a bounded page size and `OFFSET/FETCH`, while preserving
-   the existing `requests` response field and adding pagination metadata. The
-   queue's real latency and plan quality still require an authenticated
-   PlatformAdmin baseline.
+6. **SaaS subscription history was previously unbounded.** The Owner billing
+   history, Platform Admin review queue and per-tenant profile payment history
+   now apply bounded page sizes and `OFFSET/FETCH`, while preserving the
+   existing request arrays and adding pagination metadata. Post-write reads
+   use the affected request id. Their real latency and plan quality still
+   require an authenticated baseline.
 
 ### Medium — proven code-shape improvements, not yet benchmarked
 
