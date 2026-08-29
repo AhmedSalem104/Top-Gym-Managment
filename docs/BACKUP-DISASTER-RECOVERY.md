@@ -10,7 +10,8 @@ is active until those dependencies are configured and verified.
 
 Current implementation status:
 
-- Tenant logical backup: `IMPLEMENTED` and locally covered by unit/source tests.
+- Tenant logical backup: `IMPLEMENTED` and locally covered by unit/source tests,
+  including complete-registry, manifest, checksum and sensitive-column checks.
 - Platform logical DR export: `IMPLEMENTED` as a separate platform-scoped
   artifact; native database backup capability is still an infrastructure
   verification item.
@@ -22,7 +23,7 @@ Current implementation status:
 - Local private filesystem adapter: `IMPLEMENTED` for isolated
   `local`/`development`/`test` rehearsals only. It is never accepted in
   `staging` or `production` and is not durable off-site storage.
-- Tenant restore: `IMPLEMENTED` with checksum/manifest validation, a mandatory
+- Tenant restore: `IMPLEMENTED` with checksum/manifest/registry validation, a mandatory
   pre-restore safety backup and transactional tenant-scoped writes; a real
   isolated restore rehearsal is `BLOCKED` pending a safe environment.
 - Platform restore: runbook/strategy only. No dangerous full-platform restore
@@ -67,8 +68,8 @@ in the Vercel filesystem.
    SHA-256 content integrity.
 5. The compressed artifact is sent to the private tenant storage adapter under
    `tenants/{tenant_id}/private/backups/...`.
-6. Size, existence and checksum are verified. Only then is the record marked
-   `VERIFIED` and made downloadable.
+6. Size, existence, checksum, gzip contents and the complete manifest/registry
+   are verified. Only then is the record marked `VERIFIED` and made downloadable.
 7. Failures are isolated to the tenant, recorded with a safe error code and
    remain retryable. Secrets, passwords and sessions are not part of a tenant
    artifact.
@@ -91,7 +92,9 @@ tenant failure does not stop other tenants. It then creates one separate
 - SaaS plans, subscriptions, requests, payment-proof metadata, overrides,
   changes, notes and platform audit data;
 - all registered tenant-owned rows grouped under a `tenant` section;
-- no password hashes, salts, session tokens, API keys or secret columns.
+- no password hashes, session tokens, API keys or secret columns. Every
+  `tenant_id` reference in both the global control-plane section and tenant
+  sections is checked against the exported tenant catalog.
 
 The current platform artifact is a verified logical export, not a native SQL
 Server `.bak` database backup. Native `.bak` requests fail closed so a logical
@@ -118,10 +121,13 @@ version. Each manifest carries:
 - SHA-256 over the serialized table sections;
 - SHA-256 over the final compressed artifact in metadata/storage verification.
 
-Upload and restore reject unsupported versions, unknown tables, missing tenant
+Only the verified logical `json.gz` format is accepted by the service. Upload
+and restore reject unsupported versions, unknown tables, missing tenant
 ownership, foreign-tenant rows, mismatched counts and checksum tampering.
 Restore additionally requires the current tenant registry to be fully present,
 so an old partial artifact cannot silently erase newly introduced tenant data.
+Download also rejects malformed or expired metadata before private bytes are
+returned, even if retention cleanup has not run yet.
 
 ## Storage and private access
 
@@ -168,9 +174,10 @@ Default retention is configurable through environment variables:
 - platform weekly: 84 days;
 - platform monthly: 365 days.
 
-Retention cleanup first marks an eligible artifact expired, deletes the private
-object, verifies the database transition, and leaves a retryable `EXPIRED`
-record when storage/database steps partially fail. The daily Vercel invocation
+Retention cleanup first claims an eligible artifact with the database marker
+`BACKUP_DELETE_IN_PROGRESS` (with stale-claim recovery), marks it expired,
+deletes the private object, verifies the database transition, and leaves a
+retryable `EXPIRED` record when storage/database steps partially fail. The daily Vercel invocation
 also schedules `platform_weekly` on UTC Sundays and `platform_monthly` on the
 first UTC day of the month. Both are configurable through
 `BACKUP_ENABLE_PLATFORM_WEEKLY` and `BACKUP_ENABLE_PLATFORM_MONTHLY`, are
@@ -184,14 +191,16 @@ database restore:
 
 1. Authenticate and resolve the active trusted tenant.
 2. Confirm the backup belongs to that tenant and is `VERIFIED`.
-3. Recheck the compressed artifact checksum and manifest.
+3. Recheck the compressed artifact checksum, manifest and complete current
+   tenant registry.
 4. Require an explicit confirmation header and a non-empty reason.
 5. Create a mandatory `tenant_pre_restore` safety backup. Restore fails closed
    if that safety copy cannot be verified in private storage.
 6. Acquire a database application lock for the tenant.
 7. Delete and restore only registered tenant-scoped rows in foreign-key order
    within one transaction.
-8. Validate per-table counts, commit, and write `RESTORE_COMPLETED`.
+8. Validate per-table counts, commit, and write `RESTORE_COMPLETED` with the
+   source backup id and the pre-restore safety backup id.
 9. On any failure, roll back the transaction and write `RESTORE_FAILED`.
 
 Concurrent restore/backup work for the same tenant is rejected by the
@@ -240,8 +249,9 @@ Sensitive events include:
   `PLATFORM_BACKUP_FAILED`, `PLATFORM_BACKUP_DOWNLOADED` and cleanup events.
 
 Audit records contain actor, tenant/backup reference, bounded reason, result
-and safe metadata only. They never contain backup content, credentials, signed
-URLs, SQL text, stack traces or sensitive member data.
+and safe metadata only. Restore records distinguish the source backup from the
+pre-restore safety backup. They never contain backup content, credentials,
+signed URLs, SQL text, stack traces or sensitive member data.
 
 ## Performance and safety considerations
 
@@ -265,10 +275,12 @@ URLs, SQL text, stack traces or sensitive member data.
 The recovery implementation has local unit/source coverage for:
 
 - checksum, manifest, version and cross-tenant row validation;
-- platform manifest completeness, credential-column exclusion and stored-byte
-  revalidation;
+- platform manifest completeness, control-plane/tenant reference validation,
+  credential-column exclusion and stored-byte revalidation;
 - complete registry enforcement on restore;
-- bounded concurrency and retention defaults;
+- bounded concurrency, retention defaults, deletion claims and download expiry
+  gates;
+- sensitive projection checks that preserve the nutritional `salt` field;
 - private tenant/platform key separation and provider fail-closed behavior;
 - read-only path safety and route contracts;
 - migration safety, RLS/tenant QA, platform-admin contracts and build syntax.
@@ -277,6 +289,7 @@ Run the relevant checks from the repository:
 
 ```text
 npm run test:unit
+npm run test:backup
 npm run qa:database
 npm run qa:tenancy
 npm run qa:platform-admin
@@ -311,9 +324,15 @@ Backup-specific outstanding items are:
 - `45ccd8e backup: add tenant and platform recovery foundation`
 - `8385ee4 test: align backup route safety coverage`
 - `378eeb3 backup: harden integrity and retention coordination`
-- Current working change: runtime registry health inspection, transaction-safe
-  snapshot reads, native-format fail-closed behavior and platform manifest
-  verification.
+- `a23e1b1 backup: reject unsupported stored formats`
+- `3d74bb5 backup: validate sensitive fields and manifests`
+- `a597139 backup: validate restore safety failures`
+- `972a9d1 backup: coordinate retention deletion claims`
+- `fd604e4 backup: enforce manifest and restore provenance`
+- `fd2d0ad backup: preserve nutritional salt fields`
+- `6abbaff backup: validate all platform tenant references`
+- `7fc0714 backup: exclude sensitive tenant projections`
+- `83b7609 backup: enforce retention on downloads`
 
 This report deliberately recommends **No-Go for a production backup/DR claim**
 until the Critical provider and restore evidence is available. It does not

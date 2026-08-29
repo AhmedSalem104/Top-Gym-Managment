@@ -5,8 +5,8 @@ from source inspection or local build checks alone. A blocked subtask does not
 stop safe implementation elsewhere, but a Critical item remains a Go-Live
 gate.
 
-Last reviewed: 2026-08-29  
-Implementation revision covered: `378eeb3` plus the current Backup/DR closure changes
+Last reviewed: 2026-08-30
+Implementation revision covered: `83b7609` plus the current Backup/DR closure changes
 
 ## Status vocabulary
 
@@ -99,12 +99,14 @@ claims to Production evidence. Those items remain listed above exactly once.
   authenticated lifecycle and concurrent database behavior remain Staging
   evidence.
 - Backup/DR: tenant registry coverage (including a live `tenant_id` catalog
-  check), versioned logical artifacts, platform manifest validation, stored-byte
+  check), versioned logical artifacts, complete platform manifest and
+  control-plane reference validation, sensitive-column projection, stored-byte
   checksum verification, private-key enforcement, bounded daily orchestration,
-  retention reconciliation, tenant restore safety gates and audit contracts are
-  `VERIFIED` locally. A real private provider, native/full platform backup,
-  isolated restore rehearsal and deployed scheduler remain external evidence
-  gates; see `docs/BACKUP-DISASTER-RECOVERY.md`.
+  retention deletion claims, download expiry gates, tenant restore safety
+  gates and audit provenance are `VERIFIED` locally. A real private provider,
+  native/full platform backup, isolated restore rehearsal and deployed
+  scheduler remain external evidence gates; see
+  `docs/BACKUP-DISASTER-RECOVERY.md`.
 
 ## Latest local verification evidence
 
@@ -153,7 +155,9 @@ claims to Production evidence. Those items remain listed above exactly once.
   provider-side execution and Vercel runtime behavior remain deployment debt.
 - Backup-specific local tests now cover platform manifest validation, secret
   column exclusion, runtime registry inspection boundaries, native `.bak`
-  fail-closed behavior, and recovery snapshot use of the active transaction.
+  fail-closed behavior, recovery snapshot use of the active transaction,
+  complete tenant-reference validation, safe nutritional `salt` projection,
+  retention claim coordination and expiry enforcement on downloads.
 
 These local results do not close the authenticated baseline, live execution
 plans, Staging/Production capacity, restore, or pilot evidence items above.
