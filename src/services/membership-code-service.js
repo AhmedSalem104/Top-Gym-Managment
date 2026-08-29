@@ -3,7 +3,7 @@
 const crypto = require('node:crypto');
 const { getPool, sql } = require('../database');
 const { config } = require('../config/env');
-const { getTenantContext, runTenantContext } = require('../tenancy/tenant-context');
+const { currentTenantId, getTenantContext, runTenantContext } = require('../tenancy/tenant-context');
 
 const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const CODE_PATTERN = /^TG[A-HJ-NP-Z2-9]{16}$/;
@@ -185,16 +185,18 @@ async function saveNewCode(connection, memberId, { action = 'issued', userId = n
 async function audit(memberId, action, { userId = null, request = null, connection = null } = {}) {
     if (!AUDIT_ACTIONS.has(action)) throw appError('إجراء كود العضوية غير صالح.', 400);
     const id = ensurePositiveId(memberId);
+    const tenantId = currentTenantId({ required: true });
     const meta = requestMeta(request);
     const db = connection || await getPool();
     await db.request()
         .input('memberId', sql.Int, id)
+        .input('tenantId', sql.Int, tenantId)
         .input('action', sql.VarChar(30), action)
         .input('userId', sql.Int, Number.isInteger(Number(userId)) && Number(userId) > 0 ? Number(userId) : null)
         .input('ipAddress', sql.VarChar(64), meta.ip)
         .input('userAgent', sql.NVarChar(512), meta.userAgent)
-        .query(`INSERT INTO dbo.gym_membership_code_audit (member_id, action, actor_user_id, ip_address, user_agent)
-                VALUES (@memberId, @action, @userId, @ipAddress, @userAgent);`);
+        .query(`INSERT INTO dbo.gym_membership_code_audit (tenant_id, member_id, action, actor_user_id, ip_address, user_agent)
+                VALUES (@tenantId, @memberId, @action, @userId, @ipAddress, @userAgent);`);
 }
 
 async function backfillCodes(pool) {
@@ -249,13 +251,20 @@ async function issueForMember(memberId, connection = null, options = {}) {
 }
 
 async function getPreview(memberId) {
-    await ensureMembershipCodeStorage();
+    // Reads must not trigger DDL/backfill work in a Serverless request. The
+    // schema is prepared by the migration/startup path; this endpoint only
+    // reads the already provisioned columns.
+    await ensureMembershipCodeStorage({ readOnly: true });
     const id = ensurePositiveId(memberId);
+    const tenantId = currentTenantId({ required: true });
     const pool = await getPool();
-    const result = await pool.request().input('memberId', sql.Int, id).query(`
+    const result = await pool.request()
+        .input('memberId', sql.Int, id)
+        .input('tenantId', sql.Int, tenantId)
+        .query(`
         SELECT membership_code_hash, membership_code_ciphertext, membership_code_issued_at, membership_code_revoked_at,
                membership_code_version
-        FROM dbo.members WHERE id = @memberId;
+        FROM dbo.members WHERE id = @memberId AND tenant_id = @tenantId;
     `);
     const row = result.recordset[0];
     if (!row || !row.membership_code_hash || !row.membership_code_ciphertext || row.membership_code_revoked_at) {
@@ -272,12 +281,14 @@ async function getPreview(memberId) {
 }
 
 async function getPreviews(memberIds = []) {
-    await ensureMembershipCodeStorage();
+    await ensureMembershipCodeStorage({ readOnly: true });
     const ids = [...new Set(memberIds.map((value) => Number(value)).filter((value) => Number.isInteger(value) && value > 0))];
     const previews = new Map();
     if (!ids.length) return previews;
+    const tenantId = currentTenantId({ required: true });
     const pool = await getPool();
     const request = pool.request();
+    request.input('tenantId', sql.Int, tenantId);
     const placeholders = ids.map((id, index) => {
         const name = `memberId${index}`;
         request.input(name, sql.Int, id);
@@ -286,7 +297,7 @@ async function getPreviews(memberIds = []) {
     const result = await request.query(`
         SELECT id, membership_code_hash, membership_code_ciphertext, membership_code_issued_at,
                membership_code_revoked_at, membership_code_version
-        FROM dbo.members WHERE id IN (${placeholders.join(', ')});
+        FROM dbo.members WHERE tenant_id = @tenantId AND id IN (${placeholders.join(', ')});
     `);
     for (const row of result.recordset || []) {
         let code = null;
@@ -304,13 +315,17 @@ async function getPreviews(memberIds = []) {
 }
 
 async function getForMember(memberId, { userId = null, request = null, action = 'viewed' } = {}) {
-    await ensureMembershipCodeStorage();
+    await ensureMembershipCodeStorage({ readOnly: true });
     const id = ensurePositiveId(memberId);
+    const tenantId = currentTenantId({ required: true });
     const pool = await getPool();
-    const result = await pool.request().input('memberId', sql.Int, id).query(`
+    const result = await pool.request()
+        .input('memberId', sql.Int, id)
+        .input('tenantId', sql.Int, tenantId)
+        .query(`
         SELECT membership_code_hash, membership_code_ciphertext, membership_code_issued_at, membership_code_revoked_at,
                membership_code_version
-        FROM dbo.members WHERE id = @memberId;
+        FROM dbo.members WHERE id = @memberId AND tenant_id = @tenantId;
     `);
     const row = result.recordset[0];
     if (!row) throw appError('العضو غير موجود.', 404);
@@ -373,7 +388,9 @@ function requestedTenantSlug(request) {
 async function findMemberContextByCode(value, { request = null, auditAction = 'portal_viewed' } = {}) {
     const callerContext = getTenantContext();
     const readOnlyBaseline = Boolean(callerContext?.readOnlyBaseline);
-    await ensureMembershipCodeStorage({ readOnly: readOnlyBaseline });
+    // Capability lookup is a read. Keep schema maintenance out of public
+    // requests; migrations provision this storage before traffic is accepted.
+    await ensureMembershipCodeStorage({ readOnly: true });
     let compact;
     try { compact = normalizeCode(value); } catch (_) { return null; }
 

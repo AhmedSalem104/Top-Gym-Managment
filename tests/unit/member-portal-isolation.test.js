@@ -8,6 +8,7 @@ const test = require('node:test');
 const membershipCodeService = require('../../src/services/membership-code-service');
 
 const root = path.resolve(__dirname, '../..');
+const membershipCodeServiceSource = fs.readFileSync(path.join(root, 'src/services/membership-code-service.js'), 'utf8');
 const portalServiceSource = fs.readFileSync(path.join(root, 'src/services/member-portal-service.js'), 'utf8');
 const feedbackServiceSource = fs.readFileSync(path.join(root, 'src/services/member-feedback-service.js'), 'utf8');
 const portalUiSource = fs.readFileSync(path.join(root, 'public/js/member-portal.js'), 'utf8');
@@ -27,6 +28,13 @@ test('portal reads are scoped to the member-code tenant before returning report 
     assert.match(portalServiceSource, /tenant:\s*\{\s*name: memberContext\.tenantName/);
     assert.match(feedbackServiceSource, /findMemberContextByCode\(membershipCode, \{ request \}\)/);
     assert.match(feedbackServiceSource, /runTenantContext\(\{ tenantId: memberContext\.tenantId, mode: 'public'/);
+});
+
+test('membership-code reads stay read-only and audit writes carry the active tenant explicitly', () => {
+    assert.match(membershipCodeServiceSource, /ensureMembershipCodeStorage\(\{ readOnly: true \}\)/);
+    assert.match(membershipCodeServiceSource, /currentTenantId\(\{ required: true \}\)/);
+    assert.match(membershipCodeServiceSource, /tenant_id = @tenantId AND id IN/);
+    assert.match(membershipCodeServiceSource, /INSERT INTO dbo\.gym_membership_code_audit \(tenant_id, member_id, action/);
 });
 
 test('member portal UI keeps one member record and each ledger row isolated on small screens', () => {

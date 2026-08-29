@@ -13,6 +13,8 @@ const path = require('node:path');
 test('SaaS subscription requests enforce one pending request per tenant', () => {
     assert.match(SAAS_SCHEMA_SQL, /HAVING COUNT_BIG\(\*\) > 1/);
     assert.match(SAAS_SCHEMA_SQL, /THROW 51008/);
+    assert.match(SAAS_SCHEMA_SQL, /\)\s*\n\s*BEGIN\s*\n\s*THROW 51008/);
+    assert.doesNotMatch(SAAS_SCHEMA_SQL, /\)\s*\n\s*;THROW 51008/);
     assert.match(SAAS_SCHEMA_SQL, /CREATE UNIQUE INDEX UQ_saas_requests_pending_tenant ON dbo\.saas_subscription_requests\(tenant_id\) WHERE status='pending'/);
 });
 

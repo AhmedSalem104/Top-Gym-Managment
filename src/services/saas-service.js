@@ -186,7 +186,9 @@ BEGIN
         GROUP BY tenant_id
         HAVING COUNT_BIG(*) > 1
     )
-        ;THROW 51008, 'Duplicate pending SaaS subscription requests must be reconciled before enforcing uniqueness.', 1;
+    BEGIN
+        THROW 51008, 'Duplicate pending SaaS subscription requests must be reconciled before enforcing uniqueness.', 1;
+    END;
     IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name=N'UQ_saas_requests_pending_tenant' AND object_id=OBJECT_ID(N'dbo.saas_subscription_requests'))
         CREATE UNIQUE INDEX UQ_saas_requests_pending_tenant ON dbo.saas_subscription_requests(tenant_id) WHERE status='pending';
 END;
