@@ -205,15 +205,11 @@ test('normal GET requests use a read-only tenant context and do not touch sessio
 });
 
 test('the authorized backup cron remains the explicit state-changing GET exception', async () => {
-    let tenantOptions;
     let context;
     const middleware = createAuthApiMiddleware({
         authService: {},
         tenantService: {
-            resolvePublicTenant: async (slug, options) => {
-                tenantOptions = { slug, options };
-                return { id: 1, status: 'active' };
-            }
+            resolvePublicTenant: async () => { throw new Error('backup cron must not resolve a public/default tenant'); }
         },
         isAuthorizedCronRequest: () => true
     });
@@ -230,7 +226,8 @@ test('the authorized backup cron remains the explicit state-changing GET excepti
     });
 
     assert.equal(request.readOnlyRequest, false);
-    assert.deepEqual(tenantOptions.options, { readOnly: false });
+    assert.equal(context.tenantId, null);
+    assert.equal(context.mode, 'platform');
     assert.equal(context.readOnlyBaseline, false);
 });
 

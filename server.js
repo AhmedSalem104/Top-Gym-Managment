@@ -11,6 +11,8 @@ const { createAuthApiMiddleware, ownerOnly } = require('./src/middleware/auth.mi
 const { createLoginAttemptGuard, createSensitiveRateLimit, createMembershipPortalRateLimit } = require('./src/middleware/rate-limit.middleware');
 const { closePool, getPool, initDatabase } = require('./src/database');
 const backupService = require('./src/services/backup-service');
+const { createObjectStorageService } = require('./src/services/object-storage-service');
+const { createBackupRecoveryService } = require('./src/services/backup-recovery-service');
 const financeService = require('./src/services/finance-service');
 const analyticsService = require('./src/services/analytics-service');
 const reportService = require('./src/services/report-service');
@@ -37,6 +39,9 @@ const { ensureAuthReady } = authService;
 const { createPerformanceMetrics } = require('./src/middleware/performance-metrics');
 const { READ_ONLY_METHODS, readOnlyBaselineGuard } = require('./src/middleware/read-only-baseline.middleware');
 const { getClientErrorCode, getSafeErrorMessage, isPublicClientError, safeErrorCode } = require('./src/utils/error-response');
+
+const objectStorageService = createObjectStorageService();
+const backupRecoveryService = createBackupRecoveryService({ storageService: objectStorageService });
 
 let httpServer;
 let shutdownStarted = false;
@@ -159,6 +164,8 @@ registerRoutes(app, {
     ownerOnly,
     allowLoginAttempt,
     backupService,
+    backupRecoveryService,
+    objectStorageService,
     isAuthorizedCronRequest: (request) => isAuthorizedCronRequest(request, { config }),
     financeService,
     analyticsService,
@@ -250,6 +257,7 @@ async function start() {
     await runTenantContext({ mode: 'platform', tenantId: 1 }, () => initDatabase());
     await runTenantContext({ mode: 'platform', tenantId: 1 }, () => tenantService.ensureTenantTables());
     const bootstrapTenant = await runTenantContext({ mode: 'platform', tenantId: 1 }, () => tenantService.ensureBootstrapTenant());
+    await runTenantContext({ mode: 'platform', tenantId: bootstrapTenant.id }, () => backupRecoveryService.ensureRecoveryTables());
     await runTenantContext({ mode: 'platform', tenantId: bootstrapTenant.id }, () => saasService.ensureSaasTables());
     await runTenantContext({ mode: 'tenant', tenantId: bootstrapTenant.id }, async () => {
         await ensureAuthReady();

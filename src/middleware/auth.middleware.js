@@ -105,12 +105,19 @@ function createAuthApiMiddleware({ authService, isAuthorizedCronRequest, tenantS
                 .catch(next);
         }
 
-        if (publicPath || cronRequest) {
+        // Scheduled backup automation is platform-scoped. It must never
+        // resolve a public/default tenant; the orchestrator resolves each
+        // eligible tenant explicitly.
+        if (cronRequest) {
+            return runTenantContext({ tenantId: null, mode: 'platform', readOnlyBaseline: false }, next);
+        }
+
+        if (publicPath) {
             return tenantService.resolvePublicTenant(requestedTenantSlug(request), { readOnly: readOnlyRequest })
                 .then((tenant) => {
                     if (!tenant) return response.status(404).json({ error: 'الجيم المطلوب غير موجود.', code: 'TENANT_NOT_FOUND' });
                     request.tenant = tenant;
-                    return runTenantContext({ tenantId: tenant.id, mode: cronRequest ? 'platform' : 'public', readOnlyBaseline: readOnlyRequest }, next);
+                    return runTenantContext({ tenantId: tenant.id, mode: 'public', readOnlyBaseline: readOnlyRequest }, next);
                 })
                 .catch(next);
         }

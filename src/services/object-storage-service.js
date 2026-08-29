@@ -4,6 +4,7 @@ const crypto = require('node:crypto');
 
 const MAX_PRIVATE_OBJECT_BYTES = 25 * 1024 * 1024;
 const OBJECT_KEY_PATTERN = /^tenants\/(\d+)\/private\/([a-z0-9][a-z0-9_-]{0,63})\/([A-Za-z0-9_-]{16,128})(?:\.([A-Za-z0-9]{1,12}))?$/;
+const PLATFORM_OBJECT_KEY_PATTERN = /^platform\/private\/([a-z0-9][a-z0-9_-]{0,63})\/([A-Za-z0-9_-]{16,128})(?:\.([A-Za-z0-9]{1,12}))?$/;
 const CATEGORY_PATTERN = /^[a-z0-9][a-z0-9_-]{0,63}$/;
 const MIME_PATTERN = /^[a-z0-9][a-z0-9!#$&^_.+-]{0,63}\/[a-z0-9][a-z0-9!#$&^_.+-]{0,63}$/i;
 const CHECKSUM_PATTERN = /^[a-f0-9]{64}$/i;
@@ -75,6 +76,21 @@ function assertPrivateObjectKey(tenantId, key) {
     return normalizedKey;
 }
 
+function buildPrivatePlatformObjectKey({ category, objectName, objectId, idFactory } = {}) {
+    const normalizedCategory = normalizeCategory(category);
+    const normalizedName = normalizeObjectName(objectName);
+    const normalizedObjectId = normalizeObjectId(objectId, idFactory);
+    return `platform/private/${normalizedCategory}/${normalizedObjectId}${fileExtension(normalizedName)}`;
+}
+
+function assertPrivatePlatformObjectKey(key) {
+    const normalizedKey = String(key || '').trim();
+    if (!PLATFORM_OBJECT_KEY_PATTERN.test(normalizedKey)) {
+        throw storageError('The private platform object key is invalid.', 403, 'STORAGE_PLATFORM_KEY_INVALID');
+    }
+    return normalizedKey;
+}
+
 function normalizeMaxBytes(value) {
     const maxBytes = Number(value ?? MAX_PRIVATE_OBJECT_BYTES);
     if (!Number.isInteger(maxBytes) || maxBytes < 1 || maxBytes > MAX_PRIVATE_OBJECT_BYTES) {
@@ -124,6 +140,38 @@ function preparePrivateObject(input = {}, { maxBytes = MAX_PRIVATE_OBJECT_BYTES 
     };
 }
 
+function preparePrivatePlatformObject(input = {}, { maxBytes = MAX_PRIVATE_OBJECT_BYTES } = {}) {
+    const body = Buffer.isBuffer(input.body) ? input.body : Buffer.from(input.body || '');
+    const limit = normalizeMaxBytes(maxBytes);
+    if (!body.length || body.length > limit) {
+        throw storageError('The private object size is outside the allowed limit.', 400, 'INVALID_STORAGE_SIZE');
+    }
+    const key = input.key
+        ? assertPrivatePlatformObjectKey(input.key)
+        : buildPrivatePlatformObjectKey({
+            category: input.category,
+            objectName: input.objectName,
+            objectId: input.objectId,
+            idFactory: input.idFactory
+        });
+    const checksum = input.checksum
+        ? String(input.checksum).trim().toLowerCase()
+        : crypto.createHash('sha256').update(body).digest('hex');
+    if (!CHECKSUM_PATTERN.test(checksum)) {
+        throw storageError('The private object checksum is invalid.', 400, 'INVALID_STORAGE_CHECKSUM');
+    }
+    return {
+        tenantId: null,
+        scope: 'platform',
+        key,
+        originalName: normalizeObjectName(input.objectName || 'object'),
+        contentType: normalizeMimeType(input.contentType),
+        size: body.length,
+        checksum,
+        body
+    };
+}
+
 function assertAdapter(adapter, method) {
     if (!adapter || typeof adapter[method] !== 'function') {
         throw storageError('A private object storage provider is not configured.', 503, 'OBJECT_STORAGE_PROVIDER_NOT_CONFIGURED');
@@ -147,6 +195,9 @@ function createObjectStorageService({ adapter = null, maxBytes = MAX_PRIVATE_OBJ
         buildPrivateObjectKey,
         assertPrivateObjectKey,
         preparePrivateObject,
+        buildPrivatePlatformObjectKey,
+        assertPrivatePlatformObjectKey,
+        preparePrivatePlatformObject,
         async putPrivateObject(input = {}) {
             const object = preparePrivateObject(input, { maxBytes });
             assertAdapter(adapter, 'putPrivateObject');
@@ -199,6 +250,51 @@ function createObjectStorageService({ adapter = null, maxBytes = MAX_PRIVATE_OBJ
             }
             return { url: result.url, expiresInSeconds: expiry, expiresAt: result.expiresAt || null };
         },
+        async putPrivatePlatformObject(input = {}) {
+            const object = preparePrivatePlatformObject(input, { maxBytes });
+            assertAdapter(adapter, 'putPrivateObject');
+            await adapter.putPrivateObject(object);
+            return {
+                scope: 'platform',
+                key: object.key,
+                originalName: object.originalName,
+                contentType: object.contentType,
+                size: object.size,
+                checksum: object.checksum
+            };
+        },
+        async getPrivatePlatformObject({ key } = {}) {
+            const normalizedKey = assertPrivatePlatformObjectKey(key);
+            assertAdapter(adapter, 'getPrivateObject');
+            const object = await adapter.getPrivateObject({ tenantId: null, scope: 'platform', key: normalizedKey });
+            if (object?.scope && object.scope !== 'platform') throw storageError('The private object scope is invalid.', 403, 'STORAGE_SCOPE_MISMATCH');
+            if (object?.key) assertPrivatePlatformObjectKey(object.key);
+            return object || null;
+        },
+        async headPrivatePlatformObject({ key } = {}) {
+            const normalizedKey = assertPrivatePlatformObjectKey(key);
+            if (adapter && typeof adapter.headPrivateObject === 'function') {
+                const object = await adapter.headPrivateObject({ tenantId: null, scope: 'platform', key: normalizedKey });
+                if (object?.scope && object.scope !== 'platform') throw storageError('The private object scope is invalid.', 403, 'STORAGE_SCOPE_MISMATCH');
+                if (object?.key) assertPrivatePlatformObjectKey(object.key);
+                return object || null;
+            }
+            return this.getPrivatePlatformObject({ key: normalizedKey });
+        },
+        async deletePrivatePlatformObject({ key } = {}) {
+            const normalizedKey = assertPrivatePlatformObjectKey(key);
+            assertAdapter(adapter, 'deletePrivateObject');
+            await adapter.deletePrivateObject({ tenantId: null, scope: 'platform', key: normalizedKey });
+            return true;
+        },
+        async createSignedPlatformDownload({ key, expiresInSeconds = 300 } = {}) {
+            const normalizedKey = assertPrivatePlatformObjectKey(key);
+            assertAdapter(adapter, 'createSignedDownload');
+            const expiry = Math.min(900, Math.max(60, Number(expiresInSeconds) || 300));
+            const result = await adapter.createSignedDownload({ scope: 'platform', tenantId: null, key: normalizedKey, expiresInSeconds: expiry });
+            if (!result || typeof result.url !== 'string' || !result.url) throw storageError('The storage provider returned an invalid private download.', 503, 'INVALID_SIGNED_DOWNLOAD');
+            return { url: result.url, expiresInSeconds: expiry, expiresAt: result.expiresAt || null };
+        },
         async deletePrivateObject({ tenantId, key } = {}) {
             const normalizedTenantId = normalizeTenantId(tenantId);
             const normalizedKey = assertPrivateObjectKey(normalizedTenantId, key);
@@ -216,10 +312,13 @@ function createObjectStorageService({ adapter = null, maxBytes = MAX_PRIVATE_OBJ
 module.exports = {
     MAX_PRIVATE_OBJECT_BYTES,
     assertPrivateObjectKey,
+    assertPrivatePlatformObjectKey,
     buildPrivateObjectKey,
+    buildPrivatePlatformObjectKey,
     createObjectStorageService,
     normalizeCategory,
     normalizeObjectName,
     normalizeTenantId,
-    preparePrivateObject
+    preparePrivateObject,
+    preparePrivatePlatformObject
 };

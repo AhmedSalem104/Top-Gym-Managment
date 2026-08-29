@@ -16,6 +16,7 @@ const storeService = require('../src/services/store-service');
 const intelligenceService = require('../src/services/intelligence-service');
 const brandingService = require('../src/services/branding-service');
 const saasService = require('../src/services/saas-service');
+const { createBackupRecoveryService } = require('../src/services/backup-recovery-service');
 const { safeErrorCode } = require('../src/utils/error-response');
 
 const ALLOWED_MIGRATION_ENVIRONMENTS = new Set(['local', 'development', 'test', 'staging']);
@@ -55,6 +56,8 @@ async function migrate() {
     await runTenantContext({ mode: 'platform', tenantId: 1 }, () => initDatabase());
     await runTenantContext({ mode: 'platform', tenantId: 1 }, () => tenantService.ensureTenantTables());
     const bootstrapTenant = await runTenantContext({ mode: 'platform', tenantId: 1 }, () => tenantService.ensureBootstrapTenant());
+    const backupRecoveryService = createBackupRecoveryService();
+    await runTenantContext({ mode: 'platform', tenantId: bootstrapTenant.id }, () => backupRecoveryService.ensureRecoveryTables());
     await runTenantContext({ mode: 'platform', tenantId: bootstrapTenant.id }, () => saasService.ensureSaasTables());
     await runTenantContext({ mode: 'tenant', tenantId: bootstrapTenant.id }, async () => {
         await authService.ensureAuthReady();

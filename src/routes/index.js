@@ -21,7 +21,7 @@ const { registerPlatformRoutes } = require('./platform.routes');
 const { registerPlatformAdminRoutes } = require('./platform-admin.routes');
 const { registerSaasRoutes } = require('./saas.routes');
 
-function createHealthHandler({ getPool, now = () => performance.now() } = {}) {
+function createHealthHandler({ getPool, getStorageStatus = () => ({ status: 'not_configured' }), now = () => performance.now() } = {}) {
     return async (request, response) => {
         const startedAt = now();
         try {
@@ -35,7 +35,7 @@ function createHealthHandler({ getPool, now = () => performance.now() } = {}) {
                 checks: {
                     application: { status: 'healthy' },
                     database: { status: 'healthy', durationMs: databaseDurationMs },
-                    storage: { status: 'not_configured' }
+                    storage: getStorageStatus()
                 },
                 requestId: request.requestId || null
             });
@@ -48,7 +48,7 @@ function createHealthHandler({ getPool, now = () => performance.now() } = {}) {
                 checks: {
                     application: { status: 'healthy' },
                     database: { status: 'unhealthy', durationMs: databaseDurationMs },
-                    storage: { status: 'not_configured' }
+                    storage: getStorageStatus()
                 },
                 requestId: request.requestId || null
             });
@@ -72,6 +72,8 @@ function registerRoutes(app, {
     ownerOnly,
     allowLoginAttempt,
     backupService,
+    backupRecoveryService,
+    objectStorageService,
     isAuthorizedCronRequest,
     financeService,
     analyticsService,
@@ -93,10 +95,13 @@ function registerRoutes(app, {
     getPool
 }) {
     app.get('/api/health/live', asyncRoute(createLivenessHandler()));
-    app.get('/api/health', asyncRoute(createHealthHandler({ getPool })));
+    app.get('/api/health', asyncRoute(createHealthHandler({
+        getPool,
+        getStorageStatus: () => ({ status: objectStorageService?.providerStatus || 'not_configured' })
+    })));
 
     registerAuthRoutes(app, { authService, permissionService, asyncRoute, ownerOnly, allowLoginAttempt });
-    registerBackupRoutes(app, { backupService, brandingService, asyncRoute, isAuthorizedCronRequest });
+    registerBackupRoutes(app, { backupService, backupRecoveryService, brandingService, asyncRoute, isAuthorizedCronRequest });
     registerFinanceRoutes(app, { financeService, asyncRoute });
     registerDashboardRoutes(app, { memberService, analyticsService, storeService, asyncRoute });
     registerLibraryRoutes(app, { libraryService, asyncRoute });
