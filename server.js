@@ -9,7 +9,7 @@ const { registerRoutes } = require('./src/routes');
 const { isAuthorizedCronRequest } = require('./src/middleware/cron.middleware');
 const { createAuthApiMiddleware, ownerOnly } = require('./src/middleware/auth.middleware');
 const { createLoginAttemptGuard, createSensitiveRateLimit, createMembershipPortalRateLimit } = require('./src/middleware/rate-limit.middleware');
-const { getPool, initDatabase } = require('./src/database');
+const { closePool, getPool, initDatabase } = require('./src/database');
 const backupService = require('./src/services/backup-service');
 const financeService = require('./src/services/finance-service');
 const analyticsService = require('./src/services/analytics-service');
@@ -37,6 +37,9 @@ const { ensureAuthReady } = authService;
 const { createPerformanceMetrics } = require('./src/middleware/performance-metrics');
 const { readOnlyBaselineGuard } = require('./src/middleware/read-only-baseline.middleware');
 const { getClientErrorCode, getSafeErrorMessage, isPublicClientError, safeErrorCode } = require('./src/utils/error-response');
+
+let httpServer;
+let shutdownStarted = false;
 
 const publicDirectory = path.join(__dirname, 'public');
 const app = createApp({ publicDirectory, expressFactory: express });
@@ -254,16 +257,44 @@ async function start() {
     });
     await runTenantContext({ mode: 'platform', tenantId: bootstrapTenant.id }, () => tenantService.ensureTenantColumnsAndRls(bootstrapTenant.id));
     await runTenantContext({ mode: 'platform', tenantId: bootstrapTenant.id }, () => saasService.ensureBootstrapSubscription(bootstrapTenant.id));
+    if (shutdownStarted) return null;
     const port = config.port;
-    app.listen(port, () => console.log(`Gym membership app is running on http://localhost:${port}`));
+    httpServer = app.listen(port, () => console.log(`Gym membership app is running on http://localhost:${port}`));
+    return httpServer;
+}
+
+async function gracefulShutdown(signal = 'shutdown') {
+    if (shutdownStarted) return;
+    shutdownStarted = true;
+    try {
+        if (httpServer) {
+            await new Promise((resolve, reject) => {
+                httpServer.close((error) => {
+                    if (error && error.code !== 'ERR_SERVER_NOT_RUNNING') return reject(error);
+                    resolve();
+                });
+            });
+            httpServer = null;
+        }
+        await closePool();
+    } catch (error) {
+        console.error('[SHUTDOWN_ERROR]', JSON.stringify({ signal, code: safeErrorCode(error, 'shutdown_failed') }));
+        process.exitCode = 1;
+    }
 }
 
 if (require.main === module) {
-    start().catch((error) => {
+    const handleSignal = (signal) => {
+        void gracefulShutdown(signal);
+    };
+    process.once('SIGTERM', handleSignal);
+    process.once('SIGINT', handleSignal);
+    start().catch(async (error) => {
         console.error('[STARTUP_ERROR]', JSON.stringify({
             code: safeErrorCode(error, null),
             category: 'startup_failure'
         }));
+        await gracefulShutdown('startup_failure');
         process.exitCode = 1;
     });
 }
