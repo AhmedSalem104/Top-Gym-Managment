@@ -1,6 +1,6 @@
 # Security audit — static/local evidence
 
-Last reviewed: 2026-08-29 (`2fdd80a`)
+Last reviewed: 2026-08-29 (`72e96d8`)
 
 This is an engineering audit of the repository and local tests. It is not a
 penetration test and does not replace authenticated Staging verification.
@@ -14,9 +14,17 @@ penetration test and does not replace authenticated Staging verification.
   stores only its SHA-256 digest.
 - State-changing API requests enforce same-origin checks when `Origin` is
   supplied and now reject browser requests marked
-  `Sec-Fetch-Site: cross-site`.
+  `Sec-Fetch-Site: cross-site`, including public state-changing routes before
+  their allow-list handling.
 - Payment-proof and branding uploads validate size, declared MIME and file
   signatures; SVG markup is checked for active/external content.
+- The private object-storage boundary generates tenant-scoped keys, rejects
+  traversal/cross-tenant access, validates checksum/size/MIME and fails closed
+  until an approved provider is configured. It does not expose permanent
+  public URLs.
+- Rate-limit policy is separated from its storage backend. The bounded local
+  adapter remains active, while an injectable atomic backend is ready for a
+  future shared provider; backend failures do not silently bypass protection.
 - Error responses and audited logs use bounded safe codes and do not emit
   passwords, cookies, tokens, SQL text or driver messages.
 - Platform routes have a server-side `PlatformAdmin` boundary; tenant routes

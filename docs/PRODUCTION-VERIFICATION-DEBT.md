@@ -6,7 +6,7 @@ stop safe implementation elsewhere, but a Critical item remains a Go-Live
 gate.
 
 Last reviewed: 2026-08-29  
-Implementation revision covered: `cd9eda0 ci: standardize Node 24 verification workflow`
+Implementation revision covered: `72e96d8 security: enforce same-origin checks on public writes`
 
 ## Status vocabulary
 
@@ -81,6 +81,24 @@ Implementation revision covered: `cd9eda0 ci: standardize Node 24 verification w
 The Phase 2 local work does not promote migration, capacity, timeout or restore
 claims to Production evidence. Those items remain listed above exactly once.
 
+## Production Closure local snapshot
+
+- Phase 4: private object-storage contract and tenant-safe key tests are
+  `VERIFIED` locally; provider activation remains an external dependency.
+- Phase 5: rate-limit policy/backend separation, bounded local fallback and
+  fail-closed behavior are `VERIFIED` locally; distributed enforcement is not
+  active and remains an infrastructure decision.
+- Phase 6: local static/security regression coverage is `VERIFIED`, including
+  same-origin enforcement before public state-changing routes. Authenticated
+  penetration testing remains a Staging gate.
+- Phase 7: the current RLS/schema regression is `VERIFIED` for 63/63 protected
+  tables with no unassigned rows and cross-tenant writes blocked. The complete
+  authenticated Tenant A/B request matrix remains a Staging gate.
+- Phases 10-12: local integrity checks now cover approval locking, atomic audit
+  transitions, expiry/recovery guards, limits and overrides. End-to-end
+  authenticated lifecycle and concurrent database behavior remain Staging
+  evidence.
+
 ## Latest local verification evidence
 
 - `npm run build`: passed; only the repository's existing `!important` review
@@ -91,7 +109,7 @@ claims to Production evidence. Those items remain listed above exactly once.
 - `npm run qa:database`: passed with guarded/non-destructive migrations,
   runner/pool/transaction checks, runtime schema checks and SaaS integrity
   checks; live schema rehearsal remains pending.
-- `npm run test:unit`: passed 73/73, including safe internal-error logging,
+- `npm run test:unit`: passed 89/89, including safe internal-error logging,
   baseline safety, pool/transaction behavior, SaaS duplicate-request guards
   and atomic subscription rejection coverage.
 - Platform subscription request reads are now bounded and server-paginated;
@@ -117,8 +135,9 @@ claims to Production evidence. Those items remain listed above exactly once.
   listener and SQL-pool shutdown; Vercel lifecycle behavior remains a
   production verification item.
 - State-changing requests reject browser Fetch Metadata marked as
-  `cross-site`; Origin/SameSite and external CSRF verification remain required
-  for a full security sign-off.
+  `cross-site`, including public state-changing routes before their allow-list
+  handling; Origin/SameSite and external CSRF verification remain required for
+  a full security sign-off.
 - HTTPS security headers include conditional HSTS; actual proxy/TLS behavior
   still requires deployment verification.
 - `/api/health/live` is a local/source-verified tenant-neutral liveness probe;

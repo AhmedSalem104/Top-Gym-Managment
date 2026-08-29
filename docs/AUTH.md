@@ -63,7 +63,12 @@ always include an explicit tenant id and pass through the server-side
 - The current rate-limit guards are intentionally process-local and keep a
   bounded number of IP/email/code buckets to prevent unbounded memory growth.
   This cap is a defensive availability measure, not a substitute for a shared
-  distributed limiter; that production verification remains tracked separately.
+  distributed limiter. The policy accepts an atomic backend adapter for a
+  future shared provider, but distributed enforcement is not active until that
+  provider is selected and verified.
 - Non-safe cross-origin state-changing requests are rejected.
+- The same-origin boundary is applied before public state-changing routes as
+  well as authenticated routes; the authorized backup cron is the explicit
+  automation exception.
 - Assistant restrictions are enforced on the backend; hiding tabs is only UX.
 - Session tokens, passwords and secrets are not logged or returned.

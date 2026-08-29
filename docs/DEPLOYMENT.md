@@ -97,7 +97,8 @@ must use the same major version). The login, sensitive-write and member-portal
 rate-limit guards also cap their in-memory key stores as a local memory-safety
 fallback. They do not provide a global quota across Vercel instances; a shared
 rate-limit backend still requires a separate production decision and
-verification.
+verification. The middleware already separates policy from the atomic storage
+contract so that provider can be added without changing endpoint policy.
 
 ### Standalone process shutdown
 
