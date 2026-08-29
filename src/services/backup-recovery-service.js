@@ -1402,7 +1402,7 @@ async function deleteTenantBackup(id, { tenantId = null, actorUserId = null, rea
     if (!normalizedReason) throw backupError('A reason is required before deleting a backup.', 400, 'BACKUP_DELETE_REASON_REQUIRED');
     await ensureRecoveryTables();
     const storage = storageService || createObjectStorageService();
-    const deletion = await withTenantRecoveryLock(trustedTenantId, async (transaction) => {
+    const claim = await withTenantRecoveryLock(trustedTenantId, async (transaction) => {
         const recordQuery = await transaction.request()
             .input('id', sql.BigInt, Number(id))
             .input('tenantId', sql.Int, trustedTenantId)
@@ -1410,15 +1410,54 @@ async function deleteTenantBackup(id, { tenantId = null, actorUserId = null, rea
         const record = mapRecord(recordQuery.recordset[0], 'tenant', { includeStorageKey: true });
         if (!record) throw backupError('The requested backup is not available.', 404, 'BACKUP_NOT_FOUND');
         if (['RUNNING', 'UPLOADED', 'VERIFYING'].includes(record.status)) throw backupError('This backup is still being processed.', 409, 'BACKUP_BUSY');
-        const artifactCleanup = await deleteTenantArtifactAndVerify(storage, { tenantId: trustedTenantId, key: record.storageKey });
+        if (record.status === 'DELETED') return { id: Number(id), alreadyDeleted: true, storageKey: null };
+        if (record.errorCode === 'BACKUP_DELETE_IN_PROGRESS'
+            && record.updatedAt
+            && Date.now() - new Date(record.updatedAt).getTime() < 30 * 60 * 1000) {
+            throw backupError('Another deletion is already processing this backup. Try again shortly.', 409, 'BACKUP_BUSY');
+        }
         const result = await transaction.request()
             .input('id', sql.BigInt, Number(id))
             .input('tenantId', sql.Int, trustedTenantId)
-            .query(`UPDATE dbo.gym_backup_records SET status='DELETED',updated_at=SYSUTCDATETIME() WHERE id=@id AND tenant_id=@tenantId AND status NOT IN ('RUNNING','UPLOADED','VERIFYING');`);
-        if (!result.rowsAffected.some((count) => Number(count) > 0)) throw backupError('The backup could not be deleted.', 409, 'BACKUP_DELETE_CONFLICT');
-        return { id: Number(id), artifact: artifactCleanup.status };
+            .query("UPDATE dbo.gym_backup_records SET status='EXPIRED',error_code='BACKUP_DELETE_IN_PROGRESS',expires_at=SYSUTCDATETIME(),updated_at=SYSUTCDATETIME() WHERE id=@id AND tenant_id=@tenantId AND status NOT IN ('RUNNING','UPLOADED','VERIFYING','DELETED');");
+        if (!result.rowsAffected.some((count) => Number(count) > 0)) throw backupError('The backup could not be claimed for deletion.', 409, 'BACKUP_DELETE_CONFLICT');
+        return { id: Number(id), alreadyDeleted: false, storageKey: record.storageKey };
     });
-    await writeTenantBackupAudit({ tenantId: trustedTenantId, backupId: Number(id), eventType: 'BACKUP_DELETED', actorUserId, reason: normalizedReason, metadata: { artifact: deletion.artifact } });
+    if (claim.alreadyDeleted) return { id: Number(id), deleted: true, idempotent: true };
+
+    let artifactCleanup;
+    try {
+        artifactCleanup = await deleteTenantArtifactAndVerify(storage, { tenantId: trustedTenantId, key: claim.storageKey });
+    } catch (error) {
+        const errorCode = recoveryErrorCode(error, 'BACKUP_DELETE_FAILED');
+        await updateTenantRecord(trustedTenantId, Number(id), { status: 'EXPIRED', errorCode, expiresAt: new Date() }).catch(() => {});
+        await writeTenantBackupAudit({
+            tenantId: trustedTenantId,
+            backupId: Number(id),
+            eventType: 'BACKUP_DELETED',
+            actorUserId,
+            reason: normalizedReason,
+            result: 'failed',
+            metadata: { artifact: 'pending', errorCode }
+        }).catch(() => {});
+        throw error;
+    }
+
+    const update = await (await getPool()).request()
+        .input('id', sql.BigInt, Number(id))
+        .input('tenantId', sql.Int, trustedTenantId)
+        .query("UPDATE dbo.gym_backup_records SET status='DELETED',error_code=NULL,updated_at=SYSUTCDATETIME() WHERE id=@id AND tenant_id=@tenantId AND status='EXPIRED' AND error_code='BACKUP_DELETE_IN_PROGRESS';");
+    if (!update.rowsAffected.some((count) => Number(count) > 0)) {
+        throw backupError('The backup metadata could not be finalized after artifact deletion.', 503, 'BACKUP_DELETE_FINALIZE_FAILED');
+    }
+    await writeTenantBackupAudit({
+        tenantId: trustedTenantId,
+        backupId: Number(id),
+        eventType: 'BACKUP_DELETED',
+        actorUserId,
+        reason: normalizedReason,
+        metadata: { artifact: artifactCleanup.status }
+    });
     return { id: Number(id), deleted: true };
 }
 
@@ -1701,16 +1740,29 @@ async function claimTenantRetentionRecord(pool, tenantId, id) {
             .input('tenantId', sql.Int, tenantId)
             .query(`
                 DECLARE @status VARCHAR(20)=NULL;
-                SELECT TOP (1) @status=status
+                DECLARE @errorCode VARCHAR(100)=NULL;
+                DECLARE @updatedAt DATETIME2(0)=NULL;
+                DECLARE @claimed BIT=0;
+                SELECT TOP (1) @status=status,@errorCode=error_code,@updatedAt=updated_at
                 FROM dbo.gym_backup_records WITH (UPDLOCK,HOLDLOCK)
                 WHERE id=@id AND tenant_id=@tenantId AND status IN ('VERIFIED','FAILED','EXPIRED');
                 IF @status IN ('VERIFIED','FAILED')
+                BEGIN
                     UPDATE dbo.gym_backup_records
-                    SET status='EXPIRED',error_code=NULL,updated_at=SYSUTCDATETIME()
+                    SET status='EXPIRED',error_code='BACKUP_DELETE_IN_PROGRESS',updated_at=SYSUTCDATETIME()
                     WHERE id=@id AND tenant_id=@tenantId AND status IN ('VERIFIED','FAILED');
+                    SET @claimed=1;
+                END
+                ELSE IF @status='EXPIRED' AND (@errorCode IS NULL OR @errorCode<>'BACKUP_DELETE_IN_PROGRESS' OR @updatedAt < DATEADD(minute,-30,SYSUTCDATETIME()))
+                BEGIN
+                    UPDATE dbo.gym_backup_records
+                    SET status='EXPIRED',error_code='BACKUP_DELETE_IN_PROGRESS',updated_at=SYSUTCDATETIME()
+                    WHERE id=@id AND tenant_id=@tenantId AND status='EXPIRED';
+                    SET @claimed=1;
+                END
                 SELECT TOP (1) id,status,storage_key
                 FROM dbo.gym_backup_records
-                WHERE id=@id AND tenant_id=@tenantId AND status='EXPIRED';
+                WHERE @claimed=1 AND id=@id AND tenant_id=@tenantId AND status='EXPIRED' AND error_code='BACKUP_DELETE_IN_PROGRESS';
             `);
         await transaction.commit();
         committed = true;
@@ -1733,16 +1785,29 @@ async function claimPlatformRetentionRecord(pool, id) {
             .input('id', sql.BigInt, id)
             .query(`
                 DECLARE @status VARCHAR(20)=NULL;
-                SELECT TOP (1) @status=status
+                DECLARE @errorCode VARCHAR(100)=NULL;
+                DECLARE @updatedAt DATETIME2(0)=NULL;
+                DECLARE @claimed BIT=0;
+                SELECT TOP (1) @status=status,@errorCode=error_code,@updatedAt=updated_at
                 FROM dbo.gym_platform_backup_records WITH (UPDLOCK,HOLDLOCK)
                 WHERE id=@id AND status IN ('VERIFIED','FAILED','EXPIRED');
                 IF @status IN ('VERIFIED','FAILED')
+                BEGIN
                     UPDATE dbo.gym_platform_backup_records
-                    SET status='EXPIRED',error_code=NULL,updated_at=SYSUTCDATETIME()
+                    SET status='EXPIRED',error_code='BACKUP_DELETE_IN_PROGRESS',updated_at=SYSUTCDATETIME()
                     WHERE id=@id AND status IN ('VERIFIED','FAILED');
+                    SET @claimed=1;
+                END
+                ELSE IF @status='EXPIRED' AND (@errorCode IS NULL OR @errorCode<>'BACKUP_DELETE_IN_PROGRESS' OR @updatedAt < DATEADD(minute,-30,SYSUTCDATETIME()))
+                BEGIN
+                    UPDATE dbo.gym_platform_backup_records
+                    SET status='EXPIRED',error_code='BACKUP_DELETE_IN_PROGRESS',updated_at=SYSUTCDATETIME()
+                    WHERE id=@id AND status='EXPIRED';
+                    SET @claimed=1;
+                END
                 SELECT TOP (1) id,status,storage_key
                 FROM dbo.gym_platform_backup_records
-                WHERE id=@id AND status='EXPIRED';
+                WHERE @claimed=1 AND id=@id AND status='EXPIRED' AND error_code='BACKUP_DELETE_IN_PROGRESS';
             `);
         await transaction.commit();
         committed = true;
@@ -1792,7 +1857,7 @@ async function cleanupExpiredBackups({ now = new Date(), concurrency = 2, storag
             const update = await pool.request()
                 .input('id', sql.BigInt, id)
                 .input('tenantId', sql.Int, tenantId)
-                .query("UPDATE dbo.gym_backup_records SET status='DELETED',updated_at=SYSUTCDATETIME() WHERE id=@id AND tenant_id=@tenantId AND status='EXPIRED';");
+                .query("UPDATE dbo.gym_backup_records SET status='DELETED',error_code=NULL,updated_at=SYSUTCDATETIME() WHERE id=@id AND tenant_id=@tenantId AND status='EXPIRED' AND error_code='BACKUP_DELETE_IN_PROGRESS';");
             if (!update.rowsAffected.some((count) => Number(count) > 0)) return { id, tenantId, status: 'skipped' };
             await writeTenantBackupAudit({
                 tenantId,
@@ -1818,7 +1883,7 @@ async function cleanupExpiredBackups({ now = new Date(), concurrency = 2, storag
             const artifactCleanup = await deletePlatformArtifactAndVerify(storage, { key: claim.storageKey });
             const update = await pool.request()
                 .input('id', sql.BigInt, id)
-                .query("UPDATE dbo.gym_platform_backup_records SET status='DELETED',updated_at=SYSUTCDATETIME() WHERE id=@id AND status='EXPIRED';");
+                .query("UPDATE dbo.gym_platform_backup_records SET status='DELETED',error_code=NULL,updated_at=SYSUTCDATETIME() WHERE id=@id AND status='EXPIRED' AND error_code='BACKUP_DELETE_IN_PROGRESS';");
             if (!update.rowsAffected.some((count) => Number(count) > 0)) return { id, status: 'skipped' };
             await writePlatformBackupAudit({
                 backupId: id,
