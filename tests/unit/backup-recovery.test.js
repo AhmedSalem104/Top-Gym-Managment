@@ -148,6 +148,7 @@ test('scheduler retry count preserves an explicit zero retry policy', () => {
 test('native BAK requests fail closed instead of mislabelling a logical gzip artifact', () => {
     assert.equal(normalizeBackupFormat('json.gz'), 'json.gz');
     assert.throws(() => normalizeBackupFormat('bak'), { code: 'BACKUP_NATIVE_FORMAT_UNAVAILABLE', statusCode: 409 });
+    assert.throws(() => normalizeBackupFormat('zip'), { code: 'BACKUP_FORMAT_UNSUPPORTED', statusCode: 400 });
 });
 
 test('stored backup verification hashes returned bytes instead of trusting metadata', async () => {

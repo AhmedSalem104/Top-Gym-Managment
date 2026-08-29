@@ -61,6 +61,7 @@ function normalizeRetryCount(value, fallback = 1, maximum = 3) {
 
 function normalizeBackupFormat(value) {
     const format = String(value || 'json.gz').trim().toLowerCase();
+    if (format === 'json.gz') return format;
     if (format === 'bak') {
         throw backupError(
             'Native SQL Server .bak backups are not available in the current deployment; use the verified logical .json.gz backup.',
@@ -68,7 +69,11 @@ function normalizeBackupFormat(value) {
             'BACKUP_NATIVE_FORMAT_UNAVAILABLE'
         );
     }
-    return 'json.gz';
+    throw backupError(
+        'The requested backup format is not supported.',
+        400,
+        'BACKUP_FORMAT_UNSUPPORTED'
+    );
 }
 
 function retentionDays(name, fallback) {
@@ -1103,6 +1108,7 @@ async function downloadTenantBackup(id, { tenantId = null, readOnly = false, act
     const trustedTenantId = tenantScopeId(tenantId);
     const record = await getTenantBackupRecord(id, { tenantId: trustedTenantId, readOnly, includeStorageKey: true });
     if (!record) throw backupError('The requested backup is not available.', 404, 'BACKUP_NOT_FOUND');
+    if (record.format !== 'json.gz') throw backupError('The requested backup format is not supported.', 409, 'BACKUP_FORMAT_UNSUPPORTED');
     if (record.status !== 'VERIFIED') throw backupError('Only verified backups can be downloaded.', 409, 'BACKUP_NOT_VERIFIED');
     if (!record.storageKey || !record.checksum || !Number.isInteger(Number(record.sizeBytes)) || Number(record.sizeBytes) <= 0) {
         throw backupError('The verified backup metadata is incomplete.', 503, 'BACKUP_METADATA_INCOMPLETE');
@@ -1631,6 +1637,7 @@ async function getPlatformBackupAudit({ limit = 50, readOnly = false } = {}) {
 async function downloadPlatformBackup(id, { readOnly = false, actorUserId = null, auditDownload = false, storageService = null } = {}) {
     const record = await getPlatformBackupRecord(id, { readOnly, includeStorageKey: true });
     if (!record) throw backupError('The requested platform backup is not available.', 404, 'BACKUP_NOT_FOUND');
+    if (record.format !== 'json.gz') throw backupError('The requested backup format is not supported.', 409, 'BACKUP_FORMAT_UNSUPPORTED');
     if (record.status !== 'VERIFIED') throw backupError('Only verified backups can be downloaded.', 409, 'BACKUP_NOT_VERIFIED');
     const storage = storageService || createObjectStorageService();
     if (!record.storageKey || !record.checksum || !Number.isInteger(Number(record.sizeBytes)) || Number(record.sizeBytes) <= 0) {
