@@ -103,6 +103,37 @@ test('baseline runner sends only GET requests and does not retain response bodie
     }
 });
 
+test('baseline runner does not follow redirects to another target', async () => {
+    const paths = [];
+    const server = http.createServer((request, response) => {
+        paths.push(request.url);
+        if (request.url === '/api/fixture') {
+            response.writeHead(302, { Location: 'https://unapproved.example/api/fixture' });
+            response.end();
+            return;
+        }
+        response.writeHead(500);
+        response.end();
+    });
+    await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+    const baseUrl = `http://127.0.0.1:${server.address().port}`;
+
+    try {
+        const result = await runRoutes(baseUrl, '', [{ name: 'fixture', path: '/api/fixture' }], {
+            samples: 1,
+            warmups: 1,
+            concurrency: 1,
+            timeoutMs: 2_000,
+            delayMs: 0
+        });
+        assert.deepEqual(paths, ['/api/fixture', '/api/fixture']);
+        assert.equal(result.results[0].statusDistribution['302'], 1);
+        assert.equal(result.results[0].failedRequests, 1);
+    } finally {
+        await new Promise((resolve) => server.close(resolve));
+    }
+});
+
 test('read-only guard rejects accidental write methods', () => {
     let nextCalled = false;
     const response = {
@@ -150,6 +181,9 @@ test('target guard blocks production-like or unapproved external targets', () =>
     withEnvironment({ PERF_BASELINE_ENV: 'staging', PERF_BASELINE_CONFIRM: 'staging', PERF_BASELINE_ALLOWED_HOSTS: 'staging.logicfit.example,production.logicfit.example', VERCEL_ENV: 'preview' }, () => {
         assert.equal(validateTarget('https://staging.logicfit.example').environment, 'staging');
         assert.throws(() => validateTarget('https://production.logicfit.example'), /Production-like/);
+        assert.throws(() => validateTarget('https://gym-membership-app-smoky.vercel.app'), /Production-like/);
+        assert.throws(() => validateTarget('https://admin.voltyks.app'), /Production-like/);
+        assert.throws(() => validateTarget('https://gym-membership-evbhm7puy-ahmedsalem104s-projects.vercel.app'), /Production-like/);
         assert.throws(() => validateTarget('https://other.logicfit.example'), /ALLOWED_HOSTS/);
     });
 });

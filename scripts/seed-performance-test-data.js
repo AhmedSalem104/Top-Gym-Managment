@@ -1,8 +1,11 @@
+'use strict';
+
 require('dotenv').config();
 
 const { getPricingCatalog } = require('../src/services/member-service');
 const { closePool, getPool, initDatabase, sql } = require('../src/db');
 const { todayInTimeZone } = require('../src/utils/date');
+const { assertSafeDatabaseTarget } = require('./verification-target');
 
 const DEFAULT_COUNT = 1000;
 const SEED_TAG = 'PERF_TEST_SEED';
@@ -16,6 +19,15 @@ function parseCount() {
         throw new Error('The count must be an integer between 1 and 10000.');
     }
     return count;
+}
+
+function assertSeedTarget() {
+    return assertSafeDatabaseTarget({
+        environment: process.env.PERF_SEED_ENV,
+        confirmation: process.env.PERF_SEED_CONFIRM,
+        allowedHosts: process.env.PERF_SEED_ALLOWED_DB_HOSTS,
+        purpose: 'Performance seed'
+    });
 }
 
 function addDays(dateOnly, days) {
@@ -149,6 +161,7 @@ async function insertJson(request, parameterName, rows, query) {
 }
 
 async function main() {
+    assertSeedTarget();
     const count = parseCount();
     await initDatabase();
     const pool = await getPool();
@@ -295,9 +308,13 @@ async function main() {
     }
 }
 
-main()
-    .catch((error) => {
-        console.error(`PERFORMANCE_SEED_FAILED: ${error.message}`);
-        process.exitCode = 1;
-    })
-    .finally(() => closePool());
+if (require.main === module) {
+    main()
+        .catch((error) => {
+            console.error(`PERFORMANCE_SEED_FAILED: ${error.message}`);
+            process.exitCode = 1;
+        })
+        .finally(() => closePool());
+}
+
+module.exports = { assertSeedTarget, createSeedRows, parseCount };

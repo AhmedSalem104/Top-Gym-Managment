@@ -14,6 +14,11 @@ const { todayInTimeZone } = require('../src/utils/date');
 
 const LOCAL_HOST_PATTERN = /^https?:\/\/(?:127\.0\.0\.1|localhost)(?::\d+)?$/i;
 const ALLOWED_ENVIRONMENTS = new Set(['local', 'development', 'test', 'staging']);
+const KNOWN_PRODUCTION_HOSTS = new Set([
+    'gym-membership-app-smoky.vercel.app',
+    'admin.voltyks.app'
+]);
+const KNOWN_PRODUCTION_DEPLOYMENT_PATTERN = /^gym-membership-[a-z0-9]+-ahmedsalem104s-projects\.vercel\.app$/i;
 const DEFAULT_SAMPLES = 5;
 const DEFAULT_WARMUPS = 1;
 const DEFAULT_CONCURRENCY = 1;
@@ -118,6 +123,9 @@ async function request(baseUrl, route, cookie, timeoutMs) {
     try {
         const response = await fetch(`${baseUrl}${route.path}`, {
             method: 'GET',
+            // A staging alias must not be able to redirect the read-only
+            // runner to an unapproved host. Configure the final HTTPS URL.
+            redirect: 'manual',
             signal: controller.signal,
             headers: {
                 Accept: 'application/json',
@@ -374,7 +382,9 @@ function validateTarget(baseUrl) {
     }
     const productionHints = [environment, process.env.VERCEL_ENV, target.hostname]
         .map((value) => String(value || '').toLowerCase());
-    if (productionHints.some((value) => /(^|[-_.])(prod|production|live)([-_.]|$)/.test(value))) {
+    const knownProductionHost = KNOWN_PRODUCTION_HOSTS.has(target.hostname.toLowerCase())
+        || KNOWN_PRODUCTION_DEPLOYMENT_PATTERN.test(target.hostname);
+    if (knownProductionHost || productionHints.some((value) => /(^|[-_.])(prod|production|live)([-_.]|$)/.test(value))) {
         throw new Error('Production-like targets are blocked by the baseline runner.');
     }
     if (!local && (environment !== 'staging' || process.env.PERF_BASELINE_CONFIRM !== 'staging')) {

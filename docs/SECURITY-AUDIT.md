@@ -32,6 +32,9 @@ penetration test and does not replace authenticated Staging verification.
 - HTTPS responses include HSTS with subdomain coverage; local HTTP responses do
   not set the policy accidentally.
 - Tracked-environment and dependency checks pass locally.
+- Synthetic seed and Tenant A/B verification tools now fail closed for
+  unclassified or production-like databases; external Staging targets require
+  explicit environment confirmation and a host allow-list.
 
 ## Findings and gates
 

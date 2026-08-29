@@ -5,8 +5,15 @@ require('dotenv').config();
 const { closePool, getPool, sql } = require('../src/database');
 const { runTenantContext } = require('../src/tenancy/tenant-context');
 const { TENANT_TABLES } = require('../src/services/tenant-service');
+const { assertSafeDatabaseTarget } = require('./verification-target');
 
 async function verify() {
+    assertSafeDatabaseTarget({
+        environment: process.env.QA_TENANCY_ENV,
+        confirmation: process.env.QA_TENANCY_CONFIRM,
+        allowedHosts: process.env.QA_TENANCY_ALLOWED_DB_HOSTS,
+        purpose: 'Tenant isolation QA'
+    });
     const result = await runTenantContext({ mode: 'platform', tenantId: 1 }, async () => {
         const pool = await getPool();
         const tenants = await pool.request().query('SELECT id, name, slug, status FROM dbo.gym_tenants ORDER BY id;');

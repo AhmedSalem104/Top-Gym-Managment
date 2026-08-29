@@ -52,6 +52,33 @@ $env:QA_BASE_URL = 'https://staging.example.com'
 
 Production-like hostnames and `VERCEL_ENV=production` are blocked. There is no `--force` bypass. Baseline caps are deliberately conservative: 20 measured requests, 5 warm-ups, concurrency 5, and a 1,000-request total budget. This is not a load-test tool.
 
+The baseline runner also blocks the repository's known Production aliases and
+does not follow redirects. Use the final approved Staging HTTPS host rather
+than an HTTP URL that redirects elsewhere.
+
+## Synthetic database verification guard
+
+Database-backed synthetic seed and Tenant A/B verification scripts fail closed
+unless the target is explicitly classified and confirmed. They never accept an
+unclassified external database as Local, and external targets require an exact
+host allow-list. Keep these values in the terminal/CI environment only:
+
+```powershell
+$env:PERF_SEED_ENV = 'staging'
+$env:PERF_SEED_CONFIRM = 'staging'
+$env:PERF_SEED_ALLOWED_DB_HOSTS = 'staging-sql.example'
+npm run seed:performance -- --count=1000
+
+$env:QA_TENANCY_ENV = 'staging'
+$env:QA_TENANCY_CONFIRM = 'staging'
+$env:QA_TENANCY_ALLOWED_DB_HOSTS = 'staging-sql.example'
+npm run qa:tenancy
+```
+
+Do not put connection strings, credentials or session cookies in these docs or
+in Git. The seed script is a write operation and must run only against an
+isolated synthetic database; the baseline runner itself remains GET-only.
+
 ## Measurements
 
 Each endpoint gets separate warm-up and measured results. Measured latency uses `performance.now()` around `fetch()`, so total API latency includes network/proxy time. If the application exposes safe `Server-Timing` metrics, the report also contains:
