@@ -130,8 +130,8 @@ Microservices، ويحافظ على REST APIs الحالية وHash Navigation �
 متطلبات اختيارية: Git، PowerShell أو Bash، وPython 3 لأداة مزامنة أصول
 العضلات.
 
-ملاحظة: package.json يعلن Node 24.x، بينما Workflow قديم في GitHub Actions
-يشغل Node 20. عند تغيير Runtime في CI يجب تحديث الاثنين واختبار التثبيت والنشر.
+ملاحظة: package.json و.nvmrc وWorkflow الخاص بـGitHub Actions تستخدم Node 24.x
+بنفس النسخة؛ اختبارات CI لا تتصل بقاعدة Production ولا تستخدم أسرارًا.
 
 ## التثبيت والتشغيل
 
