@@ -793,6 +793,17 @@ function mapRecord(row, scope = 'tenant', { includeStorageKey = false } = {}) {
     return mapped;
 }
 
+function assertBackupNotExpired(record, now = Date.now()) {
+    if (record?.expiresAt == null) return;
+    const expiry = new Date(record.expiresAt).getTime();
+    if (!Number.isFinite(expiry)) {
+        throw backupError('The verified backup metadata is invalid.', 503, 'BACKUP_METADATA_INCOMPLETE');
+    }
+    if (expiry <= new Date(now).getTime()) {
+        throw backupError('This backup has expired and is no longer available.', 410, 'BACKUP_EXPIRED');
+    }
+}
+
 function recordColumnList(scope = 'tenant') {
     return `${scope === 'tenant' ? 'id,tenant_id,' : 'id,'}backup_type,backup_day,status,backup_version,schema_version,backup_format,file_name,storage_key,content_type,size_bytes,checksum_sha256,manifest_json,row_count,table_counts_json,attempt_count,error_code,started_at,completed_at,verified_at,expires_at,created_at,updated_at`;
 }
@@ -1162,6 +1173,7 @@ async function downloadTenantBackup(id, { tenantId = null, readOnly = false, act
     if (!record) throw backupError('The requested backup is not available.', 404, 'BACKUP_NOT_FOUND');
     if (record.format !== 'json.gz') throw backupError('The requested backup format is not supported.', 409, 'BACKUP_FORMAT_UNSUPPORTED');
     if (record.status !== 'VERIFIED') throw backupError('Only verified backups can be downloaded.', 409, 'BACKUP_NOT_VERIFIED');
+    assertBackupNotExpired(record);
     if (!record.storageKey || !record.checksum || !Number.isInteger(Number(record.sizeBytes)) || Number(record.sizeBytes) <= 0) {
         throw backupError('The verified backup metadata is incomplete.', 503, 'BACKUP_METADATA_INCOMPLETE');
     }
@@ -1744,6 +1756,7 @@ async function downloadPlatformBackup(id, { readOnly = false, actorUserId = null
     if (!record) throw backupError('The requested platform backup is not available.', 404, 'BACKUP_NOT_FOUND');
     if (record.format !== 'json.gz') throw backupError('The requested backup format is not supported.', 409, 'BACKUP_FORMAT_UNSUPPORTED');
     if (record.status !== 'VERIFIED') throw backupError('Only verified backups can be downloaded.', 409, 'BACKUP_NOT_VERIFIED');
+    assertBackupNotExpired(record);
     const storage = storageService || createObjectStorageService();
     if (!record.storageKey || !record.checksum || !Number.isInteger(Number(record.sizeBytes)) || Number(record.sizeBytes) <= 0) {
         throw backupError('The verified platform backup metadata is incomplete.', 503, 'BACKUP_METADATA_INCOMPLETE');
@@ -2165,6 +2178,7 @@ module.exports = {
     getPlatformBackupRecord,
     getPlatformBackupAudit,
     downloadPlatformBackup,
+    assertBackupNotExpired,
     cleanupExpiredBackups,
     getRetentionPolicy,
     getScheduledPlatformBackupTypes,

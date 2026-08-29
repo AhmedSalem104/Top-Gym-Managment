@@ -5,6 +5,7 @@ const test = require('node:test');
 
 const {
     buildTenantBackupPayload,
+    assertBackupNotExpired,
     deletePlatformArtifactAndVerify,
     deleteTenantArtifactAndVerify,
     getRetentionPolicy,
@@ -177,6 +178,12 @@ test('retention defaults are configurable and never include an unlimited value',
     assert.equal(policy.tenant_daily, 30);
     assert.equal(policy.platform_weekly, 84);
     assert.ok(Object.values(policy).every((days) => Number.isInteger(days) && days > 0));
+});
+
+test('expired or malformed backup metadata cannot pass the download freshness gate', () => {
+    assert.doesNotThrow(() => assertBackupNotExpired({ expiresAt: '2099-01-01T00:00:00.000Z' }, new Date('2026-08-29T00:00:00.000Z')));
+    assert.throws(() => assertBackupNotExpired({ expiresAt: '2026-08-28T00:00:00.000Z' }, new Date('2026-08-29T00:00:00.000Z')), { code: 'BACKUP_EXPIRED', statusCode: 410 });
+    assert.throws(() => assertBackupNotExpired({ expiresAt: 'not-a-date' }), { code: 'BACKUP_METADATA_INCOMPLETE', statusCode: 503 });
 });
 
 test('daily scheduler selects weekly and monthly platform snapshots by UTC calendar rules', () => {
