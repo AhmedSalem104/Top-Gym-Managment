@@ -40,8 +40,9 @@ function createPlatformAdminController({ platformAdminService, saasService, auth
         subscription: async (request, response) => {
             const tenantId = request.params.tenantId;
             if (request.method === 'GET') {
-                const subscription = await saasService.getCurrentSubscription(tenantId);
-                const entitlements = await saasService.getEffectiveEntitlements(tenantId, subscription);
+                const readOnly = request.readOnlyBaseline;
+                const subscription = await saasService.getCurrentSubscription(tenantId, { readOnly });
+                const entitlements = await saasService.getEffectiveEntitlements(tenantId, subscription, { readOnly });
                 return response.json({ subscription, entitlements });
             }
             return response.json(await platformAdminService.updateTenantSubscription(tenantId, request.body || {}, request.auth?.id, meta(request)));
@@ -63,7 +64,13 @@ function createPlatformAdminController({ platformAdminService, saasService, auth
 
         overrides: async (request, response) => {
             const tenantId = request.params.tenantId;
-            if (request.method === 'GET') return response.json({ overrides: await saasService.getTenantOverrides(tenantId), entitlements: await saasService.getEffectiveEntitlements(tenantId) });
+            if (request.method === 'GET') {
+                const readOnly = request.readOnlyBaseline;
+                return response.json({
+                    overrides: await saasService.getTenantOverrides(tenantId, { readOnly }),
+                    entitlements: await saasService.getEffectiveEntitlements(tenantId, null, { readOnly })
+                });
+            }
             return response.json(await platformAdminService.updateOverrides(tenantId, request.body || {}, request.auth?.id, meta(request)));
         },
 
