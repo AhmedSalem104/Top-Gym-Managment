@@ -193,9 +193,10 @@ function validateReturnedObject(object, tenantId, key, expectedScope = 'tenant')
     return object;
 }
 
-function createObjectStorageService({ adapter = null, maxBytes = MAX_PRIVATE_OBJECT_BYTES, providerStatus = null } = {}) {
+function createObjectStorageService({ adapter = null, maxBytes = MAX_PRIVATE_OBJECT_BYTES, providerStatus = null, offsiteStatus = 'not_configured' } = {}) {
     const service = {
         providerStatus: providerStatus || (adapter ? 'configured' : 'not_configured'),
+        offsiteStatus: String(offsiteStatus || 'not_configured'),
         isConfigured: Boolean(adapter),
         maxBytes: normalizeMaxBytes(maxBytes),
         buildPrivateObjectKey,

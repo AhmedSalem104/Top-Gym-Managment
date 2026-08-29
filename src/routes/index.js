@@ -74,6 +74,7 @@ function registerRoutes(app, {
     backupService,
     backupRecoveryService,
     objectStorageService,
+    backupActionRateLimit,
     isAuthorizedCronRequest,
     financeService,
     analyticsService,
@@ -101,7 +102,7 @@ function registerRoutes(app, {
     })));
 
     registerAuthRoutes(app, { authService, permissionService, asyncRoute, ownerOnly, allowLoginAttempt });
-    registerBackupRoutes(app, { backupService, backupRecoveryService, brandingService, asyncRoute, isAuthorizedCronRequest });
+    registerBackupRoutes(app, { backupService, backupRecoveryService, brandingService, asyncRoute, isAuthorizedCronRequest, backupActionRateLimit });
     registerFinanceRoutes(app, { financeService, asyncRoute });
     registerDashboardRoutes(app, { memberService, analyticsService, storeService, asyncRoute });
     registerLibraryRoutes(app, { libraryService, asyncRoute });
@@ -121,7 +122,8 @@ function registerRoutes(app, {
         saasService,
         authService,
         backupRecoveryService,
-        asyncRoute
+        asyncRoute,
+        backupActionRateLimit
     });
     registerSaasRoutes(app, { saasService, asyncRoute, ownerOnly });
     registerMembersRoutes(app, { memberService, asyncRoute });

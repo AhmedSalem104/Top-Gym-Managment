@@ -5,6 +5,7 @@ const test = require('node:test');
 
 const {
     createLoginAttemptGuard,
+    createBackupActionRateLimit,
     createMemoryRateLimitStore,
     createSensitiveRateLimit,
     trimMap
@@ -69,6 +70,21 @@ test('sensitive rate limiter bounds unique key memory', async () => {
     await limiter(requestFor('ip-a'), evictedKeyResponse, next);
     assert.equal(evictedKeyResponse.statusCode, 200);
     assert.equal(nextCalls, 4);
+});
+
+test('backup action rate limiter scopes expensive actions to the trusted tenant/user context', async () => {
+    const limiter = createBackupActionRateLimit({ windowMs: 60_000, max: 1, cleanupMs: Number.POSITIVE_INFINITY, maxEntries: 10 });
+    const request = (tenantId) => ({ ...requestFor('ip-backup'), tenant: { id: tenantId }, auth: { id: 42 } });
+    let nextCalls = 0;
+    await limiter(request(7), responseDouble(), () => { nextCalls += 1; });
+    const blocked = responseDouble();
+    await limiter(request(7), blocked, () => { nextCalls += 1; });
+    const otherTenant = responseDouble();
+    await limiter(request(8), otherTenant, () => { nextCalls += 1; });
+    assert.equal(blocked.statusCode, 429);
+    assert.equal(blocked.body.code, 'BACKUP_RATE_LIMITED');
+    assert.equal(otherTenant.statusCode, 200);
+    assert.equal(nextCalls, 2);
 });
 
 test('login attempt guard bounds unique key memory', async () => {

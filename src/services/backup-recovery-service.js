@@ -1545,7 +1545,7 @@ async function getPlatformBackupHealth({ readOnly = false, limit = 20, now = new
     const safeLimit = normalizePositiveInteger(limit, 20, 100);
     const pool = await getPool();
     const backupDay = backupDayKey(now);
-    const [tenantSummary, tenantLatest, platformSummary, recentFailures] = await Promise.all([
+    const [tenantSummary, tenantLatest, platformSummary, platformVerified, restoreRehearsal, recentFailures] = await Promise.all([
         pool.request().input('backupDay', sql.Date, dateValue(backupDay)).query(`
             SELECT COUNT_BIG(*) AS eligible_tenants,
                    SUM(CASE WHEN r.id IS NOT NULL AND r.status='VERIFIED' THEN 1 ELSE 0 END) AS verified_today,
@@ -1567,11 +1567,21 @@ async function getPlatformBackupHealth({ readOnly = false, limit = 20, now = new
             FROM ranked WHERE row_number=1 ORDER BY backup_day DESC,tenant_id OFFSET 0 ROWS FETCH NEXT @limit ROWS ONLY;
         `),
         pool.request().query(`SELECT TOP (1) id,backup_type,backup_day,status,size_bytes,verified_at,created_at FROM dbo.gym_platform_backup_records ORDER BY created_at DESC,id DESC;`),
+        pool.request().query(`SELECT TOP (1) id,backup_type,backup_day,status,size_bytes,verified_at,created_at FROM dbo.gym_platform_backup_records WHERE status='VERIFIED' ORDER BY verified_at DESC,created_at DESC,id DESC;`),
+        pool.request().query(`SELECT TOP (1) created_at FROM dbo.gym_platform_backup_audit_log WHERE event_type IN ('PLATFORM_RESTORE_REHEARSAL_COMPLETED','PLATFORM_RESTORE_COMPLETED') AND result='success' ORDER BY created_at DESC,id DESC;`),
         pool.request().query(`SELECT TOP (20) id,tenant_id,status,error_code,created_at FROM dbo.gym_backup_records WHERE status='FAILED' ORDER BY created_at DESC,id DESC;`)
     ]);
     const summary = tenantSummary.recordset[0] || {};
     return {
         providerStatus: storageService?.providerStatus || 'not_configured',
+        offsiteStatus: storageService?.offsiteStatus || 'not_configured',
+        scheduledPolicy: {
+            daily: true,
+            weekly: Boolean(config.backupEnablePlatformWeekly),
+            monthly: Boolean(config.backupEnablePlatformMonthly),
+            weeklyDay: 'UTC Sunday',
+            monthlyDay: 'UTC first day'
+        },
         summary: {
             eligibleTenants: Number(summary.eligible_tenants || 0),
             verifiedToday: Number(summary.verified_today || 0),
@@ -1581,6 +1591,8 @@ async function getPlatformBackupHealth({ readOnly = false, limit = 20, now = new
         },
         tenantDaily: tenantLatest.recordset.map((row) => ({ id: Number(row.id), tenantId: Number(row.tenant_id), slug: row.slug, status: row.status, backupDay: row.backup_day, sizeBytes: row.size_bytes == null ? null : Number(row.size_bytes), verifiedAt: row.verified_at, createdAt: row.created_at })),
         lastPlatformBackup: mapRecord(platformSummary.recordset[0], 'platform'),
+        lastVerifiedPlatformBackup: mapRecord(platformVerified.recordset[0], 'platform'),
+        lastRestoreRehearsalAt: restoreRehearsal.recordset[0]?.created_at || null,
         recentFailures: recentFailures.recordset.map((row) => ({ id: Number(row.id), tenantId: Number(row.tenant_id), status: row.status, errorCode: row.error_code, createdAt: row.created_at }))
     };
 }

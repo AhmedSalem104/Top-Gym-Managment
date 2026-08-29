@@ -157,7 +157,44 @@ function createMembershipPortalRateLimit({
     };
 }
 
+/**
+ * Backup actions can serialize a large amount of tenant data and are not
+ * suitable for the broad sensitive-write budget. This policy is intentionally
+ * scoped by trusted tenant/user context plus IP. It can use the same atomic
+ * shared-store contract later; the bounded in-memory stores remain the local
+ * fallback and never become a cross-instance guarantee.
+ */
+function createBackupActionRateLimit({
+    windowMs = 10 * 60_000,
+    max = 6,
+    cleanupMs = 300_000,
+    maxEntries = 20_000,
+    store = null,
+    fallbackStore = null
+} = {}) {
+    const primaryStore = store || createMemoryRateLimitStore({ cleanupMs, maxEntries });
+    const safeFallbackStore = fallbackStore || createMemoryRateLimitStore({ cleanupMs, maxEntries });
+    return (request, response, next) => {
+        const tenantId = Number(request.tenant?.id);
+        const userId = Number(request.auth?.id);
+        const scope = Number.isInteger(tenantId) && tenantId > 0
+            ? `tenant:${tenantId}`
+            : Number.isInteger(userId) && userId > 0 ? `user:${userId}` : 'anonymous';
+        const key = `backup-action:${scope}:ip:${requestIp(request)}`;
+        return incrementWithFallback(primaryStore, safeFallbackStore, key, { windowMs })
+            .then((result) => {
+                if (result.unavailable) return rateLimitUnavailable(response);
+                if (result.count > max) {
+                    response.set('Retry-After', String(Math.max(1, Math.ceil((result.resetAt - Date.now()) / 1000))));
+                    return response.status(429).json({ error: 'تم تجاوز عدد عمليات النسخ المسموح بها مؤقتًا. حاول لاحقًا.', code: 'BACKUP_RATE_LIMITED' });
+                }
+                return next();
+            });
+    };
+}
+
 module.exports = {
+    createBackupActionRateLimit,
     createLoginAttemptGuard,
     createMemoryRateLimitStore,
     createSensitiveRateLimit,

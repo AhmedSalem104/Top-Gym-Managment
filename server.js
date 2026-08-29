@@ -8,7 +8,7 @@ const { asyncRoute } = require('./src/utils/async-route');
 const { registerRoutes } = require('./src/routes');
 const { isAuthorizedCronRequest } = require('./src/middleware/cron.middleware');
 const { createAuthApiMiddleware, ownerOnly } = require('./src/middleware/auth.middleware');
-const { createLoginAttemptGuard, createSensitiveRateLimit, createMembershipPortalRateLimit } = require('./src/middleware/rate-limit.middleware');
+const { createBackupActionRateLimit, createLoginAttemptGuard, createSensitiveRateLimit, createMembershipPortalRateLimit } = require('./src/middleware/rate-limit.middleware');
 const { closePool, getPool, initDatabase } = require('./src/database');
 const backupService = require('./src/services/backup-service');
 const { createConfiguredObjectStorageService } = require('./src/services/object-storage-service');
@@ -63,6 +63,7 @@ app.use(createPerformanceMetrics({ enabled: config.performanceMetricsEnabled }))
 
 const sensitiveRateLimit = createSensitiveRateLimit();
 const membershipPortalRateLimit = createMembershipPortalRateLimit();
+const backupActionRateLimit = createBackupActionRateLimit();
 const allowLoginAttempt = createLoginAttemptGuard();
 app.use('/api', sensitiveRateLimit);
 app.use('/api/member-portal', membershipPortalRateLimit);
@@ -170,6 +171,7 @@ registerRoutes(app, {
     backupService,
     backupRecoveryService,
     objectStorageService,
+    backupActionRateLimit,
     isAuthorizedCronRequest: (request) => isAuthorizedCronRequest(request, { config }),
     financeService,
     analyticsService,

@@ -486,9 +486,11 @@
     function renderBackupHealth(data) {
         state.backupHealth = data || {};
         const summary = data?.summary || {};
-        const providerStatus = data?.providerStatus === 'configured' ? 'متصل' : 'غير مهيأ';
+        const providerStatus = data?.providerStatus === 'configured' ? 'متصل' : data?.providerStatus === 'local_development' ? 'محلي للاختبار' : 'غير مهيأ';
         const providerCaption = data?.providerStatus === 'configured'
             ? 'التخزين الخاص جاهز للتحقق والرفع.'
+            : data?.providerStatus === 'local_development'
+                ? 'تخزين محلي للتطوير فقط؛ لا يُعتمد كنسخة Production أو Off-site.'
             : 'يلزم ربط مزود تخزين خاص قبل التشغيل الفعلي.';
         $('#platformBackupHealthKpis').innerHTML = [
             backupHealthStat('الجيمات المستحقة اليوم', summary.eligibleTenants ?? 0, summary.backupDay || 'اليوم'),
@@ -496,8 +498,11 @@
             backupHealthStat('نسخ فشلت', summary.failedToday ?? 0, 'تحتاج مراجعة أو إعادة محاولة', 'kpi-danger'),
             backupHealthStat('نسخ مفقودة اليوم', summary.missingToday ?? 0, 'لم تُنشأ بعد', 'kpi-warning')
         ].join('');
-        $('#platformBackupHealthSummary').innerHTML = `<div class="backup-summary-row"><span>اليوم</span><strong>${escapeHtml(summary.backupDay || '—')}</strong></div><div class="backup-summary-row"><span>تم التحقق</span><strong>${escapeHtml(`${summary.verifiedToday ?? 0} / ${summary.eligibleTenants ?? 0}`)}</strong></div><div class="backup-summary-row"><span>مفقود أو فاشل</span><strong>${escapeHtml(Number(summary.missingToday || 0) + Number(summary.failedToday || 0))}</strong></div>`;
-        $('#platformBackupProviderState').innerHTML = `<div class="backup-provider-badge ${data?.providerStatus === 'configured' ? 'ready' : 'pending'}"><span class="scope-dot"></span><strong>${escapeHtml(providerStatus)}</strong></div><p>${escapeHtml(providerCaption)}</p><small>لا يتم عرض مسارات التخزين أو روابط عامة للملفات الخاصة.</small>`;
+        const lastVerified = data?.lastVerifiedPlatformBackup?.verifiedAt || data?.lastVerifiedPlatformBackup?.createdAt;
+        const schedule = data?.scheduledPolicy || {};
+        const recurring = [schedule.weekly ? 'أسبوعي' : '', schedule.monthly ? 'شهري' : ''].filter(Boolean).join(' + ') || 'اليومي فقط';
+        $('#platformBackupHealthSummary').innerHTML = `<div class="backup-summary-row"><span>اليوم</span><strong>${escapeHtml(summary.backupDay || '—')}</strong></div><div class="backup-summary-row"><span>تم التحقق</span><strong>${escapeHtml(`${summary.verifiedToday ?? 0} / ${summary.eligibleTenants ?? 0}`)}</strong></div><div class="backup-summary-row"><span>مفقود أو فاشل</span><strong>${escapeHtml(Number(summary.missingToday || 0) + Number(summary.failedToday || 0))}</strong></div><div class="backup-summary-row"><span>آخر نسخة منصة Verified</span><strong>${escapeHtml(formatDateTime(lastVerified))}</strong></div><div class="backup-summary-row"><span>استعادة تجريبية مثبتة</span><strong>${escapeHtml(formatDateTime(data?.lastRestoreRehearsalAt))}</strong></div><div class="backup-summary-row"><span>النسخ الدورية</span><strong>${escapeHtml(recurring)}</strong></div>`;
+        $('#platformBackupProviderState').innerHTML = `<div class="backup-provider-badge ${data?.providerStatus === 'configured' ? 'ready' : 'pending'}"><span class="scope-dot"></span><strong>${escapeHtml(providerStatus)}</strong></div><p>${escapeHtml(providerCaption)}</p><small>Off-site: ${escapeHtml(data?.offsiteStatus || 'غير مهيأ')} · لا يتم عرض مسارات التخزين أو روابط عامة للملفات الخاصة.</small>`;
         const tenantRows = data?.tenantDaily || [];
         $('#tenantBackupsHealthTableBody').innerHTML = tenantRows.length ? tenantRows.map((row) => `<tr><td><span class="tenant-cell"><strong>${escapeHtml(row.slug || `Tenant #${row.tenantId}`)}</strong><small>#${escapeHtml(row.tenantId)}</small></span></td><td>${backupStatusPill(row.status)}</td><td>${escapeHtml(formatDate(row.backupDay))}</td><td>${escapeHtml(row.sizeBytes == null ? '—' : formatBytes(row.sizeBytes))}</td><td>${escapeHtml(formatDateTime(row.verifiedAt))}</td><td>${row.id && row.status === 'VERIFIED' ? `<a class="table-action" href="/api/platform-admin/tenants/${encodeURIComponent(row.tenantId)}/backups/${encodeURIComponent(row.id)}/download">تنزيل</a>` : '—'}</td></tr>`).join('') : '<tr><td colspan="6"><div class="empty-inline">لا توجد بيانات نسخ للجيمات بعد.</div></td></tr>';
     }

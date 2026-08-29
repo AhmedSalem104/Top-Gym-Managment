@@ -3,7 +3,7 @@
 const { createPlatformAdminController } = require('../controllers/platform-admin.controller');
 const { platformOnly } = require('../middleware/platform.middleware');
 
-function registerPlatformAdminRoutes(app, { platformAdminService, saasService, authService, backupRecoveryService, asyncRoute }) {
+function registerPlatformAdminRoutes(app, { platformAdminService, saasService, authService, backupRecoveryService, asyncRoute, backupActionRateLimit }) {
     const controller = createPlatformAdminController({ platformAdminService, saasService, authService, backupRecoveryService });
     app.get('/api/platform-admin/dashboard', platformOnly, asyncRoute(controller.dashboard));
     app.get('/api/platform-admin/tenants', platformOnly, asyncRoute(controller.tenants));
@@ -36,12 +36,12 @@ function registerPlatformAdminRoutes(app, { platformAdminService, saasService, a
     app.get('/api/platform-admin/audit', platformOnly, asyncRoute(controller.auditAll));
     app.get('/api/platform-admin/backups/health', platformOnly, asyncRoute(controller.backupHealth));
     app.get('/api/platform-admin/backups', platformOnly, asyncRoute(controller.backupHistory));
-    app.post('/api/platform-admin/backups/run', platformOnly, asyncRoute(controller.runPlatformBackup));
-    app.post('/api/platform-admin/backups/retention', platformOnly, asyncRoute(controller.cleanupBackups));
-    app.get('/api/platform-admin/backups/:backupId/download', platformOnly, asyncRoute(controller.downloadPlatformBackup));
+    app.post('/api/platform-admin/backups/run', platformOnly, backupActionRateLimit, asyncRoute(controller.runPlatformBackup));
+    app.post('/api/platform-admin/backups/retention', platformOnly, backupActionRateLimit, asyncRoute(controller.cleanupBackups));
+    app.get('/api/platform-admin/backups/:backupId/download', platformOnly, backupActionRateLimit, asyncRoute(controller.downloadPlatformBackup));
     app.get('/api/platform-admin/tenants/:tenantId/backups', platformOnly, asyncRoute(controller.tenantBackups));
-    app.post('/api/platform-admin/tenants/:tenantId/backups', platformOnly, asyncRoute(controller.runTenantBackup));
-    app.get('/api/platform-admin/tenants/:tenantId/backups/:backupId/download', platformOnly, asyncRoute(controller.downloadTenantBackup));
+    app.post('/api/platform-admin/tenants/:tenantId/backups', platformOnly, backupActionRateLimit, asyncRoute(controller.runTenantBackup));
+    app.get('/api/platform-admin/tenants/:tenantId/backups/:backupId/download', platformOnly, backupActionRateLimit, asyncRoute(controller.downloadTenantBackup));
 }
 
 module.exports = { registerPlatformAdminRoutes };

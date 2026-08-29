@@ -147,6 +147,12 @@ with `FAILED`, `EXPIRED` and `DELETED` terminal/cleanup states as applicable.
 Metadata includes safe status, counts, size, checksum, timestamps, attempt
 count and expiry; storage keys are not returned in ordinary API responses.
 
+Platform Backup Health reports the latest platform artifact, latest verified
+artifact, scheduled weekly/monthly policy, restore-rehearsal evidence when a
+real audit event exists, and off-site provider status. Missing rehearsal or
+off-site evidence is shown as pending; it is never inferred from artifact
+creation alone.
+
 The authorized `/api/backup/daily` cron route is the only intentional
 state-changing GET. It requires the configured cron secret in production and
 does not resolve `top-gym` as a default tenant. Scheduler work is idempotent at
