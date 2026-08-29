@@ -34,9 +34,10 @@ function staticHeaders(response, filePath) {
     }
 }
 
-function createBaseApp({ publicDirectory, expressFactory = express }) {
+function createBaseApp({ publicDirectory, expressFactory = express, trustProxyHops = 0 }) {
     const app = expressFactory();
     app.disable('x-powered-by');
+    app.set('trust proxy', Number.isInteger(trustProxyHops) ? Math.max(0, Math.min(3, trustProxyHops)) : 0);
     app.use(requestIdMiddleware);
     app.use(express.json({ limit: '1mb' }));
     app.use(securityHeaders);

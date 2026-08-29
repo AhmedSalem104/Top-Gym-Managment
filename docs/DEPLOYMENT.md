@@ -9,6 +9,12 @@ cron User-Agent and `x-top-gym-cron-key` fallback are development-only
 conveniences; a Production request without the configured Bearer secret is
 rejected.
 
+The Express app trusts one reverse-proxy hop on Production by default because
+the deployment target is Vercel. `TRUST_PROXY_HOPS=1` makes `request.ip` and
+forwarded host/protocol handling reflect the original client behind that
+proxy. Local development defaults to `0`; do not increase the value unless the
+actual deployment topology has been verified.
+
 ## Required environment
 
 Use the variables listed in `.env.example`, including:
@@ -27,6 +33,7 @@ AUTH_PLATFORM_ADMIN_NAME=Platform Admin
 AUTH_PLATFORM_ADMIN_PASSWORD=...
 PLATFORM_ADMIN_HOST=admin.voltyks.app
 DEFAULT_TENANT_SLUG=top-gym
+TRUST_PROXY_HOPS=1
 ```
 
 Never commit real values. SQL Server must accept encrypted connections from the deployment environment.

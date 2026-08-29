@@ -85,3 +85,24 @@ test('production performance metrics require an explicit second opt-in', () => {
     assert.equal(disabled.stdout, 'false');
     assert.equal(enabled.stdout, 'true');
 });
+
+test('trusted proxy hops are bounded and default to one only in production', () => {
+    const script = `
+        const { config } = require('./src/config/env');
+        process.stdout.write(JSON.stringify({ nodeEnv: config.nodeEnv, hops: config.trustProxyHops }));
+    `;
+    const development = spawnSync(process.execPath, ['-e', script], {
+        cwd: require('node:path').join(__dirname, '..', '..'),
+        env: { ...process.env, NODE_ENV: 'development', TRUST_PROXY_HOPS: '99' },
+        encoding: 'utf8'
+    });
+    const production = spawnSync(process.execPath, ['-e', script], {
+        cwd: require('node:path').join(__dirname, '..', '..'),
+        env: { ...process.env, NODE_ENV: 'production', TRUST_PROXY_HOPS: '' },
+        encoding: 'utf8'
+    });
+    assert.equal(development.status, 0, development.stderr);
+    assert.equal(production.status, 0, production.stderr);
+    assert.deepEqual(JSON.parse(development.stdout), { nodeEnv: 'development', hops: 3 });
+    assert.deepEqual(JSON.parse(production.stdout), { nodeEnv: 'production', hops: 1 });
+});

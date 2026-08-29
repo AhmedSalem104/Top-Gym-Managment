@@ -19,8 +19,11 @@ function getBooleanEnv(name, fallback = false) {
     return ['true', '1', 'yes', 'on'].includes(value);
 }
 
+const nodeEnv = getEnv('NODE_ENV', 'development');
+const defaultTrustProxyHops = nodeEnv.trim().toLowerCase() === 'production' ? 1 : 0;
+
 const config = Object.freeze({
-    nodeEnv: getEnv('NODE_ENV', 'development'),
+    nodeEnv,
     port: getNumberEnv('PORT', 3000),
     appTimeZone: getEnv('APP_TIMEZONE', 'Africa/Cairo'),
     authSessionDays: getNumberEnv('AUTH_SESSION_DAYS', 7),
@@ -55,7 +58,10 @@ const config = Object.freeze({
     // operators can tune them for a known database capacity after measurement.
     mssqlPoolMax: getBoundedNumberEnv('MSSQL_POOL_MAX', 10, 1, 100),
     mssqlPoolMin: getBoundedNumberEnv('MSSQL_POOL_MIN', 0, 0, 100),
-    mssqlPoolIdleTimeoutMs: getBoundedNumberEnv('MSSQL_POOL_IDLE_TIMEOUT_MS', 30_000, 1_000, 600_000)
+    mssqlPoolIdleTimeoutMs: getBoundedNumberEnv('MSSQL_POOL_IDLE_TIMEOUT_MS', 30_000, 1_000, 600_000),
+    // Vercel adds one trusted proxy hop in front of the Express function.
+    // Local development defaults to zero so forwarded headers remain untrusted.
+    trustProxyHops: getBoundedNumberEnv('TRUST_PROXY_HOPS', defaultTrustProxyHops, 0, 3)
 });
 
 function isProduction() {
