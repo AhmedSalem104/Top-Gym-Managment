@@ -383,6 +383,7 @@ function checkProductionClosureContracts() {
     const storage = read('src/services/object-storage-service.js');
     const rateLimit = read('src/middleware/rate-limit.middleware.js');
     const authMiddleware = read('src/middleware/auth.middleware.js');
+    const backupService = read('src/services/backup-service.js');
     const backupRecovery = read('src/services/backup-recovery-service.js');
     const backupRegistry = read('src/services/backup-registry.js');
     const backupRoutes = read('src/routes/backup.routes.js');
@@ -395,8 +396,11 @@ function checkProductionClosureContracts() {
     record('SEC-BACKUP-ACTION-RATE-LIMIT', rateLimit.includes('createBackupActionRateLimit') && rateLimit.includes('backup-action:') && backupRoutes.includes('backupActionRateLimit'), 'expensive backup actions have a tenant/user-scoped abuse budget', 'P1');
     record('SEC-GET-READONLY-CONTEXT', authMiddleware.includes('READ_ONLY_METHODS.has(request.method) && !cronRequest') && authMiddleware.includes('request.readOnlyRequest = readOnlyRequest') && authMiddleware.includes('touch: !readOnlyRequest'), 'normal GET requests use a read-only context while the authorized backup cron remains explicit', 'P0');
     record('BACKUP-TENANT-REGISTRY', backupRegistry.includes('TENANT_BACKUP_TABLES') && backupRegistry.includes('getTenantBackupCoverage') && backupRecovery.includes('requireCompleteRegistry'), 'tenant backup coverage is registry-driven and restore rejects incomplete artifacts', 'P0');
+    record('BACKUP-RUNTIME-COVERAGE', backupRecovery.includes('getTenantBackupCoverageStatus') && backupRecovery.includes("c.name=N'tenant_id'") && backupRecovery.includes('registryCoverage'), 'platform backup health inspects the live tenant_id table catalog for registry gaps', 'P0');
     record('BACKUP-INTEGRITY', backupRecovery.includes('sha256') && backupRecovery.includes('BACKUP_CHECKSUM_MISMATCH') && backupRecovery.includes("status: 'VERIFYING'") && backupRecovery.includes("status: 'VERIFIED'"), 'backup artifacts are checksum-verified before they become downloadable', 'P0');
+    record('BACKUP-FORMAT-TRUTH', backupRecovery.includes('BACKUP_NATIVE_FORMAT_UNAVAILABLE') && backupRecovery.includes('normalizeBackupFormat') && backupService.includes('normalizeBackupFormat'), 'unsupported native .bak requests fail closed instead of being mislabelled logical exports', 'P0');
     record('BACKUP-RESTORE-SAFETY', backupRecovery.includes('tenant_pre_restore') && backupRecovery.includes('sp_getapplock') && backupRecovery.includes('BACKUP_TENANT_BUSY'), 'tenant restore requires a safety copy and database-level recovery coordination', 'P0');
+    record('BACKUP-POOL-SAFE-SNAPSHOT', backupRecovery.includes('transaction ? 1 : concurrency') && backupRecovery.includes('callback(transaction)'), 'tenant snapshot reads reuse the recovery transaction and avoid pool-size-one deadlocks', 'P1');
     record('BACKUP-PLATFORM-SEPARATION', backupRecovery.includes('createPlatformBackup') && backupRecovery.includes('platform-disaster-recovery') && platformRoutes.includes('/api/platform-admin/backups/health'), 'platform disaster-recovery artifacts and administration routes are separate from tenant backups', 'P0');
     record('BACKUP-ROUTE-SAFETY', backupRoutes.includes('/api/backup/records/:id/download') && backupRoutes.includes('/api/backup/records/:id/restore') && backupRoutes.includes("app.get('/api/backup/daily'") && backupRecovery.includes('runDailyBackupCycle'), 'tenant backup history/download/restore and authorized daily orchestration are wired', 'P0');
 }

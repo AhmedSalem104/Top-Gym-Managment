@@ -7,9 +7,13 @@ const {
     buildTenantBackupPayload,
     getRetentionPolicy,
     getScheduledPlatformBackupTypes,
+    getTenantBackupCoverageStatus,
     inspectTenantBackupBuffer,
+    inspectPlatformBackupBuffer,
     mapWithConcurrency,
+    normalizeBackupFormat,
     normalizeRetryCount,
+    validatePlatformBackupPayload,
     validateTenantBackupPayload
 } = require('../../src/services/backup-recovery-service');
 const { createObjectStorageService } = require('../../src/services/object-storage-service');
@@ -23,6 +27,32 @@ function samplePayload() {
         },
         generatedAt: '2026-08-29T00:00:00.000Z'
     });
+}
+
+function samplePlatformPayload() {
+    const tables = {
+        global: { gym_tenants: [{ id: 7, name: 'Gym A' }] },
+        tenant: { members: [{ id: 11, tenant_id: 7, full_name: 'Synthetic Member' }] }
+    };
+    return {
+        format: 'logic-fit-platform-backup',
+        version: 2,
+        backupType: 'platform-disaster-recovery',
+        generatedAt: '2026-08-29T00:00:00.000Z',
+        manifest: {
+            registryVersion: 1,
+            includesGlobalControlPlane: true,
+            includesTenantData: true,
+            excludesSecrets: true,
+            tableCounts: { global: { gym_tenants: 1 }, tenant: { members: 1 } },
+            rowCount: 2
+        },
+        tables,
+        integrity: {
+            algorithm: 'sha256',
+            sha256: require('node:crypto').createHash('sha256').update(JSON.stringify(tables)).digest('hex')
+        }
+    };
 }
 
 test('tenant backup manifest validates tenant ownership and SHA-256 content integrity', () => {
@@ -43,6 +73,19 @@ test('tenant backup validation rejects cross-tenant rows and tampering', () => {
     const tampered = structuredClone(payload);
     tampered.tables.members[0].full_name = 'Changed after export';
     assert.throws(() => validateTenantBackupPayload(tampered), { code: 'BACKUP_CHECKSUM_MISMATCH' });
+});
+
+test('platform backup validation checks scope, manifest completeness and credential exclusion', async () => {
+    const payload = samplePlatformPayload();
+    const validation = validatePlatformBackupPayload(payload, { requireCompleteRegistry: false });
+    assert.equal(validation.rowCount, 2);
+    const gzip = require('node:zlib').gzipSync(Buffer.from(JSON.stringify(payload), 'utf8'));
+    const inspected = await inspectPlatformBackupBuffer(gzip, { requireCompleteRegistry: false });
+    assert.equal(inspected.integrity.verified, true);
+    assert.throws(() => validatePlatformBackupPayload(payload), { code: 'PLATFORM_BACKUP_REGISTRY_INCOMPLETE' });
+    const secretPayload = structuredClone(payload);
+    secretPayload.tables.global.gym_tenants[0].password_hash = 'must-not-export';
+    assert.throws(() => validatePlatformBackupPayload(secretPayload, { requireCompleteRegistry: false }), { code: 'PLATFORM_BACKUP_SECRET_COLUMN' });
 });
 
 test('tenant restore rejects an artifact that does not cover the current registry', () => {
@@ -90,10 +133,19 @@ test('daily scheduler selects weekly and monthly platform snapshots by UTC calen
     assert.deepEqual(getScheduledPlatformBackupTypes(new Date('2026-11-01T12:00:00.000Z'), { monthly: false }), ['platform_weekly']);
 });
 
+test('runtime backup coverage inspection is platform-scoped before touching the database', async () => {
+    await assert.rejects(getTenantBackupCoverageStatus({ readOnly: true }), { code: 'PLATFORM_SCOPE_REQUIRED' });
+});
+
 test('scheduler retry count preserves an explicit zero retry policy', () => {
     assert.equal(normalizeRetryCount(0, 1, 3), 0);
     assert.equal(normalizeRetryCount(5, 1, 3), 3);
     assert.equal(normalizeRetryCount('invalid', 1, 3), 1);
+});
+
+test('native BAK requests fail closed instead of mislabelling a logical gzip artifact', () => {
+    assert.equal(normalizeBackupFormat('json.gz'), 'json.gz');
+    assert.throws(() => normalizeBackupFormat('bak'), { code: 'BACKUP_NATIVE_FORMAT_UNAVAILABLE', statusCode: 409 });
 });
 
 test('stored backup verification hashes returned bytes instead of trusting metadata', async () => {

@@ -14,7 +14,7 @@ const { ensureStoreTables } = require('./store-service');
 const { ensureBrandingTables } = require('./branding-service');
 const { getSafeErrorMessage } = require('../utils/error-response');
 const { getTenantContext } = require('../tenancy/tenant-context');
-const { buildTenantBackupArtifact, inspectTenantBackupBuffer } = require('./backup-recovery-service');
+const { buildTenantBackupArtifact, inspectTenantBackupBuffer, normalizeBackupFormat } = require('./backup-recovery-service');
 
 function safeOperationalError(error, fallback = 'Backup operation failed.') {
     const statusCode = Number(error?.statusCode);
@@ -122,7 +122,7 @@ async function inspectBackupBuffer(input, { expectedTenantId = null } = {}) {
 // readOnly guards below are intentionally retained to protect the route from
 // schema/seed side effects and to preserve the read-only safety contract.
 async function createBackup({ format = 'json.gz', readOnly = false } = {}) {
-    const backupFormat = String(format).toLowerCase() === 'bak' ? 'bak' : 'json.gz';
+    const backupFormat = normalizeBackupFormat(format);
     await ensureExpensesTable({ readOnly });
     await ensurePaymentTransactionsTable({ readOnly });
     await ensureAttendanceTable({ readOnly });

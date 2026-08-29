@@ -94,10 +94,10 @@ tenant failure does not stop other tenants. It then creates one separate
 - no password hashes, salts, session tokens, API keys or secret columns.
 
 The current platform artifact is a verified logical export, not a native SQL
-Server `.bak` database backup. The `bak` format label is retained only for
-compatibility and still contains the gzip logical format. A native full backup
-or a provider-supported equivalent must be selected and tested before claiming
-full disaster-recovery coverage.
+Server `.bak` database backup. Native `.bak` requests fail closed so a logical
+gzip artifact can never be mislabeled as a native database backup. A native
+full backup or a provider-supported equivalent must be selected and tested
+before claiming full disaster-recovery coverage.
 
 Private tenant files that are stored outside SQL Server require the configured
 storage provider to support a second platform/off-site copy. The current
@@ -149,9 +149,10 @@ count and expiry; storage keys are not returned in ordinary API responses.
 
 Platform Backup Health reports the latest platform artifact, latest verified
 artifact, scheduled weekly/monthly policy, restore-rehearsal evidence when a
-real audit event exists, and off-site provider status. Missing rehearsal or
-off-site evidence is shown as pending; it is never inferred from artifact
-creation alone.
+real audit event exists, off-site provider status, recent platform failures,
+and a live catalog check for tenant-scoped tables that are missing from the
+backup registry. Missing rehearsal or off-site evidence is shown as pending;
+it is never inferred from artifact creation alone.
 
 The authorized `/api/backup/daily` cron route is the only intentional
 state-changing GET. It requires the configured cron secret in production and
@@ -255,6 +256,8 @@ URLs, SQL text, stack traces or sensitive member data.
   by default. Larger production backups need a streaming/chunked design and
   an explicit capacity decision; these limits are safety gates, not capacity
   claims.
+- Native SQL Server `.bak` creation is not implemented by the current
+  deployment; only the verified logical `json.gz` format is accepted.
 - No backup operation is hidden behind a dashboard/history GET.
 
 ## Local tests and current evidence
@@ -262,6 +265,8 @@ URLs, SQL text, stack traces or sensitive member data.
 The recovery implementation has local unit/source coverage for:
 
 - checksum, manifest, version and cross-tenant row validation;
+- platform manifest completeness, credential-column exclusion and stored-byte
+  revalidation;
 - complete registry enforcement on restore;
 - bounded concurrency and retention defaults;
 - private tenant/platform key separation and provider fail-closed behavior;
@@ -304,8 +309,11 @@ Backup-specific outstanding items are:
 
 - `16e32d0 backup: add tenant registry and recovery metadata`
 - `45ccd8e backup: add tenant and platform recovery foundation`
-- Current working change: owner recovery UI, platform controls, restore safety,
-  audit/download handling, QA contracts and this runbook.
+- `8385ee4 test: align backup route safety coverage`
+- `378eeb3 backup: harden integrity and retention coordination`
+- Current working change: runtime registry health inspection, transaction-safe
+  snapshot reads, native-format fail-closed behavior and platform manifest
+  verification.
 
 This report deliberately recommends **No-Go for a production backup/DR claim**
 until the Critical provider and restore evidence is available. It does not

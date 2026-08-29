@@ -6,7 +6,7 @@ stop safe implementation elsewhere, but a Critical item remains a Go-Live
 gate.
 
 Last reviewed: 2026-08-29  
-Implementation revision covered: `45ccd8e` plus the current Backup/DR closure changes
+Implementation revision covered: `378eeb3` plus the current Backup/DR closure changes
 
 ## Status vocabulary
 
@@ -98,8 +98,9 @@ claims to Production evidence. Those items remain listed above exactly once.
   transitions, expiry/recovery guards, limits and overrides. End-to-end
   authenticated lifecycle and concurrent database behavior remain Staging
   evidence.
-- Backup/DR: tenant registry coverage, versioned logical artifacts, checksum and
-  manifest validation, private-key enforcement, bounded daily orchestration,
+- Backup/DR: tenant registry coverage (including a live `tenant_id` catalog
+  check), versioned logical artifacts, platform manifest validation, stored-byte
+  checksum verification, private-key enforcement, bounded daily orchestration,
   retention reconciliation, tenant restore safety gates and audit contracts are
   `VERIFIED` locally. A real private provider, native/full platform backup,
   isolated restore rehearsal and deployed scheduler remain external evidence
@@ -150,6 +151,9 @@ claims to Production evidence. Those items remain listed above exactly once.
   provider routing and alerting still require deployment verification.
 - GitHub Actions now has a read-only verification workflow pinned to Node 24;
   provider-side execution and Vercel runtime behavior remain deployment debt.
+- Backup-specific local tests now cover platform manifest validation, secret
+  column exclusion, runtime registry inspection boundaries, native `.bak`
+  fail-closed behavior, and recovery snapshot use of the active transaction.
 
 These local results do not close the authenticated baseline, live execution
 plans, Staging/Production capacity, restore, or pilot evidence items above.
