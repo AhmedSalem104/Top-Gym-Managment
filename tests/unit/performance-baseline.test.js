@@ -14,6 +14,8 @@ const {
 } = require('../../scripts/performance-baseline');
 const { assertReadOnlySql, hasPersistentSqlMutation } = require('../../src/database/pool');
 const { readOnlyBaselineGuard } = require('../../src/middleware/read-only-baseline.middleware');
+const { runTenantContext } = require('../../src/tenancy/tenant-context');
+const { ensureMembershipCodeStorage } = require('../../src/services/membership-code-service');
 
 function withEnvironment(values, callback) {
     const previous = new Map(Object.keys(values).map((key) => [key, process.env[key]]));
@@ -126,6 +128,11 @@ test('database guard blocks persistent SQL mutations but permits temporary query
     assert.equal(hasPersistentSqlMutation('CREATE TABLE dbo.baseline_probe (id int);'), true);
     assert.equal(hasPersistentSqlMutation("SELECT 'UPDATE dbo.members SET full_name = ''x''' AS sample;"), false);
     assert.throws(() => assertReadOnlySql('DELETE FROM dbo.members WHERE id=@id;', { readOnlyBaseline: true }), (error) => error.code === 'BASELINE_SQL_WRITE_BLOCKED' && error.statusCode === 405);
+});
+
+test('membership-code storage setup is skipped in a read-only tenant context', async () => {
+    const result = await runTenantContext({ tenantId: 1, mode: 'tenant', readOnlyBaseline: true }, () => ensureMembershipCodeStorage());
+    assert.equal(result, undefined);
 });
 
 test('target guard blocks production-like or unapproved external targets', () => {

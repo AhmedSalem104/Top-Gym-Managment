@@ -3,6 +3,7 @@
 const crypto = require('node:crypto');
 const { getPool, sql } = require('../database');
 const { config } = require('../config/env');
+const { getTenantContext } = require('../tenancy/tenant-context');
 
 const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const CODE_PATTERN = /^TG[A-HJ-NP-Z2-9]{16}$/;
@@ -94,7 +95,11 @@ function requestMeta(request) {
     };
 }
 
-async function ensureMembershipCodeStorage() {
+async function ensureMembershipCodeStorage({ readOnly = false } = {}) {
+    // Listing members and loading member details are read paths. Never let a
+    // baseline request turn those reads into schema ALTER/CREATE/backfill
+    // work; the database must already be prepared before it is benchmarked.
+    if (readOnly || getTenantContext()?.readOnlyBaseline) return;
     if (!storagePromise) {
         storagePromise = (async () => {
             const pool = await getPool();

@@ -47,6 +47,9 @@ The following facts are static evidence, not runtime benchmarks:
   in the hosted database.
 - The baseline runner and SQL guard enforce GET/HEAD/OPTIONS-only execution and
   never send a login request.
+- Member-list/detail reads skip membership-code schema setup and backfill in
+  the read-only baseline context; the prepared database remains a prerequisite
+  for those columns and tables.
 
 ## Domain inventory
 
