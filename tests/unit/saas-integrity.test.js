@@ -83,3 +83,18 @@ test('tenant subscription history uses bounded server-side pagination', () => {
     assert.match(platformClientSource, /profilePaymentsPage: 1/);
     assert.match(platformClientSource, /data-profile-payments-page/);
 });
+
+test('subscription rejection updates the request and audit atomically', () => {
+    const source = fs.readFileSync(path.join(__dirname, '../../src/services/saas-service.js'), 'utf8');
+    const start = source.indexOf('async function rejectRequest');
+    const end = source.indexOf('\nfunction normalizeTenantInput', start);
+    const block = source.slice(start, end);
+
+    assert.notEqual(start, -1);
+    assert.notEqual(end, -1);
+    assert.match(block, /if \(!Number\.isInteger\(id\) \|\| id <= 0\)/);
+    assert.match(block, /await withTransaction\(async \(transaction\)/);
+    assert.match(block, /WITH \(UPDLOCK,HOLDLOCK\)/);
+    assert.match(block, /WHERE id=@requestId AND status='pending'/);
+    assert.match(block, /executor: transaction/);
+});

@@ -1085,15 +1085,27 @@ async function approveRequest(requestId, actorUserId, reviewNotes = '') {
 async function rejectRequest(requestId, actorUserId, reviewNotes = '') {
     await ensureSaasTables();
     const id = Number(requestId);
+    if (!Number.isInteger(id) || id <= 0) throw saasError('طلب الاشتراك غير صحيح.', 400, 'INVALID_SUBSCRIPTION_REQUEST');
     const notes = text(reviewNotes, '', 1000);
     if (!notes) throw saasError('سبب رفض الطلب مطلوب.', 400, 'REVIEW_NOTES_REQUIRED');
-    const pool = await getPool();
-    const result = await pool.request().input('requestId', sql.BigInt, id).query("SELECT TOP (1) tenant_id,status FROM dbo.saas_subscription_requests WHERE id=@requestId;");
-    const request = result.recordset[0];
-    if (!request) throw saasError('طلب الاشتراك غير موجود.', 404, 'SAAS_REQUEST_NOT_FOUND');
-    if (request.status !== 'pending') throw saasError('تمت مراجعة طلب الاشتراك من قبل.', 409, 'SAAS_REQUEST_ALREADY_REVIEWED');
-    await pool.request().input('requestId', sql.BigInt, id).input('actorId', sql.Int, Number(actorUserId)).input('notes', sql.NVarChar(1000), notes).query("UPDATE dbo.saas_subscription_requests SET status='rejected',reviewed_by_user_id=@actorId,reviewed_at=SYSUTCDATETIME(),review_notes=@notes,updated_at=SYSUTCDATETIME() WHERE id=@requestId;");
-    await recordAudit({ tenantId: Number(request.tenant_id), actorUserId: Number(actorUserId), action: 'subscription_rejected', entityType: 'subscription_request', entityId: id, details: notes });
+    const actorId = Number(actorUserId);
+    let tenantId;
+    await withTransaction(async (transaction) => {
+        const result = await transaction.request()
+            .input('requestId', sql.BigInt, id)
+            .query('SELECT TOP (1) tenant_id,status FROM dbo.saas_subscription_requests WITH (UPDLOCK,HOLDLOCK) WHERE id=@requestId;');
+        const request = result.recordset[0];
+        if (!request) throw saasError('طلب الاشتراك غير موجود.', 404, 'SAAS_REQUEST_NOT_FOUND');
+        if (request.status !== 'pending') throw saasError('تمت مراجعة طلب الاشتراك من قبل.', 409, 'SAAS_REQUEST_ALREADY_REVIEWED');
+        tenantId = Number(request.tenant_id);
+        const updated = await transaction.request()
+            .input('requestId', sql.BigInt, id)
+            .input('actorId', sql.Int, actorId)
+            .input('notes', sql.NVarChar(1000), notes)
+            .query("UPDATE dbo.saas_subscription_requests SET status='rejected',reviewed_by_user_id=@actorId,reviewed_at=SYSUTCDATETIME(),review_notes=@notes,updated_at=SYSUTCDATETIME() WHERE id=@requestId AND status='pending';");
+        if (!Number(updated.rowsAffected?.[0] || 0)) throw saasError('تمت مراجعة طلب الاشتراك من قبل.', 409, 'SAAS_REQUEST_ALREADY_REVIEWED');
+        await recordAudit({ tenantId, actorUserId: actorId, action: 'subscription_rejected', entityType: 'subscription_request', entityId: id, details: notes, executor: transaction });
+    });
     return (await listPlatformRequests({ requestId: id }))[0] || null;
 }
 
