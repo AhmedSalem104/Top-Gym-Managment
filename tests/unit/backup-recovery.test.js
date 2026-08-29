@@ -77,6 +77,13 @@ test('tenant backup validation rejects cross-tenant rows and tampering', () => {
     assert.throws(() => validateTenantBackupPayload(tampered), { code: 'BACKUP_CHECKSUM_MISMATCH' });
 });
 
+test('tenant backup validation rejects sensitive credential fields', () => {
+    const payload = samplePayload();
+    payload.tables.members[0].refresh_token = 'must-not-export';
+    payload.integrity.sha256 = require('node:crypto').createHash('sha256').update(JSON.stringify(payload.tables)).digest('hex');
+    assert.throws(() => validateTenantBackupPayload(payload), { code: 'BACKUP_SENSITIVE_COLUMN' });
+});
+
 test('platform backup validation checks scope, manifest completeness and credential exclusion', async () => {
     const payload = samplePlatformPayload();
     const validation = validatePlatformBackupPayload(payload, { requireCompleteRegistry: false });

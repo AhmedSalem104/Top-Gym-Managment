@@ -34,6 +34,7 @@ const PLATFORM_SENSITIVE_COLUMNS = new Set([
     'api_key',
     'secret'
 ]);
+const SENSITIVE_COLUMN_PATTERN = /(^|_)(?:password|salt|token|secret|api_key|private_key|encryption_key|credential|credentials|otp)(?:_|$)/i;
 
 let recoverySchemaPromise;
 
@@ -47,6 +48,11 @@ function backupError(message, statusCode = 500, code = 'BACKUP_OPERATION_FAILED'
 
 function recoveryErrorCode(error, fallback) {
     return safeErrorCode(error, fallback);
+}
+
+function isSensitiveColumn(value) {
+    const column = String(value || '').trim().toLowerCase();
+    return PLATFORM_SENSITIVE_COLUMNS.has(column) || SENSITIVE_COLUMN_PATTERN.test(column);
 }
 
 function normalizePositiveInteger(value, fallback, maximum = Number.MAX_SAFE_INTEGER) {
@@ -171,6 +177,9 @@ function validateTenantBackupPayload(payload, { expectedTenantId = null, require
             throw backupError('A backup row has an invalid shape.', 400, 'BACKUP_ROW_INVALID');
         }
         const tableRows = rows.map((row) => {
+            if (Object.keys(row).some(isSensitiveColumn)) {
+                throw backupError('The backup contains a sensitive credential column.', 400, 'BACKUP_SENSITIVE_COLUMN');
+            }
             const tenantKey = Object.keys(row).find((name) => name.toLowerCase() === 'tenant_id');
             if (definition.tenantScoped && tenantKey === undefined) {
                 throw backupError('The backup contains a row without tenant ownership.', 400, 'BACKUP_TENANT_COLUMN_MISSING');
@@ -253,7 +262,7 @@ function validatePlatformBackupPayload(payload, { requireCompleteRegistry = true
             throw backupError('The platform backup has an invalid global table.', 400, 'PLATFORM_BACKUP_TABLE_INVALID');
         }
         for (const row of rows) {
-            if (Object.keys(row).some((column) => PLATFORM_SENSITIVE_COLUMNS.has(String(column).toLowerCase()))) {
+            if (Object.keys(row).some(isSensitiveColumn)) {
                 throw backupError('The platform backup contains a sensitive credential column.', 400, 'PLATFORM_BACKUP_SECRET_COLUMN');
             }
         }
@@ -625,7 +634,7 @@ async function buildTenantBackupArtifact({ tenantId = null, format = 'json.gz', 
     const definitions = TENANT_BACKUP_TABLES;
     const rows = await mapWithConcurrency(definitions, async (definition) => [
         definition.key,
-        await readTableRows(db, definition, metadata, { tenantId: trustedTenantId })
+        await readTableRows(db, definition, metadata, { tenantId: trustedTenantId, excludeSensitive: true })
     ], transaction ? 1 : concurrency);
     const tables = Object.fromEntries(rows);
     const payload = buildTenantBackupPayload({ tenant, tables, generatedAt: now });
@@ -916,9 +925,14 @@ async function verifyStoredTenantObject(storage, { tenantId, key, expectedSize, 
     if (actualChecksum !== String(expectedChecksum).toLowerCase() || actualSize !== Number(expectedSize)) {
         throw backupError('The stored backup checksum does not match.', 503, 'BACKUP_ARTIFACT_CHECKSUM_MISMATCH');
     }
+    const inspected = await inspectTenantBackupBuffer(object.body, {
+        expectedTenantId: tenantId,
+        requireCompleteRegistry: true
+    });
     return {
         checksum: actualChecksum,
         size: actualSize,
+        rowCount: inspected.rowCount,
         ...(returnBody ? { body: object.body, contentType: object.contentType || null } : {})
     };
 }
