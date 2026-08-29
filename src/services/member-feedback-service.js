@@ -3,6 +3,7 @@
 const { getPool, sql } = require('../database');
 const membershipCodeService = require('./membership-code-service');
 const { addDays, parseDateOnly, toUtcDate } = require('../utils/date');
+const { getTenantContext } = require('../tenancy/tenant-context');
 
 const NOTE_TYPES = Object.freeze({
     GENERAL: 'general',
@@ -60,7 +61,8 @@ function escapeLike(value) {
     return String(value || '').replace(/[\\%_\[]/g, '\\$&');
 }
 
-async function ensureMemberFeedbackTable() {
+async function ensureMemberFeedbackTable({ readOnly = false } = {}) {
+    if (readOnly || getTenantContext()?.readOnlyBaseline) return;
     if (!storagePromise) {
         storagePromise = (async () => {
             const pool = await getPool();
@@ -183,8 +185,8 @@ function normalizeFilters(query = {}) {
     return { filters, params };
 }
 
-async function list(query = {}) {
-    await ensureMemberFeedbackTable();
+async function list(query = {}, { readOnly = false } = {}) {
+    await ensureMemberFeedbackTable({ readOnly });
     const page = normalizePage(query.page);
     const pageSize = normalizePageSize(query.pageSize);
     const offset = (page - 1) * pageSize;

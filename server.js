@@ -35,11 +35,17 @@ const platformAdminService = require('./src/services/platform-admin-service');
 const { runTenantContext } = require('./src/tenancy/tenant-context');
 const { ensureAuthReady } = authService;
 const { createPerformanceMetrics } = require('./src/middleware/performance-metrics');
-const { readOnlyBaselineGuard } = require('./src/middleware/read-only-baseline.middleware');
+const { READ_ONLY_METHODS, readOnlyBaselineGuard } = require('./src/middleware/read-only-baseline.middleware');
 const { getClientErrorCode, getSafeErrorMessage, isPublicClientError, safeErrorCode } = require('./src/utils/error-response');
 
 let httpServer;
 let shutdownStarted = false;
+
+function isReadOnlyRequest(request) {
+    return request.readOnlyRequest !== undefined
+        ? Boolean(request.readOnlyRequest)
+        : READ_ONLY_METHODS.has(request.method);
+}
 
 const publicDirectory = path.join(__dirname, 'public');
 const app = createApp({ publicDirectory, expressFactory: express });
@@ -175,9 +181,10 @@ registerRoutes(app, {
 });
 
 app.get('/qr/:id', asyncRoute(async (request, response) => {
-    const tenant = await tenantService.resolvePublicTenant(request.query?.tenant || request.get('x-gym-slug') || '', { readOnly: request.readOnlyBaseline });
+    const readOnly = isReadOnlyRequest(request);
+    const tenant = await tenantService.resolvePublicTenant(request.query?.tenant || request.get('x-gym-slug') || '', { readOnly });
     if (!tenant) return response.status(404).send('Gym not found.');
-    const member = await runTenantContext({ tenantId: tenant.id, mode: 'public', readOnlyBaseline: request.readOnlyBaseline }, () => memberService.getMemberById(request.params.id));
+    const member = await runTenantContext({ tenantId: tenant.id, mode: 'public', readOnlyBaseline: readOnly }, () => memberService.getMemberById(request.params.id));
     response.set({
         'Cache-Control': 'no-store, no-cache, must-revalidate, private',
         'X-Robots-Tag': 'noindex, nofollow'
@@ -186,7 +193,7 @@ app.get('/qr/:id', asyncRoute(async (request, response) => {
 }));
 
 async function sendPlatformAdminPage(request, response) {
-    const user = await authService.getSessionUser(authService.readSessionCookie(request), { includePermissions: false, readOnly: request.readOnlyBaseline });
+    const user = await authService.getSessionUser(authService.readSessionCookie(request), { includePermissions: false, readOnly: isReadOnlyRequest(request) });
     if (user && user.role !== 'PlatformAdmin') {
         return response.status(403).sendFile(path.join(publicDirectory, 'platform-admin-forbidden.html'));
     }
@@ -197,7 +204,7 @@ app.get(['/platform-admin', '/platform-admin/', '/admin-panel', '/admin-panel/']
 
 app.get('/', asyncRoute(async (request, response, next) => {
     if (isPlatformAdminHost(request)) return sendPlatformAdminPage(request, response);
-    const user = await authService.getSessionUser(authService.readSessionCookie(request), { includePermissions: false, readOnly: request.readOnlyBaseline });
+    const user = await authService.getSessionUser(authService.readSessionCookie(request), { includePermissions: false, readOnly: isReadOnlyRequest(request) });
     if (user?.role === 'PlatformAdmin') return response.redirect('/platform-admin');
     return next();
 }));

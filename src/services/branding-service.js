@@ -560,9 +560,9 @@ function getPlatformBranding() {
     return { branding: clone(DEFAULT_BRANDING), version: 1, publishedAt: null };
 }
 
-async function getPublicBrandName(fallback = 'Logic Fit') {
+async function getPublicBrandName(fallback = 'Logic Fit', { readOnly = false } = {}) {
     try {
-        const result = await getPublicBranding();
+        const result = await getPublicBranding({ readOnly });
         return String(result?.branding?.identity?.brandName || fallback).trim() || fallback;
     } catch (_) {
         return fallback;

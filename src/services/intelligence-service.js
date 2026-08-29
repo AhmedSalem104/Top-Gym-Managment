@@ -228,7 +228,7 @@ function churnScore(input = {}) {
     return { score: normalizedScore, level, reasons, recommendation };
 }
 
-async function getChurnRisks({ limit = 20, actorUserId = null } = {}) {
+async function getChurnRisks({ limit = 20, actorUserId = null, readOnly = false } = {}) {
     const currentLimit = integer(limit, 1, 100, 20);
     const today = todayDate();
     const thirtyDaysAgo = addDays(today, -30);
@@ -307,7 +307,7 @@ async function getChurnRisks({ limit = 20, actorUserId = null } = {}) {
         };
     }).sort((left, right) => right.score - left.score || left.fullName.localeCompare(right.fullName, 'ar'));
 
-    if (actorUserId) await logGeneration({ actorUserId, feature: 'retention', action: 'churn_scan', resultSummary: `${risks.length} members analyzed` });
+    if (actorUserId && !readOnly) await logGeneration({ actorUserId, feature: 'retention', action: 'churn_scan', resultSummary: `${risks.length} members analyzed` });
     return { today, risks, totals: { high: risks.filter((item) => item.level === 'high').length, medium: risks.filter((item) => item.level === 'medium').length, low: risks.filter((item) => item.level === 'low').length } };
 }
 
@@ -341,12 +341,12 @@ function buildPriorities(dashboard, churn, coaching) {
     return priorities.length ? priorities : [{ tone: 'success', title: 'الوضع التشغيلي مستقر', action: 'استمر في المتابعة الدورية' }];
 }
 
-async function getOverview({ actorUserId = null } = {}) {
+async function getOverview({ actorUserId = null, readOnly = false } = {}) {
     const [dashboard, churn, coaching, brandName] = await Promise.all([
         memberService.getDashboard(),
         getChurnRisks({ limit: 20 }),
         getCoachingMetrics(),
-        brandingService.getPublicBrandName('Logic Fit')
+        brandingService.getPublicBrandName('Logic Fit', { readOnly })
     ]);
     const priorities = buildPriorities(dashboard, churn, coaching);
     const response = {
@@ -373,7 +373,7 @@ async function getOverview({ actorUserId = null } = {}) {
             'اعمل ملخص حالة التدريب والتغذية'
         ]
     };
-    if (actorUserId) await logGeneration({ actorUserId, feature: 'manager', action: 'overview', resultSummary: response.summary });
+    if (actorUserId && !readOnly) await logGeneration({ actorUserId, feature: 'manager', action: 'overview', resultSummary: response.summary });
     return response;
 }
 

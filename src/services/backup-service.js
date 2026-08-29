@@ -14,6 +14,7 @@ const { ensureStoreTables } = require('./store-service');
 const { ensureBrandingTables } = require('./branding-service');
 const { config } = require('../config/env');
 const { getSafeErrorMessage } = require('../utils/error-response');
+const { getTenantContext } = require('../tenancy/tenant-context');
 
 const gzipAsync = promisify(gzip);
 const gunzipAsync = promisify(gunzip);
@@ -125,7 +126,8 @@ async function readTable(pool, table) {
     return result.recordset;
 }
 
-async function ensureBackupOperationsTable() {
+async function ensureBackupOperationsTable({ readOnly = false } = {}) {
+    if (readOnly || getTenantContext()?.readOnlyBaseline) return;
     if (!backupOperationsPromise) {
         backupOperationsPromise = (async () => {
             const pool = await getPool();
@@ -161,7 +163,8 @@ async function ensureBackupOperationsTable() {
     return backupOperationsPromise;
 }
 
-async function ensureBackupArchivesTable() {
+async function ensureBackupArchivesTable({ readOnly = false } = {}) {
+    if (readOnly || getTenantContext()?.readOnlyBaseline) return;
     if (!backupArchivesPromise) {
         backupArchivesPromise = (async () => {
             const pool = await getPool();
@@ -298,8 +301,8 @@ async function recordBackupOperation({ operationType, fileName = null, sourceGen
                 VALUES (@operationType, @fileName, @sourceGeneratedAt, @rowCount, @tableCounts, @status, @details);`);
 }
 
-async function getBackupHistory(limit = 30) {
-    await ensureBackupOperationsTable();
+async function getBackupHistory(limit = 30, { readOnly = false } = {}) {
+    await ensureBackupOperationsTable({ readOnly });
     const safeLimit = Math.min(100, Math.max(1, Number(limit) || 30));
     const pool = await getPool();
     const result = await pool.request().input('limit', sql.Int, safeLimit).query(`
@@ -335,8 +338,8 @@ function mapBackupArchiveRow(row) {
     };
 }
 
-async function getScheduledBackupHistory(limit = 10) {
-    await ensureBackupArchivesTable();
+async function getScheduledBackupHistory(limit = 10, { readOnly = false } = {}) {
+    await ensureBackupArchivesTable({ readOnly });
     const safeLimit = Math.min(100, Math.max(1, Number(limit) || 10));
     const pool = await getPool();
     const result = await pool.request().input('limit', sql.Int, safeLimit).query(`
@@ -348,8 +351,8 @@ async function getScheduledBackupHistory(limit = 10) {
     return result.recordset.map(mapBackupArchiveRow);
 }
 
-async function getBackupArchive(id) {
-    await ensureBackupArchivesTable();
+async function getBackupArchive(id, { readOnly = false } = {}) {
+    await ensureBackupArchivesTable({ readOnly });
     const archiveId = Number.parseInt(id, 10);
     if (!Number.isInteger(archiveId) || archiveId < 1) {
         const error = new Error('رقم النسخة الاحتياطية غير صالح.');

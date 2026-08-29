@@ -26,7 +26,7 @@ function createBackupController({ backupService, brandingService, isAuthorizedCr
                 return response.status(400).json({ error: 'صيغة النسخة غير مدعومة. اختر .json.gz أو .bak.' });
             }
             const backup = await createBackup({ format: requestedFormat });
-            const brandName = brandingService ? await brandingService.getPublicBrandName('Logic Fit') : 'Logic Fit';
+            const brandName = brandingService ? await brandingService.getPublicBrandName('Logic Fit', { readOnly: request.readOnlyRequest }) : 'Logic Fit';
             await recordBackupOperation({
                 operationType: 'download',
                 fileName: backup.filename,
@@ -45,13 +45,13 @@ function createBackupController({ backupService, brandingService, isAuthorizedCr
         },
         history: async (request, response) => {
             const [operations, archives] = await Promise.all([
-                getBackupHistory(request.query.limit),
-                getScheduledBackupHistory(request.query.archiveLimit || 10)
+                getBackupHistory(request.query.limit, { readOnly: request.readOnlyRequest }),
+                getScheduledBackupHistory(request.query.archiveLimit || 10, { readOnly: request.readOnlyRequest })
             ]);
             response.json({ operations, archives });
         },
         archive: async (request, response) => {
-            const archive = await getBackupArchive(request.params.id);
+            const archive = await getBackupArchive(request.params.id, { readOnly: request.readOnlyRequest });
             response.set({
                 'Cache-Control': 'no-store, no-cache, must-revalidate, private',
                 'Content-Type': archive.format === 'bak' ? 'application/octet-stream' : 'application/gzip',

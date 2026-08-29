@@ -13,7 +13,7 @@ function createMemberFeedbackController({ feedbackService }) {
         },
 
         list: async (request, response) => {
-            response.json(await feedbackService.list(request.query));
+            response.json(await feedbackService.list(request.query, { readOnly: request.readOnlyRequest }));
         }
     };
 }
