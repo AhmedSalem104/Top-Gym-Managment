@@ -6,7 +6,7 @@ stop safe implementation elsewhere, but a Critical item remains a Go-Live
 gate.
 
 Last reviewed: 2026-08-29  
-Implementation revision covered: `2fdd80a observability: add tenant-neutral liveness probe`
+Implementation revision covered: `24c6fb0 saas: make subscription rejection atomic`
 
 ## Status vocabulary
 
@@ -69,6 +69,9 @@ Implementation revision covered: `2fdd80a observability: add tenant-neutral live
   environment evidence.
 - Transaction cleanup ordering: `VERIFIED` with begin/callback/commit/rollback
   failure tests; a real database failure rehearsal remains pending.
+- SaaS subscription rejection now updates the request and its platform audit
+  record inside one guarded transaction; the full authenticated lifecycle
+  rehearsal remains pending.
 - Migration target safety: `VERIFIED` locally; ambiguous external targets fail
   before database access, staging is explicit, and Production requires an exact
   confirmation value. Provider-side migration rehearsal remains pending.
@@ -88,8 +91,9 @@ claims to Production evidence. Those items remain listed above exactly once.
 - `npm run qa:database`: passed with guarded/non-destructive migrations,
   runner/pool/transaction checks, runtime schema checks and SaaS integrity
   checks; live schema rehearsal remains pending.
-- `npm run test:unit`: passed 72/72, including safe internal-error logging,
-  baseline safety, pool/transaction behavior and SaaS duplicate-request guards.
+- `npm run test:unit`: passed 73/73, including safe internal-error logging,
+  baseline safety, pool/transaction behavior, SaaS duplicate-request guards
+  and atomic subscription rejection coverage.
 - Platform subscription request reads are now bounded and server-paginated;
   Platform Admin can move through the queue without loading the full request
   history into one response.
