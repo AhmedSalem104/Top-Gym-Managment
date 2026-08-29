@@ -1564,7 +1564,7 @@ async function buildPlatformBackupArtifact({ format = 'json.gz', now = new Date(
     ], concurrency);
     const tenantRows = await mapWithConcurrency(TENANT_BACKUP_TABLES, async (definition) => [
         definition.key,
-        await readTableRows(pool, definition, tenantMetadata, { allTenants: true })
+        await readTableRows(pool, definition, tenantMetadata, { allTenants: true, excludeSensitive: true })
     ], concurrency);
     const tables = {
         global: Object.fromEntries(globalRows),

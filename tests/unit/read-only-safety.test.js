@@ -35,6 +35,7 @@ test('read-only feedback and backup paths do not initialize schema', () => {
     assert.match(recovery, /if \(auditDownload\)[\s\S]*?eventType: 'BACKUP_DOWNLOADED'/);
     assert.match(recovery, /eventType: 'PLATFORM_BACKUP_DOWNLOADED'/);
     assert.match(recovery, /excludeSensitive: true/);
+    assert.match(recovery, /readTableRows\(pool, definition, tenantMetadata, \{ allTenants: true, excludeSensitive: true \}\)/);
     assert.match(recovery, /function recoveryErrorCode\(error, fallback\) \{\s*return safeErrorCode\(error, fallback\);/);
     assert.match(recovery, /verifyStoredPlatformObject/);
     assert.match(recovery, /status IN \('VERIFIED','FAILED','EXPIRED'\)/);
