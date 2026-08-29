@@ -6,7 +6,7 @@ stop safe implementation elsewhere, but a Critical item remains a Go-Live
 gate.
 
 Last reviewed: 2026-08-29  
-Implementation revision covered: `ac230b3 security: redact internal operation errors`
+Implementation revision covered: `43b96dd security: redact background operation logs`
 
 ## Status vocabulary
 
@@ -61,6 +61,9 @@ Implementation revision covered: `ac230b3 security: redact internal operation er
 ## Current Phase 2 truth
 
 - Static migration safety gate: `VERIFIED` locally with `npm run qa:database`.
+- SaaS pending-request integrity guard: `VERIFIED` locally; duplicate pending
+  requests are rejected by an application pre-check and a guarded filtered
+  unique index, while existing duplicate data fails preflight safely.
 - Pool timeout bounds, stale-pool recovery and close coordination: `VERIFIED`
   by unit/source checks; live database saturation and reconnect behavior remain
   environment evidence.
@@ -79,6 +82,11 @@ claims to Production evidence. Those items remain listed above exactly once.
 - `npm run qa:gate`: passed.
 - `npm run qa:tenancy`: passed with 63/63 protected tables,
   `unassignedRows=0`, and `crossTenantWriteBlocked=true`.
+- `npm run qa:database`: passed with guarded/non-destructive migrations,
+  runner/pool/transaction checks, runtime schema checks and SaaS integrity
+  checks; live schema rehearsal remains pending.
+- `npm run test:unit`: passed 61/61, including safe internal-error logging,
+  baseline safety, pool/transaction behavior and SaaS duplicate-request guards.
 - `npm run test:visual` against a temporary local QA server: passed for all
   tested desktop/mobile viewports, dialogs, themes and print media.
 - `npm run qa:platform-admin`: safely skipped live authentication because no
@@ -89,6 +97,9 @@ claims to Production evidence. Those items remain listed above exactly once.
   operation messages.
 - Targeted report/baseline tests: passed; the report read-only flag is now
   supplied outside user query parameters.
+- Background operation logs now retain only bounded error codes; raw SQL,
+  filesystem and driver messages are not emitted by the audited coaching,
+  intelligence and tenancy migration paths.
 
 These local results do not close the authenticated baseline, live execution
 plans, Staging/Production capacity, restore, or pilot evidence items above.

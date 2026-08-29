@@ -21,6 +21,8 @@ to SQL Server and it does not execute a migration. The check currently covers:
 - Migration-runner error/cleanup wiring.
 - Pool reuse, bounded timeout wiring and pool close handling.
 - Transaction begin/work/commit/rollback ordering.
+- SaaS pending subscription request duplicate preflight and filtered unique
+  guard checks.
 
 The current local result is `PASS` for the three files under
 `database/migrations/` (`005`, `006`, `007`). This is a source-level safety
@@ -62,7 +64,10 @@ result, not proof that an existing production database will migrate cleanly.
    was added from static inspection. Candidate indexes remain
    `CANDIDATE — PENDING BASELINE/EXECUTION PLAN` in
    `docs/PHASE-1-STATIC-AUDIT.md`.
-5. Live database size, row growth, fragmentation, execution plans, connection
+5. The pending SaaS subscription request guard is an integrity constraint, not
+   a speculative performance index. Existing duplicate pending rows stop the
+   schema preflight with a clear error instead of being silently changed.
+6. Live database size, row growth, fragmentation, execution plans, connection
    limits, timeout behavior and provider latency are
    `REQUIRES STAGING/PRODUCTION VERIFICATION`.
 
@@ -87,6 +92,7 @@ maintenance window and rollback decision.
 | Transaction begin/commit/rollback path | `VERIFIED` locally with failure doubles; live failure rehearsal pending |
 | Static migration safety gate | `VERIFIED` locally (`npm run qa:database`) |
 | Additive migration guards | `IMPLEMENTED` by source audit |
+| SaaS pending-request integrity guard | `VERIFIED` locally; existing-data rehearsal pending |
 | Migration repeatability on real data | `REQUIRES STAGING VERIFICATION` |
 | Live DB capacity and workload | `REQUIRES STAGING/PRODUCTION VERIFICATION` |
 | Production/Stage/Development separation | `REQUIRES STAGING/PRODUCTION VERIFICATION` |
