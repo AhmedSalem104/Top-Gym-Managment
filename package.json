@@ -35,7 +35,8 @@
     "render:muscle-assets": "node scripts/render-muscle-assets.js",
     "enrich:exercise-content": "node scripts/enrich-exercise-data.js",
     "seed:performance": "node scripts/seed-performance-test-data.js",
-    "sync:library": "node scripts/sync-library-data.js"
+    "sync:library": "node scripts/sync-library-data.js",
+    "repair:library": "node scripts/repair-tenant-library.js"
   },
   "engines": {
     "node": "24.x"

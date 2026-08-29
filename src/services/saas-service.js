@@ -3,8 +3,9 @@
 const crypto = require('node:crypto');
 const { getPool, sql } = require('../database');
 const { withTransaction } = require('../database/transaction');
-const { currentTenantId, getTenantContext } = require('../tenancy/tenant-context');
+const { currentTenantId, getTenantContext, runTenantContext } = require('../tenancy/tenant-context');
 const { config } = require('../config/env');
+const libraryService = require('./library-service');
 
 const TRIAL_DAYS = 14;
 const MAX_PROOF_BYTES = 4 * 1024 * 1024;
@@ -919,7 +920,11 @@ async function ensureBootstrapSubscription(tenantId) {
     await pool.request().input('tenantId', sql.Int, id).input('planId', sql.Int, plan.id).input('startsAt', sql.DateTime2(0), startsAt).query("INSERT INTO dbo.saas_tenant_subscriptions (tenant_id,plan_id,status,starts_at,expires_at,source,notes) VALUES (@tenantId,@planId,'active',@startsAt,NULL,'bootstrap',N'اشتراك تأسيسي لبيانات Top Gym الحالية.'); UPDATE dbo.gym_tenants SET status='active', updated_at=SYSUTCDATETIME() WHERE id=@tenantId;");
     await pool.request().input('tenantId', sql.Int, id).input('planId', sql.Int, plan.id).input('billingPeriodSnapshot', sql.VarChar(20), snapshot.billingPeriod).input('priceSnapshot', sql.Decimal(12, 2), snapshot.price).input('maxMembersSnapshot', sql.Int, snapshot.maxMembers).input('maxUsersSnapshot', sql.Int, snapshot.maxUsers).input('maxAiGenerationsSnapshot', sql.Int, snapshot.maxAiGenerations).input('maxStorageMbSnapshot', sql.Int, snapshot.maxStorageMb).input('featuresSnapshotJson', sql.NVarChar(sql.MAX), JSON.stringify(snapshot.features)).query(`UPDATE dbo.saas_tenant_subscriptions
         SET billing_period_snapshot=@billingPeriodSnapshot,price_snapshot=@priceSnapshot,currency_snapshot=(SELECT TOP (1) currency FROM dbo.saas_plans WHERE id=@planId),max_members_snapshot=@maxMembersSnapshot,max_users_snapshot=@maxUsersSnapshot,max_ai_generations_snapshot=@maxAiGenerationsSnapshot,max_storage_mb_snapshot=@maxStorageMbSnapshot,features_snapshot_json=@featuresSnapshotJson
-        WHERE id=(SELECT TOP (1) id FROM dbo.saas_tenant_subscriptions WHERE tenant_id=@tenantId ORDER BY id DESC);`);
+                 WHERE id=(SELECT TOP (1) id FROM dbo.saas_tenant_subscriptions WHERE tenant_id=@tenantId ORDER BY id DESC);`);
+             // Provision the repository-owned catalog in the same transaction
+             // as onboarding. A failed seed rolls back the tenant instead of
+             // leaving a gym with an empty or partially copied library.
+             await runTenantContext({ mode: 'tenant', tenantId }, () => libraryService.ensureLibraryData({ transaction }));
     await recordAudit({ tenantId: id, action: 'bootstrap_subscription', entityType: 'subscription', details: 'تم تجهيز اشتراك تأسيسي غير منتهٍ لـ Top Gym.' });
     return getCurrentSubscription(id);
 }

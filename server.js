@@ -253,8 +253,10 @@ async function start() {
     await runTenantContext({ mode: 'platform', tenantId: bootstrapTenant.id }, () => saasService.ensureSaasTables());
     await runTenantContext({ mode: 'tenant', tenantId: bootstrapTenant.id }, async () => {
         await ensureAuthReady();
-        await ensureLibraryData();
-        await coachingService.ensureCoachingTables();
+        // Create every tenant table before the tenancy migration runs. The
+        // catalog is seeded only after tenant_id and RLS are in place.
+        await libraryService.ensureLibraryTables();
+        await coachingService.ensureCoachingTables({ seedLibrary: false });
         await dayPassService.ensureDayPassTables();
         await membershipCodeService.ensureMembershipCodeStorage();
         await memberFeedbackService.ensureMemberFeedbackTable();
@@ -263,6 +265,7 @@ async function start() {
         await brandingService.ensureBrandingTables();
     });
     await runTenantContext({ mode: 'platform', tenantId: bootstrapTenant.id }, () => tenantService.ensureTenantColumnsAndRls(bootstrapTenant.id));
+    await runTenantContext({ mode: 'tenant', tenantId: bootstrapTenant.id }, () => ensureLibraryData());
     await runTenantContext({ mode: 'platform', tenantId: bootstrapTenant.id }, () => saasService.ensureBootstrapSubscription(bootstrapTenant.id));
     if (shutdownStarted) return null;
     const port = config.port;

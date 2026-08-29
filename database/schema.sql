@@ -806,7 +806,7 @@ IF OBJECT_ID(N'dbo.gym_muscles', N'U') IS NULL
 BEGIN
     CREATE TABLE dbo.gym_muscles (
         id INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_gym_muscles PRIMARY KEY,
-        source_id INT NULL CONSTRAINT UQ_gym_muscles_source UNIQUE,
+        source_id INT NULL,
         name NVARCHAR(120) NOT NULL,
         name_ar NVARCHAR(120) NULL,
         body_part NVARCHAR(80) NULL,
@@ -822,7 +822,7 @@ IF OBJECT_ID(N'dbo.gym_foods', N'U') IS NULL
 BEGIN
     CREATE TABLE dbo.gym_foods (
         id INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_gym_foods PRIMARY KEY,
-        source_id INT NULL CONSTRAINT UQ_gym_foods_source UNIQUE,
+        source_id INT NULL,
         name_ar NVARCHAR(160) NULL,
         name_en NVARCHAR(160) NULL,
         category NVARCHAR(80) NULL,
@@ -844,7 +844,7 @@ IF OBJECT_ID(N'dbo.gym_exercises', N'U') IS NULL
 BEGIN
     CREATE TABLE dbo.gym_exercises (
         id INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_gym_exercises PRIMARY KEY,
-        source_id INT NULL CONSTRAINT UQ_gym_exercises_source UNIQUE,
+        source_id INT NULL,
         name NVARCHAR(160) NOT NULL,
         name_ar NVARCHAR(160) NULL,
         description NVARCHAR(2000) NULL,

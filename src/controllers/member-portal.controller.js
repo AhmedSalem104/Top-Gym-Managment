@@ -83,7 +83,9 @@ function createMemberPortalController({ membershipCodeService, portalService, li
         },
 
         libraryOptions: async (request, response) => {
-            response.set('Cache-Control', 'public, max-age=120, stale-while-revalidate=600');
+            // Library rows are tenant-owned. Never let a CDN reuse one gym's
+            // catalog response for another public portal.
+            response.set('Cache-Control', 'private, no-store');
             const options = await libraryService.getLibraryOptions({ readOnly: request.readOnlyRequest });
             response.json({
                 counts: options.counts,
@@ -103,7 +105,7 @@ function createMemberPortalController({ membershipCodeService, portalService, li
             if (!LIBRARY_TYPES.has(type)) return response.status(404).json({ error: 'Library type not found.' });
             const query = { ...request.query, pageSize: Math.min(Number(request.query.pageSize) || 18, 24) };
             const result = await libraryService.getLibraryCollection(type, query, { readOnly: request.readOnlyRequest });
-            response.set('Cache-Control', 'public, max-age=120, stale-while-revalidate=600');
+            response.set('Cache-Control', 'private, no-store');
             response.json({
                 items: result.items.map((item) => publicLibraryItem(type, item)),
                 pagination: result.pagination
@@ -114,7 +116,7 @@ function createMemberPortalController({ membershipCodeService, portalService, li
             const type = String(request.params.type || '').toLowerCase();
             if (!LIBRARY_TYPES.has(type)) return response.status(404).json({ error: 'Library type not found.' });
             const item = await libraryService.getLibraryItem(type, request.params.id, { readOnly: request.readOnlyRequest });
-            response.set('Cache-Control', 'public, max-age=300, stale-while-revalidate=900');
+            response.set('Cache-Control', 'private, no-store');
             response.json({ item: publicLibraryItem(type, item, true) });
         },
 

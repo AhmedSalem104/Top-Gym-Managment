@@ -1,14 +1,18 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { getPool, sql } = require('../database');
-const { getTenantContext } = require('../tenancy/tenant-context');
+const { currentTenantId, getTenantContext } = require('../tenancy/tenant-context');
 
 const DATA_DIRECTORY = path.join(__dirname, '..', 'data', 'library');
 const LIBRARY_TYPES = new Set(['muscles', 'foods', 'exercises']);
 const EXERCISE_CATALOG_SOURCE_ID_OFFSET = 100000;
+const CANONICAL_MUSCLE_COUNT = 297;
+const CANONICAL_FOOD_COUNT = 367;
 const CANONICAL_EXERCISE_COUNT = 873;
 let libraryTablesPromise;
-let librarySeedPromise;
+// Initialization is keyed by tenant so one gym cannot suppress provisioning
+// for another gym on a warm Node/Vercel instance.
+const librarySeedPromises = new Map();
 
 function appError(message, statusCode = 400, code = null) {
     const error = new Error(message);
@@ -218,7 +222,7 @@ async function ensureLibraryTables({ readOnly = false } = {}) {
                 BEGIN
                     CREATE TABLE dbo.gym_muscles (
                         id INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_gym_muscles PRIMARY KEY,
-                        source_id INT NULL CONSTRAINT UQ_gym_muscles_source UNIQUE,
+                        source_id INT NULL,
                         name NVARCHAR(120) NOT NULL,
                         name_ar NVARCHAR(120) NULL,
                         body_part NVARCHAR(80) NULL,
@@ -233,7 +237,7 @@ async function ensureLibraryTables({ readOnly = false } = {}) {
                 BEGIN
                     CREATE TABLE dbo.gym_foods (
                         id INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_gym_foods PRIMARY KEY,
-                        source_id INT NULL CONSTRAINT UQ_gym_foods_source UNIQUE,
+                        source_id INT NULL,
                         name_ar NVARCHAR(160) NULL,
                         name_en NVARCHAR(160) NULL,
                         category NVARCHAR(80) NULL,
@@ -254,7 +258,7 @@ async function ensureLibraryTables({ readOnly = false } = {}) {
                 BEGIN
                     CREATE TABLE dbo.gym_exercises (
                         id INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_gym_exercises PRIMARY KEY,
-                        source_id INT NULL CONSTRAINT UQ_gym_exercises_source UNIQUE,
+                        source_id INT NULL,
                         name NVARCHAR(160) NOT NULL,
                         name_ar NVARCHAR(160) NULL,
                         description NVARCHAR(2000) NULL,
@@ -313,158 +317,113 @@ function readSeedFile(type) {
     }
 }
 
-async function seedLibraryIfEmpty() {
-    await ensureLibraryTables();
-    const pool = await getPool();
-    const countResult = await pool.request().query(`
-        SELECT
-            (SELECT COUNT_BIG(*) FROM dbo.gym_muscles) AS muscles,
-            (SELECT COUNT_BIG(*) FROM dbo.gym_foods) AS foods,
-            (SELECT COUNT_BIG(*) FROM dbo.gym_exercises) AS exercises;
-    `);
-    const counts = countResult.recordset[0] || {};
-    if (Number(counts.muscles || 0) || Number(counts.foods || 0) || Number(counts.exercises || 0)) return;
+function libraryCounts(row = {}) {
+    return {
+        muscles: Number(row.muscles || 0),
+        foods: Number(row.foods || 0),
+        exercises: Number(row.exercises || 0),
+        canonicalMuscles: Number(row.canonicalMuscles || 0),
+        canonicalFoods: Number(row.canonicalFoods || 0),
+        canonicalExercises: Number(row.canonicalExercises || 0)
+    };
+}
 
-    const muscles = readSeedFile('muscles');
-    const foods = readSeedFile('foods');
-    const exercises = readSeedFile('exercises');
+async function getLibraryCounts(executor, tenantId) {
+    const result = await executor.request()
+        .input('tenantId', sql.Int, tenantId)
+        .query(`
+            SELECT
+                (SELECT COUNT_BIG(*) FROM dbo.gym_muscles WHERE tenant_id=@tenantId) AS muscles,
+                (SELECT COUNT_BIG(*) FROM dbo.gym_foods WHERE tenant_id=@tenantId) AS foods,
+                (SELECT COUNT_BIG(*) FROM dbo.gym_exercises WHERE tenant_id=@tenantId) AS exercises,
+                (SELECT COUNT_BIG(*) FROM dbo.gym_muscles WHERE tenant_id=@tenantId AND source_id BETWEEN 1 AND ${CANONICAL_MUSCLE_COUNT}) AS canonicalMuscles,
+                (SELECT COUNT_BIG(*) FROM dbo.gym_foods WHERE tenant_id=@tenantId AND source_id BETWEEN 1 AND ${CANONICAL_FOOD_COUNT}) AS canonicalFoods,
+                (SELECT COUNT_BIG(*) FROM dbo.gym_exercises
+                 WHERE tenant_id=@tenantId
+                   AND source_id >= ${EXERCISE_CATALOG_SOURCE_ID_OFFSET + 1}
+                   AND source_id < ${EXERCISE_CATALOG_SOURCE_ID_OFFSET + CANONICAL_EXERCISE_COUNT + 1}
+                   AND JSON_VALUE(metadata_json, '$.catalogStatus') = N'active') AS canonicalExercises;
+        `);
+    return libraryCounts(result.recordset[0]);
+}
+
+async function lockLibraryTenant(transaction, tenantId) {
+    const result = await transaction.request()
+        .input('tenantId', sql.Int, tenantId)
+        .query(`
+            SELECT TOP (1) id
+            FROM dbo.gym_tenants WITH (UPDLOCK, HOLDLOCK)
+            WHERE id=@tenantId;
+        `);
+    if (!result.recordset[0]) throw appError('الجيم المطلوب غير موجود لتجهيز المكتبة.', 404, 'LIBRARY_TENANT_NOT_FOUND');
+}
+
+async function withLibraryTenantTransaction(tenantId, work, existingTransaction = null) {
+    if (existingTransaction) {
+        await lockLibraryTenant(existingTransaction, tenantId);
+        return work(existingTransaction);
+    }
+    const pool = await getPool();
     const transaction = pool.transaction();
     await transaction.begin();
+    let committed = false;
     try {
-        const muscleRequest = transaction.request().input('musclesJson', sql.NVarChar(sql.MAX), JSON.stringify(muscles));
-        await muscleRequest.query(`
-            INSERT INTO dbo.gym_muscles (source_id, name, name_ar, body_part, description, description_ar, icon)
-            SELECT TRY_CONVERT(INT, item.[key]) + 1, data.name, data.nameAr, data.bodyPart,
-                   data.description, data.descriptionAr, data.icon
-            FROM OPENJSON(@musclesJson) AS item
-            CROSS APPLY OPENJSON(item.[value]) WITH (
-                name NVARCHAR(120) '$.name',
-                nameAr NVARCHAR(120) '$.nameAr',
-                bodyPart NVARCHAR(80) '$.bodyPart',
-                description NVARCHAR(1000) '$.description',
-                descriptionAr NVARCHAR(1000) '$.descriptionAr',
-                icon NVARCHAR(20) '$.icon'
-            ) AS data
-            WHERE NULLIF(LTRIM(RTRIM(data.name)), N'') IS NOT NULL;
-        `);
-
-        const foodRequest = transaction.request().input('foodsJson', sql.NVarChar(sql.MAX), JSON.stringify(foods));
-        await foodRequest.query(`
-            INSERT INTO dbo.gym_foods
-                (source_id, name_ar, name_en, category, calories, protein, carbs, fat, fiber, sugar, sodium, serving_size, serving_unit)
-            SELECT TRY_CONVERT(INT, item.[key]) + 1, data.nameAr, data.nameEn, data.category,
-                   COALESCE(data.calories, 0), COALESCE(data.protein, 0), COALESCE(data.carbs, 0),
-                   COALESCE(data.fat, 0), COALESCE(data.fiber, 0), COALESCE(data.sugar, 0),
-                   COALESCE(data.sodium, 0), COALESCE(data.servingSize, 100), data.servingUnit
-            FROM OPENJSON(@foodsJson) AS item
-            CROSS APPLY OPENJSON(item.[value]) WITH (
-                nameAr NVARCHAR(160) '$.nameAr',
-                nameEn NVARCHAR(160) '$.nameEn',
-                category NVARCHAR(80) '$.category',
-                calories DECIMAL(12,3) '$.calories',
-                protein DECIMAL(12,3) '$.protein',
-                carbs DECIMAL(12,3) '$.carbs',
-                fat DECIMAL(12,3) '$.fat',
-                fiber DECIMAL(12,3) '$.fiber',
-                sugar DECIMAL(12,3) '$.sugar',
-                sodium DECIMAL(12,3) '$.sodium',
-                servingSize DECIMAL(12,3) '$.servingSize',
-                servingUnit NVARCHAR(40) '$.servingUnit'
-            ) AS data;
-        `);
-
-        const exerciseRequest = transaction.request().input('exercisesJson', sql.NVarChar(sql.MAX), JSON.stringify(exercises));
-        await exerciseRequest.query(`
-            INSERT INTO dbo.gym_exercises
-                (source_id, name, name_ar, description, description_ar, target_muscle_id,
-                 secondary_muscles_json, equipment, is_high_impact, difficulty, category,
-                 movement_pattern, mechanic, force, instructions_json, instructions_ar_json,
-                 tips_json, tips_ar_json, common_mistakes_json, common_mistakes_ar_json,
-                 reps_range, sets_range, rest_seconds, tempo, icon, video_url, metadata_json)
-            SELECT COALESCE(data.sourceId, TRY_CONVERT(INT, item.[key]) + 1), data.name, data.nameAr, data.description, data.descriptionAr,
-                   muscle.id,
-                   CASE WHEN ISJSON(data.secondaryMuscles) = 1 THEN data.secondaryMuscles ELSE N'[]' END,
-                   data.equipment, COALESCE(data.isHighImpact, 0), data.difficulty, data.category,
-                   data.movementPattern, data.mechanic, data.force,
-                   CASE WHEN ISJSON(data.instructions) = 1 THEN data.instructions ELSE N'[]' END,
-                   CASE WHEN ISJSON(data.instructionsAr) = 1 THEN data.instructionsAr ELSE N'[]' END,
-                   CASE WHEN ISJSON(data.tips) = 1 THEN data.tips ELSE N'[]' END,
-                   CASE WHEN ISJSON(data.tipsAr) = 1 THEN data.tipsAr ELSE N'[]' END,
-                   CASE WHEN ISJSON(data.commonMistakes) = 1 THEN data.commonMistakes ELSE N'[]' END,
-                   CASE WHEN ISJSON(data.commonMistakesAr) = 1 THEN data.commonMistakesAr ELSE N'[]' END,
-                   data.repsRange, data.setsRange, data.restSeconds, data.tempo, data.icon, data.videoUrl, item.[value]
-            FROM OPENJSON(@exercisesJson) AS item
-            CROSS APPLY OPENJSON(item.[value]) WITH (
-                name NVARCHAR(160) '$.name',
-                sourceId INT '$.sourceId',
-                nameAr NVARCHAR(160) '$.nameAr',
-                description NVARCHAR(2000) '$.description',
-                descriptionAr NVARCHAR(2000) '$.descriptionAr',
-                targetMuscleId INT '$.targetMuscleId',
-                secondaryMuscles NVARCHAR(MAX) '$.secondaryMuscles' AS JSON,
-                equipment NVARCHAR(100) '$.equipment',
-                isHighImpact BIT '$.isHighImpact',
-                difficulty NVARCHAR(60) '$.difficulty',
-                category NVARCHAR(80) '$.category',
-                movementPattern NVARCHAR(80) '$.movementPattern',
-                mechanic NVARCHAR(80) '$.mechanic',
-                force NVARCHAR(80) '$.force',
-                instructions NVARCHAR(MAX) '$.instructions' AS JSON,
-                instructionsAr NVARCHAR(MAX) '$.instructionsAr' AS JSON,
-                tips NVARCHAR(MAX) '$.tips' AS JSON,
-                tipsAr NVARCHAR(MAX) '$.tipsAr' AS JSON,
-                commonMistakes NVARCHAR(MAX) '$.commonMistakes' AS JSON,
-                commonMistakesAr NVARCHAR(MAX) '$.commonMistakesAr' AS JSON,
-                repsRange NVARCHAR(40) '$.repsRange',
-                setsRange NVARCHAR(40) '$.setsRange',
-                restSeconds INT '$.restSeconds',
-                tempo NVARCHAR(40) '$.tempo',
-                icon NVARCHAR(20) '$.icon',
-                videoUrl NVARCHAR(1000) '$.videoUrl'
-            ) AS data
-            LEFT JOIN dbo.gym_muscles AS muscle ON muscle.source_id = data.targetMuscleId
-            WHERE NULLIF(LTRIM(RTRIM(data.name)), N'') IS NOT NULL;
-        `);
+        await lockLibraryTenant(transaction, tenantId);
+        const result = await work(transaction);
         await transaction.commit();
+        committed = true;
+        return result;
     } catch (error) {
-        await transaction.rollback().catch(() => {});
+        if (!committed) await transaction.rollback().catch(() => {});
         throw error;
     }
 }
 
-async function ensureLibraryData() {
-    if (!librarySeedPromise) {
-        librarySeedPromise = (async () => {
-            await ensureLibraryTables();
-            const pool = await getPool();
-            const result = await pool.request().query(`
-                SELECT
-                    (SELECT COUNT_BIG(*) FROM dbo.gym_muscles) AS muscles,
-                    (SELECT COUNT_BIG(*) FROM dbo.gym_foods) AS foods,
-                    (SELECT COUNT_BIG(*) FROM dbo.gym_exercises) AS exercises,
-                    (SELECT COUNT_BIG(*) FROM dbo.gym_exercises
-                     WHERE source_id >= ${EXERCISE_CATALOG_SOURCE_ID_OFFSET + 1}
-                       AND source_id < ${EXERCISE_CATALOG_SOURCE_ID_OFFSET + CANONICAL_EXERCISE_COUNT + 1}
-                       AND JSON_VALUE(metadata_json, '$.catalogStatus') = N'active') AS canonicalExercises;
-            `);
-            const counts = result.recordset[0] || {};
-            const hasAnyData = Number(counts.muscles || 0) || Number(counts.foods || 0) || Number(counts.exercises || 0);
-            if (!hasAnyData) {
-                await seedLibraryIfEmpty();
-            } else if (Number(counts.canonicalExercises || 0) < CANONICAL_EXERCISE_COUNT) {
-                await syncLibraryData();
-            }
-        })().catch((error) => {
-            librarySeedPromise = undefined;
-            throw error;
-        });
+async function ensureTenantLibraryRows(transaction, tenantId) {
+    const counts = await getLibraryCounts(transaction, tenantId);
+    const hasAnyData = counts.muscles || counts.foods || counts.exercises;
+    const incomplete = counts.canonicalMuscles < CANONICAL_MUSCLE_COUNT
+        || counts.canonicalFoods < CANONICAL_FOOD_COUNT
+        || counts.canonicalExercises < CANONICAL_EXERCISE_COUNT;
+    if (!hasAnyData) {
+        await syncLibraryRows(transaction, tenantId);
+        return { action: 'seeded', counts: await getLibraryCounts(transaction, tenantId) };
     }
-    return librarySeedPromise;
+    if (incomplete) {
+        await syncLibraryRows(transaction, tenantId);
+        return { action: 'repaired', counts: await getLibraryCounts(transaction, tenantId) };
+    }
+    return { action: 'ready', counts };
+}
+
+async function seedLibraryIfEmpty({ transaction = null, tenantId = currentTenantId({ required: true }) } = {}) {
+    await ensureLibraryTables();
+    return withLibraryTenantTransaction(tenantId, async (executor, resolvedTenantId = tenantId) => {
+        const counts = await getLibraryCounts(executor, resolvedTenantId);
+        if (counts.muscles || counts.foods || counts.exercises) return { action: 'ready', counts };
+        const seeded = await syncLibraryRows(executor, resolvedTenantId);
+        return { action: 'seeded', ...seeded, counts: await getLibraryCounts(executor, resolvedTenantId) };
+    }, transaction);
+}
+
+async function ensureLibraryData({ transaction = null } = {}) {
+    const tenantId = currentTenantId({ required: true });
+    await ensureLibraryTables();
+    if (transaction) return withLibraryTenantTransaction(tenantId, (executor) => ensureTenantLibraryRows(executor, tenantId), transaction);
+
+    const key = String(tenantId);
+    if (!librarySeedPromises.has(key)) {
+        const promise = withLibraryTenantTransaction(tenantId, (executor) => ensureTenantLibraryRows(executor, tenantId))
+            .finally(() => librarySeedPromises.delete(key));
+        librarySeedPromises.set(key, promise);
+    }
+    return librarySeedPromises.get(key);
 }
 
 async function prepareLibraryData({ readOnly = false } = {}) {
     // A baseline request must never seed or synchronize catalog rows. The
-    // normal application path keeps its existing lazy initialization behavior.
+    // normal application path provisions data explicitly during onboarding or
+    // through the repair command, not from a GET request.
     return readOnly ? ensureLibraryTables({ readOnly: true }) : ensureLibraryData();
 }
 
@@ -472,16 +431,13 @@ async function prepareLibraryData({ readOnly = false } = {}) {
 // recreating rows. Canonical records carry an explicit sourceId in the
 // reserved catalog namespace; legacy source ids remain untouched so existing
 // workout plans keep resolving to the same exercise rows.
-async function syncLibraryData() {
-    await ensureLibraryTables();
+async function syncLibraryRows(transaction, tenantId) {
     const muscles = readSeedFile('muscles');
     const foods = readSeedFile('foods');
     const exercises = readSeedFile('exercises');
-    const pool = await getPool();
-    const transaction = pool.transaction();
-    await transaction.begin();
     try {
         await transaction.request()
+            .input('tenantId', sql.Int, tenantId)
             .input('musclesJson', sql.NVarChar(sql.MAX), JSON.stringify(muscles))
             .query(`
                 DECLARE @seed_muscles TABLE (
@@ -510,15 +466,20 @@ async function syncLibraryData() {
                     target.description_ar = source.description_ar, target.icon = source.icon,
                     target.updated_at = SYSUTCDATETIME()
                 FROM dbo.gym_muscles AS target
-                INNER JOIN @seed_muscles AS source ON source.source_id = target.source_id;
-                INSERT INTO dbo.gym_muscles (source_id, name, name_ar, body_part, description, description_ar, icon)
-                SELECT source.source_id, source.name, source.name_ar, source.body_part,
+                INNER JOIN @seed_muscles AS source
+                    ON source.source_id = target.source_id AND target.tenant_id=@tenantId;
+                INSERT INTO dbo.gym_muscles (tenant_id, source_id, name, name_ar, body_part, description, description_ar, icon)
+                SELECT @tenantId, source.source_id, source.name, source.name_ar, source.body_part,
                        source.description, source.description_ar, source.icon
                 FROM @seed_muscles AS source
-                WHERE NOT EXISTS (SELECT 1 FROM dbo.gym_muscles target WHERE target.source_id = source.source_id);
+                WHERE NOT EXISTS (
+                    SELECT 1 FROM dbo.gym_muscles target
+                    WHERE target.tenant_id=@tenantId AND target.source_id = source.source_id
+                );
             `);
 
         await transaction.request()
+            .input('tenantId', sql.Int, tenantId)
             .input('foodsJson', sql.NVarChar(sql.MAX), JSON.stringify(foods))
             .query(`
                 DECLARE @seed_foods TABLE (
@@ -560,17 +521,22 @@ async function syncLibraryData() {
                     target.serving_size = source.serving_size, target.serving_unit = source.serving_unit,
                     target.updated_at = SYSUTCDATETIME()
                 FROM dbo.gym_foods AS target
-                INNER JOIN @seed_foods AS source ON source.source_id = target.source_id;
+                INNER JOIN @seed_foods AS source
+                    ON source.source_id = target.source_id AND target.tenant_id=@tenantId;
                 INSERT INTO dbo.gym_foods
-                    (source_id, name_ar, name_en, category, calories, protein, carbs, fat, fiber, sugar, sodium, serving_size, serving_unit)
-                SELECT source.source_id, source.name_ar, source.name_en, source.category, source.calories,
+                    (tenant_id, source_id, name_ar, name_en, category, calories, protein, carbs, fat, fiber, sugar, sodium, serving_size, serving_unit)
+                SELECT @tenantId, source.source_id, source.name_ar, source.name_en, source.category, source.calories,
                        source.protein, source.carbs, source.fat, source.fiber, source.sugar, source.sodium,
                        source.serving_size, source.serving_unit
                 FROM @seed_foods AS source
-                WHERE NOT EXISTS (SELECT 1 FROM dbo.gym_foods target WHERE target.source_id = source.source_id);
+                WHERE NOT EXISTS (
+                    SELECT 1 FROM dbo.gym_foods target
+                    WHERE target.tenant_id=@tenantId AND target.source_id = source.source_id
+                );
             `);
 
         await transaction.request()
+            .input('tenantId', sql.Int, tenantId)
             .input('exercisesJson', sql.NVarChar(sql.MAX), JSON.stringify(exercises))
             .query(`
                 DECLARE @seed_exercises TABLE (
@@ -652,8 +618,10 @@ async function syncLibraryData() {
                     target.tempo = source.tempo, target.icon = source.icon, target.video_url = source.video_url,
                     target.metadata_json = source.metadata_json, target.updated_at = SYSUTCDATETIME()
                 FROM dbo.gym_exercises AS target
-                INNER JOIN @seed_exercises AS source ON source.source_id = target.source_id
-                LEFT JOIN dbo.gym_muscles AS muscle ON muscle.source_id = source.target_muscle_source_id;
+                INNER JOIN @seed_exercises AS source
+                    ON source.source_id = target.source_id AND target.tenant_id=@tenantId
+                LEFT JOIN dbo.gym_muscles AS muscle
+                    ON muscle.tenant_id=@tenantId AND muscle.source_id = source.target_muscle_source_id;
                 -- Keep every pre-catalog exercise row addressable for old
                 -- workout plans, but remove it from the canonical list. The
                 -- identity and source_id are never changed.
@@ -664,29 +632,38 @@ async function syncLibraryData() {
                         '$.legacySourceId', target.source_id),
                     target.updated_at = SYSUTCDATETIME()
                 FROM dbo.gym_exercises AS target
-                WHERE target.source_id IS NOT NULL
+                WHERE target.tenant_id=@tenantId
+                  AND target.source_id IS NOT NULL
                   AND NOT EXISTS (SELECT 1 FROM @seed_exercises AS source WHERE source.source_id = target.source_id);
                 INSERT INTO dbo.gym_exercises
-                    (source_id, name, name_ar, description, description_ar, target_muscle_id, secondary_muscles_json,
+                    (tenant_id, source_id, name, name_ar, description, description_ar, target_muscle_id, secondary_muscles_json,
                      equipment, is_high_impact, difficulty, category, movement_pattern, mechanic, force,
                      instructions_json, instructions_ar_json, tips_json, tips_ar_json, common_mistakes_json,
                      common_mistakes_ar_json, reps_range, sets_range, rest_seconds, tempo, icon, video_url, metadata_json)
-                SELECT source.source_id, source.name, source.name_ar, source.description, source.description_ar,
+                SELECT @tenantId, source.source_id, source.name, source.name_ar, source.description, source.description_ar,
                        muscle.id, source.secondary_muscles_json, source.equipment, source.is_high_impact,
                        source.difficulty, source.category, source.movement_pattern, source.mechanic, source.force,
                        source.instructions_json, source.instructions_ar_json, source.tips_json, source.tips_ar_json,
                        source.common_mistakes_json, source.common_mistakes_ar_json, source.reps_range, source.sets_range,
                        source.rest_seconds, source.tempo, source.icon, source.video_url, source.metadata_json
                 FROM @seed_exercises AS source
-                LEFT JOIN dbo.gym_muscles AS muscle ON muscle.source_id = source.target_muscle_source_id
-                WHERE NOT EXISTS (SELECT 1 FROM dbo.gym_exercises target WHERE target.source_id = source.source_id);
+                LEFT JOIN dbo.gym_muscles AS muscle
+                    ON muscle.tenant_id=@tenantId AND muscle.source_id = source.target_muscle_source_id
+                WHERE NOT EXISTS (
+                    SELECT 1 FROM dbo.gym_exercises target
+                    WHERE target.tenant_id=@tenantId AND target.source_id = source.source_id
+                );
             `);
-        await transaction.commit();
     } catch (error) {
-        await transaction.rollback().catch(() => {});
         throw error;
     }
     return { muscles: muscles.length, foods: foods.length, exercises: exercises.length };
+}
+
+async function syncLibraryData() {
+    const tenantId = currentTenantId({ required: true });
+    await ensureLibraryTables();
+    return withLibraryTenantTransaction(tenantId, (transaction) => syncLibraryRows(transaction, tenantId));
 }
 
 function likeValue(value) {
@@ -753,7 +730,7 @@ function listQuery(type, filters, { includeLegacy = false } = {}) {
                         m.name AS target_muscle_name, m.name_ar AS target_muscle_name_ar,
                         secondary_details.secondary_muscle_details_json
                  FROM dbo.gym_exercises AS e
-                 LEFT JOIN dbo.gym_muscles AS m ON m.id = e.target_muscle_id
+                  LEFT JOIN dbo.gym_muscles AS m ON m.id = e.target_muscle_id AND m.tenant_id = e.tenant_id
                  OUTER APPLY (
                      SELECT (
                          SELECT TRY_CONVERT(INT, parsed.muscle_source_id) AS muscleId,
@@ -767,8 +744,9 @@ function listQuery(type, filters, { includeLegacy = false } = {}) {
                              COALESCE(JSON_VALUE(secondary.[value], '$.muscleId'), JSON_VALUE(secondary.[value], '$.muscle_id')),
                              COALESCE(JSON_VALUE(secondary.[value], '$.contributionPercent'), JSON_VALUE(secondary.[value], '$.contribution_percent'))
                          )) AS parsed(muscle_source_id, contribution_percent)
-                         LEFT JOIN dbo.gym_muscles AS secondary_muscle
-                           ON secondary_muscle.source_id = TRY_CONVERT(INT, parsed.muscle_source_id)
+                          LEFT JOIN dbo.gym_muscles AS secondary_muscle
+                            ON secondary_muscle.tenant_id = e.tenant_id
+                           AND secondary_muscle.source_id = TRY_CONVERT(INT, parsed.muscle_source_id)
                          WHERE TRY_CONVERT(INT, parsed.muscle_source_id) IS NOT NULL
                          FOR JSON PATH
                      ) AS secondary_muscle_details_json
@@ -785,14 +763,17 @@ function addParams(request, params) {
 async function getLibraryCollection(typeValue, query = {}, { readOnly = false } = {}) {
     const type = ensureType(typeValue);
     await prepareLibraryData({ readOnly });
+    const tenantId = currentTenantId({ required: true });
     const page = pageValue(query.page, 1, 1, 1000000);
     const pageSize = pageValue(query.pageSize, 12, 5, 100);
     const offset = (page - 1) * pageSize;
     const filters = { ...query, targetMuscleId: query.targetMuscleId ? ensureId(query.targetMuscleId, 'العضلة المستهدفة') : null };
     const specification = listQuery(type, filters);
     const pool = await getPool();
-    const countRequest = addParams(pool.request(), specification.params);
+    const countRequest = addParams(pool.request(), specification.params)
+        .input('tenantId', sql.Int, tenantId);
     const dataRequest = addParams(pool.request(), specification.params)
+        .input('tenantId', sql.Int, tenantId)
         .input('offset', sql.Int, offset)
         .input('pageSize', sql.Int, pageSize);
     /*
@@ -807,9 +788,10 @@ async function getLibraryCollection(typeValue, query = {}, { readOnly = false } 
         : type === 'foods'
             ? 'FROM dbo.gym_foods'
             : 'FROM dbo.gym_muscles';
+    const tenantWhere = type === 'exercises' ? 'e.tenant_id=@tenantId' : 'tenant_id=@tenantId';
     const [countResult, dataResult] = await Promise.all([
-        countRequest.query(`SELECT COUNT_BIG(*) AS total ${countFrom} WHERE ${specification.where};`),
-        dataRequest.query(`${specification.select} WHERE ${specification.where} ${specification.order} OFFSET @offset ROWS FETCH NEXT @pageSize ROWS ONLY;`)
+        countRequest.query(`SELECT COUNT_BIG(*) AS total ${countFrom} WHERE ${tenantWhere} AND (${specification.where});`),
+        dataRequest.query(`${specification.select} WHERE ${tenantWhere} AND (${specification.where}) ${specification.order} OFFSET @offset ROWS FETCH NEXT @pageSize ROWS ONLY;`)
     ]);
     const total = Number(countResult.recordset[0]?.total || 0);
     return {
@@ -820,29 +802,33 @@ async function getLibraryCollection(typeValue, query = {}, { readOnly = false } 
 
 async function getLibraryOptions({ readOnly = false } = {}) {
     await prepareLibraryData({ readOnly });
+    const tenantId = currentTenantId({ required: true });
     const pool = await getPool();
-    const result = await pool.request().batch(`
+    const result = await pool.request()
+        .input('tenantId', sql.Int, tenantId)
+        .batch(`
         SELECT
-            (SELECT COUNT_BIG(*) FROM dbo.gym_muscles) AS muscles,
-            (SELECT COUNT_BIG(*) FROM dbo.gym_foods) AS foods,
+            (SELECT COUNT_BIG(*) FROM dbo.gym_muscles WHERE tenant_id=@tenantId) AS muscles,
+            (SELECT COUNT_BIG(*) FROM dbo.gym_foods WHERE tenant_id=@tenantId) AS foods,
             (SELECT COUNT_BIG(*) FROM dbo.gym_exercises AS e
-             WHERE JSON_VALUE(e.metadata_json, '$.catalogStatus') IS NULL
-                OR JSON_VALUE(e.metadata_json, '$.catalogStatus') <> N'legacy-compatibility') AS exercises;
-        SELECT DISTINCT body_part AS value FROM dbo.gym_muscles WHERE NULLIF(LTRIM(RTRIM(body_part)), N'') IS NOT NULL ORDER BY body_part;
-        SELECT DISTINCT category AS value FROM dbo.gym_foods WHERE NULLIF(LTRIM(RTRIM(category)), N'') IS NOT NULL ORDER BY category;
+             WHERE e.tenant_id=@tenantId
+               AND (JSON_VALUE(e.metadata_json, '$.catalogStatus') IS NULL
+                    OR JSON_VALUE(e.metadata_json, '$.catalogStatus') <> N'legacy-compatibility')) AS exercises;
+        SELECT DISTINCT body_part AS value FROM dbo.gym_muscles WHERE tenant_id=@tenantId AND NULLIF(LTRIM(RTRIM(body_part)), N'') IS NOT NULL ORDER BY body_part;
+        SELECT DISTINCT category AS value FROM dbo.gym_foods WHERE tenant_id=@tenantId AND NULLIF(LTRIM(RTRIM(category)), N'') IS NOT NULL ORDER BY category;
         SELECT DISTINCT e.category AS value FROM dbo.gym_exercises AS e
-         WHERE NULLIF(LTRIM(RTRIM(e.category)), N'') IS NOT NULL
+         WHERE e.tenant_id=@tenantId AND NULLIF(LTRIM(RTRIM(e.category)), N'') IS NOT NULL
            AND (JSON_VALUE(e.metadata_json, '$.catalogStatus') IS NULL OR JSON_VALUE(e.metadata_json, '$.catalogStatus') <> N'legacy-compatibility')
          ORDER BY e.category;
         SELECT DISTINCT e.difficulty AS value FROM dbo.gym_exercises AS e
-         WHERE NULLIF(LTRIM(RTRIM(e.difficulty)), N'') IS NOT NULL
+         WHERE e.tenant_id=@tenantId AND NULLIF(LTRIM(RTRIM(e.difficulty)), N'') IS NOT NULL
            AND (JSON_VALUE(e.metadata_json, '$.catalogStatus') IS NULL OR JSON_VALUE(e.metadata_json, '$.catalogStatus') <> N'legacy-compatibility')
          ORDER BY e.difficulty;
         SELECT DISTINCT e.equipment AS value FROM dbo.gym_exercises AS e
-         WHERE NULLIF(LTRIM(RTRIM(e.equipment)), N'') IS NOT NULL
+         WHERE e.tenant_id=@tenantId AND NULLIF(LTRIM(RTRIM(e.equipment)), N'') IS NOT NULL
            AND (JSON_VALUE(e.metadata_json, '$.catalogStatus') IS NULL OR JSON_VALUE(e.metadata_json, '$.catalogStatus') <> N'legacy-compatibility')
          ORDER BY e.equipment;
-        SELECT id, name, name_ar FROM dbo.gym_muscles ORDER BY COALESCE(name_ar, name), name, id;
+        SELECT id, name, name_ar FROM dbo.gym_muscles WHERE tenant_id=@tenantId ORDER BY COALESCE(name_ar, name), name, id;
     `);
     const [counts = [], bodyParts = [], categories = [], exerciseCategories = [], difficulties = [], equipment = [], muscles = []] = result.recordsets || [];
     const countRow = counts[0] || {};
@@ -863,11 +849,15 @@ async function getLibraryItem(typeValue, idValue, { readOnly = false } = {}) {
     const type = ensureType(typeValue);
     const id = ensureId(idValue);
     await prepareLibraryData({ readOnly });
+    const tenantId = currentTenantId({ required: true });
     const specification = listQuery(type, { search: '', category: '', bodyPart: '', difficulty: '', equipment: '', targetMuscleId: null }, { includeLegacy: true });
     const pool = await getPool();
-    const request = addParams(pool.request(), specification.params).input('id', sql.Int, id);
+    const request = addParams(pool.request(), specification.params)
+        .input('tenantId', sql.Int, tenantId)
+        .input('id', sql.Int, id);
     const tableAlias = type === 'exercises' ? 'e.id' : 'id';
-    const result = await request.query(`${specification.select} WHERE ${tableAlias} = @id;`);
+    const tenantWhere = type === 'exercises' ? 'e.tenant_id=@tenantId' : 'tenant_id=@tenantId';
+    const result = await request.query(`${specification.select} WHERE ${tenantWhere} AND ${tableAlias} = @id;`);
     if (!result.recordset[0]) throw appError('العنصر غير موجود.', 404, 'LIBRARY_ITEM_NOT_FOUND');
     return mapItem(type, result.recordset[0]);
 }
@@ -875,13 +865,14 @@ async function getLibraryItem(typeValue, idValue, { readOnly = false } = {}) {
 async function ensureTargetMuscles(pool, ids) {
     const uniqueIds = [...new Set(ids.filter(Boolean))];
     if (!uniqueIds.length) return;
-    const request = pool.request();
+    const tenantId = currentTenantId({ required: true });
+    const request = pool.request().input('tenantId', sql.Int, tenantId);
     const names = uniqueIds.map((id, index) => {
         const name = `muscle${index}`;
         request.input(name, sql.Int, id);
         return `@${name}`;
     });
-    const result = await request.query(`SELECT id FROM dbo.gym_muscles WHERE id IN (${names.join(',')});`);
+    const result = await request.query(`SELECT id FROM dbo.gym_muscles WHERE tenant_id=@tenantId AND id IN (${names.join(',')});`);
     const existing = new Set(result.recordset.map((row) => Number(row.id)));
     if (uniqueIds.some((id) => !existing.has(id))) throw appError('يوجد معرّف عضلة غير موجود.', 400, 'MUSCLE_NOT_FOUND');
 }
@@ -967,26 +958,29 @@ function handleDuplicate(error) {
 
 async function createLibraryItem(typeValue, body = {}) {
     const type = ensureType(typeValue);
+    const tenantId = currentTenantId({ required: true });
     await ensureLibraryData();
     const pool = await getPool();
     try {
         if (type === 'muscles') {
             const item = normalizeMuscle(body);
             const result = await pool.request()
+                .input('tenantId', sql.Int, tenantId)
                 .input('name', sql.NVarChar(120), item.name)
                 .input('nameAr', sql.NVarChar(120), item.nameAr)
                 .input('bodyPart', sql.NVarChar(80), item.bodyPart)
                 .input('description', sql.NVarChar(1000), item.description)
                 .input('descriptionAr', sql.NVarChar(1000), item.descriptionAr)
                 .input('icon', sql.NVarChar(20), item.icon)
-                .query(`INSERT INTO dbo.gym_muscles (name, name_ar, body_part, description, description_ar, icon)
-                        OUTPUT INSERTED.* VALUES (@name, @nameAr, @bodyPart, @description, @descriptionAr, @icon);`);
+                .query(`INSERT INTO dbo.gym_muscles (tenant_id, name, name_ar, body_part, description, description_ar, icon)
+                        OUTPUT INSERTED.* VALUES (@tenantId, @name, @nameAr, @bodyPart, @description, @descriptionAr, @icon);`);
             return mapMuscle(result.recordset[0]);
         }
         if (type === 'foods') {
             const item = normalizeFood(body);
             if (!item.nameAr && !item.nameEn) throw appError('أدخل اسم الطعام بالعربية أو الإنجليزية.');
             const result = await pool.request()
+                .input('tenantId', sql.Int, tenantId)
                 .input('nameAr', sql.NVarChar(160), item.nameAr)
                 .input('nameEn', sql.NVarChar(160), item.nameEn)
                 .input('category', sql.NVarChar(80), item.category)
@@ -1000,15 +994,16 @@ async function createLibraryItem(typeValue, body = {}) {
                 .input('servingSize', sql.Decimal(12, 3), item.servingSize)
                 .input('servingUnit', sql.NVarChar(40), item.servingUnit)
                 .query(`INSERT INTO dbo.gym_foods
-                            (name_ar, name_en, category, calories, protein, carbs, fat, fiber, sugar, sodium, serving_size, serving_unit)
+                            (tenant_id, name_ar, name_en, category, calories, protein, carbs, fat, fiber, sugar, sodium, serving_size, serving_unit)
                         OUTPUT INSERTED.*
-                        VALUES (@nameAr, @nameEn, @category, @calories, @protein, @carbs, @fat, @fiber, @sugar, @sodium, @servingSize, @servingUnit);`);
+                        VALUES (@tenantId, @nameAr, @nameEn, @category, @calories, @protein, @carbs, @fat, @fiber, @sugar, @sodium, @servingSize, @servingUnit);`);
             return mapFood(result.recordset[0]);
         }
         const item = normalizeExercise(body);
         await ensureTargetMuscles(pool, [item.targetMuscleId, ...item.secondaryMuscles.map((muscle) => muscle.muscleId)]);
-        const result = await pool.request()
-            .input('name', sql.NVarChar(160), item.name)
+            const result = await pool.request()
+                .input('tenantId', sql.Int, tenantId)
+                .input('name', sql.NVarChar(160), item.name)
             .input('nameAr', sql.NVarChar(160), item.nameAr)
             .input('description', sql.NVarChar(2000), item.description)
             .input('descriptionAr', sql.NVarChar(2000), item.descriptionAr)
@@ -1035,12 +1030,12 @@ async function createLibraryItem(typeValue, body = {}) {
             .input('videoUrl', sql.NVarChar(1000), item.videoUrl)
             .input('metadata', sql.NVarChar(sql.MAX), item.metadataJson)
             .query(`INSERT INTO dbo.gym_exercises
-                        (name, name_ar, description, description_ar, target_muscle_id, secondary_muscles_json,
+                        (tenant_id, name, name_ar, description, description_ar, target_muscle_id, secondary_muscles_json,
                          equipment, is_high_impact, difficulty, category, movement_pattern, mechanic, force,
                          instructions_json, instructions_ar_json, tips_json, tips_ar_json, common_mistakes_json,
                          common_mistakes_ar_json, reps_range, sets_range, rest_seconds, tempo, icon, video_url, metadata_json)
                     OUTPUT INSERTED.*
-                    VALUES (@name, @nameAr, @description, @descriptionAr, @targetMuscleId, @secondaryMuscles,
+                    VALUES (@tenantId, @name, @nameAr, @description, @descriptionAr, @targetMuscleId, @secondaryMuscles,
                             @equipment, @isHighImpact, @difficulty, @category, @movementPattern, @mechanic, @force,
                             @instructions, @instructionsAr, @tips, @tipsAr, @commonMistakes, @commonMistakesAr,
                             @repsRange, @setsRange, @restSeconds, @tempo, @icon, @videoUrl, @metadata);`);
@@ -1053,6 +1048,7 @@ async function createLibraryItem(typeValue, body = {}) {
 async function updateLibraryItem(typeValue, idValue, body = {}) {
     const type = ensureType(typeValue);
     const id = ensureId(idValue);
+    const tenantId = currentTenantId({ required: true });
     await ensureLibraryData();
     const pool = await getPool();
     try {
@@ -1060,6 +1056,7 @@ async function updateLibraryItem(typeValue, idValue, body = {}) {
             const item = normalizeMuscle(body);
             const result = await pool.request()
                 .input('id', sql.Int, id)
+                .input('tenantId', sql.Int, tenantId)
                 .input('name', sql.NVarChar(120), item.name)
                 .input('nameAr', sql.NVarChar(120), item.nameAr)
                 .input('bodyPart', sql.NVarChar(80), item.bodyPart)
@@ -1069,7 +1066,7 @@ async function updateLibraryItem(typeValue, idValue, body = {}) {
                 .query(`UPDATE dbo.gym_muscles
                         SET name = @name, name_ar = @nameAr, body_part = @bodyPart, description = @description,
                             description_ar = @descriptionAr, icon = @icon, updated_at = SYSUTCDATETIME()
-                        OUTPUT INSERTED.* WHERE id = @id;`);
+                        OUTPUT INSERTED.* WHERE id = @id AND tenant_id = @tenantId;`);
             if (!result.recordset[0]) throw appError('العنصر غير موجود.', 404, 'LIBRARY_ITEM_NOT_FOUND');
             return mapMuscle(result.recordset[0]);
         }
@@ -1078,6 +1075,7 @@ async function updateLibraryItem(typeValue, idValue, body = {}) {
             if (!item.nameAr && !item.nameEn) throw appError('أدخل اسم الطعام بالعربية أو الإنجليزية.');
             const result = await pool.request()
                 .input('id', sql.Int, id)
+                .input('tenantId', sql.Int, tenantId)
                 .input('nameAr', sql.NVarChar(160), item.nameAr)
                 .input('nameEn', sql.NVarChar(160), item.nameEn)
                 .input('category', sql.NVarChar(80), item.category)
@@ -1095,7 +1093,7 @@ async function updateLibraryItem(typeValue, idValue, body = {}) {
                             protein = @protein, carbs = @carbs, fat = @fat, fiber = @fiber, sugar = @sugar,
                             sodium = @sodium, serving_size = @servingSize, serving_unit = @servingUnit,
                             updated_at = SYSUTCDATETIME()
-                        OUTPUT INSERTED.* WHERE id = @id;`);
+                        OUTPUT INSERTED.* WHERE id = @id AND tenant_id = @tenantId;`);
             if (!result.recordset[0]) throw appError('العنصر غير موجود.', 404, 'LIBRARY_ITEM_NOT_FOUND');
             return mapFood(result.recordset[0]);
         }
@@ -1103,6 +1101,7 @@ async function updateLibraryItem(typeValue, idValue, body = {}) {
         await ensureTargetMuscles(pool, [item.targetMuscleId, ...item.secondaryMuscles.map((muscle) => muscle.muscleId)]);
         const result = await pool.request()
             .input('id', sql.Int, id)
+            .input('tenantId', sql.Int, tenantId)
             .input('name', sql.NVarChar(160), item.name)
             .input('nameAr', sql.NVarChar(160), item.nameAr)
             .input('description', sql.NVarChar(2000), item.description)
@@ -1139,7 +1138,7 @@ async function updateLibraryItem(typeValue, idValue, body = {}) {
                         common_mistakes_ar_json = @commonMistakesAr, reps_range = @repsRange, sets_range = @setsRange,
                         rest_seconds = @restSeconds, tempo = @tempo, icon = @icon, video_url = @videoUrl,
                         metadata_json = COALESCE(@metadata, metadata_json), updated_at = SYSUTCDATETIME()
-                    OUTPUT INSERTED.id WHERE id = @id;`);
+                    OUTPUT INSERTED.id WHERE id = @id AND tenant_id = @tenantId;`);
         if (!result.recordset[0]) throw appError('العنصر غير موجود.', 404, 'LIBRARY_ITEM_NOT_FOUND');
         return getLibraryItem(type, id);
     } catch (error) {
@@ -1150,22 +1149,31 @@ async function updateLibraryItem(typeValue, idValue, body = {}) {
 async function deleteLibraryItem(typeValue, idValue) {
     const type = ensureType(typeValue);
     const id = ensureId(idValue);
+    const tenantId = currentTenantId({ required: true });
     await ensureLibraryData();
     const pool = await getPool();
     if (type === 'muscles') {
-        const reference = await pool.request().input('id', sql.Int, id).query(`
+        const reference = await pool.request()
+            .input('id', sql.Int, id)
+            .input('tenantId', sql.Int, tenantId)
+            .query(`
             SELECT TOP 1 e.id
             FROM dbo.gym_exercises AS e
-            WHERE e.target_muscle_id = @id
+            WHERE e.tenant_id=@tenantId
+              AND e.target_muscle_id = @id
                OR EXISTS (
                     SELECT 1 FROM OPENJSON(e.secondary_muscles_json) AS secondary
-                    WHERE TRY_CONVERT(INT, JSON_VALUE(secondary.[value], '$.muscleId')) = @id
+                    WHERE e.tenant_id=@tenantId
+                      AND TRY_CONVERT(INT, JSON_VALUE(secondary.[value], '$.muscleId')) = @id
                );
         `);
         if (reference.recordset[0]) throw appError('لا يمكن حذف العضلة لأنها مرتبطة بتمرين.', 409, 'LIBRARY_MUSCLE_IN_USE');
     }
     const table = type === 'muscles' ? 'gym_muscles' : type === 'foods' ? 'gym_foods' : 'gym_exercises';
-    const result = await pool.request().input('id', sql.Int, id).query(`DELETE FROM dbo.[${table}] WHERE id = @id;`);
+    const result = await pool.request()
+        .input('id', sql.Int, id)
+        .input('tenantId', sql.Int, tenantId)
+        .query(`DELETE FROM dbo.[${table}] WHERE id = @id AND tenant_id = @tenantId;`);
     if (!result.rowsAffected[0]) throw appError('العنصر غير موجود.', 404, 'LIBRARY_ITEM_NOT_FOUND');
 }
 

@@ -391,6 +391,41 @@ async function ensureBrandingKeyCompatibility(pool) {
     `);
 }
 
+async function ensureLibrarySourceKeys(pool, tables) {
+    const libraryKeys = [
+        ['gym_muscles', 'UQ_gym_muscles_source', 'UQ_gym_muscles_tenant_source'],
+        ['gym_foods', 'UQ_gym_foods_source', 'UQ_gym_foods_tenant_source'],
+        ['gym_exercises', 'UQ_gym_exercises_source', 'UQ_gym_exercises_tenant_source']
+    ];
+    for (const [table, legacyKey, scopedKey] of libraryKeys) {
+        if (!tables.includes(table)) continue;
+        await pool.request().batch(`
+            -- The catalog source id is stable inside a tenant, not globally.
+            -- Drop the pre-tenancy single-column key once, then keep the
+            -- tenant-scoped rule idempotently for future boots.
+            IF EXISTS (
+                SELECT 1 FROM sys.key_constraints
+                WHERE name=N'${legacyKey}' AND parent_object_id=OBJECT_ID(N'dbo.${table}')
+            )
+                ALTER TABLE dbo.[${table}] DROP CONSTRAINT [${legacyKey}];
+
+            IF EXISTS (
+                SELECT 1 FROM sys.indexes
+                WHERE name=N'${legacyKey}' AND object_id=OBJECT_ID(N'dbo.${table}')
+            )
+                DROP INDEX [${legacyKey}] ON dbo.[${table}];
+
+            IF NOT EXISTS (
+                SELECT 1 FROM sys.indexes
+                WHERE name=N'${scopedKey}' AND object_id=OBJECT_ID(N'dbo.${table}')
+            )
+                CREATE UNIQUE INDEX [${scopedKey}]
+                    ON dbo.[${table}](tenant_id, source_id)
+                    WHERE source_id IS NOT NULL;
+        `);
+    }
+}
+
 async function dropTenantSecurityPolicy(pool) {
     await pool.request().batch(`
         IF EXISTS (
@@ -437,6 +472,7 @@ async function ensureTenantColumnsAndRls(tenantId) {
             .batch(tenantColumnMigrationSql(table));
     }
     await ensureBrandingKeyCompatibility(pool);
+    await ensureLibrarySourceKeys(pool, tables);
 
     if (tables.includes('gym_branding_config')) {
         await pool.request().batch(`

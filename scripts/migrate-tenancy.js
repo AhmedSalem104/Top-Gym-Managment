@@ -58,8 +58,8 @@ async function migrate() {
     await runTenantContext({ mode: 'platform', tenantId: bootstrapTenant.id }, () => saasService.ensureSaasTables());
     await runTenantContext({ mode: 'tenant', tenantId: bootstrapTenant.id }, async () => {
         await authService.ensureAuthReady();
-        await libraryService.ensureLibraryData();
-        await coachingService.ensureCoachingTables();
+        await libraryService.ensureLibraryTables();
+        await coachingService.ensureCoachingTables({ seedLibrary: false });
         await dayPassService.ensureDayPassTables();
         await membershipCodeService.ensureMembershipCodeStorage();
         await memberFeedbackService.ensureMemberFeedbackTable();
@@ -68,6 +68,7 @@ async function migrate() {
         await brandingService.ensureBrandingTables();
     });
     const result = await runTenantContext({ mode: 'platform', tenantId: bootstrapTenant.id }, () => tenantService.ensureTenantColumnsAndRls(bootstrapTenant.id));
+    await runTenantContext({ mode: 'tenant', tenantId: bootstrapTenant.id }, () => libraryService.ensureLibraryData());
     await runTenantContext({ mode: 'platform', tenantId: bootstrapTenant.id }, () => saasService.ensureBootstrapSubscription(bootstrapTenant.id));
     console.log(JSON.stringify({ tenant: bootstrapTenant, tenantTables: result.tables.length, saasTables: saasService.SAAS_TABLES.length, policy: 'enabled' }));
 }
