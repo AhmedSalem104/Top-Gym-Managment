@@ -9,6 +9,7 @@ const { performance } = require('node:perf_hooks');
 let poolPromise;
 let tenantAwarePool;
 let tenantAwarePoolTarget;
+let poolClosePromise;
 
 const TENANT_ID_PARAMETER = '__topgym_tenant_id';
 const TENANT_MODE_PARAMETER = '__topgym_tenant_mode';
@@ -240,11 +241,18 @@ function parseConnectionString(connectionString) {
             idleTimeoutMillis: appConfig.mssqlPoolIdleTimeoutMs
         }
     };
-    if (serverParts[1]) connectionConfig.port = Number(serverParts[1]);
+    if (serverParts[1] !== undefined) {
+        const port = Number(serverParts[1]);
+        if (!Number.isInteger(port) || port < 1 || port > 65_535) {
+            throw new Error('The SQL Server connection string port is invalid.');
+        }
+        connectionConfig.port = port;
+    }
     return connectionConfig;
 }
 
 async function getPool() {
+    if (poolClosePromise) await poolClosePromise;
     if (!poolPromise) {
         const connectionConfig = parseConnectionString(appConfig.mssqlConnectionString);
         poolPromise = sql.connect(connectionConfig).catch((error) => {
@@ -254,7 +262,22 @@ async function getPool() {
             throw error;
         });
     }
-    const pool = await poolPromise;
+    const currentPromise = poolPromise;
+    const pool = await currentPromise;
+    // closePool() may have been called while the connection was being
+    // established. Never decorate or return a pool that was replaced during
+    // that wait.
+    if (poolPromise !== currentPromise) return getPool();
+    // A pool can be closed by the driver or by an operational shutdown after
+    // the cached promise resolved. Reconnect on the next request instead of
+    // handing callers a permanently closed pool.
+    if (pool && pool.connected === false && pool.connecting !== true) {
+        poolPromise = undefined;
+        tenantAwarePool = undefined;
+        tenantAwarePoolTarget = undefined;
+        await pool.close().catch(() => {});
+        return getPool();
+    }
     if (!tenantAwarePool || tenantAwarePoolTarget !== pool) {
         tenantAwarePool = decoratePool(pool);
         tenantAwarePoolTarget = pool;
@@ -263,12 +286,21 @@ async function getPool() {
 }
 
 async function closePool() {
+    if (poolClosePromise) return poolClosePromise;
     if (!poolPromise) return;
-    const pool = await poolPromise;
+    const currentPromise = poolPromise;
     poolPromise = undefined;
     tenantAwarePool = undefined;
     tenantAwarePoolTarget = undefined;
-    await pool.close();
+    poolClosePromise = (async () => {
+        const pool = await currentPromise;
+        await pool.close();
+    })();
+    try {
+        await poolClosePromise;
+    } finally {
+        poolClosePromise = undefined;
+    }
 }
 
 module.exports = { assertReadOnlySql, closePool, getPool, hasPersistentSqlMutation, parseConnectionString, sql };

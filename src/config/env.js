@@ -41,8 +41,11 @@ const config = Object.freeze({
     membershipCodeSecret: getEnv('MEMBERSHIP_CODE_SECRET'),
     attendanceAutoCheckoutMinutes: getNumberEnv('ATTENDANCE_AUTO_CHECKOUT_MINUTES', 0),
     mssqlConnectionString: getEnv('MSSQL_CONNECTION_STRING') || getEnv('DATABASE_URL'),
-    mssqlConnectionTimeout: getNumberEnv('MSSQL_CONNECTION_TIMEOUT', 30_000),
-    mssqlRequestTimeout: getNumberEnv('MSSQL_REQUEST_TIMEOUT', 120_000),
+    // Keep database timeouts finite and positive. Operators can tune these
+    // values for a measured environment, but an invalid value must not turn
+    // into an unbounded wait inside a serverless function.
+    mssqlConnectionTimeout: getBoundedNumberEnv('MSSQL_CONNECTION_TIMEOUT', 30_000, 1_000, 300_000),
+    mssqlRequestTimeout: getBoundedNumberEnv('MSSQL_REQUEST_TIMEOUT', 120_000, 1_000, 600_000),
     // These limits apply per Node/Vercel instance. Keep the defaults stable;
     // operators can tune them for a known database capacity after measurement.
     mssqlPoolMax: getBoundedNumberEnv('MSSQL_POOL_MAX', 10, 1, 100),

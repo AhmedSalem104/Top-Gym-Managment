@@ -34,3 +34,28 @@ test('SQL pool environment overrides are bounded and min never exceeds max', () 
     assert.equal(result.status, 0, result.stderr);
     assert.deepEqual(JSON.parse(result.stdout), { max: 100, min: 80, idleTimeoutMillis: 1_000 });
 });
+
+test('SQL connection and request timeouts are finite and bounded', () => {
+    const script = `
+        const { config } = require('./src/config/env');
+        process.stdout.write(JSON.stringify({ connection: config.mssqlConnectionTimeout, request: config.mssqlRequestTimeout }));
+    `;
+    const result = spawnSync(process.execPath, ['-e', script], {
+        cwd: require('node:path').join(__dirname, '..', '..'),
+        env: {
+            ...process.env,
+            MSSQL_CONNECTION_TIMEOUT: '-10',
+            MSSQL_REQUEST_TIMEOUT: '999999999'
+        },
+        encoding: 'utf8'
+    });
+    assert.equal(result.status, 0, result.stderr);
+    assert.deepEqual(JSON.parse(result.stdout), { connection: 1_000, request: 600_000 });
+});
+
+test('SQL connection string rejects an invalid port early', () => {
+    assert.throws(
+        () => parseConnectionString('Server=localhost,99999;Database=logic_fit_test;User Id=test;Password=test;'),
+        /port is invalid/i
+    );
+});

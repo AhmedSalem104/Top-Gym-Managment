@@ -18,6 +18,8 @@
     "test:visual": "node scripts/qa-browser-style.js",
     "perf:baseline": "node scripts/performance-baseline.js",
     "test:performance-baseline": "node --test tests/unit/performance-baseline.test.js",
+    "test:database-readiness": "node --test tests/unit/database-readiness.test.js tests/unit/database-pool-config.test.js tests/unit/database-transaction.test.js",
+    "qa:database": "node scripts/audit-database-readiness.js",
     "migrate:tenancy": "node scripts/migrate-tenancy.js",
     "qa:tenancy": "node scripts/verify-tenancy.js",
     "qa:gate": "node scripts/qa-gate.js",
