@@ -526,7 +526,16 @@ function clearSessionCookie(request) {
 function readSessionCookie(request) {
     const header = String(request.get?.('cookie') || '');
     const match = header.split(';').map((part) => part.trim()).find((part) => part.startsWith(`${SESSION_COOKIE_NAME}=`));
-    return match ? decodeURIComponent(match.slice(SESSION_COOKIE_NAME.length + 1)) : '';
+    if (!match) return '';
+    const encodedValue = match.slice(SESSION_COOKIE_NAME.length + 1);
+    if (!encodedValue || encodedValue.length > 512) return '';
+    try {
+        return decodeURIComponent(encodedValue);
+    } catch (_) {
+        // A malformed cookie is untrusted input. Treat it as an absent session
+        // instead of allowing URI decoding to turn it into a server error.
+        return '';
+    }
 }
 
 function appendCookie(response, value) {

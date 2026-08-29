@@ -60,6 +60,10 @@ always include an explicit tenant id and pass through the server-side
 - Disabled accounts are rejected.
 - Session cookie is `HttpOnly`, `SameSite=Lax`, and `Secure` in production.
 - Login and sensitive API rate limits are applied in middleware.
+- The current rate-limit guards are intentionally process-local and keep a
+  bounded number of IP/email/code buckets to prevent unbounded memory growth.
+  This cap is a defensive availability measure, not a substitute for a shared
+  distributed limiter; that production verification remains tracked separately.
 - Non-safe cross-origin state-changing requests are rejected.
 - Assistant restrictions are enforced on the backend; hiding tabs is only UX.
 - Session tokens, passwords and secrets are not logged or returned.

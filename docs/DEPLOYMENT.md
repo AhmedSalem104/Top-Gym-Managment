@@ -49,6 +49,15 @@ The repository does not claim live connection capacity or timeout behavior from
 these configuration values. Those require a safe Staging/Production check and
 remain in `docs/PRODUCTION-VERIFICATION-DEBT.md`.
 
+### Runtime consistency and process-local limits
+
+The supported runtime is Node 24 (`package.json`, `.nvmrc`, and the CI workflow
+must use the same major version). The login, sensitive-write and member-portal
+rate-limit guards also cap their in-memory key stores as a local memory-safety
+fallback. They do not provide a global quota across Vercel instances; a shared
+rate-limit backend still requires a separate production decision and
+verification.
+
 ## Deployment checklist
 
 1. Install with the lockfile.

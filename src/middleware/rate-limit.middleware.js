@@ -2,7 +2,21 @@
 
 const crypto = require('node:crypto');
 
-function createSensitiveRateLimit({ windowMs = 60_000, max = 120, cleanupMs = 300_000 } = {}) {
+function trimMap(map, maxEntries) {
+    const limit = Number.isInteger(maxEntries) && maxEntries > 0 ? maxEntries : 1;
+    while (map.size > limit) {
+        const oldestKey = map.keys().next().value;
+        if (oldestKey === undefined) break;
+        map.delete(oldestKey);
+    }
+}
+
+function setBoundedEntry(map, key, entry, maxEntries) {
+    map.set(key, entry);
+    trimMap(map, maxEntries);
+}
+
+function createSensitiveRateLimit({ windowMs = 60_000, max = 120, cleanupMs = 300_000, maxEntries = 10_000 } = {}) {
     const windows = new Map();
     let lastCleanup = 0;
     return (request, response, next) => {
@@ -17,7 +31,7 @@ function createSensitiveRateLimit({ windowMs = 60_000, max = 120, cleanupMs = 30
         const key = request.ip || request.socket.remoteAddress || 'unknown';
         const current = windows.get(key);
         if (!current || now - current.startedAt >= windowMs) {
-            windows.set(key, { startedAt: now, count: 1 });
+            setBoundedEntry(windows, key, { startedAt: now, count: 1 }, maxEntries);
             return next();
         }
         current.count += 1;
@@ -29,7 +43,7 @@ function createSensitiveRateLimit({ windowMs = 60_000, max = 120, cleanupMs = 30
     };
 }
 
-function createLoginAttemptGuard({ windowMs = 900_000, max = 10, cleanupMs = 300_000 } = {}) {
+function createLoginAttemptGuard({ windowMs = 900_000, max = 10, cleanupMs = 300_000, maxEntries = 20_000 } = {}) {
     const attempts = new Map();
     let lastCleanup = 0;
     return (request, email) => {
@@ -43,7 +57,7 @@ function createLoginAttemptGuard({ windowMs = 900_000, max = 10, cleanupMs = 300
         const key = `${request.ip || request.socket.remoteAddress || 'unknown'}:${String(email || '').trim().toLowerCase()}`;
         const current = attempts.get(key);
         if (!current || now - current.startedAt >= windowMs) {
-            attempts.set(key, { startedAt: now, count: 1 });
+            setBoundedEntry(attempts, key, { startedAt: now, count: 1 }, maxEntries);
             return true;
         }
         current.count += 1;
@@ -61,7 +75,8 @@ function createMembershipPortalRateLimit({
     ipMax = 30,
     codeWindowMs = 900_000,
     codeMax = 8,
-    cleanupMs = 300_000
+    cleanupMs = 300_000,
+    maxEntries = 20_000
 } = {}) {
     const ipWindows = new Map();
     const codeWindows = new Map();
@@ -78,11 +93,11 @@ function createMembershipPortalRateLimit({
         const code = String(request.body?.membershipCode || '').trim().toUpperCase().replace(/[\s-]/g, '');
         const codeDigest = crypto.createHash('sha256').update(code || 'missing').digest('hex');
         const ipEntry = ipWindows.get(ip);
-        if (!ipEntry || now - ipEntry.startedAt >= ipWindowMs) ipWindows.set(ip, { startedAt: now, count: 1 });
+        if (!ipEntry || now - ipEntry.startedAt >= ipWindowMs) setBoundedEntry(ipWindows, ip, { startedAt: now, count: 1 }, maxEntries);
         else ipEntry.count += 1;
         const codeKey = `${ip}:${codeDigest}`;
         const codeEntry = codeWindows.get(codeKey);
-        if (!codeEntry || now - codeEntry.startedAt >= codeWindowMs) codeWindows.set(codeKey, { startedAt: now, count: 1 });
+        if (!codeEntry || now - codeEntry.startedAt >= codeWindowMs) setBoundedEntry(codeWindows, codeKey, { startedAt: now, count: 1 }, maxEntries);
         else codeEntry.count += 1;
         const ipBlocked = ipWindows.get(ip)?.count > ipMax;
         const codeBlocked = codeWindows.get(codeKey)?.count > codeMax;
@@ -94,4 +109,4 @@ function createMembershipPortalRateLimit({
     };
 }
 
-module.exports = { createLoginAttemptGuard, createSensitiveRateLimit, createMembershipPortalRateLimit };
+module.exports = { createLoginAttemptGuard, createSensitiveRateLimit, createMembershipPortalRateLimit, trimMap };
