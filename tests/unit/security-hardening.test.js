@@ -9,6 +9,7 @@ const {
     trimMap
 } = require('../../src/middleware/rate-limit.middleware');
 const { readSessionCookie } = require('../../src/services/auth-service');
+const { isAuthorizedCronRequest } = require('../../src/middleware/cron.middleware');
 
 function requestFor(ip, body = {}) {
     return { method: 'POST', ip, socket: { remoteAddress: ip }, body };
@@ -69,4 +70,17 @@ test('malformed session cookies fail closed without throwing', () => {
     assert.equal(readSessionCookie(request('topgym_session=%ZZ')), '');
     assert.equal(readSessionCookie(request('topgym_session=' + 'x'.repeat(513))), '');
     assert.equal(readSessionCookie(request('topgym_session=abc%2D123')), 'abc-123');
+});
+
+test('production cron requests fail closed when the secret is missing', () => {
+    const request = { get: () => 'vercel-cron/1.0' };
+    assert.equal(isAuthorizedCronRequest(request, { config: { nodeEnv: 'production', cronSecret: '' } }), false);
+});
+
+test('cron authorization accepts the configured secret and rejects near matches', () => {
+    const request = (authorization) => ({ get: (name) => name === 'authorization' ? authorization : '' });
+    const config = { nodeEnv: 'production', cronSecret: 'safe-test-secret' };
+    assert.equal(isAuthorizedCronRequest(request('Bearer safe-test-secret'), { config }), true);
+    assert.equal(isAuthorizedCronRequest(request('Bearer safe-test-secreT'), { config }), false);
+    assert.equal(isAuthorizedCronRequest(request('vercel-cron/1.0'), { config }), false);
 });
