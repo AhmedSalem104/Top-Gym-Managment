@@ -461,7 +461,10 @@ async function createTables() {
     await ensureTenantDefaultRow(pool);
 }
 
-async function ensureBrandingTables() {
+async function ensureBrandingTables({ readOnly = false } = {}) {
+    // Read-only baseline requests must target a prepared database and must not
+    // create tables or seed a tenant default row as a side effect of GET.
+    if (readOnly) return;
     if (!readyPromise) readyPromise = createTables().catch((error) => { readyPromise = null; throw error; });
     await readyPromise;
     await ensureTenantDefaultRow();
@@ -512,8 +515,8 @@ async function latestAudit() {
     return result.recordset.map((row) => ({ id: Number(row.id), action: row.action, version: row.version == null ? null : Number(row.version), actorUserId: row.actor_user_id == null ? null : Number(row.actor_user_id), details: row.details || null, createdAt: row.created_at }));
 }
 
-async function ownerResponse() {
-    await ensureBrandingTables();
+async function ownerResponse({ readOnly = false } = {}) {
+    await ensureBrandingTables({ readOnly });
     const row = await readRow();
     const defaults = await defaultBrandingForTenant();
     const tenantSlug = await brandingTenantSlug();
@@ -536,8 +539,8 @@ function invalidatePublicCache() {
     publicCache.clear();
 }
 
-async function getPublicBranding() {
-    await ensureBrandingTables();
+async function getPublicBranding({ readOnly = false } = {}) {
+    await ensureBrandingTables({ readOnly });
     const tenantId = brandingTenantId();
     const cached = publicCache.get(tenantId);
     if (cached && cached.expiresAt > Date.now()) return clone(cached.value);
@@ -644,8 +647,8 @@ async function removeDraftAsset(key, actorUserId) {
     return { key: assetKey };
 }
 
-async function readAsset(key, scope = 'published') {
-    await ensureBrandingTables();
+async function readAsset(key, scope = 'published', { readOnly = false } = {}) {
+    await ensureBrandingTables({ readOnly });
     const assetKey = normalizeAssetKey(key);
     const normalizedScope = scope === 'draft' ? 'draft' : 'published';
     const pool = await getPool();
