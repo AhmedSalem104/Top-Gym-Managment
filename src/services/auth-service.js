@@ -344,7 +344,7 @@ async function ensureOwnerAccount() {
             passwordHash
         });
         await tenantService.assignUserToTenant(result.recordset[0]?.id, bootstrapTenant.id, 'Owner');
-        console.log(`[TOP GYM AUTH] Bootstrapped Owner account ${email}.`);
+        console.log('[TOP GYM AUTH] Bootstrapped Owner account.');
         return { created: true, setupRequired: false };
     } catch (error) {
         if (error.number === 2601 || error.number === 2627) return { created: false, setupRequired: false };
@@ -374,7 +374,7 @@ async function ensurePlatformAdminAccount() {
             .input('emailNormalized', sql.NVarChar(254), email)
             .input('passwordHash', sql.NVarChar(512), passwordHash)
             .query("INSERT INTO dbo.gym_users (full_name, username, email, email_normalized, password_hash, role, status) VALUES (@fullName, @email, @email, @emailNormalized, @passwordHash, 'PlatformAdmin', 'Active');");
-        console.log(`[TOP GYM AUTH] Bootstrapped Platform Admin account ${email}.`);
+        console.log('[TOP GYM AUTH] Bootstrapped Platform Admin account.');
         return { created: true, setupRequired: false };
     } catch (error) {
         if (error.number === 2601 || error.number === 2627) return { created: false, setupRequired: false };
