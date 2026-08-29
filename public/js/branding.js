@@ -252,7 +252,7 @@
             libraryKicker: `مرجع ${name}`,
             feedbackDescription: `راجع آراء الأعضاء ومشكلاتهم واقتراحاتهم لتحسين تجربة ${name}.`,
             feedbackFeatureOption: `إضافة يحتاجها ${name}`,
-            backupDescription: `أنشئ نسخة ${name} بصيغة .json.gz أو .bak، ثم افحصها واسترجعها بأمان من هذه الشاشة.`,
+            backupDescription: `أنشئ نسخة ${name} بصيغة .json.gz، ثم افحصها واسترجعها بأمان من هذه الشاشة.`,
             libraryFormDescription: `أدخل البيانات ثم احفظها في مكتبة ${name}.`,
             backupRestoreDescription: `اختر ملف ${name} المضغوط. سيتم فحصه أولًا ولن يبدأ الاسترجاع إلا بعد تأكيدك.`,
             assistantLabel: `مساعدة ${name}`,

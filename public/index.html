@@ -578,7 +578,7 @@
                 </header>
                 <section class="backup-management-panel backup-history-tools" aria-labelledby="backupToolsTitle">
                     <div><span class="management-eyebrow">حماية البيانات</span><h4 id="backupToolsTitle">أدوات النسخ والاسترجاع</h4><p data-brand-template="backupDescription">أنشئ نسخة محفوظة للجيم، أو نزّل نسخة لحظية، ثم افحص أي ملف واسترجعه بأمان.</p></div>
-                    <div class="backup-management-actions"><button class="btn btn-primary" id="backupManualButton" type="button">إنشاء نسخة محفوظة</button><button class="btn btn-light" id="backupJsonButton" type="button">تحميل لحظي .json.gz</button><button class="btn btn-light" id="backupBakButton" type="button">تحميل لحظي .bak</button><button class="btn btn-light" id="restoreBackupButton" type="button">استرجاع ملف</button></div>
+                    <div class="backup-management-actions"><button class="btn btn-primary" id="backupManualButton" type="button">إنشاء نسخة محفوظة</button><button class="btn btn-light" id="backupJsonButton" type="button">تحميل لحظي .json.gz</button><button class="btn btn-light" id="restoreBackupButton" type="button">استرجاع ملف</button></div>
                 </section>
                 <div class="backup-history-list" id="backupHistoryList"><div class="backup-history-loading">جاري تحميل سجل النسخ…</div></div>
             </section>
@@ -950,7 +950,7 @@
     <dialog id="backupRestoreDialog" class="backup-restore-dialog rounded-lg border-slate-200 shadow-lift">
         <form class="dialog-body" id="backupRestoreForm">
             <div class="details-dialog-head"><div><h3>استرجاع نسخة احتياطية</h3><p data-brand-template="backupRestoreDescription">اختر ملف الجيم المضغوط. سيتم فحصه أولًا ولن يبدأ الاسترجاع إلا بعد تأكيدك.</p></div><button class="btn btn-light btn-small" id="backupRestoreClose" type="button">إغلاق</button></div>
-            <label class="backup-file-field" for="backupFileInput"><span>ملف النسخة الاحتياطية (.json.gz أو .bak)</span><input id="backupFileInput" type="file" accept=".gz,.bak,application/gzip,application/x-gzip,application/octet-stream" required></label>
+            <label class="backup-file-field" for="backupFileInput"><span>ملف النسخة الاحتياطية (.json.gz)</span><input id="backupFileInput" type="file" accept=".json.gz,.gz,application/gzip,application/x-gzip" required></label>
             <label class="backup-reason-field" for="backupRestoreReason"><span>سبب الاسترجاع *</span><textarea id="backupRestoreReason" maxlength="1000" rows="2" placeholder="اكتب سبب استرجاع النسخة" required></textarea></label>
             <div class="backup-validation-box" id="backupValidationBox" hidden></div>
             <div class="dialog-actions"><button class="btn btn-light" id="backupRestoreCancel" type="button">إلغاء</button><button class="btn btn-primary" id="backupRestoreSubmit" type="submit" disabled>استرجاع بعد التحقق</button></div>

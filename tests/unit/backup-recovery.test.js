@@ -5,6 +5,8 @@ const test = require('node:test');
 
 const {
     buildTenantBackupPayload,
+    deletePlatformArtifactAndVerify,
+    deleteTenantArtifactAndVerify,
     getRetentionPolicy,
     getScheduledPlatformBackupTypes,
     getTenantBackupCoverageStatus,
@@ -163,6 +165,29 @@ test('stored backup verification hashes returned bytes instead of trusting metad
         }),
         { code: 'BACKUP_ARTIFACT_CHECKSUM_MISMATCH' }
     );
+});
+
+test('artifact deletion is confirmed before backup metadata can be finalized', async () => {
+    const tenantKey = 'tenants/7/private/backups/abcdefghijklmnop.json.gz';
+    let tenantPresent = true;
+    const tenantStorage = {
+        async deletePrivateObject() { tenantPresent = false; return true; },
+        async headPrivateObject() { return tenantPresent ? { key: tenantKey } : null; }
+    };
+    assert.deepEqual(await deleteTenantArtifactAndVerify(tenantStorage, { tenantId: 7, key: tenantKey }), { status: 'deleted' });
+
+    const platformKey = 'platform/private/backups/abcdefghijklmnop.json.gz';
+    let platformPresent = true;
+    const platformStorage = {
+        async deletePrivatePlatformObject() { return true; },
+        async headPrivatePlatformObject() { return platformPresent ? { key: platformKey } : null; }
+    };
+    await assert.rejects(
+        deletePlatformArtifactAndVerify(platformStorage, { key: platformKey }),
+        { code: 'BACKUP_ARTIFACT_DELETE_UNCONFIRMED' }
+    );
+    platformPresent = false;
+    assert.deepEqual(await deletePlatformArtifactAndVerify(platformStorage, { key: platformKey }), { status: 'deleted' });
 });
 
 test('platform private storage uses a separate scope and rejects tenant-key confusion', async () => {

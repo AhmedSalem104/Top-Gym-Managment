@@ -195,7 +195,7 @@
         if (tab === 'finance') host.innerHTML = '<label><span>نوع التقرير</span><select id="reportsFinanceType"><option value="all">الكل</option><option value="payments">التحصيل والمدفوعات</option><option value="expenses">المصروفات</option></select></label><label><span>طريقة الدفع</span><select id="reportsPaymentMethod"><option value="">كل الطرق</option><option value="cash">نقدي</option><option value="card">بطاقة</option><option value="transfer">تحويل</option><option value="other">أخرى</option></select></label><label><span>بحث</span><input id="reportsLocalSearch" type="search" placeholder="مشترك أو اسم مصروف"></label>';
         if (tab === 'coaching') host.innerHTML = '<label><span>نوع النظام</span><select id="reportsCoachingType"><option value="all">التدريب والتغذية</option><option value="workout">برامج التدريب</option><option value="diet">خطط التغذية</option></select></label><label><span>الحالة</span><select id="reportsCoachingStatus"><option value="">كل الحالات</option><option value="active">نشطة</option><option value="draft">مسودة</option><option value="paused">متوقفة</option><option value="completed">مكتملة</option><option value="archived">مؤرشفة</option></select></label><label><span>بحث</span><input id="reportsLocalSearch" type="search" placeholder="اسم المتدرب أو النظام"></label>';
         if (tab === 'library') host.innerHTML = '<label><span>قسم المكتبة</span><select id="reportsLibraryType"><option value="all">كل الأقسام</option><option value="foods">الأطعمة</option><option value="exercises">التمارين</option><option value="muscles">العضلات</option></select></label>';
-        if (tab === 'backups') host.innerHTML = '<label><span>امتداد النسخة</span><select id="reportsBackupFormat"><option value="">كل الامتدادات</option><option value="bak">.bak</option><option value="json.gz">.json.gz</option></select></label><span class="reports-filter-note">النسخ اليومية محفوظة لمدة يومين</span>';
+        if (tab === 'backups') host.innerHTML = '<label><span>امتداد النسخة</span><select id="reportsBackupFormat"><option value="">كل النسخ</option><option value="json.gz">.json.gz</option></select></label><span class="reports-filter-note">النسخ اليومية محفوظة حسب سياسة الاحتفاظ الحالية</span>';
     }
 
     function activateReportTab(tab) {
@@ -574,7 +574,7 @@
             const blob = await response.blob();
             const link = document.createElement('a');
             link.href = URL.createObjectURL(blob);
-            link.download = (response.headers.get('Content-Disposition') || '').match(/filename="([^"]+)"/)?.[1] || `TOP-GYM-backup-${id}.bak`;
+            link.download = (response.headers.get('Content-Disposition') || '').match(/filename="([^"]+)"/)?.[1] || `LOGIC-FIT-backup-${id}.json.gz`;
             link.click();
             URL.revokeObjectURL(link.href);
         } catch (error) {

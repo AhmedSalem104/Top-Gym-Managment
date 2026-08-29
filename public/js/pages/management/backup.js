@@ -5,7 +5,6 @@
     const $ = (id) => document.getElementById(id);
     const manualBackupButton = $('backupManualButton');
     const jsonDownloadButton = $('backupJsonButton');
-    const bakDownloadButton = $('backupBakButton');
     const restoreButton = $('restoreBackupButton');
     const historyRefreshButton = $('backupHistoryRefresh');
     const historyList = $('backupHistoryList');
@@ -121,13 +120,11 @@
         }
     }
 
-    async function downloadBackup(format = 'json.gz', trigger) {
-        const normalizedFormat = format === 'bak' ? 'bak' : 'json.gz';
+    async function downloadBackup(trigger) {
         if (!trigger || trigger.dataset.backupBusy === 'true') return;
         trigger.dataset.backupBusy = 'true';
         try {
-            const endpoint = normalizedFormat === 'bak' ? '/api/backup/download?format=bak' : '/api/backup/download';
-            const response = await fetch(endpoint, { method: 'GET', cache: 'no-store', headers: { Accept: normalizedFormat === 'bak' ? 'application/octet-stream' : 'application/gzip' } });
+            const response = await fetch('/api/backup/download', { method: 'GET', cache: 'no-store', headers: { Accept: 'application/gzip' } });
             if (!response.ok) {
                 const body = await response.json().catch(() => ({}));
                 throw new Error(body.error || 'تعذر إنشاء النسخة الاحتياطية.');
@@ -136,7 +133,7 @@
             const objectUrl = URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = objectUrl;
-            link.download = getFilename(response, `TOP-GYM-backup.${normalizedFormat}`);
+            link.download = getFilename(response, 'LOGIC-FIT-backup.json.gz');
             link.hidden = true;
             document.body.appendChild(link);
             link.click();
@@ -310,7 +307,7 @@
             const objectUrl = URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = objectUrl;
-            link.download = getFilename(response, `TOP-GYM-backup-${id}.bak`);
+            link.download = getFilename(response, `LOGIC-FIT-backup-${id}.json.gz`);
             link.hidden = true;
             document.body.appendChild(link);
             link.click();
@@ -403,8 +400,7 @@
     }
 
     manualBackupButton?.addEventListener('click', createManualBackup);
-    jsonDownloadButton?.addEventListener('click', () => downloadBackup('json.gz', jsonDownloadButton));
-    bakDownloadButton?.addEventListener('click', () => downloadBackup('bak', bakDownloadButton));
+    jsonDownloadButton?.addEventListener('click', () => downloadBackup(jsonDownloadButton));
     restoreButton?.addEventListener('click', () => { resetRestore(); openDialog(restoreDialog); });
     historyRefreshButton?.addEventListener('click', showHistory);
     window.addEventListener('topgym:tab-changed', (event) => {

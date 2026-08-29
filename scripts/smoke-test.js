@@ -67,18 +67,8 @@ function fetchWithSession(baseUrl, path, options = {}) {
         const backupBuffer = Buffer.from(await backupResponse.arrayBuffer());
         assert.ok(backupBuffer.byteLength > 20);
         const bakResponse = await fetchWithSession(baseUrl, '/api/backup/download?format=bak');
-        assert.equal(bakResponse.status, 200);
-        assert.equal(bakResponse.headers.get('content-type'), 'application/octet-stream');
-        assert.match(bakResponse.headers.get('content-disposition') || '', /backup_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}\.bak/);
-        const bakBuffer = Buffer.from(await bakResponse.arrayBuffer());
-        assert.ok(bakBuffer.byteLength > 20);
-        const bakInspectResponse = await fetchWithSession(baseUrl, '/api/backup/inspect', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/octet-stream', 'X-Backup-Filename': 'smoke-backup.bak' },
-            body: bakBuffer
-        });
-        assert.equal(bakInspectResponse.status, 200);
-        assert.equal((await bakInspectResponse.json()).valid, true);
+        assert.equal(bakResponse.status, 409);
+        assert.equal((await bakResponse.json()).code, 'BACKUP_NATIVE_FORMAT_UNAVAILABLE');
         const backupInspectResponse = await fetchWithSession(baseUrl, '/api/backup/inspect', {
             method: 'POST',
             headers: { 'Content-Type': 'application/gzip', 'X-Backup-Filename': 'smoke-backup.json.gz' },

@@ -641,7 +641,7 @@ async function buildTenantBackupArtifact({ tenantId = null, format = 'json.gz', 
     };
 }
 
-async function inspectTenantBackupBuffer(input, { expectedTenantId = null } = {}) {
+async function inspectTenantBackupBuffer(input, { expectedTenantId = null, requireCompleteRegistry = false } = {}) {
     const buffer = Buffer.isBuffer(input) ? input : Buffer.from(input || []);
     if (!buffer.length || buffer.length > MAX_BACKUP_UPLOAD_BYTES) throw backupError('The backup file is empty or too large.', 400, 'BACKUP_FILE_SIZE_INVALID');
     if (buffer[0] !== 0x1f || buffer[1] !== 0x8b) throw backupError('The backup must be gzip-compressed JSON.', 400, 'BACKUP_COMPRESSION_INVALID');
@@ -653,7 +653,7 @@ async function inspectTenantBackupBuffer(input, { expectedTenantId = null } = {}
     }
     let payload;
     try { payload = JSON.parse(jsonBuffer.toString('utf8')); } catch (_) { throw backupError('The backup JSON is invalid.', 400, 'BACKUP_JSON_INVALID'); }
-    const validation = validateTenantBackupPayload(payload, { expectedTenantId });
+    const validation = validateTenantBackupPayload(payload, { expectedTenantId, requireCompleteRegistry });
     return {
         payload,
         tenantId: validation.tenantId,
@@ -894,7 +894,7 @@ async function writePlatformBackupAudit({ backupId = null, eventType, actorUserI
                 VALUES (@backupId,@eventType,@actorUserId,@reason,@result,@metadata);`);
 }
 
-async function verifyStoredTenantObject(storage, { tenantId, key, expectedSize, expectedChecksum } = {}) {
+async function verifyStoredTenantObject(storage, { tenantId, key, expectedSize, expectedChecksum, returnBody = false } = {}) {
     const head = await storage.headPrivateObject({ tenantId, key });
     if (!head) throw backupError('The stored backup artifact is missing.', 503, 'BACKUP_ARTIFACT_MISSING');
     // HEAD metadata is useful for an existence/size check, but it is not an
@@ -911,10 +911,14 @@ async function verifyStoredTenantObject(storage, { tenantId, key, expectedSize, 
     if (actualChecksum !== String(expectedChecksum).toLowerCase() || actualSize !== Number(expectedSize)) {
         throw backupError('The stored backup checksum does not match.', 503, 'BACKUP_ARTIFACT_CHECKSUM_MISMATCH');
     }
-    return { checksum: actualChecksum, size: actualSize };
+    return {
+        checksum: actualChecksum,
+        size: actualSize,
+        ...(returnBody ? { body: object.body, contentType: object.contentType || null } : {})
+    };
 }
 
-async function verifyStoredPlatformObject(storage, { key, expectedSize, expectedChecksum } = {}) {
+async function verifyStoredPlatformObject(storage, { key, expectedSize, expectedChecksum, returnBody = false } = {}) {
     const head = await storage.headPrivatePlatformObject({ key });
     if (!head) throw backupError('The stored platform backup artifact is missing.', 503, 'BACKUP_ARTIFACT_MISSING');
     const object = await storage.getPrivatePlatformObject({ key });
@@ -928,7 +932,32 @@ async function verifyStoredPlatformObject(storage, { key, expectedSize, expected
         throw backupError('The stored platform backup checksum does not match.', 503, 'BACKUP_ARTIFACT_CHECKSUM_MISMATCH');
     }
     const inspected = await inspectPlatformBackupBuffer(object.body);
-    return { checksum: actualChecksum, size: actualSize, rowCount: inspected.rowCount };
+    return {
+        checksum: actualChecksum,
+        size: actualSize,
+        rowCount: inspected.rowCount,
+        ...(returnBody ? { body: object.body, contentType: object.contentType || null } : {})
+    };
+}
+
+async function deleteTenantArtifactAndVerify(storage, { tenantId, key } = {}) {
+    if (!key) return { status: 'not_stored' };
+    const deleted = await storage.deletePrivateObject({ tenantId, key });
+    const remaining = await storage.headPrivateObject({ tenantId, key });
+    if (remaining) {
+        throw backupError('The private backup artifact could not be confirmed as deleted.', 503, 'BACKUP_ARTIFACT_DELETE_UNCONFIRMED');
+    }
+    return { status: deleted ? 'deleted' : 'missing' };
+}
+
+async function deletePlatformArtifactAndVerify(storage, { key } = {}) {
+    if (!key) return { status: 'not_stored' };
+    const deleted = await storage.deletePrivatePlatformObject({ key });
+    const remaining = await storage.headPrivatePlatformObject({ key });
+    if (remaining) {
+        throw backupError('The private platform backup artifact could not be confirmed as deleted.', 503, 'BACKUP_ARTIFACT_DELETE_UNCONFIRMED');
+    }
+    return { status: deleted ? 'deleted' : 'missing' };
 }
 
 async function createTenantBackup({ tenantId = null, backupType = 'tenant_manual', format = 'json.gz', actorUserId = null, reason = '', now = new Date(), concurrency = 2, storageService = null } = {}) {
@@ -1010,14 +1039,13 @@ async function createTenantBackup({ tenantId = null, backupType = 'tenant_manual
         let artifactCleanup = 'not_needed';
         if (stored?.key) {
             try {
-                await storage.deletePrivateObject({ tenantId: trustedTenantId, key: stored.key });
-                artifactCleanup = 'completed';
+                artifactCleanup = (await deleteTenantArtifactAndVerify(storage, { tenantId: trustedTenantId, key: stored.key })).status;
             } catch (_) {
                 artifactCleanup = 'pending';
             }
         }
         const failureValues = { status: 'FAILED', errorCode, completedAt: new Date(now) };
-        if (stored?.key && artifactCleanup === 'completed') failureValues.storageKey = null;
+        if (stored?.key && ['deleted', 'missing'].includes(artifactCleanup)) failureValues.storageKey = null;
         await updateTenantRecord(trustedTenantId, claim.record.id, failureValues).catch(() => {});
         await writeTenantBackupAudit({
             tenantId: trustedTenantId,
@@ -1076,10 +1104,24 @@ async function downloadTenantBackup(id, { tenantId = null, readOnly = false, act
     const record = await getTenantBackupRecord(id, { tenantId: trustedTenantId, readOnly, includeStorageKey: true });
     if (!record) throw backupError('The requested backup is not available.', 404, 'BACKUP_NOT_FOUND');
     if (record.status !== 'VERIFIED') throw backupError('Only verified backups can be downloaded.', 409, 'BACKUP_NOT_VERIFIED');
-    const raw = await (storageService || createObjectStorageService()).getPrivateObject({ tenantId: trustedTenantId, key: record.storageKey });
-    if (!raw || !Buffer.isBuffer(raw.body)) throw backupError('The backup artifact is not available.', 404, 'BACKUP_ARTIFACT_MISSING');
-    const checksum = crypto.createHash('sha256').update(raw.body).digest('hex');
-    if (checksum !== String(record.checksum || '').toLowerCase()) throw backupError('The backup artifact failed integrity verification.', 503, 'BACKUP_ARTIFACT_CHECKSUM_MISMATCH');
+    if (!record.storageKey || !record.checksum || !Number.isInteger(Number(record.sizeBytes)) || Number(record.sizeBytes) <= 0) {
+        throw backupError('The verified backup metadata is incomplete.', 503, 'BACKUP_METADATA_INCOMPLETE');
+    }
+    const storage = storageService || createObjectStorageService();
+    const verified = await verifyStoredTenantObject(storage, {
+        tenantId: trustedTenantId,
+        key: record.storageKey,
+        expectedSize: record.sizeBytes,
+        expectedChecksum: record.checksum,
+        returnBody: true
+    });
+    const inspected = await inspectTenantBackupBuffer(verified.body, {
+        expectedTenantId: trustedTenantId,
+        requireCompleteRegistry: true
+    });
+    if (record.rowCount != null && Number(record.rowCount) !== Number(inspected.rowCount)) {
+        throw backupError('The backup metadata does not match its verified artifact.', 503, 'BACKUP_METADATA_MISMATCH');
+    }
     if (auditDownload) {
         // Ordinary GETs run in a read-only context. A download is an explicit
         // user action, so its audit insert is isolated in a write-enabled
@@ -1089,10 +1131,10 @@ async function downloadTenantBackup(id, { tenantId = null, readOnly = false, act
             backupId: record.id,
             eventType: 'BACKUP_DOWNLOADED',
             actorUserId,
-            metadata: { sizeBytes: raw.body.length, checksumVerified: true }
+            metadata: { sizeBytes: verified.size, checksumVerified: true, manifestVerified: true }
         }));
     }
-    return { record, body: raw.body, contentType: raw.contentType || 'application/gzip', fileName: record.fileName };
+    return { record, body: verified.body, contentType: verified.contentType || 'application/gzip', fileName: record.fileName };
 }
 
 function restoreScalar(value) {
@@ -1329,17 +1371,25 @@ async function deleteTenantBackup(id, { tenantId = null, actorUserId = null, rea
     const trustedTenantId = tenantScopeId(tenantId);
     const normalizedReason = String(reason || '').trim().slice(0, 1000);
     if (!normalizedReason) throw backupError('A reason is required before deleting a backup.', 400, 'BACKUP_DELETE_REASON_REQUIRED');
-    const record = await getTenantBackupRecord(id, { tenantId: trustedTenantId, includeStorageKey: true });
-    if (!record) throw backupError('The requested backup is not available.', 404, 'BACKUP_NOT_FOUND');
-    if (['RUNNING', 'UPLOADED', 'VERIFYING'].includes(record.status)) throw backupError('This backup is still being processed.', 409, 'BACKUP_BUSY');
+    await ensureRecoveryTables();
     const storage = storageService || createObjectStorageService();
-    if (record.storageKey) await storage.deletePrivateObject({ tenantId: trustedTenantId, key: record.storageKey });
-    const result = await (await getPool()).request()
-        .input('id', sql.BigInt, Number(id))
-        .input('tenantId', sql.Int, trustedTenantId)
-        .query(`UPDATE dbo.gym_backup_records SET status='DELETED',updated_at=SYSUTCDATETIME() WHERE id=@id AND tenant_id=@tenantId AND status NOT IN ('RUNNING','UPLOADED','VERIFYING');`);
-    if (!result.rowsAffected.some((count) => Number(count) > 0)) throw backupError('The backup could not be deleted.', 409, 'BACKUP_DELETE_CONFLICT');
-    await writeTenantBackupAudit({ tenantId: trustedTenantId, backupId: Number(id), eventType: 'BACKUP_DELETED', actorUserId, reason: normalizedReason });
+    const deletion = await withTenantRecoveryLock(trustedTenantId, async (transaction) => {
+        const recordQuery = await transaction.request()
+            .input('id', sql.BigInt, Number(id))
+            .input('tenantId', sql.Int, trustedTenantId)
+            .query(`${recordSelect('tenant').replace(' FROM dbo.gym_backup_records', ' FROM dbo.gym_backup_records WITH (UPDLOCK,HOLDLOCK)')} WHERE id=@id AND tenant_id=@tenantId;`);
+        const record = mapRecord(recordQuery.recordset[0], 'tenant', { includeStorageKey: true });
+        if (!record) throw backupError('The requested backup is not available.', 404, 'BACKUP_NOT_FOUND');
+        if (['RUNNING', 'UPLOADED', 'VERIFYING'].includes(record.status)) throw backupError('This backup is still being processed.', 409, 'BACKUP_BUSY');
+        const artifactCleanup = await deleteTenantArtifactAndVerify(storage, { tenantId: trustedTenantId, key: record.storageKey });
+        const result = await transaction.request()
+            .input('id', sql.BigInt, Number(id))
+            .input('tenantId', sql.Int, trustedTenantId)
+            .query(`UPDATE dbo.gym_backup_records SET status='DELETED',updated_at=SYSUTCDATETIME() WHERE id=@id AND tenant_id=@tenantId AND status NOT IN ('RUNNING','UPLOADED','VERIFYING');`);
+        if (!result.rowsAffected.some((count) => Number(count) > 0)) throw backupError('The backup could not be deleted.', 409, 'BACKUP_DELETE_CONFLICT');
+        return { id: Number(id), artifact: artifactCleanup.status };
+    });
+    await writeTenantBackupAudit({ tenantId: trustedTenantId, backupId: Number(id), eventType: 'BACKUP_DELETED', actorUserId, reason: normalizedReason, metadata: { artifact: deletion.artifact } });
     return { id: Number(id), deleted: true };
 }
 
@@ -1517,14 +1567,13 @@ async function createPlatformBackup({ backupType = 'platform_daily', format = 'j
         let artifactCleanup = 'not_needed';
         if (stored?.key) {
             try {
-                await storage.deletePrivatePlatformObject({ key: stored.key });
-                artifactCleanup = 'completed';
+                artifactCleanup = (await deletePlatformArtifactAndVerify(storage, { key: stored.key })).status;
             } catch (_) {
                 artifactCleanup = 'pending';
             }
         }
         const failureValues = { status: 'FAILED', errorCode, completedAt: new Date(now) };
-        if (stored?.key && artifactCleanup === 'completed') failureValues.storageKey = null;
+        if (stored?.key && ['deleted', 'missing'].includes(artifactCleanup)) failureValues.storageKey = null;
         await updatePlatformRecord(claim.record.id, failureValues).catch(() => {});
         await writePlatformBackupAudit({
             backupId: claim.record.id,
@@ -1584,11 +1633,18 @@ async function downloadPlatformBackup(id, { readOnly = false, actorUserId = null
     if (!record) throw backupError('The requested platform backup is not available.', 404, 'BACKUP_NOT_FOUND');
     if (record.status !== 'VERIFIED') throw backupError('Only verified backups can be downloaded.', 409, 'BACKUP_NOT_VERIFIED');
     const storage = storageService || createObjectStorageService();
-    const raw = await storage.getPrivatePlatformObject({ key: record.storageKey });
-    if (!raw || !Buffer.isBuffer(raw.body)) throw backupError('The platform backup artifact is not available.', 404, 'BACKUP_ARTIFACT_MISSING');
-    const checksum = crypto.createHash('sha256').update(raw.body).digest('hex');
-    if (checksum !== String(record.checksum || '').toLowerCase()) throw backupError('The platform backup artifact failed integrity verification.', 503, 'BACKUP_ARTIFACT_CHECKSUM_MISMATCH');
-    await inspectPlatformBackupBuffer(raw.body);
+    if (!record.storageKey || !record.checksum || !Number.isInteger(Number(record.sizeBytes)) || Number(record.sizeBytes) <= 0) {
+        throw backupError('The verified platform backup metadata is incomplete.', 503, 'BACKUP_METADATA_INCOMPLETE');
+    }
+    const verified = await verifyStoredPlatformObject(storage, {
+        key: record.storageKey,
+        expectedSize: record.sizeBytes,
+        expectedChecksum: record.checksum,
+        returnBody: true
+    });
+    if (record.rowCount != null && Number(record.rowCount) !== Number(verified.rowCount)) {
+        throw backupError('The platform backup metadata does not match its verified artifact.', 503, 'BACKUP_METADATA_MISMATCH');
+    }
     if (auditDownload) {
         // Platform download routes are normal GETs and therefore inherit a
         // read-only request context. Audit the deliberate download in an
@@ -1597,10 +1653,10 @@ async function downloadPlatformBackup(id, { readOnly = false, actorUserId = null
             backupId: record.id,
             eventType: 'PLATFORM_BACKUP_DOWNLOADED',
             actorUserId,
-            metadata: { sizeBytes: raw.body.length, checksumVerified: true }
+            metadata: { sizeBytes: verified.size, checksumVerified: true, manifestVerified: true }
         }));
     }
-    return { record, body: raw.body, contentType: raw.contentType || 'application/gzip', fileName: record.fileName };
+    return { record, body: verified.body, contentType: verified.contentType || 'application/gzip', fileName: record.fileName };
 }
 
 async function claimTenantRetentionRecord(pool, tenantId, id) {
@@ -1702,9 +1758,7 @@ async function cleanupExpiredBackups({ now = new Date(), concurrency = 2, storag
         try {
             const claim = await claimTenantRetentionRecord(pool, tenantId, id);
             if (!claim.claimed) return { id, tenantId, status: 'skipped' };
-            const artifactDeleted = claim.storageKey
-                ? await storage.deletePrivateObject({ tenantId, key: claim.storageKey })
-                : true;
+            const artifactCleanup = await deleteTenantArtifactAndVerify(storage, { tenantId, key: claim.storageKey });
             const update = await pool.request()
                 .input('id', sql.BigInt, id)
                 .input('tenantId', sql.Int, tenantId)
@@ -1716,7 +1770,7 @@ async function cleanupExpiredBackups({ now = new Date(), concurrency = 2, storag
                 eventType: 'BACKUP_DELETED',
                 actorUserId,
                 reason,
-                metadata: { retention: true, artifact: claim.storageKey ? (artifactDeleted ? 'deleted' : 'missing') : 'not_stored' }
+                metadata: { retention: true, artifact: artifactCleanup.status }
             });
             return { id, tenantId, status: 'deleted' };
         } catch (error) {
@@ -1731,9 +1785,7 @@ async function cleanupExpiredBackups({ now = new Date(), concurrency = 2, storag
         try {
             const claim = await claimPlatformRetentionRecord(pool, id);
             if (!claim.claimed) return { id, status: 'skipped' };
-            const artifactDeleted = claim.storageKey
-                ? await storage.deletePrivatePlatformObject({ key: claim.storageKey })
-                : true;
+            const artifactCleanup = await deletePlatformArtifactAndVerify(storage, { key: claim.storageKey });
             const update = await pool.request()
                 .input('id', sql.BigInt, id)
                 .query("UPDATE dbo.gym_platform_backup_records SET status='DELETED',updated_at=SYSUTCDATETIME() WHERE id=@id AND status='EXPIRED';");
@@ -1743,7 +1795,7 @@ async function cleanupExpiredBackups({ now = new Date(), concurrency = 2, storag
                 eventType: 'PLATFORM_BACKUP_DELETED',
                 actorUserId,
                 reason,
-                metadata: { retention: true, artifact: claim.storageKey ? (artifactDeleted ? 'deleted' : 'missing') : 'not_stored' }
+                metadata: { retention: true, artifact: artifactCleanup.status }
             });
             return { id, status: 'deleted' };
         } catch (error) {
@@ -1964,6 +2016,8 @@ module.exports = {
     createBackupRecoveryService,
     createPlatformBackup,
     createTenantBackup,
+    deletePlatformArtifactAndVerify,
+    deleteTenantArtifactAndVerify,
     ensureRecoveryTables,
     getPlatformBackupHealth,
     getTenantBackupCoverageStatus,

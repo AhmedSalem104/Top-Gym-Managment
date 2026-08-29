@@ -62,8 +62,11 @@ function createBackupController({ backupService, backupRecoveryService, branding
         // private storage-backed records below.
         download: async (request, response) => {
             const requestedFormat = String(request.query.format || 'json.gz').toLowerCase();
-            if (!['json.gz', 'bak'].includes(requestedFormat)) {
-                return response.status(400).json({ error: 'Unsupported backup format. Choose .json.gz or .bak.' });
+            if (requestedFormat !== 'json.gz') {
+                return response.status(409).json({
+                    error: 'Native SQL Server .bak backups are not available in this deployment. Use the verified .json.gz format.',
+                    code: 'BACKUP_NATIVE_FORMAT_UNAVAILABLE'
+                });
             }
             const backup = await createBackup({ format: requestedFormat, readOnly: request.readOnlyRequest });
             const brandName = brandingService ? await brandingService.getPublicBrandName('Logic Fit', { readOnly: request.readOnlyRequest }) : 'Logic Fit';
