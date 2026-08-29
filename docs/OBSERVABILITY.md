@@ -19,6 +19,13 @@ Each request receives a safe correlation identifier from
   driver exceptions can contain internal implementation details. Use the
   request ID plus the deployment/provider logs for controlled diagnosis.
 
+Performance request logs are opt-in. In Development/Staging set
+`PERFORMANCE_METRICS=true`; in Production set both
+`PERFORMANCE_METRICS=true` and `PERFORMANCE_METRICS_PRODUCTION=true` only
+after reviewing provider log volume and retention. The second flag prevents a
+development environment file from enabling production request metrics by
+accident.
+
 ## Health endpoint
 
 `GET /api/health` is tenant-neutral and verifies application routing and SQL

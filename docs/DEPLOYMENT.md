@@ -50,6 +50,12 @@ that the SQL host can absorb the additional concurrency. `MSSQL_POOL_MIN=0`
 allows idle instances to release connections; the application still reuses one
 pool within a warm instance.
 
+Safe request timing metrics are disabled by default. For a controlled
+Production verification, configure both `PERFORMANCE_METRICS=true` and
+`PERFORMANCE_METRICS_PRODUCTION=true`, then inspect provider log volume and
+retention. The emitted fields are bounded route/status/timing metadata only;
+they do not include SQL, request bodies, cookies or credentials.
+
 The repository does not claim live connection capacity or timeout behavior from
 these configuration values. Those require a safe Staging/Production check and
 remain in `docs/PRODUCTION-VERIFICATION-DEBT.md`.

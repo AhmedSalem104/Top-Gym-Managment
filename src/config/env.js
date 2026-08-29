@@ -34,8 +34,13 @@ const config = Object.freeze({
     defaultTenantSlug: getEnv('DEFAULT_TENANT_SLUG', 'top-gym'),
     authSessionTouchIntervalMs: getNumberEnv('AUTH_SESSION_TOUCH_INTERVAL_MS', 60_000),
     saasSyncIntervalMs: getNumberEnv('SAAS_SYNC_INTERVAL_MS', 30_000),
+    // Production metrics are opt-in twice so a development `.env` copied to
+    // a deployment cannot enable request logging by accident. The middleware
+    // emits only bounded route/timing metadata; it never logs request bodies,
+    // SQL, cookies or credentials.
     performanceMetricsEnabled: getBooleanEnv('PERFORMANCE_METRICS', false)
-        && getEnv('NODE_ENV', 'development').trim().toLowerCase() !== 'production',
+        && (getEnv('NODE_ENV', 'development').trim().toLowerCase() !== 'production'
+            || getBooleanEnv('PERFORMANCE_METRICS_PRODUCTION', false)),
     cronSecret: getEnv('CRON_SECRET'),
     publicAppUrl: getEnv('PUBLIC_APP_URL'),
     membershipCodeSecret: getEnv('MEMBERSHIP_CODE_SECRET'),

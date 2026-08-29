@@ -59,3 +59,29 @@ test('SQL connection string rejects an invalid port early', () => {
         /port is invalid/i
     );
 });
+
+test('production performance metrics require an explicit second opt-in', () => {
+    const script = `
+        const { config } = require('./src/config/env');
+        process.stdout.write(String(config.performanceMetricsEnabled));
+    `;
+    const baseEnvironment = {
+        ...process.env,
+        NODE_ENV: 'production',
+        PERFORMANCE_METRICS: 'true'
+    };
+    const disabled = spawnSync(process.execPath, ['-e', script], {
+        cwd: require('node:path').join(__dirname, '..', '..'),
+        env: { ...baseEnvironment, PERFORMANCE_METRICS_PRODUCTION: 'false' },
+        encoding: 'utf8'
+    });
+    const enabled = spawnSync(process.execPath, ['-e', script], {
+        cwd: require('node:path').join(__dirname, '..', '..'),
+        env: { ...baseEnvironment, PERFORMANCE_METRICS_PRODUCTION: 'true' },
+        encoding: 'utf8'
+    });
+    assert.equal(disabled.status, 0, disabled.stderr);
+    assert.equal(enabled.status, 0, enabled.stderr);
+    assert.equal(disabled.stdout, 'false');
+    assert.equal(enabled.stdout, 'true');
+});
