@@ -84,6 +84,16 @@
             styles: [],
             scripts: ['/js/pages/management/backup.js?v=11']
         },
+        'member-subscription-requests': {
+            dependencies: [],
+            styles: [],
+            scripts: ['/js/pages/management/member-subscription-requests.js?v=1']
+        },
+        'portal-analytics': {
+            dependencies: [],
+            styles: [],
+            scripts: ['/js/pages/management/portal-analytics.js?v=1']
+        },
         permissions: {
             styles: [],
             scripts: ['/js/pages/management/permissions.js?v=4', '/js/pages/management/auth-users.js?v=3']

@@ -2,7 +2,7 @@
     if (window.__topGymPageTabsLoaded) return;
     window.__topGymPageTabsLoaded = true;
 
-    const validTabs = new Set(['dashboard', 'members', 'expenses', 'reports', 'management', 'branding', 'saas-billing', 'backup-history', 'permissions', 'attendance', 'library', 'trainees', 'intelligence', 'feedback', 'store']);
+    const validTabs = new Set(['dashboard', 'members', 'expenses', 'reports', 'management', 'branding', 'saas-billing', 'backup-history', 'permissions', 'attendance', 'library', 'trainees', 'intelligence', 'feedback', 'store', 'member-subscription-requests', 'portal-analytics']);
     let activationToken = 0;
     let activeTabName = null;
     const SIDEBAR_PIN_STORAGE_KEY = 'topgym.sidebar.pinned';
@@ -74,7 +74,7 @@
         if (!validTabs.has(name)) return 'dashboard';
         if (window.topGymAuth?.isReady?.()) {
             if (!window.topGymAuth.getUser?.()) return 'dashboard';
-            if ((name === 'management' || name === 'branding' || name === 'saas-billing' || name === 'backup-history') && !window.topGymAuth.isOwner?.()) return window.topGymPermissions?.firstAccessibleTab?.(window.topGymAuth.getUser?.()) || 'members';
+            if ((name === 'management' || name === 'branding' || name === 'saas-billing' || name === 'backup-history' || name === 'member-subscription-requests' || name === 'portal-analytics') && !window.topGymAuth.isOwner?.()) return window.topGymPermissions?.firstAccessibleTab?.(window.topGymAuth.getUser?.()) || 'members';
             if (!window.topGymAuth.canAccessTab(name)) return window.topGymPermissions?.firstAccessibleTab?.(window.topGymAuth.getUser?.()) || 'members';
         }
         return name;
@@ -92,6 +92,8 @@
         const brandingSection = document.getElementById('brandingSection');
         const saasBillingSection = document.getElementById('saasBillingSection');
         const backupHistorySection = document.getElementById('backupHistorySection');
+        const memberSubscriptionRequestsSection = document.getElementById('memberSubscriptionRequestsSection');
+        const portalAnalyticsSection = document.getElementById('portalAnalyticsSection');
         const analyticsSection = document.getElementById('dashboardAnalytics');
         const dashboardStoreSummary = document.getElementById('dashboardStoreSummary');
         const reportsSection = document.getElementById('reportsSection');
@@ -109,6 +111,8 @@
         const isBranding = name === 'branding';
         const isSaasBilling = name === 'saas-billing';
         const isBackupHistory = name === 'backup-history';
+        const isMemberSubscriptionRequests = name === 'member-subscription-requests';
+        const isPortalAnalytics = name === 'portal-analytics';
         const isPermissions = name === 'permissions';
         const isReports = name === 'reports';
         const isFeedback = name === 'feedback';
@@ -127,6 +131,8 @@
         setHidden(brandingSection, !isBranding);
         setHidden(saasBillingSection, !isSaasBilling);
         setHidden(backupHistorySection, !isBackupHistory);
+        setHidden(memberSubscriptionRequestsSection, !isMemberSubscriptionRequests);
+        setHidden(portalAnalyticsSection, !isPortalAnalytics);
         const hideAnalytics = !isDashboard || !window.topGymAuth?.isOwner?.();
         setHidden(analyticsSection, hideAnalytics);
         setHidden(dashboardStoreSummary, !isDashboard);
@@ -139,10 +145,10 @@
         setHidden(traineesSection, !isTrainees);
         setHidden(intelligenceSection, !isIntelligence);
         setHidden(storeSection, !isStore);
-        setHidden(workspace, isDashboard || isExpenses || isReports || isManagement || isBranding || isSaasBilling || isBackupHistory || isPermissions || isAttendance || isLibrary || isTrainees || isIntelligence || isFeedback || isStore);
+        setHidden(workspace, isDashboard || isExpenses || isReports || isManagement || isBranding || isSaasBilling || isBackupHistory || isMemberSubscriptionRequests || isPortalAnalytics || isPermissions || isAttendance || isLibrary || isTrainees || isIntelligence || isFeedback || isStore);
         setHidden(membersSection, !isMembers);
 
-        const tabPanelIds = { 'saas-billing': 'saasBillingSection', 'backup-history': 'backupHistorySection' };
+        const tabPanelIds = { 'saas-billing': 'saasBillingSection', 'backup-history': 'backupHistorySection', 'member-subscription-requests': 'memberSubscriptionRequestsSection', 'portal-analytics': 'portalAnalyticsSection' };
         document.querySelectorAll('[data-page-tab]').forEach((button) => {
             const active = button.dataset.pageTab === name;
             button.classList.toggle('active', active);

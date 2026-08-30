@@ -106,3 +106,26 @@ test('member request validation rejects inactive plans and types server-side', (
     assert.match(service, /MEMBERSHIP_PLAN_NOT_AVAILABLE/);
     assert.match(service, /MEMBERSHIP_TYPE_NOT_AVAILABLE/);
 });
+
+test('owner member request review and portal analytics surfaces stay tenant-scoped and owner-only', () => {
+    const routes = read('src/permissions/route-permissions.js');
+    const pageTabs = read('public/js/page-tabs.js');
+    const permissions = read('public/js/core/permissions.js');
+    const loader = read('public/js/feature-loader.js');
+    const page = read('public/index.html');
+    assert.match(routes, /member-subscription-requests/);
+    assert.match(routes, /PORTAL_ANALYTICS_READ/);
+    assert.match(pageTabs, /member-subscription-requests/);
+    assert.match(pageTabs, /portal-analytics/);
+    assert.match(permissions, /'member-subscription-requests': 'member\.subscription_requests\.read'/);
+    assert.match(permissions, /'portal-analytics': 'portal\.analytics\.read'/);
+    assert.match(loader, /member-subscription-requests\.js/);
+    assert.match(loader, /portal-analytics\.js/);
+    assert.match(page, /id="memberSubscriptionRequestsSection"[^>]+data-owner-only/);
+    assert.match(page, /id="portalAnalyticsSection"[^>]+data-owner-only/);
+    assert.match(page, /id="memberSubscriptionRequestsRefresh"[^>]+data-async-action="false"/);
+    assert.match(page, /id="portalAnalyticsRefresh"[^>]+data-async-action="false"/);
+    assert.match(read('public/js/pages/management/member-subscription-requests.js'), /data-async-action="false"/);
+    assert.match(read('public/js/pages/management/member-subscription-requests.js'), new RegExp('api/member-subscription-requests'));
+    assert.match(read('public/js/pages/management/portal-analytics.js'), new RegExp('api/portal/analytics'));
+});
