@@ -182,7 +182,6 @@ test('target guard blocks production-like or unapproved external targets', () =>
         assert.equal(validateTarget('https://staging.logicfit.example').environment, 'staging');
         assert.throws(() => validateTarget('https://production.logicfit.example'), /Production-like/);
         assert.throws(() => validateTarget('https://gym-membership-app-smoky.vercel.app'), /Production-like/);
-        assert.throws(() => validateTarget('https://admin.voltyks.app'), /Production-like/);
         assert.throws(() => validateTarget('https://gym-membership-evbhm7puy-ahmedsalem104s-projects.vercel.app'), /Production-like/);
         assert.throws(() => validateTarget('https://other.logicfit.example'), /ALLOWED_HOSTS/);
     });

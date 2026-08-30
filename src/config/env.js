@@ -40,7 +40,10 @@ const config = Object.freeze({
     authPlatformAdminEmail: getEnv('AUTH_PLATFORM_ADMIN_EMAIL'),
     authPlatformAdminName: getEnv('AUTH_PLATFORM_ADMIN_NAME', 'Platform Admin'),
     authPlatformAdminPassword: getEnv('AUTH_PLATFORM_ADMIN_PASSWORD'),
-    platformAdminHost: getEnv('PLATFORM_ADMIN_HOST', 'admin.voltyks.app'),
+    // The platform admin has a canonical path (`/platform-admin`). A host
+    // alias is optional and must be configured explicitly only for a domain
+    // controlled and verified by the deployment owner.
+    platformAdminHost: getEnv('PLATFORM_ADMIN_HOST'),
     defaultTenantSlug: getEnv('DEFAULT_TENANT_SLUG', 'top-gym'),
     authSessionTouchIntervalMs: getNumberEnv('AUTH_SESSION_TOUCH_INTERVAL_MS', 60_000),
     saasSyncIntervalMs: getNumberEnv('SAAS_SYNC_INTERVAL_MS', 30_000),

@@ -55,7 +55,9 @@ AUTH_SESSION_DAYS=7
 AUTH_PLATFORM_ADMIN_EMAIL=platform-admin@example.com
 AUTH_PLATFORM_ADMIN_NAME=Platform Admin
 AUTH_PLATFORM_ADMIN_PASSWORD=...
-PLATFORM_ADMIN_HOST=admin.voltyks.app
+# Optional: only a DNS host controlled and verified by the deployment owner.
+# Leave empty to use the canonical /platform-admin path.
+PLATFORM_ADMIN_HOST=
 DEFAULT_TENANT_SLUG=top-gym
 TRUST_PROXY_HOPS=1
 ```

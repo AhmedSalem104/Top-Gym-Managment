@@ -15,8 +15,7 @@ const { todayInTimeZone } = require('../src/utils/date');
 const LOCAL_HOST_PATTERN = /^https?:\/\/(?:127\.0\.0\.1|localhost)(?::\d+)?$/i;
 const ALLOWED_ENVIRONMENTS = new Set(['local', 'development', 'test', 'staging']);
 const KNOWN_PRODUCTION_HOSTS = new Set([
-    'gym-membership-app-smoky.vercel.app',
-    'admin.voltyks.app'
+    'gym-membership-app-smoky.vercel.app'
 ]);
 const KNOWN_PRODUCTION_DEPLOYMENT_PATTERN = /^gym-membership-[a-z0-9]+-ahmedsalem104s-projects\.vercel\.app$/i;
 const DEFAULT_SAMPLES = 5;
