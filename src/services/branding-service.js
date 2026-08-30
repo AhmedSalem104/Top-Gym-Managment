@@ -1,5 +1,6 @@
 'use strict';
 
+const crypto = require('node:crypto');
 const { getPool, sql } = require('../database');
 const { withTransaction } = require('../database/transaction');
 const { currentTenantId } = require('../tenancy/tenant-context');
@@ -110,7 +111,12 @@ BEGIN
         scope VARCHAR(10) NOT NULL,
         mime_type VARCHAR(80) NOT NULL,
         file_name NVARCHAR(255) NULL,
-        content VARBINARY(MAX) NOT NULL,
+        content VARBINARY(MAX) NULL,
+        storage_key NVARCHAR(512) NULL,
+        storage_provider VARCHAR(40) NULL,
+        storage_size_bytes BIGINT NULL,
+        storage_checksum_sha256 CHAR(64) NULL,
+        storage_verified_at DATETIME2(0) NULL,
         width INT NULL,
         height INT NULL,
         updated_by_user_id INT NULL,
@@ -119,6 +125,26 @@ BEGIN
         CONSTRAINT CK_gym_branding_assets_scope CHECK (scope IN ('draft', 'published')),
         CONSTRAINT UQ_gym_branding_assets_scope_key UNIQUE (scope, asset_key)
     );
+END;
+IF OBJECT_ID(N'dbo.gym_branding_assets', N'U') IS NOT NULL
+BEGIN
+    IF COL_LENGTH(N'dbo.gym_branding_assets', N'storage_key') IS NULL
+        ALTER TABLE dbo.gym_branding_assets ADD storage_key NVARCHAR(512) NULL;
+    IF COL_LENGTH(N'dbo.gym_branding_assets', N'storage_provider') IS NULL
+        ALTER TABLE dbo.gym_branding_assets ADD storage_provider VARCHAR(40) NULL;
+    IF COL_LENGTH(N'dbo.gym_branding_assets', N'storage_size_bytes') IS NULL
+        ALTER TABLE dbo.gym_branding_assets ADD storage_size_bytes BIGINT NULL;
+    IF COL_LENGTH(N'dbo.gym_branding_assets', N'storage_checksum_sha256') IS NULL
+        ALTER TABLE dbo.gym_branding_assets ADD storage_checksum_sha256 CHAR(64) NULL;
+    IF COL_LENGTH(N'dbo.gym_branding_assets', N'storage_verified_at') IS NULL
+        ALTER TABLE dbo.gym_branding_assets ADD storage_verified_at DATETIME2(0) NULL;
+    IF EXISTS (
+        SELECT 1 FROM sys.columns
+        WHERE object_id=OBJECT_ID(N'dbo.gym_branding_assets')
+          AND name=N'content'
+          AND is_nullable=0
+    )
+        EXEC(N'ALTER TABLE dbo.gym_branding_assets ALTER COLUMN content VARBINARY(MAX) NULL;');
 END;
 IF OBJECT_ID(N'dbo.gym_branding_audit', N'U') IS NULL
 BEGIN
@@ -139,6 +165,51 @@ IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_gym_branding_audit_cr
 let readyPromise;
 const publicCache = new Map();
 const brandingTenantRows = new Set();
+let objectStorageService = null;
+
+function configureObjectStorageService(service) {
+    objectStorageService = service || null;
+}
+
+function requireObjectStorageService() {
+    if (objectStorageService?.isConfigured) return objectStorageService;
+    const error = new Error('Private object storage is not configured.');
+    error.statusCode = 503;
+    error.expose = false;
+    error.code = 'PRIVATE_OBJECT_STORAGE_NOT_CONFIGURED';
+    throw error;
+}
+
+function storageContentError(message, code) {
+    const error = new Error(message);
+    error.statusCode = 503;
+    error.expose = false;
+    error.code = code;
+    return error;
+}
+
+function normalizeStorageFailure(error) {
+    if (!['OBJECT_STORAGE_PROVIDER_UNAVAILABLE', 'OBJECT_STORAGE_PROVIDER_REQUEST_FAILED'].includes(error?.code)) return error;
+    const safeError = storageContentError('Private object storage is unavailable.', 'PRIVATE_OBJECT_STORAGE_UNAVAILABLE');
+    safeError.cause = error;
+    return safeError;
+}
+
+function assertStoredAssetContent(asset, object) {
+    if (!object?.body || !Buffer.isBuffer(object.body)) {
+        throw storageContentError('The stored branding asset could not be read.', 'STORAGE_OBJECT_NOT_FOUND');
+    }
+    if (asset.storage_size_bytes != null && Number(asset.storage_size_bytes) !== object.body.length) {
+        throw storageContentError('The stored branding asset size is invalid.', 'STORAGE_SIZE_MISMATCH');
+    }
+    if (asset.storage_checksum_sha256) {
+        const checksum = crypto.createHash('sha256').update(object.body).digest('hex');
+        if (checksum !== String(asset.storage_checksum_sha256).trim().toLowerCase()) {
+            throw storageContentError('The stored branding asset integrity check failed.', 'STORAGE_CHECKSUM_MISMATCH');
+        }
+    }
+    return object.body;
+}
 
 function brandingTenantId() {
     return currentTenantId({ required: true });
@@ -489,6 +560,25 @@ async function assetMetadata(scope) {
     return new Map(result.recordset.map((row) => [String(row.asset_key), { key: String(row.asset_key), mimeType: row.mime_type, fileName: row.file_name, width: Number(row.width || 0), height: Number(row.height || 0), updatedAt: row.updated_at }]));
 }
 
+async function deleteUnreferencedStorageObject(tenantId, storageKey, executor = null) {
+    if (!storageKey || !objectStorageService?.isConfigured) return false;
+    const database = executor || await getPool();
+    const reference = await database.request()
+        .input('tenantId', sql.Int, tenantId)
+        .input('storageKey', sql.NVarChar(512), storageKey)
+        .query('SELECT TOP (1) 1 AS referenced FROM dbo.gym_branding_assets WHERE tenant_id=@tenantId AND storage_key=@storageKey;');
+    if (reference.recordset.length) return false;
+    try {
+        await objectStorageService.deletePrivateObject({ tenantId, key: storageKey });
+        return true;
+    } catch (_) {
+        // Database metadata is already authoritative. A provider deletion
+        // failure is left for a later reconciliation/cleanup pass and must
+        // not turn a successful branding change into a failed request.
+        return false;
+    }
+}
+
 function decorateConfig(config, scope, version, metadata, tenantSlug = '') {
     const result = clone(config);
     result.assets = Object.fromEntries(ASSET_KEYS.map((key) => {
@@ -504,9 +594,9 @@ function decorateConfig(config, scope, version, metadata, tenantSlug = '') {
     return result;
 }
 
-async function audit(action, actorUserId, version, details) {
-    const pool = await getPool();
-    await pool.request().input('tenantId', sql.Int, brandingTenantId()).input('action', sql.VarChar(30), action).input('version', sql.Int, version || null).input('actorUserId', sql.Int, actorUserId || null).input('details', sql.NVarChar(1000), details || null).query('INSERT INTO dbo.gym_branding_audit (tenant_id, action, version, actor_user_id, details) VALUES (@tenantId,@action,@version,@actorUserId,@details);');
+async function audit(action, actorUserId, version, details, executor = null) {
+    const database = executor || await getPool();
+    await database.request().input('tenantId', sql.Int, brandingTenantId()).input('action', sql.VarChar(30), action).input('version', sql.Int, version || null).input('actorUserId', sql.Int, actorUserId || null).input('details', sql.NVarChar(1000), details || null).query('INSERT INTO dbo.gym_branding_audit (tenant_id, action, version, actor_user_id, details) VALUES (@tenantId,@action,@version,@actorUserId,@details);');
 }
 
 async function latestAudit() {
@@ -587,6 +677,7 @@ async function publish(actorUserId) {
     let publishedVersion = 1;
     const tenantId = brandingTenantId();
     const defaults = await defaultBrandingForTenant();
+    const staleStorageKeys = new Set();
     await withTransaction(async (transaction) => {
         const rowResult = await transaction.request().input('brandingId', sql.TinyInt, BRANDING_ID).input('tenantId', sql.Int, tenantId).query('SELECT TOP (1) * FROM dbo.gym_branding_config WITH (UPDLOCK, HOLDLOCK) WHERE id=@brandingId AND tenant_id=@tenantId;');
         const row = rowResult.recordset[0];
@@ -597,13 +688,36 @@ async function publish(actorUserId) {
         await transaction.request().input('brandingId', sql.TinyInt, BRANDING_ID).input('tenantId', sql.Int, tenantId).input('config', sql.NVarChar(sql.MAX), JSON.stringify(config)).input('actorUserId', sql.Int, actorUserId || null).input('version', sql.Int, publishedVersion).query('UPDATE dbo.gym_branding_config SET published_config=@config, version=@version, published_by_user_id=@actorUserId, published_at=SYSUTCDATETIME(), updated_at=SYSUTCDATETIME() WHERE id=@brandingId AND tenant_id=@tenantId;');
 
         const references = new Set(ASSET_KEYS.map((key) => config.assets[key]?.key).filter(Boolean));
-        const draftAssets = await transaction.request().input('tenantId', sql.Int, tenantId).query("SELECT asset_key, mime_type, file_name, content, width, height FROM dbo.gym_branding_assets WHERE scope='draft' AND tenant_id=@tenantId;");
+        const previousPublished = await transaction.request().input('tenantId', sql.Int, tenantId).query("SELECT asset_key, storage_key FROM dbo.gym_branding_assets WHERE scope='published' AND tenant_id=@tenantId AND storage_key IS NOT NULL;");
+        const previousStorageByAssetKey = new Map(previousPublished.recordset.map((item) => [String(item.asset_key), String(item.storage_key)]));
+        const draftAssets = await transaction.request().input('tenantId', sql.Int, tenantId).query("SELECT asset_key, mime_type, file_name, content, storage_key, storage_provider, storage_size_bytes, storage_checksum_sha256, storage_verified_at, width, height FROM dbo.gym_branding_assets WHERE scope='draft' AND tenant_id=@tenantId;");
         for (const asset of draftAssets.recordset.filter((item) => references.has(String(item.asset_key)))) {
-            await transaction.request().input('tenantId', sql.Int, tenantId).input('assetKey', sql.VarChar(40), asset.asset_key).input('mimeType', sql.VarChar(80), asset.mime_type).input('fileName', sql.NVarChar(255), asset.file_name).input('content', sql.VarBinary(sql.MAX), asset.content).input('width', sql.Int, asset.width).input('height', sql.Int, asset.height).input('actorUserId', sql.Int, actorUserId || null).query("UPDATE dbo.gym_branding_assets SET mime_type=@mimeType, file_name=@fileName, content=@content, width=@width, height=@height, updated_by_user_id=@actorUserId, updated_at=SYSUTCDATETIME() WHERE scope='published' AND asset_key=@assetKey AND tenant_id=@tenantId; IF @@ROWCOUNT=0 INSERT INTO dbo.gym_branding_assets(tenant_id,asset_key,scope,mime_type,file_name,content,width,height,updated_by_user_id) VALUES(@tenantId,@assetKey,'published',@mimeType,@fileName,@content,@width,@height,@actorUserId);");
+            const previousStorageKey = previousStorageByAssetKey.get(String(asset.asset_key));
+            if (previousStorageKey && previousStorageKey !== String(asset.storage_key || '')) staleStorageKeys.add(previousStorageKey);
+            const request = transaction.request()
+                .input('tenantId', sql.Int, tenantId)
+                .input('assetKey', sql.VarChar(40), asset.asset_key)
+                .input('mimeType', sql.VarChar(80), asset.mime_type)
+                .input('fileName', sql.NVarChar(255), asset.file_name)
+                .input('content', sql.VarBinary(sql.MAX), asset.storage_key ? null : asset.content)
+                .input('storageKey', sql.NVarChar(512), asset.storage_key || null)
+                .input('storageProvider', sql.VarChar(40), asset.storage_provider || null)
+                .input('storageSizeBytes', sql.BigInt, asset.storage_size_bytes == null ? null : Number(asset.storage_size_bytes))
+                .input('storageChecksum', sql.Char(64), asset.storage_checksum_sha256 || null)
+                .input('storageVerifiedAt', sql.DateTime2(0), asset.storage_verified_at || null)
+                .input('width', sql.Int, asset.width)
+                .input('height', sql.Int, asset.height)
+                .input('actorUserId', sql.Int, actorUserId || null);
+            await request.query("UPDATE dbo.gym_branding_assets SET mime_type=@mimeType, file_name=@fileName, content=@content, storage_key=@storageKey, storage_provider=@storageProvider, storage_size_bytes=@storageSizeBytes, storage_checksum_sha256=@storageChecksum, storage_verified_at=@storageVerifiedAt, width=@width, height=@height, updated_by_user_id=@actorUserId, updated_at=SYSUTCDATETIME() WHERE scope='published' AND asset_key=@assetKey AND tenant_id=@tenantId; IF @@ROWCOUNT=0 INSERT INTO dbo.gym_branding_assets(tenant_id,asset_key,scope,mime_type,file_name,content,storage_key,storage_provider,storage_size_bytes,storage_checksum_sha256,storage_verified_at,width,height,updated_by_user_id) VALUES(@tenantId,@assetKey,'published',@mimeType,@fileName,@content,@storageKey,@storageProvider,@storageSizeBytes,@storageChecksum,@storageVerifiedAt,@width,@height,@actorUserId);");
         }
-        for (const key of ASSET_KEYS.filter((item) => !references.has(item))) await transaction.request().input('tenantId', sql.Int, tenantId).input('assetKey', sql.VarChar(40), key).query("DELETE FROM dbo.gym_branding_assets WHERE scope='published' AND asset_key=@assetKey AND tenant_id=@tenantId;");
-        await transaction.request().input('action', sql.VarChar(30), 'published').input('version', sql.Int, publishedVersion).input('actorUserId', sql.Int, actorUserId || null).input('details', sql.NVarChar(1000), 'تم نشر الهوية على كامل المنصة.').query('INSERT INTO dbo.gym_branding_audit (action,version,actor_user_id,details) VALUES (@action,@version,@actorUserId,@details);');
+        for (const key of ASSET_KEYS.filter((item) => !references.has(item))) {
+            const previousStorageKey = previousStorageByAssetKey.get(key);
+            if (previousStorageKey) staleStorageKeys.add(previousStorageKey);
+            await transaction.request().input('tenantId', sql.Int, tenantId).input('assetKey', sql.VarChar(40), key).query("DELETE FROM dbo.gym_branding_assets WHERE scope='published' AND asset_key=@assetKey AND tenant_id=@tenantId;");
+        }
+        await audit('published', actorUserId, publishedVersion, 'Branding published across the platform.', transaction);
     });
+    for (const storageKey of staleStorageKeys) await deleteUnreferencedStorageObject(tenantId, storageKey);
     invalidatePublicCache();
     return ownerResponse();
 }
@@ -611,8 +725,14 @@ async function publish(actorUserId) {
 async function resetDraft(actorUserId) {
     await ensureBrandingTables();
     const pool = await getPool();
+    const tenantId = brandingTenantId();
+    const previousResult = await pool.request()
+        .input('tenantId', sql.Int, tenantId)
+        .query("SELECT storage_key FROM dbo.gym_branding_assets WHERE scope='draft' AND tenant_id=@tenantId AND storage_key IS NOT NULL;");
+    const previousStorageKeys = previousResult.recordset.map((item) => String(item.storage_key)).filter(Boolean);
     const defaults = await defaultBrandingForTenant(pool);
-    await pool.request().input('brandingId', sql.TinyInt, BRANDING_ID).input('tenantId', sql.Int, brandingTenantId()).input('config', sql.NVarChar(sql.MAX), JSON.stringify(defaults)).input('actorUserId', sql.Int, actorUserId || null).query('UPDATE dbo.gym_branding_config SET draft_config=@config, updated_by_user_id=@actorUserId, updated_at=SYSUTCDATETIME() WHERE id=@brandingId AND tenant_id=@tenantId; DELETE FROM dbo.gym_branding_assets WHERE scope=\'draft\' AND tenant_id=@tenantId;');
+    await pool.request().input('brandingId', sql.TinyInt, BRANDING_ID).input('tenantId', sql.Int, tenantId).input('config', sql.NVarChar(sql.MAX), JSON.stringify(defaults)).input('actorUserId', sql.Int, actorUserId || null).query('UPDATE dbo.gym_branding_config SET draft_config=@config, updated_by_user_id=@actorUserId, updated_at=SYSUTCDATETIME() WHERE id=@brandingId AND tenant_id=@tenantId; DELETE FROM dbo.gym_branding_assets WHERE scope=\'draft\' AND tenant_id=@tenantId;');
+    for (const storageKey of previousStorageKeys) await deleteUnreferencedStorageObject(tenantId, storageKey, pool);
     const row = await readRow();
     await audit('reset', actorUserId, Number(row?.version || 1), 'تمت استعادة المسودة إلى الهوية الافتراضية Logic Fit.');
     return ownerResponse();
@@ -621,28 +741,85 @@ async function resetDraft(actorUserId) {
 async function uploadDraftAsset(input, actorUserId) {
     await ensureBrandingTables();
     const asset = validateAsset(input);
+    const tenantId = brandingTenantId();
+    const storage = requireObjectStorageService();
     const pool = await getPool();
-    await pool.request().input('tenantId', sql.Int, brandingTenantId()).input('assetKey', sql.VarChar(40), asset.key).input('mimeType', sql.VarChar(80), asset.mimeType).input('fileName', sql.NVarChar(255), asset.fileName).input('content', sql.VarBinary(sql.MAX), asset.buffer).input('width', sql.Int, asset.width).input('height', sql.Int, asset.height).input('actorUserId', sql.Int, actorUserId || null).query("UPDATE dbo.gym_branding_assets SET mime_type=@mimeType, file_name=@fileName, content=@content, width=@width, height=@height, updated_by_user_id=@actorUserId, updated_at=SYSUTCDATETIME() WHERE scope='draft' AND asset_key=@assetKey AND tenant_id=@tenantId; IF @@ROWCOUNT=0 INSERT INTO dbo.gym_branding_assets(tenant_id,asset_key,scope,mime_type,file_name,content,width,height,updated_by_user_id) VALUES(@tenantId,@assetKey,'draft',@mimeType,@fileName,@content,@width,@height,@actorUserId);");
-    const row = await readRow();
-    const defaults = await defaultBrandingForTenant(pool);
-    const config = applyTenantIdentity(parseStoredConfig(row?.draft_config), defaults.identity.brandName);
-    const revision = Date.now();
-    config.assets[asset.key] = { key: asset.key, revision };
-    await pool.request().input('brandingId', sql.TinyInt, BRANDING_ID).input('tenantId', sql.Int, brandingTenantId()).input('config', sql.NVarChar(sql.MAX), JSON.stringify(config)).query('UPDATE dbo.gym_branding_config SET draft_config=@config, updated_at=SYSUTCDATETIME() WHERE id=@brandingId AND tenant_id=@tenantId;');
-    await audit('asset_uploaded', actorUserId, Number(row?.version || 1), `تم رفع أصل الهوية: ${asset.key}.`);
-    return { key: asset.key, revision, mimeType: asset.mimeType, fileName: asset.fileName, width: asset.width, height: asset.height, url: `/api/branding/draft-assets/${encodeURIComponent(asset.key)}?v=${revision}` };
+    const previousResult = await pool.request()
+        .input('tenantId', sql.Int, tenantId)
+        .input('assetKey', sql.VarChar(40), asset.key)
+        .query("SELECT TOP (1) storage_key FROM dbo.gym_branding_assets WHERE scope='draft' AND asset_key=@assetKey AND tenant_id=@tenantId;");
+    const previousStorageKey = previousResult.recordset[0]?.storage_key || null;
+    let storedObject;
+    let revision;
+    try {
+        storedObject = await storage.putPrivateObject({
+            tenantId,
+            category: 'branding',
+            objectName: asset.fileName,
+            contentType: asset.mimeType,
+            body: asset.buffer
+        });
+        await storage.verifyPrivateObject({
+            tenantId,
+            key: storedObject.key,
+            expectedSize: asset.buffer.length,
+            expectedChecksum: storedObject.checksum
+        });
+
+        await withTransaction(async (transaction) => {
+            await transaction.request()
+            .input('tenantId', sql.Int, tenantId)
+            .input('assetKey', sql.VarChar(40), asset.key)
+            .input('mimeType', sql.VarChar(80), asset.mimeType)
+            .input('fileName', sql.NVarChar(255), asset.fileName)
+            .input('storageKey', sql.NVarChar(512), storedObject.key)
+            .input('storageProvider', sql.VarChar(40), String(storage.provider || storage.providerStatus || 'private').slice(0, 40))
+            .input('storageSizeBytes', sql.BigInt, asset.buffer.length)
+            .input('storageChecksum', sql.Char(64), storedObject.checksum)
+            .input('width', sql.Int, asset.width)
+            .input('height', sql.Int, asset.height)
+            .input('actorUserId', sql.Int, actorUserId || null)
+            .query("UPDATE dbo.gym_branding_assets SET mime_type=@mimeType, file_name=@fileName, content=NULL, storage_key=@storageKey, storage_provider=@storageProvider, storage_size_bytes=@storageSizeBytes, storage_checksum_sha256=@storageChecksum, storage_verified_at=SYSUTCDATETIME(), width=@width, height=@height, updated_by_user_id=@actorUserId, updated_at=SYSUTCDATETIME() WHERE scope='draft' AND asset_key=@assetKey AND tenant_id=@tenantId; IF @@ROWCOUNT=0 INSERT INTO dbo.gym_branding_assets(tenant_id,asset_key,scope,mime_type,file_name,content,storage_key,storage_provider,storage_size_bytes,storage_checksum_sha256,storage_verified_at,width,height,updated_by_user_id) VALUES(@tenantId,@assetKey,'draft',@mimeType,@fileName,NULL,@storageKey,@storageProvider,@storageSizeBytes,@storageChecksum,SYSUTCDATETIME(),@width,@height,@actorUserId);");
+
+            const row = await readRow(transaction);
+            const defaults = await defaultBrandingForTenant(transaction);
+            revision = Date.now();
+            const config = applyTenantIdentity(parseStoredConfig(row?.draft_config), defaults.identity.brandName);
+            config.assets[asset.key] = { key: asset.key, revision };
+            await transaction.request().input('brandingId', sql.TinyInt, BRANDING_ID).input('tenantId', sql.Int, tenantId).input('config', sql.NVarChar(sql.MAX), JSON.stringify(config)).query('UPDATE dbo.gym_branding_config SET draft_config=@config, updated_at=SYSUTCDATETIME() WHERE id=@brandingId AND tenant_id=@tenantId;');
+            await audit('asset_uploaded', actorUserId, Number(row?.version || 1), `تم رفع أصل الهوية: ${asset.key}.`, transaction);
+        });
+        await deleteUnreferencedStorageObject(tenantId, previousStorageKey, pool);
+        return { key: asset.key, revision, mimeType: asset.mimeType, fileName: asset.fileName, width: asset.width, height: asset.height, url: `/api/branding/draft-assets/${encodeURIComponent(asset.key)}?v=${revision}` };
+    } catch (error) {
+        // Metadata is written only after an integrity-verified object exists.
+        // If the DB/config write fails, remove this new object best-effort and
+        // preserve the original failure for the caller.
+        if (storedObject?.key) await storage.deletePrivateObject({ tenantId, key: storedObject.key }).catch(() => {});
+        throw normalizeStorageFailure(error);
+    }
 }
 
 async function removeDraftAsset(key, actorUserId) {
     await ensureBrandingTables();
     const assetKey = normalizeAssetKey(key);
     const pool = await getPool();
-    await pool.request().input('tenantId', sql.Int, brandingTenantId()).input('assetKey', sql.VarChar(40), assetKey).query("DELETE FROM dbo.gym_branding_assets WHERE scope='draft' AND asset_key=@assetKey AND tenant_id=@tenantId;");
-    const row = await readRow();
-    const defaults = await defaultBrandingForTenant(pool);
+    const tenantId = brandingTenantId();
+    const previousResult = await pool.request()
+        .input('tenantId', sql.Int, tenantId)
+        .input('assetKey', sql.VarChar(40), assetKey)
+        .query("SELECT TOP (1) storage_key FROM dbo.gym_branding_assets WHERE scope='draft' AND asset_key=@assetKey AND tenant_id=@tenantId;");
+    const previousStorageKey = previousResult.recordset[0]?.storage_key || null;
+    let row;
+    await withTransaction(async (transaction) => {
+        await transaction.request().input('tenantId', sql.Int, tenantId).input('assetKey', sql.VarChar(40), assetKey).query("DELETE FROM dbo.gym_branding_assets WHERE scope='draft' AND asset_key=@assetKey AND tenant_id=@tenantId;");
+        row = await readRow(transaction);
+    const defaults = await defaultBrandingForTenant(transaction);
     const config = applyTenantIdentity(parseStoredConfig(row?.draft_config), defaults.identity.brandName);
     config.assets[assetKey] = null;
-    await pool.request().input('brandingId', sql.TinyInt, BRANDING_ID).input('tenantId', sql.Int, brandingTenantId()).input('config', sql.NVarChar(sql.MAX), JSON.stringify(config)).query('UPDATE dbo.gym_branding_config SET draft_config=@config, updated_at=SYSUTCDATETIME() WHERE id=@brandingId AND tenant_id=@tenantId;');
+    await transaction.request().input('brandingId', sql.TinyInt, BRANDING_ID).input('tenantId', sql.Int, tenantId).input('config', sql.NVarChar(sql.MAX), JSON.stringify(config)).query('UPDATE dbo.gym_branding_config SET draft_config=@config, updated_at=SYSUTCDATETIME() WHERE id=@brandingId AND tenant_id=@tenantId;');
+    });
+    await deleteUnreferencedStorageObject(tenantId, previousStorageKey, pool);
     await audit('asset_removed', actorUserId, Number(row?.version || 1), `تم حذف أصل الهوية: ${assetKey}.`);
     return { key: assetKey };
 }
@@ -652,8 +829,19 @@ async function readAsset(key, scope = 'published', { readOnly = false } = {}) {
     const assetKey = normalizeAssetKey(key);
     const normalizedScope = scope === 'draft' ? 'draft' : 'published';
     const pool = await getPool();
-    const result = await pool.request().input('tenantId', sql.Int, brandingTenantId()).input('assetKey', sql.VarChar(40), assetKey).input('scope', sql.VarChar(10), normalizedScope).query('SELECT TOP (1) mime_type, file_name, content FROM dbo.gym_branding_assets WHERE asset_key=@assetKey AND scope=@scope AND tenant_id=@tenantId;');
-    return result.recordset[0] || null;
+    const tenantId = brandingTenantId();
+    const result = await pool.request().input('tenantId', sql.Int, tenantId).input('assetKey', sql.VarChar(40), assetKey).input('scope', sql.VarChar(10), normalizedScope).query('SELECT TOP (1) mime_type, file_name, content, storage_key, storage_provider, storage_size_bytes, storage_checksum_sha256 FROM dbo.gym_branding_assets WHERE asset_key=@assetKey AND scope=@scope AND tenant_id=@tenantId;');
+    const asset = result.recordset[0] || null;
+    if (!asset?.storage_key) return asset;
+    const storage = requireObjectStorageService();
+    let object;
+    try {
+        object = await storage.getPrivateObject({ tenantId, key: asset.storage_key });
+    } catch (error) {
+        throw normalizeStorageFailure(error);
+    }
+    if (!object) throw storageContentError('The stored branding asset is unavailable.', 'STORAGE_OBJECT_NOT_FOUND');
+    return { ...asset, content: assertStoredAssetContent(asset, object) };
 }
 
 module.exports = {
@@ -661,6 +849,7 @@ module.exports = {
     BRANDING_SCHEMA_SQL,
     DEFAULT_BRANDING,
     MAX_ASSET_BYTES,
+    configureObjectStorageService,
     ensureBrandingTables,
     getPlatformBranding,
     getPublicBranding,

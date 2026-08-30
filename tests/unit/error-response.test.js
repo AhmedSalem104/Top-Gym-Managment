@@ -64,3 +64,15 @@ test('missing private backup storage exposes only a safe remediation message', (
     assert.match(message, /التخزين الخاص/);
     assert.doesNotMatch(message, /S3|secret|bucket|path/i);
 });
+
+test('private upload storage failures expose a safe configuration message', () => {
+    const error = Object.assign(new Error('S3 secret and internal endpoint'), {
+        statusCode: 503,
+        code: 'PRIVATE_OBJECT_STORAGE_NOT_CONFIGURED',
+        expose: false
+    });
+    const message = getSafeErrorMessage(error, 503);
+    assert.equal(getClientErrorCode(error, 503), 'PRIVATE_STORAGE_NOT_CONFIGURED');
+    assert.match(message, /التخزين الخاص/);
+    assert.doesNotMatch(message, /S3|secret|endpoint/i);
+});

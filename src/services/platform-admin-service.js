@@ -181,7 +181,7 @@ async function getDashboard({ from = null, to = null, readOnly = false } = {}) {
             (SELECT COUNT_BIG(*) FROM dbo.members) AS members,
             (SELECT COUNT_BIG(*) FROM dbo.gym_user_tenants WHERE status='active') AS users,
             (SELECT COUNT_BIG(*) FROM dbo.gym_ai_generation_log WHERE created_at >= DATEADD(month,DATEDIFF(month,0,SYSUTCDATETIME()),0)) AS ai_generations,
-            ISNULL((SELECT SUM(CONVERT(BIGINT,DATALENGTH(content))) FROM dbo.gym_branding_assets),0)
+            ISNULL((SELECT SUM(CONVERT(BIGINT,COALESCE(storage_size_bytes,DATALENGTH(content)))) FROM dbo.gym_branding_assets),0)
               + ISNULL((SELECT SUM(CONVERT(BIGINT,content_bytes)) FROM dbo.gym_backup_archives),0)
               + ISNULL((SELECT SUM(CONVERT(BIGINT,file_size)) FROM dbo.saas_payment_proofs),0) AS storage_bytes;`),
         pool.request().query("SELECT COUNT_BIG(*) AS total FROM dbo.saas_subscription_requests WHERE status='pending';"),
@@ -198,7 +198,7 @@ async function getDashboard({ from = null, to = null, readOnly = false } = {}) {
             OUTER APPLY (SELECT COUNT_BIG(*) AS total_members FROM dbo.members m WHERE m.tenant_id=t.id) members
             OUTER APPLY (SELECT COUNT_BIG(*) AS total_users FROM dbo.gym_user_tenants ut WHERE ut.tenant_id=t.id AND ut.status='active') users
             OUTER APPLY (SELECT COUNT_BIG(*) AS total_ai_generations FROM dbo.gym_ai_generation_log l WHERE l.tenant_id=t.id AND l.created_at >= DATEADD(month,DATEDIFF(month,0,SYSUTCDATETIME()),0)) ai
-            OUTER APPLY (SELECT ISNULL((SELECT SUM(CONVERT(BIGINT,DATALENGTH(content))) FROM dbo.gym_branding_assets a WHERE a.tenant_id=t.id),0)+ISNULL((SELECT SUM(CONVERT(BIGINT,content_bytes)) FROM dbo.gym_backup_archives b WHERE b.tenant_id=t.id),0)+ISNULL((SELECT SUM(CONVERT(BIGINT,file_size)) FROM dbo.saas_payment_proofs sp WHERE sp.tenant_id=t.id),0) AS storage_bytes) storage
+            OUTER APPLY (SELECT ISNULL((SELECT SUM(CONVERT(BIGINT,COALESCE(storage_size_bytes,DATALENGTH(content)))) FROM dbo.gym_branding_assets a WHERE a.tenant_id=t.id),0)+ISNULL((SELECT SUM(CONVERT(BIGINT,content_bytes)) FROM dbo.gym_backup_archives b WHERE b.tenant_id=t.id),0)+ISNULL((SELECT SUM(CONVERT(BIGINT,file_size)) FROM dbo.saas_payment_proofs sp WHERE sp.tenant_id=t.id),0) AS storage_bytes) storage
             OUTER APPLY (SELECT MAX(ses.last_seen_at) AS last_activity_at FROM dbo.gym_auth_sessions ses INNER JOIN dbo.gym_user_tenants ut2 ON ut2.user_id=ses.user_id WHERE ut2.tenant_id=t.id) last_activity
             ORDER BY t.created_at DESC,t.id DESC;`),
         saasService.listAudit({ limit: 12, readOnly })
@@ -228,7 +228,7 @@ const TENANT_LIST_FROM = `FROM dbo.gym_tenants t
     OUTER APPLY (SELECT COUNT_BIG(*) AS total_members FROM dbo.members m WHERE m.tenant_id=t.id) members
     OUTER APPLY (SELECT COUNT_BIG(*) AS total_users FROM dbo.gym_user_tenants ut2 WHERE ut2.tenant_id=t.id AND ut2.status='active') users
     OUTER APPLY (SELECT COUNT_BIG(*) AS total_ai_generations FROM dbo.gym_ai_generation_log l WHERE l.tenant_id=t.id AND l.created_at >= DATEADD(month,DATEDIFF(month,0,SYSUTCDATETIME()),0)) ai
-    OUTER APPLY (SELECT ISNULL((SELECT SUM(CONVERT(BIGINT,DATALENGTH(content))) FROM dbo.gym_branding_assets a WHERE a.tenant_id=t.id),0)+ISNULL((SELECT SUM(CONVERT(BIGINT,content_bytes)) FROM dbo.gym_backup_archives b WHERE b.tenant_id=t.id),0)+ISNULL((SELECT SUM(CONVERT(BIGINT,file_size)) FROM dbo.saas_payment_proofs sp WHERE sp.tenant_id=t.id),0) AS storage_bytes) storage
+    OUTER APPLY (SELECT ISNULL((SELECT SUM(CONVERT(BIGINT,COALESCE(storage_size_bytes,DATALENGTH(content)))) FROM dbo.gym_branding_assets a WHERE a.tenant_id=t.id),0)+ISNULL((SELECT SUM(CONVERT(BIGINT,content_bytes)) FROM dbo.gym_backup_archives b WHERE b.tenant_id=t.id),0)+ISNULL((SELECT SUM(CONVERT(BIGINT,file_size)) FROM dbo.saas_payment_proofs sp WHERE sp.tenant_id=t.id),0) AS storage_bytes) storage
     OUTER APPLY (SELECT MAX(ses.last_seen_at) AS last_activity_at FROM dbo.gym_auth_sessions ses INNER JOIN dbo.gym_user_tenants ut3 ON ut3.user_id=ses.user_id WHERE ut3.tenant_id=t.id) last_activity`;
 
 function tenantListSelect() {

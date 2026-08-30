@@ -71,6 +71,54 @@ test('storage operations fail closed until an approved provider is configured', 
     assert.throws(() => storage.getPublicUrl(), { code: 'PRIVATE_OBJECT_PUBLIC_URL_FORBIDDEN' });
 });
 
+test('private object verification reads back uploaded bytes even when HEAD has metadata', async () => {
+    const crypto = require('node:crypto');
+    const body = Buffer.from('verified object');
+    const checksum = crypto.createHash('sha256').update(body).digest('hex');
+    const calls = [];
+    const key = 'tenants/7/private/branding/abcdefghijklmnop.png';
+    const storage = createObjectStorageService({
+        adapter: {
+            async headPrivateObject() {
+                calls.push('head');
+                return { tenantId: 7, key, size: body.length, checksum };
+            },
+            async getPrivateObject() {
+                calls.push('get');
+                return { tenantId: 7, key, body, size: body.length, checksum };
+            }
+        }
+    });
+
+    const result = await storage.verifyPrivateObject({ tenantId: 7, key, expectedSize: body.length, expectedChecksum: checksum });
+    assert.deepEqual(calls, ['head', 'get']);
+    assert.deepEqual(result, { key, size: body.length, checksum });
+});
+
+test('private object verification rejects tampered bytes despite matching HEAD metadata', async () => {
+    const crypto = require('node:crypto');
+    const expectedBody = Buffer.from('expected object');
+    const tamperedBody = Buffer.from('tampered object');
+    const expectedChecksum = crypto.createHash('sha256').update(expectedBody).digest('hex');
+    const tamperedChecksum = crypto.createHash('sha256').update(tamperedBody).digest('hex');
+    const key = 'tenants/7/private/payment-proofs/abcdefghijklmnop.jpg';
+    const storage = createObjectStorageService({
+        adapter: {
+            async headPrivateObject() {
+                return { tenantId: 7, key, size: expectedBody.length, checksum: expectedChecksum };
+            },
+            async getPrivateObject() {
+                return { tenantId: 7, key, body: tamperedBody, size: tamperedBody.length, checksum: tamperedChecksum };
+            }
+        }
+    });
+
+    await assert.rejects(
+        storage.verifyPrivateObject({ tenantId: 7, key, expectedSize: expectedBody.length, expectedChecksum }),
+        { code: 'STORAGE_CHECKSUM_MISMATCH' }
+    );
+});
+
 test('local private storage is explicit, isolated and usable only outside production', async () => {
     const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), 'logic-fit-private-storage-'));
     try {

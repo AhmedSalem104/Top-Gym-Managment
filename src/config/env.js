@@ -5,6 +5,13 @@ function getEnv(name, fallback = '') {
     return value === undefined || value === '' ? fallback : value;
 }
 
+// New storage integrations use the generic OBJECT_STORAGE_* contract, while
+// the original backup-only names remain supported for existing deployments.
+// Empty primary values intentionally fall back to the legacy setting too.
+function getAliasedEnv(name, legacyName, fallback = '') {
+    return getEnv(name, getEnv(legacyName, fallback));
+}
+
 function getNumberEnv(name, fallback) {
     const value = Number(getEnv(name, fallback));
     return Number.isFinite(value) ? value : fallback;
@@ -45,16 +52,30 @@ const config = Object.freeze({
         && (getEnv('NODE_ENV', 'development').trim().toLowerCase() !== 'production'
             || getBooleanEnv('PERFORMANCE_METRICS_PRODUCTION', false)),
     cronSecret: getEnv('CRON_SECRET'),
-    backupStorageDriver: getEnv('BACKUP_STORAGE_DRIVER', 'none'),
-    backupStoragePath: getEnv('BACKUP_STORAGE_PATH'),
-    backupStorageEndpoint: getEnv('BACKUP_STORAGE_ENDPOINT'),
-    backupStorageBucket: getEnv('BACKUP_STORAGE_BUCKET'),
-    backupStorageRegion: getEnv('BACKUP_STORAGE_REGION', 'auto'),
-    backupStorageAccessKeyId: getEnv('BACKUP_STORAGE_ACCESS_KEY_ID'),
-    backupStorageSecretAccessKey: getEnv('BACKUP_STORAGE_SECRET_ACCESS_KEY'),
-    backupStorageSessionToken: getEnv('BACKUP_STORAGE_SESSION_TOKEN'),
-    backupStorageForcePathStyle: getBooleanEnv('BACKUP_STORAGE_FORCE_PATH_STYLE', true),
-    backupStorageRequestTimeoutMs: getBoundedNumberEnv('BACKUP_STORAGE_REQUEST_TIMEOUT_MS', 30_000, 1_000, 120_000),
+    // The generic object-storage contract is the single runtime configuration
+    // for backups, branding and private uploads. BACKUP_STORAGE_* remains a
+    // backwards-compatible alias so existing deployments do not need an
+    // emergency environment-variable migration.
+    objectStorageDriver: getAliasedEnv('OBJECT_STORAGE_DRIVER', 'BACKUP_STORAGE_DRIVER', 'none'),
+    objectStoragePath: getAliasedEnv('OBJECT_STORAGE_PATH', 'BACKUP_STORAGE_PATH'),
+    objectStorageEndpoint: getAliasedEnv('OBJECT_STORAGE_ENDPOINT', 'BACKUP_STORAGE_ENDPOINT'),
+    objectStorageBucket: getAliasedEnv('OBJECT_STORAGE_BUCKET', 'BACKUP_STORAGE_BUCKET'),
+    objectStorageRegion: getAliasedEnv('OBJECT_STORAGE_REGION', 'BACKUP_STORAGE_REGION', 'auto'),
+    objectStorageAccessKeyId: getAliasedEnv('OBJECT_STORAGE_ACCESS_KEY_ID', 'BACKUP_STORAGE_ACCESS_KEY_ID'),
+    objectStorageSecretAccessKey: getAliasedEnv('OBJECT_STORAGE_SECRET_ACCESS_KEY', 'BACKUP_STORAGE_SECRET_ACCESS_KEY'),
+    objectStorageSessionToken: getAliasedEnv('OBJECT_STORAGE_SESSION_TOKEN', 'BACKUP_STORAGE_SESSION_TOKEN'),
+    objectStorageForcePathStyle: getBooleanEnv('OBJECT_STORAGE_FORCE_PATH_STYLE', getBooleanEnv('BACKUP_STORAGE_FORCE_PATH_STYLE', true)),
+    objectStorageRequestTimeoutMs: getBoundedNumberEnv('OBJECT_STORAGE_REQUEST_TIMEOUT_MS', getBoundedNumberEnv('BACKUP_STORAGE_REQUEST_TIMEOUT_MS', 30_000, 1_000, 120_000), 1_000, 120_000),
+    backupStorageDriver: getAliasedEnv('OBJECT_STORAGE_DRIVER', 'BACKUP_STORAGE_DRIVER', 'none'),
+    backupStoragePath: getAliasedEnv('OBJECT_STORAGE_PATH', 'BACKUP_STORAGE_PATH'),
+    backupStorageEndpoint: getAliasedEnv('OBJECT_STORAGE_ENDPOINT', 'BACKUP_STORAGE_ENDPOINT'),
+    backupStorageBucket: getAliasedEnv('OBJECT_STORAGE_BUCKET', 'BACKUP_STORAGE_BUCKET'),
+    backupStorageRegion: getAliasedEnv('OBJECT_STORAGE_REGION', 'BACKUP_STORAGE_REGION', 'auto'),
+    backupStorageAccessKeyId: getAliasedEnv('OBJECT_STORAGE_ACCESS_KEY_ID', 'BACKUP_STORAGE_ACCESS_KEY_ID'),
+    backupStorageSecretAccessKey: getAliasedEnv('OBJECT_STORAGE_SECRET_ACCESS_KEY', 'BACKUP_STORAGE_SECRET_ACCESS_KEY'),
+    backupStorageSessionToken: getAliasedEnv('OBJECT_STORAGE_SESSION_TOKEN', 'BACKUP_STORAGE_SESSION_TOKEN'),
+    backupStorageForcePathStyle: getBooleanEnv('OBJECT_STORAGE_FORCE_PATH_STYLE', getBooleanEnv('BACKUP_STORAGE_FORCE_PATH_STYLE', true)),
+    backupStorageRequestTimeoutMs: getBoundedNumberEnv('OBJECT_STORAGE_REQUEST_TIMEOUT_MS', getBoundedNumberEnv('BACKUP_STORAGE_REQUEST_TIMEOUT_MS', 30_000, 1_000, 120_000), 1_000, 120_000),
     backupSchedulerConcurrency: getBoundedNumberEnv('BACKUP_SCHEDULER_CONCURRENCY', 2, 1, 8),
     backupSchedulerRetryCount: getBoundedNumberEnv('BACKUP_SCHEDULER_RETRY_COUNT', 1, 0, 3),
     backupEnablePlatformWeekly: getBooleanEnv('BACKUP_ENABLE_PLATFORM_WEEKLY', true),

@@ -41,19 +41,24 @@ const { READ_ONLY_METHODS, readOnlyBaselineGuard } = require('./src/middleware/r
 const { getClientErrorCode, getSafeErrorMessage, isPublicClientError, safeErrorCode } = require('./src/utils/error-response');
 
 const objectStorageService = createConfiguredObjectStorageService({
-    driver: config.backupStorageDriver,
-    rootDir: config.backupStoragePath,
+    driver: config.objectStorageDriver,
+    rootDir: config.objectStoragePath,
     nodeEnv: config.nodeEnv,
-    endpoint: config.backupStorageEndpoint,
-    bucket: config.backupStorageBucket,
-    region: config.backupStorageRegion,
-    accessKeyId: config.backupStorageAccessKeyId,
-    secretAccessKey: config.backupStorageSecretAccessKey,
-    sessionToken: config.backupStorageSessionToken,
-    forcePathStyle: config.backupStorageForcePathStyle,
-    requestTimeoutMs: config.backupStorageRequestTimeoutMs
+    endpoint: config.objectStorageEndpoint,
+    bucket: config.objectStorageBucket,
+    region: config.objectStorageRegion,
+    accessKeyId: config.objectStorageAccessKeyId,
+    secretAccessKey: config.objectStorageSecretAccessKey,
+    sessionToken: config.objectStorageSessionToken,
+    forcePathStyle: config.objectStorageForcePathStyle,
+    requestTimeoutMs: config.objectStorageRequestTimeoutMs
 });
 const backupRecoveryService = createBackupRecoveryService({ storageService: objectStorageService });
+// All durable private files use the same provider-neutral storage boundary.
+// The services keep their existing APIs; this wiring only changes where new
+// branding/payment-proof bytes are persisted when the provider is configured.
+brandingService.configureObjectStorageService(objectStorageService);
+saasService.configureObjectStorageService(objectStorageService);
 
 let httpServer;
 let shutdownStarted = false;

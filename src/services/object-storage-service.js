@@ -229,10 +229,15 @@ function validateSignedDownload(result) {
 
 function createObjectStorageService({ adapter = null, maxBytes = MAX_PRIVATE_OBJECT_BYTES, providerStatus = null, offsiteStatus = 'not_configured' } = {}) {
     const service = {
+        provider: adapter?.provider || null,
         providerStatus: providerStatus || (adapter ? 'configured' : 'not_configured'),
         offsiteStatus: String(offsiteStatus || 'not_configured'),
         isConfigured: Boolean(adapter),
         maxBytes: normalizeMaxBytes(maxBytes),
+        assertConfigured() {
+            assertAdapter(adapter, 'putPrivateObject');
+            return true;
+        },
         buildPrivateObjectKey,
         assertPrivateObjectKey,
         preparePrivateObject,
@@ -276,6 +281,44 @@ function createObjectStorageService({ adapter = null, maxBytes = MAX_PRIVATE_OBJ
             assertAdapter(adapter, 'getPrivateObject');
             const object = await adapter.getPrivateObject({ tenantId: normalizedTenantId, scope: 'tenant', key: normalizedKey });
             return validateReturnedObject(object, normalizedTenantId, normalizedKey, 'tenant');
+        },
+        async verifyPrivateObject({ tenantId, key, expectedSize = null, expectedChecksum = null } = {}) {
+            const normalizedTenantId = normalizeTenantId(tenantId);
+            const normalizedKey = assertPrivateObjectKey(normalizedTenantId, key);
+            const head = await this.headPrivateObject({ tenantId: normalizedTenantId, key: normalizedKey });
+            if (!head) throw storageError('The private object was not found after upload.', 503, 'STORAGE_OBJECT_NOT_FOUND');
+            if (expectedSize != null && head.size != null && Number(head.size) !== Number(expectedSize)) {
+                throw storageError('The private object size could not be verified.', 503, 'STORAGE_SIZE_MISMATCH');
+            }
+            const normalizedExpectedChecksum = expectedChecksum == null ? null : String(expectedChecksum).trim().toLowerCase();
+            const headChecksum = head.checksum == null ? null : String(head.checksum).trim().toLowerCase();
+            if (normalizedExpectedChecksum && headChecksum && headChecksum !== normalizedExpectedChecksum) {
+                throw storageError('The private object checksum could not be verified.', 503, 'STORAGE_CHECKSUM_MISMATCH');
+            }
+            // Always read the uploaded object when the caller supplied an
+            // expected integrity value. HEAD metadata is useful for a fast
+            // existence/size check, but it is not proof that the bytes now
+            // stored are the bytes that were uploaded. This keeps branding
+            // and payment-proof records fail-closed across S3-compatible
+            // providers that expose incomplete or user-controlled metadata.
+            if (normalizedExpectedChecksum || expectedSize != null) {
+                const object = await this.getPrivateObject({ tenantId: normalizedTenantId, key: normalizedKey });
+                if (!object?.body) throw storageError('The private object could not be read for verification.', 503, 'STORAGE_OBJECT_NOT_FOUND');
+                if (expectedSize != null && object.body.length !== Number(expectedSize)) {
+                    throw storageError('The private object size could not be verified.', 503, 'STORAGE_SIZE_MISMATCH');
+                }
+                const verifiedChecksum = normalizeAndVerifyChecksum(normalizedExpectedChecksum, object.body);
+                return {
+                    key: normalizedKey,
+                    size: object.body.length,
+                    checksum: verifiedChecksum
+                };
+            }
+            return {
+                key: normalizedKey,
+                size: head.size == null ? Number(expectedSize || 0) : Number(head.size),
+                checksum: headChecksum || normalizedExpectedChecksum || null
+            };
         },
         async createSignedDownload({ tenantId, key, expiresInSeconds = 300 } = {}) {
             const normalizedTenantId = normalizeTenantId(tenantId);
@@ -354,17 +397,17 @@ function createObjectStorageService({ adapter = null, maxBytes = MAX_PRIVATE_OBJ
  * Staging by accident.
  */
 function createConfiguredObjectStorageService({
-    driver = process.env.BACKUP_STORAGE_DRIVER || 'none',
-    rootDir = process.env.BACKUP_STORAGE_PATH || path.join(process.cwd(), '.local-private-storage'),
+    driver = process.env.OBJECT_STORAGE_DRIVER || process.env.BACKUP_STORAGE_DRIVER || 'none',
+    rootDir = process.env.OBJECT_STORAGE_PATH || process.env.BACKUP_STORAGE_PATH || path.join(process.cwd(), '.local-private-storage'),
     nodeEnv = process.env.NODE_ENV,
-    endpoint = process.env.BACKUP_STORAGE_ENDPOINT,
-    bucket = process.env.BACKUP_STORAGE_BUCKET,
-    region = process.env.BACKUP_STORAGE_REGION || 'auto',
-    accessKeyId = process.env.BACKUP_STORAGE_ACCESS_KEY_ID,
-    secretAccessKey = process.env.BACKUP_STORAGE_SECRET_ACCESS_KEY,
-    sessionToken = process.env.BACKUP_STORAGE_SESSION_TOKEN || '',
-    forcePathStyle = process.env.BACKUP_STORAGE_FORCE_PATH_STYLE,
-    requestTimeoutMs = process.env.BACKUP_STORAGE_REQUEST_TIMEOUT_MS,
+    endpoint = process.env.OBJECT_STORAGE_ENDPOINT || process.env.BACKUP_STORAGE_ENDPOINT,
+    bucket = process.env.OBJECT_STORAGE_BUCKET || process.env.BACKUP_STORAGE_BUCKET,
+    region = process.env.OBJECT_STORAGE_REGION || process.env.BACKUP_STORAGE_REGION || 'auto',
+    accessKeyId = process.env.OBJECT_STORAGE_ACCESS_KEY_ID || process.env.BACKUP_STORAGE_ACCESS_KEY_ID,
+    secretAccessKey = process.env.OBJECT_STORAGE_SECRET_ACCESS_KEY || process.env.BACKUP_STORAGE_SECRET_ACCESS_KEY,
+    sessionToken = process.env.OBJECT_STORAGE_SESSION_TOKEN || process.env.BACKUP_STORAGE_SESSION_TOKEN || '',
+    forcePathStyle = process.env.OBJECT_STORAGE_FORCE_PATH_STYLE ?? process.env.BACKUP_STORAGE_FORCE_PATH_STYLE,
+    requestTimeoutMs = process.env.OBJECT_STORAGE_REQUEST_TIMEOUT_MS ?? process.env.BACKUP_STORAGE_REQUEST_TIMEOUT_MS,
     isVercel = isVercelRuntime()
 } = {}) {
     const normalizedDriver = String(driver || 'none').trim().toLowerCase();

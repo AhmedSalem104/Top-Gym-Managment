@@ -6,6 +6,14 @@ const DEFAULT_INTERNAL_ERROR_MESSAGE = 'حدث خطأ في الخادم. حاو�
 // actionable explanation. Other 5xx errors remain intentionally generic so
 // database/provider internals cannot leak through the API response.
 const SAFE_OPERATIONAL_FAILURES = Object.freeze({
+    PRIVATE_OBJECT_STORAGE_NOT_CONFIGURED: Object.freeze({
+        code: 'PRIVATE_STORAGE_NOT_CONFIGURED',
+        message: 'التخزين الخاص لملفات المنصة غير مهيأ حاليًا. أضف مزود تخزين خاصًا معتمدًا قبل رفع الملفات.'
+    }),
+    PRIVATE_OBJECT_STORAGE_UNAVAILABLE: Object.freeze({
+        code: 'PRIVATE_STORAGE_UNAVAILABLE',
+        message: 'تعذر الوصول إلى التخزين الخاص لملفات المنصة حاليًا. حاول مرة أخرى بعد التحقق من إعدادات التخزين.'
+    }),
     OBJECT_STORAGE_PROVIDER_NOT_CONFIGURED: Object.freeze({
         code: 'BACKUP_STORAGE_NOT_CONFIGURED',
         message: 'التخزين الخاص للنسخ الاحتياطية غير مهيأ حاليًا. أضف مزود تخزين خاصًا معتمدًا قبل إنشاء نسخة محفوظة.'

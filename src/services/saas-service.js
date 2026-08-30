@@ -204,7 +204,10 @@ BEGIN
         mime_type VARCHAR(80) NOT NULL,
         file_size INT NOT NULL,
         sha256 CHAR(64) NOT NULL,
-        content VARBINARY(MAX) NOT NULL,
+        content VARBINARY(MAX) NULL,
+        storage_key NVARCHAR(512) NULL,
+        storage_provider VARCHAR(40) NULL,
+        storage_verified_at DATETIME2(0) NULL,
         uploaded_by_user_id INT NOT NULL,
         uploaded_at DATETIME2(0) NOT NULL CONSTRAINT DF_saas_proofs_uploaded DEFAULT (SYSUTCDATETIME()),
         CONSTRAINT UQ_saas_payment_proofs_request UNIQUE (request_id),
@@ -212,6 +215,22 @@ BEGIN
         CONSTRAINT FK_saas_proofs_tenant FOREIGN KEY (tenant_id) REFERENCES dbo.gym_tenants(id) ON DELETE NO ACTION,
         CONSTRAINT CK_saas_proofs_size CHECK (file_size > 0 AND file_size <= 4194304)
     );
+END;
+IF OBJECT_ID(N'dbo.saas_payment_proofs', N'U') IS NOT NULL
+BEGIN
+    IF COL_LENGTH(N'dbo.saas_payment_proofs', N'storage_key') IS NULL
+        ALTER TABLE dbo.saas_payment_proofs ADD storage_key NVARCHAR(512) NULL;
+    IF COL_LENGTH(N'dbo.saas_payment_proofs', N'storage_provider') IS NULL
+        ALTER TABLE dbo.saas_payment_proofs ADD storage_provider VARCHAR(40) NULL;
+    IF COL_LENGTH(N'dbo.saas_payment_proofs', N'storage_verified_at') IS NULL
+        ALTER TABLE dbo.saas_payment_proofs ADD storage_verified_at DATETIME2(0) NULL;
+    IF EXISTS (
+        SELECT 1 FROM sys.columns
+        WHERE object_id=OBJECT_ID(N'dbo.saas_payment_proofs')
+          AND name=N'content'
+          AND is_nullable=0
+    )
+        EXEC(N'ALTER TABLE dbo.saas_payment_proofs ALTER COLUMN content VARBINARY(MAX) NULL;');
 END;
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name=N'IX_saas_proofs_tenant' AND object_id=OBJECT_ID(N'dbo.saas_payment_proofs'))
     CREATE INDEX IX_saas_proofs_tenant ON dbo.saas_payment_proofs(tenant_id, uploaded_at DESC, id DESC);
@@ -308,6 +327,51 @@ IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name=N'IX_saas_platform_notes_ten
 let readyPromise;
 const syncStates = new Map();
 const MAX_SYNC_STATE_ENTRIES = 10_000;
+let objectStorageService = null;
+
+function configureObjectStorageService(service) {
+    objectStorageService = service || null;
+}
+
+function requireObjectStorageService() {
+    if (objectStorageService?.isConfigured) return objectStorageService;
+    const error = new Error('Private object storage is not configured.');
+    error.statusCode = 503;
+    error.expose = false;
+    error.code = 'PRIVATE_OBJECT_STORAGE_NOT_CONFIGURED';
+    throw error;
+}
+
+function storageContentError(message, code) {
+    const error = new Error(message);
+    error.statusCode = 503;
+    error.expose = false;
+    error.code = code;
+    return error;
+}
+
+function normalizeStorageFailure(error) {
+    if (!['OBJECT_STORAGE_PROVIDER_UNAVAILABLE', 'OBJECT_STORAGE_PROVIDER_REQUEST_FAILED'].includes(error?.code)) return error;
+    const safeError = storageContentError('Private object storage is unavailable.', 'PRIVATE_OBJECT_STORAGE_UNAVAILABLE');
+    safeError.cause = error;
+    return safeError;
+}
+
+async function deleteUnreferencedPaymentProofObject(tenantId, storageKey, executor = null) {
+    if (!storageKey || !objectStorageService?.isConfigured) return false;
+    const database = executor || await getPool();
+    const reference = await database.request()
+        .input('tenantId', sql.Int, tenantId)
+        .input('storageKey', sql.NVarChar(512), storageKey)
+        .query('SELECT TOP (1) 1 AS referenced FROM dbo.saas_payment_proofs WHERE tenant_id=@tenantId AND storage_key=@storageKey;');
+    if (reference.recordset.length) return false;
+    try {
+        await objectStorageService.deletePrivateObject({ tenantId, key: storageKey });
+        return true;
+    } catch (_) {
+        return false;
+    }
+}
 
 function pruneSyncStates(map, now = Date.now(), maxEntries = MAX_SYNC_STATE_ENTRIES, staleAfterMs = syncIntervalMs() * 2) {
     for (const [key, entry] of map) {
@@ -863,7 +927,7 @@ async function getUsage(tenantId = currentTenantId({ required: true }), { readOn
         pool.request().input('tenantId', sql.Int, id).query("SELECT COUNT_BIG(*) AS total FROM dbo.gym_user_tenants WHERE tenant_id=@tenantId AND status='active';"),
         pool.request().input('tenantId', sql.Int, id).query("SELECT COUNT_BIG(*) AS total FROM dbo.gym_ai_generation_log WHERE tenant_id=@tenantId AND created_at >= DATEADD(month, DATEDIFF(month, 0, SYSUTCDATETIME()), 0);"),
         pool.request().input('tenantId', sql.Int, id).query(`SELECT
-            ISNULL((SELECT SUM(CONVERT(BIGINT, DATALENGTH(content))) FROM dbo.gym_branding_assets WHERE tenant_id=@tenantId), 0)
+            ISNULL((SELECT SUM(CONVERT(BIGINT, COALESCE(storage_size_bytes, DATALENGTH(content)))) FROM dbo.gym_branding_assets WHERE tenant_id=@tenantId), 0)
             + ISNULL((SELECT SUM(CONVERT(BIGINT, content_bytes)) FROM dbo.gym_backup_archives WHERE tenant_id=@tenantId), 0)
             + ISNULL((SELECT SUM(CONVERT(BIGINT, file_size)) FROM dbo.saas_payment_proofs WHERE tenant_id=@tenantId), 0) AS total;`)
     ]);
@@ -1013,12 +1077,45 @@ async function uploadPaymentProof({ tenantId = currentTenantId({ required: true 
     const requestNumber = Number(requestId);
     if (!Number.isInteger(requestNumber) || requestNumber <= 0) throw saasError('طلب الاشتراك غير صحيح.', 400, 'INVALID_SUBSCRIPTION_REQUEST');
     const pool = await getPool();
-    const requestResult = await pool.request().input('requestId', sql.BigInt, requestNumber).input('tenantId', sql.Int, id).query("SELECT TOP (1) id,status FROM dbo.saas_subscription_requests WHERE id=@requestId AND tenant_id=@tenantId;");
+    const requestResult = await pool.request().input('requestId', sql.BigInt, requestNumber).input('tenantId', sql.Int, id).query("SELECT TOP (1) r.id,r.status,proof.storage_key AS existing_storage_key FROM dbo.saas_subscription_requests r LEFT JOIN dbo.saas_payment_proofs proof ON proof.request_id=r.id AND proof.tenant_id=r.tenant_id WHERE r.id=@requestId AND r.tenant_id=@tenantId;");
     const request = requestResult.recordset[0];
+    const previousStorageKey = request?.existing_storage_key || null;
     if (!request) throw saasError('طلب الاشتراك غير موجود.', 404, 'SAAS_REQUEST_NOT_FOUND');
     if (request.status !== 'pending') throw saasError('لا يمكن تعديل إثبات طلب تمت مراجعته.', 409, 'SAAS_REQUEST_LOCKED');
-    await pool.request().input('requestId', sql.BigInt, requestNumber).input('tenantId', sql.Int, id).input('fileName', sql.NVarChar(255), proof.fileName).input('mimeType', sql.VarChar(80), proof.mimeType).input('fileSize', sql.Int, proof.buffer.length).input('sha256', sql.Char(64), proof.sha256).input('content', sql.VarBinary(sql.MAX), proof.buffer).input('userId', sql.Int, Number(userId)).query(`UPDATE dbo.saas_payment_proofs SET file_name=@fileName,mime_type=@mimeType,file_size=@fileSize,sha256=@sha256,content=@content,uploaded_by_user_id=@userId,uploaded_at=SYSUTCDATETIME() WHERE request_id=@requestId AND tenant_id=@tenantId;
-        IF @@ROWCOUNT=0 INSERT INTO dbo.saas_payment_proofs (request_id,tenant_id,file_name,mime_type,file_size,sha256,content,uploaded_by_user_id) VALUES (@requestId,@tenantId,@fileName,@mimeType,@fileSize,@sha256,@content,@userId);`);
+    const storage = requireObjectStorageService();
+    let storedObject;
+    try {
+        storedObject = await storage.putPrivateObject({
+            tenantId: id,
+            category: 'payment-proofs',
+            objectName: proof.fileName,
+            contentType: proof.mimeType,
+            body: proof.buffer,
+            checksum: proof.sha256
+        });
+        await storage.verifyPrivateObject({
+            tenantId: id,
+            key: storedObject.key,
+            expectedSize: proof.buffer.length,
+            expectedChecksum: proof.sha256
+        });
+        await pool.request()
+            .input('requestId', sql.BigInt, requestNumber)
+            .input('tenantId', sql.Int, id)
+            .input('fileName', sql.NVarChar(255), proof.fileName)
+            .input('mimeType', sql.VarChar(80), proof.mimeType)
+            .input('fileSize', sql.Int, proof.buffer.length)
+            .input('sha256', sql.Char(64), proof.sha256)
+            .input('storageKey', sql.NVarChar(512), storedObject.key)
+            .input('storageProvider', sql.VarChar(40), String(storage.provider || storage.providerStatus || 'private').slice(0, 40))
+            .input('userId', sql.Int, Number(userId))
+            .query(`UPDATE dbo.saas_payment_proofs SET file_name=@fileName,mime_type=@mimeType,file_size=@fileSize,sha256=@sha256,content=NULL,storage_key=@storageKey,storage_provider=@storageProvider,storage_verified_at=SYSUTCDATETIME(),uploaded_by_user_id=@userId,uploaded_at=SYSUTCDATETIME() WHERE request_id=@requestId AND tenant_id=@tenantId;
+        IF @@ROWCOUNT=0 INSERT INTO dbo.saas_payment_proofs (request_id,tenant_id,file_name,mime_type,file_size,sha256,content,storage_key,storage_provider,storage_verified_at,uploaded_by_user_id) VALUES (@requestId,@tenantId,@fileName,@mimeType,@fileSize,@sha256,NULL,@storageKey,@storageProvider,SYSUTCDATETIME(),@userId);`);
+    } catch (error) {
+        if (storedObject?.key) await storage.deletePrivateObject({ tenantId: id, key: storedObject.key }).catch(() => {});
+        throw normalizeStorageFailure(error);
+    }
+    await deleteUnreferencedPaymentProofObject(id, previousStorageKey, pool);
     await recordAudit({ tenantId: id, actorUserId: Number(userId), action: 'payment_proof_uploaded', entityType: 'subscription_request', entityId: requestNumber, details: `تم رفع إثبات دفع: ${proof.fileName}.` });
     return (await listTenantRequests(id, { requestId: requestNumber })).find((item) => item.id === requestNumber) || { id: requestNumber, proof: { fileName: proof.fileName, mimeType: proof.mimeType, fileSize: proof.buffer.length } };
 }
@@ -1055,8 +1152,21 @@ async function getPaymentProofFile(proofId, tenantId = null, { readOnly = false 
     const id = Number(proofId);
     if (!Number.isInteger(id) || id <= 0) throw saasError('إثبات الدفع غير صحيح.', 400, 'INVALID_PAYMENT_PROOF');
     const pool = await getPool();
-    const result = await pool.request().input('id', sql.BigInt, id).input('tenantId', sql.Int, tenantId == null ? null : tenantId).query('SELECT TOP (1) file_name,mime_type,content FROM dbo.saas_payment_proofs WHERE id=@id AND (@tenantId IS NULL OR tenant_id=@tenantId);');
-    return result.recordset[0] || null;
+    const result = await pool.request().input('id', sql.BigInt, id).input('tenantId', sql.Int, tenantId == null ? null : tenantId).query('SELECT TOP (1) tenant_id,file_name,mime_type,file_size,sha256,content,storage_key,storage_provider,storage_verified_at FROM dbo.saas_payment_proofs WHERE id=@id AND (@tenantId IS NULL OR tenant_id=@tenantId);');
+    const proof = result.recordset[0] || null;
+    if (!proof?.storage_key) return proof;
+    const storage = requireObjectStorageService();
+    let object;
+    try {
+        object = await storage.getPrivateObject({ tenantId: Number(proof.tenant_id), key: proof.storage_key });
+    } catch (error) {
+        throw normalizeStorageFailure(error);
+    }
+    if (!object?.body || !Buffer.isBuffer(object.body)) throw storageContentError('The payment proof is unavailable.', 'STORAGE_OBJECT_NOT_FOUND');
+    if (Number(proof.file_size) !== object.body.length) throw storageContentError('The payment proof size is invalid.', 'STORAGE_SIZE_MISMATCH');
+    const checksum = crypto.createHash('sha256').update(object.body).digest('hex');
+    if (String(proof.sha256 || '').trim().toLowerCase() !== checksum) throw storageContentError('The payment proof integrity check failed.', 'STORAGE_CHECKSUM_MISMATCH');
+    return { ...proof, content: object.body };
 }
 
 async function approveRequest(requestId, actorUserId, reviewNotes = '') {
@@ -1380,6 +1490,7 @@ module.exports = {
     SAAS_TABLES,
     approveRequest,
     applyScheduledSubscriptionChanges,
+    configureObjectStorageService,
     createPlan,
     createSubscriptionRequest,
     createTenantWithOwner,
