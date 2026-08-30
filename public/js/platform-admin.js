@@ -67,6 +67,10 @@
     }
 
     function showToast(message, isError = false) {
+        if (window.topGymFeedback) {
+            window.topGymFeedback.toast(message, isError ? 'error' : 'success');
+            return;
+        }
         const element = $('#platformToast');
         element.textContent = message;
         element.classList.toggle('error', isError);
@@ -159,8 +163,13 @@
         return data;
     }
 
-    function setLoading(element, loading) {
+    function setLoading(element, loading, loadingText = '') {
         if (!element) return;
+        if (window.topGymFeedback) {
+            if (loading) window.topGymFeedback.start(element, loadingText ? { loadingText } : {});
+            else window.topGymFeedback.stop(element);
+            return;
+        }
         element.disabled = loading;
         element.dataset.loading = loading ? 'true' : 'false';
     }
@@ -650,7 +659,10 @@
         const payload = JSON.parse(dialogForm.dataset.payload || '{}');
         const values = formObject(dialogForm);
         const submit = $('#platformDialogSubmit');
-        setLoading(submit, true);
+        const loadingLabels = {
+            status: 'جاري تحديث حالة الجيم...', subscription: 'جاري تطبيق الاشتراك...', extend: 'جاري تمديد الاشتراك...', lifetime: 'جاري تفعيل الاشتراك...', plan: 'جاري تغيير الباقة...', override: 'جاري حفظ الاستثناءات...', note: 'جاري حفظ الملاحظة...', reset: 'جاري إعادة ضبط الوصول...', 'new-tenant': 'جاري إنشاء الجيم...', owner: 'جاري تحديث بيانات المالك...', 'plan-create': 'جاري إضافة الباقة...', 'plan-edit': 'جاري تحديث الباقة...', 'plan-delete': 'جاري أرشفة الباقة...', approve: 'جاري اعتماد الطلب...', reject: 'جاري رفض الطلب...', 'platform-backup': 'جاري إنشاء نسخة المنصة...', 'backup-retention': 'جاري تنظيف النسخ...', 'tenant-backup': 'جاري إنشاء نسخة الجيم...'
+        };
+        setLoading(submit, true, loadingLabels[action] || 'جاري تنفيذ الإجراء...');
         try {
             if (action === 'status') {
                 await api(`/api/platform-admin/tenants/${state.profile.tenant.id}/status`, { method: 'PATCH', body: JSON.stringify({ status: values.status, reason: values.reason, suspendUntil: values.suspendUntil || null, billingOnly: values.billingOnly }) });
@@ -729,7 +741,12 @@
     function bindEvents() {
         $$('#platformNav [data-platform-view]').forEach((button) => button.addEventListener('click', () => setView(button.dataset.platformView)));
         $$('[data-platform-view-target]').forEach((button) => button.addEventListener('click', () => setView(button.dataset.platformViewTarget)));
-        $('#platformAdminLogoutButton').addEventListener('click', async () => { await api('/api/auth/logout', { method: 'POST' }).catch(() => {}); window.location.reload(); });
+        $('#platformAdminLogoutButton').addEventListener('click', async (event) => {
+            const button = event.currentTarget;
+            setLoading(button, true, 'جاري تسجيل الخروج...');
+            await api('/api/auth/logout', { method: 'POST' }).catch(() => {});
+            window.location.reload();
+        });
         $('#platformAdminLoginForm').addEventListener('submit', async (event) => {
             event.preventDefault();
             const button = $('#platformAdminLoginButton');
@@ -744,9 +761,17 @@
         [['tenantStatusFilter','status'],['tenantPlanFilter','plan'],['tenantExpiryFilter','expiringDays']].forEach(([id,key]) => $(`#${id}`).addEventListener('change', (event) => { state.tenantFilters[key] = event.target.value; state.tenantPage = 1; loadTenants(); }));
         $('#requestStatusFilter').addEventListener('change', () => { state.requestPage = 1; loadRequests(); });
         $('#platformGlobalSearch').addEventListener('input', (event) => { if (state.view !== 'gyms') setView('gyms'); $('#tenantSearch').value = event.target.value; state.tenantFilters.search = event.target.value; state.tenantPage = 1; clearTimeout(searchTimer); searchTimer = setTimeout(loadTenants, 260); });
-        $('[data-platform-action="refresh-dashboard"]').addEventListener('click', loadDashboard);
-        $('[data-platform-action="refresh-requests"]').addEventListener('click', loadRequests);
-        $('[data-platform-action="refresh-backups"]').addEventListener('click', loadBackups);
+        const bindRefresh = (selector, loader) => {
+            const button = $(selector);
+            if (!button) return;
+            button.addEventListener('click', async () => {
+                setLoading(button, true, 'جاري التحديث...');
+                try { await loader(); } finally { setLoading(button, false); }
+            });
+        };
+        bindRefresh('[data-platform-action="refresh-dashboard"]', loadDashboard);
+        bindRefresh('[data-platform-action="refresh-requests"]', loadRequests);
+        bindRefresh('[data-platform-action="refresh-backups"]', loadBackups);
         $('#platformMobileMenu').addEventListener('click', () => $('.platform-sidebar').classList.toggle('open'));
         $('#platformMobileMenu').addEventListener('keydown', (event) => { if (event.key === 'Enter' || event.key === ' ') $('.platform-sidebar').classList.toggle('open'); });
         dialogForm.addEventListener('submit', handleDialogSubmit);
@@ -796,7 +821,8 @@
             if (userAction) {
                 const userId = userAction.dataset.userId;
                 if (userAction.dataset.userAction === 'reset') { openDialog('reset', { userId }); return; }
-                try { await api(`/api/platform-admin/tenants/${state.profile.tenant.id}/users/${userId}/status`, { method: 'PATCH', body: JSON.stringify({ status: userAction.dataset.userAction === 'enable' ? 'Active' : 'Disabled' }) }); showToast('تم تحديث حالة المستخدم.'); await refreshProfile(); } catch (error) { showToast(error.message, true); }
+                setLoading(userAction, true, 'جاري تحديث المستخدم...');
+                try { await api(`/api/platform-admin/tenants/${state.profile.tenant.id}/users/${userId}/status`, { method: 'PATCH', body: JSON.stringify({ status: userAction.dataset.userAction === 'enable' ? 'Active' : 'Disabled' }) }); showToast('تم تحديث حالة المستخدم.'); await refreshProfile(); } catch (error) { showToast(error.message, true); } finally { setLoading(userAction, false); }
             }
             const requestAction = event.target.closest('[data-request-action]');
             if (requestAction) await handleRequestAction(requestAction.dataset.requestAction, requestAction.dataset.requestId);

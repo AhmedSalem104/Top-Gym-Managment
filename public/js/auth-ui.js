@@ -250,6 +250,11 @@
     function setSubmitLoading(loading) {
         const button = $('loginSubmit');
         if (!button) return;
+        if (window.topGymFeedback) {
+            if (loading) window.topGymFeedback.start(button, { loadingText: 'جاري تسجيل الدخول...' });
+            else window.topGymFeedback.stop(button);
+            return;
+        }
         button.disabled = Boolean(loading);
         button.setAttribute('aria-busy', String(Boolean(loading)));
     }

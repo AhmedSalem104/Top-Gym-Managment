@@ -22,6 +22,12 @@
     }
 
     function showToast(icon, title, text = '') {
+        if (window.topGymFeedback) {
+            const message = text ? `${title} — ${text}` : title;
+            const kind = ['success', 'error', 'warning', 'info'].includes(icon) ? icon : 'info';
+            window.topGymFeedback.toast(message, kind);
+            return;
+        }
         if (!window.Swal) return;
         window.Swal.fire({
             toast: true,
@@ -84,6 +90,17 @@
         return error?.message || fallback;
     }
 
+    function setActionLoading(button, loading, loadingText) {
+        if (!button) return;
+        if (window.topGymFeedback) {
+            if (loading) window.topGymFeedback.start(button, { loadingText });
+            else window.topGymFeedback.stop(button);
+            return;
+        }
+        button.disabled = loading;
+        if (loadingText) button.textContent = loadingText;
+    }
+
     async function askReason(title, confirmText = 'تأكيد') {
         if (window.Swal) {
             const result = await window.Swal.fire({
@@ -111,9 +128,8 @@
         const reason = await askReason('إنشاء نسخة محفوظة للجيم', 'إنشاء النسخة');
         if (!reason) return;
         manualBackupButton.dataset.backupBusy = 'true';
-        manualBackupButton.disabled = true;
         const originalText = manualBackupButton.textContent;
-        manualBackupButton.textContent = 'جاري الإنشاء…';
+        setActionLoading(manualBackupButton, true, 'جاري إنشاء النسخة...');
         try {
             const response = await fetch('/api/backup/records', {
                 method: 'POST',
@@ -127,14 +143,15 @@
             showToast('error', 'تعذر إنشاء النسخة المحفوظة', backupErrorMessage(error, 'حاول مرة أخرى.'));
         } finally {
             delete manualBackupButton.dataset.backupBusy;
-            manualBackupButton.disabled = false;
-            manualBackupButton.textContent = originalText;
+            if (window.topGymFeedback) setActionLoading(manualBackupButton, false);
+            else { manualBackupButton.disabled = false; manualBackupButton.textContent = originalText; }
         }
     }
 
     async function downloadBackup(trigger) {
         if (!trigger || trigger.dataset.backupBusy === 'true') return;
         trigger.dataset.backupBusy = 'true';
+        setActionLoading(trigger, true, 'جاري تجهيز التنزيل...');
         try {
             const response = await fetch('/api/backup/download', { method: 'GET', cache: 'no-store', headers: { Accept: 'application/gzip' } });
             if (!response.ok) {
@@ -159,6 +176,7 @@
             showToast('error', 'تعذر تحميل النسخة الاحتياطية', backupErrorMessage(error, 'حاول مرة أخرى.'));
         } finally {
             delete trigger.dataset.backupBusy;
+            setActionLoading(trigger, false);
         }
     }
 
@@ -244,7 +262,8 @@
         }
         if (!confirmation.isConfirmed) return;
         busy = true;
-        if (restoreSubmit) { restoreSubmit.disabled = true; restoreSubmit.textContent = 'جاري الاسترجاع…'; }
+        const originalRestoreText = restoreSubmit?.textContent || 'استرجاع بعد التحقق';
+        setActionLoading(restoreSubmit, true, 'جاري استرجاع النسخة...');
         try {
             const response = await fetch('/api/backup/restore', {
                 method: 'POST',
@@ -264,7 +283,10 @@
             showToast('error', 'فشل استرجاع النسخة', backupErrorMessage(error, 'لم يتم تغيير البيانات.'));
         } finally {
             busy = false;
-            if (restoreSubmit) { restoreSubmit.disabled = !inspected; restoreSubmit.textContent = 'استرجاع بعد التحقق'; }
+            if (window.topGymFeedback) {
+                setActionLoading(restoreSubmit, false);
+                if (restoreSubmit) restoreSubmit.disabled = !inspected;
+            } else if (restoreSubmit) { restoreSubmit.disabled = !inspected; restoreSubmit.textContent = originalRestoreText; }
         }
     }
 
@@ -358,6 +380,7 @@
             if (!confirmation.isConfirmed) return;
         }
         trigger.dataset.backupBusy = 'true';
+        setActionLoading(trigger, true, 'جاري استرجاع النسخة...');
         try {
             const response = await fetch(`/api/backup/records/${encodeURIComponent(id)}/restore`, { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-TOP-GYM-RESTORE-CONFIRM': 'RESTORE' }, body: JSON.stringify({ reason }) });
             await readJsonResponse(response, 'تعذر استرجاع النسخة المحفوظة.');
@@ -365,7 +388,7 @@
             window.setTimeout(() => window.location.reload(), 1200);
         } catch (error) {
             showToast('error', 'فشل استرجاع النسخة', backupErrorMessage(error, 'لم يتم تغيير البيانات.'));
-        } finally { delete trigger.dataset.backupBusy; }
+        } finally { delete trigger.dataset.backupBusy; setActionLoading(trigger, false); }
     }
 
     async function deleteArchive(id, trigger) {
@@ -387,6 +410,7 @@
             if (!result.isConfirmed) return;
         } else if (!window.confirm('هل تريد حذف النسخة الاحتياطية المحفوظة؟')) return;
         trigger.dataset.backupBusy = 'true';
+        setActionLoading(trigger, true, 'جاري حذف النسخة...');
         try {
             const response = await fetch(`/api/backup/records/${encodeURIComponent(id)}`, { method: 'DELETE', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify({ reason }) });
             await readJsonResponse(response, 'تعذر حذف النسخة الاحتياطية.');
@@ -396,6 +420,7 @@
             showToast('error', 'تعذر حذف النسخة الاحتياطية', backupErrorMessage(error, 'حاول مرة أخرى.'));
         } finally {
             delete trigger.dataset.backupBusy;
+            setActionLoading(trigger, false);
         }
     }
 
@@ -433,7 +458,10 @@
     manualBackupButton?.addEventListener('click', createManualBackup);
     jsonDownloadButton?.addEventListener('click', () => downloadBackup(jsonDownloadButton));
     restoreButton?.addEventListener('click', () => { resetRestore(); openDialog(restoreDialog); });
-    historyRefreshButton?.addEventListener('click', showHistory);
+    historyRefreshButton?.addEventListener('click', async () => {
+        setActionLoading(historyRefreshButton, true, 'جاري تحديث السجل...');
+        try { await showHistory(); } finally { setActionLoading(historyRefreshButton, false); }
+    });
     window.addEventListener('topgym:tab-changed', (event) => {
         if (event.detail?.name === 'backup-history') void showHistory();
     });

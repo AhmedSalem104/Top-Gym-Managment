@@ -17,7 +17,7 @@
     </script>
     <title>بيانات عضويتي | Logic Fit</title>
     <link rel="icon" type="image/svg+xml" href="/assets/gym-brand.svg?v=2" sizes="any">
-    <link rel="stylesheet" href="/css/main.css?v=67">
+    <link rel="stylesheet" href="/css/main.css?v=68">
 </head>
 <body class="member-portal-page" data-branding-entry="saas">
     <main class="portal-shell">
@@ -38,7 +38,7 @@
                     <span class="portal-security-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 20 6v5c0 5-3.4 8.3-8 10-4.6-1.7-8-5-8-10V6l8-3Z"/><path d="m9 12 2 2 4-4"/></svg></span>
                     <span><strong>دخول آمن</strong><small data-brand-template="portalSecurityDescription">أدخل الكود كما استلمته من إدارة Logic Fit، ولا تشاركه مع أي شخص.</small></span>
                 </div>
-                <button class="btn btn-primary portal-submit" id="portalSubmitButton" type="submit"><span>عرض بياناتي</span><span class="portal-spinner" aria-hidden="true"></span></button>
+                <button class="btn btn-primary portal-submit" id="portalSubmitButton" type="submit" data-loading-text="جاري التحقق من الكود..."><span>عرض بياناتي</span><span class="portal-spinner" aria-hidden="true"></span></button>
                 <p class="portal-error" id="portalError" role="alert" hidden></p>
             </form>
         </section>
@@ -76,7 +76,7 @@
                 </div>
                 <div class="portal-occupancy-meta">
                     <span id="portalOccupancyUpdated">يتم التحديث تلقائيًا كل 30 ثانية</span>
-                    <button class="btn btn-light portal-occupancy-refresh" id="portalOccupancyRefresh" type="button">تحديث الآن</button>
+                    <button class="btn btn-light portal-occupancy-refresh" id="portalOccupancyRefresh" type="button" data-async-action="true" data-loading-text="جاري تحديث الحالة...">تحديث الآن</button>
                 </div>
                 <p class="portal-occupancy-note" id="portalOccupancyNote">يتم استبعاد التسجيلات القديمة تلقائيًا حسب سياسة الانصراف التلقائي.</p>
               </section>
@@ -138,7 +138,7 @@
                     </fieldset>
                     <label for="portalFeedbackType">نوع الملاحظة<select id="portalFeedbackType" required><option value="">اختر نوع الملاحظة</option><option value="general">رأي عام</option><option value="problem">مشكلة</option><option value="complaint">شكوى</option><option value="suggestion">اقتراح</option><option value="feature_request" data-brand-template="portalFeedbackFeatureOption">إضافة يحتاجها Logic Fit</option></select></label>
                     <label for="portalFeedbackMessage">ملاحظتك<textarea id="portalFeedbackMessage" rows="5" maxlength="4000" required data-brand-placeholder="portalFeedbackPlaceholder" placeholder="اكتب رأيك في Logic Fit والمدربين والإيجابيات والسلبيات أو أي اقتراح لديك..."></textarea></label>
-                    <div class="portal-feedback-actions"><button class="btn btn-primary" id="portalFeedbackSubmit" type="submit"><span>إرسال التقييم</span><span class="portal-spinner" aria-hidden="true"></span></button><p class="portal-feedback-message" id="portalFeedbackError" role="alert" hidden></p><p class="portal-feedback-message success" id="portalFeedbackSuccess" role="status" hidden>تم حفظ تقييمك بنجاح، شكرًا لمشاركتنا رأيك.</p></div>
+                    <div class="portal-feedback-actions"><button class="btn btn-primary" id="portalFeedbackSubmit" type="submit" data-loading-text="جاري إرسال التقييم..."><span>إرسال التقييم</span><span class="portal-spinner" aria-hidden="true"></span></button><p class="portal-feedback-message" id="portalFeedbackError" role="alert" hidden></p><p class="portal-feedback-message success" id="portalFeedbackSuccess" role="status" hidden>تم حفظ تقييمك بنجاح، شكرًا لمشاركتنا رأيك.</p></div>
                 </form>
             </section>
             <footer class="portal-report-signatures">
@@ -149,6 +149,7 @@
     </main>
     <script defer src="/js/theme.js?v=1"></script>
     <script defer src="/js/branding.js?v=5"></script>
-    <script defer src="/js/member-portal.js?v=9"></script>
+    <script defer src="/js/ui-feedback.js?v=2"></script>
+    <script defer src="/js/member-portal.js?v=10"></script>
 </body>
 </html>

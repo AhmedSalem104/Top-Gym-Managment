@@ -70,6 +70,11 @@
   const paymentLabel = (value) => ({ cash: 'نقدي', card: 'بطاقة', transfer: 'تحويل', other: 'أخرى' }[value] || value || '—');
 
   function setLoading(value) {
+    if (window.topGymFeedback) {
+      if (value) window.topGymFeedback.start(submit, { loadingText: 'جاري التحقق من الكود...' });
+      else window.topGymFeedback.stop(submit);
+      return;
+    }
     submit.disabled = value;
     submit.setAttribute('aria-busy', String(value));
   }
@@ -81,6 +86,11 @@
 
   function setFeedbackBusy(value) {
     if (!feedbackSubmit) return;
+    if (window.topGymFeedback) {
+      if (value) window.topGymFeedback.start(feedbackSubmit, { loadingText: 'جاري إرسال التقييم...' });
+      else window.topGymFeedback.stop(feedbackSubmit);
+      return;
+    }
     feedbackSubmit.disabled = value;
     feedbackSubmit.setAttribute('aria-busy', String(value));
   }
@@ -122,6 +132,11 @@
 
   function setOccupancyBusy(value) {
     if (!occupancyRefresh) return;
+    if (window.topGymFeedback) {
+      if (value) window.topGymFeedback.start(occupancyRefresh, { loadingText: 'جاري تحديث الحالة...' });
+      else window.topGymFeedback.stop(occupancyRefresh);
+      return;
+    }
     occupancyRefresh.disabled = value;
     occupancyRefresh.setAttribute('aria-busy', String(value));
   }

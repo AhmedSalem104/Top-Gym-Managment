@@ -19,7 +19,7 @@
     <link rel="preload" href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap" as="style" onload="this.onload=null;this.rel='sty'+'lesheet'">
     <link rel="icon" type="image/svg+xml" href="/assets/gym-brand.svg?v=2" sizes="any">
     <link rel="shortcut icon" type="image/svg+xml" href="/assets/gym-brand.svg?v=2">
-    <link rel="stylesheet" href="/css/main.css?v=66">
+    <link rel="stylesheet" href="/css/main.css?v=68">
     <title>Logic Fit | Gym Management</title>
 </head>
 <body class="auth-pending font-sans bg-slate-100 text-slate-900 gym-page-bg" data-branding-entry="saas">
@@ -132,7 +132,7 @@
                         <label class="auth-remember" for="loginRememberMe"><input id="loginRememberMe" type="checkbox"><span>تذكرني</span></label>
                         <p class="auth-message" id="loginMessage" role="alert" hidden></p>
                         <p class="auth-setup-note" id="loginSetupNote" hidden>لم يتم إعداد حساب المالك بعد. أضف AUTH_OWNER_EMAIL وAUTH_OWNER_PASSWORD في إعدادات الخادم ثم أعد المحاولة.</p>
-                        <button class="btn btn-primary auth-submit" id="loginSubmit" type="submit"><span class="auth-spinner" aria-hidden="true"></span><span class="auth-submit-label">تسجيل الدخول</span><svg class="auth-submit-arrow ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="m11 18-6-6 6-6"/></svg></button>
+                        <button class="btn btn-primary auth-submit" id="loginSubmit" type="submit" data-loading-text="جاري تسجيل الدخول..."><span class="auth-spinner" aria-hidden="true"></span><span class="auth-submit-label">تسجيل الدخول</span><svg class="auth-submit-arrow ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="m11 18-6-6 6-6"/></svg></button>
                     </form>
                     <p class="auth-footer" dir="rtl" data-brand-text="copyrightText">© Logic Fit — Smart management, better performance</p>
                 </section>
@@ -987,11 +987,12 @@
     <script defer src="/js/core/permissions.js?v=5"></script>
     <script defer src="/js/core/state.js?v=1"></script>
     <script defer src="/js/performance-loader.js?v=2"></script>
-    <script defer src="/js/auth-ui.js?v=13"></script>
+    <script defer src="/js/ui-feedback.js?v=2"></script>
+    <script defer src="/js/auth-ui.js?v=14"></script>
     <script defer src="/js/app.js?v=feature-expansion10-alert-contact-member-detail-layers-member-table-portal-initial-code-hydration-progressive-performance-skeleton-refund"></script>
     <script defer src="/js/feature-loader.js?v=17"></script>
     <script defer src="/js/page-tabs.js?v=15"></script>
-    <script defer src="/js/button-loading.js?v=1"></script>
+    <script defer src="/js/button-loading.js?v=3"></script>
     <script defer src="/js/dialog-enhancements.js?v=2"></script>
     <script defer src="/js/pagination.js?v=2"></script>
     <script defer src="/js/table-cards.js?v=2"></script>

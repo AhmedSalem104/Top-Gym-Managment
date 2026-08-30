@@ -18,6 +18,7 @@
 @import url("./components/assistant.css");
 @import url("./components/pagination.css");
 @import url("./components/loading.css");
+@import url("./components/feedback.css");
 @import url("./components/empty-states.css");
 @import url("./pages/login.css");
 @import url("./pages/dashboard.css");

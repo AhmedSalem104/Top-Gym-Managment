@@ -1,62 +1,69 @@
         (() => {
-            const activeButtons = new Set();
+            const feedback = window.topGymFeedback;
+            if (!feedback) return;
+            const activeButtons = new WeakSet();
             let latestClickedButton = null;
             let latestClickAt = 0;
 
+            const ignoredSelector = [
+                '[data-feedback-ignore]', '[data-theme-toggle]', '[data-dialog-cancel]',
+                '[data-page-tab]', '[data-page-tab-link]', '[data-portal-tool]',
+                '.dialog-close', '.modal-close', '[aria-haspopup="dialog"]'
+            ].join(',');
+            const asyncHint = /(?:submit|save|add|create|edit|update|delete|remove|archive|restore|backup|upload|download|refresh|approve|reject|renew|payment|checkout|attendance|check|search|generate|export|print|reset)/i;
+
+            function shouldTrack(button) {
+                if (!button || button.matches(ignoredSelector) || button.disabled) return false;
+                if (button.dataset.asyncAction === 'false') return false;
+                if (button.dataset.asyncAction === 'true' || button.dataset.feedbackAction === 'async') return true;
+                if ((button.getAttribute('type') || 'submit').toLowerCase() === 'submit') return true;
+                return asyncHint.test(`${button.id} ${button.className} ${button.dataset.action || ''} ${button.textContent || ''}`);
+            }
+
+            function startButtonLoading(button) {
+                if (!shouldTrack(button)) return null;
+                const record = feedback.start(button);
+                if (!record) return null;
+                record.pendingFetches = 0;
+                record.finishTimer = null;
+                record.safetyTimer = window.setTimeout(() => stopButtonLoading(button), 60_000);
+                button.__topGymLoading = record;
+                activeButtons.add(button);
+                latestClickedButton = button;
+                latestClickAt = performance.now();
+                scheduleButtonStop(button, 450);
+                return record;
+            }
+
             function stopButtonLoading(button) {
-                const record = button && button.__topGymLoading;
+                const record = button?.__topGymLoading;
                 if (!record || record.stopped) return;
+                feedback.stop(button);
                 record.stopped = true;
                 activeButtons.delete(button);
-                clearTimeout(record.finishTimer);
-                clearTimeout(record.safetyTimer);
-                button.innerHTML = record.originalHtml;
-                button.classList.remove('is-loading');
-                button.removeAttribute('aria-busy');
-                delete button.dataset.loading;
-                button.disabled = record.wasDisabled;
+                window.clearTimeout(record.finishTimer);
+                window.clearTimeout(record.safetyTimer);
                 delete button.__topGymLoading;
             }
 
-            function scheduleButtonStop(button, delay = 220) {
-                const record = button && button.__topGymLoading;
+            function scheduleButtonStop(button, delay = 260) {
+                const record = button?.__topGymLoading;
                 if (!record || record.stopped) return;
-                clearTimeout(record.finishTimer);
-                record.finishTimer = setTimeout(() => {
+                window.clearTimeout(record.finishTimer);
+                record.finishTimer = window.setTimeout(() => {
                     if (record.pendingFetches === 0) stopButtonLoading(button);
                 }, delay);
             }
 
-            function startButtonLoading(button) {
-                if (!button || button.dataset.loading === 'true') return button?.__topGymLoading;
-                const record = {
-                    originalHtml: button.innerHTML,
-                    wasDisabled: button.disabled,
-                    pendingFetches: 0,
-                    stopped: false,
-                    finishTimer: null,
-                    safetyTimer: null
-                };
-                button.__topGymLoading = record;
-                activeButtons.add(button);
-                latestClickedButton = button;
-                latestClickAt = Date.now();
-                button.dataset.loading = 'true';
-                button.classList.add('is-loading');
-                button.setAttribute('aria-busy', 'true');
-                setTimeout(() => {
-                    if (button.__topGymLoading === record && !record.stopped) button.disabled = true;
-                }, 0);
-                record.safetyTimer = setTimeout(() => stopButtonLoading(button), 30000);
-                scheduleButtonStop(button);
-                return record;
-            }
-
             function buttonForFetch() {
-                if (latestClickedButton && Date.now() - latestClickAt < 3000 && activeButtons.has(latestClickedButton)) {
-                    return latestClickedButton;
+                const latestRecord = latestClickedButton?.__topGymLoading;
+                if (latestClickedButton && performance.now() - latestClickAt < 3000 && activeButtons.has(latestClickedButton) && latestRecord && !latestRecord.stopped && feedback.isLoading(latestClickedButton)) return latestClickedButton;
+                for (const form of document.querySelectorAll('form')) {
+                    const button = form.__topGymLoadingButton;
+                    const record = button?.__topGymLoading;
+                    if (button && activeButtons.has(button) && record && !record.stopped && feedback.isLoading(button)) return button;
                 }
-                return [...activeButtons].reverse().find((button) => button.form?.__topGymLoadingButton === button) || null;
+                return null;
             }
 
             const originalFetch = window.fetch.bind(window);
@@ -65,20 +72,20 @@
                 const record = button?.__topGymLoading;
                 if (record && !record.stopped) {
                     record.pendingFetches += 1;
-                    clearTimeout(record.finishTimer);
+                    window.clearTimeout(record.finishTimer);
                 }
                 return originalFetch(...args).finally(() => {
                     if (record && !record.stopped) {
                         record.pendingFetches = Math.max(0, record.pendingFetches - 1);
-                        scheduleButtonStop(button, 260);
+                        scheduleButtonStop(button);
                     }
                 });
             };
 
             document.addEventListener('click', (event) => {
                 const button = event.target.closest?.('button');
-                if (!button) return;
-                if (button.dataset.loading === 'true') {
+                if (!button || !shouldTrack(button)) return;
+                if (feedback.isLoading(button)) {
                     event.preventDefault();
                     event.stopImmediatePropagation();
                     return;
@@ -90,12 +97,13 @@
             document.addEventListener('submit', (event) => {
                 const form = event.target;
                 const button = event.submitter || form.__topGymLoadingButton || form.querySelector('button[type="submit"]');
-                if (!button) return;
+                if (!shouldTrack(button) || feedback.isLoading(button)) return;
                 const record = startButtonLoading(button);
                 if (record) form.__topGymLoadingButton = button;
             }, true);
 
             window.topGymStopButtonLoading = stopButtonLoading;
+            window.topGymStartButtonLoading = startButtonLoading;
         })();
 
         (() => {
