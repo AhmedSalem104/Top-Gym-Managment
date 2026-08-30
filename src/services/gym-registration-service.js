@@ -421,9 +421,10 @@ function createGymRegistrationService({ commercialService, saasService, authServ
             const requests = result.recordset.map(requestFromRow);
             const count = await pool.request()
                 .input('status', sql.VarChar(20), normalizedStatus)
-                .query("SELECT COUNT_BIG(*) AS total FROM dbo.saas_gym_registration_requests WHERE (@status='' OR status=@status);");
+                .query("SELECT COUNT_BIG(*) AS total, (SELECT COUNT_BIG(*) FROM dbo.saas_gym_registration_requests WHERE status='pending') AS pending_count FROM dbo.saas_gym_registration_requests WHERE (@status='' OR status=@status);");
             const total = Number(count.recordset[0]?.total || 0);
-            return { requests, pagination: { page: currentPage, pageSize: currentPageSize, total, pages: Math.max(1, Math.ceil(total / currentPageSize)) } };
+            const pendingCount = Number(count.recordset[0]?.pending_count || 0);
+            return { requests, pendingCount, pagination: { page: currentPage, pageSize: currentPageSize, total, pages: Math.max(1, Math.ceil(total / currentPageSize)) } };
         },
 
         async getAdminProofFile(proofId) {

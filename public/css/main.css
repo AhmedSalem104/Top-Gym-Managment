@@ -18867,6 +18867,22 @@ body.auth-locked .auth-screen {
 .dialog-check { display: flex; align-items: center; gap: 8px; color: var(--text-secondary); font-size: .73rem; }
 .dialog-check input { accent-color: var(--primary); }
 .dialog-feature-grid { display: grid; grid-column: 1 / -1; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; padding: 12px; border: 1px solid var(--border-secondary); border-radius: 11px; background: var(--bg-surface); }
+.gym-registration-table { min-width: 1180px; }
+.table-secondary { display: block; margin-top: 3px; color: var(--text-muted); font-size: .64rem; }
+.danger-text { color: var(--danger-text); }
+.registration-admin-detail { padding: 12px; border: 1px solid var(--border-secondary); border-radius: 12px; background: var(--bg-surface); }
+.registration-admin-detail .detail-list { gap: 8px; }
+.registration-proof-review { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px; border: 1px solid var(--info-border); border-radius: 11px; background: var(--info-soft); color: var(--info-text); font-size: .75rem; font-weight: 800; }
+.platform-credentials-dialog { width: min(92vw, 650px); }
+.registration-credentials-grid { display: grid; gap: 8px; }
+.registration-credential-row { display: grid; grid-template-columns: minmax(130px, .7fr) minmax(0, 1.5fr) auto; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--border-secondary); border-radius: 10px; background: var(--bg-surface); }
+.registration-credential-row > span { color: var(--text-muted); font-size: .72rem; font-weight: 800; }
+.registration-credential-row code { min-width: 0; overflow-wrap: anywhere; color: var(--text-primary); font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: .72rem; direction: ltr; text-align: left; }
+.registration-whatsapp-box { display: grid; gap: 10px; padding: 14px; border: 1px solid var(--border-secondary); border-radius: 12px; background: var(--bg-surface); }
+.registration-whatsapp-box .card-heading { margin: 0; }
+.registration-whatsapp-box h3 { color: var(--text-primary); font-size: .9rem; }
+.registration-whatsapp-box textarea { width: 100%; min-height: 185px; resize: vertical; border: 1px solid var(--platform-border); border-radius: 10px; background: var(--bg-input); color: var(--text-primary); padding: 11px; font: inherit; font-size: .75rem; line-height: 1.7; direction: rtl; }
+.registration-whatsapp-box small { color: var(--text-muted); font-size: .67rem; line-height: 1.6; }
 .platform-toast { position: fixed; z-index: 120; right: 24px; bottom: 24px; max-width: min(90vw, 380px); transform: translateY(20px); border: 1px solid var(--success-border); border-radius: 11px; background: var(--success-soft); color: var(--success-text); opacity: 0; padding: 12px 15px; pointer-events: none; font-size: .75rem; font-weight: 800; transition: opacity var(--transition-fast), transform var(--transition-fast); }
 .platform-toast.show { transform: none; opacity: 1; }
 .platform-toast.error { border-color: var(--danger-border); background: var(--danger-soft); color: var(--danger-text); }
@@ -18932,6 +18948,9 @@ body.auth-locked .auth-screen {
     .dialog-grid { grid-template-columns: 1fr; }
     .dialog-label.full { grid-column: auto; }
     .platform-dialog footer { flex-direction: row; }
+    .registration-proof-review { align-items: flex-start; flex-direction: column; }
+    .registration-credential-row { grid-template-columns: 1fr auto; }
+    .registration-credential-row code { grid-column: 1 / -1; grid-row: 2; }
     .platform-toast { right: 14px; bottom: 14px; }
 }
 

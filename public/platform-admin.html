@@ -17,7 +17,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preload" href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
-    <link rel="stylesheet" href="/css/main.css?v=68">
+    <link rel="stylesheet" href="/css/main.css?v=69">
     <link rel="icon" type="image/svg+xml" href="/assets/gym-brand.svg?v=2">
     <title>إدارة المنصة | Logic Fit</title>
 </head>
@@ -55,6 +55,7 @@
                 <button class="platform-nav-item active" type="button" data-platform-view="dashboard"><span class="nav-icon">⌂</span><span>لوحة المنصة</span></button>
                 <button class="platform-nav-item" type="button" data-platform-view="gyms"><span class="nav-icon">▦</span><span>الجيمات</span><b class="nav-count" id="navGymsCount">0</b></button>
                 <button class="platform-nav-item" type="button" data-platform-view="requests"><span class="nav-icon">◌</span><span>طلبات الاشتراك</span><b class="nav-count" id="navRequestsCount">0</b></button>
+                <button class="platform-nav-item" type="button" data-platform-view="gym-registrations"><span class="nav-icon">✦</span><span>طلبات الانضمام</span><b class="nav-count" id="navGymRegistrationCount">0</b></button>
                 <button class="platform-nav-item" type="button" data-platform-view="backups"><span class="nav-icon">▣</span><span>النسخ والتعافي</span></button>
                 <button class="platform-nav-item" type="button" data-platform-view="plans"><span class="nav-icon">◇</span><span>الباقات</span></button>
                 <button class="platform-nav-item" type="button" data-platform-view="audit"><span class="nav-icon">≡</span><span>سجل المنصة</span></button>
@@ -105,6 +106,11 @@
                     <div class="platform-card"><div class="directory-toolbar compact"><select id="requestStatusFilter"><option value="">كل الطلبات</option><option value="pending">قيد المراجعة</option><option value="approved">مقبول</option><option value="rejected">مرفوض</option></select></div><div class="table-scroll"><table class="platform-table"><thead><tr><th>الجيم</th><th>الباقة</th><th>المبلغ</th><th>إثبات الدفع</th><th>الحالة</th><th>التاريخ</th><th>الإجراء</th></tr></thead><tbody id="requestsTableBody"></tbody></table></div><div class="directory-footer"><span id="requestResultsSummary">—</span><div class="pagination" id="requestPagination"></div></div></div>
                 </section>
 
+                <section class="platform-view" data-platform-panel="gym-registrations">
+                    <div class="platform-page-head"><div><span class="eyebrow">التسجيل الذاتي</span><h2>طلبات الانضمام إلى Logic Fit</h2><p>راجع طلبات الجيمات الجديدة وإثباتات الدفع قبل إنشاء Tenant وحساب Owner.</p></div><button class="platform-btn ghost platform-page-action" type="button" data-platform-action="refresh-gym-registrations">تحديث الطلبات</button></div>
+                    <div class="platform-card"><div class="directory-toolbar compact"><select id="gymRegistrationStatusFilter"><option value="">كل الطلبات</option><option value="pending">قيد المراجعة</option><option value="approved">مقبول</option><option value="rejected">مرفوض</option><option value="cancelled">ملغي</option></select></div><div class="table-scroll"><table class="platform-table gym-registration-table"><thead><tr><th>الجيم</th><th>المسؤول ووسيلة التواصل</th><th>الباقة والمدة</th><th>المبلغ وطريقة الدفع</th><th>إثبات الدفع</th><th>الحالة</th><th>التاريخ</th><th>الإجراء</th></tr></thead><tbody id="gymRegistrationTableBody"></tbody></table></div><div class="directory-footer"><span id="gymRegistrationResultsSummary">—</span><div class="pagination" id="gymRegistrationPagination"></div></div></div>
+                </section>
+
                 <section class="platform-view" data-platform-panel="plans">
                     <div class="platform-page-head"><div><span class="eyebrow">باقات المنصة</span><h2>الباقات والحدود</h2><p>إدارة أسعار الباقات والمزايا التي يتم تطبيقها مركزيًا.</p></div><button class="platform-btn primary" type="button" data-platform-action="new-plan">+ إضافة باقة</button></div><div class="plan-grid" id="plansGrid"></div>
                 </section>
@@ -131,8 +137,9 @@
     </div>
 
     <dialog class="platform-dialog" id="platformActionDialog"><form method="dialog" id="platformActionForm"><header><div><span class="eyebrow">إجراء آمن</span><h3 id="platformDialogTitle">إجراء إداري</h3></div><button class="dialog-close" data-dialog-cancel type="button" aria-label="إغلاق">×</button></header><div class="platform-dialog-error" id="platformDialogError" role="alert" hidden></div><div class="dialog-body" id="platformDialogBody"></div><footer><button class="platform-btn ghost" data-dialog-cancel type="button">إلغاء</button><button class="platform-btn primary" id="platformDialogSubmit" value="default" type="submit">تأكيد الإجراء</button></footer></form></dialog>
+    <dialog class="platform-dialog platform-credentials-dialog" id="platformRegistrationCredentialsDialog"><form method="dialog"><header><div><span class="eyebrow">بيانات مؤقتة</span><h3>تم إنشاء الجيم بنجاح</h3></div><button class="dialog-close" type="submit" aria-label="إغلاق">×</button></header><div class="dialog-body" id="platformRegistrationCredentialsBody"></div><footer><button class="platform-btn primary" type="submit">إغلاق</button></footer></form></dialog>
     <div class="platform-toast" id="platformToast" role="status" aria-live="polite"></div>
     <script defer src="/js/ui-feedback.js?v=2"></script>
-    <script defer src="/js/platform-admin.js?v=5"></script>
+    <script defer src="/js/platform-admin.js?v=6"></script>
 </body>
 </html>

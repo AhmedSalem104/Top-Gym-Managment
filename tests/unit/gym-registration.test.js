@@ -68,3 +68,19 @@ test('new registration page is independent from the existing landing page', () =
     assert.match(registration, /\/js\/register-gym\.js/);
     assert.doesNotMatch(landing, /register-gym/);
 });
+
+test('platform admin exposes a separate gym registration queue with one-time credential handling', () => {
+    const html = read('public/platform-admin.html');
+    const client = read('public/js/platform-admin.js');
+    assert.match(html, /data-platform-view="gym-registrations"/);
+    assert.match(html, /data-platform-panel="gym-registrations"/);
+    assert.match(html, /id="gymRegistrationTableBody"/);
+    assert.match(html, /id="platformRegistrationCredentialsDialog"/);
+    assert.match(client, /\/api\/platform-admin\/gym-registration-requests\?/);
+    assert.match(client, /gym-registration-approve/);
+    assert.match(client, /gym-registration-reject/);
+    assert.match(client, /oneTimeCredentials/);
+    assert.match(client, /clearRegistrationCredentials/);
+    assert.match(client, /registration-payment-proofs|gym-registration-requests\/proofs/);
+    assert.doesNotMatch(client, /currentPassword/);
+});

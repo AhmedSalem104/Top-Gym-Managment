@@ -10,6 +10,10 @@
         requests: [],
         requestPage: 1,
         requestPagination: {},
+        gymRegistrationRequests: [],
+        gymRegistrationPage: 1,
+        gymRegistrationPagination: {},
+        registrationCredentials: null,
         audit: [],
         profile: null,
         profileTab: 'overview',
@@ -27,6 +31,7 @@
     const appShell = $('#platformAdminApp');
     const dialog = $('#platformActionDialog');
     const dialogForm = $('#platformActionForm');
+    const registrationCredentialsDialog = $('#platformRegistrationCredentialsDialog');
     let toastTimer;
     let searchTimer;
 
@@ -207,12 +212,13 @@
         state.view = view;
         $$('[data-platform-view]').forEach((button) => button.classList.toggle('active', button.dataset.platformView === view));
         $$('[data-platform-panel]').forEach((panel) => panel.classList.toggle('active', panel.dataset.platformPanel === view));
-        const titles = { dashboard: 'لوحة المنصة', gyms: 'الجيمات', requests: 'طلبات الاشتراك', backups: 'النسخ والتعافي', plans: 'الباقات', audit: 'سجل المنصة', settings: 'إعدادات المنصة' };
+        const titles = { dashboard: 'لوحة المنصة', gyms: 'الجيمات', requests: 'طلبات الاشتراك', 'gym-registrations': 'طلبات الانضمام', backups: 'النسخ والتعافي', plans: 'الباقات', audit: 'سجل المنصة', settings: 'إعدادات المنصة' };
         $('#platformPageTitle').textContent = titles[view] || 'إدارة المنصة';
         $('.platform-sidebar')?.classList.remove('open');
         if (view === 'dashboard') loadDashboard();
         if (view === 'gyms') loadTenants();
         if (view === 'requests') loadRequests();
+        if (view === 'gym-registrations') loadGymRegistrations();
         if (view === 'backups') loadBackups();
         if (view === 'plans') loadPlans();
         if (view === 'audit') loadAudit();
@@ -457,6 +463,42 @@
         host.innerHTML = pages > 1 ? Array.from({ length: pages }, (_, index) => index + 1).map((number) => `<button type="button" class="${number === page ? 'active' : ''}" data-request-page="${number}">${number}</button>`).join('') : '';
     }
 
+    function registrationTermLabel(term) {
+        const months = Number(term?.durationMonths || 0);
+        return months === 1 ? 'شهري' : months === 3 ? '3 أشهر' : months === 6 ? '6 أشهر' : months === 12 ? 'سنوي' : `${months} شهر`;
+    }
+
+    function renderGymRegistrations(data) {
+        state.gymRegistrationRequests = data?.requests || [];
+        state.gymRegistrationPagination = data?.pagination || {};
+        $('#navGymRegistrationCount').textContent = Number(data?.pendingCount ?? state.gymRegistrationRequests.filter((item) => item.status === 'pending').length);
+        const rows = state.gymRegistrationRequests;
+        $('#gymRegistrationTableBody').innerHTML = rows.length ? rows.map((request) => {
+            const proof = request.proof;
+            const amount = request.pricing?.amountDue ?? 0;
+            const proofCell = proof
+                ? `<a class="table-action" target="_blank" rel="noopener noreferrer" href="/api/platform-admin/gym-registration-requests/proofs/${encodeURIComponent(proof.id)}/file">معاينة</a><small class="table-secondary">${proof.verified ? 'تم التحقق' : 'غير مكتمل'}</small>`
+                : '<span class="table-secondary">لم يرفع</span>';
+            const actions = request.status === 'pending'
+                ? `<button class="table-action" type="button" data-gym-registration-action="approve" data-gym-registration-id="${request.id}">اعتماد</button> <button class="table-action danger-text" type="button" data-gym-registration-action="reject" data-gym-registration-id="${request.id}">رفض</button>`
+                : '<span class="table-secondary">—</span>';
+            return `<tr><td><span class="tenant-cell"><strong>${escapeHtml(request.gymName)}</strong><small>${escapeHtml(request.city || 'الموقع غير محدد')} · #${escapeHtml(request.id)}</small></span></td><td><span class="owner-cell"><strong>${escapeHtml(request.ownerName)}</strong><small dir="ltr">${escapeHtml(request.whatsapp)}</small><small>${escapeHtml(request.email || '—')}</small></span></td><td><span class="tenant-cell"><strong>${escapeHtml(request.plan?.name || '—')}</strong><small>${escapeHtml(registrationTermLabel(request.term))}</small></span></td><td><span class="tenant-cell"><strong>${escapeHtml(formatMoney(amount, request.pricing?.currency))}</strong><small>${escapeHtml(request.paymentMethod?.name || '—')}</small></span></td><td>${proofCell}</td><td>${statusPill(request.status)}</td><td>${escapeHtml(formatDateTime(request.createdAt))}</td><td>${actions}</td></tr>`;
+        }).join('') : '<tr><td colspan="8"><div class="empty-inline">لا توجد طلبات انضمام مطابقة.</div></td></tr>';
+        const pagination = state.gymRegistrationPagination;
+        const total = Number(pagination.total || 0);
+        const page = Number(pagination.page || state.gymRegistrationPage || 1);
+        const pages = Number(pagination.pages || 1);
+        $('#gymRegistrationResultsSummary').textContent = total ? `عرض ${rows.length} من ${total} طلب` : 'لا توجد نتائج';
+        $('#gymRegistrationPagination').innerHTML = pages > 1 ? Array.from({ length: pages }, (_, index) => index + 1).map((number) => `<button type="button" class="${number === page ? 'active' : ''}" data-gym-registration-page="${number}">${number}</button>`).join('') : '';
+    }
+
+    async function loadGymRegistrations() {
+        const status = $('#gymRegistrationStatusFilter')?.value || '';
+        const params = new URLSearchParams({ page: state.gymRegistrationPage, pageSize: 25 });
+        if (status) params.set('status', status);
+        try { renderGymRegistrations(await api(`/api/platform-admin/gym-registration-requests?${params}`)); } catch (error) { showToast(getApiErrorMessage(error), true); }
+    }
+
     function backupStatusLabel(value) {
         return ({
             pending: 'قيد الانتظار',
@@ -616,6 +658,17 @@
             const plan = state.plans.find((item) => String(item.id) === String(payload.planId)) || {};
             title = `حذف باقة ${plan.name || ''}`;
             body = `<p>سيتم إخفاء الباقة من الاشتراكات الجديدة مع الحفاظ على الاشتراكات والتقارير القديمة. لا يتم حذف البيانات التاريخية.</p>${dialogField('سبب الحذف','reason','text','','maxlength="1000" required')}`;
+        } else if (type === 'gym-registration-approve' || type === 'gym-registration-reject') {
+            const request = state.gymRegistrationRequests.find((item) => String(item.id) === String(payload.requestId)) || {};
+            const isApproval = type === 'gym-registration-approve';
+            title = isApproval ? 'اعتماد طلب انضمام الجيم' : 'رفض طلب انضمام الجيم';
+            if (isApproval) {
+                const proof = request.proof;
+                const proofLink = proof?.id ? `<a class="table-action" target="_blank" rel="noopener noreferrer" href="/api/platform-admin/gym-registration-requests/proofs/${encodeURIComponent(proof.id)}/file">فتح إثبات الدفع</a>` : '<span class="table-secondary">لم يتم رفع إثبات دفع مؤكد</span>';
+                body = `<p class="dialog-hint">سيتم إنشاء Tenant وحساب Owner واشتراك Active باستخدام خدمة Provisioning الحالية. كلمة المرور المؤقتة ستظهر مرة واحدة فقط بعد نجاح الاعتماد.</p><div class="registration-admin-detail">${detailRows([['الجيم', request.gymName],['المسؤول', request.ownerName],['WhatsApp', request.whatsapp],['البريد', request.email],['الباقة', request.plan?.name],['المدة', registrationTermLabel(request.term)],['الإجمالي', formatMoney(request.pricing?.amountDue, request.pricing?.currency)],['وسيلة الدفع', request.paymentMethod?.name]])}</div><div class="registration-proof-review"><span>إثبات الدفع</span>${proofLink}</div>${dialogTextarea('ملاحظات المراجعة','reviewNotes','','maxlength="2000" rows="3" placeholder="اختياري"')}`;
+            } else {
+                body = `<p class="dialog-hint">لن يتم إنشاء جيم أو حساب عند الرفض. سجّل سببًا واضحًا حتى يمكن متابعة الطلب لاحقًا.</p>${dialogField('سبب الرفض','reason','text','','maxlength="2000" required')}`;
+            }
         } else if (type === 'approve') {
             const request = state.requests.find((item) => String(item.id) === String(payload.requestId));
             title = 'قبول طلب الاشتراك';
@@ -641,6 +694,47 @@
         dialog.showModal();
     }
 
+    function registrationWelcomeMessage(result) {
+        const request = result?.request || {};
+        const credentials = result?.oneTimeCredentials || {};
+        const subscription = result?.subscription || {};
+        const planName = subscription.plan?.name || request.plan?.name || 'الباقة المختارة';
+        const startsAt = formatDate(subscription.startsAt || subscription.starts_at);
+        const expiresAt = subscription.expiresAt || subscription.expires_at ? formatDate(subscription.expiresAt || subscription.expires_at) : 'بدون انتهاء';
+        const loginUrl = credentials.loginUrl || window.location.origin;
+        return `مرحبًا بك في Logic Fit\n\nتم تفعيل حساب الجيم بنجاح.\n\nالجيم: ${request.gymName || '—'}\nالباقة: ${planName}\nتاريخ البداية: ${startsAt}\nتاريخ الانتهاء: ${expiresAt}\n\nرابط تسجيل الدخول:\n${loginUrl}\n\nاسم المستخدم: ${credentials.username || '—'}\nكلمة المرور المؤقتة: ${credentials.temporaryPassword || '—'}\n\nيرجى تغيير كلمة المرور بعد أول تسجيل دخول.`;
+    }
+
+    function clearRegistrationCredentials() {
+        state.registrationCredentials = null;
+        const body = $('#platformRegistrationCredentialsBody');
+        if (body) body.replaceChildren();
+    }
+
+    function showRegistrationCredentials(result) {
+        if (!registrationCredentialsDialog) return;
+        const credentials = result?.oneTimeCredentials || {};
+        const request = result?.request || {};
+        const loginUrl = credentials.loginUrl || window.location.origin;
+        const message = registrationWelcomeMessage(result);
+        state.registrationCredentials = { ...credentials, loginUrl, message };
+        const phone = String(request.whatsapp || '').replace(/[^0-9]/g, '');
+        const whatsappHref = phone ? `https://wa.me/${phone}?text=${encodeURIComponent(message)}` : '';
+        $('#platformRegistrationCredentialsBody').innerHTML = `<p class="dialog-hint">تظهر كلمة المرور المؤقتة الآن مرة واحدة فقط. انسخها أو أرسل الرسالة يدويًا قبل إغلاق هذه النافذة؛ لا يمكن استرجاعها من النظام بعد ذلك.</p><div class="registration-credentials-grid"><div class="registration-credential-row"><span>اسم المستخدم</span><code>${escapeHtml(credentials.username || '—')}</code><button class="table-action" type="button" data-copy-registration="username">نسخ</button></div><div class="registration-credential-row"><span>كلمة المرور المؤقتة</span><code>${escapeHtml(credentials.temporaryPassword || '—')}</code><button class="table-action" type="button" data-copy-registration="temporaryPassword">نسخ</button></div><div class="registration-credential-row"><span>رابط الدخول</span><code dir="ltr">${escapeHtml(loginUrl)}</code><button class="table-action" type="button" data-copy-registration="loginUrl">نسخ</button></div></div><div class="registration-whatsapp-box"><div class="card-heading"><div><span class="eyebrow">تواصل يدوي</span><h3>رسالة الترحيب</h3></div>${whatsappHref ? `<a class="platform-btn ghost" target="_blank" rel="noopener noreferrer" href="${escapeHtml(whatsappHref)}">فتح WhatsApp</a>` : ''}</div><textarea id="registrationWelcomeMessage" readonly>${escapeHtml(message)}</textarea><button class="platform-btn ghost" type="button" data-copy-registration="message">نسخ الرسالة</button><small>فتح WhatsApp لا يثبت إرسال الرسالة؛ الإرسال يتم يدويًا داخل التطبيق.</small></div>`;
+        registrationCredentialsDialog.showModal();
+    }
+
+    async function copyRegistrationValue(key) {
+        const value = state.registrationCredentials?.[key];
+        if (!value) return;
+        try {
+            await navigator.clipboard.writeText(String(value));
+            showToast('تم نسخ البيانات إلى الحافظة.');
+        } catch (_) {
+            showToast('تعذر النسخ تلقائيًا؛ حدّد النص وانسخه يدويًا.', true);
+        }
+    }
+
     function TENANT_STATUS_OPTIONS(selected) { return ['active','trial','suspended','expired','archived'].map((status) => `<option value="${status}" ${status === selected ? 'selected' : ''}>${statusLabel(status)}</option>`).join(''); }
     function SUBSCRIPTION_OPTIONS(selected) { return [['activate','تفعيل / تحويل Trial'],['extend','تمديد'],['shorten','تقليل المدة'],['set_dates','تعديل التواريخ'],['change_plan','تغيير الباقة'],['grant_lifetime','Lifetime'],['suspend','إيقاف الاشتراك'],['reactivate','إعادة تفعيل'],['expire','إنهاء الاشتراك'],['cancel','إلغاء الاشتراك']].map(([value,label]) => `<option value="${value}" ${value === selected ? 'selected' : ''}>${label}</option>`).join(''); }
 
@@ -660,7 +754,7 @@
         const values = formObject(dialogForm);
         const submit = $('#platformDialogSubmit');
         const loadingLabels = {
-            status: 'جاري تحديث حالة الجيم...', subscription: 'جاري تطبيق الاشتراك...', extend: 'جاري تمديد الاشتراك...', lifetime: 'جاري تفعيل الاشتراك...', plan: 'جاري تغيير الباقة...', override: 'جاري حفظ الاستثناءات...', note: 'جاري حفظ الملاحظة...', reset: 'جاري إعادة ضبط الوصول...', 'new-tenant': 'جاري إنشاء الجيم...', owner: 'جاري تحديث بيانات المالك...', 'plan-create': 'جاري إضافة الباقة...', 'plan-edit': 'جاري تحديث الباقة...', 'plan-delete': 'جاري أرشفة الباقة...', approve: 'جاري اعتماد الطلب...', reject: 'جاري رفض الطلب...', 'platform-backup': 'جاري إنشاء نسخة المنصة...', 'backup-retention': 'جاري تنظيف النسخ...', 'tenant-backup': 'جاري إنشاء نسخة الجيم...'
+            status: 'جاري تحديث حالة الجيم...', subscription: 'جاري تطبيق الاشتراك...', extend: 'جاري تمديد الاشتراك...', lifetime: 'جاري تفعيل الاشتراك...', plan: 'جاري تغيير الباقة...', override: 'جاري حفظ الاستثناءات...', note: 'جاري حفظ الملاحظة...', reset: 'جاري إعادة ضبط الوصول...', 'new-tenant': 'جاري إنشاء الجيم...', owner: 'جاري تحديث بيانات المالك...', 'plan-create': 'جاري إضافة الباقة...', 'plan-edit': 'جاري تحديث الباقة...', 'plan-delete': 'جاري أرشفة الباقة...', approve: 'جاري اعتماد الطلب...', reject: 'جاري رفض الطلب...', 'gym-registration-approve': 'جاري اعتماد طلب الجيم...', 'gym-registration-reject': 'جاري رفض طلب الجيم...', 'platform-backup': 'جاري إنشاء نسخة المنصة...', 'backup-retention': 'جاري تنظيف النسخ...', 'tenant-backup': 'جاري إنشاء نسخة الجيم...'
         };
         setLoading(submit, true, loadingLabels[action] || 'جاري تنفيذ الإجراء...');
         try {
@@ -708,6 +802,12 @@
             } else if (action === 'reject') {
                 await api(`/api/platform-admin/subscription-requests/${payload.requestId}/reject`, { method: 'POST', body: JSON.stringify({ reason: values.reason }) });
                 showToast('تم رفض الطلب وتسجيل السبب.'); dialog.close(); await loadRequests();
+            } else if (action === 'gym-registration-approve') {
+                const result = await api(`/api/platform-admin/gym-registration-requests/${payload.requestId}/approve`, { method: 'POST', body: JSON.stringify({ reviewNotes: values.reviewNotes || '' }) });
+                showToast('تم اعتماد طلب الجيم وإنشاء الحساب بنجاح.'); dialog.close(); await loadGymRegistrations(); loadDashboard(); loadTenants(); showRegistrationCredentials(result);
+            } else if (action === 'gym-registration-reject') {
+                await api(`/api/platform-admin/gym-registration-requests/${payload.requestId}/reject`, { method: 'POST', body: JSON.stringify({ reason: values.reason }) });
+                showToast('تم رفض طلب الجيم وتسجيل السبب.'); dialog.close(); await loadGymRegistrations();
             } else if (action === 'platform-backup') {
                 await api('/api/platform-admin/backups/run', { method: 'POST', body: JSON.stringify({ backupType: 'platform_manual', reason: values.reason }) });
                 showToast('تم بدء نسخة المنصة والتحقق منها.'); dialog.close(); await loadBackups();
@@ -760,6 +860,7 @@
         $('#tenantSearch').addEventListener('input', (event) => { clearTimeout(searchTimer); state.tenantFilters.search = event.target.value; state.tenantPage = 1; searchTimer = setTimeout(loadTenants, 260); });
         [['tenantStatusFilter','status'],['tenantPlanFilter','plan'],['tenantExpiryFilter','expiringDays']].forEach(([id,key]) => $(`#${id}`).addEventListener('change', (event) => { state.tenantFilters[key] = event.target.value; state.tenantPage = 1; loadTenants(); }));
         $('#requestStatusFilter').addEventListener('change', () => { state.requestPage = 1; loadRequests(); });
+        $('#gymRegistrationStatusFilter').addEventListener('change', () => { state.gymRegistrationPage = 1; loadGymRegistrations(); });
         $('#platformGlobalSearch').addEventListener('input', (event) => { if (state.view !== 'gyms') setView('gyms'); $('#tenantSearch').value = event.target.value; state.tenantFilters.search = event.target.value; state.tenantPage = 1; clearTimeout(searchTimer); searchTimer = setTimeout(loadTenants, 260); });
         const bindRefresh = (selector, loader) => {
             const button = $(selector);
@@ -771,6 +872,7 @@
         };
         bindRefresh('[data-platform-action="refresh-dashboard"]', loadDashboard);
         bindRefresh('[data-platform-action="refresh-requests"]', loadRequests);
+        bindRefresh('[data-platform-action="refresh-gym-registrations"]', loadGymRegistrations);
         bindRefresh('[data-platform-action="refresh-backups"]', loadBackups);
         $('#platformMobileMenu').addEventListener('click', () => $('.platform-sidebar').classList.toggle('open'));
         $('#platformMobileMenu').addEventListener('keydown', (event) => { if (event.key === 'Enter' || event.key === ' ') $('.platform-sidebar').classList.toggle('open'); });
@@ -779,7 +881,12 @@
         $$('[data-dialog-cancel]', dialog).forEach((button) => button.addEventListener('click', () => dialog.close()));
         dialog.addEventListener('click', (event) => { if (event.target === dialog) dialog.close(); });
         dialog.addEventListener('close', clearDialogError);
+        registrationCredentialsDialog?.addEventListener('close', clearRegistrationCredentials);
         document.addEventListener('click', async (event) => {
+            const registrationCopy = event.target.closest('[data-copy-registration]');
+            if (registrationCopy) { await copyRegistrationValue(registrationCopy.dataset.copyRegistration); return; }
+            const registrationAction = event.target.closest('[data-gym-registration-action]');
+            if (registrationAction) { openDialog(`gym-registration-${registrationAction.dataset.gymRegistrationAction}`, { requestId: registrationAction.dataset.gymRegistrationId }); return; }
             const platformAction = event.target.closest('[data-platform-action]');
             if (platformAction?.dataset.platformAction === 'new-tenant') { openDialog('new-tenant'); return; }
             if (platformAction?.dataset.platformAction === 'new-plan') { openDialog('plan-create'); return; }
@@ -791,6 +898,8 @@
             if (pageButton) { state.tenantPage = Number(pageButton.dataset.tenantPage); loadTenants(); return; }
             const requestPageButton = event.target.closest('[data-request-page]');
             if (requestPageButton) { state.requestPage = Number(requestPageButton.dataset.requestPage); loadRequests(); return; }
+            const gymRegistrationPageButton = event.target.closest('[data-gym-registration-page]');
+            if (gymRegistrationPageButton) { state.gymRegistrationPage = Number(gymRegistrationPageButton.dataset.gymRegistrationPage); loadGymRegistrations(); return; }
             const profilePaymentsPageButton = event.target.closest('[data-profile-payments-page]');
             if (profilePaymentsPageButton && state.profile?.tenant?.id) {
                 state.profilePaymentsPage = Number(profilePaymentsPageButton.dataset.profilePaymentsPage) || 1;
