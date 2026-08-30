@@ -131,3 +131,16 @@ test('owner member request review and portal analytics surfaces stay tenant-scop
     assert.match(read('public/js/pages/management/member-subscription-requests.js'), new RegExp('api/member-subscription-requests'));
     assert.match(read('public/js/pages/management/portal-analytics.js'), new RegExp('api/portal/analytics'));
 });
+
+test('member portal activation celebration is approval-gated, one-time and reduced-motion safe', () => {
+    const page = read('public/member-portal.html');
+    const script = read('public/js/member-portal-subscription.js');
+    const styles = read('public/css/pages/member-portal.css');
+    assert.match(page, /id="portalActivationCelebration"/);
+    assert.match(page, /data-portal-activation-dismiss/);
+    assert.match(script, /status.*approved/);
+    assert.match(script, /approvedMembershipId/);
+    assert.match(script, /logicfit\.portal\.activation-seen\.v1/);
+    assert.match(script, /localStorage/);
+    assert.match(styles, /prefers-reduced-motion/);
+});

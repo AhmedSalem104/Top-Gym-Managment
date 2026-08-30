@@ -6,7 +6,8 @@
     catalog: null,
     paymentMethods: [],
     loading: false,
-    submitting: false
+    submitting: false,
+    activationSeen: new Set()
   };
 
   const elements = {
@@ -27,7 +28,10 @@
     submit: $('portalSubscriptionSubmit'),
     feedback: $('portalSubscriptionFeedback'),
     refresh: $('portalSubscriptionRefresh'),
-    history: $('portalSubscriptionHistory')
+    history: $('portalSubscriptionHistory'),
+    activation: $('portalActivationCelebration'),
+    activationMessage: $('portalActivationMessage'),
+    activationDismiss: document.querySelector('[data-portal-activation-dismiss]')
   };
 
   if (!elements.section || !elements.form) return;
@@ -44,6 +48,7 @@
   };
   const requestTypeLabel = (value) => ({ membership: 'اشتراك جديد', renewal: 'تجديد العضوية' }[value] || 'طلب عضوية');
   const statusLabel = (value) => ({ pending: 'قيد المراجعة', approved: 'تم الاعتماد', rejected: 'مرفوض', cancelled: 'ملغي' }[value] || 'غير معروف');
+  const activationStoragePrefix = 'logicfit.portal.activation-seen.v1:';
   const errorMessages = Object.freeze({
     PORTAL_SESSION_REQUIRED: 'انتهت جلسة البوابة. أعد إدخال كود العضوية.',
     PORTAL_SESSION_EXPIRED: 'انتهت جلسة البوابة. أعد إدخال كود العضوية.',
@@ -77,6 +82,47 @@
     elements.feedback.textContent = message;
     elements.feedback.className = `portal-subscription-feedback${type ? ` ${type}` : ''}`;
     elements.feedback.hidden = !message;
+  }
+
+  function activationKey(requestId) {
+    const id = Number(requestId);
+    return Number.isInteger(id) && id > 0 ? `${activationStoragePrefix}${id}` : '';
+  }
+
+  function activationWasSeen(requestId) {
+    const key = activationKey(requestId);
+    if (!key || state.activationSeen.has(key)) return true;
+    try { return window.localStorage.getItem(key) === '1'; } catch (_) { return false; }
+  }
+
+  function markActivationSeen(requestId) {
+    const key = activationKey(requestId);
+    if (!key) return;
+    state.activationSeen.add(key);
+    try { window.localStorage.setItem(key, '1'); } catch (_) { /* Private browsing may deny storage. */ }
+  }
+
+  function hideActivation() {
+    if (!elements.activation) return;
+    elements.activation.hidden = true;
+    elements.activation.classList.remove('is-visible');
+  }
+
+  function showActivationFor(items = []) {
+    if (!elements.activation) return;
+    const approved = (Array.isArray(items) ? items : [])
+      .filter((item) => String(item?.status || '').toLowerCase() === 'approved' && Number(item?.approvedMembershipId) > 0)
+      .sort((first, second) => new Date(second.reviewedAt || second.updatedAt || 0).getTime() - new Date(first.reviewedAt || first.updatedAt || 0).getTime())[0];
+    if (!approved || activationWasSeen(approved.id)) return;
+    const membership = approved.membership || {};
+    const plan = [membership.plan, membership.type].filter(Boolean).join(' · ') || 'عضويتك الجديدة';
+    const start = formatDate(membership.startDate);
+    const end = formatDate(membership.endDate);
+    if (elements.activationMessage) elements.activationMessage.textContent = `${plan} — من ${start} حتى ${end}.`;
+    markActivationSeen(approved.id);
+    elements.activation.hidden = false;
+    elements.activation.classList.remove('is-visible');
+    window.requestAnimationFrame(() => elements.activation?.classList.add('is-visible'));
   }
 
   function setBusy(button, busy) {
@@ -162,6 +208,7 @@
   function renderHistory(items = []) {
     if (!elements.history) return;
     if (!items.length) {
+      hideActivation();
       elements.history.innerHTML = '<div class="portal-subscription-state">لا توجد طلبات سابقة لهذا العضو.</div>';
       return;
     }
@@ -174,6 +221,7 @@
         <span class="portal-request-history-status ${escapeHtml(status)}">${escapeHtml(statusLabel(status))}</span>
       </article>`;
     }).join('');
+    showActivationFor(items);
   }
 
   async function loadHistory() {
@@ -248,6 +296,10 @@
     if (window.topGymFeedback) window.topGymFeedback.start(elements.refresh, { loadingText: 'جاري تحديث الطلبات...' });
     try { await loadHistory(); } catch (error) { setFeedback(error.message || 'تعذر تحديث الطلبات.', 'error'); }
     finally { window.topGymFeedback?.stop?.(elements.refresh); }
+  });
+  elements.activationDismiss?.addEventListener('click', () => {
+    hideActivation();
+    document.querySelector('.portal-tool-grid')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   });
   elements.form.addEventListener('submit', async (event) => {
     event.preventDefault();

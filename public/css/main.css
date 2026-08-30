@@ -15241,6 +15241,37 @@ body .swal2-popup.qr-member-preview-alert .swal2-actions > button.qr-member-prev
 
 /* Tenant-scoped membership request flow. */
 .portal-tool-card-subscription .portal-tool-icon { background: var(--info-soft); color: var(--info-text); }
+.portal-activation-celebration {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  overflow: hidden;
+  margin-bottom: 2px;
+  padding: 16px 18px;
+  border: 1px solid var(--success-border);
+  border-radius: 18px;
+  background: linear-gradient(135deg, var(--success-soft), var(--bg-card));
+  color: var(--text-primary);
+}
+.portal-activation-celebration::before,
+.portal-activation-celebration::after { position: absolute; width: 90px; height: 90px; border-radius: 50%; content: ''; pointer-events: none; }
+.portal-activation-celebration::before { inset: -42px auto auto -26px; background: var(--success-soft); }
+.portal-activation-celebration::after { inset: auto -34px -48px auto; border: 1px solid var(--success-border); }
+.portal-activation-spark { position: absolute; z-index: 1; width: 6px; height: 6px; border-radius: 2px; background: var(--success-text); transform: rotate(35deg); opacity: .75; }
+.portal-activation-spark-one { inset: 17px 24%; }
+.portal-activation-spark-two { inset: auto 12% 18px; width: 5px; height: 5px; background: var(--primary); transform: rotate(18deg); }
+.portal-activation-badge { position: relative; z-index: 2; display: grid; width: 48px; height: 48px; flex: 0 0 auto; place-items: center; border-radius: 15px; background: var(--success); color: var(--text-on-primary); box-shadow: 0 8px 20px var(--success-border); }
+.portal-activation-badge .ui-icon { width: 25px; height: 25px; }
+.portal-activation-copy { position: relative; z-index: 2; min-width: 0; }
+.portal-activation-copy h3 { margin: 3px 0 4px; color: var(--text-primary); font-size: 1.15rem; }
+.portal-activation-copy p { margin: 0; color: var(--text-secondary); font-size: 12px; line-height: 1.7; overflow-wrap: anywhere; }
+.portal-activation-celebration > .btn { position: relative; z-index: 2; white-space: nowrap; }
+.portal-activation-celebration.is-visible { animation: portalActivationIn 420ms ease both; }
+.portal-activation-celebration.is-visible .portal-activation-badge { animation: portalActivationBadge 640ms ease both; }
+@keyframes portalActivationIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes portalActivationBadge { 0%, 100% { transform: scale(1); } 45% { transform: scale(1.08) rotate(-3deg); } }
 .portal-subscription {
   display: grid;
   gap: 20px;
@@ -15317,6 +15348,8 @@ body .swal2-popup.qr-member-preview-alert .swal2-actions > button.qr-member-prev
 .portal-request-history-status.cancelled { background: var(--danger-soft); color: var(--danger-text); }
 
 @media (max-width: 640px) {
+  .portal-activation-celebration { grid-template-columns: auto minmax(0, 1fr); align-items: start; padding: 15px 14px; }
+  .portal-activation-celebration > .btn { grid-column: 1 / -1; width: 100%; }
   .portal-subscription { padding: 18px 14px; }
   .portal-subscription-grid,
   .portal-subscription-summary { grid-template-columns: 1fr; }
@@ -15324,6 +15357,11 @@ body .swal2-popup.qr-member-preview-alert .swal2-actions > button.qr-member-prev
   .portal-subscription-actions .btn { width: 100%; }
   .portal-payment-method-row,
   .portal-request-history-row { align-items: flex-start; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .portal-activation-celebration.is-visible,
+  .portal-activation-celebration.is-visible .portal-activation-badge { animation: none; }
 }
 
 @media print {
