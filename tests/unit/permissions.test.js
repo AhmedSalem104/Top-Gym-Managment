@@ -111,3 +111,11 @@ test('pricing catalog stays readable while pricing configuration is Owner-only',
         assert.equal(canAccessRoleRequest(assistant, request), false);
     });
 });
+
+test('portal analytics is Owner-only and tenant-scoped', () => {
+    const request = { path: '/portal/analytics', method: 'GET' };
+    assert.deepEqual(permissionForRequest(request).all, ['portal.analytics.read']);
+    assert.equal(permissionForRequest(request).ownerOnly, true);
+    assert.equal(canAccessRoleRequest({ role: 'Owner', permissions: [] }, request), true);
+    assert.equal(canAccessRoleRequest({ role: 'Assistant', permissions: ['portal.analytics.read'] }, request), false);
+});

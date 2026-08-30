@@ -52,3 +52,36 @@ test('new tenant-scoped commercial tables are part of the RLS inventory', () => 
         assert.match(tenantService, new RegExp(`'${table}'`));
     }
 });
+
+test('portal analytics keeps page views, estimated visitors and authenticated members separate', () => {
+    const service = read('src/services/commercial-service.js');
+    const controller = read('src/controllers/member-portal.controller.js');
+    assert.match(service, /pageViews: sum\('pageViews'\)/);
+    assert.match(service, /uniqueVisitors: sum\('uniqueVisitors'\)/);
+    assert.match(service, /authenticatedMembers: sum\('authenticatedMembers'\)/);
+    assert.match(service, /visitorHash = hashToken\(`visitor:/);
+    assert.match(service, /memberHash = hashToken\(`member:/);
+    assert.match(controller, /getPortalAnalytics\(/);
+});
+
+test('portal sessions are hashed, HttpOnly and resolved without a client tenant trust boundary', () => {
+    const service = read('src/services/commercial-service.js');
+    const middleware = read('src/middleware/auth.middleware.js');
+    assert.match(service, /createHmac\('sha256'/);
+    assert.match(service, /token_hash/);
+    assert.match(service, /HttpOnly; SameSite=Lax/);
+    assert.match(service, /runTenantContext\(\{ tenantId: null, mode: 'platform'/);
+    assert.match(middleware, /memberPortalSessionPath/);
+    assert.match(middleware, /runTenantContext\(\{ tenantId: null, mode: 'public'/);
+    assert.doesNotMatch(service, /SELECT[\s\S]{0,300}WHERE tenant_id=@tenantId[\s\S]{0,300}request\.query/);
+});
+
+test('tenant payment methods are identity-backed and excluded from generic public branding', () => {
+    const branding = read('src/services/branding-service.js');
+    const portal = read('src/services/member-portal-service.js');
+    assert.match(branding, /paymentMethods: \[\]/);
+    assert.match(branding, /delete publicPublished\.identity\.paymentMethods/);
+    assert.match(branding, /async function getTenantPaymentMethods/);
+    assert.match(portal, /getTenantPaymentMethods\(\{ readOnly: true \}\)/);
+    assert.doesNotMatch(portal, /01015819700|01005376843/);
+});

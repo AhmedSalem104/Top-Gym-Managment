@@ -8,6 +8,7 @@ const ROUTE_PERMISSION_RULES = Object.freeze([
     { pattern: /^\/saas\/subscription-requests$/, methods: ['GET'], ownerOnly: true, all: [PERMISSIONS.SAAS_SUBSCRIPTION_READ] },
     { pattern: /^\/saas\/subscription-requests$/, methods: ['POST'], ownerOnly: true, all: [PERMISSIONS.SAAS_SUBSCRIPTION_REQUEST] },
     { pattern: /^\/saas\/subscription-requests\/\d+\/proof$/, methods: ['POST'], ownerOnly: true, all: [PERMISSIONS.SAAS_SUBSCRIPTION_REQUEST] },
+    { pattern: /^\/portal\/analytics$/, methods: ['GET'], ownerOnly: true, all: [PERMISSIONS.PORTAL_ANALYTICS_READ] },
     { pattern: /^\/auth\/permissions(?:\/|$)/, methods: ['GET', 'PUT', 'POST'], all: [PERMISSIONS.PERMISSIONS_MANAGE], ownerOnly: true },
     { pattern: /^\/branding\/settings$/, methods: ['GET'], all: [PERMISSIONS.BRANDING_VIEW], ownerOnly: true },
     { pattern: /^\/branding\/draft-assets\/[^/]+$/, methods: ['GET'], all: [PERMISSIONS.BRANDING_VIEW], ownerOnly: true },

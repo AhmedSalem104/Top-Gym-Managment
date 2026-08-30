@@ -4,6 +4,7 @@ const crypto = require('node:crypto');
 const membershipCodeService = require('./membership-code-service');
 const { getMemberDetails } = require('./member-service');
 const attendanceService = require('./attendance-service');
+const commercialService = require('./commercial-service');
 const { todayInTimeZone } = require('../utils/date');
 const { getTenantContext, runTenantContext } = require('../tenancy/tenant-context');
 
@@ -103,6 +104,17 @@ async function lookupByCode(code, request) {
         const attendance = await attendanceService.getMemberAttendance(memberContext.memberId, { from, to: today, readOnly: true });
         const memberships = (details.memberships || []).map(sanitizeMembership);
         const current = currentMembership(memberships);
+        const portalSession = readOnlyBaseline ? null : await commercialService.createPortalSession({
+            tenantId: memberContext.tenantId,
+            memberId: memberContext.memberId,
+            request
+        });
+        const visitorToken = commercialService.visitorTokenFor(request);
+        if (!readOnlyBaseline) await commercialService.recordPortalVisit({
+            memberId: memberContext.memberId,
+            visitorToken,
+            readOnly: false
+        });
         return {
             tenant: {
                 name: memberContext.tenantName,
@@ -137,9 +149,31 @@ async function lookupByCode(code, request) {
                 checkOutSource: record.checkOutSource,
                 durationMinutes: record.durationMinutes
             })),
-            attendanceSummary: { totalVisits: attendance.records.length }
+            attendanceSummary: { totalVisits: attendance.records.length },
+            // Controller-only transport metadata. It is removed before JSON
+            // serialization and is used solely to set HttpOnly cookies.
+            _portalSessionCookie: portalSession?.cookie || null,
+            _portalVisitorCookie: readOnlyBaseline ? null : commercialService.buildCookie(
+                commercialService.PORTAL_VISITOR_COOKIE,
+                visitorToken,
+                30 * 24 * 60 * 60,
+                request
+            )
         };
     });
+}
+
+async function getPortalPaymentMethods(request) {
+    return commercialService.withPortalSession(request, async () => ({
+        paymentMethods: await commercialService.getTenantPaymentMethods({ readOnly: true })
+    }));
+}
+
+async function getPortalSession(request) {
+    return commercialService.withPortalSession(request, async (session) => ({
+        tenantId: session.tenantId,
+        memberId: session.memberId
+    }));
 }
 
 async function getOccupancyByCode(code, request) {
@@ -155,4 +189,4 @@ async function getOccupancyByCode(code, request) {
     ));
 }
 
-module.exports = { getOccupancyByCode, lookupByCode };
+module.exports = { getOccupancyByCode, getPortalPaymentMethods, getPortalSession, lookupByCode };

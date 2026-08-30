@@ -40,6 +40,12 @@ function createAuthApiMiddleware({ authService, isAuthorizedCronRequest, tenantS
         const platformBrandingRequest = tenantBrandingPath
             && String(request.query?.scope || '').trim().toLowerCase() === 'platform';
         const healthPath = ['/health', '/health/live'].includes(request.path);
+        // A member-portal session is a separate capability from a gym user
+        // session. Let the portal service resolve the tenant from its hashed
+        // HttpOnly cookie instead of resolving the public/default tenant here.
+        const memberPortalSessionPath = request.path === '/member-portal/session'
+            || request.path === '/member-portal/payment-methods'
+            || request.path.startsWith('/member-portal/subscription-requests');
         const publicPath = ['/health', '/health/live', '/member-portal/lookup', '/member-portal/occupancy', '/member-portal/feedback', '/branding'].includes(request.path)
             || request.path === '/member-portal/library/options'
             || request.path.startsWith('/member-portal/library/')
@@ -77,6 +83,10 @@ function createAuthApiMiddleware({ authService, isAuthorizedCronRequest, tenantS
         // path may bootstrap schema on an uninitialized environment.
         if (healthPath) {
             return runTenantContext({ tenantId: null, mode: 'platform', readOnlyBaseline: readOnlyRequest }, next);
+        }
+
+        if (memberPortalSessionPath) {
+            return runTenantContext({ tenantId: null, mode: 'public', readOnlyBaseline: readOnlyRequest }, next);
         }
 
         // Branding is public for the login screen, but an authenticated gym

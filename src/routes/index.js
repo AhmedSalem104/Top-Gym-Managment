@@ -87,6 +87,7 @@ function registerRoutes(app, {
     memberService,
     membershipCodeService,
     portalService,
+    commercialService,
     feedbackService,
     storeService,
     intelligenceService,
@@ -111,7 +112,7 @@ function registerRoutes(app, {
     registerPricingRoutes(app, { pricingService, asyncRoute });
     registerCoachingRoutes(app, { coachingService, asyncRoute });
     registerDayPassRoutes(app, { dayPassService, asyncRoute, ownerOnly });
-    registerMemberPortalRoutes(app, { membershipCodeService, portalService, libraryService, asyncRoute, ownerOnly });
+    registerMemberPortalRoutes(app, { membershipCodeService, portalService, libraryService, commercialService, asyncRoute, ownerOnly });
     registerMemberFeedbackRoutes(app, { feedbackService, asyncRoute, ownerOnly });
     registerStoreRoutes(app, { storeService, asyncRoute });
     registerIntelligenceRoutes(app, { intelligenceService, asyncRoute });

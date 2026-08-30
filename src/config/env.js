@@ -34,6 +34,7 @@ const config = Object.freeze({
     port: getNumberEnv('PORT', 3000),
     appTimeZone: getEnv('APP_TIMEZONE', 'Africa/Cairo'),
     authSessionDays: getNumberEnv('AUTH_SESSION_DAYS', 7),
+    memberPortalSessionDays: getBoundedNumberEnv('MEMBER_PORTAL_SESSION_DAYS', 1, 1, 7),
     authOwnerEmail: getEnv('AUTH_OWNER_EMAIL'),
     authOwnerName: getEnv('AUTH_OWNER_NAME', 'مالك النظام'),
     authOwnerPassword: getEnv('AUTH_OWNER_PASSWORD'),
@@ -85,6 +86,11 @@ const config = Object.freeze({
     backupEnablePlatformMonthly: getBooleanEnv('BACKUP_ENABLE_PLATFORM_MONTHLY', true),
     publicAppUrl: getEnv('PUBLIC_APP_URL'),
     membershipCodeSecret: getEnv('MEMBERSHIP_CODE_SECRET'),
+    // Portal sessions and visitor estimates use a separate purpose-specific
+    // secret when configured. The membership-code secret remains a backwards
+    // compatible fallback for existing deployments; neither secret is ever
+    // returned to a client or written to logs.
+    memberPortalSessionSecret: getEnv('MEMBER_PORTAL_SESSION_SECRET', getEnv('MEMBERSHIP_CODE_SECRET')),
     attendanceAutoCheckoutMinutes: getNumberEnv('ATTENDANCE_AUTO_CHECKOUT_MINUTES', 0),
     // Member-portal occupancy is intentionally configurable because a quiet
     // or busy gym threshold depends on the facility size. The service still

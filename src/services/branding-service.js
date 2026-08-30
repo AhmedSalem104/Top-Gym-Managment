@@ -69,7 +69,8 @@ const DEFAULT_BRANDING = Object.freeze({
         phone: '',
         address: '',
         email: '',
-        website: ''
+        website: '',
+        paymentMethods: []
     },
     assets: Object.fromEntries(ASSET_KEYS.map((key) => [key, null])),
     themes: { light: DEFAULT_LIGHT_TOKENS, dark: DEFAULT_DARK_TOKENS },
@@ -337,6 +338,32 @@ function normalizeAssetReference(value) {
     return revision > 0 ? { key: String(key), revision: Math.floor(revision) } : { key: String(key) };
 }
 
+function normalizePaymentMethods(value) {
+    if (!Array.isArray(value)) return [];
+    return value.slice(0, 12).map((item, index) => {
+        const source = item && typeof item === 'object' && !Array.isArray(item) ? item : {};
+        const name = cleanText(source.name || source.displayName, '', 120);
+        const accountReference = cleanText(source.accountReference || source.account || source.number, '', 160);
+        const recipientName = cleanText(source.recipientName || source.recipient, '', 160);
+        const instructions = cleanText(source.instructions, '', 1000);
+        const suppliedId = cleanText(source.id || source.code, '', 80).toLowerCase();
+        const id = /^[a-z0-9][a-z0-9_-]{1,79}$/.test(suppliedId)
+            ? suppliedId
+            : (name ? `method-${crypto.createHash('sha256').update(`${name}:${accountReference}`).digest('hex').slice(0, 16)}` : `method-${index + 1}`);
+        const sortOrder = Number(source.sortOrder ?? source.order ?? index);
+        return {
+            id,
+            name,
+            accountReference,
+            recipientName,
+            instructions,
+            isActive: source.isActive !== false && source.active !== false,
+            sortOrder: Number.isInteger(sortOrder) && sortOrder >= 0 && sortOrder <= 999 ? sortOrder : index
+        };
+    }).filter((item, index, items) => item.name && item.accountReference && items.findIndex((candidate) => candidate.id === item.id) === index)
+        .sort((first, second) => first.sortOrder - second.sortOrder || first.id.localeCompare(second.id));
+}
+
 function normalizeConfig(input) {
     const merged = merge(DEFAULT_BRANDING, input);
     const identity = merged.identity || {};
@@ -359,7 +386,8 @@ function normalizeConfig(input) {
             companyName: cleanText(identity.companyName, DEFAULT_BRANDING.identity.companyName, 120),
             copyrightText: cleanText(identity.copyrightText, DEFAULT_BRANDING.identity.copyrightText, 180),
             phone: cleanText(identity.phone, '', 40), address: cleanText(identity.address, '', 180),
-            email: cleanText(identity.email, '', 120), website: cleanText(identity.website, '', 180)
+            email: cleanText(identity.email, '', 120), website: cleanText(identity.website, '', 180),
+            paymentMethods: normalizePaymentMethods(identity.paymentMethods)
         },
         assets,
         themes: { light: normalizeTheme(merged.themes?.light, DEFAULT_LIGHT_TOKENS), dark: normalizeTheme(merged.themes?.dark, DEFAULT_DARK_TOKENS) },
@@ -638,9 +666,26 @@ async function getPublicBranding({ readOnly = false } = {}) {
     const defaults = await defaultBrandingForTenant();
     const tenantSlug = await brandingTenantSlug();
     const published = applyTenantIdentity(parseStoredConfig(row?.published_config), defaults.identity.brandName);
-    const result = { branding: decorateConfig(published, 'published', row?.version || 1, await assetMetadata('published'), tenantSlug), version: Number(row?.version || 1), publishedAt: row?.published_at || null };
+    const publicPublished = clone(published);
+    // Payment instructions are served through a dedicated, minimal projection
+    // for the member portal. Do not add owner-editable payment metadata to the
+    // generic branding response consumed by unrelated public screens.
+    delete publicPublished.identity.paymentMethods;
+    const result = { branding: decorateConfig(publicPublished, 'published', row?.version || 1, await assetMetadata('published'), tenantSlug), version: Number(row?.version || 1), publishedAt: row?.published_at || null };
     publicCache.set(tenantId, { value: result, expiresAt: Date.now() + 30_000 });
     return clone(result);
+}
+
+async function getTenantPaymentMethods({ readOnly = false } = {}) {
+    await ensureBrandingTables({ readOnly });
+    const row = await readRow();
+    const defaults = await defaultBrandingForTenant();
+    const published = applyTenantIdentity(parseStoredConfig(row?.published_config), defaults.identity.brandName);
+    return published.identity.paymentMethods
+        .filter((method) => method.isActive)
+        .map(({ id, name, accountReference, recipientName, instructions, sortOrder }) => ({
+            id, name, accountReference, recipientName: recipientName || null, instructions: instructions || null, sortOrder
+        }));
 }
 
 // The unauthenticated SaaS gateway belongs to the platform, not to any Gym.
@@ -854,6 +899,7 @@ module.exports = {
     getPlatformBranding,
     getPublicBranding,
     getPublicBrandName,
+    getTenantPaymentMethods,
     latestAudit,
     ownerResponse,
     publish,

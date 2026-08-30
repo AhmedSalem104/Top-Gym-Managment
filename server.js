@@ -34,6 +34,7 @@ const permissionService = require('./src/services/permission-service');
 const tenantService = require('./src/services/tenant-service');
 const saasService = require('./src/services/saas-service');
 const commercialSchema = require('./src/services/commercial-schema');
+const commercialService = require('./src/services/commercial-service');
 const platformAdminService = require('./src/services/platform-admin-service');
 const { runTenantContext } = require('./src/tenancy/tenant-context');
 const { ensureAuthReady } = authService;
@@ -198,6 +199,7 @@ registerRoutes(app, {
     memberService,
     membershipCodeService,
     portalService: memberPortalService,
+    commercialService,
     feedbackService: memberFeedbackService,
     storeService,
     intelligenceService,
@@ -280,6 +282,7 @@ async function start() {
     await runTenantContext({ mode: 'platform', tenantId: bootstrapTenant.id }, () => backupRecoveryService.ensureRecoveryTables());
     await runTenantContext({ mode: 'platform', tenantId: bootstrapTenant.id }, () => saasService.ensureSaasTables());
     await runTenantContext({ mode: 'platform', tenantId: bootstrapTenant.id }, () => commercialSchema.ensureCommercialTables());
+    await runTenantContext({ mode: 'platform', tenantId: bootstrapTenant.id }, () => commercialService.ensureDefaultPlanTerms());
     await runTenantContext({ mode: 'tenant', tenantId: bootstrapTenant.id }, async () => {
         await ensureAuthReady();
         // Create every tenant table before the tenancy migration runs. The

@@ -87,6 +87,7 @@ const PERMISSIONS = Object.freeze({
 
     SAAS_SUBSCRIPTION_READ: 'saas.subscription.read',
     SAAS_SUBSCRIPTION_REQUEST: 'saas.subscription.request',
+    PORTAL_ANALYTICS_READ: 'portal.analytics.read',
 
     INTELLIGENCE_READ: 'intelligence.read',
     INTELLIGENCE_GENERATE: 'intelligence.generate',
@@ -185,6 +186,10 @@ const CATALOG_DEFINITIONS = [
 CATALOG_DEFINITIONS.push(
     ['saas.subscription.read', 'اشتراك المنصة', 'عرض حالة اشتراك الجيم في منصة الجيم والخطط المتاحة.', 'saas', 'عرض', true],
     ['saas.subscription.request', 'طلب اشتراك المنصة', 'إنشاء طلب اشتراك ورفع إثبات الدفع للمراجعة.', 'saas', 'إدارة', true]
+);
+
+CATALOG_DEFINITIONS.push(
+    ['portal.analytics.read', 'Portal analytics', 'View tenant-scoped member portal page views, estimated unique visitors and authenticated members.', 'portal', 'view', true]
 );
 
 CATALOG_DEFINITIONS.splice(

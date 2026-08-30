@@ -76,10 +76,35 @@ function publicLibraryItem(type, item, detailed = false) {
     };
 }
 
-function createMemberPortalController({ membershipCodeService, portalService, libraryService }) {
+function createMemberPortalController({ membershipCodeService, portalService, libraryService, commercialService }) {
     return {
         lookup: async (request, response) => {
-            response.json(await portalService.lookupByCode(request.body?.membershipCode, request));
+            const result = await portalService.lookupByCode(request.body?.membershipCode, request);
+            if (result?._portalSessionCookie) commercialService.appendSetCookie(response, result._portalSessionCookie);
+            if (result?._portalVisitorCookie) commercialService.appendSetCookie(response, result._portalVisitorCookie);
+            delete result._portalSessionCookie;
+            delete result._portalVisitorCookie;
+            response.set('Cache-Control', 'private, no-store');
+            response.json(result);
+        },
+
+        session: async (request, response) => {
+            response.set('Cache-Control', 'private, no-store');
+            response.json(await portalService.getPortalSession(request));
+        },
+
+        paymentMethods: async (request, response) => {
+            response.set('Cache-Control', 'private, no-store');
+            response.json(await portalService.getPortalPaymentMethods(request));
+        },
+
+        analytics: async (request, response) => {
+            response.set('Cache-Control', 'private, no-store');
+            response.json(await commercialService.getPortalAnalytics({
+                from: request.query?.from,
+                to: request.query?.to,
+                readOnly: request.readOnlyRequest
+            }));
         },
 
         occupancy: async (request, response) => {

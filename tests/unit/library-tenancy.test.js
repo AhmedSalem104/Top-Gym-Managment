@@ -55,7 +55,7 @@ test('tenant onboarding provisions the catalog before its transaction commits', 
 
 test('public portal library responses are not CDN-shared across tenants', () => {
     const portal = read('src/controllers/member-portal.controller.js');
-    assert.equal((portal.match(/Cache-Control', 'private, no-store/g) || []).length, 4);
+    assert.ok((portal.match(/Cache-Control', 'private, no-store/g) || []).length >= 4);
     assert.doesNotMatch(portal, /library(?:Options|Collection|Item)[\s\S]{0,500}public, max-age/);
 });
 
