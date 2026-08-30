@@ -45,6 +45,7 @@ function createAuthApiMiddleware({ authService, isAuthorizedCronRequest, tenantS
         // HttpOnly cookie instead of resolving the public/default tenant here.
         const memberPortalSessionPath = request.path === '/member-portal/session'
             || request.path === '/member-portal/payment-methods'
+            || request.path === '/member-portal/membership-catalog'
             || request.path.startsWith('/member-portal/subscription-requests');
         const publicGymRegistrationPath = request.path === '/public/gym-registration/catalog'
             || request.path === '/public/gym-registration/requests'

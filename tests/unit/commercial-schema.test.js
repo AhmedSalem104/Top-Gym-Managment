@@ -85,3 +85,11 @@ test('tenant payment methods are identity-backed and excluded from generic publi
     assert.match(portal, /getTenantPaymentMethods\(\{ readOnly: true \}\)/);
     assert.doesNotMatch(portal, /01015819700|01005376843/);
 });
+
+test('member request validation rejects inactive plans and types server-side', () => {
+    const service = read('src/services/member-subscription-service.js');
+    assert.match(service, /plan\.active === false/);
+    assert.match(service, /type\.active === false/);
+    assert.match(service, /MEMBERSHIP_PLAN_NOT_AVAILABLE/);
+    assert.match(service, /MEMBERSHIP_TYPE_NOT_AVAILABLE/);
+});

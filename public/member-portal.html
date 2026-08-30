@@ -101,6 +101,11 @@
                     <span><strong>دليل التغذية</strong><small>السعرات والماكروز لكل طعام</small></span>
                     <span class="portal-tool-arrow" aria-hidden="true">←</span>
                 </button>
+                <button class="portal-tool-card portal-tool-card-subscription" type="button" data-portal-tool="subscription">
+                    <span class="portal-tool-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M7 15h3M15 14v4M13 16h4"/></svg></span>
+                    <span><strong>اشترك / جدد عضويتك</strong><small>اختر العضوية وارفع إثبات الدفع للمراجعة</small></span>
+                    <span class="portal-tool-arrow" aria-hidden="true">←</span>
+                </button>
               </section>
             </div>
             <section class="portal-view-toolbar" id="portalViewToolbar" data-no-print hidden aria-live="polite">
@@ -141,6 +146,42 @@
                     <div class="portal-feedback-actions"><button class="btn btn-primary" id="portalFeedbackSubmit" type="submit" data-loading-text="جاري إرسال التقييم..."><span>إرسال التقييم</span><span class="portal-spinner" aria-hidden="true"></span></button><p class="portal-feedback-message" id="portalFeedbackError" role="alert" hidden></p><p class="portal-feedback-message success" id="portalFeedbackSuccess" role="status" hidden>تم حفظ تقييمك بنجاح، شكرًا لمشاركتنا رأيك.</p></div>
                 </form>
             </section>
+            <section class="portal-subscription" id="portalSubscriptionSection" data-no-print aria-labelledby="portalSubscriptionTitle" hidden>
+                <header class="portal-subscription-head">
+                    <div>
+                        <span class="portal-section-kicker">MEMBERSHIP REQUEST</span>
+                        <h3 id="portalSubscriptionTitle">اشترك أو جدد عضويتك</h3>
+                        <p>اختر التفاصيل المناسبة لجيمك، ثم أرسل إثبات التحويل ليتم مراجعته من الإدارة.</p>
+                    </div>
+                    <span class="portal-subscription-secure" aria-label="طلب آمن"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 20 6v5c0 5-3.4 8.5-8 10-4.6-1.5-8-5-8-10V6l8-3Z"/><path d="m9 12 2 2 4-4"/></svg></span>
+                </header>
+                <p class="portal-subscription-feedback" id="portalSubscriptionFeedback" role="status" aria-live="polite" hidden></p>
+                <form class="portal-subscription-form" id="portalSubscriptionForm" novalidate>
+                    <div class="portal-subscription-grid">
+                        <label>نوع الطلب<select id="portalSubscriptionRequestType" required><option value="membership">اشتراك جديد</option><option value="renewal">تجديد العضوية</option></select></label>
+                        <label>الباقة<select id="portalSubscriptionPlan" required><option value="">جاري تحميل الباقات...</option></select></label>
+                        <label>نوع العضوية<select id="portalSubscriptionType" required><option value="">اختر نوع العضوية</option></select></label>
+                        <label>تاريخ البداية<input id="portalSubscriptionStartDate" type="date" required></label>
+                    </div>
+                    <section class="portal-payment-methods" aria-labelledby="portalPaymentMethodsTitle">
+                        <div class="portal-subsection-heading"><div><span class="portal-section-kicker">PAYMENT DETAILS</span><h4 id="portalPaymentMethodsTitle">بيانات التحويل للجيم</h4><p>هذه البيانات تخص <strong data-brand-text="brandName">الجيم الحالي</strong> فقط.</p></div></div>
+                        <div class="portal-payment-method-list" id="portalPaymentMethodList"><div class="portal-subscription-state">جاري تحميل وسائل الدفع...</div></div>
+                        <input id="portalSubscriptionPaymentMethod" type="hidden" required>
+                    </section>
+                    <div class="portal-subscription-summary" id="portalSubscriptionSummary" aria-live="polite">
+                        <div><span>العضوية</span><strong id="portalSubscriptionSummaryMembership">—</strong></div>
+                        <div><span>تاريخ البداية</span><strong id="portalSubscriptionSummaryStart">—</strong></div>
+                        <div><span>المبلغ المطلوب</span><strong id="portalSubscriptionSummaryAmount">—</strong></div>
+                    </div>
+                    <label class="portal-subscription-notes">ملاحظة اختيارية<textarea id="portalSubscriptionNotes" rows="3" maxlength="1000" placeholder="أي ملاحظة تساعد الإدارة على مراجعة طلبك..."></textarea></label>
+                    <label class="portal-proof-picker" for="portalSubscriptionProof"><span class="portal-proof-picker-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M8 8l4-4 4 4"/><path d="M5 14v4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4"/></svg></span><span><strong>إثبات الدفع</strong><small id="portalSubscriptionProofName">اختر صورة أو ملف إثبات التحويل — الحد الأقصى 4MB</small></span><input id="portalSubscriptionProof" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" required></label>
+                    <div class="portal-subscription-actions"><button class="btn btn-primary" id="portalSubscriptionSubmit" type="submit" data-loading-text="جاري إرسال الطلب..."><span>إرسال طلب التفعيل</span><span class="portal-spinner" aria-hidden="true"></span></button><span class="portal-subscription-note">سيتم اعتماد الاشتراك بعد مراجعة إثبات الدفع من إدارة الجيم.</span></div>
+                </form>
+                <section class="portal-request-history" aria-labelledby="portalRequestHistoryTitle">
+                    <div class="portal-subsection-heading"><div><span class="portal-section-kicker">REQUEST HISTORY</span><h4 id="portalRequestHistoryTitle">طلباتك السابقة</h4></div><button class="btn btn-light btn-small" id="portalSubscriptionRefresh" type="button">تحديث</button></div>
+                    <div class="portal-request-history-list" id="portalSubscriptionHistory"><div class="portal-subscription-state">لا توجد طلبات محملة بعد.</div></div>
+                </section>
+            </section>
             <footer class="portal-report-signatures">
                 <p>صادر من إدارة <span data-brand-text="companyName">Logic Fit</span></p>
             </footer>
@@ -151,5 +192,6 @@
     <script defer src="/js/branding.js?v=5"></script>
     <script defer src="/js/ui-feedback.js?v=2"></script>
     <script defer src="/js/member-portal.js?v=10"></script>
+    <script defer src="/js/member-portal-subscription.js?v=1"></script>
 </body>
 </html>

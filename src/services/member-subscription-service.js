@@ -241,8 +241,16 @@ async function normalizePortalRequest(body = {}) {
     const tenantId = currentTenantId({ required: true });
     const requestType = normalizeRequestType(body.requestType || 'membership');
     const membershipPlan = text(body.membershipPlan, '', 30).toLowerCase();
-    const membershipType = text(body.membershipType || body.type, '', 30).toLowerCase();
-    if (!membershipPlan || !membershipType) throw requestError('Membership plan and type are required.', 400, 'MEMBERSHIP_SELECTION_REQUIRED');
+    const requestedMembershipType = text(body.membershipType || body.type, '', 30).toLowerCase();
+    if (!membershipPlan || !requestedMembershipType) throw requestError('Membership plan and type are required.', 400, 'MEMBERSHIP_SELECTION_REQUIRED');
+    const catalog = await memberService.getPricingCatalog();
+    const plan = catalog.plans?.[membershipPlan];
+    if (!plan || plan.active === false) throw requestError('The selected membership plan is not available.', 409, 'MEMBERSHIP_PLAN_NOT_AVAILABLE');
+    const membershipType = catalog.types?.[requestedMembershipType]
+        ? requestedMembershipType
+        : catalog.typeAliases?.[requestedMembershipType];
+    const type = membershipType ? catalog.types?.[membershipType] : null;
+    if (!type || type.active === false) throw requestError('The selected membership type is not available.', 409, 'MEMBERSHIP_TYPE_NOT_AVAILABLE');
     const pricing = await memberService.calculatePricing(membershipType, membershipPlan, 0);
     const startDate = parseDateOnly(body.startDate || todayInTimeZone(), 'start date');
     const endDate = memberService.membershipEndDateFromConfig(startDate, pricing.typeConfig);

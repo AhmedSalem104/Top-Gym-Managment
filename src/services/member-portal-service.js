@@ -5,6 +5,7 @@ const membershipCodeService = require('./membership-code-service');
 const { getMemberDetails } = require('./member-service');
 const attendanceService = require('./attendance-service');
 const commercialService = require('./commercial-service');
+const memberService = require('./member-service');
 const { todayInTimeZone } = require('../utils/date');
 const { getTenantContext, runTenantContext } = require('../tenancy/tenant-context');
 
@@ -169,6 +170,48 @@ async function getPortalPaymentMethods(request) {
     }));
 }
 
+async function getPortalMembershipCatalog(request) {
+    return commercialService.withPortalSession(request, async () => {
+        const pricing = await memberService.getPricingCatalog();
+        const plans = Object.entries(pricing.plans || {})
+            .filter(([, plan]) => plan && plan.active !== false)
+            .sort(([, first], [, second]) => Number(first.sortOrder || 0) - Number(second.sortOrder || 0))
+            .map(([code, plan]) => ({
+                code,
+                label: String(plan.label || code),
+                monthlyPrice: Number(plan.monthlyPrice || 0)
+            }));
+        const types = Object.entries(pricing.types || {})
+            .filter(([, type]) => type && type.active !== false)
+            .sort(([, first], [, second]) => Number(first.sortOrder || 0) - Number(second.sortOrder || 0))
+            .map(([code, type]) => ({
+                code,
+                label: String(type.label || code),
+                mode: String(type.mode || 'months'),
+                durationValue: Number(type.durationValue || 0)
+            }));
+        const activePlanCodes = new Set(plans.map((plan) => plan.code));
+        const activeTypeCodes = new Set(types.map((type) => type.code));
+        const prices = {};
+        for (const plan of plans) {
+            prices[plan.code] = {};
+            for (const type of types) {
+                const value = pricing.prices?.[plan.code]?.[type.code];
+                if (value !== undefined && Number.isFinite(Number(value))) prices[plan.code][type.code] = Number(value);
+            }
+        }
+        return {
+            currency: 'EGP',
+            plans,
+            types,
+            prices,
+            // Keep the response deliberately limited to active combinations.
+            activePlanCount: activePlanCodes.size,
+            activeTypeCount: activeTypeCodes.size
+        };
+    });
+}
+
 async function getPortalSession(request) {
     return commercialService.withPortalSession(request, async (session) => ({
         tenantId: session.tenantId,
@@ -189,4 +232,4 @@ async function getOccupancyByCode(code, request) {
     ));
 }
 
-module.exports = { getOccupancyByCode, getPortalPaymentMethods, getPortalSession, lookupByCode };
+module.exports = { getOccupancyByCode, getPortalMembershipCatalog, getPortalPaymentMethods, getPortalSession, lookupByCode };

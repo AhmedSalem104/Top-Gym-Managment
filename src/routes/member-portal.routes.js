@@ -9,6 +9,7 @@ function registerMemberPortalRoutes(app, { membershipCodeService, portalService,
     app.post('/api/member-portal/lookup', asyncRoute(controller.lookup));
     app.get('/api/member-portal/session', asyncRoute(controller.session));
     app.get('/api/member-portal/payment-methods', asyncRoute(controller.paymentMethods));
+    app.get('/api/member-portal/membership-catalog', asyncRoute(controller.membershipCatalog));
     app.post('/api/member-portal/occupancy', asyncRoute(controller.occupancy));
     app.get('/api/member-portal/library/options', asyncRoute(controller.libraryOptions));
     app.get('/api/member-portal/library/:type', asyncRoute(controller.libraryCollection));

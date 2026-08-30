@@ -98,6 +98,11 @@ function createMemberPortalController({ membershipCodeService, portalService, li
             response.json(await portalService.getPortalPaymentMethods(request));
         },
 
+        membershipCatalog: async (request, response) => {
+            response.set('Cache-Control', 'private, no-store');
+            response.json(await portalService.getPortalMembershipCatalog(request));
+        },
+
         analytics: async (request, response) => {
             response.set('Cache-Control', 'private, no-store');
             response.json(await commercialService.getPortalAnalytics({

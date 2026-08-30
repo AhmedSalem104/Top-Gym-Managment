@@ -16,6 +16,7 @@
   const reportContent = $('portalReportContent');
   const librarySection = $('portalLibrarySection');
   const feedbackSection = $('portalFeedbackSection');
+  const subscriptionSection = $('portalSubscriptionSection');
   const feedbackForm = $('portalFeedbackForm');
   const feedbackSubmit = $('portalFeedbackSubmit');
   const feedbackRating = $('portalFeedbackRating');
@@ -45,6 +46,7 @@
     home: { title: 'بوابة عضويتي', description: 'اختر الخدمة التي تريد استخدامها' },
     report: { title: 'بياناتي وطباعتها', description: 'عرض حالة العضوية والاشتراكات والمدفوعات والحضور.' },
     feedback: { title: 'قيّم تجربتي', description: 'شاركنا رأيك في الجيم والمدربين.' },
+    subscription: { title: 'اشترك أو جدد عضويتك', description: 'أرسل طلب عضوية أو تجديد مع إثبات الدفع للمراجعة.' },
     exercises: { title: 'دليل التمارين', description: 'ابحث عن التمرين بالاسم وحدد المستوى والأداة المناسبة.' },
     foods: { title: 'دليل التغذية', description: 'ابحث عن الطعام وتعرّف على السعرات والماكروز لكل حصة.' }
   });
@@ -242,6 +244,7 @@
     if (reportContent) reportContent.hidden = !isReport;
     if (librarySection) librarySection.hidden = !isLibrary;
     if (feedbackSection) feedbackSection.hidden = nextView !== 'feedback';
+    if (subscriptionSection) subscriptionSection.hidden = nextView !== 'subscription';
     if ($('portalPrintButton')) $('portalPrintButton').hidden = !isReport;
     if ($('portalPdfButton')) $('portalPdfButton').hidden = !isReport;
     if ($('portalIssueMeta')) $('portalIssueMeta').textContent = isReport ? portalReportMeta : metadata.description;
@@ -419,6 +422,12 @@
     if (action === 'feedback') {
       setPortalView('feedback');
       viewToolbar?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return;
+    }
+    if (action === 'subscription') {
+      setPortalView('subscription');
+      viewToolbar?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      window.dispatchEvent(new CustomEvent('topgym:portal-subscription-open'));
       return;
     }
     if (action === 'exercises' || action === 'foods') void openLibrary(action);
