@@ -15,6 +15,7 @@ const { securityHeaders } = require('../../src/middleware/security.middleware');
 const { parseScryptHash, readSessionCookie, verifyPassword } = require('../../src/services/auth-service');
 const { isAuthorizedCronRequest } = require('../../src/middleware/cron.middleware');
 const { getTenantContext } = require('../../src/tenancy/tenant-context');
+const { tenantSecuritySnapshotIsReady } = require('../../src/services/tenant-service');
 
 function requestFor(ip, body = {}) {
     return { method: 'POST', ip, socket: { remoteAddress: ip }, body };
@@ -159,6 +160,44 @@ test('public state-changing routes enforce the same-origin boundary before allow
     assert.equal(response.statusCode, 403);
     assert.equal(response.body.code, 'CROSS_ORIGIN_REQUEST');
     assert.equal(nextCalled, false);
+});
+
+test('tenant isolation readiness requires an enabled policy covering every scoped table', () => {
+    assert.equal(tenantSecuritySnapshotIsReady({ policy_enabled: 1, expected_tables: 70, protected_tables: 70 }), true);
+    assert.equal(tenantSecuritySnapshotIsReady({ policy_enabled: 0, expected_tables: 70, protected_tables: 70 }), false);
+    assert.equal(tenantSecuritySnapshotIsReady({ policy_enabled: 1, expected_tables: 70, protected_tables: 69 }), false);
+    assert.equal(tenantSecuritySnapshotIsReady({ policy_enabled: 1, expected_tables: 0, protected_tables: 0 }), false);
+});
+
+test('authenticated tenant requests fail closed when the isolation policy is unavailable', async () => {
+    const isolationError = new Error('Tenant data isolation is not ready.');
+    isolationError.statusCode = 503;
+    isolationError.code = 'TENANT_ISOLATION_NOT_READY';
+    let nextError;
+    const middleware = createAuthApiMiddleware({
+        authService: {
+            getSessionUser: async () => ({ id: 17, role: 'Owner' }),
+            readSessionCookie: () => 'session-token',
+            withPermissions: async (user) => user
+        },
+        tenantService: {
+            resolveTenantForUser: async () => ({ id: 23, status: 'active' }),
+            assertTenantIsolationReady: async () => { throw isolationError; }
+        },
+        isAuthorizedCronRequest: () => false
+    });
+    const request = {
+        method: 'GET',
+        path: '/members',
+        query: {},
+        body: {},
+        get: () => '',
+        socket: { remoteAddress: '127.0.0.1' }
+    };
+
+    await middleware(request, responseDouble(), (error) => { nextError = error; });
+
+    assert.equal(nextError, isolationError);
 });
 
 test('normal GET requests use a read-only tenant context and do not touch sessions', async () => {

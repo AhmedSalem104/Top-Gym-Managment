@@ -6,6 +6,10 @@ const DEFAULT_INTERNAL_ERROR_MESSAGE = 'حدث خطأ في الخادم. حاو�
 // actionable explanation. Other 5xx errors remain intentionally generic so
 // database/provider internals cannot leak through the API response.
 const SAFE_OPERATIONAL_FAILURES = Object.freeze({
+    TENANT_ISOLATION_NOT_READY: Object.freeze({
+        code: 'TENANT_ISOLATION_NOT_READY',
+        message: 'Tenant data isolation is temporarily unavailable. Please try again later.'
+    }),
     PRIVATE_OBJECT_STORAGE_NOT_CONFIGURED: Object.freeze({
         code: 'PRIVATE_STORAGE_NOT_CONFIGURED',
         message: 'التخزين الخاص لملفات المنصة غير مهيأ حاليًا. أضف مزود تخزين خاصًا معتمدًا قبل رفع الملفات.'

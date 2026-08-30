@@ -33,6 +33,9 @@ function requestedTenantSlug(request) {
 
 function createAuthApiMiddleware({ authService, isAuthorizedCronRequest, tenantService, saasService }) {
     const { ensureAuthReady, getSessionUser, readSessionCookie } = authService;
+    const assertTenantIsolationReady = typeof tenantService?.assertTenantIsolationReady === 'function'
+        ? tenantService.assertTenantIsolationReady
+        : async () => {};
     return (request, response, next) => {
         const authPublicPath = ['/auth/login', '/auth/session', '/auth/logout'].includes(request.path);
         const tenantBrandingPath = request.method === 'GET'
@@ -90,7 +93,10 @@ function createAuthApiMiddleware({ authService, isAuthorizedCronRequest, tenantS
         }
 
         if (memberPortalSessionPath) {
-            return runTenantContext({ tenantId: null, mode: 'public', readOnlyBaseline: readOnlyRequest }, next);
+            return runTenantContext({ tenantId: null, mode: 'public', readOnlyBaseline: readOnlyRequest }, async () => {
+                await assertTenantIsolationReady();
+                return next();
+            }).catch(next);
         }
 
         // Self-service gym registration is public and platform-scoped. It
@@ -114,7 +120,10 @@ function createAuthApiMiddleware({ authService, isAuthorizedCronRequest, tenantS
                         return tenantService.resolveTenantForUser(user.id, requestedTenantSlug(request), { readOnly: readOnlyRequest }).then((tenant) => {
                             if (!tenant) return response.status(403).json({ error: 'Tenant access is required for this branding request.', code: 'TENANT_ACCESS_REQUIRED' });
                             request.tenant = tenant;
-                            return runTenantContext({ tenantId: tenant.id, userId: user.id, mode: 'tenant', readOnlyBaseline: readOnlyRequest }, next);
+                            return runTenantContext({ tenantId: tenant.id, userId: user.id, mode: 'tenant', readOnlyBaseline: readOnlyRequest }, async () => {
+                                await assertTenantIsolationReady();
+                                return next();
+                            });
                         });
                     }
                     return tenantService.resolvePublicTenant(requestedTenantSlug(request), { readOnly: readOnlyRequest }).then((tenant) => {
@@ -130,7 +139,10 @@ function createAuthApiMiddleware({ authService, isAuthorizedCronRequest, tenantS
         // resolve a public/default tenant; the orchestrator resolves each
         // eligible tenant explicitly.
         if (cronRequest) {
-            return runTenantContext({ tenantId: null, mode: 'platform', readOnlyBaseline: false }, next);
+            return runTenantContext({ tenantId: null, mode: 'platform', readOnlyBaseline: false }, async () => {
+                await assertTenantIsolationReady();
+                return next();
+            }).catch(next);
         }
 
         if (publicPath) {
@@ -138,7 +150,10 @@ function createAuthApiMiddleware({ authService, isAuthorizedCronRequest, tenantS
                 .then((tenant) => {
                     if (!tenant) return response.status(404).json({ error: 'الجيم المطلوب غير موجود.', code: 'TENANT_NOT_FOUND' });
                     request.tenant = tenant;
-                    return runTenantContext({ tenantId: tenant.id, mode: 'public', readOnlyBaseline: readOnlyRequest }, next);
+                    return runTenantContext({ tenantId: tenant.id, mode: 'public', readOnlyBaseline: readOnlyRequest }, async () => {
+                        await assertTenantIsolationReady();
+                        return next();
+                    });
                 })
                 .catch(next);
         }
@@ -160,6 +175,7 @@ function createAuthApiMiddleware({ authService, isAuthorizedCronRequest, tenantS
                     if (!tenant) return response.status(403).json({ error: 'الحساب غير مرتبط بجيم نشط، أو أن الجيم المطلوب لا يطابق عضوية الحساب.', code: 'TENANT_ACCESS_REQUIRED' });
                     request.tenant = tenant;
                     return runTenantContext({ tenantId: tenant.id, userId: user.id, mode: 'tenant', readOnlyBaseline: readOnlyRequest }, async () => {
+                        await assertTenantIsolationReady();
                         user = await authService.withPermissions(user, { readOnly: readOnlyRequest });
                         if (saasService) {
                             request.saas = await saasService.enforceTenantAccess(tenant.id, { path: request.path, method: request.method, readOnly: readOnlyRequest });

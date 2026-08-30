@@ -8,6 +8,7 @@ const BOOTSTRAP_TENANT_SLUG = 'top-gym';
 const BOOTSTRAP_TENANT_NAME = 'Top Gym';
 const TENANT_POLICY_NAME = 'gym_tenant_security_policy';
 const TENANT_PREDICATE_NAME = 'gym_tenant_access_predicate';
+const TENANT_SECURITY_READINESS_TTL_MS = 30_000;
 
 // Every operational table that stores gym data is listed explicitly. Auth
 // credentials/sessions and tenant membership metadata stay global so a user
@@ -142,6 +143,8 @@ IF NOT EXISTS (
 `;
 
 let tenantSchemaPromise;
+let tenantSecurityReadinessPromise;
+let tenantSecurityReadyUntil = 0;
 
 function tenantError(message, statusCode = 500, code = 'TENANT_ERROR') {
     const error = new Error(message);
@@ -334,6 +337,63 @@ async function existingTenantTables(pool) {
     return TENANT_TABLES.filter((table) => existing.has(table));
 }
 
+function tenantSecuritySnapshotIsReady(snapshot = {}) {
+    const policyEnabled = Number(snapshot.policy_enabled ?? snapshot.policyEnabled) === 1;
+    const expectedTables = Number(snapshot.expected_tables ?? snapshot.expectedTables);
+    const protectedTables = Number(snapshot.protected_tables ?? snapshot.protectedTables);
+    return policyEnabled && expectedTables > 0 && protectedTables === expectedTables;
+}
+
+async function assertTenantIsolationReady() {
+    if (tenantSecurityReadyUntil > Date.now()) return true;
+    if (!tenantSecurityReadinessPromise) {
+        const tableNames = TENANT_TABLES.map((table) => `N'${table.replace(/'/g, "''")}'`).join(', ');
+        tenantSecurityReadinessPromise = (async () => {
+            const pool = await getPool();
+            const result = await pool.request().query(`
+                SELECT
+                    CASE WHEN EXISTS (
+                        SELECT 1
+                        FROM sys.security_policies
+                        WHERE name=N'${TENANT_POLICY_NAME}'
+                          AND schema_id=SCHEMA_ID(N'dbo')
+                          AND is_enabled=1
+                    ) THEN 1 ELSE 0 END AS policy_enabled,
+                    (
+                        SELECT COUNT(*)
+                        FROM sys.tables AS t
+                        INNER JOIN sys.columns AS c ON c.object_id=t.object_id AND c.name=N'tenant_id'
+                        WHERE t.schema_id=SCHEMA_ID(N'dbo')
+                          AND t.name IN (${tableNames})
+                    ) AS expected_tables,
+                    (
+                        SELECT COUNT(DISTINCT sp.target_object_id)
+                        FROM sys.security_policies AS p
+                        INNER JOIN sys.security_predicates AS sp ON sp.object_id=p.object_id
+                        INNER JOIN sys.tables AS t ON t.object_id=sp.target_object_id AND t.schema_id=SCHEMA_ID(N'dbo')
+                        WHERE p.name=N'${TENANT_POLICY_NAME}'
+                          AND p.schema_id=SCHEMA_ID(N'dbo')
+                          AND sp.predicate_type_desc=N'FILTER'
+                          AND t.name IN (${tableNames})
+                    ) AS protected_tables;
+            `);
+            const snapshot = result.recordset[0] || {};
+            if (!tenantSecuritySnapshotIsReady(snapshot)) {
+                throw tenantError('Tenant data isolation is not ready.', 503, 'TENANT_ISOLATION_NOT_READY');
+            }
+            tenantSecurityReadyUntil = Date.now() + TENANT_SECURITY_READINESS_TTL_MS;
+            return true;
+        })().finally(() => {
+            tenantSecurityReadinessPromise = null;
+        });
+    }
+    return tenantSecurityReadinessPromise;
+}
+
+function invalidateTenantSecurityReadiness() {
+    tenantSecurityReadyUntil = 0;
+}
+
 function tenantColumnMigrationSql(table) {
     const quotedTable = `dbo.[${table}]`;
     const defaultName = `DF_${table}_tenant_id`;
@@ -471,6 +531,7 @@ async function ensureTenantColumnsAndRls(tenantId) {
     if (!Number.isInteger(normalizedTenantId) || normalizedTenantId <= 0) throw tenantError('Bootstrap tenant id is invalid.', 500, 'INVALID_BOOTSTRAP_TENANT');
     const pool = await getPool();
     const tables = await existingTenantTables(pool);
+    invalidateTenantSecurityReadiness();
     await dropTenantSecurityPolicy(pool);
 
     for (const table of tables) {
@@ -497,6 +558,7 @@ async function ensureTenantColumnsAndRls(tenantId) {
         `);
     }
     await recreateTenantSecurityPolicy(pool, tables);
+    invalidateTenantSecurityReadiness();
     return { tenantId: normalizedTenantId, tables };
 }
 
@@ -506,9 +568,11 @@ module.exports = {
     TENANT_SCHEMA_SQL,
     TENANT_TABLES,
     assignUserToTenant,
+    assertTenantIsolationReady,
     ensureBootstrapTenant,
     ensureTenantColumnsAndRls,
     ensureTenantTables,
     resolvePublicTenant,
-    resolveTenantForUser
+    resolveTenantForUser,
+    tenantSecuritySnapshotIsReady
 };
