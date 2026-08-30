@@ -31,6 +31,41 @@
 
 ## API
 
+### حالة ازدحام الجيم
+
+`POST /api/member-portal/occupancy`
+
+Body:
+
+```json
+{ "membershipCode": "TG-ABCD-EFGH-JKLM-NPQR" }
+```
+
+يعيد المسار قراءة مجمعة صغيرة فقط:
+
+```json
+{
+  "presentCount": 4,
+  "level": "quiet",
+  "label": "هادئ",
+  "staleCheckInsExcluded": 0,
+  "observedAt": "2026-08-30T12:00:00.000Z",
+  "refreshAfterSeconds": 30
+}
+```
+
+يتم حل مالك الكود أولًا ثم تنفيذ القراءة داخل `tenant_id` الخاص بالجيم. لا يعيد المسار أسماء أو معرفات أعضاء، ولا ينفذ تسجيل انصراف تلقائيًا أو أي تهيئة/كتابة. السجلات المفتوحة الأقدم من مدة `ATTENDANCE_AUTO_CHECKOUT_MINUTES` تستبعد منطقيًا من العد، مع إرجاع عددها فقط للتوضيح.
+
+يمكن ضبط حدود التصنيف من البيئة:
+
+```text
+MEMBER_PORTAL_OCCUPANCY_MODERATE_AT=6
+MEMBER_PORTAL_OCCUPANCY_BUSY_AT=16
+MEMBER_PORTAL_OCCUPANCY_VERY_BUSY_AT=31
+```
+
+بعد نجاح lookup، تعرض البوابة الحالة وتحدّثها كل 30 ثانية أثناء بقاء الصفحة ظاهرة، وتتوقف مؤقتًا عند إخفاء التبويب لتقليل الطلبات.
+
 ### عامة
 
 `POST /api/member-portal/lookup`

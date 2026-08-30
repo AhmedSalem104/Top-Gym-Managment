@@ -1,15 +1,42 @@
 const { getPool, sql } = require('../database');
 const { addDays, differenceInDays, formatDateOnly, parseDateOnly, todayInTimeZone, toUtcDate } = require('../utils/date');
 const { config } = require('../config/env');
-const { getTenantContext } = require('../tenancy/tenant-context');
+const { currentTenantId, getTenantContext } = require('../tenancy/tenant-context');
 
 const ATTENDANCE_SOURCES = new Set(['phone', 'qr', 'manual']);
 const DEFAULT_AUTO_CHECKOUT_MINUTES = 60;
+const DEFAULT_OCCUPANCY_THRESHOLDS = Object.freeze({ moderateAt: 6, busyAt: 16, veryBusyAt: 31 });
 let attendanceTablePromise;
 
 function getAutoCheckoutMinutes() {
     const configured = Number.parseInt(config.attendanceAutoCheckoutMinutes, 10);
     return Number.isInteger(configured) && configured > 0 ? Math.min(configured, 1440) : DEFAULT_AUTO_CHECKOUT_MINUTES;
+}
+
+function getOccupancyThresholds() {
+    const configuredModerate = Number(config.memberPortalOccupancyModerateAt);
+    const configuredBusy = Number(config.memberPortalOccupancyBusyAt);
+    const configuredVeryBusy = Number(config.memberPortalOccupancyVeryBusyAt);
+    const moderateAt = Number.isInteger(configuredModerate) && configuredModerate > 0
+        ? configuredModerate
+        : DEFAULT_OCCUPANCY_THRESHOLDS.moderateAt;
+    const busyAt = Math.max(
+        moderateAt + 1,
+        Number.isInteger(configuredBusy) && configuredBusy > 0 ? configuredBusy : DEFAULT_OCCUPANCY_THRESHOLDS.busyAt
+    );
+    const veryBusyAt = Math.max(
+        busyAt + 1,
+        Number.isInteger(configuredVeryBusy) && configuredVeryBusy > 0 ? configuredVeryBusy : DEFAULT_OCCUPANCY_THRESHOLDS.veryBusyAt
+    );
+    return { moderateAt, busyAt, veryBusyAt };
+}
+
+function getOccupancyLevel(presentCount, thresholds = getOccupancyThresholds()) {
+    const count = Math.max(0, Math.floor(Number(presentCount) || 0));
+    if (count < thresholds.moderateAt) return { level: 'quiet', label: 'هادئ' };
+    if (count < thresholds.busyAt) return { level: 'moderate', label: 'متوسط' };
+    if (count < thresholds.veryBusyAt) return { level: 'busy', label: 'مزدحم' };
+    return { level: 'very_busy', label: 'مزدحم جدًا' };
 }
 
 function appError(message, statusCode = 400, code = null, details = {}) {
@@ -266,6 +293,59 @@ async function getTodayAttendance(options = {}) {
     };
 }
 
+/**
+ * Read-only occupancy snapshot for the member portal.
+ *
+ * Attendance predates tenant RLS and therefore does not carry tenant_id on
+ * the row itself. The member join is intentionally tenant-scoped so an open
+ * attendance row can only contribute to the current trusted tenant. The
+ * auto-checkout window is applied in the query without mutating stale rows.
+ */
+async function getCurrentOccupancy() {
+    await ensureAttendanceTable({ readOnly: true });
+    const tenantId = currentTenantId({ required: true });
+    const pool = await getPool();
+    const today = todayInTimeZone();
+    const fromDate = addDays(today, -1);
+    const autoCheckoutMinutes = getAutoCheckoutMinutes();
+    const result = await pool.request()
+        .input('tenantId', sql.Int, tenantId)
+        .input('fromDate', sql.Date, toUtcDate(fromDate))
+        .input('toDate', sql.Date, toUtcDate(today))
+        .input('autoMinutes', sql.Int, autoCheckoutMinutes)
+        .query(`
+            SELECT
+                COUNT(DISTINCT CASE
+                    WHEN a.check_in_at >= DATEADD(minute, -@autoMinutes, clock.now_utc)
+                     AND a.check_in_at <= clock.now_utc
+                    THEN a.member_id
+                END) AS present_count,
+                COUNT(DISTINCT CASE
+                    WHEN a.check_in_at < DATEADD(minute, -@autoMinutes, clock.now_utc)
+                    THEN a.member_id
+                END) AS stale_check_ins_excluded
+            FROM dbo.gym_attendance AS a
+            INNER JOIN dbo.members AS m
+                ON m.id = a.member_id
+               AND m.tenant_id = @tenantId
+            CROSS APPLY (SELECT SYSUTCDATETIME() AS now_utc) AS clock
+            WHERE a.attendance_date BETWEEN @fromDate AND @toDate
+              AND a.check_out_at IS NULL;
+        `);
+    const row = result.recordset?.[0] || {};
+    const presentCount = Math.max(0, Number(row.present_count || 0));
+    const staleCheckInsExcluded = Math.max(0, Number(row.stale_check_ins_excluded || 0));
+    const level = getOccupancyLevel(presentCount);
+    return {
+        presentCount,
+        level: level.level,
+        label: level.label,
+        staleCheckInsExcluded,
+        observedAt: new Date().toISOString(),
+        refreshAfterSeconds: 30
+    };
+}
+
 async function getAttendanceRecordForDate(pool, memberId, date) {
     const result = await pool.request()
         .input('memberId', sql.Int, memberId)
@@ -513,7 +593,10 @@ module.exports = {
     checkOut,
     ensureAttendanceTable,
     getAttendanceReport,
+    getCurrentOccupancy,
     getAutoCheckoutMinutes,
+    getOccupancyLevel,
+    getOccupancyThresholds,
     getMemberAttendanceStatuses,
     getMemberAttendance,
     getTodayAttendance,

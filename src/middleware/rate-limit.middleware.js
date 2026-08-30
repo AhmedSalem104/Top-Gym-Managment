@@ -87,6 +87,14 @@ function requestIp(request) {
     return request.ip || request.socket?.remoteAddress || 'unknown';
 }
 
+function isMembershipPortalOccupancyRequest(request) {
+    const path = String(request.path || '').split('?')[0];
+    const originalPath = String(request.originalUrl || '').split('?')[0];
+    return path === '/occupancy'
+        || path === '/member-portal/occupancy'
+        || originalPath.endsWith('/api/member-portal/occupancy');
+}
+
 function createSensitiveRateLimit({ windowMs = 60_000, max = 120, cleanupMs = 300_000, maxEntries = 10_000, store = null, fallbackStore = null } = {}) {
     const primaryStore = store || createMemoryRateLimitStore({ cleanupMs, maxEntries });
     const safeFallbackStore = fallbackStore || createMemoryRateLimitStore({ cleanupMs, maxEntries });
@@ -126,6 +134,10 @@ function createMembershipPortalRateLimit({
     ipMax = 30,
     codeWindowMs = 900_000,
     codeMax = 8,
+    occupancyIpWindowMs = 60_000,
+    occupancyIpMax = 60,
+    occupancyCodeWindowMs = 900_000,
+    occupancyCodeMax = 60,
     cleanupMs = 300_000,
     maxEntries = 20_000,
     store = null,
@@ -138,15 +150,21 @@ function createMembershipPortalRateLimit({
         const ip = requestIp(request);
         const code = String(request.body?.membershipCode || '').trim().toUpperCase().replace(/[\s-]/g, '');
         const codeDigest = crypto.createHash('sha256').update(code || 'missing').digest('hex');
-        const ipKey = `portal:ip:${ip}`;
-        const codeKey = `portal:code:${ip}:${codeDigest}`;
+        const isOccupancyRequest = isMembershipPortalOccupancyRequest(request);
+        const bucket = isOccupancyRequest ? 'occupancy' : 'lookup';
+        const activeIpWindowMs = isOccupancyRequest ? occupancyIpWindowMs : ipWindowMs;
+        const activeIpMax = isOccupancyRequest ? occupancyIpMax : ipMax;
+        const activeCodeWindowMs = isOccupancyRequest ? occupancyCodeWindowMs : codeWindowMs;
+        const activeCodeMax = isOccupancyRequest ? occupancyCodeMax : codeMax;
+        const ipKey = `portal:${bucket}:ip:${ip}`;
+        const codeKey = `portal:${bucket}:code:${ip}:${codeDigest}`;
         return Promise.all([
-            incrementWithFallback(primaryStore, safeFallbackStore, ipKey, { windowMs: ipWindowMs }),
-            incrementWithFallback(primaryStore, safeFallbackStore, codeKey, { windowMs: codeWindowMs })
+            incrementWithFallback(primaryStore, safeFallbackStore, ipKey, { windowMs: activeIpWindowMs }),
+            incrementWithFallback(primaryStore, safeFallbackStore, codeKey, { windowMs: activeCodeWindowMs })
         ]).then(([ipResult, codeResult]) => {
             if (ipResult.unavailable || codeResult.unavailable) return rateLimitUnavailable(response);
-            const ipBlocked = ipResult.count > ipMax;
-            const codeBlocked = codeResult.count > codeMax;
+            const ipBlocked = ipResult.count > activeIpMax;
+            const codeBlocked = codeResult.count > activeCodeMax;
             if (ipBlocked || codeBlocked) {
                 const resetAt = Math.max(ipResult.resetAt, codeResult.resetAt);
                 response.set('Retry-After', String(Math.max(1, Math.ceil((resetAt - Date.now()) / 1000))));

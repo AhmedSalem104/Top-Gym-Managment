@@ -17,7 +17,7 @@
     </script>
     <title>بيانات عضويتي | Logic Fit</title>
     <link rel="icon" type="image/svg+xml" href="/assets/gym-brand.svg?v=2" sizes="any">
-    <link rel="stylesheet" href="/css/main.css?v=66">
+    <link rel="stylesheet" href="/css/main.css?v=67">
 </head>
 <body class="member-portal-page" data-branding-entry="saas">
     <main class="portal-shell">
@@ -57,6 +57,29 @@
                 </div>
             </header>
             <div class="portal-home-view" id="portalHomeView">
+              <section class="portal-occupancy-card" id="portalOccupancyCard" data-no-print hidden aria-labelledby="portalOccupancyTitle">
+                <div class="portal-occupancy-summary">
+                    <span class="portal-occupancy-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3.5 20a5.5 5.5 0 0 1 11 0M16 11a2.5 2.5 0 1 0 0-5M16.5 14a4.5 4.5 0 0 1 4 6"/></svg></span>
+                    <div>
+                        <span class="portal-section-kicker">حالة الجيم الآن</span>
+                        <h3 id="portalOccupancyTitle">اعرف مستوى الازدحام قبل ما تتحرك</h3>
+                        <p>عدد تقريبي يحافظ على خصوصية الأعضاء، بدون عرض أي أسماء أو بيانات شخصية.</p>
+                    </div>
+                </div>
+                <div class="portal-occupancy-reading" aria-live="polite">
+                    <strong id="portalOccupancyCount">—</strong>
+                    <span>شخص داخل الجيم</span>
+                </div>
+                <div class="portal-occupancy-status is-loading" id="portalOccupancyStatus" role="status" aria-live="polite">
+                    <span class="portal-occupancy-dot" aria-hidden="true"></span>
+                    <div><strong id="portalOccupancyStatusText">جارٍ تحديث الحالة</strong><small id="portalOccupancyStatusHint">نحسب الحضور الحالي بأمان</small></div>
+                </div>
+                <div class="portal-occupancy-meta">
+                    <span id="portalOccupancyUpdated">يتم التحديث تلقائيًا كل 30 ثانية</span>
+                    <button class="btn btn-light portal-occupancy-refresh" id="portalOccupancyRefresh" type="button">تحديث الآن</button>
+                </div>
+                <p class="portal-occupancy-note" id="portalOccupancyNote">يتم استبعاد التسجيلات القديمة تلقائيًا حسب سياسة الانصراف التلقائي.</p>
+              </section>
               <section class="portal-tool-grid" data-no-print aria-label="خدمات العضو">
                 <button class="portal-tool-card portal-tool-card-print" type="button" data-portal-tool="print">
                     <span class="portal-tool-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V3h12v6"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v7H6z"/></svg></span>
@@ -126,6 +149,6 @@
     </main>
     <script defer src="/js/theme.js?v=1"></script>
     <script defer src="/js/branding.js?v=5"></script>
-    <script defer src="/js/member-portal.js?v=8"></script>
+    <script defer src="/js/member-portal.js?v=9"></script>
 </body>
 </html>

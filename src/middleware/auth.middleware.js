@@ -40,7 +40,7 @@ function createAuthApiMiddleware({ authService, isAuthorizedCronRequest, tenantS
         const platformBrandingRequest = tenantBrandingPath
             && String(request.query?.scope || '').trim().toLowerCase() === 'platform';
         const healthPath = ['/health', '/health/live'].includes(request.path);
-        const publicPath = ['/health', '/health/live', '/member-portal/lookup', '/member-portal/feedback', '/branding'].includes(request.path)
+        const publicPath = ['/health', '/health/live', '/member-portal/lookup', '/member-portal/occupancy', '/member-portal/feedback', '/branding'].includes(request.path)
             || request.path === '/member-portal/library/options'
             || request.path.startsWith('/member-portal/library/')
             || (request.method === 'GET' && request.path.startsWith('/branding/assets/'));

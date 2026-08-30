@@ -72,6 +72,52 @@
 .portal-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .portal-actions .btn { min-height: 44px; white-space: nowrap; }
 .portal-home-view { display: block; }
+.portal-occupancy-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) auto auto;
+  align-items: center;
+  gap: 16px;
+  margin-top: 24px;
+  padding: 18px 20px;
+  border: 1px solid var(--border-primary);
+  border-radius: 18px;
+  background: linear-gradient(135deg, var(--bg-card-hover), var(--bg-card));
+  box-shadow: var(--shadow-card);
+}
+.portal-occupancy-summary { display: flex; min-width: 0; align-items: center; gap: 12px; }
+.portal-occupancy-summary > div { min-width: 0; }
+.portal-occupancy-icon {
+  display: grid;
+  width: 48px;
+  height: 48px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid var(--primary-border);
+  border-radius: 14px;
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+.portal-occupancy-icon .ui-icon { width: 24px; height: 24px; }
+.portal-occupancy-summary h3 { margin: 3px 0 3px; color: var(--text-primary); font-size: 1.05rem; }
+.portal-occupancy-summary p { margin: 0; color: var(--text-muted); font-size: 11px; line-height: 1.7; }
+.portal-occupancy-reading { display: grid; min-width: 125px; gap: 2px; text-align: center; }
+.portal-occupancy-reading strong { color: var(--text-primary); font-size: clamp(1.65rem, 4vw, 2.2rem); font-weight: 900; line-height: 1; font-variant-numeric: tabular-nums; }
+.portal-occupancy-reading span { color: var(--text-muted); font-size: 11px; white-space: nowrap; }
+.portal-occupancy-status { display: flex; min-width: 132px; align-items: center; gap: 9px; padding: 9px 11px; border: 1px solid var(--border-secondary); border-radius: 12px; background: var(--bg-elevated); }
+.portal-occupancy-status > div { display: grid; gap: 2px; min-width: 0; }
+.portal-occupancy-status strong { color: currentColor; font-size: 12px; white-space: nowrap; }
+.portal-occupancy-status small { color: var(--text-muted); font-size: 10px; line-height: 1.5; white-space: nowrap; }
+.portal-occupancy-dot { width: 9px; height: 9px; flex: 0 0 auto; border-radius: 50%; background: currentColor; box-shadow: 0 0 0 4px color-mix(in srgb, currentColor 14%, transparent); }
+.portal-occupancy-status.quiet { border-color: var(--success-border); background: var(--success-soft); color: var(--success-text); }
+.portal-occupancy-status.moderate { border-color: var(--warning-border); background: var(--warning-soft); color: var(--warning-text); }
+.portal-occupancy-status.busy, .portal-occupancy-status.very_busy { border-color: var(--danger-border); background: var(--danger-soft); color: var(--danger-text); }
+.portal-occupancy-status.is-loading { color: var(--text-muted); }
+.portal-occupancy-status.error { border-color: var(--danger-border); background: var(--danger-soft); color: var(--danger-text); }
+.portal-occupancy-meta { display: grid; min-width: 136px; justify-items: end; gap: 7px; }
+.portal-occupancy-meta > span { color: var(--text-muted); font-size: 10px; line-height: 1.5; text-align: end; }
+.portal-occupancy-refresh { min-height: 34px; padding-inline: 11px; font-size: 11px; white-space: nowrap; }
+.portal-occupancy-refresh[aria-busy="true"] { cursor: wait; opacity: .7; }
+.portal-occupancy-note { grid-column: 1 / -1; margin: -4px 0 0; color: var(--text-disabled); font-size: 10px; line-height: 1.6; }
 .portal-view-toolbar {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
@@ -164,6 +210,12 @@
   .portal-login { margin-top: 0; }
   .portal-lookup-form input { height: 60px; }
   .portal-result-header { display: grid; gap: 16px; }
+  .portal-occupancy-card { grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: 14px; padding: 16px; }
+  .portal-occupancy-summary { grid-column: 1 / -1; align-items: flex-start; }
+  .portal-occupancy-reading { align-self: center; }
+  .portal-occupancy-status { min-width: 0; }
+  .portal-occupancy-meta { min-width: 0; align-items: end; }
+  .portal-occupancy-note { margin-top: -2px; }
   .portal-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .portal-actions .btn:last-child { grid-column: 1 / -1; }
   .portal-view-toolbar { grid-template-columns: 1fr; align-items: stretch; gap: 12px; }
@@ -539,6 +591,12 @@
 }
 
 @media (max-width: 420px) {
+  .portal-occupancy-card { grid-template-columns: 1fr; }
+  .portal-occupancy-reading, .portal-occupancy-status, .portal-occupancy-meta { width: 100%; }
+  .portal-occupancy-reading { grid-template-columns: auto 1fr; align-items: baseline; justify-content: start; gap: 7px; text-align: start; }
+  .portal-occupancy-status { justify-content: start; }
+  .portal-occupancy-meta { grid-template-columns: minmax(0, 1fr) auto; align-items: center; }
+  .portal-occupancy-meta > span { text-align: start; }
   .portal-membership-facts { grid-template-columns: 1fr; }
   .portal-member-primary { gap: 11px; }
   .portal-member-avatar { width: 52px; height: 52px; font-size: 19px; }

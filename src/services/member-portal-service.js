@@ -142,4 +142,17 @@ async function lookupByCode(code, request) {
     });
 }
 
-module.exports = { lookupByCode };
+async function getOccupancyByCode(code, request) {
+    const memberContext = await membershipCodeService.findMemberContextByCode(code, { request, auditAction: null });
+    if (!memberContext) throw appError('كود العضوية غير صحيح أو منتهي الصلاحية.', 404, 'MEMBERSHIP_PORTAL_CODE_INVALID');
+
+    // Occupancy is deliberately resolved from the code owner's tenant and is
+    // a read-only aggregate. The polling endpoint must not create audit rows,
+    // auto-checkout attendance, or initialize schema.
+    const readOnlyBaseline = Boolean(getTenantContext()?.readOnlyBaseline);
+    return runTenantContext({ tenantId: memberContext.tenantId, mode: 'public', readOnlyBaseline }, () => (
+        attendanceService.getCurrentOccupancy()
+    ));
+}
+
+module.exports = { getOccupancyByCode, lookupByCode };

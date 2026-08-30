@@ -82,6 +82,11 @@ function createMemberPortalController({ membershipCodeService, portalService, li
             response.json(await portalService.lookupByCode(request.body?.membershipCode, request));
         },
 
+        occupancy: async (request, response) => {
+            response.set('Cache-Control', 'private, no-store');
+            response.json(await portalService.getOccupancyByCode(request.body?.membershipCode, request));
+        },
+
         libraryOptions: async (request, response) => {
             // Library rows are tenant-owned. Never let a CDN reuse one gym's
             // catalog response for another public portal.

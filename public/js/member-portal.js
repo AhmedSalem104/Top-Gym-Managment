@@ -23,10 +23,21 @@
   const feedbackMessage = $('portalFeedbackMessage');
   const feedbackError = $('portalFeedbackError');
   const feedbackSuccess = $('portalFeedbackSuccess');
+  const occupancyCard = $('portalOccupancyCard');
+  const occupancyCount = $('portalOccupancyCount');
+  const occupancyStatus = $('portalOccupancyStatus');
+  const occupancyStatusText = $('portalOccupancyStatusText');
+  const occupancyStatusHint = $('portalOccupancyStatusHint');
+  const occupancyUpdated = $('portalOccupancyUpdated');
+  const occupancyNote = $('portalOccupancyNote');
+  const occupancyRefresh = $('portalOccupancyRefresh');
   let portalMembershipCode = '';
   let portalReportMeta = '';
   let libraryLoaderPromise = null;
   let activePortalView = 'home';
+  let occupancyRefreshTimer = null;
+  let occupancyRequestController = null;
+  let occupancyRequestSequence = 0;
 
   const brandName = () => String(window.topGymBranding?.get?.().identity?.brandName || 'Logic Fit').trim() || 'Logic Fit';
 
@@ -78,6 +89,107 @@
     if (!feedbackError) return;
     feedbackError.textContent = message || '';
     feedbackError.hidden = !message;
+  }
+
+  const occupancyLevels = Object.freeze({
+    quiet: { label: 'هادئ', hint: 'مناسب للتمرين براحة', className: 'quiet' },
+    moderate: { label: 'متوسط', hint: 'حركة متوازنة داخل الجيم', className: 'moderate' },
+    busy: { label: 'مزدحم', hint: 'الجيم فيه حركة ملحوظة', className: 'busy' },
+    very_busy: { label: 'مزدحم جدًا', hint: 'يفضل اختيار وقت أهدأ', className: 'very_busy' }
+  });
+
+  function clearOccupancyTimer() {
+    if (occupancyRefreshTimer) window.clearTimeout(occupancyRefreshTimer);
+    occupancyRefreshTimer = null;
+  }
+
+  function stopOccupancyRequest() {
+    occupancyRequestSequence += 1;
+    occupancyRequestController?.abort();
+    occupancyRequestController = null;
+  }
+
+  function resetOccupancyDisplay() {
+    if (!occupancyCard) return;
+    occupancyCard.hidden = true;
+    if (occupancyCount) occupancyCount.textContent = '—';
+    if (occupancyStatus) occupancyStatus.className = 'portal-occupancy-status is-loading';
+    if (occupancyStatusText) occupancyStatusText.textContent = 'جارٍ تحديث الحالة';
+    if (occupancyStatusHint) occupancyStatusHint.textContent = 'نحسب الحضور الحالي بأمان';
+    if (occupancyUpdated) occupancyUpdated.textContent = 'يتم التحديث تلقائيًا كل 30 ثانية';
+    if (occupancyNote) occupancyNote.textContent = 'يتم استبعاد التسجيلات القديمة تلقائيًا حسب سياسة الانصراف التلقائي.';
+  }
+
+  function setOccupancyBusy(value) {
+    if (!occupancyRefresh) return;
+    occupancyRefresh.disabled = value;
+    occupancyRefresh.setAttribute('aria-busy', String(value));
+  }
+
+  function renderOccupancy(data) {
+    if (!occupancyCard) return;
+    const count = Math.max(0, Math.floor(number(data?.presentCount)));
+    const level = occupancyLevels[data?.level] || occupancyLevels.quiet;
+    occupancyCard.hidden = false;
+    if (occupancyCount) occupancyCount.textContent = count.toLocaleString('ar-EG');
+    if (occupancyStatus) occupancyStatus.className = `portal-occupancy-status ${level.className}`;
+    if (occupancyStatusText) occupancyStatusText.textContent = level.label;
+    if (occupancyStatusHint) occupancyStatusHint.textContent = level.hint;
+    if (occupancyUpdated) occupancyUpdated.textContent = `آخر تحديث ${dateTimeText(data?.observedAt)}`;
+    const staleCount = Math.max(0, Math.floor(number(data?.staleCheckInsExcluded)));
+    if (occupancyNote) {
+      occupancyNote.textContent = staleCount
+        ? `تم استبعاد ${staleCount.toLocaleString('ar-EG')} تسجيلات قديمة تلقائيًا حتى يظل العدد واقعيًا.`
+        : 'يتم استبعاد التسجيلات القديمة تلقائيًا حسب سياسة الانصراف التلقائي.';
+    }
+  }
+
+  function showOccupancyError() {
+    if (!occupancyCard) return;
+    occupancyCard.hidden = false;
+    if (occupancyStatus) occupancyStatus.className = 'portal-occupancy-status error';
+    if (occupancyStatusText) occupancyStatusText.textContent = 'تعذر تحديث الحالة';
+    if (occupancyStatusHint) occupancyStatusHint.textContent = 'حاول التحديث مرة أخرى بعد قليل';
+    if (occupancyUpdated) occupancyUpdated.textContent = 'آخر قراءة محفوظة إن وُجدت';
+  }
+
+  async function refreshOccupancy({ silent = false } = {}) {
+    if (!portalMembershipCode || !occupancyCard) return;
+    const requestSequence = ++occupancyRequestSequence;
+    occupancyRequestController?.abort();
+    const controller = new AbortController();
+    occupancyRequestController = controller;
+    occupancyCard.hidden = false;
+    if (!silent) setOccupancyBusy(true);
+    try {
+      const response = await fetch('/api/member-portal/occupancy', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({ membershipCode: portalMembershipCode }),
+        signal: controller.signal
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(response.status === 429 ? 'RATE_LIMITED' : 'OCCUPANCY_UNAVAILABLE');
+      if (requestSequence !== occupancyRequestSequence || controller.signal.aborted) return;
+      renderOccupancy(payload);
+    } catch (error) {
+      if (error?.name === 'AbortError' || requestSequence !== occupancyRequestSequence) return;
+      showOccupancyError();
+    } finally {
+      if (occupancyRequestController === controller) occupancyRequestController = null;
+      if (!silent) setOccupancyBusy(false);
+    }
+  }
+
+  function scheduleOccupancyRefresh(delayMs = 30_000) {
+    clearOccupancyTimer();
+    if (!portalMembershipCode || document.hidden) return;
+    occupancyRefreshTimer = window.setTimeout(async () => {
+      occupancyRefreshTimer = null;
+      await refreshOccupancy({ silent: true });
+      scheduleOccupancyRefresh();
+    }, Math.max(15_000, Number(delayMs) || 30_000));
   }
 
   function setRating(value) {
@@ -261,11 +373,13 @@
     try {
       const data = await lookup(code);
       await applyPortalTenant(data.tenant);
-      render(data);
       portalMembershipCode = code;
+      render(data);
       input.value = '';
       loginPanel.hidden = true;
       resultPanel.hidden = false;
+      void refreshOccupancy();
+      scheduleOccupancyRefresh();
       resultPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
     } catch (error) {
       showError(error.message || 'تعذر عرض بيانات العضوية.');
@@ -273,6 +387,10 @@
   });
   $('portalPrintButton')?.addEventListener('click', printReport);
   $('portalPdfButton')?.addEventListener('click', printReport);
+  occupancyRefresh?.addEventListener('click', () => {
+    void refreshOccupancy();
+    scheduleOccupancyRefresh();
+  });
   resultPanel?.addEventListener('click', (event) => {
     if (event.target.closest('[data-portal-back]')) {
       setPortalView('home');
@@ -296,6 +414,16 @@
   });
   window.addEventListener('topgym:brandingchange', () => {
     if (activePortalView === 'feedback') setPortalView(activePortalView);
+  });
+  document.addEventListener('visibilitychange', () => {
+    if (!portalMembershipCode) return;
+    if (document.hidden) {
+      clearOccupancyTimer();
+      occupancyRequestController?.abort();
+    } else {
+      void refreshOccupancy({ silent: true });
+      scheduleOccupancyRefresh();
+    }
   });
   document.querySelectorAll('[data-feedback-rating]').forEach((button) => {
     button.addEventListener('click', () => setRating(button.dataset.feedbackRating));
@@ -328,11 +456,14 @@
     } finally { setFeedbackBusy(false); }
   });
   $('portalResetButton')?.addEventListener('click', () => {
+    clearOccupancyTimer();
+    stopOccupancyRequest();
     portalMembershipCode = '';
     portalReportMeta = '';
     resetPortalTenant();
     setPortalView('home');
     resetFeedback();
+    resetOccupancyDisplay();
     resultPanel.hidden = true;
     loginPanel.hidden = false;
     input.focus();

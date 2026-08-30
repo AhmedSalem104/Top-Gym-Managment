@@ -62,6 +62,12 @@ const config = Object.freeze({
     publicAppUrl: getEnv('PUBLIC_APP_URL'),
     membershipCodeSecret: getEnv('MEMBERSHIP_CODE_SECRET'),
     attendanceAutoCheckoutMinutes: getNumberEnv('ATTENDANCE_AUTO_CHECKOUT_MINUTES', 0),
+    // Member-portal occupancy is intentionally configurable because a quiet
+    // or busy gym threshold depends on the facility size. The service still
+    // normalizes the ordering before it classifies a count.
+    memberPortalOccupancyModerateAt: getBoundedNumberEnv('MEMBER_PORTAL_OCCUPANCY_MODERATE_AT', 6, 1, 10_000),
+    memberPortalOccupancyBusyAt: getBoundedNumberEnv('MEMBER_PORTAL_OCCUPANCY_BUSY_AT', 16, 2, 10_000),
+    memberPortalOccupancyVeryBusyAt: getBoundedNumberEnv('MEMBER_PORTAL_OCCUPANCY_VERY_BUSY_AT', 31, 3, 10_000),
     mssqlConnectionString: getEnv('MSSQL_CONNECTION_STRING') || getEnv('DATABASE_URL'),
     // Keep database timeouts finite and positive. Operators can tune these
     // values for a measured environment, but an invalid value must not turn
