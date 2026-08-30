@@ -44,11 +44,13 @@ penetration test and does not replace authenticated Staging verification.
 | In-memory rate limits are process-local | High | Architecture ready, Production blocked | Configure and verify an approved shared backend before marketing protection across multiple Serverless instances. |
 | CSRF/XSS/IDOR/auth-bypass attack matrix | Critical | Requires Staging verification | Run authenticated synthetic Tenant A/B and browser attack tests, then retest all findings. |
 | SQL TLS certificate trust in deployment | High | Configuration requirement | Use `TrustServerCertificate=False` with a trusted certificate in Staging/Production and verify connectivity. |
-| Private object storage and backup restore | Critical | Provider/restore verification pending | Configure private storage and complete an isolated restore test before Go-Live. |
+| Private object storage and backup restore | Critical | Storage provider verified; isolated restore pending | Keep the private VPS provider active and complete an isolated restore rehearsal before Go-Live. |
 
 ## Verification boundary
 
 No security `PASS` is claimed for external penetration testing, Production
-secret configuration, distributed rate limiting, private storage, or restore
+secret rotation/operations, distributed rate limiting, or isolated restore
 integrity until the corresponding evidence is recorded in
-`docs/PRODUCTION-VERIFICATION-DEBT.md`.
+`docs/PRODUCTION-VERIFICATION-DEBT.md`. Private storage activation itself has
+now been verified through the deployed Vercel-to-VPS path; restore rehearsal
+remains a separate gate.

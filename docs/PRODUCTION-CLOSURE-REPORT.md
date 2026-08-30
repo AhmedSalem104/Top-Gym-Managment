@@ -186,3 +186,15 @@ missing for authenticated tenant isolation, real database behavior, restore,
 external security testing, load/capacity and pilot operation. The next safe
 step is to provide the isolated Staging inputs above; no index, provider or
 Production infrastructure change is justified before that evidence exists.
+## Deployment update — 2026-08-30
+
+The current Logic Fit deployment has now verified the private storage activation
+through the real Vercel-to-VPS path. Migration 010 is applied to the connected
+database, and both a Tenant backup and a separate Platform backup were uploaded
+to the private MinIO bucket, read back, checksum-verified, marked `VERIFIED`,
+and downloaded only through their authorized API paths.
+
+This supersedes the earlier Phase 4 provider-activation note in this historical
+closure report. The remaining gates are isolated restore rehearsal, off-site
+replication, external attack testing, progressive load evidence, and pilot
+evidence; no Production GO is implied by this storage verification alone.
