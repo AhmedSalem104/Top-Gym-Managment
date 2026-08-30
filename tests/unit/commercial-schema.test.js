@@ -121,6 +121,8 @@ test('owner member request review and portal analytics surfaces stay tenant-scop
     assert.match(permissions, /'portal-analytics': 'portal\.analytics\.read'/);
     assert.match(loader, /member-subscription-requests\.js/);
     assert.match(loader, /portal-analytics\.js/);
+    assert.match(read('scripts/qa-browser-style.js'), /memberSubscriptionRequestsSection/);
+    assert.match(read('scripts/qa-browser-style.js'), /portalAnalyticsSection/);
     assert.match(page, /id="memberSubscriptionRequestsSection"[^>]+data-owner-only/);
     assert.match(page, /id="portalAnalyticsSection"[^>]+data-owner-only/);
     assert.match(page, /id="memberSubscriptionRequestsRefresh"[^>]+data-async-action="false"/);
