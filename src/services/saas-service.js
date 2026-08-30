@@ -981,15 +981,51 @@ async function ensureBootstrapSubscription(tenantId) {
     if (!plan) throw saasError('تعذر تجهيز باقة Top Gym الأساسية.', 500, 'SAAS_BOOTSTRAP_PLAN_MISSING');
     const startsAt = new Date();
     const snapshot = snapshotForPlan(plan);
-    await pool.request().input('tenantId', sql.Int, id).input('planId', sql.Int, plan.id).input('startsAt', sql.DateTime2(0), startsAt).query("INSERT INTO dbo.saas_tenant_subscriptions (tenant_id,plan_id,status,starts_at,expires_at,source,notes) VALUES (@tenantId,@planId,'active',@startsAt,NULL,'bootstrap',N'اشتراك تأسيسي لبيانات Top Gym الحالية.'); UPDATE dbo.gym_tenants SET status='active', updated_at=SYSUTCDATETIME() WHERE id=@tenantId;");
-    await pool.request().input('tenantId', sql.Int, id).input('planId', sql.Int, plan.id).input('billingPeriodSnapshot', sql.VarChar(20), snapshot.billingPeriod).input('priceSnapshot', sql.Decimal(12, 2), snapshot.price).input('maxMembersSnapshot', sql.Int, snapshot.maxMembers).input('maxUsersSnapshot', sql.Int, snapshot.maxUsers).input('maxAiGenerationsSnapshot', sql.Int, snapshot.maxAiGenerations).input('maxStorageMbSnapshot', sql.Int, snapshot.maxStorageMb).input('featuresSnapshotJson', sql.NVarChar(sql.MAX), JSON.stringify(snapshot.features)).query(`UPDATE dbo.saas_tenant_subscriptions
-        SET billing_period_snapshot=@billingPeriodSnapshot,price_snapshot=@priceSnapshot,currency_snapshot=(SELECT TOP (1) currency FROM dbo.saas_plans WHERE id=@planId),max_members_snapshot=@maxMembersSnapshot,max_users_snapshot=@maxUsersSnapshot,max_ai_generations_snapshot=@maxAiGenerationsSnapshot,max_storage_mb_snapshot=@maxStorageMbSnapshot,features_snapshot_json=@featuresSnapshotJson
-                 WHERE id=(SELECT TOP (1) id FROM dbo.saas_tenant_subscriptions WHERE tenant_id=@tenantId ORDER BY id DESC);`);
-             // Provision the repository-owned catalog in the same transaction
-             // as onboarding. A failed seed rolls back the tenant instead of
-             // leaving a gym with an empty or partially copied library.
-             await runTenantContext({ mode: 'tenant', tenantId }, () => libraryService.ensureLibraryData({ transaction }));
-    await recordAudit({ tenantId: id, action: 'bootstrap_subscription', entityType: 'subscription', details: 'تم تجهيز اشتراك تأسيسي غير منتهٍ لـ Top Gym.' });
+    await withTransaction(async (transaction) => {
+        // Serialize bootstrap/repair calls for a tenant and keep the
+        // subscription, activation, catalog provisioning, and audit atomic.
+        const tenantResult = await transaction.request()
+            .input('tenantId', sql.Int, id)
+            .query('SELECT TOP (1) id FROM dbo.gym_tenants WITH (UPDLOCK,HOLDLOCK) WHERE id=@tenantId;');
+        if (!tenantResult.recordset[0]) throw saasError('الجيم المطلوب للتجهيز غير موجود.', 404, 'TENANT_NOT_FOUND');
+
+        const existing = await transaction.request()
+            .input('tenantId', sql.Int, id)
+            .query('SELECT TOP (1) id FROM dbo.saas_tenant_subscriptions WITH (UPDLOCK,HOLDLOCK) WHERE tenant_id=@tenantId ORDER BY id;');
+        if (existing.recordset[0]) return;
+
+        await transaction.request()
+            .input('tenantId', sql.Int, id)
+            .input('planId', sql.Int, plan.id)
+            .input('startsAt', sql.DateTime2(0), startsAt)
+            .input('billingPeriodSnapshot', sql.VarChar(20), snapshot.billingPeriod)
+            .input('priceSnapshot', sql.Decimal(12, 2), snapshot.price)
+            .input('currencySnapshot', sql.Char(3), snapshot.currency)
+            .input('maxMembersSnapshot', sql.Int, snapshot.maxMembers)
+            .input('maxUsersSnapshot', sql.Int, snapshot.maxUsers)
+            .input('maxAiGenerationsSnapshot', sql.Int, snapshot.maxAiGenerations)
+            .input('maxStorageMbSnapshot', sql.Int, snapshot.maxStorageMb)
+            .input('featuresSnapshotJson', sql.NVarChar(sql.MAX), JSON.stringify(snapshot.features))
+            .query(`
+                INSERT INTO dbo.saas_tenant_subscriptions
+                    (tenant_id,plan_id,status,starts_at,expires_at,source,notes,
+                     billing_period_snapshot,price_snapshot,currency_snapshot,
+                     max_members_snapshot,max_users_snapshot,max_ai_generations_snapshot,
+                     max_storage_mb_snapshot,features_snapshot_json)
+                VALUES
+                    (@tenantId,@planId,'active',@startsAt,NULL,'bootstrap',
+                     N'اشتراك تأسيسي للتجهيز الأولي.',
+                     @billingPeriodSnapshot,@priceSnapshot,@currencySnapshot,
+                     @maxMembersSnapshot,@maxUsersSnapshot,@maxAiGenerationsSnapshot,
+                     @maxStorageMbSnapshot,@featuresSnapshotJson);
+                UPDATE dbo.gym_tenants
+                SET status='active', updated_at=SYSUTCDATETIME()
+                WHERE id=@tenantId;
+            `);
+
+        await runTenantContext({ mode: 'tenant', tenantId: id }, () => libraryService.ensureLibraryData({ transaction }));
+        await recordAudit({ tenantId: id, action: 'bootstrap_subscription', entityType: 'subscription', details: 'تم تجهيز اشتراك تأسيسي غير منتهٍ.', executor: transaction });
+    });
     return getCurrentSubscription(id);
 }
 
@@ -1284,6 +1320,7 @@ async function createTenantWithOwner(body = {}, actorUserId, authService) {
         await withTransaction(async (transaction) => {
             const tenantResult = await transaction.request().input('name', sql.NVarChar(160), tenant.name).input('slug', sql.VarChar(80), tenant.slug).query("INSERT INTO dbo.gym_tenants (name,slug,status) OUTPUT INSERTED.id VALUES (@name,@slug,'trial');");
             tenantId = Number(tenantResult.recordset[0].id);
+            await runTenantContext({ mode: 'tenant', tenantId }, () => libraryService.ensureLibraryData({ transaction }));
             const ownerResult = await transaction.request().input('fullName', sql.NVarChar(120), ownerName).input('email', sql.NVarChar(254), ownerEmail).input('emailNormalized', sql.NVarChar(254), ownerEmail).input('passwordHash', sql.NVarChar(512), passwordHash).query("INSERT INTO dbo.gym_users (full_name,username,email,email_normalized,password_hash,role,status) OUTPUT INSERTED.id VALUES (@fullName,@email,@email,@emailNormalized,@passwordHash,'Owner','Active');");
             ownerId = Number(ownerResult.recordset[0].id);
             await transaction.request().input('userId', sql.Int, ownerId).input('tenantId', sql.Int, tenantId).query("INSERT INTO dbo.gym_user_tenants (user_id,tenant_id,role,status,is_primary) VALUES (@userId,@tenantId,'Owner','active',1);");

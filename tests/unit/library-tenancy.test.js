@@ -40,7 +40,14 @@ test('library source identities are unique per tenant, not globally', () => {
 
 test('tenant onboarding provisions the catalog before its transaction commits', () => {
     const saas = read('src/services/saas-service.js');
-    assert.match(saas, /runTenantContext\(\{ mode: 'tenant', tenantId \}, \(\) => libraryService\.ensureLibraryData\(\{ transaction \}\)\)/);
+    assert.match(saas, /await withTransaction\(async \(transaction\) => \{/);
+    assert.match(saas, /runTenantContext\(\{ mode: 'tenant', tenantId: id \}, \(\) => libraryService\.ensureLibraryData\(\{ transaction \}\)\)/);
+    assert.match(saas, /recordAudit\(\{ tenantId: id,[\s\S]*executor: transaction \}\)/);
+    const bootstrap = saas.slice(saas.indexOf('async function ensureBootstrapSubscription'), saas.indexOf('async function listTenantRequests'));
+    assert.doesNotMatch(bootstrap, /runTenantContext\(\{ mode: 'tenant', tenantId \}, \(\) => libraryService\.ensureLibraryData\(\{ transaction \}\)\)/);
+    const onboarding = saas.slice(saas.indexOf('async function createTenantWithOwner'), saas.indexOf('function booleanValue'));
+    assert.match(onboarding, /await withTransaction\(async \(transaction\) => \{/);
+    assert.match(onboarding, /tenantId = Number\(tenantResult\.recordset\[0\]\.id\);[\s\S]*runTenantContext\(\{ mode: 'tenant', tenantId \}, \(\) => libraryService\.ensureLibraryData\(\{ transaction \}\)\)/);
     const server = read('server.js');
     assert.match(server, /ensureCoachingTables\(\{ seedLibrary: false \}\)/);
     assert.match(server, /ensureTenantColumnsAndRls\(bootstrapTenant\.id\)[\s\S]*ensureLibraryData\(\)/);
