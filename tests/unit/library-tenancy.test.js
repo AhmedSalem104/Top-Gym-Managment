@@ -14,6 +14,14 @@ test('repository library fixtures contain the complete baseline catalog', () => 
     assert.equal(JSON.parse(read('data/library/exercises.json')).length, 873);
 });
 
+test('library provisioning resolves the tracked root catalog in serverless deployments', () => {
+    const library = read('src/services/library-service.js');
+    assert.match(library, /const DATA_DIRECTORY = path\.join\(__dirname, '..', '..', 'data', 'library'\)/);
+    for (const type of ['muscles', 'foods', 'exercises']) {
+        assert.equal(fs.existsSync(path.join(ROOT, 'data', 'library', `${type}.json`)), true);
+    }
+});
+
 test('library provisioning is tenant keyed and writes tenant scoped catalog rows', () => {
     const library = read('src/services/library-service.js');
     assert.match(library, /const librarySeedPromises = new Map()/);

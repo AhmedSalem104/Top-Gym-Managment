@@ -157,7 +157,7 @@ function createAuthApiMiddleware({ authService, isAuthorizedCronRequest, tenantS
                     });
                 }
                 return tenantService.resolveTenantForUser(user.id, requestedTenantSlug(request), { readOnly: readOnlyRequest }).then((tenant) => {
-                    if (!tenant) return response.status(403).json({ error: 'لا يوجد اشتراك نشط لهذا الحساب في الجيم المطلوب.', code: 'TENANT_ACCESS_REQUIRED' });
+                    if (!tenant) return response.status(403).json({ error: 'الحساب غير مرتبط بجيم نشط، أو أن الجيم المطلوب لا يطابق عضوية الحساب.', code: 'TENANT_ACCESS_REQUIRED' });
                     request.tenant = tenant;
                     return runTenantContext({ tenantId: tenant.id, userId: user.id, mode: 'tenant', readOnlyBaseline: readOnlyRequest }, async () => {
                         user = await authService.withPermissions(user, { readOnly: readOnlyRequest });

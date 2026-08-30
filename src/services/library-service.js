@@ -3,7 +3,10 @@ const path = require('node:path');
 const { getPool, sql } = require('../database');
 const { currentTenantId, getTenantContext } = require('../tenancy/tenant-context');
 
-const DATA_DIRECTORY = path.join(__dirname, '..', 'data', 'library');
+// The canonical catalog lives at the repository root (`data/library`). Keep
+// this path independent from the service's source directory so the same
+// files are resolved locally and inside the Vercel serverless bundle.
+const DATA_DIRECTORY = path.join(__dirname, '..', '..', 'data', 'library');
 const LIBRARY_TYPES = new Set(['muscles', 'foods', 'exercises']);
 const EXERCISE_CATALOG_SOURCE_ID_OFFSET = 100000;
 const CANONICAL_MUSCLE_COUNT = 297;

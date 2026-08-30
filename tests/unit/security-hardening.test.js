@@ -220,6 +220,35 @@ test('normal GET requests use a read-only tenant context and do not touch sessio
     assert.equal(nextContext.readOnlyBaseline, true);
 });
 
+test('tenant access failure explains the missing membership mapping without claiming SaaS expiry', async () => {
+    const middleware = createAuthApiMiddleware({
+        authService: {
+            getSessionUser: async () => ({ id: 17, role: 'Owner' }),
+            withPermissions: async (user) => user,
+            readSessionCookie: () => 'session-token'
+        },
+        tenantService: {
+            resolveTenantForUser: async () => null
+        },
+        isAuthorizedCronRequest: () => false
+    });
+    const request = {
+        method: 'GET',
+        path: '/permissions',
+        query: {},
+        body: {},
+        get: () => '',
+        socket: { remoteAddress: '127.0.0.1' }
+    };
+    const response = responseDouble();
+
+    await middleware(request, response, () => {});
+
+    assert.equal(response.statusCode, 403);
+    assert.equal(response.body.code, 'TENANT_ACCESS_REQUIRED');
+    assert.equal(response.body.error, 'الحساب غير مرتبط بجيم نشط، أو أن الجيم المطلوب لا يطابق عضوية الحساب.');
+});
+
 test('the authorized backup cron remains the explicit state-changing GET exception', async () => {
     let context;
     const middleware = createAuthApiMiddleware({
