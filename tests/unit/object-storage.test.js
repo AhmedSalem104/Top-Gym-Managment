@@ -119,6 +119,30 @@ test('private object verification rejects tampered bytes despite matching HEAD m
     );
 });
 
+test('platform object verification reads back bytes before registration proof acceptance', async () => {
+    const crypto = require('node:crypto');
+    const body = Buffer.from('platform proof');
+    const checksum = crypto.createHash('sha256').update(body).digest('hex');
+    const calls = [];
+    const key = 'platform/private/registration-payment-proofs/abcdefghijklmnop.png';
+    const storage = createObjectStorageService({
+        adapter: {
+            async headPrivateObject() {
+                calls.push('head');
+                return { tenantId: null, scope: 'platform', key, size: body.length, checksum };
+            },
+            async getPrivateObject() {
+                calls.push('get');
+                return { tenantId: null, scope: 'platform', key, body, size: body.length, checksum };
+            }
+        }
+    });
+
+    const result = await storage.verifyPrivatePlatformObject({ key, expectedSize: body.length, expectedChecksum: checksum });
+    assert.deepEqual(calls, ['head', 'get']);
+    assert.deepEqual(result, { key, size: body.length, checksum });
+});
+
 test('local private storage is explicit, isolated and usable only outside production', async () => {
     const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), 'logic-fit-private-storage-'));
     try {

@@ -36,6 +36,7 @@ const saasService = require('./src/services/saas-service');
 const commercialSchema = require('./src/services/commercial-schema');
 const commercialService = require('./src/services/commercial-service');
 const memberSubscriptionService = require('./src/services/member-subscription-service');
+const { createGymRegistrationService } = require('./src/services/gym-registration-service');
 const platformAdminService = require('./src/services/platform-admin-service');
 const { runTenantContext } = require('./src/tenancy/tenant-context');
 const { ensureAuthReady } = authService;
@@ -63,6 +64,12 @@ const backupRecoveryService = createBackupRecoveryService({ storageService: obje
 brandingService.configureObjectStorageService(objectStorageService);
 saasService.configureObjectStorageService(objectStorageService);
 memberSubscriptionService.configureObjectStorageService(objectStorageService);
+const gymRegistrationService = createGymRegistrationService({
+    commercialService,
+    saasService,
+    authService,
+    objectStorageService
+});
 
 let httpServer;
 let shutdownStarted = false;
@@ -203,6 +210,7 @@ registerRoutes(app, {
     portalService: memberPortalService,
     commercialService,
     memberSubscriptionService,
+    gymRegistrationService,
     feedbackService: memberFeedbackService,
     storeService,
     intelligenceService,
@@ -243,6 +251,10 @@ app.get('/', asyncRoute(async (request, response, next) => {
 
 app.get('/member-portal', (_request, response) => {
     response.sendFile(path.join(publicDirectory, 'member-portal.html'));
+});
+
+app.get('/register-gym', (_request, response) => {
+    response.sendFile(path.join(publicDirectory, 'register-gym.html'));
 });
 
 app.get('*', (request, response) => {

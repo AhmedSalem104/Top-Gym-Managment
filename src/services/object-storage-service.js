@@ -363,6 +363,33 @@ function createObjectStorageService({ adapter = null, maxBytes = MAX_PRIVATE_OBJ
             }
             return this.getPrivatePlatformObject({ key: normalizedKey });
         },
+        async verifyPrivatePlatformObject({ key, expectedSize = null, expectedChecksum = null } = {}) {
+            const normalizedKey = assertPrivatePlatformObjectKey(key);
+            const head = await this.headPrivatePlatformObject({ key: normalizedKey });
+            if (!head) throw storageError('The private platform object was not found after upload.', 503, 'STORAGE_OBJECT_NOT_FOUND');
+            if (expectedSize != null && head.size != null && Number(head.size) !== Number(expectedSize)) {
+                throw storageError('The private platform object size could not be verified.', 503, 'STORAGE_SIZE_MISMATCH');
+            }
+            const normalizedExpectedChecksum = expectedChecksum == null ? null : String(expectedChecksum).trim().toLowerCase();
+            const headChecksum = head.checksum == null ? null : String(head.checksum).trim().toLowerCase();
+            if (normalizedExpectedChecksum && headChecksum && headChecksum !== normalizedExpectedChecksum) {
+                throw storageError('The private platform object checksum could not be verified.', 503, 'STORAGE_CHECKSUM_MISMATCH');
+            }
+            if (normalizedExpectedChecksum || expectedSize != null) {
+                const object = await this.getPrivatePlatformObject({ key: normalizedKey });
+                if (!object?.body) throw storageError('The private platform object could not be read for verification.', 503, 'STORAGE_OBJECT_NOT_FOUND');
+                if (expectedSize != null && object.body.length !== Number(expectedSize)) {
+                    throw storageError('The private platform object size could not be verified.', 503, 'STORAGE_SIZE_MISMATCH');
+                }
+                const verifiedChecksum = normalizeAndVerifyChecksum(normalizedExpectedChecksum, object.body);
+                return { key: normalizedKey, size: object.body.length, checksum: verifiedChecksum };
+            }
+            return {
+                key: normalizedKey,
+                size: head.size == null ? Number(expectedSize || 0) : Number(head.size),
+                checksum: headChecksum || normalizedExpectedChecksum || null
+            };
+        },
         async deletePrivatePlatformObject({ key } = {}) {
             const normalizedKey = assertPrivatePlatformObjectKey(key);
             assertAdapter(adapter, 'deletePrivateObject');

@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex,nofollow">
+    <meta name="theme-color" content="#f5f7fb">
+    <script>
+        (function () {
+            try {
+                var savedTheme = window.localStorage.getItem('topgym-theme');
+                document.documentElement.dataset.theme = savedTheme === 'dark' || savedTheme === 'light' ? savedTheme : 'light';
+            } catch (_) {
+                document.documentElement.dataset.theme = 'light';
+            }
+        }());
+    </script>
+    <link rel="stylesheet" href="/css/main.css?v=65">
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <title>ابدأ مع Logic Fit</title>
+</head>
+<body class="public-registration-page" data-branding-entry="saas">
+    <div class="registration-shell">
+        <header class="registration-header">
+            <a class="registration-brand" href="/" aria-label="Logic Fit">
+                <span class="registration-brand-mark" data-brand-logo-shell aria-hidden="true"><img data-brand-logo="compactLogo" alt="" hidden><span data-brand-logo-fallback>L</span></span>
+                <span><strong data-brand-text="brandName">Logic Fit</strong><small>منصة إدارة الجيمات</small></span>
+            </a>
+            <div class="registration-header-actions">
+                <span class="registration-safe-note"><span aria-hidden="true">✓</span> بياناتك محمية</span>
+                <button class="theme-toggle-button" type="button" data-theme-toggle aria-pressed="false" aria-label="تفعيل الوضع الداكن">
+                    <span aria-hidden="true">◐</span><span data-theme-toggle-label>الوضع الداكن</span>
+                </button>
+            </div>
+        </header>
+
+        <main class="registration-main">
+            <aside class="registration-aside" aria-label="مراحل التسجيل">
+                <div class="registration-aside-copy">
+                    <span class="registration-kicker">ابدأ بخطوة واضحة</span>
+                    <h1>جهّز جيمك للعمل بذكاء.</h1>
+                    <p>قدّم طلب الاشتراك، وسيتولى فريق Logic Fit مراجعته ثم يجهز مساحة جيمك الخاصة.</p>
+                </div>
+                <ol class="registration-steps" id="registrationSteps">
+                    <li class="is-current" data-step-indicator="1"><span>01</span><div><strong>بيانات الجيم</strong><small>المعلومات الأساسية</small></div></li>
+                    <li data-step-indicator="2"><span>02</span><div><strong>الباقة</strong><small>اختر ما يناسبك</small></div></li>
+                    <li data-step-indicator="3"><span>03</span><div><strong>المدة</strong><small>طريقة الاشتراك</small></div></li>
+                    <li data-step-indicator="4"><span>04</span><div><strong>الدفع</strong><small>بيانات التحويل</small></div></li>
+                    <li data-step-indicator="5"><span>05</span><div><strong>الإثبات</strong><small>ارفع صورة الدفع</small></div></li>
+                    <li data-step-indicator="6"><span>06</span><div><strong>المراجعة</strong><small>تأكيد وإرسال الطلب</small></div></li>
+                </ol>
+                <div class="registration-aside-foot">
+                    <span class="registration-foot-icon" aria-hidden="true">↗</span>
+                    <p>بعد الاعتماد، يصلك رابط الدخول وبيانات التفعيل عبر WhatsApp.</p>
+                </div>
+            </aside>
+
+            <section class="registration-card" aria-labelledby="registrationTitle">
+                <div class="registration-card-head">
+                    <div>
+                        <span class="registration-kicker" id="registrationStageLabel">الخطوة 01 من 06</span>
+                        <h2 id="registrationTitle">بيانات الجيم</h2>
+                        <p id="registrationStageDescription">أدخل بيانات التواصل الأساسية حتى نتمكن من مراجعة طلبك.</p>
+                    </div>
+                    <span class="registration-card-badge"><span aria-hidden="true">●</span> طلب جديد</span>
+                </div>
+
+                <form id="gymRegistrationForm" novalidate>
+                    <div class="registration-error" id="registrationError" role="alert" hidden></div>
+
+                    <section class="registration-step-panel is-active" data-registration-step="1" aria-labelledby="stepOneTitle">
+                        <h3 id="stepOneTitle" class="visually-hidden">بيانات الجيم والمسؤول</h3>
+                        <div class="registration-form-grid">
+                            <label class="registration-field registration-field-wide">
+                                <span>اسم الجيم <b>*</b></span>
+                                <input name="gymName" type="text" maxlength="160" autocomplete="organization" placeholder="مثال: Power Gym" required>
+                            </label>
+                            <label class="registration-field">
+                                <span>اسم المسؤول <b>*</b></span>
+                                <input name="ownerName" type="text" maxlength="120" autocomplete="name" placeholder="الاسم بالكامل" required>
+                            </label>
+                            <label class="registration-field">
+                                <span>رقم WhatsApp <b>*</b></span>
+                                <input name="whatsapp" type="tel" inputmode="tel" maxlength="40" autocomplete="tel" placeholder="01xxxxxxxxx" required>
+                            </label>
+                            <label class="registration-field">
+                                <span>البريد الإلكتروني <b>*</b></span>
+                                <input name="email" type="email" maxlength="254" autocomplete="email" placeholder="name@example.com" required>
+                            </label>
+                            <label class="registration-field">
+                                <span>المدينة أو المنطقة <small>اختياري</small></span>
+                                <input name="city" type="text" maxlength="120" autocomplete="address-level2" placeholder="القاهرة، الجيزة...">
+                            </label>
+                        </div>
+                    </section>
+
+                    <section class="registration-step-panel" data-registration-step="2" aria-labelledby="stepTwoTitle" hidden>
+                        <div class="registration-section-intro"><span class="registration-step-number">02</span><div><h3 id="stepTwoTitle">اختر باقة Logic Fit</h3><p>الباقات المعروضة يتم تحميلها مباشرة من إعدادات المنصة.</p></div></div>
+                        <div class="registration-plan-grid" id="registrationPlans" aria-live="polite"><div class="registration-loading"><span class="logicfit-inline-spinner" aria-hidden="true"></span> جاري تحميل الباقات...</div></div>
+                    </section>
+
+                    <section class="registration-step-panel" data-registration-step="3" aria-labelledby="stepThreeTitle" hidden>
+                        <div class="registration-section-intro"><span class="registration-step-number">03</span><div><h3 id="stepThreeTitle">اختر مدة الاشتراك</h3><p>اختر المدة المتاحة داخل الباقة التي حددتها.</p></div></div>
+                        <div class="registration-term-grid" id="registrationTerms" aria-live="polite"></div>
+                    </section>
+
+                    <section class="registration-step-panel" data-registration-step="4" aria-labelledby="stepFourTitle" hidden>
+                        <div class="registration-section-intro"><span class="registration-step-number">04</span><div><h3 id="stepFourTitle">طريقة الدفع</h3><p>حوّل المبلغ إلى وسيلة الدفع الخاصة بـLogic Fit ثم احتفظ بالإثبات.</p></div></div>
+                        <div class="registration-payment-grid" id="registrationPaymentMethods" aria-live="polite"></div>
+                        <div class="registration-price-summary" id="registrationPriceSummary"></div>
+                    </section>
+
+                    <section class="registration-step-panel" data-registration-step="5" aria-labelledby="stepFiveTitle" hidden>
+                        <div class="registration-section-intro"><span class="registration-step-number">05</span><div><h3 id="stepFiveTitle">ارفع إثبات الدفع</h3><p>يسمح بصورة PNG/JPG/WebP أو ملف PDF بحجم أقصى 4 ميجابايت.</p></div></div>
+                        <label class="registration-upload" for="registrationProof">
+                            <span class="registration-upload-icon" aria-hidden="true">↑</span>
+                            <strong>اختر ملف إثبات الدفع</strong>
+                            <small>اضغط للاختيار أو اسحب الملف هنا</small>
+                            <input id="registrationProof" name="proof" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" required>
+                        </label>
+                        <div class="registration-file-preview" id="registrationFilePreview" hidden></div>
+                        <p class="registration-privacy-note"><span aria-hidden="true">▣</span> سيتم حفظ الإثبات في تخزين خاص ولا يظهر إلا لفريق المراجعة المصرح له.</p>
+                    </section>
+
+                    <section class="registration-step-panel" data-registration-step="6" aria-labelledby="stepSixTitle" hidden>
+                        <div class="registration-section-intro"><span class="registration-step-number">06</span><div><h3 id="stepSixTitle">راجع طلبك قبل الإرسال</h3><p>تأكد من صحة البيانات؛ سيتم تثبيت السعر من إعدادات المنصة عند إنشاء الطلب.</p></div></div>
+                        <div class="registration-review" id="registrationReview"></div>
+                        <label class="registration-field registration-field-wide registration-notes-field"><span>ملاحظة إضافية <small>اختياري</small></span><textarea name="notes" rows="3" maxlength="2000" placeholder="أي تفاصيل تساعد فريق Logic Fit في مراجعة طلبك"></textarea></label>
+                    </section>
+
+                    <section class="registration-success" id="registrationSuccess" hidden aria-live="polite">
+                        <span class="registration-success-icon" aria-hidden="true">✓</span>
+                        <span class="registration-kicker">تم استلام طلبك</span>
+                        <h3>طلبك الآن قيد المراجعة</h3>
+                        <p>سيتم مراجعة الدفع، وبعد الاعتماد ستصلك رسالة عبر WhatsApp تحتوي على تفاصيل تفعيل حساب الجيم وبيانات الدخول.</p>
+                        <div class="registration-reference"><small>رقم الطلب</small><strong id="registrationReference">—</strong></div>
+                        <a class="btn btn-light" href="/">العودة إلى Logic Fit</a>
+                    </section>
+
+                    <footer class="registration-actions" id="registrationActions">
+                        <button class="btn btn-light registration-back" id="registrationBack" type="button" hidden>رجوع</button>
+                        <span class="registration-action-hint" id="registrationActionHint">لن يتم إنشاء أي حساب قبل مراجعة الطلب.</span>
+                        <button class="btn btn-primary registration-next" id="registrationNext" type="button" data-loading-text="جاري المتابعة...">التالي <span aria-hidden="true">←</span></button>
+                    </footer>
+                </form>
+            </section>
+        </main>
+    </div>
+    <div class="logicfit-feedback-toast-stack" data-logicfit-toast-stack aria-live="polite" aria-relevant="additions text"></div>
+    <script defer src="/js/theme.js?v=1"></script>
+    <script defer src="/js/branding.js?v=5"></script>
+    <script defer src="/js/ui-feedback.js?v=2"></script>
+    <script defer src="/js/register-gym.js?v=1"></script>
+</body>
+</html>

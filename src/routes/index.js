@@ -14,6 +14,7 @@ const { registerCoachingRoutes } = require('./coaching.routes');
 const { registerDayPassRoutes } = require('./day-pass.routes');
 const { registerMemberPortalRoutes } = require('./member-portal.routes');
 const { registerMemberSubscriptionRoutes } = require('./member-subscription.routes');
+const { registerGymRegistrationRoutes } = require('./gym-registration.routes');
 const { registerMemberFeedbackRoutes } = require('./member-feedback.routes');
 const { registerStoreRoutes } = require('./store.routes');
 const { registerIntelligenceRoutes } = require('./intelligence.routes');
@@ -21,6 +22,7 @@ const { registerBrandingRoutes } = require('./branding.routes');
 const { registerPlatformRoutes } = require('./platform.routes');
 const { registerPlatformAdminRoutes } = require('./platform-admin.routes');
 const { registerSaasRoutes } = require('./saas.routes');
+const { platformOnly } = require('../middleware/platform.middleware');
 
 function createHealthHandler({ getPool, getStorageStatus = () => ({ status: 'not_configured' }), now = () => performance.now() } = {}) {
     return async (request, response) => {
@@ -90,6 +92,7 @@ function registerRoutes(app, {
     portalService,
     commercialService,
     memberSubscriptionService,
+    gymRegistrationService,
     feedbackService,
     storeService,
     intelligenceService,
@@ -116,6 +119,7 @@ function registerRoutes(app, {
     registerDayPassRoutes(app, { dayPassService, asyncRoute, ownerOnly });
     registerMemberPortalRoutes(app, { membershipCodeService, portalService, libraryService, commercialService, asyncRoute, ownerOnly });
     registerMemberSubscriptionRoutes(app, { service: memberSubscriptionService, asyncRoute, ownerOnly });
+    registerGymRegistrationRoutes(app, { service: gymRegistrationService, asyncRoute, platformOnly });
     registerMemberFeedbackRoutes(app, { feedbackService, asyncRoute, ownerOnly });
     registerStoreRoutes(app, { storeService, asyncRoute });
     registerIntelligenceRoutes(app, { intelligenceService, asyncRoute });

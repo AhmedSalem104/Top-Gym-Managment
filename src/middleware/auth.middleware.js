@@ -46,6 +46,9 @@ function createAuthApiMiddleware({ authService, isAuthorizedCronRequest, tenantS
         const memberPortalSessionPath = request.path === '/member-portal/session'
             || request.path === '/member-portal/payment-methods'
             || request.path.startsWith('/member-portal/subscription-requests');
+        const publicGymRegistrationPath = request.path === '/public/gym-registration/catalog'
+            || request.path === '/public/gym-registration/requests'
+            || request.path.startsWith('/public/gym-registration/requests/');
         const publicPath = ['/health', '/health/live', '/member-portal/lookup', '/member-portal/occupancy', '/member-portal/feedback', '/branding'].includes(request.path)
             || request.path === '/member-portal/library/options'
             || request.path.startsWith('/member-portal/library/')
@@ -86,6 +89,13 @@ function createAuthApiMiddleware({ authService, isAuthorizedCronRequest, tenantS
         }
 
         if (memberPortalSessionPath) {
+            return runTenantContext({ tenantId: null, mode: 'public', readOnlyBaseline: readOnlyRequest }, next);
+        }
+
+        // Self-service gym registration is public and platform-scoped. It
+        // must never resolve the default/Top Gym tenant from a query string or
+        // an old authenticated cookie.
+        if (publicGymRegistrationPath) {
             return runTenantContext({ tenantId: null, mode: 'public', readOnlyBaseline: readOnlyRequest }, next);
         }
 

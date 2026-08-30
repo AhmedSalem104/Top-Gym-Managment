@@ -1278,7 +1278,207 @@ function normalizeTenantInput(body = {}) {
     return { name, slug };
 }
 
+async function resolveProvisionPlan({ plan = null, planId = null, planCode = null, fallbackCode = 'starter', includeInactive = false } = {}) {
+    if (plan) return plan;
+    const requestedPlan = String(planCode || planId || fallbackCode).trim().toLowerCase();
+    const requestedPlanId = /^\d+$/.test(requestedPlan) ? Number(requestedPlan) : null;
+    let resolvedPlan = await getPlan({
+        id: requestedPlanId,
+        code: requestedPlanId ? null : requestedPlan,
+        includeInactive
+    });
+    if (!resolvedPlan && fallbackCode && requestedPlan === fallbackCode) {
+        resolvedPlan = (await getPlans({ includeInactive })).find((item) => item.isActive) || null;
+    }
+    return resolvedPlan;
+}
+
+function normalizeProvisionStatus(value, allowed, fallback) {
+    const normalized = String(value || fallback).trim().toLowerCase();
+    return allowed.has(normalized) ? normalized : fallback;
+}
+
+function provisionSnapshot(plan, override = null) {
+    const base = snapshotForPlan(plan);
+    const merged = { ...base, ...(override && typeof override === 'object' ? override : {}) };
+    return {
+        billingPeriod: text(merged.billingPeriod, base.billingPeriod, 20),
+        price: Number(merged.price),
+        currency: text(merged.currency, base.currency, 3).toUpperCase(),
+        maxMembers: merged.maxMembers == null ? null : Number(merged.maxMembers),
+        maxUsers: merged.maxUsers == null ? null : Number(merged.maxUsers),
+        maxAiGenerations: merged.maxAiGenerations == null ? null : Number(merged.maxAiGenerations),
+        maxStorageMb: merged.maxStorageMb == null ? null : Number(merged.maxStorageMb),
+        features: parseFeatures(merged.features)
+    };
+}
+
+/**
+ * Shared tenant + owner provisioning primitive. The optional transaction lets
+ * self-service approval atomically update the request and create the tenant.
+ */
+async function provisionTenantWithOwner({
+    body = {},
+    actorUserId = null,
+    authService,
+    transaction = null,
+    plan = null,
+    planId = null,
+    planCode = null,
+    ownerPasswordHash = null,
+    tenantStatus = 'trial',
+    subscriptionStatus = 'trial',
+    subscriptionSource = 'trial',
+    startsAt = new Date(),
+    expiresAt = null,
+    snapshotOverride = null,
+    subscriptionNotes = '',
+    auditAction = 'tenant_created',
+    auditDetails = ''
+} = {}) {
+    await ensureSaasTables();
+    if (!authService) throw saasError('Account service is unavailable.', 500, 'AUTH_SERVICE_REQUIRED');
+    const tenant = normalizeTenantInput(body);
+    const ownerName = authService.validateName(body.ownerName || body.ownerFullName, 'ownerName');
+    const ownerEmail = authService.validateEmail(body.ownerEmail, 'ownerEmail');
+    await authService.ensureAuthReady();
+    const resolvedPlan = await resolveProvisionPlan({
+        plan,
+        planId: planId ?? body.trialPlanId,
+        planCode: planCode ?? body.trialPlanCode,
+        includeInactive: Boolean(plan)
+    });
+    if (!resolvedPlan) throw saasError('The requested plan is unavailable.', 409, 'TRIAL_PLAN_NOT_FOUND');
+
+    let passwordHash = ownerPasswordHash;
+    if (!passwordHash) {
+        const ownerPassword = authService.validatePassword(body.ownerPassword, { field: 'ownerPassword' });
+        passwordHash = await authService.hashPassword(ownerPassword);
+    }
+    const normalizedTenantStatus = normalizeProvisionStatus(tenantStatus, new Set(['trial', 'active']), 'trial');
+    const normalizedSubscriptionStatus = normalizeProvisionStatus(subscriptionStatus, new Set(['trial', 'active']), 'trial');
+    const normalizedSource = normalizeProvisionStatus(subscriptionSource, new Set(['trial', 'manual', 'admin', 'bootstrap']), 'trial');
+    const provisionStartsAt = startsAt instanceof Date ? startsAt : new Date(startsAt);
+    if (Number.isNaN(provisionStartsAt.getTime())) throw saasError('The subscription start date is invalid.', 400, 'INVALID_SUBSCRIPTION_START');
+    const provisionExpiresAt = expiresAt == null
+        ? new Date(provisionStartsAt.getTime() + TRIAL_DAYS * 86400000)
+        : (expiresAt instanceof Date ? expiresAt : new Date(expiresAt));
+    if (Number.isNaN(provisionExpiresAt.getTime()) || provisionExpiresAt <= provisionStartsAt) {
+        throw saasError('The subscription end date is invalid.', 400, 'INVALID_SUBSCRIPTION_END');
+    }
+    const snapshot = provisionSnapshot(resolvedPlan, snapshotOverride);
+    let tenantId;
+    let ownerId;
+    let subscriptionId;
+    try {
+        const work = async (activeTransaction) => {
+            const conflict = await activeTransaction.request()
+                .input('slug', sql.VarChar(80), tenant.slug)
+                .query('SELECT TOP (1) id FROM dbo.gym_tenants WITH (UPDLOCK,HOLDLOCK) WHERE slug=@slug;');
+            if (conflict.recordset[0]) {
+                const error = saasError('This gym identifier is already in use. Choose another one.', 409, 'DUPLICATE_TENANT_SLUG');
+                error.field = 'slug';
+                throw error;
+            }
+            const tenantResult = await activeTransaction.request()
+                .input('name', sql.NVarChar(160), tenant.name)
+                .input('slug', sql.VarChar(80), tenant.slug)
+                .input('status', sql.VarChar(20), normalizedTenantStatus)
+                .query("INSERT INTO dbo.gym_tenants (name,slug,status) OUTPUT INSERTED.id VALUES (@name,@slug,@status);");
+            tenantId = Number(tenantResult.recordset[0].id);
+            await runTenantContext({ mode: 'tenant', tenantId }, () => libraryService.ensureLibraryData({ transaction: activeTransaction }));
+            const ownerResult = await activeTransaction.request()
+                .input('fullName', sql.NVarChar(120), ownerName)
+                .input('email', sql.NVarChar(254), ownerEmail)
+                .input('emailNormalized', sql.NVarChar(254), ownerEmail)
+                .input('passwordHash', sql.NVarChar(512), passwordHash)
+                .query("INSERT INTO dbo.gym_users (full_name,username,email,email_normalized,password_hash,role,status) OUTPUT INSERTED.id VALUES (@fullName,@email,@email,@emailNormalized,@passwordHash,'Owner','Active');");
+            ownerId = Number(ownerResult.recordset[0].id);
+            await activeTransaction.request()
+                .input('userId', sql.Int, ownerId)
+                .input('tenantId', sql.Int, tenantId)
+                .query("INSERT INTO dbo.gym_user_tenants (user_id,tenant_id,role,status,is_primary) VALUES (@userId,@tenantId,'Owner','active',1);");
+            const subscriptionResult = await activeTransaction.request()
+                .input('tenantId', sql.Int, tenantId)
+                .input('planId', sql.Int, resolvedPlan.id)
+                .input('status', sql.VarChar(20), normalizedSubscriptionStatus)
+                .input('startsAt', sql.DateTime2(0), provisionStartsAt)
+                .input('expiresAt', sql.DateTime2(0), provisionExpiresAt)
+                .input('source', sql.VarChar(20), normalizedSource)
+                .input('notes', sql.NVarChar(1000), text(subscriptionNotes, '', 1000) || null)
+                .input('createdByUserId', sql.Int, actorUserId == null ? null : Number(actorUserId))
+                .input('approvedByUserId', sql.Int, normalizedSubscriptionStatus === 'active' && actorUserId != null ? Number(actorUserId) : null)
+                .input('billingPeriodSnapshot', sql.VarChar(20), snapshot.billingPeriod)
+                .input('priceSnapshot', sql.Decimal(12, 2), snapshot.price)
+                .input('currencySnapshot', sql.Char(3), snapshot.currency)
+                .input('maxMembersSnapshot', sql.Int, snapshot.maxMembers)
+                .input('maxUsersSnapshot', sql.Int, snapshot.maxUsers)
+                .input('maxAiGenerationsSnapshot', sql.Int, snapshot.maxAiGenerations)
+                .input('maxStorageMbSnapshot', sql.Int, snapshot.maxStorageMb)
+                .input('featuresSnapshotJson', sql.NVarChar(sql.MAX), JSON.stringify(snapshot.features))
+                .query(`INSERT INTO dbo.saas_tenant_subscriptions
+                    (tenant_id,plan_id,status,starts_at,expires_at,source,notes,created_by_user_id,approved_by_user_id,approved_at,
+                     billing_period_snapshot,price_snapshot,currency_snapshot,max_members_snapshot,max_users_snapshot,max_ai_generations_snapshot,max_storage_mb_snapshot,features_snapshot_json)
+                    OUTPUT INSERTED.id
+                    VALUES (@tenantId,@planId,@status,@startsAt,@expiresAt,@source,@notes,@createdByUserId,@approvedByUserId,
+                            CASE WHEN @approvedByUserId IS NULL THEN NULL ELSE SYSUTCDATETIME() END,
+                            @billingPeriodSnapshot,@priceSnapshot,@currencySnapshot,@maxMembersSnapshot,@maxUsersSnapshot,@maxAiGenerationsSnapshot,@maxStorageMbSnapshot,@featuresSnapshotJson);`);
+            subscriptionId = Number(subscriptionResult.recordset[0].id);
+            await activeTransaction.request()
+                .input('tenantId', sql.Int, tenantId)
+                .input('status', sql.VarChar(20), normalizedTenantStatus)
+                .query('UPDATE dbo.gym_tenants SET status=@status,updated_at=SYSUTCDATETIME() WHERE id=@tenantId;');
+            await recordAudit({
+                tenantId,
+                actorUserId: actorUserId == null ? null : Number(actorUserId),
+                action: text(auditAction, 'tenant_created', 50),
+                entityType: 'tenant',
+                entityId: tenantId,
+                details: text(auditDetails || `Tenant ${tenant.name} provisioned with an Owner.`, '', 2000),
+                executor: activeTransaction
+            });
+        };
+        if (transaction) await work(transaction);
+        else await withTransaction(work);
+    } catch (error) {
+        if (error.number === 2601 || error.number === 2627) {
+            const duplicateError = saasError('The owner email is already in use. Use another email address.', 409, 'DUPLICATE_TENANT_OWNER');
+            duplicateError.field = 'ownerEmail';
+            throw duplicateError;
+        }
+        throw error;
+    }
+    return {
+        tenant: { id: tenantId, name: tenant.name, slug: tenant.slug, status: normalizedTenantStatus },
+        owner: { id: ownerId, name: ownerName, email: ownerEmail },
+        subscription: {
+            id: subscriptionId,
+            tenantId,
+            status: normalizedSubscriptionStatus,
+            startsAt: provisionStartsAt,
+            expiresAt: provisionExpiresAt,
+            source: normalizedSource,
+            priceSnapshot: snapshot.price,
+            currencySnapshot: snapshot.currency,
+            billingPeriodSnapshot: snapshot.billingPeriod,
+            limitsSnapshot: {
+                maxMembers: snapshot.maxMembers,
+                maxUsers: snapshot.maxUsers,
+                maxAiGenerations: snapshot.maxAiGenerations,
+                maxStorageMb: snapshot.maxStorageMb
+            },
+            featuresSnapshot: snapshot.features,
+            plan: resolvedPlan
+        }
+    };
+}
+
 async function createTenantWithOwner(body = {}, actorUserId, authService) {
+    const result = await provisionTenantWithOwner({ body, actorUserId, authService });
+    return { ...result, subscription: await getCurrentSubscription(result.tenant.id) };
+}
+
+async function legacyCreateTenantWithOwner(body = {}, actorUserId, authService) {
     await ensureSaasTables();
     if (!authService) throw saasError('خدمة الحسابات غير متاحة.', 500, 'AUTH_SERVICE_REQUIRED');
     const tenant = normalizeTenantInput(body);
@@ -1537,6 +1737,7 @@ module.exports = {
     ensureSaasTables,
     getCurrentSubscription,
     getEffectiveEntitlements,
+    getPlan,
     getPaymentProofFile,
     getPlatformOverview,
     getPlans,
@@ -1557,6 +1758,7 @@ module.exports = {
     validateProof,
     hasExpectedProofSignature,
     pruneSyncStates,
+    provisionTenantWithOwner,
     recordAudit,
     snapshotForPlan
 };

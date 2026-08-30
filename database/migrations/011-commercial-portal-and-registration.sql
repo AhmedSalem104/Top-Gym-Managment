@@ -80,6 +80,7 @@ BEGIN
         created_tenant_id INT NULL,
         created_owner_user_id INT NULL,
         idempotency_key_hash CHAR(64) NULL,
+        public_token_hash CHAR(64) NULL,
         created_at DATETIME2(0) NOT NULL CONSTRAINT DF_saas_registration_created DEFAULT (SYSUTCDATETIME()),
         updated_at DATETIME2(0) NOT NULL CONSTRAINT DF_saas_registration_updated DEFAULT (SYSUTCDATETIME()),
         CONSTRAINT FK_saas_registration_plan FOREIGN KEY (plan_id) REFERENCES dbo.saas_plans(id) ON DELETE NO ACTION,
@@ -92,6 +93,10 @@ IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name=N'IX_saas_registration_revie
     CREATE INDEX IX_saas_registration_review_queue ON dbo.saas_gym_registration_requests(status, created_at DESC, id DESC);
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name=N'UX_saas_registration_idempotency' AND object_id=OBJECT_ID(N'dbo.saas_gym_registration_requests'))
     CREATE UNIQUE INDEX UX_saas_registration_idempotency ON dbo.saas_gym_registration_requests(idempotency_key_hash) WHERE idempotency_key_hash IS NOT NULL;
+IF COL_LENGTH(N'dbo.saas_gym_registration_requests', N'public_token_hash') IS NULL
+    EXEC(N'ALTER TABLE dbo.saas_gym_registration_requests ADD public_token_hash CHAR(64) NULL;');
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name=N'UX_saas_registration_public_token' AND object_id=OBJECT_ID(N'dbo.saas_gym_registration_requests'))
+    CREATE UNIQUE INDEX UX_saas_registration_public_token ON dbo.saas_gym_registration_requests(public_token_hash) WHERE public_token_hash IS NOT NULL;
 
 IF OBJECT_ID(N'dbo.saas_gym_registration_payment_proofs', N'U') IS NULL
 BEGIN

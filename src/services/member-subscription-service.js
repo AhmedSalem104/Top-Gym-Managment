@@ -521,7 +521,14 @@ async function approveRequest(requestId, actorUserId, reviewNotes = '') {
             .query(`SELECT TOP (1) storage_key,storage_verified_at,file_size,sha256
                     FROM dbo.gym_member_subscription_payment_proofs WITH (UPDLOCK,HOLDLOCK)
                     WHERE tenant_id=@tenantId AND request_id=@requestId;`);
-        if (!proof.recordset[0]?.storage_verified_at) throw requestError('Approval requires a verified payment proof.', 409, 'PAYMENT_PROOF_REQUIRED');
+        const lockedProof = proof.recordset[0];
+        if (!lockedProof?.storage_verified_at) throw requestError('Approval requires a verified payment proof.', 409, 'PAYMENT_PROOF_REQUIRED');
+        const initialProof = proofResult.recordset[0];
+        if (String(lockedProof.storage_key || '') !== String(initialProof?.storage_key || '')
+            || Number(lockedProof.file_size) !== Number(initialProof?.file_size)
+            || String(lockedProof.sha256 || '').toLowerCase() !== String(initialProof?.sha256 || '').toLowerCase()) {
+            throw requestError('The payment proof changed during review. Please reload and verify it again.', 409, 'PAYMENT_PROOF_CHANGED');
+        }
         created = await memberService.createMembershipFromApprovedRequest({
             transaction,
             memberId: locked.member_id,

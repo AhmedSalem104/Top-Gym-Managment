@@ -91,6 +91,10 @@ const config = Object.freeze({
     // compatible fallback for existing deployments; neither secret is ever
     // returned to a client or written to logs.
     memberPortalSessionSecret: getEnv('MEMBER_PORTAL_SESSION_SECRET', getEnv('MEMBERSHIP_CODE_SECRET')),
+    // Public gym registration uses a separate capability secret when
+    // configured. Falling back keeps existing deployments compatible while
+    // ensuring the raw registration token is never persisted.
+    publicRegistrationSecret: getEnv('PUBLIC_REGISTRATION_SECRET', getEnv('MEMBER_PORTAL_SESSION_SECRET', getEnv('MEMBERSHIP_CODE_SECRET'))),
     attendanceAutoCheckoutMinutes: getNumberEnv('ATTENDANCE_AUTO_CHECKOUT_MINUTES', 0),
     // Member-portal occupancy is intentionally configurable because a quiet
     // or busy gym threshold depends on the facility size. The service still

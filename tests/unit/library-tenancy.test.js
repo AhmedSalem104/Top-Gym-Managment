@@ -46,8 +46,10 @@ test('tenant onboarding provisions the catalog before its transaction commits', 
     const bootstrap = saas.slice(saas.indexOf('async function ensureBootstrapSubscription'), saas.indexOf('async function listTenantRequests'));
     assert.doesNotMatch(bootstrap, /runTenantContext\(\{ mode: 'tenant', tenantId \}, \(\) => libraryService\.ensureLibraryData\(\{ transaction \}\)\)/);
     const onboarding = saas.slice(saas.indexOf('async function createTenantWithOwner'), saas.indexOf('function booleanValue'));
-    assert.match(onboarding, /await withTransaction\(async \(transaction\) => \{/);
-    assert.match(onboarding, /tenantId = Number\(tenantResult\.recordset\[0\]\.id\);[\s\S]*runTenantContext\(\{ mode: 'tenant', tenantId \}, \(\) => libraryService\.ensureLibraryData\(\{ transaction \}\)\)/);
+    assert.match(saas, /async function provisionTenantWithOwner\(\{/);
+    assert.match(saas, /await runTenantContext\(\{ mode: 'tenant', tenantId \}, \(\) => libraryService\.ensureLibraryData\(\{ transaction: activeTransaction \}\)\)/);
+    assert.match(saas, /if \(transaction\) await work\(transaction\);\s*else await withTransaction\(work\);/);
+    assert.match(onboarding, /const result = await provisionTenantWithOwner\(\{ body, actorUserId, authService \}\);/);
     const server = read('server.js');
     assert.match(server, /ensureCoachingTables\(\{ seedLibrary: false \}\)/);
     assert.match(server, /ensureTenantColumnsAndRls\(bootstrapTenant\.id\)[\s\S]*ensureLibraryData\(\)/);
