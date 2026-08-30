@@ -9,12 +9,15 @@ cron User-Agent and `x-top-gym-cron-key` fallback are development-only
 conveniences; a Production request without the configured Bearer secret is
 rejected.
 
-Backup storage is fail-closed by default. Production must use an approved
-private storage adapter configured outside Git; `BACKUP_STORAGE_DRIVER=local`
-is reserved for isolated local/development/test rehearsals and is rejected in
-Staging and Production. The daily invocation also creates the weekly snapshot
-on UTC Sunday and the monthly snapshot on the first UTC day when their flags
-are enabled.
+Private object storage is fail-closed by default. Production must use the
+approved S3-compatible adapter configured outside Git. The canonical
+OBJECT_STORAGE_* variables cover backups, branding and private uploads; the
+legacy BACKUP_STORAGE_* names remain aliases for existing deployments.
+OBJECT_STORAGE_DRIVER=local is reserved for isolated local/development/test
+rehearsals and is rejected in Staging, Production and Vercel. New branding and
+payment-proof uploads fail safely until a private provider is configured. The
+daily invocation also creates the weekly snapshot on UTC Sunday and the
+monthly snapshot on the first UTC day when their flags are enabled.
 
 The Express app trusts one reverse-proxy hop on Production by default because
 the deployment target is Vercel. `TRUST_PROXY_HOPS=1` makes `request.ip` and
@@ -32,7 +35,8 @@ MSSQL_CONNECTION_STRING=...
 APP_TIMEZONE=Africa/Cairo
 CRON_SECRET=...
 # Keep disabled until a registered private provider adapter is configured.
-BACKUP_STORAGE_DRIVER=none
+OBJECT_STORAGE_DRIVER=none
+# BACKUP_STORAGE_DRIVER remains supported as a legacy alias.
 BACKUP_SCHEDULER_CONCURRENCY=2
 BACKUP_SCHEDULER_RETRY_COUNT=1
 BACKUP_ENABLE_PLATFORM_WEEKLY=true

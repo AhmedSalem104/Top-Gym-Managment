@@ -15,7 +15,7 @@ capacity, restore, provider, or pilot evidence.
 | Phase 1 Performance | `IN PROGRESS` | Read-only runner and safety tests are verified. | Authenticated `baseline-before.json`, execution plans and measured after-run. |
 | Phase 2 Database | `VERIFIED` locally | Migration guards, idempotency checks, pool bounds/recovery and transaction cleanup are covered statically/unit-wise. | Staging rehearsal and live DB evidence. |
 | Phase 3 Vercel | `IMPLEMENTED` | Runtime/env/cache/shutdown safeguards are present in source. | Deployment/runtime verification. |
-| Phase 4 Object Storage | `IMPLEMENTED` / `VERIFIED` locally | Provider-neutral private contract, tenant keys, traversal/MIME/size/checksum guards and fail-closed behavior are tested. | Approved provider and private-storage cutover. |
+| Phase 4 Object Storage | `IMPLEMENTED` / `VERIFIED` locally | Provider-neutral private contract is wired into backups, new branding uploads and new payment-proof uploads; tenant keys, traversal/MIME/size/checksum/read-back guards and fail-closed behavior are tested. Legacy SQL-backed file rows remain readable. | Approved provider, metadata migration and private-storage cutover. |
 | Phase 5 Rate Limiting | `IMPLEMENTED` / `VERIFIED` locally | Policy is separated from an atomic backend contract; bounded local behavior remains active and failures fail closed. | Shared distributed backend. |
 | Phase 6 Security | `VERIFIED` locally | Static controls and regression coverage include public-write same-origin enforcement. | Authenticated Staging penetration matrix. |
 | Phase 7 Tenant Isolation | `VERIFIED` for current RLS QA | 63/63 protected tables, no unassigned rows, and cross-tenant write block are present in current QA evidence. | Authenticated A/B endpoint attack matrix. |
@@ -43,8 +43,11 @@ public URL, and fails closed while no approved adapter is configured. Unit
 tests cover key generation, tenant mismatch, validation, adapter isolation and
 unconfigured-provider behavior.
 
-The current database-backed proof, branding and backup paths were not silently
-changed. Provider activation remains an external decision.
+New branding and payment-proof uploads use the configured private storage
+service and retain only verified object metadata in SQL Server. Existing
+database-backed rows remain readable for compatibility; no bulk file move is
+performed by the additive migration. Provider activation remains an external
+deployment decision.
 
 ### Phase 5 — rate limiting
 

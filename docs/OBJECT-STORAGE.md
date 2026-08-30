@@ -1,108 +1,239 @@
-# Private object storage boundary
+# Logic Fit private object storage
 
-## Current status
+## Status
 
-The repository now contains a provider-neutral private object-storage
-contract in `src/services/object-storage-service.js`. It is intentionally not
-activated: the current payment-proof, branding and backup paths remain
-database-backed until an approved external provider and credentials are
-available.
+The application has one provider-neutral private storage boundary in
+'src/services/object-storage-service.js'. The S3-compatible adapter is
+configuration-ready. A MinIO service has now been provisioned on the provided
+VPS with a persistent host volume and a private bucket, but it is intentionally
+bound to localhost until an HTTPS hostname, TLS and firewall policy are
+configured. Vercel activation is therefore still pending.
 
-This is an architecture seam, not a claim that Object Storage is active in
-Production.
+The same runtime storage service is injected into:
 
-For isolated local/test recovery rehearsals, set `BACKUP_STORAGE_DRIVER=local`
-and optionally `BACKUP_STORAGE_PATH` while `NODE_ENV` is `local`,
-`development` or `test`. The adapter writes private files and metadata with
-atomic filesystem operations under a tenant/platform-scoped key. It is
-explicitly rejected in `staging` and `production`, and it is not a substitute
-for durable or off-site production storage.
+- tenant and platform backup/restore flows;
+- new branding uploads;
+- new SaaS payment-proof uploads.
 
-## Safety contract
+Existing SQL-backed branding/payment-proof rows remain readable. They are not
+silently migrated or deleted by the metadata migration. New uploads fail
+closed with a safe 503 while the provider is not configured; they never fall
+back to Vercel's filesystem.
 
-- Every key is generated under `tenants/{tenantId}/private/{category}/`.
-- The original filename is metadata only; it is never used as the object key.
-- Reads and deletes reject a key belonging to another tenant.
-- Path traversal, absolute paths, control characters and invalid categories
-  are rejected.
-- MIME type, byte size and SHA-256 checksum are validated before a provider
-  receives an object.
-- The service exposes no public URL operation. Private access must be through
-  an authenticated application route or a future short-lived signed access
-  flow.
-- A missing provider fails closed with
-  `OBJECT_STORAGE_PROVIDER_NOT_CONFIGURED`; it never silently writes to a
-  public location.
+## Preserved application architecture
+
+Logic Fit continues to use one central SQL Server database. tenant_id, the
+trusted tenant context and SQL Server RLS remain the ownership boundaries.
+Top Gym is an ordinary tenant. Storage keys are not a replacement for database
+authorization and are never accepted as a client-controlled trust boundary.
+
+The application does not use database-per-tenant storage, public backup URLs,
+or permanent files in public/, /tmp, or a Vercel function filesystem.
+
+## Object key contract
+
+Keys are generated and validated server-side:
+
+~~~text
+tenants/{tenant_id}/private/{category}/{uuid}.{extension}
+platform/private/{category}/{uuid}.{extension}
+~~~
+
+The current categories include backups, branding, payment-proofs and exports.
+The tenant id and generated object id are the storage identity; gym names,
+slugs, member names, email addresses and phone numbers are never used in
+object names.
+
+The storage service rejects absolute paths, traversal segments, control
+characters, invalid categories, tenant-key mismatches and platform/tenant
+scope confusion.
+
+## Private and publishable content
+
+Backups, payment proofs, sensitive exports and internal platform files are
+strictly private. Their normal API responses expose metadata only. Downloads
+must pass authentication, permission checks, trusted tenant ownership checks
+and backup/file state checks. A short-lived HTTPS signed download is allowed
+only after those checks.
+
+Branding can be displayed by an application proxy route, but the storage
+bucket remains private. The route resolves the current tenant server-side and
+does not expose the storage endpoint, bucket credentials or a permanent
+storage URL. Private backups and payment proofs use private, no-store response
+policy.
+
+## Upload and integrity rules
+
+Every upload is validated before it reaches the provider:
+
+- allowlisted MIME type and extension;
+- bounded byte size;
+- server-generated key;
+- checksum (SHA-256);
+- image signature/dimensions for branding;
+- file signature validation for payment proofs;
+- special SVG safety checks for branding.
+
+The storage service performs PUT, HEAD and an actual GET read-back when an
+expected size/checksum is supplied. A metadata-only HEAD result is not enough
+to mark an upload verified. Database metadata is written only after the
+object passes this verification. Provider failure, missing objects, size
+mismatch or checksum mismatch remains a failure and never becomes VERIFIED.
 
 ## Adapter contract
 
-An approved provider adapter must implement:
+Business services use the abstraction rather than provider-specific APIs:
 
-```text
-putPrivateObject({ tenantId, key, originalName, contentType, size, checksum, body })
-getPrivateObject({ tenantId, key })
-deletePrivateObject({ tenantId, key })
-```
+~~~text
+putPrivateObject
+getPrivateObject
+headPrivateObject
+deletePrivateObject
+createSignedDownload
+verifyPrivateObject
+~~~
 
-The adapter must keep objects private, preserve the tenant prefix, enforce
-server-side authorization, and return only a temporary signed response when
-the application explicitly needs file access. Public permanent URLs are not
-part of the contract.
+The production adapter uses HTTPS and AWS Signature Version 4 for
+S3-compatible endpoints. It does not implement a public URL method.
+Path-style addressing can be enabled for self-hosted S3-compatible servers.
+Request timeout and signed URL TTL are bounded by the application.
 
-The runtime currently exposes the local adapter only through the explicit
-`BACKUP_STORAGE_DRIVER=local` development/test switch. Unknown drivers fail at
-startup instead of silently falling back to a public or ephemeral location.
+## Environment contract
 
-## Production adapter preparation
+OBJECT_STORAGE_* is the canonical contract. The original BACKUP_STORAGE_*
+variables remain supported as backwards-compatible aliases for existing
+deployments:
 
-The repository also includes a provider-neutral S3-compatible adapter. It uses
-HTTPS, private bucket/object keys, AWS Signature V4 requests and short-lived
-signed GET URLs; it does not create public URLs. It is selected only when the
-deployment explicitly sets `BACKUP_STORAGE_DRIVER=s3` (or
-`s3-compatible`). Configure these values in the deployment secret store, never
-in Git:
+~~~text
+OBJECT_STORAGE_DRIVER=s3
+OBJECT_STORAGE_ENDPOINT=https://storage.example.com
+OBJECT_STORAGE_BUCKET=logicfit-private
+OBJECT_STORAGE_REGION=auto
+OBJECT_STORAGE_ACCESS_KEY_ID=<secret-store-value>
+OBJECT_STORAGE_SECRET_ACCESS_KEY=<secret-store-value>
+OBJECT_STORAGE_SESSION_TOKEN=<optional-secret-store-value>
+OBJECT_STORAGE_FORCE_PATH_STYLE=true
+OBJECT_STORAGE_REQUEST_TIMEOUT_MS=30000
+~~~
 
-```text
-BACKUP_STORAGE_DRIVER=s3
-BACKUP_STORAGE_ENDPOINT=https://<private-s3-endpoint>
-BACKUP_STORAGE_BUCKET=<private-bucket>
-BACKUP_STORAGE_REGION=auto
-BACKUP_STORAGE_ACCESS_KEY_ID=<secret-store-value>
-BACKUP_STORAGE_SECRET_ACCESS_KEY=<secret-store-value>
-BACKUP_STORAGE_SESSION_TOKEN=<optional-secret-store-value>
-BACKUP_STORAGE_FORCE_PATH_STYLE=true
-BACKUP_STORAGE_REQUEST_TIMEOUT_MS=30000
-```
+The access key and secret must be entered directly into the Vercel
+Environment Variables secret store. Do not paste them into chat, source
+files, committed .env files, screenshots or issue logs. Do not use a root
+storage credential in Vercel; create a restricted application credential for
+the Logic Fit private bucket/prefixes.
 
-The adapter is configuration-ready but not active in the current deployment.
-Until an approved provider is selected and its credentials are added to the
-Vercel environment, the application deliberately returns a safe `503` with
-`BACKUP_STORAGE_NOT_CONFIGURED`. Any claimed backup record is finalized as
-`FAILED`; it is never marked `VERIFIED` without a successful upload, checksum
-validation and read-back verification.
+OBJECT_STORAGE_DRIVER=local is only an explicit local/test adapter. It is
+rejected in Staging, Production and Vercel. The default none state is
+fail-closed.
 
-After configuring a provider, deploy and verify in this order:
+## Database metadata
 
-1. Confirm `/api/health` reports storage as configured without exposing secrets.
-2. Create one manual tenant backup with a reason.
-3. Confirm the record is `VERIFIED`, has a checksum and a positive size.
-4. Download it through the authenticated application route and verify the
-   tenant ownership check.
-5. Repeat the same checks from Platform Admin for a platform backup.
+Migration 010-private-object-storage-metadata.sql adds nullable storage
+metadata to gym_branding_assets and saas_payment_proofs:
 
-`BACKUP_STORAGE_DRIVER=local` remains limited to isolated local/development/test
-rehearsals and must not be used on Vercel, staging or production.
+~~~text
+storage_key
+storage_provider
+storage_size_bytes (branding)
+storage_checksum_sha256 (branding)
+storage_verified_at
+~~~
 
-## Planned mapping
+Old content bytes are preserved and remain nullable for the new external
+path. No existing files are moved by this migration. The tenant service
+continues to apply the tenant-scoped unique keys and RLS to these tables.
 
-| Current/private domain | Category | Activation state |
-| --- | --- | --- |
-| SaaS payment proofs | `payment-proofs` | Provider pending |
-| Branding assets | `branding` | Provider pending |
-| Backup archives | `backups` | Provider and restore test pending |
-| Generated exports/PDFs | `exports` | Provider pending |
+## VPS/S3-compatible activation
 
-No database migration or live storage path was changed by introducing this
-boundary. Provider activation requires a staging migration/cutover plan,
-private-access verification, tenant-isolation tests, deletion/recovery tests
-and an approved credential decision.
+The VPS is a storage service, not a second application database:
+
+~~~text
+Vercel Logic Fit --HTTPS/S3--> private S3-compatible service on VPS
+        |
+        +--------------------> central SQL Server
+~~~
+
+Use a persistent host-mounted data volume such as
+/srv/logicfit-storage/. The object-storage server owns its physical layout;
+operators must not edit files beneath that directory manually. Do not use
+tmpfs, /tmp or an ephemeral container volume.
+
+Recommended deployment properties:
+
+1. dedicated non-root storage-service account/container;
+2. automatic restart and persistent host volume;
+3. private bucket with no anonymous listing or object reads;
+4. storage API behind HTTPS at a dedicated hostname;
+5. admin console bound to localhost/VPN/IP allowlist, not public;
+6. firewall exposing only the reverse proxy ports required for HTTPS;
+7. request-size/timeouts suitable for compressed backup artifacts;
+8. disk monitoring with configurable warning/critical thresholds;
+9. encrypted disk or provider server-side encryption where supported;
+10. a separate off-site copy later; the VPS alone is not disaster recovery.
+
+The repository does not include credentials, certificates or a provider
+specific compose file because those are deployment secrets and an
+infrastructure decision. The S3 adapter remains provider-agnostic.
+
+## Safe activation and verification order
+
+After the VPS is provisioned:
+
+1. Configure the non-secret endpoint, bucket, region and path-style setting in
+   Vercel; add credentials directly in the Vercel secret store.
+2. Run migration 010 through the guarded migration process against the
+   approved environment.
+3. Deploy and confirm /api/health reports only a safe configured/provider
+   status; it must not return secrets.
+4. Upload a synthetic object, then verify PUT -> HEAD -> GET/checksum ->
+   DELETE through a controlled integration test.
+5. Create a synthetic tenant backup and require VERIFIED plus positive size
+   and SHA-256.
+6. Verify authorized download, cross-tenant denial and Platform Admin scope.
+7. Test a branding upload and payment proof upload; confirm their SQL
+   metadata contains a private key and no new BLOB bytes.
+8. Test provider outage/missing object/checksum failure and confirm a safe
+   failure state.
+
+No step should mark a backup VERIFIED merely because an HTTP write returned
+success.
+
+## Failure boundaries and recovery
+
+If the storage server is unavailable, unrelated SQL-backed application
+operations may continue, while backup and file operations fail with safe
+codes such as STORAGE_NOT_CONFIGURED or STORAGE_UNAVAILABLE. The application
+does not fall back to local Vercel disk.
+
+Branding and payment-proof replacement deletes an old object only after the
+new database reference is committed and only when no remaining tenant row
+references that key. Provider deletion failures are left for a future
+reconciliation pass and do not make a committed branding change point to a
+missing object.
+
+Current logical backup artifacts carry the database metadata references for
+external files; they do not automatically embed a second copy of every
+external object. A provider-aware file copy/restore rehearsal and off-site
+replication are still required before claiming full disaster recovery.
+
+## Production inputs still required
+
+The code and VPS storage service are ready for the controlled activation step,
+but the repository intentionally does not contain server credentials or TLS
+material. The following non-secret deployment decisions/values are still
+needed:
+
+- HTTPS storage hostname and DNS ownership;
+- selected S3-compatible server and private bucket name (MinIO/private bucket
+  are provisioned on the current VPS);
+- region and path-style requirement;
+- persistent disk/mount and disk alert thresholds;
+- application credential policy and allowed bucket/prefix scope;
+- off-site copy decision;
+- Vercel environment scope for the variables.
+
+Do not send SSH passwords, private keys, database connection strings or
+storage secrets in this conversation. The current VPS bootstrap is complete;
+the remaining activation step needs the chosen hostname plus DNS/TLS/firewall
+configuration, followed by entering the generated application credential
+directly into Vercel's secret store.

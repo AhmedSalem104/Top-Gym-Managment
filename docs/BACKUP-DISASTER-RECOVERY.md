@@ -18,8 +18,12 @@ Current implementation status:
 - Tenant isolation and trusted context: `VERIFIED` locally through registry,
   RLS and authorization checks; authenticated A/B attack testing remains a
   staging requirement.
-- Private object-storage contract: `VERIFIED` locally; provider activation is
-  `BLOCKED` until an approved private provider and credentials are supplied.
+- Private object-storage contract: `VERIFIED` locally; a MinIO/private bucket
+  and restricted application policy are provisioned on the VPS, while HTTPS
+  endpoint/Vercel activation remains a production verification item.
+- New branding and SaaS payment-proof uploads use the same private storage
+  boundary when configured; legacy SQL-backed bytes remain readable and are
+  not moved by the metadata migration.
 - Local private filesystem adapter: `IMPLEMENTED` for isolated
   `local`/`development`/`test` rehearsals only. It is never accepted in
   `staging` or `production` and is not durable off-site storage.
@@ -205,9 +209,10 @@ database restore:
 
 Concurrent restore/backup work for the same tenant is rejected by the
 database-level application lock. Assistant restore is not granted by the
-Owner route permissions. Files outside SQL Server require provider-aware
-staged validation before any replacement; that production integration remains
-pending.
+Owner route permissions. External branding/payment-proof objects require
+provider-aware validation during restore; the current logical backup carries
+their database metadata references but does not silently embed a second copy
+of every external object.
 
 ## Platform disaster recovery runbook
 
@@ -311,7 +316,8 @@ Backup-specific outstanding items are:
 
 | Item | Status | Evidence needed |
 | --- | --- | --- |
-| Approved private object-storage provider | `BLOCKED` | Configure credentials outside Git; test private tenant/platform objects, signed access, deletion and off-site copy. |
+| VPS private object-storage activation | `REQUIRES PRODUCTION VERIFICATION` | Configure HTTPS/DNS/firewall, add the restricted application credential to Vercel outside Git, then test private tenant/platform objects, signed access, deletion and off-site copy. |
+| External branding/payment-proof object restore and legacy-file cutover | `REQUIRES STAGING VERIFICATION` | Validate provider objects, checksums, tenant ownership and recovery behavior without deleting legacy SQL-backed rows. |
 | Native SQL Server backup or equivalent | `REQUIRES PRODUCTION VERIFICATION` | Confirm provider capability and run a non-destructive restore rehearsal in an isolated target. |
 | Tenant restore rehearsal | `BLOCKED` | Restore a synthetic verified artifact into isolated Staging and verify relationships, files, RLS and login/access. |
 | Daily cron execution | `REQUIRES PRODUCTION VERIFICATION` | Configure `CRON_SECRET`, verify scheduler invocation, duration, retry and health reporting. |
