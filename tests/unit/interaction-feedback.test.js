@@ -37,7 +37,7 @@ test('critical surfaces load the same feedback layer with context-aware labels',
     const platform = read('public/platform-admin.html');
 
     assert.match(index, /\/js\/ui-feedback\.js\?v=2/);
-    assert.match(index, /id="loginSubmit"[^>]*data-loading-text="جاري تسجيل الدخول\.\.\."/);
+    assert.match(index, /id="loginSubmit"[^>]*data-feedback-ignore[^>]*data-loading-text="جاري تسجيل الدخول\.\.\."/);
     assert.match(portal, /\/js\/ui-feedback\.js\?v=2/);
     assert.match(portal, /id="portalSubmitButton"[^>]*data-loading-text="جاري التحقق من الكود\.\.\."/);
     assert.match(portal, /id="portalOccupancyRefresh"[^>]*data-async-action="true"/);
