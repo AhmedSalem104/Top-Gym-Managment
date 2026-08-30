@@ -17886,6 +17886,81 @@ body .swal2-popup.qr-member-preview-alert .swal2-actions > button.qr-member-prev
   width: max-content;
 }
 
+.branding-payment-panel {
+  display: grid;
+  gap: var(--space-4);
+  margin-top: var(--space-5);
+  padding: var(--space-4);
+  border: 1px solid var(--primary-border);
+  border-radius: var(--radius-lg);
+  background: var(--primary-soft);
+}
+
+.branding-payment-panel-head {
+  align-items: flex-start;
+}
+
+.branding-payment-panel h4 {
+  margin: 3px 0;
+  color: var(--text-primary);
+  font-size: var(--font-md);
+}
+
+.branding-payment-list {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.branding-payment-row,
+.branding-payment-empty {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-md);
+  background: var(--bg-card);
+}
+
+.branding-payment-row-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.branding-payment-row-head strong,
+.branding-payment-empty strong {
+  color: var(--text-primary);
+}
+
+.branding-payment-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.branding-payment-fields .field-full {
+  grid-column: 1 / -1;
+}
+
+.branding-payment-fields label {
+  display: grid;
+  gap: 6px;
+}
+
+.branding-payment-fields label > span {
+  color: var(--danger);
+}
+
+.branding-payment-active {
+  margin: 0;
+}
+
+.branding-payment-empty span {
+  color: var(--text-muted);
+  font-size: var(--font-sm);
+}
+
 html[data-brand-card-style="flat"] .panel,
 html[data-brand-card-style="flat"] .card,
 html[data-brand-card-style="flat"] .stat-card,
@@ -17973,7 +18048,8 @@ body.auth-locked .auth-screen {
   .branding-field-grid,
   .branding-control-row,
   .branding-asset-grid,
-  .branding-token-grid {
+  .branding-token-grid,
+  .branding-payment-fields {
     grid-template-columns: 1fr;
   }
 

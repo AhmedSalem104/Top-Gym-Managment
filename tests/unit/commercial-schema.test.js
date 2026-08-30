@@ -86,6 +86,19 @@ test('tenant payment methods are identity-backed and excluded from generic publi
     assert.doesNotMatch(portal, /01015819700|01005376843/);
 });
 
+test('owner identity editor manages tenant payment methods without hard-coded account data', () => {
+    const editor = read('public/js/pages/branding/branding.js');
+    const page = read('public/index.html');
+    assert.match(page, /id="brandingPaymentMethods"/);
+    assert.match(page, /id="brandingAddPaymentMethod"/);
+    assert.match(editor, /data-branding-payment-field/);
+    assert.match(editor, /function handlePaymentMethodChange/);
+    assert.match(editor, /function addPaymentMethod/);
+    assert.match(editor, /function removePaymentMethod/);
+    assert.doesNotMatch(editor, /01015819700|01005376843/);
+    assert.doesNotMatch(page, /01015819700|01005376843/);
+});
+
 test('member request validation rejects inactive plans and types server-side', () => {
     const service = read('src/services/member-subscription-service.js');
     assert.match(service, /plan\.active === false/);

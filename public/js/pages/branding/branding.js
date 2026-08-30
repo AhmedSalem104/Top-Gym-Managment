@@ -188,6 +188,38 @@
         else element.value = value ?? '';
     }
 
+    function paymentMethods() {
+        const current = config();
+        if (!isObject(current.identity)) current.identity = {};
+        if (!Array.isArray(current.identity.paymentMethods)) current.identity.paymentMethods = [];
+        return current.identity.paymentMethods;
+    }
+
+    function renderPaymentMethods() {
+        const container = $('brandingPaymentMethods');
+        if (!container) return;
+        const methods = paymentMethods();
+        if (!methods.length) {
+            container.innerHTML = '<div class="branding-payment-empty"><strong>لا توجد وسائل دفع مضافة</strong><span>أضف وسيلة دفع ليتمكن العضو من معرفة بيانات التحويل الخاصة بهذا الجيم.</span></div>';
+            return;
+        }
+        container.innerHTML = methods.map((method, index) => {
+            const value = (key) => escapeHtml(method?.[key] ?? '');
+            const checked = method?.isActive !== false ? ' checked' : '';
+            return `<article class="branding-payment-row" data-branding-payment-row="${index}">
+                <div class="branding-payment-row-head"><strong>وسيلة دفع ${index + 1}</strong><button class="btn btn-danger btn-small" type="button" data-branding-payment-remove="${index}">إزالة</button></div>
+                <div class="branding-payment-fields">
+                    <div class="field"><label>اسم الوسيلة <span aria-hidden="true">*</span><input data-branding-payment-field="name" data-branding-payment-index="${index}" value="${value('name')}" maxlength="120" required placeholder="Vodafone Cash"></label></div>
+                    <div class="field"><label>الرقم أو الحساب <span aria-hidden="true">*</span><input data-branding-payment-field="accountReference" data-branding-payment-index="${index}" value="${value('accountReference')}" maxlength="160" dir="ltr" required placeholder="رقم الهاتف أو الحساب"></label></div>
+                    <div class="field"><label>اسم المستلم<input data-branding-payment-field="recipientName" data-branding-payment-index="${index}" value="${value('recipientName')}" maxlength="160"></label></div>
+                    <div class="field"><label>ترتيب الظهور<input data-branding-payment-field="sortOrder" data-branding-payment-index="${index}" value="${value('sortOrder')}" type="number" min="0" max="999" step="1"></label></div>
+                    <div class="field field-full"><label>تعليمات الدفع<textarea data-branding-payment-field="instructions" data-branding-payment-index="${index}" maxlength="1000" rows="2" placeholder="تعليمات مختصرة للعضو">${value('instructions')}</textarea></label></div>
+                </div>
+                <label class="checkbox-field branding-payment-active"><input type="checkbox" data-branding-payment-field="isActive" data-branding-payment-index="${index}"${checked}><span>عرض هذه الوسيلة للعضو</span></label>
+            </article>`;
+        }).join('');
+    }
+
     function renderForm() {
         const current = config();
         Object.entries(IDENTITY_FIELDS).forEach(([id, key]) => setField(id, current.identity?.[key]));
@@ -195,6 +227,7 @@
         Object.entries(TYPOGRAPHY_FIELDS).forEach(([id, key]) => setField(id, current.typography?.[key]));
         Object.entries(LOGIN_FIELDS).forEach(([id, key]) => setField(id, current.login?.[key]));
         Object.entries(INTERFACE_FIELDS).forEach(([id, key]) => setField(id, current.interface?.[key]));
+        renderPaymentMethods();
         const overlayValue = $('brandingLoginOverlayValue');
         if (overlayValue) overlayValue.textContent = `${Math.round(Number(current.login?.overlayOpacity || 0.72) * 100)}%`;
     }
@@ -369,6 +402,32 @@
             if (value) value.textContent = `${Math.round(Number(target.value || 0) * 100)}%`;
         }
         markDirty();
+    }
+
+    function handlePaymentMethodChange(target) {
+        const index = Number(target.dataset.brandingPaymentIndex);
+        const field = target.dataset.brandingPaymentField;
+        const methods = paymentMethods();
+        if (!Number.isInteger(index) || index < 0 || index >= methods.length || !field) return;
+        const value = target.type === 'checkbox' ? target.checked : target.type === 'number' ? Number(target.value) : target.value;
+        methods[index][field] = field === 'sortOrder' && !Number.isFinite(value) ? index : value;
+        markDirty();
+    }
+
+    function addPaymentMethod() {
+        const methods = paymentMethods();
+        methods.push({ id: '', name: '', accountReference: '', recipientName: '', instructions: '', isActive: true, sortOrder: methods.length });
+        markDirty('مسودة الهوية — تمت إضافة وسيلة دفع');
+        renderPaymentMethods();
+        document.querySelector('[data-branding-payment-field="name"][data-branding-payment-index="' + (methods.length - 1) + '"]')?.focus();
+    }
+
+    function removePaymentMethod(index) {
+        const methods = paymentMethods();
+        if (!Number.isInteger(index) || index < 0 || index >= methods.length) return;
+        methods.splice(index, 1);
+        markDirty('مسودة الهوية — تمت إزالة وسيلة دفع');
+        renderPaymentMethods();
     }
 
     function handleColorChange(target) {
@@ -587,7 +646,8 @@
         page.dataset.brandingBound = 'true';
         page.addEventListener('input', (event) => {
             const target = event.target;
-            if (target.matches('[data-branding-color], [data-branding-color-text]')) handleColorChange(target);
+            if (target.matches('[data-branding-payment-field]')) handlePaymentMethodChange(target);
+            else if (target.matches('[data-branding-color], [data-branding-color-text]')) handleColorChange(target);
             else handleFormChange(target);
         });
         page.addEventListener('change', (event) => {
@@ -595,10 +655,15 @@
             if (target.matches('[data-branding-file]')) {
                 void uploadAsset(target.files?.[0], target.dataset.brandingFile);
                 target.value = '';
-            } else if (target.matches('[data-branding-color], [data-branding-color-text]')) handleColorChange(target);
+            } else if (target.matches('[data-branding-payment-field]')) handlePaymentMethodChange(target);
+            else if (target.matches('[data-branding-color], [data-branding-color-text]')) handleColorChange(target);
             else handleFormChange(target);
         });
         page.addEventListener('click', (event) => {
+            const addPaymentButton = event.target.closest('#brandingAddPaymentMethod');
+            if (addPaymentButton) { addPaymentMethod(); return; }
+            const removePaymentButton = event.target.closest('[data-branding-payment-remove]');
+            if (removePaymentButton) { removePaymentMethod(Number(removePaymentButton.dataset.brandingPaymentRemove)); return; }
             const sectionButton = event.target.closest('[data-branding-section]');
             if (sectionButton) activateEditorSection(sectionButton.dataset.brandingSection);
             const themeButton = event.target.closest('[data-branding-preview-theme]');
