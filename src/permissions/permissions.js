@@ -88,6 +88,8 @@ const PERMISSIONS = Object.freeze({
     SAAS_SUBSCRIPTION_READ: 'saas.subscription.read',
     SAAS_SUBSCRIPTION_REQUEST: 'saas.subscription.request',
     PORTAL_ANALYTICS_READ: 'portal.analytics.read',
+    MEMBER_SUBSCRIPTION_REQUESTS_READ: 'member.subscription_requests.read',
+    MEMBER_SUBSCRIPTION_REQUESTS_REVIEW: 'member.subscription_requests.review',
 
     INTELLIGENCE_READ: 'intelligence.read',
     INTELLIGENCE_GENERATE: 'intelligence.generate',
@@ -190,6 +192,11 @@ CATALOG_DEFINITIONS.push(
 
 CATALOG_DEFINITIONS.push(
     ['portal.analytics.read', 'Portal analytics', 'View tenant-scoped member portal page views, estimated unique visitors and authenticated members.', 'portal', 'view', true]
+);
+
+CATALOG_DEFINITIONS.push(
+    ['member.subscription_requests.read', 'Member subscription requests', 'View tenant-scoped member subscription and renewal requests.', 'memberships', 'view', true],
+    ['member.subscription_requests.review', 'Review member subscription requests', 'Approve or reject member subscription requests and create the associated membership/payment atomically.', 'memberships', 'review', true]
 );
 
 CATALOG_DEFINITIONS.splice(

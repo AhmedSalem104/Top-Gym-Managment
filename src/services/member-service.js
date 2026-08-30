@@ -1795,6 +1795,111 @@ async function recordPayment(membershipId, body = {}) {
     return getMemberById(memberId);
 }
 
+/**
+ * Complete a membership activation/renewal inside a caller-owned transaction.
+ *
+ * The member portal approval flow uses this helper instead of duplicating the
+ * normal membership/payment/event writes.  The caller must validate the
+ * request and hold its own request lock before invoking it; this function
+ * protects the member and current membership rows and returns the IDs needed
+ * to link the approval record back to the financial ledger.
+ */
+async function createMembershipFromApprovedRequest({
+    transaction,
+    memberId,
+    requestType = 'membership',
+    membershipPlan = 'gym_only',
+    membershipType,
+    startDate,
+    endDate,
+    listPrice,
+    discountAmount = 0,
+    amountDue,
+    paymentMethod = 'transfer',
+    paymentNotes = null,
+    membershipNotes = null,
+    sourceRequestId = null
+} = {}) {
+    if (!transaction || typeof transaction.request !== 'function') {
+        throw appError('A transaction is required for membership approval.', 500);
+    }
+    const id = ensureId(memberId);
+    const plan = requiredString(membershipPlan || 'gym_only', 'Ø¨Ø§Ù‚Ø© Ø§Ù„Ø¹Ø¶ÙˆÙŠØ©', 30);
+    const type = requiredString(membershipType, 'Ù†ÙˆØ¹ Ø§Ù„Ø¹Ø¶ÙˆÙŠØ©', 30);
+    const start = parseDateOnly(startDate, 'ØªØ§Ø±ÙŠØ® Ø§Ù„Ø¨Ø¯Ø§ÙŠØ©');
+    const end = parseDateOnly(endDate, 'ØªØ§Ø±ÙŠØ® Ø§Ù„Ø§Ù†ØªÙ‡Ø§Ø¡');
+    if (end < start) throw appError('ØªØ§Ø±ÙŠØ® Ø§Ù„Ø§Ù†ØªÙ‡Ø§Ø¡ ÙŠØ¬Ø¨ Ø£Ù† ÙŠÙƒÙˆÙ† Ø¨Ø¹Ø¯ Ø§Ù„Ø¨Ø¯Ø§ÙŠØ©.', 400);
+    const price = money(listPrice, 'Ø³Ø¹Ø± Ø§Ù„Ø§Ø´ØªØ±Ø§Ùƒ');
+    const discount = money(discountAmount, 'Ø§Ù„Ø®ØµÙ…', 0);
+    const due = money(amountDue, 'Ø§Ù„Ù…Ø³ØªØ­Ù‚', Math.max(0, price - discount));
+    if (discount > price || Math.abs(due - (price - discount)) > 0.01) {
+        throw appError('Ù„Ø§ ØªØªØ·Ø§Ø¨Ù‚ Ø¨ÙŠØ§Ù†Ø§Øª Ø§Ù„Ø³Ø¹Ø± Ø§Ù„Ù…Ø­ÙÙˆØ¸Ø©.', 409);
+    }
+    const ledgerMethod = parsePaymentMethod(paymentMethod, 'transfer');
+    const member = await transaction.request()
+        .input('memberId', sql.Int, id)
+        .query('SELECT TOP (1) id FROM dbo.members WITH (UPDLOCK,HOLDLOCK) WHERE id=@memberId;');
+    if (!member.recordset[0]) throw appError('Ø§Ù„Ø¹Ø¶Ùˆ ØºÙŠØ± Ù…ÙˆØ¬ÙˆØ¯.', 404);
+    const current = await getRawMembership(transaction, id);
+    if (current && !current.cancelled_at && formatDateOnly(current.end_date) >= start) {
+        throw appError('ØªØ§Ø±ÙŠØ® Ø¨Ø¯Ø§ÙŠØ© Ø§Ù„Ø§Ø´ØªØ±Ø§Ùƒ Ø§Ù„Ø¬Ø¯ÙŠØ¯ ÙŠØ¬Ø¨ Ø£Ù† ÙŠÙ„ÙŠ Ø§Ù„Ø§Ø´ØªØ±Ø§Ùƒ Ø§Ù„Ø­Ø§Ù„ÙŠ.', 409);
+    }
+    const membershipResult = await transaction.request()
+        .input('memberId', sql.Int, id)
+        .input('membershipPlan', sql.VarChar(30), plan)
+        .input('membershipType', sql.VarChar(30), type)
+        .input('startDate', sql.Date, toUtcDate(start))
+        .input('endDate', sql.Date, toUtcDate(end))
+        .input('notes', sql.NVarChar(1000), optionalString(membershipNotes, 1000))
+        .query(`INSERT INTO dbo.memberships (member_id, membership_plan, membership_type, start_date, end_date, notes)
+                OUTPUT INSERTED.id
+                VALUES (@memberId, @membershipPlan, @membershipType, @startDate, @endDate, @notes);`);
+    const membershipId = Number(membershipResult.recordset[0]?.id);
+    if (!membershipId) throw appError('ØªØ¹Ø°Ø± Ø¥Ù†Ø´Ø§Ø¡ Ø§Ù„Ø§Ø´ØªØ±Ø§Ùƒ.', 500);
+    const paymentResult = await transaction.request()
+        .input('membershipId', sql.Int, membershipId)
+        .input('listPrice', sql.Decimal(12, 2), price)
+        .input('discountAmount', sql.Decimal(12, 2), discount)
+        .input('amountDue', sql.Decimal(12, 2), due)
+        .input('amountPaid', sql.Decimal(12, 2), due)
+        .input('paymentMethod', sql.VarChar(20), ledgerMethod)
+        .input('paidAt', sql.Date, toUtcDate(todayInTimeZone()))
+        .input('notes', sql.NVarChar(500), optionalString(paymentNotes, 500))
+        .query(`INSERT INTO dbo.gym_payments (membership_id, list_price, discount_amount, amount_due, amount_paid, payment_method, paid_at, notes)
+                OUTPUT INSERTED.id
+                VALUES (@membershipId, @listPrice, @discountAmount, @amountDue, @amountPaid, @paymentMethod, @paidAt, @notes);`);
+    const paymentId = Number(paymentResult.recordset[0]?.id);
+    if (!paymentId) throw appError('ØªØ¹Ø°Ø± ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø¯ÙØ¹.', 500);
+    const ledgerTransactionId = due > 0
+        ? await addPaymentTransaction(transaction, {
+            membershipId,
+            transactionType: 'subscription',
+            listPrice: price,
+            discountAmount: discount,
+            amountDue: due,
+            amountPaid: due,
+            amountRemaining: 0,
+            paymentMethod: ledgerMethod,
+            paidAt: todayInTimeZone(),
+            notes: optionalString(paymentNotes, 500),
+            sourcePaymentId: paymentId
+        })
+        : null;
+    await addEvent(transaction, id, membershipId, requestType === 'renewal' ? 'renewed' : 'activated', {
+        source: 'member_portal_subscription_request',
+        sourceRequestId: sourceRequestId == null ? null : Number(sourceRequestId),
+        membershipPlan: plan,
+        membershipType: type,
+        startDate: start,
+        endDate: end,
+        listPrice: price,
+        discountAmount: discount,
+        amountDue: due,
+        amountPaid: due
+    });
+    return { membershipId, paymentId, ledgerTransactionId };
+}
+
 async function refundSubscription(id, body = {}, userId = null) {
     const memberId = ensureId(id);
     await ensureSubscriptionRefundsTable();
@@ -2091,11 +2196,14 @@ module.exports = {
     getDashboard,
     getMemberById,
     getMemberDetails,
+    calculatePricing,
+    createMembershipFromApprovedRequest,
     ensurePaymentTransactionsTable,
     ensureSubscriptionRefundsTable,
     getSubscriptionRefundPreview,
     getMembers,
     markAlertCommunication,
+    membershipEndDateFromConfig,
     getPricingCatalog,
     createPricingPlan,
     createMembershipType,

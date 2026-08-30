@@ -35,6 +35,7 @@ const tenantService = require('./src/services/tenant-service');
 const saasService = require('./src/services/saas-service');
 const commercialSchema = require('./src/services/commercial-schema');
 const commercialService = require('./src/services/commercial-service');
+const memberSubscriptionService = require('./src/services/member-subscription-service');
 const platformAdminService = require('./src/services/platform-admin-service');
 const { runTenantContext } = require('./src/tenancy/tenant-context');
 const { ensureAuthReady } = authService;
@@ -61,6 +62,7 @@ const backupRecoveryService = createBackupRecoveryService({ storageService: obje
 // branding/payment-proof bytes are persisted when the provider is configured.
 brandingService.configureObjectStorageService(objectStorageService);
 saasService.configureObjectStorageService(objectStorageService);
+memberSubscriptionService.configureObjectStorageService(objectStorageService);
 
 let httpServer;
 let shutdownStarted = false;
@@ -200,6 +202,7 @@ registerRoutes(app, {
     membershipCodeService,
     portalService: memberPortalService,
     commercialService,
+    memberSubscriptionService,
     feedbackService: memberFeedbackService,
     storeService,
     intelligenceService,

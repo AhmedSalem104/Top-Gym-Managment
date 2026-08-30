@@ -13,6 +13,7 @@ const { registerPricingRoutes } = require('./pricing.routes');
 const { registerCoachingRoutes } = require('./coaching.routes');
 const { registerDayPassRoutes } = require('./day-pass.routes');
 const { registerMemberPortalRoutes } = require('./member-portal.routes');
+const { registerMemberSubscriptionRoutes } = require('./member-subscription.routes');
 const { registerMemberFeedbackRoutes } = require('./member-feedback.routes');
 const { registerStoreRoutes } = require('./store.routes');
 const { registerIntelligenceRoutes } = require('./intelligence.routes');
@@ -88,6 +89,7 @@ function registerRoutes(app, {
     membershipCodeService,
     portalService,
     commercialService,
+    memberSubscriptionService,
     feedbackService,
     storeService,
     intelligenceService,
@@ -113,6 +115,7 @@ function registerRoutes(app, {
     registerCoachingRoutes(app, { coachingService, asyncRoute });
     registerDayPassRoutes(app, { dayPassService, asyncRoute, ownerOnly });
     registerMemberPortalRoutes(app, { membershipCodeService, portalService, libraryService, commercialService, asyncRoute, ownerOnly });
+    registerMemberSubscriptionRoutes(app, { service: memberSubscriptionService, asyncRoute, ownerOnly });
     registerMemberFeedbackRoutes(app, { feedbackService, asyncRoute, ownerOnly });
     registerStoreRoutes(app, { storeService, asyncRoute });
     registerIntelligenceRoutes(app, { intelligenceService, asyncRoute });
