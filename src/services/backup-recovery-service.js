@@ -233,6 +233,26 @@ function validateTenantBackupPayload(payload, { expectedTenantId = null, require
     return { tenantId, tableCounts: counts, rowCount, integrity: { algorithm: 'sha256', verified: true } };
 }
 
+function validatePlatformTenantReferences(globalTables, tenantTables) {
+    const tenantIds = new Set((Array.isArray(globalTables.gym_tenants) ? globalTables.gym_tenants : [])
+        .map((row) => Number(row.id))
+        .filter((id) => Number.isInteger(id) && id > 0));
+    for (const rows of [...Object.values(globalTables), ...Object.values(tenantTables)]) {
+        for (const row of rows) {
+            const tenantKey = Object.keys(row).find((column) => column.toLowerCase() === 'tenant_id');
+            // Platform-scoped records may intentionally carry a NULL
+            // tenant_id (for example platform audit events). Validate only
+            // concrete tenant references; a non-null reference must still
+            // resolve to a tenant in the same platform snapshot.
+            if (tenantKey && row[tenantKey] !== null && row[tenantKey] !== undefined
+                && !tenantIds.has(Number(row[tenantKey]))) {
+                throw backupError('The platform backup contains a row for an unknown gym.', 400, 'PLATFORM_BACKUP_TENANT_REFERENCE_INVALID');
+            }
+        }
+    }
+    return true;
+}
+
 function validatePlatformBackupPayload(payload, { requireCompleteRegistry = true } = {}) {
     if (!payload || payload.format !== 'logic-fit-platform-backup') {
         throw backupError('The uploaded file is not a Logic Fit platform backup.', 400, 'PLATFORM_BACKUP_FORMAT_UNSUPPORTED');
@@ -253,9 +273,6 @@ function validatePlatformBackupPayload(payload, { requireCompleteRegistry = true
     const tables = normalizedTableMap(payload.tables);
     const globalTables = normalizedTableMap(tables.global);
     const tenantTables = normalizedTableMap(tables.tenant);
-    const tenantIds = new Set((Array.isArray(globalTables.gym_tenants) ? globalTables.gym_tenants : [])
-        .map((row) => Number(row.id))
-        .filter((id) => Number.isInteger(id) && id > 0));
     const knownGlobalKeys = new Set(PLATFORM_GLOBAL_BACKUP_TABLES.map((item) => item.key));
     const knownTenantKeys = new Set(TENANT_BACKUP_TABLES.map((item) => item.key));
     const unknownGlobal = Object.keys(globalTables).filter((key) => !knownGlobalKeys.has(key));
@@ -326,14 +343,7 @@ function validatePlatformBackupPayload(payload, { requireCompleteRegistry = true
     if (Number(manifest.rowCount) !== rowCount) {
         throw backupError('The platform backup manifest row count is invalid.', 400, 'PLATFORM_BACKUP_MANIFEST_INVALID');
     }
-    for (const rows of [...Object.values(globalTables), ...Object.values(tenantTables)]) {
-        for (const row of rows) {
-            const tenantKey = Object.keys(row).find((column) => column.toLowerCase() === 'tenant_id');
-            if (tenantKey && !tenantIds.has(Number(row[tenantKey]))) {
-                throw backupError('The platform backup contains a row for an unknown gym.', 400, 'PLATFORM_BACKUP_TENANT_REFERENCE_INVALID');
-            }
-        }
-    }
+    validatePlatformTenantReferences(globalTables, tenantTables);
     const digest = String(payload.integrity?.sha256 || '').toLowerCase();
     if (String(payload.integrity?.algorithm || '').toLowerCase() !== 'sha256' || !/^[a-f0-9]{64}$/.test(digest)) {
         throw backupError('The platform backup integrity manifest is invalid.', 400, 'PLATFORM_BACKUP_INTEGRITY_INVALID');
@@ -2174,6 +2184,7 @@ module.exports = {
     getTenantBackupCoverageStatus,
     inspectPlatformBackupBuffer,
     validatePlatformBackupPayload,
+    validatePlatformTenantReferences,
     getPlatformBackupHistory,
     getPlatformBackupRecord,
     getPlatformBackupAudit,
