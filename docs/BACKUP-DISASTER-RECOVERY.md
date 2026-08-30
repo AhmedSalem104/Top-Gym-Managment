@@ -343,3 +343,24 @@ Backup-specific outstanding items are:
 This report deliberately recommends **No-Go for a production backup/DR claim**
 until the Critical provider and restore evidence is available. It does not
 block continued local implementation or testing of unrelated production-readiness work.
+## Production storage activation status (2026-08-30)
+
+The private object-storage provider is active for the deployed Logic Fit
+application. Tenant artifacts use tenant-scoped keys such as
+`tenants/{tenant_id}/private/backups/{uuid}.gz`; platform artifacts use the
+separate `platform/private/backups/{uuid}.gz` scope. Uploads are read back and
+SHA-256 verified before a record becomes `VERIFIED`; storage failures remain
+`FAILED`.
+
+The current private endpoint is the VPS provider reverse-DNS HTTPS hostname
+`https://static.112.58.140.128.clients.your-server.de`. MinIO API/console
+ports are loopback-only and no permanent public backup URL is issued. The
+endpoint is not a Logic Fit-owned domain: `logicfit.saas.app` was not activated
+without verified ownership, and `logicfit.vercel.app` is occupied.
+
+End-to-end checks through Vercel successfully created and downloaded one
+verified Tenant backup and one verified Platform backup. The checks used the
+existing Platform Admin authorization path and discarded the private artifact
+contents after transfer. A secondary off-site copy and a destructive restore
+rehearsal in an isolated environment remain operational prerequisites; the VPS
+is a primary storage failure domain, not complete off-site disaster recovery.

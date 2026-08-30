@@ -171,3 +171,34 @@ non-secret values/decisions:
 SSH passwords, private keys, database connection strings and storage secrets
 must be supplied only through a secure operational channel. They must not be
 sent in this conversation.
+## Current Logic Fit activation (2026-08-30)
+
+The VPS is the primary private persistent storage server for Logic Fit. MinIO
+serves the private `logicfit-private` bucket on loopback only (`127.0.0.1:9000`);
+the MinIO console remains private on `127.0.0.1:9001`. Caddy exposes only the
+S3 API through the verified HTTPS host configured in Vercel. Port 9000 and 9001
+are not publicly reachable, and anonymous bucket access remains denied.
+
+The current endpoint is the provider reverse-DNS hostname
+`https://static.112.58.140.128.clients.your-server.de`. It is stable for the
+current VPS address, but it is not a Logic Fit-owned domain. `logicfit.saas.app`
+was not added because ownership/DNS control was not verified, and
+`logicfit.vercel.app` is already occupied. A domain owned by the project or a
+managed object-storage endpoint can replace this endpoint later without
+changing application code.
+
+Vercel Production is configured with the existing `OBJECT_STORAGE_*` contract,
+using private S3-compatible access and path-style requests. Credentials are
+stored only as encrypted Vercel environment variables; never place them in
+this document, Git, frontend code, or logs.
+
+End-to-end verification completed through the deployed application:
+
+- Tenant backup: uploaded, read back, checksum-verified, and marked `VERIFIED`.
+- Platform backup: uploaded, read back, checksum-verified, and marked `VERIFIED`.
+- Authorized downloads returned `200`; no backup content was written to the
+  repository or local project filesystem.
+
+This VPS is the primary failure domain only. It is not, by itself, an off-site
+disaster-recovery copy. Configure a secondary private/off-site copy before
+making a production RPO/RTO commitment.

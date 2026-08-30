@@ -237,3 +237,22 @@ storage secrets in this conversation. The current VPS bootstrap is complete;
 the remaining activation step needs the chosen hostname plus DNS/TLS/firewall
 configuration, followed by entering the generated application credential
 directly into Vercel's secret store.
+## Active VPS provider
+
+The production S3-compatible adapter is now configured against the private
+MinIO bucket `logicfit-private` on the Logic Fit VPS through the verified HTTPS
+endpoint `https://static.112.58.140.128.clients.your-server.de`. The endpoint
+is provider reverse-DNS rather than a domain owned by Logic Fit; replace it in
+Vercel environment variables when an owned domain or managed storage endpoint
+is selected. `logicfit.saas.app` was not activated because ownership/DNS control
+was not verified, and `logicfit.vercel.app` is occupied.
+
+MinIO API and console ports remain loopback-only on the VPS. Only the S3 API is
+proxied over HTTPS; the bucket is private, there is no directory listing or
+permanent public backup URL, and the application never falls back to Vercel's
+filesystem in production.
+
+The deployed application has completed an end-to-end Tenant and Platform
+backup verification: PUT/GET/HEAD/delete object behavior, SHA-256 read-back,
+private authorized download, and `VERIFIED` backup state. Credentials remain
+encrypted in Vercel and are intentionally omitted from documentation.
