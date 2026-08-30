@@ -2,7 +2,7 @@
     if (window.__topGymPageTabsLoaded) return;
     window.__topGymPageTabsLoaded = true;
 
-    const validTabs = new Set(['dashboard', 'members', 'expenses', 'reports', 'management', 'branding', 'saas-billing', 'backup-history', 'permissions', 'attendance', 'library', 'trainees', 'intelligence', 'feedback', 'store', 'member-subscription-requests', 'portal-analytics']);
+    const validTabs = new Set(['dashboard', 'members', 'expenses', 'reports', 'management', 'branding', 'member-payment-methods', 'saas-billing', 'backup-history', 'permissions', 'attendance', 'library', 'trainees', 'intelligence', 'feedback', 'store', 'member-subscription-requests', 'portal-analytics']);
     let activationToken = 0;
     let activeTabName = null;
     const SIDEBAR_PIN_STORAGE_KEY = 'topgym.sidebar.pinned';
@@ -74,7 +74,7 @@
         if (!validTabs.has(name)) return 'dashboard';
         if (window.topGymAuth?.isReady?.()) {
             if (!window.topGymAuth.getUser?.()) return 'dashboard';
-            if ((name === 'management' || name === 'branding' || name === 'saas-billing' || name === 'backup-history' || name === 'member-subscription-requests' || name === 'portal-analytics') && !window.topGymAuth.isOwner?.()) return window.topGymPermissions?.firstAccessibleTab?.(window.topGymAuth.getUser?.()) || 'members';
+            if ((name === 'management' || name === 'branding' || name === 'member-payment-methods' || name === 'saas-billing' || name === 'backup-history' || name === 'member-subscription-requests' || name === 'portal-analytics') && !window.topGymAuth.isOwner?.()) return window.topGymPermissions?.firstAccessibleTab?.(window.topGymAuth.getUser?.()) || 'members';
             if (!window.topGymAuth.canAccessTab(name)) return window.topGymPermissions?.firstAccessibleTab?.(window.topGymAuth.getUser?.()) || 'members';
         }
         return name;
@@ -90,6 +90,7 @@
         const monthlyFinanceSnapshot = document.getElementById('monthlyFinanceSnapshot');
         const managementSection = document.getElementById('managementSection');
         const brandingSection = document.getElementById('brandingSection');
+        const memberPaymentMethodsSection = document.getElementById('memberPaymentMethodsSection');
         const saasBillingSection = document.getElementById('saasBillingSection');
         const backupHistorySection = document.getElementById('backupHistorySection');
         const memberSubscriptionRequestsSection = document.getElementById('memberSubscriptionRequestsSection');
@@ -109,6 +110,7 @@
         const isExpenses = name === 'expenses';
         const isManagement = name === 'management';
         const isBranding = name === 'branding';
+        const isMemberPaymentMethods = name === 'member-payment-methods';
         const isSaasBilling = name === 'saas-billing';
         const isBackupHistory = name === 'backup-history';
         const isMemberSubscriptionRequests = name === 'member-subscription-requests';
@@ -129,6 +131,7 @@
         setHidden(expensesSection, !isExpenses);
         setHidden(managementSection, !isManagement);
         setHidden(brandingSection, !isBranding);
+        setHidden(memberPaymentMethodsSection, !isMemberPaymentMethods);
         setHidden(saasBillingSection, !isSaasBilling);
         setHidden(backupHistorySection, !isBackupHistory);
         setHidden(memberSubscriptionRequestsSection, !isMemberSubscriptionRequests);
@@ -145,10 +148,10 @@
         setHidden(traineesSection, !isTrainees);
         setHidden(intelligenceSection, !isIntelligence);
         setHidden(storeSection, !isStore);
-        setHidden(workspace, isDashboard || isExpenses || isReports || isManagement || isBranding || isSaasBilling || isBackupHistory || isMemberSubscriptionRequests || isPortalAnalytics || isPermissions || isAttendance || isLibrary || isTrainees || isIntelligence || isFeedback || isStore);
+        setHidden(workspace, isDashboard || isExpenses || isReports || isManagement || isBranding || isMemberPaymentMethods || isSaasBilling || isBackupHistory || isMemberSubscriptionRequests || isPortalAnalytics || isPermissions || isAttendance || isLibrary || isTrainees || isIntelligence || isFeedback || isStore);
         setHidden(membersSection, !isMembers);
 
-        const tabPanelIds = { 'saas-billing': 'saasBillingSection', 'backup-history': 'backupHistorySection', 'member-subscription-requests': 'memberSubscriptionRequestsSection', 'portal-analytics': 'portalAnalyticsSection' };
+        const tabPanelIds = { 'saas-billing': 'saasBillingSection', 'backup-history': 'backupHistorySection', 'member-payment-methods': 'memberPaymentMethodsSection', 'member-subscription-requests': 'memberSubscriptionRequestsSection', 'portal-analytics': 'portalAnalyticsSection' };
         document.querySelectorAll('[data-page-tab]').forEach((button) => {
             const active = button.dataset.pageTab === name;
             button.classList.toggle('active', active);
@@ -172,6 +175,10 @@
         if (window.topGymAuthReady) await window.topGymAuthReady.catch(() => null);
         if (activeTabName === 'branding' && rawName !== 'branding' && window.topGymBrandingEditor?.confirmLeave) {
             const canLeave = await window.topGymBrandingEditor.confirmLeave();
+            if (!canLeave) return;
+        }
+        if (activeTabName === 'member-payment-methods' && rawName !== 'member-payment-methods' && window.topGymMemberPaymentMethodsEditor?.confirmLeave) {
+            const canLeave = await window.topGymMemberPaymentMethodsEditor.confirmLeave();
             if (!canLeave) return;
         }
         const name = normalizeTab(rawName);

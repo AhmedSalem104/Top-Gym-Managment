@@ -74,6 +74,11 @@
             styles: [],
             scripts: ['/js/pages/branding/branding.js?v=2']
         },
+        'member-payment-methods': {
+            dependencies: [],
+            styles: [],
+            scripts: ['/js/pages/management/member-payment-methods.js?v=1']
+        },
         'saas-billing': {
             dependencies: [],
             styles: [],

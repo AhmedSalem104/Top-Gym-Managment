@@ -99,6 +99,26 @@ test('owner identity editor manages tenant payment methods without hard-coded ac
     assert.doesNotMatch(page, /01015819700|01005376843/);
 });
 
+test('tenant member payment methods have a dedicated owner-only screen backed by identity APIs', () => {
+    const page = read('public/index.html');
+    const tabs = read('public/js/page-tabs.js');
+    const permissions = read('public/js/core/permissions.js');
+    const loader = read('public/js/feature-loader.js');
+    const editor = read('public/js/pages/management/member-payment-methods.js');
+    assert.match(page, /data-page-tab="member-payment-methods"[^>]+data-owner-only/);
+    assert.match(page, /id="memberPaymentMethodsSection"[^>]+data-owner-only/);
+    assert.match(page, /id="memberPaymentMethodAdd"/);
+    assert.match(page, /id="memberPaymentMethodsPublish"/);
+    assert.match(tabs, /member-payment-methods/);
+    assert.match(permissions, /member-payment-methods/);
+    assert.match(loader, /member-payment-methods\.js/);
+    assert.match(editor, /api\/branding\/settings/);
+    assert.match(editor, /api\/branding\/draft/);
+    assert.match(editor, /api\/branding\/publish/);
+    assert.match(editor, /identity\.paymentMethods/);
+    assert.doesNotMatch(editor, /01015819700|01005376843/);
+});
+
 test('member request validation rejects inactive plans and types server-side', () => {
     const service = read('src/services/member-subscription-service.js');
     assert.match(service, /plan\.active === false/);

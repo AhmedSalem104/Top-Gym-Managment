@@ -218,9 +218,10 @@
   #pageTabs > [data-page-tab="feedback"] { order: 10; }
   #pageTabs > [data-page-tab="management"] { order: 11; }
   #pageTabs > [data-page-tab="branding"] { order: 12; }
-  #pageTabs > [data-page-tab="permissions"] { order: 13; }
-  #pageTabs > [data-page-tab="saas-billing"] { order: 14; }
-  #pageTabs > [data-page-tab="backup-history"] { order: 15; }
+  #pageTabs > [data-page-tab="member-payment-methods"] { order: 13; }
+  #pageTabs > [data-page-tab="permissions"] { order: 14; }
+  #pageTabs > [data-page-tab="saas-billing"] { order: 15; }
+  #pageTabs > [data-page-tab="backup-history"] { order: 16; }
   #pageTabs > .sidebar-pin-control { order: 98; }
   #pageTabs > .smart-assistant-launcher { order: 99; }
 }
