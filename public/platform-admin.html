@@ -17,7 +17,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preload" href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
-    <link rel="stylesheet" href="/css/main.css?v=69">
+    <link rel="stylesheet" href="/css/main.css?v=70">
     <link rel="icon" type="image/svg+xml" href="/assets/gym-brand.svg?v=2">
     <title>إدارة المنصة | Logic Fit</title>
 </head>
@@ -56,6 +56,7 @@
                 <button class="platform-nav-item" type="button" data-platform-view="gyms"><span class="nav-icon">▦</span><span>الجيمات</span><b class="nav-count" id="navGymsCount">0</b></button>
                 <button class="platform-nav-item" type="button" data-platform-view="requests"><span class="nav-icon">◌</span><span>طلبات الاشتراك</span><b class="nav-count" id="navRequestsCount">0</b></button>
                 <button class="platform-nav-item" type="button" data-platform-view="gym-registrations"><span class="nav-icon">✦</span><span>طلبات الانضمام</span><b class="nav-count" id="navGymRegistrationCount">0</b></button>
+                <button class="platform-nav-item" type="button" data-platform-view="payment-methods"><span class="nav-icon">◈</span><span>دفع Logic Fit</span></button>
                 <button class="platform-nav-item" type="button" data-platform-view="backups"><span class="nav-icon">▣</span><span>النسخ والتعافي</span></button>
                 <button class="platform-nav-item" type="button" data-platform-view="plans"><span class="nav-icon">◇</span><span>الباقات</span></button>
                 <button class="platform-nav-item" type="button" data-platform-view="audit"><span class="nav-icon">≡</span><span>سجل المنصة</span></button>
@@ -111,6 +112,12 @@
                     <div class="platform-card"><div class="directory-toolbar compact"><select id="gymRegistrationStatusFilter"><option value="">كل الطلبات</option><option value="pending">قيد المراجعة</option><option value="approved">مقبول</option><option value="rejected">مرفوض</option><option value="cancelled">ملغي</option></select></div><div class="table-scroll"><table class="platform-table gym-registration-table"><thead><tr><th>الجيم</th><th>المسؤول ووسيلة التواصل</th><th>الباقة والمدة</th><th>المبلغ وطريقة الدفع</th><th>إثبات الدفع</th><th>الحالة</th><th>التاريخ</th><th>الإجراء</th></tr></thead><tbody id="gymRegistrationTableBody"></tbody></table></div><div class="directory-footer"><span id="gymRegistrationResultsSummary">—</span><div class="pagination" id="gymRegistrationPagination"></div></div></div>
                 </section>
 
+                <section class="platform-view" data-platform-panel="payment-methods">
+                    <div class="platform-page-head"><div><span class="eyebrow">تحصيل اشتراكات Logic Fit</span><h2>وسائل دفع المنصة</h2><p>أدر وسائل الدفع التي تظهر لصاحب الجيم أثناء التسجيل في Logic Fit. هذه البيانات تخص المنصة فقط ولا تُستخدم داخل بوابات الجيمات.</p></div><div class="platform-page-actions"><button class="platform-btn ghost" type="button" data-platform-action="refresh-payment-methods">تحديث</button><button class="platform-btn primary" type="button" data-platform-action="new-platform-payment-method">+ إضافة وسيلة دفع</button></div></div>
+                    <div class="platform-card payment-methods-intro"><div class="payment-methods-intro-icon" aria-hidden="true">◈</div><div><strong>مصدر الدفع في /register-gym</strong><p>سيتم عرض الوسائل النشطة فقط للمتقدمين. لا تُعتبر الوسيلة جاهزة قبل حفظها وتفعيلها من هذه الشاشة، ولا يتم تخزين أي بيانات داخل الواجهة أو الكود.</p></div></div>
+                    <div class="platform-card payment-methods-card"><div class="card-heading"><div><span class="eyebrow">Platform payment methods</span><h3>القائمة الحالية</h3></div><span class="payment-methods-count" id="platformPaymentMethodsCount">0 وسيلة نشطة</span></div><div class="table-scroll"><table class="platform-table platform-payment-method-table"><thead><tr><th>الوسيلة</th><th>الرقم / الحساب</th><th>المستلم والتعليمات</th><th>الحالة</th><th>الترتيب</th><th>آخر تحديث</th><th>الإجراء</th></tr></thead><tbody id="platformPaymentMethodsTableBody"></tbody></table></div></div>
+                </section>
+
                 <section class="platform-view" data-platform-panel="plans">
                     <div class="platform-page-head"><div><span class="eyebrow">باقات المنصة</span><h2>الباقات والحدود</h2><p>إدارة أسعار الباقات والمزايا التي يتم تطبيقها مركزيًا.</p></div><button class="platform-btn primary" type="button" data-platform-action="new-plan">+ إضافة باقة</button></div><div class="plan-grid" id="plansGrid"></div>
                 </section>
@@ -140,6 +147,6 @@
     <dialog class="platform-dialog platform-credentials-dialog" id="platformRegistrationCredentialsDialog"><form method="dialog"><header><div><span class="eyebrow">بيانات مؤقتة</span><h3>تم إنشاء الجيم بنجاح</h3></div><button class="dialog-close" type="submit" aria-label="إغلاق">×</button></header><div class="dialog-body" id="platformRegistrationCredentialsBody"></div><footer><button class="platform-btn primary" type="submit">إغلاق</button></footer></form></dialog>
     <div class="platform-toast" id="platformToast" role="status" aria-live="polite"></div>
     <script defer src="/js/ui-feedback.js?v=2"></script>
-    <script defer src="/js/platform-admin.js?v=6"></script>
+    <script defer src="/js/platform-admin.js?v=7"></script>
 </body>
 </html>

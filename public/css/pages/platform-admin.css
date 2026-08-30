@@ -270,6 +270,18 @@
 .backup-status.running, .backup-status.pending, .backup-status.verifying { border: 1px solid var(--info-border); background: var(--info-soft); color: var(--info-text); }
 .backup-status.expired, .backup-status.deleted { border: 1px solid var(--border-primary); background: var(--bg-surface); color: var(--text-muted); }
 .backup-table-card { margin-top: 16px; overflow: hidden; padding: 20px; }
+.payment-methods-intro { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 16px; padding: 17px 20px; border-color: var(--info-border); background: var(--info-soft); }
+.payment-methods-intro-icon { display: grid; width: 38px; height: 38px; flex: 0 0 38px; place-items: center; border-radius: 11px; background: var(--primary-soft); color: var(--text-primary-soft); font-size: 1.1rem; }
+.payment-methods-intro strong { display: block; color: var(--text-primary); font-size: .82rem; }
+.payment-methods-intro p { margin-top: 4px; color: var(--text-muted); font-size: .72rem; line-height: 1.7; }
+.payment-methods-card { overflow: hidden; padding: 20px; }
+.payment-methods-card .card-heading { align-items: center; }
+.payment-methods-count { border: 1px solid var(--primary-border); border-radius: var(--radius-pill); background: var(--primary-soft); color: var(--text-primary-soft); padding: 5px 9px; font-size: .67rem; font-weight: 800; white-space: nowrap; }
+.platform-payment-method-table { min-width: 940px; }
+.payment-account-reference { display: inline-block; color: var(--text-primary); font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: .75rem; letter-spacing: .02em; }
+.payment-methods-empty { min-height: 190px; gap: 5px; text-align: center; }
+.payment-methods-empty strong { color: var(--text-primary); font-size: .82rem; }
+.payment-methods-empty span { color: var(--text-muted); font-size: .72rem; }
 .profile-section-note { margin-top: 14px; border-top: 1px solid var(--border-secondary); padding-top: 12px; color: var(--text-muted); font-size: .7rem; line-height: 1.7; }
 .settings-placeholder { display: grid; min-height: 290px; place-items: center; align-content: center; gap: 10px; padding: 25px; text-align: center; }
 .placeholder-icon { display: grid; width: 52px; height: 52px; place-items: center; border-radius: 15px; background: var(--primary-soft); color: var(--text-primary-soft); font-size: 1.4rem; }

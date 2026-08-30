@@ -3,8 +3,8 @@
 const { createPlatformAdminController } = require('../controllers/platform-admin.controller');
 const { platformOnly } = require('../middleware/platform.middleware');
 
-function registerPlatformAdminRoutes(app, { platformAdminService, saasService, authService, backupRecoveryService, asyncRoute, backupActionRateLimit }) {
-    const controller = createPlatformAdminController({ platformAdminService, saasService, authService, backupRecoveryService });
+function registerPlatformAdminRoutes(app, { platformAdminService, saasService, authService, backupRecoveryService, commercialService, asyncRoute, backupActionRateLimit }) {
+    const controller = createPlatformAdminController({ platformAdminService, saasService, authService, backupRecoveryService, commercialService });
     app.get('/api/platform-admin/dashboard', platformOnly, asyncRoute(controller.dashboard));
     app.get('/api/platform-admin/tenants', platformOnly, asyncRoute(controller.tenants));
     app.post('/api/platform-admin/tenants', platformOnly, asyncRoute(controller.createTenant));
@@ -32,6 +32,9 @@ function registerPlatformAdminRoutes(app, { platformAdminService, saasService, a
     app.get('/api/platform-admin/subscription-requests', platformOnly, asyncRoute(controller.requests));
     app.post('/api/platform-admin/subscription-requests/:requestId/approve', platformOnly, asyncRoute(controller.approveRequest));
     app.post('/api/platform-admin/subscription-requests/:requestId/reject', platformOnly, asyncRoute(controller.rejectRequest));
+    app.get('/api/platform-admin/payment-methods', platformOnly, asyncRoute(controller.paymentMethods));
+    app.post('/api/platform-admin/payment-methods', platformOnly, asyncRoute(controller.createPaymentMethod));
+    app.patch('/api/platform-admin/payment-methods/:methodId', platformOnly, asyncRoute(controller.updatePaymentMethod));
     app.get('/api/platform-admin/payment-proofs/:proofId/file', platformOnly, asyncRoute(controller.paymentProof));
     app.get('/api/platform-admin/audit', platformOnly, asyncRoute(controller.auditAll));
     app.get('/api/platform-admin/backups/health', platformOnly, asyncRoute(controller.backupHealth));

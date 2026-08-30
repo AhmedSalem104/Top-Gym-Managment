@@ -15,7 +15,17 @@ function requiredReason(request) {
     return String(request.body?.reason || request.get?.('x-backup-reason') || '').trim().slice(0, 1000);
 }
 
-function createPlatformAdminController({ platformAdminService, saasService, authService, backupRecoveryService }) {
+function paymentMethodAuditSnapshot(method) {
+    if (!method) return null;
+    return {
+        methodCode: method.methodCode,
+        displayName: method.displayName,
+        isActive: Boolean(method.isActive),
+        sortOrder: Number(method.sortOrder || 0)
+    };
+}
+
+function createPlatformAdminController({ platformAdminService, saasService, authService, backupRecoveryService, commercialService }) {
     const meta = (request) => platformAdminService.requestMeta(request);
     return {
         dashboard: async (request, response) => {
@@ -154,6 +164,48 @@ function createPlatformAdminController({ platformAdminService, saasService, auth
 
         rejectRequest: async (request, response) => {
             response.json({ request: await saasService.rejectRequest(request.params.requestId, request.auth?.id, request.body?.reviewNotes || request.body?.reason) });
+        },
+
+        paymentMethods: async (request, response) => {
+            if (!commercialService) return response.status(503).json({ error: 'Platform payment methods are not configured.', code: 'COMMERCIAL_SERVICE_NOT_CONFIGURED' });
+            response.set('Cache-Control', 'private, no-store');
+            response.json({ paymentMethods: await commercialService.listPlatformPaymentMethods({ readOnly: request.readOnlyRequest }) });
+        },
+
+        createPaymentMethod: async (request, response) => {
+            if (!commercialService) return response.status(503).json({ error: 'Platform payment methods are not configured.', code: 'COMMERCIAL_SERVICE_NOT_CONFIGURED' });
+            const paymentMethod = await commercialService.savePlatformPaymentMethod(request.body || {}, request.auth?.id);
+            await saasService.recordAudit({
+                actorUserId: request.auth?.id,
+                action: 'platform_payment_method_created',
+                entityType: 'platform_payment_method',
+                entityId: paymentMethod?.id,
+                details: 'Platform payment method created.',
+                reason: String(request.body?.reason || '').trim().slice(0, 1000),
+                after: paymentMethodAuditSnapshot(paymentMethod),
+                ...meta(request)
+            });
+            response.status(201).json({ paymentMethod });
+        },
+
+        updatePaymentMethod: async (request, response) => {
+            if (!commercialService) return response.status(503).json({ error: 'Platform payment methods are not configured.', code: 'COMMERCIAL_SERVICE_NOT_CONFIGURED' });
+            const methodId = request.params.methodId;
+            const existing = (await commercialService.listPlatformPaymentMethods({ readOnly: true }))
+                .find((item) => String(item.id) === String(methodId));
+            const paymentMethod = await commercialService.savePlatformPaymentMethod(request.body || {}, request.auth?.id, methodId);
+            await saasService.recordAudit({
+                actorUserId: request.auth?.id,
+                action: 'platform_payment_method_updated',
+                entityType: 'platform_payment_method',
+                entityId: paymentMethod?.id,
+                details: 'Platform payment method updated.',
+                reason: String(request.body?.reason || '').trim().slice(0, 1000),
+                before: paymentMethodAuditSnapshot(existing),
+                after: paymentMethodAuditSnapshot(paymentMethod),
+                ...meta(request)
+            });
+            response.json({ paymentMethod });
         },
 
         paymentProof: async (request, response) => {

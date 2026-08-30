@@ -175,7 +175,7 @@
     const methods = state.paymentMethods;
     if (!methods.length) {
       elements.method.value = '';
-      elements.methodList.innerHTML = '<div class="portal-subscription-state">لا توجد وسيلة دفع مفعلة لهذا الجيم حاليًا. تواصل مع الإدارة.</div>';
+      elements.methodList.innerHTML = '<div class="portal-subscription-state">لم يفعّل هذا الجيم وسيلة دفع إلكترونية حاليًا. يجب على Owner إضافة وسيلة دفع من إعدادات هوية الجيم ثم نشر الهوية، وبعدها أعد تحميل الصفحة.</div>';
       syncSubmitState();
       return;
     }

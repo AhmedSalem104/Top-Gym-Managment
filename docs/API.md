@@ -191,6 +191,9 @@ variables. For API clients that can access more than one gym, send
 | GET | `/api/platform-admin/subscription-requests` | PlatformAdmin |
 | POST | `/api/platform-admin/subscription-requests/:id/approve` | PlatformAdmin |
 | POST | `/api/platform-admin/subscription-requests/:id/reject` | PlatformAdmin |
+| GET | `/api/platform-admin/payment-methods` | PlatformAdmin; active and inactive Logic Fit payment methods |
+| POST | `/api/platform-admin/payment-methods` | PlatformAdmin; create a Logic Fit payment method |
+| PATCH | `/api/platform-admin/payment-methods/:methodId` | PlatformAdmin; edit, reorder or deactivate a Logic Fit payment method |
 | GET | `/api/platform-admin/payment-proofs/:id/file` | PlatformAdmin; private inline response |
 | GET | `/api/platform-admin/audit` | PlatformAdmin |
 | GET | `/api/platform/overview` | PlatformAdmin |
@@ -201,6 +204,12 @@ variables. For API clients that can access more than one gym, send
 | POST | `/api/platform/subscription-requests/:id/reject` | PlatformAdmin |
 | GET | `/api/platform/payment-proofs/:id/file` | PlatformAdmin |
 | GET | `/api/platform/audit` | PlatformAdmin |
+
+Platform payment methods are stored in `saas_platform_payment_methods` and are
+the source for the public `/register-gym` catalog. They are intentionally
+separate from tenant member-payment methods, which remain in the published
+tenant identity configuration and are returned only through the authenticated
+member-portal flow.
 
 When a trial or paid SaaS subscription expires, tenant APIs return
 `402 SAAS_SUBSCRIPTION_REQUIRED` while the subscription/recovery endpoints

@@ -14,6 +14,7 @@
         gymRegistrationPage: 1,
         gymRegistrationPagination: {},
         registrationCredentials: null,
+        platformPaymentMethods: [],
         audit: [],
         profile: null,
         profileTab: 'overview',
@@ -110,7 +111,11 @@
         REASON_REQUIRED: 'سبب هذا الإجراء مطلوب.',
         TRIAL_PLAN_NOT_FOUND: 'باقة التجربة غير متاحة حاليًا. راجع باقات المنصة ثم حاول مرة أخرى.',
         SAAS_REQUEST_PLAN_INVALID: 'بيانات الباقة المرتبطة بالطلب غير صالحة. راجع الباقة أو أنشئ طلب الاشتراك مرة أخرى.',
-        AUTH_SERVICE_REQUIRED: 'خدمة الحسابات غير متاحة حاليًا. أعد المحاولة بعد قليل.'
+        AUTH_SERVICE_REQUIRED: 'خدمة الحسابات غير متاحة حاليًا. أعد المحاولة بعد قليل.',
+        INVALID_PAYMENT_METHOD_CODE: 'المعرّف الداخلي لوسيلة الدفع غير صحيح. استخدم حروفًا إنجليزية صغيرة وأرقامًا وشرطة فقط.',
+        PAYMENT_METHOD_DETAILS_REQUIRED: 'اسم وسيلة الدفع والرقم أو الحساب مطلوبان.',
+        DUPLICATE_PAYMENT_METHOD_CODE: 'هذا المعرّف مستخدم بالفعل. اختر معرّفًا آخر.',
+        PAYMENT_METHOD_NOT_FOUND: 'وسيلة الدفع المطلوبة غير موجودة أو تم حذفها.'
     });
 
     function clearDialogError() {
@@ -212,13 +217,14 @@
         state.view = view;
         $$('[data-platform-view]').forEach((button) => button.classList.toggle('active', button.dataset.platformView === view));
         $$('[data-platform-panel]').forEach((panel) => panel.classList.toggle('active', panel.dataset.platformPanel === view));
-        const titles = { dashboard: 'لوحة المنصة', gyms: 'الجيمات', requests: 'طلبات الاشتراك', 'gym-registrations': 'طلبات الانضمام', backups: 'النسخ والتعافي', plans: 'الباقات', audit: 'سجل المنصة', settings: 'إعدادات المنصة' };
+        const titles = { dashboard: 'لوحة المنصة', gyms: 'الجيمات', requests: 'طلبات الاشتراك', 'gym-registrations': 'طلبات الانضمام', 'payment-methods': 'وسائل دفع Logic Fit', backups: 'النسخ والتعافي', plans: 'الباقات', audit: 'سجل المنصة', settings: 'إعدادات المنصة' };
         $('#platformPageTitle').textContent = titles[view] || 'إدارة المنصة';
         $('.platform-sidebar')?.classList.remove('open');
         if (view === 'dashboard') loadDashboard();
         if (view === 'gyms') loadTenants();
         if (view === 'requests') loadRequests();
         if (view === 'gym-registrations') loadGymRegistrations();
+        if (view === 'payment-methods') loadPlatformPaymentMethods();
         if (view === 'backups') loadBackups();
         if (view === 'plans') loadPlans();
         if (view === 'audit') loadAudit();
@@ -499,6 +505,28 @@
         try { renderGymRegistrations(await api(`/api/platform-admin/gym-registration-requests?${params}`)); } catch (error) { showToast(getApiErrorMessage(error), true); }
     }
 
+    function renderPlatformPaymentMethods(data) {
+        state.platformPaymentMethods = Array.isArray(data?.paymentMethods) ? data.paymentMethods : [];
+        const activeCount = state.platformPaymentMethods.filter((item) => item.isActive).length;
+        const count = $('#platformPaymentMethodsCount');
+        if (count) count.textContent = `${activeCount} وسيلة نشطة · ${state.platformPaymentMethods.length} إجمالي`;
+        const body = $('#platformPaymentMethodsTableBody');
+        if (!body) return;
+        body.innerHTML = state.platformPaymentMethods.length ? state.platformPaymentMethods.map((method) => `<tr>
+            <td><span class="tenant-cell"><strong>${escapeHtml(method.displayName)}</strong><small>${escapeHtml(method.methodCode)}</small></span></td>
+            <td><strong class="payment-account-reference" dir="ltr">${escapeHtml(method.accountReference)}</strong></td>
+            <td><span class="tenant-cell"><strong>${escapeHtml(method.recipientName || '—')}</strong><small>${escapeHtml(method.instructions || 'لا توجد تعليمات إضافية')}</small></span></td>
+            <td>${statusPill(method.isActive ? 'active' : 'archived')}</td>
+            <td>${escapeHtml(method.sortOrder)}</td>
+            <td>${escapeHtml(formatDateTime(method.updatedAt || method.createdAt))}</td>
+            <td><button class="table-action" type="button" data-platform-payment-method-edit="${escapeHtml(method.id)}">تعديل</button></td>
+        </tr>`).join('') : '<tr><td colspan="7"><div class="empty-inline payment-methods-empty"><strong>لا توجد وسائل دفع للمنصة بعد.</strong><span>أضف وسيلة دفع نشطة حتى يستطيع صاحب الجيم إكمال التسجيل من /register-gym.</span></div></td></tr>';
+    }
+
+    async function loadPlatformPaymentMethods() {
+        try { renderPlatformPaymentMethods(await api('/api/platform-admin/payment-methods')); } catch (error) { showToast(getApiErrorMessage(error), true); }
+    }
+
     function backupStatusLabel(value) {
         return ({
             pending: 'قيد الانتظار',
@@ -658,6 +686,13 @@
             const plan = state.plans.find((item) => String(item.id) === String(payload.planId)) || {};
             title = `حذف باقة ${plan.name || ''}`;
             body = `<p>سيتم إخفاء الباقة من الاشتراكات الجديدة مع الحفاظ على الاشتراكات والتقارير القديمة. لا يتم حذف البيانات التاريخية.</p>${dialogField('سبب الحذف','reason','text','','maxlength="1000" required')}`;
+        } else if (type === 'platform-payment-method-create' || type === 'platform-payment-method-edit') {
+            const method = type === 'platform-payment-method-edit'
+                ? (state.platformPaymentMethods.find((item) => String(item.id) === String(payload.methodId)) || {})
+                : {};
+            const editing = type === 'platform-payment-method-edit';
+            title = editing ? `تعديل وسيلة الدفع ${method.displayName || ''}` : 'إضافة وسيلة دفع للمنصة';
+            body = `<p class="dialog-hint">هذه الوسيلة ستظهر للمتقدمين في /register-gym فقط. لا تستخدم بيانات دفع أي Gym هنا؛ إعدادات دفع أعضاء كل Gym تظل داخل هوية الجيم.</p><div class="dialog-grid">${dialogField('المعرّف الداخلي','methodCode','text',method.methodCode || '','pattern="[a-z0-9]+(?:[-_][a-z0-9]+)*" minlength="2" maxlength="60" required' + (editing ? ' readonly' : ''))}${dialogField('اسم وسيلة الدفع','displayName','text',method.displayName || '','maxlength="120" required')}${dialogField('الرقم أو الحساب','accountReference','text',method.accountReference || '','maxlength="160" required dir="ltr"')}${dialogField('اسم المستلم','recipientName','text',method.recipientName || '','maxlength="160"')}${dialogField('ترتيب الظهور','sortOrder','number',method.sortOrder ?? 0,'min="0" max="999" step="1" required')}</div>${dialogTextarea('تعليمات الدفع','instructions',method.instructions || '','maxlength="1000" rows="3" placeholder="تعليمات مختصرة للمتقدم"')}${dialogField('سبب التغيير (اختياري)','reason','text','','maxlength="1000"')}<label class="dialog-check"><input name="isActive" type="checkbox" ${method.isActive !== false ? 'checked' : ''}> عرض الوسيلة للمتقدمين في التسجيل</label>`;
         } else if (type === 'gym-registration-approve' || type === 'gym-registration-reject') {
             const request = state.gymRegistrationRequests.find((item) => String(item.id) === String(payload.requestId)) || {};
             const isApproval = type === 'gym-registration-approve';
@@ -754,7 +789,7 @@
         const values = formObject(dialogForm);
         const submit = $('#platformDialogSubmit');
         const loadingLabels = {
-            status: 'جاري تحديث حالة الجيم...', subscription: 'جاري تطبيق الاشتراك...', extend: 'جاري تمديد الاشتراك...', lifetime: 'جاري تفعيل الاشتراك...', plan: 'جاري تغيير الباقة...', override: 'جاري حفظ الاستثناءات...', note: 'جاري حفظ الملاحظة...', reset: 'جاري إعادة ضبط الوصول...', 'new-tenant': 'جاري إنشاء الجيم...', owner: 'جاري تحديث بيانات المالك...', 'plan-create': 'جاري إضافة الباقة...', 'plan-edit': 'جاري تحديث الباقة...', 'plan-delete': 'جاري أرشفة الباقة...', approve: 'جاري اعتماد الطلب...', reject: 'جاري رفض الطلب...', 'gym-registration-approve': 'جاري اعتماد طلب الجيم...', 'gym-registration-reject': 'جاري رفض طلب الجيم...', 'platform-backup': 'جاري إنشاء نسخة المنصة...', 'backup-retention': 'جاري تنظيف النسخ...', 'tenant-backup': 'جاري إنشاء نسخة الجيم...'
+            status: 'جاري تحديث حالة الجيم...', subscription: 'جاري تطبيق الاشتراك...', extend: 'جاري تمديد الاشتراك...', lifetime: 'جاري تفعيل الاشتراك...', plan: 'جاري تغيير الباقة...', override: 'جاري حفظ الاستثناءات...', note: 'جاري حفظ الملاحظة...', reset: 'جاري إعادة ضبط الوصول...', 'new-tenant': 'جاري إنشاء الجيم...', owner: 'جاري تحديث بيانات المالك...', 'plan-create': 'جاري إضافة الباقة...', 'plan-edit': 'جاري تحديث الباقة...', 'plan-delete': 'جاري أرشفة الباقة...', 'platform-payment-method-create': 'جاري إضافة وسيلة الدفع...', 'platform-payment-method-edit': 'جاري تحديث وسيلة الدفع...', approve: 'جاري اعتماد الطلب...', reject: 'جاري رفض الطلب...', 'gym-registration-approve': 'جاري اعتماد طلب الجيم...', 'gym-registration-reject': 'جاري رفض طلب الجيم...', 'platform-backup': 'جاري إنشاء نسخة المنصة...', 'backup-retention': 'جاري تنظيف النسخ...', 'tenant-backup': 'جاري إنشاء نسخة الجيم...'
         };
         setLoading(submit, true, loadingLabels[action] || 'جاري تنفيذ الإجراء...');
         try {
@@ -796,6 +831,12 @@
             } else if (action === 'plan-delete') {
                 await api(`/api/platform-admin/plans/${payload.planId}`, { method: 'DELETE', body: JSON.stringify({ reason: values.reason }) });
                 showToast('تم حذف الباقة من الاشتراكات الجديدة مع الحفاظ على السجل.'); dialog.close(); await loadPlans();
+            } else if (action === 'platform-payment-method-create') {
+                await api('/api/platform-admin/payment-methods', { method: 'POST', body: JSON.stringify({ methodCode: values.methodCode, displayName: values.displayName, accountReference: values.accountReference, recipientName: values.recipientName, instructions: values.instructions, isActive: values.isActive, sortOrder: numberOrNull(values.sortOrder), reason: values.reason }) });
+                showToast('تمت إضافة وسيلة دفع المنصة بنجاح.'); dialog.close(); await loadPlatformPaymentMethods();
+            } else if (action === 'platform-payment-method-edit') {
+                await api(`/api/platform-admin/payment-methods/${encodeURIComponent(payload.methodId)}`, { method: 'PATCH', body: JSON.stringify({ methodCode: values.methodCode, displayName: values.displayName, accountReference: values.accountReference, recipientName: values.recipientName, instructions: values.instructions, isActive: values.isActive, sortOrder: numberOrNull(values.sortOrder), reason: values.reason }) });
+                showToast('تم تحديث وسيلة دفع المنصة.'); dialog.close(); await loadPlatformPaymentMethods();
             } else if (action === 'approve') {
                 await api(`/api/platform-admin/subscription-requests/${payload.requestId}/approve`, { method: 'POST', body: JSON.stringify({ reviewNotes: values.reviewNotes || '' }) });
                 showToast('تم قبول الطلب وتفعيل الاشتراك.'); dialog.close(); await loadRequests(); loadDashboard(); if (state.profile) await refreshProfile();
@@ -873,6 +914,7 @@
         bindRefresh('[data-platform-action="refresh-dashboard"]', loadDashboard);
         bindRefresh('[data-platform-action="refresh-requests"]', loadRequests);
         bindRefresh('[data-platform-action="refresh-gym-registrations"]', loadGymRegistrations);
+        bindRefresh('[data-platform-action="refresh-payment-methods"]', loadPlatformPaymentMethods);
         bindRefresh('[data-platform-action="refresh-backups"]', loadBackups);
         $('#platformMobileMenu').addEventListener('click', () => $('.platform-sidebar').classList.toggle('open'));
         $('#platformMobileMenu').addEventListener('keydown', (event) => { if (event.key === 'Enter' || event.key === ' ') $('.platform-sidebar').classList.toggle('open'); });
@@ -890,8 +932,11 @@
             const platformAction = event.target.closest('[data-platform-action]');
             if (platformAction?.dataset.platformAction === 'new-tenant') { openDialog('new-tenant'); return; }
             if (platformAction?.dataset.platformAction === 'new-plan') { openDialog('plan-create'); return; }
+            if (platformAction?.dataset.platformAction === 'new-platform-payment-method') { openDialog('platform-payment-method-create'); return; }
             if (platformAction?.dataset.platformAction === 'run-platform-backup') { openDialog('platform-backup'); return; }
             if (platformAction?.dataset.platformAction === 'cleanup-backups') { openDialog('backup-retention'); return; }
+            const paymentMethodEdit = event.target.closest('[data-platform-payment-method-edit]');
+            if (paymentMethodEdit) { openDialog('platform-payment-method-edit', { methodId: paymentMethodEdit.dataset.platformPaymentMethodEdit }); return; }
             const openButton = event.target.closest('[data-open-tenant]');
             if (openButton) { setView('gyms'); await openTenant(openButton.dataset.openTenant); return; }
             const pageButton = event.target.closest('[data-tenant-page]');

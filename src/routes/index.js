@@ -130,6 +130,7 @@ function registerRoutes(app, {
         saasService,
         authService,
         backupRecoveryService,
+        commercialService,
         asyncRoute,
         backupActionRateLimit
     });

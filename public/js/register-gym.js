@@ -135,7 +135,7 @@
             });
             host.appendChild(label);
         });
-        if (!state.catalog.paymentMethods.length) host.innerHTML = '<p class="registration-empty">بيانات الدفع الخاصة بالمنصة غير مهيأة حاليًا.</p>';
+        if (!state.catalog.paymentMethods.length) host.innerHTML = '<p class="registration-empty">لم تُجهّز وسائل دفع Logic Fit بعد. لا يمكن إرسال طلب التسجيل قبل تفعيل وسيلة دفع من لوحة إدارة المنصة.</p>';
     }
 
     function renderPriceSummary() {
@@ -194,7 +194,12 @@
         }
         if (step === 2 && !state.selectedPlan) { showError('اختر باقة للمتابعة.'); return false; }
         if (step === 3 && !state.selectedTerm) { showError('اختر مدة الاشتراك للمتابعة.'); return false; }
-        if (step === 4 && !state.selectedPaymentMethod) { showError('اختر وسيلة الدفع للمتابعة.'); return false; }
+        if (step === 4 && !state.selectedPaymentMethod) {
+            showError(state.catalog?.paymentMethods?.length
+                ? 'اختر وسيلة الدفع للمتابعة.'
+                : 'لا توجد وسيلة دفع مفعلة لـLogic Fit حاليًا. يجب على Platform Admin تهيئة وسيلة دفع قبل متابعة التسجيل.');
+            return false;
+        }
         if (step === 5 && !state.proof) { showError('ارفع إثبات الدفع أولًا.'); return false; }
         return true;
     }
