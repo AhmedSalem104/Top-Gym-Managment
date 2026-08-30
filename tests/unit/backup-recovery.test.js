@@ -23,7 +23,7 @@ const {
     verifyStoredTenantObject
 } = require('../../src/services/backup-recovery-service');
 const { createObjectStorageService } = require('../../src/services/object-storage-service');
-const { TENANT_BACKUP_TABLES } = require('../../src/services/backup-registry');
+const { TENANT_BACKUP_REGISTRY_VERSION, TENANT_BACKUP_TABLES } = require('../../src/services/backup-registry');
 
 function samplePayload() {
     return buildTenantBackupPayload({
@@ -47,7 +47,7 @@ function samplePlatformPayload() {
         backupType: 'platform-disaster-recovery',
         generatedAt: '2026-08-29T00:00:00.000Z',
         manifest: {
-            registryVersion: 1,
+            registryVersion: TENANT_BACKUP_REGISTRY_VERSION,
             includesGlobalControlPlane: true,
             includesTenantData: true,
             excludesSecrets: true,

@@ -7,7 +7,10 @@
  * reviewed when a tenant-scoped table is added, and the coverage helper is
  * used by QA to prevent a new table from silently falling outside backups.
  */
-const TENANT_BACKUP_REGISTRY_VERSION = 1;
+// Bump when the logical tenant artifact contract changes. Existing artifacts
+// remain readable only when their registry matches the current restore
+// inventory; new tenant-owned commercial records are included below.
+const TENANT_BACKUP_REGISTRY_VERSION = 2;
 
 function definition(key, table, restorePolicy = 'tenant') {
     return Object.freeze({ key, table, tenantScoped: true, restorePolicy });
@@ -18,6 +21,10 @@ const TENANT_BACKUP_TABLES = Object.freeze([
     definition('members', 'members'),
     definition('gym_membership_code_audit', 'gym_membership_code_audit'),
     definition('gym_member_feedback', 'gym_member_feedback'),
+    definition('gym_member_subscription_requests', 'gym_member_subscription_requests'),
+    definition('gym_member_subscription_payment_proofs', 'gym_member_subscription_payment_proofs'),
+    definition('gym_member_portal_visit_daily', 'gym_member_portal_visit_daily'),
+    definition('gym_member_portal_visit_visitors', 'gym_member_portal_visit_visitors'),
     definition('memberships', 'memberships'),
     definition('membership_pricing', 'membership_pricing'),
     definition('membership_types', 'membership_types'),
@@ -80,6 +87,9 @@ const TENANT_BACKUP_EXCLUDED_TABLES = Object.freeze([
     'gym_backup_operations',
     'gym_backup_records',
     'gym_backup_audit_log',
+    // Portal sessions are bearer-token hashes and deliberately transient;
+    // they must never be exported or restored as tenant business data.
+    'gym_member_portal_sessions',
     'saas_payment_proofs',
     'saas_platform_notes',
     'saas_subscription_requests',

@@ -33,6 +33,7 @@ const authService = require('./src/services/auth-service');
 const permissionService = require('./src/services/permission-service');
 const tenantService = require('./src/services/tenant-service');
 const saasService = require('./src/services/saas-service');
+const commercialSchema = require('./src/services/commercial-schema');
 const platformAdminService = require('./src/services/platform-admin-service');
 const { runTenantContext } = require('./src/tenancy/tenant-context');
 const { ensureAuthReady } = authService;
@@ -278,6 +279,7 @@ async function start() {
     const bootstrapTenant = await runTenantContext({ mode: 'platform', tenantId: 1 }, () => tenantService.ensureBootstrapTenant());
     await runTenantContext({ mode: 'platform', tenantId: bootstrapTenant.id }, () => backupRecoveryService.ensureRecoveryTables());
     await runTenantContext({ mode: 'platform', tenantId: bootstrapTenant.id }, () => saasService.ensureSaasTables());
+    await runTenantContext({ mode: 'platform', tenantId: bootstrapTenant.id }, () => commercialSchema.ensureCommercialTables());
     await runTenantContext({ mode: 'tenant', tenantId: bootstrapTenant.id }, async () => {
         await ensureAuthReady();
         // Create every tenant table before the tenancy migration runs. The

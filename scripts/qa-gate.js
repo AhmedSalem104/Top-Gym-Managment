@@ -147,6 +147,7 @@ function assertRequiredFiles() {
         'database/migrations/007-store.sql',
         'database/migrations/008-backup-recovery.sql',
         'database/migrations/009-platform-backup-audit.sql',
+        'database/migrations/011-commercial-portal-and-registration.sql',
         'src/services/day-pass-service.js',
         'src/services/member-feedback-service.js',
         'src/routes/member-feedback.routes.js',
