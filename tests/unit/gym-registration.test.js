@@ -38,6 +38,44 @@ test('public registration uses server-side catalog values and a capability token
     assert.doesNotMatch(middleware, /publicGymRegistrationPath[\s\S]{0,500}resolvePublicTenant/);
 });
 
+test('public registration responses do not expose internal review, tenant, user or storage references', () => {
+    const service = require('../../src/services/gym-registration-service');
+    const projected = service.publicRequestFromRow({
+        id: 41,
+        status: 'pending',
+        gym_name: 'Synthetic Gym',
+        owner_name: 'Synthetic Owner',
+        plan_id: 2,
+        plan_code_snapshot: 'growth',
+        plan_name_snapshot: 'Growth',
+        term_code_snapshot: 'annual',
+        duration_months_snapshot: 12,
+        price_snapshot: 1200,
+        discount_amount_snapshot: 100,
+        amount_due_snapshot: 1100,
+        currency_snapshot: 'EGP',
+        payment_method_code_snapshot: 'transfer',
+        payment_method_name_snapshot: 'Transfer',
+        reviewed_by_user_id: 99,
+        created_tenant_id: 77,
+        created_owner_user_id: 88,
+        storage_key: 'payment-proofs/internal-secret.json.gz',
+        proof_id: 5,
+        proof_file_name: 'proof.png',
+        proof_mime_type: 'image/png',
+        proof_file_size: 10,
+        proof_storage_verified_at: new Date()
+    });
+    assert.equal(projected.id, 41);
+    assert.equal(projected.status, 'pending');
+    assert.equal('reviewedByUserId' in projected, false);
+    assert.equal('createdTenantId' in projected, false);
+    assert.equal('createdOwnerUserId' in projected, false);
+    assert.equal('storageKey' in projected, false);
+    assert.equal('storage_key' in projected, false);
+    assert.equal(projected.proof.id, undefined);
+});
+
 test('registration approval reuses transactional provisioning and never accepts a client login URL', () => {
     const service = read('src/services/gym-registration-service.js');
     const controller = read('src/controllers/gym-registration.controller.js');

@@ -156,6 +156,37 @@ function requestFromRow(row) {
     };
 }
 
+// Public registration responses are capability-token protected, but the token
+// must not turn an internal request row into a public admin record. Keep the
+// projection intentionally small: callers need status and their submitted
+// commercial summary, never reviewer/created-user references or storage keys.
+function publicRequestFromRow(row) {
+    const request = requestFromRow(row);
+    if (!request) return null;
+    return {
+        id: request.id,
+        status: request.status,
+        gymName: request.gymName,
+        ownerName: request.ownerName,
+        plan: request.plan,
+        term: request.term,
+        pricing: request.pricing,
+        paymentMethod: request.paymentMethod,
+        notes: request.notes,
+        reviewNotes: request.status === 'rejected' ? request.reviewNotes : '',
+        createdAt: request.createdAt,
+        updatedAt: request.updatedAt,
+        proof: request.proof ? {
+            fileName: request.proof.fileName,
+            mimeType: request.proof.mimeType,
+            fileSize: request.proof.fileSize,
+            uploadedAt: request.proof.uploadedAt,
+            verified: request.proof.verified,
+            verifiedAt: request.proof.verifiedAt
+        } : null
+    };
+}
+
 const REQUEST_SELECT = `
     SELECT r.id,r.gym_name,r.owner_name,r.whatsapp,r.email,r.city,
            r.plan_id,r.plan_code_snapshot,r.plan_name_snapshot,r.term_code_snapshot,
@@ -332,7 +363,7 @@ function createGymRegistrationService({ commercialService, saasService, authServ
             }
             const row = await getRequestRow(requestId, { accessToken });
             if (!row) throw registrationError('The registration request could not be loaded.', 503, 'REGISTRATION_REQUEST_NOT_AVAILABLE');
-            return { request: requestFromRow(row), accessToken, idempotent: reused };
+            return { request: publicRequestFromRow(row), accessToken, idempotent: reused };
         },
 
         async uploadProof(requestId, accessToken, { buffer, mimeType, fileName } = {}) {
@@ -392,14 +423,14 @@ function createGymRegistrationService({ commercialService, saasService, authServ
                 throw error;
             }
             const row = await getRequestRow(requestId, { accessToken: token });
-            return { request: requestFromRow(row) };
+            return { request: publicRequestFromRow(row) };
         },
 
         async getPublicStatus(requestId, accessToken) {
             await ensureTables({ readOnly: true });
             const row = await getRequestRow(requestId, { accessToken: normalizeAccessToken(accessToken) });
             if (!row) throw registrationError('Registration request was not found.', 404, 'REGISTRATION_REQUEST_NOT_FOUND');
-            return { request: requestFromRow(row) };
+            return { request: publicRequestFromRow(row) };
         },
 
         async listAdminRequests({ status = '', page = 1, pageSize = 25 } = {}) {
@@ -595,5 +626,6 @@ module.exports = {
     generateTenantSlug,
     normalizeIdempotencyKey,
     normalizeWhatsapp,
+    publicRequestFromRow,
     requestFromRow
 };
