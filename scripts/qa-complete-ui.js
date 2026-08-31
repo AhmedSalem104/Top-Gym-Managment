@@ -226,12 +226,44 @@ async function ensureApplicationFeature(page, target) {
     await page.evaluate(async () => { await window.topGymEnsureTab?.('finance'); });
 }
 
+async function assertDesktopNavigation(page) {
+    const readLayout = () => page.evaluate(() => {
+        const shell = document.querySelector('.app-shell');
+        const sidebar = document.getElementById('pageTabs');
+        const topbar = document.querySelector('.app-shell > .topbar');
+        const sidebarRect = sidebar?.getBoundingClientRect();
+        const topbarRect = topbar?.getBoundingClientRect();
+        const shellStyle = shell ? getComputedStyle(shell) : null;
+        return {
+            topbarVisible: Boolean(topbar && getComputedStyle(topbar).display !== 'none'),
+            sidebarVisible: Boolean(sidebar && getComputedStyle(sidebar).display !== 'none'),
+            sidebarWidth: sidebarRect ? Math.round(sidebarRect.width) : 0,
+            sidebarRect: sidebarRect ? { left: sidebarRect.left, right: sidebarRect.right, top: sidebarRect.top } : null,
+            topbarRect: topbarRect ? { left: topbarRect.left, right: topbarRect.right, top: topbarRect.top } : null,
+            gridColumns: shellStyle?.gridTemplateColumns || ''
+        };
+    });
+    const closed = await readLayout();
+    assert(closed.topbarVisible, 'desktop navbar is hidden');
+    assert(closed.sidebarVisible, 'desktop sidebar is hidden');
+    assert(closed.sidebarWidth >= 64 && closed.sidebarWidth <= 120, `desktop sidebar is not compact before hover (${closed.sidebarWidth}px)`);
+    assert(closed.sidebarRect && closed.topbarRect && (closed.sidebarRect.right <= closed.topbarRect.left + 1 || closed.topbarRect.right <= closed.sidebarRect.left + 1), 'desktop sidebar intersects navbar before hover');
+
+    await page.locator('#pageTabs').hover();
+    await page.waitForTimeout(320);
+    const expanded = await readLayout();
+    assert(expanded.sidebarWidth >= closed.sidebarWidth + 80, `desktop sidebar did not expand on hover (${closed.sidebarWidth}px -> ${expanded.sidebarWidth}px)`);
+    assert(expanded.sidebarRect && expanded.topbarRect && (expanded.sidebarRect.right <= expanded.topbarRect.left + 1 || expanded.topbarRect.right <= expanded.sidebarRect.left + 1), 'desktop sidebar intersects navbar after hover');
+    assert(expanded.gridColumns !== closed.gridColumns, 'desktop grid did not allocate a separate expanded sidebar track');
+}
+
 async function run() {
     fs.mkdirSync(reports, { recursive: true });
     fs.mkdirSync(artifacts, { recursive: true });
     const browser = await chromium.launch({ headless: true });
     const evidence = [];
     const failures = [];
+    let desktopNavigationChecks = 0;
     const runCase = async (page, item, options = {}) => {
         try { evidence.push(await inspect(page, item, options.diagnostics, options)); }
         catch (error) { failures.push(error.message); }
@@ -249,6 +281,14 @@ async function run() {
                 await ensureApplicationFeature(page, target);
                 await prepareApp(page, id);
                 await runCase(page, { surface: 'Gym Application', target: `#${target}`, theme: 'light', viewport: viewport.name }, { rootId: id, diagnostics });
+            }
+            if (viewport.name === '1440') {
+                try {
+                    await assertDesktopNavigation(page);
+                    desktopNavigationChecks += 1;
+                } catch (error) {
+                    failures.push(`Gym Application/navigation/1440: ${error.message}`);
+                }
             }
             await page.close();
         }
@@ -399,6 +439,7 @@ async function run() {
         storeViewCount: storeViews.length,
         portalToolCount: portalTools.length,
         dialogCount: dialogIds.length,
+        desktopNavigationChecks,
         evidenceCount: evidence.length,
         failures,
         accessibility: {

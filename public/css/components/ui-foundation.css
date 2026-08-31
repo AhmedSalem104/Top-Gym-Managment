@@ -250,3 +250,280 @@
     transition-duration: 0.01ms;
   }
 }
+
+/* Main Gym App shell: keep the navigation rail and utility bar in separate
+   grid tracks. This is deliberately scoped to the application shell so the
+   Platform Admin shell keeps its own layout contract. The rail expands the
+   grid track on hover/focus/pin instead of covering the content. */
+@media (min-width: 1200px) {
+  .app-shell {
+    display: grid;
+    grid-template-columns: var(--sidebar-width-collapsed, 84px) minmax(0, 1fr);
+    grid-template-rows: 80px minmax(0, 1fr);
+    min-height: 100dvh;
+    overflow-x: clip;
+    transition: grid-template-columns 280ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .app-shell:has(> .page-tabs:hover),
+  .app-shell:has(> .page-tabs:focus-within),
+  .app-shell:has(> .page-tabs.is-pinned) {
+    grid-template-columns: var(--sidebar-width-expanded, 292px) minmax(0, 1fr);
+  }
+
+  .app-shell > .topbar {
+    display: block;
+    grid-column: 2;
+    grid-row: 1;
+    position: sticky;
+    top: 0;
+    z-index: var(--z-sticky);
+    width: 100%;
+    min-width: 0;
+    border-bottom: 1px solid var(--sidebar-divider);
+    background: var(--bg-surface);
+    color: var(--text-primary);
+    box-shadow: var(--shadow-sm);
+    isolation: isolate;
+  }
+
+  .app-shell > .topbar .topbar-inner {
+    width: min(calc(100% - 48px), 1520px);
+    min-height: 80px;
+    margin-inline: auto;
+    padding: 14px 0;
+  }
+
+  .app-shell > .page-tabs {
+    box-sizing: border-box;
+    grid-column: 1;
+    grid-row: 1 / -1;
+    position: sticky;
+    top: 0;
+    z-index: var(--z-dropdown);
+    display: flex;
+    width: 100%;
+    min-width: 0;
+    height: 100dvh;
+    min-height: 100dvh;
+    align-self: start;
+    flex-direction: column;
+    align-items: stretch;
+    flex-wrap: nowrap;
+    gap: 7px;
+    margin: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    border: 0;
+    border-inline-end: 1px solid var(--sidebar-divider);
+    border-radius: 0;
+    background: var(--sidebar-bg);
+    color: var(--sidebar-text);
+    padding: 18px 12px;
+    box-shadow: var(--shadow-popup);
+    direction: rtl;
+    transition: background-color 180ms ease, box-shadow 280ms ease;
+  }
+
+  .app-shell > .page-tabs::before,
+  .app-shell > .page-tabs::after {
+    display: none;
+    content: none;
+  }
+
+  .app-shell > .page-tabs > .sidebar-brand {
+    display: flex;
+    order: -2;
+    min-width: 0;
+    min-height: 56px;
+    align-items: center;
+    gap: 10px;
+    margin: 0 0 8px;
+    padding: 0 4px 12px;
+    border-bottom: 1px solid var(--sidebar-divider);
+    color: var(--sidebar-text);
+  }
+
+  .app-shell > .page-tabs > .sidebar-brand-copy {
+    display: grid;
+    min-width: 0;
+    max-width: 190px;
+    gap: 2px;
+    overflow: hidden;
+    opacity: 1;
+    transition: max-width 240ms cubic-bezier(0.22, 1, 0.36, 1), opacity 160ms ease;
+  }
+
+  .app-shell > .page-tabs > .sidebar-brand-copy strong,
+  .app-shell > .page-tabs > .sidebar-brand-copy small {
+    overflow: hidden;
+    min-width: 0;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .app-shell > .page-tabs > .page-tab,
+  .app-shell > .page-tabs > .smart-assistant-launcher {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    min-width: 0;
+    flex: 0 0 auto;
+    overflow: hidden;
+  }
+
+  .app-shell > .page-tabs > .page-tab {
+    min-height: 48px;
+    justify-content: flex-start;
+    gap: 11px;
+    border: 1px solid transparent;
+    border-radius: 12px;
+    background: transparent;
+    color: var(--sidebar-text-muted);
+    padding-inline: 12px;
+    text-align: start;
+    transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease, transform 180ms ease;
+  }
+
+  .app-shell > .page-tabs > .page-tab:hover,
+  .app-shell > .page-tabs > .page-tab:focus-visible {
+    border-color: var(--sidebar-border);
+    background: var(--sidebar-hover-bg);
+    color: var(--sidebar-text);
+    transform: translateX(2px);
+  }
+
+  .app-shell > .page-tabs > .page-tab.active,
+  .app-shell > .page-tabs > .page-tab[aria-selected="true"] {
+    border-color: var(--primary-border);
+    background: var(--sidebar-active-bg);
+    color: var(--sidebar-active-text);
+    box-shadow: var(--sidebar-active-shadow);
+    font-weight: var(--weight-bold);
+  }
+
+  .app-shell > .page-tabs > .page-tab .ui-icon,
+  .app-shell > .page-tabs > .smart-assistant-launcher .ui-icon {
+    width: 20px;
+    height: 20px;
+    flex: 0 0 20px;
+    stroke-width: 1.9;
+  }
+
+  .app-shell > .page-tabs > .page-tab > span,
+  .app-shell > .page-tabs > .auth-account-bar .auth-logout-button > span,
+  .app-shell > .page-tabs > .smart-assistant-launcher .smart-assistant-launcher-label {
+    display: inline-block;
+    max-width: 220px;
+    min-width: 0;
+    overflow: hidden;
+    opacity: 1;
+    text-overflow: ellipsis;
+    transform: translateX(0);
+    transition: max-width 240ms cubic-bezier(0.22, 1, 0.36, 1), opacity 160ms ease, transform 180ms ease;
+    white-space: nowrap;
+  }
+
+  .app-shell > .page-tabs:not(:hover):not(.is-pinned):not(:focus-within) > .page-tab,
+  .app-shell > .page-tabs:not(:hover):not(.is-pinned):not(:focus-within) > .smart-assistant-launcher {
+    justify-content: center;
+    padding-inline: 0;
+    transform: none;
+  }
+
+  .app-shell > .page-tabs:not(:hover):not(.is-pinned):not(:focus-within) > .page-tab > span,
+  .app-shell > .page-tabs:not(:hover):not(.is-pinned):not(:focus-within) > .auth-account-bar .auth-logout-button > span,
+  .app-shell > .page-tabs:not(:hover):not(.is-pinned):not(:focus-within) > .smart-assistant-launcher .smart-assistant-launcher-label,
+  .app-shell > .page-tabs:not(:hover):not(.is-pinned):not(:focus-within) > .sidebar-brand .sidebar-brand-copy {
+    max-width: 0;
+    opacity: 0;
+    transform: translateX(8px);
+    pointer-events: none;
+  }
+
+  .app-shell > .page-tabs:not(:hover):not(.is-pinned):not(:focus-within) > .sidebar-brand {
+    justify-content: center;
+    padding-inline: 0;
+  }
+
+  .app-shell > .page-tabs > .auth-account-bar {
+    z-index: 1;
+    display: flex;
+    width: 100%;
+    min-width: 0;
+    align-items: stretch;
+    justify-content: stretch;
+    margin-top: auto;
+    border-top: 1px solid var(--sidebar-divider);
+    border-inline-start: 0;
+    padding: 14px 0 0;
+    direction: rtl;
+  }
+
+  .app-shell > .page-tabs > .auth-account-bar .auth-logout-button {
+    display: inline-flex;
+    width: 100%;
+    min-width: 0;
+    min-height: 46px;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border: 1px solid var(--danger-border);
+    border-radius: 12px;
+    background: var(--danger-soft);
+    color: var(--danger-text);
+  }
+
+  .app-shell > .page-tabs:not(:hover):not(.is-pinned):not(:focus-within) > .auth-account-bar .auth-logout-button {
+    width: 46px;
+    min-width: 46px;
+    margin-inline: auto;
+    padding-inline: 0;
+  }
+
+  .app-shell > .page-tabs > .smart-assistant-launcher {
+    min-height: 46px;
+    justify-content: flex-start;
+    gap: 10px;
+    margin-top: 8px;
+    border: 1px solid var(--sidebar-border);
+    border-radius: 12px;
+    background: var(--sidebar-hover-bg);
+    color: var(--sidebar-text);
+    padding-inline: 12px;
+    box-shadow: none;
+  }
+
+  .app-shell > .page-tabs:not(:hover):not(.is-pinned):not(:focus-within) > .smart-assistant-launcher {
+    width: 46px;
+    min-width: 46px;
+    margin-inline: auto;
+    padding-inline: 0;
+  }
+
+  .app-shell > main.page {
+    box-sizing: border-box;
+    grid-column: 2;
+    grid-row: 2;
+    width: min(100%, 1520px);
+    max-width: none;
+    min-width: 0;
+    margin-inline: auto;
+    padding: 30px clamp(20px, 3vw, 48px) 56px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) and (min-width: 1200px) {
+  .app-shell {
+    transition: none;
+  }
+
+  .app-shell > .page-tabs,
+  .app-shell > .page-tabs > .page-tab,
+  .app-shell > .page-tabs > .sidebar-brand-copy,
+  .app-shell > .page-tabs > .page-tab > span,
+  .app-shell > .page-tabs > .auth-account-bar .auth-logout-button > span,
+  .app-shell > .page-tabs > .smart-assistant-launcher .smart-assistant-launcher-label {
+    transition: none;
+  }
+}
