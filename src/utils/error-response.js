@@ -26,6 +26,10 @@ const SAFE_OPERATIONAL_FAILURES = Object.freeze({
         code: 'MEMBER_PAYMENT_PROOF_STORAGE_UNAVAILABLE',
         message: 'تعذر الوصول إلى تخزين إثباتات الدفع حاليًا. حاول مرة أخرى لاحقًا.'
     }),
+    MEMBER_SUBSCRIPTION_REQUEST_NOT_AVAILABLE: Object.freeze({
+        code: 'MEMBER_SUBSCRIPTION_REQUEST_NOT_AVAILABLE',
+        message: 'تعذر تأكيد حفظ طلب العضوية حاليًا. حدّث سجل الطلبات أولًا قبل إعادة المحاولة حتى لا يتكرر الطلب.'
+    }),
     PAYMENT_PROOF_UNAVAILABLE: Object.freeze({
         code: 'PAYMENT_PROOF_UNAVAILABLE',
         message: 'إثبات الدفع غير متاح حاليًا. أعد رفعه أو حاول مرة أخرى لاحقًا.'

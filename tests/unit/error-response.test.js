@@ -96,3 +96,15 @@ test('member payment-proof storage failures expose safe member-specific response
     assert.doesNotMatch(getSafeErrorMessage(unavailable, 503), /S3|secret|endpoint/i);
     assert.doesNotMatch(getSafeErrorMessage(notConfigured, 503), /private key|bucket|path/i);
 });
+
+test('member subscription request availability failures expose safe retry guidance', () => {
+    const error = Object.assign(new Error('database internals must stay private'), {
+        statusCode: 503,
+        code: 'MEMBER_SUBSCRIPTION_REQUEST_NOT_AVAILABLE',
+        expose: false
+    });
+    assert.equal(getClientErrorCode(error, 503), 'MEMBER_SUBSCRIPTION_REQUEST_NOT_AVAILABLE');
+    assert.match(getSafeErrorMessage(error, 503), /تأكيد حفظ طلب العضوية/);
+    assert.match(getSafeErrorMessage(error, 503), /حدّث سجل الطلبات/);
+    assert.doesNotMatch(getSafeErrorMessage(error, 503), /database|internals/i);
+});

@@ -66,6 +66,16 @@
     OBJECT_STORAGE_PROVIDER_NOT_CONFIGURED: 'رفع إثبات الدفع غير متاح حاليًا لأن التخزين الخاص غير مهيأ.',
     MEMBER_PAYMENT_PROOF_STORAGE_NOT_CONFIGURED: 'رفع إثبات الدفع غير متاح حاليًا لأن التخزين الخاص غير مهيأ.',
     MEMBER_PAYMENT_PROOF_STORAGE_UNAVAILABLE: 'تعذر الوصول إلى تخزين إثباتات الدفع حاليًا. حاول مرة أخرى لاحقًا.',
+    MEMBER_SUBSCRIPTION_REQUEST_NOT_AVAILABLE: 'تعذر تأكيد حفظ طلب العضوية حاليًا. حدّث سجل الطلبات أولًا قبل إعادة المحاولة حتى لا يتكرر الطلب.',
+    MEMBER_SUBSCRIPTION_REQUEST_NOT_FOUND: 'طلب العضوية غير موجود أو لم يعد متاحًا. حدّث سجل الطلبات وحاول مرة أخرى.',
+    MEMBER_SUBSCRIPTION_REQUEST_LOCKED: 'تمت مراجعة هذا الطلب بالفعل. حدّث سجل الطلبات لمعرفة حالته الحالية.',
+    MEMBER_SUBSCRIPTION_REQUEST_ALREADY_REVIEWED: 'تمت مراجعة هذا الطلب بالفعل. حدّث سجل الطلبات لمعرفة حالته الحالية.',
+    PORTAL_SESSION_MEMBER_INVALID: 'انتهت صلاحية جلسة البوابة. أعد إدخال كود العضوية ثم حاول مرة أخرى.',
+    MEMBERSHIP_SELECTION_REQUIRED: 'اختر الباقة ونوع العضوية قبل إرسال الطلب.',
+    PAYMENT_METHOD_REQUIRED: 'اختر وسيلة الدفع التي استخدمتها قبل إرسال الطلب.',
+    INVALID_PAYMENT_PROOF_SUBMISSION: 'تعذر قراءة إثبات الدفع. اختر ملفًا صحيحًا من الأنواع المسموحة ثم حاول مرة أخرى.',
+    MEMBER_SUBSCRIPTION_REQUEST_TYPE_UNSUPPORTED: 'نوع الطلب المختار غير متاح حاليًا.',
+    REVIEW_NOTES_REQUIRED: 'اكتب سبب الرفض قبل تأكيد رفض الطلب.',
     PAYMENT_PROOF_UNAVAILABLE: 'إثبات الدفع غير متاح حاليًا. أعد رفعه أو حاول مرة أخرى لاحقًا.',
     PAYMENT_PROOF_INTEGRITY_FAILED: 'تعذر التحقق من سلامة إثبات الدفع. أعد رفع الملف الأصلي.',
     MEMBER_RENEWAL_REQUIRES_EXISTING: 'لا يمكن تقديم طلب تجديد قبل وجود عضوية سابقة. اختر اشتراكًا جديدًا إذا كانت هذه أول عضوية.',
@@ -74,17 +84,31 @@
     STORAGE_NOT_CONFIGURED: 'رفع إثبات الدفع غير متاح حاليًا لأن التخزين الخاص غير مهيأ.'
   });
 
-  function safeError(payload, fallback) {
+  function safeError(payload, fallback, statusCode = 0) {
     const code = String(payload?.code || '').trim();
-    const error = new Error(errorMessages[code] || fallback);
+    const serverMessage = typeof payload?.error === 'string'
+      ? payload.error.replace(/[\u0000-\u001F\u007F]/g, ' ').trim().slice(0, 300)
+      : '';
+    const message = errorMessages[code]
+      || (statusCode >= 400 && statusCode < 500 ? serverMessage : '')
+      || fallback;
+    const error = new Error(message || fallback);
     error.code = code;
+    error.statusCode = Number(statusCode) || 0;
     return error;
   }
 
   async function requestJson(path, options = {}, fallback = 'تعذر تنفيذ الطلب. حاول مرة أخرى.') {
-    const response = await fetch(path, { credentials: 'same-origin', ...options });
+    let response;
+    try {
+      response = await fetch(path, { credentials: 'same-origin', ...options });
+    } catch (_) {
+      const error = new Error('تعذر الاتصال بالخدمة حاليًا. تحقق من الاتصال وحاول مرة أخرى.');
+      error.code = 'NETWORK_ERROR';
+      throw error;
+    }
     const payload = await response.json().catch(() => ({}));
-    if (!response.ok) throw safeError(payload, fallback);
+    if (!response.ok) throw safeError(payload, fallback, response.status);
     return payload;
   }
 
@@ -261,8 +285,9 @@
           : item.proof?.verified
             ? 'تم إرفاق إثبات الدفع والتحقق منه'
             : 'بانتظار إثبات الدفع';
-      const reviewReason = status === 'rejected' && item.reviewNotes
-        ? `<small class="portal-request-history-review"><strong>سبب الرفض:</strong> ${escapeHtml(item.reviewNotes)}</small>`
+      const rejectionReason = String(item.reviewNotes ?? item.review_notes ?? '').trim();
+      const reviewReason = status === 'rejected'
+        ? `<div class="portal-request-history-review" role="note"><strong>سبب الرفض</strong><span>${escapeHtml(rejectionReason || 'لم يتم تسجيل سبب إضافي.')}</span></div>`
         : '';
       const proofRecovery = status === 'pending' && !item.proof?.verified
         ? `<button class="btn btn-light btn-small portal-proof-retry" type="button" data-portal-proof-retry="${escapeHtml(item.id)}">رفع الإثبات</button>`
@@ -311,18 +336,25 @@
   }
 
   async function uploadProof(requestId, file) {
-    const response = await fetch(`/api/member-portal/subscription-requests/${encodeURIComponent(requestId)}/proof`, {
-      method: 'POST',
-      credentials: 'same-origin',
-      headers: {
-        'Content-Type': 'application/octet-stream',
-        'x-payment-proof-mime': file.type || 'application/octet-stream',
-        'x-payment-proof-name-encoded': encodeURIComponent(file.name || 'payment-proof')
-      },
-      body: await file.arrayBuffer()
-    });
+    let response;
+    try {
+      response = await fetch(`/api/member-portal/subscription-requests/${encodeURIComponent(requestId)}/proof`, {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {
+          'Content-Type': 'application/octet-stream',
+          'x-payment-proof-mime': file.type || 'application/octet-stream',
+          'x-payment-proof-name-encoded': encodeURIComponent(file.name || 'payment-proof')
+        },
+        body: await file.arrayBuffer()
+      });
+    } catch (_) {
+      const error = new Error('تعذر الاتصال بالخدمة أثناء رفع إثبات الدفع. تحقق من الاتصال وحاول مرة أخرى.');
+      error.code = 'NETWORK_ERROR';
+      throw error;
+    }
     const payload = await response.json().catch(() => ({}));
-    if (!response.ok) throw safeError(payload, 'تعذر رفع إثبات الدفع.');
+    if (!response.ok) throw safeError(payload, 'تعذر رفع إثبات الدفع.', response.status);
     return payload;
   }
 
@@ -396,7 +428,7 @@
           method: 'POST',
           headers: { 'Idempotency-Key': randomIdempotencyKey() },
           body: formData
-        }, 'تعذر إنشاء طلب العضوية.');
+        }, 'تعذر إرسال طلب العضوية الآن. تحقق من البيانات وإثبات الدفع، وحدّث سجل الطلبات قبل إعادة المحاولة.');
         requestId = created.request?.id;
         if (!requestId) throw new Error('تعذر تحديد طلب العضوية بعد إنشائه.');
       }

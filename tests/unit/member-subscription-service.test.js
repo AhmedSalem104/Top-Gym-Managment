@@ -34,6 +34,15 @@ test('portal request scope comes from the resolved session and tenant is explici
     assert.doesNotMatch(source, /memberId:\s*body\.memberId/);
 });
 
+test('portal request history selects and returns the review reason for rejected requests', () => {
+    assert.match(source, /r\.review_notes/);
+    assert.match(source, /reviewNotes: row\.review_notes \|\| ''/);
+    assert.equal(
+        service.requestFromRow({ id: 9, status: 'rejected', member_id: 41, review_notes: 'إثبات الدفع غير مرفق.' }).reviewNotes,
+        'إثبات الدفع غير مرفق.'
+    );
+});
+
 test('approval locks the request, verifies its private proof, and reuses the membership transaction helper', () => {
     assert.match(source, /getRequestRow\(requestId, tenantId, \{ transaction, lock: true \}\)/);
     assert.match(source, /storage\.getPrivateObject\(\{ tenantId, key: requestRow\.storage_key \}\)/);

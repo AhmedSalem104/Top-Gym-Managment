@@ -146,6 +146,11 @@ test('member portal subscription requests use the portal session and active tena
     assert.match(portalSubscriptionUiSource, /x-payment-proof-name-encoded/);
     assert.match(portalSubscriptionUiSource, /portal-request-history-review/);
     assert.match(portalSubscriptionUiSource, /item\.reviewNotes/);
+    assert.match(portalSubscriptionUiSource, /item\.review_notes/);
+    assert.match(portalSubscriptionUiSource, /لم يتم تسجيل سبب إضافي/);
+    assert.match(portalSubscriptionUiSource, /role="note"/);
+    assert.match(portalSubscriptionUiSource, /statusCode >= 400 && statusCode < 500/);
+    assert.match(portalSubscriptionUiSource, /MEMBER_SUBSCRIPTION_REQUEST_NOT_AVAILABLE/);
     assert.match(portalSubscriptionUiSource, /data-portal-proof-retry/);
     assert.match(portalSubscriptionUiSource, /proofRecoveryRequestId/);
     assert.match(portalSubscriptionUiSource, /لن يتم إنشاء طلب جديد/);
