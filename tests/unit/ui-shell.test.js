@@ -21,3 +21,13 @@ test('desktop sidebar hover contract expands a safe layout track and reveals lab
     assert.match(source, /\.app-shell\s*>\s*main\.page[\s\S]*?grid-column:\s*2/u);
     assert.match(source, /\.app-shell\s*>\s*\.page-tabs:hover\s*>\s*\.page-tab\s*>\s*span[\s\S]*?opacity:\s*1/u);
 });
+
+test('navigation polish keeps desktop controls usable and coordinated', () => {
+    const source = fs.readFileSync(path.join(root, 'public/css/components/ui-foundation.css'), 'utf8');
+
+    assert.match(source, /grid-template-columns:\s*var\(--sidebar-width-collapsed,\s*84px\)\s+minmax\(0,\s*1fr\)[\s\S]*?transition:\s*grid-template-columns\s+320ms/u);
+    assert.match(source, /page-tabs\s*\{[\s\S]*?top:\s*80px[\s\S]*?grid-row:\s*2/u);
+    assert.match(source, /page-tab \.ui-icon[\s\S]*?width:\s*25px !important[\s\S]*?height:\s*25px !important/u);
+    assert.match(source, /topbar-controls[\s\S]*?gap:\s*8px/u);
+    assert.match(source, /auth-account-bar \.auth-logout-button[\s\S]*?background:\s*transparent/u);
+});

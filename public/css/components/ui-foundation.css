@@ -1636,3 +1636,189 @@
     transition: none;
   }
 }
+
+/* Effective navigation polish -------------------------------------------
+   Keep the final desktop contract after the historical rail rules above.
+   This prevents selector-order regressions from shrinking targets or
+   re-introducing the old sidebar transition. */
+@media (min-width: 1200px) {
+  .app-shell {
+    display: grid;
+    grid-template-columns: var(--sidebar-width-collapsed, 84px) minmax(0, 1fr);
+    grid-template-rows: 80px minmax(0, 1fr);
+    min-height: 100dvh;
+    overflow-x: clip;
+    transition: grid-template-columns 320ms cubic-bezier(0.22, 1, 0.36, 1);
+    will-change: grid-template-columns;
+  }
+
+  .app-shell.sidebar-expanded,
+  .app-shell:has(> .page-tabs:hover),
+  .app-shell:has(> .page-tabs:focus-within),
+  .app-shell:has(> .page-tabs.is-pinned) {
+    grid-template-columns: var(--sidebar-width-expanded, 292px) minmax(0, 1fr);
+  }
+
+  .app-shell > .topbar {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    width: 100%;
+    min-width: 0;
+    border-bottom: 1px solid var(--sidebar-divider);
+    isolation: isolate;
+  }
+
+  .app-shell > .topbar .topbar-inner,
+  .app-shell > .topbar .topbar-controls {
+    direction: rtl;
+  }
+
+  .app-shell > .topbar .topbar-controls,
+  .app-shell > .topbar .topbar-quick-actions {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .app-shell > .topbar .topbar-controls > .topbar-theme-toggle,
+  .app-shell > .topbar .topbar-controls > .kiosk-toggle-button,
+  .app-shell > .topbar .topbar-controls > .mobile-nav-toggle,
+  .app-shell > .topbar .auth-account-bar .auth-logout-button {
+    box-sizing: border-box;
+    width: 44px;
+    min-width: 44px;
+    height: 44px;
+    min-height: 44px;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border-radius: 12px;
+  }
+
+  .app-shell > .topbar .topbar-controls > .topbar-theme-toggle,
+  .app-shell > .topbar .topbar-controls > .kiosk-toggle-button {
+    display: inline-flex;
+  }
+
+  .app-shell > .topbar .topbar-quick-actions > .btn {
+    box-sizing: border-box;
+    min-height: 44px;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+    padding-inline: 14px;
+  }
+
+  .app-shell > .topbar .topbar-controls > .topbar-theme-toggle .ui-icon,
+  .app-shell > .topbar .topbar-controls > .kiosk-toggle-button .ui-icon,
+  .app-shell > .topbar .auth-account-bar .auth-logout-button .ui-icon {
+    width: 20px;
+    height: 20px;
+  }
+
+  .app-shell > .topbar .auth-account-bar {
+    display: inline-flex;
+    min-width: 0;
+    align-items: center;
+    margin-inline-start: 0;
+    padding-inline-start: 0;
+  }
+
+  .app-shell > .topbar .auth-account-bar .auth-logout-button {
+    border-color: var(--border-secondary);
+    background: transparent;
+    color: var(--text-secondary);
+    transition: background-color 180ms ease, border-color 180ms ease, color 180ms ease, transform 180ms ease;
+  }
+
+  .app-shell > .topbar .auth-account-bar .auth-logout-button:hover:not(:disabled),
+  .app-shell > .topbar .auth-account-bar .auth-logout-button:focus-visible {
+    border-color: var(--danger-border);
+    background: var(--danger-soft);
+    color: var(--danger-text);
+    transform: translateY(-1px);
+  }
+
+  .app-shell > .page-tabs {
+    position: sticky;
+    top: 80px;
+    grid-column: 1;
+    grid-row: 2;
+    width: 100%;
+    min-width: 0;
+    height: calc(100dvh - 80px);
+    min-height: calc(100dvh - 80px);
+    margin: 0;
+    border-inline-start: 1px solid var(--sidebar-divider);
+    border-inline-end: 0;
+    border-radius: 0;
+    box-shadow: none;
+    transition: background-color 180ms ease, border-color 180ms ease, box-shadow 220ms ease !important;
+  }
+
+  .app-shell > .page-tabs > .page-tab,
+  .app-shell > .page-tabs > .smart-assistant-launcher {
+    min-height: 52px;
+    border-radius: 13px;
+  }
+
+  .app-shell > .page-tabs > .page-tab .ui-icon,
+  .app-shell > .page-tabs > .smart-assistant-launcher .ui-icon {
+    width: 25px !important;
+    height: 25px !important;
+    min-width: 25px;
+    flex-basis: 25px;
+  }
+
+  .app-shell > .page-tabs:not(:hover):not(.is-hovered):not(.is-pinned):not(:focus-within) > .page-tab,
+  .app-shell > .page-tabs:not(:hover):not(.is-hovered):not(.is-pinned):not(:focus-within) > .smart-assistant-launcher {
+    width: 56px !important;
+    min-width: 56px !important;
+    min-height: 52px;
+    align-self: center;
+    justify-content: center;
+    gap: 0;
+    padding-inline: 0 !important;
+  }
+
+  .app-shell > .page-tabs:hover > .page-tab,
+  .app-shell > .page-tabs.is-hovered > .page-tab,
+  .app-shell > .page-tabs:focus-within > .page-tab,
+  .app-shell > .page-tabs.is-pinned > .page-tab,
+  .app-shell > .page-tabs:hover > .smart-assistant-launcher,
+  .app-shell > .page-tabs.is-hovered > .smart-assistant-launcher,
+  .app-shell > .page-tabs:focus-within > .smart-assistant-launcher,
+  .app-shell > .page-tabs.is-pinned > .smart-assistant-launcher {
+    width: 100%;
+    min-width: 0;
+    min-height: 52px;
+  }
+
+  .app-shell > main.page {
+    grid-column: 2;
+    grid-row: 2;
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+    margin: 0;
+    padding: 30px clamp(20px, 3vw, 48px) 56px;
+  }
+
+  .app-shell.is-kiosk-mode {
+    display: block;
+    grid-template-columns: none;
+    grid-template-rows: none;
+    transition: none;
+    will-change: auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) and (min-width: 1200px) {
+  .app-shell,
+  .app-shell > .page-tabs,
+  .app-shell > .topbar .auth-account-bar .auth-logout-button {
+    transition: none !important;
+    will-change: auto;
+  }
+}

@@ -65,15 +65,22 @@
         syncSidebarTooltips(rail);
 
         const shell = rail.closest('.app-shell');
+        const desktopMediaQuery = window.matchMedia('(min-width: 1200px)');
 
         let hoverReleaseTimer = null;
         const openRail = () => {
+            if (!desktopMediaQuery.matches) return;
             if (hoverReleaseTimer) window.clearTimeout(hoverReleaseTimer);
             rail.classList.add('is-hovered');
             shell?.classList.add('sidebar-expanded');
         };
         const scheduleRailClose = () => {
             if (hoverReleaseTimer) window.clearTimeout(hoverReleaseTimer);
+            if (!desktopMediaQuery.matches) {
+                rail.classList.remove('is-hovered');
+                shell?.classList.remove('sidebar-expanded');
+                return;
+            }
             hoverReleaseTimer = window.setTimeout(() => {
                 if (!rail.classList.contains('is-pinned')) {
                     rail.classList.remove('is-hovered');
@@ -89,6 +96,19 @@
         rail.addEventListener('focusout', (event) => {
             if (!rail.contains(event.relatedTarget)) scheduleRailClose();
         });
+
+        const handleDesktopViewportChange = () => {
+            if (desktopMediaQuery.matches) return;
+            if (hoverReleaseTimer) window.clearTimeout(hoverReleaseTimer);
+            rail.classList.remove('is-hovered');
+            shell?.classList.remove('sidebar-expanded');
+            hoverReleaseTimer = null;
+        };
+        if (typeof desktopMediaQuery.addEventListener === 'function') {
+            desktopMediaQuery.addEventListener('change', handleDesktopViewportChange);
+        } else if (typeof desktopMediaQuery.addListener === 'function') {
+            desktopMediaQuery.addListener(handleDesktopViewportChange);
+        }
 
         // The shell can be hidden while authentication/branding is settling.
         // Mark it ready after the first paint so the first reveal is stable;

@@ -249,6 +249,7 @@
             const number = Number(indicator.dataset.stepIndicator);
             indicator.classList.toggle('is-current', number === state.step);
             indicator.classList.toggle('is-complete', number < state.step);
+            indicator.setAttribute('aria-current', number === state.step ? 'step' : 'false');
         });
         const copy = stageCopy[state.step - 1];
         $('registrationStageLabel').textContent = `الخطوة ${String(state.step).padStart(2, '0')} من 06`;

@@ -15,7 +15,7 @@
             }
         }());
     </script>
-    <link rel="stylesheet" href="/css/main.css?v=70">
+    <link rel="stylesheet" href="/css/main.css?v=71">
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     <title>ابدأ مع Logic Fit</title>
 </head>
@@ -27,6 +27,7 @@
                 <span><strong data-brand-text="brandName">Logic Fit</strong><small>منصة إدارة الجيمات</small></span>
             </a>
             <div class="registration-header-actions">
+                <a class="registration-return" href="/" aria-label="العودة إلى منصة Logic Fit"><span aria-hidden="true">←</span> العودة للمنصة</a>
                 <span class="registration-safe-note"><span aria-hidden="true">✓</span> بياناتك محمية</span>
                 <button class="theme-toggle-button" type="button" data-theme-toggle aria-pressed="false" aria-label="تفعيل الوضع الداكن">
                     <span aria-hidden="true">◐</span><span data-theme-toggle-label>الوضع الداكن</span>
@@ -34,24 +35,30 @@
             </div>
         </header>
 
+        <nav class="registration-progress" aria-label="مراحل التسجيل">
+            <ol class="registration-steps" id="registrationSteps">
+                <li class="is-current" data-step-indicator="1" aria-current="step"><span>01</span><div><strong>بيانات الجيم</strong><small>المعلومات الأساسية</small></div></li>
+                <li data-step-indicator="2"><span>02</span><div><strong>الباقة</strong><small>اختر ما يناسبك</small></div></li>
+                <li data-step-indicator="3"><span>03</span><div><strong>المدة</strong><small>طريقة الاشتراك</small></div></li>
+                <li data-step-indicator="4"><span>04</span><div><strong>الدفع</strong><small>بيانات التحويل</small></div></li>
+                <li data-step-indicator="5"><span>05</span><div><strong>الإثبات</strong><small>ارفع صورة الدفع</small></div></li>
+                <li data-step-indicator="6"><span>06</span><div><strong>المراجعة</strong><small>تأكيد وإرسال الطلب</small></div></li>
+            </ol>
+        </nav>
+
         <main class="registration-main">
-            <aside class="registration-aside" aria-label="مراحل التسجيل">
+            <aside class="registration-aside" aria-label="عن Logic Fit وتجربة التسجيل">
                 <div class="registration-aside-copy">
                     <span class="registration-kicker">ابدأ بخطوة واضحة</span>
                     <h1>جهّز جيمك للعمل بذكاء.</h1>
                     <p>قدّم طلب الاشتراك، وسيتولى فريق Logic Fit مراجعته ثم يجهز مساحة جيمك الخاصة.</p>
                 </div>
-                <ol class="registration-steps" id="registrationSteps">
-                    <li class="is-current" data-step-indicator="1"><span>01</span><div><strong>بيانات الجيم</strong><small>المعلومات الأساسية</small></div></li>
-                    <li data-step-indicator="2"><span>02</span><div><strong>الباقة</strong><small>اختر ما يناسبك</small></div></li>
-                    <li data-step-indicator="3"><span>03</span><div><strong>المدة</strong><small>طريقة الاشتراك</small></div></li>
-                    <li data-step-indicator="4"><span>04</span><div><strong>الدفع</strong><small>بيانات التحويل</small></div></li>
-                    <li data-step-indicator="5"><span>05</span><div><strong>الإثبات</strong><small>ارفع صورة الدفع</small></div></li>
-                    <li data-step-indicator="6"><span>06</span><div><strong>المراجعة</strong><small>تأكيد وإرسال الطلب</small></div></li>
-                </ol>
+                <figure class="registration-aside-visual">
+                    <img src="/assets/gym-background.webp" alt="مساحة تدريب مجهزة لإدارة جيمك" width="900" height="520" loading="eager">
+                </figure>
                 <div class="registration-aside-foot">
                     <span class="registration-foot-icon" aria-hidden="true">↗</span>
-                    <p>بعد الاعتماد، يصلك رابط الدخول وبيانات التفعيل عبر WhatsApp.</p>
+                    <p><strong>تجربة واضحة من البداية</strong><span>بعد الاعتماد، يصلك رابط الدخول وبيانات التفعيل عبر WhatsApp.</span></p>
                 </div>
             </aside>
 
@@ -150,6 +157,6 @@
     <script defer src="/js/theme.js?v=1"></script>
     <script defer src="/js/branding.js?v=5"></script>
     <script defer src="/js/ui-feedback.js?v=2"></script>
-    <script defer src="/js/register-gym.js?v=1"></script>
+    <script defer src="/js/register-gym.js?v=2"></script>
 </body>
 </html>
