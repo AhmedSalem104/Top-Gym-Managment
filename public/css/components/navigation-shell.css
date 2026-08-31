@@ -330,37 +330,39 @@
   transform: translateY(-1px);
 }
 
-/* Mobile/tablet use a real drawer. The rail is never squeezed into a narrow
-   row of unreadable labels, and its backdrop is a separate click target. */
+/* Small screens use the same navigation as a compact tab rail. Keeping the
+   rail in the document flow prevents an off-canvas layer from covering form
+   controls and keeps every destination discoverable with a touch gesture. */
 .app-shell > .page-tabs {
-  position: fixed;
-  z-index: var(--z-dropdown);
-  inset-block: 0;
-  inset-inline-end: 0;
+  position: sticky;
+  top: 80px;
+  z-index: var(--z-sticky);
+  inset-inline: 0;
   display: flex;
-  width: min(86vw, 336px);
+  width: 100%;
   min-width: 0;
-  flex-direction: column;
-  gap: var(--space-1);
-  overflow-x: hidden;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  scrollbar-color: var(--sidebar-text-muted) transparent;
-  scrollbar-gutter: stable;
-  scrollbar-width: thin;
-  border-inline-start: 1px solid var(--sidebar-divider);
-  background: linear-gradient(180deg, var(--bg-header), var(--bg-sidebar));
+  min-height: 58px;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-inline: contain;
+  scrollbar-color: transparent transparent;
+  scrollbar-gutter: auto;
+  scrollbar-width: none;
+  border-block-end: 1px solid var(--sidebar-divider);
+  background: var(--bg-header);
   color: var(--sidebar-text);
-  padding: var(--space-4) var(--space-3) var(--space-5);
-  box-shadow: var(--shadow-popup);
-  transform: translateX(110%);
-  visibility: hidden;
-  pointer-events: none;
-  transition: transform var(--sidebar-rail-transition), visibility 0s linear var(--sidebar-rail-transition);
+  padding: 7px clamp(10px, 2vw, 24px);
+  box-shadow: var(--shadow-sm);
+  scroll-behavior: smooth;
+  transition: background-color var(--sidebar-rail-transition), border-color var(--sidebar-rail-transition), box-shadow var(--sidebar-rail-transition);
 }
 
 .app-shell > .page-tabs::-webkit-scrollbar {
-  width: 5px;
+  width: 0;
+  height: 0;
 }
 
 .app-shell > .page-tabs::-webkit-scrollbar-track {
@@ -382,19 +384,8 @@
   background-clip: padding-box;
 }
 
-.app-shell.mobile-nav-open > .page-tabs {
-  transform: translateX(0);
-  visibility: visible;
-  pointer-events: auto;
-  transition: transform var(--sidebar-rail-transition), visibility 0s;
-}
-
-body.mobile-nav-open {
-  overflow: hidden;
-}
-
 .mobile-nav-header {
-  display: flex;
+  display: none;
   min-height: 48px;
   align-items: center;
   justify-content: space-between;
@@ -775,6 +766,11 @@ body.mobile-nav-open {
     transition: background-color var(--sidebar-rail-transition), border-color var(--sidebar-rail-transition), box-shadow var(--sidebar-rail-transition);
   }
 
+  .app-shell > .page-tabs::-webkit-scrollbar {
+    width: 5px;
+    height: auto;
+  }
+
   .app-shell > .page-tabs > .mobile-nav-header {
     display: none;
   }
@@ -887,16 +883,98 @@ body.mobile-nav-open {
 }
 
 @media (max-width: 1199px) {
-  .app-shell > .page-tabs > .sidebar-brand {
-    order: -2;
+  .app-shell > .topbar .mobile-nav-toggle {
+    display: none;
   }
 
-  .app-shell > .page-tabs > .sidebar-brand > .sidebar-brand-copy,
+  .app-shell > .page-tabs {
+    align-items: stretch;
+    gap: 6px;
+    padding-block: 7px;
+  }
+
+  .app-shell > .page-tabs > .mobile-nav-header,
+  .app-shell > .page-tabs > .sidebar-brand {
+    display: none;
+  }
+
+  .app-shell > .page-tabs > .page-tab,
+  .app-shell > .page-tabs > .smart-assistant-launcher {
+    width: auto;
+    min-width: max-content;
+    min-height: 44px;
+    flex: 0 0 auto;
+    align-self: stretch;
+    justify-content: center;
+    gap: var(--space-2);
+    padding-inline: 13px;
+    border-radius: var(--radius-md);
+    font-size: var(--font-xs);
+    text-align: center;
+    scroll-snap-align: start;
+  }
+
+  .app-shell > .page-tabs > .page-tab::before,
+  .app-shell > .page-tabs > .smart-assistant-launcher::before {
+    inset-block: auto 3px;
+    inset-inline: 10px;
+    width: auto;
+    height: 2px;
+    transform: scaleX(.55);
+  }
+
+  .app-shell > .page-tabs > .page-tab:hover,
+  .app-shell > .page-tabs > .page-tab:focus-visible,
+  .app-shell > .page-tabs > .smart-assistant-launcher:hover,
+  .app-shell > .page-tabs > .smart-assistant-launcher:focus-visible {
+    transform: translateY(-1px);
+  }
+
+  .app-shell > .page-tabs > .page-tab.active::before,
+  .app-shell > .page-tabs > .page-tab[aria-selected="true"]::before,
+  .app-shell > .page-tabs > .smart-assistant-launcher[aria-expanded="true"]::before {
+    transform: scaleX(1);
+  }
+
   .app-shell > .page-tabs > .page-tab > span,
   .app-shell > .page-tabs > .smart-assistant-launcher-label {
     max-width: 220px;
     opacity: 1;
+    transform: none;
     visibility: visible;
+  }
+
+  .app-shell > .page-tabs > .page-tab .ui-icon,
+  .app-shell > .page-tabs > .smart-assistant-launcher .ui-icon {
+    width: 25px;
+    height: 25px;
+    flex-basis: 25px;
+    padding: 4px;
+  }
+
+  .app-shell > .page-tabs > .sidebar-pin-control {
+    width: auto;
+    min-width: 0;
+    flex: 0 0 auto;
+    align-self: stretch;
+    margin: 0;
+    padding: 0;
+    border-top: 0;
+  }
+
+  .app-shell > .page-tabs > .sidebar-pin-control .sidebar-pin-button {
+    width: 44px;
+    min-width: 44px;
+    height: 44px;
+    min-height: 44px;
+  }
+
+  .app-shell > .mobile-nav-backdrop:not([hidden]) {
+    display: none;
+  }
+
+  .app-shell > .page-tabs > .sidebar-brand {
+    order: -2;
   }
 
   .topbar-quick-actions .header-backup,
@@ -911,6 +989,28 @@ body.mobile-nav-open {
 }
 
 @media (max-width: 767px) {
+  .app-shell > .page-tabs {
+    top: 68px;
+    min-height: 54px;
+    gap: 4px;
+    padding-inline: 10px;
+    padding-block: 5px;
+  }
+
+  .app-shell > .page-tabs > .page-tab,
+  .app-shell > .page-tabs > .smart-assistant-launcher {
+    min-height: 44px;
+    gap: 6px;
+    padding-inline: 11px;
+  }
+
+  .app-shell > .page-tabs > .page-tab .ui-icon,
+  .app-shell > .page-tabs > .smart-assistant-launcher .ui-icon {
+    width: 23px;
+    height: 23px;
+    flex-basis: 23px;
+  }
+
   .topbar-inner {
     width: calc(100% - 20px);
     min-height: 68px;
@@ -996,6 +1096,10 @@ body.mobile-nav-open {
 }
 
 @media (max-width: 379px) {
+  .app-shell > .page-tabs {
+    padding-inline: 6px;
+  }
+
   .topbar-inner {
     width: calc(100% - 12px);
   }
@@ -1065,6 +1169,10 @@ html[data-brand-active-style="pill"] .app-shell > .page-tabs > .page-tab.active 
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .app-shell > .page-tabs {
+    scroll-behavior: auto;
+  }
+
   .app-shell,
   .app-shell > .page-tabs,
   .topbar-theme-toggle,

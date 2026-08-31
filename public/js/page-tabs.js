@@ -258,61 +258,56 @@
 
         const mediaQuery = window.matchMedia('(max-width: 1199px)');
         const openLabel = '\u0641\u062a\u062d \u0627\u0644\u0642\u0627\u0626\u0645\u0629';
-        const closeLabel = '\u0625\u063a\u0644\u0627\u0642 \u0627\u0644\u0642\u0627\u0626\u0645\u0629';
 
-        const syncNavigationAria = (open) => {
-            if (mediaQuery.matches) {
-                rail.setAttribute('aria-hidden', String(!open));
-            } else {
-                rail.removeAttribute('aria-hidden');
-            }
+        const syncNavigationAria = () => {
+            // On small screens the navigation is an always-visible tab rail,
+            // not an off-canvas drawer. It must remain exposed to keyboard and
+            // screen-reader users even while the legacy toggle is hidden.
+            rail.removeAttribute('aria-hidden');
         };
 
-        const setOpen = (open) => {
-            const wasOpen = shell.classList.contains('mobile-nav-open');
-            const nextOpen = Boolean(open) && mediaQuery.matches;
-            shell.classList.toggle('mobile-nav-open', nextOpen);
-            document.body.classList.toggle('mobile-nav-open', nextOpen);
-            rail.classList.toggle('is-mobile-open', nextOpen);
-            toggle.setAttribute('aria-expanded', String(nextOpen));
-            toggle.setAttribute('aria-label', nextOpen ? closeLabel : openLabel);
-            toggle.setAttribute('title', nextOpen ? closeLabel : openLabel);
+        const resetNavigationPresentation = () => {
+            shell.classList.remove('mobile-nav-open');
+            document.body.classList.remove('mobile-nav-open');
+            rail.classList.remove('is-mobile-open');
+            toggle.setAttribute('aria-expanded', 'false');
+            toggle.setAttribute('aria-label', openLabel);
+            toggle.setAttribute('title', openLabel);
             const toggleLabel = toggle.querySelector('[data-mobile-nav-label]');
-            if (toggleLabel) toggleLabel.textContent = nextOpen ? closeLabel : openLabel;
+            if (toggleLabel) toggleLabel.textContent = openLabel;
 
             if (backdrop) {
-                backdrop.hidden = !nextOpen;
-                backdrop.setAttribute('aria-hidden', String(!nextOpen));
+                backdrop.hidden = true;
+                backdrop.setAttribute('aria-hidden', 'true');
             }
-            syncNavigationAria(nextOpen);
-
-            if (nextOpen) {
-                window.requestAnimationFrame(() => closeButton?.focus({ preventScroll: true }));
-            } else if (wasOpen) {
-                toggle.focus({ preventScroll: true });
-            }
+            syncNavigationAria();
         };
 
-        toggle.addEventListener('click', () => {
-            setOpen(!shell.classList.contains('mobile-nav-open'));
-        });
-        closeButton?.addEventListener('click', () => setOpen(false));
-        backdrop?.addEventListener('click', () => setOpen(false));
+        const setOpen = () => {
+            // Keep the old event hooks harmless for cached markup or a stale
+            // script, while the canonical responsive presentation remains a
+            // visible, horizontally scrollable tab rail.
+            resetNavigationPresentation();
+        };
+
+        toggle.addEventListener('click', () => setOpen());
+        closeButton?.addEventListener('click', () => setOpen());
+        backdrop?.addEventListener('click', () => setOpen());
         rail.addEventListener('click', (event) => {
-            if (event.target.closest('[data-page-tab]')) setOpen(false);
+            if (event.target.closest('[data-page-tab]')) setOpen();
         });
         document.addEventListener('keydown', (event) => {
-            if (event.key === 'Escape' && shell.classList.contains('mobile-nav-open')) setOpen(false);
+            if (event.key === 'Escape' && shell.classList.contains('mobile-nav-open')) setOpen();
         });
 
-        const handleViewportChange = () => setOpen(false);
+        const handleViewportChange = () => setOpen();
         if (typeof mediaQuery.addEventListener === 'function') {
             mediaQuery.addEventListener('change', handleViewportChange);
         } else if (typeof mediaQuery.addListener === 'function') {
             mediaQuery.addListener(handleViewportChange);
         }
 
-        setOpen(false);
+        setOpen();
     }
 
     function normalizeTab(name) {
