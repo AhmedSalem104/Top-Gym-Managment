@@ -151,6 +151,7 @@
   --font-heading: var(--font-body);
   --brand-base-font-size: 16px;
   --brand-radius-base: var(--radius-lg);
+  --brand-image-radius: 6px;
   --brand-surface-secondary: var(--bg-surface);
   --brand-login-background: var(--bg-app);
   --brand-login-gradient-start: var(--primary);

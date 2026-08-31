@@ -51,9 +51,9 @@
   flex: 0 0 42px;
   place-items: center;
   overflow: hidden;
-  border: 1px solid var(--primary-border);
-  border-radius: var(--radius-md);
-  background: var(--primary-soft);
+  border: 0;
+  border-radius: var(--brand-image-radius);
+  background: transparent;
   color: var(--primary);
   font-family: var(--font-latin);
   font-size: var(--font-lg);

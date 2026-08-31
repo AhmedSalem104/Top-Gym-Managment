@@ -330,8 +330,8 @@
   height: 66px;
   place-items: center;
   overflow: hidden;
-  border: 1px dashed var(--border-primary);
-  border-radius: var(--radius-md);
+  border: 0;
+  border-radius: var(--brand-image-radius);
   background: var(--primary-soft);
   color: var(--primary);
 }

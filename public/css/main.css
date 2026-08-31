@@ -156,6 +156,7 @@
   --font-heading: var(--font-body);
   --brand-base-font-size: 16px;
   --brand-radius-base: var(--radius-lg);
+  --brand-image-radius: 6px;
   --brand-surface-secondary: var(--bg-surface);
   --brand-login-background: var(--bg-app);
   --brand-login-gradient-start: var(--primary);
@@ -4516,9 +4517,9 @@ body.auth-locked .auth-screen {
   height: 58px;
   place-items: center;
   overflow: hidden;
-  border: 1px solid var(--primary-border);
-  border-radius: 17px;
-  background: var(--primary-soft);
+  border: 0;
+  border-radius: var(--brand-image-radius);
+  background: transparent;
   color: var(--primary);
   font-size: 25px;
   font-weight: var(--weight-extrabold);
@@ -7356,11 +7357,11 @@ body.auth-locked .auth-screen[data-auth-stage="gateway"] {
   flex: 0 0 62px;
   place-items: center;
   overflow: hidden;
-  border: 1px solid var(--primary-border);
-  border-radius: var(--radius-lg);
-  background: var(--primary-soft);
+  border: 0;
+  border-radius: var(--brand-image-radius);
+  background: transparent;
   color: var(--color-primary);
-  box-shadow: var(--shadow-xs);
+  box-shadow: none;
   font-family: var(--font-latin);
   font-size: 1.55rem;
   font-weight: var(--weight-extrabold);
@@ -7525,7 +7526,7 @@ body.auth-locked .auth-screen[data-auth-stage="gateway"] {
   .dashboard-hero-actions { padding: var(--space-4); }
   .dashboard-hero-topline { align-items: flex-start; flex-direction: column; }
   .dashboard-hero-heading { align-items: flex-start; gap: var(--space-3); }
-  .dashboard-hero-brand-mark { width: 50px; height: 50px; flex-basis: 50px; border-radius: var(--radius-md); }
+  .dashboard-hero-brand-mark { width: 50px; height: 50px; flex-basis: 50px; border-radius: var(--brand-image-radius); }
   .dashboard-hero-heading h2 { font-size: 1.25rem; }
   .dashboard-hero-meta { display: grid; gap: 5px; }
   .dashboard-hero-meta span + span::before { display: none; }
@@ -17701,8 +17702,8 @@ body .swal2-popup.qr-member-preview-alert .swal2-actions > button.qr-member-prev
   height: 66px;
   place-items: center;
   overflow: hidden;
-  border: 1px dashed var(--border-primary);
-  border-radius: var(--radius-md);
+  border: 0;
+  border-radius: var(--brand-image-radius);
   background: var(--primary-soft);
   color: var(--primary);
 }
@@ -19396,9 +19397,9 @@ body.auth-locked .auth-screen {
   flex: 0 0 42px;
   place-items: center;
   overflow: hidden;
-  border: 1px solid var(--primary-border);
-  border-radius: var(--radius-md);
-  background: var(--primary-soft);
+  border: 0;
+  border-radius: var(--brand-image-radius);
+  background: transparent;
   color: var(--primary);
   font-family: var(--font-latin);
   font-size: var(--font-lg);
@@ -24368,9 +24369,9 @@ html[data-theme="light"] .theme-toggle-button:focus-visible{
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  border: 1px solid var(--sidebar-divider);
-  border-radius: var(--radius-lg);
-  background: var(--sidebar-hover-bg);
+  border: 0;
+  border-radius: var(--brand-image-radius);
+  background: transparent;
   color: var(--sidebar-text);
 }
 
@@ -24875,9 +24876,9 @@ html[data-theme="light"] .theme-toggle-button:focus-visible{
   flex: 0 0 44px;
   place-items: center;
   overflow: hidden;
-  border: 1px solid var(--sidebar-divider);
-  border-radius: var(--radius-md);
-  background: var(--bg-header);
+  border: 0;
+  border-radius: var(--brand-image-radius);
+  background: transparent;
   color: var(--sidebar-text);
   transition: background-color var(--sidebar-item-transition), border-color var(--sidebar-item-transition), transform var(--sidebar-item-transition);
 }

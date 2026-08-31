@@ -583,9 +583,9 @@ body.auth-locked .auth-screen {
   height: 58px;
   place-items: center;
   overflow: hidden;
-  border: 1px solid var(--primary-border);
-  border-radius: 17px;
-  background: var(--primary-soft);
+  border: 0;
+  border-radius: var(--brand-image-radius);
+  background: transparent;
   color: var(--primary);
   font-size: 25px;
   font-weight: var(--weight-extrabold);
