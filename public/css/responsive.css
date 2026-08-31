@@ -2024,7 +2024,7 @@
   }
 
   .app-shell > .page-tabs:not(:hover):not(.is-pinned)::before {
-    content: "TG";
+    content: "LF";
     font-size: 16px;
   }
 

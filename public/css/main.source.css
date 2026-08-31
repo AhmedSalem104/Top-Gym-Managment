@@ -45,4 +45,5 @@
 @import url("./pages/platform-admin.css");
 @import url("./responsive.css");
 @import url("./theme.css");
+@import url("./components/ui-foundation.css");
 @import url("./print.css");

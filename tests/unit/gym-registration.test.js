@@ -107,6 +107,15 @@ test('new registration page is independent from the existing landing page', () =
     assert.doesNotMatch(landing, /register-gym/);
 });
 
+test('public registration fails safely when the catalog shape or API response is invalid', () => {
+    const registration = read('public/js/register-gym.js');
+    assert.match(registration, /function normalizeCatalog\(data\)/);
+    assert.match(registration, /CATALOG_INVALID/);
+    assert.match(registration, /PRIVATE_OBJECT_STORAGE_NOT_CONFIGURED/);
+    assert.match(registration, /Number\(error\?\.status\) >= 500/);
+    assert.doesNotMatch(registration, /return text\(error\?\.message\) \|\| fallback/);
+});
+
 test('platform admin exposes a separate gym registration queue with one-time credential handling', () => {
     const html = read('public/platform-admin.html');
     const client = read('public/js/platform-admin.js');

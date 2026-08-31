@@ -45,8 +45,43 @@
         return `${(bytes / (1024 * 1024)).toFixed(2)} ميجابايت`;
     }
 
+    const safeErrorMessages = Object.freeze({
+        CATALOG_INVALID: 'تعذر تحميل خيارات التسجيل حاليًا. أعد المحاولة بعد قليل.',
+        GYM_REGISTRATION_NOT_CONFIGURED: 'التسجيل العام غير مهيأ حاليًا. تواصل مع Logic Fit أو أعد المحاولة لاحقًا.',
+        REGISTRATION_PLAN_UNAVAILABLE: 'الباقة المختارة لم تعد متاحة. أعد تحميل الخيارات واختر باقة أخرى.',
+        REGISTRATION_TERM_UNAVAILABLE: 'مدة الاشتراك المختارة لم تعد متاحة. أعد تحميل الخيارات واختر مدة أخرى.',
+        REGISTRATION_PAYMENT_METHOD_UNAVAILABLE: 'وسيلة الدفع المختارة لم تعد متاحة. أعد تحميل الخيارات واختر وسيلة أخرى.',
+        PRIVATE_OBJECT_STORAGE_NOT_CONFIGURED: 'تعذر رفع إثبات الدفع لأن التخزين الخاص غير مهيأ حاليًا.',
+        PRIVATE_STORAGE_VERIFICATION_UNAVAILABLE: 'تعذر التحقق من إثبات الدفع حاليًا. حاول مرة أخرى.',
+        REGISTRATION_PAYMENT_PROOF_UNAVAILABLE: 'تعذر الوصول إلى إثبات الدفع. أعد رفع الملف وحاول مرة أخرى.',
+        REGISTRATION_PAYMENT_PROOF_INTEGRITY_FAILED: 'تعذر التحقق من سلامة إثبات الدفع. أعد رفع الملف الأصلي.',
+        REGISTRATION_REQUEST_ALREADY_EXISTS: 'يوجد طلب تسجيل مماثل قيد المراجعة بالفعل.',
+        REGISTRATION_REQUEST_LOCKED: 'تمت مراجعة هذا الطلب بالفعل. أعد تحميل الصفحة لمعرفة حالته.'
+    });
+
+    function catalogError() {
+        const error = new Error('Registration catalog is invalid.');
+        error.code = 'CATALOG_INVALID';
+        return error;
+    }
+
+    function normalizeCatalog(data) {
+        if (!data || typeof data !== 'object' || !Array.isArray(data.plans) || !Array.isArray(data.paymentMethods)) {
+            throw catalogError();
+        }
+        return {
+            ...data,
+            plans: data.plans.filter((plan) => plan && typeof plan === 'object' && text(plan.code)),
+            paymentMethods: data.paymentMethods.filter((method) => method && typeof method === 'object' && text(method.methodCode))
+        };
+    }
+
     function errorMessage(error, fallback = 'تعذر تنفيذ الطلب. حاول مرة أخرى.') {
-        return text(error?.message) || fallback;
+        const code = text(error?.code);
+        if (code && safeErrorMessages[code]) return safeErrorMessages[code];
+        if (Number(error?.status) === 429) return 'تم تجاوز عدد المحاولات المسموح به. انتظر قليلًا ثم حاول مرة أخرى.';
+        if (Number(error?.status) >= 500 || error?.name === 'TypeError') return 'تعذر الاتصال بخدمة التسجيل حاليًا. حاول مرة أخرى بعد قليل.';
+        return fallback;
     }
 
     async function api(path, options = {}) {
@@ -234,12 +269,14 @@
     async function loadCatalog() {
         try {
             const data = await api('/api/public/gym-registration/catalog', { headers: { Accept: 'application/json' } });
-            state.catalog = data;
+            state.catalog = normalizeCatalog(data);
             renderPlans();
             renderPaymentMethods();
         } catch (error) {
             $('registrationPlans').innerHTML = '<p class="registration-empty">تعذر تحميل الباقات حاليًا. أعد تحميل الصفحة وحاول مرة أخرى.</p>';
-            showError(errorMessage(error, 'تعذر تحميل خيارات الاشتراك.'));
+            const message = errorMessage(error, 'تعذر تحميل خيارات الاشتراك.');
+            showError(message);
+            toast(message, 'error');
         }
     }
 

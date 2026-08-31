@@ -204,13 +204,18 @@
         const next = theme === 'dark' ? 'dark' : 'light';
         document.documentElement.dataset.theme = next;
         try { localStorage.setItem('topgym-theme', next); } catch (_) { /* storage is optional */ }
-        $('#platformThemeToggle').setAttribute('aria-label', next === 'dark' ? 'تفعيل المظهر الفاتح' : 'تفعيل المظهر الداكن');
+        [$('#platformThemeToggle'), $('#platformLoginThemeToggle')].filter(Boolean).forEach((toggle) => {
+            toggle.setAttribute('aria-label', next === 'dark' ? 'تفعيل المظهر الفاتح' : 'تفعيل المظهر الداكن');
+            toggle.setAttribute('title', next === 'dark' ? 'تفعيل المظهر الفاتح' : 'تفعيل المظهر الداكن');
+        });
     }
 
     function initializeTheme() {
         const current = document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light';
         setTheme(current);
-        $('#platformThemeToggle').addEventListener('click', () => setTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'));
+        [$('#platformThemeToggle'), $('#platformLoginThemeToggle')].filter(Boolean).forEach((toggle) => {
+            toggle.addEventListener('click', () => setTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'));
+        });
     }
 
     function setView(view) {
@@ -917,7 +922,6 @@
         bindRefresh('[data-platform-action="refresh-payment-methods"]', loadPlatformPaymentMethods);
         bindRefresh('[data-platform-action="refresh-backups"]', loadBackups);
         $('#platformMobileMenu').addEventListener('click', () => $('.platform-sidebar').classList.toggle('open'));
-        $('#platformMobileMenu').addEventListener('keydown', (event) => { if (event.key === 'Enter' || event.key === ' ') $('.platform-sidebar').classList.toggle('open'); });
         dialogForm.addEventListener('submit', handleDialogSubmit);
         dialogForm.addEventListener('input', () => { if (!$('#platformDialogError')?.hidden) clearDialogError(); });
         $$('[data-dialog-cancel]', dialog).forEach((button) => button.addEventListener('click', () => dialog.close()));

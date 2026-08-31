@@ -19477,6 +19477,7 @@ body.auth-locked .auth-screen {
 }
 .platform-login-glow { position: absolute; width: 420px; height: 420px; border-radius: 50%; background: var(--primary-soft); filter: blur(80px); opacity: .7; inset: auto auto -180px -120px; pointer-events: none; }
 .platform-login-card { position: relative; width: min(100%, 480px); padding: clamp(24px, 5vw, 44px); border: 1px solid var(--platform-border); border-radius: 24px; background: var(--platform-surface); box-shadow: var(--shadow-popup); }
+.platform-login-theme { position: absolute; top: 20px; inset-inline-start: 20px; }
 .platform-login-brand, .platform-sidebar-brand, .platform-admin-identity { display: flex; align-items: center; gap: 12px; }
 .platform-brand-mark { display: grid; width: 46px; height: 46px; flex: 0 0 46px; place-items: center; border-radius: 14px; background: linear-gradient(135deg, var(--primary), var(--primary-active)); color: var(--text-on-primary); font-size: 1.45rem; font-weight: 800; box-shadow: var(--shadow-primary); }
 .platform-login-brand strong, .platform-sidebar-brand strong { display: block; color: var(--text-primary); font-size: 1.1rem; }
@@ -19525,6 +19526,7 @@ body.auth-locked .auth-screen {
 .platform-global-search input { width: 100%; border: 0; background: transparent; box-shadow: none; padding-inline: 0; }
 .platform-global-search input:focus { box-shadow: none; }
 .platform-icon-btn { display: grid; width: 38px; height: 38px; flex: 0 0 38px; place-items: center; border: 1px solid var(--platform-border); border-radius: 10px; background: var(--platform-surface); color: var(--text-secondary); font-size: 1.05rem; }
+.platform-icon-btn .ui-icon { width: 17px; height: 17px; }
 .platform-icon-btn:hover, .platform-icon-btn:focus-visible { border-color: var(--primary-border); background: var(--primary-soft); color: var(--text-primary-soft); }
 .platform-admin-identity { min-width: 0; max-width: 190px; padding-inline-start: 8px; }
 .platform-admin-identity > div { min-width: 0; }
@@ -21866,7 +21868,7 @@ body.auth-locked .auth-screen {
   }
 
   .app-shell > .page-tabs:not(:hover):not(.is-pinned)::before {
-    content: "TG";
+    content: "LF";
     font-size: 16px;
   }
 
@@ -25078,6 +25080,263 @@ html[data-theme="dark"] .topbar.gym-topbar-bg {
     border-color: var(--primary-border);
     background: var(--primary-soft);
     color: var(--text-primary);
+  }
+}
+
+/* END TOP GYM layer */
+
+
+/* TOP GYM layer: public/css/components/ui-foundation.css */
+/*
+ * Logic Fit UI foundation
+ *
+ * This is the final, shared visual contract for the existing Vanilla UI.
+ * It intentionally consumes the token graph and existing primitives instead
+ * of introducing a second component library or a new color system.
+ */
+
+:where(button, a, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 3px;
+}
+
+:where(button, input, select, textarea) {
+  font-family: var(--font-body);
+}
+
+:where(.app-shell, .platform-admin-page, .member-portal-page, .public-registration-page) {
+  min-height: 100dvh;
+  overflow-x: clip;
+}
+
+:where(.page, .platform-content, .member-portal-page .portal-shell, .registration-shell) {
+  isolation: isolate;
+}
+
+:where(.page-header, .section-heading, .panel-header, .platform-page-head,
+  .portal-result-header, .registration-card-head) h1,
+:where(.page-header, .section-heading, .panel-header, .platform-page-head,
+  .portal-result-header, .registration-card-head) h2,
+:where(.page-header, .section-heading, .panel-header, .platform-page-head,
+  .portal-result-header, .registration-card-head) h3 {
+  overflow-wrap: anywhere;
+}
+
+:where(.panel, .card, .shadow-panel) {
+  border-color: var(--border-secondary);
+  box-shadow: var(--shadow-sm);
+}
+
+:where(.btn, .platform-btn, .platform-link-btn, .portal-actions .btn) {
+  min-height: 42px;
+  font-family: var(--font-body);
+  line-height: 1.35;
+}
+
+:where(.btn, .platform-btn, .platform-link-btn):disabled,
+:where(.btn, .platform-btn, .platform-link-btn)[aria-busy="true"] {
+  cursor: wait;
+}
+
+:where(.btn.is-loading, .platform-btn.is-loading, [aria-busy="true"]) {
+  pointer-events: none;
+}
+
+:where(.form-field, .field, .auth-field, .platform-field) > label {
+  line-height: 1.55;
+}
+
+:where(input:not([type="checkbox"]):not([type="radio"]), select, textarea,
+  .form-control, .search-input, .filter-input) {
+  min-width: 0;
+  color: var(--color-text);
+  caret-color: var(--color-primary);
+}
+
+:where(.table-scroll, .table-wrap, .data-table-wrap, .portal-table-wrap) {
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+  scrollbar-width: thin;
+}
+
+:where(.table-scroll, .table-wrap, .data-table-wrap, .portal-table-wrap)::-webkit-scrollbar {
+  height: 8px;
+}
+
+:where(.table-scroll, .table-wrap, .data-table-wrap, .portal-table-wrap)::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+}
+
+:where(.table-scroll, .table-wrap, .data-table-wrap, .portal-table-wrap)::-webkit-scrollbar-thumb {
+  border: 2px solid var(--scrollbar-track);
+  border-radius: var(--radius-pill);
+  background: var(--scrollbar-thumb);
+}
+
+:where(.empty-state, .empty, .no-data, .not-found-state) {
+  min-height: 156px;
+}
+
+:where(.error-state, .page-error, .registration-error, .portal-error) {
+  overflow-wrap: anywhere;
+}
+
+/* Platform Admin: a restrained operations surface, with a bounded reading
+   width so wide monitors do not turn the control center into a stretched
+   spreadsheet. */
+.platform-shell {
+  min-height: 100dvh;
+  background: var(--bg-app);
+  color: var(--text-primary);
+}
+
+.platform-content {
+  width: min(100%, 1440px);
+}
+
+.platform-card,
+.platform-login-card {
+  border-color: var(--border-secondary);
+  box-shadow: var(--shadow-sm);
+}
+
+.platform-card .card-heading,
+.platform-page-head,
+.directory-toolbar,
+.platform-dashboard-grid {
+  min-width: 0;
+}
+
+.platform-global-search > span .ui-icon,
+.platform-search-field > span .ui-icon {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+}
+
+.platform-table th {
+  letter-spacing: 0;
+}
+
+.platform-nav-item .nav-icon .ui-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.quick-actions button > span:first-child .ui-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.quick-actions button,
+.platform-nav-item,
+.platform-icon-btn {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Member Portal: the authenticated result is a product surface rather than
+   a full-width report. The existing mobile rules remain authoritative. */
+.member-portal-page .portal-result {
+  width: min(100%, 1120px);
+  margin-inline: auto;
+}
+
+.member-portal-page .portal-section,
+.member-portal-page .portal-feedback,
+.member-portal-page .portal-tool-card {
+  min-width: 0;
+}
+
+/* Register Gym: keep the conversion flow focused and avoid over-wide form
+   controls on large screens. */
+.public-registration-page .registration-shell {
+  width: min(100% - 32px, 1280px);
+}
+
+.public-registration-page .registration-card,
+.public-registration-page .registration-aside {
+  min-width: 0;
+}
+
+.registration-plan-option,
+.registration-term-option,
+.registration-payment-option {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* File inputs inherit the global form width rule. Keep the native control
+   keyboard-accessible without allowing its invisible box to widen the page. */
+.portal-proof-picker > input[type="file"],
+.registration-upload > input[type="file"] {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  min-width: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+@media (max-width: 767px) {
+  :where(.btn, .platform-btn, .platform-link-btn, .portal-actions .btn) {
+    min-height: 44px;
+  }
+
+  :where(.page, .platform-content, .member-portal-page .portal-shell,
+    .public-registration-page .registration-shell) {
+    width: calc(100% - 24px);
+  }
+
+  .platform-content {
+    padding-inline: 12px;
+  }
+
+  .platform-page-head,
+  .portal-result-header,
+  .registration-card-head {
+    align-items: stretch;
+  }
+
+  .platform-page-head .platform-btn,
+  .platform-page-head .platform-page-actions,
+  .registration-actions > *,
+  .portal-actions > * {
+    max-width: 100%;
+  }
+
+  .platform-page-head .platform-page-actions {
+    flex-wrap: wrap;
+  }
+
+  .platform-page-head .platform-page-actions > .platform-btn {
+    flex: 1 1 160px;
+  }
+
+  .registration-actions {
+    padding-bottom: max(4px, env(safe-area-inset-bottom));
+  }
+
+  :where(dialog, .modal) {
+    max-width: calc(100vw - 24px);
+  }
+}
+
+@media (max-width: 380px) {
+  .public-registration-page .registration-shell,
+  .member-portal-page .portal-shell {
+    width: calc(100% - 16px);
+  }
+
+  .platform-content {
+    padding-inline: 8px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :where(*, *::before, *::after) {
+    scroll-behavior: auto;
+    transition-duration: 0.01ms;
   }
 }
 
