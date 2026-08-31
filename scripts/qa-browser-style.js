@@ -5,7 +5,7 @@ const path = require('node:path');
 const { chromium } = require('playwright');
 
 const root = path.resolve(__dirname, '..');
-const baseUrl = process.env.QA_BASE_URL || 'http://127.0.0.1:4174';
+const baseUrl = process.env.QA_BASE_URL || 'http://127.0.0.1:3000';
 const artifacts = path.join(root, 'qa', 'artifacts');
 const viewports = [
   { name: '375', width: 375, height: 812 },
@@ -15,8 +15,8 @@ const viewports = [
   { name: '1440', width: 1440, height: 900 },
   { name: '1920', width: 1920, height: 1080 }
 ];
-const screenIds = ['dashboardSection', 'membersSection', 'traineesSection', 'managementSection', 'backupHistorySection', 'attendanceSection', 'expensesSection', 'librarySection', 'reportsSection', 'brandingSection', 'memberPaymentMethodsSection', 'permissionsSection', 'intelligenceSection', 'feedbackSection', 'storeSection', 'memberSubscriptionRequestsSection', 'portalAnalyticsSection'];
-const dialogIds = ['actionDialog', 'pricingDialog', 'membershipTypesDialog', 'membershipPlanDialog', 'membershipTypeDialog', 'detailsDialog', 'qrReaderDialog', 'memberQrDialog', 'libraryFormDialog', 'libraryDetailsDialog', 'externalTraineeDialog', 'coachingProfileDialog', 'coachingBuilderDialog', 'authUserDialog', 'backupRestoreDialog', 'expenseDialog', 'memberDialog'];
+const screenIds = ['dashboardSection', 'membersSection', 'traineesSection', 'managementSection', 'backupHistorySection', 'attendanceSection', 'expensesSection', 'librarySection', 'reportsSection', 'brandingSection', 'memberPaymentMethodsSection', 'saasBillingSection', 'permissionsSection', 'intelligenceSection', 'feedbackSection', 'storeSection', 'memberSubscriptionRequestsSection', 'portalAnalyticsSection'];
+const dialogIds = ['actionDialog', 'pricingDialog', 'membershipTypesDialog', 'membershipPlanDialog', 'membershipTypeDialog', 'detailsDialog', 'qrReaderDialog', 'memberQrDialog', 'libraryFormDialog', 'libraryDetailsDialog', 'externalTraineeDialog', 'coachingProfileDialog', 'coachingBuilderDialog', 'authUserDialog', 'backupRestoreDialog', 'expenseDialog', 'memberDialog', 'dayPassDialog'];
 
 function assert(condition, message) {
   if (!condition) throw new Error(message);
@@ -41,7 +41,7 @@ function prepareShell(page, target) {
 }
 
 async function checkPage(page, target, viewport, saveScreenshot) {
-  const requiredFeature = target === 'expensesSection' ? 'finance' : null;
+  const requiredFeature = target === 'expensesSection' ? 'finance' : target === 'saasBillingSection' ? 'saas-billing' : null;
   if (requiredFeature) {
     await page.evaluate(async (feature) => {
       await window.topGymEnsureTab?.(feature);
