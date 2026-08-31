@@ -13,10 +13,11 @@ test('navigation pending state keeps the Gym App controls interactive', () => {
     assert.doesNotMatch(pendingBlock, /pointer-events:\s*none/u);
 });
 
-test('desktop sidebar hover contract reveals labels without changing the app grid', () => {
+test('desktop sidebar hover contract expands a safe layout track and reveals labels', () => {
     const source = fs.readFileSync(path.join(root, 'public/css/components/ui-foundation.css'), 'utf8');
 
     assert.match(source, /grid-template-columns:\s*var\(--sidebar-width-collapsed,\s*84px\)\s+minmax\(0,\s*1fr\)/u);
-    assert.match(source, /\.app-shell\s*>\s*\.page-tabs:hover[\s\S]*?width:\s*var\(--sidebar-width-expanded,\s*292px\)/u);
+    assert.match(source, /\.app-shell\.sidebar-expanded[\s\S]*?grid-template-columns:\s*var\(--sidebar-width-expanded,\s*292px\)\s+minmax\(0,\s*1fr\)/u);
+    assert.match(source, /\.app-shell\s*>\s*main\.page[\s\S]*?grid-column:\s*2/u);
     assert.match(source, /\.app-shell\s*>\s*\.page-tabs:hover\s*>\s*\.page-tab\s*>\s*span[\s\S]*?opacity:\s*1/u);
 });

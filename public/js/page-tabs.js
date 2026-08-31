@@ -38,10 +38,66 @@
         }
     }
 
+    function syncSidebarTooltips(rail) {
+        if (!rail) return;
+
+        const targets = [
+            ...rail.querySelectorAll('.page-tab'),
+            rail.querySelector('#sidebarPinButton'),
+            rail.querySelector('.smart-assistant-launcher'),
+            rail.querySelector('.auth-logout-button')
+        ].filter(Boolean);
+
+        targets.forEach((element) => {
+            const label = (element.querySelector('span:not(.visually-hidden)')?.textContent || element.getAttribute('aria-label') || element.title || '').trim();
+            if (!label) return;
+            element.dataset.sidebarLabel = label;
+            if (!element.getAttribute('aria-label')) element.setAttribute('aria-label', label);
+            if (!element.title) element.title = label;
+        });
+    }
+
     function initSidebarPin() {
         const rail = document.getElementById('pageTabs');
         const pinButton = document.getElementById('sidebarPinButton');
         if (!rail || !pinButton) return;
+
+        syncSidebarTooltips(rail);
+
+        const shell = rail.closest('.app-shell');
+
+        let hoverReleaseTimer = null;
+        const openRail = () => {
+            if (hoverReleaseTimer) window.clearTimeout(hoverReleaseTimer);
+            rail.classList.add('is-hovered');
+            shell?.classList.add('sidebar-expanded');
+        };
+        const scheduleRailClose = () => {
+            if (hoverReleaseTimer) window.clearTimeout(hoverReleaseTimer);
+            hoverReleaseTimer = window.setTimeout(() => {
+                if (!rail.classList.contains('is-pinned')) {
+                    rail.classList.remove('is-hovered');
+                    shell?.classList.remove('sidebar-expanded');
+                }
+                hoverReleaseTimer = null;
+            }, 140);
+        };
+
+        rail.addEventListener('pointerenter', openRail);
+        rail.addEventListener('pointerleave', scheduleRailClose);
+        rail.addEventListener('focusin', openRail);
+        rail.addEventListener('focusout', (event) => {
+            if (!rail.contains(event.relatedTarget)) scheduleRailClose();
+        });
+
+        // The shell can be hidden while authentication/branding is settling.
+        // Mark it ready after the first paint so the first reveal is stable;
+        // only real pointer/focus changes should animate the rail afterward.
+        window.requestAnimationFrame(() => {
+            window.requestAnimationFrame(() => {
+                document.querySelector('.app-shell')?.classList.add('sidebar-ready');
+            });
+        });
 
         let pinned = false;
         try {
@@ -53,6 +109,7 @@
         const applyPinnedState = (nextPinned) => {
             pinned = Boolean(nextPinned);
             rail.classList.toggle('is-pinned', pinned);
+            shell?.classList.toggle('sidebar-expanded', pinned || rail.classList.contains('is-hovered'));
             pinButton.setAttribute('aria-pressed', String(pinned));
             const label = pinned ? 'إلغاء تثبيت القائمة الجانبية' : 'تثبيت القائمة الجانبية';
             pinButton.setAttribute('aria-label', label);
@@ -68,6 +125,73 @@
                 // The sidebar remains usable when storage is unavailable.
             }
         });
+    }
+
+    function initMobileNavigation() {
+        const rail = document.getElementById('pageTabs');
+        const shell = rail?.closest('.app-shell');
+        const toggle = document.getElementById('mobileNavToggle');
+        const closeButton = document.getElementById('mobileNavClose');
+        const backdrop = document.getElementById('mobileNavBackdrop');
+        if (!rail || !shell || !toggle) return;
+
+        const mediaQuery = window.matchMedia('(max-width: 1199px)');
+        const openLabel = '\u0641\u062a\u062d \u0627\u0644\u0642\u0627\u0626\u0645\u0629';
+        const closeLabel = '\u0625\u063a\u0644\u0627\u0642 \u0627\u0644\u0642\u0627\u0626\u0645\u0629';
+
+        const syncNavigationAria = (open) => {
+            if (mediaQuery.matches) {
+                rail.setAttribute('aria-hidden', String(!open));
+            } else {
+                rail.removeAttribute('aria-hidden');
+            }
+        };
+
+        const setOpen = (open) => {
+            const wasOpen = shell.classList.contains('mobile-nav-open');
+            const nextOpen = Boolean(open) && mediaQuery.matches;
+            shell.classList.toggle('mobile-nav-open', nextOpen);
+            document.body.classList.toggle('mobile-nav-open', nextOpen);
+            rail.classList.toggle('is-mobile-open', nextOpen);
+            toggle.setAttribute('aria-expanded', String(nextOpen));
+            toggle.setAttribute('aria-label', nextOpen ? closeLabel : openLabel);
+            toggle.setAttribute('title', nextOpen ? closeLabel : openLabel);
+            const toggleLabel = toggle.querySelector('[data-mobile-nav-label]');
+            if (toggleLabel) toggleLabel.textContent = nextOpen ? closeLabel : openLabel;
+
+            if (backdrop) {
+                backdrop.hidden = !nextOpen;
+                backdrop.setAttribute('aria-hidden', String(!nextOpen));
+            }
+            syncNavigationAria(nextOpen);
+
+            if (nextOpen) {
+                window.requestAnimationFrame(() => closeButton?.focus({ preventScroll: true }));
+            } else if (wasOpen) {
+                toggle.focus({ preventScroll: true });
+            }
+        };
+
+        toggle.addEventListener('click', () => {
+            setOpen(!shell.classList.contains('mobile-nav-open'));
+        });
+        closeButton?.addEventListener('click', () => setOpen(false));
+        backdrop?.addEventListener('click', () => setOpen(false));
+        rail.addEventListener('click', (event) => {
+            if (event.target.closest('[data-page-tab]')) setOpen(false);
+        });
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape' && shell.classList.contains('mobile-nav-open')) setOpen(false);
+        });
+
+        const handleViewportChange = () => setOpen(false);
+        if (typeof mediaQuery.addEventListener === 'function') {
+            mediaQuery.addEventListener('change', handleViewportChange);
+        } else if (typeof mediaQuery.addListener === 'function') {
+            mediaQuery.addListener(handleViewportChange);
+        }
+
+        setOpen(false);
     }
 
     function normalizeTab(name) {
@@ -215,6 +339,7 @@
     document.addEventListener('DOMContentLoaded', () => {
         ensureBackupHistoryTab();
         initSidebarPin();
+        initMobileNavigation();
         document.querySelectorAll('[data-page-tab]').forEach((button) => {
             button.setAttribute('role', 'tab');
         });

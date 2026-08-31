@@ -231,9 +231,14 @@ async function assertDesktopNavigation(page) {
         const shell = document.querySelector('.app-shell');
         const sidebar = document.getElementById('pageTabs');
         const topbar = document.querySelector('.app-shell > .topbar');
+        const main = document.querySelector('.app-shell > main.page');
         const sidebarRect = sidebar?.getBoundingClientRect();
         const topbarRect = topbar?.getBoundingClientRect();
+        const mainRect = main?.getBoundingClientRect();
         const shellStyle = shell ? getComputedStyle(shell) : null;
+        const sidebarMainOverlap = sidebarRect && mainRect
+            ? Math.max(0, Math.min(sidebarRect.right, mainRect.right) - Math.max(sidebarRect.left, mainRect.left))
+            : null;
         return {
             topbarVisible: Boolean(topbar && getComputedStyle(topbar).display !== 'none'),
             sidebarVisible: Boolean(sidebar && getComputedStyle(sidebar).display !== 'none'),
@@ -246,6 +251,8 @@ async function assertDesktopNavigation(page) {
                 return { maxWidth: style.maxWidth, opacity: style.opacity };
             })(),
             topbarRect: topbarRect ? { left: topbarRect.left, right: topbarRect.right, top: topbarRect.top, bottom: topbarRect.bottom } : null,
+            mainRect: mainRect ? { left: mainRect.left, right: mainRect.right, top: mainRect.top, bottom: mainRect.bottom } : null,
+            sidebarMainOverlap,
             gridColumns: shellStyle?.gridTemplateColumns || ''
         };
     });
@@ -260,7 +267,8 @@ async function assertDesktopNavigation(page) {
     const expanded = await readLayout();
     assert(expanded.sidebarWidth >= closed.sidebarWidth + 80, `desktop sidebar did not expand on hover (${closed.sidebarWidth}px -> ${expanded.sidebarWidth}px)`);
     assert(expanded.sidebarRect && expanded.topbarRect && (expanded.sidebarRect.top >= expanded.topbarRect.bottom - 1 || expanded.topbarRect.top >= expanded.sidebarRect.top + 1), 'desktop sidebar intersects navbar after hover');
-    assert(expanded.gridColumns === closed.gridColumns, 'desktop grid changed on hover and may cause a layout jolt');
+    assert(expanded.mainRect && expanded.sidebarMainOverlap <= 1, `desktop sidebar overlaps the page canvas after hover (${expanded.sidebarMainOverlap}px)`);
+    assert(expanded.gridColumns !== closed.gridColumns, 'desktop hover did not allocate a separate expanded layout track');
     assert(expanded.sidebarLabel && Number.parseFloat(expanded.sidebarLabel.maxWidth) > 0 && Number.parseFloat(expanded.sidebarLabel.opacity) > 0, 'desktop sidebar labels stay hidden after hover');
 }
 

@@ -583,6 +583,388 @@ body .swal2-popup.qr-member-preview-alert .swal2-actions > button.qr-member-prev
 .day-pass-empty { color: var(--color-text-muted); padding: var(--space-8); text-align: center; }
 .field-optional { color: var(--color-text-muted); font-size: 11px; font-weight: var(--weight-regular); }
 
+/* Attendance workspace refinement ---------------------------------------
+   Keep the page operationally dense without flattening the hierarchy. The
+   controls remain the same DOM/IDs so attendance handlers and permissions are
+   unchanged; this layer only improves grouping, contrast and touch clarity. */
+.attendance-section {
+  overflow: hidden;
+}
+
+.attendance-header {
+  align-items: flex-start;
+  gap: var(--space-6);
+}
+
+.attendance-heading {
+  min-width: 0;
+  align-items: flex-start;
+}
+
+.attendance-heading > div {
+  min-width: 0;
+}
+
+.attendance-kicker {
+  color: var(--color-primary);
+  font-size: var(--font-xs);
+  font-weight: var(--weight-bold);
+  letter-spacing: .02em;
+}
+
+.attendance-heading h3 {
+  color: var(--text-primary);
+  font-size: clamp(var(--font-xl), 2.3vw, var(--font-2xl));
+  line-height: 1.35;
+}
+
+.attendance-heading p,
+.attendance-entry-head p,
+.attendance-list-head p,
+.attendance-report-hint,
+.attendance-entry-hint {
+  color: var(--text-secondary);
+  line-height: 1.65;
+}
+
+.attendance-header-actions {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  justify-content: end;
+  gap: var(--space-3);
+  min-width: min(100%, 440px);
+  margin-inline-start: auto;
+}
+
+.attendance-date-badge {
+  display: inline-flex;
+  min-height: 40px;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  border: 1px solid var(--primary-border);
+  border-radius: var(--radius-pill);
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+  padding-inline: var(--space-4);
+  font-size: var(--font-sm);
+  font-weight: var(--weight-bold);
+  white-space: nowrap;
+}
+
+.attendance-date-badge .ui-icon {
+  width: 17px;
+  height: 17px;
+  flex: 0 0 17px;
+}
+
+.attendance-mode-actions {
+  min-width: 0;
+  justify-content: flex-end;
+  gap: var(--space-3);
+}
+
+.attendance-mode-actions .btn {
+  min-height: 40px;
+  flex: 0 0 auto;
+  border-color: var(--border-primary);
+  font-weight: var(--weight-bold);
+}
+
+.attendance-report-hint {
+  max-width: 25ch;
+  font-size: var(--font-xs);
+  text-align: end;
+}
+
+.attendance-control-panel {
+  gap: var(--space-5);
+}
+
+.attendance-entry-card {
+  gap: var(--space-5);
+  padding: clamp(var(--space-4), 2.2vw, var(--space-6));
+  box-shadow: var(--shadow-sm);
+}
+
+.attendance-entry-head {
+  align-items: flex-start;
+}
+
+.attendance-entry-head > div:first-child {
+  min-width: 0;
+}
+
+.attendance-entry-head h4,
+.attendance-list-head h4 {
+  line-height: 1.45;
+}
+
+.attendance-entry-mode {
+  flex: 0 0 auto;
+}
+
+.attendance-segmented-control {
+  gap: 3px;
+  border-color: var(--border-primary);
+  background: var(--color-surface-muted);
+  padding: 3px;
+}
+
+.attendance-segmented-control > button {
+  display: inline-flex;
+  min-height: 40px;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  border: 1px solid transparent;
+  color: var(--text-secondary);
+  padding-inline: var(--space-4);
+  font-size: var(--font-sm);
+  font-weight: var(--weight-bold);
+  white-space: nowrap;
+}
+
+.attendance-segmented-control > button:not(.active):not([aria-selected="true"]) {
+  border-color: var(--border-secondary);
+  background: var(--color-surface);
+  color: var(--text-secondary);
+}
+
+.attendance-segmented-control > button:not(.active):not([aria-selected="true"]):hover {
+  border-color: var(--border-hover);
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+
+.attendance-segmented-control > button.active,
+.attendance-segmented-control > button[aria-selected="true"] {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+  color: var(--text-on-primary);
+  box-shadow: var(--shadow-primary);
+}
+
+.attendance-segmented-control .ui-icon {
+  width: 17px;
+  height: 17px;
+  flex: 0 0 17px;
+}
+
+.attendance-input-row {
+  align-items: stretch;
+}
+
+.attendance-section .attendance-input-wrap > input:not([type="checkbox"]):not([type="radio"]) {
+  min-height: 48px;
+  padding-block: 0;
+  padding-inline: 44px 14px;
+  line-height: 1.4;
+}
+
+.attendance-input-wrap input::placeholder,
+.attendance-search::placeholder {
+  color: var(--text-muted);
+  opacity: 1;
+}
+
+.attendance-action-buttons {
+  gap: var(--space-3);
+}
+
+.attendance-action-buttons > .btn {
+  min-width: 154px;
+  min-height: 48px;
+  border: 1px solid transparent;
+  font-weight: var(--weight-bold);
+  box-shadow: var(--shadow-sm);
+}
+
+.attendance-action-buttons > .btn-check-in {
+  border-color: var(--success);
+  background: var(--success);
+}
+
+.attendance-action-buttons > .btn-check-out {
+  border-color: var(--warning);
+  background: var(--warning);
+}
+
+.attendance-action-buttons > .btn-check-in:hover:not(:disabled),
+.attendance-action-buttons > .btn-check-out:hover:not(:disabled) {
+  filter: brightness(.94);
+  transform: translateY(-1px);
+}
+
+.attendance-summary {
+  gap: var(--space-3);
+}
+
+.attendance-summary-card {
+  position: relative;
+  min-height: 148px;
+  gap: var(--space-2);
+  border-color: var(--border-secondary);
+  box-shadow: var(--shadow-sm);
+}
+
+.attendance-summary-card::after {
+  position: absolute;
+  inset-block-start: 12px;
+  inset-inline-end: 12px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  content: "";
+  opacity: .7;
+}
+
+.attendance-summary-card.checked-in::after { background: var(--success); }
+.attendance-summary-card.checked-out::after { background: var(--warning); }
+
+.summary-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 13px;
+}
+
+.summary-icon .ui-icon {
+  width: 21px;
+  height: 21px;
+}
+
+.attendance-summary-card strong {
+  display: block;
+  min-height: 2.65rem;
+  color: var(--text-primary);
+  font-size: clamp(1.85rem, 3vw, 2.35rem);
+  font-weight: var(--weight-extrabold);
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+}
+
+.attendance-summary-card > span:last-child {
+  color: var(--text-secondary);
+  font-size: var(--font-xs);
+  font-weight: var(--weight-semibold);
+}
+
+.attendance-list-head {
+  align-items: flex-start;
+  gap: var(--space-5);
+}
+
+.attendance-list-head > div:first-child {
+  min-width: 0;
+}
+
+.attendance-list-actions {
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.attendance-search-wrap {
+  position: relative;
+  min-width: 240px;
+}
+
+.attendance-search-wrap svg {
+  right: auto;
+  left: auto;
+  inset-inline-start: var(--space-3);
+  color: var(--text-muted);
+}
+
+.attendance-section .attendance-search-wrap > input:not([type="checkbox"]):not([type="radio"]) {
+  min-height: 46px;
+  padding-block: 0;
+  padding-inline: var(--space-9) var(--space-3);
+  line-height: 1.4;
+}
+
+.attendance-status-filter,
+.attendance-list-actions > .btn {
+  min-height: 46px;
+}
+
+@media (max-width: 767px) {
+  .attendance-header {
+    gap: var(--space-4);
+  }
+
+  .attendance-header-actions {
+    width: 100%;
+    min-width: 0;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: stretch;
+    margin-inline-start: 0;
+  }
+
+  .attendance-date-badge {
+    justify-self: start;
+  }
+
+  body .attendance-header-actions > .attendance-mode-actions {
+    width: 100%;
+    align-items: center;
+    flex-direction: row;
+    justify-content: space-between;
+  }
+
+  .attendance-report-hint {
+    max-width: 28ch;
+  }
+
+  .attendance-entry-head {
+    gap: var(--space-3);
+  }
+
+  .attendance-entry-mode,
+  .attendance-segmented-control {
+    width: 100%;
+  }
+
+  .attendance-segmented-control > button {
+    flex: 1 1 0;
+  }
+
+  .attendance-action-buttons > .btn {
+    min-width: 0;
+  }
+
+  .attendance-summary-card {
+    min-height: 132px;
+    padding: var(--space-3) var(--space-2);
+  }
+
+  .summary-icon {
+    width: 36px;
+    height: 36px;
+  }
+
+  .summary-icon .ui-icon {
+    width: 18px;
+    height: 18px;
+  }
+
+  .attendance-summary-card strong {
+    font-size: 1.7rem;
+  }
+
+  .attendance-search-wrap {
+    min-width: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .attendance-action-buttons > .btn-check-in:hover:not(:disabled),
+  .attendance-action-buttons > .btn-check-out:hover:not(:disabled) {
+    transform: none;
+  }
+}
+
 @media (max-width: 991px) {
   .day-pass-form { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .day-pass-whatsapp-option { grid-column: span 1; }
@@ -599,4 +981,125 @@ body .swal2-popup.qr-member-preview-alert .swal2-actions > button.qr-member-prev
   .day-pass-form-actions { align-items: stretch; flex-direction: column; }
   .day-pass-form-actions .btn { width: 100%; }
   .day-pass-search { width: 100%; min-width: 0; }
+}
+
+/* Final attendance alignment pass --------------------------------------
+   Keep heading/actions in one predictable RTL header and force icons to the
+   inline-start (the right side in Arabic) even when dashboard search rules
+   are loaded before this page stylesheet. */
+.attendance-section {
+  overflow: visible;
+}
+
+.attendance-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-6);
+}
+
+.attendance-header-actions {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-inline-start: 0;
+}
+
+.attendance-mode-actions {
+  display: flex !important;
+  min-width: 0;
+  align-items: center;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.attendance-report-hint {
+  max-width: 24ch;
+  text-align: start;
+}
+
+.attendance-input-wrap svg,
+.attendance-search-wrap svg {
+  right: auto !important;
+  left: auto !important;
+  inset-inline-start: 14px;
+  inset-inline-end: auto;
+}
+
+.attendance-section .attendance-input-wrap > input:not([type="checkbox"]):not([type="radio"]),
+.attendance-section .attendance-search-wrap > input:not([type="checkbox"]):not([type="radio"]) {
+  padding-inline-start: 44px;
+  padding-inline-end: 14px;
+}
+
+.attendance-summary-card strong {
+  display: block !important;
+  visibility: visible !important;
+  min-width: 2ch;
+  min-height: 2.65rem;
+  color: var(--text-primary) !important;
+  font-family: var(--font-latin);
+  font-size: clamp(2rem, 3.2vw, 2.65rem) !important;
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--weight-extrabold);
+  line-height: 1.1;
+  text-align: center;
+}
+
+.attendance-segmented-control > #attendanceScanButton {
+  border-color: var(--border-secondary);
+  background: var(--color-surface);
+  color: var(--text-secondary);
+}
+
+.attendance-segmented-control > #attendanceScanButton:hover:not(:disabled),
+.attendance-segmented-control > #attendanceScanButton:focus-visible {
+  border-color: var(--primary-border);
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+
+.attendance-action-buttons > .btn-check-in,
+.attendance-action-buttons > .btn-check-out {
+  min-height: 50px;
+  font-weight: var(--weight-bold);
+}
+
+.attendance-action-buttons > .btn-check-in {
+  border-color: var(--success);
+  background: var(--success);
+  color: var(--text-on-primary);
+}
+
+.attendance-action-buttons > .btn-check-out {
+  border-color: var(--warning);
+  background: var(--warning);
+  color: var(--text-on-primary);
+}
+
+@media (max-width: 767px) {
+  .attendance-header {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: stretch;
+    gap: var(--space-4);
+  }
+
+  .attendance-header-actions {
+    width: 100%;
+    align-items: stretch;
+    justify-content: stretch;
+  }
+
+  .attendance-mode-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .attendance-report-hint {
+    max-width: 30ch;
+  }
 }

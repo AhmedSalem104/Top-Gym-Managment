@@ -10,7 +10,6 @@
     let scanner = null;
     let scannerRunning = false;
     let currentQrMember = null;
-    let kioskMode = false;
     let attendanceAbortController = null;
     let memberPreviewAbortController = null;
     let memberPreviewTimer = null;
@@ -161,15 +160,6 @@
             oscillator.stop(context.currentTime + 0.18);
             oscillator.addEventListener('ended', () => context.close());
         } catch (_) { /* audio feedback is optional */ }
-    }
-
-    function toggleKiosk() {
-        kioskMode = !kioskMode;
-        document.body.classList.toggle('attendance-kiosk-mode', kioskMode);
-        const button = $('attendanceKioskButton');
-        if (button) button.textContent = kioskMode ? 'إنهاء Kiosk' : 'وضع Kiosk';
-        if (kioskMode) document.documentElement.requestFullscreen?.().catch(() => {});
-        else if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {});
     }
 
     async function request(path, options = {}) {
@@ -582,7 +572,6 @@
         });
         $('attendancePhoneModeButton')?.addEventListener('click', () => setAttendanceMode('phone'));
         $('attendanceScanButton')?.addEventListener('click', () => { setAttendanceMode('qr'); openScanner(); });
-        $('attendanceKioskButton')?.addEventListener('click', toggleKiosk);
         $('qrReaderClose')?.addEventListener('click', closeScanner);
         $('memberQrClose')?.addEventListener('click', closeMemberQr);
         $('memberQrDownload')?.addEventListener('click', downloadMemberQr);
@@ -627,7 +616,6 @@
         window.setInterval(() => {
             if (document.visibilityState !== 'hidden' && isAttendanceActive()) loadAttendance();
         }, 30000);
-        document.addEventListener('keydown', (event) => { if (event.key === 'Escape' && kioskMode) toggleKiosk(); });
         if (isAttendanceActive()) loadAttendance();
     }
 

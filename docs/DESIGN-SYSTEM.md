@@ -125,6 +125,14 @@ compatibility bridge in `public/js/button-loading.js`:
   region; and
 - delegated handling covers buttons rendered after the initial page load.
 
+The Gym Application also exposes a shared Kiosk mode through
+`public/js/kiosk.js`. It is a persisted shell preference, available from the
+topbar and the Attendance screen, and hides only the Gym App chrome while
+keeping the active operational view available. A fixed exit control, Escape,
+and optional browser fullscreen support provide an explicit way back. Platform
+Admin, Member Portal and Register Gym remain separate surfaces and are not
+changed by this mode.
+
 `scripts/qa-complete-ui.js` is a structural visual runner. It checks the
 actual shipped DOM at 13 viewport widths, light/dark evidence widths, all 18
 active app sections, Platform Admin panels, Member Portal roots, Store
@@ -133,3 +141,19 @@ must run against the Express application
 server (`QA_BASE_URL=http://127.0.0.1:3000` locally), not a static file server.
 It is not a substitute for authenticated workflow, WCAG conformance or
 production-device verification; those are reported separately.
+
+## Gym application navigation behavior
+
+The Gym Application uses two deliberate navigation compositions. At desktop
+widths (1200px and above), the right-to-left rail is a real layout track: it
+starts collapsed to icons, expands smoothly on hover/focus, and can remain
+expanded when pinned. The expanded track never covers the topbar or the page
+canvas.
+
+At widths below 1200px, the desktop rail is removed from the page flow. The
+topbar exposes a labelled menu button that opens a right-side drawer with all
+available section labels, a close button, an accessible backdrop, internal
+scrolling for long navigation, and focus return to the trigger. This keeps
+mobile navigation readable and prevents the old icon-only rail from taking
+over the viewport. The drawer uses the existing sidebar tokens and respects
+`prefers-reduced-motion`.
