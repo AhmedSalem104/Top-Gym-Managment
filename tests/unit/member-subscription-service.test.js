@@ -111,6 +111,13 @@ test('member proof upload is private, checks integrity, and only records verifie
     assert.match(source, /idempotencyKeyHash/);
 });
 
+test('member approval keeps the proof checksum alias used by the final integrity check', () => {
+    assert.match(source, /p\.file_size AS proof_file_size,p\.sha256 AS proof_sha256/);
+    assert.match(source, /String\(requestRow\.proof_sha256 \|\| ''\)\.trim\(\)\.toLowerCase\(\)/);
+    assert.match(source, /Number\(initialProof\?\.proof_file_size\)/);
+    assert.match(source, /initialProof\?\.proof_sha256/);
+});
+
 test('idempotency keys are stored as a scoped digest, never as the raw key', () => {
     const raw = 'member-request-test-key-001';
     const digest = service.idempotencyKeyHash(raw, 11, 42, 'membership');

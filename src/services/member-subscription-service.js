@@ -566,7 +566,8 @@ async function approveRequest(requestId, actorUserId, reviewNotes = '') {
     const proofResult = await proofPool.request()
         .input('tenantId', sql.Int, tenantId)
         .input('requestId', sql.BigInt, positiveId(requestId, 'request id'))
-        .query(`SELECT TOP (1) p.id AS proof_id,p.storage_key,p.storage_verified_at,p.file_size,p.sha256
+        .query(`SELECT TOP (1) p.id AS proof_id,p.storage_key,p.storage_verified_at,
+                       p.file_size AS proof_file_size,p.sha256 AS proof_sha256
                 FROM dbo.gym_member_subscription_payment_proofs AS p
                 WHERE p.tenant_id=@tenantId AND p.request_id=@requestId;`);
     await verifyProofForRequest({ ...initial, ...proofResult.recordset[0] }, tenantId);
@@ -585,8 +586,8 @@ async function approveRequest(requestId, actorUserId, reviewNotes = '') {
         if (!lockedProof?.storage_verified_at) throw requestError('Approval requires a verified payment proof.', 409, 'PAYMENT_PROOF_REQUIRED');
         const initialProof = proofResult.recordset[0];
         if (String(lockedProof.storage_key || '') !== String(initialProof?.storage_key || '')
-            || Number(lockedProof.file_size) !== Number(initialProof?.file_size)
-            || String(lockedProof.sha256 || '').toLowerCase() !== String(initialProof?.sha256 || '').toLowerCase()) {
+            || Number(lockedProof.file_size) !== Number(initialProof?.proof_file_size)
+            || String(lockedProof.sha256 || '').toLowerCase() !== String(initialProof?.proof_sha256 || '').toLowerCase()) {
             throw requestError('The payment proof changed during review. Please reload and verify it again.', 409, 'PAYMENT_PROOF_CHANGED');
         }
         const createdResult = await memberService.createMembershipFromApprovedRequest({

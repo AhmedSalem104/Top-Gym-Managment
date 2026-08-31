@@ -285,8 +285,8 @@
 
         const setOpen = () => {
             // Keep the old event hooks harmless for cached markup or a stale
-            // script, while the canonical responsive presentation remains a
-            // visible, horizontally scrollable tab rail.
+            // script, while the canonical mobile presentation remains a
+            // visible four-column tab grid.
             resetNavigationPresentation();
         };
 

@@ -1090,21 +1090,35 @@ async function createSubscriptionRequest({ tenantId = currentTenantId({ required
 }
 
 function validateProof({ buffer, mimeType, fileName }) {
-    const normalizedMime = String(mimeType || '').toLowerCase().split(';')[0].trim();
-    if (!PROOF_MIME_TYPES.has(normalizedMime)) throw saasError('إثبات الدفع يجب أن يكون صورة PNG/JPG/WebP أو ملف PDF.', 400, 'INVALID_PAYMENT_PROOF_TYPE');
+    const declaredMime = String(mimeType || '').toLowerCase().split(';')[0].trim();
     if (!Buffer.isBuffer(buffer) || !buffer.length || buffer.length > MAX_PROOF_BYTES) throw saasError('حجم إثبات الدفع يجب ألا يتجاوز 4 ميجابايت.', 400, 'PAYMENT_PROOF_TOO_LARGE');
-    if (!hasExpectedProofSignature(buffer, normalizedMime)) throw saasError('Payment proof content does not match its declared type.', 400, 'PAYMENT_PROOF_SIGNATURE_MISMATCH');
+
+    // The browser MIME label is untrusted metadata and may be missing or
+    // wrong for screenshots, downloaded files, and some mobile pickers. Use
+    // the file signature as the source of truth, while still allowing only
+    // the supported proof formats. Persisting the detected type also avoids
+    // serving an object under a misleading content type later.
+    const detectedMime = detectProofMime(buffer);
+    if (!detectedMime) {
+        if (!PROOF_MIME_TYPES.has(declaredMime)) throw saasError('إثبات الدفع يجب أن يكون صورة PNG/JPG/WebP أو ملف PDF.', 400, 'INVALID_PAYMENT_PROOF_TYPE');
+        throw saasError('Payment proof content does not match its declared type.', 400, 'PAYMENT_PROOF_SIGNATURE_MISMATCH');
+    }
     const cleanName = text(fileName, `payment-proof-${Date.now()}`, 255).replace(/[\\/:*?"<>|\r\n]/g, '_') || `payment-proof-${Date.now()}`;
-    return { buffer, mimeType: normalizedMime, fileName: cleanName, sha256: crypto.createHash('sha256').update(buffer).digest('hex') };
+    return { buffer, mimeType: detectedMime, fileName: cleanName, sha256: crypto.createHash('sha256').update(buffer).digest('hex') };
 }
 
 function hasExpectedProofSignature(buffer, mimeType) {
-    if (!Buffer.isBuffer(buffer)) return false;
-    if (mimeType === 'application/pdf') return buffer.subarray(0, 5).toString('ascii') === '%PDF-';
-    if (mimeType === 'image/jpeg') return buffer.length >= 3 && buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff;
-    if (mimeType === 'image/png') return buffer.length >= 8 && buffer.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]));
-    if (mimeType === 'image/webp') return buffer.length >= 12 && buffer.toString('ascii', 0, 4) === 'RIFF' && buffer.toString('ascii', 8, 12) === 'WEBP';
-    return false;
+    const normalizedMime = String(mimeType || '').toLowerCase().split(';')[0].trim();
+    return detectProofMime(buffer) === normalizedMime;
+}
+
+function detectProofMime(buffer) {
+    if (!Buffer.isBuffer(buffer)) return null;
+    if (buffer.length >= 5 && buffer.subarray(0, 5).toString('ascii') === '%PDF-') return 'application/pdf';
+    if (buffer.length >= 3 && buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) return 'image/jpeg';
+    if (buffer.length >= 8 && buffer.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]))) return 'image/png';
+    if (buffer.length >= 12 && buffer.toString('ascii', 0, 4) === 'RIFF' && buffer.toString('ascii', 8, 12) === 'WEBP') return 'image/webp';
+    return null;
 }
 
 async function uploadPaymentProof({ tenantId = currentTenantId({ required: true }), userId, requestId, buffer, mimeType, fileName }) {
@@ -1757,6 +1771,7 @@ module.exports = {
     uploadPaymentProof,
     validateProof,
     hasExpectedProofSignature,
+    detectProofMime,
     pruneSyncStates,
     provisionTenantWithOwner,
     recordAudit,

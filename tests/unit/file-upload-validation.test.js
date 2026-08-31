@@ -25,3 +25,9 @@ test('payment proof validation rejects content that only spoofs the MIME header'
         (error) => error.code === 'PAYMENT_PROOF_SIGNATURE_MISMATCH' && error.statusCode === 400
     );
 });
+
+test('payment proof validation recovers from a missing or inaccurate browser MIME label using the file signature', () => {
+    const png = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10, 0]);
+    assert.equal(validateProof({ buffer: png, mimeType: 'application/octet-stream', fileName: 'proof.bin' }).mimeType, 'image/png');
+    assert.equal(validateProof({ buffer: png, mimeType: 'image/jpeg', fileName: 'proof.jpg' }).mimeType, 'image/png');
+});

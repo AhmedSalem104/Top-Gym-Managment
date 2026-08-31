@@ -142,5 +142,10 @@ test('member portal subscription requests use the portal session and active tena
     assert.match(portalSubscriptionUiSource, /\/api\/member-portal\/payment-methods/);
     assert.match(portalSubscriptionUiSource, /Idempotency-Key/);
     assert.match(portalSubscriptionUiSource, /x-payment-proof-name-encoded/);
+    assert.match(portalSubscriptionUiSource, /portal-request-history-review/);
+    assert.match(portalSubscriptionUiSource, /item\.reviewNotes/);
+    assert.match(portalSubscriptionUiSource, /data-portal-proof-retry/);
+    assert.match(portalSubscriptionUiSource, /proofRecoveryRequestId/);
+    assert.match(portalSubscriptionUiSource, /لن يتم إنشاء طلب جديد/);
     assert.doesNotMatch(portalSubscriptionUiSource, /01015819700|01005376843/);
 });

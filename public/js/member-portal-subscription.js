@@ -7,6 +7,7 @@
     paymentMethods: [],
     loading: false,
     submitting: false,
+    proofRecoveryRequestId: null,
     activationSeen: new Set()
   };
 
@@ -134,10 +135,10 @@
     window.requestAnimationFrame(() => elements.activation?.classList.add('is-visible'));
   }
 
-  function setBusy(button, busy) {
+  function setBusy(button, busy, loadingText = 'جاري إرسال الطلب...') {
     if (!button) return;
     if (window.topGymFeedback) {
-      if (busy) window.topGymFeedback.start(button, { loadingText: 'جاري إرسال الطلب...' });
+      if (busy) window.topGymFeedback.start(button, { loadingText });
       else window.topGymFeedback.stop(button);
       return;
     }
@@ -234,7 +235,11 @@
 
   function syncSubmitState() {
     if (!elements.submit) return;
-    elements.submit.disabled = state.submitting || !state.catalog?.plans?.length || !state.catalog?.types?.length || !state.paymentMethods.length;
+    const recoveryRequestId = Number(state.proofRecoveryRequestId);
+    const isProofRecovery = Number.isInteger(recoveryRequestId) && recoveryRequestId > 0;
+    const label = elements.submit.querySelector('span:not(.portal-spinner)');
+    if (label) label.textContent = isProofRecovery ? 'رفع إثبات الدفع' : 'إرسال طلب التفعيل';
+    elements.submit.disabled = state.submitting || (!isProofRecovery && (!state.catalog?.plans?.length || !state.catalog?.types?.length || !state.paymentMethods.length));
   }
 
   function renderHistory(items = []) {
@@ -248,9 +253,22 @@
       const membership = item.membership || {};
       const pricing = item.pricing || {};
       const status = String(item.status || '').toLowerCase();
+      const proofLabel = status === 'rejected'
+        ? 'تم رفض الطلب'
+        : status === 'cancelled'
+          ? 'تم إلغاء الطلب'
+          : item.proof?.verified
+            ? 'تم إرفاق إثبات الدفع والتحقق منه'
+            : 'بانتظار إثبات الدفع';
+      const reviewReason = status === 'rejected' && item.reviewNotes
+        ? `<small class="portal-request-history-review"><strong>سبب الرفض:</strong> ${escapeHtml(item.reviewNotes)}</small>`
+        : '';
+      const proofRecovery = status === 'pending' && !item.proof?.verified
+        ? `<button class="btn btn-light btn-small portal-proof-retry" type="button" data-portal-proof-retry="${escapeHtml(item.id)}">رفع الإثبات</button>`
+        : '';
       return `<article class="portal-request-history-row">
-        <div class="portal-request-history-copy"><strong>${escapeHtml(requestTypeLabel(item.requestType))} · ${escapeHtml(membership.type || 'عضوية')}</strong><small>${formatDate(membership.startDate)} · ${formatMoney(pricing.amountDue, pricing.currency || 'EGP')} · ${item.proof?.verified ? 'تم إرفاق إثبات الدفع' : 'بانتظار إثبات الدفع'}</small></div>
-        <span class="portal-request-history-status ${escapeHtml(status)}">${escapeHtml(statusLabel(status))}</span>
+        <div class="portal-request-history-copy"><strong>${escapeHtml(requestTypeLabel(item.requestType))} · ${escapeHtml(membership.type || 'عضوية')}</strong><small>${formatDate(membership.startDate)} · ${formatMoney(pricing.amountDue, pricing.currency || 'EGP')} · ${proofLabel}</small>${reviewReason}</div>
+        <div class="portal-request-history-actions"><span class="portal-request-history-status ${escapeHtml(status)}">${escapeHtml(statusLabel(status))}</span>${proofRecovery}</div>
       </article>`;
     }).join('');
     showActivationFor(items);
@@ -325,6 +343,17 @@
   elements.proof?.addEventListener('change', () => {
     const file = elements.proof.files?.[0];
     if (elements.proofName) elements.proofName.textContent = file ? `${file.name} · ${(file.size / 1024 / 1024).toFixed(2)}MB` : 'اختر صورة أو ملف إثبات التحويل — الحد الأقصى 4MB';
+    if (file && state.proofRecoveryRequestId) setFeedback('تم اختيار الملف. اضغط «رفع إثبات الدفع» لإكمال نفس الطلب.', '');
+    syncSubmitState();
+  });
+  elements.history?.addEventListener('click', (event) => {
+    const trigger = event.target instanceof Element ? event.target.closest('[data-portal-proof-retry]') : null;
+    const requestId = Number(trigger?.dataset?.portalProofRetry);
+    if (!trigger || !Number.isInteger(requestId) || requestId <= 0 || state.submitting) return;
+    state.proofRecoveryRequestId = requestId;
+    syncSubmitState();
+    setFeedback('اختر إثبات الدفع للطلب المحدد. لن يتم إنشاء طلب جديد.', '');
+    elements.proof?.click();
   });
   elements.refresh?.addEventListener('click', async () => {
     if (window.topGymFeedback) window.topGymFeedback.start(elements.refresh, { loadingText: 'جاري تحديث الطلبات...' });
@@ -338,49 +367,61 @@
   elements.form.addEventListener('submit', async (event) => {
     event.preventDefault();
     if (state.submitting) return;
+    const recoveryRequestId = Number(state.proofRecoveryRequestId);
+    const isProofRecovery = Number.isInteger(recoveryRequestId) && recoveryRequestId > 0;
     const file = elements.proof.files?.[0];
     if (!file) { setFeedback('اختر إثبات الدفع أولًا.', 'error'); return; }
     if (file.size > 4 * 1024 * 1024) { setFeedback('حجم إثبات الدفع أكبر من الحد المسموح وهو 4MB.', 'error'); return; }
-    if (!selectedMethod()) { setFeedback('اختر وسيلة الدفع التي استخدمتها.', 'error'); return; }
+    if (!isProofRecovery && !selectedMethod()) { setFeedback('اختر وسيلة الدفع التي استخدمتها.', 'error'); return; }
     const isRenewal = elements.requestType.value === 'renewal';
-    if (!isRenewal && !elements.startDate.value) { setFeedback('حدد تاريخ بداية العضوية.', 'error'); elements.startDate.focus(); return; }
+    if (!isProofRecovery && !isRenewal && !elements.startDate.value) { setFeedback('حدد تاريخ بداية العضوية.', 'error'); elements.startDate.focus(); return; }
     state.submitting = true;
     syncSubmitState();
     setFeedback('', '');
-    setBusy(elements.submit, true);
-    let requestId = null;
+    setBusy(elements.submit, true, isProofRecovery ? 'جاري رفع إثبات الدفع...' : 'جاري إرسال الطلب...');
+    let requestId = isProofRecovery ? recoveryRequestId : null;
     let proofUploaded = false;
     try {
-      const created = await requestJson('/api/member-portal/subscription-requests', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Idempotency-Key': randomIdempotencyKey() },
-        body: JSON.stringify({
-          requestType: elements.requestType.value,
-          membershipPlan: elements.plan.value,
-          membershipType: elements.type.value,
-          startDate: isRenewal ? null : elements.startDate.value,
-          paymentMethodCode: selectedMethod().id,
-          notes: elements.notes.value
-        })
-      }, 'تعذر إنشاء طلب العضوية.');
-      requestId = created.request?.id;
-      if (!requestId) throw new Error('تعذر تحديد طلب العضوية بعد إنشائه.');
+      if (!isProofRecovery) {
+        const created = await requestJson('/api/member-portal/subscription-requests', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Idempotency-Key': randomIdempotencyKey() },
+          body: JSON.stringify({
+            requestType: elements.requestType.value,
+            membershipPlan: elements.plan.value,
+            membershipType: elements.type.value,
+            startDate: isRenewal ? null : elements.startDate.value,
+            paymentMethodCode: selectedMethod().id,
+            notes: elements.notes.value
+          })
+        }, 'تعذر إنشاء طلب العضوية.');
+        requestId = created.request?.id;
+        if (!requestId) throw new Error('تعذر تحديد طلب العضوية بعد إنشائه.');
+      }
       setFeedback('جاري رفع إثبات الدفع والتحقق منه...', '');
       await uploadProof(requestId, file);
       proofUploaded = true;
-      setFeedback('تم استلام طلبك بنجاح. ستظهر حالته هنا بعد مراجعة إدارة الجيم.', 'success');
-      elements.form.reset();
-      elements.startDate.value = today();
-      elements.startDate.min = today();
-      syncRequestTypePresentation();
-      renderPlans();
-      renderTypes();
-      renderPaymentMethods();
-      updateSummary();
+      state.proofRecoveryRequestId = null;
+      if (isProofRecovery) {
+        setFeedback('تم رفع إثبات الدفع بنجاح. سيظهر الطلب للمراجعة الآن.', 'success');
+        elements.proof.value = '';
+        if (elements.proofName) elements.proofName.textContent = 'اختر صورة أو ملف إثبات التحويل — الحد الأقصى 4MB';
+      } else {
+        setFeedback('تم استلام طلبك بنجاح. ستظهر حالته هنا بعد مراجعة إدارة الجيم.', 'success');
+        elements.form.reset();
+        elements.startDate.value = today();
+        elements.startDate.min = today();
+        syncRequestTypePresentation();
+        renderPlans();
+        renderTypes();
+        renderPaymentMethods();
+        updateSummary();
+      }
       await loadHistory();
     } catch (error) {
+      if (requestId && !proofUploaded) state.proofRecoveryRequestId = requestId;
       const message = requestId && !proofUploaded
-        ? 'تم إنشاء الطلب، لكن تعذر رفع إثبات الدفع. لا تعيد إنشاء الطلب؛ حدّث الصفحة وحاول رفع الإثبات مرة أخرى.'
+        ? `${error.message || 'تعذر رفع إثبات الدفع.'} تم الاحتفاظ بالطلب الحالي؛ أعد اختيار الملف واضغط «رفع إثبات الدفع» دون إنشاء طلب جديد.`
         : (error.message || 'تعذر إرسال الطلب. حاول مرة أخرى.');
       setFeedback(message, 'error');
     } finally {
