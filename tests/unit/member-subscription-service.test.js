@@ -70,6 +70,19 @@ test('renewal dates continue after the effective membership period and use today
     );
     assert.deepEqual(
         memberService.calculateRenewalWindow({
+            currentEndDate: '2026-09-30',
+            durationMode: 'months',
+            durationValue: 1,
+            today: '2026-09-01'
+        }),
+        {
+            effectiveEndDate: '2026-09-30',
+            startDate: '2026-10-01',
+            endDate: '2026-10-30'
+        }
+    );
+    assert.deepEqual(
+        memberService.calculateRenewalWindow({
             currentEndDate: '2026-08-20',
             durationMode: 'months',
             durationValue: 1,

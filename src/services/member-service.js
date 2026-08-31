@@ -478,7 +478,13 @@ function calculateRenewalWindow({
     }
     const effectiveEndDate = addDays(currentEnd, frozenDays);
     const startDate = effectiveEndDate < currentDay ? currentDay : addDays(effectiveEndDate, 1);
-    const endDate = membershipEndDateFromConfig(startDate, { mode, durationValue: duration });
+    // For an active membership, extend the effective end date itself. This
+    // keeps calendar-month extensions intuitive at month boundaries (for
+    // example, 30 September + one month = 30 October). An expired membership
+    // still starts today and uses the normal inclusive duration window.
+    const endDate = mode === 'months' && effectiveEndDate >= currentDay
+        ? addMonths(effectiveEndDate, duration)
+        : membershipEndDateFromConfig(startDate, { mode, durationValue: duration });
     return { effectiveEndDate, startDate, endDate };
 }
 
