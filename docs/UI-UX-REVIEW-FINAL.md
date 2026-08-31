@@ -91,6 +91,15 @@ states, and a real keyboard/screen-reader audit is still required.
 5. Perform real-device mobile review and compare the captured evidence for the
    current deployment.
 
+## Relevant commits
+
+- `880b424` — shared Logic Fit UI foundation and safe Platform Admin/Register
+  Gym interaction polish.
+- `a0b42aa` — complete route/screen discovery and repeatable responsive browser
+  QA gate.
+- `796f31a` — screen inventory, responsive/accessibility evidence and UI/UX
+  closure documentation.
+
 ## Release recommendation
 
 Keep the shared foundation and discovery checks in CI. Do not label the UI
