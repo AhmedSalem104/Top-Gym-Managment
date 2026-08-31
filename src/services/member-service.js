@@ -152,11 +152,11 @@ async function ensurePaymentTransactionsTable({ readOnly = false } = {}) {
     return paymentTransactionsTablePromise;
 }
 
-async function ensureSubscriptionRefundsTable() {
-    if (getTenantContext()?.readOnlyBaseline) return;
+async function ensureSubscriptionRefundsTable({ readOnly = false } = {}) {
+    if (readOnly || getTenantContext()?.readOnlyBaseline) return;
     if (!subscriptionRefundsTablePromise) {
         subscriptionRefundsTablePromise = (async () => {
-            await ensurePaymentTransactionsTable();
+            await ensurePaymentTransactionsTable({ readOnly });
             const pool = await getPool();
             await pool.request().batch(`
                 IF COL_LENGTH(N'dbo.memberships', N'cancelled_at') IS NULL
@@ -297,13 +297,13 @@ function has(body, key) {
     return Object.prototype.hasOwnProperty.call(body, key);
 }
 
-async function getPricingCatalog(connection = null) {
+async function getPricingCatalog(connection = null, { readOnly = false } = {}) {
     const cacheKey = currentTenantId() || 'unscoped';
     const cached = pricingCatalogCache.get(cacheKey);
     if (!connection && cached && Date.now() - cached.cachedAt < PRICING_CACHE_TTL_MS) {
         return cached.catalog;
     }
-    await ensurePricingOverrides();
+    await ensurePricingOverrides({ readOnly });
     const pool = connection || await getPool();
     const queryPlan = () => pool.request()
         .query(`SELECT plan_code, plan_name, monthly_price, is_active, sort_order
@@ -417,8 +417,8 @@ function invalidatePricingCatalog() {
     else pricingCatalogCache.clear();
 }
 
-async function ensurePricingOverrides() {
-    if (getTenantContext()?.readOnlyBaseline) return;
+async function ensurePricingOverrides({ readOnly = false } = {}) {
+    if (readOnly || getTenantContext()?.readOnlyBaseline) return;
     if (!pricingOverridesPromise) {
         pricingOverridesPromise = (async () => {
             const pool = await getPool();
@@ -714,7 +714,7 @@ async function getBootstrap({ readOnly = false } = {}) {
     const [memberPage, dashboard, pricing] = await Promise.all([
         getMembers({ page: 1, pageSize: DEFAULT_MEMBER_PAGE_SIZE, sort: 'expiry', readOnly }),
         getDashboard({ readOnly }),
-        getPricingCatalog()
+        getPricingCatalog(null, { readOnly })
     ]);
     return {
         members: memberPage.members,
@@ -1210,9 +1210,9 @@ async function getSubscriptionRefundState(connection, memberId) {
     };
 }
 
-async function getSubscriptionRefundPreview(id) {
+async function getSubscriptionRefundPreview(id, { readOnly = false } = {}) {
     const memberId = ensureId(id);
-    await ensureSubscriptionRefundsTable();
+    await ensureSubscriptionRefundsTable({ readOnly });
     const pool = await getPool();
     const state = await getSubscriptionRefundState(pool, memberId);
     return {

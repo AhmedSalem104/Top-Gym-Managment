@@ -31,8 +31,8 @@ function createAuthController({ authService, permissionService, allowLoginAttemp
             response.status(204).send();
         },
 
-        listUsers: async (_request, response) => {
-            response.json({ users: await authService.listUsers() });
+        listUsers: async (request, response) => {
+            response.json({ users: await authService.listUsers({ readOnly: request.readOnlyRequest }) });
         },
 
         createAssistant: async (request, response) => {
@@ -56,7 +56,7 @@ function createAuthController({ authService, permissionService, allowLoginAttemp
         },
 
         userPermissions: async (request, response) => {
-            response.json(await permissionService.getUserPermissionState(request.params.id));
+            response.json(await permissionService.getUserPermissionState(request.params.id, { readOnly: request.readOnlyRequest }));
         },
 
         updateUserPermissions: async (request, response) => {

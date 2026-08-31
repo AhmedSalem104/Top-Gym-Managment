@@ -233,8 +233,8 @@ async function getChurnRisks({ limit = 20, actorUserId = null, readOnly = false 
     const today = todayDate();
     const thirtyDaysAgo = addDays(today, -30);
     await Promise.all([
-        memberService.getDashboard(),
-        coachingService.ensureCoachingTables({ seedLibrary: false })
+        memberService.getDashboard({ readOnly }),
+        coachingService.ensureCoachingTables({ seedLibrary: false, readOnly })
     ]);
     const pool = await getPool();
     const result = await pool.request()
@@ -311,8 +311,8 @@ async function getChurnRisks({ limit = 20, actorUserId = null, readOnly = false 
     return { today, risks, totals: { high: risks.filter((item) => item.level === 'high').length, medium: risks.filter((item) => item.level === 'medium').length, low: risks.filter((item) => item.level === 'low').length } };
 }
 
-async function getCoachingMetrics() {
-    await coachingService.ensureCoachingTables({ seedLibrary: false });
+async function getCoachingMetrics({ readOnly = false } = {}) {
+    await coachingService.ensureCoachingTables({ seedLibrary: false, readOnly });
     const pool = await getPool();
     const result = await pool.request().query(`
         SELECT
@@ -343,9 +343,9 @@ function buildPriorities(dashboard, churn, coaching) {
 
 async function getOverview({ actorUserId = null, readOnly = false } = {}) {
     const [dashboard, churn, coaching, brandName] = await Promise.all([
-        memberService.getDashboard(),
-        getChurnRisks({ limit: 20 }),
-        getCoachingMetrics(),
+        memberService.getDashboard({ readOnly }),
+        getChurnRisks({ limit: 20, readOnly }),
+        getCoachingMetrics({ readOnly }),
         brandingService.getPublicBrandName('Logic Fit', { readOnly })
     ]);
     const priorities = buildPriorities(dashboard, churn, coaching);

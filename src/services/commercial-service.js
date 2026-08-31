@@ -319,7 +319,7 @@ async function resolvePortalSession(request) {
 
 async function withPortalSession(request, callback) {
     const session = await resolvePortalSession(request);
-    return runTenantContext({ tenantId: session.tenantId, mode: 'public', readOnlyBaseline: Boolean(request.readOnlyRequest) }, () => callback(session));
+    return runTenantContext({ tenantId: session.tenantId, mode: 'public', readOnlyBaseline: Boolean(request.readOnlyBaseline) }, () => callback(session));
 }
 
 function visitorTokenFor(request) {

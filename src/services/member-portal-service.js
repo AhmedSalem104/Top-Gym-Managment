@@ -172,7 +172,7 @@ async function getPortalPaymentMethods(request) {
 
 async function getPortalMembershipCatalog(request) {
     return commercialService.withPortalSession(request, async () => {
-        const pricing = await memberService.getPricingCatalog();
+        const pricing = await memberService.getPricingCatalog(null, { readOnly: true });
         const plans = Object.entries(pricing.plans || {})
             .filter(([, plan]) => plan && plan.active !== false)
             .sort(([, first], [, second]) => Number(first.sortOrder || 0) - Number(second.sortOrder || 0))

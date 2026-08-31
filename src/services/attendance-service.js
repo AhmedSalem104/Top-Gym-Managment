@@ -244,7 +244,7 @@ function mapAttendance(row) {
 }
 
 async function getTodayAttendance(options = {}) {
-    await ensureAttendanceTable();
+    await ensureAttendanceTable({ readOnly: Boolean(options.readOnly) });
     const pool = await getPool();
     const date = parseDateOnly(options.date || todayInTimeZone(), 'تاريخ الحضور');
     const search = String(options.search || '').trim();
@@ -365,7 +365,7 @@ async function getAttendanceRecordForDate(pool, memberId, date) {
 }
 
 async function getMemberAttendanceStatuses(memberIds = [], date = todayInTimeZone(), options = {}) {
-    await ensureAttendanceTable();
+    await ensureAttendanceTable({ readOnly: Boolean(options.readOnly) });
     const pool = await getPool();
     const ids = [...new Set(memberIds.map((value) => Number(value)).filter((value) => Number.isInteger(value) && value > 0))];
     if (!ids.length) return new Map();
@@ -478,7 +478,7 @@ async function getMemberAttendance(memberId, options = {}) {
 }
 
 async function getAttendanceReport(options = {}) {
-    await ensureAttendanceTable();
+    await ensureAttendanceTable({ readOnly: Boolean(options.readOnly) });
     const pool = await getPool();
     if (!options.readOnly) await reconcileAutoCheckout(pool);
     const today = todayInTimeZone();

@@ -14,11 +14,11 @@ function createMembersController({ memberService }) {
         },
 
         details: async (request, response) => {
-            response.json(await memberService.getMemberDetails(request.params.id));
+            response.json(await memberService.getMemberDetails(request.params.id, { readOnly: request.readOnlyRequest }));
         },
 
         refundPreview: async (request, response) => {
-            response.json(await memberService.getSubscriptionRefundPreview(request.params.id));
+            response.json(await memberService.getSubscriptionRefundPreview(request.params.id, { readOnly: request.readOnlyRequest }));
         },
 
         getById: async (request, response) => {

@@ -59,7 +59,7 @@ async function getReportData(query = {}, options = {}) {
         ]);
     }
     const pool = await getPool();
-    const dayPassRangePromise = dayPassRepository.getRangeData({ fromDate: range.from, nextDate: range.nextDate });
+    const dayPassRangePromise = dayPassRepository.getRangeData({ fromDate: range.from, nextDate: range.nextDate, readOnly });
     const baseRequest = () => pool.request()
         .input('fromDate', sql.Date, toUtcDate(range.from))
         .input('nextDate', sql.Date, toUtcDate(range.nextDate))
@@ -249,7 +249,7 @@ async function getReportData(query = {}, options = {}) {
             effectiveEndDate: formatDateOnly(row.end_date)
         }
     }));
-    const debtAlertContacts = await alertContactService.getLatestForAlerts(debtAlertSnapshots);
+    const debtAlertContacts = await alertContactService.getLatestForAlerts(debtAlertSnapshots, { readOnly });
     function debtAlertState(row) {
         const memberId = row.member_id || (row.membership_id ? row.id : null);
         const membershipId = row.membership_id || (row.member_id ? row.id : null);

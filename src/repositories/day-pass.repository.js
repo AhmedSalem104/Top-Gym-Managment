@@ -111,8 +111,8 @@ function mapSale(row) {
     };
 }
 
-async function listTypes({ activeOnly = false } = {}) {
-    await ensureDayPassTables();
+async function listTypes({ activeOnly = false, readOnly = false } = {}) {
+    await ensureDayPassTables({ readOnly });
     const pool = await getPool();
     const result = await pool.request().query(`
         SELECT type_code, type_name, price, is_active, sort_order
@@ -148,13 +148,13 @@ async function updateTypes(items) {
     });
 }
 
-async function findActiveType(code) {
-    const type = await findType(code);
+async function findActiveType(code, options = {}) {
+    const type = await findType(code, options);
     return type?.active ? type : null;
 }
 
-async function findType(code) {
-    await ensureDayPassTables();
+async function findType(code, { readOnly = false } = {}) {
+    await ensureDayPassTables({ readOnly });
     const pool = await getPool();
     const result = await pool.request()
         .input('code', sql.VarChar(40), code)
@@ -243,8 +243,8 @@ function addListFilters(request, { fromDate, nextDate, typeCode, paymentMethod, 
     return conditions.join(' AND ');
 }
 
-async function listSales({ fromDate, nextDate, typeCode = '', paymentMethod = '', search = '', page = 1, pageSize = 20, includeVoided = false }) {
-    await ensureDayPassTables();
+async function listSales({ fromDate, nextDate, typeCode = '', paymentMethod = '', search = '', page = 1, pageSize = 20, includeVoided = false, readOnly = false }) {
+    await ensureDayPassTables({ readOnly });
     const pool = await getPool();
     const request = pool.request();
     const where = addListFilters(request, { fromDate, nextDate, typeCode, paymentMethod, search, includeVoided });
@@ -268,8 +268,8 @@ async function listSales({ fromDate, nextDate, typeCode = '', paymentMethod = ''
     };
 }
 
-async function getRangeData({ fromDate, nextDate }) {
-    await ensureDayPassTables();
+async function getRangeData({ fromDate, nextDate, readOnly = false }) {
+    await ensureDayPassTables({ readOnly });
     const pool = await getPool();
     const request = pool.request()
         .input('fromDate', sql.Date, toUtcDate(fromDate))
@@ -295,8 +295,8 @@ async function getRangeData({ fromDate, nextDate }) {
     };
 }
 
-async function getRangeSummary({ fromDate, nextDate }) {
-    await ensureDayPassTables();
+async function getRangeSummary({ fromDate, nextDate, readOnly = false }) {
+    await ensureDayPassTables({ readOnly });
     const pool = await getPool();
     const result = await pool.request()
         .input('fromDate', sql.Date, toUtcDate(fromDate))

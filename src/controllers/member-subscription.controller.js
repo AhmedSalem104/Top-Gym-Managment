@@ -13,7 +13,8 @@ function createMemberSubscriptionController({ service }) {
             response.json(await service.getPortalRequests(request, {
                 status: request.query?.status,
                 page: request.query?.page,
-                pageSize: request.query?.pageSize
+                pageSize: request.query?.pageSize,
+                readOnly: request.readOnlyRequest
             }));
         },
 
@@ -35,7 +36,8 @@ function createMemberSubscriptionController({ service }) {
             response.json(await service.getOwnerRequests({
                 status: request.query?.status,
                 page: request.query?.page,
-                pageSize: request.query?.pageSize
+                pageSize: request.query?.pageSize,
+                readOnly: request.readOnlyRequest
             }));
         },
 

@@ -2,8 +2,8 @@
 
 function createPricingController({ pricingService }) {
     return {
-        catalog: async (_request, response) => {
-            response.json(await pricingService.getPricingCatalog());
+        catalog: async (request, response) => {
+            response.json(await pricingService.getPricingCatalog(null, { readOnly: request.readOnlyRequest }));
         },
         updateCatalog: async (request, response) => {
             response.json(await pricingService.updatePricingCatalog(request.body));

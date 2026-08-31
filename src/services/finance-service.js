@@ -75,14 +75,14 @@ function mapExpense(row) {
     };
 }
 
-async function getMonthlyFinance() {
-    await ensureExpensesTable();
-    await ensurePaymentTransactionsTable();
-    await dayPassRepository.ensureDayPassTables();
+async function getMonthlyFinance({ readOnly = false } = {}) {
+    await ensureExpensesTable({ readOnly });
+    await ensurePaymentTransactionsTable({ readOnly });
+    await dayPassRepository.ensureDayPassTables({ readOnly });
     const range = currentMonthRange();
     const [monthlyData, dayPassData] = await Promise.all([
         expenseRepository.getMonthlyData(range),
-        dayPassRepository.getRangeSummary({ fromDate: range.startDate, nextDate: range.nextMonth })
+        dayPassRepository.getRangeSummary({ fromDate: range.startDate, nextDate: range.nextMonth, readOnly })
     ]);
 
     const [resolvedPaymentsResult, resolvedExpenseSummaryResult, resolvedExpenseItemsResult] = monthlyData;

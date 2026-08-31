@@ -409,8 +409,13 @@ async function seedLibraryIfEmpty({ transaction = null, tenantId = currentTenant
     }, transaction);
 }
 
-async function ensureLibraryData({ transaction = null } = {}) {
+async function ensureLibraryData({ transaction = null, readOnly = false } = {}) {
     const tenantId = currentTenantId({ required: true });
+    // A read-only request may inspect the already-provisioned catalog, but it
+    // must never create, repair, or synchronize tenant rows as a side effect
+    // of reading a screen. Provisioning and explicit repair callers keep the
+    // default write-capable path (readOnly=false).
+    if (readOnly || getTenantContext()?.readOnlyBaseline) return { action: 'read-only' };
     await ensureLibraryTables();
     if (transaction) return withLibraryTenantTransaction(tenantId, (executor) => ensureTenantLibraryRows(executor, tenantId), transaction);
 

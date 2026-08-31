@@ -422,9 +422,9 @@ async function ensureCoachingTables({ seedLibrary = true, readOnly = false } = {
     return coachingTablesPromise;
 }
 
-async function ensureReady() {
-    await ensureLibraryData();
-    await ensureCoachingTables();
+async function ensureReady({ readOnly = false } = {}) {
+    await ensureLibraryData({ readOnly });
+    await ensureCoachingTables({ seedLibrary: !readOnly, readOnly });
 }
 
 async function recordCoachingEvent(memberId, eventType, { entityType = null, entityId = null, details = null } = {}) {
@@ -451,7 +451,7 @@ async function recordCoachingEvent(memberId, eventType, { entityType = null, ent
 }
 
 async function getCoachingActivity(memberId, options = {}) {
-    await ensureCoachingTables();
+    await ensureCoachingTables({ seedLibrary: false, readOnly: Boolean(options.readOnly) });
     const id = ensureId(memberId, 'معرّف العميل');
     const limit = Math.min(50, Math.max(1, Number(options.limit) || 12));
     const result = await getPool().then((pool) => pool.request()
@@ -580,8 +580,8 @@ async function updateClientBasic(memberIdValue, body = {}) {
     return getClientBase(memberId);
 }
 
-async function getExternalTrainees({ search = '', page = 1, pageSize = 12 } = {}) {
-    await ensureCoachingTables();
+async function getExternalTrainees({ search = '', page = 1, pageSize = 12, readOnly = false } = {}) {
+    await ensureCoachingTables({ seedLibrary: false, readOnly });
     const normalizedSearch = String(search || '').trim().slice(0, 100);
     const requestedPage = Number(page);
     const requestedSize = Number(pageSize);
@@ -753,8 +753,8 @@ async function getClientOptions({ search = '', limit = 100 } = {}) {
     return result.recordset.map((row) => ({ id: Number(row.id), fullName: row.full_name, phone: row.phone, email: row.email }));
 }
 
-async function getBuilderCatalog() {
-    await ensureCoachingTables();
+async function getBuilderCatalog({ readOnly = false } = {}) {
+    await ensureCoachingTables({ seedLibrary: false, readOnly });
     const pool = await getPool();
     const result = await pool.request().batch(`
         SELECT id, name, name_ar, target_muscle_id, difficulty, equipment
@@ -979,8 +979,8 @@ async function createWorkoutProgram(body = {}) {
     return program;
 }
 
-async function getWorkoutProgram(id, expectedMemberId = null) {
-    await ensureCoachingTables();
+async function getWorkoutProgram(id, expectedMemberId = null, { readOnly = false } = {}) {
+    await ensureCoachingTables({ seedLibrary: false, readOnly });
     const programId = ensureId(id, 'معرّف البرنامج');
     const pool = await getPool();
     const baseResult = await pool.request()
@@ -1048,8 +1048,8 @@ async function getWorkoutProgram(id, expectedMemberId = null) {
     };
 }
 
-async function getWorkoutPrograms({ memberId, search = '', status = '', level = '' } = {}) {
-    await ensureCoachingTables();
+async function getWorkoutPrograms({ memberId, search = '', status = '', level = '', readOnly = false } = {}) {
+    await ensureCoachingTables({ seedLibrary: false, readOnly });
     const pool = await getPool();
     const normalizedSearch = String(search || '').trim().slice(0, 100);
     const normalizedStatus = status ? statusValue(status) : '';
@@ -1187,8 +1187,8 @@ async function createDietPlan(body = {}) {
     return plan;
 }
 
-async function getDietPlan(id, expectedMemberId = null) {
-    await ensureCoachingTables();
+async function getDietPlan(id, expectedMemberId = null, { readOnly = false } = {}) {
+    await ensureCoachingTables({ seedLibrary: false, readOnly });
     const planId = ensureId(id, 'معرّف خطة التغذية');
     const pool = await getPool();
     const baseResult = await pool.request().input('id', sql.Int, planId).query(`SELECT p.*, m.full_name AS member_name, m.phone AS member_phone FROM dbo.diet_plans p INNER JOIN dbo.members m ON m.id = p.member_id WHERE p.id=@id;`);
@@ -1209,8 +1209,8 @@ async function getDietPlan(id, expectedMemberId = null) {
     return { id: Number(base.id), memberId: Number(base.member_id), memberName: base.member_name, memberPhone: base.member_phone, name: base.name, description: base.description, startDate: formatDateOnly(base.start_date), endDate: formatDateOnly(base.end_date), mealsPerDay: base.meals_per_day == null ? null : Number(base.meals_per_day), targetCalories: base.target_calories == null ? null : Number(base.target_calories), targetProtein: base.target_protein == null ? null : Number(base.target_protein), targetCarbs: base.target_carbs == null ? null : Number(base.target_carbs), targetFats: base.target_fats == null ? null : Number(base.target_fats), calorieGoal: base.calorie_goal || 'maintain', calorieAdjustment: base.calorie_adjustment == null ? 0 : Number(base.calorie_adjustment), calculator: { weightKg: base.calculator_weight_kg == null ? '' : Number(base.calculator_weight_kg), heightCm: base.calculator_height_cm == null ? '' : Number(base.calculator_height_cm), age: base.calculator_age == null ? '' : Number(base.calculator_age), gender: base.calculator_gender || 'male', activity: base.calculator_activity || 'moderate', bmr: base.bmr == null ? null : Number(base.bmr), tdee: base.tdee == null ? null : Number(base.tdee), measurementDate: '' }, status: base.status, notes: base.notes, version: Number(base.version || 1), createdAt: base.created_at, updatedAt: base.updated_at, meals, mealCount: meals.length, itemCount: meals.reduce((sum, meal) => sum + meal.items.length, 0), totals };
 }
 
-async function getDietPlans({ memberId, search = '', status = '' } = {}) {
-    await ensureCoachingTables();
+async function getDietPlans({ memberId, search = '', status = '', readOnly = false } = {}) {
+    await ensureCoachingTables({ seedLibrary: false, readOnly });
     const pool = await getPool();
     const normalizedSearch = String(search || '').trim().slice(0, 100);
     const normalizedStatus = status ? statusValue(status) : '';
@@ -1300,8 +1300,8 @@ function mapMeasurement(row) {
     return { id: Number(row.id), memberId: Number(row.member_id), measuredAt: formatDateOnly(row.measured_at), weightKg: row.weight_kg == null ? null : Number(row.weight_kg), heightCm: row.height_cm == null ? null : Number(row.height_cm), bodyFatPercent: row.body_fat_percent == null ? null : Number(row.body_fat_percent), chestCm: row.chest_cm == null ? null : Number(row.chest_cm), waistCm: row.waist_cm == null ? null : Number(row.waist_cm), hipsCm: row.hips_cm == null ? null : Number(row.hips_cm), armsCm: row.arms_cm == null ? null : Number(row.arms_cm), thighsCm: row.thighs_cm == null ? null : Number(row.thighs_cm), notes: row.notes, createdAt: row.created_at, updatedAt: row.updated_at };
 }
 
-async function getMeasurements(memberId) {
-    await ensureCoachingTables();
+async function getMeasurements(memberId, { readOnly = false } = {}) {
+    await ensureCoachingTables({ seedLibrary: false, readOnly });
     const pool = await getPool();
     const result = await pool.request().input('memberId', sql.Int, ensureId(memberId, 'معرّف العميل')).query(`SELECT id, member_id, measured_at,
                        weight_kg, height_cm, body_fat_percent, chest_cm,
@@ -1391,7 +1391,7 @@ function mapCheckin(row) {
 }
 
 async function getCheckins(memberId, options = {}) {
-    await ensureCoachingTables();
+    await ensureCoachingTables({ seedLibrary: false, readOnly: Boolean(options.readOnly) });
     const id = ensureId(memberId, 'معرّف العميل');
     const limit = Math.min(200, Math.max(1, Number(options.limit) || 60));
     const pool = await getPool();
@@ -1472,8 +1472,8 @@ async function deleteCheckin(memberId, checkinId) {
     await recordCoachingEvent(member, 'checkin_deleted', { entityType: 'checkin', entityId: id, details: 'تم حذف المتابعة اليومية.' });
 }
 
-async function getTrainingExecutionSummary(memberId) {
-    await ensureCoachingTables();
+async function getTrainingExecutionSummary(memberId, { readOnly = false } = {}) {
+    await ensureCoachingTables({ seedLibrary: false, readOnly });
     const id = ensureId(memberId);
     const pool = await getPool();
     const result = await pool.request()
@@ -1544,8 +1544,8 @@ async function getTrainingExecutionSummary(memberId) {
     };
 }
 
-async function getTrainingSummary(memberId) {
-    await ensureCoachingTables({ seedLibrary: false });
+async function getTrainingSummary(memberId, { readOnly = false } = {}) {
+    await ensureCoachingTables({ seedLibrary: false, readOnly });
     const id = ensureId(memberId, 'معرّف العميل');
     const pool = await getPool();
     const result = await pool.request()
@@ -1593,19 +1593,19 @@ async function getTrainingSummary(memberId) {
     };
 }
 
-async function getTrainingOverview(memberId) {
+async function getTrainingOverview(memberId, { readOnly = false } = {}) {
     const id = ensureId(memberId, 'معرّف العميل');
-    await ensureReady();
+    await ensureReady({ readOnly });
     const [member, workoutProgramsBase, dietPlansBase, measurements, workoutSessions, mealLogs, checkins, executionSummary, activity] = await Promise.all([
         getClientBase(id),
-        getWorkoutPrograms({ memberId: id }),
-        getDietPlans({ memberId: id }),
-        getMeasurements(id),
-        getWorkoutSessions(id, { limit: 40 }),
-        getMealLogs(id, { limit: 120 }),
-        getCheckins(id, { limit: 30 }),
-        getTrainingExecutionSummary(id),
-        getCoachingActivity(id, { limit: 12 })
+        getWorkoutPrograms({ memberId: id, readOnly }),
+        getDietPlans({ memberId: id, readOnly }),
+        getMeasurements(id, { readOnly }),
+        getWorkoutSessions(id, { limit: 40, readOnly }),
+        getMealLogs(id, { limit: 120, readOnly }),
+        getCheckins(id, { limit: 30, readOnly }),
+        getTrainingExecutionSummary(id, { readOnly }),
+        getCoachingActivity(id, { limit: 12, readOnly })
     ]);
     const workoutPrograms = workoutProgramsBase.map((program) => {
         const completedSessions = executionSummary.completedByProgram.get(program.id) || 0;
@@ -1665,7 +1665,7 @@ function executionProgress(startDate, endDate, unitsPerWeek, completedUnits) {
 }
 
 async function getWorkoutSessions(memberId, options = {}) {
-    await ensureCoachingTables();
+    await ensureCoachingTables({ seedLibrary: false, readOnly: Boolean(options.readOnly) });
     const id = ensureId(memberId, 'معرّف العميل');
     const limit = Math.min(200, Math.max(1, Number(options.limit) || 100));
     const pool = await getPool();
@@ -1690,7 +1690,7 @@ async function getWorkoutSessions(memberId, options = {}) {
 }
 
 async function getMealLogs(memberId, options = {}) {
-    await ensureCoachingTables();
+    await ensureCoachingTables({ seedLibrary: false, readOnly: Boolean(options.readOnly) });
     const id = ensureId(memberId, 'معرّف العميل');
     const from = optionalDateValue(options.from, 'تاريخ البداية');
     const to = optionalDateValue(options.to, 'تاريخ النهاية');
@@ -1747,8 +1747,8 @@ async function startWorkoutSession(body = {}) {
     return session;
 }
 
-async function getWorkoutSession(id) {
-    await ensureCoachingTables();
+async function getWorkoutSession(id, { readOnly = false } = {}) {
+    await ensureCoachingTables({ seedLibrary: false, readOnly });
     const pool = await getPool();
     const result = await pool.request().input('id', sql.Int, ensureId(id, 'معرّف الجلسة')).query(`SELECT id, member_id, program_id, routine_id,
                        started_at, ended_at, status, notes

@@ -256,7 +256,58 @@ test('normal GET requests use a read-only tenant context and do not touch sessio
     assert.deepEqual(observed.tenant.options, { readOnly: true });
     assert.equal(observed.saas.options.readOnly, true);
     assert.equal(observed.permissions.readOnly, true);
-    assert.equal(nextContext.readOnlyBaseline, true);
+    assert.equal(nextContext.readOnlyBaseline, false);
+});
+
+test('the explicit performance baseline header is the only source of strict SQL baseline mode', async () => {
+    const observed = {};
+    const middleware = createAuthApiMiddleware({
+        authService: {
+            getSessionUser: async (token, options) => {
+                observed.session = { token, options };
+                return { id: 17, role: 'Owner' };
+            },
+            readSessionCookie: () => 'session-token',
+            withPermissions: async (user, options) => {
+                observed.permissions = options;
+                return user;
+            }
+        },
+        tenantService: {
+            resolveTenantForUser: async (userId, slug, options) => {
+                observed.tenant = { userId, slug, options };
+                return { id: 23, status: 'active' };
+            }
+        },
+        saasService: {
+            enforceTenantAccess: async (tenantId, options) => {
+                observed.saas = { tenantId, options };
+                return { subscription: { status: 'active' }, entitlements: { features: {} } };
+            },
+            enforceRequestLimit: async () => {}
+        },
+        isAuthorizedCronRequest: () => false
+    });
+    const request = {
+        method: 'GET',
+        path: '/members',
+        readOnlyBaseline: true,
+        query: {},
+        body: {},
+        get: (name) => String(name).toLowerCase() === 'x-logic-fit-baseline' ? 'read-only' : '',
+        socket: { remoteAddress: '127.0.0.1' }
+    };
+    let context;
+    await middleware(request, responseDouble(), () => {
+        context = getTenantContext();
+    });
+
+    assert.equal(request.readOnlyRequest, true);
+    assert.equal(observed.session.options.readOnly, true);
+    assert.equal(observed.permissions.readOnly, true);
+    assert.equal(observed.tenant.options.readOnly, true);
+    assert.equal(observed.saas.options.readOnly, true);
+    assert.equal(context.readOnlyBaseline, true);
 });
 
 test('tenant access failure explains the missing membership mapping without claiming SaaS expiry', async () => {

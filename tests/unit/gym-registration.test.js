@@ -34,7 +34,7 @@ test('public registration uses server-side catalog values and a capability token
     assert.doesNotMatch(source, /body\.tenantId/);
     assert.match(routes, /\/api\/public\/gym-registration\/requests/);
     assert.match(middleware, /publicGymRegistrationPath/);
-    assert.match(middleware, /mode: 'public', readOnlyBaseline: readOnlyRequest/);
+    assert.match(middleware, /mode: 'public', readOnlyBaseline: Boolean\(request\.readOnlyBaseline\)/);
     assert.doesNotMatch(middleware, /publicGymRegistrationPath[\s\S]{0,500}resolvePublicTenant/);
 });
 

@@ -2,8 +2,8 @@
 
 function createFinanceController({ financeService }) {
     return {
-        monthly: async (_request, response) => {
-            response.json(await financeService.getMonthlyFinance());
+        monthly: async (request, response) => {
+            response.json(await financeService.getMonthlyFinance({ readOnly: request.readOnlyRequest }));
         },
         createExpense: async (request, response) => {
             response.status(201).json({ expense: await financeService.createExpense(request.body) });

@@ -221,8 +221,8 @@ async function getAssistant(id) {
     return user;
 }
 
-async function getLastPermissionAudit(targetUserId) {
-    await ensurePermissionTables();
+async function getLastPermissionAudit(targetUserId, { readOnly = false } = {}) {
+    await ensurePermissionTables({ readOnly });
     const result = await getPool().then((pool) => pool.request()
         .input('targetUserId', sql.Int, normalizeUserId(targetUserId))
         .query(`
@@ -250,13 +250,13 @@ async function getLastPermissionAudit(targetUserId) {
     };
 }
 
-async function getUserPermissionState(id) {
+async function getUserPermissionState(id, { readOnly = false } = {}) {
     const user = await getAssistant(id);
-    const permissions = await getEffectivePermissions(user.id, user.role);
+    const permissions = await getEffectivePermissions(user.id, user.role, { readOnly });
     const granted = new Set(permissions);
     return {
         user: publicUser(user, permissions),
-        lastModified: await getLastPermissionAudit(user.id),
+        lastModified: await getLastPermissionAudit(user.id, { readOnly }),
         permissions: PERMISSION_CATALOG
             .filter((item) => !item.ownerOnly)
             .map((item) => ({ ...item, granted: granted.has(item.code) }))

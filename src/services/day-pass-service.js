@@ -80,8 +80,8 @@ function parseRange(query = {}) {
     return { from, to, nextDate: addDays(to, 1) };
 }
 
-async function getPricing() {
-    const types = await dayPassRepository.listTypes();
+async function getPricing({ readOnly = false } = {}) {
+    const types = await dayPassRepository.listTypes({ readOnly });
     return { types };
 }
 
@@ -185,13 +185,14 @@ async function listDayPasses(query = {}) {
         search,
         page,
         pageSize,
-        includeVoided: String(query.includeVoided) === 'true'
+        includeVoided: String(query.includeVoided) === 'true',
+        readOnly: Boolean(query.readOnly)
     });
 }
 
 async function getSummary(query = {}) {
     const range = parseRange(query);
-    const result = await dayPassRepository.getRangeData({ fromDate: range.from, nextDate: range.nextDate });
+    const result = await dayPassRepository.getRangeData({ fromDate: range.from, nextDate: range.nextDate, readOnly: Boolean(query.readOnly) });
     const byType = result.records.reduce((summary, item) => {
         const key = item.passTypeCode;
         const current = summary[key] || { code: key, label: item.passTypeName, count: 0, amount: 0 };

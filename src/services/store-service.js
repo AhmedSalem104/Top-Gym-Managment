@@ -206,8 +206,8 @@ function mapProduct(row, includeCost = false) {
     return result;
 }
 
-async function listCategories({ includeInactive = false } = {}) {
-    await ensureStoreTables();
+async function listCategories({ includeInactive = false, readOnly = false } = {}) {
+    await ensureStoreTables({ readOnly });
     const pool = await getPool();
     const result = await pool.request().input('includeInactive', sql.Bit, includeInactive ? 1 : 0).query(`
         SELECT id, category_code, name_ar, name_en, is_active, sort_order
@@ -272,8 +272,8 @@ const PRODUCT_SELECT = `
     LEFT JOIN dbo.gym_store_inventory_balances AS b ON b.variant_id=v.id
 `;
 
-async function listProducts({ search = '', categoryId = '', page = 1, pageSize = 50, includeInactive = false, includeCost = false } = {}) {
-    await ensureStoreTables();
+async function listProducts({ search = '', categoryId = '', page = 1, pageSize = 50, includeInactive = false, includeCost = false, readOnly = false } = {}) {
+    await ensureStoreTables({ readOnly });
     const safePage = Math.max(1, Number(page) || 1);
     const safePageSize = Math.min(200, Math.max(1, Number(pageSize) || 50));
     const offset = (safePage - 1) * safePageSize;
@@ -376,8 +376,8 @@ async function createProduct(body = {}, options = {}) {
     return getProduct(result, { includeCost: true });
 }
 
-async function getProduct(id, { includeCost = true } = {}) {
-    await ensureStoreTables();
+async function getProduct(id, { includeCost = true, readOnly = false } = {}) {
+    await ensureStoreTables({ readOnly });
     const productId = ensureId(id, 'المنتج');
     const pool = await getPool();
     const result = await pool.request().input('id', sql.Int, productId).query(`${PRODUCT_SELECT} WHERE p.id=@id ORDER BY v.id;`);
@@ -468,8 +468,8 @@ async function deactivateVariant(productId, variantId, options = {}) {
     return getProduct(productKey, { includeCost: true });
 }
 
-async function listSuppliers({ search = '', includeInactive = false } = {}) {
-    await ensureStoreTables();
+async function listSuppliers({ search = '', includeInactive = false, readOnly = false } = {}) {
+    await ensureStoreTables({ readOnly });
     const result = await getPool().then((pool) => pool.request().input('search', sql.NVarChar(160), String(search || '').trim()).input('pattern', sql.NVarChar(170), `%${String(search || '').trim()}%`).input('includeInactive', sql.Bit, includeInactive ? 1 : 0).query(`
         SELECT id,supplier_name,phone,email,address,tax_reference,notes,is_active,created_at FROM dbo.gym_store_suppliers
         WHERE (@includeInactive=1 OR is_active=1) AND (@search=N'' OR supplier_name LIKE @pattern OR ISNULL(phone,N'') LIKE @pattern OR ISNULL(email,N'') LIKE @pattern)
@@ -496,8 +496,8 @@ async function updateSupplier(id, body = {}, options = {}) {
     return mapSupplier(result.recordset[0]);
 }
 
-async function searchCustomers(search = '') {
-    await ensureStoreTables();
+async function searchCustomers(search = '', { readOnly = false } = {}) {
+    await ensureStoreTables({ readOnly });
     const term = String(search || '').trim();
     if (term.length < 2) return [];
     const result = await getPool().then((pool) => pool.request().input('pattern', sql.NVarChar(180), `%${term}%`).query(`
@@ -511,8 +511,8 @@ async function searchCustomers(search = '') {
     return result.recordset.map((row) => ({ id: Number(row.id), type: 'member', name: row.full_name, phone: row.phone, email: row.email || null, membershipPlan: row.membership_plan || null, membershipType: row.membership_type || null, membershipEndDate: formatDateOnly(row.end_date) }));
 }
 
-async function listInventory({ search = '', lowStockOnly = false, expiryOnly = false, includeInactive = false } = {}) {
-    await ensureStoreTables();
+async function listInventory({ search = '', lowStockOnly = false, expiryOnly = false, includeInactive = false, readOnly = false } = {}) {
+    await ensureStoreTables({ readOnly });
     const result = await getPool().then((pool) => pool.request().input('pattern', sql.NVarChar(180), `%${String(search || '').trim()}%`).input('lowStockOnly', sql.Bit, lowStockOnly ? 1 : 0).input('expiryOnly', sql.Bit, expiryOnly ? 1 : 0).input('includeInactive', sql.Bit, includeInactive ? 1 : 0).query(`
         SELECT v.id AS variant_id, p.id AS product_id, p.name_ar, p.name_en, p.sku AS product_sku, c.name_ar AS category_name,
                v.variant_name, v.sku, v.barcode, v.selling_price, v.purchase_cost, v.minimum_stock AS variant_minimum_stock,
@@ -585,8 +585,8 @@ async function createPurchase(body = {}, options = {}) {
     return getPurchase(result);
 }
 
-async function getPurchase(id) {
-    await ensureStoreTables();
+async function getPurchase(id, { readOnly = false } = {}) {
+    await ensureStoreTables({ readOnly });
     const purchaseId = ensureId(id, 'فاتورة الشراء');
     const pool = await getPool();
     const head = await pool.request().input('id', sql.Int, purchaseId).query(`SELECT p.*, s.supplier_name FROM dbo.gym_store_purchases p LEFT JOIN dbo.gym_store_suppliers s ON s.id=p.supplier_id WHERE p.id=@id;`);
@@ -674,8 +674,8 @@ async function createSale(body = {}, options = {}) {
     return getSale(result);
 }
 
-async function getSale(id) {
-    await ensureStoreTables();
+async function getSale(id, { readOnly = false } = {}) {
+    await ensureStoreTables({ readOnly });
     const saleId = ensureId(id, 'الفاتورة');
     const pool = await getPool();
     const head = await pool.request().input('id', sql.Int, saleId).query(`SELECT s.*, m.full_name AS member_name, m.phone AS member_phone FROM dbo.gym_store_sales s LEFT JOIN dbo.members m ON m.id=s.member_id WHERE s.id=@id;`);
@@ -685,8 +685,8 @@ async function getSale(id) {
     return { id: Number(row.id), saleNumber: row.sale_number, memberId: row.member_id ? Number(row.member_id) : null, memberName: row.member_name || null, customerName: row.customer_name, customerPhone: row.customer_phone, saleDate: row.sale_date, subtotal: Number(row.subtotal), discountAmount: Number(row.discount_amount), taxAmount: Number(row.tax_amount), totalAmount: Number(row.total_amount), paidAmount: Number(row.paid_amount), remainingAmount: Number(row.remaining_amount), paymentMethod: row.payment_method, status: row.status, notes: row.notes || null, items: items.recordset.map((item) => ({ id: Number(item.id), variantId: Number(item.variant_id), productName: item.product_name, variantName: item.variant_name, sku: item.sku, quantity: Number(item.quantity), unitPrice: Number(item.unit_price), discountAmount: Number(item.discount_amount), lineTotal: Number(item.line_total), unitCost: Number(item.unit_cost_snapshot) })) };
 }
 
-async function listPurchases({ from, to, search = '', supplierId = '', page = 1, pageSize = 25 } = {}) {
-    await ensureStoreTables();
+async function listPurchases({ from, to, search = '', supplierId = '', page = 1, pageSize = 25, readOnly = false } = {}) {
+    await ensureStoreTables({ readOnly });
     const range = rangeFromQuery({ from, to });
     const safePage = Math.max(1, Number(page) || 1);
     const safeSize = Math.min(100, Math.max(1, Number(pageSize) || 25));
@@ -712,8 +712,8 @@ async function listPurchases({ from, to, search = '', supplierId = '', page = 1,
     };
 }
 
-async function listSales({ from, to, search = '', memberId = '', page = 1, pageSize = 25 } = {}) {
-    await ensureStoreTables();
+async function listSales({ from, to, search = '', memberId = '', page = 1, pageSize = 25, readOnly = false } = {}) {
+    await ensureStoreTables({ readOnly });
     const range = rangeFromQuery({ from, to });
     const safePage = Math.max(1, Number(page) || 1); const safeSize = Math.min(100, Math.max(1, Number(pageSize) || 25)); const offset = (safePage - 1) * safeSize;
     const selectedMember = memberId ? ensureId(memberId, 'العضو') : 0;
@@ -805,7 +805,7 @@ async function adjustInventory(body = {}, options = {}) {
 }
 
 async function getDashboard({ from, to, includeProfit = false, readOnly = false } = {}) {
-    await ensureStoreTables();
+    await ensureStoreTables({ readOnly });
     const range = rangeFromQuery({ from, to });
     const report = await getReports({ from: range.from, to: range.to, includeProfit, readOnly });
     const currentDay = todayInTimeZone();
@@ -836,7 +836,7 @@ async function getDashboard({ from, to, includeProfit = false, readOnly = false 
 }
 
 async function getReports({ from, to, includeProfit = false, readOnly = false } = {}) {
-    await ensureStoreTables();
+    await ensureStoreTables({ readOnly });
     const range = rangeFromQuery({ from, to });
     const pool = await getPool();
     const base = () => pool.request().input('fromDate', sql.Date, toUtcDate(range.from)).input('nextDate', sql.Date, toUtcDate(range.nextDate));
@@ -876,13 +876,13 @@ async function getReports({ from, to, includeProfit = false, readOnly = false } 
         purchases: (purchases.recordset || []).map((row) => ({ id: Number(row.id), invoiceNumber: row.invoice_number || null, purchaseDate: formatDateOnly(row.purchase_date), supplierName: row.supplier_name || null, totalAmount: Number(row.total_amount || 0), paidAmount: Number(row.paid_amount || 0), remainingAmount: Number(row.remaining_amount || 0), paymentMethod: row.payment_method, status: row.status, itemCount: Number(row.item_count || 0) })),
         inventory: inventory.map((item) => includeProfit ? item : (({ purchaseCost, averageCost, ...safe }) => safe)(item))
     };
-    if (includeProfit) result.expenses = await listStoreExpenses({ from: range.from, to: range.to });
+    if (includeProfit) result.expenses = await listStoreExpenses({ from: range.from, to: range.to, readOnly });
     if (includeProfit) { result.profit = { cogs, grossProfit: revenue - cogs, expenses: storeExpenses, netProfit: revenue - cogs - storeExpenses }; }
     return result;
 }
 
-async function listStockMovements({ variantId = '', from, to, page = 1, pageSize = 50 } = {}) {
-    await ensureStoreTables();
+async function listStockMovements({ variantId = '', from, to, page = 1, pageSize = 50, readOnly = false } = {}) {
+    await ensureStoreTables({ readOnly });
     const range = rangeFromQuery({ from, to });
     const selectedVariant = variantId ? ensureId(variantId, 'متغير المنتج') : 0;
     const safePage = Math.max(1, Number(page) || 1); const safeSize = Math.min(200, Math.max(1, Number(pageSize) || 50)); const offset = (safePage - 1) * safeSize;
@@ -894,8 +894,8 @@ async function listStockMovements({ variantId = '', from, to, page = 1, pageSize
     return { items: rows.recordset.map((row) => ({ id: Number(row.id), variantId: Number(row.variant_id), productName: row.product_name, variantName: row.variant_name, sku: row.sku, movementType: row.movement_type, quantityIn: Number(row.quantity_in || 0), quantityOut: Number(row.quantity_out || 0), previousQuantity: Number(row.previous_quantity || 0), resultingQuantity: Number(row.resulting_quantity || 0), unitCost: Number(row.unit_cost || 0), referenceType: row.reference_type || null, referenceId: row.reference_id ? Number(row.reference_id) : null, notes: row.notes || null, createdAt: row.created_at })), pagination: { page: safePage, pageSize: safeSize, total, totalPages: Math.ceil(total / safeSize) } };
 }
 
-async function listStoreExpenses({ from, to } = {}) {
-    await ensureStoreTables();
+async function listStoreExpenses({ from, to, readOnly = false } = {}) {
+    await ensureStoreTables({ readOnly });
     const range = rangeFromQuery({ from, to });
     const result = await getPool().then((pool) => pool.request().input('source', sql.VarChar(20), 'store').input('fromDate', sql.Date, toUtcDate(range.from)).input('nextDate', sql.Date, toUtcDate(range.nextDate)).query(`SELECT id,expense_name,amount,expense_date,expense_category,payment_method,notes,created_at FROM dbo.gym_expenses WHERE expense_source=@source AND ISNULL(is_voided,0)=0 AND expense_date>=@fromDate AND expense_date<@nextDate ORDER BY expense_date DESC,id DESC;`));
     return result.recordset.map((row) => ({ id: Number(row.id), name: row.expense_name, amount: Number(row.amount), expenseDate: formatDateOnly(row.expense_date), category: row.expense_category || null, paymentMethod: row.payment_method || 'cash', notes: row.notes || null, createdAt: row.created_at }));
@@ -927,8 +927,8 @@ async function deleteStoreExpense(id, options = {}) {
     await writeAudit(await getPool(), { action: 'store_expense_voided', entityType: 'expense', entityId: expenseId, details: { reason: 'user_request' }, ...actorMeta(options) });
 }
 
-async function getMemberPurchases(memberId, { from, to } = {}) {
-    await ensureStoreTables();
+async function getMemberPurchases(memberId, { from, to, readOnly = false } = {}) {
+    await ensureStoreTables({ readOnly });
     const id = ensureId(memberId, 'العضو');
     const pool = await getPool();
     const memberResult = await pool.request().input('memberId', sql.Int, id).query('SELECT registration_date FROM dbo.members WHERE id=@memberId;');

@@ -13,7 +13,7 @@ const permissionService = require('./permission-service');
 const tenantService = require('./tenant-service');
 const userRepository = require('../repositories/user.repository');
 const sessionRepository = require('../repositories/session.repository');
-const { currentTenantId, runTenantContext } = require('../tenancy/tenant-context');
+const { currentTenantId, getTenantContext, runTenantContext } = require('../tenancy/tenant-context');
 
 const SESSION_COOKIE_NAME = 'topgym_session';
 const DEFAULT_SESSION_DAYS = 7;
@@ -283,13 +283,13 @@ function safeUser(row) {
     };
 }
 
-async function safeUserWithPermissions(row) {
+async function safeUserWithPermissions(row, { readOnly = false } = {}) {
     const user = safeUser(row);
     if (!user) return null;
-    return withPermissions(user);
+    return withPermissions(user, { readOnly });
 }
 
-async function withPermissions(user, { readOnly = false } = {}) {
+async function withPermissions(user, { readOnly = false, readOnlyBaseline = Boolean(getTenantContext()?.readOnlyBaseline) } = {}) {
     if (!user) return null;
     const activeTenantId = currentTenantId() || null;
 
@@ -304,8 +304,8 @@ async function withPermissions(user, { readOnly = false } = {}) {
         const tenant = await tenantService.resolveTenantForUser(user.id, '', { readOnly });
         if (tenant?.id) {
             return runTenantContext(
-                { tenantId: tenant.id, userId: user.id, mode: 'tenant', readOnlyBaseline: readOnly },
-                () => withPermissions(user, { readOnly })
+                { tenantId: tenant.id, userId: user.id, mode: 'tenant', readOnlyBaseline },
+                () => withPermissions(user, { readOnly, readOnlyBaseline })
             );
         }
     }
@@ -448,10 +448,14 @@ async function revokeSession(token) {
     await sessionRepository.revokeByTokenHash(tokenHash(token));
 }
 
-async function listUsers() {
-    await ensureAuthReady();
+async function listUsers({ readOnly = false } = {}) {
+    // Listing assistants is a read path. Do not run auth bootstrap/DDL or
+    // permission seeding just because the Owner opened the permissions screen.
+    // A missing schema must fail closed and be fixed by the migration/ready
+    // workflow, rather than being mutated from a GET request.
+    if (!readOnly) await ensureAuthReady();
     const result = await userRepository.list(currentTenantId({ required: true }));
-    return Promise.all(result.recordset.map(safeUserWithPermissions));
+    return Promise.all(result.recordset.map((row) => safeUserWithPermissions(row, { readOnly })));
 }
 
 async function createAssistant(body = {}) {

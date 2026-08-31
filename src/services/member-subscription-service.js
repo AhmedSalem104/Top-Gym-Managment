@@ -175,9 +175,9 @@ async function getRequestRow(id, tenantId, { memberId = null, transaction = null
           AND (@memberId IS NULL OR r.member_id=@memberId);`)).recordset[0] || null;
 }
 
-async function listRequests({ tenantId, memberId = null, status = '', page = 1, pageSize = 25, includeMemberCode = false } = {}) {
+async function listRequests({ tenantId, memberId = null, status = '', page = 1, pageSize = 25, includeMemberCode = false, readOnly = false } = {}) {
     const id = positiveId(tenantId, 'tenant id');
-    await ensureTables({ readOnly: Boolean(getTenantContext()?.readOnlyBaseline) });
+    await ensureTables({ readOnly });
     const currentPage = normalizePage(page);
     const currentPageSize = normalizePageSize(pageSize);
     const offset = (currentPage - 1) * currentPageSize;
@@ -441,7 +441,8 @@ async function getPortalRequests(request, options = {}) {
         memberId: session.memberId,
         status: options.status,
         page: options.page,
-        pageSize: options.pageSize
+        pageSize: options.pageSize,
+        readOnly: true
     }));
 }
 
@@ -451,7 +452,8 @@ async function getOwnerRequests(options = {}) {
         status: options.status,
         page: options.page,
         pageSize: options.pageSize,
-        includeMemberCode: true
+        includeMemberCode: true,
+        readOnly: Boolean(options.readOnly)
     });
 }
 

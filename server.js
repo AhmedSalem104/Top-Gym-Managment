@@ -224,7 +224,7 @@ app.get('/qr/:id', asyncRoute(async (request, response) => {
     const readOnly = isReadOnlyRequest(request);
     const tenant = await tenantService.resolvePublicTenant(request.query?.tenant || request.get('x-gym-slug') || '', { readOnly });
     if (!tenant) return response.status(404).send('Gym not found.');
-    const member = await runTenantContext({ tenantId: tenant.id, mode: 'public', readOnlyBaseline: readOnly }, () => memberService.getMemberById(request.params.id));
+    const member = await runTenantContext({ tenantId: tenant.id, mode: 'public', readOnlyBaseline: Boolean(request.readOnlyBaseline) }, () => memberService.getMemberById(request.params.id));
     response.set({
         'Cache-Control': 'no-store, no-cache, must-revalidate, private',
         'X-Robots-Tag': 'noindex, nofollow'
