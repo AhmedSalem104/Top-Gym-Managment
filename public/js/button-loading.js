@@ -10,14 +10,15 @@
                 '[data-page-tab]', '[data-page-tab-link]', '[data-portal-tool]',
                 '.dialog-close', '.modal-close', '[aria-haspopup="dialog"]'
             ].join(',');
-            const asyncHint = /(?:submit|save|add|create|edit|update|delete|remove|archive|restore|backup|upload|download|refresh|approve|reject|renew|payment|checkout|attendance|check|search|generate|export|print|reset)/i;
-
             function shouldTrack(button) {
                 if (!button || button.matches(ignoredSelector) || button.disabled) return false;
                 if (button.dataset.asyncAction === 'false') return false;
                 if (button.dataset.asyncAction === 'true' || button.dataset.feedbackAction === 'async') return true;
                 if ((button.getAttribute('type') || 'submit').toLowerCase() === 'submit') return true;
-                return asyncHint.test(`${button.id} ${button.className} ${button.dataset.action || ''} ${button.textContent || ''}`);
+                // Standalone buttons must opt in explicitly. Inferring async
+                // behavior from ids/classes/text can disable a control during
+                // capture before its own click handler receives the event.
+                return false;
             }
 
             function startButtonLoading(button) {

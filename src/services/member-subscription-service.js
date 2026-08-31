@@ -80,8 +80,36 @@ function configureObjectStorageService(service) {
 }
 
 function requireObjectStorageService() {
-    if (!objectStorageService) throw requestError('Private storage is not configured.', 503, 'OBJECT_STORAGE_PROVIDER_NOT_CONFIGURED');
+    if (!objectStorageService || objectStorageService.isConfigured === false) {
+        throw requestError('Private payment-proof storage is not configured.', 503, 'MEMBER_PAYMENT_PROOF_STORAGE_NOT_CONFIGURED');
+    }
     return objectStorageService;
+}
+
+const PAYMENT_PROOF_STORAGE_UNAVAILABLE_CODES = new Set([
+    'OBJECT_STORAGE_PROVIDER_UNAVAILABLE',
+    'OBJECT_STORAGE_PROVIDER_REQUEST_FAILED'
+]);
+
+const PAYMENT_PROOF_STORAGE_INTEGRITY_CODES = new Set([
+    'STORAGE_OBJECT_NOT_FOUND',
+    'STORAGE_SIZE_MISMATCH',
+    'STORAGE_CHECKSUM_MISMATCH',
+    'PAYMENT_PROOF_INTEGRITY_FAILED'
+]);
+
+function normalizePaymentProofStorageError(error) {
+    const code = String(error?.code || '');
+    if (code === 'OBJECT_STORAGE_PROVIDER_NOT_CONFIGURED' || code === 'MEMBER_PAYMENT_PROOF_STORAGE_NOT_CONFIGURED') {
+        return requestError('Private payment-proof storage is not configured.', 503, 'MEMBER_PAYMENT_PROOF_STORAGE_NOT_CONFIGURED');
+    }
+    if (PAYMENT_PROOF_STORAGE_UNAVAILABLE_CODES.has(code)) {
+        return requestError('Private payment-proof storage is temporarily unavailable.', 503, 'MEMBER_PAYMENT_PROOF_STORAGE_UNAVAILABLE');
+    }
+    if (PAYMENT_PROOF_STORAGE_INTEGRITY_CODES.has(code)) {
+        return requestError('Payment proof integrity could not be verified.', 503, 'PAYMENT_PROOF_INTEGRITY_FAILED');
+    }
+    return error;
 }
 
 function paymentLedgerMethod(methodCode) {
@@ -252,8 +280,12 @@ async function normalizePortalRequest(body = {}) {
     const type = membershipType ? catalog.types?.[membershipType] : null;
     if (!type || type.active === false) throw requestError('The selected membership type is not available.', 409, 'MEMBERSHIP_TYPE_NOT_AVAILABLE');
     const pricing = await memberService.calculatePricing(membershipType, membershipPlan, 0);
-    const startDate = parseDateOnly(body.startDate || todayInTimeZone(), 'start date');
-    const endDate = memberService.membershipEndDateFromConfig(startDate, pricing.typeConfig);
+    const startDate = requestType === 'renewal'
+        ? null
+        : parseDateOnly(body.startDate || todayInTimeZone(), 'start date');
+    const endDate = startDate
+        ? memberService.membershipEndDateFromConfig(startDate, pricing.typeConfig)
+        : null;
     const method = await getTenantPaymentMethod(body.paymentMethodCode || body.paymentMethod);
     return {
         tenantId,
@@ -286,6 +318,7 @@ async function createPortalRequest(request, body = {}) {
         );
         let requestId = null;
         let reused = false;
+        let requestDates = { startDate: data.startDate, endDate: data.endDate };
         try {
             await withTransaction(async (transaction) => {
                 const member = await transaction.request()
@@ -306,6 +339,13 @@ async function createPortalRequest(request, body = {}) {
                         return;
                     }
                 }
+                if (data.requestType === 'renewal') {
+                    requestDates = await memberService.resolveRenewalDates(transaction, {
+                        memberId: session.memberId,
+                        durationMode: data.durationMode,
+                        durationValue: data.durationValue
+                    });
+                }
                 const pending = await transaction.request()
                     .input('tenantId', sql.Int, data.tenantId)
                     .input('memberId', sql.Int, session.memberId)
@@ -321,8 +361,8 @@ async function createPortalRequest(request, body = {}) {
                     .input('membershipType', sql.VarChar(30), data.membershipType)
                     .input('durationMode', sql.VarChar(10), data.durationMode)
                     .input('durationValue', sql.Int, data.durationValue)
-                    .input('startDate', sql.Date, new Date(`${data.startDate}T00:00:00.000Z`))
-                    .input('endDate', sql.Date, new Date(`${data.endDate}T00:00:00.000Z`))
+                    .input('startDate', sql.Date, new Date(`${requestDates.startDate}T00:00:00.000Z`))
+                    .input('endDate', sql.Date, new Date(`${requestDates.endDate}T00:00:00.000Z`))
                     .input('listPrice', sql.Decimal(12, 2), data.listPrice)
                     .input('discountAmount', sql.Decimal(12, 2), data.discountAmount)
                     .input('amountDue', sql.Decimal(12, 2), data.amountDue)
@@ -428,7 +468,7 @@ async function uploadPortalProof(request, requestId, { buffer, mimeType, fileNam
             if (previousKey && previousKey !== storedObject.key) await storage.deletePrivateObject({ tenantId, key: previousKey }).catch(() => {});
         } catch (error) {
             if (storedObject?.key) await storage.deletePrivateObject({ tenantId, key: storedObject.key }).catch(() => {});
-            throw error;
+            throw normalizePaymentProofStorageError(error);
         }
         const result = await getRequestRow(requestId, tenantId, { memberId: session.memberId });
         return { request: requestFromRow(result) };
@@ -475,7 +515,12 @@ async function getStoredProofFile(proofId, tenantId = currentTenantId({ required
     if (!proof) return null;
     if (!proof.storage_key || !proof.storage_verified_at) throw requestError('Payment proof is unavailable.', 503, 'PAYMENT_PROOF_UNAVAILABLE');
     const storage = requireObjectStorageService();
-    const object = await storage.getPrivateObject({ tenantId: scopedTenantId, key: proof.storage_key });
+    let object;
+    try {
+        object = await storage.getPrivateObject({ tenantId: scopedTenantId, key: proof.storage_key });
+    } catch (error) {
+        throw normalizePaymentProofStorageError(error);
+    }
     if (!object?.body || !Buffer.isBuffer(object.body)) throw requestError('Payment proof is unavailable.', 503, 'PAYMENT_PROOF_UNAVAILABLE');
     if (object.body.length !== Number(proof.file_size)) throw requestError('Payment proof integrity check failed.', 503, 'PAYMENT_PROOF_INTEGRITY_FAILED');
     const checksum = crypto.createHash('sha256').update(object.body).digest('hex');
@@ -488,7 +533,12 @@ async function verifyProofForRequest(requestRow, tenantId) {
         throw requestError('Approval requires a verified payment proof.', 409, 'PAYMENT_PROOF_REQUIRED');
     }
     const storage = requireObjectStorageService();
-    const object = await storage.getPrivateObject({ tenantId, key: requestRow.storage_key });
+    let object;
+    try {
+        object = await storage.getPrivateObject({ tenantId, key: requestRow.storage_key });
+    } catch (error) {
+        throw normalizePaymentProofStorageError(error);
+    }
     if (!object?.body || object.body.length !== Number(requestRow.proof_file_size)) {
         throw requestError('Payment proof integrity could not be verified.', 503, 'PAYMENT_PROOF_INTEGRITY_FAILED');
     }
@@ -547,6 +597,8 @@ async function approveRequest(requestId, actorUserId, reviewNotes = '') {
             membershipType: locked.membership_type,
             startDate: formatDateOnly(locked.start_date),
             endDate: formatDateOnly(locked.end_date),
+            durationMode: locked.duration_mode,
+            durationValue: Number(locked.duration_value),
             listPrice: Number(locked.list_price),
             discountAmount: Number(locked.discount_amount),
             amountDue: Number(locked.amount_due),
@@ -563,8 +615,11 @@ async function approveRequest(requestId, actorUserId, reviewNotes = '') {
             .input('membershipId', sql.Int, created.membershipId)
             .input('paymentId', sql.Int, created.paymentId)
             .input('ledgerTransactionId', sql.Int, created.ledgerTransactionId)
+            .input('startDate', sql.Date, new Date(`${created.startDate}T00:00:00.000Z`))
+            .input('endDate', sql.Date, new Date(`${created.endDate}T00:00:00.000Z`))
             .query(`UPDATE dbo.gym_member_subscription_requests
-                    SET status='approved',reviewed_by_user_id=@actorId,reviewed_at=SYSUTCDATETIME(),
+                    SET start_date=@startDate,end_date=@endDate,
+                        status='approved',reviewed_by_user_id=@actorId,reviewed_at=SYSUTCDATETIME(),
                         review_notes=@reviewNotes,approved_membership_id=@membershipId,
                         created_payment_id=@paymentId,created_ledger_transaction_id=@ledgerTransactionId,
                         updated_at=SYSUTCDATETIME()

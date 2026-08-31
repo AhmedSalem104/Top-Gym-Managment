@@ -38,10 +38,11 @@ let memberIdentityPromise;
 let paymentTransactionsTablePromise;
 let subscriptionRefundsTablePromise;
 
-function appError(message, statusCode = 400) {
+function appError(message, statusCode = 400, code = null) {
     const error = new Error(message);
     error.statusCode = statusCode;
     error.expose = true;
+    if (code) error.code = code;
     return error;
 }
 
@@ -455,6 +456,62 @@ function positiveValue(value, fieldName, maximum = 10000) {
 function membershipEndDateFromConfig(startDate, typeConfig) {
     if (typeConfig.mode === 'days') return addDays(startDate, Math.max(1, Math.round(typeConfig.durationValue)) - 1);
     return addDays(addMonths(startDate, typeConfig.durationValue), -1);
+}
+
+function calculateRenewalWindow({
+    currentEndDate,
+    freezeDays = 0,
+    durationMode,
+    durationValue,
+    today = todayInTimeZone()
+} = {}) {
+    const currentEnd = parseDateOnly(currentEndDate, 'current membership end date');
+    const currentDay = parseDateOnly(today, 'today');
+    const frozenDays = Number(freezeDays);
+    const duration = Number(durationValue);
+    const mode = String(durationMode || '').trim().toLowerCase();
+    if (!Number.isInteger(frozenDays) || frozenDays < 0) {
+        throw appError('The current membership freeze snapshot is invalid.', 409, 'MEMBERSHIP_RENEWAL_SNAPSHOT_INVALID');
+    }
+    if (!['days', 'months'].includes(mode) || !Number.isInteger(duration) || duration <= 0) {
+        throw appError('The selected membership duration is invalid.', 409, 'MEMBERSHIP_RENEWAL_SNAPSHOT_INVALID');
+    }
+    const effectiveEndDate = addDays(currentEnd, frozenDays);
+    const startDate = effectiveEndDate < currentDay ? currentDay : addDays(effectiveEndDate, 1);
+    const endDate = membershipEndDateFromConfig(startDate, { mode, durationValue: duration });
+    return { effectiveEndDate, startDate, endDate };
+}
+
+async function resolveRenewalDates(connection, {
+    memberId,
+    currentMembership = null,
+    durationMode,
+    durationValue,
+    today = todayInTimeZone()
+} = {}) {
+    const id = ensureId(memberId);
+    const current = currentMembership || await getRawMembership(connection, id);
+    if (!current || current.cancelled_at) {
+        throw appError(
+            'A renewal requires an existing membership. Submit a new membership request instead.',
+            409,
+            'MEMBER_RENEWAL_REQUIRES_EXISTING'
+        );
+    }
+    if (await getActiveFreeze(connection, current.id, today)) {
+        throw appError('Resume the membership before requesting a renewal.', 409, 'MEMBERSHIP_FREEZE_ACTIVE');
+    }
+    const freezeUsage = await getFreezeUsage(connection, id, current.id);
+    return {
+        currentMembershipId: Number(current.id),
+        ...calculateRenewalWindow({
+            currentEndDate: formatDateOnly(current.end_date),
+            freezeDays: freezeUsage.freezeDays,
+            durationMode,
+            durationValue,
+            today
+        })
+    };
 }
 
 function resolvePricingTypeCode(pricing, membershipType) {
@@ -1663,14 +1720,17 @@ async function renewMember(id, body = {}) {
     const renewedId = await withTransaction(async (transaction) => {
         const current = await getRawMembership(transaction, memberId);
         if (!current) throw appError('لا يوجد اشتراك لهذا العضو.', 400);
-        if (await getActiveFreeze(transaction, current.id, today)) throw appError('استأنف العضوية قبل التجديد.');
-        const freezeUsage = await getFreezeUsage(transaction, memberId, current.id);
-        const effectiveEnd = addDays(formatDateOnly(current.end_date), freezeUsage.freezeDays);
-        const startDate = effectiveEnd < today ? today : addDays(effectiveEnd, 1);
         const membershipPlan = body.membershipPlan || current.membership_plan || 'gym_only';
         const pricing = await calculatePricing(membershipType, membershipPlan, money(body.discountAmount, 'الخصم', 0), transaction);
         const resolvedMembershipType = pricing.typeCode || membershipType;
-        const endDate = membershipEndDateFromConfig(startDate, pricing.typeConfig);
+        const renewalWindow = await resolveRenewalDates(transaction, {
+            memberId,
+            currentMembership: current,
+            durationMode: pricing.typeConfig.mode,
+            durationValue: pricing.typeConfig.durationValue,
+            today
+        });
+        const { startDate, endDate } = renewalWindow;
         const amountPaid = money(body.amountPaid, 'المبلغ المدفوع', 0);
         if (amountPaid > pricing.amountDue) throw appError('المبلغ المدفوع لا يمكن أن يتجاوز قيمة الاشتراك بعد الخصم.');
         const paymentMethod = parsePaymentMethod(body.paymentMethod, 'cash');
@@ -1812,6 +1872,8 @@ async function createMembershipFromApprovedRequest({
     membershipType,
     startDate,
     endDate,
+    durationMode = null,
+    durationValue = null,
     listPrice,
     discountAmount = 0,
     amountDue,
@@ -1826,9 +1888,17 @@ async function createMembershipFromApprovedRequest({
     const id = ensureId(memberId);
     const plan = requiredString(membershipPlan || 'gym_only', 'Ø¨Ø§Ù‚Ø© Ø§Ù„Ø¹Ø¶ÙˆÙŠØ©', 30);
     const type = requiredString(membershipType, 'Ù†ÙˆØ¹ Ø§Ù„Ø¹Ø¶ÙˆÙŠØ©', 30);
-    const start = parseDateOnly(startDate, 'ØªØ§Ø±ÙŠØ® Ø§Ù„Ø¨Ø¯Ø§ÙŠØ©');
-    const end = parseDateOnly(endDate, 'ØªØ§Ø±ÙŠØ® Ø§Ù„Ø§Ù†ØªÙ‡Ø§Ø¡');
-    if (end < start) throw appError('ØªØ§Ø±ÙŠØ® Ø§Ù„Ø§Ù†ØªÙ‡Ø§Ø¡ ÙŠØ¬Ø¨ Ø£Ù† ÙŠÙƒÙˆÙ† Ø¨Ø¹Ø¯ Ø§Ù„Ø¨Ø¯Ø§ÙŠØ©.', 400);
+    const normalizedRequestType = String(requestType || 'membership').trim().toLowerCase();
+    if (!['membership', 'renewal'].includes(normalizedRequestType)) {
+        throw appError('This member subscription request type is not supported.', 422, 'MEMBER_SUBSCRIPTION_REQUEST_TYPE_UNSUPPORTED');
+    }
+    let start = normalizedRequestType === 'renewal'
+        ? null
+        : parseDateOnly(startDate, 'ØªØ§Ø±ÙŠØ® Ø§Ù„Ø¨Ø¯Ø§ÙŠØ©');
+    let end = normalizedRequestType === 'renewal'
+        ? null
+        : parseDateOnly(endDate, 'ØªØ§Ø±ÙŠØ® Ø§Ù„Ø§Ù†ØªÙ‡Ø§Ø¡');
+    if (start && end < start) throw appError('ØªØ§Ø±ÙŠØ® Ø§Ù„Ø§Ù†ØªÙ‡Ø§Ø¡ ÙŠØ¬Ø¨ Ø£Ù† ÙŠÙƒÙˆÙ† Ø¨Ø¹Ø¯ Ø§Ù„Ø¨Ø¯Ø§ÙŠØ©.', 400);
     const price = money(listPrice, 'Ø³Ø¹Ø± Ø§Ù„Ø§Ø´ØªØ±Ø§Ùƒ');
     const discount = money(discountAmount, 'Ø§Ù„Ø®ØµÙ…', 0);
     const due = money(amountDue, 'Ø§Ù„Ù…Ø³ØªØ­Ù‚', Math.max(0, price - discount));
@@ -1841,7 +1911,16 @@ async function createMembershipFromApprovedRequest({
         .query('SELECT TOP (1) id FROM dbo.members WITH (UPDLOCK,HOLDLOCK) WHERE id=@memberId;');
     if (!member.recordset[0]) throw appError('Ø§Ù„Ø¹Ø¶Ùˆ ØºÙŠØ± Ù…ÙˆØ¬ÙˆØ¯.', 404);
     const current = await getRawMembership(transaction, id);
-    if (current && !current.cancelled_at && formatDateOnly(current.end_date) >= start) {
+    if (normalizedRequestType === 'renewal') {
+        const renewalWindow = await resolveRenewalDates(transaction, {
+            memberId: id,
+            currentMembership: current,
+            durationMode,
+            durationValue
+        });
+        start = renewalWindow.startDate;
+        end = renewalWindow.endDate;
+    } else if (current && !current.cancelled_at && formatDateOnly(current.end_date) >= start) {
         throw appError('ØªØ§Ø±ÙŠØ® Ø¨Ø¯Ø§ÙŠØ© Ø§Ù„Ø§Ø´ØªØ±Ø§Ùƒ Ø§Ù„Ø¬Ø¯ÙŠØ¯ ÙŠØ¬Ø¨ Ø£Ù† ÙŠÙ„ÙŠ Ø§Ù„Ø§Ø´ØªØ±Ø§Ùƒ Ø§Ù„Ø­Ø§Ù„ÙŠ.', 409);
     }
     const membershipResult = await transaction.request()
@@ -1885,7 +1964,7 @@ async function createMembershipFromApprovedRequest({
             sourcePaymentId: paymentId
         })
         : null;
-    await addEvent(transaction, id, membershipId, requestType === 'renewal' ? 'renewed' : 'activated', {
+    await addEvent(transaction, id, membershipId, normalizedRequestType === 'renewal' ? 'renewed' : 'activated', {
         source: 'member_portal_subscription_request',
         sourceRequestId: sourceRequestId == null ? null : Number(sourceRequestId),
         membershipPlan: plan,
@@ -1897,7 +1976,7 @@ async function createMembershipFromApprovedRequest({
         amountDue: due,
         amountPaid: due
     });
-    return { membershipId, paymentId, ledgerTransactionId };
+    return { membershipId, paymentId, ledgerTransactionId, startDate: start, endDate: end };
 }
 
 async function refundSubscription(id, body = {}, userId = null) {
@@ -2203,6 +2282,7 @@ module.exports = {
     getSubscriptionRefundPreview,
     getMembers,
     markAlertCommunication,
+    calculateRenewalWindow,
     membershipEndDateFromConfig,
     getPricingCatalog,
     createPricingPlan,
@@ -2211,6 +2291,7 @@ module.exports = {
     recordPayment,
     refundSubscription,
     renewMember,
+    resolveRenewalDates,
     resumeMember,
     updateMembershipType,
     updatePricingPlan,

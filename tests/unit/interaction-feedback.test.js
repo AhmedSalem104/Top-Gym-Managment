@@ -57,6 +57,15 @@ test('legacy auto-loading bridge excludes immediate controls and preserves compa
     assert.match(source, /feedback\.isLoading\(latestClickedButton\)/);
 });
 
+test('standalone buttons require explicit async opt-in and are never inferred from labels', () => {
+    const source = read('public/js/button-loading.js');
+
+    assert.doesNotMatch(source, /const asyncHint\s*=/);
+    assert.match(source, /Standalone buttons must opt in explicitly/);
+    assert.match(source, /if \(button\.dataset\.asyncAction === 'true' \|\| button\.dataset\.feedbackAction === 'async'\) return true;/);
+    assert.match(source, /return false;/);
+});
+
 test('submit controls are not disabled during click capture before native submit dispatch', () => {
     const source = read('public/js/button-loading.js');
 

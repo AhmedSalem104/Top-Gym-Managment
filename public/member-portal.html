@@ -168,7 +168,7 @@
                         <label>نوع الطلب<select id="portalSubscriptionRequestType" required><option value="membership">اشتراك جديد</option><option value="renewal">تجديد العضوية</option></select></label>
                         <label>الباقة<select id="portalSubscriptionPlan" required><option value="">جاري تحميل الباقات...</option></select></label>
                         <label>نوع العضوية<select id="portalSubscriptionType" required><option value="">اختر نوع العضوية</option></select></label>
-                        <label>تاريخ البداية<input id="portalSubscriptionStartDate" type="date" required></label>
+                        <label><span id="portalSubscriptionStartDateLabel">تاريخ البداية</span><input id="portalSubscriptionStartDate" type="date" required><small id="portalSubscriptionStartDateHint">يبدأ الاشتراك الجديد من التاريخ الذي تختاره.</small></label>
                     </div>
                     <section class="portal-payment-methods" aria-labelledby="portalPaymentMethodsTitle">
                         <div class="portal-subsection-heading"><div><span class="portal-section-kicker">PAYMENT DETAILS</span><h4 id="portalPaymentMethodsTitle">بيانات التحويل للجيم</h4><p>هذه البيانات تخص <strong data-brand-text="brandName">الجيم الحالي</strong> فقط.</p></div></div>
@@ -199,6 +199,6 @@
     <script defer src="/js/branding.js?v=5"></script>
     <script defer src="/js/ui-feedback.js?v=2"></script>
     <script defer src="/js/member-portal.js?v=10"></script>
-    <script defer src="/js/member-portal-subscription.js?v=1"></script>
+    <script defer src="/js/member-portal-subscription.js?v=2"></script>
 </body>
 </html>

@@ -18,6 +18,22 @@ const SAFE_OPERATIONAL_FAILURES = Object.freeze({
         code: 'PRIVATE_STORAGE_UNAVAILABLE',
         message: 'تعذر الوصول إلى التخزين الخاص لملفات المنصة حاليًا. حاول مرة أخرى بعد التحقق من إعدادات التخزين.'
     }),
+    MEMBER_PAYMENT_PROOF_STORAGE_NOT_CONFIGURED: Object.freeze({
+        code: 'MEMBER_PAYMENT_PROOF_STORAGE_NOT_CONFIGURED',
+        message: 'رفع إثبات الدفع غير متاح حاليًا لأن التخزين الخاص لإثباتات الدفع غير مهيأ.'
+    }),
+    MEMBER_PAYMENT_PROOF_STORAGE_UNAVAILABLE: Object.freeze({
+        code: 'MEMBER_PAYMENT_PROOF_STORAGE_UNAVAILABLE',
+        message: 'تعذر الوصول إلى تخزين إثباتات الدفع حاليًا. حاول مرة أخرى لاحقًا.'
+    }),
+    PAYMENT_PROOF_UNAVAILABLE: Object.freeze({
+        code: 'PAYMENT_PROOF_UNAVAILABLE',
+        message: 'إثبات الدفع غير متاح حاليًا. أعد رفعه أو حاول مرة أخرى لاحقًا.'
+    }),
+    PAYMENT_PROOF_INTEGRITY_FAILED: Object.freeze({
+        code: 'PAYMENT_PROOF_INTEGRITY_FAILED',
+        message: 'تعذر التحقق من سلامة إثبات الدفع. أعد رفع الملف الأصلي.'
+    }),
     OBJECT_STORAGE_PROVIDER_NOT_CONFIGURED: Object.freeze({
         code: 'BACKUP_STORAGE_NOT_CONFIGURED',
         message: 'التخزين الخاص للنسخ الاحتياطية غير مهيأ حاليًا. أضف مزود تخزين خاصًا معتمدًا قبل إنشاء نسخة محفوظة.'

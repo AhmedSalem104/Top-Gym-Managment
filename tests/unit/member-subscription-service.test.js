@@ -6,9 +6,11 @@ const path = require('node:path');
 const test = require('node:test');
 
 const service = require('../../src/services/member-subscription-service');
+const memberService = require('../../src/services/member-service');
 
 const schema = fs.readFileSync(path.join(__dirname, '../../database/migrations/011-commercial-portal-and-registration.sql'), 'utf8');
 const source = fs.readFileSync(path.join(__dirname, '../../src/services/member-subscription-service.js'), 'utf8');
+const memberSource = fs.readFileSync(path.join(__dirname, '../../src/services/member-service.js'), 'utf8');
 
 test('member request pending uniqueness is scoped by request type', () => {
     assert.match(schema, /ON dbo\.gym_member_subscription_requests\(tenant_id, member_id, request_type\)/);
@@ -39,6 +41,66 @@ test('approval locks the request, verifies its private proof, and reuses the mem
     assert.match(source, /status='approved'/);
     assert.match(source, /sourceRequestId: locked\.id/);
     assert.match(source, /saasService\.recordAudit\(\{/);
+});
+
+test('renewal dates continue after the effective membership period and use today only after expiry', () => {
+    assert.deepEqual(
+        memberService.calculateRenewalWindow({
+            currentEndDate: '2026-09-10',
+            durationMode: 'months',
+            durationValue: 1,
+            today: '2026-08-31'
+        }),
+        {
+            effectiveEndDate: '2026-09-10',
+            startDate: '2026-09-11',
+            endDate: '2026-10-10'
+        }
+    );
+    assert.deepEqual(
+        memberService.calculateRenewalWindow({
+            currentEndDate: '2026-08-20',
+            durationMode: 'months',
+            durationValue: 1,
+            today: '2026-08-31'
+        }),
+        {
+            effectiveEndDate: '2026-08-20',
+            startDate: '2026-08-31',
+            endDate: '2026-09-29'
+        }
+    );
+});
+
+test('renewal dates include recorded freeze days and are guarded by a valid duration snapshot', () => {
+    assert.deepEqual(
+        memberService.calculateRenewalWindow({
+            currentEndDate: '2026-09-10',
+            freezeDays: 5,
+            durationMode: 'days',
+            durationValue: 15,
+            today: '2026-08-31'
+        }),
+        {
+            effectiveEndDate: '2026-09-15',
+            startDate: '2026-09-16',
+            endDate: '2026-09-30'
+        }
+    );
+    assert.throws(
+        () => memberService.calculateRenewalWindow({ currentEndDate: '2026-09-10', durationMode: 'weeks', durationValue: 1, today: '2026-08-31' }),
+        (error) => error.code === 'MEMBERSHIP_RENEWAL_SNAPSHOT_INVALID'
+    );
+});
+
+test('approval recomputes renewal dates inside the membership transaction and persists the authoritative window', () => {
+    assert.match(memberSource, /function calculateRenewalWindow\(/);
+    assert.match(memberSource, /async function resolveRenewalDates\(/);
+    assert.match(memberSource, /MEMBER_RENEWAL_REQUIRES_EXISTING/);
+    assert.match(source, /durationMode: locked\.duration_mode/);
+    assert.match(source, /durationValue: Number\(locked\.duration_value\)/);
+    assert.match(source, /SET start_date=@startDate,end_date=@endDate/);
+    assert.match(memberSource, /normalizedRequestType === 'renewal'/);
 });
 
 test('member proof upload is private, checks integrity, and only records verified storage', () => {

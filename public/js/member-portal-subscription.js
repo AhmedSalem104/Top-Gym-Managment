@@ -17,6 +17,8 @@
     plan: $('portalSubscriptionPlan'),
     type: $('portalSubscriptionType'),
     startDate: $('portalSubscriptionStartDate'),
+    startDateLabel: $('portalSubscriptionStartDateLabel'),
+    startDateHint: $('portalSubscriptionStartDateHint'),
     method: $('portalSubscriptionPaymentMethod'),
     methodList: $('portalPaymentMethodList'),
     summaryMembership: $('portalSubscriptionSummaryMembership'),
@@ -60,6 +62,13 @@
     INVALID_PAYMENT_PROOF_TYPE: 'نوع الملف غير مسموح. استخدم صورة أو ملف PDF.',
     PAYMENT_PROOF_SIGNATURE_MISMATCH: 'محتوى الملف لا يطابق نوعه المعلن.',
     OBJECT_STORAGE_PROVIDER_NOT_CONFIGURED: 'رفع إثبات الدفع غير متاح حاليًا لأن التخزين الخاص غير مهيأ.',
+    MEMBER_PAYMENT_PROOF_STORAGE_NOT_CONFIGURED: 'رفع إثبات الدفع غير متاح حاليًا لأن التخزين الخاص غير مهيأ.',
+    MEMBER_PAYMENT_PROOF_STORAGE_UNAVAILABLE: 'تعذر الوصول إلى تخزين إثباتات الدفع حاليًا. حاول مرة أخرى لاحقًا.',
+    PAYMENT_PROOF_UNAVAILABLE: 'إثبات الدفع غير متاح حاليًا. أعد رفعه أو حاول مرة أخرى لاحقًا.',
+    PAYMENT_PROOF_INTEGRITY_FAILED: 'تعذر التحقق من سلامة إثبات الدفع. أعد رفع الملف الأصلي.',
+    MEMBER_RENEWAL_REQUIRES_EXISTING: 'لا يمكن تقديم طلب تجديد قبل وجود عضوية سابقة. اختر اشتراكًا جديدًا إذا كانت هذه أول عضوية.',
+    MEMBERSHIP_FREEZE_ACTIVE: 'استأنف العضوية أولًا قبل تقديم طلب التجديد.',
+    MEMBERSHIP_START_OVERLAPS_CURRENT: 'سيبدأ التجديد تلقائيًا بعد نهاية العضوية الحالية.',
     STORAGE_NOT_CONFIGURED: 'رفع إثبات الدفع غير متاح حاليًا لأن التخزين الخاص غير مهيأ.'
   });
 
@@ -136,6 +145,27 @@
     button.setAttribute('aria-busy', String(busy));
   }
 
+  function syncRequestTypePresentation() {
+    const isRenewal = elements.requestType?.value === 'renewal';
+    if (elements.startDateLabel) elements.startDateLabel.textContent = isRenewal ? 'تاريخ بدء التجديد' : 'تاريخ البداية';
+    if (elements.startDateHint) {
+      elements.startDateHint.textContent = isRenewal
+        ? 'يحدده النظام تلقائيًا بعد نهاية العضوية الحالية أو من اليوم إذا انتهت.'
+        : 'يبدأ الاشتراك الجديد من التاريخ الذي تختاره.';
+    }
+    if (elements.startDate) {
+      elements.startDate.disabled = isRenewal;
+      if (isRenewal) {
+        elements.startDate.value = '';
+        elements.startDate.removeAttribute('required');
+      } else {
+        elements.startDate.setAttribute('required', '');
+        if (!elements.startDate.value) elements.startDate.value = today();
+      }
+    }
+    updateSummary();
+  }
+
   function activePlan() {
     return state.catalog?.plans?.find((item) => item.code === elements.plan?.value) || null;
   }
@@ -196,7 +226,9 @@
     const type = activeType();
     const amount = plan && type ? state.catalog?.prices?.[plan.code]?.[type.code] : null;
     if (elements.summaryMembership) elements.summaryMembership.textContent = plan && type ? `${plan.label} · ${type.label}` : '—';
-    if (elements.summaryStart) elements.summaryStart.textContent = formatDate(elements.startDate?.value);
+    if (elements.summaryStart) elements.summaryStart.textContent = elements.requestType?.value === 'renewal'
+      ? 'يحدده النظام تلقائيًا'
+      : formatDate(elements.startDate?.value);
     if (elements.summaryAmount) elements.summaryAmount.innerHTML = amount == null ? 'سيحدده النظام بعد التحقق' : formatMoney(amount, state.catalog?.currency || 'EGP');
   }
 
@@ -246,6 +278,7 @@
       renderPaymentMethods();
       if (elements.startDate && !elements.startDate.value) elements.startDate.value = today();
       if (elements.startDate) elements.startDate.min = today();
+      syncRequestTypePresentation();
       updateSummary();
       renderHistory(history.requests || []);
       setFeedback('', '');
@@ -281,6 +314,7 @@
 
   elements.plan?.addEventListener('change', updateSummary);
   elements.type?.addEventListener('change', updateSummary);
+  elements.requestType?.addEventListener('change', syncRequestTypePresentation);
   elements.startDate?.addEventListener('change', updateSummary);
   elements.methodList?.addEventListener('change', (event) => {
     if (event.target.matches('input[name="portalPaymentMethod"]')) {
@@ -308,7 +342,8 @@
     if (!file) { setFeedback('اختر إثبات الدفع أولًا.', 'error'); return; }
     if (file.size > 4 * 1024 * 1024) { setFeedback('حجم إثبات الدفع أكبر من الحد المسموح وهو 4MB.', 'error'); return; }
     if (!selectedMethod()) { setFeedback('اختر وسيلة الدفع التي استخدمتها.', 'error'); return; }
-    if (!elements.startDate.value) { setFeedback('حدد تاريخ بداية العضوية.', 'error'); elements.startDate.focus(); return; }
+    const isRenewal = elements.requestType.value === 'renewal';
+    if (!isRenewal && !elements.startDate.value) { setFeedback('حدد تاريخ بداية العضوية.', 'error'); elements.startDate.focus(); return; }
     state.submitting = true;
     syncSubmitState();
     setFeedback('', '');
@@ -323,7 +358,7 @@
           requestType: elements.requestType.value,
           membershipPlan: elements.plan.value,
           membershipType: elements.type.value,
-          startDate: elements.startDate.value,
+          startDate: isRenewal ? null : elements.startDate.value,
           paymentMethodCode: selectedMethod().id,
           notes: elements.notes.value
         })
@@ -337,6 +372,7 @@
       elements.form.reset();
       elements.startDate.value = today();
       elements.startDate.min = today();
+      syncRequestTypePresentation();
       renderPlans();
       renderTypes();
       renderPaymentMethods();
@@ -357,4 +393,6 @@
   window.addEventListener('topgym:portal-subscription-open', () => {
     void load();
   });
+
+  syncRequestTypePresentation();
 })();

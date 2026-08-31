@@ -22,6 +22,8 @@
         PAYMENT_PROOF_UNAVAILABLE: 'إثبات الدفع غير متاح حاليًا.',
         PAYMENT_PROOF_CHANGED: 'تغير إثبات الدفع أثناء المراجعة. حدّث القائمة وحاول مرة أخرى.',
         OBJECT_STORAGE_PROVIDER_NOT_CONFIGURED: 'التخزين الخاص غير مهيأ حاليًا.',
+        MEMBER_PAYMENT_PROOF_STORAGE_NOT_CONFIGURED: 'تخزين إثباتات الدفع غير مهيأ حاليًا. راجع إعدادات التخزين ثم حاول مرة أخرى.',
+        MEMBER_PAYMENT_PROOF_STORAGE_UNAVAILABLE: 'تخزين إثباتات الدفع غير متاح حاليًا. حاول مرة أخرى لاحقًا.',
         MEMBERSHIP_PLAN_NOT_AVAILABLE: 'الباقة المطلوبة لم تعد متاحة.',
         MEMBERSHIP_TYPE_NOT_AVAILABLE: 'نوع العضوية المطلوب لم يعد متاحًا.'
     });

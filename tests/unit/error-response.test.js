@@ -76,3 +76,23 @@ test('private upload storage failures expose a safe configuration message', () =
     assert.match(message, /التخزين الخاص/);
     assert.doesNotMatch(message, /S3|secret|endpoint/i);
 });
+
+test('member payment-proof storage failures expose safe member-specific responses', () => {
+    const unavailable = Object.assign(new Error('S3 secret and internal endpoint'), {
+        statusCode: 503,
+        code: 'MEMBER_PAYMENT_PROOF_STORAGE_UNAVAILABLE',
+        expose: false
+    });
+    const notConfigured = Object.assign(new Error('private key and bucket path'), {
+        statusCode: 503,
+        code: 'MEMBER_PAYMENT_PROOF_STORAGE_NOT_CONFIGURED',
+        expose: false
+    });
+
+    assert.equal(getClientErrorCode(unavailable, 503), 'MEMBER_PAYMENT_PROOF_STORAGE_UNAVAILABLE');
+    assert.equal(getClientErrorCode(notConfigured, 503), 'MEMBER_PAYMENT_PROOF_STORAGE_NOT_CONFIGURED');
+    assert.match(getSafeErrorMessage(unavailable, 503), /إثباتات الدفع/);
+    assert.match(getSafeErrorMessage(notConfigured, 503), /إثباتات الدفع/);
+    assert.doesNotMatch(getSafeErrorMessage(unavailable, 503), /S3|secret|endpoint/i);
+    assert.doesNotMatch(getSafeErrorMessage(notConfigured, 503), /private key|bucket|path/i);
+});
