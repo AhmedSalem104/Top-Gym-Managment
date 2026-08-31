@@ -13,7 +13,7 @@ function registerBrandingRoutes(app, { brandingService, asyncRoute }) {
     app.put('/api/branding/draft', requirePermission('branding.edit', { ownerOnly: true }), asyncRoute(controller.saveDraft));
     app.post('/api/branding/publish', requirePermission('branding.publish', { ownerOnly: true }), asyncRoute(controller.publish));
     app.post('/api/branding/reset', requirePermission('branding.reset', { ownerOnly: true }), asyncRoute(controller.reset));
-    app.post('/api/branding/assets', requirePermission('branding.edit', { ownerOnly: true }), express.raw({ type: 'application/octet-stream', limit: '2mb' }), asyncRoute(controller.uploadAsset));
+    app.post('/api/branding/assets', requirePermission('branding.edit', { ownerOnly: true }), express.raw({ type: ['application/octet-stream', 'image/*'], limit: '2mb' }), asyncRoute(controller.uploadAsset));
     app.delete('/api/branding/assets/:key', requirePermission('branding.edit', { ownerOnly: true }), asyncRoute(controller.removeAsset));
 }
 

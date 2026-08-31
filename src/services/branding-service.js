@@ -12,7 +12,20 @@ const ASSET_KEYS = Object.freeze([
     'primaryLogo', 'horizontalLogo', 'lightLogo', 'darkLogo', 'compactLogo', 'favicon', 'appIcon',
     'loginBackground', 'loginIllustration', 'defaultAvatar', 'printLogo', 'watermark'
 ]);
-const ASSET_MIME_TYPES = Object.freeze(new Set(['image/svg+xml', 'image/png', 'image/webp']));
+// Branding assets are rendered by the browser, so accept the common image
+// formats that can be safely identified from their bytes. The client supplied
+// MIME type is only a hint; validateAsset() normalizes it from the signature
+// before persisting or serving the object.
+const ASSET_MIME_TYPES = Object.freeze(new Set([
+    'image/svg+xml',
+    'image/png',
+    'image/jpeg',
+    'image/webp',
+    'image/gif',
+    'image/bmp',
+    'image/x-icon',
+    'image/vnd.microsoft.icon'
+]));
 const COLOR_KEYS = Object.freeze([
     'primary', 'primaryHover', 'primaryActive', 'onPrimary', 'secondary', 'accent',
     'background', 'surface', 'surfaceSecondary', 'card', 'cardHover', 'elevated',
@@ -451,13 +464,59 @@ function normalizeAssetKey(value) {
     return key;
 }
 
+function normalizeAssetMimeType(value) {
+    return String(value || '').toLowerCase().split(';')[0].trim();
+}
+
+function detectAssetMime(buffer) {
+    if (!Buffer.isBuffer(buffer) || !buffer.length) return null;
+    if (buffer.length >= 8 && buffer.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]))) return 'image/png';
+    if (buffer.length >= 3 && buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) return 'image/jpeg';
+    if (buffer.length >= 12 && buffer.toString('ascii', 0, 4) === 'RIFF' && buffer.toString('ascii', 8, 12) === 'WEBP') return 'image/webp';
+    if (buffer.length >= 6 && ['GIF87a', 'GIF89a'].includes(buffer.toString('ascii', 0, 6))) return 'image/gif';
+    if (buffer.length >= 2 && buffer.toString('ascii', 0, 2) === 'BM') return 'image/bmp';
+    if (buffer.length >= 6 && buffer.readUInt16LE(0) === 0 && buffer.readUInt16LE(2) === 1 && buffer.readUInt16LE(4) >= 1) return 'image/x-icon';
+    const source = buffer.subarray(0, Math.min(buffer.length, 4096)).toString('utf8').replace(/^\uFEFF/, '').trimStart();
+    if (/^(?:<\?xml[^>]*>\s*)?<svg\b/i.test(source)) return 'image/svg+xml';
+    return null;
+}
+
+function jpegDimensions(buffer) {
+    let offset = 2;
+    const sofMarkers = new Set([
+        0xc0, 0xc1, 0xc2, 0xc3, 0xc5, 0xc6, 0xc7,
+        0xc9, 0xca, 0xcb, 0xcd, 0xce, 0xcf
+    ]);
+    while (offset + 3 < buffer.length) {
+        if (buffer[offset] !== 0xff) {
+            offset += 1;
+            continue;
+        }
+        while (offset < buffer.length && buffer[offset] === 0xff) offset += 1;
+        const marker = buffer[offset++];
+        if (marker === 0xd8 || marker === 0xd9 || (marker >= 0xd0 && marker <= 0xd7)) continue;
+        if (offset + 2 > buffer.length) break;
+        const segmentLength = buffer.readUInt16BE(offset);
+        if (segmentLength < 2 || offset + segmentLength > buffer.length) break;
+        if (sofMarkers.has(marker) && offset + 7 <= buffer.length) {
+            return { width: buffer.readUInt16BE(offset + 5), height: buffer.readUInt16BE(offset + 3) };
+        }
+        offset += segmentLength;
+    }
+    throw brandingError('ملف JPEG غير صالح أو تعذر قراءة أبعاده.');
+}
+
 function imageDimensions(buffer, mimeType, declaredWidth, declaredHeight) {
     if (mimeType === 'image/png') {
-        if (buffer.length < 24 || !buffer.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]))) {
+        if (buffer.length < 24
+            || !buffer.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]))
+            || buffer.readUInt32BE(8) !== 13
+            || buffer.toString('ascii', 12, 16) !== 'IHDR') {
             throw brandingError('ملف PNG غير صالح أو لا يطابق نوعه المعلن.');
         }
         return { width: buffer.readUInt32BE(16), height: buffer.readUInt32BE(20) };
     }
+    if (mimeType === 'image/jpeg') return jpegDimensions(buffer);
     if (mimeType === 'image/webp') {
         if (buffer.length < 16 || buffer.toString('ascii', 0, 4) !== 'RIFF' || buffer.toString('ascii', 8, 12) !== 'WEBP') {
             throw brandingError('ملف WebP غير صالح أو لا يطابق نوعه المعلن.');
@@ -489,6 +548,26 @@ function imageDimensions(buffer, mimeType, declaredWidth, declaredHeight) {
         if (viewBox) return { width: Number(viewBox[1]), height: Number(viewBox[2]) };
         if (width && height) return { width, height };
     }
+    if (mimeType === 'image/gif') {
+        if (buffer.length < 10 || !['GIF87a', 'GIF89a'].includes(buffer.toString('ascii', 0, 6))) {
+            throw brandingError('ملف GIF غير صالح أو لا يطابق نوعه المعلن.');
+        }
+        return { width: buffer.readUInt16LE(6), height: buffer.readUInt16LE(8) };
+    }
+    if (mimeType === 'image/bmp') {
+        if (buffer.length < 26 || buffer.toString('ascii', 0, 2) !== 'BM') {
+            throw brandingError('ملف BMP غير صالح أو لا يطابق نوعه المعلن.');
+        }
+        const width = buffer.readInt32LE(18);
+        const height = buffer.readInt32LE(22);
+        return { width: Math.abs(width), height: Math.abs(height) };
+    }
+    if (mimeType === 'image/x-icon' || mimeType === 'image/vnd.microsoft.icon') {
+        if (buffer.length < 22 || buffer.readUInt16LE(0) !== 0 || buffer.readUInt16LE(2) !== 1 || buffer.readUInt16LE(4) < 1) {
+            throw brandingError('ملف الأيقونة غير صالح أو لا يطابق نوعه المعلن.');
+        }
+        return { width: buffer[6] || 256, height: buffer[7] || 256 };
+    }
     const width = Number(declaredWidth || 0);
     const height = Number(declaredHeight || 0);
     if (width > 0 && height > 0) return { width, height };
@@ -510,13 +589,20 @@ function isSafeSvgMarkup(source) {
 
 function validateAsset({ key, mimeType, fileName, buffer, width, height }) {
     normalizeAssetKey(key);
-    if (!ASSET_MIME_TYPES.has(String(mimeType || '').toLowerCase())) throw brandingError('يسمح برفع SVG أو PNG أو WebP فقط.');
     if (!Buffer.isBuffer(buffer) || !buffer.length || buffer.length > MAX_ASSET_BYTES) throw brandingError('حجم أصل الهوية يجب أن يكون بين 1 بايت و2 ميجابايت.');
-    const dimensions = imageDimensions(buffer, String(mimeType).toLowerCase(), width, height);
+    const declaredMime = normalizeAssetMimeType(mimeType);
+    if (declaredMime && declaredMime !== 'application/octet-stream' && !declaredMime.startsWith('image/')) {
+        throw brandingError('يسمح برفع ملفات الصور فقط لأصول الهوية.');
+    }
+    const detectedMime = detectAssetMime(buffer);
+    if (!detectedMime || !ASSET_MIME_TYPES.has(detectedMime)) {
+        throw brandingError('ملف الصورة غير صالح أو صيغته غير مدعومة. ارفع PNG أو JPG أو WebP أو SVG صالحًا.');
+    }
+    const dimensions = imageDimensions(buffer, detectedMime, width, height);
     if (!Number.isFinite(dimensions.width) || !Number.isFinite(dimensions.height) || dimensions.width < 1 || dimensions.height < 1 || dimensions.width > 5000 || dimensions.height > 5000) throw brandingError('أبعاد أصل الهوية غير صالحة أو أكبر من الحد المسموح.');
     const ratio = dimensions.width / dimensions.height;
     if (ratio < 0.12 || ratio > 8) throw brandingError('نسبة أبعاد أصل الهوية غير مناسبة للتصميم.');
-    return { key: normalizeAssetKey(key), mimeType: String(mimeType).toLowerCase(), fileName: cleanText(fileName, `${key}.asset`, 255), buffer, width: Math.round(dimensions.width), height: Math.round(dimensions.height) };
+    return { key: normalizeAssetKey(key), mimeType: detectedMime, fileName: cleanText(fileName, `${key}.asset`, 255), buffer, width: Math.round(dimensions.width), height: Math.round(dimensions.height) };
 }
 
 async function ensureTenantDefaultRow(pool = null) {
@@ -910,5 +996,6 @@ module.exports = {
     uploadDraftAsset,
     validateAsset,
     validateConfig,
-    isSafeSvgMarkup
+    isSafeSvgMarkup,
+    detectAssetMime
 };

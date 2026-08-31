@@ -299,7 +299,7 @@
             const asset = current.assets?.[key];
             const url = asset?.url || DEFAULT_ASSET_URLS[key] || '';
             const preview = url ? `<img src="${escapeHtml(url)}" alt="${escapeHtml(label)}" loading="lazy">` : `<span>${escapeHtml(current.identity?.shortName?.trim()?.charAt(0) || 'ج')}</span>`;
-            return `<article class="branding-asset-card"><div class="branding-asset-preview ${url ? 'has-asset' : ''}">${preview}</div><div class="branding-asset-copy"><strong>${escapeHtml(label)}</strong><small>${escapeHtml(hint)}</small>${asset ? `<em>${escapeHtml(asset.fileName || 'تم الرفع')} · ${Number(asset.width || 0)}×${Number(asset.height || 0)}</em>` : '<em>يستخدم الافتراضي حاليًا</em>'}</div><div class="branding-asset-actions"><input id="branding-file-${key}" type="file" accept="image/svg+xml,image/png,image/webp" data-branding-file="${key}" hidden><label class="btn btn-light btn-small" for="branding-file-${key}">رفع / استبدال</label>${asset ? `<button class="btn btn-danger btn-small" type="button" data-branding-remove="${key}">إزالة</button>` : ''}</div></article>`;
+            return `<article class="branding-asset-card"><div class="branding-asset-preview ${url ? 'has-asset' : ''}">${preview}</div><div class="branding-asset-copy"><strong>${escapeHtml(label)}</strong><small>${escapeHtml(hint)}</small>${asset ? `<em>${escapeHtml(asset.fileName || 'تم الرفع')} · ${Number(asset.width || 0)}×${Number(asset.height || 0)}</em>` : '<em>يستخدم الافتراضي حاليًا</em>'}</div><div class="branding-asset-actions"><input id="branding-file-${key}" type="file" accept="image/*" data-branding-file="${key}" hidden><label class="btn btn-light btn-small" for="branding-file-${key}">رفع / استبدال</label>${asset ? `<button class="btn btn-danger btn-small" type="button" data-branding-remove="${key}">إزالة</button>` : ''}</div></article>`;
         }).join('');
     }
 
@@ -478,10 +478,6 @@
 
     async function uploadAsset(file, key) {
         if (!file || state.busy) return;
-        if (!['image/svg+xml', 'image/png', 'image/webp'].includes(file.type)) {
-            showToast('error', 'نوع الملف غير مدعوم', 'ارفع SVG أو PNG أو WebP فقط.');
-            return;
-        }
         if (file.size > 2 * 1024 * 1024) {
             showToast('error', 'حجم الملف كبير', 'الحد الأقصى لأصل الهوية هو 2MB.');
             return;
@@ -494,7 +490,7 @@
                 headers: {
                     'Content-Type': 'application/octet-stream',
                     'X-Branding-Asset-Key': key,
-                    'X-Branding-Asset-Mime': file.type,
+                    'X-Branding-Asset-Mime': file.type || 'application/octet-stream',
                     'X-Branding-Asset-Name': file.name,
                     'X-Branding-Asset-Width': String(Math.round(dimensions.width || 0)),
                     'X-Branding-Asset-Height': String(Math.round(dimensions.height || 0))
