@@ -53,6 +53,7 @@
   const statusLabel = (value) => ({ pending: 'قيد المراجعة', approved: 'تم الاعتماد', rejected: 'مرفوض', cancelled: 'ملغي' }[value] || 'غير معروف');
   const activationStoragePrefix = 'logicfit.portal.activation-seen.v1:';
   const errorMessages = Object.freeze({
+    PAYMENT_PROOF_REQUIRED: 'أرفق إثبات الدفع قبل إرسال الطلب.',
     PORTAL_SESSION_REQUIRED: 'انتهت جلسة البوابة. أعد إدخال كود العضوية.',
     PORTAL_SESSION_EXPIRED: 'انتهت جلسة البوابة. أعد إدخال كود العضوية.',
     MEMBER_SUBSCRIPTION_REQUEST_ALREADY_PENDING: 'لديك طلب من نفس النوع قيد المراجعة بالفعل.',
@@ -378,28 +379,29 @@
     state.submitting = true;
     syncSubmitState();
     setFeedback('', '');
-    setBusy(elements.submit, true, isProofRecovery ? 'جاري رفع إثبات الدفع...' : 'جاري إرسال الطلب...');
+    setBusy(elements.submit, true, isProofRecovery ? 'جاري رفع إثبات الدفع...' : 'جاري رفع الإثبات والتحقق منه...');
     let requestId = isProofRecovery ? recoveryRequestId : null;
     let proofUploaded = false;
     try {
       if (!isProofRecovery) {
+        const formData = new FormData();
+        formData.append('requestType', elements.requestType.value);
+        formData.append('membershipPlan', elements.plan.value);
+        formData.append('membershipType', elements.type.value);
+        formData.append('startDate', isRenewal ? '' : elements.startDate.value);
+        formData.append('paymentMethodCode', selectedMethod().id);
+        if (elements.notes.value) formData.append('notes', elements.notes.value);
+        formData.append('proof', file, file.name || 'payment-proof');
         const created = await requestJson('/api/member-portal/subscription-requests', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Idempotency-Key': randomIdempotencyKey() },
-          body: JSON.stringify({
-            requestType: elements.requestType.value,
-            membershipPlan: elements.plan.value,
-            membershipType: elements.type.value,
-            startDate: isRenewal ? null : elements.startDate.value,
-            paymentMethodCode: selectedMethod().id,
-            notes: elements.notes.value
-          })
+          headers: { 'Idempotency-Key': randomIdempotencyKey() },
+          body: formData
         }, 'تعذر إنشاء طلب العضوية.');
         requestId = created.request?.id;
         if (!requestId) throw new Error('تعذر تحديد طلب العضوية بعد إنشائه.');
       }
-      setFeedback('جاري رفع إثبات الدفع والتحقق منه...', '');
-      await uploadProof(requestId, file);
+      if (isProofRecovery) setFeedback('جاري رفع إثبات الدفع والتحقق منه...', '');
+      if (isProofRecovery) await uploadProof(requestId, file);
       proofUploaded = true;
       state.proofRecoveryRequestId = null;
       if (isProofRecovery) {

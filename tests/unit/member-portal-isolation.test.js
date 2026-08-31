@@ -141,6 +141,8 @@ test('member portal subscription requests use the portal session and active tena
     assert.match(portalSubscriptionUiSource, /\/api\/member-portal\/membership-catalog/);
     assert.match(portalSubscriptionUiSource, /\/api\/member-portal\/payment-methods/);
     assert.match(portalSubscriptionUiSource, /Idempotency-Key/);
+    assert.match(portalSubscriptionUiSource, /new FormData\(\)/);
+    assert.match(portalSubscriptionUiSource, /formData\.append\('proof'/);
     assert.match(portalSubscriptionUiSource, /x-payment-proof-name-encoded/);
     assert.match(portalSubscriptionUiSource, /portal-request-history-review/);
     assert.match(portalSubscriptionUiSource, /item\.reviewNotes/);

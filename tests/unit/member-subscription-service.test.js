@@ -111,6 +111,22 @@ test('member proof upload is private, checks integrity, and only records verifie
     assert.match(source, /idempotencyKeyHash/);
 });
 
+test('member request creation requires a verified proof and persists it atomically with the request', () => {
+    assert.match(source, /async function createPortalRequest\(request, body = \{\}, proofInput = null\)/);
+    assert.match(source, /Payment proof is required before submitting the request/);
+    assert.match(source, /storage\.putPrivateObject\(\{/);
+    assert.match(source, /await storage\.verifyPrivateObject\(\{/);
+    assert.match(source, /INSERT INTO dbo\.gym_member_subscription_payment_proofs/);
+    assert.match(source, /objectReferenced = true/);
+});
+
+test('direct request creation without a proof is rejected before session or database work', async () => {
+    await assert.rejects(
+        service.createPortalRequest({}, {}),
+        (error) => error.code === 'PAYMENT_PROOF_REQUIRED' && error.statusCode === 422
+    );
+});
+
 test('member approval keeps the proof checksum alias used by the final integrity check', () => {
     assert.match(source, /p\.file_size AS proof_file_size,p\.sha256 AS proof_sha256/);
     assert.match(source, /String\(requestRow\.proof_sha256 \|\| ''\)\.trim\(\)\.toLowerCase\(\)/);

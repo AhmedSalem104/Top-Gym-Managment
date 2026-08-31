@@ -307,7 +307,11 @@ async function normalizePortalRequest(body = {}) {
     };
 }
 
-async function createPortalRequest(request, body = {}) {
+async function createPortalRequest(request, body = {}, proofInput = null) {
+    if (!proofInput?.buffer) {
+        throw requestError('Payment proof is required before submitting the request.', 422, 'PAYMENT_PROOF_REQUIRED');
+    }
+
     return commercialService.withPortalSession(request, async (session) => {
         const data = await normalizePortalRequest(body);
         const idempotency = idempotencyKeyHash(
@@ -316,10 +320,34 @@ async function createPortalRequest(request, body = {}) {
             session.memberId,
             data.requestType
         );
+        const proof = saasService.validateProof(proofInput);
+        if (proof.buffer.length > MAX_PROOF_BYTES) throw requestError('Payment proof is too large.', 400, 'PAYMENT_PROOF_TOO_LARGE');
+        const storage = requireObjectStorageService();
         let requestId = null;
         let reused = false;
         let requestDates = { startDate: data.startDate, endDate: data.endDate };
+        let storedObject = null;
+        let objectReferenced = false;
+
         try {
+            // Upload and verify the bytes before opening the database transaction.
+            // If SQL rejects the request, the object is deleted below and no
+            // request/proof row is left behind.
+            storedObject = await storage.putPrivateObject({
+                tenantId: data.tenantId,
+                category: 'payment-proofs',
+                objectName: proof.fileName,
+                contentType: proof.mimeType,
+                body: proof.buffer,
+                checksum: proof.sha256
+            });
+            await storage.verifyPrivateObject({
+                tenantId: data.tenantId,
+                key: storedObject.key,
+                expectedSize: proof.buffer.length,
+                expectedChecksum: proof.sha256
+            });
+
             await withTransaction(async (transaction) => {
                 const member = await transaction.request()
                     .input('tenantId', sql.Int, data.tenantId)
@@ -332,8 +360,16 @@ async function createPortalRequest(request, body = {}) {
                         .input('memberId', sql.Int, session.memberId)
                         .input('requestType', sql.VarChar(40), data.requestType)
                         .input('idempotencyKeyHash', sql.Char(64), idempotency)
-                        .query('SELECT TOP (1) id FROM dbo.gym_member_subscription_requests WITH (UPDLOCK,HOLDLOCK) WHERE tenant_id=@tenantId AND member_id=@memberId AND request_type=@requestType AND idempotency_key_hash=@idempotencyKeyHash;');
+                        .query(`SELECT TOP (1) r.id,proof.storage_verified_at
+                                FROM dbo.gym_member_subscription_requests AS r WITH (UPDLOCK,HOLDLOCK)
+                                LEFT JOIN dbo.gym_member_subscription_payment_proofs AS proof
+                                  ON proof.request_id=r.id AND proof.tenant_id=r.tenant_id
+                                WHERE r.tenant_id=@tenantId AND r.member_id=@memberId
+                                  AND r.request_type=@requestType AND r.idempotency_key_hash=@idempotencyKeyHash;`);
                     if (existing.recordset[0]) {
+                        if (!existing.recordset[0].storage_verified_at) {
+                            throw requestError('The previous request has no verified payment proof.', 409, 'PAYMENT_PROOF_REQUIRED');
+                        }
                         requestId = Number(existing.recordset[0].id);
                         reused = true;
                         return;
@@ -380,21 +416,51 @@ async function createPortalRequest(request, body = {}) {
                                     @durationMode,@durationValue,@startDate,@endDate,@listPrice,@discountAmount,
                                     @amountDue,@currency,@paymentMethodCode,@paymentMethodName,@notes,@idempotencyKeyHash);`);
                 requestId = Number(inserted.recordset[0]?.id);
+                if (!requestId) throw requestError('The subscription request could not be created.', 503, 'MEMBER_SUBSCRIPTION_REQUEST_NOT_AVAILABLE');
+                await transaction.request()
+                    .input('tenantId', sql.Int, data.tenantId)
+                    .input('requestId', sql.BigInt, requestId)
+                    .input('fileName', sql.NVarChar(255), proof.fileName)
+                    .input('mimeType', sql.VarChar(80), proof.mimeType)
+                    .input('fileSize', sql.Int, proof.buffer.length)
+                    .input('sha256', sql.Char(64), proof.sha256)
+                    .input('storageKey', sql.NVarChar(512), storedObject.key)
+                    .input('storageProvider', sql.VarChar(40), String(storage.provider || storage.providerStatus || 'private').slice(0, 40))
+                    .query(`INSERT INTO dbo.gym_member_subscription_payment_proofs
+                                (tenant_id,request_id,file_name,mime_type,file_size,sha256,storage_key,storage_provider,storage_verified_at)
+                            VALUES (@tenantId,@requestId,@fileName,@mimeType,@fileSize,@sha256,@storageKey,@storageProvider,SYSUTCDATETIME());`);
                 await saasService.recordAudit({
                     tenantId: data.tenantId,
                     actorUserId: null,
                     action: 'member_subscription_requested',
                     entityType: 'member_subscription_request',
                     entityId: requestId,
-                    details: `Member portal request ${data.requestType}.`,
+                    details: `Member portal request ${data.requestType} submitted with verified payment proof.`,
+                    executor: transaction
+                });
+                await saasService.recordAudit({
+                    tenantId: data.tenantId,
+                    actorUserId: null,
+                    action: 'member_subscription_proof_uploaded',
+                    entityType: 'member_subscription_request',
+                    entityId: requestId,
+                    details: 'Member portal payment proof uploaded and verified with the request.',
                     executor: transaction
                 });
             });
+            objectReferenced = true;
         } catch (error) {
+            if (!objectReferenced && storedObject?.key) {
+                await storage.deletePrivateObject({ tenantId: data.tenantId, key: storedObject.key }).catch(() => {});
+            }
             if (saasService.isDuplicateSqlError?.(error)) {
                 throw requestError('A request of this type was submitted already. Refresh the portal to view its status.', 409, 'MEMBER_SUBSCRIPTION_REQUEST_ALREADY_PENDING');
             }
-            throw error;
+            throw normalizePaymentProofStorageError(error);
+        }
+
+        if (reused && storedObject?.key) {
+            await storage.deletePrivateObject({ tenantId: data.tenantId, key: storedObject.key }).catch(() => {});
         }
         const result = await getRequestRow(requestId, data.tenantId, { memberId: session.memberId });
         if (!result) throw requestError('The subscription request could not be loaded after creation.', 503, 'MEMBER_SUBSCRIPTION_REQUEST_NOT_AVAILABLE');

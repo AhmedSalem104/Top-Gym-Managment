@@ -19,7 +19,9 @@ function createMemberSubscriptionController({ service }) {
         },
 
         createPortalRequest: async (request, response) => {
-            response.status(201).json(await service.createPortalRequest(request, request.body || {}));
+            const submission = request.memberSubscriptionSubmission;
+            const body = submission?.fields || request.body || {};
+            response.status(201).json(await service.createPortalRequest(request, body, submission?.proof || null));
         },
 
         uploadPortalProof: async (request, response) => {
