@@ -1,12 +1,3 @@
-.page-tab-intelligence {
-    color: var(--primary);
-}
-
-.page-tab-intelligence.active {
-    color: var(--primary-active);
-    background: linear-gradient(135deg, var(--primary-soft), var(--primary-soft));
-}
-
 .intelligence-section {
     display: grid;
     gap: var(--space-5);

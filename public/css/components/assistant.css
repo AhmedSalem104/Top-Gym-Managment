@@ -1,49 +1,11 @@
-/* Shared Smart Assistant surface. The component is intentionally independent
-   from page-specific layouts so it can follow the user across hash tabs. */
-.smart-assistant-launcher {
-  position: fixed;
-  left: 24px;
-  right: auto;
-  bottom: 24px;
-  z-index: var(--z-toast);
-  display: inline-flex;
-  min-width: 52px;
-  height: 52px;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-2);
-  border: 1px solid var(--primary-border);
-  border-radius: 17px;
-  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-hover));
-  box-shadow: 0 14px 28px var(--primary-border);
-  color: var(--text-on-primary);
-  padding: 0 var(--space-3);
-  transition: transform var(--transition-fast), box-shadow var(--transition-fast), background-color var(--transition-fast);
-}
-
-.smart-assistant-launcher:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 18px 34px var(--primary-border);
-}
-
-.smart-assistant-launcher:focus-visible,
+/* Shared Smart Assistant surface. The launcher belongs to the Gym App shell;
+   its navigation presentation is defined in navigation-shell.css. */
 .smart-assistant-close:focus-visible,
 .smart-assistant-tab:focus-visible,
 .smart-assistant-quick-action:focus-visible,
 .smart-assistant-submit:focus-visible {
   outline: 3px solid var(--primary-border);
   outline-offset: 2px;
-}
-
-.smart-assistant-launcher .ui-icon {
-  width: 23px;
-  height: 23px;
-}
-
-.smart-assistant-launcher-label {
-  display: none;
-  font-size: var(--font-sm);
-  font-weight: var(--weight-bold);
 }
 
 .smart-assistant-panel {
@@ -65,8 +27,7 @@
   animation: smart-assistant-enter 180ms ease both;
 }
 
-.smart-assistant-panel[hidden],
-.smart-assistant-launcher[hidden] {
+.smart-assistant-panel[hidden] {
   display: none;
 }
 
@@ -348,21 +309,7 @@
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
-@media (min-width: 768px) {
-  .smart-assistant-launcher-label {
-    display: inline;
-  }
-}
-
 @media (max-width: 767px) {
-  .smart-assistant-launcher {
-    left: 16px;
-    right: auto;
-    bottom: max(16px, env(safe-area-inset-bottom, 0px));
-    width: 52px;
-    padding: 0;
-  }
-
   .smart-assistant-panel {
     inset-inline: 10px;
     bottom: max(78px, calc(62px + env(safe-area-inset-bottom, 0px)));
@@ -378,7 +325,6 @@
 
 @media (prefers-reduced-motion: reduce) {
   .smart-assistant-panel,
-  .smart-assistant-launcher,
   .smart-assistant-quick-action {
     animation: none;
     transition: none;

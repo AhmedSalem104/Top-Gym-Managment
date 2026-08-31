@@ -1,0 +1,950 @@
+/*
+ * Logic Fit Gym App navigation shell
+ *
+ * This is the single source of truth for .app-shell, .topbar and .page-tabs.
+ * The layout keeps the header, navigation rail and workspace in separate
+ * tracks, so the rail can expand on hover without covering the page or
+ * stealing clicks from the workspace. It consumes the existing semantic
+ * tokens and does not introduce a new theme.
+ */
+
+.app-shell {
+  position: relative;
+  display: flex;
+  min-height: 100dvh;
+  flex-direction: column;
+  overflow-x: clip;
+  background: var(--bg-app);
+  color: var(--text-primary);
+  direction: rtl;
+}
+
+/* App lifecycle states stay with the shell so release/lock transitions do not
+   become a second source of navigation presentation rules. */
+.auth-pending .app-shell,
+.auth-locked .app-shell {
+  display: none;
+}
+
+.top-gym-navigation-pending .page-tabs {
+  opacity: .86;
+  transition: opacity 160ms ease;
+}
+
+.app-shell > .topbar {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky);
+  display: block;
+  flex: 0 0 auto;
+  border-bottom: 1px solid var(--sidebar-divider);
+  background: var(--bg-header);
+  color: var(--sidebar-text);
+  box-shadow: var(--shadow-sm);
+}
+
+.topbar-inner {
+  box-sizing: border-box;
+  display: flex;
+  width: min(100% - 48px, 1520px);
+  min-height: 80px;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-6);
+  margin-inline: auto;
+  padding-block: 14px;
+  direction: rtl;
+}
+
+.topbar-brand-area,
+.topbar-controls,
+.topbar-quick-actions,
+.topbar-welcome,
+.auth-account-bar,
+.auth-account-identity,
+.brand,
+.header-profile,
+.top-actions,
+.header-search,
+.header-notification,
+.header-backup,
+.header-refresh {
+  display: flex;
+  align-items: center;
+}
+
+.topbar-brand-area {
+  min-width: 0;
+  flex: 1 1 auto;
+  gap: var(--space-4);
+}
+
+.topbar-brand-area .brand {
+  min-width: 0;
+  gap: var(--space-3);
+}
+
+.topbar-brand-area .brand-mark {
+  display: inline-flex;
+  width: 52px;
+  height: 52px;
+  flex: 0 0 52px;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border: 1px solid var(--sidebar-divider);
+  border-radius: var(--radius-lg);
+  background: var(--sidebar-hover-bg);
+  color: var(--sidebar-text);
+}
+
+.topbar-brand-mark .brand-logo-primary,
+.topbar-brand-mark .brand-logo-compact {
+  width: 88%;
+  height: 88%;
+  object-fit: contain;
+}
+
+.topbar-brand-mark .brand-logo-compact {
+  display: none;
+}
+
+.topbar-brand-area .brand-mark .ui-icon {
+  width: 24px;
+  height: 24px;
+}
+
+.topbar-brand-area .brand-copy {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.topbar-brand-area .brand-copy h1,
+.topbar-brand-area .brand-copy p {
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.topbar-brand-area .brand-copy h1 {
+  color: var(--sidebar-text);
+  font-family: var(--font-heading);
+  font-size: var(--font-lg);
+  font-weight: var(--weight-extrabold);
+  line-height: 1.35;
+}
+
+.topbar-brand-area .brand-copy p {
+  max-width: 310px;
+  color: var(--sidebar-text-muted);
+  font-size: var(--font-xs);
+  line-height: 1.45;
+}
+
+.topbar-brand-area .brand-kicker,
+.topbar-section-context,
+.topbar-welcome {
+  display: none;
+}
+
+.topbar-controls {
+  min-width: 0;
+  flex: 0 1 auto;
+  justify-content: flex-start;
+  gap: var(--space-2);
+  direction: rtl;
+}
+
+.topbar-quick-actions,
+.top-actions {
+  min-width: 0;
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.topbar-quick-actions .header-search,
+.topbar-quick-actions .header-notification,
+.topbar-quick-actions .header-backup,
+.topbar-quick-actions .header-refresh {
+  min-height: 40px;
+  border: 1px solid var(--sidebar-divider);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--sidebar-text-muted);
+  padding-inline: var(--space-2);
+}
+
+.topbar-quick-actions .header-search:hover,
+.topbar-quick-actions .header-search:focus-visible,
+.topbar-quick-actions .header-notification:hover,
+.topbar-quick-actions .header-notification:focus-visible,
+.topbar-quick-actions .header-backup:hover,
+.topbar-quick-actions .header-backup:focus-visible,
+.topbar-quick-actions .header-refresh:hover,
+.topbar-quick-actions .header-refresh:focus-visible {
+  border-color: var(--primary-border);
+  background: var(--sidebar-hover-bg);
+  color: var(--sidebar-text);
+}
+
+.topbar-theme-toggle,
+.kiosk-toggle-button,
+.mobile-nav-toggle {
+  box-sizing: border-box;
+  display: inline-flex;
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--sidebar-divider);
+  border-radius: var(--radius-md);
+  background: var(--sidebar-hover-bg);
+  color: var(--sidebar-text);
+  padding: 0;
+  transition: background-color var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast), transform var(--transition-fast);
+}
+
+.topbar-theme-toggle:hover,
+.topbar-theme-toggle:focus-visible,
+.kiosk-toggle-button:hover,
+.kiosk-toggle-button:focus-visible,
+.mobile-nav-toggle:hover,
+.mobile-nav-toggle:focus-visible {
+  border-color: var(--primary-border);
+  background: var(--primary-soft);
+  color: var(--sidebar-text);
+  transform: translateY(-1px);
+}
+
+.topbar-theme-toggle .ui-icon,
+.kiosk-toggle-button .ui-icon,
+.mobile-nav-toggle .ui-icon {
+  width: 20px;
+  height: 20px;
+}
+
+.mobile-nav-toggle {
+  display: inline-flex;
+}
+
+.topbar-controls > .auth-account-bar {
+  min-width: 0;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+}
+
+.topbar-controls > .auth-account-bar[hidden] {
+  display: none;
+}
+
+.auth-account-identity {
+  min-width: 0;
+  gap: var(--space-2);
+}
+
+.auth-account-avatar {
+  display: inline-flex;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--primary-border);
+  border-radius: 50%;
+  background: var(--primary-soft);
+  color: var(--text-on-primary);
+  font-family: var(--font-latin);
+  font-size: var(--font-xs);
+  font-weight: var(--weight-extrabold);
+}
+
+.auth-account-copy {
+  display: grid;
+  min-width: 0;
+  gap: 1px;
+}
+
+.auth-account-copy strong,
+.auth-account-copy small {
+  display: block;
+  max-width: 132px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.auth-account-copy strong {
+  color: var(--sidebar-text);
+  font-size: var(--font-xs);
+}
+
+.auth-account-copy small {
+  color: var(--sidebar-text-muted);
+  font-size: 10px;
+}
+
+.auth-logout-button {
+  display: inline-flex;
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  border: 1px solid var(--sidebar-divider);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--sidebar-text-muted);
+  padding: 0;
+  transition: background-color var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast), transform var(--transition-fast);
+}
+
+.auth-logout-button > span {
+  display: none;
+}
+
+.auth-logout-button .ui-icon {
+  width: 20px;
+  height: 20px;
+}
+
+.auth-logout-button:hover:not(:disabled),
+.auth-logout-button:focus-visible {
+  border-color: var(--danger-border);
+  background: var(--danger-soft);
+  color: var(--danger-text);
+  transform: translateY(-1px);
+}
+
+/* Mobile/tablet use a real drawer. The rail is never squeezed into a narrow
+   row of unreadable labels, and its backdrop is a separate click target. */
+.app-shell > .page-tabs {
+  position: fixed;
+  z-index: var(--z-dropdown);
+  inset-block: 0;
+  inset-inline-end: 0;
+  display: flex;
+  width: min(86vw, 336px);
+  min-width: 0;
+  flex-direction: column;
+  gap: var(--space-2);
+  overflow-x: hidden;
+  overflow-y: auto;
+  border-inline-start: 1px solid var(--sidebar-divider);
+  background: var(--bg-sidebar);
+  color: var(--sidebar-text);
+  padding: var(--space-4) var(--space-3) var(--space-5);
+  box-shadow: var(--shadow-popup);
+  transform: translateX(110%);
+  visibility: hidden;
+  pointer-events: none;
+  transition: transform var(--transition-slow), visibility var(--transition-slow);
+}
+
+.app-shell.mobile-nav-open > .page-tabs {
+  transform: translateX(0);
+  visibility: visible;
+  pointer-events: auto;
+}
+
+body.mobile-nav-open {
+  overflow: hidden;
+}
+
+.mobile-nav-header {
+  display: flex;
+  min-height: 48px;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: 0 var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--sidebar-divider);
+}
+
+.mobile-nav-header strong {
+  color: var(--sidebar-text);
+  font-size: var(--font-md);
+  font-weight: var(--weight-bold);
+}
+
+.mobile-nav-close {
+  display: inline-flex;
+  width: 40px;
+  min-width: 40px;
+  height: 40px;
+  min-height: 40px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--sidebar-divider);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--sidebar-text-muted);
+  padding: 0;
+}
+
+.mobile-nav-close:hover,
+.mobile-nav-close:focus-visible {
+  border-color: var(--primary-border);
+  background: var(--sidebar-hover-bg);
+  color: var(--sidebar-text);
+}
+
+.mobile-nav-close .ui-icon {
+  width: 20px;
+  height: 20px;
+}
+
+.app-shell > .page-tabs > .page-tab,
+.app-shell > .page-tabs > .smart-assistant-launcher {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  min-height: 48px;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: flex-start;
+  gap: var(--space-3);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--sidebar-text-muted);
+  padding: 0 var(--space-3);
+  font-size: var(--font-sm);
+  font-weight: var(--weight-semibold);
+  text-align: start;
+  white-space: nowrap;
+  transition: background-color var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
+}
+
+.app-shell > .page-tabs > .smart-assistant-launcher {
+  position: static;
+  inset: auto;
+  z-index: auto;
+  min-width: 0;
+  height: auto;
+  box-shadow: none;
+}
+
+.app-shell > .page-tabs > .page-tab:hover,
+.app-shell > .page-tabs > .page-tab:focus-visible,
+.app-shell > .page-tabs > .smart-assistant-launcher:hover,
+.app-shell > .page-tabs > .smart-assistant-launcher:focus-visible {
+  border-color: var(--sidebar-divider);
+  background: var(--sidebar-hover-bg);
+  color: var(--sidebar-text);
+}
+
+.app-shell > .page-tabs > .page-tab.active,
+.app-shell > .page-tabs > .page-tab[aria-selected="true"],
+.app-shell > .page-tabs > .smart-assistant-launcher[aria-expanded="true"] {
+  border-color: var(--primary-border);
+  background: var(--sidebar-active-bg);
+  color: var(--sidebar-active-text);
+  box-shadow: var(--sidebar-active-shadow);
+}
+
+.app-shell > .page-tabs > .page-tab .ui-icon,
+.app-shell > .page-tabs > .smart-assistant-launcher .ui-icon {
+  width: 22px;
+  height: 22px;
+  flex: 0 0 22px;
+  stroke-width: 1.9;
+}
+
+.app-shell > .page-tabs > .page-tab > span,
+.smart-assistant-launcher-label,
+.sidebar-brand-copy {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sidebar-pin-control {
+  display: flex;
+  justify-content: flex-start;
+  padding: var(--space-2) var(--space-2) 0;
+}
+
+.sidebar-pin-button {
+  display: inline-flex;
+  width: 40px;
+  min-width: 40px;
+  height: 40px;
+  min-height: 40px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--sidebar-divider);
+  border-radius: var(--radius-md);
+  background: var(--sidebar-hover-bg);
+  color: var(--sidebar-text-muted);
+  padding: 0;
+}
+
+.sidebar-pin-button:hover,
+.sidebar-pin-button:focus-visible,
+.sidebar-pin-button[aria-pressed="true"] {
+  border-color: var(--primary-border);
+  background: var(--primary-soft);
+  color: var(--sidebar-text);
+}
+
+.sidebar-pin-button .ui-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.sidebar-brand {
+  display: flex;
+  min-width: 0;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: var(--space-3);
+  margin: 0 0 var(--space-2);
+  padding: 0 var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--sidebar-divider);
+}
+
+.sidebar-brand-mark {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid var(--sidebar-divider);
+  border-radius: var(--radius-md);
+  background: var(--sidebar-hover-bg);
+  color: var(--sidebar-text);
+}
+
+.sidebar-brand-mark img {
+  width: 86%;
+  height: 86%;
+  object-fit: contain;
+}
+
+.sidebar-brand-mark > span {
+  color: var(--sidebar-text);
+  font-family: var(--font-latin);
+  font-size: var(--font-lg);
+  font-weight: var(--weight-extrabold);
+}
+
+.sidebar-brand-copy {
+  display: grid;
+  gap: 2px;
+}
+
+.sidebar-brand-copy strong {
+  color: var(--sidebar-text);
+  font-size: var(--font-md);
+  font-weight: var(--weight-extrabold);
+}
+
+.sidebar-brand-copy small {
+  overflow: hidden;
+  color: var(--sidebar-text-muted);
+  font-size: 10px;
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mobile-nav-backdrop:not([hidden]) {
+  position: fixed;
+  z-index: calc(var(--z-dropdown) - 1);
+  inset: 0;
+  display: block;
+  border: 0;
+  background: var(--overlay);
+  padding: 0;
+}
+
+/* Keep the existing navigation order while making the menu hierarchy stable. */
+.page-tabs > .sidebar-brand { order: -2; }
+.page-tabs > .mobile-nav-header { order: -3; }
+.page-tabs > [data-page-tab="dashboard"] { order: 1; }
+.page-tabs > [data-page-tab="members"] { order: 2; }
+.page-tabs > [data-page-tab="attendance"] { order: 3; }
+.page-tabs > [data-page-tab="intelligence"] { order: 4; }
+.page-tabs > [data-page-tab="trainees"] { order: 5; }
+.page-tabs > [data-page-tab="store"] { order: 6; }
+.page-tabs > [data-page-tab="expenses"] { order: 7; }
+.page-tabs > [data-page-tab="reports"] { order: 8; }
+.page-tabs > [data-page-tab="library"] { order: 9; }
+.page-tabs > [data-page-tab="feedback"] { order: 10; }
+.page-tabs > [data-page-tab="management"] { order: 11; }
+.page-tabs > [data-page-tab="branding"] { order: 12; }
+.page-tabs > [data-page-tab="member-payment-methods"] { order: 13; }
+.page-tabs > [data-page-tab="permissions"] { order: 14; }
+.page-tabs > [data-page-tab="member-subscription-requests"] { order: 15; }
+.page-tabs > [data-page-tab="portal-analytics"] { order: 16; }
+.page-tabs > [data-page-tab="saas-billing"] { order: 17; }
+.page-tabs > [data-page-tab="backup-history"] { order: 18; }
+.page-tabs > .sidebar-pin-control { order: 98; }
+.page-tabs > .smart-assistant-launcher { order: 99; }
+
+/* Desktop: a stable grid track means hover expands the workspace rather than
+   placing a floating rail on top of buttons and form fields. */
+@media (min-width: 1200px) {
+  .app-shell {
+    display: grid;
+    grid-template-columns: var(--sidebar-width-collapsed) minmax(0, 1fr);
+    grid-template-rows: 80px minmax(0, 1fr);
+    transition: grid-template-columns var(--transition-slow);
+  }
+
+  .app-shell.sidebar-expanded,
+  .app-shell:has(> .page-tabs:hover),
+  .app-shell:has(> .page-tabs:focus-within),
+  .app-shell:has(> .page-tabs.is-pinned) {
+    grid-template-columns: var(--sidebar-width-expanded) minmax(0, 1fr);
+  }
+
+  .app-shell > .topbar {
+    grid-column: 1 / -1;
+    grid-row: 1;
+  }
+
+  .app-shell > .topbar .mobile-nav-toggle {
+    display: none;
+  }
+
+  .app-shell > .page-tabs {
+    position: sticky;
+    inset-block: auto;
+    inset-inline: auto;
+    top: 80px;
+    z-index: var(--z-content);
+    grid-column: 1;
+    grid-row: 2;
+    display: flex;
+    width: 100%;
+    height: calc(100dvh - 80px);
+    min-height: calc(100dvh - 80px);
+    flex-direction: column;
+    overflow-x: hidden;
+    overflow-y: auto;
+    border: 0;
+    border-inline-end: 1px solid var(--sidebar-divider);
+    border-radius: 0;
+    box-shadow: none;
+    padding: var(--space-4) var(--space-3) var(--space-5);
+    transform: none;
+    visibility: visible;
+    pointer-events: auto;
+    transition: background-color var(--transition-fast), border-color var(--transition-fast);
+  }
+
+  .app-shell > .page-tabs > .mobile-nav-header {
+    display: none;
+  }
+
+  .app-shell > .page-tabs > .page-tab,
+  .app-shell > .page-tabs > .smart-assistant-launcher {
+    width: 56px;
+    min-width: 56px;
+    min-height: 52px;
+    align-self: center;
+    justify-content: center;
+    gap: 0;
+    padding-inline: 0;
+  }
+
+  .app-shell > .page-tabs > .page-tab > span,
+  .app-shell > .page-tabs > .smart-assistant-launcher-label,
+  .app-shell > .page-tabs > .sidebar-brand-copy {
+    max-width: 0;
+    opacity: 0;
+    visibility: hidden;
+    transition: max-width var(--transition-normal), opacity var(--transition-normal), visibility var(--transition-normal);
+  }
+
+  .app-shell > .page-tabs > .sidebar-brand {
+    width: 56px;
+    align-self: center;
+    justify-content: center;
+    gap: 0;
+    margin-inline: 0;
+    padding-inline: 0;
+  }
+
+  .app-shell > .page-tabs > .sidebar-brand-mark {
+    width: 48px;
+    height: 48px;
+    flex-basis: 48px;
+  }
+
+  .app-shell > .page-tabs > .sidebar-pin-control {
+    align-self: center;
+    padding-inline: 0;
+  }
+
+  .app-shell > .page-tabs > .sidebar-pin-control .sidebar-pin-button {
+    width: 40px;
+    min-width: 40px;
+  }
+
+  .app-shell > .page-tabs:hover > .page-tab,
+  .app-shell > .page-tabs:hover > .smart-assistant-launcher,
+  .app-shell > .page-tabs.is-hovered > .page-tab,
+  .app-shell > .page-tabs.is-hovered > .smart-assistant-launcher,
+  .app-shell > .page-tabs:focus-within > .page-tab,
+  .app-shell > .page-tabs:focus-within > .smart-assistant-launcher,
+  .app-shell > .page-tabs.is-pinned > .page-tab,
+  .app-shell > .page-tabs.is-pinned > .smart-assistant-launcher {
+    width: 100%;
+    min-width: 0;
+    align-self: stretch;
+    justify-content: flex-start;
+    gap: var(--space-3);
+    padding-inline: var(--space-3);
+  }
+
+  .app-shell > .page-tabs:hover > .page-tab > span,
+  .app-shell > .page-tabs:hover > .smart-assistant-launcher-label,
+  .app-shell > .page-tabs:hover > .sidebar-brand-copy,
+  .app-shell > .page-tabs.is-hovered > .page-tab > span,
+  .app-shell > .page-tabs.is-hovered > .smart-assistant-launcher-label,
+  .app-shell > .page-tabs.is-hovered > .sidebar-brand-copy,
+  .app-shell > .page-tabs:focus-within > .page-tab > span,
+  .app-shell > .page-tabs:focus-within > .smart-assistant-launcher-label,
+  .app-shell > .page-tabs:focus-within > .sidebar-brand-copy,
+  .app-shell > .page-tabs.is-pinned > .page-tab > span,
+  .app-shell > .page-tabs.is-pinned > .smart-assistant-launcher-label,
+  .app-shell > .page-tabs.is-pinned > .sidebar-brand-copy {
+    max-width: 220px;
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .app-shell > .page-tabs:hover > .sidebar-brand,
+  .app-shell > .page-tabs.is-hovered > .sidebar-brand,
+  .app-shell > .page-tabs:focus-within > .sidebar-brand,
+  .app-shell > .page-tabs.is-pinned > .sidebar-brand {
+    width: auto;
+    align-self: stretch;
+    justify-content: flex-start;
+    gap: var(--space-3);
+    padding-inline: var(--space-2);
+  }
+
+  .app-shell > .page-tabs:hover > .sidebar-pin-control,
+  .app-shell > .page-tabs.is-hovered > .sidebar-pin-control,
+  .app-shell > .page-tabs:focus-within > .sidebar-pin-control,
+  .app-shell > .page-tabs.is-pinned > .sidebar-pin-control {
+    align-self: stretch;
+    justify-content: flex-start;
+    padding-inline: var(--space-2);
+  }
+
+  .app-shell > main.page {
+    grid-column: 2;
+    grid-row: 2;
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+    margin: 0;
+    padding: 30px clamp(20px, 3vw, 48px) 56px;
+  }
+}
+
+@media (max-width: 1199px) {
+  .app-shell > .page-tabs > .sidebar-brand {
+    order: -2;
+  }
+
+  .app-shell > .page-tabs > .sidebar-brand-copy,
+  .app-shell > .page-tabs > .page-tab > span,
+  .app-shell > .page-tabs > .smart-assistant-launcher-label {
+    max-width: 220px;
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .topbar-quick-actions .header-backup,
+  .topbar-quick-actions .header-refresh {
+    display: none;
+  }
+
+  .app-shell > main.page {
+    width: min(1440px, calc(100% - 32px));
+    margin-inline: auto;
+  }
+}
+
+@media (max-width: 767px) {
+  .topbar-inner {
+    width: calc(100% - 20px);
+    min-height: 68px;
+    gap: var(--space-2);
+    padding-block: 10px;
+  }
+
+  .topbar-brand-area {
+    gap: var(--space-2);
+  }
+
+  .topbar-brand-area .brand-mark {
+    width: 40px;
+    height: 40px;
+    flex-basis: 40px;
+    border-radius: var(--radius-md);
+  }
+
+  .topbar-brand-mark .brand-logo-primary {
+    display: none;
+  }
+
+  .topbar-brand-mark .brand-logo-compact {
+    display: block;
+  }
+
+  .topbar-brand-area .brand-copy h1 {
+    font-size: var(--font-md);
+  }
+
+  .topbar-brand-area .brand-copy p {
+    display: none;
+  }
+
+  .topbar-controls {
+    gap: 5px;
+  }
+
+  .topbar-quick-actions {
+    gap: 5px;
+  }
+
+  .topbar-quick-actions .btn,
+  .topbar-quick-actions .header-search,
+  .topbar-quick-actions .header-notification,
+  .topbar-theme-toggle,
+  .kiosk-toggle-button,
+  .mobile-nav-toggle,
+  .auth-logout-button {
+    width: 40px;
+    min-width: 40px;
+    height: 40px;
+    min-height: 40px;
+    justify-content: center;
+    padding: 0;
+  }
+
+  .topbar-quick-actions .btn {
+    max-width: 40px;
+    overflow: hidden;
+    font-size: 0;
+    white-space: nowrap;
+  }
+
+  .topbar-quick-actions .header-search span,
+  .topbar-quick-actions .header-notification span,
+  .topbar-controls > .auth-account-bar .auth-account-identity,
+  .auth-logout-button > span {
+    display: none;
+  }
+
+  .topbar-theme-toggle .ui-icon,
+  .kiosk-toggle-button .ui-icon,
+  .mobile-nav-toggle .ui-icon,
+  .auth-logout-button .ui-icon {
+    width: 18px;
+    height: 18px;
+  }
+
+  .app-shell > main.page {
+    width: calc(100% - 20px);
+  }
+}
+
+@media (max-width: 379px) {
+  .topbar-inner {
+    width: calc(100% - 12px);
+  }
+
+  .topbar-quick-actions .header-search,
+  .topbar-quick-actions #topPricingButton {
+    display: none;
+  }
+
+  .app-shell > main.page {
+    width: calc(100% - 16px);
+  }
+}
+
+/* Kiosk remains a presentation mode controlled by the existing JS. */
+.app-shell.is-kiosk-mode {
+  display: block;
+  min-height: 100dvh;
+}
+
+.app-shell.is-kiosk-mode > .topbar,
+.app-shell.is-kiosk-mode > .page-tabs,
+.app-shell.is-kiosk-mode > .mobile-nav-backdrop {
+  display: none;
+}
+
+.app-shell.is-kiosk-mode > main.page {
+  width: min(1600px, calc(100% - 32px));
+  max-width: none;
+  margin-inline: auto;
+}
+
+.kiosk-exit-control {
+  position: fixed;
+  z-index: var(--z-sticky);
+  inset-block-start: var(--space-4);
+  inset-inline-start: var(--space-4);
+  display: inline-flex;
+  min-height: 42px;
+  align-items: center;
+  gap: var(--space-2);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-md);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  padding-inline: var(--space-3);
+  box-shadow: var(--shadow-sm);
+}
+
+.kiosk-exit-control[hidden] {
+  display: none;
+}
+
+/* Runtime branding changes the active item without introducing a second
+   navigation stylesheet. */
+html[data-brand-active-style="indicator"] .app-shell > .page-tabs > .page-tab.active {
+  border-inline-end: 3px solid var(--primary);
+  border-radius: var(--radius-md) 0 0 var(--radius-md);
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+
+html[data-brand-active-style="pill"] .app-shell > .page-tabs > .page-tab.active {
+  border-radius: var(--radius-pill);
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-shell,
+  .app-shell > .page-tabs,
+  .topbar-theme-toggle,
+  .kiosk-toggle-button,
+  .mobile-nav-toggle,
+  .auth-logout-button,
+  .app-shell > .page-tabs > .page-tab > span,
+  .smart-assistant-launcher-label,
+  .sidebar-brand-copy {
+    transition: none;
+  }
+}

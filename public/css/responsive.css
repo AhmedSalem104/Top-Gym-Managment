@@ -1,42 +1,28 @@
-@media (max-width: 1199px) {
+@media (max-width: 1199px){
   .overview-grid,
-  .stats-grid,
-  .kpi-grid,
-  .metrics-grid,
-  .management-grid {
+.stats-grid,
+.kpi-grid,
+.metrics-grid,
+.management-grid{
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .top-actions {
-    gap: var(--space-2);
-  }
 
-  .top-actions .btn {
-    padding-inline: var(--space-3);
-  }
 
-  .page-tabs {
-    justify-content: flex-start;
-    direction: rtl;
-    flex-direction: row;
-  }
 
-  .page-tab {
-    flex: 0 0 auto;
-    direction: rtl;
-    min-width: max-content;
-  }
+
+
+
+
 }
 
-/* Mobile data tables become readable cards. Column names are supplied by
-   table-cards.js through data-label, so this remains compatible with every
-   dynamically rendered table without duplicating markup in each page. */
-@media (max-width: 767px) {
-  html {
+
+@media (max-width: 767px){
+  html{
     scroll-padding-top: 224px;
   }
 
-  .table-cards-container {
+  .table-cards-container{
     width: 100%;
     max-width: 100%;
     margin: 0;
@@ -45,7 +31,7 @@
     direction: rtl;
   }
 
-  .table-card-layout {
+  .table-card-layout{
     display: block;
     width: 100%;
     min-width: 0 !important;
@@ -53,16 +39,16 @@
     direction: rtl;
   }
 
-  .table-card-layout > thead {
+  .table-card-layout > thead{
     display: none;
   }
 
-  .table-card-layout > tbody {
+  .table-card-layout > tbody{
     display: grid;
     gap: var(--space-5);
   }
 
-  .table-card-layout > tbody > tr {
+  .table-card-layout > tbody > tr{
     display: grid;
     grid-template-columns: minmax(0, 1fr);
     min-height: 0;
@@ -74,20 +60,20 @@
     box-shadow: var(--shadow-xs);
   }
 
-  .table-card-layout > tbody > tr:nth-child(even) {
+  .table-card-layout > tbody > tr:nth-child(even){
     background: var(--color-surface);
   }
 
-  .table-card-layout > tbody > tr:hover {
+  .table-card-layout > tbody > tr:hover{
     background: var(--color-primary-soft);
   }
 
-  .table-card-layout > tbody > tr:hover {
+  .table-card-layout > tbody > tr:hover{
     border-color: var(--border-focus);
     box-shadow: var(--shadow-sm);
   }
 
-  .table-card-layout > tbody > tr > td {
+  .table-card-layout > tbody > tr > td{
     display: grid;
     grid-template-columns: minmax(88px, 34%) minmax(0, 1fr);
     align-items: start;
@@ -103,7 +89,7 @@
     overflow-wrap: anywhere;
   }
 
-  .table-card-layout > tbody > tr > td::before {
+  .table-card-layout > tbody > tr > td::before{
     min-width: 0;
     color: var(--color-text-muted);
     content: attr(data-label);
@@ -113,12 +99,12 @@
     text-align: start;
   }
 
-  .table-card-layout > tbody > tr > td > * {
+  .table-card-layout > tbody > tr > td > *{
     min-width: 0;
     max-width: 100%;
   }
 
-  .table-card-layout > tbody > tr > td:last-child {
+  .table-card-layout > tbody > tr > td:last-child{
     position: static !important;
     z-index: auto;
     min-width: 0 !important;
@@ -127,17 +113,15 @@
     box-shadow: none !important;
   }
 
-  /* Give every responsive table row the same independent card surface. The
-     cells remain key/value pairs, so no information or table interaction is
-     lost when the desktop table collapses on a phone. */
-  .table-card-layout > tbody > tr > td {
+
+  .table-card-layout > tbody > tr > td{
     min-inline-size: 0;
   }
 
   .table-card-layout > tbody > tr > td:last-child .table-actions,
-  .table-card-layout > tbody > tr > td:last-child .row-actions,
-  .table-card-layout > tbody > tr > td:last-child .action-group,
-  .table-card-layout > tbody > tr > td:last-child .members-actions {
+.table-card-layout > tbody > tr > td:last-child .row-actions,
+.table-card-layout > tbody > tr > td:last-child .action-group,
+.table-card-layout > tbody > tr > td:last-child .members-actions{
     width: 100%;
     min-width: 0;
     align-items: center;
@@ -145,50 +129,49 @@
     flex-wrap: wrap;
   }
 
-  .table-card-layout > tbody > tr > td[colspan] {
+  .table-card-layout > tbody > tr > td[colspan]{
     grid-template-columns: minmax(0, 1fr);
     text-align: center;
   }
 
-  .table-card-layout > tbody > tr > td[colspan]::before {
+  .table-card-layout > tbody > tr > td[colspan]::before{
     display: none;
   }
 
   .table-card-layout .table-actions,
-  .table-card-layout .row-actions,
-  .table-card-layout .members-actions,
-  .table-card-layout .action-group,
-  .table-card-layout .library-row-actions {
+.table-card-layout .row-actions,
+.table-card-layout .members-actions,
+.table-card-layout .action-group,
+.table-card-layout .library-row-actions{
     min-width: 0;
     flex-wrap: wrap;
     justify-content: flex-start;
   }
 
   .table-card-layout .table-actions .btn,
-  .table-card-layout .row-actions .btn,
-  .table-card-layout .members-actions .btn,
-  .table-card-layout .action-group .btn,
-  .table-card-layout .library-row-actions .btn {
+.table-card-layout .row-actions .btn,
+.table-card-layout .members-actions .btn,
+.table-card-layout .action-group .btn,
+.table-card-layout .library-row-actions .btn{
     flex: 0 0 auto;
   }
 
-  /* Daily passes use denser desktop rows, so reset their fixed row heights
-     before applying the shared mobile card surface. */
+
   .table-card-layout.dashboard-day-pass-table > tbody > tr,
-  .table-card-layout.day-pass-table > tbody > tr {
+.table-card-layout.day-pass-table > tbody > tr{
     height: auto !important;
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .table-card-layout.dashboard-day-pass-table > tbody > tr > td:first-child,
-  .table-card-layout.day-pass-table > tbody > tr > td:first-child,
-  .table-card-layout.dashboard-day-pass-table > tbody > tr > td:last-child,
-  .table-card-layout.day-pass-table > tbody > tr > td:last-child {
+.table-card-layout.day-pass-table > tbody > tr > td:first-child,
+.table-card-layout.dashboard-day-pass-table > tbody > tr > td:last-child,
+.table-card-layout.day-pass-table > tbody > tr > td:last-child{
     grid-column: 1 / -1;
   }
 
   .table-card-layout.dashboard-day-pass-table > tbody > tr > td:first-child,
-  .table-card-layout.day-pass-table > tbody > tr > td:first-child {
+.table-card-layout.day-pass-table > tbody > tr > td:first-child{
     display: block;
     padding-block: var(--space-3);
     border-bottom: 0;
@@ -196,16 +179,16 @@
   }
 
   .table-card-layout.dashboard-day-pass-table > tbody > tr > td:first-child::before,
-  .table-card-layout.day-pass-table > tbody > tr > td:first-child::before,
-  .table-card-layout.dashboard-day-pass-table > tbody > tr > td:last-child::before,
-  .table-card-layout.day-pass-table > tbody > tr > td:last-child::before {
+.table-card-layout.day-pass-table > tbody > tr > td:first-child::before,
+.table-card-layout.dashboard-day-pass-table > tbody > tr > td:last-child::before,
+.table-card-layout.day-pass-table > tbody > tr > td:last-child::before{
     display: none;
   }
 
   .table-card-layout.dashboard-day-pass-table > tbody > tr > td:first-child strong,
-  .table-card-layout.dashboard-day-pass-table > tbody > tr > td:first-child small,
-  .table-card-layout.day-pass-table > tbody > tr > td:first-child strong,
-  .table-card-layout.day-pass-table > tbody > tr > td:first-child small {
+.table-card-layout.dashboard-day-pass-table > tbody > tr > td:first-child small,
+.table-card-layout.day-pass-table > tbody > tr > td:first-child strong,
+.table-card-layout.day-pass-table > tbody > tr > td:first-child small{
     display: block;
     max-width: 100%;
     margin-inline-start: 0;
@@ -215,13 +198,13 @@
   }
 
   .table-card-layout.dashboard-day-pass-table > tbody > tr > td:last-child,
-  .table-card-layout.day-pass-table > tbody > tr > td:last-child {
+.table-card-layout.day-pass-table > tbody > tr > td:last-child{
     display: block;
     padding-top: var(--space-3);
   }
 
   .table-card-layout.dashboard-day-pass-table .day-pass-actions,
-  .table-card-layout.day-pass-table .day-pass-actions {
+.table-card-layout.day-pass-table .day-pass-actions{
     display: flex;
     width: 100%;
     align-items: center;
@@ -231,367 +214,179 @@
   }
 
   .table-card-layout.dashboard-day-pass-table .day-pass-action-button,
-  .table-card-layout.day-pass-table .day-pass-action-button {
+.table-card-layout.day-pass-table .day-pass-action-button{
     flex: 0 0 auto;
   }
 }
 
-@media (max-width: 991px) {
-  .page {
+@media (max-width: 991px){
+  .page{
     width: min(100% - 24px, 900px);
     padding-top: var(--space-6);
   }
 
-  .topbar-inner {
-    width: calc(100% - 24px);
-  }
 
-  .topbar {
-    position: relative;
-  }
 
-  .topbar-inner {
-    flex-wrap: wrap;
-  }
 
-  .top-actions {
-    margin-inline-start: auto;
-  }
 
-  .page-tabs {
-    justify-content: flex-start;
-    direction: rtl;
-    flex-direction: row;
-  }
 
-  .page-tab {
-    flex: 0 0 auto;
-    min-width: max-content;
-  }
+
+
+
+
+
+
 
   .dashboard-hero,
-  .dashboard-page-actions {
+.dashboard-page-actions{
     grid-template-columns: 1fr;
   }
 
-  .dashboard-hero-visual {
+  .dashboard-hero-visual{
     min-height: 180px;
   }
 }
 
-@media (max-width: 767px) {
-  .page {
+@media (max-width: 767px){
+  .page{
     width: calc(100% - 24px);
     padding-bottom: var(--space-9);
   }
 
-  .topbar-inner {
-    width: calc(100% - 16px);
-    padding: var(--space-3);
-    display: flex;
-    flex-wrap: nowrap;
-  }
 
-  .brand-copy,
-  .header-profile-copy,
-  .header-status,
-  .header-search-label,
-  .header-backup-label,
-  .header-refresh-label,
-  .top-actions .btn > span:not(.icon),
-  .header-notification-count {
+
+  .header-status{
     display: none;
   }
 
-  .brand-mark {
-    width: 40px;
-    height: 40px;
-  }
 
-  .brand {
-    min-width: 40px;
-    flex: 0 0 40px;
-  }
 
-  .top-actions {
-    min-width: 0;
-    flex: 1 1 auto;
-    overflow: hidden;
-    justify-content: flex-end;
-    gap: var(--space-1);
-  }
+
+
+
 
   #topAddMemberButton,
-  #topPricingButton,
-  #backupButton {
+#topPricingButton,
+#backupButton{
     display: none;
   }
 
-  .header-search,
-  .header-notification,
-  .header-profile,
-  .header-backup,
-  .header-refresh,
-  .top-actions .btn {
-    min-width: 44px;
-    min-height: 44px;
-    padding: var(--space-2);
-  }
+
 
   .page-header,
-  .section-heading,
-  .members-toolbar,
-  .toolbar {
+.section-heading,
+.members-toolbar,
+.toolbar{
     align-items: stretch;
     flex-direction: column;
   }
 
   .page-header-actions,
-  .members-toolbar-controls,
-  .actions-row,
-  .form-actions {
+.members-toolbar-controls,
+.actions-row,
+.form-actions{
     width: 100%;
   }
 
   .page-header-actions > *,
-  .actions-row > *,
-  .form-actions > * {
+.actions-row > *,
+.form-actions > *{
     flex: 1 1 auto;
   }
 
-  /* Keep all permitted sections visible as compact navigation tabs on small
-     screens instead of hiding them in a horizontal rail. */
-  .page-tabs {
-    box-sizing: border-box;
-    width: 100%;
-    position: sticky;
-    top: 0;
-    z-index: var(--z-sticky);
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 6px;
-    overflow: visible;
-    padding: 10px 10px 10px 62px;
-    direction: rtl;
-    border-top: 0;
-    border-radius: 0 0 var(--radius-lg) var(--radius-lg);
-    background: var(--bg-sidebar);
-    box-shadow: var(--shadow-card);
-  }
 
-  .page-tab {
-    min-width: 0;
-    min-height: 58px;
-    flex-direction: column;
-    gap: 3px;
-    border: 1px solid var(--border-secondary);
-    border-radius: var(--radius-md);
-    background: var(--primary-soft);
-    padding: 6px 3px;
-    font-size: 10px;
-    line-height: 1.25;
-    text-align: center;
-    white-space: normal;
-    box-shadow: var(--shadow-sm);
-  }
 
-  .page-tab:hover {
-    border-color: var(--border-hover);
-    background: var(--primary-soft);
-  }
 
-  .page-tab.active,
-  .page-tab[aria-selected="true"] {
-    border-color: var(--nav-active-border);
-    background: var(--nav-active-bg);
-    color: var(--nav-active-text);
-    box-shadow: var(--nav-active-shadow);
-  }
 
-  .page-tab .ui-icon {
-    width: 18px;
-    height: 18px;
-  }
 
-  .page-tabs > .auth-account-bar {
-    position: absolute;
-    inset-inline-start: auto;
-    inset-inline-end: 10px;
-    top: 10px;
-    z-index: var(--z-dropdown);
-    display: flex;
-    margin: 0;
-    padding: 0;
-  }
 
-  .page-tabs > .auth-account-bar .auth-logout-button {
-    display: grid;
-    place-items: center;
-    width: 42px;
-    min-width: 42px;
-    height: 42px;
-    min-height: 42px;
-    border: 1px solid var(--danger-border);
-    border-radius: var(--radius-md);
-    background: var(--danger-soft);
-    color: var(--danger-text);
-    box-shadow: var(--shadow-popup);
-  }
 
-  .page-tabs > .auth-account-bar .auth-logout-button:hover:not(:disabled),
-  .page-tabs > .auth-account-bar .auth-logout-button:focus-visible {
-    border-color: var(--danger-border);
-    background: var(--danger);
-    color: var(--text-on-primary);
-  }
 
-  .page-tabs > .auth-account-bar .auth-logout-button .ui-icon {
-    width: 21px;
-    height: 21px;
-  }
+
+
+
+
+
+
+
+
+
+
 
   .overview-grid,
-  .stats-grid,
-  .kpi-grid,
-  .metrics-grid,
-  .management-grid,
-  .three-column-grid,
-  .two-column-grid,
-  .content-grid-two,
-  .dashboard-grid,
-  .form-grid,
-  .field-grid {
+.stats-grid,
+.kpi-grid,
+.metrics-grid,
+.management-grid,
+.three-column-grid,
+.two-column-grid,
+.content-grid-two,
+.dashboard-grid,
+.form-grid,
+.field-grid{
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .field-span-2,
-  .form-field-full {
+.form-field-full{
     grid-column: 1 / -1;
   }
 
   .panel,
-  .card,
-  .shadow-panel {
+.card,
+.shadow-panel{
     border-radius: var(--radius-lg);
   }
 
   .table-scroll,
-  .table-wrap,
-  .data-table-wrap {
+.table-wrap,
+.data-table-wrap{
     margin-inline: calc(var(--space-4) * -1);
     width: calc(100% + var(--space-8));
     padding-inline: var(--space-4);
   }
 
   .data-table,
-  .members-table,
-  .history-table,
-  table {
+.members-table,
+.history-table,
+table{
     min-width: 720px;
   }
 
   .modal,
-  dialog {
+dialog{
     width: calc(100% - 24px);
     max-height: calc(100vh - 24px);
   }
 }
 
-/* Keep the compact navigation usable on tablets as well. Four visible
-   columns avoid a hidden horizontal rail, while the logout action stays in
-   its own fixed slot at the left edge of the RTL navigation. */
-@media (min-width: 768px) and (max-width: 991px) {
-  .page-tabs {
-    box-sizing: border-box;
-    width: 100%;
-    position: sticky;
-    top: 0;
-    z-index: var(--z-sticky);
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: var(--space-2);
-    overflow: visible;
-    padding: 10px 10px 10px 64px;
-    direction: rtl;
-    background: var(--bg-sidebar);
-  }
 
-  .page-tab {
-    min-width: 0;
-    min-height: 56px;
-    flex-direction: column;
-    gap: 4px;
-    border: 1px solid var(--border-secondary);
-    border-radius: var(--radius-md);
-    padding: var(--space-2) var(--space-1);
-    font-size: var(--font-xs);
-    line-height: 1.3;
-    white-space: normal;
-    text-align: center;
-  }
 
-  .page-tab .ui-icon {
-    width: 19px;
-    height: 19px;
-  }
 
-  .page-tabs > .auth-account-bar {
-    position: absolute;
-    inset-inline-start: auto;
-    inset-inline-end: 10px;
-    top: 10px;
-    z-index: var(--z-dropdown);
-    display: flex;
-    margin: 0;
-    padding: 0;
-  }
-
-  .page-tabs > .auth-account-bar .auth-logout-button {
-    display: grid;
-    width: 44px;
-    min-width: 44px;
-    height: 44px;
-    min-height: 44px;
-    place-items: center;
-    border: 1px solid var(--danger-border);
-    border-radius: var(--radius-md);
-    background: var(--danger-soft);
-    color: var(--danger-text);
-    box-shadow: var(--shadow-popup);
-  }
-
-  .page-tabs > .auth-account-bar .auth-logout-button .ui-icon {
-    width: 22px;
-    height: 22px;
-  }
-}
-
-@media (max-width: 379px) {
+@media (max-width: 379px){
   .overview-grid,
-  .stats-grid,
-  .kpi-grid,
-  .metrics-grid,
-  .management-grid {
+.stats-grid,
+.kpi-grid,
+.metrics-grid,
+.management-grid{
     grid-template-columns: 1fr;
   }
 
-  .page {
+  .page{
     width: calc(100% - 16px);
   }
 
-  .topbar-inner {
-    width: calc(100% - 8px);
-  }
 
-  .btn {
+
+  .btn{
     font-size: var(--font-sm);
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
+@media (prefers-reduced-motion: reduce){
   *,
-  *::before,
-  *::after {
+*::before,
+*::after{
     scroll-behavior: auto !important;
     animation-duration: 1ms !important;
     animation-iteration-count: 1 !important;
@@ -599,436 +394,65 @@
   }
 }
 
-/* Final responsive contract for the primary navigation. Keep all permitted
-   links visible as distinct tabs on smaller screens and reserve a dedicated
-   slot for the icon-only logout action. */
-@media (min-width: 768px) and (max-width: 1199px) {
-  .page-tabs {
-    box-sizing: border-box;
-    width: calc(100% - 24px);
-    min-height: 0;
-    margin: 10px auto 0;
-    top: 10px;
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 6px;
-    overflow: visible;
-    padding: 8px 8px 8px 62px;
-  }
 
-  .page-tab {
-    min-width: 0;
-    min-height: 58px;
-    flex-direction: column;
-    gap: 4px;
-    padding: 7px 4px;
-    font-size: var(--font-xs);
-    line-height: 1.3;
-    white-space: normal;
-    text-align: center;
-  }
 
-  .page-tabs > .auth-account-bar {
-    position: absolute;
-    inset-inline-end: 10px;
-    top: 10px;
-    display: flex;
-    margin: 0;
-    border: 0;
-    padding: 0;
-  }
-}
 
-@media (max-width: 767px) {
-  .page-tabs {
-    box-sizing: border-box;
-    width: calc(100% - 16px);
-    min-height: 0;
-    margin: 8px auto 0;
-    top: 8px;
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 6px;
-    overflow: visible;
-    padding: 8px;
-    border-radius: var(--radius-xl);
-  }
 
-  .page-tab {
-    min-width: 0;
-    min-height: 62px;
-    flex-direction: column;
-    gap: 4px;
-    border-radius: var(--radius-md);
-    padding: 7px 3px;
-    font-size: 10px;
-    line-height: 1.3;
-    white-space: normal;
-    text-align: center;
-  }
 
-  .page-tab .ui-icon {
-    width: 19px;
-    height: 19px;
-  }
 
-  .page-tabs > .auth-account-bar {
-    position: static;
-    grid-column: 1 / -1;
-    width: 100%;
-    min-width: 0;
-    z-index: var(--z-dropdown);
-    display: flex;
-    margin: 0;
-    align-items: stretch;
-    justify-content: stretch;
-    border: 0;
-    border-top: 1px solid var(--border-color);
-    padding: 6px 0 0;
-    direction: rtl;
-  }
 
-  .page-tabs > .auth-account-bar .auth-logout-button {
-    display: inline-flex;
-    width: 100%;
-    min-width: 0;
-    height: 46px;
-    min-height: 46px;
-    align-items: center;
-    justify-content: center;
-    gap: var(--space-2);
-    padding: 0 var(--space-4);
-    border-color: var(--danger-border);
-    background: var(--color-danger-soft);
-    color: var(--color-danger);
-  }
 
-  .page-tabs > .auth-account-bar .auth-logout-button > span {
-    display: inline;
-    font-size: var(--font-sm);
-    font-weight: var(--weight-bold);
-  }
 
-  .page-tabs > .auth-account-bar .auth-logout-button .ui-icon {
-    width: 20px;
-    height: 20px;
-    flex: 0 0 auto;
-    stroke-width: 2;
-  }
-}
 
-@media (max-width: 379px) {
-  .page-tabs {
-    width: calc(100% - 12px);
-    gap: 4px;
-    padding: 6px;
-  }
 
-  .page-tab {
-    min-height: 56px;
-    gap: 3px;
-    padding-inline: 2px;
-    font-size: 9px;
-  }
+@media (min-width: 1200px){
 
-  .page-tab .ui-icon {
-    width: 17px;
-    height: 17px;
-  }
 
-  .page-tabs > .auth-account-bar {
-    position: static;
-    grid-column: 1 / -1;
-    inset-inline-end: auto;
-    top: auto;
-    width: 100%;
-  }
 
-  .page-tabs > .auth-account-bar .auth-logout-button {
-    width: 100%;
-    min-width: 0;
-    height: 44px;
-    min-height: 44px;
-  }
-}
 
-/* Keep the compact navigation on the same light surface as the desktop
-   navigation. This final block intentionally follows legacy breakpoints so
-   the mobile presentation cannot fall back to the old dark rail styles. */
-@media (max-width: 1199px) {
-  .page-tabs {
-    z-index: var(--z-dropdown);
-    border: 1px solid var(--border-color);
-    background: var(--color-surface-elevated);
-    box-shadow: var(--shadow-md);
-  }
 
-  .page-tab {
-    border-color: var(--border-color);
-    background: var(--color-surface-muted);
-    color: var(--color-text-muted);
-    box-shadow: var(--shadow-xs);
-  }
 
-  .page-tab:hover {
-    border-color: var(--primary-border);
-    background: var(--color-primary-soft);
-    color: var(--color-primary);
-  }
 
-  .page-tab.active,
-  .page-tab[aria-selected="true"] {
-    border-color: var(--nav-active-border);
-    background: var(--nav-active-bg);
-    color: var(--nav-active-text);
-    box-shadow: var(--nav-active-shadow);
-  }
 
-  .page-tabs > .auth-account-bar .auth-logout-button {
-    border-color: var(--danger-border);
-    background: var(--color-danger-soft);
-    color: var(--color-danger);
-    box-shadow: none;
-  }
 
-  .page-tabs > .auth-account-bar .auth-logout-button:hover:not(:disabled),
-  .page-tabs > .auth-account-bar .auth-logout-button:focus-visible {
-    border-color: var(--danger-border);
-    background: var(--color-danger);
-    color: var(--text-on-primary);
-  }
 
-  .page-tabs > .auth-account-bar .auth-logout-button .ui-icon {
-    width: 20px;
-    height: 20px;
-    stroke-width: 2;
-  }
-}
 
-/* Desktop shell inspired by the approved reference: a quiet utility header,
-   a readable right-side navigation rail, and a content column that never
-   sits underneath the navigation. The same DOM stays a tab rail on smaller
-   screens so hash navigation and existing feature bindings remain intact. */
-@media (min-width: 1200px) {
-  .app-shell {
-    --desktop-sidebar-width: 272px;
-    display: grid;
-    grid-template-columns: var(--desktop-sidebar-width) minmax(0, 1fr);
-    grid-template-rows: 78px minmax(0, 1fr);
-    min-height: 100vh;
-    background: var(--color-bg);
-  }
 
-  .app-shell > .topbar {
-    display: block;
-    grid-column: 2;
-    grid-row: 1;
-    position: sticky;
-    top: 0;
-    z-index: var(--z-sticky);
-    border-bottom: 1px solid var(--border-color);
-    background: var(--bg-surface);
-    color: var(--color-text);
-    box-shadow: var(--shadow-sm);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-  }
 
-  .app-shell > .topbar .topbar-inner {
-    width: calc(100% - 48px);
-    max-width: 1520px;
-    min-height: 78px;
-    margin-inline: auto;
-    padding: 14px 0;
-  }
 
-  .app-shell > .topbar .brand-copy h1,
-  .app-shell > .topbar .header-profile-copy strong {
-    color: var(--color-navy);
-  }
 
-  .app-shell > .topbar .brand-copy p,
-  .app-shell > .topbar .header-profile-copy small {
-    color: var(--color-text-muted);
-  }
 
-  .app-shell > .topbar .brand-mark {
-    width: 44px;
-    height: 44px;
-    border-radius: 14px;
-    background: var(--color-primary);
-    box-shadow: 0 8px 18px var(--primary-soft);
-  }
 
-  .app-shell > .topbar .top-actions {
-    gap: 8px;
-  }
 
-  .app-shell > .topbar .header-search,
-  .app-shell > .topbar .header-notification,
-  .app-shell > .topbar .header-profile,
-  .app-shell > .topbar .header-backup,
-  .app-shell > .topbar .header-refresh {
-    min-height: 44px;
-    border-color: var(--border-color);
-    background: var(--color-surface);
-    color: var(--color-text-soft);
-  }
 
-  .app-shell > .topbar .header-search {
-    min-width: 280px;
-    justify-content: space-between;
-    background: var(--color-surface-muted);
-  }
 
-  .app-shell > .topbar .header-search:hover,
-  .app-shell > .topbar .header-notification:hover,
-  .app-shell > .topbar .header-profile:hover,
-  .app-shell > .topbar .header-backup:hover,
-  .app-shell > .topbar .header-refresh:hover {
-    border-color: var(--border-focus);
-    background: var(--color-primary-soft);
-    color: var(--color-primary);
-  }
 
-  .app-shell > .topbar .header-notification-count {
-    border-color: var(--color-surface);
-  }
 
-  .app-shell > .topbar .header-status {
-    color: var(--color-success);
-  }
 
-  .app-shell > .page-tabs {
-    box-sizing: border-box;
-    grid-column: 1;
-    grid-row: 1 / span 2;
-    position: sticky;
-    top: 0;
-    z-index: var(--z-dropdown);
-    display: flex;
-    width: var(--desktop-sidebar-width);
-    height: 100vh;
-    min-height: 100vh;
-    align-self: start;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 6px;
-    margin: 0;
-    overflow-x: hidden;
-    overflow-y: auto;
-    border: 0;
-    border-inline-end: 1px solid var(--border-color);
-    border-radius: 0;
-    background: var(--color-surface);
-    padding: 86px 14px 18px;
-    box-shadow: var(--shadow-sm);
-    direction: rtl;
-  }
 
-  .app-shell > .page-tabs::before {
-    position: absolute;
-    inset: 0 14px auto;
-    z-index: 0;
-    height: 58px;
-    background: none;
-    color: var(--color-navy);
-    content: var(--brand-name, "Logic Fit");
-    font-family: var(--font-latin);
-    font-size: 20px;
-    font-weight: var(--weight-extrabold);
-    letter-spacing: 0.02em;
-    line-height: 58px;
-    pointer-events: none;
-    text-align: center;
-  }
 
-  .app-shell > .page-tabs > .page-tab {
-    z-index: 1;
-    width: 100%;
-    min-width: 0;
-    min-height: 46px;
-    flex: 0 0 auto;
-    justify-content: flex-start;
-    border: 1px solid transparent;
-    border-radius: 12px;
-    padding: 0 14px;
-    color: var(--color-text-muted);
-    font-size: var(--font-sm);
-    text-align: start;
-  }
 
-  .app-shell > .page-tabs > .page-tab:hover,
-  .app-shell > .page-tabs > .page-tab:focus-visible {
-    border-color: var(--border-color);
-    background: var(--color-primary-soft);
-    color: var(--color-primary);
-  }
 
-  .app-shell > .page-tabs > .page-tab.active,
-  .app-shell > .page-tabs > .page-tab[aria-selected="true"] {
-    border-color: transparent;
-    background: var(--color-primary-soft);
-    color: var(--color-primary);
-    box-shadow: none;
-  }
 
-  .app-shell > .page-tabs > .page-tab:nth-child(6),
-  .app-shell > .page-tabs > .page-tab:nth-child(9),
-  .app-shell > .page-tabs > .page-tab:nth-child(11) {
-    margin-top: 12px;
-    padding-top: 12px;
-    border-top: 1px solid var(--border-color);
-    border-radius: 0 0 12px 12px;
-  }
 
-  .app-shell > .page-tabs > .auth-account-bar {
-    z-index: 1;
-    display: flex;
-    width: 100%;
-    min-width: 0;
-    align-items: stretch;
-    justify-content: stretch;
-    margin-top: auto;
-    border-top: 1px solid var(--border-color);
-    padding-top: 14px;
-    direction: rtl;
-  }
 
-  .app-shell > .page-tabs > .auth-account-bar .auth-logout-button {
-    display: inline-flex;
-    width: 100%;
-    min-width: 0;
-    min-height: 46px;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    border: 1px solid var(--danger-border);
-    border-radius: 12px;
-    background: var(--color-danger-soft);
-    color: var(--color-danger);
-    box-shadow: none;
-  }
 
-  .app-shell > .page-tabs > .auth-account-bar .auth-logout-button > span {
-    display: inline;
-    font-size: var(--font-sm);
-    font-weight: var(--weight-bold);
-  }
 
-  .app-shell > .page-tabs > .auth-account-bar .auth-logout-button .ui-icon {
-    width: 19px;
-    height: 19px;
-  }
 
-  .app-shell > .page-tabs > .auth-account-bar .auth-logout-button:hover:not(:disabled),
-  .app-shell > .page-tabs > .auth-account-bar .auth-logout-button:focus-visible {
-    border-color: var(--danger-border);
-    background: var(--color-danger);
-    color: var(--text-on-primary);
-  }
 
-  .app-shell > main.page {
+
+
+
+
+
+
+
+
+
+
+
+
+  .page{
     box-sizing: border-box;
     grid-column: 2;
     grid-row: 2;
@@ -1038,72 +462,47 @@
     padding: 30px 0 56px;
   }
 
-  .app-shell > main.page .panel,
-  .app-shell > main.page .store-card,
-  .app-shell > main.page .dashboard-store-summary {
+  .page .panel,
+.page .store-card,
+.page .dashboard-store-summary{
     box-shadow: var(--shadow-card);
   }
 }
 
-/* Keep the top utility area available on tablet and mobile while the primary
-   navigation remains the compact tab set below it. */
-@media (max-width: 1199px) {
-  .app-shell {
-    display: block;
-  }
 
-  .app-shell > .topbar {
-    display: block;
-    position: relative;
-    border-bottom: 1px solid var(--border-color);
-    background: var(--color-surface);
-    color: var(--color-text);
-    box-shadow: var(--shadow-xs);
-  }
+@media (max-width: 1199px){
 
-  .app-shell > .topbar .brand-copy h1,
-  .app-shell > .topbar .header-profile-copy strong {
-    color: var(--color-navy);
-  }
 
-  .app-shell > .topbar .brand-copy p,
-  .app-shell > .topbar .header-profile-copy small {
-    color: var(--color-text-muted);
-  }
 
-  .app-shell > .topbar .header-search,
-  .app-shell > .topbar .header-notification,
-  .app-shell > .topbar .header-profile,
-  .app-shell > .topbar .header-backup,
-  .app-shell > .topbar .header-refresh {
-    border-color: var(--border-color);
-    background: var(--color-surface);
-    color: var(--color-text-soft);
-  }
 
-  .app-shell > main.page {
+
+
+
+
+
+
+  .page{
     width: min(100% - 24px, 1440px);
     margin-inline: auto;
   }
 }
 
-/* The table-card wrapper must override the legacy horizontal-scroll spacing
-   rules that are still useful for desktop tables. */
-@media (max-width: 767px) {
+
+@media (max-width: 767px){
   .table-cards-container,
-  .table-cards-container.table-scroll,
-  .table-cards-container.table-wrap,
-  .table-cards-container.data-table-wrap,
-  .table-cards-container.history-scroll,
-  .table-cards-container.reports-table-wrap,
-  .table-cards-container.pricing-table-scroll,
-  .table-cards-container.pricing-table-wrap,
-  .table-cards-container.library-table-wrap,
-  .table-cards-container.external-trainees-table-wrap,
-  .table-cards-container.profile-table-wrap,
-  .table-cards-container.backup-history-wrap,
-  .table-cards-container.backup-count-table-wrap,
-  .table-cards-container.attendance-table-wrap {
+.table-cards-container.table-scroll,
+.table-cards-container.table-wrap,
+.table-cards-container.data-table-wrap,
+.table-cards-container.history-scroll,
+.table-cards-container.reports-table-wrap,
+.table-cards-container.pricing-table-scroll,
+.table-cards-container.pricing-table-wrap,
+.table-cards-container.library-table-wrap,
+.table-cards-container.external-trainees-table-wrap,
+.table-cards-container.profile-table-wrap,
+.table-cards-container.backup-history-wrap,
+.table-cards-container.backup-count-table-wrap,
+.table-cards-container.attendance-table-wrap{
     width: 100%;
     max-width: 100%;
     margin: 0;
@@ -1112,14 +511,12 @@
     direction: rtl;
   }
 
-  /* Keep the quick attendance action beside the compact member actions on
-     mobile cards. The row stays within the card instead of creating a second
-     action line for attendance. */
-  .table-card-layout > tbody > tr > td:last-child {
+
+  .table-card-layout > tbody > tr > td:last-child{
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .table-card-layout .member-action-row {
+  .table-card-layout .member-action-row{
     display: flex;
     width: 100%;
     min-width: 0;
@@ -1131,7 +528,7 @@
     margin: 0;
   }
 
-  .table-card-layout .member-quick-actions {
+  .table-card-layout .member-quick-actions{
     display: flex;
     order: 1;
     width: auto;
@@ -1145,7 +542,7 @@
     overflow: visible;
   }
 
-  .table-card-layout .member-action-row > .table-actions {
+  .table-card-layout .member-action-row > .table-actions{
     display: flex;
     order: 2;
     width: auto;
@@ -1159,17 +556,15 @@
     overflow: visible;
   }
 
-  /* The shared table-actions rule above is intentionally broad and has a
-     stronger selector. Override it specifically for member cards so the
-     attendance control and member actions remain on one compact line. */
-  .table-card-layout > tbody > tr > td:last-child .member-action-row > .table-actions {
+
+  .table-card-layout > tbody > tr > td:last-child .member-action-row > .table-actions{
     width: auto;
     flex: 1 1 auto;
     flex-wrap: nowrap;
   }
 
   .table-card-layout .member-quick-actions > .member-attendance-quick,
-  .table-card-layout .member-quick-actions > .member-attendance-status {
+.table-card-layout .member-quick-actions > .member-attendance-status{
     display: inline-flex;
     width: 100px;
     min-width: 90px;
@@ -1182,7 +577,7 @@
   }
 
   .table-card-layout .member-action-row > .table-actions > .table-action-visible,
-  .table-card-layout .member-action-row > .table-actions .action-menu {
+.table-card-layout .member-action-row > .table-actions .action-menu{
     display: inline-grid;
     width: 40px;
     min-width: 40px;
@@ -1193,52 +588,51 @@
     place-items: center;
   }
 
-  .table-card-layout .member-action-row > .table-actions > .table-action-visible {
+  .table-card-layout .member-action-row > .table-actions > .table-action-visible{
     padding: 0;
     font-size: 0;
   }
 
-  .table-card-layout .member-action-row > .table-actions > .table-action-visible .action-icon {
+  .table-card-layout .member-action-row > .table-actions > .table-action-visible .action-icon{
     width: 20px;
     height: 20px;
     flex: 0 0 auto;
   }
 
-  .table-card-layout .member-action-row > .table-actions > .table-action-visible[data-action="renew"] {
+  .table-card-layout .member-action-row > .table-actions > .table-action-visible[data-action="renew"]{
     width: 40px;
     min-width: 40px;
     max-width: 40px;
     flex: 0 0 40px;
   }
 
-  .table-card-layout .member-action-row > .table-actions .action-menu {
+  .table-card-layout .member-action-row > .table-actions .action-menu{
     flex: 0 0 40px;
   }
 
-  .table-card-layout .member-action-row > .table-actions .action-menu-toggle {
+  .table-card-layout .member-action-row > .table-actions .action-menu-toggle{
     width: 40px;
     min-width: 40px;
     max-width: 40px;
   }
 
-  .table-card-layout .member-action-row > .table-actions .table-action-label {
+  .table-card-layout .member-action-row > .table-actions .table-action-label{
     display: none;
   }
 
   .table-card-layout .table-actions > .btn,
-  .table-card-layout .row-actions > .btn,
-  .table-card-layout .action-group > .btn {
+.table-card-layout .row-actions > .btn,
+.table-card-layout .action-group > .btn{
     max-width: 100%;
   }
 
-  /* Keep mobile cards compact: each data point stays a readable key/value
-     row instead of becoming a tall stack. Actions retain their own spacing. */
-  .table-card-layout > tbody > tr {
+
+  .table-card-layout > tbody > tr{
     gap: 0;
     padding: 10px 12px;
   }
 
-  .table-card-layout > tbody > tr > td {
+  .table-card-layout > tbody > tr > td{
     grid-template-columns: minmax(76px, 30%) minmax(0, 1fr);
     align-items: center;
     gap: var(--space-2);
@@ -1246,28 +640,28 @@
     line-height: 1.35;
   }
 
-  .table-card-layout > tbody > tr > td::before {
+  .table-card-layout > tbody > tr > td::before{
     line-height: 1.35;
   }
 
-  .table-card-layout > tbody > tr > td:last-child {
+  .table-card-layout > tbody > tr > td:last-child{
     align-items: start;
     padding-top: 10px;
   }
 }
 
-@media (max-width: 390px) {
-  .table-card-layout .member-action-row {
+@media (max-width: 390px){
+  .table-card-layout .member-action-row{
     gap: 4px;
   }
 
   .table-card-layout .member-quick-actions,
-  .table-card-layout .member-action-row > .table-actions {
+.table-card-layout .member-action-row > .table-actions{
     gap: 4px;
   }
 
   .table-card-layout .member-quick-actions > .member-attendance-quick,
-  .table-card-layout .member-quick-actions > .member-attendance-status {
+.table-card-layout .member-quick-actions > .member-attendance-status{
     width: 84px;
     min-width: 78px;
     max-width: 90px;
@@ -1275,8 +669,8 @@
   }
 
   .table-card-layout .member-action-row > .table-actions > .table-action-visible,
-  .table-card-layout .member-action-row > .table-actions .action-menu,
-  .table-card-layout .member-action-row > .table-actions .action-menu-toggle {
+.table-card-layout .member-action-row > .table-actions .action-menu,
+.table-card-layout .member-action-row > .table-actions .action-menu-toggle{
     width: 36px;
     min-width: 36px;
     max-width: 36px;
@@ -1284,25 +678,22 @@
   }
 }
 
-/* Unified mobile data-card surface. Apply the shared card rhythm only to
-   repeated content cards and table rows. Page shells such as .panel and
-   .content-card must keep their layout role and must not become oversized
-   nested cards on narrow screens. */
-@media (max-width: 767px) {
+
+@media (max-width: 767px){
   .stat-card,
-  .management-card,
-  .library-card,
-  .finance-card,
-  .attendance-card,
-  .attendance-entry-card,
-  .attendance-summary-card,
-  .external-trainee-card,
-  .program-card,
-  .diet-card,
-  .exercise-card,
-  .food-card,
-  .muscle-card,
-  .table-card-layout > tbody > tr {
+.management-card,
+.library-card,
+.finance-card,
+.attendance-card,
+.attendance-entry-card,
+.attendance-summary-card,
+.external-trainee-card,
+.program-card,
+.diet-card,
+.exercise-card,
+.food-card,
+.muscle-card,
+.table-card-layout > tbody > tr{
     min-width: 0;
     border: 1px solid var(--color-border-soft);
     border-radius: 20px;
@@ -1311,58 +702,53 @@
   }
 
   .card-grid,
-  .library-grid,
-  .exercise-grid,
-  .food-grid,
-  .program-grid {
+.library-grid,
+.exercise-grid,
+.food-grid,
+.program-grid{
     gap: var(--space-3);
   }
 
-  .table-card-layout > tbody > tr {
+  .table-card-layout > tbody > tr{
     padding: var(--space-4);
   }
 
-  .table-card-layout > tbody > tr:hover {
+  .table-card-layout > tbody > tr:hover{
     border-color: var(--border-focus);
     box-shadow: var(--shadow-primary);
   }
 
-  /* Match the member-details rhythm for every mobile table card: primary
-     content first, compact key/value cells in two columns, and actions in a
-     separate full-width area. */
-  .table-card-layout > tbody > tr {
+
+  .table-card-layout > tbody > tr{
     grid-template-columns: repeat(2, minmax(0, 1fr));
     column-gap: var(--space-3);
     row-gap: 0;
   }
 
   .table-card-layout > tbody > tr > td.mobile-card-primary,
-  .table-card-layout > tbody > tr > td.mobile-card-actions,
-  .table-card-layout > tbody > tr > td:first-child,
-  .table-card-layout > tbody > tr > td[colspan] {
+.table-card-layout > tbody > tr > td.mobile-card-actions,
+.table-card-layout > tbody > tr > td:first-child,
+.table-card-layout > tbody > tr > td[colspan]{
     grid-column: 1 / -1;
   }
 
-  .table-card-layout > tbody > tr > td:not(.mobile-card-primary):not(.mobile-card-actions):not([colspan]) {
+  .table-card-layout > tbody > tr > td:not(.mobile-card-primary):not(.mobile-card-actions):not([colspan]){
     grid-template-columns: minmax(64px, 42%) minmax(0, 1fr);
     align-items: center;
     gap: var(--space-2);
   }
 
-  .table-card-layout > tbody > tr > td.mobile-card-actions {
+  .table-card-layout > tbody > tr > td.mobile-card-actions{
     grid-template-columns: minmax(0, 1fr);
     padding-top: var(--space-3);
   }
 
-  .table-card-layout > tbody > tr > td[colspan] {
+  .table-card-layout > tbody > tr > td[colspan]{
     grid-template-columns: minmax(0, 1fr);
   }
 
-  /* Member rows have six compact data points. Keep the identity and action
-     areas full width, while arranging the remaining key/value pairs in two
-     columns so a mobile member card remains scannable without becoming
-     unnecessarily tall. */
-  .members-table.table-card-layout > tbody > tr {
+
+  .members-table.table-card-layout > tbody > tr{
     grid-template-columns: repeat(2, minmax(0, 1fr));
     grid-template-areas:
       "identity identity"
@@ -1374,15 +760,15 @@
     row-gap: var(--space-3);
   }
 
-  .members-table.table-card-layout > tbody > tr > td:nth-child(1) { grid-area: identity; }
-  .members-table.table-card-layout > tbody > tr > td:nth-child(2) { grid-area: subscription; }
-  .members-table.table-card-layout > tbody > tr > td:nth-child(3) { grid-area: status; }
-  .members-table.table-card-layout > tbody > tr > td:nth-child(4) { grid-area: expiry; }
-  .members-table.table-card-layout > tbody > tr > td:nth-child(5) { grid-area: freeze; }
-  .members-table.table-card-layout > tbody > tr > td:nth-child(6) { grid-area: account; }
-  .members-table.table-card-layout > tbody > tr > td:nth-child(7) { grid-area: actions; }
+  .members-table.table-card-layout > tbody > tr > td:nth-child(1){ grid-area: identity; }
+  .members-table.table-card-layout > tbody > tr > td:nth-child(2){ grid-area: subscription; }
+  .members-table.table-card-layout > tbody > tr > td:nth-child(3){ grid-area: status; }
+  .members-table.table-card-layout > tbody > tr > td:nth-child(4){ grid-area: expiry; }
+  .members-table.table-card-layout > tbody > tr > td:nth-child(5){ grid-area: freeze; }
+  .members-table.table-card-layout > tbody > tr > td:nth-child(6){ grid-area: account; }
+  .members-table.table-card-layout > tbody > tr > td:nth-child(7){ grid-area: actions; }
 
-  .members-table.table-card-layout > tbody > tr > td:first-child {
+  .members-table.table-card-layout > tbody > tr > td:first-child{
     position: relative;
     display: block;
     padding: var(--space-7) 0 var(--space-3);
@@ -1390,11 +776,11 @@
     text-align: start;
   }
 
-  .members-table.table-card-layout > tbody > tr > td:first-child::before {
+  .members-table.table-card-layout > tbody > tr > td:first-child::before{
     display: none;
   }
 
-  .members-table.table-card-layout > tbody > tr > td:first-child::after {
+  .members-table.table-card-layout > tbody > tr > td:first-child::after{
     position: absolute;
     inset-block-start: var(--space-4);
     inset-inline-end: 0;
@@ -1405,13 +791,13 @@
     border-radius: var(--radius-pill);
     background: var(--color-primary-soft);
     color: var(--color-primary);
-    content: "عضو";
+    content: "Ø¹Ø¶Ùˆ";
     font-size: var(--font-xs);
     font-weight: var(--weight-bold);
     padding: 2px var(--space-2);
   }
 
-  .members-table.table-card-layout > tbody > tr > td:first-child .table-member-name {
+  .members-table.table-card-layout > tbody > tr > td:first-child .table-member-name{
     display: block;
     max-width: 100%;
     overflow: visible;
@@ -1425,12 +811,12 @@
   }
 
   .members-table.table-card-layout > tbody > tr > td:first-child .table-member-phone,
-  .members-table.table-card-layout > tbody > tr > td:first-child .table-sub {
+.members-table.table-card-layout > tbody > tr > td:first-child .table-sub{
     margin-inline: 0;
     text-align: start;
   }
 
-  .members-table.table-card-layout > tbody > tr > td:nth-child(3) {
+  .members-table.table-card-layout > tbody > tr > td:nth-child(3){
     grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
     border: 0;
@@ -1439,44 +825,41 @@
     padding: var(--space-3);
   }
 
-  .members-table.table-card-layout > tbody > tr > td:nth-child(3) .badge {
+  .members-table.table-card-layout > tbody > tr > td:nth-child(3) .badge{
     border: 0;
   }
 
-  .members-table.table-card-layout > tbody > tr > td:nth-child(3):has(.badge.expiring_soon) {
+  .members-table.table-card-layout > tbody > tr > td:nth-child(3):has(.badge.expiring_soon){
     border-color: var(--warning-border);
     background: var(--color-warning-soft);
   }
 
-  .members-table.table-card-layout > tbody > tr > td:nth-child(3):has(.badge.active) {
+  .members-table.table-card-layout > tbody > tr > td:nth-child(3):has(.badge.active){
     border-color: var(--success-border);
     background: var(--color-success-soft);
   }
 
   .members-table.table-card-layout > tbody > tr > td:nth-child(3):has(.badge.expired),
-  .members-table.table-card-layout > tbody > tr > td:nth-child(3):has(.badge.cancelled) {
+.members-table.table-card-layout > tbody > tr > td:nth-child(3):has(.badge.cancelled){
     border-color: var(--danger-border);
     background: var(--color-danger-soft);
   }
 
-  .members-table.table-card-layout > tbody > tr > td:nth-child(3):has(.badge.frozen) {
+  .members-table.table-card-layout > tbody > tr > td:nth-child(3):has(.badge.frozen){
     border-color: var(--primary-border);
     background: var(--color-info-soft);
   }
 
   .members-table.table-card-layout > tbody > tr > td:first-child,
-  .members-table.table-card-layout > tbody > tr > td:last-child {
+.members-table.table-card-layout > tbody > tr > td:last-child{
     grid-column: 1 / -1;
   }
 
-  /* Each member datum is a compact information card, not an inline
-     key/value row. The label sits above the value and its supporting line,
-     matching the member-details visual language while keeping the existing
-     table data and event bindings unchanged. */
+
   .members-table.table-card-layout > tbody > tr > td:nth-child(2),
-  .members-table.table-card-layout > tbody > tr > td:nth-child(4),
-  .members-table.table-card-layout > tbody > tr > td:nth-child(5),
-  .members-table.table-card-layout > tbody > tr > td:nth-child(6) {
+.members-table.table-card-layout > tbody > tr > td:nth-child(4),
+.members-table.table-card-layout > tbody > tr > td:nth-child(5),
+.members-table.table-card-layout > tbody > tr > td:nth-child(6){
     grid-template-columns: minmax(0, 1fr);
     align-content: center;
     align-items: start;
@@ -1492,12 +875,12 @@
   }
 
   .members-table.table-card-layout > tbody > tr > td:nth-child(2) > .table-main,
-  .members-table.table-card-layout > tbody > tr > td:nth-child(2) > .table-sub,
-  .members-table.table-card-layout > tbody > tr > td:nth-child(4) > .table-main,
-  .members-table.table-card-layout > tbody > tr > td:nth-child(4) > .table-sub,
-  .members-table.table-card-layout > tbody > tr > td:nth-child(5) > .freeze-usage,
-  .members-table.table-card-layout > tbody > tr > td:nth-child(6) > .table-money,
-  .members-table.table-card-layout > tbody > tr > td:nth-child(6) > .table-sub {
+.members-table.table-card-layout > tbody > tr > td:nth-child(2) > .table-sub,
+.members-table.table-card-layout > tbody > tr > td:nth-child(4) > .table-main,
+.members-table.table-card-layout > tbody > tr > td:nth-child(4) > .table-sub,
+.members-table.table-card-layout > tbody > tr > td:nth-child(5) > .freeze-usage,
+.members-table.table-card-layout > tbody > tr > td:nth-child(6) > .table-money,
+.members-table.table-card-layout > tbody > tr > td:nth-child(6) > .table-sub{
     grid-column: 1;
     min-width: 0;
     max-width: 100%;
@@ -1510,8 +893,8 @@
   }
 
   .members-table.table-card-layout > tbody > tr > td:nth-child(2) > .table-main,
-  .members-table.table-card-layout > tbody > tr > td:nth-child(4) > .table-main,
-  .members-table.table-card-layout > tbody > tr > td:nth-child(6) > .table-money {
+.members-table.table-card-layout > tbody > tr > td:nth-child(4) > .table-main,
+.members-table.table-card-layout > tbody > tr > td:nth-child(6) > .table-money{
     display: block;
     justify-self: stretch;
     inline-size: 100%;
@@ -1519,7 +902,7 @@
     font-size: var(--font-md);
   }
 
-  .members-table.table-card-layout > tbody > tr > td:nth-child(5) > .freeze-usage {
+  .members-table.table-card-layout > tbody > tr > td:nth-child(5) > .freeze-usage{
     display: inline-flex;
     width: 100%;
     align-items: baseline;
@@ -1529,21 +912,21 @@
     white-space: nowrap;
   }
 
-  .members-table.table-card-layout > tbody > tr > td:nth-child(5) > .freeze-usage > strong {
+  .members-table.table-card-layout > tbody > tr > td:nth-child(5) > .freeze-usage > strong{
     direction: ltr;
     unicode-bidi: isolate;
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
   }
 
-  .members-table.table-card-layout > tbody > tr > td:nth-child(5) > .freeze-usage > span {
+  .members-table.table-card-layout > tbody > tr > td:nth-child(5) > .freeze-usage > span{
     color: var(--color-text-muted);
     direction: rtl;
     unicode-bidi: isolate;
     white-space: normal;
   }
 
-  .members-table.table-card-layout > tbody > tr > td:nth-child(6) > .table-money {
+  .members-table.table-card-layout > tbody > tr > td:nth-child(6) > .table-money{
     direction: ltr;
     unicode-bidi: isolate;
     font-variant-numeric: tabular-nums;
@@ -1552,16 +935,16 @@
     text-overflow: clip;
   }
 
-  .members-table.table-card-layout > tbody > tr > td:nth-child(6) > .table-sub.has-debt {
+  .members-table.table-card-layout > tbody > tr > td:nth-child(6) > .table-sub.has-debt{
     overflow: visible;
     white-space: nowrap;
     text-overflow: clip;
   }
 
   .members-table.table-card-layout > tbody > tr > td:nth-child(2)::before,
-  .members-table.table-card-layout > tbody > tr > td:nth-child(4)::before,
-  .members-table.table-card-layout > tbody > tr > td:nth-child(5)::before,
-  .members-table.table-card-layout > tbody > tr > td:nth-child(6)::before {
+.members-table.table-card-layout > tbody > tr > td:nth-child(4)::before,
+.members-table.table-card-layout > tbody > tr > td:nth-child(5)::before,
+.members-table.table-card-layout > tbody > tr > td:nth-child(6)::before{
     display: block;
     color: var(--color-primary);
     font-size: var(--font-xs);
@@ -1571,27 +954,26 @@
   }
 
   .members-table.table-card-layout > tbody > tr > td:nth-child(2) > .table-main,
-  .members-table.table-card-layout > tbody > tr > td:nth-child(4) > .table-main,
-  .members-table.table-card-layout > tbody > tr > td:nth-child(5) > .freeze-usage,
-  .members-table.table-card-layout > tbody > tr > td:nth-child(6) > .table-money {
+.members-table.table-card-layout > tbody > tr > td:nth-child(4) > .table-main,
+.members-table.table-card-layout > tbody > tr > td:nth-child(5) > .freeze-usage,
+.members-table.table-card-layout > tbody > tr > td:nth-child(6) > .table-money{
     color: var(--color-navy);
     font-weight: var(--weight-bold);
     line-height: 1.45;
   }
 
-  .members-table.table-card-layout > tbody > tr > td:last-child {
+  .members-table.table-card-layout > tbody > tr > td:last-child{
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .members-table.table-card-layout .member-action-row {
+  .members-table.table-card-layout .member-action-row{
     gap: var(--space-2);
   }
 }
 
-/* Very narrow phones do not have enough room for two data cards side by side.
-   Keep each datum as its own card and give it the full available width. */
-@media (max-width: 390px) {
-  .members-table.table-card-layout > tbody > tr {
+
+@media (max-width: 390px){
+  .members-table.table-card-layout > tbody > tr{
     grid-template-columns: minmax(0, 1fr);
     grid-template-areas:
       "identity"
@@ -1603,27 +985,23 @@
       "actions";
   }
 
-  .members-table.table-card-layout > tbody > tr > td:not(:first-child):not(:last-child) {
+  .members-table.table-card-layout > tbody > tr > td:not(:first-child):not(:last-child){
     grid-column: 1;
   }
 
-  .members-table.table-card-layout > tbody > tr > td:nth-child(3) {
+  .members-table.table-card-layout > tbody > tr > td:nth-child(3){
     grid-template-columns: minmax(0, 1fr) auto;
   }
 }
 
-/* Daily-pass cards -----------------------------------------------------
-   A pass record has a small identity header, readable full-width details,
-   and an isolated action footer on phones. Keeping the values on their own
-   rows avoids the cramped two-column cells used by wider data tables. */
-@media (max-width: 767px) {
+@media (max-width: 767px){
   .table-card-layout.day-pass-table > tbody,
-  .table-card-layout.dashboard-day-pass-table > tbody {
+.table-card-layout.dashboard-day-pass-table > tbody{
     gap: var(--space-3);
   }
 
   .table-card-layout.day-pass-table > tbody > tr,
-  .table-card-layout.dashboard-day-pass-table > tbody > tr {
+.table-card-layout.dashboard-day-pass-table > tbody > tr{
     display: grid;
     grid-template-columns: minmax(0, 1fr);
     gap: 0;
@@ -1637,7 +1015,7 @@
   }
 
   .table-card-layout.day-pass-table > tbody > tr:hover,
-  .table-card-layout.dashboard-day-pass-table > tbody > tr:hover {
+.table-card-layout.dashboard-day-pass-table > tbody > tr:hover{
     border-color: var(--border-focus);
     background: var(--color-primary-soft);
     box-shadow: var(--shadow-primary);
@@ -1645,7 +1023,7 @@
   }
 
   .table-card-layout.day-pass-table > tbody > tr > td,
-  .table-card-layout.dashboard-day-pass-table > tbody > tr > td {
+.table-card-layout.dashboard-day-pass-table > tbody > tr > td{
     display: grid;
     grid-column: 1 / -1;
     grid-template-columns: minmax(0, 1fr) auto;
@@ -1663,7 +1041,7 @@
   }
 
   .table-card-layout.day-pass-table > tbody > tr > td::before,
-  .table-card-layout.dashboard-day-pass-table > tbody > tr > td::before {
+.table-card-layout.dashboard-day-pass-table > tbody > tr > td::before{
     display: block;
     min-width: 0;
     color: var(--color-text-muted);
@@ -1675,14 +1053,14 @@
   }
 
   .table-card-layout.day-pass-table > tbody > tr > td > *,
-  .table-card-layout.dashboard-day-pass-table > tbody > tr > td > * {
+.table-card-layout.dashboard-day-pass-table > tbody > tr > td > *{
     min-width: 0;
     max-width: 100%;
     justify-self: end;
   }
 
   .table-card-layout.day-pass-table > tbody > tr > td:first-child,
-  .table-card-layout.dashboard-day-pass-table > tbody > tr > td:first-child {
+.table-card-layout.dashboard-day-pass-table > tbody > tr > td:first-child{
     position: relative;
     display: block;
     min-height: 0;
@@ -1694,12 +1072,12 @@
   }
 
   .table-card-layout.day-pass-table > tbody > tr > td:first-child::before,
-  .table-card-layout.dashboard-day-pass-table > tbody > tr > td:first-child::before {
+.table-card-layout.dashboard-day-pass-table > tbody > tr > td:first-child::before{
     display: none;
   }
 
   .table-card-layout.day-pass-table > tbody > tr > td:first-child strong,
-  .table-card-layout.dashboard-day-pass-table > tbody > tr > td:first-child strong {
+.table-card-layout.dashboard-day-pass-table > tbody > tr > td:first-child strong{
     display: block;
     max-width: 100%;
     color: var(--color-text);
@@ -1710,7 +1088,7 @@
   }
 
   .table-card-layout.day-pass-table > tbody > tr > td:first-child small,
-  .table-card-layout.dashboard-day-pass-table > tbody > tr > td:first-child small {
+.table-card-layout.dashboard-day-pass-table > tbody > tr > td:first-child small{
     display: block;
     max-width: 100%;
     margin-top: 3px;
@@ -1720,14 +1098,14 @@
   }
 
   .table-card-layout.day-pass-table > tbody > tr > td:nth-child(2) .day-pass-type-badge,
-  .table-card-layout.dashboard-day-pass-table > tbody > tr > td:nth-child(2) .day-pass-type-badge {
+.table-card-layout.dashboard-day-pass-table > tbody > tr > td:nth-child(2) .day-pass-type-badge{
     max-width: 100%;
     overflow: hidden;
     text-overflow: ellipsis;
   }
 
   .table-card-layout.day-pass-table > tbody > tr > td.day-pass-amount,
-  .table-card-layout.dashboard-day-pass-table > tbody > tr > td.day-pass-amount {
+.table-card-layout.dashboard-day-pass-table > tbody > tr > td.day-pass-amount{
     color: var(--color-success);
     font-size: var(--font-md);
     font-weight: var(--weight-extrabold);
@@ -1735,7 +1113,7 @@
   }
 
   .table-card-layout.day-pass-table > tbody > tr > td:last-child,
-  .table-card-layout.dashboard-day-pass-table > tbody > tr > td:last-child {
+.table-card-layout.dashboard-day-pass-table > tbody > tr > td:last-child{
     display: grid;
     grid-template-columns: minmax(0, 1fr);
     align-items: start;
@@ -1746,7 +1124,7 @@
   }
 
   .table-card-layout.day-pass-table > tbody > tr > td:last-child::before,
-  .table-card-layout.dashboard-day-pass-table > tbody > tr > td:last-child::before {
+.table-card-layout.dashboard-day-pass-table > tbody > tr > td:last-child::before{
     display: block;
     color: var(--color-primary);
     font-size: var(--font-xs);
@@ -1754,7 +1132,7 @@
   }
 
   .table-card-layout.day-pass-table .day-pass-actions,
-  .table-card-layout.dashboard-day-pass-table .day-pass-actions {
+.table-card-layout.dashboard-day-pass-table .day-pass-actions{
     display: flex;
     width: 100%;
     min-width: 0;
@@ -1765,7 +1143,7 @@
   }
 
   .table-card-layout.day-pass-table .day-pass-action-button,
-  .table-card-layout.dashboard-day-pass-table .day-pass-action-button {
+.table-card-layout.dashboard-day-pass-table .day-pass-action-button{
     width: 40px;
     min-width: 40px;
     height: 40px;
@@ -1774,138 +1152,18 @@
   }
 }
 
-/* The navigation remains part of the document flow. It must not become a
-   fixed/sticky layer over page content while the user scrolls. */
-.page-tabs {
-  position: relative;
-  top: auto;
-  z-index: auto;
-}
 
-/* On wide screens the navigation can wrap its links, but the logout action
-   must never become an extra flex row. Keep it anchored inside the navbar. */
-@media (min-width: 1200px) {
-  .page-tabs {
-    box-sizing: border-box;
-    position: sticky;
-    top: 0;
-    z-index: var(--z-dropdown);
-    display: flex;
-    width: var(--desktop-sidebar-width, 272px);
-    height: 100vh;
-    min-height: 100vh;
-    flex-direction: column;
-    align-items: stretch;
-    flex-wrap: nowrap;
-    gap: 6px;
-    margin: 0;
-    overflow-x: hidden;
-    overflow-y: auto;
-    border: 0;
-    border-inline-end: 1px solid var(--border-color);
-    border-radius: 0;
-    background: var(--color-surface);
-    padding: 86px 14px 18px;
-    box-shadow: var(--shadow-sm);
-    direction: rtl;
-  }
 
-  .page-tabs > .page-tab {
-    z-index: 1;
-    width: 100%;
-    min-width: 0;
-    min-height: 46px;
-    flex: 0 0 auto;
-    justify-content: flex-start;
-    gap: var(--space-2);
-    border: 1px solid transparent;
-    border-radius: 12px;
-    padding: 0 14px;
-    font-size: var(--font-sm);
-    line-height: 1.4;
-    text-align: start;
-    white-space: nowrap;
-  }
 
-  .page-tabs > .page-tab .ui-icon {
-    width: 19px;
-    height: 19px;
-  }
 
-  .page-tabs > .page-tab > span {
-    min-width: 0;
-    white-space: nowrap;
-    text-align: start;
-  }
 
-  .page-tabs > .page-tab:nth-child(6),
-  .page-tabs > .page-tab:nth-child(9),
-  .page-tabs > .page-tab:nth-child(11) {
-    margin-top: 12px;
-    padding-top: 12px;
-    border-top: 1px solid var(--border-color);
-    border-radius: 0 0 12px 12px;
-  }
 
-  .page-tabs > .auth-account-bar {
-    position: static;
-    z-index: 1;
-    display: flex;
-    width: 100%;
-    min-width: 0;
-    align-items: stretch;
-    justify-content: stretch;
-    margin-top: auto;
-    border-top: 1px solid var(--border-color);
-    padding: 14px 0 0;
-    transform: none;
-  }
 
-  .page-tabs > .auth-account-bar .auth-logout-button {
-    display: inline-flex;
-    width: 100%;
-    min-width: 0;
-    min-height: 46px;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    border: 1px solid var(--danger-border);
-    border-radius: 12px;
-    background: var(--color-danger-soft);
-    color: var(--color-danger);
-  }
 
-  .page-tabs > .auth-account-bar .auth-logout-button > span {
-    display: inline;
-    font-size: var(--font-sm);
-    font-weight: var(--weight-bold);
-  }
 
-  .page-tabs > .auth-account-bar .auth-logout-button .ui-icon {
-    width: 19px;
-    height: 19px;
-  }
 
-  .page-tabs > .auth-account-bar .auth-logout-button:hover:not(:disabled),
-  .page-tabs > .auth-account-bar .auth-logout-button:focus-visible {
-    border-color: var(--danger-border);
-    background: var(--color-danger);
-    color: var(--text-on-primary);
-  }
-}
 
-/* The administrative navbar is intentionally hidden from the visual layer.
-   Its DOM remains mounted so existing hash navigation, permissions and event
-   bindings continue to work without a second navigation implementation. */
-.app-shell {
-  display: block;
-}
-
-.app-shell > .topbar {
-  display: none;
-}
-
-.app-shell > main.page {
+.page{
   box-sizing: border-box;
   width: min(1520px, calc(100% - 48px));
   max-width: none;
@@ -1913,1044 +1171,156 @@
   padding-top: 32px;
 }
 
-/* Keep the slide-tab navigation as the only visible navigation. On wide
-   screens it remains the side rail, while the existing responsive rules keep
-   it as the compact tab set on tablet and mobile. */
-@media (min-width: 1200px) {
-  .app-shell {
-    display: grid;
-    grid-template-columns: var(--desktop-sidebar-width, 272px) minmax(0, 1fr);
-    grid-template-rows: minmax(0, 1fr);
-    min-height: 100vh;
-  }
 
-  .app-shell > .topbar {
-    display: none;
-  }
+@media (min-width: 1200px){
 
-  .app-shell > .page-tabs {
-    display: flex;
-    grid-column: 1;
-    grid-row: 1;
-  }
 
-  .app-shell > main.page {
+
+
+
+
+  .page{
     grid-column: 2;
     grid-row: 1;
   }
 }
 
-.smart-assistant-launcher,
-.smart-assistant-panel {
+.smart-assistant-panel{
   left: 24px;
   right: auto;
   inset-inline-start: auto;
   inset-inline-end: auto;
 }
 
-.smart-assistant-launcher {
-  bottom: 24px;
-}
 
-.smart-assistant-panel {
+
+.smart-assistant-panel{
   bottom: 88px;
 }
 
-@media (max-width: 767px) {
-  .app-shell > main.page {
+@media (max-width: 767px){
+  .page{
     width: calc(100% - 24px);
     padding-top: 18px;
   }
 
-  .smart-assistant-launcher {
-    left: 16px;
-    right: auto;
-    bottom: max(16px, env(safe-area-inset-bottom, 0px));
-  }
 
-  .smart-assistant-panel {
+
+  .smart-assistant-panel{
     right: 10px;
     left: 10px;
     bottom: max(78px, calc(62px + env(safe-area-inset-bottom, 0px)));
   }
 }
 
-/* Desktop slide-tab behavior: keep the rail compact until the pointer enters
-   it, then expand it over the content. The pin button lets each user keep it
-   open without changing the main content grid. */
-@media (min-width: 1200px) {
-  .app-shell {
-    grid-template-columns: 82px minmax(0, 1fr);
-  }
 
-  .app-shell > .page-tabs {
-    width: 82px;
-    min-width: 82px;
-    overflow-x: hidden;
-    will-change: width;
-    transition: width 360ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 300ms ease;
-  }
+@media (min-width: 1200px){
 
-  .app-shell > .page-tabs:hover,
-  .app-shell > .page-tabs.is-pinned {
-    width: var(--desktop-sidebar-width, 272px);
-    box-shadow: var(--shadow-md);
-  }
 
-  .app-shell > .page-tabs:not(:hover):not(.is-pinned) > .page-tab {
-    justify-content: center;
-    padding-inline: 0;
-  }
 
-  .app-shell > .page-tabs:not(:hover):not(.is-pinned) > .page-tab > span,
-  .app-shell > .page-tabs:not(:hover):not(.is-pinned) > .auth-account-bar .auth-logout-button > span {
-    display: none;
-  }
 
-  .app-shell > .page-tabs:hover > .page-tab > span,
-  .app-shell > .page-tabs.is-pinned > .page-tab > span,
-  .app-shell > .page-tabs:hover > .auth-account-bar .auth-logout-button > span,
-  .app-shell > .page-tabs.is-pinned > .auth-account-bar .auth-logout-button > span {
-    display: inline;
-    animation: sidebar-tab-label-in 220ms ease 130ms both;
-  }
 
-  .app-shell > .page-tabs:not(:hover):not(.is-pinned) > .auth-account-bar {
-    justify-content: center;
-  }
 
-  .app-shell > .page-tabs::before {
-    white-space: nowrap;
-  }
 
-  .app-shell > .page-tabs:not(:hover):not(.is-pinned)::before {
-    content: "LF";
-    font-size: 16px;
-  }
 
-  .sidebar-pin-control {
-    position: absolute;
-    top: 12px;
-    left: 12px;
-    z-index: var(--z-dropdown);
-    display: block;
-  }
 
-  .sidebar-pin-button {
-    display: grid;
-    width: 40px;
-    height: 40px;
-    place-items: center;
-    border: 1px solid var(--border-color);
-    border-radius: 12px;
-    background: var(--color-surface-muted);
-    color: var(--color-text-muted);
-    cursor: pointer;
-    transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease;
-  }
 
-  .sidebar-pin-button .ui-icon {
-    width: 18px;
-    height: 18px;
-  }
 
-  .sidebar-pin-button:hover,
-  .sidebar-pin-button:focus-visible,
-  .sidebar-pin-button[aria-pressed="true"] {
-    border-color: var(--border-focus);
-    background: var(--color-primary-soft);
-    color: var(--color-primary);
-  }
 
-  .sidebar-pin-button:focus-visible {
-    outline: 2px solid var(--primary-border);
-    outline-offset: 2px;
-  }
 
-  @keyframes sidebar-tab-label-in {
-    from {
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  @keyframes sidebar-tab-label-in{
+    from{
       opacity: 0;
       transform: translateX(6px);
     }
-    to {
+    to{
       opacity: 1;
       transform: translateX(0);
     }
   }
 }
 
-@media (max-width: 1199px) {
-  .sidebar-pin-control {
-    display: none;
-  }
-}
-
-/* The assistant launcher belongs to the slide-tab navigation instead of a
-   floating blue control. It keeps the same id and events, so the assistant
-   logic remains unchanged. */
-@media (min-width: 1200px) {
-  .app-shell > .page-tabs > .smart-assistant-launcher {
-    position: relative;
-    inset: auto;
-    display: inline-flex;
-    width: 100%;
-    min-width: 0;
-    height: 46px;
-    min-height: 46px;
-    align-items: center;
-    justify-content: flex-start;
-    gap: 8px;
-    margin-top: 8px;
-    border: 1px solid var(--border-color);
-    border-radius: 12px;
-    background: var(--color-primary-soft);
-    box-shadow: none;
-    color: var(--color-primary);
-    padding: 0 14px;
-    transition: width 360ms cubic-bezier(0.16, 1, 0.3, 1), background-color 160ms ease, border-color 160ms ease, color 160ms ease;
-  }
-
-  .app-shell > .page-tabs > .smart-assistant-launcher[hidden] {
-    display: none;
-  }
-
-  .app-shell > .page-tabs > .smart-assistant-launcher:hover:not(:disabled),
-  .app-shell > .page-tabs > .smart-assistant-launcher:focus-visible {
-    border-color: var(--border-focus);
-    background: var(--color-primary);
-    color: var(--text-on-primary);
-    box-shadow: none;
-    transform: none;
-  }
-
-  .app-shell > .page-tabs > .smart-assistant-launcher .ui-icon {
-    width: 19px;
-    height: 19px;
-    flex: 0 0 auto;
-  }
-
-  .app-shell > .page-tabs:not(:hover):not(.is-pinned) > .smart-assistant-launcher {
-    width: 46px;
-    min-width: 46px;
-    justify-content: center;
-    margin-inline: auto;
-    padding: 0;
-  }
-
-  .app-shell > .page-tabs:not(:hover):not(.is-pinned) > .smart-assistant-launcher .smart-assistant-launcher-label {
-    display: none;
-  }
-
-  .app-shell > .page-tabs:hover > .smart-assistant-launcher .smart-assistant-launcher-label,
-  .app-shell > .page-tabs.is-pinned > .smart-assistant-launcher .smart-assistant-launcher-label {
-    display: inline;
-    animation: sidebar-tab-label-in 220ms ease 130ms both;
-  }
-}
-
-@media (max-width: 1199px) {
-  .app-shell > .page-tabs > .smart-assistant-launcher {
-    position: static;
-    inset: auto;
-    display: inline-flex;
-    grid-column: 1 / -1;
-    width: 100%;
-    min-width: 0;
-    height: 46px;
-    min-height: 46px;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    margin: 0;
-    border: 1px solid var(--border-color);
-    border-radius: 12px;
-    background: var(--color-primary-soft);
-    box-shadow: none;
-    color: var(--color-primary);
-    padding: 0 14px;
-    transform: none;
-  }
-
-  .app-shell > .page-tabs > .smart-assistant-launcher[hidden] {
-    display: none;
-  }
-}
-
-/* Premium desktop sidebar contract.
-   The rail deliberately uses a separate navy surface from the application
-   canvas. It expands over the content instead of reflowing the page, which
-   keeps navigation fast and prevents layout jumps while the pointer moves in
-   and out of the rail. Tablet/mobile navigation remains unchanged above. */
-@media (min-width: 1200px) {
-  .app-shell {
-    grid-template-columns: var(--sidebar-width-collapsed) minmax(0, 1fr);
-  }
-
-  .app-shell > .page-tabs {
-    width: var(--sidebar-width-collapsed);
-    min-width: var(--sidebar-width-collapsed);
-    padding: 88px 12px 18px;
-    overflow-x: hidden;
-    overflow-y: auto;
-    border: 1px solid var(--sidebar-border);
-    border-top: 0;
-    border-bottom: 0;
-    border-radius: 0;
-    background: var(--sidebar-bg);
-    box-shadow: var(--shadow-popup);
-    color: var(--sidebar-text);
-    transition: width 420ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 320ms ease, background-color 220ms ease;
-    will-change: width;
-  }
-
-  .app-shell > .page-tabs::before {
-    inset: 0 12px auto;
-    display: block;
-    height: 62px;
-    color: var(--sidebar-text);
-    content: var(--brand-name, "Logic Fit");
-    font-family: var(--font-latin);
-    font-size: 20px;
-    font-weight: var(--weight-extrabold);
-    letter-spacing: 0.035em;
-    line-height: 62px;
-    opacity: 1;
-    text-align: center;
-    text-shadow: var(--text-shadow-soft);
-    white-space: nowrap;
-  }
-
-  .app-shell > .page-tabs::after {
-    position: absolute;
-    top: 70px;
-    right: 12px;
-    left: 12px;
-    height: 1px;
-    background: var(--sidebar-divider);
-    content: "";
-    pointer-events: none;
-  }
-
-  .app-shell > .page-tabs > .page-tab,
-  .app-shell > .page-tabs > .smart-assistant-launcher {
-    position: relative;
-    z-index: 1;
-    overflow: hidden;
-    border: 1px solid transparent;
-    background: transparent;
-    color: var(--sidebar-text-muted);
-    transition: background-color 180ms ease, border-color 180ms ease, color 180ms ease, box-shadow 220ms ease, transform 260ms cubic-bezier(0.22, 1, 0.36, 1);
-  }
-
-  .app-shell > .page-tabs > .page-tab {
-    width: 100%;
-    min-height: 48px;
-    justify-content: flex-start;
-    border-radius: 12px;
-    padding-inline: 14px;
-    font-size: var(--font-sm);
-    text-align: start;
-  }
-
-  .app-shell > .page-tabs > .page-tab:hover,
-  .app-shell > .page-tabs > .page-tab:focus-visible {
-    border-color: var(--sidebar-border);
-    background: var(--sidebar-hover-bg);
-    color: var(--sidebar-text);
-    transform: translateX(2px);
-  }
-
-  .app-shell > .page-tabs > .page-tab.active,
-  .app-shell > .page-tabs > .page-tab[aria-selected="true"] {
-    border-color: var(--primary-soft);
-    background: var(--sidebar-active-bg);
-    color: var(--sidebar-active-text);
-    box-shadow: var(--sidebar-active-shadow);
-    font-weight: var(--weight-bold);
-  }
-
-  .app-shell > .page-tabs > .page-tab.active::after,
-  .app-shell > .page-tabs > .page-tab[aria-selected="true"]::after {
-    position: absolute;
-    top: 10px;
-    bottom: 10px;
-    left: 6px;
-    width: 3px;
-    border-radius: var(--radius-pill);
-    background: var(--bg-surface);
-    content: "";
-  }
-
-  .app-shell > .page-tabs > .page-tab .ui-icon,
-  .app-shell > .page-tabs > .smart-assistant-launcher .ui-icon {
-    width: 20px;
-    height: 20px;
-    flex: 0 0 auto;
-    stroke-width: 1.9;
-  }
-
-  .app-shell > .page-tabs > .page-tab > span,
-  .app-shell > .page-tabs > .auth-account-bar .auth-logout-button > span,
-  .app-shell > .page-tabs > .smart-assistant-launcher .smart-assistant-launcher-label {
-    display: inline-block;
-    max-width: 220px;
-    min-width: 0;
-    overflow: hidden;
-    opacity: 1;
-    transform: translateX(0);
-    transition: max-width 360ms cubic-bezier(0.22, 1, 0.36, 1), opacity 180ms ease, transform 260ms ease;
-    white-space: nowrap;
-  }
-
-  .app-shell > .page-tabs:hover,
-  .app-shell > .page-tabs.is-pinned,
-  .app-shell > .page-tabs:focus-within {
-    width: var(--sidebar-width-expanded);
-    box-shadow: var(--shadow-popup);
-  }
-
-  .app-shell > .page-tabs:not(:hover):not(.is-pinned):not(:focus-within) > .page-tab,
-  .app-shell > .page-tabs:not(:hover):not(.is-pinned):not(:focus-within) > .smart-assistant-launcher {
-    justify-content: center;
-    padding-inline: 0;
-    transform: translateX(0);
-  }
-
-  .app-shell > .page-tabs:not(:hover):not(.is-pinned):not(:focus-within) > .page-tab > span,
-  .app-shell > .page-tabs:not(:hover):not(.is-pinned):not(:focus-within) > .auth-account-bar .auth-logout-button > span,
-  .app-shell > .page-tabs:not(:hover):not(.is-pinned):not(:focus-within) > .smart-assistant-launcher .smart-assistant-launcher-label {
-    max-width: 0;
-    opacity: 0;
-    transform: translateX(8px);
-    pointer-events: none;
-  }
-
-  .app-shell > .page-tabs:not(:hover):not(.is-pinned):not(:focus-within)::before {
-    content: "TG";
-    font-size: 16px;
-    letter-spacing: 0.02em;
-  }
-
-  .app-shell > .page-tabs:not(:hover):not(.is-pinned):not(:focus-within)::after {
-    right: 16px;
-    left: 16px;
-  }
-
-  .app-shell > .page-tabs:hover > .page-tab > span,
-  .app-shell > .page-tabs.is-pinned > .page-tab > span,
-  .app-shell > .page-tabs:focus-within > .page-tab > span,
-  .app-shell > .page-tabs:hover > .auth-account-bar .auth-logout-button > span,
-  .app-shell > .page-tabs.is-pinned > .auth-account-bar .auth-logout-button > span,
-  .app-shell > .page-tabs:focus-within > .auth-account-bar .auth-logout-button > span,
-  .app-shell > .page-tabs:hover > .smart-assistant-launcher .smart-assistant-launcher-label,
-  .app-shell > .page-tabs.is-pinned > .smart-assistant-launcher .smart-assistant-launcher-label,
-  .app-shell > .page-tabs:focus-within > .smart-assistant-launcher .smart-assistant-launcher-label {
-    animation: none;
-  }
-
-  .app-shell > .page-tabs > .page-tab:nth-child(6),
-  .app-shell > .page-tabs > .page-tab:nth-child(9),
-  .app-shell > .page-tabs > .page-tab:nth-child(11) {
-    margin-top: 10px;
-    padding-top: 0;
-    border-top: 0;
-    border-radius: 12px;
-  }
-
-  .app-shell > .page-tabs > .sidebar-pin-control {
-    position: absolute;
-    top: 15px;
-    left: 12px;
-    z-index: 3;
-    display: block;
-  }
-
-  .app-shell > .page-tabs > .sidebar-pin-control .sidebar-pin-button {
-    display: grid;
-    width: 38px;
-    height: 38px;
-    place-items: center;
-    border: 1px solid var(--sidebar-border);
-    border-radius: 11px;
-    background: var(--primary-soft);
-    color: var(--sidebar-text-muted);
-    transition: background-color 180ms ease, border-color 180ms ease, color 180ms ease, transform 220ms ease;
-  }
-
-  .app-shell > .page-tabs > .sidebar-pin-control .sidebar-pin-button:hover,
-  .app-shell > .page-tabs > .sidebar-pin-control .sidebar-pin-button:focus-visible,
-  .app-shell > .page-tabs > .sidebar-pin-control .sidebar-pin-button[aria-pressed="true"] {
-    border-color: var(--border-hover);
-    background: var(--primary);
-    color: var(--text-on-primary);
-    transform: translateY(-1px);
-  }
-
-  .app-shell > .page-tabs > .sidebar-pin-control .sidebar-pin-button:focus-visible {
-    outline: 2px solid var(--border-hover);
-    outline-offset: 3px;
-  }
-
-  .app-shell > .page-tabs > .auth-account-bar {
-    z-index: 1;
-    width: 100%;
-    min-width: 0;
-    margin-top: auto;
-    border-top: 1px solid var(--sidebar-divider);
-    border-inline-start: 0;
-    padding: 14px 0 0;
-  }
-
-  .app-shell > .page-tabs > .auth-account-bar .auth-logout-button {
-    width: 100%;
-    min-width: 0;
-    min-height: 46px;
-    border: 1px solid var(--danger-border);
-    border-radius: 12px;
-    background: var(--danger-soft);
-    color: var(--danger-text);
-    box-shadow: none;
-    transition: width 360ms cubic-bezier(0.22, 1, 0.36, 1), background-color 180ms ease, border-color 180ms ease, color 180ms ease;
-  }
-
-  .app-shell > .page-tabs > .auth-account-bar .auth-logout-button:hover:not(:disabled),
-  .app-shell > .page-tabs > .auth-account-bar .auth-logout-button:focus-visible {
-    border-color: var(--danger-border);
-    background: var(--color-danger);
-    color: var(--text-on-primary);
-    transform: none;
-  }
-
-  .app-shell > .page-tabs > .auth-account-bar .auth-logout-button .ui-icon {
-    width: 20px;
-    height: 20px;
-    flex: 0 0 auto;
-  }
-
-  .app-shell > .page-tabs:not(:hover):not(.is-pinned):not(:focus-within) > .auth-account-bar {
-    align-items: center;
-    justify-content: center;
-  }
-
-  .app-shell > .page-tabs:not(:hover):not(.is-pinned):not(:focus-within) > .auth-account-bar .auth-logout-button {
-    width: 46px;
-    min-width: 46px;
-    justify-content: center;
-    padding-inline: 0;
-  }
-
-  .app-shell > .page-tabs > .smart-assistant-launcher {
-    width: 100%;
-    min-width: 0;
-    min-height: 46px;
-    justify-content: flex-start;
-    margin-top: 8px;
-    border-color: var(--info-border);
-    border-radius: 12px;
-    background: var(--primary-soft);
-    color: var(--info-text);
-    box-shadow: none;
-  }
-
-  .app-shell > .page-tabs > .smart-assistant-launcher:hover:not(:disabled),
-  .app-shell > .page-tabs > .smart-assistant-launcher:focus-visible {
-    border-color: var(--border-hover);
-    background: var(--sidebar-active-bg);
-    color: var(--text-on-primary);
-    transform: translateX(2px);
-  }
-
-  .app-shell > .page-tabs:not(:hover):not(.is-pinned):not(:focus-within) > .smart-assistant-launcher {
-    width: 46px;
-    min-width: 46px;
-    justify-content: center;
-    margin-inline: auto;
-    padding-inline: 0;
-  }
-
-  .app-shell > .page-tabs > .smart-assistant-launcher[hidden] {
-    display: none;
-  }
-}
-
-/* Large-screen sidebar refinement.
-   Keep the compact rail fast to scan, give the expanded state a clear
-   identity header, and keep the account actions anchored at the bottom.
-   This block intentionally starts at 1200px so tablet and mobile navigation
-   retain their existing card/grid presentation. */
-@media (min-width: 1200px) {
-  .app-shell > .page-tabs {
-    background: var(--sidebar-bg);
-    border-inline-end-color: var(--sidebar-divider);
-    box-shadow: var(--shadow-popup);
-    scrollbar-color: var(--scrollbar-thumb) transparent;
-    scrollbar-width: thin;
-  }
-
-  .app-shell > .page-tabs::-webkit-scrollbar {
-    width: 5px;
-  }
-
-  .app-shell > .page-tabs::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  .app-shell > .page-tabs::-webkit-scrollbar-thumb {
-    border-radius: var(--radius-pill);
-    background: var(--scrollbar-thumb);
-  }
-
-  .app-shell > .page-tabs::before {
-    z-index: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 14px;
-    background: linear-gradient(135deg, var(--info-soft), var(--primary-soft));
-    box-shadow: inset 0 1px 0 var(--primary-soft);
-    text-shadow: var(--text-shadow-strong);
-  }
-
-  .app-shell > .page-tabs::after {
-    z-index: 0;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, var(--sidebar-divider), transparent);
-  }
-
-  .app-shell > .page-tabs > .page-tab {
-    min-height: 50px;
-    gap: 12px;
-    border-radius: 14px;
-    padding-inline: 13px;
-  }
-
-  .app-shell > .page-tabs > .page-tab .ui-icon {
-    width: 30px;
-    height: 30px;
-    padding: 5px;
-    border: 1px solid transparent;
-    border-radius: 10px;
-    transition: background-color 180ms ease, border-color 180ms ease, color 180ms ease;
-  }
-
-  .app-shell > .page-tabs > .page-tab:hover .ui-icon,
-  .app-shell > .page-tabs > .page-tab:focus-visible .ui-icon {
-    border-color: var(--sidebar-border);
-    background: var(--primary-soft);
-  }
-
-  .app-shell > .page-tabs > .page-tab.active,
-  .app-shell > .page-tabs > .page-tab[aria-selected="true"] {
-    border-color: var(--primary-border);
-    background: linear-gradient(100deg, var(--primary-active) 0%, var(--primary-hover) 100%);
-    box-shadow: var(--shadow-primary-strong), inset 0 1px 0 var(--primary-soft);
-  }
-
-  .app-shell > .page-tabs > .page-tab.active .ui-icon,
-  .app-shell > .page-tabs > .page-tab[aria-selected="true"] .ui-icon {
-    border-color: var(--border-secondary);
-    background: var(--primary-soft);
-  }
-
-  .app-shell > .page-tabs > .page-tab.active::after,
-  .app-shell > .page-tabs > .page-tab[aria-selected="true"]::after {
-    top: 9px;
-    bottom: 9px;
-    left: 5px;
-    width: 4px;
-    background: var(--primary-border);
-    box-shadow: 0 0 12px var(--primary-border);
-  }
-
-  .app-shell > .page-tabs > .page-tab:nth-child(6)::before,
-  .app-shell > .page-tabs > .page-tab:nth-child(9)::before,
-  .app-shell > .page-tabs > .page-tab:nth-child(11)::before {
-    position: absolute;
-    top: -7px;
-    right: 0;
-    left: 0;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, var(--sidebar-divider), transparent);
-    content: "";
-    pointer-events: none;
-  }
-
-  .app-shell > .page-tabs > .auth-account-bar {
-    gap: 10px;
-    border-top-color: var(--border-secondary);
-  }
-
-  .app-shell > .page-tabs > .auth-account-bar .auth-account-identity {
-    display: flex;
-    min-width: 0;
-    max-width: 220px;
-    align-items: center;
-    gap: 10px;
-    overflow: hidden;
-    opacity: 1;
-    transition: max-width 360ms cubic-bezier(0.22, 1, 0.36, 1), opacity 180ms ease, transform 260ms ease;
-  }
-
-  .app-shell > .page-tabs > .auth-account-bar .auth-account-avatar {
-    width: 38px;
-    height: 38px;
-    flex: 0 0 38px;
-    border: 1px solid var(--primary-border);
-    background: var(--info-soft);
-    color: var(--text-secondary);
-  }
-
-  .app-shell > .page-tabs > .auth-account-bar .auth-account-copy {
-    min-width: 0;
-  }
-
-  .app-shell > .page-tabs > .auth-account-bar .auth-account-copy strong {
-    color: var(--sidebar-text);
-    font-size: var(--font-xs);
-  }
-
-  .app-shell > .page-tabs > .auth-account-bar .auth-account-copy small {
-    color: var(--sidebar-text-muted);
-    font-size: 10px;
-  }
-
-  .app-shell > .page-tabs > .auth-account-bar .auth-logout-button {
-    flex: 0 0 46px;
-    width: 46px;
-    min-width: 46px;
-    height: 46px;
-    min-height: 46px;
-    border-color: var(--danger-border);
-    background: var(--danger-soft);
-  }
-
-  .app-shell > .page-tabs:not(:hover):not(.is-pinned):not(:focus-within)::before {
-    top: 16px;
-    right: 4px;
-    left: auto;
-    width: 30px;
-    height: 30px;
-    border-radius: 10px;
-    background: linear-gradient(135deg, var(--primary-hover), var(--primary-active));
-    font-size: 14px;
-    line-height: 30px;
-    text-shadow: none;
-  }
-
-  .app-shell > .page-tabs:not(:hover):not(.is-pinned):not(:focus-within)::after {
-    top: 70px;
-    right: 12px;
-    left: 12px;
-  }
-
-  .app-shell > .page-tabs:not(:hover):not(.is-pinned):not(:focus-within) > .page-tab .ui-icon {
-    width: 32px;
-    height: 32px;
-    padding: 6px;
-  }
-
-  .app-shell > .page-tabs:not(:hover):not(.is-pinned):not(:focus-within) > .auth-account-bar .auth-account-identity {
-    max-width: 0;
-    opacity: 0;
-    transform: translateX(8px);
-    pointer-events: none;
-  }
-
-  .app-shell > .page-tabs:not(:hover):not(.is-pinned):not(:focus-within) > .auth-account-bar .auth-logout-button {
-    flex-basis: 46px;
-  }
-}
-
-/* Final desktop application-shell contract.
-   Keep the utility navbar and the navigation rail in separate grid tracks.
-   The grid track, rather than the rail itself, expands on hover/focus/pin;
-   this preserves a clean boundary and prevents the sidebar from covering the
-   navbar or the page content. Tablet and mobile rules above remain unchanged. */
-@media (min-width: 1200px) {
-  .app-shell {
-    display: grid;
-    grid-template-columns: var(--sidebar-width-collapsed, 84px) minmax(0, 1fr);
-    grid-template-rows: 80px minmax(0, 1fr);
-    min-height: 100dvh;
-    transition: grid-template-columns 280ms cubic-bezier(0.22, 1, 0.36, 1);
-  }
-
-  .app-shell:has(> .page-tabs:hover),
-  .app-shell:has(> .page-tabs:focus-within),
-  .app-shell:has(> .page-tabs.is-pinned) {
-    grid-template-columns: var(--sidebar-width-expanded, 292px) minmax(0, 1fr);
-  }
-
-  .app-shell > .topbar {
-    display: block;
-    grid-column: 2;
-    grid-row: 1;
-    position: sticky;
-    top: 0;
-    z-index: var(--z-sticky);
-    width: 100%;
-    min-width: 0;
-    border-bottom: 1px solid var(--sidebar-divider);
-    background: var(--bg-surface);
-    color: var(--color-text);
-    box-shadow: var(--shadow-sm);
-    isolation: isolate;
-  }
-
-  .app-shell > .topbar .topbar-inner {
-    width: min(calc(100% - 48px), 1520px);
-    min-height: 80px;
-    margin-inline: auto;
-    padding: 14px 0;
-  }
-
-  .app-shell > .page-tabs {
-    box-sizing: border-box;
-    grid-column: 1;
-    grid-row: 1 / -1;
-    position: sticky;
-    top: 0;
-    z-index: var(--z-dropdown);
-    display: flex;
-    width: 100%;
-    min-width: 0;
-    height: 100dvh;
-    min-height: 100dvh;
-    align-self: start;
-    flex-direction: column;
-    align-items: stretch;
-    flex-wrap: nowrap;
-    gap: 7px;
-    margin: 0;
-    overflow-x: hidden;
-    overflow-y: auto;
-    border: 0;
-    border-inline-end: 1px solid var(--sidebar-divider);
-    border-radius: 0;
-    background: var(--sidebar-bg);
-    color: var(--sidebar-text);
-    padding: 18px 12px 18px;
-    box-shadow: var(--shadow-popup);
-    direction: rtl;
-    transition: background-color 180ms ease, box-shadow 280ms ease;
-  }
-
-  .app-shell > .page-tabs::before,
-  .app-shell > .page-tabs::after {
-    display: none;
-    content: none;
-  }
-
-  .app-shell > .page-tabs > .sidebar-brand {
-    display: flex;
-    order: -2;
-    min-width: 0;
-    min-height: 56px;
-    align-items: center;
-    gap: 10px;
-    margin: 0 0 8px;
-    padding: 0 4px 12px;
-    border-bottom: 1px solid var(--sidebar-divider);
-    color: var(--sidebar-text);
-  }
-
-  .app-shell > .page-tabs > .sidebar-brand-mark {
-    display: grid;
-    width: 44px;
-    height: 44px;
-    flex: 0 0 44px;
-    place-items: center;
-    overflow: hidden;
-    border: 1px solid var(--sidebar-divider);
-    border-radius: 13px;
-    background: var(--sidebar-hover-bg);
-    color: var(--sidebar-text);
-  }
-
-  .app-shell > .page-tabs > .sidebar-brand-mark img {
-    width: 86%;
-    height: 86%;
-    object-fit: contain;
-  }
-
-  .app-shell > .page-tabs > .sidebar-brand-mark > span {
-    color: var(--sidebar-text);
-    font-size: 18px;
-    font-weight: var(--weight-extrabold);
-    line-height: 1;
-  }
-
-  .app-shell > .page-tabs > .sidebar-brand-copy {
-    display: grid;
-    min-width: 0;
-    max-width: 190px;
-    gap: 2px;
-    overflow: hidden;
-    opacity: 1;
-    transition: max-width 240ms cubic-bezier(0.22, 1, 0.36, 1), opacity 160ms ease;
-  }
-
-  .app-shell > .page-tabs > .sidebar-brand-copy strong,
-  .app-shell > .page-tabs > .sidebar-brand-copy small {
-    overflow: hidden;
-    min-width: 0;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .app-shell > .page-tabs > .sidebar-brand-copy strong {
-    color: var(--sidebar-text);
-    font-family: var(--font-heading);
-    font-size: var(--font-md);
-    font-weight: var(--weight-extrabold);
-  }
-
-  .app-shell > .page-tabs > .sidebar-brand-copy small {
-    color: var(--sidebar-text-muted);
-    font-size: 10px;
-    line-height: 1.35;
-  }
-
-  .app-shell > .page-tabs > .page-tab,
-  .app-shell > .page-tabs > .smart-assistant-launcher {
-    position: relative;
-    z-index: 1;
-    width: 100%;
-    min-width: 0;
-    flex: 0 0 auto;
-    overflow: hidden;
-  }
-
-  .app-shell > .page-tabs > .page-tab {
-    min-height: 48px;
-    justify-content: flex-start;
-    gap: 11px;
-    border: 1px solid transparent;
-    border-radius: 12px;
-    background: transparent;
-    color: var(--sidebar-text-muted);
-    padding-inline: 12px;
-    text-align: start;
-    transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease, transform 180ms ease;
-  }
-
-  .app-shell > .page-tabs > .page-tab:hover,
-  .app-shell > .page-tabs > .page-tab:focus-visible {
-    border-color: var(--sidebar-border);
-    background: var(--sidebar-hover-bg);
-    color: var(--sidebar-text);
-    transform: translateX(2px);
-  }
-
-  .app-shell > .page-tabs > .page-tab.active,
-  .app-shell > .page-tabs > .page-tab[aria-selected="true"] {
-    border-color: var(--primary-border);
-    background: var(--sidebar-active-bg);
-    color: var(--sidebar-active-text);
-    box-shadow: var(--sidebar-active-shadow);
-    font-weight: var(--weight-bold);
-  }
-
-  .app-shell > .page-tabs > .page-tab .ui-icon,
-  .app-shell > .page-tabs > .smart-assistant-launcher .ui-icon {
-    width: 20px;
-    height: 20px;
-    flex: 0 0 20px;
-    stroke-width: 1.9;
-  }
-
-  .app-shell > .page-tabs > .page-tab > span,
-  .app-shell > .page-tabs > .auth-account-bar .auth-logout-button > span,
-  .app-shell > .page-tabs > .smart-assistant-launcher .smart-assistant-launcher-label {
-    display: inline-block;
-    max-width: 220px;
-    min-width: 0;
-    overflow: hidden;
-    opacity: 1;
-    text-overflow: ellipsis;
-    transform: translateX(0);
-    transition: max-width 240ms cubic-bezier(0.22, 1, 0.36, 1), opacity 160ms ease, transform 180ms ease;
-    white-space: nowrap;
-  }
-
-  .app-shell > .page-tabs:not(:hover):not(.is-pinned):not(:focus-within) > .page-tab,
-  .app-shell > .page-tabs:not(:hover):not(.is-pinned):not(:focus-within) > .smart-assistant-launcher {
-    justify-content: center;
-    padding-inline: 0;
-    transform: none;
-  }
-
-  .app-shell > .page-tabs:not(:hover):not(.is-pinned):not(:focus-within) > .page-tab > span,
-  .app-shell > .page-tabs:not(:hover):not(.is-pinned):not(:focus-within) > .auth-account-bar .auth-logout-button > span,
-  .app-shell > .page-tabs:not(:hover):not(.is-pinned):not(:focus-within) > .smart-assistant-launcher .smart-assistant-launcher-label,
-  .app-shell > .page-tabs:not(:hover):not(.is-pinned):not(:focus-within) > .sidebar-brand .sidebar-brand-copy {
-    max-width: 0;
-    opacity: 0;
-    transform: translateX(8px);
-    pointer-events: none;
-  }
-
-  .app-shell > .page-tabs:not(:hover):not(.is-pinned):not(:focus-within) > .sidebar-brand {
-    justify-content: center;
-    padding-inline: 0;
-  }
-
-  .app-shell > .page-tabs > .auth-account-bar {
-    z-index: 1;
-    display: flex;
-    width: 100%;
-    min-width: 0;
-    align-items: stretch;
-    justify-content: stretch;
-    margin-top: auto;
-    border-top: 1px solid var(--sidebar-divider);
-    border-inline-start: 0;
-    padding: 14px 0 0;
-    direction: rtl;
-  }
-
-  .app-shell > .page-tabs > .auth-account-bar .auth-logout-button {
-    display: inline-flex;
-    width: 100%;
-    min-width: 0;
-    min-height: 46px;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    border: 1px solid var(--danger-border);
-    border-radius: 12px;
-    background: var(--danger-soft);
-    color: var(--danger-text);
-  }
-
-  .app-shell > .page-tabs:not(:hover):not(.is-pinned):not(:focus-within) > .auth-account-bar .auth-logout-button {
-    width: 46px;
-    min-width: 46px;
-    margin-inline: auto;
-    padding-inline: 0;
-  }
-
-  .app-shell > .page-tabs > .smart-assistant-launcher {
-    min-height: 46px;
-    justify-content: flex-start;
-    gap: 10px;
-    margin-top: 8px;
-    border: 1px solid var(--sidebar-border);
-    border-radius: 12px;
-    background: var(--sidebar-hover-bg);
-    color: var(--sidebar-text);
-    padding-inline: 12px;
-    box-shadow: none;
-  }
-
-  .app-shell > .page-tabs:not(:hover):not(.is-pinned):not(:focus-within) > .smart-assistant-launcher {
-    width: 46px;
-    min-width: 46px;
-    margin-inline: auto;
-    padding-inline: 0;
-  }
-
-  .app-shell > main.page {
+
+
+
+
+
+
+
+
+@media (min-width: 1200px){
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  .page{
     box-sizing: border-box;
     grid-column: 2;
     grid-row: 2;
@@ -2959,20 +1329,5 @@
     min-width: 0;
     margin-inline: auto;
     padding: 30px clamp(20px, 3vw, 48px) 56px;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) and (min-width: 1200px) {
-  .app-shell {
-    transition: none;
-  }
-
-  .app-shell > .page-tabs,
-  .app-shell > .page-tabs > .page-tab,
-  .app-shell > .page-tabs > .sidebar-brand-copy,
-  .app-shell > .page-tabs > .page-tab > span,
-  .app-shell > .page-tabs > .auth-account-bar .auth-logout-button > span,
-  .app-shell > .page-tabs > .smart-assistant-launcher .smart-assistant-launcher-label {
-    transition: none;
   }
 }

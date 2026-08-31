@@ -11,7 +11,7 @@ const read = (relativePath) => fs.readFileSync(path.join(root, relativePath), 'u
 test('Gym App exposes an explicit mobile navigation drawer contract', () => {
     const index = read('public/index.html');
     const source = read('public/js/page-tabs.js');
-    const styles = read('public/css/components/ui-foundation.css');
+    const styles = read('public/css/components/navigation-shell.css');
 
     assert.match(index, /id="mobileNavToggle"[^>]*aria-controls="pageTabs"/);
     assert.match(index, /id="mobileNavClose"/);
@@ -21,16 +21,17 @@ test('Gym App exposes an explicit mobile navigation drawer contract', () => {
     assert.match(source, /mobile-nav-open/);
     assert.match(source, /matchMedia\('\(max-width: 1199px\)'\)/);
     assert.match(source, /closeButton\?\.addEventListener/);
-    assert.match(styles, /\.app-shell > \.page-tabs\s*\{[\s\S]*?position: fixed !important/);
-    assert.match(styles, /\.app-shell\.mobile-nav-open > \.page-tabs\s*\{[\s\S]*?transform: translateX\(0\) !important/);
-    assert.match(styles, /\.app-shell > \.page-tabs > \.page-tab > span[\s\S]*?opacity: 1 !important/);
-    assert.match(styles, /@media \(min-width: 1200px\)[\s\S]*?\.mobile-nav-toggle[\s\S]*?display: none !important/);
+    assert.match(styles, /\.app-shell > \.page-tabs\s*\{[\s\S]*?position: fixed/u);
+    assert.match(styles, /\.app-shell\.mobile-nav-open > \.page-tabs\s*\{[\s\S]*?transform: translateX\(0\)/u);
+    assert.match(styles, /@media \(max-width: 1199px\)[\s\S]*?\.app-shell > \.page-tabs > \.page-tab > span[\s\S]*?opacity: 1/u);
+    assert.match(styles, /@media \(min-width: 1200px\)[\s\S]*?\.mobile-nav-toggle[\s\S]*?display: none/u);
 });
 
 test('Mobile navigation prevents background scrolling and supports reduced motion', () => {
-    const styles = read('public/css/components/ui-foundation.css');
+    const styles = read('public/css/components/navigation-shell.css');
 
     assert.match(styles, /body\.mobile-nav-open\s*\{[\s\S]*?overflow: hidden/);
     assert.match(styles, /\.mobile-nav-backdrop:not\(\[hidden\]\)\s*\{[\s\S]*?display: block/);
-    assert.match(styles, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.mobile-nav-close[\s\S]*?transition: none !important/);
+    assert.match(styles, /body\.mobile-nav-open[\s\S]*?overflow: hidden/u);
+    assert.match(styles, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.app-shell > \.page-tabs[\s\S]*?transition: none/u);
 });

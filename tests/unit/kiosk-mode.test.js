@@ -23,7 +23,7 @@ test('Gym App exposes one reusable global Kiosk controller', () => {
 
 test('Kiosk is scoped to the Gym App shell and keeps a visible exit path', () => {
     const index = read('public/index.html');
-    const styles = read('public/css/components/ui-foundation.css');
+    const styles = read('public/css/components/navigation-shell.css');
 
     assert.match(index, /id="globalKioskToggle"[^>]*data-kiosk-toggle/);
     assert.match(index, /id="attendanceKioskButton"[^>]*data-kiosk-toggle/);

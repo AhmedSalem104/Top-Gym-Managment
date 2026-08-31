@@ -6,11 +6,6 @@ body {
   min-height: 100vh;
 }
 
-.auth-pending .app-shell,
-.auth-locked .app-shell {
-  display: none;
-}
-
 .auth-pending .auth-screen,
 .auth-locked .auth-screen {
   display: grid;
@@ -33,7 +28,6 @@ body.auth-pending::before {
   content: "";
 }
 
-.top-gym-navigation-pending .page-tabs,
 .top-gym-navigation-pending .page {
   /* Navigation requests already have a token/idempotency guard in
      page-tabs.js. Do not disable the whole application while an optional
@@ -48,12 +42,6 @@ body.auth-pending::before {
 html[data-top-gym-active-tab]:not([data-top-gym-active-tab="dashboard"]) #dashboardAnalytics,
 html[data-top-gym-loading-tab]:not([data-top-gym-loading-tab="dashboard"]) #dashboardAnalytics {
   display: none;
-}
-
-.app-shell {
-  min-height: 100vh;
-  background: var(--color-bg);
-  color: var(--color-text);
 }
 
 html {

@@ -10,6 +10,23 @@ abandoned. The repository now has a complete source inventory, a shared
 foundation layer and a repeatable full-surface browser runner. Remaining
 items are listed explicitly instead of being marked complete by assumption.
 
+## Latest shell and onboarding closure
+
+- Consolidated the Gym Application shell into one canonical stylesheet:
+  `public/css/components/navigation-shell.css`.
+- Removed legacy shell overrides from layout, tabs, navbar, responsive, theme,
+  branding, intelligence and Smart Assistant stylesheets.
+- Desktop navigation now expands its layout track on hover/focus/pin; the
+  workspace is never covered by the rail. Small screens use the existing
+  mobile drawer contract with labelled targets and scroll lock.
+- Rebuilt the Register Gym stylesheet as one coherent responsive layer while
+  preserving all existing form hooks and the registration JavaScript flow.
+- Added a regression test that fails when shell selectors reappear in a
+  secondary stylesheet.
+
+The latest implementation is presentation-only: no API, route, database,
+authentication, permission or tenant behavior was changed.
+
 ## Before findings
 
 - UI coverage was spread across one large HTML shell, separate Platform Admin,
@@ -47,7 +64,7 @@ items are listed explicitly instead of being marked complete by assumption.
 |---|---|
 | Screen inventory | 5 HTML pages, 18 active hash views, 9 Platform Admin panels, 6 Register Gym steps, 6 Member Portal roots, 8 Store subviews, 5 Member Portal tools, 20 overlay roots, 165 form/action hooks, 51 state hooks |
 | `npm run build` | PASS locally |
-| `npm run test:unit` | PASS — 199 tests |
+| `npm run test:unit` | PASS — 214 tests |
 | `npm run test:visual:complete` | PASS locally — 811 structural evidence records, 0 failures; page/console/unexpected-response diagnostics 0/0/0; includes store subviews and portal tools |
 | `node scripts/discover-screens.js --check --verify-browser` | PASS — source inventory matches the passing browser report; no unreviewed discovered root in the structural gate |
 | `npm run qa:ui` | PASS locally — complete browser gate followed by inventory verification |

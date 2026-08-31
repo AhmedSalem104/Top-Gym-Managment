@@ -14,20 +14,41 @@ test('navigation pending state keeps the Gym App controls interactive', () => {
 });
 
 test('desktop sidebar hover contract expands a safe layout track and reveals labels', () => {
-    const source = fs.readFileSync(path.join(root, 'public/css/components/ui-foundation.css'), 'utf8');
+    const source = fs.readFileSync(path.join(root, 'public/css/components/navigation-shell.css'), 'utf8');
 
-    assert.match(source, /grid-template-columns:\s*var\(--sidebar-width-collapsed,\s*84px\)\s+minmax\(0,\s*1fr\)/u);
-    assert.match(source, /\.app-shell\.sidebar-expanded[\s\S]*?grid-template-columns:\s*var\(--sidebar-width-expanded,\s*292px\)\s+minmax\(0,\s*1fr\)/u);
+    assert.match(source, /grid-template-columns:\s*var\(--sidebar-width-collapsed\)\s+minmax\(0,\s*1fr\)/u);
+    assert.match(source, /\.app-shell\.sidebar-expanded[\s\S]*?grid-template-columns:\s*var\(--sidebar-width-expanded\)\s+minmax\(0,\s*1fr\)/u);
     assert.match(source, /\.app-shell\s*>\s*main\.page[\s\S]*?grid-column:\s*2/u);
     assert.match(source, /\.app-shell\s*>\s*\.page-tabs:hover\s*>\s*\.page-tab\s*>\s*span[\s\S]*?opacity:\s*1/u);
 });
 
 test('navigation polish keeps desktop controls usable and coordinated', () => {
-    const source = fs.readFileSync(path.join(root, 'public/css/components/ui-foundation.css'), 'utf8');
+    const source = fs.readFileSync(path.join(root, 'public/css/components/navigation-shell.css'), 'utf8');
 
-    assert.match(source, /grid-template-columns:\s*var\(--sidebar-width-collapsed,\s*84px\)\s+minmax\(0,\s*1fr\)[\s\S]*?transition:\s*grid-template-columns\s+320ms/u);
+    assert.match(source, /grid-template-columns:\s*var\(--sidebar-width-collapsed\)\s+minmax\(0,\s*1fr\)[\s\S]*?transition:\s*grid-template-columns\s+var\(--transition-slow\)/u);
     assert.match(source, /page-tabs\s*\{[\s\S]*?top:\s*80px[\s\S]*?grid-row:\s*2/u);
-    assert.match(source, /page-tab \.ui-icon[\s\S]*?width:\s*25px !important[\s\S]*?height:\s*25px !important/u);
-    assert.match(source, /topbar-controls[\s\S]*?gap:\s*8px/u);
-    assert.match(source, /auth-account-bar \.auth-logout-button[\s\S]*?background:\s*transparent/u);
+    assert.match(source, /page-tabs\s*>\s*\.page-tab \.ui-icon[\s\S]*?width:\s*22px[\s\S]*?height:\s*22px/u);
+    assert.match(source, /topbar-controls[\s\S]*?gap:\s*var\(--space-2\)/u);
+    assert.match(source, /auth-logout-button[\s\S]*?background:\s*transparent/u);
+});
+
+test('Gym App shell styles have one canonical source', () => {
+    const canonical = fs.readFileSync(path.join(root, 'public/css/components/navigation-shell.css'), 'utf8');
+    const secondarySources = [
+        'public/css/components/ui-foundation.css',
+        'public/css/components/tabs.css',
+        'public/css/components/navbar.css',
+        'public/css/components/assistant.css',
+        'public/css/responsive.css',
+        'public/css/theme.css',
+        'public/css/pages/branding.css',
+        'public/css/layout.css'
+    ].map(readRelative => fs.readFileSync(path.join(root, readRelative), 'utf8'));
+
+    assert.match(canonical, /\.app-shell\s*\{/u);
+    assert.match(canonical, /\.page-tabs\s*\{/u);
+    assert.match(canonical, /\.topbar\s*\{/u);
+    for (const source of secondarySources) {
+        assert.doesNotMatch(source, /(^|[^a-z0-9_-])(?:#pageTabs|\.app-shell|\.page-tabs|\.page-tab|\.topbar|\.auth-logout-button|\.sidebar-pin-button|\.mobile-nav-toggle|\.kiosk-toggle-button)(?=$|[^a-z0-9_-])/imu);
+    }
 });

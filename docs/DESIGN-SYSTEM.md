@@ -14,6 +14,9 @@ main.source.css
   -> components/*
   -> pages/*
   -> responsive.css
+  -> theme.css
+  -> ui-foundation.css
+  -> navigation-shell.css (canonical Gym App shell)
   -> print.css
   -> build output: main.css (one browser request)
 ```
@@ -22,7 +25,7 @@ main.source.css
 
 ## Visual language
 
-TOP GYM uses a light blue-gray SaaS workspace with white surfaces, royal blue actions, restrained status colors, subtle borders, and low-elevation shadows. The interface is Arabic-first and RTL; it is intentionally operational rather than neon or gaming-oriented.
+Logic Fit uses a light blue-gray SaaS workspace with white surfaces, royal blue actions, restrained status colors, subtle borders, and low-elevation shadows. The interface is Arabic-first and RTL; it is intentionally operational rather than neon or gaming-oriented.
 
 ## Tokens
 
@@ -49,7 +52,7 @@ Shared component styles live in `public/css/components/`:
 - Data: `table`, `.table-scroll`, `.table-actions`, `.pagination`
 - Feedback: `.badge-*`, `.alert-*`, `.loading`, `.empty-state`
 - Overlays: `dialog`, `.modal-body`, `.dialog-actions`, `.dropdown-menu`
-- Navigation: `.topbar`, `.page-tabs`, `.page-tab`, `.sidebar-link`
+- Navigation: `.topbar`, `.page-tabs`, `.page-tab`, `.sidebar-link`; Gym App shell ownership is consolidated in `public/css/components/navigation-shell.css`
 
 Every interactive component has a visible `:focus-visible` state, a disabled state where relevant, and a touch target of at least 40–44px. Destructive actions use the danger color and do not rely on color alone when their label is available.
 
@@ -103,6 +106,22 @@ Use semantic buttons and labels already present in the HTML. Do not remove focus
 3. Use `pages/` only for layout unique to one screen.
 4. Keep selectors shallow and avoid `!important`; the existing exceptions are limited to hidden/print/reduced-motion guarantees.
 5. Run `npm run build:css` and `npm run qa:gate` after styling changes.
+
+## Canonical Gym App shell
+
+`public/css/components/navigation-shell.css` is the only screen stylesheet
+allowed to define the Gym Application `.app-shell`, `.topbar`, `.page-tabs`,
+`.page-tab`, shell controls, Kiosk state and shell-level responsive behavior.
+`layout.css`, `theme.css`, `responsive.css`, `branding.css`, `tabs.css`,
+`navbar.css` and `assistant.css` do not override those selectors. The Smart
+Assistant panel remains an independent component; only its launcher placement
+inside the shell is owned by the navigation file.
+
+Desktop uses a real RTL grid track (collapsed rail to expanded hover/pinned
+rail), so the workspace moves with the navigation instead of being covered by
+it. Below 1200px the rail becomes a labelled drawer with a backdrop and body
+scroll lock. This preserves the existing `page-tabs.js` behavior and only
+changes presentation.
 
 ## Platform-wide UI foundation
 

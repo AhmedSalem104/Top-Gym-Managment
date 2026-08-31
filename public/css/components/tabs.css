@@ -1,45 +1,14 @@
-.page-tabs,
+/* Generic tab primitives. The Gym App shell navigation is defined once in
+   navigation-shell.css; keeping these selectors generic prevents tab rules
+   from competing with the application rail. */
 .tabs,
 .tab-list {
   display: flex;
+  min-width: 0;
   align-items: center;
   gap: var(--space-1);
-  min-width: 0;
 }
 
-.page-tabs {
-  box-sizing: border-box;
-  width: 100%;
-  min-width: 0;
-  position: sticky;
-  top: 0;
-  z-index: var(--z-sticky);
-  border-top: 1px solid var(--border-secondary);
-  background: var(--bg-sidebar);
-  padding: var(--space-2) max(16px, calc((100% - 1440px) / 2));
-  overflow: visible;
-  direction: rtl;
-  flex-wrap: wrap;
-  box-shadow: var(--shadow-card);
-  isolation: isolate;
-}
-
-.page-tabs::before {
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  background: linear-gradient(90deg, var(--primary-soft), transparent 42%, var(--primary-soft));
-  content: "";
-  pointer-events: none;
-}
-
-.page-tabs > .auth-account-bar {
-  flex: 0 0 auto;
-  margin-inline-start: auto;
-  direction: rtl;
-}
-
-.page-tab,
 .tab-button {
   position: relative;
   display: inline-flex;
@@ -49,179 +18,49 @@
   align-items: center;
   justify-content: center;
   gap: var(--space-2);
-  border: 0;
+  border: 1px solid transparent;
   border-radius: var(--radius-sm);
   background: transparent;
-  color: var(--sidebar-text-muted);
+  color: var(--text-secondary);
   padding: 0 var(--space-4);
   font-size: var(--font-sm);
   font-weight: var(--weight-semibold);
   white-space: nowrap;
-  transition: background-color var(--transition-fast), color var(--transition-fast);
+  transition: background-color var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
 }
 
-.page-tab:hover,
-.tab-button:hover {
-  background: var(--sidebar-hover-bg);
-  color: var(--text-primary);
+.tab-button:hover,
+.tab-button:focus-visible {
+  border-color: var(--border-hover);
+  background: var(--primary-soft);
+  color: var(--color-primary);
 }
 
-.page-tab.active,
-.page-tab[aria-selected="true"],
 .tab-button.active,
 .tab-button[aria-selected="true"] {
-  background: var(--color-primary);
-  color: var(--text-on-primary);
-  box-shadow: var(--shadow-primary);
+  border-color: var(--primary-border);
+  background: var(--primary-soft);
+  color: var(--color-primary);
 }
 
-.page-tab .ui-icon {
+.tab-button .ui-icon {
   width: 18px;
   height: 18px;
   flex: 0 0 auto;
 }
 
-.tabs-light .tab-button,
-.tabs-light .page-tab {
+.tabs-light .tab-button {
   color: var(--color-text-muted);
 }
 
 .tabs-light .tab-button.active,
-.tabs-light .page-tab.active,
-.tabs-light .tab-button[aria-selected="true"],
-.tabs-light .page-tab[aria-selected="true"] {
-  background: var(--color-primary-soft);
-  color: var(--color-primary);
-  box-shadow: none;
-}
-
-/* Unified TOP GYM application navigation.
-   The legacy rules above remain compatible with generic tabs; these rules are
-   the single visual contract for the primary page navigation. */
-.page-tabs {
-  width: min(1440px, calc(100% - 32px));
-  min-height: 72px;
-  margin: 12px auto 0;
-  top: 12px;
-  z-index: var(--z-dropdown);
-  gap: 6px;
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-xl);
-  background: var(--color-surface-elevated);
-  padding: 8px 10px;
-  box-shadow: var(--shadow-md);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  isolation: isolate;
-}
-
-.page-tabs::before {
-  background: linear-gradient(90deg, var(--primary-soft), transparent 44%, var(--primary-soft));
-}
-
-.page-tabs > .page-tab[hidden],
-.page-tabs > .auth-account-bar[hidden] {
-  display: none;
-}
-
-.page-tab {
-  min-height: 50px;
-  min-width: max-content;
-  border: 1px solid transparent;
-  border-radius: var(--radius-md);
-  color: var(--color-text-muted);
-  padding: 0 14px;
-  font-size: var(--font-sm);
-  transition: background-color var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast), box-shadow var(--transition-fast), transform var(--transition-fast);
-}
-
-.page-tab:hover {
-  border-color: var(--border-color);
+.tabs-light .tab-button[aria-selected="true"] {
   background: var(--color-primary-soft);
   color: var(--color-primary);
 }
 
-.page-tab:focus-visible,
-.auth-logout-button:focus-visible {
-  outline: 3px solid var(--primary-border);
-  outline-offset: 2px;
-}
-
-.page-tab.active,
-.page-tab[aria-selected="true"] {
-  border-color: var(--nav-active-border);
-  background: var(--nav-active-bg);
-  color: var(--nav-active-text);
-  font-weight: var(--weight-bold);
-  box-shadow: var(--nav-active-shadow);
-}
-
-.page-tab .ui-icon {
-  width: 19px;
-  height: 19px;
-  stroke-width: 1.9;
-}
-
-.page-tabs > .auth-account-bar {
-  position: relative;
-  z-index: 1;
-  flex: 0 0 auto;
-  margin-inline-start: auto;
-  margin-inline-end: 0;
-  border-inline-start: 1px solid var(--border-color);
-  padding-inline-start: 10px;
-  direction: rtl;
-}
-
-.page-tabs > .auth-account-bar .auth-logout-button {
-  display: grid;
-  width: 44px;
-  min-width: 44px;
-  height: 44px;
-  min-height: 44px;
-  place-items: center;
-  padding: 0;
-  border: 1px solid var(--danger-border);
-  border-radius: var(--radius-md);
-  background: var(--color-danger-soft);
-  color: var(--color-danger);
-  box-shadow: none;
-  transition: background-color var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast), transform var(--transition-fast);
-}
-
-.page-tabs > .auth-account-bar .auth-logout-button:hover:not(:disabled) {
-  border-color: var(--danger-border);
-  background: var(--color-danger);
-  color: var(--text-on-primary);
-  transform: translateY(-1px);
-}
-
-.page-tabs > .auth-account-bar .auth-logout-button .ui-icon {
-  width: 20px;
-  height: 20px;
-  stroke-width: 2;
-}
-
-/* Daily gym workflow order on the desktop slide menu. Configuration and
-   account-level screens stay below the operational screens, while the
-   dynamically injected backup tab keeps the same low-priority position. */
-@media (min-width: 1200px) {
-  #pageTabs > [data-page-tab="dashboard"] { order: 1; }
-  #pageTabs > [data-page-tab="members"] { order: 2; }
-  #pageTabs > [data-page-tab="attendance"] { order: 3; }
-  #pageTabs > [data-page-tab="intelligence"] { order: 4; }
-  #pageTabs > [data-page-tab="trainees"] { order: 5; }
-  #pageTabs > [data-page-tab="store"] { order: 6; }
-  #pageTabs > [data-page-tab="expenses"] { order: 7; }
-  #pageTabs > [data-page-tab="reports"] { order: 8; }
-  #pageTabs > [data-page-tab="library"] { order: 9; }
-  #pageTabs > [data-page-tab="feedback"] { order: 10; }
-  #pageTabs > [data-page-tab="management"] { order: 11; }
-  #pageTabs > [data-page-tab="branding"] { order: 12; }
-  #pageTabs > [data-page-tab="member-payment-methods"] { order: 13; }
-  #pageTabs > [data-page-tab="permissions"] { order: 14; }
-  #pageTabs > [data-page-tab="saas-billing"] { order: 15; }
-  #pageTabs > [data-page-tab="backup-history"] { order: 16; }
-  #pageTabs > .sidebar-pin-control { order: 98; }
-  #pageTabs > .smart-assistant-launcher { order: 99; }
+@media (prefers-reduced-motion: reduce) {
+  .tab-button {
+    transition: none;
+  }
 }
