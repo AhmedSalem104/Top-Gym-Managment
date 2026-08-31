@@ -1,4 +1,4 @@
-# TOP GYM Design System
+# Logic Fit Design System
 
 The UI uses one Vanilla CSS production entrypoint: `public/css/main.css`. The HTML shell links this file once in `<head>` so authenticated and unauthenticated states receive the same deterministic style surface without JavaScript-injected CSS. The editable layer graph lives in `public/css/main.source.css`; the build expands it into one browser asset.
 
@@ -103,3 +103,33 @@ Use semantic buttons and labels already present in the HTML. Do not remove focus
 3. Use `pages/` only for layout unique to one screen.
 4. Keep selectors shallow and avoid `!important`; the existing exceptions are limited to hidden/print/reduced-motion guarantees.
 5. Run `npm run build:css` and `npm run qa:gate` after styling changes.
+
+## Platform-wide UI foundation
+
+The current shared foundation is loaded last from
+`public/css/components/ui-foundation.css`. It does not introduce a second
+palette or a component framework. It reinforces the existing token graph for
+focus rings, touch targets, surface hierarchy, input sizing, contained table
+scrolling, dialog bounds, safe-area spacing and reduced motion across the Gym
+Application, Platform Admin, Member Portal and Register Gym surfaces.
+
+The interaction contract is implemented by `public/js/ui-feedback.js` and the
+compatibility bridge in `public/js/button-loading.js`:
+
+- asynchronous buttons keep their width, become disabled and expose
+  `aria-busy` while the request is pending;
+- loading copy is context-aware (`جاري الحفظ...`, `جاري الاعتماد...`,
+  `جاري الرفع...`, etc.);
+- success is emitted only by the caller after the server result is confirmed;
+- errors use safe caller-provided messages and are announced through the live
+  region; and
+- delegated handling covers buttons rendered after the initial page load.
+
+`scripts/qa-complete-ui.js` is a structural visual runner. It checks the
+actual shipped DOM at 13 viewport widths, light/dark evidence widths, all 18
+active app sections, Platform Admin panels, Member Portal roots, Store
+subviews, Member Portal tools, Register Gym steps and all 20 dialog roots. It
+must run against the Express application
+server (`QA_BASE_URL=http://127.0.0.1:3000` locally), not a static file server.
+It is not a substitute for authenticated workflow, WCAG conformance or
+production-device verification; those are reported separately.

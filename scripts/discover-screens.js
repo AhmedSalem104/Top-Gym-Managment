@@ -282,7 +282,7 @@ for (const file of jsFiles.map(pathLabel)) lines.push(`- \`${file}\``);
 lines.push('');
 
 fs.mkdirSync(docsRoot, { recursive: true });
-fs.writeFileSync(inventoryPath, `${lines.join('\n')}\n`, 'utf8');
+fs.writeFileSync(inventoryPath, `${lines.join('\n').replace(/\n+$/, '')}\n`, 'utf8');
 
 if (process.argv.includes('--check')) {
     const generated = read(inventoryPath);
