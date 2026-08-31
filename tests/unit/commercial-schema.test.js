@@ -156,6 +156,9 @@ test('member request review clears the loading summary and resyncs stale review 
     const script = read('public/js/pages/management/member-subscription-requests.js');
     assert.match(script, /if \(summary\) summary\.textContent = total \? `إجمالي النتائج:/);
     assert.match(script, /if \(error\?\.code === 'MEMBER_SUBSCRIPTION_REQUEST_ALREADY_REVIEWED'\) \{\s*await load\(\);/);
+    assert.match(script, /const membershipCodeLabel = \(value\) =>/);
+    assert.match(script, /membershipCodeLabel\(request\.member\?\.membershipCode\)/);
+    assert.match(script, /value\.maskedCode/);
 });
 
 test('member portal activation celebration is approval-gated, one-time and reduced-motion safe', () => {

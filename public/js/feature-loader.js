@@ -92,7 +92,7 @@
         'member-subscription-requests': {
             dependencies: [],
             styles: [],
-            scripts: ['/js/pages/management/member-subscription-requests.js?v=3']
+            scripts: ['/js/pages/management/member-subscription-requests.js?v=4']
         },
         'portal-analytics': {
             dependencies: [],

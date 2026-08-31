@@ -41,6 +41,11 @@
         return Number.isNaN(parsed.getTime()) ? 'غير محدد' : new Intl.DateTimeFormat('ar-EG-u-ca-gregory', { dateStyle: 'medium', timeStyle: 'short' }).format(parsed);
     };
     const amount = (value, currency) => `${Number(value || 0).toLocaleString('ar-EG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${currency || 'EGP'}`;
+    const membershipCodeLabel = (value) => {
+        if (typeof value === 'string') return value;
+        if (value && typeof value === 'object') return String(value.maskedCode || '');
+        return '';
+    };
     const safeError = (error, fallback = 'تعذر تنفيذ العملية. حاول مرة أخرى.') => errorLabels[error?.code] || fallback;
 
     function notify(message, kind = 'info') {
@@ -101,8 +106,9 @@
                 ? `<a class="btn btn-light btn-small" href="/api/member-subscription-requests/proofs/${Number(request.proof.id)}/file" target="_blank" rel="noopener noreferrer">عرض الإثبات</a>`
                 : '<span class="member-request-muted">غير مرفق/غير موثّق</span>';
             const membership = request.membership || {};
+            const membershipCode = membershipCodeLabel(request.member?.membershipCode);
             return `<tr data-member-request-id="${Number(request.id) || 0}">
-                <td><div class="member-request-member"><strong>${escapeHtml(request.member?.name || 'غير محدد')}</strong><span>${escapeHtml(request.member?.membershipCode || 'بدون كود عضوية')}</span></div></td>
+                <td><div class="member-request-member"><strong>${escapeHtml(request.member?.name || 'غير محدد')}</strong><span>${escapeHtml(membershipCode || 'بدون كود عضوية')}</span></div></td>
                 <td><div class="member-request-membership"><strong>${escapeHtml(requestTypeLabels[request.requestType] || request.requestType || 'طلب عضوية')}</strong><span>${escapeHtml(membership.plan || '—')} · ${escapeHtml(membership.type || '—')}</span><small>${escapeHtml(membership.startDate || '—')} → ${escapeHtml(membership.endDate || '—')}</small></div></td>
                 <td><strong class="member-request-amount">${escapeHtml(amount(request.pricing?.amountDue, request.pricing?.currency))}</strong><small class="member-request-price-detail">السعر ${escapeHtml(amount(request.pricing?.listPrice, request.pricing?.currency))}</small></td>
                 <td>${proof}</td>
