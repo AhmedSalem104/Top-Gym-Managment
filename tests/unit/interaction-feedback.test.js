@@ -57,6 +57,13 @@ test('legacy auto-loading bridge excludes immediate controls and preserves compa
     assert.match(source, /feedback\.isLoading\(latestClickedButton\)/);
 });
 
+test('submit controls are not disabled during click capture before native submit dispatch', () => {
+    const source = read('public/js/button-loading.js');
+
+    assert.match(source, /A submit button must remain enabled until the browser has/);
+    assert.match(source, /if \(\(button\.getAttribute\('type'\) \|\| 'submit'\)\.toLowerCase\(\) === 'submit'\) return;/);
+});
+
 test('backup and restore actions use contextual loading without changing success semantics', () => {
     const source = read('public/js/pages/management/backup.js');
 

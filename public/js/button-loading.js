@@ -85,6 +85,14 @@
             document.addEventListener('click', (event) => {
                 const button = event.target.closest?.('button');
                 if (!button || !shouldTrack(button)) return;
+                // A submit button must remain enabled until the browser has
+                // dispatched the form's submit event. Disabling it during the
+                // click capture phase cancels native form activation in
+                // Chromium/WebKit, which prevents the form handler (and its
+                // API request) from running at all. The submit listener below
+                // owns loading for submit controls; click remains responsible
+                // for standalone async buttons.
+                if ((button.getAttribute('type') || 'submit').toLowerCase() === 'submit') return;
                 if (feedback.isLoading(button)) {
                     event.preventDefault();
                     event.stopImmediatePropagation();
