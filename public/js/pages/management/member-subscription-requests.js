@@ -13,7 +13,7 @@
     const state = { page: 1, pageSize: 15, loading: false, sequence: 0, requests: [], pagination: {}, reviewing: new Set() };
 
     const statusLabels = Object.freeze({ pending: 'قيد المراجعة', approved: 'معتمد', rejected: 'مرفوض', cancelled: 'ملغى' });
-    const requestTypeLabels = Object.freeze({ membership: 'اشتراك جديد', renewal: 'تجديد عضوية' });
+    const requestTypeLabels = Object.freeze({ membership: 'اشتراك جديد', extension: 'تمديد عضوية', renewal: 'تجديد عضوية' });
     const errorLabels = Object.freeze({
         MEMBER_SUBSCRIPTION_REQUEST_NOT_FOUND: 'الطلب غير موجود أو لم يعد متاحًا.',
         MEMBER_SUBSCRIPTION_REQUEST_ALREADY_REVIEWED: 'تمت مراجعة هذا الطلب بالفعل. حدّث القائمة.',
@@ -25,7 +25,12 @@
         MEMBER_PAYMENT_PROOF_STORAGE_NOT_CONFIGURED: 'تخزين إثباتات الدفع غير مهيأ حاليًا. راجع إعدادات التخزين ثم حاول مرة أخرى.',
         MEMBER_PAYMENT_PROOF_STORAGE_UNAVAILABLE: 'تخزين إثباتات الدفع غير متاح حاليًا. حاول مرة أخرى لاحقًا.',
         MEMBERSHIP_PLAN_NOT_AVAILABLE: 'الباقة المطلوبة لم تعد متاحة.',
-        MEMBERSHIP_TYPE_NOT_AVAILABLE: 'نوع العضوية المطلوب لم يعد متاحًا.'
+        MEMBERSHIP_TYPE_NOT_AVAILABLE: 'نوع العضوية المطلوب لم يعد متاحًا.',
+        MEMBER_RENEWAL_REQUIRES_EXISTING: 'لا يمكن اعتماد التمديد أو التجديد دون عضوية سابقة. حدّث بيانات العضو ثم أعد المحاولة.',
+        MEMBERSHIP_FREEZE_ACTIVE: 'لا يمكن اعتماد التمديد أثناء التجميد. استأنف العضوية أولًا ثم أعد المحاولة.',
+        MEMBERSHIP_START_OVERLAPS_CURRENT: 'تم تحويل الطلب تلقائيًا إلى تمديد/تجديد لمنع تداخل العضويات. حدّث القائمة وحاول مرة أخرى.',
+        MEMBERSHIP_RENEWAL_SNAPSHOT_INVALID: 'بيانات مدة العضوية غير صالحة. راجع إعدادات العضوية وأنشئ طلبًا جديدًا.',
+        MEMBERSHIP_CURRENT_DATES_INVALID: 'تواريخ العضوية الحالية غير صالحة. راجع بيانات العضو قبل الاعتماد.'
     });
 
     const escapeHtml = (value) => String(value ?? '').replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[character]));

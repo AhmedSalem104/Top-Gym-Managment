@@ -165,7 +165,7 @@
                 <p class="portal-subscription-feedback" id="portalSubscriptionFeedback" role="status" aria-live="polite" hidden></p>
                 <form class="portal-subscription-form" id="portalSubscriptionForm" novalidate>
                     <div class="portal-subscription-grid">
-                        <label>نوع الطلب<select id="portalSubscriptionRequestType" required><option value="membership">اشتراك جديد</option><option value="renewal">تجديد العضوية</option></select></label>
+                        <label><span>العملية المناسبة لعضويتك</span><select id="portalSubscriptionRequestType" required disabled aria-describedby="portalSubscriptionScenarioHint"><option value="membership">اشتراك جديد</option><option value="extension">تمديد العضوية</option><option value="renewal">تجديد العضوية</option></select><small id="portalSubscriptionScenarioHint">يحدد النظام العملية تلقائيًا حسب حالة عضويتك الحالية.</small></label>
                         <label>الباقة<select id="portalSubscriptionPlan" required><option value="">جاري تحميل الباقات...</option></select></label>
                         <label>نوع العضوية<select id="portalSubscriptionType" required><option value="">اختر نوع العضوية</option></select></label>
                         <label><span id="portalSubscriptionStartDateLabel">تاريخ البداية</span><input id="portalSubscriptionStartDate" type="date" required><small id="portalSubscriptionStartDateHint">يبدأ الاشتراك الجديد من التاريخ الذي تختاره.</small></label>
@@ -198,7 +198,7 @@
     <script defer src="/js/theme.js?v=1"></script>
     <script defer src="/js/branding.js?v=5"></script>
     <script defer src="/js/ui-feedback.js?v=2"></script>
-    <script defer src="/js/member-portal.js?v=10"></script>
-    <script defer src="/js/member-portal-subscription.js?v=5"></script>
+    <script defer src="/js/member-portal.js?v=11"></script>
+    <script defer src="/js/member-portal-subscription.js?v=6"></script>
 </body>
 </html>

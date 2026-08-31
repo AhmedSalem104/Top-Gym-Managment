@@ -13,7 +13,7 @@ const memberService = require('./member-service');
 const membershipCodeService = require('./membership-code-service');
 const saasService = require('./saas-service');
 
-const SUPPORTED_REQUEST_TYPES = Object.freeze(new Set(['membership', 'renewal']));
+const SUPPORTED_REQUEST_TYPES = Object.freeze(new Set(['membership', 'extension', 'renewal']));
 const MAX_PAGE_SIZE = 50;
 const MAX_PROOF_BYTES = 4 * 1024 * 1024;
 let objectStorageService = null;
@@ -265,9 +265,13 @@ async function getTenantPaymentMethod(code) {
     };
 }
 
-async function normalizePortalRequest(body = {}) {
+async function normalizePortalRequest(body = {}, { requestType: requestTypeOverride = null } = {}) {
     const tenantId = currentTenantId({ required: true });
-    const requestType = normalizeRequestType(body.requestType || 'membership');
+    // The client value is intentionally ignored when the authoritative
+    // member scenario is supplied by the server.
+    const requestType = requestTypeOverride
+        ? normalizeRequestType(requestTypeOverride)
+        : normalizeRequestType(body.requestType || 'membership');
     const membershipPlan = text(body.membershipPlan, '', 30).toLowerCase();
     const requestedMembershipType = text(body.membershipType || body.type, '', 30).toLowerCase();
     if (!membershipPlan || !requestedMembershipType) throw requestError('Membership plan and type are required.', 400, 'MEMBERSHIP_SELECTION_REQUIRED');
@@ -280,7 +284,7 @@ async function normalizePortalRequest(body = {}) {
     const type = membershipType ? catalog.types?.[membershipType] : null;
     if (!type || type.active === false) throw requestError('The selected membership type is not available.', 409, 'MEMBERSHIP_TYPE_NOT_AVAILABLE');
     const pricing = await memberService.calculatePricing(membershipType, membershipPlan, 0);
-    const startDate = requestType === 'renewal'
+    const startDate = ['extension', 'renewal'].includes(requestType)
         ? null
         : parseDateOnly(body.startDate || todayInTimeZone(), 'start date');
     const endDate = startDate
@@ -313,9 +317,13 @@ async function createPortalRequest(request, body = {}, proofInput = null) {
     }
 
     return commercialService.withPortalSession(request, async (session) => {
-        const data = await normalizePortalRequest(body);
-        const idempotency = idempotencyKeyHash(
-            request.get?.('idempotency-key') || body.idempotencyKey,
+        // Keep accepting the old requestType field for old clients, but never
+        // trust it to decide whether this is a new membership or a continuation.
+        const initialScenario = await memberService.resolveMemberRequestScenario(null, session.memberId);
+        let data = await normalizePortalRequest(body, { requestType: initialScenario.requestType });
+        const rawIdempotencyKey = request.get?.('idempotency-key') || body.idempotencyKey;
+        let idempotency = idempotencyKeyHash(
+            rawIdempotencyKey,
             data.tenantId,
             session.memberId,
             data.requestType
@@ -354,6 +362,32 @@ async function createPortalRequest(request, body = {}, proofInput = null) {
                     .input('memberId', sql.Int, positiveId(session.memberId, 'member id'))
                     .query('SELECT TOP (1) id FROM dbo.members WITH (UPDLOCK,HOLDLOCK) WHERE id=@memberId AND tenant_id=@tenantId;');
                 if (!member.recordset[0]) throw requestError('Member portal session is no longer valid.', 401, 'PORTAL_SESSION_MEMBER_INVALID');
+                const lockedScenario = await memberService.resolveMemberRequestScenario(transaction, session.memberId);
+                if (lockedScenario.requestType !== data.requestType) {
+                    // Rebuild only the date portion if the membership state
+                    // changed between the preflight read and the write
+                    // transaction. Pricing/payment validation already ran;
+                    // avoid opening a second pool request from inside the
+                    // transaction for this rare race.
+                    data.requestType = lockedScenario.requestType;
+                    if (['extension', 'renewal'].includes(data.requestType)) {
+                        data.startDate = null;
+                        data.endDate = null;
+                    } else {
+                        data.startDate = parseDateOnly(body.startDate || todayInTimeZone(), 'start date');
+                        data.endDate = memberService.membershipEndDateFromConfig(data.startDate, {
+                            mode: data.durationMode,
+                            durationValue: data.durationValue
+                        });
+                    }
+                    idempotency = idempotencyKeyHash(
+                        rawIdempotencyKey,
+                        data.tenantId,
+                        session.memberId,
+                        data.requestType
+                    );
+                    requestDates = { startDate: data.startDate, endDate: data.endDate };
+                }
                 if (idempotency) {
                     const existing = await transaction.request()
                         .input('tenantId', sql.Int, data.tenantId)
@@ -375,7 +409,7 @@ async function createPortalRequest(request, body = {}, proofInput = null) {
                         return;
                     }
                 }
-                if (data.requestType === 'renewal') {
+                if (['extension', 'renewal'].includes(data.requestType)) {
                     requestDates = await memberService.resolveRenewalDates(transaction, {
                         memberId: session.memberId,
                         durationMode: data.durationMode,
@@ -386,7 +420,12 @@ async function createPortalRequest(request, body = {}, proofInput = null) {
                     .input('tenantId', sql.Int, data.tenantId)
                     .input('memberId', sql.Int, session.memberId)
                     .input('requestType', sql.VarChar(40), data.requestType)
-                    .query("SELECT TOP (1) id FROM dbo.gym_member_subscription_requests WITH (UPDLOCK,HOLDLOCK) WHERE tenant_id=@tenantId AND member_id=@memberId AND request_type=@requestType AND status='pending';");
+                    .query(`SELECT TOP (1) id
+                            FROM dbo.gym_member_subscription_requests WITH (UPDLOCK,HOLDLOCK)
+                            WHERE tenant_id=@tenantId AND member_id=@memberId AND status='pending'
+                              AND (request_type=@requestType
+                                   OR (@requestType IN ('extension','renewal')
+                                       AND request_type IN ('membership','extension','renewal')));`);
                 if (pending.recordset[0]) throw requestError('A pending request of this type already exists.', 409, 'MEMBER_SUBSCRIPTION_REQUEST_ALREADY_PENDING');
                 const inserted = await transaction.request()
                     .input('tenantId', sql.Int, data.tenantId)
@@ -682,10 +721,11 @@ async function approveRequest(requestId, actorUserId, reviewNotes = '') {
             .input('membershipId', sql.Int, createdResult.membershipId)
             .input('paymentId', sql.Int, createdResult.paymentId)
             .input('ledgerTransactionId', sql.Int, createdResult.ledgerTransactionId)
+            .input('requestType', sql.VarChar(40), createdResult.requestType)
             .input('startDate', sql.Date, new Date(`${createdResult.startDate}T00:00:00.000Z`))
             .input('endDate', sql.Date, new Date(`${createdResult.endDate}T00:00:00.000Z`))
             .query(`UPDATE dbo.gym_member_subscription_requests
-                    SET start_date=@startDate,end_date=@endDate,
+                    SET request_type=@requestType,start_date=@startDate,end_date=@endDate,
                         status='approved',reviewed_by_user_id=@actorId,reviewed_at=SYSUTCDATETIME(),
                         review_notes=@reviewNotes,approved_membership_id=@membershipId,
                         created_payment_id=@paymentId,created_ledger_transaction_id=@ledgerTransactionId,

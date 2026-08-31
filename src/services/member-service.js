@@ -1174,6 +1174,53 @@ async function getActiveFreeze(connection, membershipId, today) {
     return result.recordset[0] || null;
 }
 
+function membershipRequestScenario({ currentMembership = null, freezeDays = 0, activeFreeze = null, today = todayInTimeZone() } = {}) {
+    if (!currentMembership || currentMembership.cancelled_at) {
+        return {
+            requestType: 'membership',
+            operation: 'membership',
+            membershipStatus: 'none',
+            currentMembershipId: null,
+            effectiveEndDate: null,
+            freezeDays: 0
+        };
+    }
+    const currentEndDate = formatDateOnly(currentMembership.end_date);
+    if (!currentEndDate) {
+        throw appError('The current membership dates are invalid.', 409, 'MEMBERSHIP_CURRENT_DATES_INVALID');
+    }
+    const frozenDays = Number(freezeDays);
+    if (!Number.isInteger(frozenDays) || frozenDays < 0) {
+        throw appError('The current membership freeze snapshot is invalid.', 409, 'MEMBERSHIP_RENEWAL_SNAPSHOT_INVALID');
+    }
+    if (activeFreeze) {
+        throw appError('Resume the membership before requesting an extension or renewal.', 409, 'MEMBERSHIP_FREEZE_ACTIVE');
+    }
+    const effectiveEndDate = addDays(currentEndDate, frozenDays);
+    const currentDay = parseDateOnly(today, 'today');
+    const operation = effectiveEndDate < currentDay ? 'renewal' : 'extension';
+    return {
+        requestType: operation,
+        operation,
+        membershipStatus: operation === 'renewal' ? 'expired' : 'active',
+        currentMembershipId: Number(currentMembership.id),
+        effectiveEndDate,
+        freezeDays: frozenDays
+    };
+}
+
+async function resolveMemberRequestScenario(connection, memberId, { today = todayInTimeZone(), currentMembership = null } = {}) {
+    const id = ensureId(memberId);
+    const executor = connection || await getPool();
+    const current = currentMembership || await getRawMembership(executor, id);
+    if (!current || current.cancelled_at) {
+        return membershipRequestScenario({ currentMembership: current, today });
+    }
+    const freezeUsage = await getFreezeUsage(executor, id, current.id);
+    const activeFreeze = await getActiveFreeze(executor, current.id, today);
+    return membershipRequestScenario({ currentMembership: current, freezeDays: freezeUsage.freezeDays, activeFreeze, today });
+}
+
 function roundMoney(value) {
     return Math.round(Number(value || 0) * 100) / 100;
 }
@@ -1888,14 +1935,14 @@ async function createMembershipFromApprovedRequest({
     const id = ensureId(memberId);
     const plan = requiredString(membershipPlan || 'gym_only', 'Ø¨Ø§Ù‚Ø© Ø§Ù„Ø¹Ø¶ÙˆÙŠØ©', 30);
     const type = requiredString(membershipType, 'Ù†ÙˆØ¹ Ø§Ù„Ø¹Ø¶ÙˆÙŠØ©', 30);
-    const normalizedRequestType = String(requestType || 'membership').trim().toLowerCase();
-    if (!['membership', 'renewal'].includes(normalizedRequestType)) {
+    let normalizedRequestType = String(requestType || 'membership').trim().toLowerCase();
+    if (!['membership', 'extension', 'renewal'].includes(normalizedRequestType)) {
         throw appError('This member subscription request type is not supported.', 422, 'MEMBER_SUBSCRIPTION_REQUEST_TYPE_UNSUPPORTED');
     }
-    let start = normalizedRequestType === 'renewal'
+    let start = ['extension', 'renewal'].includes(normalizedRequestType)
         ? null
         : parseDateOnly(startDate, 'ØªØ§Ø±ÙŠØ® Ø§Ù„Ø¨Ø¯Ø§ÙŠØ©');
-    let end = normalizedRequestType === 'renewal'
+    let end = ['extension', 'renewal'].includes(normalizedRequestType)
         ? null
         : parseDateOnly(endDate, 'ØªØ§Ø±ÙŠØ® Ø§Ù„Ø§Ù†ØªÙ‡Ø§Ø¡');
     if (start && end < start) throw appError('ØªØ§Ø±ÙŠØ® Ø§Ù„Ø§Ù†ØªÙ‡Ø§Ø¡ ÙŠØ¬Ø¨ Ø£Ù† ÙŠÙƒÙˆÙ† Ø¨Ø¹Ø¯ Ø§Ù„Ø¨Ø¯Ø§ÙŠØ©.', 400);
@@ -1911,7 +1958,20 @@ async function createMembershipFromApprovedRequest({
         .query('SELECT TOP (1) id FROM dbo.members WITH (UPDLOCK,HOLDLOCK) WHERE id=@memberId;');
     if (!member.recordset[0]) throw appError('Ø§Ù„Ø¹Ø¶Ùˆ ØºÙŠØ± Ù…ÙˆØ¬ÙˆØ¯.', 404);
     const current = await getRawMembership(transaction, id);
-    if (normalizedRequestType === 'renewal') {
+    const scenario = await resolveMemberRequestScenario(transaction, id, { currentMembership: current });
+    if (scenario.requestType === 'membership') {
+        if (normalizedRequestType !== 'membership') {
+            throw appError(
+                'A renewal or extension requires an existing membership. Submit a new membership request instead.',
+                409,
+                'MEMBER_RENEWAL_REQUIRES_EXISTING'
+            );
+        }
+    } else {
+        // The member state is authoritative. This also safely upgrades older
+        // pending "membership" requests that were created before the portal
+        // selected the operation automatically.
+        normalizedRequestType = scenario.requestType;
         const renewalWindow = await resolveRenewalDates(transaction, {
             memberId: id,
             currentMembership: current,
@@ -1920,8 +1980,6 @@ async function createMembershipFromApprovedRequest({
         });
         start = renewalWindow.startDate;
         end = renewalWindow.endDate;
-    } else if (current && !current.cancelled_at && formatDateOnly(current.end_date) >= start) {
-        throw appError('ØªØ§Ø±ÙŠØ® Ø¨Ø¯Ø§ÙŠØ© Ø§Ù„Ø§Ø´ØªØ±Ø§Ùƒ Ø§Ù„Ø¬Ø¯ÙŠØ¯ ÙŠØ¬Ø¨ Ø£Ù† ÙŠÙ„ÙŠ Ø§Ù„Ø§Ø´ØªØ±Ø§Ùƒ Ø§Ù„Ø­Ø§Ù„ÙŠ.', 409);
     }
     const membershipResult = await transaction.request()
         .input('memberId', sql.Int, id)
@@ -1964,9 +2022,10 @@ async function createMembershipFromApprovedRequest({
             sourcePaymentId: paymentId
         })
         : null;
-    await addEvent(transaction, id, membershipId, normalizedRequestType === 'renewal' ? 'renewed' : 'activated', {
+    await addEvent(transaction, id, membershipId, ['extension', 'renewal'].includes(normalizedRequestType) ? 'renewed' : 'activated', {
         source: 'member_portal_subscription_request',
         sourceRequestId: sourceRequestId == null ? null : Number(sourceRequestId),
+        operation: normalizedRequestType,
         membershipPlan: plan,
         membershipType: type,
         startDate: start,
@@ -1976,7 +2035,7 @@ async function createMembershipFromApprovedRequest({
         amountDue: due,
         amountPaid: due
     });
-    return { membershipId, paymentId, ledgerTransactionId, startDate: start, endDate: end };
+    return { membershipId, paymentId, ledgerTransactionId, requestType: normalizedRequestType, operation: normalizedRequestType, startDate: start, endDate: end };
 }
 
 async function refundSubscription(id, body = {}, userId = null) {
@@ -2283,6 +2342,7 @@ module.exports = {
     getMembers,
     markAlertCommunication,
     calculateRenewalWindow,
+    membershipRequestScenario,
     membershipEndDateFromConfig,
     getPricingCatalog,
     createPricingPlan,
@@ -2292,6 +2352,7 @@ module.exports = {
     refundSubscription,
     renewMember,
     resolveRenewalDates,
+    resolveMemberRequestScenario,
     resumeMember,
     updateMembershipType,
     updatePricingPlan,

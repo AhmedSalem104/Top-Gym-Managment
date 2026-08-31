@@ -16,6 +16,7 @@ test('member request pending uniqueness is scoped by request type', () => {
     assert.match(schema, /ON dbo\.gym_member_subscription_requests\(tenant_id, member_id, request_type\)/);
     assert.doesNotMatch(schema, /ON dbo\.gym_member_subscription_requests\(tenant_id, member_id\)\s*WHERE status='pending'/);
     assert.equal(service.normalizeRequestType('membership'), 'membership');
+    assert.equal(service.normalizeRequestType('extension'), 'extension');
     assert.equal(service.normalizeRequestType('renewal'), 'renewal');
 });
 
@@ -23,6 +24,7 @@ test('future request types are schema-compatible but unsupported flows fail clos
     assert.throws(() => service.normalizeRequestType('freeze'), (error) => error.code === 'MEMBER_SUBSCRIPTION_REQUEST_TYPE_UNSUPPORTED');
     assert.match(source, /pending uniqueness by request_type/);
     assert.match(source, /SUPPORTED_REQUEST_TYPES/);
+    assert.match(source, /request_type IN \('membership','extension','renewal'\)/);
 });
 
 test('portal request scope comes from the resolved session and tenant is explicit in every query', () => {
@@ -102,14 +104,45 @@ test('renewal dates include recorded freeze days and are guarded by a valid dura
     );
 });
 
+test('portal operation is selected from membership state and blocks active freezes', () => {
+    assert.equal(
+        memberService.membershipRequestScenario({ today: '2026-09-01' }).requestType,
+        'membership'
+    );
+    assert.equal(
+        memberService.membershipRequestScenario({
+            currentMembership: { id: 10, end_date: '2026-09-29', cancelled_at: null },
+            today: '2026-09-01'
+        }).requestType,
+        'extension'
+    );
+    assert.equal(
+        memberService.membershipRequestScenario({
+            currentMembership: { id: 10, end_date: '2026-08-20', cancelled_at: null },
+            today: '2026-09-01'
+        }).requestType,
+        'renewal'
+    );
+    assert.throws(
+        () => memberService.membershipRequestScenario({
+            currentMembership: { id: 10, end_date: '2026-09-29', cancelled_at: null },
+            activeFreeze: { id: 3 },
+            today: '2026-09-01'
+        }),
+        (error) => error.code === 'MEMBERSHIP_FREEZE_ACTIVE' && error.statusCode === 409
+    );
+});
+
 test('approval recomputes renewal dates inside the membership transaction and persists the authoritative window', () => {
     assert.match(memberSource, /function calculateRenewalWindow\(/);
     assert.match(memberSource, /async function resolveRenewalDates\(/);
     assert.match(memberSource, /MEMBER_RENEWAL_REQUIRES_EXISTING/);
     assert.match(source, /durationMode: locked\.duration_mode/);
     assert.match(source, /durationValue: Number\(locked\.duration_value\)/);
-    assert.match(source, /SET start_date=@startDate,end_date=@endDate/);
-    assert.match(memberSource, /normalizedRequestType === 'renewal'/);
+    assert.match(source, /SET request_type=@requestType,start_date=@startDate,end_date=@endDate/);
+    assert.match(memberSource, /normalizedRequestType = scenario\.requestType/);
+    assert.match(memberSource, /\['extension', 'renewal'\]\.includes\(normalizedRequestType\)/);
+    assert.match(source, /createdResult\.requestType/);
 });
 
 test('member proof upload is private, checks integrity, and only records verified storage', () => {

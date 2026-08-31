@@ -293,6 +293,20 @@
     const member = data.member || {};
     const current = data.currentMembership || {};
     const status = current.status || 'expired';
+    const hasExistingMembership = Boolean(current.id && status !== 'cancelled');
+    const requestType = hasExistingMembership
+      ? (status === 'expired' ? 'renewal' : 'extension')
+      : 'membership';
+    const requestOperation = hasExistingMembership
+      ? (status === 'frozen' ? 'blocked' : requestType)
+      : 'membership';
+    const requestCanSubmit = !hasExistingMembership || status !== 'frozen';
+    document.documentElement.dataset.portalRequestType = requestType;
+    document.documentElement.dataset.portalRequestOperation = requestOperation;
+    document.documentElement.dataset.portalRequestCanSubmit = String(requestCanSubmit);
+    window.dispatchEvent(new CustomEvent('topgym:portal-session-change', {
+      detail: { requestType, operation: requestOperation, canSubmit: requestCanSubmit, membershipStatus: status }
+    }));
     const summary = data.financialSummary || {};
     const firstJoin = data.firstJoinDate || member.registrationDate;
     const remainingClass = number(summary.totalRemaining) > 0 ? 'portal-outstanding' : '';
@@ -358,6 +372,12 @@
 
   function resetPortalTenant() {
     delete document.body.dataset.brandingTenant;
+    delete document.documentElement.dataset.portalRequestType;
+    delete document.documentElement.dataset.portalRequestOperation;
+    delete document.documentElement.dataset.portalRequestCanSubmit;
+    window.dispatchEvent(new CustomEvent('topgym:portal-session-change', {
+      detail: { requestType: 'membership', operation: 'membership', canSubmit: true, membershipStatus: 'none' }
+    }));
     const brandingApi = window.topGymBranding;
     if (typeof brandingApi?.fallback === 'function' && typeof brandingApi?.apply === 'function') {
       brandingApi.apply(brandingApi.fallback(), 1);

@@ -15401,6 +15401,9 @@ body .swal2-popup.qr-member-preview-alert .swal2-actions > button.qr-member-prev
 .portal-subscription-grid select:focus,
 .portal-subscription-grid input:focus,
 .portal-subscription-notes textarea:focus { border-color: var(--primary); outline: 0; box-shadow: 0 0 0 3px var(--primary-soft); }
+.portal-subscription-grid select:disabled { opacity: 1; cursor: not-allowed; background: var(--bg-elevated); color: var(--text-primary); }
+.portal-subscription-grid label > small { color: var(--text-muted); font-size: 10px; font-weight: 600; line-height: 1.6; }
+.portal-subscription-grid label > small.is-blocked { color: var(--danger-text); }
 .portal-payment-methods,
 .portal-request-history { display: grid; gap: 12px; padding: 16px; border: 1px solid var(--border-secondary); border-radius: 16px; background: var(--bg-elevated); }
 .portal-payment-method-list,

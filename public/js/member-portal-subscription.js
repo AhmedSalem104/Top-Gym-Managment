@@ -8,13 +8,15 @@
     loading: false,
     submitting: false,
     proofRecoveryRequestId: null,
-    activationSeen: new Set()
+    activationSeen: new Set(),
+    requestScenario: null
   };
 
   const elements = {
     section: $('portalSubscriptionSection'),
     form: $('portalSubscriptionForm'),
     requestType: $('portalSubscriptionRequestType'),
+    scenarioHint: $('portalSubscriptionScenarioHint'),
     plan: $('portalSubscriptionPlan'),
     type: $('portalSubscriptionType'),
     startDate: $('portalSubscriptionStartDate'),
@@ -49,14 +51,14 @@
     const parsed = new Date(`${raw}T00:00:00`);
     return Number.isNaN(parsed.getTime()) ? escapeHtml(value) : new Intl.DateTimeFormat('ar-EG-u-ca-gregory', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(parsed);
   };
-  const requestTypeLabel = (value) => ({ membership: 'اشتراك جديد', renewal: 'تجديد العضوية' }[value] || 'طلب عضوية');
+  const requestTypeLabel = (value) => ({ membership: 'اشتراك جديد', extension: 'تمديد العضوية', renewal: 'تجديد العضوية' }[value] || 'طلب عضوية');
   const statusLabel = (value) => ({ pending: 'قيد المراجعة', approved: 'تم الاعتماد', rejected: 'مرفوض', cancelled: 'ملغي' }[value] || 'غير معروف');
   const activationStoragePrefix = 'logicfit.portal.activation-seen.v1:';
   const errorMessages = Object.freeze({
     PAYMENT_PROOF_REQUIRED: 'أرفق إثبات الدفع قبل إرسال الطلب.',
     PORTAL_SESSION_REQUIRED: 'انتهت جلسة البوابة. أعد إدخال كود العضوية.',
     PORTAL_SESSION_EXPIRED: 'انتهت جلسة البوابة. أعد إدخال كود العضوية.',
-    MEMBER_SUBSCRIPTION_REQUEST_ALREADY_PENDING: 'لديك طلب من نفس النوع قيد المراجعة بالفعل.',
+    MEMBER_SUBSCRIPTION_REQUEST_ALREADY_PENDING: 'لديك طلب اشتراك أو تمديد قيد المراجعة بالفعل. راجع حالته قبل إرسال طلب آخر.',
     PAYMENT_METHOD_NOT_AVAILABLE: 'وسيلة الدفع المختارة لم تعد متاحة. حدّث البيانات وحاول مرة أخرى.',
     MEMBERSHIP_PLAN_NOT_AVAILABLE: 'الباقة المختارة غير متاحة حاليًا.',
     MEMBERSHIP_TYPE_NOT_AVAILABLE: 'نوع العضوية المختار غير متاح حاليًا.',
@@ -80,7 +82,9 @@
     PAYMENT_PROOF_INTEGRITY_FAILED: 'تعذر التحقق من سلامة إثبات الدفع. أعد رفع الملف الأصلي.',
     MEMBER_RENEWAL_REQUIRES_EXISTING: 'لا يمكن تقديم طلب تجديد قبل وجود عضوية سابقة. اختر اشتراكًا جديدًا إذا كانت هذه أول عضوية.',
     MEMBERSHIP_FREEZE_ACTIVE: 'استأنف العضوية أولًا قبل تقديم طلب التجديد.',
-    MEMBERSHIP_START_OVERLAPS_CURRENT: 'سيبدأ التجديد تلقائيًا بعد نهاية العضوية الحالية.',
+    MEMBERSHIP_START_OVERLAPS_CURRENT: 'تداخلت بداية الطلب مع العضوية الحالية. سيحوّل النظام العملية إلى «تمديد العضوية» لتبدأ بعد نهايتها.',
+    MEMBERSHIP_CURRENT_DATES_INVALID: 'تواريخ العضوية الحالية غير صالحة. تواصل مع إدارة الجيم لتحديثها.',
+    MEMBERSHIP_RENEWAL_SNAPSHOT_INVALID: 'بيانات مدة العضوية غير صالحة. حدّث الصفحة وحاول مرة أخرى.',
     STORAGE_NOT_CONFIGURED: 'رفع إثبات الدفع غير متاح حاليًا لأن التخزين الخاص غير مهيأ.'
   });
 
@@ -171,17 +175,51 @@
     button.setAttribute('aria-busy', String(busy));
   }
 
+  function applyRequestScenario(detail = {}) {
+    const allowedTypes = new Set(['membership', 'extension', 'renewal']);
+    const requestType = allowedTypes.has(String(detail.requestType || ''))
+      ? String(detail.requestType)
+      : 'membership';
+    const operation = String(detail.operation || requestType);
+    const canSubmit = detail.canSubmit !== false;
+    state.requestScenario = { requestType, operation, canSubmit, resolved: true };
+    if (elements.requestType) {
+      elements.requestType.value = requestType;
+      elements.requestType.disabled = true;
+      elements.requestType.setAttribute('aria-readonly', 'true');
+      [...elements.requestType.options].forEach((option) => {
+        option.hidden = option.value !== requestType;
+      });
+    }
+    const hint = elements.scenarioHint;
+    if (hint) {
+      hint.textContent = operation === 'blocked'
+        ? 'عضويتك مجمدة حاليًا. استأنفها من إدارة الجيم قبل طلب التمديد أو التجديد.'
+        : operation === 'extension'
+          ? 'تم اختيار تمديد العضوية تلقائيًا؛ ستبدأ المدة الجديدة بعد نهاية عضويتك الحالية.'
+          : operation === 'renewal'
+            ? 'تم اختيار تجديد العضوية تلقائيًا؛ ستبدأ من اليوم لأن العضوية الحالية منتهية.'
+            : 'تم اختيار الاشتراك الجديد؛ حدد تاريخ البداية المناسب لك.';
+      hint.classList.toggle('is-blocked', operation === 'blocked');
+    }
+    syncRequestTypePresentation();
+    syncSubmitState();
+  }
+
   function syncRequestTypePresentation() {
-    const isRenewal = elements.requestType?.value === 'renewal';
-    if (elements.startDateLabel) elements.startDateLabel.textContent = isRenewal ? 'تاريخ بدء التجديد' : 'تاريخ البداية';
+    const requestType = state.requestScenario?.requestType || elements.requestType?.value || 'membership';
+    const isContinuation = ['extension', 'renewal'].includes(requestType);
+    if (elements.startDateLabel) elements.startDateLabel.textContent = requestType === 'extension' ? 'تاريخ بدء التمديد' : requestType === 'renewal' ? 'تاريخ بدء التجديد' : 'تاريخ البداية';
     if (elements.startDateHint) {
-      elements.startDateHint.textContent = isRenewal
-        ? 'يحدده النظام تلقائيًا بعد نهاية العضوية الحالية أو من اليوم إذا انتهت.'
+      elements.startDateHint.textContent = requestType === 'extension'
+        ? 'يحدده النظام تلقائيًا ليبدأ بعد نهاية العضوية الحالية.'
+        : requestType === 'renewal'
+          ? 'يحدده النظام تلقائيًا من اليوم لأن العضوية الحالية منتهية.'
         : 'يبدأ الاشتراك الجديد من التاريخ الذي تختاره.';
     }
     if (elements.startDate) {
-      elements.startDate.disabled = isRenewal;
-      if (isRenewal) {
+      elements.startDate.disabled = isContinuation;
+      if (isContinuation) {
         elements.startDate.value = '';
         elements.startDate.removeAttribute('required');
       } else {
@@ -189,6 +227,7 @@
         if (!elements.startDate.value) elements.startDate.value = today();
       }
     }
+    if (elements.requestType && state.requestScenario?.resolved) elements.requestType.disabled = true;
     updateSummary();
   }
 
@@ -252,7 +291,7 @@
     const type = activeType();
     const amount = plan && type ? state.catalog?.prices?.[plan.code]?.[type.code] : null;
     if (elements.summaryMembership) elements.summaryMembership.textContent = plan && type ? `${plan.label} · ${type.label}` : '—';
-    if (elements.summaryStart) elements.summaryStart.textContent = elements.requestType?.value === 'renewal'
+    if (elements.summaryStart) elements.summaryStart.textContent = ['extension', 'renewal'].includes(elements.requestType?.value)
       ? 'يحدده النظام تلقائيًا'
       : formatDate(elements.startDate?.value);
     if (elements.summaryAmount) elements.summaryAmount.innerHTML = amount == null ? 'سيحدده النظام بعد التحقق' : formatMoney(amount, state.catalog?.currency || 'EGP');
@@ -264,7 +303,8 @@
     const isProofRecovery = Number.isInteger(recoveryRequestId) && recoveryRequestId > 0;
     const label = elements.submit.querySelector('span:not(.portal-spinner)');
     if (label) label.textContent = isProofRecovery ? 'رفع إثبات الدفع' : 'إرسال طلب التفعيل';
-    elements.submit.disabled = state.submitting || (!isProofRecovery && (!state.catalog?.plans?.length || !state.catalog?.types?.length || !state.paymentMethods.length));
+    const scenarioBlocked = state.requestScenario?.resolved && state.requestScenario.canSubmit === false;
+    elements.submit.disabled = state.submitting || scenarioBlocked || (!isProofRecovery && (!state.catalog?.plans?.length || !state.catalog?.types?.length || !state.paymentMethods.length));
   }
 
   function renderHistory(items = []) {
@@ -320,6 +360,13 @@
       renderPlans();
       renderTypes();
       renderPaymentMethods();
+      if (!state.requestScenario?.resolved) {
+        applyRequestScenario({
+          requestType: document.documentElement.dataset.portalRequestType,
+          operation: document.documentElement.dataset.portalRequestOperation,
+          canSubmit: document.documentElement.dataset.portalRequestCanSubmit !== 'false'
+        });
+      }
       if (elements.startDate && !elements.startDate.value) elements.startDate.value = today();
       if (elements.startDate) elements.startDate.min = today();
       syncRequestTypePresentation();
@@ -406,8 +453,8 @@
     if (!file) { setFeedback('اختر إثبات الدفع أولًا.', 'error'); return; }
     if (file.size > 4 * 1024 * 1024) { setFeedback('حجم إثبات الدفع أكبر من الحد المسموح وهو 4MB.', 'error'); return; }
     if (!isProofRecovery && !selectedMethod()) { setFeedback('اختر وسيلة الدفع التي استخدمتها.', 'error'); return; }
-    const isRenewal = elements.requestType.value === 'renewal';
-    if (!isProofRecovery && !isRenewal && !elements.startDate.value) { setFeedback('حدد تاريخ بداية العضوية.', 'error'); elements.startDate.focus(); return; }
+    const isContinuation = ['extension', 'renewal'].includes(elements.requestType.value);
+    if (!isProofRecovery && !isContinuation && !elements.startDate.value) { setFeedback('حدد تاريخ بداية العضوية.', 'error'); elements.startDate.focus(); return; }
     state.submitting = true;
     syncSubmitState();
     setFeedback('', '');
@@ -420,7 +467,7 @@
         formData.append('requestType', elements.requestType.value);
         formData.append('membershipPlan', elements.plan.value);
         formData.append('membershipType', elements.type.value);
-        formData.append('startDate', isRenewal ? '' : elements.startDate.value);
+        formData.append('startDate', isContinuation ? '' : elements.startDate.value);
         formData.append('paymentMethodCode', selectedMethod().id);
         if (elements.notes.value) formData.append('notes', elements.notes.value);
         formData.append('proof', file, file.name || 'payment-proof');
@@ -467,6 +514,10 @@
 
   window.addEventListener('topgym:portal-subscription-open', () => {
     void load();
+  });
+
+  window.addEventListener('topgym:portal-session-change', (event) => {
+    applyRequestScenario(event.detail || {});
   });
 
   syncRequestTypePresentation();
