@@ -589,7 +589,7 @@ async function approveRequest(requestId, actorUserId, reviewNotes = '') {
             || String(lockedProof.sha256 || '').toLowerCase() !== String(initialProof?.sha256 || '').toLowerCase()) {
             throw requestError('The payment proof changed during review. Please reload and verify it again.', 409, 'PAYMENT_PROOF_CHANGED');
         }
-        created = await memberService.createMembershipFromApprovedRequest({
+        const createdResult = await memberService.createMembershipFromApprovedRequest({
             transaction,
             memberId: locked.member_id,
             requestType: locked.request_type,
@@ -612,11 +612,11 @@ async function approveRequest(requestId, actorUserId, reviewNotes = '') {
             .input('requestId', sql.BigInt, positiveId(requestId, 'request id'))
             .input('actorId', sql.Int, actorId)
             .input('reviewNotes', sql.NVarChar(1000), text(reviewNotes, '', 1000) || null)
-            .input('membershipId', sql.Int, created.membershipId)
-            .input('paymentId', sql.Int, created.paymentId)
-            .input('ledgerTransactionId', sql.Int, created.ledgerTransactionId)
-            .input('startDate', sql.Date, new Date(`${created.startDate}T00:00:00.000Z`))
-            .input('endDate', sql.Date, new Date(`${created.endDate}T00:00:00.000Z`))
+            .input('membershipId', sql.Int, createdResult.membershipId)
+            .input('paymentId', sql.Int, createdResult.paymentId)
+            .input('ledgerTransactionId', sql.Int, createdResult.ledgerTransactionId)
+            .input('startDate', sql.Date, new Date(`${createdResult.startDate}T00:00:00.000Z`))
+            .input('endDate', sql.Date, new Date(`${createdResult.endDate}T00:00:00.000Z`))
             .query(`UPDATE dbo.gym_member_subscription_requests
                     SET start_date=@startDate,end_date=@endDate,
                         status='approved',reviewed_by_user_id=@actorId,reviewed_at=SYSUTCDATETIME(),
@@ -624,6 +624,11 @@ async function approveRequest(requestId, actorUserId, reviewNotes = '') {
                         created_payment_id=@paymentId,created_ledger_transaction_id=@ledgerTransactionId,
                         updated_at=SYSUTCDATETIME()
                     WHERE id=@requestId AND tenant_id=@tenantId AND status='pending';`);
+        created = {
+            membershipId: createdResult.membershipId,
+            paymentId: createdResult.paymentId,
+            ledgerTransactionId: createdResult.ledgerTransactionId
+        };
         await saasService.recordAudit({
             tenantId,
             actorUserId: actorId,
