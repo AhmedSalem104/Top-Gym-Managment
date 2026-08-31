@@ -239,7 +239,13 @@ async function assertDesktopNavigation(page) {
             sidebarVisible: Boolean(sidebar && getComputedStyle(sidebar).display !== 'none'),
             sidebarWidth: sidebarRect ? Math.round(sidebarRect.width) : 0,
             sidebarRect: sidebarRect ? { left: sidebarRect.left, right: sidebarRect.right, top: sidebarRect.top } : null,
-            topbarRect: topbarRect ? { left: topbarRect.left, right: topbarRect.right, top: topbarRect.top } : null,
+            sidebarLabel: (() => {
+                const label = sidebar?.querySelector('.page-tab > span');
+                if (!label) return null;
+                const style = getComputedStyle(label);
+                return { maxWidth: style.maxWidth, opacity: style.opacity };
+            })(),
+            topbarRect: topbarRect ? { left: topbarRect.left, right: topbarRect.right, top: topbarRect.top, bottom: topbarRect.bottom } : null,
             gridColumns: shellStyle?.gridTemplateColumns || ''
         };
     });
@@ -247,14 +253,15 @@ async function assertDesktopNavigation(page) {
     assert(closed.topbarVisible, 'desktop navbar is hidden');
     assert(closed.sidebarVisible, 'desktop sidebar is hidden');
     assert(closed.sidebarWidth >= 64 && closed.sidebarWidth <= 120, `desktop sidebar is not compact before hover (${closed.sidebarWidth}px)`);
-    assert(closed.sidebarRect && closed.topbarRect && (closed.sidebarRect.right <= closed.topbarRect.left + 1 || closed.topbarRect.right <= closed.sidebarRect.left + 1), 'desktop sidebar intersects navbar before hover');
+    assert(closed.sidebarRect && closed.topbarRect && (closed.sidebarRect.top >= closed.topbarRect.bottom - 1 || closed.topbarRect.top >= closed.sidebarRect.top + 1), 'desktop sidebar intersects navbar before hover');
 
     await page.locator('#pageTabs').hover();
     await page.waitForTimeout(320);
     const expanded = await readLayout();
     assert(expanded.sidebarWidth >= closed.sidebarWidth + 80, `desktop sidebar did not expand on hover (${closed.sidebarWidth}px -> ${expanded.sidebarWidth}px)`);
-    assert(expanded.sidebarRect && expanded.topbarRect && (expanded.sidebarRect.right <= expanded.topbarRect.left + 1 || expanded.topbarRect.right <= expanded.sidebarRect.left + 1), 'desktop sidebar intersects navbar after hover');
-    assert(expanded.gridColumns !== closed.gridColumns, 'desktop grid did not allocate a separate expanded sidebar track');
+    assert(expanded.sidebarRect && expanded.topbarRect && (expanded.sidebarRect.top >= expanded.topbarRect.bottom - 1 || expanded.topbarRect.top >= expanded.sidebarRect.top + 1), 'desktop sidebar intersects navbar after hover');
+    assert(expanded.gridColumns === closed.gridColumns, 'desktop grid changed on hover and may cause a layout jolt');
+    assert(expanded.sidebarLabel && Number.parseFloat(expanded.sidebarLabel.maxWidth) > 0 && Number.parseFloat(expanded.sidebarLabel.opacity) > 0, 'desktop sidebar labels stay hidden after hover');
 }
 
 async function run() {

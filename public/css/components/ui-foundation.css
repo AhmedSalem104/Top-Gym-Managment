@@ -527,3 +527,75 @@
     transition: none;
   }
 }
+
+/* Stable hover rail refinement for the Gym App.
+   Keep the grid track compact at all times so opening the rail never nudges
+   the working area. The rail starts below the utility bar and grows over the
+   app canvas only; therefore it cannot cover or collide with the navbar. */
+@media (min-width: 1200px) {
+  .app-shell,
+  .app-shell:has(> .page-tabs:hover),
+  .app-shell:has(> .page-tabs:focus-within),
+  .app-shell:has(> .page-tabs.is-pinned) {
+    grid-template-columns: var(--sidebar-width-collapsed, 84px) minmax(0, 1fr);
+    grid-template-rows: 80px minmax(0, 1fr);
+    transition: none;
+  }
+
+  .app-shell > .topbar {
+    grid-column: 1 / -1;
+    grid-row: 1;
+  }
+
+  .app-shell > .page-tabs {
+    grid-column: 1;
+    grid-row: 2;
+    top: 80px;
+    width: var(--sidebar-width-collapsed, 84px);
+    min-width: var(--sidebar-width-collapsed, 84px);
+    height: calc(100dvh - 80px);
+    min-height: calc(100dvh - 80px);
+    overflow-x: hidden;
+    overflow-y: auto;
+    padding-top: 18px;
+    border-top: 0;
+    border-bottom: 0;
+    border-inline-end: 1px solid var(--sidebar-divider);
+    transition: width 280ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 200ms ease;
+    will-change: width;
+  }
+
+  .app-shell > .page-tabs:hover,
+  .app-shell > .page-tabs:focus-within,
+  .app-shell > .page-tabs.is-pinned {
+    width: var(--sidebar-width-expanded, 292px);
+    min-width: var(--sidebar-width-expanded, 292px);
+    box-shadow: var(--shadow-popup);
+  }
+
+  .app-shell > .page-tabs:hover > .page-tab > span,
+  .app-shell > .page-tabs:focus-within > .page-tab > span,
+  .app-shell > .page-tabs.is-pinned > .page-tab > span,
+  .app-shell > .page-tabs:hover > .auth-account-bar .auth-logout-button > span,
+  .app-shell > .page-tabs:focus-within > .auth-account-bar .auth-logout-button > span,
+  .app-shell > .page-tabs.is-pinned > .auth-account-bar .auth-logout-button > span,
+  .app-shell > .page-tabs:hover > .smart-assistant-launcher .smart-assistant-launcher-label,
+  .app-shell > .page-tabs:focus-within > .smart-assistant-launcher .smart-assistant-launcher-label {
+    max-width: 220px;
+    opacity: 1;
+    transform: translateX(0);
+    pointer-events: auto;
+  }
+
+  .app-shell > main.page {
+    grid-column: 2;
+    grid-row: 2;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) and (min-width: 1200px) {
+  .app-shell > .page-tabs {
+    transition: none;
+    will-change: auto;
+  }
+}

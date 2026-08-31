@@ -35,8 +35,11 @@ body.auth-pending::before {
 
 .top-gym-navigation-pending .page-tabs,
 .top-gym-navigation-pending .page {
-  pointer-events: none;
-  opacity: .72;
+  /* Navigation requests already have a token/idempotency guard in
+     page-tabs.js. Do not disable the whole application while an optional
+     feature script is loading: a delayed script must never make every
+     control appear dead. Keep only a subtle visual pending signal. */
+  opacity: .86;
   transition: opacity 160ms ease;
 }
 
