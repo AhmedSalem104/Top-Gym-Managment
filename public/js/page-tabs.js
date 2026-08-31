@@ -383,7 +383,10 @@
         setHidden(portalAnalyticsSection, !isPortalAnalytics);
         const hideAnalytics = !isDashboard || !window.topGymAuth?.isOwner?.();
         setHidden(analyticsSection, hideAnalytics);
-        setHidden(dashboardStoreSummary, !isDashboard);
+        // Dashboard data can finish after the user has already moved to a
+        // different tab. Only reveal the optional store summary when both
+        // conditions are true; the dashboard renderer owns availability.
+        setHidden(dashboardStoreSummary, !isDashboard || dashboardStoreSummary?.dataset.dashboardStoreAvailable !== 'true');
         analyticsSection?.setAttribute('aria-hidden', String(hideAnalytics));
         setHidden(reportsSection, !isReports);
         setHidden(feedbackSection, !isFeedback);

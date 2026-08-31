@@ -43,12 +43,12 @@
   line-height: 1.35;
 }
 
-:where(.btn, .platform-btn, .platform-link-btn):disabled,
-:where(.btn, .platform-btn, .platform-link-btn)[aria-busy="true"] {
+:where(button.btn, button.platform-btn, button.platform-link-btn):disabled,
+:where(button.btn, button.platform-btn, button.platform-link-btn)[aria-busy="true"] {
   cursor: wait;
 }
 
-:where(.btn.is-loading, .platform-btn.is-loading, [aria-busy="true"]) {
+:where(.btn.is-loading, .platform-btn.is-loading, button[aria-busy="true"]) {
   pointer-events: none;
 }
 

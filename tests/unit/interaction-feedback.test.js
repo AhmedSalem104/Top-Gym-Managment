@@ -31,6 +31,29 @@ test('feedback CSS has accessible loading, toast and reduced-motion states', () 
     assert.match(styles, /pointer-events:\s*auto/);
 });
 
+test('aria-busy only blocks the busy control, never an entire section', () => {
+    const styles = read('public/css/components/ui-foundation.css');
+
+    assert.match(styles, /button\[aria-busy="true"\]/);
+    assert.doesNotMatch(styles, /:where\([^)]*,\s*\[aria-busy="true"\]\)/);
+});
+
+test('late dashboard data cannot reveal the store summary outside the dashboard tab', () => {
+    const app = read('public/js/app.js');
+    const tabs = read('public/js/page-tabs.js');
+
+    assert.match(app, /function isDashboardViewActive\(\)/);
+    assert.match(app, /storeSummary\.hidden = !store \|\| !isDashboardViewActive\(\)/);
+    assert.match(app, /storeSummary\.dataset\.dashboardStoreAvailable = String\(Boolean\(store\)\)/);
+    assert.match(tabs, /dashboardStoreSummary\?\.dataset\.dashboardStoreAvailable !== 'true'/);
+});
+
+test('member dialog is moved out of hidden workspace before a topbar open', () => {
+    const app = read('public/js/app.js');
+
+    assert.match(app, /if \(dialog\?\.closest\('\.workspace'\)\) document\.body\.appendChild\(dialog\)/);
+});
+
 test('critical surfaces load the same feedback layer with context-aware labels', () => {
     const index = read('public/index.html');
     const portal = read('public/member-portal.html');

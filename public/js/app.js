@@ -224,6 +224,17 @@
                 || 'dashboard';
         }
 
+        function isDashboardViewActive() {
+            // The active button is updated synchronously when navigation starts,
+            // while the document dataset is updated after the tab transition.
+            // Prefer the button so a late dashboard response cannot briefly
+            // reveal dashboard-only content on the destination view.
+            const activeButton = document.querySelector('[data-page-tab].active');
+            if (activeButton) return activeButton.dataset.pageTab === 'dashboard';
+            const activeTab = document.documentElement.dataset.topGymActiveTab;
+            return activeTab ? activeTab === 'dashboard' : true;
+        }
+
         async function loadData() {
             if (!window.topGymAuth?.getUser?.()) return;
             if (dataLoadPromise) return dataLoadPromise;
@@ -306,7 +317,8 @@
              const store = dashboard.store;
              const storeSummary = $('dashboardStoreSummary');
              if (storeSummary) {
-                 storeSummary.hidden = !store;
+                 storeSummary.dataset.dashboardStoreAvailable = String(Boolean(store));
+                 storeSummary.hidden = !store || !isDashboardViewActive();
                  if (store) {
                      const summary = store.summary || {};
                      const profit = store.profit || {};
@@ -553,6 +565,11 @@
                 if (canReadPricing()) await loadPricingCatalog();
                 if (member) editMember(member); else setFormDefaults();
                 const dialog = $('memberDialog');
+                // This modal lives in the members workspace for legacy markup
+                // compatibility, but that workspace is hidden on dashboard and
+                // other views. Move it to a stable root before opening it so a
+                // topbar action never opens a 0x0 dialog.
+                if (dialog?.closest('.workspace')) document.body.appendChild(dialog);
                 if (typeof dialog.showModal === 'function') dialog.showModal();
                 else dialog.setAttribute('open', '');
             } catch (error) {
