@@ -17,6 +17,13 @@
   background: var(--bg-app);
   color: var(--text-primary);
   direction: rtl;
+
+  /* Navigation motion is intentionally local to the shell. Keeping these
+     values here prevents a sidebar refinement from changing motion elsewhere
+     in the product. */
+  --sidebar-rail-transition: 240ms cubic-bezier(0.22, 1, 0.36, 1);
+  --sidebar-item-transition: 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  --sidebar-label-transition: 220ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 /* App lifecycle states stay with the shell so release/lock transitions do not
@@ -334,24 +341,52 @@
   width: min(86vw, 336px);
   min-width: 0;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: var(--space-1);
   overflow-x: hidden;
   overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-color: var(--sidebar-text-muted) transparent;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
   border-inline-start: 1px solid var(--sidebar-divider);
-  background: var(--bg-sidebar);
+  background: linear-gradient(180deg, var(--bg-header), var(--bg-sidebar));
   color: var(--sidebar-text);
   padding: var(--space-4) var(--space-3) var(--space-5);
   box-shadow: var(--shadow-popup);
   transform: translateX(110%);
   visibility: hidden;
   pointer-events: none;
-  transition: transform var(--transition-slow), visibility var(--transition-slow);
+  transition: transform var(--sidebar-rail-transition), visibility 0s linear var(--sidebar-rail-transition);
+}
+
+.app-shell > .page-tabs::-webkit-scrollbar {
+  width: 5px;
+}
+
+.app-shell > .page-tabs::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.app-shell > .page-tabs::-webkit-scrollbar-thumb {
+  border: 1px solid transparent;
+  border-radius: var(--radius-pill);
+  background: var(--sidebar-text-muted);
+  opacity: .52;
+  background: color-mix(in srgb, var(--sidebar-text-muted) 52%, transparent);
+  background-clip: padding-box;
+}
+
+.app-shell > .page-tabs::-webkit-scrollbar-thumb:hover {
+  background: var(--sidebar-text-muted);
+  opacity: 1;
+  background-clip: padding-box;
 }
 
 .app-shell.mobile-nav-open > .page-tabs {
   transform: translateX(0);
   visibility: visible;
   pointer-events: auto;
+  transition: transform var(--sidebar-rail-transition), visibility 0s;
 }
 
 body.mobile-nav-open {
@@ -376,10 +411,10 @@ body.mobile-nav-open {
 
 .mobile-nav-close {
   display: inline-flex;
-  width: 40px;
-  min-width: 40px;
-  height: 40px;
-  min-height: 40px;
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  min-height: 44px;
   align-items: center;
   justify-content: center;
   border: 1px solid var(--sidebar-divider);
@@ -387,6 +422,8 @@ body.mobile-nav-open {
   background: transparent;
   color: var(--sidebar-text-muted);
   padding: 0;
+  touch-action: manipulation;
+  transition: background-color var(--sidebar-item-transition), border-color var(--sidebar-item-transition), color var(--sidebar-item-transition), transform var(--sidebar-item-transition);
 }
 
 .mobile-nav-close:hover,
@@ -394,6 +431,7 @@ body.mobile-nav-open {
   border-color: var(--primary-border);
   background: var(--sidebar-hover-bg);
   color: var(--sidebar-text);
+  transform: translateY(-1px);
 }
 
 .mobile-nav-close .ui-icon {
@@ -403,10 +441,12 @@ body.mobile-nav-open {
 
 .app-shell > .page-tabs > .page-tab,
 .app-shell > .page-tabs > .smart-assistant-launcher {
+  position: relative;
+  isolation: isolate;
   display: flex;
   width: 100%;
   min-width: 0;
-  min-height: 48px;
+  min-height: 50px;
   flex: 0 0 auto;
   align-items: center;
   justify-content: flex-start;
@@ -419,17 +459,24 @@ body.mobile-nav-open {
   font-size: var(--font-sm);
   font-weight: var(--weight-semibold);
   text-align: start;
+  touch-action: manipulation;
   white-space: nowrap;
-  transition: background-color var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
+  transition: background-color var(--sidebar-item-transition), border-color var(--sidebar-item-transition), color var(--sidebar-item-transition), box-shadow var(--sidebar-item-transition), transform var(--sidebar-item-transition);
 }
 
-.app-shell > .page-tabs > .smart-assistant-launcher {
-  position: static;
-  inset: auto;
-  z-index: auto;
-  min-width: 0;
-  height: auto;
-  box-shadow: none;
+.app-shell > .page-tabs > .page-tab::before,
+.app-shell > .page-tabs > .smart-assistant-launcher::before {
+  position: absolute;
+  z-index: 0;
+  inset-block: 9px;
+  inset-inline-end: 4px;
+  width: 3px;
+  border-radius: var(--radius-pill);
+  background: var(--sidebar-active-text);
+  content: "";
+  opacity: 0;
+  transform: scaleY(.55);
+  transition: opacity var(--sidebar-item-transition), transform var(--sidebar-item-transition);
 }
 
 .app-shell > .page-tabs > .page-tab:hover,
@@ -439,6 +486,16 @@ body.mobile-nav-open {
   border-color: var(--sidebar-divider);
   background: var(--sidebar-hover-bg);
   color: var(--sidebar-text);
+  transform: translateX(-2px);
+}
+
+.app-shell > .page-tabs > .smart-assistant-launcher {
+  position: relative;
+  inset: auto;
+  z-index: 0;
+  min-width: 0;
+  height: auto;
+  box-shadow: none;
 }
 
 .app-shell > .page-tabs > .page-tab.active,
@@ -450,17 +507,50 @@ body.mobile-nav-open {
   box-shadow: var(--sidebar-active-shadow);
 }
 
+.app-shell > .page-tabs > .page-tab.active::before,
+.app-shell > .page-tabs > .page-tab[aria-selected="true"]::before,
+.app-shell > .page-tabs > .smart-assistant-launcher[aria-expanded="true"]::before {
+  opacity: 1;
+  transform: scaleY(1);
+}
+
 .app-shell > .page-tabs > .page-tab .ui-icon,
 .app-shell > .page-tabs > .smart-assistant-launcher .ui-icon {
-  width: 22px;
-  height: 22px;
-  flex: 0 0 22px;
+  box-sizing: border-box;
+  display: block;
+  width: 32px;
+  height: 32px;
+  flex: 0 0 32px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  color: currentColor;
+  padding: 6px;
   stroke-width: 1.9;
+  transition: background-color var(--sidebar-item-transition), border-color var(--sidebar-item-transition), color var(--sidebar-item-transition), transform var(--sidebar-item-transition);
+}
+
+.app-shell > .page-tabs > .page-tab:hover .ui-icon,
+.app-shell > .page-tabs > .page-tab:focus-visible .ui-icon,
+.app-shell > .page-tabs > .smart-assistant-launcher:hover .ui-icon,
+.app-shell > .page-tabs > .smart-assistant-launcher:focus-visible .ui-icon {
+  border-color: var(--sidebar-divider);
+  background: var(--sidebar-hover-bg);
+  color: var(--primary-hover);
+  transform: translateX(-1px);
+}
+
+.app-shell > .page-tabs > .page-tab.active .ui-icon,
+.app-shell > .page-tabs > .page-tab[aria-selected="true"] .ui-icon,
+.app-shell > .page-tabs > .smart-assistant-launcher[aria-expanded="true"] .ui-icon {
+  border-color: var(--sidebar-divider);
+  background: var(--sidebar-hover-bg);
+  color: var(--sidebar-active-text);
 }
 
 .app-shell > .page-tabs > .page-tab > span,
 .smart-assistant-launcher-label,
 .sidebar-brand-copy {
+  flex: 1 1 auto;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -470,15 +560,17 @@ body.mobile-nav-open {
 .sidebar-pin-control {
   display: flex;
   justify-content: flex-start;
-  padding: var(--space-2) var(--space-2) 0;
+  margin-block-start: var(--space-2);
+  padding: var(--space-3) var(--space-2) 0;
+  border-top: 1px solid var(--sidebar-divider);
 }
 
 .sidebar-pin-button {
   display: inline-flex;
-  width: 40px;
-  min-width: 40px;
-  height: 40px;
-  min-height: 40px;
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  min-height: 44px;
   align-items: center;
   justify-content: center;
   border: 1px solid var(--sidebar-divider);
@@ -486,6 +578,8 @@ body.mobile-nav-open {
   background: var(--sidebar-hover-bg);
   color: var(--sidebar-text-muted);
   padding: 0;
+  touch-action: manipulation;
+  transition: background-color var(--sidebar-item-transition), border-color var(--sidebar-item-transition), color var(--sidebar-item-transition), transform var(--sidebar-item-transition);
 }
 
 .sidebar-pin-button:hover,
@@ -494,6 +588,7 @@ body.mobile-nav-open {
   border-color: var(--primary-border);
   background: var(--primary-soft);
   color: var(--sidebar-text);
+  transform: translateY(-1px);
 }
 
 .sidebar-pin-button .ui-icon {
@@ -510,6 +605,7 @@ body.mobile-nav-open {
   margin: 0 0 var(--space-2);
   padding: 0 var(--space-2) var(--space-3);
   border-bottom: 1px solid var(--sidebar-divider);
+  transition: width var(--sidebar-rail-transition), padding var(--sidebar-rail-transition), gap var(--sidebar-rail-transition);
 }
 
 .sidebar-brand-mark {
@@ -521,8 +617,9 @@ body.mobile-nav-open {
   overflow: hidden;
   border: 1px solid var(--sidebar-divider);
   border-radius: var(--radius-md);
-  background: var(--sidebar-hover-bg);
+  background: var(--bg-header);
   color: var(--sidebar-text);
+  transition: background-color var(--sidebar-item-transition), border-color var(--sidebar-item-transition), transform var(--sidebar-item-transition);
 }
 
 .sidebar-brand-mark img {
@@ -540,7 +637,9 @@ body.mobile-nav-open {
 
 .sidebar-brand-copy {
   display: grid;
+  flex: 1 1 auto;
   gap: 2px;
+  transition: max-width var(--sidebar-label-transition), opacity var(--sidebar-label-transition), transform var(--sidebar-label-transition), visibility 0s linear var(--sidebar-label-transition);
 }
 
 .sidebar-brand-copy strong {
@@ -556,6 +655,36 @@ body.mobile-nav-open {
   line-height: 1.4;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.sidebar-floating-tooltip {
+  position: fixed;
+  z-index: var(--z-toast);
+  max-width: 220px;
+  border: 1px solid var(--sidebar-divider);
+  border-radius: var(--radius-sm);
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  padding: var(--space-2) var(--space-3);
+  box-shadow: var(--shadow-sm);
+  font-size: var(--font-xs);
+  font-weight: var(--weight-semibold);
+  line-height: 1.4;
+  pointer-events: none;
+  text-align: start;
+  white-space: nowrap;
+  opacity: 0;
+  transform: translateY(-50%) translateX(4px);
+  transition: opacity 160ms cubic-bezier(0.2, 0.8, 0.2, 1), transform 160ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.sidebar-floating-tooltip.is-visible {
+  opacity: 1;
+  transform: translateY(-50%);
+}
+
+.sidebar-floating-tooltip[hidden] {
+  display: none;
 }
 
 .mobile-nav-backdrop:not([hidden]) {
@@ -599,11 +728,10 @@ body.mobile-nav-open {
     display: grid;
     grid-template-columns: var(--sidebar-width-collapsed) minmax(0, 1fr);
     grid-template-rows: 80px minmax(0, 1fr);
-    transition: grid-template-columns var(--transition-slow);
+    transition: grid-template-columns var(--sidebar-rail-transition);
   }
 
   .app-shell.sidebar-expanded,
-  .app-shell:has(> .page-tabs:hover),
   .app-shell:has(> .page-tabs:focus-within),
   .app-shell:has(> .page-tabs.is-pinned) {
     grid-template-columns: var(--sidebar-width-expanded) minmax(0, 1fr);
@@ -633,6 +761,9 @@ body.mobile-nav-open {
     flex-direction: column;
     overflow-x: hidden;
     overflow-y: auto;
+    scrollbar-color: var(--sidebar-text-muted) transparent;
+    scrollbar-gutter: stable;
+    scrollbar-width: thin;
     border: 0;
     border-inline-end: 1px solid var(--sidebar-divider);
     border-radius: 0;
@@ -641,7 +772,7 @@ body.mobile-nav-open {
     transform: none;
     visibility: visible;
     pointer-events: auto;
-    transition: background-color var(--transition-fast), border-color var(--transition-fast);
+    transition: background-color var(--sidebar-rail-transition), border-color var(--sidebar-rail-transition), box-shadow var(--sidebar-rail-transition);
   }
 
   .app-shell > .page-tabs > .mobile-nav-header {
@@ -652,7 +783,7 @@ body.mobile-nav-open {
   .app-shell > .page-tabs > .smart-assistant-launcher {
     width: 56px;
     min-width: 56px;
-    min-height: 52px;
+    min-height: 50px;
     align-self: center;
     justify-content: center;
     gap: 0;
@@ -661,11 +792,13 @@ body.mobile-nav-open {
 
   .app-shell > .page-tabs > .page-tab > span,
   .app-shell > .page-tabs > .smart-assistant-launcher-label,
-  .app-shell > .page-tabs > .sidebar-brand-copy {
+  .app-shell > .page-tabs > .sidebar-brand > .sidebar-brand-copy {
     max-width: 0;
+    max-inline-size: 0;
     opacity: 0;
+    transform: translateX(-4px);
     visibility: hidden;
-    transition: max-width var(--transition-normal), opacity var(--transition-normal), visibility var(--transition-normal);
+    transition: max-inline-size var(--sidebar-label-transition), opacity 140ms ease, transform var(--sidebar-label-transition), visibility 0s linear var(--sidebar-label-transition);
   }
 
   .app-shell > .page-tabs > .sidebar-brand {
@@ -689,12 +822,10 @@ body.mobile-nav-open {
   }
 
   .app-shell > .page-tabs > .sidebar-pin-control .sidebar-pin-button {
-    width: 40px;
-    min-width: 40px;
+    width: 44px;
+    min-width: 44px;
   }
 
-  .app-shell > .page-tabs:hover > .page-tab,
-  .app-shell > .page-tabs:hover > .smart-assistant-launcher,
   .app-shell > .page-tabs.is-hovered > .page-tab,
   .app-shell > .page-tabs.is-hovered > .smart-assistant-launcher,
   .app-shell > .page-tabs:focus-within > .page-tab,
@@ -709,24 +840,23 @@ body.mobile-nav-open {
     padding-inline: var(--space-3);
   }
 
-  .app-shell > .page-tabs:hover > .page-tab > span,
-  .app-shell > .page-tabs:hover > .smart-assistant-launcher-label,
-  .app-shell > .page-tabs:hover > .sidebar-brand-copy,
   .app-shell > .page-tabs.is-hovered > .page-tab > span,
   .app-shell > .page-tabs.is-hovered > .smart-assistant-launcher-label,
-  .app-shell > .page-tabs.is-hovered > .sidebar-brand-copy,
+  .app-shell > .page-tabs.is-hovered > .sidebar-brand > .sidebar-brand-copy,
   .app-shell > .page-tabs:focus-within > .page-tab > span,
   .app-shell > .page-tabs:focus-within > .smart-assistant-launcher-label,
-  .app-shell > .page-tabs:focus-within > .sidebar-brand-copy,
+  .app-shell > .page-tabs:focus-within > .sidebar-brand > .sidebar-brand-copy,
   .app-shell > .page-tabs.is-pinned > .page-tab > span,
   .app-shell > .page-tabs.is-pinned > .smart-assistant-launcher-label,
-  .app-shell > .page-tabs.is-pinned > .sidebar-brand-copy {
+  .app-shell > .page-tabs.is-pinned > .sidebar-brand > .sidebar-brand-copy {
     max-width: 220px;
+    max-inline-size: 220px;
     opacity: 1;
+    transform: none;
     visibility: visible;
+    transition: max-inline-size var(--sidebar-label-transition), opacity 160ms ease 40ms, transform var(--sidebar-label-transition), visibility 0s;
   }
 
-  .app-shell > .page-tabs:hover > .sidebar-brand,
   .app-shell > .page-tabs.is-hovered > .sidebar-brand,
   .app-shell > .page-tabs:focus-within > .sidebar-brand,
   .app-shell > .page-tabs.is-pinned > .sidebar-brand {
@@ -737,7 +867,6 @@ body.mobile-nav-open {
     padding-inline: var(--space-2);
   }
 
-  .app-shell > .page-tabs:hover > .sidebar-pin-control,
   .app-shell > .page-tabs.is-hovered > .sidebar-pin-control,
   .app-shell > .page-tabs:focus-within > .sidebar-pin-control,
   .app-shell > .page-tabs.is-pinned > .sidebar-pin-control {
@@ -762,7 +891,7 @@ body.mobile-nav-open {
     order: -2;
   }
 
-  .app-shell > .page-tabs > .sidebar-brand-copy,
+  .app-shell > .page-tabs > .sidebar-brand > .sidebar-brand-copy,
   .app-shell > .page-tabs > .page-tab > span,
   .app-shell > .page-tabs > .smart-assistant-launcher-label {
     max-width: 220px;
@@ -943,8 +1072,16 @@ html[data-brand-active-style="pill"] .app-shell > .page-tabs > .page-tab.active 
   .mobile-nav-toggle,
   .auth-logout-button,
   .app-shell > .page-tabs > .page-tab > span,
+  .app-shell > .page-tabs > .page-tab,
+  .app-shell > .page-tabs > .page-tab .ui-icon,
+  .app-shell > .page-tabs > .smart-assistant-launcher,
+  .app-shell > .page-tabs > .smart-assistant-launcher .ui-icon,
+  .sidebar-pin-button,
+  .sidebar-brand,
+  .sidebar-brand-mark,
   .smart-assistant-launcher-label,
-  .sidebar-brand-copy {
+  .sidebar-brand-copy,
+  .sidebar-floating-tooltip {
     transition: none;
   }
 }

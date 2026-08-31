@@ -15,21 +15,27 @@ test('navigation pending state keeps the Gym App controls interactive', () => {
 
 test('desktop sidebar hover contract expands a safe layout track and reveals labels', () => {
     const source = fs.readFileSync(path.join(root, 'public/css/components/navigation-shell.css'), 'utf8');
+    const script = fs.readFileSync(path.join(root, 'public/js/page-tabs.js'), 'utf8');
 
     assert.match(source, /grid-template-columns:\s*var\(--sidebar-width-collapsed\)\s+minmax\(0,\s*1fr\)/u);
     assert.match(source, /\.app-shell\.sidebar-expanded[\s\S]*?grid-template-columns:\s*var\(--sidebar-width-expanded\)\s+minmax\(0,\s*1fr\)/u);
     assert.match(source, /\.app-shell\s*>\s*main\.page[\s\S]*?grid-column:\s*2/u);
-    assert.match(source, /\.app-shell\s*>\s*\.page-tabs:hover\s*>\s*\.page-tab\s*>\s*span[\s\S]*?opacity:\s*1/u);
+    assert.match(source, /\.app-shell\s*>\s*\.page-tabs\.is-hovered\s*>\s*\.page-tab\s*>\s*span[\s\S]*?opacity:\s*1/u);
+    assert.match(source, /\.app-shell\s*>\s*\.page-tabs\s*>\s*\.sidebar-brand\s*>\s*\.sidebar-brand-copy[\s\S]*?max-inline-size:\s*0/u);
+    assert.match(script, /function initSidebarTooltip\(rail\)/u);
+    assert.match(script, /hoverOpenTimer\s*=\s*window\.setTimeout\(revealRail,\s*120\)/u);
 });
 
 test('navigation polish keeps desktop controls usable and coordinated', () => {
     const source = fs.readFileSync(path.join(root, 'public/css/components/navigation-shell.css'), 'utf8');
 
-    assert.match(source, /grid-template-columns:\s*var\(--sidebar-width-collapsed\)\s+minmax\(0,\s*1fr\)[\s\S]*?transition:\s*grid-template-columns\s+var\(--transition-slow\)/u);
+    assert.match(source, /grid-template-columns:\s*var\(--sidebar-width-collapsed\)\s+minmax\(0,\s*1fr\)[\s\S]*?transition:\s*grid-template-columns\s+var\(--sidebar-rail-transition\)/u);
     assert.match(source, /page-tabs\s*\{[\s\S]*?top:\s*80px[\s\S]*?grid-row:\s*2/u);
-    assert.match(source, /page-tabs\s*>\s*\.page-tab \.ui-icon[\s\S]*?width:\s*22px[\s\S]*?height:\s*22px/u);
+    assert.match(source, /page-tabs\s*>\s*\.page-tab \.ui-icon[\s\S]*?width:\s*32px[\s\S]*?height:\s*32px/u);
     assert.match(source, /topbar-controls[\s\S]*?gap:\s*var\(--space-2\)/u);
     assert.match(source, /auth-logout-button[\s\S]*?background:\s*transparent/u);
+    assert.match(source, /page-tabs::-webkit-scrollbar[\s\S]*?width:\s*5px/u);
+    assert.match(source, /sidebar-floating-tooltip[\s\S]*?pointer-events:\s*none/u);
 });
 
 test('Gym App shell styles have one canonical source', () => {

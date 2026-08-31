@@ -57,24 +57,120 @@
         });
     }
 
+    function initSidebarTooltip(rail) {
+        if (!rail || document.querySelector('.sidebar-floating-tooltip')) return null;
+
+        const shell = rail.closest('.app-shell');
+        const tooltip = document.createElement('div');
+        tooltip.className = 'sidebar-floating-tooltip';
+        tooltip.setAttribute('role', 'tooltip');
+        tooltip.setAttribute('aria-hidden', 'true');
+        tooltip.hidden = true;
+        document.body.appendChild(tooltip);
+
+        let target = null;
+        let hideTimer = null;
+
+        const position = () => {
+            if (!target || tooltip.hidden) return;
+            const rect = target.getBoundingClientRect();
+            const gap = 12;
+            const direction = getComputedStyle(rail).direction;
+
+            tooltip.style.top = `${Math.round(rect.top + (rect.height / 2))}px`;
+            tooltip.style.maxWidth = `${Math.min(220, Math.max(140, window.innerWidth - 24))}px`;
+            if (direction === 'rtl') {
+                tooltip.style.right = `${Math.max(8, Math.round(window.innerWidth - rect.left + gap))}px`;
+                tooltip.style.left = 'auto';
+            } else {
+                tooltip.style.left = `${Math.max(8, Math.round(rect.right + gap))}px`;
+                tooltip.style.right = 'auto';
+            }
+        };
+
+        const hide = () => {
+            target = null;
+            tooltip.classList.remove('is-visible');
+            if (hideTimer) window.clearTimeout(hideTimer);
+            hideTimer = window.setTimeout(() => {
+                if (target) return;
+                tooltip.hidden = true;
+                tooltip.setAttribute('aria-hidden', 'true');
+            }, 180);
+        };
+
+        const show = (element) => {
+            if (window.matchMedia('(max-width: 1199px)').matches) return;
+            if (rail.classList.contains('is-hovered') || rail.classList.contains('is-pinned') || shell?.classList.contains('sidebar-expanded')) return;
+            const label = element?.dataset.sidebarLabel;
+            if (!label) return;
+
+            if (hideTimer) window.clearTimeout(hideTimer);
+            target = element;
+            tooltip.textContent = label;
+            tooltip.hidden = false;
+            tooltip.setAttribute('aria-hidden', 'false');
+            position();
+            window.requestAnimationFrame(() => {
+                if (target === element) tooltip.classList.add('is-visible');
+            });
+        };
+
+        const targets = [
+            ...rail.querySelectorAll('.page-tab, .smart-assistant-launcher'),
+            rail.querySelector('#sidebarPinButton')
+        ].filter(Boolean);
+        targets.forEach((element) => {
+            element.addEventListener('pointerenter', () => show(element));
+            element.addEventListener('pointerleave', hide);
+            element.addEventListener('focusin', () => show(element));
+            element.addEventListener('focusout', (event) => {
+                if (!element.contains(event.relatedTarget)) hide();
+            });
+        });
+
+        rail.addEventListener('scroll', position, { passive: true });
+        window.addEventListener('resize', position, { passive: true });
+        return { hide };
+    }
+
     function initSidebarPin() {
         const rail = document.getElementById('pageTabs');
         const pinButton = document.getElementById('sidebarPinButton');
         if (!rail || !pinButton) return;
 
         syncSidebarTooltips(rail);
+        const tooltip = initSidebarTooltip(rail);
 
         const shell = rail.closest('.app-shell');
         const desktopMediaQuery = window.matchMedia('(min-width: 1200px)');
 
+        let hoverOpenTimer = null;
         let hoverReleaseTimer = null;
-        const openRail = () => {
+        const revealRail = () => {
             if (!desktopMediaQuery.matches) return;
+            if (hoverOpenTimer) window.clearTimeout(hoverOpenTimer);
             if (hoverReleaseTimer) window.clearTimeout(hoverReleaseTimer);
+            hoverOpenTimer = null;
+            hoverReleaseTimer = null;
             rail.classList.add('is-hovered');
             shell?.classList.add('sidebar-expanded');
+            tooltip?.hide();
+        };
+        const openRail = (reason = 'pointer') => {
+            if (!desktopMediaQuery.matches) return;
+            if (hoverReleaseTimer) window.clearTimeout(hoverReleaseTimer);
+            if (reason === 'focus') {
+                revealRail();
+                return;
+            }
+            if (rail.classList.contains('is-hovered') || rail.classList.contains('is-pinned')) return;
+            if (hoverOpenTimer) window.clearTimeout(hoverOpenTimer);
+            hoverOpenTimer = window.setTimeout(revealRail, 120);
         };
         const scheduleRailClose = () => {
+            if (hoverOpenTimer) window.clearTimeout(hoverOpenTimer);
+            hoverOpenTimer = null;
             if (hoverReleaseTimer) window.clearTimeout(hoverReleaseTimer);
             if (!desktopMediaQuery.matches) {
                 rail.classList.remove('is-hovered');
@@ -87,21 +183,24 @@
                     shell?.classList.remove('sidebar-expanded');
                 }
                 hoverReleaseTimer = null;
-            }, 140);
+            }, 180);
         };
 
         rail.addEventListener('pointerenter', openRail);
         rail.addEventListener('pointerleave', scheduleRailClose);
-        rail.addEventListener('focusin', openRail);
+        rail.addEventListener('focusin', () => openRail('focus'));
         rail.addEventListener('focusout', (event) => {
             if (!rail.contains(event.relatedTarget)) scheduleRailClose();
         });
 
         const handleDesktopViewportChange = () => {
             if (desktopMediaQuery.matches) return;
+            if (hoverOpenTimer) window.clearTimeout(hoverOpenTimer);
             if (hoverReleaseTimer) window.clearTimeout(hoverReleaseTimer);
             rail.classList.remove('is-hovered');
             shell?.classList.remove('sidebar-expanded');
+            tooltip?.hide();
+            hoverOpenTimer = null;
             hoverReleaseTimer = null;
         };
         if (typeof desktopMediaQuery.addEventListener === 'function') {
@@ -134,6 +233,8 @@
             const label = pinned ? 'إلغاء تثبيت القائمة الجانبية' : 'تثبيت القائمة الجانبية';
             pinButton.setAttribute('aria-label', label);
             pinButton.setAttribute('title', label);
+            pinButton.dataset.sidebarLabel = label;
+            if (pinned) tooltip?.hide();
         };
 
         applyPinnedState(pinned);

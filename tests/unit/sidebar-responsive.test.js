@@ -16,7 +16,7 @@ test('Gym App exposes an explicit mobile navigation drawer contract', () => {
     assert.match(index, /id="mobileNavToggle"[^>]*aria-controls="pageTabs"/);
     assert.match(index, /id="mobileNavClose"/);
     assert.match(index, /id="mobileNavBackdrop"[^>]*hidden/);
-    assert.match(index, /\/js\/page-tabs\.js\?v=18/);
+    assert.match(index, /\/js\/page-tabs\.js\?v=19/);
     assert.match(source, /function initMobileNavigation\(\)/);
     assert.match(source, /mobile-nav-open/);
     assert.match(source, /matchMedia\('\(max-width: 1199px\)'\)/);
