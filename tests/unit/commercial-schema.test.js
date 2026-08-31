@@ -152,6 +152,12 @@ test('owner member request review and portal analytics surfaces stay tenant-scop
     assert.match(read('public/js/pages/management/portal-analytics.js'), new RegExp('api/portal/analytics'));
 });
 
+test('member request review clears the loading summary and resyncs stale review conflicts', () => {
+    const script = read('public/js/pages/management/member-subscription-requests.js');
+    assert.match(script, /if \(summary\) summary\.textContent = total \? `إجمالي النتائج:/);
+    assert.match(script, /if \(error\?\.code === 'MEMBER_SUBSCRIPTION_REQUEST_ALREADY_REVIEWED'\) \{\s*await load\(\);/);
+});
+
 test('member portal activation celebration is approval-gated, one-time and reduced-motion safe', () => {
     const page = read('public/member-portal.html');
     const script = read('public/js/member-portal-subscription.js');

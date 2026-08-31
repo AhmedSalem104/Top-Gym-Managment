@@ -117,10 +117,10 @@
         const total = Number(state.pagination?.total || 0);
         const page = Number(state.pagination?.page || state.page || 1);
         const pages = Math.max(1, Number(state.pagination?.pages || 1));
+        if (summary) summary.textContent = total ? `إجمالي النتائج: ${number(total)}` : 'لا توجد طلبات مطابقة';
         pagination.hidden = pages <= 1;
         if (pages <= 1) { pagination.innerHTML = ''; return; }
         pagination.innerHTML = `<span>صفحة ${number(page)} من ${number(pages)}</span><div><button class="btn btn-light btn-small" type="button" data-member-request-page="prev" ${page <= 1 ? 'disabled' : ''}>السابق</button><button class="btn btn-light btn-small" type="button" data-member-request-page="next" ${page >= pages ? 'disabled' : ''}>التالي</button></div>`;
-        if (summary && total) summary.textContent = `إجمالي النتائج: ${number(total)}`;
     }
 
     async function load() {
@@ -180,8 +180,15 @@
             notify(action === 'approve' ? 'تم اعتماد الطلب وتفعيل العضوية.' : 'تم رفض الطلب.', 'success');
             await load();
         } catch (error) {
-            notify(safeError(error, action === 'approve' ? 'تعذر اعتماد الطلب.' : 'تعذر رفض الطلب.'), 'error');
-            setStatus(safeError(error), true);
+            const message = safeError(error, action === 'approve' ? 'تعذر اعتماد الطلب.' : 'تعذر رفض الطلب.');
+            notify(message, 'error');
+            // A second review attempt is expected to receive 409 after the
+            // first transaction has already changed the request status. Sync
+            // the table so the stale Pending row cannot be acted on again.
+            if (error?.code === 'MEMBER_SUBSCRIPTION_REQUEST_ALREADY_REVIEWED') {
+                await load();
+            }
+            setStatus(message, true);
         } finally {
             state.reviewing.delete(requestId);
             setButtonLoading(button, false);
