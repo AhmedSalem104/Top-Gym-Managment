@@ -5634,14 +5634,23 @@ body.auth-locked .auth-screen[data-auth-stage="gateway"] {
   display: inline-flex;
   min-height: 28px;
   align-items: center;
-  padding: 0 11px;
-  border: 1px solid var(--primary-border);
-  border-radius: var(--radius-pill);
-  background: var(--primary-soft);
+  gap: 10px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
   color: var(--primary);
   font-size: 11px;
   letter-spacing: 0;
   text-transform: none;
+}
+
+.auth-screen[data-auth-stage="gateway"] .saas-entry-eyebrow::after {
+  width: 44px;
+  height: 2px;
+  border-radius: var(--radius-pill);
+  background: var(--primary-border);
+  content: "";
 }
 
 .auth-screen[data-auth-stage="gateway"] .saas-entry-copy h1 {
@@ -5667,8 +5676,8 @@ body.auth-locked .auth-screen[data-auth-stage="gateway"] {
 }
 
 .auth-screen[data-auth-stage="gateway"] .saas-entry-action {
-  width: min(100%, 410px);
-  margin-top: clamp(22px, 3vw, 30px);
+  width: min(100%, 480px);
+  margin-top: clamp(24px, 3.4vw, 34px);
   padding: 0;
   border: 0;
   border-radius: 0;
@@ -5677,7 +5686,7 @@ body.auth-locked .auth-screen[data-auth-stage="gateway"] {
 }
 
 .auth-screen[data-auth-stage="gateway"] .saas-entry-action-heading {
-  display: block;
+  display: none;
 }
 
 .auth-screen[data-auth-stage="gateway"] .saas-entry-action-icon {
@@ -5701,19 +5710,15 @@ body.auth-locked .auth-screen[data-auth-stage="gateway"] {
 
 .auth-screen[data-auth-stage="gateway"] .saas-entry-continue {
   width: 100%;
-  min-height: 54px;
-  margin-top: 15px;
-  border-radius: var(--radius-md);
+  min-height: 66px;
+  margin-top: 0;
+  border-radius: 16px;
   box-shadow: var(--shadow-primary);
+  font-size: var(--font-lg);
 }
 
 .auth-screen[data-auth-stage="gateway"] .saas-entry-action > small {
-  display: block;
-  margin-top: 13px;
-  color: var(--text-muted);
-  font-size: 10px;
-  line-height: 1.7;
-  text-align: right;
+  display: none;
 }
 
 .auth-screen[data-auth-stage="gateway"] .saas-entry-features {
@@ -5788,9 +5793,11 @@ body.auth-locked .auth-screen[data-auth-stage="gateway"] {
   position: absolute;
   z-index: -1;
   inset: 0;
-  background: linear-gradient(145deg, transparent 15%, var(--overlay));
+  background:
+    radial-gradient(ellipse 160px 78% at 100% 50%, var(--bg-app) 0 54%, transparent 55%),
+    linear-gradient(145deg, transparent 15%, var(--overlay));
   content: "";
-  opacity: .24;
+  opacity: .92;
   pointer-events: none;
 }
 
@@ -5984,11 +5991,11 @@ body.auth-locked .auth-screen[data-auth-stage="gateway"] {
     direction: rtl;
   }
 
-  .auth-screen[data-auth-stage="gateway"] .saas-entry-copy {
-    display: flex;
-    width: 100%;
-    align-items: stretch;
-    order: 1;
+    .auth-screen[data-auth-stage="gateway"] .saas-entry-copy {
+      display: flex;
+      width: 100%;
+      align-items: stretch;
+      order: 1;
   }
 
   .auth-screen[data-auth-stage="gateway"] .saas-entry-copy h1 {
@@ -6012,11 +6019,27 @@ body.auth-locked .auth-screen[data-auth-stage="gateway"] {
     margin-top: 24px;
   }
 
-  .auth-screen[data-auth-stage="gateway"] .saas-entry-preview {
-    order: 2;
-    min-height: 360px;
-    border-radius: 24px 24px 24px 10px;
-  }
+    .auth-screen[data-auth-stage="gateway"] .saas-entry-preview {
+      order: 1;
+      min-height: 360px;
+      border-radius: 24px 24px 24px 10px;
+    }
+
+    .auth-screen[data-auth-stage="gateway"] .saas-entry-copy {
+      order: 2;
+    }
+
+    .auth-screen[data-auth-stage="gateway"] .saas-entry-action {
+      margin-top: 22px;
+    }
+
+    .auth-screen[data-auth-stage="gateway"] .saas-entry-continue {
+      min-height: 58px;
+    }
+
+    .auth-screen[data-auth-stage="gateway"] .saas-entry-copy-break {
+      display: none;
+    }
 
   .saas-entry-preview-glass-panel {
     inset-inline: 8%;
@@ -6035,9 +6058,13 @@ body.auth-locked .auth-screen[data-auth-stage="gateway"] {
     font-size: 10px;
   }
 
-  .auth-screen[data-auth-stage="gateway"] .saas-entry-copy h1 {
-    font-size: clamp(30px, 9.2vw, 38px);
-  }
+    .auth-screen[data-auth-stage="gateway"] .saas-entry-copy h1 {
+      font-size: clamp(30px, 9.2vw, 38px);
+    }
+
+    .auth-screen[data-auth-stage="gateway"] .saas-entry-eyebrow {
+      font-size: 10px;
+    }
 
   .auth-screen[data-auth-stage="gateway"] .saas-entry-features {
     gap: 7px;
@@ -16374,6 +16401,459 @@ body .swal2-popup.qr-member-preview-alert .swal2-actions > button.qr-member-prev
 
   .portal-occupancy-meta > span {
     max-width: none;
+  }
+}
+
+/* Subscription request surface -------------------------------------------
+   The request flow keeps its existing markup and hooks, but uses a denser
+   review-oriented composition: details first, payment and quote side by side,
+   then proof and notes. This keeps the reference hierarchy without changing
+   the submission flow or any data contract. */
+.member-portal-page .portal-result:has(#portalSubscriptionSection:not([hidden])) {
+  width: min(1180px, calc(100% - 32px));
+  padding: clamp(18px, 2.8vw, 30px);
+  border-radius: 24px;
+  background: color-mix(in srgb, var(--bg-card) 94%, var(--primary-soft));
+  box-shadow: var(--shadow-popup);
+}
+
+.member-portal-page .portal-result:has(#portalSubscriptionSection:not([hidden])) > .portal-result-header {
+  min-height: 0;
+  justify-content: flex-start;
+  padding: 0;
+  border-bottom: 0;
+}
+
+.member-portal-page .portal-result:has(#portalSubscriptionSection:not([hidden])) > .portal-result-header > div:first-child {
+  display: none;
+}
+
+.member-portal-page .portal-result:has(#portalSubscriptionSection:not([hidden])) .portal-actions {
+  width: auto;
+  margin-inline-start: auto;
+}
+
+.member-portal-page .portal-result:has(#portalSubscriptionSection:not([hidden])) .portal-actions .btn {
+  min-height: 36px;
+  padding-inline: 12px;
+  font-size: 11px;
+}
+
+.member-portal-page .portal-result:has(#portalSubscriptionSection:not([hidden])) .portal-view-toolbar {
+  display: flex;
+  min-height: 0;
+  align-items: center;
+  justify-content: flex-start;
+  margin-top: 10px;
+  padding: 14px 16px;
+  border: 1px solid var(--border-secondary);
+  border-radius: 16px;
+  background: var(--bg-elevated);
+}
+
+.member-portal-page .portal-result:has(#portalSubscriptionSection:not([hidden])) .portal-view-toolbar > div {
+  display: none;
+}
+
+.member-portal-page .portal-result:has(#portalSubscriptionSection:not([hidden])) .portal-back-button {
+  margin-inline-start: auto;
+}
+
+.member-portal-page .portal-result:has(#portalSubscriptionSection:not([hidden])) .portal-subscription {
+  gap: 14px;
+  margin-top: 14px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.member-portal-page .portal-result:has(#portalSubscriptionSection:not([hidden])) .portal-subscription-head {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 16px;
+  margin: 0;
+  padding: 17px 18px;
+  border: 1px solid var(--border-primary);
+  border-radius: 16px;
+  background: var(--bg-card);
+  box-shadow: var(--shadow-card);
+}
+
+.member-portal-page .portal-result:has(#portalSubscriptionSection:not([hidden])) .portal-subscription-head > div {
+  min-width: 0;
+}
+
+.member-portal-page .portal-result:has(#portalSubscriptionSection:not([hidden])) .portal-subscription-head h3 {
+  margin: 3px 0 4px;
+  font-size: clamp(1.25rem, 2vw, 1.65rem);
+  letter-spacing: -.02em;
+}
+
+.member-portal-page .portal-result:has(#portalSubscriptionSection:not([hidden])) .portal-subscription-head p {
+  max-width: 720px;
+  line-height: 1.65;
+}
+
+.member-portal-page .portal-result:has(#portalSubscriptionSection:not([hidden])) .portal-subscription-secure {
+  width: 44px;
+  height: 44px;
+  order: -1;
+  border: 1px solid var(--primary-border);
+  border-radius: 13px;
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+
+.member-portal-page .portal-result:has(#portalSubscriptionSection:not([hidden])) .portal-subscription-secure .ui-icon {
+  width: 22px;
+  height: 22px;
+}
+
+.member-portal-page .portal-result:has(#portalSubscriptionSection:not([hidden])) .portal-subscription-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-areas:
+    "details details"
+    "methods summary"
+    "proof notes"
+    "actions actions";
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--border-primary);
+  border-radius: 16px;
+  background: var(--bg-card);
+  box-shadow: var(--shadow-card);
+}
+
+.member-portal-page .portal-result:has(#portalSubscriptionSection:not([hidden])) .portal-subscription-grid {
+  grid-area: details;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.member-portal-page .portal-result:has(#portalSubscriptionSection:not([hidden])) .portal-subscription-grid label,
+.member-portal-page .portal-result:has(#portalSubscriptionSection:not([hidden])) .portal-subscription-notes {
+  gap: 6px;
+  font-size: 11px;
+}
+
+.member-portal-page .portal-result:has(#portalSubscriptionSection:not([hidden])) .portal-subscription-grid select,
+.member-portal-page .portal-result:has(#portalSubscriptionSection:not([hidden])) .portal-subscription-grid input {
+  height: 44px;
+  border-radius: 10px;
+  font-size: 12px;
+}
+
+.member-portal-page .portal-result:has(#portalSubscriptionSection:not([hidden])) .portal-subscription-grid label > small {
+  min-height: 0;
+  font-size: 9px;
+  line-height: 1.55;
+}
+
+.member-portal-page .portal-result:has(#portalSubscriptionSection:not([hidden])) .portal-payment-methods,
+.member-portal-page .portal-result:has(#portalSubscriptionSection:not([hidden])) .portal-subscription-summary,
+.member-portal-page .portal-result:has(#portalSubscriptionSection:not([hidden])) .portal-subscription-notes,
+.member-portal-page .portal-result:has(#portalSubscriptionSection:not([hidden])) .portal-proof-picker {
+  min-width: 0;
+  margin: 0;
+  border-radius: 13px;
+}
+
+.member-portal-page .portal-result:has(#portalSubscriptionSection:not([hidden])) .portal-payment-methods {
+  grid-area: methods;
+  gap: 10px;
+  padding: 13px;
+  border-color: var(--border-secondary);
+  background: var(--bg-elevated);
+}
+
+.member-portal-page .portal-result:has(#portalSubscriptionSection:not([hidden])) .portal-subsection-heading {
+  gap: 10px;
+}
+
+.member-portal-page .portal-result:has(#portalSubscriptionSection:not([hidden])) .portal-subsection-heading h4 {
+  margin: 2px 0 3px;
+  font-size: 1rem;
+}
+
+.member-portal-page .portal-result:has(#portalSubscriptionSection:not([hidden])) .portal-subsection-heading p {
+  font-size: 10px;
+  line-height: 1.55;
+}
+
+.member-portal-page .portal-result:has(#portalSubscriptionSection:not([hidden])) .portal-payment-method-list {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.member-portal-page .portal-result:has(#portalSubscriptionSection:not([hidden])) .portal-payment-method-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  min-height: 64px;
+  align-items: center;
+  gap: 8px;
+  padding: 10px;
+  border-radius: 11px;
+}
+
+.member-portal-page .portal-result:has(#portalSubscriptionSection:not([hidden])) .portal-payment-method-copy {
+  gap: 2px;
+}
+
+.member-portal-page .portal-result:has(#portalSubscriptionSection:not([hidden])) .portal-payment-method-copy strong {
+  font-size: 11px;
+}
+
+.member-portal-page .portal-result:has(#portalSubscriptionSection:not([hidden])) .portal-payment-method-copy small,
+.member-portal-page .portal-result:has(#portalSubscriptionSection:not([hidden])) .portal-payment-method-account {
+  font-size: 10px;
+}
+
+.member-portal-page .portal-result:has(#portalSubscriptionSection:not([hidden])) .portal-subscription-summary {
+  grid-area: summary;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-content: stretch;
+  gap: 1px;
+  padding: 10px;
+  border-color: var(--primary-border);
+  background: var(--primary-soft);
+}
+
+.member-portal-page .portal-result:has(#portalSubscriptionSection:not([hidden])) .portal-subscription-summary div {
+  min-height: 56px;
+  align-content: center;
+  padding: 6px 9px;
+  border: 1px solid color-mix(in srgb, var(--primary-border) 46%, transparent);
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--bg-card) 68%, transparent);
+}
+
+.member-portal-page .portal-result:has(#portalSubscriptionSection:not([hidden])) .portal-subscription-summary span {
+  font-size: 9px;
+}
+
+.member-portal-page .portal-result:has(#portalSubscriptionSection:not([hidden])) .portal-subscription-summary strong {
+  font-size: 11px;
+}
+
+.member-portal-page .portal-result:has(#portalSubscriptionSection:not([hidden])) .portal-subscription-summary div:last-child strong {
+  font-size: 1rem;
+}
+
+.member-portal-page .portal-result:has(#portalSubscriptionSection:not([hidden])) .portal-subscription-notes {
+  grid-area: notes;
+  align-content: start;
+  padding: 13px;
+  border: 1px solid var(--border-secondary);
+  border-radius: 13px;
+  background: var(--bg-elevated);
+}
+
+.member-portal-page .portal-result:has(#portalSubscriptionSection:not([hidden])) .portal-subscription-notes textarea {
+  min-height: 94px;
+  border-radius: 10px;
+  font-size: 11px;
+  resize: vertical;
+}
+
+.member-portal-page .portal-result:has(#portalSubscriptionSection:not([hidden])) .portal-proof-picker {
+  grid-area: proof;
+  align-items: center;
+  min-height: 120px;
+  padding: 13px;
+  border-color: var(--primary-border);
+  background: var(--bg-elevated);
+}
+
+.member-portal-page .portal-result:has(#portalSubscriptionSection:not([hidden])) .portal-proof-picker-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+}
+
+.member-portal-page .portal-result:has(#portalSubscriptionSection:not([hidden])) .portal-proof-picker strong {
+  font-size: 11px;
+}
+
+.member-portal-page .portal-result:has(#portalSubscriptionSection:not([hidden])) .portal-proof-picker small {
+  font-size: 10px;
+  line-height: 1.55;
+}
+
+.member-portal-page .portal-result:has(#portalSubscriptionSection:not([hidden])) .portal-subscription-actions {
+  grid-area: actions;
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-secondary);
+}
+
+.member-portal-page .portal-result:has(#portalSubscriptionSection:not([hidden])) .portal-subscription-actions .btn {
+  width: min(100%, 330px);
+  min-height: 48px;
+  justify-content: center;
+  border-radius: 11px;
+  font-size: 12px;
+}
+
+.member-portal-page .portal-result:has(#portalSubscriptionSection:not([hidden])) .portal-subscription-note {
+  max-width: 420px;
+  font-size: 10px;
+  line-height: 1.65;
+}
+
+.member-portal-page .portal-result:has(#portalSubscriptionSection:not([hidden])) .portal-request-history {
+  gap: 10px;
+  margin: 0;
+  padding: 14px;
+  border-color: var(--border-primary);
+  border-radius: 16px;
+  background: var(--bg-card);
+  box-shadow: var(--shadow-card);
+}
+
+.member-portal-page .portal-result:has(#portalSubscriptionSection:not([hidden])) .portal-request-history-list {
+  gap: 8px;
+}
+
+.member-portal-page .portal-result:has(#portalSubscriptionSection:not([hidden])) .portal-request-history-row {
+  min-width: 0;
+  align-items: center;
+  padding: 11px 12px;
+  border-radius: 11px;
+  background: var(--bg-elevated);
+}
+
+.member-portal-page .portal-result:has(#portalSubscriptionSection:not([hidden])) .portal-request-history-copy strong {
+  font-size: 11px;
+}
+
+.member-portal-page .portal-result:has(#portalSubscriptionSection:not([hidden])) .portal-request-history-copy small {
+  font-size: 10px;
+  line-height: 1.6;
+}
+
+@media (max-width: 980px) {
+  .member-portal-page .portal-result:has(#portalSubscriptionSection:not([hidden])) {
+    width: min(100% - 24px, 760px);
+  }
+
+  .member-portal-page .portal-result:has(#portalSubscriptionSection:not([hidden])) .portal-subscription-form {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "details"
+      "methods"
+      "summary"
+      "proof"
+      "notes"
+      "actions";
+  }
+
+  .member-portal-page .portal-result:has(#portalSubscriptionSection:not([hidden])) .portal-subscription-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .member-portal-page .portal-result:has(#portalSubscriptionSection:not([hidden])) {
+    width: min(100% - 16px, 620px);
+    padding: 14px 10px 16px;
+    border-radius: 18px;
+  }
+
+  .member-portal-page .portal-result:has(#portalSubscriptionSection:not([hidden])) .portal-view-toolbar {
+    margin-top: 8px;
+    padding: 11px 12px;
+  }
+
+  .member-portal-page .portal-result:has(#portalSubscriptionSection:not([hidden])) .portal-subscription-head {
+    align-items: flex-start;
+    padding: 14px;
+  }
+
+  .member-portal-page .portal-result:has(#portalSubscriptionSection:not([hidden])) .portal-subscription-head h3 {
+    font-size: 1.18rem;
+  }
+
+  .member-portal-page .portal-result:has(#portalSubscriptionSection:not([hidden])) .portal-subscription-form {
+    gap: 10px;
+    padding: 12px;
+  }
+
+  .member-portal-page .portal-result:has(#portalSubscriptionSection:not([hidden])) .portal-subscription-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .member-portal-page .portal-result:has(#portalSubscriptionSection:not([hidden])) .portal-payment-method-list {
+    grid-template-columns: 1fr;
+  }
+
+  .member-portal-page .portal-result:has(#portalSubscriptionSection:not([hidden])) .portal-subscription-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .member-portal-page .portal-result:has(#portalSubscriptionSection:not([hidden])) .portal-proof-picker {
+    min-height: 100px;
+  }
+
+  .member-portal-page .portal-result:has(#portalSubscriptionSection:not([hidden])) .portal-subscription-actions {
+    display: grid;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .member-portal-page .portal-result:has(#portalSubscriptionSection:not([hidden])) .portal-subscription-actions .btn {
+    width: 100%;
+  }
+
+  .member-portal-page .portal-result:has(#portalSubscriptionSection:not([hidden])) .portal-subscription-note {
+    max-width: none;
+  }
+
+  .member-portal-page .portal-result:has(#portalSubscriptionSection:not([hidden])) .portal-request-history-row {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+    align-items: stretch;
+  }
+
+  .member-portal-page .portal-result:has(#portalSubscriptionSection:not([hidden])) .portal-request-history-actions {
+    justify-content: space-between;
+    padding-top: 9px;
+    border-top: 1px solid var(--border-secondary);
+  }
+}
+
+@media (max-width: 420px) {
+  .member-portal-page .portal-result:has(#portalSubscriptionSection:not([hidden])) .portal-subscription-summary div {
+    min-height: 52px;
+    padding-inline: 7px;
+  }
+
+  .member-portal-page .portal-result:has(#portalSubscriptionSection:not([hidden])) .portal-subscription-summary strong {
+    font-size: 10px;
+  }
+}
+
+@media print {
+  .member-portal-page .portal-result:has(#portalSubscriptionSection:not([hidden])) {
+    width: 100%;
+    padding: 0;
+    border: 0;
+    box-shadow: none;
+  }
+
+  .member-portal-page .portal-result:has(#portalSubscriptionSection:not([hidden])) .portal-subscription-form,
+  .member-portal-page .portal-result:has(#portalSubscriptionSection:not([hidden])) .portal-subscription-head,
+  .member-portal-page .portal-result:has(#portalSubscriptionSection:not([hidden])) .portal-request-history {
+    box-shadow: none;
   }
 }
 

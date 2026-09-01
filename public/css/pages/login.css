@@ -1700,14 +1700,23 @@ body.auth-locked .auth-screen[data-auth-stage="gateway"] {
   display: inline-flex;
   min-height: 28px;
   align-items: center;
-  padding: 0 11px;
-  border: 1px solid var(--primary-border);
-  border-radius: var(--radius-pill);
-  background: var(--primary-soft);
+  gap: 10px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
   color: var(--primary);
   font-size: 11px;
   letter-spacing: 0;
   text-transform: none;
+}
+
+.auth-screen[data-auth-stage="gateway"] .saas-entry-eyebrow::after {
+  width: 44px;
+  height: 2px;
+  border-radius: var(--radius-pill);
+  background: var(--primary-border);
+  content: "";
 }
 
 .auth-screen[data-auth-stage="gateway"] .saas-entry-copy h1 {
@@ -1733,8 +1742,8 @@ body.auth-locked .auth-screen[data-auth-stage="gateway"] {
 }
 
 .auth-screen[data-auth-stage="gateway"] .saas-entry-action {
-  width: min(100%, 410px);
-  margin-top: clamp(22px, 3vw, 30px);
+  width: min(100%, 480px);
+  margin-top: clamp(24px, 3.4vw, 34px);
   padding: 0;
   border: 0;
   border-radius: 0;
@@ -1743,7 +1752,7 @@ body.auth-locked .auth-screen[data-auth-stage="gateway"] {
 }
 
 .auth-screen[data-auth-stage="gateway"] .saas-entry-action-heading {
-  display: block;
+  display: none;
 }
 
 .auth-screen[data-auth-stage="gateway"] .saas-entry-action-icon {
@@ -1767,19 +1776,15 @@ body.auth-locked .auth-screen[data-auth-stage="gateway"] {
 
 .auth-screen[data-auth-stage="gateway"] .saas-entry-continue {
   width: 100%;
-  min-height: 54px;
-  margin-top: 15px;
-  border-radius: var(--radius-md);
+  min-height: 66px;
+  margin-top: 0;
+  border-radius: 16px;
   box-shadow: var(--shadow-primary);
+  font-size: var(--font-lg);
 }
 
 .auth-screen[data-auth-stage="gateway"] .saas-entry-action > small {
-  display: block;
-  margin-top: 13px;
-  color: var(--text-muted);
-  font-size: 10px;
-  line-height: 1.7;
-  text-align: right;
+  display: none;
 }
 
 .auth-screen[data-auth-stage="gateway"] .saas-entry-features {
@@ -1854,9 +1859,11 @@ body.auth-locked .auth-screen[data-auth-stage="gateway"] {
   position: absolute;
   z-index: -1;
   inset: 0;
-  background: linear-gradient(145deg, transparent 15%, var(--overlay));
+  background:
+    radial-gradient(ellipse 160px 78% at 100% 50%, var(--bg-app) 0 54%, transparent 55%),
+    linear-gradient(145deg, transparent 15%, var(--overlay));
   content: "";
-  opacity: .24;
+  opacity: .92;
   pointer-events: none;
 }
 
@@ -2050,11 +2057,11 @@ body.auth-locked .auth-screen[data-auth-stage="gateway"] {
     direction: rtl;
   }
 
-  .auth-screen[data-auth-stage="gateway"] .saas-entry-copy {
-    display: flex;
-    width: 100%;
-    align-items: stretch;
-    order: 1;
+    .auth-screen[data-auth-stage="gateway"] .saas-entry-copy {
+      display: flex;
+      width: 100%;
+      align-items: stretch;
+      order: 1;
   }
 
   .auth-screen[data-auth-stage="gateway"] .saas-entry-copy h1 {
@@ -2078,11 +2085,27 @@ body.auth-locked .auth-screen[data-auth-stage="gateway"] {
     margin-top: 24px;
   }
 
-  .auth-screen[data-auth-stage="gateway"] .saas-entry-preview {
-    order: 2;
-    min-height: 360px;
-    border-radius: 24px 24px 24px 10px;
-  }
+    .auth-screen[data-auth-stage="gateway"] .saas-entry-preview {
+      order: 1;
+      min-height: 360px;
+      border-radius: 24px 24px 24px 10px;
+    }
+
+    .auth-screen[data-auth-stage="gateway"] .saas-entry-copy {
+      order: 2;
+    }
+
+    .auth-screen[data-auth-stage="gateway"] .saas-entry-action {
+      margin-top: 22px;
+    }
+
+    .auth-screen[data-auth-stage="gateway"] .saas-entry-continue {
+      min-height: 58px;
+    }
+
+    .auth-screen[data-auth-stage="gateway"] .saas-entry-copy-break {
+      display: none;
+    }
 
   .saas-entry-preview-glass-panel {
     inset-inline: 8%;
@@ -2101,9 +2124,13 @@ body.auth-locked .auth-screen[data-auth-stage="gateway"] {
     font-size: 10px;
   }
 
-  .auth-screen[data-auth-stage="gateway"] .saas-entry-copy h1 {
-    font-size: clamp(30px, 9.2vw, 38px);
-  }
+    .auth-screen[data-auth-stage="gateway"] .saas-entry-copy h1 {
+      font-size: clamp(30px, 9.2vw, 38px);
+    }
+
+    .auth-screen[data-auth-stage="gateway"] .saas-entry-eyebrow {
+      font-size: 10px;
+    }
 
   .auth-screen[data-auth-stage="gateway"] .saas-entry-features {
     gap: 7px;

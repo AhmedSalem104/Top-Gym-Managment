@@ -16,7 +16,7 @@ test('pre-login gateway keeps the auth entry point and product preview together'
     assert.match(markup, /id="authLoginCard"/);
     assert.match(markup, /class="saas-entry-preview"/);
     assert.match(markup, /class="saas-entry-preview-glass-panel"/);
-    assert.match(markup, /أدر جيمك بذكاء، <span>من مكان واحد\.<\/span>/);
+    assert.match(markup, /إدارة الجيم\.<br><span>أبسط وأذكى\.<\/span>/);
     assert.match(markup, /الدخول إلى مساحة الجيم/);
     assert.match(markup, /class="saas-entry-preview-sidebar"/);
     assert.match(markup, /class="saas-entry-preview-kpis"/);
