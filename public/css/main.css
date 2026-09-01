@@ -5729,7 +5729,7 @@ body.auth-locked .auth-screen[data-auth-stage="gateway"] {
   min-height: 64px;
   margin-top: 0;
   border-radius: 16px;
-  background: linear-gradient(110deg, var(--primary) 4%, color-mix(in srgb, var(--primary) 58%, var(--text-primary-soft) 42%) 96%);
+  background: linear-gradient(110deg, var(--primary) 0%, color-mix(in srgb, var(--primary) 54%, var(--text-primary-soft) 46%) 100%);
   box-shadow: 0 16px 34px color-mix(in srgb, var(--primary) 24%, transparent);
   font-size: clamp(var(--font-md), 1.45vw, var(--font-lg));
 }
@@ -5790,7 +5790,7 @@ body.auth-locked .auth-screen[data-auth-stage="gateway"] {
   min-height: 100%;
   overflow: visible;
   border: 0;
-  border-radius: 0 42px 42px 0;
+  border-radius: 0;
   background: var(--bg-sidebar);
   box-shadow: none;
   isolation: isolate;
@@ -5801,25 +5801,26 @@ body.auth-locked .auth-screen[data-auth-stage="gateway"] {
   position: absolute;
   z-index: 0;
   inset: 0;
-  background-image: linear-gradient(145deg, rgb(2 12 30 / .05), rgb(2 12 30 / .44)), url("/assets/gym-background.webp");
+  background-image: linear-gradient(145deg, rgb(2 12 30 / .04), rgb(2 12 30 / .32)), url("/assets/gym-background.webp");
   background-position: center center;
   background-size: cover;
   content: "";
-  filter: brightness(1.08) contrast(1.04) saturate(1.08);
+  filter: brightness(1.02) contrast(1.03) saturate(1.08);
   border-radius: inherit;
 }
 
 .auth-screen[data-auth-stage="gateway"] .saas-entry-preview::after {
   position: absolute;
   z-index: 1;
-  inset: 0;
-  background:
-    radial-gradient(ellipse 50% 126% at 110% 100%, var(--bg-surface) 0 51.5%, transparent 52.25%),
-    radial-gradient(ellipse 52.2% 128% at 110% 100%, color-mix(in srgb, var(--primary) 62%, var(--text-primary-soft) 38%) 0 51.8%, transparent 52.55%),
-    linear-gradient(145deg, transparent 15%, rgb(2 6 23 / .42));
-  border-radius: inherit;
+  inset-block: -8%;
+  inset-inline-start: -3%;
+  width: 25%;
+  background: var(--bg-surface);
+  border-inline-end: 2px solid color-mix(in srgb, var(--primary) 70%, var(--text-primary-soft) 30%);
+  border-radius: 50% 0 0 50% / 50% 0 0 50%;
+  box-shadow: -8px 0 24px color-mix(in srgb, var(--primary) 18%, transparent), -2px 0 12px color-mix(in srgb, var(--text-primary-soft) 18%, transparent);
   content: "";
-  opacity: .96;
+  opacity: .98;
   pointer-events: none;
 }
 
@@ -5836,16 +5837,16 @@ body.auth-locked .auth-screen[data-auth-stage="gateway"] {
   inset-inline-end: auto;
   z-index: 3;
   display: grid;
-  gap: 18px;
-  width: min(510px, calc(100% - 74px));
+  gap: 16px;
+  width: min(470px, calc(100% - 74px));
   max-height: calc(100% - 72px);
-  padding: clamp(26px, 3vw, 34px);
+  padding: clamp(24px, 2.7vw, 32px);
   border: 1px solid rgb(184 194 255 / .54);
   border-radius: 30px;
-  background: linear-gradient(135deg, rgb(28 50 103 / .68), rgb(8 22 49 / .58));
-  box-shadow: 0 30px 76px rgb(2 7 24 / .46), 0 0 30px rgb(76 83 255 / .14), inset 0 1px 0 rgb(255 255 255 / .12);
-  backdrop-filter: blur(24px) saturate(1.16);
-  -webkit-backdrop-filter: blur(24px) saturate(1.16);
+  background: linear-gradient(135deg, rgb(28 50 103 / .62), rgb(8 22 49 / .5));
+  box-shadow: 0 28px 68px rgb(2 7 24 / .44), 0 0 26px rgb(76 83 255 / .14), inset 0 1px 0 rgb(255 255 255 / .13);
+  backdrop-filter: blur(18px) saturate(1.12);
+  -webkit-backdrop-filter: blur(18px) saturate(1.12);
   transform: translateY(-50%);
 }
 
@@ -6052,7 +6053,12 @@ body.auth-locked .auth-screen[data-auth-stage="gateway"] {
   }
 
   .auth-screen[data-auth-stage="gateway"] .saas-entry-preview::after {
+    inset: 0;
+    width: auto;
     background: linear-gradient(145deg, transparent 10%, rgb(2 6 23 / .64));
+    border: 0;
+    border-radius: inherit;
+    box-shadow: none;
   }
 
   .saas-entry-preview-glass-panel {
@@ -6146,7 +6152,12 @@ body.auth-locked .auth-screen[data-auth-stage="gateway"] {
   }
 
   .auth-screen[data-auth-stage="gateway"] .saas-entry-preview::after {
+    inset: 0;
+    width: auto;
     background: linear-gradient(145deg, transparent 10%, rgb(2 6 23 / .64));
+    border: 0;
+    border-radius: inherit;
+    box-shadow: none;
   }
 
   .auth-screen[data-auth-stage="gateway"] .saas-entry-action {
