@@ -29,9 +29,9 @@ test('pre-login gateway layout is theme-token based and preserves desktop/mobile
     assert.match(styles, /grid-template-areas:\s*"preview copy"/);
     assert.doesNotMatch(styles, /grid-template-areas:[\s\S]*"preview action"/);
     assert.match(styles, /\.saas-entry-preview\s*\{[\s\S]*grid-area: preview/);
-    assert.match(styles, /grid-template-areas:\s*"copy preview"/);
     assert.match(styles, /background-image:[\s\S]*gym-background\.webp/);
-    assert.match(styles, /\.auth-screen\[data-auth-stage="gateway"\][\s\S]*auth-theme-toggle[\s\S]*font-size: 0/);
+    assert.match(styles, /\.auth-screen\[data-auth-stage="gateway"\] \.auth-theme-toggle\s*\{[\s\S]*font-size: var\(--font-sm\)/);
+    assert.match(styles, /\.auth-screen\[data-auth-stage="gateway"\] \.auth-theme-toggle\s*>\s*span\[data-theme-toggle-label\][\s\S]*position: static/);
     assert.match(styles, /@media \(max-width: 760px\)[\s\S]*\.saas-entry-copy\s*\{[\s\S]*display: contents/);
     assert.match(styles, /\.saas-entry-preview\s*\{[\s\S]*background: var\(--bg/);
     assert.doesNotMatch(styles, /\.saas-entry-preview[^}]*#[0-9a-f]{3,8}/i);

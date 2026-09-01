@@ -5517,21 +5517,22 @@ body.auth-locked .auth-screen[data-auth-stage="gateway"] {
 }
 
 .auth-screen[data-auth-stage="gateway"] .auth-theme-toggle {
-  display: inline-grid;
-  width: 42px;
-  min-width: 42px;
-  height: 42px;
-  min-height: 42px;
+  display: inline-flex;
+  width: auto;
+  min-width: 0;
+  height: 44px;
+  min-height: 44px;
   margin-inline-start: auto;
   margin-bottom: clamp(14px, 2vw, 22px);
-  padding: 0;
-  place-items: center;
+  padding-inline: 15px;
+  flex-direction: row-reverse;
+  gap: 8px;
   border: 1px solid var(--border-secondary);
-  border-radius: 12px;
+  border-radius: var(--radius-pill);
   background: var(--bg-card);
   color: var(--text-secondary);
   box-shadow: var(--shadow-xs);
-  font-size: 0;
+  font-size: var(--font-sm);
 }
 
 .auth-screen[data-auth-stage="gateway"] .auth-theme-toggle:hover {
@@ -5546,12 +5547,12 @@ body.auth-locked .auth-screen[data-auth-stage="gateway"] {
 }
 
 .auth-screen[data-auth-stage="gateway"] .auth-theme-toggle > span[data-theme-toggle-label] {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
+  position: static;
+  width: auto;
+  height: auto;
+  overflow: visible;
+  clip-path: none;
+  white-space: normal;
 }
 
 .auth-screen[data-auth-stage="gateway"] .auth-theme-toggle .ui-icon {
@@ -5578,6 +5579,7 @@ body.auth-locked .auth-screen[data-auth-stage="gateway"] {
   max-width: 100%;
   margin-inline-end: auto;
   padding: 0 0 clamp(18px, 2vw, 26px);
+  flex-direction: row-reverse;
   direction: rtl;
 }
 
@@ -5610,7 +5612,7 @@ body.auth-locked .auth-screen[data-auth-stage="gateway"] {
   display: grid;
   direction: ltr;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  grid-template-areas: "copy preview";
+  grid-template-areas: "preview copy";
   gap: clamp(30px, 5vw, 78px);
   align-items: center;
   padding: 0;
@@ -5761,7 +5763,7 @@ body.auth-locked .auth-screen[data-auth-stage="gateway"] {
   display: block;
   grid-area: preview;
   width: 100%;
-  min-height: clamp(420px, calc(100svh - 260px), 560px);
+  min-height: clamp(440px, calc(100svh - 230px), 650px);
   overflow: hidden;
   border: 1px solid var(--border-secondary);
   border-radius: 30px 30px 30px 12px;
