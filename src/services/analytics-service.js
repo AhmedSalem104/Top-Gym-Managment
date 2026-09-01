@@ -282,7 +282,7 @@ async function getDashboardAnalytics(periodValue = 'month', { readOnly = false }
 
             SELECT paid_at AS eventDate, amount_paid AS amount, payment_method AS paymentMethod
             FROM dbo.gym_payment_transactions
-            WHERE paid_at >= @startDate AND paid_at < @nextDate AND amount_paid <> 0;
+            WHERE paid_at >= @startDate AND paid_at < @nextDate AND is_voided = 0 AND amount_paid <> 0;
 
             SELECT visit_date AS eventDate, amount_paid AS amount, payment_method AS paymentMethod
             FROM dbo.gym_day_pass_sales
@@ -351,7 +351,7 @@ async function getDashboardAnalytics(periodValue = 'month', { readOnly = false }
             SELECT COUNT_BIG(*) AS total,
                    ISNULL(SUM(amount_paid), 0) AS amount
             FROM dbo.gym_payment_transactions
-            WHERE paid_at >= @startDate AND paid_at < @nextDate AND amount_paid <> 0;
+            WHERE paid_at >= @startDate AND paid_at < @nextDate AND is_voided = 0 AND amount_paid <> 0;
 
             SELECT COUNT_BIG(*) AS total,
                    ISNULL(SUM(amount_paid), 0) AS amount

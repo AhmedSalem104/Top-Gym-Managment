@@ -132,7 +132,7 @@ async function getReportData(query = {}, options = {}) {
             FROM dbo.gym_payment_transactions AS t
             INNER JOIN dbo.memberships AS ms ON ms.id = t.membership_id
             INNER JOIN dbo.members AS m ON m.id = ms.member_id
-            WHERE t.paid_at >= @fromDate AND t.paid_at < @nextDate AND t.amount_paid <> 0
+            WHERE t.paid_at >= @fromDate AND t.paid_at < @nextDate AND t.is_voided = 0 AND t.amount_paid <> 0
             ORDER BY t.paid_at DESC, t.id DESC;
         `),
         baseRequest().query(`
@@ -145,7 +145,7 @@ async function getReportData(query = {}, options = {}) {
         baseRequest().query(`
             SELECT payment_method, COUNT(*) AS count, ISNULL(SUM(amount_paid), 0) AS amount
             FROM dbo.gym_payment_transactions
-            WHERE paid_at >= @fromDate AND paid_at < @nextDate AND amount_paid <> 0
+            WHERE paid_at >= @fromDate AND paid_at < @nextDate AND is_voided = 0 AND amount_paid <> 0
             GROUP BY payment_method ORDER BY amount DESC;
         `),
         getDashboard({ readOnly }),

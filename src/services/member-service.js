@@ -1,3 +1,4 @@
+const crypto = require('node:crypto');
 const { getPool, sql } = require('../database');
 const { withTransaction } = require('../database/transaction');
 const memberRepository = require('../repositories/member.repository');
@@ -46,6 +47,52 @@ function appError(message, statusCode = 400, code = null) {
     return error;
 }
 
+function normalizePaymentIdempotencyKey(value) {
+    if (value === undefined || value === null || String(value).trim() === '') return null;
+    const normalized = String(value).trim();
+    if (normalized.length > 200) throw appError('مفتاح عملية الدفع غير صالح.', 400, 'PAYMENT_IDEMPOTENCY_KEY_INVALID');
+    return crypto.createHash('sha256').update(normalized, 'utf8').digest('hex');
+}
+
+async function findPaymentTransactionByIdempotencyKey(connection, idempotencyKeyHash, { lock = false } = {}) {
+    if (!idempotencyKeyHash) return null;
+    const tenantId = currentTenantId({ required: true });
+    const result = await connection.request()
+        .input('tenantId', sql.Int, tenantId)
+        .input('idempotencyKeyHash', sql.Char(64), idempotencyKeyHash)
+        .query(`SELECT TOP (1) t.id,t.membership_id,t.transaction_type,t.amount_paid,
+                       m.member_id,m.tenant_id
+                FROM dbo.gym_payment_transactions AS t${lock ? ' WITH (UPDLOCK,HOLDLOCK)' : ''}
+                INNER JOIN dbo.memberships AS m ON m.id=t.membership_id
+                WHERE t.idempotency_key_hash=@idempotencyKeyHash
+                  AND m.tenant_id=@tenantId;`);
+    const row = result.recordset[0];
+    return row ? {
+        id: Number(row.id),
+        membershipId: Number(row.membership_id),
+        memberId: Number(row.member_id),
+        tenantId: Number(row.tenant_id),
+        transactionType: row.transaction_type,
+        amountPaid: Number(row.amount_paid)
+    } : null;
+}
+
+function assertPaymentReplayMatches(existing, { membershipId, amountPaid, transactionType }) {
+    if (!existing) return;
+    const sameOperation = existing.membershipId === Number(membershipId)
+        && existing.transactionType === transactionType
+        && Math.abs(existing.amountPaid - Number(amountPaid)) < 0.005;
+    if (!sameOperation) {
+        throw appError('مفتاح عملية الدفع مستخدم لعملية مختلفة.', 409, 'PAYMENT_IDEMPOTENCY_CONFLICT');
+    }
+}
+
+function normalizePaymentCollectionDate(value, fallback = todayInTimeZone()) {
+    const date = value ? parseDateOnly(value, 'تاريخ الدفع') : fallback;
+    if (date > todayInTimeZone()) throw appError('تاريخ الدفع لا يمكن أن يكون في المستقبل.', 400, 'PAYMENT_DATE_IN_FUTURE');
+    return date;
+}
+
 async function ensurePaymentTransactionsTable({ readOnly = false } = {}) {
     if (readOnly || getTenantContext()?.readOnlyBaseline) return;
     if (!paymentTransactionsTablePromise) {
@@ -67,6 +114,11 @@ async function ensurePaymentTransactionsTable({ readOnly = false } = {}) {
                         paid_at DATE NULL,
                         notes NVARCHAR(500) NULL,
                         source_payment_id INT NULL,
+                        is_voided BIT NOT NULL CONSTRAINT DF_gym_payment_transactions_voided_runtime DEFAULT (0),
+                        voided_at DATETIME2(0) NULL,
+                        voided_by_user_id INT NULL,
+                        void_reason NVARCHAR(500) NULL,
+                        idempotency_key_hash CHAR(64) NULL,
                         created_at DATETIME2(0) NOT NULL CONSTRAINT DF_gym_payment_transactions_created_runtime DEFAULT (SYSUTCDATETIME()),
                         CONSTRAINT FK_gym_payment_transactions_membership_runtime FOREIGN KEY (membership_id)
                             REFERENCES dbo.memberships(id) ON DELETE CASCADE,
@@ -80,6 +132,23 @@ async function ensurePaymentTransactionsTable({ readOnly = false } = {}) {
                         CONSTRAINT CK_gym_payment_transactions_method_runtime CHECK (payment_method IN (''cash'', ''card'', ''transfer'', ''other''))
                     );');
                 END;
+                IF COL_LENGTH(N'dbo.gym_payment_transactions', N'is_voided') IS NULL
+                    ALTER TABLE dbo.gym_payment_transactions ADD is_voided BIT NOT NULL CONSTRAINT DF_gym_payment_transactions_voided_runtime_migration DEFAULT (0);
+                IF COL_LENGTH(N'dbo.gym_payment_transactions', N'voided_at') IS NULL
+                    ALTER TABLE dbo.gym_payment_transactions ADD voided_at DATETIME2(0) NULL;
+                IF COL_LENGTH(N'dbo.gym_payment_transactions', N'voided_by_user_id') IS NULL
+                    ALTER TABLE dbo.gym_payment_transactions ADD voided_by_user_id INT NULL;
+                IF COL_LENGTH(N'dbo.gym_payment_transactions', N'void_reason') IS NULL
+                    ALTER TABLE dbo.gym_payment_transactions ADD void_reason NVARCHAR(500) NULL;
+                IF COL_LENGTH(N'dbo.gym_payment_transactions', N'idempotency_key_hash') IS NULL
+                    ALTER TABLE dbo.gym_payment_transactions ADD idempotency_key_hash CHAR(64) NULL;
+                IF NOT EXISTS (
+                    SELECT 1 FROM sys.check_constraints
+                    WHERE name = N'CK_gym_payment_transactions_void_state'
+                      AND parent_object_id = OBJECT_ID(N'dbo.gym_payment_transactions')
+                )
+                    EXEC(N'ALTER TABLE dbo.gym_payment_transactions ADD CONSTRAINT CK_gym_payment_transactions_void_state
+                        CHECK (is_voided = 0 OR (voided_at IS NOT NULL AND void_reason IS NOT NULL AND LEN(LTRIM(RTRIM(void_reason))) > 0));');
                 IF NOT EXISTS (
                     SELECT 1 FROM sys.indexes
                     WHERE name = N'IX_gym_payment_transactions_membership_date'
@@ -108,18 +177,14 @@ async function ensurePaymentTransactionsTable({ readOnly = false } = {}) {
                           ON dbo.gym_payment_transactions(source_payment_id)
                           WHERE source_payment_id IS NOT NULL;');
                 END;
-                ;WITH duplicate_subscriptions AS (
-                    SELECT id,
-                           ROW_NUMBER() OVER (
-                               PARTITION BY membership_id
-                               ORDER BY CASE WHEN source_payment_id IS NOT NULL THEN 0 ELSE 1 END,
-                                        created_at ASC,
-                                        id ASC
-                           ) AS row_number
+                IF EXISTS (
+                    SELECT membership_id
                     FROM dbo.gym_payment_transactions
-                    WHERE transaction_type = 'subscription'
+                    WHERE transaction_type = 'subscription' AND is_voided = 0
+                    GROUP BY membership_id
+                    HAVING COUNT_BIG(*) > 1
                 )
-                DELETE FROM duplicate_subscriptions WHERE row_number > 1;
+                    THROW 51211, 'Duplicate active subscription payment transactions require reconciliation.', 1;
                 IF NOT EXISTS (
                     SELECT 1 FROM sys.indexes
                     WHERE name = N'UX_gym_payment_transactions_subscription_membership'
@@ -129,6 +194,16 @@ async function ensurePaymentTransactionsTable({ readOnly = false } = {}) {
                     EXEC(N'CREATE UNIQUE INDEX UX_gym_payment_transactions_subscription_membership
                           ON dbo.gym_payment_transactions(membership_id)
                           WHERE transaction_type = ''subscription'';');
+                END;
+                IF NOT EXISTS (
+                    SELECT 1 FROM sys.indexes
+                    WHERE name = N'UX_gym_payment_transactions_idempotency'
+                      AND object_id = OBJECT_ID(N'dbo.gym_payment_transactions')
+                )
+                BEGIN
+                    EXEC(N'CREATE UNIQUE INDEX UX_gym_payment_transactions_idempotency
+                          ON dbo.gym_payment_transactions(idempotency_key_hash)
+                          WHERE idempotency_key_hash IS NOT NULL;');
                 END;
                 EXEC(N'INSERT INTO dbo.gym_payment_transactions
                     (membership_id, transaction_type, list_price, discount_amount, amount_due,
@@ -592,10 +667,15 @@ function normalizePayload(body = {}, { partial = false } = {}) {
     if (!partial || has(body, 'discountAmount')) output.discountAmount = money(body.discountAmount, 'الخصم');
     if (!partial || has(body, 'paymentMethod')) output.paymentMethod = parsePaymentMethod(body.paymentMethod);
     if (!partial || has(body, 'paymentNotes')) output.paymentNotes = optionalString(body.paymentNotes, 500);
+    if (has(body, 'paidAt') || has(body, 'paymentDate')) {
+        output.paidAt = body.paidAt || body.paymentDate
+            ? normalizePaymentCollectionDate(body.paidAt || body.paymentDate)
+            : null;
+    }
     return output;
 }
 
-function normalizePaymentPayload(body = {}, current = {}) {
+function normalizePaymentPayload(body = {}, current = {}, { paymentDateDefault = null } = {}) {
     let listPrice = has(body, 'listPrice')
         ? money(body.listPrice, 'السعر الأساسي')
         : money(current.list_price ?? current.amount_due, 'السعر الأساسي');
@@ -625,7 +705,9 @@ function normalizePaymentPayload(body = {}, current = {}) {
         paymentNotes: has(body, 'paymentNotes')
             ? optionalString(body.paymentNotes, 500)
             : (current.notes || null),
-        paidAt: amountPaid > 0 ? todayInTimeZone() : null
+        paidAt: amountPaid > 0
+            ? normalizePaymentCollectionDate(body.paidAt || body.paymentDate, paymentDateDefault || current.paid_at || current.paidAt || todayInTimeZone())
+            : null
     };
 }
 
@@ -1352,8 +1434,17 @@ async function addPaymentTransaction(connection, {
     paymentMethod = 'cash',
     paidAt = null,
     notes = null,
-    sourcePaymentId = null
+    sourcePaymentId = null,
+    idempotencyKey = null
 }) {
+    const idempotencyKeyHash = normalizePaymentIdempotencyKey(idempotencyKey);
+    if (idempotencyKeyHash) {
+        const existing = await findPaymentTransactionByIdempotencyKey(connection, idempotencyKeyHash, { lock: true });
+        if (existing) {
+            assertPaymentReplayMatches(existing, { membershipId, amountPaid, transactionType });
+            return existing.id;
+        }
+    }
     const result = await connection.request()
         .input('membershipId', sql.Int, membershipId)
         .input('transactionType', sql.VarChar(20), transactionType)
@@ -1366,23 +1457,36 @@ async function addPaymentTransaction(connection, {
         .input('paidAt', sql.Date, paidAt ? toUtcDate(paidAt) : null)
         .input('notes', sql.NVarChar(500), notes)
         .input('sourcePaymentId', sql.Int, sourcePaymentId || null)
+        .input('idempotencyKeyHash', sql.Char(64), idempotencyKeyHash)
         .query(`INSERT INTO dbo.gym_payment_transactions
                     (membership_id, transaction_type, list_price, discount_amount, amount_due,
-                     amount_paid, amount_remaining, payment_method, paid_at, notes, source_payment_id)
+                     amount_paid, amount_remaining, payment_method, paid_at, notes, source_payment_id,
+                     idempotency_key_hash)
                 OUTPUT INSERTED.id
                 VALUES (@membershipId, @transactionType, @listPrice, @discountAmount, @amountDue,
-                        @amountPaid, @amountRemaining, @paymentMethod, @paidAt, @notes, @sourcePaymentId);`);
+                        @amountPaid, @amountRemaining, @paymentMethod, @paidAt, @notes, @sourcePaymentId,
+                        @idempotencyKeyHash);`);
     return Number(result.recordset[0].id);
 }
 
-async function createMember(body, { tenantSlug = '' } = {}) {
+async function createMember(body, { tenantSlug = '', idempotencyKey = null } = {}) {
     const data = normalizePayload(body);
     const amountPaid = data.amountPaid ?? 0;
+    const paymentDate = amountPaid > 0 ? normalizePaymentCollectionDate(data.paidAt) : null;
+    const paymentIdempotencyKey = amountPaid > 0 ? normalizePaymentIdempotencyKey(idempotencyKey) : null;
     await ensureMemberIdentityFields();
     await ensurePaymentTransactionsTable();
     await membershipCodeService.ensureMembershipCodeStorage();
+    if (paymentIdempotencyKey) {
+        const existing = await findPaymentTransactionByIdempotencyKey(await getPool(), paymentIdempotencyKey);
+        if (existing) return getMemberById(existing.memberId);
+    }
     let issuedMembershipCode = null;
     const memberId = await withTransaction(async (transaction) => {
+        if (paymentIdempotencyKey) {
+            const existing = await findPaymentTransactionByIdempotencyKey(transaction, paymentIdempotencyKey, { lock: true });
+            if (existing) return existing.memberId;
+        }
         await assertNoDuplicateMember(transaction, data.phoneNormalized, data.email);
         const pricing = await calculatePricing(data.membershipType, data.membershipPlan, data.discountAmount, transaction);
         const membershipType = pricing.typeCode || data.membershipType;
@@ -1418,7 +1522,7 @@ async function createMember(body, { tenantSlug = '' } = {}) {
             .input('amountDue', sql.Decimal(12, 2), pricing.amountDue)
             .input('amountPaid', sql.Decimal(12, 2), amountPaid)
             .input('paymentMethod', sql.VarChar(20), data.paymentMethod)
-            .input('paidAt', sql.Date, data.amountPaid > 0 ? toUtcDate(todayInTimeZone()) : null)
+            .input('paidAt', sql.Date, paymentDate ? toUtcDate(paymentDate) : null)
             .input('notes', sql.NVarChar(500), data.paymentNotes)
             .query(`INSERT INTO dbo.gym_payments (membership_id, list_price, discount_amount, amount_due, amount_paid, payment_method, paid_at, notes)
                     VALUES (@membershipId, @listPrice, @discountAmount, @amountDue, @amountPaid, @paymentMethod, @paidAt, @notes);`);
@@ -1432,8 +1536,9 @@ async function createMember(body, { tenantSlug = '' } = {}) {
                 amountPaid,
                 amountRemaining: pricing.amountDue - amountPaid,
                 paymentMethod: data.paymentMethod,
-                paidAt: todayInTimeZone(),
-                notes: data.paymentNotes
+                paidAt: paymentDate,
+                notes: data.paymentNotes,
+                idempotencyKey: paymentIdempotencyKey
             });
         }
         await addEvent(transaction, id, membershipId, 'created', {
@@ -1451,16 +1556,31 @@ async function createMember(body, { tenantSlug = '' } = {}) {
     const member = await getMemberById(memberId);
     return {
         ...member,
-        membershipCode: issuedMembershipCode,
+        membershipCode: issuedMembershipCode || member.membershipCode,
         membershipCodePortalUrl: membershipCodeService.getPortalUrl('', tenantSlug)
     };
 }
 
-async function updateMember(id, body) {
+async function updateMember(id, body, idempotencyKey = null) {
     const memberId = ensureId(id);
+    const paymentIdempotencyKey = normalizePaymentIdempotencyKey(idempotencyKey);
     await ensureMemberIdentityFields();
     await ensurePaymentTransactionsTable();
+    if (paymentIdempotencyKey) {
+        const existing = await findPaymentTransactionByIdempotencyKey(await getPool(), paymentIdempotencyKey);
+        if (existing) {
+            if (existing.memberId !== memberId) throw appError('مفتاح عملية الدفع مستخدم لعضو مختلف.', 409, 'PAYMENT_IDEMPOTENCY_CONFLICT');
+            return getMemberById(memberId);
+        }
+    }
     const updatedId = await withTransaction(async (transaction) => {
+        if (paymentIdempotencyKey) {
+            const existing = await findPaymentTransactionByIdempotencyKey(transaction, paymentIdempotencyKey, { lock: true });
+            if (existing) {
+                if (existing.memberId !== memberId) throw appError('مفتاح عملية الدفع مستخدم لعضو مختلف.', 409, 'PAYMENT_IDEMPOTENCY_CONFLICT');
+                return memberId;
+            }
+        }
         const currentMember = await getRawMember(transaction, memberId);
         if (!currentMember) throw appError('العضو غير موجود.', 404);
         const currentMembership = await getRawMembership(transaction, memberId);
@@ -1540,11 +1660,15 @@ async function updateMember(id, body) {
                     amountPaid,
                     paymentMethod: patch.paymentMethod ?? currentPayment?.payment_method ?? 'cash',
                     paymentNotes: patch.paymentNotes === undefined ? (currentPayment?.notes || null) : patch.paymentNotes,
-                    paidAt: amountPaid > 0 ? todayInTimeZone() : null
+                    paidAt: amountPaid > 0 ? normalizePaymentCollectionDate(body.paidAt || body.paymentDate, todayInTimeZone()) : null
                 };
             } else {
                 payment = normalizePaymentPayload(body, currentPayment || {});
             }
+            const paymentDelta = Math.round((Number(payment.amountPaid) - previousAmountPaid) * 100) / 100;
+            payment.paidAt = paymentDelta > 0
+                ? normalizePaymentCollectionDate(body.paidAt || body.paymentDate, todayInTimeZone())
+                : (currentPayment?.paid_at ? formatDateOnly(currentPayment.paid_at) : null);
             if (currentPayment) {
                 await transaction.request()
                     .input('id', sql.Int, currentPayment.id)
@@ -1572,7 +1696,6 @@ async function updateMember(id, body) {
                     .query(`INSERT INTO dbo.gym_payments (membership_id, list_price, discount_amount, amount_due, amount_paid, payment_method, paid_at, notes)
                             VALUES (@membershipId, @listPrice, @discountAmount, @amountDue, @amountPaid, @paymentMethod, @paidAt, @notes);`);
             }
-            const paymentDelta = Math.round((Number(payment.amountPaid) - previousAmountPaid) * 100) / 100;
             if (paymentDelta !== 0) {
                 await addPaymentTransaction(transaction, {
                     membershipId: currentMembership.id,
@@ -1583,8 +1706,9 @@ async function updateMember(id, body) {
                     amountPaid: paymentDelta,
                     amountRemaining: payment.amountDue - payment.amountPaid,
                     paymentMethod: payment.paymentMethod,
-                    paidAt: paymentDelta > 0 ? todayInTimeZone() : null,
-                    notes: payment.paymentNotes || (paymentDelta < 0 ? 'تسوية يدوية على الرصيد.' : null)
+                    paidAt: paymentDelta > 0 ? payment.paidAt : null,
+                    notes: payment.paymentNotes || (paymentDelta < 0 ? 'تسوية يدوية على الرصيد.' : null),
+                    idempotencyKey: paymentIdempotencyKey
                 });
             }
         }
@@ -1632,12 +1756,30 @@ async function deleteMember(id) {
     if (!result.rowsAffected.some((count) => Number(count) > 0)) throw appError('العضو غير موجود.', 404);
 }
 
-async function activateMembership(id, body = {}) {
+async function activateMembership(id, body = {}, idempotencyKey = null) {
     const memberId = ensureId(id);
+    const paymentIdempotencyKey = normalizePaymentIdempotencyKey(idempotencyKey);
     await ensurePaymentTransactionsTable();
+    if (paymentIdempotencyKey) {
+        const existing = await findPaymentTransactionByIdempotencyKey(await getPool(), paymentIdempotencyKey);
+        if (existing) {
+            if (existing.memberId !== memberId) throw appError('مفتاح عملية الدفع مستخدم لعضو مختلف.', 409, 'PAYMENT_IDEMPOTENCY_CONFLICT');
+            return getMemberById(memberId);
+        }
+    }
     const membershipType = requiredString(body.membershipType || body.type, 'نوع العضوية', 30);
     const today = todayInTimeZone();
     const activatedId = await withTransaction(async (transaction) => {
+        await transaction.request()
+            .input('memberId', sql.Int, memberId)
+            .query('SELECT TOP (1) id FROM dbo.members WITH (UPDLOCK,HOLDLOCK) WHERE id=@memberId;');
+        if (paymentIdempotencyKey) {
+            const existing = await findPaymentTransactionByIdempotencyKey(transaction, paymentIdempotencyKey, { lock: true });
+            if (existing) {
+                if (existing.memberId !== memberId) throw appError('مفتاح عملية الدفع مستخدم لعضو مختلف.', 409, 'PAYMENT_IDEMPOTENCY_CONFLICT');
+                return memberId;
+            }
+        }
         const member = await getRawMember(transaction, memberId);
         if (!member) throw appError('العضو غير موجود.', 404);
         const existing = await getRawMembership(transaction, memberId);
@@ -1651,6 +1793,7 @@ async function activateMembership(id, body = {}) {
         const amountPaid = money(body.amountPaid, 'المبلغ المدفوع', 0);
         if (amountPaid > pricing.amountDue) throw appError('المبلغ المدفوع لا يمكن أن يتجاوز قيمة الاشتراك بعد الخصم.');
         const paymentMethod = parsePaymentMethod(body.paymentMethod, 'cash');
+        const paymentDate = amountPaid > 0 ? normalizePaymentCollectionDate(body.paidAt || body.paymentDate, today) : null;
         const paymentNotes = optionalString(body.paymentNotes, 500);
         const membershipNotes = optionalString(body.membershipNotes, 1000);
         const result = await transaction.request()
@@ -1670,7 +1813,7 @@ async function activateMembership(id, body = {}) {
             .input('amountDue', sql.Decimal(12, 2), pricing.amountDue)
             .input('amountPaid', sql.Decimal(12, 2), amountPaid)
             .input('paymentMethod', sql.VarChar(20), paymentMethod)
-            .input('paidAt', sql.Date, amountPaid > 0 ? toUtcDate(today) : null)
+            .input('paidAt', sql.Date, paymentDate ? toUtcDate(paymentDate) : null)
             .input('notes', sql.NVarChar(500), paymentNotes)
             .query(`INSERT INTO dbo.gym_payments (membership_id, list_price, discount_amount, amount_due, amount_paid, payment_method, paid_at, notes)
                     VALUES (@membershipId, @listPrice, @discountAmount, @amountDue, @amountPaid, @paymentMethod, @paidAt, @notes);`);
@@ -1684,8 +1827,9 @@ async function activateMembership(id, body = {}) {
                 amountPaid,
                 amountRemaining: pricing.amountDue - amountPaid,
                 paymentMethod,
-                paidAt: today,
-                notes: paymentNotes
+                paidAt: paymentDate,
+                notes: paymentNotes,
+                idempotencyKey: paymentIdempotencyKey
             });
         }
         await addEvent(transaction, memberId, membershipId, 'activated', {
@@ -1760,17 +1904,35 @@ async function resumeMember(id) {
     return getMemberById(resumedId);
 }
 
-async function renewMember(id, body = {}) {
+async function renewMember(id, body = {}, idempotencyKey = null) {
     const memberId = ensureId(id);
+    const paymentIdempotencyKey = normalizePaymentIdempotencyKey(idempotencyKey);
     await ensurePaymentTransactionsTable();
     const type = body.membershipType || body.type;
     const membershipType = requiredString(type, 'نوع العضوية', 30);
     const today = todayInTimeZone();
     const pool = await getPool();
     const existingMembership = await getRawMembership(pool, memberId);
-    if (!existingMembership) return activateMembership(memberId, body);
-    if (existingMembership.cancelled_at) return activateMembership(memberId, body);
+    if (!existingMembership) return activateMembership(memberId, body, paymentIdempotencyKey);
+    if (existingMembership.cancelled_at) return activateMembership(memberId, body, paymentIdempotencyKey);
+    if (paymentIdempotencyKey) {
+        const existing = await findPaymentTransactionByIdempotencyKey(pool, paymentIdempotencyKey);
+        if (existing) {
+            if (existing.memberId !== memberId) throw appError('مفتاح عملية الدفع مستخدم لعضو مختلف.', 409, 'PAYMENT_IDEMPOTENCY_CONFLICT');
+            return getMemberById(memberId);
+        }
+    }
     const renewedId = await withTransaction(async (transaction) => {
+        await transaction.request()
+            .input('memberId', sql.Int, memberId)
+            .query('SELECT TOP (1) id FROM dbo.members WITH (UPDLOCK,HOLDLOCK) WHERE id=@memberId;');
+        if (paymentIdempotencyKey) {
+            const existing = await findPaymentTransactionByIdempotencyKey(transaction, paymentIdempotencyKey, { lock: true });
+            if (existing) {
+                if (existing.memberId !== memberId) throw appError('مفتاح عملية الدفع مستخدم لعضو مختلف.', 409, 'PAYMENT_IDEMPOTENCY_CONFLICT');
+                return memberId;
+            }
+        }
         const current = await getRawMembership(transaction, memberId);
         if (!current) throw appError('لا يوجد اشتراك لهذا العضو.', 400);
         const membershipPlan = body.membershipPlan || current.membership_plan || 'gym_only';
@@ -1787,6 +1949,7 @@ async function renewMember(id, body = {}) {
         const amountPaid = money(body.amountPaid, 'المبلغ المدفوع', 0);
         if (amountPaid > pricing.amountDue) throw appError('المبلغ المدفوع لا يمكن أن يتجاوز قيمة الاشتراك بعد الخصم.');
         const paymentMethod = parsePaymentMethod(body.paymentMethod, 'cash');
+        const paymentDate = amountPaid > 0 ? normalizePaymentCollectionDate(body.paidAt || body.paymentDate, today) : null;
         const paymentNotes = optionalString(body.paymentNotes, 500);
         const membershipNotes = optionalString(body.membershipNotes, 1000);
         const result = await transaction.request()
@@ -1806,7 +1969,7 @@ async function renewMember(id, body = {}) {
             .input('amountDue', sql.Decimal(12, 2), pricing.amountDue)
             .input('amountPaid', sql.Decimal(12, 2), amountPaid)
             .input('paymentMethod', sql.VarChar(20), paymentMethod)
-            .input('paidAt', sql.Date, amountPaid > 0 ? toUtcDate(today) : null)
+            .input('paidAt', sql.Date, paymentDate ? toUtcDate(paymentDate) : null)
             .input('notes', sql.NVarChar(500), paymentNotes)
             .query(`INSERT INTO dbo.gym_payments (membership_id, list_price, discount_amount, amount_due, amount_paid, payment_method, paid_at, notes)
                     VALUES (@membershipId, @listPrice, @discountAmount, @amountDue, @amountPaid, @paymentMethod, @paidAt, @notes);`);
@@ -1819,10 +1982,11 @@ async function renewMember(id, body = {}) {
                 amountDue: pricing.amountDue,
                 amountPaid,
                 amountRemaining: pricing.amountDue - amountPaid,
-                paymentMethod,
-                paidAt: today,
-                notes: paymentNotes
-            });
+            paymentMethod,
+            paidAt: paymentDate,
+            notes: paymentNotes,
+            idempotencyKey: paymentIdempotencyKey
+        });
         }
         await addEvent(transaction, memberId, membershipId, 'renewed', {
             membershipPlan, membershipType: resolvedMembershipType, startDate, endDate,
@@ -1836,23 +2000,41 @@ async function renewMember(id, body = {}) {
     return getMemberById(renewedId);
 }
 
-async function recordPayment(membershipId, body = {}) {
+async function recordPayment(membershipId, body = {}, idempotencyKey = null) {
     const id = ensureId(membershipId, 'معرّف الاشتراك');
+    const paymentIdempotencyKey = normalizePaymentIdempotencyKey(idempotencyKey);
     await ensurePaymentTransactionsTable();
+    if (paymentIdempotencyKey) {
+        const existing = await findPaymentTransactionByIdempotencyKey(await getPool(), paymentIdempotencyKey);
+        if (existing && existing.membershipId !== id) {
+            throw appError('مفتاح عملية الدفع مستخدم لاشتراك مختلف.', 409, 'PAYMENT_IDEMPOTENCY_CONFLICT');
+        }
+        if (existing) return getMemberById(existing.memberId);
+    }
     const memberId = await withTransaction(async (transaction) => {
         const membershipResult = await transaction.request()
             .input('membershipId', sql.Int, id)
-            .query('SELECT member_id, cancelled_at FROM dbo.memberships WHERE id = @membershipId;');
+            .query('SELECT member_id, cancelled_at FROM dbo.memberships WITH (UPDLOCK,HOLDLOCK) WHERE id = @membershipId;');
         const membership = membershipResult.recordset[0];
         if (!membership) throw appError('الاشتراك غير موجود.', 404);
         if (membership.cancelled_at) throw appError('لا يمكن تسجيل دفعة على اشتراك ملغى.');
+        if (paymentIdempotencyKey) {
+            const existing = await findPaymentTransactionByIdempotencyKey(transaction, paymentIdempotencyKey, { lock: true });
+            if (existing) {
+                if (existing.membershipId !== id) throw appError('مفتاح عملية الدفع مستخدم لاشتراك مختلف.', 409, 'PAYMENT_IDEMPOTENCY_CONFLICT');
+                return Number(membership.member_id);
+            }
+        }
         const current = await getRawPayment(transaction, id);
         const previousAmountPaid = Number(current?.amount_paid || 0);
         const paymentBody = has(body, 'paymentAmount')
             ? { ...body, amountPaid: previousAmountPaid + money(body.paymentAmount, 'قيمة الدفعة الجديدة') }
             : body;
-        const payment = normalizePaymentPayload(paymentBody, current || {});
+        const payment = normalizePaymentPayload(paymentBody, current || {}, { paymentDateDefault: todayInTimeZone() });
         const paymentDelta = Math.round((Number(payment.amountPaid) - previousAmountPaid) * 100) / 100;
+        payment.paidAt = paymentDelta > 0
+            ? normalizePaymentCollectionDate(body.paidAt || body.paymentDate, todayInTimeZone())
+            : (current?.paid_at ? formatDateOnly(current.paid_at) : null);
         if (current) {
             await transaction.request()
                 .input('id', sql.Int, current.id)
@@ -1890,8 +2072,9 @@ async function recordPayment(membershipId, body = {}) {
                 amountPaid: paymentDelta,
                 amountRemaining: payment.amountDue - payment.amountPaid,
                 paymentMethod: payment.paymentMethod,
-                paidAt: paymentDelta > 0 ? todayInTimeZone() : null,
-                notes: payment.paymentNotes || (paymentDelta < 0 ? 'تسوية يدوية على الرصيد.' : null)
+                paidAt: paymentDelta > 0 ? payment.paidAt : null,
+                notes: payment.paymentNotes || (paymentDelta < 0 ? 'تسوية يدوية على الرصيد.' : null),
+                idempotencyKey: paymentIdempotencyKey
             });
         }
         await addEvent(transaction, Number(membership.member_id), id, 'payment_updated', {
@@ -2203,6 +2386,7 @@ async function getMemberDetails(id, { readOnly = false } = {}) {
                     FROM dbo.gym_payment_transactions AS p
                     INNER JOIN dbo.memberships AS m ON m.id = p.membership_id
                     WHERE m.member_id = @memberId
+                      AND p.is_voided = 0
                     ORDER BY p.created_at DESC, p.id DESC;`)
     ]);
 

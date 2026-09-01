@@ -36,11 +36,14 @@ function createMembersController({ memberService }) {
         },
 
         create: async (request, response) => {
-            response.status(201).json({ member: await memberService.createMember(request.body, { tenantSlug: request.tenant?.slug }) });
+            response.status(201).json({ member: await memberService.createMember(request.body, {
+                tenantSlug: request.tenant?.slug,
+                idempotencyKey: request.get('idempotency-key')
+            }) });
         },
 
         update: async (request, response) => {
-            response.json({ member: await memberService.updateMember(request.params.id, request.body) });
+            response.json({ member: await memberService.updateMember(request.params.id, request.body, request.get('idempotency-key')) });
         },
 
         freeze: async (request, response) => {
@@ -52,15 +55,15 @@ function createMembersController({ memberService }) {
         },
 
         renew: async (request, response) => {
-            response.json({ member: await memberService.renewMember(request.params.id, request.body) });
+            response.json({ member: await memberService.renewMember(request.params.id, request.body, request.get('idempotency-key')) });
         },
 
         addMembership: async (request, response) => {
-            response.status(201).json({ member: await memberService.renewMember(request.params.id, request.body) });
+            response.status(201).json({ member: await memberService.renewMember(request.params.id, request.body, request.get('idempotency-key')) });
         },
 
         payment: async (request, response) => {
-            response.json({ member: await memberService.recordPayment(request.params.id, request.body) });
+            response.json({ member: await memberService.recordPayment(request.params.id, request.body, request.get('idempotency-key')) });
         },
 
         refund: async (request, response) => {

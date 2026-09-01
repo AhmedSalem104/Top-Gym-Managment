@@ -848,7 +848,10 @@
                             <div class="field"><label for="amountDue">المستحق بعد الخصم</label><input id="amountDue" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0.00" readonly></div>
                             <div class="field" data-required-permission="payments.create"><label for="discountAmount">الخصم</label><input id="discountAmount" type="number" min="0" step="0.01" inputmode="decimal" value="0" placeholder="0.00"></div>
                         </div>
-                        <div class="field" data-required-permission="payments.create"><label for="amountPaid">المبلغ المدفوع</label><input id="amountPaid" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0.00"></div>
+                        <div class="field-grid">
+                            <div class="field" data-required-permission="payments.create"><label for="amountPaid">المبلغ المدفوع</label><input id="amountPaid" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0.00"></div>
+                            <div class="field" data-required-permission="payments.create"><label for="paidAt">تاريخ الدفع</label><input id="paidAt" type="date"><small class="field-hint">يُستخدم في تقارير التحصيل، ويظل مصدره الخادم.</small></div>
+                        </div>
                         <div class="pricing-summary" id="pricingSummary">السعر الأساسي: —</div>
                         <div class="field" data-required-permission="payments.create"><label for="paymentMethod">طريقة الدفع</label><select id="paymentMethod"><option value="cash">نقدي</option><option value="card">بطاقة</option><option value="transfer">تحويل</option><option value="other">أخرى</option></select></div>
                         <label class="checkbox-field whatsapp-after-save"><input id="sendWhatsAppAfterSave" type="checkbox" checked><span>📱 إرسال رسالة تفاصيل الاشتراك على واتساب بعد حفظ المشترك الجديد</span></label>

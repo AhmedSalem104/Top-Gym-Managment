@@ -24,7 +24,8 @@ test('database readiness audit finds the canonical migration set safe at source 
         '008-backup-recovery.sql',
         '009-platform-backup-audit.sql',
         '010-private-object-storage-metadata.sql',
-        '011-commercial-portal-and-registration.sql'
+        '011-commercial-portal-and-registration.sql',
+        '012-payment-ledger-integrity.sql'
     ]);
     assert.deepEqual(report.migrationFindings, []);
     assert.equal(report.schemaReview.status, 'REQUIRES STAGING VERIFICATION');

@@ -15,6 +15,7 @@ const memberFeedbackService = require('../src/services/member-feedback-service')
 const storeService = require('../src/services/store-service');
 const intelligenceService = require('../src/services/intelligence-service');
 const brandingService = require('../src/services/branding-service');
+const paymentLedgerSchema = require('../src/services/payment-ledger-schema');
 const saasService = require('../src/services/saas-service');
 const commercialSchema = require('../src/services/commercial-schema');
 const { createBackupRecoveryService } = require('../src/services/backup-recovery-service');
@@ -61,6 +62,7 @@ async function migrate() {
     await runTenantContext({ mode: 'platform', tenantId: bootstrapTenant.id }, () => backupRecoveryService.ensureRecoveryTables());
     await runTenantContext({ mode: 'platform', tenantId: bootstrapTenant.id }, () => saasService.ensureSaasTables());
     await runTenantContext({ mode: 'platform', tenantId: bootstrapTenant.id }, () => commercialSchema.ensureCommercialTables());
+    await runTenantContext({ mode: 'platform', tenantId: bootstrapTenant.id }, () => paymentLedgerSchema.ensurePaymentLedgerIntegrity());
     await runTenantContext({ mode: 'tenant', tenantId: bootstrapTenant.id }, async () => {
         await authService.ensureAuthReady();
         await libraryService.ensureLibraryTables();

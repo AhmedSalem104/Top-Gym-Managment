@@ -286,7 +286,7 @@ async function getTenantStats(tenantId) {
         (SELECT COUNT_BIG(*) FROM dbo.memberships WHERE tenant_id=@tenantId AND (cancelled_at IS NOT NULL OR end_date < CAST(SYSUTCDATETIME() AS DATE))) AS expired_memberships,
         (SELECT COUNT_BIG(*) FROM dbo.gym_attendance WHERE tenant_id=@tenantId AND attendance_date=CAST(SYSUTCDATETIME() AS DATE)) AS attendance_today,
         (SELECT COUNT_BIG(*) FROM dbo.gym_attendance WHERE tenant_id=@tenantId AND attendance_date >= DATEADD(month,DATEDIFF(month,0,SYSUTCDATETIME()),0)) AS attendance_month,
-        (SELECT ISNULL(SUM(amount_paid),0) FROM dbo.gym_payment_transactions WHERE tenant_id=@tenantId AND paid_at >= DATEADD(month,DATEDIFF(month,0,SYSUTCDATETIME()),0) AND amount_paid<>0)
+        (SELECT ISNULL(SUM(amount_paid),0) FROM dbo.gym_payment_transactions WHERE tenant_id=@tenantId AND paid_at >= DATEADD(month,DATEDIFF(month,0,SYSUTCDATETIME()),0) AND is_voided=0 AND amount_paid<>0)
           + (SELECT ISNULL(SUM(amount_paid),0) FROM dbo.gym_day_pass_sales WHERE tenant_id=@tenantId AND visit_date >= DATEADD(month,DATEDIFF(month,0,SYSUTCDATETIME()),0) AND status='completed' AND amount_paid>0) AS revenue_month,
         (SELECT ISNULL(SUM(amount),0) FROM dbo.gym_expenses WHERE tenant_id=@tenantId AND expense_date >= DATEADD(month,DATEDIFF(month,0,SYSUTCDATETIME()),0) AND ISNULL(is_voided,0)=0) AS expenses_month,
         (SELECT COUNT_BIG(*) FROM dbo.gym_store_sales WHERE tenant_id=@tenantId AND status='completed' AND sale_date >= DATEADD(month,DATEDIFF(month,0,SYSUTCDATETIME()),0)) AS store_sales_month,

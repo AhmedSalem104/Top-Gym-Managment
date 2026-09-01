@@ -40,7 +40,8 @@
     "enrich:exercise-content": "node scripts/enrich-exercise-data.js",
     "seed:performance": "node scripts/seed-performance-test-data.js",
     "sync:library": "node scripts/sync-library-data.js",
-    "repair:library": "node scripts/repair-tenant-library.js"
+    "repair:library": "node scripts/repair-tenant-library.js",
+    "reconcile:payment-ledger": "node scripts/reconcile-payment-ledger.js"
   },
   "engines": {
     "node": "24.x"

@@ -496,6 +496,11 @@ BEGIN
         paid_at DATE NULL,
         notes NVARCHAR(500) NULL,
         source_payment_id INT NULL,
+        is_voided BIT NOT NULL CONSTRAINT DF_gym_payment_transactions_voided DEFAULT (0),
+        voided_at DATETIME2(0) NULL,
+        voided_by_user_id INT NULL,
+        void_reason NVARCHAR(500) NULL,
+        idempotency_key_hash CHAR(64) NULL,
         created_at DATETIME2(0) NOT NULL CONSTRAINT DF_gym_payment_transactions_created DEFAULT (SYSUTCDATETIME()),
         CONSTRAINT FK_gym_payment_transactions_membership FOREIGN KEY (membership_id)
             REFERENCES dbo.memberships(id) ON DELETE CASCADE,
@@ -507,6 +512,7 @@ BEGIN
             AND ((transaction_type = 'adjustment' AND amount_paid <> 0) OR (transaction_type <> 'adjustment' AND amount_paid > 0))
         ),
         CONSTRAINT CK_gym_payment_transactions_method CHECK (payment_method IN ('cash', 'card', 'transfer', 'other'))
+        ,CONSTRAINT CK_gym_payment_transactions_void_state CHECK (is_voided = 0 OR (voided_at IS NOT NULL AND NULLIF(LTRIM(RTRIM(void_reason)), N'') IS NOT NULL))
     );
 END;
 
@@ -539,6 +545,18 @@ BEGIN
     CREATE UNIQUE INDEX UX_gym_payment_transactions_source_payment
         ON dbo.gym_payment_transactions(source_payment_id)
         WHERE source_payment_id IS NOT NULL;
+END;
+
+IF COL_LENGTH(N'dbo.gym_payment_transactions', N'idempotency_key_hash') IS NOT NULL
+   AND NOT EXISTS (
+       SELECT 1 FROM sys.indexes
+       WHERE name = N'UX_gym_payment_transactions_idempotency'
+         AND object_id = OBJECT_ID(N'dbo.gym_payment_transactions')
+   )
+BEGIN
+    EXEC(N'CREATE UNIQUE INDEX UX_gym_payment_transactions_idempotency
+          ON dbo.gym_payment_transactions(idempotency_key_hash)
+          WHERE idempotency_key_hash IS NOT NULL;');
 END;
 
 IF OBJECT_ID(N'dbo.gym_expenses', N'U') IS NULL

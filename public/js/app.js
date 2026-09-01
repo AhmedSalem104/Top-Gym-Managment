@@ -158,8 +158,34 @@
             return window.confirm(`هل تريد حذف العضو ${name}؟`);
         }
 
+        function getPaymentOperationKey(element) {
+            if (!element) return null;
+            if (!element.dataset.paymentIdempotencyKey) {
+                element.dataset.paymentIdempotencyKey = window.crypto?.randomUUID?.()
+                    || `payment-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+            }
+            return element.dataset.paymentIdempotencyKey;
+        }
+        function paymentRequestOptions(path, options = {}) {
+            const method = String(options.method || 'GET').toUpperCase();
+            const isPaymentMutation = method !== 'GET' && (
+                path === '/api/members'
+                || /^\/api\/members\/\d+$/.test(path)
+                || /\/api\/members\/\d+\/(renew|memberships)$/.test(path)
+                || /\/api\/memberships\/\d+\/payments$/.test(path)
+            );
+            if (!isPaymentMutation || !options.body) return options;
+            const element = path === '/api/members' || /^\/api\/members\/\d+$/.test(path)
+                ? $('memberForm')
+                : $('actionDialog');
+            const key = getPaymentOperationKey(element);
+            if (!key) return options;
+            const headers = new Headers(options.headers || {});
+            if (!headers.has('Idempotency-Key')) headers.set('Idempotency-Key', key);
+            return { ...options, headers };
+        }
         async function api(path, options = {}) {
-            return window.topGymApi.request(path, options);
+            return window.topGymApi.request(path, paymentRequestOptions(path, options));
         }
 
         function applyPricingCatalog(pricing) {
@@ -518,7 +544,7 @@
             const editing = Boolean($('memberId')?.value);
             const membershipAllowed = !editing || canUpdateMemberMembership();
             const pricingAllowed = !editing || (membershipAllowed && paymentAllowed);
-            ['discountAmount', 'amountPaid', 'paymentMethod'].forEach((id) => {
+            ['discountAmount', 'amountPaid', 'paidAt', 'paymentMethod'].forEach((id) => {
                 const input = $(id);
                 if (!input) return;
                 input.disabled = !paymentAllowed;
@@ -548,6 +574,13 @@
             if (note) note.hidden = paymentAllowed;
         }
 
+        function syncMemberPaymentDate(member = null) {
+            const input = $('paidAt');
+            if (!input) return;
+            input.value = member?.membership?.paymentPaidAt || todayIso();
+            $('memberForm')?.removeAttribute('data-payment-idempotency-key');
+        }
+
         function setFormDefaults(close = false) { const today = todayIso(); const defaultType = activeTypeEntries()[0]?.[0] || 'monthly'; $('memberId').value = ''; $('fullName').value = ''; $('phone').value = ''; $('email').value = ''; $('registrationDate').value = today; $('notes').value = ''; $('membershipType').value = defaultType; $('membershipPlan').value = 'gym_only'; $('startDate').value = today; $('endDate').value = calculatedEndDate(today, defaultType); $('membershipNotes').value = ''; $('discountAmount').value = '0'; $('amountPaid').value = ''; $('paymentMethod').value = 'cash'; $('sendWhatsAppAfterSave').checked = true; $('sendWhatsAppAfterSave').closest('.whatsapp-after-save')?.classList.remove('hidden'); state.editing = null; state.endDateManual = false; $('formTitle').textContent = 'إضافة عضو جديد'; $('saveButton').textContent = 'حفظ العضو'; $('cancelEditButton').classList.add('hidden'); $('resetButton').classList.add('hidden'); syncMemberPermissionFields(); updateFormPricing(); if (close) closeMemberDialog(); }
         async function openMemberDialog(member = null) {
             try {
@@ -564,6 +597,7 @@
                 // a member but is not allowed to browse pricing configuration.
                 if (canReadPricing()) await loadPricingCatalog();
                 if (member) editMember(member); else setFormDefaults();
+                syncMemberPaymentDate(member);
                 const dialog = $('memberDialog');
                 // This modal lives in the members workspace for legacy markup
                 // compatibility, but that workspace is hidden on dashboard and
@@ -685,6 +719,7 @@
         openDialog = function(action, member) {
             $('dialogSubmit').disabled = false;
             $('dialogSubmit').textContent = '\u062a\u0623\u0643\u064a\u062f';
+            $('actionDialog')?.removeAttribute('data-payment-idempotency-key');
             return baseOpenDialog(action, member);
         };
 
@@ -789,6 +824,7 @@
                 body.amountDue = Number($('amountDue').value || 0);
                 body.amountPaid = Number($('amountPaid').value || 0);
                 body.paymentMethod = $('paymentMethod').value;
+                body.paidAt = $('paidAt').value;
             }
             const button = $('saveButton');
             button.disabled = true;

@@ -74,6 +74,7 @@ async function getMonthlyData(range) {
             FROM dbo.gym_payment_transactions
             WHERE paid_at >= @monthStart
               AND paid_at < @nextMonth
+              AND is_voided = 0
               AND amount_paid <> 0;
         `),
         expenseSummaryRequest.query(`
