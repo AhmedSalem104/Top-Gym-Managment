@@ -175,3 +175,15 @@ test('member portal activation celebration is approval-gated, one-time and reduc
     assert.match(script, /localStorage/);
     assert.match(styles, /prefers-reduced-motion/);
 });
+
+test('member portal keeps theme controls outside the cards and uses mobile request cards', () => {
+    const page = read('public/member-portal.html');
+    const portalStyles = read('public/css/pages/member-portal.css');
+    const themeStyles = read('public/css/theme.css');
+
+    assert.match(page, /<div class="portal-utility-bar" data-no-print>\s*<button class="portal-theme-toggle theme-toggle-button"/);
+    assert.match(portalStyles, /\.portal-login::before\s*\{[\s\S]*?background:\s*linear-gradient/u);
+    assert.match(portalStyles, /@media \(max-width: 640px\)[\s\S]*?\.portal-request-history-row\s*\{[\s\S]*?display:\s*grid/u);
+    assert.match(portalStyles, /@media \(max-width: 640px\)[\s\S]*?\.portal-request-history-actions\s*\{[\s\S]*?grid-template-columns:\s*minmax\(0, 1fr\) auto/u);
+    assert.match(themeStyles, /\.portal-theme-toggle\s*\{[\s\S]*?position:\s*static[\s\S]*?min-width:\s*124px/u);
+});

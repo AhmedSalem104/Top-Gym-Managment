@@ -1500,10 +1500,43 @@ html[data-theme="dark"] .qr-member-page .theme-toggle-button{
 }
 
 .portal-theme-toggle{
-  position: fixed;
-  top: 18px;
-  left: 18px;
-  z-index: var(--z-sticky);
+  position: static;
+  z-index: auto;
+  min-width: 124px;
+  min-height: 42px;
+  padding-inline: 13px;
+  border-radius: 12px;
+  gap: 8px;
+  box-shadow: var(--shadow-card);
+}
+
+.portal-theme-toggle .ui-icon {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+}
+
+.portal-theme-toggle span {
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.portal-theme-toggle:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+html[data-theme="dark"] .member-portal-page .portal-theme-toggle {
+  border-color: var(--border-primary);
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+}
+
+html[data-theme="dark"] .member-portal-page .portal-theme-toggle:hover,
+html[data-theme="dark"] .member-portal-page .portal-theme-toggle:focus-visible {
+  border-color: var(--primary-border);
+  background: var(--primary-soft);
+  color: var(--primary-hover);
 }
 
 html[data-theme="dark"] .table-actions,
