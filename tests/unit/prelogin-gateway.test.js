@@ -15,6 +15,9 @@ test('pre-login gateway keeps the auth entry point and product preview together'
     assert.match(markup, /id="saasEntryContinue"/);
     assert.match(markup, /id="authLoginCard"/);
     assert.match(markup, /class="saas-entry-preview"/);
+    assert.match(markup, /class="saas-entry-preview-glass-panel"/);
+    assert.match(markup, /أدر جيمك بذكاء، <span>من مكان واحد\.<\/span>/);
+    assert.match(markup, /الدخول إلى مساحة الجيم/);
     assert.match(markup, /class="saas-entry-preview-sidebar"/);
     assert.match(markup, /class="saas-entry-preview-kpis"/);
     assert.match(markup, /class="saas-entry-preview-activity"/);
@@ -26,6 +29,9 @@ test('pre-login gateway layout is theme-token based and preserves desktop/mobile
     assert.match(styles, /grid-template-areas:\s*"preview copy"/);
     assert.doesNotMatch(styles, /grid-template-areas:[\s\S]*"preview action"/);
     assert.match(styles, /\.saas-entry-preview\s*\{[\s\S]*grid-area: preview/);
+    assert.match(styles, /grid-template-areas:\s*"copy preview"/);
+    assert.match(styles, /background-image:[\s\S]*gym-background\.webp/);
+    assert.match(styles, /\.auth-screen\[data-auth-stage="gateway"\][\s\S]*auth-theme-toggle[\s\S]*font-size: 0/);
     assert.match(styles, /@media \(max-width: 760px\)[\s\S]*\.saas-entry-copy\s*\{[\s\S]*display: contents/);
     assert.match(styles, /\.saas-entry-preview\s*\{[\s\S]*background: var\(--bg/);
     assert.doesNotMatch(styles, /\.saas-entry-preview[^}]*#[0-9a-f]{3,8}/i);
