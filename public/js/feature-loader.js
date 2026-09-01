@@ -50,7 +50,7 @@
         },
         print: {
             styles: [],
-            scripts: ['/js/exercise-assets.js?v=5', '/js/integrations/print-enhancements.js?v=12']
+            scripts: ['/js/exercise-assets.js?v=5', '/js/integrations/print-enhancements.js?v=13']
         },
         expenses: {
             dependencies: ['finance'],
@@ -394,13 +394,16 @@
         document.addEventListener('click', (event) => {
             const receiptButton = event.target.closest('[data-payment-receipt]');
             const memberPrintButton = event.target.closest('button[data-action="print"]');
-            const pricingPrintButton = event.target.closest('#dashboardPrintPricingButton');
+            const pricingPrintButton = event.target.closest('#dashboardPrintPricingButton, #dashboardPrintPricingPreviewButton');
+            const pricingPreviewButton = pricingPrintButton?.id === 'dashboardPrintPricingPreviewButton';
             const button = receiptButton || memberPrintButton || pricingPrintButton;
             const printReady = receiptButton
                 ? window.topGymPrint?.printPaymentReceipt
                 : memberPrintButton
                     ? window.topGymPrint?.printMember
-                    : window.topGymPrint?.downloadPricingPdf;
+                    : pricingPreviewButton
+                        ? window.topGymPrint?.printPricing
+                        : window.topGymPrint?.downloadPricingPdf;
             if (!button || button.dataset.topGymPrintLoading === 'true') return;
             if (pricingPrintButton && printReady) {
                 event.preventDefault();
@@ -409,7 +412,7 @@
                 button.disabled = true;
                 const label = button.querySelector('span:last-child');
                 const originalLabel = label?.textContent || '';
-                if (label) label.textContent = 'جاري تجهيز ملف PDF…';
+                if (label) label.textContent = pricingPreviewButton ? 'جاري تجهيز الطباعة…' : 'جاري تجهيز ملف PDF…';
                 Promise.resolve()
                     .then(() => printReady())
                     .catch((error) => {
@@ -428,7 +431,7 @@
             event.stopImmediatePropagation();
             button.dataset.topGymPrintLoading = 'true';
             ensurePrint().then(() => pricingPrintButton
-                ? window.topGymPrint?.downloadPricingPdf?.()
+                ? (pricingPreviewButton ? window.topGymPrint?.printPricing?.() : window.topGymPrint?.downloadPricingPdf?.())
                 : button.click())
                 .catch((error) => {
                     console.warn('[TOP GYM] Receipt print feature failed to load.', error);

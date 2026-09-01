@@ -214,11 +214,6 @@
             <button class="page-tab" type="button" data-page-tab="feedback" aria-selected="false"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-2.9-5.6 2.9 1.1-6.2L3 9.6l6.2-.9L12 3Z"/></svg><span>تقييمات المشتركين</span></button>
             <button class="page-tab" type="button" data-page-tab="member-subscription-requests" data-owner-only aria-selected="false"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 9h8M8 13h5M8 17h8"/><path d="m16 14 2 2 3-3"/></svg><span>طلبات اشتراك الأعضاء</span></button>
             <button class="page-tab" type="button" data-page-tab="portal-analytics" data-owner-only aria-selected="false"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19V5M4 19h16"/><path d="m7 15 3-4 3 2 5-6"/><circle cx="18" cy="7" r="1"/></svg><span>إحصائيات البوابة</span></button>
-            <div class="sidebar-pin-control" role="presentation">
-                <button class="sidebar-pin-button" id="sidebarPinButton" type="button" aria-label="تثبيت القائمة الجانبية" title="تثبيت القائمة الجانبية" aria-pressed="false">
-                    <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14.5 4.5 5 5-3.5 1.2-3.6 3.6v3.2H9.6v-3.2L6 10.7 3.5 9.5l6-6h5Z"/><path d="m10.4 17.5-4 4"/></svg>
-                </button>
-            </div>
             <button class="smart-assistant-launcher" id="smartAssistantLauncher" type="button" hidden aria-label="فتح المساعد الذكي" aria-controls="smartAssistantPanel" aria-expanded="false" title="اسأل المساعد">
                 <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 13.7 8.3 19 10l-5.3 1.7L12 17l-1.7-5.3L5 10l5.3-1.7Z"/><path d="m19 16 .7 2.3L22 19l-2.3.7L19 22l-.7-2.3L16 19l2.3-.7Z"/></svg>
                 <span class="smart-assistant-launcher-label">اسأل المساعد</span>
@@ -253,6 +248,7 @@
                     <div class="dashboard-hero-buttons">
                         <button class="btn btn-light btn-small" type="button" data-page-tab-link="members"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg><span>عرض المشتركين</span></button>
                         <button class="btn btn-primary btn-small dashboard-pricing-print-button" id="dashboardPrintPricingButton" data-owner-only type="button" title="إنشاء ملف PDF للاشتراكات والباقات" aria-label="طباعة الاشتراكات والباقات"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9V3h12v6"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v7H6z"/><path d="M17 12h.01"/></svg><span>طباعة الاشتراكات</span></button>
+                        <button class="btn btn-light btn-small dashboard-pricing-preview-button" id="dashboardPrintPricingPreviewButton" data-owner-only type="button" title="فتح نسخة الطباعة للأسعار والعضويات" aria-label="طباعة الأسعار والعضويات"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9V3h12v6"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v7H6z"/><path d="M17 12h.01"/></svg><span>طباعة الأسعار</span></button>
                     </div>
                 </div>
             </div>
@@ -1083,8 +1079,8 @@
     <script defer src="/js/auth-ui.js?v=14"></script>
     <script defer src="/js/kiosk.js?v=1"></script>
     <script defer src="/js/app.js?v=feature-expansion10-alert-contact-member-detail-layers-member-table-portal-initial-code-hydration-progressive-performance-skeleton-refund-busy-scope-store-visibility"></script>
-    <script defer src="/js/feature-loader.js?v=17"></script>
-    <script defer src="/js/page-tabs.js?v=21"></script>
+    <script defer src="/js/feature-loader.js?v=18"></script>
+    <script defer src="/js/page-tabs.js?v=22"></script>
     <script defer src="/js/button-loading.js?v=5"></script>
     <script defer src="/js/dialog-enhancements.js?v=2"></script>
     <script defer src="/js/pagination.js?v=2"></script>

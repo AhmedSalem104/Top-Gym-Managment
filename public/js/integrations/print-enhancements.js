@@ -253,10 +253,13 @@
                 const holder = document.createElement('div');
                 holder.dir = 'rtl';
                 holder.style.cssText = `position:fixed;left:-100000px;top:0;width:190mm;min-height:1px;overflow:visible;background:${printPaperColor()};z-index:-1;`;
+                const brandVariables = parsed.head?.querySelector('[data-top-gym-print-brand]')?.cloneNode(true);
+                if (brandVariables) holder.append(brandVariables);
                 holder.append(sheet);
                 document.body.append(holder);
                 try {
                     if (document.fonts?.ready) await document.fonts.ready;
+                    if (document.fonts?.load) await Promise.all(['400 10pt Cairo', '700 10pt Cairo', '800 16pt Cairo'].map((font) => document.fonts.load(font).catch(() => [])));
                     await Promise.all([...holder.querySelectorAll('img')].map((image) => image.complete ? Promise.resolve() : new Promise((resolve) => { image.onload = resolve; image.onerror = resolve; })));
                     const blob = await window.html2pdf().set({
                         margin: [8, 8, 8, 8],
@@ -622,6 +625,28 @@
                 }
             }
 
+            async function printPricing(existingWindow = null) {
+                const printWindow = existingWindow || window.open('', '_blank', 'width=980,height=820');
+                if (!printWindow) {
+                    notifyPrint('يرجى السماح بالنوافذ المنبثقة لإتمام طباعة الأسعار والعضويات.', 'error');
+                    return;
+                }
+                writePrintLoading(printWindow, 'جاري تجهيز الأسعار والعضويات للطباعة…');
+                try {
+                    const pricing = await fetchPrintJson('/api/pricing');
+                    writeWindow(printWindow, buildPricingDocument(pricing));
+                    printWindow.onafterprint = () => printWindow.close();
+                    window.setTimeout(async () => {
+                        await waitForPrintWindowFonts(printWindow);
+                        await waitForPrintWindowImages(printWindow);
+                        printWindow.focus();
+                        printWindow.print();
+                    }, 100);
+                } catch (error) {
+                    writeWindow(printWindow, '<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"></head><body><div class="print-error">' + escapeHtml(error.message || 'تعذر تجهيز الأسعار والعضويات للطباعة.') + '</div></body></html>');
+                }
+            }
+
             async function downloadCoachingPdf(id, type) {
                 try {
                     const result = await fetchCoachingSystem(id, type);
@@ -776,6 +801,7 @@
                 printMember,
                 printPaymentReceipt,
                 createPdfFile,
+                printPricing,
                 printCoachingSystem,
                 downloadCoachingPdf,
                 downloadPricingPdf,

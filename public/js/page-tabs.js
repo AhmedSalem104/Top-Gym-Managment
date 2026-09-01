@@ -5,7 +5,6 @@
     const validTabs = new Set(['dashboard', 'members', 'expenses', 'reports', 'management', 'branding', 'member-payment-methods', 'saas-billing', 'backup-history', 'permissions', 'attendance', 'library', 'trainees', 'intelligence', 'feedback', 'store', 'member-subscription-requests', 'portal-analytics']);
     let activationToken = 0;
     let activeTabName = null;
-    const SIDEBAR_PIN_STORAGE_KEY = 'topgym.sidebar.pinned';
 
     function ensureBackupHistoryTab() {
         const rail = document.getElementById('pageTabs');
@@ -43,7 +42,6 @@
 
         const targets = [
             ...rail.querySelectorAll('.page-tab'),
-            rail.querySelector('#sidebarPinButton'),
             rail.querySelector('.smart-assistant-launcher'),
             rail.querySelector('.auth-logout-button')
         ].filter(Boolean);
@@ -101,7 +99,7 @@
 
         const show = (element) => {
             if (window.matchMedia('(max-width: 1199px)').matches) return;
-            if (rail.classList.contains('is-hovered') || rail.classList.contains('is-pinned') || shell?.classList.contains('sidebar-expanded')) return;
+            if (rail.classList.contains('is-hovered') || shell?.classList.contains('sidebar-expanded')) return;
             const label = element?.dataset.sidebarLabel;
             if (!label) return;
 
@@ -118,7 +116,6 @@
 
         const targets = [
             ...rail.querySelectorAll('.page-tab, .smart-assistant-launcher'),
-            rail.querySelector('#sidebarPinButton')
         ].filter(Boolean);
         targets.forEach((element) => {
             element.addEventListener('pointerenter', () => show(element));
@@ -136,8 +133,7 @@
 
     function initSidebarPin() {
         const rail = document.getElementById('pageTabs');
-        const pinButton = document.getElementById('sidebarPinButton');
-        if (!rail || !pinButton) return;
+        if (!rail) return;
 
         syncSidebarTooltips(rail);
         const tooltip = initSidebarTooltip(rail);
@@ -164,7 +160,7 @@
                 revealRail();
                 return;
             }
-            if (rail.classList.contains('is-hovered') || rail.classList.contains('is-pinned')) return;
+            if (rail.classList.contains('is-hovered')) return;
             if (hoverOpenTimer) window.clearTimeout(hoverOpenTimer);
             hoverOpenTimer = window.setTimeout(revealRail, 120);
         };
@@ -178,10 +174,8 @@
                 return;
             }
             hoverReleaseTimer = window.setTimeout(() => {
-                if (!rail.classList.contains('is-pinned')) {
-                    rail.classList.remove('is-hovered');
-                    shell?.classList.remove('sidebar-expanded');
-                }
+                rail.classList.remove('is-hovered');
+                shell?.classList.remove('sidebar-expanded');
                 hoverReleaseTimer = null;
             }, 180);
         };
@@ -218,34 +212,6 @@
             });
         });
 
-        let pinned = false;
-        try {
-            pinned = window.localStorage.getItem(SIDEBAR_PIN_STORAGE_KEY) === 'true';
-        } catch {
-            pinned = false;
-        }
-
-        const applyPinnedState = (nextPinned) => {
-            pinned = Boolean(nextPinned);
-            rail.classList.toggle('is-pinned', pinned);
-            shell?.classList.toggle('sidebar-expanded', pinned || rail.classList.contains('is-hovered'));
-            pinButton.setAttribute('aria-pressed', String(pinned));
-            const label = pinned ? 'إلغاء تثبيت القائمة الجانبية' : 'تثبيت القائمة الجانبية';
-            pinButton.setAttribute('aria-label', label);
-            pinButton.setAttribute('title', label);
-            pinButton.dataset.sidebarLabel = label;
-            if (pinned) tooltip?.hide();
-        };
-
-        applyPinnedState(pinned);
-        pinButton.addEventListener('click', () => {
-            applyPinnedState(!pinned);
-            try {
-                window.localStorage.setItem(SIDEBAR_PIN_STORAGE_KEY, String(pinned));
-            } catch {
-                // The sidebar remains usable when storage is unavailable.
-            }
-        });
     }
 
     function initMobileNavigation() {
