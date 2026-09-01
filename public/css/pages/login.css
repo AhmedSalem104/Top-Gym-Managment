@@ -1739,7 +1739,7 @@ body.auth-locked .auth-screen[data-auth-stage="gateway"] {
 .auth-screen[data-auth-stage="gateway"] .saas-entry-copy h1 {
   max-width: 720px;
   margin: 18px 0 20px;
-  font-size: clamp(44px, 5vw, 80px);
+  font-size: clamp(40px, 4.35vw, 72px);
   letter-spacing: -.035em;
   line-height: 1.01;
 }
