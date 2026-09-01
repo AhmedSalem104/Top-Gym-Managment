@@ -5494,12 +5494,12 @@ body.auth-locked .auth-screen[data-auth-stage="gateway"] {
    visual layer scoped to the pre-login stage so the real auth form and its
    stage transition remain untouched. */
 .auth-screen[data-auth-stage="gateway"] {
+  display: block;
   align-items: stretch;
   overflow-x: hidden;
-  background-color: var(--bg-app);
-  background-image:
-    radial-gradient(circle at 13% 46%, var(--primary-soft), transparent 34%),
-    radial-gradient(circle at 88% 16%, var(--primary-soft), transparent 30%);
+  padding: 0;
+  background-color: var(--bg-surface);
+  background-image: radial-gradient(circle at 82% 42%, var(--primary-soft), transparent 34%);
 }
 
 .auth-screen[data-auth-stage="gateway"]::before {
@@ -5508,22 +5508,23 @@ body.auth-locked .auth-screen[data-auth-stage="gateway"] {
 }
 
 .auth-screen[data-auth-stage="gateway"] .auth-shell {
-  display: grid;
-  width: min(1280px, 100%);
-  min-height: 0;
-  grid-template-rows: auto auto auto;
-  align-content: center;
-  justify-items: stretch;
+  display: block;
+  width: 100%;
+  min-height: 100dvh;
+  margin: 0;
 }
 
 .auth-screen[data-auth-stage="gateway"] .auth-theme-toggle {
+  position: absolute;
+  top: clamp(24px, 4vh, 42px);
+  inset-inline-end: clamp(22px, 3.2vw, 58px);
+  z-index: 6;
   display: inline-flex;
   width: auto;
   min-width: 0;
   height: 44px;
   min-height: 44px;
-  margin-inline-start: auto;
-  margin-bottom: clamp(14px, 2vw, 22px);
+  margin: 0;
   padding-inline: 15px;
   flex-direction: row-reverse;
   gap: 8px;
@@ -5563,10 +5564,11 @@ body.auth-locked .auth-screen[data-auth-stage="gateway"] {
 .auth-screen[data-auth-stage="gateway"] .saas-entry-card {
   display: grid;
   width: 100%;
+  min-height: 100svh;
   overflow: visible;
   border: 0;
   border-radius: 0;
-  background: transparent;
+  background: var(--bg-surface);
   box-shadow: none;
 }
 
@@ -5575,10 +5577,14 @@ body.auth-locked .auth-screen[data-auth-stage="gateway"] {
 }
 
 .auth-screen[data-auth-stage="gateway"] .saas-entry-brand {
+  position: absolute;
+  top: clamp(26px, 4vh, 48px);
+  inset-inline-start: clamp(24px, 4.8vw, 88px);
+  z-index: 5;
   width: max-content;
   max-width: 100%;
-  margin-inline-end: auto;
-  padding: 0 0 clamp(18px, 2vw, 26px);
+  margin: 0;
+  padding: 0;
   flex-direction: row-reverse;
   direction: rtl;
 }
@@ -5610,10 +5616,13 @@ body.auth-locked .auth-screen[data-auth-stage="gateway"] {
 
 .auth-screen[data-auth-stage="gateway"] .saas-entry-layout {
   display: grid;
+  position: relative;
+  min-height: 100svh;
+  height: 100dvh;
   direction: ltr;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1.08fr) minmax(0, .92fr);
   grid-template-areas: "preview copy";
-  gap: clamp(30px, 5vw, 78px);
+  gap: 0;
   align-items: center;
   padding: 0;
 }
@@ -5625,7 +5634,9 @@ body.auth-locked .auth-screen[data-auth-stage="gateway"] {
   flex-direction: column;
   align-items: flex-start;
   justify-content: center;
-  padding: 0;
+  height: 100%;
+  padding-block: clamp(92px, 12vh, 148px) clamp(62px, 8vh, 96px);
+  padding-inline: clamp(52px, 6.8vw, 124px) clamp(34px, 4.2vw, 84px);
   direction: rtl;
   text-align: right;
 }
@@ -5654,30 +5665,32 @@ body.auth-locked .auth-screen[data-auth-stage="gateway"] {
 }
 
 .auth-screen[data-auth-stage="gateway"] .saas-entry-copy h1 {
-  max-width: 590px;
-  margin: 16px 0 14px;
-  font-size: clamp(36px, 4.2vw, 58px);
+  max-width: 640px;
+  margin: 18px 0 16px;
+  font-size: clamp(42px, 5vw, 76px);
   letter-spacing: -.035em;
-  line-height: 1.16;
+  line-height: 1.05;
 }
 
 .auth-screen[data-auth-stage="gateway"] .saas-entry-copy h1 span {
-  display: inline-block;
-  color: var(--primary);
-  white-space: nowrap;
+  display: block;
+  background: linear-gradient(110deg, var(--primary) 4%, color-mix(in srgb, var(--primary) 58%, var(--text-primary-soft) 42%) 96%);
+  color: transparent;
+  -webkit-background-clip: text;
+  background-clip: text;
 }
 
 .auth-screen[data-auth-stage="gateway"] .saas-entry-copy > p {
-  max-width: 540px;
+  max-width: 580px;
   margin: 0;
   color: var(--text-secondary);
-  font-size: clamp(var(--font-sm), 1.35vw, var(--font-md));
-  line-height: 1.9;
+  font-size: clamp(var(--font-md), 1.35vw, var(--font-lg));
+  line-height: 1.95;
 }
 
 .auth-screen[data-auth-stage="gateway"] .saas-entry-action {
-  width: min(100%, 480px);
-  margin-top: clamp(24px, 3.4vw, 34px);
+  width: min(100%, 520px);
+  margin-top: clamp(28px, 3.5vw, 42px);
   padding: 0;
   border: 0;
   border-radius: 0;
@@ -5710,11 +5723,12 @@ body.auth-locked .auth-screen[data-auth-stage="gateway"] {
 
 .auth-screen[data-auth-stage="gateway"] .saas-entry-continue {
   width: 100%;
-  min-height: 66px;
+  min-height: 64px;
   margin-top: 0;
   border-radius: 16px;
-  box-shadow: var(--shadow-primary);
-  font-size: var(--font-lg);
+  background: linear-gradient(110deg, var(--primary) 4%, color-mix(in srgb, var(--primary) 58%, var(--text-primary-soft) 42%) 96%);
+  box-shadow: 0 14px 30px color-mix(in srgb, var(--primary) 22%, transparent);
+  font-size: clamp(var(--font-md), 1.45vw, var(--font-lg));
 }
 
 .auth-screen[data-auth-stage="gateway"] .saas-entry-action > small {
@@ -5722,10 +5736,10 @@ body.auth-locked .auth-screen[data-auth-stage="gateway"] {
 }
 
 .auth-screen[data-auth-stage="gateway"] .saas-entry-features {
-  width: min(100%, 550px);
+  width: min(100%, 580px);
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
-  margin-top: clamp(22px, 3vw, 30px);
+  gap: 10px;
+  margin-top: clamp(24px, 3vw, 34px);
 }
 
 .auth-screen[data-auth-stage="gateway"] .saas-entry-features article {
@@ -5740,10 +5754,10 @@ body.auth-locked .auth-screen[data-auth-stage="gateway"] {
 }
 
 .auth-screen[data-auth-stage="gateway"] .saas-entry-feature-icon {
-  width: 25px;
-  height: 25px;
+  width: 28px;
+  height: 28px;
   flex: 0 0 auto;
-  border-radius: 8px;
+  border-radius: 9px;
 }
 
 .auth-screen[data-auth-stage="gateway"] .saas-entry-features article > span:last-child {
@@ -5765,39 +5779,44 @@ body.auth-locked .auth-screen[data-auth-stage="gateway"] {
 }
 
 .auth-screen[data-auth-stage="gateway"] .saas-entry-preview {
+  position: relative;
   display: block;
   grid-area: preview;
   width: 100%;
-  min-height: clamp(440px, calc(100svh - 230px), 650px);
-  overflow: hidden;
-  border: 1px solid var(--border-secondary);
-  border-radius: 30px 30px 30px 12px;
-  background: var(--bg-elevated);
-  box-shadow: var(--shadow-lg);
+  height: 100%;
+  min-height: 100%;
+  overflow: visible;
+  border: 0;
+  border-radius: 0 42px 42px 0;
+  background: var(--bg-sidebar);
+  box-shadow: none;
+  isolation: isolate;
   direction: rtl;
 }
 
 .auth-screen[data-auth-stage="gateway"] .saas-entry-preview::before {
   position: absolute;
-  z-index: -2;
-  inset: -10px;
-  background-image: linear-gradient(145deg, var(--primary-soft), transparent 66%), url("/assets/gym-background.webp");
-  background-position: center;
+  z-index: 0;
+  inset: 0;
+  background-image: linear-gradient(145deg, rgb(2 12 30 / .22), rgb(2 12 30 / .74)), url("/assets/gym-background.webp");
+  background-position: center center;
   background-size: cover;
   content: "";
-  filter: blur(2px) brightness(1.16) saturate(.92);
-  transform: scale(1.03);
+  filter: brightness(.86) saturate(.96);
+  border-radius: inherit;
 }
 
 .auth-screen[data-auth-stage="gateway"] .saas-entry-preview::after {
   position: absolute;
-  z-index: -1;
+  z-index: 1;
   inset: 0;
   background:
-    radial-gradient(ellipse 160px 78% at 100% 50%, var(--bg-app) 0 54%, transparent 55%),
-    linear-gradient(145deg, transparent 15%, var(--overlay));
+    radial-gradient(ellipse 52% 92% at 100% 50%, var(--bg-surface) 0 52%, transparent 52.8%),
+    radial-gradient(ellipse 54% 94% at 100% 50%, color-mix(in srgb, var(--primary) 62%, var(--text-primary-soft) 38%) 0 52.2%, transparent 53%),
+    linear-gradient(145deg, transparent 15%, rgb(2 6 23 / .52));
+  border-radius: inherit;
   content: "";
-  opacity: .92;
+  opacity: .96;
   pointer-events: none;
 }
 
@@ -5810,19 +5829,20 @@ body.auth-locked .auth-screen[data-auth-stage="gateway"] {
 .saas-entry-preview-glass-panel {
   position: absolute;
   top: 50%;
-  inset-inline: 14%;
-  z-index: 2;
+  inset-inline-start: clamp(-16px, -.8vw, -8px);
+  inset-inline-end: auto;
+  z-index: 3;
   display: grid;
-  gap: 18px;
-  width: auto;
-  padding: clamp(24px, 3vw, 30px);
-  border: 1px solid color-mix(in srgb, var(--bg-card) 76%, var(--primary) 24%);
-  border-radius: 24px;
-  background: var(--bg-card);
-  background: color-mix(in srgb, var(--bg-card) 78%, transparent);
-  box-shadow: var(--shadow-popup);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  gap: 24px;
+  width: min(510px, calc(100% - 74px));
+  max-height: calc(100% - 72px);
+  padding: clamp(28px, 3.2vw, 40px);
+  border: 1px solid rgb(147 155 255 / .46);
+  border-radius: 30px;
+  background: rgb(8 22 49 / .82);
+  box-shadow: 0 26px 70px rgb(2 7 24 / .42), 0 0 40px rgb(76 83 255 / .16);
+  backdrop-filter: blur(20px) saturate(1.1);
+  -webkit-backdrop-filter: blur(20px) saturate(1.1);
   transform: translateY(-50%);
 }
 
@@ -5834,43 +5854,46 @@ body.auth-locked .auth-screen[data-auth-stage="gateway"] {
 }
 
 .saas-entry-preview-glass-brand {
-  justify-items: center;
-  gap: 9px;
-  direction: rtl;
-  text-align: center;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid rgb(167 190 255 / .18);
+  direction: ltr;
+  text-align: left;
 }
 
 .saas-entry-preview-glass-brand > span:last-child {
-  gap: 1px;
-  justify-items: center;
+  gap: 3px;
+  justify-items: start;
   direction: ltr;
-  text-align: center;
+  text-align: left;
 }
 
 .saas-entry-preview-glass-brand strong {
-  color: var(--text-primary);
-  font-size: 18px;
+  color: rgb(246 248 255);
+  font-size: clamp(20px, 1.8vw, 25px);
   font-weight: var(--weight-extrabold);
   line-height: 1.1;
 }
 
 .saas-entry-preview-glass-brand small {
-  color: var(--text-muted);
-  font-size: 9px;
+  color: rgb(159 178 217);
+  font-size: 10px;
   font-weight: var(--weight-bold);
   letter-spacing: .12em;
 }
 
 .saas-entry-preview-glass-mark {
   display: grid;
-  width: 43px;
-  height: 43px;
+  width: 54px;
+  height: 54px;
   place-items: center;
-  border: 1px solid var(--primary-border);
-  border-radius: 12px;
-  background: var(--primary);
+  border: 1px solid rgb(150 159 255 / .35);
+  border-radius: 14px;
+  background: linear-gradient(135deg, var(--primary), var(--text-primary-soft));
   color: var(--text-on-primary);
-  box-shadow: var(--shadow-primary);
+  box-shadow: 0 10px 24px rgb(41 86 255 / .3);
 }
 
 .saas-entry-preview-glass-mark .ui-icon {
@@ -5880,15 +5903,16 @@ body.auth-locked .auth-screen[data-auth-stage="gateway"] {
 
 .saas-entry-preview-glass-list {
   display: grid;
-  gap: 4px;
+  gap: 0;
 }
 
 .saas-entry-preview-glass-list > div {
   grid-template-columns: auto minmax(0, 1fr);
-  gap: 11px;
+  gap: 16px;
   align-items: center;
-  padding: 9px 0;
-  border-bottom: 1px solid color-mix(in srgb, var(--border-primary) 66%, transparent);
+  padding: 16px 0;
+  border-bottom: 1px solid rgb(167 190 255 / .16);
+  direction: ltr;
 }
 
 .saas-entry-preview-glass-list > div:last-child {
@@ -5898,18 +5922,20 @@ body.auth-locked .auth-screen[data-auth-stage="gateway"] {
 .saas-entry-preview-glass-list > div > span:last-child {
   gap: 1px;
   min-width: 0;
+  direction: rtl;
+  text-align: right;
 }
 
 .saas-entry-preview-glass-list strong {
-  color: var(--text-primary);
-  font-size: var(--font-sm);
+  color: rgb(246 248 255);
+  font-size: clamp(var(--font-md), 1.5vw, var(--font-lg));
   font-weight: var(--weight-bold);
 }
 
 .saas-entry-preview-glass-list small {
   overflow: hidden;
-  color: var(--text-secondary);
-  font-size: 10px;
+  color: rgb(184 199 226);
+  font-size: clamp(10px, 1vw, 13px);
   line-height: 1.6;
   text-overflow: ellipsis;
   white-space: normal;
@@ -5917,13 +5943,14 @@ body.auth-locked .auth-screen[data-auth-stage="gateway"] {
 
 .saas-entry-preview-glass-icon {
   display: grid;
-  width: 30px;
-  height: 30px;
+  width: 56px;
+  height: 56px;
   place-items: center;
-  border: 1px solid var(--primary-border);
-  border-radius: 10px;
-  background: var(--primary-soft);
-  color: var(--primary);
+  border: 1px solid rgb(111 93 255 / .6);
+  border-radius: 15px;
+  background: rgb(18 31 75 / .76);
+  color: rgb(125 164 255);
+  box-shadow: inset 0 0 0 1px rgb(72 91 185 / .18);
 }
 
 .saas-entry-preview-glass-icon .ui-icon {
@@ -5932,70 +5959,154 @@ body.auth-locked .auth-screen[data-auth-stage="gateway"] {
 }
 
 .saas-entry-preview-glass-note {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   text-align: center;
-  color: var(--text-muted);
-  font-size: 10px;
+  color: rgb(184 199 226);
+  font-size: 11px;
   line-height: 1.6;
 }
 
+.saas-entry-preview-glass-note .ui-icon {
+  width: 16px;
+  height: 16px;
+  color: rgb(201 215 255);
+}
+
 .saas-entry-copyright {
-  margin: clamp(18px, 2vw, 24px) 0 0;
+  position: absolute;
+  right: 0;
+  bottom: clamp(14px, 2.2vh, 24px);
+  left: 0;
+  z-index: 5;
+  margin: 0;
   color: var(--text-muted);
   font-size: 10px;
   text-align: center;
 }
 
-@media (max-width: 980px) and (min-width: 761px) {
-  .auth-screen[data-auth-stage="gateway"] .saas-entry-layout {
-    gap: 28px;
-  }
-
-  .auth-screen[data-auth-stage="gateway"] .saas-entry-copy h1 {
-    font-size: clamp(34px, 4.8vw, 48px);
-  }
-
-  .auth-screen[data-auth-stage="gateway"] .saas-entry-preview {
-    min-height: 430px;
-  }
-
-  .saas-entry-preview-glass-panel {
-    inset-inline: 10%;
-    padding: 22px;
-  }
-}
-
-@media (max-width: 760px) {
-  .auth-screen[data-auth-stage="gateway"] {
-    align-items: start;
-    padding: 16px 14px 20px;
-  }
-
-  .auth-screen[data-auth-stage="gateway"] .auth-shell {
-    display: block;
-    width: 100%;
-  }
-
+@media (max-width: 1023px) and (min-width: 761px) {
   .auth-screen[data-auth-stage="gateway"] .auth-theme-toggle {
-    margin-bottom: 18px;
+    top: 24px;
+    inset-inline-end: 28px;
   }
 
   .auth-screen[data-auth-stage="gateway"] .saas-entry-brand {
+    position: relative;
+    top: auto;
+    inset-inline-start: auto;
     width: 100%;
-    padding-bottom: 20px;
+    padding: 82px 28px 24px;
   }
 
   .auth-screen[data-auth-stage="gateway"] .saas-entry-layout {
     display: flex;
     flex-direction: column;
-    gap: 28px;
+    height: auto;
+    min-height: 0;
+    gap: 34px;
+    padding: 0 28px 42px;
     direction: rtl;
   }
 
-    .auth-screen[data-auth-stage="gateway"] .saas-entry-copy {
-      display: flex;
-      width: 100%;
-      align-items: stretch;
-      order: 1;
+  .auth-screen[data-auth-stage="gateway"] .saas-entry-copy {
+    display: flex;
+    width: 100%;
+    height: auto;
+    align-items: stretch;
+    order: 1;
+    padding: 0;
+  }
+
+  .auth-screen[data-auth-stage="gateway"] .saas-entry-copy h1 {
+    max-width: 720px;
+    font-size: clamp(42px, 6vw, 62px);
+  }
+
+  .auth-screen[data-auth-stage="gateway"] .saas-entry-copy > p {
+    max-width: 680px;
+  }
+
+  .auth-screen[data-auth-stage="gateway"] .saas-entry-action {
+    max-width: 560px;
+  }
+
+  .auth-screen[data-auth-stage="gateway"] .saas-entry-features {
+    max-width: 680px;
+  }
+
+  .auth-screen[data-auth-stage="gateway"] .saas-entry-preview {
+    order: 2;
+    width: 100%;
+    height: auto;
+    min-height: 500px;
+    overflow: hidden;
+    border-radius: 28px;
+  }
+
+  .auth-screen[data-auth-stage="gateway"] .saas-entry-preview::after {
+    background: linear-gradient(145deg, transparent 10%, rgb(2 6 23 / .64));
+  }
+
+  .saas-entry-preview-glass-panel {
+    inset-inline-start: 50%;
+    inset-inline-end: auto;
+    width: min(560px, calc(100% - 48px));
+    max-height: calc(100% - 32px);
+    padding: 28px;
+    transform: translate(50%, -50%);
+  }
+}
+
+@media (max-width: 760px) {
+  .auth-screen[data-auth-stage="gateway"] {
+    display: block;
+    align-items: start;
+    min-height: 100dvh;
+    padding: 0;
+  }
+
+  .auth-screen[data-auth-stage="gateway"] .auth-shell {
+    display: block;
+    width: 100%;
+    min-height: 100dvh;
+  }
+
+  .auth-screen[data-auth-stage="gateway"] .auth-theme-toggle {
+    top: 16px;
+    inset-inline-end: 16px;
+    margin: 0;
+  }
+
+  .auth-screen[data-auth-stage="gateway"] .saas-entry-brand {
+    position: relative;
+    top: auto;
+    inset-inline-start: auto;
+    z-index: 5;
+    width: 100%;
+    margin: 0;
+    padding: 78px 18px 18px;
+  }
+
+  .auth-screen[data-auth-stage="gateway"] .saas-entry-layout {
+    display: flex;
+    flex-direction: column;
+    height: auto;
+    min-height: 0;
+    gap: 26px;
+    padding: 0 16px 30px;
+    direction: rtl;
+  }
+
+  .auth-screen[data-auth-stage="gateway"] .saas-entry-copy {
+    display: flex;
+    width: 100%;
+    height: auto;
+    align-items: stretch;
+    order: 1;
+    padding: 0;
   }
 
   .auth-screen[data-auth-stage="gateway"] .saas-entry-copy h1 {
@@ -6019,33 +6130,74 @@ body.auth-locked .auth-screen[data-auth-stage="gateway"] {
     margin-top: 24px;
   }
 
-    .auth-screen[data-auth-stage="gateway"] .saas-entry-preview {
-      order: 1;
-      min-height: 360px;
-      border-radius: 24px 24px 24px 10px;
-    }
+  .auth-screen[data-auth-stage="gateway"] .saas-entry-preview {
+    position: relative;
+    order: 2;
+    width: 100%;
+    height: auto;
+    min-height: clamp(332px, 70vw, 390px);
+    overflow: hidden;
+    border-radius: 26px;
+  }
 
-    .auth-screen[data-auth-stage="gateway"] .saas-entry-copy {
-      order: 2;
-    }
+  .auth-screen[data-auth-stage="gateway"] .saas-entry-preview::after {
+    background: linear-gradient(145deg, transparent 10%, rgb(2 6 23 / .64));
+  }
 
-    .auth-screen[data-auth-stage="gateway"] .saas-entry-action {
-      margin-top: 22px;
-    }
+  .auth-screen[data-auth-stage="gateway"] .saas-entry-action {
+    margin-top: 24px;
+  }
 
-    .auth-screen[data-auth-stage="gateway"] .saas-entry-continue {
-      min-height: 58px;
-    }
+  .auth-screen[data-auth-stage="gateway"] .saas-entry-continue {
+    min-height: 58px;
+  }
 
-    .auth-screen[data-auth-stage="gateway"] .saas-entry-copy-break {
-      display: none;
-    }
+  .auth-screen[data-auth-stage="gateway"] .saas-entry-copy-break {
+    display: none;
+  }
 
   .saas-entry-preview-glass-panel {
-    inset-inline: 8%;
-    gap: 16px;
+    top: 50%;
+    inset-inline: 6%;
+    width: auto;
+    max-height: none;
+    gap: 14px;
     padding: 20px;
     border-radius: 20px;
+    transform: translateY(-50%);
+  }
+
+  .saas-entry-preview-glass-brand {
+    padding-bottom: 14px;
+  }
+
+  .saas-entry-preview-glass-mark {
+    width: 44px;
+    height: 44px;
+  }
+
+  .saas-entry-preview-glass-list > div {
+    gap: 10px;
+    padding: 10px 0;
+  }
+
+  .saas-entry-preview-glass-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 11px;
+  }
+
+  .saas-entry-preview-glass-panel .saas-entry-preview-glass-list strong {
+    font-size: var(--font-sm);
+  }
+
+  .saas-entry-preview-glass-panel .saas-entry-preview-glass-list small {
+    font-size: 10px;
+  }
+
+  .auth-screen[data-auth-stage="gateway"] .saas-entry-copyright {
+    position: static;
+    margin: 0 0 18px;
   }
 }
 
@@ -6058,13 +6210,13 @@ body.auth-locked .auth-screen[data-auth-stage="gateway"] {
     font-size: 10px;
   }
 
-    .auth-screen[data-auth-stage="gateway"] .saas-entry-copy h1 {
-      font-size: clamp(30px, 9.2vw, 38px);
-    }
+  .auth-screen[data-auth-stage="gateway"] .saas-entry-copy h1 {
+    font-size: clamp(34px, 10vw, 44px);
+  }
 
-    .auth-screen[data-auth-stage="gateway"] .saas-entry-eyebrow {
-      font-size: 10px;
-    }
+  .auth-screen[data-auth-stage="gateway"] .saas-entry-eyebrow {
+    font-size: 10px;
+  }
 
   .auth-screen[data-auth-stage="gateway"] .saas-entry-features {
     gap: 7px;
@@ -6085,8 +6237,8 @@ body.auth-locked .auth-screen[data-auth-stage="gateway"] {
 
   .saas-entry-preview-glass-panel {
     inset-inline: 7%;
-    gap: 12px;
-    padding: 16px;
+    gap: 10px;
+    padding: 15px;
   }
 
   .saas-entry-preview-glass-list {
