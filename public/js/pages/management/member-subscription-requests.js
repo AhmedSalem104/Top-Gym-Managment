@@ -21,6 +21,8 @@
         PAYMENT_PROOF_INTEGRITY_FAILED: 'تعذر التحقق من سلامة إثبات الدفع.',
         PAYMENT_PROOF_UNAVAILABLE: 'إثبات الدفع غير متاح حاليًا.',
         PAYMENT_PROOF_CHANGED: 'تغير إثبات الدفع أثناء المراجعة. حدّث القائمة وحاول مرة أخرى.',
+        PAYMENT_DATE_REQUIRED: 'حدد تاريخ التحصيل الفعلي قبل اعتماد الطلب.',
+        PAYMENT_DATE_IN_FUTURE: 'تاريخ التحصيل لا يمكن أن يكون في المستقبل.',
         OBJECT_STORAGE_PROVIDER_NOT_CONFIGURED: 'التخزين الخاص غير مهيأ حاليًا.',
         MEMBER_PAYMENT_PROOF_STORAGE_NOT_CONFIGURED: 'تخزين إثباتات الدفع غير مهيأ حاليًا. راجع إعدادات التخزين ثم حاول مرة أخرى.',
         MEMBER_PAYMENT_PROOF_STORAGE_UNAVAILABLE: 'تخزين إثباتات الدفع غير متاح حاليًا. حاول مرة أخرى لاحقًا.',
@@ -109,7 +111,7 @@
             const membershipCode = membershipCodeLabel(request.member?.membershipCode);
             return `<tr data-member-request-id="${Number(request.id) || 0}">
                 <td><div class="member-request-member"><strong>${escapeHtml(request.member?.name || 'غير محدد')}</strong><span>${escapeHtml(membershipCode || 'بدون كود عضوية')}</span></div></td>
-                <td><div class="member-request-membership"><strong>${escapeHtml(requestTypeLabels[request.requestType] || request.requestType || 'طلب عضوية')}</strong><span>${escapeHtml(membership.plan || '—')} · ${escapeHtml(membership.type || '—')}</span><small>${escapeHtml(membership.startDate || '—')} → ${escapeHtml(membership.endDate || '—')}</small></div></td>
+                <td><div class="member-request-membership"><strong>${escapeHtml(requestTypeLabels[request.requestType] || request.requestType || 'طلب عضوية')}</strong><span>${escapeHtml(membership.plan || '—')} · ${escapeHtml(membership.type || '—')}</span><small>${escapeHtml(membership.startDate || '—')} → ${escapeHtml(membership.endDate || '—')}</small><small>التحصيل: ${escapeHtml(request.paymentDate || 'يحتاج تحديدًا')}</small></div></td>
                 <td><strong class="member-request-amount">${escapeHtml(amount(request.pricing?.amountDue, request.pricing?.currency))}</strong><small class="member-request-price-detail">السعر ${escapeHtml(amount(request.pricing?.listPrice, request.pricing?.currency))}</small></td>
                 <td>${proof}</td>
                 <td class="member-request-date" dir="ltr">${escapeHtml(date(request.createdAt))}</td>
@@ -165,23 +167,26 @@
         return reason?.trim().slice(0, 1000) || null;
     }
 
-    async function confirmApproval() {
+    async function confirmApproval(request) {
+        const paymentDate = request?.paymentDate || new Date().toISOString().slice(0, 10);
         if (window.Swal) {
-            const result = await window.Swal.fire({ position: 'center', icon: 'warning', title: 'اعتماد طلب الاشتراك؟', text: 'سيتم إنشاء/تجديد العضوية وتسجيل الدفعة داخل معاملة واحدة.', showCancelButton: true, confirmButtonText: 'اعتماد وتفعيل', cancelButtonText: 'إلغاء', buttonsStyling: false, customClass: { popup: 'top-gym-alert', confirmButton: 'btn btn-primary', cancelButton: 'btn btn-light' } });
-            return result.isConfirmed;
+            const result = await window.Swal.fire({ position: 'center', icon: 'warning', title: 'اعتماد طلب الاشتراك؟', text: 'سيتم إنشاء/تجديد العضوية وتسجيل الدفعة داخل معاملة واحدة.', input: 'date', inputValue: paymentDate, inputLabel: 'تاريخ التحصيل الفعلي', inputAttributes: { max: new Date().toISOString().slice(0, 10), 'aria-label': 'تاريخ التحصيل الفعلي' }, showCancelButton: true, confirmButtonText: 'اعتماد وتفعيل', cancelButtonText: 'إلغاء', buttonsStyling: false, customClass: { popup: 'top-gym-alert', confirmButton: 'btn btn-primary', cancelButton: 'btn btn-light' }, inputValidator: (value) => String(value || '').trim() ? undefined : 'تاريخ التحصيل مطلوب.' });
+            return { confirmed: result.isConfirmed, paymentDate: result.isConfirmed ? result.value : null };
         }
-        return window.confirm('سيتم تفعيل العضوية وتسجيل الدفعة. هل تريد المتابعة؟');
+        return { confirmed: window.confirm('سيتم تفعيل العضوية وتسجيل الدفعة بتاريخ التحصيل المحدد. هل تريد المتابعة؟'), paymentDate };
     }
 
     async function review(requestId, action, button) {
         if (!requestId || state.reviewing.has(requestId)) return;
-        const reason = action === 'reject' ? await askRejectionReason() : await confirmApproval();
+        const request = state.requests.find((item) => Number(item.id) === Number(requestId));
+        const reviewInput = action === 'reject' ? await askRejectionReason() : await confirmApproval(request);
+        const reason = action === 'reject' ? reviewInput : reviewInput?.confirmed ? reviewInput : null;
         if (action === 'reject' && !reason) return;
         if (action === 'approve' && !reason) return;
         state.reviewing.add(requestId);
         setButtonLoading(button, true, button?.dataset.loadingText || 'جاري التنفيذ...');
         try {
-            const body = action === 'reject' ? { reason } : {};
+            const body = action === 'reject' ? { reason } : { paymentDate: reason.paymentDate };
             await window.topGymAuth.api(`/api/member-subscription-requests/${requestId}/${action}`, { method: 'POST', body: JSON.stringify(body) });
             notify(action === 'approve' ? 'تم اعتماد الطلب وتفعيل العضوية.' : 'تم رفض الطلب.', 'success');
             await load();

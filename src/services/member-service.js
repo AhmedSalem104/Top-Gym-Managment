@@ -87,6 +87,11 @@ function assertPaymentReplayMatches(existing, { membershipId, amountPaid, transa
     }
 }
 
+function requiredPaymentCollectionDate(value) {
+    if (!value) throw appError('Payment collection date is required.', 422, 'PAYMENT_DATE_REQUIRED');
+    return normalizePaymentCollectionDate(value);
+}
+
 function normalizePaymentCollectionDate(value, fallback = todayInTimeZone()) {
     const date = value ? parseDateOnly(value, 'تاريخ الدفع') : fallback;
     if (date > todayInTimeZone()) throw appError('تاريخ الدفع لا يمكن أن يكون في المستقبل.', 400, 'PAYMENT_DATE_IN_FUTURE');
@@ -675,7 +680,7 @@ function normalizePayload(body = {}, { partial = false } = {}) {
     return output;
 }
 
-function normalizePaymentPayload(body = {}, current = {}, { paymentDateDefault = null } = {}) {
+function normalizePaymentPayload(body = {}, current = {}) {
     let listPrice = has(body, 'listPrice')
         ? money(body.listPrice, 'السعر الأساسي')
         : money(current.list_price ?? current.amount_due, 'السعر الأساسي');
@@ -706,7 +711,7 @@ function normalizePaymentPayload(body = {}, current = {}, { paymentDateDefault =
             ? optionalString(body.paymentNotes, 500)
             : (current.notes || null),
         paidAt: amountPaid > 0
-            ? normalizePaymentCollectionDate(body.paidAt || body.paymentDate, paymentDateDefault || current.paid_at || current.paidAt || todayInTimeZone())
+            ? requiredPaymentCollectionDate(body.paidAt || body.paymentDate)
             : null
     };
 }
@@ -1472,7 +1477,7 @@ async function addPaymentTransaction(connection, {
 async function createMember(body, { tenantSlug = '', idempotencyKey = null } = {}) {
     const data = normalizePayload(body);
     const amountPaid = data.amountPaid ?? 0;
-    const paymentDate = amountPaid > 0 ? normalizePaymentCollectionDate(data.paidAt) : null;
+    const paymentDate = amountPaid > 0 ? requiredPaymentCollectionDate(data.paidAt) : null;
     const paymentIdempotencyKey = amountPaid > 0 ? normalizePaymentIdempotencyKey(idempotencyKey) : null;
     await ensureMemberIdentityFields();
     await ensurePaymentTransactionsTable();
@@ -1660,14 +1665,14 @@ async function updateMember(id, body, idempotencyKey = null) {
                     amountPaid,
                     paymentMethod: patch.paymentMethod ?? currentPayment?.payment_method ?? 'cash',
                     paymentNotes: patch.paymentNotes === undefined ? (currentPayment?.notes || null) : patch.paymentNotes,
-                    paidAt: amountPaid > 0 ? normalizePaymentCollectionDate(body.paidAt || body.paymentDate, todayInTimeZone()) : null
+                    paidAt: amountPaid > 0 ? requiredPaymentCollectionDate(body.paidAt || body.paymentDate) : null
                 };
             } else {
                 payment = normalizePaymentPayload(body, currentPayment || {});
             }
             const paymentDelta = Math.round((Number(payment.amountPaid) - previousAmountPaid) * 100) / 100;
             payment.paidAt = paymentDelta > 0
-                ? normalizePaymentCollectionDate(body.paidAt || body.paymentDate, todayInTimeZone())
+                ? requiredPaymentCollectionDate(body.paidAt || body.paymentDate)
                 : (currentPayment?.paid_at ? formatDateOnly(currentPayment.paid_at) : null);
             if (currentPayment) {
                 await transaction.request()
@@ -1793,7 +1798,7 @@ async function activateMembership(id, body = {}, idempotencyKey = null) {
         const amountPaid = money(body.amountPaid, 'المبلغ المدفوع', 0);
         if (amountPaid > pricing.amountDue) throw appError('المبلغ المدفوع لا يمكن أن يتجاوز قيمة الاشتراك بعد الخصم.');
         const paymentMethod = parsePaymentMethod(body.paymentMethod, 'cash');
-        const paymentDate = amountPaid > 0 ? normalizePaymentCollectionDate(body.paidAt || body.paymentDate, today) : null;
+        const paymentDate = amountPaid > 0 ? requiredPaymentCollectionDate(body.paidAt || body.paymentDate) : null;
         const paymentNotes = optionalString(body.paymentNotes, 500);
         const membershipNotes = optionalString(body.membershipNotes, 1000);
         const result = await transaction.request()
@@ -1949,7 +1954,7 @@ async function renewMember(id, body = {}, idempotencyKey = null) {
         const amountPaid = money(body.amountPaid, 'المبلغ المدفوع', 0);
         if (amountPaid > pricing.amountDue) throw appError('المبلغ المدفوع لا يمكن أن يتجاوز قيمة الاشتراك بعد الخصم.');
         const paymentMethod = parsePaymentMethod(body.paymentMethod, 'cash');
-        const paymentDate = amountPaid > 0 ? normalizePaymentCollectionDate(body.paidAt || body.paymentDate, today) : null;
+        const paymentDate = amountPaid > 0 ? requiredPaymentCollectionDate(body.paidAt || body.paymentDate) : null;
         const paymentNotes = optionalString(body.paymentNotes, 500);
         const membershipNotes = optionalString(body.membershipNotes, 1000);
         const result = await transaction.request()
@@ -2030,10 +2035,10 @@ async function recordPayment(membershipId, body = {}, idempotencyKey = null) {
         const paymentBody = has(body, 'paymentAmount')
             ? { ...body, amountPaid: previousAmountPaid + money(body.paymentAmount, 'قيمة الدفعة الجديدة') }
             : body;
-        const payment = normalizePaymentPayload(paymentBody, current || {}, { paymentDateDefault: todayInTimeZone() });
+        const payment = normalizePaymentPayload(paymentBody, current || {});
         const paymentDelta = Math.round((Number(payment.amountPaid) - previousAmountPaid) * 100) / 100;
         payment.paidAt = paymentDelta > 0
-            ? normalizePaymentCollectionDate(body.paidAt || body.paymentDate, todayInTimeZone())
+            ? requiredPaymentCollectionDate(body.paidAt || body.paymentDate)
             : (current?.paid_at ? formatDateOnly(current.paid_at) : null);
         if (current) {
             await transaction.request()
@@ -2114,6 +2119,7 @@ async function createMembershipFromApprovedRequest({
     discountAmount = 0,
     amountDue,
     paymentMethod = 'transfer',
+    paymentDate,
     paymentNotes = null,
     membershipNotes = null,
     sourceRequestId = null
@@ -2142,6 +2148,10 @@ async function createMembershipFromApprovedRequest({
         throw appError('Ù„Ø§ ØªØªØ·Ø§Ø¨Ù‚ Ø¨ÙŠØ§Ù†Ø§Øª Ø§Ù„Ø³Ø¹Ø± Ø§Ù„Ù…Ø­ÙÙˆØ¸Ø©.', 409);
     }
     const ledgerMethod = parsePaymentMethod(paymentMethod, 'transfer');
+    if (!paymentDate) {
+        throw appError('Payment collection date is required.', 422, 'PAYMENT_DATE_REQUIRED');
+    }
+    const collectionDate = requiredPaymentCollectionDate(paymentDate);
     const member = await transaction.request()
         .input('memberId', sql.Int, id)
         .query('SELECT TOP (1) id FROM dbo.members WITH (UPDLOCK,HOLDLOCK) WHERE id=@memberId;');
@@ -2189,7 +2199,7 @@ async function createMembershipFromApprovedRequest({
         .input('amountDue', sql.Decimal(12, 2), due)
         .input('amountPaid', sql.Decimal(12, 2), due)
         .input('paymentMethod', sql.VarChar(20), ledgerMethod)
-        .input('paidAt', sql.Date, toUtcDate(todayInTimeZone()))
+        .input('paidAt', sql.Date, toUtcDate(collectionDate))
         .input('notes', sql.NVarChar(500), optionalString(paymentNotes, 500))
         .query(`INSERT INTO dbo.gym_payments (membership_id, list_price, discount_amount, amount_due, amount_paid, payment_method, paid_at, notes)
                 OUTPUT INSERTED.id
@@ -2206,7 +2216,7 @@ async function createMembershipFromApprovedRequest({
             amountPaid: due,
             amountRemaining: 0,
             paymentMethod: ledgerMethod,
-            paidAt: todayInTimeZone(),
+            paidAt: collectionDate,
             notes: optionalString(paymentNotes, 500),
             sourcePaymentId: paymentId
         })
@@ -2224,7 +2234,7 @@ async function createMembershipFromApprovedRequest({
         amountDue: due,
         amountPaid: due
     });
-    return { membershipId, paymentId, ledgerTransactionId, requestType: normalizedRequestType, operation: normalizedRequestType, startDate: start, endDate: end };
+    return { membershipId, paymentId, ledgerTransactionId, requestType: normalizedRequestType, operation: normalizedRequestType, startDate: start, endDate: end, paymentDate: collectionDate };
 }
 
 async function refundSubscription(id, body = {}, userId = null) {

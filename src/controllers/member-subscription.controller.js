@@ -60,7 +60,8 @@ function createMemberSubscriptionController({ service }) {
             response.json(await service.approveRequest(
                 request.params.requestId,
                 request.auth?.id,
-                request.body?.reviewNotes || request.body?.notes
+                request.body?.reviewNotes || request.body?.notes,
+                request.body?.paymentDate || request.body?.paidAt
             ));
         },
 

@@ -22,10 +22,12 @@
     startDate: $('portalSubscriptionStartDate'),
     startDateLabel: $('portalSubscriptionStartDateLabel'),
     startDateHint: $('portalSubscriptionStartDateHint'),
+    paymentDate: $('portalSubscriptionPaymentDate'),
     method: $('portalSubscriptionPaymentMethod'),
     methodList: $('portalPaymentMethodList'),
     summaryMembership: $('portalSubscriptionSummaryMembership'),
     summaryStart: $('portalSubscriptionSummaryStart'),
+    summaryPaymentDate: $('portalSubscriptionSummaryPaymentDate'),
     summaryAmount: $('portalSubscriptionSummaryAmount'),
     notes: $('portalSubscriptionNotes'),
     proof: $('portalSubscriptionProof'),
@@ -75,6 +77,8 @@
     PORTAL_SESSION_MEMBER_INVALID: 'انتهت صلاحية جلسة البوابة. أعد إدخال كود العضوية ثم حاول مرة أخرى.',
     MEMBERSHIP_SELECTION_REQUIRED: 'اختر الباقة ونوع العضوية قبل إرسال الطلب.',
     PAYMENT_METHOD_REQUIRED: 'اختر وسيلة الدفع التي استخدمتها قبل إرسال الطلب.',
+    PAYMENT_DATE_REQUIRED: 'حدد تاريخ التحصيل الفعلي قبل إرسال الطلب.',
+    PAYMENT_DATE_IN_FUTURE: 'تاريخ التحصيل لا يمكن أن يكون في المستقبل.',
     INVALID_PAYMENT_PROOF_SUBMISSION: 'تعذر قراءة إثبات الدفع. اختر ملفًا صحيحًا من الأنواع المسموحة ثم حاول مرة أخرى.',
     MEMBER_SUBSCRIPTION_REQUEST_TYPE_UNSUPPORTED: 'نوع الطلب المختار غير متاح حاليًا.',
     REVIEW_NOTES_REQUIRED: 'اكتب سبب الرفض قبل تأكيد رفض الطلب.',
@@ -294,6 +298,7 @@
     if (elements.summaryStart) elements.summaryStart.textContent = ['extension', 'renewal'].includes(elements.requestType?.value)
       ? 'يحدده النظام تلقائيًا'
       : formatDate(elements.startDate?.value);
+    if (elements.summaryPaymentDate) elements.summaryPaymentDate.textContent = formatDate(elements.paymentDate?.value);
     if (elements.summaryAmount) elements.summaryAmount.innerHTML = amount == null ? 'سيحدده النظام بعد التحقق' : formatMoney(amount, state.catalog?.currency || 'EGP');
   }
 
@@ -369,6 +374,10 @@
       }
       if (elements.startDate && !elements.startDate.value) elements.startDate.value = today();
       if (elements.startDate) elements.startDate.min = today();
+      if (elements.paymentDate) {
+        if (!elements.paymentDate.value) elements.paymentDate.value = today();
+        elements.paymentDate.max = today();
+      }
       syncRequestTypePresentation();
       updateSummary();
       renderHistory(history.requests || []);
@@ -414,6 +423,7 @@
   elements.type?.addEventListener('change', updateSummary);
   elements.requestType?.addEventListener('change', syncRequestTypePresentation);
   elements.startDate?.addEventListener('change', updateSummary);
+  elements.paymentDate?.addEventListener('change', updateSummary);
   elements.methodList?.addEventListener('change', (event) => {
     if (event.target.matches('input[name="portalPaymentMethod"]')) {
       elements.method.value = event.target.value;
@@ -453,6 +463,7 @@
     if (!file) { setFeedback('اختر إثبات الدفع أولًا.', 'error'); return; }
     if (file.size > 4 * 1024 * 1024) { setFeedback('حجم إثبات الدفع أكبر من الحد المسموح وهو 4MB.', 'error'); return; }
     if (!isProofRecovery && !selectedMethod()) { setFeedback('اختر وسيلة الدفع التي استخدمتها.', 'error'); return; }
+    if (!isProofRecovery && !elements.paymentDate?.value) { setFeedback('حدد تاريخ التحصيل الفعلي.', 'error'); elements.paymentDate?.focus(); return; }
     const isContinuation = ['extension', 'renewal'].includes(elements.requestType.value);
     if (!isProofRecovery && !isContinuation && !elements.startDate.value) { setFeedback('حدد تاريخ بداية العضوية.', 'error'); elements.startDate.focus(); return; }
     state.submitting = true;
@@ -468,6 +479,7 @@
         formData.append('membershipPlan', elements.plan.value);
         formData.append('membershipType', elements.type.value);
         formData.append('startDate', isContinuation ? '' : elements.startDate.value);
+        formData.append('paymentDate', elements.paymentDate.value);
         formData.append('paymentMethodCode', selectedMethod().id);
         if (elements.notes.value) formData.append('notes', elements.notes.value);
         formData.append('proof', file, file.name || 'payment-proof');
@@ -492,6 +504,8 @@
         elements.form.reset();
         elements.startDate.value = today();
         elements.startDate.min = today();
+        elements.paymentDate.value = today();
+        elements.paymentDate.max = today();
         syncRequestTypePresentation();
         renderPlans();
         renderTypes();

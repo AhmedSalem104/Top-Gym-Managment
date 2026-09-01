@@ -133,6 +133,7 @@ BEGIN
         duration_value INT NOT NULL,
         start_date DATE NOT NULL,
         end_date DATE NULL,
+        payment_date DATE NULL,
         list_price DECIMAL(12,2) NOT NULL,
         discount_amount DECIMAL(12,2) NOT NULL CONSTRAINT DF_gym_member_subscription_requests_discount DEFAULT (0),
         amount_due DECIMAL(12,2) NOT NULL,
@@ -156,6 +157,8 @@ BEGIN
         CONSTRAINT CK_gym_member_subscription_requests_amounts CHECK (list_price >= 0 AND discount_amount >= 0 AND discount_amount <= list_price AND amount_due = list_price - discount_amount)
     );
 END;
+IF COL_LENGTH(N'dbo.gym_member_subscription_requests', N'payment_date') IS NULL
+    ALTER TABLE dbo.gym_member_subscription_requests ADD payment_date DATE NULL;
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name=N'IX_gym_member_subscription_requests_tenant_queue' AND object_id=OBJECT_ID(N'dbo.gym_member_subscription_requests'))
     CREATE INDEX IX_gym_member_subscription_requests_tenant_queue ON dbo.gym_member_subscription_requests(tenant_id, status, created_at DESC, id DESC);
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name=N'UX_gym_member_subscription_requests_pending_kind' AND object_id=OBJECT_ID(N'dbo.gym_member_subscription_requests'))

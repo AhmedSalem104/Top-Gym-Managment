@@ -18,11 +18,14 @@ The remaining 15 rows still have `paid_at=2026-09-01`. Their `created_at` values
 ## Future payment contract
 
 - `paid_at` is the collection date and is stored separately from member registration date and membership start/end dates.
+- Member Portal requests now persist the submitted `payment_date` while they are pending; approval uses that stored date (or an explicitly reviewed date for a legacy pending request) for both `gym_payments.paid_at` and the independent ledger transaction.
+- Manual member payments, renewals, and partial payments require the actual collection date at entry. Each positive payment is its own transaction; adding a later payment never changes an earlier transaction.
 - The server validates the date and rejects future dates.
 - Positive payment deltas create independent ledger transactions; historical transactions are not rewritten.
 - Reports, analytics, finance summaries, platform revenue, and member payment history exclude voided ledger corrections.
 - Browser payment mutations send an `Idempotency-Key`; only its SHA-256 digest is stored.
 - A replay with the same key and matching operation is safe; reusing a key for a different operation is rejected.
+- A missing or future collection date is rejected instead of being silently replaced with the approval or insertion date.
 
 ## Controlled commands
 

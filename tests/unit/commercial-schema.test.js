@@ -25,6 +25,8 @@ test('commercial migration defines separate platform and tenant request boundari
     }
     assert.match(migration, /unique_visitors_estimate BIGINT/);
     assert.match(migration, /authenticated_members BIGINT/);
+    assert.match(migration, /payment_date DATE NULL/);
+    assert.match(migration, /COL_LENGTH\(N'dbo\.gym_member_subscription_requests', N'payment_date'\)/);
     assert.match(migration, /ON dbo\.gym_member_subscription_requests\(tenant_id, member_id, request_type\)/);
     assert.doesNotMatch(migration, /ON dbo\.gym_member_subscription_requests\(tenant_id\)\s+WHERE status='pending'/i);
 });

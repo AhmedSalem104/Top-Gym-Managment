@@ -169,6 +169,7 @@
                         <label>الباقة<select id="portalSubscriptionPlan" required><option value="">جاري تحميل الباقات...</option></select></label>
                         <label>نوع العضوية<select id="portalSubscriptionType" required><option value="">اختر نوع العضوية</option></select></label>
                         <label><span id="portalSubscriptionStartDateLabel">تاريخ البداية</span><input id="portalSubscriptionStartDate" type="date" required><small id="portalSubscriptionStartDateHint">يبدأ الاشتراك الجديد من التاريخ الذي تختاره.</small></label>
+                        <label><span>تاريخ التحصيل الفعلي</span><input id="portalSubscriptionPaymentDate" type="date" required><small>التاريخ الذي استلمت فيه إدارة الجيم المبلغ، وليس وقت إدخال الطلب.</small></label>
                     </div>
                     <section class="portal-payment-methods" aria-labelledby="portalPaymentMethodsTitle">
                         <div class="portal-subsection-heading"><div><span class="portal-section-kicker">PAYMENT DETAILS</span><h4 id="portalPaymentMethodsTitle">بيانات التحويل للجيم</h4><p>هذه البيانات تخص <strong data-brand-text="brandName">الجيم الحالي</strong> فقط.</p></div></div>
@@ -178,6 +179,7 @@
                     <div class="portal-subscription-summary" id="portalSubscriptionSummary" aria-live="polite">
                         <div><span>العضوية</span><strong id="portalSubscriptionSummaryMembership">—</strong></div>
                         <div><span>تاريخ البداية</span><strong id="portalSubscriptionSummaryStart">—</strong></div>
+                        <div><span>تاريخ التحصيل</span><strong id="portalSubscriptionSummaryPaymentDate">—</strong></div>
                         <div><span>المبلغ المطلوب</span><strong id="portalSubscriptionSummaryAmount">—</strong></div>
                     </div>
                     <label class="portal-subscription-notes">ملاحظة اختيارية<textarea id="portalSubscriptionNotes" rows="3" maxlength="1000" placeholder="أي ملاحظة تساعد الإدارة على مراجعة طلبك..."></textarea></label>
@@ -199,6 +201,6 @@
     <script defer src="/js/branding.js?v=5"></script>
     <script defer src="/js/ui-feedback.js?v=2"></script>
     <script defer src="/js/member-portal.js?v=11"></script>
-    <script defer src="/js/member-portal-subscription.js?v=6"></script>
+    <script defer src="/js/member-portal-subscription.js?v=7"></script>
 </body>
 </html>

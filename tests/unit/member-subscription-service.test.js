@@ -20,6 +20,19 @@ test('member request pending uniqueness is scoped by request type', () => {
     assert.equal(service.normalizeRequestType('renewal'), 'renewal');
 });
 
+test('member payment collection date is captured on the request and carried into approval', () => {
+    assert.match(schema, /payment_date DATE NULL/);
+    assert.match(source, /paymentDate: formatDateOnly\(row\.payment_date\)/);
+    assert.match(source, /const paymentDate = normalizePaymentDate\(body\.paymentDate \|\| body\.paidAt\)/);
+    assert.match(source, /paymentDateOverride \|\| formatDateOnly\(locked\.payment_date\)/);
+    assert.match(source, /paymentDate,/);
+    assert.match(memberSource, /function requiredPaymentCollectionDate\(value\)/);
+    assert.match(memberSource, /requiredPaymentCollectionDate\(body\.paidAt \|\| body\.paymentDate\)/);
+    assert.doesNotMatch(memberSource, /paymentDateDefault \|\| current\.paid_at/);
+    assert.match(memberSource, /const collectionDate = requiredPaymentCollectionDate\(paymentDate\)/);
+    assert.match(memberSource, /paidAt: collectionDate/);
+});
+
 test('future request types are schema-compatible but unsupported flows fail closed', () => {
     assert.throws(() => service.normalizeRequestType('freeze'), (error) => error.code === 'MEMBER_SUBSCRIPTION_REQUEST_TYPE_UNSUPPORTED');
     assert.match(source, /pending uniqueness by request_type/);

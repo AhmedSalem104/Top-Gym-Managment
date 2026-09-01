@@ -120,6 +120,17 @@ function paymentLedgerMethod(methodCode) {
     return String(methodCode || '').toLowerCase() === 'cash' ? 'cash' : 'transfer';
 }
 
+function normalizePaymentDate(value) {
+    if (!value) {
+        throw requestError('Payment collection date is required.', 422, 'PAYMENT_DATE_REQUIRED');
+    }
+    const paymentDate = parseDateOnly(value, 'payment collection date');
+    if (paymentDate > todayInTimeZone()) {
+        throw requestError('Payment collection date cannot be in the future.', 400, 'PAYMENT_DATE_IN_FUTURE');
+    }
+    return paymentDate;
+}
+
 function requestFromRow(row, codePreview = null) {
     if (!row) return null;
     return {
@@ -140,6 +151,7 @@ function requestFromRow(row, codePreview = null) {
             startDate: formatDateOnly(row.start_date),
             endDate: formatDateOnly(row.end_date)
         },
+        paymentDate: formatDateOnly(row.payment_date),
         pricing: {
             listPrice: Number(row.list_price || 0),
             discountAmount: Number(row.discount_amount || 0),
@@ -172,7 +184,7 @@ function requestFromRow(row, codePreview = null) {
 const REQUEST_SELECT = `
     SELECT r.id,r.tenant_id,r.member_id,r.request_type,r.status,
            r.membership_plan,r.membership_type,r.duration_mode,r.duration_value,
-           r.start_date,r.end_date,r.list_price,r.discount_amount,r.amount_due,r.currency,
+           r.start_date,r.end_date,r.payment_date,r.list_price,r.discount_amount,r.amount_due,r.currency,
            r.payment_method_code,r.payment_method_name,r.notes,r.review_notes,
            r.reviewed_at,r.approved_membership_id,r.created_payment_id,r.created_ledger_transaction_id,
            r.created_at,r.updated_at,
@@ -290,6 +302,7 @@ async function normalizePortalRequest(body = {}, { requestType: requestTypeOverr
     const endDate = startDate
         ? memberService.membershipEndDateFromConfig(startDate, pricing.typeConfig)
         : null;
+    const paymentDate = normalizePaymentDate(body.paymentDate || body.paidAt);
     const method = await getTenantPaymentMethod(body.paymentMethodCode || body.paymentMethod);
     return {
         tenantId,
@@ -300,6 +313,7 @@ async function normalizePortalRequest(body = {}, { requestType: requestTypeOverr
         durationValue: Math.round(Number(pricing.typeConfig.durationValue)),
         startDate,
         endDate,
+        paymentDate,
         listPrice: Number(pricing.listPrice),
         discountAmount: Number(pricing.discountAmount),
         amountDue: Number(pricing.amountDue),
@@ -438,6 +452,7 @@ async function createPortalRequest(request, body = {}, proofInput = null) {
                     .input('durationValue', sql.Int, data.durationValue)
                     .input('startDate', sql.Date, new Date(`${requestDates.startDate}T00:00:00.000Z`))
                     .input('endDate', sql.Date, new Date(`${requestDates.endDate}T00:00:00.000Z`))
+                    .input('paymentDate', sql.Date, new Date(`${data.paymentDate}T00:00:00.000Z`))
                     .input('listPrice', sql.Decimal(12, 2), data.listPrice)
                     .input('discountAmount', sql.Decimal(12, 2), data.discountAmount)
                     .input('amountDue', sql.Decimal(12, 2), data.amountDue)
@@ -448,11 +463,11 @@ async function createPortalRequest(request, body = {}, proofInput = null) {
                     .input('idempotencyKeyHash', sql.Char(64), idempotency)
                     .query(`INSERT INTO dbo.gym_member_subscription_requests
                             (tenant_id,member_id,request_type,status,membership_plan,membership_type,
-                             duration_mode,duration_value,start_date,end_date,list_price,discount_amount,
+                             duration_mode,duration_value,start_date,end_date,payment_date,list_price,discount_amount,
                              amount_due,currency,payment_method_code,payment_method_name,notes,idempotency_key_hash)
                             OUTPUT INSERTED.id
                             VALUES (@tenantId,@memberId,@requestType,@status,@membershipPlan,@membershipType,
-                                    @durationMode,@durationValue,@startDate,@endDate,@listPrice,@discountAmount,
+                                    @durationMode,@durationValue,@startDate,@endDate,@paymentDate,@listPrice,@discountAmount,
                                     @amountDue,@currency,@paymentMethodCode,@paymentMethodName,@notes,@idempotencyKeyHash);`);
                 requestId = Number(inserted.recordset[0]?.id);
                 if (!requestId) throw requestError('The subscription request could not be created.', 503, 'MEMBER_SUBSCRIPTION_REQUEST_NOT_AVAILABLE');
@@ -659,7 +674,7 @@ function approvalPaymentNotes(row) {
     return text(`Member portal payment method: ${method}${notes ? `; ${notes}` : ''}`, '', 500);
 }
 
-async function approveRequest(requestId, actorUserId, reviewNotes = '') {
+async function approveRequest(requestId, actorUserId, reviewNotes = '', paymentDateOverride = null) {
     const tenantId = currentTenantId({ required: true });
     const actorId = positiveId(actorUserId, 'actor id');
     await ensureTables();
@@ -695,6 +710,7 @@ async function approveRequest(requestId, actorUserId, reviewNotes = '') {
             || String(lockedProof.sha256 || '').toLowerCase() !== String(initialProof?.proof_sha256 || '').toLowerCase()) {
             throw requestError('The payment proof changed during review. Please reload and verify it again.', 409, 'PAYMENT_PROOF_CHANGED');
         }
+        const paymentDate = normalizePaymentDate(paymentDateOverride || formatDateOnly(locked.payment_date));
         const createdResult = await memberService.createMembershipFromApprovedRequest({
             transaction,
             memberId: locked.member_id,
@@ -709,6 +725,7 @@ async function approveRequest(requestId, actorUserId, reviewNotes = '') {
             discountAmount: Number(locked.discount_amount),
             amountDue: Number(locked.amount_due),
             paymentMethod: paymentLedgerMethod(locked.payment_method_code),
+            paymentDate,
             paymentNotes: approvalPaymentNotes(locked),
             membershipNotes: locked.notes,
             sourceRequestId: locked.id
@@ -724,8 +741,9 @@ async function approveRequest(requestId, actorUserId, reviewNotes = '') {
             .input('requestType', sql.VarChar(40), createdResult.requestType)
             .input('startDate', sql.Date, new Date(`${createdResult.startDate}T00:00:00.000Z`))
             .input('endDate', sql.Date, new Date(`${createdResult.endDate}T00:00:00.000Z`))
+            .input('paymentDate', sql.Date, new Date(`${createdResult.paymentDate}T00:00:00.000Z`))
             .query(`UPDATE dbo.gym_member_subscription_requests
-                    SET request_type=@requestType,start_date=@startDate,end_date=@endDate,
+                    SET request_type=@requestType,start_date=@startDate,end_date=@endDate,payment_date=@paymentDate,
                         status='approved',reviewed_by_user_id=@actorId,reviewed_at=SYSUTCDATETIME(),
                         review_notes=@reviewNotes,approved_membership_id=@membershipId,
                         created_payment_id=@paymentId,created_ledger_transaction_id=@ledgerTransactionId,
@@ -742,7 +760,7 @@ async function approveRequest(requestId, actorUserId, reviewNotes = '') {
             action: 'member_subscription_approved',
             entityType: 'member_subscription_request',
             entityId: positiveId(requestId, 'request id'),
-            details: 'Member subscription request approved and membership/payment created atomically.',
+            details: `Member subscription request approved and membership/payment created atomically. Payment collection date: ${createdResult.paymentDate}.`,
             reason: text(reviewNotes, '', 1000),
             executor: transaction
         });

@@ -13,6 +13,8 @@ const analyticsService = fs.readFileSync(path.join(__dirname, '../../src/service
 const expenseRepository = fs.readFileSync(path.join(__dirname, '../../src/repositories/expense.repository.js'), 'utf8');
 const platformService = fs.readFileSync(path.join(__dirname, '../../src/services/platform-admin-service.js'), 'utf8');
 const client = fs.readFileSync(path.join(__dirname, '../../public/js/app.js'), 'utf8');
+const portalClient = fs.readFileSync(path.join(__dirname, '../../public/js/member-portal-subscription.js'), 'utf8');
+const memberRequestClient = fs.readFileSync(path.join(__dirname, '../../public/js/pages/management/member-subscription-requests.js'), 'utf8');
 const { assertKnownDuplicate } = require('../../scripts/reconcile-payment-ledger');
 
 test('payment ledger integrity migration is additive, idempotent, and does not delete or rewrite facts', () => {
@@ -39,6 +41,20 @@ test('new payment mutations use server-side collection dates and hashed idempote
     assert.match(memberService, /idempotency_key_hash/);
     assert.match(client, /Idempotency-Key/);
     assert.match(client, /body\.paidAt\s*=\s*\$\('paidAt'\)\.value/);
+    assert.match(client, /id="dialogPaidAt"/);
+    assert.match(client, /paidAt: \$\('dialogPaidAt'\)\.value/);
+    assert.match(portalClient, /formData\.append\('paymentDate', elements\.paymentDate\.value\)/);
+    assert.match(memberRequestClient, /input: 'date'/);
+});
+
+test('partial payments remain independent transactions and monthly reports use collection date only', () => {
+    assert.match(memberService, /const paymentDelta = Math\.round\(\(Number\(payment\.amountPaid\) - previousAmountPaid\) \* 100\) \/ 100/);
+    assert.match(memberService, /transactionType: paymentDelta > 0 \? 'payment' : 'adjustment'/);
+    assert.match(memberService, /amountPaid: paymentDelta/);
+    assert.match(memberService, /if \(paymentDelta !== 0\) \{/);
+    assert.match(reportService, /t\.paid_at >= @fromDate AND t\.paid_at < @nextDate/);
+    assert.match(reportService, /t\.created_at/);
+    assert.match(reportService, /ORDER BY t\.paid_at DESC/);
 });
 
 test('one-time repair refuses to act unless the audited duplicate fingerprint matches', () => {
