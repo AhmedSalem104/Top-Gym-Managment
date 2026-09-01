@@ -1844,7 +1844,7 @@ body.auth-locked .auth-screen[data-auth-stage="gateway"] {
   background-position: center;
   background-size: cover;
   content: "";
-  filter: blur(3px);
+  filter: blur(2px) brightness(1.16) saturate(.92);
   transform: scale(1.03);
 }
 
@@ -1854,7 +1854,7 @@ body.auth-locked .auth-screen[data-auth-stage="gateway"] {
   inset: 0;
   background: linear-gradient(145deg, transparent 15%, var(--overlay));
   content: "";
-  opacity: .42;
+  opacity: .24;
   pointer-events: none;
 }
 
@@ -1867,16 +1867,16 @@ body.auth-locked .auth-screen[data-auth-stage="gateway"] {
 .saas-entry-preview-glass-panel {
   position: absolute;
   top: 50%;
-  inset-inline: 9%;
+  inset-inline: 14%;
   z-index: 2;
   display: grid;
-  gap: 22px;
+  gap: 18px;
   width: auto;
-  padding: clamp(22px, 3vw, 32px);
-  border: 1px solid color-mix(in srgb, var(--bg-card) 68%, var(--primary) 32%);
+  padding: clamp(24px, 3vw, 30px);
+  border: 1px solid color-mix(in srgb, var(--bg-card) 76%, var(--primary) 24%);
   border-radius: 24px;
   background: var(--bg-card);
-  background: color-mix(in srgb, var(--bg-card) 74%, transparent);
+  background: color-mix(in srgb, var(--bg-card) 78%, transparent);
   box-shadow: var(--shadow-popup);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
@@ -1891,16 +1891,17 @@ body.auth-locked .auth-screen[data-auth-stage="gateway"] {
 }
 
 .saas-entry-preview-glass-brand {
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: 11px;
-  align-items: center;
-  direction: ltr;
+  justify-items: center;
+  gap: 9px;
+  direction: rtl;
+  text-align: center;
 }
 
 .saas-entry-preview-glass-brand > span:last-child {
   gap: 1px;
+  justify-items: center;
   direction: ltr;
-  text-align: left;
+  text-align: center;
 }
 
 .saas-entry-preview-glass-brand strong {
@@ -1919,8 +1920,8 @@ body.auth-locked .auth-screen[data-auth-stage="gateway"] {
 
 .saas-entry-preview-glass-mark {
   display: grid;
-  width: 39px;
-  height: 39px;
+  width: 43px;
+  height: 43px;
   place-items: center;
   border: 1px solid var(--primary-border);
   border-radius: 12px;
@@ -1936,14 +1937,14 @@ body.auth-locked .auth-screen[data-auth-stage="gateway"] {
 
 .saas-entry-preview-glass-list {
   display: grid;
-  gap: 10px;
+  gap: 4px;
 }
 
 .saas-entry-preview-glass-list > div {
   grid-template-columns: auto minmax(0, 1fr);
   gap: 11px;
   align-items: center;
-  padding: 10px 0;
+  padding: 9px 0;
   border-bottom: 1px solid color-mix(in srgb, var(--border-primary) 66%, transparent);
 }
 
@@ -1968,7 +1969,7 @@ body.auth-locked .auth-screen[data-auth-stage="gateway"] {
   font-size: 10px;
   line-height: 1.6;
   text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: normal;
 }
 
 .saas-entry-preview-glass-icon {
@@ -1988,6 +1989,7 @@ body.auth-locked .auth-screen[data-auth-stage="gateway"] {
 }
 
 .saas-entry-preview-glass-note {
+  text-align: center;
   color: var(--text-muted);
   font-size: 10px;
   line-height: 1.6;
@@ -2014,7 +2016,7 @@ body.auth-locked .auth-screen[data-auth-stage="gateway"] {
   }
 
   .saas-entry-preview-glass-panel {
-    inset-inline: 7%;
+    inset-inline: 10%;
     padding: 22px;
   }
 }
@@ -2081,7 +2083,7 @@ body.auth-locked .auth-screen[data-auth-stage="gateway"] {
   }
 
   .saas-entry-preview-glass-panel {
-    inset-inline: 7%;
+    inset-inline: 8%;
     gap: 16px;
     padding: 20px;
     border-radius: 20px;
@@ -2119,7 +2121,7 @@ body.auth-locked .auth-screen[data-auth-stage="gateway"] {
   }
 
   .saas-entry-preview-glass-panel {
-    inset-inline: 5%;
+    inset-inline: 7%;
     gap: 12px;
     padding: 16px;
   }
