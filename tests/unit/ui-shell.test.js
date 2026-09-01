@@ -33,7 +33,9 @@ test('navigation polish keeps desktop controls usable and coordinated', () => {
     assert.match(source, /page-tabs\s*\{[\s\S]*?top:\s*80px[\s\S]*?grid-row:\s*2/u);
     assert.match(source, /page-tabs\s*>\s*\.page-tab \.ui-icon[\s\S]*?width:\s*32px[\s\S]*?height:\s*32px/u);
     assert.match(source, /topbar-controls[\s\S]*?gap:\s*var\(--space-2\)/u);
-    assert.match(source, /auth-logout-button[\s\S]*?background:\s*transparent/u);
+    assert.match(source, /auth-logout-button[\s\S]*?background:\s*var\(--danger-soft\)/u);
+    assert.match(source, /auth-logout-button[\s\S]*?color:\s*var\(--danger-text\)/u);
+    assert.match(source, /auth-logout-button \.ui-icon[\s\S]*?stroke-width:\s*2\.2px/u);
     assert.match(source, /page-tabs::-webkit-scrollbar[\s\S]*?width:\s*5px/u);
     assert.match(source, /sidebar-floating-tooltip[\s\S]*?pointer-events:\s*none/u);
 });

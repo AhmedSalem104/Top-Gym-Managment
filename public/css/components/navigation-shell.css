@@ -305,12 +305,12 @@
   align-items: center;
   justify-content: center;
   gap: var(--space-2);
-  border: 1px solid var(--sidebar-divider);
+  border: 1px solid var(--danger-border);
   border-radius: var(--radius-md);
-  background: transparent;
-  color: var(--sidebar-text-muted);
+  background: var(--danger-soft);
+  color: var(--danger-text);
   padding: 0;
-  transition: background-color var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast), transform var(--transition-fast);
+  transition: background-color var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast), box-shadow var(--transition-fast), transform var(--transition-fast);
 }
 
 .auth-logout-button > span {
@@ -320,14 +320,35 @@
 .auth-logout-button .ui-icon {
   width: 20px;
   height: 20px;
+  flex: 0 0 auto;
+  stroke-width: 2.2px;
 }
 
 .auth-logout-button:hover:not(:disabled),
 .auth-logout-button:focus-visible {
   border-color: var(--danger-border);
+  background: var(--danger-border);
+  color: var(--danger-text);
+  box-shadow: 0 0 0 3px var(--danger-soft);
+  transform: translateY(-1px);
+}
+
+.auth-logout-button:focus-visible {
+  outline: 2px solid var(--danger-text);
+  outline-offset: 2px;
+}
+
+.auth-logout-button:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 0 0 2px var(--danger-soft);
+}
+
+.auth-logout-button:disabled {
+  border-color: var(--danger-border);
   background: var(--danger-soft);
   color: var(--danger-text);
-  transform: translateY(-1px);
+  opacity: .62;
+  cursor: wait;
 }
 
 /* Non-desktop navigation stays in the document flow: tablets use a compact
