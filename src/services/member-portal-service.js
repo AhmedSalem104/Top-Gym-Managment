@@ -2,12 +2,16 @@
 
 const crypto = require('node:crypto');
 const membershipCodeService = require('./membership-code-service');
+const coachingService = require('./coaching-service');
+const trainerCommerceService = require('./trainer-commerce-service');
+const { getPool, sql } = require('../database');
 const { getMemberDetails } = require('./member-service');
 const attendanceService = require('./attendance-service');
 const commercialService = require('./commercial-service');
 const memberService = require('./member-service');
 const { todayInTimeZone } = require('../utils/date');
 const { getTenantContext, runTenantContext } = require('../tenancy/tenant-context');
+const { TENANT_TYPES } = require('../tenancy/tenant-types');
 
 function appError(message, statusCode = 400, code = null) {
     const error = new Error(message);
@@ -85,6 +89,97 @@ function sanitizeFreeze(item) {
     };
 }
 
+function sanitizeTrainerPayment(item) {
+    return {
+        id: item.id,
+        membershipId: null,
+        receiptNumber: `TR-${item.id}`,
+        transactionType: item.transactionType,
+        amountDue: item.amountDue,
+        amountPaid: item.amountPaid,
+        amountRemaining: item.amountRemaining,
+        paymentMethod: item.paymentMethod,
+        paidAt: item.paidAt,
+        transactionDate: item.paidAt,
+        createdAt: item.createdAt,
+        packagePurchaseId: item.packagePurchaseId,
+        packageName: item.packageName
+    };
+}
+
+async function lookupTenantType(tenantId) {
+    const result = await getPool().then((pool) => pool.request()
+        .input('tenantId', sql.Int, Number(tenantId))
+        .query('SELECT TOP (1) tenant_type FROM dbo.gym_tenants WHERE id=@tenantId;'));
+    return result.recordset[0]?.tenant_type || null;
+}
+
+async function trainerPortalSnapshot(memberContext, request, readOnlyBaseline) {
+    const client = await coachingService.getTrainingOverview(memberContext.memberId, { readOnly: true });
+    const [packagePurchases, sessions, payments] = await Promise.all([
+        trainerCommerceService.listPurchases({ memberId: memberContext.memberId, readOnly: true }),
+        trainerCommerceService.listSessions({ memberId: memberContext.memberId, readOnly: true }),
+        trainerCommerceService.listPayments({ memberId: memberContext.memberId, readOnly: true })
+    ]);
+    const portalSession = readOnlyBaseline ? null : await commercialService.createPortalSession({
+        tenantId: memberContext.tenantId,
+        memberId: memberContext.memberId,
+        request
+    });
+    const visitorToken = commercialService.visitorTokenFor(request);
+    if (!readOnlyBaseline) await commercialService.recordPortalVisit({
+        memberId: memberContext.memberId,
+        visitorToken,
+        readOnly: false
+    });
+    const totalDue = packagePurchases.reduce((sum, item) => sum + Number(item.amountDue || 0), 0);
+    const totalPaid = packagePurchases.reduce((sum, item) => sum + Number(item.amountPaid || 0), 0);
+    const totalRemaining = packagePurchases.reduce((sum, item) => sum + Number(item.amountRemaining || 0), 0);
+    return {
+        tenant: { name: memberContext.tenantName, slug: memberContext.tenantSlug, type: TENANT_TYPES.INDEPENDENT_TRAINER },
+        portalMode: 'trainer_client',
+        reportNumber: reportNumber(),
+        issuedAt: new Date().toISOString(),
+        member: {
+            fullName: client.member.fullName,
+            phone: client.member.phone,
+            email: client.member.email || null,
+            registrationDate: client.member.registrationDate
+        },
+        firstJoinDate: client.member.registrationDate,
+        currentMembership: null,
+        memberships: [],
+        financialSummary: {
+            totalDue,
+            totalPaid,
+            totalRemaining,
+            transactionCount: payments.length,
+            paidTransactionCount: payments.filter((item) => Number(item.amountPaid || 0) !== 0).length
+        },
+        payments: payments.map(sanitizeTrainerPayment),
+        packagePurchases,
+        sessions,
+        coaching: {
+            trainingPlans: client.workoutPrograms || [],
+            nutritionPlans: client.dietPlans || [],
+            measurements: client.measurements || [],
+            checkins: client.checkins || [],
+            progress: client.progress || {},
+            activity: client.activity || []
+        },
+        freezes: [],
+        attendance: [],
+        attendanceSummary: { totalVisits: 0 },
+        _portalSessionCookie: portalSession?.cookie || null,
+        _portalVisitorCookie: readOnlyBaseline ? null : commercialService.buildCookie(
+            commercialService.PORTAL_VISITOR_COOKIE,
+            visitorToken,
+            30 * 24 * 60 * 60,
+            request
+        )
+    };
+}
+
 async function lookupByCode(code, request) {
     const memberContext = await membershipCodeService.findMemberContextByCode(code, { request });
     if (!memberContext) throw appError('كود العضوية غير صحيح أو منتهي الصلاحية.', 404, 'MEMBERSHIP_PORTAL_CODE_INVALID');
@@ -100,6 +195,9 @@ async function lookupByCode(code, request) {
         // membership code out of the URL. Do not auto-checkout attendance or
         // initialize schema while assembling the report.
         const details = await getMemberDetails(memberContext.memberId, { readOnly: true });
+        if (memberContext.tenantType === TENANT_TYPES.INDEPENDENT_TRAINER) {
+            return trainerPortalSnapshot(memberContext, request, readOnlyBaseline);
+        }
         const today = todayInTimeZone();
         const from = details.member.registrationDate || `${today.slice(0, 7)}-01`;
         const attendance = await attendanceService.getMemberAttendance(memberContext.memberId, { from, to: today, readOnly: true });
@@ -165,13 +263,21 @@ async function lookupByCode(code, request) {
 }
 
 async function getPortalPaymentMethods(request) {
-    return commercialService.withPortalSession(request, async () => ({
-        paymentMethods: await commercialService.getTenantPaymentMethods({ readOnly: true })
-    }));
+    return commercialService.withPortalSession(request, async () => {
+        const tenantId = getTenantContext()?.tenantId;
+        const tenantType = await lookupTenantType(tenantId);
+        if (tenantType === TENANT_TYPES.INDEPENDENT_TRAINER) return { portalMode: 'trainer_client', paymentMethods: [] };
+        return { paymentMethods: await commercialService.getTenantPaymentMethods({ readOnly: true }) };
+    });
 }
 
 async function getPortalMembershipCatalog(request) {
     return commercialService.withPortalSession(request, async () => {
+        const tenantId = getTenantContext()?.tenantId;
+        const tenantType = await lookupTenantType(tenantId);
+        if (tenantType === TENANT_TYPES.INDEPENDENT_TRAINER) {
+            return { portalMode: 'trainer_client', currency: 'EGP', plans: [], types: [], prices: {}, activePlanCount: 0, activeTypeCount: 0 };
+        }
         const pricing = await memberService.getPricingCatalog(null, { readOnly: true });
         const plans = Object.entries(pricing.plans || {})
             .filter(([, plan]) => plan && plan.active !== false)
@@ -222,6 +328,9 @@ async function getPortalSession(request) {
 async function getOccupancyByCode(code, request) {
     const memberContext = await membershipCodeService.findMemberContextByCode(code, { request, auditAction: null });
     if (!memberContext) throw appError('كود العضوية غير صحيح أو منتهي الصلاحية.', 404, 'MEMBERSHIP_PORTAL_CODE_INVALID');
+    if (memberContext.tenantType === TENANT_TYPES.INDEPENDENT_TRAINER) {
+        throw appError('خدمة الازدحام متاحة لبوابة الجيم فقط.', 404, 'PORTAL_FEATURE_UNAVAILABLE');
+    }
 
     // Occupancy is deliberately resolved from the code owner's tenant and is
     // a read-only aggregate. The polling endpoint must not create audit rows,

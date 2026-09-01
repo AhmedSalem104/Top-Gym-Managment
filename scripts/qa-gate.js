@@ -90,11 +90,15 @@ function assertRequiredFiles() {
         'public/js/pages/management/auth-users.js',
         'scripts/validate-styles.js',
         'scripts/qa-browser-style.js',
+        'scripts/qa-rls.js',
         'src/app.js',
         'src/config/env.js',
         'src/database/pool.js',
         'src/database/transaction.js',
         'src/database/index.js',
+        'src/tenancy/tenant-types.js',
+        'src/services/capability-service.js',
+        'src/services/plan-compatibility-service.js',
         'src/utils/date.js',
         'src/repositories/member.repository.js',
         'src/repositories/day-pass.repository.js',
@@ -109,6 +113,8 @@ function assertRequiredFiles() {
         'src/middleware/permission.middleware.js',
         'src/middleware/financial-data.middleware.js',
         'database/migrations/006-permissions.sql',
+        'database/migrations/014-tenant-type-foundation.sql',
+        'database/migrations/015-plan-tenant-type-compatibility.sql',
         'public/js/pages/management/permissions.js',
         'public/css/pages/permissions.css',
         'public/css/pages/store.css',
@@ -148,6 +154,10 @@ function assertRequiredFiles() {
         'database/migrations/008-backup-recovery.sql',
         'database/migrations/009-platform-backup-audit.sql',
         'database/migrations/011-commercial-portal-and-registration.sql',
+        'database/migrations/016-independent-trainer-registration.sql',
+        'database/migrations/017-trainer-client-profile.sql',
+        'database/migrations/018-trainer-commercial-operations.sql',
+        'database/migrations/019-trainer-portal-foundation.sql',
         'src/services/day-pass-service.js',
         'src/services/member-feedback-service.js',
         'src/routes/member-feedback.routes.js',
@@ -173,6 +183,16 @@ function assertRequiredFiles() {
         'public/js/pages/platform/platform.js',
         'public/js/pages/saas/saas.js',
         'public/css/pages/saas.css',
+        'public/trainer-workspace.html',
+        'public/js/trainer-workspace.js',
+        'public/css/pages/trainer-workspace.css',
+        'src/routes/trainer.routes.js',
+        'src/controllers/trainer.controller.js',
+        'src/services/trainer-service.js',
+        'src/services/trainer-commerce-service.js',
+        'src/services/capability-service.js',
+        'src/services/plan-compatibility-service.js',
+        'docs/TENANT-TYPES.md',
         'database/migrations/005-member-feedback.sql',
         'public/js/day-passes.js',
         'public/js/day-pass-reports.js',
@@ -247,6 +267,9 @@ function checkModuleGraph() {
         './src/repositories/user.repository',
         './src/repositories/session.repository',
         './src/services/permission-service',
+        './src/services/capability-service',
+        './src/services/trainer-service',
+        './src/services/trainer-commerce-service',
         './src/middleware/permission.middleware',
         './src/middleware/financial-data.middleware'
     ];
@@ -275,12 +298,13 @@ function checkRouteSurface() {
         'src/routes/branding.routes.js',
         'src/routes/platform.routes.js',
         'src/routes/platform-admin.routes.js',
-        'src/routes/saas.routes.js'
+        'src/routes/saas.routes.js',
+        'src/routes/trainer.routes.js'
     ].filter((relativePath) => fs.existsSync(path.join(root, relativePath))).map(read).join('\n');
     const expectedRoutes = [
         '/api/members', '/api/expenses', '/api/attendance', '/api/reports',
         '/api/backup', '/api/library', '/api/external-trainees',
-        '/api/workoutprograms', '/api/dietplans', '/api/workoutsessions', '/api/meal-logs', '/api/intelligence/overview', '/api/intelligence/refine', '/api/day-passes', '/api/member-feedback', '/api/member-portal/feedback', '/api/store/products', '/api/store/sales', '/api/store/inventory', '/api/branding', '/api/branding/publish', '/api/platform/overview', '/api/platform/tenants', '/api/platform-admin/dashboard', '/api/platform-admin/tenants', '/api/platform-admin/tenants/:tenantId', '/api/platform-admin/tenants/:tenantId/subscription', '/api/platform-admin/tenants/:tenantId/usage', '/api/saas/subscription', '/api/saas/subscription-requests'
+        '/api/workoutprograms', '/api/dietplans', '/api/workoutsessions', '/api/meal-logs', '/api/intelligence/overview', '/api/intelligence/refine', '/api/day-passes', '/api/member-feedback', '/api/member-portal/feedback', '/api/store/products', '/api/store/sales', '/api/store/inventory', '/api/branding', '/api/branding/publish', '/api/platform/overview', '/api/platform/tenants', '/api/platform-admin/dashboard', '/api/platform-admin/tenants', '/api/platform-admin/tenants/:tenantId', '/api/platform-admin/tenants/:tenantId/subscription', '/api/platform-admin/tenants/:tenantId/usage', '/api/saas/subscription', '/api/saas/subscription-requests', '/api/trainer/workspace', '/api/trainer/clients', '/api/trainer/reports/summary', '/api/trainer/packages', '/api/trainer/sessions', '/api/trainer/payments'
     ];
     expectedRoutes.forEach((route) => record(
         `ROUTE-${route.replaceAll('/', '-')}`,
@@ -320,6 +344,7 @@ function checkAuthSurface() {
     const permissionService = read('src/services/permission-service.js');
     const userRepository = read('src/repositories/user.repository.js');
     const tenantService = read('src/services/tenant-service.js');
+    const capabilityService = read('src/services/capability-service.js');
     const permissionsUi = read('public/js/pages/management/permissions.js');
     record('PERMISSIONS-CATALOG', permissions.includes('members.read') && permissions.includes('payments.create') && permissions.includes('finance.read'), 'resource.action permission catalog is present', 'P0');
     record('PERMISSIONS-ROUTE-RESOLVER', routePermissions.includes('permissionForRequest') && authMiddleware.includes('permission.middleware'), 'all API authorization resolves through the centralized route permission resolver', 'P0');
@@ -329,6 +354,18 @@ function checkAuthSurface() {
     record('PERMISSIONS-SESSION-INVALIDATION', permissionService.includes('revokeForUser'), 'permission updates invalidate the target Assistant sessions', 'P0');
     record('TENANT-USER-SCOPE', auth.includes('currentTenantId({ required: true })') && userRepository.includes("ut.status='active'") && permissionService.includes('currentTenantId({ required: true })'), 'account and permission lists/actions are scoped to the active tenant', 'P0');
     record('TENANT-BOOTSTRAP-SAFETY', tenantService.includes('bootstrapMembership') && tenantService.includes('otherMembership.tenant_id<>@tenantId'), 'legacy Top Gym bootstrap mapping cannot override another gym membership', 'P0');
+    record('TENANT-RLS-DYNAMIC-COVERAGE', tenantService.includes('getTenantSecuritySnapshot') && tenantService.includes('sys.columns') && tenantService.includes('sys.security_predicates') && tenantService.includes('missingRegistryEntries') && tenantService.includes('tenantSecuritySnapshotIsReady'), 'tenant isolation readiness discovers tenant_id tables and validates registry/predicate coverage before API access', 'P0');
+    record('TENANT-RLS-SCHEMA-CONTRACT', tenantService.includes('schema_contract_ready') && tenantService.includes('TENANT_ISOLATION_NOT_READY'), 'tenant APIs fail closed when the canonical auth/security schema contract is missing', 'P0');
+    record('TENANT-NO-PUBLIC-FALLBACK', tenantService.includes('if (!normalizedSlug) return null') && !tenantService.includes('normalizeTenantSlug(config.defaultTenantSlug)'), 'public tenant resolution requires an explicit tenant identifier and has no Top Gym fallback', 'P0');
+    const tenantTypes = read('src/tenancy/tenant-types.js');
+    const tenantTypeMigration = read('database/migrations/014-tenant-type-foundation.sql');
+    const tenantTypeSaasService = read('src/services/saas-service.js');
+    const tenantTypePlatformAdminService = read('src/services/platform-admin-service.js');
+    record('TENANT-TYPE-CANONICAL', tenantTypes.includes("GYM: 'gym'") && tenantTypes.includes("INDEPENDENT_TRAINER: 'independent_trainer'") && tenantService.includes('resolveTenantType'), 'tenant type values and trusted resolution are centralized', 'P1');
+    record('TENANT-TYPE-MIGRATION', tenantTypeMigration.includes("tenant_type VARCHAR(32)") && tenantTypeMigration.includes('CK_gym_tenants_tenant_type') && tenantTypeMigration.includes('independent_trainer'), 'tenant type schema is additive, constrained and idempotent', 'P1');
+    record('TENANT-TYPE-PROVISIONING', tenantTypeSaasService.includes('tenant_type,status') && tenantTypeSaasService.includes('TENANT_TYPES.GYM') && tenantService.includes('tenant_type, status'), 'existing provisioning paths explicitly create Gym tenants', 'P1');
+    record('TENANT-TYPE-PLATFORM-READ', tenantTypePlatformAdminService.includes('tenantType: resolveTenantType') && tenantTypePlatformAdminService.includes('t.tenant_type'), 'PlatformAdmin can read tenant type without a tenant-type mutation path', 'P1');
+    record('AUTH-FORCED-PASSWORD', auth.includes('must_change_password') && auth.includes('changePassword') && authMiddleware.includes('PASSWORD_CHANGE_REQUIRED') && authRoutes.includes('/api/auth/change-password'), 'temporary credentials are server-enforced, rotated through a dedicated password-change endpoint, and block normal APIs', 'P0');
     record('FINANCE-FIELD-GUARD', fs.existsSync(path.join(root, 'src/middleware/financial-data.middleware.js')) && authMiddleware.includes('protectFinancialResponse'), 'financial response fields are filtered when finance.read is disabled', 'P0');
     const brandingRoutes = read('src/routes/branding.routes.js');
     const brandingService = read('src/services/branding-service.js');
@@ -348,8 +385,39 @@ function checkAuthSurface() {
     record('SAAS-SCHEMA', saasService.includes('saas_plans') && saasService.includes('saas_tenant_subscriptions') && saasService.includes('saas_subscription_requests') && saasService.includes('saas_payment_proofs'), 'SaaS plans, subscriptions, manual requests and payment proofs have separate tables', 'P0');
     record('SAAS-WORKFLOW', saasRoutes.includes('/api/saas/subscription-requests/:id/proof') && platformRoutes.includes('/api/platform/subscription-requests/:id/approve') && platformRoutes.includes('/api/platform/subscription-requests/:id/reject'), 'manual payment-proof review workflow is wired', 'P0');
     record('SAAS-ENFORCEMENT', authMiddleware.includes('enforceTenantAccess') && authMiddleware.includes('enforceRequestLimit') && saasService.includes('SAAS_PLAN_LIMIT_REACHED'), 'tenant expiration, feature and plan limits are enforced before domain handlers', 'P0');
+    const planCompatibilityService = read('src/services/plan-compatibility-service.js');
+    const planCompatibilityMigration = read('database/migrations/015-plan-tenant-type-compatibility.sql');
+    record('CAPABILITY-SERVER-FOUNDATION', capabilityService.includes('resolveEffectiveCapabilities') && capabilityService.includes('IMPLEMENTED_CAPABILITIES_BY_TENANT_TYPE') && capabilityService.includes('assertCapabilityAccess') && saasService.includes('assertCapabilityAccess'), 'capabilities are resolved and enforced centrally on the backend while unfinished Trainer operations remain unavailable', 'P0');
+    record('CAPABILITY-LIMIT-RESOLVER', capabilityService.includes('resolveEffectiveLimits') && capabilityService.includes('maxMembers') && capabilityService.includes('maxClients'), 'effective limits are resolved centrally without renaming the existing Gym max_members contract', 'P1');
+    record('PLAN-TENANT-COMPATIBILITY', planCompatibilityService.includes('normalizeCompatibleTenantTypes') && saasService.includes('saas_plan_tenant_types') && saasService.includes('assertPlanCompatibleWithTenant') && planCompatibilityMigration.includes('MERGE dbo.saas_plan_tenant_types') && planCompatibilityMigration.includes('tenant_type IN'), 'plans are explicitly compatible with trusted tenant types and assignments fail closed server-side', 'P0');
     record('SAAS-CURRENCY-SNAPSHOT', saasService.includes('currency_snapshot=(SELECT TOP (1) currency FROM dbo.saas_plans WHERE id=@planId)') && !saasService.includes("input('currencySnapshot', sql.VarChar(3)"), 'subscription snapshots use the plan currency in SQL and avoid the production TDS metadata failure', 'P0');
     record('SAAS-UI', platformAdminPage.includes('platformAdminLoginScreen') && platformAdminPage.includes('platformAdminApp') && index.includes('data-page-tab="saas-billing"') && platformUi.includes('/api/platform/tenants') && saasUi.includes('/api/saas/subscription'), 'Platform Admin has an independent shell and tenant billing remains available to gym owners', 'P1');
+}
+
+function checkTrainerClosureContracts() {
+    const migrations = [
+        'database/migrations/016-independent-trainer-registration.sql',
+        'database/migrations/017-trainer-client-profile.sql',
+        'database/migrations/018-trainer-commercial-operations.sql',
+        'database/migrations/019-trainer-portal-foundation.sql'
+    ].map(read).join('\n');
+    const trainerRoutes = read('src/routes/trainer.routes.js');
+    const trainerController = read('src/controllers/trainer.controller.js');
+    const trainerService = read('src/services/trainer-service.js');
+    const commerce = read('src/services/trainer-commerce-service.js');
+    const portal = read('src/services/member-portal-service.js');
+    const tenantService = read('src/services/tenant-service.js');
+    const backupRegistry = read('src/services/backup-registry.js');
+    const storage = read('src/services/object-storage-service.js');
+    const packageJson = JSON.parse(read('package.json'));
+    record('TRAINER-MIGRATION-SAFETY', !/\b(?:DROP\s+(?:TABLE|COLUMN|INDEX|CONSTRAINT)|TRUNCATE\s+TABLE|sp_rename)\b/i.test(migrations) && migrations.includes('trainer_package_usage') && migrations.includes('tenant_id'), 'Trainer migrations are additive and tenant-scoped', 'P0');
+    record('TRAINER-RLS-INVENTORY', ['trainer_packages', 'trainer_package_purchases', 'coaching_sessions', 'trainer_package_usage'].every((table) => tenantService.includes(`'${table}'`) && backupRegistry.includes(`'${table}'`)), 'Trainer tables are present in tenant security and backup inventories', 'P0');
+    record('TRAINER-ROUTE-GUARD', trainerRoutes.includes('trainerOnly') && trainerRoutes.includes('/api/trainer/reports/summary') && trainerController.includes('trainerService.getReports'), 'Trainer APIs use the tenant-type route guard and report handler', 'P0');
+    record('TRAINER-SERVER-TENANT-SCOPE', trainerService.includes('currentTenantId({ required: true })') && trainerService.includes('tenant_id=@tenantId') && trainerService.includes('assertTrainerTenant'), 'Trainer services resolve trusted tenant context server-side', 'P0');
+    record('TRAINER-COMMERCE-SAFETY', commerce.includes('gym_payment_transactions') && commerce.includes('idempotency_key_hash') && commerce.includes('withTransaction') && commerce.includes('trainer_package_usage'), 'Trainer commerce reuses the ledger with transactional idempotency and usage protection', 'P0');
+    record('TRAINER-SHARED-PORTAL', portal.includes("portalMode: 'trainer_client'") && !fs.existsSync(path.join(root, 'public', 'trainer-portal.html')), 'Trainer clients use the existing shared portal infrastructure', 'P0');
+    record('TRAINER-PRIVATE-STORAGE', storage.includes('private') && storage.includes('tenant'), 'Trainer media remains on the existing tenant-private storage path', 'P0');
+    record('TRAINER-NODE-CONTRACT', packageJson.engines?.node === '24.x', 'package contract requires Node 24.x; runtime parity is verified separately', 'P0');
 }
 
 function checkPlatformAdminSurface() {
@@ -513,6 +581,7 @@ checkRouteSurface();
 checkAuthSurface();
 checkPlatformAdminSurface();
 checkProductionClosureContracts();
+checkTrainerClosureContracts();
 checkStyleSurface();
 checkPrintAndLazyLoadingSurface();
 checkAnatomyAsset();

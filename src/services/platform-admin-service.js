@@ -4,6 +4,7 @@ const { getPool, sql } = require('../database');
 const { withTransaction } = require('../database/transaction');
 const saasService = require('./saas-service');
 const sessionRepository = require('../repositories/session.repository');
+const { TENANT_TYPE_VALUES, resolveTenantType } = require('../tenancy/tenant-types');
 
 const TENANT_STATUSES = Object.freeze(['trial', 'active', 'suspended', 'expired', 'archived']);
 const USER_STATUSES = Object.freeze(['Active', 'Disabled']);
@@ -74,6 +75,7 @@ function tenantDto(row) {
         id: Number(row.id),
         name: row.name,
         slug: row.slug,
+        tenantType: resolveTenantType(row.tenant_type),
         status: row.status,
         contactPhone: row.contact_phone || null,
         contactEmail: row.contact_email || null,
@@ -137,8 +139,9 @@ function userDto(row) {
 
 function usageDto(usage, entitlements) {
     const limits = entitlements?.limits || {};
+    const isTrainer = entitlements?.tenantType === 'independent_trainer';
     const rows = [
-        ['members', 'Members', limits.maxMembers],
+        ['members', isTrainer ? 'Clients' : 'Members', limits.maxMembers],
         ['users', 'Users', limits.maxUsers],
         ['aiGenerations', 'AI', limits.maxAiGenerations]
     ].map(([key, label, max]) => ({
@@ -190,7 +193,7 @@ async function getDashboard({ from = null, to = null, readOnly = false } = {}) {
             OUTER APPLY (SELECT TOP (1) s.expires_at FROM dbo.saas_tenant_subscriptions s WHERE s.tenant_id=t.id AND s.status IN ('trial','active') ORDER BY s.updated_at DESC,s.id DESC) s
             WHERE s.expires_at IS NOT NULL AND s.expires_at > SYSUTCDATETIME() AND s.expires_at <= DATEADD(day,30,SYSUTCDATETIME());`),
         pool.request().input('fromDate', sql.DateTime2(0), start).input('toDate', sql.DateTime2(0), end).query('SELECT COUNT_BIG(*) AS total FROM dbo.gym_tenants WHERE created_at >= @fromDate AND created_at < DATEADD(day,1,@toDate);'),
-        pool.request().query(`SELECT TOP (8) t.id,t.name,t.slug,t.status,t.created_at,t.updated_at,s.expires_at,s.status AS subscription_status,p.code AS plan_code,p.name AS plan_name,p.billing_period,p.price,p.currency,owner.id AS owner_id,owner.full_name AS owner_name,owner.email AS owner_email,owner.status AS owner_status,owner.last_login_at AS owner_last_login_at,members.total_members,users.total_users,ai.total_ai_generations,storage.storage_bytes,last_activity.last_activity_at
+        pool.request().query(`SELECT TOP (8) t.id,t.name,t.slug,t.tenant_type,t.status,t.created_at,t.updated_at,s.expires_at,s.status AS subscription_status,p.code AS plan_code,p.name AS plan_name,p.billing_period,p.price,p.currency,owner.id AS owner_id,owner.full_name AS owner_name,owner.email AS owner_email,owner.status AS owner_status,owner.last_login_at AS owner_last_login_at,members.total_members,users.total_users,ai.total_ai_generations,storage.storage_bytes,last_activity.last_activity_at
             FROM dbo.gym_tenants t
             OUTER APPLY (SELECT TOP (1) s0.* FROM dbo.saas_tenant_subscriptions s0 WHERE s0.tenant_id=t.id ORDER BY CASE s0.status WHEN 'active' THEN 0 WHEN 'trial' THEN 1 WHEN 'expired' THEN 2 ELSE 3 END,s0.updated_at DESC,s0.id DESC) s
             LEFT JOIN dbo.saas_plans p ON p.id=s.plan_id
@@ -232,7 +235,7 @@ const TENANT_LIST_FROM = `FROM dbo.gym_tenants t
     OUTER APPLY (SELECT MAX(ses.last_seen_at) AS last_activity_at FROM dbo.gym_auth_sessions ses INNER JOIN dbo.gym_user_tenants ut3 ON ut3.user_id=ses.user_id WHERE ut3.tenant_id=t.id) last_activity`;
 
 function tenantListSelect() {
-    return `SELECT t.id,t.name,t.slug,t.status,t.contact_phone,t.contact_email,t.suspension_reason,t.suspended_at,t.suspend_until,t.suspension_billing_only,t.archived_at,t.created_at,t.updated_at,
+    return `SELECT t.id,t.name,t.slug,t.tenant_type,t.status,t.contact_phone,t.contact_email,t.suspension_reason,t.suspended_at,t.suspend_until,t.suspension_billing_only,t.archived_at,t.created_at,t.updated_at,
         owner.id AS owner_id,owner.full_name AS owner_name,owner.email AS owner_email,owner.status AS owner_status,owner.last_login_at AS owner_last_login_at,
         s.id AS subscription_id,s.status AS subscription_status,s.starts_at,s.expires_at,s.source,s.renewal_status,p.id AS plan_id,p.code AS plan_code,p.name AS plan_name,p.billing_period,p.price,p.currency,
         members.total_members,users.total_users,ai.total_ai_generations,storage.storage_bytes,last_activity.last_activity_at `;
@@ -242,10 +245,11 @@ function tenantListWhere() {
     return `WHERE (@search='' OR t.name LIKE @searchLike OR t.slug LIKE @searchLike OR owner.full_name LIKE @searchLike OR owner.email LIKE @searchLike OR CONVERT(VARCHAR(20),t.id)=@search)
         AND (@status='' OR t.status=@status)
         AND (@plan='' OR p.code=@plan)
+        AND (@tenantType='' OR t.tenant_type=@tenantType)
         AND (@expiringDays=0 OR (s.expires_at IS NOT NULL AND s.expires_at > SYSUTCDATETIME() AND s.expires_at <= DATEADD(day,@expiringDays,SYSUTCDATETIME())))`;
 }
 
-async function listTenants({ search = '', status = '', plan = '', sort = 'createdAt', direction = 'desc', page = 1, pageSize = 20, expiringDays = 0, readOnly = false } = {}) {
+async function listTenants({ search = '', status = '', plan = '', tenantType = '', sort = 'createdAt', direction = 'desc', page = 1, pageSize = 20, expiringDays = 0, readOnly = false } = {}) {
     await ensureReady({ readOnly });
     if (!readOnly) await saasService.syncExpiredTenants();
     const normalizedPage = Math.max(1, Number(page) || 1);
@@ -253,12 +257,17 @@ async function listTenants({ search = '', status = '', plan = '', sort = 'create
     const normalizedSearch = text(search, '', 120);
     const normalizedStatus = TENANT_STATUSES.includes(String(status).toLowerCase()) ? String(status).toLowerCase() : '';
     const normalizedPlan = text(plan, '', 40).toLowerCase();
+    const normalizedTenantType = tenantType === '' || tenantType == null
+        ? ''
+        : TENANT_TYPE_VALUES.includes(String(tenantType).trim().toLowerCase())
+            ? String(tenantType).trim().toLowerCase()
+            : (() => { throw platformError('Tenant type filter is invalid.', 400, 'INVALID_TENANT_TYPE_FILTER'); })();
     const normalizedSort = SORT_COLUMNS[sort] || SORT_COLUMNS.createdAt;
     const normalizedDirection = String(direction).toLowerCase() === 'asc' ? 'ASC' : 'DESC';
     const normalizedExpiring = Math.min(365, Math.max(0, Number(expiringDays) || 0));
     const offset = (normalizedPage - 1) * normalizedPageSize;
     const pool = await getPool();
-    const bind = (request) => request.input('search', sql.VarChar(120), normalizedSearch).input('searchLike', sql.NVarChar(140), `%${normalizedSearch}%`).input('status', sql.VarChar(20), normalizedStatus).input('plan', sql.VarChar(40), normalizedPlan).input('expiringDays', sql.Int, normalizedExpiring);
+    const bind = (request) => request.input('search', sql.VarChar(120), normalizedSearch).input('searchLike', sql.NVarChar(140), `%${normalizedSearch}%`).input('status', sql.VarChar(20), normalizedStatus).input('plan', sql.VarChar(40), normalizedPlan).input('tenantType', sql.VarChar(32), normalizedTenantType).input('expiringDays', sql.Int, normalizedExpiring);
     const where = tenantListWhere();
     const countResult = await bind(pool.request()).query(`SELECT COUNT_BIG(*) AS total ${TENANT_LIST_FROM} ${where};`);
     const result = await bind(pool.request()).input('offset', sql.Int, offset).input('pageSize', sql.Int, normalizedPageSize).query(`${tenantListSelect()} ${TENANT_LIST_FROM} ${where} ORDER BY ${normalizedSort} ${normalizedDirection},t.id DESC OFFSET @offset ROWS FETCH NEXT @pageSize ROWS ONLY;`);
@@ -359,7 +368,7 @@ async function getTenantProfile(tenantId, { readOnly = false, paymentsPage = 1, 
     await ensureReady({ readOnly });
     if (!readOnly) await saasService.syncExpiredTenants();
     const pool = await getPool();
-    const tenantResult = await pool.request().input('tenantId', sql.Int, id).query(`SELECT TOP (1) t.id,t.name,t.slug,t.status,t.contact_phone,t.contact_email,t.suspension_reason,t.suspended_at,t.suspend_until,t.suspension_billing_only,t.archived_at,t.created_at,t.updated_at,
+    const tenantResult = await pool.request().input('tenantId', sql.Int, id).query(`SELECT TOP (1) t.id,t.name,t.slug,t.tenant_type,t.status,t.contact_phone,t.contact_email,t.suspension_reason,t.suspended_at,t.suspend_until,t.suspension_billing_only,t.archived_at,t.created_at,t.updated_at,
         owner.id AS owner_id,owner.full_name AS owner_name,owner.email AS owner_email,owner.status AS owner_status,owner.last_login_at AS owner_last_login_at
         FROM dbo.gym_tenants t OUTER APPLY (SELECT TOP (1) u.id,u.full_name,u.email,u.status,u.last_login_at FROM dbo.gym_user_tenants ut INNER JOIN dbo.gym_users u ON u.id=ut.user_id WHERE ut.tenant_id=t.id AND ut.role='Owner' ORDER BY ut.is_primary DESC,ut.status,u.id) owner WHERE t.id=@tenantId;`);
     if (!tenantResult.recordset[0]) throw platformError('Gym was not found.', 404, 'TENANT_NOT_FOUND');
@@ -396,13 +405,13 @@ async function getTenantProfile(tenantId, { readOnly = false, paymentsPage = 1, 
 async function getTenantRow(tenantId, executor = null) {
     const id = idValue(tenantId, 'Tenant id');
     const connection = executor || await getPool();
-    const result = await connection.request().input('tenantId', sql.Int, id).query('SELECT TOP (1) id,name,slug,status,contact_phone,contact_email,suspension_reason,suspended_at,suspend_until,suspension_billing_only,archived_at,archived_by_user_id,created_at,updated_at FROM dbo.gym_tenants WHERE id=@tenantId;');
+    const result = await connection.request().input('tenantId', sql.Int, id).query('SELECT TOP (1) id,name,slug,tenant_type,status,contact_phone,contact_email,suspension_reason,suspended_at,suspend_until,suspension_billing_only,archived_at,archived_by_user_id,created_at,updated_at FROM dbo.gym_tenants WHERE id=@tenantId;');
     return result.recordset[0] || null;
 }
 
 function tenantState(row) {
     if (!row) return null;
-    return { id: Number(row.id), name: row.name, slug: row.slug, status: row.status, suspensionReason: row.suspension_reason || '', suspendedAt: row.suspended_at || null, suspendUntil: row.suspend_until || null, billingOnly: Boolean(row.suspension_billing_only), archivedAt: row.archived_at || null };
+    return { id: Number(row.id), name: row.name, slug: row.slug, tenantType: resolveTenantType(row.tenant_type), status: row.status, suspensionReason: row.suspension_reason || '', suspendedAt: row.suspended_at || null, suspendUntil: row.suspend_until || null, billingOnly: Boolean(row.suspension_billing_only), archivedAt: row.archived_at || null };
 }
 
 async function updateTenantStatus(tenantId, body = {}, actorUserId, meta = {}) {
@@ -441,13 +450,14 @@ function normalizeSubscriptionAction(body) {
     return aliases[action] || action;
 }
 
-async function planForBody(body, { required = false } = {}) {
+async function planForBody(body, { required = false, tenantId = null } = {}) {
     if (body.planId === undefined && body.planCode === undefined) {
         if (required) throw platformError('A plan is required.', 400, 'PLAN_REQUIRED');
         return null;
     }
     const plan = await saasService.getPlan({ id: body.planId, code: body.planCode, includeInactive: true });
     if (!plan) throw platformError('The selected plan was not found.', 404, 'SAAS_PLAN_NOT_FOUND');
+    if (tenantId != null) await saasService.assertPlanCompatibleWithTenant(tenantId, plan);
     return plan;
 }
 
@@ -460,7 +470,7 @@ async function updateTenantSubscription(tenantId, body = {}, actorUserId, meta =
     if (!action) throw platformError('Subscription action is required.', 400, 'SUBSCRIPTION_ACTION_REQUIRED');
     if (dangerous.includes(action) && !reason) throw platformError('A reason is required for this subscription action.', 400, 'REASON_REQUIRED');
     const current = await saasService.getCurrentSubscription(id);
-    const selectedPlan = await planForBody(body, { required: ['change_plan', 'activate', 'grant_lifetime'].includes(action) && !current });
+    const selectedPlan = await planForBody(body, { required: ['change_plan', 'activate', 'grant_lifetime'].includes(action) && !current, tenantId: id });
     if (action === 'change_plan' && !selectedPlan) throw platformError('A new plan is required.', 400, 'PLAN_REQUIRED');
     const when = String(body.effective || body.apply || 'immediate').toLowerCase();
     if (action === 'change_plan' && when === 'renewal') {
@@ -485,6 +495,9 @@ async function updateTenantSubscription(tenantId, body = {}, actorUserId, meta =
     let notes = body.notes === undefined ? current?.notes || '' : text(body.notes, '', 1000);
     let autoRenew = body.autoRenew === undefined ? Boolean(current?.autoRenew) : bool(body.autoRenew);
     if (!nextPlan && action !== 'expire' && action !== 'cancel' && action !== 'suspend') nextPlan = await saasService.getPlan({ code: 'starter', includeInactive: false });
+    if (nextPlan && ['activate', 'grant_lifetime', 'reactivate', 'change_plan'].includes(action)) {
+        await saasService.assertPlanCompatibleWithTenant(id, nextPlan);
+    }
     if (action === 'activate') {
         nextStatus = 'active';
         if (!current || !expiresAt || expiresAt.getTime() <= Date.now()) expiresAt = addPeriod(new Date(), nextPlan?.billingPeriod || 'monthly');
@@ -616,19 +629,41 @@ async function updateTenantUserStatus(tenantId, userId, status, actorUserId, met
     return { userId: user, status: nextStatus };
 }
 
-async function resetTenantUserPassword(tenantId, userId, newPassword, actorUserId, authService, meta = {}) {
+async function resetTenantUserPassword(tenantId, userId, _legacyPassword, actorUserId, authService, meta = {}) {
     const tenant = idValue(tenantId, 'Tenant id');
     const user = idValue(userId, 'User id');
-    if (!authService) throw platformError('Authentication service is unavailable.', 500, 'AUTH_SERVICE_REQUIRED');
-    const password = authService.validatePassword(newPassword);
-    const pool = await getPool();
-    const result = await pool.request().input('tenantId', sql.Int, tenant).input('userId', sql.Int, user).query("SELECT TOP (1) u.id,u.role,u.email FROM dbo.gym_user_tenants ut INNER JOIN dbo.gym_users u ON u.id=ut.user_id WHERE ut.tenant_id=@tenantId AND ut.user_id=@userId AND u.role <> 'PlatformAdmin';");
-    if (!result.recordset[0]) throw platformError('Tenant user was not found.', 404, 'TENANT_USER_NOT_FOUND');
-    const hash = await authService.hashPassword(password);
-    await pool.request().input('userId', sql.Int, user).input('passwordHash', sql.NVarChar(512), hash).query('UPDATE dbo.gym_users SET password_hash=@passwordHash,updated_at=SYSUTCDATETIME() WHERE id=@userId;');
-    await sessionRepository.revokeForUser(user);
-    await saasService.recordAudit({ tenantId: tenant, actorUserId, action: 'tenant_user_password_reset', entityType: 'user', entityId: user, details: 'Password reset flow completed and existing sessions revoked.', ...meta });
-    return { userId: user, sessionsRevoked: true };
+    if (!authService || typeof authService.generateTemporaryPassword !== 'function') throw platformError('Authentication service is unavailable.', 500, 'AUTH_SERVICE_REQUIRED');
+    await authService.ensureAuthReady();
+    const temporaryPassword = authService.generateTemporaryPassword();
+    const hash = await authService.hashPassword(temporaryPassword);
+    await withTransaction(async (transaction) => {
+        const result = await transaction.request()
+            .input('tenantId', sql.Int, tenant)
+            .input('userId', sql.Int, user)
+            .query("SELECT TOP (1) u.id,u.role,u.email,u.must_change_password FROM dbo.gym_user_tenants ut WITH (UPDLOCK,HOLDLOCK) INNER JOIN dbo.gym_users u WITH (UPDLOCK,HOLDLOCK) ON u.id=ut.user_id WHERE ut.tenant_id=@tenantId AND ut.user_id=@userId AND ut.status='active' AND u.role <> 'PlatformAdmin';");
+        const current = result.recordset[0];
+        if (!current) throw platformError('Tenant user was not found.', 404, 'TENANT_USER_NOT_FOUND');
+        await transaction.request()
+            .input('userId', sql.Int, user)
+            .input('passwordHash', sql.NVarChar(512), hash)
+            .query('UPDATE dbo.gym_users SET password_hash=@passwordHash,must_change_password=1,password_changed_at=NULL,updated_at=SYSUTCDATETIME() WHERE id=@userId AND role <> \'PlatformAdmin\';');
+        await sessionRepository.revokeForUser(user, transaction);
+        await saasService.recordAudit({
+            tenantId: tenant,
+            actorUserId,
+            action: 'tenant_user_password_reset',
+            entityType: 'user',
+            entityId: user,
+            details: 'Temporary credential issued; forced password change enabled and existing sessions revoked.',
+            before: { mustChangePassword: Boolean(current.must_change_password) },
+            after: { mustChangePassword: true },
+            ...meta,
+            executor: transaction
+        });
+    });
+    // The plaintext is returned only in this response. It is never written to
+    // the database, audit metadata, logs, or a later retrieval endpoint.
+    return { userId: user, temporaryPassword, mustChangePassword: true, sessionsRevoked: true };
 }
 
 async function createOrChangeOwner(tenantId, body = {}, actorUserId, authService, meta = {}) {

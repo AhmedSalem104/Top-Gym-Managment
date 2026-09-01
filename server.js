@@ -22,6 +22,8 @@ const { ensureLibraryData } = libraryService;
 const memberService = require('./src/services/member-service');
 const pricingService = memberService;
 const coachingService = require('./src/services/coaching-service');
+const trainerService = require('./src/services/trainer-service');
+const trainerCommerceService = require('./src/services/trainer-commerce-service');
 const dayPassService = require('./src/services/day-pass-service');
 const membershipCodeService = require('./src/services/membership-code-service');
 const memberPortalService = require('./src/services/member-portal-service');
@@ -67,6 +69,8 @@ memberSubscriptionService.configureObjectStorageService(objectStorageService);
 const gymRegistrationService = createGymRegistrationService({
     commercialService,
     saasService,
+    trainerService,
+    trainerCommerceService,
     authService,
     objectStorageService
 });
@@ -255,6 +259,14 @@ app.get('/member-portal', (_request, response) => {
 
 app.get('/register-gym', (_request, response) => {
     response.sendFile(path.join(publicDirectory, 'register-gym.html'));
+});
+
+app.get('/register-trainer', (_request, response) => {
+    response.sendFile(path.join(publicDirectory, 'register-trainer.html'));
+});
+
+app.get('/trainer-workspace', (_request, response) => {
+    response.sendFile(path.join(publicDirectory, 'trainer-workspace.html'));
 });
 
 app.get('*', (request, response) => {

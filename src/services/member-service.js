@@ -147,6 +147,32 @@ async function ensurePaymentTransactionsTable({ readOnly = false } = {}) {
                     ALTER TABLE dbo.gym_payment_transactions ADD void_reason NVARCHAR(500) NULL;
                 IF COL_LENGTH(N'dbo.gym_payment_transactions', N'idempotency_key_hash') IS NULL
                     ALTER TABLE dbo.gym_payment_transactions ADD idempotency_key_hash CHAR(64) NULL;
+                IF COL_LENGTH(N'dbo.gym_payment_transactions', N'membership_id') IS NOT NULL
+                   AND EXISTS (
+                       SELECT 1 FROM sys.columns
+                       WHERE object_id = OBJECT_ID(N'dbo.gym_payment_transactions')
+                         AND name = N'membership_id'
+                         AND is_nullable = 0
+                   )
+                    ALTER TABLE dbo.gym_payment_transactions ALTER COLUMN membership_id INT NULL;
+                IF COL_LENGTH(N'dbo.gym_payment_transactions', N'trainer_package_purchase_id') IS NULL
+                    ALTER TABLE dbo.gym_payment_transactions ADD trainer_package_purchase_id INT NULL;
+                IF OBJECT_ID(N'dbo.trainer_package_purchases', N'U') IS NOT NULL
+                   AND NOT EXISTS (
+                       SELECT 1 FROM sys.foreign_keys
+                       WHERE name = N'FK_gym_payment_transactions_trainer_purchase'
+                         AND parent_object_id = OBJECT_ID(N'dbo.gym_payment_transactions')
+                   )
+                    ALTER TABLE dbo.gym_payment_transactions ADD CONSTRAINT FK_gym_payment_transactions_trainer_purchase
+                        FOREIGN KEY (trainer_package_purchase_id) REFERENCES dbo.trainer_package_purchases(id) ON DELETE NO ACTION;
+                IF NOT EXISTS (
+                    SELECT 1 FROM sys.check_constraints
+                    WHERE name = N'CK_gym_payment_transactions_owner_ref'
+                      AND parent_object_id = OBJECT_ID(N'dbo.gym_payment_transactions')
+                )
+                    ALTER TABLE dbo.gym_payment_transactions ADD CONSTRAINT CK_gym_payment_transactions_owner_ref
+                        CHECK ((membership_id IS NOT NULL AND trainer_package_purchase_id IS NULL)
+                            OR (membership_id IS NULL AND trainer_package_purchase_id IS NOT NULL));
                 IF NOT EXISTS (
                     SELECT 1 FROM sys.check_constraints
                     WHERE name = N'CK_gym_payment_transactions_void_state'
@@ -209,6 +235,15 @@ async function ensurePaymentTransactionsTable({ readOnly = false } = {}) {
                     EXEC(N'CREATE UNIQUE INDEX UX_gym_payment_transactions_idempotency
                           ON dbo.gym_payment_transactions(idempotency_key_hash)
                           WHERE idempotency_key_hash IS NOT NULL;');
+                END;
+                IF NOT EXISTS (
+                    SELECT 1 FROM sys.indexes
+                    WHERE name = N'IX_gym_payment_transactions_trainer_purchase'
+                      AND object_id = OBJECT_ID(N'dbo.gym_payment_transactions')
+                )
+                BEGIN
+                    EXEC(N'CREATE INDEX IX_gym_payment_transactions_trainer_purchase
+                          ON dbo.gym_payment_transactions(trainer_package_purchase_id, paid_at DESC, id DESC);');
                 END;
                 EXEC(N'INSERT INTO dbo.gym_payment_transactions
                     (membership_id, transaction_type, list_price, discount_amount, amount_due,

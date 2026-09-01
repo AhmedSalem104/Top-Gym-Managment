@@ -83,6 +83,33 @@ const ROUTE_PERMISSION_RULES = Object.freeze([
     { pattern: /^\/workoutsessions\/\d+\/sets$/, methods: ['POST'], all: [PERMISSIONS.COACHING_CREATE] },
     { pattern: /^\/workoutsessions\/\d+\/end$/, methods: ['POST'], all: [PERMISSIONS.COACHING_UPDATE] },
     { pattern: /^\/meal-logs(?:\/|$)/, methods: ['GET'], all: [PERMISSIONS.COACHING_READ] },
+
+    // Independent Trainer workspace APIs use the same coaching permission
+    // vocabulary. Tenant type and capability enforcement still happen in the
+    // authentication/SaaS middleware; these rules only cover user actions.
+    { pattern: /^\/trainer\/workspace$/, methods: ['GET'], all: [PERMISSIONS.DASHBOARD_READ] },
+    { pattern: /^\/trainer\/follow-up$/, methods: ['GET'], all: [PERMISSIONS.COACHING_READ] },
+    { pattern: /^\/trainer\/reports\/summary$/, methods: ['GET'], all: [PERMISSIONS.REPORTS_READ] },
+    { pattern: /^\/trainer\/clients(?:\/|$)/, methods: ['GET'], all: [PERMISSIONS.COACHING_READ] },
+    { pattern: /^\/trainer\/clients(?:\/|$)/, methods: ['POST'], all: [PERMISSIONS.COACHING_CREATE] },
+    { pattern: /^\/trainer\/clients(?:\/|$)/, methods: ['PATCH', 'PUT'], all: [PERMISSIONS.COACHING_UPDATE] },
+    { pattern: /^\/trainer\/clients(?:\/|$)/, methods: ['DELETE'], all: [PERMISSIONS.COACHING_DELETE] },
+    { pattern: /^\/trainer\/(?:training-plans|nutrition-plans)(?:\/|$)/, methods: ['GET'], all: [PERMISSIONS.COACHING_READ] },
+    { pattern: /^\/trainer\/(?:training-plans|nutrition-plans)(?:\/|$)/, methods: ['POST'], all: [PERMISSIONS.COACHING_CREATE] },
+    { pattern: /^\/trainer\/(?:training-plans|nutrition-plans)(?:\/|$)/, methods: ['PATCH', 'PUT'], all: [PERMISSIONS.COACHING_UPDATE] },
+    { pattern: /^\/trainer\/(?:training-plans|nutrition-plans)(?:\/|$)/, methods: ['DELETE'], all: [PERMISSIONS.COACHING_DELETE] },
+    { pattern: /^\/trainer\/packages$/, methods: ['GET'], all: [PERMISSIONS.COACHING_READ] },
+    { pattern: /^\/trainer\/packages$/, methods: ['POST'], all: [PERMISSIONS.COACHING_CREATE] },
+    { pattern: /^\/trainer\/packages\/\d+$/, methods: ['PATCH', 'PUT'], all: [PERMISSIONS.COACHING_UPDATE] },
+    { pattern: /^\/trainer\/package-purchases$/, methods: ['GET'], all: [PERMISSIONS.COACHING_READ] },
+    { pattern: /^\/trainer\/package-purchases$/, methods: ['POST'], all: [PERMISSIONS.COACHING_CREATE] },
+    { pattern: /^\/trainer\/payments$/, methods: ['GET'], all: [PERMISSIONS.FINANCE_READ] },
+    { pattern: /^\/trainer\/package-purchases\/\d+\/payments$/, methods: ['POST'], all: [PERMISSIONS.PAYMENTS_CREATE] },
+    { pattern: /^\/trainer\/package-purchases\/\d+\/refunds$/, methods: ['POST'], all: [PERMISSIONS.PAYMENTS_REFUND] },
+    { pattern: /^\/trainer\/sessions$/, methods: ['GET'], all: [PERMISSIONS.COACHING_READ] },
+    { pattern: /^\/trainer\/sessions$/, methods: ['POST'], all: [PERMISSIONS.COACHING_CREATE] },
+    { pattern: /^\/trainer\/sessions\/\d+$/, methods: ['PATCH', 'PUT'], all: [PERMISSIONS.COACHING_UPDATE] },
+    { pattern: /^\/trainer\/sessions\/\d+\/status$/, methods: ['PATCH', 'POST'], all: [PERMISSIONS.COACHING_UPDATE] },
     { pattern: /^\/meal-logs(?:\/|$)/, methods: ['POST'], all: [PERMISSIONS.COACHING_CREATE] },
 
     { pattern: /^\/attendance\/report$/, methods: ['GET'], all: [PERMISSIONS.ATTENDANCE_REPORT] },

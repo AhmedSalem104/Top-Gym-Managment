@@ -47,13 +47,28 @@ The application now uses `gym_tenants` as the gym/organization record and `gym_u
 
 - name: `Top Gym`
 - slug: `top-gym`
+- tenant_type: `gym`
 - status: `active`
 
 All current operational rows are assigned to this tenant through a non-null `tenant_id`. Credentials and sessions remain global so the server can resolve the account before applying the gym context.
 
 `src/tenancy/tenant-context.js` stores the request tenant with `AsyncLocalStorage`. `src/database/pool.js` writes that context to SQL Server `SESSION_CONTEXT` before every query/batch, and `tenant-service.js` installs a SQL Server Row-Level Security policy over every tenant-owned table. This protects reads, updates and inserts even where legacy services do not yet include an explicit `tenant_id` predicate.
 
-Run `npm run migrate:tenancy` to apply the idempotent bootstrap/migration manually, and `npm run qa:tenancy` to verify table coverage, unassigned rows, Top Gym ownership and cross-tenant read/write blocking.
+Run `npm run migrate:tenancy` to apply the idempotent bootstrap/migration manually. Before an authorized environment is considered ready, run `npm run qa:rls` for the schema-driven RLS contract and then `npm run qa:tenancy` for unassigned rows, Top Gym ownership and cross-tenant read/write blocking.
+
+The Phase 0 security migration (`013-phase0-security-preconditions.sql`) makes
+the forced-password columns part of the canonical schema. It is additive and
+idempotent; the runtime compatibility DDL remains only as a guarded bridge for
+older installations. Tenant API readiness also requires the live auth/session
+schema contract, the schema-bound tenant predicate function, an enabled policy,
+and complete metadata-discovered coverage. A database that does not satisfy
+that contract fails closed with `TENANT_ISOLATION_NOT_READY`.
+
+Migration `014-tenant-type-foundation.sql` adds the canonical tenant type to
+the existing tenant aggregate. Existing rows are safely backfilled to
+`gym`; `independent_trainer` is reserved for a later approved product phase
+and is not operationally enabled yet. Tenant type is metadata only and never
+replaces `tenant_id`-based RLS.
 
 ## SaaS control plane
 
@@ -61,15 +76,21 @@ SaaS billing is a separate domain from gym-member memberships. The platform
 uses these independent tables:
 
 - `saas_plans`: platform plans such as Starter, Pro and Enterprise.
+- `saas_plan_tenant_types`: normalized plan compatibility mapping. Existing
+  plans are seeded for `gym`; this table is platform-scoped and does not
+  participate in tenant RLS.
 - `saas_tenant_subscriptions`: the active/trial subscription owned by a gym tenant.
 - `saas_subscription_requests`: manual upgrade/renewal requests.
 - `saas_payment_proofs`: one image/PDF proof per request, limited to 4 MB.
 - `saas_audit_log`: platform onboarding, review, activation and status events.
 
-`saas_plans` and `saas_audit_log` are platform-scoped. The other SaaS tables
-are tenant-scoped and covered by the same SQL Server RLS policy. The runtime
-schema is idempotently provisioned by `src/services/saas-service.js` and by
-`npm run migrate:tenancy`.
+`saas_plans` is platform-scoped. `saas_audit_log` is dual-scope: tenant events
+carry `tenant_id` and are protected by the same SQL Server RLS policy, while
+platform events intentionally use `NULL` and are available only in platform
+context. The other SaaS tables are tenant-scoped and covered by that policy.
+The runtime schema is idempotently provisioned by `src/services/saas-service.js`
+and by `npm run migrate:tenancy`; the schema-driven `qa:rls` gate is the source
+of truth for whether the live policy contract is ready.
 
 The default Top Gym tenant receives an Enterprise bootstrap subscription so
 the existing installation remains available. New tenants receive a 14-day

@@ -120,6 +120,7 @@ version. Each manifest carries:
 - `applicationVersion`, `schemaVersion` and registry version;
 - backup type and UTC creation time;
 - tenant id for tenant artifacts;
+- canonical tenant type metadata for tenant artifacts;
 - per-table counts and total row count;
 - `excludesSecrets` for platform exports where applicable;
 - SHA-256 over the serialized table sections;

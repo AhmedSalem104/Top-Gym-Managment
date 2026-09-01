@@ -15,7 +15,7 @@ const { securityHeaders } = require('../../src/middleware/security.middleware');
 const { parseScryptHash, readSessionCookie, verifyPassword } = require('../../src/services/auth-service');
 const { isAuthorizedCronRequest } = require('../../src/middleware/cron.middleware');
 const { getTenantContext } = require('../../src/tenancy/tenant-context');
-const { tenantSecuritySnapshotIsReady } = require('../../src/services/tenant-service');
+const { getTenantSecuritySnapshot, TENANT_TABLES, tenantSecuritySnapshotIsReady } = require('../../src/services/tenant-service');
 
 function requestFor(ip, body = {}) {
     return { method: 'POST', ip, socket: { remoteAddress: ip }, body };
@@ -163,10 +163,44 @@ test('public state-changing routes enforce the same-origin boundary before allow
 });
 
 test('tenant isolation readiness requires an enabled policy covering every scoped table', () => {
-    assert.equal(tenantSecuritySnapshotIsReady({ policy_enabled: 1, expected_tables: 70, protected_tables: 70 }), true);
-    assert.equal(tenantSecuritySnapshotIsReady({ policy_enabled: 0, expected_tables: 70, protected_tables: 70 }), false);
-    assert.equal(tenantSecuritySnapshotIsReady({ policy_enabled: 1, expected_tables: 70, protected_tables: 69 }), false);
-    assert.equal(tenantSecuritySnapshotIsReady({ policy_enabled: 1, expected_tables: 0, protected_tables: 0 }), false);
+    const ready = { policy_enabled: 1, security_function_present: 1, schema_contract_ready: 1, actual_tenant_tables: TENANT_TABLES.length, registry_tenant_tables: TENANT_TABLES.length, protected_tables: TENANT_TABLES.length, unprotected_tenant_tables: 0, missing_registry_entries: 0, missing_registry_tables: 0, disabled_required_policies: 0, invalid_predicates: 0, schema_security_mismatch: 0 };
+    assert.equal(tenantSecuritySnapshotIsReady(ready), true);
+    assert.equal(tenantSecuritySnapshotIsReady({ ...ready, policy_enabled: 0 }), false);
+    assert.equal(tenantSecuritySnapshotIsReady({ ...ready, protected_tables: 70 }), false);
+    assert.equal(tenantSecuritySnapshotIsReady({ ...ready, missing_registry_entries: 1 }), false);
+    assert.equal(tenantSecuritySnapshotIsReady({ ...ready, security_function_present: 0 }), false);
+    assert.equal(tenantSecuritySnapshotIsReady({ ...ready, schema_contract_ready: 0 }), false);
+});
+
+test('tenant security inspection discovers schema tables instead of trusting only the registry', async () => {
+    const policy = [
+        { policy_name: 'gym_tenant_security_policy', policy_schema: 'dbo', schema_name: 'dbo', table_name: 'members', is_enabled: 1, predicate_type_desc: 'FILTER', operation: null, predicate_definition: 'dbo.gym_tenant_access_predicate(tenant_id)' },
+        { policy_name: 'gym_tenant_security_policy', policy_schema: 'dbo', schema_name: 'dbo', table_name: 'members', is_enabled: 1, predicate_type_desc: 'BLOCK', operation: 'AFTER INSERT', predicate_definition: 'dbo.gym_tenant_access_predicate(tenant_id)' },
+        { policy_name: 'gym_tenant_security_policy', policy_schema: 'dbo', schema_name: 'dbo', table_name: 'members', is_enabled: 1, predicate_type_desc: 'BLOCK', operation: 'AFTER UPDATE', predicate_definition: 'dbo.gym_tenant_access_predicate(tenant_id)' }
+    ];
+    const fakePool = {
+        request: () => ({
+            query: async () => ({
+                recordsets: [
+                    [
+                        { schema_name: 'dbo', name: 'members', is_nullable: 0, data_type: 'int' },
+                        { schema_name: 'dbo', name: 'gym_user_tenants', is_nullable: 0, data_type: 'int' },
+                        { schema_name: 'dbo', name: 'unregistered_future_table', is_nullable: 0, data_type: 'int' }
+                    ],
+                    [{ schema_name: 'dbo', name: 'members' }],
+                    policy,
+                    [{ name: 'gym_tenant_access_predicate', schema_name: 'dbo', type: 'IF', is_ms_shipped: 0, is_schema_bound: 1 }],
+                    [{ schema_contract_ready: 1 }]
+                ]
+            })
+        })
+    };
+    const snapshot = await getTenantSecuritySnapshot(fakePool);
+    assert.deepEqual(snapshot.actualTenantTables, ['dbo.members', 'dbo.unregistered_future_table']);
+    assert.deepEqual(snapshot.globalTenantColumnTables, ['dbo.gym_user_tenants']);
+    assert.deepEqual(snapshot.missingRegistryEntries, ['dbo.unregistered_future_table']);
+    assert.deepEqual(snapshot.unprotectedTenantTables, ['dbo.unregistered_future_table']);
+    assert.equal(tenantSecuritySnapshotIsReady(snapshot), false);
 });
 
 test('authenticated tenant requests fail closed when the isolation policy is unavailable', async () => {
@@ -198,6 +232,28 @@ test('authenticated tenant requests fail closed when the isolation policy is una
     await middleware(request, responseDouble(), (error) => { nextError = error; });
 
     assert.equal(nextError, isolationError);
+});
+
+test('forced-password sessions cannot call normal tenant APIs server-side', async () => {
+    let nextCalled = false;
+    const middleware = createAuthApiMiddleware({
+        authService: {
+            getSessionUser: async () => ({ id: 17, role: 'Owner', mustChangePassword: true }),
+            readSessionCookie: () => 'session-token',
+            withPermissions: async (user) => user
+        },
+        tenantService: {
+            resolveTenantForUser: async () => ({ id: 23, status: 'active' }),
+            assertTenantIsolationReady: async () => {}
+        },
+        isAuthorizedCronRequest: () => false
+    });
+    const request = { method: 'GET', path: '/members', query: {}, body: {}, get: () => '', socket: { remoteAddress: '127.0.0.1' } };
+    const response = responseDouble();
+    await middleware(request, response, () => { nextCalled = true; });
+    assert.equal(response.statusCode, 403);
+    assert.equal(response.body.code, 'PASSWORD_CHANGE_REQUIRED');
+    assert.equal(nextCalled, false);
 });
 
 test('normal GET requests use a read-only tenant context and do not touch sessions', async () => {

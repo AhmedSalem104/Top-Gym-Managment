@@ -4,6 +4,14 @@ const crypto = require('node:crypto');
 const { getPool, sql } = require('../database');
 const { withTransaction } = require('../database/transaction');
 const { currentTenantId, getTenantContext, runTenantContext } = require('../tenancy/tenant-context');
+const capabilityService = require('./capability-service');
+const tenantService = require('./tenant-service');
+const { TENANT_TYPES, resolveTenantType } = require('../tenancy/tenant-types');
+const {
+    PLAN_COMPATIBILITY_TABLE,
+    assertPlanSupportsTenantType,
+    normalizeCompatibleTenantTypes
+} = require('./plan-compatibility-service');
 const { config } = require('../config/env');
 const libraryService = require('./library-service');
 
@@ -14,6 +22,7 @@ const PROOF_MIME_TYPES = Object.freeze(new Set([
 ]));
 
 const SAAS_TABLES = Object.freeze([
+    'saas_plan_tenant_types',
     'saas_tenant_subscriptions',
     'saas_subscription_requests',
     'saas_payment_proofs',
@@ -92,6 +101,27 @@ BEGIN
 END;
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name=N'IX_saas_plans_active_order' AND object_id=OBJECT_ID(N'dbo.saas_plans'))
     CREATE INDEX IX_saas_plans_active_order ON dbo.saas_plans(is_active, sort_order, id);
+
+IF OBJECT_ID(N'dbo.saas_plan_tenant_types', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.saas_plan_tenant_types (
+        plan_id INT NOT NULL,
+        tenant_type VARCHAR(32) NOT NULL,
+        created_at DATETIME2(0) NOT NULL CONSTRAINT DF_saas_plan_tenant_types_created DEFAULT (SYSUTCDATETIME()),
+        CONSTRAINT PK_saas_plan_tenant_types PRIMARY KEY (plan_id, tenant_type),
+        CONSTRAINT FK_saas_plan_tenant_types_plan FOREIGN KEY (plan_id) REFERENCES dbo.saas_plans(id) ON DELETE CASCADE,
+        CONSTRAINT CK_saas_plan_tenant_types_type CHECK (tenant_type IN ('gym', 'independent_trainer'))
+    );
+END;
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name=N'IX_saas_plan_tenant_types_type_plan' AND object_id=OBJECT_ID(N'dbo.saas_plan_tenant_types'))
+    CREATE INDEX IX_saas_plan_tenant_types_type_plan ON dbo.saas_plan_tenant_types(tenant_type, plan_id);
+IF OBJECT_ID(N'dbo.saas_plan_tenant_types', N'U') IS NOT NULL
+   AND (
+       NOT EXISTS (SELECT 1 FROM sys.key_constraints WHERE name=N'PK_saas_plan_tenant_types' AND parent_object_id=OBJECT_ID(N'dbo.saas_plan_tenant_types'))
+       OR NOT EXISTS (SELECT 1 FROM sys.foreign_keys WHERE name=N'FK_saas_plan_tenant_types_plan' AND parent_object_id=OBJECT_ID(N'dbo.saas_plan_tenant_types'))
+       OR NOT EXISTS (SELECT 1 FROM sys.check_constraints WHERE name=N'CK_saas_plan_tenant_types_type' AND parent_object_id=OBJECT_ID(N'dbo.saas_plan_tenant_types'))
+   )
+    THROW 51022, 'saas_plan_tenant_types schema contract is not ready.', 1;
 
 IF OBJECT_ID(N'dbo.saas_tenant_subscriptions', N'U') IS NULL
 BEGIN
@@ -478,6 +508,85 @@ function planFromRow(row) {
     };
 }
 
+async function getPlanTenantTypes(planId, { executor = null } = {}) {
+    const normalizedPlanId = Number(planId);
+    if (!Number.isInteger(normalizedPlanId) || normalizedPlanId <= 0) {
+        throw saasError('The plan identifier is invalid.', 400, 'INVALID_PLAN');
+    }
+    const request = (executor || await getPool()).request()
+        .input('planId', sql.Int, normalizedPlanId);
+    const result = await request.query(`SELECT tenant_type FROM dbo.${PLAN_COMPATIBILITY_TABLE} WHERE plan_id=@planId ORDER BY tenant_type;`);
+    const types = [];
+    for (const row of result.recordset || []) {
+        const type = resolveTenantType(row.tenant_type);
+        if (!types.includes(type)) types.push(type);
+    }
+    return types;
+}
+
+function planWithTenantTypes(plan, compatibleTenantTypes) {
+    if (!plan) return null;
+    if (!Array.isArray(compatibleTenantTypes) || compatibleTenantTypes.length === 0) {
+        throw saasError('Plan compatibility metadata is not ready.', 503, 'PLAN_COMPATIBILITY_NOT_READY');
+    }
+    return { ...plan, compatibleTenantTypes: normalizeCompatibleTenantTypes(compatibleTenantTypes) };
+}
+
+function assertPlanCompatibleForTenantType(plan, tenantType) {
+    try {
+        return assertPlanSupportsTenantType(plan, tenantType);
+    } catch (error) {
+        if (error.code === 'PLAN_COMPATIBILITY_INVALID' || error.code === 'PLAN_COMPATIBILITY_REQUIRED') throw error;
+        throw saasError('The selected plan is not compatible with this tenant type.', 409, 'SAAS_PLAN_TENANT_TYPE_MISMATCH');
+    }
+}
+
+async function assertPlanCompatibleWithTenant(tenantId, plan, { executor = null } = {}) {
+    const id = tenantIdValue(tenantId);
+    let tenantType;
+    if (executor) {
+        const result = await executor.request().input('tenantId', sql.Int, id).query('SELECT TOP (1) tenant_type FROM dbo.gym_tenants WHERE id=@tenantId;');
+        if (!result.recordset[0]) throw saasError('The tenant was not found.', 404, 'TENANT_NOT_FOUND');
+        tenantType = resolveTenantType(result.recordset[0].tenant_type);
+    } else {
+        tenantType = await tenantService.getTenantType(id);
+    }
+    assertPlanCompatibleForTenantType(plan, tenantType);
+    return tenantType;
+}
+
+async function assertPlanCompatibilityCanChange(planId, compatibleTenantTypes, { executor = null } = {}) {
+    const normalizedTypes = normalizeCompatibleTenantTypes(compatibleTenantTypes, { fallback: [] });
+    const request = (executor || await getPool()).request()
+        .input('planId', sql.Int, Number(planId));
+    const result = await request.query(`
+        SELECT DISTINCT t.tenant_type
+        FROM dbo.saas_tenant_subscriptions s
+        INNER JOIN dbo.gym_tenants t ON t.id=s.tenant_id
+        WHERE s.plan_id=@planId AND s.status IN ('trial', 'active');
+    `);
+    for (const row of result.recordset || []) {
+        const type = resolveTenantType(row.tenant_type);
+        if (!normalizedTypes.includes(type)) {
+            throw saasError('This compatibility change would invalidate an active tenant subscription.', 409, 'PLAN_COMPATIBILITY_IN_USE');
+        }
+    }
+    return normalizedTypes;
+}
+
+async function replacePlanTenantTypes(planId, compatibleTenantTypes, executor) {
+    const normalizedTypes = normalizeCompatibleTenantTypes(compatibleTenantTypes, { fallback: [] });
+    const request = executor.request().input('planId', sql.Int, Number(planId));
+    await request.query(`DELETE FROM dbo.${PLAN_COMPATIBILITY_TABLE} WHERE plan_id=@planId;`);
+    for (const tenantType of normalizedTypes) {
+        await executor.request()
+            .input('planId', sql.Int, Number(planId))
+            .input('tenantType', sql.VarChar(32), tenantType)
+            .query(`INSERT INTO dbo.${PLAN_COMPATIBILITY_TABLE}(plan_id,tenant_type) VALUES (@planId,@tenantType);`);
+    }
+    return normalizedTypes;
+}
+
 function snapshotForPlan(plan) {
     return {
         billingPeriod: plan?.billingPeriod || 'monthly',
@@ -491,11 +600,11 @@ function snapshotForPlan(plan) {
     };
 }
 
-function subscriptionFromRow(row) {
+function subscriptionFromRow(row, compatibleTenantTypes = null) {
     if (!row) return null;
     const expiresAt = row.expires_at ? new Date(row.expires_at) : null;
     const daysRemaining = expiresAt ? Math.max(0, Math.ceil((expiresAt.getTime() - Date.now()) / 86400000)) : null;
-    const plan = planFromRow(row);
+    const plan = compatibleTenantTypes ? planWithTenantTypes(planFromRow(row), compatibleTenantTypes) : planFromRow(row);
     const fallback = snapshotForPlan(plan);
     return {
         id: Number(row.id),
@@ -525,14 +634,15 @@ function subscriptionFromRow(row) {
     };
 }
 
-function requestFromRow(row) {
+function requestFromRow(row, compatibleTenantTypes = null) {
     if (!row) return null;
     return {
         id: Number(row.id),
         tenantId: Number(row.tenant_id),
         tenantName: row.tenant_name || null,
         tenantSlug: row.tenant_slug || null,
-        plan: planFromRow(row),
+        tenantType: row.tenant_type == null ? null : resolveTenantType(row.tenant_type),
+        plan: compatibleTenantTypes === null ? planFromRow(row) : planWithTenantTypes(planFromRow(row), compatibleTenantTypes),
         status: String(row.status),
         amount: Number(row.amount_snapshot || 0),
         currency: String(row.currency || 'EGP'),
@@ -551,6 +661,23 @@ function requestFromRow(row) {
             uploadedAt: row.proof_uploaded_at || null
         } : null
     };
+}
+
+async function requestsWithCompatibility(rows, executor = null) {
+    const requests = Array.isArray(rows) ? rows : [];
+    const planIds = [...new Set(requests.map((row) => Number(row.plan_id)).filter((id) => Number.isInteger(id) && id > 0))];
+    if (!planIds.length) return requests.map((row) => requestFromRow(row));
+    const connection = executor || await getPool();
+    const result = await connection.request().query(`SELECT plan_id,tenant_type FROM dbo.${PLAN_COMPATIBILITY_TABLE} WHERE plan_id IN (${planIds.join(',')}) ORDER BY plan_id,tenant_type;`);
+    const byPlan = new Map();
+    for (const row of result.recordset || []) {
+        const planId = Number(row.plan_id);
+        const types = byPlan.get(planId) || [];
+        const type = resolveTenantType(row.tenant_type);
+        if (!types.includes(type)) types.push(type);
+        byPlan.set(planId, types);
+    }
+    return requests.map((row) => requestFromRow(row, byPlan.get(Number(row.plan_id)) || []));
 }
 
 function tenantIdValue(value = currentTenantId({ required: true })) {
@@ -589,6 +716,19 @@ async function seedPlans(pool) {
     }
 }
 
+async function seedPlanCompatibility(pool) {
+    await pool.request().query(`
+        MERGE dbo.saas_plan_tenant_types AS target
+        USING (
+            SELECT id AS plan_id, CAST('gym' AS VARCHAR(32)) AS tenant_type
+            FROM dbo.saas_plans
+        ) AS source
+        ON target.plan_id=source.plan_id AND target.tenant_type=source.tenant_type
+        WHEN NOT MATCHED BY TARGET THEN
+            INSERT (plan_id, tenant_type) VALUES (source.plan_id, source.tenant_type);
+    `);
+}
+
 async function ensureSaasTables({ readOnly = false } = {}) {
     // Read-only baseline requests must fail on an unprepared database rather
     // than seed plans or run compatibility updates as a side effect.
@@ -598,6 +738,7 @@ async function ensureSaasTables({ readOnly = false } = {}) {
             const pool = await getPool();
             await pool.request().batch(SAAS_SCHEMA_SQL);
             await seedPlans(pool);
+            await seedPlanCompatibility(pool);
         })().catch((error) => {
             readyPromise = null;
             throw error;
@@ -630,7 +771,17 @@ async function getPlans({ includeInactive = false, readOnly = false } = {}) {
     const result = await pool.request()
         .input('includeInactive', sql.Bit, includeInactive ? 1 : 0)
         .query('SELECT id,code,name,description,billing_period,price,currency,max_members,max_users,max_ai_generations,max_storage_mb,features_json,is_active,sort_order,updated_at FROM dbo.saas_plans WHERE @includeInactive=1 OR is_active=1 ORDER BY sort_order,id;');
-    return result.recordset.map(planFromRow);
+    const plans = result.recordset.map(planFromRow);
+    if (!plans.length) return plans;
+    const compatibility = await pool.request().query(`SELECT plan_id,tenant_type FROM dbo.${PLAN_COMPATIBILITY_TABLE} WHERE plan_id IN (${plans.map((plan) => Number(plan.id)).join(',')}) ORDER BY plan_id,tenant_type;`);
+    const byPlan = new Map();
+    for (const row of compatibility.recordset || []) {
+        const types = byPlan.get(Number(row.plan_id)) || [];
+        const type = resolveTenantType(row.tenant_type);
+        if (!types.includes(type)) types.push(type);
+        byPlan.set(Number(row.plan_id), types);
+    }
+    return plans.map((plan) => planWithTenantTypes(plan, byPlan.get(plan.id) || []));
 }
 
 async function getPlan({ id = null, code = null, includeInactive = false } = {}) {
@@ -641,7 +792,9 @@ async function getPlan({ id = null, code = null, includeInactive = false } = {})
         .input('code', sql.VarChar(40), code ? text(code, '', 40).toLowerCase() : null)
         .input('includeInactive', sql.Bit, includeInactive ? 1 : 0)
         .query('SELECT TOP (1) id,code,name,description,billing_period,price,currency,max_members,max_users,max_ai_generations,max_storage_mb,features_json,is_active,sort_order,updated_at FROM dbo.saas_plans WHERE (@id IS NOT NULL AND id=@id OR @id IS NULL AND @code IS NOT NULL AND code=@code) AND (@includeInactive=1 OR is_active=1);');
-    return planFromRow(result.recordset[0]);
+    const plan = planFromRow(result.recordset[0]);
+    if (!plan) return null;
+    return planWithTenantTypes(plan, await getPlanTenantTypes(plan.id));
 }
 
 async function applyScheduledSubscriptionChanges() {
@@ -651,6 +804,31 @@ async function applyScheduledSubscriptionChanges() {
         ? tenantIdValue(context.tenantId)
         : null;
     const applied = await withTransaction(async (transaction) => {
+        // Validate all due plan changes while the same transaction holds the
+        // row locks. This prevents a scheduled incompatible plan from being
+        // applied by a background sync or a tenant request.
+        const incompatible = await transaction.request()
+            .input('tenantId', sql.Int, tenantId)
+            .query(`
+                SELECT TOP (1) c.tenant_id,c.new_plan_id,t.tenant_type
+                FROM dbo.saas_subscription_changes c WITH (UPDLOCK,HOLDLOCK)
+                INNER JOIN dbo.saas_tenant_subscriptions s WITH (UPDLOCK,HOLDLOCK)
+                    ON s.id=c.subscription_id AND s.tenant_id=c.tenant_id
+                INNER JOIN dbo.gym_tenants t WITH (UPDLOCK,HOLDLOCK)
+                    ON t.id=c.tenant_id
+                WHERE c.status='scheduled'
+                  AND c.effective_at <= SYSUTCDATETIME()
+                  AND (@tenantId IS NULL OR c.tenant_id=@tenantId)
+                  AND NOT EXISTS (
+                      SELECT 1
+                      FROM dbo.${PLAN_COMPATIBILITY_TABLE} pt
+                      WHERE pt.plan_id=c.new_plan_id
+                        AND pt.tenant_type=t.tenant_type
+                  );
+            `);
+        if (incompatible.recordset[0]) {
+            throw saasError('The scheduled plan is not compatible with the tenant type.', 409, 'SAAS_PLAN_TENANT_TYPE_MISMATCH');
+        }
         const request = transaction.request().input('tenantId', sql.Int, tenantId);
         const result = await request.query(`
             DECLARE @applied TABLE (
@@ -793,7 +971,9 @@ async function getCurrentSubscription(tenantId = currentTenantId({ required: tru
                 INNER JOIN dbo.saas_plans p ON p.id=s.plan_id
                 WHERE s.tenant_id=@tenantId
                 ORDER BY CASE s.status WHEN 'active' THEN 0 WHEN 'trial' THEN 1 WHEN 'expired' THEN 2 WHEN 'suspended' THEN 3 ELSE 4 END, s.updated_at DESC,s.id DESC;`);
-    const subscription = subscriptionFromRow(result.recordset[0]);
+    const subscriptionRow = result.recordset[0];
+    const subscriptionPlanTypes = subscriptionRow ? await getPlanTenantTypes(subscriptionRow.plan_id) : [];
+    const subscription = subscriptionFromRow(subscriptionRow, subscriptionPlanTypes);
     if (!readOnly && subscription && ['active', 'trial'].includes(subscription.status) && subscription.expiresAt && new Date(subscription.expiresAt).getTime() <= Date.now()) {
         await pool.request().input('id', sql.BigInt, subscription.id).query("UPDATE dbo.saas_tenant_subscriptions SET status='expired', updated_at=SYSUTCDATETIME() WHERE id=@id AND status IN ('trial','active');");
         await pool.request().input('tenantId', sql.Int, id).query("UPDATE dbo.gym_tenants SET status='expired', updated_at=SYSUTCDATETIME() WHERE id=@tenantId AND status IN ('trial','active');");
@@ -830,22 +1010,43 @@ async function getTenantOverrides(tenantId = currentTenantId({ required: true })
 async function getEffectiveEntitlements(tenantId = currentTenantId({ required: true }), subscription = null, { readOnly = false } = {}) {
     const id = tenantIdValue(tenantId);
     const current = subscription || await getCurrentSubscription(id, { readOnly });
-    const base = current?.limitsSnapshot || {};
+    const tenantType = await tenantService.getTenantType(id);
+    // Historical expired/suspended subscriptions remain readable even if a
+    // later plan-catalog change no longer lists their tenant type. Active
+    // operational access is the point at which compatibility is mandatory.
+    if (current?.plan && ['active', 'trial'].includes(String(current.status).toLowerCase())) {
+        assertPlanCompatibleForTenantType(current.plan, tenantType);
+    }
+    const base = current?.limitsSnapshot || (current ? null : {});
     const baseFeatures = current?.featuresSnapshot || current?.plan?.features || {};
     const overrides = await getTenantOverrides(id, { readOnly });
-    const limits = {
-        maxMembers: overrides?.maxMembers ?? base.maxMembers ?? null,
-        maxUsers: overrides?.maxUsers ?? base.maxUsers ?? null,
-        maxAiGenerations: overrides?.maxAiGenerations ?? base.maxAiGenerations ?? null,
-        maxStorageMb: overrides?.maxStorageMb ?? base.maxStorageMb ?? null
-    };
+    const subscriptionStatus = current?.status || 'none';
+    const limits = capabilityService.resolveEffectiveLimits({
+        tenantType,
+        planLimits: base,
+        overrideLimits: overrides,
+        subscriptionStatus,
+        requirePlan: Boolean(current)
+    });
     const features = { ...baseFeatures, ...(overrides?.features || {}) };
+    const capabilities = capabilityService.resolveEffectiveCapabilities({
+        tenantType,
+        features,
+        subscriptionStatus
+    });
     return {
+        tenantType,
         plan: current?.plan || null,
         subscription: current,
         overrides,
         limits,
-        features
+        limitsResolution: {
+            tenantType,
+            subscriptionActive: ['trial', 'active'].includes(String(subscriptionStatus).toLowerCase()),
+            source: 'tenant-type+plan+overrides'
+        },
+        features,
+        capabilities
     };
 }
 
@@ -854,7 +1055,7 @@ async function getTenantBilling(tenantId = currentTenantId({ required: true }), 
     await ensureSaasTables({ readOnly });
     const pool = await getPool();
     const [tenantResult, subscription, requestPage, plans] = await Promise.all([
-        pool.request().input('tenantId', sql.Int, id).query('SELECT TOP (1) id,name,slug,status,created_at,updated_at FROM dbo.gym_tenants WHERE id=@tenantId;'),
+        pool.request().input('tenantId', sql.Int, id).query('SELECT TOP (1) id,name,slug,tenant_type,status,created_at,updated_at FROM dbo.gym_tenants WHERE id=@tenantId;'),
         getCurrentSubscription(id, { readOnly }),
         listTenantRequests(id, { readOnly, page, pageSize, includePagination: true }),
         getPlans({ readOnly })
@@ -862,7 +1063,7 @@ async function getTenantBilling(tenantId = currentTenantId({ required: true }), 
     const entitlements = await getEffectiveEntitlements(id, subscription, { readOnly });
     const tenant = tenantResult.recordset[0];
     return {
-        tenant: tenant ? { id: Number(tenant.id), name: tenant.name, slug: tenant.slug, status: tenant.status, createdAt: tenant.created_at, updatedAt: tenant.updated_at } : null,
+        tenant: tenant ? { id: Number(tenant.id), name: tenant.name, slug: tenant.slug, tenantType: resolveTenantType(tenant.tenant_type), status: tenant.status, createdAt: tenant.created_at, updatedAt: tenant.updated_at } : null,
         subscription,
         entitlements,
         overrides: entitlements.overrides,
@@ -879,15 +1080,6 @@ function recoveryRequest(path, method) {
         || (normalizedPath === '/saas/plans' && normalizedMethod === 'GET')
         || (normalizedPath === '/saas/subscription-requests' && ['GET', 'POST'].includes(normalizedMethod))
         || (/^\/saas\/subscription-requests\/\d+\/proof$/.test(normalizedPath) && normalizedMethod === 'POST');
-}
-
-function requiredFeature(path) {
-    const value = String(path || '');
-    if (value.startsWith('/intelligence')) return 'intelligence';
-    if (value.startsWith('/store')) return 'store';
-    if (value.startsWith('/coaching') || value.startsWith('/workout') || value.startsWith('/diet') || value.startsWith('/meal-logs') || value.startsWith('/external-trainees') || value.startsWith('/clients')) return 'coaching';
-    if (value.startsWith('/member-portal')) return 'portal';
-    return null;
 }
 
 async function enforceTenantAccess(tenantId, { path = '', method = 'GET', readOnly = false } = {}) {
@@ -911,9 +1103,21 @@ async function enforceTenantAccess(tenantId, { path = '', method = 'GET', readOn
         throw saasError('تم إيقاف وصول هذا الجيم مؤقتًا. تواصل مع إدارة المنصة.', 403, 'TENANT_NOT_ACTIVE', { subscription, tenantStatus: tenant.status });
     }
 
-    const feature = requiredFeature(path);
-    if (feature && entitlements.features && entitlements.features[feature] === false) {
-        throw saasError('هذه الميزة غير متاحة في باقة الجيم الحالية.', 403, 'SAAS_FEATURE_NOT_INCLUDED', { feature, plan: subscription.plan.code });
+    try {
+        capabilityService.assertCapabilityAccess({
+            tenantType: entitlements.tenantType,
+            path,
+            features: entitlements.features,
+            planCode: subscription?.plan?.code || null,
+            planCompatible: true,
+            subscriptionStatus: subscription?.status || null
+        });
+    } catch (error) {
+        if (error.code === 'SAAS_FEATURE_NOT_INCLUDED') {
+            const feature = capabilityService.requiredFeature(path);
+            throw saasError('هذه الميزة غير متاحة في باقة الجيم الحالية.', 403, error.code, { feature, plan: subscription?.plan?.code || null });
+        }
+        throw error;
     }
     return { tenantStatus: tenant.status, subscription, entitlements, recovery: false };
 }
@@ -979,6 +1183,7 @@ async function ensureBootstrapSubscription(tenantId) {
     if (existing.recordset[0]) return getCurrentSubscription(id);
     const plan = await getPlan({ code: 'enterprise', includeInactive: true });
     if (!plan) throw saasError('تعذر تجهيز باقة Top Gym الأساسية.', 500, 'SAAS_BOOTSTRAP_PLAN_MISSING');
+    assertPlanCompatibleForTenantType(plan, TENANT_TYPES.GYM);
     const startsAt = new Date();
     const snapshot = snapshotForPlan(plan);
     await withTransaction(async (transaction) => {
@@ -1039,7 +1244,7 @@ async function listTenantRequests(tenantId = currentTenantId({ required: true })
     if (normalizedRequestId !== null && (!Number.isInteger(normalizedRequestId) || normalizedRequestId <= 0)) throw saasError('Invalid subscription request.', 400, 'INVALID_SUBSCRIPTION_REQUEST');
     const offset = (normalizedPage - 1) * normalizedPageSize;
     const result = await pool.request().input('tenantId', sql.Int, id).input('requestId', sql.BigInt, normalizedRequestId).input('offset', sql.Int, offset).input('pageSize', sql.Int, normalizedPageSize).query(`SELECT r.id,r.tenant_id,r.status,r.amount_snapshot,r.currency,r.notes,r.review_notes,r.requested_by_user_id,r.reviewed_by_user_id,r.reviewed_at,r.created_at,
-                       t.name AS tenant_name,t.slug AS tenant_slug,u.full_name AS requested_by_name,
+                       t.name AS tenant_name,t.slug AS tenant_slug,t.tenant_type,u.full_name AS requested_by_name,
                        p.id AS plan_id,p.code,p.name,p.description,p.billing_period,p.price,p.currency AS plan_currency,p.max_members,p.max_users,p.max_ai_generations,p.max_storage_mb,p.features_json,p.is_active,p.sort_order,p.updated_at AS plan_updated_at,
                        proof.id AS proof_id,proof.file_name AS proof_file_name,proof.mime_type AS proof_mime_type,proof.file_size AS proof_file_size,proof.uploaded_at AS proof_uploaded_at,
                        COUNT_BIG(*) OVER() AS total_count
@@ -1051,7 +1256,7 @@ async function listTenantRequests(tenantId = currentTenantId({ required: true })
                 WHERE r.tenant_id=@tenantId AND (@requestId IS NULL OR r.id=@requestId)
                 ORDER BY r.created_at DESC,r.id DESC
                 OFFSET @offset ROWS FETCH NEXT @pageSize ROWS ONLY;`);
-    const requests = result.recordset.map(requestFromRow);
+    const requests = await requestsWithCompatibility(result.recordset);
     if (!includePagination) return requests;
     const total = Number(result.recordset[0]?.total_count || 0);
     return { requests, pagination: { page: normalizedPage, pageSize: normalizedPageSize, total, pages: Math.max(1, Math.ceil(total / normalizedPageSize)) } };
@@ -1063,6 +1268,7 @@ async function createSubscriptionRequest({ tenantId = currentTenantId({ required
     if (!Number.isInteger(actorId) || actorId <= 0) throw saasError('الحساب المنفذ غير صحيح.', 400, 'INVALID_USER');
     const plan = await getPlan({ id: planId, code: planCode });
     if (!plan) throw saasError('الباقة المطلوبة غير متاحة.', 404, 'SAAS_PLAN_NOT_FOUND');
+    await assertPlanCompatibleWithTenant(id, plan);
     const pool = await getPool();
     const pending = await pool.request().input('tenantId', sql.Int, id).query("SELECT TOP (1) id FROM dbo.saas_subscription_requests WHERE tenant_id=@tenantId AND status='pending' ORDER BY created_at DESC,id DESC;");
     // The filtered unique index is the final race-safe guard; translate its
@@ -1179,7 +1385,7 @@ async function listPlatformRequests({ status = '', page = 1, pageSize = 25, requ
     if (normalizedRequestId !== null && (!Number.isInteger(normalizedRequestId) || normalizedRequestId <= 0)) throw saasError('Ø·Ù„Ø¨ Ø§Ù„Ø§Ø´ØªØ±Ø§Ùƒ ØºÙŠØ± ØµØ­ÙŠØ­.', 400, 'INVALID_SUBSCRIPTION_REQUEST');
     const offset = (normalizedPage - 1) * normalizedPageSize;
     const result = await pool.request().input('status', sql.VarChar(20), text(status, '', 20).toLowerCase()).input('requestId', sql.BigInt, normalizedRequestId).input('offset', sql.Int, offset).input('pageSize', sql.Int, normalizedPageSize).query(`SELECT r.id,r.tenant_id,r.status,r.amount_snapshot,r.currency,r.notes,r.review_notes,r.requested_by_user_id,r.reviewed_by_user_id,r.reviewed_at,r.created_at,
-                       t.name AS tenant_name,t.slug AS tenant_slug,u.full_name AS requested_by_name,
+                       t.name AS tenant_name,t.slug AS tenant_slug,t.tenant_type,u.full_name AS requested_by_name,
                        p.id AS plan_id,p.code,p.name,p.description,p.billing_period,p.price,p.currency AS plan_currency,p.max_members,p.max_users,p.max_ai_generations,p.max_storage_mb,p.features_json,p.is_active,p.sort_order,p.updated_at AS plan_updated_at,
                        proof.id AS proof_id,proof.file_name AS proof_file_name,proof.mime_type AS proof_mime_type,proof.file_size AS proof_file_size,proof.uploaded_at AS proof_uploaded_at,
                        COUNT_BIG(*) OVER() AS total_count
@@ -1191,7 +1397,7 @@ async function listPlatformRequests({ status = '', page = 1, pageSize = 25, requ
                 WHERE (@status='' OR r.status=@status) AND (@requestId IS NULL OR r.id=@requestId)
                 ORDER BY CASE WHEN r.status='pending' THEN 0 ELSE 1 END,r.created_at DESC,r.id DESC
                 OFFSET @offset ROWS FETCH NEXT @pageSize ROWS ONLY;`);
-    const requests = result.recordset.map(requestFromRow);
+    const requests = await requestsWithCompatibility(result.recordset);
     if (!includePagination) return requests;
     const total = Number(result.recordset[0]?.total_count || 0);
     return { requests, pagination: { page: normalizedPage, pageSize: normalizedPageSize, total, pages: Math.max(1, Math.ceil(total / normalizedPageSize)) } };
@@ -1227,7 +1433,7 @@ async function approveRequest(requestId, actorUserId, reviewNotes = '') {
     const now = new Date();
     let tenantId;
     await withTransaction(async (transaction) => {
-        const result = await transaction.request().input('requestId', sql.BigInt, id).query(`SELECT TOP (1) r.*,t.name AS tenant_name,t.status AS tenant_status,p.code,p.name,p.description,p.billing_period,p.price,p.currency AS plan_currency,p.max_members,p.max_users,p.max_ai_generations,p.max_storage_mb,p.features_json,p.is_active,p.sort_order,p.updated_at AS plan_updated_at,proof.id AS proof_id
+        const result = await transaction.request().input('requestId', sql.BigInt, id).query(`SELECT TOP (1) r.*,t.name AS tenant_name,t.status AS tenant_status,t.tenant_type,p.code,p.name,p.description,p.billing_period,p.price,p.currency AS plan_currency,p.max_members,p.max_users,p.max_ai_generations,p.max_storage_mb,p.features_json,p.is_active,p.sort_order,p.updated_at AS plan_updated_at,proof.id AS proof_id
             FROM dbo.saas_subscription_requests r WITH (UPDLOCK,HOLDLOCK) INNER JOIN dbo.gym_tenants t ON t.id=r.tenant_id INNER JOIN dbo.saas_plans p ON p.id=r.plan_id LEFT JOIN dbo.saas_payment_proofs proof ON proof.request_id=r.id WHERE r.id=@requestId;`);
         const request = result.recordset[0];
         if (!request) throw saasError('طلب الاشتراك غير موجود.', 404, 'SAAS_REQUEST_NOT_FOUND');
@@ -1239,8 +1445,13 @@ async function approveRequest(requestId, actorUserId, reviewNotes = '') {
         if (!Number.isInteger(planId) || planId <= 0) {
             throw saasError('بيانات الباقة المرتبطة بطلب الاشتراك غير صالحة. أعد إنشاء الطلب أو راجع إعدادات الباقة.', 409, 'SAAS_REQUEST_PLAN_INVALID');
         }
+        const requestedPlan = planWithTenantTypes(
+            planFromRow({ ...request, id: planId, currency: request.plan_currency || request.currency }),
+            await getPlanTenantTypes(planId, { executor: transaction })
+        );
+        assertPlanCompatibleForTenantType(requestedPlan, request.tenant_type);
         const expiresAt = addBillingPeriod(now, request.billing_period);
-        const snapshot = snapshotForPlan(planFromRow({ ...request, id: planId, currency: request.plan_currency || request.currency }));
+        const snapshot = snapshotForPlan(requestedPlan);
         await transaction.request().input('requestId', sql.BigInt, id).input('actorId', sql.Int, actorId).input('reviewNotes', sql.NVarChar(1000), text(reviewNotes, '', 1000) || null).query("UPDATE dbo.saas_subscription_requests SET status='approved',reviewed_by_user_id=@actorId,reviewed_at=SYSUTCDATETIME(),review_notes=@reviewNotes,updated_at=SYSUTCDATETIME() WHERE id=@requestId;");
         await transaction.request().input('tenantId', sql.Int, tenantId).query("UPDATE dbo.saas_tenant_subscriptions SET status='expired',updated_at=SYSUTCDATETIME() WHERE tenant_id=@tenantId AND status IN ('trial','active');");
         await transaction.request().input('tenantId', sql.Int, tenantId).input('planId', sql.Int, planId).input('startsAt', sql.DateTime2(0), now).input('expiresAt', sql.DateTime2(0), expiresAt).input('actorId', sql.Int, actorId).input('notes', sql.NVarChar(1000), text(reviewNotes, '', 1000) || null).input('billingPeriodSnapshot', sql.VarChar(20), snapshot.billingPeriod).input('priceSnapshot', sql.Decimal(12, 2), snapshot.price).input('maxMembersSnapshot', sql.Int, snapshot.maxMembers).input('maxUsersSnapshot', sql.Int, snapshot.maxUsers).input('maxAiGenerationsSnapshot', sql.Int, snapshot.maxAiGenerations).input('maxStorageMbSnapshot', sql.Int, snapshot.maxStorageMb).input('featuresSnapshotJson', sql.NVarChar(sql.MAX), JSON.stringify(snapshot.features)).query("INSERT INTO dbo.saas_tenant_subscriptions (tenant_id,plan_id,status,starts_at,expires_at,source,approved_by_user_id,approved_at,notes,billing_period_snapshot,price_snapshot,currency_snapshot,max_members_snapshot,max_users_snapshot,max_ai_generations_snapshot,max_storage_mb_snapshot,features_snapshot_json) VALUES (@tenantId,@planId,'active',@startsAt,@expiresAt,'manual',@actorId,SYSUTCDATETIME(),@notes,@billingPeriodSnapshot,@priceSnapshot,(SELECT TOP (1) currency FROM dbo.saas_plans WHERE id=@planId),@maxMembersSnapshot,@maxUsersSnapshot,@maxAiGenerationsSnapshot,@maxStorageMbSnapshot,@featuresSnapshotJson); UPDATE dbo.gym_tenants SET status='active',updated_at=SYSUTCDATETIME() WHERE id=@tenantId;");
@@ -1335,11 +1546,13 @@ async function provisionTenantWithOwner({
     body = {},
     actorUserId = null,
     authService,
+    tenantType = TENANT_TYPES.GYM,
     transaction = null,
     plan = null,
     planId = null,
     planCode = null,
     ownerPasswordHash = null,
+    ownerPasswordIsTemporary = false,
     tenantStatus = 'trial',
     subscriptionStatus = 'trial',
     subscriptionSource = 'trial',
@@ -1353,6 +1566,10 @@ async function provisionTenantWithOwner({
     await ensureSaasTables();
     if (!authService) throw saasError('Account service is unavailable.', 500, 'AUTH_SERVICE_REQUIRED');
     const tenant = normalizeTenantInput(body);
+    // Tenant type is an internal provisioning decision made by the trusted
+    // approval path. It is deliberately not read from `body`, so a public
+    // registration client cannot change the type of the tenant being created.
+    const normalizedTenantType = resolveTenantType(tenantType);
     const ownerName = authService.validateName(body.ownerName || body.ownerFullName, 'ownerName');
     const ownerEmail = authService.validateEmail(body.ownerEmail, 'ownerEmail');
     await authService.ensureAuthReady();
@@ -1363,6 +1580,7 @@ async function provisionTenantWithOwner({
         includeInactive: Boolean(plan)
     });
     if (!resolvedPlan) throw saasError('The requested plan is unavailable.', 409, 'TRIAL_PLAN_NOT_FOUND');
+    assertPlanCompatibleForTenantType(resolvedPlan, normalizedTenantType);
 
     let passwordHash = ownerPasswordHash;
     if (!passwordHash) {
@@ -1397,8 +1615,9 @@ async function provisionTenantWithOwner({
             const tenantResult = await activeTransaction.request()
                 .input('name', sql.NVarChar(160), tenant.name)
                 .input('slug', sql.VarChar(80), tenant.slug)
+                .input('tenantType', sql.VarChar(32), normalizedTenantType)
                 .input('status', sql.VarChar(20), normalizedTenantStatus)
-                .query("INSERT INTO dbo.gym_tenants (name,slug,status) OUTPUT INSERTED.id VALUES (@name,@slug,@status);");
+                .query("INSERT INTO dbo.gym_tenants (name,slug,tenant_type,status) OUTPUT INSERTED.id VALUES (@name,@slug,@tenantType,@status);");
             tenantId = Number(tenantResult.recordset[0].id);
             await runTenantContext({ mode: 'tenant', tenantId }, () => libraryService.ensureLibraryData({ transaction: activeTransaction }));
             const ownerResult = await activeTransaction.request()
@@ -1406,7 +1625,8 @@ async function provisionTenantWithOwner({
                 .input('email', sql.NVarChar(254), ownerEmail)
                 .input('emailNormalized', sql.NVarChar(254), ownerEmail)
                 .input('passwordHash', sql.NVarChar(512), passwordHash)
-                .query("INSERT INTO dbo.gym_users (full_name,username,email,email_normalized,password_hash,role,status) OUTPUT INSERTED.id VALUES (@fullName,@email,@email,@emailNormalized,@passwordHash,'Owner','Active');");
+                .input('temporary', sql.Bit, ownerPasswordIsTemporary ? 1 : 0)
+                .query("INSERT INTO dbo.gym_users (full_name,username,email,email_normalized,password_hash,role,status,must_change_password) OUTPUT INSERTED.id VALUES (@fullName,@email,@email,@emailNormalized,@passwordHash,'Owner','Active',CASE WHEN @temporary=1 THEN 1 ELSE 0 END);");
             ownerId = Number(ownerResult.recordset[0].id);
             await activeTransaction.request()
                 .input('userId', sql.Int, ownerId)
@@ -1463,7 +1683,7 @@ async function provisionTenantWithOwner({
         throw error;
     }
     return {
-        tenant: { id: tenantId, name: tenant.name, slug: tenant.slug, status: normalizedTenantStatus },
+        tenant: { id: tenantId, name: tenant.name, slug: tenant.slug, tenantType: normalizedTenantType, status: normalizedTenantStatus },
         owner: { id: ownerId, name: ownerName, email: ownerEmail },
         subscription: {
             id: subscriptionId,
@@ -1487,8 +1707,12 @@ async function provisionTenantWithOwner({
     };
 }
 
-async function createTenantWithOwner(body = {}, actorUserId, authService) {
-    const result = await provisionTenantWithOwner({ body, actorUserId, authService });
+async function createTenantWithOwner(body = {}, actorUserId, authService, { tenantType = TENANT_TYPES.GYM } = {}) {
+    // Keep the legacy Gym call shape stable while making the Trainer type an
+    // explicit trusted argument when that additive flow is used.
+    const result = tenantType === TENANT_TYPES.GYM
+        ? await provisionTenantWithOwner({ body, actorUserId, authService })
+        : await provisionTenantWithOwner({ body, actorUserId, authService, tenantType });
     return { ...result, subscription: await getCurrentSubscription(result.tenant.id) };
 }
 
@@ -1517,6 +1741,7 @@ async function legacyCreateTenantWithOwner(body = {}, actorUserId, authService) 
         plan = (await getPlans()).find((item) => item.isActive) || null;
     }
     if (!plan) throw saasError('باقة التجربة غير متاحة.', 409, 'TRIAL_PLAN_NOT_FOUND');
+    assertPlanCompatibleForTenantType(plan, TENANT_TYPES.GYM);
     const existingTenant = await getPool();
     const conflict = await existingTenant.request().input('slug', sql.VarChar(80), tenant.slug).query('SELECT TOP (1) id FROM dbo.gym_tenants WHERE slug=@slug;');
     if (conflict.recordset[0]) {
@@ -1532,7 +1757,7 @@ async function legacyCreateTenantWithOwner(body = {}, actorUserId, authService) 
     let ownerId;
     try {
         await withTransaction(async (transaction) => {
-            const tenantResult = await transaction.request().input('name', sql.NVarChar(160), tenant.name).input('slug', sql.VarChar(80), tenant.slug).query("INSERT INTO dbo.gym_tenants (name,slug,status) OUTPUT INSERTED.id VALUES (@name,@slug,'trial');");
+            const tenantResult = await transaction.request().input('name', sql.NVarChar(160), tenant.name).input('slug', sql.VarChar(80), tenant.slug).input('tenantType', sql.VarChar(32), TENANT_TYPES.GYM).query("INSERT INTO dbo.gym_tenants (name,slug,tenant_type,status) OUTPUT INSERTED.id VALUES (@name,@slug,@tenantType,'trial');");
             tenantId = Number(tenantResult.recordset[0].id);
             await runTenantContext({ mode: 'tenant', tenantId }, () => libraryService.ensureLibraryData({ transaction }));
             const ownerResult = await transaction.request().input('fullName', sql.NVarChar(120), ownerName).input('email', sql.NVarChar(254), ownerEmail).input('emailNormalized', sql.NVarChar(254), ownerEmail).input('passwordHash', sql.NVarChar(512), passwordHash).query("INSERT INTO dbo.gym_users (full_name,username,email,email_normalized,password_hash,role,status) OUTPUT INSERTED.id VALUES (@fullName,@email,@email,@emailNormalized,@passwordHash,'Owner','Active');");
@@ -1552,7 +1777,7 @@ async function legacyCreateTenantWithOwner(body = {}, actorUserId, authService) 
         }
         throw error;
     }
-    return { tenant: { id: tenantId, name: tenant.name, slug: tenant.slug, status: 'trial' }, owner: { id: ownerId, name: ownerName, email: ownerEmail }, subscription: await getCurrentSubscription(tenantId) };
+    return { tenant: { id: tenantId, name: tenant.name, slug: tenant.slug, tenantType: TENANT_TYPES.GYM, status: 'trial' }, owner: { id: ownerId, name: ownerName, email: ownerEmail }, subscription: await getCurrentSubscription(tenantId) };
 }
 
 function booleanValue(value, fallback = false) {
@@ -1584,6 +1809,9 @@ function normalizePlanValues(body = {}, current = null) {
     if (!Number.isInteger(sortOrder) || sortOrder < 0) throw planFieldError('ترتيب الباقة غير صحيح.', 'INVALID_PLAN_SORT_ORDER', 'sortOrder');
     const isActive = body.isActive === undefined ? current?.isActive !== false : booleanValue(body.isActive);
     const features = normalizePlanFeatures(body.features === undefined ? current?.features : body.features);
+    const compatibleTenantTypes = normalizeCompatibleTenantTypes(
+        body.compatibleTenantTypes === undefined ? current?.compatibleTenantTypes : body.compatibleTenantTypes
+    );
 
     return {
         code,
@@ -1597,14 +1825,15 @@ function normalizePlanValues(body = {}, current = null) {
         maxAiGenerations,
         maxStorageMb,
         features,
+        compatibleTenantTypes,
         isActive,
         sortOrder
     };
 }
 
-async function assertActivePlanRemains(excludedPlanId = null) {
-    const pool = await getPool();
-    const result = await pool.request()
+async function assertActivePlanRemains(excludedPlanId = null, { executor = null } = {}) {
+    const connection = executor || await getPool();
+    const result = await connection.request()
         .input('excludedPlanId', sql.Int, excludedPlanId == null ? null : Number(excludedPlanId))
         .query('SELECT COUNT_BIG(*) AS total FROM dbo.saas_plans WHERE is_active=1 AND (@excludedPlanId IS NULL OR id<>@excludedPlanId);');
     if (Number(result.recordset[0]?.total || 0) < 1) {
@@ -1620,7 +1849,8 @@ async function createPlan(body = {}, actorUserId, meta = {}) {
     if (duplicate.recordset[0]) throw planFieldError('معرف الباقة مستخدم بالفعل. اختر معرفًا آخر.', 'DUPLICATE_PLAN_CODE', 'code', 409);
     let created;
     try {
-        const result = await pool.request()
+        await withTransaction(async (transaction) => {
+        const result = await transaction.request()
             .input('code', sql.VarChar(40), values.code)
             .input('name', sql.NVarChar(120), values.name)
             .input('description', sql.NVarChar(500), values.description || null)
@@ -1637,7 +1867,11 @@ async function createPlan(body = {}, actorUserId, meta = {}) {
             .query(`INSERT INTO dbo.saas_plans (code,name,description,billing_period,price,currency,max_members,max_users,max_ai_generations,max_storage_mb,features_json,is_active,sort_order)
                 OUTPUT INSERTED.id
                 VALUES (@code,@name,@description,@billingPeriod,@price,@currency,@maxMembers,@maxUsers,@maxAiGenerations,@maxStorageMb,@features,@isActive,@sortOrder);`);
-        created = await getPlan({ id: Number(result.recordset[0]?.id), includeInactive: true });
+        const createdId = Number(result.recordset[0]?.id);
+        await replacePlanTenantTypes(createdId, values.compatibleTenantTypes, transaction);
+        created = { id: createdId };
+        });
+        created = await getPlan({ id: created.id, includeInactive: true });
     } catch (error) {
         if (error.number === 2601 || error.number === 2627) throw planFieldError('معرف الباقة مستخدم بالفعل. اختر معرفًا آخر.', 'DUPLICATE_PLAN_CODE', 'code', 409);
         throw error;
@@ -1652,9 +1886,12 @@ async function updatePlan(planId, body = {}, actorUserId, meta = {}) {
     const current = await getPlan({ id, includeInactive: true });
     if (!current) throw saasError('الباقة غير موجودة.', 404, 'SAAS_PLAN_NOT_FOUND');
     const values = normalizePlanValues(body, current);
-    if (current.isActive && !values.isActive) await assertActivePlanRemains(id);
-    const pool = await getPool();
-    await pool.request().input('id', sql.Int, id).input('name', sql.NVarChar(120), values.name).input('description', sql.NVarChar(500), values.description || null).input('billingPeriod', sql.VarChar(20), values.billingPeriod).input('price', sql.Decimal(12, 2), values.price).input('currency', sql.VarChar(3), values.currency).input('maxMembers', sql.Int, values.maxMembers).input('maxUsers', sql.Int, values.maxUsers).input('maxAiGenerations', sql.Int, values.maxAiGenerations).input('maxStorageMb', sql.Int, values.maxStorageMb).input('features', sql.NVarChar(sql.MAX), JSON.stringify(values.features)).input('isActive', sql.Bit, values.isActive ? 1 : 0).input('sortOrder', sql.Int, values.sortOrder).query('UPDATE dbo.saas_plans SET name=@name,description=@description,billing_period=@billingPeriod,price=@price,currency=@currency,max_members=@maxMembers,max_users=@maxUsers,max_ai_generations=@maxAiGenerations,max_storage_mb=@maxStorageMb,features_json=@features,is_active=@isActive,sort_order=@sortOrder,updated_at=SYSUTCDATETIME() WHERE id=@id;');
+    await withTransaction(async (transaction) => {
+        if (current.isActive && !values.isActive) await assertActivePlanRemains(id, { executor: transaction });
+        await assertPlanCompatibilityCanChange(id, values.compatibleTenantTypes, { executor: transaction });
+        await transaction.request().input('id', sql.Int, id).input('name', sql.NVarChar(120), values.name).input('description', sql.NVarChar(500), values.description || null).input('billingPeriod', sql.VarChar(20), values.billingPeriod).input('price', sql.Decimal(12, 2), values.price).input('currency', sql.VarChar(3), values.currency).input('maxMembers', sql.Int, values.maxMembers).input('maxUsers', sql.Int, values.maxUsers).input('maxAiGenerations', sql.Int, values.maxAiGenerations).input('maxStorageMb', sql.Int, values.maxStorageMb).input('features', sql.NVarChar(sql.MAX), JSON.stringify(values.features)).input('isActive', sql.Bit, values.isActive ? 1 : 0).input('sortOrder', sql.Int, values.sortOrder).query('UPDATE dbo.saas_plans SET name=@name,description=@description,billing_period=@billingPeriod,price=@price,currency=@currency,max_members=@maxMembers,max_users=@maxUsers,max_ai_generations=@maxAiGenerations,max_storage_mb=@maxStorageMb,features_json=@features,is_active=@isActive,sort_order=@sortOrder,updated_at=SYSUTCDATETIME() WHERE id=@id;');
+        await replacePlanTenantTypes(id, values.compatibleTenantTypes, transaction);
+    });
     const updated = await getPlan({ id, includeInactive: true });
     await recordAudit({ actorUserId: actorUserId == null ? null : Number(actorUserId), action: 'plan_updated', entityType: 'saas_plan', entityId: id, details: `تم تحديث الباقة ${current.code}.`, reason: text(body.reason, '', 1000), before: current, after: updated, ...meta });
     return updated;
@@ -1680,16 +1917,16 @@ async function updateTenantStatus(tenantId, status, actorUserId, notes = '') {
     const nextStatus = String(status || '').trim().toLowerCase();
     if (!['trial', 'active', 'suspended', 'expired', 'archived'].includes(nextStatus)) throw saasError('حالة الجيم غير صحيحة.', 400, 'INVALID_TENANT_STATUS');
     const pool = await getPool();
-    const result = await pool.request().input('tenantId', sql.Int, id).input('status', sql.VarChar(20), nextStatus).query('UPDATE dbo.gym_tenants SET status=@status,updated_at=SYSUTCDATETIME() OUTPUT INSERTED.id,INSERTED.name,INSERTED.slug,INSERTED.status WHERE id=@tenantId;');
+    const result = await pool.request().input('tenantId', sql.Int, id).input('status', sql.VarChar(20), nextStatus).query('UPDATE dbo.gym_tenants SET status=@status,updated_at=SYSUTCDATETIME() OUTPUT INSERTED.id,INSERTED.name,INSERTED.slug,INSERTED.tenant_type,INSERTED.status WHERE id=@tenantId;');
     if (!result.recordset[0]) throw saasError('الجيم غير موجود.', 404, 'TENANT_NOT_FOUND');
     await recordAudit({ tenantId: id, actorUserId: actorUserId == null ? null : Number(actorUserId), action: 'tenant_status_changed', entityType: 'tenant', entityId: id, details: text(notes, `تم تغيير الحالة إلى ${nextStatus}.`, 2000) });
-    return { id, name: result.recordset[0].name, slug: result.recordset[0].slug, status: result.recordset[0].status };
+    return { id, name: result.recordset[0].name, slug: result.recordset[0].slug, tenantType: resolveTenantType(result.recordset[0].tenant_type), status: result.recordset[0].status };
 }
 
 async function listTenants({ readOnly = false } = {}) {
     if (!readOnly) await syncExpiredTenants();
     const pool = await getPool();
-    const result = await pool.request().query(`SELECT t.id,t.name,t.slug,t.status,t.created_at,t.updated_at,
+    const result = await pool.request().query(`SELECT t.id,t.name,t.slug,t.tenant_type,t.status,t.created_at,t.updated_at,
         owner.id AS owner_id,owner.full_name AS owner_name,owner.email AS owner_email,
         s.id AS subscription_id,s.status AS subscription_status,s.starts_at,s.expires_at,s.source,
         p.code AS plan_code,p.name AS plan_name,p.billing_period,p.price,p.currency,
@@ -1702,7 +1939,7 @@ async function listTenants({ readOnly = false } = {}) {
         OUTER APPLY (SELECT COUNT_BIG(*) AS total_users FROM dbo.gym_user_tenants ut2 WHERE ut2.tenant_id=t.id AND ut2.status='active') users
         ORDER BY t.created_at DESC,t.id DESC;`);
     return result.recordset.map((row) => ({
-        id: Number(row.id), name: row.name, slug: row.slug, status: row.status, createdAt: row.created_at, updatedAt: row.updated_at,
+        id: Number(row.id), name: row.name, slug: row.slug, tenantType: resolveTenantType(row.tenant_type), status: row.status, createdAt: row.created_at, updatedAt: row.updated_at,
         owner: row.owner_id ? { id: Number(row.owner_id), name: row.owner_name, email: row.owner_email } : null,
         subscription: row.subscription_id ? { id: Number(row.subscription_id), status: row.subscription_status, startsAt: row.starts_at, expiresAt: row.expires_at, source: row.source, plan: { code: row.plan_code, name: row.plan_name, billingPeriod: row.billing_period, price: Number(row.price || 0), currency: row.currency } } : null,
         usage: { members: Number(row.total_members || 0), users: Number(row.total_users || 0) }
@@ -1715,10 +1952,10 @@ async function getPlatformOverview({ readOnly = false } = {}) {
     const [counts, pending, recent] = await Promise.all([
         pool.request().query(`SELECT COUNT_BIG(*) AS total_tenants, SUM(CASE WHEN status IN ('trial','active') THEN 1 ELSE 0 END) AS live_tenants, SUM(CASE WHEN status='trial' THEN 1 ELSE 0 END) AS trial_tenants, SUM(CASE WHEN status='expired' THEN 1 ELSE 0 END) AS expired_tenants, SUM(CASE WHEN status='suspended' THEN 1 ELSE 0 END) AS suspended_tenants FROM dbo.gym_tenants;`),
         pool.request().query("SELECT COUNT_BIG(*) AS total FROM dbo.saas_subscription_requests WHERE status='pending';"),
-        pool.request().query(`SELECT TOP (8) r.id,r.tenant_id,r.status,r.amount_snapshot,r.currency,r.notes,r.review_notes,r.requested_by_user_id,r.reviewed_by_user_id,r.reviewed_at,r.created_at,t.name AS tenant_name,t.slug AS tenant_slug,u.full_name AS requested_by_name,p.id AS plan_id,p.code,p.name,p.description,p.billing_period,p.price,p.currency AS plan_currency,p.max_members,p.max_users,p.max_ai_generations,p.max_storage_mb,p.features_json,p.is_active,p.sort_order,p.updated_at AS plan_updated_at,proof.id AS proof_id,proof.file_name AS proof_file_name,proof.mime_type AS proof_mime_type,proof.file_size AS proof_file_size,proof.uploaded_at AS proof_uploaded_at FROM dbo.saas_subscription_requests r INNER JOIN dbo.gym_tenants t ON t.id=r.tenant_id INNER JOIN dbo.saas_plans p ON p.id=r.plan_id LEFT JOIN dbo.gym_users u ON u.id=r.requested_by_user_id LEFT JOIN dbo.saas_payment_proofs proof ON proof.request_id=r.id ORDER BY CASE WHEN r.status='pending' THEN 0 ELSE 1 END,r.created_at DESC,r.id DESC;`)
+        pool.request().query(`SELECT TOP (8) r.id,r.tenant_id,r.status,r.amount_snapshot,r.currency,r.notes,r.review_notes,r.requested_by_user_id,r.reviewed_by_user_id,r.reviewed_at,r.created_at,t.name AS tenant_name,t.slug AS tenant_slug,t.tenant_type,u.full_name AS requested_by_name,p.id AS plan_id,p.code,p.name,p.description,p.billing_period,p.price,p.currency AS plan_currency,p.max_members,p.max_users,p.max_ai_generations,p.max_storage_mb,p.features_json,p.is_active,p.sort_order,p.updated_at AS plan_updated_at,proof.id AS proof_id,proof.file_name AS proof_file_name,proof.mime_type AS proof_mime_type,proof.file_size AS proof_file_size,proof.uploaded_at AS proof_uploaded_at FROM dbo.saas_subscription_requests r INNER JOIN dbo.gym_tenants t ON t.id=r.tenant_id INNER JOIN dbo.saas_plans p ON p.id=r.plan_id LEFT JOIN dbo.gym_users u ON u.id=r.requested_by_user_id LEFT JOIN dbo.saas_payment_proofs proof ON proof.request_id=r.id ORDER BY CASE WHEN r.status='pending' THEN 0 ELSE 1 END,r.created_at DESC,r.id DESC;`)
     ]);
     const row = counts.recordset[0] || {};
-    return { tenants: { total: Number(row.total_tenants || 0), live: Number(row.live_tenants || 0), trial: Number(row.trial_tenants || 0), expired: Number(row.expired_tenants || 0), suspended: Number(row.suspended_tenants || 0) }, pendingRequests: Number(pending.recordset[0]?.total || 0), recentRequests: recent.recordset.map(requestFromRow) };
+    return { tenants: { total: Number(row.total_tenants || 0), live: Number(row.live_tenants || 0), trial: Number(row.trial_tenants || 0), expired: Number(row.expired_tenants || 0), suspended: Number(row.suspended_tenants || 0) }, pendingRequests: Number(pending.recordset[0]?.total || 0), recentRequests: await requestsWithCompatibility(recent.recordset) };
 }
 
 async function listAudit({ tenantId = null, limit = 50, readOnly = false } = {}) {
@@ -1740,6 +1977,8 @@ module.exports = {
     SAAS_SCHEMA_SQL,
     SAAS_TABLES,
     approveRequest,
+    assertPlanCompatibleForTenantType,
+    assertPlanCompatibleWithTenant,
     applyScheduledSubscriptionChanges,
     configureObjectStorageService,
     createPlan,

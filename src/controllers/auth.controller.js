@@ -1,6 +1,6 @@
 'use strict';
 
-function createAuthController({ authService, permissionService, allowLoginAttempt }) {
+function createAuthController({ authService, permissionService, allowLoginAttempt, saasService }) {
     return {
         session: async (request, response) => {
             const readOnly = Boolean(request.readOnlyRequest);
@@ -29,6 +29,15 @@ function createAuthController({ authService, permissionService, allowLoginAttemp
             await authService.revokeSession(authService.readSessionCookie(request));
             authService.appendCookie(response, authService.clearSessionCookie(request));
             response.status(204).send();
+        },
+
+        changePassword: async (request, response) => {
+            const result = await authService.changePassword(request.auth?.id, request.body || {}, request, {
+                recordAudit: saasService?.recordAudit
+            });
+            authService.appendCookie(response, authService.sessionCookie(result.token, result.expiresAt, request));
+            response.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+            response.json({ user: result.user, expiresAt: result.expiresAt.toISOString() });
         },
 
         listUsers: async (request, response) => {

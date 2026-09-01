@@ -22,6 +22,7 @@ const { registerBrandingRoutes } = require('./branding.routes');
 const { registerPlatformRoutes } = require('./platform.routes');
 const { registerPlatformAdminRoutes } = require('./platform-admin.routes');
 const { registerSaasRoutes } = require('./saas.routes');
+const { registerTrainerRoutes } = require('./trainer.routes');
 const { platformOnly } = require('../middleware/platform.middleware');
 
 function createHealthHandler({ getPool, getStorageStatus = () => ({ status: 'not_configured' }), now = () => performance.now() } = {}) {
@@ -98,6 +99,8 @@ function registerRoutes(app, {
     intelligenceService,
     brandingService,
     saasService,
+    trainerService,
+    trainerCommerceService,
     platformAdminService,
     getPool
 }) {
@@ -107,7 +110,7 @@ function registerRoutes(app, {
         getStorageStatus: () => ({ status: objectStorageService?.providerStatus || 'not_configured' })
     })));
 
-    registerAuthRoutes(app, { authService, permissionService, asyncRoute, ownerOnly, allowLoginAttempt });
+    registerAuthRoutes(app, { authService, permissionService, saasService, asyncRoute, ownerOnly, allowLoginAttempt });
     registerBackupRoutes(app, { backupService, backupRecoveryService, brandingService, asyncRoute, isAuthorizedCronRequest, backupActionRateLimit });
     registerFinanceRoutes(app, { financeService, asyncRoute });
     registerDashboardRoutes(app, { memberService, analyticsService, storeService, asyncRoute });
@@ -135,6 +138,7 @@ function registerRoutes(app, {
         backupActionRateLimit
     });
     registerSaasRoutes(app, { saasService, asyncRoute, ownerOnly });
+    registerTrainerRoutes(app, { trainerService, trainerCommerceService, asyncRoute });
     registerMembersRoutes(app, { memberService, asyncRoute });
 }
 

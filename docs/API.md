@@ -166,6 +166,13 @@ use a separate `PlatformAdmin` account created from the platform environment
 variables. For API clients that can access more than one gym, send
 `X-Gym-Slug` so the server resolves `slug -> tenant_id -> RLS context`.
 
+Plan responses include `compatibleTenantTypes`, resolved from the platform
+control-plane mapping `saas_plan_tenant_types`. Tenant billing responses also
+include the backend-derived `tenantType`, effective capabilities and effective
+limits. These are presentation data; every operational request is independently
+validated against tenant isolation, subscription state, capability and user
+permission on the server.
+
 | Method | Path | Access |
 |---|---|---|
 | GET | `/api/saas/subscription` | Tenant Owner |
@@ -204,6 +211,30 @@ variables. For API clients that can access more than one gym, send
 | POST | `/api/platform/subscription-requests/:id/reject` | PlatformAdmin |
 | GET | `/api/platform/payment-proofs/:id/file` | PlatformAdmin |
 | GET | `/api/platform/audit` | PlatformAdmin |
+
+## Independent Trainer workspace
+
+Trainer routes are available only when the server-resolved tenant is an
+`independent_trainer` tenant with an active/trial subscription, compatible
+plan entitlements and the authenticated user's permissions. The frontend
+does not provide the security boundary.
+
+| Method | Path | Access |
+|---|---|---|
+| GET | `/api/trainer/workspace` | Independent Trainer Owner/authorized user |
+| GET | `/api/trainer/reports/summary` | Independent Trainer; reports read |
+| GET/POST | `/api/trainer/clients` | Independent Trainer; coaching permission |
+| GET/PATCH/DELETE | `/api/trainer/clients/:id` | Independent Trainer; coaching permission |
+| GET/POST/PATCH/DELETE | `/api/trainer/clients/:id/measurements` | Independent Trainer; coaching permission |
+| GET/POST/PATCH/DELETE | `/api/trainer/clients/:id/checkins` | Independent Trainer; coaching permission |
+| GET/PATCH/DELETE | `/api/trainer/training-plans/:id` | Independent Trainer; coaching permission |
+| GET/PATCH/DELETE | `/api/trainer/nutrition-plans/:id` | Independent Trainer; coaching permission |
+| GET/POST/PATCH | `/api/trainer/packages` | Independent Trainer; coaching permission |
+| GET/POST | `/api/trainer/package-purchases` | Independent Trainer; coaching permission |
+| GET/POST | `/api/trainer/payments` and `/api/trainer/package-purchases/:id/payments` | Independent Trainer; finance/payment permission |
+| POST | `/api/trainer/package-purchases/:id/refunds` | Independent Trainer; refund permission |
+| GET/POST/PATCH | `/api/trainer/sessions` | Independent Trainer; coaching permission |
+| PATCH | `/api/trainer/sessions/:id/status` | Independent Trainer; coaching permission |
 
 Platform payment methods are stored in `saas_platform_payment_methods` and are
 the source for the public `/register-gym` catalog. They are intentionally

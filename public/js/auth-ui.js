@@ -208,6 +208,70 @@
         }
     }
 
+    function showForcedPasswordMessage(message = '', type = 'error') {
+        const element = $('forcePasswordMessage');
+        if (!element) return;
+        element.textContent = String(message || 'تعذر تغيير كلمة المرور.');
+        element.className = `auth-message${type === 'info' ? ' info' : ''}`;
+        element.hidden = !message;
+    }
+
+    async function submitForcedPassword(event) {
+        event.preventDefault();
+        const form = event.currentTarget;
+        const newPassword = $('forceNewPassword')?.value || '';
+        const confirmPassword = $('forceConfirmPassword')?.value || '';
+        showForcedPasswordMessage('');
+        if (newPassword.length < 8) {
+            showForcedPasswordMessage('كلمة المرور الجديدة يجب أن تكون 8 أحرف على الأقل.');
+            return;
+        }
+        if (newPassword !== confirmPassword) {
+            showForcedPasswordMessage('كلمتا المرور غير متطابقتين.');
+            return;
+        }
+        const submit = form.querySelector('button[type="submit"]');
+        if (submit) submit.disabled = true;
+        try {
+            const response = await nativeFetch('/api/auth/change-password', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ newPassword, confirmPassword })
+            });
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok) throw Object.assign(new Error(data.error || 'تعذر تغيير كلمة المرور.'), { code: data.code });
+            showAuthenticated(data.user);
+        } catch (error) {
+            showForcedPasswordMessage(error.message || 'تعذر تغيير كلمة المرور. حاول مرة أخرى.');
+            if (submit) submit.disabled = false;
+        }
+    }
+
+    function showForcedPasswordChange(user) {
+        const screen = $('authScreen');
+        const card = $('authLoginCard');
+        const loginForm = $('loginForm');
+        const panelHost = card?.querySelector('.auth-form-panel');
+        if (!screen || !card || !panelHost) return;
+        setAuthStage('login');
+        document.body.classList.add('auth-locked');
+        screen.hidden = false;
+        card.hidden = false;
+        loginForm.hidden = true;
+        let panel = $('forcePasswordChangePanel');
+        if (!panel) {
+            panel = document.createElement('section');
+            panel.id = 'forcePasswordChangePanel';
+            panel.className = 'auth-force-password-panel';
+            panelHost.appendChild(panel);
+        }
+        panel.hidden = false;
+        panel.innerHTML = '<div class="auth-form-heading"><h2>تعيين كلمة مرور جديدة</h2><p>لأمان حسابك، يجب تعيين كلمة مرور جديدة قبل متابعة استخدام المنصة.</p></div><form class="auth-form" id="forcePasswordChangeForm" novalidate><div class="auth-field"><label for="forceNewPassword">كلمة المرور الجديدة</label><input id="forceNewPassword" type="password" autocomplete="new-password" minlength="8" maxlength="128" required></div><div class="auth-field"><label for="forceConfirmPassword">تأكيد كلمة المرور</label><input id="forceConfirmPassword" type="password" autocomplete="new-password" minlength="8" maxlength="128" required></div><p class="auth-message" id="forcePasswordMessage" role="alert" hidden></p><button class="btn btn-primary auth-submit" type="submit"><span class="auth-submit-label">حفظ كلمة المرور والمتابعة</span></button></form>';
+        panel.querySelector('form')?.addEventListener('submit', submitForcedPassword);
+        window.setTimeout(() => $('forceNewPassword')?.focus(), 50);
+    }
+
     function hasTenantWelcomeFlag() {
         try { return new URLSearchParams(window.location.search).get('welcome') === '1'; } catch (_) { return false; }
     }
@@ -346,9 +410,19 @@
     function showAuthenticated(user, options = {}) {
         state.user = user;
         state.ready = true;
+        if (user?.tenantType === 'independent_trainer'
+            && window.location.pathname !== '/trainer-workspace'
+            && !user.mustChangePassword) {
+            window.location.replace('/trainer-workspace');
+            return;
+        }
         document.body.dataset.topGymAuthenticated = 'true';
         document.body.classList.add('top-gym-navigation-pending');
         applyNavigation(user);
+        if (user?.mustChangePassword) {
+            showForcedPasswordChange(user);
+            return;
+        }
         const screen = $('authScreen');
         if (screen) screen.hidden = true;
         document.body.classList.remove('auth-pending', 'auth-locked');
@@ -362,6 +436,7 @@
         document.body.classList.add('auth-locked');
         document.body.dataset.topGymAuthenticated = 'false';
         const screen = $('authScreen');
+        $('forcePasswordChangePanel')?.remove();
         window.topGymBranding?.apply?.(window.topGymBranding.fallback?.() || {}, 1);
         loadAuthVisuals();
         if (screen) screen.hidden = false;

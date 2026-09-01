@@ -137,7 +137,7 @@ function lifecycle still requires provider-side verification.
 
 1. Install with the lockfile.
 2. Configure SQL Server connectivity and auth bootstrap values.
-3. Run `npm run migrate:tenancy` once against the target database, then verify with `npm run qa:tenancy`.
+3. Run `npm run migrate:tenancy` once against the target database, then verify with `npm run qa:rls` and `npm run qa:tenancy`.
 4. Run `npm run qa:gate` and `npm run build`.
 5. Run database-dependent smoke/E2E checks against a safe test database.
 6. Deploy.

@@ -5,6 +5,7 @@ const { getPool, sql } = require('../database');
 const { withTransaction } = require('../database/transaction');
 const { config } = require('../config/env');
 const commercialSchema = require('./commercial-schema');
+const { TENANT_TYPES, resolveTenantType } = require('../tenancy/tenant-types');
 
 const MAX_PAGE_SIZE = 100;
 const REGISTRATION_TOKEN_PATTERN = /^[A-Za-z0-9_-]{32,128}$/;
@@ -99,6 +100,14 @@ function generateTenantSlug(gymName) {
     return `gym-${base}-${crypto.randomBytes(4).toString('hex')}`.slice(0, 80);
 }
 
+function registrationTypeFromRoute(value = TENANT_TYPES.GYM) {
+    try {
+        return resolveTenantType(value);
+    } catch (_) {
+        throw registrationError('The registration customer type is not supported.', 400, 'REGISTRATION_TENANT_TYPE_INVALID');
+    }
+}
+
 function generateTemporaryPassword() {
     return `Lf-${crypto.randomBytes(18).toString('base64url')}`;
 }
@@ -112,6 +121,7 @@ function requestFromRow(row) {
     return {
         id: Number(row.id),
         status: String(row.status),
+        tenantType: registrationTypeFromRoute(row.tenant_type || TENANT_TYPES.GYM),
         gymName: row.gym_name,
         ownerName: row.owner_name,
         whatsapp: row.whatsapp,
@@ -166,6 +176,7 @@ function publicRequestFromRow(row) {
     return {
         id: request.id,
         status: request.status,
+        tenantType: request.tenantType,
         gymName: request.gymName,
         ownerName: request.ownerName,
         plan: request.plan,
@@ -188,7 +199,7 @@ function publicRequestFromRow(row) {
 }
 
 const REQUEST_SELECT = `
-    SELECT r.id,r.gym_name,r.owner_name,r.whatsapp,r.email,r.city,
+    SELECT r.id,r.gym_name,r.tenant_type,r.owner_name,r.whatsapp,r.email,r.city,
            r.plan_id,r.plan_code_snapshot,r.plan_name_snapshot,r.term_code_snapshot,
            r.duration_months_snapshot,r.price_snapshot,r.discount_amount_snapshot,
            r.amount_due_snapshot,r.currency_snapshot,r.payment_method_code_snapshot,
@@ -221,12 +232,13 @@ async function getRequestRow(requestId, { accessToken = null, transaction = null
     return (await request.query(`${select} WHERE ${predicate};`)).recordset[0] || null;
 }
 
-async function getCatalog(commercialService) {
+async function getCatalog(commercialService, tenantType = TENANT_TYPES.GYM) {
+    const normalizedTenantType = registrationTypeFromRoute(tenantType);
     const [plans, paymentMethods] = await Promise.all([
-        commercialService.getCommercialPlanCatalog({ readOnly: true }),
+        commercialService.getCommercialPlanCatalog({ readOnly: true, tenantType: normalizedTenantType }),
         commercialService.listPlatformPaymentMethods({ activeOnly: true, readOnly: true })
     ]);
-    return { plans, paymentMethods };
+    return { plans, paymentMethods, tenantType: normalizedTenantType };
 }
 
 function normalizeSelection(catalog, body = {}) {
@@ -274,13 +286,14 @@ function createGymRegistrationService({ commercialService, saasService, authServ
     if (!commercialService || !saasService || !authService) throw new Error('Gym registration service dependencies are required.');
 
     return {
-        async catalog() {
+        async catalog(tenantType = TENANT_TYPES.GYM) {
             await ensureTables({ readOnly: true });
-            return getCatalog(commercialService);
+            return getCatalog(commercialService, tenantType);
         },
 
-        async createRequest(body = {}, idempotencyKey) {
+        async createRequest(body = {}, idempotencyKey, tenantType = TENANT_TYPES.GYM) {
             await ensureTables();
+            const normalizedTenantType = registrationTypeFromRoute(tenantType);
             const key = normalizeIdempotencyKey(idempotencyKey);
             const idempotencyKeyHash = hashCapability(key, 'registration-idempotency');
             const accessToken = accessTokenForIdempotency(key);
@@ -291,7 +304,7 @@ function createGymRegistrationService({ commercialService, saasService, authServ
             const whatsapp = normalizeWhatsapp(body.whatsapp || body.phone);
             const email = authService.validateEmail(body.email || body.ownerEmail, 'email');
             const city = text(body.city, '', 120) || null;
-            const catalog = await getCatalog(commercialService);
+            const catalog = await getCatalog(commercialService, normalizedTenantType);
             const selection = normalizeSelection(catalog, body);
             const notes = text(body.notes, '', 2000) || null;
             let requestId = null;
@@ -310,6 +323,7 @@ function createGymRegistrationService({ commercialService, saasService, authServ
                 }
                 const result = await transaction.request()
                     .input('gymName', sql.NVarChar(160), gymName)
+                    .input('tenantType', sql.VarChar(32), normalizedTenantType)
                     .input('ownerName', sql.NVarChar(120), ownerName)
                     .input('whatsapp', sql.NVarChar(40), whatsapp)
                     .input('email', sql.NVarChar(254), email)
@@ -329,12 +343,12 @@ function createGymRegistrationService({ commercialService, saasService, authServ
                     .input('idempotencyKeyHash', sql.Char(64), idempotencyKeyHash)
                     .input('publicTokenHash', sql.Char(64), publicTokenHash)
                     .query(`INSERT INTO dbo.saas_gym_registration_requests
-                            (gym_name,owner_name,whatsapp,email,city,plan_id,plan_code_snapshot,plan_name_snapshot,
+                            (gym_name,tenant_type,owner_name,whatsapp,email,city,plan_id,plan_code_snapshot,plan_name_snapshot,
                              term_code_snapshot,duration_months_snapshot,price_snapshot,discount_amount_snapshot,
                              amount_due_snapshot,currency_snapshot,payment_method_code_snapshot,payment_method_name_snapshot,
                              notes,idempotency_key_hash,public_token_hash)
                             OUTPUT INSERTED.id
-                            VALUES (@gymName,@ownerName,@whatsapp,@email,@city,@planId,@planCode,@planName,
+                            VALUES (@gymName,@tenantType,@ownerName,@whatsapp,@email,@city,@planId,@planCode,@planName,
                                     @termCode,@durationMonths,@price,@discountAmount,@amountDue,@currency,
                                     @paymentMethodCode,@paymentMethodName,@notes,@idempotencyKeyHash,@publicTokenHash);`);
                 requestId = Number(result.recordset[0]?.id);
@@ -344,7 +358,9 @@ function createGymRegistrationService({ commercialService, saasService, authServ
                     action: 'gym_registration_requested',
                     entityType: 'gym_registration_request',
                     entityId: requestId,
-                    details: 'A public gym registration request was submitted.',
+                    details: normalizedTenantType === TENANT_TYPES.GYM
+                        ? 'A public gym registration request was submitted.'
+                        : 'A public independent trainer registration request was submitted.',
                     executor: transaction
                 });
             };
@@ -502,6 +518,7 @@ function createGymRegistrationService({ commercialService, saasService, authServ
             const passwordHash = await authService.hashPassword(temporaryPassword);
             const startsAt = new Date();
             const expiresAt = addMonths(startsAt, Number(initial.duration_months_snapshot));
+            const normalizedTenantType = registrationTypeFromRoute(initial.tenant_type || TENANT_TYPES.GYM);
             const slug = generateTenantSlug(initial.gym_name);
             const notes = text(reviewNotes, '', 2000) || null;
             let provisioned;
@@ -531,8 +548,10 @@ function createGymRegistrationService({ commercialService, saasService, authServ
                         ownerName: locked.owner_name,
                         ownerEmail: locked.email
                     },
+                    tenantType: normalizedTenantType,
                     plan,
                     ownerPasswordHash: passwordHash,
+                    ownerPasswordIsTemporary: true,
                     tenantStatus: 'active',
                     subscriptionStatus: 'active',
                     subscriptionSource: 'manual',
@@ -545,8 +564,12 @@ function createGymRegistrationService({ commercialService, saasService, authServ
                         features: plan.features
                     },
                     subscriptionNotes: `Self-service registration request #${id}`,
-                    auditAction: 'gym_registration_provisioned',
-                    auditDetails: 'Tenant provisioned after PlatformAdmin approved a self-service registration request.'
+                    auditAction: normalizedTenantType === TENANT_TYPES.GYM
+                        ? 'gym_registration_provisioned'
+                        : 'trainer_registration_provisioned',
+                    auditDetails: normalizedTenantType === TENANT_TYPES.GYM
+                        ? 'Tenant provisioned after PlatformAdmin approved a self-service registration request.'
+                        : 'Independent Trainer tenant provisioned after PlatformAdmin approved a self-service registration request.'
                 });
                 await transaction.request()
                     .input('requestId', sql.BigInt, id)
@@ -561,7 +584,9 @@ function createGymRegistrationService({ commercialService, saasService, authServ
                 await saasService.recordAudit({
                     tenantId: provisioned.tenant.id,
                     actorUserId: actorId,
-                    action: 'gym_registration_approved',
+                    action: normalizedTenantType === TENANT_TYPES.GYM
+                        ? 'gym_registration_approved'
+                        : 'trainer_registration_approved',
                     entityType: 'gym_registration_request',
                     entityId: id,
                     details: 'Self-service registration approved and tenant provisioned.',
@@ -579,7 +604,7 @@ function createGymRegistrationService({ commercialService, saasService, authServ
                     username: provisioned.owner.email,
                     temporaryPassword,
                     loginUrl: config.publicAppUrl || null,
-                    mustChangePassword: false
+                    mustChangePassword: true
                 }
             };
         },

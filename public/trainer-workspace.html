@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex,nofollow">
+    <script>
+        try {
+            const theme = localStorage.getItem('topgym-theme');
+            document.documentElement.dataset.theme = theme === 'dark' || theme === 'light' ? theme : 'light';
+        } catch (_) { document.documentElement.dataset.theme = 'light'; }
+    </script>
+    <link rel="stylesheet" href="/css/main.css?v=74">
+    <link rel="stylesheet" href="/css/pages/trainer-workspace.css?v=3">
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <title>مساحة المدرب | Logic Fit</title>
+</head>
+<body class="trainer-workspace-page" data-branding-entry="saas" data-trainer-workspace="phase5">
+    <main class="trainer-workspace-shell">
+        <header class="trainer-workspace-header">
+            <div class="trainer-workspace-intro">
+                <span class="trainer-workspace-kicker">Logic Fit · Independent Trainer</span>
+                <h1>مساحة عمل المدرب</h1>
+                <p>أهلًا بك في مساحتك الخاصة. تم تجهيز الحساب بأمان، وستصل أدوات التدريب والعملاء تدريجيًا ضمن خطة المنصة.</p>
+                <p id="trainerWorkspaceMessage" class="trainer-workspace-message" role="status">جاري التحقق من مساحة العمل...</p>
+            </div>
+            <div class="trainer-workspace-header-side">
+                <div class="trainer-workspace-brand"><span class="trainer-workspace-brand-mark" aria-hidden="true">L</span><span id="trainerWorkspaceBrand">Logic Fit</span></div>
+                <div class="trainer-workspace-actions"><button class="theme-toggle-button" type="button" data-theme-toggle aria-pressed="false"><span aria-hidden="true">◐</span><span data-theme-toggle-label>الوضع الداكن</span></button><button class="btn btn-light btn-small" id="trainerWorkspaceLogout" type="button">تسجيل الخروج</button></div>
+            </div>
+        </header>
+        <section class="trainer-workspace-summary" aria-label="ملخص الحساب">
+            <article class="trainer-workspace-card trainer-workspace-card--identity"><span class="trainer-card-eyebrow">الحساب</span><strong>مدرب شخصي مستقل</strong><small>مساحة تشغيل معزولة</small></article>
+            <article class="trainer-workspace-card"><span class="trainer-card-eyebrow">الباقة الحالية</span><strong id="trainerWorkspacePlan">جاري التحميل...</strong><small>خطة المنصة</small></article>
+            <article class="trainer-workspace-card"><span class="trainer-card-eyebrow">حالة الاشتراك</span><strong id="trainerWorkspaceStatus">جاري التحميل...</strong><small>الحالة الحالية</small></article>
+            <article class="trainer-workspace-card trainer-workspace-card--metric"><span class="trainer-card-icon" aria-hidden="true">◎</span><strong id="trainerMetricClients">—</strong><small>عملاء نشطون</small></article>
+            <article class="trainer-workspace-card trainer-workspace-card--metric"><span class="trainer-card-icon" aria-hidden="true">↗</span><strong id="trainerMetricPlans">—</strong><small>خطط تدريب نشطة</small></article>
+            <article class="trainer-workspace-card trainer-workspace-card--metric"><span class="trainer-card-icon trainer-card-icon--violet" aria-hidden="true">◷</span><strong id="trainerMetricSessions">—</strong><small>جلسات اليوم</small></article>
+            <article class="trainer-workspace-card trainer-workspace-card--metric"><span class="trainer-card-icon trainer-card-icon--orange" aria-hidden="true">⌛</span><strong id="trainerMetricPackages">—</strong><small>باكدجات قريبة الانتهاء</small></article>
+            <article class="trainer-workspace-card trainer-workspace-card--metric"><span class="trainer-card-icon trainer-card-icon--green" aria-hidden="true">ج.م</span><strong id="trainerMetricPayments">—</strong><small>أرصدة مستحقة</small></article>
+        </section>
+        <section class="trainer-workspace-main-grid">
+            <section class="trainer-workspace-panel trainer-clients-panel" aria-labelledby="trainerClientsTitle">
+                <div class="trainer-panel-header">
+                    <div><span class="trainer-panel-kicker">إدارة العملاء</span><h2 id="trainerClientsTitle">عملاؤك</h2><p>ملفات العملاء وخططهم ومتابعتهم في مكان واحد.</p></div>
+                    <button class="btn btn-primary trainer-add-client" id="trainerAddClient" type="button"><span aria-hidden="true">+</span> إضافة عميل</button>
+                </div>
+                <div class="trainer-clients-toolbar">
+                    <label class="trainer-search"><span class="sr-only">البحث في العملاء</span><span aria-hidden="true">⌕</span><input id="trainerClientSearch" type="search" placeholder="ابحث بالاسم أو الهاتف" autocomplete="off"></label>
+                    <button class="btn btn-light btn-small" id="trainerRefreshClients" type="button">تحديث</button>
+                </div>
+                <div id="trainerClientsMessage" class="trainer-inline-message" role="status"></div>
+                <div id="trainerClientsList" class="trainer-clients-list" aria-live="polite"></div>
+                <div id="trainerClientsPagination" class="trainer-pagination" hidden></div>
+            </section>
+            <aside class="trainer-workspace-panel trainer-activity-panel" aria-labelledby="trainerActivityTitle">
+                <div class="trainer-panel-header trainer-panel-header--stacked"><div><span class="trainer-panel-kicker">نظرة تشغيلية</span><h2 id="trainerActivityTitle">ما يحتاج انتباهك</h2></div></div>
+                <div class="trainer-priority-list">
+                    <div class="trainer-priority-item"><span class="trainer-priority-icon trainer-priority-icon--blue" aria-hidden="true">◷</span><div><strong id="trainerMetricFollowUp">—</strong><span>عميل يحتاج متابعة</span></div></div>
+                    <div class="trainer-priority-item"><span class="trainer-priority-icon trainer-priority-icon--green" aria-hidden="true">✓</span><div><strong id="trainerMetricMeasurements">—</strong><span>قياسات خلال آخر 30 يومًا</span></div></div>
+                    <div class="trainer-priority-item"><span class="trainer-priority-icon trainer-priority-icon--violet" aria-hidden="true">⌁</span><div><strong id="trainerMetricCheckins">—</strong><span>متابعات خلال آخر 14 يومًا</span></div></div>
+                </div>
+                <div class="trainer-availability-note"><span aria-hidden="true">✦</span><p>الأولوية محسوبة من العملاء والجلسات والباكدجات والتحصيلات الموجودة في مساحة المدرب فقط.</p></div>
+            </aside>
+        </section>
+        <section class="trainer-operations-grid" aria-label="عمليات المدرب">
+            <article class="trainer-workspace-panel trainer-operations-panel" aria-labelledby="trainerPackagesTitle">
+                <div class="trainer-panel-header">
+                    <div><span class="trainer-panel-kicker">الخدمات التجارية</span><h2 id="trainerPackagesTitle">الباقات</h2><p>عرّف الخدمات التي تبيعها لعملائك.</p></div>
+                    <button class="btn btn-light btn-small" id="trainerAddPackage" type="button">إضافة باقة</button>
+                </div>
+                <div id="trainerPackagesMessage" class="trainer-inline-message" role="status"></div>
+                <div id="trainerPackagesList" class="trainer-compact-list" aria-live="polite"></div>
+            </article>
+            <article class="trainer-workspace-panel trainer-operations-panel" aria-labelledby="trainerSessionsTitle">
+                <div class="trainer-panel-header">
+                    <div><span class="trainer-panel-kicker">اليوم والقادم</span><h2 id="trainerSessionsTitle">الجلسات</h2><p>نظّم المواعيد وتابع تنفيذها.</p></div>
+                    <button class="btn btn-light btn-small" id="trainerAddSession" type="button">جدولة جلسة</button>
+                </div>
+                <div id="trainerSessionsMessage" class="trainer-inline-message" role="status"></div>
+                <div id="trainerSessionsList" class="trainer-compact-list" aria-live="polite"></div>
+            </article>
+        </section>
+        <section class="trainer-workspace-panel trainer-payments-panel" aria-labelledby="trainerPurchasesTitle">
+            <div class="trainer-panel-header">
+                <div><span class="trainer-panel-kicker">التحصيل والمتابعة</span><h2 id="trainerPurchasesTitle">مشتريات العملاء</h2><p>كل دفعة مستقلة ومتصلة بسجلها المالي.</p></div>
+                <button class="btn btn-light btn-small" id="trainerAddPurchase" type="button">بيع باقة</button>
+            </div>
+            <div id="trainerPurchasesMessage" class="trainer-inline-message" role="status"></div>
+            <div id="trainerPurchasesList" class="trainer-compact-list trainer-purchases-list" aria-live="polite"></div>
+        </section>
+        <section class="trainer-workspace-panel trainer-reports-panel" aria-labelledby="trainerReportsTitle">
+            <div class="trainer-panel-header">
+                <div><span class="trainer-panel-kicker">تقارير التشغيل</span><h2 id="trainerReportsTitle">ملخص النشاط</h2><p id="trainerReportsPeriod">آخر 30 يومًا</p></div>
+                <button class="btn btn-light btn-small" id="trainerRefreshReports" type="button">تحديث التقرير</button>
+            </div>
+            <div id="trainerReportsMessage" class="trainer-inline-message" role="status"></div>
+            <div id="trainerReportsGrid" class="trainer-reports-grid" aria-live="polite">
+                <div class="trainer-report-stat"><span>الإيراد الصافي</span><strong id="trainerReportRevenue">—</strong></div>
+                <div class="trainer-report-stat"><span>العملاء الجدد</span><strong id="trainerReportNewClients">—</strong></div>
+                <div class="trainer-report-stat"><span>الجلسات المكتملة</span><strong id="trainerReportCompletedSessions">—</strong></div>
+                <div class="trainer-report-stat"><span>إجمالي الجلسات</span><strong id="trainerReportTotalSessions">—</strong></div>
+                <div class="trainer-report-stat"><span>الرصيد المستحق</span><strong id="trainerReportOutstanding">—</strong></div>
+                <div class="trainer-report-stat"><span>القياسات والمتابعات</span><strong id="trainerReportProgress">—</strong></div>
+            </div>
+        </section>
+    </main>
+    <dialog id="trainerClientDialog" class="trainer-client-dialog" aria-labelledby="trainerClientDialogTitle">
+        <form id="trainerClientForm" method="dialog" novalidate>
+            <div class="trainer-dialog-header"><div><span class="trainer-panel-kicker">ملف العميل</span><h2 id="trainerClientDialogTitle">إضافة عميل</h2></div><button type="button" class="trainer-dialog-close" id="trainerClientDialogClose" aria-label="إغلاق">×</button></div>
+            <input id="trainerClientId" type="hidden">
+            <div class="trainer-form-grid">
+                <label>اسم العميل<input id="trainerClientName" name="fullName" required maxlength="120" autocomplete="name"></label>
+                <label>رقم الهاتف<input id="trainerClientPhone" name="phone" required maxlength="30" inputmode="tel" autocomplete="tel"></label>
+                <label>البريد الإلكتروني<input id="trainerClientEmail" name="email" maxlength="254" type="email" autocomplete="email"></label>
+                <label>الهدف الأساسي<input id="trainerClientGoal" name="primaryGoal" maxlength="200"></label>
+                <label>الحالة<select id="trainerClientStatus" name="status"><option value="active">نشط</option><option value="paused">متوقف مؤقتًا</option><option value="archived">مؤرشف</option></select></label>
+                <label class="trainer-form-field--wide">ملاحظات<textarea id="trainerClientNotes" name="notes" maxlength="1000" rows="3"></textarea></label>
+            </div>
+            <p id="trainerClientFormMessage" class="trainer-form-message" role="alert"></p>
+            <div class="trainer-dialog-actions"><button class="btn btn-light" type="button" id="trainerClientCancel">إلغاء</button><button class="btn btn-primary" type="submit" id="trainerClientSave">حفظ العميل</button></div>
+        </form>
+    </dialog>
+    <dialog id="trainerClientDetailsDialog" class="trainer-client-dialog trainer-client-details-dialog" aria-labelledby="trainerClientDetailsTitle">
+        <div class="trainer-dialog-header"><div><span class="trainer-panel-kicker">نظرة على الملف</span><h2 id="trainerClientDetailsTitle">تفاصيل العميل</h2></div><button type="button" class="trainer-dialog-close" id="trainerClientDetailsClose" aria-label="إغلاق">×</button></div>
+        <div id="trainerClientDetails" class="trainer-client-details"></div>
+    </dialog>
+    <dialog id="trainerTimelineDialog" class="trainer-client-dialog" aria-labelledby="trainerTimelineDialogTitle">
+        <div class="trainer-dialog-header"><div><span class="trainer-panel-kicker">سجل الملف</span><h2 id="trainerTimelineDialogTitle">الخط الزمني للعميل</h2></div><button type="button" class="trainer-dialog-close" id="trainerTimelineDialogClose" aria-label="إغلاق">×</button></div>
+        <div id="trainerTimelineList" class="trainer-client-details trainer-timeline-list" aria-live="polite"></div>
+    </dialog>
+    <dialog id="trainerMeasurementDialog" class="trainer-client-dialog" aria-labelledby="trainerMeasurementDialogTitle">
+        <form id="trainerMeasurementForm" method="dialog" novalidate>
+            <div class="trainer-dialog-header"><div><span class="trainer-panel-kicker">تقييم وتقدم</span><h2 id="trainerMeasurementDialogTitle">إضافة قياس</h2></div><button type="button" class="trainer-dialog-close" id="trainerMeasurementDialogClose" aria-label="إغلاق">×</button></div>
+            <input id="trainerMeasurementClientId" type="hidden">
+            <div class="trainer-form-grid">
+                <label>التاريخ<input id="trainerMeasurementDate" required type="date"></label>
+                <label>الوزن (كجم)<input id="trainerMeasurementWeight" type="number" min="0" max="1000" step="0.1" inputmode="decimal"></label>
+                <label>الطول (سم)<input id="trainerMeasurementHeight" type="number" min="0" max="300" step="0.1" inputmode="decimal"></label>
+                <label>نسبة الدهون<input id="trainerMeasurementFat" type="number" min="0" max="100" step="0.1" inputmode="decimal"></label>
+                <label>محيط الصدر<input id="trainerMeasurementChest" type="number" min="0" max="500" step="0.1" inputmode="decimal"></label>
+                <label>محيط الخصر<input id="trainerMeasurementWaist" type="number" min="0" max="500" step="0.1" inputmode="decimal"></label>
+                <label>محيط الأرداف<input id="trainerMeasurementHips" type="number" min="0" max="500" step="0.1" inputmode="decimal"></label>
+                <label>محيط الذراع<input id="trainerMeasurementArms" type="number" min="0" max="500" step="0.1" inputmode="decimal"></label>
+                <label>محيط الفخذ<input id="trainerMeasurementThighs" type="number" min="0" max="500" step="0.1" inputmode="decimal"></label>
+                <label class="trainer-form-field--wide">ملاحظات<textarea id="trainerMeasurementNotes" maxlength="1000" rows="2"></textarea></label>
+            </div>
+            <p id="trainerMeasurementFormMessage" class="trainer-form-message" role="alert"></p>
+            <div class="trainer-dialog-actions"><button class="btn btn-light" type="button" id="trainerMeasurementCancel">إلغاء</button><button class="btn btn-primary" type="submit" id="trainerMeasurementSave">حفظ القياس</button></div>
+        </form>
+    </dialog>
+    <dialog id="trainerCheckinDialog" class="trainer-client-dialog" aria-labelledby="trainerCheckinDialogTitle">
+        <form id="trainerCheckinForm" method="dialog" novalidate>
+            <div class="trainer-dialog-header"><div><span class="trainer-panel-kicker">متابعة العميل</span><h2 id="trainerCheckinDialogTitle">إضافة متابعة</h2></div><button type="button" class="trainer-dialog-close" id="trainerCheckinDialogClose" aria-label="إغلاق">×</button></div>
+            <input id="trainerCheckinClientId" type="hidden">
+            <div class="trainer-form-grid">
+                <label>التاريخ<input id="trainerCheckinDate" required type="date"></label>
+                <label>وزن المتابعة (كجم)<input id="trainerCheckinWeight" type="number" min="0" max="1000" step="0.1" inputmode="decimal"></label>
+                <label>جودة النوم (1–5)<input id="trainerCheckinSleepQuality" type="number" min="1" max="5" step="1" inputmode="numeric"></label>
+                <label>الطاقة/الإجهاد (1–5)<input id="trainerCheckinFatigue" type="number" min="1" max="5" step="1" inputmode="numeric"></label>
+                <label>المزاج/الالتزام (1–5)<input id="trainerCheckinMood" type="number" min="1" max="5" step="1" inputmode="numeric"></label>
+                <label class="trainer-form-field--wide">ملاحظات المتابعة<textarea id="trainerCheckinNotes" maxlength="1000" rows="3"></textarea></label>
+            </div>
+            <p id="trainerCheckinFormMessage" class="trainer-form-message" role="alert"></p>
+            <div class="trainer-dialog-actions"><button class="btn btn-light" type="button" id="trainerCheckinCancel">إلغاء</button><button class="btn btn-primary" type="submit" id="trainerCheckinSave">حفظ المتابعة</button></div>
+        </form>
+    </dialog>
+    <dialog id="trainerPackageDialog" class="trainer-client-dialog" aria-labelledby="trainerPackageDialogTitle">
+        <form id="trainerPackageForm" method="dialog" novalidate>
+            <div class="trainer-dialog-header"><div><span class="trainer-panel-kicker">الخدمات التجارية</span><h2 id="trainerPackageDialogTitle">إضافة باقة</h2></div><button type="button" class="trainer-dialog-close" id="trainerPackageDialogClose" aria-label="إغلاق">×</button></div>
+            <div class="trainer-form-grid">
+                <label>اسم الباقة<input id="trainerPackageName" required maxlength="160"></label>
+                <label>السعر<input id="trainerPackagePrice" required type="number" min="0" step="0.01" inputmode="decimal"></label>
+                <label>مدة الباقة بالأيام<input id="trainerPackageDuration" type="number" min="1" max="3650"></label>
+                <label>عدد الجلسات<input id="trainerPackageSessions" type="number" min="1" max="10000"></label>
+                <label>طريقة التقديم<select id="trainerPackageMode"><option value="hybrid">حضوري وأونلاين</option><option value="in_person">حضوري</option><option value="online">أونلاين</option></select></label>
+                <label class="trainer-form-field--wide">الوصف<textarea id="trainerPackageDescription" maxlength="1000" rows="2"></textarea></label>
+            </div>
+            <p id="trainerPackageFormMessage" class="trainer-form-message" role="alert"></p>
+            <div class="trainer-dialog-actions"><button class="btn btn-light" type="button" id="trainerPackageCancel">إلغاء</button><button class="btn btn-primary" type="submit" id="trainerPackageSave">حفظ الباقة</button></div>
+        </form>
+    </dialog>
+    <dialog id="trainerSessionDialog" class="trainer-client-dialog" aria-labelledby="trainerSessionDialogTitle">
+        <form id="trainerSessionForm" method="dialog" novalidate>
+            <div class="trainer-dialog-header"><div><span class="trainer-panel-kicker">الجدولة</span><h2 id="trainerSessionDialogTitle">جدولة جلسة</h2></div><button type="button" class="trainer-dialog-close" id="trainerSessionDialogClose" aria-label="إغلاق">×</button></div>
+            <div class="trainer-form-grid">
+                <label>العميل<select id="trainerSessionClient" required></select></label>
+                <label>الباقة المرتبطة<select id="trainerSessionPurchase"><option value="">بدون باقة</option></select></label>
+                <label>تبدأ في<input id="trainerSessionStart" required type="datetime-local"></label>
+                <label>تنتهي في<input id="trainerSessionEnd" required type="datetime-local"></label>
+                <label class="trainer-form-field--wide">ملاحظات<textarea id="trainerSessionNotes" maxlength="1000" rows="2"></textarea></label>
+            </div>
+            <p id="trainerSessionFormMessage" class="trainer-form-message" role="alert"></p>
+            <div class="trainer-dialog-actions"><button class="btn btn-light" type="button" id="trainerSessionCancel">إلغاء</button><button class="btn btn-primary" type="submit" id="trainerSessionSave">حفظ الجلسة</button></div>
+        </form>
+    </dialog>
+    <dialog id="trainerPurchaseDialog" class="trainer-client-dialog" aria-labelledby="trainerPurchaseDialogTitle">
+        <form id="trainerPurchaseForm" method="dialog" novalidate>
+            <div class="trainer-dialog-header"><div><span class="trainer-panel-kicker">بيع باقة</span><h2 id="trainerPurchaseDialogTitle">تسجيل شراء جديد</h2></div><button type="button" class="trainer-dialog-close" id="trainerPurchaseDialogClose" aria-label="إغلاق">×</button></div>
+            <div class="trainer-form-grid">
+                <label>العميل<select id="trainerPurchaseClient" required></select></label>
+                <label>الباقة<select id="trainerPurchasePackage" required></select></label>
+                <label>تاريخ البداية<input id="trainerPurchaseStart" required type="date"></label>
+                <label>المدفوع الآن<input id="trainerPurchasePaid" required type="number" min="0" step="0.01" inputmode="decimal"></label>
+                <label>طريقة الدفع<select id="trainerPurchaseMethod"><option value="cash">نقدي</option><option value="card">بطاقة</option><option value="transfer">تحويل</option><option value="other">أخرى</option></select></label>
+                <label>تاريخ التحصيل<input id="trainerPurchasePaidAt" type="date"></label>
+                <label class="trainer-form-field--wide">ملاحظات<textarea id="trainerPurchaseNotes" maxlength="500" rows="2"></textarea></label>
+            </div>
+            <p id="trainerPurchaseFormMessage" class="trainer-form-message" role="alert"></p>
+            <div class="trainer-dialog-actions"><button class="btn btn-light" type="button" id="trainerPurchaseCancel">إلغاء</button><button class="btn btn-primary" type="submit" id="trainerPurchaseSave">تسجيل الشراء</button></div>
+        </form>
+    </dialog>
+    <dialog id="trainerPaymentDialog" class="trainer-client-dialog" aria-labelledby="trainerPaymentDialogTitle">
+        <form id="trainerPaymentForm" method="dialog" novalidate>
+            <div class="trainer-dialog-header"><div><span class="trainer-panel-kicker">دفعة مستقلة</span><h2 id="trainerPaymentDialogTitle">تسجيل دفعة</h2></div><button type="button" class="trainer-dialog-close" id="trainerPaymentDialogClose" aria-label="إغلاق">×</button></div>
+            <input id="trainerPaymentPurchaseId" type="hidden">
+            <div class="trainer-form-grid">
+                <label>المبلغ<input id="trainerPaymentAmount" required type="number" min="0.01" step="0.01" inputmode="decimal"></label>
+                <label>طريقة الدفع<select id="trainerPaymentMethod"><option value="cash">نقدي</option><option value="card">بطاقة</option><option value="transfer">تحويل</option><option value="other">أخرى</option></select></label>
+                <label>تاريخ التحصيل<input id="trainerPaymentPaidAt" required type="date"></label>
+                <label class="trainer-form-field--wide">ملاحظات<textarea id="trainerPaymentNotes" maxlength="500" rows="2"></textarea></label>
+            </div>
+            <p id="trainerPaymentFormMessage" class="trainer-form-message" role="alert"></p>
+            <div class="trainer-dialog-actions"><button class="btn btn-light" type="button" id="trainerPaymentCancel">إلغاء</button><button class="btn btn-primary" type="submit" id="trainerPaymentSave">حفظ الدفعة</button></div>
+        </form>
+    </dialog>
+    <script defer src="/js/theme.js?v=1"></script><script defer src="/js/branding.js?v=5"></script><script defer src="/js/trainer-workspace.js?v=4"></script>
+</body>
+</html>

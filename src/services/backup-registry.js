@@ -10,7 +10,7 @@
 // Bump when the logical tenant artifact contract changes. Existing artifacts
 // remain readable only when their registry matches the current restore
 // inventory; new tenant-owned commercial records are included below.
-const TENANT_BACKUP_REGISTRY_VERSION = 2;
+const TENANT_BACKUP_REGISTRY_VERSION = 3;
 
 function definition(key, table, restorePolicy = 'tenant') {
     return Object.freeze({ key, table, tenantScoped: true, restorePolicy });
@@ -50,6 +50,10 @@ const TENANT_BACKUP_TABLES = Object.freeze([
     definition('body_measurements', 'body_measurements'),
     definition('athlete_checkins', 'athlete_checkins'),
     definition('coaching_activity_events', 'coaching_activity_events'),
+    definition('coaching_sessions', 'coaching_sessions'),
+    definition('trainer_packages', 'trainer_packages'),
+    definition('trainer_package_purchases', 'trainer_package_purchases'),
+    definition('trainer_package_usage', 'trainer_package_usage'),
     definition('workout_sessions', 'workout_sessions'),
     definition('workout_set_logs', 'workout_set_logs'),
     definition('meal_logs', 'meal_logs'),
@@ -91,6 +95,10 @@ const TENANT_BACKUP_EXCLUDED_TABLES = Object.freeze([
     // they must never be exported or restored as tenant business data.
     'gym_member_portal_sessions',
     'saas_payment_proofs',
+    // Audit is dual-scope: tenant events are RLS-scoped, while platform
+    // events intentionally have a NULL tenant_id and stay in the platform
+    // control-plane backup artifact.
+    'saas_audit_log',
     'saas_platform_notes',
     'saas_subscription_requests',
     'saas_subscription_changes',
@@ -102,6 +110,7 @@ const PLATFORM_GLOBAL_BACKUP_TABLES = Object.freeze([
     Object.freeze({ key: 'gym_tenants', table: 'gym_tenants' }),
     Object.freeze({ key: 'gym_users', table: 'gym_users' }),
     Object.freeze({ key: 'saas_plans', table: 'saas_plans' }),
+    Object.freeze({ key: 'saas_plan_tenant_types', table: 'saas_plan_tenant_types' }),
     Object.freeze({ key: 'saas_tenant_subscriptions', table: 'saas_tenant_subscriptions' }),
     Object.freeze({ key: 'saas_subscription_requests', table: 'saas_subscription_requests' }),
     Object.freeze({ key: 'saas_payment_proofs', table: 'saas_payment_proofs' }),

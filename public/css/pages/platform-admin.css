@@ -186,6 +186,9 @@
 .status-pill.trial { background: var(--info-soft); color: var(--info-text); }
 .status-pill.suspended, .status-pill.expired { background: var(--warning-soft); color: var(--warning-text); }
 .status-pill.archived, .status-pill.cancelled { background: var(--danger-soft); color: var(--danger-text); }
+.tenant-type-pill { display: inline-flex; align-items: center; gap: 4px; border: 1px solid var(--platform-border); border-radius: var(--radius-pill); background: var(--bg-surface); color: var(--text-secondary); padding: 4px 8px; font-size: .62rem; font-weight: 800; white-space: nowrap; }
+.tenant-type-pill.gym { border-color: var(--primary-border); background: var(--primary-soft); color: var(--text-primary-soft); }
+.tenant-type-pill.independent_trainer { border-color: rgba(125, 92, 255, .35); background: rgba(125, 92, 255, .1); color: var(--text-primary); }
 .table-action { border: 1px solid var(--platform-border); border-radius: 8px; background: var(--platform-surface-2); color: var(--text-primary-soft); padding: 6px 9px; font-size: .67rem; font-weight: 800; }
 .table-action:hover { border-color: var(--primary-border); background: var(--primary-soft); }
 .directory-footer { display: flex; min-height: 54px; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 15px; border-top: 1px solid var(--border-secondary); color: var(--text-muted); font-size: .68rem; }
@@ -244,6 +247,8 @@
 .plan-card p { min-height: 46px; color: var(--text-muted); font-size: .72rem; }
 .plan-price { color: var(--text-primary); font-size: 1.7rem; font-weight: 800; }
 .plan-price small { color: var(--text-muted); font-size: .68rem; font-weight: 500; }
+.plan-compatibility { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-height: 27px; border-top: 1px solid var(--border-secondary); padding-top: 12px; color: var(--text-muted); font-size: .65rem; }
+.plan-compatibility .tenant-type-pill { padding-block: 3px; }
 .plan-limits { display: grid; gap: 7px; border-top: 1px solid var(--border-secondary); padding-top: 14px; }
 .plan-limits span { display: flex; justify-content: space-between; gap: 10px; color: var(--text-muted); font-size: .69rem; }
 .plan-limits b { color: var(--text-secondary); }
@@ -254,6 +259,8 @@
 .plan-edit { width: 100%; }
 .plan-delete { min-width: 66px; }
 .plan-delete:disabled { cursor: not-allowed; opacity: .48; }
+.dialog-fieldset { min-width: 0; margin: 0; border: 1px solid var(--platform-border); border-radius: 12px; padding: 12px; }
+.dialog-fieldset legend { padding-inline: 6px; color: var(--text-secondary); font-size: .72rem; font-weight: 800; }
 .audit-table { min-width: 850px; }
 .platform-page-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; }
 .backup-health-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }

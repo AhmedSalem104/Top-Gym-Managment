@@ -14,6 +14,23 @@ async function findByEmail(emailNormalized) {
         .query('SELECT TOP (1) * FROM dbo.gym_users WHERE email_normalized = @emailNormalized;');
 }
 
+async function findAuthById(id, executor = null) {
+    const database = executor || await getPool();
+    return database.request()
+        .input('id', sql.Int, id)
+        .query(`SELECT TOP (1) u.id,u.full_name,u.email,u.role,u.status,u.last_login_at,u.password_hash,
+                       u.must_change_password,u.password_changed_at,primary_tenant.tenant_type
+                FROM dbo.gym_users AS u WITH (UPDLOCK,HOLDLOCK)
+                OUTER APPLY (
+                    SELECT TOP (1) t.tenant_type
+                    FROM dbo.gym_user_tenants AS ut
+                    INNER JOIN dbo.gym_tenants AS t ON t.id=ut.tenant_id
+                    WHERE ut.user_id=u.id AND ut.status='active'
+                    ORDER BY ut.is_primary DESC, ut.tenant_id ASC
+                ) AS primary_tenant
+                WHERE u.id=@id;`);
+}
+
 async function touchLogin(userId) {
     const pool = await getPool();
     return pool.request()
@@ -101,6 +118,7 @@ module.exports = {
     createOwner,
     deleteAssistant,
     findByEmail,
+    findAuthById,
     findOwner,
     findPublicById,
     findRoleById,

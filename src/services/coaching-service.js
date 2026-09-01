@@ -524,6 +524,9 @@ async function createExternalTrainee(body = {}) {
     if (email && !/^\S+@\S+\.\S+$/.test(email)) throw appError('البريد الإلكتروني غير صالح.');
     const registrationDate = dateValue(body.registrationDate, 'تاريخ التسجيل');
     const notes = text(body.notes, 'الملاحظات', 1000);
+    const primaryGoal = text(body.primaryGoal, 'primary goal', 200);
+    const requestedProfileStatus = String(body.profileStatus || '').trim().toLowerCase();
+    const profileStatus = ['active', 'paused', 'archived'].includes(requestedProfileStatus) ? requestedProfileStatus : 'active';
     const memberId = await withTransaction(async (transaction) => {
         await assertNoDuplicatePhone(transaction, phoneNormalized, email);
         const result = await transaction.request()
@@ -533,9 +536,11 @@ async function createExternalTrainee(body = {}) {
             .input('email', sql.NVarChar(254), email)
             .input('registrationDate', sql.Date, toUtcDate(registrationDate))
             .input('notes', sql.NVarChar(1000), notes)
-            .query(`INSERT INTO dbo.members (full_name, phone, phone_normalized, email, registration_date, notes)
+            .input('primaryGoal', sql.NVarChar(200), primaryGoal)
+            .input('profileStatus', sql.VarChar(20), profileStatus)
+            .query(`INSERT INTO dbo.members (full_name, phone, phone_normalized, email, registration_date, notes, primary_goal, profile_status)
                     OUTPUT INSERTED.id
-                    VALUES (@fullName, @phone, @phoneNormalized, @email, @registrationDate, @notes);`);
+                    VALUES (@fullName, @phone, @phoneNormalized, @email, @registrationDate, @notes, @primaryGoal, @profileStatus);`);
         return Number(result.recordset[0].id);
     });
     return getClientBase(memberId);
@@ -545,7 +550,7 @@ async function getClientBase(memberId, connection = null) {
     const pool = connection || await getPool();
     const result = await pool.request()
         .input('memberId', sql.Int, ensureId(memberId, 'معرّف العميل'))
-        .query('SELECT id, full_name, phone, email, registration_date, notes, created_at, updated_at FROM dbo.members WHERE id = @memberId;');
+        .query('SELECT id, full_name, phone, email, registration_date, notes, primary_goal, profile_status, created_at, updated_at FROM dbo.members WHERE id = @memberId;');
     const row = result.recordset[0];
     if (!row) throw appError('العميل غير موجود.', 404, 'CLIENT_NOT_FOUND');
     return {
@@ -555,6 +560,8 @@ async function getClientBase(memberId, connection = null) {
         email: row.email,
         registrationDate: formatDateOnly(row.registration_date),
         notes: row.notes,
+        primaryGoal: row.primary_goal || null,
+        status: row.profile_status || 'active',
         createdAt: row.created_at,
         updatedAt: row.updated_at
     };
@@ -1850,6 +1857,7 @@ module.exports = {
     getWorkoutPrograms,
     getWorkoutSession,
     getWorkoutSessions,
+    recordCoachingEvent,
     startWorkoutSession,
     setDietPlanStatus,
     setWorkoutProgramStatus,

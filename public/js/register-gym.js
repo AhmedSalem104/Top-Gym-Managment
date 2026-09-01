@@ -3,6 +3,8 @@
 
     const form = document.getElementById('gymRegistrationForm');
     if (!form) return;
+    const isTrainerRegistration = document.body?.dataset.registrationType === 'independent_trainer';
+    const registrationEndpoint = isTrainerRegistration ? 'trainer-registration' : 'gym-registration';
 
     const $ = (id) => document.getElementById(id);
     const panels = [...document.querySelectorAll('[data-registration-step]')];
@@ -26,6 +28,14 @@
         ['بيانات الدفع', 'حوّل المبلغ إلى وسيلة الدفع المختارة واحتفظ بالإثبات.'],
         ['إثبات الدفع', 'ارفع ملفًا واضحًا حتى يتمكن فريق المراجعة من التحقق.'],
         ['المراجعة والإرسال', 'راجع تفاصيلك ثم أرسل الطلب إلى فريق Logic Fit.']
+    ];
+    const trainerStageCopy = [
+        ['\u0628\u064a\u0627\u0646\u0627\u062a \u0627\u0644\u0645\u062f\u0631\u0628', '\u0623\u062f\u062e\u0644 \u0628\u064a\u0627\u0646\u0627\u062a \u0627\u0644\u062a\u0648\u0627\u0635\u0644 \u0627\u0644\u0623\u0633\u0627\u0633\u064a\u0629 \u0644\u0645\u0631\u0627\u062c\u0639\u0629 \u0637\u0644\u0628\u0643.'],
+        ['\u0627\u062e\u062a\u0631 \u0627\u0644\u0628\u0627\u0642\u0629', '\u0627\u062e\u062a\u0631 \u0627\u0644\u0628\u0627\u0642\u0629 \u0627\u0644\u0645\u062a\u0627\u062d\u0629 \u0644\u0644\u0645\u062f\u0631\u0628\u064a\u0646.'],
+        ['\u0627\u062e\u062a\u0631 \u0627\u0644\u0645\u062f\u0629', '\u0627\u062e\u062a\u0631 \u0627\u0644\u0645\u062f\u0629 \u0627\u0644\u0645\u0646\u0627\u0633\u0628\u0629 \u0644\u0644\u0628\u0627\u0642\u0629.'],
+        ['\u0628\u064a\u0627\u0646\u0627\u062a \u0627\u0644\u062f\u0641\u0639', '\u062d\u0648\u0644 \u0627\u0644\u0645\u0628\u0644\u063a \u0625\u0644\u0649 \u0648\u0633\u064a\u0644\u0629 \u0627\u0644\u062f\u0641\u0639 \u0627\u0644\u0645\u062e\u062a\u0627\u0631\u0629.'],
+        ['\u0625\u062b\u0628\u0627\u062a \u0627\u0644\u062f\u0641\u0639', '\u0627\u0631\u0641\u0639 \u0645\u0644\u0641\u0627 \u0648\u0627\u0636\u062d\u0627 \u0644\u0644\u0645\u0631\u0627\u062c\u0639\u0629.'],
+        ['\u0627\u0644\u0645\u0631\u0627\u062c\u0639\u0629 \u0648\u0627\u0644\u0625\u0631\u0633\u0627\u0644', '\u0631\u0627\u062c\u0639 \u062a\u0641\u0627\u0635\u064a\u0644\u0643 \u062b\u0645 \u0623\u0631\u0633\u0644 \u0627\u0644\u0637\u0644\u0628.']
     ];
     const termLabels = { monthly: 'شهري', quarterly: '3 أشهر', semiannual: '6 أشهر', annual: 'سنوي' };
 
@@ -251,7 +261,7 @@
             indicator.classList.toggle('is-complete', number < state.step);
             indicator.setAttribute('aria-current', number === state.step ? 'step' : 'false');
         });
-        const copy = stageCopy[state.step - 1];
+        const copy = (isTrainerRegistration ? trainerStageCopy : stageCopy)[state.step - 1];
         $('registrationStageLabel').textContent = `الخطوة ${String(state.step).padStart(2, '0')} من 06`;
         $('registrationTitle').textContent = copy[0];
         $('registrationStageDescription').textContent = copy[1];
@@ -269,7 +279,7 @@
 
     async function loadCatalog() {
         try {
-            const data = await api('/api/public/gym-registration/catalog', { headers: { Accept: 'application/json' } });
+            const data = await api(`/api/public/${registrationEndpoint}/catalog`, { headers: { Accept: 'application/json' } });
             state.catalog = normalizeCatalog(data);
             renderPlans();
             renderPaymentMethods();
@@ -284,7 +294,7 @@
     async function createRequest() {
         if (state.requestId && state.accessToken) return;
         if (!state.idempotencyKey) state.idempotencyKey = window.crypto?.randomUUID?.() || `registration-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-        const data = await api('/api/public/gym-registration/requests', {
+        const data = await api(`/api/public/${registrationEndpoint}/requests`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'Idempotency-Key': state.idempotencyKey },
             body: JSON.stringify({
@@ -305,7 +315,7 @@
             'X-Payment-Proof-Mime': state.proof.type || 'application/octet-stream',
             'X-Payment-Proof-Name-Encoded': encodeURIComponent(state.proof.name)
         };
-        await api(`/api/public/gym-registration/requests/${encodeURIComponent(state.requestId)}/proof`, { method: 'POST', headers, body: state.proof });
+        await api(`/api/public/${registrationEndpoint}/requests/${encodeURIComponent(state.requestId)}/proof`, { method: 'POST', headers, body: state.proof });
     }
 
     async function submitRequest() {

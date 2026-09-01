@@ -2,11 +2,12 @@
 
 const { createAuthController } = require('../controllers/auth.controller');
 
-function registerAuthRoutes(app, { authService, permissionService, asyncRoute, ownerOnly, allowLoginAttempt }) {
-    const controller = createAuthController({ authService, permissionService, allowLoginAttempt });
+function registerAuthRoutes(app, { authService, permissionService, saasService, asyncRoute, ownerOnly, allowLoginAttempt }) {
+    const controller = createAuthController({ authService, permissionService, allowLoginAttempt, saasService });
     app.get('/api/auth/session', asyncRoute(controller.session));
     app.post('/api/auth/login', asyncRoute(controller.login));
     app.post('/api/auth/logout', asyncRoute(controller.logout));
+    app.post('/api/auth/change-password', asyncRoute(controller.changePassword));
     app.get('/api/auth/users', ownerOnly, asyncRoute(controller.listUsers));
     app.post('/api/auth/users', ownerOnly, asyncRoute(controller.createAssistant));
     app.put('/api/auth/users/:id', ownerOnly, asyncRoute(controller.updateUser));

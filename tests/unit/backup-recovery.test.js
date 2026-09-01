@@ -27,7 +27,7 @@ const { TENANT_BACKUP_REGISTRY_VERSION, TENANT_BACKUP_TABLES } = require('../../
 
 function samplePayload() {
     return buildTenantBackupPayload({
-        tenant: { id: 7, slug: 'gym-a', name: 'Gym A' },
+        tenant: { id: 7, slug: 'gym-a', name: 'Gym A', tenantType: 'gym' },
         tables: {
             members: [{ id: 11, tenant_id: 7, full_name: 'Synthetic Member' }],
             gym_muscles: [{ id: 1, tenant_id: 7, source_id: 'muscle-1', name: 'Synthetic Muscle' }]
@@ -229,7 +229,7 @@ test('stored backup verification hashes returned bytes instead of trusting metad
 
 test('stored tenant verification also validates the complete manifest after upload', async () => {
     const tables = Object.fromEntries(TENANT_BACKUP_TABLES.map((definition) => [definition.key, []]));
-    const payload = buildTenantBackupPayload({ tenant: { id: 7, slug: 'gym-a', name: 'Gym A' }, tables });
+    const payload = buildTenantBackupPayload({ tenant: { id: 7, slug: 'gym-a', name: 'Gym A', tenantType: 'gym' }, tables });
     const body = require('node:zlib').gzipSync(Buffer.from(JSON.stringify(payload), 'utf8'));
     const checksum = require('node:crypto').createHash('sha256').update(body).digest('hex');
     const storage = {

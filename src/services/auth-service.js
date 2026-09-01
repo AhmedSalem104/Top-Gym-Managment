@@ -2,6 +2,7 @@
 
 const crypto = require('node:crypto');
 const { getPool, sql } = require('../database');
+const { withTransaction } = require('../database/transaction');
 const { config, isProduction } = require('../config/env');
 const {
     ROLE_PERMISSIONS,
@@ -14,6 +15,7 @@ const tenantService = require('./tenant-service');
 const userRepository = require('../repositories/user.repository');
 const sessionRepository = require('../repositories/session.repository');
 const { currentTenantId, getTenantContext, runTenantContext } = require('../tenancy/tenant-context');
+const { resolveTenantType } = require('../tenancy/tenant-types');
 
 const SESSION_COOKIE_NAME = 'topgym_session';
 const DEFAULT_SESSION_DAYS = 7;
@@ -35,6 +37,8 @@ BEGIN
         password_hash NVARCHAR(512) NOT NULL,
         role VARCHAR(20) NOT NULL CONSTRAINT DF_gym_users_role DEFAULT ('Assistant'),
         status VARCHAR(20) NOT NULL CONSTRAINT DF_gym_users_status DEFAULT ('Active'),
+        must_change_password BIT NOT NULL CONSTRAINT DF_gym_users_must_change_password DEFAULT (0),
+        password_changed_at DATETIME2(0) NULL,
         last_login_at DATETIME2(0) NULL,
         created_at DATETIME2(0) NOT NULL CONSTRAINT DF_gym_users_created_at DEFAULT (SYSUTCDATETIME()),
         updated_at DATETIME2(0) NOT NULL CONSTRAINT DF_gym_users_updated_at DEFAULT (SYSUTCDATETIME()),
@@ -58,6 +62,32 @@ BEGIN
         EXEC(N'ALTER TABLE dbo.gym_users ADD status VARCHAR(20) NULL;');
     IF COL_LENGTH(N'dbo.gym_users', N'last_login_at') IS NULL
         EXEC(N'ALTER TABLE dbo.gym_users ADD last_login_at DATETIME2(0) NULL;');
+    IF COL_LENGTH(N'dbo.gym_users', N'must_change_password') IS NULL
+        EXEC(N'ALTER TABLE dbo.gym_users ADD must_change_password BIT NOT NULL CONSTRAINT DF_gym_users_must_change_password DEFAULT (0) WITH VALUES;');
+    IF COL_LENGTH(N'dbo.gym_users', N'password_changed_at') IS NULL
+        ALTER TABLE dbo.gym_users ADD password_changed_at DATETIME2(0) NULL;
+    IF EXISTS (
+        SELECT 1 FROM sys.columns
+        WHERE object_id=OBJECT_ID(N'dbo.gym_users')
+          AND name=N'must_change_password'
+          AND system_type_id<>104
+    )
+        THROW 51011, 'gym_users.must_change_password must be BIT; auth schema is not compatible.', 1;
+    IF EXISTS (
+        SELECT 1 FROM sys.columns
+        WHERE object_id=OBJECT_ID(N'dbo.gym_users')
+          AND name=N'must_change_password'
+          AND is_nullable=1
+    )
+        EXEC(N'UPDATE dbo.gym_users SET must_change_password=0 WHERE must_change_password IS NULL; ALTER TABLE dbo.gym_users ALTER COLUMN must_change_password BIT NOT NULL;');
+    IF EXISTS (
+        SELECT 1 FROM sys.columns
+        WHERE object_id=OBJECT_ID(N'dbo.gym_users')
+          AND name=N'password_changed_at'
+          AND (system_type_id<>42 OR scale<>0)
+    )
+        THROW 51012, 'gym_users.password_changed_at must be DATETIME2(0); auth schema is not compatible.', 1;
+    EXEC(N'UPDATE dbo.gym_users SET must_change_password=0 WHERE must_change_password IS NULL;');
 
     -- A previous schema used the same constraint name for reception/manager
     -- roles. Replace it before normalizing the data to Owner/Assistant.
@@ -278,9 +308,24 @@ function safeUser(row) {
         email: row.email,
         role,
         status: row.status,
+        mustChangePassword: Boolean(row.must_change_password),
+        passwordChangedAt: row.password_changed_at ? new Date(row.password_changed_at).toISOString() : null,
+        tenantType: row.tenant_type == null ? null : resolveTenantType(row.tenant_type),
         permissions: ROLE_PERMISSIONS[role] || [],
         lastLoginAt: row.last_login_at ? new Date(row.last_login_at).toISOString() : null
     };
+}
+
+const TEMPORARY_PASSWORD_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%';
+
+function generateTemporaryPassword(length = 20) {
+    const size = Math.max(16, Math.min(64, Number(length) || 20));
+    const bytes = crypto.randomBytes(size);
+    let password = '';
+    for (let index = 0; index < size; index += 1) {
+        password += TEMPORARY_PASSWORD_ALPHABET[bytes[index] % TEMPORARY_PASSWORD_ALPHABET.length];
+    }
+    return password;
 }
 
 async function safeUserWithPermissions(row, { readOnly = false } = {}) {
@@ -448,6 +493,67 @@ async function revokeSession(token) {
     await sessionRepository.revokeByTokenHash(tokenHash(token));
 }
 
+async function changePassword(userId, body = {}, request = null, { recordAudit = null } = {}) {
+    await ensureAuthReady();
+    const normalizedUserId = Number(userId);
+    if (!Number.isInteger(normalizedUserId) || normalizedUserId <= 0) {
+        throw authError('معرّف الحساب غير صحيح.', 400, 'INVALID_USER_ID');
+    }
+    const newPassword = validatePassword(body.newPassword ?? body.password, { field: 'newPassword' });
+    const confirmation = String(body.confirmPassword ?? body.confirmation ?? '');
+    if (newPassword !== confirmation) {
+        throw authError('كلمتا المرور غير متطابقتين.', 400, 'PASSWORD_CONFIRMATION_MISMATCH', 'confirmPassword');
+    }
+    const passwordHash = await hashPassword(newPassword);
+    let changedFromForcedState = false;
+    await withTransaction(async (transaction) => {
+        const currentResult = await userRepository.findAuthById(normalizedUserId, transaction);
+        const current = currentResult.recordset[0];
+        if (!current || current.status !== 'Active') throw authError('الحساب غير متاح.', 403, 'ACCOUNT_DISABLED');
+        if (!current.must_change_password) {
+            throw authError('لا توجد كلمة مرور مؤقتة تحتاج إلى تغيير.', 403, 'PASSWORD_CHANGE_NOT_REQUIRED');
+        }
+        changedFromForcedState = true;
+        await transaction.request()
+            .input('userId', sql.Int, normalizedUserId)
+            .input('passwordHash', sql.NVarChar(512), passwordHash)
+            .query(`UPDATE dbo.gym_users
+                    SET password_hash=@passwordHash,
+                        must_change_password=0,
+                        password_changed_at=SYSUTCDATETIME(),
+                        updated_at=SYSUTCDATETIME()
+                    WHERE id=@userId AND status='Active';`);
+        await sessionRepository.revokeForUser(normalizedUserId, transaction);
+        if (typeof recordAudit === 'function') {
+            await recordAudit({
+                tenantId: currentTenantId() || null,
+                actorUserId: normalizedUserId,
+                action: changedFromForcedState ? 'OWNER_FORCED_PASSWORD_CHANGE_COMPLETED' : 'PASSWORD_CHANGED',
+                entityType: 'user',
+                entityId: normalizedUserId,
+                details: changedFromForcedState ? 'Forced first-login password change completed.' : 'Password changed and prior sessions revoked.',
+                reason: '',
+                before: { mustChangePassword: changedFromForcedState },
+                after: { mustChangePassword: false },
+                ipAddress: request?.ip || request?.socket?.remoteAddress || null,
+                userAgent: request?.get?.('user-agent') || null,
+                executor: transaction
+            });
+        }
+    });
+    const token = crypto.randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + sessionDays() * 24 * 60 * 60 * 1000);
+    await sessionRepository.create({
+        userId: normalizedUserId,
+        tokenHash: tokenHash(token),
+        expiresAt,
+        ipAddress: String(request?.ip || request?.socket?.remoteAddress || '').slice(0, 64),
+        userAgent: String(request?.get?.('user-agent') || '').slice(0, 512)
+    });
+    const updated = await userRepository.findAuthById(normalizedUserId);
+    return { token, expiresAt, user: await safeUserWithPermissions(updated.recordset[0]) };
+}
+
 async function listUsers({ readOnly = false } = {}) {
     // Listing assistants is a read path. Do not run auth bootstrap/DDL or
     // permission seeding just because the Owner opened the permissions screen.
@@ -571,6 +677,7 @@ module.exports = {
     appendCookie,
     assistantPathAllowed,
     canAccess,
+    changePassword,
     clearSessionCookie,
     createAssistant,
     deleteAssistant,
@@ -578,6 +685,7 @@ module.exports = {
     ensureAuthTables,
     ensureOwnerAccount,
     getSessionUser,
+    generateTemporaryPassword,
     hashPassword,
     listUsers,
     login,

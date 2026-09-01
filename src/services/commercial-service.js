@@ -172,10 +172,16 @@ async function ensureDefaultPlanTerms() {
     }
 }
 
-async function getCommercialPlanCatalog({ readOnly = false } = {}) {
+async function getCommercialPlanCatalog({ readOnly = false, tenantType = null } = {}) {
     await ensureCommercialTables({ readOnly });
     const pool = await getPool();
-    const result = await pool.request().query(`
+    const request = pool.request();
+    const normalizedTenantType = tenantType == null ? '' : text(tenantType, '', 32).toLowerCase();
+    request.input('tenantType', sql.VarChar(32), normalizedTenantType);
+    const compatibilityFilter = normalizedTenantType
+        ? ` AND EXISTS (SELECT 1 FROM dbo.saas_plan_tenant_types ptt WHERE ptt.plan_id=p.id AND ptt.tenant_type=@tenantType)`
+        : '';
+    const result = await request.query(`
         SELECT p.id AS plan_id,p.code AS plan_code,p.name AS plan_name,p.description AS plan_description,
                p.currency AS plan_currency,p.max_members,p.max_users,p.max_ai_generations,p.max_storage_mb,
                p.features_json,p.is_active AS plan_active,p.sort_order AS plan_sort_order,
@@ -183,7 +189,7 @@ async function getCommercialPlanCatalog({ readOnly = false } = {}) {
                t.discount_amount,t.discount_percent,t.is_active AS term_active,t.sort_order AS term_sort_order
         FROM dbo.saas_plans p
         LEFT JOIN dbo.saas_plan_terms t ON t.plan_id=p.id AND t.is_active=1
-        WHERE p.is_active=1
+        WHERE p.is_active=1${compatibilityFilter}
         ORDER BY p.sort_order,p.id,t.sort_order,t.id;
     `);
     return planCatalogFromRows(result.recordset || []);

@@ -37,6 +37,7 @@ function createPlatformAdminController({ platformAdminService, saasService, auth
                 search: request.query?.search,
                 status: request.query?.status,
                 plan: request.query?.plan,
+                tenantType: request.query?.tenantType,
                 sort: request.query?.sort,
                 direction: request.query?.direction,
                 page: request.query?.page,
@@ -47,7 +48,10 @@ function createPlatformAdminController({ platformAdminService, saasService, auth
         },
 
         createTenant: async (request, response) => {
-            response.status(201).json(await saasService.createTenantWithOwner(request.body || {}, request.auth?.id, authService));
+            // The type is accepted only on this authenticated PlatformAdmin
+            // control-plane route; provisioning still validates it against
+            // the canonical server-side enum and compatible plan.
+            response.status(201).json(await saasService.createTenantWithOwner(request.body || {}, request.auth?.id, authService, { tenantType: request.body?.tenantType }));
         },
 
         tenant: async (request, response) => {
@@ -112,7 +116,10 @@ function createPlatformAdminController({ platformAdminService, saasService, auth
         },
 
         resetPassword: async (request, response) => {
-            response.json(await platformAdminService.resetTenantUserPassword(request.params.tenantId, request.params.userId, request.body?.newPassword, request.auth?.id, authService, meta(request)));
+            const result = await platformAdminService.resetTenantUserPassword(request.params.tenantId, request.params.userId, request.body?.newPassword, request.auth?.id, authService, meta(request));
+            response.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+            response.set('Pragma', 'no-cache');
+            response.json(result);
         },
 
         owner: async (request, response) => {

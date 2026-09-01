@@ -4,7 +4,7 @@ require('dotenv').config();
 
 const { closePool, getPool, sql } = require('../src/database');
 const { runTenantContext } = require('../src/tenancy/tenant-context');
-const { TENANT_TABLES } = require('../src/services/tenant-service');
+const { getTenantSecuritySnapshot, tenantSecuritySnapshotIsReady } = require('../src/services/tenant-service');
 const { assertSafeDatabaseTarget } = require('./verification-target');
 
 async function verify() {
@@ -17,20 +17,23 @@ async function verify() {
     const result = await runTenantContext({ mode: 'platform', tenantId: 1 }, async () => {
         const pool = await getPool();
         const tenants = await pool.request().query('SELECT id, name, slug, status FROM dbo.gym_tenants ORDER BY id;');
-        const policy = await pool.request().query("SELECT name, is_enabled FROM sys.security_policies WHERE name='gym_tenant_security_policy' AND schema_id=SCHEMA_ID('dbo');");
-        const columns = await pool.request().query(`
-            SELECT t.name
-            FROM sys.tables t
-            INNER JOIN sys.columns c ON c.object_id=t.object_id AND c.name='tenant_id'
-            WHERE t.schema_id=SCHEMA_ID('dbo') AND t.name IN (${TENANT_TABLES.map((name) => `N'${name}'`).join(',')});
-        `);
-        const existingTableNames = new Set(columns.recordset.map((row) => String(row.name)));
-        const tableAudit = await Promise.all(TENANT_TABLES.filter((name) => existingTableNames.has(name)).map(async (name) => {
-            const tableResult = await pool.request().query(`SELECT COUNT_BIG(*) AS total, SUM(CASE WHEN tenant_id IS NULL THEN 1 ELSE 0 END) AS unassigned FROM dbo.[${name}];`);
+        const security = await getTenantSecuritySnapshot(pool);
+        if (!tenantSecuritySnapshotIsReady(security)) {
+            const error = new Error('Tenant data isolation is not ready.');
+            error.code = 'TENANT_ISOLATION_NOT_READY';
+            throw error;
+        }
+        const nullableTenantTables = new Set((security.nullableTenantTables || []).map((table) => String(table).toLowerCase()));
+        const tableAudit = await Promise.all(security.actualTenantTables.map(async (qualifiedName) => {
+            const [schema, ...nameParts] = String(qualifiedName).split('.');
+            const name = nameParts.join('.');
+            const quote = (identifier) => `[${String(identifier).replace(/]/g, ']]')}]`;
+            const tableResult = await pool.request().query(`SELECT COUNT_BIG(*) AS total, SUM(CASE WHEN tenant_id IS NULL THEN 1 ELSE 0 END) AS unassigned FROM ${quote(schema)}.${quote(name)};`);
             return {
-                name,
+                name: qualifiedName,
                 rows: Number(tableResult.recordset[0]?.total || 0),
-                unassigned: Number(tableResult.recordset[0]?.unassigned || 0)
+                unassigned: Number(tableResult.recordset[0]?.unassigned || 0),
+                nullableTenantColumn: nullableTenantTables.has(String(qualifiedName).toLowerCase())
             };
         }));
         const userMappings = await pool.request().query("SELECT COUNT(*) AS total FROM dbo.gym_user_tenants WHERE tenant_id=1 AND status='active';");
@@ -72,10 +75,15 @@ async function verify() {
         });
         return {
             tenants: tenants.recordset.map((tenant) => ({ id: Number(tenant.id), name: tenant.name, slug: tenant.slug, status: tenant.status })),
-            securityPolicy: policy.recordset[0] ? { name: policy.recordset[0].name, enabled: Boolean(policy.recordset[0].is_enabled) } : null,
-            coveredTables: columns.recordset.length,
-            expectedTables: TENANT_TABLES.length,
-            unassignedRows: tableAudit.reduce((sum, table) => sum + table.unassigned, 0),
+            security,
+            coveredTables: security.protected_tables,
+            actualTenantTables: security.actual_tenant_tables,
+            registryTenantTables: security.registry_tenant_tables,
+            unprotectedTenantTables: security.unprotected_tenant_tables,
+            missingRegistryEntries: security.missing_registry_entries,
+            missingRegistryTables: security.missing_registry_tables,
+            unassignedRows: tableAudit.reduce((sum, table) => sum + (table.nullableTenantColumn ? 0 : table.unassigned), 0),
+            tableAudit,
             mappedUsers: Number(userMappings.recordset[0]?.total || 0),
             topGymMemberRows: Number(topGymRows.recordset[0]?.total || 0),
             currentTenantWriteAllowed,

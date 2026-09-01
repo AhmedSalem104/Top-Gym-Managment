@@ -1,0 +1,278 @@
+/* Phase 4 Trainer workspace: operational density with a calm, editorial SaaS rhythm. */
+:root {
+  --trainer-ink: #0c2344;
+  --trainer-muted: #6f829f;
+  --trainer-line: rgba(99, 132, 178, .19);
+  --trainer-blue-soft: rgba(21, 111, 244, .11);
+  --trainer-violet-soft: rgba(113, 85, 222, .11);
+  --trainer-radius: 18px;
+}
+
+.trainer-workspace-page {
+  min-height: 100svh;
+  margin: 0;
+  color: var(--color-text);
+  background:
+    radial-gradient(circle at 5% 0%, rgba(31, 119, 246, .10), transparent 26rem),
+    var(--color-bg);
+}
+
+.trainer-workspace-shell {
+  width: min(1240px, calc(100% - 40px));
+  margin-inline: auto;
+  padding-block: clamp(22px, 4vw, 52px);
+}
+
+.trainer-workspace-header,
+.trainer-workspace-card,
+.trainer-workspace-panel {
+  border: 1px solid var(--trainer-line);
+  background: color-mix(in srgb, var(--color-surface) 96%, var(--color-primary-soft));
+  box-shadow: 0 12px 34px rgba(20, 44, 78, .06);
+}
+
+.trainer-workspace-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 28px;
+  padding: clamp(22px, 4vw, 38px);
+  border-radius: 26px;
+}
+
+.trainer-workspace-intro { max-width: 650px; }
+
+.trainer-workspace-kicker,
+.trainer-panel-kicker,
+.trainer-card-eyebrow {
+  display: block;
+  color: var(--color-primary);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .08em;
+}
+
+.trainer-workspace-kicker { margin-block-end: 9px; text-transform: uppercase; }
+
+.trainer-workspace-header h1 {
+  margin: 0;
+  color: var(--trainer-ink);
+  font-size: clamp(30px, 4vw, 48px);
+  line-height: 1.12;
+}
+
+.trainer-workspace-header p {
+  max-width: 610px;
+  margin: 13px 0 0;
+  color: var(--color-text-soft);
+  line-height: 1.75;
+}
+
+.trainer-workspace-message {
+  min-height: 1.7em;
+  color: var(--color-primary);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.trainer-workspace-header-side { display: flex; min-width: 210px; flex-direction: column; align-items: flex-end; }
+
+.trainer-workspace-brand { display: inline-flex; align-items: center; gap: 10px; color: var(--trainer-ink); font-weight: 850; white-space: nowrap; }
+
+.trainer-workspace-brand-mark {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  border-radius: 13px;
+  color: #fff;
+  background: linear-gradient(135deg, #1678f5, #5964df);
+  box-shadow: 0 8px 20px rgba(22, 120, 245, .20);
+  font-size: 20px;
+}
+
+.trainer-workspace-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 9px; margin-block-start: 18px; }
+
+.trainer-workspace-actions .theme-toggle-button,
+.trainer-workspace-actions .btn { min-height: 40px; }
+
+.trainer-workspace-summary {
+  display: grid;
+  grid-template-columns: 1.2fr repeat(2, 1fr) repeat(5, .82fr);
+  gap: 12px;
+  margin-block-start: 14px;
+}
+
+.trainer-workspace-card {
+  min-width: 0;
+  min-height: 116px;
+  padding: 18px;
+  border-radius: var(--trainer-radius);
+}
+
+.trainer-workspace-card strong { display: block; margin-block-start: 16px; color: var(--trainer-ink); font-size: 20px; line-height: 1.25; }
+.trainer-workspace-card small { display: block; margin-block-start: 6px; color: var(--trainer-muted); font-size: 12px; }
+.trainer-card-eyebrow { color: var(--trainer-muted); letter-spacing: 0; }
+.trainer-card-icon { display: grid; width: 30px; height: 30px; place-items: center; border-radius: 10px; color: var(--color-primary); background: var(--trainer-blue-soft); font-size: 18px; }
+.trainer-card-icon--violet { color: #7357d5; background: var(--trainer-violet-soft); }
+.trainer-card-icon--orange { color: #c26b27; background: rgba(194, 107, 39, .12); }
+.trainer-card-icon--green { color: #168460; background: rgba(28, 163, 119, .11); font-size: 10px; font-weight: 800; }
+.trainer-workspace-card--metric strong { margin-block-start: 10px; font-size: 27px; }
+
+.trainer-workspace-main-grid { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(270px, .75fr); gap: 14px; margin-block-start: 14px; align-items: start; }
+
+.trainer-workspace-panel { min-width: 0; padding: clamp(18px, 2.5vw, 26px); border-radius: 22px; }
+
+.trainer-panel-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; }
+.trainer-panel-header h2 { margin: 7px 0 0; color: var(--trainer-ink); font-size: 25px; line-height: 1.2; }
+.trainer-panel-header p { margin: 7px 0 0; color: var(--trainer-muted); font-size: 13px; line-height: 1.6; }
+.trainer-add-client { flex: 0 0 auto; white-space: nowrap; }
+.trainer-add-client span { margin-inline-end: 5px; font-size: 18px; line-height: 0; }
+
+.trainer-clients-toolbar { display: flex; gap: 9px; margin-block-start: 21px; }
+.trainer-search { display: flex; min-width: 0; flex: 1; align-items: center; gap: 8px; padding-inline: 12px; border: 1px solid var(--trainer-line); border-radius: 12px; color: var(--trainer-muted); background: var(--color-surface-muted); }
+.trainer-search:focus-within { border-color: var(--color-primary); box-shadow: 0 0 0 3px var(--trainer-blue-soft); }
+.trainer-search input { width: 100%; min-width: 0; min-height: 42px; border: 0; outline: 0; color: var(--color-text); background: transparent; }
+.trainer-inline-message { min-height: 22px; margin-block-start: 9px; color: var(--color-primary); font-size: 13px; }
+.trainer-inline-message.is-error, .trainer-form-message.is-error { color: #c33b54; }
+
+.trainer-clients-list { display: grid; gap: 8px; margin-block-start: 4px; }
+.trainer-client-row { display: grid; grid-template-columns: minmax(180px, 1.2fr) minmax(130px, .8fr) repeat(3, minmax(64px, .4fr)) auto; gap: 14px; align-items: center; min-height: 70px; padding: 10px 12px; border: 1px solid transparent; border-bottom-color: var(--trainer-line); transition: background-color 160ms ease, border-color 160ms ease, transform 160ms ease; }
+.trainer-client-row:hover { border-color: var(--trainer-line); border-radius: 13px; background: var(--trainer-blue-soft); transform: translateY(-1px); }
+.trainer-client-name { min-width: 0; }
+.trainer-client-name strong { display: block; overflow: hidden; color: var(--trainer-ink); font-size: 15px; text-overflow: ellipsis; white-space: nowrap; }
+.trainer-client-name span, .trainer-client-stat span { display: block; margin-block-start: 4px; color: var(--trainer-muted); font-size: 12px; }
+.trainer-client-goal { overflow: hidden; color: var(--color-text-soft); font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
+.trainer-client-stat { color: var(--trainer-ink); font-variant-numeric: tabular-nums; text-align: center; }
+.trainer-client-actions { display: flex; gap: 6px; justify-content: flex-end; }
+.trainer-client-actions button { min-height: 36px; padding-inline: 10px; border: 1px solid var(--trainer-line); border-radius: 9px; color: var(--color-primary); background: var(--color-surface); cursor: pointer; font: inherit; font-size: 12px; font-weight: 700; }
+.trainer-client-actions button:hover { border-color: var(--color-primary); background: var(--trainer-blue-soft); }
+.trainer-empty-state { padding: 32px 16px; border: 1px dashed var(--trainer-line); border-radius: 14px; color: var(--trainer-muted); text-align: center; }
+.trainer-empty-state strong { display: block; margin-block-end: 6px; color: var(--trainer-ink); }
+
+.trainer-priority-list { display: grid; gap: 4px; margin-block-start: 20px; }
+.trainer-priority-item { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--trainer-line); }
+.trainer-priority-icon { display: grid; width: 36px; height: 36px; flex: 0 0 auto; place-items: center; border-radius: 11px; font-size: 18px; }
+.trainer-priority-icon--blue { color: #146df0; background: var(--trainer-blue-soft); }
+.trainer-priority-icon--green { color: #168460; background: rgba(28, 163, 119, .11); }
+.trainer-priority-icon--violet { color: #7357d5; background: var(--trainer-violet-soft); }
+.trainer-priority-item strong { display: block; color: var(--trainer-ink); font-size: 21px; font-variant-numeric: tabular-nums; }
+.trainer-priority-item span:not(.trainer-priority-icon) { display: block; margin-block-start: 2px; color: var(--trainer-muted); font-size: 12px; }
+.trainer-availability-note { display: flex; gap: 10px; margin-block-start: 20px; padding: 13px; border-radius: 13px; color: var(--color-primary); background: var(--trainer-blue-soft); }
+.trainer-availability-note p { margin: 0; color: var(--color-text-soft); font-size: 12px; line-height: 1.7; }
+
+.trainer-operations-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-block-start: 14px; }
+.trainer-operations-panel { min-width: 0; }
+.trainer-payments-panel { margin-block-start: 14px; }
+.trainer-reports-panel { margin-block-start: 14px; }
+.trainer-reports-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 9px; margin-block-start: 12px; }
+.trainer-report-stat { min-width: 0; padding: 13px 12px; border: 1px solid var(--trainer-line); border-radius: 13px; background: var(--color-surface-muted); }
+.trainer-report-stat span { display: block; overflow: hidden; color: var(--trainer-muted); font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+.trainer-report-stat strong { display: block; margin-block-start: 8px; overflow: hidden; color: var(--trainer-ink); font-size: 17px; font-variant-numeric: tabular-nums; text-overflow: ellipsis; white-space: nowrap; }
+.trainer-compact-list { display: grid; gap: 0; margin-block-start: 9px; }
+.trainer-compact-row { display: flex; min-width: 0; align-items: center; justify-content: space-between; gap: 12px; padding: 11px 0; border-bottom: 1px solid var(--trainer-line); }
+.trainer-compact-row:last-child { border-bottom: 0; }
+.trainer-compact-row-main { min-width: 0; }
+.trainer-compact-row-main strong { display: block; overflow: hidden; color: var(--trainer-ink); font-size: 14px; text-overflow: ellipsis; white-space: nowrap; }
+.trainer-compact-row-main span { display: block; margin-block-start: 4px; overflow: hidden; color: var(--trainer-muted); font-size: 12px; line-height: 1.5; text-overflow: ellipsis; white-space: nowrap; }
+.trainer-compact-row-actions { display: flex; flex: 0 0 auto; align-items: center; gap: 7px; }
+.trainer-status-pill { display: inline-flex; min-height: 26px; align-items: center; padding-inline: 9px; border: 1px solid var(--trainer-line); border-radius: 999px; color: var(--trainer-muted); background: var(--color-surface-muted); font-size: 11px; font-weight: 800; white-space: nowrap; }
+.trainer-status-pill--active, .trainer-status-pill--scheduled { border-color: rgba(24, 146, 103, .24); color: #137b5b; background: rgba(24, 146, 103, .09); }
+.trainer-status-pill--completed { border-color: rgba(21, 111, 244, .22); color: var(--color-primary); background: var(--trainer-blue-soft); }
+.trainer-status-pill--cancelled, .trainer-status-pill--archived { color: var(--trainer-muted); }
+.trainer-status-pill--no_show { border-color: rgba(194, 107, 39, .24); color: #a65c22; background: rgba(194, 107, 39, .09); }
+.trainer-inline-action { min-height: 32px; padding-inline: 9px; border: 1px solid var(--trainer-line); border-radius: 8px; color: var(--color-primary); background: var(--color-surface); cursor: pointer; font: inherit; font-size: 11px; font-weight: 800; }
+.trainer-inline-action:hover { border-color: var(--color-primary); background: var(--trainer-blue-soft); }
+
+.trainer-pagination { display: flex; justify-content: center; gap: 8px; margin-block-start: 16px; }
+.trainer-pagination button { min-width: 36px; min-height: 34px; border: 1px solid var(--trainer-line); border-radius: 9px; color: var(--color-primary); background: var(--color-surface); cursor: pointer; font: inherit; }
+
+.trainer-client-dialog { width: min(620px, calc(100% - 28px)); padding: 0; border: 1px solid var(--trainer-line); border-radius: 22px; color: var(--color-text); background: var(--color-surface); box-shadow: 0 28px 90px rgba(7, 28, 57, .28); }
+.trainer-client-dialog::backdrop { background: rgba(7, 25, 50, .52); backdrop-filter: blur(3px); }
+.trainer-client-dialog form, .trainer-client-details { padding: 23px; }
+.trainer-dialog-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding-block-end: 17px; border-bottom: 1px solid var(--trainer-line); }
+.trainer-dialog-header h2 { margin: 6px 0 0; color: var(--trainer-ink); font-size: 23px; }
+.trainer-dialog-close { width: 38px; height: 38px; border: 1px solid var(--trainer-line); border-radius: 10px; color: var(--trainer-muted); background: transparent; cursor: pointer; font-size: 24px; line-height: 1; }
+.trainer-dialog-close:hover { color: var(--color-primary); background: var(--trainer-blue-soft); }
+.trainer-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 13px; margin-block-start: 19px; }
+.trainer-form-grid label { display: grid; gap: 7px; color: var(--trainer-ink); font-size: 13px; font-weight: 700; }
+.trainer-form-grid input, .trainer-form-grid select, .trainer-form-grid textarea { width: 100%; box-sizing: border-box; min-height: 42px; padding: 9px 11px; border: 1px solid var(--trainer-line); border-radius: 10px; color: var(--color-text); background: var(--color-surface-muted); font: inherit; font-size: 14px; resize: vertical; }
+.trainer-form-grid input:focus, .trainer-form-grid select:focus, .trainer-form-grid textarea:focus { border-color: var(--color-primary); outline: 0; box-shadow: 0 0 0 3px var(--trainer-blue-soft); }
+.trainer-form-field--wide { grid-column: 1 / -1; }
+.trainer-form-message { min-height: 22px; margin: 12px 0 0; font-size: 13px; }
+.trainer-dialog-actions { display: flex; justify-content: flex-start; gap: 9px; margin-block-start: 12px; }
+.trainer-client-details-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-block-start: 19px; }
+.trainer-detail-stat { padding: 13px; border-radius: 12px; background: var(--color-surface-muted); }
+.trainer-detail-stat span { display: block; color: var(--trainer-muted); font-size: 12px; }
+.trainer-detail-stat strong { display: block; margin-block-start: 5px; color: var(--trainer-ink); font-size: 18px; }
+.trainer-detail-note { margin-block-start: 14px; color: var(--color-text-soft); line-height: 1.8; }
+.trainer-detail-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-block-start: 16px; padding-block-start: 14px; border-top: 1px solid var(--trainer-line); }
+.trainer-timeline-list { max-height: min(62vh, 560px); overflow: auto; }
+.trainer-timeline-item { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px; padding: 11px 0; border-bottom: 1px solid var(--trainer-line); }
+.trainer-timeline-item:last-child { border-bottom: 0; }
+.trainer-timeline-dot { width: 9px; height: 9px; margin-block-start: 6px; border: 2px solid var(--color-primary); border-radius: 50%; background: var(--color-surface); }
+.trainer-timeline-item strong { display: block; color: var(--trainer-ink); font-size: 13px; }
+.trainer-timeline-item span { display: block; margin-block-start: 3px; color: var(--trainer-muted); font-size: 11px; }
+.trainer-timeline-item p { margin: 5px 0 0; color: var(--color-text-soft); font-size: 12px; line-height: 1.6; }
+
+html[data-theme="dark"] .trainer-workspace-header h1,
+html[data-theme="dark"] .trainer-workspace-card strong,
+html[data-theme="dark"] .trainer-panel-header h2,
+html[data-theme="dark"] .trainer-client-name strong,
+html[data-theme="dark"] .trainer-priority-item strong,
+html[data-theme="dark"] .trainer-dialog-header h2,
+html[data-theme="dark"] .trainer-detail-stat strong,
+html[data-theme="dark"] .trainer-workspace-brand,
+html[data-theme="dark"] .trainer-form-grid label,
+html[data-theme="dark"] .trainer-report-stat strong { color: #eaf2ff; }
+
+html[data-theme="dark"] .trainer-workspace-page { background: radial-gradient(circle at 5% 0%, rgba(41, 127, 248, .14), transparent 26rem), var(--color-bg); }
+html[data-theme="dark"] .trainer-workspace-header,
+html[data-theme="dark"] .trainer-workspace-card,
+html[data-theme="dark"] .trainer-workspace-panel { box-shadow: 0 16px 40px rgba(0, 0, 0, .16); }
+
+@media (max-width: 980px) {
+  .trainer-workspace-summary { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .trainer-workspace-main-grid { grid-template-columns: 1fr; }
+  .trainer-operations-grid { grid-template-columns: 1fr; }
+  .trainer-reports-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+@media (max-width: 720px) {
+  .trainer-workspace-shell { width: min(100% - 24px, 600px); }
+  .trainer-workspace-header { flex-direction: column; }
+  .trainer-workspace-header-side { width: 100%; flex-direction: row; align-items: center; justify-content: space-between; }
+  .trainer-workspace-actions { margin-block-start: 0; }
+  .trainer-workspace-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .trainer-compact-row { align-items: flex-start; }
+  .trainer-compact-row-actions { flex-wrap: wrap; justify-content: flex-end; }
+  .trainer-client-row { grid-template-columns: minmax(0, 1fr) auto; gap: 8px 12px; }
+  .trainer-client-goal { grid-column: 1 / -1; }
+  .trainer-client-stat { display: none; }
+  .trainer-client-actions { grid-column: 2; grid-row: 1; }
+}
+
+@media (max-width: 480px) {
+  .trainer-workspace-shell { width: min(100% - 20px, 420px); padding-block: 14px 28px; }
+  .trainer-workspace-header { padding: 18px; border-radius: 20px; }
+  .trainer-workspace-header-side { align-items: flex-start; flex-direction: column; gap: 12px; }
+  .trainer-workspace-actions { justify-content: flex-start; }
+  .trainer-workspace-summary { gap: 8px; }
+  .trainer-workspace-card { min-height: 104px; padding: 14px; }
+  .trainer-workspace-card strong { margin-block-start: 12px; font-size: 17px; }
+  .trainer-workspace-card--metric strong { font-size: 23px; }
+  .trainer-workspace-panel { padding: 16px; border-radius: 18px; }
+  .trainer-reports-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .trainer-panel-header { flex-direction: column; gap: 14px; }
+  .trainer-add-client { width: 100%; }
+  .trainer-clients-toolbar { align-items: stretch; }
+  .trainer-clients-toolbar .btn { flex: 0 0 auto; }
+  .trainer-form-grid { grid-template-columns: 1fr; }
+  .trainer-form-field--wide { grid-column: auto; }
+  .trainer-detail-actions .btn { flex: 1 1 calc(50% - 8px); }
+  .trainer-client-dialog form, .trainer-client-details { padding: 18px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .trainer-workspace-page *, .trainer-workspace-page *::before, .trainer-workspace-page *::after { transition: none; animation: none; }
+}

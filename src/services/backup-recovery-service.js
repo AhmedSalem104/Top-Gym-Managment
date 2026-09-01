@@ -5,6 +5,7 @@ const { promisify } = require('node:util');
 const { gzip, gunzip } = require('node:zlib');
 const { getPool, sql } = require('../database');
 const { currentTenantId, getTenantContext, runTenantContext } = require('../tenancy/tenant-context');
+const { resolveTenantType } = require('../tenancy/tenant-types');
 const { config } = require('../config/env');
 const { createObjectStorageService } = require('./object-storage-service');
 const { TENANT_TABLES } = require('./tenant-service');
@@ -370,7 +371,8 @@ function buildTenantBackupPayload({ tenant, tables, generatedAt = new Date() } =
         tenant: {
             id: normalizedTenantId,
             slug: String(tenant.slug || '').slice(0, 80),
-            name: String(tenant.name || '').slice(0, 160)
+            name: String(tenant.name || '').slice(0, 160),
+            tenantType: resolveTenantType(tenant.tenantType)
         },
         manifest: {
             registryVersion: TENANT_BACKUP_REGISTRY_VERSION,
@@ -659,13 +661,13 @@ function backupFileName(scope, id, format, now) {
 
 async function loadTenantReference(pool, tenantId) {
     const result = await pool.request().input('tenantId', sql.Int, tenantId).query(`
-        SELECT TOP (1) id, name, slug, status
+        SELECT TOP (1) id, name, slug, tenant_type, status
         FROM dbo.gym_tenants
         WHERE id=@tenantId;
     `);
     const tenant = result.recordset[0];
     if (!tenant) throw backupError('The requested gym does not exist.', 404, 'TENANT_NOT_FOUND');
-    return { id: Number(tenant.id), name: tenant.name, slug: tenant.slug, status: tenant.status };
+    return { id: Number(tenant.id), name: tenant.name, slug: tenant.slug, tenantType: resolveTenantType(tenant.tenant_type), status: tenant.status };
 }
 
 async function buildTenantBackupArtifact({ tenantId = null, format = 'json.gz', now = new Date(), concurrency = 2, transaction = null } = {}) {

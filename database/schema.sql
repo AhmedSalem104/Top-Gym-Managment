@@ -8,13 +8,16 @@ BEGIN
         email NVARCHAR(254) NULL,
         registration_date DATE NOT NULL,
         notes NVARCHAR(1000) NULL,
+        primary_goal NVARCHAR(200) NULL,
+        profile_status VARCHAR(20) NULL,
         membership_code_hash CHAR(64) NULL,
         membership_code_ciphertext NVARCHAR(512) NULL,
         membership_code_version INT NOT NULL CONSTRAINT DF_members_membership_code_version DEFAULT (1),
         membership_code_issued_at DATETIME2(0) NULL,
         membership_code_revoked_at DATETIME2(0) NULL,
         created_at DATETIME2(0) NOT NULL CONSTRAINT DF_members_created_at DEFAULT (SYSUTCDATETIME()),
-        updated_at DATETIME2(0) NOT NULL CONSTRAINT DF_members_updated_at DEFAULT (SYSUTCDATETIME())
+        updated_at DATETIME2(0) NOT NULL CONSTRAINT DF_members_updated_at DEFAULT (SYSUTCDATETIME()),
+        CONSTRAINT CK_members_profile_status CHECK (profile_status IS NULL OR profile_status IN ('active','paused','archived'))
     );
 END;
 
@@ -112,6 +115,8 @@ BEGIN
         password_hash NVARCHAR(512) NOT NULL,
         role VARCHAR(20) NOT NULL CONSTRAINT DF_gym_users_role DEFAULT ('Assistant'),
         status VARCHAR(20) NOT NULL CONSTRAINT DF_gym_users_status DEFAULT ('Active'),
+        must_change_password BIT NOT NULL CONSTRAINT DF_gym_users_must_change_password DEFAULT (0),
+        password_changed_at DATETIME2(0) NULL,
         last_login_at DATETIME2(0) NULL,
         created_at DATETIME2(0) NOT NULL CONSTRAINT DF_gym_users_created_at DEFAULT (SYSUTCDATETIME()),
         updated_at DATETIME2(0) NOT NULL CONSTRAINT DF_gym_users_updated_at DEFAULT (SYSUTCDATETIME()),

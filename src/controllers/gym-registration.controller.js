@@ -6,15 +6,15 @@ function decodeHeaderFilename(value) {
     try { return decodeURIComponent(encoded); } catch (_) { return encoded; }
 }
 
-function createGymRegistrationController({ service }) {
+function createGymRegistrationController({ service, tenantType = 'gym' }) {
     return {
         catalog: async (_request, response) => {
             response.set('Cache-Control', 'no-store, private');
-            response.json(await service.catalog());
+            response.json(await service.catalog(tenantType));
         },
 
         createRequest: async (request, response) => {
-            response.status(201).json(await service.createRequest(request.body || {}, request.get('idempotency-key')));
+            response.status(201).json(await service.createRequest(request.body || {}, request.get('idempotency-key'), tenantType));
         },
 
         uploadProof: async (request, response) => {

@@ -38,6 +38,7 @@ function createAuthApiMiddleware({ authService, isAuthorizedCronRequest, tenantS
         : async () => {};
     return (request, response, next) => {
         const authPublicPath = ['/auth/login', '/auth/session', '/auth/logout'].includes(request.path);
+        const passwordChangePath = request.method === 'POST' && request.path === '/auth/change-password';
         const tenantBrandingPath = request.method === 'GET'
             && (request.path === '/branding' || request.path.startsWith('/branding/assets/'));
         const platformBrandingRequest = tenantBrandingPath
@@ -53,6 +54,9 @@ function createAuthApiMiddleware({ authService, isAuthorizedCronRequest, tenantS
         const publicGymRegistrationPath = request.path === '/public/gym-registration/catalog'
             || request.path === '/public/gym-registration/requests'
             || request.path.startsWith('/public/gym-registration/requests/');
+        const publicTrainerRegistrationPath = request.path === '/public/trainer-registration/catalog'
+            || request.path === '/public/trainer-registration/requests'
+            || request.path.startsWith('/public/trainer-registration/requests/');
         const publicPath = ['/health', '/health/live', '/member-portal/lookup', '/member-portal/occupancy', '/member-portal/feedback', '/branding'].includes(request.path)
             || request.path === '/member-portal/library/options'
             || request.path.startsWith('/member-portal/library/')
@@ -103,6 +107,9 @@ function createAuthApiMiddleware({ authService, isAuthorizedCronRequest, tenantS
         // must never resolve the default/Top Gym tenant from a query string or
         // an old authenticated cookie.
         if (publicGymRegistrationPath) {
+            return runTenantContext({ tenantId: null, mode: 'public', readOnlyBaseline: Boolean(request.readOnlyBaseline) }, next);
+        }
+        if (publicTrainerRegistrationPath) {
             return runTenantContext({ tenantId: null, mode: 'public', readOnlyBaseline: Boolean(request.readOnlyBaseline) }, next);
         }
 
@@ -162,6 +169,30 @@ function createAuthApiMiddleware({ authService, isAuthorizedCronRequest, tenantS
             .then(() => getSessionUser(readSessionCookie(request), { ...readOnlyOptions, readOnly: readOnlyRequest }))
             .then((user) => {
                 if (!user) return response.status(401).json({ error: 'انتهت جلسة الدخول. سجّل الدخول مرة أخرى.', code: 'AUTH_REQUIRED' });
+                // A forced-password session may only inspect its session,
+                // logout, or complete this endpoint. Enforce this before
+                // route permissions/SaaS checks so another API cannot bypass
+                // the first-login restriction.
+                if (passwordChangePath) {
+                    if (user.role === ROLES.PLATFORM_ADMIN) {
+                        return runTenantContext({ tenantId: null, userId: user.id, mode: 'platform', readOnlyBaseline: Boolean(request.readOnlyBaseline) }, async () => {
+                            request.auth = await authService.withPermissions(user, { readOnly: readOnlyRequest });
+                            return next();
+                        });
+                    }
+                    return tenantService.resolveTenantForUser(user.id, requestedTenantSlug(request), { readOnly: readOnlyRequest }).then((tenant) => {
+                        if (!tenant) return response.status(403).json({ error: 'Tenant access is required to change this password.', code: 'TENANT_ACCESS_REQUIRED' });
+                        request.tenant = tenant;
+                        return runTenantContext({ tenantId: tenant.id, userId: user.id, mode: 'tenant', readOnlyBaseline: Boolean(request.readOnlyBaseline) }, async () => {
+                            await assertTenantIsolationReady();
+                            request.auth = await authService.withPermissions(user, { readOnly: readOnlyRequest });
+                            return next();
+                        });
+                    });
+                }
+                if (user.mustChangePassword) {
+                    return response.status(403).json({ error: 'يجب تغيير كلمة المرور المؤقتة قبل استخدام النظام.', code: 'PASSWORD_CHANGE_REQUIRED' });
+                }
                 if (platformPath) {
                     if (user.role !== ROLES.PLATFORM_ADMIN) {
                         return response.status(403).json({ error: 'هذه المساحة مخصصة لمدير المنصة فقط.', code: 'PLATFORM_ADMIN_REQUIRED' });

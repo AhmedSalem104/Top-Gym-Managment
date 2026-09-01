@@ -22,7 +22,7 @@ test('public registration uses server-side catalog values and a capability token
     const source = read('src/services/gym-registration-service.js');
     const routes = read('src/routes/gym-registration.routes.js');
     const middleware = read('src/middleware/auth.middleware.js');
-    assert.match(source, /getCommercialPlanCatalog\(\{ readOnly: true \}\)/);
+    assert.match(source, /getCommercialPlanCatalog\(\{ readOnly: true(?:, tenantType: normalizedTenantType)? \}\)/);
     assert.match(source, /listPlatformPaymentMethods\(\{ activeOnly: true, readOnly: true \}\)/);
     assert.match(source, /hashCapability\(key, 'registration-idempotency'\)/);
     assert.match(source, /accessTokenForIdempotency\(key\)/);

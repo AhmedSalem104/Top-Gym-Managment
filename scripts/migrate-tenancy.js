@@ -2,7 +2,9 @@
 
 require('dotenv').config();
 
-const { closePool, initDatabase } = require('../src/database');
+const fs = require('node:fs');
+const path = require('node:path');
+const { closePool, getPool, initDatabase } = require('../src/database');
 const { parseConnectionString } = require('../src/database/pool');
 const { runTenantContext } = require('../src/tenancy/tenant-context');
 const tenantService = require('../src/services/tenant-service');
@@ -24,6 +26,13 @@ const { safeErrorCode } = require('../src/utils/error-response');
 const ALLOWED_MIGRATION_ENVIRONMENTS = new Set(['local', 'development', 'test', 'staging']);
 const PRODUCTION_CONFIRMATION = 'I_UNDERSTAND_PRODUCTION_MIGRATION';
 const NON_PRODUCTION_EXTERNAL_CONFIRMATION = 'I_UNDERSTAND_NON_PRODUCTION_TARGET';
+const PHASE1_TENANT_TYPE_MIGRATION_PATH = path.join(__dirname, '..', 'database', 'migrations', '014-tenant-type-foundation.sql');
+const PHASE2_PLAN_COMPATIBILITY_MIGRATION_PATH = path.join(__dirname, '..', 'database', 'migrations', '015-plan-tenant-type-compatibility.sql');
+const PHASE3_TRAINER_REGISTRATION_MIGRATION_PATH = path.join(__dirname, '..', 'database', 'migrations', '016-independent-trainer-registration.sql');
+const PHASE4_TRAINER_CLIENT_PROFILE_MIGRATION_PATH = path.join(__dirname, '..', 'database', 'migrations', '017-trainer-client-profile.sql');
+const PHASE5_TRAINER_COMMERCIAL_OPERATIONS_MIGRATION_PATH = path.join(__dirname, '..', 'database', 'migrations', '018-trainer-commercial-operations.sql');
+const PHASE6_TRAINER_PORTAL_FOUNDATION_MIGRATION_PATH = path.join(__dirname, '..', 'database', 'migrations', '019-trainer-portal-foundation.sql');
+const PHASE0_SECURITY_MIGRATION_PATH = path.join(__dirname, '..', 'database', 'migrations', '013-phase0-security-preconditions.sql');
 
 function isLocalDatabaseServer(server) {
     const value = String(server || '').trim().toLowerCase();
@@ -57,10 +66,40 @@ async function migrate() {
     assertMigrationTarget();
     await runTenantContext({ mode: 'platform', tenantId: 1 }, () => initDatabase());
     await runTenantContext({ mode: 'platform', tenantId: 1 }, () => tenantService.ensureTenantTables());
+    const phase1TenantTypeMigration = fs.readFileSync(PHASE1_TENANT_TYPE_MIGRATION_PATH, 'utf8');
+    await runTenantContext({ mode: 'platform', tenantId: 1 }, async () => {
+        const pool = await getPool();
+        await pool.request().batch(phase1TenantTypeMigration);
+    });
     const bootstrapTenant = await runTenantContext({ mode: 'platform', tenantId: 1 }, () => tenantService.ensureBootstrapTenant());
     const backupRecoveryService = createBackupRecoveryService();
     await runTenantContext({ mode: 'platform', tenantId: bootstrapTenant.id }, () => backupRecoveryService.ensureRecoveryTables());
     await runTenantContext({ mode: 'platform', tenantId: bootstrapTenant.id }, () => saasService.ensureSaasTables());
+    const phase2PlanCompatibilityMigration = fs.readFileSync(PHASE2_PLAN_COMPATIBILITY_MIGRATION_PATH, 'utf8');
+    await runTenantContext({ mode: 'platform', tenantId: bootstrapTenant.id }, async () => {
+        const pool = await getPool();
+        await pool.request().batch(phase2PlanCompatibilityMigration);
+    });
+    const phase3TrainerRegistrationMigration = fs.readFileSync(PHASE3_TRAINER_REGISTRATION_MIGRATION_PATH, 'utf8');
+    await runTenantContext({ mode: 'platform', tenantId: bootstrapTenant.id }, async () => {
+        const pool = await getPool();
+        await pool.request().batch(phase3TrainerRegistrationMigration);
+    });
+    const phase4TrainerClientProfileMigration = fs.readFileSync(PHASE4_TRAINER_CLIENT_PROFILE_MIGRATION_PATH, 'utf8');
+    await runTenantContext({ mode: 'platform', tenantId: bootstrapTenant.id }, async () => {
+        const pool = await getPool();
+        await pool.request().batch(phase4TrainerClientProfileMigration);
+    });
+    const phase5TrainerCommercialOperationsMigration = fs.readFileSync(PHASE5_TRAINER_COMMERCIAL_OPERATIONS_MIGRATION_PATH, 'utf8');
+    await runTenantContext({ mode: 'platform', tenantId: bootstrapTenant.id }, async () => {
+        const pool = await getPool();
+        await pool.request().batch(phase5TrainerCommercialOperationsMigration);
+    });
+    const phase6TrainerPortalFoundationMigration = fs.readFileSync(PHASE6_TRAINER_PORTAL_FOUNDATION_MIGRATION_PATH, 'utf8');
+    await runTenantContext({ mode: 'platform', tenantId: bootstrapTenant.id }, async () => {
+        const pool = await getPool();
+        await pool.request().batch(phase6TrainerPortalFoundationMigration);
+    });
     await runTenantContext({ mode: 'platform', tenantId: bootstrapTenant.id }, () => commercialSchema.ensureCommercialTables());
     await runTenantContext({ mode: 'platform', tenantId: bootstrapTenant.id }, () => paymentLedgerSchema.ensurePaymentLedgerIntegrity());
     await runTenantContext({ mode: 'tenant', tenantId: bootstrapTenant.id }, async () => {
@@ -73,6 +112,11 @@ async function migrate() {
         await storeService.ensureStoreTables();
         await intelligenceService.ensureIntelligenceTables();
         await brandingService.ensureBrandingTables();
+    });
+    const phase0SecurityMigration = fs.readFileSync(PHASE0_SECURITY_MIGRATION_PATH, 'utf8');
+    await runTenantContext({ mode: 'platform', tenantId: bootstrapTenant.id }, async () => {
+        const pool = await getPool();
+        await pool.request().batch(phase0SecurityMigration);
     });
     const result = await runTenantContext({ mode: 'platform', tenantId: bootstrapTenant.id }, () => tenantService.ensureTenantColumnsAndRls(bootstrapTenant.id));
     await runTenantContext({ mode: 'tenant', tenantId: bootstrapTenant.id }, () => libraryService.ensureLibraryData());

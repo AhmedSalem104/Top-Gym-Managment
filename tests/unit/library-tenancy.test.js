@@ -57,7 +57,7 @@ test('tenant onboarding provisions the catalog before its transaction commits', 
     assert.match(saas, /async function provisionTenantWithOwner\(\{/);
     assert.match(saas, /await runTenantContext\(\{ mode: 'tenant', tenantId \}, \(\) => libraryService\.ensureLibraryData\(\{ transaction: activeTransaction \}\)\)/);
     assert.match(saas, /if \(transaction\) await work\(transaction\);\s*else await withTransaction\(work\);/);
-    assert.match(onboarding, /const result = await provisionTenantWithOwner\(\{ body, actorUserId, authService \}\);/);
+    assert.match(onboarding, /provisionTenantWithOwner\(\{ body, actorUserId, authService/);
     const server = read('server.js');
     assert.match(server, /ensureCoachingTables\(\{ seedLibrary: false \}\)/);
     assert.match(server, /ensureTenantColumnsAndRls\(bootstrapTenant\.id\)[\s\S]*ensureLibraryData\(\)/);

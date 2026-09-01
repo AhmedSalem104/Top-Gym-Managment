@@ -20,7 +20,7 @@
         profileTab: 'overview',
         profilePaymentsPage: 1,
         tenantPage: 1,
-        tenantFilters: { search: '', status: '', plan: '', expiringDays: '0' },
+        tenantFilters: { search: '', status: '', plan: '', tenantType: '', expiringDays: '0' },
         backupHealth: null,
         backups: [],
         backupAudit: []
@@ -65,6 +65,10 @@
 
     function statusLabel(value) {
         return ({ active: 'نشط', trial: 'تجريبي', suspended: 'موقوف', expired: 'منتهي', archived: 'مؤرشف', cancelled: 'ملغي', pending: 'قيد المراجعة', approved: 'مقبول', rejected: 'مرفوض' })[String(value || '').toLowerCase()] || value || '—';
+    }
+
+    function tenantTypeLabel(value) {
+        return ({ gym: 'جيم', independent_trainer: 'مدرب مستقل' })[String(value || '').toLowerCase()] || 'نوع غير معروف';
     }
 
     function statusPill(value) {
@@ -261,7 +265,7 @@
         const statusItems = [['active', gyms.active], ['trial', gyms.trial], ['suspended', gyms.suspended], ['expired', gyms.expired], ['archived', gyms.archived]];
         $('#platformStatusGrid').innerHTML = statusItems.map(([status, count]) => `<div class="status-tile ${status}"><strong>${Number(count || 0)}</strong><span>${escapeHtml(statusLabel(status))}</span></div>`).join('');
         const recent = data.recentGyms || [];
-        $('#recentTenants').innerHTML = recent.length ? recent.map((tenant) => `<button class="mini-tenant" type="button" data-open-tenant="${tenant.id}"><span class="mini-tenant-main"><strong>${escapeHtml(tenant.name)}</strong><small>${escapeHtml(tenant.slug)} · ${escapeHtml(tenant.owner?.name || 'بدون مالك')}</small></span>${statusPill(tenant.status)}</button>`).join('') : '<div class="empty-inline">لا توجد جيمات مضافة بعد.</div>';
+        $('#recentTenants').innerHTML = recent.length ? recent.map((tenant) => `<button class="mini-tenant" type="button" data-open-tenant="${tenant.id}"><span class="mini-tenant-main"><strong>${escapeHtml(tenant.name)}</strong><small>${escapeHtml(tenantTypeLabel(tenant.tenantType))} · ${escapeHtml(tenant.slug)} · ${escapeHtml(tenant.owner?.name || 'بدون مالك')}</small></span>${statusPill(tenant.status)}</button>`).join('') : '<div class="empty-inline">لا توجد جيمات مضافة بعد.</div>';
         const activity = data.recentActivity || [];
         $('#recentActivity').innerHTML = activity.length ? activity.map((item) => `<div class="mini-activity"><span class="mini-activity-main"><strong>${escapeHtml(item.action || 'عملية')}</strong><small>${escapeHtml(item.actorName || 'النظام')} · ${escapeHtml(item.details || '')}</small></span><small>${escapeHtml(formatDateTime(item.createdAt))}</small></div>`).join('') : '<div class="empty-inline">لا توجد عمليات مسجلة.</div>';
     }
@@ -279,11 +283,11 @@
     function renderTenants(data) {
         state.tenants = data;
         const rows = data.tenants || [];
-        $('#tenantsTableBody').innerHTML = rows.length ? rows.map((tenant) => `<tr><td><span class="tenant-cell"><strong>${escapeHtml(tenant.name)}</strong><small>${escapeHtml(tenant.slug)} · #${tenant.id}</small></span></td><td><span class="owner-cell"><strong>${escapeHtml(tenant.owner?.name || '—')}</strong><small>${escapeHtml(tenant.owner?.email || '—')}</small></span></td><td>${escapeHtml(tenant.subscription?.plan?.name || '—')}</td><td>${statusPill(tenant.status)}</td><td><span>${escapeHtml(statusLabel(tenant.subscription?.status))}</span><small class="table-secondary">${escapeHtml(tenant.subscription?.expiresAt ? `${tenant.subscription.daysRemaining ?? 0} يوم` : 'بدون انتهاء')}</small></td><td>${tenantUsageCell(tenant)}</td><td>${escapeHtml(formatDateTime(tenant.lastActivityAt))}</td><td><button class="table-action" type="button" data-open-tenant="${tenant.id}">فتح الملف</button></td></tr>`).join('') : '<tr><td colspan="8"><div class="empty-inline">لا توجد نتائج مطابقة.</div></td></tr>';
+        $('#tenantsTableBody').innerHTML = rows.length ? rows.map((tenant) => `<tr><td><span class="tenant-cell"><strong>${escapeHtml(tenant.name)}</strong><small>${escapeHtml(tenant.slug)} · #${tenant.id}</small></span></td><td><span class="tenant-type-pill ${escapeHtml(tenant.tenantType || '')}">${escapeHtml(tenantTypeLabel(tenant.tenantType))}</span></td><td><span class="owner-cell"><strong>${escapeHtml(tenant.owner?.name || '—')}</strong><small>${escapeHtml(tenant.owner?.email || '—')}</small></span></td><td>${escapeHtml(tenant.subscription?.plan?.name || '—')}</td><td>${statusPill(tenant.status)}</td><td><span>${escapeHtml(statusLabel(tenant.subscription?.status))}</span><small class="table-secondary">${escapeHtml(tenant.subscription?.expiresAt ? `${tenant.subscription.daysRemaining ?? 0} يوم` : 'بدون انتهاء')}</small></td><td>${tenantUsageCell(tenant)}</td><td>${escapeHtml(formatDateTime(tenant.lastActivityAt))}</td><td><button class="table-action" type="button" data-open-tenant="${tenant.id}">فتح الملف</button></td></tr>`).join('') : '<tr><td colspan="9"><div class="empty-inline">لا توجد نتائج مطابقة.</div></td></tr>';
         const total = Number(data.pagination?.total || 0);
         const page = Number(data.pagination?.page || 1);
         const pages = Number(data.pagination?.pages || 1);
-        $('#tenantResultsSummary').textContent = total ? `عرض ${rows.length} من ${total} جيم` : 'لا توجد نتائج';
+        $('#tenantResultsSummary').textContent = total ? `عرض ${rows.length} من ${total} عميل منصة` : 'لا توجد نتائج';
         $('#tenantPagination').innerHTML = pages > 1 ? Array.from({ length: pages }, (_, index) => index + 1).map((number) => `<button type="button" class="${number === page ? 'active' : ''}" data-tenant-page="${number}">${number}</button>`).join('') : '';
     }
 
@@ -312,7 +316,7 @@
         const health = profile.health || {};
         const plan = subscription?.plan;
         const actions = tenant.status === 'suspended' ? profileActionButton('إعادة التفعيل', 'activate', 'primary') : tenant.status === 'archived' ? profileActionButton('استعادة الجيم', 'restore', 'primary') : profileActionButton('إيقاف الجيم', 'suspend', 'danger');
-        $('#tenantProfile').innerHTML = `<div class="profile-head"><div class="profile-heading"><span class="profile-logo">ج</span><div><h2>${escapeHtml(tenant.name)}</h2><p>${escapeHtml(tenant.slug)} · معرف الجيم #${tenant.id}</p><div class="profile-status-line">${statusPill(tenant.status)}<span class="table-secondary">${escapeHtml(tenant.contactEmail || 'لا يوجد بريد اتصال')}</span></div></div></div><div class="profile-actions"><button class="platform-btn ghost" type="button" data-profile-action="back">← كل الجيمات</button>${actions}${profileActionButton('الاشتراك', 'subscription')}${profileActionButton('تغيير الباقة', 'plan')}${profileActionButton('تمديد', 'extend', 'primary')}<button class="platform-btn ghost" type="button" data-profile-action="more">المزيد</button></div></div><div class="profile-tabs" role="tablist">${[['overview','نظرة عامة'],['subscription','الاشتراك'],['usage','الاستخدام والحدود'],['users','المالك والمستخدمون'],['data','بيانات الجيم'],['payments','المدفوعات'],['health','الحالة الفنية'],['backups','النسخ الاحتياطي'],['audit','سجل العمليات'],['notes','ملاحظات داخلية']].map(([id,label]) => `<button class="profile-tab ${state.profileTab === id ? 'active' : ''}" type="button" data-profile-tab="${id}">${label}</button>`).join('')}</div><div class="profile-panel-wrap">${profileOverviewPanel(profile)}${profileSubscriptionPanel(profile)}${profileUsagePanel(profile)}${profileUsersPanel(profile)}${profileDataPanel(profile)}${profilePaymentsPanel(profile)}${profileHealthPanel(profile)}${profileBackupsPanel(profile)}${profileAuditPanel(profile)}${profileNotesPanel(profile)}</div>`;
+        $('#tenantProfile').innerHTML = `<div class="profile-head"><div class="profile-heading"><span class="profile-logo">ج</span><div><h2>${escapeHtml(tenant.name)}</h2><p>${escapeHtml(tenantTypeLabel(tenant.tenantType))} · ${escapeHtml(tenant.slug)} · معرف الجيم #${tenant.id}</p><div class="profile-status-line">${statusPill(tenant.status)}<span class="table-secondary">${escapeHtml(tenant.contactEmail || 'لا يوجد بريد اتصال')}</span></div></div></div><div class="profile-actions"><button class="platform-btn ghost" type="button" data-profile-action="back">← كل الجيمات</button>${actions}${profileActionButton('الاشتراك', 'subscription')}${profileActionButton('تغيير الباقة', 'plan')}${profileActionButton('تمديد', 'extend', 'primary')}<button class="platform-btn ghost" type="button" data-profile-action="more">المزيد</button></div></div><div class="profile-tabs" role="tablist">${[['overview','نظرة عامة'],['subscription','الاشتراك'],['usage','الاستخدام والحدود'],['users','المالك والمستخدمون'],['data','بيانات الجيم'],['payments','المدفوعات'],['health','الحالة الفنية'],['backups','النسخ الاحتياطي'],['audit','سجل العمليات'],['notes','ملاحظات داخلية']].map(([id,label]) => `<button class="profile-tab ${state.profileTab === id ? 'active' : ''}" type="button" data-profile-tab="${id}">${label}</button>`).join('')}</div><div class="profile-panel-wrap">${profileOverviewPanel(profile)}${profileSubscriptionPanel(profile)}${profileUsagePanel(profile)}${profileUsersPanel(profile)}${profileDataPanel(profile)}${profilePaymentsPanel(profile)}${profileHealthPanel(profile)}${profileBackupsPanel(profile)}${profileAuditPanel(profile)}${profileNotesPanel(profile)}</div>`;
         $('#tenantDirectory').hidden = true;
         $('.platform-view[data-platform-panel="gyms"] > .platform-page-head').hidden = true;
         $('#tenantProfile').hidden = false;
@@ -330,7 +334,7 @@
         const tenant = profile.tenant || {};
         const sub = profile.subscription;
         const stats = profile.stats || {};
-        return profilePanel('overview', `<div class="profile-grid">${stat('المشتركون', stats.members ?? 0)}${stat('عضويات نشطة', stats.activeMemberships ?? 0)}${stat('حضور اليوم', stats.attendanceToday ?? 0)}${stat('إيراد الشهر', formatMoney(stats.revenueMonth ?? 0))}</div><div class="profile-section-grid"><article class="profile-section"><h3>بيانات الجيم</h3>${detailRows([['معرف الجيم', tenant.id],['المعرف المختصر', tenant.slug],['الحالة', statusLabel(tenant.status)],['تاريخ الإنشاء', formatDate(tenant.createdAt)],['آخر تحديث', formatDateTime(tenant.updatedAt)],['هاتف الاتصال', tenant.contactPhone]])}</article><article class="profile-section"><h3>المالك والاشتراك</h3>${detailRows([['المالك', tenant.owner?.name],['البريد', tenant.owner?.email],['آخر دخول', formatDateTime(tenant.owner?.lastLoginAt)],['الباقة', sub?.plan?.name],['حالة الاشتراك', statusLabel(sub?.status)],['ينتهي في', sub?.expiresAt ? `${formatDate(sub.expiresAt)} (${sub.daysRemaining} يوم)` : 'مدى الحياة']])}</article></div>`);
+        return profilePanel('overview', `<div class="profile-grid">${stat('المشتركون', stats.members ?? 0)}${stat('عضويات نشطة', stats.activeMemberships ?? 0)}${stat('حضور اليوم', stats.attendanceToday ?? 0)}${stat('إيراد الشهر', formatMoney(stats.revenueMonth ?? 0))}</div><div class="profile-section-grid"><article class="profile-section"><h3>بيانات الجيم</h3>${detailRows([['نوع العميل', tenantTypeLabel(tenant.tenantType)],['معرف الجيم', tenant.id],['المعرف المختصر', tenant.slug],['الحالة', statusLabel(tenant.status)],['تاريخ الإنشاء', formatDate(tenant.createdAt)],['آخر تحديث', formatDateTime(tenant.updatedAt)],['هاتف الاتصال', tenant.contactPhone]])}</article><article class="profile-section"><h3>المالك والاشتراك</h3>${detailRows([['المالك', tenant.owner?.name],['البريد', tenant.owner?.email],['آخر دخول', formatDateTime(tenant.owner?.lastLoginAt)],['الباقة', sub?.plan?.name],['حالة الاشتراك', statusLabel(sub?.status)],['ينتهي في', sub?.expiresAt ? `${formatDate(sub.expiresAt)} (${sub.daysRemaining} يوم)` : 'مدى الحياة']])}</article></div>`);
     }
 
     function profileSubscriptionPanel(profile) {
@@ -459,7 +463,7 @@
     }
 
     function renderRequests() {
-        $('#requestsTableBody').innerHTML = state.requests.length ? state.requests.map((request) => `<tr><td><span class="tenant-cell"><strong>${escapeHtml(request.tenantName || '—')}</strong><small>${escapeHtml(request.tenantSlug || '')}</small></span></td><td>${escapeHtml(request.plan?.name || '—')}</td><td>${escapeHtml(formatMoney(request.amount, request.currency))}</td><td>${request.proof ? `<a class="table-action" target="_blank" rel="noreferrer" href="/api/platform-admin/payment-proofs/${request.proof.id}/file">معاينة</a>` : 'لم يرفع'}</td><td>${statusPill(request.status)}</td><td>${escapeHtml(formatDate(request.createdAt))}</td><td>${request.status === 'pending' ? `<button class="table-action" data-request-action="approve" data-request-id="${request.id}" type="button">قبول</button> <button class="table-action" data-request-action="reject" data-request-id="${request.id}" type="button">رفض</button>` : '—'}</td></tr>`).join('') : '<tr><td colspan="7"><div class="empty-inline">لا توجد طلبات.</div></td></tr>';
+        $('#requestsTableBody').innerHTML = state.requests.length ? state.requests.map((request) => `<tr><td><span class="tenant-cell"><strong>${escapeHtml(request.tenantName || '—')}</strong><small>${escapeHtml(request.tenantSlug || '')}</small></span></td><td><span class="tenant-type-pill ${escapeHtml(request.tenantType || '')}">${escapeHtml(tenantTypeLabel(request.tenantType))}</span></td><td>${escapeHtml(request.plan?.name || '—')}</td><td>${escapeHtml(formatMoney(request.amount, request.currency))}</td><td>${request.proof ? `<a class="table-action" target="_blank" rel="noreferrer" href="/api/platform-admin/payment-proofs/${request.proof.id}/file">معاينة</a>` : 'لم يرفع'}</td><td>${statusPill(request.status)}</td><td>${escapeHtml(formatDate(request.createdAt))}</td><td>${request.status === 'pending' ? `<button class="table-action" data-request-action="approve" data-request-id="${request.id}" type="button">قبول</button> <button class="table-action" data-request-action="reject" data-request-id="${request.id}" type="button">رفض</button>` : '—'}</td></tr>`).join('') : '<tr><td colspan="8"><div class="empty-inline">لا توجد طلبات.</div></td></tr>';
     }
 
     function renderRequestPagination() {
@@ -645,6 +649,15 @@
         return `<div class="dialog-feature-grid full">${Object.entries(labels).map(([key, label]) => `<label class="dialog-check"><input name="feature_${key}" type="checkbox" ${features[key] === true ? 'checked' : ''}> ${escapeHtml(label)}</label>`).join('')}</div>`;
     }
 
+    function planCompatibilityFields(selected = ['gym']) {
+        const values = Array.isArray(selected) ? selected : [];
+        return `<fieldset class="dialog-fieldset full"><legend>توافق الباقة</legend><p class="dialog-hint">يحدد أنواع العملاء التي يمكن أن تستخدم هذه الباقة. لا يمكن إزالة نوع مستخدم من اشتراك نشط.</p><div class="dialog-feature-grid full"><label class="dialog-check"><input name="compatibleTenantType_gym" type="checkbox" ${values.includes('gym') ? 'checked' : ''}> الجيم</label><label class="dialog-check"><input name="compatibleTenantType_independent_trainer" type="checkbox" ${values.includes('independent_trainer') ? 'checked' : ''}> المدرب المستقل</label></div></fieldset>`;
+    }
+
+    function tenantTypeField(selected = 'gym') {
+        return `<label class="dialog-label full"><span>نوع العميل</span><select name="tenantType"><option value="gym" ${selected === 'gym' ? 'selected' : ''}>جيم</option><option value="independent_trainer" ${selected === 'independent_trainer' ? 'selected' : ''}>مدرب مستقل</option></select></label><p class="dialog-hint full">نوع العميل جزء ثابت من ملف الـTenant، وسيتم التحقق منه مع الباقة قبل الإنشاء.</p>`;
+    }
+
     function numberOrNull(value) { return value === '' || value == null ? null : Number(value); }
 
     function dialogField(label, name, type = 'text', value = '', extra = '') { return `<label class="dialog-label"><span>${escapeHtml(label)}</span><input name="${escapeHtml(name)}" type="${type}" value="${escapeHtml(value)}" ${extra}></label>`; }
@@ -705,7 +718,7 @@
             if (isApproval) {
                 const proof = request.proof;
                 const proofLink = proof?.id ? `<a class="table-action" target="_blank" rel="noopener noreferrer" href="/api/platform-admin/gym-registration-requests/proofs/${encodeURIComponent(proof.id)}/file">فتح إثبات الدفع</a>` : '<span class="table-secondary">لم يتم رفع إثبات دفع مؤكد</span>';
-                body = `<p class="dialog-hint">سيتم إنشاء Tenant وحساب Owner واشتراك Active باستخدام خدمة Provisioning الحالية. كلمة المرور المؤقتة ستظهر مرة واحدة فقط بعد نجاح الاعتماد.</p><div class="registration-admin-detail">${detailRows([['الجيم', request.gymName],['المسؤول', request.ownerName],['WhatsApp', request.whatsapp],['البريد', request.email],['الباقة', request.plan?.name],['المدة', registrationTermLabel(request.term)],['الإجمالي', formatMoney(request.pricing?.amountDue, request.pricing?.currency)],['وسيلة الدفع', request.paymentMethod?.name]])}</div><div class="registration-proof-review"><span>إثبات الدفع</span>${proofLink}</div>${dialogTextarea('ملاحظات المراجعة','reviewNotes','','maxlength="2000" rows="3" placeholder="اختياري"')}`;
+                body = `<p class="dialog-hint">سيتم إنشاء Tenant وحساب Owner واشتراك Active باستخدام خدمة Provisioning الحالية. كلمة المرور المؤقتة ستظهر مرة واحدة فقط بعد نجاح الاعتماد.</p><div class="registration-admin-detail">${detailRows([['نوع العميل', tenantTypeLabel(request.tenantType)],['الجيم أو العلامة', request.gymName],['المسؤول', request.ownerName],['WhatsApp', request.whatsapp],['البريد', request.email],['الباقة', request.plan?.name],['المدة', registrationTermLabel(request.term)],['الإجمالي', formatMoney(request.pricing?.amountDue, request.pricing?.currency)],['وسيلة الدفع', request.paymentMethod?.name]])}</div><div class="registration-proof-review"><span>إثبات الدفع</span>${proofLink}</div>${dialogTextarea('ملاحظات المراجعة','reviewNotes','','maxlength="2000" rows="3" placeholder="اختياري"')}`;
             } else {
                 body = `<p class="dialog-hint">لن يتم إنشاء جيم أو حساب عند الرفض. سجّل سببًا واضحًا حتى يمكن متابعة الطلب لاحقًا.</p>${dialogField('سبب الرفض','reason','text','','maxlength="2000" required')}`;
             }
@@ -728,6 +741,16 @@
         }
         $('#platformDialogTitle').textContent = title;
         $('#platformDialogBody').innerHTML = body;
+        if (action === 'plan-create' || action === 'plan-edit') {
+            const selectedTenantTypes = type === 'plan-edit'
+                ? (state.plans.find((item) => String(item.id) === String(payload.planId))?.compatibleTenantTypes || ['gym'])
+                : ['gym'];
+            $('#platformDialogBody').insertAdjacentHTML('beforeend', planCompatibilityFields(selectedTenantTypes));
+        }
+        if (action === 'new-tenant') $('#platformDialogBody').insertAdjacentHTML('afterbegin', tenantTypeField('gym'));
+        if (action === 'reset') {
+            $('#platformDialogBody').innerHTML = '<p class="dialog-hint">سيتم إنشاء كلمة مرور مؤقتة آمنة من الخادم، وإبطال الجلسات الحالية للحساب.</p><p>بعد تسجيل الدخول بها سيُطلب من صاحب الجيم تعيين كلمة مرور جديدة. لن يتم عرض كلمة المرور الحالية أو حفظ كلمة المرور المؤقتة في النظام.</p>';
+        }
         dialogForm.dataset.action = action;
         dialogForm.dataset.payload = JSON.stringify(payload);
         if (dialog.open) dialog.close();
@@ -764,6 +787,21 @@
         registrationCredentialsDialog.showModal();
     }
 
+    function showPasswordResetCredentials(result, userId) {
+        const user = (state.profile?.users || []).find((item) => String(item.id) === String(userId)) || {};
+        showRegistrationCredentials({
+            ...result,
+            oneTimeCredentials: {
+                username: user.email || '—',
+                temporaryPassword: result?.temporaryPassword,
+                loginUrl: window.location.origin,
+                mustChangePassword: true
+            },
+            request: { gymName: state.profile?.tenant?.name || '—', ownerName: user.name || '—', email: user.email || '—' },
+            subscription: {}
+        });
+    }
+
     async function copyRegistrationValue(key) {
         const value = state.registrationCredentials?.[key];
         if (!value) return;
@@ -787,7 +825,7 @@
     async function handleDialogSubmit(event) {
         event.preventDefault();
         if (event.submitter?.value === 'cancel') { dialog.close(); return; }
-        if (!validateDialogForm()) return;
+        if (dialogForm.dataset.action !== 'reset' && !validateDialogForm()) return;
         clearDialogError();
         const action = dialogForm.dataset.action;
         const payload = JSON.parse(dialogForm.dataset.payload || '{}');
@@ -798,6 +836,14 @@
         };
         setLoading(submit, true, loadingLabels[action] || 'جاري تنفيذ الإجراء...');
         try {
+            if (action === 'reset') {
+                const result = await api(`/api/platform-admin/tenants/${state.profile.tenant.id}/users/${payload.userId}/reset-password`, { method: 'POST', body: JSON.stringify({}) });
+                showToast('تم إنشاء كلمة مرور مؤقتة وإبطال الجلسات القديمة.');
+                dialog.close();
+                showPasswordResetCredentials(result, payload.userId);
+                await refreshProfile();
+                return;
+            }
             if (action === 'status') {
                 await api(`/api/platform-admin/tenants/${state.profile.tenant.id}/status`, { method: 'PATCH', body: JSON.stringify({ status: values.status, reason: values.reason, suspendUntil: values.suspendUntil || null, billingOnly: values.billingOnly }) });
                 showToast('تم تحديث حالة الجيم وتسجيل العملية.');
@@ -813,12 +859,8 @@
             } else if (action === 'note') {
                 await api(`/api/platform-admin/tenants/${state.profile.tenant.id}/notes`, { method: 'POST', body: JSON.stringify({ note: values.note }) });
                 showToast('تمت إضافة الملاحظة الداخلية.'); dialog.close(); await refreshProfile();
-            } else if (action === 'reset') {
-                if (values.newPassword !== values.confirmPassword) throw new Error('كلمتا المرور غير متطابقتين.');
-                await api(`/api/platform-admin/tenants/${state.profile.tenant.id}/users/${payload.userId}/reset-password`, { method: 'POST', body: JSON.stringify({ newPassword: values.newPassword }) });
-                showToast('تم تغيير كلمة المرور وإبطال الجلسات القديمة.'); dialog.close(); await refreshProfile();
             } else if (action === 'new-tenant') {
-                const created = await api('/api/platform-admin/tenants', { method: 'POST', body: JSON.stringify(values) });
+                const created = await api('/api/platform-admin/tenants', { method: 'POST', body: JSON.stringify({ ...values, tenantType: values.tenantType || 'gym' }) });
                 showToast('تم إنشاء الجيم والـOwner وفترة التجربة.'); dialog.close(); state.tenantPage = 1; setView('gyms'); if (created.tenant?.id) setTimeout(() => openTenant(created.tenant.id), 250);
             } else if (action === 'owner') {
                 await api(`/api/platform-admin/tenants/${state.profile.tenant.id}/owner`, { method: 'POST', body: JSON.stringify(values) });
@@ -826,12 +868,14 @@
             } else if (action === 'plan-create') {
                 const features = {};
                 ['intelligence','coaching','store','reports','portal','prioritySupport'].forEach((key) => { features[key] = Boolean(values[`feature_${key}`]); });
-                await api('/api/platform-admin/plans', { method: 'POST', body: JSON.stringify({ code: values.code, name: values.name, description: values.description, price: values.price, currency: values.currency, billingPeriod: values.billingPeriod, sortOrder: values.sortOrder, maxMembers: numberOrNull(values.maxMembers), maxUsers: numberOrNull(values.maxUsers), maxAiGenerations: numberOrNull(values.maxAiGenerations), maxStorageMb: numberOrNull(values.maxStorageMb), isActive: values.isActive, features, reason: values.reason }) });
+                const compatibleTenantTypes = ['gym', 'independent_trainer'].filter((type) => values[`compatibleTenantType_${type}`]);
+                await api('/api/platform-admin/plans', { method: 'POST', body: JSON.stringify({ code: values.code, name: values.name, description: values.description, price: values.price, currency: values.currency, billingPeriod: values.billingPeriod, sortOrder: values.sortOrder, maxMembers: numberOrNull(values.maxMembers), maxUsers: numberOrNull(values.maxUsers), maxAiGenerations: numberOrNull(values.maxAiGenerations), maxStorageMb: numberOrNull(values.maxStorageMb), isActive: values.isActive, features, compatibleTenantTypes, reason: values.reason }) });
                 showToast('تم إنشاء الباقة بنجاح.'); dialog.close(); await loadPlans();
             } else if (action === 'plan-edit') {
                 const features = {};
                 ['intelligence','coaching','store','reports','portal','prioritySupport'].forEach((key) => { features[key] = Boolean(values[`feature_${key}`]); });
-                await api(`/api/platform-admin/plans/${payload.planId}`, { method: 'PATCH', body: JSON.stringify({ name: values.name, description: values.description, price: values.price, currency: values.currency, billingPeriod: values.billingPeriod, sortOrder: values.sortOrder, maxMembers: numberOrNull(values.maxMembers), maxUsers: numberOrNull(values.maxUsers), maxAiGenerations: numberOrNull(values.maxAiGenerations), maxStorageMb: numberOrNull(values.maxStorageMb), isActive: values.isActive, features, reason: values.reason }) });
+                const compatibleTenantTypes = ['gym', 'independent_trainer'].filter((type) => values[`compatibleTenantType_${type}`]);
+                await api(`/api/platform-admin/plans/${payload.planId}`, { method: 'PATCH', body: JSON.stringify({ name: values.name, description: values.description, price: values.price, currency: values.currency, billingPeriod: values.billingPeriod, sortOrder: values.sortOrder, maxMembers: numberOrNull(values.maxMembers), maxUsers: numberOrNull(values.maxUsers), maxAiGenerations: numberOrNull(values.maxAiGenerations), maxStorageMb: numberOrNull(values.maxStorageMb), isActive: values.isActive, features, compatibleTenantTypes, reason: values.reason }) });
                 showToast('تم تحديث الباقة.'); dialog.close(); await loadPlans();
             } else if (action === 'plan-delete') {
                 await api(`/api/platform-admin/plans/${payload.planId}`, { method: 'DELETE', body: JSON.stringify({ reason: values.reason }) });
@@ -904,7 +948,7 @@
             } catch (error) { const message = $('#platformAdminLoginMessage'); message.textContent = error.message; message.hidden = false; } finally { setLoading(button, false); }
         });
         $('#tenantSearch').addEventListener('input', (event) => { clearTimeout(searchTimer); state.tenantFilters.search = event.target.value; state.tenantPage = 1; searchTimer = setTimeout(loadTenants, 260); });
-        [['tenantStatusFilter','status'],['tenantPlanFilter','plan'],['tenantExpiryFilter','expiringDays']].forEach(([id,key]) => $(`#${id}`).addEventListener('change', (event) => { state.tenantFilters[key] = event.target.value; state.tenantPage = 1; loadTenants(); }));
+        [['tenantStatusFilter','status'],['tenantPlanFilter','plan'],['tenantTypeFilter','tenantType'],['tenantExpiryFilter','expiringDays']].forEach(([id,key]) => $(`#${id}`).addEventListener('change', (event) => { state.tenantFilters[key] = event.target.value; state.tenantPage = 1; loadTenants(); }));
         $('#requestStatusFilter').addEventListener('change', () => { state.requestPage = 1; loadRequests(); });
         $('#gymRegistrationStatusFilter').addEventListener('change', () => { state.gymRegistrationPage = 1; loadGymRegistrations(); });
         $('#platformGlobalSearch').addEventListener('input', (event) => { if (state.view !== 'gyms') setView('gyms'); $('#tenantSearch').value = event.target.value; state.tenantFilters.search = event.target.value; state.tenantPage = 1; clearTimeout(searchTimer); searchTimer = setTimeout(loadTenants, 260); });

@@ -2,13 +2,23 @@
 
 const { getPool, sql } = require('../database');
 const { currentTenantId } = require('../tenancy/tenant-context');
-const { config } = require('../config/env');
+const { TENANT_TYPES, resolveTenantType } = require('../tenancy/tenant-types');
 
 const BOOTSTRAP_TENANT_SLUG = 'top-gym';
 const BOOTSTRAP_TENANT_NAME = 'Top Gym';
 const TENANT_POLICY_NAME = 'gym_tenant_security_policy';
 const TENANT_PREDICATE_NAME = 'gym_tenant_access_predicate';
 const TENANT_SECURITY_READINESS_TTL_MS = 30_000;
+
+// Tenant membership is control-plane metadata. It deliberately contains a
+// tenant_id so it can answer membership questions before a tenant context is
+// available, but it is not tenant-owned operational data and therefore is
+// excluded from the operational RLS coverage contract below.
+const GLOBAL_TENANT_COLUMN_TABLES = Object.freeze(['dbo.gym_user_tenants']);
+// This audit table is dual-scope: tenant events carry tenant_id, while
+// platform-level events intentionally keep it NULL. It is still RLS
+// protected, but NULL is valid for this one table's platform records.
+const NULLABLE_TENANT_TABLES = Object.freeze(['dbo.saas_audit_log']);
 
 // Every operational table that stores gym data is listed explicitly. Auth
 // credentials/sessions and tenant membership metadata stay global so a user
@@ -17,6 +27,7 @@ const TENANT_TABLES = Object.freeze([
     'athlete_checkins',
     'body_measurements',
     'coaching_activity_events',
+    'coaching_sessions',
     'diet_meal_items',
     'diet_meals',
     'diet_plans',
@@ -73,7 +84,11 @@ const TENANT_TABLES = Object.freeze([
     'membership_type_prices',
     'membership_types',
     'memberships',
+    'trainer_packages',
+    'trainer_package_purchases',
+    'trainer_package_usage',
     'saas_payment_proofs',
+    'saas_audit_log',
     'saas_platform_notes',
     'saas_subscription_requests',
     'saas_subscription_changes',
@@ -93,6 +108,7 @@ BEGIN
         id INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_gym_tenants PRIMARY KEY,
         name NVARCHAR(160) NOT NULL,
         slug VARCHAR(80) NOT NULL,
+        tenant_type VARCHAR(32) NOT NULL CONSTRAINT DF_gym_tenants_tenant_type DEFAULT ('gym'),
         status VARCHAR(20) NOT NULL CONSTRAINT DF_gym_tenants_status DEFAULT ('active'),
         contact_phone NVARCHAR(40) NULL,
         contact_email NVARCHAR(254) NULL,
@@ -105,7 +121,8 @@ BEGIN
         created_at DATETIME2(0) NOT NULL CONSTRAINT DF_gym_tenants_created DEFAULT (SYSUTCDATETIME()),
         updated_at DATETIME2(0) NOT NULL CONSTRAINT DF_gym_tenants_updated DEFAULT (SYSUTCDATETIME()),
         CONSTRAINT UQ_gym_tenants_slug UNIQUE (slug),
-        CONSTRAINT CK_gym_tenants_status CHECK (status IN ('trial', 'active', 'suspended', 'expired', 'archived'))
+        CONSTRAINT CK_gym_tenants_status CHECK (status IN ('trial', 'active', 'suspended', 'expired', 'archived')),
+        CONSTRAINT CK_gym_tenants_tenant_type CHECK (tenant_type IN ('gym', 'independent_trainer'))
     );
 END;
 
@@ -164,6 +181,7 @@ function tenantRecord(row) {
         id: Number(row.id),
         name: String(row.name || ''),
         slug: String(row.slug || ''),
+        tenantType: resolveTenantType(row.tenant_type),
         status: String(row.status || 'active'),
         role: row.role ? String(row.role) : null,
         isPrimary: Boolean(row.is_primary)
@@ -224,13 +242,41 @@ async function ensureTenantTables() {
 async function ensureBootstrapTenant() {
     await ensureTenantTables();
     const pool = await getPool();
+    const tenantTypeColumn = await pool.request().query(`
+        SELECT CASE WHEN EXISTS (
+            SELECT 1 FROM sys.columns
+            WHERE object_id=OBJECT_ID(N'dbo.gym_tenants')
+              AND name=N'tenant_type'
+              AND system_type_id=167
+              AND max_length>=32
+              AND is_nullable=0
+        )
+        AND EXISTS (
+            SELECT 1 FROM sys.default_constraints dc
+            INNER JOIN sys.columns c ON c.default_object_id=dc.object_id
+            WHERE dc.parent_object_id=OBJECT_ID(N'dbo.gym_tenants')
+              AND c.name=N'tenant_type'
+              AND LOWER(dc.definition) LIKE N'%gym%'
+        )
+        AND EXISTS (
+            SELECT 1 FROM sys.check_constraints cc
+            WHERE cc.parent_object_id=OBJECT_ID(N'dbo.gym_tenants')
+              AND cc.name=N'CK_gym_tenants_tenant_type'
+              AND LOWER(cc.definition) LIKE N'%gym%'
+              AND LOWER(cc.definition) LIKE N'%independent_trainer%'
+        ) THEN 1 ELSE 0 END AS ready;
+    `);
+    if (Number(tenantTypeColumn.recordset[0]?.ready) !== 1) {
+        throw tenantError('Tenant type schema is not ready.', 503, 'TENANT_TYPE_SCHEMA_NOT_READY');
+    }
     const tenantResult = await pool.request()
         .input('slug', sql.VarChar(80), BOOTSTRAP_TENANT_SLUG)
         .input('name', sql.NVarChar(160), BOOTSTRAP_TENANT_NAME)
+        .input('tenantType', sql.VarChar(32), TENANT_TYPES.GYM)
         .query(`
             IF NOT EXISTS (SELECT 1 FROM dbo.gym_tenants WHERE slug=@slug)
-                INSERT INTO dbo.gym_tenants(name, slug, status) VALUES (@name, @slug, 'active');
-            SELECT TOP (1) id, name, slug, status FROM dbo.gym_tenants WHERE slug=@slug;
+                INSERT INTO dbo.gym_tenants(name, slug, tenant_type, status) VALUES (@name, @slug, @tenantType, 'active');
+            SELECT TOP (1) id, name, slug, tenant_type, status FROM dbo.gym_tenants WHERE slug=@slug;
         `);
     const tenant = tenantRecord(tenantResult.recordset[0]);
     if (!tenant) throw tenantError('Unable to create the Top Gym tenant.', 500, 'BOOTSTRAP_TENANT_FAILED');
@@ -297,7 +343,7 @@ async function resolveTenantForUser(userId, requestedSlug = '', { readOnly = fal
         .input('slug', sql.VarChar(80), normalizedSlug)
         .input('bootstrapSlug', sql.VarChar(80), BOOTSTRAP_TENANT_SLUG)
         .query(`
-            SELECT TOP (1) t.id, t.name, t.slug, t.status, ut.role, ut.is_primary
+            SELECT TOP (1) t.id, t.name, t.slug, t.tenant_type, t.status, ut.role, ut.is_primary
             FROM dbo.gym_user_tenants ut
             INNER JOIN dbo.gym_tenants t ON t.id=ut.tenant_id
             WHERE ut.user_id=@userId
@@ -316,15 +362,30 @@ async function resolveTenantForUser(userId, requestedSlug = '', { readOnly = fal
 
 async function resolvePublicTenant(requestedSlug = '', { readOnly = false } = {}) {
     if (!readOnly) await ensureTenantTables();
-    const normalizedSlug = normalizeTenantSlug(requestedSlug) || normalizeTenantSlug(config.defaultTenantSlug) || BOOTSTRAP_TENANT_SLUG;
+    // Public tenant resolution must be explicit. A missing slug is not a
+    // request for Top Gym (or for any other tenant); callers must provide a
+    // tenant identifier through the hostname/header/query contract.
+    const normalizedSlug = normalizeTenantSlug(requestedSlug);
+    if (!normalizedSlug) return null;
     const pool = await getPool();
     const result = await pool.request()
         .input('slug', sql.VarChar(80), normalizedSlug)
-        .query("SELECT TOP (1) id, name, slug, status FROM dbo.gym_tenants WHERE slug=@slug AND status IN ('trial', 'active');");
+        .query("SELECT TOP (1) id, name, slug, tenant_type, status FROM dbo.gym_tenants WHERE slug=@slug AND status IN ('trial', 'active');");
     const tenant = tenantRecord(result.recordset[0]);
-    // This keeps the app shell and isolated test boots safe when the base
-    // schema exists but the tenancy bootstrap has not run yet.
-    return tenant || (normalizedSlug === BOOTSTRAP_TENANT_SLUG && !readOnly ? ensureBootstrapTenant() : null);
+    return tenant;
+}
+
+async function getTenantType(tenantId) {
+    const normalizedTenantId = Number(tenantId);
+    if (!Number.isInteger(normalizedTenantId) || normalizedTenantId <= 0) {
+        throw tenantError('Invalid tenant id.', 400, 'INVALID_TENANT_ID');
+    }
+    const pool = await getPool();
+    const result = await pool.request()
+        .input('tenantId', sql.Int, normalizedTenantId)
+        .query('SELECT TOP (1) tenant_type FROM dbo.gym_tenants WHERE id=@tenantId;');
+    if (!result.recordset[0]) throw tenantError('Tenant was not found.', 404, 'TENANT_NOT_FOUND');
+    return resolveTenantType(result.recordset[0].tenant_type);
 }
 
 async function existingTenantTables(pool) {
@@ -337,47 +398,223 @@ async function existingTenantTables(pool) {
     return TENANT_TABLES.filter((table) => existing.has(table));
 }
 
+function tableKey(schemaName, tableName) {
+    return `${String(schemaName || '').trim().toLowerCase()}.${String(tableName || '').trim().toLowerCase()}`;
+}
+
+function hasTenantPredicate(row, type, operation = null) {
+    if (!row || String(row.predicate_type_desc || '').toUpperCase() !== type) return false;
+    if (operation && String(row.operation || '').toUpperCase() !== operation) return false;
+    const definition = String(row.predicate_definition || '').toLowerCase();
+    return definition.includes(TENANT_PREDICATE_NAME.toLowerCase()) && definition.includes('tenant_id');
+}
+
+/**
+ * Discover the tenant-owned surface from SQL Server metadata. The registry
+ * remains an application contract for expected tables, but it is no longer
+ * the source of truth for deciding which tables need protection.
+ */
+async function getTenantSecuritySnapshot(pool = null) {
+    const database = pool || await getPool();
+    const registryNames = TENANT_TABLES.map((name) => `N'${name.replace(/'/g, "''")}'`).join(', ');
+    const result = await database.request().query(`
+        SELECT s.name AS schema_name, t.name, c.is_nullable, ty.name AS data_type
+        FROM sys.tables AS t
+        INNER JOIN sys.schemas AS s ON s.schema_id=t.schema_id
+        INNER JOIN sys.columns AS c ON c.object_id=t.object_id AND c.name=N'tenant_id'
+        INNER JOIN sys.types AS ty ON ty.user_type_id=c.user_type_id
+        WHERE t.is_ms_shipped=0;
+
+        SELECT s.name AS schema_name, t.name
+        FROM sys.tables AS t
+        INNER JOIN sys.schemas AS s ON s.schema_id=t.schema_id
+        WHERE t.is_ms_shipped=0
+          AND s.name=N'dbo'
+          AND t.name IN (${registryNames});
+
+        SELECT p.name AS policy_name, p.is_enabled, ps.name AS policy_schema,
+               ts.name AS schema_name, t.name AS table_name,
+               sp.predicate_type_desc, sp.operation, sp.predicate_definition
+        FROM sys.security_policies AS p
+        INNER JOIN sys.schemas AS ps ON ps.schema_id=p.schema_id
+        INNER JOIN sys.security_predicates AS sp ON sp.object_id=p.object_id
+        INNER JOIN sys.tables AS t ON t.object_id=sp.target_object_id
+        INNER JOIN sys.schemas AS ts ON ts.schema_id=t.schema_id
+        WHERE p.name=N'${TENANT_POLICY_NAME}';
+
+        SELECT o.name, s.name AS schema_name, o.type, o.is_ms_shipped,
+               OBJECTPROPERTYEX(o.object_id, 'IsSchemaBound') AS is_schema_bound
+        FROM sys.objects AS o
+        INNER JOIN sys.schemas AS s ON s.schema_id=o.schema_id
+        WHERE o.name=N'${TENANT_PREDICATE_NAME}';
+
+        SELECT CASE WHEN OBJECT_ID(N'dbo.gym_users', N'U') IS NOT NULL
+                         AND OBJECT_ID(N'dbo.gym_auth_sessions', N'U') IS NOT NULL
+                         AND EXISTS (
+                             SELECT 1
+                             FROM sys.columns c
+                             WHERE c.object_id=OBJECT_ID(N'dbo.gym_users')
+                               AND c.name=N'must_change_password'
+                               AND c.system_type_id=104
+                               AND c.is_nullable=0
+                         )
+                         AND EXISTS (
+                             SELECT 1
+                             FROM sys.columns c
+                             WHERE c.object_id=OBJECT_ID(N'dbo.gym_users')
+                               AND c.name=N'password_changed_at'
+                               AND c.system_type_id=42
+                              AND c.scale=0
+                              AND c.is_nullable=1
+                         )
+                         AND EXISTS (
+                             SELECT 1
+                             FROM sys.columns c
+                             WHERE c.object_id=OBJECT_ID(N'dbo.gym_tenants')
+                               AND c.name=N'tenant_type'
+                               AND c.system_type_id=167
+                               AND c.max_length>=32
+                               AND c.is_nullable=0
+                         )
+                         AND EXISTS (
+                             SELECT 1
+                             FROM sys.default_constraints dc
+                             INNER JOIN sys.columns c ON c.default_object_id=dc.object_id
+                             WHERE dc.parent_object_id=OBJECT_ID(N'dbo.gym_tenants')
+                               AND c.name=N'tenant_type'
+                               AND LOWER(dc.definition) LIKE N'%gym%'
+                         )
+                         AND EXISTS (
+                             SELECT 1
+                             FROM sys.check_constraints cc
+                             WHERE cc.parent_object_id=OBJECT_ID(N'dbo.gym_tenants')
+                               AND cc.name=N'CK_gym_tenants_tenant_type'
+                               AND LOWER(cc.definition) LIKE N'%gym%'
+                               AND LOWER(cc.definition) LIKE N'%independent_trainer%'
+                         )
+                    THEN 1 ELSE 0 END AS schema_contract_ready;
+    `);
+
+    const actualRows = result.recordsets?.[0] || [];
+    const registeredRows = result.recordsets?.[1] || [];
+    const policyRows = result.recordsets?.[2] || [];
+    const functionRows = result.recordsets?.[3] || [];
+    const schemaRows = result.recordsets?.[4] || [];
+    const globalTables = new Set(GLOBAL_TENANT_COLUMN_TABLES);
+    const actual = actualRows
+        .map((row) => ({
+            schema: String(row.schema_name || ''),
+            name: String(row.name || ''),
+            key: tableKey(row.schema_name, row.name),
+            nullable: Boolean(row.is_nullable),
+            dataType: String(row.data_type || '').toLowerCase()
+        }))
+        .filter((row) => !globalTables.has(row.key));
+    const registeredPhysical = new Set(registeredRows.map((row) => tableKey(row.schema_name, row.name)));
+    const registry = TENANT_TABLES.map((name) => ({ schema: 'dbo', name, key: tableKey('dbo', name) }));
+    const registryKeys = new Set(registry.map((row) => row.key));
+    const predicatesByTable = new Map();
+    for (const row of policyRows) {
+        const key = tableKey(row.schema_name, row.table_name);
+        if (!predicatesByTable.has(key)) predicatesByTable.set(key, []);
+        predicatesByTable.get(key).push(row);
+    }
+    const policyExists = policyRows.some((row) => String(row.policy_schema || '').toLowerCase() === 'dbo');
+    const policyEnabled = policyRows.some((row) => Number(row.is_enabled) === 1 && String(row.policy_schema || '').toLowerCase() === 'dbo');
+    const protectedTables = [];
+    const unprotectedTables = [];
+    const invalidPredicates = [];
+    const disabledRequiredPolicies = [];
+    for (const table of actual) {
+        const rows = predicatesByTable.get(table.key) || [];
+        const policyIsDisabled = rows.some((row) => Number(row.is_enabled) !== 1);
+        const valid = rows.some((row) => hasTenantPredicate(row, 'FILTER'))
+            && rows.some((row) => hasTenantPredicate(row, 'BLOCK', 'AFTER INSERT'))
+            && rows.some((row) => hasTenantPredicate(row, 'BLOCK', 'AFTER UPDATE'))
+            && rows.every((row) => String(row.policy_schema || '').toLowerCase() === 'dbo'
+                && String(row.policy_name || '') === TENANT_POLICY_NAME);
+        if (valid && !policyIsDisabled) protectedTables.push(table.key);
+        else unprotectedTables.push(table.key);
+        if (rows.length > 0 && (!valid || policyIsDisabled)) invalidPredicates.push(table.key);
+        if (policyIsDisabled) disabledRequiredPolicies.push(table.key);
+    }
+    const missingRegistryEntries = actual.filter((table) => !registryKeys.has(table.key)).map((table) => table.key);
+    const missingRegistryTables = registry.filter((table) => !registeredPhysical.has(table.key)).map((table) => table.key);
+    const schemaSecurityMismatches = actual
+        .filter((table) => table.dataType !== 'int'
+            || (table.nullable && !NULLABLE_TENANT_TABLES.includes(table.key)))
+        .map((table) => table.key);
+    const securityFunction = functionRows.find((row) => String(row.schema_name || '').toLowerCase() === 'dbo'
+        && String(row.name || '') === TENANT_PREDICATE_NAME);
+    const securityFunctionPresent = Boolean(securityFunction
+        && String(securityFunction.type || '').toUpperCase() === 'IF'
+        && Number(securityFunction.is_ms_shipped) === 0
+        && Number(securityFunction.is_schema_bound) === 1);
+    const securityFunctionSchemaMismatch = functionRows.length > 0 && !securityFunctionPresent;
+    const schemaContractReady = Number(schemaRows[0]?.schema_contract_ready) === 1;
+    const registryMismatch = missingRegistryEntries.length > 0 || missingRegistryTables.length > 0;
+    return {
+        policy_enabled: policyEnabled ? 1 : 0,
+        policy_exists: policyExists ? 1 : 0,
+        security_function_present: securityFunctionPresent ? 1 : 0,
+        schema_contract_ready: schemaContractReady ? 1 : 0,
+        actual_tenant_tables: actual.length,
+        registry_tenant_tables: registry.length,
+        registry_physical_tables: registeredPhysical.size,
+        expected_tables: actual.length,
+        protected_tables: protectedTables.length,
+        unprotected_tenant_tables: unprotectedTables.length,
+        missing_registry_entries: missingRegistryEntries.length,
+        missing_registry_tables: missingRegistryTables.length,
+        disabled_required_policies: disabledRequiredPolicies.length,
+        invalid_predicates: invalidPredicates.length,
+        schema_security_mismatch: schemaSecurityMismatches.length + (securityFunctionSchemaMismatch ? 1 : 0),
+        registry_mismatch: registryMismatch ? 1 : 0,
+        actualTenantTables: actual.map((table) => table.key),
+        registryTables: registry.map((table) => table.key),
+        missingRegistryEntries,
+        missingRegistryTables,
+        unprotectedTenantTables: unprotectedTables,
+        invalidPredicates,
+        disabledRequiredPolicies,
+        schemaSecurityMismatches,
+        globalTenantColumnTables: [...GLOBAL_TENANT_COLUMN_TABLES],
+        nullableTenantTables: [...NULLABLE_TENANT_TABLES]
+    };
+}
+
 function tenantSecuritySnapshotIsReady(snapshot = {}) {
     const policyEnabled = Number(snapshot.policy_enabled ?? snapshot.policyEnabled) === 1;
-    const expectedTables = Number(snapshot.expected_tables ?? snapshot.expectedTables);
+    const actualTables = Number(snapshot.actual_tenant_tables ?? snapshot.actualTenantTablesCount ?? snapshot.expected_tables);
+    const registryTables = Number(snapshot.registry_tenant_tables ?? snapshot.registryTenantTables);
     const protectedTables = Number(snapshot.protected_tables ?? snapshot.protectedTables);
-    return policyEnabled && expectedTables > 0 && protectedTables === expectedTables;
+    const functionPresent = Number(snapshot.security_function_present ?? snapshot.securityFunctionPresent) === 1;
+    const unprotected = Number(snapshot.unprotected_tenant_tables ?? snapshot.unprotectedTenantTablesCount);
+    const missingRegistry = Number(snapshot.missing_registry_entries ?? snapshot.missingRegistryEntriesCount);
+    const missingPhysical = Number(snapshot.missing_registry_tables ?? snapshot.missingRegistryTablesCount);
+    const disabledPolicies = Number(snapshot.disabled_required_policies ?? snapshot.disabledRequiredPoliciesCount);
+    const invalidPredicates = Number(snapshot.invalid_predicates ?? snapshot.invalidPredicatesCount);
+    const schemaMismatch = Number(snapshot.schema_security_mismatch ?? snapshot.schemaSecurityMismatchCount);
+    return policyEnabled
+        && functionPresent
+        && Number(snapshot.schema_contract_ready ?? snapshot.schemaContractReady) === 1
+        && actualTables > 0
+        && registryTables === actualTables
+        && protectedTables === actualTables
+        && unprotected === 0
+        && missingRegistry === 0
+        && missingPhysical === 0
+        && disabledPolicies === 0
+        && invalidPredicates === 0
+        && schemaMismatch === 0;
 }
 
 async function assertTenantIsolationReady() {
     if (tenantSecurityReadyUntil > Date.now()) return true;
     if (!tenantSecurityReadinessPromise) {
-        const tableNames = TENANT_TABLES.map((table) => `N'${table.replace(/'/g, "''")}'`).join(', ');
         tenantSecurityReadinessPromise = (async () => {
             const pool = await getPool();
-            const result = await pool.request().query(`
-                SELECT
-                    CASE WHEN EXISTS (
-                        SELECT 1
-                        FROM sys.security_policies
-                        WHERE name=N'${TENANT_POLICY_NAME}'
-                          AND schema_id=SCHEMA_ID(N'dbo')
-                          AND is_enabled=1
-                    ) THEN 1 ELSE 0 END AS policy_enabled,
-                    (
-                        SELECT COUNT(*)
-                        FROM sys.tables AS t
-                        INNER JOIN sys.columns AS c ON c.object_id=t.object_id AND c.name=N'tenant_id'
-                        WHERE t.schema_id=SCHEMA_ID(N'dbo')
-                          AND t.name IN (${tableNames})
-                    ) AS expected_tables,
-                    (
-                        SELECT COUNT(DISTINCT sp.target_object_id)
-                        FROM sys.security_policies AS p
-                        INNER JOIN sys.security_predicates AS sp ON sp.object_id=p.object_id
-                        INNER JOIN sys.tables AS t ON t.object_id=sp.target_object_id AND t.schema_id=SCHEMA_ID(N'dbo')
-                        WHERE p.name=N'${TENANT_POLICY_NAME}'
-                          AND p.schema_id=SCHEMA_ID(N'dbo')
-                          AND sp.predicate_type_desc=N'FILTER'
-                          AND t.name IN (${tableNames})
-                    ) AS protected_tables;
-            `);
-            const snapshot = result.recordset[0] || {};
+            const snapshot = await getTenantSecuritySnapshot(pool);
             if (!tenantSecuritySnapshotIsReady(snapshot)) {
                 throw tenantError('Tenant data isolation is not ready.', 503, 'TENANT_ISOLATION_NOT_READY');
             }
@@ -396,6 +633,7 @@ function invalidateTenantSecurityReadiness() {
 
 function tenantColumnMigrationSql(table) {
     const quotedTable = `dbo.[${table}]`;
+    const nullableTenantColumn = NULLABLE_TENANT_TABLES.includes(`dbo.${table}`);
     const defaultName = `DF_${table}_tenant_id`;
     const foreignKeyName = `FK_${table}_tenant`;
     const indexName = `IX_${table}_tenant_id`;
@@ -403,9 +641,9 @@ function tenantColumnMigrationSql(table) {
         IF COL_LENGTH(N'dbo.${table}', N'tenant_id') IS NULL
             EXEC(N'ALTER TABLE ${quotedTable} ADD tenant_id INT NULL;');
 
-        EXEC sys.sp_executesql
+        ${nullableTenantColumn ? '' : `EXEC sys.sp_executesql
             N'UPDATE ${quotedTable} SET tenant_id=@TenantId WHERE tenant_id IS NULL;',
-            N'@TenantId INT', @TenantId=@tenantId;
+            N'@TenantId INT', @TenantId=@tenantId;`}
 
         IF NOT EXISTS (
             SELECT 1
@@ -416,12 +654,12 @@ function tenantColumnMigrationSql(table) {
         )
             EXEC(N'ALTER TABLE ${quotedTable} ADD CONSTRAINT [${defaultName}] DEFAULT (TRY_CONVERT(INT, SESSION_CONTEXT(N''tenant_id''))) FOR tenant_id;');
 
-        IF EXISTS (
+        IF ${nullableTenantColumn ? '0=1' : `EXISTS (
             SELECT 1 FROM sys.columns
             WHERE object_id=OBJECT_ID(N'dbo.${table}')
               AND name=N'tenant_id'
               AND (is_nullable=1 OR system_type_id<>56)
-        )
+        )`}
             EXEC(N'ALTER TABLE ${quotedTable} ALTER COLUMN tenant_id INT NOT NULL;');
 
         IF NOT EXISTS (
@@ -531,6 +769,16 @@ async function ensureTenantColumnsAndRls(tenantId) {
     if (!Number.isInteger(normalizedTenantId) || normalizedTenantId <= 0) throw tenantError('Bootstrap tenant id is invalid.', 500, 'INVALID_BOOTSTRAP_TENANT');
     const pool = await getPool();
     const tables = await existingTenantTables(pool);
+    const beforeRepair = await getTenantSecuritySnapshot(pool);
+    if (Number(beforeRepair.schema_contract_ready) !== 1) {
+        throw tenantError('Tenant schema contract is not ready.', 503, 'TENANT_SCHEMA_CONTRACT_NOT_READY');
+    }
+    if (beforeRepair.missing_registry_entries.length > 0) {
+        throw tenantError(`Tenant registry mismatch: ${beforeRepair.missing_registry_entries.join(', ')}`, 503, 'TENANT_REGISTRY_MISMATCH');
+    }
+    if (beforeRepair.missing_registry_tables.length > 0) {
+        throw tenantError(`Required tenant tables are missing: ${beforeRepair.missing_registry_tables.join(', ')}`, 503, 'TENANT_SCHEMA_INCOMPLETE');
+    }
     invalidateTenantSecurityReadiness();
     await dropTenantSecurityPolicy(pool);
 
@@ -538,6 +786,13 @@ async function ensureTenantColumnsAndRls(tenantId) {
         await pool.request()
             .input('tenantId', sql.Int, normalizedTenantId)
             .batch(tenantColumnMigrationSql(table));
+    }
+    const afterColumns = await getTenantSecuritySnapshot(pool);
+    if (afterColumns.missing_registry_entries.length > 0) {
+        throw tenantError(`Tenant registry mismatch: ${afterColumns.missing_registry_entries.join(', ')}`, 503, 'TENANT_REGISTRY_MISMATCH');
+    }
+    if (afterColumns.missing_registry_tables.length > 0) {
+        throw tenantError(`Required tenant tables are missing: ${afterColumns.missing_registry_tables.join(', ')}`, 503, 'TENANT_SCHEMA_INCOMPLETE');
     }
     await ensureBrandingKeyCompatibility(pool);
     await ensureLibrarySourceKeys(pool, tables);
@@ -557,7 +812,7 @@ async function ensureTenantColumnsAndRls(tenantId) {
                 CREATE UNIQUE INDEX UQ_gym_branding_assets_tenant_scope_key ON dbo.gym_branding_assets(tenant_id, scope, asset_key);
         `);
     }
-    await recreateTenantSecurityPolicy(pool, tables);
+    await recreateTenantSecurityPolicy(pool, afterColumns.actualTenantTables.map((key) => key.split('.')[1]));
     invalidateTenantSecurityReadiness();
     return { tenantId: normalizedTenantId, tables };
 }
@@ -566,12 +821,16 @@ module.exports = {
     BOOTSTRAP_TENANT_NAME,
     BOOTSTRAP_TENANT_SLUG,
     TENANT_SCHEMA_SQL,
+    GLOBAL_TENANT_COLUMN_TABLES,
+    NULLABLE_TENANT_TABLES,
     TENANT_TABLES,
     assignUserToTenant,
     assertTenantIsolationReady,
     ensureBootstrapTenant,
     ensureTenantColumnsAndRls,
+    getTenantType,
     ensureTenantTables,
+    getTenantSecuritySnapshot,
     resolvePublicTenant,
     resolveTenantForUser,
     tenantSecuritySnapshotIsReady

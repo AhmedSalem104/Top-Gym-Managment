@@ -531,6 +531,10 @@
   });
 
   window.addEventListener('topgym:portal-session-change', (event) => {
+    if (event.detail?.operation === 'trainer_client') {
+      if (elements.section) elements.section.hidden = true;
+      return;
+    }
     applyRequestScenario(event.detail || {});
   });
 

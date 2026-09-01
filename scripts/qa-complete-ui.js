@@ -67,7 +67,7 @@ const portalTools = [
     ['foods', 'portalLibrarySection'],
     ['subscription', 'portalSubscriptionSection']
 ];
-const dialogIds = ['actionDialog', 'pricingDialog', 'membershipTypesDialog', 'membershipPlanDialog', 'membershipTypeDialog', 'detailsDialog', 'qrReaderDialog', 'memberQrDialog', 'libraryFormDialog', 'libraryDetailsDialog', 'externalTraineeDialog', 'coachingProfileDialog', 'coachingBuilderDialog', 'authUserDialog', 'backupRestoreDialog', 'expenseDialog', 'memberDialog', 'dayPassDialog', 'platformActionDialog', 'platformRegistrationCredentialsDialog'];
+const dialogIds = ['actionDialog', 'pricingDialog', 'membershipTypesDialog', 'membershipPlanDialog', 'membershipTypeDialog', 'detailsDialog', 'qrReaderDialog', 'memberQrDialog', 'libraryFormDialog', 'libraryDetailsDialog', 'externalTraineeDialog', 'coachingProfileDialog', 'coachingBuilderDialog', 'authUserDialog', 'backupRestoreDialog', 'expenseDialog', 'memberDialog', 'dayPassDialog', 'trainerClientDialog', 'trainerClientDetailsDialog', 'trainerTimelineDialog', 'trainerMeasurementDialog', 'trainerCheckinDialog', 'trainerPackageDialog', 'trainerSessionDialog', 'trainerPurchaseDialog', 'trainerPaymentDialog', 'platformActionDialog', 'platformRegistrationCredentialsDialog'];
 
 function assert(condition, message) {
     if (!condition) throw new Error(message);
@@ -323,6 +323,22 @@ async function run() {
             }
         }
 
+        // The Trainer workspace is a separately served tenant surface. Its
+        // authenticated data is intentionally unavailable to this logged-out
+        // structural runner, so inspect the real markup/layout with only its
+        // data bootstrap script stubbed. This still exercises the shipped CSS,
+        // RTL document contract, responsive shell and dialog geometry.
+        for (const viewport of viewports) {
+            const page = await browser.newPage({ viewport: { width: viewport.width, height: viewport.height } });
+            await page.route('**/js/trainer-workspace.js*', (route) => route.fulfill({ status: 200, contentType: 'application/javascript', body: '' }));
+            await page.route('**/api/branding*', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: '{}' }));
+            const diagnostics = listen(page);
+            await page.goto(`${baseUrl}/trainer-workspace`, { waitUntil: 'networkidle' });
+            await runCase(page, { surface: 'Trainer Workspace', target: 'workspace', theme: 'light', viewport: viewport.name }, { rootSelector: '.trainer-workspace-shell', diagnostics });
+            if (viewport.name === '390' || viewport.name === '1440') await page.screenshot({ path: path.join(artifacts, `trainer-workspace-${viewport.name}.png`), fullPage: true });
+            await page.close();
+        }
+
         // Store contains a second navigation layer. Check every actual panel
         // at representative mobile/tablet/desktop widths and both themes.
         for (const theme of ['light', 'dark']) {
@@ -416,11 +432,16 @@ async function run() {
         }
 
         const dialogCases = [
-            { route: '/#dashboard', ids: dialogIds.filter((id) => !id.startsWith('platform')), surface: 'Gym Dialogs' },
+            { route: '/#dashboard', ids: dialogIds.filter((id) => !id.startsWith('platform') && !id.startsWith('trainerClient')), surface: 'Gym Dialogs' },
+            { route: '/trainer-workspace', ids: dialogIds.filter((id) => id.startsWith('trainerClient')), surface: 'Trainer Dialogs' },
             { route: '/platform-admin', ids: dialogIds.filter((id) => id.startsWith('platform')), surface: 'Platform Dialogs' }
         ];
         for (const dialogCase of dialogCases) {
             const dialogPage = await browser.newPage({ viewport: { width: 390, height: 844 } });
+            if (dialogCase.surface === 'Trainer Dialogs') {
+                await dialogPage.route('**/js/trainer-workspace.js*', (route) => route.fulfill({ status: 200, contentType: 'application/javascript', body: '' }));
+                await dialogPage.route('**/api/branding*', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: '{}' }));
+            }
             const diagnostics = listen(dialogPage);
             await dialogPage.goto(`${baseUrl}${dialogCase.route}`, { waitUntil: 'networkidle' });
             if (dialogCase.surface === 'Gym Dialogs') await prepareApp(dialogPage, 'dashboardSection');

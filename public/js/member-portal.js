@@ -32,6 +32,8 @@
   const occupancyUpdated = $('portalOccupancyUpdated');
   const occupancyNote = $('portalOccupancyNote');
   const occupancyRefresh = $('portalOccupancyRefresh');
+  const trainerOverview = $('portalTrainerOverview');
+  const trainerOverviewContent = $('portalTrainerOverviewContent');
   let portalMembershipCode = '';
   let portalReportMeta = '';
   let libraryLoaderPromise = null;
@@ -289,7 +291,50 @@
     return `<section class="${sectionClass}" aria-label="${escapeHtml(title)}"><div class="portal-section-heading"><div><span class="portal-section-kicker">سجل العضوية</span><h3>${escapeHtml(title)}</h3></div><span class="portal-section-count">${countLabel}</span></div>${rows.length ? `<div class="portal-table-wrap"><table class="portal-table"><thead><tr>${headers.map((header) => `<th>${escapeHtml(header)}</th>`).join('')}</tr></thead><tbody>${rows.join('')}</tbody></table></div>` : `<div class="portal-empty">${escapeHtml(emptyText)}</div>`}</section>`;
   }
 
+  function renderTrainerPortal(data) {
+    const member = data.member || {};
+    const coaching = data.coaching || {};
+    const packages = Array.isArray(data.packagePurchases) ? data.packagePurchases : [];
+    const sessions = Array.isArray(data.sessions) ? data.sessions : [];
+    const plans = Array.isArray(coaching.trainingPlans) ? coaching.trainingPlans : [];
+    const nutritionPlans = Array.isArray(coaching.nutritionPlans) ? coaching.nutritionPlans : [];
+    const upcomingSessions = sessions.filter((item) => item.status === 'scheduled').slice(0, 3);
+    const remainingSessions = packages.reduce((sum, item) => sum + number(item.sessionsRemaining), 0);
+    document.documentElement.dataset.portalMode = 'trainer_client';
+    document.documentElement.dataset.portalRequestType = 'trainer_client';
+    document.documentElement.dataset.portalRequestOperation = 'trainer_client';
+    document.documentElement.dataset.portalRequestCanSubmit = 'false';
+    window.dispatchEvent(new CustomEvent('topgym:portal-session-change', {
+      detail: { requestType: 'trainer_client', operation: 'trainer_client', canSubmit: false, membershipStatus: 'none' }
+    }));
+    if (occupancyCard) occupancyCard.hidden = true;
+    const trainerTool = document.querySelector('[data-portal-tool="subscription"]');
+    if (trainerTool) trainerTool.hidden = true;
+    if (resultTitle) resultTitle.textContent = 'بوابة العميل';
+    if ($('portalIssueMeta')) $('portalIssueMeta').textContent = 'تابع خطتك وجلساتك وتقدمك مع مدربك.';
+    if (trainerOverview) trainerOverview.hidden = false;
+    if (trainerOverviewContent) {
+      trainerOverviewContent.innerHTML = `
+        <section class="portal-trainer-identity"><div><span class="portal-section-kicker">CLIENT PROFILE</span><h4>${escapeHtml(member.fullName || '—')}</h4><p class="portal-ltr">${escapeHtml(member.phone || '—')}</p></div><span class="portal-trainer-mode">تدريب شخصي</span></section>
+        <div class="portal-stat-grid portal-trainer-stats" aria-label="ملخص مساحة العميل"><article class="portal-stat"><span>خطط التدريب</span><strong>${number(plans.length).toLocaleString('ar-EG')}</strong><small>الخطط المتاحة لك</small></article><article class="portal-stat"><span>خطط التغذية</span><strong>${number(nutritionPlans.length).toLocaleString('ar-EG')}</strong><small>الخطط المتاحة لك</small></article><article class="portal-stat"><span>الجلسات القادمة</span><strong>${number(upcomingSessions.length).toLocaleString('ar-EG')}</strong><small>مواعيد مجدولة</small></article><article class="portal-stat"><span>الجلسات المتبقية</span><strong>${number(remainingSessions).toLocaleString('ar-EG')}</strong><small>ضمن الباقات الحالية</small></article></div>
+        ${table('خطط التدريب', ['الخطة', 'الفترة', 'الحالة'], plans.map((item) => `<tr>${tableCell('الخطة', escapeHtml(item.name || '—'))}${tableCell('الفترة', `${dateText(item.startDate)}<br>حتى ${dateText(item.endDate)}`, 'portal-ltr')}${tableCell('الحالة', escapeHtml(item.status || '—'))}</tr>`), 'لا توجد خطط تدريب متاحة.', 'portal-trainer-history')}
+        ${table('خطط التغذية', ['الخطة', 'الفترة', 'الحالة'], nutritionPlans.map((item) => `<tr>${tableCell('الخطة', escapeHtml(item.name || '—'))}${tableCell('الفترة', `${dateText(item.startDate)}<br>حتى ${dateText(item.endDate)}`, 'portal-ltr')}${tableCell('الحالة', escapeHtml(item.status || '—'))}</tr>`), 'لا توجد خطط تغذية متاحة.', 'portal-trainer-history')}
+        ${table('الجلسات القادمة', ['الموعد', 'الحالة', 'ملاحظات'], upcomingSessions.map((item) => `<tr>${tableCell('الموعد', dateTimeText(item.scheduledStart), 'portal-ltr')}${tableCell('الحالة', escapeHtml(item.status === 'scheduled' ? 'مجدولة' : item.status || '—'))}${tableCell('ملاحظات', escapeHtml(item.notes || '—'))}</tr>`), 'لا توجد جلسات قادمة.', 'portal-trainer-history')}`;
+    }
+    portalReportMeta = `ملف العميل: ${member.fullName || '—'} · تاريخ الإصدار: ${dateTimeText(data.issuedAt)}`;
+    resetFeedback();
+    setPortalView('home');
+  }
+
   function render(data) {
+    if (data?.portalMode === 'trainer_client') {
+      renderTrainerPortal(data);
+      return;
+    }
+    document.documentElement.dataset.portalMode = 'gym_member';
+    const trainerTool = document.querySelector('[data-portal-tool="subscription"]');
+    if (trainerTool) trainerTool.hidden = false;
+    if (trainerOverview) trainerOverview.hidden = true;
     const member = data.member || {};
     const current = data.currentMembership || {};
     const status = current.status || 'expired';
@@ -375,6 +420,10 @@
     delete document.documentElement.dataset.portalRequestType;
     delete document.documentElement.dataset.portalRequestOperation;
     delete document.documentElement.dataset.portalRequestCanSubmit;
+    delete document.documentElement.dataset.portalMode;
+    const trainerTool = document.querySelector('[data-portal-tool="subscription"]');
+    if (trainerTool) trainerTool.hidden = false;
+    if (trainerOverview) trainerOverview.hidden = true;
     window.dispatchEvent(new CustomEvent('topgym:portal-session-change', {
       detail: { requestType: 'membership', operation: 'membership', canSubmit: true, membershipStatus: 'none' }
     }));
@@ -416,8 +465,13 @@
       input.value = '';
       loginPanel.hidden = true;
       resultPanel.hidden = false;
-      void refreshOccupancy();
-      scheduleOccupancyRefresh();
+      if (data?.portalMode !== 'trainer_client') {
+        void refreshOccupancy();
+        scheduleOccupancyRefresh();
+      } else {
+        clearOccupancyTimer();
+        stopOccupancyRequest();
+      }
       resultPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
     } catch (error) {
       showError(error.message || 'تعذر عرض بيانات العضوية.');
@@ -460,7 +514,7 @@
     if (activePortalView === 'feedback') setPortalView(activePortalView);
   });
   document.addEventListener('visibilitychange', () => {
-    if (!portalMembershipCode) return;
+    if (!portalMembershipCode || document.documentElement.dataset.portalMode === 'trainer_client') return;
     if (document.hidden) {
       clearOccupancyTimer();
       occupancyRequestController?.abort();
