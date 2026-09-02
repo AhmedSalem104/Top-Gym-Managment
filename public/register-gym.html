@@ -36,10 +36,26 @@
         </header>
 
         <nav class="registration-type-switch" aria-label="نوع استخدام المنصة">
-            <span class="registration-type-switch-label">هتستخدم المنصة لإيه؟</span>
+            <div class="registration-type-switch-intro">
+                <span class="registration-type-switch-eyebrow">خطوتك الأولى</span>
+                <span class="registration-type-switch-label">هتستخدم المنصة لإيه؟</span>
+                <span class="registration-type-switch-helper">اختار المسار المناسب لك عشان نجهز تجربتك.</span>
+            </div>
             <div class="registration-type-switch-options">
-                <a class="is-active" href="/register-gym" aria-current="page">إدارة جيم</a>
-                <a href="/register-trainer">أنا مدرب شخصي</a>
+                <a class="is-active" href="/register-gym" aria-current="page">
+                    <span class="registration-type-option-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" focusable="false"><path d="M4 21V9.5L12 4l8 5.5V21M8 21v-5h8v5M9 12h.01M15 12h.01" /></svg>
+                    </span>
+                    <span class="registration-type-option-copy"><strong>إدارة جيم</strong><small>للجيمات ومراكز اللياقة</small></span>
+                    <span class="registration-type-option-arrow" aria-hidden="true">←</span>
+                </a>
+                <a href="/register-trainer">
+                    <span class="registration-type-option-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" focusable="false"><circle cx="12" cy="7" r="3" /><path d="M5 21c.7-3.7 3.1-5.6 7-5.6s6.3 1.9 7 5.6M4 12h4m8 0h4" /></svg>
+                    </span>
+                    <span class="registration-type-option-copy"><strong>أنا مدرب شخصي</strong><small>للتدريب الفردي وإدارة عملائك</small></span>
+                    <span class="registration-type-option-arrow" aria-hidden="true">←</span>
+                </a>
             </div>
         </nav>
 

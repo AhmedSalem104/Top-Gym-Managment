@@ -181,57 +181,150 @@
 }
 
 .registration-type-switch {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(190px, .7fr) minmax(0, 1.3fr);
   align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
+  gap: var(--space-6);
   margin-bottom: var(--space-3);
-  padding: var(--space-2) var(--space-3);
-  border: 1px solid var(--border-secondary);
-  border-radius: var(--radius-lg);
-  background: color-mix(in srgb, var(--bg-card) 92%, var(--primary-soft));
+  padding: var(--space-4);
+  border: 1px solid var(--primary-border);
+  border-radius: var(--radius-xl);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--primary-soft) 54%, var(--bg-card)), var(--bg-card));
+  box-shadow: var(--shadow-md);
+}
+
+.registration-type-switch-intro {
+  display: grid;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.registration-type-switch-eyebrow {
+  color: var(--primary);
+  font-size: 0.6875rem;
+  font-weight: var(--weight-bold);
+  letter-spacing: .06em;
+  text-transform: uppercase;
 }
 
 .registration-type-switch-label {
-  color: var(--text-secondary);
+  color: var(--text-primary);
+  font-size: clamp(1.1rem, 1rem + .35vw, 1.35rem);
+  font-weight: var(--weight-extrabold);
+  line-height: 1.35;
+}
+
+.registration-type-switch-helper {
+  max-width: 250px;
+  color: var(--text-muted);
   font-size: var(--font-xs);
-  font-weight: var(--weight-semibold);
+  line-height: 1.65;
 }
 
 .registration-type-switch-options {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  padding: 3px;
-  border: 1px solid var(--border-secondary);
-  border-radius: var(--radius-pill);
-  background: var(--bg-surface);
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
 }
 
 .registration-type-switch-options a {
-  min-height: 32px;
-  display: inline-flex;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  min-height: 84px;
   align-items: center;
-  justify-content: center;
-  padding-inline: var(--space-3);
-  border-radius: var(--radius-pill);
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-lg);
+  background: var(--bg-surface);
   color: var(--text-muted);
-  font-size: var(--font-xs);
-  font-weight: var(--weight-semibold);
+  text-align: start;
   text-decoration: none;
-  transition: background-color var(--transition-fast), color var(--transition-fast), transform var(--transition-fast);
+  transition: background-color var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast), color var(--transition-fast), transform var(--transition-fast);
 }
 
 .registration-type-switch-options a:hover,
 .registration-type-switch-options a:focus-visible {
   color: var(--primary);
   background: var(--primary-soft);
+  border-color: var(--primary-border);
+  box-shadow: var(--shadow-primary);
   transform: translateY(-1px);
 }
 
 .registration-type-switch-options a.is-active {
   color: var(--text-on-primary);
   background: var(--primary);
+  border-color: var(--primary);
+  box-shadow: var(--shadow-primary-strong);
+}
+
+.registration-type-option-icon {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+  place-items: center;
+  border: 1px solid var(--primary-border);
+  border-radius: var(--radius-md);
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+
+.registration-type-option-icon svg {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.7;
+}
+
+.registration-type-switch-options a.is-active .registration-type-option-icon {
+  border-color: rgb(255 255 255 / .25);
+  background: rgb(255 255 255 / .16);
+  color: var(--text-on-primary);
+}
+
+.registration-type-option-copy {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.registration-type-option-copy strong {
+  overflow: hidden;
+  color: currentColor;
+  font-size: var(--font-md);
+  font-weight: var(--weight-bold);
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.registration-type-option-copy small {
+  overflow: hidden;
+  color: var(--text-muted);
+  font-size: var(--font-xs);
+  line-height: 1.5;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.registration-type-switch-options a.is-active .registration-type-option-copy small {
+  color: rgb(255 255 255 / .8);
+}
+
+.registration-type-option-arrow {
+  color: var(--primary);
+  font-size: var(--font-lg);
+  font-weight: var(--weight-bold);
+  line-height: 1;
+}
+
+.registration-type-switch-options a.is-active .registration-type-option-arrow {
+  color: var(--text-on-primary);
 }
 
 .registration-steps {
@@ -1090,10 +1183,14 @@
   }
 
   .registration-type-switch {
+    grid-template-columns: 1fr;
     align-items: stretch;
-    flex-direction: column;
     gap: var(--space-2);
     padding: var(--space-2);
+  }
+
+  .registration-type-switch-intro {
+    padding: var(--space-2) var(--space-2) 0;
   }
 
   .registration-type-switch-label {
@@ -1102,11 +1199,12 @@
 
   .registration-type-switch-options {
     width: 100%;
+    grid-template-columns: 1fr;
   }
 
   .registration-type-switch-options a {
-    flex: 1 1 50%;
-    padding-inline: var(--space-2);
+    min-height: 72px;
+    padding: var(--space-3);
   }
 
   .registration-header-actions {
