@@ -12,20 +12,29 @@ IF COL_LENGTH(N'dbo.memberships', N'branch_access_mode') IS NULL
         ADD branch_access_mode VARCHAR(24) NOT NULL
             CONSTRAINT DF_memberships_branch_access_mode DEFAULT ('single_branch');
 
-IF EXISTS (
-    SELECT 1 FROM dbo.memberships
-    WHERE branch_access_mode NOT IN ('single_branch', 'selected_branches', 'all_branches')
-)
-    THROW 51301, 'Membership branch access contains an unsupported value.', 1;
+-- SQL Server binds a static batch before executing its first statement. The
+-- column added above therefore cannot be referenced later in the same static
+-- batch on a cold schema. Compile the dependent validation/constraint batch
+-- only after the conditional ALTER TABLE has completed.
+EXEC sys.sp_executesql N'
+    IF EXISTS (
+        SELECT 1 FROM dbo.memberships
+        WHERE branch_access_mode NOT IN (''single_branch'', ''selected_branches'', ''all_branches'')
+    )
+    BEGIN
+        THROW 51301, ''Membership branch access contains an unsupported value.'', 1;
+    END;
 
-IF NOT EXISTS (
-    SELECT 1
-    FROM sys.check_constraints
-    WHERE name=N'CK_memberships_branch_access_mode'
-      AND parent_object_id=OBJECT_ID(N'dbo.memberships')
-)
-    ALTER TABLE dbo.memberships ADD CONSTRAINT CK_memberships_branch_access_mode
-        CHECK (branch_access_mode IN ('single_branch', 'selected_branches', 'all_branches'));
+    IF NOT EXISTS (
+        SELECT 1
+        FROM sys.check_constraints
+        WHERE name=N''CK_memberships_branch_access_mode''
+          AND parent_object_id=OBJECT_ID(N''dbo.memberships'')
+    )
+    BEGIN
+        ALTER TABLE dbo.memberships ADD CONSTRAINT CK_memberships_branch_access_mode
+            CHECK (branch_access_mode IN (''single_branch'', ''selected_branches'', ''all_branches''));
+    END;';
 
 IF OBJECT_ID(N'dbo.gym_membership_branch_access', N'U') IS NULL
 BEGIN
@@ -82,16 +91,18 @@ IF NOT EXISTS (
 
 -- A legacy membership has one default branch. Explicit future modes are
 -- represented by rows in this table and are not silently expanded.
-MERGE dbo.gym_membership_branch_access AS target
-USING (
-    SELECT membership.tenant_id, membership.id AS membership_id, branch.id AS branch_id
-    FROM dbo.memberships AS membership
-    INNER JOIN dbo.gym_branches AS branch
-            ON branch.tenant_id = membership.tenant_id
-           AND branch.is_main_branch = 1
-    WHERE membership.branch_access_mode = 'single_branch'
-) AS source
-ON target.membership_id=source.membership_id AND target.branch_id=source.branch_id
-WHEN NOT MATCHED THEN
-    INSERT (tenant_id, membership_id, branch_id)
-    VALUES (source.tenant_id, source.membership_id, source.branch_id);
+-- Keep the final backfill in a separate compile scope for the same reason.
+EXEC sys.sp_executesql N'
+    MERGE dbo.gym_membership_branch_access AS target
+    USING (
+        SELECT membership.tenant_id, membership.id AS membership_id, branch.id AS branch_id
+        FROM dbo.memberships AS membership
+        INNER JOIN dbo.gym_branches AS branch
+                ON branch.tenant_id = membership.tenant_id
+               AND branch.is_main_branch = 1
+        WHERE membership.branch_access_mode = ''single_branch''
+    ) AS source
+    ON target.membership_id=source.membership_id AND target.branch_id=source.branch_id
+    WHEN NOT MATCHED THEN
+        INSERT (tenant_id, membership_id, branch_id)
+        VALUES (source.tenant_id, source.membership_id, source.branch_id);';

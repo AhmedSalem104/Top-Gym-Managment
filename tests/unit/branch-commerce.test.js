@@ -33,7 +33,11 @@ test('Bar schema prevents negative inventory and duplicate open shifts', () => {
     assert.match(locationMigration, /CK_gym_store_location_inventory_quantity/);
     assert.match(migration, /UX_gym_pos_shifts_open/);
     assert.match(migration, /UX_gym_store_sales_idempotency/);
-    assert.match(migration, /sales_channel IN \('store', 'bar'\)/);
+    assert.ok(
+        /sales_channel IN \('store', 'bar'\)/.test(migration)
+        || /sales_channel IN \(''store'', ''bar''\)/.test(migration),
+        'sales channel constraint preserves the store/bar domain inside or outside dynamic SQL'
+    );
 });
 
 test('branch plan limits are additive and constrained', () => {

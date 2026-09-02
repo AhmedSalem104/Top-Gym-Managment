@@ -92,8 +92,14 @@ BEGIN
     );
 END;
 
-IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name=N'UX_gym_stock_transfers_idempotency' AND object_id=OBJECT_ID(N'dbo.gym_stock_transfers'))
-    CREATE UNIQUE INDEX UX_gym_stock_transfers_idempotency ON dbo.gym_stock_transfers(tenant_id, idempotency_key_hash) WHERE idempotency_key_hash IS NOT NULL;
+-- The filtered index references a column created with the table above. Keep
+-- it in a later compile scope so a cold-schema batch cannot bind the column
+-- before CREATE TABLE has executed.
+EXEC sys.sp_executesql N'
+    IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name=N''UX_gym_stock_transfers_idempotency'' AND object_id=OBJECT_ID(N''dbo.gym_stock_transfers''))
+        CREATE UNIQUE INDEX UX_gym_stock_transfers_idempotency
+            ON dbo.gym_stock_transfers(tenant_id, idempotency_key_hash)
+            WHERE idempotency_key_hash IS NOT NULL;';
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name=N'IX_gym_stock_transfers_tenant_status' AND object_id=OBJECT_ID(N'dbo.gym_stock_transfers'))
     CREATE INDEX IX_gym_stock_transfers_tenant_status ON dbo.gym_stock_transfers(tenant_id, status, created_at DESC, id DESC);
 

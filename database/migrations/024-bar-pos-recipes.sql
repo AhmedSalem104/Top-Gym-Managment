@@ -115,16 +115,22 @@ IF COL_LENGTH(N'dbo.gym_store_sale_items', N'recipe_id') IS NULL
 IF COL_LENGTH(N'dbo.gym_store_sale_items', N'modifier_snapshot_json') IS NULL
     ALTER TABLE dbo.gym_store_sale_items ADD modifier_snapshot_json NVARCHAR(MAX) NULL;
 
-IF NOT EXISTS (SELECT 1 FROM sys.foreign_keys WHERE name=N'FK_gym_store_sales_shift' AND parent_object_id=OBJECT_ID(N'dbo.gym_store_sales'))
-    ALTER TABLE dbo.gym_store_sales ADD CONSTRAINT FK_gym_store_sales_shift FOREIGN KEY (pos_shift_id) REFERENCES dbo.gym_pos_shifts(id);
-IF NOT EXISTS (SELECT 1 FROM sys.foreign_keys WHERE name=N'FK_gym_store_sale_items_recipe' AND parent_object_id=OBJECT_ID(N'dbo.gym_store_sale_items'))
-    ALTER TABLE dbo.gym_store_sale_items ADD CONSTRAINT FK_gym_store_sale_items_recipe FOREIGN KEY (recipe_id) REFERENCES dbo.gym_bar_recipes(id);
-IF NOT EXISTS (SELECT 1 FROM sys.check_constraints WHERE name=N'CK_gym_store_sales_channel' AND parent_object_id=OBJECT_ID(N'dbo.gym_store_sales'))
-    ALTER TABLE dbo.gym_store_sales ADD CONSTRAINT CK_gym_store_sales_channel CHECK (sales_channel IN ('store', 'bar'));
-IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name=N'UX_gym_store_sales_idempotency' AND object_id=OBJECT_ID(N'dbo.gym_store_sales'))
-    CREATE UNIQUE INDEX UX_gym_store_sales_idempotency ON dbo.gym_store_sales(tenant_id, idempotency_key_hash) WHERE idempotency_key_hash IS NOT NULL;
-IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name=N'IX_gym_store_sales_channel_date' AND object_id=OBJECT_ID(N'dbo.gym_store_sales'))
-    CREATE INDEX IX_gym_store_sales_channel_date ON dbo.gym_store_sales(tenant_id, sales_channel, branch_id, sale_date DESC, id DESC);
+-- The statements below depend on columns added immediately above. Compile
+-- them after those conditional ALTER TABLE statements have executed.
+EXEC sys.sp_executesql N'
+    IF NOT EXISTS (SELECT 1 FROM sys.foreign_keys WHERE name=N''FK_gym_store_sales_shift'' AND parent_object_id=OBJECT_ID(N''dbo.gym_store_sales''))
+        ALTER TABLE dbo.gym_store_sales ADD CONSTRAINT FK_gym_store_sales_shift FOREIGN KEY (pos_shift_id) REFERENCES dbo.gym_pos_shifts(id);
+    IF NOT EXISTS (SELECT 1 FROM sys.foreign_keys WHERE name=N''FK_gym_store_sale_items_recipe'' AND parent_object_id=OBJECT_ID(N''dbo.gym_store_sale_items''))
+        ALTER TABLE dbo.gym_store_sale_items ADD CONSTRAINT FK_gym_store_sale_items_recipe FOREIGN KEY (recipe_id) REFERENCES dbo.gym_bar_recipes(id);
+    IF NOT EXISTS (SELECT 1 FROM sys.check_constraints WHERE name=N''CK_gym_store_sales_channel'' AND parent_object_id=OBJECT_ID(N''dbo.gym_store_sales''))
+        ALTER TABLE dbo.gym_store_sales ADD CONSTRAINT CK_gym_store_sales_channel CHECK (sales_channel IN (''store'', ''bar''));
+    IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name=N''UX_gym_store_sales_idempotency'' AND object_id=OBJECT_ID(N''dbo.gym_store_sales''))
+        CREATE UNIQUE INDEX UX_gym_store_sales_idempotency
+            ON dbo.gym_store_sales(tenant_id, idempotency_key_hash)
+            WHERE idempotency_key_hash IS NOT NULL;
+    IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name=N''IX_gym_store_sales_channel_date'' AND object_id=OBJECT_ID(N''dbo.gym_store_sales''))
+        CREATE INDEX IX_gym_store_sales_channel_date
+            ON dbo.gym_store_sales(tenant_id, sales_channel, branch_id, sale_date DESC, id DESC);';
 
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name=N'IX_gym_store_stock_movements_waste' AND object_id=OBJECT_ID(N'dbo.gym_store_stock_movements'))
     CREATE INDEX IX_gym_store_stock_movements_waste ON dbo.gym_store_stock_movements(tenant_id, reference_type, reference_id, created_at DESC);
