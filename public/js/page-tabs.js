@@ -431,8 +431,14 @@
         document.querySelectorAll('[data-page-tab]').forEach((button) => {
             button.setAttribute('role', 'tab');
         });
-        document.querySelectorAll('[data-page-tab]').forEach((button) => {
-            button.addEventListener('click', () => { void activateTab(button.dataset.pageTab); });
+        // Use one delegated listener so tabs injected by optional modules
+        // (for example the Gym-only Branches tab) remain navigable even when
+        // they are created after this bootstrap handler runs.
+        const tabRail = document.getElementById('pageTabs');
+        tabRail?.addEventListener('click', (event) => {
+            const button = event.target.closest?.('[data-page-tab]');
+            if (!button || !tabRail.contains(button)) return;
+            void activateTab(button.dataset.pageTab);
         });
         document.querySelectorAll('[data-page-tab-link]').forEach((button) => {
             button.addEventListener('click', () => { void activateTab(button.dataset.pageTabLink); });

@@ -24,7 +24,7 @@ test('Gym App exposes five compact mobile navigation tabs per row', () => {
     assert.match(index, /id="mobileNavToggle"[^>]*aria-controls="pageTabs"/);
     assert.match(index, /id="mobileNavClose"/);
     assert.match(index, /id="mobileNavBackdrop"[^>]*hidden/);
-    assert.match(index, /\/js\/page-tabs\.js\?v=22/);
+    assert.match(index, /\/js\/page-tabs\.js\?v=23/);
     assert.match(source, /function initMobileNavigation\(\)/);
     assert.match(source, /matchMedia\('\(max-width: 1199px\)'\)/);
     assert.match(source, /rail\.removeAttribute\('aria-hidden'\)/);
