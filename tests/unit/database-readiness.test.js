@@ -2,6 +2,7 @@
 
 const assert = require('node:assert/strict');
 const path = require('node:path');
+const fs = require('node:fs');
 const test = require('node:test');
 
 const {
@@ -38,6 +39,19 @@ test('database readiness audit finds the canonical migration set safe at source 
     assert.equal(report.schemaReview.status, 'REQUIRES STAGING VERIFICATION');
     assert.equal(report.liveVerification, 'REQUIRES STAGING/PRODUCTION VERIFICATION');
     assert.equal(report.runtimeSchemaChecks.tenantStatusConstraintOnlyReplacedWhenOutdated, true);
+});
+
+test('migration runner applies the canonical commercial base before trainer registration extensions', () => {
+    const runner = fs.readFileSync(path.join(__dirname, '..', '..', 'scripts', 'migrate-tenancy.js'), 'utf8');
+    const baseMigration = runner.indexOf('BASE_COMMERCIAL_MIGRATION_PATH');
+    const phase2Migration = runner.indexOf('PHASE2_PLAN_COMPATIBILITY_MIGRATION_PATH');
+    const baseBatch = runner.indexOf('baseCommercialMigration');
+    const phase2Batch = runner.indexOf('phase2PlanCompatibilityMigration');
+    assert.ok(baseMigration >= 0);
+    assert.ok(baseBatch >= 0);
+    assert.ok(phase2Migration >= 0);
+    assert.ok(phase2Batch >= 0);
+    assert.ok(baseBatch < phase2Batch);
 });
 
 test('database readiness audit requires guards for additive migration operations', () => {

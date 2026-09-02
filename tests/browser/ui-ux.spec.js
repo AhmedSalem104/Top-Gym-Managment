@@ -64,6 +64,17 @@ async function capture(page, testInfo, name) {
 
 test.beforeEach(async ({ page }) => {
     await page.goto('/', { waitUntil: 'domcontentloaded' });
+    const entryButton = page.locator('#saasEntryContinue');
+    if (await entryButton.count()) {
+        await entryButton.click();
+        await expect(page.locator('#loginEmail')).toBeVisible({ timeout: 20_000 });
+        const email = process.env.QA_OWNER_EMAIL || process.env.AUTH_OWNER_EMAIL;
+        const password = process.env.QA_OWNER_PASSWORD || process.env.AUTH_OWNER_PASSWORD;
+        if (!email || !password) throw new Error('E2E owner credentials are not configured.');
+        await page.locator('#loginEmail').fill(email);
+        await page.locator('#loginPassword').fill(password);
+        await page.locator('#loginSubmit').click();
+    }
     await expect(page.locator('[data-page-tab="dashboard"]')).toHaveClass(/active/, { timeout: 20_000 });
 });
 
@@ -101,7 +112,9 @@ test('members modal and action menu stay inside the viewport', async ({ page }) 
     expect(dialogBox.y).toBeGreaterThanOrEqual(0);
     expect(dialogBox.x + dialogBox.width).toBeLessThanOrEqual(viewport.width + 1);
     expect(dialogBox.y + dialogBox.height).toBeLessThanOrEqual(viewport.height + 1);
-    await page.locator('#memberDialogClose').click();
+    const dialogClose = page.locator('#memberDialog .dialog-close-button');
+    await expect(dialogClose).toBeVisible();
+    await dialogClose.click();
     await expect(dialog).not.toBeVisible();
 
     const menuToggle = page.locator('#membersList [data-menu-toggle]').first();

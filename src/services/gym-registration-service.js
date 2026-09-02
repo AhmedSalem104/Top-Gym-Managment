@@ -5,6 +5,7 @@ const { getPool, sql } = require('../database');
 const { withTransaction } = require('../database/transaction');
 const { config } = require('../config/env');
 const commercialSchema = require('./commercial-schema');
+const { runTenantContext } = require('../tenancy/tenant-context');
 const { TENANT_TYPES, resolveTenantType } = require('../tenancy/tenant-types');
 
 const MAX_PAGE_SIZE = 100;
@@ -285,6 +286,15 @@ async function verifyStoredProof(storage, row) {
 function createGymRegistrationService({ commercialService, saasService, authService, objectStorageService } = {}) {
     if (!commercialService || !saasService || !authService) throw new Error('Gym registration service dependencies are required.');
 
+    // Public registration is deliberately tenant-neutral. Its audit events
+    // are platform-scoped (tenant_id = NULL), so execute only those audit
+    // writes in the platform context required by the SQL Server block
+    // predicate. This does not grant public callers platform data access.
+    const recordPlatformAudit = (details) => runTenantContext(
+        { tenantId: null, mode: 'platform', readOnlyBaseline: false },
+        () => saasService.recordAudit(details)
+    );
+
     return {
         async catalog(tenantType = TENANT_TYPES.GYM) {
             await ensureTables({ readOnly: true });
@@ -352,7 +362,7 @@ function createGymRegistrationService({ commercialService, saasService, authServ
                                     @termCode,@durationMonths,@price,@discountAmount,@amountDue,@currency,
                                     @paymentMethodCode,@paymentMethodName,@notes,@idempotencyKeyHash,@publicTokenHash);`);
                 requestId = Number(result.recordset[0]?.id);
-                await saasService.recordAudit({
+                await recordPlatformAudit({
                     tenantId: null,
                     actorUserId: null,
                     action: 'gym_registration_requested',
@@ -423,7 +433,7 @@ function createGymRegistrationService({ commercialService, saasService, authServ
                                     INSERT INTO dbo.saas_gym_registration_payment_proofs
                                         (request_id,file_name,mime_type,file_size,sha256,storage_key,storage_provider,storage_verified_at)
                                     VALUES (@requestId,@fileName,@mimeType,@fileSize,@sha256,@storageKey,@storageProvider,SYSUTCDATETIME());`);
-                    await saasService.recordAudit({
+                    await recordPlatformAudit({
                         tenantId: null,
                         actorUserId: null,
                         action: 'gym_registration_payment_proof_uploaded',

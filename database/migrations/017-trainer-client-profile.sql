@@ -19,13 +19,13 @@ IF NOT EXISTS (
     WHERE name=N'CK_members_profile_status'
       AND parent_object_id=OBJECT_ID(N'dbo.members')
 )
-    ALTER TABLE dbo.members ADD CONSTRAINT CK_members_profile_status
-        CHECK (profile_status IS NULL OR profile_status IN ('active','paused','archived'));
+    EXEC(N'ALTER TABLE dbo.members ADD CONSTRAINT CK_members_profile_status
+        CHECK (profile_status IS NULL OR profile_status IN (''active'',''paused'',''archived''));');
 
 IF NOT EXISTS (
     SELECT 1 FROM sys.indexes
     WHERE name=N'IX_members_profile_status'
       AND object_id=OBJECT_ID(N'dbo.members')
 )
-    CREATE INDEX IX_members_profile_status
-        ON dbo.members(profile_status, updated_at DESC, id DESC);
+    EXEC(N'CREATE INDEX IX_members_profile_status
+        ON dbo.members(profile_status, updated_at DESC, id DESC);');

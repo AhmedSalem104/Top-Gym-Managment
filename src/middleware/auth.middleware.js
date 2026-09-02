@@ -50,6 +50,8 @@ function createAuthApiMiddleware({ authService, isAuthorizedCronRequest, tenantS
         const memberPortalSessionPath = request.path === '/member-portal/session'
             || request.path === '/member-portal/payment-methods'
             || request.path === '/member-portal/membership-catalog'
+            || request.path === '/member-portal/library/options'
+            || request.path.startsWith('/member-portal/library/')
             || request.path.startsWith('/member-portal/subscription-requests');
         const publicGymRegistrationPath = request.path === '/public/gym-registration/catalog'
             || request.path === '/public/gym-registration/requests'
@@ -58,8 +60,6 @@ function createAuthApiMiddleware({ authService, isAuthorizedCronRequest, tenantS
             || request.path === '/public/trainer-registration/requests'
             || request.path.startsWith('/public/trainer-registration/requests/');
         const publicPath = ['/health', '/health/live', '/member-portal/lookup', '/member-portal/occupancy', '/member-portal/feedback', '/branding'].includes(request.path)
-            || request.path === '/member-portal/library/options'
-            || request.path.startsWith('/member-portal/library/')
             || (request.method === 'GET' && request.path.startsWith('/branding/assets/'));
         const cronRequest = request.path === '/backup/daily' && isAuthorizedCronRequest(request);
         const platformPath = request.path.startsWith('/platform/') || request.path.startsWith('/platform-admin/');

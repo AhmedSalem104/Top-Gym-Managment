@@ -393,9 +393,16 @@ async function createPurchase(body = {}) {
             .query('SELECT TOP (1) id,package_id,member_id,amount_due,amount_paid,amount_remaining FROM dbo.trainer_package_purchases WITH (UPDLOCK,HOLDLOCK) WHERE tenant_id=@tenantId AND idempotency_key_hash=@hash;');
         if (replay.recordset[0]) {
             const existing = replay.recordset[0];
+            const initialPaymentHash = idempotencyHash(`trainer-payment:${existing.id}:purchase:${requestKey}`);
+            const initialPayment = await transaction.request()
+                .input('tenantId', sql.Int, tenantId)
+                .input('purchaseId', sql.Int, Number(existing.id))
+                .input('hash', sql.Char(64), initialPaymentHash)
+                .query('SELECT TOP (1) amount_paid FROM dbo.gym_payment_transactions WHERE tenant_id=@tenantId AND trainer_package_purchase_id=@purchaseId AND idempotency_key_hash=@hash;');
+            const originalAmountPaid = initialPayment.recordset[0] ? Number(initialPayment.recordset[0].amount_paid) : 0;
             if (Number(existing.package_id) !== packageId
                 || Number(existing.member_id) !== memberId
-                || Math.abs(Number(existing.amount_paid) - paid) > 0.005) {
+                || Math.abs(originalAmountPaid - paid) > 0.005) {
                 throw commerceError('مفتاح العملية مستخدم لطلب شراء مختلف.', 409, 'PURCHASE_IDEMPOTENCY_CONFLICT');
             }
             return Number(existing.id);
@@ -440,6 +447,7 @@ async function createPurchase(body = {}) {
 async function recordPayment(purchaseIdValue, body = {}) {
     const { tenantId } = await assertTrainerContext();
     const purchaseId = positiveId(purchaseIdValue, 'معرّف شراء الباقة');
+    idempotencyHash(body.idempotencyKey);
     const paid = money(body.amountPaid, 'المبلغ المدفوع', { required: true });
     if (paid <= 0) throw commerceError('المبلغ المدفوع يجب أن يكون أكبر من صفر.', 422, 'VALIDATION_ERROR');
     const paymentMethod = String(body.paymentMethod || 'cash').trim().toLowerCase();

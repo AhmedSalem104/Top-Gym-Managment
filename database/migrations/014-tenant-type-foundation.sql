@@ -32,12 +32,13 @@ EXEC sys.sp_executesql N'
     SET tenant_type=''gym''
     WHERE tenant_type IS NULL OR LTRIM(RTRIM(tenant_type))='''';';
 
-IF EXISTS (
-    SELECT 1
-    FROM dbo.gym_tenants
-    WHERE tenant_type NOT IN ('gym', 'independent_trainer')
-)
-    THROW 51017, 'gym_tenants contains an unsupported tenant_type; migration stopped safely.', 1;
+EXEC sys.sp_executesql N'
+    IF EXISTS (
+        SELECT 1
+        FROM dbo.gym_tenants
+        WHERE tenant_type NOT IN (''gym'', ''independent_trainer'')
+    )
+        THROW 51017, ''gym_tenants contains an unsupported tenant_type; migration stopped safely.'', 1;';
 
 IF EXISTS (
     SELECT 1
@@ -46,7 +47,7 @@ IF EXISTS (
       AND name=N'tenant_type'
       AND is_nullable=1
 )
-    ALTER TABLE dbo.gym_tenants ALTER COLUMN tenant_type VARCHAR(32) NOT NULL;
+    EXEC(N'ALTER TABLE dbo.gym_tenants ALTER COLUMN tenant_type VARCHAR(32) NOT NULL;');
 
 IF EXISTS (
     SELECT 1
@@ -65,7 +66,7 @@ IF NOT EXISTS (
     WHERE dc.parent_object_id=OBJECT_ID(N'dbo.gym_tenants')
       AND c.name=N'tenant_type'
 )
-    ALTER TABLE dbo.gym_tenants ADD CONSTRAINT DF_gym_tenants_tenant_type DEFAULT ('gym') FOR tenant_type;
+    EXEC(N'ALTER TABLE dbo.gym_tenants ADD CONSTRAINT DF_gym_tenants_tenant_type DEFAULT (''gym'') FOR tenant_type;');
 
 IF EXISTS (
     SELECT 1
@@ -82,6 +83,6 @@ IF NOT EXISTS (
     WHERE name=N'CK_gym_tenants_tenant_type'
       AND parent_object_id=OBJECT_ID(N'dbo.gym_tenants')
 )
-    ALTER TABLE dbo.gym_tenants ADD CONSTRAINT CK_gym_tenants_tenant_type CHECK (tenant_type IN ('gym', 'independent_trainer'));
+    EXEC(N'ALTER TABLE dbo.gym_tenants ADD CONSTRAINT CK_gym_tenants_tenant_type CHECK (tenant_type IN (''gym'', ''independent_trainer''));');
 
 COMMIT TRANSACTION;

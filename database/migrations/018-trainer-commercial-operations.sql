@@ -96,8 +96,8 @@ BEGIN
         quantity INT NOT NULL CONSTRAINT DF_trainer_package_usage_quantity DEFAULT (1),
         created_at DATETIME2(0) NOT NULL CONSTRAINT DF_trainer_package_usage_created DEFAULT (SYSUTCDATETIME()),
         CONSTRAINT FK_trainer_package_usage_tenant FOREIGN KEY (tenant_id) REFERENCES dbo.gym_tenants(id) ON DELETE CASCADE,
-        CONSTRAINT FK_trainer_package_usage_purchase FOREIGN KEY (package_purchase_id) REFERENCES dbo.trainer_package_purchases(id) ON DELETE CASCADE,
-        CONSTRAINT FK_trainer_package_usage_session FOREIGN KEY (coaching_session_id) REFERENCES dbo.coaching_sessions(id) ON DELETE CASCADE,
+        CONSTRAINT FK_trainer_package_usage_purchase FOREIGN KEY (package_purchase_id) REFERENCES dbo.trainer_package_purchases(id) ON DELETE NO ACTION,
+        CONSTRAINT FK_trainer_package_usage_session FOREIGN KEY (coaching_session_id) REFERENCES dbo.coaching_sessions(id) ON DELETE NO ACTION,
         CONSTRAINT UQ_trainer_package_usage_session UNIQUE (package_purchase_id, coaching_session_id),
         CONSTRAINT CK_trainer_package_usage_quantity CHECK (quantity = 1)
     );
@@ -120,20 +120,20 @@ IF NOT EXISTS (
     WHERE name = N'FK_gym_payment_transactions_trainer_purchase'
       AND parent_object_id = OBJECT_ID(N'dbo.gym_payment_transactions')
 )
-    ALTER TABLE dbo.gym_payment_transactions
+    EXEC(N'ALTER TABLE dbo.gym_payment_transactions
         ADD CONSTRAINT FK_gym_payment_transactions_trainer_purchase
-        FOREIGN KEY (trainer_package_purchase_id) REFERENCES dbo.trainer_package_purchases(id) ON DELETE NO ACTION;
+        FOREIGN KEY (trainer_package_purchase_id) REFERENCES dbo.trainer_package_purchases(id) ON DELETE NO ACTION;');
 
 IF NOT EXISTS (
     SELECT 1 FROM sys.check_constraints
     WHERE name = N'CK_gym_payment_transactions_owner_ref'
       AND parent_object_id = OBJECT_ID(N'dbo.gym_payment_transactions')
 )
-    ALTER TABLE dbo.gym_payment_transactions
+    EXEC(N'ALTER TABLE dbo.gym_payment_transactions
         ADD CONSTRAINT CK_gym_payment_transactions_owner_ref CHECK (
             (membership_id IS NOT NULL AND trainer_package_purchase_id IS NULL)
             OR (membership_id IS NULL AND trainer_package_purchase_id IS NOT NULL)
-        );
+        );');
 
 IF NOT EXISTS (
     SELECT 1 FROM sys.indexes
@@ -213,6 +213,6 @@ IF NOT EXISTS (
       AND object_id = OBJECT_ID(N'dbo.gym_payment_transactions')
 )
 BEGIN
-    CREATE INDEX IX_gym_payment_transactions_trainer_purchase
-        ON dbo.gym_payment_transactions(trainer_package_purchase_id, paid_at DESC, id DESC);
+    EXEC(N'CREATE INDEX IX_gym_payment_transactions_trainer_purchase
+        ON dbo.gym_payment_transactions(trainer_package_purchase_id, paid_at DESC, id DESC);');
 END;

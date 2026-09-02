@@ -36,7 +36,7 @@ test('tenant type migration is additive, idempotent, and only backfills legacy t
     assert.match(migration, /UPDATE dbo\.gym_tenants[\s\S]*tenant_type=''gym''/i);
     assert.match(migration, /tenant_type VARCHAR\(32\) NOT NULL/i);
     assert.match(migration, /CK_gym_tenants_tenant_type/i);
-    assert.match(migration, /tenant_type IN \('gym', 'independent_trainer'\)/i);
+    assert.match(migration, /tenant_type IN \(('{2})?gym\1, \1independent_trainer\1\)/i);
     assert.doesNotMatch(migration, /DROP\s+(?:TABLE|COLUMN|INDEX)/i);
     assert.doesNotMatch(migration, /DELETE\s+FROM\s+dbo\.(?!gym_tenants\b)/i);
     assert.doesNotMatch(migration, /UPDATE\s+dbo\.(?!gym_tenants\b)/i);

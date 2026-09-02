@@ -187,7 +187,7 @@
 .trainer-pagination { display: flex; justify-content: center; gap: 8px; margin-block-start: 16px; }
 .trainer-pagination button { min-width: 36px; min-height: 34px; border: 1px solid var(--trainer-line); border-radius: 9px; color: var(--color-primary); background: var(--color-surface); cursor: pointer; font: inherit; }
 
-.trainer-client-dialog { width: min(620px, calc(100% - 28px)); padding: 0; border: 1px solid var(--trainer-line); border-radius: 22px; color: var(--color-text); background: var(--color-surface); box-shadow: 0 28px 90px rgba(7, 28, 57, .28); }
+.trainer-client-dialog { width: min(620px, calc(100% - 28px)); max-height: calc(100dvh - 28px); box-sizing: border-box; overflow: auto; padding: 0; border: 1px solid var(--trainer-line); border-radius: 22px; color: var(--color-text); background: var(--color-surface); box-shadow: 0 28px 90px rgba(7, 28, 57, .28); overscroll-behavior: contain; }
 .trainer-client-dialog::backdrop { background: rgba(7, 25, 50, .52); backdrop-filter: blur(3px); }
 .trainer-client-dialog form, .trainer-client-details { padding: 23px; }
 .trainer-dialog-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding-block-end: 17px; border-bottom: 1px solid var(--trainer-line); }

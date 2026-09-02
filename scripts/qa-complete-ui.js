@@ -221,6 +221,38 @@ async function preparePortalTool(page, tool) {
     await page.waitForTimeout(50);
 }
 
+async function installPortalVisualStubs(page) {
+    // These cases deliberately exercise a portal surface without a real
+    // member/portal credential. Provide empty, valid payloads for the data
+    // requests triggered by the visual state so the check validates layout
+    // rather than relying on a removed public/default tenant fallback.
+    await page.route('**/api/member-portal/library/options*', (route) => route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ filters: { difficulties: [], equipment: [], categories: [] } })
+    }));
+    await page.route('**/api/member-portal/library/*', (route) => route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ items: [], pagination: { page: 1, pageSize: 18, totalItems: 0, totalPages: 0 } })
+    }));
+    await page.route('**/api/member-portal/membership-catalog*', (route) => route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ currency: 'EGP', plans: [], types: [], prices: {} })
+    }));
+    await page.route('**/api/member-portal/payment-methods*', (route) => route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ paymentMethods: [] })
+    }));
+    await page.route('**/api/member-portal/subscription-requests*', (route) => route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ requests: [], pagination: { page: 1, pageSize: 10, totalItems: 0, totalPages: 0 } })
+    }));
+}
+
 async function ensureApplicationFeature(page, target) {
     if (target !== 'expenses') return;
     await page.evaluate(async () => { await window.topGymEnsureTab?.('finance'); });
@@ -421,6 +453,7 @@ async function run() {
             for (const viewport of viewports.filter((item) => darkEvidenceWidths.has(item.name))) {
                 const page = await browser.newPage({ viewport: { width: viewport.width, height: viewport.height } });
                 await page.addInitScript((savedTheme) => { window.localStorage.setItem('topgym-theme', savedTheme); }, theme);
+                await installPortalVisualStubs(page);
                 const diagnostics = listen(page);
                 await page.goto(`${baseUrl}/member-portal`, { waitUntil: 'networkidle' });
                 for (const [tool, targetId] of portalTools) {
@@ -432,8 +465,8 @@ async function run() {
         }
 
         const dialogCases = [
-            { route: '/#dashboard', ids: dialogIds.filter((id) => !id.startsWith('platform') && !id.startsWith('trainerClient')), surface: 'Gym Dialogs' },
-            { route: '/trainer-workspace', ids: dialogIds.filter((id) => id.startsWith('trainerClient')), surface: 'Trainer Dialogs' },
+            { route: '/#dashboard', ids: dialogIds.filter((id) => !id.startsWith('platform') && !id.startsWith('trainer')), surface: 'Gym Dialogs' },
+            { route: '/trainer-workspace', ids: dialogIds.filter((id) => id.startsWith('trainer')), surface: 'Trainer Dialogs' },
             { route: '/platform-admin', ids: dialogIds.filter((id) => id.startsWith('platform')), surface: 'Platform Dialogs' }
         ];
         for (const dialogCase of dialogCases) {

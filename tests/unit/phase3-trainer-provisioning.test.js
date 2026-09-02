@@ -24,7 +24,7 @@ test('Phase 3 migration is additive, idempotent, and constrains registration typ
     const migration = read('database/migrations/016-independent-trainer-registration.sql');
     assert.match(migration, /COL_LENGTH\([^\n]+tenant_type/);
     assert.match(migration, /UPDATE dbo\.saas_gym_registration_requests/);
-    assert.match(migration, /tenant_type IN \('gym', 'independent_trainer'\)/);
+    assert.match(migration, /tenant_type IN \(('{2})?gym\1, \1independent_trainer\1\)/);
     assert.match(migration, /DF_saas_registration_tenant_type/);
     assert.match(migration, /CK_saas_registration_tenant_type/);
     assert.match(migration, /IX_saas_registration_tenant_type_queue/);

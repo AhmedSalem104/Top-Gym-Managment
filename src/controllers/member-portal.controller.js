@@ -121,17 +121,19 @@ function createMemberPortalController({ membershipCodeService, portalService, li
             // Library rows are tenant-owned. Never let a CDN reuse one gym's
             // catalog response for another public portal.
             response.set('Cache-Control', 'private, no-store');
-            const options = await libraryService.getLibraryOptions({ readOnly: request.readOnlyRequest });
-            response.json({
-                counts: options.counts,
-                filters: {
-                    bodyParts: options.filters.bodyParts,
-                    categories: options.filters.categories,
-                    exerciseCategories: options.filters.exerciseCategories,
-                    difficulties: options.filters.difficulties,
-                    equipment: options.filters.equipment,
-                    muscles: options.filters.muscles.map((item) => ({ id: item.id, name: item.name, nameAr: item.nameAr }))
-                }
+            await commercialService.withPortalSession(request, async () => {
+                const options = await libraryService.getLibraryOptions({ readOnly: request.readOnlyRequest });
+                response.json({
+                    counts: options.counts,
+                    filters: {
+                        bodyParts: options.filters.bodyParts,
+                        categories: options.filters.categories,
+                        exerciseCategories: options.filters.exerciseCategories,
+                        difficulties: options.filters.difficulties,
+                        equipment: options.filters.equipment,
+                        muscles: options.filters.muscles.map((item) => ({ id: item.id, name: item.name, nameAr: item.nameAr }))
+                    }
+                });
             });
         },
 
@@ -139,20 +141,24 @@ function createMemberPortalController({ membershipCodeService, portalService, li
             const type = String(request.params.type || '').toLowerCase();
             if (!LIBRARY_TYPES.has(type)) return response.status(404).json({ error: 'Library type not found.' });
             const query = { ...request.query, pageSize: Math.min(Number(request.query.pageSize) || 18, 24) };
-            const result = await libraryService.getLibraryCollection(type, query, { readOnly: request.readOnlyRequest });
-            response.set('Cache-Control', 'private, no-store');
-            response.json({
-                items: result.items.map((item) => publicLibraryItem(type, item)),
-                pagination: result.pagination
+            await commercialService.withPortalSession(request, async () => {
+                const result = await libraryService.getLibraryCollection(type, query, { readOnly: request.readOnlyRequest });
+                response.set('Cache-Control', 'private, no-store');
+                response.json({
+                    items: result.items.map((item) => publicLibraryItem(type, item)),
+                    pagination: result.pagination
+                });
             });
         },
 
         libraryItem: async (request, response) => {
             const type = String(request.params.type || '').toLowerCase();
             if (!LIBRARY_TYPES.has(type)) return response.status(404).json({ error: 'Library type not found.' });
-            const item = await libraryService.getLibraryItem(type, request.params.id, { readOnly: request.readOnlyRequest });
-            response.set('Cache-Control', 'private, no-store');
-            response.json({ item: publicLibraryItem(type, item, true) });
+            await commercialService.withPortalSession(request, async () => {
+                const item = await libraryService.getLibraryItem(type, request.params.id, { readOnly: request.readOnlyRequest });
+                response.set('Cache-Control', 'private, no-store');
+                response.json({ item: publicLibraryItem(type, item, true) });
+            });
         },
 
         getCode: async (request, response) => {

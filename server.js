@@ -208,6 +208,8 @@ registerRoutes(app, {
     libraryService,
     pricingService,
     coachingService,
+    trainerService,
+    trainerCommerceService,
     dayPassService,
     memberService,
     membershipCodeService,

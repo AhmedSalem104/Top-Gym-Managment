@@ -16,19 +16,20 @@ EXEC(N'
     WHERE tenant_type IS NULL OR LTRIM(RTRIM(tenant_type))='''';
 ');
 
-IF EXISTS (
-    SELECT 1
-    FROM dbo.saas_gym_registration_requests
-    WHERE tenant_type NOT IN ('gym', 'independent_trainer')
-)
-    THROW 51031, 'saas_gym_registration_requests contains an unsupported tenant_type.', 1;
+EXEC sys.sp_executesql N'
+    IF EXISTS (
+        SELECT 1
+        FROM dbo.saas_gym_registration_requests
+        WHERE tenant_type NOT IN (''gym'', ''independent_trainer'')
+    )
+        THROW 51031, ''saas_gym_registration_requests contains an unsupported tenant_type.'', 1;';
 
 IF EXISTS (
     SELECT 1
     FROM sys.columns
     WHERE object_id=OBJECT_ID(N'dbo.saas_gym_registration_requests')
       AND name=N'tenant_type'
-      AND (system_type_id<>167 OR max_length<32 OR is_nullable<>0)
+      AND (system_type_id<>167 OR max_length<32 OR is_nullable<>1)
 )
     THROW 51032, 'saas_gym_registration_requests.tenant_type must remain VARCHAR(32) NULL until backfill is complete.', 1;
 
@@ -38,8 +39,8 @@ IF NOT EXISTS (
     WHERE parent_object_id=OBJECT_ID(N'dbo.saas_gym_registration_requests')
       AND name=N'DF_saas_registration_tenant_type'
 )
-    ALTER TABLE dbo.saas_gym_registration_requests
-        ADD CONSTRAINT DF_saas_registration_tenant_type DEFAULT ('gym') FOR tenant_type;
+    EXEC(N'ALTER TABLE dbo.saas_gym_registration_requests
+        ADD CONSTRAINT DF_saas_registration_tenant_type DEFAULT (''gym'') FOR tenant_type;');
 
 IF NOT EXISTS (
     SELECT 1
@@ -47,16 +48,16 @@ IF NOT EXISTS (
     WHERE parent_object_id=OBJECT_ID(N'dbo.saas_gym_registration_requests')
       AND name=N'CK_saas_registration_tenant_type'
 )
-    ALTER TABLE dbo.saas_gym_registration_requests
-        ADD CONSTRAINT CK_saas_registration_tenant_type CHECK (tenant_type IN ('gym', 'independent_trainer'));
+    EXEC(N'ALTER TABLE dbo.saas_gym_registration_requests
+        ADD CONSTRAINT CK_saas_registration_tenant_type CHECK (tenant_type IN (''gym'', ''independent_trainer''));');
 
 IF NOT EXISTS (
     SELECT 1 FROM sys.indexes
     WHERE name=N'IX_saas_registration_tenant_type_queue'
       AND object_id=OBJECT_ID(N'dbo.saas_gym_registration_requests')
 )
-    CREATE INDEX IX_saas_registration_tenant_type_queue
-        ON dbo.saas_gym_registration_requests(tenant_type, status, created_at DESC, id DESC);
+    EXEC(N'CREATE INDEX IX_saas_registration_tenant_type_queue
+        ON dbo.saas_gym_registration_requests(tenant_type, status, created_at DESC, id DESC);');
 
 /* The starter plan is the existing neutral entry plan. It is the only plan
    exposed to Trainer registration until PlatformAdmin creates a dedicated

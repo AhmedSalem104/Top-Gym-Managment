@@ -33,6 +33,7 @@ const PHASE4_TRAINER_CLIENT_PROFILE_MIGRATION_PATH = path.join(__dirname, '..', 
 const PHASE5_TRAINER_COMMERCIAL_OPERATIONS_MIGRATION_PATH = path.join(__dirname, '..', 'database', 'migrations', '018-trainer-commercial-operations.sql');
 const PHASE6_TRAINER_PORTAL_FOUNDATION_MIGRATION_PATH = path.join(__dirname, '..', 'database', 'migrations', '019-trainer-portal-foundation.sql');
 const PHASE0_SECURITY_MIGRATION_PATH = path.join(__dirname, '..', 'database', 'migrations', '013-phase0-security-preconditions.sql');
+const BASE_COMMERCIAL_MIGRATION_PATH = commercialSchema.MIGRATION_PATH;
 
 function isLocalDatabaseServer(server) {
     const value = String(server || '').trim().toLowerCase();
@@ -75,6 +76,15 @@ async function migrate() {
     const backupRecoveryService = createBackupRecoveryService();
     await runTenantContext({ mode: 'platform', tenantId: bootstrapTenant.id }, () => backupRecoveryService.ensureRecoveryTables());
     await runTenantContext({ mode: 'platform', tenantId: bootstrapTenant.id }, () => saasService.ensureSaasTables());
+    // Migration 016 extends the registration-request table created by the
+    // canonical commercial migration 011. Keep that dependency explicit in
+    // the migration runner instead of relying on a runtime request side
+    // effect, so a fresh local/staging database can apply the chain safely.
+    const baseCommercialMigration = fs.readFileSync(BASE_COMMERCIAL_MIGRATION_PATH, 'utf8');
+    await runTenantContext({ mode: 'platform', tenantId: bootstrapTenant.id }, async () => {
+        const pool = await getPool();
+        await pool.request().batch(baseCommercialMigration);
+    });
     const phase2PlanCompatibilityMigration = fs.readFileSync(PHASE2_PLAN_COMPATIBILITY_MIGRATION_PATH, 'utf8');
     await runTenantContext({ mode: 'platform', tenantId: bootstrapTenant.id }, async () => {
         const pool = await getPool();

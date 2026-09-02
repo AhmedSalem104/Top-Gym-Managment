@@ -404,7 +404,15 @@ function tableKey(schemaName, tableName) {
 
 function hasTenantPredicate(row, type, operation = null) {
     if (!row || String(row.predicate_type_desc || '').toUpperCase() !== type) return false;
-    if (operation && String(row.operation || '').toUpperCase() !== operation) return false;
+    if (operation) {
+        const operationDescription = String(row.operation_desc || '').toUpperCase();
+        const operationValue = String(row.operation || '').toUpperCase();
+        const numericOperation = Number(row.operation);
+        const normalizedOperation = operationDescription
+            || (operationValue === 'AFTER INSERT' || operationValue === 'AFTER UPDATE' ? operationValue : '')
+            || (numericOperation === 1 ? 'AFTER INSERT' : numericOperation === 2 ? 'AFTER UPDATE' : '');
+        if (normalizedOperation !== operation) return false;
+    }
     const definition = String(row.predicate_definition || '').toLowerCase();
     return definition.includes(TENANT_PREDICATE_NAME.toLowerCase()) && definition.includes('tenant_id');
 }
@@ -434,7 +442,8 @@ async function getTenantSecuritySnapshot(pool = null) {
 
         SELECT p.name AS policy_name, p.is_enabled, ps.name AS policy_schema,
                ts.name AS schema_name, t.name AS table_name,
-               sp.predicate_type_desc, sp.operation, sp.predicate_definition
+               sp.predicate_type_desc, sp.operation, sp.operation_desc,
+               sp.predicate_definition
         FROM sys.security_policies AS p
         INNER JOIN sys.schemas AS ps ON ps.schema_id=p.schema_id
         INNER JOIN sys.security_predicates AS sp ON sp.object_id=p.object_id

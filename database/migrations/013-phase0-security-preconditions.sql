@@ -43,7 +43,7 @@ BEGIN
           AND name=N'must_change_password'
           AND is_nullable=1
     )
-        ALTER TABLE dbo.gym_users ALTER COLUMN must_change_password BIT NOT NULL;
+        EXEC(N'ALTER TABLE dbo.gym_users ALTER COLUMN must_change_password BIT NOT NULL;');
 
     IF EXISTS (
         SELECT 1
@@ -52,5 +52,5 @@ BEGIN
           AND c.name=N'password_changed_at'
           AND c.is_nullable=0
     )
-        ALTER TABLE dbo.gym_users ALTER COLUMN password_changed_at DATETIME2(0) NULL;
+        EXEC(N'ALTER TABLE dbo.gym_users ALTER COLUMN password_changed_at DATETIME2(0) NULL;');
 END;
