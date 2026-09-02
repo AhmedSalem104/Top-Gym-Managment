@@ -71,17 +71,18 @@ function mapExpense(row) {
         category: row.expense_category || null,
         paymentMethod: row.payment_method || null,
         notes: row.notes || null,
+        branchId: row.branch_id ? Number(row.branch_id) : null,
         createdAt: row.created_at
     };
 }
 
-async function getMonthlyFinance({ readOnly = false } = {}) {
+async function getMonthlyFinance({ readOnly = false, branchId = null } = {}) {
     await ensureExpensesTable({ readOnly });
     await ensurePaymentTransactionsTable({ readOnly });
     await dayPassRepository.ensureDayPassTables({ readOnly });
     const range = currentMonthRange();
     const [monthlyData, dayPassData] = await Promise.all([
-        expenseRepository.getMonthlyData(range),
+        expenseRepository.getMonthlyData(range, { branchId }),
         dayPassRepository.getRangeSummary({ fromDate: range.startDate, nextDate: range.nextMonth, readOnly })
     ]);
 
@@ -113,33 +114,33 @@ async function getMonthlyFinance({ readOnly = false } = {}) {
     };
 }
 
-async function createExpense(body = {}) {
+async function createExpense(body = {}, { branchId = null, actorUserId = null } = {}) {
     const name = requiredString(body.name ?? body.expenseName, 'اسم المصروف', 120);
     const amount = positiveMoney(body.amount);
     const expenseDate = parseDateOnly(body.expenseDate || todayInTimeZone(), 'تاريخ المصروف');
     const notes = optionalString(body.notes, 500);
     await ensureExpensesTable();
-    const result = await expenseRepository.create({ name, amount, expenseDate, notes, source: 'gym' });
+    const result = await expenseRepository.create({ name, amount, expenseDate, notes, source: 'gym', branchId, createdByUserId: actorUserId });
 
     return mapExpense(result.recordset[0]);
 }
 
-async function updateExpense(id, body = {}) {
+async function updateExpense(id, body = {}, { branchId = null } = {}) {
     const expenseId = ensureId(id);
     const name = requiredString(body.name ?? body.expenseName, 'اسم المصروف', 120);
     const amount = positiveMoney(body.amount);
     const expenseDate = parseDateOnly(body.expenseDate, 'تاريخ المصروف');
     const notes = optionalString(body.notes, 500);
     await ensureExpensesTable();
-    const result = await expenseRepository.update({ id: expenseId, name, amount, expenseDate, notes, source: 'gym' });
+    const result = await expenseRepository.update({ id: expenseId, name, amount, expenseDate, notes, source: 'gym', branchId });
     if (!result.recordset[0]) throw appError('المصروف غير موجود.', 404);
     return mapExpense(result.recordset[0]);
 }
 
-async function deleteExpense(id) {
+async function deleteExpense(id, { branchId = null } = {}) {
     const expenseId = ensureId(id);
     await ensureExpensesTable();
-    const result = await expenseRepository.remove(expenseId);
+    const result = await expenseRepository.remove(expenseId, { branchId });
     if (!result.rowsAffected[0]) throw appError('المصروف غير موجود.', 404);
 }
 

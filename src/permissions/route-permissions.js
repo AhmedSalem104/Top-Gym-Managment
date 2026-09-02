@@ -152,6 +152,24 @@ const ROUTE_PERMISSION_RULES = Object.freeze([
     { pattern: /^\/library\/(?:foods|exercises|muscles)\/\d+$/, methods: ['DELETE'], all: [PERMISSIONS.LIBRARY_DELETE] },
 
     { pattern: /^\/members\/\d+\/store-purchases$/, methods: ['GET'], all: [PERMISSIONS.MEMBERS_READ, PERMISSIONS.STORE_SALES_VIEW] },
+    { pattern: /^\/memberships\/\d+\/branches$/, methods: ['GET'], all: [PERMISSIONS.MEMBERSHIPS_READ] },
+    { pattern: /^\/memberships\/\d+\/branches$/, methods: ['PUT'], all: [PERMISSIONS.MEMBERSHIPS_UPDATE] },
+    { pattern: /^\/commerce\/stock-locations$/, methods: ['GET'], all: [PERMISSIONS.STORE_INVENTORY_VIEW] },
+    { pattern: /^\/commerce\/stock-locations$/, methods: ['POST'], all: [PERMISSIONS.INVENTORY_LOCATIONS_MANAGE] },
+    { pattern: /^\/commerce\/stock-locations\/\d+\/adjustments$/, methods: ['POST'], all: [PERMISSIONS.STORE_INVENTORY_ADJUST] },
+    { pattern: /^\/commerce\/stock-transfers$/, methods: ['GET'], all: [PERMISSIONS.INVENTORY_TRANSFERS_READ] },
+    { pattern: /^\/commerce\/stock-transfers$/, methods: ['POST'], all: [PERMISSIONS.INVENTORY_TRANSFERS_MANAGE] },
+    { pattern: /^\/commerce\/stock-transfers\/\d+\/(?:approve|receive)$/, methods: ['POST'], all: [PERMISSIONS.INVENTORY_TRANSFERS_MANAGE] },
+    { pattern: /^\/bar\/menu$/, methods: ['GET'], all: [PERMISSIONS.BAR_READ] },
+    { pattern: /^\/bar\/recipes$/, methods: ['GET'], all: [PERMISSIONS.BAR_READ] },
+    { pattern: /^\/bar\/recipes$/, methods: ['POST'], all: [PERMISSIONS.BAR_RECIPES_MANAGE] },
+    { pattern: /^\/bar\/modifiers$/, methods: ['GET'], all: [PERMISSIONS.BAR_READ] },
+    { pattern: /^\/bar\/modifiers$/, methods: ['POST'], all: [PERMISSIONS.BAR_RECIPES_MANAGE] },
+    { pattern: /^\/bar\/shifts$/, methods: ['POST'], all: [PERMISSIONS.BAR_SHIFTS_MANAGE] },
+    { pattern: /^\/bar\/shifts\/branch\/\d+\/open$/, methods: ['GET'], all: [PERMISSIONS.BAR_READ] },
+    { pattern: /^\/bar\/shifts\/\d+\/close$/, methods: ['POST'], all: [PERMISSIONS.BAR_SHIFTS_MANAGE] },
+    { pattern: /^\/bar\/sales$/, methods: ['POST'], all: [PERMISSIONS.BAR_SELL] },
+    { pattern: /^\/bar\/waste$/, methods: ['POST'], all: [PERMISSIONS.BAR_WASTE_MANAGE] },
     { pattern: /^\/store\/bootstrap$/, methods: ['GET'], all: [PERMISSIONS.STORE_VIEW] },
     { pattern: /^\/store\/dashboard$/, methods: ['GET'], all: [PERMISSIONS.STORE_VIEW] },
     { pattern: /^\/store\/reports$/, methods: ['GET'], all: [PERMISSIONS.STORE_REPORTS_VIEW] },
@@ -206,6 +224,15 @@ function memberCreateRequiresPaymentPermission(request) {
 function permissionForRequest(request) {
     const path = String(request?.path || '');
     const method = String(request?.method || 'GET').toUpperCase();
+    if (/^\/branches\/users\/\d+$/.test(path)) {
+        return { all: [method === 'GET' ? PERMISSIONS.BRANCHES_READ : PERMISSIONS.BRANCH_ACCESS_MANAGE], ownerOnly: method !== 'GET' };
+    }
+    if (/^\/branches\/\d+\/archive$/.test(path) || /^\/branches\/\d+$/.test(path) && method === 'PATCH' || path === '/branches' && method === 'POST') {
+        return { all: [PERMISSIONS.BRANCHES_MANAGE], ownerOnly: true };
+    }
+    if ((path === '/branches' || path === '/branches/bootstrap') && method === 'GET') {
+        return { all: [PERMISSIONS.BRANCHES_READ], ownerOnly: false };
+    }
     if (method === 'POST' && /^\/members\/?$/.test(path)) {
         return {
             all: [

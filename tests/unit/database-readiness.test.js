@@ -33,7 +33,14 @@ test('database readiness audit finds the canonical migration set safe at source 
         '016-independent-trainer-registration.sql',
         '017-trainer-client-profile.sql',
         '018-trainer-commercial-operations.sql',
-        '019-trainer-portal-foundation.sql'
+        '019-trainer-portal-foundation.sql',
+        '020-branch-foundation.sql',
+        '021-membership-branch-attendance.sql',
+        '022-financial-branch-attribution.sql',
+        '023-stock-locations-and-transfers.sql',
+        '024-bar-pos-recipes.sql',
+        '025-bar-modifiers.sql',
+        '026-branch-plan-limits.sql'
     ]);
     assert.deepEqual(report.migrationFindings, []);
     assert.equal(report.schemaReview.status, 'REQUIRES STAGING VERIFICATION');

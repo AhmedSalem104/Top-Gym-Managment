@@ -24,6 +24,19 @@ const NULLABLE_TENANT_TABLES = Object.freeze(['dbo.saas_audit_log']);
 // credentials/sessions and tenant membership metadata stay global so a user
 // can be resolved before the tenant context is applied.
 const TENANT_TABLES = Object.freeze([
+    'gym_branches',
+    'gym_branch_user_access',
+    'gym_branch_commerce_config',
+    'gym_membership_branch_access',
+    'gym_stock_locations',
+    'gym_store_location_inventory_balances',
+    'gym_stock_transfers',
+    'gym_stock_transfer_items',
+    'gym_bar_recipes',
+    'gym_bar_recipe_items',
+    'gym_pos_shifts',
+    'gym_commerce_waste',
+    'gym_bar_modifiers',
     'athlete_checkins',
     'body_measurements',
     'coaching_activity_events',

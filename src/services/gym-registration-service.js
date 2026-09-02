@@ -61,9 +61,25 @@ function normalizeAccessToken(value) {
     return token;
 }
 
-function normalizeWhatsapp(value) {
-    const normalized = text(value, '', 40).replace(/[\s().-]/g, '');
-    if (!/^\+?[0-9]{7,20}$/.test(normalized)) throw registrationError('Enter a valid WhatsApp number.', 400, 'INVALID_REGISTRATION_WHATSAPP', 'whatsapp');
+function normalizeWhatsapp(value, { defaultCountryCode = '20' } = {}) {
+    const raw = text(value, '', 40).replace(/[\s().-]/g, '');
+    if (!/^\+?[0-9]{7,20}$/.test(raw)) throw registrationError('Enter a valid WhatsApp number.', 400, 'INVALID_REGISTRATION_WHATSAPP', 'whatsapp');
+    const hasExplicitCountryCode = raw.startsWith('+') || raw.startsWith('00');
+    let normalized = raw.startsWith('+') ? raw.slice(1) : raw.startsWith('00') ? raw.slice(2) : raw;
+    if (!hasExplicitCountryCode && /^0[0-9]{9,10}$/.test(normalized)) {
+        const countryCode = String(defaultCountryCode || '').replace(/\D/g, '');
+        if (!countryCode) throw registrationError('A country code is required for this WhatsApp number.', 400, 'INVALID_REGISTRATION_WHATSAPP', 'whatsapp');
+        normalized = `${countryCode}${normalized.slice(1)}`;
+    }
+    // The current registration contract has one phone field and no separate
+    // country_code column. Egyptian national numbers therefore use the
+    // existing registration market default; explicit international formats
+    // remain untouched and are accepted as international numbers.
+    if (normalized.startsWith('20') && !/^20(?:10|11|12|15)[0-9]{8}$/.test(normalized)) {
+        throw registrationError('Enter a valid WhatsApp number.', 400, 'INVALID_REGISTRATION_WHATSAPP', 'whatsapp');
+    }
+    if (normalized.startsWith('0')) throw registrationError('Enter a valid WhatsApp number.', 400, 'INVALID_REGISTRATION_WHATSAPP', 'whatsapp');
+    if (!/^[0-9]{7,20}$/.test(normalized)) throw registrationError('Enter a valid WhatsApp number.', 400, 'INVALID_REGISTRATION_WHATSAPP', 'whatsapp');
     return normalized;
 }
 
@@ -119,13 +135,15 @@ function roundMoney(value) {
 
 function requestFromRow(row) {
     if (!row) return null;
+    let whatsapp = row.whatsapp;
+    try { whatsapp = normalizeWhatsapp(row.whatsapp); } catch (_) { /* preserve a legacy value for admin review; never fail queue reads */ }
     return {
         id: Number(row.id),
         status: String(row.status),
         tenantType: registrationTypeFromRoute(row.tenant_type || TENANT_TYPES.GYM),
         gymName: row.gym_name,
         ownerName: row.owner_name,
-        whatsapp: row.whatsapp,
+        whatsapp,
         email: row.email || null,
         city: row.city || null,
         plan: {

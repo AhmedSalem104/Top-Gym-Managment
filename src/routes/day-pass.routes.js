@@ -2,8 +2,8 @@
 
 const { createDayPassController } = require('../controllers/day-pass.controller');
 
-function registerDayPassRoutes(app, { dayPassService, asyncRoute, ownerOnly }) {
-    const controller = createDayPassController({ dayPassService });
+function registerDayPassRoutes(app, { dayPassService, branchService, asyncRoute, ownerOnly }) {
+    const controller = createDayPassController({ dayPassService, branchService });
     app.get('/api/day-passes/pricing', asyncRoute(controller.pricing));
     app.put('/api/day-passes/pricing', ownerOnly, asyncRoute(controller.updatePricing));
     app.get('/api/day-passes', asyncRoute(controller.list));

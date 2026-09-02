@@ -55,17 +55,20 @@ async function ensureExpensesTable({ readOnly = false } = {}) {
     return expensesTablePromise;
 }
 
-async function getMonthlyData(range) {
+async function getMonthlyData(range, { branchId = null } = {}) {
     const pool = await getPool();
     const paymentRequest = pool.request()
         .input('monthStart', sql.Date, toUtcDate(range.startDate))
-        .input('nextMonth', sql.Date, toUtcDate(range.nextMonth));
+        .input('nextMonth', sql.Date, toUtcDate(range.nextMonth))
+        .input('branchId', sql.Int, branchId == null ? null : Number(branchId));
     const expenseSummaryRequest = pool.request()
         .input('monthStart', sql.Date, toUtcDate(range.startDate))
-        .input('nextMonth', sql.Date, toUtcDate(range.nextMonth));
+        .input('nextMonth', sql.Date, toUtcDate(range.nextMonth))
+        .input('branchId', sql.Int, branchId == null ? null : Number(branchId));
     const expenseItemsRequest = pool.request()
         .input('monthStart', sql.Date, toUtcDate(range.startDate))
-        .input('nextMonth', sql.Date, toUtcDate(range.nextMonth));
+        .input('nextMonth', sql.Date, toUtcDate(range.nextMonth))
+        .input('branchId', sql.Int, branchId == null ? null : Number(branchId));
 
     return Promise.all([
         paymentRequest.query(`
@@ -75,7 +78,8 @@ async function getMonthlyData(range) {
             WHERE paid_at >= @monthStart
               AND paid_at < @nextMonth
               AND is_voided = 0
-              AND amount_paid <> 0;
+              AND amount_paid <> 0
+              AND (@branchId IS NULL OR branch_id = @branchId);
         `),
         expenseSummaryRequest.query(`
             SELECT COUNT(*) AS expenseCount,
@@ -83,7 +87,8 @@ async function getMonthlyData(range) {
             FROM dbo.gym_expenses
             WHERE expense_date >= @monthStart
               AND expense_date < @nextMonth
-              AND ISNULL(is_voided, 0) = 0;
+              AND ISNULL(is_voided, 0) = 0
+              AND (@branchId IS NULL OR branch_id = @branchId);
         `),
         expenseItemsRequest.query(`
             SELECT id, expense_name, amount, expense_date, expense_source, expense_category, payment_method, notes, created_at
@@ -91,12 +96,13 @@ async function getMonthlyData(range) {
             WHERE expense_date >= @monthStart
               AND expense_date < @nextMonth
               AND ISNULL(is_voided, 0) = 0
+              AND (@branchId IS NULL OR branch_id = @branchId)
             ORDER BY expense_date DESC, id DESC;
         `)
     ]);
 }
 
-async function create({ name, amount, expenseDate, notes, source = 'gym', category = null, paymentMethod = null, createdByUserId = null }) {
+async function create({ name, amount, expenseDate, notes, source = 'gym', category = null, paymentMethod = null, createdByUserId = null, branchId = null }) {
     const pool = await getPool();
     return pool.request()
         .input('name', sql.NVarChar(120), name)
@@ -106,16 +112,17 @@ async function create({ name, amount, expenseDate, notes, source = 'gym', catego
         .input('category', sql.NVarChar(80), category)
         .input('paymentMethod', sql.VarChar(20), paymentMethod)
         .input('createdByUserId', sql.Int, createdByUserId)
+        .input('branchId', sql.Int, branchId == null ? null : Number(branchId))
         .input('notes', sql.NVarChar(500), notes)
         .query(`
-            INSERT INTO dbo.gym_expenses (expense_name, amount, expense_date, expense_source, expense_category, payment_method, created_by_user_id, notes)
+            INSERT INTO dbo.gym_expenses (expense_name, amount, expense_date, expense_source, expense_category, payment_method, created_by_user_id, branch_id, notes)
             OUTPUT INSERTED.id, INSERTED.expense_name, INSERTED.amount, INSERTED.expense_date,
-                   INSERTED.expense_source, INSERTED.expense_category, INSERTED.payment_method, INSERTED.notes, INSERTED.created_at
-            VALUES (@name, @amount, @expenseDate, @source, @category, @paymentMethod, @createdByUserId, @notes);
+                   INSERTED.expense_source, INSERTED.expense_category, INSERTED.payment_method, INSERTED.branch_id, INSERTED.notes, INSERTED.created_at
+            VALUES (@name, @amount, @expenseDate, @source, @category, @paymentMethod, @createdByUserId, @branchId, @notes);
         `);
 }
 
-async function update({ id, name, amount, expenseDate, notes, source = null, category = null, paymentMethod = null }) {
+async function update({ id, name, amount, expenseDate, notes, source = null, category = null, paymentMethod = null, branchId = null }) {
     const pool = await getPool();
     return pool.request()
         .input('id', sql.Int, id)
@@ -125,6 +132,7 @@ async function update({ id, name, amount, expenseDate, notes, source = null, cat
         .input('source', sql.VarChar(20), source)
         .input('category', sql.NVarChar(80), category)
         .input('paymentMethod', sql.VarChar(20), paymentMethod)
+        .input('branchId', sql.Int, branchId == null ? null : Number(branchId))
         .input('notes', sql.NVarChar(500), notes)
         .query(`
             UPDATE dbo.gym_expenses
@@ -137,16 +145,17 @@ async function update({ id, name, amount, expenseDate, notes, source = null, cat
                 notes = @notes,
                 updated_at = SYSUTCDATETIME()
             OUTPUT INSERTED.id, INSERTED.expense_name, INSERTED.amount, INSERTED.expense_date,
-                   INSERTED.expense_source, INSERTED.expense_category, INSERTED.payment_method, INSERTED.notes, INSERTED.created_at
-            WHERE id = @id;
+                   INSERTED.expense_source, INSERTED.expense_category, INSERTED.payment_method, INSERTED.branch_id, INSERTED.notes, INSERTED.created_at
+            WHERE id = @id AND (@branchId IS NULL OR branch_id = @branchId);
         `);
 }
 
-async function remove(id) {
+async function remove(id, { branchId = null } = {}) {
     const pool = await getPool();
     return pool.request()
         .input('id', sql.Int, id)
-        .query('DELETE FROM dbo.gym_expenses WHERE id = @id;');
+        .input('branchId', sql.Int, branchId == null ? null : Number(branchId))
+        .query('DELETE FROM dbo.gym_expenses WHERE id = @id AND (@branchId IS NULL OR branch_id = @branchId);');
 }
 
 module.exports = { create, ensureExpensesTable, getMonthlyData, remove, update };

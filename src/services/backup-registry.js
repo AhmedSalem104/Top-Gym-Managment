@@ -17,6 +17,19 @@ function definition(key, table, restorePolicy = 'tenant') {
 }
 
 const TENANT_BACKUP_TABLES = Object.freeze([
+    definition('gym_branches', 'gym_branches'),
+    definition('gym_branch_user_access', 'gym_branch_user_access'),
+    definition('gym_branch_commerce_config', 'gym_branch_commerce_config'),
+    definition('gym_membership_branch_access', 'gym_membership_branch_access'),
+    definition('gym_stock_locations', 'gym_stock_locations'),
+    definition('gym_store_location_inventory_balances', 'gym_store_location_inventory_balances'),
+    definition('gym_stock_transfers', 'gym_stock_transfers'),
+    definition('gym_stock_transfer_items', 'gym_stock_transfer_items'),
+    definition('gym_bar_recipes', 'gym_bar_recipes'),
+    definition('gym_bar_recipe_items', 'gym_bar_recipe_items'),
+    definition('gym_pos_shifts', 'gym_pos_shifts'),
+    definition('gym_commerce_waste', 'gym_commerce_waste'),
+    definition('gym_bar_modifiers', 'gym_bar_modifiers'),
     definition('members', 'members'),
     definition('gym_membership_code_audit', 'gym_membership_code_audit'),
     definition('gym_member_feedback', 'gym_member_feedback'),

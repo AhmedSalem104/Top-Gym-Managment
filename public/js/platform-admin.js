@@ -71,6 +71,22 @@
         return ({ gym: 'جيم', independent_trainer: 'مدرب مستقل' })[String(value || '').toLowerCase()] || 'نوع غير معروف';
     }
 
+    function normalizeWhatsappNumber(value) {
+        const raw = String(value ?? '').trim().replace(/[\s().-]/g, '');
+        if (!/^\+?[0-9]{7,20}$/.test(raw)) return '';
+        const explicit = raw.startsWith('+') || raw.startsWith('00');
+        let digits = raw.startsWith('+') ? raw.slice(1) : raw.startsWith('00') ? raw.slice(2) : raw;
+        if (!explicit && /^0[0-9]{9,10}$/.test(digits)) digits = `20${digits.slice(1)}`;
+        if (digits.startsWith('20') && !/^20(?:10|11|12|15)[0-9]{8}$/.test(digits)) return '';
+        if (digits.startsWith('0')) return '';
+        return /^[0-9]{7,20}$/.test(digits) ? digits : '';
+    }
+
+    function buildWhatsappHref(phone, message) {
+        const normalized = normalizeWhatsappNumber(phone);
+        return normalized ? `https://wa.me/${normalized}?text=${encodeURIComponent(String(message || ''))}` : '';
+    }
+
     function statusPill(value) {
         const normalized = String(value || '').toLowerCase();
         return `<span class="status-pill ${escapeHtml(normalized)}">${escapeHtml(statusLabel(value))}</span>`;
@@ -761,11 +777,12 @@
         const request = result?.request || {};
         const credentials = result?.oneTimeCredentials || {};
         const subscription = result?.subscription || {};
+        const isTrainer = String(request.tenantType || '').toLowerCase() === 'independent_trainer';
         const planName = subscription.plan?.name || request.plan?.name || 'الباقة المختارة';
         const startsAt = formatDate(subscription.startsAt || subscription.starts_at);
         const expiresAt = subscription.expiresAt || subscription.expires_at ? formatDate(subscription.expiresAt || subscription.expires_at) : 'بدون انتهاء';
         const loginUrl = credentials.loginUrl || window.location.origin;
-        return `مرحبًا بك في Logic Fit\n\nتم تفعيل حساب الجيم بنجاح.\n\nالجيم: ${request.gymName || '—'}\nالباقة: ${planName}\nتاريخ البداية: ${startsAt}\nتاريخ الانتهاء: ${expiresAt}\n\nرابط تسجيل الدخول:\n${loginUrl}\n\nاسم المستخدم: ${credentials.username || '—'}\nكلمة المرور المؤقتة: ${credentials.temporaryPassword || '—'}\n\nيرجى تغيير كلمة المرور بعد أول تسجيل دخول.`;
+        return `مرحبًا بك في Logic Fit\n\nتم تفعيل حساب ${isTrainer ? 'المدرب المستقل' : 'الجيم'} بنجاح.\n\n${isTrainer ? 'المدرب' : 'الجيم'}: ${request.gymName || '—'}\nالباقة: ${planName}\nتاريخ البداية: ${startsAt}\nتاريخ الانتهاء: ${expiresAt}\n\nرابط تسجيل الدخول:\n${loginUrl}\n\nاسم المستخدم: ${credentials.username || '—'}\nكلمة المرور المؤقتة: ${credentials.temporaryPassword || '—'}\n\nيرجى تغيير كلمة المرور بعد أول تسجيل دخول.`;
     }
 
     function clearRegistrationCredentials() {
@@ -781,8 +798,7 @@
         const loginUrl = credentials.loginUrl || window.location.origin;
         const message = registrationWelcomeMessage(result);
         state.registrationCredentials = { ...credentials, loginUrl, message };
-        const phone = String(request.whatsapp || '').replace(/[^0-9]/g, '');
-        const whatsappHref = phone ? `https://wa.me/${phone}?text=${encodeURIComponent(message)}` : '';
+        const whatsappHref = buildWhatsappHref(request.whatsapp, message);
         $('#platformRegistrationCredentialsBody').innerHTML = `<p class="dialog-hint">تظهر كلمة المرور المؤقتة الآن مرة واحدة فقط. انسخها أو أرسل الرسالة يدويًا قبل إغلاق هذه النافذة؛ لا يمكن استرجاعها من النظام بعد ذلك.</p><div class="registration-credentials-grid"><div class="registration-credential-row"><span>اسم المستخدم</span><code>${escapeHtml(credentials.username || '—')}</code><button class="table-action" type="button" data-copy-registration="username">نسخ</button></div><div class="registration-credential-row"><span>كلمة المرور المؤقتة</span><code>${escapeHtml(credentials.temporaryPassword || '—')}</code><button class="table-action" type="button" data-copy-registration="temporaryPassword">نسخ</button></div><div class="registration-credential-row"><span>رابط الدخول</span><code dir="ltr">${escapeHtml(loginUrl)}</code><button class="table-action" type="button" data-copy-registration="loginUrl">نسخ</button></div></div><div class="registration-whatsapp-box"><div class="card-heading"><div><span class="eyebrow">تواصل يدوي</span><h3>رسالة الترحيب</h3></div>${whatsappHref ? `<a class="platform-btn ghost" target="_blank" rel="noopener noreferrer" href="${escapeHtml(whatsappHref)}">فتح WhatsApp</a>` : ''}</div><textarea id="registrationWelcomeMessage" readonly>${escapeHtml(message)}</textarea><button class="platform-btn ghost" type="button" data-copy-registration="message">نسخ الرسالة</button><small>فتح WhatsApp لا يثبت إرسال الرسالة؛ الإرسال يتم يدويًا داخل التطبيق.</small></div>`;
         registrationCredentialsDialog.showModal();
     }
@@ -797,7 +813,7 @@
                 loginUrl: window.location.origin,
                 mustChangePassword: true
             },
-            request: { gymName: state.profile?.tenant?.name || '—', ownerName: user.name || '—', email: user.email || '—' },
+            request: { gymName: state.profile?.tenant?.name || '—', tenantType: state.profile?.tenant?.tenantType || '', ownerName: user.name || '—', email: user.email || '—', whatsapp: user.onboardingWhatsapp || state.profile?.tenant?.contactPhone || '' },
             subscription: {}
         });
     }

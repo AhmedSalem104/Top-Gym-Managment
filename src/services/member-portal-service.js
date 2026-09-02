@@ -114,6 +114,48 @@ async function lookupTenantType(tenantId) {
     return result.recordset[0]?.tenant_type || null;
 }
 
+async function getMemberBranchSummary(memberContext) {
+    const tenantId = Number(memberContext?.tenantId);
+    const memberId = Number(memberContext?.memberId);
+    if (!Number.isInteger(tenantId) || !Number.isInteger(memberId)) return [];
+    const result = await getPool().then((pool) => pool.request()
+        .input('tenantId', sql.Int, tenantId)
+        .input('memberId', sql.Int, memberId)
+        .query(`SELECT DISTINCT b.id,b.name,b.address,b.phone,b.working_hours_json,b.is_main_branch
+                FROM dbo.gym_branches AS b
+                WHERE b.tenant_id=@tenantId AND b.status='active'
+                  AND (EXISTS (
+                        SELECT 1
+                        FROM dbo.memberships AS m
+                        INNER JOIN dbo.gym_membership_branch_access AS access
+                            ON access.membership_id=m.id AND access.tenant_id=m.tenant_id AND access.branch_id=b.id
+                        WHERE m.tenant_id=@tenantId AND m.member_id=@memberId
+                          AND m.cancelled_at IS NULL
+                          AND CAST(SYSUTCDATETIME() AS DATE) BETWEEN m.start_date AND m.end_date
+                          AND m.branch_access_mode IN ('single_branch','selected_branches')
+                    ) OR EXISTS (
+                        SELECT 1
+                        FROM dbo.memberships AS m
+                        WHERE m.tenant_id=@tenantId AND m.member_id=@memberId
+                          AND m.cancelled_at IS NULL
+                          AND CAST(SYSUTCDATETIME() AS DATE) BETWEEN m.start_date AND m.end_date
+                          AND m.branch_access_mode='all_branches'
+                    ))
+                ORDER BY b.is_main_branch DESC,b.name,b.id;`));
+    return result.recordset.map((row) => {
+        let workingHours = null;
+        try { workingHours = row.working_hours_json ? JSON.parse(row.working_hours_json) : null; } catch (_) { workingHours = null; }
+        return {
+            id: Number(row.id),
+            name: row.name,
+            address: row.address || null,
+            phone: row.phone || null,
+            workingHours,
+            isMain: Boolean(row.is_main_branch)
+        };
+    });
+}
+
 async function trainerPortalSnapshot(memberContext, request, readOnlyBaseline) {
     const client = await coachingService.getTrainingOverview(memberContext.memberId, { readOnly: true });
     const [packagePurchases, sessions, payments] = await Promise.all([
@@ -202,6 +244,7 @@ async function lookupByCode(code, request) {
         const from = details.member.registrationDate || `${today.slice(0, 7)}-01`;
         const attendance = await attendanceService.getMemberAttendance(memberContext.memberId, { from, to: today, readOnly: true });
         const memberships = (details.memberships || []).map(sanitizeMembership);
+        const branches = await getMemberBranchSummary(memberContext);
         const current = currentMembership(memberships);
         const portalSession = readOnlyBaseline ? null : await commercialService.createPortalSession({
             tenantId: memberContext.tenantId,
@@ -230,6 +273,7 @@ async function lookupByCode(code, request) {
             firstJoinDate: memberships.reduce((earliest, item) => !earliest || item.startDate < earliest ? item.startDate : earliest, details.member.registrationDate),
             currentMembership: current,
             memberships,
+            branches,
             financialSummary: {
                 totalDue: Number(details.financialSummary?.totalDue || 0),
                 totalPaid: Number(details.financialSummary?.totalPaid || 0),
@@ -336,9 +380,15 @@ async function getOccupancyByCode(code, request) {
     // a read-only aggregate. The polling endpoint must not create audit rows,
     // auto-checkout attendance, or initialize schema.
     const readOnlyBaseline = Boolean(getTenantContext()?.readOnlyBaseline);
-    return runTenantContext({ tenantId: memberContext.tenantId, mode: 'public', readOnlyBaseline }, () => (
-        attendanceService.getCurrentOccupancy()
-    ));
+    return runTenantContext({ tenantId: memberContext.tenantId, mode: 'public', readOnlyBaseline }, async () => {
+        const branches = await getMemberBranchSummary(memberContext);
+        const branchOccupancy = await Promise.all(branches.map(async (branch) => ({
+            ...branch,
+            ...(await attendanceService.getCurrentOccupancy({ branchId: branch.id }))
+        })));
+        const aggregate = await attendanceService.getCurrentOccupancy();
+        return { ...aggregate, branches: branchOccupancy };
+    });
 }
 
 module.exports = { getOccupancyByCode, getPortalMembershipCatalog, getPortalPaymentMethods, getPortalSession, lookupByCode };

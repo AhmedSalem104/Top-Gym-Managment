@@ -53,13 +53,14 @@ const appSections = [
     ['intelligenceSection', 'intelligence'],
     ['feedbackSection', 'feedback'],
     ['storeSection', 'store'],
+    ['branchesSection', 'branches'],
     ['memberSubscriptionRequestsSection', 'member-subscription-requests'],
     ['portalAnalyticsSection', 'portal-analytics']
 ];
 const platformPanels = ['dashboard', 'gyms', 'requests', 'gym-registrations', 'payment-methods', 'backups', 'plans', 'audit', 'settings'];
 const registrationSteps = [1, 2, 3, 4, 5, 6];
 const portalRoots = ['portalLoginPanel', 'portalResult', 'portalHomeView', 'portalFeedbackSection', 'portalSubscriptionSection', 'portalLibrarySection'];
-const storeViews = ['pos', 'products', 'inventory', 'purchases', 'sales', 'suppliers', 'expenses', 'reports'];
+const storeViews = ['pos', 'products', 'inventory', 'purchases', 'sales', 'suppliers', 'expenses', 'reports', 'bar'];
 const portalTools = [
     ['print', 'portalReportContent'],
     ['feedback', 'portalFeedbackSection'],
@@ -159,6 +160,16 @@ async function prepareApp(page, id) {
             current = current.parentElement;
         }
     }, id);
+    // Branch management is injected by the branch-context module during the
+    // initial shell lifecycle. Let that lifecycle settle, then force the
+    // requested structural surface visible for this logged-out visual case.
+    if (id === 'branchesSection') {
+        await page.waitForTimeout(50);
+        await page.evaluate(() => {
+            const target = document.getElementById('branchesSection');
+            if (target) target.hidden = false;
+        });
+    }
 }
 
 async function preparePlatform(page, panel) {

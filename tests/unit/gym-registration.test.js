@@ -89,6 +89,29 @@ test('registration approval reuses transactional provisioning and never accepts 
     assert.doesNotMatch(service, /INSERT INTO[\s\S]{0,400}temporaryPassword/);
 });
 
+test('registration WhatsApp numbers are canonicalized for Egyptian and explicit international formats', () => {
+    const service = require('../../src/services/gym-registration-service');
+    assert.equal(service.normalizeWhatsapp('01 0123 45678'), '201012345678');
+    assert.equal(service.normalizeWhatsapp('+201112345678'), '201112345678');
+    assert.equal(service.normalizeWhatsapp('201212345678'), '201212345678');
+    assert.equal(service.normalizeWhatsapp('00201512345678'), '201512345678');
+    assert.equal(service.normalizeWhatsapp('+971501234567'), '971501234567');
+    assert.throws(() => service.normalizeWhatsapp('01112345'), /WhatsApp/);
+});
+
+test('approval and reset onboarding paths keep WhatsApp target and temporary credentials transient', () => {
+    const registration = read('src/services/gym-registration-service.js');
+    const platform = read('src/services/platform-admin-service.js');
+    const client = read('public/js/platform-admin.js');
+    assert.match(registration, /temporaryPassword/);
+    assert.match(registration, /requestFromRow[\s\S]{0,240}normalizeWhatsapp/);
+    assert.match(client, /encodeURIComponent\(String\(message \|\| ''\)\)/);
+    assert.match(client, /buildWhatsappHref\(request\.whatsapp, message\)/);
+    assert.match(client, /onboardingWhatsapp/);
+    assert.match(platform, /created_owner_user_id=u\.id/);
+    assert.doesNotMatch(platform, /temporaryPassword[^\n]*audit/);
+});
+
 test('proof approval re-checks the locked artifact before financial or tenant mutation', () => {
     const memberService = read('src/services/member-subscription-service.js');
     const registrationService = read('src/services/gym-registration-service.js');

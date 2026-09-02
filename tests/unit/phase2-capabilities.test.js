@@ -39,7 +39,7 @@ test('Gym keeps the existing capability contract and limits', () => {
             tenantType: 'gym',
             planLimits: { maxMembers: 300, maxUsers: 3, maxAiGenerations: 100, maxStorageMb: 1024 }
         }),
-        { maxMembers: 300, maxUsers: 3, maxAiGenerations: 100, maxStorageMb: 1024 }
+        { maxMembers: 300, maxUsers: 3, maxAiGenerations: 100, maxStorageMb: 1024, maxBranches: null }
     );
 });
 

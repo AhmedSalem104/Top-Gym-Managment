@@ -76,6 +76,7 @@ async function ensureAttendanceTable({ readOnly = false } = {}) {
                         id INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_gym_attendance_runtime PRIMARY KEY,
                         member_id INT NOT NULL,
                         membership_id INT NULL,
+                        branch_id INT NULL,
                         attendance_date DATE NOT NULL,
                         check_in_at DATETIME2(0) NOT NULL CONSTRAINT DF_gym_attendance_check_in_runtime DEFAULT (SYSUTCDATETIME()),
                         check_out_at DATETIME2(0) NULL,
@@ -90,6 +91,8 @@ async function ensureAttendanceTable({ readOnly = false } = {}) {
                         CONSTRAINT CK_gym_attendance_source_runtime CHECK (check_in_source IN (''phone'', ''qr'', ''manual'') AND (check_out_source IS NULL OR check_out_source IN (''phone'', ''qr'', ''manual'', ''auto'')))
                     );');
                 END;
+                IF COL_LENGTH(N'dbo.gym_attendance', N'branch_id') IS NULL
+                    ALTER TABLE dbo.gym_attendance ADD branch_id INT NULL;
                 IF EXISTS (
                     SELECT 1 FROM sys.check_constraints
                     WHERE name = N'CK_gym_attendance_source'
@@ -179,7 +182,7 @@ function parseQrToken(value) {
     return null;
 }
 
-async function findMember(pool, body = {}, { requireActive = true } = {}) {
+async function findMember(pool, body = {}, { requireActive = true, branchId = null } = {}) {
     const qrMemberId = parseQrToken(body.qrToken ?? body.token);
     const phone = normalizePhone(body.phone);
     if (!qrMemberId && phone.length < 5) {
@@ -219,6 +222,9 @@ async function findMember(pool, body = {}, { requireActive = true } = {}) {
             throw appError('لا يمكن تسجيل الحضور لأن عضوية المشترك مجمدة حالياً.', 409, 'ATTENDANCE_MEMBERSHIP_FROZEN');
         }
     }
+    if (branchId && membership?.id) {
+        await require('../services/branch-service').assertMembershipBranchAccess(membership.id, branchId);
+    }
     return { member, membership, today, source: qrMemberId ? 'qr' : 'phone' };
 }
 
@@ -226,6 +232,7 @@ function mapAttendance(row) {
     return {
         id: Number(row.id),
         memberId: Number(row.member_id),
+        branchId: row.branch_id ? Number(row.branch_id) : null,
         memberName: row.full_name,
         phone: row.phone,
         membershipId: row.membership_id ? Number(row.membership_id) : null,
@@ -251,7 +258,7 @@ async function getTodayAttendance(options = {}) {
     const request = pool.request()
         .input('attendanceDate', sql.Date, toUtcDate(date))
         .input('search', sql.NVarChar(120), search ? `%${search}%` : null);
-    const selectQuery = `SELECT a.id, a.member_id, a.membership_id, a.attendance_date,
+    const selectQuery = `SELECT a.id, a.member_id, a.membership_id, a.branch_id, a.attendance_date,
                        a.check_in_at, a.check_out_at, a.check_in_source, a.check_out_source,
                        a.notes, m.full_name, m.phone,
                        ms.membership_plan, ms.membership_type
@@ -263,8 +270,10 @@ async function getTodayAttendance(options = {}) {
                     WHERE x.id = a.membership_id
                 ) AS ms
                 WHERE a.attendance_date = @attendanceDate
+                  AND (@branchId IS NULL OR a.branch_id = @branchId)
                   AND (@search IS NULL OR m.full_name LIKE @search OR m.phone LIKE @search)
                 ORDER BY a.check_in_at DESC, a.id DESC;`;
+    request.input('branchId', sql.Int, options.branchId == null ? null : Number(options.branchId));
     const result = options.readOnly
         ? await request.query(selectQuery)
         : await request
@@ -301,7 +310,7 @@ async function getTodayAttendance(options = {}) {
  * attendance row can only contribute to the current trusted tenant. The
  * auto-checkout window is applied in the query without mutating stale rows.
  */
-async function getCurrentOccupancy() {
+async function getCurrentOccupancy({ branchId = null } = {}) {
     await ensureAttendanceTable({ readOnly: true });
     const tenantId = currentTenantId({ required: true });
     const pool = await getPool();
@@ -312,6 +321,7 @@ async function getCurrentOccupancy() {
         .input('tenantId', sql.Int, tenantId)
         .input('fromDate', sql.Date, toUtcDate(fromDate))
         .input('toDate', sql.Date, toUtcDate(today))
+        .input('branchId', sql.Int, branchId == null ? null : Number(branchId))
         .input('autoMinutes', sql.Int, autoCheckoutMinutes)
         .query(`
             SELECT
@@ -330,7 +340,8 @@ async function getCurrentOccupancy() {
                AND m.tenant_id = @tenantId
             CROSS APPLY (SELECT SYSUTCDATETIME() AS now_utc) AS clock
             WHERE a.attendance_date BETWEEN @fromDate AND @toDate
-              AND a.check_out_at IS NULL;
+              AND a.check_out_at IS NULL
+              AND (@branchId IS NULL OR a.branch_id = @branchId);
         `);
     const row = result.recordset?.[0] || {};
     const presentCount = Math.max(0, Number(row.present_count || 0));
@@ -346,11 +357,12 @@ async function getCurrentOccupancy() {
     };
 }
 
-async function getAttendanceRecordForDate(pool, memberId, date) {
+async function getAttendanceRecordForDate(pool, memberId, date, branchId = null) {
     const result = await pool.request()
         .input('memberId', sql.Int, memberId)
         .input('attendanceDate', sql.Date, toUtcDate(date))
-        .query(`SELECT a.id, a.member_id, a.membership_id, a.attendance_date,
+        .input('branchId', sql.Int, branchId == null ? null : Number(branchId))
+        .query(`SELECT a.id, a.member_id, a.membership_id, a.branch_id, a.attendance_date,
                        a.check_in_at, a.check_out_at, a.check_in_source, a.check_out_source,
                        a.notes, m.full_name, m.phone,
                        ms.membership_plan, ms.membership_type
@@ -360,7 +372,8 @@ async function getAttendanceRecordForDate(pool, memberId, date) {
                     SELECT TOP 1 x.membership_plan, x.membership_type
                     FROM dbo.memberships AS x WHERE x.id = a.membership_id
                 ) AS ms
-                WHERE a.member_id = @memberId AND a.attendance_date = @attendanceDate;`);
+                WHERE a.member_id = @memberId AND a.attendance_date = @attendanceDate
+                  AND (@branchId IS NULL OR a.branch_id = @branchId);`);
     return result.recordset[0] ? mapAttendance(result.recordset[0]) : null;
 }
 
@@ -376,7 +389,7 @@ async function getMemberAttendanceStatuses(memberIds = [], date = todayInTimeZon
         request.input(name, sql.Int, id);
         return `@${name}`;
     });
-    const selectQuery = `SELECT a.id, a.member_id, a.membership_id, a.attendance_date,
+    const selectQuery = `SELECT a.id, a.member_id, a.membership_id, a.branch_id, a.attendance_date,
                        a.check_in_at, a.check_out_at, a.check_in_source, a.check_out_source,
                        a.notes, m.full_name, m.phone,
                        ms.membership_plan, ms.membership_type
@@ -388,7 +401,9 @@ async function getMemberAttendanceStatuses(memberIds = [], date = todayInTimeZon
                     WHERE x.id = a.membership_id
                 ) AS ms
                 WHERE a.attendance_date = @attendanceDate
-                  AND a.member_id IN (${placeholders.join(', ')});`;
+                  AND a.member_id IN (${placeholders.join(', ')})
+                  AND (@branchId IS NULL OR a.branch_id = @branchId);`;
+    request.input('branchId', sql.Int, options.branchId == null ? null : Number(options.branchId));
     const result = options.readOnly
         ? await request.query(selectQuery)
         : await request
@@ -405,12 +420,12 @@ async function getMemberAttendanceStatuses(memberIds = [], date = todayInTimeZon
     return new Map(rows.map((row) => [Number(row.member_id), mapAttendance(row)]));
 }
 
-async function checkIn(body = {}) {
+async function checkIn(body = {}, { branchId = null } = {}) {
     await ensureAttendanceTable();
     const pool = await getPool();
     await reconcileAutoCheckout(pool);
-    const resolved = await findMember(pool, body, { requireActive: true });
-    const existing = await getAttendanceRecordForDate(pool, resolved.member.id, resolved.today);
+    const resolved = await findMember(pool, body, { requireActive: true, branchId });
+    const existing = await getAttendanceRecordForDate(pool, resolved.member.id, resolved.today, branchId);
     if (existing) {
         throw appError('تم تسجيل حضور هذا المشترك اليوم بالفعل.', 409, 'ATTENDANCE_ALREADY_CHECKED_IN', { attendance: existing });
     }
@@ -418,27 +433,28 @@ async function checkIn(body = {}) {
         await pool.request()
             .input('memberId', sql.Int, resolved.member.id)
             .input('membershipId', sql.Int, resolved.membership?.id || null)
+            .input('branchId', sql.Int, branchId == null ? null : Number(branchId))
             .input('attendanceDate', sql.Date, toUtcDate(resolved.today))
             .input('source', sql.VarChar(10), ATTENDANCE_SOURCES.has(resolved.source) ? resolved.source : 'manual')
-            .query(`INSERT INTO dbo.gym_attendance (member_id, membership_id, attendance_date, check_in_source)
-                    VALUES (@memberId, @membershipId, @attendanceDate, @source);`);
+            .query(`INSERT INTO dbo.gym_attendance (member_id, membership_id, branch_id, attendance_date, check_in_source)
+                    VALUES (@memberId, @membershipId, @branchId, @attendanceDate, @source);`);
     } catch (error) {
         if (error.number === 2601 || error.number === 2627) {
-            const duplicate = await getAttendanceRecordForDate(pool, resolved.member.id, resolved.today);
+            const duplicate = await getAttendanceRecordForDate(pool, resolved.member.id, resolved.today, branchId);
             throw appError('تم تسجيل حضور هذا المشترك اليوم بالفعل.', 409, 'ATTENDANCE_ALREADY_CHECKED_IN', { attendance: duplicate });
         }
         throw error;
     }
-    const attendance = await getAttendanceRecordForDate(pool, resolved.member.id, resolved.today);
+    const attendance = await getAttendanceRecordForDate(pool, resolved.member.id, resolved.today, branchId);
     return { attendance, message: `تم تسجيل حضور ${resolved.member.full_name} بنجاح.` };
 }
 
-async function checkOut(body = {}) {
+async function checkOut(body = {}, { branchId = null } = {}) {
     await ensureAttendanceTable();
     const pool = await getPool();
     await reconcileAutoCheckout(pool);
-    const resolved = await findMember(pool, body, { requireActive: false });
-    const existing = await getAttendanceRecordForDate(pool, resolved.member.id, resolved.today);
+    const resolved = await findMember(pool, body, { requireActive: false, branchId });
+    const existing = await getAttendanceRecordForDate(pool, resolved.member.id, resolved.today, branchId);
     if (!existing) throw appError('لا يوجد تسجيل حضور لهذا المشترك اليوم.', 409, 'ATTENDANCE_NOT_CHECKED_IN');
     if (existing.checkOutAt) throw appError('تم تسجيل انصراف هذا المشترك اليوم بالفعل.', 409, 'ATTENDANCE_ALREADY_CHECKED_OUT', { attendance: existing });
     await pool.request()
@@ -447,7 +463,7 @@ async function checkOut(body = {}) {
         .query(`UPDATE dbo.gym_attendance
                 SET check_out_at = SYSUTCDATETIME(), check_out_source = @source, updated_at = SYSUTCDATETIME()
                 WHERE id = @id;`);
-    const attendance = await getAttendanceRecordForDate(pool, resolved.member.id, resolved.today);
+    const attendance = await getAttendanceRecordForDate(pool, resolved.member.id, resolved.today, branchId);
     return { attendance, message: `تم تسجيل انصراف ${resolved.member.full_name} بنجاح.` };
 }
 
@@ -463,7 +479,8 @@ async function getMemberAttendance(memberId, options = {}) {
         .input('memberId', sql.Int, id)
         .input('fromDate', sql.Date, toUtcDate(from))
         .input('toDate', sql.Date, toUtcDate(to))
-        .query(`SELECT a.id, a.member_id, a.membership_id, a.attendance_date,
+        .input('branchId', sql.Int, options.branchId == null ? null : Number(options.branchId))
+        .query(`SELECT a.id, a.member_id, a.membership_id, a.branch_id, a.attendance_date,
                        a.check_in_at, a.check_out_at, a.check_in_source, a.check_out_source,
                        a.notes, m.full_name, m.phone,
                        ms.membership_plan, ms.membership_type
@@ -473,6 +490,7 @@ async function getMemberAttendance(memberId, options = {}) {
                     SELECT TOP 1 x.membership_plan, x.membership_type FROM dbo.memberships AS x WHERE x.id = a.membership_id
                 ) AS ms
                 WHERE a.member_id = @memberId AND a.attendance_date BETWEEN @fromDate AND @toDate
+                  AND (@branchId IS NULL OR a.branch_id = @branchId)
                 ORDER BY a.attendance_date DESC, a.check_in_at DESC;`);
     return { from, to, records: result.recordset.map(mapAttendance) };
 }
@@ -489,10 +507,11 @@ async function getAttendanceReport(options = {}) {
 
     const baseRequest = () => pool.request()
         .input('fromDate', sql.Date, toUtcDate(from))
-        .input('toDate', sql.Date, toUtcDate(to));
+        .input('toDate', sql.Date, toUtcDate(to))
+        .input('branchId', sql.Int, options.branchId == null ? null : Number(options.branchId));
     const [recordsResult, absentResult] = await Promise.all([
         baseRequest().query(`
-            SELECT a.id, a.member_id, a.membership_id, a.attendance_date,
+            SELECT a.id, a.member_id, a.membership_id, a.branch_id, a.attendance_date,
                    a.check_in_at, a.check_out_at, a.check_in_source, a.check_out_source,
                    a.notes, m.full_name, m.phone,
                    ms.membership_plan, ms.membership_type
@@ -503,6 +522,7 @@ async function getAttendanceReport(options = {}) {
                 FROM dbo.memberships AS x WHERE x.id = a.membership_id
             ) AS ms
             WHERE a.attendance_date BETWEEN @fromDate AND @toDate
+              AND (@branchId IS NULL OR a.branch_id = @branchId)
             ORDER BY a.attendance_date DESC, a.check_in_at DESC, a.id DESC;
         `),
         baseRequest().query(`
@@ -518,6 +538,7 @@ async function getAttendanceReport(options = {}) {
             WHERE NOT EXISTS (
                 SELECT 1 FROM dbo.gym_attendance AS a
                 WHERE a.member_id = m.id AND a.attendance_date BETWEEN @fromDate AND @toDate
+                  AND (@branchId IS NULL OR a.branch_id = @branchId)
             )
               AND NOT EXISTS (
                 SELECT 1 FROM dbo.membership_freezes AS f

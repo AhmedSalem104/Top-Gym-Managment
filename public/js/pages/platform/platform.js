@@ -80,6 +80,54 @@
         }).join('');
     }
 
+    function renderTenantsWithBranchInfo(tenants) {
+        const host = $('platformTenantsList');
+        if (!host) return;
+        if (!tenants?.length) {
+            host.innerHTML = '<tr><td colspan="7"><div class="saas-empty">لا توجد جيمات مسجلة بعد.</div></td></tr>';
+            return;
+        }
+        const tenantTypeLabel = (value) => String(value || '').toLowerCase() === 'independent_trainer' ? 'مدرب حر' : 'جيم';
+        host.innerHTML = tenants.map((tenant) => {
+            const plan = tenant.subscription?.plan?.name || 'بدون باقة';
+            const usage = `${numberFormatter.format(tenant.usage?.members || 0)} عضو · ${numberFormatter.format(tenant.usage?.users || 0)} مستخدم`;
+            const branches = tenant.branches || {};
+            const branchLimit = branches.limit == null ? 'غير محدود' : numberFormatter.format(branches.limit);
+            const branchUsage = `${numberFormatter.format(branches.active || 0)} / ${branchLimit}`;
+            const statusOptions = ['trial', 'active', 'suspended', 'expired', 'archived'].map((value) => `<option value="${value}" ${value === tenant.status ? 'selected' : ''}>${statusLabel(value)}</option>`).join('');
+            return `<tr><td><strong>${escapeHtml(tenant.name)}</strong><small class="saas-muted" dir="ltr">${escapeHtml(tenant.slug)}</small></td><td>${escapeHtml(tenantTypeLabel(tenant.tenantType))}</td><td>${escapeHtml(tenant.owner?.name || '—')}<small class="saas-muted" dir="ltr">${escapeHtml(tenant.owner?.email || '')}</small></td><td><select class="saas-inline-input" data-platform-tenant-status="${tenant.id}" aria-label="حالة ${escapeHtml(tenant.name)}">${statusOptions}</select></td><td>${escapeHtml(plan)}<small class="saas-muted">${tenant.subscription?.expiresAt ? `حتى ${escapeHtml(formatDate(tenant.subscription.expiresAt))}` : 'بدون انتهاء'}</small></td><td><span class="platform-branch-usage">${escapeHtml(branchUsage)}<small class="saas-muted">فروع نشطة / الحد</small></span><small class="saas-muted">${escapeHtml(usage)}</small></td><td><span class="saas-muted">${escapeHtml(formatDate(tenant.createdAt))}</span></td></tr>`;
+        }).join('');
+    }
+
+    function enhancePlanBranchLimits(items) {
+        (items || []).forEach((plan) => {
+            const card = document.querySelector(`.saas-admin-plan-card [data-platform-action="save-plan"][data-plan-id="${plan.id}"]`)?.closest('.saas-admin-plan-card');
+            if (!card) return;
+            const edit = card.querySelector('.saas-plan-edit');
+            if (edit && !edit.querySelector('[data-plan-field="maxBranches"]')) {
+                const label = document.createElement('label');
+                label.textContent = 'الفروع';
+                const input = document.createElement('input');
+                input.className = 'saas-inline-input';
+                input.type = 'number';
+                input.min = '1';
+                input.dataset.planField = 'maxBranches';
+                input.dataset.planId = String(plan.id);
+                input.value = plan.maxBranches == null ? '' : String(plan.maxBranches);
+                input.placeholder = 'غير محدود';
+                label.append(input);
+                edit.append(label);
+            }
+            const limits = card.querySelector('.saas-plan-limits');
+            if (limits && !limits.querySelector('[data-plan-limit="maxBranches"]')) {
+                const item = document.createElement('li');
+                item.dataset.planLimit = 'maxBranches';
+                item.innerHTML = `<span>الفروع</span><strong>${plan.maxBranches == null ? 'غير محدود' : numberFormatter.format(plan.maxBranches)}</strong>`;
+                limits.insertBefore(item, limits.lastElementChild || null);
+            }
+        });
+    }
+
     function planLimits(plan) {
         const limit = (value) => value == null ? 'غير محدود' : numberFormatter.format(value);
         return `<ul class="saas-plan-limits"><li><span>الأعضاء</span><strong>${limit(plan.maxMembers)}</strong></li><li><span>المستخدمون</span><strong>${limit(plan.maxUsers)}</strong></li><li><span>AI شهريًا</span><strong>${limit(plan.maxAiGenerations)}</strong></li><li><span>التخزين</span><strong>${limit(plan.maxStorageMb)} MB</strong></li></ul>`;
@@ -124,8 +172,9 @@
                 window.topGymAuth.api('/api/platform/audit?limit=50')
             ]);
             renderOverview(overview);
-            renderTenants(tenants.tenants || []);
+            renderTenantsWithBranchInfo(tenants.tenants || []);
             renderPlans(platformPlans.plans || []);
+            enhancePlanBranchLimits(platformPlans.plans || []);
             renderRequests(requests.requests || []);
             renderAudit(audit.audit || []);
             loaded = true;

@@ -23,6 +23,13 @@ test('central capability resolution preserves Gym and exposes only shipped Train
 test('capability enforcement preserves plan-gated server-side behavior', () => {
     assert.equal(capabilityService.requiredCapability('/store/sales'), 'store');
     assert.equal(capabilityService.requiredCapability('/coaching/programs'), 'coaching');
+    assert.equal(capabilityService.requiredCapability('/dashboard'), 'dashboard');
+    assert.equal(capabilityService.requiredCapability('/day-passes/summary'), 'day_passes');
+    assert.equal(capabilityService.requiredCapability('/monthly-finance'), 'finance');
+    assert.throws(
+        () => capabilityService.assertCapabilityAccess({ tenantType: 'independent_trainer', path: '/day-passes' }),
+        (error) => error.code === 'CAPABILITY_NOT_ENABLED' && error.statusCode === 503
+    );
     assert.throws(
         () => capabilityService.assertCapabilityAccess({ path: '/store/sales', features: { store: false } }),
         (error) => error.code === 'SAAS_FEATURE_NOT_INCLUDED' && error.statusCode === 403

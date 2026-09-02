@@ -54,6 +54,9 @@
     "express": "^4.21.2",
     "mssql": "^11.0.1"
   },
+  "overrides": {
+    "qs": "6.16.0"
+  },
   "devDependencies": {
     "@gltf-transform/core": "^4.4.2",
     "@gltf-transform/extensions": "^4.4.2",

@@ -413,6 +413,7 @@
         };
         const storeViewIds = {
             pos: 'storePosView',
+            bar: 'barPosView',
             products: 'storeProductsView',
             inventory: 'storeInventoryView',
             purchases: 'storePurchasesView',

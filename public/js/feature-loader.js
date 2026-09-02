@@ -122,7 +122,7 @@
         },
         store: {
             styles: [],
-            scripts: ['/js/pages/store/store.js?v=1']
+            scripts: ['/js/pages/store/store.js?v=1', '/js/pages/store/bar-pos.js?v=1']
         },
         'smart-assistant': {
             styles: [],
@@ -196,7 +196,12 @@
     }
 
     function dashboardIsRequested() {
-        return (window.location.hash.slice(1) || 'dashboard') === 'dashboard';
+        return (window.location.hash.slice(1) || 'dashboard') === 'dashboard'
+            && String(window.topGymAuth?.getUser?.()?.tenantType || '').toLowerCase() !== 'independent_trainer';
+    }
+
+    function isIndependentTrainer() {
+        return String(window.topGymAuth?.getUser?.()?.tenantType || '').toLowerCase() === 'independent_trainer';
     }
 
     function scheduleDashboardAnalytics(immediate = false) {
@@ -205,7 +210,7 @@
         window.__topGymDashboardAnalyticsScheduled = true;
         const start = async () => {
             if (window.topGymAuthReady) await window.topGymAuthReady.catch(() => null);
-            if (!dashboardIsRequested() || !window.topGymAuth?.canAccessTab?.('dashboard') || (!window.topGymAuth?.isOwner?.() && !window.topGymAuth?.hasPermission?.('finance.read'))) {
+            if (isIndependentTrainer() || !dashboardIsRequested() || !window.topGymAuth?.canAccessTab?.('dashboard') || (!window.topGymAuth?.isOwner?.() && !window.topGymAuth?.hasPermission?.('finance.read'))) {
                 window.__topGymDashboardAnalyticsScheduled = false;
                 return;
             }
@@ -224,7 +229,7 @@
         window.__topGymDashboardEnhancementsScheduled = true;
         const start = async () => {
             if (window.topGymAuthReady) await window.topGymAuthReady.catch(() => null);
-            if (!dashboardIsRequested() || !window.topGymAuth?.getUser?.() || !window.topGymAuth?.canAccessTab?.('dashboard')) {
+            if (isIndependentTrainer() || !dashboardIsRequested() || !window.topGymAuth?.getUser?.() || !window.topGymAuth?.canAccessTab?.('dashboard')) {
                 window.__topGymDashboardEnhancementsScheduled = false;
                 return;
             }

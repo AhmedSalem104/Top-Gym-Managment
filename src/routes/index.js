@@ -23,6 +23,9 @@ const { registerPlatformRoutes } = require('./platform.routes');
 const { registerPlatformAdminRoutes } = require('./platform-admin.routes');
 const { registerSaasRoutes } = require('./saas.routes');
 const { registerTrainerRoutes } = require('./trainer.routes');
+const { registerBranchRoutes } = require('./branch.routes');
+const { registerStockLocationRoutes } = require('./stock-location.routes');
+const { registerBarRoutes } = require('./bar.routes');
 const { platformOnly } = require('../middleware/platform.middleware');
 
 function createHealthHandler({ getPool, getStorageStatus = () => ({ status: 'not_configured' }), now = () => performance.now() } = {}) {
@@ -102,6 +105,9 @@ function registerRoutes(app, {
     trainerService,
     trainerCommerceService,
     platformAdminService,
+    branchService,
+    stockLocationService,
+    barService,
     getPool
 }) {
     app.get('/api/health/live', asyncRoute(createLivenessHandler()));
@@ -112,14 +118,14 @@ function registerRoutes(app, {
 
     registerAuthRoutes(app, { authService, permissionService, saasService, asyncRoute, ownerOnly, allowLoginAttempt });
     registerBackupRoutes(app, { backupService, backupRecoveryService, brandingService, asyncRoute, isAuthorizedCronRequest, backupActionRateLimit });
-    registerFinanceRoutes(app, { financeService, asyncRoute });
+    registerFinanceRoutes(app, { financeService, branchService, asyncRoute });
     registerDashboardRoutes(app, { memberService, analyticsService, storeService, asyncRoute });
     registerLibraryRoutes(app, { libraryService, asyncRoute });
     registerReportsRoutes(app, { reportService, storeService, asyncRoute });
-    registerAttendanceRoutes(app, { attendanceService, asyncRoute });
+    registerAttendanceRoutes(app, { attendanceService, branchService, asyncRoute });
     registerPricingRoutes(app, { pricingService, asyncRoute });
     registerCoachingRoutes(app, { coachingService, asyncRoute });
-    registerDayPassRoutes(app, { dayPassService, asyncRoute, ownerOnly });
+    registerDayPassRoutes(app, { dayPassService, branchService, asyncRoute, ownerOnly });
     registerMemberPortalRoutes(app, { membershipCodeService, portalService, libraryService, commercialService, asyncRoute, ownerOnly });
     registerMemberSubscriptionRoutes(app, { service: memberSubscriptionService, asyncRoute, ownerOnly });
     registerGymRegistrationRoutes(app, { service: gymRegistrationService, asyncRoute, platformOnly });
@@ -139,7 +145,10 @@ function registerRoutes(app, {
     });
     registerSaasRoutes(app, { saasService, asyncRoute, ownerOnly });
     registerTrainerRoutes(app, { trainerService, trainerCommerceService, asyncRoute });
-    registerMembersRoutes(app, { memberService, asyncRoute });
+    registerBranchRoutes(app, { branchService, asyncRoute });
+    registerStockLocationRoutes(app, { stockLocationService, asyncRoute });
+    registerBarRoutes(app, { barService, asyncRoute });
+    registerMembersRoutes(app, { memberService, branchService, asyncRoute });
 }
 
 module.exports = { createHealthHandler, createLivenessHandler, registerRoutes };

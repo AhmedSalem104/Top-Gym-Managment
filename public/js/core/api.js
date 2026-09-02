@@ -9,6 +9,12 @@
         if (body !== undefined && body !== null && !isFormData && !isBlob && !headers.has('Content-Type')) {
             headers.set('Content-Type', 'application/json');
         }
+        // Branch context is only a request hint. Every server endpoint still
+        // resolves tenant ownership and branch access before using it.
+        const branchId = window.sessionStorage?.getItem('logicfit.branchId');
+        if (branchId && /^\d+$/.test(branchId) && !headers.has('x-branch-id')) {
+            headers.set('x-branch-id', branchId);
+        }
         return headers;
     }
 

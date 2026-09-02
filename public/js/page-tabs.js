@@ -2,7 +2,7 @@
     if (window.__topGymPageTabsLoaded) return;
     window.__topGymPageTabsLoaded = true;
 
-    const validTabs = new Set(['dashboard', 'members', 'expenses', 'reports', 'management', 'branding', 'member-payment-methods', 'saas-billing', 'backup-history', 'permissions', 'attendance', 'library', 'trainees', 'intelligence', 'feedback', 'store', 'member-subscription-requests', 'portal-analytics']);
+    const validTabs = new Set(['dashboard', 'members', 'expenses', 'reports', 'management', 'branding', 'member-payment-methods', 'saas-billing', 'backup-history', 'permissions', 'attendance', 'library', 'trainees', 'intelligence', 'feedback', 'store', 'branches', 'member-subscription-requests', 'portal-analytics']);
     let activationToken = 0;
     let activeTabName = null;
 
@@ -280,7 +280,7 @@
         if (!validTabs.has(name)) return 'dashboard';
         if (window.topGymAuth?.isReady?.()) {
             if (!window.topGymAuth.getUser?.()) return 'dashboard';
-            if ((name === 'management' || name === 'branding' || name === 'member-payment-methods' || name === 'saas-billing' || name === 'backup-history' || name === 'member-subscription-requests' || name === 'portal-analytics') && !window.topGymAuth.isOwner?.()) return window.topGymPermissions?.firstAccessibleTab?.(window.topGymAuth.getUser?.()) || 'members';
+            if ((name === 'management' || name === 'branding' || name === 'member-payment-methods' || name === 'saas-billing' || name === 'backup-history' || name === 'branches' || name === 'member-subscription-requests' || name === 'portal-analytics') && !window.topGymAuth.isOwner?.()) return window.topGymPermissions?.firstAccessibleTab?.(window.topGymAuth.getUser?.()) || 'members';
             if (!window.topGymAuth.canAccessTab(name)) return window.topGymPermissions?.firstAccessibleTab?.(window.topGymAuth.getUser?.()) || 'members';
         }
         return name;
@@ -311,6 +311,7 @@
         const traineesSection = document.getElementById('traineesSection');
         const intelligenceSection = document.getElementById('intelligenceSection');
         const storeSection = document.getElementById('storeSection');
+        const branchesSection = document.getElementById('branchesSection');
         const isDashboard = name === 'dashboard';
         const isMembers = name === 'members';
         const isExpenses = name === 'expenses';
@@ -329,6 +330,7 @@
         const isTrainees = name === 'trainees';
         const isIntelligence = name === 'intelligence';
         const isStore = name === 'store';
+        const isBranches = name === 'branches';
 
         setHidden(dashboardHero, !isDashboard);
         setHidden(dashboardSectionHeading, !isDashboard);
@@ -357,7 +359,8 @@
         setHidden(traineesSection, !isTrainees);
         setHidden(intelligenceSection, !isIntelligence);
         setHidden(storeSection, !isStore);
-        setHidden(workspace, isDashboard || isExpenses || isReports || isManagement || isBranding || isMemberPaymentMethods || isSaasBilling || isBackupHistory || isMemberSubscriptionRequests || isPortalAnalytics || isPermissions || isAttendance || isLibrary || isTrainees || isIntelligence || isFeedback || isStore);
+        setHidden(branchesSection, !isBranches);
+        setHidden(workspace, isDashboard || isExpenses || isReports || isManagement || isBranding || isMemberPaymentMethods || isSaasBilling || isBackupHistory || isMemberSubscriptionRequests || isPortalAnalytics || isPermissions || isAttendance || isLibrary || isTrainees || isIntelligence || isFeedback || isStore || isBranches);
         setHidden(membersSection, !isMembers);
 
         const tabPanelIds = { 'saas-billing': 'saasBillingSection', 'backup-history': 'backupHistorySection', 'member-payment-methods': 'memberPaymentMethodsSection', 'member-subscription-requests': 'memberSubscriptionRequestsSection', 'portal-analytics': 'portalAnalyticsSection' };

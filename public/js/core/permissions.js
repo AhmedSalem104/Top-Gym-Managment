@@ -1,7 +1,7 @@
 (() => {
     if (window.topGymPermissions) return;
 
-    const OWNER_TABS = Object.freeze(['dashboard', 'members', 'trainees', 'intelligence', 'management', 'branding', 'member-payment-methods', 'saas-billing', 'backup-history', 'permissions', 'attendance', 'expenses', 'library', 'reports', 'feedback', 'store', 'member-subscription-requests', 'portal-analytics']);
+    const OWNER_TABS = Object.freeze(['dashboard', 'members', 'trainees', 'intelligence', 'management', 'branding', 'member-payment-methods', 'saas-billing', 'backup-history', 'permissions', 'attendance', 'expenses', 'library', 'reports', 'feedback', 'store', 'branches', 'member-subscription-requests', 'portal-analytics']);
     const PLATFORM_TABS = Object.freeze([]);
     const TAB_PERMISSION_CODES = Object.freeze({
         dashboard: 'dashboard.read',
@@ -19,6 +19,7 @@
         reports: 'reports.read',
         feedback: 'feedback.read',
         store: 'store.view',
+        branches: 'branches.manage',
         'member-subscription-requests': 'member.subscription_requests.read',
         'portal-analytics': 'portal.analytics.read'
     });
@@ -94,7 +95,7 @@
     function tabsForUser(user) {
         if (user?.role === 'PlatformAdmin') return [...PLATFORM_TABS];
         if (user?.role === 'Owner') return [...OWNER_TABS];
-        return OWNER_TABS.filter((tab) => ['management', 'branding', 'member-payment-methods', 'saas-billing', 'backup-history', 'member-subscription-requests', 'portal-analytics'].includes(tab) ? false : TAB_PERMISSION_ALTERNATIVES[tab]
+        return OWNER_TABS.filter((tab) => ['management', 'branding', 'member-payment-methods', 'saas-billing', 'backup-history', 'branches', 'member-subscription-requests', 'portal-analytics'].includes(tab) ? false : TAB_PERMISSION_ALTERNATIVES[tab]
             ? TAB_PERMISSION_ALTERNATIVES[tab].some((code) => hasPermission(user, code))
             : hasPermission(user, TAB_PERMISSION_CODES[tab]));
     }

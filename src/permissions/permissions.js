@@ -105,7 +105,19 @@ const PERMISSIONS = Object.freeze({
     STORE_SUPPLIERS_MANAGE: 'store.suppliers.manage',
     STORE_EXPENSES_MANAGE: 'store.expenses.manage',
     STORE_REPORTS_VIEW: 'store.reports.view',
-    STORE_PROFIT_VIEW: 'store.profit.view'
+    STORE_PROFIT_VIEW: 'store.profit.view',
+
+    BRANCHES_READ: 'branches.read',
+    BRANCHES_MANAGE: 'branches.manage',
+    BRANCH_ACCESS_MANAGE: 'branches.access.manage'
+    ,INVENTORY_LOCATIONS_MANAGE: 'inventory.locations.manage'
+    ,INVENTORY_TRANSFERS_READ: 'inventory.transfers.read'
+    ,INVENTORY_TRANSFERS_MANAGE: 'inventory.transfers.manage'
+    ,BAR_READ: 'bar.read'
+    ,BAR_SELL: 'bar.sell'
+    ,BAR_RECIPES_MANAGE: 'bar.recipes.manage'
+    ,BAR_SHIFTS_MANAGE: 'bar.shifts.manage'
+    ,BAR_WASTE_MANAGE: 'bar.waste.manage'
 });
 
 const CATALOG_DEFINITIONS = [
@@ -192,6 +204,20 @@ CATALOG_DEFINITIONS.push(
 
 CATALOG_DEFINITIONS.push(
     ['portal.analytics.read', 'Portal analytics', 'View tenant-scoped member portal page views, estimated unique visitors and authenticated members.', 'portal', 'view', true]
+);
+
+CATALOG_DEFINITIONS.push(
+    ['branches.read', 'Branch visibility', 'View the active branches available to this Gym user.', 'branches', 'view'],
+    ['branches.manage', 'Manage branches', 'Create, edit, and archive Gym branches.', 'branches', 'manage', true],
+    ['branches.access.manage', 'Manage branch access', 'Assign existing Gym staff to one or more branches.', 'branches', 'manage', true],
+    ['inventory.locations.manage', 'Manage stock locations', 'Create inventory locations inside an authorized Gym branch.', 'inventory', 'manage', true],
+    ['inventory.transfers.read', 'View stock transfers', 'View stock transfers for authorized Gym branches.', 'inventory', 'view'],
+    ['inventory.transfers.manage', 'Manage stock transfers', 'Create, approve, and receive stock transfers for authorized Gym branches.', 'inventory', 'manage'],
+    ['bar.read', 'View Bar', 'View the branch Bar menu and shifts.', 'bar', 'view'],
+    ['bar.sell', 'Sell at Bar', 'Create paid Bar sales in an authorized branch.', 'bar', 'sell'],
+    ['bar.recipes.manage', 'Manage Bar recipes', 'Configure Bar recipes and ingredients.', 'bar', 'manage', true],
+    ['bar.shifts.manage', 'Manage Bar shifts', 'Open and close Bar POS shifts.', 'bar', 'manage'],
+    ['bar.waste.manage', 'Record Bar waste', 'Record traceable spoilage and preparation waste.', 'bar', 'manage']
 );
 
 CATALOG_DEFINITIONS.push(

@@ -128,13 +128,13 @@ test('finance, day-pass and store reads propagate read-only mode to schema guard
     const store = source('src/services/store-service.js');
     const storeController = source('src/controllers/store.controller.js');
 
-    assert.match(finance, /async function getMonthlyFinance\(\{ readOnly = false \} = \{\}\)[\s\S]*?ensureExpensesTable\(\{ readOnly \}\)[\s\S]*?ensurePaymentTransactionsTable\(\{ readOnly \}\)[\s\S]*?ensureDayPassTables\(\{ readOnly \}\)/);
-    assert.match(financeController, /getMonthlyFinance\(\{ readOnly: request\.readOnlyRequest \}\)/);
+    assert.match(finance, /async function getMonthlyFinance\(\{[^}]*readOnly = false[^}]*\} = \{\}\)[\s\S]*?ensureExpensesTable\(\{ readOnly \}\)[\s\S]*?ensurePaymentTransactionsTable\(\{ readOnly \}\)[\s\S]*?ensureDayPassTables\(\{ readOnly \}\)/);
+    assert.match(financeController, /getMonthlyFinance\(\{[^}]*readOnly: request\.readOnlyRequest[^}]*\}\)/);
     assert.match(dayPass, /async function getPricing\(\{ readOnly = false \} = \{\}\)/);
     assert.match(dayPass, /readOnly: Boolean\(query\.readOnly\)/);
     assert.match(dayPassRepository, /async function listTypes\(\{ activeOnly = false, readOnly = false \} = \{\}\)[\s\S]*?ensureDayPassTables\(\{ readOnly \}\)/);
-    assert.match(dayPassRepository, /async function getRangeSummary\(\{ fromDate, nextDate, readOnly = false \}\)[\s\S]*?ensureDayPassTables\(\{ readOnly \}\)/);
-    assert.match(dayPassController, /listDayPasses\(\{ \.\.\.request\.query, readOnly: request\.readOnlyRequest \}\)/);
+    assert.match(dayPassRepository, /async function getRangeSummary\(\{[^}]*fromDate,[^}]*nextDate,[^}]*readOnly = false[^}]*\}\)[\s\S]*?ensureDayPassTables\(\{ readOnly \}\)/);
+    assert.match(dayPassController, /listDayPasses\(\{ \.\.\.request\.query,[^}]*readOnly: request\.readOnlyRequest[^}]*\}\)/);
     assert.match(store, /async function listProducts\([\s\S]*?readOnly = false[\s\S]*?ensureStoreTables\(\{ readOnly \}\)/);
     assert.match(store, /async function getDashboard\([\s\S]*?readOnly = false[\s\S]*?ensureStoreTables\(\{ readOnly \}\)/);
     assert.match(storeController, /storeService\.listProducts\(\{ \.\.\.request\.query,[\s\S]*?readOnly: request\.readOnlyRequest \}\)/);

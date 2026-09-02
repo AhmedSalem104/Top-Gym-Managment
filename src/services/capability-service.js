@@ -11,6 +11,7 @@ const ENABLED_TENANT_TYPES = Object.freeze(new Set(TENANT_TYPE_VALUES));
 // tenant's product/plan may expose a domain; role permissions still decide
 // whether a specific user may perform an action inside that domain.
 const GYM_CAPABILITIES = Object.freeze([
+    'dashboard',
     'members',
     'attendance',
     'coaching',
@@ -20,9 +21,12 @@ const GYM_CAPABILITIES = Object.freeze([
     'pricing',
     'payments',
     'finance',
+    'day_passes',
     'reports',
     'store',
     'inventory',
+    'branches',
+    'bar',
     'portal',
     'branding',
     'backup',
@@ -68,6 +72,7 @@ const LIMIT_KEYS = Object.freeze([
     'maxUsers',
     'maxAiGenerations',
     'maxStorageMb',
+    'maxBranches',
     // Reserved extension point. No database column or Trainer workflow is
     // introduced in this phase; the resolver accepts it when a later plan
     // model supplies the value.
@@ -85,6 +90,9 @@ const FEATURE_TO_CAPABILITY = Object.freeze({
 });
 
 const PATH_CAPABILITIES = Object.freeze([
+    [/^\/(?:dashboard(?:-analytics)?|bootstrap)(?:\/|$)/, 'dashboard'],
+    [/^\/day-passes(?:\/|$)/, 'day_passes'],
+    [/^\/monthly-finance(?:\/|$)/, 'finance'],
     [/^\/trainer\/clients(?:\/|$)/, 'clients'],
     [/^\/trainer\/assessments(?:\/|$)/, 'assessments'],
     [/^\/trainer\/progress(?:\/|$)/, 'progress'],
@@ -186,6 +194,8 @@ function requiredFeature(path = '') {
     if (value.startsWith('/trainer/reports')) return 'reports';
     if (value.startsWith('/intelligence')) return 'intelligence';
     if (value.startsWith('/store')) return 'store';
+    if (value.startsWith('/bar')) return 'bar';
+    if (value.startsWith('/branches') || value.startsWith('/commerce/stock')) return 'branches';
     if (value.startsWith('/coaching') || value.startsWith('/workout') || value.startsWith('/diet')
         || value.startsWith('/meal-logs') || value.startsWith('/external-trainees') || value.startsWith('/clients')) return 'coaching';
     if (value.startsWith('/member-portal')) return 'portal';

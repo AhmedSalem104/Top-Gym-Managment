@@ -262,7 +262,11 @@
         }
 
         async function loadData() {
-            if (!window.topGymAuth?.getUser?.()) return;
+            const authenticatedUser = window.topGymAuth?.getUser?.();
+            // Owners exist in both Gym and Independent Trainer tenants. The
+            // shared shell must not bootstrap Gym-only endpoints for a
+            // trainer while the auth redirect is settling.
+            if (!authenticatedUser || authenticatedUser.tenantType === 'independent_trainer') return;
             if (dataLoadPromise) return dataLoadPromise;
             const loadPromise = withLoader(async () => {
                 const isOwner = window.topGymAuth?.isOwner?.() === true;

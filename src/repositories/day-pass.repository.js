@@ -166,7 +166,7 @@ async function findType(code, { readOnly = false } = {}) {
     return result.recordset[0] ? mapType(result.recordset[0]) : null;
 }
 
-async function createSale({ visitorName, visitorPhone, visitorPhoneNormalized, passType, paymentMethod, visitDate, notes, createdByUserId }) {
+async function createSale({ visitorName, visitorPhone, visitorPhoneNormalized, passType, paymentMethod, visitDate, notes, createdByUserId, branchId = null }) {
     await ensureDayPassTables();
     const pool = await getPool();
     const result = await pool.request()
@@ -181,16 +181,17 @@ async function createSale({ visitorName, visitorPhone, visitorPhoneNormalized, p
         .input('visitDate', sql.Date, toUtcDate(visitDate))
         .input('notes', sql.NVarChar(500), notes)
         .input('createdByUserId', sql.Int, createdByUserId || null)
+        .input('branchId', sql.Int, branchId == null ? null : Number(branchId))
         .query(`
             INSERT INTO dbo.gym_day_pass_sales
                 (visitor_name, visitor_phone, visitor_phone_normalized, pass_type_code, pass_type_name,
-                 amount_due, amount_paid, payment_method, visit_date, notes, created_by_user_id)
+                 amount_due, amount_paid, payment_method, visit_date, notes, created_by_user_id, branch_id)
             OUTPUT INSERTED.id, INSERTED.visitor_name, INSERTED.visitor_phone, INSERTED.visitor_phone_normalized,
                    INSERTED.pass_type_code, INSERTED.pass_type_name, INSERTED.amount_due, INSERTED.amount_paid,
                    INSERTED.payment_method, INSERTED.visit_date, INSERTED.notes, INSERTED.status,
                    INSERTED.created_by_user_id, INSERTED.whatsapp_opened_at, INSERTED.created_at, INSERTED.updated_at
             VALUES (@visitorName, @visitorPhone, @visitorPhoneNormalized, @passTypeCode, @passTypeName,
-                    @amountDue, @amountPaid, @paymentMethod, @visitDate, @notes, @createdByUserId);
+                    @amountDue, @amountPaid, @paymentMethod, @visitDate, @notes, @createdByUserId, @branchId);
         `);
     return mapSale(result.recordset[0]);
 }
@@ -232,22 +233,24 @@ async function updateSale({ id, visitorName, visitorPhone, visitorPhoneNormalize
     return result.recordset[0] ? mapSale(result.recordset[0]) : null;
 }
 
-function addListFilters(request, { fromDate, nextDate, typeCode, paymentMethod, search, includeVoided = false }) {
+function addListFilters(request, { fromDate, nextDate, typeCode, paymentMethod, search, includeVoided = false, branchId = null }) {
     request.input('fromDate', sql.Date, toUtcDate(fromDate));
     request.input('nextDate', sql.Date, toUtcDate(nextDate));
     const conditions = ['s.visit_date >= @fromDate', 's.visit_date < @nextDate'];
     if (!includeVoided) conditions.push("s.status = 'completed'");
+    request.input('branchId', sql.Int, branchId == null ? null : Number(branchId));
+    conditions.push('(@branchId IS NULL OR s.branch_id = @branchId)');
     if (typeCode) { request.input('typeCode', sql.VarChar(40), typeCode); conditions.push('s.pass_type_code = @typeCode'); }
     if (paymentMethod) { request.input('paymentMethod', sql.VarChar(20), paymentMethod); conditions.push('s.payment_method = @paymentMethod'); }
     if (search) { request.input('search', sql.NVarChar(160), `%${search}%`); conditions.push('(s.visitor_name LIKE @search OR s.visitor_phone LIKE @search OR s.visitor_phone_normalized LIKE @search)'); }
     return conditions.join(' AND ');
 }
 
-async function listSales({ fromDate, nextDate, typeCode = '', paymentMethod = '', search = '', page = 1, pageSize = 20, includeVoided = false, readOnly = false }) {
+async function listSales({ fromDate, nextDate, typeCode = '', paymentMethod = '', search = '', page = 1, pageSize = 20, includeVoided = false, readOnly = false, branchId = null }) {
     await ensureDayPassTables({ readOnly });
     const pool = await getPool();
     const request = pool.request();
-    const where = addListFilters(request, { fromDate, nextDate, typeCode, paymentMethod, search, includeVoided });
+    const where = addListFilters(request, { fromDate, nextDate, typeCode, paymentMethod, search, includeVoided, branchId });
     request.input('offset', sql.Int, (page - 1) * pageSize).input('pageSize', sql.Int, pageSize);
     const result = await request.batch(`
         SELECT COUNT_BIG(*) AS total
@@ -268,23 +271,24 @@ async function listSales({ fromDate, nextDate, typeCode = '', paymentMethod = ''
     };
 }
 
-async function getRangeData({ fromDate, nextDate, readOnly = false }) {
+async function getRangeData({ fromDate, nextDate, readOnly = false, branchId = null }) {
     await ensureDayPassTables({ readOnly });
     const pool = await getPool();
     const request = pool.request()
         .input('fromDate', sql.Date, toUtcDate(fromDate))
-        .input('nextDate', sql.Date, toUtcDate(nextDate));
+        .input('nextDate', sql.Date, toUtcDate(nextDate))
+        .input('branchId', sql.Int, branchId == null ? null : Number(branchId));
     const result = await request.batch(`
         SELECT s.id, s.visitor_name, s.visitor_phone, s.visitor_phone_normalized,
                s.pass_type_code, s.pass_type_name, s.amount_due, s.amount_paid,
                s.payment_method, s.visit_date, s.notes, s.status, s.created_by_user_id,
                s.whatsapp_opened_at, s.created_at, s.updated_at
         FROM dbo.gym_day_pass_sales AS s
-        WHERE s.visit_date >= @fromDate AND s.visit_date < @nextDate AND s.status = 'completed'
+        WHERE s.visit_date >= @fromDate AND s.visit_date < @nextDate AND s.status = 'completed' AND (@branchId IS NULL OR s.branch_id = @branchId)
         ORDER BY s.visit_date DESC, s.id DESC;
         SELECT COUNT_BIG(*) AS count, ISNULL(SUM(s.amount_paid), 0) AS amount
         FROM dbo.gym_day_pass_sales AS s
-        WHERE s.visit_date >= @fromDate AND s.visit_date < @nextDate AND s.status = 'completed';
+        WHERE s.visit_date >= @fromDate AND s.visit_date < @nextDate AND s.status = 'completed' AND (@branchId IS NULL OR s.branch_id = @branchId);
     `);
     return {
         records: (result.recordsets[0] || []).map(mapSale),
@@ -295,16 +299,17 @@ async function getRangeData({ fromDate, nextDate, readOnly = false }) {
     };
 }
 
-async function getRangeSummary({ fromDate, nextDate, readOnly = false }) {
+async function getRangeSummary({ fromDate, nextDate, readOnly = false, branchId = null }) {
     await ensureDayPassTables({ readOnly });
     const pool = await getPool();
     const result = await pool.request()
         .input('fromDate', sql.Date, toUtcDate(fromDate))
         .input('nextDate', sql.Date, toUtcDate(nextDate))
+        .input('branchId', sql.Int, branchId == null ? null : Number(branchId))
         .query(`
             SELECT COUNT_BIG(*) AS count, ISNULL(SUM(s.amount_paid), 0) AS amount
             FROM dbo.gym_day_pass_sales AS s
-            WHERE s.visit_date >= @fromDate AND s.visit_date < @nextDate AND s.status = 'completed';
+            WHERE s.visit_date >= @fromDate AND s.visit_date < @nextDate AND s.status = 'completed' AND (@branchId IS NULL OR s.branch_id = @branchId);
         `);
     return {
         count: Number(result.recordset[0]?.count || 0),

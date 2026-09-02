@@ -106,7 +106,7 @@ async function updatePricing(body = {}) {
     return { types: await dayPassRepository.updateTypes(items) };
 }
 
-async function createDayPass(body = {}, { createdByUserId = null } = {}) {
+async function createDayPass(body = {}, { createdByUserId = null, branchId = null } = {}) {
     const visitorName = optionalString(body.visitorName ?? body.name, 120) || 'زائر';
     const visitorPhone = optionalString(body.visitorPhone ?? body.phone, 30) || '';
     const visitorPhoneNormalized = normalizePhone(visitorPhone);
@@ -124,7 +124,8 @@ async function createDayPass(body = {}, { createdByUserId = null } = {}) {
         paymentMethod,
         visitDate,
         notes,
-        createdByUserId
+        createdByUserId,
+        branchId
     });
     const brandName = await currentBrandName();
     return {
@@ -186,13 +187,14 @@ async function listDayPasses(query = {}) {
         page,
         pageSize,
         includeVoided: String(query.includeVoided) === 'true',
-        readOnly: Boolean(query.readOnly)
+        readOnly: Boolean(query.readOnly),
+        branchId: query.branchId ?? null
     });
 }
 
 async function getSummary(query = {}) {
     const range = parseRange(query);
-    const result = await dayPassRepository.getRangeData({ fromDate: range.from, nextDate: range.nextDate, readOnly: Boolean(query.readOnly) });
+    const result = await dayPassRepository.getRangeData({ fromDate: range.from, nextDate: range.nextDate, readOnly: Boolean(query.readOnly), branchId: query.branchId ?? null });
     const byType = result.records.reduce((summary, item) => {
         const key = item.passTypeCode;
         const current = summary[key] || { code: key, label: item.passTypeName, count: 0, amount: 0 };

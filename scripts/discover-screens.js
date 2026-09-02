@@ -113,7 +113,7 @@ const platformPanels = unique([
 ]);
 const registrationSteps = unique(htmlSources.flatMap(({ source }) => attributeValues(source, 'data-registration-step')));
 const portalRootIds = unique(allIds.filter((id) => /^portal(?:LoginPanel|Result|HomeView|FeedbackSection|SubscriptionSection|LibrarySection)$/.test(id)));
-const storeViewValues = ['pos', 'products', 'inventory', 'purchases', 'sales', 'suppliers', 'expenses', 'reports']
+const storeViewValues = ['pos', 'products', 'inventory', 'purchases', 'sales', 'suppliers', 'expenses', 'reports', 'bar']
     .filter((value) => nestedViews.includes(value));
 const portalToolValues = ['print', 'feedback', 'exercises', 'foods', 'subscription']
     .filter((value) => nestedViews.includes(value));

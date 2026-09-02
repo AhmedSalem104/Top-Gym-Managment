@@ -34,6 +34,9 @@ const brandingService = require('./src/services/branding-service');
 const authService = require('./src/services/auth-service');
 const permissionService = require('./src/services/permission-service');
 const tenantService = require('./src/services/tenant-service');
+const branchService = require('./src/services/branch-service');
+const stockLocationService = require('./src/services/stock-location-service');
+const barService = require('./src/services/bar-service');
 const saasService = require('./src/services/saas-service');
 const commercialSchema = require('./src/services/commercial-schema');
 const commercialService = require('./src/services/commercial-service');
@@ -223,6 +226,9 @@ registerRoutes(app, {
     brandingService,
     saasService,
     platformAdminService,
+    branchService,
+    stockLocationService,
+    barService,
     getPool
 });
 

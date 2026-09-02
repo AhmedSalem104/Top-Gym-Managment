@@ -2,8 +2,8 @@
 
 const { createMembersController } = require('../controllers/members.controller');
 
-function registerMembersRoutes(app, { memberService, asyncRoute }) {
-    const controller = createMembersController({ memberService });
+function registerMembersRoutes(app, { memberService, branchService, asyncRoute }) {
+    const controller = createMembersController({ memberService, branchService });
     app.get('/api/members', asyncRoute(controller.list));
     app.get('/api/members/:id/refund-preview', asyncRoute(controller.refundPreview));
     app.get('/api/members/:id/details', asyncRoute(controller.details));
@@ -16,6 +16,8 @@ function registerMembersRoutes(app, { memberService, asyncRoute }) {
     app.post('/api/members/:id/renew', asyncRoute(controller.renew));
     app.post('/api/members/:id/refund', asyncRoute(controller.refund));
     app.post('/api/members/:id/memberships', asyncRoute(controller.addMembership));
+    app.get('/api/memberships/:id/branches', asyncRoute(controller.membershipBranches));
+    app.put('/api/memberships/:id/branches', asyncRoute(controller.updateMembershipBranches));
     app.post('/api/memberships/:id/payments', asyncRoute(controller.payment));
     app.delete('/api/members/:id', asyncRoute(controller.remove));
 }

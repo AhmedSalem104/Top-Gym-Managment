@@ -32,6 +32,13 @@ const PHASE3_TRAINER_REGISTRATION_MIGRATION_PATH = path.join(__dirname, '..', 'd
 const PHASE4_TRAINER_CLIENT_PROFILE_MIGRATION_PATH = path.join(__dirname, '..', 'database', 'migrations', '017-trainer-client-profile.sql');
 const PHASE5_TRAINER_COMMERCIAL_OPERATIONS_MIGRATION_PATH = path.join(__dirname, '..', 'database', 'migrations', '018-trainer-commercial-operations.sql');
 const PHASE6_TRAINER_PORTAL_FOUNDATION_MIGRATION_PATH = path.join(__dirname, '..', 'database', 'migrations', '019-trainer-portal-foundation.sql');
+const PHASE7_BRANCH_FOUNDATION_MIGRATION_PATH = path.join(__dirname, '..', 'database', 'migrations', '020-branch-foundation.sql');
+const PHASE8_MEMBERSHIP_BRANCH_ATTENDANCE_MIGRATION_PATH = path.join(__dirname, '..', 'database', 'migrations', '021-membership-branch-attendance.sql');
+const PHASE9_FINANCIAL_BRANCH_ATTRIBUTION_MIGRATION_PATH = path.join(__dirname, '..', 'database', 'migrations', '022-financial-branch-attribution.sql');
+const PHASE10_STOCK_LOCATIONS_MIGRATION_PATH = path.join(__dirname, '..', 'database', 'migrations', '023-stock-locations-and-transfers.sql');
+const PHASE11_BAR_POS_MIGRATION_PATH = path.join(__dirname, '..', 'database', 'migrations', '024-bar-pos-recipes.sql');
+const PHASE12_BAR_MODIFIERS_MIGRATION_PATH = path.join(__dirname, '..', 'database', 'migrations', '025-bar-modifiers.sql');
+const PHASE13_BRANCH_PLAN_LIMITS_MIGRATION_PATH = path.join(__dirname, '..', 'database', 'migrations', '026-branch-plan-limits.sql');
 const PHASE0_SECURITY_MIGRATION_PATH = path.join(__dirname, '..', 'database', 'migrations', '013-phase0-security-preconditions.sql');
 const BASE_COMMERCIAL_MIGRATION_PATH = commercialSchema.MIGRATION_PATH;
 
@@ -111,6 +118,11 @@ async function migrate() {
         await pool.request().batch(phase6TrainerPortalFoundationMigration);
     });
     await runTenantContext({ mode: 'platform', tenantId: bootstrapTenant.id }, () => commercialSchema.ensureCommercialTables());
+    const branchFoundationMigration = fs.readFileSync(PHASE7_BRANCH_FOUNDATION_MIGRATION_PATH, 'utf8');
+    await runTenantContext({ mode: 'platform', tenantId: bootstrapTenant.id }, async () => {
+        const pool = await getPool();
+        await pool.request().batch(branchFoundationMigration);
+    });
     await runTenantContext({ mode: 'platform', tenantId: bootstrapTenant.id }, () => paymentLedgerSchema.ensurePaymentLedgerIntegrity());
     await runTenantContext({ mode: 'tenant', tenantId: bootstrapTenant.id }, async () => {
         await authService.ensureAuthReady();
@@ -129,9 +141,47 @@ async function migrate() {
         await pool.request().batch(phase0SecurityMigration);
     });
     const result = await runTenantContext({ mode: 'platform', tenantId: bootstrapTenant.id }, () => tenantService.ensureTenantColumnsAndRls(bootstrapTenant.id));
+    const membershipBranchAttendanceMigration = fs.readFileSync(PHASE8_MEMBERSHIP_BRANCH_ATTENDANCE_MIGRATION_PATH, 'utf8');
+    await runTenantContext({ mode: 'platform', tenantId: bootstrapTenant.id }, async () => {
+        const pool = await getPool();
+        await pool.request().batch(membershipBranchAttendanceMigration);
+    });
+    // 021 creates a new tenant-owned table after the first RLS pass and adds
+    // branch attributes to legacy tables. Rebuild the policy so the new
+    // table is covered before any tenant request can observe it.
+    const postBranchResult = await runTenantContext({ mode: 'platform', tenantId: bootstrapTenant.id }, () => tenantService.ensureTenantColumnsAndRls(bootstrapTenant.id));
+    const financialBranchAttributionMigration = fs.readFileSync(PHASE9_FINANCIAL_BRANCH_ATTRIBUTION_MIGRATION_PATH, 'utf8');
+    await runTenantContext({ mode: 'platform', tenantId: bootstrapTenant.id }, async () => {
+        const pool = await getPool();
+        await pool.request().batch(financialBranchAttributionMigration);
+    });
+    const postFinanceResult = await runTenantContext({ mode: 'platform', tenantId: bootstrapTenant.id }, () => tenantService.ensureTenantColumnsAndRls(bootstrapTenant.id));
+    const stockLocationsMigration = fs.readFileSync(PHASE10_STOCK_LOCATIONS_MIGRATION_PATH, 'utf8');
+    await runTenantContext({ mode: 'platform', tenantId: bootstrapTenant.id }, async () => {
+        const pool = await getPool();
+        await pool.request().batch(stockLocationsMigration);
+    });
+    const postCommerceFoundationResult = await runTenantContext({ mode: 'platform', tenantId: bootstrapTenant.id }, () => tenantService.ensureTenantColumnsAndRls(bootstrapTenant.id));
+    const barPosMigration = fs.readFileSync(PHASE11_BAR_POS_MIGRATION_PATH, 'utf8');
+    await runTenantContext({ mode: 'platform', tenantId: bootstrapTenant.id }, async () => {
+        const pool = await getPool();
+        await pool.request().batch(barPosMigration);
+    });
+    const postBarResult = await runTenantContext({ mode: 'platform', tenantId: bootstrapTenant.id }, () => tenantService.ensureTenantColumnsAndRls(bootstrapTenant.id));
+    const barModifiersMigration = fs.readFileSync(PHASE12_BAR_MODIFIERS_MIGRATION_PATH, 'utf8');
+    await runTenantContext({ mode: 'platform', tenantId: bootstrapTenant.id }, async () => {
+        const pool = await getPool();
+        await pool.request().batch(barModifiersMigration);
+    });
+    const postModifiersResult = await runTenantContext({ mode: 'platform', tenantId: bootstrapTenant.id }, () => tenantService.ensureTenantColumnsAndRls(bootstrapTenant.id));
+    const branchPlanLimitsMigration = fs.readFileSync(PHASE13_BRANCH_PLAN_LIMITS_MIGRATION_PATH, 'utf8');
+    await runTenantContext({ mode: 'platform', tenantId: bootstrapTenant.id }, async () => {
+        const pool = await getPool();
+        await pool.request().batch(branchPlanLimitsMigration);
+    });
     await runTenantContext({ mode: 'tenant', tenantId: bootstrapTenant.id }, () => libraryService.ensureLibraryData());
     await runTenantContext({ mode: 'platform', tenantId: bootstrapTenant.id }, () => saasService.ensureBootstrapSubscription(bootstrapTenant.id));
-    console.log(JSON.stringify({ tenant: bootstrapTenant, tenantTables: result.tables.length, saasTables: saasService.SAAS_TABLES.length, policy: 'enabled' }));
+    console.log(JSON.stringify({ tenant: bootstrapTenant, tenantTables: postModifiersResult.tables.length, saasTables: saasService.SAAS_TABLES.length, policy: 'enabled' }));
 }
 
 if (require.main === module) {

@@ -1,6 +1,6 @@
 'use strict';
 
-function createMembersController({ memberService }) {
+function createMembersController({ memberService, branchService }) {
     return {
         list: async (request, response) => {
             response.json(await memberService.getMembers({
@@ -60,6 +60,19 @@ function createMembersController({ memberService }) {
 
         addMembership: async (request, response) => {
             response.status(201).json({ member: await memberService.renewMember(request.params.id, request.body, request.get('idempotency-key')) });
+        },
+
+        membershipBranches: async (request, response) => {
+            response.json({ access: await branchService.getMembershipBranchAccess(request.params.id) });
+        },
+
+        updateMembershipBranches: async (request, response) => {
+            response.json({ access: await branchService.setMembershipBranchAccess(request.params.id, {
+                mode: request.body?.mode,
+                branchIds: request.body?.branchIds,
+                actorUserId: request.auth?.id,
+                request
+            }) });
         },
 
         payment: async (request, response) => {

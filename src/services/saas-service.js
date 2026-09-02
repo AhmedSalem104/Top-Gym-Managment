@@ -42,6 +42,7 @@ const DEFAULT_PLANS = Object.freeze([
         maxUsers: 3,
         maxAiGenerations: 100,
         maxStorageMb: 1024,
+        maxBranches: 1,
         features: { intelligence: true, coaching: true, store: false, reports: true, portal: true },
         sortOrder: 1
     },
@@ -55,6 +56,7 @@ const DEFAULT_PLANS = Object.freeze([
         maxUsers: 10,
         maxAiGenerations: 500,
         maxStorageMb: 5120,
+        maxBranches: 3,
         features: { intelligence: true, coaching: true, store: true, reports: true, portal: true },
         sortOrder: 2
     },
@@ -68,6 +70,7 @@ const DEFAULT_PLANS = Object.freeze([
         maxUsers: null,
         maxAiGenerations: null,
         maxStorageMb: 51200,
+        maxBranches: null,
         features: { intelligence: true, coaching: true, store: true, reports: true, portal: true, prioritySupport: true },
         sortOrder: 3
     }
@@ -88,6 +91,7 @@ BEGIN
         max_users INT NULL,
         max_ai_generations INT NULL,
         max_storage_mb INT NULL,
+        max_branches INT NULL,
         features_json NVARCHAR(MAX) NOT NULL CONSTRAINT DF_saas_plans_features DEFAULT ('{}'),
         is_active BIT NOT NULL CONSTRAINT DF_saas_plans_active DEFAULT (1),
         sort_order INT NOT NULL CONSTRAINT DF_saas_plans_sort DEFAULT (0),
@@ -96,7 +100,7 @@ BEGIN
         CONSTRAINT UQ_saas_plans_code UNIQUE (code),
         CONSTRAINT CK_saas_plans_period CHECK (billing_period IN ('monthly', 'yearly')),
         CONSTRAINT CK_saas_plans_price CHECK (price >= 0),
-        CONSTRAINT CK_saas_plans_limits CHECK ((max_members IS NULL OR max_members > 0) AND (max_users IS NULL OR max_users > 0) AND (max_ai_generations IS NULL OR max_ai_generations > 0) AND (max_storage_mb IS NULL OR max_storage_mb > 0))
+        CONSTRAINT CK_saas_plans_limits CHECK ((max_members IS NULL OR max_members > 0) AND (max_users IS NULL OR max_users > 0) AND (max_ai_generations IS NULL OR max_ai_generations > 0) AND (max_storage_mb IS NULL OR max_storage_mb > 0) AND (max_branches IS NULL OR max_branches > 0))
     );
 END;
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name=N'IX_saas_plans_active_order' AND object_id=OBJECT_ID(N'dbo.saas_plans'))
@@ -163,6 +167,10 @@ IF COL_LENGTH(N'dbo.saas_tenant_subscriptions', N'max_ai_generations_snapshot') 
     EXEC(N'ALTER TABLE dbo.saas_tenant_subscriptions ADD max_ai_generations_snapshot INT NULL;');
 IF COL_LENGTH(N'dbo.saas_tenant_subscriptions', N'max_storage_mb_snapshot') IS NULL
     EXEC(N'ALTER TABLE dbo.saas_tenant_subscriptions ADD max_storage_mb_snapshot INT NULL;');
+IF COL_LENGTH(N'dbo.saas_plans', N'max_branches') IS NULL
+    EXEC(N'ALTER TABLE dbo.saas_plans ADD max_branches INT NULL;');
+IF COL_LENGTH(N'dbo.saas_tenant_subscriptions', N'max_branches_snapshot') IS NULL
+    EXEC(N'ALTER TABLE dbo.saas_tenant_subscriptions ADD max_branches_snapshot INT NULL;');
 IF COL_LENGTH(N'dbo.saas_tenant_subscriptions', N'features_snapshot_json') IS NULL
     EXEC(N'ALTER TABLE dbo.saas_tenant_subscriptions ADD features_snapshot_json NVARCHAR(MAX) NULL;');
 IF COL_LENGTH(N'dbo.saas_tenant_subscriptions', N'renewal_status') IS NULL
@@ -176,10 +184,11 @@ EXEC(N'
         max_users_snapshot=COALESCE(s.max_users_snapshot,p.max_users),
         max_ai_generations_snapshot=COALESCE(s.max_ai_generations_snapshot,p.max_ai_generations),
         max_storage_mb_snapshot=COALESCE(s.max_storage_mb_snapshot,p.max_storage_mb),
+        max_branches_snapshot=COALESCE(s.max_branches_snapshot,p.max_branches),
         features_snapshot_json=COALESCE(s.features_snapshot_json,p.features_json)
     FROM dbo.saas_tenant_subscriptions s
     INNER JOIN dbo.saas_plans p ON p.id=s.plan_id
-    WHERE s.billing_period_snapshot IS NULL OR s.price_snapshot IS NULL OR s.features_snapshot_json IS NULL;
+    WHERE s.billing_period_snapshot IS NULL OR s.price_snapshot IS NULL OR s.features_snapshot_json IS NULL OR s.max_branches_snapshot IS NULL;
 ');
 
 IF OBJECT_ID(N'dbo.saas_subscription_requests', N'U') IS NULL
@@ -300,6 +309,7 @@ BEGIN
         max_users INT NULL,
         max_ai_generations INT NULL,
         max_storage_mb INT NULL,
+        max_branches INT NULL,
         features_json NVARCHAR(MAX) NULL,
         notes NVARCHAR(1000) NULL,
         created_by_user_id INT NULL,
@@ -308,11 +318,13 @@ BEGIN
         updated_at DATETIME2(0) NOT NULL CONSTRAINT DF_saas_overrides_updated DEFAULT (SYSUTCDATETIME()),
         CONSTRAINT UQ_saas_tenant_overrides_tenant UNIQUE (tenant_id),
         CONSTRAINT FK_saas_tenant_overrides_tenant FOREIGN KEY (tenant_id) REFERENCES dbo.gym_tenants(id) ON DELETE CASCADE,
-        CONSTRAINT CK_saas_tenant_overrides_limits CHECK ((max_members IS NULL OR max_members > 0) AND (max_users IS NULL OR max_users > 0) AND (max_ai_generations IS NULL OR max_ai_generations > 0) AND (max_storage_mb IS NULL OR max_storage_mb > 0))
+        CONSTRAINT CK_saas_tenant_overrides_limits CHECK ((max_members IS NULL OR max_members > 0) AND (max_users IS NULL OR max_users > 0) AND (max_ai_generations IS NULL OR max_ai_generations > 0) AND (max_storage_mb IS NULL OR max_storage_mb > 0) AND (max_branches IS NULL OR max_branches > 0))
     );
 END;
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name=N'IX_saas_tenant_overrides_tenant' AND object_id=OBJECT_ID(N'dbo.saas_tenant_overrides'))
     CREATE INDEX IX_saas_tenant_overrides_tenant ON dbo.saas_tenant_overrides(tenant_id, updated_at DESC);
+IF COL_LENGTH(N'dbo.saas_tenant_overrides', N'max_branches') IS NULL
+    EXEC(N'ALTER TABLE dbo.saas_tenant_overrides ADD max_branches INT NULL;');
 
 IF OBJECT_ID(N'dbo.saas_subscription_changes', N'U') IS NULL
 BEGIN
@@ -501,6 +513,7 @@ function planFromRow(row) {
         maxUsers: row.max_users == null ? null : Number(row.max_users),
         maxAiGenerations: row.max_ai_generations == null ? null : Number(row.max_ai_generations),
         maxStorageMb: row.max_storage_mb == null ? null : Number(row.max_storage_mb),
+        maxBranches: row.max_branches == null ? null : Number(row.max_branches),
         features: parseFeatures(row.features_json),
         isActive: Boolean(row.is_active),
         sortOrder: Number(row.sort_order || 0),
@@ -596,6 +609,7 @@ function snapshotForPlan(plan) {
         maxUsers: plan?.maxUsers == null ? null : Number(plan.maxUsers),
         maxAiGenerations: plan?.maxAiGenerations == null ? null : Number(plan.maxAiGenerations),
         maxStorageMb: plan?.maxStorageMb == null ? null : Number(plan.maxStorageMb),
+        maxBranches: plan?.maxBranches == null ? null : Number(plan.maxBranches),
         features: { ...(plan?.features || {}) }
     };
 }
@@ -625,7 +639,8 @@ function subscriptionFromRow(row, compatibleTenantTypes = null) {
             maxMembers: row.max_members_snapshot == null ? fallback.maxMembers : Number(row.max_members_snapshot),
             maxUsers: row.max_users_snapshot == null ? fallback.maxUsers : Number(row.max_users_snapshot),
             maxAiGenerations: row.max_ai_generations_snapshot == null ? fallback.maxAiGenerations : Number(row.max_ai_generations_snapshot),
-            maxStorageMb: row.max_storage_mb_snapshot == null ? fallback.maxStorageMb : Number(row.max_storage_mb_snapshot)
+            maxStorageMb: row.max_storage_mb_snapshot == null ? fallback.maxStorageMb : Number(row.max_storage_mb_snapshot),
+            maxBranches: row.max_branches_snapshot == null ? fallback.maxBranches : Number(row.max_branches_snapshot)
         },
         featuresSnapshot: Object.keys(parseFeatures(row.features_snapshot_json)).length
             ? parseFeatures(row.features_snapshot_json)
@@ -706,12 +721,13 @@ async function seedPlans(pool) {
             .input('maxUsers', sql.Int, plan.maxUsers)
             .input('maxAiGenerations', sql.Int, plan.maxAiGenerations)
             .input('maxStorageMb', sql.Int, plan.maxStorageMb)
+            .input('maxBranches', sql.Int, plan.maxBranches)
             .input('features', sql.NVarChar(sql.MAX), JSON.stringify(plan.features))
             .input('sortOrder', sql.Int, plan.sortOrder)
             .query(`
                 IF NOT EXISTS (SELECT 1 FROM dbo.saas_plans WHERE code=@code)
-                    INSERT INTO dbo.saas_plans (code,name,description,billing_period,price,currency,max_members,max_users,max_ai_generations,max_storage_mb,features_json,sort_order)
-                    VALUES (@code,@name,@description,@billingPeriod,@price,@currency,@maxMembers,@maxUsers,@maxAiGenerations,@maxStorageMb,@features,@sortOrder);
+                    INSERT INTO dbo.saas_plans (code,name,description,billing_period,price,currency,max_members,max_users,max_ai_generations,max_storage_mb,max_branches,features_json,sort_order)
+                    VALUES (@code,@name,@description,@billingPeriod,@price,@currency,@maxMembers,@maxUsers,@maxAiGenerations,@maxStorageMb,@maxBranches,@features,@sortOrder);
             `);
     }
 }
@@ -770,7 +786,7 @@ async function getPlans({ includeInactive = false, readOnly = false } = {}) {
     const pool = await getPool();
     const result = await pool.request()
         .input('includeInactive', sql.Bit, includeInactive ? 1 : 0)
-        .query('SELECT id,code,name,description,billing_period,price,currency,max_members,max_users,max_ai_generations,max_storage_mb,features_json,is_active,sort_order,updated_at FROM dbo.saas_plans WHERE @includeInactive=1 OR is_active=1 ORDER BY sort_order,id;');
+        .query('SELECT id,code,name,description,billing_period,price,currency,max_members,max_users,max_ai_generations,max_storage_mb,max_branches,features_json,is_active,sort_order,updated_at FROM dbo.saas_plans WHERE @includeInactive=1 OR is_active=1 ORDER BY sort_order,id;');
     const plans = result.recordset.map(planFromRow);
     if (!plans.length) return plans;
     const compatibility = await pool.request().query(`SELECT plan_id,tenant_type FROM dbo.${PLAN_COMPATIBILITY_TABLE} WHERE plan_id IN (${plans.map((plan) => Number(plan.id)).join(',')}) ORDER BY plan_id,tenant_type;`);
@@ -791,7 +807,7 @@ async function getPlan({ id = null, code = null, includeInactive = false } = {})
         .input('id', sql.Int, id == null ? null : Number(id))
         .input('code', sql.VarChar(40), code ? text(code, '', 40).toLowerCase() : null)
         .input('includeInactive', sql.Bit, includeInactive ? 1 : 0)
-        .query('SELECT TOP (1) id,code,name,description,billing_period,price,currency,max_members,max_users,max_ai_generations,max_storage_mb,features_json,is_active,sort_order,updated_at FROM dbo.saas_plans WHERE (@id IS NOT NULL AND id=@id OR @id IS NULL AND @code IS NOT NULL AND code=@code) AND (@includeInactive=1 OR is_active=1);');
+        .query('SELECT TOP (1) id,code,name,description,billing_period,price,currency,max_members,max_users,max_ai_generations,max_storage_mb,max_branches,features_json,is_active,sort_order,updated_at FROM dbo.saas_plans WHERE (@id IS NOT NULL AND id=@id OR @id IS NULL AND @code IS NOT NULL AND code=@code) AND (@includeInactive=1 OR is_active=1);');
     const plan = planFromRow(result.recordset[0]);
     if (!plan) return null;
     return planWithTenantTypes(plan, await getPlanTenantTypes(plan.id));
@@ -857,6 +873,7 @@ async function applyScheduledSubscriptionChanges() {
                 max_users_snapshot=p.max_users,
                 max_ai_generations_snapshot=p.max_ai_generations,
                 max_storage_mb_snapshot=p.max_storage_mb,
+                max_branches_snapshot=p.max_branches,
                 features_snapshot_json=p.features_json,
                 renewal_status='manual',
                 updated_at=SYSUTCDATETIME()
@@ -965,8 +982,8 @@ async function getCurrentSubscription(tenantId = currentTenantId({ required: tru
     const result = await pool.request()
         .input('tenantId', sql.Int, id)
         .query(`SELECT TOP (1) s.id,s.tenant_id,s.status,s.starts_at,s.expires_at,s.source,s.auto_renew,s.notes,s.approved_at,
-                       s.billing_period_snapshot,s.price_snapshot,s.currency_snapshot,s.max_members_snapshot,s.max_users_snapshot,s.max_ai_generations_snapshot,s.max_storage_mb_snapshot,s.features_snapshot_json,s.renewal_status,
-                       p.id AS plan_id,p.code,p.name,p.description,p.billing_period,p.price,p.currency,p.max_members,p.max_users,p.max_ai_generations,p.max_storage_mb,p.features_json,p.is_active,p.sort_order,p.updated_at AS plan_updated_at
+                       s.billing_period_snapshot,s.price_snapshot,s.max_members_snapshot,s.max_users_snapshot,s.max_ai_generations_snapshot,s.max_storage_mb_snapshot,s.max_branches_snapshot,s.currency_snapshot,s.features_snapshot_json,s.renewal_status,
+                       p.id AS plan_id,p.code,p.name,p.description,p.billing_period,p.price,p.currency,p.max_members,p.max_users,p.max_ai_generations,p.max_storage_mb,p.max_branches,p.features_json,p.is_active,p.sort_order,p.updated_at AS plan_updated_at
                 FROM dbo.saas_tenant_subscriptions s
                 INNER JOIN dbo.saas_plans p ON p.id=s.plan_id
                 WHERE s.tenant_id=@tenantId
@@ -987,7 +1004,7 @@ async function getTenantOverrides(tenantId = currentTenantId({ required: true })
     const id = tenantIdValue(tenantId);
     if (!readOnly) await ensureSaasTables();
     const pool = await getPool();
-    const result = await pool.request().input('tenantId', sql.Int, id).query(`SELECT TOP (1) id,tenant_id,max_members,max_users,max_ai_generations,max_storage_mb,features_json,notes,created_by_user_id,updated_by_user_id,created_at,updated_at
+    const result = await pool.request().input('tenantId', sql.Int, id).query(`SELECT TOP (1) id,tenant_id,max_members,max_users,max_ai_generations,max_storage_mb,max_branches,features_json,notes,created_by_user_id,updated_by_user_id,created_at,updated_at
         FROM dbo.saas_tenant_overrides WHERE tenant_id=@tenantId;`);
     const row = result.recordset[0];
     if (!row) return null;
@@ -998,6 +1015,7 @@ async function getTenantOverrides(tenantId = currentTenantId({ required: true })
         maxUsers: row.max_users == null ? null : Number(row.max_users),
         maxAiGenerations: row.max_ai_generations == null ? null : Number(row.max_ai_generations),
         maxStorageMb: row.max_storage_mb == null ? null : Number(row.max_storage_mb),
+        maxBranches: row.max_branches == null ? null : Number(row.max_branches),
         features: parseFeatures(row.features_json),
         notes: row.notes || '',
         createdByUserId: row.created_by_user_id == null ? null : Number(row.created_by_user_id),
@@ -1117,6 +1135,12 @@ async function enforceTenantAccess(tenantId, { path = '', method = 'GET', readOn
             const feature = capabilityService.requiredFeature(path);
             throw saasError('هذه الميزة غير متاحة في باقة الجيم الحالية.', 403, error.code, { feature, plan: subscription?.plan?.code || null });
         }
+        if (error.code === 'CAPABILITY_NOT_ENABLED') {
+            throw saasError('Tenant capability is not available for this account type.', 403, 'TENANT_CAPABILITY_FORBIDDEN', {
+                capability: error.capability || capabilityService.requiredCapability(path),
+                tenantType: entitlements.tenantType
+            });
+        }
         throw error;
     }
     return { tenantStatus: tenant.status, subscription, entitlements, recovery: false };
@@ -1210,19 +1234,20 @@ async function ensureBootstrapSubscription(tenantId) {
             .input('maxUsersSnapshot', sql.Int, snapshot.maxUsers)
             .input('maxAiGenerationsSnapshot', sql.Int, snapshot.maxAiGenerations)
             .input('maxStorageMbSnapshot', sql.Int, snapshot.maxStorageMb)
+            .input('maxBranchesSnapshot', sql.Int, snapshot.maxBranches)
             .input('featuresSnapshotJson', sql.NVarChar(sql.MAX), JSON.stringify(snapshot.features))
             .query(`
                 INSERT INTO dbo.saas_tenant_subscriptions
                     (tenant_id,plan_id,status,starts_at,expires_at,source,notes,
                      billing_period_snapshot,price_snapshot,currency_snapshot,
                      max_members_snapshot,max_users_snapshot,max_ai_generations_snapshot,
-                     max_storage_mb_snapshot,features_snapshot_json)
+                     max_storage_mb_snapshot,max_branches_snapshot,features_snapshot_json)
                 VALUES
                     (@tenantId,@planId,'active',@startsAt,NULL,'bootstrap',
                      N'اشتراك تأسيسي للتجهيز الأولي.',
                      @billingPeriodSnapshot,@priceSnapshot,@currencySnapshot,
                      @maxMembersSnapshot,@maxUsersSnapshot,@maxAiGenerationsSnapshot,
-                     @maxStorageMbSnapshot,@featuresSnapshotJson);
+                     @maxStorageMbSnapshot,@maxBranchesSnapshot,@featuresSnapshotJson);
                 UPDATE dbo.gym_tenants
                 SET status='active', updated_at=SYSUTCDATETIME()
                 WHERE id=@tenantId;
@@ -1245,7 +1270,7 @@ async function listTenantRequests(tenantId = currentTenantId({ required: true })
     const offset = (normalizedPage - 1) * normalizedPageSize;
     const result = await pool.request().input('tenantId', sql.Int, id).input('requestId', sql.BigInt, normalizedRequestId).input('offset', sql.Int, offset).input('pageSize', sql.Int, normalizedPageSize).query(`SELECT r.id,r.tenant_id,r.status,r.amount_snapshot,r.currency,r.notes,r.review_notes,r.requested_by_user_id,r.reviewed_by_user_id,r.reviewed_at,r.created_at,
                        t.name AS tenant_name,t.slug AS tenant_slug,t.tenant_type,u.full_name AS requested_by_name,
-                       p.id AS plan_id,p.code,p.name,p.description,p.billing_period,p.price,p.currency AS plan_currency,p.max_members,p.max_users,p.max_ai_generations,p.max_storage_mb,p.features_json,p.is_active,p.sort_order,p.updated_at AS plan_updated_at,
+                       p.id AS plan_id,p.code,p.name,p.description,p.billing_period,p.price,p.currency AS plan_currency,p.max_members,p.max_users,p.max_ai_generations,p.max_storage_mb,p.max_branches,p.features_json,p.is_active,p.sort_order,p.updated_at AS plan_updated_at,
                        proof.id AS proof_id,proof.file_name AS proof_file_name,proof.mime_type AS proof_mime_type,proof.file_size AS proof_file_size,proof.uploaded_at AS proof_uploaded_at,
                        COUNT_BIG(*) OVER() AS total_count
                 FROM dbo.saas_subscription_requests r
@@ -1386,7 +1411,7 @@ async function listPlatformRequests({ status = '', page = 1, pageSize = 25, requ
     const offset = (normalizedPage - 1) * normalizedPageSize;
     const result = await pool.request().input('status', sql.VarChar(20), text(status, '', 20).toLowerCase()).input('requestId', sql.BigInt, normalizedRequestId).input('offset', sql.Int, offset).input('pageSize', sql.Int, normalizedPageSize).query(`SELECT r.id,r.tenant_id,r.status,r.amount_snapshot,r.currency,r.notes,r.review_notes,r.requested_by_user_id,r.reviewed_by_user_id,r.reviewed_at,r.created_at,
                        t.name AS tenant_name,t.slug AS tenant_slug,t.tenant_type,u.full_name AS requested_by_name,
-                       p.id AS plan_id,p.code,p.name,p.description,p.billing_period,p.price,p.currency AS plan_currency,p.max_members,p.max_users,p.max_ai_generations,p.max_storage_mb,p.features_json,p.is_active,p.sort_order,p.updated_at AS plan_updated_at,
+                       p.id AS plan_id,p.code,p.name,p.description,p.billing_period,p.price,p.currency AS plan_currency,p.max_members,p.max_users,p.max_ai_generations,p.max_storage_mb,p.max_branches,p.features_json,p.is_active,p.sort_order,p.updated_at AS plan_updated_at,
                        proof.id AS proof_id,proof.file_name AS proof_file_name,proof.mime_type AS proof_mime_type,proof.file_size AS proof_file_size,proof.uploaded_at AS proof_uploaded_at,
                        COUNT_BIG(*) OVER() AS total_count
                 FROM dbo.saas_subscription_requests r
@@ -1433,7 +1458,7 @@ async function approveRequest(requestId, actorUserId, reviewNotes = '') {
     const now = new Date();
     let tenantId;
     await withTransaction(async (transaction) => {
-        const result = await transaction.request().input('requestId', sql.BigInt, id).query(`SELECT TOP (1) r.*,t.name AS tenant_name,t.status AS tenant_status,t.tenant_type,p.code,p.name,p.description,p.billing_period,p.price,p.currency AS plan_currency,p.max_members,p.max_users,p.max_ai_generations,p.max_storage_mb,p.features_json,p.is_active,p.sort_order,p.updated_at AS plan_updated_at,proof.id AS proof_id
+        const result = await transaction.request().input('requestId', sql.BigInt, id).query(`SELECT TOP (1) r.*,t.name AS tenant_name,t.status AS tenant_status,t.tenant_type,p.code,p.name,p.description,p.billing_period,p.price,p.currency AS plan_currency,p.max_members,p.max_users,p.max_ai_generations,p.max_storage_mb,p.max_branches,p.features_json,p.is_active,p.sort_order,p.updated_at AS plan_updated_at,proof.id AS proof_id
             FROM dbo.saas_subscription_requests r WITH (UPDLOCK,HOLDLOCK) INNER JOIN dbo.gym_tenants t ON t.id=r.tenant_id INNER JOIN dbo.saas_plans p ON p.id=r.plan_id LEFT JOIN dbo.saas_payment_proofs proof ON proof.request_id=r.id WHERE r.id=@requestId;`);
         const request = result.recordset[0];
         if (!request) throw saasError('طلب الاشتراك غير موجود.', 404, 'SAAS_REQUEST_NOT_FOUND');
@@ -1454,7 +1479,7 @@ async function approveRequest(requestId, actorUserId, reviewNotes = '') {
         const snapshot = snapshotForPlan(requestedPlan);
         await transaction.request().input('requestId', sql.BigInt, id).input('actorId', sql.Int, actorId).input('reviewNotes', sql.NVarChar(1000), text(reviewNotes, '', 1000) || null).query("UPDATE dbo.saas_subscription_requests SET status='approved',reviewed_by_user_id=@actorId,reviewed_at=SYSUTCDATETIME(),review_notes=@reviewNotes,updated_at=SYSUTCDATETIME() WHERE id=@requestId;");
         await transaction.request().input('tenantId', sql.Int, tenantId).query("UPDATE dbo.saas_tenant_subscriptions SET status='expired',updated_at=SYSUTCDATETIME() WHERE tenant_id=@tenantId AND status IN ('trial','active');");
-        await transaction.request().input('tenantId', sql.Int, tenantId).input('planId', sql.Int, planId).input('startsAt', sql.DateTime2(0), now).input('expiresAt', sql.DateTime2(0), expiresAt).input('actorId', sql.Int, actorId).input('notes', sql.NVarChar(1000), text(reviewNotes, '', 1000) || null).input('billingPeriodSnapshot', sql.VarChar(20), snapshot.billingPeriod).input('priceSnapshot', sql.Decimal(12, 2), snapshot.price).input('maxMembersSnapshot', sql.Int, snapshot.maxMembers).input('maxUsersSnapshot', sql.Int, snapshot.maxUsers).input('maxAiGenerationsSnapshot', sql.Int, snapshot.maxAiGenerations).input('maxStorageMbSnapshot', sql.Int, snapshot.maxStorageMb).input('featuresSnapshotJson', sql.NVarChar(sql.MAX), JSON.stringify(snapshot.features)).query("INSERT INTO dbo.saas_tenant_subscriptions (tenant_id,plan_id,status,starts_at,expires_at,source,approved_by_user_id,approved_at,notes,billing_period_snapshot,price_snapshot,currency_snapshot,max_members_snapshot,max_users_snapshot,max_ai_generations_snapshot,max_storage_mb_snapshot,features_snapshot_json) VALUES (@tenantId,@planId,'active',@startsAt,@expiresAt,'manual',@actorId,SYSUTCDATETIME(),@notes,@billingPeriodSnapshot,@priceSnapshot,(SELECT TOP (1) currency FROM dbo.saas_plans WHERE id=@planId),@maxMembersSnapshot,@maxUsersSnapshot,@maxAiGenerationsSnapshot,@maxStorageMbSnapshot,@featuresSnapshotJson); UPDATE dbo.gym_tenants SET status='active',updated_at=SYSUTCDATETIME() WHERE id=@tenantId;");
+        await transaction.request().input('tenantId', sql.Int, tenantId).input('planId', sql.Int, planId).input('startsAt', sql.DateTime2(0), now).input('expiresAt', sql.DateTime2(0), expiresAt).input('actorId', sql.Int, actorId).input('notes', sql.NVarChar(1000), text(reviewNotes, '', 1000) || null).input('billingPeriodSnapshot', sql.VarChar(20), snapshot.billingPeriod).input('priceSnapshot', sql.Decimal(12, 2), snapshot.price).input('maxMembersSnapshot', sql.Int, snapshot.maxMembers).input('maxUsersSnapshot', sql.Int, snapshot.maxUsers).input('maxAiGenerationsSnapshot', sql.Int, snapshot.maxAiGenerations).input('maxStorageMbSnapshot', sql.Int, snapshot.maxStorageMb).input('maxBranchesSnapshot', sql.Int, snapshot.maxBranches).input('featuresSnapshotJson', sql.NVarChar(sql.MAX), JSON.stringify(snapshot.features)).query("INSERT INTO dbo.saas_tenant_subscriptions (tenant_id,plan_id,status,starts_at,expires_at,source,approved_by_user_id,approved_at,notes,billing_period_snapshot,price_snapshot,currency_snapshot,max_members_snapshot,max_users_snapshot,max_ai_generations_snapshot,max_storage_mb_snapshot,max_branches_snapshot,features_snapshot_json) VALUES (@tenantId,@planId,'active',@startsAt,@expiresAt,'manual',@actorId,SYSUTCDATETIME(),@notes,@billingPeriodSnapshot,@priceSnapshot,(SELECT TOP (1) currency FROM dbo.saas_plans WHERE id=@planId),@maxMembersSnapshot,@maxUsersSnapshot,@maxAiGenerationsSnapshot,@maxStorageMbSnapshot,@maxBranchesSnapshot,@featuresSnapshotJson); UPDATE dbo.gym_tenants SET status='active',updated_at=SYSUTCDATETIME() WHERE id=@tenantId;");
         await recordAudit({ tenantId, actorUserId: actorId, action: 'subscription_approved', entityType: 'subscription_request', entityId: id, details: `تم قبول طلب الاشتراك وإنشاء اشتراك ${request.code}.`, executor: transaction });
     });
     return { request: (await listPlatformRequests({ requestId: id }))[0] || null, subscription: await getCurrentSubscription(tenantId) };
@@ -1534,6 +1559,7 @@ function provisionSnapshot(plan, override = null) {
         maxUsers: merged.maxUsers == null ? null : Number(merged.maxUsers),
         maxAiGenerations: merged.maxAiGenerations == null ? null : Number(merged.maxAiGenerations),
         maxStorageMb: merged.maxStorageMb == null ? null : Number(merged.maxStorageMb),
+        maxBranches: merged.maxBranches == null ? null : Number(merged.maxBranches),
         features: parseFeatures(merged.features)
     };
 }
@@ -1649,14 +1675,15 @@ async function provisionTenantWithOwner({
                 .input('maxUsersSnapshot', sql.Int, snapshot.maxUsers)
                 .input('maxAiGenerationsSnapshot', sql.Int, snapshot.maxAiGenerations)
                 .input('maxStorageMbSnapshot', sql.Int, snapshot.maxStorageMb)
+                .input('maxBranchesSnapshot', sql.Int, snapshot.maxBranches)
                 .input('featuresSnapshotJson', sql.NVarChar(sql.MAX), JSON.stringify(snapshot.features))
                 .query(`INSERT INTO dbo.saas_tenant_subscriptions
                     (tenant_id,plan_id,status,starts_at,expires_at,source,notes,created_by_user_id,approved_by_user_id,approved_at,
-                     billing_period_snapshot,price_snapshot,currency_snapshot,max_members_snapshot,max_users_snapshot,max_ai_generations_snapshot,max_storage_mb_snapshot,features_snapshot_json)
+                     billing_period_snapshot,price_snapshot,currency_snapshot,max_members_snapshot,max_users_snapshot,max_ai_generations_snapshot,max_storage_mb_snapshot,max_branches_snapshot,features_snapshot_json)
                     OUTPUT INSERTED.id
                     VALUES (@tenantId,@planId,@status,@startsAt,@expiresAt,@source,@notes,@createdByUserId,@approvedByUserId,
                             CASE WHEN @approvedByUserId IS NULL THEN NULL ELSE SYSUTCDATETIME() END,
-                            @billingPeriodSnapshot,@priceSnapshot,@currencySnapshot,@maxMembersSnapshot,@maxUsersSnapshot,@maxAiGenerationsSnapshot,@maxStorageMbSnapshot,@featuresSnapshotJson);`);
+                            @billingPeriodSnapshot,@priceSnapshot,@currencySnapshot,@maxMembersSnapshot,@maxUsersSnapshot,@maxAiGenerationsSnapshot,@maxStorageMbSnapshot,@maxBranchesSnapshot,@featuresSnapshotJson);`);
             subscriptionId = Number(subscriptionResult.recordset[0].id);
             await activeTransaction.request()
                 .input('tenantId', sql.Int, tenantId)
@@ -1700,6 +1727,7 @@ async function provisionTenantWithOwner({
                 maxUsers: snapshot.maxUsers,
                 maxAiGenerations: snapshot.maxAiGenerations,
                 maxStorageMb: snapshot.maxStorageMb
+                ,maxBranches: snapshot.maxBranches
             },
             featuresSnapshot: snapshot.features,
             plan: resolvedPlan
@@ -1764,8 +1792,8 @@ async function legacyCreateTenantWithOwner(body = {}, actorUserId, authService) 
             ownerId = Number(ownerResult.recordset[0].id);
             await transaction.request().input('userId', sql.Int, ownerId).input('tenantId', sql.Int, tenantId).query("INSERT INTO dbo.gym_user_tenants (user_id,tenant_id,role,status,is_primary) VALUES (@userId,@tenantId,'Owner','active',1);");
             await transaction.request().input('tenantId', sql.Int, tenantId).input('planId', sql.Int, plan.id).input('startsAt', sql.DateTime2(0), startsAt).input('expiresAt', sql.DateTime2(0), expiresAt).query("INSERT INTO dbo.saas_tenant_subscriptions (tenant_id,plan_id,status,starts_at,expires_at,source,notes) VALUES (@tenantId,@planId,'trial',@startsAt,@expiresAt,'trial',N'فترة تجربة مجانية.');");
-            await transaction.request().input('tenantId', sql.Int, tenantId).input('planId', sql.Int, plan.id).input('billingPeriodSnapshot', sql.VarChar(20), snapshot.billingPeriod).input('priceSnapshot', sql.Decimal(12, 2), snapshot.price).input('maxMembersSnapshot', sql.Int, snapshot.maxMembers).input('maxUsersSnapshot', sql.Int, snapshot.maxUsers).input('maxAiGenerationsSnapshot', sql.Int, snapshot.maxAiGenerations).input('maxStorageMbSnapshot', sql.Int, snapshot.maxStorageMb).input('featuresSnapshotJson', sql.NVarChar(sql.MAX), JSON.stringify(snapshot.features)).query(`UPDATE dbo.saas_tenant_subscriptions
-                SET billing_period_snapshot=@billingPeriodSnapshot,price_snapshot=@priceSnapshot,currency_snapshot=(SELECT TOP (1) currency FROM dbo.saas_plans WHERE id=@planId),max_members_snapshot=@maxMembersSnapshot,max_users_snapshot=@maxUsersSnapshot,max_ai_generations_snapshot=@maxAiGenerationsSnapshot,max_storage_mb_snapshot=@maxStorageMbSnapshot,features_snapshot_json=@featuresSnapshotJson
+            await transaction.request().input('tenantId', sql.Int, tenantId).input('planId', sql.Int, plan.id).input('billingPeriodSnapshot', sql.VarChar(20), snapshot.billingPeriod).input('priceSnapshot', sql.Decimal(12, 2), snapshot.price).input('maxMembersSnapshot', sql.Int, snapshot.maxMembers).input('maxUsersSnapshot', sql.Int, snapshot.maxUsers).input('maxAiGenerationsSnapshot', sql.Int, snapshot.maxAiGenerations).input('maxStorageMbSnapshot', sql.Int, snapshot.maxStorageMb).input('maxBranchesSnapshot', sql.Int, snapshot.maxBranches).input('featuresSnapshotJson', sql.NVarChar(sql.MAX), JSON.stringify(snapshot.features)).query(`UPDATE dbo.saas_tenant_subscriptions
+                SET billing_period_snapshot=@billingPeriodSnapshot,price_snapshot=@priceSnapshot,currency_snapshot=(SELECT TOP (1) currency FROM dbo.saas_plans WHERE id=@planId),max_members_snapshot=@maxMembersSnapshot,max_users_snapshot=@maxUsersSnapshot,max_ai_generations_snapshot=@maxAiGenerationsSnapshot,max_storage_mb_snapshot=@maxStorageMbSnapshot,max_branches_snapshot=@maxBranchesSnapshot,features_snapshot_json=@featuresSnapshotJson
                 WHERE id=(SELECT TOP (1) id FROM dbo.saas_tenant_subscriptions WHERE tenant_id=@tenantId ORDER BY id DESC);`);
             await recordAudit({ tenantId, actorUserId: actorUserId == null ? null : Number(actorUserId), action: 'tenant_created', entityType: 'tenant', entityId: tenantId, details: `تم إنشاء ${tenant.name} مع Owner أولي وباقة تجربة.`, executor: transaction });
         });
@@ -1805,6 +1833,7 @@ function normalizePlanValues(body = {}, current = null) {
     const maxUsers = body.maxUsers === undefined ? current?.maxUsers ?? null : integerOrNull(body.maxUsers, 'حد المستخدمين');
     const maxAiGenerations = body.maxAiGenerations === undefined ? current?.maxAiGenerations ?? null : integerOrNull(body.maxAiGenerations, 'حد استخدام AI');
     const maxStorageMb = body.maxStorageMb === undefined ? current?.maxStorageMb ?? null : integerOrNull(body.maxStorageMb, 'حد التخزين');
+    const maxBranches = body.maxBranches === undefined ? current?.maxBranches ?? null : integerOrNull(body.maxBranches, 'حد الفروع');
     const sortOrder = body.sortOrder === undefined ? Number(current?.sortOrder || 0) : Number(body.sortOrder);
     if (!Number.isInteger(sortOrder) || sortOrder < 0) throw planFieldError('ترتيب الباقة غير صحيح.', 'INVALID_PLAN_SORT_ORDER', 'sortOrder');
     const isActive = body.isActive === undefined ? current?.isActive !== false : booleanValue(body.isActive);
@@ -1824,6 +1853,7 @@ function normalizePlanValues(body = {}, current = null) {
         maxUsers,
         maxAiGenerations,
         maxStorageMb,
+        maxBranches,
         features,
         compatibleTenantTypes,
         isActive,
@@ -1861,12 +1891,13 @@ async function createPlan(body = {}, actorUserId, meta = {}) {
             .input('maxUsers', sql.Int, values.maxUsers)
             .input('maxAiGenerations', sql.Int, values.maxAiGenerations)
             .input('maxStorageMb', sql.Int, values.maxStorageMb)
+            .input('maxBranches', sql.Int, values.maxBranches)
             .input('features', sql.NVarChar(sql.MAX), JSON.stringify(values.features))
             .input('isActive', sql.Bit, values.isActive ? 1 : 0)
             .input('sortOrder', sql.Int, values.sortOrder)
-            .query(`INSERT INTO dbo.saas_plans (code,name,description,billing_period,price,currency,max_members,max_users,max_ai_generations,max_storage_mb,features_json,is_active,sort_order)
+            .query(`INSERT INTO dbo.saas_plans (code,name,description,billing_period,price,currency,max_members,max_users,max_ai_generations,max_storage_mb,max_branches,features_json,is_active,sort_order)
                 OUTPUT INSERTED.id
-                VALUES (@code,@name,@description,@billingPeriod,@price,@currency,@maxMembers,@maxUsers,@maxAiGenerations,@maxStorageMb,@features,@isActive,@sortOrder);`);
+                VALUES (@code,@name,@description,@billingPeriod,@price,@currency,@maxMembers,@maxUsers,@maxAiGenerations,@maxStorageMb,@maxBranches,@features,@isActive,@sortOrder);`);
         const createdId = Number(result.recordset[0]?.id);
         await replacePlanTenantTypes(createdId, values.compatibleTenantTypes, transaction);
         created = { id: createdId };
@@ -1889,7 +1920,7 @@ async function updatePlan(planId, body = {}, actorUserId, meta = {}) {
     await withTransaction(async (transaction) => {
         if (current.isActive && !values.isActive) await assertActivePlanRemains(id, { executor: transaction });
         await assertPlanCompatibilityCanChange(id, values.compatibleTenantTypes, { executor: transaction });
-        await transaction.request().input('id', sql.Int, id).input('name', sql.NVarChar(120), values.name).input('description', sql.NVarChar(500), values.description || null).input('billingPeriod', sql.VarChar(20), values.billingPeriod).input('price', sql.Decimal(12, 2), values.price).input('currency', sql.VarChar(3), values.currency).input('maxMembers', sql.Int, values.maxMembers).input('maxUsers', sql.Int, values.maxUsers).input('maxAiGenerations', sql.Int, values.maxAiGenerations).input('maxStorageMb', sql.Int, values.maxStorageMb).input('features', sql.NVarChar(sql.MAX), JSON.stringify(values.features)).input('isActive', sql.Bit, values.isActive ? 1 : 0).input('sortOrder', sql.Int, values.sortOrder).query('UPDATE dbo.saas_plans SET name=@name,description=@description,billing_period=@billingPeriod,price=@price,currency=@currency,max_members=@maxMembers,max_users=@maxUsers,max_ai_generations=@maxAiGenerations,max_storage_mb=@maxStorageMb,features_json=@features,is_active=@isActive,sort_order=@sortOrder,updated_at=SYSUTCDATETIME() WHERE id=@id;');
+        await transaction.request().input('id', sql.Int, id).input('name', sql.NVarChar(120), values.name).input('description', sql.NVarChar(500), values.description || null).input('billingPeriod', sql.VarChar(20), values.billingPeriod).input('price', sql.Decimal(12, 2), values.price).input('currency', sql.VarChar(3), values.currency).input('maxMembers', sql.Int, values.maxMembers).input('maxUsers', sql.Int, values.maxUsers).input('maxAiGenerations', sql.Int, values.maxAiGenerations).input('maxStorageMb', sql.Int, values.maxStorageMb).input('maxBranches', sql.Int, values.maxBranches).input('features', sql.NVarChar(sql.MAX), JSON.stringify(values.features)).input('isActive', sql.Bit, values.isActive ? 1 : 0).input('sortOrder', sql.Int, values.sortOrder).query('UPDATE dbo.saas_plans SET name=@name,description=@description,billing_period=@billingPeriod,price=@price,currency=@currency,max_members=@maxMembers,max_users=@maxUsers,max_ai_generations=@maxAiGenerations,max_storage_mb=@maxStorageMb,max_branches=@maxBranches,features_json=@features,is_active=@isActive,sort_order=@sortOrder,updated_at=SYSUTCDATETIME() WHERE id=@id;');
         await replacePlanTenantTypes(id, values.compatibleTenantTypes, transaction);
     });
     const updated = await getPlan({ id, includeInactive: true });
@@ -1952,7 +1983,7 @@ async function getPlatformOverview({ readOnly = false } = {}) {
     const [counts, pending, recent] = await Promise.all([
         pool.request().query(`SELECT COUNT_BIG(*) AS total_tenants, SUM(CASE WHEN status IN ('trial','active') THEN 1 ELSE 0 END) AS live_tenants, SUM(CASE WHEN status='trial' THEN 1 ELSE 0 END) AS trial_tenants, SUM(CASE WHEN status='expired' THEN 1 ELSE 0 END) AS expired_tenants, SUM(CASE WHEN status='suspended' THEN 1 ELSE 0 END) AS suspended_tenants FROM dbo.gym_tenants;`),
         pool.request().query("SELECT COUNT_BIG(*) AS total FROM dbo.saas_subscription_requests WHERE status='pending';"),
-        pool.request().query(`SELECT TOP (8) r.id,r.tenant_id,r.status,r.amount_snapshot,r.currency,r.notes,r.review_notes,r.requested_by_user_id,r.reviewed_by_user_id,r.reviewed_at,r.created_at,t.name AS tenant_name,t.slug AS tenant_slug,t.tenant_type,u.full_name AS requested_by_name,p.id AS plan_id,p.code,p.name,p.description,p.billing_period,p.price,p.currency AS plan_currency,p.max_members,p.max_users,p.max_ai_generations,p.max_storage_mb,p.features_json,p.is_active,p.sort_order,p.updated_at AS plan_updated_at,proof.id AS proof_id,proof.file_name AS proof_file_name,proof.mime_type AS proof_mime_type,proof.file_size AS proof_file_size,proof.uploaded_at AS proof_uploaded_at FROM dbo.saas_subscription_requests r INNER JOIN dbo.gym_tenants t ON t.id=r.tenant_id INNER JOIN dbo.saas_plans p ON p.id=r.plan_id LEFT JOIN dbo.gym_users u ON u.id=r.requested_by_user_id LEFT JOIN dbo.saas_payment_proofs proof ON proof.request_id=r.id ORDER BY CASE WHEN r.status='pending' THEN 0 ELSE 1 END,r.created_at DESC,r.id DESC;`)
+        pool.request().query(`SELECT TOP (8) r.id,r.tenant_id,r.status,r.amount_snapshot,r.currency,r.notes,r.review_notes,r.requested_by_user_id,r.reviewed_by_user_id,r.reviewed_at,r.created_at,t.name AS tenant_name,t.slug AS tenant_slug,t.tenant_type,u.full_name AS requested_by_name,p.id AS plan_id,p.code,p.name,p.description,p.billing_period,p.price,p.currency AS plan_currency,p.max_members,p.max_users,p.max_ai_generations,p.max_storage_mb,p.max_branches,p.features_json,p.is_active,p.sort_order,p.updated_at AS plan_updated_at,proof.id AS proof_id,proof.file_name AS proof_file_name,proof.mime_type AS proof_mime_type,proof.file_size AS proof_file_size,proof.uploaded_at AS proof_uploaded_at FROM dbo.saas_subscription_requests r INNER JOIN dbo.gym_tenants t ON t.id=r.tenant_id INNER JOIN dbo.saas_plans p ON p.id=r.plan_id LEFT JOIN dbo.gym_users u ON u.id=r.requested_by_user_id LEFT JOIN dbo.saas_payment_proofs proof ON proof.request_id=r.id ORDER BY CASE WHEN r.status='pending' THEN 0 ELSE 1 END,r.created_at DESC,r.id DESC;`)
     ]);
     const row = counts.recordset[0] || {};
     return { tenants: { total: Number(row.total_tenants || 0), live: Number(row.live_tenants || 0), trial: Number(row.trial_tenants || 0), expired: Number(row.expired_tenants || 0), suspended: Number(row.suspended_tenants || 0) }, pendingRequests: Number(pending.recordset[0]?.total || 0), recentRequests: await requestsWithCompatibility(recent.recordset) };
