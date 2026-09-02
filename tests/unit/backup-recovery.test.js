@@ -5,6 +5,7 @@ const test = require('node:test');
 
 const {
     buildTenantBackupPayload,
+    buildPlatformManifest,
     assertBackupNotExpired,
     deletePlatformArtifactAndVerify,
     deleteTenantArtifactAndVerify,
@@ -20,7 +21,8 @@ const {
     metadataColumns,
     validatePlatformBackupPayload,
     validateTenantBackupPayload,
-    verifyStoredTenantObject
+    verifyStoredTenantObject,
+    getDailyBackupCycleHttpStatus
 } = require('../../src/services/backup-recovery-service');
 const { createObjectStorageService } = require('../../src/services/object-storage-service');
 const { TENANT_BACKUP_REGISTRY_VERSION, TENANT_BACKUP_TABLES } = require('../../src/services/backup-registry');
@@ -133,6 +135,40 @@ test('platform backup validation checks scope, manifest completeness and credent
     assert.throws(() => validatePlatformBackupPayload(unknownControlPlaneTenant, { requireCompleteRegistry: false }), { code: 'PLATFORM_BACKUP_TENANT_REFERENCE_INVALID' });
 });
 
+test('platform v3 manifest covers every registered table with per-table checksums', () => {
+    const { PLATFORM_GLOBAL_BACKUP_TABLES } = require('../../src/services/backup-registry');
+    const tables = {
+        global: Object.fromEntries(PLATFORM_GLOBAL_BACKUP_TABLES.map((definition) => [definition.key, []])),
+        tenant: Object.fromEntries(TENANT_BACKUP_TABLES.map((definition) => [definition.key, []]))
+    };
+    tables.global.gym_tenants = [{ id: 7, name: 'Synthetic Gym' }];
+    tables.tenant.members = [{ id: 11, tenant_id: 7, full_name: 'Synthetic Member' }];
+    const tableCounts = {
+        global: Object.fromEntries(Object.entries(tables.global).map(([key, rows]) => [key, rows.length])),
+        tenant: Object.fromEntries(Object.entries(tables.tenant).map(([key, rows]) => [key, rows.length]))
+    };
+    const payload = {
+        format: 'logic-fit-platform-backup',
+        version: 3,
+        backupType: 'platform-disaster-recovery',
+        generatedAt: '2026-08-29T00:00:00.000Z',
+        manifest: buildPlatformManifest({ tables, tableCounts, now: '2026-08-29T00:00:00.000Z' }),
+        tables,
+        integrity: { algorithm: 'sha256', sha256: payloadDigest(tables) }
+    };
+    assert.doesNotThrow(() => validatePlatformBackupPayload(payload));
+    const tampered = structuredClone(payload);
+    tampered.manifest.tableInventory.tenant.find((item) => item.key === 'members').sha256 = '0'.repeat(64);
+    assert.throws(() => validatePlatformBackupPayload(tampered), { code: 'PLATFORM_BACKUP_INVENTORY_INVALID' });
+});
+
+test('daily backup health endpoint status fails closed for partial or failed cycles', () => {
+    assert.equal(getDailyBackupCycleHttpStatus({ tenantFailed: 0, platform: { status: 'success' }, retention: { failed: 0 }, scheduledPlatform: [] }), 200);
+    assert.equal(getDailyBackupCycleHttpStatus({ tenantFailed: 1, platform: { status: 'success' }, retention: { failed: 0 }, scheduledPlatform: [] }), 503);
+    assert.equal(getDailyBackupCycleHttpStatus({ tenantFailed: 0, platform: { status: 'failed' }, retention: { failed: 0 }, scheduledPlatform: [] }), 503);
+    assert.equal(getDailyBackupCycleHttpStatus({ tenantFailed: 0, platform: { status: 'success' }, retention: { failed: 0 }, scheduledPlatform: [{ status: 'failed' }] }), 503);
+});
+
 test('backup projections exclude secret-like columns without dropping nutritional salt', () => {
     const metadata = new Map([['gym_foods', [
         { name: 'salt', isComputed: false, isRowVersion: false },
@@ -141,6 +177,17 @@ test('backup projections exclude secret-like columns without dropping nutritiona
         { name: 'calories', isComputed: false, isRowVersion: false }
     ]]]);
     assert.deepEqual(metadataColumns(metadata, 'gym_foods', { excludeSensitive: true }).map((column) => column.name), ['salt', 'calories']);
+});
+
+test('backup projections exclude legacy camel-case credential columns', () => {
+    const metadata = new Map([['DomainUsers', [
+        { name: 'PasswordHash', isComputed: false, isRowVersion: false },
+        { name: 'MustChangePassword', isComputed: false, isRowVersion: false },
+        { name: 'PasswordResetToken', isComputed: false, isRowVersion: false },
+        { name: 'Notes', isComputed: false, isRowVersion: false }
+    ]]]);
+    const columns = metadataColumns(metadata, 'DomainUsers', { excludeSensitive: true });
+    assert.deepEqual(columns.map((column) => column.name), ['Notes']);
 });
 
 test('tenant restore rejects an artifact that does not cover the current registry', () => {

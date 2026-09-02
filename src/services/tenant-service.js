@@ -301,6 +301,7 @@ async function ensureBootstrapTenant() {
             SET is_primary=0, status='disabled', updated_at=SYSUTCDATETIME()
             FROM dbo.gym_user_tenants bootstrapMembership
             WHERE bootstrapMembership.tenant_id=@tenantId
+              AND (bootstrapMembership.is_primary<>0 OR bootstrapMembership.status<>'disabled')
               AND EXISTS (
                 SELECT 1 FROM dbo.gym_user_tenants otherMembership
                 WHERE otherMembership.user_id=bootstrapMembership.user_id

@@ -50,6 +50,10 @@ test('new tenant records are explicitly created as Gym and bootstrap is not a ty
     assert.doesNotMatch(saasService, /body\.tenantType|body\.tenant_type/);
 });
 
+test('bootstrap tenant repair does not mutate already-repaired membership history', () => {
+    assert.match(tenantService, /bootstrapMembership\.is_primary<>0 OR bootstrapMembership\.status<>'disabled'/);
+});
+
 test('capability foundation preserves Gym output and exposes only shipped Trainer domains', () => {
     const fromCanonicalGym = capabilityService.resolveEffectiveCapabilities({ tenantType: TENANT_TYPES.GYM, features: { store: false } });
     const legacyCallShape = capabilityService.resolveEffectiveCapabilities({ features: { store: false } });

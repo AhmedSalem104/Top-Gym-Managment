@@ -262,7 +262,7 @@
 
 .external-trainee-system-actions .btn,
 .member-training-system-actions .btn {
-  min-height: 30px;
+  min-height: 34px;
   padding-inline: var(--space-2);
   font-size: 10px;
 }

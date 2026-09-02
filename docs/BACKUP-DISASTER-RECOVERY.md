@@ -30,8 +30,9 @@ Current implementation status:
 - Tenant restore: `IMPLEMENTED` with checksum/manifest/registry validation, a mandatory
   pre-restore safety backup and transactional tenant-scoped writes; a real
   isolated restore rehearsal is `BLOCKED` pending a safe environment.
-- Platform restore: runbook/strategy only. No dangerous full-platform restore
-  button is exposed to Owners.
+- Platform application-level restore: `IMPLEMENTED` for the explicit local/test
+  rehearsal path, including legacy pre-Trainer source schemas. No dangerous
+  full-platform restore button is exposed to Owners.
 
 ## Architecture discovered
 
@@ -102,9 +103,46 @@ tenant failure does not stop other tenants. It then creates one separate
 
 The current platform artifact is a verified logical export, not a native SQL
 Server `.bak` database backup. Native `.bak` requests fail closed so a logical
-gzip artifact can never be mislabeled as a native database backup. A native
-full backup or a provider-supported equivalent must be selected and tested
-before claiming full disaster-recovery coverage.
+gzip artifact can never be mislabeled as a native database backup. The current
+MonsterASP Free plan does not provide a downloadable native `.bak`; the
+application-level path below is therefore the supported rehearsal mechanism.
+
+### Legacy source-schema compatibility
+
+Platform DR v3 is source-schema aware. It supports both the current
+`modern-phase3-8` schema and the deployed `legacy-pre-trainer` schema used by
+the Gym application before `tenant_type` and the Trainer tables were added.
+Legacy backup creation does not require or write `gym_tenants.tenant_type`.
+
+On a legacy source, the classifier reviews every physical application table
+and assigns it to `GLOBAL_REQUIRED`, `TENANT_REQUIRED`, `LEGACY_REQUIRED`,
+`REFERENCE_REQUIRED`, or an explicit exclusion. Legacy `TenantId` and modern
+`tenant_id` spellings are both recognized. Where a legacy table has no direct
+tenant column, ownership is derived only from reviewed foreign-key
+relationships; unreviewed tables remain `UNKNOWN` and fail the coverage gate.
+Legacy GUID-backed or nullable tenant references are preserved as source data;
+they are not coerced to modern integer tenant ids during read-only export.
+
+The legacy manifest records the source generation, whether `tenant_type` was
+present, Trainer table presence/absence, physical table count, included and
+explicitly excluded counts, classification reasons, and `unknown`/
+`unexplained` counts. The expected absent pre-Trainer objects
+(`saas_plan_tenant_types`, `trainer_client_profiles`, `trainer_packages`,
+`trainer_package_purchases`, `trainer_package_usage`, and `coaching_sessions`)
+are compatibility metadata, not coverage failures. Historical legacy business
+tables such as appointments, memberships, payments, training, nutrition,
+store, financial history, permissions, and audit history remain recoverable.
+
+For a legacy source, the required coverage equation is:
+
+`physical application tables = included required tables + explicit exclusions`
+
+The platform artifact is created under trusted platform read-only context so
+RLS/session context cannot silently reduce a tenant's exported rows. Counts and
+tenant-group coverage must be compared against the source before the artifact
+is accepted. This logical artifact remains distinct from a physical SQL Server
+backup and must be restored only through a documented application-level
+recovery/bootstrap process.
 
 Private tenant files that are stored outside SQL Server require the configured
 storage provider to support a second platform/off-site copy. The current
@@ -114,8 +152,8 @@ off-site replication is active without provider configuration.
 ## Artifact format and integrity
 
 Tenant artifacts use `format = logic-fit-tenant-backup` and version `2`.
-Platform artifacts use `format = logic-fit-platform-backup` and the same
-version. Each manifest carries:
+Platform artifacts use `format = logic-fit-platform-backup` and version `3`.
+Each manifest carries:
 
 - `applicationVersion`, `schemaVersion` and registry version;
 - backup type and UTC creation time;
@@ -223,8 +261,9 @@ in an isolated maintenance environment:
 1. Enter maintenance/recovery mode and preserve the incident/request id.
 2. Obtain the latest verified platform artifact and its checksum from private
    storage plus the off-site copy when configured.
-3. Restore the database using the provider-supported native backup or verified
-   logical import strategy. Never restore over Production during rehearsal.
+3. Restore the database using the provider-supported native backup or the
+   verified logical application-level import strategy. Never restore over
+   Production during rehearsal.
 4. Restore private files and verify object checksums and tenant prefixes.
 5. Run migrations/compatibility checks in the approved order.
 6. Validate schema, RLS, tenant isolation, SaaS control plane, critical
@@ -304,9 +343,10 @@ npm run build
 ```
 
 The exact result for the current commit is recorded in the hand-off summary
-and `qa/reports/` generated by the commands. No real provider upload, native
-SQL backup, isolated restore, authenticated cross-tenant attack matrix or
-production scheduler execution is represented as locally verified.
+and `qa/reports/` generated by the commands. The local legacy Production
+artifact drill described below is read-only against the source database and
+uses a disposable local SQL Server target; it does not establish native `.bak`
+coverage, durable off-host retention, or Production migration readiness.
 
 ## Verification debt and required production configuration
 
@@ -320,7 +360,7 @@ Backup-specific outstanding items are:
 | VPS private object-storage activation | `REQUIRES PRODUCTION VERIFICATION` | Configure HTTPS/DNS/firewall, add the restricted application credential to Vercel outside Git, then test private tenant/platform objects, signed access, deletion and off-site copy. |
 | External branding/payment-proof object restore and legacy-file cutover | `REQUIRES STAGING VERIFICATION` | Validate provider objects, checksums, tenant ownership and recovery behavior without deleting legacy SQL-backed rows. |
 | Native SQL Server backup or equivalent | `REQUIRES PRODUCTION VERIFICATION` | Confirm provider capability and run a non-destructive restore rehearsal in an isolated target. |
-| Tenant restore rehearsal | `BLOCKED` | Restore a synthetic verified artifact into isolated Staging and verify relationships, files, RLS and login/access. |
+| Tenant restore rehearsal in isolated Staging | `BLOCKED` | The local synthetic restore drill passes; restore a verified artifact into isolated Staging and verify relationships, files, RLS and login/access. |
 | Daily cron execution | `REQUIRES PRODUCTION VERIFICATION` | Configure `CRON_SECRET`, verify scheduler invocation, duration, retry and health reporting. |
 | Authenticated Tenant A/B backup attack matrix | `REQUIRES STAGING VERIFICATION` | Test list/download/restore/ids/tenant changes with synthetic credentials. |
 | RPO/RTO | `PENDING REAL-WORLD EVIDENCE` | Measure from a real isolated restore rehearsal; do not infer from daily schedule. |
@@ -344,6 +384,104 @@ Backup-specific outstanding items are:
 This report deliberately recommends **No-Go for a production backup/DR claim**
 until the Critical provider and restore evidence is available. It does not
 block continued local implementation or testing of unrelated production-readiness work.
+
+## Application-level platform DR contract (v3)
+
+The platform artifact is an **application-level disaster-recovery backup**,
+not a SQL Server physical backup. Version 3 contains a complete manifest for
+the current registry, including the application release identifier when one
+is available, schema/registry versions, required restore version, tenant
+count, per-table row counts and SHA-256 checksums. The payload is gzip JSON;
+the compressed bytes and the logical payload are both integrity-checked.
+
+Platform exports run in trusted platform scope and use the SQL Server
+`SESSION_CONTEXT` platform mode for every read. A runtime coverage check
+compares every non-system `dbo` table and every physical `tenant_id` table to
+the platform/global registry. An uncovered, unclassified or missing table
+fails the backup rather than producing a partial artifact. The read transaction
+uses `SERIALIZABLE` isolation so the logical snapshot is internally coherent.
+
+The platform registry intentionally includes control-plane tables required to
+recreate commercial state, including plan terms, platform payment methods and
+gym registration requests/payment proofs. Transient sessions and recovery
+metadata are excluded and rebuilt/invalidated during recovery. Credential
+hashes, session tokens and other secret-like columns are never exported.
+
+The supported local/test restore drill is:
+
+```text
+1. Create a disposable local/test SQL Server database.
+2. Run the canonical schema/bootstrap/migration process for the target app.
+3. Set DR_RESTORE_TARGET=local or test and DR_RESTORE_CONFIRM=YES only in
+   the restore process environment.
+4. Run scripts/restore-platform-backup.js against the verified v3 artifact.
+5. Verify counts, relationships, RLS, tenant isolation and application health.
+```
+
+For the deployed legacy pre-Trainer Production schema, use the dedicated
+read-only artifact and restore drill instead:
+
+```text
+1. Create the artifact only through the explicitly confirmed
+   scripts/create-production-platform-backup-artifact.js path.
+2. Compare it with the source using
+   scripts/compare-production-platform-artifact.js.
+3. Copy/retrieve the gzip artifact independently from the database host and
+   verify the SHA-256 checksum.
+4. Provide a disposable local SQL Server connection through the process
+   environment (never .env) and run
+   scripts/restore-production-legacy-artifact.js <artifact.json.gz>.
+5. Verify source/artifact/restore counts and checksums before any migration.
+6. Run the canonical migration only on the restored local clone, then rerun
+   it to verify idempotency and re-check RLS/application readiness.
+```
+
+This legacy path classifies every physical source table before extraction,
+allows the absent `tenant_type` and future Trainer tables to remain absent,
+and derives legacy ownership only through reviewed relationships. It excludes
+credential/session secrets and resets credentials on restore. `is_active` on a
+legacy `gym_users` source is preserved semantically through the current
+`status` field during logical restore; this is a documented compatibility
+transformation, not a claim that the physical schemas are identical.
+
+The restore refuses Production-hosted processes, the known Production database
+name and non-local SQL Server targets. It clears only the explicitly confirmed
+isolated target, restores in foreign-key order, invalidates auth/portal
+sessions, and assigns unusable credentials requiring out-of-band credential
+recovery. It does not claim native `.bak` equivalence.
+
+The daily backup endpoint now returns a non-2xx response when any tenant,
+platform or retention operation fails. Health data reports registry and
+physical-schema coverage separately from provider configuration, so a cron
+invocation cannot appear successful merely because its HTTP handler returned.
+
+## Local synthetic restore evidence (2026-09-02)
+
+The v3 platform artifact and restore drill were exercised against the
+disposable local SQL Server database `GymMembershipClosure_20260902F` and a
+new isolated target `LogicFit_DR_Restore_20260902_01`. The artifact contained
+9,390 projected rows and restored with matching counts for all 79 registered
+global/tenant tables. The restored target reported 87 physical application
+tables, 76 physical `tenant_id` tables, and complete platform backup coverage;
+153 foreign keys had zero orphan rows. The dynamic local RLS gate reported 75
+actual tenant tables, 75 registry tables and 75 protected tables, with zero
+unprotected tables, missing entries or invalid predicates. The canonical
+migration runner was then executed twice successfully, and the target app
+returned healthy responses for health, session and both registration catalog
+endpoints. This is local synthetic evidence only: it does not establish
+Production row-count/checksum parity, provider persistence, off-site recovery,
+or a live scheduler run.
+
+On 2026-09-02, the same path was exercised against the read-only legacy
+Production source `db62278`: 162 physical tables were classified, 152 were
+included, 10 were explicitly excluded, and unknown/unexplained tables were
+zero. The resulting 5,330-row artifact matched Production counts, checksums
+and tenant groups. An independent local copy had the same checksum, and a
+new local restore matched all 5,330 rows/checksums; the target migration then
+ran twice, followed by local application, RLS and tenancy checks. This is
+application-level logical DR evidence only: it does not establish native
+`.bak` coverage, durable off-site retention, Production migration readiness,
+or live scheduler evidence.
 ## Production storage activation status (2026-08-30)
 
 The private object-storage provider is active for the deployed Logic Fit

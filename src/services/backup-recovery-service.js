@@ -4,6 +4,7 @@ const crypto = require('node:crypto');
 const { promisify } = require('node:util');
 const { gzip, gunzip } = require('node:zlib');
 const { getPool, sql } = require('../database');
+const { parseConnectionString } = require('../database/pool');
 const { currentTenantId, getTenantContext, runTenantContext } = require('../tenancy/tenant-context');
 const { resolveTenantType } = require('../tenancy/tenant-types');
 const { config } = require('../config/env');
@@ -11,20 +12,35 @@ const { createObjectStorageService } = require('./object-storage-service');
 const { TENANT_TABLES } = require('./tenant-service');
 const { safeErrorCode } = require('../utils/error-response');
 const {
+    PLATFORM_BACKUP_EXCLUDED_TABLES,
     PLATFORM_GLOBAL_BACKUP_TABLES,
+    LEGACY_BACKUP_EXCLUDED_TABLES,
+    LEGACY_BACKUP_TABLES,
     TENANT_BACKUP_REGISTRY_VERSION,
     TENANT_BACKUP_TABLES,
+    classifyPlatformTable,
+    getPlatformBackupCoverage,
     getTenantBackupCoverage
 } = require('./backup-registry');
 
 const gzipAsync = promisify(gzip);
 const gunzipAsync = promisify(gunzip);
-const BACKUP_VERSION = 2;
+const BACKUP_VERSION = 3;
+const SUPPORTED_BACKUP_VERSIONS = Object.freeze(new Set([2, BACKUP_VERSION]));
 const SCHEMA_VERSION = '009';
+const REQUIRED_RESTORE_VERSION = 'logic-fit-platform-logical-v3';
 const MAX_BACKUP_UPLOAD_BYTES = 25 * 1024 * 1024;
 const MAX_BACKUP_JSON_BYTES = 80 * 1024 * 1024;
 const MAX_BACKUP_ROWS = 150000;
 const BACKUP_CATEGORY = 'backups';
+const LEGACY_SCHEMA_SNAPSHOT_VERSION = 1;
+const SAFE_SCHEMA_TYPES = new Set([
+    'bigint', 'bit', 'char', 'date', 'datetime', 'datetime2', 'decimal',
+    'float', 'int', 'money', 'nchar', 'ntext', 'numeric', 'nvarchar',
+    'real', 'smalldatetime', 'smallint', 'smallmoney', 'text', 'time',
+    'timestamp', 'tinyint', 'uniqueidentifier', 'varbinary', 'varchar',
+    'binary', 'datetimeoffset', 'xml'
+]);
 const ACTIVE_TENANT_STATUSES = Object.freeze(['trial', 'active']);
 const RECOVERY_STATUSES = Object.freeze(['PENDING', 'RUNNING', 'UPLOADED', 'VERIFYING', 'VERIFIED', 'FAILED', 'EXPIRED', 'DELETED']);
 const PLATFORM_SENSITIVE_COLUMNS = new Set([
@@ -52,8 +68,12 @@ function recoveryErrorCode(error, fallback) {
 }
 
 function isSensitiveColumn(value) {
-    const column = String(value || '').trim().toLowerCase();
-    return PLATFORM_SENSITIVE_COLUMNS.has(column) || SENSITIVE_COLUMN_PATTERN.test(column);
+    const rawColumn = String(value || '').trim();
+    const column = rawColumn.replace(/([a-z0-9])([A-Z])/g, '$1_$2').toLowerCase();
+    const compactColumn = column.replaceAll('_', '');
+    return PLATFORM_SENSITIVE_COLUMNS.has(column)
+        || SENSITIVE_COLUMN_PATTERN.test(column)
+        || ['passwordhash', 'passwordsalt', 'passwordresettoken', 'refreshtoken', 'sessiontoken', 'apikey'].includes(compactColumn);
 }
 
 function normalizePositiveInteger(value, fallback, maximum = Number.MAX_SAFE_INTEGER) {
@@ -124,6 +144,15 @@ function getScheduledPlatformBackupTypes(now = new Date(), {
     return types;
 }
 
+function getDailyBackupCycleHttpStatus(result) {
+    const tenantFailed = Number(result?.tenantFailed || 0) > 0;
+    const platformFailed = result?.platform?.status === 'failed';
+    const scheduledFailed = Array.isArray(result?.scheduledPlatform)
+        && result.scheduledPlatform.some((item) => item?.status === 'failed' || item?.record?.status === 'FAILED');
+    const retentionFailed = Number(result?.retention?.failed || 0) > 0;
+    return tenantFailed || platformFailed || scheduledFailed || retentionFailed ? 503 : 200;
+}
+
 function dateValue(day) {
     return new Date(`${day}T00:00:00.000Z`);
 }
@@ -140,6 +169,89 @@ function payloadDigest(tables) {
     return crypto.createHash('sha256').update(jsonStringify(tables)).digest('hex');
 }
 
+function schemaSnapshotDigest(snapshot) {
+    return crypto.createHash('sha256').update(jsonStringify(snapshot || null)).digest('hex');
+}
+
+function rowsDigest(rows) {
+    return crypto.createHash('sha256').update(jsonStringify(Array.isArray(rows) ? rows : [])).digest('hex');
+}
+
+function canonicalRows(rows) {
+    return (Array.isArray(rows) ? rows : []).slice().sort((left, right) => {
+        const a = jsonStringify(left);
+        const b = jsonStringify(right);
+        return a < b ? -1 : a > b ? 1 : 0;
+    });
+}
+
+function releaseIdentifier() {
+    const value = process.env.VERCEL_GIT_COMMIT_SHA || process.env.APP_RELEASE_ID || '';
+    return /^[A-Za-z0-9._-]{1,128}$/.test(String(value)) ? String(value) : null;
+}
+
+function buildTableInventory(tables, definitionsByScope) {
+    const inventory = { global: [], tenant: [] };
+    if (Array.isArray(definitionsByScope.legacy)) inventory.legacy = [];
+    for (const scope of Object.keys(inventory)) {
+        const scopeTables = normalizedTableMap(tables?.[scope]);
+        for (const definition of definitionsByScope[scope] || []) {
+            const rows = Array.isArray(scopeTables[definition.key]) ? scopeTables[definition.key] : [];
+            inventory[scope].push({
+                key: definition.key,
+                table: definition.table,
+                rowCount: rows.length,
+                sha256: rowsDigest(rows)
+            });
+        }
+    }
+    return inventory;
+}
+
+function tableChecksumsFromInventory(inventory) {
+    return Object.fromEntries(Object.entries(inventory || {}).map(([scope, items]) => [
+        scope,
+        Object.fromEntries((items || []).map((item) => [item.key, item.sha256]))
+    ]));
+}
+
+function buildPlatformManifest({ tables, tableCounts, now, definitionsByScope = null, sourceSchemaGeneration = 'modern', sourceSchemaCapabilities = null, coverage = null, legacySchemaSnapshot = null }) {
+    const definitions = definitionsByScope || {
+        global: PLATFORM_GLOBAL_BACKUP_TABLES,
+        tenant: TENANT_BACKUP_TABLES
+    };
+    const inventory = buildTableInventory(tables, {
+        global: definitions.global || [],
+        tenant: definitions.tenant || [],
+        ...(Array.isArray(definitions.legacy) ? { legacy: definitions.legacy } : {})
+    });
+    const excludedTables = [
+        ...PLATFORM_BACKUP_EXCLUDED_TABLES,
+        ...LEGACY_BACKUP_EXCLUDED_TABLES
+    ];
+    return {
+        backupFormatVersion: BACKUP_VERSION,
+        requiredRestoreVersion: REQUIRED_RESTORE_VERSION,
+        registryVersion: TENANT_BACKUP_REGISTRY_VERSION,
+        backupType: 'platform-disaster-recovery',
+        createdAt: new Date(now).toISOString(),
+        includesGlobalControlPlane: true,
+        includesTenantData: true,
+        excludesSecrets: true,
+        excludedTables,
+        tenantCount: Array.isArray(tables?.global?.gym_tenants) ? tables.global.gym_tenants.length : 0,
+        tableInventory: inventory,
+        tableChecksums: tableChecksumsFromInventory(inventory),
+        tableCounts,
+        rowCount: Object.values(tableCounts || {}).reduce((sum, counts) => sum + totalRows(counts), 0),
+        sourceSchemaGeneration,
+        sourceSchemaCapabilities: sourceSchemaCapabilities || undefined,
+        coverage: coverage || undefined,
+        legacySchemaSnapshot: legacySchemaSnapshot || undefined,
+        legacySchemaSnapshotSha256: legacySchemaSnapshot ? schemaSnapshotDigest(legacySchemaSnapshot) : undefined
+    };
+}
+
 function normalizedTableMap(value) {
     return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
 }
@@ -151,7 +263,7 @@ function validateTenantBackupPayload(payload, { expectedTenantId = null, require
     if (payload.backupType !== 'tenant') {
         throw backupError('The tenant backup type is invalid.', 400, 'BACKUP_TYPE_INVALID');
     }
-    if (Number(payload.version) !== BACKUP_VERSION) {
+    if (!SUPPORTED_BACKUP_VERSIONS.has(Number(payload.version))) {
         throw backupError('The backup version is not supported.', 400, 'BACKUP_VERSION_UNSUPPORTED');
     }
     const tenantId = Number(payload.tenant?.id);
@@ -239,7 +351,7 @@ function validatePlatformTenantReferences(globalTables, tenantTables) {
         .map((row) => Number(row.id))
         .filter((id) => Number.isInteger(id) && id > 0));
     for (const rows of [...Object.values(globalTables), ...Object.values(tenantTables)]) {
-        for (const row of rows) {
+        for (const [rowIndex, row] of rows.entries()) {
             const tenantKey = Object.keys(row).find((column) => column.toLowerCase() === 'tenant_id');
             // Platform-scoped records may intentionally carry a NULL
             // tenant_id (for example platform audit events). Validate only
@@ -261,7 +373,8 @@ function validatePlatformBackupPayload(payload, { requireCompleteRegistry = true
     if (payload.backupType !== 'platform-disaster-recovery') {
         throw backupError('The platform backup type is invalid.', 400, 'PLATFORM_BACKUP_TYPE_INVALID');
     }
-    if (Number(payload.version) !== BACKUP_VERSION) {
+    const payloadVersion = Number(payload.version);
+    if (!SUPPORTED_BACKUP_VERSIONS.has(payloadVersion)) {
         throw backupError('The platform backup version is not supported.', 400, 'PLATFORM_BACKUP_VERSION_UNSUPPORTED');
     }
     const manifest = payload.manifest;
@@ -274,14 +387,18 @@ function validatePlatformBackupPayload(payload, { requireCompleteRegistry = true
     const tables = normalizedTableMap(payload.tables);
     const globalTables = normalizedTableMap(tables.global);
     const tenantTables = normalizedTableMap(tables.tenant);
+    const legacyTables = normalizedTableMap(tables.legacy);
+    const legacySource = manifest.sourceSchemaGeneration === 'legacy-pre-trainer';
     const knownGlobalKeys = new Set(PLATFORM_GLOBAL_BACKUP_TABLES.map((item) => item.key));
     const knownTenantKeys = new Set(TENANT_BACKUP_TABLES.map((item) => item.key));
+    const knownLegacyKeys = new Set(LEGACY_BACKUP_TABLES.map((item) => item.key));
     const unknownGlobal = Object.keys(globalTables).filter((key) => !knownGlobalKeys.has(key));
     const unknownTenant = Object.keys(tenantTables).filter((key) => !knownTenantKeys.has(key));
-    if (unknownGlobal.length || unknownTenant.length) {
+    const unknownLegacy = Object.keys(legacyTables).filter((key) => !knownLegacyKeys.has(key));
+    if (unknownGlobal.length || unknownTenant.length || unknownLegacy.length) {
         throw backupError('The platform backup contains an unknown table.', 400, 'PLATFORM_BACKUP_TABLE_NOT_ALLOWED');
     }
-    if (requireCompleteRegistry) {
+    if (requireCompleteRegistry && !legacySource) {
         const missingGlobal = PLATFORM_GLOBAL_BACKUP_TABLES.map((item) => item.key)
             .filter((key) => !Object.prototype.hasOwnProperty.call(globalTables, key));
         const missingTenant = TENANT_BACKUP_TABLES.map((item) => item.key)
@@ -290,13 +407,13 @@ function validatePlatformBackupPayload(payload, { requireCompleteRegistry = true
             throw backupError('The platform backup is incomplete for the current registry.', 400, 'PLATFORM_BACKUP_REGISTRY_INCOMPLETE');
         }
     }
-    const counts = { global: {}, tenant: {} };
+    const counts = { global: {}, tenant: {}, ...(legacySource ? { legacy: {} } : {}) };
     let rowCount = 0;
     for (const [key, rows] of Object.entries(globalTables)) {
         if (!Array.isArray(rows) || rows.some((row) => !row || typeof row !== 'object' || Array.isArray(row))) {
             throw backupError('The platform backup has an invalid global table.', 400, 'PLATFORM_BACKUP_TABLE_INVALID');
         }
-        for (const row of rows) {
+        for (const [rowIndex, row] of rows.entries()) {
             if (Object.keys(row).some(isSensitiveColumn)) {
                 throw backupError('The platform backup contains a sensitive credential column.', 400, 'PLATFORM_BACKUP_SECRET_COLUMN');
             }
@@ -318,13 +435,38 @@ function validatePlatformBackupPayload(payload, { requireCompleteRegistry = true
         counts.tenant[key] = rows.length;
         rowCount += rows.length;
     }
+    for (const [key, rows] of Object.entries(legacyTables)) {
+        const definition = LEGACY_BACKUP_TABLES.find((item) => item.key === key);
+        if (!definition || !Array.isArray(rows) || rows.some((row) => !row || typeof row !== 'object' || Array.isArray(row))) {
+            throw backupError('The platform backup has an invalid legacy table.', 400, 'PLATFORM_BACKUP_TABLE_INVALID');
+        }
+        for (const [rowIndex, row] of rows.entries()) {
+            if (Object.keys(row).some(isSensitiveColumn)) {
+                throw backupError('The platform backup contains a sensitive credential column.', 400, 'PLATFORM_BACKUP_SECRET_COLUMN');
+            }
+            if (String(definition.ownership || '').startsWith('direct:')) {
+                const tenantKey = Object.keys(row).find((column) => column.toLowerCase() === 'tenantid' || column.toLowerCase() === 'tenant_id');
+                // Legacy TenantId columns are not guaranteed to use the
+                // modern INT tenant key (the deployed schema includes legacy
+                // GUID-backed records). Presence is required; the source
+                // value is retained exactly and is not coerced to a modern
+                // gym_tenants.id.
+                if (tenantKey === undefined) {
+                    throw backupError(`The legacy platform backup contains a row without valid tenant ownership in ${key} at ordinal ${rowIndex}; columns=${Object.keys(row).join(',')}.`, 400, 'PLATFORM_BACKUP_TENANT_COLUMN_INVALID');
+                }
+            }
+        }
+        counts.legacy[key] = rows.length;
+        rowCount += rows.length;
+    }
     if (rowCount > MAX_BACKUP_ROWS) throw backupError('The platform backup exceeds the safe row limit.', 400, 'BACKUP_ROW_LIMIT_EXCEEDED');
     const manifestCounts = normalizedTableMap(manifest.tableCounts);
     if (!manifestCounts.global || typeof manifestCounts.global !== 'object' || Array.isArray(manifestCounts.global)
-        || !manifestCounts.tenant || typeof manifestCounts.tenant !== 'object' || Array.isArray(manifestCounts.tenant)) {
+        || !manifestCounts.tenant || typeof manifestCounts.tenant !== 'object' || Array.isArray(manifestCounts.tenant)
+        || (legacySource && (!manifestCounts.legacy || typeof manifestCounts.legacy !== 'object' || Array.isArray(manifestCounts.legacy)))) {
         throw backupError('The platform backup table counts are incomplete.', 400, 'PLATFORM_BACKUP_MANIFEST_INVALID');
     }
-    if (requireCompleteRegistry) {
+    if (requireCompleteRegistry && !legacySource) {
         const missingGlobalCounts = PLATFORM_GLOBAL_BACKUP_TABLES.map((item) => item.key)
             .filter((key) => !Object.prototype.hasOwnProperty.call(manifestCounts.global, key));
         const missingTenantCounts = TENANT_BACKUP_TABLES.map((item) => item.key)
@@ -333,7 +475,7 @@ function validatePlatformBackupPayload(payload, { requireCompleteRegistry = true
             throw backupError('The platform backup manifest does not cover the current registry.', 400, 'PLATFORM_BACKUP_REGISTRY_INCOMPLETE');
         }
     }
-    for (const scope of ['global', 'tenant']) {
+    for (const scope of ['global', 'tenant', ...(legacySource ? ['legacy'] : [])]) {
         const expectedCounts = normalizedTableMap(manifestCounts[scope]);
         for (const [key, count] of Object.entries(counts[scope])) {
             if (Object.prototype.hasOwnProperty.call(expectedCounts, key) && Number(expectedCounts[key]) !== count) {
@@ -344,6 +486,10 @@ function validatePlatformBackupPayload(payload, { requireCompleteRegistry = true
     if (Number(manifest.rowCount) !== rowCount) {
         throw backupError('The platform backup manifest row count is invalid.', 400, 'PLATFORM_BACKUP_MANIFEST_INVALID');
     }
+    // Modern platform/control-plane references must resolve to the snapshot's
+    // gym_tenants ids. Legacy tables may use a separate historical key type;
+    // they are validated through their own source relationships and are not
+    // compared to modern INT tenant ids.
     validatePlatformTenantReferences(globalTables, tenantTables);
     const digest = String(payload.integrity?.sha256 || '').toLowerCase();
     if (String(payload.integrity?.algorithm || '').toLowerCase() !== 'sha256' || !/^[a-f0-9]{64}$/.test(digest)) {
@@ -351,6 +497,69 @@ function validatePlatformBackupPayload(payload, { requireCompleteRegistry = true
     }
     if (payloadDigest(tables) !== digest) {
         throw backupError('The platform backup content failed its integrity check.', 400, 'PLATFORM_BACKUP_CHECKSUM_MISMATCH');
+    }
+    if (payloadVersion >= 3) {
+        if (legacySource) validateLegacySchemaSnapshot(manifest, legacyTables);
+        const inventory = manifest.tableInventory;
+        const checksums = manifest.tableChecksums;
+        if (!inventory || typeof inventory !== 'object' || Array.isArray(inventory)
+            || !Array.isArray(inventory.global) || !Array.isArray(inventory.tenant)
+            || (legacySource && !Array.isArray(inventory.legacy))
+            || !checksums || typeof checksums !== 'object' || Array.isArray(checksums)
+            || !checksums.global || typeof checksums.global !== 'object'
+            || !checksums.tenant || typeof checksums.tenant !== 'object'
+            || (legacySource && (!checksums.legacy || typeof checksums.legacy !== 'object'))
+            || manifest.backupFormatVersion !== 3
+            || manifest.requiredRestoreVersion !== REQUIRED_RESTORE_VERSION
+            || !Array.isArray(manifest.excludedTables)
+            || !PLATFORM_BACKUP_EXCLUDED_TABLES.every((table) => manifest.excludedTables.includes(table))
+            || !LEGACY_BACKUP_EXCLUDED_TABLES.every((table) => manifest.excludedTables.includes(table))) {
+            throw backupError('The platform backup table inventory is incomplete or unsafe.', 400, 'PLATFORM_BACKUP_INVENTORY_INVALID');
+        }
+        const inventoryScopes = [
+            ['global', PLATFORM_GLOBAL_BACKUP_TABLES],
+            ['tenant', TENANT_BACKUP_TABLES],
+            ...(legacySource ? [['legacy', LEGACY_BACKUP_TABLES]] : [])
+        ];
+        for (const [scope, definitions] of inventoryScopes) {
+            const rowsByKey = scope === 'global' ? globalTables : tenantTables;
+            const scopedRows = scope === 'global' ? globalTables : scope === 'tenant' ? tenantTables : legacyTables;
+            const presentDefinitions = definitions.filter((definition) => Object.prototype.hasOwnProperty.call(scopedRows, definition.key));
+            const inventoryByKey = new Map(inventory[scope].map((item) => [String(item?.key || ''), item]));
+            if (requireCompleteRegistry && !legacySource && inventoryByKey.size !== definitions.length) {
+                throw backupError('The platform backup inventory does not cover the current registry.', 400, 'PLATFORM_BACKUP_INVENTORY_INVALID');
+            }
+            for (const [key, rows] of Object.entries(scopedRows)) {
+                const item = inventoryByKey.get(key);
+                if (!item || item.table !== definitions.find((definition) => definition.key === key)?.table
+                    || Number(item.rowCount) !== rows.length
+                    || item.sha256 !== rowsDigest(rows)
+                    || checksums[scope][key] !== item.sha256) {
+                    throw backupError('The platform backup table inventory does not match its records.', 400, 'PLATFORM_BACKUP_INVENTORY_INVALID');
+                }
+            }
+            if (requireCompleteRegistry && !legacySource) {
+                for (const definition of definitions) {
+                    if (!inventoryByKey.has(definition.key)
+                        || !Object.prototype.hasOwnProperty.call(checksums[scope], definition.key)) {
+                        throw backupError('The platform backup inventory does not cover the current registry.', 400, 'PLATFORM_BACKUP_INVENTORY_INVALID');
+                    }
+                }
+            }
+            if (legacySource) {
+                for (const definition of presentDefinitions) {
+                    if (!inventoryByKey.has(definition.key) || !Object.prototype.hasOwnProperty.call(checksums[scope], definition.key)) {
+                        throw backupError('The legacy platform backup inventory does not cover a present source table.', 400, 'PLATFORM_BACKUP_INVENTORY_INVALID');
+                    }
+                }
+            }
+        }
+        if (legacySource) {
+            const coverage = manifest.coverage;
+            if (!coverage || Number(coverage.unknownTables || 0) !== 0 || Number(coverage.unexplainedTables || 0) !== 0) {
+                throw backupError('The legacy platform backup coverage manifest is incomplete.', 400, 'PLATFORM_BACKUP_INVENTORY_INVALID');
+            }
+        }
     }
     return { tableCounts: counts, rowCount, integrity: { algorithm: 'sha256', verified: true } };
 }
@@ -405,11 +614,13 @@ async function loadTableMetadata(pool, definitions) {
     if (!names.length) return new Map();
     const literals = names.map((name) => `N'${name.replaceAll("'", "''")}'`).join(',');
     const result = await pool.request().query(`
-        SELECT t.name AS table_name, c.name, c.is_identity AS isIdentity, c.is_computed AS isComputed,
+        SELECT t.name AS table_name, c.name, ty.name AS typeName, c.max_length AS maxLength,
+               c.precision, c.scale, c.is_identity AS isIdentity, c.is_computed AS isComputed,
                CASE WHEN c.system_type_id = 189 THEN 1 ELSE 0 END AS isRowVersion
         FROM sys.columns AS c
         INNER JOIN sys.tables AS t ON t.object_id=c.object_id
         INNER JOIN sys.schemas AS s ON s.schema_id=t.schema_id
+        INNER JOIN sys.types AS ty ON ty.user_type_id=c.user_type_id
         WHERE s.name=N'dbo' AND t.name IN (${literals})
         ORDER BY t.name, c.column_id;
     `);
@@ -418,12 +629,245 @@ async function loadTableMetadata(pool, definitions) {
         const table = String(row.table_name);
         if (metadata.has(table)) metadata.get(table).push({
             name: String(row.name),
+            typeName: String(row.typeName || ''),
+            maxLength: row.maxLength == null ? null : Number(row.maxLength),
+            precision: row.precision == null ? null : Number(row.precision),
+            scale: row.scale == null ? null : Number(row.scale),
             isIdentity: Boolean(row.isIdentity),
             isComputed: Boolean(row.isComputed),
             isRowVersion: Boolean(row.isRowVersion)
         });
     }
     return metadata;
+}
+
+function snapshotIdentifier(value) {
+    const name = String(value || '');
+    if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(name)) {
+        throw backupError('Backup schema metadata contains an unsafe identifier.', 400, 'BACKUP_SCHEMA_METADATA_INVALID');
+    }
+    return name;
+}
+
+function snapshotExpression(value, { required = false } = {}) {
+    const expression = value == null ? '' : String(value).trim();
+    if (!expression) {
+        if (required) throw backupError('Backup schema metadata contains a missing expression.', 400, 'BACKUP_SCHEMA_METADATA_INVALID');
+        return null;
+    }
+    // Expressions come from trusted SQL metadata, but a restored artifact is
+    // still treated as untrusted input. Do not allow batch separators,
+    // comments or a second statement to cross the local restore boundary.
+    if (expression.length > 4000 || /;|--|\/\*|\*\//.test(expression)) {
+        throw backupError('Backup schema metadata contains an unsafe expression.', 400, 'BACKUP_SCHEMA_METADATA_INVALID');
+    }
+    return expression;
+}
+
+function schemaSnapshotType(column) {
+    const type = String(column?.type || '').trim().toLowerCase();
+    if (!SAFE_SCHEMA_TYPES.has(type)) throw backupError('Backup schema metadata contains an unsupported SQL type.', 400, 'BACKUP_SCHEMA_METADATA_INVALID');
+    const maxLength = Number(column?.maxLength);
+    const precision = Number(column?.precision);
+    const scale = Number(column?.scale);
+    if (['varchar', 'char', 'nvarchar', 'nchar', 'varbinary', 'binary'].includes(type)) {
+        const length = maxLength === -1 ? 'MAX' : Math.max(1, Number.isFinite(maxLength) ? maxLength : 1);
+        const normalizedLength = ['nvarchar', 'nchar'].includes(type) && length !== 'MAX' ? Math.max(1, Math.floor(length / 2)) : length;
+        return `${type}(${normalizedLength})`;
+    }
+    if (['decimal', 'numeric'].includes(type)) return `${type}(${Math.max(1, precision || 18)},${Math.max(0, scale || 0)})`;
+    if (['datetime2', 'datetimeoffset', 'time'].includes(type)) return `${type}(${Math.max(0, Math.min(7, scale || 0))})`;
+    if (type === 'float' && precision > 0) return `${type}(${Math.max(1, Math.min(53, precision))})`;
+    return type;
+}
+
+async function loadSchemaSnapshot(pool, definitions) {
+    const names = safeTableNames(definitions).map(snapshotIdentifier);
+    if (!names.length) return { formatVersion: LEGACY_SCHEMA_SNAPSHOT_VERSION, schema: 'dbo', tables: [] };
+    const literals = names.map((name) => `N'${name.replaceAll("'", "''")}'`).join(',');
+    // A transaction owns one SQL connection. Run metadata reads sequentially
+    // so SQL Server/node-mssql cannot reject concurrent requests on that
+    // connection with EREQINPROG.
+    const columnsResult = await pool.request().query(`
+            SELECT c.object_id,t.name AS table_name,c.column_id,c.name AS column_name,ty.name AS type_name,
+                   c.max_length,c.precision,c.scale,c.is_nullable,c.is_identity,c.is_computed,
+                   CASE WHEN c.system_type_id=189 THEN 1 ELSE 0 END AS is_rowversion,
+                   CONVERT(nvarchar(80),ic.seed_value) AS identity_seed,
+                   CONVERT(nvarchar(80),ic.increment_value) AS identity_increment,
+                   dc.name AS default_name,dc.definition AS default_definition,
+                   cc.definition AS computed_definition
+            FROM sys.columns c
+            INNER JOIN sys.tables t ON t.object_id=c.object_id
+            INNER JOIN sys.schemas s ON s.schema_id=t.schema_id
+            INNER JOIN sys.types ty ON ty.user_type_id=c.user_type_id
+            LEFT JOIN sys.identity_columns ic ON ic.object_id=c.object_id AND ic.column_id=c.column_id
+            LEFT JOIN sys.default_constraints dc ON dc.parent_object_id=c.object_id AND dc.parent_column_id=c.column_id
+            LEFT JOIN sys.computed_columns cc ON cc.object_id=c.object_id AND cc.column_id=c.column_id
+            WHERE s.name=N'dbo' AND t.name IN (${literals})
+            ORDER BY t.name,c.column_id;
+        `);
+    const keysResult = await pool.request().query(`
+            SELECT kc.parent_object_id AS object_id,kc.type,kc.name,
+                   STRING_AGG(c.name,N'|') WITHIN GROUP (ORDER BY ic.key_ordinal) AS key_columns
+            FROM sys.key_constraints kc
+            INNER JOIN sys.index_columns ic ON ic.object_id=kc.parent_object_id AND ic.index_id=kc.unique_index_id AND ic.key_ordinal>0
+            INNER JOIN sys.columns c ON c.object_id=ic.object_id AND c.column_id=ic.column_id
+            INNER JOIN sys.tables t ON t.object_id=kc.parent_object_id
+            INNER JOIN sys.schemas s ON s.schema_id=t.schema_id
+            WHERE s.name=N'dbo' AND t.name IN (${literals})
+            GROUP BY kc.parent_object_id,kc.type,kc.name;
+        `);
+    const indexesResult = await pool.request().query(`
+            SELECT i.object_id,i.name,i.type_desc,i.is_unique,i.is_primary_key,i.is_unique_constraint,i.is_disabled,
+                   i.has_filter,i.filter_definition,
+                   STRING_AGG(c.name,N'|') WITHIN GROUP (ORDER BY ic.key_ordinal) AS key_columns
+            FROM sys.indexes i
+            INNER JOIN sys.tables t ON t.object_id=i.object_id
+            INNER JOIN sys.schemas s ON s.schema_id=t.schema_id
+            LEFT JOIN sys.index_columns ic ON ic.object_id=i.object_id AND ic.index_id=i.index_id AND ic.key_ordinal>0
+            LEFT JOIN sys.columns c ON c.object_id=ic.object_id AND c.column_id=ic.column_id
+            WHERE s.name=N'dbo' AND t.name IN (${literals}) AND i.name IS NOT NULL AND i.is_hypothetical=0
+            GROUP BY i.object_id,i.name,i.type_desc,i.is_unique,i.is_primary_key,i.is_unique_constraint,i.is_disabled,i.has_filter,i.filter_definition;
+        `);
+    const foreignKeysResult = await pool.request().query(`
+            SELECT fk.parent_object_id AS object_id,fk.name,
+                   rs.name AS referenced_schema,rt.name AS referenced_table,
+                   STRING_AGG(pc.name,N'|') WITHIN GROUP (ORDER BY fkc.constraint_column_id) AS columns,
+                   STRING_AGG(rc.name,N'|') WITHIN GROUP (ORDER BY fkc.constraint_column_id) AS referenced_columns,
+                   fk.is_disabled
+            FROM sys.foreign_keys fk
+            INNER JOIN sys.tables pt ON pt.object_id=fk.parent_object_id
+            INNER JOIN sys.schemas ps ON ps.schema_id=pt.schema_id
+            INNER JOIN sys.tables rt ON rt.object_id=fk.referenced_object_id
+            INNER JOIN sys.schemas rs ON rs.schema_id=rt.schema_id
+            INNER JOIN sys.foreign_key_columns fkc ON fkc.constraint_object_id=fk.object_id
+            INNER JOIN sys.columns pc ON pc.object_id=fkc.parent_object_id AND pc.column_id=fkc.parent_column_id
+            INNER JOIN sys.columns rc ON rc.object_id=fkc.referenced_object_id AND rc.column_id=fkc.referenced_column_id
+            WHERE ps.name=N'dbo' AND pt.name IN (${literals})
+            GROUP BY fk.parent_object_id,fk.name,rs.name,rt.name,fk.is_disabled;
+        `);
+    const checksResult = await pool.request().query(`
+            SELECT cc.parent_object_id AS object_id,cc.name,cc.definition,cc.is_disabled
+            FROM sys.check_constraints cc
+            INNER JOIN sys.tables t ON t.object_id=cc.parent_object_id
+            INNER JOIN sys.schemas s ON s.schema_id=t.schema_id
+            WHERE s.name=N'dbo' AND t.name IN (${literals});
+        `);
+    const byObject = (rows) => {
+        const map = new Map();
+        for (const row of rows.recordset) {
+            const key = Number(row.object_id);
+            const list = map.get(key) || [];
+            list.push(row);
+            map.set(key, list);
+        }
+        return map;
+    };
+    const tableObjects = await pool.request().query(`
+        SELECT t.object_id,t.name
+        FROM sys.tables t INNER JOIN sys.schemas s ON s.schema_id=t.schema_id
+        WHERE s.name=N'dbo' AND t.name IN (${literals}) ORDER BY t.name;
+    `);
+    const columnsByObject = byObject(columnsResult);
+    const keysByObject = byObject(keysResult);
+    const indexesByObject = byObject(indexesResult);
+    const foreignKeysByObject = byObject(foreignKeysResult);
+    const checksByObject = byObject(checksResult);
+    const split = (value) => String(value || '').split('|').filter(Boolean).map(snapshotIdentifier);
+    const tables = tableObjects.recordset.map((table) => {
+        const objectId = Number(table.object_id);
+        const columns = (columnsByObject.get(objectId) || []).map((column) => ({
+            ordinal: Number(column.column_id),
+            name: snapshotIdentifier(column.column_name),
+            type: String(column.type_name),
+            maxLength: Number(column.max_length),
+            precision: Number(column.precision || 0),
+            scale: Number(column.scale || 0),
+            nullable: Boolean(column.is_nullable),
+            identity: Boolean(column.is_identity),
+            identitySeed: column.identity_seed == null ? null : String(column.identity_seed),
+            identityIncrement: column.identity_increment == null ? null : String(column.identity_increment),
+            computed: Boolean(column.is_computed),
+            rowVersion: Boolean(column.is_rowversion),
+            defaultName: column.default_name ? snapshotIdentifier(column.default_name) : null,
+            defaultDefinition: column.default_definition ? snapshotExpression(column.default_definition) : null,
+            computedDefinition: column.computed_definition ? snapshotExpression(column.computed_definition, { required: true }) : null
+        }));
+        return {
+            schema: 'dbo',
+            table: snapshotIdentifier(table.name),
+            columns,
+            primaryKeys: (keysByObject.get(objectId) || []).filter((row) => row.type === 'PK').map((row) => ({ name: snapshotIdentifier(row.name), columns: split(row.key_columns) })),
+            uniqueConstraints: (keysByObject.get(objectId) || []).filter((row) => row.type === 'UQ').map((row) => ({ name: snapshotIdentifier(row.name), columns: split(row.key_columns) })),
+            indexes: (indexesByObject.get(objectId) || []).map((row) => ({ name: snapshotIdentifier(row.name), type: String(row.type_desc), unique: Boolean(row.is_unique), primaryKey: Boolean(row.is_primary_key), uniqueConstraint: Boolean(row.is_unique_constraint), disabled: Boolean(row.is_disabled), filterDefinition: row.filter_definition ? snapshotExpression(row.filter_definition, { required: true }) : null, columns: split(row.key_columns) })),
+            foreignKeys: (foreignKeysByObject.get(objectId) || []).map((row) => ({ name: snapshotIdentifier(row.name), referencedSchema: snapshotIdentifier(row.referenced_schema), referencedTable: snapshotIdentifier(row.referenced_table), columns: split(row.columns), referencedColumns: split(row.referenced_columns), disabled: Boolean(row.is_disabled) })),
+            checks: (checksByObject.get(objectId) || []).map((row) => ({ name: snapshotIdentifier(row.name), definition: snapshotExpression(row.definition, { required: true }), disabled: Boolean(row.is_disabled) }))
+        };
+    });
+    return { formatVersion: LEGACY_SCHEMA_SNAPSHOT_VERSION, schema: 'dbo', tables };
+}
+
+function validateLegacySchemaSnapshot(manifest, legacyTables) {
+    const snapshot = manifest?.legacySchemaSnapshot;
+    if (!snapshot || Number(snapshot.formatVersion) !== LEGACY_SCHEMA_SNAPSHOT_VERSION || snapshot.schema !== 'dbo' || !Array.isArray(snapshot.tables)) {
+        throw backupError('The legacy platform backup schema snapshot is incomplete.', 400, 'PLATFORM_BACKUP_SCHEMA_SNAPSHOT_INVALID');
+    }
+    const expectedTables = new Set(Object.keys(legacyTables).map((key) => key.startsWith('legacy:') ? key.slice('legacy:'.length).toLowerCase() : key.toLowerCase()));
+    const seenTables = new Set();
+    for (const table of snapshot.tables) {
+        const tableName = snapshotIdentifier(table?.table);
+        const tableKey = tableName.toLowerCase();
+        if (seenTables.has(tableKey) || !expectedTables.has(tableKey) || !Array.isArray(table.columns) || !table.columns.length) {
+            throw backupError('The legacy platform backup schema snapshot does not match its data inventory.', 400, 'PLATFORM_BACKUP_SCHEMA_SNAPSHOT_INVALID');
+        }
+        seenTables.add(tableKey);
+        const seenColumns = new Set();
+        for (const column of table.columns) {
+            const name = snapshotIdentifier(column?.name).toLowerCase();
+            if (seenColumns.has(name) || !SAFE_SCHEMA_TYPES.has(String(column?.type || '').toLowerCase())) {
+                throw backupError('The legacy platform backup schema snapshot contains an invalid column.', 400, 'PLATFORM_BACKUP_SCHEMA_SNAPSHOT_INVALID');
+            }
+            seenColumns.add(name);
+            schemaSnapshotType(column);
+            if (column.computed) snapshotExpression(column.computedDefinition, { required: true });
+            if (column.defaultDefinition) snapshotExpression(column.defaultDefinition, { required: true });
+        }
+        const validateKeyList = (items) => {
+            for (const item of Array.isArray(items) ? items : []) {
+                snapshotIdentifier(item?.name);
+                if (!Array.isArray(item?.columns) || !item.columns.length) throw backupError('The legacy platform backup schema snapshot contains an invalid key.', 400, 'PLATFORM_BACKUP_SCHEMA_SNAPSHOT_INVALID');
+                item.columns.forEach(snapshotIdentifier);
+            }
+        };
+        validateKeyList(table.primaryKeys);
+        validateKeyList(table.uniqueConstraints);
+        for (const index of Array.isArray(table.indexes) ? table.indexes : []) {
+            snapshotIdentifier(index?.name);
+            if (!Array.isArray(index?.columns) || !index.columns.length) throw backupError('The legacy platform backup schema snapshot contains an invalid index.', 400, 'PLATFORM_BACKUP_SCHEMA_SNAPSHOT_INVALID');
+            index.columns.forEach(snapshotIdentifier);
+            if (index.filterDefinition) snapshotExpression(index.filterDefinition, { required: true });
+        }
+        for (const foreignKey of Array.isArray(table.foreignKeys) ? table.foreignKeys : []) {
+            snapshotIdentifier(foreignKey?.name);
+            snapshotIdentifier(foreignKey?.referencedSchema);
+            snapshotIdentifier(foreignKey?.referencedTable);
+            if (!Array.isArray(foreignKey?.columns) || !Array.isArray(foreignKey?.referencedColumns) || foreignKey.columns.length !== foreignKey.referencedColumns.length || !foreignKey.columns.length) {
+                throw backupError('The legacy platform backup schema snapshot contains an invalid foreign key.', 400, 'PLATFORM_BACKUP_SCHEMA_SNAPSHOT_INVALID');
+            }
+            foreignKey.columns.forEach(snapshotIdentifier);
+            foreignKey.referencedColumns.forEach(snapshotIdentifier);
+        }
+        for (const check of Array.isArray(table.checks) ? table.checks : []) {
+            snapshotIdentifier(check?.name);
+            snapshotExpression(check?.definition, { required: true });
+        }
+    }
+    if (seenTables.size !== expectedTables.size) throw backupError('The legacy platform backup schema snapshot omits a data table.', 400, 'PLATFORM_BACKUP_SCHEMA_SNAPSHOT_INVALID');
+    const digest = String(manifest.legacySchemaSnapshotSha256 || '').toLowerCase();
+    if (!/^[a-f0-9]{64}$/.test(digest) || schemaSnapshotDigest(snapshot) !== digest) {
+        throw backupError('The legacy platform backup schema snapshot failed its integrity check.', 400, 'PLATFORM_BACKUP_SCHEMA_SNAPSHOT_CHECKSUM_MISMATCH');
+    }
+    return snapshot;
 }
 
 function metadataColumns(metadata, table, { excludeSensitive = false } = {}) {
@@ -433,8 +877,45 @@ function metadataColumns(metadata, table, { excludeSensitive = false } = {}) {
         && (!excludeSensitive || !isSensitiveColumn(column.name)));
 }
 
+function nullParameterType(column) {
+    const type = String(column?.typeName || '').toLowerCase();
+    const maxLength = Number(column?.maxLength);
+    const length = maxLength === -1 ? sql.MAX : Math.max(1, Number.isFinite(maxLength) ? maxLength : 1);
+    const nationalLength = length === sql.MAX ? sql.MAX : Math.max(1, Math.floor(length / 2));
+    if (type === 'nvarchar') return sql.NVarChar(nationalLength);
+    if (type === 'nchar') return sql.NChar(nationalLength);
+    if (type === 'varchar') return sql.VarChar(length);
+    if (type === 'char') return sql.Char(length);
+    if (type === 'varbinary') return sql.VarBinary(length);
+    if (type === 'binary') return sql.Binary(length);
+    if (type === 'bigint') return sql.BigInt;
+    if (type === 'int') return sql.Int;
+    if (type === 'smallint') return sql.SmallInt;
+    if (type === 'tinyint') return sql.TinyInt;
+    if (type === 'bit') return sql.Bit;
+    if (type === 'uniqueidentifier') return sql.UniqueIdentifier;
+    if (type === 'decimal' || type === 'numeric') return sql.Decimal(Math.max(1, Number(column?.precision) || 18), Math.max(0, Number(column?.scale) || 0));
+    if (type === 'float') return sql.Float;
+    if (type === 'real') return sql.Real;
+    if (type === 'money') return sql.Money;
+    if (type === 'smallmoney') return sql.SmallMoney;
+    if (type === 'date') return sql.Date;
+    if (type === 'datetime') return sql.DateTime;
+    if (type === 'datetime2') return sql.DateTime2(Math.max(0, Math.min(7, Number(column?.scale) || 0)));
+    if (type === 'smalldatetime') return sql.SmallDateTime;
+    if (type === 'time') return sql.Time(Math.max(0, Math.min(7, Number(column?.scale) || 0)));
+    if (type === 'text') return sql.Text;
+    if (type === 'ntext') return sql.NText;
+    if (type === 'xml') return sql.Xml;
+    return sql.NVarChar(1);
+}
+
 function hasTenantColumn(columns) {
-    return columns.some((column) => column.name.toLowerCase() === 'tenant_id');
+    return columns.some((column) => ['tenant_id', 'tenantid'].includes(column.name.toLowerCase()));
+}
+
+function tenantColumnName(columns) {
+    return columns.find((column) => ['tenant_id', 'tenantid'].includes(column.name.toLowerCase()))?.name || null;
 }
 
 async function readTableRows(pool, definition, metadata, { tenantId = null, allTenants = false, excludeSensitive = false } = {}) {
@@ -448,10 +929,10 @@ async function readTableRows(pool, definition, metadata, { tenantId = null, allT
     if (definition.tenantScoped && !allTenants) {
         if (!Number.isInteger(Number(tenantId)) || Number(tenantId) <= 0) throw backupError('A trusted tenant is required.', 500, 'BACKUP_TENANT_REQUIRED');
         request.input('tenantId', sql.Int, Number(tenantId));
-        predicate = ' WHERE [tenant_id]=@tenantId';
+        predicate = ` WHERE ${quoteIdentifier(tenantColumnName(columns))}=@tenantId`;
     }
     const result = await request.query(`SELECT ${projection} FROM dbo.${quoteIdentifier(definition.table)}${predicate};`);
-    return result.recordset;
+    return canonicalRows(result.recordset);
 }
 
 async function mapWithConcurrency(items, worker, concurrency = 2) {
@@ -524,6 +1005,68 @@ async function getTenantBackupCoverageStatus({ readOnly = false } = {}) {
         excludedTables: coverage.excludedTables,
         uncoveredTenantTables: coverage.uncoveredTenantTables,
         missingPhysicalTables: coverage.missingPhysicalTables
+    };
+}
+
+async function getPlatformBackupCoverageStatus({ readOnly = false, executor = null } = {}) {
+    assertPlatformScope();
+    if (!executor) await ensureRecoveryTables({ readOnly });
+    const pool = executor || await getPool();
+    const tablesResult = await pool.request().query(`
+        SELECT t.name
+        FROM sys.tables AS t
+        INNER JOIN sys.schemas AS s ON s.schema_id=t.schema_id
+        WHERE s.name=N'dbo' AND t.is_ms_shipped=0
+        ORDER BY t.name;
+    `);
+    const tenantTablesResult = await pool.request().query(`
+        SELECT DISTINCT t.name
+        FROM sys.tables AS t
+        INNER JOIN sys.columns AS c ON c.object_id=t.object_id
+        INNER JOIN sys.schemas AS s ON s.schema_id=t.schema_id
+        WHERE s.name=N'dbo' AND t.is_ms_shipped=0 AND REPLACE(LOWER(c.name),N'_',N'')=N'tenantid'
+        ORDER BY t.name;
+    `);
+    const existingTables = tablesResult.recordset.map((row) => String(row.name));
+    const tenantTables = tenantTablesResult.recordset.map((row) => String(row.name));
+    const tenantTypeResult = await pool.request().query(`
+        SELECT CASE WHEN COL_LENGTH(N'dbo.gym_tenants', N'tenant_type') IS NOT NULL THEN 1 ELSE 0 END AS tenant_type_column;
+    `);
+    const tenantTypeColumn = Boolean(tenantTypeResult.recordset[0]?.tenant_type_column);
+    const legacyNameSet = new Set(LEGACY_BACKUP_TABLES.map((item) => item.table.toLowerCase()));
+    const legacySource = !tenantTypeColumn || existingTables.some((table) => legacyNameSet.has(table.toLowerCase()));
+    const sourceSchemaGeneration = legacySource ? 'legacy-pre-trainer' : 'modern-phase3-8';
+    const coverage = getPlatformBackupCoverage({ existingTables, tenantTables, sourceSchemaGeneration });
+    const globalDefinitions = PLATFORM_GLOBAL_BACKUP_TABLES.filter((definition) => existingTables.some((table) => table.toLowerCase() === definition.table.toLowerCase()));
+    const tenantDefinitions = TENANT_BACKUP_TABLES.filter((definition) => existingTables.some((table) => table.toLowerCase() === definition.table.toLowerCase()));
+    const legacyDefinitions = LEGACY_BACKUP_TABLES.filter((definition) => existingTables.some((table) => table.toLowerCase() === definition.table.toLowerCase()));
+    const classifications = existingTables.map((table) => classifyPlatformTable(table, { hasTenantId: tenantTables.some((candidate) => candidate.toLowerCase() === table.toLowerCase()) }));
+    const classificationCounts = classifications.reduce((result, item) => {
+        result[item.classification] = (result[item.classification] || 0) + 1;
+        return result;
+    }, {});
+    const trainerExpectedTables = ['saas_plan_tenant_types', 'trainer_client_profiles', 'trainer_packages', 'trainer_package_purchases', 'trainer_package_usage', 'coaching_sessions'];
+    const presentTrainerTables = trainerExpectedTables.filter((table) => existingTables.some((candidate) => candidate.toLowerCase() === table));
+    return {
+        ...coverage,
+        sourceSchemaGeneration,
+        sourceSchemaCapabilities: {
+            tenantTypeColumn,
+            trainerSchemaPresent: presentTrainerTables.length > 0,
+            presentTrainerTables,
+            absentTrainerTables: trainerExpectedTables.filter((table) => !presentTrainerTables.includes(table))
+        },
+        definitionsByScope: {
+            global: globalDefinitions,
+            tenant: tenantDefinitions,
+            ...(legacySource ? { legacy: legacyDefinitions } : {})
+        },
+        classificationCounts,
+        classifications,
+        existingTableCount: existingTables.length,
+        tenantTableCount: tenantTables.length,
+        existingTables,
+        tenantTables
     };
 }
 
@@ -731,7 +1274,7 @@ async function inspectTenantBackupBuffer(input, { expectedTenantId = null, requi
     };
 }
 
-async function inspectPlatformBackupBuffer(input, { requireCompleteRegistry = true } = {}) {
+async function decodePlatformBackupBuffer(input, { requireCompleteRegistry = true } = {}) {
     const buffer = Buffer.isBuffer(input) ? input : Buffer.from(input || []);
     if (!buffer.length || buffer.length > MAX_BACKUP_UPLOAD_BYTES) throw backupError('The platform backup file is empty or too large.', 400, 'PLATFORM_BACKUP_FILE_SIZE_INVALID');
     if (buffer[0] !== 0x1f || buffer[1] !== 0x8b) throw backupError('The platform backup must be gzip-compressed JSON.', 400, 'PLATFORM_BACKUP_COMPRESSION_INVALID');
@@ -745,6 +1288,7 @@ async function inspectPlatformBackupBuffer(input, { requireCompleteRegistry = tr
     try { payload = JSON.parse(jsonBuffer.toString('utf8')); } catch (_) { throw backupError('The platform backup JSON is invalid.', 400, 'PLATFORM_BACKUP_JSON_INVALID'); }
     const validation = validatePlatformBackupPayload(payload, { requireCompleteRegistry });
     return {
+        payload,
         generatedAt: payload.generatedAt || null,
         compressedBytes: buffer.length,
         jsonBytes: jsonBuffer.length,
@@ -753,6 +1297,12 @@ async function inspectPlatformBackupBuffer(input, { requireCompleteRegistry = tr
         artifactChecksum: crypto.createHash('sha256').update(buffer).digest('hex'),
         integrity: validation.integrity
     };
+}
+
+async function inspectPlatformBackupBuffer(input, { requireCompleteRegistry = true } = {}) {
+    const inspected = await decodePlatformBackupBuffer(input, { requireCompleteRegistry });
+    const { payload, ...metadata } = inspected;
+    return metadata;
 }
 
 function metadataJson(payload) {
@@ -1300,29 +1850,48 @@ async function withTenantRecoveryLock(tenantId, callback) {
     }
 }
 
-async function insertTenantRows(transaction, definition, rows, metadata) {
+async function insertTenantRows(transaction, definition, rows, metadata, { credentialHash = null, forceCredentialReset = false } = {}) {
     if (!rows.length) return;
     const columns = metadataColumns(metadata, definition.table);
+    const isUserTable = definition.table === 'gym_users';
     const insertColumns = columns.filter((column) => rows.some((row) => Object.prototype.hasOwnProperty.call(row, column.name)
         || Object.prototype.hasOwnProperty.call(row, column.name.toLowerCase())));
+    if (credentialHash) {
+        const credentialColumns = columns.filter((column) => {
+            const name = column.name.toLowerCase();
+            return name === 'password_hash' || name === 'passwordhash' || name === 'must_change_password' || name === 'mustchangepassword';
+        });
+        for (const column of credentialColumns) {
+            if (!insertColumns.includes(column)) insertColumns.push(column);
+        }
+    }
     if (!insertColumns.length) return;
     const quotedTable = `dbo.${quoteIdentifier(definition.table)}`;
     const quotedColumns = insertColumns.map((column) => quoteIdentifier(column.name)).join(', ');
     const usesIdentity = insertColumns.some((column) => column.isIdentity);
-    if (usesIdentity) await transaction.request().query(`SET IDENTITY_INSERT ${quotedTable} ON;`);
     try {
         for (let rowIndex = 0; rowIndex < rows.length; rowIndex += 1) {
             const row = rows[rowIndex];
             const request = transaction.request();
             const values = insertColumns.map((column, columnIndex) => {
                 const sourceKey = Object.keys(row).find((key) => key.toLowerCase() === column.name.toLowerCase());
-                const value = restoreScalar(sourceKey === undefined ? null : row[sourceKey]);
+                let value = restoreScalar(sourceKey === undefined ? null : row[sourceKey]);
+                const normalizedColumnName = column.name.toLowerCase();
+                if (credentialHash && (normalizedColumnName === 'password_hash' || normalizedColumnName === 'passwordhash')) value = credentialHash;
+                if (credentialHash && (normalizedColumnName === 'must_change_password' || normalizedColumnName === 'mustchangepassword')) value = true;
+                if (isUserTable && forceCredentialReset && normalizedColumnName === 'password_changed_at') value = null;
                 const parameter = `restore_${rowIndex}_${columnIndex}`;
-                if (value === null) request.input(parameter, sql.NVarChar(1), null);
+                if (value === null) request.input(parameter, nullParameterType(column), null);
                 else request.input(parameter, value);
                 return `@${parameter}`;
             });
-            await request.query(`INSERT INTO ${quotedTable} (${quotedColumns}) VALUES (${values.join(', ')});`);
+            // Keep IDENTITY_INSERT in the same batch as the INSERT. The
+            // database wrapper prefixes requests with SESSION_CONTEXT calls;
+            // keeping the SET/INSERT/SET sequence together guarantees that
+            // SQL Server applies it to the same session and batch.
+            const identityPrefix = usesIdentity ? `SET IDENTITY_INSERT ${quotedTable} ON;` : '';
+            const identitySuffix = usesIdentity ? `SET IDENTITY_INSERT ${quotedTable} OFF;` : '';
+            await request.query(`${identityPrefix}INSERT INTO ${quotedTable} (${quotedColumns}) VALUES (${values.join(', ')});${identitySuffix}`);
         }
     } finally {
         if (usesIdentity) await transaction.request().query(`SET IDENTITY_INSERT ${quotedTable} OFF;`).catch(() => {});
@@ -1463,6 +2032,268 @@ async function restoreTenantBackupRecord(id, options = {}) {
     });
 }
 
+function platformRestoreDefinitions({ includeExcluded = false, includeLegacy = false, existingTables = null } = {}) {
+    const definitions = [
+        ...PLATFORM_GLOBAL_BACKUP_TABLES.map((definition) => ({ ...definition, tenantScoped: false, restorePolicy: 'platform' })),
+        ...TENANT_BACKUP_TABLES
+    ];
+    if (includeLegacy) definitions.push(...LEGACY_BACKUP_TABLES.map((definition) => ({
+        ...definition,
+        tenantScoped: false,
+        restorePolicy: 'legacy'
+    })));
+    if (includeExcluded) definitions.push(...PLATFORM_BACKUP_EXCLUDED_TABLES.map((table) => ({
+        key: `excluded:${table}`,
+        table,
+        tenantScoped: false,
+        restorePolicy: 'rebuild'
+    })));
+    const existing = existingTables && new Set(existingTables.map((table) => String(table).toLowerCase()));
+    const seen = new Set();
+    return definitions.filter((definition) => {
+        const table = String(definition.table).toLowerCase();
+        if (seen.has(table) || (existing && !existing.has(table))) return false;
+        seen.add(table);
+        return true;
+    });
+}
+
+function snapshotColumnDefinition(column) {
+    const name = quoteIdentifier(snapshotIdentifier(column.name));
+    if (column.computed) return `${name} AS ${snapshotExpression(column.computedDefinition, { required: true })}`;
+    const type = schemaSnapshotType(column);
+    let identity = '';
+    if (column.identity) {
+        const seed = String(column.identitySeed || '1');
+        const increment = String(column.identityIncrement || '1');
+        if (!/^-?\d+(?:\.\d+)?$/.test(seed) || !/^-?\d+(?:\.\d+)?$/.test(increment)) {
+            throw backupError('The legacy schema identity metadata is invalid.', 400, 'PLATFORM_BACKUP_SCHEMA_SNAPSHOT_INVALID');
+        }
+        identity = ` IDENTITY(${seed},${increment})`;
+    }
+    const nullability = column.nullable ? ' NULL' : ' NOT NULL';
+    const defaultName = column.defaultName ? ` CONSTRAINT ${quoteIdentifier(snapshotIdentifier(column.defaultName))}` : '';
+    const defaultDefinition = column.defaultDefinition ? ` DEFAULT ${snapshotExpression(column.defaultDefinition, { required: true })}` : '';
+    return `${name} ${type}${identity}${nullability}${defaultName}${defaultDefinition}`;
+}
+
+function schemaSnapshotColumns(columns) {
+    return (Array.isArray(columns) ? columns : []).map((column) => quoteIdentifier(snapshotIdentifier(column))).join(',');
+}
+
+async function ensureLegacySchema(transaction, snapshot) {
+    if (!snapshot) return;
+    validateLegacySchemaSnapshot({ legacySchemaSnapshot: snapshot, legacySchemaSnapshotSha256: schemaSnapshotDigest(snapshot) }, Object.fromEntries((snapshot.tables || []).map((table) => [`legacy:${table.table}`, []])));
+    const tables = snapshot.tables || [];
+    for (const table of tables) {
+        const tableName = snapshotIdentifier(table.table);
+        if (!Array.isArray(table.columns) || !table.columns.length) throw backupError('The legacy schema snapshot has no columns.', 400, 'PLATFORM_BACKUP_SCHEMA_SNAPSHOT_INVALID');
+        const columnSql = [...table.columns]
+            .sort((left, right) => Number(left.ordinal || 0) - Number(right.ordinal || 0))
+            .map(snapshotColumnDefinition)
+            .join(',');
+        await transaction.request().query(`
+            IF OBJECT_ID(N'dbo.${tableName.replaceAll("'", "''")}', N'U') IS NULL
+            BEGIN
+                CREATE TABLE dbo.${quoteIdentifier(tableName)} (${columnSql});
+            END;
+        `);
+    }
+    for (const table of tables) {
+        const tableName = snapshotIdentifier(table.table);
+        for (const key of Array.isArray(table.primaryKeys) ? table.primaryKeys : []) {
+            const constraint = snapshotIdentifier(key.name);
+            const columns = schemaSnapshotColumns(key.columns);
+            await transaction.request().query(`
+                IF NOT EXISTS (SELECT 1 FROM sys.key_constraints WHERE parent_object_id=OBJECT_ID(N'dbo.${tableName}') AND name=N'${constraint.replaceAll("'", "''")}')
+                    ALTER TABLE dbo.${quoteIdentifier(tableName)} ADD CONSTRAINT ${quoteIdentifier(constraint)} PRIMARY KEY CLUSTERED (${columns});
+            `);
+        }
+        for (const key of Array.isArray(table.uniqueConstraints) ? table.uniqueConstraints : []) {
+            const constraint = snapshotIdentifier(key.name);
+            const columns = schemaSnapshotColumns(key.columns);
+            await transaction.request().query(`
+                IF NOT EXISTS (SELECT 1 FROM sys.key_constraints WHERE parent_object_id=OBJECT_ID(N'dbo.${tableName}') AND name=N'${constraint.replaceAll("'", "''")}')
+                    ALTER TABLE dbo.${quoteIdentifier(tableName)} ADD CONSTRAINT ${quoteIdentifier(constraint)} UNIQUE (${columns});
+            `);
+        }
+        for (const check of Array.isArray(table.checks) ? table.checks : []) {
+            if (check.disabled) continue;
+            const constraint = snapshotIdentifier(check.name);
+            const definition = snapshotExpression(check.definition, { required: true });
+            await transaction.request().query(`
+                IF NOT EXISTS (SELECT 1 FROM sys.check_constraints WHERE parent_object_id=OBJECT_ID(N'dbo.${tableName}') AND name=N'${constraint.replaceAll("'", "''")}')
+                    ALTER TABLE dbo.${quoteIdentifier(tableName)} ADD CONSTRAINT ${quoteIdentifier(constraint)} CHECK ${definition};
+            `);
+        }
+    }
+    for (const table of tables) {
+        const tableName = snapshotIdentifier(table.table);
+        for (const foreignKey of Array.isArray(table.foreignKeys) ? table.foreignKeys : []) {
+            if (foreignKey.disabled) continue;
+            const constraint = snapshotIdentifier(foreignKey.name);
+            const referencedSchema = snapshotIdentifier(foreignKey.referencedSchema);
+            const referencedTable = snapshotIdentifier(foreignKey.referencedTable);
+            const columns = schemaSnapshotColumns(foreignKey.columns);
+            const referencedColumns = schemaSnapshotColumns(foreignKey.referencedColumns);
+            await transaction.request().query(`
+                IF NOT EXISTS (SELECT 1 FROM sys.foreign_keys WHERE parent_object_id=OBJECT_ID(N'dbo.${tableName}') AND name=N'${constraint.replaceAll("'", "''")}')
+                    ALTER TABLE dbo.${quoteIdentifier(tableName)} ADD CONSTRAINT ${quoteIdentifier(constraint)} FOREIGN KEY (${columns}) REFERENCES ${quoteIdentifier(referencedSchema)}.${quoteIdentifier(referencedTable)} (${referencedColumns});
+            `);
+        }
+    }
+    for (const table of tables) {
+        const tableName = snapshotIdentifier(table.table);
+        for (const index of Array.isArray(table.indexes) ? table.indexes : []) {
+            if (index.disabled || index.primaryKey || index.uniqueConstraint || !index.columns?.length) continue;
+            const indexName = snapshotIdentifier(index.name);
+            const columns = schemaSnapshotColumns(index.columns);
+            const unique = index.unique ? 'UNIQUE ' : '';
+            const type = String(index.type || '').toUpperCase() === 'CLUSTERED' ? 'CLUSTERED' : 'NONCLUSTERED';
+            const filter = index.filterDefinition ? ` WHERE ${snapshotExpression(index.filterDefinition, { required: true })}` : '';
+            await transaction.request().query(`
+                IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE object_id=OBJECT_ID(N'dbo.${tableName}') AND name=N'${indexName.replaceAll("'", "''")}')
+                    CREATE ${unique}${type} INDEX ${quoteIdentifier(indexName)} ON dbo.${quoteIdentifier(tableName)} (${columns})${filter};
+            `);
+        }
+    }
+}
+
+function assertSafePlatformRestoreTarget() {
+    const target = String(process.env.DR_RESTORE_TARGET || '').trim().toLowerCase();
+    if (!['local', 'test'].includes(target)) {
+        throw backupError('Platform logical restore is allowed only for an explicitly named local or test target.', 403, 'PLATFORM_RESTORE_TARGET_UNSAFE');
+    }
+    if (config.nodeEnv === 'production' || process.env.VERCEL === '1') {
+        throw backupError('Platform logical restore is disabled in production-hosted processes.', 403, 'PLATFORM_RESTORE_TARGET_UNSAFE');
+    }
+    if (String(process.env.DR_RESTORE_CONFIRM || '').trim().toUpperCase() !== 'YES') {
+        throw backupError('Platform logical restore requires an explicit local/test confirmation.', 400, 'PLATFORM_RESTORE_CONFIRMATION_REQUIRED');
+    }
+    const connection = parseConnectionString(process.env.MSSQL_CONNECTION_STRING || config.mssqlConnectionString);
+    const database = String(connection.database || '').trim().toLowerCase();
+    const server = String(connection.server || '').trim().toLowerCase();
+    const localServer = /^(localhost|127\.0\.0\.1|::1|\.|\(local\))(\\[^,]+)?$/i.test(server);
+    if (!localServer || database === 'db62278' || /(^|[_-])prod(uction)?([_-]|$)/i.test(database)) {
+        throw backupError('Platform logical restore requires a local SQL Server database and refuses the known Production target.', 403, 'PLATFORM_RESTORE_TARGET_UNSAFE');
+    }
+    return { target, database: connection.database };
+}
+
+async function verifyPlatformRestoredCounts(transaction, definitions, payload) {
+    const verifiedCounts = { global: {}, tenant: {}, ...(payload.tables?.legacy ? { legacy: {} } : {}) };
+    for (const scope of ['global', 'tenant', ...(payload.tables?.legacy ? ['legacy'] : [])]) {
+        const scopeRows = normalizedTableMap(payload.tables?.[scope]);
+        const scopeCounts = normalizedTableMap(payload.manifest?.tableCounts?.[scope]);
+        const scopeDefinitions = scope === 'global'
+            ? PLATFORM_GLOBAL_BACKUP_TABLES
+            : scope === 'tenant' ? TENANT_BACKUP_TABLES : LEGACY_BACKUP_TABLES;
+        for (const definition of scopeDefinitions) {
+            if (!Object.prototype.hasOwnProperty.call(scopeRows, definition.key)) continue;
+            if (!definitions.some((item) => item.table === definition.table)) {
+                throw backupError('The restore target is missing a required backup table.', 503, 'RESTORE_TABLE_MISSING');
+            }
+            const result = await transaction.request()
+                .query(`SELECT COUNT_BIG(*) AS total FROM dbo.${quoteIdentifier(definition.table)};`);
+            const actual = Number(result.recordset[0]?.total || 0);
+            const expected = Number(scopeCounts[definition.key] || 0);
+            if (actual !== expected) throw backupError('The restored platform data failed table-count integrity validation.', 503, 'PLATFORM_RESTORE_COUNT_MISMATCH');
+            verifiedCounts[scope][definition.key] = actual;
+        }
+    }
+    return verifiedCounts;
+}
+
+async function restorePlatformBackup(input, {
+    actorUserId = null,
+    reason = '',
+    clearTarget = false
+} = {}) {
+    assertPlatformScope();
+    const target = assertSafePlatformRestoreTarget();
+    if (clearTarget !== true) throw backupError('Platform restore must explicitly authorize clearing the isolated target.', 400, 'PLATFORM_RESTORE_CLEAR_CONFIRMATION_REQUIRED');
+    const normalizedReason = String(reason || '').trim().slice(0, 1000) || 'Local/test application-level disaster recovery drill';
+    const inspected = input?.payload
+        ? { ...input, rowCount: input.rowCount ?? Number(input.payload.manifest?.rowCount || 0) }
+        : await decodePlatformBackupBuffer(input, { requireCompleteRegistry: true });
+    validatePlatformBackupPayload(inspected.payload, { requireCompleteRegistry: true });
+    const legacySource = inspected.payload.manifest?.sourceSchemaGeneration === 'legacy-pre-trainer';
+    await ensureRecoveryTables();
+
+    const pool = await getPool();
+    const transaction = pool.transaction();
+    let committed = false;
+    try {
+        await transaction.begin(sql.ISOLATION_LEVEL.SERIALIZABLE);
+        await transaction.request()
+            .input('lockResource', sql.NVarChar(255), 'logic-fit:platform-recovery')
+            .query(`
+                DECLARE @lockResult INT;
+                EXEC @lockResult = sys.sp_getapplock
+                    @Resource=@lockResource,
+                    @LockMode='Exclusive',
+                    @LockOwner='Transaction',
+                    @LockTimeout=0;
+                IF @lockResult < 0 THROW 51091, 'Another platform recovery operation is active.', 1;
+        `);
+        if (legacySource) await ensureLegacySchema(transaction, inspected.payload.manifest.legacySchemaSnapshot);
+        const coverage = await getPlatformBackupCoverageStatus({ executor: transaction });
+        if (coverage.status !== 'covered') throw backupError('The restore target schema is not covered by the platform backup registry.', 503, 'PLATFORM_RESTORE_COVERAGE_MISMATCH');
+        const clearDefinitions = platformRestoreDefinitions({ includeExcluded: true, includeLegacy: legacySource, existingTables: coverage.existingTables });
+        const restoreDefinitions = platformRestoreDefinitions({ includeLegacy: legacySource, existingTables: coverage.existingTables });
+        const metadata = await loadTableMetadata(transaction, restoreDefinitions);
+        const clearOrder = await loadRestoreOrder(transaction, clearDefinitions);
+        for (const definition of [...clearOrder].reverse()) {
+            await transaction.request().query(`DELETE FROM dbo.${quoteIdentifier(definition.table)};`);
+        }
+        const { hashPassword } = require('./auth-service');
+        const credentialHash = await hashPassword(crypto.randomBytes(32).toString('base64url'));
+        const restoreOrder = await loadRestoreOrder(transaction, restoreDefinitions);
+        const globalKeys = new Set(PLATFORM_GLOBAL_BACKUP_TABLES.map((item) => item.key));
+        const tenantKeys = new Set(TENANT_BACKUP_TABLES.map((item) => item.key));
+        for (const definition of restoreOrder) {
+            const scope = globalKeys.has(definition.key) ? 'global' : tenantKeys.has(definition.key) ? 'tenant' : 'legacy';
+            const rows = inspected.payload.tables?.[scope]?.[definition.key];
+            if (!rows) continue;
+            await insertTenantRows(transaction, definition, rows, metadata, {
+                credentialHash: ['gym_users', 'DomainUsers'].includes(definition.table) ? credentialHash : null,
+                forceCredentialReset: ['gym_users', 'DomainUsers'].includes(definition.table)
+            });
+        }
+        const verifiedCounts = await verifyPlatformRestoredCounts(transaction, restoreDefinitions, inspected.payload);
+        await transaction.request()
+            .input('actorUserId', sql.Int, actorUserId == null ? null : Number(actorUserId))
+            .input('reason', sql.NVarChar(1000), normalizedReason)
+            .input('metadata', sql.NVarChar(sql.MAX), jsonStringify({
+                target: target.target,
+                database: target.database,
+                rowCount: inspected.rowCount,
+                credentialsReset: true,
+                countsVerified: true
+            }))
+            .query(`
+                INSERT INTO dbo.gym_platform_backup_audit_log
+                    (backup_id,event_type,actor_user_id,reason,result,safe_metadata_json)
+                VALUES (NULL,'PLATFORM_RESTORE_COMPLETED',@actorUserId,@reason,'success',@metadata);
+            `);
+        await transaction.commit();
+        committed = true;
+        return {
+            restored: true,
+            target: target.target,
+            database: target.database,
+            generatedAt: inspected.generatedAt || inspected.payload.generatedAt || null,
+            rowCount: inspected.rowCount,
+            tableCounts: verifiedCounts,
+            credentialsReset: true,
+            integrity: inspected.integrity || { algorithm: 'sha256', verified: true }
+        };
+    } catch (error) {
+        if (!committed) await transaction.rollback().catch(() => {});
+        throw error;
+    }
+}
+
 async function deleteTenantBackup(id, { tenantId = null, actorUserId = null, reason = '', storageService = null } = {}) {
     const trustedTenantId = tenantScopeId(tenantId);
     const normalizedReason = String(reason || '').trim().slice(0, 1000);
@@ -1580,39 +2411,100 @@ async function buildPlatformBackupArtifact({ format = 'json.gz', now = new Date(
     assertPlatformScope();
     const normalizedFormat = normalizeBackupFormat(format);
     const pool = await getPool();
-    const globalMetadata = await loadTableMetadata(pool, PLATFORM_GLOBAL_BACKUP_TABLES);
-    const tenantMetadata = await loadTableMetadata(pool, TENANT_BACKUP_TABLES);
-    const globalRows = await mapWithConcurrency(PLATFORM_GLOBAL_BACKUP_TABLES, async (definition) => [
-        definition.key,
-        await readTableRows(pool, { ...definition, tenantScoped: false }, globalMetadata, { excludeSensitive: true })
-    ], concurrency);
-    const tenantRows = await mapWithConcurrency(TENANT_BACKUP_TABLES, async (definition) => [
-        definition.key,
-        await readTableRows(pool, definition, tenantMetadata, { allTenants: true, excludeSensitive: true })
-    ], concurrency);
-    const tables = {
-        global: Object.fromEntries(globalRows),
-        tenant: Object.fromEntries(tenantRows)
-    };
-    const tableCounts = {
-        global: Object.fromEntries(globalRows.map(([key, rows]) => [key, rows.length])),
-        tenant: Object.fromEntries(tenantRows.map(([key, rows]) => [key, rows.length]))
-    };
+    const transaction = pool.transaction();
+    let committed = false;
+    let tables;
+    let legacySchemaSnapshot = null;
+    try {
+        // A platform artifact must represent one coherent logical snapshot.
+        // SERIALIZABLE prevents a tenant row from being added/deleted between
+        // the registry check and the table reads. The platform RLS context is
+        // still applied to every transaction request by the database wrapper.
+        await transaction.begin(sql.ISOLATION_LEVEL.SERIALIZABLE);
+        const coverage = await getPlatformBackupCoverageStatus({ executor: transaction });
+        if (coverage.status !== 'covered') {
+            throw backupError('The platform backup registry does not cover the current database schema.', 503, 'PLATFORM_BACKUP_COVERAGE_MISMATCH');
+        }
+        const pool = transaction;
+        const definitionsByScope = coverage.definitionsByScope || { global: PLATFORM_GLOBAL_BACKUP_TABLES, tenant: TENANT_BACKUP_TABLES };
+        const globalDefinitions = definitionsByScope.global || [];
+        const tenantDefinitions = definitionsByScope.tenant || [];
+        const legacyDefinitions = definitionsByScope.legacy || [];
+        // Keep the canonical global metadata contract intact. Absent modern
+        // tables are represented by empty metadata entries and are never read
+        // because globalDefinitions is already filtered to the source schema.
+        const globalMetadata = await loadTableMetadata(pool, PLATFORM_GLOBAL_BACKUP_TABLES);
+        const tenantMetadata = await loadTableMetadata(pool, tenantDefinitions);
+        const legacyMetadata = await loadTableMetadata(pool, legacyDefinitions);
+        legacySchemaSnapshot = legacyDefinitions.length ? await loadSchemaSnapshot(pool, legacyDefinitions) : null;
+        const globalRows = await mapWithConcurrency(globalDefinitions, async (definition) => [
+            definition.key,
+            await readTableRows(pool, { ...definition, tenantScoped: false }, globalMetadata, { excludeSensitive: true })
+        ], 1);
+        const tenantRows = await mapWithConcurrency(tenantDefinitions, async (definition) => [
+            definition.key,
+            await readTableRows(pool, definition, tenantMetadata, { allTenants: true, excludeSensitive: true })
+        ], 1);
+        const legacyRows = await mapWithConcurrency(legacyDefinitions, async (definition) => [
+            definition.key,
+            await readTableRows(pool, { ...definition, tenantScoped: false }, legacyMetadata, { allTenants: true, excludeSensitive: true })
+        ], 1);
+        tables = {
+            global: Object.fromEntries(globalRows),
+            tenant: Object.fromEntries(tenantRows),
+            ...(legacyDefinitions.length ? { legacy: Object.fromEntries(legacyRows) } : {})
+        };
+        // Keep the source-schema coverage in the manifest, not in the data
+        // digest. It is metadata-only and proves why absent future tables were
+        // not treated as unknown legacy data.
+        var sourceCoverage = {
+            sourceSchemaGeneration: coverage.sourceSchemaGeneration,
+            physicalTableCount: coverage.existingTableCount,
+            includedTableCount: globalDefinitions.length + tenantDefinitions.length + legacyDefinitions.length,
+            explicitExcludedTableCount: coverage.excludedTables.length + coverage.legacyExcludedTables.length,
+            unknownTables: coverage.unclassifiedTables.length,
+            unexplainedTables: coverage.unregisteredTenantTables.length,
+            includedTables: [...globalDefinitions, ...tenantDefinitions, ...legacyDefinitions].map((definition) => ({ table: definition.table, classification: definition.classification || (globalDefinitions.includes(definition) ? 'GLOBAL_REQUIRED' : tenantDefinitions.includes(definition) ? 'TENANT_REQUIRED' : 'LEGACY_REQUIRED') })),
+            excludedTables: [...coverage.excludedTables, ...coverage.legacyExcludedTables],
+            absentModernTables: coverage.absentModernTables || [],
+            absentTrainerTables: coverage.sourceSchemaCapabilities?.absentTrainerTables || []
+        };
+        await transaction.commit();
+        committed = true;
+    } catch (error) {
+        if (!committed) await transaction.rollback().catch(() => {});
+        throw error;
+    }
+    const coverage = sourceCoverage || null;
+    const definitionsByScope = coverage?.sourceSchemaGeneration === 'legacy-pre-trainer'
+        ? {
+            global: PLATFORM_GLOBAL_BACKUP_TABLES.filter((definition) => Object.prototype.hasOwnProperty.call(tables.global || {}, definition.key)),
+            tenant: TENANT_BACKUP_TABLES.filter((definition) => Object.prototype.hasOwnProperty.call(tables.tenant || {}, definition.key)),
+            legacy: LEGACY_BACKUP_TABLES.filter((definition) => Object.prototype.hasOwnProperty.call(tables.legacy || {}, definition.key))
+        }
+        : { global: PLATFORM_GLOBAL_BACKUP_TABLES, tenant: TENANT_BACKUP_TABLES };
+    const tableCounts = Object.fromEntries(Object.entries(definitionsByScope).map(([scope, definitions]) => [
+        scope,
+        Object.fromEntries(definitions.map((definition) => [definition.key, tables[scope]?.[definition.key]?.length || 0]))
+    ]));
     const payload = {
         format: 'logic-fit-platform-backup',
         version: BACKUP_VERSION,
         backupType: 'platform-disaster-recovery',
         generatedAt: new Date(now).toISOString(),
         applicationVersion: require('../../package.json').version,
+        releaseId: releaseIdentifier(),
         schemaVersion: SCHEMA_VERSION,
-        manifest: {
-            registryVersion: TENANT_BACKUP_REGISTRY_VERSION,
-            includesGlobalControlPlane: true,
-            includesTenantData: true,
-            excludesSecrets: true,
+        manifest: buildPlatformManifest({
+            tables,
             tableCounts,
-            rowCount: totalRows(tableCounts.global) + totalRows(tableCounts.tenant)
-        },
+            now,
+            definitionsByScope,
+            sourceSchemaGeneration: coverage?.sourceSchemaGeneration || 'modern-phase3-8',
+            sourceSchemaCapabilities: coverage?.sourceSchemaCapabilities || null,
+            coverage,
+            legacySchemaSnapshot
+        }),
         tables,
         integrity: {
             algorithm: 'sha256',
@@ -2082,7 +2974,7 @@ async function getPlatformBackupHealth({ readOnly = false, limit = 20, now = new
     const safeLimit = normalizePositiveInteger(limit, 20, 100);
     const pool = await getPool();
     const backupDay = backupDayKey(now);
-    const [tenantSummary, tenantLatest, platformSummary, platformVerified, restoreRehearsal, recentFailures, platformFailures, registryCoverage] = await Promise.all([
+    const [tenantSummary, tenantLatest, platformSummary, platformVerified, restoreRehearsal, recentFailures, platformFailures, registryCoverage, platformCoverage] = await Promise.all([
         pool.request().input('backupDay', sql.Date, dateValue(backupDay)).query(`
             SELECT COUNT_BIG(*) AS eligible_tenants,
                    SUM(CASE WHEN r.id IS NOT NULL AND r.status='VERIFIED' THEN 1 ELSE 0 END) AS verified_today,
@@ -2108,7 +3000,8 @@ async function getPlatformBackupHealth({ readOnly = false, limit = 20, now = new
         pool.request().query(`SELECT TOP (1) created_at FROM dbo.gym_platform_backup_audit_log WHERE event_type IN ('PLATFORM_RESTORE_REHEARSAL_COMPLETED','PLATFORM_RESTORE_COMPLETED') AND result='success' ORDER BY created_at DESC,id DESC;`),
         pool.request().input('limit', sql.Int, safeLimit).query(`SELECT TOP (@limit) id,tenant_id,status,error_code,created_at FROM dbo.gym_backup_records WHERE status='FAILED' ORDER BY created_at DESC,id DESC;`),
         pool.request().input('limit', sql.Int, safeLimit).query(`SELECT TOP (@limit) id,status,error_code,created_at FROM dbo.gym_platform_backup_records WHERE status='FAILED' ORDER BY created_at DESC,id DESC;`),
-        getTenantBackupCoverageStatus({ readOnly })
+        getTenantBackupCoverageStatus({ readOnly }),
+        getPlatformBackupCoverageStatus({ readOnly })
     ]);
     const summary = tenantSummary.recordset[0] || {};
     return {
@@ -2134,7 +3027,8 @@ async function getPlatformBackupHealth({ readOnly = false, limit = 20, now = new
         lastRestoreRehearsalAt: restoreRehearsal.recordset[0]?.created_at || null,
         recentFailures: recentFailures.recordset.map((row) => ({ id: Number(row.id), tenantId: Number(row.tenant_id), status: row.status, errorCode: row.error_code, createdAt: row.created_at })),
         platformFailures: platformFailures.recordset.map((row) => ({ id: Number(row.id), status: row.status, errorCode: row.error_code, createdAt: row.created_at })),
-        registryCoverage
+        registryCoverage,
+        platformCoverage
     };
 }
 
@@ -2160,9 +3054,12 @@ function createBackupRecoveryService({ storageService = createObjectStorageServi
         getPlatformBackupRecord,
         getPlatformBackupAudit,
         downloadPlatformBackup: (id, options = {}) => downloadPlatformBackup(id, { ...options, storageService }),
+        restorePlatformBackup,
         cleanupExpiredBackups: (options = {}) => cleanupExpiredBackups({ ...options, storageService }),
         getPlatformBackupHealth: (options = {}) => getPlatformBackupHealth({ ...options, storageService }),
         getTenantBackupCoverageStatus,
+        getPlatformBackupCoverageStatus,
+        getDailyBackupCycleHttpStatus,
         getRetentionPolicy
     };
 }
@@ -2174,8 +3071,14 @@ module.exports = {
     MAX_BACKUP_UPLOAD_BYTES,
     RECOVERY_STATUSES,
     buildPlatformBackupArtifact,
+    buildPlatformManifest,
     buildTenantBackupArtifact,
     buildTenantBackupPayload,
+    loadTableMetadata,
+    loadSchemaSnapshot,
+    readTableRows,
+    rowsDigest,
+    schemaSnapshotDigest,
     createBackupRecoveryService,
     createPlatformBackup,
     createTenantBackup,
@@ -2183,6 +3086,8 @@ module.exports = {
     deleteTenantArtifactAndVerify,
     ensureRecoveryTables,
     getPlatformBackupHealth,
+    getPlatformBackupCoverageStatus,
+    getDailyBackupCycleHttpStatus,
     getTenantBackupCoverageStatus,
     inspectPlatformBackupBuffer,
     validatePlatformBackupPayload,
@@ -2191,6 +3096,7 @@ module.exports = {
     getPlatformBackupRecord,
     getPlatformBackupAudit,
     downloadPlatformBackup,
+    restorePlatformBackup,
     assertBackupNotExpired,
     cleanupExpiredBackups,
     getRetentionPolicy,
@@ -2208,6 +3114,7 @@ module.exports = {
     validateTenantBackupPayload,
     verifyStoredPlatformObject,
     verifyStoredTenantObject,
+    canonicalRows,
     downloadTenantBackup,
     deleteTenantBackup,
     restoreTenantBackup,

@@ -61,6 +61,7 @@ function createAuthApiMiddleware({ authService, isAuthorizedCronRequest, tenantS
             || request.path.startsWith('/public/trainer-registration/requests/');
         const publicPath = ['/health', '/health/live', '/member-portal/lookup', '/member-portal/occupancy', '/member-portal/feedback', '/branding'].includes(request.path)
             || (request.method === 'GET' && request.path.startsWith('/branding/assets/'));
+        const memberPortalCodePath = ['/member-portal/lookup', '/member-portal/occupancy', '/member-portal/feedback'].includes(request.path);
         const cronRequest = request.path === '/backup/daily' && isAuthorizedCronRequest(request);
         const platformPath = request.path.startsWith('/platform/') || request.path.startsWith('/platform-admin/');
         // Normal safe HTTP methods must not trigger schema setup, expiry
@@ -98,6 +99,19 @@ function createAuthApiMiddleware({ authService, isAuthorizedCronRequest, tenantS
 
         if (memberPortalSessionPath) {
             return runTenantContext({ tenantId: null, mode: 'public', readOnlyBaseline: Boolean(request.readOnlyBaseline) }, async () => {
+                await assertTenantIsolationReady();
+                return next();
+            }).catch(next);
+        }
+
+        // A portal lookup resolves its tenant from the capability code in the
+        // request body. It cannot require a tenant slug before that lookup,
+        // otherwise trainer-owned clients (whose shared portal URL may omit a
+        // slug in API calls) are incorrectly rejected as TENANT_NOT_FOUND.
+        // The portal service performs the trusted platform lookup and then
+        // switches into the resolved tenant context before reading data.
+        if (memberPortalCodePath) {
+            return runTenantContext({ tenantId: null, mode: 'platform', readOnlyBaseline: Boolean(request.readOnlyBaseline) }, async () => {
                 await assertTenantIsolationReady();
                 return next();
             }).catch(next);

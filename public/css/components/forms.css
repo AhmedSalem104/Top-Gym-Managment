@@ -147,8 +147,11 @@ textarea[aria-invalid="true"],
 
 input[type="checkbox"],
 input[type="radio"] {
-  width: 18px;
-  height: 18px;
+  inline-size: 32px;
+  block-size: 32px;
+  min-inline-size: 32px;
+  min-block-size: 32px;
+  margin: 0;
   accent-color: var(--color-primary);
 }
 

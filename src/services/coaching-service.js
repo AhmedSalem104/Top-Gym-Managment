@@ -1849,6 +1849,7 @@ module.exports = {
     getDietPlans,
     getExternalTrainees,
     getCheckins,
+    getCoachingActivity,
     getMealLogs,
     getMeasurements,
     getTrainingSummary,

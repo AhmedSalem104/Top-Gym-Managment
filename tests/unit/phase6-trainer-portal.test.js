@@ -15,6 +15,7 @@ const trainerService = read('src/services/trainer-service.js');
 const routes = read('src/routes/trainer.routes.js');
 const portalScript = read('public/js/member-portal.js');
 const portalHtml = read('public/member-portal.html');
+const coachingService = require('../../src/services/coaching-service');
 
 test('Trainer portal reuses the existing member portal and keeps audit rows tenant scoped', () => {
     assert.match(migration, /gym_membership_code_audit/i);
@@ -28,6 +29,10 @@ test('Trainer portal reuses the existing member portal and keeps audit rows tena
     assert.match(portalService, /trainerCommerceService\.listSessions/);
     assert.match(portalService, /trainerCommerceService\.listPayments/);
     assert.match(portalService, /PORTAL_FEATURE_UNAVAILABLE/);
+});
+
+test('Trainer timeline dependency is part of the coaching service contract', () => {
+    assert.equal(typeof coachingService.getCoachingActivity, 'function');
 });
 
 test('Trainer client portal access uses the existing secure membership-code capability', () => {

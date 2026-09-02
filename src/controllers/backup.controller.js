@@ -61,7 +61,10 @@ function createBackupController({ backupService, backupRecoveryService, branding
             if (!isAuthorizedCronRequest(request)) return response.status(401).json({ error: 'The scheduled backup request is not authorized.' });
             if (!recovery) return response.status(503).json({ error: 'Backup recovery service is not configured.', code: 'BACKUP_RECOVERY_NOT_CONFIGURED' });
             const result = await recovery.runDailyBackupCycle({});
-            response.json({ ok: true, scheduled: true, ...result });
+            const statusCode = typeof recovery.getDailyBackupCycleHttpStatus === 'function'
+                ? recovery.getDailyBackupCycleHttpStatus(result)
+                : 200;
+            return response.status(statusCode).json({ ok: statusCode === 200, scheduled: true, ...result });
         },
 
         // This route remains a read-only, on-demand export for compatibility
