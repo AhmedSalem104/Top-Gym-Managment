@@ -416,6 +416,13 @@
     function showAuthenticated(user, options = {}) {
         state.user = user;
         state.ready = true;
+        if (user?.mustChangePassword && window.location.pathname !== '/change-password') {
+            // Forced-password sessions must never render the authenticated
+            // application shell. Route to the isolated auth surface before
+            // applying navigation or touching workspace UI.
+            window.location.replace('/change-password');
+            return;
+        }
         const isIndependentTrainer = String(user?.tenantType || '').trim().toLowerCase() === 'independent_trainer';
         if (isIndependentTrainer
             && window.location.pathname !== '/trainer-workspace'

@@ -48,7 +48,12 @@ function createBaseApp({ publicDirectory, expressFactory = express, trustProxyHo
     app.use(express.json({ limit: '1mb' }));
     app.use(securityHeaders);
     app.use(compression({ threshold: 1024 }));
-    app.use(express.static(publicDirectory, { etag: true, lastModified: true, setHeaders: staticHeaders }));
+    // Keep the root route under the server's control. Express static serves
+    // index.html automatically for `/` by default, which would bypass the
+    // authenticated workspace resolver and briefly expose the Gym shell to a
+    // forced-password session. Explicit routes still serve static assets and
+    // pages, while `/` falls through to server.js for auth-aware routing.
+    app.use(express.static(publicDirectory, { index: false, etag: true, lastModified: true, setHeaders: staticHeaders }));
     app.use('/api', noStoreApi);
     return app;
 }

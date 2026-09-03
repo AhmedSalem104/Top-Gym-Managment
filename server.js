@@ -258,6 +258,7 @@ app.get('/', asyncRoute(async (request, response, next) => {
     if (isPlatformAdminHost(request)) return sendPlatformAdminPage(request, response);
     const user = await authService.getSessionUser(authService.readSessionCookie(request), { includePermissions: false, readOnly: isReadOnlyRequest(request) });
     if (user?.role === 'PlatformAdmin') return response.redirect('/platform-admin');
+    if (user?.mustChangePassword) return response.redirect('/change-password');
     // Resolve the product surface at the server boundary as well as in the
     // browser. This prevents a trainer session from ever falling through to
     // the Gym shell when the client redirect is delayed, cached, or skipped.
@@ -282,6 +283,11 @@ app.get('/register-trainer', (_request, response) => {
 app.get('/trainer-workspace', (_request, response) => {
     response.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
     response.sendFile(path.join(publicDirectory, 'trainer-workspace.html'));
+});
+
+app.get(['/change-password', '/change-password/'], (_request, response) => {
+    response.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    response.sendFile(path.join(publicDirectory, 'change-password.html'));
 });
 
 app.get('*', (request, response) => {

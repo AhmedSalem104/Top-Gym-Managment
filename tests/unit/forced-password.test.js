@@ -49,6 +49,38 @@ test('forced first-login screen releases the auth restoration veil', () => {
     assert.match(dayPasses, /if \(!user \|\| user\.mustChangePassword\) return/);
 });
 
+test('forced-password sessions use an isolated surface with no workspace shell', () => {
+    const security = read('src/middleware/security.middleware.js');
+    const server = read('server.js');
+    const authUi = read('public/js/auth-ui.js');
+    const surface = read('public/change-password.html');
+    const script = read('public/js/change-password.js');
+
+    assert.match(security, /express\.static\(publicDirectory, \{ index: false/);
+    assert.match(server, /if \(user\?\.mustChangePassword\) return response\.redirect\('\/change-password'\)/);
+    assert.match(server, /app\.get\(\['\/change-password', '\/change-password\/'\]/);
+    assert.match(authUi, /user\?\.mustChangePassword && window\.location\.pathname !== '\/change-password'/);
+    assert.match(authUi, /window\.location\.replace\('\/change-password'\)/);
+    assert.match(surface, /data-forced-password-surface="true"/);
+    assert.doesNotMatch(surface, /app-shell|dashboardSection|topbar|sidebar|auth-ui\.js/);
+    assert.match(surface, /change-password\.js/);
+    assert.match(script, /mustChangePassword/);
+    assert.match(script, /window\.location\.replace\('\/trainer-workspace'\)/);
+    assert.match(script, /window\.location\.replace\('\/#dashboard'\)/);
+    assert.match(script, /api\/auth\/session/);
+    assert.match(script, /api\/auth\/change-password/);
+});
+
+test('post-password routing is resolved from the refreshed session for Gym and Trainer', () => {
+    const script = read('public/js/change-password.js');
+    assert.match(script, /await request\('\/api\/auth\/change-password'/);
+    assert.match(script, /const user = await currentSession\(\)/);
+    assert.match(script, /if \(!user \|\| user\.mustChangePassword\)/);
+    assert.match(script, /const tenantType = normalizeTenantType\(user\)/);
+    assert.match(script, /tenantType === 'independent_trainer'/);
+    assert.match(script, /tenantType === 'gym'/);
+});
+
 test('temporary credential reset is tenant-scoped, transactional, and audit-safe', () => {
     const service = read('src/services/platform-admin-service.js');
     const start = service.indexOf('async function resetTenantUserPassword');
