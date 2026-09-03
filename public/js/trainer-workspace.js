@@ -156,6 +156,7 @@
         setText(byId('trainerMetricMeasurements'), metrics.recentMeasurements ?? 0);
         setText(byId('trainerMetricCheckins'), metrics.recentCheckins ?? 0);
         setText(byId('trainerMetricSessions'), metrics.sessionsToday ?? 0);
+        setText(byId('trainerMetricUpcoming'), metrics.upcomingSessions ?? 0);
         setText(byId('trainerMetricPackages'), metrics.packagesExpiring ?? 0);
         setText(byId('trainerMetricPayments'), metrics.outstandingPayments == null ? '—' : `${Number(metrics.outstandingPayments).toLocaleString('ar-EG')} ج.م`);
     }
@@ -577,6 +578,7 @@
 
     logout?.addEventListener('click', async () => { logout.disabled = true; try { await api('/api/auth/logout', { method: 'POST' }); } finally { window.location.assign('/'); } });
     byId('trainerAddClient')?.addEventListener('click', () => openClientDialog());
+    byId('trainerAddClientSecondary')?.addEventListener('click', () => openClientDialog());
     byId('trainerRefreshClients')?.addEventListener('click', () => loadClients(1));
     byId('trainerRefreshReports')?.addEventListener('click', () => loadReports());
     byId('trainerClientForm')?.addEventListener('submit', saveClient);
@@ -591,10 +593,12 @@
     byId('trainerCheckinCancel')?.addEventListener('click', () => closeDialog(byId('trainerCheckinDialog')));
     byId('trainerCheckinDialogClose')?.addEventListener('click', () => closeDialog(byId('trainerCheckinDialog')));
     byId('trainerAddPackage')?.addEventListener('click', openPackageDialog);
+    byId('trainerAddPackageSecondary')?.addEventListener('click', openPackageDialog);
     byId('trainerPackageForm')?.addEventListener('submit', savePackage);
     byId('trainerPackageCancel')?.addEventListener('click', () => closeDialog(byId('trainerPackageDialog')));
     byId('trainerPackageDialogClose')?.addEventListener('click', () => closeDialog(byId('trainerPackageDialog')));
     byId('trainerAddSession')?.addEventListener('click', openSessionDialog);
+    byId('trainerScheduleSession')?.addEventListener('click', openSessionDialog);
     byId('trainerSessionForm')?.addEventListener('submit', saveSession);
     byId('trainerSessionCancel')?.addEventListener('click', () => closeDialog(byId('trainerSessionDialog')));
     byId('trainerSessionDialogClose')?.addEventListener('click', () => closeDialog(byId('trainerSessionDialog')));
@@ -629,12 +633,20 @@
     pagination?.addEventListener('click', (event) => { const action = event.target.closest('[data-page]')?.dataset.page; if (action === 'prev') loadClients(Math.max(1, currentPage - 1)); if (action === 'next') loadClients(currentPage + 1); });
     search?.addEventListener('input', () => { clearTimeout(searchTimer); searchTimer = setTimeout(() => loadClients(1), 240); });
 
+    document.querySelectorAll('[data-trainer-nav]').forEach((link) => {
+        link.addEventListener('click', () => {
+            document.querySelectorAll('[data-trainer-nav]').forEach((item) => item.classList.toggle('is-active', item === link));
+        });
+    });
+
     async function init() {
         try {
             const session = await api('/api/auth/session');
             const user = session.user;
-            if (!user || user.mustChangePassword || user.role === 'PlatformAdmin' || user.tenantType !== 'independent_trainer') return window.location.replace('/');
-            await Promise.all([loadWorkspace(), loadClients(1)]);
+            const tenantType = String(user?.tenantType || '').trim().toLowerCase();
+            if (!user || user.mustChangePassword || user.role === 'PlatformAdmin' || tenantType !== 'independent_trainer') return window.location.replace('/');
+            setText(byId('trainerWorkspaceName'), user.name || 'أيها المدرب');
+            await Promise.all([loadWorkspace(), loadClients(1), loadReports()]);
             await loadOperations();
         } catch (_) { window.location.replace('/'); }
     }

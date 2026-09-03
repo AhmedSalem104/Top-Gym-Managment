@@ -11,97 +11,103 @@
         } catch (_) { document.documentElement.dataset.theme = 'light'; }
     </script>
     <link rel="stylesheet" href="/css/main.css?v=79">
-    <link rel="stylesheet" href="/css/pages/trainer-workspace.css?v=3">
+    <link rel="stylesheet" href="/css/pages/trainer-workspace.css?v=4">
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     <title>مساحة المدرب | Logic Fit</title>
 </head>
-<body class="trainer-workspace-page" data-branding-entry="saas" data-trainer-workspace="phase5">
+<body class="trainer-workspace-page" data-branding-entry="saas" data-trainer-workspace="phase6" data-product-surface="independent-trainer">
     <main class="trainer-workspace-shell">
-        <header class="trainer-workspace-header">
+        <header class="trainer-workspace-header" aria-labelledby="trainerWorkspaceTitle">
             <div class="trainer-workspace-intro">
-                <span class="trainer-workspace-kicker">Logic Fit · Independent Trainer</span>
-                <h1>مساحة عمل المدرب</h1>
-                <p>أهلًا بك في مساحتك الخاصة. تم تجهيز الحساب بأمان، وستصل أدوات التدريب والعملاء تدريجيًا ضمن خطة المنصة.</p>
+                <div class="trainer-product-mark"><span class="trainer-workspace-brand-mark" aria-hidden="true">L</span><div><span class="trainer-workspace-kicker">Logic Fit · Trainer Studio</span><strong id="trainerWorkspaceBrand">مساحة المدرب المستقل</strong></div></div>
+                <h1 id="trainerWorkspaceTitle">كل عميل. كل جلسة. في مسارك.</h1>
+                <p>مساحة تشغيل مصممة للمدرب الحر لإدارة العملاء، الجلسات، الخطط والتحصيلات من مكان واحد.</p>
                 <p id="trainerWorkspaceMessage" class="trainer-workspace-message" role="status">جاري التحقق من مساحة العمل...</p>
             </div>
             <div class="trainer-workspace-header-side">
-                <div class="trainer-workspace-brand"><span class="trainer-workspace-brand-mark" aria-hidden="true">L</span><span id="trainerWorkspaceBrand">Logic Fit</span></div>
+                <span class="trainer-workspace-context"><span class="trainer-context-dot" aria-hidden="true"></span>مساحتك التدريبية الخاصة</span>
                 <div class="trainer-workspace-actions"><button class="theme-toggle-button" type="button" data-theme-toggle aria-pressed="false"><span aria-hidden="true">◐</span><span data-theme-toggle-label>الوضع الداكن</span></button><button class="btn btn-light btn-small" id="trainerWorkspaceLogout" type="button">تسجيل الخروج</button></div>
             </div>
         </header>
-        <section class="trainer-workspace-summary" aria-label="ملخص الحساب">
-            <article class="trainer-workspace-card trainer-workspace-card--identity"><span class="trainer-card-eyebrow">الحساب</span><strong>مدرب شخصي مستقل</strong><small>مساحة تشغيل معزولة</small></article>
-            <article class="trainer-workspace-card"><span class="trainer-card-eyebrow">الباقة الحالية</span><strong id="trainerWorkspacePlan">جاري التحميل...</strong><small>خطة المنصة</small></article>
-            <article class="trainer-workspace-card"><span class="trainer-card-eyebrow">حالة الاشتراك</span><strong id="trainerWorkspaceStatus">جاري التحميل...</strong><small>الحالة الحالية</small></article>
-            <article class="trainer-workspace-card trainer-workspace-card--metric"><span class="trainer-card-icon" aria-hidden="true">◎</span><strong id="trainerMetricClients">—</strong><small>عملاء نشطون</small></article>
-            <article class="trainer-workspace-card trainer-workspace-card--metric"><span class="trainer-card-icon" aria-hidden="true">↗</span><strong id="trainerMetricPlans">—</strong><small>خطط تدريب نشطة</small></article>
-            <article class="trainer-workspace-card trainer-workspace-card--metric"><span class="trainer-card-icon trainer-card-icon--violet" aria-hidden="true">◷</span><strong id="trainerMetricSessions">—</strong><small>جلسات اليوم</small></article>
-            <article class="trainer-workspace-card trainer-workspace-card--metric"><span class="trainer-card-icon trainer-card-icon--orange" aria-hidden="true">⌛</span><strong id="trainerMetricPackages">—</strong><small>باكدجات قريبة الانتهاء</small></article>
-            <article class="trainer-workspace-card trainer-workspace-card--metric"><span class="trainer-card-icon trainer-card-icon--green" aria-hidden="true">ج.م</span><strong id="trainerMetricPayments">—</strong><small>أرصدة مستحقة</small></article>
+
+        <nav class="trainer-workspace-nav" aria-label="تنقل مساحة المدرب">
+            <a class="trainer-nav-link is-active" href="#trainerToday" data-trainer-nav="trainerToday"><span aria-hidden="true">◷</span>اليوم</a>
+            <a class="trainer-nav-link" href="#trainerClients" data-trainer-nav="trainerClients"><span aria-hidden="true">◎</span>العملاء</a>
+            <a class="trainer-nav-link" href="#trainerPackages" data-trainer-nav="trainerPackages"><span aria-hidden="true">◇</span>الباقات</a>
+            <a class="trainer-nav-link" href="#trainerPurchases" data-trainer-nav="trainerPurchases"><span aria-hidden="true">↗</span>التحصيلات</a>
+            <a class="trainer-nav-link" href="#trainerReports" data-trainer-nav="trainerReports"><span aria-hidden="true">▥</span>التقارير</a>
+        </nav>
+
+        <section class="trainer-welcome-strip" aria-label="ملخص المدرب">
+            <div><span class="trainer-card-eyebrow">مساحة تشغيل مستقلة</span><h2>صباح النشاط، <span id="trainerWorkspaceName">أيها المدرب</span></h2><p>ابدأ من جلساتك القادمة، ثم تابع العملاء الذين يحتاجون خطوة منك.</p></div>
+            <div class="trainer-welcome-meta"><span class="trainer-status-pill trainer-status-pill--active"><span class="trainer-live-dot" aria-hidden="true"></span>البيانات محدثة من مساحة المدرب</span></div>
         </section>
-        <section class="trainer-workspace-main-grid">
-            <section class="trainer-workspace-panel trainer-clients-panel" aria-labelledby="trainerClientsTitle">
+
+        <section class="trainer-workspace-summary" aria-label="مؤشرات المدرب">
+            <article class="trainer-workspace-card trainer-workspace-card--metric trainer-workspace-card--primary"><span class="trainer-card-icon" aria-hidden="true">◎</span><span class="trainer-card-eyebrow">قاعدة العملاء</span><strong id="trainerMetricClients">—</strong><small>عملاء نشطون</small></article>
+            <article class="trainer-workspace-card trainer-workspace-card--metric"><span class="trainer-card-icon trainer-card-icon--violet" aria-hidden="true">◷</span><span class="trainer-card-eyebrow">إيقاع اليوم</span><strong id="trainerMetricSessions">—</strong><small>جلسات اليوم</small></article>
+            <article class="trainer-workspace-card trainer-workspace-card--metric"><span class="trainer-card-icon trainer-card-icon--blue" aria-hidden="true">↗</span><span class="trainer-card-eyebrow">المواعيد القادمة</span><strong id="trainerMetricUpcoming">—</strong><small>جلسات مجدولة</small></article>
+            <article class="trainer-workspace-card trainer-workspace-card--metric"><span class="trainer-card-icon trainer-card-icon--orange" aria-hidden="true">⌛</span><span class="trainer-card-eyebrow">تنبيه تجاري</span><strong id="trainerMetricPackages">—</strong><small>باقات تنتهي قريبًا</small></article>
+            <article class="trainer-workspace-card trainer-workspace-card--metric"><span class="trainer-card-icon trainer-card-icon--green" aria-hidden="true">ج.م</span><span class="trainer-card-eyebrow">التحصيل</span><strong id="trainerMetricPayments">—</strong><small>أرصدة مستحقة</small></article>
+        </section>
+
+        <section class="trainer-quick-actions" aria-labelledby="trainerQuickActionsTitle">
+            <div><span class="trainer-panel-kicker">اختصارات العمل</span><h2 id="trainerQuickActionsTitle">خطوتك التالية</h2></div>
+            <div class="trainer-quick-actions-list"><button class="trainer-quick-action trainer-quick-action--primary" id="trainerAddClient" type="button"><span class="trainer-quick-icon" aria-hidden="true">+</span><span><strong>إضافة عميل</strong><small>ابدأ ملفًا تدريبيًا جديدًا</small></span><span class="trainer-quick-arrow" aria-hidden="true">←</span></button><button class="trainer-quick-action" id="trainerAddSession" type="button"><span class="trainer-quick-icon" aria-hidden="true">◷</span><span><strong>جدولة جلسة</strong><small>نظّم موعدك القادم</small></span><span class="trainer-quick-arrow" aria-hidden="true">←</span></button><button class="trainer-quick-action" id="trainerAddPackage" type="button"><span class="trainer-quick-icon" aria-hidden="true">◇</span><span><strong>إنشاء باقة</strong><small>قدّم خدمة واضحة لعملائك</small></span><span class="trainer-quick-arrow" aria-hidden="true">←</span></button></div>
+        </section>
+
+        <section class="trainer-workspace-main-grid" id="trainerToday">
+            <section class="trainer-workspace-panel trainer-schedule-panel" aria-labelledby="trainerSessionsTitle">
                 <div class="trainer-panel-header">
-                    <div><span class="trainer-panel-kicker">إدارة العملاء</span><h2 id="trainerClientsTitle">عملاؤك</h2><p>ملفات العملاء وخططهم ومتابعتهم في مكان واحد.</p></div>
-                    <button class="btn btn-primary trainer-add-client" id="trainerAddClient" type="button"><span aria-hidden="true">+</span> إضافة عميل</button>
+                    <div><span class="trainer-panel-kicker">جدولك اليومي</span><h2 id="trainerSessionsTitle">جلسات اليوم والقادم</h2><p>تابع الموعد والحالة وافتح الإجراء المناسب من نفس المكان.</p></div>
+                    <button class="btn btn-light btn-small" id="trainerScheduleSession" type="button">جدولة جلسة</button>
                 </div>
-                <div class="trainer-clients-toolbar">
-                    <label class="trainer-search"><span class="sr-only">البحث في العملاء</span><span aria-hidden="true">⌕</span><input id="trainerClientSearch" type="search" placeholder="ابحث بالاسم أو الهاتف" autocomplete="off"></label>
-                    <button class="btn btn-light btn-small" id="trainerRefreshClients" type="button">تحديث</button>
-                </div>
-                <div id="trainerClientsMessage" class="trainer-inline-message" role="status"></div>
-                <div id="trainerClientsList" class="trainer-clients-list" aria-live="polite"></div>
-                <div id="trainerClientsPagination" class="trainer-pagination" hidden></div>
+                <div id="trainerSessionsMessage" class="trainer-inline-message" role="status"></div>
+                <div id="trainerSessionsList" class="trainer-compact-list trainer-schedule-list" aria-live="polite"></div>
             </section>
             <aside class="trainer-workspace-panel trainer-activity-panel" aria-labelledby="trainerActivityTitle">
-                <div class="trainer-panel-header trainer-panel-header--stacked"><div><span class="trainer-panel-kicker">نظرة تشغيلية</span><h2 id="trainerActivityTitle">ما يحتاج انتباهك</h2></div></div>
+                <div class="trainer-panel-header trainer-panel-header--stacked"><div><span class="trainer-panel-kicker">إشارات المتابعة</span><h2 id="trainerActivityTitle">عملاء يحتاجونك</h2><p>أرقام حقيقية من ملفات التدريب الخاصة بك.</p></div></div>
                 <div class="trainer-priority-list">
                     <div class="trainer-priority-item"><span class="trainer-priority-icon trainer-priority-icon--blue" aria-hidden="true">◷</span><div><strong id="trainerMetricFollowUp">—</strong><span>عميل يحتاج متابعة</span></div></div>
                     <div class="trainer-priority-item"><span class="trainer-priority-icon trainer-priority-icon--green" aria-hidden="true">✓</span><div><strong id="trainerMetricMeasurements">—</strong><span>قياسات خلال آخر 30 يومًا</span></div></div>
                     <div class="trainer-priority-item"><span class="trainer-priority-icon trainer-priority-icon--violet" aria-hidden="true">⌁</span><div><strong id="trainerMetricCheckins">—</strong><span>متابعات خلال آخر 14 يومًا</span></div></div>
                 </div>
-                <div class="trainer-availability-note"><span aria-hidden="true">✦</span><p>الأولوية محسوبة من العملاء والجلسات والباكدجات والتحصيلات الموجودة في مساحة المدرب فقط.</p></div>
+                <div class="trainer-availability-note"><span aria-hidden="true">✦</span><p>الأولوية محسوبة من العملاء والجلسات والباقات والتحصيلات الموجودة في مساحة المدرب فقط.</p></div>
             </aside>
         </section>
-        <section class="trainer-operations-grid" aria-label="عمليات المدرب">
-            <article class="trainer-workspace-panel trainer-operations-panel" aria-labelledby="trainerPackagesTitle">
-                <div class="trainer-panel-header">
-                    <div><span class="trainer-panel-kicker">الخدمات التجارية</span><h2 id="trainerPackagesTitle">الباقات</h2><p>عرّف الخدمات التي تبيعها لعملائك.</p></div>
-                    <button class="btn btn-light btn-small" id="trainerAddPackage" type="button">إضافة باقة</button>
-                </div>
+
+        <section class="trainer-workspace-panel trainer-clients-panel" id="trainerClients" aria-labelledby="trainerClientsTitle">
+            <div class="trainer-panel-header">
+                <div><span class="trainer-panel-kicker">ملفات التدريب</span><h2 id="trainerClientsTitle">عملاؤك</h2><p>ملف العميل، هدفه، خططه، قياساته وتقدمه — بدون خلط مع بيانات أي منشأة.</p></div>
+                <button class="btn btn-primary trainer-add-client-secondary" id="trainerAddClientSecondary" type="button"><span aria-hidden="true">+</span> إضافة عميل</button>
+            </div>
+            <div class="trainer-clients-toolbar">
+                <label class="trainer-search"><span class="sr-only">البحث في العملاء</span><span aria-hidden="true">⌕</span><input id="trainerClientSearch" type="search" placeholder="ابحث باسم العميل أو هاتفه" autocomplete="off"></label>
+                <button class="btn btn-light btn-small" id="trainerRefreshClients" type="button">تحديث</button>
+            </div>
+            <div id="trainerClientsMessage" class="trainer-inline-message" role="status"></div>
+            <div id="trainerClientsList" class="trainer-clients-list" aria-live="polite"></div>
+            <div id="trainerClientsPagination" class="trainer-pagination" hidden></div>
+        </section>
+
+        <section class="trainer-operations-grid" aria-label="إدارة خدمات المدرب">
+            <article class="trainer-workspace-panel trainer-operations-panel" id="trainerPackages" aria-labelledby="trainerPackagesTitle">
+                <div class="trainer-panel-header"><div><span class="trainer-panel-kicker">الخدمات</span><h2 id="trainerPackagesTitle">باقات التدريب</h2><p>خطط بيع واضحة لعملائك حضوريًا أو أونلاين.</p></div><button class="btn btn-light btn-small" id="trainerAddPackageSecondary" type="button">إضافة باقة</button></div>
                 <div id="trainerPackagesMessage" class="trainer-inline-message" role="status"></div>
                 <div id="trainerPackagesList" class="trainer-compact-list" aria-live="polite"></div>
             </article>
-            <article class="trainer-workspace-panel trainer-operations-panel" aria-labelledby="trainerSessionsTitle">
-                <div class="trainer-panel-header">
-                    <div><span class="trainer-panel-kicker">اليوم والقادم</span><h2 id="trainerSessionsTitle">الجلسات</h2><p>نظّم المواعيد وتابع تنفيذها.</p></div>
-                    <button class="btn btn-light btn-small" id="trainerAddSession" type="button">جدولة جلسة</button>
-                </div>
-                <div id="trainerSessionsMessage" class="trainer-inline-message" role="status"></div>
-                <div id="trainerSessionsList" class="trainer-compact-list" aria-live="polite"></div>
+            <article class="trainer-workspace-panel trainer-operations-panel" id="trainerPurchases" aria-labelledby="trainerPurchasesTitle">
+                <div class="trainer-panel-header"><div><span class="trainer-panel-kicker">التحصيلات</span><h2 id="trainerPurchasesTitle">مشتريات العملاء</h2><p>تابع المدفوع والمتبقي لكل باقة بدون سجل مالي موازٍ.</p></div><button class="btn btn-light btn-small" id="trainerAddPurchase" type="button">بيع باقة</button></div>
+                <div id="trainerPurchasesMessage" class="trainer-inline-message" role="status"></div>
+                <div id="trainerPurchasesList" class="trainer-compact-list trainer-purchases-list" aria-live="polite"></div>
             </article>
         </section>
-        <section class="trainer-workspace-panel trainer-payments-panel" aria-labelledby="trainerPurchasesTitle">
-            <div class="trainer-panel-header">
-                <div><span class="trainer-panel-kicker">التحصيل والمتابعة</span><h2 id="trainerPurchasesTitle">مشتريات العملاء</h2><p>كل دفعة مستقلة ومتصلة بسجلها المالي.</p></div>
-                <button class="btn btn-light btn-small" id="trainerAddPurchase" type="button">بيع باقة</button>
-            </div>
-            <div id="trainerPurchasesMessage" class="trainer-inline-message" role="status"></div>
-            <div id="trainerPurchasesList" class="trainer-compact-list trainer-purchases-list" aria-live="polite"></div>
-        </section>
-        <section class="trainer-workspace-panel trainer-reports-panel" aria-labelledby="trainerReportsTitle">
-            <div class="trainer-panel-header">
-                <div><span class="trainer-panel-kicker">تقارير التشغيل</span><h2 id="trainerReportsTitle">ملخص النشاط</h2><p id="trainerReportsPeriod">آخر 30 يومًا</p></div>
-                <button class="btn btn-light btn-small" id="trainerRefreshReports" type="button">تحديث التقرير</button>
-            </div>
+
+        <section class="trainer-workspace-panel trainer-reports-panel" id="trainerReports" aria-labelledby="trainerReportsTitle">
+            <div class="trainer-panel-header"><div><span class="trainer-panel-kicker">قراءة النشاط</span><h2 id="trainerReportsTitle">ملخص أداء التدريب</h2><p id="trainerReportsPeriod">آخر 30 يومًا</p></div><button class="btn btn-light btn-small" id="trainerRefreshReports" type="button">تحديث التقرير</button></div>
             <div id="trainerReportsMessage" class="trainer-inline-message" role="status"></div>
             <div id="trainerReportsGrid" class="trainer-reports-grid" aria-live="polite">
-                <div class="trainer-report-stat"><span>الإيراد الصافي</span><strong id="trainerReportRevenue">—</strong></div>
-                <div class="trainer-report-stat"><span>العملاء الجدد</span><strong id="trainerReportNewClients">—</strong></div>
-                <div class="trainer-report-stat"><span>الجلسات المكتملة</span><strong id="trainerReportCompletedSessions">—</strong></div>
-                <div class="trainer-report-stat"><span>إجمالي الجلسات</span><strong id="trainerReportTotalSessions">—</strong></div>
-                <div class="trainer-report-stat"><span>الرصيد المستحق</span><strong id="trainerReportOutstanding">—</strong></div>
-                <div class="trainer-report-stat"><span>القياسات والمتابعات</span><strong id="trainerReportProgress">—</strong></div>
+                <div class="trainer-report-stat"><span>الإيراد الصافي</span><strong id="trainerReportRevenue">—</strong></div><div class="trainer-report-stat"><span>العملاء الجدد</span><strong id="trainerReportNewClients">—</strong></div><div class="trainer-report-stat"><span>الجلسات المكتملة</span><strong id="trainerReportCompletedSessions">—</strong></div><div class="trainer-report-stat"><span>إجمالي الجلسات</span><strong id="trainerReportTotalSessions">—</strong></div><div class="trainer-report-stat"><span>الرصيد المستحق</span><strong id="trainerReportOutstanding">—</strong></div><div class="trainer-report-stat"><span>القياسات والمتابعات</span><strong id="trainerReportProgress">—</strong></div>
             </div>
         </section>
     </main>
@@ -224,6 +230,6 @@
             <div class="trainer-dialog-actions"><button class="btn btn-light" type="button" id="trainerPaymentCancel">إلغاء</button><button class="btn btn-primary" type="submit" id="trainerPaymentSave">حفظ الدفعة</button></div>
         </form>
     </dialog>
-    <script defer src="/js/theme.js?v=1"></script><script defer src="/js/branding.js?v=5"></script><script defer src="/js/trainer-workspace.js?v=4"></script>
+    <script defer src="/js/theme.js?v=1"></script><script defer src="/js/branding.js?v=5"></script><script defer src="/js/trainer-workspace.js?v=5"></script>
 </body>
 </html>

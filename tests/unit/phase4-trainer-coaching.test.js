@@ -56,7 +56,7 @@ test('Trainer service applies tenant and client guards before profile/coaching o
 });
 
 test('Trainer workspace uses real API metrics and gives no fake operational data', () => {
-    assert.match(workspace, /data-trainer-workspace="phase5"/);
+    assert.match(workspace, /data-trainer-workspace="phase6"/);
     assert.match(workspaceScript, /\/api\/trainer\/workspace/);
     assert.match(workspaceScript, /\/api\/trainer\/clients/);
     assert.match(workspaceScript, /method: 'POST'/);
