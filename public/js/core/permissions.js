@@ -94,6 +94,10 @@
 
     function tabsForUser(user) {
         if (user?.role === 'PlatformAdmin') return [...PLATFORM_TABS];
+        // Independent Trainers use the dedicated trainer workspace. Never
+        // expose the Gym application navigation even though their owner role
+        // is also named Owner in the shared authentication model.
+        if (String(user?.tenantType || '').trim().toLowerCase() === 'independent_trainer') return [];
         if (user?.role === 'Owner') return [...OWNER_TABS];
         return OWNER_TABS.filter((tab) => ['management', 'branding', 'member-payment-methods', 'saas-billing', 'backup-history', 'branches', 'member-subscription-requests', 'portal-analytics'].includes(tab) ? false : TAB_PERMISSION_ALTERNATIVES[tab]
             ? TAB_PERMISSION_ALTERNATIVES[tab].some((code) => hasPermission(user, code))

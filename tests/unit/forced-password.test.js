@@ -100,3 +100,13 @@ test('trainer onboarding is capability-driven and does not bootstrap Gym-only AP
     assert.match(saas, /CAPABILITY_NOT_ENABLED/);
     assert.match(saas, /TENANT_CAPABILITY_FORBIDDEN/);
 });
+
+test('independent trainer owners cannot receive the Gym application navigation', () => {
+    const permissions = read('public/js/core/permissions.js');
+    const authUi = read('public/js/auth-ui.js');
+    assert.match(permissions, /tenantType \|\| ''\)\.trim\(\)\.toLowerCase\(\) === 'independent_trainer'/);
+    assert.match(permissions, /if \(String\(user\?\.tenantType \|\| ''\)\.trim\(\)\.toLowerCase\(\) === 'independent_trainer'\) return \[\]/);
+    assert.match(authUi, /isIndependentTrainer = String\(user\?\.tenantType \|\| ''\)\.trim\(\)\.toLowerCase\(\) === 'independent_trainer'/);
+    assert.match(authUi, /isOwner && !isIndependentTrainer/);
+    assert.match(authUi, /managementPanel\.hidden = !isOwner \|\| isIndependentTrainer/);
+});

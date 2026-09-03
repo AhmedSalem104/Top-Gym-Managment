@@ -367,6 +367,7 @@
     function applyNavigation(user) {
         const isOwner = user?.role === 'Owner';
         const isPlatformAdmin = user?.role === 'PlatformAdmin';
+        const isIndependentTrainer = String(user?.tenantType || '').trim().toLowerCase() === 'independent_trainer';
         const tabs = permissions.tabsForUser(user);
         document.body.dataset.topGymRole = user?.role || '';
         document.body.dataset.topGymUserId = user?.id ? String(user.id) : '';
@@ -379,14 +380,14 @@
         document.querySelectorAll('[data-page-tab]').forEach((button) => {
             const allowed = button.hasAttribute('data-platform-only')
                 ? isPlatformAdmin
-                : button.hasAttribute('data-owner-only') ? isOwner : tabs.includes(button.dataset.pageTab);
+                : button.hasAttribute('data-owner-only') ? isOwner && !isIndependentTrainer : tabs.includes(button.dataset.pageTab);
             if (!allowed && button === document.activeElement) button.blur();
             button.hidden = !allowed;
             button.toggleAttribute('inert', !allowed);
             button.setAttribute('aria-hidden', String(!allowed));
         });
         const managementPanel = $('authUsersPanel');
-        if (managementPanel) managementPanel.hidden = !isOwner;
+        if (managementPanel) managementPanel.hidden = !isOwner || isIndependentTrainer;
         const profileName = document.querySelector('.header-profile-copy strong');
         const profileRole = document.querySelector('.header-profile-copy small');
         const profileAvatar = document.querySelector('.profile-avatar');
