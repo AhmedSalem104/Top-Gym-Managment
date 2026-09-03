@@ -12,6 +12,24 @@
     document.body.classList.add('auth-pending');
 
     const $ = (id) => document.getElementById(id);
+
+    function booleanFlag(value) {
+        return value === true || value === 1 || value === '1' || value === 'true';
+    }
+
+    // Normalize auth payloads once at the browser boundary. The backend
+    // contract is camelCase; legacy snake_case aliases are accepted only
+    // here so routing never depends on a payload spelling mismatch.
+    function normalizeAuthUser(user) {
+        if (!user || typeof user !== 'object') return null;
+        const normalized = { ...user };
+        normalized.tenantType = String(user.tenantType ?? user.tenant_type ?? '')
+            .trim()
+            .toLowerCase()
+            .replace(/-/g, '_');
+        normalized.mustChangePassword = booleanFlag(user.mustChangePassword ?? user.must_change_password);
+        return normalized;
+    }
     const escapeHtml = (value) => String(value ?? '').replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[character]));
 
     function showMessage(message, type = 'error') {
@@ -414,33 +432,34 @@
     }
 
     function showAuthenticated(user, options = {}) {
-        state.user = user;
+        const normalizedUser = normalizeAuthUser(user);
+        state.user = normalizedUser;
         state.ready = true;
-        if (user?.mustChangePassword && window.location.pathname !== '/change-password') {
+        if (normalizedUser?.mustChangePassword && window.location.pathname !== '/change-password') {
             // Forced-password sessions must never render the authenticated
             // application shell. Route to the isolated auth surface before
             // applying navigation or touching workspace UI.
             window.location.replace('/change-password');
             return;
         }
-        const isIndependentTrainer = String(user?.tenantType || '').trim().toLowerCase() === 'independent_trainer';
+        const isIndependentTrainer = normalizedUser?.tenantType === 'independent_trainer';
         if (isIndependentTrainer
             && window.location.pathname !== '/trainer-workspace'
-            && !user.mustChangePassword) {
+            && !normalizedUser.mustChangePassword) {
             window.location.replace('/trainer-workspace');
             return;
         }
         document.body.dataset.topGymAuthenticated = 'true';
         document.body.classList.add('top-gym-navigation-pending');
-        applyNavigation(user);
-        if (user?.mustChangePassword) {
-            showForcedPasswordChange(user);
+        applyNavigation(normalizedUser);
+        if (normalizedUser?.mustChangePassword) {
+            showForcedPasswordChange(normalizedUser);
             return;
         }
         const screen = $('authScreen');
         if (screen) screen.hidden = true;
         document.body.classList.remove('auth-pending', 'auth-locked');
-        if (options.showWelcome && user?.role !== 'PlatformAdmin') showTenantWelcome();
+        if (options.showWelcome && normalizedUser?.role !== 'PlatformAdmin') showTenantWelcome();
     }
 
     function showLogin(message = '', setupRequired = false) {
@@ -524,6 +543,18 @@
             } catch {
                 // Storage may be disabled; authentication must continue normally.
             }
+            const loggedInUser = normalizeAuthUser(data.user);
+            if (!loggedInUser) throw new Error('ØªØ¹Ø°Ø± Ø§Ù„ØªØ­Ù‚Ù‚ Ù…Ù† Ø­Ø§Ù„Ø© Ø§Ù„Ø­Ø³Ø§Ø¨ Ø¨Ø¹Ø¯ ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø¯Ø®ÙˆÙ„.');
+            // The login response is authoritative for the first redirect.
+            // Forced-password always wins over product/workspace routing.
+            if (loggedInUser.mustChangePassword) {
+                window.location.replace('/change-password');
+                return;
+            }
+            if (loggedInUser.tenantType === 'independent_trainer') {
+                window.location.replace('/trainer-workspace');
+                return;
+            }
             const nextUrl = new URL(window.location.href);
             nextUrl.searchParams.set('welcome', '1');
             window.location.assign(nextUrl.toString());
@@ -578,10 +609,17 @@
             const response = await nativeFetch('/api/auth/session', { credentials: 'same-origin', cache: 'no-store' });
             const data = await response.json().catch(() => ({}));
             if (!response.ok) throw new Error(data.error || 'تعذر التحقق من جلسة الدخول.');
-            if (data.authenticated && data.user) {
-                if (data.user.role === 'PlatformAdmin') window.topGymBranding?.apply?.(window.topGymBranding.fallback?.() || {}, 1);
-                else await refreshTenantBranding(data.user);
-                showAuthenticated(data.user, { showWelcome: hasTenantWelcomeFlag() });
+            const user = normalizeAuthUser(data.user);
+            if (data.authenticated && user) {
+                // Forced-password is a neutral auth surface. Do not start
+                // tenant branding/bootstrap work before the password gate.
+                if (user.mustChangePassword) {
+                    showAuthenticated(user);
+                    return;
+                }
+                if (user.role === 'PlatformAdmin') window.topGymBranding?.apply?.(window.topGymBranding.fallback?.() || {}, 1);
+                else await refreshTenantBranding(user);
+                showAuthenticated(user, { showWelcome: hasTenantWelcomeFlag() });
             }
             else showLogin('', Boolean(data.setupRequired));
         } catch (error) {

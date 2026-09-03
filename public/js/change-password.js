@@ -11,6 +11,14 @@
         .trim()
         .toLowerCase()
         .replace(/-/g, '_');
+    const isPasswordChangeRequired = (user) => user?.mustChangePassword === true
+        || user?.mustChangePassword === 1
+        || user?.mustChangePassword === '1'
+        || user?.mustChangePassword === 'true'
+        || user?.must_change_password === true
+        || user?.must_change_password === 1
+        || user?.must_change_password === '1'
+        || user?.must_change_password === 'true';
 
     function setMessage(text = '', type = 'error') {
         if (!message) return;
@@ -64,7 +72,7 @@
         try {
             const user = await currentSession();
             if (!user) return;
-            if (!user.mustChangePassword) {
+            if (!isPasswordChangeRequired(user)) {
                 routeForUser(user);
                 return;
             }
@@ -103,7 +111,7 @@
             // the product route so the decision comes from the fresh server
             // session, without asking the user to log in again.
             const user = await currentSession();
-            if (!user || user.mustChangePassword) {
+            if (!user || isPasswordChangeRequired(user)) {
                 throw new Error('لم يتم تحديث حالة الحساب بعد. أعد المحاولة.');
             }
             routeForUser(user);

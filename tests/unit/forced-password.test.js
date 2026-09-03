@@ -59,7 +59,7 @@ test('forced-password sessions use an isolated surface with no workspace shell',
     assert.match(security, /express\.static\(publicDirectory, \{ index: false/);
     assert.match(server, /if \(user\?\.mustChangePassword\) return response\.redirect\('\/change-password'\)/);
     assert.match(server, /app\.get\(\['\/change-password', '\/change-password\/'\]/);
-    assert.match(authUi, /user\?\.mustChangePassword && window\.location\.pathname !== '\/change-password'/);
+    assert.match(authUi, /normalizedUser\?\.mustChangePassword && window\.location\.pathname !== '\/change-password'/);
     assert.match(authUi, /window\.location\.replace\('\/change-password'\)/);
     assert.match(surface, /data-forced-password-surface="true"/);
     assert.doesNotMatch(surface, /app-shell|dashboardSection|topbar|sidebar|auth-ui\.js/);
@@ -71,11 +71,29 @@ test('forced-password sessions use an isolated surface with no workspace shell',
     assert.match(script, /api\/auth\/change-password/);
 });
 
+test('login response contract resolves forced password before workspace routing', () => {
+    const authUi = read('public/js/auth-ui.js');
+    const controller = read('src/controllers/auth.controller.js');
+    const authService = read('src/services/auth-service.js');
+    const sessionRepository = read('src/repositories/session.repository.js');
+
+    assert.match(authService, /mustChangePassword: Boolean\(row\.must_change_password\)/);
+    assert.match(authService, /return \{ token, expiresAt, user: await safeUserWithPermissions\(user\) \}/);
+    assert.match(controller, /response\.json\(\{ user: result\.user, expiresAt/);
+    assert.match(sessionRepository, /u\.must_change_password/);
+    assert.match(authUi, /function normalizeAuthUser\(user\)/);
+    assert.match(authUi, /normalized\.mustChangePassword = booleanFlag/);
+    assert.match(authUi, /const loggedInUser = normalizeAuthUser\(data\.user\)/);
+    assert.match(authUi, /if \(loggedInUser\.mustChangePassword\)/);
+    assert.match(authUi, /window\.location\.replace\('\/change-password'\)/);
+    assert.match(authUi, /if \(loggedInUser\.tenantType === 'independent_trainer'\)/);
+});
+
 test('post-password routing is resolved from the refreshed session for Gym and Trainer', () => {
     const script = read('public/js/change-password.js');
     assert.match(script, /await request\('\/api\/auth\/change-password'/);
     assert.match(script, /const user = await currentSession\(\)/);
-    assert.match(script, /if \(!user \|\| user\.mustChangePassword\)/);
+    assert.match(script, /if \(!user \|\| isPasswordChangeRequired\(user\)\)/);
     assert.match(script, /const tenantType = normalizeTenantType\(user\)/);
     assert.match(script, /tenantType === 'independent_trainer'/);
     assert.match(script, /tenantType === 'gym'/);
@@ -125,7 +143,8 @@ test('trainer onboarding is capability-driven and does not bootstrap Gym-only AP
     assert.match(app, /if \(!authenticatedUser \|\| isIndependentTrainerTenant\(\)\) return/);
     assert.match(loader, /tenantType \|\| ''\)\.trim\(\)\.toLowerCase\(\) !== 'independent_trainer'/);
     assert.match(loader, /isIndependentTrainer\(\) \|\| !dashboardIsRequested\(\)/);
-    assert.match(authUi, /isIndependentTrainer = String\(user\?\.tenantType \|\| ''\)\.trim\(\)\.toLowerCase\(\) === 'independent_trainer'/);
+    assert.match(authUi, /normalized\.tenantType = String\(user\.tenantType \?\? user\.tenant_type/);
+    assert.match(authUi, /if \(loggedInUser\.tenantType === 'independent_trainer'\)/);
     assert.match(authUi, /window\.location\.replace\('\/trainer-workspace'\)/);
     assert.match(read('public/js/trainer-workspace.js'), /\/api\/trainer\/workspace/);
     assert.doesNotMatch(read('public/js/trainer-workspace.js'), /\/api\/dashboard/);
@@ -139,7 +158,7 @@ test('independent trainer owners cannot receive the Gym application navigation',
     const authUi = read('public/js/auth-ui.js');
     assert.match(permissions, /tenantType \|\| ''\)\.trim\(\)\.toLowerCase\(\) === 'independent_trainer'/);
     assert.match(permissions, /if \(String\(user\?\.tenantType \|\| ''\)\.trim\(\)\.toLowerCase\(\) === 'independent_trainer'\) return \[\]/);
-    assert.match(authUi, /isIndependentTrainer = String\(user\?\.tenantType \|\| ''\)\.trim\(\)\.toLowerCase\(\) === 'independent_trainer'/);
+    assert.match(authUi, /const isIndependentTrainer = normalizedUser\?\.tenantType === 'independent_trainer'/);
     assert.match(authUi, /isOwner && !isIndependentTrainer/);
     assert.match(authUi, /managementPanel\.hidden = !isOwner \|\| isIndependentTrainer/);
 });

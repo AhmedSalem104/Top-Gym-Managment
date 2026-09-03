@@ -119,6 +119,13 @@ function normalizedHost(value) {
         .split(':')[0];
 }
 
+function normalizedTenantType(user) {
+    return String(user?.tenantType ?? user?.tenant_type ?? '')
+        .trim()
+        .toLowerCase()
+        .replace(/-/g, '_');
+}
+
 function isPlatformAdminHost(request) {
     const configuredHosts = String(config.platformAdminHost || '')
         .split(',')
@@ -256,13 +263,17 @@ app.get(['/platform-admin', '/platform-admin/', '/admin-panel', '/admin-panel/']
 
 app.get('/', asyncRoute(async (request, response, next) => {
     if (isPlatformAdminHost(request)) return sendPlatformAdminPage(request, response);
+    response.set({
+        'Cache-Control': 'no-store, no-cache, must-revalidate, private',
+        'X-Auth-Routing-Version': 'forced-password-v3'
+    });
     const user = await authService.getSessionUser(authService.readSessionCookie(request), { includePermissions: false, readOnly: isReadOnlyRequest(request) });
     if (user?.role === 'PlatformAdmin') return response.redirect('/platform-admin');
     if (user?.mustChangePassword) return response.redirect('/change-password');
     // Resolve the product surface at the server boundary as well as in the
     // browser. This prevents a trainer session from ever falling through to
     // the Gym shell when the client redirect is delayed, cached, or skipped.
-    if (String(user?.tenantType || '').trim().toLowerCase() === 'independent_trainer' && !user.mustChangePassword) {
+    if (normalizedTenantType(user) === 'independent_trainer' && !user.mustChangePassword) {
         return response.redirect('/trainer-workspace');
     }
     return next();
@@ -280,15 +291,28 @@ app.get('/register-trainer', (_request, response) => {
     response.sendFile(path.join(publicDirectory, 'register-trainer.html'));
 });
 
-app.get('/trainer-workspace', (_request, response) => {
+app.get('/trainer-workspace', asyncRoute(async (request, response) => {
+    const user = await authService.getSessionUser(authService.readSessionCookie(request), { includePermissions: false, readOnly: isReadOnlyRequest(request) });
+    if (!user) return response.redirect('/');
+    if (user.mustChangePassword) return response.redirect('/change-password');
+    if (normalizedTenantType(user) !== 'independent_trainer') return response.redirect('/');
     response.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    response.set('X-Auth-Routing-Version', 'forced-password-v3');
     response.sendFile(path.join(publicDirectory, 'trainer-workspace.html'));
-});
+}));
 
-app.get(['/change-password', '/change-password/'], (_request, response) => {
+app.get(['/change-password', '/change-password/'], asyncRoute(async (request, response) => {
+    const user = await authService.getSessionUser(authService.readSessionCookie(request), { includePermissions: false, readOnly: isReadOnlyRequest(request) });
+    if (!user) return response.redirect('/');
+    if (!user.mustChangePassword) {
+        return normalizedTenantType(user) === 'independent_trainer'
+            ? response.redirect('/trainer-workspace')
+            : response.redirect('/#dashboard');
+    }
     response.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    response.set('X-Auth-Routing-Version', 'forced-password-v3');
     response.sendFile(path.join(publicDirectory, 'change-password.html'));
-});
+}));
 
 app.get('*', (request, response) => {
     response.sendFile(path.join(publicDirectory, 'index.html'));

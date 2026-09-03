@@ -29,8 +29,8 @@ test('independent trainer uses a dedicated product composition', () => {
 
 test('independent trainer routing is resolved from the authenticated tenant contract', () => {
     assert.match(userRepository, /OUTER APPLY \([\s\S]*?t\.tenant_type[\s\S]*?ut\.is_primary/);
-    assert.match(authUi, /const isIndependentTrainer = String\(user\?\.tenantType \|\| ''\)\.trim\(\)\.toLowerCase\(\) === 'independent_trainer'/);
-    assert.match(server, /String\(user\?\.tenantType \|\| ''\)\.trim\(\)\.toLowerCase\(\) === 'independent_trainer'/);
+    assert.match(authUi, /const isIndependentTrainer = normalizedUser\?\.tenantType === 'independent_trainer'/);
+    assert.match(server, /normalizedTenantType\(user\) === 'independent_trainer'/);
 });
 
 test('independent trainer does not render Gym-only dashboard surfaces', () => {

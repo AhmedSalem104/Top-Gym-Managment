@@ -1,4 +1,24 @@
+const fs = require('node:fs');
+const path = require('node:path');
 const { test, expect } = require('@playwright/test');
+
+const changePasswordHtml = fs.readFileSync(path.join(__dirname, '..', '..', 'public', 'change-password.html'), 'utf8');
+const trainerWorkspaceHtml = fs.readFileSync(path.join(__dirname, '..', '..', 'public', 'trainer-workspace.html'), 'utf8');
+
+async function mockPasswordSurfaceDocument(page) {
+    await page.route('**/change-password**', async (route) => {
+        if (route.request().resourceType() !== 'document') return route.continue();
+        return route.fulfill({ status: 200, contentType: 'text/html; charset=utf-8', body: changePasswordHtml });
+    });
+    await page.route('**/trainer-workspace**', async (route) => {
+        if (route.request().resourceType() !== 'document') return route.continue();
+        return route.fulfill({ status: 200, contentType: 'text/html; charset=utf-8', body: trainerWorkspaceHtml });
+    });
+}
+
+test.beforeEach(async ({ page }) => {
+    await mockPasswordSurfaceDocument(page);
+});
 
 function mockAuth(page, user) {
     let currentUser = { ...user };
@@ -27,6 +47,46 @@ function mockAuth(page, user) {
         }
     };
 }
+
+function mockLoginFlow(page, user) {
+    let authenticated = false;
+    const apiRequests = [];
+    return {
+        apiRequests,
+        install: async () => {
+            await page.route('**/api/**', async (route) => {
+                const request = route.request();
+                const url = new URL(request.url());
+                const pathname = url.pathname;
+                apiRequests.push({ method: request.method(), pathname });
+                if (pathname === '/api/auth/login' && request.method() === 'POST') {
+                    authenticated = true;
+                    return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ user, expiresAt: '2099-01-01T00:00:00.000Z' }) });
+                }
+                if (pathname === '/api/auth/session') {
+                    return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ authenticated, user: authenticated ? user : null }) });
+                }
+                return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({}) });
+            });
+        }
+    };
+}
+
+test('real login response routes a forced Independent Trainer before any workspace reload', async ({ page }) => {
+    const user = { id: 34, name: 'Ù…Ø¯Ø±Ø¨ Ø§Ù„Ø§Ø®ØªØ¨Ø¨Ø§Ø±', role: 'Owner', tenantType: 'independent_trainer', mustChangePassword: true };
+    const mock = mockLoginFlow(page, user);
+    await mock.install();
+    await page.goto('/', { waitUntil: 'networkidle' });
+    await page.locator('#saasEntryContinue').click();
+    await page.locator('#loginEmail').fill('trainer@example.test');
+    await page.locator('#loginPassword').fill('TemporaryPassword123!');
+    await page.locator('#loginForm').evaluate((form) => form.requestSubmit());
+    await expect(page).toHaveURL(/\/change-password$/);
+    await expect(page.locator('[data-forced-password-surface="true"]')).toBeVisible();
+    await expect(page.locator('.app-shell')).toHaveCount(0);
+    expect(mock.apiRequests.map(({ pathname }) => pathname).filter((pathname) => pathname.startsWith('/api/auth/'))).toEqual(['/api/auth/session', '/api/auth/login', '/api/auth/session']);
+    expect(mock.apiRequests.some(({ pathname }) => /\/api\/(dashboard|members|branches|attendance|day-passes|monthly-finance|dashboard-analytics)/.test(pathname))).toBe(false);
+});
 
 test('forced Trainer password state has no Gym shell or Gym requests, then routes to Trainer workspace', async ({ page }, testInfo) => {
     const mock = mockAuth(page, { id: 34, name: 'مدرب الاختبار', role: 'Owner', tenantType: 'independent_trainer', mustChangePassword: true });
