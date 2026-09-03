@@ -51,4 +51,8 @@
 @import url("./components/ui-foundation.css");
 @import url("./components/design-foundation.css");
 @import url("./components/navigation-shell.css");
+/* Canonical visual layer: explicit component ownership keeps the legacy
+   selectors as compatibility fallbacks while this system owns the rendered
+   hierarchy, density and states. */
+@import url("./components/visual-redesign.css");
 @import url("./print.css");

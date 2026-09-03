@@ -213,6 +213,27 @@
   --qr-ink: #0f172a;
   --qr-paper: #ffffff;
 
+  /* Visual redesign tokens. Components consume these semantic roles instead
+     of embedding a page-specific palette. */
+  --rf-page: #f4f7fb;
+  --rf-surface: #ffffff;
+  --rf-surface-raised: #ffffff;
+  --rf-surface-soft: #eef3f8;
+  --rf-ink: #0b1729;
+  --rf-ink-soft: #1d304a;
+  --rf-muted: #66758b;
+  --rf-line: #d9e3ee;
+  --rf-line-soft: #e9eff5;
+  --rf-accent: #1976f3;
+  --rf-accent-strong: #0758c9;
+  --rf-accent-soft: rgb(25 118 243 / .1);
+  --rf-teal: #12a99a;
+  --rf-shadow-sm: 0 5px 16px rgb(11 23 41 / .055);
+  --rf-shadow-md: 0 14px 34px rgb(11 23 41 / .09);
+  --rf-shadow-focus: 0 0 0 4px rgb(25 118 243 / .16);
+  --rf-radius-card: 18px;
+  --rf-radius-control: 11px;
+
   /* Guided builder accents. The page chooses a mode; the theme owns the
      actual palette so the workflow stays readable in both themes. */
   --builder-diet-accent: #0f766e;
@@ -365,4 +386,20 @@ body[data-theme="dark"] {
   --anatomy-rim-light: #7c3aed;
   --qr-ink: #0f172a;
   --qr-paper: #ffffff;
+  --rf-page: #070c15;
+  --rf-surface: #101a29;
+  --rf-surface-raised: #142135;
+  --rf-surface-soft: #0c1523;
+  --rf-ink: #f5f8fc;
+  --rf-ink-soft: #d6e0ee;
+  --rf-muted: #91a2b8;
+  --rf-line: #26374e;
+  --rf-line-soft: #1b2a3d;
+  --rf-accent: #5ca8ff;
+  --rf-accent-strong: #82bbff;
+  --rf-accent-soft: rgb(92 168 255 / .13);
+  --rf-teal: #42d3c5;
+  --rf-shadow-sm: 0 8px 22px rgb(0 0 0 / .18);
+  --rf-shadow-md: 0 18px 42px rgb(0 0 0 / .3);
+  --rf-shadow-focus: 0 0 0 4px rgb(92 168 255 / .2);
 }
