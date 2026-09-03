@@ -196,8 +196,10 @@
     }
 
     function dashboardIsRequested() {
+        const user = window.topGymAuth?.getUser?.();
         return (window.location.hash.slice(1) || 'dashboard') === 'dashboard'
-            && String(window.topGymAuth?.getUser?.()?.tenantType || '').toLowerCase() !== 'independent_trainer';
+            && !user?.mustChangePassword
+            && String(user?.tenantType || '').toLowerCase() !== 'independent_trainer';
     }
 
     function isIndependentTrainer() {

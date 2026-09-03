@@ -906,10 +906,13 @@
                     void loadPricingCatalog();
                     void loadMembersOnly();
                 }
-                if (event.detail?.name === 'dashboard' && !state.dashboard && window.topGymAuth?.isOwner?.()) void loadData();
+                if (event.detail?.name === 'dashboard'
+                    && !state.dashboard
+                    && window.topGymAuth?.isOwner?.()
+                    && !window.topGymAuth?.getUser?.()?.mustChangePassword) void loadData();
             });
             const loadAfterAuth = () => {
-                if (window.topGymAuth?.getUser?.()) void loadData();
+                if (window.topGymAuth?.getUser?.() && !window.topGymAuth.getUser()?.mustChangePassword) void loadData();
             };
             if (window.topGymAuthReady) window.topGymAuthReady.then(loadAfterAuth).catch(() => {});
             else loadAfterAuth();

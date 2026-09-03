@@ -493,14 +493,16 @@
         const pricingDialog = $('pricingDialog');
         if (pricingDialog) new MutationObserver(() => { if (pricingDialog.hasAttribute('open')) pricingDialogOpened(); }).observe(pricingDialog, { attributes: true, attributeFilter: ['open'] });
         const loadAfterAuth = () => {
-            if (!isAuthenticated()) return;
+            const user = window.topGymAuth?.getUser?.() || window.topGymAuth?.currentUser?.();
+            if (!user || user.mustChangePassword) return;
             void loadPricing();
             if (!$('dashboardSection')?.hidden) void loadDashboard();
         };
         if (window.topGymAuthReady) window.topGymAuthReady.then(loadAfterAuth).catch(() => {});
         else loadAfterAuth();
         document.addEventListener('topgym:tab-changed', (event) => {
-            if (event.detail?.name === 'dashboard' && isAuthenticated()) void loadDashboard();
+            const user = window.topGymAuth?.getUser?.() || window.topGymAuth?.currentUser?.();
+            if (event.detail?.name === 'dashboard' && user && !user.mustChangePassword) void loadDashboard();
         });
     }
 

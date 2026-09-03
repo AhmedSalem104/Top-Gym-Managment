@@ -255,6 +255,11 @@
         const panelHost = card?.querySelector('.auth-form-panel');
         if (!screen || !card || !panelHost) return;
         setAuthStage('login');
+        // Session restoration hides the auth screen with auth-pending until
+        // the session decision is complete. A forced-password session is an
+        // authenticated, intentionally locked state, so release that
+        // restoration veil before rendering the password-change form.
+        document.body.classList.remove('auth-pending', 'top-gym-navigation-pending');
         document.body.classList.add('auth-locked');
         screen.hidden = false;
         card.hidden = false;

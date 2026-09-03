@@ -148,6 +148,16 @@
     async function loadBranches() {
         if (!window.topGymAuth?.isReady?.() || !window.topGymAuth.getUser?.()) return;
         const user = window.topGymAuth.getUser();
+        // A forced-password session is authenticated but deliberately locked.
+        // Do not bootstrap tenant/branch data until the password rotation has
+        // completed; the server will correctly reject it, but the UI should
+        // not make that forbidden request during the lock screen.
+        if (user.mustChangePassword) {
+            setTabVisibility(false);
+            const lockedShell = $('branchContextShell');
+            if (lockedShell) lockedShell.hidden = true;
+            return;
+        }
         const isGym = user.tenantType === 'gym';
         setTabVisibility(isGym && user.role === 'Owner');
         const shell = $('branchContextShell');

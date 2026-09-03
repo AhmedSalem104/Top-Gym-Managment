@@ -29,6 +29,26 @@ test('forced first-login password flow is server-enforced and additive', () => {
     assert.match(migration, /IF COL_LENGTH\(N'dbo\.gym_users', N'password_changed_at'\) IS NULL/);
 });
 
+test('forced first-login screen releases the auth restoration veil', () => {
+    const authUi = read('public/js/auth-ui.js');
+    const app = read('public/js/app.js');
+    const loader = read('public/js/feature-loader.js');
+    const branches = read('public/js/branch-context.js');
+    const dayPasses = read('public/js/day-passes.js');
+    const start = authUi.indexOf('function showForcedPasswordChange');
+    const end = authUi.indexOf('\n    function hasTenantWelcomeFlag', start);
+    const block = authUi.slice(start, end);
+
+    assert.notEqual(start, -1);
+    assert.match(block, /classList\.remove\('auth-pending', 'top-gym-navigation-pending'\)/);
+    assert.match(block, /classList\.add\('auth-locked'\)/);
+    assert.match(block, /id = 'forcePasswordChangePanel'/);
+    assert.match(app, /!window\.topGymAuth\?\.getUser\?\.\(\)\?\.mustChangePassword/);
+    assert.match(loader, /!user\?\.mustChangePassword/);
+    assert.match(branches, /if \(user\.mustChangePassword\)/);
+    assert.match(dayPasses, /if \(!user \|\| user\.mustChangePassword\) return/);
+});
+
 test('temporary credential reset is tenant-scoped, transactional, and audit-safe', () => {
     const service = read('src/services/platform-admin-service.js');
     const start = service.indexOf('async function resetTenantUserPassword');
