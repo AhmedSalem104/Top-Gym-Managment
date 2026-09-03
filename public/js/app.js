@@ -197,6 +197,7 @@
         }
 
         async function loadPricingCatalog(force = false) {
+            if (isIndependentTrainerTenant()) return state.pricing;
             if (pricingRequestPromise) return pricingRequestPromise;
             const isFresh = state.pricingLoadedAt && Date.now() - state.pricingLoadedAt < PRICING_CACHE_TTL_MS;
             if (!force && isFresh) return state.pricing;
@@ -261,12 +262,16 @@
             return activeTab ? activeTab === 'dashboard' : true;
         }
 
+        function isIndependentTrainerTenant() {
+            return String(window.topGymAuth?.getUser?.()?.tenantType || '').trim().toLowerCase() === 'independent_trainer';
+        }
+
         async function loadData() {
             const authenticatedUser = window.topGymAuth?.getUser?.();
             // Owners exist in both Gym and Independent Trainer tenants. The
             // shared shell must not bootstrap Gym-only endpoints for a
             // trainer while the auth redirect is settling.
-            if (!authenticatedUser || authenticatedUser.tenantType === 'independent_trainer') return;
+            if (!authenticatedUser || isIndependentTrainerTenant()) return;
             if (dataLoadPromise) return dataLoadPromise;
             const loadPromise = withLoader(async () => {
                 const isOwner = window.topGymAuth?.isOwner?.() === true;
@@ -309,7 +314,7 @@
             return trackedPromise;
         }
         async function loadMembersOnly() {
-            if (!window.topGymAuth?.getUser?.()) return;
+            if (!window.topGymAuth?.getUser?.() || isIndependentTrainerTenant()) return;
             const queryKey = JSON.stringify([$('searchInput')?.value.trim() || '', $('statusFilter')?.value || '', $('sortFilter')?.value || '']);
             if (membersLoadPromise && membersLoadKey === queryKey) return membersLoadPromise;
             if (!membersLoadPromise && membersLastLoadedKey === queryKey && Date.now() - membersLastLoadedAt < 750) return;

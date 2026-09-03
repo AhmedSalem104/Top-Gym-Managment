@@ -416,7 +416,8 @@
     function showAuthenticated(user, options = {}) {
         state.user = user;
         state.ready = true;
-        if (user?.tenantType === 'independent_trainer'
+        const isIndependentTrainer = String(user?.tenantType || '').trim().toLowerCase() === 'independent_trainer';
+        if (isIndependentTrainer
             && window.location.pathname !== '/trainer-workspace'
             && !user.mustChangePassword) {
             window.location.replace('/trainer-workspace');

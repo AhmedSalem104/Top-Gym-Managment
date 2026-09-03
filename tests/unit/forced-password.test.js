@@ -89,10 +89,11 @@ test('trainer onboarding is capability-driven and does not bootstrap Gym-only AP
     const app = read('public/js/app.js');
     const loader = read('public/js/feature-loader.js');
     const authUi = read('public/js/auth-ui.js');
-    assert.match(app, /authenticatedUser\.tenantType === 'independent_trainer'/);
-    assert.match(loader, /tenantType \|\| ''\)\.toLowerCase\(\) !== 'independent_trainer'/);
+    assert.match(app, /function isIndependentTrainerTenant\(\)/);
+    assert.match(app, /if \(!authenticatedUser \|\| isIndependentTrainerTenant\(\)\) return/);
+    assert.match(loader, /tenantType \|\| ''\)\.trim\(\)\.toLowerCase\(\) !== 'independent_trainer'/);
     assert.match(loader, /isIndependentTrainer\(\) \|\| !dashboardIsRequested\(\)/);
-    assert.match(authUi, /tenantType === 'independent_trainer'/);
+    assert.match(authUi, /isIndependentTrainer = String\(user\?\.tenantType \|\| ''\)\.trim\(\)\.toLowerCase\(\) === 'independent_trainer'/);
     assert.match(authUi, /window\.location\.replace\('\/trainer-workspace'\)/);
     assert.match(read('public/js/trainer-workspace.js'), /\/api\/trainer\/workspace/);
     assert.doesNotMatch(read('public/js/trainer-workspace.js'), /\/api\/dashboard/);

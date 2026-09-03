@@ -11,7 +11,16 @@ async function findByEmail(emailNormalized) {
     const pool = await getPool();
     return pool.request()
         .input('emailNormalized', sql.NVarChar(254), emailNormalized)
-        .query('SELECT TOP (1) * FROM dbo.gym_users WHERE email_normalized = @emailNormalized;');
+        .query(`SELECT TOP (1) u.*, primary_tenant.tenant_type
+                FROM dbo.gym_users AS u
+                OUTER APPLY (
+                    SELECT TOP (1) t.tenant_type
+                    FROM dbo.gym_user_tenants AS ut
+                    INNER JOIN dbo.gym_tenants AS t ON t.id=ut.tenant_id
+                    WHERE ut.user_id=u.id AND ut.status='active'
+                    ORDER BY ut.is_primary DESC, ut.tenant_id ASC
+                ) AS primary_tenant
+                WHERE u.email_normalized = @emailNormalized;`);
 }
 
 async function findAuthById(id, executor = null) {

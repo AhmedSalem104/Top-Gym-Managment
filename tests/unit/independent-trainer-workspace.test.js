@@ -10,9 +10,14 @@ const read = (relativePath) => fs.readFileSync(path.join(root, relativePath), 'u
 const workspace = read('public/trainer-workspace.html');
 const script = read('public/js/trainer-workspace.js');
 const gymApp = read('public/index.html');
+const authUi = read('public/js/auth-ui.js');
+const server = read('server.js');
+const userRepository = read('src/repositories/user.repository.js');
 
 test('independent trainer uses a dedicated product composition', () => {
     assert.match(workspace, /data-product-surface="independent-trainer"/);
+    assert.match(workspace, /data-workspace="independent-trainer"/);
+    assert.match(workspace, /data-dashboard-version="trainer-v2"/);
     assert.match(workspace, /trainer-workspace-nav/);
     assert.match(workspace, /id="trainerToday"/);
     assert.match(workspace, /id="trainerClients"/);
@@ -20,6 +25,12 @@ test('independent trainer uses a dedicated product composition', () => {
     assert.match(workspace, /id="trainerPurchases"/);
     assert.match(workspace, /id="trainerReports"/);
     assert.match(workspace, /id="trainerQuickActionsTitle"/);
+});
+
+test('independent trainer routing is resolved from the authenticated tenant contract', () => {
+    assert.match(userRepository, /OUTER APPLY \([\s\S]*?t\.tenant_type[\s\S]*?ut\.is_primary/);
+    assert.match(authUi, /const isIndependentTrainer = String\(user\?\.tenantType \|\| ''\)\.trim\(\)\.toLowerCase\(\) === 'independent_trainer'/);
+    assert.match(server, /String\(user\?\.tenantType \|\| ''\)\.trim\(\)\.toLowerCase\(\) === 'independent_trainer'/);
 });
 
 test('independent trainer does not render Gym-only dashboard surfaces', () => {

@@ -199,11 +199,11 @@
         const user = window.topGymAuth?.getUser?.();
         return (window.location.hash.slice(1) || 'dashboard') === 'dashboard'
             && !user?.mustChangePassword
-            && String(user?.tenantType || '').toLowerCase() !== 'independent_trainer';
+            && String(user?.tenantType || '').trim().toLowerCase() !== 'independent_trainer';
     }
 
     function isIndependentTrainer() {
-        return String(window.topGymAuth?.getUser?.()?.tenantType || '').toLowerCase() === 'independent_trainer';
+        return String(window.topGymAuth?.getUser?.()?.tenantType || '').trim().toLowerCase() === 'independent_trainer';
     }
 
     function scheduleDashboardAnalytics(immediate = false) {
