@@ -49,5 +49,6 @@
 @import url("./responsive.css");
 @import url("./theme.css");
 @import url("./components/ui-foundation.css");
+@import url("./components/design-foundation.css");
 @import url("./components/navigation-shell.css");
 @import url("./print.css");

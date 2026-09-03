@@ -279,7 +279,12 @@
     function normalizeTab(name) {
         if (!validTabs.has(name)) return 'dashboard';
         if (window.topGymAuth?.isReady?.()) {
-            if (!window.topGymAuth.getUser?.()) return 'dashboard';
+            const user = window.topGymAuth.getUser?.();
+            if (!user) return 'dashboard';
+            // Branch management is a Gym-only surface. The backend remains
+            // authoritative, but the client must not route an independent
+            // trainer into a dynamically injected Gym panel during startup.
+            if (name === 'branches' && user.tenantType !== 'gym') return window.topGymPermissions?.firstAccessibleTab?.(user) || 'members';
             if ((name === 'management' || name === 'branding' || name === 'member-payment-methods' || name === 'saas-billing' || name === 'backup-history' || name === 'branches' || name === 'member-subscription-requests' || name === 'portal-analytics') && !window.topGymAuth.isOwner?.()) return window.topGymPermissions?.firstAccessibleTab?.(window.topGymAuth.getUser?.()) || 'members';
             if (!window.topGymAuth.canAccessTab(name)) return window.topGymPermissions?.firstAccessibleTab?.(window.topGymAuth.getUser?.()) || 'members';
         }
@@ -290,6 +295,7 @@
         const overview = document.querySelector('.overview-grid');
         const dashboardHero = document.querySelector('.dashboard-page-actions');
         const dashboardSectionHeading = document.querySelector('.dashboard-section-heading');
+        const dashboardInitialSkeleton = document.getElementById('dashboardInitialSkeleton');
         const workspace = document.querySelector('.workspace');
         const membersSection = document.getElementById('membersSection');
         const expensesSection = document.getElementById('expensesSection');
@@ -335,6 +341,8 @@
         setHidden(dashboardHero, !isDashboard);
         setHidden(dashboardSectionHeading, !isDashboard);
         setHidden(overview, !isDashboard);
+        setHidden(dashboardInitialSkeleton, !isDashboard);
+        dashboardInitialSkeleton?.setAttribute('aria-hidden', String(!isDashboard));
         setHidden(monthlyFinanceSnapshot, !isDashboard);
         setHidden(expensesSection, !isExpenses);
         setHidden(managementSection, !isManagement);

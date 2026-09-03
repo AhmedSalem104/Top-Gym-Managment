@@ -32,7 +32,10 @@
         button.type = 'button';
         button.dataset.pageTab = 'branches';
         button.dataset.ownerOnly = '';
+        button.dataset.branchTabReady = 'true';
         button.setAttribute('aria-selected', 'false');
+        button.setAttribute('aria-label', 'الفروع');
+        button.title = 'الفروع';
         button.innerHTML = '<svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h16"/><path d="M6 20V8l6-4 6 4v12"/><path d="M9 11h.01M15 11h.01M9 15h.01M15 15h.01"/></svg><span>الفروع</span>';
         const store = rail.querySelector('[data-page-tab="store"]');
         rail.insertBefore(button, store?.nextSibling || null);
@@ -77,7 +80,11 @@
 
     function setTabVisibility(show) {
         const tab = document.querySelector('[data-page-tab="branches"]');
-        if (tab) tab.hidden = !show;
+        if (tab) {
+            tab.hidden = !show;
+            tab.setAttribute('aria-hidden', String(!show));
+            tab.toggleAttribute('inert', !show);
+        }
         const panel = $('branchesSection');
         if (!show) {
             if (panel) panel.hidden = true;
