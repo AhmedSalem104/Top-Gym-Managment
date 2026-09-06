@@ -36,6 +36,31 @@ test('Trainer Studio V2 exposes only data-backed trainer routes and keeps explic
     assert.match(script, /data-studio-open-client=.*item\.clientId/);
 });
 
+test('Trainer Studio reuses the tenant-scoped Gym library and automatic plan generator', () => {
+    const routes = read('src/routes/trainer.routes.js');
+    const controller = read('src/controllers/trainer.controller.js');
+    const permissions = read('src/permissions/route-permissions.js');
+    const capabilities = read('src/services/capability-service.js');
+    const script = read('public/js/trainer-studio-v2.js');
+    assert.match(routes, /\/api\/trainer\/library\/catalog/);
+    assert.match(routes, /\/api\/trainer\/intelligence\/workout-suggestions/);
+    assert.match(routes, /\/api\/trainer\/intelligence\/diet-suggestions/);
+    assert.match(controller, /libraryService\.getLibraryCollection\('exercises'/);
+    assert.match(controller, /libraryService\.getLibraryCollection\('foods'/);
+    assert.match(controller, /libraryService\.getLibraryCollection\('muscles'/);
+    assert.match(controller, /intelligenceService\.generateWorkoutSuggestion/);
+    assert.match(controller, /intelligenceService\.generateDietSuggestion/);
+    assert.ok(permissions.includes(String.raw`trainer\/library\/catalog`));
+    assert.ok(permissions.includes(String.raw`trainer\/intelligence\/`));
+    assert.ok(capabilities.includes(String.raw`trainer\/library`));
+    assert.ok(capabilities.includes(String.raw`trainer\/intelligence`));
+    assert.match(script, /\/api\/trainer\/library\/catalog/);
+    assert.match(script, /\/api\/trainer\/intelligence\/workout-suggestions/);
+    assert.match(script, /\/api\/trainer\/intelligence\/diet-suggestions/);
+    assert.match(script, /trainerLibraryState/);
+    assert.match(script, /data-studio-auto-generate/);
+});
+
 test('trainer plan write actions stay behind the trainer route and ownership checks', () => {
     const routes = read('src/routes/trainer.routes.js');
     const controller = read('src/controllers/trainer.controller.js');

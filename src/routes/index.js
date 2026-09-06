@@ -145,7 +145,7 @@ function registerRoutes(app, {
         backupActionRateLimit
     });
     registerSaasRoutes(app, { saasService, asyncRoute, ownerOnly });
-    registerTrainerRoutes(app, { trainerService, trainerCommerceService, trainerStudioService, asyncRoute });
+    registerTrainerRoutes(app, { trainerService, trainerCommerceService, trainerStudioService, libraryService, intelligenceService, asyncRoute });
     registerBranchRoutes(app, { branchService, asyncRoute });
     registerStockLocationRoutes(app, { stockLocationService, asyncRoute });
     registerBarRoutes(app, { barService, asyncRoute });

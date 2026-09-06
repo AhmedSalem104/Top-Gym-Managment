@@ -10,10 +10,17 @@ function trainerOnly(request, response, next) {
     return next();
 }
 
-function registerTrainerRoutes(app, { trainerService, trainerCommerceService, trainerStudioService, asyncRoute }) {
-    const controller = createTrainerController({ trainerService, trainerCommerceService, trainerStudioService });
+function registerTrainerRoutes(app, { trainerService, trainerCommerceService, trainerStudioService, libraryService, intelligenceService, asyncRoute }) {
+    const controller = createTrainerController({ trainerService, trainerCommerceService, trainerStudioService, libraryService, intelligenceService });
     const guard = [trainerOnly];
     app.get('/api/trainer/workspace', ...guard, asyncRoute(controller.workspace));
+    app.get('/api/trainer/library/options', ...guard, asyncRoute(controller.libraryOptions));
+    app.get('/api/trainer/library/catalog', ...guard, asyncRoute(controller.libraryCatalog));
+    app.get('/api/trainer/library/:type', ...guard, asyncRoute(controller.libraryCollection));
+    app.get('/api/trainer/library/:type/:id', ...guard, asyncRoute(controller.libraryItem));
+    app.post('/api/trainer/intelligence/workout-suggestions', ...guard, asyncRoute(controller.workoutSuggestion));
+    app.post('/api/trainer/intelligence/diet-suggestions', ...guard, asyncRoute(controller.dietSuggestion));
+    app.post('/api/trainer/intelligence/refine', ...guard, asyncRoute(controller.refineSuggestion));
     app.get('/api/trainer/reports/summary', ...guard, asyncRoute(controller.reports));
     app.get('/api/trainer/clients', ...guard, asyncRoute(controller.clients));
     app.get('/api/trainer/follow-up', ...guard, asyncRoute(controller.followUp));

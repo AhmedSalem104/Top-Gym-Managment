@@ -1,8 +1,30 @@
 'use strict';
 
-function createTrainerController({ trainerService, trainerCommerceService, trainerStudioService }) {
+function createTrainerController({ trainerService, trainerCommerceService, trainerStudioService, libraryService, intelligenceService }) {
     return {
         workspace: async (request, response) => response.json(await trainerService.getWorkspace({ readOnly: request.readOnlyRequest })),
+        libraryOptions: async (request, response) => {
+            response.set('Cache-Control', 'private, max-age=20, stale-while-revalidate=60');
+            response.json(await libraryService.getLibraryOptions({ readOnly: request.readOnlyRequest }));
+        },
+        libraryCatalog: async (request, response) => {
+            response.set('Cache-Control', 'private, max-age=20, stale-while-revalidate=60');
+            const [options, exercises, foods, muscles] = await Promise.all([
+                libraryService.getLibraryOptions({ readOnly: request.readOnlyRequest }),
+                libraryService.getLibraryCollection('exercises', { page: 1, pageSize: 100 }, { readOnly: request.readOnlyRequest }),
+                libraryService.getLibraryCollection('foods', { page: 1, pageSize: 100 }, { readOnly: request.readOnlyRequest }),
+                libraryService.getLibraryCollection('muscles', { page: 1, pageSize: 100 }, { readOnly: request.readOnlyRequest })
+            ]);
+            response.json({ options, exercises: exercises.items, foods: foods.items, muscles: muscles.items, pagination: { exercises: exercises.pagination, foods: foods.pagination, muscles: muscles.pagination } });
+        },
+        libraryCollection: async (request, response) => {
+            response.set('Cache-Control', 'private, max-age=20, stale-while-revalidate=60');
+            response.json(await libraryService.getLibraryCollection(request.params.type, request.query, { readOnly: request.readOnlyRequest }));
+        },
+        libraryItem: async (request, response) => response.json({ item: await libraryService.getLibraryItem(request.params.type, request.params.id, { readOnly: request.readOnlyRequest }) }),
+        workoutSuggestion: async (request, response) => response.status(201).json(await intelligenceService.generateWorkoutSuggestion(request.body || {}, { actorUserId: request.auth?.id })),
+        dietSuggestion: async (request, response) => response.status(201).json(await intelligenceService.generateDietSuggestion(request.body || {}, { actorUserId: request.auth?.id })),
+        refineSuggestion: async (request, response) => response.status(201).json(await intelligenceService.refineSuggestion(request.body || {}, { actorUserId: request.auth?.id })),
         reports: async (request, response) => response.json(await trainerService.getReports({ from: request.query.from, to: request.query.to, readOnly: request.readOnlyRequest })),
         clients: async (request, response) => response.json(await trainerService.listClients({ search: request.query.search, page: request.query.page, pageSize: request.query.pageSize, readOnly: request.readOnlyRequest })),
         followUp: async (request, response) => response.json(await trainerService.getFollowUp({ limit: request.query.limit, readOnly: request.readOnlyRequest })),

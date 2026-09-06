@@ -88,6 +88,10 @@ const ROUTE_PERMISSION_RULES = Object.freeze([
     // vocabulary. Tenant type and capability enforcement still happen in the
     // authentication/SaaS middleware; these rules only cover user actions.
     { pattern: /^\/trainer\/workspace$/, methods: ['GET'], all: [PERMISSIONS.DASHBOARD_READ] },
+    { pattern: /^\/trainer\/library\/options$/, methods: ['GET'], all: [PERMISSIONS.LIBRARY_READ] },
+    { pattern: /^\/trainer\/library\/catalog$/, methods: ['GET'], all: [PERMISSIONS.LIBRARY_READ] },
+    { pattern: /^\/trainer\/library\/(?:foods|exercises|muscles)(?:\/\d+)?$/, methods: ['GET'], all: [PERMISSIONS.LIBRARY_READ] },
+    { pattern: /^\/trainer\/intelligence\/(?:workout-suggestions|diet-suggestions|refine)$/, methods: ['POST'], all: [PERMISSIONS.INTELLIGENCE_GENERATE] },
     { pattern: /^\/trainer\/follow-up$/, methods: ['GET'], all: [PERMISSIONS.COACHING_READ] },
     { pattern: /^\/trainer\/reports\/summary$/, methods: ['GET'], all: [PERMISSIONS.REPORTS_READ] },
     { pattern: /^\/trainer\/clients(?:\/|$)/, methods: ['GET'], all: [PERMISSIONS.COACHING_READ] },

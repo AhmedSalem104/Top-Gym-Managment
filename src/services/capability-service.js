@@ -111,6 +111,8 @@ const PATH_CAPABILITIES = Object.freeze([
     [/^\/trainer\/tasks(?:\/|$)/, 'tasks'],
     [/^\/trainer\/templates(?:\/|$)/, 'templates'],
     [/^\/trainer\/portal(?:\/|$)/, 'portal'],
+    [/^\/trainer\/library(?:\/|$)/, 'library'],
+    [/^\/trainer\/intelligence(?:\/|$)/, 'ai'],
     [/^\/trainer\/workspace(?:\/|$)/, 'clients'],
     [/^\/trainer\/follow-up(?:\/|$)/, 'clients'],
     [/^\/trainer\/reports(?:\/|$)/, 'reports'],
@@ -201,6 +203,7 @@ function requiredFeature(path = '') {
     // Trainer reports use the same commercial feature entitlement as the
     // existing reports surface without changing the legacy path contract.
     if (value.startsWith('/trainer/reports')) return 'reports';
+    if (value.startsWith('/trainer/intelligence')) return 'intelligence';
     if (value.startsWith('/intelligence')) return 'intelligence';
     if (value.startsWith('/store')) return 'store';
     if (value.startsWith('/bar')) return 'bar';

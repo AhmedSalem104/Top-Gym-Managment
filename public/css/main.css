@@ -243,12 +243,16 @@
      the Vanilla surface does not need a second, page-owned palette. */
   --studio-ink: #142033;
   --studio-muted: #66758b;
-  --studio-line: #dfe6ef;
+  --studio-line: #d9e2ef;
   --studio-surface: #ffffff;
   --studio-surface-soft: #f4f7fb;
-  --studio-navy: #142a46;
-  --studio-accent: #18b89a;
-  --studio-accent-strong: #0d8e79;
+  --studio-navy: #102744;
+  --studio-brand: #1769e8;
+  --studio-brand-strong: #0f56c9;
+  --studio-brand-soft: rgb(23 105 232 / .1);
+  --studio-brand-border: rgb(23 105 232 / .24);
+  --studio-accent: var(--studio-brand);
+  --studio-accent-strong: var(--studio-brand-strong);
   --studio-warning: #bd7517;
   --studio-danger: #b44959;
 
@@ -426,8 +430,12 @@ body[data-theme="dark"] {
   --studio-surface: #142438;
   --studio-surface-soft: #102032;
   --studio-navy: #0d1b2b;
-  --studio-accent: #42d3c5;
-  --studio-accent-strong: #91ead9;
+  --studio-brand: #62a7ff;
+  --studio-brand-strong: #8dc1ff;
+  --studio-brand-soft: rgb(98 167 255 / .14);
+  --studio-brand-border: rgb(98 167 255 / .32);
+  --studio-accent: var(--studio-brand);
+  --studio-accent-strong: var(--studio-brand-strong);
   --studio-warning: #f4b84a;
   --studio-danger: #ff8495;
 }

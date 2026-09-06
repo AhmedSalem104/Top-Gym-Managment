@@ -11,7 +11,7 @@ function installTrainerRuntime(page) {
     return {
         requests,
         async install() {
-            await page.route('**/trainer-workspace*', async (route) => {
+            await page.route('**/trainer-workspace/**', async (route) => {
                 if (route.request().resourceType() === 'document') return route.fulfill({ status: 200, contentType: 'text/html; charset=utf-8', body: trainerHtml });
                 return route.continue();
             });
@@ -38,6 +38,10 @@ function installTrainerRuntime(page) {
                 if (pathname === '/api/trainer/training-plans') return body({ plans: [] });
                 if (pathname === '/api/trainer/nutrition-plans') return body({ plans: [] });
                 if (pathname === '/api/coaching/catalog') return body({ exercises: [{ id: 1, nameAr: 'سكوات', bodyPart: 'أرجل' }], foods: [{ id: 1, nameAr: 'شوفان' }] });
+                if (pathname === '/api/trainer/library/catalog') return body({ options: { counts: { exercises: 1, foods: 1, muscles: 1 } }, exercises: [{ id: 1, nameAr: 'Squat', targetMuscleNameAr: 'Legs', bodyPart: 'Legs' }], foods: [{ id: 1, nameAr: 'Oats', calories: 380, protein: 13, servingSize: 100, servingUnit: 'g' }], muscles: [{ id: 1, nameAr: 'Quadriceps', bodyPart: 'Legs' }] });
+                if (pathname === '/api/trainer/intelligence/workout-suggestions') return body({ type: 'workout', suggestion: { memberId: 1, name: 'Generated workout', description: 'Reviewable draft', daysPerWeek: 3, durationWeeks: 4, routines: [{ name: 'Day 1', exercises: [{ exerciseId: 1 }] }] }, warnings: [], requiresReview: true });
+                if (pathname === '/api/trainer/intelligence/diet-suggestions') return body({ type: 'diet', suggestion: { memberId: 1, name: 'Generated diet', description: 'Reviewable draft', mealsPerDay: 4, targetCalories: 2200, meals: [{ name: 'Breakfast', items: [{ foodId: 1 }] }] }, warnings: [], requiresReview: true });
+                if (pathname === '/api/trainer/intelligence/refine') return body({ type: 'workout', draft: {}, changes: [], warnings: [], requiresReview: true });
                 return body({});
             });
         }
@@ -65,6 +69,12 @@ test('Trainer Studio V2 renders a separate shell and navigates supported routes'
     else await expect(page.locator('#trainerStudioSidebar')).toBeAttached();
     await expect(page.locator('[data-studio-route="dashboard"]')).toHaveClass(/is-active/);
     await expect(page.locator('#trainerMetricClients')).toHaveText('1');
+    await expect(page.locator('.trainer-studio-topbar')).toBeVisible();
+    await expect(page.locator('#trainerWorkspaceLogout')).toBeVisible();
+    await expect(page.locator('.trainer-welcome-strip')).toBeHidden();
+    await page.locator('#trainerAddClient').click();
+    await expect(page.locator('#trainerClientDialog')).toBeVisible();
+    await page.locator('#trainerClientDialogClose').click();
     await expect(page.locator('[data-page-tab]')).toHaveCount(0);
     await expect(page.locator('[data-studio-route="branches"]')).toHaveCount(0);
     expect(runtime.requests.some(({ pathname }) => /\/api\/(dashboard|branches|attendance|day-passes|monthly-finance|dashboard-analytics)/.test(pathname))).toBe(false);
@@ -76,8 +86,17 @@ test('Trainer Studio V2 renders a separate shell and navigates supported routes'
     await expect(page).toHaveURL(/\/trainer-workspace\/training$/);
     await expect(page.locator('#trainerStudioDynamicView')).toBeVisible();
     await expect(page.locator('[data-studio-open-editor]')).toBeVisible();
+    await expect(page.locator('[data-studio-auto-generate="training"]')).toBeVisible();
     await page.locator('[data-studio-open-editor]').click();
     await expect(page.locator('#trainerStudioPlanForm')).toBeVisible();
+    await clickStudioRoute(page, 'training');
+    await page.locator('[data-studio-auto-generate="training"]').click();
+    await expect(page.locator('#trainerStudioAutoForm')).toBeVisible();
+    await page.locator('[data-studio-close-auto]').click();
+    await clickStudioRoute(page, 'exercises');
+    await expect(page.locator('[data-trainer-library-tab="exercises"]')).toBeVisible();
+    await expect(page.locator('[data-trainer-library-tab="foods"]')).toBeVisible();
+    await expect(page.locator('[data-trainer-library-tab="muscles"]')).toBeVisible();
     await assertNoOverflow(page);
     await page.screenshot({ path: testInfo.outputPath('trainer-studio-v2-routes.png'), fullPage: true });
 });
