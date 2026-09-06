@@ -727,12 +727,52 @@ body .auth-form-heading h2 {
   font-size: clamp(1.5rem, 3vw, 2rem);
 }
 
-body .auth-form .auth-input-wrap > input:not([type="checkbox"]):not([type="radio"]),
-body .auth-form .auth-password-wrap > input:not([type="checkbox"]):not([type="radio"]) {
+body .auth-form:not(#loginForm) .auth-input-wrap > input:not([type="checkbox"]):not([type="radio"]),
+body .auth-form:not(#loginForm) .auth-password-wrap > input:not([type="checkbox"]):not([type="radio"]) {
   min-height: 50px;
   border-color: var(--rf-line);
   border-radius: var(--rf-radius-control);
   background: var(--rf-surface-raised);
+}
+
+/* The reference login control is a compact two-state switch. Keep the
+   existing data-theme click contract while making both states visible. */
+.auth-screen[data-auth-stage="login"] .auth-theme-toggle {
+  position: absolute;
+  width: 112px;
+  min-height: 44px;
+  justify-content: space-between;
+  padding: 4px 11px;
+  border-radius: 999px;
+  overflow: hidden;
+}
+.auth-screen[data-auth-stage="login"] .auth-theme-toggle::before {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 48px;
+  height: 36px;
+  border-radius: 999px;
+  background: var(--auth-blue);
+  box-shadow: 0 6px 14px rgb(23 105 232 / .26);
+  content: "";
+  transition: left .18s ease, right .18s ease;
+}
+.auth-screen[data-auth-stage="login"] .auth-theme-toggle .theme-toggle-icon-dark,
+.auth-screen[data-auth-stage="login"] .auth-theme-toggle .theme-toggle-icon-light {
+  position: relative;
+  z-index: 1;
+  display: block !important;
+  width: 19px;
+  height: 19px;
+}
+html[data-theme="dark"] .auth-screen[data-auth-stage="login"] .auth-theme-toggle::before {
+  left: 3px;
+  right: auto;
+}
+html:not([data-theme="dark"]) .auth-screen[data-auth-stage="login"] .auth-theme-toggle::before {
+  right: 3px;
+  left: auto;
 }
 
 body .auth-submit {
