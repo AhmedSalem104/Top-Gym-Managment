@@ -39,9 +39,13 @@ const INDEPENDENT_TRAINER_BASELINE_CAPABILITIES = Object.freeze([
     'nutrition',
     'assessments',
     'progress',
+    'goals',
     'sessions',
     'packages',
     'payments',
+    'notifications',
+    'tasks',
+    'templates',
     'reports',
     'portal',
     'ai',
@@ -63,7 +67,8 @@ const IMPLEMENTED_CAPABILITIES_BY_TENANT_TYPE = Object.freeze({
     // middleware still performs the independent tenant/member lookup.
     [TENANT_TYPES.INDEPENDENT_TRAINER]: Object.freeze([
         'clients', 'coaching', 'nutrition', 'assessments', 'progress',
-        'ai', 'library', 'branding', 'sessions', 'packages', 'payments', 'portal', 'reports'
+        'goals', 'ai', 'library', 'branding', 'sessions', 'packages', 'payments',
+        'notifications', 'tasks', 'templates', 'portal', 'reports'
     ])
 });
 
@@ -96,11 +101,15 @@ const PATH_CAPABILITIES = Object.freeze([
     [/^\/trainer\/clients(?:\/|$)/, 'clients'],
     [/^\/trainer\/assessments(?:\/|$)/, 'assessments'],
     [/^\/trainer\/progress(?:\/|$)/, 'progress'],
+    [/^\/trainer\/goals(?:\/|$)/, 'goals'],
     [/^\/trainer\/training-plans(?:\/|$)/, 'coaching'],
     [/^\/trainer\/nutrition-plans(?:\/|$)/, 'nutrition'],
     [/^\/trainer\/sessions(?:\/|$)/, 'sessions'],
     [/^\/trainer\/packages(?:\/|$)/, 'packages'],
     [/^\/trainer\/payments(?:\/|$)/, 'payments'],
+    [/^\/trainer\/notifications(?:\/|$)/, 'notifications'],
+    [/^\/trainer\/tasks(?:\/|$)/, 'tasks'],
+    [/^\/trainer\/templates(?:\/|$)/, 'templates'],
     [/^\/trainer\/portal(?:\/|$)/, 'portal'],
     [/^\/trainer\/workspace(?:\/|$)/, 'clients'],
     [/^\/trainer\/follow-up(?:\/|$)/, 'clients'],

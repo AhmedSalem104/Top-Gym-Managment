@@ -35,7 +35,8 @@ flows and WCAG conformance remain separate release checks.
 | Platform Admin forbidden | `/platform-admin-forbidden` | `public/platform-admin-forbidden.html` | DISCOVERED · REVIEWED · NO_CHANGE_NEEDED · FUNCTIONAL_TESTED · VISUAL_TESTED |
 | Register Gym | `/register-gym` | `public/register-gym.html` | DISCOVERED · REVIEWED · UPDATED · FUNCTIONAL_TESTED · VISUAL_TESTED |
 | Register Independent Trainer | `/register-trainer` | `public/register-trainer.html` | DISCOVERED · REVIEWED · UPDATED · FUNCTIONAL_TESTED · VISUAL_TESTED |
-| Trainer Workspace | `/trainer-workspace` | `public/trainer-workspace.html` | DISCOVERED · REVIEWED · UPDATED · FUNCTIONAL_TESTED · VISUAL_TESTED |
+| Trainer Studio V2 shell | `/trainer-workspace` and `/trainer-workspace/<view>` | `public/trainer-workspace.html`, `public/js/trainer-studio-v2.js` | DISCOVERED · REVIEWED · UPDATED · FUNCTIONAL_TESTED · VISUAL_TESTED |
+| Trainer Studio V2 data surfaces | `/trainer-workspace/dashboard`, `/clients`, `/calendar`, `/sessions`, `/training`, `/nutrition`, `/exercises`, `/measurements`, `/progress`, `/goals`, `/checkins`, `/packages`, `/sales`, `/renewals`, `/finance`, `/reports`, `/notifications`, `/tasks`, `/templates`, `/portal`, `/settings` | `public/js/trainer-studio-v2.js` | DISCOVERED · REVIEWED · FUNCTIONAL_TESTED · RESPONSIVE_REVIEWED · LIGHT_REVIEWED · DARK_REVIEWED · RTL_REVIEWED · ACCESSIBILITY_REVIEWED · VISUAL_TESTED |
 
 ## Gym application views
 

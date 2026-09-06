@@ -40,7 +40,9 @@ test('database readiness audit finds the canonical migration set safe at source 
         '023-stock-locations-and-transfers.sql',
         '024-bar-pos-recipes.sql',
         '025-bar-modifiers.sql',
-        '026-branch-plan-limits.sql'
+        '026-branch-plan-limits.sql',
+        '027-trainer-studio-goals-templates.sql',
+        '028-trainer-action-center.sql'
     ]);
     assert.deepEqual(report.migrationFindings, []);
     assert.equal(report.schemaReview.status, 'REQUIRES STAGING VERIFICATION');

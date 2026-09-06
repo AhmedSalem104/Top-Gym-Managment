@@ -234,6 +234,19 @@
   --rf-radius-card: 18px;
   --rf-radius-control: 11px;
 
+  /* Trainer Studio V2 semantic roles. Kept in the canonical token graph so
+     the Vanilla surface does not need a second, page-owned palette. */
+  --studio-ink: #142033;
+  --studio-muted: #66758b;
+  --studio-line: #dfe6ef;
+  --studio-surface: #ffffff;
+  --studio-surface-soft: #f4f7fb;
+  --studio-navy: #142a46;
+  --studio-accent: #18b89a;
+  --studio-accent-strong: #0d8e79;
+  --studio-warning: #bd7517;
+  --studio-danger: #b44959;
+
   /* Guided builder accents. The page chooses a mode; the theme owns the
      actual palette so the workflow stays readable in both themes. */
   --builder-diet-accent: #0f766e;
@@ -402,4 +415,14 @@ body[data-theme="dark"] {
   --rf-shadow-sm: 0 8px 22px rgb(0 0 0 / .18);
   --rf-shadow-md: 0 18px 42px rgb(0 0 0 / .3);
   --rf-shadow-focus: 0 0 0 4px rgb(92 168 255 / .2);
+  --studio-ink: #edf6ff;
+  --studio-muted: #9db0c4;
+  --studio-line: #26394e;
+  --studio-surface: #142438;
+  --studio-surface-soft: #102032;
+  --studio-navy: #0d1b2b;
+  --studio-accent: #42d3c5;
+  --studio-accent-strong: #91ead9;
+  --studio-warning: #f4b84a;
+  --studio-danger: #ff8495;
 }

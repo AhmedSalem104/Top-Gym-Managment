@@ -27,6 +27,7 @@ const { registerBranchRoutes } = require('./branch.routes');
 const { registerStockLocationRoutes } = require('./stock-location.routes');
 const { registerBarRoutes } = require('./bar.routes');
 const { platformOnly } = require('../middleware/platform.middleware');
+const trainerStudioService = require('../services/trainer-studio-service');
 
 function createHealthHandler({ getPool, getStorageStatus = () => ({ status: 'not_configured' }), now = () => performance.now() } = {}) {
     return async (request, response) => {
@@ -144,7 +145,7 @@ function registerRoutes(app, {
         backupActionRateLimit
     });
     registerSaasRoutes(app, { saasService, asyncRoute, ownerOnly });
-    registerTrainerRoutes(app, { trainerService, trainerCommerceService, asyncRoute });
+    registerTrainerRoutes(app, { trainerService, trainerCommerceService, trainerStudioService, asyncRoute });
     registerBranchRoutes(app, { branchService, asyncRoute });
     registerStockLocationRoutes(app, { stockLocationService, asyncRoute });
     registerBarRoutes(app, { barService, asyncRoute });

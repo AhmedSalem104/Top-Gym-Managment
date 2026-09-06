@@ -18,6 +18,10 @@ function trainerError(message, statusCode = 400, code = 'TRAINER_ERROR') {
     return error;
 }
 
+function getTrainerCommerceService() {
+    return require('./trainer-commerce-service');
+}
+
 function positiveId(value, label = 'المعرّف') {
     const id = Number(value);
     if (!Number.isInteger(id) || id <= 0) throw trainerError(`${label} غير صالح.`, 400, 'INVALID_IDENTIFIER');
@@ -240,13 +244,17 @@ async function getClient(memberIdValue, { readOnly = false } = {}) {
     const row = await assertTrainerClient(memberIdValue, { readOnly });
     await coachingService.ensureCoachingTables({ seedLibrary: false, readOnly });
     const memberId = Number(row.id);
-    const [measurements, checkins, trainingPlans, nutritionPlans] = await Promise.all([
+    const commerceService = getTrainerCommerceService();
+    const [measurements, checkins, trainingPlans, nutritionPlans, purchases, sessions, payments] = await Promise.all([
         coachingService.getMeasurements(memberId, { readOnly }),
         coachingService.getCheckins(memberId, { readOnly }),
         coachingService.getWorkoutPrograms({ memberId, readOnly }),
-        coachingService.getDietPlans({ memberId, readOnly })
+        coachingService.getDietPlans({ memberId, readOnly }),
+        commerceService.listPurchases({ memberId, readOnly: true }),
+        commerceService.listSessions({ memberId, readOnly: true }),
+        commerceService.listPayments({ memberId, readOnly: true })
     ]);
-    return { client: mapClient(row), measurements, checkins, trainingPlans, nutritionPlans };
+    return { client: mapClient(row), measurements, checkins, trainingPlans, nutritionPlans, purchases, sessions, payments };
 }
 
 async function getClientPortalAccess(memberIdValue, { request = null, userId = null } = {}) {
@@ -439,6 +447,10 @@ async function deleteTrainingPlan(id) {
     const memberId = await assertOwnedCoachingPlan('training', id);
     return coachingService.deleteWorkoutProgram(id, memberId);
 }
+async function setTrainingPlanStatus(id, status) {
+    await assertOwnedCoachingPlan('training', id);
+    return coachingService.setWorkoutProgramStatus(id, status);
+}
 async function listNutritionPlans(query) { await assertTrainerTenant(); return coachingService.getDietPlans(query); }
 async function createNutritionPlan(body) { await assertTrainerClient(body.memberId || body.clientId); return coachingService.createDietPlan(body); }
 async function updateNutritionPlan(id, body) {
@@ -450,6 +462,10 @@ async function updateNutritionPlan(id, body) {
 async function deleteNutritionPlan(id) {
     const memberId = await assertOwnedCoachingPlan('nutrition', id);
     return coachingService.deleteDietPlan(id, memberId);
+}
+async function setNutritionPlanStatus(id, status) {
+    await assertOwnedCoachingPlan('nutrition', id);
+    return coachingService.setDietPlanStatus(id, status);
 }
 
 module.exports = {
@@ -465,6 +481,8 @@ module.exports = {
     deleteMeasurement,
     deleteNutritionPlan,
     deleteTrainingPlan,
+    setNutritionPlanStatus,
+    setTrainingPlanStatus,
     getCheckins,
     getClient,
     getClientPortalAccess,

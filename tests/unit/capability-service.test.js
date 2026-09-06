@@ -15,6 +15,10 @@ test('central capability resolution preserves Gym and exposes only shipped Train
     assert.equal(trainer.capabilities.portal, true);
     assert.equal(trainer.capabilities.sessions, true);
     assert.equal(trainer.capabilities.packages, true);
+    assert.equal(trainer.capabilities.goals, true);
+    assert.equal(trainer.capabilities.notifications, true);
+    assert.equal(trainer.capabilities.tasks, true);
+    assert.equal(trainer.capabilities.templates, true);
     assert.ok(!trainer.unsupportedCapabilities.includes('portal'));
     assert.equal(trainer.capabilities.reports, true);
     assert.ok(!trainer.unsupportedCapabilities.includes('reports'));
@@ -26,6 +30,10 @@ test('capability enforcement preserves plan-gated server-side behavior', () => {
     assert.equal(capabilityService.requiredCapability('/dashboard'), 'dashboard');
     assert.equal(capabilityService.requiredCapability('/day-passes/summary'), 'day_passes');
     assert.equal(capabilityService.requiredCapability('/monthly-finance'), 'finance');
+    assert.equal(capabilityService.requiredCapability('/trainer/goals'), 'goals');
+    assert.equal(capabilityService.requiredCapability('/trainer/notifications'), 'notifications');
+    assert.equal(capabilityService.requiredCapability('/trainer/tasks'), 'tasks');
+    assert.equal(capabilityService.requiredCapability('/trainer/templates'), 'templates');
     assert.throws(
         () => capabilityService.assertCapabilityAccess({ tenantType: 'independent_trainer', path: '/day-passes' }),
         (error) => error.code === 'CAPABILITY_NOT_ENABLED' && error.statusCode === 503

@@ -10,8 +10,8 @@ function trainerOnly(request, response, next) {
     return next();
 }
 
-function registerTrainerRoutes(app, { trainerService, trainerCommerceService, asyncRoute }) {
-    const controller = createTrainerController({ trainerService, trainerCommerceService });
+function registerTrainerRoutes(app, { trainerService, trainerCommerceService, trainerStudioService, asyncRoute }) {
+    const controller = createTrainerController({ trainerService, trainerCommerceService, trainerStudioService });
     const guard = [trainerOnly];
     app.get('/api/trainer/workspace', ...guard, asyncRoute(controller.workspace));
     app.get('/api/trainer/reports/summary', ...guard, asyncRoute(controller.reports));
@@ -34,10 +34,12 @@ function registerTrainerRoutes(app, { trainerService, trainerCommerceService, as
     app.get('/api/trainer/training-plans', ...guard, asyncRoute(controller.trainingPlans));
     app.post('/api/trainer/training-plans', ...guard, asyncRoute(controller.createTrainingPlan));
     app.patch('/api/trainer/training-plans/:id', ...guard, asyncRoute(controller.updateTrainingPlan));
+    app.patch('/api/trainer/training-plans/:id/status', ...guard, asyncRoute(controller.setTrainingPlanStatus));
     app.delete('/api/trainer/training-plans/:id', ...guard, asyncRoute(controller.deleteTrainingPlan));
     app.get('/api/trainer/nutrition-plans', ...guard, asyncRoute(controller.nutritionPlans));
     app.post('/api/trainer/nutrition-plans', ...guard, asyncRoute(controller.createNutritionPlan));
     app.patch('/api/trainer/nutrition-plans/:id', ...guard, asyncRoute(controller.updateNutritionPlan));
+    app.patch('/api/trainer/nutrition-plans/:id/status', ...guard, asyncRoute(controller.setNutritionPlanStatus));
     app.delete('/api/trainer/nutrition-plans/:id', ...guard, asyncRoute(controller.deleteNutritionPlan));
     app.get('/api/trainer/packages', ...guard, asyncRoute(controller.packages));
     app.post('/api/trainer/packages', ...guard, asyncRoute(controller.createPackage));
@@ -51,6 +53,20 @@ function registerTrainerRoutes(app, { trainerService, trainerCommerceService, as
     app.post('/api/trainer/sessions', ...guard, asyncRoute(controller.createSession));
     app.patch('/api/trainer/sessions/:id', ...guard, asyncRoute(controller.updateSession));
     app.patch('/api/trainer/sessions/:id/status', ...guard, asyncRoute(controller.setSessionStatus));
+    app.get('/api/trainer/goals', ...guard, asyncRoute(controller.goals));
+    app.post('/api/trainer/goals', ...guard, asyncRoute(controller.createGoal));
+    app.patch('/api/trainer/goals/:id', ...guard, asyncRoute(controller.updateGoal));
+    app.patch('/api/trainer/goals/:id/status', ...guard, asyncRoute(controller.setGoalStatus));
+    app.delete('/api/trainer/goals/:id', ...guard, asyncRoute(controller.deleteGoal));
+    app.get('/api/trainer/notifications', ...guard, asyncRoute(controller.notifications));
+    app.get('/api/trainer/tasks', ...guard, asyncRoute(controller.tasks));
+    app.post('/api/trainer/tasks', ...guard, asyncRoute(controller.createTask));
+    app.patch('/api/trainer/tasks/:id', ...guard, asyncRoute(controller.updateTask));
+    app.post('/api/trainer/tasks/:id/dismiss', ...guard, asyncRoute(controller.dismissTask));
+    app.get('/api/trainer/templates', ...guard, asyncRoute(controller.templates));
+    app.post('/api/trainer/templates', ...guard, asyncRoute(controller.createTemplate));
+    app.patch('/api/trainer/templates/:id', ...guard, asyncRoute(controller.updateTemplate));
+    app.post('/api/trainer/templates/:id/instantiate', ...guard, asyncRoute(controller.instantiateTemplate));
 }
 
 module.exports = { registerTrainerRoutes, trainerOnly };

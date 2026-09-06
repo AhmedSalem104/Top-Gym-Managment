@@ -235,6 +235,12 @@ does not provide the security boundary.
 | POST | `/api/trainer/package-purchases/:id/refunds` | Independent Trainer; refund permission |
 | GET/POST/PATCH | `/api/trainer/sessions` | Independent Trainer; coaching permission |
 | PATCH | `/api/trainer/sessions/:id/status` | Independent Trainer; coaching permission |
+| GET/POST/PATCH/DELETE | `/api/trainer/goals` and `/api/trainer/goals/:id` | Independent Trainer; coaching permission; tenant/client scoped |
+| GET | `/api/trainer/notifications` | Independent Trainer; coaching permission; derived action center |
+| GET/POST/PATCH | `/api/trainer/tasks` and `/api/trainer/tasks/:id` | Independent Trainer; coaching permission; tenant/client scoped action center |
+| POST | `/api/trainer/tasks/:id/dismiss` | Independent Trainer; coaching update permission; soft-dismisses a task |
+| GET/POST/PATCH | `/api/trainer/templates` and `/api/trainer/templates/:id` | Independent Trainer; coaching permission; tenant scoped |
+| POST | `/api/trainer/templates/:id/instantiate` | Independent Trainer; coaching permission; training/nutrition templates only |
 
 Platform payment methods are stored in `saas_platform_payment_methods` and are
 the source for the public `/register-gym` catalog. They are intentionally

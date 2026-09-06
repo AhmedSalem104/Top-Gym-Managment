@@ -39,7 +39,7 @@ test('Trainer routes are isolated by persisted tenant type and use existing auth
     assert.match(trainerRoutes, /\/api\/trainer\/clients\/:id\/checkins/);
     assert.match(trainerRoutes, /\/api\/trainer\/training-plans/);
     assert.match(trainerRoutes, /\/api\/trainer\/nutrition-plans/);
-    assert.match(routeIndex, /registerTrainerRoutes\(app, \{ trainerService, trainerCommerceService, asyncRoute \}\)/);
+    assert.match(routeIndex, /registerTrainerRoutes\(app, \{ trainerService, trainerCommerceService, trainerStudioService, asyncRoute \}\)/);
     assert.match(routePermissions, /trainer\\\/clients/);
     assert.ok(routePermissions.includes('training-plans|nutrition-plans'));
 });

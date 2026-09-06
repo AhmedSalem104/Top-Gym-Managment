@@ -291,7 +291,7 @@ app.get('/register-trainer', (_request, response) => {
     response.sendFile(path.join(publicDirectory, 'register-trainer.html'));
 });
 
-app.get('/trainer-workspace', asyncRoute(async (request, response) => {
+app.get(['/trainer-workspace', '/trainer-workspace/', '/trainer-workspace/:view', '/trainer-workspace/:view/:subview'], asyncRoute(async (request, response) => {
     const user = await authService.getSessionUser(authService.readSessionCookie(request), { includePermissions: false, readOnly: isReadOnlyRequest(request) });
     if (!user) return response.redirect('/');
     if (user.mustChangePassword) return response.redirect('/change-password');

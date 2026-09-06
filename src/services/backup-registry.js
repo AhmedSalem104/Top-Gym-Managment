@@ -10,7 +10,7 @@
 // Bump when the logical tenant artifact contract changes. Existing artifacts
 // remain readable only when their registry matches the current restore
 // inventory; new tenant-owned commercial records are included below.
-const TENANT_BACKUP_REGISTRY_VERSION = 3;
+const TENANT_BACKUP_REGISTRY_VERSION = 5;
 
 function definition(key, table, restorePolicy = 'tenant') {
     return Object.freeze({ key, table, tenantScoped: true, restorePolicy });
@@ -66,6 +66,9 @@ const TENANT_BACKUP_TABLES = Object.freeze([
     definition('trainer_packages', 'trainer_packages'),
     definition('trainer_package_purchases', 'trainer_package_purchases'),
     definition('trainer_package_usage', 'trainer_package_usage'),
+    definition('gym_trainer_goals', 'gym_trainer_goals'),
+    definition('gym_trainer_templates', 'gym_trainer_templates'),
+    definition('gym_trainer_tasks', 'gym_trainer_tasks'),
     definition('workout_sessions', 'workout_sessions'),
     definition('workout_set_logs', 'workout_set_logs'),
     definition('meal_logs', 'meal_logs'),

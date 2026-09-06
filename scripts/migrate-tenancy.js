@@ -39,6 +39,8 @@ const PHASE10_STOCK_LOCATIONS_MIGRATION_PATH = path.join(__dirname, '..', 'datab
 const PHASE11_BAR_POS_MIGRATION_PATH = path.join(__dirname, '..', 'database', 'migrations', '024-bar-pos-recipes.sql');
 const PHASE12_BAR_MODIFIERS_MIGRATION_PATH = path.join(__dirname, '..', 'database', 'migrations', '025-bar-modifiers.sql');
 const PHASE13_BRANCH_PLAN_LIMITS_MIGRATION_PATH = path.join(__dirname, '..', 'database', 'migrations', '026-branch-plan-limits.sql');
+const PHASE14_TRAINER_STUDIO_MIGRATION_PATH = path.join(__dirname, '..', 'database', 'migrations', '027-trainer-studio-goals-templates.sql');
+const PHASE15_TRAINER_ACTION_CENTER_MIGRATION_PATH = path.join(__dirname, '..', 'database', 'migrations', '028-trainer-action-center.sql');
 const PHASE0_SECURITY_MIGRATION_PATH = path.join(__dirname, '..', 'database', 'migrations', '013-phase0-security-preconditions.sql');
 const BASE_COMMERCIAL_MIGRATION_PATH = commercialSchema.MIGRATION_PATH;
 
@@ -179,6 +181,17 @@ async function migrate() {
         const pool = await getPool();
         await pool.request().batch(branchPlanLimitsMigration);
     });
+    const trainerStudioMigration = fs.readFileSync(PHASE14_TRAINER_STUDIO_MIGRATION_PATH, 'utf8');
+    await runTenantContext({ mode: 'platform', tenantId: bootstrapTenant.id }, async () => {
+        const pool = await getPool();
+        await pool.request().batch(trainerStudioMigration);
+    });
+    const trainerActionCenterMigration = fs.readFileSync(PHASE15_TRAINER_ACTION_CENTER_MIGRATION_PATH, 'utf8');
+    await runTenantContext({ mode: 'platform', tenantId: bootstrapTenant.id }, async () => {
+        const pool = await getPool();
+        await pool.request().batch(trainerActionCenterMigration);
+    });
+    await runTenantContext({ mode: 'platform', tenantId: bootstrapTenant.id }, () => tenantService.ensureTenantColumnsAndRls(bootstrapTenant.id));
     await runTenantContext({ mode: 'tenant', tenantId: bootstrapTenant.id }, () => libraryService.ensureLibraryData());
     await runTenantContext({ mode: 'platform', tenantId: bootstrapTenant.id }, () => saasService.ensureBootstrapSubscription(bootstrapTenant.id));
     console.log(JSON.stringify({ tenant: bootstrapTenant, tenantTables: postModifiersResult.tables.length, saasTables: saasService.SAAS_TABLES.length, policy: 'enabled' }));

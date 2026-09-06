@@ -1,6 +1,6 @@
 'use strict';
 
-function createTrainerController({ trainerService, trainerCommerceService }) {
+function createTrainerController({ trainerService, trainerCommerceService, trainerStudioService }) {
     return {
         workspace: async (request, response) => response.json(await trainerService.getWorkspace({ readOnly: request.readOnlyRequest })),
         reports: async (request, response) => response.json(await trainerService.getReports({ from: request.query.from, to: request.query.to, readOnly: request.readOnlyRequest })),
@@ -23,10 +23,12 @@ function createTrainerController({ trainerService, trainerCommerceService }) {
         trainingPlans: async (request, response) => response.json({ plans: await trainerService.listTrainingPlans({ memberId: request.query.memberId || request.query.clientId, search: request.query.search, status: request.query.status, level: request.query.level, readOnly: request.readOnlyRequest }) }),
         createTrainingPlan: async (request, response) => response.status(201).json({ plan: await trainerService.createTrainingPlan(request.body || {}) }),
         updateTrainingPlan: async (request, response) => response.json({ plan: await trainerService.updateTrainingPlan(request.params.id, request.body || {}) }),
+        setTrainingPlanStatus: async (request, response) => response.json({ plan: await trainerService.setTrainingPlanStatus(request.params.id, request.body?.status) }),
         deleteTrainingPlan: async (request, response) => { await trainerService.deleteTrainingPlan(request.params.id); response.status(204).send(); },
         nutritionPlans: async (request, response) => response.json({ plans: await trainerService.listNutritionPlans({ memberId: request.query.memberId || request.query.clientId, search: request.query.search, status: request.query.status, readOnly: request.readOnlyRequest }) }),
         createNutritionPlan: async (request, response) => response.status(201).json({ plan: await trainerService.createNutritionPlan(request.body || {}) }),
         updateNutritionPlan: async (request, response) => response.json({ plan: await trainerService.updateNutritionPlan(request.params.id, request.body || {}) }),
+        setNutritionPlanStatus: async (request, response) => response.json({ plan: await trainerService.setNutritionPlanStatus(request.params.id, request.body?.status) }),
         deleteNutritionPlan: async (request, response) => { await trainerService.deleteNutritionPlan(request.params.id); response.status(204).send(); }
         ,packages: async (request, response) => response.json({ packages: await trainerCommerceService.listPackages({ includeArchived: request.query.includeArchived === 'true', readOnly: request.readOnlyRequest }) })
         ,createPackage: async (request, response) => response.status(201).json({ package: await trainerCommerceService.createPackage(request.body || {}) })
@@ -40,6 +42,20 @@ function createTrainerController({ trainerService, trainerCommerceService }) {
         ,createSession: async (request, response) => response.status(201).json({ session: await trainerCommerceService.createSession({ ...(request.body || {}), idempotencyKey: request.get('idempotency-key') || request.body?.idempotencyKey }) })
         ,updateSession: async (request, response) => response.json({ session: await trainerCommerceService.updateSession(request.params.id, request.body || {}) })
         ,setSessionStatus: async (request, response) => response.json({ session: await trainerCommerceService.setSessionStatus(request.params.id, request.body?.status) })
+        ,goals: async (request, response) => response.json({ goals: await trainerStudioService.listGoals({ memberId: request.query.memberId || request.query.clientId, status: request.query.status, includeArchived: request.query.includeArchived === 'true', readOnly: request.readOnlyRequest }) })
+        ,createGoal: async (request, response) => response.status(201).json({ goal: await trainerStudioService.createGoal(request.body || {}) })
+        ,updateGoal: async (request, response) => response.json({ goal: await trainerStudioService.updateGoal(request.params.id, request.body || {}) })
+        ,setGoalStatus: async (request, response) => response.json({ goal: await trainerStudioService.setGoalStatus(request.params.id, request.body?.status) })
+        ,deleteGoal: async (request, response) => { await trainerStudioService.deleteGoal(request.params.id); response.status(204).send(); }
+        ,notifications: async (request, response) => response.json(await trainerStudioService.getNotifications({ limit: request.query.limit }))
+        ,tasks: async (request, response) => response.json({ tasks: await trainerStudioService.listTasks({ memberId: request.query.memberId || request.query.clientId, status: request.query.status, includeDismissed: request.query.includeDismissed === 'true', limit: request.query.limit, readOnly: request.readOnlyRequest }) })
+        ,createTask: async (request, response) => response.status(201).json({ task: await trainerStudioService.createTask({ ...(request.body || {}), idempotencyKey: request.get('idempotency-key') || request.body?.idempotencyKey }) })
+        ,updateTask: async (request, response) => response.json({ task: await trainerStudioService.updateTask(request.params.id, request.body || {}) })
+        ,dismissTask: async (request, response) => response.json({ task: await trainerStudioService.dismissTask(request.params.id) })
+        ,templates: async (request, response) => response.json({ templates: await trainerStudioService.listTemplates({ type: request.query.type, includeArchived: request.query.includeArchived === 'true' }) })
+        ,createTemplate: async (request, response) => response.status(201).json({ template: await trainerStudioService.createTemplate({ ...(request.body || {}), idempotencyKey: request.get('idempotency-key') || request.body?.idempotencyKey }) })
+        ,updateTemplate: async (request, response) => response.json({ template: await trainerStudioService.updateTemplate(request.params.id, request.body || {}) })
+        ,instantiateTemplate: async (request, response) => response.status(201).json({ resource: await trainerStudioService.instantiateTemplate(request.params.id, request.body || {}) })
     };
 }
 

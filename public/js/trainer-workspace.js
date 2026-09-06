@@ -639,6 +639,18 @@
         });
     });
 
+    document.addEventListener('trainer-studio-open-client', (event) => {
+        const clientId = Number(event.detail?.clientId);
+        if (clientId > 0) openDetails(clientId);
+    });
+    document.addEventListener('trainer-studio-open-session', () => openSessionDialog());
+
+    function trainerStudioInitialRoute() {
+        const prefix = '/trainer-workspace';
+        const suffix = window.location.pathname.startsWith(prefix) ? window.location.pathname.slice(prefix.length) : '';
+        return suffix.split('/').filter(Boolean)[0] || 'dashboard';
+    }
+
     async function init() {
         try {
             const session = await api('/api/auth/session');
@@ -646,8 +658,15 @@
             const tenantType = String(user?.tenantType || '').trim().toLowerCase();
             if (!user || user.mustChangePassword || user.role === 'PlatformAdmin' || tenantType !== 'independent_trainer') return window.location.replace('/');
             setText(byId('trainerWorkspaceName'), user.name || 'أيها المدرب');
-            await Promise.all([loadWorkspace(), loadClients(1), loadReports()]);
-            await loadOperations();
+            // Trainer Studio V2 owns route composition. Keep the legacy
+            // handlers available for its forms, but avoid bootstrapping every
+            // unrelated trainer surface on every deep link.
+            const route = trainerStudioInitialRoute();
+            const tasks = [loadWorkspace()];
+            if (['dashboard', 'packages', 'sales', 'calendar', 'sessions'].includes(route)) tasks.push(loadOperations());
+            if (['clients', 'portal'].includes(route)) tasks.push(loadClients(1));
+            if (route === 'reports') tasks.push(loadReports());
+            await Promise.all(tasks);
         } catch (_) { window.location.replace('/'); }
     }
     init();

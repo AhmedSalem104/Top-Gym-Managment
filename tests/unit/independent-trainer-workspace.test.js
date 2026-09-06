@@ -49,7 +49,9 @@ test('trainer dashboard data is sourced from trainer APIs and has no fabricated 
     assert.match(script, /\/api\/trainer\/clients/);
     assert.match(script, /\/api\/trainer\/sessions/);
     assert.match(script, /\/api\/trainer\/reports\/summary/);
-    assert.match(script, /loadWorkspace\(\), loadClients\(1\), loadReports\(\)/);
+    assert.match(script, /const tasks = \[loadWorkspace\(\)\]/);
+    assert.match(script, /loadClients\(1\)/);
+    assert.match(script, /loadReports\(\)/);
     assert.doesNotMatch(script, /fake|mock|demo/i);
 });
 
