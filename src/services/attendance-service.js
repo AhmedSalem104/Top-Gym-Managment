@@ -147,17 +147,23 @@ async function ensureAttendanceTable({ readOnly = false } = {}) {
 
 async function reconcileAutoCheckout(pool = null, memberId = null) {
     await ensureAttendanceTable();
+    const tenantId = currentTenantId({ required: true });
     const connection = pool || await getPool();
     const result = await connection.request()
+        .input('tenantId', sql.Int, tenantId)
         .input('autoMinutes', sql.Int, getAutoCheckoutMinutes())
         .input('memberId', sql.Int, memberId == null ? null : ensureId(memberId, 'معرّف العضو'))
-        .query(`UPDATE dbo.gym_attendance
+        .query(`UPDATE attendance
                 SET check_out_at = DATEADD(minute, @autoMinutes, check_in_at),
                     check_out_source = 'auto',
                     updated_at = SYSUTCDATETIME()
-                WHERE check_out_at IS NULL
-                  AND (@memberId IS NULL OR member_id = @memberId)
-                  AND DATEADD(minute, @autoMinutes, check_in_at) <= SYSUTCDATETIME();`);
+                FROM dbo.gym_attendance AS attendance
+                INNER JOIN dbo.members AS member
+                    ON member.id = attendance.member_id
+                   AND member.tenant_id = @tenantId
+                WHERE attendance.check_out_at IS NULL
+                  AND (@memberId IS NULL OR attendance.member_id = @memberId)
+                  AND DATEADD(minute, @autoMinutes, attendance.check_in_at) <= SYSUTCDATETIME();`);
     return Number(result.rowsAffected?.[0] || 0);
 }
 

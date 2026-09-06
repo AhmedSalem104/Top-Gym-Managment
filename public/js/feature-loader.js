@@ -109,7 +109,7 @@
         },
         library: {
             styles: [],
-            scripts: ['/js/exercise-assets.js?v=5', '/js/muscle-assets.js?v=3', '/js/pages/library/library.js?v=13']
+            scripts: ['/js/exercise-assets.js?v=5', '/js/muscle-assets.js?v=3', '/js/food-assets.js?v=1', '/js/pages/library/library.js?v=13']
         },
         trainees: {
             dependencies: ['coaching'],

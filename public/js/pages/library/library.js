@@ -74,6 +74,11 @@
         return `<span class="exercise-media exercise-media-fallback ${escapeHtml(options.className || '')}" aria-hidden="true"><span class="exercise-media-fallback-icon">${escapeHtml(item?.icon || '🏋️')}</span></span>`;
     }
 
+    function foodImage(item, options = {}) {
+        if (window.TopGymFoodAssets?.imageMarkup) return window.TopGymFoodAssets.imageMarkup(item, options);
+        return `<span class="food-media food-media-fallback ${escapeHtml(options.className || '')}" aria-hidden="true"></span>`;
+    }
+
     function exerciseGallery(item) {
         const match = window.TopGymExerciseAssets?.find(item) || item;
         const names = itemNames(item);
@@ -181,7 +186,7 @@
 
     function renderFoodRow(item) {
         const title = item.nameAr || item.nameEn || itemName(item);
-        return `<tr><td><div class="library-table-primary"><span class="library-table-icon">🥗</span><div><strong title="${escapeHtml(title)}">${escapeHtml(title)}</strong><small dir="ltr">${escapeHtml(item.nameEn || '')}</small></div></div></td><td>${item.category ? `<span class="library-table-badge foods">${escapeHtml(foodCategoryLabel(item.category))}</span>` : '—'}</td><td><strong>${formatNumber(item.calories, 1)}</strong><small>سعرة</small></td><td><strong>${formatNumber(item.protein, 1)} جرام</strong><small>بروتين</small></td><td><strong>${formatNumber(item.carbs, 1)} جرام</strong><small>كارب</small></td><td><strong>${formatNumber(item.fat, 1)} جرام</strong><small>دهون</small></td><td>${formatNumber(item.servingSize, 1)} ${escapeHtml(foodUnitLabel(item.servingUnit))}</td><td>${tableActions(item.id)}</td></tr>`;
+        return `<tr><td><div class="library-table-primary"><span class="library-table-icon food-table-icon">${foodImage(item, { className: 'food-media-thumb', alt: title })}</span><div><strong title="${escapeHtml(title)}">${escapeHtml(title)}</strong><small dir="ltr">${escapeHtml(item.nameEn || '')}</small></div></div></td><td>${item.category ? `<span class="library-table-badge foods">${escapeHtml(foodCategoryLabel(item.category))}</span>` : '—'}</td><td><strong>${formatNumber(item.calories, 1)}</strong><small>سعرة</small></td><td><strong>${formatNumber(item.protein, 1)} جرام</strong><small>بروتين</small></td><td><strong>${formatNumber(item.carbs, 1)} جرام</strong><small>كارب</small></td><td><strong>${formatNumber(item.fat, 1)} جرام</strong><small>دهون</small></td><td>${formatNumber(item.servingSize, 1)} ${escapeHtml(foodUnitLabel(item.servingUnit))}</td><td>${tableActions(item.id)}</td></tr>`;
     }
 
     function renderExerciseRow(item) {
@@ -207,6 +212,7 @@
         list.innerHTML = `<div class="library-table-wrap"><table class="library-data-table ${state.activeType}"><thead><tr>${headers}</tr></thead><tbody>${state.items.map(renderer).join('')}</tbody></table></div>`;
         window.TopGymExerciseAssets?.hydrate(list);
         window.TopGymMuscleAssets?.hydrate(list);
+        window.TopGymFoodAssets?.hydrate(list);
         renderPagination();
     }
 

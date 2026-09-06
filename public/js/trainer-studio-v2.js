@@ -41,7 +41,9 @@
         sessions: { label: 'الجلسات', eyebrow: 'التنفيذ', description: 'راجع الجلسات وحالتها وارتباطها بالباقات.' },
         training: { label: 'خطط التدريب', eyebrow: 'البرمجة التدريبية', description: 'الخطط المحفوظة لعملائك من المصدر الحالي.' },
         nutrition: { label: 'خطط التغذية', eyebrow: 'التغذية', description: 'الخطط الغذائية المرتبطة بملفات العملاء.' },
-        exercises: { label: 'مكتبة التمارين', eyebrow: 'المكتبة', description: 'كتالوج التمارين الموجود في النظام.' },
+        exercises: { label: 'مكتبة التمارين', eyebrow: 'المكتبة', description: 'تمارين مصورة جاهزة للاستخدام داخل برامج التدريب.' },
+        muscles: { label: 'العضلات', eyebrow: 'خريطة الجسم', description: 'استكشف العضلات المستهدفة وصورها ومناطقها.' },
+        foods: { label: 'مكتبة الأطعمة', eyebrow: 'التغذية', description: 'أطعمة ومكونات مصورة مع القيم الغذائية الحالية.' },
         measurements: { label: 'القياسات', eyebrow: 'التقييم', description: 'آخر قياسات العملاء وتاريخ تحديث الملف.' },
         progress: { label: 'التقدم', eyebrow: 'النتائج', description: 'مؤشرات التدريب والقياسات المسجلة فعليًا.' },
         checkins: { label: 'المتابعات', eyebrow: 'العناية بالعميل', description: 'العملاء الذين يحتاجون خطوة متابعة منك.' },
@@ -56,7 +58,7 @@
 
     const navGroups = [
         { label: 'العمل اليومي', items: [['dashboard', 'لوحة التحكم', 'dashboard'], ['clients', 'العملاء', 'users'], ['calendar', 'الجدول', 'calendar'], ['sessions', 'الجلسات', 'activity']] },
-        { label: 'التدريب والمتابعة', items: [['training', 'خطط التدريب', 'plan'], ['nutrition', 'خطط التغذية', 'plan'], ['exercises', 'مكتبة التمارين', 'book'], ['measurements', 'القياسات', 'activity'], ['progress', 'التقدم', 'chart'], ['checkins', 'المتابعات', 'activity']] },
+        { label: 'التدريب والمتابعة', items: [['training', 'خطط التدريب', 'plan'], ['nutrition', 'خطط التغذية', 'plan'], ['exercises', 'مكتبة التمارين', 'book'], ['muscles', 'العضلات', 'activity'], ['foods', 'مكتبة الأطعمة', 'activity'], ['measurements', 'القياسات', 'activity'], ['progress', 'التقدم', 'chart'], ['checkins', 'المتابعات', 'activity']] },
         { label: 'الأعمال', items: [['packages', 'الباقات', 'plan'], ['sales', 'المبيعات والتحصيلات', 'wallet'], ['renewals', 'التجديدات', 'arrow'], ['finance', 'المالية', 'wallet'], ['reports', 'التقارير', 'chart'], ['portal', 'بوابة العميل', 'users']] },
         { label: 'المساحة', items: [['settings', 'الإعدادات', 'settings']] }
     ];
@@ -322,6 +324,86 @@
                     : `${escapeHtml(item.targetMuscleNameAr || item.targetMuscleName || item.category || 'عضلة مستهدفة غير محددة')} · ${escapeHtml(item.difficulty || 'كل المستويات')}`;
             return `<article class="trainer-studio-exercise-card trainer-library-card"><div class="trainer-studio-row-icon">${icon(type === 'foods' ? 'activity' : type === 'muscles' ? 'chart' : 'book')}</div><strong>${escapeHtml(label)}</strong><span>${detail}</span>${type === 'exercises' && item.equipment ? `<small>${escapeHtml(item.equipment)}</small>` : ''}</article>`;
         }).join('');
+    }
+
+    const trainerCatalogMeta = Object.freeze({
+        exercises: { title: 'مكتبة التمارين', eyebrow: 'المكتبة المصورة', search: 'ابحث باسم التمرين أو العضلة أو المعدة...', empty: 'لا توجد تمارين مطابقة.' },
+        muscles: { title: 'العضلات', eyebrow: 'خريطة الجسم', search: 'ابحث باسم العضلة أو منطقة الجسم...', empty: 'لا توجد عضلات مطابقة.' },
+        foods: { title: 'مكتبة الأطعمة', eyebrow: 'التغذية المصورة', search: 'ابحث باسم الطعام أو التصنيف...', empty: 'لا توجد أطعمة مطابقة.' }
+    });
+
+    function catalogTag(label, tone = 'neutral') {
+        return label ? `<span class="trainer-library-tag trainer-library-tag--${tone}">${escapeHtml(label)}</span>` : '';
+    }
+
+    function catalogMedia(type, item) {
+        const title = trainerLibraryLabel(type, item);
+        if (type === 'exercises' && window.TopGymExerciseAssets?.imageMarkup) {
+            return window.TopGymExerciseAssets.imageMarkup(item, 'start', { className: 'trainer-library-card-media', alt: title, loading: 'lazy' });
+        }
+        if (type === 'muscles' && window.TopGymMuscleAssets?.imageMarkup) {
+            return window.TopGymMuscleAssets.imageMarkup(item, 'main', { className: 'trainer-library-card-media', alt: title, loading: 'lazy' });
+        }
+        if (type === 'foods' && window.TopGymFoodAssets?.imageMarkup) {
+            return window.TopGymFoodAssets.imageMarkup(item, { className: 'trainer-library-card-media', alt: title, loading: 'lazy' });
+        }
+        return `<span class="trainer-library-card-media trainer-library-card-media--fallback" aria-hidden="true"></span>`;
+    }
+
+    function renderCatalogCard(type, item) {
+        const title = trainerLibraryLabel(type, item);
+        const english = type === 'foods' ? item.nameEn : item.name;
+        const tags = type === 'exercises'
+            ? [catalogTag(item.targetMuscleNameAr || item.targetMuscleName, 'primary'), catalogTag(item.equipment, 'sky'), catalogTag(item.difficulty, 'neutral')].join('')
+            : type === 'muscles'
+                ? [catalogTag(item.bodyPart, 'primary'), catalogTag(item.name, 'sky')].join('')
+                : [catalogTag(`${formatNumber(item.calories)} سعرة`, 'primary'), catalogTag(`${formatNumber(item.protein, 1)}g بروتين`, 'mint'), catalogTag(item.category, 'neutral')].join('');
+        const detail = type === 'exercises'
+            ? (item.descriptionAr || item.description || 'تمرين جاهز للاستخدام داخل برنامج تدريبي.')
+            : type === 'muscles'
+                ? (item.descriptionAr || item.description || 'معلومة تشريحية تساعدك على اختيار التمرين المناسب.')
+                : `${formatNumber(item.carbs, 1)}g كربوهيدرات · ${formatNumber(item.fat, 1)}g دهون لكل ${formatNumber(item.servingSize, 1)} ${item.servingUnit || 'حصة'}`;
+        return `<article class="trainer-library-visual-card trainer-library-visual-card--${type}">
+            <div class="trainer-library-card-media-wrap">${catalogMedia(type, item)}<span class="trainer-library-card-index">${escapeHtml(type === 'exercises' ? 'تمرين' : type === 'muscles' ? 'عضلة' : 'طعام')}</span></div>
+            <div class="trainer-library-card-body"><div class="trainer-library-card-heading"><div><h3>${escapeHtml(title)}</h3>${english ? `<small dir="ltr">${escapeHtml(english)}</small>` : ''}</div><span class="trainer-library-card-arrow" aria-hidden="true">↗</span></div><p>${escapeHtml(detail)}</p><div class="trainer-library-tags">${tags}</div></div>
+        </article>`;
+    }
+
+    function renderCatalogGrid(type, items) {
+        if (!items.length) return emptyState(trainerCatalogMeta[type].empty, 'جرّب كلمة بحث أو تصنيفًا مختلفًا.');
+        return items.map((item) => renderCatalogCard(type, item)).join('');
+    }
+
+    async function renderTrainerCatalogPage(type = 'exercises', page = 1, search = '') {
+        const dynamic = $('#trainerStudioDynamicView');
+        const meta = trainerCatalogMeta[type] || trainerCatalogMeta.exercises;
+        dynamic.innerHTML = pageFrame(type, '<section class="trainer-library-loading"><span class="trainer-studio-spinner"></span>جاري تجهيز المكتبة المصورة...</section>');
+        dynamic.hidden = false;
+        try {
+            const [optionsPayload, collection] = await Promise.all([
+                api('/api/trainer/library/options'),
+                api(`/api/trainer/library/${encodeURIComponent(type)}?page=${Number(page) || 1}&pageSize=48&search=${encodeURIComponent(search)}`)
+            ]);
+            const items = Array.isArray(collection.items) ? collection.items : [];
+            if (type === 'exercises') await (window.TopGymExerciseAssets?.load?.() || Promise.resolve()).catch(() => null);
+            if (type === 'muscles') await (window.TopGymMuscleAssets?.load?.() || Promise.resolve()).catch(() => null);
+            const counts = optionsPayload.counts || {};
+            const pagination = collection.pagination || { page: 1, totalPages: 1, totalItems: items.length };
+            const stat = type === 'exercises' ? counts.exercises : type === 'muscles' ? counts.muscles : counts.foods;
+            dynamic.innerHTML = pageFrame(type, `<section class="trainer-library-page" data-trainer-library-type="${escapeHtml(type)}">
+                <header class="trainer-library-hero"><div class="trainer-library-hero-mark" aria-hidden="true">${type === 'exercises' ? '✦' : type === 'muscles' ? '◌' : '◈'}</div><div><span class="trainer-panel-kicker">${meta.eyebrow}</span><h2>${meta.title}</h2><p>${type === 'exercises' ? 'استخدم الكتالوج المصور لبناء برامج تدريب دقيقة ومناسبة لكل عميل.' : type === 'muscles' ? 'صور وبيانات تشريحية تساعدك على ربط كل حركة بالعضلة المستهدفة.' : 'مرجع غذائي عملي لبناء خطط تغذية واقعية من البيانات الحالية.'}</p></div><div class="trainer-library-hero-stat"><strong>${formatNumber(stat)}</strong><span>عنصر متاح</span></div></header>
+                <section class="trainer-library-toolbar" aria-label="بحث المكتبة"><form id="trainerCatalogSearchForm" class="trainer-library-search-form"><label><span class="sr-only">${meta.search}</span><span class="trainer-library-search-icon" aria-hidden="true">⌕</span><input id="trainerCatalogSearch" type="search" value="${escapeHtml(search)}" placeholder="${meta.search}" autocomplete="off"></label><button type="submit" class="btn btn-primary btn-small">بحث</button></form><div class="trainer-library-toolbar-meta"><span class="trainer-studio-count-chip">${formatNumber(pagination.totalItems)} ${type === 'exercises' ? 'تمرين' : type === 'muscles' ? 'عضلة' : 'طعام'}</span>${type === 'exercises' ? '<button type="button" class="btn btn-light btn-small" data-studio-go-training>إنشاء برنامج من المكتبة</button>' : ''}</div></section>
+                <div class="trainer-library-grid" id="trainerCatalogGrid">${renderCatalogGrid(type, items)}</div>
+                <footer class="trainer-library-pagination"><span>صفحة ${formatNumber(pagination.page)} من ${formatNumber(pagination.totalPages)}</span><div><button type="button" class="btn btn-light btn-small" data-trainer-catalog-page="${Math.max(1, Number(pagination.page) - 1)}" ${pagination.page <= 1 ? 'disabled' : ''}>السابق</button><button type="button" class="btn btn-light btn-small" data-trainer-catalog-page="${Math.min(Number(pagination.totalPages), Number(pagination.page) + 1)}" ${pagination.page >= pagination.totalPages ? 'disabled' : ''}>التالي</button></div></footer>
+            </section>`);
+            window.TopGymExerciseAssets?.hydrate?.(dynamic);
+            window.TopGymMuscleAssets?.hydrate?.(dynamic);
+            window.TopGymFoodAssets?.hydrate?.(dynamic);
+            $('#trainerCatalogSearchForm')?.addEventListener('submit', (event) => { event.preventDefault(); renderTrainerCatalogPage(type, 1, $('#trainerCatalogSearch')?.value.trim() || ''); });
+            $$('[data-trainer-catalog-page]').forEach((button) => button.addEventListener('click', () => renderTrainerCatalogPage(type, Number(button.dataset.trainerCatalogPage), search)));
+        } catch (error) {
+            dynamic.innerHTML = pageFrame(type, errorState(error.message));
+        }
     }
 
     async function renderTrainerLibraryPage() {
@@ -720,7 +802,7 @@
         else {
             const dynamic = $('#trainerStudioDynamicView');
             if (dynamic) dynamic.hidden = false;
-            const task = route === 'calendar' || route === 'sessions' ? renderSessionsPage(route) : route === 'training' ? renderTrainingPage(route) : route === 'nutrition' ? renderTrainingPage(route, true) : route === 'exercises' ? renderTrainerLibraryPage() : route === 'measurements' ? renderClientsDataPage(route, 'measurements') : route === 'progress' ? renderClientsDataPage(route, 'progress') : route === 'checkins' ? renderFollowUpPage() : route === 'goals' ? renderGoalsPage() : route === 'notifications' ? renderNotificationsPage() : route === 'tasks' ? renderTasksPage() : route === 'templates' ? renderTemplatesPage() : route === 'renewals' ? renderRenewalsPage() : route === 'finance' ? renderFinancePage() : route === 'portal' ? renderPortalPage() : renderSettingsPage();
+            const task = route === 'calendar' || route === 'sessions' ? renderSessionsPage(route) : route === 'training' ? renderTrainingPage(route) : route === 'nutrition' ? renderTrainingPage(route, true) : ['exercises', 'muscles', 'foods'].includes(route) ? renderTrainerCatalogPage(route) : route === 'measurements' ? renderClientsDataPage(route, 'measurements') : route === 'progress' ? renderClientsDataPage(route, 'progress') : route === 'checkins' ? renderFollowUpPage() : route === 'goals' ? renderGoalsPage() : route === 'notifications' ? renderNotificationsPage() : route === 'tasks' ? renderTasksPage() : route === 'templates' ? renderTemplatesPage() : route === 'renewals' ? renderRenewalsPage() : route === 'finance' ? renderFinancePage() : route === 'portal' ? renderPortalPage() : renderSettingsPage();
             Promise.resolve(task).then(() => { if (token !== routeRenderToken) return; if (route === 'training' || route === 'nutrition') injectTrainerAutoButton(route, route === 'nutrition'); }).catch(() => {});
         }
     }
@@ -794,6 +876,7 @@
                 .catch((error) => { statusButton.disabled = false; window.alert(error.message || 'تعذر تحديث حالة الخطة.'); });
         }
         if (event.target.closest('[data-studio-go-sales]')) navigate('sales');
+        if (event.target.closest('[data-studio-go-training]')) navigate('training');
         const scheduleButton = event.target.closest('[data-studio-schedule-session]');
         if (scheduleButton) document.dispatchEvent(new CustomEvent('trainer-studio-open-session'));
         const sessionButton = event.target.closest('[data-studio-session-id]');

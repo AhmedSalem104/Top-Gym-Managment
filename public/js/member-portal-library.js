@@ -52,6 +52,11 @@
     return `<img class="${className}" src="${escapeHtml(source)}" alt="${escapeHtml(nameOf(item))}" loading="lazy" width="720" height="480" data-portal-library-image>`;
   }
 
+  function foodImageMarkup(item) {
+    if (window.TopGymFoodAssets?.imageMarkup) return window.TopGymFoodAssets.imageMarkup(item, { className: 'portal-food-media', alt: nameOf(item), loading: 'lazy' });
+    return '<span class="portal-food-symbol" aria-hidden="true"></span>';
+  }
+
 
   function renderExerciseCard(item) {
     const title = nameOf(item);
@@ -61,7 +66,7 @@
 
   function renderFoodCard(item) {
     const title = nameOf(item);
-    return `<article class="portal-food-card"><div class="portal-food-symbol" aria-hidden="true">🥗</div><div class="portal-food-title"><div><h5>${escapeHtml(title)}</h5><small dir="ltr">${escapeHtml(englishName(item))}</small></div><span>${escapeHtml(item.category || 'طعام')}</span></div><div class="portal-food-calories"><strong>${number(item.calories, 1)}</strong><span>سعرة لكل ${number(item.servingSize, 1)} ${escapeHtml(item.servingUnit || 'جرام')}</span></div><div class="portal-macro-grid"><span><b>${number(item.protein, 1)}</b><small>بروتين</small></span><span><b>${number(item.carbs, 1)}</b><small>كارب</small></span><span><b>${number(item.fat, 1)}</b><small>دهون</small></span></div><button class="btn btn-light portal-library-details-button" type="button" data-library-details="foods" data-library-id="${item.id}">التفاصيل الغذائية</button></article>`;
+    return `<article class="portal-food-card"><div class="portal-food-media-wrap">${foodImageMarkup(item)}</div><div class="portal-food-title"><div><h5>${escapeHtml(title)}</h5><small dir="ltr">${escapeHtml(englishName(item))}</small></div><span>${escapeHtml(item.category || 'طعام')}</span></div><div class="portal-food-calories"><strong>${number(item.calories, 1)}</strong><span>سعرة لكل ${number(item.servingSize, 1)} ${escapeHtml(item.servingUnit || 'جرام')}</span></div><div class="portal-macro-grid"><span><b>${number(item.protein, 1)}</b><small>بروتين</small></span><span><b>${number(item.carbs, 1)}</b><small>كارب</small></span><span><b>${number(item.fat, 1)}</b><small>دهون</small></span></div><button class="btn btn-light portal-library-details-button" type="button" data-library-details="foods" data-library-id="${item.id}">التفاصيل الغذائية</button></article>`;
   }
 
   function renderPagination() {
@@ -121,6 +126,7 @@
       state.items = result.items || [];
       state.pagination = result.pagination || null;
       renderCurrent();
+      if (state.activeType === 'foods') window.TopGymFoodAssets?.hydrate?.(content);
     } catch (error) {
       if (error.name === 'AbortError') return;
       if (content) content.innerHTML = `<div class="portal-library-state portal-library-error"><strong>تعذر تحميل الدليل</strong><span>${escapeHtml(error.message || 'حاول مرة أخرى.')}</span><button type="button" class="btn btn-light" data-library-retry>إعادة المحاولة</button></div>`;

@@ -55,6 +55,66 @@
 .platform-form-message { padding: 10px 12px; border: 1px solid var(--danger-border); border-radius: 10px; background: var(--danger-soft); color: var(--danger-text); font-size: .8rem; }
 .platform-login-foot { margin-top: 24px; color: var(--text-disabled); font-size: .73rem; text-align: center; }
 
+/* Keep the platform entry point on the same Logic Fit authentication card
+   language as the shared login surface without changing its auth flow. */
+.platform-login-screen {
+    --platform-login-bg: #f3f7fc;
+    --platform-login-surface: rgb(255 255 255 / .9);
+    --platform-login-border: #d7e5f7;
+    --platform-login-text: #0b1e42;
+    --platform-login-muted: #6d7d98;
+    --platform-login-blue: #1769e8;
+    background:
+        radial-gradient(circle at 16% 18%, rgb(23 105 232 / .1), transparent 32%),
+        linear-gradient(135deg, #f8fbff, var(--platform-login-bg));
+}
+html[data-theme="dark"] .platform-login-screen {
+    --platform-login-bg: #020b18;
+    --platform-login-surface: rgb(7 22 41 / .88);
+    --platform-login-border: rgb(137 171 218 / .32);
+    --platform-login-text: #f7fbff;
+    --platform-login-muted: #a7b8d0;
+    --platform-login-blue: #2584ff;
+    background:
+        radial-gradient(circle at 16% 18%, rgb(23 105 232 / .16), transparent 32%),
+        linear-gradient(135deg, #07172a, var(--platform-login-bg));
+}
+.platform-login-card {
+    width: min(100%, 550px);
+    padding: clamp(28px, 3.6vw, 46px) clamp(24px, 3.6vw, 42px) clamp(24px, 3vw, 34px);
+    border: 1px solid var(--platform-login-border);
+    border-radius: 28px;
+    background: var(--platform-login-surface);
+    box-shadow: 0 28px 70px rgb(20 67 129 / .16);
+    backdrop-filter: blur(18px);
+}
+.platform-login-theme { color: var(--platform-login-text); }
+.platform-login-brand { display: grid; justify-items: center; gap: 10px; text-align: center; }
+.platform-login-card .platform-brand-mark { background: linear-gradient(135deg, #168ff9, #1655e8); box-shadow: 0 14px 28px rgb(23 105 232 / .26); }
+.platform-login-brand > div { display: grid; gap: 3px; }
+.platform-login-brand strong { color: var(--platform-login-text); font-size: 1.7rem; }
+.platform-login-brand small { color: var(--platform-login-muted); font-size: .62rem; letter-spacing: .08em; }
+.platform-login-heading { margin: 28px 0 22px; text-align: center; }
+.platform-login-heading h1 { color: var(--platform-login-text); font-size: clamp(1.42rem, 2.2vw, 1.8rem); }
+.platform-login-heading p { color: var(--platform-login-muted); font-size: .82rem; }
+.platform-field { color: var(--platform-login-text); }
+.platform-field input {
+    min-height: 58px;
+    border-color: var(--platform-login-border);
+    border-radius: 14px;
+    background: rgb(248 251 255 / .78);
+    color: var(--platform-login-text);
+}
+html[data-theme="dark"] .platform-field input { background: rgb(10 30 53 / .78); }
+.platform-field input:focus { border-color: var(--platform-login-blue); box-shadow: 0 0 0 4px rgb(23 105 232 / .12); }
+.platform-btn.primary.full {
+    min-height: 62px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, #168ff9, #2d56ec);
+    box-shadow: 0 14px 24px rgb(23 105 232 / .22);
+}
+.platform-login-foot { color: var(--platform-login-muted); }
+
 .platform-shell { display: flex; min-height: 100vh; background: var(--bg-app); direction: rtl; }
 .platform-sidebar { position: sticky; z-index: 40; top: 0; display: flex; width: 274px; min-width: 274px; height: 100vh; flex: 0 0 274px; flex-direction: column; overflow-y: auto; padding: 24px 16px 16px; border-left: 1px solid var(--border-secondary); background: var(--platform-sidebar); color: var(--sidebar-text); direction: rtl; }
 .platform-sidebar-brand { padding: 0 8px 28px; }

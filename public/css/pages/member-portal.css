@@ -481,6 +481,12 @@
 .portal-library-details-button { width: 100%; min-height: 38px; justify-content: center; border-radius: 9px; color: var(--primary); font-size: 11px; font-weight: 800; }
 .portal-food-card { display: grid; gap: 11px; }
 .portal-food-symbol { display: grid; width: 48px; height: 48px; place-items: center; border-radius: 14px; background: var(--warning-soft); font-size: 24px; }
+
+.portal-food-media-wrap { height: 142px; overflow: hidden; background: linear-gradient(145deg, #dcecff, #f6fbff); }
+.portal-food-media { display: block; width: 100%; height: 100%; }
+.portal-food-media img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.portal-food-media.is-fallback img { display: none; }
+html[data-theme="dark"] .portal-food-media-wrap { background: linear-gradient(145deg, #1a3658, #0e2038); }
 .portal-food-title > span { background: var(--warning-soft); color: var(--warning-text); white-space: nowrap; }
 .portal-food-calories { display: flex; align-items: baseline; gap: 6px; padding: 10px; border-radius: 10px; background: var(--bg-elevated); }
 .portal-food-calories strong { color: var(--text-primary); font-size: 22px; font-weight: 800; }

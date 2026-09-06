@@ -212,7 +212,7 @@
         });
     }
 
-    function setAuthStage(stage = 'gateway') {
+    function setAuthStage(stage = 'login') {
         const normalizedStage = stage === 'login' ? 'login' : 'gateway';
         const screen = $('authScreen');
         const entry = $('saasEntryCard');
@@ -473,7 +473,7 @@
         window.topGymBranding?.apply?.(window.topGymBranding.fallback?.() || {}, 1);
         loadAuthVisuals();
         if (screen) screen.hidden = false;
-        setAuthStage(message ? 'login' : 'gateway');
+        setAuthStage('login');
         const form = $('loginForm');
         if (form) form.hidden = false;
         const heading = form?.querySelector('.auth-form-heading p');
@@ -569,7 +569,7 @@
         if (!form || form.dataset.bound) return;
         form.dataset.bound = 'true';
         form.hidden = true;
-        setAuthStage('gateway');
+        setAuthStage('login');
         try {
             const rememberedEmail = localStorage.getItem(rememberEmailKey);
             if (rememberedEmail && !$('loginEmail')?.value) {

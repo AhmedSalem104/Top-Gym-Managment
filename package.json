@@ -35,6 +35,8 @@
     "qa:exercise-catalog": "node scripts/validate-exercise-catalog.js",
     "qa:exercise-content": "node scripts/validate-exercise-content.js",
     "qa:muscle-assets": "node scripts/validate-muscle-assets.js",
+    "job:backup": "node scripts/run-server-scheduled-backup.js",
+    "job:auto-checkout": "node scripts/run-server-auto-checkout.js",
     "build:muscle-mapping": "node scripts/build-muscle-mapping.js",
     "sync:muscle-assets": "node scripts/build-muscle-mapping.js && python scripts/download-muscle-assets.py --workers 3",
     "render:muscle-assets": "node scripts/render-muscle-assets.js",
