@@ -5,7 +5,7 @@ const { resolveBranchContext } = require('../branches/branch-context');
 function createAttendanceController({ attendanceService, branchService }) {
     const branchOptions = async (request, required = false) => {
         const context = await resolveBranchContext(request, { branchService, required, allowAll: !required });
-        return { branchId: context.branchId, allBranches: context.allBranches };
+        return { branchId: context.branchId, sectionId: context.sectionId, allBranches: context.allBranches };
     };
     return {
         today: async (request, response) => {

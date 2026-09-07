@@ -4,7 +4,7 @@ const { withTransaction } = require('../database/transaction');
 const memberRepository = require('../repositories/member.repository');
 const alertContactService = require('./alert-contact-service');
 const membershipCodeService = require('./membership-code-service');
-const { MEMBER_ROW_COLUMNS, MEMBER_ROWS_CTE } = memberRepository;
+const { MEMBER_ROW_COLUMNS, MEMBER_ROWS_CTE, MEMBER_ROWS_SCOPED_CTE } = memberRepository;
 const {
     addDays,
     addMonths,
@@ -823,7 +823,7 @@ async function getMemberById(id, connection = null) {
     return member;
 }
 
-async function getMembers({ search = '', status = '', sort = 'expiry', page = 1, pageSize = DEFAULT_MEMBER_PAGE_SIZE, readOnly = false } = {}) {
+async function getMembers({ search = '', status = '', sort = 'expiry', page = 1, pageSize = DEFAULT_MEMBER_PAGE_SIZE, readOnly = false, branchId = null, sectionId = null } = {}) {
     const normalizedSearch = String(search || '').trim().slice(0, 100);
     const normalizedStatus = ensureStatus(status);
     const normalizedSort = ensureMemberSort(sort);
@@ -838,13 +838,15 @@ async function getMembers({ search = '', status = '', sort = 'expiry', page = 1,
         sort: normalizedSort,
         offset,
         pageSize: currentPageSize,
-        today: todayInTimeZone()
+        today: todayInTimeZone(),
+        branchId,
+        sectionId
     });
     const mappedMembers = result.recordset.map(mapMember);
     const memberIds = mappedMembers.map((member) => member.id);
     const [membershipCodePreviews, attendanceByMember] = await Promise.all([
         membershipCodeService.getPreviews(memberIds),
-        getMemberAttendanceStatuses(memberIds, undefined, { readOnly })
+        getMemberAttendanceStatuses(memberIds, undefined, { readOnly, branchId, sectionId })
     ]);
     const members = mappedMembers.map((member) => ({
         ...member,
@@ -895,10 +897,10 @@ function dashboardFromMembers(members, today = todayInTimeZone()) {
     };
 }
 
-async function getBootstrap({ readOnly = false } = {}) {
+async function getBootstrap({ readOnly = false, branchId = null, sectionId = null } = {}) {
     const [memberPage, dashboard, pricing] = await Promise.all([
-        getMembers({ page: 1, pageSize: DEFAULT_MEMBER_PAGE_SIZE, sort: 'expiry', readOnly }),
-        getDashboard({ readOnly }),
+        getMembers({ page: 1, pageSize: DEFAULT_MEMBER_PAGE_SIZE, sort: 'expiry', readOnly, branchId, sectionId }),
+        getDashboard({ readOnly, branchId, sectionId }),
         getPricingCatalog(null, { readOnly })
     ]);
     return {
@@ -1146,14 +1148,16 @@ async function updateMembershipType(typeCodeValue, body = {}) {
     return getPricingCatalog();
 }
 
-async function getDashboard({ readOnly = false } = {}) {
+async function getDashboard({ readOnly = false, branchId = null, sectionId = null } = {}) {
     if (!readOnly) await ensureAttendanceTable();
     const pool = await getPool();
     const today = todayInTimeZone();
-    const result = await pool.request()
+    const request = pool.request()
         .input('today', sql.Date, toUtcDate(today))
         .input('inactiveSince', sql.Date, toUtcDate(addDays(today, -7)))
-        .batch(`${MEMBER_ROWS_CTE}
+        .input('branchId', sql.Int, branchId == null ? null : Number(branchId))
+        .input('sectionId', sql.Int, sectionId == null ? null : Number(sectionId));
+    const result = await request.batch(`${(branchId != null || sectionId != null) ? MEMBER_ROWS_SCOPED_CTE : MEMBER_ROWS_CTE}
             SELECT ${MEMBER_ROW_COLUMNS} INTO #member_rows FROM member_rows;
 
             SELECT
@@ -1192,6 +1196,8 @@ async function getDashboard({ readOnly = false } = {}) {
                 SELECT TOP (1) a.attendance_date AS lastVisitDate
                 FROM dbo.gym_attendance AS a
                 WHERE a.member_id = member_rows.id
+                  AND (@branchId IS NULL OR a.branch_id = @branchId)
+                  AND (@sectionId IS NULL OR a.section_id = @sectionId)
                 ORDER BY a.attendance_date DESC, a.check_in_at DESC, a.id DESC
             ) AS last_visit
             WHERE member_rows.computedStatus = 'active'

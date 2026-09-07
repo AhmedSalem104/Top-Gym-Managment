@@ -28,6 +28,49 @@ function roundMoney(value) {
     return Math.round(Number(value || 0) * 100) / 100;
 }
 
+function membershipScope(alias = 'm') {
+    return `
+              AND (@branchId IS NULL OR EXISTS (
+                  SELECT 1
+                  FROM dbo.gym_membership_branch_access AS branch_scope
+                  WHERE branch_scope.tenant_id = ${alias}.tenant_id
+                    AND branch_scope.membership_id = ${alias}.id
+                    AND branch_scope.branch_id = @branchId
+              ))
+              AND (@sectionId IS NULL OR EXISTS (
+                  SELECT 1
+                  FROM dbo.gym_membership_section_access AS section_scope
+                  WHERE section_scope.tenant_id = ${alias}.tenant_id
+                    AND section_scope.membership_id = ${alias}.id
+                    AND section_scope.section_id = @sectionId
+              ))`;
+}
+
+function memberScope(memberExpression) {
+    const tenantExpression = memberExpression.replace(/\.[^.]+$/, '.tenant_id');
+    return `
+              AND (@branchId IS NULL OR EXISTS (
+                  SELECT 1
+                  FROM dbo.memberships AS member_scope_membership
+                  INNER JOIN dbo.gym_membership_branch_access AS branch_scope
+                      ON branch_scope.tenant_id = member_scope_membership.tenant_id
+                     AND branch_scope.membership_id = member_scope_membership.id
+                  WHERE member_scope_membership.tenant_id = ${tenantExpression}
+                    AND member_scope_membership.member_id = ${memberExpression}
+                    AND branch_scope.branch_id = @branchId
+              ))
+              AND (@sectionId IS NULL OR EXISTS (
+                  SELECT 1
+                  FROM dbo.memberships AS member_scope_membership
+                  INNER JOIN dbo.gym_membership_section_access AS section_scope
+                      ON section_scope.tenant_id = member_scope_membership.tenant_id
+                     AND section_scope.membership_id = member_scope_membership.id
+                  WHERE member_scope_membership.tenant_id = ${tenantExpression}
+                    AND member_scope_membership.member_id = ${memberExpression}
+                    AND section_scope.section_id = @sectionId
+              ))`;
+}
+
 function emptyTimeline(from, to) {
     const rows = [];
     let cursor = from;
@@ -59,11 +102,15 @@ async function getReportData(query = {}, options = {}) {
         ]);
     }
     const pool = await getPool();
-    const dayPassRangePromise = dayPassRepository.getRangeData({ fromDate: range.from, nextDate: range.nextDate, readOnly });
+    const branchId = options.branchId == null ? null : Number(options.branchId);
+    const sectionId = options.sectionId == null ? null : Number(options.sectionId);
+    const dayPassRangePromise = dayPassRepository.getRangeData({ fromDate: range.from, nextDate: range.nextDate, readOnly, branchId, sectionId });
     const baseRequest = () => pool.request()
         .input('fromDate', sql.Date, toUtcDate(range.from))
         .input('nextDate', sql.Date, toUtcDate(range.nextDate))
-        .input('todayDate', sql.Date, toUtcDate(range.today));
+        .input('todayDate', sql.Date, toUtcDate(range.today))
+        .input('branchId', sql.Int, branchId)
+        .input('sectionId', sql.Int, sectionId);
 
     const [membersResult, membershipsResult, paymentsResult, expensesResult, paymentMethodsResult, dashboard, debtorsResult, coachingResult, libraryResult] = await Promise.all([
         baseRequest().query(`
@@ -77,7 +124,7 @@ async function getReportData(query = {}, options = {}) {
                    p.amount_due, p.amount_paid, p.amount_remaining
             FROM dbo.members AS m
             OUTER APPLY (
-                SELECT TOP (1) x.id, x.membership_plan, x.membership_type, x.start_date, x.end_date, x.cancelled_at
+                SELECT TOP (1) x.id, x.tenant_id, x.membership_plan, x.membership_type, x.start_date, x.end_date, x.cancelled_at
                 FROM dbo.memberships AS x
                 WHERE x.member_id = m.id
                 ORDER BY x.end_date DESC, x.id DESC
@@ -89,6 +136,7 @@ async function getReportData(query = {}, options = {}) {
                 ORDER BY y.created_at DESC, y.id DESC
             ) AS p
             WHERE m.registration_date >= @fromDate AND m.registration_date < @nextDate
+              ${membershipScope('ms')}
             ORDER BY m.registration_date DESC, m.id DESC;
         `),
         baseRequest().query(`
@@ -122,6 +170,7 @@ async function getReportData(query = {}, options = {}) {
                 WHERE f.membership_id = m.id
             ) AS freeze_totals
             WHERE m.start_date >= @fromDate AND m.start_date < @nextDate
+              ${membershipScope('m')}
             ORDER BY m.start_date DESC, m.id DESC;
         `),
         baseRequest().query(`
@@ -133,12 +182,15 @@ async function getReportData(query = {}, options = {}) {
             INNER JOIN dbo.memberships AS ms ON ms.id = t.membership_id
             INNER JOIN dbo.members AS m ON m.id = ms.member_id
             WHERE t.paid_at >= @fromDate AND t.paid_at < @nextDate AND t.is_voided = 0 AND t.amount_paid <> 0
+              ${membershipScope('ms')}
             ORDER BY t.paid_at DESC, t.id DESC;
         `),
         baseRequest().query(`
             SELECT id, expense_name, expense_date AS event_date, amount, notes, created_at
             FROM dbo.gym_expenses
             WHERE expense_date >= @fromDate AND expense_date < @nextDate
+              AND (@branchId IS NULL OR branch_id = @branchId)
+              AND @sectionId IS NULL
               AND ISNULL(is_voided, 0) = 0
             ORDER BY expense_date DESC, id DESC;
         `),
@@ -146,10 +198,18 @@ async function getReportData(query = {}, options = {}) {
             SELECT payment_method, COUNT(*) AS count, ISNULL(SUM(amount_paid), 0) AS amount
             FROM dbo.gym_payment_transactions
             WHERE paid_at >= @fromDate AND paid_at < @nextDate AND is_voided = 0 AND amount_paid <> 0
+              AND (@branchId IS NULL OR EXISTS (
+                  SELECT 1 FROM dbo.memberships AS method_membership
+                  WHERE method_membership.id = membership_id
+                    ${membershipScope('method_membership')}
+              ))
             GROUP BY payment_method ORDER BY amount DESC;
         `),
-        getDashboard({ readOnly }),
-        pool.request().query(`
+        getDashboard({ readOnly, branchId, sectionId }),
+        pool.request()
+            .input('branchId', sql.Int, branchId)
+            .input('sectionId', sql.Int, sectionId)
+            .query(`
             SELECT TOP (1000)
                    m.id, m.full_name, m.phone, m.email,
                    ms.id AS membership_id, ms.membership_plan, ms.membership_type,
@@ -159,32 +219,37 @@ async function getReportData(query = {}, options = {}) {
             INNER JOIN dbo.memberships AS ms ON ms.id = p.membership_id
             INNER JOIN dbo.members AS m ON m.id = ms.member_id
             WHERE p.amount_remaining > 0
+              ${membershipScope('ms')}
             ORDER BY p.amount_remaining DESC, ms.end_date ASC, m.full_name ASC;
         `),
         baseRequest().batch(`
             SELECT
-                (SELECT COUNT_BIG(*) FROM dbo.workout_programs) AS total_workout_programs,
-                (SELECT COUNT_BIG(*) FROM dbo.workout_programs WHERE status = 'active') AS active_workout_programs,
-                (SELECT COUNT_BIG(*) FROM dbo.diet_plans) AS total_diet_plans,
-                (SELECT COUNT_BIG(*) FROM dbo.diet_plans WHERE status = 'active') AS active_diet_plans,
-                (SELECT COUNT_BIG(*) FROM dbo.body_measurements WHERE measured_at >= @fromDate AND measured_at < @nextDate) AS measurements_in_period,
-                (SELECT COUNT_BIG(*) FROM dbo.workout_sessions WHERE started_at >= @fromDate AND started_at < @nextDate) AS workout_sessions_in_period,
-                (SELECT COUNT_BIG(*) FROM dbo.workout_sessions WHERE started_at >= @fromDate AND started_at < @nextDate AND status = 'completed') AS completed_workout_sessions,
-                (SELECT COUNT_BIG(*) FROM dbo.meal_logs WHERE consumed_at >= @fromDate AND consumed_at < @nextDate) AS meal_logs_in_period,
-                (SELECT COUNT_BIG(*) FROM dbo.athlete_checkins WHERE checkin_date >= @fromDate AND checkin_date < @nextDate) AS checkins_in_period,
+                (SELECT COUNT_BIG(*) FROM dbo.workout_programs AS scope_programs WHERE 1=1 ${memberScope('scope_programs.member_id')}) AS total_workout_programs,
+                (SELECT COUNT_BIG(*) FROM dbo.workout_programs AS scope_programs WHERE scope_programs.status = 'active' ${memberScope('scope_programs.member_id')}) AS active_workout_programs,
+                (SELECT COUNT_BIG(*) FROM dbo.diet_plans AS scope_diets WHERE 1=1 ${memberScope('scope_diets.member_id')}) AS total_diet_plans,
+                (SELECT COUNT_BIG(*) FROM dbo.diet_plans AS scope_diets WHERE scope_diets.status = 'active' ${memberScope('scope_diets.member_id')}) AS active_diet_plans,
+                (SELECT COUNT_BIG(*) FROM dbo.body_measurements AS scope_measurements WHERE measured_at >= @fromDate AND measured_at < @nextDate ${memberScope('scope_measurements.member_id')}) AS measurements_in_period,
+                (SELECT COUNT_BIG(*) FROM dbo.workout_sessions AS scope_sessions WHERE started_at >= @fromDate AND started_at < @nextDate ${memberScope('scope_sessions.member_id')}) AS workout_sessions_in_period,
+                (SELECT COUNT_BIG(*) FROM dbo.workout_sessions AS scope_sessions WHERE started_at >= @fromDate AND started_at < @nextDate AND status = 'completed' ${memberScope('scope_sessions.member_id')}) AS completed_workout_sessions,
+                (SELECT COUNT_BIG(*) FROM dbo.meal_logs AS scope_meals WHERE consumed_at >= @fromDate AND consumed_at < @nextDate ${memberScope('scope_meals.member_id')}) AS meal_logs_in_period,
+                (SELECT COUNT_BIG(*) FROM dbo.athlete_checkins AS scope_checkins WHERE checkin_date >= @fromDate AND checkin_date < @nextDate ${memberScope('scope_checkins.member_id')}) AS checkins_in_period,
                 (SELECT COALESCE(SUM(COALESCE(log.weight_kg, 0) * COALESCE(log.reps, 0)), 0)
                  FROM dbo.workout_set_logs AS log
                  INNER JOIN dbo.workout_sessions AS session ON session.id = log.session_id
-                 WHERE session.started_at >= @fromDate AND session.started_at < @nextDate) AS workout_volume_in_period,
-                (SELECT COALESCE(SUM(calc_calories), 0) FROM dbo.meal_logs WHERE consumed_at >= @fromDate AND consumed_at < @nextDate) AS meal_calories_in_period,
-                (SELECT COALESCE(SUM(calc_protein), 0) FROM dbo.meal_logs WHERE consumed_at >= @fromDate AND consumed_at < @nextDate) AS meal_protein_in_period,
-                (SELECT COALESCE(SUM(calc_carbs), 0) FROM dbo.meal_logs WHERE consumed_at >= @fromDate AND consumed_at < @nextDate) AS meal_carbs_in_period,
-                (SELECT COALESCE(SUM(calc_fats), 0) FROM dbo.meal_logs WHERE consumed_at >= @fromDate AND consumed_at < @nextDate) AS meal_fats_in_period;
+                 WHERE session.started_at >= @fromDate AND session.started_at < @nextDate ${memberScope('session.member_id')}) AS workout_volume_in_period,
+                (SELECT COALESCE(SUM(calc_calories), 0) FROM dbo.meal_logs AS scope_meals WHERE consumed_at >= @fromDate AND consumed_at < @nextDate ${memberScope('scope_meals.member_id')}) AS meal_calories_in_period,
+                (SELECT COALESCE(SUM(calc_protein), 0) FROM dbo.meal_logs AS scope_meals WHERE consumed_at >= @fromDate AND consumed_at < @nextDate ${memberScope('scope_meals.member_id')}) AS meal_protein_in_period,
+                (SELECT COALESCE(SUM(calc_carbs), 0) FROM dbo.meal_logs AS scope_meals WHERE consumed_at >= @fromDate AND consumed_at < @nextDate ${memberScope('scope_meals.member_id')}) AS meal_carbs_in_period,
+                (SELECT COALESCE(SUM(calc_fats), 0) FROM dbo.meal_logs AS scope_meals WHERE consumed_at >= @fromDate AND consumed_at < @nextDate ${memberScope('scope_meals.member_id')}) AS meal_fats_in_period;
             SELECT 'workout' AS category, status, COUNT_BIG(*) AS count
-            FROM dbo.workout_programs GROUP BY status
+            FROM dbo.workout_programs AS status_workout
+            WHERE 1 = 1 ${memberScope('status_workout.member_id')}
+            GROUP BY status
             UNION ALL
             SELECT 'diet' AS category, status, COUNT_BIG(*) AS count
-            FROM dbo.diet_plans GROUP BY status;
+            FROM dbo.diet_plans AS status_diet
+            WHERE 1 = 1 ${memberScope('status_diet.member_id')}
+            GROUP BY status;
             SELECT TOP (50) p.id, p.member_id, m.full_name, m.phone, p.name, p.start_date, p.end_date,
                    p.status, p.goal, p.level, p.updated_at,
                    (SELECT COUNT(1) FROM dbo.workout_routines r WHERE r.program_id = p.id) AS routine_count,
@@ -192,6 +257,7 @@ async function getReportData(query = {}, options = {}) {
             FROM dbo.workout_programs p
             INNER JOIN dbo.members m ON m.id = p.member_id
             WHERE p.created_at >= @fromDate AND p.created_at < @nextDate
+              ${memberScope('p.member_id')}
             ORDER BY p.updated_at DESC, p.id DESC;
             SELECT TOP (50) p.id, p.member_id, m.full_name, m.phone, p.name, p.start_date, p.end_date,
                    p.status, p.target_calories, p.target_protein, p.target_carbs, p.target_fats, p.updated_at,
@@ -200,6 +266,7 @@ async function getReportData(query = {}, options = {}) {
             FROM dbo.diet_plans p
             INNER JOIN dbo.members m ON m.id = p.member_id
             WHERE p.created_at >= @fromDate AND p.created_at < @nextDate
+              ${memberScope('p.member_id')}
             ORDER BY p.updated_at DESC, p.id DESC;
         `),
         baseRequest().batch(`

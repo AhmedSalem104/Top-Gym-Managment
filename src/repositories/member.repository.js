@@ -3,7 +3,23 @@
 const { getPool, sql } = require('../database/pool');
 const { todayInTimeZone, toUtcDate } = require('../utils/date');
 
-const MEMBER_ROWS_CTE = `
+function createMemberRowsCte({ scoped = false } = {}) {
+    const membershipScope = scoped ? `
+        AND (@branchId IS NULL OR EXISTS (
+            SELECT 1
+            FROM dbo.gym_membership_branch_access AS branch_access
+            WHERE branch_access.tenant_id=m.tenant_id
+              AND branch_access.membership_id=m.id
+              AND branch_access.branch_id=@branchId
+        ))
+        AND (@sectionId IS NULL OR EXISTS (
+            SELECT 1
+            FROM dbo.gym_membership_section_access AS section_access
+            WHERE section_access.tenant_id=m.tenant_id
+              AND section_access.membership_id=m.id
+              AND section_access.section_id=@sectionId
+        ))` : '';
+    return `
 WITH latest_membership AS (
     SELECT
         m.id AS membershipId,
@@ -17,6 +33,7 @@ WITH latest_membership AS (
         m.cancellation_reason AS cancellationReason,
         ROW_NUMBER() OVER (PARTITION BY m.member_id ORDER BY CASE WHEN m.cancelled_at IS NULL THEN 0 ELSE 1 END, m.end_date DESC, m.id DESC) AS membershipRank
     FROM dbo.memberships AS m
+    WHERE 1=1${membershipScope}
 ),
 freeze_totals AS (
     SELECT
@@ -104,6 +121,10 @@ LEFT JOIN current_freeze AS cf ON cf.currentFreezeMembershipId = lm.membershipId
 LEFT JOIN payment_summary AS ps ON ps.paymentMembershipId = lm.membershipId
 )
 `;
+}
+
+const MEMBER_ROWS_CTE = createMemberRowsCte();
+const MEMBER_ROWS_SCOPED_CTE = createMemberRowsCte({ scoped: true });
 
 const MEMBER_ROW_COLUMNS = [
     'id',
@@ -157,16 +178,18 @@ async function findById({ id, connection = null, today = todayInTimeZone() }) {
         .query(`${MEMBER_CTE} WHERE id = @id;`);
 }
 
-async function list({ search = '', status = '', sort = 'expiry', offset = 0, pageSize = 5, today = todayInTimeZone() }) {
+async function list({ search = '', status = '', sort = 'expiry', offset = 0, pageSize = 5, today = todayInTimeZone(), branchId = null, sectionId = null }) {
     const pool = await getPool();
-    return pool.request()
+    const scoped = branchId != null || sectionId != null;
+    const request = pool.request()
         .input('today', sql.Date, toUtcDate(today))
         .input('search', sql.NVarChar(100), search)
         .input('pattern', sql.NVarChar(110), `%${search}%`)
         .input('status', sql.VarChar(20), status)
         .input('offset', sql.Int, offset)
-        .input('pageSize', sql.Int, pageSize)
-        .query(`${MEMBER_CTE}
+        .input('pageSize', sql.Int, pageSize);
+    if (scoped) request.input('branchId', sql.Int, branchId == null ? null : Number(branchId)).input('sectionId', sql.Int, sectionId == null ? null : Number(sectionId));
+    return request.query(`${scoped ? MEMBER_ROWS_SCOPED_CTE : MEMBER_CTE}
             WHERE (@search = N'' OR fullName LIKE @pattern OR phone LIKE @pattern OR ISNULL(email, N'') LIKE @pattern)
               AND membershipId IS NOT NULL
               AND (@status = '' OR computedStatus = @status)
@@ -174,4 +197,4 @@ async function list({ search = '', status = '', sort = 'expiry', offset = 0, pag
             OFFSET @offset ROWS FETCH NEXT @pageSize ROWS ONLY;`);
 }
 
-module.exports = { findById, list, MEMBER_CTE, MEMBER_ROW_COLUMNS, MEMBER_ROWS_CTE };
+module.exports = { findById, list, MEMBER_CTE, MEMBER_ROW_COLUMNS, MEMBER_ROWS_CTE, MEMBER_ROWS_SCOPED_CTE, createMemberRowsCte };

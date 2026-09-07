@@ -41,6 +41,8 @@ const PHASE12_BAR_MODIFIERS_MIGRATION_PATH = path.join(__dirname, '..', 'databas
 const PHASE13_BRANCH_PLAN_LIMITS_MIGRATION_PATH = path.join(__dirname, '..', 'database', 'migrations', '026-branch-plan-limits.sql');
 const PHASE14_TRAINER_STUDIO_MIGRATION_PATH = path.join(__dirname, '..', 'database', 'migrations', '027-trainer-studio-goals-templates.sql');
 const PHASE15_TRAINER_ACTION_CENTER_MIGRATION_PATH = path.join(__dirname, '..', 'database', 'migrations', '028-trainer-action-center.sql');
+const PHASE16_BRANCH_SECTIONS_MIGRATION_PATH = path.join(__dirname, '..', 'database', 'migrations', '029-branch-sections.sql');
+const PHASE17_PLAN_ENTITLEMENTS_MIGRATION_PATH = path.join(__dirname, '..', 'database', 'migrations', '030-plan-entitlements.sql');
 const PHASE0_SECURITY_MIGRATION_PATH = path.join(__dirname, '..', 'database', 'migrations', '013-phase0-security-preconditions.sql');
 const BASE_COMMERCIAL_MIGRATION_PATH = commercialSchema.MIGRATION_PATH;
 
@@ -190,6 +192,16 @@ async function migrate() {
     await runTenantContext({ mode: 'platform', tenantId: bootstrapTenant.id }, async () => {
         const pool = await getPool();
         await pool.request().batch(trainerActionCenterMigration);
+    });
+    const branchSectionsMigration = fs.readFileSync(PHASE16_BRANCH_SECTIONS_MIGRATION_PATH, 'utf8');
+    await runTenantContext({ mode: 'platform', tenantId: bootstrapTenant.id }, async () => {
+        const pool = await getPool();
+        await pool.request().batch(branchSectionsMigration);
+    });
+    const planEntitlementsMigration = fs.readFileSync(PHASE17_PLAN_ENTITLEMENTS_MIGRATION_PATH, 'utf8');
+    await runTenantContext({ mode: 'platform', tenantId: bootstrapTenant.id }, async () => {
+        const pool = await getPool();
+        await pool.request().batch(planEntitlementsMigration);
     });
     await runTenantContext({ mode: 'platform', tenantId: bootstrapTenant.id }, () => tenantService.ensureTenantColumnsAndRls(bootstrapTenant.id));
     await runTenantContext({ mode: 'tenant', tenantId: bootstrapTenant.id }, () => libraryService.ensureLibraryData());

@@ -15,6 +15,10 @@
         if (branchId && /^\d+$/.test(branchId) && !headers.has('x-branch-id')) {
             headers.set('x-branch-id', branchId);
         }
+        const sectionId = window.sessionStorage?.getItem('logicfit.sectionId');
+        if (sectionId && /^\d+$/.test(sectionId) && !headers.has('x-section-id')) {
+            headers.set('x-section-id', sectionId);
+        }
         return headers;
     }
 

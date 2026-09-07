@@ -7,7 +7,7 @@ function createFinanceController({ financeService, branchService }) {
     return {
         monthly: async (request, response) => {
             const branch = await branchOptions(request);
-            response.json(await financeService.getMonthlyFinance({ readOnly: request.readOnlyRequest, branchId: branch.branchId }));
+            response.json(await financeService.getMonthlyFinance({ readOnly: request.readOnlyRequest, branchId: branch.branchId, sectionId: branch.sectionId }));
         },
         createExpense: async (request, response) => {
             const branch = await branchOptions(request);

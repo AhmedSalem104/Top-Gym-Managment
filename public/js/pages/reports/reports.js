@@ -219,7 +219,10 @@
     }
 
     async function getJson(path, options = {}) {
-        const response = await fetch(path, { cache: 'no-store', ...options, headers: { Accept: 'application/json', ...(options.headers || {}) } });
+        const requestOptions = { cache: 'no-store', ...options, headers: { Accept: 'application/json', ...(options.headers || {}) } };
+        const response = window.topGymApi?.raw
+            ? await window.topGymApi.raw(path, requestOptions)
+            : await fetch(path, requestOptions);
         const data = await response.json().catch(() => ({}));
         if (!response.ok) throw new Error(data.error || 'تعذر تحميل التقرير.');
         return data;
@@ -657,6 +660,13 @@
         window.addEventListener('topgym:brandingchange', () => {
             const title = $('reportsTitle');
             if (title) title.textContent = `تقارير ${brandName()}`;
+        });
+        window.addEventListener('topgym:branch-context-changed', () => {
+            state.data = null;
+            state.attendance = null;
+            state.loadedRangeKey = '';
+            state.loadedAt = 0;
+            if (document.querySelector('[data-page-tab="reports"]')?.classList.contains('active')) void loadReport(true);
         });
         if (document.querySelector('[data-page-tab="reports"]')?.classList.contains('active')) loadReport();
     }

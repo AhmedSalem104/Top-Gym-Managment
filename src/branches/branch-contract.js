@@ -25,10 +25,29 @@ const BRANCH_NULL_SEMANTICS = Object.freeze({
 
 const BRANCH_CAPABILITY = 'branches';
 
+const BRANCH_SECTION_TYPES = Object.freeze({
+    MEN: 'men',
+    WOMEN: 'women',
+    MIXED: 'mixed'
+});
+
+const BRANCH_SECTION_TYPE_VALUES = Object.freeze(Object.values(BRANCH_SECTION_TYPES));
+
 function normalizeBranchId(value) {
     if (value === undefined || value === null || value === '') return null;
     const id = Number(value);
     return Number.isInteger(id) && id > 0 ? id : null;
+}
+
+function normalizeSectionId(value) {
+    if (value === undefined || value === null || value === '') return null;
+    const id = Number(value);
+    return Number.isInteger(id) && id > 0 ? id : null;
+}
+
+function normalizeBranchSectionType(value) {
+    const normalized = String(value || '').trim().toLowerCase();
+    return BRANCH_SECTION_TYPE_VALUES.includes(normalized) ? normalized : null;
 }
 
 function normalizeBranchStatus(value, fallback = BRANCH_STATUS.ACTIVE) {
@@ -59,13 +78,15 @@ function branchCapabilityEnabled({ tenantType, capabilities = {} } = {}) {
     return isGymTenant(tenantType) && capabilities[BRANCH_CAPABILITY] === true;
 }
 
-function normalizeBranchContext({ branchId = null, allBranches = false } = {}) {
-    if (allBranches) return { branchId: null, allBranches: true };
-    return { branchId: normalizeBranchId(branchId), allBranches: false };
+function normalizeBranchContext({ branchId = null, sectionId = null, allBranches = false } = {}) {
+    if (allBranches) return { branchId: null, sectionId: null, allBranches: true };
+    return { branchId: normalizeBranchId(branchId), sectionId: normalizeSectionId(sectionId), allBranches: false };
 }
 
 module.exports = {
     BRANCH_CAPABILITY,
+    BRANCH_SECTION_TYPES,
+    BRANCH_SECTION_TYPE_VALUES,
     BRANCH_NULL_SEMANTICS,
     BRANCH_STATUS,
     BRANCH_STATUS_VALUES,
@@ -77,6 +98,8 @@ module.exports = {
     isGymTenant,
     normalizeBranchContext,
     normalizeBranchId,
+    normalizeSectionId,
+    normalizeBranchSectionType,
     normalizeBranchStatus,
     normalizeMembershipBranchAccessMode
 };

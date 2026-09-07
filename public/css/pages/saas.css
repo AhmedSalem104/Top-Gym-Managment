@@ -360,6 +360,11 @@
 .saas-plan-limits strong { color: var(--text-primary); }
 .saas-plan-card .btn { width: 100%; margin-top: auto; }
 
+.saas-plan-entitlements { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.saas-entitlement { border-radius: var(--radius-pill); padding: 4px 8px; font-size: var(--font-2xs); font-weight: 700; }
+.saas-entitlement.is-enabled { background: var(--success-soft); color: var(--success-text); }
+.saas-entitlement.is-disabled { background: var(--border-secondary); color: var(--text-muted); }
+
 .saas-upload-field { min-width: 0; }
 .saas-upload-box {
     display: grid;

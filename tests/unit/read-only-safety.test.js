@@ -150,7 +150,7 @@ test('subscription requests and reports keep read paths free of maintenance writ
     assert.match(subscription, /getPortalRequests\(request, options = \{\}\)[\s\S]*?pageSize: options\.pageSize,[\s\S]*?readOnly: true/);
     assert.match(subscription, /getOwnerRequests\(options = \{\}\)[\s\S]*?includeMemberCode: true,[\s\S]*?readOnly: Boolean\(options\.readOnly\)/);
     assert.match(subscriptionController, /service\.getOwnerRequests\(\{[\s\S]*?readOnly: request\.readOnlyRequest/);
-    assert.match(report, /dayPassRepository\.getRangeData\(\{ fromDate: range\.from, nextDate: range\.nextDate, readOnly \}\)/);
+    assert.match(report, /dayPassRepository\.getRangeData\(\{ fromDate: range\.from, nextDate: range\.nextDate, readOnly,[\s\S]*?branchId,[\s\S]*?sectionId \}\)/);
     assert.match(report, /alertContactService\.getLatestForAlerts\(debtAlertSnapshots, \{ readOnly \}\)/);
 });
 

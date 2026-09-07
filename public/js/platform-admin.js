@@ -7,6 +7,7 @@
         dashboard: null,
         tenants: { tenants: [], pagination: {} },
         plans: [],
+        featureCatalog: [],
         requests: [],
         requestPage: 1,
         requestPagination: {},
@@ -364,6 +365,11 @@
         const usage = profile.tenant?.usage || {};
         const entitlements = profile.entitlements || {};
         const rows = usage.rows || [];
+        const catalog = entitlements.featureCatalog || state.featureCatalog || [];
+        if (catalog.length) {
+            const featureRows = catalog.map((feature) => `<span class="feature-chip ${entitlements.features?.[feature.key] === false ? 'off' : ''}" title="${escapeHtml(feature.description)}">${entitlements.features?.[feature.key] === false ? '×' : '✓'} ${escapeHtml(feature.key)}</span>`).join('');
+            return profilePanel('usage', `<div class="profile-section-grid"><article class="profile-section"><h3>Usage vs limits</h3><div class="limit-list">${rows.map((row) => `<div class="limit-row ${row.percent >= 100 ? 'reached' : row.percent >= 80 ? 'near' : ''}"><div class="limit-row-head"><span>${escapeHtml(row.label)}</span><b>${escapeHtml(row.key === 'storage' ? formatBytes(row.used) : row.used)} / ${escapeHtml(row.max == null ? '∞' : row.key === 'storage' ? formatBytes(row.max) : row.max)}</b></div><span class="progress-track"><i style="width:${row.percent}%"></i></span></div>`).join('')}</div></article><article class="profile-section"><div class="card-heading"><h3>Entitled features</h3>${profileActionButton('Add override','override')}</div><div class="feature-list">${featureRows}</div>${detailRows([['Current plan', entitlements.plan?.name || profile.subscription?.plan?.name],['Custom overrides', entitlements.overrides ? 'Enabled' : 'None'],['Override notes', entitlements.overrides?.notes || '—']])}</article></div>`);
+        }
         const featureNames = { intelligence: 'الذكاء التشغيلي', coaching: 'التدريب والتغذية', store: 'المتجر', reports: 'التقارير', portal: 'بوابة المشترك', prioritySupport: 'دعم بأولوية' };
         return profilePanel('usage', `<div class="profile-section-grid"><article class="profile-section"><h3>الاستهلاك مقابل الحدود</h3><div class="limit-list">${rows.map((row) => `<div class="limit-row ${row.percent >= 100 ? 'reached' : row.percent >= 80 ? 'near' : ''}"><div class="limit-row-head"><span>${escapeHtml(row.label)}</span><b>${escapeHtml(row.key === 'storage' ? formatBytes(row.used) : row.used)} / ${escapeHtml(row.max == null ? '∞' : row.key === 'storage' ? formatBytes(row.max) : row.max)}</b></div><span class="progress-track"><i style="width:${row.percent}%"></i></span></div>`).join('')}</div></article><article class="profile-section"><div class="card-heading"><h3>المزايا الفعالة</h3>${profileActionButton('إضافة Override','override')}</div><div class="feature-list">${Object.entries(featureNames).map(([key,label]) => `<span class="feature-chip ${entitlements.features?.[key] === false ? 'off' : ''}">${entitlements.features?.[key] === false ? '×' : '✓'} ${escapeHtml(label)}</span>`).join('')}</div><div style="margin-top:18px">${detailRows([['الباقة الأساسية', entitlements.plan?.name || profile.subscription?.plan?.name],['استثناءات مخصصة', entitlements.overrides ? 'مفعلة' : 'لا توجد'],['ملاحظات الاستثناء', entitlements.overrides?.notes || '—']])}</div></article></div>`);
     }
@@ -639,10 +645,39 @@
     }
 
     async function loadPlans() {
-        try { state.plans = (await api('/api/platform-admin/plans')).plans || []; updatePlanFilter(); renderPlans(); } catch (error) { showToast(error.message, true); }
+        try {
+            const [plansResponse, catalogResponse] = await Promise.all([
+                api('/api/platform-admin/plans'),
+                api('/api/platform-admin/feature-catalog')
+            ]);
+            state.plans = plansResponse.plans || [];
+            state.featureCatalog = catalogResponse.featureCatalog || [];
+            updatePlanFilter();
+            renderPlans();
+        } catch (error) { showToast(error.message, true); }
     }
 
     function renderPlans() {
+        const catalog = state.featureCatalog || [];
+        if (catalog.length) {
+            const activeCount = state.plans.filter((item) => (item.status || (item.isActive ? 'active' : 'archived')) === 'active').length;
+            $('#plansGrid').innerHTML = state.plans.length ? state.plans.map((plan) => {
+                const status = plan.status || (plan.isActive ? 'active' : 'archived');
+                const statusAction = status === 'active' ? 'disabled' : 'active';
+                const compatible = Array.isArray(plan.compatibleTenantTypes) && plan.compatibleTenantTypes.length
+                    ? catalog.filter((feature) => feature.tenantTypes?.some((type) => plan.compatibleTenantTypes.includes(type)))
+                    : catalog;
+                return `<article class="plan-card ${plan.code === 'pro' && status === 'active' ? 'featured' : ''} ${status !== 'active' ? 'is-inactive' : ''}">
+                    <div class="card-heading"><div><span class="eyebrow">${escapeHtml(plan.code)}</span><h3>${escapeHtml(plan.name)}</h3></div>${statusPill(status)}</div>
+                    <p>${escapeHtml(plan.description || 'SaaS plan')}</p>
+                    <div class="plan-price">${escapeHtml(formatMoney(plan.price, plan.currency))}<small> / ${escapeHtml(plan.billingPeriod === 'yearly' ? 'year' : 'month')}</small></div>
+                    <div class="plan-limits"><span>Members <b>${escapeHtml(plan.maxMembers ?? '∞')}</b></span><span>Clients <b>${escapeHtml(plan.maxClients ?? '∞')}</b></span><span>Branches <b>${escapeHtml(plan.maxBranches ?? '∞')}</b></span><span>Users <b>${escapeHtml(plan.maxUsers ?? '∞')}</b></span><span>AI <b>${escapeHtml(plan.maxAiGenerations ?? '∞')}</b></span><span>Storage <b>${escapeHtml(plan.maxStorageMb == null ? '∞' : `${plan.maxStorageMb} MB`)}</b></span></div>
+                    <div class="plan-features">${compatible.map((feature) => `<span class="feature-chip ${plan.features?.[feature.key] === false ? 'off' : ''}" title="${escapeHtml(feature.description)}">${plan.features?.[feature.key] === false ? '×' : '✓'} ${escapeHtml(feature.key)}</span>`).join('')}</div>
+                    <div class="plan-card-actions"><button class="platform-btn ghost plan-edit" type="button" data-plan-edit="${plan.id}">Edit</button><button class="platform-btn ${status === 'active' ? 'danger' : 'ghost'} plan-status" type="button" data-plan-status="${plan.id}" data-next-status="${statusAction}" ${status === 'active' && activeCount <= 1 ? 'disabled title="Keep one active plan"' : ''}>${status === 'active' ? 'Disable' : 'Activate'}</button><button class="platform-btn danger plan-delete" type="button" data-plan-delete="${plan.id}" ${status === 'archived' ? 'disabled' : ''}>Archive</button></div>
+                </article>`;
+            }).join('') : '<div class="empty-inline">No plans.</div>';
+            return;
+        }
         const featureNames = { intelligence: 'الذكاء التشغيلي', coaching: 'التدريب والتغذية', store: 'المتجر', reports: 'التقارير', portal: 'بوابة المشترك', prioritySupport: 'دعم بأولوية' };
         $('#plansGrid').innerHTML = state.plans.length ? state.plans.map((plan) => `<article class="plan-card ${plan.code === 'pro' && plan.isActive ? 'featured' : ''} ${plan.isActive ? '' : 'is-inactive'}"><div class="card-heading"><div><span class="eyebrow">${escapeHtml(plan.code)}</span><h3>${escapeHtml(plan.name)}</h3></div>${plan.isActive ? statusPill('active') : statusPill('archived')}</div><p>${escapeHtml(plan.description || 'باقة SaaS لمنصة الجيم.')}</p><div class="plan-price">${escapeHtml(formatMoney(plan.price, plan.currency))}<small> / ${escapeHtml(plan.billingPeriod === 'yearly' ? 'سنة' : 'شهر')}</small></div><div class="plan-limits"><span>المشتركون <b>${escapeHtml(plan.maxMembers ?? '∞')}</b></span><span>المستخدمون <b>${escapeHtml(plan.maxUsers ?? '∞')}</b></span><span>AI شهريًا <b>${escapeHtml(plan.maxAiGenerations ?? '∞')}</b></span><span>التخزين <b>${escapeHtml(plan.maxStorageMb ? `${plan.maxStorageMb} MB` : '∞')}</b></span></div><div class="plan-features">${Object.entries(featureNames).map(([key,label]) => `<span class="feature-chip ${plan.features?.[key] === false ? 'off' : ''}">${plan.features?.[key] === false ? '×' : '✓'} ${label}</span>`).join('')}</div><div class="plan-card-actions"><button class="platform-btn ghost plan-edit" type="button" data-plan-edit="${plan.id}">تعديل الباقة</button><button class="platform-btn danger plan-delete" type="button" data-plan-delete="${plan.id}" ${plan.isActive && state.plans.filter((item) => item.isActive).length <= 1 ? 'disabled title="يجب إبقاء باقة مفعّلة"' : ''}>حذف</button></div></article>`).join('') : '<div class="empty-inline">لا توجد باقات.</div>';
     }
@@ -661,8 +696,22 @@
     }
 
     function planFeatureFields(features = {}) {
+        const catalog = state.featureCatalog || [];
+        if (catalog.length) {
+            return `<div class="dialog-feature-grid full">${catalog.map((feature) => `<label class="dialog-check" title="${escapeHtml(feature.description)}"><input name="feature_${escapeHtml(feature.key)}" type="checkbox" ${features[feature.key] !== false ? 'checked' : ''}> ${escapeHtml(feature.key)}</label>`).join('')}</div>`;
+        }
         const labels = { intelligence: 'الذكاء التشغيلي', coaching: 'التدريب والتغذية', store: 'المتجر', reports: 'التقارير', portal: 'بوابة المشترك', prioritySupport: 'دعم بأولوية' };
         return `<div class="dialog-feature-grid full">${Object.entries(labels).map(([key, label]) => `<label class="dialog-check"><input name="feature_${key}" type="checkbox" ${features[key] === true ? 'checked' : ''}> ${escapeHtml(label)}</label>`).join('')}</div>`;
+    }
+
+    function overrideFeatureFields(features = {}) {
+        const catalog = state.featureCatalog || [];
+        const entries = catalog.length ? catalog : ['intelligence', 'coaching', 'store', 'reports', 'portal', 'prioritySupport'].map((key) => ({ key, description: key }));
+        return '<div class="dialog-feature-grid full">' + entries.map((feature) => {
+            const key = feature.key;
+            const current = Object.prototype.hasOwnProperty.call(features, key) ? (features[key] === true ? 'enabled' : 'disabled') : 'inherit';
+            return '<label class="dialog-label"><span title="' + escapeHtml(feature.description) + '">' + escapeHtml(key) + '</span><select name="feature_override_' + escapeHtml(key) + '"><option value="inherit" ' + (current === 'inherit' ? 'selected' : '') + '>Use plan</option><option value="enabled" ' + (current === 'enabled' ? 'selected' : '') + '>Enabled</option><option value="disabled" ' + (current === 'disabled' ? 'selected' : '') + '>Disabled</option></select></label>';
+        }).join('') + '</div>';
     }
 
     function planCompatibilityFields(selected = ['gym']) {
@@ -675,6 +724,27 @@
     }
 
     function numberOrNull(value) { return value === '' || value == null ? null : Number(value); }
+
+    function planFeaturePayload(values) {
+        const keys = (state.featureCatalog || []).map((feature) => feature.key);
+        const fallbackKeys = ['intelligence', 'coaching', 'store', 'reports', 'portal', 'prioritySupport'];
+        const features = {};
+        [...new Set([...keys, ...fallbackKeys])].forEach((key) => {
+            if (Object.prototype.hasOwnProperty.call(values, `feature_${key}`)) features[key] = Boolean(values[`feature_${key}`]);
+        });
+        return features;
+    }
+
+    function overrideFeaturePayload(values) {
+        const keys = (state.featureCatalog || []).map((feature) => feature.key);
+        const fallbackKeys = ['intelligence', 'coaching', 'store', 'reports', 'portal', 'prioritySupport'];
+        const features = {};
+        [...new Set([...keys, ...fallbackKeys])].forEach((key) => {
+            const value = values['feature_override_' + key];
+            if (value === 'enabled' || value === 'disabled') features[key] = value === 'enabled';
+        });
+        return features;
+    }
 
     function dialogField(label, name, type = 'text', value = '', extra = '') { return `<label class="dialog-label"><span>${escapeHtml(label)}</span><input name="${escapeHtml(name)}" type="${type}" value="${escapeHtml(value)}" ${extra}></label>`; }
     function dialogSelect(label, name, options, extraClass = '') { return `<label class="dialog-label ${extraClass}"><span>${escapeHtml(label)}</span><select name="${escapeHtml(name)}">${options}</select></label>`; }
@@ -699,7 +769,7 @@
         } else if (type === 'override') {
             title = 'استثناءات مخصصة للجيم';
             const over = profile?.entitlements?.overrides || {};
-            body = `<p>اترك الحد فارغًا لاستخدام حد الباقة. هذه الاستثناءات لا تنشئ باقة جديدة.</p><div class="dialog-grid">${dialogField('حد المشتركين','maxMembers','number',over.maxMembers || '')}${dialogField('حد المستخدمين','maxUsers','number',over.maxUsers || '')}${dialogField('حد AI الشهري','maxAiGenerations','number',over.maxAiGenerations || '')}${dialogField('حد التخزين MB','maxStorageMb','number',over.maxStorageMb || '')}</div><div class="dialog-grid">${['intelligence','coaching','store','reports','portal','prioritySupport'].map((key) => `<label class="dialog-check"><input name="feature_${key}" type="checkbox" ${over.features?.[key] === true ? 'checked' : ''}> ${escapeHtml(key)}</label>`).join('')}</div>${dialogField('ملاحظات','notes','text',over.notes || '')}${dialogField('سبب التغيير','reason','text','','required')}`;
+            body = `<p>اترك الحد أو الميزة على «Use plan» لاستخدام إعدادات الباقة. هذه الاستثناءات لا تنشئ باقة جديدة.</p><div class="dialog-grid">${dialogField('حد المشتركين','maxMembers','number',over.maxMembers || '')}${dialogField('حد العملاء','maxClients','number',over.maxClients || '')}${dialogField('حد الفروع','maxBranches','number',over.maxBranches || '')}${dialogField('حد المستخدمين','maxUsers','number',over.maxUsers || '')}${dialogField('حد AI الشهري','maxAiGenerations','number',over.maxAiGenerations || '')}${dialogField('حد التخزين MB','maxStorageMb','number',over.maxStorageMb || '')}</div>${overrideFeatureFields(over.features || {})}${dialogField('ملاحظات','notes','text',over.notes || '')}${dialogField('سبب التغيير','reason','text','','required')}`;
         } else if (type === 'note') {
             title = 'إضافة ملاحظة داخلية';
             body = '<p>هذه الملاحظة لا يراها Owner أو مستخدمو الجيم.</p><label class="dialog-label full"><span>الملاحظة</span><textarea name="note" required placeholder="اكتب تفاصيل المتابعة..."></textarea></label>';
@@ -715,7 +785,12 @@
         } else if (type === 'plan-create' || type === 'plan-edit') {
             const plan = type === 'plan-edit' ? (state.plans.find((item) => String(item.id) === String(payload.planId)) || {}) : {};
             title = type === 'plan-edit' ? `تعديل باقة ${plan.name || ''}` : 'إضافة باقة جديدة';
-            body = `<div class="dialog-grid">${type === 'plan-create' ? dialogField('معرف الباقة','code','text','','pattern="[a-z0-9]+(?:-[a-z0-9]+)*" minlength="2" maxlength="40" required') : dialogField('معرف الباقة','code','text',plan.code || '','readonly')}${dialogField('اسم الباقة','name','text',plan.name || '','maxlength="120" required')}${dialogField('السعر','price','number',plan.price ?? 0,'min="0" step="0.01" required')}${dialogSelect('الفترة','billingPeriod',`<option value="monthly" ${plan.billingPeriod === 'monthly' || !plan.billingPeriod ? 'selected' : ''}>شهري</option><option value="yearly" ${plan.billingPeriod === 'yearly' ? 'selected' : ''}>سنوي</option>`)}${dialogField('العملة','currency','text',plan.currency || 'EGP','pattern="[A-Za-z]{3}" minlength="3" maxlength="3" required')}${dialogField('ترتيب الظهور','sortOrder','number',plan.sortOrder ?? 0,'min="0" step="1" required')}${dialogField('حد المشتركين','maxMembers','number',plan.maxMembers ?? '')}${dialogField('حد المستخدمين','maxUsers','number',plan.maxUsers ?? '')}${dialogField('حد AI الشهري','maxAiGenerations','number',plan.maxAiGenerations ?? '')}${dialogField('التخزين MB','maxStorageMb','number',plan.maxStorageMb ?? '')}</div>${dialogTextarea('وصف الباقة','description',plan.description || '','maxlength="500" rows="3"')}${planFeatureFields(plan.features || {})}<label class="dialog-check"><input name="isActive" type="checkbox" ${plan.isActive !== false ? 'checked' : ''}> الباقة مفعلة للاشتراكات الجديدة</label>${dialogField(type === 'plan-edit' ? 'سبب تعديل الباقة' : 'سبب إنشاء الباقة', 'reason', 'text', '', 'required')}`;
+            body = `<div class="dialog-grid">${type === 'plan-create' ? dialogField('معرف الباقة','code','text','','pattern="[a-z0-9]+(?:-[a-z0-9]+)*" minlength="2" maxlength="40" required') : dialogField('معرف الباقة','code','text',plan.code || '','readonly')}${dialogField('اسم الباقة','name','text',plan.name || '','maxlength="120" required')}${dialogField('السعر','price','number',plan.price ?? 0,'min="0" step="0.01" required')}${dialogSelect('الفترة','billingPeriod',`<option value="monthly" ${plan.billingPeriod === 'monthly' || !plan.billingPeriod ? 'selected' : ''}>شهري</option><option value="yearly" ${plan.billingPeriod === 'yearly' ? 'selected' : ''}>سنوي</option>`)}${dialogField('العملة','currency','text',plan.currency || 'EGP','pattern="[A-Za-z]{3}" minlength="3" maxlength="3" required')}${dialogField('ترتيب الظهور','sortOrder','number',plan.sortOrder ?? 0,'min="0" step="1" required')}${dialogField('حد المشتركين','maxMembers','number',plan.maxMembers ?? '')}${dialogField('حد العملاء','maxClients','number',plan.maxClients ?? '')}${dialogField('حد الفروع','maxBranches','number',plan.maxBranches ?? '')}${dialogField('حد المستخدمين','maxUsers','number',plan.maxUsers ?? '')}${dialogField('حد AI الشهري','maxAiGenerations','number',plan.maxAiGenerations ?? '')}${dialogField('التخزين MB','maxStorageMb','number',plan.maxStorageMb ?? '')}</div>${dialogTextarea('وصف الباقة','description',plan.description || '','maxlength="500" rows="3"')}${planCompatibilityFields(plan.compatibleTenantTypes || ['gym'])}${planFeatureFields(plan.features || {})}<label class="dialog-check"><input name="isActive" type="checkbox" ${plan.isActive !== false ? 'checked' : ''}> الباقة مفعلة للاشتراكات الجديدة</label>${dialogField(type === 'plan-edit' ? 'سبب تعديل الباقة' : 'سبب إنشاء الباقة', 'reason', 'text', '', 'required')}`;
+        } else if (type === 'plan-status') {
+            const plan = state.plans.find((item) => String(item.id) === String(payload.planId)) || {};
+            const nextStatus = payload.nextStatus || 'active';
+            title = `${nextStatus === 'active' ? 'Activate' : nextStatus === 'disabled' ? 'Disable' : 'Restore'} plan ${plan.name || ''}`;
+            body = `${dialogSelect('New status','status',`<option value="active" ${nextStatus === 'active' ? 'selected' : ''}>Active</option><option value="disabled" ${nextStatus === 'disabled' ? 'selected' : ''}>Disabled</option><option value="archived" ${nextStatus === 'archived' ? 'selected' : ''}>Archived</option>`)}${dialogField('Reason','reason','text','','maxlength="1000" required')}`;
         } else if (type === 'plan-delete') {
             const plan = state.plans.find((item) => String(item.id) === String(payload.planId)) || {};
             title = `حذف باقة ${plan.name || ''}`;
@@ -757,12 +832,6 @@
         }
         $('#platformDialogTitle').textContent = title;
         $('#platformDialogBody').innerHTML = body;
-        if (action === 'plan-create' || action === 'plan-edit') {
-            const selectedTenantTypes = type === 'plan-edit'
-                ? (state.plans.find((item) => String(item.id) === String(payload.planId))?.compatibleTenantTypes || ['gym'])
-                : ['gym'];
-            $('#platformDialogBody').insertAdjacentHTML('beforeend', planCompatibilityFields(selectedTenantTypes));
-        }
         if (action === 'new-tenant') $('#platformDialogBody').insertAdjacentHTML('afterbegin', tenantTypeField('gym'));
         if (action === 'reset') {
             $('#platformDialogBody').innerHTML = '<p class="dialog-hint">سيتم إنشاء كلمة مرور مؤقتة آمنة من الخادم، وإبطال الجلسات الحالية للحساب.</p><p>بعد تسجيل الدخول بها سيُطلب من صاحب الجيم تعيين كلمة مرور جديدة. لن يتم عرض كلمة المرور الحالية أو حفظ كلمة المرور المؤقتة في النظام.</p>';
@@ -869,8 +938,8 @@
                 await api(`/api/platform-admin/tenants/${state.profile.tenant.id}/subscription`, { method: 'PATCH', body: JSON.stringify(body) });
                 showToast('تم تحديث الاشتراك بنجاح.'); dialog.close(); await refreshProfile();
             } else if (action === 'override') {
-                const features = {}; ['intelligence','coaching','store','reports','portal','prioritySupport'].forEach((key) => { if (Object.prototype.hasOwnProperty.call(values, `feature_${key}`)) features[key] = Boolean(values[`feature_${key}`]); });
-                await api(`/api/platform-admin/tenants/${state.profile.tenant.id}/overrides`, { method: 'PUT', body: JSON.stringify({ maxMembers: values.maxMembers || null, maxUsers: values.maxUsers || null, maxAiGenerations: values.maxAiGenerations || null, maxStorageMb: values.maxStorageMb || null, features, notes: values.notes, reason: values.reason }) });
+                const features = overrideFeaturePayload(values);
+                await api(`/api/platform-admin/tenants/${state.profile.tenant.id}/overrides`, { method: 'PUT', body: JSON.stringify({ maxMembers: values.maxMembers || null, maxClients: values.maxClients || null, maxBranches: values.maxBranches || null, maxUsers: values.maxUsers || null, maxAiGenerations: values.maxAiGenerations || null, maxStorageMb: values.maxStorageMb || null, features, notes: values.notes, reason: values.reason }) });
                 showToast('تم حفظ استثناءات الباقة.'); dialog.close(); await refreshProfile();
             } else if (action === 'note') {
                 await api(`/api/platform-admin/tenants/${state.profile.tenant.id}/notes`, { method: 'POST', body: JSON.stringify({ note: values.note }) });
@@ -882,16 +951,17 @@
                 await api(`/api/platform-admin/tenants/${state.profile.tenant.id}/owner`, { method: 'POST', body: JSON.stringify(values) });
                 showToast('تم تحديث Owner الجيم.'); dialog.close(); await refreshProfile();
             } else if (action === 'plan-create') {
-                const features = {};
-                ['intelligence','coaching','store','reports','portal','prioritySupport'].forEach((key) => { features[key] = Boolean(values[`feature_${key}`]); });
+                const features = planFeaturePayload(values);
                 const compatibleTenantTypes = ['gym', 'independent_trainer'].filter((type) => values[`compatibleTenantType_${type}`]);
-                await api('/api/platform-admin/plans', { method: 'POST', body: JSON.stringify({ code: values.code, name: values.name, description: values.description, price: values.price, currency: values.currency, billingPeriod: values.billingPeriod, sortOrder: values.sortOrder, maxMembers: numberOrNull(values.maxMembers), maxUsers: numberOrNull(values.maxUsers), maxAiGenerations: numberOrNull(values.maxAiGenerations), maxStorageMb: numberOrNull(values.maxStorageMb), isActive: values.isActive, features, compatibleTenantTypes, reason: values.reason }) });
+                await api('/api/platform-admin/plans', { method: 'POST', body: JSON.stringify({ code: values.code, name: values.name, description: values.description, price: values.price, currency: values.currency, billingPeriod: values.billingPeriod, sortOrder: values.sortOrder, maxMembers: numberOrNull(values.maxMembers), maxClients: numberOrNull(values.maxClients), maxBranches: numberOrNull(values.maxBranches), maxUsers: numberOrNull(values.maxUsers), maxAiGenerations: numberOrNull(values.maxAiGenerations), maxStorageMb: numberOrNull(values.maxStorageMb), isActive: values.isActive, features, compatibleTenantTypes, reason: values.reason }) });
                 showToast('تم إنشاء الباقة بنجاح.'); dialog.close(); await loadPlans();
             } else if (action === 'plan-edit') {
-                const features = {};
-                ['intelligence','coaching','store','reports','portal','prioritySupport'].forEach((key) => { features[key] = Boolean(values[`feature_${key}`]); });
+                const features = planFeaturePayload(values);
                 const compatibleTenantTypes = ['gym', 'independent_trainer'].filter((type) => values[`compatibleTenantType_${type}`]);
-                await api(`/api/platform-admin/plans/${payload.planId}`, { method: 'PATCH', body: JSON.stringify({ name: values.name, description: values.description, price: values.price, currency: values.currency, billingPeriod: values.billingPeriod, sortOrder: values.sortOrder, maxMembers: numberOrNull(values.maxMembers), maxUsers: numberOrNull(values.maxUsers), maxAiGenerations: numberOrNull(values.maxAiGenerations), maxStorageMb: numberOrNull(values.maxStorageMb), isActive: values.isActive, features, compatibleTenantTypes, reason: values.reason }) });
+                await api(`/api/platform-admin/plans/${payload.planId}`, { method: 'PATCH', body: JSON.stringify({ name: values.name, description: values.description, price: values.price, currency: values.currency, billingPeriod: values.billingPeriod, sortOrder: values.sortOrder, maxMembers: numberOrNull(values.maxMembers), maxClients: numberOrNull(values.maxClients), maxBranches: numberOrNull(values.maxBranches), maxUsers: numberOrNull(values.maxUsers), maxAiGenerations: numberOrNull(values.maxAiGenerations), maxStorageMb: numberOrNull(values.maxStorageMb), isActive: values.isActive, features, compatibleTenantTypes, reason: values.reason }) });
+                showToast('تم تحديث الباقة.'); dialog.close(); await loadPlans();
+            } else if (action === 'plan-status') {
+                await api(`/api/platform-admin/plans/${payload.planId}/status`, { method: 'PATCH', body: JSON.stringify({ status: values.status, reason: values.reason }) });
                 showToast('تم تحديث الباقة.'); dialog.close(); await loadPlans();
             } else if (action === 'plan-delete') {
                 await api(`/api/platform-admin/plans/${payload.planId}`, { method: 'DELETE', body: JSON.stringify({ reason: values.reason }) });
@@ -1046,6 +1116,8 @@
             if (requestAction) await handleRequestAction(requestAction.dataset.requestAction, requestAction.dataset.requestId);
             const planEdit = event.target.closest('[data-plan-edit]');
             if (planEdit) openDialog('plan-edit', { planId: planEdit.dataset.planEdit });
+            const planStatus = event.target.closest('[data-plan-status]');
+            if (planStatus && !planStatus.disabled) openDialog('plan-status', { planId: planStatus.dataset.planStatus, nextStatus: planStatus.dataset.nextStatus });
             const planDelete = event.target.closest('[data-plan-delete]');
             if (planDelete && !planDelete.disabled) openDialog('plan-delete', { planId: planDelete.dataset.planDelete });
         });

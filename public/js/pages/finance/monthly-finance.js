@@ -30,6 +30,14 @@
         return activeTab === 'dashboard';
     }
 
+    async function requestJson(path, options = {}) {
+        if (window.topGymApi?.request) return window.topGymApi.request(path, options);
+        const response = await nativeFetch(path, options);
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.error || 'تعذر تنفيذ العملية المالية.');
+        return data;
+    }
+
     function queueRefresh() {
         window.clearTimeout(refreshTimer);
         refreshTimer = window.setTimeout(() => {
@@ -220,10 +228,9 @@
         $('monthlyFinanceStatus').textContent = 'جاري التحديث…';
         financeRequest = (async () => {
             try {
-                const response = await nativeFetch('/api/monthly-finance', {
-                    cache: 'no-store',
-                    headers: { Accept: 'application/json' }
-                });
+                const response = window.topGymApi?.raw
+                    ? await window.topGymApi.raw('/api/monthly-finance', { cache: 'no-store', headers: { Accept: 'application/json' } })
+                    : await nativeFetch('/api/monthly-finance', { cache: 'no-store', headers: { Accept: 'application/json' } });
                 const data = await response.json().catch(() => ({}));
                 if (!response.ok) throw new Error(data.error || 'تعذر تحميل الحسابات الشهرية.');
                 renderFinance(data);
@@ -272,13 +279,11 @@
             notes: $('expenseNotes').value
         };
         try {
-            const response = await window.fetch(expenseId ? `/api/expenses/${encodeURIComponent(expenseId)}` : '/api/expenses', {
+            await requestJson(expenseId ? `/api/expenses/${encodeURIComponent(expenseId)}` : '/api/expenses', {
                 method: expenseId ? 'PUT' : 'POST',
                 headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
                 body: JSON.stringify(body)
             });
-            const data = await response.json().catch(() => ({}));
-            if (!response.ok) throw new Error(data.error || 'تعذر حفظ المصروف.');
             closeExpenseDialog();
             await loadFinance();
             showFinanceToast('success', 'تم حفظ المصروف ✅', 'تم تحديث ملخص الشهر وصافي الحساب تلقائيًا.');
@@ -310,9 +315,7 @@
         const expense = getExpenseById(id);
         if (!expense || !(await confirmDeleteExpense(expense.name))) return;
         try {
-            const response = await window.fetch(`/api/expenses/${encodeURIComponent(id)}`, { method: 'DELETE' });
-            const data = await response.json().catch(() => ({}));
-            if (!response.ok) throw new Error(data.error || 'تعذر حذف المصروف.');
+            await requestJson(`/api/expenses/${encodeURIComponent(id)}`, { method: 'DELETE' });
             await loadFinance();
             showFinanceToast('success', 'تم حذف المصروف ✅', 'تم تحديث إجمالي المصروفات وصافي الشهر.');
         } catch (error) {
@@ -357,6 +360,10 @@
             if (['dashboard', 'expenses'].includes(event.detail?.name) && canReadFinance()) {
                 void loadFinance();
             }
+        });
+        window.addEventListener('topgym:branch-context-changed', () => {
+            financeData = null;
+            if (canReadFinance() && isFinanceTabVisible()) void loadFinance();
         });
     }
 

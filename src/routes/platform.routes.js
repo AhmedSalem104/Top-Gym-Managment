@@ -10,7 +10,9 @@ function registerPlatformRoutes(app, { saasService, authService, asyncRoute }) {
     app.post('/api/platform/tenants', platformOnly, asyncRoute(controller.createTenant));
     app.patch('/api/platform/tenants/:id/status', platformOnly, asyncRoute(controller.updateTenantStatus));
     app.get('/api/platform/plans', platformOnly, asyncRoute(controller.plans));
+    app.get('/api/platform/feature-catalog', platformOnly, asyncRoute(controller.featureCatalog));
     app.patch('/api/platform/plans/:id', platformOnly, asyncRoute(controller.updatePlan));
+    app.patch('/api/platform/plans/:id/status', platformOnly, asyncRoute(controller.planStatus));
     app.get('/api/platform/subscription-requests', platformOnly, asyncRoute(controller.requests));
     app.post('/api/platform/subscription-requests/:id/approve', platformOnly, asyncRoute(controller.approveRequest));
     app.post('/api/platform/subscription-requests/:id/reject', platformOnly, asyncRoute(controller.rejectRequest));

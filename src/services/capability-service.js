@@ -1,6 +1,7 @@
 'use strict';
 
 const { TENANT_TYPES, TENANT_TYPE_VALUES, resolveTenantType } = require('../tenancy/tenant-types');
+const { FEATURE_KEYS, LEGACY_FEATURE_ALIASES, normalizeFeatureKey } = require('./feature-catalog');
 
 // A tenant type may be represented by the domain model before its product
 // surface is enabled. This keeps future Trainer tenants explicit without
@@ -29,6 +30,7 @@ const GYM_CAPABILITIES = Object.freeze([
     'bar',
     'portal',
     'branding',
+    'team',
     'backup',
     'audit'
 ]);
@@ -48,6 +50,7 @@ const INDEPENDENT_TRAINER_BASELINE_CAPABILITIES = Object.freeze([
     'templates',
     'reports',
     'portal',
+    'team',
     'ai',
     'branding',
     'library'
@@ -68,7 +71,7 @@ const IMPLEMENTED_CAPABILITIES_BY_TENANT_TYPE = Object.freeze({
     [TENANT_TYPES.INDEPENDENT_TRAINER]: Object.freeze([
         'clients', 'coaching', 'nutrition', 'assessments', 'progress',
         'goals', 'ai', 'library', 'branding', 'sessions', 'packages', 'payments',
-        'notifications', 'tasks', 'templates', 'portal', 'reports'
+        'notifications', 'tasks', 'templates', 'portal', 'reports', 'team'
     ])
 });
 
@@ -84,7 +87,7 @@ const LIMIT_KEYS = Object.freeze([
     'maxClients'
 ]);
 
-const PLAN_FEATURE_KEYS = Object.freeze(['intelligence', 'coaching', 'store', 'reports', 'portal', 'prioritySupport']);
+const PLAN_FEATURE_KEYS = Object.freeze([...FEATURE_KEYS, ...Object.keys(LEGACY_FEATURE_ALIASES)]);
 
 const FEATURE_TO_CAPABILITY = Object.freeze({
     coaching: 'coaching',
@@ -106,6 +109,8 @@ const PATH_CAPABILITIES = Object.freeze([
     [/^\/trainer\/nutrition-plans(?:\/|$)/, 'nutrition'],
     [/^\/trainer\/sessions(?:\/|$)/, 'sessions'],
     [/^\/trainer\/packages(?:\/|$)/, 'packages'],
+    [/^\/trainer\/package-purchases\/(?:[^/]+\/)?(?:payments|refunds)(?:\/|$)/, 'payments'],
+    [/^\/trainer\/package-purchases(?:\/|$)/, 'packages'],
     [/^\/trainer\/payments(?:\/|$)/, 'payments'],
     [/^\/trainer\/notifications(?:\/|$)/, 'notifications'],
     [/^\/trainer\/tasks(?:\/|$)/, 'tasks'],
@@ -157,7 +162,7 @@ function normalizeFeatureFlags(value, label = 'plan features') {
         if (![true, false, 1, 0, 'true', 'false', '1', '0'].includes(raw)) {
             throw capabilityError(`${label} contains an invalid feature value.`, 503, 'CAPABILITY_MODEL_NOT_READY');
         }
-        normalized[key] = raw === true || raw === 1 || raw === '1' || String(raw).toLowerCase() === 'true';
+        normalized[normalizeFeatureKey(key)] = raw === true || raw === 1 || raw === '1' || String(raw).toLowerCase() === 'true';
     }
     return normalized;
 }
@@ -205,18 +210,38 @@ function requiredFeature(path = '') {
     if (value.startsWith('/trainer/reports')) return 'reports';
     if (value.startsWith('/trainer/intelligence')) return 'intelligence';
     if (value.startsWith('/intelligence')) return 'intelligence';
+    if (value.startsWith('/trainer/package-purchases/') && (value.includes('/payments') || value.includes('/refunds'))) return 'payments';
+    if (value.startsWith('/trainer/package-purchases')) return 'packages';
+    if (value.startsWith('/auth/users') || value.startsWith('/auth/permissions')) return 'team';
+    if (value.startsWith('/attendance')) return 'attendance';
+    if (value.startsWith('/memberships/') && value.includes('/branches')) return 'branches';
+    if (value.startsWith('/memberships')) return 'members';
+    if (value.startsWith('/members')) return 'members';
+    if (value.startsWith('/payments') || value.startsWith('/trainer/payments')) return 'payments';
+    if (value.startsWith('/pricing') || value.startsWith('/membership')) return 'pricing';
+    if (value.startsWith('/inventory') || value.startsWith('/commerce/stock')) return 'inventory';
+    if (value.startsWith('/audit')) return 'audit';
     if (value.startsWith('/store')) return 'store';
     if (value.startsWith('/bar')) return 'bar';
-    if (value.startsWith('/branches') || value.startsWith('/commerce/stock')) return 'branches';
-    if (value.startsWith('/coaching') || value.startsWith('/workout') || value.startsWith('/diet')
-        || value.startsWith('/meal-logs') || value.startsWith('/external-trainees') || value.startsWith('/clients')) return 'coaching';
+    if (value.startsWith('/branches')) return 'branches';
+    if (value.startsWith('/diet') || value.startsWith('/meal-logs')) return 'nutrition';
+    if (value.startsWith('/coaching') || value.startsWith('/workout')
+        || value.startsWith('/external-trainees') || value.startsWith('/clients')) return 'coaching';
     if (value.startsWith('/member-portal')) return 'portal';
+    if (value.startsWith('/member-subscription-requests') || value.startsWith('/member-feedback') || value.startsWith('/portal')) return 'portal';
     return null;
 }
 
 function requiredCapability(path = '') {
     const feature = requiredFeature(path);
-    return feature ? FEATURE_TO_CAPABILITY[feature] : (PATH_CAPABILITIES.find(([pattern]) => pattern.test(String(path || '')))?.[1] || null);
+    if (feature) {
+        const normalizedFeature = normalizeFeatureKey(feature);
+        // Feature keys are the canonical capability contract. Keep the
+        // legacy mapping for aliases, but never let a catalog feature such as
+        // `bar` or `branches` fall through as an unguarded route.
+        return FEATURE_TO_CAPABILITY[normalizedFeature] || normalizedFeature;
+    }
+    return PATH_CAPABILITIES.find(([pattern]) => pattern.test(String(path || '')))?.[1] || null;
 }
 
 function resolveEffectiveCapabilities({ tenantType = TENANT_TYPES.GYM, features = {}, overrides = null, planCompatible = true, subscriptionStatus = null } = {}) {
@@ -229,8 +254,11 @@ function resolveEffectiveCapabilities({ tenantType = TENANT_TYPES.GYM, features 
     const implementedCapabilities = IMPLEMENTED_CAPABILITIES_BY_TENANT_TYPE[normalizedTenantType] || [];
     const operational = subscriptionStatus == null || ['trial', 'active'].includes(String(subscriptionStatus).toLowerCase());
     const capabilities = Object.fromEntries(implementedCapabilities.map((capability) => {
-        const feature = Object.entries(FEATURE_TO_CAPABILITY).find(([, value]) => value === capability)?.[0];
-        return [capability, operational && (!feature || effectiveFeatures[feature] !== false)];
+        const legacyFeature = Object.entries(FEATURE_TO_CAPABILITY).find(([, value]) => value === capability)?.[0];
+        const directFeature = effectiveFeatures[capability];
+        const mappedFeature = legacyFeature ? effectiveFeatures[normalizeFeatureKey(legacyFeature)] : undefined;
+        const enabled = directFeature !== undefined ? directFeature : mappedFeature;
+        return [capability, operational && enabled !== false];
     }));
     return {
         tenantType: normalizedTenantType,
@@ -250,7 +278,10 @@ function assertCapabilityAccess({ tenantType = TENANT_TYPES.GYM, path = '', feat
     }
     const feature = requiredFeature(path);
     const capability = requiredCapability(path);
-    if (feature && resolved.featureEntitlements[feature] === false) {
+    if (feature && (resolved.featureEntitlements[feature] === false || resolved.featureEntitlements[normalizeFeatureKey(feature)] === false)) {
+        throw capabilityError('هذه الميزة غير متاحة في الباقة الحالية.', 403, 'SAAS_FEATURE_NOT_INCLUDED');
+    }
+    if (capability && resolved.featureEntitlements[capability] === false) {
         throw capabilityError('هذه الميزة غير متاحة في الباقة الحالية.', 403, 'SAAS_FEATURE_NOT_INCLUDED');
     }
     if (capability && resolved.capabilities[capability] !== true) {

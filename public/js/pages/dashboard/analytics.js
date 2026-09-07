@@ -342,7 +342,9 @@
         const loading = $('dashboardAnalyticsLoading');
         if (loading) loading.hidden = false;
         try {
-            const response = await fetch(`/api/dashboard-analytics?period=${encodeURIComponent(state.period)}`, { cache: 'no-store', signal: controller.signal, headers: { Accept: 'application/json' } });
+            const response = window.topGymApi?.raw
+                ? await window.topGymApi.raw(`/api/dashboard-analytics?period=${encodeURIComponent(state.period)}`, { cache: 'no-store', signal: controller.signal, headers: { Accept: 'application/json' } })
+                : await fetch(`/api/dashboard-analytics?period=${encodeURIComponent(state.period)}`, { cache: 'no-store', signal: controller.signal, headers: { Accept: 'application/json' } });
             const data = await response.json().catch(() => ({}));
             if (!response.ok) throw new Error(data.error || 'تعذر تحميل تحليلات لوحة التحكم.');
             if (requestId === state.requestId) renderAnalytics(data);
@@ -378,6 +380,9 @@
         });
         window.addEventListener('hashchange', () => {
             if ((window.location.hash.slice(1) || 'dashboard') !== 'dashboard') hidePanel();
+        });
+        window.addEventListener('topgym:branch-context-changed', () => {
+            if (isDashboardActive()) void loadAnalytics(state.period);
         });
         if (isDashboardActive()) loadAnalytics('month');
     }

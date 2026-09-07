@@ -3,6 +3,7 @@
     window.__topGymBranchContextLoaded = true;
 
     const storageKey = 'logicfit.branchId';
+    const sectionStorageKey = 'logicfit.sectionId';
     const $ = (id) => document.getElementById(id);
     const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[character]));
     const notify = (message, isError = false) => {
@@ -22,6 +23,25 @@
         } catch {
             // A disabled session store must not prevent navigation.
         }
+    }
+
+    function readStoredSection() {
+        try { return sessionStorage.getItem(sectionStorageKey); } catch { return null; }
+    }
+
+    function writeStoredSection(value) {
+        try {
+            if (value) sessionStorage.setItem(sectionStorageKey, String(value));
+            else sessionStorage.removeItem(sectionStorageKey);
+        } catch {
+            // A disabled session store must not prevent navigation.
+        }
+    }
+
+    function sectionLabel(section) {
+        const labels = { men: 'Men', women: 'Women', mixed: 'Mixed' };
+        const typeLabel = labels[String(section?.type || '').toLowerCase()] || section?.name || 'Section';
+        return section?.name && section.name !== typeLabel ? `${typeLabel} · ${section.name}` : typeLabel;
     }
 
     function ensureBranchTab() {
@@ -95,10 +115,12 @@
     function renderSelector(data) {
         const shell = $('branchContextShell');
         const select = $('branchContextSelect');
+        const sectionSelect = $('sectionContextSelect');
         if (!shell || !select) return;
         const active = Array.isArray(data?.activeBranches) ? data.activeBranches : [];
         const allowed = Array.isArray(data?.branches) ? data.branches : active;
-        shell.hidden = !data?.hasMultipleActiveBranches || allowed.length < 2;
+        const allSections = Array.isArray(data?.sections) ? data.sections : [];
+        shell.hidden = (!data?.hasMultipleActiveBranches || allowed.length < 2) && allSections.length === 0;
         select.innerHTML = '';
         if (data?.canUseAllBranches && active.length > 1) select.append(new Option('كل الفروع', ''));
         allowed.forEach((branch) => select.append(new Option(branch.name, String(branch.id))));
@@ -109,6 +131,19 @@
         else { select.value = ''; writeStoredBranch(''); }
         const selected = active.find((branch) => String(branch.id) === select.value);
         $('branchContextStatus').textContent = selected ? `${selected.status === 'active' ? 'نشط' : 'غير نشط'}` : 'عرض موحد';
+        if (sectionSelect) {
+            const sections = (Array.isArray(data?.sections) ? data.sections : [])
+                .filter((section) => String(section.branchId) === String(select.value) && section.active !== false);
+            sectionSelect.innerHTML = '';
+            sectionSelect.append(new Option('كل الأقسام', ''));
+            sections.forEach((section) => sectionSelect.append(new Option(sectionLabel(section), String(section.id))));
+            const storedSection = readStoredSection();
+            const allowedSectionIds = new Set(sections.map((section) => String(section.id)));
+            if (storedSection && allowedSectionIds.has(storedSection) && select.value) sectionSelect.value = storedSection;
+            else { sectionSelect.value = ''; writeStoredSection(''); }
+            sectionSelect.disabled = !select.value || sections.length === 0;
+            sectionSelect.hidden = !select.value;
+        }
     }
 
     function renderManager(data) {
@@ -156,12 +191,13 @@
             setTabVisibility(false);
             const lockedShell = $('branchContextShell');
             if (lockedShell) lockedShell.hidden = true;
+            writeStoredSection('');
             return;
         }
         const isGym = user.tenantType === 'gym';
         setTabVisibility(isGym && user.role === 'Owner');
         const shell = $('branchContextShell');
-        if (!isGym) { if (shell) shell.hidden = true; return; }
+        if (!isGym) { if (shell) shell.hidden = true; writeStoredSection(''); return; }
         try {
             bootstrap = await window.topGymApi.request('/api/branches/bootstrap');
             renderSelector(bootstrap);
@@ -203,9 +239,19 @@
         $('branchContextSelect')?.addEventListener('change', (event) => {
             const value = event.currentTarget.value;
             writeStoredBranch(value);
+            writeStoredSection('');
             const active = bootstrap?.activeBranches?.find((branch) => String(branch.id) === value);
             $('branchContextStatus').textContent = active ? 'نشط' : 'عرض موحد';
-            window.dispatchEvent(new CustomEvent('topgym:branch-context-changed', { detail: { branchId: value ? Number(value) : null } }));
+            renderSelector(bootstrap || {});
+            window.dispatchEvent(new CustomEvent('topgym:branch-context-changed', { detail: { branchId: value ? Number(value) : null, sectionId: null } }));
+        });
+        $('sectionContextSelect')?.addEventListener('change', (event) => {
+            const value = event.currentTarget.value;
+            writeStoredSection(value);
+            window.dispatchEvent(new CustomEvent('topgym:branch-context-changed', { detail: {
+                branchId: $('branchContextSelect')?.value ? Number($('branchContextSelect').value) : null,
+                sectionId: value ? Number(value) : null
+            } }));
         });
         $('branchesList')?.addEventListener('click', (event) => {
             const button = event.target.closest('[data-branch-archive]');

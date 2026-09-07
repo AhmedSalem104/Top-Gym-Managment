@@ -120,9 +120,9 @@ function registerRoutes(app, {
     registerAuthRoutes(app, { authService, permissionService, saasService, asyncRoute, ownerOnly, allowLoginAttempt });
     registerBackupRoutes(app, { backupService, backupRecoveryService, brandingService, asyncRoute, isAuthorizedCronRequest, backupActionRateLimit });
     registerFinanceRoutes(app, { financeService, branchService, asyncRoute });
-    registerDashboardRoutes(app, { memberService, analyticsService, storeService, asyncRoute });
+    registerDashboardRoutes(app, { memberService, analyticsService, storeService, branchService, asyncRoute });
     registerLibraryRoutes(app, { libraryService, asyncRoute });
-    registerReportsRoutes(app, { reportService, storeService, asyncRoute });
+    registerReportsRoutes(app, { reportService, storeService, branchService, asyncRoute });
     registerAttendanceRoutes(app, { attendanceService, branchService, asyncRoute });
     registerPricingRoutes(app, { pricingService, asyncRoute });
     registerCoachingRoutes(app, { coachingService, asyncRoute });

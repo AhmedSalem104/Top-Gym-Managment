@@ -4,7 +4,7 @@ const { getPool, sql } = require('../database');
 const { withTransaction } = require('../database/transaction');
 const { currentTenantId, getTenantContext } = require('../tenancy/tenant-context');
 const { TENANT_TYPES } = require('../tenancy/tenant-types');
-const { BRANCH_STATUS, canAcceptNewOperations, normalizeBranchId, normalizeBranchStatus, normalizeMembershipBranchAccessMode, MEMBERSHIP_BRANCH_ACCESS_MODE } = require('../branches/branch-contract');
+const { BRANCH_STATUS, canAcceptNewOperations, normalizeBranchId, normalizeSectionId, normalizeBranchStatus, normalizeMembershipBranchAccessMode, MEMBERSHIP_BRANCH_ACCESS_MODE } = require('../branches/branch-contract');
 const saasService = require('./saas-service');
 
 function branchError(message, statusCode = 400, code = 'BRANCH_ERROR') {
@@ -77,6 +77,20 @@ function branchDto(row) {
         isMain: Boolean(row.is_main_branch),
         storeEnabled: row.store_enabled == null ? true : Boolean(row.store_enabled),
         barEnabled: row.bar_enabled == null ? false : Boolean(row.bar_enabled),
+        createdAt: row.created_at,
+        updatedAt: row.updated_at
+    };
+}
+
+function sectionDto(row) {
+    return {
+        id: Number(row.id),
+        tenantId: Number(row.tenant_id),
+        branchId: Number(row.branch_id),
+        code: String(row.section_code || ''),
+        name: String(row.name || ''),
+        type: String(row.section_type || 'mixed'),
+        active: Boolean(row.is_active),
         createdAt: row.created_at,
         updatedAt: row.updated_at
     };
@@ -168,11 +182,45 @@ async function assertBranchAccess(branchId, { userId = null, role = null, requir
     return branch;
 }
 
+async function getBranchSections(branchId, { userId = null, role = null, includeInactive = false } = {}) {
+    const branch = await assertBranchAccess(branchId, { userId, role, requireActive: false });
+    const result = await getPool().then((pool) => pool.request()
+        .input('tenantId', sql.Int, branch.tenantId)
+        .input('branchId', sql.Int, branch.id)
+        .input('includeInactive', sql.Bit, includeInactive ? 1 : 0)
+        .query(`SELECT id,tenant_id,branch_id,section_code,name,section_type,is_active,created_at,updated_at
+                FROM dbo.gym_branch_sections
+                WHERE tenant_id=@tenantId AND branch_id=@branchId
+                  AND (@includeInactive=1 OR is_active=1)
+                ORDER BY CASE section_type WHEN 'men' THEN 1 WHEN 'women' THEN 2 WHEN 'mixed' THEN 3 ELSE 4 END, name, id;`));
+    return result.recordset.map(sectionDto);
+}
+
+async function assertSectionAccess(sectionId, branchId, { userId = null, role = null } = {}) {
+    const id = normalizeSectionId(sectionId);
+    if (!id) throw branchError('Section id is invalid.', 400, 'INVALID_SECTION_ID');
+    const branch = await assertBranchAccess(branchId, { userId, role, requireActive: false });
+    const result = await getPool().then((pool) => pool.request()
+        .input('tenantId', sql.Int, branch.tenantId)
+        .input('branchId', sql.Int, branch.id)
+        .input('sectionId', sql.Int, id)
+        .query(`SELECT TOP (1) id,tenant_id,branch_id,section_code,name,section_type,is_active,created_at,updated_at
+                FROM dbo.gym_branch_sections
+                WHERE tenant_id=@tenantId AND branch_id=@branchId AND id=@sectionId AND is_active=1;`));
+    const row = result.recordset[0];
+    if (!row) throw branchError('Section was not found in the selected branch.', 404, 'SECTION_NOT_FOUND');
+    return sectionDto(row);
+}
+
 async function bootstrap({ userId = null, role = null } = {}) {
     await assertGymTenant();
     const branches = await getAllowedBranches({ userId, role });
     const all = await listBranches({ includeArchived: false, includeInactive: false });
     const main = all.find((branch) => branch.isMain) || all[0] || null;
+    const sections = [];
+    for (const branch of branches) {
+        sections.push(...await getBranchSections(branch.id, { userId, role }));
+    }
     const entitlements = await saasService.getEffectiveEntitlements(tenantId());
     return {
         branches,
@@ -180,7 +228,8 @@ async function bootstrap({ userId = null, role = null } = {}) {
         defaultBranch: main,
         hasMultipleActiveBranches: all.length > 1,
         canUseAllBranches: String(role || '').toLowerCase() === 'owner',
-        branchLimit: entitlements.limits?.maxBranches ?? null
+        branchLimit: entitlements.limits?.maxBranches ?? null,
+        sections
     };
 }
 
@@ -220,6 +269,24 @@ async function createBranch(body = {}, { actorUserId = null, role = null, reques
                     VALUES (@tenantId,@code,@name,@address,@phone,@hours,@actor);`);
         const row = result.recordset[0];
         await ensureBranchCommerceDefaults(transaction, { tenantId: currentTenant, branchId: Number(row.id), storeEnabled, barEnabled, actorUserId });
+        // Migration 029 creates the section model. Keep branch creation
+        // forward-compatible with pre-migration environments, while ensuring
+        // every new branch receives the same safe Mixed default as existing
+        // branches once the model is available.
+        await transaction.request()
+            .input('tenantId', sql.Int, currentTenant)
+            .input('branchId', sql.Int, Number(row.id))
+            .query(`
+                IF OBJECT_ID(N'dbo.gym_branch_sections', N'U') IS NOT NULL
+                   AND NOT EXISTS (
+                       SELECT 1 FROM dbo.gym_branch_sections
+                       WHERE tenant_id=@tenantId AND branch_id=@branchId AND section_type='mixed'
+                   )
+                BEGIN
+                    INSERT INTO dbo.gym_branch_sections(tenant_id,branch_id,section_code,name,section_type)
+                    VALUES (@tenantId,@branchId,'mixed',N'Mixed','mixed');
+                END;
+            `);
         created = branchDto({ ...row, store_enabled: storeEnabled, bar_enabled: barEnabled });
         await saasService.recordAudit({ tenantId: currentTenant, actorUserId, action: 'branch_created', entityType: 'branch', entityId: created.id, details: 'Gym branch created.', after: { code, name }, ipAddress: request?.ip, userAgent: request?.get?.('user-agent'), executor: transaction });
     });
@@ -385,6 +452,8 @@ module.exports = {
     bootstrap,
     createBranch,
     getAllowedBranches,
+    getBranchSections,
+    assertSectionAccess,
     getBranch,
     getUserBranchAccess,
     getMembershipBranchAccess,

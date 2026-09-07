@@ -149,12 +149,20 @@ function createPlatformAdminController({ platformAdminService, saasService, auth
             response.json({ plans: await saasService.getPlans({ includeInactive: true, readOnly: request.readOnlyRequest }) });
         },
 
+        featureCatalog: async (request, response) => {
+            response.json({ featureCatalog: saasService.getFeatureCatalog({ tenantType: request.query?.tenantType || null }) });
+        },
+
         createPlan: async (request, response) => {
             response.status(201).json({ plan: await saasService.createPlan(request.body || {}, request.auth?.id, meta(request)) });
         },
 
         updatePlan: async (request, response) => {
             response.json({ plan: await saasService.updatePlan(request.params.planId, request.body || {}, request.auth?.id, meta(request)) });
+        },
+
+        planStatus: async (request, response) => {
+            response.json({ plan: await saasService.setPlanStatus(request.params.planId, request.body?.status, request.auth?.id, request.body?.reason, meta(request)) });
         },
 
         deletePlan: async (request, response) => {

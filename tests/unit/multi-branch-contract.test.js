@@ -20,7 +20,7 @@ test('branch contract normalizes IDs, statuses, and all-branch scope safely', ()
     assert.equal(normalizeBranchId('not-an-id'), null);
     assert.equal(normalizeBranchStatus('ARCHIVED'), BRANCH_STATUS.ARCHIVED);
     assert.equal(normalizeBranchStatus('unexpected'), BRANCH_STATUS.ACTIVE);
-    assert.deepEqual(normalizeBranchContext({ allBranches: true, branchId: 7 }), { branchId: null, allBranches: true });
+    assert.deepEqual(normalizeBranchContext({ allBranches: true, branchId: 7 }), { branchId: null, sectionId: null, allBranches: true });
 });
 
 test('only active branches accept new operations', () => {
@@ -43,6 +43,6 @@ test('branch capability is Gym-only and server-side', () => {
 });
 
 test('branch context treats client input as a request and supports explicit all-branch scope', () => {
-    assert.deepEqual(requestedBranchContext({ query: { branchId: '12' } }), { branchId: 12, allBranches: false });
-    assert.deepEqual(requestedBranchContext({ body: { branchId: '7', allBranches: 'true' } }), { branchId: null, allBranches: true });
+    assert.deepEqual(requestedBranchContext({ query: { branchId: '12' } }), { branchId: 12, sectionId: null, allBranches: false });
+    assert.deepEqual(requestedBranchContext({ body: { branchId: '7', allBranches: 'true' } }), { branchId: null, sectionId: null, allBranches: true });
 });

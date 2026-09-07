@@ -55,20 +55,23 @@ async function ensureExpensesTable({ readOnly = false } = {}) {
     return expensesTablePromise;
 }
 
-async function getMonthlyData(range, { branchId = null } = {}) {
+async function getMonthlyData(range, { branchId = null, sectionId = null } = {}) {
     const pool = await getPool();
     const paymentRequest = pool.request()
         .input('monthStart', sql.Date, toUtcDate(range.startDate))
         .input('nextMonth', sql.Date, toUtcDate(range.nextMonth))
-        .input('branchId', sql.Int, branchId == null ? null : Number(branchId));
+        .input('branchId', sql.Int, branchId == null ? null : Number(branchId))
+        .input('sectionId', sql.Int, sectionId == null ? null : Number(sectionId));
     const expenseSummaryRequest = pool.request()
         .input('monthStart', sql.Date, toUtcDate(range.startDate))
         .input('nextMonth', sql.Date, toUtcDate(range.nextMonth))
-        .input('branchId', sql.Int, branchId == null ? null : Number(branchId));
+        .input('branchId', sql.Int, branchId == null ? null : Number(branchId))
+        .input('sectionId', sql.Int, sectionId == null ? null : Number(sectionId));
     const expenseItemsRequest = pool.request()
         .input('monthStart', sql.Date, toUtcDate(range.startDate))
         .input('nextMonth', sql.Date, toUtcDate(range.nextMonth))
-        .input('branchId', sql.Int, branchId == null ? null : Number(branchId));
+        .input('branchId', sql.Int, branchId == null ? null : Number(branchId))
+        .input('sectionId', sql.Int, sectionId == null ? null : Number(sectionId));
 
     return Promise.all([
         paymentRequest.query(`
@@ -79,7 +82,16 @@ async function getMonthlyData(range, { branchId = null } = {}) {
               AND paid_at < @nextMonth
               AND is_voided = 0
               AND amount_paid <> 0
-              AND (@branchId IS NULL OR branch_id = @branchId);
+              AND (@branchId IS NULL OR branch_id = @branchId)
+              AND (@sectionId IS NULL OR EXISTS (
+                  SELECT 1
+                  FROM dbo.memberships AS scoped_membership
+                  INNER JOIN dbo.gym_membership_section_access AS section_scope
+                      ON section_scope.tenant_id = scoped_membership.tenant_id
+                     AND section_scope.membership_id = scoped_membership.id
+                  WHERE scoped_membership.id = gym_payment_transactions.membership_id
+                    AND section_scope.section_id = @sectionId
+              ));
         `),
         expenseSummaryRequest.query(`
             SELECT COUNT(*) AS expenseCount,
@@ -88,7 +100,8 @@ async function getMonthlyData(range, { branchId = null } = {}) {
             WHERE expense_date >= @monthStart
               AND expense_date < @nextMonth
               AND ISNULL(is_voided, 0) = 0
-              AND (@branchId IS NULL OR branch_id = @branchId);
+              AND (@branchId IS NULL OR branch_id = @branchId)
+              AND @sectionId IS NULL;
         `),
         expenseItemsRequest.query(`
             SELECT id, expense_name, amount, expense_date, expense_source, expense_category, payment_method, notes, created_at
@@ -97,6 +110,7 @@ async function getMonthlyData(range, { branchId = null } = {}) {
               AND expense_date < @nextMonth
               AND ISNULL(is_voided, 0) = 0
               AND (@branchId IS NULL OR branch_id = @branchId)
+              AND @sectionId IS NULL
             ORDER BY expense_date DESC, id DESC;
         `)
     ]);

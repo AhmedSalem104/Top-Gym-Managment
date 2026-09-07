@@ -22,8 +22,16 @@ function createPlatformController({ saasService, authService }) {
             response.json({ plans: await saasService.getPlans({ includeInactive: true, readOnly: request.readOnlyRequest }) });
         },
 
+        featureCatalog: async (request, response) => {
+            response.json({ featureCatalog: saasService.getFeatureCatalog({ tenantType: request.query?.tenantType || null }) });
+        },
+
         updatePlan: async (request, response) => {
             response.json({ plan: await saasService.updatePlan(request.params.id, request.body || {}, request.auth?.id) });
+        },
+
+        planStatus: async (request, response) => {
+            response.json({ plan: await saasService.setPlanStatus(request.params.id, request.body?.status, request.auth?.id, request.body?.reason) });
         },
 
         requests: async (request, response) => {

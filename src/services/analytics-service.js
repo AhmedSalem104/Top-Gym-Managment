@@ -215,6 +215,47 @@ function createRangeRequest(pool, range) {
         .input('nextDate', sql.Date, toUtcDate(range.nextDate));
 }
 
+function membershipScope(alias = 'm') {
+    return `
+              AND (@branchId IS NULL OR EXISTS (
+                  SELECT 1 FROM dbo.gym_membership_branch_access AS branch_scope
+                  WHERE branch_scope.tenant_id = ${alias}.tenant_id
+                    AND branch_scope.membership_id = ${alias}.id
+                    AND branch_scope.branch_id = @branchId
+              ))
+              AND (@sectionId IS NULL OR EXISTS (
+                  SELECT 1 FROM dbo.gym_membership_section_access AS section_scope
+                  WHERE section_scope.tenant_id = ${alias}.tenant_id
+                    AND section_scope.membership_id = ${alias}.id
+                    AND section_scope.section_id = @sectionId
+              ))`;
+}
+
+function memberScope(memberExpression) {
+    const tenantExpression = memberExpression.replace(/\.[^.]+$/, '.tenant_id');
+    return `
+              AND (@branchId IS NULL OR EXISTS (
+                  SELECT 1
+                  FROM dbo.memberships AS member_scope_membership
+                  INNER JOIN dbo.gym_membership_branch_access AS branch_scope
+                      ON branch_scope.tenant_id = member_scope_membership.tenant_id
+                     AND branch_scope.membership_id = member_scope_membership.id
+                  WHERE member_scope_membership.tenant_id = ${tenantExpression}
+                    AND member_scope_membership.member_id = ${memberExpression}
+                    AND branch_scope.branch_id = @branchId
+              ))
+              AND (@sectionId IS NULL OR EXISTS (
+                  SELECT 1
+                  FROM dbo.memberships AS member_scope_membership
+                  INNER JOIN dbo.gym_membership_section_access AS section_scope
+                      ON section_scope.tenant_id = member_scope_membership.tenant_id
+                     AND section_scope.membership_id = member_scope_membership.id
+                  WHERE member_scope_membership.tenant_id = ${tenantExpression}
+                    AND member_scope_membership.member_id = ${memberExpression}
+                    AND section_scope.section_id = @sectionId
+              ))`;
+}
+
 function getPreviousPeriodRange(range) {
     const startDate = range.key === 'year'
         ? `${Number(range.startDate.slice(0, 4)) - 1}-01-01`
@@ -252,7 +293,7 @@ function buildComparison(currentValue, previousValue) {
     };
 }
 
-async function getDashboardAnalytics(periodValue = 'month', { readOnly = false } = {}) {
+async function getDashboardAnalytics(periodValue = 'month', { readOnly = false, branchId = null, sectionId = null } = {}) {
     const range = getPeriodRange(periodValue);
     const previousRange = getPreviousPeriodRange(range);
     const buckets = createBuckets(range);
@@ -267,45 +308,61 @@ async function getDashboardAnalytics(periodValue = 'month', { readOnly = false }
 
     const currentRequest = createRangeRequest(pool, range)
         .input('today', sql.Date, toUtcDate(today))
-        .input('inactiveSince', sql.Date, toUtcDate(inactiveSince));
-    const previousRequest = createRangeRequest(pool, previousRange);
+        .input('inactiveSince', sql.Date, toUtcDate(inactiveSince))
+        .input('branchId', sql.Int, branchId == null ? null : Number(branchId))
+        .input('sectionId', sql.Int, sectionId == null ? null : Number(sectionId));
+    const previousRequest = createRangeRequest(pool, previousRange)
+        .input('branchId', sql.Int, branchId == null ? null : Number(branchId))
+        .input('sectionId', sql.Int, sectionId == null ? null : Number(sectionId));
     const [dashboard, currentResult, previousResult] = await Promise.all([
-        getDashboard({ readOnly }),
+        getDashboard({ readOnly, branchId, sectionId }),
         currentRequest.batch(`
             SELECT registration_date AS eventDate
-            FROM dbo.members
-            WHERE registration_date >= @startDate AND registration_date < @nextDate;
+            FROM dbo.members AS members
+            WHERE registration_date >= @startDate AND registration_date < @nextDate
+              ${memberScope('members.id')};
 
             SELECT start_date AS eventDate, membership_plan AS planCode, membership_type AS typeCode
-            FROM dbo.memberships
-            WHERE start_date >= @startDate AND start_date < @nextDate;
+            FROM dbo.memberships AS memberships
+            WHERE start_date >= @startDate AND start_date < @nextDate
+              ${membershipScope('memberships')};
 
             SELECT paid_at AS eventDate, amount_paid AS amount, payment_method AS paymentMethod
-            FROM dbo.gym_payment_transactions
-            WHERE paid_at >= @startDate AND paid_at < @nextDate AND is_voided = 0 AND amount_paid <> 0;
+            FROM dbo.gym_payment_transactions AS payment_transactions
+            INNER JOIN dbo.memberships AS payment_membership ON payment_membership.id = payment_transactions.membership_id
+            WHERE paid_at >= @startDate AND paid_at < @nextDate AND is_voided = 0 AND amount_paid <> 0
+              ${membershipScope('payment_membership')};
 
             SELECT visit_date AS eventDate, amount_paid AS amount, payment_method AS paymentMethod
-            FROM dbo.gym_day_pass_sales
+            FROM dbo.gym_day_pass_sales AS day_passes
             WHERE visit_date >= @startDate AND visit_date < @nextDate
-              AND status = 'completed' AND amount_paid > 0;
+              AND status = 'completed' AND amount_paid > 0
+              AND (@branchId IS NULL OR day_passes.branch_id = @branchId)
+              AND @sectionId IS NULL;
 
             SELECT expense_date AS eventDate, amount
-            FROM dbo.gym_expenses
+            FROM dbo.gym_expenses AS expenses
             WHERE expense_date >= @startDate AND expense_date < @nextDate
-              AND ISNULL(is_voided, 0) = 0;
+              AND ISNULL(is_voided, 0) = 0
+              AND (@branchId IS NULL OR expenses.branch_id = @branchId)
+              AND @sectionId IS NULL;
 
             SELECT a.attendance_date AS eventDate, a.member_id AS memberId,
                    a.check_in_at AS checkInAt, a.check_out_at AS checkOutAt,
                    m.full_name AS fullName, m.phone
             FROM dbo.gym_attendance AS a
             INNER JOIN dbo.members AS m ON m.id = a.member_id
-            WHERE a.attendance_date >= @startDate AND a.attendance_date < @nextDate;
+            WHERE a.attendance_date >= @startDate AND a.attendance_date < @nextDate
+              AND (@branchId IS NULL OR a.branch_id = @branchId)
+              AND (@sectionId IS NULL OR a.section_id = @sectionId);
 
             WITH ranked_memberships AS (
                 SELECT m.id AS membershipId, m.member_id AS memberId,
                        m.start_date AS membershipStartDate, m.end_date AS membershipEndDate,
                        ROW_NUMBER() OVER (PARTITION BY m.member_id ORDER BY m.end_date DESC, m.id DESC) AS membershipRank
                 FROM dbo.memberships AS m
+                WHERE 1 = 1
+                  ${membershipScope('m')}
             ), eligible_members AS (
                 SELECT b.id AS memberId, b.full_name AS fullName, b.phone,
                        lm.membershipId, lm.membershipEndDate
@@ -329,6 +386,8 @@ async function getDashboardAnalytics(periodValue = 'month', { readOnly = false }
                 SELECT TOP (1) a.attendance_date AS lastVisitDate
                 FROM dbo.gym_attendance AS a
                 WHERE a.member_id = em.memberId
+                  AND (@branchId IS NULL OR a.branch_id = @branchId)
+                  AND (@sectionId IS NULL OR a.section_id = @sectionId)
                 ORDER BY a.attendance_date DESC, a.check_in_at DESC, a.id DESC
             ) AS lastVisit
             WHERE lastVisit.lastVisitDate IS NULL OR lastVisit.lastVisitDate < @inactiveSince
@@ -337,38 +396,50 @@ async function getDashboardAnalytics(periodValue = 'month', { readOnly = false }
 
             SELECT COUNT_BIG(CASE WHEN amount_remaining > 0 THEN 1 END) AS outstandingCount,
                    ISNULL(SUM(CASE WHEN amount_remaining > 0 THEN amount_remaining ELSE 0 END), 0) AS outstandingTotal
-            FROM dbo.gym_payments;
+            FROM dbo.gym_payments AS outstanding_payment
+            INNER JOIN dbo.memberships AS outstanding_membership ON outstanding_membership.id = outstanding_payment.membership_id
+            WHERE 1 = 1 ${membershipScope('outstanding_membership')};
         `),
         previousRequest.batch(`
             SELECT COUNT_BIG(*) AS total
-            FROM dbo.members
-            WHERE registration_date >= @startDate AND registration_date < @nextDate;
+            FROM dbo.members AS members
+            WHERE registration_date >= @startDate AND registration_date < @nextDate
+              ${memberScope('members.id')};
 
             SELECT COUNT_BIG(*) AS total
-            FROM dbo.memberships
-            WHERE start_date >= @startDate AND start_date < @nextDate;
+            FROM dbo.memberships AS memberships
+            WHERE start_date >= @startDate AND start_date < @nextDate
+              ${membershipScope('memberships')};
 
             SELECT COUNT_BIG(*) AS total,
                    ISNULL(SUM(amount_paid), 0) AS amount
-            FROM dbo.gym_payment_transactions
-            WHERE paid_at >= @startDate AND paid_at < @nextDate AND is_voided = 0 AND amount_paid <> 0;
+            FROM dbo.gym_payment_transactions AS payment_transactions
+            INNER JOIN dbo.memberships AS payment_membership ON payment_membership.id = payment_transactions.membership_id
+            WHERE paid_at >= @startDate AND paid_at < @nextDate AND is_voided = 0 AND amount_paid <> 0
+              ${membershipScope('payment_membership')};
 
             SELECT COUNT_BIG(*) AS total,
                    ISNULL(SUM(amount_paid), 0) AS amount
-            FROM dbo.gym_day_pass_sales
+            FROM dbo.gym_day_pass_sales AS day_passes
             WHERE visit_date >= @startDate AND visit_date < @nextDate
-              AND status = 'completed' AND amount_paid > 0;
+              AND status = 'completed' AND amount_paid > 0
+              AND (@branchId IS NULL OR day_passes.branch_id = @branchId)
+              AND @sectionId IS NULL;
 
             SELECT COUNT_BIG(*) AS total,
                    ISNULL(SUM(amount), 0) AS amount
-            FROM dbo.gym_expenses
+            FROM dbo.gym_expenses AS expenses
             WHERE expense_date >= @startDate AND expense_date < @nextDate
-              AND ISNULL(is_voided, 0) = 0;
+              AND ISNULL(is_voided, 0) = 0
+              AND (@branchId IS NULL OR expenses.branch_id = @branchId)
+              AND @sectionId IS NULL;
 
             SELECT COUNT_BIG(*) AS visits,
                    COUNT(DISTINCT member_id) AS uniqueMembers
             FROM dbo.gym_attendance
-            WHERE attendance_date >= @startDate AND attendance_date < @nextDate;
+            WHERE attendance_date >= @startDate AND attendance_date < @nextDate
+              AND (@branchId IS NULL OR branch_id = @branchId)
+              AND (@sectionId IS NULL OR section_id = @sectionId);
         `)
     ]);
 

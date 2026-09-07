@@ -1,15 +1,21 @@
 'use strict';
 
+const { resolveBranchContext } = require('../branches/branch-context');
+
 function createMembersController({ memberService, branchService }) {
+    const branchOptions = (request) => resolveBranchContext(request, { branchService, allowAll: true });
     return {
         list: async (request, response) => {
+            const branch = await branchOptions(request);
             response.json(await memberService.getMembers({
                 search: request.query.search,
                 status: request.query.status,
                 sort: request.query.sort,
                 page: request.query.page,
                 pageSize: request.query.pageSize,
-                readOnly: request.readOnlyRequest
+                readOnly: request.readOnlyRequest,
+                branchId: branch.branchId,
+                sectionId: branch.sectionId
             }));
         },
 

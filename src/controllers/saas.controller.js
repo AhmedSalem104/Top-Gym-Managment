@@ -26,6 +26,10 @@ function createSaasController({ saasService }) {
             response.json({ plans: await saasService.getPlans({ readOnly: request.readOnlyRequest }) });
         },
 
+        featureCatalog: async (request, response) => {
+            response.json({ featureCatalog: saasService.getFeatureCatalog({ tenantType: request.tenant?.tenantType || null }) });
+        },
+
         requests: async (request, response) => {
             response.json({
                 ...await saasService.listTenantRequests(request.tenant?.id, {

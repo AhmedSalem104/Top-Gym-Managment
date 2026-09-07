@@ -163,6 +163,7 @@
     }
 
     async function request(path, options = {}) {
+        if (window.topGymApi?.request) return window.topGymApi.request(path, options);
         const response = await fetch(path, { ...options, headers: { 'Content-Type': 'application/json', ...(options.headers || {}) } });
         const data = await response.json().catch(() => ({}));
         if (!response.ok) {
@@ -613,6 +614,10 @@
             if (detail.isNew && detail.member?.id) openMemberQr(detail.member.id);
         });
         document.addEventListener('topgym:tab-changed', (event) => { if (event.detail?.name === 'attendance') loadAttendance(); });
+        window.addEventListener('topgym:branch-context-changed', () => {
+            attendanceSnapshot = null;
+            if (isAttendanceActive()) void loadAttendance();
+        });
         window.setInterval(() => {
             if (document.visibilityState !== 'hidden' && isAttendanceActive()) loadAttendance();
         }, 30000);

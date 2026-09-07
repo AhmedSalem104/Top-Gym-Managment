@@ -315,7 +315,13 @@
         }
         async function loadMembersOnly() {
             if (!window.topGymAuth?.getUser?.() || isIndependentTrainerTenant()) return;
-            const queryKey = JSON.stringify([$('searchInput')?.value.trim() || '', $('statusFilter')?.value || '', $('sortFilter')?.value || '']);
+            const queryKey = JSON.stringify([
+                $('searchInput')?.value.trim() || '',
+                $('statusFilter')?.value || '',
+                $('sortFilter')?.value || '',
+                window.sessionStorage?.getItem('logicfit.branchId') || '',
+                window.sessionStorage?.getItem('logicfit.sectionId') || ''
+            ]);
             if (membersLoadPromise && membersLoadKey === queryKey) return membersLoadPromise;
             if (!membersLoadPromise && membersLastLoadedKey === queryKey && Date.now() - membersLastLoadedAt < 750) return;
             if (membersAbortController) membersAbortController.abort();
@@ -915,6 +921,14 @@
                     && !state.dashboard
                     && window.topGymAuth?.isOwner?.()
                     && !window.topGymAuth?.getUser?.()?.mustChangePassword) void loadData();
+            });
+            window.addEventListener('topgym:branch-context-changed', () => {
+                if (isIndependentTrainerTenant()) return;
+                state.dashboard = null;
+                state.members = [];
+                state.detailsCache = new Map();
+                if (isDashboardViewActive()) void loadData();
+                if (isMembersTabActive()) void loadMembersOnly();
             });
             const loadAfterAuth = () => {
                 if (window.topGymAuth?.getUser?.() && !window.topGymAuth.getUser()?.mustChangePassword) void loadData();

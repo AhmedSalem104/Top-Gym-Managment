@@ -30,6 +30,10 @@ test('capability enforcement preserves plan-gated server-side behavior', () => {
     assert.equal(capabilityService.requiredCapability('/dashboard'), 'dashboard');
     assert.equal(capabilityService.requiredCapability('/day-passes/summary'), 'day_passes');
     assert.equal(capabilityService.requiredCapability('/monthly-finance'), 'finance');
+    assert.equal(capabilityService.requiredFeature('/diet-plans'), 'nutrition');
+    assert.equal(capabilityService.requiredFeature('/commerce/stock'), 'inventory');
+    assert.equal(capabilityService.requiredFeature('/audit/history'), 'audit');
+    assert.equal(capabilityService.requiredFeature('/payments'), 'payments');
     assert.equal(capabilityService.requiredCapability('/trainer/goals'), 'goals');
     assert.equal(capabilityService.requiredCapability('/trainer/notifications'), 'notifications');
     assert.equal(capabilityService.requiredCapability('/trainer/tasks'), 'tasks');

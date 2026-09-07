@@ -271,24 +271,28 @@ async function listSales({ fromDate, nextDate, typeCode = '', paymentMethod = ''
     };
 }
 
-async function getRangeData({ fromDate, nextDate, readOnly = false, branchId = null }) {
+async function getRangeData({ fromDate, nextDate, readOnly = false, branchId = null, sectionId = null }) {
     await ensureDayPassTables({ readOnly });
     const pool = await getPool();
     const request = pool.request()
         .input('fromDate', sql.Date, toUtcDate(fromDate))
         .input('nextDate', sql.Date, toUtcDate(nextDate))
-        .input('branchId', sql.Int, branchId == null ? null : Number(branchId));
+        .input('branchId', sql.Int, branchId == null ? null : Number(branchId))
+        // Day passes are branch-level records and have no section assignment.
+        // They remain visible for branch/all-branch views and are excluded from
+        // a section view instead of being attributed to the wrong section.
+        .input('sectionId', sql.Int, sectionId == null ? null : Number(sectionId));
     const result = await request.batch(`
         SELECT s.id, s.visitor_name, s.visitor_phone, s.visitor_phone_normalized,
                s.pass_type_code, s.pass_type_name, s.amount_due, s.amount_paid,
                s.payment_method, s.visit_date, s.notes, s.status, s.created_by_user_id,
                s.whatsapp_opened_at, s.created_at, s.updated_at
         FROM dbo.gym_day_pass_sales AS s
-        WHERE s.visit_date >= @fromDate AND s.visit_date < @nextDate AND s.status = 'completed' AND (@branchId IS NULL OR s.branch_id = @branchId)
+        WHERE s.visit_date >= @fromDate AND s.visit_date < @nextDate AND s.status = 'completed' AND (@branchId IS NULL OR s.branch_id = @branchId) AND @sectionId IS NULL
         ORDER BY s.visit_date DESC, s.id DESC;
         SELECT COUNT_BIG(*) AS count, ISNULL(SUM(s.amount_paid), 0) AS amount
         FROM dbo.gym_day_pass_sales AS s
-        WHERE s.visit_date >= @fromDate AND s.visit_date < @nextDate AND s.status = 'completed' AND (@branchId IS NULL OR s.branch_id = @branchId);
+        WHERE s.visit_date >= @fromDate AND s.visit_date < @nextDate AND s.status = 'completed' AND (@branchId IS NULL OR s.branch_id = @branchId) AND @sectionId IS NULL;
     `);
     return {
         records: (result.recordsets[0] || []).map(mapSale),
@@ -299,17 +303,18 @@ async function getRangeData({ fromDate, nextDate, readOnly = false, branchId = n
     };
 }
 
-async function getRangeSummary({ fromDate, nextDate, readOnly = false, branchId = null }) {
+async function getRangeSummary({ fromDate, nextDate, readOnly = false, branchId = null, sectionId = null }) {
     await ensureDayPassTables({ readOnly });
     const pool = await getPool();
     const result = await pool.request()
         .input('fromDate', sql.Date, toUtcDate(fromDate))
         .input('nextDate', sql.Date, toUtcDate(nextDate))
         .input('branchId', sql.Int, branchId == null ? null : Number(branchId))
+        .input('sectionId', sql.Int, sectionId == null ? null : Number(sectionId))
         .query(`
             SELECT COUNT_BIG(*) AS count, ISNULL(SUM(s.amount_paid), 0) AS amount
             FROM dbo.gym_day_pass_sales AS s
-            WHERE s.visit_date >= @fromDate AND s.visit_date < @nextDate AND s.status = 'completed' AND (@branchId IS NULL OR s.branch_id = @branchId);
+            WHERE s.visit_date >= @fromDate AND s.visit_date < @nextDate AND s.status = 'completed' AND (@branchId IS NULL OR s.branch_id = @branchId) AND @sectionId IS NULL;
         `);
     return {
         count: Number(result.recordset[0]?.count || 0),
