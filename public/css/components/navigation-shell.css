@@ -1504,3 +1504,211 @@ html[data-brand-active-style="pill"] .app-shell > .page-tabs > .page-tab.active 
     border-radius: 10px;
   }
 }
+
+/* Final desktop rail behavior: the sidebar owns the full viewport height,
+   stays compact by default, and expands only while hovered/focused or when
+   the user explicitly pins it. The topbar and workspace keep their own
+   column, so the rail never overlays application content. */
+@media (min-width: 1200px) {
+  .app-shell {
+    display: grid;
+    min-height: 100dvh;
+    grid-template-columns: var(--sidebar-width-collapsed) minmax(0, 1fr);
+    grid-template-rows: minmax(80px, auto) minmax(0, 1fr);
+    transition: grid-template-columns var(--sidebar-rail-transition);
+  }
+
+  .app-shell.sidebar-expanded,
+  .app-shell:has(> .page-tabs.is-hovered),
+  .app-shell:has(> .page-tabs:focus-within),
+  .app-shell:has(> .page-tabs.sidebar-pinned) {
+    grid-template-columns: var(--sidebar-width-expanded) minmax(0, 1fr);
+  }
+
+  .app-shell > .topbar {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .app-shell > .topbar .mobile-nav-toggle {
+    display: none;
+  }
+
+  .app-shell > .page-tabs {
+    position: sticky;
+    top: 0;
+    z-index: var(--z-content);
+    grid-column: 1;
+    grid-row: 1 / -1;
+    display: flex;
+    width: 100%;
+    height: 100dvh;
+    min-height: 100dvh;
+    max-height: none;
+    align-self: start;
+    flex-direction: column;
+    overflow-x: hidden;
+    overflow-y: auto;
+    scrollbar-color: var(--sidebar-text-muted) transparent;
+    scrollbar-gutter: stable;
+    scrollbar-width: thin;
+    border: 0;
+    border-inline-end: 1px solid var(--sidebar-divider);
+    border-radius: 0;
+    background: linear-gradient(180deg, var(--sidebar-bg) 0%, var(--sidebar-bg-deep) 100%);
+    box-shadow: 10px 0 34px rgb(2 6 23 / .13);
+    padding: 20px var(--space-3) 24px;
+    transform: none;
+    visibility: visible;
+    pointer-events: auto;
+    transition: background-color var(--sidebar-rail-transition), border-color var(--sidebar-rail-transition), box-shadow var(--sidebar-rail-transition);
+  }
+
+  .app-shell > .page-tabs > .mobile-nav-header {
+    display: none;
+  }
+
+  .app-shell > .page-tabs > .sidebar-brand {
+    order: -2;
+    width: 56px;
+    min-width: 56px;
+    align-self: center;
+    justify-content: center;
+    gap: 0;
+    margin-inline: 0;
+    padding-inline: 0;
+  }
+
+  .app-shell > .page-tabs > .sidebar-pin-toggle {
+    order: -1;
+    width: 56px;
+    min-width: 56px;
+    min-height: 42px;
+    align-self: center;
+    justify-content: center;
+    gap: 0;
+    padding-inline: 0;
+  }
+
+  .app-shell > .page-tabs > .page-tab,
+  .app-shell > .page-tabs > .smart-assistant-launcher {
+    width: 56px;
+    min-width: 56px;
+    min-height: 50px;
+    align-self: center;
+    justify-content: center;
+    gap: 0;
+    padding-inline: 0;
+  }
+
+  .app-shell > .page-tabs > .page-tab > span,
+  .app-shell > .page-tabs > .smart-assistant-launcher-label,
+  .app-shell > .page-tabs > .sidebar-brand > .sidebar-brand-copy,
+  .app-shell > .page-tabs > .sidebar-pin-toggle > span {
+    max-width: 0;
+    max-inline-size: 0;
+    opacity: 0;
+    transform: translateX(-4px);
+    visibility: hidden;
+    transition: max-inline-size var(--sidebar-label-transition), opacity 140ms ease, transform var(--sidebar-label-transition), visibility 0s linear var(--sidebar-label-transition);
+  }
+
+  .app-shell > .page-tabs.is-hovered > .page-tab,
+  .app-shell > .page-tabs.is-hovered > .smart-assistant-launcher,
+  .app-shell > .page-tabs.is-hovered > .sidebar-pin-toggle,
+  .app-shell > .page-tabs.sidebar-pinned > .page-tab,
+  .app-shell > .page-tabs.sidebar-pinned > .smart-assistant-launcher,
+  .app-shell > .page-tabs.sidebar-pinned > .sidebar-pin-toggle,
+  .app-shell > .page-tabs:focus-within > .page-tab,
+  .app-shell > .page-tabs:focus-within > .smart-assistant-launcher,
+  .app-shell > .page-tabs:focus-within > .sidebar-pin-toggle {
+    width: 100%;
+    min-width: 0;
+    align-self: stretch;
+    justify-content: flex-start;
+    gap: var(--space-3);
+    padding-inline: var(--space-3);
+  }
+
+  .app-shell > .page-tabs.is-hovered > .page-tab > span,
+  .app-shell > .page-tabs.is-hovered > .smart-assistant-launcher-label,
+  .app-shell > .page-tabs.is-hovered > .sidebar-brand > .sidebar-brand-copy,
+  .app-shell > .page-tabs.is-hovered > .sidebar-pin-toggle > span,
+  .app-shell > .page-tabs.sidebar-pinned > .page-tab > span,
+  .app-shell > .page-tabs.sidebar-pinned > .smart-assistant-launcher-label,
+  .app-shell > .page-tabs.sidebar-pinned > .sidebar-brand > .sidebar-brand-copy,
+  .app-shell > .page-tabs.sidebar-pinned > .sidebar-pin-toggle > span,
+  .app-shell > .page-tabs:focus-within > .page-tab > span,
+  .app-shell > .page-tabs:focus-within > .smart-assistant-launcher-label,
+  .app-shell > .page-tabs:focus-within > .sidebar-brand > .sidebar-brand-copy,
+  .app-shell > .page-tabs:focus-within > .sidebar-pin-toggle > span {
+    max-width: 220px;
+    max-inline-size: 220px;
+    opacity: 1;
+    transform: none;
+    visibility: visible;
+    transition: max-inline-size var(--sidebar-label-transition), opacity 160ms ease 40ms, transform var(--sidebar-label-transition), visibility 0s;
+  }
+
+  .app-shell > .page-tabs.is-hovered > .sidebar-brand,
+  .app-shell > .page-tabs.sidebar-pinned > .sidebar-brand,
+  .app-shell > .page-tabs:focus-within > .sidebar-brand {
+    width: auto;
+    min-width: 0;
+    align-self: stretch;
+    justify-content: flex-start;
+    gap: var(--space-3);
+    padding-inline: var(--space-2);
+  }
+
+  .app-shell > .page-tabs > .sidebar-pin-toggle {
+    display: flex;
+    align-items: center;
+    border: 1px solid transparent;
+    border-radius: var(--radius-md);
+    background: transparent;
+    color: var(--sidebar-text-muted);
+    cursor: pointer;
+    transition: width var(--sidebar-rail-transition), min-width var(--sidebar-rail-transition), background-color var(--sidebar-item-transition), border-color var(--sidebar-item-transition), color var(--sidebar-item-transition), gap var(--sidebar-item-transition), padding var(--sidebar-rail-transition);
+  }
+
+  .app-shell > .page-tabs > .sidebar-pin-toggle:hover,
+  .app-shell > .page-tabs > .sidebar-pin-toggle:focus-visible,
+  .app-shell > .page-tabs > .sidebar-pin-toggle[aria-pressed="true"] {
+    border-color: var(--sidebar-divider);
+    background: var(--sidebar-hover-bg);
+    color: var(--sidebar-active-text);
+    outline: none;
+  }
+
+  .app-shell > .page-tabs > .sidebar-pin-toggle .ui-icon {
+    width: 28px;
+    height: 28px;
+    flex: 0 0 28px;
+    padding: 5px;
+  }
+
+  .app-shell > .topbar .topbar-brand-area {
+    display: none;
+  }
+
+  .app-shell > .topbar .topbar-inner {
+    width: min(100% - 40px, 1800px);
+    max-width: none;
+  }
+
+  .app-shell > main.page {
+    grid-column: 2;
+    grid-row: 2;
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+    min-height: calc(100dvh - 80px);
+    margin: 0;
+    padding: 30px clamp(20px, 3vw, 48px) 56px;
+  }
+}
+
+@media (max-width: 1199px) {
+  .sidebar-pin-toggle { display: none; }
+}

@@ -43,6 +43,7 @@
         const targets = [
             ...rail.querySelectorAll('.page-tab'),
             rail.querySelector('.smart-assistant-launcher'),
+            rail.querySelector('.sidebar-pin-toggle'),
             rail.querySelector('.auth-logout-button')
         ].filter(Boolean);
 
@@ -140,9 +141,36 @@
 
         const shell = rail.closest('.app-shell');
         const desktopMediaQuery = window.matchMedia('(min-width: 1200px)');
+        const pinToggle = rail.querySelector('#sidebarPinToggle');
+        const pinStorageKey = 'logic-fit.sidebar-pinned';
 
         let hoverOpenTimer = null;
         let hoverReleaseTimer = null;
+        let isPinned = false;
+
+        try {
+            isPinned = window.localStorage.getItem(pinStorageKey) === 'true';
+        } catch {
+            isPinned = false;
+        }
+
+        const updatePinState = (nextPinned) => {
+            isPinned = Boolean(nextPinned);
+            rail.classList.toggle('sidebar-pinned', isPinned);
+            rail.classList.toggle('is-hovered', isPinned);
+            shell?.classList.toggle('sidebar-expanded', isPinned);
+            pinToggle?.setAttribute('aria-pressed', String(isPinned));
+            pinToggle?.setAttribute('aria-label', isPinned ? 'إلغاء تثبيت القائمة' : 'تثبيت القائمة');
+            pinToggle?.setAttribute('title', isPinned ? 'إلغاء تثبيت القائمة' : 'تثبيت القائمة');
+            try {
+                window.localStorage.setItem(pinStorageKey, String(isPinned));
+            } catch {
+                // A storage restriction should not disable navigation.
+            }
+        };
+
+        updatePinState(isPinned);
+
         const revealRail = () => {
             if (!desktopMediaQuery.matches) return;
             if (hoverOpenTimer) window.clearTimeout(hoverOpenTimer);
@@ -155,6 +183,7 @@
         };
         const openRail = (reason = 'pointer') => {
             if (!desktopMediaQuery.matches) return;
+            if (isPinned) return;
             if (hoverReleaseTimer) window.clearTimeout(hoverReleaseTimer);
             if (reason === 'focus') {
                 revealRail();
@@ -165,6 +194,7 @@
             hoverOpenTimer = window.setTimeout(revealRail, 120);
         };
         const scheduleRailClose = () => {
+            if (isPinned) return;
             if (hoverOpenTimer) window.clearTimeout(hoverOpenTimer);
             hoverOpenTimer = null;
             if (hoverReleaseTimer) window.clearTimeout(hoverReleaseTimer);
@@ -179,6 +209,20 @@
                 hoverReleaseTimer = null;
             }, 180);
         };
+
+        pinToggle?.addEventListener('click', (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            const nextPinned = !isPinned;
+            updatePinState(nextPinned);
+            if (nextPinned) {
+                revealRail();
+            } else if (rail.matches(':hover')) {
+                openRail();
+            } else {
+                scheduleRailClose();
+            }
+        });
 
         rail.addEventListener('pointerenter', openRail);
         rail.addEventListener('pointerleave', scheduleRailClose);
