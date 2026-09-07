@@ -210,13 +210,20 @@
                 </div>
                 <div class="topbar-controls">
                     <div class="branch-context-shell" id="branchContextShell" hidden>
-                        <span class="branch-context-kicker">سياق التشغيل</span>
-                        <span class="branch-context-mark" aria-hidden="true"></span>
-                        <label class="visually-hidden" for="branchContextSelect">الفرع الحالي</label>
-                        <select id="branchContextSelect" aria-label="الفرع الحالي"></select>
-                        <label class="visually-hidden" for="sectionContextSelect">القسم الحالي</label>
-                        <select id="sectionContextSelect" aria-label="القسم الحالي" disabled></select>
-                        <span class="branch-context-status" id="branchContextStatus" aria-live="polite"></span>
+                        <div class="branch-context-kicker">
+                            <span class="branch-context-kicker-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12Z"/><circle cx="12" cy="9" r="2.4"/></svg></span>
+                            <span><strong>سياق التشغيل</strong><small>بيانات العرض الحالية</small></span>
+                        </div>
+                        <div class="branch-context-divider" aria-hidden="true"></div>
+                        <div class="branch-context-field" data-context-field="branch">
+                            <span class="branch-context-field-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16"/><path d="M6 20V8l6-4 6 4v12"/><path d="M9 11h.01M15 11h.01M9 15h.01M15 15h.01"/></svg></span>
+                            <span class="branch-context-field-copy"><small>الفرع</small><label class="visually-hidden" for="branchContextSelect">الفرع الحالي</label><select id="branchContextSelect" aria-label="الفرع الحالي"></select></span>
+                        </div>
+                        <div class="branch-context-field" id="sectionContextField" data-context-field="section">
+                            <span class="branch-context-field-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16M4 12h16M4 19h16"/><circle cx="8" cy="5" r="2"/><circle cx="15" cy="12" r="2"/><circle cx="11" cy="19" r="2"/></svg></span>
+                            <span class="branch-context-field-copy"><small>القسم</small><label class="visually-hidden" for="sectionContextSelect">القسم الحالي</label><select id="sectionContextSelect" aria-label="القسم الحالي" disabled></select></span>
+                        </div>
+                        <div class="branch-context-status" aria-live="polite"><span class="branch-context-status-dot" aria-hidden="true"></span><span id="branchContextStatus">عرض موحد</span></div>
                     </div>
                     <div class="top-actions topbar-quick-actions">
                         <button class="btn btn-primary btn-small" id="topAddMemberButton" data-required-permission="members.create" hidden>إضافة مشترك</button>

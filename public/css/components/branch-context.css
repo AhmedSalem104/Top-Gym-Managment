@@ -1,35 +1,101 @@
 /* Branch context is an operational aid, never an authorization boundary. */
 .branch-context-shell {
+  position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 9px;
-  min-height: 42px;
-  padding: 5px 8px 5px 11px;
-  border: 1px solid var(--sidebar-border);
-  border-radius: 14px;
-  background: color-mix(in srgb, var(--sidebar-bg) 92%, transparent);
+  gap: 0;
+  min-height: 58px;
+  max-width: min(100%, 620px);
+  padding: 6px 8px;
+  border: 1px solid color-mix(in srgb, var(--primary-border) 42%, var(--sidebar-border));
+  border-radius: 18px;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--sidebar-bg) 98%, var(--primary) 2%), color-mix(in srgb, var(--sidebar-bg) 88%, var(--primary) 12%));
   color: var(--sidebar-text);
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 10px 24px rgb(2 6 23 / .13), inset 0 1px 0 rgb(255 255 255 / .06);
+  isolation: isolate;
 }
 
 .branch-context-kicker {
-  color: var(--sidebar-text-muted);
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: .08em;
+  display: inline-flex;
+  min-width: 126px;
+  align-items: center;
+  gap: 8px;
+  padding-inline: 8px 12px;
   white-space: nowrap;
 }
 
-.branch-context-mark {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--success);
-  box-shadow: 0 0 0 4px var(--success-soft);
+.branch-context-kicker-icon,
+.branch-context-field-icon {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  flex: 0 0 30px;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--primary-border) 56%, transparent);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--primary-soft) 72%, transparent);
+  color: var(--color-primary);
 }
 
-.branch-context-shell select {
-  min-width: 132px;
+.branch-context-kicker-icon svg,
+.branch-context-field-icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.branch-context-kicker > span:last-child,
+.branch-context-field-copy {
+  display: grid;
+  min-width: 0;
+  gap: 1px;
+}
+
+.branch-context-kicker strong {
+  color: var(--sidebar-text);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: -.01em;
+}
+
+.branch-context-kicker small,
+.branch-context-field-copy small {
+  color: var(--sidebar-text-muted);
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.branch-context-divider {
+  width: 1px;
+  height: 34px;
+  flex: 0 0 1px;
+  margin-inline: 2px 4px;
+  background: var(--sidebar-divider);
+}
+
+.branch-context-field {
+  display: inline-flex;
+  min-width: 148px;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 10px;
+  border: 1px solid transparent;
+  border-radius: 13px;
+  transition: border-color 180ms ease, background-color 180ms ease, transform 180ms ease;
+}
+
+.branch-context-field:hover,
+.branch-context-field:focus-within {
+  border-color: color-mix(in srgb, var(--primary-border) 62%, transparent);
+  background: color-mix(in srgb, var(--primary-soft) 68%, transparent);
+}
+
+.branch-context-field:focus-within { transform: translateY(-1px); }
+
+.branch-context-field-copy select {
+  display: block;
+  width: 100%;
+  min-width: 0;
   border: 0;
   outline: 0;
   background: transparent;
@@ -37,23 +103,49 @@
   cursor: pointer;
   font: inherit;
   font-size: 13px;
-  font-weight: 800;
+  font-weight: 900;
+  line-height: 1.35;
+  text-overflow: ellipsis;
 }
 
-.branch-context-shell select option {
+.branch-context-field-copy select:disabled {
+  cursor: not-allowed;
+  opacity: .55;
+}
+
+.branch-context-field-copy select option {
   background: var(--sidebar-bg);
   color: var(--sidebar-text);
+}
+
+.branch-context-status {
+  display: inline-flex;
+  min-height: 32px;
+  align-items: center;
+  gap: 7px;
+  margin-inline-start: 5px;
+  padding: 0 10px;
+  border: 1px solid color-mix(in srgb, var(--success) 32%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--success-soft) 78%, transparent);
+  color: var(--success-text);
+  font-size: 10px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.branch-context-status-dot {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 7px;
+  border-radius: 50%;
+  background: var(--success);
+  box-shadow: 0 0 0 4px var(--success-soft), 0 0 12px color-mix(in srgb, var(--success) 68%, transparent);
 }
 
 .branch-context-shell select:focus-visible {
   border-radius: 7px;
   box-shadow: var(--focus-ring);
-}
-
-.branch-context-status {
-  color: var(--success-text);
-  font-size: 11px;
-  white-space: nowrap;
 }
 
 .branches-page {
@@ -121,12 +213,28 @@
 }
 
 @media (max-width: 700px) {
-  .branch-context-shell { width: 100%; justify-content: space-between; }
-  .branch-context-shell select { min-width: 0; flex: 1; }
+  .branch-context-shell { width: 100%; max-width: none; justify-content: stretch; }
+  .branch-context-kicker { min-width: auto; padding-inline: 4px 8px; }
+  .branch-context-kicker small,
+  .branch-context-field-icon { display: none; }
+  .branch-context-field { min-width: 0; flex: 1 1 0; padding-inline: 7px; }
+  .branch-context-status { margin-inline-start: 3px; padding-inline: 8px; }
   .branches-page-header, .branches-card { padding: 16px; }
   .branches-page-summary { width: 100%; }
   .branches-page-summary span { flex: 1; }
   .branches-list { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 480px) {
+  .branch-context-shell { min-height: 52px; border-radius: 15px; }
+  .branch-context-kicker strong { font-size: 10px; }
+  .branch-context-kicker { gap: 5px; }
+  .branch-context-kicker-icon { width: 26px; height: 26px; flex-basis: 26px; border-radius: 8px; }
+  .branch-context-field { gap: 0; padding-inline: 5px; }
+  .branch-context-field-copy small { font-size: 8px; }
+  .branch-context-field-copy select { font-size: 11px; }
+  .branch-context-status { min-height: 28px; padding-inline: 6px; font-size: 9px; }
+  .branch-context-status-dot { width: 6px; height: 6px; flex-basis: 6px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -132,6 +132,7 @@
         const selected = active.find((branch) => String(branch.id) === select.value);
         $('branchContextStatus').textContent = selected ? `${selected.status === 'active' ? 'نشط' : 'غير نشط'}` : 'عرض موحد';
         if (sectionSelect) {
+            const sectionField = document.getElementById('sectionContextField');
             const sections = (Array.isArray(data?.sections) ? data.sections : [])
                 .filter((section) => String(section.branchId) === String(select.value) && section.active !== false);
             sectionSelect.innerHTML = '';
@@ -143,6 +144,7 @@
             else { sectionSelect.value = ''; writeStoredSection(''); }
             sectionSelect.disabled = !select.value || sections.length === 0;
             sectionSelect.hidden = !select.value;
+            if (sectionField) sectionField.hidden = sectionSelect.hidden;
         }
     }
 
