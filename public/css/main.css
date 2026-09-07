@@ -2922,14 +2922,16 @@ body .swal2-close:hover {
 /* Branch context is an operational aid, never an authorization boundary. */
 .branch-context-shell {
   position: relative;
+  box-sizing: border-box;
   display: inline-flex;
   align-items: center;
   gap: 0;
-  min-height: 58px;
-  max-width: min(100%, 620px);
-  padding: 6px 8px;
+  height: 50px;
+  min-height: 50px;
+  max-width: min(100%, 540px);
+  padding: 4px 6px;
   border: 1px solid color-mix(in srgb, var(--primary-border) 42%, var(--sidebar-border));
-  border-radius: 18px;
+  border-radius: 15px;
   background: linear-gradient(135deg, color-mix(in srgb, var(--sidebar-bg) 98%, var(--primary) 2%), color-mix(in srgb, var(--sidebar-bg) 88%, var(--primary) 12%));
   color: var(--sidebar-text);
   box-shadow: 0 10px 24px rgb(2 6 23 / .13), inset 0 1px 0 rgb(255 255 255 / .06);
@@ -2938,30 +2940,30 @@ body .swal2-close:hover {
 
 .branch-context-kicker {
   display: inline-flex;
-  min-width: 126px;
+  min-width: 110px;
   align-items: center;
   gap: 8px;
-  padding-inline: 8px 12px;
+  padding-inline: 5px 8px;
   white-space: nowrap;
 }
 
 .branch-context-kicker-icon,
 .branch-context-field-icon {
   display: grid;
-  width: 30px;
-  height: 30px;
-  flex: 0 0 30px;
+  width: 25px;
+  height: 25px;
+  flex: 0 0 25px;
   place-items: center;
   border: 1px solid color-mix(in srgb, var(--primary-border) 56%, transparent);
-  border-radius: 10px;
+  border-radius: 8px;
   background: color-mix(in srgb, var(--primary-soft) 72%, transparent);
   color: var(--color-primary);
 }
 
 .branch-context-kicker-icon svg,
 .branch-context-field-icon svg {
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
 }
 
 .branch-context-kicker > span:last-child,
@@ -2973,7 +2975,7 @@ body .swal2-close:hover {
 
 .branch-context-kicker strong {
   color: var(--sidebar-text);
-  font-size: 12px;
+  font-size: 10px;
   font-weight: 900;
   letter-spacing: -.01em;
 }
@@ -2981,14 +2983,14 @@ body .swal2-close:hover {
 .branch-context-kicker small,
 .branch-context-field-copy small {
   color: var(--sidebar-text-muted);
-  font-size: 9px;
+  font-size: 8px;
   font-weight: 700;
   line-height: 1.3;
 }
 
 .branch-context-divider {
   width: 1px;
-  height: 34px;
+  height: 28px;
   flex: 0 0 1px;
   margin-inline: 2px 4px;
   background: var(--sidebar-divider);
@@ -2996,10 +2998,10 @@ body .swal2-close:hover {
 
 .branch-context-field {
   display: inline-flex;
-  min-width: 148px;
+  min-width: 126px;
   align-items: center;
   gap: 7px;
-  padding: 4px 10px;
+  padding: 2px 7px;
   border: 1px solid transparent;
   border-radius: 13px;
   transition: border-color 180ms ease, background-color 180ms ease, transform 180ms ease;
@@ -3023,7 +3025,7 @@ body .swal2-close:hover {
   color: var(--sidebar-text);
   cursor: pointer;
   font: inherit;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 900;
   line-height: 1.35;
   text-overflow: ellipsis;
@@ -3041,16 +3043,16 @@ body .swal2-close:hover {
 
 .branch-context-status {
   display: inline-flex;
-  min-height: 32px;
+  min-height: 28px;
   align-items: center;
   gap: 7px;
-  margin-inline-start: 5px;
-  padding: 0 10px;
+  margin-inline-start: 3px;
+  padding: 0 8px;
   border: 1px solid color-mix(in srgb, var(--success) 32%, transparent);
   border-radius: 999px;
   background: color-mix(in srgb, var(--success-soft) 78%, transparent);
   color: var(--success-text);
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 900;
   white-space: nowrap;
 }
@@ -3147,7 +3149,7 @@ body .swal2-close:hover {
 }
 
 @media (max-width: 480px) {
-  .branch-context-shell { min-height: 52px; border-radius: 15px; }
+  .branch-context-shell { height: 46px; min-height: 46px; border-radius: 13px; }
   .branch-context-kicker strong { font-size: 10px; }
   .branch-context-kicker { gap: 5px; }
   .branch-context-kicker-icon { width: 26px; height: 26px; flex-basis: 26px; border-radius: 8px; }
