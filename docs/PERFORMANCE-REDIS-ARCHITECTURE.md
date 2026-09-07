@@ -1,8 +1,8 @@
 # Logic Fit Performance & Redis Architecture
 
-Status: `IMPLEMENTED — RELEASE READY`
+Status: `IMPLEMENTED - DEPLOYED`
 
-This document records the measured performance work for the current release. It intentionally separates verified local/browser evidence from measurements that require an authenticated QA session or a secure Redis connectivity path.
+This document records the measured performance work for the current release and separates local structural evidence from read-only authenticated Production evidence.
 
 ## Scope and safety
 
@@ -14,15 +14,20 @@ This document records the measured performance work for the current release. It 
 
 ## Baseline evidence
 
-Authenticated API timing was not run because no QA session cookie was available to the read-only baseline runner. The runner correctly refuses Production-like targets and does not log in or create data.
+Authenticated timing was collected against the Production alias with an approved QA Owner account. The run logged in, sent GET requests with the read-only baseline header, and revoked the test session afterward; no business write was performed.
 
 | Surface | Evidence | Status |
 | --- | --- | --- |
 | Main application structural browser load | 34 requests, 2 API requests, approximately 1.7 MB transferred | PASS |
 | Member Portal structural load | 11 requests, approximately 267 KB transferred | PASS |
 | Platform Admin structural load | 12 requests, approximately 178 KB transferred | PASS |
-| Authenticated Login/Dashboard/Members/Reports timing | Requires an approved QA session cookie | NOT VERIFIED |
-| SQL query count and DB p50/p95/p99 | Requires authenticated QA data and Server-Timing capture | NOT VERIFIED |
+| Production authenticated login | 200; cold sample 2.09s-5.94s | PASS |
+| Production authenticated Dashboard | 200; p50 4407ms, p95 4762ms, 97.5KB | PASS |
+| Production authenticated Members | 200; p50 3565ms, p95 4994ms, 17.9KB | PASS |
+| Production authenticated Attendance | 200; p50 3484ms, p95 3730ms | PASS |
+| Production authenticated Reports | 200; p50 4811ms, p95 5251ms, 38.6KB | PASS |
+| Production authenticated Branch bootstrap after read-only fix | 200 on 3/3 samples; p50 5099ms | PASS |
+| SQL execution-plan/logical-read evidence | Not exposed by the safe Production run | NOT VERIFIED |
 
 ## Root causes found
 
@@ -59,8 +64,9 @@ Authenticated API timing was not run because no QA session cookie was available 
 - Database readiness: `PASS`
 - npm audit: `0 vulnerabilities`
 - `git diff --check`: `PASS`
-
-The real authenticated before/after latency comparison remains `NOT VERIFIED` until an approved local/staging QA session is provided.
+- Production `/api/health`: `200`, database connected, cache healthy.
+- Production `/api/health/live`: `200`.
+- Final Production cache sample: `10` hits, `2` misses, `0` errors, `2` sets, average cache operation `207.45ms`.
 
 ## VPS discovery
 
@@ -117,7 +123,7 @@ Candidate resources, subject to measured value and invalidation:
 
 ## Remaining bottlenecks / gaps
 
-- Authenticated p50/p95/p99 and DB query-count measurements are not available without a safe QA session.
-- SQL Server execution-plan evidence (logical reads, seeks/scans, sort cost) was not collected because no approved test database/session was available for this run.
-- Production cache hit/miss population is traffic-dependent; the production health endpoint verifies gateway reachability after release. The gateway and Redis service are healthy on the VPS.
-- Authenticated p50/p95/p99 comparison still requires an approved QA session; no credentials were created or logged by this work.
+- SQL Server execution-plan evidence (logical reads, seeks/scans and sort cost) was not collected because the safe Production run intentionally did not enable diagnostic SQL commands.
+- Platform Admin and Trainer authenticated p50/p95 require separate approved QA sessions; Gym Owner coverage is verified above.
+- Production cache hit ratio is instance/traffic dependent; the final observed sample had 10 hits and 2 misses with no errors.
+- The dominant remaining latency is database/application cold-start and remote SQL work, with authenticated p95 values commonly in the 3.7-5.6s range.
