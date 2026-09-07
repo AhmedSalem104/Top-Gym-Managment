@@ -69,6 +69,17 @@
         host.innerHTML = `<article class="saas-summary-card saas-summary-gym"><span>الجيم</span><strong>${escapeHtml(billing.tenant.name)}</strong><p dir="ltr">${escapeHtml(billing.tenant.slug)}</p></article><article class="saas-summary-card saas-summary-status"><div class="saas-summary-card-top"><span>حالة الاشتراك</span>${subscription ? statusMarkup(subscription.status) : statusMarkup('expired')}</div><strong>${subscription ? statusLabel(subscription.status) : 'بدون اشتراك'}</strong><div class="saas-summary-progress" aria-hidden="true"><span style="width:${progress}%"></span></div><p>${daysRemaining == null ? 'لا يوجد تاريخ انتهاء محدد' : `${numberFormatter.format(Math.max(0, daysRemaining))} يوم متبقٍ`}</p></article><article class="saas-summary-card"><span>الباقة الحالية</span><strong>${escapeHtml(plan?.name || 'بدون باقة')}</strong><p>${plan?.billingPeriod === 'yearly' ? 'دورة سنوية' : plan?.billingPeriod === 'monthly' ? 'دورة شهرية' : 'بيانات الاشتراك'}</p></article><article class="saas-summary-card"><span>تاريخ الاشتراك</span><strong>${subscription?.startsAt ? date(subscription.startsAt) : 'غير محدد'}</strong><p>${subscription?.expiresAt ? `حتى ${date(subscription.expiresAt)}` : 'اشتراك مفتوح'}</p></article><article class="saas-summary-card"><span>المشتركون</span><strong>${numberFormatter.format(Number(billing.usage?.members || 0))}</strong><p>من حد ${limit(plan?.maxMembers)} عضو</p></article>`;
     }
 
+    function planIcon(plan) {
+        const name = String(plan?.name || '').toLowerCase();
+        if (name.includes('enterprise') || name.includes('مؤسس') || name.includes('احتراف')) {
+            return '<svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 2.2 5.1L20 9l-4 3.8 1.1 5.7L12 15.8 6.9 18.5 8 12.8 4 9l5.8-.9L12 3Z"/><path d="M8 21h8"/></svg>';
+        }
+        if (name.includes('pro') || name.includes('احتراف') || name.includes('متقدم')) {
+            return '<svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 1.7 5.3L19 10l-5.3 1.7L12 17l-1.7-5.3L5 10l5.3-1.7L12 3Z"/><path d="m19 16 .7 2.3L22 19l-2.3.7L19 22l-.7-2.3L16 19l2.3-.7L19 16Z"/></svg>';
+        }
+        return '<svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 10-12h-7l0-8Z"/></svg>';
+    }
+
     function renderPlans(plans) {
         const host = $('saasPlansList');
         const select = $('saasPlanSelect');
@@ -85,9 +96,8 @@
         if (!host) return;
         if (!availablePlans.length) { host.innerHTML = '<div class="saas-empty">لا توجد باقات مفعّلة حاليًا. راجع مدير المنصة.</div>'; return; }
         const selectedId = availablePlans.some((plan) => String(plan.id) === String(currentPlanId)) ? currentPlanId : availablePlans[0].id;
-        host.innerHTML = availablePlans.map((plan) => `<article class="saas-plan-card ${String(plan.id) === String(selectedId) ? 'is-selected' : ''} ${String(plan.id) === String(currentPlanId) ? 'is-current' : ''}" data-saas-plan-card="${plan.id}"><div><h5>${escapeHtml(plan.name)}</h5><span class="saas-muted">${escapeHtml(plan.description || '')}</span></div><div class="saas-plan-price">${money(plan.price, plan.currency)} <small>/ ${plan.billingPeriod === 'yearly' ? 'سنة' : 'شهر'}</small></div><ul class="saas-plan-limits"><li><span>الأعضاء</span><strong>${limit(plan.maxMembers)}</strong></li><li><span>المستخدمون</span><strong>${limit(plan.maxUsers)}</strong></li><li><span>AI شهريًا</span><strong>${limit(plan.maxAiGenerations)}</strong></li><li><span>الفروع</span><strong>${limit(plan.maxBranches)}</strong></li><li><span>التخزين</span><strong>${limit(plan.maxStorageMb)} MB</strong></li></ul><button class="btn btn-light btn-small" type="button" data-saas-select-plan="${plan.id}">${String(plan.id) === String(currentPlanId) ? 'الباقة الحالية' : 'اختيار الباقة'}</button></article>`).join('');
+        host.innerHTML = availablePlans.map((plan) => `<article class="saas-plan-card ${String(plan.id) === String(selectedId) ? 'is-selected' : ''} ${String(plan.id) === String(currentPlanId) ? 'is-current' : ''}" data-saas-plan-card="${plan.id}"><div class="saas-plan-card-heading"><span class="saas-plan-card-icon">${planIcon(plan)}</span><div><h5>${escapeHtml(plan.name)}</h5><span class="saas-muted">${escapeHtml(plan.description || '')}</span></div></div><div class="saas-plan-price">${money(plan.price, plan.currency)} <small>/ ${plan.billingPeriod === 'yearly' ? 'سنة' : 'شهر'}</small></div><ul class="saas-plan-limits"><li><span>الأعضاء</span><strong>${limit(plan.maxMembers)}</strong></li><li><span>المستخدمون</span><strong>${limit(plan.maxUsers)}</strong></li><li><span>AI شهريًا</span><strong>${limit(plan.maxAiGenerations)}</strong></li><li><span>الفروع</span><strong>${limit(plan.maxBranches)}</strong></li><li><span>التخزين</span><strong>${limit(plan.maxStorageMb)} MB</strong></li></ul><button class="btn btn-light btn-small" type="button" data-saas-select-plan="${plan.id}">${String(plan.id) === String(currentPlanId) ? 'الباقة الحالية' : 'اختيار الباقة'}</button></article>`).join('');
         if (select) select.value = String(selectedId);
-        enhancePlanFeatureComparison(availablePlans, currentPlanId);
     }
 
     function renderRequests(requests) {

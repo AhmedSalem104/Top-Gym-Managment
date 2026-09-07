@@ -670,27 +670,29 @@
   padding: 0;
 }
 
-/* Keep the existing navigation order while making the menu hierarchy stable. */
+/* Keep one continuous resource list ordered by daily usage. Visual section
+   labels are intentionally removed; the order itself provides the hierarchy. */
 .page-tabs > .sidebar-brand { order: -2; }
 .page-tabs > .mobile-nav-header { order: -3; }
 .page-tabs > [data-page-tab="dashboard"] { order: 1; }
 .page-tabs > [data-page-tab="members"] { order: 2; }
 .page-tabs > [data-page-tab="attendance"] { order: 3; }
-.page-tabs > [data-page-tab="intelligence"] { order: 4; }
-.page-tabs > [data-page-tab="trainees"] { order: 5; }
+.page-tabs > [data-page-tab="reports"] { order: 4; }
+.page-tabs > [data-page-tab="branches"] { order: 5; }
 .page-tabs > [data-page-tab="store"] { order: 6; }
 .page-tabs > [data-page-tab="expenses"] { order: 7; }
-.page-tabs > [data-page-tab="reports"] { order: 8; }
-.page-tabs > [data-page-tab="library"] { order: 9; }
-.page-tabs > [data-page-tab="feedback"] { order: 10; }
-.page-tabs > [data-page-tab="management"] { order: 11; }
-.page-tabs > [data-page-tab="branding"] { order: 12; }
-.page-tabs > [data-page-tab="member-payment-methods"] { order: 13; }
-.page-tabs > [data-page-tab="permissions"] { order: 14; }
-.page-tabs > [data-page-tab="member-subscription-requests"] { order: 15; }
+.page-tabs > [data-page-tab="management"] { order: 8; }
+.page-tabs > [data-page-tab="member-subscription-requests"] { order: 9; }
+.page-tabs > [data-page-tab="library"] { order: 10; }
+.page-tabs > [data-page-tab="trainees"] { order: 11; }
+.page-tabs > [data-page-tab="intelligence"] { order: 12; }
+.page-tabs > [data-page-tab="feedback"] { order: 13; }
+.page-tabs > [data-page-tab="branding"] { order: 14; }
+.page-tabs > [data-page-tab="member-payment-methods"] { order: 15; }
 .page-tabs > [data-page-tab="portal-analytics"] { order: 16; }
 .page-tabs > [data-page-tab="saas-billing"] { order: 17; }
 .page-tabs > [data-page-tab="backup-history"] { order: 18; }
+.page-tabs > [data-page-tab="permissions"] { order: 19; }
 .page-tabs > .smart-assistant-launcher { order: 99; }
 
 /* Desktop: a stable grid track means hover expands the workspace rather than
@@ -1428,31 +1430,25 @@ html[data-brand-active-style="pill"] .app-shell > .page-tabs > .page-tab.active 
   .app-shell > .page-tabs > .sidebar-brand { order: -100; }
   .app-shell > .page-tabs > .mobile-nav-header { order: -99; }
 
-  .app-shell > .page-tabs > [data-nav-section="daily"] { order: 0; }
   .app-shell > .page-tabs > [data-page-tab="dashboard"] { order: 1; }
   .app-shell > .page-tabs > [data-page-tab="members"] { order: 2; }
   .app-shell > .page-tabs > [data-page-tab="attendance"] { order: 3; }
   .app-shell > .page-tabs > [data-page-tab="reports"] { order: 4; }
-
-  .app-shell > .page-tabs > [data-nav-section="operations"] { order: 5; }
+  .app-shell > .page-tabs > [data-page-tab="branches"] { order: 5; }
   .app-shell > .page-tabs > [data-page-tab="store"] { order: 6; }
   .app-shell > .page-tabs > [data-page-tab="expenses"] { order: 7; }
-  .app-shell > .page-tabs > [data-page-tab="intelligence"] { order: 8; }
-  .app-shell > .page-tabs > [data-page-tab="trainees"] { order: 9; }
+  .app-shell > .page-tabs > [data-page-tab="management"] { order: 8; }
+  .app-shell > .page-tabs > [data-page-tab="member-subscription-requests"] { order: 9; }
   .app-shell > .page-tabs > [data-page-tab="library"] { order: 10; }
-  .app-shell > .page-tabs > [data-page-tab="feedback"] { order: 11; }
-
-  .app-shell > .page-tabs > [data-nav-section="management"] { order: 12; }
-  .app-shell > .page-tabs > [data-page-tab="management"] { order: 13; }
-  .app-shell > .page-tabs > [data-page-tab="member-payment-methods"] { order: 14; }
-  .app-shell > .page-tabs > [data-page-tab="permissions"] { order: 15; }
-  .app-shell > .page-tabs > [data-page-tab="branding"] { order: 16; }
-
-  .app-shell > .page-tabs > [data-nav-section="platform"] { order: 17; }
-  .app-shell > .page-tabs > [data-page-tab="saas-billing"] { order: 18; }
-  .app-shell > .page-tabs > [data-page-tab="member-subscription-requests"] { order: 19; }
-  .app-shell > .page-tabs > [data-page-tab="portal-analytics"] { order: 20; }
-  .app-shell > .page-tabs > [data-page-tab="backup-history"] { order: 21; }
+  .app-shell > .page-tabs > [data-page-tab="trainees"] { order: 11; }
+  .app-shell > .page-tabs > [data-page-tab="intelligence"] { order: 12; }
+  .app-shell > .page-tabs > [data-page-tab="feedback"] { order: 13; }
+  .app-shell > .page-tabs > [data-page-tab="branding"] { order: 14; }
+  .app-shell > .page-tabs > [data-page-tab="member-payment-methods"] { order: 15; }
+  .app-shell > .page-tabs > [data-page-tab="portal-analytics"] { order: 16; }
+  .app-shell > .page-tabs > [data-page-tab="saas-billing"] { order: 17; }
+  .app-shell > .page-tabs > [data-page-tab="backup-history"] { order: 18; }
+  .app-shell > .page-tabs > [data-page-tab="permissions"] { order: 19; }
   .app-shell > .page-tabs > .smart-assistant-launcher { order: 99; }
 
   .app-shell > .page-tabs > .page-tab,

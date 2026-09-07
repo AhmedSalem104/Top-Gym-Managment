@@ -614,3 +614,288 @@
     .saas-panel { padding: 16px; }
     .saas-summary-card strong { overflow-wrap: anywhere; }
 }
+
+/* Platform subscription visual reconstruction.
+   The data contract stays unchanged; this layer only restores the reference
+   composition: compact header, five-card summary, balanced workspace, and a
+   quiet history surface. */
+.saas-billing-page {
+    --subscription-page: var(--bg-app);
+    --subscription-panel: var(--bg-card);
+    --subscription-panel-soft: var(--bg-surface);
+    --subscription-line: var(--border-secondary);
+    --subscription-muted: var(--text-muted);
+    --subscription-accent: var(--primary);
+    --subscription-accent-soft: var(--primary-soft);
+    width: calc(100% - clamp(24px, 3vw, 64px));
+    max-width: none;
+    min-height: calc(100dvh - 24px);
+    margin-inline: auto;
+    padding: 18px 0 24px;
+    gap: 14px;
+    background: var(--subscription-page);
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+}
+
+html[data-theme="dark"] .saas-billing-page,
+body[data-theme="dark"] .saas-billing-page {
+    --subscription-page: #07172a;
+    --subscription-panel: #10233b;
+    --subscription-panel-soft: #0c1c31;
+    --subscription-line: rgba(136, 165, 202, .22);
+    --subscription-muted: #9aacc5;
+    --subscription-accent: #8b45f2;
+    --subscription-accent-soft: rgba(139, 69, 242, .14);
+    background:
+        radial-gradient(circle at 86% 0%, rgba(91, 62, 183, .13), transparent 28%),
+        linear-gradient(180deg, #08192e 0%, #07172a 100%);
+}
+
+/* visual-redesign.css is intentionally loaded after page layers. Keep the
+   subscription canvas itself as the final visual authority for this route. */
+.saas-billing-page { background: var(--subscription-page) !important; }
+html[data-theme="dark"] .saas-billing-page,
+body[data-theme="dark"] .saas-billing-page { background: linear-gradient(180deg, #08192e 0%, #07172a 100%) !important; }
+
+.saas-billing-page .saas-page-header {
+    align-items: flex-start;
+    min-height: 0;
+    margin: 0;
+    padding: 0 6px 4px;
+    border-bottom: 0;
+}
+
+.saas-billing-page .saas-page-heading h3 {
+    margin: 5px 0 4px;
+    font-size: clamp(22px, 1.9vw, 29px);
+    letter-spacing: -.025em;
+}
+
+.saas-billing-page .saas-page-heading p {
+    max-width: 620px;
+    font-size: 12px;
+    line-height: 1.6;
+}
+
+.saas-page-header-nav {
+    display: grid;
+    justify-items: start;
+    gap: 7px;
+    flex: 0 0 auto;
+    min-width: 150px;
+}
+
+.saas-back-button {
+    min-height: 34px;
+    padding-inline: 12px;
+    border-color: color-mix(in srgb, var(--success) 55%, var(--subscription-line));
+    color: var(--success);
+    background: color-mix(in srgb, var(--success-soft) 60%, transparent);
+}
+
+.saas-back-button .ui-icon { width: 15px; height: 15px; }
+
+.saas-breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    color: var(--subscription-muted);
+    font-size: 11px;
+    white-space: nowrap;
+}
+
+.saas-breadcrumb b { color: var(--subscription-accent); font-size: 15px; line-height: 1; }
+.saas-breadcrumb strong { color: var(--text-primary); font-weight: 700; }
+
+.saas-billing-page .saas-subscription-summary {
+    grid-template-columns: minmax(190px, 1fr) minmax(270px, 1.55fr) repeat(3, minmax(170px, 1fr));
+    gap: 12px;
+    margin: 0;
+}
+
+.saas-billing-page .saas-summary-card {
+    min-height: 88px;
+    padding: 14px 16px;
+    background: var(--subscription-panel);
+    border: 1px solid var(--subscription-line);
+    border-radius: 13px;
+    box-shadow: 0 10px 26px rgba(1, 8, 20, .12);
+}
+
+.saas-billing-page .saas-summary-card span { color: var(--subscription-muted); font-size: 11px; }
+.saas-billing-page .saas-summary-card strong { margin-top: 7px; font-size: clamp(17px, 1.35vw, 21px); }
+.saas-billing-page .saas-summary-card p { margin-top: 4px; color: var(--subscription-muted); font-size: 11px; }
+.saas-billing-page .saas-summary-card-top { gap: 6px; }
+.saas-billing-page .saas-summary-card-top .saas-status { min-height: 23px; padding: 3px 8px; }
+.saas-billing-page .saas-summary-progress { height: 5px; margin-top: 9px; background: color-mix(in srgb, var(--success) 20%, var(--subscription-line)); }
+.saas-billing-page .saas-summary-progress span { background: linear-gradient(90deg, #19c47b, #36e19b); }
+
+.saas-billing-page .saas-billing-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 14px;
+    align-items: stretch;
+}
+
+.saas-billing-page .saas-panel {
+    padding: 18px;
+    background: var(--subscription-panel);
+    border: 1px solid var(--subscription-line);
+    border-radius: 14px;
+    box-shadow: 0 14px 32px rgba(1, 8, 20, .14);
+}
+
+.saas-billing-page .saas-plans-panel,
+.saas-billing-page .saas-request-panel { min-height: 354px; }
+.saas-billing-page .saas-panel-head { align-items: flex-start; gap: 12px; margin-bottom: 13px; }
+.saas-billing-page .saas-panel-head h4 { margin-top: 4px; font-size: 18px; }
+.saas-billing-page .saas-panel-head p { max-width: 530px; font-size: 11px; line-height: 1.55; }
+.saas-billing-page .saas-panel-badge { padding: 4px 8px; font-size: 10px; }
+
+.saas-billing-page .saas-owner-plan-list {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+    height: calc(100% - 66px);
+}
+
+.saas-billing-page .saas-owner-plan-list .saas-plan-card {
+    min-height: 260px;
+    gap: 10px;
+    padding: 14px;
+    background: var(--subscription-panel-soft);
+    border: 1px solid var(--subscription-line);
+    border-radius: 12px;
+}
+
+.saas-billing-page .saas-plan-card-heading {
+    display: flex;
+    align-items: flex-start;
+    gap: 9px;
+    min-width: 0;
+}
+
+.saas-billing-page .saas-plan-card-icon {
+    display: grid;
+    width: 34px;
+    height: 34px;
+    flex: 0 0 34px;
+    place-items: center;
+    border: 1px solid color-mix(in srgb, var(--subscription-accent) 42%, var(--subscription-line));
+    border-radius: 10px;
+    background: var(--subscription-accent-soft);
+    color: var(--subscription-accent);
+}
+
+.saas-billing-page .saas-plan-card-icon .ui-icon { width: 18px; height: 18px; }
+.saas-billing-page .saas-plan-card h5 { padding-inline: 0; font-size: 16px; }
+.saas-billing-page .saas-plan-card-heading .saas-muted { display: block; margin-top: 3px; font-size: 10px; line-height: 1.45; }
+.saas-billing-page .saas-plan-price { color: var(--subscription-accent); font-size: 19px; }
+.saas-billing-page .saas-plan-price small { font-size: 10px; }
+.saas-billing-page .saas-plan-limits { gap: 4px; padding: 2px 0 5px; font-size: 11px; }
+.saas-billing-page .saas-plan-limits strong { color: var(--text-primary); }
+
+.saas-billing-page .saas-owner-plan-list .saas-plan-card.is-current {
+    border-color: color-mix(in srgb, var(--subscription-accent) 78%, #fff 0%);
+    background: color-mix(in srgb, var(--subscription-accent-soft) 58%, var(--subscription-panel-soft));
+}
+
+.saas-billing-page .saas-owner-plan-list .saas-plan-card.is-selected {
+    border-color: var(--subscription-accent);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--subscription-accent) 22%, transparent), 0 14px 26px color-mix(in srgb, var(--subscription-accent) 13%, transparent);
+}
+
+.saas-billing-page .saas-owner-plan-list .saas-plan-card.is-current::before {
+    top: 10px;
+    inset-inline-start: 10px;
+    padding: 3px 7px;
+    border-color: color-mix(in srgb, var(--subscription-accent) 55%, var(--subscription-line));
+    background: var(--subscription-accent-soft);
+    color: color-mix(in srgb, var(--subscription-accent) 75%, #fff);
+    font-size: 9px;
+}
+
+.saas-billing-page .saas-owner-plan-list .saas-plan-card.is-current h5 { padding-inline-start: 74px; }
+.saas-billing-page .saas-owner-plan-list .saas-plan-card.is-current .btn { background: var(--subscription-accent); color: #fff; }
+.saas-billing-page .saas-plan-entitlements { display: none; }
+.saas-billing-page .saas-plan-card .btn { min-height: 36px; font-size: 11px; }
+
+.saas-billing-page .saas-request-panel { display: flex; flex-direction: column; }
+.saas-billing-page .saas-request-panel .saas-form-grid { flex: 1 1 auto; gap: 9px 12px; align-content: start; }
+.saas-billing-page .saas-form-grid label { margin-bottom: 4px; font-size: 11px; }
+.saas-billing-page .saas-form-grid input,
+.saas-billing-page .saas-form-grid select,
+.saas-billing-page .saas-form-grid textarea { border-color: var(--subscription-line); background: var(--subscription-panel-soft); }
+.saas-billing-page .saas-form-grid select,
+.saas-billing-page .saas-form-grid textarea { min-height: 42px; }
+.saas-billing-page .saas-form-grid textarea { min-height: 64px; }
+
+.saas-billing-page .saas-upload-box {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    min-height: 87px;
+    padding: 10px 12px;
+    border-color: color-mix(in srgb, var(--subscription-accent) 38%, var(--subscription-line));
+    background: var(--subscription-panel-soft);
+}
+
+.saas-billing-page .saas-upload-icon { width: 32px; height: 32px; border-radius: 9px; }
+.saas-billing-page .saas-upload-icon .ui-icon { width: 16px; height: 16px; }
+.saas-billing-page .saas-upload-box strong { display: block; font-size: 12px; }
+.saas-billing-page .saas-upload-box small { display: block; margin-top: 3px; color: var(--subscription-muted); font-size: 10px; }
+.saas-billing-page .saas-upload-box input[type="file"] { width: 132px; min-width: 0; color: var(--subscription-muted); font-size: 10px; }
+.saas-billing-page .saas-upload-box input[type="file"]::file-selector-button { margin-inline-end: 5px; padding: 6px 8px; border: 1px solid var(--subscription-line); border-radius: 7px; background: var(--subscription-panel); color: var(--text-primary); font: inherit; cursor: pointer; }
+.saas-billing-page .saas-form-actions { justify-content: flex-end; padding-top: 2px; }
+.saas-billing-page .saas-form-actions .btn { min-width: 190px; min-height: 42px; padding-inline: 18px; }
+.saas-billing-page .saas-requests-panel { margin-top: 0; }
+.saas-billing-page .saas-requests-panel .saas-panel-head { margin-bottom: 10px; }
+.saas-billing-page .saas-table-wrap { border-color: var(--subscription-line); }
+
+@media (max-width: 1279px) {
+    .saas-billing-page .saas-subscription-summary { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .saas-billing-page .saas-summary-status { grid-column: span 2; }
+    .saas-billing-page .saas-billing-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+    .saas-billing-page .saas-owner-plan-list .saas-plan-card { padding-inline: 12px; }
+}
+
+@media (max-width: 1080px) {
+    .saas-billing-page .saas-billing-grid { grid-template-columns: 1fr; }
+    .saas-billing-page .saas-billing-grid > .saas-plans-panel { order: 1; }
+    .saas-billing-page .saas-billing-grid > .saas-request-panel { order: 2; }
+}
+
+@media (max-width: 820px) {
+    .saas-billing-page { width: calc(100% - 24px); padding-top: 14px; }
+    .saas-billing-page .saas-page-header { gap: 14px; }
+    .saas-billing-page .saas-subscription-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .saas-billing-page .saas-summary-status { grid-column: 1 / -1; order: -1; }
+    .saas-billing-page .saas-owner-plan-list { grid-template-columns: 1fr; height: auto; }
+    .saas-billing-page .saas-owner-plan-list .saas-plan-card { min-height: 0; }
+}
+
+@media (max-width: 560px) {
+    .saas-billing-page { width: calc(100% - 24px); gap: 12px; }
+    .saas-billing-page .saas-page-header { flex-direction: column; }
+    .saas-page-header-nav { width: 100%; grid-template-columns: auto 1fr; align-items: center; justify-items: start; }
+    .saas-breadcrumb { justify-self: end; }
+    .saas-billing-page .saas-subscription-summary { gap: 9px; }
+    .saas-billing-page .saas-summary-card { min-height: 80px; padding: 12px; }
+    .saas-billing-page .saas-summary-card strong { font-size: 17px; }
+    .saas-billing-page .saas-panel { padding: 14px; }
+    .saas-billing-page .saas-panel-head { flex-direction: column; gap: 7px; }
+    .saas-billing-page .saas-panel-badge { align-self: flex-start; }
+    .saas-billing-page .saas-upload-box { grid-template-columns: auto minmax(0, 1fr); }
+    .saas-billing-page .saas-upload-box input[type="file"] { grid-column: 1 / -1; width: 100%; }
+    .saas-billing-page .saas-form-actions .btn { width: 100%; }
+    .saas-billing-page .saas-table-wrap { overflow: visible; border: 0; }
+}
+
+@media (max-width: 389px) {
+    .saas-billing-page { width: calc(100% - 20px); padding-top: 10px; }
+    .saas-billing-page .saas-subscription-summary { grid-template-columns: 1fr; }
+    .saas-billing-page .saas-summary-status { grid-column: auto; }
+    .saas-billing-page .saas-page-heading h3 { font-size: 22px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .saas-billing-page .saas-plan-card { transition: none; }
+}
