@@ -29124,6 +29124,203 @@ html[data-brand-active-style="pill"] .app-shell > .page-tabs > .page-tab.active 
   .workspace-contextbar-inner { width: calc(100% - 12px); }
 }
 
+/* Gym shell refinement: one full-height navigation rail, one compact context
+   control in the top bar, and an information hierarchy that matches daily use. */
+.workspace-contextbar { display: none !important; }
+
+.topbar-controls {
+  flex-wrap: nowrap;
+  align-items: center;
+}
+
+.topbar-controls > .branch-context-shell {
+  order: -2;
+  width: auto;
+  max-width: 430px;
+  height: 44px;
+  min-height: 44px;
+  padding: 3px 5px;
+  border-radius: 12px;
+  box-shadow: 0 8px 18px rgb(2 6 23 / .12), inset 0 1px 0 rgb(255 255 255 / .06);
+}
+
+.topbar-controls > .branch-context-shell .branch-context-kicker {
+  min-width: 92px;
+  gap: 6px;
+  padding-inline: 4px 6px;
+}
+
+.topbar-controls > .branch-context-shell .branch-context-kicker-icon,
+.topbar-controls > .branch-context-shell .branch-context-field-icon {
+  width: 23px;
+  height: 23px;
+  flex-basis: 23px;
+  border-radius: 7px;
+}
+
+.topbar-controls > .branch-context-shell .branch-context-kicker strong {
+  font-size: 9px;
+}
+
+.topbar-controls > .branch-context-shell .branch-context-kicker small,
+.topbar-controls > .branch-context-shell .branch-context-field-copy small {
+  font-size: 8px;
+}
+
+.topbar-controls > .branch-context-shell .branch-context-field {
+  min-width: 112px;
+  gap: 6px;
+  padding-inline: 6px;
+  border-radius: 10px;
+}
+
+.topbar-controls > .branch-context-shell .branch-context-field-copy select {
+  max-width: 102px;
+  font-size: 11px;
+}
+
+.topbar-controls > .branch-context-shell .branch-context-status {
+  min-height: 26px;
+  gap: 5px;
+  padding-inline: 7px;
+  font-size: 8px;
+}
+
+.sidebar-section-label {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  margin-block: 13px 3px;
+  padding-inline: 10px;
+  color: var(--sidebar-text-muted);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: .04em;
+  line-height: 1.4;
+  opacity: .78;
+}
+
+.sidebar-section-label::after {
+  display: block;
+  width: 32px;
+  height: 2px;
+  margin-block-start: 5px;
+  border-radius: 99px;
+  background: var(--primary);
+  content: '';
+  opacity: .65;
+}
+
+@media (min-width: 1200px) {
+  .app-shell {
+    min-height: 100dvh;
+    grid-template-rows: 80px minmax(0, 1fr);
+  }
+
+  .app-shell > .page-tabs {
+    grid-column: 1;
+    grid-row: 2;
+    position: sticky;
+    top: 80px;
+    height: calc(100dvh - 80px);
+    min-height: calc(100dvh - 80px);
+    max-height: none;
+    overflow-x: hidden;
+    overflow-y: auto;
+    padding: 18px 14px 24px;
+    scrollbar-gutter: stable;
+  }
+
+  .app-shell > main.page {
+    grid-column: 2;
+    grid-row: 2;
+    min-height: calc(100dvh - 80px);
+  }
+
+  .app-shell > .page-tabs > .sidebar-brand { order: -100; }
+  .app-shell > .page-tabs > .mobile-nav-header { order: -99; }
+
+  .app-shell > .page-tabs > [data-nav-section="daily"] { order: 0; }
+  .app-shell > .page-tabs > [data-page-tab="dashboard"] { order: 1; }
+  .app-shell > .page-tabs > [data-page-tab="members"] { order: 2; }
+  .app-shell > .page-tabs > [data-page-tab="attendance"] { order: 3; }
+  .app-shell > .page-tabs > [data-page-tab="reports"] { order: 4; }
+
+  .app-shell > .page-tabs > [data-nav-section="operations"] { order: 5; }
+  .app-shell > .page-tabs > [data-page-tab="store"] { order: 6; }
+  .app-shell > .page-tabs > [data-page-tab="expenses"] { order: 7; }
+  .app-shell > .page-tabs > [data-page-tab="intelligence"] { order: 8; }
+  .app-shell > .page-tabs > [data-page-tab="trainees"] { order: 9; }
+  .app-shell > .page-tabs > [data-page-tab="library"] { order: 10; }
+  .app-shell > .page-tabs > [data-page-tab="feedback"] { order: 11; }
+
+  .app-shell > .page-tabs > [data-nav-section="management"] { order: 12; }
+  .app-shell > .page-tabs > [data-page-tab="management"] { order: 13; }
+  .app-shell > .page-tabs > [data-page-tab="member-payment-methods"] { order: 14; }
+  .app-shell > .page-tabs > [data-page-tab="permissions"] { order: 15; }
+  .app-shell > .page-tabs > [data-page-tab="branding"] { order: 16; }
+
+  .app-shell > .page-tabs > [data-nav-section="platform"] { order: 17; }
+  .app-shell > .page-tabs > [data-page-tab="saas-billing"] { order: 18; }
+  .app-shell > .page-tabs > [data-page-tab="member-subscription-requests"] { order: 19; }
+  .app-shell > .page-tabs > [data-page-tab="portal-analytics"] { order: 20; }
+  .app-shell > .page-tabs > [data-page-tab="backup-history"] { order: 21; }
+  .app-shell > .page-tabs > .smart-assistant-launcher { order: 99; }
+
+  .app-shell > .page-tabs > .page-tab,
+  .app-shell > .page-tabs > .smart-assistant-launcher {
+    min-height: 46px;
+    border-radius: 12px;
+  }
+}
+
+@media (max-width: 1199px) {
+  .topbar-controls {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+  }
+
+  .topbar-controls > .branch-context-shell {
+    order: -2;
+    max-width: min(100%, 420px);
+  }
+
+  .sidebar-section-label { display: none; }
+}
+
+@media (max-width: 767px) {
+  .topbar-controls > .branch-context-shell {
+    max-width: 100%;
+    height: 42px;
+    min-height: 42px;
+  }
+
+  .topbar-controls > .branch-context-shell .branch-context-kicker {
+    min-width: auto;
+  }
+
+  .topbar-controls > .branch-context-shell .branch-context-kicker small,
+  .topbar-controls > .branch-context-shell .branch-context-field-icon {
+    display: none;
+  }
+
+  .topbar-controls > .branch-context-shell .branch-context-field {
+    min-width: 0;
+    flex: 1 1 0;
+  }
+
+  .topbar-controls > .branch-context-shell .branch-context-field-copy select {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .topbar-controls > .branch-context-shell {
+    width: 100%;
+    border-radius: 10px;
+  }
+}
+
 /* END TOP GYM layer */
 
 /* Canonical visual layer: explicit component ownership keeps the legacy

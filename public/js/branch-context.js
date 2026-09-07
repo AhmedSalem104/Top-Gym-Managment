@@ -14,14 +14,14 @@
 
     function mountContextShell() {
         const shell = $('branchContextShell');
-        const host = $('workspaceContextbarInner');
-        if (shell && host && shell.parentElement !== host) host.appendChild(shell);
+        const controls = document.querySelector('.topbar-controls');
+        const actions = controls?.querySelector('.topbar-quick-actions');
+        if (shell && controls && shell.parentElement !== controls) controls.insertBefore(shell, actions || controls.firstChild);
     }
 
     function syncContextBar() {
         const shell = $('branchContextShell');
-        const bar = $('workspaceContextbar');
-        if (shell && bar) bar.hidden = shell.hidden;
+        if (shell) shell.dataset.contextReady = shell.hidden ? 'false' : 'true';
     }
 
     function readStoredBranch() {
