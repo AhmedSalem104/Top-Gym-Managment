@@ -4,7 +4,7 @@ require('dotenv').config();
 
 const fs = require('node:fs');
 const path = require('node:path');
-const { closePool, getPool, initDatabase } = require('../src/database');
+const { closePool, getPool, initDatabase, sql } = require('../src/database');
 const { parseConnectionString } = require('../src/database/pool');
 const { runTenantContext } = require('../src/tenancy/tenant-context');
 const tenantService = require('../src/services/tenant-service');
@@ -45,6 +45,79 @@ const PHASE16_BRANCH_SECTIONS_MIGRATION_PATH = path.join(__dirname, '..', 'datab
 const PHASE17_PLAN_ENTITLEMENTS_MIGRATION_PATH = path.join(__dirname, '..', 'database', 'migrations', '030-plan-entitlements.sql');
 const PHASE0_SECURITY_MIGRATION_PATH = path.join(__dirname, '..', 'database', 'migrations', '013-phase0-security-preconditions.sql');
 const BASE_COMMERCIAL_MIGRATION_PATH = commercialSchema.MIGRATION_PATH;
+const MIGRATION_HISTORY_TABLE = '__TenantEFMigrationsHistory';
+const MIGRATION_HISTORY_PRODUCT_VERSION = 'logic-fit-runner-1';
+
+const SINGLE_MIGRATIONS = Object.freeze({
+    '029': Object.freeze({
+        id: '029-branch-sections.sql',
+        version: '029',
+        path: PHASE16_BRANCH_SECTIONS_MIGRATION_PATH,
+        excluded: ['030-plan-entitlements.sql']
+    })
+});
+
+function parseMigrationOnly(argv = process.argv.slice(2)) {
+    const values = [];
+    for (let index = 0; index < argv.length; index += 1) {
+        const token = String(argv[index] || '').trim();
+        if (token === '--only') {
+            const value = String(argv[index + 1] || '').trim();
+            if (!value) throw new Error('The --only option requires a migration version.');
+            values.push(value);
+            index += 1;
+        } else if (token.startsWith('--only=')) {
+            values.push(token.slice('--only='.length).trim());
+        } else if (token) {
+            throw new Error(`Unknown migration runner argument: ${token}`);
+        }
+    }
+    if (!values.length) return null;
+    if (values.length !== 1) throw new Error('Only one migration may be selected at a time.');
+    const normalized = values[0]
+        .replace(/\.sql$/i, '')
+        .replace(/-.*$/, '')
+        .replace(/^0+(?=\d)/, '')
+        .padStart(3, '0');
+    if (!SINGLE_MIGRATIONS[normalized]) {
+        throw new Error(`Unsupported single migration selection: ${values[0]}.`);
+    }
+    return SINGLE_MIGRATIONS[normalized];
+}
+
+async function ensureMigrationHistory(executor) {
+    await executor.request().batch(`
+        IF OBJECT_ID(N'dbo.${MIGRATION_HISTORY_TABLE}', N'U') IS NULL
+        BEGIN
+            CREATE TABLE dbo.${MIGRATION_HISTORY_TABLE} (
+                MigrationId NVARCHAR(150) NOT NULL CONSTRAINT PK___TenantEFMigrationsHistory PRIMARY KEY,
+                ProductVersion NVARCHAR(64) NOT NULL
+            );
+        END;
+    `);
+}
+
+async function hasMigrationHistory(executor, migrationId) {
+    const result = await executor.request()
+        .input('migrationId', sql.NVarChar(150), migrationId)
+        .query(`
+            SELECT CASE WHEN EXISTS (
+                SELECT 1 FROM dbo.${MIGRATION_HISTORY_TABLE} WHERE MigrationId=@migrationId
+            ) THEN 1 ELSE 0 END AS applied;
+        `);
+    return Number(result.recordset[0]?.applied) === 1;
+}
+
+async function recordMigrationHistory(executor, migrationId) {
+    await executor.request()
+        .input('migrationId', sql.NVarChar(150), migrationId)
+        .input('productVersion', sql.NVarChar(64), MIGRATION_HISTORY_PRODUCT_VERSION)
+        .query(`
+            IF NOT EXISTS (SELECT 1 FROM dbo.${MIGRATION_HISTORY_TABLE} WHERE MigrationId=@migrationId)
+                INSERT INTO dbo.${MIGRATION_HISTORY_TABLE}(MigrationId,ProductVersion)
+                VALUES (@migrationId,@productVersion);
+        `);
+}
 
 function isLocalDatabaseServer(server) {
     const value = String(server || '').trim().toLowerCase();
@@ -75,6 +148,8 @@ function assertMigrationTarget({
 }
 
 async function migrate() {
+    const onlyMigration = parseMigrationOnly();
+    if (onlyMigration) return migrateOnly(onlyMigration);
     assertMigrationTarget();
     await runTenantContext({ mode: 'platform', tenantId: 1 }, () => initDatabase());
     await runTenantContext({ mode: 'platform', tenantId: 1 }, () => tenantService.ensureTenantTables());
@@ -209,6 +284,71 @@ async function migrate() {
     console.log(JSON.stringify({ tenant: bootstrapTenant, tenantTables: postModifiersResult.tables.length, saasTables: saasService.SAAS_TABLES.length, policy: 'enabled' }));
 }
 
+/**
+ * Run one reviewed migration as a complete unit. This is intentionally kept
+ * separate from the historical full-chain bootstrap: selecting 029 must not
+ * read or execute 030 (or any other migration file).
+ */
+async function migrateOnly(migration) {
+    assertMigrationTarget();
+    await runTenantContext({ mode: 'platform', tenantId: 1 }, () => initDatabase());
+    await runTenantContext({ mode: 'platform', tenantId: 1 }, () => tenantService.ensureTenantTables());
+    const bootstrapTenant = await runTenantContext({ mode: 'platform', tenantId: 1 }, () => tenantService.ensureBootstrapTenant());
+    return runTenantContext({ mode: 'platform', tenantId: bootstrapTenant.id }, async () => {
+        const pool = await getPool();
+        await ensureMigrationHistory(pool);
+        if (await hasMigrationHistory(pool, migration.id)) {
+            const snapshot = await tenantService.getTenantSecuritySnapshot(pool);
+            return {
+                only: migration.version,
+                migration: migration.id,
+                executedMigrations: [],
+                skippedMigrations: [migration.id],
+                excludedMigrations: migration.excluded,
+                registryRlsRebuilt: false,
+                tenantReady: tenantService.tenantSecuritySnapshotIsReady(snapshot)
+            };
+        }
+
+        // 029 is a schema batch containing dynamic SQL/DDL. Use the native
+        // transaction from the official pool so the request is not decorated
+        // with tenant parameters by the normal application query guard.
+        const transaction = pool.rawTransaction();
+        let committed = false;
+        try {
+            await transaction.begin(sql.ISOLATION_LEVEL.SERIALIZABLE);
+            await transaction.request().batch(`
+                EXEC sys.sp_set_session_context @key=N'tenant_id', @value=${bootstrapTenant.id};
+                EXEC sys.sp_set_session_context @key=N'tenant_mode', @value=N'platform';
+            `);
+            const migrationSql = fs.readFileSync(migration.path, 'utf8');
+            await transaction.request().batch(migrationSql);
+
+            // 029 creates tenant-owned tables. Rebuild the official dynamic
+            // registry and RLS policy in the same transaction before history
+            // is recorded; 030 is deliberately not called here.
+            await tenantService.ensureTenantColumnsAndRls(bootstrapTenant.id, { executor: transaction });
+            await recordMigrationHistory(transaction, migration.id);
+            await transaction.commit();
+            committed = true;
+        } catch (error) {
+            if (!committed) await transaction.rollback().catch(() => {});
+            throw error;
+        }
+
+        const snapshot = await tenantService.getTenantSecuritySnapshot(pool);
+        return {
+            only: migration.version,
+            migration: migration.id,
+            executedMigrations: [migration.id],
+            skippedMigrations: [],
+            excludedMigrations: migration.excluded,
+            registryRlsRebuilt: true,
+            tenantReady: tenantService.tenantSecuritySnapshotIsReady(snapshot)
+        };
+    });
+}
+
 if (require.main === module) {
     migrate()
         .catch((error) => {
@@ -218,4 +358,10 @@ if (require.main === module) {
         .finally(() => closePool().catch(() => {}));
 }
 
-module.exports = { assertMigrationTarget, migrate };
+module.exports = {
+    assertMigrationTarget,
+    migrate,
+    migrateOnly,
+    parseMigrationOnly,
+    SINGLE_MIGRATIONS
+};

@@ -47,7 +47,12 @@ BEGIN
         CONSTRAINT PK_gym_membership_section_access PRIMARY KEY (membership_id, section_id),
         CONSTRAINT FK_gym_membership_section_access_tenant FOREIGN KEY (tenant_id) REFERENCES dbo.gym_tenants(id) ON DELETE CASCADE,
         CONSTRAINT FK_gym_membership_section_access_membership FOREIGN KEY (membership_id) REFERENCES dbo.memberships(id) ON DELETE CASCADE,
-        CONSTRAINT FK_gym_membership_section_access_section FOREIGN KEY (section_id) REFERENCES dbo.gym_branch_sections(id) ON DELETE CASCADE
+        -- Do not cascade section deletion through this join table. A section
+        -- is already reachable from the tenant/branch cascade paths, while
+        -- membership access is also reachable from the tenant/membership
+        -- path. Keeping this FK NO ACTION avoids SQL Server's multiple
+        -- cascade-path rejection and makes deletion explicit/safe.
+        CONSTRAINT FK_gym_membership_section_access_section FOREIGN KEY (section_id) REFERENCES dbo.gym_branch_sections(id)
     );
 END;
 

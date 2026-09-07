@@ -186,6 +186,11 @@ function decoratePool(pool) {
             const value = target[property];
             if (property === 'request') return (...args) => decorateRequest(value.apply(target, args));
             if (property === 'transaction') return (...args) => decorateTransaction(value.apply(target, args));
+            // Controlled schema/migration runners need the native transaction
+            // object so a DDL batch is not decorated with request parameters.
+            // They set the required session context explicitly inside that
+            // transaction and remain responsible for their own target guard.
+            if (property === 'rawTransaction') return (...args) => target.transaction(...args);
             if (property === 'query' || property === 'batch') {
                 return (command, ...rest) => decorateRequest(target.request())[property](command, ...rest);
             }

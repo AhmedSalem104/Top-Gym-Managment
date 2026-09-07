@@ -791,11 +791,14 @@ async function recreateTenantSecurityPolicy(pool, tables) {
     await pool.request().batch(policySql);
 }
 
-async function ensureTenantColumnsAndRls(tenantId) {
-    await ensureTenantTables();
+async function ensureTenantColumnsAndRls(tenantId, { executor = null } = {}) {
+    // Migration runners can supply an active transaction so the additive
+    // schema change and the corresponding registry/RLS rebuild commit as one
+    // controlled unit. Existing callers keep the historical pool behavior.
+    if (!executor) await ensureTenantTables();
     const normalizedTenantId = Number(tenantId);
     if (!Number.isInteger(normalizedTenantId) || normalizedTenantId <= 0) throw tenantError('Bootstrap tenant id is invalid.', 500, 'INVALID_BOOTSTRAP_TENANT');
-    const pool = await getPool();
+    const pool = executor || await getPool();
     const tables = await existingTenantTables(pool);
     const beforeRepair = await getTenantSecuritySnapshot(pool);
     if (Number(beforeRepair.schema_contract_ready) !== 1) {

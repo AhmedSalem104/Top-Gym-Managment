@@ -35,6 +35,7 @@ test('platform backup inventory remains separate from tenant restore inventory',
     const tenantTables = new Set(TENANT_BACKUP_TABLES.map((item) => item.table));
     assert.ok(PLATFORM_GLOBAL_BACKUP_TABLES.some((item) => item.table === 'gym_tenants'));
     assert.ok(PLATFORM_GLOBAL_BACKUP_TABLES.some((item) => item.table === 'saas_plans'));
+    assert.ok(PLATFORM_GLOBAL_BACKUP_TABLES.some((item) => item.table === 'saas_plan_features'));
     assert.ok(PLATFORM_GLOBAL_BACKUP_TABLES.some((item) => item.table === 'saas_plan_tenant_types'));
     assert.equal(PLATFORM_GLOBAL_BACKUP_TABLES.some((item) => item.table === 'gym_user_tenants'), true);
     assert.ok(TENANT_BACKUP_EXCLUDED_TABLES.includes('gym_backup_operations'));
@@ -73,6 +74,21 @@ test('legacy production tables are classified without requiring the modern tenan
     assert.equal(classifyPlatformTable('JobExecutionLogs').classification, 'TRANSIENT_EXCLUDED');
     assert.equal(classifyPlatformTable('gym_auth_sessions').classification, 'SECRET_EXCLUDED');
     assert.equal(classifyPlatformTable('unknown_legacy_table', { hasTenantId: true }).classification, 'UNKNOWN');
+});
+
+test('plan entitlement mappings are classified as global control-plane backup data', () => {
+    assert.deepEqual(classifyPlatformTable('saas_plan_features'), {
+        classification: 'GLOBAL_REQUIRED',
+        scope: 'global',
+        key: 'saas_plan_features',
+        table: 'saas_plan_features',
+        reason: 'Authoritative platform/control-plane table.'
+    });
+    const coverage = getPlatformBackupCoverage({
+        existingTables: ['saas_plans', 'saas_plan_features'],
+        tenantTables: []
+    });
+    assert.deepEqual(coverage.unclassifiedTables, []);
 });
 
 test('legacy source coverage allows absent future trainer tables and covers reviewed physical tables', () => {

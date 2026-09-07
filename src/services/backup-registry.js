@@ -132,6 +132,10 @@ const PLATFORM_GLOBAL_BACKUP_TABLES = Object.freeze([
     Object.freeze({ key: 'gym_user_tenants', table: 'gym_user_tenants' }),
     Object.freeze({ key: 'saas_plans', table: 'saas_plans' }),
     Object.freeze({ key: 'saas_plan_terms', table: 'saas_plan_terms' }),
+    // Entitlements are platform control-plane data. The mapping belongs to a
+    // plan, not to a tenant, so it must be included in the global artifact
+    // rather than being treated as an unknown tenant table.
+    Object.freeze({ key: 'saas_plan_features', table: 'saas_plan_features' }),
     Object.freeze({ key: 'saas_plan_tenant_types', table: 'saas_plan_tenant_types' }),
     Object.freeze({ key: 'saas_platform_payment_methods', table: 'saas_platform_payment_methods' }),
     Object.freeze({ key: 'saas_gym_registration_requests', table: 'saas_gym_registration_requests' }),

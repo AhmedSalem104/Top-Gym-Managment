@@ -10,7 +10,11 @@ const {
     auditMigrationText,
     parseMigrationVersion
 } = require('../../scripts/audit-database-readiness');
-const { assertMigrationTarget } = require('../../scripts/migrate-tenancy');
+const {
+    assertMigrationTarget,
+    parseMigrationOnly,
+    SINGLE_MIGRATIONS
+} = require('../../scripts/migrate-tenancy');
 
 const connectionString = 'Server=localhost,1433;Database=logic_fit_test;User Id=test-user;Password=test-password;Encrypt=True;TrustServerCertificate=True;';
 const externalConnectionString = 'Server=sql.staging.example,1433;Database=logic_fit_test;User Id=test-user;Password=test-password;Encrypt=True;TrustServerCertificate=False;';
@@ -63,6 +67,31 @@ test('migration runner applies the canonical commercial base before trainer regi
     assert.ok(phase2Migration >= 0);
     assert.ok(phase2Batch >= 0);
     assert.ok(baseBatch < phase2Batch);
+});
+
+test('single migration selection accepts only the reviewed 029 migration', () => {
+    const selected = parseMigrationOnly(['--only', '029']);
+    assert.equal(selected.id, '029-branch-sections.sql');
+    assert.equal(selected.version, '029');
+    assert.deepEqual(selected.excluded, ['030-plan-entitlements.sql']);
+    assert.equal(SINGLE_MIGRATIONS['029'].path.endsWith('029-branch-sections.sql'), true);
+    assert.throws(() => parseMigrationOnly(['--only', '030']), /Unsupported single migration selection/);
+    assert.throws(() => parseMigrationOnly(['--only', '029', '--only', '030']), /Only one migration/);
+});
+
+test('single migration runner contract excludes 030 from the 029-only path', () => {
+    const runner = fs.readFileSync(path.join(__dirname, '..', '..', 'scripts', 'migrate-tenancy.js'), 'utf8');
+    const onlyStart = runner.indexOf('async function migrateOnly');
+    const onlyEnd = runner.indexOf('\nasync function migrate()', onlyStart);
+    const onlySource = onlyStart >= 0 && onlyEnd > onlyStart
+        ? runner.slice(onlyStart, onlyEnd)
+        : runner.slice(onlyStart);
+    assert.match(onlySource, /PHASE16_BRANCH_SECTIONS_MIGRATION_PATH|migration\.path/);
+    assert.doesNotMatch(onlySource, /planEntitlementsMigration|PHASE17_PLAN_ENTITLEMENTS_MIGRATION_PATH/);
+    assert.match(onlySource, /rawTransaction\(\)/);
+    assert.match(onlySource, /sp_set_session_context/);
+    assert.match(onlySource, /ensureTenantColumnsAndRls/);
+    assert.match(onlySource, /recordMigrationHistory/);
 });
 
 test('database readiness audit requires guards for additive migration operations', () => {
