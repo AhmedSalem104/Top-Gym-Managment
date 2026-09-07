@@ -58,7 +58,7 @@ const config = Object.freeze({
     cacheEnabled: getBooleanEnv('CACHE_ENABLED', false),
     cacheGatewayUrl: getEnv('CACHE_GATEWAY_URL'),
     cacheGatewayToken: getEnv('CACHE_GATEWAY_TOKEN'),
-    cacheGatewayTimeoutMs: getBoundedNumberEnv('CACHE_GATEWAY_TIMEOUT_MS', 250, 50, 2_000),
+    cacheGatewayTimeoutMs: getBoundedNumberEnv('CACHE_GATEWAY_TIMEOUT_MS', 500, 50, 2_000),
     cacheNamespaceVersion: getEnv('CACHE_NAMESPACE_VERSION', 'v1'),
     cacheEnvironment: getEnv('CACHE_ENVIRONMENT', getEnv('VERCEL_ENV', nodeEnv)),
     cronSecret: getEnv('CRON_SECRET'),
