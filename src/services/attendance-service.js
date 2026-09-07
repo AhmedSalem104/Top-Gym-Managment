@@ -427,6 +427,7 @@ async function getMemberAttendanceStatuses(memberIds = [], date = todayInTimeZon
                   AND (@branchId IS NULL OR a.branch_id = @branchId)
                   AND (@sectionId IS NULL OR a.section_id = @sectionId);`;
     request.input('branchId', sql.Int, options.branchId == null ? null : Number(options.branchId));
+    request.input('sectionId', sql.Int, options.sectionId == null ? null : Number(options.sectionId));
     const result = options.readOnly
         ? await request.query(selectQuery)
         : await request
