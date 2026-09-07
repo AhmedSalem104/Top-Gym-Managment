@@ -181,6 +181,7 @@ async function findById({ id, connection = null, today = todayInTimeZone() }) {
 async function list({ search = '', status = '', sort = 'expiry', offset = 0, pageSize = 5, today = todayInTimeZone(), branchId = null, sectionId = null }) {
     const pool = await getPool();
     const scoped = branchId != null || sectionId != null;
+    const orderBy = ORDER_BY[sort] || ORDER_BY.expiry;
     const request = pool.request()
         .input('today', sql.Date, toUtcDate(today))
         .input('search', sql.NVarChar(100), search)
@@ -190,11 +191,18 @@ async function list({ search = '', status = '', sort = 'expiry', offset = 0, pag
         .input('pageSize', sql.Int, pageSize);
     if (scoped) request.input('branchId', sql.Int, branchId == null ? null : Number(branchId)).input('sectionId', sql.Int, sectionId == null ? null : Number(sectionId));
     return request.query(`${scoped ? MEMBER_ROWS_SCOPED_CTE : MEMBER_CTE}
-            WHERE (@search = N'' OR fullName LIKE @pattern OR phone LIKE @pattern OR ISNULL(email, N'') LIKE @pattern)
-              AND membershipId IS NOT NULL
-              AND (@status = '' OR computedStatus = @status)
-            ORDER BY ${ORDER_BY[sort] || ORDER_BY.expiry}
-            OFFSET @offset ROWS FETCH NEXT @pageSize ROWS ONLY;`);
+            SELECT ${MEMBER_ROW_COLUMNS}, totalCount
+            FROM (
+                SELECT ${MEMBER_ROW_COLUMNS},
+                       COUNT(1) OVER() AS totalCount,
+                       ROW_NUMBER() OVER (ORDER BY ${orderBy}) AS rowNumber
+                FROM member_rows
+                WHERE (@search = N'' OR fullName LIKE @pattern OR phone LIKE @pattern OR ISNULL(email, N'') LIKE @pattern)
+                  AND membershipId IS NOT NULL
+                  AND (@status = '' OR computedStatus = @status)
+            ) AS paged_members
+            WHERE rowNumber > @offset AND rowNumber <= (@offset + @pageSize)
+            ORDER BY rowNumber;`);
 }
 
 module.exports = { findById, list, MEMBER_CTE, MEMBER_ROW_COLUMNS, MEMBER_ROWS_CTE, MEMBER_ROWS_SCOPED_CTE, createMemberRowsCte };
