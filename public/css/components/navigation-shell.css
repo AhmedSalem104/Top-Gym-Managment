@@ -1180,3 +1180,134 @@ html[data-brand-active-style="pill"] .app-shell > .page-tabs > .page-tab.active 
     transition: none;
   }
 }
+
+/* Gym workspace v2 navigation: the topbar carries identity and actions,
+   while the primary destinations live in a readable right-side rail. The
+   existing #pageTabs and data-page-tab hooks remain unchanged. */
+.workspace-contextbar {
+  box-sizing: border-box;
+  display: block;
+  width: 100%;
+  border-block-end: 1px solid var(--border-secondary);
+  background: color-mix(in srgb, var(--bg-app) 92%, var(--primary-soft));
+}
+
+.workspace-contextbar[hidden] { display: none; }
+
+.workspace-contextbar-inner {
+  box-sizing: border-box;
+  display: flex;
+  width: min(100% - 48px, 1520px);
+  min-height: 66px;
+  align-items: center;
+  justify-content: flex-start;
+  margin-inline: auto;
+  padding-block: 8px;
+}
+
+.workspace-contextbar .branch-context-shell {
+  width: min(100%, 660px);
+  max-width: 660px;
+}
+
+.topbar-quick-actions #topAddMemberButton {
+  min-height: 42px;
+  border-color: color-mix(in srgb, var(--primary) 70%, white 10%);
+  box-shadow: 0 8px 18px rgb(23 105 232 / .22);
+}
+
+@media (min-width: 1200px) {
+  .app-shell {
+    grid-template-columns: minmax(252px, var(--sidebar-width-expanded)) minmax(0, 1fr);
+    grid-template-rows: 80px auto minmax(0, 1fr);
+  }
+
+  .app-shell.sidebar-expanded,
+  .app-shell:has(> .page-tabs:focus-within) {
+    grid-template-columns: minmax(252px, var(--sidebar-width-expanded)) minmax(0, 1fr);
+  }
+
+  .app-shell > .topbar { grid-column: 1 / -1; grid-row: 1; }
+
+  .app-shell > .workspace-contextbar {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
+  .app-shell > .page-tabs {
+    top: 0;
+    grid-column: 1;
+    grid-row: 3;
+    height: auto;
+    min-height: 0;
+    max-height: calc(100dvh - 80px - 66px);
+    padding: 18px 14px 24px;
+    border-inline-end: 1px solid var(--sidebar-divider);
+    background: linear-gradient(180deg, var(--sidebar-bg) 0%, var(--sidebar-bg-deep) 100%);
+  }
+
+  .app-shell > .page-tabs > .page-tab,
+  .app-shell > .page-tabs > .smart-assistant-launcher {
+    width: 100%;
+    min-width: 0;
+    min-height: 48px;
+    align-self: stretch;
+    justify-content: flex-start;
+    gap: var(--space-3);
+    padding-inline: 12px;
+  }
+
+  .app-shell > .page-tabs > .page-tab > span,
+  .app-shell > .page-tabs > .smart-assistant-launcher-label,
+  .app-shell > .page-tabs > .sidebar-brand > .sidebar-brand-copy {
+    max-width: 220px;
+    max-inline-size: 220px;
+    opacity: 1;
+    transform: none;
+    visibility: visible;
+  }
+
+  .app-shell > .page-tabs > .sidebar-brand {
+    width: auto;
+    align-self: stretch;
+    justify-content: flex-start;
+    gap: var(--space-3);
+    margin-inline: 0;
+    padding-inline: 8px;
+  }
+
+  .app-shell > main.page {
+    grid-column: 2;
+    grid-row: 3;
+    min-width: 0;
+  }
+}
+
+@media (max-width: 1199px) {
+  .workspace-contextbar-inner {
+    width: min(100% - 32px, 1440px);
+    min-height: 62px;
+  }
+
+  .workspace-contextbar .branch-context-shell {
+    width: 100%;
+    max-width: 660px;
+  }
+}
+
+@media (max-width: 767px) {
+  .workspace-contextbar-inner {
+    width: calc(100% - 20px);
+    min-height: 58px;
+    padding-block: 6px;
+  }
+
+  .workspace-contextbar .branch-context-shell {
+    height: auto;
+    min-height: 46px;
+  }
+}
+
+@media (max-width: 379px) {
+  .workspace-contextbar-inner { width: calc(100% - 12px); }
+}

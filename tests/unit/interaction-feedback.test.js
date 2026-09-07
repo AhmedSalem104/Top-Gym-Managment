@@ -41,11 +41,13 @@ test('aria-busy only blocks the busy control, never an entire section', () => {
 test('late dashboard data cannot reveal the store summary outside the dashboard tab', () => {
     const app = read('public/js/app.js');
     const tabs = read('public/js/page-tabs.js');
+    const store = read('public/js/pages/store/store.js');
 
     assert.match(app, /function isDashboardViewActive\(\)/);
-    assert.match(app, /storeSummary\.hidden = !store \|\| !isDashboardViewActive\(\)/);
+    assert.match(app, /storeSummary\.hidden = true/);
     assert.match(app, /storeSummary\.dataset\.dashboardStoreAvailable = String\(Boolean\(store\)\)/);
-    assert.match(tabs, /dashboardStoreSummary\?\.dataset\.dashboardStoreAvailable !== 'true'/);
+    assert.match(tabs, /setHidden\(dashboardStoreSummary, true\)/);
+    assert.match(store, /storeSection\.insertBefore\(summary, subnav\)/);
 });
 
 test('member dialog is moved out of hidden workspace before a topbar open', () => {

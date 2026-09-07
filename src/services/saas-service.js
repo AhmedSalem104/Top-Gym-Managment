@@ -1208,11 +1208,12 @@ async function getTenantBilling(tenantId = currentTenantId({ required: true }), 
     const id = tenantIdValue(tenantId);
     await ensureSaasTables({ readOnly });
     const pool = await getPool();
-    const [tenantResult, subscription, requestPage, plans] = await Promise.all([
+    const [tenantResult, subscription, requestPage, plans, usage] = await Promise.all([
         pool.request().input('tenantId', sql.Int, id).query('SELECT TOP (1) id,name,slug,tenant_type,status,created_at,updated_at FROM dbo.gym_tenants WHERE id=@tenantId;'),
         getCurrentSubscription(id, { readOnly }),
         listTenantRequests(id, { readOnly, page, pageSize, includePagination: true }),
-        getPlans({ readOnly })
+        getPlans({ readOnly }),
+        getUsage(id, { readOnly })
     ]);
     const entitlements = await getEffectiveEntitlements(id, subscription, { readOnly });
     const tenant = tenantResult.recordset[0];
@@ -1221,6 +1222,7 @@ async function getTenantBilling(tenantId = currentTenantId({ required: true }), 
         subscription,
         entitlements,
         overrides: entitlements.overrides,
+        usage,
         plans,
         featureCatalog: featureCatalog.getFeatureCatalog({ tenantType: tenant ? resolveTenantType(tenant.tenant_type) : null }),
         requests: requestPage.requests,

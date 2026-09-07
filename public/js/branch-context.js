@@ -12,6 +12,18 @@
     };
     let bootstrap = null;
 
+    function mountContextShell() {
+        const shell = $('branchContextShell');
+        const host = $('workspaceContextbarInner');
+        if (shell && host && shell.parentElement !== host) host.appendChild(shell);
+    }
+
+    function syncContextBar() {
+        const shell = $('branchContextShell');
+        const bar = $('workspaceContextbar');
+        if (shell && bar) bar.hidden = shell.hidden;
+    }
+
     function readStoredBranch() {
         try { return sessionStorage.getItem(storageKey); } catch { return null; }
     }
@@ -146,6 +158,7 @@
             sectionSelect.hidden = !select.value;
             if (sectionField) sectionField.hidden = sectionSelect.hidden;
         }
+        syncContextBar();
     }
 
     function renderManager(data) {
@@ -193,19 +206,21 @@
             setTabVisibility(false);
             const lockedShell = $('branchContextShell');
             if (lockedShell) lockedShell.hidden = true;
+            syncContextBar();
             writeStoredSection('');
             return;
         }
         const isGym = user.tenantType === 'gym';
         setTabVisibility(isGym && user.role === 'Owner');
         const shell = $('branchContextShell');
-        if (!isGym) { if (shell) shell.hidden = true; writeStoredSection(''); return; }
+        if (!isGym) { if (shell) shell.hidden = true; syncContextBar(); writeStoredSection(''); return; }
         try {
             bootstrap = await window.topGymApi.request('/api/branches/bootstrap');
             renderSelector(bootstrap);
             renderManagerWithCommerce({ ...bootstrap, branchLimit: bootstrap.branchLimit });
         } catch (error) {
             if (shell) shell.hidden = true;
+            syncContextBar();
             if (user.role === 'Owner') notify(error.message || 'تعذر تحميل سياق الفروع.', true);
         }
     }
@@ -234,6 +249,7 @@
     }
 
     function bind() {
+        mountContextShell();
         ensureBranchTab();
         ensureBranchPanel();
         $('branchCreateForm')?.addEventListener('submit', createBranch);
@@ -261,7 +277,12 @@
             const commerceButton = event.target.closest('[data-branch-commerce]');
             if (commerceButton) void toggleBranchBar(commerceButton.dataset.branchCommerce, commerceButton.dataset.nextBar === 'true');
         });
-        void (window.topGymAuthReady?.then(loadBranches) || loadBranches());
+        const schedule = window.requestIdleCallback
+            ? (callback) => window.requestIdleCallback(callback, { timeout: 1200 })
+            : (callback) => window.setTimeout(callback, 180);
+        const start = () => schedule(() => { void loadBranches(); });
+        if (window.topGymAuthReady) window.topGymAuthReady.then(start).catch(() => {});
+        else start();
     }
 
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bind, { once: true });

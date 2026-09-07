@@ -21887,6 +21887,151 @@ body.auth-locked .auth-screen {
     .saas-feature-grid { grid-template-columns: 1fr; }
 }
 
+/* Subscription workspace composition: compact summary, balanced plans, and
+   a request form that remains readable without wasting wide-screen space. */
+.saas-billing-page {
+    width: min(100%, 1800px);
+    max-width: 1800px;
+    margin-inline: auto;
+    gap: 20px;
+}
+
+.saas-billing-page .saas-page-header {
+    align-items: center;
+    min-height: 68px;
+    margin-bottom: 0;
+    padding-bottom: 18px;
+}
+
+.saas-billing-page .saas-page-heading h3 { font-size: clamp(24px, 2.2vw, 32px); letter-spacing: -.03em; }
+.saas-billing-page .saas-page-heading p { max-width: 720px; }
+.saas-billing-steps { grid-template-columns: repeat(3, minmax(0, 1fr)); padding: 10px; }
+
+.saas-subscription-summary {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.8fr) repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    margin-bottom: 0;
+}
+
+.saas-summary-card {
+    min-height: 92px;
+    padding: 15px 16px;
+    border-radius: 14px;
+    background: var(--bg-card);
+    box-shadow: var(--shadow-sm);
+}
+
+.saas-summary-card-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.saas-summary-card-top .saas-status { min-height: 24px; padding: 3px 8px; }
+.saas-summary-card strong { font-size: clamp(17px, 1.5vw, 22px); }
+.saas-summary-card p { line-height: 1.45; }
+.saas-summary-progress { height: 6px; margin-top: 10px; overflow: hidden; border-radius: 99px; background: var(--border-secondary); }
+.saas-summary-progress span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--primary), var(--info)); }
+
+.saas-billing-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(500px, 1.08fr);
+    gap: 20px;
+    align-items: stretch;
+}
+
+.saas-billing-grid > .saas-plans-panel { order: 1; }
+.saas-billing-grid > .saas-request-panel { order: 2; }
+.saas-panel { border-radius: 16px; padding: 20px; }
+.saas-panel-head { align-items: center; }
+
+.saas-owner-plan-list {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-items: stretch;
+}
+
+.saas-owner-plan-list .saas-plan-card {
+    position: relative;
+    min-height: 100%;
+    grid-template-rows: auto auto 1fr auto;
+    padding: 18px;
+    border-radius: 15px;
+}
+
+.saas-owner-plan-list .saas-plan-card.is-current::before {
+    position: absolute;
+    top: 12px;
+    inset-inline-start: 12px;
+    content: "الباقة الحالية";
+    border: 1px solid var(--success-border);
+    border-radius: 99px;
+    background: var(--success-soft);
+    color: var(--success-text);
+    padding: 4px 8px;
+    font-size: 10px;
+    font-weight: 800;
+}
+
+.saas-owner-plan-list .saas-plan-card.is-selected { box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 18%, transparent), 0 14px 30px color-mix(in srgb, var(--primary) 12%, transparent); }
+.saas-owner-plan-list .saas-plan-card.is-current.is-selected { background: color-mix(in srgb, var(--primary-soft) 70%, var(--bg-card)); }
+.saas-owner-plan-list .saas-plan-card.is-current .btn { background: var(--primary); color: var(--text-on-primary); }
+.saas-owner-plan-list .saas-plan-card h5 { padding-inline-end: 86px; }
+.saas-plan-limits { padding-block: 4px 8px; }
+
+.saas-request-panel { display: flex; flex-direction: column; }
+.saas-request-panel .saas-form-grid { flex: 1 1 auto; align-content: start; }
+.saas-upload-box { min-height: 122px; align-content: center; justify-items: start; }
+.saas-upload-box input[type="file"] { cursor: pointer; }
+.saas-form-actions .btn { min-height: 48px; padding-inline: 24px; }
+
+.saas-requests-panel { margin-top: 0; }
+
+@media (max-width: 1279px) {
+    .saas-subscription-summary { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .saas-summary-status { grid-column: span 2; }
+    .saas-billing-grid { grid-template-columns: minmax(0, 1fr) minmax(430px, .95fr); }
+    .saas-owner-plan-list { grid-template-columns: repeat(3, minmax(170px, 1fr)); }
+}
+
+@media (max-width: 1080px) {
+    .saas-billing-grid { grid-template-columns: 1fr; }
+    .saas-billing-grid > .saas-plans-panel { order: 1; }
+    .saas-billing-grid > .saas-request-panel { order: 2; }
+}
+
+@media (max-width: 820px) {
+    .saas-subscription-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .saas-summary-status { grid-column: 1 / -1; }
+    .saas-owner-plan-list { grid-template-columns: repeat(3, minmax(220px, 1fr)); overflow-x: auto; padding: 3px 3px 10px; scroll-snap-type: x proximity; }
+    .saas-owner-plan-list .saas-plan-card { min-height: 330px; scroll-snap-align: start; }
+}
+
+@media (max-width: 560px) {
+    .saas-billing-page { gap: 14px; }
+    .saas-billing-page .saas-page-header { align-items: flex-start; flex-direction: column; }
+    .saas-billing-steps { gap: 7px; padding: 7px; }
+    .saas-billing-step { padding: 8px; }
+    .saas-billing-step small { white-space: normal; }
+    .saas-subscription-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+    .saas-summary-card { min-height: 84px; padding: 13px; }
+    .saas-summary-status { grid-column: 1 / -1; }
+    .saas-owner-plan-list { display: grid; grid-template-columns: 1fr; overflow: visible; }
+    .saas-owner-plan-list .saas-plan-card { min-height: 0; }
+    .saas-table-wrap { overflow: visible; border: 0; }
+    .saas-table { min-width: 0; }
+    .saas-table thead { display: none; }
+    .saas-table,
+    .saas-table tbody,
+    .saas-table tr,
+    .saas-table td { display: block; width: 100%; }
+    .saas-table tr { margin-bottom: 10px; padding: 12px; border: 1px solid var(--border-secondary); border-radius: 14px; background: var(--bg-card); box-shadow: var(--shadow-sm); }
+    .saas-table td { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 7px 0; border: 0; white-space: normal; text-align: start; }
+    .saas-table td::before { flex: 0 0 92px; color: var(--text-muted); content: attr(data-label); font-size: var(--font-xs); font-weight: 700; }
+    .saas-table td:last-child { justify-content: space-between; }
+    .saas-table td:last-child::before { align-self: flex-start; }
+}
+
+@media (max-width: 389px) {
+    .saas-subscription-summary { grid-template-columns: 1fr; }
+    .saas-summary-status { grid-column: auto; }
+    .saas-panel { padding: 16px; }
+    .saas-summary-card strong { overflow-wrap: anywhere; }
+}
+
 /* END TOP GYM layer */
 
 
@@ -28846,6 +28991,137 @@ html[data-brand-active-style="pill"] .app-shell > .page-tabs > .page-tab.active 
   .sidebar-floating-tooltip {
     transition: none;
   }
+}
+
+/* Gym workspace v2 navigation: the topbar carries identity and actions,
+   while the primary destinations live in a readable right-side rail. The
+   existing #pageTabs and data-page-tab hooks remain unchanged. */
+.workspace-contextbar {
+  box-sizing: border-box;
+  display: block;
+  width: 100%;
+  border-block-end: 1px solid var(--border-secondary);
+  background: color-mix(in srgb, var(--bg-app) 92%, var(--primary-soft));
+}
+
+.workspace-contextbar[hidden] { display: none; }
+
+.workspace-contextbar-inner {
+  box-sizing: border-box;
+  display: flex;
+  width: min(100% - 48px, 1520px);
+  min-height: 66px;
+  align-items: center;
+  justify-content: flex-start;
+  margin-inline: auto;
+  padding-block: 8px;
+}
+
+.workspace-contextbar .branch-context-shell {
+  width: min(100%, 660px);
+  max-width: 660px;
+}
+
+.topbar-quick-actions #topAddMemberButton {
+  min-height: 42px;
+  border-color: color-mix(in srgb, var(--primary) 70%, white 10%);
+  box-shadow: 0 8px 18px rgb(23 105 232 / .22);
+}
+
+@media (min-width: 1200px) {
+  .app-shell {
+    grid-template-columns: minmax(252px, var(--sidebar-width-expanded)) minmax(0, 1fr);
+    grid-template-rows: 80px auto minmax(0, 1fr);
+  }
+
+  .app-shell.sidebar-expanded,
+  .app-shell:has(> .page-tabs:focus-within) {
+    grid-template-columns: minmax(252px, var(--sidebar-width-expanded)) minmax(0, 1fr);
+  }
+
+  .app-shell > .topbar { grid-column: 1 / -1; grid-row: 1; }
+
+  .app-shell > .workspace-contextbar {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
+  .app-shell > .page-tabs {
+    top: 0;
+    grid-column: 1;
+    grid-row: 3;
+    height: auto;
+    min-height: 0;
+    max-height: calc(100dvh - 80px - 66px);
+    padding: 18px 14px 24px;
+    border-inline-end: 1px solid var(--sidebar-divider);
+    background: linear-gradient(180deg, var(--sidebar-bg) 0%, var(--sidebar-bg-deep) 100%);
+  }
+
+  .app-shell > .page-tabs > .page-tab,
+  .app-shell > .page-tabs > .smart-assistant-launcher {
+    width: 100%;
+    min-width: 0;
+    min-height: 48px;
+    align-self: stretch;
+    justify-content: flex-start;
+    gap: var(--space-3);
+    padding-inline: 12px;
+  }
+
+  .app-shell > .page-tabs > .page-tab > span,
+  .app-shell > .page-tabs > .smart-assistant-launcher-label,
+  .app-shell > .page-tabs > .sidebar-brand > .sidebar-brand-copy {
+    max-width: 220px;
+    max-inline-size: 220px;
+    opacity: 1;
+    transform: none;
+    visibility: visible;
+  }
+
+  .app-shell > .page-tabs > .sidebar-brand {
+    width: auto;
+    align-self: stretch;
+    justify-content: flex-start;
+    gap: var(--space-3);
+    margin-inline: 0;
+    padding-inline: 8px;
+  }
+
+  .app-shell > main.page {
+    grid-column: 2;
+    grid-row: 3;
+    min-width: 0;
+  }
+}
+
+@media (max-width: 1199px) {
+  .workspace-contextbar-inner {
+    width: min(100% - 32px, 1440px);
+    min-height: 62px;
+  }
+
+  .workspace-contextbar .branch-context-shell {
+    width: 100%;
+    max-width: 660px;
+  }
+}
+
+@media (max-width: 767px) {
+  .workspace-contextbar-inner {
+    width: calc(100% - 20px);
+    min-height: 58px;
+    padding-block: 6px;
+  }
+
+  .workspace-contextbar .branch-context-shell {
+    height: auto;
+    min-height: 46px;
+  }
+}
+
+@media (max-width: 379px) {
+  .workspace-contextbar-inner { width: calc(100% - 12px); }
 }
 
 /* END TOP GYM layer */

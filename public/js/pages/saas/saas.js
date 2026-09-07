@@ -59,17 +59,28 @@
         if (statusHost) { statusHost.textContent = statusLabel(status); statusHost.dataset.status = status; }
         if (!host) return;
         if (!billing?.tenant) { host.innerHTML = '<div class="saas-loading-block">تعذر العثور على بيانات الجيم.</div>'; return; }
-        host.innerHTML = `<article class="saas-summary-card"><span>الجيم</span><strong>${escapeHtml(billing.tenant.name)}</strong><p dir="ltr">${escapeHtml(billing.tenant.slug)}</p></article><article class="saas-summary-card"><span>الباقة الحالية</span><strong>${escapeHtml(plan?.name || 'بدون باقة')}</strong><p>${subscription ? statusMarkup(subscription.status) : 'لم يبدأ الاشتراك'}</p></article><article class="saas-summary-card"><span>الصلاحية</span><strong>${subscription?.expiresAt ? date(subscription.expiresAt) : 'غير محددة'}</strong><p>${subscription?.daysRemaining == null ? 'اشتراك مفتوح' : `${numberFormatter.format(subscription.daysRemaining)} يوم متبقٍ`}</p></article><article class="saas-summary-card"><span>الحدود الحالية</span><strong>${limit(plan?.maxMembers)} عضو</strong><p>${limit(plan?.maxUsers)} مستخدم · ${limit(plan?.maxAiGenerations)} AI</p></article>`;
+        const daysRemaining = subscription?.daysRemaining;
+        const durationDays = subscription?.startsAt && subscription?.expiresAt
+            ? Math.max(1, Math.ceil((new Date(subscription.expiresAt).getTime() - new Date(subscription.startsAt).getTime()) / 86400000))
+            : null;
+        const progress = durationDays && daysRemaining != null
+            ? Math.max(0, Math.min(100, ((durationDays - Number(daysRemaining)) / durationDays) * 100))
+            : 0;
+        host.innerHTML = `<article class="saas-summary-card saas-summary-gym"><span>الجيم</span><strong>${escapeHtml(billing.tenant.name)}</strong><p dir="ltr">${escapeHtml(billing.tenant.slug)}</p></article><article class="saas-summary-card saas-summary-status"><div class="saas-summary-card-top"><span>حالة الاشتراك</span>${subscription ? statusMarkup(subscription.status) : statusMarkup('expired')}</div><strong>${subscription ? statusLabel(subscription.status) : 'بدون اشتراك'}</strong><div class="saas-summary-progress" aria-hidden="true"><span style="width:${progress}%"></span></div><p>${daysRemaining == null ? 'لا يوجد تاريخ انتهاء محدد' : `${numberFormatter.format(Math.max(0, daysRemaining))} يوم متبقٍ`}</p></article><article class="saas-summary-card"><span>الباقة الحالية</span><strong>${escapeHtml(plan?.name || 'بدون باقة')}</strong><p>${plan?.billingPeriod === 'yearly' ? 'دورة سنوية' : plan?.billingPeriod === 'monthly' ? 'دورة شهرية' : 'بيانات الاشتراك'}</p></article><article class="saas-summary-card"><span>تاريخ الاشتراك</span><strong>${subscription?.startsAt ? date(subscription.startsAt) : 'غير محدد'}</strong><p>${subscription?.expiresAt ? `حتى ${date(subscription.expiresAt)}` : 'اشتراك مفتوح'}</p></article><article class="saas-summary-card"><span>المشتركون</span><strong>${numberFormatter.format(Number(billing.usage?.members || 0))}</strong><p>من حد ${limit(plan?.maxMembers)} عضو</p></article>`;
     }
 
     function renderPlans(plans) {
         const host = $('saasPlansList');
         const select = $('saasPlanSelect');
-        const availablePlans = (plans || []).filter((plan) => plan.isActive !== false);
         const currentPlanId = state.billing?.subscription?.plan?.id;
+        const currentPlan = state.billing?.subscription?.plan;
+        const activePlans = (plans || []).filter((plan) => plan.isActive !== false);
+        const availablePlans = currentPlan && !activePlans.some((plan) => String(plan.id) === String(currentPlanId))
+            ? [currentPlan, ...activePlans]
+            : activePlans;
         if (select) {
-            select.innerHTML = availablePlans.map((plan) => `<option value="${plan.id}">${escapeHtml(plan.name)} — ${money(plan.price, plan.currency)} / ${plan.billingPeriod === 'yearly' ? 'سنة' : 'شهر'}</option>`).join('');
-            select.disabled = !availablePlans.length;
+            select.innerHTML = availablePlans.map((plan) => `<option value="${plan.id}" ${String(plan.id) === String(currentPlanId) ? 'selected' : ''} ${plan.isActive === false ? 'disabled' : ''}>${escapeHtml(plan.name)} — ${money(plan.price, plan.currency)} / ${plan.billingPeriod === 'yearly' ? 'سنة' : 'شهر'}${String(plan.id) === String(currentPlanId) ? ' · الباقة الحالية' : ''}</option>`).join('');
+            select.disabled = !activePlans.length;
         }
         if (!host) return;
         if (!availablePlans.length) { host.innerHTML = '<div class="saas-empty">لا توجد باقات مفعّلة حاليًا. راجع مدير المنصة.</div>'; return; }
@@ -83,7 +94,7 @@
         const host = $('saasRequestsList');
         if (!host) return;
         if (!requests?.length) { host.innerHTML = '<tr><td colspan="6"><div class="saas-empty">لم يتم إرسال طلبات اشتراك بعد.</div></td></tr>'; return; }
-        host.innerHTML = requests.map((request) => `<tr><td>${escapeHtml(date(request.createdAt))}</td><td>${escapeHtml(request.plan?.name || '—')}</td><td>${money(request.amount, request.currency)}</td><td>${statusMarkup(request.status)}</td><td>${request.proof ? `<a class="btn btn-light btn-small" href="/api/saas/payment-proofs/${request.proof.id}/file" target="_blank" rel="noreferrer">عرض الإثبات</a>` : '<span class="saas-muted">غير مرفق</span>'}</td><td><span class="saas-muted">${escapeHtml(request.reviewNotes || 'لا توجد ملاحظات')}</span></td></tr>`).join('');
+        host.innerHTML = requests.map((request) => `<tr><td data-label="التاريخ">${escapeHtml(date(request.createdAt))}</td><td data-label="الباقة">${escapeHtml(request.plan?.name || '—')}</td><td data-label="المبلغ">${money(request.amount, request.currency)}</td><td data-label="الحالة">${statusMarkup(request.status)}</td><td data-label="إثبات الدفع">${request.proof ? `<a class="btn btn-light btn-small" href="/api/saas/payment-proofs/${request.proof.id}/file" target="_blank" rel="noreferrer">عرض الإثبات</a>` : '<span class="saas-muted">غير مرفق</span>'}</td><td data-label="ملاحظات"><span class="saas-muted">${escapeHtml(request.reviewNotes || 'لا توجد ملاحظات')}</span></td></tr>`).join('');
     }
 
     function ensureRequestPagination() {

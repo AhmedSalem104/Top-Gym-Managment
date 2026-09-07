@@ -22,6 +22,16 @@
     const money = (value) => `${Number(value || 0).toLocaleString('ar-EG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ج.م`;
     const paymentLabels = { cash: 'نقدي', card: 'بطاقة', transfer: 'تحويل', wallet: 'محفظة', other: 'أخرى' };
     const today = () => new Date().toISOString().slice(0, 10);
+
+    function mountStoreSummary() {
+        const summary = $('dashboardStoreSummary');
+        const storeSection = $('storeSection');
+        const subnav = storeSection?.querySelector('.store-subnav');
+        if (summary && storeSection && subnav && summary.parentElement !== storeSection) {
+            summary.classList.add('store-only-summary');
+            storeSection.insertBefore(summary, subnav);
+        }
+    }
     const notify = (message, type = 'success') => {
         if (window.showToast) window.showToast(message, type === 'error');
         else if (type === 'error') console.error(message);
@@ -405,6 +415,7 @@
     }
 
     function bind() {
+        mountStoreSummary();
         const permissionControls = {
             storeAddProduct: 'store.products.manage',
             storeAddPurchase: 'store.purchases.manage',

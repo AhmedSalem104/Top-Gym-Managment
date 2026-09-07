@@ -359,7 +359,10 @@
              const storeSummary = $('dashboardStoreSummary');
              if (storeSummary) {
                  storeSummary.dataset.dashboardStoreAvailable = String(Boolean(store));
-                 storeSummary.hidden = !store || !isDashboardViewActive();
+                 // Store KPIs belong to the Store workspace only. Keep the
+                 // values warm when the dashboard payload includes them, but
+                 // never surface the Store domain inside the Gym dashboard.
+                 storeSummary.hidden = true;
                  if (store) {
                      const summary = store.summary || {};
                      const profit = store.profit || {};

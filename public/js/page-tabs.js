@@ -357,7 +357,10 @@
         // Dashboard data can finish after the user has already moved to a
         // different tab. Only reveal the optional store summary when both
         // conditions are true; the dashboard renderer owns availability.
-        setHidden(dashboardStoreSummary, !isDashboard || dashboardStoreSummary?.dataset.dashboardStoreAvailable !== 'true');
+        // The Store summary is mounted inside the Store workspace and must
+        // never appear on Dashboard, even when a legacy dashboard payload
+        // still contains Store aggregates.
+        setHidden(dashboardStoreSummary, true);
         analyticsSection?.setAttribute('aria-hidden', String(hideAnalytics));
         setHidden(reportsSection, !isReports);
         setHidden(feedbackSection, !isFeedback);
