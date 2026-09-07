@@ -12,6 +12,8 @@ test('branch bootstrap loads independent branch sections concurrently', () => {
     const source = read('src/services/branch-service.js');
     assert.match(source, /const sectionsByBranch = await Promise\.all\(/u);
     assert.match(source, /branches\.map\(\(branch\) => getBranchSections\(branch\.id, \{ userId, role \}\)\)/u);
+    assert.match(source, /async function bootstrap\(\{ userId = null, role = null, readOnly = false \} = \{\}\)/u);
+    assert.match(source, /getEffectiveEntitlements\(tenantId\(\), null, \{ readOnly \}\)/u);
     assert.match(source, /const sections = sectionsByBranch\.flat\(\);/u);
 });
 

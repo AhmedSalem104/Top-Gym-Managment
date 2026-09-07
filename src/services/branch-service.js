@@ -239,7 +239,7 @@ async function assertSectionAccess(sectionId, branchId, { userId = null, role = 
     return sectionDto(row);
 }
 
-async function bootstrap({ userId = null, role = null } = {}) {
+async function bootstrap({ userId = null, role = null, readOnly = false } = {}) {
     const [branches, all] = await Promise.all([
         getAllowedBranches({ userId, role }),
         listBranches({ includeArchived: false, includeInactive: false })
@@ -249,7 +249,7 @@ async function bootstrap({ userId = null, role = null } = {}) {
         branches.map((branch) => getBranchSections(branch.id, { userId, role }))
     );
     const sections = sectionsByBranch.flat();
-    const entitlements = await saasService.getEffectiveEntitlements(tenantId());
+    const entitlements = await saasService.getEffectiveEntitlements(tenantId(), null, { readOnly });
     return {
         branches,
         activeBranches: all,
