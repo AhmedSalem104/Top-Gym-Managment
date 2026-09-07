@@ -110,5 +110,4 @@
     refreshButton?.addEventListener('click', () => { if (!state.loading) void load(); });
     window.topGymPortalAnalyticsRefresh = load;
     window.addEventListener('topgym:tab-changed', (event) => { if (event.detail?.name === 'portal-analytics') void load(); });
-    if (document.documentElement.dataset.topGymActiveTab === 'portal-analytics') void load();
 })();

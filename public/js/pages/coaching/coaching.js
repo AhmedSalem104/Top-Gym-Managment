@@ -69,6 +69,7 @@
     }
 
     async function requestJson(url, options = {}) {
+        if (window.topGymApi?.request) return window.topGymApi.request(url, options);
         const response = await fetch(url, { ...options, headers: { 'Content-Type': 'application/json', ...(options.headers || {}) } });
         if (response.status === 204) return null;
         const data = await response.json().catch(() => ({}));
@@ -2567,7 +2568,8 @@
             const memberId = event.detail?.memberId;
             if (memberId && Number(state.profile?.member?.id) === Number(memberId) && $('coachingProfileDialog')?.open) openProfile(memberId);
         });
-        if (document.querySelector('[data-page-tab="trainees"]')?.classList.contains('active')) loadTrainees();
+        // The tab router dispatches after the lazy module is ready; do not
+        // race it with an eager duplicate request here.
     }
 
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initializeCoaching, { once: true });

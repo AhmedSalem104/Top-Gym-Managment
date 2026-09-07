@@ -159,5 +159,4 @@
     }
 
     bind();
-    if (document.querySelector('[data-page-tab="permissions"]')?.classList.contains('active')) void loadUsers();
 })();

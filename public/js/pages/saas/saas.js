@@ -214,5 +214,4 @@
 
     bind();
     window.addEventListener('topgym:tab-changed', (event) => { if (event.detail?.name === 'saas-billing' && !state.loaded) void load(); });
-    if (document.documentElement.dataset.topGymActiveTab === 'saas-billing') void load();
 })();

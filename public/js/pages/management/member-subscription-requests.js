@@ -228,5 +228,4 @@
 
     window.topGymMemberSubscriptionRequestsRefresh = load;
     window.addEventListener('topgym:tab-changed', (event) => { if (event.detail?.name === 'member-subscription-requests') void load(); });
-    if (document.documentElement.dataset.topGymActiveTab === 'member-subscription-requests') void load();
 })();

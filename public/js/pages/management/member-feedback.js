@@ -139,5 +139,4 @@
     window.addEventListener('topgym:brandingchange', () => {
         if (document.querySelector('[data-page-tab="feedback"]')?.classList.contains('active')) void load();
     });
-    if (document.querySelector('[data-page-tab="feedback"]')?.classList.contains('active')) void load();
 })();

@@ -509,5 +509,6 @@
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bind, { once: true });
     else bind();
     window.addEventListener('topgym:tab-changed', (event) => { if (event.detail?.name === 'store') void onStoreTab(); });
-    if (window.location.hash === '#store') void onStoreTab();
+    // Store is lazy-loaded by the tab router. The router event is the single
+    // startup trigger, avoiding a second bootstrap request on deep links.
 })();

@@ -621,7 +621,9 @@
         window.setInterval(() => {
             if (document.visibilityState !== 'hidden' && isAttendanceActive()) loadAttendance();
         }, 30000);
-        if (isAttendanceActive()) loadAttendance();
+        // The tab router dispatches `topgym:tab-changed` after this lazy
+        // module is loaded. Waiting for that event prevents a duplicate
+        // attendance request during first navigation to the screen.
     }
 
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initializeAttendance, { once: true });

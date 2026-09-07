@@ -400,10 +400,10 @@ async function getAttendanceRecordForDate(pool, memberId, date, branchId = null,
 }
 
 async function getMemberAttendanceStatuses(memberIds = [], date = todayInTimeZone(), options = {}) {
-    await ensureAttendanceTable({ readOnly: Boolean(options.readOnly) });
-    const pool = await getPool();
     const ids = [...new Set(memberIds.map((value) => Number(value)).filter((value) => Number.isInteger(value) && value > 0))];
     if (!ids.length) return new Map();
+    await ensureAttendanceTable({ readOnly: Boolean(options.readOnly) });
+    const pool = await getPool();
     const request = pool.request()
         .input('attendanceDate', sql.Date, toUtcDate(parseDateOnly(date, 'تاريخ الحضور')));
     const placeholders = ids.map((id, index) => {

@@ -150,20 +150,32 @@ async function listBranches({ includeArchived = false, includeInactive = true } 
 }
 
 async function getAllowedBranches({ userId = null, role = null, includeArchived = false } = {}) {
-    const branches = await listBranches({ includeArchived, includeInactive: !includeArchived });
-    if (String(role || '').toLowerCase() === 'owner') return branches;
+    const tenant = await assertGymTenant();
     const user = Number(userId);
-    if (!Number.isInteger(user) || user <= 0) return [];
-    const id = tenantId();
+    const isOwner = String(role || '').toLowerCase() === 'owner';
+    if (!isOwner && (!Number.isInteger(user) || user <= 0)) return [];
     const result = await getPool().then((pool) => pool.request()
-        .input('tenantId', sql.Int, id)
+        .input('tenantId', sql.Int, tenant.tenantId)
         .input('userId', sql.Int, user)
-        .query(`SELECT b.id
-                FROM dbo.gym_branch_user_access a
-                INNER JOIN dbo.gym_branches b ON b.id=a.branch_id AND b.tenant_id=a.tenant_id
-                WHERE a.tenant_id=@tenantId AND a.user_id=@userId AND b.status<>'archived';`));
-    const allowed = new Set(result.recordset.map((row) => Number(row.id)));
-    return branches.filter((branch) => allowed.has(branch.id));
+        .input('isOwner', sql.Bit, isOwner ? 1 : 0)
+        .input('includeArchived', sql.Bit, includeArchived ? 1 : 0)
+        .input('includeInactive', sql.Bit, includeArchived ? 0 : 1)
+        .query(`SELECT b.*,c.store_enabled,c.bar_enabled
+                FROM dbo.gym_branches AS b
+                LEFT JOIN dbo.gym_branch_commerce_config AS c
+                  ON c.branch_id=b.id AND c.tenant_id=b.tenant_id
+                WHERE b.tenant_id=@tenantId
+                  AND (@includeArchived=1 OR b.status<>'archived')
+                  AND (@includeInactive=1 OR b.status='active')
+                  AND (@isOwner=1 OR EXISTS (
+                      SELECT 1
+                      FROM dbo.gym_branch_user_access AS a
+                      WHERE a.tenant_id=b.tenant_id
+                        AND a.branch_id=b.id
+                        AND a.user_id=@userId
+                  ))
+                ORDER BY b.is_main_branch DESC,b.status,b.name,b.id;`));
+    return result.recordset.map(branchDto);
 }
 
 async function assertBranchAccess(branchId, { userId = null, role = null, requireActive = true } = {}) {
@@ -213,14 +225,15 @@ async function assertSectionAccess(sectionId, branchId, { userId = null, role = 
 }
 
 async function bootstrap({ userId = null, role = null } = {}) {
-    await assertGymTenant();
-    const branches = await getAllowedBranches({ userId, role });
-    const all = await listBranches({ includeArchived: false, includeInactive: false });
+    const [branches, all] = await Promise.all([
+        getAllowedBranches({ userId, role }),
+        listBranches({ includeArchived: false, includeInactive: false })
+    ]);
     const main = all.find((branch) => branch.isMain) || all[0] || null;
-    const sections = [];
-    for (const branch of branches) {
-        sections.push(...await getBranchSections(branch.id, { userId, role }));
-    }
+    const sectionsByBranch = await Promise.all(
+        branches.map((branch) => getBranchSections(branch.id, { userId, role }))
+    );
+    const sections = sectionsByBranch.flat();
     const entitlements = await saasService.getEffectiveEntitlements(tenantId());
     return {
         branches,

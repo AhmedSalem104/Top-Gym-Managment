@@ -1,6 +1,11 @@
 (() => {
     if (window.topGymApi) return;
 
+    // Share only identical in-flight GET requests. This is intentionally not
+    // a response cache: SQL Server remains the source of truth and every
+    // later request still reaches the server after the current promise settles.
+    const inFlightGetRequests = new Map();
+
     function headersFor(options = {}) {
         const headers = new Headers(options.headers || {});
         const body = options.body;
@@ -45,9 +50,38 @@
     }
 
     async function request(path, options = {}) {
-        const response = await raw(path, options);
-        if (response.status === 204) return null;
-        return response.json().catch(() => ({}));
+        const method = String(options.method || 'GET').toUpperCase();
+        const canShare = method === 'GET'
+            && !options.signal
+            && options.body == null;
+
+        if (!canShare) {
+            const response = await raw(path, options);
+            if (response.status === 204) return null;
+            return response.json().catch(() => ({}));
+        }
+
+        const headers = headersFor(options);
+        const headerEntries = [...headers.entries()].sort(([first], [second]) => first.localeCompare(second));
+        const key = JSON.stringify([
+            String(path),
+            String(options.credentials || 'same-origin'),
+            String(options.cache || ''),
+            headerEntries
+        ]);
+        const existing = inFlightGetRequests.get(key);
+        if (existing) return existing;
+
+        const pending = (async () => {
+            const response = await raw(path, { ...options, headers });
+            if (response.status === 204) return null;
+            return response.json().catch(() => ({}));
+        })();
+        inFlightGetRequests.set(key, pending);
+        pending.finally(() => {
+            if (inFlightGetRequests.get(key) === pending) inFlightGetRequests.delete(key);
+        }).catch(() => {});
+        return pending;
     }
 
     window.topGymApi = Object.freeze({

@@ -329,5 +329,4 @@
 
     bindEvents();
     setPlanType('workout');
-    if (document.querySelector('[data-page-tab="intelligence"]')?.classList.contains('active')) void loadBaseData();
 })();

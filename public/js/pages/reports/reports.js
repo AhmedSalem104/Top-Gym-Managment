@@ -668,7 +668,8 @@
             state.loadedAt = 0;
             if (document.querySelector('[data-page-tab="reports"]')?.classList.contains('active')) void loadReport(true);
         });
-        if (document.querySelector('[data-page-tab="reports"]')?.classList.contains('active')) loadReport();
+        // `topgym:tab-changed` is emitted after the lazy feature is ready and
+        // is the single initial load trigger for this screen.
     }
 
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initializeReports, { once: true });

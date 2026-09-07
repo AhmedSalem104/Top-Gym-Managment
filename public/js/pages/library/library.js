@@ -91,6 +91,7 @@
     }
 
     async function requestJson(url, options = {}) {
+        if (window.topGymApi?.request) return window.topGymApi.request(url, options);
         const response = await fetch(url, { ...options, headers: { 'Content-Type': 'application/json', ...(options.headers || {}) } });
         if (response.status === 204) return null;
         const data = await response.json().catch(() => ({}));
