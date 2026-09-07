@@ -1,0 +1,5 @@
+# Insert before the existing storage reverse_proxy in the VPS Caddyfile.
+# Caddy terminates TLS; the gateway itself remains bound to 127.0.0.1.
+handle_path /logicfit-cache/* {
+    reverse_proxy 127.0.0.1:9400
+}

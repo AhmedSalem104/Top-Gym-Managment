@@ -15,6 +15,7 @@ const {
 const { config } = require('../config/env');
 const libraryService = require('./library-service');
 const featureCatalog = require('./feature-catalog');
+const cacheService = require('./cache-service');
 
 const TRIAL_DAYS = 14;
 const MAX_PROOF_BYTES = 4 * 1024 * 1024;
@@ -491,6 +492,17 @@ function syncIntervalMs() {
     return Number.isFinite(value) ? Math.max(1_000, value) : 30_000;
 }
 
+function planCacheKeys() {
+    return [
+        cacheService.platformKey({ resource: 'plans', scope: { visibility: 'active' } }),
+        cacheService.platformKey({ resource: 'plans', scope: { visibility: 'all' } })
+    ];
+}
+
+async function invalidatePlanCache() {
+    await cacheService.deleteMany(planCacheKeys());
+}
+
 function saasError(message, statusCode = 400, code = 'SAAS_ERROR', details = null) {
     const error = new Error(message);
     error.statusCode = statusCode;
@@ -907,6 +919,9 @@ async function recordAudit({ tenantId = null, actorUserId = null, action, entity
 
 async function getPlans({ includeInactive = false, readOnly = false } = {}) {
     await ensureSaasTables({ readOnly });
+    const cacheKey = cacheService.platformKey({ resource: 'plans', scope: { visibility: includeInactive ? 'all' : 'active' } });
+    const cached = await cacheService.get(cacheKey);
+    if (Array.isArray(cached)) return cached;
     const pool = await getPool();
     const result = await pool.request()
         .input('includeInactive', sql.Bit, includeInactive ? 1 : 0)
@@ -914,7 +929,10 @@ async function getPlans({ includeInactive = false, readOnly = false } = {}) {
     const planRows = result.recordset || [];
     const featureMap = await getPlanFeatures(planRows.map((row) => row.id));
     const plans = planRows.map((row) => mergePlanFeatures(planFromRow(row), featureMap.get(Number(row.id))));
-    if (!plans.length) return plans;
+    if (!plans.length) {
+        await cacheService.set(cacheKey, plans, 60);
+        return plans;
+    }
     const compatibility = await pool.request().query(`SELECT plan_id,tenant_type FROM dbo.${PLAN_COMPATIBILITY_TABLE} WHERE plan_id IN (${plans.map((plan) => Number(plan.id)).join(',')}) ORDER BY plan_id,tenant_type;`);
     const byPlan = new Map();
     for (const row of compatibility.recordset || []) {
@@ -923,7 +941,9 @@ async function getPlans({ includeInactive = false, readOnly = false } = {}) {
         if (!types.includes(type)) types.push(type);
         byPlan.set(Number(row.plan_id), types);
     }
-    return plans.map((plan) => planWithTenantTypes(plan, byPlan.get(plan.id) || []));
+    const resultPlans = plans.map((plan) => planWithTenantTypes(plan, byPlan.get(plan.id) || []));
+    await cacheService.set(cacheKey, resultPlans, 60);
+    return resultPlans;
 }
 
 async function getPlan({ id = null, code = null, includeInactive = false } = {}) {
@@ -2072,6 +2092,7 @@ async function createPlan(body = {}, actorUserId, meta = {}) {
         throw error;
     }
     await recordAudit({ actorUserId: actorUserId == null ? null : Number(actorUserId), action: 'plan_created', entityType: 'saas_plan', entityId: created?.id, details: `تم إنشاء الباقة ${values.code}.`, after: created, ...meta });
+    await invalidatePlanCache();
     return created;
 }
 
@@ -2090,6 +2111,7 @@ async function updatePlan(planId, body = {}, actorUserId, meta = {}) {
     });
     const updated = await getPlan({ id, includeInactive: true });
     await recordAudit({ actorUserId: actorUserId == null ? null : Number(actorUserId), action: 'plan_updated', entityType: 'saas_plan', entityId: id, details: `تم تحديث الباقة ${current.code}.`, reason: text(body.reason, '', 1000), before: current, after: updated, ...meta });
+    await invalidatePlanCache();
     return updated;
 }
 
@@ -2141,6 +2163,7 @@ async function setPlanStatus(planId, status, actorUserId, reason = '', meta = {}
         });
     });
     const updated = await getPlan({ id, includeInactive: true });
+    await invalidatePlanCache();
     return updated;
 }
 

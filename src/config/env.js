@@ -55,6 +55,12 @@ const config = Object.freeze({
     performanceMetricsEnabled: getBooleanEnv('PERFORMANCE_METRICS', false)
         && (getEnv('NODE_ENV', 'development').trim().toLowerCase() !== 'production'
             || getBooleanEnv('PERFORMANCE_METRICS_PRODUCTION', false)),
+    cacheEnabled: getBooleanEnv('CACHE_ENABLED', false),
+    cacheGatewayUrl: getEnv('CACHE_GATEWAY_URL'),
+    cacheGatewayToken: getEnv('CACHE_GATEWAY_TOKEN'),
+    cacheGatewayTimeoutMs: getBoundedNumberEnv('CACHE_GATEWAY_TIMEOUT_MS', 250, 50, 2_000),
+    cacheNamespaceVersion: getEnv('CACHE_NAMESPACE_VERSION', 'v1'),
+    cacheEnvironment: getEnv('CACHE_ENVIRONMENT', getEnv('VERCEL_ENV', nodeEnv)),
     cronSecret: getEnv('CRON_SECRET'),
     // The generic object-storage contract is the single runtime configuration
     // for backups, branding and private uploads. BACKUP_STORAGE_* remains a

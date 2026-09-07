@@ -29,35 +29,41 @@ const { registerBarRoutes } = require('./bar.routes');
 const { platformOnly } = require('../middleware/platform.middleware');
 const trainerStudioService = require('../services/trainer-studio-service');
 
-function createHealthHandler({ getPool, getStorageStatus = () => ({ status: 'not_configured' }), now = () => performance.now() } = {}) {
+function createHealthHandler({ getPool, getStorageStatus = () => ({ status: 'not_configured' }), getCacheStatus = null, now = () => performance.now() } = {}) {
     return async (request, response) => {
         const startedAt = now();
         try {
             const pool = await getPool();
             await pool.request().query('SELECT 1 AS ok;');
             const databaseDurationMs = Math.round((now() - startedAt) * 100) / 100;
+            const checks = {
+                application: { status: 'healthy' },
+                database: { status: 'healthy', durationMs: databaseDurationMs },
+                storage: getStorageStatus()
+            };
+            if (getCacheStatus) {
+                try { checks.cache = await getCacheStatus(); } catch (_) { checks.cache = { status: 'degraded' }; }
+            }
             return response.json({
                 ok: true,
                 status: 'healthy',
                 database: 'connected',
-                checks: {
-                    application: { status: 'healthy' },
-                    database: { status: 'healthy', durationMs: databaseDurationMs },
-                    storage: getStorageStatus()
-                },
+                checks,
                 requestId: request.requestId || null
             });
         } catch (_) {
             const databaseDurationMs = Math.round((now() - startedAt) * 100) / 100;
+            const checks = {
+                application: { status: 'healthy' },
+                database: { status: 'unhealthy', durationMs: databaseDurationMs },
+                storage: getStorageStatus()
+            };
+            if (getCacheStatus) checks.cache = { status: 'degraded' };
             return response.status(503).json({
                 ok: false,
                 status: 'degraded',
                 database: 'unavailable',
-                checks: {
-                    application: { status: 'healthy' },
-                    database: { status: 'unhealthy', durationMs: databaseDurationMs },
-                    storage: getStorageStatus()
-                },
+                checks,
                 requestId: request.requestId || null
             });
         }
@@ -105,6 +111,7 @@ function registerRoutes(app, {
     saasService,
     trainerService,
     trainerCommerceService,
+    cacheService,
     platformAdminService,
     branchService,
     stockLocationService,
@@ -114,7 +121,8 @@ function registerRoutes(app, {
     app.get('/api/health/live', asyncRoute(createLivenessHandler()));
     app.get('/api/health', asyncRoute(createHealthHandler({
         getPool,
-        getStorageStatus: () => ({ status: objectStorageService?.providerStatus || 'not_configured' })
+        getStorageStatus: () => ({ status: objectStorageService?.providerStatus || 'not_configured' }),
+        getCacheStatus: cacheService ? async () => ({ ...(await cacheService.health()), metrics: cacheService.metrics() }) : null
     })));
 
     registerAuthRoutes(app, { authService, permissionService, saasService, asyncRoute, ownerOnly, allowLoginAttempt });

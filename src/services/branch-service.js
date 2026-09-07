@@ -6,6 +6,7 @@ const { currentTenantId, getTenantContext } = require('../tenancy/tenant-context
 const { TENANT_TYPES } = require('../tenancy/tenant-types');
 const { BRANCH_STATUS, canAcceptNewOperations, normalizeBranchId, normalizeSectionId, normalizeBranchStatus, normalizeMembershipBranchAccessMode, MEMBERSHIP_BRANCH_ACCESS_MODE } = require('../branches/branch-contract');
 const saasService = require('./saas-service');
+const cacheService = require('./cache-service');
 
 function branchError(message, statusCode = 400, code = 'BRANCH_ERROR') {
     const error = new Error(message);
@@ -196,6 +197,9 @@ async function assertBranchAccess(branchId, { userId = null, role = null, requir
 
 async function getBranchSections(branchId, { userId = null, role = null, includeInactive = false } = {}) {
     const branch = await assertBranchAccess(branchId, { userId, role, requireActive: false });
+    const cacheKey = cacheService.tenantKey({ tenantId: branch.tenantId, resource: 'sections', scope: { branchId: branch.id, includeInactive: includeInactive ? 1 : 0 } });
+    const cached = await cacheService.get(cacheKey);
+    if (Array.isArray(cached)) return cached;
     const result = await getPool().then((pool) => pool.request()
         .input('tenantId', sql.Int, branch.tenantId)
         .input('branchId', sql.Int, branch.id)
@@ -205,7 +209,18 @@ async function getBranchSections(branchId, { userId = null, role = null, include
                 WHERE tenant_id=@tenantId AND branch_id=@branchId
                   AND (@includeInactive=1 OR is_active=1)
                 ORDER BY CASE section_type WHEN 'men' THEN 1 WHEN 'women' THEN 2 WHEN 'mixed' THEN 3 ELSE 4 END, name, id;`));
-    return result.recordset.map(sectionDto);
+    const sections = result.recordset.map(sectionDto);
+    await cacheService.set(cacheKey, sections, 30);
+    return sections;
+}
+
+async function invalidateBranchSectionCache(branchId, currentTenant = tenantId()) {
+    const id = normalizeBranchId(branchId);
+    if (!id) return;
+    await cacheService.deleteMany([
+        cacheService.tenantKey({ tenantId: currentTenant, resource: 'sections', scope: { branchId: id, includeInactive: 0 } }),
+        cacheService.tenantKey({ tenantId: currentTenant, resource: 'sections', scope: { branchId: id, includeInactive: 1 } })
+    ]);
 }
 
 async function assertSectionAccess(sectionId, branchId, { userId = null, role = null } = {}) {
@@ -303,6 +318,7 @@ async function createBranch(body = {}, { actorUserId = null, role = null, reques
         created = branchDto({ ...row, store_enabled: storeEnabled, bar_enabled: barEnabled });
         await saasService.recordAudit({ tenantId: currentTenant, actorUserId, action: 'branch_created', entityType: 'branch', entityId: created.id, details: 'Gym branch created.', after: { code, name }, ipAddress: request?.ip, userAgent: request?.get?.('user-agent'), executor: transaction });
     });
+    await invalidateBranchSectionCache(created.id, currentTenant);
     return getBranch(created.id);
 }
 
@@ -329,6 +345,7 @@ async function updateBranch(branchId, body = {}, { actorUserId = null, role = nu
         updated = branchDto({ ...result.recordset[0], store_enabled: nextStoreEnabled, bar_enabled: nextBarEnabled });
         await saasService.recordAudit({ tenantId: currentTenant, actorUserId, action: 'branch_updated', entityType: 'branch', entityId: updated.id, details: 'Branch identity and Commerce settings updated.', before: current, after: { name, address, phone, storeEnabled: nextStoreEnabled, barEnabled: nextBarEnabled }, ipAddress: request?.ip, userAgent: request?.get?.('user-agent'), executor: transaction });
     });
+    await invalidateBranchSectionCache(updated.id, currentTenant);
     return getBranch(updated.id);
 }
 
@@ -342,6 +359,7 @@ async function archiveBranch(branchId, { actorUserId = null, role = null, reques
         .query(`UPDATE dbo.gym_branches SET status='archived',updated_at=SYSUTCDATETIME() OUTPUT INSERTED.* WHERE tenant_id=@tenantId AND id=@branchId;`));
     const archived = branchDto(result.recordset[0]);
     await saasService.recordAudit({ tenantId: tenantId(), actorUserId, action: 'branch_archived', entityType: 'branch', entityId: archived.id, details: 'Gym branch archived.', before: { status: current.status }, after: { status: archived.status }, ipAddress: request?.ip, userAgent: request?.get?.('user-agent') });
+    await invalidateBranchSectionCache(archived.id, tenantId());
     return archived;
 }
 

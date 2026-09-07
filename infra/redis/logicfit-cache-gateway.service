@@ -1,0 +1,25 @@
+[Unit]
+Description=Logic Fit authenticated Redis cache gateway
+After=network-online.target redis-server.service
+Wants=network-online.target
+Requires=redis-server.service
+
+[Service]
+Type=simple
+User=logicfit-cache
+Group=logicfit-cache
+WorkingDirectory=/opt/logicfit-cache-gateway
+EnvironmentFile=/etc/logicfit-cache-gateway.env
+ExecStart=/usr/bin/python3 /opt/logicfit-cache-gateway/cache-gateway.py
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+LockPersonality=true
+MemoryDenyWriteExecute=true
+
+[Install]
+WantedBy=multi-user.target

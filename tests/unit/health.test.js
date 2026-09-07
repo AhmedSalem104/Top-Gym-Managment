@@ -72,6 +72,21 @@ test('health handler can use the default monotonic timer without losing performa
     assert.equal(Number.isFinite(response.body.checks.database.durationMs), true);
 });
 
+test('health reports cache degradation without turning an optional cache into a core outage', async () => {
+    const response = responseDouble();
+    const handler = createHealthHandler({
+        getPool: async () => ({ request: () => ({ query: async () => ({ recordset: [{ ok: 1 }] }) }) }),
+        getCacheStatus: async () => ({ enabled: true, status: 'degraded', metrics: { errors: 1 } })
+    });
+
+    await handler({ requestId: 'health-cache-test' }, response);
+
+    assert.equal(response.statusCode, 200);
+    assert.equal(response.body.status, 'healthy');
+    assert.equal(response.body.checks.cache.status, 'degraded');
+    assert.equal(response.body.checks.cache.metrics.errors, 1);
+});
+
 test('health handler returns 503 without exposing database errors', async () => {
     const response = responseDouble();
     let tick = 100;

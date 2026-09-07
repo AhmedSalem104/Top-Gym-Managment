@@ -46,6 +46,7 @@ const platformAdminService = require('./src/services/platform-admin-service');
 const { runTenantContext } = require('./src/tenancy/tenant-context');
 const { ensureAuthReady } = authService;
 const { createPerformanceMetrics } = require('./src/middleware/performance-metrics');
+const cacheService = require('./src/services/cache-service');
 const { READ_ONLY_METHODS, readOnlyBaselineGuard } = require('./src/middleware/read-only-baseline.middleware');
 const { getClientErrorCode, getSafeErrorMessage, isPublicClientError, safeErrorCode } = require('./src/utils/error-response');
 
@@ -220,6 +221,7 @@ registerRoutes(app, {
     coachingService,
     trainerService,
     trainerCommerceService,
+    cacheService,
     dayPassService,
     memberService,
     membershipCodeService,

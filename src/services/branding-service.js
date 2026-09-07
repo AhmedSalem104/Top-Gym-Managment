@@ -4,6 +4,7 @@ const crypto = require('node:crypto');
 const { getPool, sql } = require('../database');
 const { withTransaction } = require('../database/transaction');
 const { currentTenantId } = require('../tenancy/tenant-context');
+const cacheService = require('./cache-service');
 
 const BRANDING_ID = 1;
 const MAX_TEXT_LENGTH = 500;
@@ -739,8 +740,10 @@ async function ownerResponse({ readOnly = false } = {}) {
     };
 }
 
-function invalidatePublicCache() {
+async function invalidatePublicCache(tenantId = null) {
     publicCache.clear();
+    if (tenantId == null) return;
+    await cacheService.delete(cacheService.tenantKey({ tenantId, resource: 'branding', scope: { scope: 'published' } }));
 }
 
 async function getPublicBranding({ readOnly = false } = {}) {
@@ -748,6 +751,11 @@ async function getPublicBranding({ readOnly = false } = {}) {
     const tenantId = brandingTenantId();
     const cached = publicCache.get(tenantId);
     if (cached && cached.expiresAt > Date.now()) return clone(cached.value);
+    const distributed = await cacheService.get(cacheService.tenantKey({ tenantId, resource: 'branding', scope: { scope: 'published' } }));
+    if (distributed?.branding) {
+        publicCache.set(tenantId, { value: distributed, expiresAt: Date.now() + 30_000 });
+        return clone(distributed);
+    }
     const row = await readRow();
     const defaults = await defaultBrandingForTenant();
     const tenantSlug = await brandingTenantSlug();
@@ -759,6 +767,7 @@ async function getPublicBranding({ readOnly = false } = {}) {
     delete publicPublished.identity.paymentMethods;
     const result = { branding: decorateConfig(publicPublished, 'published', row?.version || 1, await assetMetadata('published'), tenantSlug), version: Number(row?.version || 1), publishedAt: row?.published_at || null };
     publicCache.set(tenantId, { value: result, expiresAt: Date.now() + 30_000 });
+    await cacheService.set(cacheService.tenantKey({ tenantId, resource: 'branding', scope: { scope: 'published' } }), result, 60);
     return clone(result);
 }
 
@@ -849,7 +858,7 @@ async function publish(actorUserId) {
         await audit('published', actorUserId, publishedVersion, 'Branding published across the platform.', transaction);
     });
     for (const storageKey of staleStorageKeys) await deleteUnreferencedStorageObject(tenantId, storageKey);
-    invalidatePublicCache();
+    await invalidatePublicCache(tenantId);
     return ownerResponse();
 }
 
