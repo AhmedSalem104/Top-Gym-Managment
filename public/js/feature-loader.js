@@ -82,7 +82,7 @@
         'saas-billing': {
             dependencies: [],
             styles: [],
-            scripts: ['/js/pages/saas/saas.js?v=1']
+            scripts: ['/js/pages/saas/saas.js?v=2']
         },
         'backup-history': {
             dependencies: [],
