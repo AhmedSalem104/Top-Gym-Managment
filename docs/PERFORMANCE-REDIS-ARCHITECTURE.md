@@ -31,6 +31,22 @@ Authenticated timing was collected against the Production alias with an approved
 | Production Platform Admin tenants/requests/plans | 200 on 9/9 samples; 0.58-1.69s, 2.8-3.4KB | PASS |
 | SQL execution-plan/logical-read evidence | Not exposed by the safe Production run | NOT VERIFIED |
 
+### Production Server-Timing evidence
+
+Production performance metrics were explicitly enabled for the read-only measurement release. The headers expose bounded aggregate timings only; no SQL text, rows, request bodies or secrets are logged.
+
+| Endpoint | Samples | DB queries/request | DB wall time | DB work time | Total time | Payload |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| `/api/bootstrap` | 3 | 17-23 | 3.46-5.11s | 4.22-11.46s | 4.74-6.27s | 103.2KB |
+| `/api/dashboard` | 3 | 20 | 3.36-3.41s | 4.87-5.06s | 3.69-3.81s | 97.5KB |
+| `/api/members` | 3 | 15-17 | 3.20-3.98s | 3.42-4.20s | 3.72-5.15s | 17.9KB |
+| `/api/attendance` | 3 | 13 | ~2.78s | ~2.78s | 3.08-3.24s | 127B |
+| `/api/reports` | 3 | 29 | 4.17-4.68s | 8.11-10.19s | 4.90-6.63s | 38.7KB |
+| `/api/branches/bootstrap` | 3 | 19-21 | 3.82-4.75s | 4.25-5.18s | 4.35-5.38s | 1.0KB |
+| `/api/platform-admin/dashboard` | 3 | 8 | 0.58-1.13s | 1.97-3.99s | 0.77-1.50s | 11.6KB |
+
+The query count is the application request-level metric, not a claim about the number of SQL statements inside a multi-statement batch. SQL logical reads and actual execution plans remain intentionally unverified.
+
 ## Root causes found
 
 1. Several lazy screens had both a tab-router load trigger and an eager deep-link/active-tab load trigger. This could request the same resource twice during navigation.
@@ -54,6 +70,9 @@ Authenticated timing was collected against the Production alias with an approved
 - Branch bootstrap now loads independent branch lists and section lists concurrently.
 - Allowed branch filtering is performed in SQL with tenant and user-access predicates.
 - Empty attendance-member input returns before attendance table setup or pool acquisition.
+- Branch section authorization now combines tenant, branch existence and delegated access checks in one read, avoiding repeated `tenant → branch → access` lookups on context/bootstrap paths.
+- Owner branch bootstrap reuses the already-authorized branch result instead of issuing a second all-branches query.
+- Frontend branch bootstrap and attendance requests now reuse an in-flight request and abort stale attendance reads when search/context changes.
 - No new index or schema migration was required by the reviewed changes.
 
 ## Verification after code changes
@@ -69,6 +88,7 @@ Authenticated timing was collected against the Production alias with an approved
 - Production `/api/health`: `200`, database connected, cache healthy.
 - Production `/api/health/live`: `200`.
 - Final Production cache sample: `10` hits, `2` misses, `0` errors, `2` sets, average cache operation `207.45ms`.
+- Post-optimization local regression: unit `360/360 PASS`, database readiness `19/19 PASS`, performance contracts `12/12 PASS`, and syntax checks for the changed JavaScript files `PASS`.
 
 ## VPS discovery
 
@@ -129,3 +149,5 @@ Candidate resources, subject to measured value and invalidation:
 - Trainer Studio and Member/Trainer Portal authenticated p50/p95 require separate approved QA sessions; Gym Owner and Platform Admin coverage is verified above.
 - Production cache hit ratio is instance/traffic dependent; the final observed sample had 10 hits and 2 misses with no errors.
 - The dominant remaining latency is database/application cold-start and remote SQL work, with authenticated p95 values commonly in the 3.7-5.6s range.
+- Production remeasurement of the branch-context/request-dedup patch is still required after its release; the numbers above are the pre-patch authenticated Server-Timing baseline.
+- `ufw` is inactive on the VPS, but Redis and the gateway remain loopback-only; firewall hardening and the Redis 6.0.16 lifecycle review are separate operational follow-ups.

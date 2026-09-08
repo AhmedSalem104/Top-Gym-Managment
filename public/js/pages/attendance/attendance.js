@@ -15,6 +15,8 @@
     let memberPreviewTimer = null;
     let previewMember = null;
     let attendanceSnapshot = null;
+    let attendanceRequest = null;
+    let attendanceRequestKey = '';
     let initialized = false;
 
     function escapeHtml(value) {
@@ -370,11 +372,17 @@
         });
     }
 
-    async function loadAttendance() {
+    async function loadAttendance(options = {}) {
         const search = $('attendanceSearch')?.value.trim() || '';
+        const branchId = window.sessionStorage?.getItem('logicfit.branchId') || '';
+        const sectionId = window.sessionStorage?.getItem('logicfit.sectionId') || '';
+        const requestKey = JSON.stringify([search, branchId, sectionId]);
+        const force = options?.force === true;
+        if (!force && attendanceRequest && attendanceRequestKey === requestKey) return attendanceRequest;
         attendanceAbortController?.abort();
         attendanceAbortController = new AbortController();
         const controller = attendanceAbortController;
+        const loadPromise = (async () => {
         $('attendanceTableWrap').innerHTML = '<div class="loading">جاري تحديث سجل الحضور…</div>';
         try {
             const data = await request(`/api/attendance?${new URLSearchParams({ search })}`, { signal: controller.signal });
@@ -388,6 +396,16 @@
             if (error.name === 'AbortError') return;
             $('attendanceTableWrap').innerHTML = `<div class="attendance-empty">${escapeHtml(error.message)}</div>`;
         }
+        })();
+        const trackedPromise = loadPromise.finally(() => {
+            if (attendanceRequest === trackedPromise) {
+                attendanceRequest = null;
+                attendanceRequestKey = '';
+            }
+        });
+        attendanceRequestKey = requestKey;
+        attendanceRequest = trackedPromise;
+        return trackedPromise;
     }
 
     function currentInput() {
@@ -412,12 +430,12 @@
             clearMemberPreview();
             await showMessage('تم تسجيل الحضور بنجاح ✅', 'success', result.message);
             attendanceFeedback('success');
-            await loadAttendance();
+            await loadAttendance({ force: true });
             announceAttendanceUpdate();
         } catch (error) {
             attendanceFeedback('error');
             await showMessage(error.message, error.code?.startsWith('ATTENDANCE_') ? 'warning' : 'error');
-            if (error.attendance) await loadAttendance();
+            if (error.attendance) await loadAttendance({ force: true });
         }
     }
 
@@ -434,7 +452,7 @@
             clearMemberPreview();
             await showMessage('تم تسجيل الانصراف بنجاح ✅', 'success', result.message);
             attendanceFeedback('success');
-            await loadAttendance();
+            await loadAttendance({ force: true });
             announceAttendanceUpdate();
         } catch (error) {
             attendanceFeedback('error');

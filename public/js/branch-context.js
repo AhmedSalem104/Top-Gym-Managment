@@ -11,6 +11,7 @@
         else if (isError) console.error(message);
     };
     let bootstrap = null;
+    let branchesRequest = null;
 
     function mountContextShell() {
         const shell = $('branchContextShell');
@@ -214,15 +215,23 @@
         setTabVisibility(isGym && user.role === 'Owner');
         const shell = $('branchContextShell');
         if (!isGym) { if (shell) shell.hidden = true; syncContextBar(); writeStoredSection(''); return; }
-        try {
-            bootstrap = await window.topGymApi.request('/api/branches/bootstrap');
-            renderSelector(bootstrap);
-            renderManagerWithCommerce({ ...bootstrap, branchLimit: bootstrap.branchLimit });
-        } catch (error) {
-            if (shell) shell.hidden = true;
-            syncContextBar();
+        if (branchesRequest) return branchesRequest;
+        const loadPromise = (async () => {
+            try {
+                bootstrap = await window.topGymApi.request('/api/branches/bootstrap');
+                renderSelector(bootstrap);
+                renderManagerWithCommerce({ ...bootstrap, branchLimit: bootstrap.branchLimit });
+            } catch (error) {
+                if (shell) shell.hidden = true;
+                syncContextBar();
             if (user.role === 'Owner') notify(error.message || 'تعذر تحميل سياق الفروع.', true);
-        }
+            }
+        })();
+        const trackedPromise = loadPromise.finally(() => {
+            if (branchesRequest === trackedPromise) branchesRequest = null;
+        });
+        branchesRequest = trackedPromise;
+        return trackedPromise;
     }
 
     async function createBranch(event) {

@@ -196,7 +196,60 @@ async function assertBranchAccess(branchId, { userId = null, role = null, requir
 }
 
 async function getBranchSections(branchId, { userId = null, role = null, includeInactive = false } = {}) {
-    const branch = await assertBranchAccess(branchId, { userId, role, requireActive: false });
+    const id = idValue(branchId);
+    const currentTenant = tenantId();
+    const user = Number(userId);
+    const isOwner = String(role || '').toLowerCase() === 'owner';
+    if (!isOwner && (!Number.isInteger(user) || user <= 0)) {
+        throw branchError('Branch access is required.', 403, 'BRANCH_ACCESS_REQUIRED');
+    }
+
+    // Keep the authorization boundary, but resolve tenant, branch existence,
+    // and delegated branch access in one read. Previously this path called
+    // assertGymTenant -> getBranch -> access check before the section cache,
+    // repeating the same scope reads for every dashboard/bootstrap request.
+    const authorization = await getPool().then((pool) => pool.request()
+        .input('tenantId', sql.Int, currentTenant)
+        .input('branchId', sql.Int, id)
+        .input('userId', sql.Int, isOwner ? null : user)
+        .input('isOwner', sql.Bit, isOwner ? 1 : 0)
+        .query(`
+            SELECT TOP (1)
+                   t.tenant_type,
+                   b.id AS branch_id,
+                   b.tenant_id,
+                   b.status AS branch_status,
+                   CASE WHEN @isOwner=1 THEN 1
+                        WHEN EXISTS (
+                            SELECT 1
+                            FROM dbo.gym_branch_user_access AS a
+                            WHERE a.tenant_id=b.tenant_id
+                              AND a.branch_id=b.id
+                              AND a.user_id=@userId
+                        ) THEN 1
+                        ELSE 0 END AS branch_allowed
+            FROM dbo.gym_tenants AS t
+            LEFT JOIN dbo.gym_branches AS b
+              ON b.tenant_id=t.id
+             AND b.id=@branchId
+             AND b.status<>'archived'
+            WHERE t.id=@tenantId;
+        `));
+    const authorizationRow = authorization.recordset[0];
+    if (!authorizationRow) throw branchError('Tenant was not found.', 404, 'TENANT_NOT_FOUND');
+    if (String(authorizationRow.tenant_type || '').toLowerCase() !== TENANT_TYPES.GYM) {
+        throw branchError('Branches are available for Gym tenants only.', 403, 'BRANCHES_GYM_ONLY');
+    }
+    if (!authorizationRow.branch_id) throw branchError('Branch was not found.', 404, 'BRANCH_NOT_FOUND');
+    if (!Number(authorizationRow.branch_allowed)) {
+        throw branchError('You do not have access to this branch.', 403, 'BRANCH_ACCESS_DENIED');
+    }
+
+    const branch = {
+        id: Number(authorizationRow.branch_id),
+        tenantId: Number(authorizationRow.tenant_id),
+        status: authorizationRow.branch_status
+    };
     const cacheKey = cacheService.tenantKey({ tenantId: branch.tenantId, resource: 'sections', scope: { branchId: branch.id, includeInactive: includeInactive ? 1 : 0 } });
     const cached = await cacheService.get(cacheKey);
     if (Array.isArray(cached)) return cached;
@@ -240,10 +293,11 @@ async function assertSectionAccess(sectionId, branchId, { userId = null, role = 
 }
 
 async function bootstrap({ userId = null, role = null, readOnly = false } = {}) {
-    const [branches, all] = await Promise.all([
-        getAllowedBranches({ userId, role }),
-        listBranches({ includeArchived: false, includeInactive: false })
-    ]);
+    const allowedBranchesPromise = getAllowedBranches({ userId, role });
+    const allBranchesPromise = String(role || '').toLowerCase() === 'owner'
+        ? allowedBranchesPromise.then((branches) => branches.filter((branch) => branch.status === BRANCH_STATUS.ACTIVE))
+        : listBranches({ includeArchived: false, includeInactive: false });
+    const [branches, all] = await Promise.all([allowedBranchesPromise, allBranchesPromise]);
     const main = all.find((branch) => branch.isMain) || all[0] || null;
     const sectionsByBranch = await Promise.all(
         branches.map((branch) => getBranchSections(branch.id, { userId, role }))
