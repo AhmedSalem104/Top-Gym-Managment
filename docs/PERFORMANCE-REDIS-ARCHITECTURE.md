@@ -89,6 +89,8 @@ The query count is the application request-level metric, not a claim about the n
 - Production `/api/health/live`: `200`.
 - Final Production cache sample: `10` hits, `2` misses, `0` errors, `2` sets, average cache operation `207.45ms`.
 - Post-optimization local regression: unit `360/360 PASS`, database readiness `19/19 PASS`, performance contracts `12/12 PASS`, and syntax checks for the changed JavaScript files `PASS`.
+- Latest clean Production release: deployment `dpl_5X47pHK5ahxhXcTwiHojmAMfqRUQ`, Git SHA `ee12474539e6c64488ce3f6f1b37a09993212118`, ref `main`, Vercel `gitDirty` metadata absent. The production alias returned `/api/health=200`, `/api/health/live=200`, and cache status `healthy` after this release.
+- Authenticated endpoint remeasurement after the latest clean release: `NOT VERIFIED`. The authorized Production secret store exposes the Platform Admin email metadata but did not provide a password value to the local measurement process; no chat-shared password was copied into a command, file, log, or source. The earlier authenticated Server-Timing baseline remains valid and is not relabeled as post-release evidence.
 
 ## VPS discovery
 
