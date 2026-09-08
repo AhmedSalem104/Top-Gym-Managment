@@ -250,6 +250,15 @@ async function getBranchSections(branchId, { userId = null, role = null, include
         tenantId: Number(authorizationRow.tenant_id),
         status: authorizationRow.branch_status
     };
+    return getSectionsForAuthorizedBranch(branch, { includeInactive });
+}
+
+async function getSectionsForAuthorizedBranch(branch, { includeInactive = false } = {}) {
+    // This helper is only called with a branch that has already passed the
+    // current request's getAllowedBranches authorization query. Keeping the
+    // authorization boundary in getBranchSections preserves the public
+    // contract; bootstrap can safely reuse that already-authorized result
+    // instead of re-querying access once per branch.
     const cacheKey = cacheService.tenantKey({ tenantId: branch.tenantId, resource: 'sections', scope: { branchId: branch.id, includeInactive: includeInactive ? 1 : 0 } });
     const cached = await cacheService.get(cacheKey);
     if (Array.isArray(cached)) return cached;
@@ -300,7 +309,7 @@ async function bootstrap({ userId = null, role = null, readOnly = false } = {}) 
     const [branches, all] = await Promise.all([allowedBranchesPromise, allBranchesPromise]);
     const main = all.find((branch) => branch.isMain) || all[0] || null;
     const sectionsByBranch = await Promise.all(
-        branches.map((branch) => getBranchSections(branch.id, { userId, role }))
+        branches.map((branch) => getSectionsForAuthorizedBranch(branch))
     );
     const sections = sectionsByBranch.flat();
     const entitlements = await saasService.getEffectiveEntitlements(tenantId(), null, { readOnly });

@@ -300,9 +300,11 @@ async function getDashboardAnalytics(periodValue = 'month', { readOnly = false, 
     const today = todayInTimeZone();
     const inactiveSince = addDays(today, -7);
     if (!readOnly) {
-        await ensureExpensesTable();
-        await ensurePaymentTransactionsTable();
-        await dayPassRepository.ensureDayPassTables();
+        await Promise.all([
+            ensureExpensesTable(),
+            ensurePaymentTransactionsTable(),
+            dayPassRepository.ensureDayPassTables()
+        ]);
     }
     const pool = await getPool();
 

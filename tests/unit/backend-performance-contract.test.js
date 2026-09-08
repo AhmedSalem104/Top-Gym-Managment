@@ -11,7 +11,8 @@ const read = (relative) => fs.readFileSync(path.join(root, relative), 'utf8');
 test('branch bootstrap loads independent branch sections concurrently', () => {
     const source = read('src/services/branch-service.js');
     assert.match(source, /const sectionsByBranch = await Promise\.all\(/u);
-    assert.match(source, /branches\.map\(\(branch\) => getBranchSections\(branch\.id, \{ userId, role \}\)\)/u);
+    assert.match(source, /branches\.map\(\(branch\) => getSectionsForAuthorizedBranch\(branch\)\)/u);
+    assert.match(source, /async function getSectionsForAuthorizedBranch\(branch/u);
     assert.match(source, /async function bootstrap\(\{ userId = null, role = null, readOnly = false \} = \{\}\)/u);
     assert.match(source, /getEffectiveEntitlements\(tenantId\(\), null, \{ readOnly \}\)/u);
     assert.match(source, /const sections = sectionsByBranch\.flat\(\);/u);
@@ -27,4 +28,20 @@ test('allowed branches are filtered server-side with tenant and user access pred
 test('empty member attendance status lists return before database setup', () => {
     const source = read('src/services/attendance-service.js');
     assert.match(source, /const ids = \[\.\.\.new Set\(memberIds\.map[\s\S]*?if \(!ids\.length\) return new Map\(\);[\s\S]*?ensureAttendanceTable/u);
+});
+
+test('reports use a summary-only dashboard query instead of hydrating dashboard alerts', () => {
+    const source = read('src/services/report-service.js');
+    assert.match(source, /getDashboardSummary/u);
+    assert.match(source, /alertsCount: Number\(dashboard\.alertsCount \|\| 0\)/u);
+    assert.doesNotMatch(source, /getDashboard\(/u);
+});
+
+test('member lists reuse portal-code previews without a per-member hydration fan-out', () => {
+    const appSource = read('public/js/app.js');
+    const paginationSource = read('public/js/pagination.js');
+
+    assert.match(appSource, /membershipCode/u);
+    assert.doesNotMatch(appSource, /hydrateMemberPortalCodes/u);
+    assert.doesNotMatch(paginationSource, /hydrateMemberPortalCodes/u);
 });

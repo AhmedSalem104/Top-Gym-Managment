@@ -1249,6 +1249,77 @@ async function markAlertCommunication(memberId, payload = {}, userId = null) {
     return alertContactService.mark(memberId, payload, userId);
 }
 
+async function getDashboardSummary({ readOnly = false, branchId = null, sectionId = null } = {}) {
+    if (!readOnly) await ensureAttendanceTable();
+    const pool = await getPool();
+    const today = todayInTimeZone();
+    const request = pool.request()
+        .input('today', sql.Date, toUtcDate(today))
+        .input('inactiveSince', sql.Date, toUtcDate(addDays(today, -7)))
+        .input('branchId', sql.Int, branchId == null ? null : Number(branchId))
+        .input('sectionId', sql.Int, sectionId == null ? null : Number(sectionId));
+    const result = await request.batch(`${(branchId != null || sectionId != null) ? MEMBER_ROWS_SCOPED_CTE : MEMBER_ROWS_CTE}
+            SELECT ${MEMBER_ROW_COLUMNS} INTO #member_rows FROM member_rows;
+
+            SELECT
+                COUNT(1) AS total,
+                SUM(CASE WHEN computedStatus = 'active' THEN 1 ELSE 0 END) AS active,
+                SUM(CASE WHEN computedStatus = 'expiring_soon' THEN 1 ELSE 0 END) AS expiringSoon,
+                SUM(CASE WHEN computedStatus = 'expired' THEN 1 ELSE 0 END) AS expired,
+                SUM(CASE WHEN computedStatus = 'frozen' THEN 1 ELSE 0 END) AS frozen
+            FROM #member_rows
+            WHERE membershipId IS NOT NULL;
+
+            SELECT
+                (SELECT COUNT_BIG(*) FROM (
+                    SELECT id
+                    FROM #member_rows
+                    WHERE membershipId IS NOT NULL
+                      AND computedStatus IN ('frozen', 'expiring_soon', 'expired')
+                ) AS membership_alerts)
+                + (SELECT COUNT_BIG(*) FROM (
+                    SELECT TOP (50) id
+                    FROM #member_rows
+                    WHERE membershipId IS NOT NULL AND amountRemaining > 0
+                    ORDER BY amountRemaining DESC, effectiveEndDate ASC, fullName ASC
+                ) AS debt_alerts)
+                + (SELECT COUNT_BIG(*) FROM (
+                    SELECT TOP (50) member_rows.id
+                    FROM #member_rows AS member_rows
+                    OUTER APPLY (
+                        SELECT TOP (1) a.attendance_date AS lastVisitDate
+                        FROM dbo.gym_attendance AS a
+                        WHERE a.member_id = member_rows.id
+                          AND (@branchId IS NULL OR a.branch_id = @branchId)
+                          AND (@sectionId IS NULL OR a.section_id = @sectionId)
+                        ORDER BY a.attendance_date DESC, a.check_in_at DESC, a.id DESC
+                    ) AS last_visit
+                    WHERE member_rows.computedStatus = 'active'
+                      AND (
+                          (last_visit.lastVisitDate IS NULL
+                           AND (member_rows.registrationDate < @inactiveSince OR member_rows.startDate < @inactiveSince))
+                          OR last_visit.lastVisitDate < @inactiveSince
+                      )
+                    ORDER BY CASE WHEN last_visit.lastVisitDate IS NULL THEN 0 ELSE 1 END,
+                             last_visit.lastVisitDate ASC, member_rows.fullName ASC
+                ) AS inactive_alerts) AS alertCount;
+
+            DROP TABLE #member_rows;`);
+    const stats = result.recordsets?.[0]?.[0] || {};
+    const alertRow = result.recordsets?.[1]?.[0] || {};
+    return {
+        today,
+        stats: {
+            total: Number(stats.total || 0),
+            active: Number(stats.active || 0),
+            expiringSoon: Number(stats.expiringSoon || 0),
+            expired: Number(stats.expired || 0),
+            frozen: Number(stats.frozen || 0)
+        },
+        alertsCount: Number(alertRow.alertCount || 0)
+    };
+}
+
 async function getRawMember(connection, id) {
     const result = await connection.request()
         .input('id', sql.Int, ensureId(id))
@@ -2573,6 +2644,7 @@ module.exports = {
     deleteMember,
     getBootstrap,
     getDashboard,
+    getDashboardSummary,
     getMemberById,
     getMemberDetails,
     calculatePricing,

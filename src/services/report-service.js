@@ -1,6 +1,6 @@
 const { getPool, sql } = require('../database');
 const { addDays, differenceInDays, formatDateOnly, parseDateOnly, todayInTimeZone, toUtcDate } = require('../utils/date');
-const { ensurePaymentTransactionsTable, getDashboard } = require('./member-service');
+const { ensurePaymentTransactionsTable, getDashboardSummary } = require('./member-service');
 const { ensureExpensesTable } = require('./finance-service');
 const { ensureCoachingTables } = require('./coaching-service');
 const { ensureLibraryData } = require('./library-service');
@@ -205,7 +205,7 @@ async function getReportData(query = {}, options = {}) {
               ))
             GROUP BY payment_method ORDER BY amount DESC;
         `),
-        getDashboard({ readOnly, branchId, sectionId }),
+        getDashboardSummary({ readOnly, branchId, sectionId }),
         pool.request()
             .input('branchId', sql.Int, branchId)
             .input('sectionId', sql.Int, sectionId)
@@ -404,7 +404,7 @@ async function getReportData(query = {}, options = {}) {
             debtorsTotal: roundMoney(debtorRows.reduce((sum, row) => sum + Number(row.amount_remaining || 0), 0)),
             currentMembers: Number(dashboard.stats?.total || 0),
             activeMembers: Number(dashboard.stats?.active || 0),
-            alertsCount: Array.isArray(dashboard.alerts) ? dashboard.alerts.length : 0
+            alertsCount: Number(dashboard.alertsCount || 0)
         },
         breakdown: {
             plans: Object.entries(plans).map(([key, value]) => ({ key, value })),

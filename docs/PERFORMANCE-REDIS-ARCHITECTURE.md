@@ -156,3 +156,28 @@ Candidate resources, subject to measured value and invalidation:
 - The dominant remaining latency is database/application cold-start and remote SQL work, with authenticated p95 values commonly in the 3.7-5.6s range.
 - Production remeasurement of the branch-context/request-dedup patch is still required after its release; the numbers above are the pre-patch authenticated Server-Timing baseline.
 - `ufw` is inactive on the VPS, but Redis and the gateway remain loopback-only; firewall hardening and the Redis 6.0.16 lifecycle review are separate operational follow-ups.
+
+## 2026-09-09 autonomous performance pass
+
+The following source-level optimizations were implemented after the earlier baseline. They do not change API contracts, tenant checks, RLS, permissions, plans, or database schema:
+
+- Member list rendering no longer starts one `/api/members/:id/membership-code` request per row. `/api/members` already returns the tenant-scoped preview map in the same response, so pagination and refresh now render from that result directly.
+- Branch bootstrap reuses the already-authorized branch rows when loading sections. The public `getBranchSections` path still performs its full tenant/branch/access check; only the internal bootstrap path avoids repeating that check once per authorized branch.
+- Report generation now uses a summary-only dashboard query for the status and alert-count fields it actually returns, instead of hydrating dashboard alert rows and contact state that the report response does not expose.
+- Independent report maintenance-table readiness checks now run concurrently before the report queries start.
+
+### Direct VPS verification
+
+The execution environment successfully authenticated to the approved VPS using the local credential file without printing or storing its password. Read-only checks confirmed:
+
+- Redis service active; authenticated Redis `PING` passed.
+- Redis 6.0.16, loopback-only (`127.0.0.1`/`::1`), protected mode enabled.
+- `maxmemory=256mb`, `maxmemory-policy=allkeys-lru`, AOF disabled.
+- Authenticated gateway `POST /ping` passed on `127.0.0.1:9400`.
+- Port 6379 is not publicly bound; the HTTPS gateway remains the only external cache boundary.
+- MinIO, storage containers, Caddy, cron and scheduled backup timers were present and running/healthy at inspection.
+- Redis INFO counters are restricted by the application ACL; no ACL broadening was performed. Memory/eviction counters requiring an administrative Redis identity remain `NOT VERIFIED`.
+
+### Measurement boundary
+
+Authenticated p50/p95 for Dashboard, Members, Attendance, Reports and Bootstrap remains `BLOCKED` until an approved QA session and safe SQL diagnostic environment are supplied. No chat-shared password, authentication bypass, production write, migration, or schema/index change was used. Public health verification remains `PASS`; it is not relabeled as authenticated endpoint performance evidence.
