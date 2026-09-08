@@ -57,7 +57,7 @@
          function actionButton(action, memberId, classes = 'btn btn-light btn-small', extra = '') { const label = ACTION_LABELS[action] || action; const requiredPermission = { details: 'members.read,memberships.read', edit: 'members.update', renew: 'memberships.renew,payments.create', freeze: 'memberships.freeze', resume: 'memberships.freeze', payment: 'payments.create', print: 'members.print,members.read,memberships.read', qr: 'members.read,memberships.read', delete: 'members.delete' }[action] || ''; return `<button class="${classes} icon-action rounded-lg shadow-none transition-colors" data-action="${action}" data-required-permission="${requiredPermission}" data-label="${label}" data-id="${memberId}" aria-label="${label}" title="${label}" type="button" ${extra}>${actionIcon(action)}</button>`; }
          function memberStatusBadge(status, label = STATUS_LABELS[status] || status) { const path = ALERT_ICON_PATHS[status] || ALERT_ICON_PATHS.inactive; return `<span class="badge ${escapeHtml(status || 'unknown')} status-badge-with-icon"><svg class="status-badge-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${path}</svg><span>${escapeHtml(label)}</span></span>`; }
          const DEFAULT_PRICING = { plans: { gym_only: { label: 'جيم فقط', monthlyPrice: 305, active: true, sortOrder: 1 }, gym_cardio: { label: 'جيم وكارديو', monthlyPrice: 400, active: true, sortOrder: 2 } }, types: { monthly: { label: 'شهرية', mode: 'months', durationValue: 1, priceMultiplier: 1, active: true, sortOrder: 1 }, half_month: { label: 'نصف شهر', mode: 'days', durationValue: 15, priceMultiplier: .5, active: true, sortOrder: 2 }, quarterly: { label: 'ربع سنوية', mode: 'months', durationValue: 3, priceMultiplier: 3, active: true, sortOrder: 3 }, semiannual: { label: 'نصف سنوية', mode: 'months', durationValue: 6, priceMultiplier: 6, active: true, sortOrder: 4 }, annual: { label: 'سنوية', mode: 'months', durationValue: 12, priceMultiplier: 12, active: true, sortOrder: 5 } }, durations: { monthly: 1, quarterly: 3, semiannual: 6, annual: 12 } };
-         const state = { members: [], dashboard: null, pricing: DEFAULT_PRICING, pricingLoadedAt: 0, editing: null, dialogAction: null, dialogMember: null, endDateManual: false, membersPageSize: 5 };
+        const state = { members: [], dashboard: null, saasSubscription: null, saasSubscriptionLoaded: false, pricing: DEFAULT_PRICING, pricingLoadedAt: 0, editing: null, dialogAction: null, dialogMember: null, endDateManual: false, membersPageSize: 5 };
          const $ = (id) => document.getElementById(id);
         let membersAbortController = null;
         let membersLoadPromise = null;
@@ -279,6 +279,9 @@
                 const dashboardRequest = isOwner && activeTab === 'dashboard'
                     ? api('/api/dashboard')
                     : Promise.resolve(null);
+                const subscriptionRequest = isOwner && activeTab === 'dashboard' && !state.saasSubscriptionLoaded
+                    ? api('/api/saas/subscription?page=1&pageSize=1').catch(() => null)
+                    : Promise.resolve(state.saasSubscription);
                 // Pricing is needed by the members workspace and its dialogs,
                 // not by every route opened at boot.
                 const pricingRequest = activeTab === 'members' && canReadPricing()
@@ -291,9 +294,13 @@
                     dashboardSection?.setAttribute('aria-busy', 'true');
                 }
                 try {
-                    const [dashboard] = await Promise.all([dashboardRequest, pricingRequest]);
+                    const [dashboard, , subscription] = await Promise.all([dashboardRequest, pricingRequest, subscriptionRequest]);
                     if (isOwner && activeTab === 'dashboard') {
                         state.dashboard = dashboard || null;
+                        if (!state.saasSubscriptionLoaded) {
+                            state.saasSubscription = subscription || {};
+                            state.saasSubscriptionLoaded = true;
+                        }
                         renderDashboard();
                     }
                     updateFormPricing();
@@ -351,6 +358,11 @@
                 const number = Number(raw.replace(/[^\d.-]/g, ''));
                 value.textContent = raw && Number.isFinite(number) ? number.toLocaleString('en-US') : raw;
             });
+            const subscription = state.saasSubscription?.subscription || {};
+            const planValue = document.querySelector('[data-dashboard-hero-subscription="plan"] [data-dashboard-hero-value]');
+            const dateValue = document.querySelector('[data-dashboard-hero-subscription="date"] [data-dashboard-hero-value]');
+            if (planValue) planValue.textContent = subscription.plan?.name || '—';
+            if (dateValue) dateValue.textContent = subscription.startsAt ? formatDate(subscription.startsAt) : '—';
         }
 
          function renderDashboard() {

@@ -1451,3 +1451,957 @@ body .branch-create-dialog .dialog-actions {
     padding: 16px;
   }
 }
+
+/* Topbar context control: centered operational scope, left-side actions, and
+   hover/focus dropdowns without changing the existing branch/section APIs. */
+@media (min-width: 1200px) {
+  body .app-shell > .topbar,
+  body .topbar-inner {
+    overflow: visible;
+  }
+
+  body .topbar-inner {
+    position: relative;
+    justify-content: flex-end;
+  }
+
+  body .topbar-controls {
+    position: static;
+    flex: 0 0 auto;
+    justify-content: flex-start;
+  }
+
+  body .topbar-controls > .branch-context-shell {
+    position: absolute;
+    z-index: 12;
+    inset-block-start: 50%;
+    inset-inline-start: 50%;
+    width: min(430px, calc(100% - 500px));
+    max-width: 430px;
+    height: 50px;
+    min-height: 50px;
+    margin: 0;
+    padding: 4px;
+    inset-inline-start: auto;
+    left: 50%;
+    border-color: color-mix(in srgb, var(--primary) 32%, var(--sidebar-divider));
+    border-radius: 16px;
+    background: color-mix(in srgb, var(--sidebar-bg) 92%, var(--primary) 8%);
+    box-shadow: 0 12px 28px rgb(2 6 23 / .18), inset 0 1px 0 rgb(255 255 255 / .07);
+    transform: translate(-50%, -50%);
+    transition: box-shadow 180ms ease, border-color 180ms ease, transform 180ms ease;
+  }
+
+  body .topbar-controls > .branch-context-shell:hover,
+  body .topbar-controls > .branch-context-shell:focus-within {
+    border-color: color-mix(in srgb, var(--primary) 62%, var(--sidebar-divider));
+    box-shadow: 0 16px 34px rgb(2 6 23 / .24), 0 0 0 3px color-mix(in srgb, var(--primary) 12%, transparent), inset 0 1px 0 rgb(255 255 255 / .08);
+    transform: translate(-50%, calc(-50% - 1px));
+  }
+}
+
+body .branch-context-shell {
+  overflow: visible;
+}
+
+body .branch-context-kicker {
+  min-width: 112px;
+}
+
+body .branch-context-field {
+  position: relative;
+  min-width: 132px;
+  border-color: transparent;
+  background: color-mix(in srgb, var(--sidebar-bg) 68%, var(--primary) 5%);
+  cursor: pointer;
+  transition: min-width 180ms ease, border-color 180ms ease, background-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+}
+
+body .branch-context-field:hover,
+body .branch-context-field:focus-within,
+body .branch-context-field.is-open {
+  min-width: 158px;
+  border-color: color-mix(in srgb, var(--primary) 48%, transparent);
+  background: color-mix(in srgb, var(--primary-soft) 70%, var(--sidebar-bg));
+  box-shadow: 0 8px 18px rgb(2 6 23 / .13);
+  transform: translateY(-1px);
+}
+
+body .branch-context-field-copy {
+  width: 100%;
+}
+
+body .branch-context-field-copy select {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+body .branch-context-trigger {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 31px;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--sidebar-text);
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1.35;
+  text-align: start;
+}
+
+body .branch-context-trigger:disabled {
+  cursor: not-allowed;
+  opacity: .52;
+}
+
+body .branch-context-trigger:focus-visible {
+  border-radius: 7px;
+  box-shadow: var(--focus-ring);
+}
+
+body .branch-context-trigger > [data-context-value] {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+body .branch-context-trigger-chevron {
+  width: 6px;
+  height: 6px;
+  flex: 0 0 6px;
+  border-inline-end: 1.5px solid currentColor;
+  border-block-end: 1.5px solid currentColor;
+  color: var(--sidebar-text-muted);
+  transform: rotate(45deg) translateY(-2px);
+  transition: transform 180ms ease, color 180ms ease;
+}
+
+body .branch-context-field:hover .branch-context-trigger-chevron,
+body .branch-context-field:focus-within .branch-context-trigger-chevron,
+body .branch-context-field.is-open .branch-context-trigger-chevron {
+  color: var(--color-primary);
+  transform: rotate(225deg) translateY(-1px);
+}
+
+body .branch-context-menu {
+  position: absolute;
+  z-index: 30;
+  inset-block-start: calc(100% + 8px);
+  inset-inline: 0;
+  display: grid;
+  max-height: 230px;
+  gap: 4px;
+  padding: 6px;
+  overflow-y: auto;
+  border: 1px solid color-mix(in srgb, var(--primary) 34%, var(--sidebar-divider));
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--sidebar-bg) 96%, var(--primary) 4%);
+  box-shadow: 0 18px 34px rgb(2 6 23 / .28);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-5px) scale(.98);
+  transform-origin: top center;
+  transition: opacity 160ms ease, transform 160ms ease;
+}
+
+body .branch-context-field:hover .branch-context-menu,
+body .branch-context-field:focus-within .branch-context-menu,
+body .branch-context-field.is-open .branch-context-menu {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0) scale(1);
+}
+
+body .branch-context-option {
+  display: flex;
+  min-height: 34px;
+  align-items: center;
+  justify-content: flex-start;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--sidebar-text);
+  cursor: pointer;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 800;
+  padding-inline: 10px;
+  text-align: start;
+  transition: background-color 140ms ease, color 140ms ease, border-color 140ms ease;
+}
+
+body .branch-context-option:hover,
+body .branch-context-option:focus-visible,
+body .branch-context-option.is-selected {
+  border-color: color-mix(in srgb, var(--primary) 30%, transparent);
+  background: color-mix(in srgb, var(--primary-soft) 78%, transparent);
+  color: var(--color-primary);
+  outline: 0;
+}
+
+body .branch-context-option:disabled {
+  cursor: not-allowed;
+  opacity: .45;
+}
+
+@media (max-width: 1199px) {
+  body .topbar-inner {
+    flex-wrap: wrap;
+  }
+
+  body .topbar-controls {
+    flex: 1 1 100%;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    row-gap: 8px;
+  }
+
+  body .topbar-controls > .branch-context-shell {
+    position: static;
+    order: -2;
+    width: min(100%, 500px);
+    max-width: 100%;
+    height: 46px;
+    min-height: 46px;
+    margin-inline: auto;
+    transform: none;
+  }
+
+  body .topbar-controls > .branch-context-shell:hover,
+  body .topbar-controls > .branch-context-shell:focus-within {
+    transform: translateY(-1px);
+  }
+}
+
+@media (max-width: 767px) {
+  body .topbar-inner {
+    gap: 6px;
+  }
+
+  body .topbar-controls {
+    align-items: stretch;
+  }
+
+  body .topbar-controls > .branch-context-shell {
+    width: 100%;
+    height: 44px;
+    min-height: 44px;
+  }
+
+  body .branch-context-kicker {
+    min-width: 84px;
+  }
+
+  body .branch-context-kicker small,
+  body .branch-context-field-icon {
+    display: none;
+  }
+
+  body .branch-context-field,
+  body .branch-context-field:hover,
+  body .branch-context-field:focus-within,
+  body .branch-context-field.is-open {
+    min-width: 0;
+    flex: 1 1 0;
+  }
+
+  body .branch-context-status {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body .branch-context-shell,
+  body .branch-context-field,
+  body .branch-context-trigger-chevron,
+  body .branch-context-menu {
+    transition: none;
+  }
+}
+
+/* -------------------------------------------------------------------------
+   Final visual pass: dashboard welcome, image-backed navigation and the
+   desktop members table.  Mobile member cards intentionally remain outside
+   this block so their existing composition is untouched.
+   ------------------------------------------------------------------------- */
+
+body .dashboard-hero {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  grid-template-columns: minmax(0, 1.12fr) minmax(350px, .88fr);
+  min-height: 320px;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid rgb(219 228 240 / .95);
+  border-radius: 26px;
+  background: #fff;
+  box-shadow: 0 18px 44px rgb(37 55 91 / .08);
+}
+
+body .dashboard-hero::before {
+  position: absolute;
+  z-index: -2;
+  inset: 0;
+  content: '';
+  background:
+    linear-gradient(90deg, rgb(255 255 255 / .08) 0%, rgb(255 255 255 / .38) 45%, rgb(255 255 255 / .98) 88%),
+    url('/assets/gym-background.webp') center / cover no-repeat;
+  opacity: .32;
+  pointer-events: none;
+}
+
+body .dashboard-hero::after {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  content: '';
+  background: linear-gradient(90deg, rgb(255 255 255 / .72), rgb(255 255 255 / .18) 56%, rgb(255 255 255 / .9));
+  pointer-events: none;
+}
+
+body .dashboard-hero-content,
+body .dashboard-hero-actions {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+  padding: 30px 32px;
+}
+
+body .dashboard-hero-content {
+  display: flex;
+  min-height: 320px;
+  flex-direction: column;
+  justify-content: center;
+  gap: 22px;
+  color: var(--text-primary, #17233d);
+}
+
+body .dashboard-hero-topline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+body .dashboard-hero-kicker {
+  color: #7a8ba5;
+  font-size: .66rem;
+  font-weight: 900;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+}
+
+body .dashboard-live-status {
+  display: inline-flex;
+  min-height: 29px;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 11px;
+  border: 1px solid rgb(24 177 112 / .18);
+  border-radius: 999px;
+  background: rgb(232 250 242 / .92);
+  color: #087a51;
+  font-size: .72rem;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+body .dashboard-live-status i {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 7px;
+  border-radius: 50%;
+  background: #18b170;
+  box-shadow: 0 0 0 4px rgb(24 177 112 / .12);
+}
+
+body .dashboard-hero-heading {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+body .dashboard-hero-brand-mark {
+  display: grid;
+  width: 62px;
+  height: 62px;
+  flex: 0 0 62px;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid rgb(111 93 230 / .2);
+  border-radius: 18px;
+  background: linear-gradient(145deg, #7768e8, #4933ad);
+  box-shadow: 0 12px 25px rgb(85 66 193 / .18);
+  color: #fff;
+  font-size: 1.7rem;
+  font-weight: 900;
+}
+
+body .dashboard-hero-brand-mark img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 8px;
+  background: #fff;
+}
+
+body .dashboard-hero-heading-copy {
+  min-width: 0;
+}
+
+body .dashboard-hero-eyebrow {
+  display: block;
+  margin-block-end: 7px;
+  color: #64748b;
+  font-size: .76rem;
+  font-weight: 800;
+}
+
+body .dashboard-hero-heading h2,
+body .dashboard-hero-heading h2 strong {
+  margin: 0;
+  color: #17233d;
+  font-size: clamp(1.45rem, 2.1vw, 2.15rem);
+  font-weight: 900;
+  letter-spacing: -.03em;
+  line-height: 1.25;
+}
+
+body .dashboard-hero-heading h2 strong {
+  color: #5d46d6;
+}
+
+body .dashboard-hero-heading-copy p {
+  margin: 8px 0 0;
+  color: #6a7890;
+  font-size: .9rem;
+  font-weight: 700;
+}
+
+body .dashboard-hero-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 18px;
+  margin-inline-start: 78px;
+  color: #63738d;
+  font-size: .72rem;
+  font-weight: 800;
+}
+
+body .dashboard-hero-meta span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+body .dashboard-hero-meta .ui-icon {
+  width: 16px;
+  height: 16px;
+  color: #6755da;
+}
+
+body .dashboard-hero-actions {
+  display: flex;
+  min-height: 320px;
+  flex-direction: column;
+  justify-content: center;
+  gap: 18px;
+  border: 0;
+  border-inline-start: 1px solid rgb(214 223 237 / .8);
+  background: rgb(248 250 253 / .52);
+}
+
+body .dashboard-hero-action-copy {
+  display: grid;
+  gap: 6px;
+}
+
+body .dashboard-hero-action-copy span {
+  color: #17233d;
+  font-size: 1.06rem;
+  font-weight: 900;
+}
+
+body .dashboard-hero-action-copy small {
+  max-width: 360px;
+  color: #77859b;
+  font-size: .78rem;
+  font-weight: 700;
+  line-height: 1.7;
+}
+
+body .dashboard-hero-buttons {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+/* The preview action is the user-facing pricing shortcut in the reference;
+   the full subscription PDF remains available from the top toolbar. */
+body .dashboard-hero #dashboardPrintPricingButton {
+  display: none;
+}
+
+body .dashboard-hero-buttons .btn {
+  min-height: 45px;
+  justify-content: center;
+  padding-inline: 13px;
+  border-radius: 12px;
+  font-size: .76rem;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+body .dashboard-hero-buttons .btn-light {
+  border-color: #dbe2ef;
+  background: #fff;
+  color: #31415f;
+  box-shadow: 0 8px 18px rgb(37 55 91 / .06);
+}
+
+body .dashboard-hero-buttons .btn-primary {
+  border-color: #654bd4;
+  background: linear-gradient(135deg, #765ee4, #5034ba);
+  color: #fff;
+  box-shadow: 0 10px 22px rgb(91 64 202 / .22);
+}
+
+body .dashboard-hero-buttons #dashboardPrintPricingPreviewButton {
+  border-color: #654bd4;
+  background: linear-gradient(135deg, #765ee4, #5034ba);
+  color: #fff;
+  box-shadow: 0 10px 22px rgb(91 64 202 / .22);
+}
+
+body .dashboard-hero-mini-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-block-start: auto;
+}
+
+body .dashboard-hero-mini-stat {
+  display: flex;
+  min-width: 0;
+  min-height: 66px;
+  align-items: center;
+  gap: 9px;
+  padding: 10px;
+  border: 1px solid rgb(218 226 240 / .92);
+  border-radius: 14px;
+  background: rgb(255 255 255 / .8);
+  box-shadow: 0 8px 20px rgb(37 55 91 / .05);
+}
+
+body .dashboard-hero-mini-stat > span:last-child {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+body .dashboard-hero-mini-stat small {
+  overflow: hidden;
+  color: #78869a;
+  font-size: .64rem;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+body .dashboard-hero-mini-stat strong {
+  overflow: hidden;
+  color: #253453;
+  font-size: .82rem;
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+body .dashboard-hero-mini-stat-icon {
+  display: grid;
+  width: 31px;
+  height: 31px;
+  flex: 0 0 31px;
+  place-items: center;
+  border-radius: 10px;
+  background: #f0edff;
+  color: #6550d7;
+}
+
+body .dashboard-hero-mini-stat-icon .ui-icon {
+  width: 16px;
+  height: 16px;
+}
+
+html[data-theme="dark"] body .dashboard-hero,
+body[data-theme="dark"] .dashboard-hero {
+  border-color: rgb(104 129 170 / .32);
+  background: #101a2c;
+  box-shadow: 0 20px 48px rgb(1 6 18 / .24);
+}
+
+html[data-theme="dark"] body .dashboard-hero::before,
+body[data-theme="dark"] .dashboard-hero::before {
+  background:
+    linear-gradient(90deg, rgb(8 17 34 / .2), rgb(8 17 34 / .7) 54%, rgb(8 17 34 / .96)),
+    url('/assets/gym-background.webp') center / cover no-repeat;
+  opacity: .52;
+}
+
+html[data-theme="dark"] body .dashboard-hero::after,
+body[data-theme="dark"] .dashboard-hero::after {
+  background: linear-gradient(90deg, rgb(8 17 34 / .62), rgb(8 17 34 / .12) 54%, rgb(8 17 34 / .76));
+}
+
+html[data-theme="dark"] body .dashboard-hero-heading h2,
+html[data-theme="dark"] body .dashboard-hero-heading h2 strong,
+body[data-theme="dark"] .dashboard-hero-heading h2,
+body[data-theme="dark"] .dashboard-hero-heading h2 strong,
+html[data-theme="dark"] body .dashboard-hero-action-copy span,
+body[data-theme="dark"] .dashboard-hero-action-copy span {
+  color: #f5f8ff;
+}
+
+html[data-theme="dark"] body .dashboard-hero-heading h2 strong,
+body[data-theme="dark"] .dashboard-hero-heading h2 strong {
+  color: #b3a7ff;
+}
+
+html[data-theme="dark"] body .dashboard-hero-eyebrow,
+body[data-theme="dark"] .dashboard-hero-eyebrow,
+html[data-theme="dark"] body .dashboard-hero-heading-copy p,
+body[data-theme="dark"] .dashboard-hero-heading-copy p,
+html[data-theme="dark"] body .dashboard-hero-meta,
+body[data-theme="dark"] .dashboard-hero-meta,
+html[data-theme="dark"] body .dashboard-hero-action-copy small,
+body[data-theme="dark"] .dashboard-hero-action-copy small {
+  color: #b2c0d7;
+}
+
+html[data-theme="dark"] body .dashboard-hero-actions,
+body[data-theme="dark"] .dashboard-hero-actions {
+  border-inline-start-color: rgb(158 179 217 / .17);
+  background: rgb(2 9 22 / .22);
+}
+
+html[data-theme="dark"] body .dashboard-hero-buttons .btn-light,
+body[data-theme="dark"] .dashboard-hero-buttons .btn-light {
+  border-color: rgb(155 177 216 / .25);
+  background: rgb(255 255 255 / .08);
+  color: #edf4ff;
+  box-shadow: none;
+}
+
+html[data-theme="dark"] body .dashboard-hero-mini-stat,
+body[data-theme="dark"] .dashboard-hero-mini-stat {
+  border-color: rgb(149 174 219 / .2);
+  background: rgb(13 29 52 / .72);
+  box-shadow: none;
+}
+
+html[data-theme="dark"] body .dashboard-hero-mini-stat small,
+body[data-theme="dark"] .dashboard-hero-mini-stat small {
+  color: #aebdd3;
+}
+
+html[data-theme="dark"] body .dashboard-hero-mini-stat strong,
+body[data-theme="dark"] .dashboard-hero-mini-stat strong {
+  color: #f3f7ff;
+}
+
+html[data-theme="dark"] body .dashboard-hero-mini-stat-icon,
+body[data-theme="dark"] .dashboard-hero-mini-stat-icon {
+  background: rgb(121 100 231 / .18);
+  color: #b8adff;
+}
+
+/* Sidebar image treatment. The navigation geometry and interactions remain
+   owned by navigation-shell.css; this layer only changes its surface. */
+body .app-shell > .page-tabs,
+body .app-shell > .page-tabs:hover,
+body .app-shell > .page-tabs:focus-within {
+  background-color: #071326;
+  background-image: linear-gradient(180deg, rgb(3 10 26 / .94), rgb(4 13 31 / .985)), url('/assets/gym-sidebar-aesthetic.jpg');
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-blend-mode: normal;
+}
+
+body .app-shell > .page-tabs::before {
+  background: linear-gradient(180deg, rgb(2 8 22 / .18), rgb(2 8 22 / .62));
+  opacity: 1;
+}
+
+body .app-shell > .page-tabs > .page-tab {
+  color: #c1ccdc;
+}
+
+body .app-shell > .page-tabs > .page-tab:hover,
+body .app-shell > .page-tabs > .page-tab:focus-visible {
+  border-color: rgb(174 153 255 / .28);
+  background: rgb(126 101 227 / .2);
+  color: #fff;
+}
+
+body .app-shell > .page-tabs > .page-tab.active,
+body .app-shell > .page-tabs > .page-tab[aria-selected="true"] {
+  border-color: rgb(180 160 255 / .48);
+  background: linear-gradient(135deg, rgb(121 92 227 / .9), rgb(75 50 157 / .88));
+  box-shadow: 0 10px 24px rgb(50 29 126 / .26), inset 0 1px 0 rgb(255 255 255 / .15);
+  color: #fff;
+}
+
+/* Desktop/tablet table geometry. The mobile card layout intentionally does
+   not match this selector and therefore keeps its established composition. */
+@media (min-width: 768px) {
+  body .members-table:not(.table-card-layout) {
+    width: 100%;
+    min-width: 1180px;
+    table-layout: fixed;
+  }
+
+  body .members-table:not(.table-card-layout) th,
+  body .members-table:not(.table-card-layout) td {
+    box-sizing: border-box;
+    vertical-align: middle;
+    white-space: nowrap;
+  }
+
+  body .members-table:not(.table-card-layout) th:nth-child(1),
+  body .members-table:not(.table-card-layout) td:nth-child(1) { width: 29%; }
+  body .members-table:not(.table-card-layout) th:nth-child(2),
+  body .members-table:not(.table-card-layout) td:nth-child(2) { width: 14%; }
+  body .members-table:not(.table-card-layout) th:nth-child(3),
+  body .members-table:not(.table-card-layout) td:nth-child(3) { width: 8%; }
+  body .members-table:not(.table-card-layout) th:nth-child(4),
+  body .members-table:not(.table-card-layout) td:nth-child(4) { width: 12%; }
+  body .members-table:not(.table-card-layout) th:nth-child(5),
+  body .members-table:not(.table-card-layout) td:nth-child(5) { width: 7%; }
+  body .members-table:not(.table-card-layout) th:nth-child(6),
+  body .members-table:not(.table-card-layout) td:nth-child(6) { width: 10%; }
+  body .members-table:not(.table-card-layout) th:nth-child(7),
+  body .members-table:not(.table-card-layout) td:nth-child(7) { width: 20%; min-width: 236px; }
+
+  body .members-table:not(.table-card-layout) th:last-child {
+    text-align: center;
+  }
+
+  body .members-table:not(.table-card-layout) td:first-child {
+    min-width: 330px;
+  }
+
+  body .members-table:not(.table-card-layout) .member-identity {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 11px;
+  }
+
+  body .members-table:not(.table-card-layout) .member-identity-copy {
+    display: grid;
+    min-width: 0;
+    gap: 3px;
+  }
+
+  body .members-table:not(.table-card-layout) .table-member-name {
+    overflow: hidden;
+    color: var(--text-primary, #17233d);
+    font-size: .88rem;
+    font-weight: 900;
+    line-height: 1.35;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  body .members-table:not(.table-card-layout) .table-member-phone,
+  body .members-table:not(.table-card-layout) .member-identity-copy .table-sub,
+  body .members-table:not(.table-card-layout) .member-code-preview {
+    color: var(--text-secondary, #718096);
+    font-size: .72rem;
+    line-height: 1.45;
+  }
+
+  body .members-table:not(.table-card-layout) .table-actions,
+  body .members-table:not(.table-card-layout) .member-action-row > .table-actions {
+    display: flex;
+    min-width: 0;
+    min-height: 40px;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    flex-wrap: nowrap;
+    white-space: nowrap;
+  }
+
+  body .members-table:not(.table-card-layout) .table-actions > .table-action-visible,
+  body .members-table:not(.table-card-layout) .table-actions > .action-menu,
+  body .members-table:not(.table-card-layout) .table-actions > .btn,
+  body .members-table:not(.table-card-layout) .table-actions .action-menu-toggle {
+    width: 40px;
+    min-width: 40px;
+    height: 40px;
+    min-height: 40px;
+    flex: 0 0 40px;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border-radius: 10px;
+  }
+
+  body .members-table:not(.table-card-layout) .table-actions > [data-action="renew"] {
+    width: auto;
+    min-width: 126px;
+    flex: 0 0 auto;
+    gap: 7px;
+    padding-inline: 11px;
+  }
+
+  body .members-table:not(.table-card-layout) .table-actions .table-action-label {
+    display: inline;
+    overflow: visible;
+    font-size: .7rem;
+    font-weight: 900;
+    white-space: nowrap;
+  }
+
+  body .members-table:not(.table-card-layout) .action-menu {
+    position: relative;
+    display: inline-flex;
+    flex: 0 0 40px;
+  }
+
+  body .members-table:not(.table-card-layout) .action-menu-panel {
+    min-width: 190px;
+  }
+
+  body .members-table:not(.table-card-layout) .badge {
+    min-width: 74px;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 1199px) and (min-width: 768px) {
+  body .dashboard-hero {
+    grid-template-columns: minmax(0, 1fr) minmax(300px, .9fr);
+  }
+
+  body .dashboard-hero-content,
+  body .dashboard-hero-actions {
+    padding: 26px 22px;
+  }
+
+  body .dashboard-hero-heading h2,
+  body .dashboard-hero-heading h2 strong {
+    font-size: clamp(1.3rem, 2.5vw, 1.75rem);
+  }
+}
+
+@media (max-width: 767px) {
+  body .dashboard-hero {
+    display: flex;
+    min-height: 0;
+    flex-direction: column;
+    border-radius: 20px;
+  }
+
+  body .dashboard-hero::before {
+    opacity: .2;
+  }
+
+  body .dashboard-hero-content,
+  body .dashboard-hero-actions {
+    min-height: 0;
+    padding: 22px 18px;
+  }
+
+  body .dashboard-hero-content {
+    order: 1;
+  }
+
+  body .dashboard-hero-actions {
+    order: 2;
+  }
+
+  body .dashboard-hero-content {
+    gap: 18px;
+  }
+
+  body .dashboard-hero-actions {
+    gap: 15px;
+    border-top: 1px solid rgb(214 223 237 / .8);
+    border-inline-start: 0;
+  }
+
+  body .dashboard-hero-topline {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  body .dashboard-hero-heading h2,
+  body .dashboard-hero-heading h2 strong {
+    font-size: clamp(1.25rem, 6vw, 1.7rem);
+  }
+
+  body .dashboard-hero-meta {
+    margin-inline-start: 0;
+  }
+
+  body .dashboard-hero-buttons {
+    grid-template-columns: 1fr;
+  }
+
+  body .dashboard-hero-buttons .btn {
+    width: 100%;
+  }
+
+  body .dashboard-hero-mini-stats {
+    gap: 8px;
+  }
+
+  body .dashboard-hero-mini-stat {
+    min-height: 62px;
+    padding: 8px;
+  }
+
+  body .dashboard-hero-mini-stat-icon {
+    width: 28px;
+    height: 28px;
+    flex-basis: 28px;
+  }
+
+  body .dashboard-hero-mini-stat strong {
+    font-size: .72rem;
+  }
+}
+
+@media (max-width: 430px) {
+  body .dashboard-hero-content,
+  body .dashboard-hero-actions {
+    padding: 18px 14px;
+  }
+
+  body .dashboard-hero-mini-stats {
+    grid-template-columns: 1fr;
+  }
+
+  body .dashboard-hero-mini-stat {
+    min-height: 52px;
+  }
+}

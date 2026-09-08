@@ -128,6 +128,76 @@
         else dialog?.removeAttribute('open');
     }
 
+    function refreshContextDropdown(select) {
+        const field = select?.closest('[data-context-field]');
+        const trigger = field?.querySelector('.branch-context-trigger');
+        const menu = field?.querySelector('.branch-context-menu');
+        if (!select || !field || !trigger || !menu) return;
+
+        const selectedOption = select.options[select.selectedIndex];
+        const selectedValue = String(select.value || '');
+        const selectedLabel = selectedOption?.textContent?.trim() || '—';
+        const valueElement = trigger.querySelector('[data-context-value]');
+        if (valueElement) valueElement.textContent = selectedLabel;
+        trigger.disabled = Boolean(select.disabled);
+        trigger.setAttribute('aria-disabled', String(Boolean(select.disabled)));
+        trigger.setAttribute('aria-expanded', String(field.classList.contains('is-open')));
+
+        menu.innerHTML = Array.from(select.options).map((option) => {
+            const value = String(option.value || '');
+            const selected = value === selectedValue;
+            return `<button type="button" class="branch-context-option${selected ? ' is-selected' : ''}" role="option" aria-selected="${selected}" data-context-option="${escapeHtml(value)}"${select.disabled ? ' disabled' : ''}>${escapeHtml(option.textContent || '')}</button>`;
+        }).join('');
+
+        menu.querySelectorAll('[data-context-option]').forEach((optionButton) => {
+            optionButton.addEventListener('click', () => {
+                if (select.disabled) return;
+                select.value = optionButton.dataset.contextOption || '';
+                select.dispatchEvent(new Event('change', { bubbles: true }));
+                field.classList.remove('is-open');
+                trigger.setAttribute('aria-expanded', 'false');
+                trigger.focus();
+            });
+        });
+    }
+
+    function ensureContextDropdown(select, field) {
+        if (!select || !field) return;
+        if (!field.querySelector('.branch-context-trigger')) {
+            const trigger = document.createElement('button');
+            trigger.className = 'branch-context-trigger';
+            trigger.type = 'button';
+            trigger.setAttribute('aria-haspopup', 'listbox');
+            trigger.setAttribute('aria-expanded', 'false');
+            trigger.setAttribute('aria-label', select.getAttribute('aria-label') || (field.dataset.contextField === 'section' ? 'القسم الحالي' : 'الفرع الحالي'));
+            trigger.innerHTML = '<span data-context-value>—</span><span class="branch-context-trigger-chevron" aria-hidden="true"></span>';
+            const menu = document.createElement('div');
+            menu.className = 'branch-context-menu';
+            menu.id = `${select.id}Menu`;
+            menu.setAttribute('role', 'listbox');
+            trigger.setAttribute('aria-controls', menu.id);
+            field.querySelector('.branch-context-field-copy')?.append(trigger);
+            field.append(menu);
+
+            trigger.addEventListener('click', () => {
+                if (select.disabled) return;
+                const isOpen = field.classList.toggle('is-open');
+                trigger.setAttribute('aria-expanded', String(isOpen));
+            });
+            trigger.addEventListener('keydown', (event) => {
+                if (event.key === 'Escape') {
+                    field.classList.remove('is-open');
+                    trigger.setAttribute('aria-expanded', 'false');
+                }
+            });
+            select.addEventListener('change', () => {
+                refreshContextDropdown(select);
+                field.classList.remove('is-open');
+            });
+        }
+        refreshContextDropdown(select);
+    }
+
     function setTabVisibility(show) {
         const tab = document.querySelector('[data-page-tab="branches"]');
         if (tab) {
@@ -161,6 +231,7 @@
         else { select.value = ''; writeStoredBranch(''); }
         const selected = active.find((branch) => String(branch.id) === select.value);
         $('branchContextStatus').textContent = selected ? `${selected.status === 'active' ? 'نشط' : 'غير نشط'}` : 'عرض موحد';
+        refreshContextDropdown(select);
         if (sectionSelect) {
             const sectionField = document.getElementById('sectionContextField');
             const sections = (Array.isArray(data?.sections) ? data.sections : [])
@@ -175,6 +246,7 @@
             sectionSelect.disabled = !select.value || sections.length === 0;
             sectionSelect.hidden = !select.value;
             if (sectionField) sectionField.hidden = sectionSelect.hidden;
+            refreshContextDropdown(sectionSelect);
         }
         syncContextBar();
     }
@@ -278,6 +350,8 @@
         mountContextShell();
         ensureBranchTab();
         ensureBranchPanel();
+        ensureContextDropdown($('branchContextSelect'), document.querySelector('[data-context-field="branch"]'));
+        ensureContextDropdown($('sectionContextSelect'), $('sectionContextField'));
         $('branchCreateForm')?.addEventListener('submit', createBranch);
         $('branchCreateOpen')?.addEventListener('click', openBranchCreateDialog);
         $('branchCreateDialogClose')?.addEventListener('click', closeBranchCreateDialog);
