@@ -23,6 +23,25 @@
     function statusMarkup(status, className = 'saas-status') { const value = String(status || '').toLowerCase(); return `<span class="${className}" data-status="${escapeHtml(value)}">${escapeHtml(statusLabel(value))}</span>`; }
     function limit(value) { return value == null ? 'غير محدود' : numberFormatter.format(value); }
 
+    const featureLabels = Object.freeze({
+        dashboard: 'لوحة التحكم', members: 'إدارة المشتركين', attendance: 'الحضور والانصراف',
+        coaching: 'التدريب', nutrition: 'التغذية', ai: 'الذكاء الاصطناعي', library: 'المكتبة',
+        pricing: 'أسعار العضويات', payments: 'المدفوعات', finance: 'التقارير المالية',
+        day_passes: 'دخول اليوم الواحد', reports: 'التقارير', store: 'المتجر', inventory: 'المخزون',
+        branches: 'الفروع', bar: 'البار والوصفات', portal: 'البوابة', branding: 'هوية الجيم',
+        team: 'الفريق والصلاحيات', backup: 'النسخ الاحتياطي', audit: 'سجل النشاط', clients: 'إدارة العملاء',
+        assessments: 'القياسات والتقييمات', progress: 'متابعة التقدم', goals: 'الأهداف', sessions: 'الجلسات',
+        packages: 'الباقات', notifications: 'الإشعارات', tasks: 'مركز الإجراءات', templates: 'القوالب',
+        prioritySupport: 'دعم بأولوية'
+    });
+
+    function planFeaturesMarkup(plan) {
+        const catalog = state.billing?.featureCatalog || state.billing?.entitlements?.featureCatalog || [];
+        const enabled = catalog.filter((feature) => plan.features?.[feature.key] !== false);
+        if (!enabled.length) return '<li class="saas-plan-feature-empty">لا توجد مميزات إضافية مسجلة لهذه الباقة.</li>';
+        return enabled.map((feature) => `<li><span class="saas-plan-feature-check" aria-hidden="true">✓</span><span>${escapeHtml(featureLabels[feature.key] || feature.key)}</span></li>`).join('');
+    }
+
     function enhancePlanFeatureComparison(availablePlans, currentPlanId) {
         const catalog = state.billing?.featureCatalog || state.billing?.entitlements?.featureCatalog || [];
         if (!catalog.length) return;
@@ -85,10 +104,13 @@
         const select = $('saasPlanSelect');
         const currentPlanId = state.billing?.subscription?.plan?.id;
         const currentPlan = state.billing?.subscription?.plan;
-        const activePlans = (plans || []).filter((plan) => plan.isActive !== false);
-        const availablePlans = currentPlan && !activePlans.some((plan) => String(plan.id) === String(currentPlanId))
-            ? [currentPlan, ...activePlans]
-            : activePlans;
+        const uniquePlans = new Map();
+        [...(plans || []), ...(currentPlan ? [currentPlan] : [])].forEach((plan) => {
+            if (plan?.id == null || uniquePlans.has(String(plan.id))) return;
+            uniquePlans.set(String(plan.id), plan);
+        });
+        const availablePlans = [...uniquePlans.values()];
+        const activePlans = availablePlans.filter((plan) => plan.isActive !== false);
         if (select) {
             select.innerHTML = availablePlans.map((plan) => `<option value="${plan.id}" ${String(plan.id) === String(currentPlanId) ? 'selected' : ''} ${plan.isActive === false ? 'disabled' : ''}>${escapeHtml(plan.name)} — ${money(plan.price, plan.currency)} / ${plan.billingPeriod === 'yearly' ? 'سنة' : 'شهر'}${String(plan.id) === String(currentPlanId) ? ' · الباقة الحالية' : ''}</option>`).join('');
             select.disabled = !activePlans.length;
@@ -96,8 +118,75 @@
         if (!host) return;
         if (!availablePlans.length) { host.innerHTML = '<div class="saas-empty">لا توجد باقات مفعّلة حاليًا. راجع مدير المنصة.</div>'; return; }
         const selectedId = availablePlans.some((plan) => String(plan.id) === String(currentPlanId)) ? currentPlanId : availablePlans[0].id;
-        host.innerHTML = availablePlans.map((plan) => `<article class="saas-plan-card ${String(plan.id) === String(selectedId) ? 'is-selected' : ''} ${String(plan.id) === String(currentPlanId) ? 'is-current' : ''}" data-saas-plan-card="${plan.id}"><div class="saas-plan-card-heading"><span class="saas-plan-card-icon">${planIcon(plan)}</span><div><h5>${escapeHtml(plan.name)}</h5><span class="saas-muted">${escapeHtml(plan.description || '')}</span></div></div><div class="saas-plan-price">${money(plan.price, plan.currency)} <small>/ ${plan.billingPeriod === 'yearly' ? 'سنة' : 'شهر'}</small></div><ul class="saas-plan-limits"><li><span>الأعضاء</span><strong>${limit(plan.maxMembers)}</strong></li><li><span>المستخدمون</span><strong>${limit(plan.maxUsers)}</strong></li><li><span>AI شهريًا</span><strong>${limit(plan.maxAiGenerations)}</strong></li><li><span>الفروع</span><strong>${limit(plan.maxBranches)}</strong></li><li><span>التخزين</span><strong>${limit(plan.maxStorageMb)} MB</strong></li></ul><button class="btn btn-light btn-small" type="button" data-saas-select-plan="${plan.id}">${String(plan.id) === String(currentPlanId) ? 'الباقة الحالية' : 'اختيار الباقة'}</button></article>`).join('');
+        host.innerHTML = availablePlans.map((plan) => {
+            const isCurrent = String(plan.id) === String(currentPlanId);
+            const isSelected = String(plan.id) === String(selectedId);
+            return `<article class="saas-plan-card ${isSelected ? 'is-selected' : ''} ${isCurrent ? 'is-current' : ''}" data-saas-plan-card="${plan.id}" ${isCurrent ? 'aria-current="true"' : ''}><div class="saas-plan-card-heading"><span class="saas-plan-card-icon">${planIcon(plan)}</span><div><h5>${escapeHtml(plan.name)}</h5><span class="saas-muted">${escapeHtml(plan.description || '')}</span></div></div><div class="saas-plan-price">${money(plan.price, plan.currency)} <small>/ ${plan.billingPeriod === 'yearly' ? 'سنة' : 'شهر'}</small></div><ul class="saas-plan-limits"><li><span>الأعضاء</span><strong>${limit(plan.maxMembers)}</strong></li><li><span>المستخدمون</span><strong>${limit(plan.maxUsers)}</strong></li><li><span>AI شهريًا</span><strong>${limit(plan.maxAiGenerations)}</strong></li><li><span>الفروع</span><strong>${limit(plan.maxBranches)}</strong></li><li><span>التخزين</span><strong>${limit(plan.maxStorageMb)} MB</strong></li></ul><div class="saas-plan-features"><span class="saas-plan-features-title">مميزات الباقة</span><ul>${planFeaturesMarkup(plan)}</ul></div><button class="btn ${isCurrent ? 'btn-current-plan' : 'btn-light'} btn-small" type="button" data-saas-select-plan="${plan.id}" ${isCurrent ? 'disabled aria-pressed="true"' : ''}>${isCurrent ? 'الباقة الحالية' : 'اختيار الباقة'}</button></article>`;
+        }).join('');
         if (select) select.value = String(selectedId);
+    }
+
+    function setupPaymentProofUpload() {
+        const input = $('saasPaymentProof');
+        const box = input?.closest('.saas-upload-box');
+        if (!input || !box || box.dataset.uploadReady === 'true') return;
+        box.dataset.uploadReady = 'true';
+        box.setAttribute('role', 'group');
+        const copy = box.querySelector('div');
+        const fileName = document.createElement('span');
+        fileName.className = 'saas-upload-file-name';
+        fileName.setAttribute('aria-live', 'polite');
+        fileName.textContent = 'لم يتم اختيار ملف بعد';
+        copy?.appendChild(fileName);
+        const trigger = document.createElement('button');
+        trigger.className = 'saas-upload-trigger';
+        trigger.type = 'button';
+        trigger.textContent = 'اختيار ملف';
+        trigger.addEventListener('click', () => input.click());
+        box.appendChild(trigger);
+        const update = (file) => {
+            box.classList.toggle('has-file', Boolean(file));
+            fileName.textContent = file ? `${file.name} · ${Math.max(1, Math.round(file.size / 1024))} KB` : 'لم يتم اختيار ملف بعد';
+        };
+        input.addEventListener('change', () => update(input.files?.[0]));
+        box.addEventListener('dragover', (event) => { event.preventDefault(); box.classList.add('is-dragging'); });
+        box.addEventListener('dragleave', () => box.classList.remove('is-dragging'));
+        box.addEventListener('drop', (event) => {
+            event.preventDefault();
+            box.classList.remove('is-dragging');
+            const file = event.dataTransfer?.files?.[0];
+            if (!file) return;
+            const transfer = new DataTransfer();
+            transfer.items.add(file);
+            input.files = transfer.files;
+            update(file);
+        });
+    }
+
+    function setupRequestDialog() {
+        const page = $('saasBillingSection');
+        const panel = page?.querySelector('.saas-request-panel');
+        if (!page || !panel || panel.dataset.dialogReady === 'true') return;
+        panel.dataset.dialogReady = 'true';
+        const dialog = document.createElement('dialog');
+        dialog.className = 'saas-request-dialog';
+        dialog.setAttribute('aria-labelledby', 'saasRequestTitle');
+        const close = document.createElement('button');
+        close.className = 'btn btn-light btn-small saas-request-dialog-close';
+        close.type = 'button';
+        close.setAttribute('aria-label', 'إغلاق نموذج طلب الاشتراك');
+        close.textContent = 'إغلاق';
+        panel.querySelector('.saas-panel-head')?.appendChild(close);
+        close.addEventListener('click', () => dialog.close());
+        dialog.addEventListener('click', (event) => { if (event.target === dialog) dialog.close(); });
+        panel.parentElement.insertBefore(dialog, panel);
+        dialog.appendChild(panel);
+        const trigger = document.createElement('button');
+        trigger.className = 'btn btn-primary saas-request-open';
+        trigger.type = 'button';
+        trigger.innerHTML = '<span aria-hidden="true">＋</span><span>إرسال طلب اشتراك</span>';
+        trigger.addEventListener('click', () => dialog.showModal());
+        page.querySelector('.saas-page-header')?.appendChild(trigger);
     }
 
     function renderRequests(requests) {
@@ -200,6 +289,8 @@
     function bind() {
         $('saasSubscriptionForm')?.addEventListener('submit', submit);
         $('saasPlanSelect')?.addEventListener('change', (event) => selectPlan(event.target.value));
+        setupPaymentProofUpload();
+        setupRequestDialog();
         $('saasPlansList')?.addEventListener('click', (event) => {
             const button = event.target.closest('[data-saas-select-plan]');
             if (button) selectPlan(button.dataset.saasSelectPlan);
