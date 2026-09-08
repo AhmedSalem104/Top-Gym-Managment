@@ -113,23 +113,42 @@
     function renderPlans(plans) {
         const host = $('saasPlansList');
         const select = $('saasPlanSelect');
-        const currentPlanId = state.billing?.subscription?.plan?.id;
+        const subscriptionPlan = state.billing?.subscription?.plan || null;
+        const subscriptionPlanId = subscriptionPlan?.id ?? state.billing?.subscription?.planId ?? null;
+        const subscriptionPlanCode = String(subscriptionPlan?.code || state.billing?.subscription?.planCode || '').trim().toLowerCase();
+        const subscriptionPlanName = String(subscriptionPlan?.name || '').trim().toLowerCase();
         const uniquePlans = new Map();
         (plans || []).forEach((plan) => {
             if (plan?.id == null || uniquePlans.has(String(plan.id))) return;
             uniquePlans.set(String(plan.id), plan);
         });
+        // The current subscription is a real plan from the API, not a second
+        // catalog entry. Keep it visible once even if the active catalog no
+        // longer returns it, so the select and comparison always reflect the
+        // tenant's actual subscription.
+        if (subscriptionPlan?.id != null && !uniquePlans.has(String(subscriptionPlan.id))) {
+            uniquePlans.set(String(subscriptionPlan.id), subscriptionPlan);
+        }
         const availablePlans = [...uniquePlans.values()];
+        const currentPlan = availablePlans.find((plan) => {
+            if (subscriptionPlanId != null && String(plan.id) === String(subscriptionPlanId)) return true;
+            if (subscriptionPlanCode && String(plan.code || '').trim().toLowerCase() === subscriptionPlanCode) return true;
+            return !subscriptionPlanId && !subscriptionPlanCode && subscriptionPlanName && String(plan.name || '').trim().toLowerCase() === subscriptionPlanName;
+        }) || null;
+        const currentPlanId = currentPlan?.id ?? subscriptionPlanId;
         const activePlans = availablePlans.filter((plan) => plan.isActive !== false);
+        const requestPlans = currentPlan && !activePlans.some((plan) => String(plan.id) === String(currentPlan.id))
+            ? [currentPlan, ...activePlans]
+            : activePlans;
         if (select) {
-            const hasCurrentPlan = activePlans.some((plan) => String(plan.id) === String(currentPlanId));
-            select.innerHTML = `<option value="">اختر الباقة المطلوبة</option>${activePlans.map((plan) => `<option value="${plan.id}" ${String(plan.id) === String(currentPlanId) ? 'selected' : ''}>${escapeHtml(plan.name)} — ${money(plan.price, plan.currency)} / ${plan.billingPeriod === 'yearly' ? 'سنة' : 'شهر'}${String(plan.id) === String(currentPlanId) ? ' · الباقة الحالية' : ''}</option>`).join('')}`;
-            select.disabled = !activePlans.length;
-            if (hasCurrentPlan) select.value = String(currentPlanId);
+            const hasCurrentPlan = requestPlans.some((plan) => String(plan.id) === String(currentPlanId));
+            select.innerHTML = `<option value="">اختر الباقة المطلوبة</option>${requestPlans.map((plan) => `<option value="${plan.id}" ${String(plan.id) === String(currentPlanId) ? 'selected' : ''}>${escapeHtml(plan.name)} — ${money(plan.price, plan.currency)} / ${plan.billingPeriod === 'yearly' ? 'سنة' : 'شهر'}${String(plan.id) === String(currentPlanId) ? ' · الباقة الحالية' : ''}</option>`).join('')}`;
+            select.disabled = !requestPlans.length;
+            select.value = hasCurrentPlan ? String(currentPlanId) : '';
         }
         if (!host) return;
         if (!availablePlans.length) { host.innerHTML = '<div class="saas-empty">لا توجد باقات مفعّلة حاليًا. راجع مدير المنصة.</div>'; return; }
-        const selectedId = availablePlans.some((plan) => String(plan.id) === String(currentPlanId)) ? currentPlanId : null;
+        const selectedId = currentPlan?.id ?? null;
         host.innerHTML = availablePlans.map((plan) => {
             const isCurrent = String(plan.id) === String(currentPlanId);
             const isSelected = String(plan.id) === String(selectedId);

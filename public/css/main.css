@@ -22504,10 +22504,22 @@ body[data-theme="dark"] .saas-billing-page { background: linear-gradient(180deg,
 }
 
 .saas-billing-page .saas-request-open {
-    min-height: 44px;
+    min-width: 216px;
+    min-height: 52px;
     margin-inline-start: auto;
-    padding-inline: 18px;
+    padding-inline: 24px;
+    color: #fff !important;
+    font-size: 14px !important;
+    font-weight: 800;
+    letter-spacing: 0;
+    line-height: 1.35;
+    white-space: nowrap;
     box-shadow: 0 9px 22px color-mix(in srgb, var(--primary) 20%, transparent);
+}
+
+.saas-billing-page .saas-request-open span:last-child {
+    display: inline-block;
+    min-width: max-content;
 }
 
 .saas-billing-page .saas-plan-action-bar {
