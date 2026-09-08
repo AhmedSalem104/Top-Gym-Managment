@@ -1093,6 +1093,73 @@ body[data-theme="dark"] .saas-billing-page { background: linear-gradient(180deg,
     box-shadow: 0 9px 22px color-mix(in srgb, var(--primary) 20%, transparent);
 }
 
+.saas-billing-page .saas-plan-action-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 12px;
+    padding: 12px 16px;
+    border: 1px solid var(--subscription-line);
+    border-radius: 14px;
+    background: color-mix(in srgb, var(--subscription-panel) 82%, var(--subscription-accent-soft));
+}
+
+.saas-billing-page .saas-plan-action-bar > div {
+    display: grid;
+    gap: 3px;
+}
+
+.saas-billing-page .saas-plan-action-bar span {
+    color: var(--subscription-muted);
+    font-size: 11px;
+}
+
+.saas-billing-page .saas-plan-action-bar strong {
+    color: var(--text-primary);
+    font-size: 14px;
+}
+
+.saas-billing-page .saas-request-current {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+    padding: 11px 13px;
+    border: 1px solid color-mix(in srgb, var(--subscription-accent) 32%, var(--subscription-line));
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--subscription-accent-soft) 58%, var(--subscription-panel-soft));
+}
+
+.saas-billing-page .saas-request-current-icon {
+    display: inline-grid;
+    width: 30px;
+    height: 30px;
+    flex: 0 0 30px;
+    place-items: center;
+    border-radius: 50%;
+    background: var(--success-soft);
+    color: var(--success-text);
+    font-weight: 900;
+}
+
+.saas-billing-page .saas-request-current div {
+    display: grid;
+    min-width: 0;
+    gap: 2px;
+}
+
+.saas-billing-page .saas-request-current small,
+.saas-billing-page .saas-request-current span:not(.saas-request-current-icon) {
+    color: var(--subscription-muted);
+    font-size: 11px;
+}
+
+.saas-billing-page .saas-request-current strong {
+    color: var(--text-primary);
+    font-size: 14px;
+}
+
 .saas-request-dialog {
     width: min(700px, calc(100vw - 32px));
     max-width: 700px;
@@ -1133,6 +1200,12 @@ body[data-theme="dark"] .saas-billing-page { background: linear-gradient(180deg,
 }
 
 @media (max-width: 560px) {
+    .saas-billing-page .saas-plan-action-bar {
+        align-items: stretch;
+        flex-direction: column;
+        gap: 10px;
+    }
+
     .saas-billing-page .saas-page-header {
         align-items: stretch;
     }

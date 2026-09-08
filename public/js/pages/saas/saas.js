@@ -86,6 +86,17 @@
             ? Math.max(0, Math.min(100, ((durationDays - Number(daysRemaining)) / durationDays) * 100))
             : 0;
         host.innerHTML = `<article class="saas-summary-card saas-summary-gym"><span>الجيم</span><strong>${escapeHtml(billing.tenant.name)}</strong><p dir="ltr">${escapeHtml(billing.tenant.slug)}</p></article><article class="saas-summary-card saas-summary-status"><div class="saas-summary-card-top"><span>حالة الاشتراك</span>${subscription ? statusMarkup(subscription.status) : statusMarkup('expired')}</div><strong>${subscription ? statusLabel(subscription.status) : 'بدون اشتراك'}</strong><div class="saas-summary-progress" aria-hidden="true"><span style="width:${progress}%"></span></div><p>${daysRemaining == null ? 'لا يوجد تاريخ انتهاء محدد' : `${numberFormatter.format(Math.max(0, daysRemaining))} يوم متبقٍ`}</p></article><article class="saas-summary-card"><span>الباقة الحالية</span><strong>${escapeHtml(plan?.name || 'بدون باقة')}</strong><p>${plan?.billingPeriod === 'yearly' ? 'دورة سنوية' : plan?.billingPeriod === 'monthly' ? 'دورة شهرية' : 'بيانات الاشتراك'}</p></article><article class="saas-summary-card"><span>تاريخ الاشتراك</span><strong>${subscription?.startsAt ? date(subscription.startsAt) : 'غير محدد'}</strong><p>${subscription?.expiresAt ? `حتى ${date(subscription.expiresAt)}` : 'اشتراك مفتوح'}</p></article><article class="saas-summary-card"><span>المشتركون</span><strong>${numberFormatter.format(Number(billing.usage?.members || 0))}</strong><p>من حد ${limit(plan?.maxMembers)} عضو</p></article>`;
+        renderRequestContext();
+    }
+
+    function renderRequestContext() {
+        const host = $('saasRequestCurrent');
+        if (!host) return;
+        const subscription = state.billing?.subscription;
+        const plan = subscription?.plan;
+        host.innerHTML = plan
+            ? `<span class="saas-request-current-icon" aria-hidden="true">✓</span><div><small>الاشتراك الحالي</small><strong>${escapeHtml(plan.name)}</strong><span>${escapeHtml(statusLabel(subscription.status))}${subscription.expiresAt ? ` · حتى ${escapeHtml(date(subscription.expiresAt))}` : ''}</span></div>`
+            : '<span class="saas-request-current-icon" aria-hidden="true">i</span><div><small>الاشتراك الحالي</small><strong>لا توجد باقة مفعّلة</strong><span>اختر باقة من القائمة الحالية لإرسال الطلب.</span></div>';
     }
 
     function planIcon(plan) {
@@ -103,27 +114,28 @@
         const host = $('saasPlansList');
         const select = $('saasPlanSelect');
         const currentPlanId = state.billing?.subscription?.plan?.id;
-        const currentPlan = state.billing?.subscription?.plan;
         const uniquePlans = new Map();
-        [...(plans || []), ...(currentPlan ? [currentPlan] : [])].forEach((plan) => {
+        (plans || []).forEach((plan) => {
             if (plan?.id == null || uniquePlans.has(String(plan.id))) return;
             uniquePlans.set(String(plan.id), plan);
         });
         const availablePlans = [...uniquePlans.values()];
         const activePlans = availablePlans.filter((plan) => plan.isActive !== false);
         if (select) {
-            select.innerHTML = availablePlans.map((plan) => `<option value="${plan.id}" ${String(plan.id) === String(currentPlanId) ? 'selected' : ''} ${plan.isActive === false ? 'disabled' : ''}>${escapeHtml(plan.name)} — ${money(plan.price, plan.currency)} / ${plan.billingPeriod === 'yearly' ? 'سنة' : 'شهر'}${String(plan.id) === String(currentPlanId) ? ' · الباقة الحالية' : ''}</option>`).join('');
+            const hasCurrentPlan = activePlans.some((plan) => String(plan.id) === String(currentPlanId));
+            select.innerHTML = `<option value="">اختر الباقة المطلوبة</option>${activePlans.map((plan) => `<option value="${plan.id}" ${String(plan.id) === String(currentPlanId) ? 'selected' : ''}>${escapeHtml(plan.name)} — ${money(plan.price, plan.currency)} / ${plan.billingPeriod === 'yearly' ? 'سنة' : 'شهر'}${String(plan.id) === String(currentPlanId) ? ' · الباقة الحالية' : ''}</option>`).join('')}`;
             select.disabled = !activePlans.length;
+            if (hasCurrentPlan) select.value = String(currentPlanId);
         }
         if (!host) return;
         if (!availablePlans.length) { host.innerHTML = '<div class="saas-empty">لا توجد باقات مفعّلة حاليًا. راجع مدير المنصة.</div>'; return; }
-        const selectedId = availablePlans.some((plan) => String(plan.id) === String(currentPlanId)) ? currentPlanId : availablePlans[0].id;
+        const selectedId = availablePlans.some((plan) => String(plan.id) === String(currentPlanId)) ? currentPlanId : null;
         host.innerHTML = availablePlans.map((plan) => {
             const isCurrent = String(plan.id) === String(currentPlanId);
             const isSelected = String(plan.id) === String(selectedId);
             return `<article class="saas-plan-card ${isSelected ? 'is-selected' : ''} ${isCurrent ? 'is-current' : ''}" data-saas-plan-card="${plan.id}" ${isCurrent ? 'aria-current="true"' : ''}><div class="saas-plan-card-heading"><span class="saas-plan-card-icon">${planIcon(plan)}</span><div><h5>${escapeHtml(plan.name)}</h5><span class="saas-muted">${escapeHtml(plan.description || '')}</span></div></div><div class="saas-plan-price">${money(plan.price, plan.currency)} <small>/ ${plan.billingPeriod === 'yearly' ? 'سنة' : 'شهر'}</small></div><ul class="saas-plan-limits"><li><span>الأعضاء</span><strong>${limit(plan.maxMembers)}</strong></li><li><span>المستخدمون</span><strong>${limit(plan.maxUsers)}</strong></li><li><span>AI شهريًا</span><strong>${limit(plan.maxAiGenerations)}</strong></li><li><span>الفروع</span><strong>${limit(plan.maxBranches)}</strong></li><li><span>التخزين</span><strong>${limit(plan.maxStorageMb)} MB</strong></li></ul><div class="saas-plan-features"><span class="saas-plan-features-title">مميزات الباقة</span><ul>${planFeaturesMarkup(plan)}</ul></div><button class="btn ${isCurrent ? 'btn-current-plan' : 'btn-light'} btn-small" type="button" data-saas-select-plan="${plan.id}" ${isCurrent ? 'disabled aria-pressed="true"' : ''}>${isCurrent ? 'الباقة الحالية' : 'اختيار الباقة'}</button></article>`;
         }).join('');
-        if (select) select.value = String(selectedId);
+        if (select) select.value = selectedId == null ? '' : String(selectedId);
     }
 
     function setupPaymentProofUpload() {
@@ -166,7 +178,8 @@
     function setupRequestDialog() {
         const page = $('saasBillingSection');
         const panel = page?.querySelector('.saas-request-panel');
-        if (!page || !panel || panel.dataset.dialogReady === 'true') return;
+        const plansPanel = page?.querySelector('.saas-plans-panel');
+        if (!page || !panel || !plansPanel || panel.dataset.dialogReady === 'true') return;
         panel.dataset.dialogReady = 'true';
         const dialog = document.createElement('dialog');
         dialog.className = 'saas-request-dialog';
@@ -177,16 +190,25 @@
         close.setAttribute('aria-label', 'إغلاق نموذج طلب الاشتراك');
         close.textContent = 'إغلاق';
         panel.querySelector('.saas-panel-head')?.appendChild(close);
+        const currentContext = document.createElement('div');
+        currentContext.id = 'saasRequestCurrent';
+        currentContext.className = 'saas-request-current';
+        panel.querySelector('.saas-panel-head')?.after(currentContext);
         close.addEventListener('click', () => dialog.close());
         dialog.addEventListener('click', (event) => { if (event.target === dialog) dialog.close(); });
         panel.parentElement.insertBefore(dialog, panel);
         dialog.appendChild(panel);
+        const actionBar = document.createElement('div');
+        actionBar.className = 'saas-plan-action-bar';
+        actionBar.innerHTML = '<div><span>إدارة اشتراك الجيم</span><strong>هل تريد الترقية أو التجديد؟</strong></div>';
         const trigger = document.createElement('button');
         trigger.className = 'btn btn-primary saas-request-open';
         trigger.type = 'button';
         trigger.innerHTML = '<span aria-hidden="true">＋</span><span>إرسال طلب اشتراك</span>';
         trigger.addEventListener('click', () => dialog.showModal());
-        page.querySelector('.saas-page-header')?.appendChild(trigger);
+        actionBar.appendChild(trigger);
+        plansPanel.parentElement.insertBefore(actionBar, plansPanel);
+        renderRequestContext();
     }
 
     function renderRequests(requests) {
