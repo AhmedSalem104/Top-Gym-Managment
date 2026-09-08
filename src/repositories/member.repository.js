@@ -159,10 +159,10 @@ const MEMBER_ROW_COLUMNS = [
     'daysRemaining'
 ].join(', ');
 
-const MEMBER_CTE = `${MEMBER_ROWS_CTE}
-SELECT ${MEMBER_ROW_COLUMNS}, COUNT(1) OVER() AS totalCount
-FROM member_rows
-`;
+// Keep the CTE definition reusable across findById and list. A CTE is scoped
+// to the single statement that follows it; embedding a SELECT here caused
+// list() to append a second statement and lose the member_rows scope.
+const MEMBER_CTE = MEMBER_ROWS_CTE;
 
 const ORDER_BY = Object.freeze({
     expiry: 'effectiveEndDate ASC, fullName ASC, id ASC',
@@ -175,7 +175,10 @@ async function findById({ id, connection = null, today = todayInTimeZone() }) {
     return pool.request()
         .input('today', sql.Date, toUtcDate(today))
         .input('id', sql.Int, id)
-        .query(`${MEMBER_CTE} WHERE id = @id;`);
+        .query(`${MEMBER_CTE}
+                SELECT ${MEMBER_ROW_COLUMNS}, COUNT(1) OVER() AS totalCount
+                FROM member_rows
+                WHERE id = @id;`);
 }
 
 async function list({ search = '', status = '', sort = 'expiry', offset = 0, pageSize = 5, today = todayInTimeZone(), branchId = null, sectionId = null }) {

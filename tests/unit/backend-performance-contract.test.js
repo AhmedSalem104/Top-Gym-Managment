@@ -45,3 +45,9 @@ test('member lists reuse portal-code previews without a per-member hydration fan
     assert.doesNotMatch(appSource, /hydrateMemberPortalCodes/u);
     assert.doesNotMatch(paginationSource, /hydrateMemberPortalCodes/u);
 });
+
+test('member repository keeps the reusable CTE scoped to the following statement', () => {
+    const source = read('src/repositories/member.repository.js');
+    assert.match(source, /const MEMBER_CTE = MEMBER_ROWS_CTE;/u);
+    assert.match(source, /\.query\(`\$\{MEMBER_CTE\}[\s\S]*?FROM member_rows[\s\S]*?WHERE id = @id/u);
+});

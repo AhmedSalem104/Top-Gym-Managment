@@ -181,3 +181,46 @@ The execution environment successfully authenticated to the approved VPS using t
 ### Measurement boundary
 
 Authenticated p50/p95 for Dashboard, Members, Attendance, Reports and Bootstrap remains `BLOCKED` until an approved QA session and safe SQL diagnostic environment are supplied. No chat-shared password, authentication bypass, production write, migration, or schema/index change was used. Public health verification remains `PASS`; it is not relabeled as authenticated endpoint performance evidence.
+
+## 2026-09-09 local authenticated QA verification
+
+The missing authenticated measurement path was completed safely against the isolated local database `LogicFit_QA_20260907`. The runner creates only ephemeral local SQL access and ephemeral QA password hashes in the local QA database, logs in through the real authentication endpoint, and removes the temporary SQL login after the run. No Production credential, customer data, Production database, migration, or schema/index change was used.
+
+The prepared QA fixture contained 500 synthetic members, 450 memberships, 450 payment rows and 450 attendance rows under Tenant 1. The application was mounted with the real Express routes, authentication, tenant context, RLS/readiness checks and services; schema bootstrap replay was not run against the prepared QA database.
+
+### Authenticated API results
+
+Five measured warm samples were collected after one warm-up request per route. Cache was intentionally disabled for this run so the result measures application/SQL behavior without attributing a cache benefit that was not measured.
+
+| Endpoint | Warm p50 | Warm p95 | DB p95 | DB queries | Payload | Result |
+| --- | ---: | ---: | ---: | ---: | ---: | --- |
+| `/api/dashboard` | 68.07ms | 71.34ms | 49.11ms | 18 | 326,621B | PASS |
+| `/api/members` | 37.24ms | 40.84ms | 33.61ms | 13 | 17,909B | PASS |
+| `/api/attendance` | 16.64ms | 23.24ms | 20.02ms | 11 | 127B | PASS |
+| `/api/reports` | 242.94ms | 251.69ms | 228.10ms | 26 | 481,793B | PASS |
+| `/api/bootstrap` | 63.10ms | 66.04ms | 46.32ms | 15 | 331,954B | PASS |
+| `/api/branches` | 16.39ms* | 23.82ms* | 17.49ms* | 10 | — | PASS |
+| `/api/branches/bootstrap` | 25.87ms* | 29.71ms* | 24.19ms* | 17 | — | PASS |
+
+`*` Branch measurements are five post-warm-up samples; the harness records the raw samples and Server-Timing headers separately from the baseline JSON report.
+
+### Browser authenticated runtime
+
+- Real Chromium login was completed against the local application with the ephemeral QA Owner account.
+- Authenticated shell initial load: 4 API requests, 0 duplicate requests.
+- Navigation through Dashboard → Members → Attendance → Reports: 0 duplicate API requests in the authenticated phase.
+- Failed API requests: 0.
+- Console errors: 0.
+- The anonymous login page and the authenticated shell are intentionally measured as separate phases; their session/branding requests are not counted as duplicates of the authenticated shell.
+
+### Backend correction included in this pass
+
+`src/repositories/member.repository.js` had a real SQL Server CTE-scope defect: the reusable `member_rows` CTE embedded a `SELECT`, while `list()` appended a second statement. SQL Server therefore returned `Invalid object name 'member_rows'` for Members and Bootstrap in the prepared QA path. The CTE is now definition-only, and `findById()` owns its following `SELECT`. The regression contract test covers this scope requirement. After the correction, service diagnostics and both HTTP routes returned 200.
+
+### Safe SQL evidence
+
+The QA database Query Store is enabled in `READ_WRITE` mode and contains aggregate runtime statistics from the authenticated run. The top observed aggregate was an exercise-catalog query at approximately 112ms average and approximately 10,326 logical reads per execution; it is outside the core Gym Owner critical path and no index or schema change was applied. Query Store also recorded the members-list shape at approximately 14.62ms average and approximately 2,554 logical reads per execution. Full execution-plan XML/seek-vs-scan classification remains `NOT VERIFIED`; no Production SQL diagnostic command was run.
+
+### Production boundary after local verification
+
+These measurements are `LOCAL AUTHENTICATED QA`, not Production evidence. The documented Production authenticated baseline remains the historical pre-patch baseline until a separately authorized Production QA session is available. The local result does not change any Production status and does not prove the current Production deployment contains the CTE correction until a release is deployed and a Production smoke/benchmark is run.

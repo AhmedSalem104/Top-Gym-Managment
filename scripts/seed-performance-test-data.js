@@ -4,6 +4,7 @@ require('dotenv').config();
 
 const { getPricingCatalog } = require('../src/services/member-service');
 const { closePool, getPool, initDatabase, sql } = require('../src/db');
+const { runTenantContext } = require('../src/tenancy/tenant-context');
 const { todayInTimeZone } = require('../src/utils/date');
 const { assertSafeDatabaseTarget } = require('./verification-target');
 
@@ -160,10 +161,12 @@ async function insertJson(request, parameterName, rows, query) {
         .query(query);
 }
 
-async function main() {
-    assertSeedTarget();
+async function seedData() {
     const count = parseCount();
-    await initDatabase();
+    // A prepared local QA database already has its schema and migration chain.
+    // Skipping the bootstrap schema replay avoids re-running legacy ledger
+    // reconciliation while keeping the normal staging seed behavior intact.
+    if (String(process.env.PERF_SEED_SKIP_INIT || '').trim() !== '1') await initDatabase();
     const pool = await getPool();
     const existing = await pool.request()
         .input('seedTag', sql.NVarChar(100), SEED_TAG)
@@ -306,6 +309,15 @@ async function main() {
         await transaction.rollback().catch(() => {});
         throw error;
     }
+}
+
+async function main() {
+    assertSeedTarget();
+    const tenantId = Number(process.env.PERF_SEED_TENANT_ID || 1);
+    if (!Number.isInteger(tenantId) || tenantId <= 0) {
+        throw new Error('PERF_SEED_TENANT_ID must be a positive integer.');
+    }
+    return runTenantContext({ tenantId, mode: 'tenant' }, seedData);
 }
 
 if (require.main === module) {

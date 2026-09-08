@@ -268,10 +268,11 @@ function createTenantRoutes(tenantHeaders) {
     const today = todayInTimeZone();
     const from = `${today.slice(0, 7)}-01`;
     const searchTerm = String(process.env.PERF_MEMBER_SEARCH || '').trim().slice(0, 100);
+    const includeMemberPortalRoutes = String(process.env.PERF_INCLUDE_MEMBER_PORTAL_ROUTES ?? '1').trim() !== '0';
     const searchRoute = searchTerm
         ? [{ name: 'member-search', path: `/api/members?search=${encodeURIComponent(searchTerm)}&page=1&pageSize=20`, reportPath: '/api/members?search=:fixture&page=1&pageSize=20' }]
         : [];
-    return [
+    const routes = [
         { name: 'session', path: '/api/auth/session' },
         { name: 'members', path: '/api/members?page=1&pageSize=20', captureBody: (body) => Number(body?.members?.[0]?.id || 0) || null },
         ...searchRoute,
@@ -287,11 +288,15 @@ function createTenantRoutes(tenantHeaders) {
         { name: 'store-dashboard', path: '/api/store/dashboard' },
         { name: 'store-reports', path: `/api/store/reports?from=${from}&to=${today}` },
         { name: 'store-bootstrap', path: '/api/store/bootstrap' },
-        { name: 'member-portal-library-options', path: '/api/member-portal/library/options' },
-        { name: 'member-portal-exercises', path: '/api/member-portal/library/exercises?page=1&pageSize=18' },
-        { name: 'member-portal-foods', path: '/api/member-portal/library/foods?page=1&pageSize=18' },
         { name: 'bootstrap', path: '/api/bootstrap' }
-    ].map((route) => ({ ...route, headers: tenantHeaders }));
+    ];
+    if (includeMemberPortalRoutes) {
+        routes.splice(routes.length - 1, 0,
+            { name: 'member-portal-library-options', path: '/api/member-portal/library/options' },
+            { name: 'member-portal-exercises', path: '/api/member-portal/library/exercises?page=1&pageSize=18' },
+            { name: 'member-portal-foods', path: '/api/member-portal/library/foods?page=1&pageSize=18' });
+    }
+    return routes.map((route) => ({ ...route, headers: tenantHeaders }));
 }
 
 function createPlatformRoutes() {
