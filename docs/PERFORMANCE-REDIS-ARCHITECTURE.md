@@ -77,7 +77,7 @@ The query count is the application request-level metric, not a claim about the n
 
 ## Verification after code changes
 
-- Unit suite: `360/360 PASS`
+- Unit suite: `361/361 PASS`
 - Frontend dedup focused tests: `3/3 PASS`
 - Performance baseline contract tests: `12/12 PASS`
 - Visual QA: `PASS`
@@ -89,12 +89,15 @@ The query count is the application request-level metric, not a claim about the n
 - Production `/api/health/live`: `200`.
 - Final Production cache sample: `10` hits, `2` misses, `0` errors, `2` sets, average cache operation `207.45ms`.
 - Post-optimization local regression: unit `360/360 PASS`, database readiness `19/19 PASS`, performance contracts `12/12 PASS`, and syntax checks for the changed JavaScript files `PASS`.
-- Latest clean Production release: deployment `dpl_5X47pHK5ahxhXcTwiHojmAMfqRUQ`, Git SHA `ee12474539e6c64488ce3f6f1b37a09993212118`, ref `main`, Vercel `gitDirty` metadata absent. The production alias returned `/api/health=200`, `/api/health/live=200`, and cache status `healthy` after this release.
+- Latest clean Production release: deployment `dpl_8AKFJZmqgXKUJgJJeTaEYu8LTvLe`, Git SHA `c9d6e704f2be95b114d5eb4e92c7bc2d503e4c4f`, ref `main`, Vercel `gitDirty` metadata absent. The production alias returned `/api/health=200`, `/api/health/live=200`, and the cache health probe returned `healthy` after this release.
 - Authenticated endpoint remeasurement after the latest clean release: `NOT VERIFIED`. The authorized Production secret store exposes the Platform Admin email metadata but did not provide a password value to the local measurement process; no chat-shared password was copied into a command, file, log, or source. The earlier authenticated Server-Timing baseline remains valid and is not relabeled as post-release evidence.
+- Current read-only health probes after the release: `/api/health=200`, database `connected`, storage `configured`, cache `enabled=true` and `status=healthy`. The process-local cache counters showed no new cache hit/miss during health-only probes; the previously measured cache sample remains `10 hits / 12 total cache reads` (83.33%) and is not relabeled as a fresh authenticated sample.
 
 ## VPS discovery
 
 Target: `128.140.58.112`
+
+Current SSH revalidation from the execution environment: `BLOCKED` (`publickey` authentication was denied). No password fallback was attempted. The VPS and Redis observations below are retained from the earlier approved read-only inspection and are not presented as a new direct SSH measurement.
 
 | Item | Observed |
 | --- | --- |
