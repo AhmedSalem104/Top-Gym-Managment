@@ -22522,6 +22522,11 @@ body[data-theme="dark"] .saas-billing-page { background: linear-gradient(180deg,
     min-width: max-content;
 }
 
+body .saas-billing-page .saas-request-open,
+body .saas-billing-page .saas-request-open span {
+    color: #fff !important;
+}
+
 .saas-billing-page .saas-plan-action-bar {
     display: flex;
     align-items: center;

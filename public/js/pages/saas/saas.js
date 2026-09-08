@@ -118,23 +118,33 @@
         const subscriptionPlanCode = String(subscriptionPlan?.code || state.billing?.subscription?.planCode || '').trim().toLowerCase();
         const subscriptionPlanName = String(subscriptionPlan?.name || '').trim().toLowerCase();
         const uniquePlans = new Map();
+        const planKey = (plan) => {
+            const code = String(plan?.code || '').trim().toLowerCase();
+            if (code) return `code:${code}`;
+            if (plan?.id != null) return `id:${String(plan.id)}`;
+            const name = String(plan?.name || '').trim().toLowerCase();
+            return name ? `name:${name}|${String(plan?.billingPeriod || '').toLowerCase()}` : '';
+        };
+        const planMatchesCurrent = (plan) => {
+            if (subscriptionPlanId != null && String(plan?.id) === String(subscriptionPlanId)) return true;
+            if (subscriptionPlanCode && String(plan?.code || '').trim().toLowerCase() === subscriptionPlanCode) return true;
+            return !subscriptionPlanId && !subscriptionPlanCode && subscriptionPlanName && String(plan?.name || '').trim().toLowerCase() === subscriptionPlanName;
+        };
+        const addPlan = (plan) => {
+            const key = planKey(plan);
+            if (!key || uniquePlans.has(key)) return;
+            uniquePlans.set(key, plan);
+        };
         (plans || []).forEach((plan) => {
-            if (plan?.id == null || uniquePlans.has(String(plan.id))) return;
-            uniquePlans.set(String(plan.id), plan);
+            addPlan(plan);
         });
         // The current subscription is a real plan from the API, not a second
         // catalog entry. Keep it visible once even if the active catalog no
         // longer returns it, so the select and comparison always reflect the
         // tenant's actual subscription.
-        if (subscriptionPlan?.id != null && !uniquePlans.has(String(subscriptionPlan.id))) {
-            uniquePlans.set(String(subscriptionPlan.id), subscriptionPlan);
-        }
+        if (subscriptionPlan && ![...uniquePlans.values()].some(planMatchesCurrent)) addPlan(subscriptionPlan);
         const availablePlans = [...uniquePlans.values()];
-        const currentPlan = availablePlans.find((plan) => {
-            if (subscriptionPlanId != null && String(plan.id) === String(subscriptionPlanId)) return true;
-            if (subscriptionPlanCode && String(plan.code || '').trim().toLowerCase() === subscriptionPlanCode) return true;
-            return !subscriptionPlanId && !subscriptionPlanCode && subscriptionPlanName && String(plan.name || '').trim().toLowerCase() === subscriptionPlanName;
-        }) || null;
+        const currentPlan = availablePlans.find(planMatchesCurrent) || null;
         const currentPlanId = currentPlan?.id ?? subscriptionPlanId;
         const activePlans = availablePlans.filter((plan) => plan.isActive !== false);
         const requestPlans = currentPlan && !activePlans.some((plan) => String(plan.id) === String(currentPlan.id))

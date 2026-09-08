@@ -119,3 +119,11 @@ test('portal analytics is Owner-only and tenant-scoped', () => {
     assert.equal(canAccessRoleRequest({ role: 'Owner', permissions: [] }, request), true);
     assert.equal(canAccessRoleRequest({ role: 'Assistant', permissions: ['portal.analytics.read'] }, request), false);
 });
+
+test('tenant SaaS payment-proof reads resolve to the subscription-read permission', () => {
+    const request = { path: '/saas/payment-proofs/42/file', method: 'GET' };
+    assert.deepEqual(permissionForRequest(request).all, ['saas.subscription.read']);
+    assert.equal(permissionForRequest(request).ownerOnly, true);
+    assert.equal(canAccessRoleRequest({ role: 'Owner', permissions: [] }, request), true);
+    assert.equal(canAccessRoleRequest({ role: 'Assistant', permissions: ['saas.subscription.read'] }, request), false);
+});
