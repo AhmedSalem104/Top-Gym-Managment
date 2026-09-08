@@ -27,6 +27,8 @@ Authenticated timing was collected against the Production alias with an approved
 | Production authenticated Attendance | 200; p50 3484ms, p95 3730ms | PASS |
 | Production authenticated Reports | 200; p50 4811ms, p95 5251ms, 38.6KB | PASS |
 | Production authenticated Branch bootstrap after read-only fix | 200 on 3/3 samples; p50 5099ms | PASS |
+| Production Platform Admin dashboard | 200 on 3/3 samples; 0.72-1.60s, 11.6KB | PASS |
+| Production Platform Admin tenants/requests/plans | 200 on 9/9 samples; 0.58-1.69s, 2.8-3.4KB | PASS |
 | SQL execution-plan/logical-read evidence | Not exposed by the safe Production run | NOT VERIFIED |
 
 ## Root causes found
@@ -124,6 +126,6 @@ Candidate resources, subject to measured value and invalidation:
 ## Remaining bottlenecks / gaps
 
 - SQL Server execution-plan evidence (logical reads, seeks/scans and sort cost) was not collected because the safe Production run intentionally did not enable diagnostic SQL commands.
-- Platform Admin and Trainer authenticated p50/p95 require separate approved QA sessions; Gym Owner coverage is verified above.
+- Trainer Studio and Member/Trainer Portal authenticated p50/p95 require separate approved QA sessions; Gym Owner and Platform Admin coverage is verified above.
 - Production cache hit ratio is instance/traffic dependent; the final observed sample had 10 hits and 2 misses with no errors.
 - The dominant remaining latency is database/application cold-start and remote SQL work, with authenticated p95 values commonly in the 3.7-5.6s range.
