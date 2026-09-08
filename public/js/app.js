@@ -349,6 +349,18 @@
             return trackedPromise;
         }
 
+        function dashboardSubscriptionValue() {
+            const billing = state.saasSubscription || {};
+            const candidates = [
+                billing.subscription,
+                billing.currentSubscription,
+                billing.entitlements?.subscription,
+                billing.data?.subscription,
+                billing.data?.entitlements?.subscription
+            ].filter(Boolean);
+            return candidates.find((candidate) => candidate.plan || candidate.planName || candidate.startsAt || candidate.starts_at) || candidates[0] || {};
+        }
+
         function syncDashboardHeroStats() {
             document.querySelectorAll('[data-dashboard-hero-source]').forEach((card) => {
                 const source = document.getElementById(card.dataset.dashboardHeroSource);
@@ -358,11 +370,14 @@
                 const number = Number(raw.replace(/[^\d.-]/g, ''));
                 value.textContent = raw && Number.isFinite(number) ? number.toLocaleString('en-US') : raw;
             });
-            const subscription = state.saasSubscription?.subscription || {};
+            const subscription = dashboardSubscriptionValue();
+            const plan = typeof subscription.plan === 'string' ? { name: subscription.plan } : (subscription.plan || {});
+            const planName = plan.name || subscription.planName || subscription.plan_name || '—';
+            const subscriptionStart = subscription.startsAt || subscription.startDate || subscription.starts_at || subscription.start_date || null;
             const planValue = document.querySelector('[data-dashboard-hero-subscription="plan"] [data-dashboard-hero-value]');
             const dateValue = document.querySelector('[data-dashboard-hero-subscription="date"] [data-dashboard-hero-value]');
-            if (planValue) planValue.textContent = subscription.plan?.name || '—';
-            if (dateValue) dateValue.textContent = subscription.startsAt ? formatDate(subscription.startsAt) : '—';
+            if (planValue) planValue.textContent = planName;
+            if (dateValue) dateValue.textContent = subscriptionStart ? formatDate(subscriptionStart) : '—';
         }
 
          function renderDashboard() {
