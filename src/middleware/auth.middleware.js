@@ -223,7 +223,12 @@ function createAuthApiMiddleware({ authService, isAuthorizedCronRequest, tenantS
                         await assertTenantIsolationReady();
                         user = await authService.withPermissions(user, { readOnly: readOnlyRequest });
                         if (saasService) {
-                            request.saas = await saasService.enforceTenantAccess(tenant.id, { path: request.path, method: request.method, readOnly: readOnlyRequest });
+                            request.saas = await saasService.enforceTenantAccess(tenant.id, {
+                                path: request.path,
+                                method: request.method,
+                                readOnly: readOnlyRequest,
+                                tenant
+                            });
                             await saasService.enforceRequestLimit(tenant.id, {
                                 path: request.path,
                                 method: request.method,

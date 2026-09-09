@@ -101,12 +101,7 @@ function safeJson(value) {
     try { return JSON.parse(String(value)); } catch (_) { return null; }
 }
 
-async function assertGymTenant() {
-    const id = tenantId();
-    const result = await getPool().then((pool) => pool.request()
-        .input('tenantId', sql.Int, id)
-        .query('SELECT TOP (1) tenant_type,status FROM dbo.gym_tenants WHERE id=@tenantId;'));
-    const row = result.recordset[0];
+function assertGymTenantRow(row, id) {
     if (!row) throw branchError('Tenant was not found.', 404, 'TENANT_NOT_FOUND');
     if (String(row.tenant_type || '').toLowerCase() !== TENANT_TYPES.GYM) {
         throw branchError('Branches are available for Gym tenants only.', 403, 'BRANCHES_GYM_ONLY');
@@ -114,19 +109,29 @@ async function assertGymTenant() {
     return { tenantId: id, status: String(row.status || '') };
 }
 
+async function assertGymTenant() {
+    const id = tenantId();
+    const result = await getPool().then((pool) => pool.request()
+        .input('tenantId', sql.Int, id)
+        .query('SELECT TOP (1) tenant_type,status FROM dbo.gym_tenants WHERE id=@tenantId;'));
+    return assertGymTenantRow(result.recordset[0], id);
+}
+
 async function getBranch(branchId, { includeArchived = false, requireActive = false } = {}) {
     const id = idValue(branchId);
-    const tenant = await assertGymTenant();
     const result = await getPool().then((pool) => pool.request()
-        .input('tenantId', sql.Int, tenant.tenantId)
+        .input('tenantId', sql.Int, tenantId())
         .input('branchId', sql.Int, id)
         .input('includeArchived', sql.Bit, includeArchived ? 1 : 0)
-        .query(`SELECT b.*,c.store_enabled,c.bar_enabled
+        .query(`SELECT TOP (1) tenant_type,status FROM dbo.gym_tenants WHERE id=@tenantId;
+
+                SELECT b.*,c.store_enabled,c.bar_enabled
                 FROM dbo.gym_branches b
                 LEFT JOIN dbo.gym_branch_commerce_config c ON c.branch_id=b.id AND c.tenant_id=b.tenant_id
                 WHERE b.tenant_id=@tenantId AND b.id=@branchId
                   AND (@includeArchived=1 OR b.status<>'archived');`));
-    const row = result.recordset[0];
+    const tenant = assertGymTenantRow(result.recordsets?.[0]?.[0], tenantId());
+    const row = result.recordsets?.[1]?.[0];
     if (!row) throw branchError('Branch was not found.', 404, 'BRANCH_NOT_FOUND');
     if (requireActive && !canAcceptNewOperations(row.status)) {
         throw branchError('This branch is not active for new operations.', 409, 'BRANCH_NOT_ACTIVE');
@@ -135,33 +140,38 @@ async function getBranch(branchId, { includeArchived = false, requireActive = fa
 }
 
 async function listBranches({ includeArchived = false, includeInactive = true } = {}) {
-    const tenant = await assertGymTenant();
+    const id = tenantId();
     const result = await getPool().then((pool) => pool.request()
-        .input('tenantId', sql.Int, tenant.tenantId)
+        .input('tenantId', sql.Int, id)
         .input('includeArchived', sql.Bit, includeArchived ? 1 : 0)
         .input('includeInactive', sql.Bit, includeInactive ? 1 : 0)
-        .query(`SELECT b.*,c.store_enabled,c.bar_enabled
+        .query(`SELECT TOP (1) tenant_type,status FROM dbo.gym_tenants WHERE id=@tenantId;
+
+                SELECT b.*,c.store_enabled,c.bar_enabled
                 FROM dbo.gym_branches b
                 LEFT JOIN dbo.gym_branch_commerce_config c ON c.branch_id=b.id AND c.tenant_id=b.tenant_id
                 WHERE b.tenant_id=@tenantId
                   AND (@includeArchived=1 OR b.status<>'archived')
                   AND (@includeInactive=1 OR b.status='active')
                 ORDER BY b.is_main_branch DESC,b.status,b.name,b.id;`));
-    return result.recordset.map(branchDto);
+    assertGymTenantRow(result.recordsets?.[0]?.[0], id);
+    return (result.recordsets?.[1] || []).map(branchDto);
 }
 
 async function getAllowedBranches({ userId = null, role = null, includeArchived = false } = {}) {
-    const tenant = await assertGymTenant();
+    const id = tenantId();
     const user = Number(userId);
     const isOwner = String(role || '').toLowerCase() === 'owner';
     if (!isOwner && (!Number.isInteger(user) || user <= 0)) return [];
     const result = await getPool().then((pool) => pool.request()
-        .input('tenantId', sql.Int, tenant.tenantId)
+        .input('tenantId', sql.Int, id)
         .input('userId', sql.Int, user)
         .input('isOwner', sql.Bit, isOwner ? 1 : 0)
         .input('includeArchived', sql.Bit, includeArchived ? 1 : 0)
         .input('includeInactive', sql.Bit, includeArchived ? 0 : 1)
-        .query(`SELECT b.*,c.store_enabled,c.bar_enabled
+        .query(`SELECT TOP (1) tenant_type,status FROM dbo.gym_tenants WHERE id=@tenantId;
+
+                SELECT b.*,c.store_enabled,c.bar_enabled
                 FROM dbo.gym_branches AS b
                 LEFT JOIN dbo.gym_branch_commerce_config AS c
                   ON c.branch_id=b.id AND c.tenant_id=b.tenant_id
@@ -176,7 +186,8 @@ async function getAllowedBranches({ userId = null, role = null, includeArchived 
                         AND a.user_id=@userId
                   ))
                 ORDER BY b.is_main_branch DESC,b.status,b.name,b.id;`));
-    return result.recordset.map(branchDto);
+    assertGymTenantRow(result.recordsets?.[0]?.[0], id);
+    return (result.recordsets?.[1] || []).map(branchDto);
 }
 
 async function assertBranchAccess(branchId, { userId = null, role = null, requireActive = true } = {}) {

@@ -1136,10 +1136,31 @@ async function getCurrentSubscription(tenantId = currentTenantId({ required: tru
                 FROM dbo.saas_tenant_subscriptions s
                 INNER JOIN dbo.saas_plans p ON p.id=s.plan_id
                 WHERE s.tenant_id=@tenantId
-                ORDER BY CASE s.status WHEN 'active' THEN 0 WHEN 'trial' THEN 1 WHEN 'expired' THEN 2 WHEN 'suspended' THEN 3 ELSE 4 END, s.updated_at DESC,s.id DESC;`);
-    const subscriptionRow = result.recordset[0];
-    const subscriptionPlanTypes = subscriptionRow ? await getPlanTenantTypes(subscriptionRow.plan_id) : [];
-    const subscriptionFeatureMap = subscriptionRow ? await getPlanFeatures([subscriptionRow.plan_id]) : new Map();
+                ORDER BY CASE s.status WHEN 'active' THEN 0 WHEN 'trial' THEN 1 WHEN 'expired' THEN 2 WHEN 'suspended' THEN 3 ELSE 4 END, s.updated_at DESC,s.id DESC;
+
+                SELECT tenant_type
+                FROM dbo.${PLAN_COMPATIBILITY_TABLE}
+                WHERE plan_id=(SELECT TOP (1) s.plan_id
+                               FROM dbo.saas_tenant_subscriptions s
+                               WHERE s.tenant_id=@tenantId
+                               ORDER BY CASE s.status WHEN 'active' THEN 0 WHEN 'trial' THEN 1 WHEN 'expired' THEN 2 WHEN 'suspended' THEN 3 ELSE 4 END, s.updated_at DESC,s.id DESC)
+                ORDER BY tenant_type;
+
+                SELECT plan_id,feature_key,is_enabled
+                FROM dbo.saas_plan_features
+                WHERE plan_id=(SELECT TOP (1) s.plan_id
+                               FROM dbo.saas_tenant_subscriptions s
+                               WHERE s.tenant_id=@tenantId
+                               ORDER BY CASE s.status WHEN 'active' THEN 0 WHEN 'trial' THEN 1 WHEN 'expired' THEN 2 WHEN 'suspended' THEN 3 ELSE 4 END, s.updated_at DESC,s.id DESC)
+                ORDER BY plan_id,feature_key;`);
+    const subscriptionRow = result.recordsets?.[0]?.[0] || null;
+    const subscriptionPlanTypes = (result.recordsets?.[1] || []).map((row) => resolveTenantType(row.tenant_type));
+    const subscriptionFeatureMap = new Map();
+    for (const row of result.recordsets?.[2] || []) {
+        const features = subscriptionFeatureMap.get(Number(row.plan_id)) || {};
+        features[String(row.feature_key)] = Boolean(row.is_enabled);
+        subscriptionFeatureMap.set(Number(row.plan_id), features);
+    }
     const hydratedRow = subscriptionRow
         ? { ...subscriptionRow, features_json: JSON.stringify(subscriptionFeatureMap.get(Number(subscriptionRow.plan_id)) || parseFeatures(subscriptionRow.features_json)) }
         : null;
@@ -1179,22 +1200,22 @@ async function getTenantOverrides(tenantId = currentTenantId({ required: true })
     };
 }
 
-async function getEffectiveEntitlements(tenantId = currentTenantId({ required: true }), subscription = null, { readOnly = false } = {}) {
+async function getEffectiveEntitlements(tenantId = currentTenantId({ required: true }), subscription = null, { readOnly = false, tenantType = null } = {}) {
     const id = tenantIdValue(tenantId);
     const current = subscription || await getCurrentSubscription(id, { readOnly });
-    const tenantType = await tenantService.getTenantType(id);
+    const resolvedTenantType = tenantType || await tenantService.getTenantType(id);
     // Historical expired/suspended subscriptions remain readable even if a
     // later plan-catalog change no longer lists their tenant type. Active
     // operational access is the point at which compatibility is mandatory.
     if (current?.plan && ['active', 'trial'].includes(String(current.status).toLowerCase())) {
-        assertPlanCompatibleForTenantType(current.plan, tenantType);
+        assertPlanCompatibleForTenantType(current.plan, resolvedTenantType);
     }
     const base = current?.limitsSnapshot || (current ? null : {});
     const baseFeatures = current?.featuresSnapshot || current?.plan?.features || {};
     const overrides = await getTenantOverrides(id, { readOnly });
     const subscriptionStatus = current?.status || 'none';
     const limits = capabilityService.resolveEffectiveLimits({
-        tenantType,
+        tenantType: resolvedTenantType,
         planLimits: base,
         overrideLimits: overrides,
         subscriptionStatus,
@@ -1202,19 +1223,19 @@ async function getEffectiveEntitlements(tenantId = currentTenantId({ required: t
     });
     const features = { ...baseFeatures, ...(overrides?.features || {}) };
     const capabilities = capabilityService.resolveEffectiveCapabilities({
-        tenantType,
+        tenantType: resolvedTenantType,
         features,
         subscriptionStatus
     });
-    const catalog = featureCatalog.getFeatureCatalog({ tenantType });
+    const catalog = featureCatalog.getFeatureCatalog({ tenantType: resolvedTenantType });
     return {
-        tenantType,
+        tenantType: resolvedTenantType,
         plan: current?.plan || null,
         subscription: current,
         overrides,
         limits,
         limitsResolution: {
-            tenantType,
+            tenantType: resolvedTenantType,
             subscriptionActive: ['trial', 'active'].includes(String(subscriptionStatus).toLowerCase()),
             source: 'tenant-type+plan+overrides'
         },
@@ -1265,25 +1286,31 @@ function recoveryRequest(path, method) {
         || (/^\/saas\/subscription-requests\/\d+\/proof$/.test(normalizedPath) && normalizedMethod === 'POST');
 }
 
-async function enforceTenantAccess(tenantId, { path = '', method = 'GET', readOnly = false } = {}) {
+async function enforceTenantAccess(tenantId, { path = '', method = 'GET', readOnly = false, tenant: tenantContext = null } = {}) {
     const id = tenantIdValue(tenantId);
     if (!readOnly) await syncExpiredTenants();
-    const pool = await getPool();
-    const tenantResult = await pool.request().input('tenantId', sql.Int, id).query('SELECT TOP (1) id,status FROM dbo.gym_tenants WHERE id=@tenantId;');
-    const tenant = tenantResult.recordset[0];
-    if (!tenant) throw saasError('الجيم المطلوب غير موجود.', 404, 'TENANT_NOT_FOUND');
-    if (String(tenant.status) === 'archived') throw saasError('هذا الجيم مؤرشف ولا يمكن الدخول إليه.', 403, 'TENANT_ARCHIVED');
+    const tenant = tenantContext && Number(tenantContext.id) === id ? tenantContext : null;
+    const pool = tenant ? null : await getPool();
+    const tenantResult = tenant
+        ? null
+        : await pool.request().input('tenantId', sql.Int, id).query('SELECT TOP (1) id,status,tenant_type FROM dbo.gym_tenants WHERE id=@tenantId;');
+    const resolvedTenant = tenant || tenantResult?.recordset?.[0];
+    if (!resolvedTenant) throw saasError('الجيم المطلوب غير موجود.', 404, 'TENANT_NOT_FOUND');
+    if (String(resolvedTenant.status) === 'archived') throw saasError('هذا الجيم مؤرشف ولا يمكن الدخول إليه.', 403, 'TENANT_ARCHIVED');
 
     const subscription = await getCurrentSubscription(id, { readOnly });
-    const entitlements = await getEffectiveEntitlements(id, subscription, { readOnly });
+    const entitlements = await getEffectiveEntitlements(id, subscription, {
+        readOnly,
+        tenantType: resolvedTenant.tenantType || resolvedTenant.tenant_type || null
+    });
     const canRecover = recoveryRequest(path, method);
     if (!subscription || !['active', 'trial'].includes(subscription.status) || (subscription.expiresAt && new Date(subscription.expiresAt).getTime() <= Date.now())) {
-        if (canRecover) return { tenantStatus: tenant.status, subscription, recovery: true };
-        throw saasError('اشتراك الجيم في منصة الجيم غير نشط أو انتهت مدته. يمكنك رفع إثبات دفع لتجديد الاشتراك.', 402, 'SAAS_SUBSCRIPTION_REQUIRED', { subscription, tenantStatus: tenant.status });
+        if (canRecover) return { tenantStatus: resolvedTenant.status, subscription, recovery: true };
+        throw saasError('اشتراك الجيم في منصة الجيم غير نشط أو انتهت مدته. يمكنك رفع إثبات دفع لتجديد الاشتراك.', 402, 'SAAS_SUBSCRIPTION_REQUIRED', { subscription, tenantStatus: resolvedTenant.status });
     }
-    if (!['trial', 'active'].includes(String(tenant.status))) {
-        if (canRecover) return { tenantStatus: tenant.status, subscription, recovery: true };
-        throw saasError('تم إيقاف وصول هذا الجيم مؤقتًا. تواصل مع إدارة المنصة.', 403, 'TENANT_NOT_ACTIVE', { subscription, tenantStatus: tenant.status });
+    if (!['trial', 'active'].includes(String(resolvedTenant.status))) {
+        if (canRecover) return { tenantStatus: resolvedTenant.status, subscription, recovery: true };
+        throw saasError('تم إيقاف وصول هذا الجيم مؤقتًا. تواصل مع إدارة المنصة.', 403, 'TENANT_NOT_ACTIVE', { subscription, tenantStatus: resolvedTenant.status });
     }
 
     try {
@@ -1308,7 +1335,7 @@ async function enforceTenantAccess(tenantId, { path = '', method = 'GET', readOn
         }
         throw error;
     }
-    return { tenantStatus: tenant.status, subscription, entitlements, recovery: false };
+    return { tenantStatus: resolvedTenant.status, subscription, entitlements, recovery: false };
 }
 
 async function getUsage(tenantId = currentTenantId({ required: true }), { readOnly = false } = {}) {
