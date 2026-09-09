@@ -324,7 +324,7 @@ async function assertSectionAccess(sectionId, branchId, { userId = null, role = 
     return sectionDto(row);
 }
 
-async function bootstrap({ userId = null, role = null, readOnly = false } = {}) {
+async function bootstrap({ userId = null, role = null, readOnly = false, tenantType = null } = {}) {
     const allowedBranchesPromise = getAllowedBranches({ userId, role });
     const allBranchesPromise = String(role || '').toLowerCase() === 'owner'
         ? allowedBranchesPromise.then((branches) => branches.filter((branch) => branch.status === BRANCH_STATUS.ACTIVE))
@@ -335,7 +335,7 @@ async function bootstrap({ userId = null, role = null, readOnly = false } = {}) 
         branches.map((branch) => getSectionsForAuthorizedBranch(branch))
     );
     const sections = sectionsByBranch.flat();
-    const entitlements = await saasService.getEffectiveEntitlements(tenantId(), null, { readOnly });
+    const entitlements = await saasService.getEffectiveEntitlements(tenantId(), null, { readOnly, tenantType });
     return {
         branches,
         activeBranches: all,

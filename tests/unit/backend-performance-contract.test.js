@@ -13,8 +13,8 @@ test('branch bootstrap loads independent branch sections concurrently', () => {
     assert.match(source, /const sectionsByBranch = await Promise\.all\(/u);
     assert.match(source, /branches\.map\(\(branch\) => getSectionsForAuthorizedBranch\(branch\)\)/u);
     assert.match(source, /async function getSectionsForAuthorizedBranch\(branch/u);
-    assert.match(source, /async function bootstrap\(\{ userId = null, role = null, readOnly = false \} = \{\}\)/u);
-    assert.match(source, /getEffectiveEntitlements\(tenantId\(\), null, \{ readOnly \}\)/u);
+    assert.match(source, /async function bootstrap\(\{ userId = null, role = null, readOnly = false, tenantType = null \} = \{\}\)/u);
+    assert.match(source, /getEffectiveEntitlements\(tenantId\(\), null, \{ readOnly, tenantType \}\)/u);
     assert.match(source, /const sections = sectionsByBranch\.flat\(\);/u);
 });
 
