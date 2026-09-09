@@ -216,7 +216,12 @@ function createAuthApiMiddleware({ authService, isAuthorizedCronRequest, tenantS
                         return next();
                     });
                 }
-                return tenantService.resolveTenantForUser(user.id, requestedTenantSlug(request), { readOnly: readOnlyRequest }).then((tenant) => {
+                const tenantSlug = requestedTenantSlug(request);
+                const sessionTenant = !tenantSlug ? user._primaryTenant : null;
+                const tenantPromise = sessionTenant
+                    ? Promise.resolve(sessionTenant)
+                    : tenantService.resolveTenantForUser(user.id, tenantSlug, { readOnly: readOnlyRequest });
+                return tenantPromise.then((tenant) => {
                     if (!tenant) return response.status(403).json({ error: 'الحساب غير مرتبط بجيم نشط، أو أن الجيم المطلوب لا يطابق عضوية الحساب.', code: 'TENANT_ACCESS_REQUIRED' });
                     request.tenant = tenant;
                     return runTenantContext({ tenantId: tenant.id, userId: user.id, mode: 'tenant', readOnlyBaseline: Boolean(request.readOnlyBaseline) }, async () => {

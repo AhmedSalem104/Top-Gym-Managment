@@ -302,7 +302,7 @@ function sessionDays() {
 function safeUser(row) {
     if (!row) return null;
     const role = String(row.role || 'Assistant');
-    return {
+    const user = {
         id: Number(row.id),
         name: row.full_name,
         email: row.email,
@@ -314,6 +314,27 @@ function safeUser(row) {
         permissions: ROLE_PERMISSIONS[role] || [],
         lastLoginAt: row.last_login_at ? new Date(row.last_login_at).toISOString() : null
     };
+    // Session lookup already resolves the user's trusted primary tenant. Keep
+    // this internal hint non-enumerable so the public session contract stays
+    // unchanged; the request middleware may reuse it when no explicit tenant
+    // slug was requested and still falls back to the canonical resolver for
+    // explicit tenant selection.
+    if (row.primary_tenant_id) {
+        Object.defineProperty(user, '_primaryTenant', {
+            enumerable: false,
+            configurable: true,
+            value: {
+                id: Number(row.primary_tenant_id),
+                name: String(row.primary_tenant_name || ''),
+                slug: String(row.primary_tenant_slug || ''),
+                tenantType: row.tenant_type == null ? null : resolveTenantType(row.tenant_type),
+                status: String(row.tenant_status || 'active'),
+                role: row.tenant_role ? String(row.tenant_role) : null,
+                isPrimary: Boolean(row.tenant_is_primary)
+            }
+        });
+    }
+    return user;
 }
 
 const TEMPORARY_PASSWORD_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%';
