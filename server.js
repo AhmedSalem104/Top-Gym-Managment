@@ -1,5 +1,6 @@
 require('dotenv').config();
 
+const crypto = require('node:crypto');
 const path = require('node:path');
 const express = require('express');
 const { createApp } = require('./src/app');
@@ -9,7 +10,7 @@ const { registerRoutes } = require('./src/routes');
 const { isAuthorizedCronRequest } = require('./src/middleware/cron.middleware');
 const { createAuthApiMiddleware, ownerOnly } = require('./src/middleware/auth.middleware');
 const { createBackupActionRateLimit, createLoginAttemptGuard, createSensitiveRateLimit, createMembershipPortalRateLimit } = require('./src/middleware/rate-limit.middleware');
-const { closePool, getPool, initDatabase } = require('./src/database');
+const { closePool, getPool, initDatabase, sql } = require('./src/database');
 const backupService = require('./src/services/backup-service');
 const { createConfiguredObjectStorageService } = require('./src/services/object-storage-service');
 const { createBackupRecoveryService } = require('./src/services/backup-recovery-service');
@@ -100,6 +101,70 @@ const backupActionRateLimit = createBackupActionRateLimit();
 const allowLoginAttempt = createLoginAttemptGuard();
 app.use('/api', sensitiveRateLimit);
 app.use('/api/member-portal', membershipPortalRateLimit);
+
+// Temporary, explicitly enabled maintenance path for the first membership
+// key transition. It is intentionally placed before the normal authenticated
+// API middleware because it uses a dedicated one-time operational secret,
+// never a browser session. The route is removed after the transition.
+function isAuthorizedMembershipRewrapRequest(request) {
+    if (process.env.MEMBERSHIP_REWRAP_JOB_ENABLED !== 'true') return false;
+    const configured = String(process.env.MEMBERSHIP_REWRAP_JOB_SECRET || '');
+    const authorization = String(request.get('authorization') || '');
+    const presented = authorization.startsWith('Bearer ') ? authorization.slice(7) : '';
+    if (!configured || !presented) return false;
+    const expected = Buffer.from(configured, 'utf8');
+    const actual = Buffer.from(presented, 'utf8');
+    return expected.length === actual.length && crypto.timingSafeEqual(expected, actual);
+}
+
+app.post('/api/internal/maintenance/membership-rewrap', asyncRoute(async (request, response) => {
+    if (!isAuthorizedMembershipRewrapRequest(request)) return response.status(404).json({ error: 'Not found.' });
+    const requestedLimit = Number(request.body?.limit || request.query?.limit || 10);
+    const limit = Math.min(25, Math.max(1, Number.isInteger(requestedLimit) ? requestedLimit : 10));
+    const requestedAfterId = Number(request.body?.afterId || request.query?.afterId || 0);
+    const afterId = Number.isInteger(requestedAfterId) && requestedAfterId > 0 ? requestedAfterId : 0;
+    const result = await runTenantContext({ mode: 'platform' }, async () => {
+        const pool = await getPool();
+        const rows = await pool.request()
+            .input('afterId', sql.Int, afterId)
+            .input('limit', sql.Int, limit)
+            .query(`SELECT TOP (@limit) id, tenant_id
+                    FROM dbo.members
+                    WHERE id > @afterId
+                      AND membership_code_hash IS NOT NULL
+                      AND membership_code_ciphertext IS NOT NULL
+                      AND membership_code_revoked_at IS NULL
+                    ORDER BY id ASC;`);
+        let succeeded = 0;
+        let skipped = 0;
+        let failed = 0;
+        let nextAfterId = afterId;
+        for (const row of rows.recordset || []) {
+            const memberId = Number(row.id);
+            const tenantId = Number(row.tenant_id);
+            try {
+                const outcome = await runTenantContext({ tenantId, mode: 'tenant' }, () => membershipCodeService.rewrapMemberCodeIfPrevious(memberId));
+                nextAfterId = memberId;
+                if (outcome.rewrapped) succeeded += 1;
+                else skipped += 1;
+            } catch (_) {
+                failed += 1;
+                break;
+            }
+        }
+        return {
+            selected: (rows.recordset || []).length,
+            succeeded,
+            skipped,
+            failed,
+            nextAfterId: failed ? afterId : nextAfterId,
+            complete: failed === 0 && (rows.recordset || []).length < limit
+        };
+    });
+    response.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    response.json({ ok: true, ...result });
+}));
+
 app.use('/api', createAuthApiMiddleware({
     authService,
     permissionService,
