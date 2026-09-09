@@ -137,6 +137,8 @@ app.post('/api/internal/maintenance/membership-rewrap', asyncRoute(async (reques
                     ORDER BY id ASC;`);
         let succeeded = 0;
         let skipped = 0;
+        let alreadyCurrent = 0;
+        let notActive = 0;
         let failed = 0;
         let nextAfterId = afterId;
         for (const row of rows.recordset || []) {
@@ -146,7 +148,11 @@ app.post('/api/internal/maintenance/membership-rewrap', asyncRoute(async (reques
                 const outcome = await runTenantContext({ tenantId, mode: 'tenant' }, () => membershipCodeService.rewrapMemberCodeIfPrevious(memberId));
                 nextAfterId = memberId;
                 if (outcome.rewrapped) succeeded += 1;
-                else skipped += 1;
+                else {
+                    skipped += 1;
+                    if (outcome.reason === 'already_current') alreadyCurrent += 1;
+                    if (outcome.reason === 'not_active') notActive += 1;
+                }
             } catch (_) {
                 failed += 1;
                 break;
@@ -156,6 +162,8 @@ app.post('/api/internal/maintenance/membership-rewrap', asyncRoute(async (reques
             selected: (rows.recordset || []).length,
             succeeded,
             skipped,
+            alreadyCurrent,
+            notActive,
             failed,
             nextAfterId: failed ? afterId : nextAfterId,
             complete: failed === 0 && (rows.recordset || []).length < limit
