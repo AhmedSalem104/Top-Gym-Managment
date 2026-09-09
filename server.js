@@ -42,6 +42,7 @@ const commercialSchema = require('./src/services/commercial-schema');
 const commercialService = require('./src/services/commercial-service');
 const memberSubscriptionService = require('./src/services/member-subscription-service');
 const { createGymRegistrationService } = require('./src/services/gym-registration-service');
+const { secretRing } = require('./src/services/secret-ring');
 const platformAdminService = require('./src/services/platform-admin-service');
 const { runTenantContext } = require('./src/tenancy/tenant-context');
 const { ensureAuthReady } = authService;
@@ -350,6 +351,10 @@ app.use((error, request, response, next) => {
 });
 
 async function start() {
+    // Critical cryptographic purposes must be present before a production
+    // process accepts traffic. Legacy aliases remain accepted by the ring
+    // during the controlled transition; unrelated secrets never qualify.
+    if (config.nodeEnv === 'production') secretRing.assertRequiredSecrets();
     await runTenantContext({ mode: 'platform', tenantId: 1 }, () => initDatabase());
     await runTenantContext({ mode: 'platform', tenantId: 1 }, () => tenantService.ensureTenantTables());
     const bootstrapTenant = await runTenantContext({ mode: 'platform', tenantId: 1 }, () => tenantService.ensureBootstrapTenant());

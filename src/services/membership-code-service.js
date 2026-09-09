@@ -3,12 +3,15 @@
 const crypto = require('node:crypto');
 const { getPool, sql } = require('../database');
 const { config } = require('../config/env');
+const { secretRing } = require('./secret-ring');
+const { createMembershipCodeCrypto } = require('./membership-code-crypto');
 const { currentTenantId, getTenantContext, runTenantContext } = require('../tenancy/tenant-context');
 
 const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const CODE_PATTERN = /^TG[A-HJ-NP-Z2-9]{16}$/;
 const AUDIT_ACTIONS = new Set(['issued', 'viewed', 'whatsapp_sent', 'rotated', 'portal_viewed']);
 let storagePromise;
+const codeCrypto = createMembershipCodeCrypto(secretRing);
 
 function appError(message, statusCode = 400, code = null) {
     const error = new Error(message);
@@ -24,31 +27,13 @@ function ensurePositiveId(value) {
     return id;
 }
 
-function secretSource() {
-    // The explicit secret is recommended. The fallbacks keep existing
-    // installations stable while they roll out the new environment value.
-    return String(
-        config.membershipCodeSecret
-        || process.env.SESSION_SECRET
-        || config.authOwnerPassword
-        || config.mssqlConnectionString
-        || 'TOP_GYM_MEMBERSHIP_CODE_FALLBACK'
-    );
-}
-
-function encryptionKey() {
-    return crypto.createHash('sha256').update(secretSource()).digest();
-}
-
 function normalizeCode(value) {
     const compact = String(value || '').trim().toUpperCase().replace(/[\s-]/g, '');
     if (!CODE_PATTERN.test(compact)) throw appError('كود العضوية غير صحيح.', 400, 'INVALID_MEMBERSHIP_CODE');
     return compact;
 }
 
-function hashCode(compactCode) {
-    return crypto.createHmac('sha256', secretSource()).update(compactCode).digest('hex');
-}
+const { hashCode } = codeCrypto;
 
 function formatCode(compactCode) {
     const compact = String(compactCode || '').replace(/[^A-Z0-9]/gi, '').toUpperCase();
@@ -62,21 +47,6 @@ function generateCode() {
     let body = '';
     for (const byte of bytes) body += CODE_ALPHABET[byte & 31];
     return formatCode(`TG${body}`);
-}
-
-function encryptCode(compactCode) {
-    const iv = crypto.randomBytes(12);
-    const cipher = crypto.createCipheriv('aes-256-gcm', encryptionKey(), iv);
-    const encrypted = Buffer.concat([cipher.update(compactCode, 'utf8'), cipher.final()]);
-    return [iv, cipher.getAuthTag(), encrypted].map((part) => part.toString('base64url')).join('.');
-}
-
-function decryptCode(value) {
-    const [ivEncoded, tagEncoded, dataEncoded] = String(value || '').split('.');
-    if (!ivEncoded || !tagEncoded || !dataEncoded) throw new Error('Invalid membership code ciphertext.');
-    const decipher = crypto.createDecipheriv('aes-256-gcm', encryptionKey(), Buffer.from(ivEncoded, 'base64url'));
-    decipher.setAuthTag(Buffer.from(tagEncoded, 'base64url'));
-    return Buffer.concat([decipher.update(Buffer.from(dataEncoded, 'base64url')), decipher.final()]).toString('utf8');
 }
 
 function maskCode(value) {
@@ -186,8 +156,8 @@ async function saveNewCode(connection, memberId, { action = 'issued', userId = n
     const request = connection.request();
     const code = generateCode();
     const compact = normalizeCode(code);
-    const hash = hashCode(compact);
-    const ciphertext = encryptCode(compact);
+    const hash = codeCrypto.hashCode(compact);
+    const ciphertext = codeCrypto.encryptCode(compact);
     request
         .input('memberId', sql.Int, id)
         .input('hash', sql.Char(64), hash)
@@ -246,8 +216,8 @@ async function backfillCodes(pool) {
                 const compact = normalizeCode(code);
                 const update = await pool.request()
                     .input('memberId', sql.Int, id)
-                    .input('hash', sql.Char(64), hashCode(compact))
-                    .input('ciphertext', sql.NVarChar(512), encryptCode(compact))
+                    .input('hash', sql.Char(64), codeCrypto.hashCode(compact))
+                    .input('ciphertext', sql.NVarChar(512), codeCrypto.encryptCode(compact))
                     .query(`UPDATE dbo.members
                             SET membership_code_hash = @hash,
                                 membership_code_ciphertext = @ciphertext,
@@ -274,7 +244,7 @@ async function issueForMember(memberId, connection = null, options = {}) {
         .query(`SELECT membership_code_hash, membership_code_ciphertext, membership_code_revoked_at FROM dbo.members WHERE id = @memberId;`);
     if (!existing.recordset[0]) throw appError('العضو غير موجود.', 404);
     if (existing.recordset[0].membership_code_hash && existing.recordset[0].membership_code_ciphertext && !existing.recordset[0].membership_code_revoked_at) {
-        return formatCode(decryptCode(existing.recordset[0].membership_code_ciphertext));
+        return formatCode(codeCrypto.decryptWithVerification(existing.recordset[0].membership_code_ciphertext).plaintext);
     }
     const issued = await saveNewCode(db, id, options);
     if (options.audit !== false) await audit(id, options.action || 'issued', { ...options, connection: db });
@@ -302,7 +272,7 @@ async function getPreview(memberId) {
         return { active: false, maskedCode: null, issuedAt: null, version: Number(row?.membership_code_version || 0) };
     }
     let code;
-    try { code = formatCode(decryptCode(row.membership_code_ciphertext)); } catch (_) { code = null; }
+    try { code = formatCode(codeCrypto.decryptWithVerification(row.membership_code_ciphertext).plaintext); } catch (_) { code = null; }
     return {
         active: Boolean(code),
         maskedCode: code ? maskCode(code) : null,
@@ -333,7 +303,7 @@ async function getPreviews(memberIds = []) {
     for (const row of result.recordset || []) {
         let code = null;
         if (row.membership_code_hash && row.membership_code_ciphertext && !row.membership_code_revoked_at) {
-            try { code = formatCode(decryptCode(row.membership_code_ciphertext)); } catch (_) { code = null; }
+            try { code = formatCode(codeCrypto.decryptWithVerification(row.membership_code_ciphertext).plaintext); } catch (_) { code = null; }
         }
         previews.set(Number(row.id), {
             active: Boolean(code),
@@ -364,7 +334,7 @@ async function getForMember(memberId, { userId = null, request = null, action = 
         throw appError('لا يوجد كود نشط لهذا العضو.', 404, 'MEMBERSHIP_CODE_NOT_ACTIVE');
     }
     let code;
-    try { code = formatCode(decryptCode(row.membership_code_ciphertext)); } catch (_) {
+    try { code = formatCode(codeCrypto.decryptWithVerification(row.membership_code_ciphertext).plaintext); } catch (_) {
         throw appError('تعذر قراءة كود العضوية. أصدر كودًا جديدًا.', 500, 'MEMBERSHIP_CODE_DECRYPT_FAILED');
     }
     await audit(id, action, { userId, request });
@@ -381,8 +351,8 @@ async function rotateForMember(memberId, { userId = null, request = null } = {})
     const compact = normalizeCode(code);
     const result = await pool.request()
         .input('memberId', sql.Int, id)
-        .input('hash', sql.Char(64), hashCode(compact))
-        .input('ciphertext', sql.NVarChar(512), encryptCode(compact))
+        .input('hash', sql.Char(64), codeCrypto.hashCode(compact))
+        .input('ciphertext', sql.NVarChar(512), codeCrypto.encryptCode(compact))
         .query(`UPDATE dbo.members
                 SET membership_code_hash = @hash,
                     membership_code_ciphertext = @ciphertext,
@@ -402,6 +372,54 @@ function requestedTenantSlug(request) {
         || request?.body?.tenantSlug
         || '';
     return String(raw).trim().toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 80);
+}
+
+/**
+ * Prepare an optimistic, tenant-scoped lazy rewrap for a future controlled
+ * rollout. This function is intentionally not called by read paths. The
+ * expected hash and ciphertext predicates make a concurrent issue/rotate win
+ * safely instead of being overwritten by a stale rewrap.
+ */
+async function rewrapMemberCodeIfPrevious(memberId) {
+    await ensureMembershipCodeStorage({ readOnly: true });
+    const id = ensurePositiveId(memberId);
+    const tenantId = currentTenantId({ required: true });
+    const pool = await getPool();
+    const result = await pool.request()
+        .input('memberId', sql.Int, id)
+        .input('tenantId', sql.Int, tenantId)
+        .query(`SELECT membership_code_hash, membership_code_ciphertext, membership_code_revoked_at
+                FROM dbo.members
+                WHERE id=@memberId AND tenant_id=@tenantId;`);
+    const row = result.recordset[0];
+    if (!row || !row.membership_code_hash || !row.membership_code_ciphertext || row.membership_code_revoked_at) {
+        return { rewrapped: false, reason: 'not_active' };
+    }
+    const decrypted = codeCrypto.decryptWithVerification(row.membership_code_ciphertext);
+    if (decrypted.keyId !== 'previous') return { rewrapped: false, reason: 'already_current' };
+
+    const compact = normalizeCode(decrypted.plaintext);
+    const nextHash = codeCrypto.hashCode(compact);
+    const nextCiphertext = codeCrypto.encryptCode(compact);
+    const update = await pool.request()
+        .input('memberId', sql.Int, id)
+        .input('tenantId', sql.Int, tenantId)
+        .input('expectedHash', sql.Char(64), row.membership_code_hash)
+        .input('expectedCiphertext', sql.NVarChar(512), row.membership_code_ciphertext)
+        .input('nextHash', sql.Char(64), nextHash)
+        .input('nextCiphertext', sql.NVarChar(512), nextCiphertext)
+        .query(`UPDATE dbo.members
+                SET membership_code_hash=@nextHash,
+                    membership_code_ciphertext=@nextCiphertext,
+                    updated_at=SYSUTCDATETIME()
+                WHERE id=@memberId AND tenant_id=@tenantId
+                  AND membership_code_hash=@expectedHash
+                  AND membership_code_ciphertext=@expectedCiphertext
+                  AND membership_code_revoked_at IS NULL;`);
+    return {
+        rewrapped: Number(update.rowsAffected?.[0] || 0) > 0,
+        keyVersion: secretRing.getCurrentKeyVersion('membershipCode')
+    };
 }
 
 /**
@@ -426,21 +444,28 @@ async function findMemberContextByCode(value, { request = null, auditAction = 'p
     try { compact = normalizeCode(value); } catch (_) { return null; }
 
     const tenantSlug = requestedTenantSlug(request);
+    const hashCandidates = codeCrypto.hashCandidates(compact);
     const result = await runTenantContext({ tenantId: null, mode: 'platform', readOnlyBaseline }, async () => {
         const pool = await getPool();
-        return pool.request()
-            .input('hash', sql.Char(64), hashCode(compact))
-            .input('tenantSlug', sql.VarChar(80), tenantSlug)
-            .query(`SELECT TOP (1) m.id, m.tenant_id, t.name AS tenant_name, t.slug AS tenant_slug, t.tenant_type
+        const query = pool.request().input('tenantSlug', sql.VarChar(80), tenantSlug);
+        const placeholders = hashCandidates.map((candidate, index) => {
+            const name = `membershipHash${index}`;
+            query.input(name, sql.Char(64), candidate.hash);
+            return `@${name}`;
+        });
+        return query.query(`SELECT TOP (1) m.id, m.tenant_id, m.membership_code_hash AS matched_code_hash,
+                           t.name AS tenant_name, t.slug AS tenant_slug, t.tenant_type
                     FROM dbo.members AS m
                     INNER JOIN dbo.gym_tenants AS t ON t.id = m.tenant_id
-                    WHERE m.membership_code_hash = @hash
+                    WHERE m.membership_code_hash IN (${placeholders.join(', ')})
                       AND m.membership_code_revoked_at IS NULL
                       AND t.status IN ('trial', 'active')
                       AND (@tenantSlug = '' OR t.slug = @tenantSlug);`);
     });
     const row = result.recordset[0];
     if (!row) return null;
+    const matchedHash = hashCandidates.find((candidate) => candidate.hash === String(row.matched_code_hash || ''));
+    if (matchedHash) secretRing.recordVerification('membershipCode', matchedHash.keyId);
 
     const memberContext = {
         memberId: Number(row.id),
@@ -480,5 +505,6 @@ module.exports = {
     issueForMember,
     maskCode,
     normalizeCode,
+    rewrapMemberCodeIfPrevious,
     rotateForMember
 };

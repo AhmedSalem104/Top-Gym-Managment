@@ -5,6 +5,7 @@ const { getPool, sql } = require('../database');
 const { withTransaction } = require('../database/transaction');
 const { currentTenantId, getTenantContext } = require('../tenancy/tenant-context');
 const { config } = require('../config/env');
+const { secretRing } = require('./secret-ring');
 const { addDays, formatDateOnly, parseDateOnly, todayInTimeZone } = require('../utils/date');
 const commercialSchema = require('./commercial-schema');
 const commercialService = require('./commercial-service');
@@ -63,16 +64,32 @@ function normalizeRequestType(value = 'membership') {
     return type;
 }
 
-function idempotencyKeyHash(value, tenantId, memberId, requestType) {
+function normalizedIdempotencyKey(value) {
     const key = text(value, '', 128);
     if (!key) return null;
     if (!/^[A-Za-z0-9][A-Za-z0-9._:-]{7,127}$/.test(key)) {
         throw requestError('Idempotency key is invalid.', 400, 'INVALID_IDEMPOTENCY_KEY');
     }
-    const secret = String(config.memberPortalSessionSecret || 'logicfit-idempotency-key');
-    return crypto.createHmac('sha256', secret)
+    return key;
+}
+
+function idempotencyKeyHash(value, tenantId, memberId, requestType, secret = null) {
+    const key = normalizedIdempotencyKey(value);
+    if (!key) return null;
+    const signingSecret = secret || secretRing.getCurrentSecret('memberPortalSession');
+    return crypto.createHmac('sha256', signingSecret)
         .update(`${tenantId}:${memberId}:${requestType}:${key}`)
         .digest('hex');
+}
+
+function idempotencyKeyHashCandidates(value, tenantId, memberId, requestType) {
+    const key = normalizedIdempotencyKey(value);
+    if (!key) return [];
+    return secretRing.getVerificationSecrets('memberPortalSession').map((entry) => ({
+        hash: idempotencyKeyHash(key, tenantId, memberId, requestType, entry.secret),
+        keyId: entry.keyId,
+        version: entry.version
+    }));
 }
 
 function configureObjectStorageService(service) {
@@ -336,7 +353,7 @@ async function createPortalRequest(request, body = {}, proofInput = null) {
         const initialScenario = await memberService.resolveMemberRequestScenario(null, session.memberId);
         let data = await normalizePortalRequest(body, { requestType: initialScenario.requestType });
         const rawIdempotencyKey = request.get?.('idempotency-key') || body.idempotencyKey;
-        let idempotency = idempotencyKeyHash(
+        let idempotencyCandidates = idempotencyKeyHashCandidates(
             rawIdempotencyKey,
             data.tenantId,
             session.memberId,
@@ -394,7 +411,7 @@ async function createPortalRequest(request, body = {}, proofInput = null) {
                             durationValue: data.durationValue
                         });
                     }
-                    idempotency = idempotencyKeyHash(
+                    idempotencyCandidates = idempotencyKeyHashCandidates(
                         rawIdempotencyKey,
                         data.tenantId,
                         session.memberId,
@@ -402,19 +419,27 @@ async function createPortalRequest(request, body = {}, proofInput = null) {
                     );
                     requestDates = { startDate: data.startDate, endDate: data.endDate };
                 }
-                if (idempotency) {
-                    const existing = await transaction.request()
+                if (idempotencyCandidates.length) {
+                    const idempotencyRequest = transaction.request()
                         .input('tenantId', sql.Int, data.tenantId)
                         .input('memberId', sql.Int, session.memberId)
-                        .input('requestType', sql.VarChar(40), data.requestType)
-                        .input('idempotencyKeyHash', sql.Char(64), idempotency)
-                        .query(`SELECT TOP (1) r.id,proof.storage_verified_at
+                        .input('requestType', sql.VarChar(40), data.requestType);
+                    const idempotencyPlaceholders = idempotencyCandidates.map((candidate, index) => {
+                        const name = `idempotencyKeyHash${index}`;
+                        idempotencyRequest.input(name, sql.Char(64), candidate.hash);
+                        return `@${name}`;
+                    });
+                    const existing = await idempotencyRequest.query(`SELECT TOP (1) r.id,proof.storage_verified_at,
+                                       r.idempotency_key_hash AS matched_idempotency_key_hash
                                 FROM dbo.gym_member_subscription_requests AS r WITH (UPDLOCK,HOLDLOCK)
                                 LEFT JOIN dbo.gym_member_subscription_payment_proofs AS proof
                                   ON proof.request_id=r.id AND proof.tenant_id=r.tenant_id
                                 WHERE r.tenant_id=@tenantId AND r.member_id=@memberId
-                                  AND r.request_type=@requestType AND r.idempotency_key_hash=@idempotencyKeyHash;`);
+                                  AND r.request_type=@requestType
+                                  AND r.idempotency_key_hash IN (${idempotencyPlaceholders.join(', ')});`);
                     if (existing.recordset[0]) {
+                        const matched = idempotencyCandidates.find((candidate) => candidate.hash === String(existing.recordset[0].matched_idempotency_key_hash || ''));
+                        if (matched) secretRing.recordVerification('memberPortalSession', matched.keyId);
                         if (!existing.recordset[0].storage_verified_at) {
                             throw requestError('The previous request has no verified payment proof.', 409, 'PAYMENT_PROOF_REQUIRED');
                         }
@@ -460,7 +485,7 @@ async function createPortalRequest(request, body = {}, proofInput = null) {
                     .input('paymentMethodCode', sql.VarChar(60), data.paymentMethodCode)
                     .input('paymentMethodName', sql.NVarChar(120), data.paymentMethodName)
                     .input('notes', sql.NVarChar(1000), data.notes)
-                    .input('idempotencyKeyHash', sql.Char(64), idempotency)
+                    .input('idempotencyKeyHash', sql.Char(64), idempotencyCandidates[0]?.hash || null)
                     .query(`INSERT INTO dbo.gym_member_subscription_requests
                             (tenant_id,member_id,request_type,status,membership_plan,membership_type,
                              duration_mode,duration_value,start_date,end_date,payment_date,list_price,discount_amount,
@@ -815,6 +840,7 @@ module.exports = {
     getRequestRow,
     getStoredProofFile,
     idempotencyKeyHash,
+    idempotencyKeyHashCandidates,
     normalizeRequestType,
     paymentLedgerMethod,
     rejectRequest,

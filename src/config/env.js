@@ -21,6 +21,24 @@ function getBoundedNumberEnv(name, fallback, minimum, maximum) {
     return Math.min(maximum, Math.max(minimum, getNumberEnv(name, fallback)));
 }
 
+function resolveSecretFamily(currentName, previousName, legacyName) {
+    const current = getEnv(currentName);
+    const previous = getEnv(previousName);
+    const legacy = getEnv(legacyName);
+    const hasValue = (value) => String(value ?? '').trim() !== '';
+    const currentPresent = hasValue(current);
+    const legacyPresent = hasValue(legacy);
+    const previousPresent = hasValue(previous);
+    const hasDistinctLegacyBridge = currentPresent && legacyPresent && legacy !== current;
+    return {
+        value: currentPresent ? current : legacyPresent ? legacy : '',
+        source: currentPresent ? 'current' : legacyPresent ? 'legacy' : 'missing',
+        legacy,
+        previous: previousPresent ? previous : hasDistinctLegacyBridge ? legacy : '',
+        previousSource: previousPresent ? 'explicit' : hasDistinctLegacyBridge ? 'legacy_bridge' : 'none'
+    };
+}
+
 function getBooleanEnv(name, fallback = false) {
     const value = getEnv(name, fallback ? 'true' : 'false').trim().toLowerCase();
     return ['true', '1', 'yes', 'on'].includes(value);
@@ -28,6 +46,53 @@ function getBooleanEnv(name, fallback = false) {
 
 const nodeEnv = getEnv('NODE_ENV', 'development');
 const defaultTrustProxyHops = nodeEnv.trim().toLowerCase() === 'production' ? 1 : 0;
+const membershipCodeSecret = resolveSecretFamily(
+    'MEMBERSHIP_CODE_SECRET_CURRENT',
+    'MEMBERSHIP_CODE_SECRET_PREVIOUS',
+    'MEMBERSHIP_CODE_SECRET'
+);
+const memberPortalSessionSecret = resolveSecretFamily(
+    'MEMBER_PORTAL_SESSION_SECRET_CURRENT',
+    'MEMBER_PORTAL_SESSION_SECRET_PREVIOUS',
+    'MEMBER_PORTAL_SESSION_SECRET'
+);
+const publicRegistrationSecret = resolveSecretFamily(
+    'PUBLIC_REGISTRATION_SECRET_CURRENT',
+    'PUBLIC_REGISTRATION_SECRET_PREVIOUS',
+    'PUBLIC_REGISTRATION_SECRET'
+);
+const secretRing = Object.freeze({
+    membershipCode: Object.freeze({
+        current: membershipCodeSecret.value,
+        currentSource: membershipCodeSecret.source,
+        legacy: membershipCodeSecret.legacy,
+        legacyAliasPresent: Boolean(String(membershipCodeSecret.legacy || '').trim()),
+        previous: membershipCodeSecret.previous,
+        previousSource: membershipCodeSecret.previousSource,
+        currentVersion: getBoundedNumberEnv('MEMBERSHIP_CODE_SECRET_CURRENT_VERSION', 1, 1, 100_000),
+        previousVersion: getBoundedNumberEnv('MEMBERSHIP_CODE_SECRET_PREVIOUS_VERSION', 0, 0, 100_000)
+    }),
+    memberPortalSession: Object.freeze({
+        current: memberPortalSessionSecret.value,
+        currentSource: memberPortalSessionSecret.source,
+        legacy: memberPortalSessionSecret.legacy,
+        legacyAliasPresent: Boolean(String(memberPortalSessionSecret.legacy || '').trim()),
+        previous: memberPortalSessionSecret.previous,
+        previousSource: memberPortalSessionSecret.previousSource,
+        currentVersion: getBoundedNumberEnv('MEMBER_PORTAL_SESSION_SECRET_CURRENT_VERSION', 1, 1, 100_000),
+        previousVersion: getBoundedNumberEnv('MEMBER_PORTAL_SESSION_SECRET_PREVIOUS_VERSION', 0, 0, 100_000)
+    }),
+    publicRegistration: Object.freeze({
+        current: publicRegistrationSecret.value,
+        currentSource: publicRegistrationSecret.source,
+        legacy: publicRegistrationSecret.legacy,
+        legacyAliasPresent: Boolean(String(publicRegistrationSecret.legacy || '').trim()),
+        previous: publicRegistrationSecret.previous,
+        previousSource: publicRegistrationSecret.previousSource,
+        currentVersion: getBoundedNumberEnv('PUBLIC_REGISTRATION_SECRET_CURRENT_VERSION', 1, 1, 100_000),
+        previousVersion: getBoundedNumberEnv('PUBLIC_REGISTRATION_SECRET_PREVIOUS_VERSION', 0, 0, 100_000)
+    })
+});
 
 const config = Object.freeze({
     nodeEnv,
@@ -91,16 +156,12 @@ const config = Object.freeze({
     backupEnablePlatformWeekly: getBooleanEnv('BACKUP_ENABLE_PLATFORM_WEEKLY', true),
     backupEnablePlatformMonthly: getBooleanEnv('BACKUP_ENABLE_PLATFORM_MONTHLY', true),
     publicAppUrl: getEnv('PUBLIC_APP_URL'),
-    membershipCodeSecret: getEnv('MEMBERSHIP_CODE_SECRET'),
-    // Portal sessions and visitor estimates use a separate purpose-specific
-    // secret when configured. The membership-code secret remains a backwards
-    // compatible fallback for existing deployments; neither secret is ever
-    // returned to a client or written to logs.
-    memberPortalSessionSecret: getEnv('MEMBER_PORTAL_SESSION_SECRET', getEnv('MEMBERSHIP_CODE_SECRET')),
-    // Public gym registration uses a separate capability secret when
-    // configured. Falling back keeps existing deployments compatible while
-    // ensuring the raw registration token is never persisted.
-    publicRegistrationSecret: getEnv('PUBLIC_REGISTRATION_SECRET', getEnv('MEMBER_PORTAL_SESSION_SECRET', getEnv('MEMBERSHIP_CODE_SECRET'))),
+    // Legacy scalar fields remain available to non-crypto bootstrap code. All
+    // cryptographic consumers use src/services/secret-ring.js instead.
+    membershipCodeSecret: membershipCodeSecret.value,
+    memberPortalSessionSecret: memberPortalSessionSecret.value,
+    publicRegistrationSecret: publicRegistrationSecret.value,
+    secretRing,
     attendanceAutoCheckoutMinutes: getNumberEnv('ATTENDANCE_AUTO_CHECKOUT_MINUTES', 0),
     // Member-portal occupancy is intentionally configurable because a quiet
     // or busy gym threshold depends on the facility size. The service still

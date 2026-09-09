@@ -4,6 +4,7 @@ const crypto = require('node:crypto');
 const { getPool, sql } = require('../database');
 const { withTransaction } = require('../database/transaction');
 const { config } = require('../config/env');
+const { secretRing } = require('./secret-ring');
 const { currentTenantId, runTenantContext } = require('../tenancy/tenant-context');
 const { todayInTimeZone } = require('../utils/date');
 const commercialSchema = require('./commercial-schema');
@@ -49,13 +50,25 @@ function integer(value, label, { min = 1, max = 120 } = {}) {
 }
 
 function requireSecret() {
-    const secret = String(config.memberPortalSessionSecret || '').trim();
-    if (secret.length < 32) throw commercialError('Member portal sessions are not configured.', 503, 'PORTAL_SESSION_NOT_CONFIGURED');
-    return secret;
+    try {
+        const secret = secretRing.getCurrentSecret('memberPortalSession');
+        if (secret.length < 32) throw new Error('too short');
+        return secret;
+    } catch (_) {
+        throw commercialError('Member portal sessions are not configured.', 503, 'PORTAL_SESSION_NOT_CONFIGURED');
+    }
 }
 
-function hashToken(token) {
-    return crypto.createHmac('sha256', requireSecret()).update(String(token)).digest('hex');
+function hashToken(token, secret = requireSecret()) {
+    return crypto.createHmac('sha256', secret).update(String(token)).digest('hex');
+}
+
+function hashTokenCandidates(token) {
+    return secretRing.getVerificationSecrets('memberPortalSession').map((entry) => ({
+        hash: hashToken(token, entry.secret),
+        keyId: entry.keyId,
+        version: entry.version
+    }));
 }
 
 function randomToken() {
@@ -309,17 +322,25 @@ async function createPortalSession({ tenantId, memberId, request }) {
 async function resolvePortalSession(request) {
     const token = parseCookie(request, PORTAL_SESSION_COOKIE);
     if (!token) throw commercialError('Member portal session is required.', 401, 'PORTAL_SESSION_REQUIRED');
-    const tokenHash = hashToken(token);
+    const tokenHashes = hashTokenCandidates(token);
     const row = await runTenantContext({ tenantId: null, mode: 'platform', readOnlyBaseline: false }, async () => {
         const pool = await getPool();
-        const result = await pool.request()
-            .input('tokenHash', sql.Char(64), tokenHash)
-            .query(`SELECT TOP (1) id,tenant_id,member_id,expires_at
+        const query = pool.request();
+        const placeholders = tokenHashes.map((candidate, index) => {
+            const name = `portalTokenHash${index}`;
+            query.input(name, sql.Char(64), candidate.hash);
+            return `@${name}`;
+        });
+        const result = await query.query(`SELECT TOP (1) id,tenant_id,member_id,expires_at,
+                                                   token_hash AS matched_token_hash
                     FROM dbo.gym_member_portal_sessions
-                    WHERE token_hash=@tokenHash AND revoked_at IS NULL AND expires_at>SYSUTCDATETIME();`);
+                    WHERE token_hash IN (${placeholders.join(', ')})
+                      AND revoked_at IS NULL AND expires_at>SYSUTCDATETIME();`);
         return result.recordset[0] || null;
     });
     if (!row) throw commercialError('Member portal session has expired.', 401, 'PORTAL_SESSION_EXPIRED');
+    const matched = tokenHashes.find((candidate) => candidate.hash === String(row.matched_token_hash || ''));
+    if (matched) secretRing.recordVerification('memberPortalSession', matched.keyId);
     return { sessionId: Number(row.id), tenantId: Number(row.tenant_id), memberId: Number(row.member_id), expiresAt: row.expires_at };
 }
 
@@ -332,13 +353,44 @@ function visitorTokenFor(request) {
     return parseCookie(request, PORTAL_VISITOR_COOKIE) || randomToken();
 }
 
+async function insertUniquePortalHash(transaction, { tenantId, visitDate, hashes }) {
+    const query = transaction.request()
+        .input('tenantId', sql.Int, tenantId)
+        .input('visitDate', sql.Date, new Date(`${visitDate}T00:00:00.000Z`));
+    const placeholders = hashes.map((candidate, index) => {
+        const name = `visitorHash${index}`;
+        query.input(name, sql.Char(64), candidate.hash);
+        return `@${name}`;
+    });
+    const result = await query.query(`
+        IF NOT EXISTS (
+            SELECT 1 FROM dbo.gym_member_portal_visit_visitors WITH (UPDLOCK,HOLDLOCK)
+            WHERE tenant_id=@tenantId AND visit_date=@visitDate AND visitor_hash IN (${placeholders.join(', ')})
+        )
+        BEGIN
+            INSERT INTO dbo.gym_member_portal_visit_visitors (tenant_id,visit_date,visitor_hash)
+            VALUES (@tenantId,@visitDate,@visitorHash0);
+            SELECT CAST(1 AS bit) AS inserted, CAST(0 AS bit) AS previousMatched;
+        END
+        ELSE
+        BEGIN
+            SELECT CAST(0 AS bit) AS inserted,
+                   CAST(CASE WHEN ${hashes.length > 1
+                       ? `EXISTS (SELECT 1 FROM dbo.gym_member_portal_visit_visitors WHERE tenant_id=@tenantId AND visit_date=@visitDate AND visitor_hash=@visitorHash1)`
+                       : '1=0'} THEN 1 ELSE 0 END AS bit) AS previousMatched;
+        END;`);
+    const state = result.recordset?.[0] || {};
+    if (state.previousMatched) secretRing.recordVerification('memberPortalSession', 'previous');
+    return Number(state.inserted ? 1 : 0);
+}
+
 async function recordPortalVisit({ memberId, visitorToken, readOnly = false }) {
     if (readOnly) return { visitorToken, recorded: false };
     const tenantId = tenantIdValue();
     const member = integer(memberId, 'Member id', { min: 1, max: 2_147_483_647 });
     const visitDate = todayInTimeZone();
-    const visitorHash = hashToken(`visitor:${visitorToken}:${visitDate}`);
-    const memberHash = hashToken(`member:${tenantId}:${member}:${visitDate}`);
+    const visitorHashes = hashTokenCandidates(`visitor:${visitorToken}:${visitDate}`);
+    const memberHashes = hashTokenCandidates(`member:${tenantId}:${member}:${visitDate}`);
     await withTransaction(async (transaction) => {
         await transaction.request()
             .input('tenantId', sql.Int, tenantId)
@@ -346,25 +398,13 @@ async function recordPortalVisit({ memberId, visitorToken, readOnly = false }) {
             .query(`INSERT INTO dbo.gym_member_portal_visit_daily (tenant_id,visit_date)
                     SELECT @tenantId,@visitDate
                     WHERE NOT EXISTS (SELECT 1 FROM dbo.gym_member_portal_visit_daily WITH (UPDLOCK,HOLDLOCK) WHERE tenant_id=@tenantId AND visit_date=@visitDate);`);
-        const visitorInsert = await transaction.request()
-            .input('tenantId', sql.Int, tenantId)
-            .input('visitDate', sql.Date, new Date(`${visitDate}T00:00:00.000Z`))
-            .input('visitorHash', sql.Char(64), visitorHash)
-            .query(`INSERT INTO dbo.gym_member_portal_visit_visitors (tenant_id,visit_date,visitor_hash)
-                    SELECT @tenantId,@visitDate,@visitorHash
-                    WHERE NOT EXISTS (SELECT 1 FROM dbo.gym_member_portal_visit_visitors WITH (UPDLOCK,HOLDLOCK) WHERE tenant_id=@tenantId AND visit_date=@visitDate AND visitor_hash=@visitorHash);`);
-        const memberInsert = await transaction.request()
-            .input('tenantId', sql.Int, tenantId)
-            .input('visitDate', sql.Date, new Date(`${visitDate}T00:00:00.000Z`))
-            .input('memberHash', sql.Char(64), memberHash)
-            .query(`INSERT INTO dbo.gym_member_portal_visit_visitors (tenant_id,visit_date,visitor_hash)
-                    SELECT @tenantId,@visitDate,@memberHash
-                    WHERE NOT EXISTS (SELECT 1 FROM dbo.gym_member_portal_visit_visitors WITH (UPDLOCK,HOLDLOCK) WHERE tenant_id=@tenantId AND visit_date=@visitDate AND visitor_hash=@memberHash);`);
+        const visitorDelta = await insertUniquePortalHash(transaction, { tenantId, visitDate, hashes: visitorHashes });
+        const memberDelta = await insertUniquePortalHash(transaction, { tenantId, visitDate, hashes: memberHashes });
         await transaction.request()
             .input('tenantId', sql.Int, tenantId)
             .input('visitDate', sql.Date, new Date(`${visitDate}T00:00:00.000Z`))
-            .input('visitorDelta', sql.BigInt, Number(visitorInsert.rowsAffected?.[0] || 0))
-            .input('memberDelta', sql.BigInt, Number(memberInsert.rowsAffected?.[0] || 0))
+            .input('visitorDelta', sql.BigInt, visitorDelta)
+            .input('memberDelta', sql.BigInt, memberDelta)
             .query(`UPDATE dbo.gym_member_portal_visit_daily
                     SET page_views=page_views+1,
                         unique_visitors_estimate=unique_visitors_estimate+@visitorDelta,
@@ -433,6 +473,7 @@ module.exports = {
     getCommercialPlanCatalog,
     getPortalAnalytics,
     getTenantPaymentMethods: brandingService.getTenantPaymentMethods,
+    hashTokenCandidates,
     listPlatformPaymentMethods,
     parseCookie,
     recordPortalVisit,

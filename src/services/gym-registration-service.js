@@ -7,6 +7,7 @@ const { config } = require('../config/env');
 const commercialSchema = require('./commercial-schema');
 const { runTenantContext } = require('../tenancy/tenant-context');
 const { TENANT_TYPES, resolveTenantType } = require('../tenancy/tenant-types');
+const { secretRing } = require('./secret-ring');
 
 const MAX_PAGE_SIZE = 100;
 const REGISTRATION_TOKEN_PATTERN = /^[A-Za-z0-9_-]{32,128}$/;
@@ -36,9 +37,13 @@ function positiveId(value, field = 'id') {
 }
 
 function requireSecret() {
-    const secret = String(config.publicRegistrationSecret || '').trim();
-    if (secret.length < 32) throw registrationError('Public registration is not configured.', 503, 'GYM_REGISTRATION_NOT_CONFIGURED');
-    return secret;
+    try {
+        const secret = secretRing.getCurrentSecret('publicRegistration');
+        if (secret.length < 32) throw new Error('too short');
+        return secret;
+    } catch (_) {
+        throw registrationError('Public registration is not configured.', 503, 'GYM_REGISTRATION_NOT_CONFIGURED');
+    }
 }
 
 function normalizeIdempotencyKey(value) {
@@ -47,12 +52,37 @@ function normalizeIdempotencyKey(value) {
     return key;
 }
 
-function hashCapability(value, purpose) {
-    return crypto.createHmac('sha256', requireSecret()).update(`${purpose}:${String(value)}`).digest('hex');
+function hashCapability(value, purpose, secret = null) {
+    return crypto.createHmac('sha256', secret || requireSecret()).update(`${purpose}:${String(value)}`).digest('hex');
 }
 
-function accessTokenForIdempotency(key) {
-    return crypto.createHmac('sha256', requireSecret()).update(`registration-access:${key}`).digest('base64url');
+function hashCapabilityCandidates(value, purpose) {
+    return secretRing.getVerificationSecrets('publicRegistration').map((entry) => ({
+        hash: hashCapability(value, purpose, entry.secret),
+        keyId: entry.keyId,
+        version: entry.version
+    }));
+}
+
+function accessTokenForIdempotency(key, secret = null) {
+    return crypto.createHmac('sha256', secret || requireSecret()).update(`registration-access:${key}`).digest('base64url');
+}
+
+function registrationRequestCandidates(key) {
+    return secretRing.getVerificationSecrets('publicRegistration').map((entry) => {
+        const accessToken = entry.keyId === 'current'
+            ? accessTokenForIdempotency(key)
+            : accessTokenForIdempotency(key, entry.secret);
+        return {
+            keyId: entry.keyId,
+            version: entry.version,
+            idempotencyHash: entry.keyId === 'current'
+                ? hashCapability(key, 'registration-idempotency')
+                : hashCapability(key, 'registration-idempotency', entry.secret),
+            accessToken,
+            publicTokenHash: hashCapability(accessToken, 'registration-token', entry.secret)
+        };
+    });
 }
 
 function normalizeAccessToken(value) {
@@ -225,6 +255,7 @@ const REQUEST_SELECT = `
            r.payment_method_name_snapshot,r.status,r.notes,r.review_notes,
            r.reviewed_by_user_id,r.reviewed_at,r.created_tenant_id,r.created_owner_user_id,
            r.created_at,r.updated_at,
+           r.public_token_hash AS matched_public_token_hash,
            proof.id AS proof_id,proof.file_name AS proof_file_name,proof.mime_type AS proof_mime_type,
            proof.file_size AS proof_file_size,proof.uploaded_at AS proof_uploaded_at,
            proof.storage_verified_at AS proof_storage_verified_at,proof.storage_key,proof.sha256 AS proof_sha256
@@ -244,11 +275,22 @@ async function getRequestRow(requestId, { accessToken = null, transaction = null
     const executor = transaction || await getPool();
     const request = executor.request().input('requestId', sql.BigInt, id);
     let predicate = 'r.id=@requestId';
+    let accessTokenCandidates = [];
     if (accessToken != null) {
-        request.input('publicTokenHash', sql.Char(64), hashCapability(normalizeAccessToken(accessToken), 'registration-token'));
-        predicate += ' AND r.public_token_hash=@publicTokenHash';
+        accessTokenCandidates = hashCapabilityCandidates(normalizeAccessToken(accessToken), 'registration-token');
+        const placeholders = accessTokenCandidates.map((candidate, index) => {
+            const name = `publicTokenHash${index}`;
+            request.input(name, sql.Char(64), candidate.hash);
+            return `@${name}`;
+        });
+        predicate += ` AND r.public_token_hash IN (${placeholders.join(', ')})`;
     }
-    return (await request.query(`${select} WHERE ${predicate};`)).recordset[0] || null;
+    const row = (await request.query(`${select} WHERE ${predicate};`)).recordset[0] || null;
+    if (row && accessTokenCandidates.length) {
+        const matched = accessTokenCandidates.find((candidate) => candidate.hash === String(row.matched_public_token_hash || ''));
+        if (matched) secretRing.recordVerification('publicRegistration', matched.keyId);
+    }
+    return row;
 }
 
 async function getCatalog(commercialService, tenantType = TENANT_TYPES.GYM) {
@@ -323,9 +365,9 @@ function createGymRegistrationService({ commercialService, saasService, authServ
             await ensureTables();
             const normalizedTenantType = registrationTypeFromRoute(tenantType);
             const key = normalizeIdempotencyKey(idempotencyKey);
-            const idempotencyKeyHash = hashCapability(key, 'registration-idempotency');
-            const accessToken = accessTokenForIdempotency(key);
-            const publicTokenHash = hashCapability(accessToken, 'registration-token');
+            const registrationCandidates = registrationRequestCandidates(key);
+            const currentRegistration = registrationCandidates[0];
+            let accessToken = currentRegistration.accessToken;
             const gymName = text(body.gymName || body.name, '', 160);
             if (gymName.length < 2) throw registrationError('Gym name is required.', 400, 'INVALID_REGISTRATION_GYM_NAME', 'gymName');
             const ownerName = authService.validateName(body.ownerName || body.ownerFullName, 'ownerName');
@@ -338,13 +380,23 @@ function createGymRegistrationService({ commercialService, saasService, authServ
             let requestId = null;
             let reused = false;
             const insert = async (transaction) => {
-                const existing = await transaction.request()
-                    .input('idempotencyKeyHash', sql.Char(64), idempotencyKeyHash)
-                    .query('SELECT TOP (1) id,public_token_hash FROM dbo.saas_gym_registration_requests WITH (UPDLOCK,HOLDLOCK) WHERE idempotency_key_hash=@idempotencyKeyHash;');
+                const idempotencyRequest = transaction.request();
+                const idempotencyPlaceholders = registrationCandidates.map((candidate, index) => {
+                    const name = `idempotencyKeyHash${index}`;
+                    idempotencyRequest.input(name, sql.Char(64), candidate.idempotencyHash);
+                    return `@${name}`;
+                });
+                const existing = await idempotencyRequest
+                    .query(`SELECT TOP (1) id,public_token_hash,idempotency_key_hash
+                            FROM dbo.saas_gym_registration_requests WITH (UPDLOCK,HOLDLOCK)
+                            WHERE idempotency_key_hash IN (${idempotencyPlaceholders.join(', ')});`);
                 if (existing.recordset[0]) {
-                    if (String(existing.recordset[0].public_token_hash || '') !== publicTokenHash) {
+                    const matched = registrationCandidates.find((candidate) => candidate.idempotencyHash === String(existing.recordset[0].idempotency_key_hash || ''));
+                    if (!matched || String(existing.recordset[0].public_token_hash || '') !== matched.publicTokenHash) {
                         throw registrationError('This registration request already exists.', 409, 'REGISTRATION_REQUEST_ALREADY_EXISTS');
                     }
+                    if (matched.keyId === 'previous') secretRing.recordVerification('publicRegistration', 'previous');
+                    accessToken = matched.accessToken;
                     requestId = Number(existing.recordset[0].id);
                     reused = true;
                     return;
@@ -368,8 +420,8 @@ function createGymRegistrationService({ commercialService, saasService, authServ
                     .input('paymentMethodCode', sql.VarChar(60), selection.paymentMethod.methodCode)
                     .input('paymentMethodName', sql.NVarChar(120), selection.paymentMethod.displayName)
                     .input('notes', sql.NVarChar(2000), notes)
-                    .input('idempotencyKeyHash', sql.Char(64), idempotencyKeyHash)
-                    .input('publicTokenHash', sql.Char(64), publicTokenHash)
+                    .input('idempotencyKeyHash', sql.Char(64), currentRegistration.idempotencyHash)
+                    .input('publicTokenHash', sql.Char(64), currentRegistration.publicTokenHash)
                     .query(`INSERT INTO dbo.saas_gym_registration_requests
                             (gym_name,tenant_type,owner_name,whatsapp,email,city,plan_id,plan_code_snapshot,plan_name_snapshot,
                              term_code_snapshot,duration_months_snapshot,price_snapshot,discount_amount_snapshot,
@@ -397,11 +449,21 @@ function createGymRegistrationService({ commercialService, saasService, authServ
             } catch (error) {
                 if (!saasService.isDuplicateSqlError?.(error)) throw error;
                 const existing = await getPool();
-                const result = await existing.request()
-                    .input('idempotencyKeyHash', sql.Char(64), idempotencyKeyHash)
-                    .query('SELECT TOP (1) id,public_token_hash FROM dbo.saas_gym_registration_requests WHERE idempotency_key_hash=@idempotencyKeyHash;');
+                const duplicateRequest = existing.request();
+                const idempotencyPlaceholders = registrationCandidates.map((candidate, index) => {
+                    const name = `idempotencyKeyHash${index}`;
+                    duplicateRequest.input(name, sql.Char(64), candidate.idempotencyHash);
+                    return `@${name}`;
+                });
+                const result = await duplicateRequest
+                    .query(`SELECT TOP (1) id,public_token_hash,idempotency_key_hash
+                            FROM dbo.saas_gym_registration_requests
+                            WHERE idempotency_key_hash IN (${idempotencyPlaceholders.join(', ')});`);
                 const row = result.recordset[0];
-                if (!row || String(row.public_token_hash || '') !== publicTokenHash) throw registrationError('This registration request already exists.', 409, 'REGISTRATION_REQUEST_ALREADY_EXISTS');
+                const matched = registrationCandidates.find((candidate) => candidate.idempotencyHash === String(row?.idempotency_key_hash || ''));
+                if (!row || !matched || String(row.public_token_hash || '') !== matched.publicTokenHash) throw registrationError('This registration request already exists.', 409, 'REGISTRATION_REQUEST_ALREADY_EXISTS');
+                if (matched.keyId === 'previous') secretRing.recordVerification('publicRegistration', 'previous');
+                accessToken = matched.accessToken;
                 requestId = Number(row.id);
                 reused = true;
             }
@@ -677,8 +739,10 @@ module.exports = {
     createGymRegistrationService,
     generateTemporaryPassword,
     generateTenantSlug,
+    hashCapabilityCandidates,
     normalizeIdempotencyKey,
     normalizeWhatsapp,
     publicRequestFromRow,
+    registrationRequestCandidates,
     requestFromRow
 };
