@@ -51,3 +51,16 @@ test('member repository keeps the reusable CTE scoped to the following statement
     assert.match(source, /const MEMBER_CTE = MEMBER_ROWS_CTE;/u);
     assert.match(source, /\.query\(`\$\{MEMBER_CTE\}[\s\S]*?FROM member_rows[\s\S]*?WHERE id = @id/u);
 });
+
+test('pricing catalog uses one SQL batch for uncached lookups', () => {
+    const source = read('src/services/member-service.js');
+    const block = source.slice(source.indexOf('async function getPricingCatalog'), source.indexOf('\nfunction invalidatePricingCatalog'));
+    assert.match(block, /await pool\.request\(\)\.batch\(/u);
+    assert.doesNotMatch(block, /queryFactories|Promise\.all\(queryFactories/u);
+});
+
+test('branch context reuses an already-authorized branch for section reads', () => {
+    const source = read('src/branches/branch-context.js');
+    assert.match(source, /authorizedBranch: branch/u);
+    assert.match(source, /authorizedBranch: branches\[0\]/u);
+});

@@ -126,7 +126,7 @@ test('subscription lifecycle and enforcement have explicit expiry, recovery and 
 
     assert.match(source, /async function syncExpiredTenants\(\{ force = false \} = \{\}\)/);
     assert.match(source, /status='expired', updated_at=SYSUTCDATETIME\(\)/);
-    assert.match(source, /async function getCurrentSubscription\(tenantId = currentTenantId\(\{ required: true \}\), \{ readOnly = false \} = \{\}\)/);
+    assert.match(source, /async function getCurrentSubscription\(tenantId = currentTenantId\(\{ required: true \}\), \{ readOnly = false, includeOverrides = false \} = \{\}\)/);
     assert.match(source, /async function enforceTenantAccess\(tenantId, \{ path = '', method = 'GET', readOnly = false, tenant: tenantContext = null \} = \{\}\)/);
     assert.match(source, /if \(!subscription \|\| !\['active', 'trial'\]\.includes\(subscription\.status\)/);
     assert.match(source, /if \(canRecover\) return \{ tenantStatus: resolvedTenant\.status, subscription, recovery: true \}/);

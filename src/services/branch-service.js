@@ -206,7 +206,7 @@ async function assertBranchAccess(branchId, { userId = null, role = null, requir
     return branch;
 }
 
-async function getBranchSections(branchId, { userId = null, role = null, includeInactive = false } = {}) {
+async function getBranchSections(branchId, { userId = null, role = null, includeInactive = false, authorizedBranch = null } = {}) {
     const id = idValue(branchId);
     const currentTenant = tenantId();
     const user = Number(userId);
@@ -215,10 +215,22 @@ async function getBranchSections(branchId, { userId = null, role = null, include
         throw branchError('Branch access is required.', 403, 'BRANCH_ACCESS_REQUIRED');
     }
 
-    // Keep the authorization boundary, but resolve tenant, branch existence,
-    // and delegated branch access in one read. Previously this path called
-    // assertGymTenant -> getBranch -> access check before the section cache,
-    // repeating the same scope reads for every dashboard/bootstrap request.
+    // A caller may pass a branch that it has already authorized in the same
+    // request (getAllowedBranches/assertBranchAccess). Reuse that trusted
+    // result instead of issuing a second authorization read. Direct callers
+    // still take the guarded query below, so this is not an auth bypass.
+    if (authorizedBranch
+        && Number(authorizedBranch.id) === id
+        && Number(authorizedBranch.tenantId) === currentTenant) {
+        return getSectionsForAuthorizedBranch({
+            id,
+            tenantId: currentTenant,
+            status: authorizedBranch.status
+        }, { includeInactive });
+    }
+
+    // Keep the authorization boundary for direct callers, but resolve tenant,
+    // branch existence, and delegated branch access in one read.
     const authorization = await getPool().then((pool) => pool.request()
         .input('tenantId', sql.Int, currentTenant)
         .input('branchId', sql.Int, id)

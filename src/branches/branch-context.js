@@ -52,7 +52,7 @@ async function resolveBranchContext(request, { branchService, required = false, 
             role: request.auth.role,
             requireActive: required
         });
-        const sections = await branchService.getBranchSections(branch.id, { userId: request.auth.id, role: request.auth.role });
+        const sections = await branchService.getBranchSections(branch.id, { userId: request.auth.id, role: request.auth.role, authorizedBranch: branch });
         let section = null;
         if (requested.sectionId) {
             section = await branchService.assertSectionAccess(requested.sectionId, branch.id, { userId: request.auth.id, role: request.auth.role });
@@ -67,7 +67,7 @@ async function resolveBranchContext(request, { branchService, required = false, 
         throw error;
     }
     if (branches.length === 1) {
-        const sections = await branchService.getBranchSections(branches[0].id, { userId: request.auth.id, role: request.auth.role });
+        const sections = await branchService.getBranchSections(branches[0].id, { userId: request.auth.id, role: request.auth.role, authorizedBranch: branches[0] });
         return { branch: branches[0], branchId: branches[0].id, section: null, sectionId: null, allBranches: false, branches, sections };
     }
     if (required) {

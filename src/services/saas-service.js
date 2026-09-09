@@ -1124,7 +1124,7 @@ async function syncExpiredTenants({ force = false } = {}) {
     }
 }
 
-async function getCurrentSubscription(tenantId = currentTenantId({ required: true }), { readOnly = false } = {}) {
+async function getCurrentSubscription(tenantId = currentTenantId({ required: true }), { readOnly = false, includeOverrides = false } = {}) {
     if (!readOnly) await ensureSaasTables();
     const id = tenantIdValue(tenantId);
     const pool = await getPool();
@@ -1152,7 +1152,10 @@ async function getCurrentSubscription(tenantId = currentTenantId({ required: tru
                                FROM dbo.saas_tenant_subscriptions s
                                WHERE s.tenant_id=@tenantId
                                ORDER BY CASE s.status WHEN 'active' THEN 0 WHEN 'trial' THEN 1 WHEN 'expired' THEN 2 WHEN 'suspended' THEN 3 ELSE 4 END, s.updated_at DESC,s.id DESC)
-                ORDER BY plan_id,feature_key;`);
+                ORDER BY plan_id,feature_key;
+                ${includeOverrides ? `
+                SELECT TOP (1) id,tenant_id,max_members,max_clients,max_users,max_ai_generations,max_storage_mb,max_branches,features_json,notes,created_by_user_id,updated_by_user_id,created_at,updated_at
+                FROM dbo.saas_tenant_overrides WHERE tenant_id=@tenantId;` : ''}`);
     const subscriptionRow = result.recordsets?.[0]?.[0] || null;
     const subscriptionPlanTypes = (result.recordsets?.[1] || []).map((row) => resolveTenantType(row.tenant_type));
     const subscriptionFeatureMap = new Map();
@@ -1165,6 +1168,14 @@ async function getCurrentSubscription(tenantId = currentTenantId({ required: tru
         ? { ...subscriptionRow, features_json: JSON.stringify(subscriptionFeatureMap.get(Number(subscriptionRow.plan_id)) || parseFeatures(subscriptionRow.features_json)) }
         : null;
     const subscription = subscriptionFromRow(hydratedRow, subscriptionPlanTypes);
+    if (includeOverrides && subscription) {
+        const overrideRow = result.recordsets?.[3]?.[0] || null;
+        Object.defineProperty(subscription, '__tenantOverrides', {
+            configurable: true,
+            enumerable: false,
+            value: tenantOverrideFromRow(overrideRow)
+        });
+    }
     if (!readOnly && subscription && ['active', 'trial'].includes(subscription.status) && subscription.expiresAt && new Date(subscription.expiresAt).getTime() <= Date.now()) {
         await pool.request().input('id', sql.BigInt, subscription.id).query("UPDATE dbo.saas_tenant_subscriptions SET status='expired', updated_at=SYSUTCDATETIME() WHERE id=@id AND status IN ('trial','active');");
         await pool.request().input('tenantId', sql.Int, id).query("UPDATE dbo.gym_tenants SET status='expired', updated_at=SYSUTCDATETIME() WHERE id=@tenantId AND status IN ('trial','active');");
@@ -1181,6 +1192,11 @@ async function getTenantOverrides(tenantId = currentTenantId({ required: true })
     const result = await pool.request().input('tenantId', sql.Int, id).query(`SELECT TOP (1) id,tenant_id,max_members,max_clients,max_users,max_ai_generations,max_storage_mb,max_branches,features_json,notes,created_by_user_id,updated_by_user_id,created_at,updated_at
         FROM dbo.saas_tenant_overrides WHERE tenant_id=@tenantId;`);
     const row = result.recordset[0];
+    if (!row) return null;
+    return tenantOverrideFromRow(row);
+}
+
+function tenantOverrideFromRow(row) {
     if (!row) return null;
     return {
         id: Number(row.id),
@@ -1212,7 +1228,9 @@ async function getEffectiveEntitlements(tenantId = currentTenantId({ required: t
     }
     const base = current?.limitsSnapshot || (current ? null : {});
     const baseFeatures = current?.featuresSnapshot || current?.plan?.features || {};
-    const overrides = await getTenantOverrides(id, { readOnly });
+    const overrides = subscription?.__tenantOverrides !== undefined
+        ? subscription.__tenantOverrides
+        : await getTenantOverrides(id, { readOnly });
     const subscriptionStatus = current?.status || 'none';
     const limits = capabilityService.resolveEffectiveLimits({
         tenantType: resolvedTenantType,
@@ -1298,7 +1316,7 @@ async function enforceTenantAccess(tenantId, { path = '', method = 'GET', readOn
     if (!resolvedTenant) throw saasError('الجيم المطلوب غير موجود.', 404, 'TENANT_NOT_FOUND');
     if (String(resolvedTenant.status) === 'archived') throw saasError('هذا الجيم مؤرشف ولا يمكن الدخول إليه.', 403, 'TENANT_ARCHIVED');
 
-    const subscription = await getCurrentSubscription(id, { readOnly });
+    const subscription = await getCurrentSubscription(id, { readOnly, includeOverrides: true });
     const entitlements = await getEffectiveEntitlements(id, subscription, {
         readOnly,
         tenantType: resolvedTenant.tenantType || resolvedTenant.tenant_type || null

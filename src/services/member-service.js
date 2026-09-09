@@ -421,36 +421,37 @@ async function getPricingCatalog(connection = null, { readOnly = false } = {}) {
     }
     await ensurePricingOverrides({ readOnly });
     const pool = connection || await getPool();
-    const queryPlan = () => pool.request()
-        .query(`SELECT plan_code, plan_name, monthly_price, is_active, sort_order
-                FROM dbo.membership_pricing ORDER BY id ASC;`);
-    const queryType = () => pool.request()
-        .query(`SELECT type_code, type_name, duration_mode, duration_value,
-                       price_multiplier, is_active, sort_order
-                FROM dbo.membership_types ORDER BY sort_order ASC, id ASC;`);
-    const queryPrice = () => pool.request()
-        .query(`SELECT plan_code, type_code, price
-                FROM dbo.membership_type_prices;`);
-    const queryLegacyType = () => pool.request()
-        .query(`SELECT m.membership_type AS type_code,
-                       MIN(m.start_date) AS start_date,
-                       MAX(m.end_date) AS end_date,
-                       MIN(m.membership_plan) AS membership_plan,
-                       MIN(ISNULL(p.list_price, 0)) AS list_price
-                FROM dbo.memberships AS m
-                LEFT JOIN dbo.gym_payments AS p ON p.membership_id = m.id
-                WHERE NOT EXISTS (
-                    SELECT 1 FROM dbo.membership_types AS current_type
-                    WHERE current_type.type_code = m.membership_type
-                )
-                GROUP BY m.membership_type;`);
-    const queryFactories = [queryPlan, queryType, queryPrice, queryLegacyType];
-    const queryResults = connection && typeof connection.commit === 'function'
-        ? [await queryPlan(), await queryType(), await queryPrice(), await queryLegacyType()]
-        : await Promise.all(queryFactories.map((query) => query()));
-    const [planResult, typeResult, priceResult, legacyTypeResult] = queryResults;
+    // These four lookups are independent, but issuing them as separate
+    // requests made every uncached bootstrap pay for four network round trips
+    // to SQL Server. Keep the same result shape while using one batch. This
+    // also works inside an existing transaction connection.
+    const pricingResult = await pool.request().batch(`
+        SELECT plan_code, plan_name, monthly_price, is_active, sort_order
+        FROM dbo.membership_pricing ORDER BY id ASC;
+
+        SELECT type_code, type_name, duration_mode, duration_value,
+               price_multiplier, is_active, sort_order
+        FROM dbo.membership_types ORDER BY sort_order ASC, id ASC;
+
+        SELECT plan_code, type_code, price
+        FROM dbo.membership_type_prices;
+
+        SELECT m.membership_type AS type_code,
+               MIN(m.start_date) AS start_date,
+               MAX(m.end_date) AS end_date,
+               MIN(m.membership_plan) AS membership_plan,
+               MIN(ISNULL(p.list_price, 0)) AS list_price
+        FROM dbo.memberships AS m
+        LEFT JOIN dbo.gym_payments AS p ON p.membership_id = m.id
+        WHERE NOT EXISTS (
+            SELECT 1 FROM dbo.membership_types AS current_type
+            WHERE current_type.type_code = m.membership_type
+        )
+        GROUP BY m.membership_type;
+    `);
+    const [planRows = [], typeRows = [], priceRows = [], legacyTypeRows = []] = pricingResult.recordsets || [];
     const plans = { ...DEFAULT_MEMBERSHIP_PLANS };
-    for (const row of planResult.recordset) {
+    for (const row of planRows) {
         const fallbackLabel = DEFAULT_MEMBERSHIP_PLANS[row.plan_code]?.label || row.plan_code;
         const storedLabel = String(row.plan_name || '').trim();
         plans[row.plan_code] = {
@@ -461,7 +462,7 @@ async function getPricingCatalog(connection = null, { readOnly = false } = {}) {
         };
     }
     const types = { ...DEFAULT_MEMBERSHIP_TYPES };
-    for (const row of typeResult.recordset) {
+    for (const row of typeRows) {
         types[row.type_code] = {
             label: row.type_name,
             mode: row.duration_mode,
@@ -478,12 +479,12 @@ async function getPricingCatalog(connection = null, { readOnly = false } = {}) {
             prices[planCode][typeCode] = Math.round((Number(plan.monthlyPrice || 0) * Number(type.priceMultiplier || 0)) * 100) / 100;
         }
     }
-    for (const row of priceResult.recordset) {
+    for (const row of priceRows) {
         if (!prices[row.plan_code]) prices[row.plan_code] = {};
         prices[row.plan_code][row.type_code] = Number(row.price || 0);
     }
     const typeAliases = {};
-    for (const row of legacyTypeResult.recordset) {
+    for (const row of legacyTypeRows) {
         const legacyCode = String(row.type_code || '').trim();
         if (!legacyCode || types[legacyCode]) continue;
         const startDate = formatDateOnly(row.start_date);
