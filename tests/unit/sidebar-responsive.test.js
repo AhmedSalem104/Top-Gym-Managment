@@ -51,3 +51,12 @@ test('Mobile tab grid keeps the page scrollable and supports reduced motion', ()
     assert.match(mobileStyles, /overflow-y: visible/u);
     assert.match(styles, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.app-shell > \.page-tabs[\s\S]*?transition: none/u);
 });
+
+test('Desktop navigation rail fills the viewport with a legacy height fallback', () => {
+    const styles = read('public/css/components/navigation-shell.css');
+    const desktopRail = styles.slice(styles.lastIndexOf('@media (min-width: 1200px)'));
+
+    assert.match(desktopRail, /grid-row:\s*1\s*\/\s*-1/u);
+    assert.match(desktopRail, /height:\s*100vh[\s\S]*?min-height:\s*100vh[\s\S]*?height:\s*100dvh[\s\S]*?min-height:\s*100dvh/u);
+    assert.match(desktopRail, /align-self:\s*stretch/u);
+});

@@ -1563,10 +1563,15 @@ html[data-brand-active-style="pill"] .app-shell > .page-tabs > .page-tab.active 
     grid-row: 1 / -1;
     display: flex;
     width: 100%;
+    /* Keep the rail viewport-tall even when dynamic viewport units are not
+       available. The grid span preserves the full-height visual anchor while
+       the rail itself owns scrolling for long navigation lists. */
+    height: 100vh;
+    min-height: 100vh;
     height: 100dvh;
     min-height: 100dvh;
     max-height: none;
-    align-self: start;
+    align-self: stretch;
     flex-direction: column;
     overflow-x: hidden;
     overflow-y: auto;

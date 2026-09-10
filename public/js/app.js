@@ -639,7 +639,40 @@
             $('memberForm')?.removeAttribute('data-payment-idempotency-key');
         }
 
-        function setFormDefaults(close = false) { const today = todayIso(); const defaultType = activeTypeEntries()[0]?.[0] || 'monthly'; $('memberId').value = ''; $('fullName').value = ''; $('phone').value = ''; $('email').value = ''; $('registrationDate').value = today; $('notes').value = ''; $('createMembership').checked = false; $('createMembership').disabled = false; $('membershipType').value = defaultType; $('membershipPlan').value = 'gym_only'; $('startDate').value = today; $('endDate').value = calculatedEndDate(today, defaultType); $('membershipNotes').value = ''; $('discountAmount').value = '0'; $('amountPaid').value = ''; $('paidAt').value = today; $('paidAt').max = today; $('paymentMethod').value = 'cash'; $('sendWhatsAppAfterSave').checked = true; $('sendWhatsAppAfterSave').closest('.whatsapp-after-save')?.classList.remove('hidden'); state.editing = null; state.endDateManual = false; $('formTitle').textContent = 'إضافة عضو جديد'; $('saveButton').textContent = 'حفظ العضو'; $('cancelEditButton').classList.add('hidden'); $('resetButton').classList.add('hidden'); syncMemberSubscriptionFields(); syncMemberPermissionFields(); updateFormPricing(); if (close) closeMemberDialog(); }
+        function setFormDefaults(close = false) {
+            const today = todayIso();
+            const defaultType = activeTypeEntries()[0]?.[0] || 'monthly';
+            $('memberId').value = '';
+            $('fullName').value = '';
+            $('phone').value = '';
+            $('email').value = '';
+            $('registrationDate').value = today;
+            $('notes').value = '';
+            $('createMembership').checked = true;
+            $('createMembership').disabled = false;
+            $('membershipType').value = defaultType;
+            $('membershipPlan').value = 'gym_only';
+            $('startDate').value = today;
+            $('endDate').value = calculatedEndDate(today, defaultType);
+            $('membershipNotes').value = '';
+            $('discountAmount').value = '0';
+            $('amountPaid').value = '';
+            $('paidAt').value = today;
+            $('paidAt').max = today;
+            $('paymentMethod').value = 'cash';
+            $('sendWhatsAppAfterSave').checked = true;
+            $('sendWhatsAppAfterSave').closest('.whatsapp-after-save')?.classList.remove('hidden');
+            state.editing = null;
+            state.endDateManual = false;
+            $('formTitle').textContent = 'إضافة عضو جديد';
+            $('saveButton').textContent = 'حفظ العضو';
+            $('cancelEditButton').classList.add('hidden');
+            $('resetButton').classList.add('hidden');
+            syncMemberSubscriptionFields();
+            syncMemberPermissionFields();
+            updateFormPricing();
+            if (close) closeMemberDialog();
+        }
         async function openMemberDialog(member = null) {
             try {
                 if (member && !canUpdateMember()) {
@@ -859,12 +892,10 @@
                 registrationDate: $('registrationDate').value,
                 notes: $('notes').value
             };
-            // Membership and payment are opt-in for a new member. Existing
-            // edits send only the domains the current user is allowed to
-            // change, so a profile-only edit cannot mutate finance data.
-            if (isNewMember) {
-                body.createMembership = shouldCreateMembership;
-            }
+            // A new gym registration keeps the complete member + membership
+            // flow in one atomic API operation. Payment remains optional and
+            // is sent only when the current actor is allowed to record it.
+            if (isNewMember) body.createMembership = shouldCreateMembership;
             if (isNewMember && shouldCreateMembership) {
                 body.startDate = $('startDate').value;
                 body.endDate = $('endDate').value;

@@ -29,10 +29,13 @@ test('production member creation uses a read-only schema gate instead of request
     assert.match(source, /FROM dbo\.members WITH \(UPDLOCK, HOLDLOCK\)/);
 });
 
-test('the browser opts into membership and payment fields instead of sending them for profile-only creation', () => {
+test('the browser keeps membership and payment opt-in fields in the member registration form', () => {
     assert.match(browserSource, /const shouldCreateMembership = isNewMember && Boolean\(\$\('createMembership'\)\?\.checked\)/u);
     assert.match(browserSource, /body\.createMembership = shouldCreateMembership/u);
     assert.match(browserSource, /if \(paymentAllowed && \(shouldCreateMembership/u);
+    assert.match(browserSource, /const body = \{[\s\S]*?fullName: \$\('fullName'\)\.value,[\s\S]*?phone: \$\('phone'\)\.value,[\s\S]*?notes: \$\('notes'\)\.value/u);
+    assert.doesNotMatch(pageSource, /class="checkbox-field member-membership-toggle" hidden/u);
+    assert.doesNotMatch(pageSource, /class="checkbox-field whatsapp-after-save" hidden/u);
     assert.doesNotMatch(pageSource, /id="membershipType"[^>]*required/u);
     assert.doesNotMatch(pageSource, /id="membershipPlan"[^>]*required/u);
     assert.doesNotMatch(pageSource, /id="startDate"[^>]*required/u);
