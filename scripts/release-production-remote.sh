@@ -114,7 +114,7 @@ run_control() {
 }
 plan_output="$(run_control -e MIGRATION_ENV=production -e MIGRATION_PRODUCTION_CONFIRM=I_UNDERSTAND_PRODUCTION_MIGRATION node scripts/production-migration-gate.js --plan --json)"
 case "$plan_output" in
-    *'"pending":['*|*'"pending" : ['*) ;;
+    *'"status":"PASS"'*) ;;
     *)
         STAGE='migration-plan'
         abort_release 78
