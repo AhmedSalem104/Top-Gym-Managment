@@ -16,6 +16,10 @@ test('notification center is loaded only by account shells and uses safe same-or
     assert.match(center, /textContent = item\.title/);
     assert.match(center, /notificationCategoryFilter/);
     assert.match(center, /params\.set\('category', state\.category\)/);
+    assert.match(center, /notification-center-item-icon/);
+    assert.match(center, /notification-center-item-action/);
+    assert.match(center, /تصفية الإشعارات/);
+    assert.doesNotMatch(center, /All notifications|Registration|System/);
     assert.doesNotMatch(center, /console\.(log|error|warn)\([^)]*(token|secret|password)/i);
     assert.match(read('public/index.html'), /notification-center\.js/);
     assert.match(read('public/platform-admin.html'), /notification-center\.js/);

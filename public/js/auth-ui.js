@@ -179,9 +179,16 @@
         });
         document.querySelectorAll('[data-required-permission]').forEach((element) => {
             const allowed = user?.role === 'Owner' || permissionValueAllowed(user, element.dataset.requiredPermission);
-            element.hidden = !allowed;
-            element.toggleAttribute('aria-hidden', !allowed);
-            if (!allowed && 'disabled' in element) element.disabled = true;
+            const stableFreezeAction = element.matches('[data-action="freeze"]');
+            // Keep the freeze affordance in a stable table position. Visibility
+            // is not authorization: unavailable actions remain disabled and the
+            // API enforces the permission again on the server.
+            element.hidden = !allowed && !stableFreezeAction;
+            element.toggleAttribute('aria-hidden', !allowed && !stableFreezeAction);
+            if (!allowed && 'disabled' in element) {
+                element.disabled = true;
+                element.setAttribute('aria-disabled', 'true');
+            }
         });
         const memberPaymentNote = $('memberPaymentPermissionNote');
         if (memberPaymentNote) {

@@ -85,7 +85,7 @@ test('frozen memberships keep resume alongside the visible disabled freeze actio
     assert.match(html, /data-action="resume" data-id="42"/);
 });
 
-test('members without a subscription do not receive a freeze action', () => {
+test('members without a subscription keep a visible disabled freeze action', () => {
     const renderMemberTableRow = loadMemberTableRow();
     const html = renderMemberTableRow({
         id: 42,
@@ -95,7 +95,7 @@ test('members without a subscription do not receive a freeze action', () => {
         membership: null
     });
 
-    assert.doesNotMatch(html, /data-action="freeze"/);
+    assert.match(html, /data-action="freeze" data-id="42" disabled aria-disabled="true"/);
 });
 
 test('member quick-action decoration does not remove freeze for cancelled memberships', () => {

@@ -16,6 +16,7 @@ const {
 } = require('../utils/date');
 const { ensureAttendanceTable, getMemberAttendanceStatuses } = require('./attendance-service');
 const { currentTenantId, getTenantContext } = require('../tenancy/tenant-context');
+const { config } = require('../config/env');
 
 const DEFAULT_MEMBERSHIP_PLANS = {
     gym_only: { label: 'جيم فقط', monthlyPrice: 305, active: true, sortOrder: 1 },
@@ -368,6 +369,67 @@ async function ensureMemberIdentityFields() {
         });
     }
     return memberIdentityPromise;
+}
+
+/**
+ * Production writes must not run DDL or backfill work inside an HTTP request.
+ * The release/migration pipeline owns schema changes; this is a read-only
+ * contract check that fails closed when the deployed schema is incompatible.
+ */
+async function assertMemberMutationSchemaReady({ paymentRequired = false } = {}) {
+    const pool = await getPool();
+    const result = await pool.request().query(`
+        SELECT
+            CASE WHEN OBJECT_ID(N'dbo.members', N'U') IS NULL THEN 1 ELSE 0 END AS membersTable,
+            CASE WHEN COL_LENGTH(N'dbo.members', N'phone_normalized') IS NULL THEN 1 ELSE 0 END AS phoneNormalized,
+            CASE WHEN COL_LENGTH(N'dbo.members', N'membership_code_hash') IS NULL THEN 1 ELSE 0 END AS membershipCodeHash,
+            CASE WHEN COL_LENGTH(N'dbo.members', N'membership_code_ciphertext') IS NULL THEN 1 ELSE 0 END AS membershipCodeCiphertext,
+            CASE WHEN OBJECT_ID(N'dbo.gym_membership_code_audit', N'U') IS NULL THEN 1 ELSE 0 END AS membershipCodeAuditTable,
+            CASE WHEN OBJECT_ID(N'dbo.membership_events', N'U') IS NULL THEN 1 ELSE 0 END AS membershipEventsTable,
+            CASE WHEN OBJECT_ID(N'dbo.memberships', N'U') IS NULL THEN 1 ELSE 0 END AS membershipsTable,
+            CASE WHEN OBJECT_ID(N'dbo.gym_payments', N'U') IS NULL THEN 1 ELSE 0 END AS paymentsTable,
+            CASE WHEN OBJECT_ID(N'dbo.gym_payment_transactions', N'U') IS NULL THEN 1 ELSE 0 END AS paymentTransactionsTable
+    `);
+
+    const row = result.recordset?.[0] || {};
+    const required = [
+        ['membersTable', 'dbo.members'],
+        ['phoneNormalized', 'dbo.members.phone_normalized'],
+        ['membershipCodeHash', 'dbo.members.membership_code_hash'],
+        ['membershipCodeCiphertext', 'dbo.members.membership_code_ciphertext'],
+        ['membershipCodeAuditTable', 'dbo.gym_membership_code_audit'],
+        ['membershipEventsTable', 'dbo.membership_events'],
+        ['membershipsTable', 'dbo.memberships'],
+        ['paymentsTable', 'dbo.gym_payments']
+    ];
+
+    if (paymentRequired) {
+        required.push(['paymentTransactionsTable', 'dbo.gym_payment_transactions']);
+    }
+
+    const missing = required
+        .filter(([field]) => Number(row[field]) !== 0)
+        .map(([, name]) => name);
+
+    if (missing.length) {
+        throw appError(
+            'قاعدة بيانات العضويات غير جاهزة للإصدار الحالي.',
+            503,
+            'MEMBER_SCHEMA_NOT_READY'
+        );
+    }
+}
+
+async function prepareMemberMutationSchema({ paymentRequired = false } = {}) {
+    if (config.nodeEnv === 'production') {
+        return assertMemberMutationSchemaReady({ paymentRequired });
+    }
+
+    await ensureMemberIdentityFields();
+    if (paymentRequired) {
+        await ensurePaymentTransactionsTable();
+    }
+    await membershipCodeService.ensureMembershipCodeStorage();
 }
 
 async function assertNoDuplicateMember(connection, phoneNormalized, email, excludeId = null) {
@@ -1592,9 +1654,7 @@ async function createMember(body, { tenantSlug = '', idempotencyKey = null } = {
     const amountPaid = data.amountPaid ?? 0;
     const paymentDate = amountPaid > 0 ? requiredPaymentCollectionDate(data.paidAt) : null;
     const paymentIdempotencyKey = amountPaid > 0 ? normalizePaymentIdempotencyKey(idempotencyKey) : null;
-    await ensureMemberIdentityFields();
-    await ensurePaymentTransactionsTable();
-    await membershipCodeService.ensureMembershipCodeStorage();
+    await prepareMemberMutationSchema({ paymentRequired: amountPaid > 0 });
     if (paymentIdempotencyKey) {
         const existing = await findPaymentTransactionByIdempotencyKey(await getPool(), paymentIdempotencyKey);
         if (existing) return getMemberById(existing.memberId);
