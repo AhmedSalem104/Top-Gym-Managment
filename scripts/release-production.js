@@ -210,7 +210,7 @@ function runRemoteRelease(config, script) {
         const failure = String(result.stderr || '').match(/RELEASE_REMOTE_FAIL stage=([a-z0-9-]+) code=([0-9]+)/i);
         const safeErrors = String(result.stderr || '').split(/\r?\n/).filter((line) =>
             /^RELEASE_REMOTE_FAIL stage=[a-z0-9-]+ code=[0-9]+$/i.test(line)
-            || /^\{"status":"FAIL","code":"[A-Z0-9_]+"\}$/.test(line)
+            || /^\{"status":"FAIL","code":"[A-Z0-9_]+","errorName":"[A-Za-z0-9_]+","sqlNumber":(?:null|-?\d+)\}$/.test(line)
         );
         if (safeErrors.length) process.stderr.write(`${safeErrors.join('\n')}\n`);
         const error = new Error('Production release remote gate failed; previous release was preserved where rollback was possible.');
