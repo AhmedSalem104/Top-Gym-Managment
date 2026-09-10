@@ -139,6 +139,9 @@ function sshArgs(config) {
 }
 
 function uploadArchive(config, archivePath, archiveName, expectedChecksum) {
+    const existing = run('ssh', [...sshArgs(config), `sha256sum -- /tmp/${archiveName}`], { encoding: 'utf8', timeout: 30000 });
+    const existingChecksum = existing.status === 0 ? String(existing.stdout || '').trim().split(/\s+/)[0].toLowerCase() : '';
+    if (existingChecksum === expectedChecksum) return 'REMOTE_ALREADY_VERIFIED';
     const result = run('scp', ['-i', config.identityPath, '-o', 'IdentitiesOnly=yes', '-o', 'BatchMode=yes', '-o', 'StrictHostKeyChecking=no', '-o', 'ConnectTimeout=15', archivePath, remoteTarget(config, archiveName)], { stdio: 'ignore', timeout: 180000 });
     if (!result.error && result.status === 0) return 'PASS';
     // Some Windows OpenSSH/scp builds return a non-zero status after the
