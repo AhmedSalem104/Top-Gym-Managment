@@ -48,7 +48,7 @@ if [ -e "$RELEASE_DIR" ]; then
     [ "$(cat "$RELEASE_DIR/.logicfit-release-sha")" = "$RELEASE_SHA" ]
 else
     mkdir "$RELEASE_DIR"
-    tar -xf "$ARCHIVE_PATH" -C "$RELEASE_DIR"
+    tar -xzf "$ARCHIVE_PATH" -C "$RELEASE_DIR"
     printf '%s\n' "$RELEASE_SHA" > "$RELEASE_DIR/.logicfit-release-sha"
 fi
 rm -f "$ARCHIVE_PATH"

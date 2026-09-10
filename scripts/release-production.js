@@ -4,6 +4,7 @@ const childProcess = require('node:child_process');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
+const zlib = require('node:zlib');
 
 const ROOT = path.resolve(__dirname, '..');
 const CONFIG_PATH = path.join(ROOT, 'config', 'production-release.json');
@@ -113,9 +114,16 @@ function runLocalPreflight() {
 }
 
 function archiveCommit(sha, tempDir) {
-    const archiveName = `logicfit-release-${sha}.tar`;
+    const tarName = `logicfit-release-${sha}.tar`;
+    const tarPath = path.join(tempDir, tarName);
+    const archiveName = `${tarName}.gz`;
     const archivePath = path.join(tempDir, archiveName);
-    runChecked('git', ['archive', '--format=tar', '--output', archivePath, sha], { stdio: 'ignore', failureMessage: 'Immutable release archive could not be created.', code: 'RELEASE_ARCHIVE_FAILED' });
+    runChecked('git', ['archive', '--format=tar', '--output', tarPath, sha], { stdio: 'ignore', failureMessage: 'Immutable release archive could not be created.', code: 'RELEASE_ARCHIVE_FAILED' });
+    try {
+        fs.writeFileSync(archivePath, zlib.gzipSync(fs.readFileSync(tarPath), { level: 6 }));
+    } finally {
+        fs.unlinkSync(tarPath);
+    }
     if (!fs.existsSync(archivePath) || fs.statSync(archivePath).size <= 0) fail('Immutable release archive is empty.', 'RELEASE_ARCHIVE_INVALID');
     return { archiveName, archivePath };
 }
