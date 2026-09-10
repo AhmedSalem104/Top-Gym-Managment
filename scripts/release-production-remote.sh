@@ -110,7 +110,7 @@ printf 'BACKUP_VERIFICATION=PASS\n'
 
 STAGE='migration-plan'
 run_control() {
-    run_with_current_env "$OLD_CONTAINER" -e NODE_ENV=production -e NODE_PATH=/app/node_modules -e RELEASE_APP_ROOT=/app -e RELEASE_MIGRATIONS_DIR=/app/database/migrations -e RELEASE_MANIFEST_PATH=/control/database/migration-manifest.json -v "$RELEASE_DIR:/app" -v "$CONTROL_DIR:/control" -w /control "$NODE_IMAGE" "$@"
+    run_with_current_env "$OLD_CONTAINER" -e NODE_ENV=production -e NODE_PATH=/app/node_modules -e RELEASE_APP_ROOT=/app -e RELEASE_MIGRATIONS_DIR=/app/database/migrations -e RELEASE_MANIFEST_PATH=/app/database/migration-manifest.json -v "$RELEASE_DIR:/app" -w /app "$NODE_IMAGE" "$@"
 }
 plan_output="$(run_control -e MIGRATION_ENV=production -e MIGRATION_PRODUCTION_CONFIRM=I_UNDERSTAND_PRODUCTION_MIGRATION node scripts/production-migration-gate.js --plan --json)"
 case "$plan_output" in
