@@ -26,8 +26,8 @@ BEGIN
         expires_at DATETIME2(0) NULL,
         CONSTRAINT CK_saas_notifications_severity CHECK (severity IN ('info', 'success', 'warning', 'critical')),
         CONSTRAINT FK_saas_notifications_tenant FOREIGN KEY (tenant_id) REFERENCES dbo.gym_tenants(id) ON DELETE CASCADE,
-        CONSTRAINT FK_saas_notifications_recipient FOREIGN KEY (recipient_user_id) REFERENCES dbo.gym_users(id) ON DELETE SET NULL,
-        CONSTRAINT FK_saas_notifications_actor FOREIGN KEY (actor_user_id) REFERENCES dbo.gym_users(id) ON DELETE SET NULL
+        CONSTRAINT FK_saas_notifications_recipient FOREIGN KEY (recipient_user_id) REFERENCES dbo.gym_users(id) ON DELETE NO ACTION,
+        CONSTRAINT FK_saas_notifications_actor FOREIGN KEY (actor_user_id) REFERENCES dbo.gym_users(id) ON DELETE NO ACTION
     );
 END;
 

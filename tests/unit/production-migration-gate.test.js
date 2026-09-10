@@ -15,8 +15,8 @@ test('migration apply resolves SQL from the verified migration directory', () =>
 });
 
 test('central notification foreign keys avoid SQL Server multiple cascade paths', () => {
-    assert.match(migration, /FK_saas_notifications_recipient[\s\S]*ON DELETE SET NULL/i);
-    assert.match(migration, /FK_saas_notifications_actor[\s\S]*ON DELETE SET NULL/i);
+    assert.match(migration, /FK_saas_notifications_recipient[\s\S]*ON DELETE NO ACTION/i);
+    assert.match(migration, /FK_saas_notifications_actor[\s\S]*ON DELETE NO ACTION/i);
     assert.equal(manifest.migrations['031-central-notifications.sql'].checksum,
         require('node:crypto').createHash('sha256').update(migration).digest('hex'));
 });
