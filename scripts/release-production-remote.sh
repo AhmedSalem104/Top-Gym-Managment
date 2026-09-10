@@ -3,6 +3,9 @@ set -Eeuo pipefail
 
 RELEASE_SHA='__RELEASE_SHA__'
 APP_ROOT='__APP_ROOT__'
+REPOSITORY_URL='__REPOSITORY_URL__'
+GIT_CACHE_DIR='__GIT_CACHE_DIR__'
+RELEASE_TRANSPORT='__RELEASE_TRANSPORT__'
 NODE_IMAGE='__NODE_IMAGE__'
 CONTAINER_NAME='__CONTAINER_NAME__'
 INTERNAL_PORT='__INTERNAL_PORT__'
@@ -49,27 +52,56 @@ OLD_RELEASE="$(docker inspect "$OLD_CONTAINER" --format '{{range .Mounts}}{{if e
 [ -n "$OLD_RELEASE" ]
 printf 'CURRENT_CONTAINER=PASS\n'
 
-STAGE='control-stage'
-rm -rf -- "$CONTROL_DIR"
-mkdir -p "$CONTROL_DIR"
-tar -xzf "$CONTROL_ARCHIVE_PATH" -C "$CONTROL_DIR"
-[ -f "$CONTROL_DIR/scripts/production-migration-gate.js" ]
-[ -f "$CONTROL_DIR/scripts/production-security-gate.js" ]
-[ -f "$CONTROL_DIR/database/migration-manifest.json" ]
-printf 'RELEASE_CONTROL=PASS\n'
-
 STAGE='stage-release'
 mkdir -p "$APP_ROOT"
-if [ -e "$RELEASE_DIR" ]; then
-    [ -f "$RELEASE_DIR/.logicfit-release-sha" ]
-    [ "$(cat "$RELEASE_DIR/.logicfit-release-sha")" = "$RELEASE_SHA" ]
+if [ "$RELEASE_TRANSPORT" = 'git' ]; then
+    STAGE='source-fetch'
+    command -v git >/dev/null 2>&1
+    mkdir -p "$(dirname "$GIT_CACHE_DIR")"
+    if [ ! -d "$GIT_CACHE_DIR" ]; then
+        git init --bare "$GIT_CACHE_DIR" >/dev/null
+        git --git-dir="$GIT_CACHE_DIR" remote add origin "$REPOSITORY_URL"
+    else
+        [ -d "$GIT_CACHE_DIR/objects" ]
+        existing_origin="$(git --git-dir="$GIT_CACHE_DIR" remote get-url origin 2>/dev/null || true)"
+        [ "$existing_origin" = "$REPOSITORY_URL" ]
+    fi
+    git --git-dir="$GIT_CACHE_DIR" fetch --no-tags origin "$RELEASE_SHA" >/dev/null
+    fetched_sha="$(git --git-dir="$GIT_CACHE_DIR" rev-parse --verify "$RELEASE_SHA^{commit}")"
+    [ "$fetched_sha" = "$RELEASE_SHA" ]
+    if [ -e "$RELEASE_DIR" ]; then
+        [ -f "$RELEASE_DIR/.logicfit-release-sha" ]
+        [ "$(cat "$RELEASE_DIR/.logicfit-release-sha")" = "$RELEASE_SHA" ]
+    else
+        mkdir "$RELEASE_DIR"
+        git --git-dir="$GIT_CACHE_DIR" archive --format=tar "$RELEASE_SHA" | tar -x -C "$RELEASE_DIR"
+        printf '%s\n' "$RELEASE_SHA" > "$RELEASE_DIR/.logicfit-release-sha"
+    fi
+    printf 'RELEASE_SOURCE=GIT_FETCH_PASS\n'
+elif [ "$RELEASE_TRANSPORT" = 'archive' ]; then
+    STAGE='control-stage'
+    rm -rf -- "$CONTROL_DIR"
+    mkdir -p "$CONTROL_DIR"
+    tar -xzf "$CONTROL_ARCHIVE_PATH" -C "$CONTROL_DIR"
+    [ -f "$CONTROL_DIR/scripts/production-migration-gate.js" ]
+    [ -f "$CONTROL_DIR/scripts/production-security-gate.js" ]
+    [ -f "$CONTROL_DIR/database/migration-manifest.json" ]
+    printf 'RELEASE_CONTROL=PASS\n'
+    if [ -e "$RELEASE_DIR" ]; then
+        [ -f "$RELEASE_DIR/.logicfit-release-sha" ]
+        [ "$(cat "$RELEASE_DIR/.logicfit-release-sha")" = "$RELEASE_SHA" ]
+    else
+        mkdir "$RELEASE_DIR"
+        tar -xzf "$ARCHIVE_PATH" -C "$RELEASE_DIR"
+        printf '%s\n' "$RELEASE_SHA" > "$RELEASE_DIR/.logicfit-release-sha"
+    fi
+    printf 'RELEASE_SOURCE=ARCHIVE_PASS\n'
 else
-    mkdir "$RELEASE_DIR"
-    tar -xzf "$ARCHIVE_PATH" -C "$RELEASE_DIR"
-    printf '%s\n' "$RELEASE_SHA" > "$RELEASE_DIR/.logicfit-release-sha"
+    abort_release 74
 fi
-rm -f "$ARCHIVE_PATH"
-printf 'RELEASE_ARCHIVE=PASS\n'
+if [ "$RELEASE_TRANSPORT" = 'archive' ]; then
+    rm -f "$ARCHIVE_PATH" "$CONTROL_ARCHIVE_PATH"
+fi
 
 STAGE='dependencies'
 if [ ! -d "$RELEASE_DIR/node_modules" ]; then
@@ -83,34 +115,23 @@ run_with_current_env() {
     docker inspect "$source_container" --format '{{range .Config.Env}}{{println .}}{{end}}' | docker run --rm --network host --env-file /dev/stdin "$@"
 }
 
-STAGE='backup'
-backup_started_at="$(date -u +%Y-%m-%dT%H:%M:%S.%3NZ)"
-backup_log="$(mktemp)"
-if ! run_with_current_env "$OLD_CONTAINER" \
-    -e LOGIC_FIT_JOB_STATE_DIR=/tmp/logicfit-job-state-release \
-    -e NODE_ENV=production \
-    -v "$RELEASE_DIR:/app" -w /app "$NODE_IMAGE" \
-    node --max-old-space-size=640 scripts/run-server-scheduled-backup.js >"$backup_log" 2>&1; then
-    rm -f "$backup_log"
-    abort_release 76
-fi
-rm -f "$backup_log"
-printf 'BACKUP_JOB=PASS\n'
-
-STAGE='backup-verification'
-if ! run_with_current_env "$OLD_CONTAINER" \
-    -e NODE_ENV=production \
-    -e "BACKUP_STARTED_AT=$backup_started_at" \
-    -e PRODUCTION_BACKUP_VERIFY_CONFIRM=YES \
-    -v "$RELEASE_DIR:/app" -w /app "$NODE_IMAGE" \
-    node --max-old-space-size=640 scripts/verify-production-backup.js >/dev/null; then
-    abort_release 77
-fi
-printf 'BACKUP_VERIFICATION=PASS\n'
-
 STAGE='migration-plan'
 run_control() {
-    run_with_current_env "$OLD_CONTAINER" -e NODE_ENV=production -e NODE_PATH=/app/node_modules -e RELEASE_APP_ROOT=/app -e RELEASE_MIGRATIONS_DIR=/app/database/migrations -e RELEASE_MANIFEST_PATH=/app/database/migration-manifest.json -v "$RELEASE_DIR:/app" -w /app "$NODE_IMAGE" "$@"
+    control_env=()
+    while [ "${1:-}" = '-e' ]; do
+        [ "$#" -ge 2 ]
+        control_env+=("$1" "$2")
+        shift 2
+    done
+    [ "$#" -ge 1 ]
+    run_with_current_env "$OLD_CONTAINER" \
+        -e NODE_ENV=production \
+        -e NODE_PATH=/app/node_modules \
+        -e RELEASE_APP_ROOT=/app \
+        -e RELEASE_MIGRATIONS_DIR=/app/database/migrations \
+        -e RELEASE_MANIFEST_PATH=/app/database/migration-manifest.json \
+        "${control_env[@]}" \
+        -v "$RELEASE_DIR:/app" -w /app "$NODE_IMAGE" "$@"
 }
 plan_output="$(run_control -e MIGRATION_ENV=production -e MIGRATION_PRODUCTION_CONFIRM=I_UNDERSTAND_PRODUCTION_MIGRATION node scripts/production-migration-gate.js --plan --json)"
 case "$plan_output" in
@@ -128,20 +149,54 @@ case "$plan_output" in
 esac
 printf 'MIGRATION_PLAN=PASS\n'
 
+MIGRATION_PENDING='NONE'
 case "$plan_output" in
-    *031-central-notifications.sql*)
-    STAGE='migration-031'
-    run_control -e MIGRATION_ENV=production -e MIGRATION_PRODUCTION_CONFIRM=I_UNDERSTAND_PRODUCTION_MIGRATION -e RELEASE_MIGRATION_APPLY_CONFIRM=YES node scripts/production-migration-gate.js --apply --json >/dev/null
-    printf 'MIGRATION_PENDING=APPLIED\n'
+*031-central-notifications.sql*)
+    MIGRATION_PENDING='031-central-notifications.sql'
     ;;
     *)
-    printf 'MIGRATION_PENDING=NONE\n'
     ;;
 esac
 
-STAGE='rls-tenancy'
-run_control -e RELEASE_PRODUCTION_SECURITY_CONFIRM=YES node scripts/production-security-gate.js >/dev/null
-printf 'RLS_TENANCY=PASS\n'
+if [ "$MIGRATION_PENDING" = '031-central-notifications.sql' ]; then
+    STAGE='backup'
+    backup_started_at="$(date -u +%Y-%m-%dT%H:%M:%S.%3NZ)"
+    backup_log="$(mktemp)"
+    if ! run_with_current_env "$OLD_CONTAINER" \
+        -e LOGIC_FIT_JOB_STATE_DIR=/tmp/logicfit-job-state-release \
+        -e NODE_ENV=production \
+        -v "$RELEASE_DIR:/app" -w /app "$NODE_IMAGE" \
+        node --max-old-space-size=640 scripts/run-server-scheduled-backup.js >"$backup_log" 2>&1; then
+        rm -f "$backup_log"
+        abort_release 76
+    fi
+    rm -f "$backup_log"
+    printf 'BACKUP_JOB=PASS\n'
+
+    STAGE='backup-verification'
+    if ! run_with_current_env "$OLD_CONTAINER" \
+        -e NODE_ENV=production \
+        -e "BACKUP_STARTED_AT=$backup_started_at" \
+        -e PRODUCTION_BACKUP_VERIFY_CONFIRM=YES \
+        -v "$RELEASE_DIR:/app" -w /app "$NODE_IMAGE" \
+        node --max-old-space-size=640 scripts/verify-production-backup.js >/dev/null; then
+        abort_release 77
+    fi
+    printf 'BACKUP_VERIFICATION=PASS\n'
+
+    STAGE='migration-031'
+    run_control -e MIGRATION_ENV=production -e MIGRATION_PRODUCTION_CONFIRM=I_UNDERSTAND_PRODUCTION_MIGRATION -e RELEASE_MIGRATION_APPLY_CONFIRM=YES node scripts/production-migration-gate.js --apply --json >/dev/null
+    printf 'MIGRATION_PENDING=APPLIED\n'
+
+    STAGE='rls-tenancy'
+    run_control -e RELEASE_PRODUCTION_SECURITY_CONFIRM=YES node scripts/production-security-gate.js >/dev/null
+    printf 'RLS_TENANCY=PASS\n'
+else
+    printf 'BACKUP_JOB=SKIPPED_CODE_ONLY\n'
+    printf 'BACKUP_VERIFICATION=SKIPPED_CODE_ONLY\n'
+    printf 'MIGRATION_PENDING=NONE\n'
+    printf 'RLS_TENANCY=SKIPPED_CODE_ONLY\n'
+fi
 
 STAGE='candidate'
 CANDIDATE_NAME="${CONTAINER_NAME}-candidate-${RELEASE_SHA:0:12}"

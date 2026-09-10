@@ -1,0 +1,152 @@
+name: Logic Fit Production VPS
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  deployments: write
+
+concurrency:
+  group: logic-fit-production
+  cancel-in-progress: false
+
+jobs:
+  production-release:
+    name: Production release
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    environment:
+      name: production-vps
+      url: https://getlogicfit.com
+    steps:
+      - name: Create deployment (PENDING)
+        id: deployment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const deployment = await github.rest.repos.createDeployment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: context.sha,
+              environment: 'production-vps',
+              description: 'Logic Fit VPS release queued',
+              auto_merge: false,
+              required_contexts: []
+            });
+            await github.rest.repos.createDeploymentStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              deployment_id: deployment.data.id,
+              state: 'queued',
+              description: 'PENDING: waiting for the production release lock'
+            });
+            core.setOutput('id', String(deployment.data.id));
+
+      - name: Checkout exact pushed SHA
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+
+      - name: Update deployment (BUILDING)
+        uses: actions/github-script@v7
+        env:
+          DEPLOYMENT_ID: ${{ steps.deployment.outputs.id }}
+        with:
+          script: |
+            await github.rest.repos.createDeploymentStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              deployment_id: Number(process.env.DEPLOYMENT_ID),
+              state: 'in_progress',
+              description: 'BUILDING: locked dependency, test, QA, and build gates'
+            });
+
+      - name: Use Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24.x
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Unit tests
+        run: npm run test:unit
+
+      - name: Backup and recovery tests
+        run: npm run test:backup
+
+      - name: Database readiness tests
+        run: npm run test:database-readiness
+
+      - name: QA gate
+        run: npm run qa:gate
+
+      - name: Production build
+        run: npm run build
+
+      - name: Dependency audit
+        run: npm audit --audit-level=high
+
+      - name: Prepare ephemeral SSH identity
+        env:
+          VPS_SSH_PRIVATE_KEY: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+        run: |
+          if [ -z "$VPS_SSH_PRIVATE_KEY" ]; then
+            echo 'VPS_SSH_PRIVATE_KEY is not configured in the production environment.' >&2
+            exit 1
+          fi
+          key_path="$RUNNER_TEMP/logicfit-vps-admin"
+          umask 077
+          printf '%s\n' "$VPS_SSH_PRIVATE_KEY" > "$key_path"
+          unset VPS_SSH_PRIVATE_KEY
+          echo "RELEASE_SSH_IDENTITY_PATH=$key_path" >> "$GITHUB_ENV"
+
+      - name: Update deployment (DEPLOYING)
+        uses: actions/github-script@v7
+        env:
+          DEPLOYMENT_ID: ${{ steps.deployment.outputs.id }}
+        with:
+          script: |
+            await github.rest.repos.createDeploymentStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              deployment_id: Number(process.env.DEPLOYMENT_ID),
+              state: 'in_progress',
+              description: 'DEPLOYING: VPS fetches and verifies the exact Git SHA'
+            });
+
+      - name: Run official production release pipeline
+        env:
+          RELEASE_PRODUCTION_CONFIRM: I_UNDERSTAND_PRODUCTION_RELEASE
+          RELEASE_TRANSPORT: git
+        run: npm run release:production -- --sha "$GITHUB_SHA"
+
+      - name: Final deployment status
+        if: always()
+        uses: actions/github-script@v7
+        env:
+          DEPLOYMENT_ID: ${{ steps.deployment.outputs.id }}
+          JOB_STATUS: ${{ job.status }}
+        with:
+          script: |
+            const state = process.env.JOB_STATUS === 'success' ? 'success' : 'failure';
+            const description = state === 'success'
+              ? 'SUCCESS: exact SHA deployed and health gates passed'
+              : 'FAILED: previous Production release was preserved where possible';
+            await github.rest.repos.createDeploymentStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              deployment_id: Number(process.env.DEPLOYMENT_ID),
+              state,
+              description,
+              environment_url: 'https://getlogicfit.com'
+            });
+
+      - name: Remove ephemeral SSH identity
+        if: always()
+        run: rm -f -- "$RUNNER_TEMP/logicfit-vps-admin"

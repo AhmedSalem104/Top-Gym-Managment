@@ -1,7 +1,7 @@
 'use strict';
 
 const assert = require('node:assert/strict');
-const { evaluateReleaseGates } = require('./release-production');
+const { evaluateReleaseGates, parseArgs, renderRemoteScript } = require('./release-production');
 
 const passing = {
     backup: true,
@@ -34,6 +34,22 @@ function main() {
     expectFailure('concurrent release', { lock: false }, 'lock');
     expectFailure('health failure', { health: false }, 'health');
     expectFailure('SHA mismatch', { sha: false }, 'sha');
+
+    assert.equal(parseArgs([]).transport, '');
+    assert.equal(parseArgs(['--sha', 'a'.repeat(40), '--transport', 'git']).transport, 'git');
+    assert.throws(() => parseArgs(['--transport', 'ftp']), /transport is invalid/i);
+    const rendered = renderRemoteScript({
+        appRoot: '/opt/logicfit-vps',
+        repositoryUrl: 'https://github.com/example/logic-fit.git',
+        gitCacheDir: '/opt/logicfit-vps/git-cache',
+        nodeImage: 'node:24-bookworm-slim',
+        containerName: 'logicfit-production-vps',
+        internalPort: 3017,
+        candidatePort: 3027
+    }, 'a'.repeat(40), '', '', 'git');
+    assert.match(rendered, /fetch --no-tags origin/);
+    assert.match(rendered, /RELEASE_SOURCE=GIT_FETCH_PASS/);
+    assert.doesNotMatch(rendered, /__[A-Z0-9_]+__/);
 
     process.stdout.write('RELEASE_PIPELINE_SELF_TEST=PASS\n');
 }

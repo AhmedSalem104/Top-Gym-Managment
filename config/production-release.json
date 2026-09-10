@@ -2,6 +2,8 @@
   "host": "128.140.58.112",
   "user": "root",
   "identityPath": "%USERPROFILE%/AppData/Local/LogicFitssh/logicfit-vps-admin",
+  "repositoryUrl": "https://github.com/AhmedSalem104/Top-Gym-Managment.git",
+  "gitCacheDir": "/opt/logicfit-vps/git-cache",
   "appRoot": "/opt/logicfit-vps",
   "containerName": "logicfit-production-vps",
   "nodeImage": "node:24-bookworm-slim",

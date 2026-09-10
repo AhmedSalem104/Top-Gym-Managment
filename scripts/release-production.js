@@ -65,9 +65,9 @@ function loadReleaseConfig() {
     } catch (_) {
         fail('Production release configuration is unavailable.', 'RELEASE_CONFIG_MISSING');
     }
-    const required = ['host', 'user', 'identityPath', 'appRoot', 'containerName', 'nodeImage', 'internalPort', 'candidatePort'];
+    const required = ['host', 'user', 'identityPath', 'repositoryUrl', 'gitCacheDir', 'appRoot', 'containerName', 'nodeImage', 'internalPort', 'candidatePort'];
     for (const key of required) if (config[key] === undefined || config[key] === null || String(config[key]).trim() === '') fail(`Release configuration is missing ${key}.`, 'RELEASE_CONFIG_INVALID');
-    const identityPath = expandPath(config.identityPath);
+    const identityPath = expandPath(process.env.RELEASE_SSH_IDENTITY_PATH || config.identityPath);
     if (!identityPath || !fs.existsSync(identityPath)) fail('Canonical production SSH identity is unavailable locally.', 'RELEASE_SSH_IDENTITY_MISSING');
     if (!Number.isInteger(Number(config.internalPort)) || !Number.isInteger(Number(config.candidatePort))) fail('Release ports are invalid.', 'RELEASE_CONFIG_INVALID');
     if (Number(config.internalPort) === Number(config.candidatePort)) fail('Release ports must be distinct.', 'RELEASE_CONFIG_INVALID');
@@ -175,7 +175,7 @@ function uploadArchive(config, archivePath, archiveName, expectedChecksum) {
     fail('Production release archive upload failed.', 'RELEASE_UPLOAD_FAILED');
 }
 
-function renderRemoteScript(config, sha, archiveName, controlArchiveName) {
+function renderRemoteScript(config, sha, archiveName = '', controlArchiveName = '', transport = 'git') {
     let script;
     try {
         script = fs.readFileSync(REMOTE_SCRIPT_PATH, 'utf8');
@@ -185,6 +185,9 @@ function renderRemoteScript(config, sha, archiveName, controlArchiveName) {
     const replacements = {
         __RELEASE_SHA__: sha,
         __APP_ROOT__: config.appRoot,
+        __REPOSITORY_URL__: config.repositoryUrl,
+        __GIT_CACHE_DIR__: config.gitCacheDir,
+        __RELEASE_TRANSPORT__: transport,
         __NODE_IMAGE__: config.nodeImage,
         __CONTAINER_NAME__: config.containerName,
         __INTERNAL_PORT__: String(config.internalPort),
@@ -193,7 +196,7 @@ function renderRemoteScript(config, sha, archiveName, controlArchiveName) {
         __CONTROL_ARCHIVE_NAME__: controlArchiveName
     };
     for (const [placeholder, value] of Object.entries(replacements)) {
-        if (!/^[\w./:@+-]+$/.test(String(value))) fail('Release configuration contains unsafe remote values.', 'RELEASE_CONFIG_UNSAFE');
+        if (value !== '' && !/^[\w./:@+-]+$/.test(String(value))) fail('Release configuration contains unsafe remote values.', 'RELEASE_CONFIG_UNSAFE');
         script = script.split(placeholder).join(String(value));
     }
     if (/__[A-Z0-9_]+__/.test(script)) fail('Remote release runner has unresolved placeholders.', 'RELEASE_REMOTE_RUNNER_INVALID');
@@ -222,12 +225,16 @@ function cleanupDirectory(directory) {
 function parseArgs(argv = process.argv.slice(2)) {
     const shaIndex = argv.indexOf('--sha');
     const sha = shaIndex >= 0 ? argv[shaIndex + 1] : '';
-    const known = new Set(['--sha', '--self-test']);
+    const transportIndex = argv.indexOf('--transport');
+    const transport = transportIndex >= 0 ? String(argv[transportIndex + 1] || '').trim().toLowerCase() : '';
+    const known = new Set(['--sha', '--transport', '--self-test']);
     for (let index = 0; index < argv.length; index += 1) {
         if (argv[index] === '--sha') { index += 1; continue; }
+        if (argv[index] === '--transport') { index += 1; continue; }
         if (!known.has(argv[index])) fail('Unknown production release argument.', 'RELEASE_ARGUMENT_INVALID');
     }
-    return { sha, selfTest: argv.includes('--self-test') };
+    if (transport && !['git', 'archive'].includes(transport)) fail('Release transport is invalid.', 'RELEASE_TRANSPORT_INVALID');
+    return { sha, transport, selfTest: argv.includes('--self-test') };
 }
 
 function main() {
@@ -239,15 +246,21 @@ function main() {
     if (String(process.env.RELEASE_PRODUCTION_CONFIRM || '').trim() !== RELEASE_CONFIRMATION) fail('Production release requires explicit confirmation.', 'RELEASE_CONFIRMATION_MISSING');
     const config = loadReleaseConfig();
     const sha = resolveReleaseSha(args.sha);
+    const transport = args.transport || String(process.env.RELEASE_TRANSPORT || 'git').trim().toLowerCase() || 'git';
+    if (!['git', 'archive'].includes(transport)) fail('Release transport is invalid.', 'RELEASE_TRANSPORT_INVALID');
     assertReleaseWorktreeSafe();
     runLocalPreflight();
     const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'logicfit-release-'));
     try {
-        const archive = archiveCommit(sha, tempDir);
-        const control = archiveControlBundle(tempDir);
-        uploadArchive(config, archive.archivePath, archive.archiveName, archive.checksum);
-        uploadArchive(config, control.archivePath, control.archiveName, control.checksum);
-        const output = runRemoteRelease(config, renderRemoteScript(config, sha, archive.archiveName, control.archiveName));
+        let archive = null;
+        let control = null;
+        if (transport === 'archive') {
+            archive = archiveCommit(sha, tempDir);
+            control = archiveControlBundle(tempDir);
+            uploadArchive(config, archive.archivePath, archive.archiveName, archive.checksum);
+            uploadArchive(config, control.archivePath, control.archiveName, control.checksum);
+        }
+        const output = runRemoteRelease(config, renderRemoteScript(config, sha, archive?.archiveName || '', control?.archiveName || '', transport));
         process.stdout.write(`RELEASE_SHA=${sha}\n${output.join('\n')}\nPRODUCTION_RELEASE=PASS\n`);
     } finally {
         cleanupDirectory(tempDir);

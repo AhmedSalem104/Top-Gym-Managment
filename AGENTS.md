@@ -55,3 +55,27 @@ For every meaningful change:
 Each specialist reports to the Lead using:
 
 `FINDING → ROOT CAUSE → PROPOSED FIX → FILES AFFECTED → DEPENDENCIES → RISKS → TESTS → BEFORE/AFTER EVIDENCE`
+
+### Automatic production delivery
+
+- A successful push/update to `main` is the Production deployment trigger.
+- The Lead uses the existing `npm run release:production` pipeline; normal
+  releases fetch the exact Git SHA on the VPS and do not SCP the full source
+  archive or edit the running directory in place.
+- The pipeline classifies code-only versus migration releases. Code-only
+  releases skip unnecessary Production backup and migration work. Migration
+  releases require the existing verified backup gate, authoritative ledger,
+  manifest safety gate, RLS/Tenancy gate, candidate health/smoke, and exact-SHA
+  cutover checks.
+- The migration ledger remains the only applied-history source. Never infer
+  pending state from filenames, never replay historical migrations, and never
+  rerun 029 or 030.
+- One release lock covers both migration and deployment. A concurrent release
+  fails safely; the newest valid `main` SHA is allowed to proceed after the
+  prior run finishes.
+- GitHub Actions supplies only the encrypted CI SSH identity needed to invoke
+  the runner. Private keys and secrets never enter source, Git, docs, logs,
+  command output, or tracked environment files.
+- A failed release leaves the prior healthy Production container running and
+  preserves the prior immutable release for rollback. Manual SSH/publish
+  instructions are emergency fallback only, not the normal path.
