@@ -211,7 +211,7 @@ fi
 STAGE='candidate'
 CANDIDATE_NAME="${CONTAINER_NAME}-candidate-${RELEASE_SHA:0:12}"
 docker rm -f "$CANDIDATE_NAME" >/dev/null 2>&1 || true
-run_with_current_env_persistent "$OLD_CONTAINER" -e NODE_ENV=production -e PORT="$CANDIDATE_PORT" -e APP_RELEASE_ID="$RELEASE_SHA" -d --name "$CANDIDATE_NAME" --network host --restart no -v "$RELEASE_DIR:/app" -w /app "$NODE_IMAGE" node -e 'const app=require("./server"); const {closePool}=require("./src/database"); const port=Number(process.env.PORT||3027); const server=app.listen(port,"127.0.0.1",()=>process.stdout.write("candidate-ready\n")); const shutdown=()=>server.close(()=>closePool().finally(()=>process.exit(0))); process.once("SIGTERM",shutdown); process.once("SIGINT",shutdown);' >/dev/null
+run_with_current_env_persistent "$OLD_CONTAINER" -e NODE_ENV=production -e PORT="$CANDIDATE_PORT" -e APP_RELEASE_ID="$RELEASE_SHA" -d --name "$CANDIDATE_NAME" --restart no -v "$RELEASE_DIR:/app" -w /app "$NODE_IMAGE" node -e 'const app=require("./server"); const {closePool}=require("./src/database"); const port=Number(process.env.PORT||3027); const server=app.listen(port,"127.0.0.1",()=>process.stdout.write("candidate-ready\n")); const shutdown=()=>server.close(()=>closePool().finally(()=>process.exit(0))); process.once("SIGTERM",shutdown); process.once("SIGINT",shutdown);' >/dev/null
 candidate_ok=0
 for _ in $(seq 1 60); do
     if curl -fsS --max-time 5 "http://127.0.0.1:${CANDIDATE_PORT}/api/health/live" >/dev/null 2>&1; then candidate_ok=1; break; fi
@@ -238,7 +238,7 @@ if ! docker stop "$PREVIOUS_NAME" >/dev/null; then
     docker start "$CONTAINER_NAME" >/dev/null
     abort_release 80
 fi
-if ! run_with_current_env_persistent "$PREVIOUS_NAME" -e NODE_ENV=production -e PORT="$INTERNAL_PORT" -e APP_RELEASE_ID="$RELEASE_SHA" -d --name "$CONTAINER_NAME" --network host --restart unless-stopped -v "$RELEASE_DIR:/app" -w /app "$NODE_IMAGE" node -e 'const app=require("./server"); const {closePool}=require("./src/database"); const port=Number(process.env.PORT||3017); const server=app.listen(port,"127.0.0.1",()=>process.stdout.write("production-ready\n")); const shutdown=()=>server.close(()=>closePool().finally(()=>process.exit(0))); process.once("SIGTERM",shutdown); process.once("SIGINT",shutdown);' >/dev/null; then
+if ! run_with_current_env_persistent "$PREVIOUS_NAME" -e NODE_ENV=production -e PORT="$INTERNAL_PORT" -e APP_RELEASE_ID="$RELEASE_SHA" -d --name "$CONTAINER_NAME" --restart unless-stopped -v "$RELEASE_DIR:/app" -w /app "$NODE_IMAGE" node -e 'const app=require("./server"); const {closePool}=require("./src/database"); const port=Number(process.env.PORT||3017); const server=app.listen(port,"127.0.0.1",()=>process.stdout.write("production-ready\n")); const shutdown=()=>server.close(()=>closePool().finally(()=>process.exit(0))); process.once("SIGTERM",shutdown); process.once("SIGINT",shutdown);' >/dev/null; then
     docker rename "$PREVIOUS_NAME" "$CONTAINER_NAME"
     docker start "$CONTAINER_NAME" >/dev/null
     abort_release 80
