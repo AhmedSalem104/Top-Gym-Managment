@@ -208,6 +208,11 @@ function runRemoteRelease(config, script) {
     const safeLines = String(result.stdout || '').split(/\r?\n/).filter((line) => /^(RELEASE_|DEPENDENCIES=|BACKUP_|MIGRATION_|RLS_|CANDIDATE_|DEPLOYED_|SHA_|HEALTH=|ROLLBACK_)/.test(line));
     if (result.error || result.status !== 0) {
         const failure = String(result.stderr || '').match(/RELEASE_REMOTE_FAIL stage=([a-z0-9-]+) code=([0-9]+)/i);
+        const safeErrors = String(result.stderr || '').split(/\r?\n/).filter((line) =>
+            /^RELEASE_REMOTE_FAIL stage=[a-z0-9-]+ code=[0-9]+$/i.test(line)
+            || /^\{"status":"FAIL","code":"[A-Z0-9_]+"\}$/.test(line)
+        );
+        if (safeErrors.length) process.stderr.write(`${safeErrors.join('\n')}\n`);
         const error = new Error('Production release remote gate failed; previous release was preserved where rollback was possible.');
         error.code = 'RELEASE_REMOTE_FAILED';
         const lastSafeLine = safeLines[safeLines.length - 1] || '';
