@@ -52,6 +52,13 @@ test('member repository keeps the reusable CTE scoped to the following statement
     assert.match(source, /\.query\(`\$\{MEMBER_CTE\}[\s\S]*?FROM member_rows[\s\S]*?WHERE id = @id/u);
 });
 
+test('member list includes profile-only members without manufacturing a subscription', () => {
+    const source = read('src/repositories/member.repository.js');
+    const listStart = source.indexOf('async function list(');
+    const listBody = source.slice(listStart);
+    assert.doesNotMatch(listBody, /AND membershipId IS NOT NULL/u);
+});
+
 test('pricing catalog uses one SQL batch for uncached lookups', () => {
     const source = read('src/services/member-service.js');
     const block = source.slice(source.indexOf('async function getPricingCatalog'), source.indexOf('\nfunction invalidatePricingCatalog'));

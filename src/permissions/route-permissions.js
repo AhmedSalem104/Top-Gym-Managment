@@ -53,9 +53,9 @@ const ROUTE_PERMISSION_RULES = Object.freeze([
     { pattern: /^\/members\/\d+\/refund-preview$/, methods: ['GET'], ownerOnly: true, all: [PERMISSIONS.PAYMENTS_REFUND] },
     { pattern: /^\/members\/\d+\/refund$/, methods: ['POST'], ownerOnly: true, all: [PERMISSIONS.PAYMENTS_REFUND] },
     { pattern: /^\/members(?:\/|$)/, methods: ['GET'], all: [PERMISSIONS.MEMBERS_READ, PERMISSIONS.MEMBERSHIPS_READ] },
-    // Registering a new member is one operational action. The initial
-    // membership is created as part of that atomic onboarding flow, while
-    // collecting money remains conditional on payments.create below.
+    // Registering a member is the base operational action. An initial
+    // membership is opt-in, and collecting money remains conditional on
+    // payments.create below.
     { pattern: /^\/members(?:\/|$)/, methods: ['POST'], all: [PERMISSIONS.MEMBERS_CREATE] },
     { pattern: /^\/members\/\d+\/alert-communications$/, methods: ['POST'], all: [PERMISSIONS.MEMBERS_ALERTS] },
     { pattern: /^\/members\/\d+\/(?:freeze|resume)$/, methods: ['POST'], all: [PERMISSIONS.MEMBERSHIPS_FREEZE] },

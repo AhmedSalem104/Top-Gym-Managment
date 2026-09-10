@@ -201,7 +201,6 @@ async function list({ search = '', status = '', sort = 'expiry', offset = 0, pag
                        ROW_NUMBER() OVER (ORDER BY ${orderBy}) AS rowNumber
                 FROM member_rows
                 WHERE (@search = N'' OR fullName LIKE @pattern OR phone LIKE @pattern OR ISNULL(email, N'') LIKE @pattern)
-                  AND membershipId IS NOT NULL
                   AND (@status = '' OR computedStatus = @status)
             ) AS paged_members
             WHERE rowNumber > @offset AND rowNumber <= (@offset + @pageSize)

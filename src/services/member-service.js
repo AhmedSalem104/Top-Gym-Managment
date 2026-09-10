@@ -16,7 +16,6 @@ const {
 } = require('../utils/date');
 const { ensureAttendanceTable, getMemberAttendanceStatuses } = require('./attendance-service');
 const { currentTenantId, getTenantContext } = require('../tenancy/tenant-context');
-const { config } = require('../config/env');
 
 const DEFAULT_MEMBERSHIP_PLANS = {
     gym_only: { label: 'جيم فقط', monthlyPrice: 305, active: true, sortOrder: 1 },
@@ -376,7 +375,7 @@ async function ensureMemberIdentityFields() {
  * The release/migration pipeline owns schema changes; this is a read-only
  * contract check that fails closed when the deployed schema is incompatible.
  */
-async function assertMemberMutationSchemaReady({ paymentRequired = false } = {}) {
+async function assertMemberMutationSchemaReady({ membershipRequired = false, paymentRequired = false } = {}) {
     const pool = await getPool();
     const result = await pool.request().query(`
         SELECT
@@ -394,14 +393,19 @@ async function assertMemberMutationSchemaReady({ paymentRequired = false } = {})
     const row = result.recordset?.[0] || {};
     const required = [
         ['membersTable', 'dbo.members'],
-        ['phoneNormalized', 'dbo.members.phone_normalized'],
-        ['membershipCodeHash', 'dbo.members.membership_code_hash'],
-        ['membershipCodeCiphertext', 'dbo.members.membership_code_ciphertext'],
-        ['membershipCodeAuditTable', 'dbo.gym_membership_code_audit'],
-        ['membershipEventsTable', 'dbo.membership_events'],
-        ['membershipsTable', 'dbo.memberships'],
-        ['paymentsTable', 'dbo.gym_payments']
+        ['phoneNormalized', 'dbo.members.phone_normalized']
     ];
+
+    if (membershipRequired) {
+        required.push(
+            ['membershipCodeHash', 'dbo.members.membership_code_hash'],
+            ['membershipCodeCiphertext', 'dbo.members.membership_code_ciphertext'],
+            ['membershipCodeAuditTable', 'dbo.gym_membership_code_audit'],
+            ['membershipEventsTable', 'dbo.membership_events'],
+            ['membershipsTable', 'dbo.memberships'],
+            ['paymentsTable', 'dbo.gym_payments']
+        );
+    }
 
     if (paymentRequired) {
         required.push(['paymentTransactionsTable', 'dbo.gym_payment_transactions']);
@@ -420,22 +424,13 @@ async function assertMemberMutationSchemaReady({ paymentRequired = false } = {})
     }
 }
 
-async function prepareMemberMutationSchema({ paymentRequired = false } = {}) {
-    if (config.nodeEnv === 'production') {
-        return assertMemberMutationSchemaReady({ paymentRequired });
-    }
-
-    await ensureMemberIdentityFields();
-    if (paymentRequired) {
-        await ensurePaymentTransactionsTable();
-    }
-    await membershipCodeService.ensureMembershipCodeStorage();
-}
-
 async function assertNoDuplicateMember(connection, phoneNormalized, email, excludeId = null) {
     const result = await connection.request().query(`
+        -- HOLDLOCK makes the duplicate check serializable for the duration
+        -- of the create transaction, so concurrent retries cannot both pass
+        -- the check and insert the same member.
         SELECT id, full_name, phone, phone_normalized, email
-        FROM dbo.members;
+        FROM dbo.members WITH (UPDLOCK, HOLDLOCK);
     `);
     const normalizedEmail = String(email || '').trim().toLowerCase();
     const duplicate = result.recordset.find((row) => {
@@ -473,6 +468,35 @@ function parsePaymentMethod(value, fallback = 'cash') {
 
 function has(body, key) {
     return Object.prototype.hasOwnProperty.call(body, key);
+}
+
+function hasValue(value) {
+    return value !== undefined && value !== null && String(value).trim() !== '';
+}
+
+function resolveMembershipRequest(body = {}) {
+    if (has(body, 'createMembership')) {
+        if (typeof body.createMembership === 'boolean') return body.createMembership;
+        const value = String(body.createMembership).trim().toLowerCase();
+        if (['true', '1'].includes(value)) return true;
+        if (['false', '0', ''].includes(value)) return false;
+        throw appError('اختيار إنشاء الاشتراك غير صالح.', 400, 'MEMBERSHIP_SELECTION_INVALID');
+    }
+
+    // Preserve the old API contract for callers that explicitly submit
+    // membership data, while allowing a profile-only member to be created
+    // with name and phone alone.
+    return ['membershipType', 'membershipPlan', 'startDate', 'endDate', 'membershipNotes']
+        .some((field) => hasValue(body[field]));
+}
+
+function hasPaymentDetails(data = {}) {
+    return Number(data.amountPaid || 0) > 0
+        || Number(data.discountAmount || 0) > 0
+        || Number(data.amountDue || 0) > 0
+        || Boolean(data.paymentNotes)
+        || Boolean(data.paidAt)
+        || (data.paymentMethod && data.paymentMethod !== 'cash');
 }
 
 async function getPricingCatalog(connection = null, { readOnly = false } = {}) {
@@ -744,10 +768,10 @@ function normalizePayload(body = {}, { partial = false } = {}) {
     if (!partial || has(body, 'notes')) output.notes = optionalString(body.notes, 1000);
 
     if (!partial || has(body, 'membershipType')) {
-        output.membershipType = requiredString(body.membershipType, 'نوع العضوية', 30);
+        output.membershipType = optionalString(body.membershipType, 30);
     }
     if (!partial || has(body, 'membershipPlan')) {
-        output.membershipPlan = requiredString(body.membershipPlan || 'gym_only', 'باقة العضوية', 30);
+        output.membershipPlan = optionalString(body.membershipPlan, 30);
     }
     if (!partial || has(body, 'startDate')) {
         output.startDate = body.startDate
@@ -1651,10 +1675,25 @@ async function addPaymentTransaction(connection, {
 
 async function createMember(body, { tenantSlug = '', idempotencyKey = null } = {}) {
     const data = normalizePayload(body);
+    const membershipRequested = resolveMembershipRequest(body);
+    const paymentDetailsProvided = hasPaymentDetails(data);
+    if (membershipRequested && (!data.membershipType || !data.membershipPlan)) {
+        throw appError('اختر نوع العضوية والباقة قبل إنشاء الاشتراك.', 422, 'MEMBERSHIP_DETAILS_REQUIRED');
+    }
+    if (!membershipRequested && paymentDetailsProvided) {
+        throw appError('لا يمكن تسجيل بيانات دفع بدون اشتراك.', 422, 'PAYMENT_REQUIRES_MEMBERSHIP');
+    }
     const amountPaid = data.amountPaid ?? 0;
-    const paymentDate = amountPaid > 0 ? requiredPaymentCollectionDate(data.paidAt) : null;
-    const paymentIdempotencyKey = amountPaid > 0 ? normalizePaymentIdempotencyKey(idempotencyKey) : null;
-    await prepareMemberMutationSchema({ paymentRequired: amountPaid > 0 });
+    const paymentDate = membershipRequested && amountPaid > 0 ? requiredPaymentCollectionDate(data.paidAt) : null;
+    const paymentIdempotencyKey = membershipRequested && amountPaid > 0
+        ? normalizePaymentIdempotencyKey(idempotencyKey)
+        : null;
+    // Schema changes belong to the migration/release pipeline. This request
+    // performs only a read-only readiness check and never repairs the schema.
+    await assertMemberMutationSchemaReady({
+        membershipRequired: membershipRequested,
+        paymentRequired: membershipRequested && amountPaid > 0
+    });
     if (paymentIdempotencyKey) {
         const existing = await findPaymentTransactionByIdempotencyKey(await getPool(), paymentIdempotencyKey);
         if (existing) return getMemberById(existing.memberId);
@@ -1666,10 +1705,6 @@ async function createMember(body, { tenantSlug = '', idempotencyKey = null } = {
             if (existing) return existing.memberId;
         }
         await assertNoDuplicateMember(transaction, data.phoneNormalized, data.email);
-        const pricing = await calculatePricing(data.membershipType, data.membershipPlan, data.discountAmount, transaction);
-        const membershipType = pricing.typeCode || data.membershipType;
-        if (amountPaid > pricing.amountDue) throw appError('المبلغ المدفوع لا يمكن أن يتجاوز قيمة الاشتراك بعد الخصم.');
-        const endDate = data.endDate || membershipEndDateFromConfig(data.startDate, pricing.typeConfig);
         const memberResult = await transaction.request()
             .input('fullName', sql.NVarChar(120), data.fullName)
             .input('phone', sql.NVarChar(30), data.phone)
@@ -1681,67 +1716,73 @@ async function createMember(body, { tenantSlug = '', idempotencyKey = null } = {
                     OUTPUT INSERTED.id
                     VALUES (@fullName, @phone, @phoneNormalized, @email, @registrationDate, @notes);`);
         const id = Number(memberResult.recordset[0].id);
-        issuedMembershipCode = await membershipCodeService.issueForMember(id, transaction, { action: 'issued' });
-        const membershipResult = await transaction.request()
-            .input('memberId', sql.Int, id)
-            .input('membershipPlan', sql.VarChar(30), data.membershipPlan)
-            .input('membershipType', sql.VarChar(30), membershipType)
-            .input('startDate', sql.Date, toUtcDate(data.startDate))
-            .input('endDate', sql.Date, toUtcDate(endDate))
-            .input('notes', sql.NVarChar(1000), data.membershipNotes)
-            .query(`INSERT INTO dbo.memberships (member_id, membership_plan, membership_type, start_date, end_date, notes)
-                    OUTPUT INSERTED.id
-                    VALUES (@memberId, @membershipPlan, @membershipType, @startDate, @endDate, @notes);`);
-        const membershipId = Number(membershipResult.recordset[0].id);
-        await transaction.request()
-            .input('membershipId', sql.Int, membershipId)
-            .input('listPrice', sql.Decimal(12, 2), pricing.listPrice)
-            .input('discountAmount', sql.Decimal(12, 2), pricing.discountAmount)
-            .input('amountDue', sql.Decimal(12, 2), pricing.amountDue)
-            .input('amountPaid', sql.Decimal(12, 2), amountPaid)
-            .input('paymentMethod', sql.VarChar(20), data.paymentMethod)
-            .input('paidAt', sql.Date, paymentDate ? toUtcDate(paymentDate) : null)
-            .input('notes', sql.NVarChar(500), data.paymentNotes)
-            .query(`INSERT INTO dbo.gym_payments (membership_id, list_price, discount_amount, amount_due, amount_paid, payment_method, paid_at, notes)
-                    VALUES (@membershipId, @listPrice, @discountAmount, @amountDue, @amountPaid, @paymentMethod, @paidAt, @notes);`);
-        if (amountPaid > 0) {
-            await addPaymentTransaction(transaction, {
-                membershipId,
-                transactionType: 'subscription',
+        if (membershipRequested) {
+            const pricing = await calculatePricing(data.membershipType, data.membershipPlan, data.discountAmount, transaction);
+            const membershipType = pricing.typeCode || data.membershipType;
+            if (amountPaid > pricing.amountDue) throw appError('المبلغ المدفوع لا يمكن أن يتجاوز قيمة الاشتراك بعد الخصم.');
+            const endDate = data.endDate || membershipEndDateFromConfig(data.startDate, pricing.typeConfig);
+            issuedMembershipCode = await membershipCodeService.issueForMember(id, transaction, { action: 'issued' });
+            const membershipResult = await transaction.request()
+                .input('memberId', sql.Int, id)
+                .input('membershipPlan', sql.VarChar(30), data.membershipPlan)
+                .input('membershipType', sql.VarChar(30), membershipType)
+                .input('startDate', sql.Date, toUtcDate(data.startDate))
+                .input('endDate', sql.Date, toUtcDate(endDate))
+                .input('notes', sql.NVarChar(1000), data.membershipNotes)
+                .query(`INSERT INTO dbo.memberships (member_id, membership_plan, membership_type, start_date, end_date, notes)
+                        OUTPUT INSERTED.id
+                        VALUES (@memberId, @membershipPlan, @membershipType, @startDate, @endDate, @notes);`);
+            const membershipId = Number(membershipResult.recordset[0].id);
+            await transaction.request()
+                .input('membershipId', sql.Int, membershipId)
+                .input('listPrice', sql.Decimal(12, 2), pricing.listPrice)
+                .input('discountAmount', sql.Decimal(12, 2), pricing.discountAmount)
+                .input('amountDue', sql.Decimal(12, 2), pricing.amountDue)
+                .input('amountPaid', sql.Decimal(12, 2), amountPaid)
+                .input('paymentMethod', sql.VarChar(20), data.paymentMethod)
+                .input('paidAt', sql.Date, paymentDate ? toUtcDate(paymentDate) : null)
+                .input('notes', sql.NVarChar(500), data.paymentNotes)
+                .query(`INSERT INTO dbo.gym_payments (membership_id, list_price, discount_amount, amount_due, amount_paid, payment_method, paid_at, notes)
+                        VALUES (@membershipId, @listPrice, @discountAmount, @amountDue, @amountPaid, @paymentMethod, @paidAt, @notes);`);
+            if (amountPaid > 0) {
+                await addPaymentTransaction(transaction, {
+                    membershipId,
+                    transactionType: 'subscription',
+                    listPrice: pricing.listPrice,
+                    discountAmount: pricing.discountAmount,
+                    amountDue: pricing.amountDue,
+                    amountPaid,
+                    amountRemaining: pricing.amountDue - amountPaid,
+                    paymentMethod: data.paymentMethod,
+                    paidAt: paymentDate,
+                    notes: data.paymentNotes,
+                    idempotencyKey: paymentIdempotencyKey
+                });
+            }
+            await addEvent(transaction, id, membershipId, 'created', {
+                membershipPlan: data.membershipPlan,
+                membershipType,
+                startDate: data.startDate,
+                endDate,
                 listPrice: pricing.listPrice,
                 discountAmount: pricing.discountAmount,
                 amountDue: pricing.amountDue,
-                amountPaid,
-                amountRemaining: pricing.amountDue - amountPaid,
-                paymentMethod: data.paymentMethod,
-                paidAt: paymentDate,
-                notes: data.paymentNotes,
-                idempotencyKey: paymentIdempotencyKey
+                amountPaid
             });
         }
-        await addEvent(transaction, id, membershipId, 'created', {
-            membershipPlan: data.membershipPlan,
-            membershipType,
-            startDate: data.startDate,
-            endDate,
-            listPrice: pricing.listPrice,
-            discountAmount: pricing.discountAmount,
-            amountDue: pricing.amountDue,
-            amountPaid
-        });
         return id;
     });
     const member = await getMemberById(memberId);
     return {
         ...member,
         membershipCode: issuedMembershipCode || member.membershipCode,
-        membershipCodePortalUrl: membershipCodeService.getPortalUrl('', tenantSlug)
+        membershipCodePortalUrl: member.membership ? membershipCodeService.getPortalUrl('', tenantSlug) : null
     };
 }
 
 async function updateMember(id, body, idempotencyKey = null) {
     const memberId = ensureId(id);
-    const paymentIdempotencyKey = normalizePaymentIdempotencyKey(idempotencyKey);
+    const paymentIdempotencyKey = hasPaymentDetails(body) ? normalizePaymentIdempotencyKey(idempotencyKey) : null;
     await ensureMemberIdentityFields();
     await ensurePaymentTransactionsTable();
     if (paymentIdempotencyKey) {
@@ -1762,9 +1803,15 @@ async function updateMember(id, body, idempotencyKey = null) {
         const currentMember = await getRawMember(transaction, memberId);
         if (!currentMember) throw appError('العضو غير موجود.', 404);
         const currentMembership = await getRawMembership(transaction, memberId);
-        if (!currentMembership) throw appError('لا يوجد اشتراك لهذا العضو.', 400);
-        const currentPayment = await getRawPayment(transaction, currentMembership.id);
         const patch = normalizePayload(body, { partial: true });
+        const membershipFields = ['membershipPlan', 'membershipType', 'startDate', 'endDate', 'membershipNotes'];
+        const paymentFields = ['discountAmount', 'amountDue', 'amountPaid', 'paymentMethod', 'paymentNotes', 'paidAt', 'paymentDate'];
+        const membershipChangeRequested = membershipFields.some((field) => has(body, field));
+        const paymentChangeRequested = paymentFields.some((field) => has(body, field));
+        if (!currentMembership && (membershipChangeRequested || paymentChangeRequested)) {
+            throw appError('لا يوجد اشتراك لهذا العضو لتعديل بياناته المالية أو الاشتراكية.', 422, 'MEMBERSHIP_REQUIRED_FOR_UPDATE');
+        }
+        const currentPayment = currentMembership ? await getRawPayment(transaction, currentMembership.id) : null;
 
         const memberData = {
             fullName: patch.fullName ?? currentMember.full_name,
@@ -1775,14 +1822,14 @@ async function updateMember(id, body, idempotencyKey = null) {
             notes: patch.notes === undefined ? currentMember.notes : patch.notes
         };
         await assertNoDuplicateMember(transaction, memberData.phoneNormalized, memberData.email, memberId);
-        const membershipData = {
+        const membershipData = currentMembership ? {
             plan: patch.membershipPlan ?? currentMembership.membership_plan ?? 'gym_only',
             type: patch.membershipType ?? currentMembership.membership_type,
             startDate: patch.startDate ?? formatDateOnly(currentMembership.start_date),
             endDate: patch.endDate ?? formatDateOnly(currentMembership.end_date),
             notes: patch.membershipNotes === undefined ? currentMembership.notes : patch.membershipNotes
-        };
-        if (membershipData.endDate < membershipData.startDate) {
+        } : null;
+        if (membershipData && membershipData.endDate < membershipData.startDate) {
             throw appError('تاريخ الانتهاء يجب أن يكون بعد أو مساوياً لتاريخ البداية.');
         }
         const pricingChanged = has(body, 'membershipType') || has(body, 'membershipPlan') || has(body, 'discountAmount');
@@ -1815,7 +1862,7 @@ async function updateMember(id, body, idempotencyKey = null) {
         // profile fields, while membership changes require memberships.update.
         const membershipChanged = ['membershipPlan', 'membershipType', 'startDate', 'endDate', 'membershipNotes']
             .some((field) => has(body, field));
-        if (membershipChanged) {
+        if (membershipChanged && currentMembership) {
             await transaction.request()
                 .input('id', sql.Int, currentMembership.id)
                 .input('membershipPlan', sql.VarChar(30), membershipData.plan)
@@ -1890,17 +1937,19 @@ async function updateMember(id, body, idempotencyKey = null) {
                 });
             }
         }
-        await addEvent(transaction, memberId, currentMembership.id, 'updated', {
-            fields: Object.keys(body || {}),
-            membershipPlan: membershipData.plan,
-            membershipType: membershipData.type,
-            ...(paymentChanged ? {
-                listPrice: payment.listPrice,
-                discountAmount: payment.discountAmount,
-                amountDue: payment.amountDue,
-                amountPaid: payment.amountPaid
-            } : {})
-        });
+        if (currentMembership) {
+            await addEvent(transaction, memberId, currentMembership.id, 'updated', {
+                fields: Object.keys(body || {}),
+                membershipPlan: membershipData.plan,
+                membershipType: membershipData.type,
+                ...(paymentChanged ? {
+                    listPrice: payment.listPrice,
+                    discountAmount: payment.discountAmount,
+                    amountDue: payment.amountDue,
+                    amountPaid: payment.amountPaid
+                } : {})
+            });
+        }
         return memberId;
     });
     return getMemberById(updatedId);
@@ -2718,6 +2767,8 @@ module.exports = {
     calculateRenewalWindow,
     membershipRequestScenario,
     membershipEndDateFromConfig,
+    resolveMembershipRequest,
+    hasPaymentDetails,
     getPricingCatalog,
     createPricingPlan,
     createMembershipType,
