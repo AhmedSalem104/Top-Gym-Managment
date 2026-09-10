@@ -176,8 +176,15 @@ function renderRemoteScript(config, sha, archiveName) {
 
 function runRemoteRelease(config, script) {
     const result = run('ssh', [...sshArgs(config), 'bash', '-s'], { input: script, encoding: 'utf8', timeout: 900000 });
-    if (result.error || result.status !== 0) fail('Production release remote gate failed; previous release was preserved where rollback was possible.', 'RELEASE_REMOTE_FAILED');
     const safeLines = String(result.stdout || '').split(/\r?\n/).filter((line) => /^(RELEASE_|BACKUP_|MIGRATION_|RLS_|CANDIDATE_|DEPLOYED_|SHA_|HEALTH=|ROLLBACK_)/.test(line));
+    if (result.error || result.status !== 0) {
+        const failure = String(result.stderr || '').match(/RELEASE_REMOTE_FAIL stage=([a-z0-9-]+) code=([0-9]+)/i);
+        const error = new Error('Production release remote gate failed; previous release was preserved where rollback was possible.');
+        error.code = 'RELEASE_REMOTE_FAILED';
+        error.stage = failure?.[1] || 'remote';
+        error.remoteCode = failure?.[2] || 'unknown';
+        throw error;
+    }
     return safeLines;
 }
 
@@ -220,7 +227,8 @@ function main() {
 
 if (require.main === module) {
     try { main(); } catch (error) {
-        process.stderr.write(`PRODUCTION_RELEASE_BLOCKED code=${error.code || 'PRODUCTION_RELEASE_FAILED'}\n`);
+        const suffix = error.stage ? ` stage=${error.stage}` : '';
+        process.stderr.write(`PRODUCTION_RELEASE_BLOCKED code=${error.code || 'PRODUCTION_RELEASE_FAILED'}${suffix}\n`);
         process.exitCode = 1;
     }
 }
