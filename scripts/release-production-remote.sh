@@ -98,28 +98,14 @@ rm -f "$backup_log"
 printf 'BACKUP_JOB=PASS\n'
 
 STAGE='backup-verification'
-docker exec -e "BACKUP_STARTED_AT=$backup_started_at" -e PRODUCTION_BACKUP_VERIFY_CONFIRM=YES -i "$OLD_CONTAINER" node - <<'NODE'
-const { closePool, getPool, sql } = require('./src/database');
-const { runTenantContext } = require('./src/tenancy/tenant-context');
-const { createBackupRecoveryService } = require('./src/services/backup-recovery-service');
-const { createConfiguredObjectStorageService } = require('./src/services/object-storage-service');
-(async () => {
-    const startedAt = new Date(process.env.BACKUP_STARTED_AT || '');
-    if (Number.isNaN(startedAt.getTime())) throw new Error('backup_marker_invalid');
-    await runTenantContext({ mode: 'platform', tenantId: null, readOnlyBaseline: true }, async () => {
-        const pool = await getPool();
-        const row = (await pool.request().input('startedAt', sql.DateTime2(3), startedAt).query("SELECT TOP (1) id,status,size_bytes,checksum_sha256 FROM dbo.gym_platform_backup_records WHERE backup_type='platform_daily' AND status='VERIFIED' AND (created_at>=@startedAt OR started_at>=@startedAt OR updated_at>=@startedAt OR (backup_day=CONVERT(date,SYSUTCDATETIME()) AND verified_at>=DATEADD(hour,-24,SYSUTCDATETIME()))) ORDER BY verified_at DESC,updated_at DESC,created_at DESC,id DESC;")).recordset[0];
-        if (!row || Number(row.size_bytes || 0) <= 0 || !/^[a-f0-9]{64}$/i.test(String(row.checksum_sha256 || ''))) throw new Error('backup_record_invalid');
-        const storage = createConfiguredObjectStorageService({ nodeEnv: process.env.NODE_ENV || 'production', isVercel: false });
-        if (!storage.isConfigured) throw new Error('backup_storage_not_configured');
-        const service = createBackupRecoveryService({ storageService: storage });
-        await service.downloadPlatformBackup(Number(row.id), { readOnly: true, auditDownload: false });
-        const health = await service.getPlatformBackupHealth({ readOnly: true });
-        if (health.summary.missingToday !== 0 || health.summary.failedToday !== 0 || health.lastVerifiedPlatformBackup?.status !== 'VERIFIED') throw new Error('backup_coverage_incomplete');
-    });
-    process.stdout.write('BACKUP_VERIFY_PASS\n');
-})().catch(() => { process.stderr.write('BACKUP_VERIFY_FAIL\n'); process.exitCode = 1; }).finally(() => closePool().catch(() => {}));
-NODE
+if ! run_with_current_env "$OLD_CONTAINER" \
+    -e NODE_ENV=production \
+    -e "BACKUP_STARTED_AT=$backup_started_at" \
+    -e PRODUCTION_BACKUP_VERIFY_CONFIRM=YES \
+    -v "$RELEASE_DIR:/app" -w /app "$NODE_IMAGE" \
+    node --max-old-space-size=640 scripts/verify-production-backup.js >/dev/null; then
+    abort_release 77
+fi
 printf 'BACKUP_VERIFICATION=PASS\n'
 
 STAGE='migration-plan'
