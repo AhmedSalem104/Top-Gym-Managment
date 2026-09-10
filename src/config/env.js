@@ -156,6 +156,16 @@ const config = Object.freeze({
     backupEnablePlatformWeekly: getBooleanEnv('BACKUP_ENABLE_PLATFORM_WEEKLY', true),
     backupEnablePlatformMonthly: getBooleanEnv('BACKUP_ENABLE_PLATFORM_MONTHLY', true),
     publicAppUrl: getEnv('PUBLIC_APP_URL'),
+    // Email delivery is opt-in. Notification failures must never roll back
+    // a successful business operation.
+    emailEnabled: getBooleanEnv('EMAIL_ENABLED', false),
+    emailSmtpHost: getEnv('EMAIL_SMTP_HOST'),
+    emailSmtpPort: getBoundedNumberEnv('EMAIL_SMTP_PORT', 587, 1, 65_535),
+    emailSmtpSecure: getBooleanEnv('EMAIL_SMTP_SECURE', false),
+    emailSmtpUser: getEnv('EMAIL_SMTP_USER'),
+    emailSmtpPassword: getEnv('EMAIL_SMTP_PASSWORD'),
+    emailFrom: getEnv('EMAIL_FROM'),
+    notificationAdminEmail: getEnv('NOTIFICATION_ADMIN_EMAIL', getEnv('AUTH_PLATFORM_ADMIN_EMAIL')),
     // Legacy scalar fields remain available to non-crypto bootstrap code. All
     // cryptographic consumers use src/services/secret-ring.js instead.
     membershipCodeSecret: membershipCodeSecret.value,

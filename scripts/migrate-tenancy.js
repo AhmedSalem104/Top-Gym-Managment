@@ -43,6 +43,7 @@ const PHASE14_TRAINER_STUDIO_MIGRATION_PATH = path.join(__dirname, '..', 'databa
 const PHASE15_TRAINER_ACTION_CENTER_MIGRATION_PATH = path.join(__dirname, '..', 'database', 'migrations', '028-trainer-action-center.sql');
 const PHASE16_BRANCH_SECTIONS_MIGRATION_PATH = path.join(__dirname, '..', 'database', 'migrations', '029-branch-sections.sql');
 const PHASE17_PLAN_ENTITLEMENTS_MIGRATION_PATH = path.join(__dirname, '..', 'database', 'migrations', '030-plan-entitlements.sql');
+const PHASE18_NOTIFICATIONS_MIGRATION_PATH = path.join(__dirname, '..', 'database', 'migrations', '031-central-notifications.sql');
 const PHASE0_SECURITY_MIGRATION_PATH = path.join(__dirname, '..', 'database', 'migrations', '013-phase0-security-preconditions.sql');
 const BASE_COMMERCIAL_MIGRATION_PATH = commercialSchema.MIGRATION_PATH;
 const MIGRATION_HISTORY_TABLE = '__TenantEFMigrationsHistory';
@@ -54,6 +55,12 @@ const SINGLE_MIGRATIONS = Object.freeze({
         version: '029',
         path: PHASE16_BRANCH_SECTIONS_MIGRATION_PATH,
         excluded: ['030-plan-entitlements.sql']
+    }),
+    '031': Object.freeze({
+        id: '031-central-notifications.sql',
+        version: '031',
+        path: PHASE18_NOTIFICATIONS_MIGRATION_PATH,
+        excluded: ['029-branch-sections.sql', '030-plan-entitlements.sql']
     })
 });
 
@@ -278,6 +285,11 @@ async function migrate() {
         const pool = await getPool();
         await pool.request().batch(planEntitlementsMigration);
     });
+    const notificationsMigration = fs.readFileSync(PHASE18_NOTIFICATIONS_MIGRATION_PATH, 'utf8');
+    await runTenantContext({ mode: 'platform', tenantId: bootstrapTenant.id }, async () => {
+        const pool = await getPool();
+        await pool.request().batch(notificationsMigration);
+    });
     await runTenantContext({ mode: 'platform', tenantId: bootstrapTenant.id }, () => tenantService.ensureTenantColumnsAndRls(bootstrapTenant.id));
     await runTenantContext({ mode: 'tenant', tenantId: bootstrapTenant.id }, () => libraryService.ensureLibraryData());
     await runTenantContext({ mode: 'platform', tenantId: bootstrapTenant.id }, () => saasService.ensureBootstrapSubscription(bootstrapTenant.id));
@@ -286,8 +298,8 @@ async function migrate() {
 
 /**
  * Run one reviewed migration as a complete unit. This is intentionally kept
- * separate from the historical full-chain bootstrap: selecting 029 must not
- * read or execute 030 (or any other migration file).
+ * separate from the historical full-chain bootstrap: selecting one migration
+ * must not read or execute any other migration file.
  */
 async function migrateOnly(migration) {
     assertMigrationTarget();
@@ -310,9 +322,10 @@ async function migrateOnly(migration) {
             };
         }
 
-        // 029 is a schema batch containing dynamic SQL/DDL. Use the native
-        // transaction from the official pool so the request is not decorated
-        // with tenant parameters by the normal application query guard.
+        // Use the native transaction from the official pool so the request is
+        // not decorated with tenant parameters by the normal application
+        // query guard. RLS is rebuilt after the selected migration so newly
+        // introduced tenant-scoped tables are covered before commit.
         const transaction = pool.rawTransaction();
         let committed = false;
         try {
@@ -324,9 +337,9 @@ async function migrateOnly(migration) {
             const migrationSql = fs.readFileSync(migration.path, 'utf8');
             await transaction.request().batch(migrationSql);
 
-            // 029 creates tenant-owned tables. Rebuild the official dynamic
-            // registry and RLS policy in the same transaction before history
-            // is recorded; 030 is deliberately not called here.
+            // Rebuild the official dynamic registry and RLS policy in the same
+            // transaction before history is recorded. No other migration is
+            // read or called here, including 029 and 030 when 031 is selected.
             await tenantService.ensureTenantColumnsAndRls(bootstrapTenant.id, { executor: transaction });
             await recordMigrationHistory(transaction, migration.id);
             await transaction.commit();

@@ -37,6 +37,7 @@
     "qa:muscle-assets": "node scripts/validate-muscle-assets.js",
     "job:backup": "node scripts/run-server-scheduled-backup.js",
     "job:auto-checkout": "node scripts/run-server-auto-checkout.js",
+    "admin:reset-password": "node scripts/admin-reset-password.js",
     "build:muscle-mapping": "node scripts/build-muscle-mapping.js",
     "sync:muscle-assets": "node scripts/build-muscle-mapping.js && python scripts/download-muscle-assets.py --workers 3",
     "render:muscle-assets": "node scripts/render-muscle-assets.js",
@@ -54,7 +55,8 @@
     "compression": "^1.8.1",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
-    "mssql": "^11.0.1"
+    "mssql": "^11.0.1",
+    "nodemailer": "^10.0.2"
   },
   "overrides": {
     "qs": "6.16.0"

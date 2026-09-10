@@ -42,6 +42,8 @@ const commercialSchema = require('./src/services/commercial-schema');
 const commercialService = require('./src/services/commercial-service');
 const memberSubscriptionService = require('./src/services/member-subscription-service');
 const { createGymRegistrationService } = require('./src/services/gym-registration-service');
+const { createEmailNotificationService } = require('./src/services/email-notification-service');
+const { createNotificationService } = require('./src/services/notification-service');
 const { secretRing } = require('./src/services/secret-ring');
 const platformAdminService = require('./src/services/platform-admin-service');
 const { runTenantContext } = require('./src/tenancy/tenant-context');
@@ -71,13 +73,36 @@ const backupRecoveryService = createBackupRecoveryService({ storageService: obje
 brandingService.configureObjectStorageService(objectStorageService);
 saasService.configureObjectStorageService(objectStorageService);
 memberSubscriptionService.configureObjectStorageService(objectStorageService);
+const emailNotificationService = createEmailNotificationService({
+    enabled: config.emailEnabled,
+    smtpHost: config.emailSmtpHost,
+    smtpPort: config.emailSmtpPort,
+    smtpSecure: config.emailSmtpSecure,
+    smtpUser: config.emailSmtpUser,
+    smtpPassword: config.emailSmtpPassword,
+    from: config.emailFrom,
+    recipients: config.notificationAdminEmail
+});
+const notificationService = createNotificationService({
+    getPool,
+    databaseEnabled: true,
+    emailService: emailNotificationService,
+    auditService: {
+        recordAudit: (details) => runTenantContext(
+            { tenantId: null, mode: 'platform', readOnlyBaseline: false },
+            () => saasService.recordAudit(details)
+        )
+    },
+    publicAppUrl: config.publicAppUrl
+});
 const gymRegistrationService = createGymRegistrationService({
     commercialService,
     saasService,
     trainerService,
     trainerCommerceService,
     authService,
-    objectStorageService
+    objectStorageService,
+    notificationService
 });
 
 let httpServer;
@@ -239,6 +264,7 @@ registerRoutes(app, {
     branchService,
     stockLocationService,
     barService,
+    notificationService,
     getPool
 });
 
@@ -360,6 +386,7 @@ async function start() {
     const bootstrapTenant = await runTenantContext({ mode: 'platform', tenantId: 1 }, () => tenantService.ensureBootstrapTenant());
     await runTenantContext({ mode: 'platform', tenantId: bootstrapTenant.id }, () => backupRecoveryService.ensureRecoveryTables());
     await runTenantContext({ mode: 'platform', tenantId: bootstrapTenant.id }, () => saasService.ensureSaasTables());
+    await runTenantContext({ mode: 'platform', tenantId: bootstrapTenant.id }, () => notificationService.ensureTables());
     await runTenantContext({ mode: 'platform', tenantId: bootstrapTenant.id }, () => commercialSchema.ensureCommercialTables());
     await runTenantContext({ mode: 'platform', tenantId: bootstrapTenant.id }, () => commercialService.ensureDefaultPlanTerms());
     await runTenantContext({ mode: 'tenant', tenantId: bootstrapTenant.id }, async () => {

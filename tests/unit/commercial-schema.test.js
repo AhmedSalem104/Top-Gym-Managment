@@ -61,8 +61,8 @@ test('portal analytics keeps page views, estimated visitors and authenticated me
     assert.match(service, /pageViews: sum\('pageViews'\)/);
     assert.match(service, /uniqueVisitors: sum\('uniqueVisitors'\)/);
     assert.match(service, /authenticatedMembers: sum\('authenticatedMembers'\)/);
-    assert.match(service, /visitorHash = hashToken\(`visitor:/);
-    assert.match(service, /memberHash = hashToken\(`member:/);
+    assert.match(service, /visitorHashes = hashTokenCandidates\(`visitor:/);
+    assert.match(service, /memberHashes = hashTokenCandidates\(`member:/);
     assert.match(controller, /getPortalAnalytics\(/);
 });
 

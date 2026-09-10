@@ -338,9 +338,17 @@
             const loadPromise = withLoader(async () => {
                 state.pagination = null;
                 if ($('membersPagination')) $('membersPagination').hidden = true;
-                $('membersList').innerHTML = '<div class="loading">جاري تحديث القائمة…</div>';
-                 try { const params = new URLSearchParams({ search: $('searchInput').value.trim(), status: $('statusFilter').value, sort: $('sortFilter').value, page: '1', pageSize: String(state.membersPageSize || 5) }); const response = await api(`/api/members?${params}`, { signal: controller.signal }); state.members = response.members || []; state.pagination = response.pagination || null; state.detailsCache = new Map(); renderMembers(); membersLastLoadedKey = queryKey; membersLastLoadedAt = Date.now(); }
-                catch (error) { if (error.name !== 'AbortError') { $('membersList').innerHTML = `<div class="empty">${escapeHtml(error.message)}</div>`; await notify(error.message, 'error'); } }
+                const membersList = $('membersList');
+                const skeleton = window.topGymSkeleton;
+                const preserve = Boolean(membersList?.querySelector('table, .empty'));
+                if (skeleton && membersList) {
+                    if (preserve) skeleton.refresh(membersList);
+                    else skeleton.start(membersList, skeleton.table({ rows: 5, columns: 7, className: 'members-skeleton' }));
+                } else if (membersList) {
+                    membersList.innerHTML = '<div class="loading">جاري تحديث القائمة…</div>';
+                }
+                 try { const params = new URLSearchParams({ search: $('searchInput').value.trim(), status: $('statusFilter').value, sort: $('sortFilter').value, page: '1', pageSize: String(state.membersPageSize || 5) }); const response = await api(`/api/members?${params}`, { signal: controller.signal }); state.members = response.members || []; state.pagination = response.pagination || null; state.detailsCache = new Map(); renderMembers(); window.topGymSkeleton?.ready(membersList); membersLastLoadedKey = queryKey; membersLastLoadedAt = Date.now(); }
+                catch (error) { if (error.name !== 'AbortError') { window.topGymSkeleton?.error(membersList, `<div class="skeleton-region-error"><strong>تعذر تحميل المشتركين.</strong><span>${escapeHtml(error.message || 'حاول مرة أخرى.')}</span><button type="button" class="btn btn-light btn-small" data-members-retry>إعادة المحاولة</button></div>`, { preserve: true }); await notify(error.message, 'error'); } }
             }, `جاري تحديث قائمة ${brandName()}…`);
             const trackedPromise = loadPromise.finally(() => {
                 if (membersLoadPromise === trackedPromise) membersLoadPromise = null;
@@ -428,7 +436,8 @@
                 const phone = String(member.phone || '');
                 return `<article class="alert-card ${status}" data-alert-enhanced="true" data-alert-kind="${escapeHtml(kind)}" data-member-id="${escapeHtml(member.id || '')}" data-alert-name="${escapeHtml(member.fullName)}" data-alert-phone="${escapeHtml(member.phone)}" data-alert-status="${escapeHtml(status)}" data-alert-end="${escapeHtml(sub.effectiveEndDate || sub.endDate || '')}" data-alert-freeze-end="${escapeHtml(sub.freezeEnd || '')}" data-alert-remaining="${escapeHtml(sub.amountRemaining ?? '')}" data-alert-days="${escapeHtml(member.daysSinceLastVisit ?? '')}" data-alert-key="${escapeHtml(alertKey)}">${alertIconMarkup(kind, status)}<div class="alert-card-body"><div class="alert-card-content"><div class="alert-card-head"><strong class="alert-card-name">${escapeHtml(member.fullName)}</strong></div><span class="alert-card-detail">${escapeHtml(detail)}</span><a class="alert-card-phone" href="tel:${escapeHtml(phone.replace(/\s+/g, ''))}">${escapeHtml(phone)}</a></div><div class="alert-card-actions">${alertStatusMarkup(kind, status, label)}${alertContactMarkup(alertContact)}${alertAction}</div></div></article>`;
             }).join('') : '<div class="empty">لا توجد تنبيهات اليوم.</div>';
-            const headerAlertCount = $('headerAlertCount'); if (headerAlertCount) headerAlertCount.textContent = alerts.length.toLocaleString('ar-EG');
+             window.topGymSkeleton?.ready($('alertsList'));
+             const headerAlertCount = $('headerAlertCount'); if (headerAlertCount) headerAlertCount.textContent = alerts.length.toLocaleString('ar-EG');
         }
         function decorateMemberQuickActions() {
             const list = $('membersList');
@@ -501,7 +510,7 @@
                     else tableActions.insertAdjacentHTML('beforeend', refundActionButton(member.id));
                 }
                 if (member.membership?.status === 'cancelled') {
-                    tableActions?.querySelectorAll('[data-action="freeze"], [data-action="payment"]').forEach((button) => button.remove());
+                    tableActions?.querySelectorAll('[data-action="payment"]').forEach((button) => button.remove());
                 }
                 const actionRow = document.createElement('div');
                 actionRow.className = 'member-action-row';
@@ -527,14 +536,23 @@
             const freezeCount = Number(sub.freezeCount || 0);
             const remaining = sub.status === 'expired' ? `منتهية منذ ${Math.abs(sub.daysRemaining || 0)} يوم` : sub.status === 'frozen' ? `تجميد حتى ${formatDate(sub.freezeEnd)}` : `${sub.daysRemaining} يوم متبقي`;
             const freezeUsage = `<span class="freeze-usage${freezeCount >= freezeLimit ? ' complete' : ''}"><strong>${freezeCount}/${freezeLimit}</strong><span>متبقي ${Math.max(0, freezeLimit - freezeCount)}</span></span>`;
-            const freezeButton = sub.status === 'frozen'
+            // Keep the freeze action in a stable position for every member with
+            // a membership. The server remains the authority for eligibility;
+            // the disabled state only communicates known ineligible states.
+            const freezeUnavailable = ['cancelled', 'expired', 'frozen'].includes(sub.status)
+                || freezeCount >= freezeLimit;
+            const freezeButton = actionButton(
+                'freeze',
+                member.id,
+                'btn btn-light btn-small',
+                freezeUnavailable ? 'disabled aria-disabled="true"' : ''
+            );
+            const resumeButton = sub.status === 'frozen'
                 ? actionButton('resume', member.id, 'btn btn-purple btn-small')
-                : sub.status === 'expired'
-                    ? ''
-                    : actionButton('freeze', member.id, 'btn btn-light btn-small', freezeCount >= freezeLimit ? 'disabled' : '');
+                : '';
             const amountRemaining = Number(sub.amountRemaining || 0);
             const remainingClass = amountRemaining > 0 ? 'has-debt' : 'is-settled';
-            return `<tr data-member-id="${member.id}"><td><span class="table-member-name">${escapeHtml(member.fullName)}</span><a class="table-member-phone" href="tel:${escapeHtml(member.phone)}">${escapeHtml(member.phone)}</a><span class="table-sub">تسجيل: ${formatDate(member.registrationDate)}</span>${memberPortalCodeMarkup(member)}</td><td><span class="table-main">${escapeHtml(planLabel(sub.plan))}</span><span class="table-sub">${escapeHtml(typeLabel(sub.type))}</span></td><td>${memberStatusBadge(sub.status)}</td><td><span class="table-main">${formatDate(sub.effectiveEndDate)}</span><span class="table-sub">${escapeHtml(remaining)}</span></td><td>${freezeUsage}</td><td><span class="table-money">${money(sub.amountDue)}</span><span class="table-sub ${remainingClass}">متبقي ${money(amountRemaining)}</span></td><td><div class="table-actions">${actionButton('details', member.id, 'btn btn-details btn-small')}${actionButton('edit', member.id)}${actionButton('renew', member.id, 'btn btn-primary btn-small')}${freezeButton}${actionButton('payment', member.id)}${actionButton('print', member.id)}${actionButton('delete', member.id, 'btn btn-danger btn-small')}</div></td></tr>`;
+            return `<tr data-member-id="${member.id}"><td><span class="table-member-name">${escapeHtml(member.fullName)}</span><a class="table-member-phone" href="tel:${escapeHtml(member.phone)}">${escapeHtml(member.phone)}</a><span class="table-sub">تسجيل: ${formatDate(member.registrationDate)}</span>${memberPortalCodeMarkup(member)}</td><td><span class="table-main">${escapeHtml(planLabel(sub.plan))}</span><span class="table-sub">${escapeHtml(typeLabel(sub.type))}</span></td><td>${memberStatusBadge(sub.status)}</td><td><span class="table-main">${formatDate(sub.effectiveEndDate)}</span><span class="table-sub">${escapeHtml(remaining)}</span></td><td>${freezeUsage}</td><td><span class="table-money">${money(sub.amountDue)}</span><span class="table-sub ${remainingClass}">متبقي ${money(amountRemaining)}</span></td><td><div class="table-actions">${actionButton('details', member.id, 'btn btn-details btn-small')}${actionButton('edit', member.id)}${actionButton('renew', member.id, 'btn btn-primary btn-small')}${freezeButton}${resumeButton}${actionButton('payment', member.id)}${actionButton('print', member.id)}${actionButton('delete', member.id, 'btn btn-danger btn-small')}</div></td></tr>`;
         }
         function renderMembers() { $('membersCount').textContent = `${state.members.length} عضو ظاهر`; $('membersList').innerHTML = state.members.length ? `<div class="table-scroll"><table class="members-table"><thead><tr><th>العضو</th><th>الاشتراك</th><th>الحالة</th><th>الانتهاء</th><th>التجميد</th><th>الحساب</th><th>الإجراءات</th></tr></thead><tbody>${state.members.map(memberTableRow).join('')}</tbody></table></div>` : '<div class="empty">لا يوجد أعضاء مطابقون للبحث.</div>'; }
 
@@ -897,6 +915,9 @@
             });
             const membersQuickActionsObserver = new MutationObserver(() => decorateMemberQuickActions());
             membersQuickActionsObserver.observe($('membersList'), { childList: true, subtree: true });
+            $('membersList').addEventListener('click', (event) => {
+                if (event.target.closest('[data-members-retry]')) void loadMembersOnly();
+            });
             window.addEventListener('topgym:attendance-updated', () => loadMembersOnly());
             $('membersList').addEventListener('click', async (event) => {
                 const button = event.target.closest('button[data-attendance-action]');

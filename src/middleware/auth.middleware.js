@@ -64,6 +64,10 @@ function createAuthApiMiddleware({ authService, isAuthorizedCronRequest, tenantS
         const memberPortalCodePath = ['/member-portal/lookup', '/member-portal/occupancy', '/member-portal/feedback'].includes(request.path);
         const cronRequest = request.path === '/backup/daily' && isAuthorizedCronRequest(request);
         const platformPath = request.path.startsWith('/platform/') || request.path.startsWith('/platform-admin/');
+        const notificationPath = request.path === '/notifications'
+            || request.path === '/notifications/unread-count'
+            || request.path === '/notifications/read-all'
+            || /^\/notifications\/\d+\/read$/.test(request.path);
         // Normal safe HTTP methods must not trigger schema setup, expiry
         // reconciliation, attendance auto-checkout, session touching, or any
         // other maintenance write. The explicitly authenticated backup cron
@@ -206,6 +210,12 @@ function createAuthApiMiddleware({ authService, isAuthorizedCronRequest, tenantS
                 }
                 if (user.mustChangePassword) {
                     return response.status(403).json({ error: 'يجب تغيير كلمة المرور المؤقتة قبل استخدام النظام.', code: 'PASSWORD_CHANGE_REQUIRED' });
+                }
+                if (notificationPath && user.role === ROLES.PLATFORM_ADMIN) {
+                    return runTenantContext({ tenantId: null, userId: user.id, mode: 'platform', readOnlyBaseline: Boolean(request.readOnlyBaseline) }, async () => {
+                        request.auth = await authService.withPermissions(user, { readOnly: readOnlyRequest });
+                        return next();
+                    });
                 }
                 if (platformPath) {
                     if (user.role !== ROLES.PLATFORM_ADMIN) {

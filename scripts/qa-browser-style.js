@@ -179,13 +179,19 @@ async function main() {
             viewport: window.innerWidth,
             stage: document.getElementById('authScreen')?.dataset.authStage || '',
             entryVisible: Boolean(document.getElementById('saasEntryCard') && !document.getElementById('saasEntryCard').hidden),
+            loginVisible: Boolean(document.getElementById('authLoginCard') && !document.getElementById('authLoginCard').hidden),
             previewVisible: Boolean(document.querySelector('.saas-entry-preview')),
             whiteSurfaces
           };
         });
         assert(gateway.theme === theme, `pre-login gateway did not load ${theme} theme at ${viewport.name}px`);
         assert(!gateway.overflow, `pre-login gateway overflows at ${theme}/${viewport.name}px (${gateway.scrollWidth}/${gateway.viewport})`);
-        assert(gateway.stage === 'gateway' && gateway.entryVisible && gateway.previewVisible, `pre-login gateway is not visible at ${theme}/${viewport.name}px`);
+        // The current auth contract may intentionally start at the login card
+        // instead of the optional SaaS gateway. Accept either real state, but
+        // never pass a blank or partially mounted pre-login surface.
+        const gatewayOrLoginVisible = (gateway.stage === 'gateway' && gateway.entryVisible && gateway.previewVisible)
+          || (gateway.stage === 'login' && gateway.loginVisible);
+        assert(gatewayOrLoginVisible, `pre-login gateway/login is not visible at ${theme}/${viewport.name}px`);
         if (theme === 'dark') assert(gateway.whiteSurfaces === 0, `pre-login gateway exposes ${gateway.whiteSurfaces} white surface(s) in dark mode at ${viewport.name}px`);
         if (viewport.name === '430') await gatewayPage.screenshot({ path: path.join(artifacts, `login-gateway-${theme}-${viewport.name}.png`), fullPage: true });
         summary.push(`Pre-login gateway ${theme} ${viewport.name}: PASS (${gateway.scrollWidth}px)`);

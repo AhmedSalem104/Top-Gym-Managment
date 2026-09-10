@@ -376,7 +376,12 @@ async function run() {
             await page.route('**/js/trainer-workspace.js*', (route) => route.fulfill({ status: 200, contentType: 'application/javascript', body: '' }));
             await page.route('**/api/branding*', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: '{}' }));
             const diagnostics = listen(page);
-            await page.goto(`${baseUrl}/trainer-workspace`, { waitUntil: 'networkidle' });
+            // The guarded route intentionally redirects unauthenticated users
+            // to the login surface. Structural visual QA has no credentials by
+            // design, so use the shipped HTML entry point and stub only the
+            // authenticated bootstrap script. This keeps the server guard
+            // intact while allowing the trainer markup/CSS to be audited.
+            await page.goto(`${baseUrl}/trainer-workspace.html`, { waitUntil: 'networkidle' });
             await runCase(page, { surface: 'Trainer Workspace', target: 'workspace', theme: 'light', viewport: viewport.name }, { rootSelector: '.trainer-workspace-shell', diagnostics });
             if (viewport.name === '390' || viewport.name === '1440') await page.screenshot({ path: path.join(artifacts, `trainer-workspace-${viewport.name}.png`), fullPage: true });
             await page.close();
@@ -487,7 +492,10 @@ async function run() {
                 await dialogPage.route('**/api/branding*', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: '{}' }));
             }
             const diagnostics = listen(dialogPage);
-            await dialogPage.goto(`${baseUrl}${dialogCase.route}`, { waitUntil: 'networkidle' });
+            const dialogRoute = dialogCase.surface === 'Trainer Dialogs'
+                ? '/trainer-workspace.html'
+                : dialogCase.route;
+            await dialogPage.goto(`${baseUrl}${dialogRoute}`, { waitUntil: 'networkidle' });
             if (dialogCase.surface === 'Gym Dialogs') await prepareApp(dialogPage, 'dashboardSection');
             for (const id of dialogCase.ids) {
             const result = await dialogPage.evaluate((dialogId) => {

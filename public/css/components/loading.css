@@ -105,7 +105,71 @@ div.page-loading:not(.skeleton-loading-host)::after {
 .skeleton-line { width: 92%; height: 9px; }
 .skeleton-line.is-short { width: 55%; }
 
+.skeleton-text {
+  display: grid;
+  gap: var(--space-2);
+  width: 100%;
+}
+
+.skeleton-text .skeleton-line:last-child { width: 58%; }
+
+.skeleton-avatar-sm { width: 28px; height: 28px; }
+.skeleton-avatar-md { width: 36px; height: 36px; }
+.skeleton-avatar-lg { width: 52px; height: 52px; }
+
+.skeleton-kpi {
+  display: grid;
+  align-content: space-between;
+  gap: var(--space-3);
+  min-height: 112px;
+  padding: var(--space-4);
+  overflow: hidden;
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-lg);
+  background: var(--bg-card);
+}
+
+.skeleton-kpi-label { width: 44%; height: 9px; }
+.skeleton-kpi-value { width: 62%; height: 24px; }
+
+.skeleton-chart {
+  position: relative;
+  min-height: 220px;
+  overflow: hidden;
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-lg);
+  background: repeating-linear-gradient(to bottom, transparent 0 43px, var(--border-secondary) 44px 45px);
+}
+
+.skeleton-chart-grid {
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(to right, transparent 0 64px, color-mix(in srgb, var(--border-secondary) 60%, transparent) 65px 66px);
+}
+
+.skeleton-chart-line {
+  position: absolute;
+  inset-inline: 8%;
+  bottom: 20%;
+  height: 42%;
+  border-top: 5px solid var(--bg-card-hover);
+  border-radius: 52% 48% 0 0;
+  transform: skewY(-12deg) rotate(-3deg);
+}
+
+.skeleton-form {
+  display: grid;
+  gap: var(--space-4);
+  width: 100%;
+}
+
+.skeleton-form-field { display: grid; gap: var(--space-2); }
+.skeleton-form-label { width: 28%; height: 9px; }
+.skeleton-form-control { width: 100%; height: 42px; border-radius: var(--radius-md); }
+.skeleton-select { display: inline-block; width: 180px; height: 40px; border-radius: var(--radius-md); }
+
 .skeleton-table {
+  --skeleton-columns: repeat(4, minmax(0, 1fr));
   display: grid;
   gap: 8px;
   width: 100%;
@@ -114,7 +178,7 @@ div.page-loading:not(.skeleton-loading-host)::after {
 .skeleton-table-head,
 .skeleton-table-row {
   display: grid;
-  grid-template-columns: 1.4fr repeat(3, minmax(0, 1fr));
+  grid-template-columns: var(--skeleton-columns, 1.4fr repeat(3, minmax(0, 1fr)));
   align-items: center;
   gap: var(--space-3);
   min-height: 42px;
@@ -126,6 +190,62 @@ div.page-loading:not(.skeleton-loading-host)::after {
 .skeleton-table-cell { width: 78%; height: 9px; }
 .skeleton-table-cell:first-child { width: 90%; }
 .skeleton-table-cell.is-head { height: 8px; background: var(--bg-elevated); }
+
+.skeleton-list {
+  display: grid;
+  gap: var(--space-2);
+  width: 100%;
+}
+
+.skeleton-list-row {
+  display: flex;
+  min-height: 64px;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-md);
+  background: var(--bg-card);
+}
+
+.skeleton-list-copy {
+  display: grid;
+  flex: 1;
+  gap: var(--space-2);
+}
+
+.skeleton-list-copy .skeleton-line:first-child { width: min(62%, 260px); }
+.skeleton-list-copy .skeleton-line:last-child { width: min(42%, 180px); }
+
+.skeleton-region[data-loading-state="refreshing"] {
+  position: relative;
+}
+
+.skeleton-region[data-loading-state="refreshing"]::after {
+  position: absolute;
+  top: 0;
+  inset-inline: 0;
+  height: 2px;
+  border-radius: var(--radius-pill);
+  background: linear-gradient(90deg, transparent, var(--color-primary), transparent);
+  content: "";
+  pointer-events: none;
+  animation: top-gym-progress-slide 1.15s cubic-bezier(.4, 0, .2, 1) infinite;
+}
+
+.skeleton-region[data-loading-state="error"] {
+  min-height: 64px;
+}
+
+.skeleton-error .skeleton-region-error {
+  min-height: 64px;
+  display: grid;
+  place-items: center;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  color: var(--text-secondary);
+  text-align: center;
+}
 
 @keyframes top-gym-skeleton-shimmer {
   to { transform: translateX(100%); }
@@ -240,7 +360,8 @@ button[aria-busy="true"] .loading-spinner {
   .skeleton-card::after,
   div.loading::after,
   div.loading-state::after,
-  div.page-loading::after { animation-duration: 1.8s; }
+  div.page-loading::after,
+  .skeleton-region[data-loading-state="refreshing"]::after { animation: none; }
 }
 
 @media (max-width: 768px) {

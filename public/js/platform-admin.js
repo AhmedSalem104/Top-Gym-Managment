@@ -256,6 +256,23 @@
         if (view === 'audit') loadAudit();
     }
 
+    function setDashboardLoading(preserve = false) {
+        const skeleton = window.topGymSkeleton;
+        if (!skeleton) return;
+        skeleton.start($('#platformKpis'), preserve ? '' : skeleton.cards({ count: 4 }), { preserve });
+        skeleton.start($('#platformStatusGrid'), preserve ? '' : skeleton.list({ rows: 5 }), { preserve });
+        skeleton.start($('#recentTenants'), preserve ? '' : skeleton.list({ rows: 3 }), { preserve });
+        skeleton.start($('#recentActivity'), preserve ? '' : skeleton.list({ rows: 3 }), { preserve });
+    }
+
+    function setDashboardReady() {
+        const skeleton = window.topGymSkeleton;
+        if (!skeleton) return;
+        ['#platformKpis', '#platformStatusGrid', '#recentTenants', '#recentActivity']
+            .map((selector) => $(selector))
+            .forEach((host) => skeleton.ready(host));
+    }
+
     function renderKpis(metrics) {
         const gyms = metrics.gyms || {};
         const items = [
@@ -285,10 +302,12 @@
         $('#recentTenants').innerHTML = recent.length ? recent.map((tenant) => `<button class="mini-tenant" type="button" data-open-tenant="${tenant.id}"><span class="mini-tenant-main"><strong>${escapeHtml(tenant.name)}</strong><small>${escapeHtml(tenantTypeLabel(tenant.tenantType))} · ${escapeHtml(tenant.slug)} · ${escapeHtml(tenant.owner?.name || 'بدون مالك')}</small></span>${statusPill(tenant.status)}</button>`).join('') : '<div class="empty-inline">لا توجد جيمات مضافة بعد.</div>';
         const activity = data.recentActivity || [];
         $('#recentActivity').innerHTML = activity.length ? activity.map((item) => `<div class="mini-activity"><span class="mini-activity-main"><strong>${escapeHtml(item.action || 'عملية')}</strong><small>${escapeHtml(item.actorName || 'النظام')} · ${escapeHtml(item.details || '')}</small></span><small>${escapeHtml(formatDateTime(item.createdAt))}</small></div>`).join('') : '<div class="empty-inline">لا توجد عمليات مسجلة.</div>';
+        setDashboardReady();
     }
 
     async function loadDashboard() {
-        try { renderDashboard(await api('/api/platform-admin/dashboard')); } catch (error) { showToast(error.message, true); }
+        setDashboardLoading(Boolean(state.dashboard));
+        try { renderDashboard(await api('/api/platform-admin/dashboard')); } catch (error) { window.topGymSkeleton?.error($('#platformKpis'), '', { preserve: true }); showToast(error.message, true); }
     }
 
     function tenantUsageCell(tenant) {

@@ -168,3 +168,15 @@ test('platform admin exposes a separate gym registration queue with one-time cre
     assert.match(client, /registration-payment-proofs|gym-registration-requests\/proofs/);
     assert.doesNotMatch(client, /currentPassword/);
 });
+
+test('registration notifications are centralized, post-commit and idempotent for Gym and Trainer routes', () => {
+    const registration = read('src/services/gym-registration-service.js');
+    const server = read('server.js');
+    assert.match(registration, /notificationService\?\.recordEvent/);
+    assert.match(registration, /type: normalizedTenantType === TENANT_TYPES\.GYM[\s\S]*?gym_registration_requested[\s\S]*?trainer_registration_requested/);
+    assert.match(registration, /if \(!reused && notificationEvent && notificationService\?\.dispatchEvent\)/);
+    assert.match(registration, /try \{ await notificationService\.dispatchEvent\(notificationEvent\); \} catch/);
+    assert.ok(registration.indexOf('await withTransaction(insert);') < registration.indexOf('notificationService.dispatchEvent(notificationEvent)'));
+    assert.match(server, /createNotificationService/);
+    assert.match(server, /createEmailNotificationService/);
+});

@@ -10,7 +10,7 @@
 // Bump when the logical tenant artifact contract changes. Existing artifacts
 // remain readable only when their registry matches the current restore
 // inventory; new tenant-owned commercial records are included below.
-const TENANT_BACKUP_REGISTRY_VERSION = 5;
+const TENANT_BACKUP_REGISTRY_VERSION = 6;
 
 function definition(key, table, restorePolicy = 'tenant') {
     return Object.freeze({ key, table, tenantScoped: true, restorePolicy });
@@ -117,6 +117,8 @@ const TENANT_BACKUP_EXCLUDED_TABLES = Object.freeze([
     // events intentionally have a NULL tenant_id and stay in the platform
     // control-plane backup artifact.
     'saas_audit_log',
+    'saas_notifications',
+    'saas_notification_reads',
     'saas_platform_notes',
     'saas_subscription_requests',
     'saas_subscription_changes',
@@ -146,7 +148,9 @@ const PLATFORM_GLOBAL_BACKUP_TABLES = Object.freeze([
     Object.freeze({ key: 'saas_tenant_overrides', table: 'saas_tenant_overrides' }),
     Object.freeze({ key: 'saas_subscription_changes', table: 'saas_subscription_changes' }),
     Object.freeze({ key: 'saas_platform_notes', table: 'saas_platform_notes' }),
-    Object.freeze({ key: 'saas_audit_log', table: 'saas_audit_log' })
+    Object.freeze({ key: 'saas_audit_log', table: 'saas_audit_log' }),
+    Object.freeze({ key: 'saas_notifications', table: 'saas_notifications' }),
+    Object.freeze({ key: 'saas_notification_reads', table: 'saas_notification_reads' })
 ]);
 
 // These objects are deliberately not part of a logical application restore:

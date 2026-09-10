@@ -33,7 +33,7 @@ const FEATURE_CATALOG = Object.freeze([
     { key: 'goals', description: 'Trainer client goals', tenantTypes: [TENANT_TYPES.INDEPENDENT_TRAINER], limitKeys: [], screens: ['trainer-goals'], apiPaths: ['/trainer/goals'] },
     { key: 'sessions', description: 'Trainer sessions and scheduling', tenantTypes: [TENANT_TYPES.INDEPENDENT_TRAINER], limitKeys: [], screens: ['trainer-sessions', 'trainer-calendar'], apiPaths: ['/trainer/sessions'] },
     { key: 'packages', description: 'Trainer packages and session balances', tenantTypes: [TENANT_TYPES.INDEPENDENT_TRAINER], limitKeys: [], screens: ['trainer-packages'], apiPaths: ['/trainer/packages'] },
-    { key: 'notifications', description: 'Trainer notifications', tenantTypes: [TENANT_TYPES.INDEPENDENT_TRAINER], limitKeys: [], screens: ['trainer-notifications'], apiPaths: ['/trainer/notifications'] },
+    { key: 'notifications', description: 'Role- and tenant-scoped notifications', tenantTypes: [TENANT_TYPES.GYM, TENANT_TYPES.INDEPENDENT_TRAINER], limitKeys: [], screens: ['notifications', 'trainer-notifications'], apiPaths: ['/notifications', '/trainer/notifications'] },
     { key: 'tasks', description: 'Trainer action center and tasks', tenantTypes: [TENANT_TYPES.INDEPENDENT_TRAINER], limitKeys: [], screens: ['trainer-tasks'], apiPaths: ['/trainer/tasks'] },
     { key: 'templates', description: 'Trainer training and nutrition templates', tenantTypes: [TENANT_TYPES.INDEPENDENT_TRAINER], limitKeys: [], screens: ['trainer-templates'], apiPaths: ['/trainer/templates'] },
     { key: 'prioritySupport', description: 'Priority platform support', tenantTypes: [TENANT_TYPES.GYM, TENANT_TYPES.INDEPENDENT_TRAINER], limitKeys: [], screens: [], apiPaths: [] }

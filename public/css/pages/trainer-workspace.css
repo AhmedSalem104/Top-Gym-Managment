@@ -97,6 +97,7 @@
 .trainer-workspace-actions .btn { min-height: 40px; }
 
 .trainer-workspace-summary {
+  position: relative;
   display: grid;
   grid-template-columns: 1.2fr repeat(2, 1fr) repeat(5, .82fr);
   gap: 12px;
@@ -118,6 +119,30 @@
 .trainer-card-icon--orange { color: #c26b27; background: rgba(194, 107, 39, .12); }
 .trainer-card-icon--green { color: #168460; background: rgba(28, 163, 119, .11); font-size: 10px; font-weight: 800; }
 .trainer-workspace-card--metric strong { margin-block-start: 10px; font-size: 27px; }
+
+.trainer-workspace-summary[data-loading-state="initial"] .trainer-workspace-card--metric strong,
+.trainer-workspace-summary[data-loading-state="refreshing"] .trainer-workspace-card--metric strong {
+  color: transparent;
+  border-radius: var(--radius-sm);
+  background: var(--trainer-line);
+  user-select: none;
+}
+
+.trainer-workspace-summary[data-loading-state="initial"] .trainer-workspace-card--metric strong {
+  min-width: 54px;
+  min-height: 30px;
+}
+
+.trainer-workspace-summary[data-loading-state="refreshing"]::after {
+  position: absolute;
+  inset-inline: 0;
+  height: 2px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, transparent, var(--trainer-indigo), transparent);
+  content: "";
+  pointer-events: none;
+  animation: top-gym-progress-slide 1.15s cubic-bezier(.4, 0, .2, 1) infinite;
+}
 
 .trainer-workspace-main-grid { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(270px, .75fr); gap: 14px; margin-block-start: 14px; align-items: start; }
 
@@ -376,6 +401,10 @@ html[data-theme="dark"] .trainer-workspace-page { background: radial-gradient(ci
 html[data-theme="dark"] .trainer-workspace-card, html[data-theme="dark"] .trainer-workspace-panel, html[data-theme="dark"] .trainer-quick-actions, html[data-theme="dark"] .trainer-welcome-strip, html[data-theme="dark"] .trainer-workspace-nav { box-shadow: 0 14px 34px rgba(0,0,0,.17); }
 html[data-theme="dark"] .trainer-welcome-strip h2, html[data-theme="dark"] .trainer-quick-actions h2, html[data-theme="dark"] .trainer-workspace-card--metric strong { color: #ecf3ff; }
 html[data-theme="dark"] .trainer-nav-link.is-active { color: #fff; }
+
+@media (prefers-reduced-motion: reduce) {
+  .trainer-workspace-summary[data-loading-state="refreshing"]::after { animation: none; }
+}
 
 @media (max-width: 1020px) {
   .trainer-workspace-summary { grid-template-columns: repeat(3, minmax(0, 1fr)); }

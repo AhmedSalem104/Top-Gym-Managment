@@ -9,6 +9,7 @@ const { ROLES } = require('./roles');
  */
 const PERMISSIONS = Object.freeze({
     DASHBOARD_READ: 'dashboard.read',
+    NOTIFICATIONS_READ: 'notifications.read',
 
     MEMBERS_READ: 'members.read',
     MEMBERS_CREATE: 'members.create',
@@ -121,6 +122,7 @@ const PERMISSIONS = Object.freeze({
 });
 
 const CATALOG_DEFINITIONS = [
+    ['notifications.read', 'Notifications', 'View role- and tenant-scoped in-app notifications.', 'notifications', 'view'],
     ['dashboard.read', 'لوحة التحكم', 'عرض لوحة التحكم والتحليلات التشغيلية.', 'dashboard', 'عرض'],
     ['members.read', 'المشتركون', 'عرض قائمة المشتركين وتفاصيل ملفاتهم.', 'members', 'عرض'],
     ['members.create', 'إضافة مشترك', 'إنشاء ملف المشترك وعضويته الأولية بدون تحصيل دفعة؛ تحصيل المبلغ يحتاج صلاحية تسجيل دفعة.', 'members', 'إضافة'],
@@ -245,6 +247,7 @@ const KNOWN_PERMISSION_CODES = new Set(PERMISSION_CATALOG.map((item) => item.cod
 // These grants preserve the current Assistant route surface for accounts
 // that already existed before this permission system was introduced.
 const LEGACY_ASSISTANT_DEFAULT_PERMISSIONS = Object.freeze([
+    'notifications.read',
     'members.read', 'members.create', 'members.update', 'members.delete', 'members.alerts', 'members.print',
     'memberships.read', 'memberships.create', 'memberships.update', 'memberships.freeze', 'memberships.renew',
     'payments.create',
@@ -261,6 +264,7 @@ const LEGACY_ASSISTANT_DEFAULT_PERMISSIONS = Object.freeze([
 // destructive, financial, reporting and configuration capabilities stay off
 // until the Owner explicitly grants them.
 const SAFE_ASSISTANT_DEFAULT_PERMISSIONS = Object.freeze([
+    'notifications.read',
     'members.read', 'members.create', 'members.update', 'members.print',
     'memberships.read', 'memberships.create', 'memberships.update',
     'trainees.read', 'trainees.create',

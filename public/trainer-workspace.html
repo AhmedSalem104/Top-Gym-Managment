@@ -44,7 +44,7 @@
             <div class="trainer-welcome-meta"><span class="trainer-status-pill trainer-status-pill--active"><span class="trainer-live-dot" aria-hidden="true"></span>البيانات محدثة من مساحة المدرب</span></div>
         </section>
 
-        <section class="trainer-workspace-summary" aria-label="مؤشرات المدرب">
+        <section class="trainer-workspace-summary" data-skeleton-region="trainer-metrics" aria-label="مؤشرات المدرب">
             <article class="trainer-workspace-card trainer-workspace-card--metric trainer-workspace-card--primary"><span class="trainer-card-icon" aria-hidden="true">◎</span><span class="trainer-card-eyebrow">قاعدة العملاء</span><strong id="trainerMetricClients">—</strong><small>عملاء نشطون</small></article>
             <article class="trainer-workspace-card trainer-workspace-card--metric"><span class="trainer-card-icon trainer-card-icon--violet" aria-hidden="true">◷</span><span class="trainer-card-eyebrow">إيقاع اليوم</span><strong id="trainerMetricSessions">—</strong><small>جلسات اليوم</small></article>
             <article class="trainer-workspace-card trainer-workspace-card--metric"><span class="trainer-card-icon trainer-card-icon--blue" aria-hidden="true">↗</span><span class="trainer-card-eyebrow">المواعيد القادمة</span><strong id="trainerMetricUpcoming">—</strong><small>جلسات مجدولة</small></article>
@@ -64,7 +64,7 @@
                     <button class="btn btn-light btn-small" id="trainerScheduleSession" type="button">جدولة جلسة</button>
                 </div>
                 <div id="trainerSessionsMessage" class="trainer-inline-message" role="status"></div>
-                <div id="trainerSessionsList" class="trainer-compact-list trainer-schedule-list" aria-live="polite"></div>
+            <div id="trainerSessionsList" class="trainer-compact-list trainer-schedule-list" data-skeleton-kind="list" data-skeleton-rows="4" data-skeleton-class="trainer-sessions-skeleton" aria-live="polite"><div class="loading" aria-hidden="true"></div></div>
             </section>
             <aside class="trainer-workspace-panel trainer-activity-panel" aria-labelledby="trainerActivityTitle">
                 <div class="trainer-panel-header trainer-panel-header--stacked"><div><span class="trainer-panel-kicker">إشارات المتابعة</span><h2 id="trainerActivityTitle">عملاء يحتاجونك</h2><p>أرقام حقيقية من ملفات التدريب الخاصة بك.</p></div></div>
@@ -87,7 +87,7 @@
                 <button class="btn btn-light btn-small" id="trainerRefreshClients" type="button">تحديث</button>
             </div>
             <div id="trainerClientsMessage" class="trainer-inline-message" role="status"></div>
-            <div id="trainerClientsList" class="trainer-clients-list" aria-live="polite"></div>
+            <div id="trainerClientsList" class="trainer-clients-list" data-skeleton-kind="list" data-skeleton-rows="5" data-skeleton-class="trainer-clients-skeleton" aria-live="polite"><div class="loading" aria-hidden="true"></div></div>
             <div id="trainerClientsPagination" class="trainer-pagination" hidden></div>
         </section>
 
@@ -95,12 +95,12 @@
             <article class="trainer-workspace-panel trainer-operations-panel" id="trainerPackages" aria-labelledby="trainerPackagesTitle">
                 <div class="trainer-panel-header"><div><span class="trainer-panel-kicker">الخدمات</span><h2 id="trainerPackagesTitle">باقات التدريب</h2><p>خطط بيع واضحة لعملائك حضوريًا أو أونلاين.</p></div><button class="btn btn-light btn-small" id="trainerAddPackageSecondary" type="button">إضافة باقة</button></div>
                 <div id="trainerPackagesMessage" class="trainer-inline-message" role="status"></div>
-                <div id="trainerPackagesList" class="trainer-compact-list" aria-live="polite"></div>
+                <div id="trainerPackagesList" class="trainer-compact-list" data-skeleton-kind="list" data-skeleton-rows="3" data-skeleton-class="trainer-packages-skeleton" aria-live="polite"><div class="loading" aria-hidden="true"></div></div>
             </article>
             <article class="trainer-workspace-panel trainer-operations-panel" id="trainerPurchases" aria-labelledby="trainerPurchasesTitle">
                 <div class="trainer-panel-header"><div><span class="trainer-panel-kicker">التحصيلات</span><h2 id="trainerPurchasesTitle">مشتريات العملاء</h2><p>تابع المدفوع والمتبقي لكل باقة بدون سجل مالي موازٍ.</p></div><button class="btn btn-light btn-small" id="trainerAddPurchase" type="button">بيع باقة</button></div>
                 <div id="trainerPurchasesMessage" class="trainer-inline-message" role="status"></div>
-                <div id="trainerPurchasesList" class="trainer-compact-list trainer-purchases-list" aria-live="polite"></div>
+                <div id="trainerPurchasesList" class="trainer-compact-list trainer-purchases-list" data-skeleton-kind="list" data-skeleton-rows="3" data-skeleton-class="trainer-purchases-skeleton" aria-live="polite"><div class="loading" aria-hidden="true"></div></div>
             </article>
         </section>
 
@@ -231,6 +231,6 @@
             <div class="trainer-dialog-actions"><button class="btn btn-light" type="button" id="trainerPaymentCancel">إلغاء</button><button class="btn btn-primary" type="submit" id="trainerPaymentSave">حفظ الدفعة</button></div>
         </form>
     </dialog>
-    <script defer src="/js/theme.js?v=1"></script><script defer src="/js/branding.js?v=5"></script><script defer src="/js/exercise-assets.js?v=2"></script><script defer src="/js/muscle-assets.js?v=1"></script><script defer src="/js/food-assets.js?v=1"></script><script defer src="/js/trainer-workspace.js?v=6"></script><script defer src="/js/trainer-studio-v2.js?v=3"></script>
+    <script defer src="/js/theme.js?v=1"></script><script defer src="/js/branding.js?v=5"></script><script defer src="/js/loading-skeleton.js?v=1"></script><script defer src="/js/notification-center.js?v=1"></script><script defer src="/js/exercise-assets.js?v=2"></script><script defer src="/js/muscle-assets.js?v=1"></script><script defer src="/js/food-assets.js?v=1"></script><script defer src="/js/trainer-workspace.js?v=6"></script><script defer src="/js/trainer-studio-v2.js?v=3"></script>
 </body>
 </html>

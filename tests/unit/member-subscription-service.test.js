@@ -204,7 +204,7 @@ test('member approval keeps the proof checksum alias used by the final integrity
 
 test('idempotency keys are stored as a scoped digest, never as the raw key', () => {
     const raw = 'member-request-test-key-001';
-    const digest = service.idempotencyKeyHash(raw, 11, 42, 'membership');
+    const digest = service.idempotencyKeyHash(raw, 11, 42, 'membership', 'unit-test-member-portal-secret-value-32');
     assert.match(digest, /^[a-f0-9]{64}$/);
     assert.notEqual(digest, raw);
     assert.throws(() => service.idempotencyKeyHash('short', 11, 42, 'membership'), (error) => error.code === 'INVALID_IDEMPOTENCY_KEY');

@@ -48,7 +48,8 @@ test('database readiness audit finds the canonical migration set safe at source 
         '027-trainer-studio-goals-templates.sql',
         '028-trainer-action-center.sql',
         '029-branch-sections.sql',
-        '030-plan-entitlements.sql'
+        '030-plan-entitlements.sql',
+        '031-central-notifications.sql'
     ]);
     assert.deepEqual(report.migrationFindings, []);
     assert.equal(report.schemaReview.status, 'REQUIRES STAGING VERIFICATION');
@@ -69,17 +70,24 @@ test('migration runner applies the canonical commercial base before trainer regi
     assert.ok(baseBatch < phase2Batch);
 });
 
-test('single migration selection accepts only the reviewed 029 migration', () => {
+test('single migration selection accepts only the reviewed migration set', () => {
     const selected = parseMigrationOnly(['--only', '029']);
     assert.equal(selected.id, '029-branch-sections.sql');
     assert.equal(selected.version, '029');
     assert.deepEqual(selected.excluded, ['030-plan-entitlements.sql']);
     assert.equal(SINGLE_MIGRATIONS['029'].path.endsWith('029-branch-sections.sql'), true);
+
+    const notifications = parseMigrationOnly(['--only', '031']);
+    assert.equal(notifications.id, '031-central-notifications.sql');
+    assert.equal(notifications.version, '031');
+    assert.deepEqual(notifications.excluded, ['029-branch-sections.sql', '030-plan-entitlements.sql']);
+    assert.equal(SINGLE_MIGRATIONS['031'].path.endsWith('031-central-notifications.sql'), true);
+
     assert.throws(() => parseMigrationOnly(['--only', '030']), /Unsupported single migration selection/);
     assert.throws(() => parseMigrationOnly(['--only', '029', '--only', '030']), /Only one migration/);
 });
 
-test('single migration runner contract excludes 030 from the 029-only path', () => {
+test('single migration runner contract excludes historical migrations from the selected path', () => {
     const runner = fs.readFileSync(path.join(__dirname, '..', '..', 'scripts', 'migrate-tenancy.js'), 'utf8');
     const onlyStart = runner.indexOf('async function migrateOnly');
     const onlyEnd = runner.indexOf('\nasync function migrate()', onlyStart);
@@ -92,6 +100,7 @@ test('single migration runner contract excludes 030 from the 029-only path', () 
     assert.match(onlySource, /sp_set_session_context/);
     assert.match(onlySource, /ensureTenantColumnsAndRls/);
     assert.match(onlySource, /recordMigrationHistory/);
+    assert.doesNotMatch(onlySource, /planEntitlementsMigration|PHASE17_PLAN_ENTITLEMENTS_MIGRATION_PATH/);
 });
 
 test('database readiness audit requires guards for additive migration operations', () => {

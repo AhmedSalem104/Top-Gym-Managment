@@ -26,6 +26,7 @@ const { registerTrainerRoutes } = require('./trainer.routes');
 const { registerBranchRoutes } = require('./branch.routes');
 const { registerStockLocationRoutes } = require('./stock-location.routes');
 const { registerBarRoutes } = require('./bar.routes');
+const { registerNotificationRoutes } = require('./notification.routes');
 const { platformOnly } = require('../middleware/platform.middleware');
 const trainerStudioService = require('../services/trainer-studio-service');
 
@@ -116,6 +117,7 @@ function registerRoutes(app, {
     branchService,
     stockLocationService,
     barService,
+    notificationService,
     getPool
 }) {
     app.get('/api/health/live', asyncRoute(createLivenessHandler()));
@@ -157,6 +159,7 @@ function registerRoutes(app, {
     registerBranchRoutes(app, { branchService, asyncRoute });
     registerStockLocationRoutes(app, { stockLocationService, asyncRoute });
     registerBarRoutes(app, { barService, asyncRoute });
+    registerNotificationRoutes(app, { notificationService, asyncRoute });
     registerMembersRoutes(app, { memberService, branchService, asyncRoute });
 }
 

@@ -343,7 +343,7 @@ async function verifyStoredProof(storage, row) {
     return { size: object.body.length, checksum };
 }
 
-function createGymRegistrationService({ commercialService, saasService, authService, objectStorageService } = {}) {
+function createGymRegistrationService({ commercialService, saasService, authService, objectStorageService, notificationService = null } = {}) {
     if (!commercialService || !saasService || !authService) throw new Error('Gym registration service dependencies are required.');
 
     // Public registration is deliberately tenant-neutral. Its audit events
@@ -354,6 +354,18 @@ function createGymRegistrationService({ commercialService, saasService, authServ
         { tenantId: null, mode: 'platform', readOnlyBaseline: false },
         () => saasService.recordAudit(details)
     );
+
+    const recordRegistrationEvent = (event, executor) => notificationService?.recordEvent
+        ? runTenantContext({ tenantId: null, mode: 'platform', readOnlyBaseline: false }, () => notificationService.recordEvent(event, { executor }))
+        : recordPlatformAudit({
+            tenantId: event.tenantId,
+            actorUserId: event.actorUserId,
+            action: event.type,
+            entityType: event.entityType,
+            entityId: event.entityId,
+            details: event.auditDetails,
+            executor
+        });
 
     return {
         async catalog(tenantType = TENANT_TYPES.GYM) {
@@ -379,6 +391,7 @@ function createGymRegistrationService({ commercialService, saasService, authServ
             const notes = text(body.notes, '', 2000) || null;
             let requestId = null;
             let reused = false;
+            let notificationEvent = null;
             const insert = async (transaction) => {
                 const idempotencyRequest = transaction.request();
                 const idempotencyPlaceholders = registrationCandidates.map((candidate, index) => {
@@ -432,17 +445,29 @@ function createGymRegistrationService({ commercialService, saasService, authServ
                                     @termCode,@durationMonths,@price,@discountAmount,@amountDue,@currency,
                                     @paymentMethodCode,@paymentMethodName,@notes,@idempotencyKeyHash,@publicTokenHash);`);
                 requestId = Number(result.recordset[0]?.id);
-                await recordPlatformAudit({
+                notificationEvent = await recordRegistrationEvent({
+                    type: normalizedTenantType === TENANT_TYPES.GYM
+                        ? 'gym_registration_requested'
+                        : 'trainer_registration_requested',
                     tenantId: null,
                     actorUserId: null,
-                    action: 'gym_registration_requested',
                     entityType: 'gym_registration_request',
                     entityId: requestId,
-                    details: normalizedTenantType === TENANT_TYPES.GYM
+                    auditDetails: normalizedTenantType === TENANT_TYPES.GYM
                         ? 'A public gym registration request was submitted.'
                         : 'A public independent trainer registration request was submitted.',
-                    executor: transaction
-                });
+                    payload: {
+                        registrationType: normalizedTenantType,
+                        gymName,
+                        ownerName,
+                        contactEmail: email,
+                        planName: selection.plan.name,
+                        amountDue: selection.amountDue,
+                        currency: selection.term.currency,
+                        submittedAt: new Date().toISOString(),
+                        actionUrl: `${String(config.publicAppUrl || '').replace(/\/+$/, '')}/platform-admin`
+                    }
+                }, transaction);
             };
             try {
                 await withTransaction(insert);
@@ -466,6 +491,11 @@ function createGymRegistrationService({ commercialService, saasService, authServ
                 accessToken = matched.accessToken;
                 requestId = Number(row.id);
                 reused = true;
+            }
+            if (!reused && notificationEvent && notificationService?.dispatchEvent) {
+                // Dispatch only after the insert transaction has committed.
+                // A delivery failure must not undo a saved request.
+                try { await notificationService.dispatchEvent(notificationEvent); } catch (_) { /* persisted request remains successful */ }
             }
             const row = await getRequestRow(requestId, { accessToken });
             if (!row) throw registrationError('The registration request could not be loaded.', 503, 'REGISTRATION_REQUEST_NOT_AVAILABLE');

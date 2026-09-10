@@ -91,7 +91,7 @@ async function trainerRegistration(admin, suffix) {
         body: {
             gymName: `QA Trainer ${suffix}`,
             ownerName: `QA Trainer Owner ${suffix}`,
-            whatsapp: `+2010000${String(Date.now()).slice(-6)}`,
+            whatsapp: `+2010${String(Date.now()).slice(-8)}`,
             email,
             city: 'QA Local',
             planCode: plan.code,

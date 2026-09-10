@@ -63,14 +63,18 @@ async function capture(page, testInfo, name) {
 }
 
 test.beforeEach(async ({ page }) => {
+    const email = process.env.QA_OWNER_EMAIL || process.env.AUTH_OWNER_EMAIL;
+    const password = process.env.QA_OWNER_PASSWORD || process.env.AUTH_OWNER_PASSWORD;
+    // Authenticated Gym browser flows must never fall back to fake data or a
+    // hidden gateway click. Keep the suite honest when a safe QA account is
+    // not configured: report the scenario as skipped/NOT VERIFIED instead of
+    // turning missing credentials into a misleading timeout.
+    test.skip(!email || !password, 'NOT VERIFIED: QA_OWNER_* credentials are not configured.');
     await page.goto('/', { waitUntil: 'domcontentloaded' });
     const entryButton = page.locator('#saasEntryContinue');
-    if (await entryButton.count()) {
+    if (await entryButton.isVisible().catch(() => false)) {
         await entryButton.click();
         await expect(page.locator('#loginEmail')).toBeVisible({ timeout: 20_000 });
-        const email = process.env.QA_OWNER_EMAIL || process.env.AUTH_OWNER_EMAIL;
-        const password = process.env.QA_OWNER_PASSWORD || process.env.AUTH_OWNER_PASSWORD;
-        if (!email || !password) throw new Error('E2E owner credentials are not configured.');
         await page.locator('#loginEmail').fill(email);
         await page.locator('#loginPassword').fill(password);
         await page.locator('#loginSubmit').click();

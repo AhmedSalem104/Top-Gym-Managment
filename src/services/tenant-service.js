@@ -18,7 +18,11 @@ const GLOBAL_TENANT_COLUMN_TABLES = Object.freeze(['dbo.gym_user_tenants']);
 // This audit table is dual-scope: tenant events carry tenant_id, while
 // platform-level events intentionally keep it NULL. It is still RLS
 // protected, but NULL is valid for this one table's platform records.
-const NULLABLE_TENANT_TABLES = Object.freeze(['dbo.saas_audit_log']);
+const NULLABLE_TENANT_TABLES = Object.freeze([
+    'dbo.saas_audit_log',
+    'dbo.saas_notifications',
+    'dbo.saas_notification_reads'
+]);
 
 // Every operational table that stores gym data is listed explicitly. Auth
 // credentials/sessions and tenant membership metadata stay global so a user
@@ -107,6 +111,8 @@ const TENANT_TABLES = Object.freeze([
     'gym_trainer_tasks',
     'saas_payment_proofs',
     'saas_audit_log',
+    'saas_notifications',
+    'saas_notification_reads',
     'saas_platform_notes',
     'saas_subscription_requests',
     'saas_subscription_changes',

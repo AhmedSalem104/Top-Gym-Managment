@@ -29,6 +29,13 @@
         return payload;
     };
 
+    function beginRegionLoading(target, markup) {
+        if (!target || !window.topGymSkeleton) return;
+        const hasContent = Boolean(target.firstElementChild && !target.querySelector(':scope > .loading'));
+        if (hasContent) window.topGymSkeleton.refresh(target);
+        else window.topGymSkeleton.start(target, markup);
+    }
+
     function setClientsMessage(value, isError = false) {
         if (!clientsMessage) return;
         clientsMessage.textContent = value || '';
@@ -134,7 +141,7 @@
     async function loadClients(pageNumber = currentPage) {
         currentPage = pageNumber;
         setClientsMessage('جارٍ تحميل العملاء...');
-        if (clientsList) clientsList.setAttribute('aria-busy', 'true');
+        beginRegionLoading(clientsList, window.topGymSkeleton?.list({ rows: 5, className: 'trainer-clients-skeleton' }));
         try {
             const payload = await api(`/api/trainer/clients?page=${currentPage}&pageSize=20&search=${encodeURIComponent(search?.value || '')}`);
             renderClients(payload);
@@ -144,7 +151,7 @@
             setClientsMessage(error.message || 'تعذر تحميل العملاء.', true);
             renderEmpty('تعذر تحميل قائمة العملاء.');
         } finally {
-            if (clientsList) clientsList.removeAttribute('aria-busy');
+            window.topGymSkeleton?.ready(clientsList);
         }
     }
 
@@ -256,6 +263,12 @@
     }
 
     async function loadOperations() {
+        const operationTargets = [
+            [byId('trainerPackagesList'), window.topGymSkeleton?.list({ rows: 3, className: 'trainer-packages-skeleton' })],
+            [byId('trainerSessionsList'), window.topGymSkeleton?.list({ rows: 4, className: 'trainer-sessions-skeleton' })],
+            [byId('trainerPurchasesList'), window.topGymSkeleton?.list({ rows: 3, className: 'trainer-purchases-skeleton' })]
+        ];
+        operationTargets.forEach(([target, markup]) => beginRegionLoading(target, markup));
         try {
             const [packages, sessions, purchases] = await Promise.all([
                 api('/api/trainer/packages'),
@@ -273,6 +286,13 @@
             setSectionMessage('trainerPackagesMessage', text, true);
             setSectionMessage('trainerSessionsMessage', text, true);
             setSectionMessage('trainerPurchasesMessage', text, true);
+            operationTargets.forEach(([target]) => {
+                if (target?.querySelector('.skeleton-list')) {
+                    target.innerHTML = `<div class="trainer-empty-state"><strong>${escapeHtml(text)}</strong><span>حاول تحديث هذا القسم مرة أخرى.</span></div>`;
+                }
+            });
+        } finally {
+            operationTargets.forEach(([target]) => window.topGymSkeleton?.ready(target));
         }
     }
 
@@ -561,6 +581,8 @@
     });
 
     async function loadWorkspace() {
+        const summary = document.querySelector('.trainer-workspace-summary[data-skeleton-region="trainer-metrics"]');
+        window.topGymSkeleton?.start(summary, '', { preserve: true });
         try {
             const payload = await api('/api/trainer/workspace');
             setMetrics(payload);
@@ -573,6 +595,8 @@
         } catch (error) {
             if (error?.status === 401 || error?.code === 'TENANT_ACCESS_REQUIRED') return window.location.replace('/');
             setText(message, error.message || 'تعذر تحميل مساحة العمل.');
+        } finally {
+            window.topGymSkeleton?.ready(summary);
         }
     }
 

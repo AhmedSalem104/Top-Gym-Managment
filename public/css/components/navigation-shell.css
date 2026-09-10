@@ -1314,6 +1314,27 @@ html[data-brand-active-style="pill"] .app-shell > .page-tabs > .page-tab.active 
   .workspace-contextbar-inner { width: calc(100% - 12px); }
 }
 
+/* The current Gym shell has no rendered context bar. Keep the rail and
+   workspace in the second grid row until that optional bar is actually
+   present, so the rail cannot overlap the sticky topbar. */
+@media (min-width: 1200px) {
+  .app-shell:not(:has(> .workspace-contextbar:not([hidden]))) {
+    grid-template-rows: 80px minmax(0, 1fr);
+  }
+
+  .app-shell:not(:has(> .workspace-contextbar:not([hidden]))) > .page-tabs {
+    top: 80px;
+    grid-row: 2;
+    height: calc(100dvh - 80px);
+    min-height: calc(100dvh - 80px);
+    max-height: none;
+  }
+
+  .app-shell:not(:has(> .workspace-contextbar:not([hidden]))) > main.page {
+    grid-row: 2;
+  }
+}
+
 /* Gym shell refinement: one full-height navigation rail, one compact context
    control in the top bar, and an information hierarchy that matches daily use. */
 .workspace-contextbar { display: none !important; }

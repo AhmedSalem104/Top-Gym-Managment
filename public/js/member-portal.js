@@ -321,6 +321,7 @@
         ${table('خطط التغذية', ['الخطة', 'الفترة', 'الحالة'], nutritionPlans.map((item) => `<tr>${tableCell('الخطة', escapeHtml(item.name || '—'))}${tableCell('الفترة', `${dateText(item.startDate)}<br>حتى ${dateText(item.endDate)}`, 'portal-ltr')}${tableCell('الحالة', escapeHtml(item.status || '—'))}</tr>`), 'لا توجد خطط تغذية متاحة.', 'portal-trainer-history')}
         ${table('الجلسات القادمة', ['الموعد', 'الحالة', 'ملاحظات'], upcomingSessions.map((item) => `<tr>${tableCell('الموعد', dateTimeText(item.scheduledStart), 'portal-ltr')}${tableCell('الحالة', escapeHtml(item.status === 'scheduled' ? 'مجدولة' : item.status || '—'))}${tableCell('ملاحظات', escapeHtml(item.notes || '—'))}</tr>`), 'لا توجد جلسات قادمة.', 'portal-trainer-history')}`;
     }
+    window.topGymSkeleton?.ready(trainerOverviewContent);
     portalReportMeta = `ملف العميل: ${member.fullName || '—'} · تاريخ الإصدار: ${dateTimeText(data.issuedAt)}`;
     resetFeedback();
     setPortalView('home');

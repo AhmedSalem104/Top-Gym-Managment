@@ -82,9 +82,9 @@
             <main class="platform-content">
                 <section class="platform-view active" data-platform-panel="dashboard">
                     <div class="platform-page-head"><div><span class="eyebrow">نظرة عامة</span><h2>صورة المنصة اليوم</h2><p>تابع حالة الجيمات والاشتراكات والاستخدام من مكان واحد.</p></div><button class="platform-btn primary platform-page-action" type="button" data-platform-action="refresh-dashboard">تحديث البيانات</button></div>
-                    <div class="platform-kpi-grid" id="platformKpis"></div>
+                    <div class="platform-kpi-grid" id="platformKpis" data-skeleton-kind="cards" data-skeleton-rows="4"><div class="loading">Loading platform metrics...</div></div>
                     <div class="platform-dashboard-grid">
-                        <article class="platform-card status-overview-card"><div class="card-heading"><div><span class="eyebrow">صحة الجيمات</span><h3>توزيع حالات الجيمات</h3></div><button class="platform-link-btn" type="button" data-platform-view-target="gyms">عرض الكل</button></div><div class="status-grid" id="platformStatusGrid"></div></article>
+                        <article class="platform-card status-overview-card"><div class="card-heading"><div><span class="eyebrow">صحة الجيمات</span><h3>توزيع حالات الجيمات</h3></div><button class="platform-link-btn" type="button" data-platform-view-target="gyms">عرض الكل</button></div><div class="status-grid" id="platformStatusGrid" data-skeleton-kind="list" data-skeleton-rows="5"><div class="loading">Loading customer status...</div></div></article>
                     <article class="platform-card quick-actions-card"><div class="card-heading"><div><span class="eyebrow">إجراءات سريعة</span><h3>إجراءات المنصة</h3></div></div><div class="quick-actions"><button type="button" data-platform-view-target="gyms"><span aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V6l8-3 8 3v14"/><path d="M8 20v-5h8v5M8 8h.01M12 8h.01M16 8h.01M8 11h.01M12 11h.01M16 11h.01"/></svg></span><b>إدارة الجيمات</b><small>فتح ملف أي جيم</small></button><button type="button" data-platform-view-target="requests"><span aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 8h8M8 12h5M8 16h8"/></svg></span><b>مراجعة الطلبات</b><small>الدفع والاشتراكات</small></button><button type="button" data-platform-view-target="plans"><span aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 2.6 5.4L20 11l-5.4 2.6L12 19l-2.6-5.4L4 11l5.4-2.6Z"/><path d="M19 3v4M17 5h4"/></svg></span><b>ضبط الباقات</b><small>الحدود والمزايا</small></button></div></article>
                     </div>
                     <div class="platform-dashboard-grid lower-grid">
@@ -148,6 +148,8 @@
     <dialog class="platform-dialog platform-credentials-dialog" id="platformRegistrationCredentialsDialog"><form method="dialog"><header><div><span class="eyebrow">بيانات مؤقتة</span><h3>تم إنشاء الجيم بنجاح</h3></div><button class="dialog-close" type="submit" aria-label="إغلاق">×</button></header><div class="dialog-body" id="platformRegistrationCredentialsBody"></div><footer><button class="platform-btn primary" type="submit">إغلاق</button></footer></form></dialog>
     <div class="platform-toast" id="platformToast" role="status" aria-live="polite"></div>
     <script defer src="/js/ui-feedback.js?v=2"></script>
+    <script defer src="/js/loading-skeleton.js?v=1"></script>
+    <script defer src="/js/notification-center.js?v=1"></script>
     <script defer src="/js/platform-admin.js?v=7"></script>
 </body>
 </html>
