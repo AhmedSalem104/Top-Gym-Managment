@@ -78,7 +78,7 @@ function resolveReleaseSha(requestedSha) {
 }
 
 function dirtyPaths() {
-    const output = gitOutput(['status', '--porcelain=v1', '--untracked-files=all']);
+    const output = runChecked('git', ['status', '--porcelain=v1', '--untracked-files=all'], { failureMessage: 'Git worktree inspection failed.', code: 'RELEASE_GIT_PREFLIGHT_FAILED' }).stdout;
     return output ? output.split(/\r?\n/).map((line) => line.slice(3).trim()).filter(Boolean) : [];
 }
 
