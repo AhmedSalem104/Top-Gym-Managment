@@ -41,7 +41,7 @@ function run(command, args, options = {}) {
         input: options.input,
         timeout: options.timeout
     });
-    if (result.error) fail(`Release command could not be started (${result.error.code || 'unknown'}).`, options.code || 'RELEASE_COMMAND_START_FAILED');
+    if (result.error) fail(`Release command could not be started (${result.error.code || 'unknown'}).`, `${options.code || 'RELEASE_COMMAND_START_FAILED'}_${result.error.code || 'UNKNOWN'}`);
     return result;
 }
 
