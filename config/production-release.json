@@ -1,0 +1,16 @@
+{
+  "host": "128.140.58.112",
+  "user": "root",
+  "identityPath": "%USERPROFILE%/AppData/Local/LogicFitssh/logicfit-vps-admin",
+  "appRoot": "/opt/logicfit-vps",
+  "containerName": "logicfit-production-vps",
+  "nodeImage": "node:24-bookworm-slim",
+  "internalPort": 3017,
+  "candidatePort": 3027,
+  "publicBaseUrl": "https://getlogicfit.com",
+  "healthPaths": [
+    "/api/health/live",
+    "/api/health"
+  ],
+  "forbiddenMigrationVersions": ["029", "030"]
+}

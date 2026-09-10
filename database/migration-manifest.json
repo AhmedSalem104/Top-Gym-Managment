@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "migrations": {
+    "031-central-notifications.sql": {
+      "version": "031",
+      "checksum": "7bb57ef3aa3851b1a5215ce2c2d5176dc4d58d3529a2241048dcecf6049ccfc1",
+      "transactional": true,
+      "backwardCompatible": true,
+      "destructive": false,
+      "requiresBackup": true,
+      "requiresMaintenanceMode": false,
+      "rlsImpact": true,
+      "rollback": "forward-fix-or-database-recovery"
+    }
+  }
+}

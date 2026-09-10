@@ -40,6 +40,18 @@ For every meaningful change:
 
 ## Specialist handoff format
 
+## Production release and migration pipeline
+
+- The canonical production release entry point is `npm run release:production`.
+- When the user asks to deploy, publish, upload, or says `ارفع`, the Lead uses that pipeline when deployment access is available. Do not ask the user to run migrations manually.
+- The pipeline is the single ordered flow: exact Git SHA preflight, local gates, release lock, official production backup and verification, migration-ledger discovery, manifest safety classification, only pending `SAFE_AUTOMATIC` migrations, RLS/Tenancy gate, immutable candidate health/smoke, cutover, exact-SHA verification, and rollback audit.
+- The migration ledger remains the only source of truth for applied migrations. `database/migration-manifest.json` is safety/checksum metadata, never a second history store. Historical migrations must not be rerun because of filename order; migrations `029` and `030` are forbidden for the current release.
+- Backup verification must use the existing Logic Fit backup/recovery service. A successful process exit without verified metadata, checksum, payload integrity, and coverage is not sufficient.
+- The release lock covers backup, migration, and deployment together. A live concurrent lock fails closed; stale-lock recovery is explicit and auditable.
+- Deployment uses the canonical SSH identity reference `logicfit-vps-admin` from local release configuration; private keys and secrets never enter Git, arguments, logs, docs, or tracked environment files.
+- Agent 1 reviews database/migration/RLS/security gates, Agent 2 reviews feature/browser/UI smoke, and Agent 3 reviews backup/deployment/performance/rollback. The Lead integrates their evidence and makes the final release decision.
+- A migration that is destructive, ambiguous, non-transactional, non-backward-compatible, or lacks verified recovery requires explicit review. Prefer expand/contract migrations so the previous application release remains runnable.
+
 Each specialist reports to the Lead using:
 
 `FINDING → ROOT CAUSE → PROPOSED FIX → FILES AFFECTED → DEPENDENCIES → RISKS → TESTS → BEFORE/AFTER EVIDENCE`

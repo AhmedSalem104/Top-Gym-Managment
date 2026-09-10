@@ -375,6 +375,7 @@ module.exports = {
     assertMigrationTarget,
     migrate,
     migrateOnly,
+    runMigrationUnit: migrateOnly,
     parseMigrationOnly,
     SINGLE_MIGRATIONS
 };

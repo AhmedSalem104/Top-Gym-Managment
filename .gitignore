@@ -8,3 +8,4 @@ qa/artifacts/
 .tmp/
 .local-private-storage/
 __pycache__/
+.logicfit-release-state/
