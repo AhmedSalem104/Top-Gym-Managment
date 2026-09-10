@@ -8,6 +8,9 @@ const chromeCandidates = [
     'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe'
 ].filter(Boolean);
 const systemBrowser = chromeCandidates.find((candidate) => fs.existsSync(candidate));
+const browserServerCommand = process.env.CI
+    ? 'node scripts/serve-browser-qa.js'
+    : 'node server.js';
 
 module.exports = defineConfig({
     testDir: './tests/browser',
@@ -38,7 +41,7 @@ module.exports = defineConfig({
         { name: 'mobile', use: { viewport: { width: 390, height: 844 }, isMobile: false, deviceScaleFactor: 1 } }
     ],
     webServer: {
-        command: 'node server.js',
+        command: browserServerCommand,
         url: 'http://127.0.0.1:4173/api/health',
         timeout: 120_000,
         reuseExistingServer: !process.env.CI,
