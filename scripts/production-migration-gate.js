@@ -223,7 +223,11 @@ async function applyPendingMigrations({ expected = [] } = {}) {
     const applied = [];
     for (const migration of plan.pending) {
         const entry = loadManifest().migrations[migration.id];
-        const result = await applyMigrationUnit({ ...migration, source: fs.readFileSync(migration.path, 'utf8') });
+        // The plan is intentionally metadata-only. Resolve the SQL source
+        // from the already verified migration directory instead of relying on
+        // a path property that is not part of the ledger/safety contract.
+        const source = fs.readFileSync(path.join(MIGRATIONS_DIR, migration.id), 'utf8');
+        const result = await applyMigrationUnit({ ...migration, source });
         applied.push({ id: migration.id, version: migration.version, checksum: entry.checksum, executed: result.executedMigrations.length === 1 });
     }
     const finalPlan = await buildMigrationPlan({ expected });
