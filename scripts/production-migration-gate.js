@@ -260,8 +260,10 @@ if (require.main === module) {
             // carry verbose messages, so expose only stable classification
             // fields needed to identify a safe remediation.
             const errorName = String(error?.name || 'Error').replace(/[^A-Za-z0-9_]/g, '').slice(0, 64) || 'Error';
-            const sqlNumber = Number.isInteger(error?.number) ? error.number : null;
-            process.stderr.write(`${JSON.stringify({ status: 'FAIL', code: error.code || 'PRODUCTION_MIGRATION_GATE_FAILED', errorName, sqlNumber })}\n`);
+            const sqlNumbers = [error?.number, ...(Array.isArray(error?.precedingErrors) ? error.precedingErrors.map((item) => item?.number) : [])]
+                .filter((value) => Number.isInteger(value))
+                .slice(0, 8);
+            process.stderr.write(`${JSON.stringify({ status: 'FAIL', code: error.code || 'PRODUCTION_MIGRATION_GATE_FAILED', errorName, sqlNumbers })}\n`);
             process.exitCode = 1;
         })
         .finally(() => closePool().catch(() => {}));
