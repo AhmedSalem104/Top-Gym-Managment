@@ -113,20 +113,31 @@ run_control() {
     run_with_current_env "$OLD_CONTAINER" -e NODE_ENV=production -e NODE_PATH=/app/node_modules -e RELEASE_APP_ROOT=/app -e RELEASE_MIGRATIONS_DIR=/app/database/migrations -e RELEASE_MANIFEST_PATH=/control/database/migration-manifest.json -v "$RELEASE_DIR:/app" -v "$CONTROL_DIR:/control" -w /control "$NODE_IMAGE" "$@"
 }
 plan_output="$(run_control -e MIGRATION_ENV=production -e MIGRATION_PRODUCTION_CONFIRM=I_UNDERSTAND_PRODUCTION_MIGRATION node scripts/production-migration-gate.js --plan --json)"
-printf '%s\n' "$plan_output" | grep -Eq '"pending"[[:space:]]*:[[:space:]]*\['
-if printf '%s\n' "$plan_output" | grep -Eq '029|030'; then
+case "$plan_output" in
+    *'"pending":['*|*'"pending" : ['*) ;;
+    *)
+        STAGE='migration-plan'
+        abort_release 78
+        ;;
+esac
+case "$plan_output" in
+    *029*|*030*)
     STAGE='migration-plan'
     abort_release 78
-fi
+    ;;
+esac
 printf 'MIGRATION_PLAN=PASS\n'
 
-if printf '%s\n' "$plan_output" | grep -q '031-central-notifications.sql'; then
+case "$plan_output" in
+    *031-central-notifications.sql*)
     STAGE='migration-031'
     run_control -e MIGRATION_ENV=production -e MIGRATION_PRODUCTION_CONFIRM=I_UNDERSTAND_PRODUCTION_MIGRATION -e RELEASE_MIGRATION_APPLY_CONFIRM=YES node scripts/production-migration-gate.js --apply --json >/dev/null
     printf 'MIGRATION_PENDING=APPLIED\n'
-else
+    ;;
+    *)
     printf 'MIGRATION_PENDING=NONE\n'
-fi
+    ;;
+esac
 
 STAGE='rls-tenancy'
 run_control -e RELEASE_PRODUCTION_SECURITY_CONFIRM=YES node scripts/production-security-gate.js >/dev/null
