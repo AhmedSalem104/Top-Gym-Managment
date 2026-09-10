@@ -3,7 +3,7 @@
   "migrations": {
     "031-central-notifications.sql": {
       "version": "031",
-      "checksum": "7bb57ef3aa3851b1a5215ce2c2d5176dc4d58d3529a2241048dcecf6049ccfc1",
+      "checksum": "f7adf91bb597cffe9d3e7fd7baec16dd0b0dd3fdbd6982190e511f1e3298eda9",
       "transactional": true,
       "backwardCompatible": true,
       "destructive": false,
