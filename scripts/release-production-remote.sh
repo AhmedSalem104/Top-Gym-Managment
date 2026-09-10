@@ -17,13 +17,18 @@ fail_release() {
     printf 'RELEASE_REMOTE_FAIL stage=%s code=%s\n' "$STAGE" "$code" >&2
     exit "$code"
 }
+abort_release() {
+    code="$1"
+    printf 'RELEASE_REMOTE_FAIL stage=%s code=%s\n' "$STAGE" "$code" >&2
+    exit "$code"
+}
 trap fail_release ERR
 
 if [ -e "$LOCK_DIR" ]; then
     if [ -f "$LOCK_DIR/pid" ] && kill -0 "$(cat "$LOCK_DIR/pid" 2>/dev/null)" 2>/dev/null; then
         STAGE='release-lock'
         printf 'RELEASE_LOCK=BUSY\n' >&2
-        exit 73
+        abort_release 73
     fi
     mv "$LOCK_DIR" "${LOCK_DIR}.stale.$(date -u +%Y%m%d%H%M%S)"
 fi
@@ -71,7 +76,7 @@ backup_started_at="$(date -u +%Y-%m-%dT%H:%M:%S.%3NZ)"
 backup_log="$(mktemp)"
 if ! docker exec "$OLD_CONTAINER" node scripts/run-server-scheduled-backup.js >"$backup_log" 2>&1; then
     rm -f "$backup_log"
-    exit 76
+    abort_release 76
 fi
 rm -f "$backup_log"
 printf 'BACKUP_JOB=PASS\n'
@@ -116,7 +121,8 @@ NODE
 fi
 printf '%s\n' "$plan_output" | grep -Eq '"pending"[[:space:]]*:[[:space:]]*\['
 if printf '%s\n' "$plan_output" | grep -Eq '029|030'; then
-    exit 78
+    STAGE='migration-plan'
+    abort_release 78
 fi
 printf 'MIGRATION_PLAN=PASS\n'
 
@@ -161,7 +167,7 @@ for _ in $(seq 1 60); do
     if curl -fsS --max-time 5 "http://127.0.0.1:${CANDIDATE_PORT}/api/health/live" >/dev/null 2>&1; then candidate_ok=1; break; fi
     sleep 1
 done
-if [ "$candidate_ok" -ne 1 ]; then docker rm -f "$CANDIDATE_NAME" >/dev/null 2>&1 || true; exit 79; fi
+if [ "$candidate_ok" -ne 1 ]; then docker rm -f "$CANDIDATE_NAME" >/dev/null 2>&1 || true; abort_release 79; fi
 if [ -f "$RELEASE_DIR/scripts/production-smoke.js" ]; then
     run_with_current_env "$OLD_CONTAINER" -e NODE_ENV=production -v "$RELEASE_DIR:/app" -w /app "$NODE_IMAGE" node scripts/production-smoke.js --base-url "http://127.0.0.1:${CANDIDATE_PORT}" >/dev/null
 else
@@ -180,12 +186,12 @@ docker rename "$OLD_CONTAINER" "$PREVIOUS_NAME"
 if ! docker stop "$PREVIOUS_NAME" >/dev/null; then
     docker rename "$PREVIOUS_NAME" "$CONTAINER_NAME"
     docker start "$CONTAINER_NAME" >/dev/null
-    exit 80
+    abort_release 80
 fi
 if ! run_with_current_env "$PREVIOUS_NAME" -e NODE_ENV=production -e PORT="$INTERNAL_PORT" -e APP_RELEASE_ID="$RELEASE_SHA" -d --name "$CONTAINER_NAME" --network host --restart unless-stopped -v "$RELEASE_DIR:/app" -w /app "$NODE_IMAGE" node -e 'const app=require("./server"); const {closePool}=require("./src/database"); const port=Number(process.env.PORT||3017); const server=app.listen(port,"127.0.0.1",()=>process.stdout.write("production-ready\n")); const shutdown=()=>server.close(()=>closePool().finally(()=>process.exit(0))); process.once("SIGTERM",shutdown); process.once("SIGINT",shutdown);' >/dev/null; then
     docker rename "$PREVIOUS_NAME" "$CONTAINER_NAME"
     docker start "$CONTAINER_NAME" >/dev/null
-    exit 80
+    abort_release 80
 fi
 health_ok=0
 for _ in $(seq 1 60); do
@@ -196,7 +202,7 @@ if [ "$health_ok" -ne 1 ]; then
     docker rm -f "$CONTAINER_NAME" >/dev/null 2>&1 || true
     docker rename "$PREVIOUS_NAME" "$CONTAINER_NAME"
     docker start "$CONTAINER_NAME" >/dev/null
-    exit 81
+    abort_release 81
 fi
 
 STAGE='sha-verification'
