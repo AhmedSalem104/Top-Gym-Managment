@@ -141,7 +141,7 @@ function archiveControlBundle(tempDir) {
     const tarPath = path.join(tempDir, tarName);
     const archiveName = `${tarName}.gz`;
     const archivePath = path.join(tempDir, archiveName);
-    runChecked('git', ['archive', '--format=tar', '--output', tarPath, 'HEAD', '--', ...CONTROL_ARCHIVE_PATHS], { stdio: 'ignore', failureMessage: 'Release control bundle could not be created.', code: 'RELEASE_CONTROL_ARCHIVE_FAILED' });
+    runChecked('git', ['archive', '--format=tar', '--output', tarPath, 'HEAD', ...CONTROL_ARCHIVE_PATHS], { stdio: 'ignore', failureMessage: 'Release control bundle could not be created.', code: 'RELEASE_CONTROL_ARCHIVE_FAILED' });
     try {
         fs.writeFileSync(archivePath, zlib.gzipSync(fs.readFileSync(tarPath), { level: 6 }));
     } finally {
