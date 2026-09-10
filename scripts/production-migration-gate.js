@@ -1,18 +1,17 @@
 'use strict';
 
-require('dotenv').config();
-
 const crypto = require('node:crypto');
 const fs = require('node:fs');
 const path = require('node:path');
-const { closePool, getPool } = require('../src/database');
-const { runTenantContext } = require('../src/tenancy/tenant-context');
-const { migrateOnly } = require('./migrate-tenancy');
-const { auditMigrationText, parseMigrationVersion } = require('./audit-database-readiness');
-const { tenantSecuritySnapshotIsReady, getTenantSecuritySnapshot } = require('../src/services/tenant-service');
-
-const ROOT = path.resolve(__dirname, '..');
-const MANIFEST_PATH = path.join(ROOT, 'database', 'migration-manifest.json');
+const CONTROL_ROOT = path.resolve(__dirname, '..');
+const APP_ROOT = path.resolve(process.env.RELEASE_APP_ROOT || CONTROL_ROOT);
+const MIGRATIONS_DIR = path.resolve(process.env.RELEASE_MIGRATIONS_DIR || path.join(APP_ROOT, 'database', 'migrations'));
+const MANIFEST_PATH = path.resolve(process.env.RELEASE_MANIFEST_PATH || path.join(APP_ROOT, 'database', 'migration-manifest.json'));
+const { closePool, getPool, sql } = require(path.join(APP_ROOT, 'src', 'database'));
+const { runTenantContext } = require(path.join(APP_ROOT, 'src', 'tenancy', 'tenant-context'));
+const { auditMigrationText, parseMigrationVersion } = require(path.join(CONTROL_ROOT, 'scripts', 'audit-database-readiness'));
+const tenantService = require(path.join(APP_ROOT, 'src', 'services', 'tenant-service'));
+const { tenantSecuritySnapshotIsReady, getTenantSecuritySnapshot } = tenantService;
 const HISTORY_TABLE = 'dbo.__TenantEFMigrationsHistory';
 const PRODUCTION_CONFIRMATION = 'I_UNDERSTAND_PRODUCTION_MIGRATION';
 const FORBIDDEN_VERSIONS = new Set(['029', '030']);
@@ -55,8 +54,7 @@ function loadManifest() {
 }
 
 function discoverMigrations() {
-    const directory = path.join(ROOT, 'database', 'migrations');
-    const files = fs.readdirSync(directory)
+    const files = fs.readdirSync(MIGRATIONS_DIR)
         .filter((fileName) => fileName.toLowerCase().endsWith('.sql'))
         .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
     const seenVersions = new Set();
@@ -66,9 +64,9 @@ function discoverMigrations() {
         const normalizedVersion = String(version).padStart(3, '0');
         if (seenVersions.has(normalizedVersion)) fail(`Duplicate migration version: ${normalizedVersion}`, 'MIGRATION_VERSION_DUPLICATE');
         seenVersions.add(normalizedVersion);
-        const source = fs.readFileSync(path.join(directory, fileName), 'utf8');
+        const source = fs.readFileSync(path.join(MIGRATIONS_DIR, fileName), 'utf8');
         const checksum = crypto.createHash('sha256').update(source).digest('hex');
-        return { fileName, version: normalizedVersion, path: path.join(directory, fileName), source, checksum };
+        return { fileName, version: normalizedVersion, path: path.join(MIGRATIONS_DIR, fileName), source, checksum };
     });
 }
 
@@ -95,6 +93,86 @@ async function readAppliedMigrations(pool) {
     return new Map(result.recordset.map((row) => [String(row.MigrationId), String(row.ProductVersion || '')]));
 }
 
+async function resolveExistingBootstrapTenant(pool) {
+    const result = await pool.request()
+        .input('slug', sql.VarChar(80), 'top-gym')
+        .query(`
+            SELECT TOP (1) id
+            FROM dbo.gym_tenants
+            WHERE slug=@slug AND status IN ('trial','active','suspended','expired')
+            ORDER BY id ASC;
+        `);
+    const tenantId = Number(result.recordset[0]?.id || 0);
+    if (!Number.isInteger(tenantId) || tenantId <= 0) fail('Existing bootstrap tenant could not be resolved.', 'MIGRATION_BOOTSTRAP_TENANT_MISSING');
+    return tenantId;
+}
+
+async function assertMigrationLedgerExists(pool) {
+    const result = await pool.request().query(`
+        SELECT CASE WHEN OBJECT_ID(N'${HISTORY_TABLE}', N'U') IS NULL THEN 0 ELSE 1 END AS present;
+    `);
+    if (Number(result.recordset[0]?.present) !== 1) fail('Production migration ledger is missing; refusing to create it during a release.', 'MIGRATION_LEDGER_MISSING');
+}
+
+async function recordMigrationHistory(executor, migrationId) {
+    await executor.request()
+        .input('migrationId', sql.NVarChar(150), migrationId)
+        .input('productVersion', sql.NVarChar(64), 'logic-fit-production-release')
+        .query(`
+            IF NOT EXISTS (SELECT 1 FROM ${HISTORY_TABLE} WHERE MigrationId=@migrationId)
+                INSERT INTO ${HISTORY_TABLE}(MigrationId,ProductVersion)
+                VALUES (@migrationId,@productVersion);
+        `);
+}
+
+async function applyMigrationUnit(migration) {
+    const pool = await getPool();
+    await assertMigrationLedgerExists(pool);
+    const tenantId = await resolveExistingBootstrapTenant(pool);
+    return runTenantContext({ mode: 'platform', tenantId, readOnlyBaseline: false }, async () => {
+        const transaction = pool.rawTransaction();
+        let committed = false;
+        try {
+            await transaction.begin(sql.ISOLATION_LEVEL.SERIALIZABLE);
+            if (await hasMigrationHistory(transaction, migration.id)) {
+                await transaction.rollback();
+                const snapshot = await getTenantSecuritySnapshot(pool);
+                return {
+                    only: migration.version,
+                    migration: migration.id,
+                    executedMigrations: [],
+                    skippedMigrations: [migration.id],
+                    excludedMigrations: [],
+                    registryRlsRebuilt: false,
+                    tenantReady: tenantSecuritySnapshotIsReady(snapshot)
+                };
+            }
+            await transaction.request().batch(`
+                EXEC sys.sp_set_session_context @key=N'tenant_id', @value=${tenantId};
+                EXEC sys.sp_set_session_context @key=N'tenant_mode', @value=N'platform';
+            `);
+            await transaction.request().batch(migration.source);
+            await tenantService.ensureTenantColumnsAndRls(tenantId, { executor: transaction });
+            await recordMigrationHistory(transaction, migration.id);
+            await transaction.commit();
+            committed = true;
+        } catch (error) {
+            if (!committed) await transaction.rollback().catch(() => {});
+            throw error;
+        }
+        const snapshot = await getTenantSecuritySnapshot(pool);
+        return {
+            only: migration.version,
+            migration: migration.id,
+            executedMigrations: [migration.id],
+            skippedMigrations: [],
+            excludedMigrations: [],
+            registryRlsRebuilt: true,
+            tenantReady: tenantSecuritySnapshotIsReady(snapshot)
+        };
+    });
+}
+
 async function buildMigrationPlan({ expected = [] } = {}) {
     const manifest = loadManifest();
     const migrations = discoverMigrations();
@@ -114,7 +192,7 @@ async function buildMigrationPlan({ expected = [] } = {}) {
             rlsImpact: safety.rlsImpact
         });
     }
-    if (expected.length && pending.length && pending.some((migration) => !expected.includes(migration.version))) {
+    if (expected.length && (pending.length !== expected.length || pending.some((migration) => !expected.includes(migration.version)))) {
         fail('Pending migrations differ from the explicitly expected release set.', 'UNEXPECTED_PENDING_MIGRATION');
     }
     return {
@@ -134,12 +212,7 @@ async function applyPendingMigrations({ expected = [] } = {}) {
     const applied = [];
     for (const migration of plan.pending) {
         const entry = loadManifest().migrations[migration.id];
-        const result = await migrateOnly({
-            id: migration.id,
-            version: migration.version,
-            path: path.join(ROOT, 'database', 'migrations', migration.id),
-            excluded: [...FORBIDDEN_VERSIONS].filter((version) => version !== migration.version).map((version) => `${version}.sql`)
-        });
+        const result = await applyMigrationUnit({ ...migration, source: fs.readFileSync(migration.path, 'utf8') });
         applied.push({ id: migration.id, version: migration.version, checksum: entry.checksum, executed: result.executedMigrations.length === 1 });
     }
     const finalPlan = await buildMigrationPlan({ expected });

@@ -1,10 +1,11 @@
 'use strict';
 
-require('dotenv').config();
+const path = require('node:path');
 
-const { closePool, getPool } = require('../src/database');
-const { runTenantContext } = require('../src/tenancy/tenant-context');
-const { getTenantSecuritySnapshot, tenantSecuritySnapshotIsReady } = require('../src/services/tenant-service');
+const APP_ROOT = path.resolve(process.env.RELEASE_APP_ROOT || path.resolve(__dirname, '..'));
+const { closePool, getPool } = require(path.join(APP_ROOT, 'src', 'database'));
+const { runTenantContext } = require(path.join(APP_ROOT, 'src', 'tenancy', 'tenant-context'));
+const { getTenantSecuritySnapshot, tenantSecuritySnapshotIsReady } = require(path.join(APP_ROOT, 'src', 'services', 'tenant-service'));
 
 async function verifyProductionSecurity() {
     if (String(process.env.RELEASE_PRODUCTION_SECURITY_CONFIRM || '').trim() !== 'YES') {

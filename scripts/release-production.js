@@ -11,6 +11,12 @@ const ROOT = path.resolve(__dirname, '..');
 const CONFIG_PATH = path.join(ROOT, 'config', 'production-release.json');
 const REMOTE_SCRIPT_PATH = path.join(__dirname, 'release-production-remote.sh');
 const RELEASE_CONFIRMATION = 'I_UNDERSTAND_PRODUCTION_RELEASE';
+const CONTROL_ARCHIVE_PATHS = [
+    'database/migration-manifest.json',
+    'scripts/audit-database-readiness.js',
+    'scripts/production-migration-gate.js',
+    'scripts/production-security-gate.js'
+];
 const ALLOWED_DIRTY_PATHS = new Set([
     'docs/COMPLETE-SCREEN-INVENTORY.md',
     'docs/SYSTEM-SCREENS-API-QA-INVENTORY.md'
@@ -35,7 +41,7 @@ function run(command, args, options = {}) {
         input: options.input,
         timeout: options.timeout
     });
-    if (result.error) fail('Release command could not be started.', options.code || 'RELEASE_COMMAND_START_FAILED');
+    if (result.error) fail(`Release command could not be started (${result.error.code || 'unknown'}).`, options.code || 'RELEASE_COMMAND_START_FAILED');
     return result;
 }
 
@@ -130,6 +136,22 @@ function archiveCommit(sha, tempDir) {
     return { archiveName, archivePath, checksum };
 }
 
+function archiveControlBundle(tempDir) {
+    const tarName = 'logicfit-release-control.tar';
+    const tarPath = path.join(tempDir, tarName);
+    const archiveName = `${tarName}.gz`;
+    const archivePath = path.join(tempDir, archiveName);
+    runChecked('git', ['archive', '--format=tar', '--output', tarPath, 'HEAD', '--', ...CONTROL_ARCHIVE_PATHS], { stdio: 'ignore', failureMessage: 'Release control bundle could not be created.', code: 'RELEASE_CONTROL_ARCHIVE_FAILED' });
+    try {
+        fs.writeFileSync(archivePath, zlib.gzipSync(fs.readFileSync(tarPath), { level: 6 }));
+    } finally {
+        fs.unlinkSync(tarPath);
+    }
+    if (!fs.existsSync(archivePath) || fs.statSync(archivePath).size <= 0) fail('Release control bundle is empty.', 'RELEASE_CONTROL_ARCHIVE_INVALID');
+    const checksum = crypto.createHash('sha256').update(fs.readFileSync(archivePath)).digest('hex');
+    return { archiveName, archivePath, checksum };
+}
+
 function remoteTarget(config, fileName) {
     return `${config.user}@${config.host}:/tmp/${fileName}`;
 }
@@ -153,7 +175,7 @@ function uploadArchive(config, archivePath, archiveName, expectedChecksum) {
     fail('Production release archive upload failed.', 'RELEASE_UPLOAD_FAILED');
 }
 
-function renderRemoteScript(config, sha, archiveName) {
+function renderRemoteScript(config, sha, archiveName, controlArchiveName) {
     let script;
     try {
         script = fs.readFileSync(REMOTE_SCRIPT_PATH, 'utf8');
@@ -167,7 +189,8 @@ function renderRemoteScript(config, sha, archiveName) {
         __CONTAINER_NAME__: config.containerName,
         __INTERNAL_PORT__: String(config.internalPort),
         __CANDIDATE_PORT__: String(config.candidatePort),
-        __ARCHIVE_NAME__: archiveName
+        __ARCHIVE_NAME__: archiveName,
+        __CONTROL_ARCHIVE_NAME__: controlArchiveName
     };
     for (const [placeholder, value] of Object.entries(replacements)) {
         if (!/^[\w./:@+-]+$/.test(String(value))) fail('Release configuration contains unsafe remote values.', 'RELEASE_CONFIG_UNSAFE');
@@ -221,8 +244,10 @@ function main() {
     const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'logicfit-release-'));
     try {
         const archive = archiveCommit(sha, tempDir);
+        const control = archiveControlBundle(tempDir);
         uploadArchive(config, archive.archivePath, archive.archiveName, archive.checksum);
-        const output = runRemoteRelease(config, renderRemoteScript(config, sha, archive.archiveName));
+        uploadArchive(config, control.archivePath, control.archiveName, control.checksum);
+        const output = runRemoteRelease(config, renderRemoteScript(config, sha, archive.archiveName, control.archiveName));
         process.stdout.write(`RELEASE_SHA=${sha}\n${output.join('\n')}\nPRODUCTION_RELEASE=PASS\n`);
     } finally {
         cleanupDirectory(tempDir);

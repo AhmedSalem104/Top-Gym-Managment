@@ -5,6 +5,7 @@ require('dotenv').config();
 const { closePool, getPool, sql } = require('../src/database');
 const { runTenantContext } = require('../src/tenancy/tenant-context');
 const { createBackupRecoveryService } = require('../src/services/backup-recovery-service');
+const { createConfiguredObjectStorageService } = require('../src/services/object-storage-service');
 
 async function verifyProductionBackup() {
     if (String(process.env.PRODUCTION_BACKUP_VERIFY_CONFIRM || '').trim() !== 'YES') {
@@ -31,7 +32,16 @@ async function verifyProductionBackup() {
             error.code = 'BACKUP_VERIFICATION_RECORD_MISSING';
             throw error;
         }
-        const service = createBackupRecoveryService();
+        const storage = createConfiguredObjectStorageService({
+            nodeEnv: process.env.NODE_ENV || 'production',
+            isVercel: false
+        });
+        if (!storage.isConfigured) {
+            const error = new Error('Configured private backup storage is unavailable.');
+            error.code = 'BACKUP_STORAGE_NOT_CONFIGURED';
+            throw error;
+        }
+        const service = createBackupRecoveryService({ storageService: storage });
         // downloadPlatformBackup re-reads the private object and hashes its
         // bytes before returning; the body is discarded immediately.
         await service.downloadPlatformBackup(Number(row.id), { readOnly: true, auditDownload: false });
@@ -49,7 +59,8 @@ async function verifyProductionBackup() {
             verifiedAt: row.verified_at,
             eligibleTenants: health.summary.eligibleTenants,
             missingToday: health.summary.missingToday,
-            failedToday: health.summary.failedToday
+            failedToday: health.summary.failedToday,
+            providerStatus: storage.providerStatus
         };
     });
 }

@@ -8,7 +8,9 @@ CONTAINER_NAME='__CONTAINER_NAME__'
 INTERNAL_PORT='__INTERNAL_PORT__'
 CANDIDATE_PORT='__CANDIDATE_PORT__'
 ARCHIVE_PATH='/tmp/__ARCHIVE_NAME__'
+CONTROL_ARCHIVE_PATH='/tmp/__CONTROL_ARCHIVE_NAME__'
 RELEASE_DIR="${APP_ROOT}/app-${RELEASE_SHA:0:12}"
+CONTROL_DIR="/tmp/logicfit-release-control-${RELEASE_SHA:0:12}"
 LOCK_DIR="${APP_ROOT}/.production-release-lock"
 STAGE='start'
 
@@ -36,7 +38,8 @@ mkdir -p "$LOCK_DIR"
 printf '%s\n' "$$" > "$LOCK_DIR/pid"
 printf '%s\n' "$RELEASE_SHA" > "$LOCK_DIR/sha"
 cleanup_lock() { rm -f "$LOCK_DIR/pid" "$LOCK_DIR/sha" 2>/dev/null || true; rmdir "$LOCK_DIR" 2>/dev/null || true; }
-trap cleanup_lock EXIT
+cleanup_artifacts() { rm -f "$ARCHIVE_PATH" "$CONTROL_ARCHIVE_PATH" 2>/dev/null || true; rm -rf -- "$CONTROL_DIR" 2>/dev/null || true; }
+trap 'cleanup_lock; cleanup_artifacts' EXIT
 printf 'RELEASE_LOCK=ACQUIRED\n'
 
 STAGE='preflight'
@@ -45,6 +48,15 @@ OLD_CONTAINER="$CONTAINER_NAME"
 OLD_RELEASE="$(docker inspect "$OLD_CONTAINER" --format '{{range .Mounts}}{{if eq .Destination "/app"}}{{.Source}}{{end}}{{end}}')"
 [ -n "$OLD_RELEASE" ]
 printf 'CURRENT_CONTAINER=PASS\n'
+
+STAGE='control-stage'
+rm -rf -- "$CONTROL_DIR"
+mkdir -p "$CONTROL_DIR"
+tar -xzf "$CONTROL_ARCHIVE_PATH" -C "$CONTROL_DIR"
+[ -f "$CONTROL_DIR/scripts/production-migration-gate.js" ]
+[ -f "$CONTROL_DIR/scripts/production-security-gate.js" ]
+[ -f "$CONTROL_DIR/database/migration-manifest.json" ]
+printf 'RELEASE_CONTROL=PASS\n'
 
 STAGE='stage-release'
 mkdir -p "$APP_ROOT"
@@ -74,10 +86,12 @@ run_with_current_env() {
 STAGE='backup'
 backup_started_at="$(date -u +%Y-%m-%dT%H:%M:%S.%3NZ)"
 backup_log="$(mktemp)"
-if ! docker exec "$OLD_CONTAINER" node scripts/run-server-scheduled-backup.js >"$backup_log" 2>&1; then
+if ! docker exec -e LOGIC_FIT_JOB_STATE_DIR=/tmp/logicfit-job-state-release "$OLD_CONTAINER" node scripts/run-server-scheduled-backup.js >"$backup_log" 2>&1; then
+    docker exec "$OLD_CONTAINER" rm -rf /tmp/logicfit-job-state-release >/dev/null 2>&1 || true
     rm -f "$backup_log"
     abort_release 76
 fi
+docker exec "$OLD_CONTAINER" rm -rf /tmp/logicfit-job-state-release >/dev/null 2>&1 || true
 rm -f "$backup_log"
 printf 'BACKUP_JOB=PASS\n'
 
@@ -86,14 +100,17 @@ docker exec -e "BACKUP_STARTED_AT=$backup_started_at" -e PRODUCTION_BACKUP_VERIF
 const { closePool, getPool, sql } = require('./src/database');
 const { runTenantContext } = require('./src/tenancy/tenant-context');
 const { createBackupRecoveryService } = require('./src/services/backup-recovery-service');
+const { createConfiguredObjectStorageService } = require('./src/services/object-storage-service');
 (async () => {
     const startedAt = new Date(process.env.BACKUP_STARTED_AT || '');
     if (Number.isNaN(startedAt.getTime())) throw new Error('backup_marker_invalid');
     await runTenantContext({ mode: 'platform', tenantId: null, readOnlyBaseline: true }, async () => {
         const pool = await getPool();
-        const row = (await pool.request().input('startedAt', sql.DateTime2(3), startedAt).query("SELECT TOP (1) id,status,size_bytes,checksum_sha256,verified_at FROM dbo.gym_platform_backup_records WHERE backup_type='platform_daily' AND status='VERIFIED' AND created_at>=@startedAt ORDER BY created_at DESC,id DESC;")).recordset[0];
-        if (!row || !row.verified_at || Number(row.size_bytes || 0) <= 0 || !/^[a-f0-9]{64}$/i.test(String(row.checksum_sha256 || ''))) throw new Error('backup_record_invalid');
-        const service = createBackupRecoveryService();
+        const row = (await pool.request().input('startedAt', sql.DateTime2(3), startedAt).query("SELECT TOP (1) id,status,size_bytes,checksum_sha256 FROM dbo.gym_platform_backup_records WHERE backup_type='platform_daily' AND status='VERIFIED' AND created_at>=@startedAt ORDER BY created_at DESC,id DESC;")).recordset[0];
+        if (!row || Number(row.size_bytes || 0) <= 0 || !/^[a-f0-9]{64}$/i.test(String(row.checksum_sha256 || ''))) throw new Error('backup_record_invalid');
+        const storage = createConfiguredObjectStorageService({ nodeEnv: process.env.NODE_ENV || 'production', isVercel: false });
+        if (!storage.isConfigured) throw new Error('backup_storage_not_configured');
+        const service = createBackupRecoveryService({ storageService: storage });
         await service.downloadPlatformBackup(Number(row.id), { readOnly: true, auditDownload: false });
         const health = await service.getPlatformBackupHealth({ readOnly: true });
         if (health.summary.missingToday !== 0 || health.summary.failedToday !== 0 || health.lastVerifiedPlatformBackup?.status !== 'VERIFIED') throw new Error('backup_coverage_incomplete');
@@ -104,21 +121,10 @@ NODE
 printf 'BACKUP_VERIFICATION=PASS\n'
 
 STAGE='migration-plan'
-if [ -f "$RELEASE_DIR/scripts/production-migration-gate.js" ]; then
-    plan_output="$(run_with_current_env "$OLD_CONTAINER" -e NODE_ENV=production -e MIGRATION_ENV=production -e MIGRATION_PRODUCTION_CONFIRM=I_UNDERSTAND_PRODUCTION_MIGRATION -v "$RELEASE_DIR:/app" -w /app "$NODE_IMAGE" node scripts/production-migration-gate.js --plan --expected-pending 031 --json)"
-else
-    plan_output="$(docker exec -i "$OLD_CONTAINER" node - <<'NODE'
-const { closePool, getPool } = require('./src/database');
-(async () => {
-    const pool = await getPool();
-    const exists = (await pool.request().query("SELECT CASE WHEN OBJECT_ID(N'dbo.__TenantEFMigrationsHistory',N'U') IS NULL THEN 0 ELSE 1 END AS present;")).recordset[0]?.present;
-    if (Number(exists) !== 1) throw new Error('ledger_missing');
-    const rows = (await pool.request().query("SELECT MigrationId FROM dbo.__TenantEFMigrationsHistory;")).recordset.map((row) => String(row.MigrationId));
-    process.stdout.write(JSON.stringify({ ledger: 'verified', pending: rows.includes('031-central-notifications.sql') ? [] : ['031-central-notifications.sql'] }) + '\n');
-})().catch(() => { process.stderr.write('MIGRATION_PLAN_FAIL\n'); process.exitCode = 1; }).finally(() => closePool().catch(() => {}));
-NODE
-)"
-fi
+run_control() {
+    run_with_current_env "$OLD_CONTAINER" -e NODE_ENV=production -e NODE_PATH=/app/node_modules -e RELEASE_APP_ROOT=/app -e RELEASE_MIGRATIONS_DIR=/app/database/migrations -e RELEASE_MANIFEST_PATH=/control/database/migration-manifest.json -v "$RELEASE_DIR:/app" -v "$CONTROL_DIR:/control" -w /control "$NODE_IMAGE" "$@"
+}
+plan_output="$(run_control -e MIGRATION_ENV=production -e MIGRATION_PRODUCTION_CONFIRM=I_UNDERSTAND_PRODUCTION_MIGRATION node scripts/production-migration-gate.js --plan --json)"
 printf '%s\n' "$plan_output" | grep -Eq '"pending"[[:space:]]*:[[:space:]]*\['
 if printf '%s\n' "$plan_output" | grep -Eq '029|030'; then
     STAGE='migration-plan'
@@ -128,34 +134,14 @@ printf 'MIGRATION_PLAN=PASS\n'
 
 if printf '%s\n' "$plan_output" | grep -q '031-central-notifications.sql'; then
     STAGE='migration-031'
-    if [ -f "$RELEASE_DIR/scripts/production-migration-gate.js" ]; then
-        run_with_current_env "$OLD_CONTAINER" -e NODE_ENV=production -e MIGRATION_ENV=production -e MIGRATION_PRODUCTION_CONFIRM=I_UNDERSTAND_PRODUCTION_MIGRATION -e RELEASE_MIGRATION_APPLY_CONFIRM=YES -v "$RELEASE_DIR:/app" -w /app "$NODE_IMAGE" node scripts/production-migration-gate.js --apply --expected-pending 031 --json >/dev/null
-    else
-        run_with_current_env "$OLD_CONTAINER" -e NODE_ENV=production -e MIGRATION_ENV=production -e MIGRATION_PRODUCTION_CONFIRM=I_UNDERSTAND_PRODUCTION_MIGRATION -v "$RELEASE_DIR:/app" -w /app "$NODE_IMAGE" node scripts/migrate-tenancy.js --only 031 >/dev/null
-    fi
-    printf 'MIGRATION_031=PASS\n'
+    run_control -e MIGRATION_ENV=production -e MIGRATION_PRODUCTION_CONFIRM=I_UNDERSTAND_PRODUCTION_MIGRATION -e RELEASE_MIGRATION_APPLY_CONFIRM=YES node scripts/production-migration-gate.js --apply --json >/dev/null
+    printf 'MIGRATION_PENDING=APPLIED\n'
 else
-    printf 'MIGRATION_031=ALREADY_APPLIED\n'
+    printf 'MIGRATION_PENDING=NONE\n'
 fi
 
 STAGE='rls-tenancy'
-if [ -f "$RELEASE_DIR/scripts/production-security-gate.js" ]; then
-    run_with_current_env "$OLD_CONTAINER" -e NODE_ENV=production -e RELEASE_PRODUCTION_SECURITY_CONFIRM=YES -v "$RELEASE_DIR:/app" -w /app "$NODE_IMAGE" node scripts/production-security-gate.js >/dev/null
-else
-    docker exec -i "$OLD_CONTAINER" node - <<'NODE'
-const { closePool, getPool } = require('./src/database');
-const { runTenantContext } = require('./src/tenancy/tenant-context');
-const { getTenantSecuritySnapshot, tenantSecuritySnapshotIsReady } = require('./src/services/tenant-service');
-(async () => {
-    const result = await runTenantContext({ mode: 'platform', tenantId: 1, readOnlyBaseline: true }, async () => getTenantSecuritySnapshot(await getPool()));
-    if (!tenantSecuritySnapshotIsReady(result)
-        || Number(result.unprotected_tenant_tables || 0) !== 0
-        || Number(result.missing_registry_tables || 0) !== 0
-        || Number(result.invalid_predicates || 0) !== 0) throw new Error('security_gap');
-    process.stdout.write('SECURITY_GATE_PASS\n');
-})().catch(() => { process.stderr.write('SECURITY_GATE_FAIL\n'); process.exitCode = 1; }).finally(() => closePool().catch(() => {}));
-NODE
-fi
+run_control -e RELEASE_PRODUCTION_SECURITY_CONFIRM=YES node scripts/production-security-gate.js >/dev/null
 printf 'RLS_TENANCY=PASS\n'
 
 STAGE='candidate'
