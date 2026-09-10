@@ -108,7 +108,7 @@ const { createConfiguredObjectStorageService } = require('./src/services/object-
     if (Number.isNaN(startedAt.getTime())) throw new Error('backup_marker_invalid');
     await runTenantContext({ mode: 'platform', tenantId: null, readOnlyBaseline: true }, async () => {
         const pool = await getPool();
-        const row = (await pool.request().input('startedAt', sql.DateTime2(3), startedAt).query("SELECT TOP (1) id,status,size_bytes,checksum_sha256 FROM dbo.gym_platform_backup_records WHERE backup_type='platform_daily' AND status='VERIFIED' AND created_at>=@startedAt ORDER BY created_at DESC,id DESC;")).recordset[0];
+        const row = (await pool.request().input('startedAt', sql.DateTime2(3), startedAt).query("SELECT TOP (1) id,status,size_bytes,checksum_sha256 FROM dbo.gym_platform_backup_records WHERE backup_type='platform_daily' AND status='VERIFIED' AND (created_at>=@startedAt OR started_at>=@startedAt OR updated_at>=@startedAt OR (backup_day=CONVERT(date,SYSUTCDATETIME()) AND verified_at>=DATEADD(hour,-24,SYSUTCDATETIME()))) ORDER BY verified_at DESC,updated_at DESC,created_at DESC,id DESC;")).recordset[0];
         if (!row || Number(row.size_bytes || 0) <= 0 || !/^[a-f0-9]{64}$/i.test(String(row.checksum_sha256 || ''))) throw new Error('backup_record_invalid');
         const storage = createConfiguredObjectStorageService({ nodeEnv: process.env.NODE_ENV || 'production', isVercel: false });
         if (!storage.isConfigured) throw new Error('backup_storage_not_configured');

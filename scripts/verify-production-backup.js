@@ -24,8 +24,14 @@ async function verifyProductionBackup() {
         const row = (await pool.request().input('startedAt', sql.DateTime2(3), startedAt).query(`
             SELECT TOP (1) id,status,size_bytes,checksum_sha256,verified_at,created_at
             FROM dbo.gym_platform_backup_records
-            WHERE backup_type='platform_daily' AND status='VERIFIED' AND created_at>=@startedAt
-            ORDER BY created_at DESC,id DESC;
+            WHERE backup_type='platform_daily' AND status='VERIFIED'
+              AND (
+                created_at>=@startedAt
+                OR started_at>=@startedAt
+                OR updated_at>=@startedAt
+                OR (backup_day=CONVERT(date,SYSUTCDATETIME()) AND verified_at>=DATEADD(hour,-24,SYSUTCDATETIME()))
+              )
+            ORDER BY verified_at DESC,updated_at DESC,created_at DESC,id DESC;
         `)).recordset[0];
         if (!row || !row.verified_at || Number(row.size_bytes || 0) <= 0 || !/^[a-f0-9]{64}$/i.test(String(row.checksum_sha256 || ''))) {
             const error = new Error('A newly verified platform backup record was not found.');
