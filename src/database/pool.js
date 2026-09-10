@@ -134,7 +134,12 @@ function decorateRequest(request) {
                         result = value.call(target, command, ...rest);
                     } else {
                         target.input(TENANT_ID_PARAMETER, sql.Int, context.tenantId);
-                        target.input(TENANT_MODE_PARAMETER, sql.VarChar(20), context.mode);
+                        // Transaction-scoped tedious requests may not expose a
+                        // server collation while validating batch parameters.
+                        // NVarChar validation is collation-independent and the
+                        // value is still constrained to the closed mode set
+                        // by tenant-context normalization.
+                        target.input(TENANT_MODE_PARAMETER, sql.NVarChar(20), context.mode);
                         const guardedCommand = `EXEC sys.sp_set_session_context @key=N'tenant_id', @value=@${TENANT_ID_PARAMETER}; EXEC sys.sp_set_session_context @key=N'tenant_mode', @value=@${TENANT_MODE_PARAMETER}; ${String(command || '')}`;
                         result = value.call(target, guardedCommand, ...rest);
                     }

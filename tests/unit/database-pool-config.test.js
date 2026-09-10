@@ -1,6 +1,8 @@
 'use strict';
 
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 const test = require('node:test');
 
@@ -57,6 +59,14 @@ test('SQL connection string rejects an invalid port early', () => {
     assert.throws(
         () => parseConnectionString('Server=localhost,99999;Database=logic_fit_test;User Id=test;Password=test;'),
         /port is invalid/i
+    );
+});
+
+test('tenant session mode uses a collation-independent type in guarded requests', () => {
+    const source = fs.readFileSync(path.join(__dirname, '..', '..', 'src', 'database', 'pool.js'), 'utf8');
+    assert.match(
+        source,
+        /target\.input\(TENANT_MODE_PARAMETER, sql\.NVarChar\(20\), context\.mode\)/
     );
 });
 
