@@ -307,7 +307,7 @@ signed URLs, SQL text, stack traces or sensitive member data.
   duplicate scheduler work.
 - Restore uses short metadata/claim transactions and one controlled tenant
   restore transaction; the application lock prevents overlapping recovery.
-- Uploads are size-limited at 25 MiB compressed / 80 MiB JSON and 150,000 rows
+- Uploads are size-limited at 25 MiB compressed / 192 MiB JSON and 150,000 rows. The JSON ceiling is finite and bounded for the current platform snapshot size; artifacts are compressed before storage.
   by default. Larger production backups need a streaming/chunked design and
   an explicit capacity decision; these limits are safety gates, not capacity
   claims.

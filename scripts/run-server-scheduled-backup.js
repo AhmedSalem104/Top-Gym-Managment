@@ -11,6 +11,30 @@ const { createBackupRecoveryService } = require('../src/services/backup-recovery
 const { createConfiguredObjectStorageService } = require('../src/services/object-storage-service');
 const { acquireJobLock, writeJobResult } = require('./server-job-utils');
 
+const BACKUP_HEAP_MB = 640;
+
+function relaunchWithBoundedBackupHeap() {
+    const hasHeapLimit = process.execArgv.some((argument) => /^--max-old-space-size=\d+$/.test(argument))
+        || /(?:^|\s)--max-old-space-size=\d+(?:\s|$)/.test(String(process.env.NODE_OPTIONS || ''));
+    if (hasHeapLimit || process.env.LOGIC_FIT_BACKUP_HEAP_REEXEC === '1') return false;
+    const { spawnSync } = require('node:child_process');
+    const result = spawnSync(process.execPath, [
+        `--max-old-space-size=${BACKUP_HEAP_MB}`,
+        __filename,
+        ...process.argv.slice(2)
+    ], {
+        stdio: 'inherit',
+        env: { ...process.env, LOGIC_FIT_BACKUP_HEAP_REEXEC: '1' }
+    });
+    if (result.error) {
+        process.stderr.write('BACKUP_HEAP_REEXEC_FAILED\n');
+        process.exitCode = 1;
+    } else {
+        process.exitCode = Number.isInteger(result.status) ? result.status : 1;
+    }
+    return true;
+}
+
 async function main() {
     const release = await acquireJobLock('backup');
     try {
@@ -44,7 +68,11 @@ async function main() {
     }
 }
 
-main().catch((error) => {
-    writeJobResult({ job: 'backup', status: 'failed', code: error.code || 'BACKUP_JOB_FAILED', message: error.message });
-    process.exitCode = 1;
-}).finally(() => closePool().catch(() => {}));
+if (relaunchWithBoundedBackupHeap()) {
+    process.exit(process.exitCode || 0);
+} else {
+    main().catch((error) => {
+        writeJobResult({ job: 'backup', status: 'failed', code: error.code || 'BACKUP_JOB_FAILED', message: error.message });
+        process.exitCode = 1;
+    }).finally(() => closePool().catch(() => {}));
+}

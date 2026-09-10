@@ -14,6 +14,7 @@ const {
     getTenantBackupCoverageStatus,
     inspectTenantBackupBuffer,
     inspectPlatformBackupBuffer,
+    assertBackupJsonSize,
     mapWithConcurrency,
     normalizeBackupFormat,
     normalizeRetryCount,
@@ -167,6 +168,28 @@ test('daily backup health endpoint status fails closed for partial or failed cyc
     assert.equal(getDailyBackupCycleHttpStatus({ tenantFailed: 1, platform: { status: 'success' }, retention: { failed: 0 }, scheduledPlatform: [] }), 503);
     assert.equal(getDailyBackupCycleHttpStatus({ tenantFailed: 0, platform: { status: 'failed' }, retention: { failed: 0 }, scheduledPlatform: [] }), 503);
     assert.equal(getDailyBackupCycleHttpStatus({ tenantFailed: 0, platform: { status: 'success' }, retention: { failed: 0 }, scheduledPlatform: [{ status: 'failed' }] }), 503);
+});
+
+test('bounded backup JSON guard accepts real artifacts above the legacy 80 MiB limit', () => {
+    const legacyLimit = 80 * 1024 * 1024;
+    const json = JSON.stringify({ rows: 'x'.repeat(legacyLimit + 1) });
+    assert.throws(() => assertBackupJsonSize(json, legacyLimit), { code: 'BACKUP_SIZE_LIMIT_EXCEEDED' });
+    const measured = assertBackupJsonSize(json);
+    assert.ok(measured > legacyLimit);
+    assert.ok(measured < 192 * 1024 * 1024);
+    const compressed = require('node:zlib').gzipSync(Buffer.from(json, 'utf8'));
+    const checksum = require('node:crypto').createHash('sha256').update(compressed).digest('hex');
+    assert.equal(checksum.length, 64);
+    assert.ok(compressed.length < 25 * 1024 * 1024);
+});
+
+test('corrupted and truncated compressed backup artifacts are rejected', async () => {
+    const payload = samplePlatformPayload();
+    const gzip = require('node:zlib').gzipSync(Buffer.from(JSON.stringify(payload), 'utf8'));
+    const corrupted = Buffer.from(gzip);
+    corrupted[corrupted.length - 1] ^= 0xff;
+    await assert.rejects(() => inspectPlatformBackupBuffer(corrupted, { requireCompleteRegistry: false }), { code: 'PLATFORM_BACKUP_COMPRESSION_INVALID' });
+    await assert.rejects(() => inspectPlatformBackupBuffer(gzip.subarray(0, -4), { requireCompleteRegistry: false }), { code: 'PLATFORM_BACKUP_COMPRESSION_INVALID' });
 });
 
 test('backup projections exclude secret-like columns without dropping nutritional salt', () => {

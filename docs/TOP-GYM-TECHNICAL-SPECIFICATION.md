@@ -2119,7 +2119,7 @@ POST /api/backup/inspect:
 حدود الفحص:
 
 - compressed upload حتى 25MB.
-- decompressed JSON حتى 80MB.
+- decompressed JSON حتى 192MiB ضمن حد bounded؛ ويظل الرفع المضغوط محدودًا بـ25MiB.
 - rows حتى 150,000.
 
 يرجع:
@@ -2473,7 +2473,7 @@ index.html يظل يملك هيكل كل dialogs، وبعض scripts مشتركة
 | open attendance قديم | auto checkout | source=auto وduration |
 | تغيير وقت الصيف/الشتاء | cron fixed UTC | backup local time |
 | restore ملف تالف | inspect يرفض قبل delete | database بلا تغيير |
-| restore ملف صحيح لكن بيانات كبيرة | limits 25MB/80MB/150k | رسالة حد واضحة |
+| restore ملف صحيح لكن بيانات كبيرة | limits 25MiB/192MiB/150k | رسالة حد واضحة |
 | تقرير من أكبر من 730 يومًا | يرفض | pagination/export policy |
 | اسم خطة طويل | print/UI truncation | لا layout break |
 

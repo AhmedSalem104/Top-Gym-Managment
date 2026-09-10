@@ -30,7 +30,11 @@ const SUPPORTED_BACKUP_VERSIONS = Object.freeze(new Set([2, BACKUP_VERSION]));
 const SCHEMA_VERSION = '009';
 const REQUIRED_RESTORE_VERSION = 'logic-fit-platform-logical-v3';
 const MAX_BACKUP_UPLOAD_BYTES = 25 * 1024 * 1024;
-const MAX_BACKUP_JSON_BYTES = 80 * 1024 * 1024;
+// The platform snapshot is compressed before it reaches object storage. The
+// observed production JSON is ~145 MiB and compresses to ~10 MiB, so the old
+// 80 MiB guard rejected a valid artifact before compression. Keep a finite
+// bounded ceiling with headroom; the compressed upload limit remains 25 MiB.
+const MAX_BACKUP_JSON_BYTES = 192 * 1024 * 1024;
 const MAX_BACKUP_ROWS = 150000;
 const BACKUP_CATEGORY = 'backups';
 const LEGACY_SCHEMA_SNAPSHOT_VERSION = 1;
@@ -163,6 +167,12 @@ function totalRows(tableCounts = {}) {
 
 function jsonStringify(value) {
     return JSON.stringify(value, (_, item) => typeof item === 'bigint' ? item.toString() : item);
+}
+
+function assertBackupJsonSize(json, maxBytes = MAX_BACKUP_JSON_BYTES) {
+    const size = Buffer.byteLength(String(json || ''), 'utf8');
+    if (size > maxBytes) throw backupError('The backup exceeds the safe size limit.', 400, 'BACKUP_SIZE_LIMIT_EXCEEDED');
+    return size;
 }
 
 function payloadDigest(tables) {
@@ -1232,7 +1242,7 @@ async function buildTenantBackupArtifact({ tenantId = null, format = 'json.gz', 
     const tables = Object.fromEntries(rows);
     const payload = buildTenantBackupPayload({ tenant, tables, generatedAt: now });
     const json = jsonStringify(payload);
-    if (Buffer.byteLength(json, 'utf8') > MAX_BACKUP_JSON_BYTES) throw backupError('The backup exceeds the safe size limit.', 400, 'BACKUP_SIZE_LIMIT_EXCEEDED');
+    assertBackupJsonSize(json);
     const buffer = await gzipAsync(Buffer.from(json, 'utf8'));
     return {
         buffer,
@@ -2513,7 +2523,7 @@ async function buildPlatformBackupArtifact({ format = 'json.gz', now = new Date(
     };
     validatePlatformBackupPayload(payload, { requireCompleteRegistry: true });
     const json = jsonStringify(payload);
-    if (Buffer.byteLength(json, 'utf8') > MAX_BACKUP_JSON_BYTES) throw backupError('The platform backup exceeds the safe size limit.', 400, 'BACKUP_SIZE_LIMIT_EXCEEDED');
+    assertBackupJsonSize(json);
     const buffer = await gzipAsync(Buffer.from(json, 'utf8'));
     return {
         buffer,
@@ -3066,6 +3076,7 @@ function createBackupRecoveryService({ storageService = createObjectStorageServi
 
 module.exports = {
     BACKUP_VERSION,
+    assertBackupJsonSize,
     MAX_BACKUP_JSON_BYTES,
     MAX_BACKUP_ROWS,
     MAX_BACKUP_UPLOAD_BYTES,

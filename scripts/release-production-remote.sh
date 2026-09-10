@@ -86,12 +86,14 @@ run_with_current_env() {
 STAGE='backup'
 backup_started_at="$(date -u +%Y-%m-%dT%H:%M:%S.%3NZ)"
 backup_log="$(mktemp)"
-if ! docker exec -e LOGIC_FIT_JOB_STATE_DIR=/tmp/logicfit-job-state-release "$OLD_CONTAINER" node scripts/run-server-scheduled-backup.js >"$backup_log" 2>&1; then
-    docker exec "$OLD_CONTAINER" rm -rf /tmp/logicfit-job-state-release >/dev/null 2>&1 || true
+if ! run_with_current_env "$OLD_CONTAINER" \
+    -e LOGIC_FIT_JOB_STATE_DIR=/tmp/logicfit-job-state-release \
+    -e NODE_ENV=production \
+    -v "$RELEASE_DIR:/app" -w /app "$NODE_IMAGE" \
+    node --max-old-space-size=640 scripts/run-server-scheduled-backup.js >"$backup_log" 2>&1; then
     rm -f "$backup_log"
     abort_release 76
 fi
-docker exec "$OLD_CONTAINER" rm -rf /tmp/logicfit-job-state-release >/dev/null 2>&1 || true
 rm -f "$backup_log"
 printf 'BACKUP_JOB=PASS\n'
 
