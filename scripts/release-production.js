@@ -161,15 +161,15 @@ function sshArgs(config) {
 }
 
 function uploadArchive(config, archivePath, archiveName, expectedChecksum) {
-    const existing = run('ssh', [...sshArgs(config), `sha256sum -- /tmp/${archiveName}`], { encoding: 'utf8', timeout: 30000 });
+    const existing = run('ssh', [...sshArgs(config), `sha256sum -- /tmp/${archiveName}`], { encoding: 'utf8', timeout: 30000, code: 'RELEASE_REMOTE_ARCHIVE_CHECK' });
     const existingChecksum = existing.status === 0 ? String(existing.stdout || '').trim().split(/\s+/)[0].toLowerCase() : '';
     if (existingChecksum === expectedChecksum) return 'REMOTE_ALREADY_VERIFIED';
-    const result = run('scp', ['-i', config.identityPath, '-o', 'IdentitiesOnly=yes', '-o', 'BatchMode=yes', '-o', 'StrictHostKeyChecking=no', '-o', 'ConnectTimeout=15', archivePath, remoteTarget(config, archiveName)], { stdio: 'ignore', timeout: 180000 });
+    const result = run('scp', ['-i', config.identityPath, '-o', 'IdentitiesOnly=yes', '-o', 'BatchMode=yes', '-o', 'StrictHostKeyChecking=no', '-o', 'ConnectTimeout=15', archivePath, remoteTarget(config, archiveName)], { stdio: 'ignore', timeout: 180000, code: 'RELEASE_ARCHIVE_UPLOAD' });
     if (!result.error && result.status === 0) return 'PASS';
     // Some Windows OpenSSH/scp builds return a non-zero status after the
     // remote file is completely written. Accept only an exact remote digest;
     // a partial or stale artifact remains a hard failure.
-    const verification = run('ssh', [...sshArgs(config), `sha256sum -- /tmp/${archiveName}`], { encoding: 'utf8', timeout: 30000 });
+    const verification = run('ssh', [...sshArgs(config), `sha256sum -- /tmp/${archiveName}`], { encoding: 'utf8', timeout: 30000, code: 'RELEASE_REMOTE_ARCHIVE_VERIFY' });
     const remoteChecksum = verification.status === 0 ? String(verification.stdout || '').trim().split(/\s+/)[0].toLowerCase() : '';
     if (remoteChecksum === expectedChecksum) return 'PASS_AFTER_REMOTE_CHECKSUM';
     fail('Production release archive upload failed.', 'RELEASE_UPLOAD_FAILED');
