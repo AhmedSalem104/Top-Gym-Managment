@@ -135,7 +135,7 @@ function remoteTarget(config, fileName) {
 }
 
 function sshArgs(config) {
-    return ['-i', config.identityPath, '-o', 'IdentitiesOnly=yes', '-o', 'BatchMode=yes', '-o', 'StrictHostKeyChecking=no', '-o', 'ConnectTimeout=15', `${config.user}@${config.host}`];
+    return ['-T', '-i', config.identityPath, '-o', 'IdentitiesOnly=yes', '-o', 'BatchMode=yes', '-o', 'StrictHostKeyChecking=no', '-o', 'ConnectTimeout=15', `${config.user}@${config.host}`];
 }
 
 function uploadArchive(config, archivePath, archiveName, expectedChecksum) {
@@ -236,4 +236,4 @@ if (require.main === module) {
     }
 }
 
-module.exports = { ALLOWED_DIRTY_PATHS, evaluateReleaseGates, expandPath, loadReleaseConfig, parseArgs, resolveReleaseSha };
+module.exports = { ALLOWED_DIRTY_PATHS, evaluateReleaseGates, expandPath, loadReleaseConfig, parseArgs, renderRemoteScript, resolveReleaseSha };
