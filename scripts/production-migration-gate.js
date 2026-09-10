@@ -177,8 +177,19 @@ async function buildMigrationPlan({ expected = [] } = {}) {
     const manifest = loadManifest();
     const migrations = discoverMigrations();
     const applied = await runTenantContext({ mode: 'platform', tenantId: 1, readOnlyBaseline: true }, async () => readAppliedMigrations(await getPool()));
+    const managedNames = new Set(Object.keys(manifest.migrations));
+    const managedVersions = migrations
+        .filter((migration) => managedNames.has(migration.fileName))
+        .map((migration) => Number(migration.version));
+    const highestManagedVersion = managedVersions.length ? Math.max(...managedVersions) : 0;
+    const unmanifestedFuture = migrations.find((migration) => Number(migration.version) > highestManagedVersion && !managedNames.has(migration.fileName));
+    if (unmanifestedFuture) fail(`Migration ${unmanifestedFuture.fileName} is not registered in the release manifest.`, 'MIGRATION_MANIFEST_ENTRY_MISSING');
     const pending = [];
-    for (const migration of migrations) {
+    // The manifest is the version-controlled safety allow-list for the
+    // current release scope. Older migrations remain in Git for historical
+    // reference but are not rediscovered as new work; the ledger remains the
+    // only source of truth for whether a managed migration was applied.
+    for (const migration of migrations.filter((item) => managedNames.has(item.fileName))) {
         if (applied.has(migration.fileName)) continue;
         const entry = manifest.migrations[migration.fileName];
         const safety = classifyMigration(migration, entry);
