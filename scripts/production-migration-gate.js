@@ -122,7 +122,18 @@ async function recordMigrationHistory(executor, migrationId) {
             IF NOT EXISTS (SELECT 1 FROM ${HISTORY_TABLE} WHERE MigrationId=@migrationId)
                 INSERT INTO ${HISTORY_TABLE}(MigrationId,ProductVersion)
                 VALUES (@migrationId,@productVersion);
+    `);
+}
+
+async function hasMigrationHistory(executor, migrationId) {
+    const result = await executor.request()
+        .input('migrationId', sql.NVarChar(150), migrationId)
+        .query(`
+            SELECT CASE WHEN EXISTS (
+                SELECT 1 FROM ${HISTORY_TABLE} WHERE MigrationId=@migrationId
+            ) THEN 1 ELSE 0 END AS applied;
         `);
+    return Number(result.recordset[0]?.applied) === 1;
 }
 
 async function applyMigrationUnit(migration) {
