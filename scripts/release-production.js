@@ -41,7 +41,7 @@ function run(command, args, options = {}) {
         input: options.input,
         timeout: options.timeout
     });
-    if (result.error) fail(`Release command could not be started (${result.error.code || 'unknown'}).`, `${options.code || 'RELEASE_COMMAND_START_FAILED'}_${result.error.code || 'UNKNOWN'}`);
+    if (result.error && !options.allowError) fail(`Release command could not be started (${result.error.code || 'unknown'}).`, `${options.code || 'RELEASE_COMMAND_START_FAILED'}_${result.error.code || 'UNKNOWN'}`);
     return result;
 }
 
@@ -164,7 +164,7 @@ function uploadArchive(config, archivePath, archiveName, expectedChecksum) {
     const existing = run('ssh', [...sshArgs(config), `sha256sum -- /tmp/${archiveName}`], { encoding: 'utf8', timeout: 30000, code: 'RELEASE_REMOTE_ARCHIVE_CHECK' });
     const existingChecksum = existing.status === 0 ? String(existing.stdout || '').trim().split(/\s+/)[0].toLowerCase() : '';
     if (existingChecksum === expectedChecksum) return 'REMOTE_ALREADY_VERIFIED';
-    const result = run('scp', ['-i', config.identityPath, '-o', 'IdentitiesOnly=yes', '-o', 'BatchMode=yes', '-o', 'StrictHostKeyChecking=no', '-o', 'ConnectTimeout=15', archivePath, remoteTarget(config, archiveName)], { stdio: 'ignore', timeout: 180000, code: 'RELEASE_ARCHIVE_UPLOAD' });
+    const result = run('scp', ['-i', config.identityPath, '-o', 'IdentitiesOnly=yes', '-o', 'BatchMode=yes', '-o', 'StrictHostKeyChecking=no', '-o', 'ConnectTimeout=15', archivePath, remoteTarget(config, archiveName)], { stdio: 'ignore', timeout: 900000, allowError: true, code: 'RELEASE_ARCHIVE_UPLOAD' });
     if (!result.error && result.status === 0) return 'PASS';
     // Some Windows OpenSSH/scp builds return a non-zero status after the
     // remote file is completely written. Accept only an exact remote digest;
