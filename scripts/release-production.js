@@ -184,7 +184,8 @@ function runRemoteRelease(config, script) {
         const failure = String(result.stderr || '').match(/RELEASE_REMOTE_FAIL stage=([a-z0-9-]+) code=([0-9]+)/i);
         const error = new Error('Production release remote gate failed; previous release was preserved where rollback was possible.');
         error.code = 'RELEASE_REMOTE_FAILED';
-        error.stage = failure?.[1] || 'remote';
+        const lastSafeLine = safeLines[safeLines.length - 1] || '';
+        error.stage = failure?.[1] || (lastSafeLine ? lastSafeLine.split('=')[0].toLowerCase() : 'remote');
         error.remoteCode = failure?.[2] || 'unknown';
         throw error;
     }
@@ -230,7 +231,7 @@ function main() {
 
 if (require.main === module) {
     try { main(); } catch (error) {
-        const suffix = error.stage ? ` stage=${error.stage}` : '';
+        const suffix = error.stage ? ` stage=${error.stage}${error.remoteCode ? ` remote_code=${error.remoteCode}` : ''}` : '';
         process.stderr.write(`PRODUCTION_RELEASE_BLOCKED code=${error.code || 'PRODUCTION_RELEASE_FAILED'}${suffix}\n`);
         process.exitCode = 1;
     }
