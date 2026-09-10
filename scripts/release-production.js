@@ -1,6 +1,7 @@
 'use strict';
 
 const childProcess = require('node:child_process');
+const crypto = require('node:crypto');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
@@ -125,7 +126,8 @@ function archiveCommit(sha, tempDir) {
         fs.unlinkSync(tarPath);
     }
     if (!fs.existsSync(archivePath) || fs.statSync(archivePath).size <= 0) fail('Immutable release archive is empty.', 'RELEASE_ARCHIVE_INVALID');
-    return { archiveName, archivePath };
+    const checksum = crypto.createHash('sha256').update(fs.readFileSync(archivePath)).digest('hex');
+    return { archiveName, archivePath, checksum };
 }
 
 function remoteTarget(config, fileName) {
@@ -136,8 +138,16 @@ function sshArgs(config) {
     return ['-i', config.identityPath, '-o', 'IdentitiesOnly=yes', '-o', 'BatchMode=yes', '-o', 'StrictHostKeyChecking=no', '-o', 'ConnectTimeout=15', `${config.user}@${config.host}`];
 }
 
-function uploadArchive(config, archivePath, archiveName) {
-    runChecked('scp', ['-i', config.identityPath, '-o', 'IdentitiesOnly=yes', '-o', 'BatchMode=yes', '-o', 'StrictHostKeyChecking=no', '-o', 'ConnectTimeout=15', archivePath, remoteTarget(config, archiveName)], { stdio: 'ignore', timeout: 120000, failureMessage: 'Production release archive upload failed.', code: 'RELEASE_UPLOAD_FAILED' });
+function uploadArchive(config, archivePath, archiveName, expectedChecksum) {
+    const result = run('scp', ['-i', config.identityPath, '-o', 'IdentitiesOnly=yes', '-o', 'BatchMode=yes', '-o', 'StrictHostKeyChecking=no', '-o', 'ConnectTimeout=15', archivePath, remoteTarget(config, archiveName)], { stdio: 'ignore', timeout: 180000 });
+    if (!result.error && result.status === 0) return 'PASS';
+    // Some Windows OpenSSH/scp builds return a non-zero status after the
+    // remote file is completely written. Accept only an exact remote digest;
+    // a partial or stale artifact remains a hard failure.
+    const verification = run('ssh', [...sshArgs(config), `sha256sum -- /tmp/${archiveName}`], { encoding: 'utf8', timeout: 30000 });
+    const remoteChecksum = verification.status === 0 ? String(verification.stdout || '').trim().split(/\s+/)[0].toLowerCase() : '';
+    if (remoteChecksum === expectedChecksum) return 'PASS_AFTER_REMOTE_CHECKSUM';
+    fail('Production release archive upload failed.', 'RELEASE_UPLOAD_FAILED');
 }
 
 function renderRemoteScript(config, sha, archiveName) {
@@ -200,7 +210,7 @@ function main() {
     const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'logicfit-release-'));
     try {
         const archive = archiveCommit(sha, tempDir);
-        uploadArchive(config, archive.archivePath, archive.archiveName);
+        uploadArchive(config, archive.archivePath, archive.archiveName, archive.checksum);
         const output = runRemoteRelease(config, renderRemoteScript(config, sha, archive.archiveName));
         process.stdout.write(`RELEASE_SHA=${sha}\n${output.join('\n')}\nPRODUCTION_RELEASE=PASS\n`);
     } finally {
