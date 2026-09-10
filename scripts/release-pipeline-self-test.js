@@ -49,6 +49,8 @@ function main() {
     }, 'a'.repeat(40), '', '', 'git');
     assert.match(rendered, /fetch --no-tags origin/);
     assert.match(rendered, /RELEASE_SOURCE=GIT_FETCH_PASS/);
+    assert.match(rendered, /run_with_current_env_persistent "\$OLD_CONTAINER"/);
+    assert.match(rendered, /run_with_current_env_persistent "\$PREVIOUS_NAME"/);
     assert.doesNotMatch(rendered, /__[A-Z0-9_]+__/);
 
     process.stdout.write('RELEASE_PIPELINE_SELF_TEST=PASS\n');
