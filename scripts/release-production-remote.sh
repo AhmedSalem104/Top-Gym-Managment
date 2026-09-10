@@ -159,16 +159,8 @@ case "$plan_output" in
 esac
 printf 'MIGRATION_PLAN=PASS\n'
 
-MIGRATION_PENDING='NONE'
-case "$plan_output" in
-*031-central-notifications.sql*)
-    MIGRATION_PENDING='031-central-notifications.sql'
-    ;;
-    *)
-    ;;
-esac
-
-if [ "$MIGRATION_PENDING" = '031-central-notifications.sql' ]; then
+MIGRATION_APPLY_OUTPUT='{"status":"SKIPPED","applied":[],"pending":[],"ledger":"verified"}'
+if [[ "$plan_output" != *'"pending":[]'* ]]; then
     STAGE='backup'
     backup_started_at="$(date -u +%Y-%m-%dT%H:%M:%S.%3NZ)"
     backup_log="$(mktemp)"
@@ -194,9 +186,13 @@ if [ "$MIGRATION_PENDING" = '031-central-notifications.sql' ]; then
     fi
     printf 'BACKUP_VERIFICATION=PASS\n'
 
-    STAGE='migration-031'
-    run_control -e MIGRATION_ENV=production -e MIGRATION_PRODUCTION_CONFIRM=I_UNDERSTAND_PRODUCTION_MIGRATION -e RELEASE_MIGRATION_APPLY_CONFIRM=YES node scripts/production-migration-gate.js --apply --json >/dev/null
-    printf 'MIGRATION_PENDING=APPLIED\n'
+    STAGE='migration-apply'
+    MIGRATION_APPLY_OUTPUT="$(run_control -e MIGRATION_ENV=production -e MIGRATION_PRODUCTION_CONFIRM=I_UNDERSTAND_PRODUCTION_MIGRATION -e RELEASE_MIGRATION_APPLY_CONFIRM=YES node scripts/production-migration-gate.js --apply --json)"
+    case "$MIGRATION_APPLY_OUTPUT" in
+        *'"status":"PASS"'*) ;;
+        *) abort_release 78 ;;
+    esac
+    printf 'MIGRATIONS_PENDING=APPLIED\n'
 
     STAGE='rls-tenancy'
     run_control -e RELEASE_PRODUCTION_SECURITY_CONFIRM=YES node scripts/production-security-gate.js >/dev/null
@@ -204,7 +200,7 @@ if [ "$MIGRATION_PENDING" = '031-central-notifications.sql' ]; then
 else
     printf 'BACKUP_JOB=SKIPPED_CODE_ONLY\n'
     printf 'BACKUP_VERIFICATION=SKIPPED_CODE_ONLY\n'
-    printf 'MIGRATION_PENDING=NONE\n'
+    printf 'MIGRATIONS_PENDING=NONE\n'
     printf 'RLS_TENANCY=SKIPPED_CODE_ONLY\n'
 fi
 
@@ -268,7 +264,7 @@ AUDIT_DIR="${APP_ROOT}/release-audit"
 mkdir -p "$AUDIT_DIR"
 umask 077
 cat > "$AUDIT_DIR/${RELEASE_SHA}.json" <<EOF
-{"releaseSha":"$RELEASE_SHA","previousContainer":"$PREVIOUS_NAME","deployedContainer":"$CONTAINER_NAME","migration":"031-central-notifications.sql","migrationStatus":"verified","backupStatus":"verified","securityStatus":"verified","healthStatus":"verified","createdAt":"$(date -u +%Y-%m-%dT%H:%M:%SZ)"}
+{"releaseSha":"$RELEASE_SHA","previousContainer":"$PREVIOUS_NAME","deployedContainer":"$CONTAINER_NAME","migrationPlan":$plan_output,"migrationApply":$MIGRATION_APPLY_OUTPUT,"backupStatus":"$(if [[ "$MIGRATION_APPLY_OUTPUT" == *'"status":"SKIPPED"'* ]]; then printf 'skipped_code_only'; else printf 'verified'; fi)","securityStatus":"$(if [[ "$MIGRATION_APPLY_OUTPUT" == *'"status":"SKIPPED"'* ]]; then printf 'skipped_code_only'; else printf 'verified'; fi)","healthStatus":"verified","createdAt":"$(date -u +%Y-%m-%dT%H:%M:%SZ)"}
 EOF
 printf 'ROLLBACK_READY=PASS\n'
 printf 'RELEASE_REMOTE=PASS\n'
