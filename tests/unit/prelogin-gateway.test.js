@@ -8,38 +8,36 @@ const test = require('node:test');
 const ROOT = path.join(__dirname, '..', '..');
 const read = (relativePath) => fs.readFileSync(path.join(ROOT, relativePath), 'utf8');
 
-test('pre-login gateway keeps the auth entry point and product preview together', () => {
+test('minimal login keeps only the real auth hooks and theme control', () => {
     const markup = read('public/index.html');
 
-    assert.match(markup, /id="saasEntryCard"/);
-    assert.match(markup, /id="saasEntryContinue"/);
-    assert.match(markup, /id="authLoginCard"/);
-    assert.match(markup, /class="saas-entry-preview"/);
-    assert.match(markup, /class="saas-entry-preview-glass-panel"/);
-    assert.match(markup, /إدارة الجيم\.<br><span>أبسط وأذكى\.<\/span>/);
-    assert.match(markup, /الدخول إلى مساحة الجيم/);
-    assert.match(markup, /class="saas-entry-preview-sidebar"/);
-    assert.match(markup, /class="saas-entry-preview-kpis"/);
-    assert.match(markup, /class="saas-entry-preview-activity"/);
+    assert.match(markup, /id="authScreen"[^>]*data-auth-stage="login"/u);
+    assert.match(markup, /id="authLoginCard"/u);
+    assert.match(markup, /id="loginForm"/u);
+    assert.match(markup, /id="loginEmail"[^>]*required/u);
+    assert.match(markup, /id="loginPassword"[^>]*required/u);
+    assert.match(markup, /data-theme-toggle/iu);
 });
 
-test('pre-login gateway layout is theme-token based and preserves desktop/mobile intent', () => {
+test('minimal login suppresses marketing composition without touching auth behavior', () => {
     const styles = read('public/css/pages/login.css');
 
-    assert.match(styles, /grid-template-areas:\s*"preview copy"/);
-    assert.doesNotMatch(styles, /grid-template-areas:[\s\S]*"preview action"/);
-    assert.match(styles, /\.saas-entry-preview\s*\{[\s\S]*grid-area: preview/);
-    assert.match(styles, /background-image:[\s\S]*gym-background\.webp/);
-    assert.match(styles, /\.auth-screen\[data-auth-stage="gateway"\] \.auth-theme-toggle\s*\{[\s\S]*font-size: var\(--font-sm\)/);
-    assert.match(styles, /\.auth-screen\[data-auth-stage="gateway"\] \.auth-theme-toggle\s*>\s*span\[data-theme-toggle-label\][\s\S]*position: static/);
-    assert.match(styles, /@media \(max-width: 760px\)[\s\S]*\.saas-entry-copy\s*\{[\s\S]*display: contents/);
-    assert.match(styles, /\.saas-entry-preview\s*\{[\s\S]*background: var\(--bg/);
-    assert.doesNotMatch(styles, /\.saas-entry-preview[^}]*#[0-9a-f]{3,8}/i);
+    assert.match(styles, /\.auth-screen\[data-auth-stage="login"\] \.auth-reference-hero[\s\S]*display: none !important/u);
+    assert.match(styles, /\.auth-screen\[data-auth-stage="login"\] \.saas-entry-card[\s\S]*display: none !important/u);
+    assert.match(styles, /\.auth-screen\[data-auth-stage="login"\] \.auth-reference-security[\s\S]*display: none !important/u);
+    assert.match(styles, /\.auth-screen\[data-auth-stage="login"\] \.auth-card\[hidden\][\s\S]*display: none !important/u);
+    assert.match(styles, /@media \(max-width: 560px\)[\s\S]*\.auth-screen\[data-auth-stage="login"\] \.auth-form-panel/u);
+    assert.match(styles, /@media \(prefers-reduced-motion: reduce\)[\s\S]*\.auth-screen\[data-auth-stage="login"\]/u);
 });
 
-test('pre-login CTA remains wired to the existing authentication stage transition', () => {
-    const authUi = read('public/js/auth-ui.js');
+test('login remains keyboard and mobile friendly', () => {
+    const markup = read('public/index.html');
+    const styles = read('public/css/pages/login.css');
 
-    assert.match(authUi, /saasEntryContinue/);
-    assert.match(authUi, /setAuthStage\(['"]login['"]\)/);
+    assert.match(markup, /<label for="loginEmail">/u);
+    assert.match(markup, /<label for="loginPassword">/u);
+    assert.match(markup, /id="loginPasswordToggle"[^>]*aria-label=/u);
+    assert.match(styles, /\.auth-screen\[data-auth-stage="login"\] \.auth-theme-toggle[\s\S]*min-height: 44px;/u);
+    assert.match(styles, /\.auth-screen\[data-auth-stage="login"\] \.auth-password-toggle[\s\S]*min-width: 42px;[\s\S]*min-height: 42px;/u);
+    assert.match(styles, /\.auth-screen\[data-auth-stage="login"\] \.auth-theme-toggle/iu);
 });
