@@ -56,36 +56,34 @@ function memberWithStatus(status, freezeCount = 0) {
     };
 }
 
-test('members with a subscription always render the freeze action', () => {
+test('eligible subscriptions render the freeze action', () => {
     const renderMemberTableRow = loadMemberTableRow();
 
-    for (const status of ['active', 'expiring_soon', 'expired', 'cancelled', 'frozen']) {
+    for (const status of ['active', 'expiring_soon']) {
         const html = renderMemberTableRow(memberWithStatus(status));
-        assert.match(html, /data-action="freeze"/, `${status} membership must keep the freeze action visible`);
+        assert.match(html, /data-action="freeze" data-id="42"\s*><\/button>/, `${status} membership should be freezeable`);
     }
 });
 
-test('freeze action is disabled only when membership state or usage prevents freezing', () => {
+test('freeze action is disabled when the usage limit is reached and absent for expired memberships', () => {
     const renderMemberTableRow = loadMemberTableRow();
     const enabled = renderMemberTableRow(memberWithStatus('active', 0));
     const limitReached = renderMemberTableRow(memberWithStatus('active', 3));
     const expired = renderMemberTableRow(memberWithStatus('expired', 0));
-    const cancelled = renderMemberTableRow(memberWithStatus('cancelled', 0));
 
     assert.match(enabled, /data-action="freeze" data-id="42"\s*><\/button>/);
-    assert.match(limitReached, /data-action="freeze" data-id="42" disabled aria-disabled="true"/);
-    assert.match(expired, /data-action="freeze" data-id="42" disabled aria-disabled="true"/);
-    assert.match(cancelled, /data-action="freeze" data-id="42" disabled aria-disabled="true"/);
+    assert.match(limitReached, /data-action="freeze" data-id="42" disabled\s*><\/button>/);
+    assert.doesNotMatch(expired, /data-action="freeze"/);
 });
 
-test('frozen memberships keep resume alongside the visible disabled freeze action', () => {
+test('frozen memberships show resume instead of freeze', () => {
     const html = loadMemberTableRow()(memberWithStatus('frozen', 1));
 
-    assert.match(html, /data-action="freeze" data-id="42" disabled aria-disabled="true"/);
+    assert.doesNotMatch(html, /data-action="freeze"/);
     assert.match(html, /data-action="resume" data-id="42"/);
 });
 
-test('members without a subscription keep a visible disabled freeze action', () => {
+test('members without a subscription do not receive a freeze action', () => {
     const renderMemberTableRow = loadMemberTableRow();
     const html = renderMemberTableRow({
         id: 42,
@@ -95,13 +93,13 @@ test('members without a subscription keep a visible disabled freeze action', () 
         membership: null
     });
 
-    assert.match(html, /data-action="freeze" data-id="42" disabled aria-disabled="true"/);
+    assert.doesNotMatch(html, /data-action="freeze"/);
 });
 
-test('member quick-action decoration does not remove freeze for cancelled memberships', () => {
-    assert.doesNotMatch(
+test('member quick-action decoration removes freeze and payment for cancelled memberships', () => {
+    assert.match(
         source,
         /querySelectorAll\('\[data-action="freeze"\], \[data-action="payment"\]'\)/,
-        'the quick-action enhancement must not delete the stable freeze action'
+        'cancelled memberships must not expose freeze or payment actions'
     );
 });

@@ -510,7 +510,7 @@
                     else tableActions.insertAdjacentHTML('beforeend', refundActionButton(member.id));
                 }
                 if (member.membership?.status === 'cancelled') {
-                    tableActions?.querySelectorAll('[data-action="payment"]').forEach((button) => button.remove());
+                    tableActions?.querySelectorAll('[data-action="freeze"], [data-action="payment"]').forEach((button) => button.remove());
                 }
                 const actionRow = document.createElement('div');
                 actionRow.className = 'member-action-row';
@@ -531,28 +531,19 @@
         }
         function memberTableRow(member) {
             const sub = member.membership;
-            if (!sub) return `<tr data-member-id="${member.id}"><td><span class="table-member-name">${escapeHtml(member.fullName)}</span><a class="table-member-phone" href="tel:${escapeHtml(member.phone)}">${escapeHtml(member.phone)}</a><span class="table-sub">تسجيل: ${formatDate(member.registrationDate)}</span>${memberPortalCodeMarkup(member)}</td><td>—</td><td>${memberStatusBadge('expired', 'بدون اشتراك')}</td><td>—</td><td>—</td><td>—</td><td><div class="table-actions">${actionButton('details', member.id, 'btn btn-details btn-small')}${actionButton('edit', member.id)}${actionButton('freeze', member.id, 'btn btn-light btn-small', 'disabled aria-disabled="true"')}${actionButton('print', member.id)}${actionButton('delete', member.id, 'btn btn-danger btn-small')}</div></td></tr>`;
+            if (!sub) return `<tr data-member-id="${member.id}"><td><span class="table-member-name">${escapeHtml(member.fullName)}</span><a class="table-member-phone" href="tel:${escapeHtml(member.phone)}">${escapeHtml(member.phone)}</a><span class="table-sub">تسجيل: ${formatDate(member.registrationDate)}</span>${memberPortalCodeMarkup(member)}</td><td>—</td><td>${memberStatusBadge('expired', 'بدون اشتراك')}</td><td>—</td><td>—</td><td>—</td><td><div class="table-actions">${actionButton('details', member.id, 'btn btn-details btn-small')}${actionButton('edit', member.id)}${actionButton('print', member.id)}${actionButton('delete', member.id, 'btn btn-danger btn-small')}</div></td></tr>`;
             const freezeLimit = Number(sub.freezeLimit || FREEZE_LIMIT);
             const freezeCount = Number(sub.freezeCount || 0);
             const remaining = sub.status === 'expired' ? `منتهية منذ ${Math.abs(sub.daysRemaining || 0)} يوم` : sub.status === 'frozen' ? `تجميد حتى ${formatDate(sub.freezeEnd)}` : `${sub.daysRemaining} يوم متبقي`;
             const freezeUsage = `<span class="freeze-usage${freezeCount >= freezeLimit ? ' complete' : ''}"><strong>${freezeCount}/${freezeLimit}</strong><span>متبقي ${Math.max(0, freezeLimit - freezeCount)}</span></span>`;
-            // Keep the freeze action in a stable position for every member with
-            // a membership. The server remains the authority for eligibility;
-            // the disabled state only communicates known ineligible states.
-            const freezeUnavailable = ['cancelled', 'expired', 'frozen'].includes(sub.status)
-                || freezeCount >= freezeLimit;
-            const freezeButton = actionButton(
-                'freeze',
-                member.id,
-                'btn btn-light btn-small',
-                freezeUnavailable ? 'disabled aria-disabled="true"' : ''
-            );
-            const resumeButton = sub.status === 'frozen'
+            const freezeButton = sub.status === 'frozen'
                 ? actionButton('resume', member.id, 'btn btn-purple btn-small')
-                : '';
+                : sub.status === 'expired'
+                    ? ''
+                    : actionButton('freeze', member.id, 'btn btn-light btn-small', freezeCount >= freezeLimit ? 'disabled' : '');
             const amountRemaining = Number(sub.amountRemaining || 0);
             const remainingClass = amountRemaining > 0 ? 'has-debt' : 'is-settled';
-            return `<tr data-member-id="${member.id}"><td><span class="table-member-name">${escapeHtml(member.fullName)}</span><a class="table-member-phone" href="tel:${escapeHtml(member.phone)}">${escapeHtml(member.phone)}</a><span class="table-sub">تسجيل: ${formatDate(member.registrationDate)}</span>${memberPortalCodeMarkup(member)}</td><td><span class="table-main">${escapeHtml(planLabel(sub.plan))}</span><span class="table-sub">${escapeHtml(typeLabel(sub.type))}</span></td><td>${memberStatusBadge(sub.status)}</td><td><span class="table-main">${formatDate(sub.effectiveEndDate)}</span><span class="table-sub">${escapeHtml(remaining)}</span></td><td>${freezeUsage}</td><td><span class="table-money">${money(sub.amountDue)}</span><span class="table-sub ${remainingClass}">متبقي ${money(amountRemaining)}</span></td><td><div class="table-actions">${actionButton('details', member.id, 'btn btn-details btn-small')}${actionButton('edit', member.id)}${actionButton('renew', member.id, 'btn btn-primary btn-small')}${freezeButton}${resumeButton}${actionButton('payment', member.id)}${actionButton('print', member.id)}${actionButton('delete', member.id, 'btn btn-danger btn-small')}</div></td></tr>`;
+            return `<tr data-member-id="${member.id}"><td><span class="table-member-name">${escapeHtml(member.fullName)}</span><a class="table-member-phone" href="tel:${escapeHtml(member.phone)}">${escapeHtml(member.phone)}</a><span class="table-sub">تسجيل: ${formatDate(member.registrationDate)}</span>${memberPortalCodeMarkup(member)}</td><td><span class="table-main">${escapeHtml(planLabel(sub.plan))}</span><span class="table-sub">${escapeHtml(typeLabel(sub.type))}</span></td><td>${memberStatusBadge(sub.status)}</td><td><span class="table-main">${formatDate(sub.effectiveEndDate)}</span><span class="table-sub">${escapeHtml(remaining)}</span></td><td>${freezeUsage}</td><td><span class="table-money">${money(sub.amountDue)}</span><span class="table-sub ${remainingClass}">متبقي ${money(amountRemaining)}</span></td><td><div class="table-actions">${actionButton('details', member.id, 'btn btn-details btn-small')}${actionButton('edit', member.id)}${actionButton('renew', member.id, 'btn btn-primary btn-small')}${freezeButton}${actionButton('payment', member.id)}${actionButton('print', member.id)}${actionButton('delete', member.id, 'btn btn-danger btn-small')}</div></td></tr>`;
         }
         function renderMembers() { $('membersCount').textContent = `${state.members.length} عضو ظاهر`; $('membersList').innerHTML = state.members.length ? `<div class="table-scroll"><table class="members-table"><thead><tr><th>العضو</th><th>الاشتراك</th><th>الحالة</th><th>الانتهاء</th><th>التجميد</th><th>الحساب</th><th>الإجراءات</th></tr></thead><tbody>${state.members.map(memberTableRow).join('')}</tbody></table></div>` : '<div class="empty">لا يوجد أعضاء مطابقون للبحث.</div>'; }
 
