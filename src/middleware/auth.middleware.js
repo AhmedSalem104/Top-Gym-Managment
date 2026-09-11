@@ -60,6 +60,7 @@ function createAuthApiMiddleware({ authService, isAuthorizedCronRequest, tenantS
         const publicTrainerRegistrationPath = request.path === '/public/trainer-registration/catalog'
             || request.path === '/public/trainer-registration/requests'
             || request.path.startsWith('/public/trainer-registration/requests/');
+        const phoneCatalogPath = request.method === 'GET' && request.path === '/phone/countries';
         const publicPath = ['/health', '/health/live', '/member-portal/lookup', '/member-portal/occupancy', '/member-portal/feedback', '/branding'].includes(request.path)
             || (request.method === 'GET' && request.path.startsWith('/branding/assets/'));
         const memberPortalCodePath = ['/member-portal/lookup', '/member-portal/occupancy', '/member-portal/feedback'].includes(request.path);
@@ -130,6 +131,9 @@ function createAuthApiMiddleware({ authService, isAuthorizedCronRequest, tenantS
             return runTenantContext({ tenantId: null, mode: 'public', readOnlyBaseline: Boolean(request.readOnlyBaseline) }, next);
         }
         if (publicTrainerRegistrationPath) {
+            return runTenantContext({ tenantId: null, mode: 'public', readOnlyBaseline: Boolean(request.readOnlyBaseline) }, next);
+        }
+        if (phoneCatalogPath) {
             return runTenantContext({ tenantId: null, mode: 'public', readOnlyBaseline: Boolean(request.readOnlyBaseline) }, next);
         }
 

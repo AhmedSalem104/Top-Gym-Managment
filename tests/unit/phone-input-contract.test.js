@@ -17,6 +17,9 @@ test('phone input layer is loaded by every page that owns a phone form', () => {
     assert.match(script, /\/api\/phone\/countries/);
     assert.match(script, /data-phone-country/);
     assert.match(script, /normalizeForTransport/);
+    const auth = read('src/middleware/auth.middleware.js');
+    assert.match(auth, /request\.path === '\/phone\/countries'/);
+    assert.match(auth, /phoneCatalogPath/);
 });
 
 test('phone-bearing screens use tel inputs without changing numeric business fields', () => {
