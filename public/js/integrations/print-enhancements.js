@@ -90,6 +90,7 @@
             function paymentLabel(value) { return PAYMENT_LABELS[value] || value || '—'; }
             function statusLabel(value) { return STATUS_LABELS[value] || value || '—'; }
             function currentMembership(data) { return data.memberships?.[data.memberships.length - 1] || null; }
+            function scopeNames(items) { return (Array.isArray(items) ? items : []).map((item) => String(item?.name || '').trim()).filter(Boolean).join('، ') || 'غير محدد'; }
 
             function infoItem(label, value) {
                 return `<div class="print-info-item"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></div>`;
@@ -115,6 +116,8 @@
             function membershipHistory(data) {
                 const rows = (data.memberships || []).map((item) => `<tr>
                     <td><span class="print-table-main">${escapeHtml(planLabel(item.plan))}</span><span class="print-table-sub">${escapeHtml(typeLabel(item.type))}</span></td>
+                    <td>${escapeHtml(scopeNames(item.scope?.branches))}</td>
+                    <td>${escapeHtml(scopeNames(item.scope?.sections))}</td>
                     <td>${escapeHtml(printDate(item.startDate))}<span class="print-table-sub">حتى ${escapeHtml(printDate(item.effectiveEndDate))}</span></td>
                     <td><span class="print-status ${escapeHtml(item.status)}">${escapeHtml(statusLabel(item.status))}</span></td>
                     <td>${escapeHtml(money(item.amountDue))}<span class="print-table-sub">متبقي ${escapeHtml(money(item.amountRemaining))}</span></td>
@@ -167,6 +170,8 @@
                     <div class="print-member-hero"><span class="print-member-avatar">${escapeHtml(initials(memberName))}</span><div class="print-member-copy"><h2>${escapeHtml(memberName)}</h2><p>${escapeHtml(member.phone || '—')}${member.email ? ` · ${escapeHtml(member.email)}` : ''}</p></div></div>
                     <div class="print-info-grid">${infoItem('رقم العضو', `#${member.id || '—'}`)}${infoItem('تاريخ التسجيل', printDate(member.registrationDate))}${infoItem('البريد الإلكتروني', member.email || '—')}${infoItem('ملاحظات العضو', member.notes || '—')}</div>
                 </section>`;
+                const membershipScope = membership?.scope || {};
+                const membershipAccessInfo = `<section class="print-section"><div class="print-section-title"><div><span class="print-section-kicker">نطاق العضوية والبوابة</span><h2>تفاصيل الوصول</h2></div></div><div class="print-info-grid">${infoItem('الفرع', scopeNames(membershipScope.branches))}${infoItem('القسم', scopeNames(membershipScope.sections))}${infoItem('كود بوابة العضوية', member.membershipCode?.maskedCode || 'غير متاح')}${infoItem('رابط بوابة العضوية', member.membershipCodePortalUrl || 'غير متاح')}</div></section>`;
                 const membershipInfo = membership ? `<section class="print-section">
                     <div class="print-section-title"><div><span class="print-section-kicker">تفاصيل العضوية</span><h2>${mode === 'new' ? 'تفاصيل الاشتراك الجديد' : 'الاشتراك الحالي'}</h2></div><span class="print-status ${escapeHtml(membership.status)}">${escapeHtml(statusLabel(membership.status))}</span></div>
                     <div class="print-info-grid">${infoItem('الباقة', planLabel(membership.plan))}${infoItem('نوع العضوية', typeLabel(membership.type))}${infoItem('تاريخ البداية', printDate(membership.startDate))}${infoItem('تاريخ الانتهاء', printDate(membership.effectiveEndDate))}${infoItem('الأيام المتبقية', membership.status === 'expired' ? `منتهية منذ ${Math.abs(Number(membership.daysRemaining || 0))} يوم` : `${Number(membership.daysRemaining || 0)} يوم`)}${infoItem('التجميد', `${Number(membership.freezeCount || 0)}/${Number(membership.freezeLimit || 3)}`)}${infoItem('تاريخ الدفع', printDate(membership.paidAt))}${infoItem('طريقة الدفع', paymentLabel(membership.paymentMethod))}</div>
@@ -174,12 +179,12 @@
                     ${membership.notes ? `<p class="print-notes"><strong>ملاحظات الاشتراك:</strong> ${escapeHtml(membership.notes)}</p>` : ''}
                 </section>` : '<section class="print-section"><div class="print-empty">لا يوجد اشتراك مسجل لهذا العضو.</div></section>';
                 const history = mode === 'full' ? `<section class="print-section"><div class="print-section-title"><div><span class="print-section-kicker">السجل المالي</span><h2>سجل المدفوعات والإيصالات</h2></div></div><div class="print-billing-grid print-payment-summary">${billingItem('إجمالي المستحق', money(data.financialSummary?.totalDue))}${billingItem('إجمالي المدفوع', money(data.financialSummary?.totalPaid))}${billingItem('إجمالي المتبقي', money(data.financialSummary?.totalRemaining), 'remaining')}${billingItem('عدد الإيصالات', String(data.financialSummary?.paidTransactionCount || 0))}</div><div class="print-table-wrap"><table class="print-table"><thead><tr><th>رقم الإيصال</th><th>التاريخ</th><th>العملية</th><th>الاشتراك</th><th>قيمة العملية</th><th>المتبقي</th><th>طريقة الدفع</th><th>ملاحظات</th></tr></thead><tbody>${paymentHistory(data)}</tbody></table></div></section>
-                    <section class="print-section"><div class="print-section-title"><div><span class="print-section-kicker">السجل الكامل</span><h2>سجل الاشتراكات والتجديدات</h2></div></div><div class="print-table-wrap"><table class="print-table"><thead><tr><th>الباقة والمدة</th><th>الفترة</th><th>الحالة</th><th>الحساب</th><th>الدفع</th></tr></thead><tbody>${membershipHistory(data)}</tbody></table></div></section>
+                    <section class="print-section"><div class="print-section-title"><div><span class="print-section-kicker">السجل الكامل</span><h2>سجل الاشتراكات والتجديدات</h2></div></div><div class="print-table-wrap"><table class="print-table"><thead><tr><th>الباقة والمدة</th><th>الفرع</th><th>القسم</th><th>الفترة</th><th>الحالة</th><th>الحساب</th><th>الدفع</th></tr></thead><tbody>${membershipHistory(data)}</tbody></table></div></section>
                     <section class="print-section"><div class="print-section-title"><div><span class="print-section-kicker">سجل التجميد</span><h2>عمليات التجميد</h2></div></div><div class="print-table-wrap"><table class="print-table"><thead><tr><th>البداية</th><th>النهاية</th><th>الاستئناف</th><th>المدة</th><th>السبب</th></tr></thead><tbody>${freezeHistory(data)}</tbody></table></div></section>
                     <section class="print-section"><div class="print-section-title"><div><span class="print-section-kicker">سجل النشاط</span><h2>كل العمليات المسجلة</h2></div></div><div class="print-table-wrap"><table class="print-table"><thead><tr><th>التاريخ</th><th>العملية</th><th>التفاصيل</th></tr></thead><tbody>${eventHistory(data)}</tbody></table></div></section>` : '';
                 const printHeader = `<header class="print-header">${printBrandMarkup('إدارة العضويات والاشتراكات')}<div class="print-document-meta"><strong>${escapeHtml(title)}</strong><span>رقم العضو: #${escapeHtml(member.id || '—')}</span><span>تاريخ الطباعة: ${escapeHtml(printDate(new Date()))}</span></div></header>`;
                 const printFooter = printFooterMarkup('إدارة العضويات والاشتراكات');
-                return `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${escapeHtml(title)} - ${escapeHtml(brandName())}</title></head><body><main class="print-sheet">${printHeader}<div class="print-accent"></div>${memberInfo}${membershipInfo}${history}${printFooter}</main></body></html>`;
+                return `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${escapeHtml(title)} - ${escapeHtml(brandName())}</title></head><body><main class="print-sheet">${printHeader}<div class="print-accent"></div>${memberInfo}${membershipAccessInfo}${membershipInfo}${history}${printFooter}</main></body></html>`;
             }
 
             function buildPaymentReceiptDocument(data, payment) {

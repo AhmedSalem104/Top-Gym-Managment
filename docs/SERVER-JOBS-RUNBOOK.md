@@ -17,6 +17,14 @@ installed with separate log files and must not share a lock. The entrypoints
 fail closed in production unless `LOGIC_FIT_JOB_STATE_DIR` points to a
 non-public, writable directory owned by the application service account.
 
+The production release pipeline installs
+`logicfit-attendance-auto-checkout.timer` on the VPS. It invokes the official
+`job:auto-checkout` entrypoint every five minutes through a private wrapper that
+reuses the running application container environment through an anonymous
+pipe; secrets are not written to the host scheduler configuration. The timer
+skips while the release lock is held, and the job's tenant-scoped lock remains
+the second concurrency guard.
+
 ## Installation checklist
 
 1. Verify the real release directory and Node 24 binary on the VPS.

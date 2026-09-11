@@ -72,6 +72,25 @@
     return member?.membership || memberships.find((item) => item?.status !== 'cancelled') || memberships[memberships.length - 1] || null;
   }
 
+  function scopeNames(items) {
+    return (Array.isArray(items) ? items : [])
+      .map((item) => String(item?.name || '').trim())
+      .filter(Boolean)
+      .join('، ');
+  }
+
+  function renderMemberScope(member, subscription) {
+    const scope = subscription?.scope || {};
+    const branches = scopeNames(scope.branches);
+    const sections = scopeNames(scope.sections);
+    const portalUrl = String(member?.membershipCodePortalUrl || '').trim();
+    const portalCode = String(member?.membershipCode?.maskedCode || '').trim();
+    const section = document.createElement('section');
+    section.className = 'details-section member-scope-details';
+    section.innerHTML = `<div class="member-scope-details-head"><div><span class="member-store-purchases-kicker">نطاق العضوية والبوابة</span><h4>تفاصيل الوصول</h4></div></div><div class="member-scope-grid"><div><span>الفرع</span><strong>${escapeHtml(branches || 'غير محدد')}</strong></div><div><span>القسم</span><strong>${escapeHtml(sections || 'غير محدد')}</strong></div><div><span>كود بوابة العضوية</span><strong dir="ltr">${escapeHtml(portalCode || 'غير متاح')}</strong></div><div><span>رابط بوابة العضوية</span><strong dir="ltr">${escapeHtml(portalUrl || 'غير متاح')}</strong></div></div>`;
+    return section;
+  }
+
   function updateHeader(member, details) {
     const subscription = resolveSubscription(member, details);
     const avatar = document.getElementById('detailsAvatar');
@@ -174,6 +193,7 @@
        <span class="member-details-more"><button class="member-details-action member-details-action-more" type="button" data-member-detail-action="more" aria-expanded="false" aria-controls="memberDetailsMoreMenu" aria-label="المزيد" title="المزيد">${icon('more')}</button><span class="member-details-more-menu" id="memberDetailsMoreMenu" hidden>${paymentAction}<button type="button" data-member-detail-action="qr" data-required-permission="members.read,memberships.read">${icon('qr')}<span>عرض QR</span></button><button type="button" data-member-detail-action="edit" data-required-permission="members.update">${icon('view')}<span>تعديل البيانات</span></button>${refundAction}</span></span>
     </div></section>`;
     content.prepend(overview);
+    overview.append(renderMemberScope(member, subscription));
   }
 
   function renderStorePurchases(purchases, loading = false) {
@@ -226,7 +246,7 @@
   });
 
   window.addEventListener('topgym:member-details-opened', (event) => {
-    const member = event.detail?.member || event.detail?.details?.member;
+    const member = event.detail?.details?.member || event.detail?.member;
     const details = event.detail?.details;
     if (!member || !details || !dialog.open) return;
     updateHeader(member, details);

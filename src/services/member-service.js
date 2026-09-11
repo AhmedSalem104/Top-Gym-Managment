@@ -2677,38 +2677,50 @@ async function getMemberDetails(id, { readOnly = false } = {}) {
     const memberId = ensureId(id);
     await ensurePaymentTransactionsTable({ readOnly });
     const pool = await getPool();
+    const tenantId = currentTenantId({ required: true });
     const today = todayInTimeZone();
-    const [memberResult, membershipsResult, freezesResult, eventsResult, paymentsResult] = await Promise.all([
+    const [memberResult, membershipsResult, freezesResult, eventsResult, paymentsResult, membershipScopeResult] = await Promise.all([
         pool.request()
             .input('memberId', sql.Int, memberId)
-            .query(`SELECT id, full_name, phone, email, registration_date, notes, created_at, updated_at
-                    FROM dbo.members WHERE id = @memberId;`),
+            .input('tenantId', sql.Int, tenantId)
+            .query(`SELECT TOP (1) member.id, member.full_name, member.phone, member.email,
+                           member.registration_date, member.notes, member.created_at, member.updated_at,
+                           tenant.slug AS tenant_slug
+                    FROM dbo.members AS member
+                    LEFT JOIN dbo.gym_tenants AS tenant ON tenant.id = member.tenant_id
+                    WHERE member.id = @memberId AND member.tenant_id = @tenantId;`),
         pool.request()
             .input('memberId', sql.Int, memberId)
+            .input('tenantId', sql.Int, tenantId)
             .query(`SELECT m.id, m.membership_plan, m.membership_type, m.start_date, m.end_date, m.notes,
                            m.cancelled_at, m.cancellation_reason,
+                           m.branch_access_mode,
                            p.list_price, p.discount_amount, p.amount_due, p.amount_paid,
                            p.amount_remaining, p.payment_method, p.paid_at, p.notes AS payment_notes
                     FROM dbo.memberships AS m
                     LEFT JOIN dbo.gym_payments AS p ON p.membership_id = m.id
-                    WHERE m.member_id = @memberId
+                    WHERE m.member_id = @memberId AND m.tenant_id = @tenantId
                     ORDER BY m.start_date ASC, m.id ASC;`),
         pool.request()
             .input('memberId', sql.Int, memberId)
+            .input('tenantId', sql.Int, tenantId)
             .query(`SELECT f.id, f.membership_id, f.start_date, f.end_date, f.resumed_date,
                            f.reason, f.created_at, f.updated_at
                     FROM dbo.membership_freezes AS f
                     INNER JOIN dbo.memberships AS m ON m.id = f.membership_id
-                    WHERE m.member_id = @memberId
+                    WHERE m.member_id = @memberId AND m.tenant_id = @tenantId
                     ORDER BY f.start_date ASC, f.id ASC;`),
         pool.request()
             .input('memberId', sql.Int, memberId)
-            .query(`SELECT id, membership_id, event_type, details, created_at
-                    FROM dbo.membership_events
-                    WHERE member_id = @memberId
-                    ORDER BY created_at ASC, id ASC;`),
+            .input('tenantId', sql.Int, tenantId)
+            .query(`SELECT events.id, events.membership_id, events.event_type, events.details, events.created_at
+                    FROM dbo.membership_events AS events
+                    INNER JOIN dbo.members AS member ON member.id = events.member_id
+                    WHERE events.member_id = @memberId AND member.tenant_id = @tenantId
+                    ORDER BY events.created_at ASC, events.id ASC;`),
         pool.request()
             .input('memberId', sql.Int, memberId)
+            .input('tenantId', sql.Int, tenantId)
             .query(`SELECT p.id, p.membership_id, p.transaction_type,
                            p.list_price, p.discount_amount, p.amount_due,
                            p.amount_paid, p.amount_remaining,
@@ -2716,14 +2728,62 @@ async function getMemberDetails(id, { readOnly = false } = {}) {
                            m.membership_plan, m.membership_type
                     FROM dbo.gym_payment_transactions AS p
                     INNER JOIN dbo.memberships AS m ON m.id = p.membership_id
-                    WHERE m.member_id = @memberId
+                    WHERE m.member_id = @memberId AND m.tenant_id = @tenantId
                       AND p.is_voided = 0
-                    ORDER BY p.created_at DESC, p.id DESC;`)
+                    ORDER BY p.created_at DESC, p.id DESC;`),
+        pool.request()
+            .input('memberId', sql.Int, memberId)
+            .input('tenantId', sql.Int, tenantId)
+            .query(`
+                    SELECT access.membership_id, branch.id AS branch_id, branch.name AS branch_name
+                    FROM dbo.gym_membership_branch_access AS access
+                    INNER JOIN dbo.memberships AS membership
+                        ON membership.id = access.membership_id
+                       AND membership.tenant_id = access.tenant_id
+                    INNER JOIN dbo.gym_branches AS branch
+                        ON branch.id = access.branch_id
+                       AND branch.tenant_id = access.tenant_id
+                    WHERE access.tenant_id = @tenantId
+                      AND membership.member_id = @memberId
+                    ORDER BY branch.is_main_branch DESC, branch.name, branch.id;
+
+                    SELECT access.membership_id, section.id AS section_id, section.branch_id,
+                           section.name AS section_name, section.section_type
+                    FROM dbo.gym_membership_section_access AS access
+                    INNER JOIN dbo.memberships AS membership
+                        ON membership.id = access.membership_id
+                       AND membership.tenant_id = access.tenant_id
+                    INNER JOIN dbo.gym_branch_sections AS section
+                        ON section.id = access.section_id
+                       AND section.tenant_id = access.tenant_id
+                    WHERE access.tenant_id = @tenantId
+                      AND membership.member_id = @memberId
+                    ORDER BY section.name, section.id;`)
     ]);
 
     const memberRow = memberResult.recordset[0];
     const membershipCode = await membershipCodeService.getPreview(memberId);
     if (!memberRow) throw appError('العضو غير موجود.', 404);
+
+    const membershipScopes = new Map();
+    for (const row of membershipsResult.recordset || []) {
+        membershipScopes.set(Number(row.id), { branches: [], sections: [] });
+    }
+    for (const row of membershipScopeResult.recordsets?.[0] || []) {
+        const scope = membershipScopes.get(Number(row.membership_id));
+        if (!scope) continue;
+        scope.branches.push({ id: Number(row.branch_id), name: row.branch_name });
+    }
+    for (const row of membershipScopeResult.recordsets?.[1] || []) {
+        const scope = membershipScopes.get(Number(row.membership_id));
+        if (!scope) continue;
+        scope.sections.push({
+            id: Number(row.section_id),
+            branchId: Number(row.branch_id),
+            name: row.section_name,
+            type: row.section_type
+        });
+    }
 
     const freezeRows = freezesResult.recordset.map((row) => {
         const startDate = formatDateOnly(row.start_date);
@@ -2787,7 +2847,12 @@ async function getMemberDetails(id, { readOnly = false } = {}) {
             paymentMethod: row.payment_method || 'cash',
             paidAt: formatDateOnly(row.paid_at),
             paymentNotes: row.payment_notes,
-            freezes: membershipFreezes
+            freezes: membershipFreezes,
+            scope: {
+                mode: row.branch_access_mode || 'single_branch',
+                branches: membershipScopes.get(membershipId)?.branches || [],
+                sections: membershipScopes.get(membershipId)?.sections || []
+            }
         };
     });
 
@@ -2825,7 +2890,10 @@ async function getMemberDetails(id, { readOnly = false } = {}) {
             notes: memberRow.notes,
             createdAt: memberRow.created_at,
             updatedAt: memberRow.updated_at,
-            membershipCode
+            membershipCode,
+            membershipCodePortalUrl: membershipCode.active
+                ? membershipCodeService.getPortalUrl('', memberRow.tenant_slug)
+                : null
         },
         memberships,
         freezes: freezeRows,

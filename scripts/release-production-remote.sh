@@ -15,6 +15,9 @@ CONTROL_ARCHIVE_PATH='/tmp/__CONTROL_ARCHIVE_NAME__'
 RELEASE_DIR="${APP_ROOT}/app-${RELEASE_SHA:0:12}"
 CONTROL_DIR="/tmp/logicfit-release-control-${RELEASE_SHA:0:12}"
 LOCK_DIR="${APP_ROOT}/.production-release-lock"
+JOB_WRAPPER_TARGET="${APP_ROOT}/bin/logicfit-auto-checkout-job.sh"
+JOB_SERVICE_TARGET='/etc/systemd/system/logicfit-attendance-auto-checkout.service'
+JOB_TIMER_TARGET='/etc/systemd/system/logicfit-attendance-auto-checkout.timer'
 STAGE='start'
 
 fail_release() {
@@ -102,6 +105,25 @@ fi
 if [ "$RELEASE_TRANSPORT" = 'archive' ]; then
     rm -f "$ARCHIVE_PATH" "$CONTROL_ARCHIVE_PATH"
 fi
+
+STAGE='scheduler'
+[ -f "$RELEASE_DIR/scripts/run-vps-auto-checkout-job.sh" ]
+[ -f "$RELEASE_DIR/infra/systemd/logicfit-attendance-auto-checkout.service" ]
+[ -f "$RELEASE_DIR/infra/systemd/logicfit-attendance-auto-checkout.timer" ]
+mkdir -p "$APP_ROOT/bin" "$APP_ROOT/job-state"
+chmod 750 "$APP_ROOT/bin" "$APP_ROOT/job-state"
+sed -e "s#__APP_ROOT__#${APP_ROOT}#g" \
+    -e "s#__CONTAINER_NAME__#${CONTAINER_NAME}#g" \
+    -e "s#__NODE_IMAGE__#${NODE_IMAGE}#g" \
+    "$RELEASE_DIR/scripts/run-vps-auto-checkout-job.sh" > "$JOB_WRAPPER_TARGET"
+chmod 750 "$JOB_WRAPPER_TARGET"
+sed "s#__APP_ROOT__#${APP_ROOT}#g" \
+    "$RELEASE_DIR/infra/systemd/logicfit-attendance-auto-checkout.service" > "$JOB_SERVICE_TARGET"
+install -m 0644 "$RELEASE_DIR/infra/systemd/logicfit-attendance-auto-checkout.timer" "$JOB_TIMER_TARGET"
+systemctl daemon-reload
+systemctl enable logicfit-attendance-auto-checkout.timer >/dev/null
+systemctl start logicfit-attendance-auto-checkout.timer
+printf 'AUTO_CHECKOUT_SCHEDULER=PASS\n'
 
 STAGE='dependencies'
 if [ ! -d "$RELEASE_DIR/node_modules" ]; then

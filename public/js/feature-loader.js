@@ -26,7 +26,7 @@
         'member-details': {
             styles: [],
             scripts: [
-                '/js/member-details-ui.js?v=4',
+                '/js/member-details-ui.js?v=5',
                 '/js/member-portal-admin.js?v=4',
                 '/js/member-coaching-summary.js?v=2'
             ]
@@ -50,7 +50,7 @@
         },
         print: {
             styles: [],
-            scripts: ['/js/exercise-assets.js?v=5', '/js/integrations/print-enhancements.js?v=13']
+            scripts: ['/js/exercise-assets.js?v=5', '/js/integrations/print-enhancements.js?v=14']
         },
         expenses: {
             dependencies: ['finance'],

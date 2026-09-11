@@ -47,3 +47,16 @@ test('auto checkout update is explicitly constrained through the tenant-owned me
     assert.match(source, /attendance\.check_out_at IS NULL/);
     assert.match(source, /check_out_source = 'auto'/);
 });
+
+test('VPS auto checkout scheduler runs the official job without persisting app secrets', () => {
+    const wrapper = read('scripts/run-vps-auto-checkout-job.sh');
+    const service = read('infra/systemd/logicfit-attendance-auto-checkout.service');
+    const timer = read('infra/systemd/logicfit-attendance-auto-checkout.timer');
+    assert.match(wrapper, /docker inspect[\s\S]*\.Config\.Env/);
+    assert.match(wrapper, /--env-file \/dev\/stdin/);
+    assert.match(wrapper, /run-server-auto-checkout\.js/);
+    assert.match(wrapper, /\.production-release-lock/);
+    assert.match(service, /ExecStart=.*logicfit-auto-checkout-job\.sh/);
+    assert.match(timer, /OnCalendar=.*0\/5/);
+    assert.doesNotMatch(wrapper, /PASSWORD|SECRET_VALUE|ACCESS_KEY/i);
+});

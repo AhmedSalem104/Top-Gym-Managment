@@ -1,0 +1,11 @@
+[Unit]
+Description=Run Logic Fit attendance automatic checkout every five minutes
+
+[Timer]
+OnCalendar=*-*-* *:00/5:00
+Persistent=true
+AccuracySec=30s
+Unit=logicfit-attendance-auto-checkout.service
+
+[Install]
+WantedBy=timers.target
