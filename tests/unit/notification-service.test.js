@@ -220,7 +220,7 @@ test('configured email adapter sends through the injected transport without expo
 test('registration email is safe, bounded and contains a review destination', () => {
     const message = buildRegistrationEmail(normalizeEvent(registrationEvent()), 'https://logicfit.example');
     assert.match(message.subject, /New Gym registration request/);
-    assert.match(message.text, /Review: \/platform-admin/);
+    assert.match(message.text, /Review request: \/platform-admin/);
     assert.match(message.html, /href="\/platform-admin"/);
     assert.doesNotMatch(message.text, /accessToken|publicTokenHash|idempotencyKey/i);
 });

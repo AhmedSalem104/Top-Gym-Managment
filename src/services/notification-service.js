@@ -266,25 +266,59 @@ function buildRegistrationEmail(event, publicAppUrl = '') {
     const payload = event.payload;
     const typeLabel = registrationTypeLabel(payload.registrationType);
     const actionUrl = payload.actionUrl || `${String(publicAppUrl || '').replace(/\/+$/, '')}/platform-admin`;
-    const subject = `Logic Fit: New ${typeLabel} registration request`;
-    const lines = [
-        'A new registration request is ready for platform review.',
-        `Type: ${typeLabel}`,
-        `Business/brand: ${payload.gymName || 'Not provided'}`,
-        `Applicant: ${payload.ownerName || 'Not provided'}`,
-        `Contact email: ${payload.contactEmail || 'Not provided'}`,
-        `Plan: ${payload.planName || 'Not provided'}`,
-        `Amount due: ${payload.amountDue == null ? 'Not provided' : `${payload.amountDue.toFixed(2)} ${payload.currency}`}`,
-        `Submitted at: ${payload.submittedAt || 'Not provided'}`,
-        `Review: ${actionUrl}`
-    ];
-    const html = `<p>A new registration request is ready for platform review.</p><dl>${[
-        ['Type', typeLabel], ['Business/brand', payload.gymName || 'Not provided'],
-        ['Applicant', payload.ownerName || 'Not provided'], ['Contact email', payload.contactEmail || 'Not provided'],
+    const subject = `Logic Fit | New ${typeLabel} registration request`;
+    const details = [
+        ['Type', typeLabel],
+        ['Business / brand', payload.gymName || 'Not provided'],
+        ['Applicant', payload.ownerName || 'Not provided'],
+        ['Contact email', payload.contactEmail || 'Not provided'],
         ['Plan', payload.planName || 'Not provided'],
         ['Amount due', payload.amountDue == null ? 'Not provided' : `${payload.amountDue.toFixed(2)} ${payload.currency}`],
         ['Submitted at', payload.submittedAt || 'Not provided']
-    ].map(([label, value]) => `<dt>${htmlEscape(label)}</dt><dd>${htmlEscape(value)}</dd>`).join('')}</dl><p><a href="${htmlEscape(actionUrl)}">Open the registration review queue</a></p>`;
+    ];
+    const lines = [
+        'Logic Fit',
+        `New ${typeLabel} registration request`,
+        '',
+        'A new registration request is ready for platform review.',
+        '',
+        ...details.map(([label, value]) => `${label}: ${value}`),
+        '',
+        `Review request: ${actionUrl}`,
+        '',
+        'This is an automated notification from Logic Fit.'
+    ];
+    const html = `<!doctype html>
+<html lang="en" dir="ltr">
+<head><meta charset="utf-8"><meta name="color-scheme" content="light"><meta name="supported-color-schemes" content="light"></head>
+<body style="margin:0;padding:0;background:#f3f6fb;color:#172033;font-family:Arial,Helvetica,sans-serif;">
+  <div role="article" aria-roledescription="email" style="width:100%;background:#f3f6fb;padding:32px 12px;box-sizing:border-box;">
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width:640px;margin:0 auto;background:#ffffff;border:1px solid #e5eaf2;border-radius:16px;overflow:hidden;">
+      <tr><td style="padding:24px 28px;background:#102a43;color:#ffffff;">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
+          <td style="font-size:20px;font-weight:700;letter-spacing:.5px;">LOGIC <span style="color:#57d3b2;">FIT</span></td>
+          <td align="right" style="font-size:11px;letter-spacing:1.4px;color:#b9c9dc;text-transform:uppercase;">Platform alert</td>
+        </tr></table>
+      </td></tr>
+      <tr><td style="padding:36px 28px 20px;">
+        <div style="display:inline-block;padding:7px 11px;border-radius:999px;background:#e7f8f3;color:#087f69;font-size:12px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;">New request</div>
+        <h1 style="margin:16px 0 10px;font-size:28px;line-height:1.2;color:#102a43;">New ${htmlEscape(typeLabel)} registration request</h1>
+        <p style="margin:0;color:#526173;font-size:15px;line-height:1.7;">A new registration request is ready for platform review.</p>
+      </td></tr>
+      <tr><td style="padding:0 28px 12px;">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid #e5eaf2;border-radius:12px;background:#fbfcfe;">
+          ${details.map(([label, value]) => `<tr><td style="padding:13px 16px;border-bottom:1px solid #edf0f5;color:#718096;font-size:12px;font-weight:700;">${htmlEscape(label)}</td><td style="padding:13px 16px;border-bottom:1px solid #edf0f5;color:#172033;font-size:14px;text-align:right;">${htmlEscape(value)}</td></tr>`).join('')}
+        </table>
+      </td></tr>
+      <tr><td style="padding:20px 28px 34px;">
+        <a href="${htmlEscape(actionUrl)}" style="display:inline-block;padding:13px 20px;border-radius:9px;background:#0f9d83;color:#ffffff;font-size:14px;font-weight:700;text-decoration:none;">Review request</a>
+        <p style="margin:22px 0 0;color:#8a96a8;font-size:12px;line-height:1.6;">This is an automated notification from Logic Fit. Please review the request from the secure platform dashboard.</p>
+      </td></tr>
+      <tr><td style="padding:18px 28px;background:#f8fafc;border-top:1px solid #edf0f5;color:#8a96a8;font-size:11px;line-height:1.5;">Logic Fit · Platform notifications</td></tr>
+    </table>
+  </div>
+</body>
+</html>`;
     return { subject, text: lines.join('\n'), html };
 }
 
