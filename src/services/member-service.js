@@ -470,24 +470,26 @@ function has(body, key) {
     return Object.prototype.hasOwnProperty.call(body, key);
 }
 
-function hasValue(value) {
-    return value !== undefined && value !== null && String(value).trim() !== '';
-}
-
 function resolveMembershipRequest(body = {}) {
     if (has(body, 'createMembership')) {
-        if (typeof body.createMembership === 'boolean') return body.createMembership;
+        if (typeof body.createMembership === 'boolean') {
+            if (!body.createMembership) {
+                throw appError('A membership is required when creating a member.', 422, 'MEMBERSHIP_REQUIRED');
+            }
+            return true;
+        }
         const value = String(body.createMembership).trim().toLowerCase();
         if (['true', '1'].includes(value)) return true;
-        if (['false', '0', ''].includes(value)) return false;
+        if (['false', '0', ''].includes(value)) {
+            throw appError('A membership is required when creating a member.', 422, 'MEMBERSHIP_REQUIRED');
+        }
         throw appError('اختيار إنشاء الاشتراك غير صالح.', 400, 'MEMBERSHIP_SELECTION_INVALID');
     }
 
-    // Preserve the old API contract for callers that explicitly submit
-    // membership data, while allowing a profile-only member to be created
-    // with name and phone alone.
-    return ['membershipType', 'membershipPlan', 'startDate', 'endDate', 'membershipNotes']
-        .some((field) => hasValue(body[field]));
+    // Every new member is registered with an initial membership. The legacy
+    // flag remains accepted only as a compatibility input and cannot disable
+    // the required membership transaction.
+    return true;
 }
 
 function hasPaymentDetails(data = {}) {

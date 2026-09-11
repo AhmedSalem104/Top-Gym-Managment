@@ -29,12 +29,12 @@ test('production member creation uses a read-only schema gate instead of request
     assert.match(source, /FROM dbo\.members WITH \(UPDLOCK, HOLDLOCK\)/);
 });
 
-test('the browser keeps membership and payment opt-in fields in the member registration form', () => {
-    assert.match(browserSource, /const shouldCreateMembership = isNewMember && Boolean\(\$\('createMembership'\)\?\.checked\)/u);
-    assert.match(browserSource, /body\.createMembership = shouldCreateMembership/u);
-    assert.match(browserSource, /if \(paymentAllowed && \(shouldCreateMembership/u);
+test('the browser always submits initial membership fields for new members', () => {
+    assert.doesNotMatch(browserSource, /createMembership/u);
+    assert.match(browserSource, /if \(isNewMember\) \{[\s\S]*?body\.membershipType = \$\('membershipType'\)\.value;[\s\S]*?body\.membershipPlan = \$\('membershipPlan'\)\.value;/u);
+    assert.match(browserSource, /if \(paymentAllowed && \(isNewMember/u);
     assert.match(browserSource, /const body = \{[\s\S]*?fullName: \$\('fullName'\)\.value,[\s\S]*?phone: \$\('phone'\)\.value,[\s\S]*?notes: \$\('notes'\)\.value/u);
-    assert.doesNotMatch(pageSource, /class="checkbox-field member-membership-toggle" hidden/u);
+    assert.doesNotMatch(pageSource, /createMembership|member-membership-toggle/u);
     assert.doesNotMatch(pageSource, /class="checkbox-field whatsapp-after-save" hidden/u);
     assert.doesNotMatch(pageSource, /id="membershipType"[^>]*required/u);
     assert.doesNotMatch(pageSource, /id="membershipPlan"[^>]*required/u);

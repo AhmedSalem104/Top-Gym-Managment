@@ -617,10 +617,11 @@
 
         function syncMemberSubscriptionFields() {
             const editing = Boolean($('memberId')?.value);
-            const selected = Boolean($('createMembership')?.checked);
             const fields = $('memberSubscriptionFields');
-            if (fields) fields.hidden = !selected;
-            if (editing && $('createMembership')) $('createMembership').disabled = true;
+            // New members always receive their initial membership. Keep the
+            // section visible for creation, and hide it only when editing an
+            // older profile that has no membership record yet.
+            if (fields) fields.hidden = editing && !state.editing?.membership;
         }
 
         function syncMemberPaymentDate(member = null) {
@@ -639,8 +640,6 @@
             $('email').value = '';
             $('registrationDate').value = today;
             $('notes').value = '';
-            $('createMembership').checked = true;
-            $('createMembership').disabled = false;
             $('membershipType').value = defaultType;
             $('membershipPlan').value = 'gym_only';
             $('startDate').value = today;
@@ -692,7 +691,7 @@
                 await notify(error.message, 'error');
             }
         }
-        function editMember(member) { const sub = member.membership || {}; $('memberId').value = member.id; $('fullName').value = member.fullName || ''; $('phone').value = member.phone || ''; $('email').value = member.email || ''; $('registrationDate').value = member.registrationDate || todayIso(); $('notes').value = member.notes || ''; $('createMembership').checked = Boolean(sub.id); $('membershipType').value = resolvedTypeCode(sub.type || 'monthly'); $('membershipPlan').value = sub.plan || 'gym_only'; $('startDate').value = sub.startDate || todayIso(); $('endDate').value = sub.endDate || calculatedEndDate($('startDate').value, $('membershipType').value); $('membershipNotes').value = sub.notes || ''; $('discountAmount').value = String(sub.discountAmount || 0); $('amountPaid').value = String(sub.amountPaid || 0); $('paymentMethod').value = sub.paymentMethod || 'cash'; $('sendWhatsAppAfterSave').checked = false; $('sendWhatsAppAfterSave').closest('.whatsapp-after-save')?.classList.add('hidden'); state.editing = member; state.endDateManual = true; $('formTitle').textContent = 'تعديل بيانات العضو'; $('saveButton').textContent = 'حفظ التعديلات'; $('cancelEditButton').classList.remove('hidden'); $('resetButton').classList.remove('hidden'); syncMemberSubscriptionFields(); syncMemberPermissionFields(); updateFormPricing(); }
+        function editMember(member) { const sub = member.membership || {}; $('memberId').value = member.id; $('fullName').value = member.fullName || ''; $('phone').value = member.phone || ''; $('email').value = member.email || ''; $('registrationDate').value = member.registrationDate || todayIso(); $('notes').value = member.notes || ''; $('membershipType').value = resolvedTypeCode(sub.type || 'monthly'); $('membershipPlan').value = sub.plan || 'gym_only'; $('startDate').value = sub.startDate || todayIso(); $('endDate').value = sub.endDate || calculatedEndDate($('startDate').value, $('membershipType').value); $('membershipNotes').value = sub.notes || ''; $('discountAmount').value = String(sub.discountAmount || 0); $('amountPaid').value = String(sub.amountPaid || 0); $('paymentMethod').value = sub.paymentMethod || 'cash'; $('sendWhatsAppAfterSave').checked = false; $('sendWhatsAppAfterSave').closest('.whatsapp-after-save')?.classList.add('hidden'); state.editing = member; state.endDateManual = true; $('formTitle').textContent = 'تعديل بيانات العضو'; $('saveButton').textContent = 'حفظ التعديلات'; $('cancelEditButton').classList.remove('hidden'); $('resetButton').classList.remove('hidden'); syncMemberSubscriptionFields(); syncMemberPermissionFields(); updateFormPricing(); }
 
         function openDialog(action, member) {
              state.dialogAction = action; state.dialogMember = member; const sub = member.membership || {}; const fields = $('dialogFields'); const freezeLimit = Number(sub.freezeLimit || FREEZE_LIMIT); const freezeCount = Number(sub.freezeCount || 0); $('dialogTitle').textContent = action === 'freeze' ? 'تجميد العضوية' : action === 'renew' ? 'تجديد العضوية' : 'تسجيل دفعة'; $('dialogDescription').textContent = `${member.fullName} · ${member.phone}`;
@@ -871,8 +870,7 @@
                     : 'لا تملك صلاحية تعديل بيانات المشترك. اطلب من مالك النظام تفعيلها، ثم سجّل الخروج والدخول مرة أخرى.', 'error');
                 return;
             }
-            const shouldCreateMembership = isNewMember && Boolean($('createMembership')?.checked);
-            const shouldSendWhatsApp = shouldCreateMembership && Boolean($('sendWhatsAppAfterSave')?.checked);
+            const shouldSendWhatsApp = isNewMember && Boolean($('sendWhatsAppAfterSave')?.checked);
             const paymentAllowed = canRecordMemberPayment();
             const membershipAllowed = isNewMember || canUpdateMemberMembership();
             const pricingAllowed = isNewMember || (membershipAllowed && paymentAllowed);
@@ -883,11 +881,10 @@
                 registrationDate: $('registrationDate').value,
                 notes: $('notes').value
             };
-            // A new gym registration keeps the complete member + membership
-            // flow in one atomic API operation. Payment remains optional and
-            // is sent only when the current actor is allowed to record it.
-            if (isNewMember) body.createMembership = shouldCreateMembership;
-            if (isNewMember && shouldCreateMembership) {
+            // A new gym registration always creates the initial membership in
+            // the same atomic API operation. Payment remains optional and is
+            // sent only when the current actor is allowed to record it.
+            if (isNewMember) {
                 body.startDate = $('startDate').value;
                 body.endDate = $('endDate').value;
                 body.membershipNotes = $('membershipNotes').value;
@@ -902,7 +899,7 @@
                     body.membershipPlan = $('membershipPlan').value;
                 }
             }
-            if (paymentAllowed && (shouldCreateMembership || (!isNewMember && state.editing?.membership))) {
+            if (paymentAllowed && (isNewMember || (!isNewMember && state.editing?.membership))) {
                 body.discountAmount = Number($('discountAmount').value || 0);
                 body.amountDue = Number($('amountDue').value || 0);
                 body.amountPaid = Number($('amountPaid').value || 0);
@@ -932,7 +929,7 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-             setFormDefaults(); $('memberForm').addEventListener('submit', submitMember); $('createMembership').addEventListener('change', () => { syncMemberSubscriptionFields(); if ($('createMembership').checked) updateFormPricing(); }); $('refreshButton').addEventListener('click', loadData); $('topAddMemberButton').addEventListener('click', () => openMemberDialog()); $('addMemberButton').addEventListener('click', () => openMemberDialog()); $('topPricingButton').addEventListener('click', openPricingDialog); $('pricingButton').addEventListener('click', openPricingDialog); $('membershipTypesButton').addEventListener('click', openMembershipTypesDialog); $('memberDialogClose').addEventListener('click', closeMemberDialog); $('cancelEditButton').addEventListener('click', () => setFormDefaults(true)); $('resetButton').addEventListener('click', () => setFormDefaults(true)); $('actionForm').addEventListener('submit', submitDialog); $('dialogCancel').addEventListener('click', closeDialog); $('pricingForm').addEventListener('submit', savePricing); $('pricingClose').addEventListener('click', closePricingDialog); $('membershipTypesClose').addEventListener('click', closeMembershipTypesDialog); $('detailsClose').addEventListener('click', closeDetails); $('detailsContent').addEventListener('click', (event) => { const button = event.target.closest('[data-payment-receipt]'); if (!button) return; window.topGymPrint?.printPaymentReceipt(button.dataset.memberId, button.dataset.paymentId); }); $('addMembershipTypeButton').addEventListener('click', () => openMembershipTypeDialog()); $('membershipTypeDialogClose').addEventListener('click', closeMembershipTypeDialog); $('membershipTypeCancel').addEventListener('click', closeMembershipTypeDialog); $('membershipTypeForm').addEventListener('submit', submitMembershipType); ['membershipTypeName', 'membershipTypeMode', 'membershipTypeDuration', 'membershipTypeMultiplier'].forEach((id) => $(id).addEventListener('input', updateMembershipTypePreview)); $('membershipTypeMode').addEventListener('change', updateMembershipTypePreview); $('membershipTypesTableContainer').addEventListener('click', (event) => { const button = event.target.closest('[data-type-action="edit"]'); if (button) openMembershipTypeDialog(button.dataset.code); }); $('membershipType').addEventListener('change', () => { if (!state.endDateManual) $('endDate').value = calculatedEndDate($('startDate').value, $('membershipType').value); updateFormPricing(); }); $('membershipPlan').addEventListener('change', updateFormPricing); $('discountAmount').addEventListener('input', updateFormPricing); $('startDate').addEventListener('change', () => { if (!state.endDateManual) $('endDate').value = calculatedEndDate($('startDate').value, $('membershipType').value); }); $('endDate').addEventListener('input', () => { state.endDateManual = true; }); let timer; $('searchInput').addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(loadMembersOnly, 300); }); $('statusFilter').addEventListener('change', loadMembersOnly);
+             setFormDefaults(); $('memberForm').addEventListener('submit', submitMember); $('refreshButton').addEventListener('click', loadData); $('topAddMemberButton').addEventListener('click', () => openMemberDialog()); $('addMemberButton').addEventListener('click', () => openMemberDialog()); $('topPricingButton').addEventListener('click', openPricingDialog); $('pricingButton').addEventListener('click', openPricingDialog); $('membershipTypesButton').addEventListener('click', openMembershipTypesDialog); $('memberDialogClose').addEventListener('click', closeMemberDialog); $('cancelEditButton').addEventListener('click', () => setFormDefaults(true)); $('resetButton').addEventListener('click', () => setFormDefaults(true)); $('actionForm').addEventListener('submit', submitDialog); $('dialogCancel').addEventListener('click', closeDialog); $('pricingForm').addEventListener('submit', savePricing); $('pricingClose').addEventListener('click', closePricingDialog); $('membershipTypesClose').addEventListener('click', closeMembershipTypesDialog); $('detailsClose').addEventListener('click', closeDetails); $('detailsContent').addEventListener('click', (event) => { const button = event.target.closest('[data-payment-receipt]'); if (!button) return; window.topGymPrint?.printPaymentReceipt(button.dataset.memberId, button.dataset.paymentId); }); $('addMembershipTypeButton').addEventListener('click', () => openMembershipTypeDialog()); $('membershipTypeDialogClose').addEventListener('click', closeMembershipTypeDialog); $('membershipTypeCancel').addEventListener('click', closeMembershipTypeDialog); $('membershipTypeForm').addEventListener('submit', submitMembershipType); ['membershipTypeName', 'membershipTypeMode', 'membershipTypeDuration', 'membershipTypeMultiplier'].forEach((id) => $(id).addEventListener('input', updateMembershipTypePreview)); $('membershipTypeMode').addEventListener('change', updateMembershipTypePreview); $('membershipTypesTableContainer').addEventListener('click', (event) => { const button = event.target.closest('[data-type-action="edit"]'); if (button) openMembershipTypeDialog(button.dataset.code); }); $('membershipType').addEventListener('change', () => { if (!state.endDateManual) $('endDate').value = calculatedEndDate($('startDate').value, $('membershipType').value); updateFormPricing(); }); $('membershipPlan').addEventListener('change', updateFormPricing); $('discountAmount').addEventListener('input', updateFormPricing); $('startDate').addEventListener('change', () => { if (!state.endDateManual) $('endDate').value = calculatedEndDate($('startDate').value, $('membershipType').value); }); $('endDate').addEventListener('input', () => { state.endDateManual = true; }); let timer; $('searchInput').addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(loadMembersOnly, 300); }); $('statusFilter').addEventListener('change', loadMembersOnly);
             $('membersList').addEventListener('click', async (event) => { const button = event.target.closest('button[data-action]'); if (!button) return; if (!hasRequiredPermissions(button.dataset.requiredPermission)) { await notify('لا تملك صلاحية تنفيذ هذا الإجراء. إذا تم تفعيلها حديثًا، سجّل الخروج ثم ادخل مرة أخرى.', 'error'); return; } const id = button.dataset.id || button.closest('[data-member-id]')?.dataset.memberId; const member = state.members.find((item) => String(item.id) === String(id)); if (!member) { await notify('تعذر تحديد العضو. حدّث الصفحة وحاول مرة أخرى.', 'error'); return; } const action = button.dataset.action; if (action === 'details') { await openDetails(member); return; } if (action === 'edit') { openMemberDialog(member); return; } if (action === 'freeze' || action === 'renew' || action === 'payment') { openDialog(action, member); return; } if (action === 'resume') { try { await withLoader(() => api(`/api/members/${member.id}/resume`, { method: 'POST' }), 'جاري استئناف العضوية…'); await refreshAfterAction('تم استئناف العضوية.'); } catch (error) { await notify(error.message, 'error'); } return; } if (action === 'delete' && await confirmDelete(member.fullName)) { try { await withLoader(() => api(`/api/members/${member.id}`, { method: 'DELETE' }), 'جاري حذف العضو…'); if (String($('memberId').value) === String(member.id)) setFormDefaults(true); await refreshAfterAction('تم حذف العضو.'); } catch (error) { await notify(error.message, 'error'); } } });
             $('membersList').addEventListener('click', async (event) => {
                 const button = event.target.closest('button[data-action="refund"]');

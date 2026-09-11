@@ -5,14 +5,17 @@ const test = require('node:test');
 
 const { hasPaymentDetails, resolveMembershipRequest } = require('../../src/services/member-service');
 
-test('name and phone alone create a profile without a membership', () => {
-    assert.equal(resolveMembershipRequest({ fullName: 'عضو اختبار', phone: '01000000000' }), false);
+test('every new member creation requires an initial membership', () => {
+    assert.equal(resolveMembershipRequest({ fullName: 'عضو اختبار', phone: '01000000000' }), true);
     assert.equal(hasPaymentDetails({ amountPaid: 0, discountAmount: 0, amountDue: 0, paymentMethod: 'cash' }), false);
 });
 
-test('membership creation is explicit and validates its required pair', () => {
+test('membership creation cannot be disabled by the legacy flag', () => {
     assert.equal(resolveMembershipRequest({ createMembership: true, membershipType: 'monthly', membershipPlan: 'gym_only' }), true);
-    assert.equal(resolveMembershipRequest({ createMembership: false, membershipType: 'monthly', membershipPlan: 'gym_only' }), false);
+    assert.throws(
+        () => resolveMembershipRequest({ createMembership: false, membershipType: 'monthly', membershipPlan: 'gym_only' }),
+        (error) => error.code === 'MEMBERSHIP_REQUIRED' && error.statusCode === 422
+    );
     assert.equal(resolveMembershipRequest({ membershipType: 'monthly', membershipPlan: 'gym_only' }), true);
     assert.throws(
         () => resolveMembershipRequest({ createMembership: 'invalid' }),
@@ -28,5 +31,5 @@ test('payment details are rejected by the create contract unless membership is r
 
 test('legacy clients remain compatible when they explicitly submit membership data', () => {
     assert.equal(resolveMembershipRequest({ membershipType: 'monthly', membershipPlan: 'gym_only', startDate: '2026-09-10' }), true);
-    assert.equal(resolveMembershipRequest({ fullName: 'عضو اختبار', phone: '01000000000', email: '' }), false);
+    assert.equal(resolveMembershipRequest({ fullName: 'عضو اختبار', phone: '01000000000', email: '' }), true);
 });
