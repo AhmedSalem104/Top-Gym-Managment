@@ -2,11 +2,11 @@
 Description=Logic Fit attendance automatic checkout
 After=docker.service
 Requires=docker.service
-ConditionPathExists=__APP_ROOT__/bin/logicfit-auto-checkout-job.sh
+ConditionPathExists=@@APP_ROOT@@/bin/logicfit-auto-checkout-job.sh
 
 [Service]
 Type=oneshot
-ExecStart=__APP_ROOT__/bin/logicfit-auto-checkout-job.sh
+ExecStart=@@APP_ROOT@@/bin/logicfit-auto-checkout-job.sh
 TimeoutStartSec=10min
 StandardOutput=journal
 StandardError=journal

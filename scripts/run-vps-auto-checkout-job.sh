@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-APP_ROOT='__APP_ROOT__'
-CONTAINER_NAME='__CONTAINER_NAME__'
-NODE_IMAGE='__NODE_IMAGE__'
+APP_ROOT='@@APP_ROOT@@'
+CONTAINER_NAME='@@CONTAINER_NAME@@'
+NODE_IMAGE='@@NODE_IMAGE@@'
 STATE_DIR="${APP_ROOT}/job-state"
 RELEASE_LOCK="${APP_ROOT}/.production-release-lock"
 

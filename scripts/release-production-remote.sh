@@ -112,12 +112,12 @@ STAGE='scheduler'
 [ -f "$RELEASE_DIR/infra/systemd/logicfit-attendance-auto-checkout.timer" ]
 mkdir -p "$APP_ROOT/bin" "$APP_ROOT/job-state"
 chmod 750 "$APP_ROOT/bin" "$APP_ROOT/job-state"
-sed -e "s#__APP_ROOT__#${APP_ROOT}#g" \
-    -e "s#__CONTAINER_NAME__#${CONTAINER_NAME}#g" \
-    -e "s#__NODE_IMAGE__#${NODE_IMAGE}#g" \
+sed -e "s#@@APP_ROOT@@#${APP_ROOT}#g" \
+    -e "s#@@CONTAINER_NAME@@#${CONTAINER_NAME}#g" \
+    -e "s#@@NODE_IMAGE@@#${NODE_IMAGE}#g" \
     "$RELEASE_DIR/scripts/run-vps-auto-checkout-job.sh" > "$JOB_WRAPPER_TARGET"
 chmod 750 "$JOB_WRAPPER_TARGET"
-sed "s#__APP_ROOT__#${APP_ROOT}#g" \
+sed "s#@@APP_ROOT@@#${APP_ROOT}#g" \
     "$RELEASE_DIR/infra/systemd/logicfit-attendance-auto-checkout.service" > "$JOB_SERVICE_TARGET"
 install -m 0644 "$RELEASE_DIR/infra/systemd/logicfit-attendance-auto-checkout.timer" "$JOB_TIMER_TARGET"
 systemctl daemon-reload
