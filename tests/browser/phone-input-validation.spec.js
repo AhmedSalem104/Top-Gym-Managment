@@ -9,7 +9,7 @@ const catalog = {
             exampleNational: '010 01234567',
             exampleInternational: '+201001234567',
             validLengths: [8, 9, 10],
-            mobileRules: { supported: true, validLengths: [10], nationalPattern: '1[0-25]\\d{8}' }
+            mobileRules: { supported: true, validLengths: [10], nationalPattern: '1[0-25]\\d{8}', localPrefix: '0' }
         },
         {
             country: 'الإمارات العربية المتحدة',
@@ -18,7 +18,7 @@ const catalog = {
             exampleNational: '050 123 4567',
             exampleInternational: '+971501234567',
             validLengths: [9],
-            mobileRules: { supported: true, validLengths: [9], nationalPattern: '5[02-68]\\d{7}' }
+            mobileRules: { supported: true, validLengths: [9], nationalPattern: '5[02-68]\\d{7}', localPrefix: '0' }
         }
     ]
 };
@@ -78,4 +78,27 @@ test('phone input blocks invalid length/format before registration request', asy
     await phone.blur();
     await expect(error).toBeVisible();
     await expect(error).toContainText('الدولة المختارة');
+});
+
+test('selected country enforces its local mobile prefix', async ({ page }) => {
+    await page.route('**/api/phone/countries', (route) => route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(catalog)
+    }));
+    await page.goto('/register-gym.html', { waitUntil: 'domcontentloaded' });
+    const phone = page.locator('input[name="whatsapp"]');
+    const error = page.locator('.phone-input-error');
+    await phone.fill('1012345678');
+    await phone.blur();
+    await expect(error).toBeVisible();
+    await expect(phone).toHaveAttribute('aria-invalid', 'true');
+    const errorColor = await error.evaluate((element) => getComputedStyle(element).color);
+    const colorChannels = errorColor.match(/\d+/gu)?.map(Number) || [];
+    expect(colorChannels.length).toBeGreaterThanOrEqual(3);
+    expect(colorChannels[0]).toBeGreaterThan(colorChannels[1]);
+    expect(colorChannels[0]).toBeGreaterThan(colorChannels[2]);
+    await phone.fill('01012345678');
+    await phone.blur();
+    await expect(error).toBeHidden();
 });

@@ -45,6 +45,28 @@ function compactPhone(value) {
     return normalized.replace(/\D/g, '');
 }
 
+function assertPhoneSyntax(value, fieldName) {
+    const normalized = normalizeDigits(value).trim();
+    if (!normalized) return;
+    if (!/^[+\d\s().-]+$/u.test(normalized)
+        || /^[^\d+]/u.test(normalized)
+        || /\+.*\+/u.test(normalized)
+        || (normalized.includes('+') && !/^\+|^00/u.test(normalized))) {
+        throw phoneError(fieldName, 'INVALID_PHONE_FORMAT', `${fieldName} contains unsupported characters or format.`);
+    }
+}
+
+function getMobileLocalPrefix(isoCode, example) {
+    const exampleNational = compactPhone(example?.formatNational?.() || '');
+    const exampleInternational = compactPhone(example?.number || '');
+    const dialCode = getCountryCallingCode(isoCode);
+    const nationalDigits = exampleInternational.startsWith('+')
+        ? exampleInternational.slice(1 + dialCode.length)
+        : '';
+    if (!exampleNational || !nationalDigits || !exampleNational.endsWith(nationalDigits)) return '';
+    return exampleNational.slice(0, exampleNational.length - nationalDigits.length);
+}
+
 function isMobilePhone(phoneNumber) {
     const type = phoneNumber.getType?.();
     return !type || MOBILE_TYPES.has(type);
@@ -61,6 +83,7 @@ function normalizePhone(value, {
     allowFixedLine = false,
     fieldName = 'Phone number'
 } = {}) {
+    assertPhoneSyntax(value, fieldName);
     const raw = compactPhone(value);
     if (!raw) {
         if (!required) return null;
@@ -70,7 +93,14 @@ function normalizePhone(value, {
     const hasSelectedCountry = country !== null && country !== undefined && String(country).trim() !== '';
     const selectedCountry = hasSelectedCountry ? normalizeCountry(country, { required: true }) : null;
     const isInternational = raw.startsWith('+');
-    const phoneNumber = parsePhoneNumberFromString(raw, isInternational ? undefined : (selectedCountry || DEFAULT_COUNTRY));
+    const parsingCountry = selectedCountry || DEFAULT_COUNTRY;
+    if (!isInternational && !allowFixedLine) {
+        const localPrefix = getMobileLocalPrefix(parsingCountry, getExampleNumber(parsingCountry, mobileExamples));
+        if (localPrefix && !raw.startsWith(localPrefix)) {
+            throw phoneError(fieldName, 'PHONE_LOCAL_FORMAT', `${fieldName} must use the local mobile format for the selected country.`);
+        }
+    }
+    const phoneNumber = parsePhoneNumberFromString(raw, isInternational ? undefined : parsingCountry);
     if (!phoneNumber || !phoneNumber.isValid()) {
         throw phoneError(fieldName);
     }
@@ -106,6 +136,7 @@ function countryOption(isoCode) {
     const mobilePattern = mobileType?.[0] || '';
     const mobileLengths = Array.isArray(mobileType?.[1]) ? mobileType[1] : [];
     const example = getExampleNumber(isoCode, mobileExamples);
+    const mobileLocalPrefix = getMobileLocalPrefix(isoCode, example);
     return Object.freeze({
         country: countryName(isoCode),
         isoCode,
@@ -117,6 +148,7 @@ function countryOption(isoCode) {
             supported: Boolean(mobileType),
             validLengths: [...mobileLengths],
             prefixValidation: Boolean(mobilePattern),
+            localPrefix: mobileLocalPrefix || null,
             // The pattern is public country metadata, not application data.
             // The browser uses it for an early UX check; the server library
             // remains authoritative for the final validation decision.

@@ -93,7 +93,7 @@ test('registration WhatsApp numbers are canonicalized for Egyptian and explicit 
     const service = require('../../src/services/gym-registration-service');
     assert.equal(service.normalizeWhatsapp('01 0123 45678'), '+201012345678');
     assert.equal(service.normalizeWhatsapp('+201112345678'), '+201112345678');
-    assert.equal(service.normalizeWhatsapp('201212345678'), '+201212345678');
+    assert.equal(service.normalizeWhatsapp('+201212345678'), '+201212345678');
     assert.equal(service.normalizeWhatsapp('00201512345678'), '+201512345678');
     assert.equal(service.normalizeWhatsapp('+971501234567'), '+971501234567');
     assert.throws(() => service.normalizeWhatsapp('01112345'), /WhatsApp/);

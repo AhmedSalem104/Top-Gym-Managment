@@ -18,6 +18,7 @@
         length: '\u0623\u062f\u062e\u0644 \u0631\u0642\u0645\u064b\u0627 \u0628\u0639\u062f\u062f \u0627\u0644\u062e\u0627\u0646\u0627\u062a \u0627\u0644\u0635\u062d\u064a\u062d \u0644\u0644\u062f\u0648\u0644\u0629 \u0627\u0644\u0645\u062e\u062a\u0627\u0631\u0629.',
         tooLong: (maximum) => `\u0627\u0644\u0631\u0642\u0645 \u0623\u0637\u0648\u0644 \u0645\u0646 \u0627\u0644\u062d\u062f \u0627\u0644\u0623\u0642\u0635\u0649 \u0627\u0644\u0645\u0633\u0645\u0648\u062d (${maximum} \u0631\u0642\u0645\u064b\u0627 \u0643\u062d\u062f \u0623\u0642\u0635\u0649).`,
         format: '\u0623\u062f\u062e\u0644 \u0631\u0642\u0645 \u0645\u0648\u0628\u0627\u064a\u0644 \u0635\u062d\u064a\u062d \u0644\u0644\u062f\u0648\u0644\u0629 \u0627\u0644\u0645\u062e\u062a\u0627\u0631\u0629.',
+        localFormat: '\u0627\u0643\u062a\u0628 \u0627\u0644\u0631\u0642\u0645 \u0628\u0627\u0644\u0635\u064a\u063a\u0629 \u0627\u0644\u0645\u062d\u0644\u064a\u0629 \u0627\u0644\u0635\u062d\u064a\u062d\u0629 \u0644\u0644\u062f\u0648\u0644\u0629 \u0627\u0644\u0645\u062e\u062a\u0627\u0631\u0629.',
         catalog: '\u062c\u0627\u0631\u064d \u062a\u062d\u0645\u064a\u0644 \u0642\u0648\u0627\u0639\u062f \u0627\u0644\u0647\u0627\u062a\u0641. \u062d\u0627\u0648\u0644 \u0645\u0631\u0629 \u0623\u062e\u0631\u0649.',
         search: '\u0627\u0628\u062d\u062b \u0628\u0627\u0633\u0645 \u0627\u0644\u062f\u0648\u0644\u0629 \u0623\u0648 \u0645\u0641\u062a\u0627\u062d \u0627\u0644\u0627\u062a\u0635\u0627\u0644'
     });
@@ -55,16 +56,22 @@
         if (international && !digits.startsWith(dialCode)) {
             return { value, select, iso, country, compactValue, valid: false, message: PHONE_MESSAGES.country };
         }
-        const nationalDigits = international ? digits.slice(dialCode.length) : digits.replace(/^0/, '');
         const allowFixedLine = input.dataset.phoneAllowFixedLine === 'true';
         const mobileRules = country.mobileRules || {};
+        const localPrefix = String(mobileRules.localPrefix || '');
+        if (!international && !allowFixedLine && localPrefix && !digits.startsWith(localPrefix)) {
+            return { value, select, iso, country, compactValue, valid: false, message: PHONE_MESSAGES.localFormat };
+        }
+        const nationalDigits = international
+            ? digits.slice(dialCode.length)
+            : (allowFixedLine ? digits.replace(/^0/, '') : (localPrefix ? digits.slice(localPrefix.length) : digits));
         const validLengths = allowFixedLine
             ? (country.validLengths || [])
             : (mobileRules.validLengths?.length ? mobileRules.validLengths : (country.validLengths || []));
         const maximumNationalDigits = validLengths.length ? Math.max(...validLengths) : null;
         const maximumInputDigits = maximumNationalDigits === null
             ? null
-            : (international ? dialCode.length + maximumNationalDigits : maximumNationalDigits + (digits.startsWith('0') ? 1 : 0));
+            : (international ? dialCode.length + maximumNationalDigits : maximumNationalDigits + localPrefix.length);
         if (maximumNationalDigits !== null && nationalDigits.length > maximumNationalDigits) {
             return {
                 value,
@@ -215,7 +222,10 @@
         const country = countriesByIso.get(iso) || countriesByIso.get(DEFAULT_COUNTRY);
         if (!country?.dialCode) return compactValue;
         const dialCode = String(country.dialCode).replace(/^\+/, '');
-        const local = compactValue.replace(/^0+/, '');
+        const localPrefix = String(country.mobileRules?.localPrefix || '');
+        const local = localPrefix && compactValue.startsWith(localPrefix)
+            ? compactValue.slice(localPrefix.length)
+            : compactValue.replace(/^0+/, '');
         return `+${dialCode}${local}`;
     }
 
@@ -459,7 +469,7 @@
             country: '\u0645\u0635\u0631',
             exampleNational: '01012345678',
             validLengths: [8, 9, 10],
-            mobileRules: { validLengths: [10], nationalPattern: '1[0-25]\\d{8}' }
+            mobileRules: { validLengths: [10], nationalPattern: '1[0-25]\\d{8}', localPrefix: '0' }
         });
         decorateAll();
         loadCountries().then(() => decorateAll()).catch(() => {});
