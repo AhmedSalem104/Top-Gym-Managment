@@ -19,6 +19,9 @@ test('notification center is loaded only by account shells and uses safe same-or
     assert.match(center, /notification-center-item-icon/);
     assert.match(center, /notification-center-item-action/);
     assert.match(center, /EventSource/);
+    assert.match(center, /showLiveToast/);
+    assert.match(center, /realtimeReconnectTimer/);
+    assert.match(center, /if \(host\) \{[\s\S]*void load\(\);/);
     assert.match(center, /api\/member-portal\/notifications/);
     assert.match(read('public/member-portal.html'), /portal-notification-host/);
     assert.match(center, /تصفية الإشعارات/);
@@ -27,6 +30,7 @@ test('notification center is loaded only by account shells and uses safe same-or
     assert.match(read('public/index.html'), /notification-center\.js/);
     assert.match(read('public/platform-admin.html'), /notification-center\.js/);
     assert.match(read('public/trainer-workspace.html'), /notification-center\.js/);
+    assert.match(read('public/js/platform-admin.js'), /topGymNotificationCenter\?\.refresh/);
 });
 
 test('notification API surface is explicit, paginated and tenant-scoped by the server', () => {

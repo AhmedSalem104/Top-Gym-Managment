@@ -1049,7 +1049,7 @@
             try {
                 const result = await api('/api/auth/login', { method: 'POST', body: JSON.stringify({ email: $('#platformAdminEmail').value, password: $('#platformAdminPassword').value }) });
                 if (result.user?.role !== 'PlatformAdmin') { await api('/api/auth/logout', { method: 'POST' }).catch(() => {}); throw new Error('هذا الدخول مخصص لحساب PlatformAdmin فقط.'); }
-                showApp(result.user); await Promise.all([loadPlans(), loadDashboard()]);
+                showApp(result.user); window.topGymNotificationCenter?.refresh?.(); await Promise.all([loadPlans(), loadDashboard()]);
             } catch (error) { const message = $('#platformAdminLoginMessage'); message.textContent = error.message; message.hidden = false; } finally { setLoading(button, false); }
         });
         $('#tenantSearch').addEventListener('input', (event) => { clearTimeout(searchTimer); state.tenantFilters.search = event.target.value; state.tenantPage = 1; searchTimer = setTimeout(loadTenants, 260); });

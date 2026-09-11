@@ -249,6 +249,12 @@ function htmlEscape(value) {
     }[character]));
 }
 
+function absoluteEmailActionUrl(value, publicAppUrl = '') {
+    const safeUrl = safeActionUrl(value || '/platform-admin');
+    const origin = boundedText(publicAppUrl, 300).replace(/\/+$/, '');
+    return safeUrl.startsWith('/') && origin ? `${origin}${safeUrl}` : safeUrl;
+}
+
 function registrationTypeLabel(value) {
     return value === 'independent_trainer' ? 'Independent Trainer' : 'Gym';
 }
@@ -265,7 +271,7 @@ function registrationMessage(event) {
 function buildRegistrationEmail(event, publicAppUrl = '') {
     const payload = event.payload;
     const typeLabel = registrationTypeLabel(payload.registrationType);
-    const actionUrl = payload.actionUrl || `${String(publicAppUrl || '').replace(/\/+$/, '')}/platform-admin`;
+    const actionUrl = absoluteEmailActionUrl(payload.actionUrl, publicAppUrl);
     const subject = `Logic Fit | New ${typeLabel} registration request`;
     const details = [
         ['Type', typeLabel],

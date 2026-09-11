@@ -39,6 +39,10 @@
   let summaryElement;
   let apiBase = '/api/notifications';
   let realtimeSource;
+  let realtimeReconnectTimer;
+  let sessionReady = false;
+  let liveToast;
+  let liveToastTimer;
 
   const formatDate = (value) => {
     if (!value) return '';
@@ -67,8 +71,14 @@
   function apiPath(suffix = '') { return `${apiBase}${suffix}`; }
 
   function startRealtime() {
-    if (realtimeSource || typeof window.EventSource !== 'function') return;
+    if (realtimeSource || realtimeReconnectTimer || !sessionReady || typeof window.EventSource !== 'function') return;
     realtimeSource = new EventSource(apiPath('/stream'), { withCredentials: true });
+    realtimeSource.addEventListener('open', () => {
+      if (realtimeReconnectTimer) {
+        clearTimeout(realtimeReconnectTimer);
+        realtimeReconnectTimer = null;
+      }
+    });
     realtimeSource.addEventListener('notification', (event) => {
       try {
         const incoming = JSON.parse(event.data || '{}');
@@ -77,14 +87,61 @@
         state.loaded = true;
         renderNotifications(state.items);
         setBadge(state.unread + 1);
+        showLiveToast(incoming);
       } catch (_) { /* malformed push data is ignored; next refresh reconciles it */ }
     });
     realtimeSource.addEventListener('error', () => {
-      if (realtimeSource?.readyState === EventSource.CLOSED) {
+      if (realtimeSource) {
         realtimeSource.close();
         realtimeSource = null;
       }
+      if (sessionReady && !realtimeReconnectTimer) {
+        realtimeReconnectTimer = window.setTimeout(() => {
+          realtimeReconnectTimer = null;
+          startRealtime();
+        }, 5000);
+      }
     });
+  }
+
+  function showLiveToast(item) {
+    if (!document.body || !item?.id) return;
+    if (liveToastTimer) window.clearTimeout(liveToastTimer);
+    liveToast?.remove();
+
+    const toast = document.createElement('aside');
+    toast.className = 'notification-center-live-toast';
+    toast.setAttribute('role', 'status');
+    toast.setAttribute('aria-live', 'polite');
+
+    const title = document.createElement('strong');
+    title.className = 'notification-center-live-toast-title';
+    title.textContent = item.title || 'إشعار جديد';
+    const message = document.createElement('span');
+    message.className = 'notification-center-live-toast-message';
+    message.textContent = item.message || '';
+    const close = document.createElement('button');
+    close.type = 'button';
+    close.className = 'notification-center-live-toast-close';
+    close.setAttribute('aria-label', 'إغلاق الإشعار');
+    close.textContent = '×';
+    close.addEventListener('click', () => toast.remove());
+    toast.append(title, message, close);
+
+    const actionUrl = safeActionUrl(item.actionUrl);
+    if (actionUrl) {
+      toast.classList.add('is-actionable');
+      toast.addEventListener('click', (event) => {
+        if (event.target !== close) window.location.assign(actionUrl);
+      });
+    }
+
+    document.body.appendChild(toast);
+    liveToast = toast;
+    liveToastTimer = window.setTimeout(() => {
+      toast.remove();
+      if (liveToast === toast) liveToast = null;
+    }, 6500);
   }
 
   function getCategoryMeta(item) {
@@ -186,7 +243,11 @@
 
   async function refreshUnread() {
     const payload = await requestJson(apiPath('/unread-count'));
-    if (payload) setBadge(payload.unread);
+    if (payload) {
+      sessionReady = true;
+      setBadge(payload.unread);
+      startRealtime();
+    }
   }
 
   async function load({ append = false } = {}) {
@@ -199,10 +260,20 @@
       if (state.category) params.set('category', state.category);
       const payload = await requestJson(`${apiBase}?${params}`);
       if (!payload) {
+        sessionReady = false;
+        if (realtimeSource) {
+          realtimeSource.close();
+          realtimeSource = null;
+        }
+        if (realtimeReconnectTimer) {
+          clearTimeout(realtimeReconnectTimer);
+          realtimeReconnectTimer = null;
+        }
         setMessage('سجّل الدخول لعرض إشعاراتك.');
         state.loaded = true;
         return;
       }
+      sessionReady = true;
       const incoming = Array.isArray(payload.notifications) ? payload.notifications : [];
       state.items = append ? [...state.items, ...incoming] : incoming;
       state.page = page;
@@ -306,5 +377,8 @@
 
   window.topGymNotificationCenter = { refresh: () => load(), toggle };
   const host = document.querySelector('.topbar-quick-actions, .platform-topbar-actions, .trainer-workspace-actions, .portal-notification-host');
-  if (host) create(host);
+  if (host) {
+    create(host);
+    void load();
+  }
 })();
