@@ -30,7 +30,7 @@ test('navigation polish keeps desktop controls usable and coordinated', () => {
     const source = fs.readFileSync(path.join(root, 'public/css/components/navigation-shell.css'), 'utf8');
 
     assert.match(source, /grid-template-columns:\s*var\(--sidebar-width-collapsed\)\s+minmax\(0,\s*1fr\)[\s\S]*?transition:\s*grid-template-columns\s+var\(--sidebar-rail-transition\)/u);
-    assert.match(source, /page-tabs\s*\{[\s\S]*?top:\s*80px[\s\S]*?grid-row:\s*2/u);
+    assert.match(source, /\.app-shell:not\(:has\(> \.workspace-contextbar:not\(\[hidden\]\)\)\)\s*>\s*\.page-tabs[\s\S]*?top:\s*0[\s\S]*?grid-row:\s*1\s*\/\s*-1/u);
     assert.match(source, /page-tabs\s*>\s*\.page-tab \.ui-icon[\s\S]*?width:\s*32px[\s\S]*?height:\s*32px/u);
     assert.match(source, /topbar-controls[\s\S]*?gap:\s*var\(--space-2\)/u);
     assert.match(source, /auth-logout-button[\s\S]*?background:\s*var\(--danger-soft\)/u);

@@ -30565,19 +30565,21 @@ html[data-brand-active-style="pill"] .app-shell > .page-tabs > .page-tab.active 
   .workspace-contextbar-inner { width: calc(100% - 12px); }
 }
 
-/* The current Gym shell has no rendered context bar. Keep the rail and
-   workspace in the second grid row until that optional bar is actually
-   present, so the rail cannot overlap the sticky topbar. */
+/* The current Gym shell has no rendered context bar. Let the rail span the
+   complete grid so its background reaches both viewport edges, while the
+   workspace remains below the topbar in the content column. */
 @media (min-width: 1200px) {
   .app-shell:not(:has(> .workspace-contextbar:not([hidden]))) {
     grid-template-rows: 80px minmax(0, 1fr);
   }
 
   .app-shell:not(:has(> .workspace-contextbar:not([hidden]))) > .page-tabs {
-    top: 80px;
-    grid-row: 2;
-    height: calc(100dvh - 80px);
-    min-height: calc(100dvh - 80px);
+    top: 0;
+    grid-row: 1 / -1;
+    height: 100vh;
+    min-height: 100vh;
+    height: 100dvh;
+    min-height: 100dvh;
     max-height: none;
   }
 
