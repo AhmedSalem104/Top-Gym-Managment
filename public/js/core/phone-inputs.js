@@ -187,8 +187,13 @@
         const flag = input.closest('.phone-input-control')?.querySelector('[data-phone-country-flag]');
         if (flag) {
             flag.textContent = countryFlag(iso) || iso;
+            flag.dataset.isoCode = iso;
             flag.title = `${country.country} (${country.dialCode})`;
         }
+        const code = input.closest('.phone-input-control')?.querySelector('[data-phone-country-code]');
+        if (code) code.textContent = country.dialCode;
+        const name = input.closest('.phone-input-control')?.querySelector('[data-phone-country-name]');
+        if (name) name.textContent = country.country;
         if (select) {
             select.title = `${country.country} (${country.dialCode})`;
             select.setAttribute('aria-label', `${country.country} ${country.dialCode}`);
@@ -223,8 +228,20 @@
         input.dataset.phoneCountry = iso;
     }
 
-    function populateSelect(select, preferred, query = '') {
+    function populateSelect(select, preferred) {
         while (select.firstChild) select.removeChild(select.firstChild);
+        [...countriesByIso.values()]
+            .sort((a, b) => String(a.country).localeCompare(String(b.country), 'ar'))
+            .forEach((country) => {
+                const option = new Option(`${country.dialCode} · ${country.country}`, country.isoCode);
+                option.title = `${country.country} (${country.dialCode})`;
+                select.appendChild(option);
+            });
+        select.value = countriesByIso.has(preferred) ? preferred : DEFAULT_COUNTRY;
+    }
+
+    function renderCountryOptions(optionsElement, preferred, query = '') {
+        if (!optionsElement) return;
         const needle = latinDigits(query).trim().toLocaleLowerCase();
         const countries = [...countriesByIso.values()]
             .filter((country) => {
@@ -235,19 +252,34 @@
                     || dialCode.includes(needle.replace(/^\+/, ''));
             })
             .sort((a, b) => String(a.country).localeCompare(String(b.country), 'ar'));
+        optionsElement.replaceChildren();
         if (!countries.length) {
-            const empty = new Option('\u0644\u0627 \u062a\u0648\u062c\u062f \u0646\u062a\u0627\u0626\u062c', '');
-            empty.disabled = true;
-            select.appendChild(empty);
-            select.value = '';
+            const empty = document.createElement('p');
+            empty.className = 'phone-country-empty';
+            empty.textContent = '\u0644\u0627 \u062a\u0648\u062c\u062f \u0646\u062a\u0627\u0626\u062c';
+            optionsElement.appendChild(empty);
             return;
         }
         countries.forEach((country) => {
-                const option = new Option(`${country.dialCode} · ${country.country}`, country.isoCode);
-                option.title = `${country.country} (${country.dialCode})`;
-                select.appendChild(option);
+            const option = document.createElement('button');
+            option.type = 'button';
+            option.className = 'phone-country-option';
+            option.dataset.phoneCountryOption = country.isoCode;
+            option.setAttribute('role', 'option');
+            option.setAttribute('aria-selected', String(country.isoCode === preferred));
+            const optionFlag = document.createElement('span');
+            optionFlag.className = 'phone-country-option-flag';
+            optionFlag.setAttribute('aria-hidden', 'true');
+            optionFlag.textContent = countryFlag(country.isoCode) || country.isoCode;
+            const optionCode = document.createElement('span');
+            optionCode.className = 'phone-country-option-code';
+            optionCode.textContent = country.dialCode;
+            const optionName = document.createElement('span');
+            optionName.className = 'phone-country-option-name';
+            optionName.textContent = country.country;
+            option.append(optionFlag, optionCode, optionName);
+            optionsElement.appendChild(option);
         });
-        select.value = countries.some((country) => country.isoCode === preferred) ? preferred : countries[0].isoCode;
     }
 
     function decorate(input) {
@@ -276,23 +308,37 @@
         flag.className = 'phone-country-flag';
         flag.dataset.phoneCountryFlag = 'true';
         flag.setAttribute('aria-hidden', 'true');
-        const searchButton = document.createElement('button');
-        searchButton.type = 'button';
-        searchButton.className = 'phone-country-search-toggle';
-        searchButton.textContent = '⌕';
-        searchButton.setAttribute('aria-label', PHONE_MESSAGES.search);
-        searchButton.setAttribute('aria-expanded', 'false');
-        const searchPanel = document.createElement('span');
-        searchPanel.className = 'phone-country-search-panel';
-        searchPanel.hidden = true;
+        const trigger = document.createElement('button');
+        trigger.type = 'button';
+        trigger.className = 'phone-country-trigger';
+        trigger.setAttribute('aria-haspopup', 'listbox');
+        trigger.setAttribute('aria-expanded', 'false');
+        const code = document.createElement('span');
+        code.className = 'phone-country-code';
+        code.dataset.phoneCountryCode = 'true';
+        const name = document.createElement('span');
+        name.className = 'phone-country-name';
+        name.dataset.phoneCountryName = 'true';
+        const caret = document.createElement('span');
+        caret.className = 'phone-country-caret';
+        caret.textContent = '⌄';
+        trigger.append(flag, code, name, caret);
+        const menu = document.createElement('span');
+        menu.className = 'phone-country-menu';
+        menu.hidden = true;
+        menu.setAttribute('role', 'listbox');
         const searchInput = document.createElement('input');
         searchInput.type = 'search';
         searchInput.className = 'phone-country-search';
         searchInput.placeholder = PHONE_MESSAGES.search;
         searchInput.autocomplete = 'off';
         searchInput.setAttribute('aria-label', PHONE_MESSAGES.search);
-        searchPanel.appendChild(searchInput);
-        countryControl.append(flag, select, searchButton, searchPanel);
+        const options = document.createElement('span');
+        options.className = 'phone-country-options';
+        menu.append(searchInput, options);
+        select.className = 'phone-country-native-select';
+        select.tabIndex = -1;
+        countryControl.append(trigger, select, menu);
         wrapper.insertBefore(countryControl, input);
         input.dataset.phoneCountry = preferred;
 
@@ -304,35 +350,52 @@
         wrapper.appendChild(error);
         input.setAttribute('aria-describedby', [input.getAttribute('aria-describedby'), error.id].filter(Boolean).join(' '));
 
-        const closeCountrySearch = () => {
-            searchPanel.hidden = true;
-            searchButton.setAttribute('aria-expanded', 'false');
+        const closeCountryMenu = () => {
+            menu.hidden = true;
+            trigger.setAttribute('aria-expanded', 'false');
             searchInput.value = '';
             populateSelect(select, String(input.dataset.phoneCountry || preferred).toUpperCase());
+            renderCountryOptions(options, String(input.dataset.phoneCountry || preferred).toUpperCase());
             applyCountryPresentation(input, select);
         };
 
-        searchButton.addEventListener('click', () => {
-            const isOpen = !searchPanel.hidden;
-            searchPanel.hidden = isOpen;
-            searchButton.setAttribute('aria-expanded', String(!isOpen));
-            if (!isOpen) searchInput.focus();
-            else closeCountrySearch();
+        trigger.addEventListener('click', () => {
+            const isOpen = !menu.hidden;
+            if (isOpen) {
+                closeCountryMenu();
+                return;
+            }
+            menu.hidden = false;
+            trigger.setAttribute('aria-expanded', 'true');
+            renderCountryOptions(options, String(input.dataset.phoneCountry || preferred).toUpperCase());
+            searchInput.focus();
         });
         searchInput.addEventListener('input', () => {
-            populateSelect(select, String(input.dataset.phoneCountry || preferred).toUpperCase(), searchInput.value);
+            renderCountryOptions(options, String(input.dataset.phoneCountry || preferred).toUpperCase(), searchInput.value);
+        });
+        searchInput.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') {
+                closeCountryMenu();
+                trigger.focus();
+            }
+        });
+        options.addEventListener('click', (event) => {
+            const option = event.target.closest('[data-phone-country-option]');
+            if (!option) return;
+            select.value = option.dataset.phoneCountryOption;
+            select.dispatchEvent(new Event('change', { bubbles: true }));
         });
 
         select.addEventListener('change', () => {
             input.dataset.phoneCountry = String(select.value || DEFAULT_COUNTRY).toUpperCase();
-            closeCountrySearch();
+            closeCountryMenu();
             applyCountryPresentation(input, select);
             if (input.value.trim()) validateInput(input, { show: true });
             else setValidationState(input, { valid: true }, { show: false });
         });
         input.addEventListener('input', () => {
             const result = phoneInputParts(input);
-            if (result.tooLong) setValidationState(input, result, { show: true });
+            if (result.tooLong || (!result.valid && result.message === PHONE_MESSAGES.characters)) setValidationState(input, result, { show: true });
             else {
                 setValidationState(input, { valid: true }, { show: false });
                 if (shouldValidateWhileTyping(input)) validateInput(input, { show: false });
@@ -343,6 +406,7 @@
         loadCountries().then(() => {
             if (!document.contains(select)) return;
             populateSelect(select, String(input.dataset.phoneCountry || preferred).toUpperCase());
+            renderCountryOptions(options, String(input.dataset.phoneCountry || preferred).toUpperCase());
             applyCountryPresentation(input, select);
             if (input.value.trim()) validateInput(input, { show: false });
         }).catch(() => { /* the API remains authoritative if catalog is unavailable */ });
