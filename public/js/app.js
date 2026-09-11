@@ -624,6 +624,43 @@
             if (fields) fields.hidden = editing && !state.editing?.membership;
         }
 
+        async function syncMemberScopeOptions({ preserve = true } = {}) {
+            const branchSelect = $('memberBranchId');
+            const sectionSelect = $('memberSectionId');
+            if (!branchSelect || !sectionSelect) return;
+            const previousBranch = preserve ? branchSelect.value : '';
+            const previousSection = preserve ? sectionSelect.value : '';
+            const data = await window.topGymBranchContext?.getBootstrap?.() || {};
+            const branches = (Array.isArray(data.branches) ? data.branches : Array.isArray(data.activeBranches) ? data.activeBranches : [])
+                .filter((branch) => branch?.status === undefined || branch.status === 'active');
+            const branchIds = new Set(branches.map((branch) => String(branch.id)));
+            const contextBranchId = window.topGymBranchContext?.getSelectedBranchId?.();
+            const defaultBranchId = data.defaultBranch?.id && branchIds.has(String(data.defaultBranch.id))
+                ? String(data.defaultBranch.id)
+                : contextBranchId && branchIds.has(String(contextBranchId))
+                    ? String(contextBranchId)
+                    : String(branches[0]?.id || '');
+            const selectedBranchId = previousBranch && branchIds.has(previousBranch) ? previousBranch : defaultBranchId;
+            branchSelect.innerHTML = `<option value="">الفرع الرئيسي تلقائيًا</option>${branches.map((branch) => `<option value="${escapeHtml(branch.id)}">${escapeHtml(branch.name || `فرع #${branch.id}`)}</option>`).join('')}`;
+            branchSelect.value = selectedBranchId;
+
+            const sections = (Array.isArray(data.sections) ? data.sections : [])
+                .filter((section) => String(section.branchId) === selectedBranchId && section.active !== false);
+            const sectionLabels = { men: 'رجال', women: 'نساء', mixed: 'مختلط' };
+            const sectionIds = new Set(sections.map((section) => String(section.id)));
+            const defaultSection = sections.find((section) => String(section.type || '').toLowerCase() === 'mixed');
+            const selectedSectionId = previousSection && sectionIds.has(previousSection)
+                ? previousSection
+                : String(defaultSection?.id || '');
+            sectionSelect.innerHTML = `<option value="">القسم المختلط تلقائيًا</option>${sections.map((section) => {
+                const type = sectionLabels[String(section.type || '').toLowerCase()] || 'قسم';
+                const label = section.name && section.name !== type ? `${type} · ${section.name}` : type;
+                return `<option value="${escapeHtml(section.id)}">${escapeHtml(label)}</option>`;
+            }).join('')}`;
+            sectionSelect.value = selectedSectionId;
+            sectionSelect.disabled = !selectedBranchId || sections.length === 0;
+        }
+
         function syncMemberPaymentDate(member = null) {
             const input = $('paidAt');
             if (!input) return;
@@ -640,6 +677,8 @@
             $('email').value = '';
             $('registrationDate').value = today;
             $('notes').value = '';
+            $('memberBranchId').value = '';
+            $('memberSectionId').value = '';
             $('membershipType').value = defaultType;
             $('membershipPlan').value = 'gym_only';
             $('startDate').value = today;
@@ -678,6 +717,7 @@
                 // a member but is not allowed to browse pricing configuration.
                 if (canReadPricing()) await loadPricingCatalog();
                 if (member) editMember(member); else setFormDefaults();
+                if (!member) await syncMemberScopeOptions({ preserve: false });
                 syncMemberPaymentDate(member);
                 const dialog = $('memberDialog');
                 // This modal lives in the members workspace for legacy markup
@@ -891,6 +931,8 @@
                 body.membershipNotes = $('membershipNotes').value;
                 body.membershipType = $('membershipType').value;
                 body.membershipPlan = $('membershipPlan').value;
+                body.branchId = $('memberBranchId').value || null;
+                body.sectionId = $('memberSectionId').disabled ? null : ($('memberSectionId').value || null);
             } else if (!isNewMember && membershipAllowed && state.editing?.membership) {
                 body.startDate = $('startDate').value;
                 body.endDate = $('endDate').value;
@@ -930,7 +972,7 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-             setFormDefaults(); $('memberForm').addEventListener('submit', submitMember); $('refreshButton').addEventListener('click', loadData); $('topAddMemberButton').addEventListener('click', () => openMemberDialog()); $('addMemberButton').addEventListener('click', () => openMemberDialog()); $('topPricingButton').addEventListener('click', openPricingDialog); $('pricingButton').addEventListener('click', openPricingDialog); $('membershipTypesButton').addEventListener('click', openMembershipTypesDialog); $('memberDialogClose').addEventListener('click', closeMemberDialog); $('cancelEditButton').addEventListener('click', () => setFormDefaults(true)); $('resetButton').addEventListener('click', () => setFormDefaults(true)); $('actionForm').addEventListener('submit', submitDialog); $('dialogCancel').addEventListener('click', closeDialog); $('pricingForm').addEventListener('submit', savePricing); $('pricingClose').addEventListener('click', closePricingDialog); $('membershipTypesClose').addEventListener('click', closeMembershipTypesDialog); $('detailsClose').addEventListener('click', closeDetails); $('detailsContent').addEventListener('click', (event) => { const button = event.target.closest('[data-payment-receipt]'); if (!button) return; window.topGymPrint?.printPaymentReceipt(button.dataset.memberId, button.dataset.paymentId); }); $('addMembershipTypeButton').addEventListener('click', () => openMembershipTypeDialog()); $('membershipTypeDialogClose').addEventListener('click', closeMembershipTypeDialog); $('membershipTypeCancel').addEventListener('click', closeMembershipTypeDialog); $('membershipTypeForm').addEventListener('submit', submitMembershipType); ['membershipTypeName', 'membershipTypeMode', 'membershipTypeDuration', 'membershipTypeMultiplier'].forEach((id) => $(id).addEventListener('input', updateMembershipTypePreview)); $('membershipTypeMode').addEventListener('change', updateMembershipTypePreview); $('membershipTypesTableContainer').addEventListener('click', (event) => { const button = event.target.closest('[data-type-action="edit"]'); if (button) openMembershipTypeDialog(button.dataset.code); }); $('membershipType').addEventListener('change', () => { if (!state.endDateManual) $('endDate').value = calculatedEndDate($('startDate').value, $('membershipType').value); updateFormPricing(); }); $('membershipPlan').addEventListener('change', updateFormPricing); $('discountAmount').addEventListener('input', updateFormPricing); $('startDate').addEventListener('change', () => { if (!state.endDateManual) $('endDate').value = calculatedEndDate($('startDate').value, $('membershipType').value); }); $('endDate').addEventListener('input', () => { state.endDateManual = true; }); let timer; $('searchInput').addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(loadMembersOnly, 300); }); $('statusFilter').addEventListener('change', loadMembersOnly);
+             setFormDefaults(); $('memberForm').addEventListener('submit', submitMember); $('refreshButton').addEventListener('click', loadData); $('topAddMemberButton').addEventListener('click', () => openMemberDialog()); $('addMemberButton').addEventListener('click', () => openMemberDialog()); $('topPricingButton').addEventListener('click', openPricingDialog); $('pricingButton').addEventListener('click', openPricingDialog); $('membershipTypesButton').addEventListener('click', openMembershipTypesDialog); $('memberDialogClose').addEventListener('click', closeMemberDialog); $('cancelEditButton').addEventListener('click', () => setFormDefaults(true)); $('resetButton').addEventListener('click', () => setFormDefaults(true)); $('actionForm').addEventListener('submit', submitDialog); $('dialogCancel').addEventListener('click', closeDialog); $('pricingForm').addEventListener('submit', savePricing); $('pricingClose').addEventListener('click', closePricingDialog); $('membershipTypesClose').addEventListener('click', closeMembershipTypesDialog); $('detailsClose').addEventListener('click', closeDetails); $('detailsContent').addEventListener('click', (event) => { const button = event.target.closest('[data-payment-receipt]'); if (!button) return; window.topGymPrint?.printPaymentReceipt(button.dataset.memberId, button.dataset.paymentId); }); $('addMembershipTypeButton').addEventListener('click', () => openMembershipTypeDialog()); $('membershipTypeDialogClose').addEventListener('click', closeMembershipTypeDialog); $('membershipTypeCancel').addEventListener('click', closeMembershipTypeDialog); $('membershipTypeForm').addEventListener('submit', submitMembershipType); ['membershipTypeName', 'membershipTypeMode', 'membershipTypeDuration', 'membershipTypeMultiplier'].forEach((id) => $(id).addEventListener('input', updateMembershipTypePreview)); $('membershipTypeMode').addEventListener('change', updateMembershipTypePreview); $('membershipTypesTableContainer').addEventListener('click', (event) => { const button = event.target.closest('[data-type-action="edit"]'); if (button) openMembershipTypeDialog(button.dataset.code); }); $('membershipType').addEventListener('change', () => { if (!state.endDateManual) $('endDate').value = calculatedEndDate($('startDate').value, $('membershipType').value); updateFormPricing(); }); $('membershipPlan').addEventListener('change', updateFormPricing); $('discountAmount').addEventListener('input', updateFormPricing); $('startDate').addEventListener('change', () => { if (!state.endDateManual) $('endDate').value = calculatedEndDate($('startDate').value, $('membershipType').value); }); $('endDate').addEventListener('input', () => { state.endDateManual = true; }); $('memberBranchId').addEventListener('change', () => { void syncMemberScopeOptions({ preserve: true }); }); let timer; $('searchInput').addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(loadMembersOnly, 300); }); $('statusFilter').addEventListener('change', loadMembersOnly);
             $('membersList').addEventListener('click', async (event) => { const button = event.target.closest('button[data-action]'); if (!button) return; if (!hasRequiredPermissions(button.dataset.requiredPermission)) { await notify('لا تملك صلاحية تنفيذ هذا الإجراء. إذا تم تفعيلها حديثًا، سجّل الخروج ثم ادخل مرة أخرى.', 'error'); return; } const id = button.dataset.id || button.closest('[data-member-id]')?.dataset.memberId; const member = state.members.find((item) => String(item.id) === String(id)); if (!member) { await notify('تعذر تحديد العضو. حدّث الصفحة وحاول مرة أخرى.', 'error'); return; } const action = button.dataset.action; if (action === 'details') { await openDetails(member); return; } if (action === 'edit') { openMemberDialog(member); return; } if (action === 'freeze' || action === 'renew' || action === 'payment') { openDialog(action, member); return; } if (action === 'resume') { try { await withLoader(() => api(`/api/members/${member.id}/resume`, { method: 'POST' }), 'جاري استئناف العضوية…'); await refreshAfterAction('تم استئناف العضوية.'); } catch (error) { await notify(error.message, 'error'); } return; } if (action === 'delete' && await confirmDelete(member.fullName)) { try { await withLoader(() => api(`/api/members/${member.id}`, { method: 'DELETE' }), 'جاري حذف العضو…'); if (String($('memberId').value) === String(member.id)) setFormDefaults(true); await refreshAfterAction('تم حذف العضو.'); } catch (error) { await notify(error.message, 'error'); } } });
             $('membersList').addEventListener('click', async (event) => {
                 const button = event.target.closest('button[data-action="refund"]');

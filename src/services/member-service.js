@@ -1675,7 +1675,100 @@ async function addPaymentTransaction(connection, {
     return Number(result.recordset[0].id);
 }
 
-async function createMember(body, { tenantSlug = '', idempotencyKey = null } = {}) {
+/**
+ * Keep every new Gym membership visible in the selected branch/section scope.
+ * The member list intentionally filters memberships through these access
+ * tables, so scope initialization must be part of the same transaction as
+ * the membership itself.
+ */
+async function assignDefaultMembershipScope(transaction, membershipId, { branchId = null, sectionId = null, actorUserId = null, actorRole = null } = {}) {
+    const tenantId = currentTenantId({ required: true });
+    const requestedBranchId = branchId === undefined || branchId === null || branchId === ''
+        ? null
+        : Number(branchId);
+    const requestedSectionId = sectionId === undefined || sectionId === null || sectionId === ''
+        ? null
+        : Number(sectionId);
+    if (requestedBranchId !== null && (!Number.isInteger(requestedBranchId) || requestedBranchId <= 0)) {
+        throw appError('الفرع المحدد غير صالح.', 422, 'MEMBERSHIP_BRANCH_INVALID');
+    }
+    if (requestedSectionId !== null && (!Number.isInteger(requestedSectionId) || requestedSectionId <= 0)) {
+        throw appError('القسم المحدد غير صالح.', 422, 'MEMBERSHIP_SECTION_INVALID');
+    }
+    const actorId = actorUserId === undefined || actorUserId === null || actorUserId === '' ? null : Number(actorUserId);
+    const isOwner = String(actorRole || '').trim().toLowerCase() === 'owner';
+    if (actorId !== null && (!Number.isInteger(actorId) || actorId <= 0)) {
+        throw appError('لا يمكن تحديد نطاق الفرع للحساب الحالي.', 403, 'MEMBERSHIP_BRANCH_ACCESS_REQUIRED');
+    }
+    const branchResult = await transaction.request()
+        .input('tenantId', sql.Int, tenantId)
+        .input('requestedBranchId', sql.Int, requestedBranchId)
+        .input('actorUserId', sql.Int, actorId)
+        .input('isOwner', sql.Bit, isOwner ? 1 : 0)
+        .query(`SELECT TOP (1) id
+                FROM dbo.gym_branches
+                WHERE tenant_id=@tenantId AND status='active'
+                  AND (@requestedBranchId IS NULL OR id=@requestedBranchId)
+                  AND (@actorUserId IS NULL OR @isOwner=1 OR EXISTS (
+                      SELECT 1 FROM dbo.gym_branch_user_access AS user_access
+                      WHERE user_access.tenant_id=gym_branches.tenant_id
+                        AND user_access.branch_id=gym_branches.id
+                        AND user_access.user_id=@actorUserId
+                  ))
+                ORDER BY is_main_branch DESC, id ASC;`);
+    const selectedBranchId = Number(branchResult.recordset[0]?.id || 0);
+    if (!selectedBranchId) {
+        throw appError(requestedBranchId
+            ? 'الفرع المحدد غير موجود أو غير نشط.'
+            : 'لا يوجد فرع نشط لربط الاشتراك به.', 409, 'MEMBERSHIP_BRANCH_REQUIRED');
+    }
+
+    await transaction.request()
+        .input('tenantId', sql.Int, tenantId)
+        .input('membershipId', sql.Int, membershipId)
+        .input('branchId', sql.Int, selectedBranchId)
+        .query(`
+            UPDATE dbo.memberships
+               SET branch_access_mode='single_branch'
+             WHERE tenant_id=@tenantId AND id=@membershipId;
+
+            IF NOT EXISTS (
+                SELECT 1 FROM dbo.gym_membership_branch_access
+                WHERE tenant_id=@tenantId AND membership_id=@membershipId AND branch_id=@branchId
+            )
+                INSERT INTO dbo.gym_membership_branch_access(tenant_id,membership_id,branch_id)
+                VALUES (@tenantId,@membershipId,@branchId);
+        `);
+
+    const sectionResult = await transaction.request()
+        .input('tenantId', sql.Int, tenantId)
+        .input('branchId', sql.Int, selectedBranchId)
+        .input('requestedSectionId', sql.Int, requestedSectionId)
+        .query(`SELECT TOP (1) id
+                FROM dbo.gym_branch_sections
+                WHERE tenant_id=@tenantId AND branch_id=@branchId
+                  AND is_active=1
+                  AND ((@requestedSectionId IS NULL AND section_type='mixed') OR id=@requestedSectionId)
+                ORDER BY id ASC;`);
+    const selectedSectionId = Number(sectionResult.recordset[0]?.id || 0);
+    if (requestedSectionId !== null && !selectedSectionId) {
+        throw appError('القسم المحدد غير موجود أو لا يتبع الفرع المختار.', 409, 'MEMBERSHIP_SECTION_INVALID');
+    }
+    if (selectedSectionId) {
+        await transaction.request()
+            .input('tenantId', sql.Int, tenantId)
+            .input('membershipId', sql.Int, membershipId)
+            .input('sectionId', sql.Int, selectedSectionId)
+            .query(`IF NOT EXISTS (
+                        SELECT 1 FROM dbo.gym_membership_section_access
+                        WHERE tenant_id=@tenantId AND membership_id=@membershipId AND section_id=@sectionId
+                    )
+                        INSERT INTO dbo.gym_membership_section_access(tenant_id,membership_id,section_id)
+                        VALUES (@tenantId,@membershipId,@sectionId);`);
+    }
+}
+
+async function createMember(body, { tenantSlug = '', idempotencyKey = null, branchId = null, sectionId = null, actorUserId = null, actorRole = null } = {}) {
     const data = normalizePayload(body);
     const membershipRequested = resolveMembershipRequest(body);
     const paymentDetailsProvided = hasPaymentDetails(data);
@@ -1735,6 +1828,7 @@ async function createMember(body, { tenantSlug = '', idempotencyKey = null } = {
                         OUTPUT INSERTED.id
                         VALUES (@memberId, @membershipPlan, @membershipType, @startDate, @endDate, @notes);`);
             const membershipId = Number(membershipResult.recordset[0].id);
+            await assignDefaultMembershipScope(transaction, membershipId, { branchId, sectionId, actorUserId, actorRole });
             await transaction.request()
                 .input('membershipId', sql.Int, membershipId)
                 .input('listPrice', sql.Decimal(12, 2), pricing.listPrice)
@@ -2035,6 +2129,7 @@ async function activateMembership(id, body = {}, idempotencyKey = null) {
             .query(`INSERT INTO dbo.memberships (member_id, membership_plan, membership_type, start_date, end_date, notes)
                     OUTPUT INSERTED.id VALUES (@memberId, @membershipPlan, @membershipType, @startDate, @endDate, @notes);`);
         const membershipId = Number(result.recordset[0].id);
+        await assignDefaultMembershipScope(transaction, membershipId);
         await transaction.request()
             .input('membershipId', sql.Int, membershipId)
             .input('listPrice', sql.Decimal(12, 2), pricing.listPrice)
@@ -2191,6 +2286,7 @@ async function renewMember(id, body = {}, idempotencyKey = null) {
             .query(`INSERT INTO dbo.memberships (member_id, membership_plan, membership_type, start_date, end_date, notes)
                     OUTPUT INSERTED.id VALUES (@memberId, @membershipPlan, @membershipType, @startDate, @endDate, @notes);`);
         const membershipId = Number(result.recordset[0].id);
+        await assignDefaultMembershipScope(transaction, membershipId);
         await transaction.request()
             .input('membershipId', sql.Int, membershipId)
             .input('listPrice', sql.Decimal(12, 2), pricing.listPrice)
@@ -2415,6 +2511,7 @@ async function createMembershipFromApprovedRequest({
                 OUTPUT INSERTED.id
                 VALUES (@memberId, @membershipPlan, @membershipType, @startDate, @endDate, @notes);`);
     const membershipId = Number(membershipResult.recordset[0]?.id);
+    await assignDefaultMembershipScope(transaction, membershipId);
     if (!membershipId) throw appError('ØªØ¹Ø°Ø± Ø¥Ù†Ø´Ø§Ø¡ Ø§Ù„Ø§Ø´ØªØ±Ø§Ùƒ.', 500);
     const paymentResult = await transaction.request()
         .input('membershipId', sql.Int, membershipId)

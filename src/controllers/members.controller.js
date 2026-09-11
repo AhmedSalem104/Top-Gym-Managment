@@ -44,7 +44,11 @@ function createMembersController({ memberService, branchService }) {
         create: async (request, response) => {
             response.status(201).json({ member: await memberService.createMember(request.body, {
                 tenantSlug: request.tenant?.slug,
-                idempotencyKey: request.get('idempotency-key')
+                idempotencyKey: request.get('idempotency-key'),
+                branchId: request.body?.branchId,
+                sectionId: request.body?.sectionId,
+                actorUserId: request.auth?.id,
+                actorRole: request.auth?.role
             }) });
         },
 

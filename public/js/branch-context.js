@@ -323,6 +323,27 @@
         return trackedPromise;
     }
 
+    // The members form reuses this already-authorized bootstrap instead of
+    // issuing a second branches request. It exposes no raw authorization data;
+    // consumers only receive the same scoped branch/section catalog rendered
+    // by the context switcher.
+    async function getBootstrap() {
+        if (!bootstrap) await loadBranches();
+        return bootstrap || {};
+    }
+
+    window.topGymBranchContext = Object.freeze({
+        getBootstrap,
+        getSelectedBranchId: () => {
+            const value = $('branchContextSelect')?.value;
+            return value ? Number(value) : null;
+        },
+        getSelectedSectionId: () => {
+            const value = $('sectionContextSelect')?.value;
+            return value ? Number(value) : null;
+        }
+    });
+
     async function createBranch(event) {
         event.preventDefault();
         const form = event.currentTarget;
