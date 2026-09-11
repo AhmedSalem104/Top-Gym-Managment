@@ -7,6 +7,7 @@ const { TENANT_TYPES } = require('../tenancy/tenant-types');
 const { BRANCH_STATUS, canAcceptNewOperations, normalizeBranchId, normalizeSectionId, normalizeBranchStatus, normalizeMembershipBranchAccessMode, MEMBERSHIP_BRANCH_ACCESS_MODE } = require('../branches/branch-contract');
 const saasService = require('./saas-service');
 const cacheService = require('./cache-service');
+const { normalizePhone: normalizeInternationalPhone } = require('./phone-service');
 
 function branchError(message, statusCode = 400, code = 'BRANCH_ERROR') {
     const error = new Error(message);
@@ -31,6 +32,19 @@ function textValue(value, label, maxLength, required = false) {
     if (required && !valueText) throw branchError(`${label} is required.`, 400, 'BRANCH_FIELD_REQUIRED');
     if (valueText.length > maxLength) throw branchError(`${label} is too long.`, 400, 'BRANCH_FIELD_TOO_LONG');
     return valueText || null;
+}
+
+function normalizeContactPhone(value, country = null) {
+    try {
+        return normalizeInternationalPhone(value, {
+            country,
+            required: false,
+            allowFixedLine: true,
+            fieldName: 'Phone number'
+        });
+    } catch (_) {
+        throw branchError('Phone number is invalid for the selected country.', 400, 'INVALID_PHONE');
+    }
 }
 
 function booleanValue(value, fallback) {
@@ -365,7 +379,7 @@ async function createBranch(body = {}, { actorUserId = null, role = null, reques
     if (!code) throw branchError('Branch code is invalid.', 400, 'BRANCH_CODE_INVALID');
     const name = textValue(body.name, 'Branch name', 160, true);
     const address = textValue(body.address, 'Address', 300);
-    const phone = textValue(body.phone, 'Phone', 40);
+    const phone = normalizeContactPhone(body.phone, body.phoneCountry || body.country || null);
     const workingHours = body.workingHours == null ? null : JSON.stringify(body.workingHours).slice(0, 4000);
     const storeEnabled = booleanValue(body.storeEnabled, true);
     const barEnabled = booleanValue(body.barEnabled, false);
@@ -413,7 +427,9 @@ async function updateBranch(branchId, body = {}, { actorUserId = null, role = nu
     if (String(role || '').toLowerCase() !== 'owner') throw branchError('Only the Gym Owner can manage branches.', 403, 'OWNER_REQUIRED');
     const name = textValue(body.name ?? current.name, 'Branch name', 160, true);
     const address = body.address === undefined ? current.address : textValue(body.address, 'Address', 300);
-    const phone = body.phone === undefined ? current.phone : textValue(body.phone, 'Phone', 40);
+    const phone = body.phone === undefined
+        ? current.phone
+        : normalizeContactPhone(body.phone, body.phoneCountry || body.country || null);
     const workingHours = body.workingHours === undefined
         ? current.workingHours == null ? null : JSON.stringify(current.workingHours).slice(0, 4000)
         : body.workingHours == null ? null : JSON.stringify(body.workingHours).slice(0, 4000);

@@ -181,7 +181,9 @@
     }
 
     function normalizePhone(value) {
-        return String(value ?? '').replace(/[^0-9]/g, '');
+        const iso = $('attendancePhone')?.dataset.phoneCountry || 'EG';
+        const prepared = window.LogicFitPhoneInputs?.normalizeForTransport?.(value, iso) || value;
+        return String(prepared ?? '').replace(/[^0-9]/g, '');
     }
 
     function membershipStatus(member) {
@@ -414,7 +416,7 @@
             showMessage('أدخل رقم الهاتف أو امسح QR Code أولاً.', 'warning');
             return null;
         }
-        return { phone };
+        return { phone, phoneCountry: window.LogicFitPhoneInputs?.countryForInput?.($('attendancePhone'))?.iso || $('attendancePhone')?.dataset.phoneCountry || 'EG' };
     }
 
     async function checkIn(payload = null) {

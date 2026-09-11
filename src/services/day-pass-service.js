@@ -3,6 +3,7 @@
 const dayPassRepository = require('../repositories/day-pass.repository');
 const brandingService = require('./branding-service');
 const { addDays, differenceInDays, parseDateOnly, todayInTimeZone } = require('../utils/date');
+const { normalizePhone: normalizeInternationalPhone } = require('./phone-service');
 
 const PAYMENT_METHODS = ['cash', 'card', 'transfer', 'other'];
 
@@ -45,17 +46,17 @@ function ensureId(value, label = 'المعرّف') {
     return id;
 }
 
-function normalizePhone(value) {
-    const arabicDigits = '٠١٢٣٤٥٦٧٨٩';
-    const englishDigits = '0123456789';
-    let phone = String(value ?? '').trim().replace(/[٠-٩]/gu, (digit) => englishDigits[arabicDigits.indexOf(digit)]);
-    if (!phone) return '';
-    phone = phone.replace(/[^0-9]/g, '');
-    if (phone.startsWith('00')) phone = phone.slice(2);
-    if (phone.startsWith('20') && phone.length === 12) return phone;
-    if (phone.startsWith('0') && phone.length === 11) return `20${phone.slice(1)}`;
-    if (phone.length >= 8 && phone.length <= 15) return phone;
-    throw appError('رقم الهاتف غير صالح.', 400, 'INVALID_VISITOR_PHONE');
+function normalizePhone(value, options = {}) {
+    try {
+        return normalizeInternationalPhone(value, {
+            country: null,
+            required: false,
+            fieldName: 'Visitor phone',
+            ...options
+        }) || '';
+    } catch (_) {
+        throw appError('رقم هاتف الزائر غير صالح للدولة المختارة.', 400, 'INVALID_VISITOR_PHONE');
+    }
 }
 
 function parsePaymentMethod(value) {
@@ -108,8 +109,9 @@ async function updatePricing(body = {}) {
 
 async function createDayPass(body = {}, { createdByUserId = null, branchId = null } = {}) {
     const visitorName = optionalString(body.visitorName ?? body.name, 120) || 'زائر';
-    const visitorPhone = optionalString(body.visitorPhone ?? body.phone, 30) || '';
-    const visitorPhoneNormalized = normalizePhone(visitorPhone);
+    const visitorPhoneInput = optionalString(body.visitorPhone ?? body.phone, 30) || '';
+    const visitorPhoneNormalized = normalizePhone(visitorPhoneInput, { country: body.visitorPhoneCountry || body.phoneCountry || null });
+    const visitorPhone = visitorPhoneNormalized || '';
     const passTypeCode = requiredString(body.passTypeCode ?? body.type, 'نوع الحصة', 40);
     const passType = await dayPassRepository.findActiveType(passTypeCode);
     if (!passType) throw appError('نوع الحصة غير متاح حاليًا.', 400, 'DAY_PASS_TYPE_UNAVAILABLE');
@@ -141,8 +143,9 @@ async function createDayPass(body = {}, { createdByUserId = null, branchId = nul
 async function updateDayPass(id, body = {}) {
     const saleId = ensureId(id, 'معرّف الحصة');
     const visitorName = optionalString(body.visitorName ?? body.name, 120) || 'زائر';
-    const visitorPhone = optionalString(body.visitorPhone ?? body.phone, 30) || '';
-    const visitorPhoneNormalized = normalizePhone(visitorPhone);
+    const visitorPhoneInput = optionalString(body.visitorPhone ?? body.phone, 30) || '';
+    const visitorPhoneNormalized = normalizePhone(visitorPhoneInput, { country: body.visitorPhoneCountry || body.phoneCountry || null });
+    const visitorPhone = visitorPhoneNormalized || '';
     const passTypeCode = requiredString(body.passTypeCode ?? body.type, 'نوع الحصة', 40);
     const passType = await dayPassRepository.findType(passTypeCode);
     if (!passType || passType.active === false) throw appError('نوع الحصة غير متاح حاليًا.', 400, 'DAY_PASS_TYPE_UNAVAILABLE');

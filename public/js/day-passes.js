@@ -404,6 +404,7 @@
                 body: JSON.stringify({
                     visitorName: $('dayPassVisitorName').value,
                     visitorPhone,
+                    visitorPhoneCountry: window.LogicFitPhoneInputs?.countryForInput?.($('dayPassVisitorPhone'))?.iso || $('dayPassVisitorPhone')?.dataset.phoneCountry || 'EG',
                     passTypeCode: $('dayPassType').value,
                     paymentMethod: $('dayPassPaymentMethod').value,
                     visitDate: todayIso()

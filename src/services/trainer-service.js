@@ -192,6 +192,7 @@ async function createClient(body = {}) {
     const client = await coachingService.createExternalTrainee({
         fullName: boundedText(body.fullName, 'اسم العميل', 120, { required: true }),
         phone: boundedText(body.phone, 'رقم الهاتف', 30, { required: true }),
+        phoneCountry: body.phoneCountry || body.country || null,
         email: boundedText(body.email, 'البريد الإلكتروني', 254),
         registrationDate: body.registrationDate || todayInTimeZone(),
         notes: boundedText(body.notes, 'الملاحظات', 1000),
@@ -206,7 +207,7 @@ async function updateClient(memberIdValue, body = {}) {
     const memberId = Number(current.id);
     await coachingService.updateClientBasic(memberId, {
         ...(body.fullName === undefined ? {} : { fullName: body.fullName }),
-        ...(body.phone === undefined ? {} : { phone: body.phone }),
+        ...(body.phone === undefined ? {} : { phone: body.phone, phoneCountry: body.phoneCountry || body.country || null }),
         ...(body.email === undefined ? {} : { email: body.email }),
         ...(body.registrationDate === undefined ? {} : { registrationDate: body.registrationDate }),
         ...(body.notes === undefined ? {} : { notes: body.notes })

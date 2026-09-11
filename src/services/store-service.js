@@ -7,6 +7,7 @@ const { getPool, sql } = require('../database');
 const { withTransaction } = require('../database/transaction');
 const { addDays, formatDateOnly, parseDateOnly, todayInTimeZone, toUtcDate } = require('../utils/date');
 const { getTenantContext } = require('../tenancy/tenant-context');
+const { normalizePhone: normalizeInternationalPhone } = require('./phone-service');
 
 const PAYMENT_METHODS = new Set(['cash', 'card', 'transfer', 'wallet', 'other']);
 const MOVEMENT_TYPES = new Set(['purchase', 'sale', 'sale_return', 'purchase_return', 'adjustment', 'damaged', 'expired', 'manual']);
@@ -83,12 +84,14 @@ function rangeFromQuery(query = {}) {
     return { from, to, nextDate: addDays(to, 1) };
 }
 
-function normalizePhone(value) {
-    const arabic = '٠١٢٣٤٥٦٧٨٩';
-    let phone = String(value ?? '').trim().replace(/[٠-٩]/gu, (digit) => String(arabic.indexOf(digit)));
-    phone = phone.replace(/[^0-9]/g, '');
-    if (phone.startsWith('00')) phone = phone.slice(2);
-    return phone || null;
+function normalizePhone(value, options = {}) {
+    return normalizeInternationalPhone(value, {
+        country: null,
+        required: false,
+        allowFixedLine: true,
+        fieldName: 'Phone number',
+        ...options
+    });
 }
 
 async function ensureStoreTables({ readOnly = false } = {}) {
@@ -479,7 +482,7 @@ async function listSuppliers({ search = '', includeInactive = false, readOnly = 
 
 async function createSupplier(body = {}, options = {}) {
     await ensureStoreTables();
-    const values = { name: requiredString(body.name ?? body.supplierName, 'اسم المورد', 160), phone: optionalString(body.phone, 40), email: optionalString(body.email, 254), address: optionalString(body.address, 500), taxReference: optionalString(body.taxReference, 120), notes: optionalString(body.notes, 1000) };
+    const values = { name: requiredString(body.name ?? body.supplierName, 'اسم المورد', 160), phone: normalizePhone(body.phone, { country: body.phoneCountry || body.country || null }), email: optionalString(body.email, 254), address: optionalString(body.address, 500), taxReference: optionalString(body.taxReference, 120), notes: optionalString(body.notes, 1000) };
     const result = await getPool().then((pool) => pool.request().input('name', sql.NVarChar(160), values.name).input('phone', sql.NVarChar(40), values.phone).input('email', sql.NVarChar(254), values.email).input('address', sql.NVarChar(500), values.address).input('taxReference', sql.NVarChar(120), values.taxReference).input('notes', sql.NVarChar(1000), values.notes).query(`
         INSERT INTO dbo.gym_store_suppliers(supplier_name,phone,email,address,tax_reference,notes) OUTPUT INSERTED.* VALUES (@name,@phone,@email,@address,@taxReference,@notes);`));
     await writeAudit(await getPool(), { action: 'supplier_created', entityType: 'supplier', entityId: result.recordset[0].id, details: values, ...actorMeta(options) });
@@ -489,7 +492,7 @@ async function createSupplier(body = {}, options = {}) {
 async function updateSupplier(id, body = {}, options = {}) {
     await ensureStoreTables();
     const supplierId = ensureId(id, 'المورد');
-    const values = { name: requiredString(body.name ?? body.supplierName, 'اسم المورد', 160), phone: optionalString(body.phone, 40), email: optionalString(body.email, 254), address: optionalString(body.address, 500), taxReference: optionalString(body.taxReference, 120), notes: optionalString(body.notes, 1000), active: body.active !== false };
+    const values = { name: requiredString(body.name ?? body.supplierName, 'اسم المورد', 160), phone: body.phone === undefined ? null : normalizePhone(body.phone, { country: body.phoneCountry || body.country || null }), email: optionalString(body.email, 254), address: optionalString(body.address, 500), taxReference: optionalString(body.taxReference, 120), notes: optionalString(body.notes, 1000), active: body.active !== false };
     const result = await getPool().then((pool) => pool.request().input('id', sql.Int, supplierId).input('name', sql.NVarChar(160), values.name).input('phone', sql.NVarChar(40), values.phone).input('email', sql.NVarChar(254), values.email).input('address', sql.NVarChar(500), values.address).input('taxReference', sql.NVarChar(120), values.taxReference).input('notes', sql.NVarChar(1000), values.notes).input('active', sql.Bit, values.active ? 1 : 0).query(`UPDATE dbo.gym_store_suppliers SET supplier_name=@name,phone=@phone,email=@email,address=@address,tax_reference=@taxReference,notes=@notes,is_active=@active,updated_at=SYSUTCDATETIME() OUTPUT INSERTED.* WHERE id=@id;`));
     if (!result.recordset[0]) throw appError('المورد غير موجود.', 404, 'STORE_SUPPLIER_NOT_FOUND');
     await writeAudit(await getPool(), { action: 'supplier_updated', entityType: 'supplier', entityId: supplierId, details: { active: values.active }, ...actorMeta(options) });
@@ -636,11 +639,13 @@ async function createSale(body = {}, options = {}) {
         const total = Math.round((subtotal - discountAmount + taxAmount) * 100) / 100;
         const paidAmount = money(body.paidAmount === undefined ? total : body.paidAmount, 'المبلغ المدفوع');
         if (paidAmount > total) throw appError('المبلغ المدفوع أكبر من إجمالي الفاتورة.');
-        const phone = member?.phone || optionalString(body.customerPhone, 40);
+        const phone = member?.phone
+            ? normalizePhone(member.phone)
+            : normalizePhone(body.customerPhone, { country: body.customerPhoneCountry || body.phoneCountry || null });
         const name = member?.full_name || optionalString(body.customerName, 160) || 'عميل نقدي';
         let customerId = null;
         if (!member && (body.customerName || body.customerPhone)) {
-            const normalized = normalizePhone(body.customerPhone);
+            const normalized = normalizePhone(body.customerPhone, { country: body.customerPhoneCountry || body.phoneCountry || null });
             const existing = normalized ? await transaction.request().input('phone', sql.NVarChar(40), normalized).query('SELECT TOP (1) id FROM dbo.gym_store_customers WHERE phone_normalized=@phone ORDER BY id;') : { recordset: [] };
             if (existing.recordset[0]) customerId = Number(existing.recordset[0].id);
             else {

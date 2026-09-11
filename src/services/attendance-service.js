@@ -3,6 +3,7 @@ const { addDays, differenceInDays, formatDateOnly, parseDateOnly, todayInTimeZon
 const { config } = require('../config/env');
 const { currentTenantId, getTenantContext } = require('../tenancy/tenant-context');
 const { publish, publishForRoles } = require('./notification-dispatcher');
+const { normalizePhone: normalizeInternationalPhone } = require('./phone-service');
 
 const ATTENDANCE_SOURCES = new Set(['phone', 'qr', 'manual']);
 const DEFAULT_AUTO_CHECKOUT_MINUTES = 60;
@@ -84,16 +85,6 @@ function ensureId(value, label = 'المعرّف') {
     const id = Number(value);
     if (!Number.isInteger(id) || id < 1) throw appError(`${label} غير صالح.`);
     return id;
-}
-
-function normalizePhone(value) {
-    const arabicDigits = '٠١٢٣٤٥٦٧٨٩';
-    const englishDigits = '0123456789';
-    let normalized = String(value ?? '').trim().replace(/[٠-٩]/gu, (digit) => englishDigits[arabicDigits.indexOf(digit)]);
-    normalized = normalized.replace(/[^0-9]/g, '');
-    if (normalized.startsWith('00')) normalized = normalized.slice(2);
-    if (normalized.startsWith('20') && normalized.length === 12) normalized = `0${normalized.slice(2)}`;
-    return normalized;
 }
 
 async function ensureAttendanceTable({ readOnly = false } = {}) {
@@ -222,15 +213,22 @@ function parseQrToken(value) {
 
 async function findMember(pool, body = {}, { requireActive = true, branchId = null, sectionId = null } = {}) {
     const qrMemberId = parseQrToken(body.qrToken ?? body.token);
-    const phone = normalizePhone(body.phone);
-    if (!qrMemberId && phone.length < 5) {
+    const phone = qrMemberId ? null : normalizeInternationalPhone(body.phone, {
+        country: body.phoneCountry || body.country || null,
+        required: false,
+        fieldName: 'Phone number'
+    });
+    if (!qrMemberId && !phone) {
         throw appError('أدخل رقم الهاتف أو امسح QR Code للعضو.');
     }
 
+    const tenantId = currentTenantId({ required: true });
     const memberRequest = pool.request();
     let memberQuery = `SELECT TOP 1 id, full_name, phone, phone_normalized
                        FROM dbo.members
-                       WHERE ${qrMemberId ? 'id = @memberId' : '(phone_normalized = @phone OR phone = @phone)'};`;
+                       WHERE tenant_id=@tenantId
+                         AND ${qrMemberId ? 'id = @memberId' : '(phone_normalized = @phone OR phone = @phone)'};`;
+    memberRequest.input('tenantId', sql.Int, tenantId);
     if (qrMemberId) memberRequest.input('memberId', sql.Int, qrMemberId);
     else memberRequest.input('phone', sql.NVarChar(30), phone);
     const memberResult = await memberRequest.query(memberQuery);
@@ -240,6 +238,7 @@ async function findMember(pool, body = {}, { requireActive = true, branchId = nu
     const today = todayInTimeZone();
     const membershipResult = await pool.request()
         .input('memberId', sql.Int, member.id)
+        .input('tenantId', sql.Int, tenantId)
         .input('today', sql.Date, toUtcDate(today))
         .query(`SELECT TOP 1 m.id, m.membership_plan, m.membership_type, m.start_date, m.end_date,
                        CASE WHEN EXISTS (
@@ -248,7 +247,7 @@ async function findMember(pool, body = {}, { requireActive = true, branchId = nu
                              AND @today BETWEEN f.start_date AND f.end_date
                        ) THEN 1 ELSE 0 END AS is_frozen
                 FROM dbo.memberships AS m
-                WHERE m.member_id = @memberId
+                WHERE m.member_id = @memberId AND m.tenant_id=@tenantId
                 ORDER BY CASE WHEN @today BETWEEN m.start_date AND m.end_date THEN 0 ELSE 1 END,
                          m.end_date DESC, m.id DESC;`);
     const membership = membershipResult.recordset[0] || null;

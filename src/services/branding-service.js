@@ -5,6 +5,7 @@ const { getPool, sql } = require('../database');
 const { withTransaction } = require('../database/transaction');
 const { currentTenantId } = require('../tenancy/tenant-context');
 const cacheService = require('./cache-service');
+const { normalizePhone: normalizeInternationalPhone } = require('./phone-service');
 
 const BRANDING_ID = 1;
 const MAX_TEXT_LENGTH = 500;
@@ -378,7 +379,25 @@ function normalizePaymentMethods(value) {
         .sort((first, second) => first.sortOrder - second.sortOrder || first.id.localeCompare(second.id));
 }
 
-function normalizeConfig(input) {
+function normalizeBrandingPhone(value, { strict = false } = {}) {
+    const raw = cleanText(value, '', 40);
+    if (!raw) return '';
+    try {
+        return normalizeInternationalPhone(raw, {
+            country: null,
+            required: false,
+            allowFixedLine: true,
+            fieldName: 'Phone number'
+        }) || '';
+    } catch (error) {
+        if (strict) throw error;
+        // Existing branding is read frequently. Preserve a legacy value for
+        // display until an owner explicitly saves it through the validator.
+        return raw;
+    }
+}
+
+function normalizeConfig(input, { strictPhones = false } = {}) {
     const merged = merge(DEFAULT_BRANDING, input);
     const identity = merged.identity || {};
     const typography = merged.typography || {};
@@ -399,7 +418,7 @@ function normalizeConfig(input) {
             welcomeSubtitle: cleanText(identity.welcomeSubtitle, DEFAULT_BRANDING.identity.welcomeSubtitle, 180),
             companyName: cleanText(identity.companyName, DEFAULT_BRANDING.identity.companyName, 120),
             copyrightText: cleanText(identity.copyrightText, DEFAULT_BRANDING.identity.copyrightText, 180),
-            phone: cleanText(identity.phone, '', 40), address: cleanText(identity.address, '', 180),
+            phone: normalizeBrandingPhone(identity.phone, { strict: strictPhones }), address: cleanText(identity.address, '', 180),
             email: cleanText(identity.email, '', 120), website: cleanText(identity.website, '', 180),
             paymentMethods: normalizePaymentMethods(identity.paymentMethods)
         },
@@ -429,7 +448,7 @@ function normalizeConfig(input) {
             activeStyle: ['background', 'indicator', 'pill'].includes(interfaceOptions.activeStyle) ? interfaceOptions.activeStyle : 'background'
         },
         documents: {
-            phone: cleanText(documents.phone, identity.phone, 40), address: cleanText(documents.address, identity.address, 180),
+            phone: normalizeBrandingPhone(documents.phone || identity.phone, { strict: strictPhones }), address: cleanText(documents.address, identity.address, 180),
             email: cleanText(documents.email, identity.email, 120), website: cleanText(documents.website, identity.website, 180),
             footer: cleanText(documents.footer, DEFAULT_BRANDING.documents.footer, 180), watermark: cleanText(documents.watermark, '', 100),
             signature: cleanText(documents.signature, '', 120), stamp: cleanText(documents.stamp, '', 120)
@@ -802,7 +821,7 @@ async function getPublicBrandName(fallback = 'Logic Fit', { readOnly = false } =
 async function saveDraft(input, actorUserId) {
     await ensureBrandingTables();
     const defaults = await defaultBrandingForTenant();
-    const config = applyTenantIdentity(normalizeConfig(input), defaults.identity.brandName);
+    const config = applyTenantIdentity(normalizeConfig(input, { strictPhones: true }), defaults.identity.brandName);
     const validation = validateConfig(config);
     if (validation.errors.length) throw brandingError('لا يمكن حفظ المسودة قبل إصلاح مشاكل الهوية.', validation);
     const pool = await getPool();
@@ -821,7 +840,7 @@ async function publish(actorUserId) {
     await withTransaction(async (transaction) => {
         const rowResult = await transaction.request().input('brandingId', sql.TinyInt, BRANDING_ID).input('tenantId', sql.Int, tenantId).query('SELECT TOP (1) * FROM dbo.gym_branding_config WITH (UPDLOCK, HOLDLOCK) WHERE id=@brandingId AND tenant_id=@tenantId;');
         const row = rowResult.recordset[0];
-        const config = applyTenantIdentity(normalizeConfig(parseStoredConfig(row?.draft_config)), defaults.identity.brandName);
+        const config = applyTenantIdentity(normalizeConfig(parseStoredConfig(row?.draft_config), { strictPhones: true }), defaults.identity.brandName);
         const validation = validateConfig(config);
         if (validation.errors.length) throw brandingError('لا يمكن نشر الهوية قبل إصلاح مشاكل التباين أو البيانات.', validation);
         publishedVersion = Number(row?.version || 1) + 1;

@@ -1,0 +1,30 @@
+.phone-input-control {
+  display: grid;
+  grid-template-columns: minmax(8.5rem, 11rem) minmax(0, 1fr);
+  gap: var(--space-2);
+  align-items: stretch;
+  direction: ltr;
+}
+
+.phone-input-control > select[data-phone-country] {
+  min-width: 0;
+  direction: ltr;
+  text-align: left;
+  font-size: var(--font-xs);
+}
+
+.phone-input-control > input[data-phone-input] {
+  min-width: 0;
+  direction: ltr;
+  text-align: left;
+}
+
+[dir="rtl"] .phone-input-control {
+  direction: rtl;
+}
+
+@media (max-width: 520px) {
+  .phone-input-control {
+    grid-template-columns: minmax(7.5rem, 9rem) minmax(0, 1fr);
+  }
+}

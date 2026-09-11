@@ -1,6 +1,7 @@
 const { getPool, sql } = require('../database');
 const { ensureLibraryData, ensureLibraryTables } = require('./library-service');
 const { getTenantContext, currentTenantId } = require('../tenancy/tenant-context');
+const { normalizePhone: normalizeInternationalPhone } = require('./phone-service');
 const { safeErrorCode } = require('../utils/error-response');
 const { publish } = require('./notification-dispatcher');
 const {
@@ -95,12 +96,7 @@ function dietGoalValue(value, fallback = 'maintain') {
 }
 
 function normalizePhone(value) {
-    const arabicDigits = '٠١٢٣٤٥٦٧٨٩';
-    let normalized = String(value ?? '').trim().replace(/[٠-٩]/gu, (digit) => String(arabicDigits.indexOf(digit)));
-    normalized = normalized.replace(/[^0-9]/g, '');
-    if (normalized.startsWith('00')) normalized = normalized.slice(2);
-    if (normalized.startsWith('20') && normalized.length === 12) normalized = `0${normalized.slice(2)}`;
-    return normalized;
+    return normalizeInternationalPhone(value, { country: null, fieldName: 'Phone number' });
 }
 
 function withTransaction(work) {
@@ -514,7 +510,10 @@ async function assertMember(connection, memberId) {
 }
 
 async function assertNoDuplicatePhone(connection, phoneNormalized, email, excludeId = null) {
-    const result = await connection.request().query('SELECT id, full_name, phone, phone_normalized, email FROM dbo.members;');
+    const tenantId = currentTenantId({ required: true });
+    const result = await connection.request()
+        .input('tenantId', sql.Int, tenantId)
+        .query('SELECT id, full_name, phone, phone_normalized, email FROM dbo.members WITH (UPDLOCK, HOLDLOCK) WHERE tenant_id=@tenantId;');
     const normalizedEmail = String(email || '').trim().toLowerCase();
     const duplicate = result.recordset.find((row) => {
         if (excludeId && Number(row.id) === Number(excludeId)) return false;
@@ -539,8 +538,10 @@ async function createExternalTrainee(body = {}) {
     await ensureCoachingTables();
     const fullName = text(body.fullName, 'اسم المتدرب', 120, true);
     const phone = text(body.phone, 'رقم الهاتف', 30, true);
-    const phoneNormalized = normalizePhone(phone);
-    if (phoneNormalized.length < 5) throw appError('رقم الهاتف غير صالح.');
+    const phoneNormalized = normalizeInternationalPhone(phone, {
+        country: body.phoneCountry || body.country || null,
+        fieldName: 'Phone number'
+    });
     const email = text(body.email, 'البريد الإلكتروني', 254);
     if (email && !/^\S+@\S+\.\S+$/.test(email)) throw appError('البريد الإلكتروني غير صالح.');
     const registrationDate = dateValue(body.registrationDate, 'تاريخ التسجيل');
@@ -552,7 +553,7 @@ async function createExternalTrainee(body = {}) {
         await assertNoDuplicatePhone(transaction, phoneNormalized, email);
         const result = await transaction.request()
             .input('fullName', sql.NVarChar(120), fullName)
-            .input('phone', sql.NVarChar(30), phone)
+            .input('phone', sql.NVarChar(30), phoneNormalized)
             .input('phoneNormalized', sql.NVarChar(30), phoneNormalized)
             .input('email', sql.NVarChar(254), email)
             .input('registrationDate', sql.Date, toUtcDate(registrationDate))
@@ -594,8 +595,9 @@ async function updateClientBasic(memberIdValue, body = {}) {
     const current = await getClientBase(memberId);
     const fullName = body.fullName === undefined ? current.fullName : text(body.fullName, 'اسم المتدرب', 120, true);
     const phone = body.phone === undefined ? current.phone : text(body.phone, 'رقم الهاتف', 30, true);
-    const phoneNormalized = normalizePhone(phone);
-    if (phoneNormalized.length < 5) throw appError('رقم الهاتف غير صالح.');
+    const phoneNormalized = body.phone === undefined
+        ? normalizeInternationalPhone(current.phone, { country: null, fieldName: 'Phone number' })
+        : normalizeInternationalPhone(phone, { country: body.phoneCountry || body.country || null, fieldName: 'Phone number' });
     const email = body.email === undefined ? current.email : text(body.email, 'البريد الإلكتروني', 254);
     if (email && !/^\S+@\S+\.\S+$/.test(email)) throw appError('البريد الإلكتروني غير صالح.');
     const registrationDate = body.registrationDate === undefined ? current.registrationDate : dateValue(body.registrationDate, 'تاريخ التسجيل');
@@ -603,7 +605,7 @@ async function updateClientBasic(memberIdValue, body = {}) {
     await withTransaction(async (transaction) => {
         await assertMember(transaction, memberId);
         await assertNoDuplicatePhone(transaction, phoneNormalized, email, memberId);
-        await transaction.request().input('id', sql.Int, memberId).input('fullName', sql.NVarChar(120), fullName).input('phone', sql.NVarChar(30), phone).input('phoneNormalized', sql.NVarChar(30), phoneNormalized).input('email', sql.NVarChar(254), email).input('registrationDate', sql.Date, toUtcDate(registrationDate)).input('notes', sql.NVarChar(1000), notes).query('UPDATE dbo.members SET full_name=@fullName,phone=@phone,phone_normalized=@phoneNormalized,email=@email,registration_date=@registrationDate,notes=@notes,updated_at=SYSUTCDATETIME() WHERE id=@id;');
+        await transaction.request().input('id', sql.Int, memberId).input('fullName', sql.NVarChar(120), fullName).input('phone', sql.NVarChar(30), phoneNormalized).input('phoneNormalized', sql.NVarChar(30), phoneNormalized).input('email', sql.NVarChar(254), email).input('registrationDate', sql.Date, toUtcDate(registrationDate)).input('notes', sql.NVarChar(1000), notes).query('UPDATE dbo.members SET full_name=@fullName,phone=@phone,phone_normalized=@phoneNormalized,email=@email,registration_date=@registrationDate,notes=@notes,updated_at=SYSUTCDATETIME() WHERE id=@id;');
     });
     return getClientBase(memberId);
 }

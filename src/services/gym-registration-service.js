@@ -8,6 +8,7 @@ const commercialSchema = require('./commercial-schema');
 const { runTenantContext } = require('../tenancy/tenant-context');
 const { TENANT_TYPES, resolveTenantType } = require('../tenancy/tenant-types');
 const { secretRing } = require('./secret-ring');
+const { normalizeMobile, normalizeDigits } = require('./phone-service');
 
 const MAX_PAGE_SIZE = 100;
 const REGISTRATION_TOKEN_PATTERN = /^[A-Za-z0-9_-]{32,128}$/;
@@ -91,26 +92,15 @@ function normalizeAccessToken(value) {
     return token;
 }
 
-function normalizeWhatsapp(value, { defaultCountryCode = '20' } = {}) {
-    const raw = text(value, '', 40).replace(/[\s().-]/g, '');
-    if (!/^\+?[0-9]{7,20}$/.test(raw)) throw registrationError('Enter a valid WhatsApp number.', 400, 'INVALID_REGISTRATION_WHATSAPP', 'whatsapp');
-    const hasExplicitCountryCode = raw.startsWith('+') || raw.startsWith('00');
-    let normalized = raw.startsWith('+') ? raw.slice(1) : raw.startsWith('00') ? raw.slice(2) : raw;
-    if (!hasExplicitCountryCode && /^0[0-9]{9,10}$/.test(normalized)) {
-        const countryCode = String(defaultCountryCode || '').replace(/\D/g, '');
-        if (!countryCode) throw registrationError('A country code is required for this WhatsApp number.', 400, 'INVALID_REGISTRATION_WHATSAPP', 'whatsapp');
-        normalized = `${countryCode}${normalized.slice(1)}`;
+function normalizeWhatsapp(value, { defaultCountryCode = '20', country = null } = {}) {
+    const raw = normalizeDigits(value).trim();
+    const hasExplicitCountry = raw.startsWith('+') || raw.startsWith('00');
+    const selectedCountry = country || (!hasExplicitCountry && String(defaultCountryCode) === '20' ? 'EG' : null);
+    try {
+        return normalizeMobile(value, { country: selectedCountry, fieldName: 'WhatsApp number' });
+    } catch (_) {
+        throw registrationError('Enter a valid WhatsApp number for the selected country.', 400, 'INVALID_REGISTRATION_WHATSAPP', 'whatsapp');
     }
-    // The current registration contract has one phone field and no separate
-    // country_code column. Egyptian national numbers therefore use the
-    // existing registration market default; explicit international formats
-    // remain untouched and are accepted as international numbers.
-    if (normalized.startsWith('20') && !/^20(?:10|11|12|15)[0-9]{8}$/.test(normalized)) {
-        throw registrationError('Enter a valid WhatsApp number.', 400, 'INVALID_REGISTRATION_WHATSAPP', 'whatsapp');
-    }
-    if (normalized.startsWith('0')) throw registrationError('Enter a valid WhatsApp number.', 400, 'INVALID_REGISTRATION_WHATSAPP', 'whatsapp');
-    if (!/^[0-9]{7,20}$/.test(normalized)) throw registrationError('Enter a valid WhatsApp number.', 400, 'INVALID_REGISTRATION_WHATSAPP', 'whatsapp');
-    return normalized;
 }
 
 function normalizeStatus(value) {
@@ -166,7 +156,7 @@ function roundMoney(value) {
 function requestFromRow(row) {
     if (!row) return null;
     let whatsapp = row.whatsapp;
-    try { whatsapp = normalizeWhatsapp(row.whatsapp); } catch (_) { /* preserve a legacy value for admin review; never fail queue reads */ }
+    try { whatsapp = normalizeWhatsapp(row.whatsapp, { defaultCountryCode: null }); } catch (_) { /* preserve a legacy value for admin review; never fail queue reads */ }
     return {
         id: Number(row.id),
         status: String(row.status),
@@ -383,7 +373,9 @@ function createGymRegistrationService({ commercialService, saasService, authServ
             const gymName = text(body.gymName || body.name, '', 160);
             if (gymName.length < 2) throw registrationError('Gym name is required.', 400, 'INVALID_REGISTRATION_GYM_NAME', 'gymName');
             const ownerName = authService.validateName(body.ownerName || body.ownerFullName, 'ownerName');
-            const whatsapp = normalizeWhatsapp(body.whatsapp || body.phone);
+            const whatsapp = normalizeWhatsapp(body.whatsapp || body.phone, {
+                country: body.whatsappCountry || body.phoneCountry || null
+            });
             const email = authService.validateEmail(body.email || body.ownerEmail, 'email');
             const city = text(body.city, '', 120) || null;
             const catalog = await getCatalog(commercialService, normalizedTenantType);

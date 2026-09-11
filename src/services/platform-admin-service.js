@@ -5,6 +5,7 @@ const { withTransaction } = require('../database/transaction');
 const saasService = require('./saas-service');
 const sessionRepository = require('../repositories/session.repository');
 const { TENANT_TYPE_VALUES, resolveTenantType } = require('../tenancy/tenant-types');
+const { normalizePhone: normalizeInternationalPhone } = require('./phone-service');
 
 const TENANT_STATUSES = Object.freeze(['trial', 'active', 'suspended', 'expired', 'archived']);
 const USER_STATUSES = Object.freeze(['Active', 'Disabled']);
@@ -612,7 +613,15 @@ async function updateTenantProfile(tenantId, body = {}, actorUserId, meta = {}) 
     const pool = await getPool();
     const before = await getTenantRow(id);
     if (!before) throw platformError('Gym was not found.', 404, 'TENANT_NOT_FOUND');
-    await pool.request().input('tenantId', sql.Int, id).input('name', sql.NVarChar(160), name || before.name).input('phone', sql.NVarChar(40), body.contactPhone === undefined ? before.contact_phone : text(body.contactPhone, '', 40) || null).input('email', sql.NVarChar(254), body.contactEmail === undefined ? before.contact_email : contactEmail || null).query('UPDATE dbo.gym_tenants SET name=@name,contact_phone=@phone,contact_email=@email,updated_at=SYSUTCDATETIME() WHERE id=@tenantId;');
+    const phone = body.contactPhone === undefined
+        ? before.contact_phone
+        : normalizeInternationalPhone(body.contactPhone, {
+            country: body.contactPhoneCountry || body.phoneCountry || null,
+            required: false,
+            allowFixedLine: true,
+            fieldName: 'Contact phone'
+        });
+    await pool.request().input('tenantId', sql.Int, id).input('name', sql.NVarChar(160), name || before.name).input('phone', sql.NVarChar(40), phone || null).input('email', sql.NVarChar(254), body.contactEmail === undefined ? before.contact_email : contactEmail || null).query('UPDATE dbo.gym_tenants SET name=@name,contact_phone=@phone,contact_email=@email,updated_at=SYSUTCDATETIME() WHERE id=@tenantId;');
     const after = await getTenantRow(id);
     await saasService.recordAudit({ tenantId: id, actorUserId, action: 'tenant_profile_updated', entityType: 'tenant', entityId: id, details: 'Tenant profile updated.', before: tenantState(before), after: tenantState(after), ...meta });
     return { tenant: tenantState(after) };

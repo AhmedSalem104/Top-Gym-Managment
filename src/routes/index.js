@@ -27,6 +27,7 @@ const { registerBranchRoutes } = require('./branch.routes');
 const { registerStockLocationRoutes } = require('./stock-location.routes');
 const { registerBarRoutes } = require('./bar.routes');
 const { registerNotificationRoutes } = require('./notification.routes');
+const { registerPhoneRoutes } = require('./phone.routes');
 const { platformOnly } = require('../middleware/platform.middleware');
 const trainerStudioService = require('../services/trainer-studio-service');
 
@@ -126,6 +127,8 @@ function registerRoutes(app, {
         getStorageStatus: () => ({ status: objectStorageService?.providerStatus || 'not_configured' }),
         getCacheStatus: cacheService ? async () => ({ ...(await cacheService.health()), metrics: cacheService.metrics() }) : null
     })));
+
+    registerPhoneRoutes(app, { asyncRoute });
 
     registerAuthRoutes(app, { authService, permissionService, saasService, asyncRoute, ownerOnly, allowLoginAttempt });
     registerBackupRoutes(app, { backupService, backupRecoveryService, brandingService, asyncRoute, isAuthorizedCronRequest, backupActionRateLimit });

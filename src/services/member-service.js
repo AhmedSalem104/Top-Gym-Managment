@@ -17,6 +17,7 @@ const {
 const { ensureAttendanceTable, getMemberAttendanceStatuses } = require('./attendance-service');
 const { currentTenantId, getTenantContext } = require('../tenancy/tenant-context');
 const { publish, publishForRoles } = require('./notification-dispatcher');
+const { normalizePhone: normalizeInternationalPhone } = require('./phone-service');
 
 const DEFAULT_MEMBERSHIP_PLANS = {
     gym_only: { label: 'جيم فقط', monthlyPrice: 305, active: true, sortOrder: 1 },
@@ -374,13 +375,7 @@ function optionalString(value, maxLength) {
 }
 
 function normalizePhone(value) {
-    const arabicDigits = '٠١٢٣٤٥٦٧٨٩';
-    const englishDigits = '0123456789';
-    let normalized = String(value ?? '').trim().replace(/[٠-٩]/gu, (digit) => englishDigits[arabicDigits.indexOf(digit)]);
-    normalized = normalized.replace(/[^0-9]/g, '');
-    if (normalized.startsWith('00')) normalized = normalized.slice(2);
-    if (normalized.startsWith('20') && normalized.length === 12) normalized = `0${normalized.slice(2)}`;
-    return normalized;
+    return normalizeInternationalPhone(value, { country: null, fieldName: 'Phone number' });
 }
 
 async function ensureMemberIdentityFields() {
@@ -466,12 +461,16 @@ async function assertMemberMutationSchemaReady({ membershipRequired = false, pay
 }
 
 async function assertNoDuplicateMember(connection, phoneNormalized, email, excludeId = null) {
-    const result = await connection.request().query(`
+    const tenantId = currentTenantId({ required: true });
+    const result = await connection.request()
+        .input('tenantId', sql.Int, tenantId)
+        .query(`
         -- HOLDLOCK makes the duplicate check serializable for the duration
         -- of the create transaction, so concurrent retries cannot both pass
         -- the check and insert the same member.
         SELECT id, full_name, phone, phone_normalized, email
-        FROM dbo.members WITH (UPDLOCK, HOLDLOCK);
+        FROM dbo.members WITH (UPDLOCK, HOLDLOCK)
+        WHERE tenant_id=@tenantId;
     `);
     const normalizedEmail = String(email || '').trim().toLowerCase();
     const duplicate = result.recordset.find((row) => {
@@ -793,9 +792,11 @@ function normalizePayload(body = {}, { partial = false } = {}) {
     if (!partial || has(body, 'fullName')) output.fullName = requiredString(body.fullName, 'الاسم', 120);
     if (!partial || has(body, 'phone')) {
         output.phone = requiredString(body.phone, 'رقم الهاتف', 30);
-        if (!/^[0-9٠-٩+()\-\s]{5,30}$/u.test(output.phone)) throw appError('رقم الهاتف غير صالح.');
-        output.phoneNormalized = normalizePhone(output.phone);
-        if (output.phoneNormalized.length < 5) throw appError('رقم الهاتف غير صالح.');
+        output.phoneNormalized = normalizeInternationalPhone(output.phone, {
+            country: body.phoneCountry || body.country || null,
+            fieldName: 'Phone number'
+        });
+        output.phone = output.phoneNormalized;
     }
     if (!partial || has(body, 'email')) {
         output.email = optionalString(body.email, 254);
@@ -1843,7 +1844,7 @@ async function createMember(body, { tenantSlug = '', idempotencyKey = null, bran
         await assertNoDuplicateMember(transaction, data.phoneNormalized, data.email);
         const memberResult = await transaction.request()
             .input('fullName', sql.NVarChar(120), data.fullName)
-            .input('phone', sql.NVarChar(30), data.phone)
+            .input('phone', sql.NVarChar(30), data.phoneNormalized)
             .input('phoneNormalized', sql.NVarChar(30), data.phoneNormalized)
             .input('email', sql.NVarChar(254), data.email)
             .input('registrationDate', sql.Date, toUtcDate(data.registrationDate))
@@ -1956,7 +1957,7 @@ async function updateMember(id, body, idempotencyKey = null) {
 
         const memberData = {
             fullName: patch.fullName ?? currentMember.full_name,
-            phone: patch.phone ?? currentMember.phone,
+            phone: patch.phoneNormalized ?? normalizePhone(currentMember.phone_normalized || currentMember.phone),
             phoneNormalized: patch.phoneNormalized ?? normalizePhone(currentMember.phone_normalized || currentMember.phone),
             email: patch.email === undefined ? currentMember.email : patch.email,
             registrationDate: patch.registrationDate ?? formatDateOnly(currentMember.registration_date),

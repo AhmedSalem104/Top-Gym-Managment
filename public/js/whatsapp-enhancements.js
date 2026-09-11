@@ -31,13 +31,9 @@
             }
 
             function normalizeEgyptianPhone(value) {
-                let phone = latinDigits(value).trim();
-                if (phone.startsWith('+')) phone = phone.slice(1);
-                phone = phone.replace(/\D/g, '');
-                if (phone.startsWith('00')) phone = phone.slice(2);
-                if (phone.startsWith('0')) phone = `20${phone.slice(1)}`;
-                else if (/^(10|11|12|15)\d{8}$/.test(phone)) phone = `20${phone}`;
-                return /^20(10|11|12|15)\d{8}$/.test(phone) ? phone : '';
+                const prepared = window.LogicFitPhoneInputs?.normalizeForTransport?.(latinDigits(value), 'EG') || latinDigits(value).trim();
+                if (!/^\+[1-9]\d{6,14}$/.test(prepared)) return '';
+                return prepared.slice(1);
             }
 
             function formatDate(value) {

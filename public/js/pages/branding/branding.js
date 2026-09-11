@@ -392,7 +392,12 @@
     function handleFormChange(target) {
         const id = target.id;
         if (IDENTITY_FIELDS[id]) setPath(`identity.${IDENTITY_FIELDS[id]}`, target.value);
-        else if (DOCUMENT_FIELDS[id]) setPath(`documents.${DOCUMENT_FIELDS[id]}`, target.value);
+        else if (DOCUMENT_FIELDS[id]) {
+            const value = id === 'brandingDocumentPhone'
+                ? (window.LogicFitPhoneInputs?.normalizeForTransport?.(target.value, target.dataset.phoneCountry || 'EG') || target.value)
+                : target.value;
+            setPath(`documents.${DOCUMENT_FIELDS[id]}`, value);
+        }
         else if (TYPOGRAPHY_FIELDS[id]) setPath(`typography.${TYPOGRAPHY_FIELDS[id]}`, target.type === 'number' ? Number(target.value) : target.value);
         else if (LOGIN_FIELDS[id]) setPath(`login.${LOGIN_FIELDS[id]}`, target.type === 'checkbox' ? target.checked : target.type === 'range' ? Number(target.value) : target.value);
         else if (INTERFACE_FIELDS[id]) setPath(`interface.${INTERFACE_FIELDS[id]}`, target.value);
