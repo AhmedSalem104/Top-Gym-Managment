@@ -37,6 +37,7 @@ const MAX_BACKUP_UPLOAD_BYTES = 25 * 1024 * 1024;
 const MAX_BACKUP_JSON_BYTES = 192 * 1024 * 1024;
 const MAX_BACKUP_ROWS = 150000;
 const BACKUP_CATEGORY = 'backups';
+const PLATFORM_VERIFICATION_STALE_AFTER_MS = 5 * 60 * 1000;
 const LEGACY_SCHEMA_SNAPSHOT_VERSION = 1;
 const SAFE_SCHEMA_TYPES = new Set([
     'bigint', 'bit', 'char', 'date', 'datetime', 'datetime2', 'decimal',
@@ -1558,7 +1559,7 @@ async function verifyStoredTenantObject(storage, { tenantId, key, expectedSize, 
     };
 }
 
-async function verifyStoredPlatformObject(storage, { key, expectedSize, expectedChecksum, returnBody = false } = {}) {
+async function verifyStoredPlatformObject(storage, { key, expectedSize, expectedChecksum, returnBody = false, inspectPayload = true } = {}) {
     const head = await storage.headPrivatePlatformObject({ key });
     if (!head) throw backupError('The stored platform backup artifact is missing.', 503, 'BACKUP_ARTIFACT_MISSING');
     const object = await storage.getPrivatePlatformObject({ key });
@@ -1571,13 +1572,19 @@ async function verifyStoredPlatformObject(storage, { key, expectedSize, expected
     if (actualChecksum !== String(expectedChecksum).toLowerCase() || actualSize !== Number(expectedSize)) {
         throw backupError('The stored platform backup checksum does not match.', 503, 'BACKUP_ARTIFACT_CHECKSUM_MISMATCH');
     }
-    const inspected = await inspectPlatformBackupBuffer(object.body);
+    const inspected = inspectPayload ? await inspectPlatformBackupBuffer(object.body) : null;
     return {
         checksum: actualChecksum,
         size: actualSize,
-        rowCount: inspected.rowCount,
+        ...(inspected ? { rowCount: inspected.rowCount } : {}),
         ...(returnBody ? { body: object.body, contentType: object.contentType || null } : {})
     };
+}
+
+function isStalePlatformVerification(record, now = Date.now()) {
+    if (record?.status !== 'VERIFYING' || !record.updatedAt) return false;
+    const updatedAt = new Date(record.updatedAt).getTime();
+    return Number.isFinite(updatedAt) && now - updatedAt >= PLATFORM_VERIFICATION_STALE_AFTER_MS;
 }
 
 async function deleteTenantArtifactAndVerify(storage, { tenantId, key } = {}) {
@@ -2410,7 +2417,7 @@ async function claimPlatformRecord({ backupType, backupDay, fileName, format, ac
             `);
         await transaction.commit();
         const row = result.recordset[0];
-        return { claimed: Boolean(Number(row?.claimed || 0)), record: mapRecord(row, 'platform') };
+        return { claimed: Boolean(Number(row?.claimed || 0)), record: mapRecord(row, 'platform', { includeStorageKey: true }) };
     } catch (error) {
         try { await transaction.rollback(); } catch (_) { /* preserve original error */ }
         throw error;
@@ -2547,6 +2554,7 @@ async function createPlatformBackup({ backupType = 'platform_daily', format = 'j
     const normalizedFormat = normalizeBackupFormat(format);
     const backupDay = backupDayKey(now);
     const fileName = backupFileName('platform', 'dr', normalizedFormat, now);
+    const storage = storageService || createObjectStorageService();
     const claim = await claimPlatformRecord({
         backupType,
         backupDay,
@@ -2555,8 +2563,39 @@ async function createPlatformBackup({ backupType = 'platform_daily', format = 'j
         actorUserId,
         expiresAt: retentionExpiry(backupType, now)
     });
-    if (!claim.claimed) return { idempotent: true, record: claim.record, providerStatus: 'not_requested' };
-    const storage = storageService || createObjectStorageService();
+    if (!claim.claimed) {
+        // A process can be interrupted after the object is uploaded and the
+        // record enters VERIFYING. Re-verify that exact immutable artifact
+        // after a bounded grace period instead of rebuilding a full snapshot
+        // or leaving the daily ledger permanently stuck.
+        if (isStalePlatformVerification(claim.record)
+            && claim.record.storageKey
+            && Number.isInteger(Number(claim.record.sizeBytes))
+            && Number(claim.record.sizeBytes) > 0
+            && /^[a-f0-9]{64}$/i.test(String(claim.record.checksum || ''))) {
+            const verified = await verifyStoredPlatformObject(storage, {
+                key: claim.record.storageKey,
+                expectedSize: claim.record.sizeBytes,
+                expectedChecksum: claim.record.checksum,
+                inspectPayload: false
+            });
+            const verifiedAt = new Date();
+            await updatePlatformRecord(claim.record.id, { status: 'VERIFIED', completedAt: verifiedAt, verifiedAt });
+            await writePlatformBackupAudit({
+                backupId: claim.record.id,
+                eventType: 'PLATFORM_BACKUP_COMPLETED',
+                actorUserId,
+                reason: normalizedReason,
+                metadata: { sizeBytes: verified.size, checksumVerified: true, recoveredVerification: true }
+            });
+            return {
+                idempotent: true,
+                record: { ...claim.record, status: 'VERIFIED', completedAt: verifiedAt, verifiedAt },
+                providerStatus: storage.providerStatus
+            };
+        }
+        return { idempotent: true, record: claim.record, providerStatus: 'not_requested' };
+    }
     let stored = null;
     try {
         await writePlatformBackupAudit({
@@ -2588,7 +2627,12 @@ async function createPlatformBackup({ backupType = 'platform_daily', format = 'j
         await verifyStoredPlatformObject(storage, {
             key: stored.key,
             expectedSize: backup.buffer.length,
-            expectedChecksum: backup.checksum
+            expectedChecksum: backup.checksum,
+            // The generated payload was validated before upload. Re-reading
+            // and parsing the same 160MB+ JSON while it is still retained in
+            // memory can exceed the bounded backup heap; byte checksum and
+            // size verification prove the stored artifact is unchanged.
+            inspectPayload: false
         });
         await updatePlatformRecord(claim.record.id, { status: 'VERIFIED', completedAt: new Date(now), verifiedAt: new Date(now) });
         await writePlatformBackupAudit({
@@ -2665,7 +2709,7 @@ async function getPlatformBackupAudit({ limit = 50, readOnly = false } = {}) {
     }));
 }
 
-async function downloadPlatformBackup(id, { readOnly = false, actorUserId = null, auditDownload = false, storageService = null } = {}) {
+async function downloadPlatformBackup(id, { readOnly = false, actorUserId = null, auditDownload = false, storageService = null, inspectPayload = true } = {}) {
     const record = await getPlatformBackupRecord(id, { readOnly, includeStorageKey: true });
     if (!record) throw backupError('The requested platform backup is not available.', 404, 'BACKUP_NOT_FOUND');
     if (record.format !== 'json.gz') throw backupError('The requested backup format is not supported.', 409, 'BACKUP_FORMAT_UNSUPPORTED');
@@ -2679,9 +2723,10 @@ async function downloadPlatformBackup(id, { readOnly = false, actorUserId = null
         key: record.storageKey,
         expectedSize: record.sizeBytes,
         expectedChecksum: record.checksum,
-        returnBody: true
+        returnBody: true,
+        inspectPayload
     });
-    if (record.rowCount != null && Number(record.rowCount) !== Number(verified.rowCount)) {
+    if (record.rowCount != null && verified.rowCount != null && Number(record.rowCount) !== Number(verified.rowCount)) {
         throw backupError('The platform backup metadata does not match its verified artifact.', 503, 'BACKUP_METADATA_MISMATCH');
     }
     if (auditDownload) {
@@ -3112,6 +3157,7 @@ module.exports = {
     cleanupExpiredBackups,
     getRetentionPolicy,
     getScheduledPlatformBackupTypes,
+    isStalePlatformVerification,
     getTenantBackupHistory,
     getTenantBackupRecord,
     getTenantBackupAudit,

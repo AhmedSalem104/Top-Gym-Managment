@@ -11,7 +11,9 @@ const { createBackupRecoveryService } = require('../src/services/backup-recovery
 const { createConfiguredObjectStorageService } = require('../src/services/object-storage-service');
 const { acquireJobLock, writeJobResult } = require('./server-job-utils');
 
-const BACKUP_HEAP_MB = 640;
+// The current production snapshot is ~161MiB uncompressed. Keep this finite,
+// but leave enough headroom for the validated payload plus gzip buffers.
+const BACKUP_HEAP_MB = 1024;
 
 function relaunchWithBoundedBackupHeap() {
     const hasHeapLimit = process.execArgv.some((argument) => /^--max-old-space-size=\d+$/.test(argument))

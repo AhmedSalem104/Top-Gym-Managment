@@ -23,6 +23,7 @@ const {
     validatePlatformBackupPayload,
     validateTenantBackupPayload,
     verifyStoredTenantObject,
+    isStalePlatformVerification,
     getDailyBackupCycleHttpStatus
 } = require('../../src/services/backup-recovery-service');
 const { createObjectStorageService } = require('../../src/services/object-storage-service');
@@ -254,6 +255,13 @@ test('expired or malformed backup metadata cannot pass the download freshness ga
     assert.doesNotThrow(() => assertBackupNotExpired({ expiresAt: '2099-01-01T00:00:00.000Z' }, new Date('2026-08-29T00:00:00.000Z')));
     assert.throws(() => assertBackupNotExpired({ expiresAt: '2026-08-28T00:00:00.000Z' }, new Date('2026-08-29T00:00:00.000Z')), { code: 'BACKUP_EXPIRED', statusCode: 410 });
     assert.throws(() => assertBackupNotExpired({ expiresAt: 'not-a-date' }), { code: 'BACKUP_METADATA_INCOMPLETE', statusCode: 503 });
+});
+
+test('stale platform verification can be recovered without treating a live verifier as stale', () => {
+    const now = Date.parse('2026-09-11T18:20:00.000Z');
+    assert.equal(isStalePlatformVerification({ status: 'VERIFYING', updatedAt: '2026-09-11T18:14:59.000Z' }, now), true);
+    assert.equal(isStalePlatformVerification({ status: 'VERIFYING', updatedAt: '2026-09-11T18:15:01.000Z' }, now), false);
+    assert.equal(isStalePlatformVerification({ status: 'VERIFIED', updatedAt: '2026-09-11T18:00:00.000Z' }, now), false);
 });
 
 test('daily scheduler selects weekly and monthly platform snapshots by UTC calendar rules', () => {
