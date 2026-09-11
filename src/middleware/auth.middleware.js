@@ -50,6 +50,7 @@ function createAuthApiMiddleware({ authService, isAuthorizedCronRequest, tenantS
         const memberPortalSessionPath = request.path === '/member-portal/session'
             || request.path === '/member-portal/payment-methods'
             || request.path === '/member-portal/membership-catalog'
+            || request.path.startsWith('/member-portal/notifications')
             || request.path === '/member-portal/library/options'
             || request.path.startsWith('/member-portal/library/')
             || request.path.startsWith('/member-portal/subscription-requests');
@@ -67,6 +68,7 @@ function createAuthApiMiddleware({ authService, isAuthorizedCronRequest, tenantS
         const notificationPath = request.path === '/notifications'
             || request.path === '/notifications/unread-count'
             || request.path === '/notifications/read-all'
+            || request.path === '/notifications/stream'
             || /^\/notifications\/\d+\/read$/.test(request.path);
         // Normal safe HTTP methods must not trigger schema setup, expiry
         // reconciliation, attendance auto-checkout, session touching, or any

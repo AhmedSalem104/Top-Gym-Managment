@@ -2,11 +2,43 @@ const { getPool, sql } = require('../database');
 const { addDays, differenceInDays, formatDateOnly, parseDateOnly, todayInTimeZone, toUtcDate } = require('../utils/date');
 const { config } = require('../config/env');
 const { currentTenantId, getTenantContext } = require('../tenancy/tenant-context');
+const { publish, publishForRoles } = require('./notification-dispatcher');
 
 const ATTENDANCE_SOURCES = new Set(['phone', 'qr', 'manual']);
 const DEFAULT_AUTO_CHECKOUT_MINUTES = 60;
 const DEFAULT_OCCUPANCY_THRESHOLDS = Object.freeze({ moderateAt: 6, busyAt: 16, veryBusyAt: 31 });
 let attendanceTablePromise;
+
+async function emitAttendanceNotification(type, resolved, attendance) {
+    if (!resolved?.member?.id || !attendance?.id) return;
+    const tenantId = currentTenantId({ required: true });
+    const base = {
+        type,
+        tenantId,
+        actorUserId: Number(getTenantContext()?.userId) || null,
+        entityType: 'attendance',
+        entityId: Number(attendance.id),
+        auditDetails: `Notification emitted for ${type}.`,
+        payload: {
+            memberName: resolved.member.full_name,
+            actionUrl: `/attendance?memberId=${Number(resolved.member.id)}`
+        }
+    };
+    try {
+        await Promise.all([
+            publishForRoles({ ...base, dedupeKey: `${type}:tenant-${tenantId}:staff:${attendance.id}` }, ['Owner', 'Assistant']),
+            publish({
+                ...base,
+                audienceRole: 'Member',
+                recipientMemberId: Number(resolved.member.id),
+                dedupeKey: `${type}:tenant-${tenantId}:member-${Number(resolved.member.id)}:${attendance.id}`,
+                payload: { ...base.payload, actionUrl: '/member-portal' }
+            })
+        ]);
+    } catch (_) {
+        // Attendance remains successful if notification delivery is unavailable.
+    }
+}
 
 function getAutoCheckoutMinutes() {
     const configured = Number.parseInt(config.attendanceAutoCheckoutMinutes, 10);
@@ -471,6 +503,7 @@ async function checkIn(body = {}, { branchId = null, sectionId = null } = {}) {
         throw error;
     }
     const attendance = await getAttendanceRecordForDate(pool, resolved.member.id, resolved.today, branchId, sectionId);
+    await emitAttendanceNotification('attendance_checked_in', resolved, attendance);
     return { attendance, message: `تم تسجيل حضور ${resolved.member.full_name} بنجاح.` };
 }
 

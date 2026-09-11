@@ -10,6 +10,7 @@ const coachingService = require('./coaching-service');
 const trainerService = require('./trainer-service');
 const saasService = require('./saas-service');
 const commercialSchema = require('./commercial-schema');
+const { publish, publishForRoles } = require('./notification-dispatcher');
 
 function commerceError(message, statusCode = 400, code = 'TRAINER_COMMERCE_ERROR') {
     const error = new Error(message);
@@ -96,6 +97,37 @@ function sessionStatus(value, fallback = 'scheduled') {
 function actorUserId() {
     const userId = Number(getTenantContext()?.userId);
     return Number.isInteger(userId) && userId > 0 ? userId : null;
+}
+
+async function emitTrainerSessionNotification(type, session) {
+    if (!session?.id || !session?.tenantId || !session?.memberId) return;
+    const base = {
+        type,
+        tenantId: Number(session.tenantId),
+        actorUserId: actorUserId(),
+        entityType: 'coaching_session',
+        entityId: Number(session.id),
+        auditDetails: `Notification emitted for ${type}.`,
+        payload: {
+            memberName: session.clientName || '',
+            sessionStart: session.scheduledStart || '',
+            actionUrl: '/trainer/sessions'
+        }
+    };
+    try {
+        await Promise.all([
+            publishForRoles({ ...base, dedupeKey: `${type}:tenant-${session.tenantId}:owner:session-${session.id}` }, ['Owner']),
+            publish({
+                ...base,
+                audienceRole: 'Member',
+                recipientMemberId: Number(session.memberId),
+                dedupeKey: `${type}:tenant-${session.tenantId}:member-${session.memberId}:session-${session.id}`,
+                payload: { ...base.payload, actionUrl: '/member-portal' }
+            })
+        ]);
+    } catch (_) {
+        // Session writes remain authoritative if a notification channel fails.
+    }
 }
 
 async function assertTrainerContext({ readOnly = false } = {}) {
@@ -597,7 +629,9 @@ async function createSession(body = {}) {
         return sessionId;
     });
     await coachingService.recordCoachingEvent(memberId, 'session_scheduled', { entityType: 'coaching_session', entityId: id, details: 'تم جدولة جلسة تدريب.' });
-    return (await listSessions({ memberId, readOnly: true })).find((row) => row.id === id) || null;
+    const session = (await listSessions({ memberId, readOnly: true })).find((row) => row.id === id) || null;
+    await emitTrainerSessionNotification('trainer_session_scheduled', session);
+    return session;
 }
 
 async function updateSession(sessionIdValue, body = {}) {
@@ -617,7 +651,9 @@ async function updateSession(sessionIdValue, body = {}) {
         await recordAudit(transaction, 'trainer_session_updated', 'coaching_session', sessionId, { before: { scheduledStart: row.scheduled_start, scheduledEnd: row.scheduled_end, notes: row.notes }, after: { scheduledStart: start, scheduledEnd: end, notes } });
         return Number(row.member_id);
     });
-    return (await listSessions({ memberId: current, readOnly: true })).find((row) => row.id === sessionId) || null;
+    const session = (await listSessions({ memberId: current, readOnly: true })).find((row) => row.id === sessionId) || null;
+    await emitTrainerSessionNotification('trainer_session_updated', session);
+    return session;
 }
 
 async function setSessionStatus(sessionIdValue, statusValue) {
@@ -646,7 +682,9 @@ async function setSessionStatus(sessionIdValue, statusValue) {
         return Number(session.member_id);
     });
     await coachingService.recordCoachingEvent(memberId, `session_${nextStatus}`, { entityType: 'coaching_session', entityId: sessionId, details: `تم تحديث حالة الجلسة إلى ${nextStatus}.` });
-    return (await listSessions({ memberId, readOnly: true })).find((row) => row.id === sessionId) || null;
+    const session = (await listSessions({ memberId, readOnly: true })).find((row) => row.id === sessionId) || null;
+    await emitTrainerSessionNotification('trainer_session_status_changed', session);
+    return session;
 }
 
 module.exports = {

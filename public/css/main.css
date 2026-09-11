@@ -4271,6 +4271,18 @@ button[aria-busy="true"] .loading-spinner {
   z-index: calc(var(--z-sticky, 20) + 1);
 }
 
+.portal-notification-host {
+  display: inline-flex;
+  min-width: 42px;
+  min-height: 42px;
+  align-items: center;
+}
+
+.portal-notification-host .notification-center-panel {
+  inset-inline-end: 0;
+  z-index: calc(var(--z-sticky, 20) + 2);
+}
+
 .notification-center-trigger {
   position: relative;
   display: inline-flex;

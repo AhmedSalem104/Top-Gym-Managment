@@ -16,6 +16,7 @@ const {
 } = require('../utils/date');
 const { ensureAttendanceTable, getMemberAttendanceStatuses } = require('./attendance-service');
 const { currentTenantId, getTenantContext } = require('../tenancy/tenant-context');
+const { publish, publishForRoles } = require('./notification-dispatcher');
 
 const DEFAULT_MEMBERSHIP_PLANS = {
     gym_only: { label: 'جيم فقط', monthlyPrice: 305, active: true, sortOrder: 1 },
@@ -38,6 +39,46 @@ const pricingCatalogCache = new Map();
 let memberIdentityPromise;
 let paymentTransactionsTablePromise;
 let subscriptionRefundsTablePromise;
+
+async function emitMemberNotification(type, member, { audienceRole = null, recipientMemberId = null, actorUserId = null, actorRole = null, actionUrl = '/' } = {}) {
+    if (!member?.id) return;
+    const tenantId = currentTenantId({ required: true });
+    const base = {
+        type,
+        tenantId,
+        actorUserId,
+        entityType: type.startsWith('membership_') || type === 'payment_updated' ? 'membership' : 'member',
+        entityId: type === 'member_created' ? member.id : (member.membership?.id || member.id),
+        title: '',
+        message: '',
+        auditDetails: `Notification emitted for ${type}.`,
+        payload: { memberName: member.fullName, membershipStatus: member.membership?.status, actionUrl },
+        ...(audienceRole ? { audienceRole } : {}),
+        ...(recipientMemberId ? { recipientMemberId } : {})
+    };
+    try {
+        if (audienceRole || recipientMemberId) {
+            await publish({ ...base, dedupeKey: `${type}:tenant-${tenantId}:${recipientMemberId ? `member-${recipientMemberId}` : audienceRole}:${base.entityId}` });
+        } else {
+            await publishForRoles({ ...base, dedupeKey: `${type}:tenant-${tenantId}:${base.entityId}` }, ['Owner', 'Assistant']);
+        }
+    } catch (_) {
+        // Notifications are post-commit and must never turn a successful
+        // member or membership operation into a failed business request.
+    }
+}
+
+async function emitMemberAndStaffNotifications(type, member, options = {}) {
+    await emitMemberNotification(type, member, options);
+    if (!options.staffOnly && member?.id) {
+        await emitMemberNotification(type, member, {
+            ...options,
+            audienceRole: 'Member',
+            recipientMemberId: member.id,
+            actionUrl: options.memberActionUrl || '/member-portal'
+        });
+    }
+}
 
 function appError(message, statusCode = 400, code = null) {
     const error = new Error(message);
@@ -1869,6 +1910,10 @@ async function createMember(body, { tenantSlug = '', idempotencyKey = null, bran
         return id;
     });
     const member = await getMemberById(memberId);
+    await emitMemberNotification('member_created', member, { actorUserId, actorRole, actionUrl: `/members/${memberId}` });
+    if (membershipRequested && member.membership) {
+        await emitMemberAndStaffNotifications('membership_created', member, { actorUserId, actorRole, actionUrl: `/members/${memberId}` });
+    }
     return {
         ...member,
         membershipCode: issuedMembershipCode || member.membershipCode,
@@ -1879,6 +1924,10 @@ async function createMember(body, { tenantSlug = '', idempotencyKey = null, bran
 async function updateMember(id, body, idempotencyKey = null) {
     const memberId = ensureId(id);
     const paymentIdempotencyKey = hasPaymentDetails(body) ? normalizePaymentIdempotencyKey(idempotencyKey) : null;
+    const membershipFields = ['membershipPlan', 'membershipType', 'startDate', 'endDate', 'membershipNotes'];
+    const paymentFields = ['discountAmount', 'amountDue', 'amountPaid', 'paymentMethod', 'paymentNotes', 'paidAt', 'paymentDate'];
+    const membershipChangeRequested = membershipFields.some((field) => has(body, field));
+    const paymentChangeRequested = paymentFields.some((field) => has(body, field));
     await ensureMemberIdentityFields();
     await ensurePaymentTransactionsTable();
     if (paymentIdempotencyKey) {
@@ -1900,10 +1949,6 @@ async function updateMember(id, body, idempotencyKey = null) {
         if (!currentMember) throw appError('العضو غير موجود.', 404);
         const currentMembership = await getRawMembership(transaction, memberId);
         const patch = normalizePayload(body, { partial: true });
-        const membershipFields = ['membershipPlan', 'membershipType', 'startDate', 'endDate', 'membershipNotes'];
-        const paymentFields = ['discountAmount', 'amountDue', 'amountPaid', 'paymentMethod', 'paymentNotes', 'paidAt', 'paymentDate'];
-        const membershipChangeRequested = membershipFields.some((field) => has(body, field));
-        const paymentChangeRequested = paymentFields.some((field) => has(body, field));
         if (!currentMembership && (membershipChangeRequested || paymentChangeRequested)) {
             throw appError('لا يوجد اشتراك لهذا العضو لتعديل بياناته المالية أو الاشتراكية.', 422, 'MEMBERSHIP_REQUIRED_FOR_UPDATE');
         }
@@ -2048,7 +2093,14 @@ async function updateMember(id, body, idempotencyKey = null) {
         }
         return memberId;
     });
-    return getMemberById(updatedId);
+    const updatedMember = await getMemberById(updatedId);
+    if (membershipChangeRequested) {
+        await emitMemberAndStaffNotifications('membership_updated', updatedMember, { actionUrl: `/members/${updatedId}` });
+    }
+    if (paymentChangeRequested) {
+        await emitMemberAndStaffNotifications('payment_updated', updatedMember, { actionUrl: `/members/${updatedId}` });
+    }
+    return updatedMember;
 }
 
 async function deleteMember(id) {
@@ -2168,7 +2220,9 @@ async function activateMembership(id, body = {}, idempotencyKey = null) {
         });
         return memberId;
     });
-    return getMemberById(activatedId);
+    const activatedMember = await getMemberById(activatedId);
+    await emitMemberAndStaffNotifications('membership_created', activatedMember, { actionUrl: `/members/${activatedId}` });
+    return activatedMember;
 }
 
 async function freezeMember(id, days, reason) {
@@ -2202,7 +2256,9 @@ async function freezeMember(id, days, reason) {
         await addEvent(transaction, memberId, membership.id, 'frozen', { freezeId, days: freezeDays, freezeNumber: freezeUsage.freezeCount + 1, freezeLimit: MEMBERSHIP_FREEZE_LIMIT, startDate: today, endDate: freezeEnd });
         return memberId;
     });
-    return getMemberById(frozenId);
+    const member = await getMemberById(frozenId);
+    await emitMemberAndStaffNotifications('membership_frozen', member, { actionUrl: `/members/${frozenId}` });
+    return member;
 }
 
 async function resumeMember(id) {
@@ -2225,7 +2281,9 @@ async function resumeMember(id) {
         });
         return memberId;
     });
-    return getMemberById(resumedId);
+    const member = await getMemberById(resumedId);
+    await emitMemberAndStaffNotifications('membership_resumed', member, { actionUrl: `/members/${resumedId}` });
+    return member;
 }
 
 async function renewMember(id, body = {}, idempotencyKey = null) {
@@ -2322,7 +2380,9 @@ async function renewMember(id, body = {}, idempotencyKey = null) {
         });
         return memberId;
     });
-    return getMemberById(renewedId);
+    const member = await getMemberById(renewedId);
+    await emitMemberAndStaffNotifications('membership_renewed', member, { actionUrl: `/members/${renewedId}` });
+    return member;
 }
 
 async function recordPayment(membershipId, body = {}, idempotencyKey = null) {
@@ -2413,7 +2473,9 @@ async function recordPayment(membershipId, body = {}, idempotencyKey = null) {
         });
         return Number(membership.member_id);
     });
-    return getMemberById(memberId);
+    const member = await getMemberById(memberId);
+    await emitMemberAndStaffNotifications('payment_updated', member, { actionUrl: `/members/${memberId}` });
+    return member;
 }
 
 /**

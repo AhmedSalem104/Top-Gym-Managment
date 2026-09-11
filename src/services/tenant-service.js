@@ -113,6 +113,7 @@ const TENANT_TABLES = Object.freeze([
     'saas_audit_log',
     'saas_notifications',
     'saas_notification_reads',
+    'saas_member_notification_reads',
     'saas_platform_notes',
     'saas_subscription_requests',
     'saas_subscription_changes',

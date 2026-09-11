@@ -14,6 +14,7 @@
     items: []
   };
   const categoryMeta = Object.freeze({
+    coaching: { label: '\u0627\u0644\u062a\u062f\u0631\u064a\u0628', tone: 'info', icon: 'coaching' },
     registration: { label: 'التسجيل', tone: 'info', icon: 'registration' },
     membership: { label: 'العضويات', tone: 'success', icon: 'membership' },
     payment: { label: 'المدفوعات', tone: 'warning', icon: 'payment' },
@@ -23,6 +24,7 @@
   const iconPaths = Object.freeze({
     registration: '<path d="M12 5v14M5 12h14"/>',
     membership: '<path d="M7 4h10v16H7z"/><path d="M9.5 8h5M9.5 12h5M9.5 16h3"/>',
+    coaching: '<path d="M4 6h16v12H4z"/><path d="M8 10h8M8 14h5"/>',
     payment: '<path d="M5 7h14v10H5z"/><path d="M5 10h14M8 14h3"/>',
     system: '<path d="M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3z"/><path d="M12 8v5M12 16h.01"/>',
     default: '<path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/>'
@@ -35,6 +37,8 @@
   let loadMoreButton;
   let triggerElement;
   let summaryElement;
+  let apiBase = '/api/notifications';
+  let realtimeSource;
 
   const formatDate = (value) => {
     if (!value) return '';
@@ -58,6 +62,29 @@
   function safeActionUrl(value) {
     const candidate = String(value || '').trim();
     return candidate.startsWith('/') && !candidate.startsWith('//') ? candidate : '';
+  }
+
+  function apiPath(suffix = '') { return `${apiBase}${suffix}`; }
+
+  function startRealtime() {
+    if (realtimeSource || typeof window.EventSource !== 'function') return;
+    realtimeSource = new EventSource(apiPath('/stream'), { withCredentials: true });
+    realtimeSource.addEventListener('notification', (event) => {
+      try {
+        const incoming = JSON.parse(event.data || '{}');
+        if (!incoming.id || state.items.some((item) => Number(item.id) === Number(incoming.id))) return;
+        state.items = [incoming, ...state.items].slice(0, 50);
+        state.loaded = true;
+        renderNotifications(state.items);
+        setBadge(state.unread + 1);
+      } catch (_) { /* malformed push data is ignored; next refresh reconciles it */ }
+    });
+    realtimeSource.addEventListener('error', () => {
+      if (realtimeSource?.readyState === EventSource.CLOSED) {
+        realtimeSource.close();
+        realtimeSource = null;
+      }
+    });
   }
 
   function getCategoryMeta(item) {
@@ -158,7 +185,7 @@
   }
 
   async function refreshUnread() {
-    const payload = await requestJson('/api/notifications/unread-count');
+    const payload = await requestJson(apiPath('/unread-count'));
     if (payload) setBadge(payload.unread);
   }
 
@@ -170,7 +197,7 @@
       const page = append ? state.page + 1 : 1;
       const params = new URLSearchParams({ page: String(page), pageSize: '8' });
       if (state.category) params.set('category', state.category);
-      const payload = await requestJson(`/api/notifications?${params}`);
+      const payload = await requestJson(`${apiBase}?${params}`);
       if (!payload) {
         setMessage('سجّل الدخول لعرض إشعاراتك.');
         state.loaded = true;
@@ -183,6 +210,7 @@
       renderNotifications(state.items);
       loadMoreButton.hidden = !state.hasNext;
       state.loaded = true;
+      startRealtime();
       try { await refreshUnread(); } catch (_) { /* list remains usable */ }
     } catch (_) {
       setMessage('تعذر تحميل الإشعارات. حاول مرة أخرى.', 'notification-center-error');
@@ -195,7 +223,7 @@
     const numericId = Number(id);
     if (!Number.isInteger(numericId) || numericId <= 0) return;
     try {
-      const payload = await requestJson(`/api/notifications/${numericId}/read`, { method: 'POST' });
+      const payload = await requestJson(apiPath(`/${numericId}/read`), { method: 'POST' });
       if (payload) {
         state.items = state.items.map((item) => item.id === numericId ? { ...item, read: true } : item);
         renderNotifications(state.items);
@@ -207,7 +235,7 @@
   async function markAllRead() {
     if (markAllButton) markAllButton.disabled = true;
     try {
-      const payload = await requestJson('/api/notifications/read-all', { method: 'POST' });
+      const payload = await requestJson(apiPath('/read-all'), { method: 'POST' });
       if (payload) {
         state.items = state.items.map((item) => ({ ...item, read: true }));
         renderNotifications(state.items);
@@ -231,6 +259,9 @@
     root = document.createElement('div');
     root.className = 'notification-center';
     root.dataset.notificationCenter = 'true';
+    apiBase = host.dataset.notificationScope === 'portal'
+      ? '/api/member-portal/notifications'
+      : '/api/notifications';
 
     const trigger = document.createElement('button');
     triggerElement = trigger;
@@ -261,6 +292,10 @@
     refreshButton = panel.querySelector('[data-notification-refresh]');
     loadMoreButton = panel.querySelector('[data-notification-more]');
     const categoryFilter = panel.querySelector('#notificationCategoryFilter');
+    const coachingOption = document.createElement('option');
+    coachingOption.value = 'coaching';
+    coachingOption.textContent = '\u0627\u0644\u062a\u062f\u0631\u064a\u0628';
+    categoryFilter.appendChild(coachingOption);
     trigger.addEventListener('click', () => toggle());
     refreshButton.addEventListener('click', () => void load());
     categoryFilter.addEventListener('change', () => { state.category = categoryFilter.value; state.loaded = false; state.page = 1; void load(); });
@@ -270,6 +305,6 @@
   }
 
   window.topGymNotificationCenter = { refresh: () => load(), toggle };
-  const host = document.querySelector('.topbar-quick-actions, .platform-topbar-actions, .trainer-workspace-actions');
+  const host = document.querySelector('.topbar-quick-actions, .platform-topbar-actions, .trainer-workspace-actions, .portal-notification-host');
   if (host) create(host);
 })();

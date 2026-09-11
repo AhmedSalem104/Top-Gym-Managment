@@ -159,7 +159,7 @@ function registerRoutes(app, {
     registerBranchRoutes(app, { branchService, asyncRoute });
     registerStockLocationRoutes(app, { stockLocationService, asyncRoute });
     registerBarRoutes(app, { barService, asyncRoute });
-    registerNotificationRoutes(app, { notificationService, asyncRoute });
+    registerNotificationRoutes(app, { notificationService, commercialService, asyncRoute });
     registerMembersRoutes(app, { memberService, branchService, asyncRoute });
 }
 

@@ -11,6 +11,17 @@
       "requiresMaintenanceMode": false,
       "rlsImpact": true,
       "rollback": "forward-fix-or-database-recovery"
+    },
+    "032-notification-portal-recipients.sql": {
+      "version": "032",
+      "checksum": "12704da4aee1c55a4b11282f0a1f3b89a189a88e1d1d064592b90decf9f9e9b5",
+      "transactional": true,
+      "backwardCompatible": true,
+      "destructive": false,
+      "requiresBackup": true,
+      "requiresMaintenanceMode": false,
+      "rlsImpact": true,
+      "rollback": "forward-fix-or-database-recovery"
     }
   }
 }

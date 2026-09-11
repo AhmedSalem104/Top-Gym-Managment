@@ -13,11 +13,47 @@ const brandingService = require('./branding-service');
 const memberService = require('./member-service');
 const membershipCodeService = require('./membership-code-service');
 const saasService = require('./saas-service');
+const { publish, publishForRoles } = require('./notification-dispatcher');
 
 const SUPPORTED_REQUEST_TYPES = Object.freeze(new Set(['membership', 'extension', 'renewal']));
 const MAX_PAGE_SIZE = 50;
 const MAX_PROOF_BYTES = 4 * 1024 * 1024;
 let objectStorageService = null;
+
+async function emitSubscriptionNotification(type, row, actorUserId = null) {
+    if (!row?.id || !row?.tenant_id || !row?.member_id) return;
+    const base = {
+        type,
+        tenantId: Number(row.tenant_id),
+        actorUserId: actorUserId == null ? null : Number(actorUserId),
+        entityType: 'member_subscription_request',
+        entityId: Number(row.id),
+        auditDetails: `Notification emitted for ${type}.`,
+        payload: {
+            memberName: row.member_name || '',
+            membershipStatus: row.status || '',
+            actionUrl: '/member-subscription-requests'
+        }
+    };
+    try {
+        const staffDelivery = publishForRoles({
+            ...base,
+            dedupeKey: `${type}:tenant-${base.tenantId}:staff:request-${base.entityId}`
+        }, ['Owner', 'Assistant']);
+        const memberDelivery = ['member_subscription_request_approved', 'member_subscription_request_rejected'].includes(type)
+            ? publish({
+                ...base,
+                audienceRole: 'Member',
+                recipientMemberId: Number(row.member_id),
+                dedupeKey: `${type}:tenant-${base.tenantId}:member-${row.member_id}:request-${base.entityId}`,
+                payload: { ...base.payload, actionUrl: '/member-portal' }
+            })
+            : Promise.resolve();
+        await Promise.all([staffDelivery, memberDelivery]);
+    } catch (_) {
+        // A notification channel must not change the subscription request result.
+    }
+}
 
 function requestError(message, statusCode = 400, code = 'MEMBER_SUBSCRIPTION_REQUEST_INVALID') {
     const error = new Error(message);
@@ -543,6 +579,7 @@ async function createPortalRequest(request, body = {}, proofInput = null) {
         }
         const result = await getRequestRow(requestId, data.tenantId, { memberId: session.memberId });
         if (!result) throw requestError('The subscription request could not be loaded after creation.', 503, 'MEMBER_SUBSCRIPTION_REQUEST_NOT_AVAILABLE');
+        await emitSubscriptionNotification('member_subscription_request_created', result);
         return { request: requestFromRow(result), idempotent: reused };
     });
 }
@@ -791,6 +828,7 @@ async function approveRequest(requestId, actorUserId, reviewNotes = '', paymentD
         });
     });
     const result = await getRequestRow(requestId, tenantId);
+    await emitSubscriptionNotification('member_subscription_request_approved', result, actorId);
     return { request: requestFromRow(result), created };
 }
 
@@ -825,6 +863,7 @@ async function rejectRequest(requestId, actorUserId, reviewNotes = '') {
         });
     });
     const result = await getRequestRow(requestId, tenantId);
+    await emitSubscriptionNotification('member_subscription_request_rejected', result, actorId);
     return { request: requestFromRow(result) };
 }
 

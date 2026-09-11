@@ -165,7 +165,11 @@ const config = Object.freeze({
     emailSmtpUser: getEnv('EMAIL_SMTP_USER'),
     emailSmtpPassword: getEnv('EMAIL_SMTP_PASSWORD'),
     emailFrom: getEnv('EMAIL_FROM'),
-    notificationAdminEmail: getEnv('NOTIFICATION_ADMIN_EMAIL', getEnv('AUTH_PLATFORM_ADMIN_EMAIL')),
+    // The platform notification mailbox is configuration, never a recipient
+    // embedded in an event producer. Keep the older name as a compatibility
+    // alias for existing deployments.
+    platformAdminNotificationEmail: getEnv('PLATFORM_ADMIN_NOTIFICATION_EMAIL', getEnv('NOTIFICATION_ADMIN_EMAIL', getEnv('AUTH_PLATFORM_ADMIN_EMAIL'))),
+    notificationAdminEmail: getEnv('PLATFORM_ADMIN_NOTIFICATION_EMAIL', getEnv('NOTIFICATION_ADMIN_EMAIL', getEnv('AUTH_PLATFORM_ADMIN_EMAIL'))),
     // Legacy scalar fields remain available to non-crypto bootstrap code. All
     // cryptographic consumers use src/services/secret-ring.js instead.
     membershipCodeSecret: membershipCodeSecret.value,

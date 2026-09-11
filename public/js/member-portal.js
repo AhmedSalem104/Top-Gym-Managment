@@ -463,6 +463,7 @@
       await applyPortalTenant(data.tenant);
       portalMembershipCode = code;
       render(data);
+      window.topGymNotificationCenter?.refresh?.();
       input.value = '';
       loginPanel.hidden = true;
       resultPanel.hidden = false;
@@ -560,6 +561,7 @@
     portalMembershipCode = '';
     portalReportMeta = '';
     resetPortalTenant();
+    window.topGymNotificationCenter?.refresh?.();
     setPortalView('home');
     resetFeedback();
     resetOccupancyDisplay();

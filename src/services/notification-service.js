@@ -5,6 +5,7 @@ const { getPool, sql: defaultSql } = require('../database');
 
 const NOTIFICATION_TABLE = 'dbo.saas_notifications';
 const NOTIFICATION_READ_TABLE = 'dbo.saas_notification_reads';
+const MEMBER_NOTIFICATION_READ_TABLE = 'dbo.saas_member_notification_reads';
 const NOTIFICATION_SCHEMA_SQL = `
 IF OBJECT_ID(N'${NOTIFICATION_TABLE}', N'U') IS NULL
 BEGIN
@@ -13,6 +14,7 @@ BEGIN
         tenant_id INT NULL,
         audience_role VARCHAR(32) NULL,
         recipient_user_id INT NULL,
+        recipient_member_id INT NULL,
         actor_user_id INT NULL,
         type VARCHAR(80) NOT NULL,
         category VARCHAR(80) NOT NULL,
@@ -28,11 +30,12 @@ BEGIN
         CONSTRAINT CK_saas_notifications_severity CHECK (severity IN ('info', 'success', 'warning', 'critical')),
         CONSTRAINT FK_saas_notifications_tenant FOREIGN KEY (tenant_id) REFERENCES dbo.gym_tenants(id) ON DELETE CASCADE,
         CONSTRAINT FK_saas_notifications_recipient FOREIGN KEY (recipient_user_id) REFERENCES dbo.gym_users(id) ON DELETE CASCADE,
+        CONSTRAINT FK_saas_notifications_member_recipient FOREIGN KEY (recipient_member_id) REFERENCES dbo.members(id) ON DELETE NO ACTION,
         CONSTRAINT FK_saas_notifications_actor FOREIGN KEY (actor_user_id) REFERENCES dbo.gym_users(id) ON DELETE NO ACTION
     );
 END;
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name=N'IX_saas_notifications_audience' AND object_id=OBJECT_ID(N'${NOTIFICATION_TABLE}'))
-    CREATE INDEX IX_saas_notifications_audience ON ${NOTIFICATION_TABLE}(tenant_id,audience_role,recipient_user_id,created_at DESC,id DESC);
+    CREATE INDEX IX_saas_notifications_audience ON ${NOTIFICATION_TABLE}(tenant_id,audience_role,recipient_user_id,recipient_member_id,created_at DESC,id DESC);
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name=N'IX_saas_notifications_dedupe' AND object_id=OBJECT_ID(N'${NOTIFICATION_TABLE}'))
     CREATE INDEX IX_saas_notifications_dedupe ON ${NOTIFICATION_TABLE}(dedupe_key,tenant_id,audience_role,recipient_user_id);
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name=N'UQ_saas_notifications_dedupe_key' AND object_id=OBJECT_ID(N'${NOTIFICATION_TABLE}'))
@@ -52,23 +55,109 @@ BEGIN
 END;
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name=N'IX_saas_notification_reads_user' AND object_id=OBJECT_ID(N'${NOTIFICATION_READ_TABLE}'))
     CREATE INDEX IX_saas_notification_reads_user ON ${NOTIFICATION_READ_TABLE}(user_id,tenant_id,read_at,notification_id);
+
+IF OBJECT_ID(N'${MEMBER_NOTIFICATION_READ_TABLE}', N'U') IS NULL
+BEGIN
+    CREATE TABLE ${MEMBER_NOTIFICATION_READ_TABLE} (
+        notification_id BIGINT NOT NULL,
+        tenant_id INT NOT NULL,
+        member_id INT NOT NULL,
+        read_at DATETIME2(0) NOT NULL CONSTRAINT DF_saas_member_notification_reads_read DEFAULT (SYSUTCDATETIME()),
+        CONSTRAINT PK_saas_member_notification_reads PRIMARY KEY (notification_id,member_id),
+        CONSTRAINT FK_saas_member_notification_reads_notification FOREIGN KEY (notification_id) REFERENCES ${NOTIFICATION_TABLE}(id) ON DELETE CASCADE,
+        CONSTRAINT FK_saas_member_notification_reads_member FOREIGN KEY (member_id) REFERENCES dbo.members(id) ON DELETE CASCADE
+    );
+END;
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name=N'IX_saas_member_notification_reads_member' AND object_id=OBJECT_ID(N'${MEMBER_NOTIFICATION_READ_TABLE}'))
+    CREATE INDEX IX_saas_member_notification_reads_member ON ${MEMBER_NOTIFICATION_READ_TABLE}(member_id,tenant_id,read_at,notification_id);
 `;
 
+const STAFF_ROLES = Object.freeze(['Owner', 'Assistant']);
 const EVENT_CATALOG = Object.freeze({
     gym_registration_requested: Object.freeze({
         category: 'registration', audience: 'platform-admin', tenantScope: 'platform',
-        audienceRole: 'PlatformAdmin', requiredPermission: null, severity: 'info',
+        audienceRole: 'PlatformAdmin', audienceRoles: Object.freeze(['PlatformAdmin']), requiredPermission: null, severity: 'info',
         channels: Object.freeze({ inApp: true, email: true, audit: true })
     }),
     trainer_registration_requested: Object.freeze({
         category: 'registration', audience: 'platform-admin', tenantScope: 'platform',
-        audienceRole: 'PlatformAdmin', requiredPermission: null, severity: 'info',
+        audienceRole: 'PlatformAdmin', audienceRoles: Object.freeze(['PlatformAdmin']), requiredPermission: null, severity: 'info',
         channels: Object.freeze({ inApp: true, email: true, audit: true })
+    }),
+    member_created: Object.freeze({
+        category: 'membership', audience: 'tenant-staff', tenantScope: 'tenant', audienceRole: 'Owner', audienceRoles: STAFF_ROLES,
+        requiredPermission: 'members.read', severity: 'success', channels: Object.freeze({ inApp: true, email: false, audit: true })
+    }),
+    membership_created: Object.freeze({
+        category: 'membership', audience: 'tenant', tenantScope: 'tenant', audienceRole: 'Owner', audienceRoles: Object.freeze([...STAFF_ROLES, 'Member']),
+        requiredPermission: 'memberships.read', severity: 'success', channels: Object.freeze({ inApp: true, email: false, audit: true })
+    }),
+    membership_frozen: Object.freeze({
+        category: 'membership', audience: 'tenant', tenantScope: 'tenant', audienceRole: 'Owner', audienceRoles: Object.freeze([...STAFF_ROLES, 'Member']),
+        requiredPermission: 'memberships.read', severity: 'warning', channels: Object.freeze({ inApp: true, email: false, audit: true })
+    }),
+    membership_resumed: Object.freeze({
+        category: 'membership', audience: 'tenant', tenantScope: 'tenant', audienceRole: 'Owner', audienceRoles: Object.freeze([...STAFF_ROLES, 'Member']),
+        requiredPermission: 'memberships.read', severity: 'success', channels: Object.freeze({ inApp: true, email: false, audit: true })
+    }),
+    membership_renewed: Object.freeze({
+        category: 'membership', audience: 'tenant', tenantScope: 'tenant', audienceRole: 'Owner', audienceRoles: Object.freeze([...STAFF_ROLES, 'Member']),
+        requiredPermission: 'memberships.read', severity: 'success', channels: Object.freeze({ inApp: true, email: false, audit: true })
+    }),
+    membership_updated: Object.freeze({
+        category: 'membership', audience: 'tenant', tenantScope: 'tenant', audienceRole: 'Owner', audienceRoles: Object.freeze([...STAFF_ROLES, 'Member']),
+        requiredPermission: 'memberships.read', severity: 'info', channels: Object.freeze({ inApp: true, email: false, audit: true })
+    }),
+    payment_updated: Object.freeze({
+        category: 'payment', audience: 'tenant', tenantScope: 'tenant', audienceRole: 'Owner', audienceRoles: Object.freeze([...STAFF_ROLES, 'Member']),
+        requiredPermission: 'payments.read', severity: 'success', channels: Object.freeze({ inApp: true, email: false, audit: true })
+    }),
+    attendance_checked_in: Object.freeze({
+        category: 'attendance', audience: 'tenant', tenantScope: 'tenant', audienceRole: 'Owner', audienceRoles: Object.freeze([...STAFF_ROLES, 'Member']),
+        requiredPermission: 'attendance.read', severity: 'info', channels: Object.freeze({ inApp: true, email: false, audit: true })
+    }),
+    attendance_auto_checked_out: Object.freeze({
+        category: 'attendance', audience: 'tenant-staff', tenantScope: 'tenant', audienceRole: 'Owner', audienceRoles: STAFF_ROLES,
+        requiredPermission: 'attendance.read', severity: 'info', channels: Object.freeze({ inApp: true, email: false, audit: true })
+    }),
+    member_subscription_request_created: Object.freeze({
+        category: 'membership', audience: 'tenant-staff', tenantScope: 'tenant', audienceRole: 'Owner', audienceRoles: STAFF_ROLES,
+        requiredPermission: 'memberships.read', severity: 'info', channels: Object.freeze({ inApp: true, email: false, audit: true })
+    }),
+    member_subscription_request_approved: Object.freeze({
+        category: 'membership', audience: 'tenant', tenantScope: 'tenant', audienceRole: 'Owner', audienceRoles: Object.freeze([...STAFF_ROLES, 'Member']),
+        requiredPermission: 'memberships.read', severity: 'success', channels: Object.freeze({ inApp: true, email: false, audit: true })
+    }),
+    member_subscription_request_rejected: Object.freeze({
+        category: 'membership', audience: 'tenant', tenantScope: 'tenant', audienceRole: 'Owner', audienceRoles: Object.freeze([...STAFF_ROLES, 'Member']),
+        requiredPermission: 'memberships.read', severity: 'warning', channels: Object.freeze({ inApp: true, email: false, audit: true })
+    }),
+    trainer_session_scheduled: Object.freeze({
+        category: 'coaching', audience: 'tenant', tenantScope: 'tenant', audienceRole: 'Owner', audienceRoles: Object.freeze(['Owner', 'Member']),
+        requiredPermission: 'coaching.read', severity: 'info', channels: Object.freeze({ inApp: true, email: false, audit: true })
+    }),
+    trainer_session_updated: Object.freeze({
+        category: 'coaching', audience: 'tenant', tenantScope: 'tenant', audienceRole: 'Owner', audienceRoles: Object.freeze(['Owner', 'Member']),
+        requiredPermission: 'coaching.read', severity: 'info', channels: Object.freeze({ inApp: true, email: false, audit: true })
+    }),
+    trainer_session_status_changed: Object.freeze({
+        category: 'coaching', audience: 'tenant', tenantScope: 'tenant', audienceRole: 'Owner', audienceRoles: Object.freeze(['Owner', 'Member']),
+        requiredPermission: 'coaching.read', severity: 'success', channels: Object.freeze({ inApp: true, email: false, audit: true })
+    }),
+    trainer_plan_published: Object.freeze({
+        category: 'coaching', audience: 'member', tenantScope: 'tenant', audienceRole: 'Member', audienceRoles: Object.freeze(['Member']),
+        requiredPermission: 'coaching.read', severity: 'success', channels: Object.freeze({ inApp: true, email: false, audit: true })
+    }),
+    system_announcement: Object.freeze({
+        category: 'system', audience: 'tenant', tenantScope: 'tenant', audienceRole: 'Owner', audienceRoles: Object.freeze([...STAFF_ROLES, 'Member']),
+        requiredPermission: 'notifications.read', severity: 'info', channels: Object.freeze({ inApp: true, email: false, audit: true })
     })
 });
 
 const MAX_DEDUPE_ENTRIES = 1_000;
 const DEFAULT_DEDUPE_TTL_MS = 24 * 60 * 60 * 1_000;
+const EMAIL_DELIVERY_MAX_ATTEMPTS = 3;
+const EMAIL_DELIVERY_RETRY_DELAYS_MS = Object.freeze([150, 450]);
 
 function boundedText(value, maxLength = 500) {
     return String(value ?? '').replace(/[\u0000-\u001F\u007F]/g, '').trim().slice(0, maxLength);
@@ -110,21 +199,45 @@ function normalizeEvent(input = {}) {
         contactEmail: boundedText(payload.contactEmail, 254),
         planName: boundedText(payload.planName, 120),
         amountDue: normalizeAmount(payload.amountDue),
+        amountPaid: normalizeAmount(payload.amountPaid),
         currency: boundedText(payload.currency || 'EGP', 3).toUpperCase(),
         submittedAt: boundedText(payload.submittedAt, 80),
+        memberName: boundedText(payload.memberName, 160),
+        membershipStatus: boundedText(payload.membershipStatus, 40),
+        sessionStart: boundedText(payload.sessionStart, 80),
+        branchName: boundedText(payload.branchName, 120),
+        sectionName: boundedText(payload.sectionName, 120),
         actionUrl: safeActionUrl(payload.actionUrl || '/platform-admin')
     });
+    const audienceRoles = Array.isArray(catalog.audienceRoles) ? catalog.audienceRoles : [];
+    const audienceRole = boundedText(input.audienceRole || catalog.audienceRole || '', 32) || null;
+    if (audienceRoles.length && !audienceRoles.includes(audienceRole)) {
+        throw new Error(`Unsupported audience role for notification event: ${type}.`);
+    }
+    if (catalog.tenantScope === 'tenant' && input.tenantId == null) {
+        throw new Error(`${type} requires tenantId.`);
+    }
+    if (catalog.tenantScope === 'platform' && input.tenantId != null) {
+        throw new Error(`${type} must not include tenantId.`);
+    }
+    const recipientMemberId = optionalId(input.recipientMemberId, 'recipientMemberId');
+    if (audienceRole === 'Member' && !recipientMemberId) throw new Error(`${type} requires recipientMemberId.`);
+    const recipientScope = input.recipientUserId != null
+        ? `user-${input.recipientUserId}`
+        : recipientMemberId != null ? `member-${recipientMemberId}` : audienceRole || 'broadcast';
     return Object.freeze({
         type, category: catalog.category, audience: catalog.audience, tenantScope: catalog.tenantScope,
-        audienceRole: catalog.audienceRole, requiredPermission: catalog.requiredPermission,
+        audienceRole, requiredPermission: catalog.requiredPermission,
         severity: catalog.severity, channels: catalog.channels,
         tenantId: optionalId(input.tenantId, 'tenantId'),
         recipientUserId: optionalId(input.recipientUserId, 'recipientUserId'),
+        recipientMemberId,
         actorUserId: optionalId(input.actorUserId, 'actorUserId'),
         entityType: boundedText(input.entityType || 'notification', 80), entityId,
         title: boundedText(input.title || '', 200), message: boundedText(input.message || '', 2_000),
         payload: normalizedPayload,
-        dedupeKey: boundedText(input.dedupeKey || `${type}:${input.tenantId == null ? 'platform' : `tenant-${input.tenantId}`}:${input.recipientUserId == null ? catalog.audienceRole : `user-${input.recipientUserId}`}:${entityId}`, 180),
+        notificationId: optionalId(input.notificationId, 'notificationId'),
+        dedupeKey: boundedText(input.dedupeKey || `${type}:${input.tenantId == null ? 'platform' : `tenant-${input.tenantId}`}:${recipientScope}:${entityId}`, 180),
         auditDetails: boundedText(input.auditDetails || 'Business event emitted.', 2_000),
         expiresAt: input.expiresAt || null
     });
@@ -187,6 +300,7 @@ function createNotificationService({
 } = {}) {
     const completed = new Map();
     const inFlight = new Map();
+    const subscribers = new Set();
     let readyPromise = tablesReady ? Promise.resolve(true) : null;
 
     function pruneDedupe() {
@@ -208,10 +322,30 @@ function createNotificationService({
     }
 
     function displayFields(event) {
+        const fallbackTitle = {
+            membership_updated: '\u062a\u0645 \u062a\u062d\u062f\u064a\u062b \u0627\u0644\u0639\u0636\u0648\u064a\u0629',
+            member_created: 'عضو جديد',
+            membership_created: 'تم إنشاء الاشتراك',
+            membership_frozen: 'تم تجميد العضوية',
+            membership_resumed: 'تم استئناف العضوية',
+            membership_renewed: 'تم تجديد العضوية',
+            payment_updated: 'تم تحديث الدفع',
+            attendance_checked_in: 'تم تسجيل الحضور',
+            attendance_auto_checked_out: 'تم تسجيل الانصراف تلقائيًا',
+            member_subscription_request_created: 'طلب اشتراك جديد',
+            member_subscription_request_approved: 'تم قبول طلب الاشتراك',
+            member_subscription_request_rejected: 'تم رفض طلب الاشتراك',
+            trainer_session_scheduled: 'تم جدولة جلسة تدريب',
+            trainer_session_updated: 'تم تحديث جلسة التدريب',
+            trainer_session_status_changed: 'تغيرت حالة جلسة التدريب',
+            trainer_plan_published: 'تم نشر خطة جديدة',
+            system_announcement: 'إعلان جديد'
+        };
+        const memberLabel = event.payload.memberName ? `: ${event.payload.memberName}` : '';
         return {
-            title: event.title || (event.type.endsWith('_requested') ? registrationTitle(event) : boundedText(event.type, 200)),
-            message: event.message || (event.type.endsWith('_requested') ? registrationMessage(event) : event.auditDetails),
-            actionUrl: event.payload.actionUrl || '/platform-admin'
+            title: event.title || (event.type.endsWith('_requested') ? registrationTitle(event) : fallbackTitle[event.type] || boundedText(event.type, 200)),
+            message: event.message || (event.type.endsWith('_requested') ? registrationMessage(event) : `${event.auditDetails}${memberLabel}`),
+            actionUrl: event.payload.actionUrl || (event.tenantScope === 'tenant' ? '/' : '/platform-admin')
         };
     }
 
@@ -223,6 +357,7 @@ function createNotificationService({
             .input('tenantId', sql.Int, event.tenantId)
             .input('audienceRole', sql.VarChar(32), event.audienceRole)
             .input('recipientUserId', sql.Int, event.recipientUserId)
+            .input('recipientMemberId', sql.Int, event.recipientMemberId)
             .input('actorUserId', sql.Int, event.actorUserId)
             .input('type', sql.VarChar(80), event.type)
             .input('category', sql.VarChar(80), event.category)
@@ -241,18 +376,20 @@ function createNotificationService({
                   AND ${sameNullable('tenant_id', '@tenantId')}
                   AND ${sameNullable('audience_role', '@audienceRole')}
                   AND ${sameNullable('recipient_user_id', '@recipientUserId')}
+                  AND ${sameNullable('recipient_member_id', '@recipientMemberId')}
             )
             BEGIN
                 INSERT INTO ${NOTIFICATION_TABLE}
-                    (tenant_id,audience_role,recipient_user_id,actor_user_id,type,category,severity,title,message,action_url,entity_type,entity_id,dedupe_key,expires_at)
+                    (tenant_id,audience_role,recipient_user_id,recipient_member_id,actor_user_id,type,category,severity,title,message,action_url,entity_type,entity_id,dedupe_key,expires_at)
                 VALUES
-                    (@tenantId,@audienceRole,@recipientUserId,@actorUserId,@type,@category,@severity,@title,@message,@actionUrl,@entityType,@entityId,@dedupeKey,@expiresAt);
+                    (@tenantId,@audienceRole,@recipientUserId,@recipientMemberId,@actorUserId,@type,@category,@severity,@title,@message,@actionUrl,@entityType,@entityId,@dedupeKey,@expiresAt);
             END;
             SELECT TOP (1) id FROM ${NOTIFICATION_TABLE}
             WHERE dedupe_key=@dedupeKey
               AND ${sameNullable('tenant_id', '@tenantId')}
               AND ${sameNullable('audience_role', '@audienceRole')}
               AND ${sameNullable('recipient_user_id', '@recipientUserId')}
+              AND ${sameNullable('recipient_member_id', '@recipientMemberId')}
             ORDER BY id DESC;
         `);
         return { status: 'recorded', notificationId: Number(result.recordset?.[0]?.id || 0) || null };
@@ -263,18 +400,35 @@ function createNotificationService({
         if (event.channels.audit && auditService?.recordAudit) {
             await auditService.recordAudit({ tenantId: event.tenantId, actorUserId: event.actorUserId, action: event.type, entityType: event.entityType, entityId: event.entityId, details: event.auditDetails, executor });
         }
-        // Registration callers pass their business transaction here, making
-        // the in-app row atomic with the request and still post-commit for email.
-        if (event.channels.inApp && databaseEnabled && executor) await createInApp(event, { executor });
-        return event;
+        // A caller-owned transaction keeps the event atomic with the business
+        // write. Post-commit producers use the service pool here instead.
+        let notificationId = event.notificationId;
+        if (event.channels.inApp && databaseEnabled) {
+            const inApp = await createInApp(event, { executor });
+            notificationId = inApp.notificationId;
+        }
+        return notificationId ? Object.freeze({ ...event, notificationId }) : event;
     }
 
     async function dispatchChannel(event, channel, callback) {
         if (!callback) return { status: 'skipped', reason: 'not_configured' };
-        try { return await callback(event); } catch (_) {
-            try { logger.warn('[NOTIFICATION_CHANNEL_FAILED]', { eventType: event.type, channel }); } catch (_) { /* best effort */ }
-            return { status: 'failed', reason: 'channel_failed' };
+        const maxAttempts = channel === 'email' ? EMAIL_DELIVERY_MAX_ATTEMPTS : 1;
+        let lastResult = { status: 'failed', reason: 'channel_failed' };
+        for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+            try {
+                const result = await callback(event);
+                if (result?.status !== 'failed') return { ...result, attempts: attempt };
+                lastResult = result;
+            } catch (_) {
+                lastResult = { status: 'failed', reason: 'channel_failed' };
+            }
+            if (attempt < maxAttempts) {
+                const delay = EMAIL_DELIVERY_RETRY_DELAYS_MS[attempt - 1] || 0;
+                if (delay) await new Promise((resolve) => setTimeout(resolve, delay));
+            }
         }
+        try { logger.warn('[NOTIFICATION_CHANNEL_FAILED]', { eventType: event.type, channel, attempts: maxAttempts }); } catch (_) { /* best effort */ }
+        return { ...lastResult, status: 'failed', attempts: maxAttempts };
     }
 
     async function dispatchEvent(input) {
@@ -291,6 +445,7 @@ function createNotificationService({
                     ? await dispatchChannel(event, 'email', emailService?.send ? (item) => emailService.send({ ...item, email: buildRegistrationEmail(item, publicAppUrl) }) : null)
                     : { status: 'skipped', reason: 'not_selected' }
             };
+            if (channels.inApp.status !== 'skipped') broadcast(event);
             if (channels.email.status !== 'failed') completed.set(event.dedupeKey, now());
             return { eventType: event.type, dedupeKey: event.dedupeKey, deduplicated: false, channels };
         })();
@@ -389,16 +544,156 @@ function createNotificationService({
         return { read: true, changed: Number(result.recordset?.[0]?.changed || 0) };
     }
 
+    function portalVisibleSql() {
+        return `(n.recipient_member_id=@memberId OR (n.recipient_member_id IS NULL AND n.audience_role='Member'))
+            AND n.tenant_id=@tenantId`;
+    }
+
+    async function listForPortalMember({ memberId, tenantId, page = 1, pageSize = 20, unreadOnly = false, category = '' } = {}) {
+        const safeMemberId = positiveId(memberId, 'memberId');
+        const safeTenantId = positiveId(tenantId, 'tenantId');
+        const safePage = Math.min(10_000, Math.max(1, Number(page) || 1));
+        const safePageSize = Math.min(50, Math.max(1, Number(pageSize) || 20));
+        const offset = (safePage - 1) * safePageSize;
+        const normalizedCategory = boundedText(category, 80);
+        const pool = await poolProvider();
+        const request = pool.request()
+            .input('memberId', sql.Int, safeMemberId)
+            .input('tenantId', sql.Int, safeTenantId)
+            .input('offset', sql.Int, offset)
+            .input('pageSize', sql.Int, safePageSize)
+            .input('unreadOnly', sql.Bit, unreadOnly ? 1 : 0)
+            .input('category', sql.VarChar(80), normalizedCategory);
+        const result = await request.query(`
+            WITH visible AS (
+                SELECT n.id,n.tenant_id,n.type,n.category,n.severity,n.title,n.message,n.action_url,n.entity_type,n.entity_id,n.created_at,
+                    CASE WHEN r.notification_id IS NULL THEN CAST(0 AS BIT) ELSE CAST(1 AS BIT) END AS is_read
+                FROM ${NOTIFICATION_TABLE} n
+                LEFT JOIN ${MEMBER_NOTIFICATION_READ_TABLE} r ON r.notification_id=n.id AND r.member_id=@memberId AND r.tenant_id=@tenantId
+                WHERE ${portalVisibleSql()}
+                  AND (n.expires_at IS NULL OR n.expires_at>SYSUTCDATETIME())
+                  AND (@category='' OR n.category=@category)
+            )
+            SELECT id,tenant_id,type,category,severity,title,message,action_url,entity_type,entity_id,created_at,is_read,
+                COUNT_BIG(*) OVER() AS total_count
+            FROM visible
+            WHERE @unreadOnly=0 OR is_read=0
+            ORDER BY created_at DESC,id DESC
+            OFFSET @offset ROWS FETCH NEXT @pageSize ROWS ONLY;
+        `);
+        const rows = result.recordset || [];
+        return {
+            notifications: rows.map((row) => ({
+                id: Number(row.id), tenantId: Number(row.tenant_id), type: row.type, category: row.category,
+                severity: row.severity, title: row.title, message: row.message, actionUrl: row.action_url || null,
+                entityType: row.entity_type || null, entityId: row.entity_id == null ? null : Number(row.entity_id),
+                createdAt: row.created_at, read: Boolean(row.is_read)
+            })),
+            pagination: { page: safePage, pageSize: safePageSize, total: Number(rows[0]?.total_count || 0), hasNext: offset + rows.length < Number(rows[0]?.total_count || 0) }
+        };
+    }
+
+    async function unreadCountForPortalMember({ memberId, tenantId } = {}) {
+        const data = await listForPortalMember({ memberId, tenantId, page: 1, pageSize: 1, unreadOnly: true });
+        return data.pagination.total;
+    }
+
+    async function markPortalRead({ memberId, tenantId, notificationId } = {}) {
+        const id = positiveId(notificationId, 'notificationId');
+        const pool = await poolProvider();
+        const result = await pool.request()
+            .input('memberId', sql.Int, positiveId(memberId, 'memberId'))
+            .input('tenantId', sql.Int, positiveId(tenantId, 'tenantId'))
+            .input('notificationId', sql.BigInt, id)
+            .query(`
+                IF EXISTS (SELECT 1 FROM ${NOTIFICATION_TABLE} n WHERE n.id=@notificationId AND ${portalVisibleSql()})
+                BEGIN
+                    IF NOT EXISTS (SELECT 1 FROM ${MEMBER_NOTIFICATION_READ_TABLE} WHERE notification_id=@notificationId AND member_id=@memberId AND tenant_id=@tenantId)
+                        INSERT INTO ${MEMBER_NOTIFICATION_READ_TABLE}(notification_id,tenant_id,member_id) VALUES (@notificationId,@tenantId,@memberId);
+                    SELECT 1 AS changed;
+                END
+                ELSE SELECT 0 AS changed;
+            `);
+        if (Number(result.recordset?.[0]?.changed) !== 1) {
+            const error = new Error('Notification not found.');
+            error.statusCode = 404;
+            error.expose = true;
+            error.code = 'NOTIFICATION_NOT_FOUND';
+            throw error;
+        }
+        return { read: true };
+    }
+
+    async function markPortalAllRead({ memberId, tenantId } = {}) {
+        const pool = await poolProvider();
+        const result = await pool.request()
+            .input('memberId', sql.Int, positiveId(memberId, 'memberId'))
+            .input('tenantId', sql.Int, positiveId(tenantId, 'tenantId'))
+            .query(`
+                INSERT INTO ${MEMBER_NOTIFICATION_READ_TABLE}(notification_id,tenant_id,member_id)
+                SELECT n.id,@tenantId,@memberId FROM ${NOTIFICATION_TABLE} n
+                WHERE ${portalVisibleSql()}
+                  AND (n.expires_at IS NULL OR n.expires_at>SYSUTCDATETIME())
+                  AND NOT EXISTS (SELECT 1 FROM ${MEMBER_NOTIFICATION_READ_TABLE} r WHERE r.notification_id=n.id AND r.member_id=@memberId AND r.tenant_id=@tenantId);
+                SELECT @@ROWCOUNT AS changed;
+            `);
+        return { read: true, changed: Number(result.recordset?.[0]?.changed || 0) };
+    }
+
+    function subscriberMatches(event, subscriber) {
+        if (subscriber.kind === 'member') {
+            return event.tenantId === subscriber.tenantId
+                && (event.recipientMemberId === subscriber.memberId
+                    || (!event.recipientMemberId && event.audienceRole === 'Member'));
+        }
+        return event.tenantId === subscriber.tenantId
+            && (event.recipientUserId === subscriber.userId
+                || (!event.recipientUserId && event.audienceRole === subscriber.role));
+    }
+
+    function broadcast(event) {
+        if (!event.notificationId) return;
+        const fields = displayFields(event);
+        const payload = {
+            id: event.notificationId,
+            tenantId: event.tenantId,
+            type: event.type,
+            category: event.category,
+            severity: event.severity,
+            title: fields.title,
+            message: fields.message,
+            actionUrl: fields.actionUrl,
+            entityType: event.entityType,
+            entityId: event.entityId,
+            createdAt: new Date(now()).toISOString(),
+            read: false
+        };
+        for (const subscriber of subscribers) {
+            if (!subscriberMatches(event, subscriber)) continue;
+            try { subscriber.send(payload); } catch (_) { subscribers.delete(subscriber); }
+        }
+    }
+
+    function subscribe(filter, send) {
+        const subscriber = { ...filter, send };
+        subscribers.add(subscriber);
+        return () => subscribers.delete(subscriber);
+    }
+
     async function publish(input) {
         const event = await recordEvent(input);
-        if (event.channels.inApp && databaseEnabled) await createInApp(event);
         return { event, delivery: await dispatchEvent(event) };
     }
 
-    return Object.freeze({ catalog: EVENT_CATALOG, ensureTables, recordEvent, createInApp, dispatchEvent, publish, listForUser, unreadCount, markRead, markAllRead });
+    return Object.freeze({
+        catalog: EVENT_CATALOG, ensureTables, recordEvent, createInApp, dispatchEvent, publish,
+        listForUser, unreadCount, markRead, markAllRead, listForPortalMember,
+        unreadCountForPortalMember, markPortalRead, markPortalAllRead,
+        subscribe
+    });
 }
 
 module.exports = {
-    DEFAULT_DEDUPE_TTL_MS, EVENT_CATALOG, NOTIFICATION_READ_TABLE, NOTIFICATION_SCHEMA_SQL,
+    DEFAULT_DEDUPE_TTL_MS, EVENT_CATALOG, MEMBER_NOTIFICATION_READ_TABLE, NOTIFICATION_READ_TABLE, NOTIFICATION_SCHEMA_SQL,
     NOTIFICATION_TABLE, buildRegistrationEmail, createNotificationService, normalizeEvent
 };

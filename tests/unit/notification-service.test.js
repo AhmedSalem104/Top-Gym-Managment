@@ -32,19 +32,36 @@ function registrationEvent(type = 'gym_registration_requested', entityId = 41) {
     };
 }
 
-test('catalog contains only the existing registration business events', () => {
+test('catalog contains registration, operational and portal notification events', () => {
     assert.deepEqual(Object.keys(EVENT_CATALOG).sort(), [
+        'attendance_auto_checked_out',
+        'attendance_checked_in',
         'gym_registration_requested',
-        'trainer_registration_requested'
+        'member_created',
+        'member_subscription_request_approved',
+        'member_subscription_request_created',
+        'member_subscription_request_rejected',
+        'membership_created',
+        'membership_frozen',
+        'membership_renewed',
+        'membership_resumed',
+        'membership_updated',
+        'payment_updated',
+        'system_announcement',
+        'trainer_plan_published',
+        'trainer_registration_requested',
+        'trainer_session_scheduled',
+        'trainer_session_status_changed',
+        'trainer_session_updated'
     ]);
     for (const event of Object.values(EVENT_CATALOG)) {
-        assert.equal(event.audience, 'platform-admin');
-        assert.equal(event.tenantScope, 'platform');
-        assert.equal(event.requiredPermission, null);
         assert.equal(event.channels.audit, true);
-        assert.equal(event.channels.email, true);
         assert.equal(event.channels.inApp, true);
+        assert.ok(Array.isArray(event.audienceRoles));
     }
+    assert.equal(EVENT_CATALOG.gym_registration_requested.channels.email, true);
+    assert.equal(EVENT_CATALOG.member_created.channels.email, false);
+    assert.deepEqual(EVENT_CATALOG.trainer_plan_published.audienceRoles, ['Member']);
 });
 
 test('registration event normalization is platform-scoped and excludes capability data', () => {
@@ -103,9 +120,32 @@ test('recording with an executor persists one durable in-app notification atomic
 });
 
 test('default event dedupe keys include scope so tenant events cannot collide', () => {
-    const first = normalizeEvent({ ...registrationEvent(), tenantId: 7, entityId: 55 });
-    const second = normalizeEvent({ ...registrationEvent(), tenantId: 8, entityId: 55 });
+    const first = normalizeEvent({ type: 'member_created', tenantId: 7, entityId: 55 });
+    const second = normalizeEvent({ type: 'member_created', tenantId: 8, entityId: 55 });
     assert.notEqual(first.dedupeKey, second.dedupeKey);
+});
+
+test('tenant events fail closed without tenant scope and member events require a member recipient', () => {
+    assert.throws(() => normalizeEvent({ type: 'member_created', entityId: 55 }), /requires tenantId/);
+    assert.throws(() => normalizeEvent({ type: 'membership_created', tenantId: 7, entityId: 55, audienceRole: 'Member' }), /requires recipientMemberId/);
+    assert.throws(() => normalizeEvent({ ...registrationEvent(), tenantId: 7 }), /must not include tenantId/);
+});
+
+test('portal subscriber receives only its tenant and member-scoped event', async () => {
+    const service = createNotificationService();
+    const received = [];
+    const unsubscribe = service.subscribe({ kind: 'member', tenantId: 7, memberId: 55 }, (event) => received.push(event));
+    await service.dispatchEvent({
+        type: 'trainer_plan_published', tenantId: 7, audienceRole: 'Member', recipientMemberId: 55,
+        entityType: 'workout_program', entityId: 901, payload: { actionUrl: '/member-portal' }, notificationId: 1
+    });
+    await service.dispatchEvent({
+        type: 'trainer_plan_published', tenantId: 7, audienceRole: 'Member', recipientMemberId: 56,
+        entityType: 'workout_program', entityId: 902, payload: { actionUrl: '/member-portal' }, notificationId: 2
+    });
+    unsubscribe();
+    assert.equal(received.length, 1);
+    assert.equal(received[0].id, 1);
 });
 
 test('dispatch deduplicates concurrent and repeated delivery for one registration', async () => {
@@ -132,13 +172,31 @@ test('dispatch deduplicates concurrent and repeated delivery for one registratio
 });
 
 test('email channel failure is isolated from the saved business event', async () => {
+    let attempts = 0;
     const service = createNotificationService({
-        emailService: { send: async () => { throw new Error('synthetic transport failure'); } },
+        emailService: { send: async () => { attempts += 1; throw new Error('synthetic transport failure'); } },
         logger: { warn() {} }
     });
     const result = await service.dispatchEvent(normalizeEvent(registrationEvent()));
     assert.equal(result.channels.email.status, 'failed');
+    assert.equal(result.channels.email.attempts, 3);
+    assert.equal(attempts, 3);
     assert.equal(result.channels.audit.status, 'recorded');
+});
+
+test('email channel retries a transient provider failure without duplicating the event', async () => {
+    let attempts = 0;
+    const service = createNotificationService({
+        emailService: { send: async () => {
+            attempts += 1;
+            return attempts < 3 ? { status: 'failed', reason: 'delivery_failed' } : { status: 'sent' };
+        } },
+        logger: { warn() {} }
+    });
+    const result = await service.dispatchEvent(normalizeEvent(registrationEvent('trainer_registration_requested', 43)));
+    assert.equal(result.channels.email.status, 'sent');
+    assert.equal(result.channels.email.attempts, 3);
+    assert.equal(attempts, 3);
 });
 
 test('configured email adapter sends through the injected transport without exposing transport credentials', async () => {

@@ -1,7 +1,8 @@
 const { getPool, sql } = require('../database');
 const { ensureLibraryData, ensureLibraryTables } = require('./library-service');
-const { getTenantContext } = require('../tenancy/tenant-context');
+const { getTenantContext, currentTenantId } = require('../tenancy/tenant-context');
 const { safeErrorCode } = require('../utils/error-response');
+const { publish } = require('./notification-dispatcher');
 const {
     addDays,
     differenceInDays,
@@ -13,6 +14,26 @@ const {
 
 let coachingTablesPromise;
 let memberIdentityPromise;
+
+async function emitPlanPublished(plan, entityType) {
+    if (!plan?.id || !plan?.memberId || plan.status !== 'active') return;
+    try {
+        const tenantId = currentTenantId({ required: true });
+        await publish({
+            type: 'trainer_plan_published',
+            tenantId,
+            audienceRole: 'Member',
+            recipientMemberId: Number(plan.memberId),
+            entityType,
+            entityId: Number(plan.id),
+            auditDetails: `Notification emitted for ${entityType} publication.`,
+            payload: { memberName: plan.memberName || '', actionUrl: '/member-portal' },
+            dedupeKey: `trainer_plan_published:tenant-${tenantId}:member-${plan.memberId}:${entityType}-${plan.id}:v${Number(plan.version || 1)}`
+        });
+    } catch (_) {
+        // Coaching writes remain authoritative if notification delivery fails.
+    }
+}
 
 function appError(message, statusCode = 400, code = null) {
     const error = new Error(message);
@@ -983,6 +1004,7 @@ async function createWorkoutProgram(body = {}) {
     });
     const program = await getWorkoutProgram(programId);
     await recordCoachingEvent(data.memberId, 'workout_created', { entityType: 'workout_program', entityId: programId, details: `تم إنشاء برنامج التدريب: ${data.name}` });
+    await emitPlanPublished(program, 'workout_program');
     return program;
 }
 
@@ -1110,6 +1132,7 @@ async function updateWorkoutProgram(id, body = {}) {
         return programId;
     });
     const program = await getWorkoutProgram(updated);
+    await emitPlanPublished(program, 'workout_program');
     await recordCoachingEvent(data.memberId, 'workout_updated', { entityType: 'workout_program', entityId: updated, details: `تم تعديل برنامج التدريب: ${data.name}` });
     return program;
 }
@@ -1190,6 +1213,7 @@ async function createDietPlan(body = {}) {
         return id;
     });
     const plan = await getDietPlan(planId);
+    await emitPlanPublished(plan, 'diet_plan');
     await recordCoachingEvent(data.memberId, 'diet_created', { entityType: 'diet_plan', entityId: planId, details: `تم إنشاء خطة التغذية: ${data.name}` });
     return plan;
 }
@@ -1255,6 +1279,7 @@ async function updateDietPlan(id, body = {}) {
         return planId;
     });
     const plan = await getDietPlan(updated);
+    await emitPlanPublished(plan, 'diet_plan');
     await recordCoachingEvent(data.memberId, 'diet_updated', { entityType: 'diet_plan', entityId: updated, details: `تم تعديل خطة التغذية: ${data.name}` });
     return plan;
 }

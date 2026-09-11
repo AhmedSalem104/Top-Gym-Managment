@@ -44,6 +44,7 @@ const memberSubscriptionService = require('./src/services/member-subscription-se
 const { createGymRegistrationService } = require('./src/services/gym-registration-service');
 const { createEmailNotificationService } = require('./src/services/email-notification-service');
 const { createNotificationService } = require('./src/services/notification-service');
+const { configureNotificationService } = require('./src/services/notification-dispatcher');
 const { secretRing } = require('./src/services/secret-ring');
 const platformAdminService = require('./src/services/platform-admin-service');
 const { runTenantContext } = require('./src/tenancy/tenant-context');
@@ -81,7 +82,7 @@ const emailNotificationService = createEmailNotificationService({
     smtpUser: config.emailSmtpUser,
     smtpPassword: config.emailSmtpPassword,
     from: config.emailFrom,
-    recipients: config.notificationAdminEmail
+    recipients: config.platformAdminNotificationEmail
 });
 const notificationService = createNotificationService({
     getPool,
@@ -95,6 +96,7 @@ const notificationService = createNotificationService({
     },
     publicAppUrl: config.publicAppUrl
 });
+configureNotificationService(notificationService);
 const gymRegistrationService = createGymRegistrationService({
     commercialService,
     saasService,

@@ -18,6 +18,9 @@ test('notification center is loaded only by account shells and uses safe same-or
     assert.match(center, /params\.set\('category', state\.category\)/);
     assert.match(center, /notification-center-item-icon/);
     assert.match(center, /notification-center-item-action/);
+    assert.match(center, /EventSource/);
+    assert.match(center, /api\/member-portal\/notifications/);
+    assert.match(read('public/member-portal.html'), /portal-notification-host/);
     assert.match(center, /تصفية الإشعارات/);
     assert.doesNotMatch(center, /All notifications|Registration|System/);
     assert.doesNotMatch(center, /console\.(log|error|warn)\([^)]*(token|secret|password)/i);
@@ -34,5 +37,9 @@ test('notification API surface is explicit, paginated and tenant-scoped by the s
     assert.match(service, /n\.tenant_id IS NULL AND @role='PlatformAdmin'/);
     assert.match(routes, /\/api\/notifications\/unread-count/);
     assert.match(routes, /\/api\/notifications\/read-all/);
+    assert.match(routes, /\/api\/member-portal\/notifications\/stream/);
+    assert.match(routes, /listForPortalMember/);
+    assert.match(service, /recipient_member_id/);
+    assert.match(service, /saas_member_notification_reads/);
     assert.match(read('src/middleware/auth.middleware.js'), /const notificationPath/);
 });
