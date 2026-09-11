@@ -30,8 +30,7 @@ test('production member creation uses a read-only schema gate instead of request
 });
 
 test('the browser always submits initial membership fields for new members', () => {
-    assert.doesNotMatch(browserSource, /createMembership/u);
-    assert.match(browserSource, /if \(isNewMember\) \{[\s\S]*?body\.membershipType = \$\('membershipType'\)\.value;[\s\S]*?body\.membershipPlan = \$\('membershipPlan'\)\.value;/u);
+    assert.match(browserSource, /if \(isNewMember\) \{[\s\S]*?body\.createMembership = true;[\s\S]*?body\.membershipType = \$\('membershipType'\)\.value;[\s\S]*?body\.membershipPlan = \$\('membershipPlan'\)\.value;/u);
     assert.match(browserSource, /if \(paymentAllowed && \(isNewMember/u);
     assert.match(browserSource, /const body = \{[\s\S]*?fullName: \$\('fullName'\)\.value,[\s\S]*?phone: \$\('phone'\)\.value,[\s\S]*?notes: \$\('notes'\)\.value/u);
     assert.doesNotMatch(pageSource, /createMembership|member-membership-toggle/u);

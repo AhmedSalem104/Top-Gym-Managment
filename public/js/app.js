@@ -885,6 +885,7 @@
             // the same atomic API operation. Payment remains optional and is
             // sent only when the current actor is allowed to record it.
             if (isNewMember) {
+                body.createMembership = true;
                 body.startDate = $('startDate').value;
                 body.endDate = $('endDate').value;
                 body.membershipNotes = $('membershipNotes').value;
