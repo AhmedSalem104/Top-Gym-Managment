@@ -9,6 +9,7 @@ const ALLOWED_FIELDS = new Set([
     'membershipPlan',
     'membershipType',
     'startDate',
+    'paymentDate',
     'paymentMethodCode',
     'notes',
     'idempotencyKey'

@@ -36,11 +36,13 @@ test('multipart member submission keeps metadata and proof bytes in memory witho
         membershipPlan: 'gym_only',
         membershipType: 'monthly',
         startDate: '2026-09-01',
+        paymentDate: '2026-09-01',
         paymentMethodCode: 'vodafone-cash'
     }, { name: 'proof.png', type: 'image/png', body: proof }));
 
     assert.equal(parsed.error, undefined);
     assert.equal(parsed.request.memberSubscriptionSubmission.fields.requestType, 'membership');
+    assert.equal(parsed.request.memberSubscriptionSubmission.fields.paymentDate, '2026-09-01');
     assert.deepEqual(parsed.request.memberSubscriptionSubmission.proof.buffer, proof);
     assert.equal(parsed.request.memberSubscriptionSubmission.proof.mimeType, 'image/png');
 });
