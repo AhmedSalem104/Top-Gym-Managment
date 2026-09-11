@@ -539,6 +539,13 @@
 
     async function saveDraft(button = $('brandingSaveDraftButton')) {
         if (state.busy || !state.draft) return false;
+        const phoneInput = $('brandingDocumentPhone');
+        const phoneValidation = window.LogicFitPhoneInputs?.validateInput?.(phoneInput, { show: true });
+        if (phoneValidation && !phoneValidation.valid) {
+            phoneInput?.focus();
+            showToast('error', 'رقم الهاتف غير صحيح', phoneValidation.message);
+            return false;
+        }
         state.busy = true;
         setBusy(button, true, 'جاري الحفظ…');
         try {

@@ -48,8 +48,7 @@
     function phoneValue(name) {
         const input = form.elements?.namedItem(name);
         const country = input?.dataset?.phoneCountry || 'EG';
-        const inferred = window.LogicFitPhoneInputs?.countryForValue?.(input?.value || '');
-        return window.LogicFitPhoneInputs?.normalizeForTransport?.(input?.value || '', inferred || country) || value(name);
+        return window.LogicFitPhoneInputs?.normalizeForTransport?.(input?.value || '', country) || value(name);
     }
 
     function formatMoney(value, currency = 'EGP') {
@@ -253,6 +252,15 @@
             return false;
         }
         if (step === 5 && !state.proof) { showError('ارفع إثبات الدفع أولًا.'); return false; }
+        if (step === 1) {
+            const phoneInput = form.elements?.namedItem('whatsapp');
+            const phoneValidation = window.LogicFitPhoneInputs?.validateInput?.(phoneInput, { show: true });
+            if (phoneValidation && !phoneValidation.valid) {
+                showError(phoneValidation.message);
+                phoneInput?.focus();
+                return false;
+            }
+        }
         return true;
     }
 

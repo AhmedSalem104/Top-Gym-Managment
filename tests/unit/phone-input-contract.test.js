@@ -17,6 +17,12 @@ test('phone input layer is loaded by every page that owns a phone form', () => {
     assert.match(script, /\/api\/phone\/countries/);
     assert.match(script, /data-phone-country/);
     assert.match(script, /normalizeForTransport/);
+    assert.match(script, /validateInput/);
+    assert.match(script, /setCustomValidity/);
+    assert.match(script, /phone-input-error/);
+    assert.match(script, /countryFlag/);
+    assert.match(script, /exampleNational/);
+    assert.match(read('public/css/components/phone-inputs.css'), /grid-template-columns: minmax\(5\.25rem/);
     const auth = read('src/middleware/auth.middleware.js');
     assert.match(auth, /request\.path === '\/phone\/countries'/);
     assert.match(auth, /phoneCatalogPath/);
@@ -28,8 +34,10 @@ test('phone-bearing screens use tel inputs without changing numeric business fie
     assert.match(index, /id="attendancePhone" type="tel"[^>]*data-phone-input/);
     assert.match(index, /id="dayPassVisitorPhone" type="tel"[^>]*data-phone-input/);
     assert.match(index, /id="storeSupplierPhone" type="tel"[^>]*data-phone-input/);
+    assert.match(index, /id="storeSupplierPhone"[^>]*data-phone-allow-fixed-line="true"/);
+    assert.match(index, /id="brandingDocumentPhone"[^>]*data-phone-allow-fixed-line="true"/);
     assert.match(index, /id="externalPhone" type="tel"[^>]*data-phone-input/);
-    assert.match(read('public/js/branch-context.js'), /id="branchPhoneInput"[^>]*type="tel"[^>]*data-phone-input/);
+    assert.match(read('public/js/branch-context.js'), /id="branchPhoneInput"[^>]*type="tel"[^>]*data-phone-input[^>]*data-phone-allow-fixed-line="true"/);
     assert.match(read('public/js/pages/coaching/coaching.js'), /id="coachingEditPhone"[^>]*type="tel"[^>]*data-phone-input/);
     assert.match(read('public/js/trainer-workspace.js'), /phoneCountry/);
     assert.match(index, /id="amountPaid"[^>]*type="number"/);

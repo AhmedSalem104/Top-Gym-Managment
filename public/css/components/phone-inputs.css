@@ -1,6 +1,6 @@
 .phone-input-control {
   display: grid;
-  grid-template-columns: minmax(8.5rem, 11rem) minmax(0, 1fr);
+  grid-template-columns: minmax(5.25rem, 6.75rem) minmax(0, 1fr);
   gap: var(--space-2);
   align-items: stretch;
   direction: ltr;
@@ -11,6 +11,10 @@
   direction: ltr;
   text-align: left;
   font-size: var(--font-xs);
+  padding-inline: 0.35rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .phone-input-control > input[data-phone-input] {
@@ -19,12 +23,27 @@
   text-align: left;
 }
 
+.phone-input-control > input[data-phone-input].is-invalid,
+.phone-input-control > input[data-phone-input][aria-invalid="true"] {
+  border-color: var(--color-danger, #dc2626);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-danger, #dc2626) 14%, transparent);
+}
+
+.phone-input-error {
+  grid-column: 1 / -1;
+  display: block;
+  margin-top: calc(var(--space-2) * -1);
+  color: var(--color-danger, #dc2626);
+  font-size: var(--font-xs);
+  line-height: 1.5;
+}
+
 [dir="rtl"] .phone-input-control {
   direction: rtl;
 }
 
 @media (max-width: 520px) {
   .phone-input-control {
-    grid-template-columns: minmax(7.5rem, 9rem) minmax(0, 1fr);
+    grid-template-columns: minmax(4.75rem, 5.75rem) minmax(0, 1fr);
   }
 }

@@ -416,6 +416,12 @@
             showMessage('أدخل رقم الهاتف أو امسح QR Code أولاً.', 'warning');
             return null;
         }
+        const validation = window.LogicFitPhoneInputs?.validateInput?.($('attendancePhone'), { show: true });
+        if (validation && !validation.valid) {
+            showMessage(validation.message, 'warning');
+            $('attendancePhone')?.focus();
+            return null;
+        }
         return { phone, phoneCountry: window.LogicFitPhoneInputs?.countryForInput?.($('attendancePhone'))?.iso || $('attendancePhone')?.dataset.phoneCountry || 'EG' };
     }
 

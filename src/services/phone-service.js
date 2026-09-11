@@ -3,9 +3,11 @@
 const {
     getCountries,
     getCountryCallingCode,
-    parsePhoneNumberFromString
+    parsePhoneNumberFromString,
+    getExampleNumber
 } = require('libphonenumber-js/max');
 const metadata = require('libphonenumber-js/metadata.full.json');
+const mobileExamples = require('libphonenumber-js/examples.mobile.json');
 
 const DEFAULT_COUNTRY = 'EG';
 const MOBILE_TYPES = new Set(['MOBILE', 'FIXED_LINE_OR_MOBILE']);
@@ -103,15 +105,22 @@ function countryOption(isoCode) {
     const mobileType = country?.[11]?.[1] || null;
     const mobilePattern = mobileType?.[0] || '';
     const mobileLengths = Array.isArray(mobileType?.[1]) ? mobileType[1] : [];
+    const example = getExampleNumber(isoCode, mobileExamples);
     return Object.freeze({
         country: countryName(isoCode),
         isoCode,
         dialCode: `+${getCountryCallingCode(isoCode)}`,
+        exampleNational: example?.formatNational?.() || null,
+        exampleInternational: example?.number || null,
         validLengths: [...(country?.[3] || [])],
         mobileRules: Object.freeze({
             supported: Boolean(mobileType),
             validLengths: [...mobileLengths],
             prefixValidation: Boolean(mobilePattern),
+            // The pattern is public country metadata, not application data.
+            // The browser uses it for an early UX check; the server library
+            // remains authoritative for the final validation decision.
+            nationalPattern: mobilePattern || null,
             numberValidation: 'libphonenumber-js/full metadata',
             validation: 'libphonenumber-js/full metadata'
         })
