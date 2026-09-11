@@ -910,6 +910,13 @@
                     : 'لا تملك صلاحية تعديل بيانات المشترك. اطلب من مالك النظام تفعيلها، ثم سجّل الخروج والدخول مرة أخرى.', 'error');
                 return;
             }
+            const phoneInput = $('phone');
+            const phoneValidation = window.LogicFitPhoneInputs?.validateInput?.(phoneInput, { show: true });
+            if (phoneValidation && !phoneValidation.valid) {
+                await notify(phoneValidation.message, 'error');
+                phoneInput?.focus();
+                return;
+            }
             const shouldSendWhatsApp = isNewMember && Boolean($('sendWhatsAppAfterSave')?.checked);
             const paymentAllowed = canRecordMemberPayment();
             const membershipAllowed = isNewMember || canUpdateMemberMembership();

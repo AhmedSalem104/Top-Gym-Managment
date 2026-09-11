@@ -21,8 +21,15 @@ test('phone input layer is loaded by every page that owns a phone form', () => {
     assert.match(script, /setCustomValidity/);
     assert.match(script, /phone-input-error/);
     assert.match(script, /countryFlag/);
+    assert.match(script, /phone-country-flag/);
+    assert.match(script, /phone-country-search/);
+    assert.match(script, /tooLong/);
+    assert.match(script, /phoneValidationBlocked/);
     assert.match(script, /exampleNational/);
     assert.match(read('public/css/components/phone-inputs.css'), /grid-template-columns: minmax\(5\.25rem/);
+    assert.match(read('public/css/components/phone-inputs.css'), /phone-country-flag/);
+    assert.match(read('public/css/components/phone-inputs.css'), /phone-country-search-panel/);
+    assert.match(read('public/js/app.js'), /LogicFitPhoneInputs\?\.validateInput/);
     const auth = read('src/middleware/auth.middleware.js');
     assert.match(auth, /request\.path === '\/phone\/countries'/);
     assert.match(auth, /phoneCatalogPath/);

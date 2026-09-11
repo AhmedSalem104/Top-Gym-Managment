@@ -1247,13 +1247,85 @@ input[type="radio"] {
 
 .phone-input-control > select[data-phone-country] {
   min-width: 0;
+}
+
+.phone-country-control {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  overflow: visible;
+  border: 1px solid var(--border-color, #d7dee8);
+  border-radius: var(--radius-md, 0.65rem);
+  background: var(--color-surface, #fff);
+  direction: ltr;
+}
+
+.phone-country-flag {
+  flex: 0 0 1.15rem;
+  width: 1.15rem;
+  margin-inline-start: 0.35rem;
+  font-family: "Segoe UI Emoji", "Apple Color Emoji", sans-serif;
+  font-size: 1rem;
+  line-height: 1;
+  text-align: center;
+}
+
+.phone-country-control > select[data-phone-country] {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 100%;
+  border: 0;
+  outline: 0;
   direction: ltr;
   text-align: left;
-  font-size: var(--font-xs);
-  padding-inline: 0.35rem;
+  font-size: var(--font-2xs, 0.7rem);
+  padding-inline: 0.15rem;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  background: transparent;
+}
+
+.phone-country-search-toggle {
+  flex: 0 0 1.45rem;
+  width: 1.45rem;
+  height: 100%;
+  border: 0;
+  color: var(--color-text-muted, #64748b);
+  background: transparent;
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.phone-country-search-toggle:hover,
+.phone-country-search-toggle:focus-visible {
+  color: var(--color-primary, #2563eb);
+}
+
+.phone-country-search-panel {
+  position: absolute;
+  z-index: 30;
+  inset-inline-start: 0;
+  top: calc(100% + 0.35rem);
+  width: min(16rem, 72vw);
+  padding: 0.4rem;
+  border: 1px solid var(--border-color, #d7dee8);
+  border-radius: var(--radius-md, 0.65rem);
+  background: var(--color-surface, #fff);
+  box-shadow: 0 14px 32px rgb(15 23 42 / 14%);
+}
+
+.phone-country-search {
+  width: 100%;
+  min-width: 0;
+  direction: rtl;
+  border: 1px solid var(--border-color, #d7dee8);
+  border-radius: calc(var(--radius-md, 0.65rem) - 0.15rem);
+  padding: 0.45rem 0.55rem;
+  font-size: var(--font-xs);
+  background: var(--color-surface-muted, #f8fafc);
 }
 
 .phone-input-control > input[data-phone-input] {
@@ -1283,7 +1355,7 @@ input[type="radio"] {
 
 @media (max-width: 520px) {
   .phone-input-control {
-    grid-template-columns: minmax(4.75rem, 5.75rem) minmax(0, 1fr);
+    grid-template-columns: minmax(5rem, 6rem) minmax(0, 1fr);
   }
 }
 

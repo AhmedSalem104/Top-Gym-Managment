@@ -34,9 +34,10 @@ test('phone input blocks invalid length/format before registration request', asy
     const phone = page.locator('input[name="whatsapp"]');
     const country = page.locator('select[data-phone-country]');
     const error = page.locator('.phone-input-error');
+    const flag = page.locator('[data-phone-country-flag]');
     await expect(country).toHaveValue('EG');
     await expect(phone).toHaveAttribute('placeholder', /010/);
-    await expect(country.locator('option[value="EG"]')).toContainText('🇪🇬');
+    await expect(flag).toHaveText('🇪🇬');
 
     await page.locator('input[name="gymName"]').fill('QA Phone Validation Gym');
     await page.locator('input[name="ownerName"]').fill('QA Owner');
@@ -48,14 +49,24 @@ test('phone input blocks invalid length/format before registration request', asy
     await page.locator('#registrationNext').click();
     await expect(page.locator('[data-registration-step="1"]')).toBeVisible();
 
+    await phone.fill('0101581970000000');
+    await phone.blur();
+    await expect(error).toBeVisible();
+    await expect(error).toContainText('11');
+
     await phone.fill('01012345678');
     await phone.blur();
     await expect(error).toBeHidden();
     await expect(phone).not.toHaveAttribute('aria-invalid', 'true');
 
+    await page.locator('.phone-country-search-toggle').click();
+    const countrySearch = page.locator('.phone-country-search');
+    await expect(countrySearch).toBeVisible();
+    await countrySearch.fill('+971');
+    await expect(country.locator('option[value="AE"]')).toHaveCount(1);
     await country.selectOption('AE');
     await expect(phone).toHaveAttribute('placeholder', /050/);
-    await expect(country.locator('option:checked')).toContainText('🇦🇪');
+    await expect(flag).toHaveText('🇦🇪');
     await phone.fill('+201012345678');
     await phone.blur();
     await expect(error).toBeVisible();

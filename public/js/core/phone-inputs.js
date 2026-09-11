@@ -16,8 +16,10 @@
         characters: '\u0627\u0633\u062a\u062e\u062f\u0645 \u0623\u0631\u0642\u0627\u0645\u064b\u0627 \u0641\u0642\u0637 \u0645\u0639 \u0627\u0644\u0645\u0633\u0627\u0641\u0627\u062a \u0623\u0648 \u0627\u0644\u0634\u0631\u0637\u0627\u062a \u0648\u0639\u0644\u0627\u0645\u0629 + \u0641\u064a \u0627\u0644\u0628\u062f\u0627\u064a\u0629.',
         country: '\u0631\u0642\u0645 \u0627\u0644\u0647\u0627\u062a\u0641 \u0644\u0627 \u064a\u0637\u0627\u0628\u0642 \u0627\u0644\u062f\u0648\u0644\u0629 \u0627\u0644\u0645\u062e\u062a\u0627\u0631\u0629.',
         length: '\u0623\u062f\u062e\u0644 \u0631\u0642\u0645\u064b\u0627 \u0628\u0639\u062f\u062f \u0627\u0644\u062e\u0627\u0646\u0627\u062a \u0627\u0644\u0635\u062d\u064a\u062d \u0644\u0644\u062f\u0648\u0644\u0629 \u0627\u0644\u0645\u062e\u062a\u0627\u0631\u0629.',
+        tooLong: (maximum) => `\u0627\u0644\u0631\u0642\u0645 \u0623\u0637\u0648\u0644 \u0645\u0646 \u0627\u0644\u062d\u062f \u0627\u0644\u0623\u0642\u0635\u0649 \u0627\u0644\u0645\u0633\u0645\u0648\u062d (${maximum} \u0631\u0642\u0645\u064b\u0627 \u0643\u062d\u062f \u0623\u0642\u0635\u0649).`,
         format: '\u0623\u062f\u062e\u0644 \u0631\u0642\u0645 \u0645\u0648\u0628\u0627\u064a\u0644 \u0635\u062d\u064a\u062d \u0644\u0644\u062f\u0648\u0644\u0629 \u0627\u0644\u0645\u062e\u062a\u0627\u0631\u0629.',
-        catalog: '\u062c\u0627\u0631\u064d \u062a\u062d\u0645\u064a\u0644 \u0642\u0648\u0627\u0639\u062f \u0627\u0644\u0647\u0627\u062a\u0641. \u062d\u0627\u0648\u0644 \u0645\u0631\u0629 \u0623\u062e\u0631\u0649.'
+        catalog: '\u062c\u0627\u0631\u064d \u062a\u062d\u0645\u064a\u0644 \u0642\u0648\u0627\u0639\u062f \u0627\u0644\u0647\u0627\u062a\u0641. \u062d\u0627\u0648\u0644 \u0645\u0631\u0629 \u0623\u062e\u0631\u0649.',
+        search: '\u0627\u0628\u062d\u062b \u0628\u0627\u0633\u0645 \u0627\u0644\u062f\u0648\u0644\u0629 \u0623\u0648 \u0645\u0641\u062a\u0627\u062d \u0627\u0644\u0627\u062a\u0635\u0627\u0644'
     });
 
     function latinDigits(value) {
@@ -59,6 +61,24 @@
         const validLengths = allowFixedLine
             ? (country.validLengths || [])
             : (mobileRules.validLengths?.length ? mobileRules.validLengths : (country.validLengths || []));
+        const maximumNationalDigits = validLengths.length ? Math.max(...validLengths) : null;
+        const maximumInputDigits = maximumNationalDigits === null
+            ? null
+            : (international ? dialCode.length + maximumNationalDigits : maximumNationalDigits + (digits.startsWith('0') ? 1 : 0));
+        if (maximumNationalDigits !== null && nationalDigits.length > maximumNationalDigits) {
+            return {
+                value,
+                select,
+                iso,
+                country,
+                compactValue,
+                nationalDigits,
+                valid: false,
+                tooLong: true,
+                maximumInputDigits,
+                message: PHONE_MESSAGES.tooLong(maximumInputDigits)
+            };
+        }
         if (!validLengths.includes(nationalDigits.length)) {
             return { value, select, iso, country, compactValue, nationalDigits, valid: false, message: PHONE_MESSAGES.length };
         }
@@ -93,7 +113,27 @@
             errorElement.textContent = message;
             errorElement.hidden = !show || !message;
         }
+        syncSubmitControls(input, result);
         return result;
+    }
+
+    function syncSubmitControls(input, result) {
+        const form = input?.form;
+        if (!form) return;
+        const phoneInputs = [...form.querySelectorAll(PHONE_FIELD_SELECTOR)];
+        const invalidPhone = phoneInputs.some((field) => {
+            if (field === input) return !result.valid;
+            return !phoneInputParts(field).valid;
+        });
+        form.querySelectorAll('button[type="submit"]').forEach((button) => {
+            if (invalidPhone) {
+                button.dataset.phoneValidationBlocked = 'true';
+                button.disabled = true;
+            } else if (button.dataset.phoneValidationBlocked === 'true') {
+                delete button.dataset.phoneValidationBlocked;
+                button.disabled = false;
+            }
+        });
     }
 
     function validateInput(input, options = {}) {
@@ -144,6 +184,11 @@
         if (!country || !input) return;
         const example = country.exampleNational || country.exampleInternational || country.dialCode;
         input.placeholder = example ? `\u0645\u062b\u0627\u0644: ${example}` : `\u0631\u0642\u0645 ${country.country}`;
+        const flag = input.closest('.phone-input-control')?.querySelector('[data-phone-country-flag]');
+        if (flag) {
+            flag.textContent = countryFlag(iso) || iso;
+            flag.title = `${country.country} (${country.dialCode})`;
+        }
         if (select) {
             select.title = `${country.country} (${country.dialCode})`;
             select.setAttribute('aria-label', `${country.country} ${country.dialCode}`);
@@ -178,16 +223,31 @@
         input.dataset.phoneCountry = iso;
     }
 
-    function populateSelect(select, preferred) {
+    function populateSelect(select, preferred, query = '') {
         while (select.firstChild) select.removeChild(select.firstChild);
-        [...countriesByIso.values()]
-            .sort((a, b) => String(a.country).localeCompare(String(b.country), 'ar'))
-            .forEach((country) => {
-                const option = new Option(`${countryFlag(country.isoCode)} ${country.dialCode} · ${country.country}`, country.isoCode);
+        const needle = latinDigits(query).trim().toLocaleLowerCase();
+        const countries = [...countriesByIso.values()]
+            .filter((country) => {
+                if (!needle) return true;
+                const dialCode = String(country.dialCode || '').replace(/^\+/, '');
+                return String(country.country).toLocaleLowerCase().includes(needle)
+                    || String(country.isoCode).toLocaleLowerCase().includes(needle)
+                    || dialCode.includes(needle.replace(/^\+/, ''));
+            })
+            .sort((a, b) => String(a.country).localeCompare(String(b.country), 'ar'));
+        if (!countries.length) {
+            const empty = new Option('\u0644\u0627 \u062a\u0648\u062c\u062f \u0646\u062a\u0627\u0626\u062c', '');
+            empty.disabled = true;
+            select.appendChild(empty);
+            select.value = '';
+            return;
+        }
+        countries.forEach((country) => {
+                const option = new Option(`${country.dialCode} · ${country.country}`, country.isoCode);
                 option.title = `${country.country} (${country.dialCode})`;
                 select.appendChild(option);
-            });
-        select.value = countriesByIso.has(preferred) ? preferred : DEFAULT_COUNTRY;
+        });
+        select.value = countries.some((country) => country.isoCode === preferred) ? preferred : countries[0].isoCode;
     }
 
     function decorate(input) {
@@ -210,7 +270,30 @@
         select.setAttribute('aria-label', 'Country for phone number');
         const preferred = selectedCountry(input);
         select.appendChild(new Option(preferred, preferred));
-        wrapper.insertBefore(select, input);
+        const countryControl = document.createElement('span');
+        countryControl.className = 'phone-country-control';
+        const flag = document.createElement('span');
+        flag.className = 'phone-country-flag';
+        flag.dataset.phoneCountryFlag = 'true';
+        flag.setAttribute('aria-hidden', 'true');
+        const searchButton = document.createElement('button');
+        searchButton.type = 'button';
+        searchButton.className = 'phone-country-search-toggle';
+        searchButton.textContent = '⌕';
+        searchButton.setAttribute('aria-label', PHONE_MESSAGES.search);
+        searchButton.setAttribute('aria-expanded', 'false');
+        const searchPanel = document.createElement('span');
+        searchPanel.className = 'phone-country-search-panel';
+        searchPanel.hidden = true;
+        const searchInput = document.createElement('input');
+        searchInput.type = 'search';
+        searchInput.className = 'phone-country-search';
+        searchInput.placeholder = PHONE_MESSAGES.search;
+        searchInput.autocomplete = 'off';
+        searchInput.setAttribute('aria-label', PHONE_MESSAGES.search);
+        searchPanel.appendChild(searchInput);
+        countryControl.append(flag, select, searchButton, searchPanel);
+        wrapper.insertBefore(countryControl, input);
         input.dataset.phoneCountry = preferred;
 
         const error = document.createElement('small');
@@ -221,15 +304,39 @@
         wrapper.appendChild(error);
         input.setAttribute('aria-describedby', [input.getAttribute('aria-describedby'), error.id].filter(Boolean).join(' '));
 
+        const closeCountrySearch = () => {
+            searchPanel.hidden = true;
+            searchButton.setAttribute('aria-expanded', 'false');
+            searchInput.value = '';
+            populateSelect(select, String(input.dataset.phoneCountry || preferred).toUpperCase());
+            applyCountryPresentation(input, select);
+        };
+
+        searchButton.addEventListener('click', () => {
+            const isOpen = !searchPanel.hidden;
+            searchPanel.hidden = isOpen;
+            searchButton.setAttribute('aria-expanded', String(!isOpen));
+            if (!isOpen) searchInput.focus();
+            else closeCountrySearch();
+        });
+        searchInput.addEventListener('input', () => {
+            populateSelect(select, String(input.dataset.phoneCountry || preferred).toUpperCase(), searchInput.value);
+        });
+
         select.addEventListener('change', () => {
             input.dataset.phoneCountry = String(select.value || DEFAULT_COUNTRY).toUpperCase();
+            closeCountrySearch();
             applyCountryPresentation(input, select);
             if (input.value.trim()) validateInput(input, { show: true });
             else setValidationState(input, { valid: true }, { show: false });
         });
         input.addEventListener('input', () => {
-            setValidationState(input, { valid: true }, { show: false });
-            if (shouldValidateWhileTyping(input)) validateInput(input, { show: false });
+            const result = phoneInputParts(input);
+            if (result.tooLong) setValidationState(input, result, { show: true });
+            else {
+                setValidationState(input, { valid: true }, { show: false });
+                if (shouldValidateWhileTyping(input)) validateInput(input, { show: false });
+            }
         });
         input.addEventListener('blur', () => validateInput(input, { show: true }));
 
@@ -237,6 +344,7 @@
             if (!document.contains(select)) return;
             populateSelect(select, String(input.dataset.phoneCountry || preferred).toUpperCase());
             applyCountryPresentation(input, select);
+            if (input.value.trim()) validateInput(input, { show: false });
         }).catch(() => { /* the API remains authoritative if catalog is unavailable */ });
     }
 
