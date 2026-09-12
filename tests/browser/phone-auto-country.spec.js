@@ -28,6 +28,15 @@ const catalog = {
             exampleInternational: '+971501234567',
             validLengths: [9],
             mobileRules: { supported: true, validLengths: [9], nationalPattern: '5[02-68]\\d{7}', localPrefix: '0' }
+        },
+        {
+            country: 'India',
+            isoCode: 'IN',
+            dialCode: '+91',
+            exampleNational: '09876543210',
+            exampleInternational: '+919876543210',
+            validLengths: [10],
+            mobileRules: { supported: true, validLengths: [10], nationalPattern: '[6-9]\\d{9}', localPrefix: '0' }
         }
     ]
 };
@@ -114,6 +123,22 @@ test.describe('automatic country detection', () => {
             await expect(phone).toHaveAttribute('placeholder', '501234567');
             await expect(page.locator('[data-phone-country-code]')).toHaveText('+971');
             await expect(page.locator('[data-phone-country-name]')).toHaveText(catalog.countries[2].country);
+        });
+
+        test('every selected country exposes digits-only national placeholders', async ({ page }, testInfo) => {
+            skipMobile(testInfo);
+            await routeCatalog(page);
+            await page.goto('/register-gym.html', { waitUntil: 'domcontentloaded' });
+
+            const phone = page.locator('input[name="whatsapp"]');
+            const country = page.locator('select[data-phone-country]');
+            for (const item of catalog.countries) {
+                await country.selectOption(item.isoCode);
+                const placeholder = await phone.getAttribute('placeholder');
+                expect(placeholder).toMatch(/^\d+$/);
+                expect(placeholder).not.toMatch(/\D/u);
+                expect(await phone.inputValue()).toBe('');
+            }
         });
     });
 

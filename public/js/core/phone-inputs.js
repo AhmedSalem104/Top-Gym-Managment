@@ -398,7 +398,7 @@
         // A dial code is country-selector metadata, never a national-number example.
         // Keep the placeholder empty when the catalog has no example rather than
         // presenting a misleading value such as "20" in the phone field.
-        return localPrefix ? localPrefix.replace(/^0+/u, '') : '';
+        return '';
     }
 
     function applyCountryPresentation(input, select) {
@@ -406,7 +406,9 @@
         const country = countriesByIso.get(iso);
         if (!country || !input) return;
         const example = countryInputExample(country, input);
-        input.placeholder = example || `\u0631\u0642\u0645 ${country.country}`;
+        // The phone field exposes only the national example. Country name and
+        // dial code belong to the selector, never to the input placeholder.
+        input.placeholder = example;
         input.title = example ? `\u0627\u0643\u062a\u0628 \u0645\u062b\u0627\u0644: ${example}` : `\u0631\u0642\u0645 ${country.country}`;
         syncNativeInputLimit(input);
         const flag = input.closest('.phone-input-control')?.querySelector('[data-phone-country-flag]');
