@@ -401,8 +401,28 @@
         return '';
     }
 
+    function resolveCountryIso(input, select) {
+        const candidates = [
+            select?.value,
+            input?.dataset?.phoneCountry,
+            input?.dataset?.phoneExplicitCountry,
+            selectedCountry(input),
+            FALLBACK_COUNTRY
+        ];
+        const iso = candidates
+            .map((value) => String(value || '').trim().toUpperCase())
+            .find((value) => countriesByIso.has(value)) || '';
+        // A native select can briefly have no option while the remote catalog
+        // is being hydrated. Repair that transient state from the same
+        // central country selection instead of allowing an empty country to
+        // reach the member API.
+        if (select && iso && select.value !== iso) select.value = iso;
+        if (input && iso) input.dataset.phoneCountry = iso;
+        return iso;
+    }
+
     function applyCountryPresentation(input, select) {
-        const iso = String(select?.value || input?.dataset.phoneCountry || FALLBACK_COUNTRY).toUpperCase();
+        const iso = resolveCountryIso(input, select);
         const country = countriesByIso.get(iso);
         if (!country || !input) return;
         const example = countryInputExample(country, input);
@@ -429,8 +449,7 @@
     function countryForInput(input) {
         const select = input.parentElement?.querySelector('select[data-phone-country]')
             || input.closest('.phone-input-control')?.querySelector('select[data-phone-country]');
-        const iso = String(select?.value || input.dataset.phoneCountry || input.dataset.phoneExplicitCountry || selectedCountry(input)).toUpperCase();
-        if (select?.value) input.dataset.phoneCountry = iso;
+        const iso = resolveCountryIso(input, select);
         return { select, iso };
     }
 

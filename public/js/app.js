@@ -775,8 +775,9 @@
             state.endDateManual = false;
             $('formTitle').textContent = 'إضافة عضو جديد';
             $('saveButton').textContent = 'حفظ العضو';
+            $('resetButton').textContent = 'إلغاء';
             setDialogControlVisibility($('cancelEditButton'), false);
-            setDialogControlVisibility($('resetButton'), false);
+            setDialogControlVisibility($('resetButton'), true);
             syncMemberSubscriptionFields();
             syncMemberPermissionFields();
             updateFormPricing();
@@ -810,7 +811,7 @@
                 await notify(error.message, 'error');
             }
         }
-        function editMember(member) { const sub = member.membership || {}; $('memberId').value = member.id; $('fullName').value = member.fullName || ''; $('phone').value = member.phone || ''; $('email').value = member.email || ''; $('registrationDate').value = member.registrationDate || todayIso(); $('notes').value = member.notes || ''; $('membershipType').value = resolvedTypeCode(sub.type || 'monthly'); $('membershipPlan').value = sub.plan || 'gym_only'; $('startDate').value = sub.startDate || todayIso(); $('endDate').value = sub.endDate || calculatedEndDate($('startDate').value, $('membershipType').value); $('membershipNotes').value = sub.notes || ''; $('discountAmount').value = String(sub.discountAmount || 0); $('amountPaid').value = String(sub.amountPaid || 0); $('paymentMethod').value = sub.paymentMethod || 'cash'; $('sendWhatsAppAfterSave').checked = false; $('sendWhatsAppAfterSave').closest('.whatsapp-after-save')?.classList.add('hidden'); state.editing = member; state.endDateManual = true; $('formTitle').textContent = 'تعديل بيانات العضو'; $('saveButton').textContent = 'حفظ التعديلات'; setDialogControlVisibility($('cancelEditButton'), true); setDialogControlVisibility($('resetButton'), true); syncMemberSubscriptionFields(); syncMemberPermissionFields(); updateFormPricing(); }
+        function editMember(member) { const sub = member.membership || {}; $('memberId').value = member.id; $('fullName').value = member.fullName || ''; $('phone').value = member.phone || ''; $('email').value = member.email || ''; $('registrationDate').value = member.registrationDate || todayIso(); $('notes').value = member.notes || ''; $('membershipType').value = resolvedTypeCode(sub.type || 'monthly'); $('membershipPlan').value = sub.plan || 'gym_only'; $('startDate').value = sub.startDate || todayIso(); $('endDate').value = sub.endDate || calculatedEndDate($('startDate').value, $('membershipType').value); $('membershipNotes').value = sub.notes || ''; $('discountAmount').value = String(sub.discountAmount || 0); $('amountPaid').value = String(sub.amountPaid || 0); $('paymentMethod').value = sub.paymentMethod || 'cash'; $('sendWhatsAppAfterSave').checked = false; $('sendWhatsAppAfterSave').closest('.whatsapp-after-save')?.classList.add('hidden'); state.editing = member; state.endDateManual = true; $('formTitle').textContent = 'تعديل بيانات العضو'; $('saveButton').textContent = 'حفظ التعديلات'; $('resetButton').textContent = 'تفريغ'; setDialogControlVisibility($('cancelEditButton'), true); setDialogControlVisibility($('resetButton'), false); syncMemberSubscriptionFields(); syncMemberPermissionFields(); updateFormPricing(); }
 
         function canOpenFreezeDialog(member) {
             const subscription = member?.membership;
@@ -1018,7 +1019,7 @@
             const body = {
                 fullName: $('fullName').value,
                 phone: $('phone').value,
-                phoneCountry: window.LogicFitPhoneInputs?.countryForInput?.($('phone'))?.iso || $('phone')?.dataset.phoneCountry || '',
+                phoneCountry: window.LogicFitPhoneInputs?.countryCodeForInput?.($('phone')) || $('phone')?.dataset.phoneCountry || '',
                 email: $('email').value,
                 registrationDate: $('registrationDate').value,
                 notes: $('notes').value

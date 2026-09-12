@@ -20,7 +20,7 @@
     <link rel="preload" href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap" as="style" onload="this.onload=null;this.rel='sty'+'lesheet'">
     <link rel="icon" type="image/svg+xml" href="/assets/gym-brand.svg?v=2" sizes="any">
     <link rel="shortcut icon" type="image/svg+xml" href="/assets/gym-brand.svg?v=2">
-    <link rel="stylesheet" href="/css/main.css?v=97">
+    <link rel="stylesheet" href="/css/main.css?v=98">
     <title>Logic Fit | Gym Management</title>
 </head>
 <body class="auth-pending font-sans bg-slate-100 text-slate-900 gym-page-bg" data-branding-entry="saas">
@@ -911,54 +911,73 @@
                     </form>
                 </dialog>
                 <dialog id="memberDialog" class="member-dialog rounded-lg border-slate-200" aria-labelledby="formTitle" aria-describedby="memberDialogDescription">
-                <section class="panel form-panel bg-white">
-                    <div class="section-heading bg-slate-50"><div><h3 id="formTitle">إضافة عضو جديد</h3><span id="memberDialogDescription" class="visually-hidden">أدخل بيانات العضو الأساسية، ويمكنك استكمال بيانات الاشتراك والدفع حسب الحاجة.</span></div><div class="dialog-heading-actions"><button class="btn btn-light btn-small rounded-lg hidden" id="cancelEditButton" type="button">إلغاء التعديل</button><button class="btn btn-light btn-small rounded-lg" id="memberDialogClose" type="button">إغلاق</button></div></div>
-                    <form class="form-body" id="memberForm">
-                        <input type="hidden" id="memberId">
-                        <div class="section-label">بيانات العضو</div>
-                        <div class="field"><label for="fullName">الاسم الكامل *</label><input id="fullName" required maxlength="120" placeholder="مثال: أحمد محمد"></div>
-                        <div class="field-grid">
-                            <div class="field"><label for="phone">رقم الهاتف *</label><input id="phone" type="tel" required maxlength="30" inputmode="numeric" autocomplete="tel" data-phone-input></div>
-                            <div class="field"><label for="email">البريد الإلكتروني</label><input id="email" type="email" maxlength="254" placeholder="اختياري"></div>
-                        </div>
-                        <div class="field-grid">
-                            <div class="field"><label for="registrationDate">تاريخ التسجيل</label><input id="registrationDate" type="date"></div>
-                            <div class="field"><label for="notes">ملاحظات العضو</label><input id="notes" maxlength="1000" placeholder="اختياري"></div>
-                        </div>
+                    <section class="member-dialog-shell">
+                        <header class="member-dialog-header">
+                            <div class="member-dialog-heading">
+                                <span class="member-dialog-heading-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M15 20a6 6 0 0 0-12 0"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M16 11h6"/></svg></span>
+                                <div>
+                                    <h3 id="formTitle">إضافة عضو جديد</h3>
+                                    <p id="memberDialogDescription">أدخل بيانات العضو الأساسية ثم أكمل التفاصيل الاختيارية</p>
+                                </div>
+                            </div>
+                            <div class="dialog-heading-actions">
+                                <button class="btn btn-light btn-small rounded-lg hidden" id="cancelEditButton" type="button">إلغاء التعديل</button>
+                                <button class="btn btn-light btn-small rounded-lg" id="memberDialogClose" type="button">إغلاق</button>
+                            </div>
+                        </header>
+                        <form class="form-body member-dialog-form" id="memberForm">
+                            <div class="member-dialog-scroll">
+                                <input type="hidden" id="memberId">
+                                <section class="member-form-section member-profile-section" aria-labelledby="memberProfileSectionTitle">
+                                    <div class="member-form-section-heading">
+                                        <span class="member-form-section-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="7" r="4"/><path d="M2.5 21a6.5 6.5 0 0 1 13 0M17 8h5M19.5 5.5v5"/></svg></span>
+                                        <div><h4 id="memberProfileSectionTitle">بيانات العضو</h4><p>المعلومات الأساسية للتواصل والتسجيل</p></div>
+                                    </div>
+                                    <div class="member-form-grid">
+                                        <div class="field"><label for="fullName">الاسم الكامل *</label><input id="fullName" required maxlength="120" placeholder="مثال: أحمد محمد"></div>
+                                        <div class="field member-phone-field"><label for="phone">رقم الهاتف *</label><input id="phone" type="tel" required maxlength="30" inputmode="numeric" autocomplete="tel" data-phone-input></div>
+                                        <div class="field"><label for="email">البريد الإلكتروني</label><input id="email" type="email" maxlength="254" placeholder="اختياري"></div>
+                                        <div class="field"><label for="notes">ملاحظات العضو</label><input id="notes" maxlength="1000" placeholder="اختياري"></div>
+                                        <div class="field member-form-field-full"><label for="registrationDate">تاريخ التسجيل</label><input id="registrationDate" type="date"></div>
+                                    </div>
+                                </section>
 
-                        <div id="memberSubscriptionFields">
-                            <div class="section-label">بيانات الاشتراك</div>
-                            <div class="field-grid member-scope-fields">
-                                <div class="field"><label for="memberBranchId">الفرع</label><select id="memberBranchId"><option value="">الفرع الرئيسي تلقائيًا</option></select><small class="field-hint">اختر الفرع الذي سيظهر فيه الاشتراك. عند تركه فارغًا يُستخدم الفرع الرئيسي.</small></div>
-                                <div class="field"><label for="memberSectionId">القسم</label><select id="memberSectionId"><option value="">القسم المختلط تلقائيًا</option></select><small class="field-hint">اختياري — رجال أو نساء أو مختلط حسب أقسام الفرع.</small></div>
-                            </div>
-                            <div class="field-grid">
-                                 <div class="field"><label for="membershipType">نوع العضوية</label><select id="membershipType"><option value="monthly">شهرية</option><option value="half_month">نصف شهر</option><option value="quarterly">ربع سنوية</option><option value="semiannual">نصف سنوية</option><option value="annual">سنوية</option></select></div>
-                                <div class="field"><label for="membershipPlan">الباقة</label><select id="membershipPlan"><option value="gym_only">جيم فقط</option><option value="gym_cardio">جيم وكارديو</option></select></div>
-                            </div>
-                            <div class="field-grid">
-                                <div class="field"><label for="startDate">تاريخ البداية</label><input id="startDate" type="date"></div>
-                                <div class="field"><label for="endDate">تاريخ الانتهاء</label><input id="endDate" type="date"></div>
-                            </div>
-                            <div class="field"><label for="membershipNotes">ملاحظات الاشتراك</label><input id="membershipNotes" maxlength="1000" placeholder="اختياري"></div>
+                                <section id="memberSubscriptionFields" class="member-form-section member-subscription-section" aria-labelledby="memberSubscriptionSectionTitle">
+                                    <div class="member-form-section-heading">
+                                        <span class="member-form-section-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 6h16M4 12h16M4 18h10"/><circle cx="19" cy="18" r="2"/></svg></span>
+                                        <div><h4 id="memberSubscriptionSectionTitle">بيانات الاشتراك</h4><p>هذه البيانات اختيارية ويمكن إضافتها لاحقًا</p></div>
+                                    </div>
+                                    <div class="member-form-grid member-scope-fields">
+                                        <div class="field"><label for="memberBranchId">الفرع</label><select id="memberBranchId"><option value="">الفرع الرئيسي تلقائيًا</option></select><small class="field-hint">اختر الفرع الذي سيظهر فيه الاشتراك. عند تركه فارغًا يُستخدم الفرع الرئيسي.</small></div>
+                                        <div class="field"><label for="memberSectionId">القسم</label><select id="memberSectionId"><option value="">القسم المختلط تلقائيًا</option></select><small class="field-hint">اختياري — رجال أو نساء أو مختلط حسب أقسام الفرع.</small></div>
+                                        <div class="field"><label for="membershipType">نوع العضوية</label><select id="membershipType"><option value="monthly">شهرية</option><option value="half_month">نصف شهر</option><option value="quarterly">ربع سنوية</option><option value="semiannual">نصف سنوية</option><option value="annual">سنوية</option></select></div>
+                                        <div class="field"><label for="membershipPlan">الباقة</label><select id="membershipPlan"><option value="gym_only">جيم فقط</option><option value="gym_cardio">جيم وكارديو</option></select></div>
+                                        <div class="field"><label for="startDate">تاريخ البداية</label><input id="startDate" type="date"></div>
+                                        <div class="field"><label for="endDate">تاريخ الانتهاء</label><input id="endDate" type="date"></div>
+                                        <div class="field member-form-field-full"><label for="membershipNotes">ملاحظات الاشتراك</label><input id="membershipNotes" maxlength="1000" placeholder="اختياري"></div>
+                                    </div>
 
-                            <div class="section-label">الدفع</div>
-                            <div class="permission-note" id="memberPaymentPermissionNote" hidden>يمكنك إضافة المشترك والعضوية بدون تحصيل دفعة. لتسجيل مبلغ مدفوع أو خصم، فعّل للمساعد صلاحية «تسجيل دفعة».</div>
-                            <div class="field-grid">
-                                <div class="field"><label for="amountDue">المستحق بعد الخصم</label><input id="amountDue" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0.00" readonly></div>
-                                <div class="field" data-required-permission="payments.create"><label for="discountAmount">الخصم</label><input id="discountAmount" type="number" min="0" step="0.01" inputmode="decimal" value="0" placeholder="0.00"></div>
+                                    <section class="member-payment-section" aria-labelledby="memberPaymentSectionTitle">
+                                        <div class="member-form-section-heading member-payment-heading">
+                                            <span class="member-form-section-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M7 15h4"/></svg></span>
+                                            <div><h4 id="memberPaymentSectionTitle">الدفع</h4><p>سجل الدفعات والمبالغ (اختياري)</p></div>
+                                        </div>
+                                        <div class="permission-note" id="memberPaymentPermissionNote" hidden>يمكنك إضافة المشترك والعضوية بدون تحصيل دفعة. لتسجيل مبلغ مدفوع أو خصم، فعّل للمساعد صلاحية «تسجيل دفعة».</div>
+                                        <div class="member-form-grid">
+                                            <div class="field"><label for="amountDue">المستحق بعد الخصم</label><input id="amountDue" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0.00" readonly></div>
+                                            <div class="field" data-required-permission="payments.create"><label for="discountAmount">الخصم</label><input id="discountAmount" type="number" min="0" step="0.01" inputmode="decimal" value="0" placeholder="0.00"></div>
+                                            <div class="field" data-required-permission="payments.create"><label for="amountPaid">المبلغ المدفوع</label><input id="amountPaid" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0.00"></div>
+                                            <div class="field" data-required-permission="payments.create"><label for="paidAt">تاريخ الدفع</label><input id="paidAt" type="date"><small class="field-hint">يُستخدم في تقارير التحصيل، ويظل مصدره الخادم.</small></div>
+                                            <div class="pricing-summary member-form-field-full" id="pricingSummary">السعر الأساسي: —</div>
+                                            <div class="field member-form-field-full" data-required-permission="payments.create"><label for="paymentMethod">طريقة الدفع</label><select id="paymentMethod"><option value="cash">نقدي</option><option value="card">بطاقة</option><option value="transfer">تحويل</option><option value="other">أخرى</option></select></div>
+                                        </div>
+                                    </section>
+                                </section>
+                                <label class="checkbox-field whatsapp-after-save"><input id="sendWhatsAppAfterSave" type="checkbox" checked><span>📱 إرسال رسالة تفاصيل الاشتراك على واتساب بعد حفظ المشترك الجديد</span></label>
                             </div>
-                            <div class="field-grid">
-                                <div class="field" data-required-permission="payments.create"><label for="amountPaid">المبلغ المدفوع</label><input id="amountPaid" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0.00"></div>
-                                <div class="field" data-required-permission="payments.create"><label for="paidAt">تاريخ الدفع</label><input id="paidAt" type="date"><small class="field-hint">يُستخدم في تقارير التحصيل، ويظل مصدره الخادم.</small></div>
-                            </div>
-                            <div class="pricing-summary" id="pricingSummary">السعر الأساسي: —</div>
-                            <div class="field" data-required-permission="payments.create"><label for="paymentMethod">طريقة الدفع</label><select id="paymentMethod"><option value="cash">نقدي</option><option value="card">بطاقة</option><option value="transfer">تحويل</option><option value="other">أخرى</option></select></div>
-                        </div>
-                        <label class="checkbox-field whatsapp-after-save"><input id="sendWhatsAppAfterSave" type="checkbox" checked><span>📱 إرسال رسالة تفاصيل الاشتراك على واتساب بعد حفظ المشترك الجديد</span></label>
-                        <div class="form-actions"><button class="btn btn-primary" id="saveButton" type="submit">حفظ العضو</button><button class="btn btn-light hidden" id="resetButton" type="button">تفريغ</button></div>
-                    </form>
-                </section>
+                            <div class="form-actions"><button class="btn btn-primary" id="saveButton" type="submit">حفظ العضو</button><button class="btn btn-light" id="resetButton" type="button">إلغاء</button></div>
+                        </form>
+                    </section>
                 </dialog>
 
                 <section class="panel members-panel bg-white border-slate-200 rounded-xl shadow-panel" id="membersSection">

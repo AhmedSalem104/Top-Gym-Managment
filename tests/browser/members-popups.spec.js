@@ -126,6 +126,140 @@ test('member action popups keep hidden edit controls, fields and footer inside t
     await page.keyboard.press('Escape');
 });
 
+test('member form keeps the selected country, valid phone payload and fixed footer', async ({ page }, testInfo) => {
+    let submittedBody = null;
+    await page.route('**/api/members', async (route) => {
+        if (route.request().method() !== 'POST') {
+            await route.fallback();
+            return;
+        }
+        submittedBody = JSON.parse(route.request().postData() || '{}');
+        await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            // Keep the browser fixture side-effect free; the production handler
+            // may open the member QR dialog when a created member has an id.
+            body: JSON.stringify({ member: { fullName: 'QA Member', phone: '+201012345678' } })
+        });
+    });
+
+    await page.locator('#addMemberButton').click();
+    const dialog = page.locator('#memberDialog');
+    await expect(dialog).toBeVisible();
+    await expect(page.locator('#resetButton')).toBeVisible();
+    const initial = await page.evaluate(() => {
+        const input = document.getElementById('phone');
+        const country = document.querySelector('#phone')?.closest('[data-phone-control]')?.querySelector('select[data-phone-country]');
+        return { value: input?.value || '', placeholder: input?.getAttribute('placeholder') || '', country: country?.value || '' };
+    });
+    expect(initial.value).toBe('');
+    expect(initial.country).toMatch(/^[A-Z]{2}$/);
+    expect(initial.placeholder).toMatch(/^\d+$/);
+
+    const initialDialogHeight = await dialog.evaluate((element) => element.getBoundingClientRect().height);
+    await page.locator('#phone').fill('966501234567');
+    await page.locator('#phone').blur();
+    const invalidPhoneState = await page.evaluate(() => {
+        const input = document.getElementById('phone');
+        const error = document.getElementById('phoneValidationError');
+        const style = error ? getComputedStyle(error) : null;
+        return {
+            visible: Boolean(error && !error.hidden && style?.display !== 'none'),
+            color: style?.color || '',
+            text: error?.textContent || '',
+            dialogHeight: document.getElementById('memberDialog')?.getBoundingClientRect().height || 0,
+            value: input?.value || ''
+        };
+    });
+    expect(invalidPhoneState.visible).toBe(true);
+    expect(invalidPhoneState.text).not.toBe('');
+    expect(invalidPhoneState.color).toMatch(/rgb\(/);
+    expect(Math.abs(invalidPhoneState.dialogHeight - initialDialogHeight)).toBeLessThanOrEqual(1);
+    await page.locator('#phone').fill('01012345678');
+    const repairedCountry = await page.evaluate(() => {
+        const input = document.getElementById('phone');
+        const select = input.closest('[data-phone-control]')?.querySelector('select[data-phone-country]');
+        select.value = '';
+        return window.LogicFitPhoneInputs.countryCodeForInput(input);
+    });
+    expect(repairedCountry).toBe(initial.country);
+
+    await page.locator('#fullName').fill('QA Member');
+    await page.locator('#phone').fill('01012345678');
+    await page.locator('#sendWhatsAppAfterSave').uncheck();
+    await page.locator('#saveButton').click();
+    await expect(dialog).toBeHidden();
+    expect(submittedBody).toMatchObject({ fullName: 'QA Member', phoneCountry: initial.country, createMembership: true });
+    expect(submittedBody.phone).toBe('+201012345678');
+    await page.evaluate(() => document.getElementById('memberQrDialog')?.close?.());
+
+    await page.locator('#addMemberButton').click();
+    await expect(dialog).toBeVisible();
+    await page.evaluate(() => {
+        const scroll = document.querySelector('#memberDialog .member-dialog-scroll');
+        if (scroll) scroll.scrollTop = 0;
+    });
+    await page.screenshot({ path: `qa/artifacts/member-form-top-${testInfo.project.name}.png`, fullPage: false });
+    const geometry = await page.evaluate(() => {
+        const popup = document.getElementById('memberDialog');
+        const scroll = popup.querySelector('.member-dialog-scroll');
+        const footer = popup.querySelector('.form-actions');
+        const lastInput = popup.querySelector('#paymentMethod');
+        scroll.scrollTop = scroll.scrollHeight;
+        const popupRect = popup.getBoundingClientRect();
+        const footerRect = footer.getBoundingClientRect();
+        const inputRect = lastInput.getBoundingClientRect();
+        const formRect = popup.querySelector('.member-dialog-form').getBoundingClientRect();
+        const scrollRect = scroll.getBoundingClientRect();
+        return {
+            width: popupRect.width,
+            height: popupRect.height,
+            insideViewport: popupRect.left >= 0 && popupRect.top >= 0 && popupRect.right <= innerWidth + 1 && popupRect.bottom <= innerHeight + 1,
+            bodyScrolls: scroll.scrollHeight >= scroll.clientHeight,
+            footerVisible: footerRect.top >= 0 && footerRect.bottom <= innerHeight + 1,
+            lastInputAboveFooter: inputRect.bottom <= footerRect.top + 1,
+            form: { top: formRect.top, bottom: formRect.bottom, height: formRect.height },
+            scroll: { top: scrollRect.top, bottom: scrollRect.bottom, height: scrollRect.height },
+            footer: { top: footerRect.top, bottom: footerRect.bottom, height: footerRect.height },
+            pageOverflow: document.documentElement.scrollWidth > innerWidth
+        };
+    });
+    expect(geometry.insideViewport).toBe(true);
+    expect(geometry.bodyScrolls).toBe(true);
+    expect(geometry.footerVisible).toBe(true);
+    expect(geometry.lastInputAboveFooter).toBe(true);
+    expect(geometry.pageOverflow).toBe(false);
+    await page.screenshot({ path: `qa/artifacts/member-form-${testInfo.project.name}.png`, fullPage: false });
+    await page.keyboard.press('Escape');
+});
+
+test('member form remains usable in portrait tablet layout', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'desktop', 'Portrait tablet is covered by the desktop browser project.');
+    await page.setViewportSize({ width: 768, height: 1024 });
+    await page.locator('#addMemberButton').click();
+    const result = await page.evaluate(() => {
+        const dialog = document.getElementById('memberDialog');
+        const scroll = dialog?.querySelector('.member-dialog-scroll');
+        const footer = dialog?.querySelector('.form-actions');
+        const rect = dialog?.getBoundingClientRect();
+        const footerRect = footer?.getBoundingClientRect();
+        return {
+            withinViewport: Boolean(rect && rect.left >= 0 && rect.top >= 0 && rect.right <= innerWidth + 1 && rect.bottom <= innerHeight + 1),
+            twoColumns: getComputedStyle(dialog?.querySelector('.member-form-grid')).gridTemplateColumns.split(' ').length === 2,
+            scrollable: Boolean(scroll && scroll.scrollHeight > scroll.clientHeight),
+            footerVisible: Boolean(footerRect && footerRect.bottom <= innerHeight + 1),
+            horizontalOverflow: document.documentElement.scrollWidth > innerWidth
+        };
+    });
+    expect(result.withinViewport).toBe(true);
+    expect(result.twoColumns).toBe(true);
+    expect(result.scrollable).toBe(true);
+    expect(result.footerVisible).toBe(true);
+    expect(result.horizontalOverflow).toBe(false);
+    await page.screenshot({ path: `qa/artifacts/member-form-tablet-portrait-${testInfo.project.name}.png`, fullPage: false });
+    await page.keyboard.press('Escape');
+});
+
 test('freeze action is rendered only for an eligible subscription', async ({ page }) => {
     await openSyntheticDetails(page, { status: 'active', freezeCount: 0, freezeLimit: 3 });
     await expect(page.locator('[data-member-detail-action="freeze"]')).toBeVisible();
@@ -137,6 +271,58 @@ test('freeze action is rendered only for an eligible subscription', async ({ pag
     });
     await expect(page.locator('[data-member-detail-action="freeze"]')).toHaveCount(0);
     await expect(page.locator('[data-member-detail-action="resume"]')).toHaveCount(0);
+});
+
+test('member details selects the latest non-cancelled subscription from full history', async ({ page }) => {
+    await page.evaluate(async () => {
+        const member = { id: 4242, fullName: 'QA Member', phone: '01012345678', registrationDate: '2026-01-01' };
+        const details = {
+            member,
+            memberships: [
+                {
+                    id: 1,
+                    status: 'expired',
+                    plan: 'gym_only',
+                    type: 'monthly',
+                    startDate: '2026-01-01',
+                    endDate: '2026-01-31',
+                    effectiveEndDate: '2026-01-31',
+                    daysRemaining: -200,
+                    freezeCount: 0,
+                    freezeLimit: 3,
+                    amountDue: 300,
+                    amountRemaining: 0,
+                    amountPaid: 300
+                },
+                {
+                    id: 2,
+                    status: 'active',
+                    plan: 'gym_cardio',
+                    type: 'monthly',
+                    startDate: '2026-09-01',
+                    endDate: '2026-12-31',
+                    effectiveEndDate: '2026-12-31',
+                    daysRemaining: 110,
+                    freezeCount: 0,
+                    freezeLimit: 3,
+                    amountDue: 400,
+                    amountRemaining: 0,
+                    amountPaid: 400
+                }
+            ]
+        };
+        await window.topGymEnsureTab?.('member-details');
+        const dialog = document.getElementById('detailsDialog');
+        if (!dialog.open) dialog.showModal();
+        window.dispatchEvent(new CustomEvent('topgym:member-details-opened', { detail: { member, details } }));
+    });
+
+    await expect(page.locator('#detailsExpiryBanner')).toBeHidden();
+    const overview = await page.locator('#detailsContent').innerText();
+    expect(overview).toContain('٣١');
+    expect(overview).toContain('جيم وكارديو');
+    expect(overview).not.toContain('الاشتراك منتهي');
+    await expect(page.locator('[data-member-detail-action="freeze"]')).toBeVisible();
 });
 
 test('members table keeps responsive overflow inside its scroll container', async ({ page }) => {
