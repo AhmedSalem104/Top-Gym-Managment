@@ -2143,6 +2143,7 @@ async function deleteMember(id) {
                 WHERE member_id = @id;
             END;
             IF OBJECT_ID(N'dbo.saas_notifications', N'U') IS NOT NULL
+                AND COL_LENGTH(N'dbo.saas_notifications', N'recipient_member_id') IS NOT NULL
             BEGIN
                 UPDATE dbo.saas_notifications
                 SET recipient_member_id = NULL
