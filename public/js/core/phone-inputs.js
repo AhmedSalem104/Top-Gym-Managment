@@ -37,6 +37,60 @@
         return /^[0-9\u0660-\u0669\u06F0-\u06F9]*$/u.test(String(value ?? ''));
     }
 
+    function inputLimits(input, rawValue = input?.value) {
+        const { iso } = countryForInput(input);
+        const country = countriesByIso.get(iso);
+        if (!country) return null;
+        const allowFixedLine = input?.dataset.phoneAllowFixedLine === 'true';
+        const mobileRules = country.mobileRules || {};
+        const localPrefix = String(mobileRules.localPrefix || '');
+        const validLengths = allowFixedLine
+            ? (country.validLengths || [])
+            : (mobileRules.validLengths?.length ? mobileRules.validLengths : (country.validLengths || []));
+        if (!validLengths.length) return null;
+        const maximumNationalDigits = Math.max(...validLengths);
+        const compactValue = compact(rawValue);
+        const international = compactValue.startsWith('+');
+        const dialCode = String(country.dialCode || '').replace(/^\+/, '');
+        const maximumInputDigits = maximumNationalDigits + (international ? dialCode.length : localPrefix.length);
+        return { country, maximumNationalDigits, maximumInputDigits, international };
+    }
+
+    function syncNativeInputLimit(input) {
+        if (!input) return;
+        const limits = inputLimits(input);
+        if (!limits) {
+            delete input.dataset.phoneMaximumDigits;
+            return;
+        }
+        input.dataset.phoneMaximumDigits = String(limits.maximumInputDigits);
+    }
+
+    function projectedInputValue(input, insertedText) {
+        const current = String(input?.value || '');
+        const start = Number.isInteger(input?.selectionStart) ? input.selectionStart : current.length;
+        const end = Number.isInteger(input?.selectionEnd) ? input.selectionEnd : current.length;
+        return `${current.slice(0, start)}${insertedText}${current.slice(end)}`;
+    }
+
+    function exceedsInputLimit(input, insertedText) {
+        const limits = inputLimits(input, projectedInputValue(input, insertedText));
+        if (!limits) return null;
+        const projectedDigits = localDigits(projectedInputValue(input, insertedText)).length;
+        return projectedDigits > limits.maximumInputDigits ? limits : null;
+    }
+
+    function rejectedLimitResult(input) {
+        if (input?.dataset.phoneRejectedLimit !== 'true') return null;
+        const limits = inputLimits(input);
+        if (!limits) return null;
+        return {
+            valid: false,
+            tooLong: true,
+            message: PHONE_MESSAGES.tooLong(limits.maximumInputDigits + (limits.international ? 1 : 0))
+        };
+    }
+
     function compact(value) {
         const raw = latinDigits(value).trim().replace(/[\s().-]/gu, '');
         if (!raw) return '';
@@ -152,7 +206,7 @@
     }
 
     function validateInput(input, options = {}) {
-        return setValidationState(input, phoneInputParts(input), options);
+        return setValidationState(input, rejectedLimitResult(input) || phoneInputParts(input), options);
     }
 
     function shouldValidateWhileTyping(input) {
@@ -231,8 +285,10 @@
         const iso = String(select?.value || input?.dataset.phoneCountry || DEFAULT_COUNTRY).toUpperCase();
         const country = countriesByIso.get(iso);
         if (!country || !input) return;
-        const example = country.exampleNational || country.exampleInternational || country.dialCode;
+        const example = String(country.exampleNational || country.exampleInternational || country.dialCode || '').trim();
         input.placeholder = example ? `\u0645\u062b\u0627\u0644: ${example}` : `\u0631\u0642\u0645 ${country.country}`;
+        input.title = example ? `\u0627\u0643\u062a\u0628 \u0645\u062b\u0627\u0644: ${example}` : `\u0631\u0642\u0645 ${country.country}`;
+        syncNativeInputLimit(input);
         const flag = input.closest('.phone-input-control')?.querySelector('[data-phone-country-flag]');
         if (flag) {
             renderCountryFlag(flag, iso);
@@ -454,26 +510,71 @@
             if (!event.data || containsOnlyDigits(event.data)) return;
             event.preventDefault();
             setValidationState(input, { valid: false, message: PHONE_MESSAGES.characters }, { show: true });
+            return;
+        });
+        input.addEventListener('beforeinput', (event) => {
+            if (!event.data || !containsOnlyDigits(event.data)) return;
+            const limits = exceedsInputLimit(input, event.data);
+            if (!limits) return;
+            event.preventDefault();
+            input.dataset.phoneRejectedLimit = 'true';
+            setValidationState(input, {
+                valid: false,
+                tooLong: true,
+                message: PHONE_MESSAGES.tooLong(limits.maximumInputDigits + (limits.international ? 1 : 0))
+            }, { show: true });
         });
         input.addEventListener('paste', (event) => {
             const pasted = event.clipboardData?.getData('text') || '';
             if (containsOnlyDigits(pasted)) return;
             event.preventDefault();
             setValidationState(input, { valid: false, message: PHONE_MESSAGES.characters }, { show: true });
+            return;
+        });
+        input.addEventListener('paste', (event) => {
+            const pasted = event.clipboardData?.getData('text') || '';
+            if (!containsOnlyDigits(pasted)) return;
+            const limits = exceedsInputLimit(input, pasted);
+            if (!limits) return;
+            event.preventDefault();
+            input.dataset.phoneRejectedLimit = 'true';
+            setValidationState(input, {
+                valid: false,
+                tooLong: true,
+                message: PHONE_MESSAGES.tooLong(limits.maximumInputDigits + (limits.international ? 1 : 0))
+            }, { show: true });
         });
         input.addEventListener('input', () => {
+            delete input.dataset.phoneRejectedLimit;
             const raw = String(input.value || '');
             const normalizedDigits = latinDigits(raw);
             const sanitized = localDigits(raw);
             if (sanitized !== normalizedDigits) {
                 input.value = sanitized;
                 setValidationState(input, { valid: false, message: PHONE_MESSAGES.characters }, { show: true });
+                syncNativeInputLimit(input);
                 return;
             }
             if (raw !== normalizedDigits) input.value = normalizedDigits;
             const result = phoneInputParts(input);
-            if (result.tooLong || (!result.valid && result.message === PHONE_MESSAGES.characters)) setValidationState(input, result, { show: true });
+            if (result.tooLong) {
+                const limits = inputLimits(input);
+                if (limits) {
+                    const prefix = limits.international ? '+' : '';
+                    input.value = `${prefix}${localDigits(input.value).slice(0, limits.maximumInputDigits)}`;
+                    syncNativeInputLimit(input);
+                    input.dataset.phoneRejectedLimit = 'true';
+                    setValidationState(input, {
+                        valid: false,
+                        tooLong: true,
+                        message: PHONE_MESSAGES.tooLong(limits.maximumInputDigits + (limits.international ? 1 : 0))
+                    }, { show: true });
+                    return;
+                }
+                setValidationState(input, result, { show: true });
+            } else if (!result.valid && result.message === PHONE_MESSAGES.characters) setValidationState(input, result, { show: true });
             else {
+                syncNativeInputLimit(input);
                 setValidationState(input, { valid: true }, { show: false });
                 if (shouldValidateWhileTyping(input)) validateInput(input, { show: false });
             }

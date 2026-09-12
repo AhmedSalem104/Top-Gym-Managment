@@ -31,6 +31,13 @@ test('phone input layer is loaded by every page that owns a phone form', () => {
     assert.match(script, /tooLong/);
     assert.match(script, /phoneValidationBlocked/);
     assert.match(script, /exampleNational/);
+    assert.match(script, /inputLimits/);
+    assert.match(script, /syncNativeInputLimit/);
+    assert.match(script, /projectedInputValue/);
+    assert.match(script, /exceedsInputLimit/);
+    assert.match(script, /phoneRejectedLimit/);
+    assert.match(script, /maximumInputDigits/);
+    assert.match(script, /phoneMaximumDigits/);
     assert.match(script, /inputMode = 'numeric'/);
     assert.match(script, /setAttribute\('inputmode', 'numeric'\)/);
     assert.match(script, /setAttribute\('pattern', '\[0-9\+\\\\s\(\)\.\-\]\*'\)/);

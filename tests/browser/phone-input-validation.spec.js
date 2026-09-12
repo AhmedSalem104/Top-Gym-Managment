@@ -77,6 +77,11 @@ test('phone input blocks invalid length/format before registration request', asy
     await phone.blur();
     await expect(error).toBeHidden();
     await expect(phone).not.toHaveAttribute('aria-invalid', 'true');
+    await expect(phone).toHaveAttribute('data-phone-maximum-digits', '11');
+    await phone.pressSequentially('9');
+    await expect(phone).toHaveValue('01012345678');
+    await expect(error).toBeVisible();
+    await expect(error).toContainText('11');
 
     await page.locator('.phone-country-trigger').click();
     await expect(page.locator('.phone-country-menu')).toBeVisible();
