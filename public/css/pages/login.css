@@ -2906,7 +2906,12 @@ html[data-theme="dark"] .auth-screen[data-auth-stage="login"] {
 /* Final cascade guard: the shared visual layer is intentionally broad, so
    these scoped rules keep the login contract blue and theme-correct. */
 body.auth-locked .auth-screen[data-auth-stage="login"] {
-  background: var(--auth-bg);
+  background-color: var(--auth-bg);
+  background-image: var(--login-backdrop);
+  background-position: center 42%;
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-attachment: fixed;
 }
 body.auth-locked .auth-screen[data-auth-stage="login"] .auth-input-icon {
   right: auto;
@@ -3058,12 +3063,22 @@ html[data-theme="dark"] .auth-screen[data-auth-stage="login"] .auth-reference-he
   --login-muted: var(--text-secondary);
   --login-primary: var(--primary);
   --login-primary-hover: var(--primary-hover);
+  --login-backdrop: linear-gradient(115deg, rgb(243 247 252 / .78) 0%, rgb(243 247 252 / .46) 48%, rgb(243 247 252 / .8) 100%), url("/assets/gym-background.webp");
   display: grid;
   min-height: 100dvh;
   place-items: center;
   overflow: auto;
   padding: 24px;
-  background: var(--login-bg);
+  background-color: var(--login-bg);
+  background-image: var(--login-backdrop);
+  background-position: center 42%;
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-attachment: fixed;
+}
+
+html[data-theme="dark"] .auth-screen[data-auth-stage="login"] {
+  --login-backdrop: linear-gradient(115deg, rgb(2 11 24 / .88) 0%, rgb(2 11 24 / .62) 48%, rgb(2 11 24 / .9) 100%), url("/assets/gym-background.webp");
 }
 
 .auth-screen[data-auth-stage="login"]::before,
@@ -3392,6 +3407,13 @@ html:not([data-theme="dark"]) .auth-screen[data-auth-stage="login"] .auth-theme-
 @media (max-width: 560px) {
   .auth-screen[data-auth-stage="login"] {
     padding: 16px;
+    background-attachment: scroll;
+    background-position: center;
+  }
+
+  body.auth-locked .auth-screen[data-auth-stage="login"] {
+    background-attachment: scroll;
+    background-position: center;
   }
 
   .auth-screen[data-auth-stage="login"] .auth-shell {
