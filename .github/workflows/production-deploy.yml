@@ -89,6 +89,9 @@ jobs:
       - name: Production build
         run: npm run build
 
+      - name: Restore generated build artifacts before release preflight
+        run: git restore -- public/css/main.css
+
       - name: Dependency audit
         run: npm audit --audit-level=high
 
