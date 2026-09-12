@@ -52,7 +52,13 @@
         const compactValue = compact(rawValue);
         const international = compactValue.startsWith('+');
         const dialCode = String(country.dialCode || '').replace(/^\+/, '');
-        const maximumInputDigits = maximumNationalDigits + (international ? dialCode.length : localPrefix.length);
+        const digits = international ? compactValue.slice(1) : compactValue;
+        const hasLocalPrefix = !international
+            && !allowFixedLine
+            && Boolean(localPrefix)
+            && digits.startsWith(localPrefix);
+        const maximumInputDigits = maximumNationalDigits
+            + (international ? dialCode.length : (hasLocalPrefix ? localPrefix.length : 0));
         return { country, maximumNationalDigits, maximumInputDigits, international };
     }
 
@@ -87,7 +93,8 @@
         return {
             valid: false,
             tooLong: true,
-            message: PHONE_MESSAGES.tooLong(limits.maximumInputDigits + (limits.international ? 1 : 0))
+            message: PHONE_MESSAGES.tooLong(Number(input.dataset.phoneRejectedLimitMaximum)
+                || limits.maximumInputDigits + (limits.international ? 1 : 0))
         };
     }
 
@@ -121,19 +128,20 @@
         const allowFixedLine = input.dataset.phoneAllowFixedLine === 'true';
         const mobileRules = country.mobileRules || {};
         const localPrefix = String(mobileRules.localPrefix || '');
-        if (!international && !allowFixedLine && localPrefix && !digits.startsWith(localPrefix)) {
-            return { value, select, iso, country, compactValue, valid: false, message: PHONE_MESSAGES.localFormat };
-        }
+        const hasLocalPrefix = !international
+            && !allowFixedLine
+            && Boolean(localPrefix)
+            && digits.startsWith(localPrefix);
         const nationalDigits = international
             ? digits.slice(dialCode.length)
-            : (allowFixedLine ? digits.replace(/^0/, '') : (localPrefix ? digits.slice(localPrefix.length) : digits));
+            : (allowFixedLine ? digits.replace(/^0/, '') : (hasLocalPrefix ? digits.slice(localPrefix.length) : digits));
         const validLengths = allowFixedLine
             ? (country.validLengths || [])
             : (mobileRules.validLengths?.length ? mobileRules.validLengths : (country.validLengths || []));
         const maximumNationalDigits = validLengths.length ? Math.max(...validLengths) : null;
         const maximumInputDigits = maximumNationalDigits === null
             ? null
-            : (international ? dialCode.length + maximumNationalDigits : maximumNationalDigits + localPrefix.length);
+            : (international ? dialCode.length + maximumNationalDigits : maximumNationalDigits + (hasLocalPrefix ? localPrefix.length : 0));
         if (maximumNationalDigits !== null && nationalDigits.length > maximumNationalDigits) {
             return {
                 value,
@@ -177,6 +185,7 @@
         input.setCustomValidity(message);
         input.setAttribute('aria-invalid', String(!result.valid));
         input.classList.toggle('is-invalid', !result.valid);
+        input.closest('.phone-number-control')?.classList.toggle('is-invalid', !result.valid);
         const errorElement = validationElement(input);
         if (errorElement) {
             errorElement.textContent = message;
@@ -265,6 +274,7 @@
             element.dataset.flagFallback = 'true';
             return;
         }
+        element.textContent = fallback;
         const image = document.createElement('img');
         image.className = 'phone-country-flag-image';
         image.src = imageUrl;
@@ -274,6 +284,13 @@
         image.decoding = 'async';
         image.loading = 'eager';
         image.referrerPolicy = 'no-referrer';
+        image.style.opacity = '0';
+        image.style.transition = 'opacity 120ms ease';
+        image.addEventListener('load', () => {
+            element.replaceChildren(image);
+            element.dataset.flagFallback = 'false';
+            image.style.opacity = '1';
+        }, { once: true });
         image.addEventListener('error', () => {
             element.replaceChildren(document.createTextNode(fallback));
             element.dataset.flagFallback = 'true';
@@ -286,20 +303,20 @@
         const localPrefix = String(mobileRules.localPrefix || '');
         const formattedNational = localDigits(country?.exampleNational || '');
         if (formattedNational) {
-            if (input?.dataset.phoneAllowFixedLine !== 'true' && localPrefix && !formattedNational.startsWith(localPrefix)) {
-                return `${localPrefix}${formattedNational}`;
-            }
-            return formattedNational;
+            if (input?.dataset.phoneAllowFixedLine === 'true' || !localPrefix) return formattedNational;
+            return formattedNational.startsWith(localPrefix)
+                ? formattedNational.slice(localPrefix.length)
+                : formattedNational;
         }
         const international = compact(country?.exampleInternational || '');
         const dialCode = String(country?.dialCode || '').replace(/^\+/, '');
         if (international.startsWith('+') && dialCode && international.slice(1).startsWith(dialCode)) {
             const national = international.slice(1 + dialCode.length);
-            return input?.dataset.phoneAllowFixedLine === 'true' || !localPrefix || national.startsWith(localPrefix)
+            return input?.dataset.phoneAllowFixedLine === 'true' || !localPrefix
                 ? national
-                : `${localPrefix}${national}`;
+                : (national.startsWith(localPrefix) ? national.slice(localPrefix.length) : national);
         }
-        return localPrefix || localDigits(country?.dialCode || '');
+        return localPrefix ? localPrefix.replace(/^0+/u, '') : localDigits(country?.dialCode || '');
     }
 
     function applyCountryPresentation(input, select) {
@@ -307,7 +324,7 @@
         const country = countriesByIso.get(iso);
         if (!country || !input) return;
         const example = countryInputExample(country, input);
-        input.placeholder = example ? `\u0645\u062b\u0627\u0644: ${example}` : `\u0631\u0642\u0645 ${country.country}`;
+        input.placeholder = example || `\u0631\u0642\u0645 ${country.country}`;
         input.title = example ? `\u0627\u0643\u062a\u0628 \u0645\u062b\u0627\u0644: ${example}` : `\u0631\u0642\u0645 ${country.country}`;
         syncNativeInputLimit(input);
         const flag = input.closest('.phone-input-control')?.querySelector('[data-phone-country-flag]');
@@ -326,8 +343,8 @@
     }
 
     function countryForInput(input) {
-        const select = input.parentElement?.querySelector('[data-phone-country]')
-            || input.closest('.phone-input-control')?.querySelector('[data-phone-country]');
+        const select = input.parentElement?.querySelector('select[data-phone-country]')
+            || input.closest('.phone-input-control')?.querySelector('select[data-phone-country]');
         const iso = String(select?.value || input.dataset.phoneCountry || input.dataset.defaultCountry || DEFAULT_COUNTRY).toUpperCase();
         if (select?.value) input.dataset.phoneCountry = iso;
         return { select, iso };
@@ -453,10 +470,13 @@
         const name = document.createElement('span');
         name.className = 'phone-country-name';
         name.dataset.phoneCountryName = 'true';
+        const countryDivider = document.createElement('span');
+        countryDivider.className = 'phone-country-divider';
+        countryDivider.setAttribute('aria-hidden', 'true');
         const caret = document.createElement('span');
         caret.className = 'phone-country-caret';
         caret.textContent = '⌄';
-        trigger.append(flag, name, code, caret);
+        trigger.append(flag, name, countryDivider, code, caret);
         const menu = document.createElement('span');
         menu.className = 'phone-country-menu';
         menu.hidden = true;
@@ -476,13 +496,39 @@
         wrapper.insertBefore(countryControl, input);
         input.dataset.phoneCountry = preferred;
 
+        const phoneControl = document.createElement('span');
+        phoneControl.className = 'phone-number-control';
+        const phoneIcon = document.createElement('span');
+        phoneIcon.className = 'phone-number-icon';
+        phoneIcon.setAttribute('aria-hidden', 'true');
+        const phoneIconSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        phoneIconSvg.setAttribute('viewBox', '0 0 24 24');
+        phoneIconSvg.setAttribute('focusable', 'false');
+        const phoneIconPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        phoneIconPath.setAttribute('d', 'M6.62 10.79a15.05 15.05 0 0 0 6.59 6.59l2.2-2.2a1 1 0 0 1 1.02-.24c1.12.37 2.3.57 3.57.57a1 1 0 0 1 1 1v3.49a1 1 0 0 1-1 1C11.72 21 3 12.28 3 2.99a1 1 0 0 1 1-1H7.5a1 1 0 0 1 1 1c0 1.26.2 2.45.57 3.57a1 1 0 0 1-.24 1.02l-2.21 2.21Z');
+        phoneIconSvg.appendChild(phoneIconPath);
+        phoneIcon.appendChild(phoneIconSvg);
+        const phoneDivider = document.createElement('span');
+        phoneDivider.className = 'phone-number-divider';
+        phoneDivider.setAttribute('aria-hidden', 'true');
+        phoneControl.append(phoneIcon, phoneDivider, input);
+        wrapper.appendChild(phoneControl);
+
+        const help = document.createElement('small');
+        help.className = 'phone-input-help';
+        help.dataset.phoneInputHelp = 'true';
+        help.textContent = '\u0623\u062f\u062e\u0644 \u0627\u0644\u0631\u0642\u0645 \u0628\u062f\u0648\u0646 \u0645\u0641\u062a\u0627\u062d \u0627\u0644\u062f\u0648\u0644\u0629.';
+        const helpId = `${input.id || input.name || 'phone'}InputHelp`;
+        help.id = helpId;
+        wrapper.appendChild(help);
+
         const error = document.createElement('small');
         error.className = 'phone-input-error';
         error.setAttribute('role', 'alert');
         error.hidden = true;
         error.id = `${input.id || input.name || 'phone'}ValidationError`;
         wrapper.appendChild(error);
-        input.setAttribute('aria-describedby', [input.getAttribute('aria-describedby'), error.id].filter(Boolean).join(' '));
+        input.setAttribute('aria-describedby', [input.getAttribute('aria-describedby'), helpId, error.id].filter(Boolean).join(' '));
 
         const closeCountryMenu = () => {
             menu.hidden = true;
@@ -539,6 +585,7 @@
             if (!limits) return;
             event.preventDefault();
             input.dataset.phoneRejectedLimit = 'true';
+            input.dataset.phoneRejectedLimitMaximum = String(limits.maximumInputDigits + (limits.international ? 1 : 0));
             setValidationState(input, {
                 valid: false,
                 tooLong: true,
@@ -559,6 +606,7 @@
             if (!limits) return;
             event.preventDefault();
             input.dataset.phoneRejectedLimit = 'true';
+            input.dataset.phoneRejectedLimitMaximum = String(limits.maximumInputDigits + (limits.international ? 1 : 0));
             setValidationState(input, {
                 valid: false,
                 tooLong: true,
@@ -566,7 +614,16 @@
             }, { show: true });
         });
         input.addEventListener('input', () => {
+            const wasRejectedBeforeInput = input.dataset.phoneRejectedLimit === 'true';
+            if (wasRejectedBeforeInput && !String(input.value || '').trim()) {
+                const rejected = rejectedLimitResult(input);
+                if (rejected) {
+                    setValidationState(input, rejected, { show: true });
+                    return;
+                }
+            }
             delete input.dataset.phoneRejectedLimit;
+            delete input.dataset.phoneRejectedLimitMaximum;
             const raw = String(input.value || '');
             const normalizedDigits = latinDigits(raw);
             const sanitized = localDigits(raw);
@@ -585,6 +642,7 @@
                     input.value = `${prefix}${localDigits(input.value).slice(0, limits.maximumInputDigits)}`;
                     syncNativeInputLimit(input);
                     input.dataset.phoneRejectedLimit = 'true';
+                    input.dataset.phoneRejectedLimitMaximum = String(limits.maximumInputDigits + (limits.international ? 1 : 0));
                     setValidationState(input, {
                         valid: false,
                         tooLong: true,

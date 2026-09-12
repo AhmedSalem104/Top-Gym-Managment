@@ -28,6 +28,11 @@ test('phone input layer is loaded by every page that owns a phone form', () => {
     assert.match(script, /phone-country-menu/);
     assert.match(script, /phone-country-option/);
     assert.match(script, /phone-country-trigger/);
+    assert.match(script, /phone-country-divider/);
+    assert.match(script, /phone-number-control/);
+    assert.match(script, /phone-number-icon/);
+    assert.match(script, /phone-number-divider/);
+    assert.match(script, /phone-input-help/);
     assert.match(script, /tooLong/);
     assert.match(script, /phoneValidationBlocked/);
     assert.match(script, /exampleNational/);
@@ -44,9 +49,13 @@ test('phone input layer is loaded by every page that owns a phone form', () => {
     assert.match(script, /setAttribute\('pattern', '\[0-9\+\\\\s\(\)\.\-\]\*'\)/);
     assert.match(script, /beforeinput/);
     assert.match(script, /clipboardData/);
-    assert.match(read('public/css/components/phone-inputs.css'), /grid-template-columns: minmax\(7\.2rem/);
-    assert.match(read('public/css/components/phone-inputs.css'), /grid-template-rows: minmax\(3\.05rem/);
-    assert.match(read('public/css/components/phone-inputs.css'), /min-height: 1\.9rem/);
+    assert.match(read('public/css/components/phone-inputs.css'), /grid-template-columns: minmax\(8\.8rem/);
+    assert.match(read('public/css/components/phone-inputs.css'), /grid-template-areas/);
+    assert.match(read('public/css/components/phone-inputs.css'), /phone-number-control/);
+    assert.match(read('public/css/components/phone-inputs.css'), /phone-number-icon/);
+    assert.match(read('public/css/components/phone-inputs.css'), /phone-number-divider/);
+    assert.match(read('public/css/components/phone-inputs.css'), /phone-input-help/);
+    assert.match(read('public/css/components/phone-inputs.css'), /min-height: 2\.75rem/);
     assert.match(read('public/css/components/phone-inputs.css'), /phone-country-flag-image/);
     assert.match(read('public/css/components/phone-inputs.css'), /phone-country-flag/);
     assert.match(read('public/css/components/phone-inputs.css'), /phone-country-menu/);

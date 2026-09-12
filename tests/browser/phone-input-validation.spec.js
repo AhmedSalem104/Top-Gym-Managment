@@ -36,12 +36,18 @@ test('phone input blocks invalid length/format before registration request', asy
     const error = page.locator('.phone-input-error');
     const flag = page.locator('[data-phone-country-flag]');
     await expect(country).toHaveValue('EG');
-    await expect(phone).toHaveAttribute('placeholder', /010\d{8}$/);
+    await expect(phone).toHaveAttribute('placeholder', /^1\d{9}$/);
     await expect(phone).toHaveAttribute('inputmode', 'numeric');
     await expect(phone).toHaveAttribute('autocomplete', 'tel');
     await expect(phone).toHaveAttribute('pattern', '[0-9+\\s().-]*');
     await expect(flag.locator('img')).toHaveAttribute('src', /\/eg\.png$/);
     await expect(page.locator('.phone-country-trigger')).toContainText('+20');
+    await expect(page.locator('.phone-country-divider')).toBeVisible();
+    await expect(page.locator('.phone-number-icon svg')).toBeVisible();
+    await expect(page.locator('.phone-number-divider')).toBeVisible();
+    await expect(page.locator('.phone-input-help')).toBeVisible();
+    await page.screenshot({ path: `qa/artifacts/phone-control-${test.info().project.name}-initial.png`, fullPage: false });
+    await page.locator('.phone-input-control').screenshot({ path: `qa/artifacts/phone-control-${test.info().project.name}-focused.png` });
     await expect(page.locator('.phone-country-trigger')).toContainText('مصر');
 
     await page.locator('input[name="gymName"]').fill('QA Phone Validation Gym');
@@ -73,33 +79,39 @@ test('phone input blocks invalid length/format before registration request', asy
     await expect(error).toBeVisible();
     await expect(error).toContainText('11');
 
-    await phone.fill('01012345678');
+    await phone.fill('1012345678');
     await phone.blur();
     await expect(error).toBeHidden();
     await expect(phone).not.toHaveAttribute('aria-invalid', 'true');
-    await expect(phone).toHaveAttribute('data-phone-maximum-digits', '11');
+    await expect(phone).toHaveAttribute('data-phone-maximum-digits', '10');
     await phone.pressSequentially('9');
-    await expect(phone).toHaveValue('01012345678');
+    await expect(phone).toHaveValue('1012345678');
     await expect(error).toBeVisible();
-    await expect(error).toContainText('11');
+    await expect(error).toContainText('10');
+    await phone.fill('01012345678');
+    await phone.blur();
+    await expect(error).toBeHidden();
 
     await page.locator('.phone-country-trigger').click();
     await expect(page.locator('.phone-country-menu')).toBeVisible();
     await expect(page.locator('.phone-country-option img')).toHaveCount(2);
+    await page.locator('.phone-input-control').screenshot({ path: `qa/artifacts/phone-control-${test.info().project.name}-dropdown.png` });
     const countrySearch = page.locator('.phone-country-search');
     await expect(countrySearch).toBeVisible();
     await countrySearch.fill('+971');
     await expect(page.locator('[data-phone-country-option="AE"]')).toHaveCount(1);
     await page.locator('[data-phone-country-option="AE"]').click();
-    await expect(phone).toHaveAttribute('placeholder', /050\d{7}$/);
+    await expect(phone).toHaveAttribute('placeholder', /^5\d{8}$/);
     await expect(flag.locator('img')).toHaveAttribute('src', /\/ae\.png$/);
+    await expect(page.locator('[data-phone-country-code]')).toHaveText('+971');
+    await expect(page.locator('[data-phone-country-name]')).toHaveText(catalog.countries[1].country);
     await phone.fill('0101234567');
     await phone.blur();
     await expect(error).toBeVisible();
     await expect(phone).toHaveAttribute('aria-invalid', 'true');
 });
 
-test('selected country enforces its local mobile prefix', async ({ page }) => {
+test('selected country enforces its local mobile format', async ({ page }) => {
     await page.route('**/api/phone/countries', (route) => route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -108,7 +120,7 @@ test('selected country enforces its local mobile prefix', async ({ page }) => {
     await page.goto('/register-gym.html', { waitUntil: 'domcontentloaded' });
     const phone = page.locator('input[name="whatsapp"]');
     const error = page.locator('.phone-input-error');
-    await phone.fill('1012345678');
+    await phone.fill('2012345678');
     await phone.blur();
     await expect(error).toBeVisible();
     await expect(phone).toHaveAttribute('aria-invalid', 'true');
@@ -123,7 +135,7 @@ test('selected country enforces its local mobile prefix', async ({ page }) => {
 });
 
 test('phone input stays stable and usable at 320px in both themes', async ({ page }) => {
-    await page.setViewportSize({ width: 320, height: 800 });
+    await page.setViewportSize({ width: 320, height: 568 });
     await page.route('**/api/phone/countries', (route) => route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -134,6 +146,13 @@ test('phone input stays stable and usable at 320px in both themes', async ({ pag
     const control = page.locator('.phone-input-control');
     const error = page.locator('.phone-input-error');
     const beforeHeight = await control.evaluate((element) => element.getBoundingClientRect().height);
+    const initialLayout = await page.evaluate(() => {
+        const country = document.querySelector('.phone-country-control')?.getBoundingClientRect();
+        const number = document.querySelector('.phone-number-control')?.getBoundingClientRect();
+        return { countryWidth: country?.width || 0, numberWidth: number?.width || 0, countryHeight: country?.height || 0, numberHeight: number?.height || 0 };
+    });
+    expect(initialLayout.countryWidth).toBeLessThan(initialLayout.numberWidth);
+    expect(Math.abs(initialLayout.countryHeight - initialLayout.numberHeight)).toBeLessThanOrEqual(1);
     await phone.fill('010123');
     await phone.blur();
     await expect(error).toBeVisible();
@@ -153,6 +172,8 @@ test('phone input stays stable and usable at 320px in both themes', async ({ pag
 
     await page.evaluate(() => document.documentElement.setAttribute('data-theme', 'dark'));
     await expect(page.locator('[data-phone-country-flag] img')).toBeVisible();
+    await page.locator('.phone-input-control').screenshot({ path: `qa/artifacts/phone-control-${test.info().project.name}-320-dark.png` });
     await page.evaluate(() => document.documentElement.setAttribute('data-theme', 'light'));
     await expect(page.locator('[data-phone-country-flag] img')).toBeVisible();
+    await page.screenshot({ path: `qa/artifacts/phone-control-${test.info().project.name}-320.png`, fullPage: false });
 });
