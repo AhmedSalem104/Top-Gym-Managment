@@ -37,7 +37,10 @@ test('phone input blocks invalid length/format before registration request', asy
     const flag = page.locator('[data-phone-country-flag]');
     await expect(country).toHaveValue('EG');
     await expect(phone).toHaveAttribute('placeholder', /010/);
-    await expect(flag).toHaveText('🇪🇬');
+    await expect(phone).toHaveAttribute('inputmode', 'numeric');
+    await expect(phone).toHaveAttribute('autocomplete', 'tel');
+    await expect(phone).toHaveAttribute('pattern', '[0-9+\\s().-]*');
+    await expect(flag.locator('img')).toHaveAttribute('src', /\/eg\.png$/);
     await expect(page.locator('.phone-country-trigger')).toContainText('+20');
     await expect(page.locator('.phone-country-trigger')).toContainText('مصر');
 
@@ -54,6 +57,16 @@ test('phone input blocks invalid length/format before registration request', asy
     await phone.fill('0101234abc');
     await phone.blur();
     await expect(error).toBeVisible();
+    await expect(phone).toHaveValue('010123');
+
+    await phone.fill('');
+    await phone.pressSequentially('abc');
+    await expect(phone).toHaveValue('');
+    await expect(error).toBeVisible();
+
+    await phone.fill('01012abc345678');
+    await expect(phone).toHaveValue('');
+    await expect(error).toBeVisible();
 
     await phone.fill('0101581970000000');
     await phone.blur();
@@ -67,17 +80,18 @@ test('phone input blocks invalid length/format before registration request', asy
 
     await page.locator('.phone-country-trigger').click();
     await expect(page.locator('.phone-country-menu')).toBeVisible();
+    await expect(page.locator('.phone-country-option img')).toHaveCount(2);
     const countrySearch = page.locator('.phone-country-search');
     await expect(countrySearch).toBeVisible();
     await countrySearch.fill('+971');
     await expect(page.locator('[data-phone-country-option="AE"]')).toHaveCount(1);
     await page.locator('[data-phone-country-option="AE"]').click();
     await expect(phone).toHaveAttribute('placeholder', /050/);
-    await expect(flag).toHaveText('🇦🇪');
-    await phone.fill('+201012345678');
+    await expect(flag.locator('img')).toHaveAttribute('src', /\/ae\.png$/);
+    await phone.fill('0101234567');
     await phone.blur();
     await expect(error).toBeVisible();
-    await expect(error).toContainText('الدولة المختارة');
+    await expect(phone).toHaveAttribute('aria-invalid', 'true');
 });
 
 test('selected country enforces its local mobile prefix', async ({ page }) => {
@@ -101,4 +115,39 @@ test('selected country enforces its local mobile prefix', async ({ page }) => {
     await phone.fill('01012345678');
     await phone.blur();
     await expect(error).toBeHidden();
+});
+
+test('phone input stays stable and usable at 320px in both themes', async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 800 });
+    await page.route('**/api/phone/countries', (route) => route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(catalog)
+    }));
+    await page.goto('/register-gym.html', { waitUntil: 'domcontentloaded' });
+    const phone = page.locator('input[name="whatsapp"]');
+    const control = page.locator('.phone-input-control');
+    const error = page.locator('.phone-input-error');
+    const beforeHeight = await control.evaluate((element) => element.getBoundingClientRect().height);
+    await phone.fill('010123');
+    await phone.blur();
+    await expect(error).toBeVisible();
+    const afterHeight = await control.evaluate((element) => element.getBoundingClientRect().height);
+    expect(Math.abs(afterHeight - beforeHeight)).toBeLessThanOrEqual(1);
+    const metrics = await page.evaluate(() => ({
+        viewport: document.documentElement.clientWidth,
+        scroll: document.documentElement.scrollWidth,
+        control: document.querySelector('.phone-input-control')?.getBoundingClientRect().toJSON(),
+        error: document.querySelector('.phone-input-error')?.getBoundingClientRect().toJSON(),
+        errorColor: getComputedStyle(document.querySelector('.phone-input-error')).color
+    }));
+    expect(metrics.scroll).toBeLessThanOrEqual(metrics.viewport);
+    expect(metrics.control.right).toBeLessThanOrEqual(metrics.viewport + 1);
+    expect(metrics.error.right).toBeLessThanOrEqual(metrics.viewport + 1);
+    expect(metrics.errorColor).toMatch(/\d+/);
+
+    await page.evaluate(() => document.documentElement.setAttribute('data-theme', 'dark'));
+    await expect(page.locator('[data-phone-country-flag] img')).toBeVisible();
+    await page.evaluate(() => document.documentElement.setAttribute('data-theme', 'light'));
+    await expect(page.locator('[data-phone-country-flag] img')).toBeVisible();
 });

@@ -13,7 +13,7 @@
 
     const PHONE_MESSAGES = Object.freeze({
         required: '\u0631\u0642\u0645 \u0627\u0644\u0647\u0627\u062a\u0641 \u0645\u0637\u0644\u0648\u0628.',
-        characters: '\u0627\u0633\u062a\u062e\u062f\u0645 \u0623\u0631\u0642\u0627\u0645\u064b\u0627 \u0641\u0642\u0637 \u0645\u0639 \u0627\u0644\u0645\u0633\u0627\u0641\u0627\u062a \u0623\u0648 \u0627\u0644\u0634\u0631\u0637\u0627\u062a \u0648\u0639\u0644\u0627\u0645\u0629 + \u0641\u064a \u0627\u0644\u0628\u062f\u0627\u064a\u0629.',
+        characters: '\u0627\u0633\u062a\u062e\u062f\u0645 \u0623\u0631\u0642\u0627\u0645\u064b\u0627 \u0641\u0642\u0637 \u0641\u064a \u062d\u0642\u0644 \u0627\u0644\u0631\u0642\u0645.',
         country: '\u0631\u0642\u0645 \u0627\u0644\u0647\u0627\u062a\u0641 \u0644\u0627 \u064a\u0637\u0627\u0628\u0642 \u0627\u0644\u062f\u0648\u0644\u0629 \u0627\u0644\u0645\u062e\u062a\u0627\u0631\u0629.',
         length: '\u0623\u062f\u062e\u0644 \u0631\u0642\u0645\u064b\u0627 \u0628\u0639\u062f\u062f \u0627\u0644\u062e\u0627\u0646\u0627\u062a \u0627\u0644\u0635\u062d\u064a\u062d \u0644\u0644\u062f\u0648\u0644\u0629 \u0627\u0644\u0645\u062e\u062a\u0627\u0631\u0629.',
         tooLong: (maximum) => `\u0627\u0644\u0631\u0642\u0645 \u0623\u0637\u0648\u0644 \u0645\u0646 \u0627\u0644\u062d\u062f \u0627\u0644\u0623\u0642\u0635\u0649 \u0627\u0644\u0645\u0633\u0645\u0648\u062d (${maximum} \u0631\u0642\u0645\u064b\u0627 \u0643\u062d\u062f \u0623\u0642\u0635\u0649).`,
@@ -27,6 +27,14 @@
         return String(value ?? '')
             .replace(/[\u0660-\u0669]/gu, (digit) => String(digit.charCodeAt(0) - 0x0660))
             .replace(/[\u06F0-\u06F9]/gu, (digit) => String(digit.charCodeAt(0) - 0x06F0));
+    }
+
+    function localDigits(value) {
+        return latinDigits(value).replace(/\D/gu, '');
+    }
+
+    function containsOnlyDigits(value) {
+        return /^[0-9\u0660-\u0669\u06F0-\u06F9]*$/u.test(String(value ?? ''));
     }
 
     function compact(value) {
@@ -185,6 +193,40 @@
         return String(isoCode || '').toUpperCase().replace(/[A-Z]/g, (letter) => String.fromCodePoint(127397 + letter.charCodeAt(0)));
     }
 
+    function countryFlagUrl(isoCode) {
+        const normalized = String(isoCode || '').trim().toLowerCase();
+        return /^[a-z]{2}$/u.test(normalized) ? `https://flagcdn.com/w20/${normalized}.png` : '';
+    }
+
+    function renderCountryFlag(element, isoCode) {
+        if (!element) return;
+        const normalized = String(isoCode || '').toUpperCase();
+        const fallback = countryFlag(normalized) || normalized;
+        element.dataset.isoCode = normalized;
+        element.dataset.flagFallback = 'false';
+        element.replaceChildren();
+        const imageUrl = countryFlagUrl(normalized);
+        if (!imageUrl) {
+            element.textContent = fallback;
+            element.dataset.flagFallback = 'true';
+            return;
+        }
+        const image = document.createElement('img');
+        image.className = 'phone-country-flag-image';
+        image.src = imageUrl;
+        image.alt = '';
+        image.width = 20;
+        image.height = 15;
+        image.decoding = 'async';
+        image.loading = 'eager';
+        image.referrerPolicy = 'no-referrer';
+        image.addEventListener('error', () => {
+            element.replaceChildren(document.createTextNode(fallback));
+            element.dataset.flagFallback = 'true';
+        }, { once: true });
+        element.appendChild(image);
+    }
+
     function applyCountryPresentation(input, select) {
         const iso = String(select?.value || input?.dataset.phoneCountry || DEFAULT_COUNTRY).toUpperCase();
         const country = countriesByIso.get(iso);
@@ -193,8 +235,7 @@
         input.placeholder = example ? `\u0645\u062b\u0627\u0644: ${example}` : `\u0631\u0642\u0645 ${country.country}`;
         const flag = input.closest('.phone-input-control')?.querySelector('[data-phone-country-flag]');
         if (flag) {
-            flag.textContent = countryFlag(iso) || iso;
-            flag.dataset.isoCode = iso;
+            renderCountryFlag(flag, iso);
             flag.title = `${country.country} (${country.dialCode})`;
         }
         const code = input.closest('.phone-input-control')?.querySelector('[data-phone-country-code]');
@@ -280,14 +321,14 @@
             const optionFlag = document.createElement('span');
             optionFlag.className = 'phone-country-option-flag';
             optionFlag.setAttribute('aria-hidden', 'true');
-            optionFlag.textContent = countryFlag(country.isoCode) || country.isoCode;
+            renderCountryFlag(optionFlag, country.isoCode);
             const optionCode = document.createElement('span');
             optionCode.className = 'phone-country-option-code';
             optionCode.textContent = country.dialCode;
             const optionName = document.createElement('span');
             optionName.className = 'phone-country-option-name';
             optionName.textContent = country.country;
-            option.append(optionFlag, optionCode, optionName);
+            option.append(optionFlag, optionName, optionCode);
             optionsElement.appendChild(option);
         });
     }
@@ -296,12 +337,18 @@
         if (!input || input.dataset.phoneDecorated === 'true') return;
         input.dataset.phoneDecorated = 'true';
         input.type = 'tel';
-        input.inputMode = 'tel';
-        input.autocomplete = input.autocomplete || 'tel';
+        input.inputMode = 'numeric';
+        input.setAttribute('inputmode', 'numeric');
+        input.autocomplete = 'tel';
+        // Keep native validation compatible with stored E.164 values that edit
+        // forms assign programmatically; user-entered non-digits are rejected
+        // by beforeinput/paste/input and the central validator remains strict.
+        input.setAttribute('pattern', '[0-9+\\s().-]*');
         input.dir = input.dir || 'ltr';
 
         const wrapper = document.createElement('span');
         wrapper.className = 'phone-input-control';
+        wrapper.dataset.phoneControl = 'true';
         input.parentNode?.insertBefore(wrapper, input);
         wrapper.appendChild(input);
 
@@ -332,7 +379,7 @@
         const caret = document.createElement('span');
         caret.className = 'phone-country-caret';
         caret.textContent = '⌄';
-        trigger.append(flag, code, name, caret);
+        trigger.append(flag, name, code, caret);
         const menu = document.createElement('span');
         menu.className = 'phone-country-menu';
         menu.hidden = true;
@@ -403,7 +450,27 @@
             if (input.value.trim()) validateInput(input, { show: true });
             else setValidationState(input, { valid: true }, { show: false });
         });
+        input.addEventListener('beforeinput', (event) => {
+            if (!event.data || containsOnlyDigits(event.data)) return;
+            event.preventDefault();
+            setValidationState(input, { valid: false, message: PHONE_MESSAGES.characters }, { show: true });
+        });
+        input.addEventListener('paste', (event) => {
+            const pasted = event.clipboardData?.getData('text') || '';
+            if (containsOnlyDigits(pasted)) return;
+            event.preventDefault();
+            setValidationState(input, { valid: false, message: PHONE_MESSAGES.characters }, { show: true });
+        });
         input.addEventListener('input', () => {
+            const raw = String(input.value || '');
+            const normalizedDigits = latinDigits(raw);
+            const sanitized = localDigits(raw);
+            if (sanitized !== normalizedDigits) {
+                input.value = sanitized;
+                setValidationState(input, { valid: false, message: PHONE_MESSAGES.characters }, { show: true });
+                return;
+            }
+            if (raw !== normalizedDigits) input.value = normalizedDigits;
             const result = phoneInputParts(input);
             if (result.tooLong || (!result.valid && result.message === PHONE_MESSAGES.characters)) setValidationState(input, result, { show: true });
             else {

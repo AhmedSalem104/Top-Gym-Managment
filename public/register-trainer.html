@@ -10,7 +10,7 @@
             document.documentElement.dataset.theme = theme === 'dark' || theme === 'light' ? theme : 'light';
         } catch (_) { document.documentElement.dataset.theme = 'light'; }
     </script>
-    <link rel="stylesheet" href="/css/main.css?v=94">
+    <link rel="stylesheet" href="/css/main.css?v=95">
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     <title>ابدأ كمدرب شخصي | Logic Fit</title>
 </head>
@@ -77,7 +77,7 @@
                     <section class="registration-step-panel is-active" data-registration-step="1" aria-labelledby="stepOneTitle"><h3 id="stepOneTitle" class="visually-hidden">بيانات المدرب</h3><div class="registration-form-grid">
                         <label class="registration-field registration-field-wide"><span>اسم المدرب أو العلامة <b>*</b></span><input name="gymName" type="text" maxlength="160" autocomplete="organization" placeholder="مثال: أحمد كوتشنج" required></label>
                         <label class="registration-field"><span>الاسم الكامل <b>*</b></span><input name="ownerName" type="text" maxlength="120" autocomplete="name" placeholder="الاسم الكامل" required></label>
-                        <label class="registration-field"><span>رقم الهاتف <b>*</b></span><input name="whatsapp" type="tel" inputmode="tel" maxlength="40" autocomplete="tel" data-phone-input data-default-country="EG" placeholder="01xxxxxxxxx" required></label>
+                        <label class="registration-field"><span>رقم الهاتف <b>*</b></span><input name="whatsapp" type="tel" inputmode="numeric" maxlength="40" autocomplete="tel" data-phone-input data-default-country="EG" placeholder="01xxxxxxxxx" required></label>
                         <label class="registration-field"><span>البريد الإلكتروني <b>*</b></span><input name="email" type="email" maxlength="254" autocomplete="email" placeholder="name@example.com" required></label>
                         <label class="registration-field"><span>المدينة أو المنطقة <small>اختياري</small></span><input name="city" type="text" maxlength="120" autocomplete="address-level2" placeholder="القاهرة، الجيزة..."></label>
                     </div></section>
@@ -93,6 +93,6 @@
         </main>
     </div>
     <div class="logicfit-feedback-toast-stack" data-logicfit-toast-stack aria-live="polite" aria-relevant="additions text"></div>
-    <script defer src="/js/theme.js?v=1"></script><script defer src="/js/core/phone-inputs.js?v=3"></script><script defer src="/js/branding.js?v=5"></script><script defer src="/js/ui-feedback.js?v=2"></script><script defer src="/js/register-gym.js?v=3"></script>
+    <script defer src="/js/theme.js?v=1"></script><script defer src="/js/core/phone-inputs.js?v=4"></script><script defer src="/js/branding.js?v=5"></script><script defer src="/js/ui-feedback.js?v=2"></script><script defer src="/js/register-gym.js?v=3"></script>
 </body>
 </html>

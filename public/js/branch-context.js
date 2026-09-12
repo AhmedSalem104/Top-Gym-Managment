@@ -99,7 +99,7 @@
                         <label>كود الفرع<input id="branchCodeInput" name="code" required maxlength="40" dir="ltr" placeholder="nasr-city"></label>
                         <label>اسم الفرع<input id="branchNameInput" name="name" required maxlength="160" placeholder="فرع مدينة نصر"></label>
                         <label>العنوان<input id="branchAddressInput" name="address" maxlength="300"></label>
-                        <label>الهاتف<input id="branchPhoneInput" name="phone" type="tel" inputmode="tel" autocomplete="tel" data-phone-input data-phone-allow-fixed-line="true" data-default-country="EG" maxlength="40" dir="ltr"></label>
+                        <label>الهاتف<input id="branchPhoneInput" name="phone" type="tel" inputmode="numeric" autocomplete="tel" data-phone-input data-phone-allow-fixed-line="true" data-default-country="EG" maxlength="40" dir="ltr"></label>
                     </div>
                     <div class="branch-create-options"><label class="branches-check-field"><input type="checkbox" name="storeEnabled" checked> تفعيل Store</label><label class="branches-check-field"><input type="checkbox" name="barEnabled"> تفعيل Bar وإنشاء موقع البيع</label></div>
                     <p class="branches-form-status" id="branchFormStatus" role="status" aria-live="polite"></p>

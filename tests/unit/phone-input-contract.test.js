@@ -21,6 +21,9 @@ test('phone input layer is loaded by every page that owns a phone form', () => {
     assert.match(script, /setCustomValidity/);
     assert.match(script, /phone-input-error/);
     assert.match(script, /countryFlag/);
+    assert.match(script, /countryFlagUrl/);
+    assert.match(script, /renderCountryFlag/);
+    assert.match(script, /flagcdn\.com/);
     assert.match(script, /phone-country-flag/);
     assert.match(script, /phone-country-menu/);
     assert.match(script, /phone-country-option/);
@@ -28,7 +31,15 @@ test('phone input layer is loaded by every page that owns a phone form', () => {
     assert.match(script, /tooLong/);
     assert.match(script, /phoneValidationBlocked/);
     assert.match(script, /exampleNational/);
+    assert.match(script, /inputMode = 'numeric'/);
+    assert.match(script, /setAttribute\('inputmode', 'numeric'\)/);
+    assert.match(script, /setAttribute\('pattern', '\[0-9\+\\\\s\(\)\.\-\]\*'\)/);
+    assert.match(script, /beforeinput/);
+    assert.match(script, /clipboardData/);
     assert.match(read('public/css/components/phone-inputs.css'), /grid-template-columns: minmax\(7\.2rem/);
+    assert.match(read('public/css/components/phone-inputs.css'), /grid-template-rows: minmax\(3\.05rem/);
+    assert.match(read('public/css/components/phone-inputs.css'), /min-height: 1\.9rem/);
+    assert.match(read('public/css/components/phone-inputs.css'), /phone-country-flag-image/);
     assert.match(read('public/css/components/phone-inputs.css'), /phone-country-flag/);
     assert.match(read('public/css/components/phone-inputs.css'), /phone-country-menu/);
     assert.match(read('public/css/components/phone-inputs.css'), /phone-country-option/);
