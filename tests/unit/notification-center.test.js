@@ -21,7 +21,9 @@ test('notification center is loaded only by account shells and uses safe same-or
     assert.match(center, /EventSource/);
     assert.match(center, /showLiveToast/);
     assert.match(center, /realtimeReconnectTimer/);
-    assert.match(center, /if \(host\) \{[\s\S]*void load\(\);/);
+    assert.match(center, /window\.topGymAuthReady/);
+    assert.match(center, /ensureNotificationSession/);
+    assert.match(center, /document\.addEventListener\('DOMContentLoaded', initialize/);
     assert.match(center, /api\/member-portal\/notifications/);
     assert.match(read('public/member-portal.html'), /portal-notification-host/);
     assert.match(center, /تصفية الإشعارات/);

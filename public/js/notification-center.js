@@ -41,6 +41,7 @@
   let realtimeSource;
   let realtimeReconnectTimer;
   let sessionReady = false;
+  let authBootstrapPromise;
   let liveToast;
   let liveToastTimer;
 
@@ -241,6 +242,30 @@
     return payload;
   }
 
+  function authenticatedUser() {
+    if (authBootstrapPromise) return authBootstrapPromise;
+    const ready = window.topGymAuthReady;
+    authBootstrapPromise = ready && typeof ready.then === 'function'
+      ? Promise.resolve(ready).then((user) => user || null).catch(() => null)
+      : Promise.resolve(window.topGymAuth?.getUser?.() || null);
+    return authBootstrapPromise;
+  }
+
+  async function ensureNotificationSession() {
+    const user = await authenticatedUser();
+    const usable = Boolean(user) && user.mustChangePassword !== true;
+    sessionReady = usable;
+    if (!usable) {
+      state.loaded = true;
+      if (realtimeSource) {
+        realtimeSource.close();
+        realtimeSource = null;
+      }
+      setMessage('سجّل الدخول لعرض إشعاراتك.');
+    }
+    return usable;
+  }
+
   async function refreshUnread() {
     const payload = await requestJson(apiPath('/unread-count'));
     if (payload) {
@@ -251,6 +276,7 @@
   }
 
   async function load({ append = false } = {}) {
+    if (!(await ensureNotificationSession())) return;
     if (state.loading) return;
     state.loading = true;
     if (!append) setMessage('جاري تحميل الإشعارات...', 'notification-center-loading');
@@ -379,6 +405,8 @@
   const host = document.querySelector('.topbar-quick-actions, .platform-topbar-actions, .trainer-workspace-actions, .portal-notification-host');
   if (host) {
     create(host);
-    void load();
+    const initialize = () => void load();
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initialize, { once: true });
+    else initialize();
   }
 })();

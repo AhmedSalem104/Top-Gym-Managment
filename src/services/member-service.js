@@ -2116,9 +2116,46 @@ async function updateMember(id, body, idempotencyKey = null) {
 
 async function deleteMember(id) {
     const memberId = ensureId(id);
-    const result = await withTransaction(async (transaction) => transaction.request()
-        .input('id', sql.Int, memberId)
-        .query(`
+    let result;
+    try {
+        result = await withTransaction(async (transaction) => transaction.request()
+            .input('id', sql.Int, memberId)
+            .query(`
+            /*
+             * Keep the existing hard-delete contract while releasing only
+             * nullable NO ACTION references first. The updates are part of
+             * the same transaction as the delete, so a failure rolls back
+             * every cleanup and the member remains untouched.
+             */
+            IF OBJECT_ID(N'dbo.gym_store_customers', N'U') IS NOT NULL
+            BEGIN
+                UPDATE dbo.gym_store_customers
+                SET member_id = NULL,
+                    customer_type = CASE WHEN customer_type = 'member' THEN 'walk_in' ELSE customer_type END,
+                    updated_at = SYSUTCDATETIME()
+                WHERE member_id = @id;
+            END;
+            IF OBJECT_ID(N'dbo.gym_trainer_tasks', N'U') IS NOT NULL
+            BEGIN
+                UPDATE dbo.gym_trainer_tasks
+                SET member_id = NULL,
+                    updated_at = SYSUTCDATETIME()
+                WHERE member_id = @id;
+            END;
+            IF OBJECT_ID(N'dbo.saas_notifications', N'U') IS NOT NULL
+            BEGIN
+                UPDATE dbo.saas_notifications
+                SET recipient_member_id = NULL
+                WHERE recipient_member_id = @id;
+            END;
+            IF OBJECT_ID(N'dbo.membership_events', N'U') IS NOT NULL
+            BEGIN
+                UPDATE events
+                SET membership_id = NULL
+                FROM dbo.membership_events AS events
+                INNER JOIN dbo.memberships AS memberships ON memberships.id = events.membership_id
+                WHERE memberships.member_id = @id;
+            END;
             IF OBJECT_ID(N'dbo.workout_set_logs', N'U') IS NOT NULL
             BEGIN
                 UPDATE logs SET workout_exercise_id = NULL
@@ -2139,6 +2176,15 @@ async function deleteMember(id) {
             END;
             DELETE FROM dbo.members WHERE id = @id;
         `));
+    } catch (error) {
+        // A newly introduced NO ACTION reference must never surface as an
+        // opaque 500. The transaction has already rolled back; keep the
+        // record intact and return an actionable domain response.
+        if (Number(error?.number) === 547) {
+            throw appError('لا يمكن حذف العضو لوجود بيانات مرتبطة غير قابلة للفصل. راجع بيانات العضو وحاول مرة أخرى.', 409, 'MEMBER_DELETE_BLOCKED_BY_DATA');
+        }
+        throw error;
+    }
     if (!result.rowsAffected.some((count) => Number(count) > 0)) throw appError('العضو غير موجود.', 404);
 }
 
