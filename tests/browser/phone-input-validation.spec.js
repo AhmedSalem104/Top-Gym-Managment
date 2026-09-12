@@ -6,8 +6,8 @@ const catalog = {
             country: 'مصر',
             isoCode: 'EG',
             dialCode: '+20',
-            exampleNational: '010 01234567',
-            exampleInternational: '+201001234567',
+            exampleNational: '01015819700',
+            exampleInternational: '+201015819700',
             validLengths: [8, 9, 10],
             mobileRules: { supported: true, validLengths: [10], nationalPattern: '1[0-25]\\d{8}', localPrefix: '0' }
         },
@@ -36,7 +36,7 @@ test('phone input blocks invalid length/format before registration request', asy
     const error = page.locator('.phone-input-error');
     const flag = page.locator('[data-phone-country-flag]');
     await expect(country).toHaveValue('EG');
-    await expect(phone).toHaveAttribute('placeholder', /^1\d{9}$/);
+    await expect(phone).toHaveAttribute('placeholder', '1015819700');
     await expect(phone).toHaveAttribute('inputmode', 'numeric');
     await expect(phone).toHaveAttribute('autocomplete', 'tel');
     await expect(phone).toHaveAttribute('pattern', '[0-9+\\s().-]*');

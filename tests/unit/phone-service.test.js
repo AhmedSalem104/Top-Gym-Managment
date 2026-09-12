@@ -46,8 +46,8 @@ test('country catalog is sourced from full libphonenumber metadata', () => {
     assert.ok(countries.length > 200);
     const egypt = countries.find((country) => country.isoCode === 'EG');
     assert.equal(egypt.dialCode, '+20');
-    assert.equal(egypt.exampleNational, '010 01234567');
-    assert.equal(egypt.exampleInternational, '+201001234567');
+    assert.equal(egypt.exampleNational, '01015819700');
+    assert.equal(egypt.exampleInternational, '+201015819700');
     assert.deepEqual(egypt.mobileRules.validLengths, [10]);
     assert.equal(egypt.mobileRules.localPrefix, '0');
     assert.match(egypt.mobileRules.nationalPattern, /1\[0-25\]/);

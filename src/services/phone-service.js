@@ -11,6 +11,9 @@ const mobileExamples = require('libphonenumber-js/examples.mobile.json');
 
 const DEFAULT_COUNTRY = 'EG';
 const MOBILE_TYPES = new Set(['MOBILE', 'FIXED_LINE_OR_MOBILE']);
+const PHONE_DISPLAY_EXAMPLES = Object.freeze({
+    EG: Object.freeze({ national: '01015819700', international: '+201015819700' })
+});
 let countryOptionsCache;
 
 function normalizeDigits(value) {
@@ -136,13 +139,14 @@ function countryOption(isoCode) {
     const mobilePattern = mobileType?.[0] || '';
     const mobileLengths = Array.isArray(mobileType?.[1]) ? mobileType[1] : [];
     const example = getExampleNumber(isoCode, mobileExamples);
+    const displayExample = PHONE_DISPLAY_EXAMPLES[isoCode];
     const mobileLocalPrefix = getMobileLocalPrefix(isoCode, example);
     return Object.freeze({
         country: countryName(isoCode),
         isoCode,
         dialCode: `+${getCountryCallingCode(isoCode)}`,
-        exampleNational: example?.formatNational?.() || null,
-        exampleInternational: example?.number || null,
+        exampleNational: displayExample?.national || example?.formatNational?.() || null,
+        exampleInternational: displayExample?.international || example?.number || null,
         validLengths: [...(country?.[3] || [])],
         mobileRules: Object.freeze({
             supported: Boolean(mobileType),

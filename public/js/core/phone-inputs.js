@@ -714,7 +714,7 @@
             isoCode: DEFAULT_COUNTRY,
             dialCode: '+20',
             country: '\u0645\u0635\u0631',
-            exampleNational: '01012345678',
+            exampleNational: '01015819700',
             validLengths: [8, 9, 10],
             mobileRules: { validLengths: [10], nationalPattern: '1[0-25]\\d{8}', localPrefix: '0' }
         });
