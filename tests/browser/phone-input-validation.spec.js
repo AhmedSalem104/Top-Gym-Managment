@@ -49,7 +49,7 @@ test('phone input blocks invalid length/format before registration request', asy
     await expect(phone).toHaveAttribute('placeholder', '1015819700');
     await expect(phone).toHaveAttribute('inputmode', 'numeric');
     await expect(phone).toHaveAttribute('autocomplete', 'tel');
-    await expect(phone).toHaveAttribute('pattern', '[0-9+\\s().-]*');
+    await expect(phone).toHaveAttribute('pattern', '(?:[0-9]|\\+|\\s|\\.|\\(|\\)|-)*');
     await expect(flag.locator('img')).toHaveAttribute('src', /\/eg\.png$/);
     await expect(page.locator('.phone-country-trigger')).toContainText('+20');
     await expect(page.locator('.phone-country-divider')).toBeVisible();

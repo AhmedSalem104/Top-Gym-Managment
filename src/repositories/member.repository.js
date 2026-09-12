@@ -77,6 +77,7 @@ SELECT
     b.id,
     b.full_name AS fullName,
     b.phone,
+    b.phone_normalized AS phoneNormalized,
     b.email,
     b.registration_date AS registrationDate,
     b.notes AS memberNotes,
@@ -130,6 +131,7 @@ const MEMBER_ROW_COLUMNS = [
     'id',
     'fullName',
     'phone',
+    'phoneNormalized',
     'email',
     'registrationDate',
     'memberNotes',
@@ -181,7 +183,7 @@ async function findById({ id, connection = null, today = todayInTimeZone() }) {
                 WHERE id = @id;`);
 }
 
-async function list({ search = '', status = '', sort = 'expiry', offset = 0, pageSize = 5, today = todayInTimeZone(), branchId = null, sectionId = null }) {
+async function list({ search = '', phoneSearch = '', status = '', sort = 'expiry', offset = 0, pageSize = 5, today = todayInTimeZone(), branchId = null, sectionId = null }) {
     const pool = await getPool();
     const scoped = branchId != null || sectionId != null;
     const orderBy = ORDER_BY[sort] || ORDER_BY.expiry;
@@ -189,6 +191,7 @@ async function list({ search = '', status = '', sort = 'expiry', offset = 0, pag
         .input('today', sql.Date, toUtcDate(today))
         .input('search', sql.NVarChar(100), search)
         .input('pattern', sql.NVarChar(110), `%${search}%`)
+        .input('phoneSearch', sql.NVarChar(30), phoneSearch)
         .input('status', sql.VarChar(20), status)
         .input('offset', sql.Int, offset)
         .input('pageSize', sql.Int, pageSize);
@@ -200,7 +203,7 @@ async function list({ search = '', status = '', sort = 'expiry', offset = 0, pag
                        COUNT(1) OVER() AS totalCount,
                        ROW_NUMBER() OVER (ORDER BY ${orderBy}) AS rowNumber
                 FROM member_rows
-                WHERE (@search = N'' OR fullName LIKE @pattern OR phone LIKE @pattern OR ISNULL(email, N'') LIKE @pattern)
+                WHERE (@search = N'' OR fullName LIKE @pattern OR phone LIKE @pattern OR ISNULL(email, N'') LIKE @pattern OR phoneNormalized = @phoneSearch)
                   AND (@status = '' OR computedStatus = @status)
             ) AS paged_members
             WHERE rowNumber > @offset AND rowNumber <= (@offset + @pageSize)

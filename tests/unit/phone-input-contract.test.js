@@ -9,10 +9,10 @@ const root = path.join(__dirname, '..', '..');
 const read = (relativePath) => fs.readFileSync(path.join(root, relativePath), 'utf8');
 
 test('phone input layer is loaded by every page that owns a phone form', () => {
-    assert.match(read('public/index.html'), /core\/phone-inputs\.js\?v=8/);
-    assert.match(read('public/register-gym.html'), /core\/phone-inputs\.js\?v=8/);
-    assert.match(read('public/register-trainer.html'), /core\/phone-inputs\.js\?v=8/);
-    assert.match(read('public/trainer-workspace.html'), /core\/phone-inputs\.js\?v=8/);
+    assert.match(read('public/index.html'), /core\/phone-inputs\.js\?v=9/);
+    assert.match(read('public/register-gym.html'), /core\/phone-inputs\.js\?v=9/);
+    assert.match(read('public/register-trainer.html'), /core\/phone-inputs\.js\?v=9/);
+    assert.match(read('public/trainer-workspace.html'), /core\/phone-inputs\.js\?v=9/);
     assert.doesNotMatch(read('public/index.html'), /data-default-country="EG"/);
     assert.doesNotMatch(read('public/register-gym.html'), /data-default-country="EG"/);
     assert.doesNotMatch(read('public/register-trainer.html'), /data-default-country="EG"/);
@@ -21,6 +21,10 @@ test('phone input layer is loaded by every page that owns a phone form', () => {
     assert.match(script, /\/api\/phone\/countries/);
     assert.match(script, /data-phone-country/);
     assert.match(script, /normalizeForTransport/);
+    assert.match(script, /getSubmissionPayload/);
+    assert.match(script, /phoneNational/);
+    assert.match(script, /function parsePhoneInput/);
+    assert.match(script, /function getState/);
     assert.match(script, /validateInput/);
     assert.match(script, /setCustomValidity/);
     assert.match(script, /phone-input-error/);
@@ -55,7 +59,8 @@ test('phone input layer is loaded by every page that owns a phone form', () => {
     assert.match(script, /phoneMaximumDigits/);
     assert.match(script, /inputMode = 'numeric'/);
     assert.match(script, /setAttribute\('inputmode', 'numeric'\)/);
-    assert.match(script, /setAttribute\('pattern', '\[0-9\+\\\\s\(\)\.\-\]\*'\)/);
+    assert.match(script, /NATIVE_PHONE_PATTERN/);
+    assert.match(script, /const NATIVE_PHONE_PATTERN = '\(\?:\[0-9\]\|\\\\\+\|\\\\s\|\\\\\.\|\\\\\(\|\\\\\)\|-\)\*'/);
     assert.match(script, /beforeinput/);
     assert.match(script, /clipboardData/);
     assert.match(read('public/css/components/phone-inputs.css'), /grid-template-columns: minmax\(8\.8rem/);
@@ -106,7 +111,8 @@ test('phone writes use centralized normalization and tenant-scoped duplicate che
     const coaching = read('src/services/coaching-service.js');
     const attendance = read('src/services/attendance-service.js');
     const registration = read('src/services/gym-registration-service.js');
-    assert.match(member, /normalizeInternationalPhone\(output\.phone/);
+    assert.match(member, /parsePhone\(output\.phoneInput/);
+    assert.match(member, /output\.phoneNational/);
     assert.match(member, /WHERE tenant_id=@tenantId/);
     assert.match(member, /phoneNormalized/);
     assert.match(coaching, /normalizeInternationalPhone\(phone/);

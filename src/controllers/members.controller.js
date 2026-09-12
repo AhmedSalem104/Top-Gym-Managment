@@ -13,6 +13,7 @@ function createMembersController({ memberService, branchService }) {
                 sort: request.query.sort,
                 page: request.query.page,
                 pageSize: request.query.pageSize,
+                phoneCountry: request.query.phoneCountry,
                 readOnly: request.readOnlyRequest,
                 branchId: branch.branchId,
                 sectionId: branch.sectionId

@@ -78,11 +78,17 @@ function isMobilePhone(phoneNumber) {
 }
 
 /**
- * Parse and normalize a phone/mobile number using the library's full
- * international metadata. Local input is interpreted only in the selected
- * country; international input must agree with that country when provided.
+ * Parse a phone number at the domain boundary. The selected ISO-3166 country
+ * is the authority for local input. International input is parsed from its
+ * explicit calling code and must agree with that selection when one exists.
+ *
+ * The parser intentionally accepts both common national representations:
+ * the representation users normally type (including a national trunk `0`)
+ * and the national significant number displayed by our phone control. The
+ * library remains the authority for numbering-plan validity; the candidate
+ * construction below only resolves presentation format.
  */
-function normalizePhone(value, {
+function parsePhone(value, {
     country = null,
     required = true,
     allowFixedLine = false,
@@ -103,27 +109,54 @@ function normalizePhone(value, {
         throw phoneError(fieldName, 'PHONE_COUNTRY_REQUIRED', `${fieldName} requires a selected country for local input.`);
     }
     const parsingCountry = selectedCountry || FALLBACK_COUNTRY;
-    if (!isInternational && !allowFixedLine) {
+    let phoneNumber = parsePhoneNumberFromString(raw, isInternational ? undefined : parsingCountry);
+
+    // A national significant number (for example 1015819700 for Egypt) is a
+    // valid user representation even though libphonenumber expects the local
+    // trunk prefix when parsing a national string. Resolve it through the
+    // selected country's calling code, then let the same library validate it.
+    if (!isInternational && (!phoneNumber || !phoneNumber.isValid())) {
+        const digits = raw.replace(/\D/g, '');
+        const dialCode = getCountryCallingCode(parsingCountry);
         const localPrefix = getMobileLocalPrefix(parsingCountry, getExampleNumber(parsingCountry, mobileExamples));
-        if (localPrefix && !raw.startsWith(localPrefix)) {
-            throw phoneError(fieldName, 'PHONE_LOCAL_FORMAT', `${fieldName} must use the local mobile format for the selected country.`);
-        }
+        const nationalNumber = localPrefix && digits.startsWith(localPrefix)
+            ? digits.slice(localPrefix.length)
+            : digits;
+        if (nationalNumber) phoneNumber = parsePhoneNumberFromString(`+${dialCode}${nationalNumber}`);
     }
-    const phoneNumber = parsePhoneNumberFromString(raw, isInternational ? undefined : parsingCountry);
     if (!phoneNumber || !phoneNumber.isValid()) {
         throw phoneError(fieldName);
     }
-    if (isInternational && selectedCountry && phoneNumber.country && phoneNumber.country !== selectedCountry) {
+    if ((isInternational || phoneNumber.country) && selectedCountry && phoneNumber.country && phoneNumber.country !== selectedCountry) {
         throw phoneError(fieldName, 'PHONE_COUNTRY_MISMATCH', `${fieldName} does not match the selected country.`);
     }
     if (!allowFixedLine && !isMobilePhone(phoneNumber)) {
         throw phoneError(fieldName, 'MOBILE_NUMBER_REQUIRED', `${fieldName} must be a valid mobile number.`);
     }
-    return phoneNumber.number;
+    const countryIso2 = selectedCountry || phoneNumber.country || null;
+    return {
+        countryIso2,
+        nationalNumber: phoneNumber.nationalNumber,
+        e164: phoneNumber.number,
+        input: String(value ?? '')
+    };
+}
+
+function normalizePhone(value, options = {}) {
+    return parsePhone(value, options)?.e164 || null;
 }
 
 function normalizeMobile(value, options = {}) {
     return normalizePhone(value, { ...options, allowFixedLine: false });
+}
+
+function normalizePhoneForSearch(value, options = {}) {
+    if (value === undefined || value === null || String(value).trim() === '') return null;
+    try {
+        return normalizePhone(value, { ...options, required: false });
+    } catch (_) {
+        return null;
+    }
 }
 
 function toMessagingDigits(value, options = {}) {
@@ -180,8 +213,10 @@ module.exports = {
     FALLBACK_COUNTRY,
     normalizeDigits,
     normalizeCountry,
+    parsePhone,
     normalizePhone,
     normalizeMobile,
+    normalizePhoneForSearch,
     toMessagingDigits,
     getSupportedCountries
 };

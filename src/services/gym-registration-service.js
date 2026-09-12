@@ -371,7 +371,7 @@ function createGymRegistrationService({ commercialService, saasService, authServ
             const gymName = text(body.gymName || body.name, '', 160);
             if (gymName.length < 2) throw registrationError('Gym name is required.', 400, 'INVALID_REGISTRATION_GYM_NAME', 'gymName');
             const ownerName = authService.validateName(body.ownerName || body.ownerFullName, 'ownerName');
-            const whatsapp = normalizeWhatsapp(body.whatsapp || body.phone, {
+            const whatsapp = normalizeWhatsapp(body.whatsappNational || body.whatsapp || body.phoneNational || body.phone, {
                 country: body.whatsappCountry || body.phoneCountry || null
             });
             const email = authService.validateEmail(body.email || body.ownerEmail, 'email');

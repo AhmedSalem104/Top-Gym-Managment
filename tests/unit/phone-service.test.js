@@ -4,13 +4,16 @@ const assert = require('node:assert/strict');
 const test = require('node:test');
 const phoneService = require('../../src/services/phone-service');
 
-test('normalizes Egyptian mobile input from local, international and Arabic digits', () => {
+test('normalizes Egyptian mobile input from every supported user representation', () => {
     assert.equal(phoneService.normalizeMobile('01012345678', { country: 'EG' }), '+201012345678');
     assert.equal(phoneService.normalizeMobile('01112345678', { country: 'EG' }), '+201112345678');
     assert.equal(phoneService.normalizeMobile('01212345678', { country: 'EG' }), '+201212345678');
     assert.equal(phoneService.normalizeMobile('01512345678', { country: 'EG' }), '+201512345678');
     assert.equal(phoneService.normalizeMobile('+201012345678', { country: 'EG' }), '+201012345678');
     assert.equal(phoneService.normalizeMobile('00201012345678', { country: 'EG' }), '+201012345678');
+    assert.equal(phoneService.normalizeMobile('1012345678', { country: 'EG' }), '+201012345678');
+    assert.equal(phoneService.normalizeMobile('010 1234 5678', { country: 'EG' }), '+201012345678');
+    assert.equal(phoneService.normalizeMobile('+20 101 234 5678', { country: 'EG' }), '+201012345678');
     assert.equal(phoneService.normalizeMobile('٠١٠١٢٣٤٥٦٧٨', { country: 'EG' }), '+201012345678');
 });
 
@@ -21,14 +24,36 @@ test('canonical normalization makes local and international duplicates identical
     );
 });
 
+test('search normalization uses the same canonical value', () => {
+    for (const value of ['01012345678', '1012345678', '+201012345678', '00201012345678', '010 1234 5678']) {
+        assert.equal(phoneService.normalizePhoneForSearch(value, { country: 'EG' }), '+201012345678');
+    }
+});
+
+test('national input is supported for multiple catalog countries without feature regexes', () => {
+    assert.equal(phoneService.normalizeMobile('501234567', { country: 'AE' }), '+971501234567');
+    assert.equal(phoneService.normalizeMobile('0501234567', { country: 'AE' }), '+971501234567');
+    assert.equal(phoneService.normalizeMobile('501234567', { country: 'SA' }), '+966501234567');
+    assert.equal(phoneService.normalizeMobile('+96550123456', { country: 'KW' }), '+96550123456');
+});
+
+test('returns one canonical phone contract for the backend boundary', () => {
+    assert.deepEqual(phoneService.parsePhone('01012345678', { country: 'EG' }), {
+        countryIso2: 'EG',
+        nationalNumber: '1012345678',
+        e164: '+201012345678',
+        input: '01012345678'
+    });
+});
+
 test('selected country controls local parsing and rejects international mismatch', () => {
     assert.equal(phoneService.normalizeMobile('0501234567', { country: 'AE' }), '+971501234567');
     assert.throws(() => phoneService.normalizeMobile('+971501234567', { country: 'EG' }), (error) => error.code === 'PHONE_COUNTRY_MISMATCH');
     assert.throws(() => phoneService.normalizeMobile('01612345678', { country: 'EG' }));
     assert.throws(() => phoneService.normalizeMobile('0223456789', { country: 'EG' }));
     assert.throws(() => phoneService.normalizeMobile('+966501234567', { country: 'EG' }), (error) => error.code === 'PHONE_COUNTRY_MISMATCH');
-    assert.throws(() => phoneService.normalizeMobile('1012345678', { country: 'EG' }), (error) => error.code === 'PHONE_LOCAL_FORMAT');
-    assert.throws(() => phoneService.normalizeMobile('501234567', { country: 'AE' }), (error) => error.code === 'PHONE_LOCAL_FORMAT');
+    assert.equal(phoneService.normalizeMobile('1012345678', { country: 'EG' }), '+201012345678');
+    assert.equal(phoneService.normalizeMobile('501234567', { country: 'AE' }), '+971501234567');
 });
 
 test('phone syntax rejects letters instead of silently stripping them', () => {

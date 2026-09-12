@@ -411,18 +411,20 @@
     }
 
     function currentInput() {
-        const phone = $('attendancePhone')?.value.trim();
+        const phoneInput = $('attendancePhone');
+        const phone = phoneInput?.value.trim();
         if (!phone) {
             showMessage('أدخل رقم الهاتف أو امسح QR Code أولاً.', 'warning');
             return null;
         }
-        const validation = window.LogicFitPhoneInputs?.validateInput?.($('attendancePhone'), { show: true });
-        if (validation && !validation.valid) {
-            showMessage(validation.message, 'warning');
-            $('attendancePhone')?.focus();
+        const validation = window.LogicFitPhoneInputs?.validateInput?.(phoneInput, { show: true });
+        const payload = window.LogicFitPhoneInputs?.getSubmissionPayload?.(phoneInput);
+        if (!validation?.valid || !payload) {
+            showMessage(validation?.message || 'أدخل رقم هاتف صحيحًا.', 'warning');
+            phoneInput?.focus();
             return null;
         }
-        return { phone, phoneCountry: window.LogicFitPhoneInputs?.countryForInput?.($('attendancePhone'))?.iso || $('attendancePhone')?.dataset.phoneCountry || '' };
+        return payload;
     }
 
     async function checkIn(payload = null) {

@@ -60,7 +60,7 @@ test('the browser always submits initial membership fields for new members', () 
     assert.match(browserSource, /async function syncMemberScopeOptions/u);
     assert.match(browserSource, /window\.topGymBranchContext\?\.getBootstrap/);
     assert.match(browserSource, /if \(paymentAllowed && \(isNewMember/u);
-    assert.match(browserSource, /const body = \{[\s\S]*?fullName: \$\('fullName'\)\.value,[\s\S]*?phone: \$\('phone'\)\.value,[\s\S]*?notes: \$\('notes'\)\.value/u);
+    assert.match(browserSource, /const body = \{[\s\S]*?fullName: \$\('fullName'\)\.value,[\s\S]*?\.\.\.phonePayload,[\s\S]*?notes: \$\('notes'\)\.value/u);
     assert.doesNotMatch(pageSource, /createMembership|member-membership-toggle/u);
     assert.doesNotMatch(pageSource, /class="checkbox-field whatsapp-after-save" hidden/u);
     assert.doesNotMatch(pageSource, /id="membershipType"[^>]*required/u);

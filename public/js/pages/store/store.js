@@ -367,7 +367,15 @@
     async function saveSupplier(event) {
         event.preventDefault();
         const supplierId = $('storeSupplierId').value;
-        const payload = { name: $('storeSupplierName').value.trim(), phone: $('storeSupplierPhone').value.trim() || null, phoneCountry: window.LogicFitPhoneInputs?.countryForInput?.($('storeSupplierPhone'))?.iso || $('storeSupplierPhone')?.dataset.phoneCountry || '', email: $('storeSupplierEmail').value.trim() || null, address: $('storeSupplierAddress').value.trim() || null };
+        const phoneInput = $('storeSupplierPhone');
+        const phoneValue = phoneInput.value.trim();
+        const phonePayload = phoneValue ? window.LogicFitPhoneInputs?.getSubmissionPayload?.(phoneInput) : null;
+        if (phoneValue && !phonePayload) {
+            notify('رقم هاتف المورد غير صحيح.', 'error');
+            phoneInput.focus();
+            return;
+        }
+        const payload = { name: $('storeSupplierName').value.trim(), phone: phonePayload?.phone || null, phoneNational: phonePayload?.phoneNational || null, phoneCountry: phonePayload?.phoneCountry || '', email: $('storeSupplierEmail').value.trim() || null, address: $('storeSupplierAddress').value.trim() || null };
         try { if (supplierId) await api.put(`/api/store/suppliers/${encodeURIComponent(supplierId)}`, payload); else await api.post('/api/store/suppliers', payload); notify(supplierId ? 'تم تحديث المورد.' : 'تم حفظ المورد.'); $('storeSupplierFormCard').hidden = true; event.target.reset(); $('storeSupplierId').value = ''; await loadSuppliers(); } catch (error) { notify(error.message, 'error'); }
     }
 
@@ -396,7 +404,7 @@
         if (!supplier) return;
         $('storeSupplierId').value = supplier.id;
         $('storeSupplierName').value = supplier.name || '';
-        $('storeSupplierPhone').value = supplier.phone || '';
+        window.LogicFitPhoneInputs?.setValue?.($('storeSupplierPhone'), supplier.phone || '', supplier.phoneCountry || '');
         $('storeSupplierEmail').value = supplier.email || '';
         $('storeSupplierAddress').value = supplier.address || '';
         $('storeSupplierFormCard').hidden = false;

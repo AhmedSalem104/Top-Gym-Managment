@@ -47,8 +47,12 @@
 
     function phoneValue(name) {
         const input = form.elements?.namedItem(name);
-        const country = window.LogicFitPhoneInputs?.countryCodeForInput?.(input) || input?.dataset?.phoneCountry || '';
-        return window.LogicFitPhoneInputs?.normalizeForTransport?.(input?.value || '', country) || value(name);
+        return window.LogicFitPhoneInputs?.getSubmissionPayload?.(input)?.phone || '';
+    }
+
+    function phonePayload(name) {
+        const input = form.elements?.namedItem(name);
+        return window.LogicFitPhoneInputs?.getSubmissionPayload?.(input) || {};
     }
 
     function formatMoney(value, currency = 'EGP') {
@@ -313,7 +317,7 @@
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'Idempotency-Key': state.idempotencyKey },
             body: JSON.stringify({
-                gymName: value('gymName'), ownerName: value('ownerName'), whatsapp: phoneValue('whatsapp'), whatsappCountry: window.LogicFitPhoneInputs?.countryForInput?.(form.elements?.namedItem('whatsapp'))?.iso || form.elements?.namedItem('whatsapp')?.dataset?.phoneCountry || '', email: value('email'), city: value('city'), notes: value('notes'),
+                gymName: value('gymName'), ownerName: value('ownerName'), whatsapp: phoneValue('whatsapp'), whatsappNational: phonePayload('whatsapp').phoneNational || '', whatsappCountry: phonePayload('whatsapp').phoneCountry || '', email: value('email'), city: value('city'), notes: value('notes'),
                 planCode: state.selectedPlan.code, termCode: state.selectedTerm.code, paymentMethodCode: state.selectedPaymentMethod.methodCode
             })
         });

@@ -441,7 +441,8 @@
         const submitButton = form.querySelector('button[type="submit"]');
         submitButton.disabled = true;
         try {
-            const data = await requestJson('/api/external-trainees', { method: 'POST', body: JSON.stringify({ fullName: $('externalFullName').value, phone: $('externalPhone').value, phoneCountry: window.LogicFitPhoneInputs?.countryForInput?.($('externalPhone'))?.iso || $('externalPhone')?.dataset.phoneCountry || '', email: $('externalEmail').value, registrationDate: $('externalRegistrationDate').value, notes: $('externalNotes').value }) });
+            const phonePayload = window.LogicFitPhoneInputs?.getSubmissionPayload?.($('externalPhone')) || {};
+            const data = await requestJson('/api/external-trainees', { method: 'POST', body: JSON.stringify({ fullName: $('externalFullName').value, ...phonePayload, email: $('externalEmail').value, registrationDate: $('externalRegistrationDate').value, notes: $('externalNotes').value }) });
             closeDialog($('externalTraineeDialog'));
             state.builderClients = null;
             state.loaded = false;
@@ -1990,7 +1991,8 @@
         }
         const memberId = $('coachingEditMemberId').value;
         try {
-            const data = await requestJson(`/api/clients/${memberId}`, { method: 'PUT', body: JSON.stringify({ fullName: $('coachingEditName').value, phone: $('coachingEditPhone').value, phoneCountry: window.LogicFitPhoneInputs?.countryForInput?.($('coachingEditPhone'))?.iso || $('coachingEditPhone')?.dataset.phoneCountry || '', email: $('coachingEditEmail').value, notes: $('coachingEditNotes').value }) });
+            const phonePayload = window.LogicFitPhoneInputs?.getSubmissionPayload?.($('coachingEditPhone')) || {};
+            const data = await requestJson(`/api/clients/${memberId}`, { method: 'PUT', body: JSON.stringify({ fullName: $('coachingEditName').value, ...phonePayload, email: $('coachingEditEmail').value, notes: $('coachingEditNotes').value }) });
             closeDialog($('coachingClientEditDialog'));
             notify('تم تحديث بيانات العميل.');
             if ($('coachingProfileDialog')?.open) openProfile(data.member.id);

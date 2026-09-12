@@ -17,7 +17,11 @@ const {
 const { ensureAttendanceTable, getMemberAttendanceStatuses } = require('./attendance-service');
 const { currentTenantId, getTenantContext } = require('../tenancy/tenant-context');
 const { publish, publishForRoles } = require('./notification-dispatcher');
-const { normalizePhone: normalizeInternationalPhone } = require('./phone-service');
+const {
+    FALLBACK_COUNTRY,
+    parsePhone,
+    normalizePhoneForSearch
+} = require('./phone-service');
 
 const DEFAULT_MEMBERSHIP_PLANS = {
     gym_only: { label: 'جيم فقط', monthlyPrice: 305, active: true, sortOrder: 1 },
@@ -37,7 +41,6 @@ const DEFAULT_MEMBER_PAGE_SIZE = 5;
 const PRICING_CACHE_TTL_MS = 30_000;
 let pricingOverridesPromise;
 const pricingCatalogCache = new Map();
-let memberIdentityPromise;
 let paymentTransactionsTablePromise;
 let subscriptionRefundsTablePromise;
 
@@ -374,44 +377,12 @@ function optionalString(value, maxLength) {
     return normalized;
 }
 
-function normalizePhone(value) {
-    return normalizeInternationalPhone(value, { country: null, fieldName: 'Phone number' });
-}
-
-async function ensureMemberIdentityFields() {
-    if (!memberIdentityPromise) {
-        memberIdentityPromise = (async () => {
-            const pool = await getPool();
-            await pool.request().batch(`
-                IF COL_LENGTH(N'dbo.members', N'phone_normalized') IS NULL
-                BEGIN
-                    ALTER TABLE dbo.members ADD phone_normalized NVARCHAR(30) NULL;
-                END;
-                EXEC(N'UPDATE dbo.members
-                       SET phone_normalized = phone
-                       WHERE phone_normalized IS NULL OR LTRIM(RTRIM(phone_normalized)) = N'''';');
-                IF NOT EXISTS (
-                    SELECT 1 FROM sys.indexes
-                    WHERE name = N'IX_members_phone_normalized_runtime' AND object_id = OBJECT_ID(N'dbo.members')
-                )
-                BEGIN
-                    EXEC(N'CREATE INDEX IX_members_phone_normalized_runtime ON dbo.members(phone_normalized);');
-                END;
-            `);
-        })().catch((error) => {
-            memberIdentityPromise = undefined;
-            throw error;
-        });
-    }
-    return memberIdentityPromise;
-}
-
 /**
  * Production writes must not run DDL or backfill work inside an HTTP request.
  * The release/migration pipeline owns schema changes; this is a read-only
  * contract check that fails closed when the deployed schema is incompatible.
  */
-async function assertMemberMutationSchemaReady({ membershipRequired = false, paymentRequired = false } = {}) {
+async function assertMemberMutationSchemaReady({ membershipRequired = false, membershipTablesRequired = false, paymentRequired = false } = {}) {
     const pool = await getPool();
     const result = await pool.request().query(`
         SELECT
@@ -442,6 +413,9 @@ async function assertMemberMutationSchemaReady({ membershipRequired = false, pay
             ['paymentsTable', 'dbo.gym_payments']
         );
     }
+    if (membershipTablesRequired && !membershipRequired) {
+        required.push(['membershipsTable', 'dbo.memberships'], ['paymentsTable', 'dbo.gym_payments']);
+    }
 
     if (paymentRequired) {
         required.push(['paymentTransactionsTable', 'dbo.gym_payment_transactions']);
@@ -460,7 +434,7 @@ async function assertMemberMutationSchemaReady({ membershipRequired = false, pay
     }
 }
 
-async function assertNoDuplicateMember(connection, phoneNormalized, email, excludeId = null) {
+async function assertNoDuplicateMember(connection, phoneNormalized, email, excludeId = null, phoneCountry = null) {
     const tenantId = currentTenantId({ required: true });
     const result = await connection.request()
         .input('tenantId', sql.Int, tenantId)
@@ -475,13 +449,19 @@ async function assertNoDuplicateMember(connection, phoneNormalized, email, exclu
     const normalizedEmail = String(email || '').trim().toLowerCase();
     const duplicate = result.recordset.find((row) => {
         if (excludeId && Number(row.id) === Number(excludeId)) return false;
-        const rowPhone = normalizePhone(row.phone_normalized || row.phone);
+        const rowPhone = normalizePhoneForSearch(row.phone_normalized || row.phone, {
+            country: phoneCountry || null,
+            fieldName: 'Phone number'
+        });
         const rowEmail = String(row.email || '').trim().toLowerCase();
         return (phoneNormalized && rowPhone && rowPhone === phoneNormalized)
             || (normalizedEmail && rowEmail && rowEmail === normalizedEmail);
     });
     if (!duplicate) return;
-    const samePhone = phoneNormalized && normalizePhone(duplicate.phone_normalized || duplicate.phone) === phoneNormalized;
+    const samePhone = phoneNormalized && normalizePhoneForSearch(duplicate.phone_normalized || duplicate.phone, {
+        country: phoneCountry || null,
+        fieldName: 'Phone number'
+    }) === phoneNormalized;
     const error = appError(samePhone
         ? `رقم الهاتف مسجل بالفعل باسم ${duplicate.full_name}.`
         : `البريد الإلكتروني مسجل بالفعل باسم ${duplicate.full_name}.`, 409);
@@ -790,13 +770,18 @@ async function calculatePricing(membershipType, membershipPlan = 'gym_only', dis
 function normalizePayload(body = {}, { partial = false } = {}) {
     const output = {};
     if (!partial || has(body, 'fullName')) output.fullName = requiredString(body.fullName, 'الاسم', 120);
-    if (!partial || has(body, 'phone')) {
-        output.phone = requiredString(body.phone, 'رقم الهاتف', 30);
-        output.phoneNormalized = normalizeInternationalPhone(output.phone, {
+    const phoneProvided = has(body, 'phone') || has(body, 'phoneNational');
+    if (!partial || phoneProvided) {
+        const phoneInput = body.phoneNational ?? body.phone;
+        output.phoneInput = requiredString(phoneInput, 'رقم الهاتف', 30);
+        const parsedPhone = parsePhone(output.phoneInput, {
             country: body.phoneCountry || body.country || null,
             fieldName: 'Phone number'
         });
-        output.phone = output.phoneNormalized;
+        output.phoneNormalized = parsedPhone.e164;
+        output.phone = parsedPhone.e164;
+        output.phoneCountry = parsedPhone.countryIso2;
+        output.phoneNational = parsedPhone.nationalNumber;
     }
     if (!partial || has(body, 'email')) {
         output.email = optionalString(body.email, 254);
@@ -902,11 +887,20 @@ function ensureMemberSort(value) {
 
 function mapMember(row) {
     const membershipId = row.membershipId ? Number(row.membershipId) : null;
+    let parsedPhone = null;
+    try {
+        parsedPhone = parsePhone(row.phoneNormalized || row.phone, { required: false, requireCountryForLocal: false });
+    } catch (_) {
+        // Legacy rows remain readable even when their historic representation
+        // cannot be unambiguously parsed. They are not rewritten here.
+    }
     return {
         id: Number(row.id),
         qrToken: `TOPGYM-MEMBER:${Number(row.id)}`,
         fullName: row.fullName,
-        phone: row.phone,
+        phone: row.phoneNormalized || row.phone,
+        phoneCountry: parsedPhone?.countryIso2 || null,
+        phoneNational: parsedPhone?.nationalNumber || null,
         email: row.email,
         registrationDate: formatDateOnly(row.registrationDate),
         notes: row.memberNotes,
@@ -954,8 +948,13 @@ async function getMemberById(id, connection = null) {
     return member;
 }
 
-async function getMembers({ search = '', status = '', sort = 'expiry', page = 1, pageSize = DEFAULT_MEMBER_PAGE_SIZE, readOnly = false, branchId = null, sectionId = null } = {}) {
+async function getMembers({ search = '', status = '', sort = 'expiry', page = 1, pageSize = DEFAULT_MEMBER_PAGE_SIZE, readOnly = false, branchId = null, sectionId = null, phoneCountry = null } = {}) {
     const normalizedSearch = String(search || '').trim().slice(0, 100);
+    const normalizedPhoneSearch = normalizePhoneForSearch(normalizedSearch, {
+        country: /^\+|^00/.test(normalizedSearch) ? null : (phoneCountry || FALLBACK_COUNTRY),
+        required: false,
+        fieldName: 'Phone number'
+    }) || '';
     const normalizedStatus = ensureStatus(status);
     const normalizedSort = ensureMemberSort(sort);
     const requestedPage = Number(page);
@@ -965,6 +964,7 @@ async function getMembers({ search = '', status = '', sort = 'expiry', page = 1,
     const offset = (currentPage - 1) * currentPageSize;
     const result = await memberRepository.list({
         search: normalizedSearch,
+        phoneSearch: normalizedPhoneSearch,
         status: normalizedStatus,
         sort: normalizedSort,
         offset,
@@ -1841,7 +1841,7 @@ async function createMember(body, { tenantSlug = '', idempotencyKey = null, bran
             const existing = await findPaymentTransactionByIdempotencyKey(transaction, paymentIdempotencyKey, { lock: true });
             if (existing) return existing.memberId;
         }
-        await assertNoDuplicateMember(transaction, data.phoneNormalized, data.email);
+        await assertNoDuplicateMember(transaction, data.phoneNormalized, data.email, null, data.phoneCountry);
         const memberResult = await transaction.request()
             .input('fullName', sql.NVarChar(120), data.fullName)
             .input('phone', sql.NVarChar(30), data.phoneNormalized)
@@ -1929,8 +1929,12 @@ async function updateMember(id, body, idempotencyKey = null) {
     const paymentFields = ['discountAmount', 'amountDue', 'amountPaid', 'paymentMethod', 'paymentNotes', 'paidAt', 'paymentDate'];
     const membershipChangeRequested = membershipFields.some((field) => has(body, field));
     const paymentChangeRequested = paymentFields.some((field) => has(body, field));
-    await ensureMemberIdentityFields();
-    await ensurePaymentTransactionsTable();
+    // Updates use the release-managed schema only. Request handlers perform a
+    // read-only readiness check and never create/alter tables.
+    await assertMemberMutationSchemaReady({
+        membershipTablesRequired: membershipChangeRequested || paymentChangeRequested,
+        paymentRequired: paymentChangeRequested
+    });
     if (paymentIdempotencyKey) {
         const existing = await findPaymentTransactionByIdempotencyKey(await getPool(), paymentIdempotencyKey);
         if (existing) {
@@ -1957,13 +1961,19 @@ async function updateMember(id, body, idempotencyKey = null) {
 
         const memberData = {
             fullName: patch.fullName ?? currentMember.full_name,
-            phone: patch.phoneNormalized ?? normalizePhone(currentMember.phone_normalized || currentMember.phone),
-            phoneNormalized: patch.phoneNormalized ?? normalizePhone(currentMember.phone_normalized || currentMember.phone),
+            phone: patch.phoneNormalized ?? normalizePhoneForSearch(currentMember.phone_normalized || currentMember.phone, {
+                country: patch.phoneCountry || null,
+                fieldName: 'Phone number'
+            }),
+            phoneNormalized: patch.phoneNormalized ?? normalizePhoneForSearch(currentMember.phone_normalized || currentMember.phone, {
+                country: patch.phoneCountry || null,
+                fieldName: 'Phone number'
+            }),
             email: patch.email === undefined ? currentMember.email : patch.email,
             registrationDate: patch.registrationDate ?? formatDateOnly(currentMember.registration_date),
             notes: patch.notes === undefined ? currentMember.notes : patch.notes
         };
-        await assertNoDuplicateMember(transaction, memberData.phoneNormalized, memberData.email, memberId);
+        await assertNoDuplicateMember(transaction, memberData.phoneNormalized, memberData.email, memberId, patch.phoneCountry || null);
         const membershipData = currentMembership ? {
             plan: patch.membershipPlan ?? currentMembership.membership_plan ?? 'gym_only',
             type: patch.membershipType ?? currentMembership.membership_type,

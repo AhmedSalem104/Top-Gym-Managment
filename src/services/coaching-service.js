@@ -537,7 +537,7 @@ async function createExternalTrainee(body = {}) {
     await ensureMemberIdentityColumn();
     await ensureCoachingTables();
     const fullName = text(body.fullName, 'اسم المتدرب', 120, true);
-    const phone = text(body.phone, 'رقم الهاتف', 30, true);
+    const phone = text(body.phoneNational ?? body.phone, 'رقم الهاتف', 30, true);
     const phoneNormalized = normalizeInternationalPhone(phone, {
         country: body.phoneCountry || body.country || null,
         fieldName: 'Phone number'
@@ -594,8 +594,9 @@ async function updateClientBasic(memberIdValue, body = {}) {
     const memberId = ensureId(memberIdValue, 'معرّف العميل');
     const current = await getClientBase(memberId);
     const fullName = body.fullName === undefined ? current.fullName : text(body.fullName, 'اسم المتدرب', 120, true);
-    const phone = body.phone === undefined ? current.phone : text(body.phone, 'رقم الهاتف', 30, true);
-    const phoneNormalized = body.phone === undefined
+    const phoneProvided = body.phone !== undefined || body.phoneNational !== undefined;
+    const phone = !phoneProvided ? current.phone : text(body.phoneNational ?? body.phone, 'رقم الهاتف', 30, true);
+    const phoneNormalized = !phoneProvided
         ? normalizeInternationalPhone(current.phone, { country: null, fieldName: 'Phone number' })
         : normalizeInternationalPhone(phone, { country: body.phoneCountry || body.country || null, fieldName: 'Phone number' });
     const email = body.email === undefined ? current.email : text(body.email, 'البريد الإلكتروني', 254);
