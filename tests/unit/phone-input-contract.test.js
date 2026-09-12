@@ -9,10 +9,10 @@ const root = path.join(__dirname, '..', '..');
 const read = (relativePath) => fs.readFileSync(path.join(root, relativePath), 'utf8');
 
 test('phone input layer is loaded by every page that owns a phone form', () => {
-    assert.match(read('public/index.html'), /core\/phone-inputs\.js/);
-    assert.match(read('public/register-gym.html'), /core\/phone-inputs\.js/);
-    assert.match(read('public/register-trainer.html'), /core\/phone-inputs\.js/);
-    assert.match(read('public/trainer-workspace.html'), /core\/phone-inputs\.js/);
+    assert.match(read('public/index.html'), /core\/phone-inputs\.js\?v=5/);
+    assert.match(read('public/register-gym.html'), /core\/phone-inputs\.js\?v=5/);
+    assert.match(read('public/register-trainer.html'), /core\/phone-inputs\.js\?v=5/);
+    assert.match(read('public/trainer-workspace.html'), /core\/phone-inputs\.js\?v=5/);
     const script = read('public/js/core/phone-inputs.js');
     assert.match(script, /\/api\/phone\/countries/);
     assert.match(script, /data-phone-country/);
@@ -43,6 +43,7 @@ test('phone input layer is loaded by every page that owns a phone form', () => {
     assert.match(script, /exceedsInputLimit/);
     assert.match(script, /phoneRejectedLimit/);
     assert.match(script, /maximumInputDigits/);
+    assert.doesNotMatch(script, /localDigits\(country\?\.dialCode/);
     assert.match(script, /phoneMaximumDigits/);
     assert.match(script, /inputMode = 'numeric'/);
     assert.match(script, /setAttribute\('inputmode', 'numeric'\)/);

@@ -316,7 +316,10 @@
                 ? national
                 : (national.startsWith(localPrefix) ? national.slice(localPrefix.length) : national);
         }
-        return localPrefix ? localPrefix.replace(/^0+/u, '') : localDigits(country?.dialCode || '');
+        // A dial code is country-selector metadata, never a national-number example.
+        // Keep the placeholder empty when the catalog has no example rather than
+        // presenting a misleading value such as "20" in the phone field.
+        return localPrefix ? localPrefix.replace(/^0+/u, '') : '';
     }
 
     function applyCountryPresentation(input, select) {

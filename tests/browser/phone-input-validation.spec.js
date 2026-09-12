@@ -12,7 +12,16 @@ const catalog = {
             mobileRules: { supported: true, validLengths: [10], nationalPattern: '1[0-25]\\d{8}', localPrefix: '0' }
         },
         {
-            country: 'الإمارات العربية المتحدة',
+            country: 'Saudi Arabia',
+            isoCode: 'SA',
+            dialCode: '+966',
+            exampleNational: '0501234567',
+            exampleInternational: '+966501234567',
+            validLengths: [9],
+            mobileRules: { supported: true, validLengths: [9], nationalPattern: '5\\d{8}', localPrefix: '0' }
+        },
+        {
+            country: 'United Arab Emirates',
             isoCode: 'AE',
             dialCode: '+971',
             exampleNational: '050 123 4567',
@@ -94,7 +103,7 @@ test('phone input blocks invalid length/format before registration request', asy
 
     await page.locator('.phone-country-trigger').click();
     await expect(page.locator('.phone-country-menu')).toBeVisible();
-    await expect(page.locator('.phone-country-option img')).toHaveCount(2);
+    await expect(page.locator('.phone-country-option img')).toHaveCount(catalog.countries.length);
     await page.locator('.phone-input-control').screenshot({ path: `qa/artifacts/phone-control-${test.info().project.name}-dropdown.png` });
     const countrySearch = page.locator('.phone-country-search');
     await expect(countrySearch).toBeVisible();
@@ -104,7 +113,7 @@ test('phone input blocks invalid length/format before registration request', asy
     await expect(phone).toHaveAttribute('placeholder', /^5\d{8}$/);
     await expect(flag.locator('img')).toHaveAttribute('src', /\/ae\.png$/);
     await expect(page.locator('[data-phone-country-code]')).toHaveText('+971');
-    await expect(page.locator('[data-phone-country-name]')).toHaveText(catalog.countries[1].country);
+    await expect(page.locator('[data-phone-country-name]')).toHaveText(catalog.countries[2].country);
     await phone.fill('0101234567');
     await phone.blur();
     await expect(error).toBeVisible();
@@ -176,4 +185,36 @@ test('phone input stays stable and usable at 320px in both themes', async ({ pag
     await page.evaluate(() => document.documentElement.setAttribute('data-theme', 'light'));
     await expect(page.locator('[data-phone-country-flag] img')).toBeVisible();
     await page.screenshot({ path: `qa/artifacts/phone-control-${test.info().project.name}-320.png`, fullPage: false });
+});
+
+test('Egypt placeholder remains the national example after async country updates and reload', async ({ page }) => {
+    await page.route('**/api/phone/countries', (route) => route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(catalog)
+    }));
+    await page.goto('/register-gym.html', { waitUntil: 'domcontentloaded' });
+
+    const phone = page.locator('input[name="whatsapp"]');
+    const country = page.locator('select[data-phone-country]');
+    await expect(country).toHaveValue('EG');
+    await expect(phone).toHaveAttribute('placeholder', '1015819700');
+
+    await country.selectOption('SA');
+    await expect(phone).toHaveAttribute('placeholder', '501234567');
+    await country.selectOption('AE');
+    await expect(phone).toHaveAttribute('placeholder', '501234567');
+    await country.selectOption('EG');
+    await expect(phone).toHaveAttribute('placeholder', '1015819700');
+
+    // Waiting is intentional test observation; production code contains no timer-based fix.
+    await page.waitForTimeout(1500);
+    await expect(phone).toHaveAttribute('placeholder', '1015819700');
+    expect(await phone.getAttribute('placeholder')).not.toBe('20');
+    expect(await phone.getAttribute('placeholder')).not.toBe('+20');
+
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await expect(country).toHaveValue('EG');
+    await page.waitForTimeout(1500);
+    await expect(phone).toHaveAttribute('placeholder', '1015819700');
 });
