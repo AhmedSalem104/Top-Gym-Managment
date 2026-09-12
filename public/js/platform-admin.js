@@ -37,6 +37,13 @@
     let toastTimer;
     let searchTimer;
 
+    // Notification Center uses this read-only bridge because Platform Admin
+    // intentionally owns a separate login shell from auth-ui.js. It exposes
+    // only the in-memory authenticated user and never credentials/tokens.
+    window.topGymPlatformAdminAuth = {
+        getUser: () => state.user
+    };
+
     function escapeHtml(value) {
         return String(value ?? '').replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[character]));
     }

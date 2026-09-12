@@ -243,12 +243,22 @@
   }
 
   function authenticatedUser() {
-    if (authBootstrapPromise) return authBootstrapPromise;
     const ready = window.topGymAuthReady;
-    authBootstrapPromise = ready && typeof ready.then === 'function'
-      ? Promise.resolve(ready).then((user) => user || null).catch(() => null)
-      : Promise.resolve(window.topGymAuth?.getUser?.() || null);
-    return authBootstrapPromise;
+    if (ready && typeof ready.then === 'function') {
+      if (!authBootstrapPromise) {
+        authBootstrapPromise = Promise.resolve(ready).then((user) => user || null).catch(() => null);
+      }
+      return authBootstrapPromise;
+    }
+    // Platform Admin has a deliberately separate auth shell and does not
+    // load auth-ui.js. Resolve its current user at call time so the first
+    // unauthenticated render stays quiet while a later successful login can
+    // refresh notifications without a page reload.
+    return Promise.resolve(
+      window.topGymAuth?.getUser?.()
+      || window.topGymPlatformAdminAuth?.getUser?.()
+      || null
+    );
   }
 
   async function ensureNotificationSession() {
