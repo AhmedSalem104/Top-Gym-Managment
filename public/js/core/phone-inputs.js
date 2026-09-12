@@ -281,11 +281,32 @@
         element.appendChild(image);
     }
 
+    function countryInputExample(country, input) {
+        const mobileRules = country?.mobileRules || {};
+        const localPrefix = String(mobileRules.localPrefix || '');
+        const formattedNational = localDigits(country?.exampleNational || '');
+        if (formattedNational) {
+            if (input?.dataset.phoneAllowFixedLine !== 'true' && localPrefix && !formattedNational.startsWith(localPrefix)) {
+                return `${localPrefix}${formattedNational}`;
+            }
+            return formattedNational;
+        }
+        const international = compact(country?.exampleInternational || '');
+        const dialCode = String(country?.dialCode || '').replace(/^\+/, '');
+        if (international.startsWith('+') && dialCode && international.slice(1).startsWith(dialCode)) {
+            const national = international.slice(1 + dialCode.length);
+            return input?.dataset.phoneAllowFixedLine === 'true' || !localPrefix || national.startsWith(localPrefix)
+                ? national
+                : `${localPrefix}${national}`;
+        }
+        return localPrefix || localDigits(country?.dialCode || '');
+    }
+
     function applyCountryPresentation(input, select) {
         const iso = String(select?.value || input?.dataset.phoneCountry || DEFAULT_COUNTRY).toUpperCase();
         const country = countriesByIso.get(iso);
         if (!country || !input) return;
-        const example = String(country.exampleNational || country.exampleInternational || country.dialCode || '').trim();
+        const example = countryInputExample(country, input);
         input.placeholder = example ? `\u0645\u062b\u0627\u0644: ${example}` : `\u0631\u0642\u0645 ${country.country}`;
         input.title = example ? `\u0627\u0643\u062a\u0628 \u0645\u062b\u0627\u0644: ${example}` : `\u0631\u0642\u0645 ${country.country}`;
         syncNativeInputLimit(input);

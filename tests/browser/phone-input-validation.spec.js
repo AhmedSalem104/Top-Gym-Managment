@@ -36,7 +36,7 @@ test('phone input blocks invalid length/format before registration request', asy
     const error = page.locator('.phone-input-error');
     const flag = page.locator('[data-phone-country-flag]');
     await expect(country).toHaveValue('EG');
-    await expect(phone).toHaveAttribute('placeholder', /010/);
+    await expect(phone).toHaveAttribute('placeholder', /010\d{8}$/);
     await expect(phone).toHaveAttribute('inputmode', 'numeric');
     await expect(phone).toHaveAttribute('autocomplete', 'tel');
     await expect(phone).toHaveAttribute('pattern', '[0-9+\\s().-]*');
@@ -91,7 +91,7 @@ test('phone input blocks invalid length/format before registration request', asy
     await countrySearch.fill('+971');
     await expect(page.locator('[data-phone-country-option="AE"]')).toHaveCount(1);
     await page.locator('[data-phone-country-option="AE"]').click();
-    await expect(phone).toHaveAttribute('placeholder', /050/);
+    await expect(phone).toHaveAttribute('placeholder', /050\d{7}$/);
     await expect(flag.locator('img')).toHaveAttribute('src', /\/ae\.png$/);
     await phone.fill('0101234567');
     await phone.blur();
