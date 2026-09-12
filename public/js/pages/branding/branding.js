@@ -394,7 +394,7 @@
         if (IDENTITY_FIELDS[id]) setPath(`identity.${IDENTITY_FIELDS[id]}`, target.value);
         else if (DOCUMENT_FIELDS[id]) {
             const value = id === 'brandingDocumentPhone'
-                ? (window.LogicFitPhoneInputs?.normalizeForTransport?.(target.value, target.dataset.phoneCountry || 'EG') || target.value)
+                ? (window.LogicFitPhoneInputs?.normalizeForTransport?.(target.value, target.dataset.phoneCountry || '') || target.value)
                 : target.value;
             setPath(`documents.${DOCUMENT_FIELDS[id]}`, value);
         }

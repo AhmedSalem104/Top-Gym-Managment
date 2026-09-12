@@ -9,10 +9,14 @@ const root = path.join(__dirname, '..', '..');
 const read = (relativePath) => fs.readFileSync(path.join(root, relativePath), 'utf8');
 
 test('phone input layer is loaded by every page that owns a phone form', () => {
-    assert.match(read('public/index.html'), /core\/phone-inputs\.js\?v=5/);
-    assert.match(read('public/register-gym.html'), /core\/phone-inputs\.js\?v=5/);
-    assert.match(read('public/register-trainer.html'), /core\/phone-inputs\.js\?v=5/);
-    assert.match(read('public/trainer-workspace.html'), /core\/phone-inputs\.js\?v=5/);
+    assert.match(read('public/index.html'), /core\/phone-inputs\.js\?v=6/);
+    assert.match(read('public/register-gym.html'), /core\/phone-inputs\.js\?v=6/);
+    assert.match(read('public/register-trainer.html'), /core\/phone-inputs\.js\?v=6/);
+    assert.match(read('public/trainer-workspace.html'), /core\/phone-inputs\.js\?v=6/);
+    assert.doesNotMatch(read('public/index.html'), /data-default-country="EG"/);
+    assert.doesNotMatch(read('public/register-gym.html'), /data-default-country="EG"/);
+    assert.doesNotMatch(read('public/register-trainer.html'), /data-default-country="EG"/);
+    assert.doesNotMatch(read('public/trainer-workspace.html'), /data-default-country="EG"/);
     const script = read('public/js/core/phone-inputs.js');
     assert.match(script, /\/api\/phone\/countries/);
     assert.match(script, /data-phone-country/);
@@ -37,6 +41,10 @@ test('phone input layer is loaded by every page that owns a phone form', () => {
     assert.match(script, /phoneValidationBlocked/);
     assert.match(script, /exampleNational/);
     assert.match(script, /countryInputExample/);
+    assert.match(script, /approximateCountry/);
+    assert.match(script, /TIMEZONE_COUNTRY_MAP/);
+    assert.match(script, /phoneCountrySource/);
+    assert.match(script, /countryCodeForInput/);
     assert.match(script, /inputLimits/);
     assert.match(script, /syncNativeInputLimit/);
     assert.match(script, /projectedInputValue/);
@@ -94,4 +102,6 @@ test('phone writes use centralized normalization and tenant-scoped duplicate che
     assert.match(coaching, /WHERE tenant_id=@tenantId/);
     assert.match(attendance, /tenant_id=@tenantId/);
     assert.match(registration, /normalizeMobile/);
+    assert.doesNotMatch(registration, /defaultCountryCode\s*=\s*['"]20['"]/);
+    assert.match(registration, /requireCountryForLocal:\s*true/);
 });

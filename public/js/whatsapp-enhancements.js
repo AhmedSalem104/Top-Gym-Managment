@@ -30,8 +30,13 @@
                 return String(value ?? '').replace(/[٠-٩]/g, (digit) => String(arabicDigits.indexOf(digit)));
             }
 
-            function normalizeEgyptianPhone(value) {
-                const prepared = window.LogicFitPhoneInputs?.normalizeForTransport?.(latinDigits(value), 'EG') || latinDigits(value).trim();
+            function normalizePhone(value, country = '') {
+                const detectedCountry = country
+                    || window.LogicFitPhoneInputs?.countryForValue?.(value)
+                    || window.LogicFitPhoneInputs?.countryCodeForInput?.(memberForm.elements?.namedItem('phone'))
+                    || memberForm.elements?.namedItem('phone')?.dataset?.phoneCountry
+                    || '';
+                const prepared = window.LogicFitPhoneInputs?.normalizeForTransport?.(latinDigits(value), detectedCountry) || latinDigits(value).trim();
                 if (!/^\+[1-9]\d{6,14}$/.test(prepared)) return '';
                 return prepared.slice(1);
             }
@@ -147,7 +152,7 @@
             }
 
             function prepareWhatsappWindow(phone) {
-                if (!normalizeEgyptianPhone(phone)) return null;
+                if (!normalizePhone(phone)) return null;
                 if (isMobileDevice()) return null;
                 const opened = window.open('about:blank', 'topGymWhatsapp', 'popup=yes,width=480,height=760,resizable=yes,scrollbars=yes');
                 if (opened) opened.opener = null;
@@ -189,7 +194,7 @@
 
             function sendMembershipPortalInvite(detail = {}) {
                 const member = detail.member || {};
-                const phone = normalizeEgyptianPhone(detail.phone || member.phone);
+                const phone = normalizePhone(detail.phone || member.phone, member.phoneCountry || detail.payload?.phoneCountry);
                 if (!phone) throw new Error('رقم هاتف المشترك غير صالح لفتح واتساب.');
                 const message = buildMessage({ ...detail, member, portalUrl: detail.portalUrl || `${window.location.origin}/member-portal` });
                 const opened = openWhatsappChat(phone, message);
@@ -198,7 +203,7 @@
             }
 
             function sendWhatsappMessage(detail) {
-                const phone = normalizeEgyptianPhone(detail.payload?.phone || detail.member?.phone);
+                const phone = normalizePhone(detail.payload?.phone || detail.member?.phone, detail.payload?.phoneCountry || detail.member?.phoneCountry);
                 const message = buildMessage(detail);
                 if (!phone) {
                     if (window.Swal) window.Swal.fire({ toast: true, position: 'top-start', icon: 'warning', title: 'تم الحفظ — رقم الهاتف غير صحيح', showConfirmButton: false, timer: 4500, timerProgressBar: true, customClass: { popup: 'top-gym-alert top-gym-toast' } });
@@ -375,7 +380,7 @@
 
             async function sendAlertWhatsapp(memberId, kind, button = null) {
                 if (button) button.disabled = true;
-                const fallbackPhone = normalizeEgyptianPhone(button?.dataset.alertPhone);
+                const fallbackPhone = normalizePhone(button?.dataset.alertPhone);
                 const fallbackMember = {
                     fullName: button?.dataset.alertName || '',
                     daysSinceLastVisit: button?.dataset.alertDays ? Number(button.dataset.alertDays) : null,
@@ -400,7 +405,7 @@
                     const data = await response.json().catch(() => ({}));
                     if (!response.ok) throw new Error(data.error || 'تعذر تحميل بيانات المشترك.');
                     const member = data.member || data;
-                    const phone = normalizeEgyptianPhone(member.phone);
+                    const phone = normalizePhone(member.phone, member.phoneCountry);
                     if (!phone) throw new Error('رقم هاتف المشترك غير صالح لفتح واتساب.');
                     const message = buildAlertMessage(member, kind);
                     const opened = openWhatsappChat(phone, message, preparedWindow);

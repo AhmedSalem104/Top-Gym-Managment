@@ -6,7 +6,15 @@
     if (window.__logicFitPhoneInputsLoaded) return;
     window.__logicFitPhoneInputsLoaded = true;
 
-    const DEFAULT_COUNTRY = 'EG';
+    // Central fallback policy only. It is used when no approximate location signal
+    // is available; it is not a per-screen phone default.
+    const FALLBACK_COUNTRY = 'EG';
+    const TIMEZONE_COUNTRY_MAP = Object.freeze({
+        'Africa/Cairo': 'EG',
+        'Asia/Riyadh': 'SA',
+        'Asia/Dubai': 'AE',
+        'Asia/Abu_Dhabi': 'AE'
+    });
     const PHONE_FIELD_SELECTOR = '[data-phone-input], input[name="whatsapp"], #branchPhoneInput, #coachingEditPhone';
     const countriesByIso = new Map();
     let countriesPromise = null;
@@ -231,16 +239,45 @@
     }
 
     function localeCountry() {
+        const locales = [navigator.language, ...(navigator.languages || [])].filter(Boolean);
+        for (const locale of locales) {
+            try {
+                const region = new Intl.Locale(locale).region;
+                if (region && /^[A-Z]{2}$/u.test(region)) return region;
+            } catch (_) { /* continue with the next available locale signal */ }
+        }
+        return '';
+    }
+
+    function timeZoneCountry() {
         try {
-            const region = new Intl.Locale(navigator.language || '').region;
-            if (region && countriesByIso.has(region)) return region;
+            const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+            return TIMEZONE_COUNTRY_MAP[timeZone] || '';
         } catch (_) { /* use the product default below */ }
-        return DEFAULT_COUNTRY;
+        return '';
+    }
+
+    function approximateCountry() {
+        return timeZoneCountry() || localeCountry() || FALLBACK_COUNTRY;
     }
 
     function selectedCountry(input) {
-        const explicit = String(input.dataset.defaultCountry || '').trim().toUpperCase();
-        return countriesByIso.has(explicit) ? explicit : localeCountry();
+        const current = String(input?.dataset?.phoneCountry || '').trim().toUpperCase();
+        if (input?.dataset?.phoneCountrySource === 'manual' && countriesByIso.has(current)) return current;
+        const explicit = String(input?.dataset?.phoneExplicitCountry || '').trim().toUpperCase();
+        if (explicit && countriesByIso.has(explicit)) return explicit;
+        const detected = approximateCountry();
+        return countriesByIso.has(detected) ? detected : FALLBACK_COUNTRY;
+    }
+
+    function applyInitialCountryDetection(input, select) {
+        if (!input || input.dataset.phoneCountrySource === 'manual' || input.dataset.phoneExplicitCountry || input.value.trim()) return;
+        const detected = approximateCountry();
+        const next = countriesByIso.has(detected) ? detected : FALLBACK_COUNTRY;
+        input.dataset.phoneCountry = next;
+        input.dataset.phoneCountrySource = next === detected ? 'auto' : 'fallback';
+        if (select) select.value = next;
+        return next;
     }
 
     function countryForValue(value) {
@@ -323,7 +360,7 @@
     }
 
     function applyCountryPresentation(input, select) {
-        const iso = String(select?.value || input?.dataset.phoneCountry || DEFAULT_COUNTRY).toUpperCase();
+        const iso = String(select?.value || input?.dataset.phoneCountry || FALLBACK_COUNTRY).toUpperCase();
         const country = countriesByIso.get(iso);
         if (!country || !input) return;
         const example = countryInputExample(country, input);
@@ -348,16 +385,20 @@
     function countryForInput(input) {
         const select = input.parentElement?.querySelector('select[data-phone-country]')
             || input.closest('.phone-input-control')?.querySelector('select[data-phone-country]');
-        const iso = String(select?.value || input.dataset.phoneCountry || input.dataset.defaultCountry || DEFAULT_COUNTRY).toUpperCase();
+        const iso = String(select?.value || input.dataset.phoneCountry || input.dataset.phoneExplicitCountry || selectedCountry(input)).toUpperCase();
         if (select?.value) input.dataset.phoneCountry = iso;
         return { select, iso };
+    }
+
+    function countryCodeForInput(input) {
+        return countryForInput(input).iso;
     }
 
     function toE164Transport(value, iso) {
         const compactValue = compact(value);
         if (!compactValue) return '';
         if (compactValue.startsWith('+')) return compactValue;
-        const country = countriesByIso.get(iso) || countriesByIso.get(DEFAULT_COUNTRY);
+        const country = countriesByIso.get(iso) || countriesByIso.get(FALLBACK_COUNTRY);
         if (!country?.dialCode) return compactValue;
         const dialCode = String(country.dialCode).replace(/^\+/, '');
         const localPrefix = String(country.mobileRules?.localPrefix || '');
@@ -370,7 +411,7 @@
     function applyTransportValue(input, select) {
         const raw = input.value;
         if (!String(raw || '').trim()) return;
-        const iso = String(select?.value || input.dataset.phoneCountry || DEFAULT_COUNTRY).toUpperCase();
+        const iso = String(select?.value || input.dataset.phoneCountry || FALLBACK_COUNTRY).toUpperCase();
         const normalized = toE164Transport(raw, iso);
         if (normalized) input.value = normalized;
         input.dataset.phoneCountry = iso;
@@ -385,7 +426,7 @@
                 option.title = `${country.country} (${country.dialCode})`;
                 select.appendChild(option);
             });
-        select.value = countriesByIso.has(preferred) ? preferred : DEFAULT_COUNTRY;
+        select.value = countriesByIso.has(preferred) ? preferred : FALLBACK_COUNTRY;
     }
 
     function renderCountryOptions(optionsElement, preferred, query = '') {
@@ -498,6 +539,7 @@
         countryControl.append(trigger, select, menu);
         wrapper.insertBefore(countryControl, input);
         input.dataset.phoneCountry = preferred;
+        input.dataset.phoneCountrySource = input.dataset.phoneExplicitCountry ? 'explicit' : 'pending';
 
         const phoneControl = document.createElement('span');
         phoneControl.className = 'phone-number-control';
@@ -532,6 +574,10 @@
         error.id = `${input.id || input.name || 'phone'}ValidationError`;
         wrapper.appendChild(error);
         input.setAttribute('aria-describedby', [input.getAttribute('aria-describedby'), helpId, error.id].filter(Boolean).join(' '));
+        // Render the centralized fallback immediately, then replace it with the
+        // detected catalog country when metadata arrives. This never changes the
+        // input value; it only presents country metadata and the national example.
+        applyCountryPresentation(input, select);
 
         const closeCountryMenu = () => {
             menu.hidden = true;
@@ -570,7 +616,8 @@
         });
 
         select.addEventListener('change', () => {
-            input.dataset.phoneCountry = String(select.value || DEFAULT_COUNTRY).toUpperCase();
+            input.dataset.phoneCountry = String(select.value || FALLBACK_COUNTRY).toUpperCase();
+            input.dataset.phoneCountrySource = 'manual';
             closeCountryMenu();
             applyCountryPresentation(input, select);
             if (input.value.trim()) validateInput(input, { show: true });
@@ -665,6 +712,7 @@
 
         loadCountries().then(() => {
             if (!document.contains(select)) return;
+            applyInitialCountryDetection(input, select);
             populateSelect(select, String(input.dataset.phoneCountry || preferred).toUpperCase());
             renderCountryOptions(options, String(input.dataset.phoneCountry || preferred).toUpperCase());
             applyCountryPresentation(input, select);
@@ -680,7 +728,7 @@
                 (payload.countries || []).forEach((country) => {
                     if (country?.isoCode && country?.dialCode) countriesByIso.set(String(country.isoCode).toUpperCase(), country);
                 });
-                if (!countriesByIso.has(DEFAULT_COUNTRY)) throw new Error('default country unavailable');
+                if (!countriesByIso.has(FALLBACK_COUNTRY)) throw new Error('fallback country unavailable');
                 return countriesByIso;
             })
             .catch((error) => {
@@ -713,8 +761,8 @@
         result.input?.reportValidity?.();
     }, true);
     document.addEventListener('DOMContentLoaded', () => {
-        countriesByIso.set(DEFAULT_COUNTRY, {
-            isoCode: DEFAULT_COUNTRY,
+        countriesByIso.set(FALLBACK_COUNTRY, {
+            isoCode: FALLBACK_COUNTRY,
             dialCode: '+20',
             country: '\u0645\u0635\u0631',
             exampleNational: '01015819700',
@@ -735,6 +783,7 @@
         validateInput,
         validateForm,
         countryForInput,
+        countryCodeForInput,
         countryForValue
     });
 })();

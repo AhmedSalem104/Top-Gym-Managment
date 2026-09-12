@@ -924,7 +924,7 @@
             const body = {
                 fullName: $('fullName').value,
                 phone: $('phone').value,
-                phoneCountry: window.LogicFitPhoneInputs?.countryForInput?.($('phone'))?.iso || $('phone')?.dataset.phoneCountry || 'EG',
+                phoneCountry: window.LogicFitPhoneInputs?.countryForInput?.($('phone'))?.iso || $('phone')?.dataset.phoneCountry || '',
                 email: $('email').value,
                 registrationDate: $('registrationDate').value,
                 notes: $('notes').value

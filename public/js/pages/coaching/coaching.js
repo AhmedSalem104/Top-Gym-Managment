@@ -441,7 +441,7 @@
         const submitButton = form.querySelector('button[type="submit"]');
         submitButton.disabled = true;
         try {
-            const data = await requestJson('/api/external-trainees', { method: 'POST', body: JSON.stringify({ fullName: $('externalFullName').value, phone: $('externalPhone').value, phoneCountry: window.LogicFitPhoneInputs?.countryForInput?.($('externalPhone'))?.iso || $('externalPhone')?.dataset.phoneCountry || 'EG', email: $('externalEmail').value, registrationDate: $('externalRegistrationDate').value, notes: $('externalNotes').value }) });
+            const data = await requestJson('/api/external-trainees', { method: 'POST', body: JSON.stringify({ fullName: $('externalFullName').value, phone: $('externalPhone').value, phoneCountry: window.LogicFitPhoneInputs?.countryForInput?.($('externalPhone'))?.iso || $('externalPhone')?.dataset.phoneCountry || '', email: $('externalEmail').value, registrationDate: $('externalRegistrationDate').value, notes: $('externalNotes').value }) });
             closeDialog($('externalTraineeDialog'));
             state.builderClients = null;
             state.loaded = false;
@@ -1961,7 +1961,7 @@
         const dialog = document.createElement('dialog');
         dialog.id = 'coachingClientEditDialog';
         dialog.className = 'coaching-small-dialog rounded-lg border-slate-200 shadow-lift';
-        dialog.innerHTML = `<form class="dialog-body" id="coachingClientEditForm"><div class="details-dialog-head"><div><h3>تعديل بيانات العميل</h3><p>يتم تحديث الهوية نفسها، ولن تتأثر البرامج أو الخطط أو القياسات.</p></div><button class="btn btn-light btn-small" type="button" data-close-client-edit>إغلاق</button></div><input type="hidden" id="coachingEditMemberId"><div class="field"><label>الاسم الكامل *<input id="coachingEditName" maxlength="120" required></label></div><div class="field-grid"><label>رقم الهاتف *<input id="coachingEditPhone" type="tel" inputmode="numeric" autocomplete="tel" data-phone-input data-default-country="EG" maxlength="30" required></label><label>البريد الإلكتروني<input id="coachingEditEmail" type="email" maxlength="254"></label></div><div class="field"><label>الملاحظات<textarea id="coachingEditNotes" rows="3" maxlength="1000"></textarea></label></div><div class="dialog-actions"><button class="btn btn-light" type="button" data-close-client-edit>إلغاء</button><button class="btn btn-primary" type="submit">حفظ التعديلات</button></div></form>`;
+        dialog.innerHTML = `<form class="dialog-body" id="coachingClientEditForm"><div class="details-dialog-head"><div><h3>تعديل بيانات العميل</h3><p>يتم تحديث الهوية نفسها، ولن تتأثر البرامج أو الخطط أو القياسات.</p></div><button class="btn btn-light btn-small" type="button" data-close-client-edit>إغلاق</button></div><input type="hidden" id="coachingEditMemberId"><div class="field"><label>الاسم الكامل *<input id="coachingEditName" maxlength="120" required></label></div><div class="field-grid"><label>رقم الهاتف *<input id="coachingEditPhone" type="tel" inputmode="numeric" autocomplete="tel" data-phone-input maxlength="30" required></label><label>البريد الإلكتروني<input id="coachingEditEmail" type="email" maxlength="254"></label></div><div class="field"><label>الملاحظات<textarea id="coachingEditNotes" rows="3" maxlength="1000"></textarea></label></div><div class="dialog-actions"><button class="btn btn-light" type="button" data-close-client-edit>إلغاء</button><button class="btn btn-primary" type="submit">حفظ التعديلات</button></div></form>`;
         document.body.appendChild(dialog);
         dialog.addEventListener('click', (event) => { if (event.target.matches('[data-close-client-edit]')) closeDialog(dialog); });
         dialog.querySelector('form').addEventListener('submit', saveClientEdit);
@@ -1990,7 +1990,7 @@
         }
         const memberId = $('coachingEditMemberId').value;
         try {
-            const data = await requestJson(`/api/clients/${memberId}`, { method: 'PUT', body: JSON.stringify({ fullName: $('coachingEditName').value, phone: $('coachingEditPhone').value, phoneCountry: window.LogicFitPhoneInputs?.countryForInput?.($('coachingEditPhone'))?.iso || $('coachingEditPhone')?.dataset.phoneCountry || 'EG', email: $('coachingEditEmail').value, notes: $('coachingEditNotes').value }) });
+            const data = await requestJson(`/api/clients/${memberId}`, { method: 'PUT', body: JSON.stringify({ fullName: $('coachingEditName').value, phone: $('coachingEditPhone').value, phoneCountry: window.LogicFitPhoneInputs?.countryForInput?.($('coachingEditPhone'))?.iso || $('coachingEditPhone')?.dataset.phoneCountry || '', email: $('coachingEditEmail').value, notes: $('coachingEditNotes').value }) });
             closeDialog($('coachingClientEditDialog'));
             notify('تم تحديث بيانات العميل.');
             if ($('coachingProfileDialog')?.open) openProfile(data.member.id);

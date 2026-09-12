@@ -9,7 +9,9 @@ const {
 const metadata = require('libphonenumber-js/metadata.full.json');
 const mobileExamples = require('libphonenumber-js/examples.mobile.json');
 
-const DEFAULT_COUNTRY = 'EG';
+// A single server-side fallback is retained only for legacy/internal parsing.
+// New local input must carry the country selected by the caller.
+const FALLBACK_COUNTRY = 'EG';
 const MOBILE_TYPES = new Set(['MOBILE', 'FIXED_LINE_OR_MOBILE']);
 const PHONE_DISPLAY_EXAMPLES = Object.freeze({
     EG: Object.freeze({ national: '01015819700', international: '+201015819700' })
@@ -32,10 +34,10 @@ function phoneError(fieldName = 'Phone number', code = 'INVALID_PHONE', message 
 }
 
 function normalizeCountry(value, { required = false } = {}) {
-    const country = String(value || DEFAULT_COUNTRY).trim().toUpperCase();
+    const country = String(value || FALLBACK_COUNTRY).trim().toUpperCase();
     if (!/^[A-Z]{2}$/.test(country) || !metadata.countries[country]) {
         if (required) throw phoneError('Country', 'PHONE_COUNTRY_UNSUPPORTED', 'The selected country is not supported.');
-        return DEFAULT_COUNTRY;
+        return FALLBACK_COUNTRY;
     }
     return country;
 }
@@ -81,9 +83,10 @@ function isMobilePhone(phoneNumber) {
  * country; international input must agree with that country when provided.
  */
 function normalizePhone(value, {
-    country = DEFAULT_COUNTRY,
+    country = null,
     required = true,
     allowFixedLine = false,
+    requireCountryForLocal = true,
     fieldName = 'Phone number'
 } = {}) {
     assertPhoneSyntax(value, fieldName);
@@ -96,7 +99,10 @@ function normalizePhone(value, {
     const hasSelectedCountry = country !== null && country !== undefined && String(country).trim() !== '';
     const selectedCountry = hasSelectedCountry ? normalizeCountry(country, { required: true }) : null;
     const isInternational = raw.startsWith('+');
-    const parsingCountry = selectedCountry || DEFAULT_COUNTRY;
+    if (!isInternational && requireCountryForLocal && !selectedCountry) {
+        throw phoneError(fieldName, 'PHONE_COUNTRY_REQUIRED', `${fieldName} requires a selected country for local input.`);
+    }
+    const parsingCountry = selectedCountry || FALLBACK_COUNTRY;
     if (!isInternational && !allowFixedLine) {
         const localPrefix = getMobileLocalPrefix(parsingCountry, getExampleNumber(parsingCountry, mobileExamples));
         if (localPrefix && !raw.startsWith(localPrefix)) {
@@ -171,7 +177,7 @@ function getSupportedCountries() {
 }
 
 module.exports = {
-    DEFAULT_COUNTRY,
+    FALLBACK_COUNTRY,
     normalizeDigits,
     normalizeCountry,
     normalizePhone,

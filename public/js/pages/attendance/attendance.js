@@ -181,7 +181,7 @@
     }
 
     function normalizePhone(value) {
-        const iso = $('attendancePhone')?.dataset.phoneCountry || 'EG';
+        const iso = $('attendancePhone')?.dataset.phoneCountry || '';
         const prepared = window.LogicFitPhoneInputs?.normalizeForTransport?.(value, iso) || value;
         return String(prepared ?? '').replace(/[^0-9]/g, '');
     }
@@ -422,7 +422,7 @@
             $('attendancePhone')?.focus();
             return null;
         }
-        return { phone, phoneCountry: window.LogicFitPhoneInputs?.countryForInput?.($('attendancePhone'))?.iso || $('attendancePhone')?.dataset.phoneCountry || 'EG' };
+        return { phone, phoneCountry: window.LogicFitPhoneInputs?.countryForInput?.($('attendancePhone'))?.iso || $('attendancePhone')?.dataset.phoneCountry || '' };
     }
 
     async function checkIn(payload = null) {

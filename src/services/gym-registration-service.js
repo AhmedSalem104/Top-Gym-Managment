@@ -92,12 +92,10 @@ function normalizeAccessToken(value) {
     return token;
 }
 
-function normalizeWhatsapp(value, { defaultCountryCode = '20', country = null } = {}) {
+function normalizeWhatsapp(value, { country = null } = {}) {
     const raw = normalizeDigits(value).trim();
-    const hasExplicitCountry = raw.startsWith('+') || raw.startsWith('00');
-    const selectedCountry = country || (!hasExplicitCountry && String(defaultCountryCode) === '20' ? 'EG' : null);
     try {
-        return normalizeMobile(value, { country: selectedCountry, fieldName: 'WhatsApp number' });
+        return normalizeMobile(value, { country: country || null, requireCountryForLocal: true, fieldName: 'WhatsApp number' });
     } catch (_) {
         throw registrationError('Enter a valid WhatsApp number for the selected country.', 400, 'INVALID_REGISTRATION_WHATSAPP', 'whatsapp');
     }
@@ -156,7 +154,7 @@ function roundMoney(value) {
 function requestFromRow(row) {
     if (!row) return null;
     let whatsapp = row.whatsapp;
-    try { whatsapp = normalizeWhatsapp(row.whatsapp, { defaultCountryCode: null }); } catch (_) { /* preserve a legacy value for admin review; never fail queue reads */ }
+    try { whatsapp = normalizeWhatsapp(row.whatsapp, { country: null }); } catch (_) { /* preserve a legacy value for admin review; never fail queue reads */ }
     return {
         id: Number(row.id),
         status: String(row.status),

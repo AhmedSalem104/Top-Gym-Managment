@@ -214,7 +214,7 @@
         event.preventDefault();
         const saveButton = byId('trainerClientSave');
         const id = byId('trainerClientId')?.value;
-        const payload = { fullName: byId('trainerClientName').value.trim(), phone: byId('trainerClientPhone').value.trim(), phoneCountry: window.LogicFitPhoneInputs?.countryForInput?.(byId('trainerClientPhone'))?.iso || byId('trainerClientPhone')?.dataset.phoneCountry || 'EG', email: byId('trainerClientEmail').value.trim(), primaryGoal: byId('trainerClientGoal').value.trim(), status: byId('trainerClientStatus').value, notes: byId('trainerClientNotes').value.trim() };
+        const payload = { fullName: byId('trainerClientName').value.trim(), phone: byId('trainerClientPhone').value.trim(), phoneCountry: window.LogicFitPhoneInputs?.countryForInput?.(byId('trainerClientPhone'))?.iso || byId('trainerClientPhone')?.dataset.phoneCountry || '', email: byId('trainerClientEmail').value.trim(), primaryGoal: byId('trainerClientGoal').value.trim(), status: byId('trainerClientStatus').value, notes: byId('trainerClientNotes').value.trim() };
         if (!payload.fullName || !payload.phone) { setText(byId('trainerClientFormMessage'), 'الاسم ورقم الهاتف مطلوبان.'); return; }
         saveButton.disabled = true;
         setText(byId('trainerClientFormMessage'), 'جارٍ الحفظ...');

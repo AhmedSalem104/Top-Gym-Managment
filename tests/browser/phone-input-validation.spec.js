@@ -45,6 +45,7 @@ test('phone input blocks invalid length/format before registration request', asy
     const error = page.locator('.phone-input-error');
     const flag = page.locator('[data-phone-country-flag]');
     await expect(country).toHaveValue('EG');
+    await expect(phone).toHaveValue('');
     await expect(phone).toHaveAttribute('placeholder', '1015819700');
     await expect(phone).toHaveAttribute('inputmode', 'numeric');
     await expect(phone).toHaveAttribute('autocomplete', 'tel');
