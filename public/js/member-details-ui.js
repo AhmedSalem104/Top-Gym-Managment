@@ -77,13 +77,20 @@
   }
 
   function membershipEndTimestamp(item) {
-    const value = item?.effectiveEndDate || item?.endDate;
+    // The list projection ranks memberships by the stored end date. Keep the
+    // compatibility fallback aligned with that projection; the API's explicit
+    // currentMembership is preferred whenever it is available.
+    const value = item?.endDate || item?.effectiveEndDate;
     if (!value) return 0;
     const timestamp = Date.parse(`${String(value).slice(0, 10)}T00:00:00`);
     return Number.isNaN(timestamp) ? 0 : timestamp;
   }
 
   function resolveSubscription(member, details) {
+    // The API derives this from the same member_rows CTE used by the table.
+    // It is the authoritative current/latest membership for every member.
+    if (details?.currentMembership && typeof details.currentMembership === 'object') return details.currentMembership;
+
     // The members list is the source of truth for the current subscription
     // shown in the table. Keep the details header/overview aligned with it;
     // the details endpoint remains a history fallback for callers that do not
@@ -98,7 +105,10 @@
     // current subscription. The details API intentionally returns the full
     // history in chronological order, so taking the first non-cancelled row
     // would surface an old expired subscription instead of the current one.
-    const candidates = memberships.filter((item) => String(item?.status || '').toLowerCase() !== 'cancelled');
+    const candidates = memberships.filter((item) => (
+      String(item?.status || '').toLowerCase() !== 'cancelled'
+      && !item?.cancelledAt
+    ));
     const source = candidates.length ? candidates : memberships;
     return [...source].sort((left, right) => (
       membershipEndTimestamp(right) - membershipEndTimestamp(left)

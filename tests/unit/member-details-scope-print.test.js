@@ -26,6 +26,18 @@ test('member details read membership branch and section scope tenant-safely', ()
     assert.match(details, /sections: membershipScopes\.get\(membershipId\)\?\.sections/u);
 });
 
+test('member details exposes the same canonical current membership selected by the members list', () => {
+    const detailsStart = serviceSource.indexOf('async function getMemberDetails');
+    const detailsEnd = serviceSource.indexOf('module.exports', detailsStart);
+    const details = serviceSource.slice(detailsStart, detailsEnd);
+
+    assert.match(details, /memberRepository\.findById\(\{[\s\S]*?today[\s\S]*?\}\)/u);
+    assert.match(details, /currentMembershipResult\.recordset\[0\]/u);
+    assert.match(details, /const currentMembership = currentMembershipResult\.recordset\[0\]/u);
+    assert.match(details, /currentMembership,\s*memberships,/u);
+    assert.match(detailsUiSource, /details\?\.currentMembership/u);
+});
+
 test('member details expose only the masked portal code and tenant-scoped portal URL', () => {
     assert.match(serviceSource, /membershipCodePortalUrl: membershipCode\.active[\s\S]*?getPortalUrl\('', memberRow\.tenant_slug\)/u);
     assert.match(detailsUiSource, /membershipCode\?\.maskedCode/u);

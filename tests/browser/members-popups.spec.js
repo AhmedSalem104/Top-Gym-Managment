@@ -370,7 +370,7 @@ test('member details promotes the list membership and orders the history newest 
         await route.fulfill({
             status: 200,
             contentType: 'application/json',
-            body: JSON.stringify({ member, memberships, freezes: [], events: [], payments: [], financialSummary: {} })
+            body: JSON.stringify({ member, currentMembership: member.membership, memberships, freezes: [], events: [], payments: [], financialSummary: {} })
         });
     });
     await page.reload({ waitUntil: 'networkidle' });

@@ -2799,7 +2799,7 @@ async function getMemberDetails(id, { readOnly = false } = {}) {
     const pool = await getPool();
     const tenantId = currentTenantId({ required: true });
     const today = todayInTimeZone();
-    const [memberResult, membershipsResult, freezesResult, eventsResult, paymentsResult, membershipScopeResult] = await Promise.all([
+    const [memberResult, membershipsResult, freezesResult, eventsResult, paymentsResult, membershipScopeResult, currentMembershipResult] = await Promise.all([
         pool.request()
             .input('memberId', sql.Int, memberId)
             .input('tenantId', sql.Int, tenantId)
@@ -2878,10 +2878,21 @@ async function getMemberDetails(id, { readOnly = false } = {}) {
                        AND section.tenant_id = access.tenant_id
                     WHERE access.tenant_id = @tenantId
                       AND membership.member_id = @memberId
-                    ORDER BY section.name, section.id;`)
+                    ORDER BY section.name, section.id;`),
+        memberRepository.findById({
+            id: memberId,
+            connection: pool,
+            today
+        })
     ]);
 
     const memberRow = memberResult.recordset[0];
+    // Keep the details view on the exact same latest-membership projection as
+    // the members list. The history query below is intentionally independent
+    // and must never be used to guess which subscription is current.
+    const currentMembership = currentMembershipResult.recordset[0]
+        ? mapMember(currentMembershipResult.recordset[0]).membership
+        : null;
     const membershipCode = await membershipCodeService.getPreview(memberId);
     if (!memberRow) throw appError('العضو غير موجود.', 404);
 
@@ -3015,6 +3026,7 @@ async function getMemberDetails(id, { readOnly = false } = {}) {
                 ? membershipCodeService.getPortalUrl('', memberRow.tenant_slug)
                 : null
         },
+        currentMembership,
         memberships,
         freezes: freezeRows,
         payments,
