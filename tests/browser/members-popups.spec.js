@@ -325,6 +325,87 @@ test('member details selects the latest non-cancelled subscription from full his
     await expect(page.locator('[data-member-detail-action="freeze"]')).toBeVisible();
 });
 
+test('member details promotes the list membership and orders the history newest first', async ({ page }, testInfo) => {
+    const member = {
+        id: 4151,
+        fullName: 'QA Member 4151',
+        phone: '01000000000',
+        registrationDate: '2026-08-06',
+        membership: {
+            id: 4045,
+            status: 'active',
+            plan: 'gym_only',
+            type: 'monthly',
+            startDate: '2026-12-07',
+            effectiveEndDate: '2027-01-06',
+            amountDue: 300,
+            amountPaid: 300,
+            amountRemaining: 0,
+            freezeCount: 0,
+            freezeLimit: 3
+        }
+    };
+    const memberships = [
+        { id: 3802, status: 'expired', plan: 'gym_only', type: 'monthly', startDate: '2026-08-06', effectiveEndDate: '2026-09-05', amountDue: 300, amountPaid: 300, amountRemaining: 0, freezes: [] },
+        { id: 4022, status: 'active', plan: 'gym_only', type: 'monthly', startDate: '2026-09-06', effectiveEndDate: '2026-10-06', amountDue: 300, amountPaid: 300, amountRemaining: 0, freezes: [] },
+        { id: 4021, status: 'active', plan: 'gym_only', type: 'monthly', startDate: '2026-09-07', effectiveEndDate: '2026-10-06', amountDue: 300, amountPaid: 300, amountRemaining: 0, freezes: [] },
+        { id: 4026, status: 'active', plan: 'gym_only', type: 'monthly', startDate: '2026-10-07', effectiveEndDate: '2026-11-06', amountDue: 300, amountPaid: 300, amountRemaining: 0, freezes: [] },
+        { id: 4027, status: 'active', plan: 'gym_only', type: 'monthly', startDate: '2026-11-07', effectiveEndDate: '2026-12-06', amountDue: 300, amountPaid: 300, amountRemaining: 0, freezes: [] },
+        { id: 4045, status: 'active', plan: 'gym_only', type: 'monthly', startDate: '2026-12-07', effectiveEndDate: '2027-01-06', amountDue: 300, amountPaid: 300, amountRemaining: 0, freezes: [] }
+    ];
+    await page.route('**/api/members*', async (route) => {
+        const url = new URL(route.request().url());
+        if (url.pathname !== '/api/members' || route.request().method() !== 'GET') {
+            await route.fallback();
+            return;
+        }
+        await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({ members: [member], pagination: { page: 1, pageSize: 5, totalItems: 1, totalPages: 1 } })
+        });
+    });
+    await page.route('**/api/members/4151/details', async (route) => {
+        await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({ member, memberships, freezes: [], events: [], payments: [], financialSummary: {} })
+        });
+    });
+    await page.reload({ waitUntil: 'networkidle' });
+    await page.locator('tr[data-member-id="4151"] button[data-action="details"]').click();
+    await expect(page.locator('#detailsDialog')).toBeVisible();
+    await expect(page.locator('#currentMembershipTitle')).toHaveText('العضوية الحالية');
+
+    const view = await page.evaluate(() => {
+        const table = document.querySelector('#detailsContent .details-section .history-table');
+        const rows = [...(table?.tBodies[0]?.rows || [])];
+        const ids = rows.map((row) => row.querySelector('td:first-child .table-sub')?.textContent.trim());
+        const currentRow = rows.find((row) => row.classList.contains('membership-current-row'));
+        const currentCard = document.querySelector('#detailsContent .current-membership-section');
+        const dialog = document.getElementById('detailsDialog');
+        return {
+            ids,
+            currentRowId: currentRow?.querySelector('td:first-child .table-sub')?.textContent.trim() || '',
+            currentMarker: currentRow?.querySelector('.membership-current-marker')?.textContent.trim() || '',
+            currentStatus: currentCard?.querySelector('.badge')?.className || '',
+            currentCardOrder: currentCard?.compareDocumentPosition(table) & Node.DOCUMENT_POSITION_FOLLOWING,
+            horizontalOverflow: document.documentElement.scrollWidth > innerWidth,
+            dialogBottom: dialog?.getBoundingClientRect().bottom || 0
+        };
+    });
+    expect(view.ids).toEqual(['4045', '4027', '4026', '4021', '4022', '3802']);
+    expect(view.currentRowId).toBe('4045');
+    expect(view.currentMarker).toBe('العضوية الحالية');
+    expect(view.currentStatus).toContain('active');
+    expect(view.currentCardOrder).toBeTruthy();
+    expect(view.horizontalOverflow).toBe(false);
+    expect(view.dialogBottom).toBeLessThanOrEqual((page.viewportSize()?.height || 0) + 1);
+    await page.screenshot({ path: `qa/artifacts/member-details-current-history-${testInfo.project.name}.png`, fullPage: false });
+    await page.locator('#detailsContent .current-membership-section').scrollIntoViewIfNeeded();
+    await page.screenshot({ path: `qa/artifacts/member-details-current-membership-${testInfo.project.name}.png`, fullPage: false });
+});
+
 test('members table keeps responsive overflow inside its scroll container', async ({ page }) => {
     await page.locator('#membersSection').waitFor({ state: 'visible' });
     await page.locator('#membersList').evaluate((list) => {

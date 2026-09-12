@@ -957,7 +957,63 @@
 
          function eventSummary(event) { const details = event.details || {}; const values = []; if (details.membershipPlan) values.push(planLabel(details.membershipPlan)); if (details.membershipType) values.push(typeLabel(details.membershipType)); if (details.startDate) values.push(`من ${formatDate(details.startDate)}`); if (details.endDate) values.push(`إلى ${formatDate(details.endDate)}`); if (details.amountDue !== undefined) values.push(`مستحق ${money(details.amountDue)}`); if (details.amountPaid !== undefined) values.push(`مدفوع ${money(details.amountPaid)}`); if (details.days) values.push(`${details.days} يوم`); return values.join(' · ') || 'تم تسجيل العملية في سجل العضو.'; }
          function renderDetails(data) { const member = data.member; const memberships = data.memberships || []; const freezes = data.freezes || []; const events = data.events || []; $('detailsTitle').textContent = member.fullName; $('detailsSubtitle').textContent = `${member.phone}${member.email ? ` · ${member.email}` : ''}`; const membershipRows = memberships.length ? memberships.map((item, index) => `<tr><td><strong>#${index + 1}</strong><span class="table-sub">${item.id}</span></td><td><strong>${escapeHtml(planLabel(item.plan))}</strong><span class="table-sub">${escapeHtml(typeLabel(item.type))}</span></td><td>${formatDate(item.startDate)}<span class="table-sub">حتى ${formatDate(item.effectiveEndDate)}</span></td><td><span class="badge ${item.status}">${STATUS_LABELS[item.status] || item.status}</span></td><td><span class="table-money">${money(item.amountDue)}</span><span class="table-sub">مدفوع ${money(item.amountPaid)} · متبقي ${money(item.amountRemaining)}</span></td><td>${item.freezes.length ? `${item.freezes.length} مرة` : '—'}</td></tr>`).join('') : '<tr><td colspan="6">لا توجد اشتراكات مسجلة.</td></tr>'; const freezeRows = freezes.length ? freezes.map((item) => `<tr><td>${formatDate(item.startDate)}</td><td>${formatDate(item.endDate)}</td><td>${item.resumedDate ? formatDate(item.resumedDate) : '<span class="badge frozen">نشط</span>'}</td><td>${item.days} يوم</td><td>${escapeHtml(item.reason || '—')}</td></tr>`).join('') : ''; const eventRows = events.length ? events.map((event) => `<div class="event-item"><div><strong>${escapeHtml(EVENT_LABELS[event.eventType] || event.eventType)}</strong><span>${escapeHtml(eventSummary(event))}</span></div><span class="event-date">${formatDateTime(event.createdAt)}</span></div>`).join('') : '<div class="history-empty">لا توجد عمليات مسجلة بعد.</div>'; $('detailsContent').innerHTML = `<div class="details-summary"><div class="details-summary-card"><span>تاريخ التسجيل</span><strong>${formatDate(member.registrationDate)}</strong></div><div class="details-summary-card"><span>عدد الاشتراكات</span><strong>${memberships.length}</strong></div><div class="details-summary-card"><span>عدد التجميدات</span><strong>${freezes.length}</strong></div><div class="details-summary-card"><span>عدد العمليات</span><strong>${events.length}</strong></div></div><div class="details-section"><h4>سجل الاشتراكات والتجديدات</h4><div class="history-scroll"><table class="history-table"><thead><tr><th>#</th><th>الباقة والمدة</th><th>الفترة</th><th>الحالة</th><th>الحساب</th><th>التجميد</th></tr></thead><tbody>${membershipRows}</tbody></table></div></div>${freezes.length ? `<div class="details-section"><h4>سجل التجميد</h4><div class="history-scroll"><table class="history-table"><thead><tr><th>البداية</th><th>النهاية</th><th>الاستئناف</th><th>المدة</th><th>السبب</th></tr></thead><tbody>${freezeRows}</tbody></table></div></div>` : ''}<div class="details-section"><h4>سجل كل العمليات</h4><div class="event-list">${eventRows}</div></div>${member.notes ? `<div class="details-section"><h4>ملاحظات العضو</h4><div class="history-empty">${escapeHtml(member.notes)}</div></div>` : ''}`; }
+        function enhanceMembershipHistoryView(data) {
+            const detailsContent = $('detailsContent');
+            const memberships = Array.isArray(data?.memberships) ? data.memberships : [];
+            const memberId = String($('detailsDialog')?.dataset.memberId || '');
+            const listMember = (state.members || []).find((item) => String(item.id) === memberId);
+            const currentMembershipSource = data?.currentMembership || listMember?.membership || null;
+            if (!detailsContent || !memberships.length || !currentMembershipSource) return;
+
+            const membershipTable = [...detailsContent.querySelectorAll('.details-section .history-table')]
+                .find((table) => table.querySelectorAll('thead th').length === 6 && table.querySelector('tbody'));
+            if (!membershipTable) return;
+
+            const currentId = Number(currentMembershipSource.id);
+            const currentMembership = memberships.find((item) => Number(item.id) === currentId);
+            if (!currentMembership) return;
+
+            const status = String(currentMembershipSource.status || '').toLowerCase();
+            const statusClass = ['active', 'expiring_soon', 'expired', 'frozen', 'cancelled'].includes(status) ? status : 'unknown';
+            const statusLabel = STATUS_LABELS[status] || currentMembershipSource.status || 'غير محددة';
+            const membershipSection = membershipTable.closest('.details-section');
+            if (!membershipSection) return;
+
+            detailsContent.querySelector('.current-membership-section')?.remove();
+            const currentSection = document.createElement('section');
+            currentSection.className = 'details-section current-membership-section';
+            currentSection.dataset.status = statusClass;
+            currentSection.setAttribute('aria-labelledby', 'currentMembershipTitle');
+            currentSection.innerHTML = `<div class="current-membership-head"><div><span class="current-membership-kicker">الاشتراك المعتمد في القائمة</span><h4 id="currentMembershipTitle">العضوية الحالية</h4><p>أحدث عضوية ظاهرة للعضو حسب نفس حالة جدول الأعضاء.</p></div><span class="badge ${statusClass}">${escapeHtml(statusLabel)}</span></div><div class="current-membership-facts"><div><span>الباقة</span><strong>${escapeHtml(planLabel(currentMembership.plan))}</strong><small>${escapeHtml(typeLabel(currentMembership.type))}</small></div><div><span>الفترة</span><strong dir="ltr">${formatDate(currentMembership.startDate)}</strong><small dir="ltr">حتى ${formatDate(currentMembership.effectiveEndDate || currentMembership.endDate)}</small></div><div><span>المستحق</span><strong dir="ltr">${escapeHtml(money(currentMembership.amountDue))}</strong><small>مدفوع ${escapeHtml(money(currentMembership.amountPaid))} · متبقي ${escapeHtml(money(currentMembership.amountRemaining))}</small></div></div>`;
+            membershipSection.parentNode.insertBefore(currentSection, membershipSection);
+
+            const rowById = new Map([...membershipTable.querySelectorAll('tbody > tr')].map((row) => [
+                row.querySelector('td:first-child .table-sub')?.textContent.trim(),
+                row
+            ]));
+            const orderedMemberships = [...memberships].sort((left, right) => (
+                String(right.startDate || '').localeCompare(String(left.startDate || ''))
+                || Number(right.id || 0) - Number(left.id || 0)
+            ));
+            const orderedRows = orderedMemberships.map((item) => rowById.get(String(item.id))).filter(Boolean);
+            orderedRows.forEach((row, index) => {
+                const rowMembershipId = Number(row.querySelector('td:first-child .table-sub')?.textContent);
+                row.classList.toggle('membership-current-row', rowMembershipId === currentId);
+                const ordinal = row.querySelector('td:first-child strong');
+                if (ordinal) ordinal.textContent = `#${index + 1}`;
+                const statusCell = row.children[3];
+                if (rowMembershipId === currentId && statusCell && !statusCell.querySelector('.membership-current-marker')) {
+                    const marker = document.createElement('span');
+                    marker.className = 'membership-current-marker';
+                    marker.textContent = 'العضوية الحالية';
+                    statusCell.append(marker);
+                }
+                membershipTable.tBodies[0].appendChild(row);
+            });
+        }
+
         function renderPaymentHistory(data) {
+            enhanceMembershipHistoryView(data);
             const payments = data.payments || [];
             const summary = data.financialSummary || {};
             const section = document.createElement('div');
