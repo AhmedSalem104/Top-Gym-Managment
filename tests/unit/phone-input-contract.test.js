@@ -9,10 +9,10 @@ const root = path.join(__dirname, '..', '..');
 const read = (relativePath) => fs.readFileSync(path.join(root, relativePath), 'utf8');
 
 test('phone input layer is loaded by every page that owns a phone form', () => {
-    assert.match(read('public/index.html'), /core\/phone-inputs\.js\?v=6/);
-    assert.match(read('public/register-gym.html'), /core\/phone-inputs\.js\?v=6/);
-    assert.match(read('public/register-trainer.html'), /core\/phone-inputs\.js\?v=6/);
-    assert.match(read('public/trainer-workspace.html'), /core\/phone-inputs\.js\?v=6/);
+    assert.match(read('public/index.html'), /core\/phone-inputs\.js\?v=7/);
+    assert.match(read('public/register-gym.html'), /core\/phone-inputs\.js\?v=7/);
+    assert.match(read('public/register-trainer.html'), /core\/phone-inputs\.js\?v=7/);
+    assert.match(read('public/trainer-workspace.html'), /core\/phone-inputs\.js\?v=7/);
     assert.doesNotMatch(read('public/index.html'), /data-default-country="EG"/);
     assert.doesNotMatch(read('public/register-gym.html'), /data-default-country="EG"/);
     assert.doesNotMatch(read('public/register-trainer.html'), /data-default-country="EG"/);
@@ -72,7 +72,16 @@ test('phone input layer is loaded by every page that owns a phone form', () => {
     assert.match(read('public/js/app.js'), /LogicFitPhoneInputs\?\.validateInput/);
     const auth = read('src/middleware/auth.middleware.js');
     assert.match(auth, /request\.path === '\/phone\/countries'/);
+    assert.match(auth, /request\.path === '\/phone\/country'/);
     assert.match(auth, /phoneCatalogPath/);
+    assert.match(script, /\/api\/phone\/country/);
+    assert.match(script, /loadDetectedCountry/);
+    assert.match(script, /countryDetectionPromise/);
+    assert.match(script, /phoneCountryGeneration/);
+    assert.match(script, /applyCountrySelection\(input, select, detectedIso, 'ip'\)/);
+    assert.match(read('src/config/env.js'), /PHONE_IP_GEOLOCATION_URL/);
+    assert.match(read('src/config/env.js'), /PHONE_IP_GEOLOCATION_TIMEOUT_MS/);
+    assert.match(read('.env.example'), /PHONE_IP_GEOLOCATION_URL=https:\/\/ipapi\.co\/\{ip\}\/country\//);
 });
 
 test('phone-bearing screens use tel inputs without changing numeric business fields', () => {

@@ -60,7 +60,8 @@ function createAuthApiMiddleware({ authService, isAuthorizedCronRequest, tenantS
         const publicTrainerRegistrationPath = request.path === '/public/trainer-registration/catalog'
             || request.path === '/public/trainer-registration/requests'
             || request.path.startsWith('/public/trainer-registration/requests/');
-        const phoneCatalogPath = request.method === 'GET' && request.path === '/phone/countries';
+        const phoneCatalogPath = request.method === 'GET'
+            && (request.path === '/phone/countries' || request.path === '/phone/country');
         const publicPath = ['/health', '/health/live', '/member-portal/lookup', '/member-portal/occupancy', '/member-portal/feedback', '/branding'].includes(request.path)
             || (request.method === 'GET' && request.path.startsWith('/branding/assets/'));
         const memberPortalCodePath = ['/member-portal/lookup', '/member-portal/occupancy', '/member-portal/feedback'].includes(request.path);

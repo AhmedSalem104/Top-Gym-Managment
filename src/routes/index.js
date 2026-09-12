@@ -119,7 +119,8 @@ function registerRoutes(app, {
     stockLocationService,
     barService,
     notificationService,
-    getPool
+    getPool,
+    phoneCountryDetectionService
 }) {
     app.get('/api/health/live', asyncRoute(createLivenessHandler()));
     app.get('/api/health', asyncRoute(createHealthHandler({
@@ -128,7 +129,7 @@ function registerRoutes(app, {
         getCacheStatus: cacheService ? async () => ({ ...(await cacheService.health()), metrics: cacheService.metrics() }) : null
     })));
 
-    registerPhoneRoutes(app, { asyncRoute });
+    registerPhoneRoutes(app, { asyncRoute, countryDetectionService: phoneCountryDetectionService });
 
     registerAuthRoutes(app, { authService, permissionService, saasService, asyncRoute, ownerOnly, allowLoginAttempt });
     registerBackupRoutes(app, { backupService, backupRecoveryService, brandingService, asyncRoute, isAuthorizedCronRequest, backupActionRateLimit });

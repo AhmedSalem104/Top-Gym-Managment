@@ -53,6 +53,8 @@ const { createPerformanceMetrics } = require('./src/middleware/performance-metri
 const cacheService = require('./src/services/cache-service');
 const { READ_ONLY_METHODS, readOnlyBaselineGuard } = require('./src/middleware/read-only-baseline.middleware');
 const { getClientErrorCode, getSafeErrorMessage, isPublicClientError, safeErrorCode } = require('./src/utils/error-response');
+const { createPhoneCountryDetectionService } = require('./src/services/phone-country-detection-service');
+const phoneService = require('./src/services/phone-service');
 
 const objectStorageService = createConfiguredObjectStorageService({
     driver: config.objectStorageDriver,
@@ -66,6 +68,11 @@ const objectStorageService = createConfiguredObjectStorageService({
     sessionToken: config.objectStorageSessionToken,
     forcePathStyle: config.objectStorageForcePathStyle,
     requestTimeoutMs: config.objectStorageRequestTimeoutMs
+});
+const phoneCountryDetectionService = createPhoneCountryDetectionService({
+    endpoint: config.phoneIpGeolocationUrl,
+    timeoutMs: config.phoneIpGeolocationTimeoutMs,
+    supportedCountryCodes: phoneService.getSupportedCountries?.().map((country) => country.isoCode)
 });
 const backupRecoveryService = createBackupRecoveryService({ storageService: objectStorageService });
 // All durable private files use the same provider-neutral storage boundary.
@@ -267,7 +274,8 @@ registerRoutes(app, {
     stockLocationService,
     barService,
     notificationService,
-    getPool
+    getPool,
+    phoneCountryDetectionService
 });
 
 app.get('/qr/:id', asyncRoute(async (request, response) => {

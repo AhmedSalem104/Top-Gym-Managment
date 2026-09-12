@@ -156,6 +156,11 @@ const config = Object.freeze({
     backupEnablePlatformWeekly: getBooleanEnv('BACKUP_ENABLE_PLATFORM_WEEKLY', true),
     backupEnablePlatformMonthly: getBooleanEnv('BACKUP_ENABLE_PLATFORM_MONTHLY', true),
     publicAppUrl: getEnv('PUBLIC_APP_URL'),
+    // IP geolocation is an optional, server-side country signal. The provider
+    // receives only the request IP and the route returns the ISO country code;
+    // no IP/location data is sent to or stored by the browser.
+    phoneIpGeolocationUrl: getEnv('PHONE_IP_GEOLOCATION_URL', 'https://ipapi.co/{ip}/country/'),
+    phoneIpGeolocationTimeoutMs: getBoundedNumberEnv('PHONE_IP_GEOLOCATION_TIMEOUT_MS', 1_500, 250, 5_000),
     // Email delivery is opt-in. Notification failures must never roll back
     // a successful business operation.
     emailEnabled: getBooleanEnv('EMAIL_ENABLED', false),
