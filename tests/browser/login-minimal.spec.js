@@ -39,7 +39,13 @@ async function assertLoginSurface(page) {
         direction: getComputedStyle(document.querySelector('.auth-shell')).direction,
         emailDirection: getComputedStyle(document.querySelector('#loginEmail')).direction,
         card: document.querySelector('#authLoginCard').getBoundingClientRect().toJSON(),
-        themeToggle: document.querySelector('.auth-theme-toggle').getBoundingClientRect().toJSON()
+        themeToggle: document.querySelector('.auth-theme-toggle').getBoundingClientRect().toJSON(),
+        themeInsideCard: Boolean(document.querySelector('#authLoginCard .auth-theme-toggle')),
+        submitGap: (() => {
+            const card = document.querySelector('#authLoginCard').getBoundingClientRect();
+            const submit = document.querySelector('#loginSubmit').getBoundingClientRect();
+            return Math.round(card.bottom - submit.bottom);
+        })()
     }));
 
     expect(metrics.documentWidth).toBeLessThanOrEqual(metrics.viewport + 1);
@@ -48,8 +54,12 @@ async function assertLoginSurface(page) {
     expect(metrics.emailDirection).toBe('ltr');
     expect(metrics.card.width).toBeGreaterThan(280);
     expect(metrics.card.width).toBeLessThanOrEqual(metrics.viewport);
-    expect(metrics.themeToggle.width).toBeGreaterThanOrEqual(44);
-    expect(metrics.themeToggle.height).toBeGreaterThanOrEqual(44);
+    expect(metrics.themeInsideCard).toBe(true);
+    expect(metrics.themeToggle.width).toBe(96);
+    expect(metrics.themeToggle.height).toBe(40);
+    expect(metrics.card.height).toBeLessThan(650);
+    expect(metrics.submitGap).toBeGreaterThanOrEqual(28);
+    expect(metrics.submitGap).toBeLessThanOrEqual(34);
 }
 
 test.beforeEach(async ({ page }) => {

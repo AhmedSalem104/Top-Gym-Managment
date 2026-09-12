@@ -739,10 +739,11 @@ body .auth-form:not(#loginForm) .auth-password-wrap > input:not([type="checkbox"
    existing data-theme click contract while making both states visible. */
 .auth-screen[data-auth-stage="login"] .auth-theme-toggle {
   position: absolute;
-  width: 112px;
-  min-height: 44px;
+  width: 96px;
+  height: 40px;
+  min-height: 40px;
   justify-content: space-between;
-  padding: 4px 11px;
+  padding: 0 10px;
   border-radius: 999px;
   overflow: hidden;
 }
