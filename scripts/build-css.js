@@ -2,6 +2,7 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
+const esbuild = require('esbuild');
 
 const root = path.resolve(__dirname, '..');
 const cssRoot = path.join(root, 'public', 'css');
@@ -33,5 +34,14 @@ const banner = [
 ].join('\n');
 
 const bundledCss = `${expand(sourceEntry).replace(/\s+$/u, '')}\n`;
-fs.writeFileSync(output, banner + bundledCss, 'utf8');
+// The layer files remain the readable source of truth. Minify only the
+// generated delivery artifact so first-load CSS transfer and parse cost stay
+// bounded without changing the cascade or asking production to run a second
+// stylesheet pipeline.
+const minifiedCss = esbuild.transformSync(bundledCss, {
+    loader: 'css',
+    minify: true,
+    legalComments: 'none'
+}).code.trim();
+fs.writeFileSync(output, `${banner}${minifiedCss}\n`, 'utf8');
 console.log(`[CSS-BUNDLE-OK] generated ${path.relative(root, output)} from the organized CSS layers`);

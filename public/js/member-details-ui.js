@@ -76,9 +76,28 @@
     return Math.ceil((end.getTime() - Date.now()) / 86400000);
   }
 
+  function membershipEndTimestamp(item) {
+    const value = item?.effectiveEndDate || item?.endDate;
+    if (!value) return 0;
+    const timestamp = Date.parse(`${String(value).slice(0, 10)}T00:00:00`);
+    return Number.isNaN(timestamp) ? 0 : timestamp;
+  }
+
   function resolveSubscription(member, details) {
     const memberships = Array.isArray(details?.memberships) ? details.memberships : [];
-    return member?.membership || memberships.find((item) => item?.status !== 'cancelled') || memberships[memberships.length - 1] || null;
+    if (!memberships.length) return member?.membership || null;
+
+    // Keep the details view aligned with the members list: cancelled rows are
+    // last, then the membership with the latest effective end date is the
+    // current subscription. The details API intentionally returns the full
+    // history in chronological order, so taking the first non-cancelled row
+    // would surface an old expired subscription instead of the current one.
+    const candidates = memberships.filter((item) => String(item?.status || '').toLowerCase() !== 'cancelled');
+    const source = candidates.length ? candidates : memberships;
+    return [...source].sort((left, right) => (
+      membershipEndTimestamp(right) - membershipEndTimestamp(left)
+      || number(right?.id) - number(left?.id)
+    ))[0] || member?.membership || null;
   }
 
   function scopeNames(items) {
