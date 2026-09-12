@@ -65,14 +65,14 @@ test('eligible subscriptions render the freeze action', () => {
     }
 });
 
-test('freeze action is disabled when the usage limit is reached and absent for expired memberships', () => {
+test('freeze action is absent when the usage limit is reached and for expired memberships', () => {
     const renderMemberTableRow = loadMemberTableRow();
     const enabled = renderMemberTableRow(memberWithStatus('active', 0));
     const limitReached = renderMemberTableRow(memberWithStatus('active', 3));
     const expired = renderMemberTableRow(memberWithStatus('expired', 0));
 
     assert.match(enabled, /data-action="freeze" data-id="42"\s*><\/button>/);
-    assert.match(limitReached, /data-action="freeze" data-id="42" disabled\s*><\/button>/);
+    assert.doesNotMatch(limitReached, /data-action="freeze"/);
     assert.doesNotMatch(expired, /data-action="freeze"/);
 });
 

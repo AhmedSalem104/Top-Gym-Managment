@@ -885,7 +885,8 @@ html {
 .w-full { width: 100%; }
 .max-w-7xl { width: min(1440px, calc(100% - 32px)); margin-inline: auto; }
 .mx-auto { margin-inline: auto; }
-.hidden { display: none; }
+.hidden,
+[hidden] { display: none !important; }
 .visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 .flex { display: flex; }
 .grid { display: grid; }
@@ -34664,6 +34665,233 @@ body .app-shell > .page-tabs {
   background-position: center;
   background-repeat: no-repeat;
   background-size: cover;
+}
+
+/* Members workspace popup polish -----------------------------------------
+   This layer is intentionally scoped to the members dialogs. It fixes the
+   visual contracts without changing the underlying API or business flow. */
+body #memberDialog {
+  width: min(900px, calc(100vw - 32px));
+  max-height: calc(100dvh - 32px);
+}
+
+body #memberDialog .section-heading > div:first-child {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+body #memberDialog .form-body {
+  gap: var(--space-3);
+  padding: var(--space-5);
+  padding-bottom: calc(var(--space-5) + 76px);
+  scroll-padding-bottom: calc(var(--space-5) + 76px);
+}
+
+body #memberDialog .section-label {
+  margin-top: var(--space-1);
+  padding-bottom: var(--space-1);
+}
+
+body #memberDialog .field-grid {
+  gap: var(--space-3);
+}
+
+body #memberDialog .form-actions {
+  bottom: calc(var(--space-5) * -1);
+  margin-inline: calc(var(--space-5) * -1);
+  margin-bottom: calc(var(--space-5) * -1);
+  padding: var(--space-3) var(--space-5);
+}
+
+body #detailsDialog .member-profile-name-row h3,
+body #detailsDialog .member-detail-stat-copy strong,
+body #detailsDialog .member-details-actions h4 {
+  color: var(--color-text);
+}
+
+body #detailsDialog > .dialog-body {
+  gap: var(--space-4);
+  padding: var(--space-5);
+  scroll-padding-bottom: var(--space-5);
+}
+
+body #detailsDialog .member-details-overview {
+  gap: var(--space-4);
+}
+
+body #detailsDialog .member-detail-stat {
+  min-height: 112px;
+  padding: var(--space-3);
+}
+
+body #detailsDialog .member-detail-stat-copy strong {
+  font-size: 21px;
+}
+
+body #detailsDialog .member-details-action-grid {
+  grid-template-columns: repeat(auto-fit, minmax(108px, 1fr));
+}
+
+body #detailsDialog .member-details-action {
+  min-height: 48px;
+  padding-inline: var(--space-2);
+}
+
+body #detailsDialog {
+  overflow: visible;
+}
+
+body #detailsDialog .member-details-more-menu.is-floating {
+  position: fixed;
+  z-index: calc(var(--z-modal) + 5);
+  display: grid;
+  gap: 2px;
+  max-height: calc(100dvh - 24px);
+  overflow-y: auto;
+  border: 1px solid var(--color-border-soft);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  padding: var(--space-2);
+  box-shadow: var(--shadow-lg);
+  overscroll-behavior: contain;
+}
+
+/* The details menu is promoted to a fixed layer inside the native dialog by
+   member-details-ui.js while open, so it can escape the scrolling body and be
+   placed above/below the trigger according to the available viewport space. */
+body .member-details-more-menu.is-floating {
+  position: fixed;
+  z-index: calc(var(--z-modal) + 5);
+  display: grid;
+  gap: 2px;
+  max-height: calc(100dvh - 24px);
+  overflow-y: auto;
+  border: 1px solid var(--color-border-soft);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  padding: var(--space-2);
+  box-shadow: var(--shadow-lg);
+  overscroll-behavior: contain;
+}
+
+body .member-details-more-menu.is-floating button {
+  display: flex;
+  min-height: 42px;
+  width: 100%;
+  align-items: center;
+  gap: var(--space-2);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-soft);
+  padding: 0 var(--space-3);
+  font-family: var(--font-body);
+  font-size: var(--font-xs);
+  text-align: start;
+}
+
+body .member-details-more-menu.is-floating button:hover,
+body .member-details-more-menu.is-floating button:focus-visible {
+  background: var(--color-pale-blue);
+  color: var(--color-primary);
+  outline: 0;
+}
+
+body .member-details-more-menu.is-floating button[data-member-detail-action="refund"] {
+  color: var(--color-danger);
+}
+
+body .member-details-more-menu.is-floating .ui-icon {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+}
+
+body #actionDialog > form.dialog-body {
+  scroll-padding-bottom: 104px;
+  padding-bottom: calc(var(--space-5) + 104px);
+}
+
+body #actionDialog > form.dialog-body > .dialog-actions {
+  margin-bottom: calc(var(--space-5) * -1);
+  padding: var(--space-3) var(--space-5);
+}
+
+body .coaching-builder-dialog > form.dialog-body {
+  scroll-padding-bottom: 112px;
+}
+
+body .coaching-builder-dialog > form.dialog-body > #coachingBuilderContent {
+  padding-bottom: var(--space-7);
+}
+
+body .coaching-builder-dialog > form.dialog-body > .builder-dialog-actions {
+  min-height: 66px;
+  padding-block: var(--space-3);
+}
+
+body #membersSection .members-table {
+  min-width: 1120px;
+}
+
+@media (max-width: 767px) {
+  body #memberDialog {
+    width: calc(100vw - 24px);
+    max-height: calc(100dvh - 24px);
+  }
+
+  body #memberDialog .form-body {
+    padding: var(--space-4);
+    padding-bottom: calc(var(--space-4) + 76px);
+    scroll-padding-bottom: calc(var(--space-4) + 76px);
+  }
+
+  body #memberDialog .form-actions {
+    bottom: calc(var(--space-4) * -1);
+    margin-inline: calc(var(--space-4) * -1);
+    margin-bottom: calc(var(--space-4) * -1);
+    padding-inline: var(--space-4);
+  }
+
+  body #detailsDialog > .dialog-body {
+    padding: var(--space-4);
+  }
+
+  body #detailsDialog .member-details-action-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  body #detailsDialog .member-details-action-renew {
+    grid-column: 1 / -1;
+  }
+
+  body #detailsDialog .member-details-action-more {
+    width: 100%;
+  }
+
+  body #actionDialog > form.dialog-body {
+    padding-bottom: calc(var(--space-4) + 104px);
+  }
+
+  body #actionDialog > form.dialog-body > .dialog-actions {
+    margin-bottom: calc(var(--space-4) * -1);
+    padding-inline: var(--space-4);
+  }
+
+  body .coaching-builder-dialog > form.dialog-body > #coachingBuilderContent {
+    padding-bottom: var(--space-6);
+  }
+}
+
+@media (max-width: 380px) {
+  body #memberDialog .field-grid {
+    grid-template-columns: 1fr;
+  }
+
+  body #detailsDialog .member-details-action {
+    font-size: var(--font-xs);
+  }
 }
 
 /* END TOP GYM layer */

@@ -91,6 +91,84 @@
             return dialogs[dialogs.length - 1] || null;
         }
 
+        const dialogReturnFocus = new WeakMap();
+        const dialogFocusableSelector = 'button:not([disabled]), [href], input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+        const isDialogElementVisible = (element) => {
+            if (!element || element.hidden || element.getAttribute('aria-hidden') === 'true' || element.closest('[hidden], [inert]')) return false;
+            const style = window.getComputedStyle(element);
+            return style.display !== 'none' && style.visibility !== 'hidden';
+        };
+
+        function prepareDialogAccessibility(dialog, titleId = '', descriptionId = '') {
+            if (!dialog) return;
+            dialog.setAttribute('role', 'dialog');
+            dialog.setAttribute('aria-modal', 'true');
+            const title = titleId ? document.getElementById(titleId) : dialog.querySelector('h3[id], [role="heading"][id]');
+            const description = descriptionId ? document.getElementById(descriptionId) : dialog.querySelector('p[id]');
+            if (title?.id) dialog.setAttribute('aria-labelledby', title.id);
+            if (description?.id) dialog.setAttribute('aria-describedby', description.id);
+            if (dialog.dataset.topGymAccessibilityReady === 'true') return;
+            dialog.dataset.topGymAccessibilityReady = 'true';
+            dialog.addEventListener('cancel', (event) => {
+                event.preventDefault();
+                closeDialogSafely(dialog);
+            });
+            dialog.addEventListener('keydown', (event) => {
+                if (event.key !== 'Tab') return;
+                const focusable = [...dialog.querySelectorAll(dialogFocusableSelector)].filter(isDialogElementVisible);
+                if (!focusable.length) return;
+                const first = focusable[0];
+                const last = focusable[focusable.length - 1];
+                if (event.shiftKey && document.activeElement === first) {
+                    event.preventDefault();
+                    last.focus();
+                } else if (!event.shiftKey && document.activeElement === last) {
+                    event.preventDefault();
+                    first.focus();
+                }
+            });
+            dialog.addEventListener('close', () => {
+                const trigger = dialogReturnFocus.get(dialog);
+                dialogReturnFocus.delete(dialog);
+                if (!trigger?.isConnected || trigger.disabled) return;
+                window.requestAnimationFrame(() => trigger.focus({ preventScroll: true }));
+            });
+        }
+
+        function rememberDialogTrigger(dialog) {
+            if (!dialog) return;
+            const active = document.activeElement;
+            if (active && active !== document.body && !dialog.contains(active)) dialogReturnFocus.set(dialog, active);
+            prepareDialogAccessibility(dialog);
+        }
+
+        function openDialogSafely(dialog) {
+            if (!dialog) return;
+            rememberDialogTrigger(dialog);
+            if (typeof dialog.showModal === 'function' && !dialog.open) dialog.showModal();
+            else dialog.setAttribute('open', '');
+            const initial = [...dialog.querySelectorAll('[autofocus], input:not([type="hidden"]), select, textarea, button')]
+                .find(isDialogElementVisible);
+            window.requestAnimationFrame(() => initial?.focus({ preventScroll: true }));
+        }
+
+        function closeDialogSafely(dialog) {
+            if (!dialog) return;
+            if (typeof dialog.close === 'function' && dialog.open) dialog.close();
+            else dialog.removeAttribute('open');
+        }
+
+        function setDialogControlVisibility(element, visible) {
+            if (!element) return;
+            element.hidden = !visible;
+            element.classList.toggle('hidden', !visible);
+            element.setAttribute('aria-hidden', String(!visible));
+            element.toggleAttribute('inert', !visible);
+            // `.btn` has a display rule that can override the legacy `.hidden`
+            // utility. Keep the state explicit without changing shared CSS.
+            element.style.display = visible ? '' : 'none';
+        }
+
         function showDialogValidation(message, type = 'error') {
             const dialog = getTopLayerDialog();
             if (!dialog) return false;
@@ -536,18 +614,20 @@
             const freezeCount = Number(sub.freezeCount || 0);
             const remaining = sub.status === 'expired' ? `منتهية منذ ${Math.abs(sub.daysRemaining || 0)} يوم` : sub.status === 'frozen' ? `تجميد حتى ${formatDate(sub.freezeEnd)}` : `${sub.daysRemaining} يوم متبقي`;
             const freezeUsage = `<span class="freeze-usage${freezeCount >= freezeLimit ? ' complete' : ''}"><strong>${freezeCount}/${freezeLimit}</strong><span>متبقي ${Math.max(0, freezeLimit - freezeCount)}</span></span>`;
-            const freezeButton = sub.status === 'frozen'
-                ? actionButton('resume', member.id, 'btn btn-purple btn-small')
-                : sub.status === 'expired'
-                    ? ''
-                    : actionButton('freeze', member.id, 'btn btn-light btn-small', freezeCount >= freezeLimit ? 'disabled' : '');
+             const membershipStatus = String(sub.status || '').toLowerCase();
+             const canFreeze = ['active', 'expiring_soon'].includes(membershipStatus) && freezeCount < freezeLimit;
+             const freezeButton = membershipStatus === 'frozen'
+                 ? actionButton('resume', member.id, 'btn btn-purple btn-small')
+                 : canFreeze
+                     ? actionButton('freeze', member.id, 'btn btn-light btn-small')
+                     : '';
             const amountRemaining = Number(sub.amountRemaining || 0);
             const remainingClass = amountRemaining > 0 ? 'has-debt' : 'is-settled';
             return `<tr data-member-id="${member.id}"><td><span class="table-member-name">${escapeHtml(member.fullName)}</span><a class="table-member-phone" href="tel:${escapeHtml(member.phone)}">${escapeHtml(member.phone)}</a><span class="table-sub">تسجيل: ${formatDate(member.registrationDate)}</span>${memberPortalCodeMarkup(member)}</td><td><span class="table-main">${escapeHtml(planLabel(sub.plan))}</span><span class="table-sub">${escapeHtml(typeLabel(sub.type))}</span></td><td>${memberStatusBadge(sub.status)}</td><td><span class="table-main">${formatDate(sub.effectiveEndDate)}</span><span class="table-sub">${escapeHtml(remaining)}</span></td><td>${freezeUsage}</td><td><span class="table-money">${money(sub.amountDue)}</span><span class="table-sub ${remainingClass}">متبقي ${money(amountRemaining)}</span></td><td><div class="table-actions">${actionButton('details', member.id, 'btn btn-details btn-small')}${actionButton('edit', member.id)}${actionButton('renew', member.id, 'btn btn-primary btn-small')}${freezeButton}${actionButton('payment', member.id)}${actionButton('print', member.id)}${actionButton('delete', member.id, 'btn btn-danger btn-small')}</div></td></tr>`;
         }
         function renderMembers() { $('membersCount').textContent = `${state.members.length} عضو ظاهر`; $('membersList').innerHTML = state.members.length ? `<div class="table-scroll"><table class="members-table"><thead><tr><th>العضو</th><th>الاشتراك</th><th>الحالة</th><th>الانتهاء</th><th>التجميد</th><th>الحساب</th><th>الإجراءات</th></tr></thead><tbody>${state.members.map(memberTableRow).join('')}</tbody></table></div>` : '<div class="empty">لا يوجد أعضاء مطابقون للبحث.</div>'; }
 
-        function closeMemberDialog() { const dialog = $('memberDialog'); if (typeof dialog.close === 'function' && dialog.open) dialog.close(); else dialog.removeAttribute('open'); }
+        function closeMemberDialog() { const dialog = $('memberDialog'); closeDialogSafely(dialog); }
         function canCreateMember() {
             return window.topGymAuth?.isOwner?.() === true
                 || window.topGymAuth?.hasPermission?.('members.create') === true;
@@ -695,8 +775,8 @@
             state.endDateManual = false;
             $('formTitle').textContent = 'إضافة عضو جديد';
             $('saveButton').textContent = 'حفظ العضو';
-            $('cancelEditButton').classList.add('hidden');
-            $('resetButton').classList.add('hidden');
+            setDialogControlVisibility($('cancelEditButton'), false);
+            setDialogControlVisibility($('resetButton'), false);
             syncMemberSubscriptionFields();
             syncMemberPermissionFields();
             updateFormPricing();
@@ -725,20 +805,34 @@
                 // other views. Move it to a stable root before opening it so a
                 // topbar action never opens a 0x0 dialog.
                 if (dialog?.closest('.workspace')) document.body.appendChild(dialog);
-                if (typeof dialog.showModal === 'function') dialog.showModal();
-                else dialog.setAttribute('open', '');
+                openDialogSafely(dialog);
             } catch (error) {
                 await notify(error.message, 'error');
             }
         }
-        function editMember(member) { const sub = member.membership || {}; $('memberId').value = member.id; $('fullName').value = member.fullName || ''; $('phone').value = member.phone || ''; $('email').value = member.email || ''; $('registrationDate').value = member.registrationDate || todayIso(); $('notes').value = member.notes || ''; $('membershipType').value = resolvedTypeCode(sub.type || 'monthly'); $('membershipPlan').value = sub.plan || 'gym_only'; $('startDate').value = sub.startDate || todayIso(); $('endDate').value = sub.endDate || calculatedEndDate($('startDate').value, $('membershipType').value); $('membershipNotes').value = sub.notes || ''; $('discountAmount').value = String(sub.discountAmount || 0); $('amountPaid').value = String(sub.amountPaid || 0); $('paymentMethod').value = sub.paymentMethod || 'cash'; $('sendWhatsAppAfterSave').checked = false; $('sendWhatsAppAfterSave').closest('.whatsapp-after-save')?.classList.add('hidden'); state.editing = member; state.endDateManual = true; $('formTitle').textContent = 'تعديل بيانات العضو'; $('saveButton').textContent = 'حفظ التعديلات'; $('cancelEditButton').classList.remove('hidden'); $('resetButton').classList.remove('hidden'); syncMemberSubscriptionFields(); syncMemberPermissionFields(); updateFormPricing(); }
+        function editMember(member) { const sub = member.membership || {}; $('memberId').value = member.id; $('fullName').value = member.fullName || ''; $('phone').value = member.phone || ''; $('email').value = member.email || ''; $('registrationDate').value = member.registrationDate || todayIso(); $('notes').value = member.notes || ''; $('membershipType').value = resolvedTypeCode(sub.type || 'monthly'); $('membershipPlan').value = sub.plan || 'gym_only'; $('startDate').value = sub.startDate || todayIso(); $('endDate').value = sub.endDate || calculatedEndDate($('startDate').value, $('membershipType').value); $('membershipNotes').value = sub.notes || ''; $('discountAmount').value = String(sub.discountAmount || 0); $('amountPaid').value = String(sub.amountPaid || 0); $('paymentMethod').value = sub.paymentMethod || 'cash'; $('sendWhatsAppAfterSave').checked = false; $('sendWhatsAppAfterSave').closest('.whatsapp-after-save')?.classList.add('hidden'); state.editing = member; state.endDateManual = true; $('formTitle').textContent = 'تعديل بيانات العضو'; $('saveButton').textContent = 'حفظ التعديلات'; setDialogControlVisibility($('cancelEditButton'), true); setDialogControlVisibility($('resetButton'), true); syncMemberSubscriptionFields(); syncMemberPermissionFields(); updateFormPricing(); }
+
+        function canOpenFreezeDialog(member) {
+            const subscription = member?.membership;
+            if (!subscription) return false;
+            const status = String(subscription.status || '').toLowerCase();
+            if (!['active', 'expiring_soon'].includes(status)) return false;
+            const limit = Number(subscription.freezeLimit || FREEZE_LIMIT);
+            const count = Number(subscription.freezeCount || 0);
+            return count < limit;
+        }
 
         function openDialog(action, member) {
+             if (action === 'freeze' && !canOpenFreezeDialog(member)) {
+                 const status = String(member?.membership?.status || '').toLowerCase();
+                 notify(status === 'expired' ? 'لا يمكن تجميد عضوية منتهية. جدّد العضوية أولًا.' : status === 'frozen' ? 'العضوية مجمدة بالفعل.' : status === 'cancelled' ? 'لا يمكن تجميد عضوية ملغاة.' : 'لا يمكن تنفيذ التجميد لهذه العضوية حاليًا.', 'warning');
+                 return;
+             }
              state.dialogAction = action; state.dialogMember = member; const sub = member.membership || {}; const fields = $('dialogFields'); const freezeLimit = Number(sub.freezeLimit || FREEZE_LIMIT); const freezeCount = Number(sub.freezeCount || 0); $('dialogTitle').textContent = action === 'freeze' ? 'تجميد العضوية' : action === 'renew' ? 'تجديد العضوية' : 'تسجيل دفعة'; $('dialogDescription').textContent = `${member.fullName} · ${member.phone}`;
             if (action === 'freeze' && freezeCount >= freezeLimit) { state.dialogAction = null; state.dialogMember = null; notify(`تم استهلاك الحد الأقصى للتجميد (${freezeLimit} مرات) لهذا العضو.`, 'warning'); return; }
             if (action === 'freeze') fields.innerHTML = `<div class="freeze-limit-note"><span class="freeze-limit-icon">${actionIcon('freeze')}</span><div><strong>التجميد المستخدم ${freezeCount}/${freezeLimit}</strong><span>متبقي ${Math.max(0, freezeLimit - freezeCount)} مرات لهذا العضو.</span></div></div><div class="field"><label for="dialogDays">عدد أيام التجميد</label><input id="dialogDays" type="number" min="1" max="365" value="7" required></div><div class="field"><label for="dialogReason">السبب (اختياري)</label><textarea id="dialogReason" maxlength="500"></textarea></div>`;
             if (action === 'renew' || action === 'payment') { const plan = sub.plan || 'gym_only'; const type = sub.type || activeTypeEntries()[0]?.[0] || 'monthly'; const discount = sub.discountAmount || 0; const paidDefault = 0; const collectionDate = todayIso(); const planOptions = Object.entries(state.pricing.plans).map(([code, item]) => `<option value="${escapeHtml(code)}">${escapeHtml(item.label)}</option>`).join(''); const typeOptions = activeTypeEntries().map(([code, item]) => `<option value="${escapeHtml(code)}">${escapeHtml(item.label)}</option>`).join(''); const paymentHint = action === 'payment' ? `<div class="payment-dialog-balance"><span>المدفوع حتى الآن</span><strong>${money(sub.amountPaid)}</strong><span>المتبقي الحالي</span><strong class="has-debt">${money(sub.amountRemaining)}</strong></div>` : ''; fields.innerHTML = `<div class="field-grid"><div class="field"><label for="dialogPlan">الباقة</label><select id="dialogPlan">${planOptions}</select></div><div class="field"><label for="dialogType">نوع العضوية</label><select id="dialogType">${typeOptions}</select></div></div><div class="field-grid"><div class="field"><label for="dialogDiscount">الخصم</label><input id="dialogDiscount" type="number" min="0" step="0.01" value="${discount}"></div><div class="field"><label for="dialogDue">المستحق بعد الخصم</label><input id="dialogDue" type="number" readonly></div></div><div class="pricing-summary" id="dialogPricing"></div>${paymentHint}<div class="field"><label for="dialogPaid">${action === 'payment' ? 'قيمة الدفعة الجديدة' : 'المبلغ المدفوع'}</label><input id="dialogPaid" type="number" min="0" step="0.01" value="${paidDefault}" required></div><div class="field"><label for="dialogMethod">طريقة الدفع</label><select id="dialogMethod"><option value="cash">نقدي</option><option value="card">بطاقة</option><option value="transfer">تحويل</option><option value="other">أخرى</option></select></div><div class="field"><label for="dialogPaidAt">تاريخ التحصيل الفعلي</label><input id="dialogPaidAt" type="date" max="${collectionDate}" value="${collectionDate}" required><small class="field-hint">يُستخدم في التقارير، ولا يمكن أن يكون تاريخًا مستقبليًا.</small></div>`; $('dialogPlan').value = plan; $('dialogType').value = type; $('dialogMethod').value = sub.paymentMethod || 'cash'; updateDialogPricing(); $('dialogPlan').addEventListener('change', updateDialogPricing); $('dialogType').addEventListener('change', updateDialogPricing); $('dialogDiscount').addEventListener('input', updateDialogPricing); }
-            const dialog = $('actionDialog'); if (typeof dialog.showModal === 'function') dialog.showModal(); else dialog.setAttribute('open', '');
+            openDialogSafely($('actionDialog'));
         }
         async function openRefundDialog(member) {
             state.dialogAction = 'refund';
@@ -750,7 +844,7 @@
             $('dialogSubmit').textContent = '\u062a\u0646\u0641\u064a\u0630 \u0627\u0644\u0627\u0633\u062a\u0631\u062c\u0627\u0639';
             $('dialogSubmit').disabled = true;
             const dialog = $('actionDialog');
-            if (typeof dialog.showModal === 'function') dialog.showModal(); else dialog.setAttribute('open', '');
+            openDialogSafely(dialog);
             try {
                 const preview = await api(`/api/members/${member.id}/refund-preview`);
                 if (state.dialogAction !== 'refund' || state.dialogMember?.id !== member.id) return;
@@ -772,7 +866,7 @@
                 }
             }
         }
-        function closeDialog() { const dialog = $('actionDialog'); if (typeof dialog.close === 'function' && dialog.open) dialog.close(); else dialog.removeAttribute('open'); state.dialogAction = null; state.dialogMember = null; state.refundPreview = null; $('dialogSubmit').disabled = false; $('dialogSubmit').textContent = '\u062a\u0623\u0643\u064a\u062f'; }
+        function closeDialog() { const dialog = $('actionDialog'); closeDialogSafely(dialog); state.dialogAction = null; state.dialogMember = null; state.refundPreview = null; $('dialogSubmit').disabled = false; $('dialogSubmit').textContent = '\u062a\u0623\u0643\u064a\u062f'; }
 
         async function confirmRefund(name, amount) {
             if (window.Swal) {
@@ -844,7 +938,7 @@
             return baseOpenDialog(action, member);
         };
 
-        async function submitDialog(event) { event.preventDefault(); const action = state.dialogAction; const member = state.dialogMember; if (!action || !member) return; if (action === 'freeze' && Number(member.membership?.freezeCount || 0) >= Number(member.membership?.freezeLimit || FREEZE_LIMIT)) { await notify(`تم استهلاك الحد الأقصى للتجميد (${FREEZE_LIMIT} مرات) لهذا العضو.`, 'warning'); return; } try { await withLoader(async () => { if (action === 'freeze') await api(`/api/members/${member.id}/freeze`, { method: 'POST', body: JSON.stringify({ days: Number($('dialogDays').value), reason: $('dialogReason').value }) }); if (action === 'renew') await api(`/api/members/${member.id}/renew`, { method: 'POST', body: JSON.stringify({ membershipType: $('dialogType').value, membershipPlan: $('dialogPlan').value, discountAmount: Number($('dialogDiscount').value || 0), amountPaid: Number($('dialogPaid').value || 0), paymentMethod: $('dialogMethod').value, paidAt: $('dialogPaidAt').value }) }); if (action === 'payment') { const pricing = calculateClientPricing($('dialogType').value, $('dialogPlan').value, $('dialogDiscount').value); await api(`/api/memberships/${member.membership.id}/payments`, { method: 'POST', body: JSON.stringify({ listPrice: pricing.listPrice, discountAmount: pricing.discountAmount, amountDue: pricing.amountDue, paymentAmount: Number($('dialogPaid').value || 0), paymentMethod: $('dialogMethod').value, paidAt: $('dialogPaidAt').value }) }); } }, 'جاري تنفيذ الإجراء…'); closeDialog(); await refreshAfterAction(action === 'freeze' ? 'تم تجميد العضوية.' : action === 'renew' ? 'تم تجديد العضوية.' : 'تم تسجيل الدفعة وإضافة الإيصال للسجل المالي.'); } catch (error) { await notify(error.message, 'error'); } }
+        async function submitDialog(event) { event.preventDefault(); const action = state.dialogAction; const member = state.dialogMember; if (!action || !member) return; if (action === 'freeze' && !canOpenFreezeDialog(member)) { await notify('لا يمكن تنفيذ التجميد لهذه العضوية حاليًا.', 'warning'); closeDialog(); return; } try { await withLoader(async () => { if (action === 'freeze') await api(`/api/members/${member.id}/freeze`, { method: 'POST', body: JSON.stringify({ days: Number($('dialogDays').value), reason: $('dialogReason').value }) }); if (action === 'renew') await api(`/api/members/${member.id}/renew`, { method: 'POST', body: JSON.stringify({ membershipType: $('dialogType').value, membershipPlan: $('dialogPlan').value, discountAmount: Number($('dialogDiscount').value || 0), amountPaid: Number($('dialogPaid').value || 0), paymentMethod: $('dialogMethod').value, paidAt: $('dialogPaidAt').value }) }); if (action === 'payment') { const pricing = calculateClientPricing($('dialogType').value, $('dialogPlan').value, $('dialogDiscount').value); await api(`/api/memberships/${member.membership.id}/payments`, { method: 'POST', body: JSON.stringify({ listPrice: pricing.listPrice, discountAmount: pricing.discountAmount, amountDue: pricing.amountDue, paymentAmount: Number($('dialogPaid').value || 0), paymentMethod: $('dialogMethod').value, paidAt: $('dialogPaidAt').value }) }); } }, 'جاري تنفيذ الإجراء…'); closeDialog(); await refreshAfterAction(action === 'freeze' ? 'تم تجميد العضوية.' : action === 'renew' ? 'تم تجديد العضوية.' : 'تم تسجيل الدفعة وإضافة الإيصال للسجل المالي.'); } catch (error) { await notify(error.message, 'error'); } }
 
          function renderPricingTable() { const typeEntries = activeTypeEntries(); const headers = typeEntries.map(([, type]) => `<th>${escapeHtml(type.label)}<small class="pricing-column-hint">سعر مستقل</small></th>`).join(''); const rows = Object.entries(state.pricing.plans).map(([code, plan]) => `<tr data-plan="${escapeHtml(code)}"><td><input data-field="planName" maxlength="80" value="${escapeHtml(plan.label)}"><span class="table-sub">${escapeHtml(code)}</span></td><td><input data-field="monthlyPrice" type="number" min="0" step="0.01" value="${Number(plan.monthlyPrice).toFixed(2)}"></td>${typeEntries.map(([typeCode, type]) => { const currentPrice = Number(state.pricing.prices?.[code]?.[typeCode] ?? (Number(plan.monthlyPrice || 0) * Number(type.priceMultiplier || 1))); return `<td class="duration-price"><input data-field="typePrice" data-type-code="${escapeHtml(typeCode)}" type="number" min="0" step="0.01" value="${currentPrice.toFixed(2)}"></td>`; }).join('')}</tr>`).join(''); $('pricingTableContainer').innerHTML = `<table class="pricing-table"><thead><tr><th>الباقة</th><th>السعر الشهري</th>${headers}</tr></thead><tbody>${rows}</tbody></table>`; }
          function renderMembershipTypesTable() { const entries = Object.entries(state.pricing.types || {}).sort(([, first], [, second]) => Number(first.sortOrder || 0) - Number(second.sortOrder || 0)); const rows = entries.map(([code, type]) => { const duration = type.mode === 'days' ? `${Number(type.durationValue)} يوم` : `${Number(type.durationValue)} شهر`; const status = type.active === false ? '<span class="type-status off">غير ظاهر</span>' : '<span class="type-status">نشط</span>'; return `<tr><td><strong>${escapeHtml(type.label)}</strong><span class="table-sub">${escapeHtml(code)}</span></td><td>${duration}</td><td>${Number(type.priceMultiplier || 0).toFixed(4).replace(/0+$/, '').replace(/\.$/, '')}</td><td>${status}</td><td><div class="type-actions"><button class="btn btn-light btn-small" type="button" data-type-action="edit" data-code="${escapeHtml(code)}">تعديل</button></div></td></tr>`; }).join(''); $('membershipTypesTableContainer').innerHTML = `<table class="membership-types-table"><thead><tr><th>النوع</th><th>المدة</th><th>معامل السعر</th><th>الحالة</th><th>الإجراء</th></tr></thead><tbody>${rows || '<tr><td colspan="5">لا توجد أنواع عضويات.</td></tr>'}</tbody></table>`; }
@@ -878,7 +972,7 @@
             $('detailsTitle').textContent = 'تفاصيل العميل';
             $('detailsSubtitle').textContent = `${member.fullName} · ${member.phone}`;
             $('detailsContent').innerHTML = '<div class="loading">جاري تحميل التفاصيل…</div>';
-            if (typeof dialog.showModal === 'function') dialog.showModal(); else dialog.setAttribute('open', '');
+            openDialogSafely(dialog);
             try {
                 const cached = detailsCache.get(member.id);
                 if (cached) {
@@ -897,7 +991,7 @@
                 await notify(error.message, 'error');
             }
         }
-        function closeDetails() { const dialog = $('detailsDialog'); if (typeof dialog.close === 'function' && dialog.open) dialog.close(); else dialog.removeAttribute('open'); }
+        function closeDetails() { const dialog = $('detailsDialog'); closeDialogSafely(dialog); }
 
         async function submitMember(event) {
             event.preventDefault();
@@ -980,6 +1074,7 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
+             document.querySelectorAll('dialog').forEach((dialog) => prepareDialogAccessibility(dialog));
              setFormDefaults(); $('memberForm').addEventListener('submit', submitMember); $('refreshButton').addEventListener('click', loadData); $('topAddMemberButton').addEventListener('click', () => openMemberDialog()); $('addMemberButton').addEventListener('click', () => openMemberDialog()); $('topPricingButton').addEventListener('click', openPricingDialog); $('pricingButton').addEventListener('click', openPricingDialog); $('membershipTypesButton').addEventListener('click', openMembershipTypesDialog); $('memberDialogClose').addEventListener('click', closeMemberDialog); $('cancelEditButton').addEventListener('click', () => setFormDefaults(true)); $('resetButton').addEventListener('click', () => setFormDefaults(true)); $('actionForm').addEventListener('submit', submitDialog); $('dialogCancel').addEventListener('click', closeDialog); $('pricingForm').addEventListener('submit', savePricing); $('pricingClose').addEventListener('click', closePricingDialog); $('membershipTypesClose').addEventListener('click', closeMembershipTypesDialog); $('detailsClose').addEventListener('click', closeDetails); $('detailsContent').addEventListener('click', (event) => { const button = event.target.closest('[data-payment-receipt]'); if (!button) return; window.topGymPrint?.printPaymentReceipt(button.dataset.memberId, button.dataset.paymentId); }); $('addMembershipTypeButton').addEventListener('click', () => openMembershipTypeDialog()); $('membershipTypeDialogClose').addEventListener('click', closeMembershipTypeDialog); $('membershipTypeCancel').addEventListener('click', closeMembershipTypeDialog); $('membershipTypeForm').addEventListener('submit', submitMembershipType); ['membershipTypeName', 'membershipTypeMode', 'membershipTypeDuration', 'membershipTypeMultiplier'].forEach((id) => $(id).addEventListener('input', updateMembershipTypePreview)); $('membershipTypeMode').addEventListener('change', updateMembershipTypePreview); $('membershipTypesTableContainer').addEventListener('click', (event) => { const button = event.target.closest('[data-type-action="edit"]'); if (button) openMembershipTypeDialog(button.dataset.code); }); $('membershipType').addEventListener('change', () => { if (!state.endDateManual) $('endDate').value = calculatedEndDate($('startDate').value, $('membershipType').value); updateFormPricing(); }); $('membershipPlan').addEventListener('change', updateFormPricing); $('discountAmount').addEventListener('input', updateFormPricing); $('startDate').addEventListener('change', () => { if (!state.endDateManual) $('endDate').value = calculatedEndDate($('startDate').value, $('membershipType').value); }); $('endDate').addEventListener('input', () => { state.endDateManual = true; }); $('memberBranchId').addEventListener('change', () => { void syncMemberScopeOptions({ preserve: true }); }); let timer; $('searchInput').addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(loadMembersOnly, 300); }); $('statusFilter').addEventListener('change', loadMembersOnly);
             $('membersList').addEventListener('click', async (event) => { const button = event.target.closest('button[data-action]'); if (!button) return; if (!hasRequiredPermissions(button.dataset.requiredPermission)) { await notify('لا تملك صلاحية تنفيذ هذا الإجراء. إذا تم تفعيلها حديثًا، سجّل الخروج ثم ادخل مرة أخرى.', 'error'); return; } const id = button.dataset.id || button.closest('[data-member-id]')?.dataset.memberId; const member = state.members.find((item) => String(item.id) === String(id)); if (!member) { await notify('تعذر تحديد العضو. حدّث الصفحة وحاول مرة أخرى.', 'error'); return; } const action = button.dataset.action; if (action === 'details') { await openDetails(member); return; } if (action === 'edit') { openMemberDialog(member); return; } if (action === 'freeze' || action === 'renew' || action === 'payment') { openDialog(action, member); return; } if (action === 'resume') { try { await withLoader(() => api(`/api/members/${member.id}/resume`, { method: 'POST' }), 'جاري استئناف العضوية…'); await refreshAfterAction('تم استئناف العضوية.'); } catch (error) { await notify(error.message, 'error'); } return; } if (action === 'delete' && await confirmDelete(member.fullName)) { try { await withLoader(() => api(`/api/members/${member.id}`, { method: 'DELETE' }), 'جاري حذف العضو…'); if (String($('memberId').value) === String(member.id)) setFormDefaults(true); await refreshAfterAction('تم حذف العضو.'); } catch (error) { await notify(error.message, 'error'); } } });
             $('membersList').addEventListener('click', async (event) => {

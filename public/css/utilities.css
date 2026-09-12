@@ -27,7 +27,8 @@
 .w-full { width: 100%; }
 .max-w-7xl { width: min(1440px, calc(100% - 32px)); margin-inline: auto; }
 .mx-auto { margin-inline: auto; }
-.hidden { display: none; }
+.hidden,
+[hidden] { display: none !important; }
 .visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 .flex { display: flex; }
 .grid { display: grid; }

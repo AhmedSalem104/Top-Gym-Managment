@@ -38,7 +38,9 @@ module.exports = defineConfig({
         // Keep the local system-Chrome run deterministic. Native iPhone emulation
         // can close system Chrome on Windows; the responsive viewport still gives
         // us reliable mobile layout coverage. CI uses bundled Chromium when available.
-        { name: 'mobile', use: { viewport: { width: 390, height: 844 }, isMobile: false, deviceScaleFactor: 1 } }
+        { name: 'mobile', use: { viewport: { width: 390, height: 844 }, isMobile: false, deviceScaleFactor: 1 } },
+        { name: 'tablet-light', use: { viewport: { width: 768, height: 900 }, isMobile: false, deviceScaleFactor: 1, colorScheme: 'light' } },
+        { name: 'mobile320-light', use: { viewport: { width: 320, height: 568 }, isMobile: false, deviceScaleFactor: 1, colorScheme: 'light' } }
     ],
     webServer: {
         command: browserServerCommand,

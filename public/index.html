@@ -910,9 +910,9 @@
                         <div class="dialog-actions"><button class="btn btn-light" id="expenseCancel" type="button">إلغاء</button><button class="btn btn-primary" id="expenseSave" type="submit">حفظ المصروف</button></div>
                     </form>
                 </dialog>
-                <dialog id="memberDialog" class="member-dialog rounded-lg border-slate-200">
+                <dialog id="memberDialog" class="member-dialog rounded-lg border-slate-200" aria-labelledby="formTitle" aria-describedby="memberDialogDescription">
                 <section class="panel form-panel bg-white">
-                    <div class="section-heading bg-slate-50"><h3 id="formTitle">إضافة عضو جديد</h3><div class="dialog-heading-actions"><button class="btn btn-light btn-small rounded-lg hidden" id="cancelEditButton" type="button">إلغاء التعديل</button><button class="btn btn-light btn-small rounded-lg" id="memberDialogClose" type="button">إغلاق</button></div></div>
+                    <div class="section-heading bg-slate-50"><div><h3 id="formTitle">إضافة عضو جديد</h3><span id="memberDialogDescription" class="visually-hidden">أدخل بيانات العضو الأساسية، ويمكنك استكمال بيانات الاشتراك والدفع حسب الحاجة.</span></div><div class="dialog-heading-actions"><button class="btn btn-light btn-small rounded-lg hidden" id="cancelEditButton" type="button">إلغاء التعديل</button><button class="btn btn-light btn-small rounded-lg" id="memberDialogClose" type="button">إغلاق</button></div></div>
                     <form class="form-body" id="memberForm">
                         <input type="hidden" id="memberId">
                         <div class="section-label">بيانات العضو</div>
@@ -1005,7 +1005,7 @@
         </main>
     </div>
 
-    <dialog id="actionDialog" class="rounded-lg border-slate-200 shadow-lift">
+    <dialog id="actionDialog" class="rounded-lg border-slate-200 shadow-lift" aria-labelledby="dialogTitle" aria-describedby="dialogDescription">
         <form class="dialog-body" id="actionForm">
             <h3 id="dialogTitle">إجراء</h3><p id="dialogDescription"></p><div id="dialogFields"></div>
             <div class="dialog-actions"><button class="btn btn-light" id="dialogCancel" type="button">إلغاء</button><button class="btn btn-primary" id="dialogSubmit" type="submit">تأكيد</button></div>
@@ -1081,7 +1081,7 @@
             <div class="dialog-actions"><button class="btn btn-light" id="membershipTypeCancel" type="button">إلغاء</button><button class="btn btn-primary" id="membershipTypeSave" type="submit">حفظ النوع</button></div>
         </form>
     </dialog>
-    <dialog id="detailsDialog" class="details-dialog rounded-lg border-slate-200 shadow-lift">
+    <dialog id="detailsDialog" class="details-dialog rounded-lg border-slate-200 shadow-lift" aria-labelledby="detailsTitle" aria-describedby="detailsSubtitle">
         <div class="dialog-body">
             <div class="details-dialog-head member-details-head"><div class="member-details-head-content"><div class="member-profile-identity"><span class="member-profile-avatar" id="detailsAvatar" aria-hidden="true">م</span><span class="member-profile-copy"><span class="member-profile-name-row"><h3 id="detailsTitle">تفاصيل العميل</h3><span class="member-profile-badge" id="detailsMemberBadge">عضو</span></span><p id="detailsSubtitle" class="member-profile-phone" dir="ltr"></p><small id="detailsRegistration" class="member-profile-registration"></small></span></div></div><button class="btn btn-light btn-small" id="detailsClose" type="button">إغلاق</button></div>
             <div class="member-expiry-banner" id="detailsExpiryBanner" hidden><span class="member-expiry-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span><span><strong id="detailsExpiryTitle">قريبة الانتهاء</strong><small id="detailsExpiryText">ينتهي الاشتراك قريبًا</small></span></div>
@@ -1091,8 +1091,8 @@
     <dialog id="qrReaderDialog" class="qr-reader-dialog rounded-lg border-slate-200 shadow-lift">
         <div class="dialog-body"><div class="details-dialog-head"><div><h3>مسح QR Code</h3><p>وجّه كاميرا الهاتف إلى رمز العضو.</p></div><button class="btn btn-light btn-small" id="qrReaderClose" type="button">إغلاق</button></div><div id="qrReader"></div><p class="qr-reader-note">إذا لم تعمل الكاميرا، أغلق النافذة وسجّل الحضور برقم الهاتف.</p></div>
     </dialog>
-    <dialog id="memberQrDialog" class="member-qr-dialog rounded-lg border-slate-200 shadow-lift">
-        <div class="dialog-body"><div class="details-dialog-head"><div><h3>QR Code العضو</h3><p>احتفظ بالرمز أو اطبعه لاستخدامه عند الحضور.</p></div><button class="btn btn-light btn-small" id="memberQrClose" type="button">إغلاق</button></div><div class="member-qr-card"><canvas id="memberQrCanvas" width="210" height="210"></canvas><strong id="memberQrName">—</strong><span id="memberQrPhone">—</span></div><div class="dialog-actions"><button class="btn btn-primary" id="memberQrDownload" type="button">تحميل QR Code</button></div></div>
+    <dialog id="memberQrDialog" class="member-qr-dialog rounded-lg border-slate-200 shadow-lift" aria-labelledby="memberQrDialogTitle" aria-describedby="memberQrDialogDescription">
+        <div class="dialog-body"><div class="details-dialog-head"><div><h3 id="memberQrDialogTitle">QR Code العضو</h3><p id="memberQrDialogDescription">احتفظ بالرمز أو اطبعه لاستخدامه عند الحضور.</p></div><button class="btn btn-light btn-small" id="memberQrClose" type="button">إغلاق</button></div><div class="member-qr-card"><canvas id="memberQrCanvas" width="210" height="210"></canvas><strong id="memberQrName">—</strong><span id="memberQrPhone">—</span></div><div class="dialog-actions"><button class="btn btn-primary" id="memberQrDownload" type="button">تحميل QR Code</button></div></div>
     </dialog>
     <dialog id="libraryFormDialog" class="library-dialog rounded-lg border-slate-200 shadow-lift">
         <form class="dialog-body" id="libraryForm">
@@ -1117,7 +1117,7 @@
     <dialog id="coachingProfileDialog" class="coaching-profile-dialog rounded-lg border-slate-200 shadow-lift">
         <div class="dialog-body"><div class="details-dialog-head"><div><h3 id="coachingProfileTitle">ملف المتدرب</h3><p id="coachingProfileSubtitle"></p></div><button class="btn btn-light btn-small" id="coachingProfileClose" type="button">إغلاق</button></div><div id="coachingProfileContent"><div class="loading">جاري تحميل الملف…</div></div></div>
     </dialog>
-    <dialog id="coachingBuilderDialog" class="coaching-builder-dialog rounded-lg border-slate-200 shadow-lift">
+    <dialog id="coachingBuilderDialog" class="coaching-builder-dialog rounded-lg border-slate-200 shadow-lift" aria-labelledby="coachingBuilderTitle" aria-describedby="coachingBuilderSubtitle">
         <form class="dialog-body" id="coachingBuilderForm" novalidate>
             <div class="details-dialog-head"><div><h3 id="coachingBuilderTitle">إنشاء نظام</h3><p id="coachingBuilderSubtitle"></p></div><button class="btn btn-light btn-small" id="coachingBuilderClose" type="button">إغلاق</button></div>
             <input type="hidden" id="coachingBuilderId"><input type="hidden" id="coachingBuilderMemberId">
