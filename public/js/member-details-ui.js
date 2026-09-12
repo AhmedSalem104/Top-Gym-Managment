@@ -84,6 +84,12 @@
   }
 
   function resolveSubscription(member, details) {
+    // The members list is the source of truth for the current subscription
+    // shown in the table. Keep the details header/overview aligned with it;
+    // the details endpoint remains a history fallback for callers that do not
+    // have the list row available.
+    if (member?.membership && typeof member.membership === 'object') return member.membership;
+
     const memberships = Array.isArray(details?.memberships) ? details.memberships : [];
     if (!memberships.length) return member?.membership || null;
 

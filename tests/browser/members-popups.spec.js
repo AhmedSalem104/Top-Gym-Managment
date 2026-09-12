@@ -342,7 +342,8 @@ test('member details promotes the list membership and orders the history newest 
             amountPaid: 300,
             amountRemaining: 0,
             freezeCount: 0,
-            freezeLimit: 3
+            freezeLimit: 3,
+            daysRemaining: 100
         }
     };
     const memberships = [
@@ -376,6 +377,7 @@ test('member details promotes the list membership and orders the history newest 
     await page.locator('tr[data-member-id="4151"] button[data-action="details"]').click();
     await expect(page.locator('#detailsDialog')).toBeVisible();
     await expect(page.locator('#currentMembershipTitle')).toHaveText('العضوية الحالية');
+    await expect(page.locator('#detailsExpiryBanner')).toBeHidden();
 
     const view = await page.evaluate(() => {
         const table = document.querySelector('#detailsContent .details-section .history-table');
