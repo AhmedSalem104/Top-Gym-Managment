@@ -121,7 +121,7 @@ async function getReportData(query = {}, options = {}) {
         return request;
     };
 
-    const [membersResult, membershipsResult, paymentsResult, expensesResult, paymentMethodsResult, dashboard, debtorsResult, coachingResult, libraryResult] = await Promise.all([
+    const [membersResult, membershipsResult, paymentsResult, expensesResult, paymentMethodsResult, dashboard, debtorsResult, outstandingResult, coachingResult, libraryResult] = await Promise.all([
         baseRequest().query(`
             SELECT TOP (1000) m.id, m.full_name, m.phone, m.email, m.registration_date,
                    ms.membership_plan, ms.membership_type, ms.start_date, ms.end_date,
@@ -235,6 +235,14 @@ async function getReportData(query = {}, options = {}) {
             WHERE p.amount_remaining > 0
               ${membershipScope('ms')}
             ORDER BY p.amount_remaining DESC, ms.end_date ASC, m.full_name ASC;
+        `),
+        baseRequest().query(`
+            SELECT COUNT_BIG(CASE WHEN p.amount_remaining > 0 THEN 1 END) AS outstanding_count,
+                   ISNULL(SUM(CASE WHEN p.amount_remaining > 0 THEN p.amount_remaining ELSE 0 END), 0) AS outstanding_total
+            FROM dbo.gym_payments AS p
+            INNER JOIN dbo.memberships AS ms ON ms.id = p.membership_id
+            WHERE p.amount_remaining > 0
+              ${membershipScope('ms')};
         `),
         baseRequest().batch(`
             SELECT
@@ -390,7 +398,8 @@ async function getReportData(query = {}, options = {}) {
     addTimelineAmount(timelineByDate, dayPassRows, 'visitDate', 'amountPaid');
     addTimelineAmount(timelineByDate, expenseRows, 'event_date', 'expenses');
 
-    const outstanding = membershipRows.reduce((sum, row) => sum + Number(row.amount_remaining || 0), 0);
+    const outstandingSummary = outstandingResult.recordset[0] || {};
+    const outstanding = Number(outstandingSummary.outstanding_total || 0);
     const plans = membershipRows.reduce((result, row) => {
         const key = String(row.membership_plan || 'gym_only');
         result[key] = (result[key] || 0) + 1;
@@ -418,7 +427,7 @@ async function getReportData(query = {}, options = {}) {
             expensesCount: expenseRows.length,
             net: roundMoney(collected - refunds - expenses),
             outstanding: roundMoney(outstanding),
-            outstandingCount: membershipRows.filter((row) => Number(row.amount_remaining || 0) > 0).length,
+            outstandingCount: Number(outstandingSummary.outstanding_count || 0),
             debtorsCount: debtorRows.length,
             debtorsTotal: roundMoney(debtorRows.reduce((sum, row) => sum + Number(row.amount_remaining || 0), 0)),
             currentMembers: Number(dashboard.stats?.total || 0),

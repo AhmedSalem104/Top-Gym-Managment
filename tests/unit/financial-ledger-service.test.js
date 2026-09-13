@@ -73,6 +73,7 @@ test('all gym financial read paths use the central ledger semantics', () => {
     assert.match(source('src/services/platform-admin-service.js'), /payment_transactions\.transaction_type <> 'adjustment'/);
     assert.match(source('src/repositories/expense.repository.js'), /WITH ledger_entries AS/);
     assert.match(source('src/services/analytics-service.js'), /WITH ledger_entries AS/);
+    assert.match(source('src/services/report-service.js'), /outstanding_total/);
     assert.doesNotMatch(source('src/repositories/expense.repository.js'), /SUM\(CASE WHEN \$\{actualCollectionCaseSql/);
     assert.doesNotMatch(source('src/services/analytics-service.js'), /SUM\(CASE WHEN \$\{actualCollectionCaseSql/);
 });
