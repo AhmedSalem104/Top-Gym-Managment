@@ -99,7 +99,7 @@ function collectMatches(source, pattern) {
     return [...source.matchAll(pattern)].map((match) => ({ match, index: match.index }));
 }
 
-function auditMigrationText(fileName, source) {
+function auditMigrationText(fileName, source, { allowDataBackfill = false } = {}) {
     const masked = maskSql(source);
     const findings = [];
     const operations = {
@@ -113,10 +113,12 @@ function auditMigrationText(fileName, source) {
         ['DROP_TABLE', /\bDROP\s+TABLE\b/i],
         ['TRUNCATE_TABLE', /\bTRUNCATE\s+TABLE\b/i],
         ['DELETE_ROWS', /\bDELETE\s+FROM\b/i],
-        ['UPDATE_ROWS', /\bUPDATE\s+(?:\[?dbo\]?\.)?[A-Za-z_][A-Za-z0-9_]*/i],
         ['DROP_INDEX', /\bDROP\s+INDEX\b/i],
         ['DROP_CONSTRAINT', /\bALTER\s+TABLE[\s\S]{0,160}?\bDROP\s+CONSTRAINT\b/i]
     ];
+    if (!allowDataBackfill) {
+        dangerousPatterns.splice(3, 0, ['UPDATE_ROWS', /\bUPDATE\s+(?:\[?dbo\]?\.)?[A-Za-z_][A-Za-z0-9_]*/i]);
+    }
     for (const [code, pattern] of dangerousPatterns) {
         if (pattern.test(masked)) {
             findings.push({ severity: 'CRITICAL', code, message: `${code} is not allowed in a repeatable production migration.` });
@@ -124,6 +126,21 @@ function auditMigrationText(fileName, source) {
     }
     if (/(^|\r?\n)\s*GO\s*(?:$|\r?\n)/im.test(masked)) {
         findings.push({ severity: 'ERROR', code: 'GO_BATCH_SEPARATOR', message: 'GO batch separators are not accepted by mssql batch execution.' });
+    }
+
+    if (allowDataBackfill) {
+        const requiredMarkers = [
+            ['SAFE_DATA_BACKFILL_MARKER', /LOGIC_FIT_SAFE_DATA_BACKFILL:\s*legacy-single-branch/i],
+            ['TOP_GYM_SCOPE_GUARD', /slug\s*=\s*'top-gym'/i],
+            ['SINGLE_ACTIVE_BRANCH_GUARD', /status\s*=\s*'active'[\s\S]{0,240}COUNT_BIG\(\*\)/i],
+            ['NULL_BRANCH_GUARD', /branch_id\s+IS\s+NULL/i],
+            ['IDEMPOTENT_GUARD', /NOT\s+EXISTS[\s\S]{0,420}gym_membership_branch_access/i],
+            ['TRANSACTION_GUARD', /SET\s+XACT_ABORT\s+ON/i],
+            ['MERGE_OR_UPDATE', /\bMERGE\b|\bUPDATE\b/i]
+        ];
+        for (const [code, pattern] of requiredMarkers) {
+            if (!pattern.test(source)) findings.push({ severity: 'ERROR', code, message: `Safe data backfill marker is missing: ${code}.` });
+        }
     }
 
     for (const { match, index } of collectMatches(masked, /\bCREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(?:\[?dbo\]?\.)?\[?([A-Za-z_][A-Za-z0-9_]*)\]?/gi)) {
@@ -194,12 +211,19 @@ function auditDatabaseReadiness({ rootDir = ROOT } = {}) {
     const migrationFiles = fs.readdirSync(migrationDirectory)
         .filter((fileName) => fileName.toLowerCase().endsWith('.sql'))
         .sort((first, second) => first.localeCompare(second, undefined, { numeric: true }));
+    let migrationManifest = {};
+    try {
+        migrationManifest = JSON.parse(fs.readFileSync(path.join(rootDir, 'database', 'migration-manifest.json'), 'utf8'));
+    } catch (_) {
+        migrationManifest = {};
+    }
     const versions = migrationFiles.map(parseMigrationVersion);
     const duplicateVersions = versions.filter((version, index) => version !== null && versions.indexOf(version) !== index);
     const invalidNames = migrationFiles.filter((fileName) => parseMigrationVersion(fileName) === null);
     const migrations = migrationFiles.map((fileName) => auditMigrationText(
         fileName,
-        fs.readFileSync(path.join(migrationDirectory, fileName), 'utf8')
+        fs.readFileSync(path.join(migrationDirectory, fileName), 'utf8'),
+        { allowDataBackfill: migrationManifest.migrations?.[fileName]?.dataBackfill === true }
     ));
     const migrationFindings = [];
     if (duplicateVersions.length) migrationFindings.push({ severity: 'ERROR', code: 'DUPLICATE_MIGRATION_VERSION', message: `Duplicate migration version(s): ${[...new Set(duplicateVersions)].join(', ')}` });

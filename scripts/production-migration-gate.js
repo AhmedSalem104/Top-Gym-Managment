@@ -75,7 +75,9 @@ function classifyMigration(migration, manifestEntry) {
     if (manifestEntry.version !== migration.version || manifestEntry.checksum !== migration.checksum) {
         return { classification: 'BLOCKED', reason: 'manifest_checksum_mismatch' };
     }
-    const audit = auditMigrationText(migration.fileName, migration.source);
+    const audit = auditMigrationText(migration.fileName, migration.source, {
+        allowDataBackfill: manifestEntry.dataBackfill === true
+    });
     if (audit.status !== 'PASS') return { classification: 'REQUIRES_REVIEW', reason: 'static_sql_audit_failed', findings: audit.findings };
     if (manifestEntry.destructive === true || manifestEntry.requiresMaintenanceMode === true || manifestEntry.transactional !== true || manifestEntry.backwardCompatible !== true) {
         return { classification: 'REQUIRES_REVIEW', reason: 'migration_metadata_requires_review' };

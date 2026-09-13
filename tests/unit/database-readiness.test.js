@@ -50,7 +50,8 @@ test('database readiness audit finds the canonical migration set safe at source 
         '029-branch-sections.sql',
         '030-plan-entitlements.sql',
         '031-central-notifications.sql',
-        '032-notification-portal-recipients.sql'
+        '032-notification-portal-recipients.sql',
+        '033-top-gym-legacy-branch-attribution.sql'
     ]);
     assert.deepEqual(report.migrationFindings, []);
     assert.equal(report.schemaReview.status, 'REQUIRES STAGING VERIFICATION');
@@ -124,6 +125,14 @@ test('database readiness audit rejects destructive migration statements', () => 
     const unsafe = auditMigrationText('fixture.sql', 'DROP TABLE dbo.fixture; TRUNCATE TABLE dbo.other;');
     assert.equal(unsafe.status, 'FAIL');
     assert.deepEqual(unsafe.findings.map((finding) => finding.code), ['DROP_TABLE', 'TRUNCATE_TABLE']);
+});
+
+test('database readiness audit accepts only the guarded legacy branch backfill policy', () => {
+    const source = fs.readFileSync(path.join(__dirname, '..', '..', 'database', 'migrations', '033-top-gym-legacy-branch-attribution.sql'), 'utf8');
+    const audit = auditMigrationText('033-top-gym-legacy-branch-attribution.sql', source, { allowDataBackfill: true });
+    assert.equal(audit.status, 'PASS');
+    assert.deepEqual(audit.findings, []);
+    assert.equal(auditMigrationText('fixture.sql', source).findings.some((finding) => finding.code === 'UPDATE_ROWS'), true);
 });
 
 test('migration versions are parsed without treating arbitrary SQL files as migrations', () => {

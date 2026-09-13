@@ -22,6 +22,18 @@
       "requiresMaintenanceMode": false,
       "rlsImpact": true,
       "rollback": "forward-fix-or-database-recovery"
+    },
+    "033-top-gym-legacy-branch-attribution.sql": {
+      "version": "033",
+      "checksum": "39544ce07749a17fd88ebdd125a7e79f99ddf0f2640c41a67bd28584bb64fb6e",
+      "transactional": true,
+      "backwardCompatible": true,
+      "destructive": false,
+      "requiresBackup": true,
+      "requiresMaintenanceMode": false,
+      "rlsImpact": false,
+      "dataBackfill": true,
+      "rollback": "forward-fix-or-database-recovery"
     }
   }
 }
