@@ -291,3 +291,126 @@ test('browser exposes selected-country mismatch without changing manual country'
     await expect(country).toHaveValue('EG');
     await expect(phone).toHaveValue('+966501234567');
 });
+
+test('member and today-attendance searches expose an in-field clear action', async ({ page }) => {
+    await installLocalMemberApi(page);
+    await page.goto('/?members-popup-contract#members', { waitUntil: 'networkidle' });
+
+    const memberSearch = page.locator('#searchInput');
+    const memberClear = page.locator('#membersSearchClearButton');
+    await memberSearch.fill('مهاب');
+    await expect(memberClear).toBeVisible();
+    await memberClear.click();
+    await expect(memberSearch).toHaveValue('');
+    await expect(memberClear).toBeHidden();
+
+    await page.locator('#attendanceSection').evaluate((section) => { section.hidden = false; });
+    const attendanceSearch = page.locator('#attendanceSearch');
+    const attendanceClear = page.locator('#attendanceSearchClearButton');
+    await attendanceSearch.fill('01015819700');
+    await expect(attendanceClear).toBeVisible();
+    await attendanceClear.click();
+    await expect(attendanceSearch).toHaveValue('');
+    await expect(attendanceClear).toBeHidden();
+});
+
+test('attendance workspace stays compact and overflow-free at supported viewports', async ({ page }, testInfo) => {
+    await installLocalMemberApi(page);
+    await page.goto('/?members-popup-contract#members', { waitUntil: 'networkidle' });
+
+    await page.locator('#attendanceSection').evaluate((section) => {
+        section.hidden = false;
+        section.querySelector('#attendanceTableWrap').innerHTML = '<div class="attendance-empty">لا يوجد حضور مسجل اليوم</div>';
+    });
+
+    const metrics = await page.evaluate(() => {
+        const section = document.getElementById('attendanceSection');
+        const entry = section.querySelector('.attendance-entry-card').getBoundingClientRect();
+        const summary = [...section.querySelectorAll('.attendance-summary-card')].map((card) => card.getBoundingClientRect());
+        const listHead = section.querySelector('.attendance-list-head').getBoundingClientRect();
+        const table = section.querySelector('.attendance-table-wrap').getBoundingClientRect();
+        return {
+            viewport: window.innerWidth,
+            documentWidth: document.documentElement.scrollWidth,
+            bodyWidth: document.body.scrollWidth,
+            entryHeight: Math.round(entry.height),
+            summaryHeights: summary.map((box) => Math.round(box.height)),
+            summaryWidths: summary.map((box) => Math.round(box.width)),
+            listHeadBottom: Math.round(listHead.bottom),
+            tableTop: Math.round(table.top),
+            sectionBottom: Math.round(section.getBoundingClientRect().bottom)
+        };
+    });
+
+    expect(metrics.documentWidth).toBeLessThanOrEqual(metrics.viewport + 1);
+    expect(metrics.bodyWidth).toBeLessThanOrEqual(metrics.viewport + 1);
+    expect(new Set(metrics.summaryWidths).size).toBe(1);
+    expect(Math.max(...metrics.summaryHeights)).toBeLessThanOrEqual(metrics.viewport <= 767 ? 100 : 112);
+    expect(metrics.tableTop - metrics.listHeadBottom).toBeLessThanOrEqual(2);
+    expect(metrics.sectionBottom).toBeGreaterThan(metrics.tableTop);
+
+    await testInfo.attach(`attendance-${testInfo.project.name}.png`, {
+        body: await page.screenshot({ fullPage: true }),
+        contentType: 'image/png'
+    });
+});
+
+test('attendance workspace stays compact at the intermediate 1024px desktop width', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'desktop', 'The desktop project owns the explicit 1024px intermediate viewport check.');
+    await page.setViewportSize({ width: 1024, height: 768 });
+    await installLocalMemberApi(page);
+    await page.goto('/?members-popup-contract#members', { waitUntil: 'networkidle' });
+
+    await page.locator('#attendanceSection').evaluate((section) => {
+        section.hidden = false;
+        section.querySelector('#attendanceTableWrap').innerHTML = '<div class="attendance-empty">لا يوجد حضور مسجل اليوم</div>';
+    });
+
+    const metrics = await page.evaluate(() => {
+        const section = document.getElementById('attendanceSection');
+        const summary = [...section.querySelectorAll('.attendance-summary-card')].map((card) => card.getBoundingClientRect());
+        const listHead = section.querySelector('.attendance-list-head').getBoundingClientRect();
+        const table = section.querySelector('.attendance-table-wrap').getBoundingClientRect();
+        return {
+            viewport: window.innerWidth,
+            documentWidth: document.documentElement.scrollWidth,
+            bodyWidth: document.body.scrollWidth,
+            summaryHeights: summary.map((box) => Math.round(box.height)),
+            summaryWidths: summary.map((box) => Math.round(box.width)),
+            listHeadBottom: Math.round(listHead.bottom),
+            tableTop: Math.round(table.top)
+        };
+    });
+
+    expect(metrics.viewport).toBe(1024);
+    expect(metrics.documentWidth).toBeLessThanOrEqual(metrics.viewport + 1);
+    expect(metrics.bodyWidth).toBeLessThanOrEqual(metrics.viewport + 1);
+    expect(new Set(metrics.summaryWidths).size).toBe(1);
+    expect(Math.max(...metrics.summaryHeights)).toBeLessThanOrEqual(112);
+    expect(metrics.tableTop - metrics.listHeadBottom).toBeLessThanOrEqual(2);
+
+    await testInfo.attach('attendance-1024.png', {
+        body: await page.screenshot({ fullPage: true }),
+        contentType: 'image/png'
+    });
+});
+
+test('authenticated shell reveals without a dimmed or overlapping first-login state', async ({ page }) => {
+    await installLocalMemberApi(page);
+    await page.goto('/?members-popup-contract#members', { waitUntil: 'networkidle' });
+    await expect(page.locator('.app-shell')).toBeVisible();
+
+    const state = await page.evaluate(() => ({
+        authHidden: document.getElementById('authScreen')?.hidden === true,
+        authPending: document.body.classList.contains('auth-pending'),
+        navigationPending: document.body.classList.contains('top-gym-navigation-pending'),
+        pageOpacity: getComputedStyle(document.querySelector('.app-shell .page')).opacity,
+        tabsOpacity: getComputedStyle(document.querySelector('.app-shell .page-tabs')).opacity
+    }));
+
+    expect(state.authHidden).toBe(true);
+    expect(state.authPending).toBe(false);
+    expect(state.navigationPending).toBe(false);
+    expect(state.pageOpacity).toBe('1');
+    expect(state.tabsOpacity).toBe('1');
+});

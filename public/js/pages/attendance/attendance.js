@@ -615,7 +615,24 @@
         $('memberQrClose')?.addEventListener('click', closeMemberQr);
         $('memberQrDownload')?.addEventListener('click', downloadMemberQr);
         let timer;
-        $('attendanceSearch')?.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(loadAttendance, 350); });
+        const attendanceSearch = $('attendanceSearch');
+        const attendanceSearchClear = $('attendanceSearchClearButton');
+        const syncAttendanceSearchClear = () => {
+            if (attendanceSearchClear && attendanceSearch) attendanceSearchClear.hidden = !attendanceSearch.value.trim();
+        };
+        attendanceSearch?.addEventListener('input', () => {
+            syncAttendanceSearchClear();
+            clearTimeout(timer);
+            timer = setTimeout(loadAttendance, 350);
+        });
+        attendanceSearchClear?.addEventListener('click', () => {
+            clearTimeout(timer);
+            if (attendanceSearch) attendanceSearch.value = '';
+            syncAttendanceSearchClear();
+            attendanceSearch?.focus({ preventScroll: true });
+            void loadAttendance({ force: true });
+        });
+        syncAttendanceSearchClear();
         $('attendanceStatusFilter')?.addEventListener('change', () => {
             if (!attendanceSnapshot) return;
             renderRecords(attendanceSnapshot);

@@ -3,7 +3,11 @@ const { addDays, differenceInDays, formatDateOnly, parseDateOnly, todayInTimeZon
 const { config } = require('../config/env');
 const { currentTenantId, getTenantContext } = require('../tenancy/tenant-context');
 const { publish, publishForRoles } = require('./notification-dispatcher');
-const { normalizePhone: normalizeInternationalPhone } = require('./phone-service');
+const {
+    FALLBACK_COUNTRY,
+    normalizePhone: normalizeInternationalPhone,
+    normalizePhoneForSearch
+} = require('./phone-service');
 
 const ATTENDANCE_SOURCES = new Set(['phone', 'qr', 'manual']);
 const DEFAULT_AUTO_CHECKOUT_MINUTES = 60;
@@ -302,9 +306,15 @@ async function getTodayAttendance(options = {}) {
     const pool = await getPool();
     const date = parseDateOnly(options.date || todayInTimeZone(), 'تاريخ الحضور');
     const search = String(options.search || '').trim();
+    const phoneSearch = normalizePhoneForSearch(search, {
+        country: /^\+|^00/.test(search) ? null : FALLBACK_COUNTRY,
+        required: false,
+        fieldName: 'Phone number'
+    }) || '';
     const request = pool.request()
         .input('attendanceDate', sql.Date, toUtcDate(date))
-        .input('search', sql.NVarChar(120), search ? `%${search}%` : null);
+        .input('search', sql.NVarChar(120), search ? `%${search}%` : null)
+        .input('phoneSearch', sql.NVarChar(30), phoneSearch);
     const selectQuery = `SELECT a.id, a.member_id, a.membership_id, a.branch_id, a.section_id, a.attendance_date,
                        a.check_in_at, a.check_out_at, a.check_in_source, a.check_out_source,
                        a.notes, m.full_name, m.phone,
@@ -319,7 +329,7 @@ async function getTodayAttendance(options = {}) {
                 WHERE a.attendance_date = @attendanceDate
                   AND (@branchId IS NULL OR a.branch_id = @branchId)
                   AND (@sectionId IS NULL OR a.section_id = @sectionId)
-                  AND (@search IS NULL OR m.full_name LIKE @search OR m.phone LIKE @search)
+                  AND (@search IS NULL OR m.full_name LIKE @search OR m.phone LIKE @search OR m.phone_normalized = @phoneSearch)
                 ORDER BY a.check_in_at DESC, a.id DESC;`;
     request.input('branchId', sql.Int, options.branchId == null ? null : Number(options.branchId));
     request.input('sectionId', sql.Int, options.sectionId == null ? null : Number(options.sectionId));

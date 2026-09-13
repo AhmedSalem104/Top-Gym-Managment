@@ -1036,6 +1036,43 @@ body .swal2-popup.qr-member-preview-alert .swal2-actions > button.qr-member-prev
   padding-inline-end: 14px;
 }
 
+.attendance-search-wrap .search-clear-button {
+  position: absolute;
+  top: 50%;
+  inset-inline-start: 38px;
+  display: inline-grid;
+  width: 24px;
+  height: 24px;
+  place-items: center;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-muted);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+  transform: translateY(-50%);
+}
+
+.attendance-search-wrap .search-clear-button:hover {
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+
+.attendance-search-wrap .search-clear-button:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.attendance-section .attendance-search-wrap > input:not([type="checkbox"]):not([type="radio"]) {
+  padding-inline-start: 70px;
+}
+
+.attendance-search-wrap input::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
 .attendance-summary-card strong {
   display: block !important;
   visibility: visible !important;
@@ -1101,5 +1138,356 @@ body .swal2-popup.qr-member-preview-alert .swal2-actions > button.qr-member-prev
 
   .attendance-report-hint {
     max-width: 30ch;
+  }
+}
+
+/* Compact workspace pass -------------------------------------------------
+   Keep the existing attendance DOM, IDs and action contracts intact while
+   letting the operational controls and today's record use the viewport
+   efficiently. The table keeps its intentional horizontal scroll on narrow
+   screens; only the surrounding workspace is tightened. */
+.attendance-section {
+  gap: var(--space-3);
+}
+
+.attendance-header {
+  gap: var(--space-4);
+}
+
+.attendance-heading {
+  gap: var(--space-3);
+}
+
+.attendance-heading > div {
+  gap: 2px;
+}
+
+.attendance-heading h3 {
+  font-size: clamp(var(--font-lg), 2vw, var(--font-xl));
+  line-height: 1.3;
+}
+
+.attendance-heading p {
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.attendance-header-actions {
+  gap: var(--space-2);
+}
+
+.attendance-date-badge,
+.attendance-mode-actions .btn {
+  min-height: 36px;
+}
+
+.attendance-date-badge {
+  padding-inline: var(--space-3);
+  font-size: var(--font-xs);
+}
+
+.attendance-mode-actions {
+  gap: var(--space-2);
+}
+
+.attendance-report-hint {
+  max-width: 22ch;
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.attendance-control-panel {
+  grid-template-columns: minmax(0, 1.28fr) minmax(300px, .92fr);
+  gap: var(--space-3);
+}
+
+.attendance-entry-card {
+  gap: var(--space-3);
+  padding: var(--space-4);
+}
+
+.attendance-entry-head {
+  gap: var(--space-3);
+}
+
+.attendance-entry-head h4,
+.attendance-list-head h4 {
+  font-size: var(--font-md);
+  line-height: 1.35;
+}
+
+.attendance-entry-head p,
+.attendance-list-head p {
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.attendance-segmented-control > button {
+  min-height: 36px;
+  padding-inline: var(--space-3);
+  font-size: var(--font-xs);
+}
+
+.attendance-input-row {
+  gap: var(--space-2);
+}
+
+.attendance-section .attendance-input-wrap > input:not([type="checkbox"]):not([type="radio"]) {
+  min-height: 44px;
+}
+
+.attendance-action-buttons {
+  gap: var(--space-2);
+}
+
+.attendance-action-buttons > .btn {
+  min-width: 132px;
+  min-height: 44px;
+  box-shadow: none;
+}
+
+.attendance-member-preview {
+  padding: var(--space-3);
+}
+
+.attendance-entry-hint {
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.attendance-summary {
+  gap: var(--space-2);
+  align-self: start;
+  grid-auto-rows: min-content;
+}
+
+.attendance-summary-card {
+  min-height: 104px;
+  gap: 3px;
+  padding: var(--space-3) var(--space-2);
+  box-shadow: var(--shadow-xs);
+}
+
+.attendance-summary-card::after {
+  inset-block-start: 8px;
+  inset-inline-end: 8px;
+}
+
+.summary-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+}
+
+.summary-icon .ui-icon {
+  width: 17px;
+  height: 17px;
+}
+
+.attendance-summary-card strong {
+  min-height: 0;
+  font-size: 1.7rem !important;
+  line-height: 1.05;
+}
+
+.attendance-summary-card > span:last-child {
+  font-size: 10px;
+}
+
+.attendance-list-head {
+  margin-top: var(--space-2);
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+}
+
+.attendance-list-actions {
+  gap: var(--space-2);
+}
+
+.attendance-search-wrap {
+  min-width: 220px;
+}
+
+.attendance-section .attendance-search-wrap > input:not([type="checkbox"]):not([type="radio"]),
+.attendance-status-filter,
+.attendance-list-actions > .btn {
+  min-height: 42px;
+}
+
+.attendance-table th,
+.attendance-table td {
+  padding: 10px 12px;
+}
+
+.attendance-table-wrap:has(.attendance-empty),
+.attendance-empty {
+  min-height: 112px;
+}
+
+.attendance-empty {
+  padding: var(--space-5) var(--space-4);
+}
+
+.attendance-list-head + .attendance-table-wrap {
+  margin-top: calc(-1 * var(--space-3));
+}
+
+@media (min-width: 768px) {
+  .attendance-list-head {
+    display: grid;
+    grid-template-columns: minmax(150px, .7fr) minmax(0, 2.3fr);
+    align-items: center;
+  }
+
+  .attendance-list-actions {
+    width: 100%;
+    min-width: 0;
+    flex: 1 1 auto;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+  }
+
+  .attendance-list-actions .attendance-search-wrap {
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+
+  .attendance-list-actions .attendance-status-filter {
+    flex: 0 0 150px;
+  }
+
+  .attendance-list-actions > .btn {
+    flex: 0 0 auto;
+  }
+}
+
+@media (max-width: 1199px) and (min-width: 992px) {
+  .attendance-control-panel {
+    grid-template-columns: minmax(0, 1.15fr) minmax(280px, .85fr);
+  }
+
+  .attendance-action-buttons > .btn {
+    min-width: 118px;
+    padding-inline: var(--space-3);
+  }
+
+  .attendance-list-actions {
+    flex: 1 1 100%;
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 991px) {
+  .attendance-control-panel {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 767px) {
+  .attendance-section {
+    gap: var(--space-3);
+  }
+
+  .attendance-header {
+    gap: var(--space-3);
+  }
+
+  .attendance-heading p {
+    max-width: 34ch;
+  }
+
+  .attendance-control-panel {
+    grid-template-columns: 1fr;
+    gap: var(--space-3);
+  }
+
+  .attendance-entry-card {
+    gap: var(--space-3);
+    padding: var(--space-3);
+  }
+
+  .attendance-entry-head {
+    gap: var(--space-2);
+  }
+
+  .attendance-entry-mode,
+  .attendance-segmented-control {
+    width: 100%;
+  }
+
+  .attendance-input-row {
+    gap: var(--space-2);
+  }
+
+  .attendance-action-buttons > .btn {
+    min-width: 0;
+    min-height: 42px;
+  }
+
+  .attendance-summary-card {
+    min-height: 92px;
+    padding: var(--space-2);
+  }
+
+  .summary-icon {
+    width: 28px;
+    height: 28px;
+  }
+
+  .summary-icon .ui-icon {
+    width: 15px;
+    height: 15px;
+  }
+
+  .attendance-summary-card strong {
+    font-size: 1.45rem !important;
+  }
+
+  .attendance-list-head {
+    gap: var(--space-2);
+    padding: var(--space-3);
+  }
+
+  .attendance-list-actions {
+    gap: var(--space-2);
+  }
+
+  .attendance-search-wrap {
+    min-width: 0;
+  }
+}
+
+@media (max-width: 360px) {
+  .attendance-section .phone-input-control[data-phone-control] {
+    grid-template-columns: minmax(5.8rem, 5.9rem) minmax(0, 1fr);
+    column-gap: var(--space-1);
+  }
+
+  .attendance-section .phone-number-icon {
+    flex-basis: 1.65rem;
+    width: 1.65rem;
+    min-width: 1.65rem;
+  }
+
+  .attendance-section .phone-number-icon svg {
+    width: 1rem;
+    height: 1rem;
+  }
+
+  .attendance-section .phone-number-control > input[data-phone-input] {
+    padding-inline: var(--space-1);
+    font-size: 0.75rem;
+  }
+
+  .attendance-section .phone-number-control > input[data-phone-input]::placeholder {
+    letter-spacing: 0;
+  }
+
+  .attendance-summary-card > span:last-child {
+    font-size: 9px;
+  }
+
+  .attendance-summary-card strong {
+    font-size: 1.3rem !important;
   }
 }

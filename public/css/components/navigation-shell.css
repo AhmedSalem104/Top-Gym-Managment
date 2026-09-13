@@ -34,8 +34,10 @@
 }
 
 .top-gym-navigation-pending .page-tabs {
-  opacity: .86;
-  transition: opacity 160ms ease;
+  /* Keep the first authenticated shell crisp while optional route code is
+     loading; pending state is handled by the route loader itself. */
+  opacity: 1;
+  transition: none;
 }
 
 .app-shell > .topbar {

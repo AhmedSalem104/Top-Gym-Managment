@@ -30,11 +30,11 @@ body.auth-pending::before {
 
 .top-gym-navigation-pending .page {
   /* Navigation requests already have a token/idempotency guard in
-     page-tabs.js. Do not disable the whole application while an optional
-     feature script is loading: a delayed script must never make every
-     control appear dead. Keep only a subtle visual pending signal. */
-  opacity: .86;
-  transition: opacity 160ms ease;
+     page-tabs.js. Do not dim the whole application while the first
+     authenticated route is settling: that transient opacity made the
+     post-login shell look visually broken even though it was usable. */
+  opacity: 1;
+  transition: none;
 }
 
 /* Dashboard analytics is dashboard-only. Keep this invariant in the layout

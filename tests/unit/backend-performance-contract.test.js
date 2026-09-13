@@ -52,6 +52,15 @@ test('member repository keeps the reusable CTE scoped to the following statement
     assert.match(source, /\.query\(`\$\{MEMBER_CTE\}[\s\S]*?FROM member_rows[\s\S]*?WHERE id = @id/u);
 });
 
+test('today attendance search also matches the centralized canonical phone value', () => {
+    const service = read('src/services/attendance-service.js');
+    assert.match(service, /FALLBACK_COUNTRY/u);
+    assert.match(service, /normalizePhoneForSearch\(search/u);
+    assert.match(service, /\.input\('phoneSearch', sql\.NVarChar\(30\), phoneSearch\)/u);
+    assert.match(service, /m\.phone_normalized = @phoneSearch/u);
+    assert.match(service, /a\.attendance_date = @attendanceDate/u);
+});
+
 test('member list includes profile-only members without manufacturing a subscription', () => {
     const source = read('src/repositories/member.repository.js');
     const listStart = source.indexOf('async function list(');

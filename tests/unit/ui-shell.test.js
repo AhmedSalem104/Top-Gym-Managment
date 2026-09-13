@@ -5,11 +5,12 @@ const test = require('node:test');
 
 const root = path.resolve(__dirname, '..', '..');
 
-test('navigation pending state keeps the Gym App controls interactive', () => {
+test('navigation pending state keeps the first authenticated shell crisp and interactive', () => {
     const source = fs.readFileSync(path.join(root, 'public/css/layout.css'), 'utf8');
-    const pendingBlock = source.match(/\.top-gym-navigation-pending[\s\S]*?transition: opacity 160ms ease;/u)?.[0] || '';
+    const pendingBlock = source.match(/\.top-gym-navigation-pending[\s\S]*?transition: none;/u)?.[0] || '';
 
-    assert.match(pendingBlock, /opacity:\s*\.86/u);
+    assert.match(pendingBlock, /opacity:\s*1/u);
+    assert.match(pendingBlock, /transition:\s*none/u);
     assert.doesNotMatch(pendingBlock, /pointer-events:\s*none/u);
 });
 
