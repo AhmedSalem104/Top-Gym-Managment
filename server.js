@@ -315,6 +315,10 @@ app.get('/', asyncRoute(async (request, response, next) => {
     if (normalizedTenantType(user) === 'independent_trainer' && !user.mustChangePassword) {
         return response.redirect('/trainer-workspace');
     }
+    // Keep the unauthenticated critical path small. The full index contains
+    // the authenticated shell, feature markup and dialog DOM; it is only
+    // needed after the session has been established.
+    if (!user) return response.sendFile(path.join(publicDirectory, 'login.html'));
     return next();
 }));
 
@@ -353,9 +357,20 @@ app.get(['/change-password', '/change-password/'], asyncRoute(async (request, re
     response.sendFile(path.join(publicDirectory, 'change-password.html'));
 }));
 
-app.get('*', (request, response) => {
+app.get('*', asyncRoute(async (request, response) => {
+    // Deep links are protected HTML entry points too. Do not make an
+    // anonymous visitor download the authenticated shell just because the
+    // requested route is not handled by a dedicated server route.
+    const user = await authService.getSessionUser(authService.readSessionCookie(request), { includePermissions: false, readOnly: isReadOnlyRequest(request) });
+    if (!user) {
+        response.set({
+            'Cache-Control': 'no-store, no-cache, must-revalidate, private',
+            'X-Auth-Routing-Version': 'forced-password-v3'
+        });
+        return response.sendFile(path.join(publicDirectory, 'login.html'));
+    }
     response.sendFile(path.join(publicDirectory, 'index.html'));
-});
+}));
 
 app.use((error, request, response, next) => {
     const statusCode = Number.isInteger(error.statusCode) ? error.statusCode : 500;
