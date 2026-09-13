@@ -87,6 +87,12 @@
                 ...(feature.dialogs || []).map(({ source, ids }) => dialogLoader.load(source, ids))
             ]);
             await Promise.all((feature.scripts || []).map((source) => loadScript(source)));
+            if (name === 'phone-inputs') {
+                await Promise.all([
+                    Promise.resolve(window.LogicFitPhoneInputs?.loadCatalog?.()).catch(() => null),
+                    window.LogicFitPhoneInputs?.loadFormatter?.()
+                ]);
+            }
         })();
         featurePromises.set(name, promise);
         try {
@@ -133,7 +139,8 @@
                 window.__topGymDashboardAnalyticsScheduled = false;
                 return;
             }
-            loadScript('/js/pages/dashboard/analytics.js?v=8', 'dashboard-analytics')
+            await ensureTab('phone-inputs');
+            await loadScript('/js/pages/dashboard/analytics.js?v=8', 'dashboard-analytics')
                 .catch((error) => console.warn('[TOP GYM] Dashboard analytics failed to load.', error));
         };
         scheduleIdle(() => void start(), immediate ? 700 : 1600);

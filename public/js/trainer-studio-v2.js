@@ -7,6 +7,7 @@
     const $ = (selector, root = document) => root.querySelector(selector);
     const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
     const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]));
+    const displayPhone = (value, iso = '') => window.LogicFitPhoneInputs?.formatForDisplay?.(value, iso) || String(value || '');
     const formatNumber = (value) => Number(value || 0).toLocaleString('ar-EG');
     const formatMoney = (value) => `${Number(value || 0).toLocaleString('ar-EG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ج.م`;
     const formatDate = (value, withTime = false) => {
@@ -499,7 +500,7 @@
         try {
             const payload = await api('/api/trainer/clients?page=1&pageSize=100');
             const clients = Array.isArray(payload.clients) ? payload.clients : [];
-            renderListPage('portal', 'دخول بوابة العملاء', clients, (item) => `<article class="trainer-studio-data-row"><div class="trainer-studio-row-icon">${icon('users')}</div><div class="trainer-studio-row-main"><strong>${escapeHtml(item.fullName)}</strong><span>${item.email ? escapeHtml(item.email) : escapeHtml(item.phone || 'لا توجد وسيلة تواصل')}</span></div><span class="trainer-studio-portal-note">يُصدر من ملف العميل</span></article>`, 'أضف عميلًا أولًا لإصدار دخول البوابة.');
+            renderListPage('portal', 'دخول بوابة العملاء', clients, (item) => `<article class="trainer-studio-data-row"><div class="trainer-studio-row-icon">${icon('users')}</div><div class="trainer-studio-row-main"><strong>${escapeHtml(item.fullName)}</strong><span>${item.email ? escapeHtml(item.email) : escapeHtml(item.phone ? displayPhone(item.phone, item.phoneCountry) : 'لا توجد وسيلة تواصل')}</span></div><span class="trainer-studio-portal-note">يُصدر من ملف العميل</span></article>`, 'أضف عميلًا أولًا لإصدار دخول البوابة.');
         } catch (error) { dynamic.innerHTML = pageFrame('portal', errorState(error.message)); }
     }
 

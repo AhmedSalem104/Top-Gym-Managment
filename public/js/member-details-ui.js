@@ -135,6 +135,10 @@
     return section;
   }
 
+  function displayPhone(value, iso = '') {
+    return window.LogicFitPhoneInputs?.formatForDisplay?.(value, iso) || String(value || '');
+  }
+
   function updateHeader(member, details) {
     const subscription = resolveSubscription(member, details);
     const avatar = document.getElementById('detailsAvatar');
@@ -145,7 +149,10 @@
     const bannerTitle = document.getElementById('detailsExpiryTitle');
     const bannerText = document.getElementById('detailsExpiryText');
     if (avatar) avatar.textContent = initials(member?.fullName);
-    if (subtitle) subtitle.textContent = `${member?.phone || '—'}${member?.email ? ` · ${member.email}` : ''}`;
+    if (subtitle) {
+      const formattedPhone = displayPhone(member?.phone, member?.phoneCountry) || '—';
+      subtitle.textContent = `${formattedPhone}${member?.email ? ` · ${member.email}` : ''}`;
+    }
     if (registration) registration.textContent = `تاريخ التسجيل: ${dateText(member?.registrationDate)}`;
     if (badge) badge.textContent = 'عضو';
     if (!banner) return;

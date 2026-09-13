@@ -13,6 +13,10 @@
         return String(value ?? '').replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[character]));
     }
 
+    function displayPhone(value, iso = '') {
+        return window.LogicFitPhoneInputs?.formatForDisplay?.(value, iso) || String(value || '');
+    }
+
     function todayIso() {
         const now = new Date();
         return new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
@@ -228,13 +232,17 @@
         return String(item?.visitorName || '').trim() || 'زائر';
     }
 
-    function recordPhone(item) {
+    function recordPhoneValue(item) {
         return String(item?.visitorPhoneNormalized || item?.visitorPhone || '').trim();
+    }
+
+    function recordPhone(item) {
+        return displayPhone(recordPhoneValue(item), item?.visitorPhoneCountry || item?.phoneCountry || '');
     }
 
     function renderRecordActions(item, { compact = true } = {}) {
         const owner = window.topGymAuth?.isOwner?.() === true;
-        const phone = recordPhone(item);
+        const phone = recordPhoneValue(item);
         const permissionByAction = { whatsapp: 'day_passes.whatsapp', edit: 'day_passes.update', delete: 'day_passes.delete', void: 'day_passes.delete' };
         const iconButton = (action, label, icon, extra = '') => `<button type="button" class="btn btn-light btn-small day-pass-action-button ${compact ? 'is-compact' : ''} ${extra}" data-day-pass-${action}="${item.id}" data-required-permission="${permissionByAction[action] || 'day_passes.read'}" title="${label}" aria-label="${label}">${icon}${compact ? '' : `<span>${label}</span>`}</button>`;
         const whatsapp = phone
@@ -366,7 +374,7 @@
         showDayPassDialog();
         state.editingId = String(id);
         $('dayPassVisitorName').value = recordDisplayName(sale) === 'زائر' ? '' : recordDisplayName(sale);
-        $('dayPassVisitorPhone').value = sale.visitorPhone || '';
+        window.LogicFitPhoneInputs?.setValue?.($('dayPassVisitorPhone'), sale.visitorPhoneNational || sale.visitorPhone || '', sale.visitorPhoneCountry || sale.phoneCountry || '');
         $('dayPassType').value = sale.passTypeCode || '';
         $('dayPassPaymentMethod').value = sale.paymentMethod || 'cash';
         $('dayPassSendWhatsApp').checked = false;

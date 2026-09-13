@@ -14,6 +14,7 @@
     function number(value) { return Number(value || 0).toLocaleString('ar-EG'); }
     function money(value) { return `${Number(value || 0).toLocaleString('ar-EG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ج.م`; }
     function escapeHtml(value) { return String(value ?? '').replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[character])); }
+    function displayPhone(value, iso = '') { return window.LogicFitPhoneInputs?.formatForDisplay?.(value, iso) || String(value || ''); }
 
     function formatDate(value, options = { dateStyle: 'medium' }) {
         if (!value) return '—';
@@ -288,7 +289,7 @@
                 const meta = inactive
                     ? (item.daysSinceLastVisit === null ? 'بحاجة إلى أول زيارة' : `منذ ${number(item.daysSinceLastVisit)} يوم`)
                     : `${number(item.visits)} زيارة`;
-                return `<div class="attendance-member-row"><div class="attendance-member-copy"><strong>${escapeHtml(item.fullName || '—')}</strong><small>${escapeHtml(secondary)} · ${escapeHtml(item.phone || '—')}</small></div><span class="attendance-member-stat">${escapeHtml(meta)}</span></div>`;
+                return `<div class="attendance-member-row"><div class="attendance-member-copy"><strong>${escapeHtml(item.fullName || '—')}</strong><small>${escapeHtml(secondary)} · ${escapeHtml(displayPhone(item.phone, item.phoneCountry) || '—')}</small></div><span class="attendance-member-stat">${escapeHtml(meta)}</span></div>`;
             }).join('');
         };
         renderMembers('attendanceTopMembers', (attendance.topMembers || []).slice(0, 5));

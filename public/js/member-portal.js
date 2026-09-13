@@ -36,6 +36,7 @@
   const trainerOverviewContent = $('portalTrainerOverviewContent');
   let portalMembershipCode = '';
   let portalReportMeta = '';
+  let portalDisplayMember = null;
   let libraryLoaderPromise = null;
   let activePortalView = 'home';
   let occupancyRefreshTimer = null;
@@ -54,6 +55,13 @@
   });
 
   const escapeHtml = (value) => String(value ?? '').replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[character]));
+  const displayPhone = (value, iso = '') => window.LogicFitPhoneInputs?.formatForDisplay?.(value, iso) || String(value || '');
+  const refreshPortalPhoneDisplay = () => {
+    const formatted = displayPhone(portalDisplayMember?.phone, portalDisplayMember?.phoneCountry) || '—';
+    document.querySelectorAll('[data-portal-phone-display]').forEach((element) => { element.textContent = formatted; });
+  };
+  window.addEventListener('logicfit:phone-formatter-ready', refreshPortalPhoneDisplay);
+  window.addEventListener('logicfit:phone-catalog-ready', refreshPortalPhoneDisplay);
   const number = (value) => Number.isFinite(Number(value)) ? Number(value) : 0;
   const money = (value) => `${number(value).toLocaleString('ar-EG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ج.م`;
   const dateText = (value) => {
@@ -293,6 +301,7 @@
 
   function renderTrainerPortal(data) {
     const member = data.member || {};
+    portalDisplayMember = member;
     const coaching = data.coaching || {};
     const packages = Array.isArray(data.packagePurchases) ? data.packagePurchases : [];
     const sessions = Array.isArray(data.sessions) ? data.sessions : [];
@@ -315,13 +324,14 @@
     if (trainerOverview) trainerOverview.hidden = false;
     if (trainerOverviewContent) {
       trainerOverviewContent.innerHTML = `
-        <section class="portal-trainer-identity"><div><span class="portal-section-kicker">CLIENT PROFILE</span><h4>${escapeHtml(member.fullName || '—')}</h4><p class="portal-ltr">${escapeHtml(member.phone || '—')}</p></div><span class="portal-trainer-mode">تدريب شخصي</span></section>
+        <section class="portal-trainer-identity"><div><span class="portal-section-kicker">CLIENT PROFILE</span><h4>${escapeHtml(member.fullName || '—')}</h4><p class="portal-ltr" data-portal-phone-display>${escapeHtml(displayPhone(member.phone, member.phoneCountry) || '—')}</p></div><span class="portal-trainer-mode">تدريب شخصي</span></section>
         <div class="portal-stat-grid portal-trainer-stats" aria-label="ملخص مساحة العميل"><article class="portal-stat"><span>خطط التدريب</span><strong>${number(plans.length).toLocaleString('ar-EG')}</strong><small>الخطط المتاحة لك</small></article><article class="portal-stat"><span>خطط التغذية</span><strong>${number(nutritionPlans.length).toLocaleString('ar-EG')}</strong><small>الخطط المتاحة لك</small></article><article class="portal-stat"><span>الجلسات القادمة</span><strong>${number(upcomingSessions.length).toLocaleString('ar-EG')}</strong><small>مواعيد مجدولة</small></article><article class="portal-stat"><span>الجلسات المتبقية</span><strong>${number(remainingSessions).toLocaleString('ar-EG')}</strong><small>ضمن الباقات الحالية</small></article></div>
         ${table('خطط التدريب', ['الخطة', 'الفترة', 'الحالة'], plans.map((item) => `<tr>${tableCell('الخطة', escapeHtml(item.name || '—'))}${tableCell('الفترة', `${dateText(item.startDate)}<br>حتى ${dateText(item.endDate)}`, 'portal-ltr')}${tableCell('الحالة', escapeHtml(item.status || '—'))}</tr>`), 'لا توجد خطط تدريب متاحة.', 'portal-trainer-history')}
         ${table('خطط التغذية', ['الخطة', 'الفترة', 'الحالة'], nutritionPlans.map((item) => `<tr>${tableCell('الخطة', escapeHtml(item.name || '—'))}${tableCell('الفترة', `${dateText(item.startDate)}<br>حتى ${dateText(item.endDate)}`, 'portal-ltr')}${tableCell('الحالة', escapeHtml(item.status || '—'))}</tr>`), 'لا توجد خطط تغذية متاحة.', 'portal-trainer-history')}
         ${table('الجلسات القادمة', ['الموعد', 'الحالة', 'ملاحظات'], upcomingSessions.map((item) => `<tr>${tableCell('الموعد', dateTimeText(item.scheduledStart), 'portal-ltr')}${tableCell('الحالة', escapeHtml(item.status === 'scheduled' ? 'مجدولة' : item.status || '—'))}${tableCell('ملاحظات', escapeHtml(item.notes || '—'))}</tr>`), 'لا توجد جلسات قادمة.', 'portal-trainer-history')}`;
     }
     window.topGymSkeleton?.ready(trainerOverviewContent);
+    refreshPortalPhoneDisplay();
     portalReportMeta = `ملف العميل: ${member.fullName || '—'} · تاريخ الإصدار: ${dateTimeText(data.issuedAt)}`;
     resetFeedback();
     setPortalView('home');
@@ -337,6 +347,7 @@
     if (trainerTool) trainerTool.hidden = false;
     if (trainerOverview) trainerOverview.hidden = true;
     const member = data.member || {};
+    portalDisplayMember = member;
     const current = data.currentMembership || {};
     const status = current.status || 'expired';
     const hasExistingMembership = Boolean(current.id && status !== 'cancelled');
@@ -365,7 +376,7 @@
     const tenantName = String(data.tenant?.name || brandName()).trim() || brandName();
     reportContent.innerHTML = `
       <section class="portal-member-identity">
-        <div class="portal-member-primary"><span class="portal-member-avatar" aria-hidden="true">${escapeHtml(initials(member.fullName))}</span><div class="portal-member-copy"><h3>${escapeHtml(member.fullName || '—')}</h3><p class="portal-member-contact"><span>الهاتف</span><b class="portal-ltr">${escapeHtml(member.phone || '—')}</b></p><p class="portal-member-contact"><span>البريد الإلكتروني</span><b>${escapeHtml(member.email || '—')}</b></p></div></div>
+        <div class="portal-member-primary"><span class="portal-member-avatar" aria-hidden="true">${escapeHtml(initials(member.fullName))}</span><div class="portal-member-copy"><h3>${escapeHtml(member.fullName || '—')}</h3><p class="portal-member-contact"><span>الهاتف</span><b class="portal-ltr" data-portal-phone-display>${escapeHtml(displayPhone(member.phone, member.phoneCountry) || '—')}</b></p><p class="portal-member-contact"><span>البريد الإلكتروني</span><b>${escapeHtml(member.email || '—')}</b></p></div></div>
         <div class="portal-member-status-block"><span>حالة العضوية</span><span class="portal-status ${escapeHtml(status)}">${escapeHtml(statusLabel(status))}</span></div>
       </section>
       <section class="portal-membership-overview" aria-labelledby="portalMembershipOverviewTitle">
@@ -378,6 +389,7 @@
       ${table('سجل الحضور والزيارات', ['التاريخ', 'الحضور', 'الانصراف', 'المدة'], attendanceRows, 'لا توجد زيارات مسجلة.', 'portal-attendance-history')}
       ${freezeRows.length ? table('حالات التجميد أو الإيقاف', ['البداية', 'النهاية', 'الاستئناف', 'المدة'], freezeRows, 'لا توجد حالات تجميد.', 'portal-freeze-history') : ''}`;
     portalReportMeta = `رقم التقرير: ${data.reportNumber || '—'} · تاريخ الإصدار: ${dateTimeText(data.issuedAt)}`;
+    refreshPortalPhoneDisplay();
     resetFeedback();
     setPortalView('home');
   }

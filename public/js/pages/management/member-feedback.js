@@ -20,6 +20,7 @@
     const typeLabel = (value) => value === 'feature_request' ? `إضافة يحتاجها ${brandName()}` : typeLabels[value] || value || '—';
 
     const escapeHtml = (value) => String(value ?? '').replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[character]));
+    const displayPhone = (value, iso = '') => window.LogicFitPhoneInputs?.formatForDisplay?.(value, iso) || String(value || '');
     const formatNumber = (value) => Number(value || 0).toLocaleString('ar-EG');
     const formatDateTime = (value) => {
         if (!value) return '—';
@@ -51,7 +52,7 @@
             return;
         }
         const rows = items.map((item) => `<tr>
-            <td><div class="feedback-member-cell"><strong>${escapeHtml(item.memberName || '—')}</strong><span class="feedback-phone" dir="ltr">${escapeHtml(item.phone || '—')}</span></div></td>
+            <td><div class="feedback-member-cell"><strong>${escapeHtml(item.memberName || '—')}</strong><span class="feedback-phone" dir="ltr">${escapeHtml(displayPhone(item.phone, item.phoneCountry) || '—')}</span></div></td>
             <td>${stars(item.rating)}</td>
             <td><span class="feedback-type feedback-type-${escapeHtml(item.noteType)}">${escapeHtml(typeLabel(item.noteType))}</span></td>
             <td><p class="feedback-message-cell">${escapeHtml(item.message)}</p></td>

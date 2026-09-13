@@ -19,6 +19,7 @@
     const can = (permission) => window.topGymAuth?.isOwner?.() || window.topGymAuth?.hasPermission?.(permission);
     const canCreateSale = () => Boolean(can('store.sales.create'));
     const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[character]));
+    const displayPhone = (value, iso = '') => window.LogicFitPhoneInputs?.formatForDisplay?.(value, iso) || String(value || '');
     const money = (value) => `${Number(value || 0).toLocaleString('ar-EG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ج.م`;
     const paymentLabels = { cash: 'نقدي', card: 'بطاقة', transfer: 'تحويل', wallet: 'محفظة', other: 'أخرى' };
     const today = () => new Date().toISOString().slice(0, 10);
@@ -115,7 +116,7 @@
         $('storeCustomerResults').hidden = true;
         $('storeCustomerSearch').value = '';
         $('storeSelectedCustomer').hidden = false;
-        $('storeSelectedCustomer').innerHTML = `<span><strong>${esc(customer.name)}</strong><br><small dir="ltr">${esc(customer.phone || 'بدون هاتف')}</small></span><button type="button" class="store-cart-remove" data-store-clear-customer aria-label="إزالة العميل">×</button>`;
+        $('storeSelectedCustomer').innerHTML = `<span><strong>${esc(customer.name)}</strong><br><small dir="ltr">${esc(displayPhone(customer.phone, customer.phoneCountry) || 'بدون هاتف')}</small></span><button type="button" class="store-cart-remove" data-store-clear-customer aria-label="إزالة العميل">×</button>`;
     }
 
     function renderTable(target, headers, rows, empty = 'لا توجد بيانات.') {
@@ -216,7 +217,7 @@
     async function loadSuppliers() {
         state.suppliers = await api.request('/api/store/suppliers');
         renderSupplierOptions();
-        const rows = state.suppliers.map((item) => `<tr><td>${esc(item.name)}</td><td dir="ltr">${esc(item.phone || '—')}</td><td dir="ltr">${esc(item.email || '—')}</td><td>${item.active ? '<span class="store-status">نشط</span>' : '<span class="store-status danger">غير نشط</span>'}</td><td>${can('store.suppliers.manage') ? `<button class="btn btn-light btn-small" type="button" data-store-edit-supplier="${esc(item.id)}">تعديل</button>` : '—'}</td></tr>`);
+        const rows = state.suppliers.map((item) => `<tr><td>${esc(item.name)}</td><td dir="ltr">${esc(displayPhone(item.phone, item.phoneCountry) || '—')}</td><td dir="ltr">${esc(item.email || '—')}</td><td>${item.active ? '<span class="store-status">نشط</span>' : '<span class="store-status danger">غير نشط</span>'}</td><td>${can('store.suppliers.manage') ? `<button class="btn btn-light btn-small" type="button" data-store-edit-supplier="${esc(item.id)}">تعديل</button>` : '—'}</td></tr>`);
         renderTable('storeSuppliersTable', ['المورد', 'الهاتف', 'البريد', 'الحالة', 'الإجراء'], rows, 'لا يوجد موردون بعد.');
     }
 
@@ -243,7 +244,7 @@
             rows = (data.byCategory || []).map((item) => `<tr><td>${esc(item.name)}</td><td>${Number(item.quantity || 0).toLocaleString('ar-EG')}</td><td>${money(item.revenue)}</td>${profitVisible ? `<td>${money(item.cogs)}</td>` : ''}</tr>`);
         } else if (mode === 'customers') {
             headers = ['العميل', 'الهاتف', 'الفواتير', 'الإيراد'];
-            rows = (data.byCustomer || []).map((item) => `<tr><td>${esc(item.name)}</td><td dir="ltr">${esc(item.phone || '—')}</td><td>${Number(item.orders || 0).toLocaleString('ar-EG')}</td><td>${money(item.revenue)}</td></tr>`);
+            rows = (data.byCustomer || []).map((item) => `<tr><td>${esc(item.name)}</td><td dir="ltr">${esc(displayPhone(item.phone, item.phoneCountry) || '—')}</td><td>${Number(item.orders || 0).toLocaleString('ar-EG')}</td><td>${money(item.revenue)}</td></tr>`);
         } else if (mode === 'payments') {
             headers = ['طريقة الدفع', 'الفواتير', 'القيمة'];
             rows = (data.paymentMethods || []).map((item) => `<tr><td>${esc(paymentLabels[item.method] || item.method)}</td><td>${Number(item.orders || 0).toLocaleString('ar-EG')}</td><td>${money(item.amount)}</td></tr>`);
@@ -345,7 +346,7 @@
         if (term.length < 2) { results.hidden = true; return; }
         try {
             const data = await api.request(`/api/store/customers/search?search=${encodeURIComponent(term)}`);
-            results.innerHTML = (data.customers || []).map((customer) => `<button type="button" class="store-customer-result" data-store-customer="${esc(customer.id)}"><span><strong>${esc(customer.name)}</strong><br><small dir="ltr">${esc(customer.phone || 'بدون هاتف')}</small></span><span>${esc(customer.membershipPlan || '')}</span></button>`).join('') || '<div class="empty">لا توجد نتائج.</div>';
+            results.innerHTML = (data.customers || []).map((customer) => `<button type="button" class="store-customer-result" data-store-customer="${esc(customer.id)}"><span><strong>${esc(customer.name)}</strong><br><small dir="ltr">${esc(displayPhone(customer.phone, customer.phoneCountry) || 'بدون هاتف')}</small></span><span>${esc(customer.membershipPlan || '')}</span></button>`).join('') || '<div class="empty">لا توجد نتائج.</div>';
             results.hidden = false;
             results._customers = data.customers || [];
         } catch (error) { notify(error.message || 'تعذر البحث عن العميل.', 'error'); }

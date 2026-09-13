@@ -87,7 +87,7 @@ test('phone input blocks invalid length/format before registration request', asy
     await phone.fill('0101234abc');
     await phone.blur();
     await expect(error).toBeVisible();
-    await expect(phone).toHaveValue('010123');
+    await expect(phone).toHaveValue('010 123');
 
     await phone.fill('');
     await phone.pressSequentially('abc');
@@ -109,7 +109,7 @@ test('phone input blocks invalid length/format before registration request', asy
     await expect(phone).not.toHaveAttribute('aria-invalid', 'true');
     await expect(phone).toHaveAttribute('data-phone-maximum-digits', '10');
     await phone.pressSequentially('9');
-    await expect(phone).toHaveValue('1012345678');
+    await expect(phone).toHaveValue('010 12345678');
     await expect(error).toBeVisible();
     await expect(error).toContainText('10');
     await phone.fill('01012345678');

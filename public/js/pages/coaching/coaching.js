@@ -45,6 +45,25 @@
         return String(value ?? '').replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[character]));
     }
 
+    function displayPhone(value, iso = '') {
+        return window.LogicFitPhoneInputs?.formatForDisplay?.(value, iso) || String(value || '');
+    }
+
+    function refreshCoachingPhoneDisplays(member = state.profile?.member) {
+        const formatted = displayPhone(member?.phone, member?.phoneCountry);
+        if (member && formatted) {
+            const contact = `${formatted}${member.email ? ` · ${member.email}` : ''}`;
+            const subtitle = $('coachingProfileSubtitle');
+            if (subtitle) subtitle.textContent = contact;
+            const heroPhone = $('coachingProfileContent')?.querySelector('.profile-hero > div:nth-child(2) > span');
+            if (heroPhone) heroPhone.textContent = contact;
+        }
+        document.querySelectorAll('#externalTraineesList a[href^="tel:"]').forEach((link) => {
+            const phone = link.getAttribute('href')?.slice(4) || link.textContent;
+            link.textContent = displayPhone(phone);
+        });
+    }
+
     function number(value, digits = 1) {
         const parsed = Number(value);
         return Number.isFinite(parsed) ? parsed.toLocaleString('ar-EG', { maximumFractionDigits: digits }) : '—';
@@ -378,7 +397,7 @@
                 ...(trainee.dietPlans || []).map((plan) => systemCard(plan, 'diet'))
             ].join('');
             return `<tr data-trainee-id="${trainee.id}">
-            <td class="trainee-cell"><div class="external-trainee-primary"><div class="trainee-avatar">${escapeHtml((trainee.fullName || 'م').trim().slice(0, 1))}</div><div><strong title="${escapeHtml(trainee.fullName)}">${escapeHtml(trainee.fullName)}</strong><a href="tel:${escapeHtml(trainee.phone)}" dir="ltr">${escapeHtml(trainee.phone)}</a>${trainee.email ? `<small title="${escapeHtml(trainee.email)}" dir="ltr">${escapeHtml(trainee.email)}</small>` : ''}</div></div></td>
+            <td class="trainee-cell"><div class="external-trainee-primary"><div class="trainee-avatar">${escapeHtml((trainee.fullName || 'م').trim().slice(0, 1))}</div><div><strong title="${escapeHtml(trainee.fullName)}">${escapeHtml(trainee.fullName)}</strong><a href="tel:${escapeHtml(trainee.phone)}" dir="ltr">${escapeHtml(displayPhone(trainee.phone, trainee.phoneCountry) || trainee.phone || '—')}</a>${trainee.email ? `<small title="${escapeHtml(trainee.email)}" dir="ltr">${escapeHtml(trainee.email)}</small>` : ''}</div></div></td>
             <td class="trainee-type-cell"><span class="trainee-badge">خارجي</span></td>
             <td class="trainee-systems-cell"><div class="external-trainee-systems"><div class="external-trainee-counts"><span class="external-trainee-count workout"><span class="external-trainee-count-icon">${coachingIcon('workout')}</span><b>${number(trainee.workoutCount, 0)}</b><span>تدريب</span></span><span class="external-trainee-count diet"><span class="external-trainee-count-icon">${coachingIcon('diet')}</span><b>${number(trainee.dietCount, 0)}</b><span>تغذية</span></span></div><div class="external-trainee-system-list">${systems || '<span class="external-trainee-no-diet">لا توجد أنظمة محفوظة</span>'}</div></div></td>
             <td class="trainee-measurements-cell"><div class="external-trainee-compact-metric">${coachingIcon('ruler')}<span><strong>${number(trainee.measurementCount, 0)}</strong><small>${Number(trainee.measurementCount || 0) > 0 ? 'قياس محفوظ' : 'لا توجد قياسات'}</small></span></div></td>
@@ -389,6 +408,7 @@
         container.innerHTML = `<div class="external-trainees-table-wrap"><table class="external-trainees-table"><thead><tr><th>المتدرب</th><th>النوع</th><th>الأنظمة</th><th>القياسات</th><th>آخر نشاط</th><th>الإجراءات</th></tr></thead><tbody>${rows}</tbody></table></div>`;
         enhanceTraineeActionMenus();
         activateCoachingSummary();
+        refreshCoachingPhoneDisplays();
     }
 
     function renderPagination() {
@@ -478,11 +498,11 @@
     function renderProfile(overview) {
         const member = overview.member;
         $('coachingProfileTitle').textContent = member.fullName;
-        $('coachingProfileSubtitle').textContent = `${member.phone}${member.email ? ` · ${member.email}` : ''}`;
+        $('coachingProfileSubtitle').textContent = `${displayPhone(member.phone, member.phoneCountry)}${member.email ? ` · ${member.email}` : ''}`;
         const workoutCards = (overview.workoutPrograms || []).map((program) => `<article class="profile-system-card"><div><span class="system-type workout">برنامج تدريب</span><strong>${escapeHtml(program.name)}</strong><small>${escapeHtml(program.goal || 'هدف غير محدد')} · ${escapeHtml(program.level || 'مستوى غير محدد')}</small></div><div><span class="system-status ${program.status}">${STATUS_LABELS[program.status] || program.status}</span><button class="btn btn-light btn-small" data-profile-action="edit-workout" data-id="${program.id}">تعديل</button></div></article>`).join('');
         const dietCards = (overview.dietPlans || []).map((plan) => `<article class="profile-system-card"><div><span class="system-type diet">خطة تغذية</span><strong>${escapeHtml(plan.name)}</strong><small>${number(plan.targetCalories, 0)} سعر · ${number(plan.mealCount, 0)} وجبات</small></div><div><span class="system-status ${plan.status}">${STATUS_LABELS[plan.status] || plan.status}</span><button class="btn btn-light btn-small" data-profile-action="edit-diet" data-id="${plan.id}">تعديل</button></div></article>`).join('');
         const measurements = (overview.measurements || []).slice(0, 6).map((item) => `<tr><td>${escapeHtml(item.measuredAt)}</td><td>${item.weightKg == null ? '—' : `${number(item.weightKg, 1)} كجم`}</td><td>${item.bodyFatPercent == null ? '—' : `${number(item.bodyFatPercent, 1)}%`}</td><td><button class="btn btn-light btn-small" data-measurement-action="edit" data-id="${item.id}">تعديل</button><button class="btn btn-danger btn-small" data-measurement-action="delete" data-id="${item.id}">حذف</button></td></tr>`).join('');
-        $('coachingProfileContent').innerHTML = `<div class="profile-hero"><div class="trainee-avatar large">${escapeHtml((member.fullName || 'م').trim().slice(0, 1))}</div><div><strong>${escapeHtml(member.fullName)}</strong><span>${escapeHtml(member.phone)}${member.email ? ` · ${escapeHtml(member.email)}` : ''}</span><small>ملف العميل #${member.id} · لا يوجد اشتراك Gym فعال حاليًا</small></div><button class="btn btn-primary btn-small" data-profile-action="subscribe">إضافة اشتراك Gym</button></div>
+        $('coachingProfileContent').innerHTML = `<div class="profile-hero"><div class="trainee-avatar large">${escapeHtml((member.fullName || 'م').trim().slice(0, 1))}</div><div><strong>${escapeHtml(member.fullName)}</strong><span>${escapeHtml(displayPhone(member.phone, member.phoneCountry) || '—')}${member.email ? ` · ${escapeHtml(member.email)}` : ''}</span><small>ملف العميل #${member.id} · لا يوجد اشتراك Gym فعال حاليًا</small></div><button class="btn btn-primary btn-small" data-profile-action="subscribe">إضافة اشتراك Gym</button></div>
             <div class="profile-stats"><article><span>الوزن الحالي</span><strong>${overview.progress.currentWeight == null ? '—' : `${number(overview.progress.currentWeight, 1)} كجم`}</strong></article><article><span>تغير الوزن</span><strong>${overview.progress.weightChange == null ? '—' : `${overview.progress.weightChange > 0 ? '+' : ''}${number(overview.progress.weightChange, 1)} كجم`}</strong></article><article><span>الجلسات المكتملة</span><strong>${number(overview.progress.completedSessions, 0)}</strong></article><article><span>تسجيلات الوجبات</span><strong>${number(overview.progress.mealLogCount, 0)}</strong></article></div>
             <div class="profile-actions"><button class="btn btn-primary" data-profile-action="new-workout">+ برنامج تدريب</button><button class="btn btn-light" data-profile-action="new-diet">+ خطة تغذية</button><button class="btn btn-light" data-profile-action="new-measurement">+ قياس جديد</button><button class="btn btn-light" data-profile-action="edit-client">تعديل البيانات الأساسية</button></div>
             <div class="profile-section"><div class="profile-section-head"><h4>الأنظمة الحالية</h4><span>${number((overview.workoutPrograms || []).length + (overview.dietPlans || []).length, 0)} نظام</span></div>${workoutCards || dietCards ? `${workoutCards}${dietCards}` : '<div class="profile-empty">لم يتم إنشاء نظام بعد.</div>'}</div>
@@ -505,8 +525,9 @@
 
     function renderProfileEnhanced(overview) {
         const member = overview.member;
+        queueMicrotask(() => refreshCoachingPhoneDisplays(member));
         $('coachingProfileTitle').textContent = member.fullName;
-        $('coachingProfileSubtitle').textContent = `${member.phone}${member.email ? ` · ${member.email}` : ''}`;
+        $('coachingProfileSubtitle').textContent = `${displayPhone(member.phone, member.phoneCountry)}${member.email ? ` · ${member.email}` : ''}`;
         const workouts = overview.workoutPrograms || [];
         const diets = overview.dietPlans || [];
         const sessions = overview.workoutSessions || [];
@@ -516,7 +537,7 @@
         const measurements = (overview.measurements || []).slice(0, 8).map((item) => `<tr><td>${escapeHtml(item.measuredAt)}</td><td>${item.weightKg == null ? '—' : `${number(item.weightKg, 1)} كجم`}</td><td>${item.bodyFatPercent == null ? '—' : `${number(item.bodyFatPercent, 1)}%`}</td><td><button class="btn btn-light btn-small" data-measurement-action="edit" data-id="${item.id}">تعديل</button><button class="btn btn-danger btn-small" data-measurement-action="delete" data-id="${item.id}">حذف</button></td></tr>`).join('');
         const sessionRows = sessions.slice(0, 6).map((session) => `<tr><td>${escapeHtml(session.programName || 'جلسة تدريب')}</td><td>${escapeHtml(session.routineName || '—')}</td><td>${escapeHtml(session.status === 'completed' ? 'مكتملة' : session.status === 'started' ? 'مفتوحة' : 'ملغاة')}</td><td>${number(session.setCount, 0)}</td></tr>`).join('');
         const mealRows = mealLogs.slice(0, 6).map((log) => `<tr><td><strong>${escapeHtml(log.foodName || 'طعام')}</strong><small>${number(log.consumedQuantity, 1)} ${escapeHtml(log.servingUnit || '')}</small></td><td>${escapeHtml(log.mealName || '—')}</td><td><strong>${number(log.calories, 0)}</strong><small class="profile-meal-macros">P ${number(log.protein, 1)} · C ${number(log.carbs, 1)} · F ${number(log.fats, 1)}</small></td><td>${escapeHtml(new Date(log.consumedAt).toLocaleDateString('ar-EG'))}</td></tr>`).join('');
-        $('coachingProfileContent').innerHTML = `<div class="profile-hero"><div class="trainee-avatar large">${escapeHtml((member.fullName || 'م').trim().slice(0, 1))}</div><div><strong>${escapeHtml(member.fullName)}</strong><span>${escapeHtml(member.phone)}${member.email ? ` · ${escapeHtml(member.email)}` : ''}</span><small>ملف العميل #${member.id} · التنفيذ والتقدم محفوظان في قاعدة البيانات</small></div><button class="btn btn-primary btn-small" data-profile-action="subscribe">إضافة اشتراك Gym</button></div>
+        $('coachingProfileContent').innerHTML = `<div class="profile-hero"><div class="trainee-avatar large">${escapeHtml((member.fullName || 'م').trim().slice(0, 1))}</div><div><strong>${escapeHtml(member.fullName)}</strong><span>${escapeHtml(displayPhone(member.phone, member.phoneCountry) || '—')}${member.email ? ` · ${escapeHtml(member.email)}` : ''}</span><small>ملف العميل #${member.id} · التنفيذ والتقدم محفوظان في قاعدة البيانات</small></div><button class="btn btn-primary btn-small" data-profile-action="subscribe">إضافة اشتراك Gym</button></div>
             <div class="profile-stats"><article><span>الوزن الحالي</span><strong>${overview.progress.currentWeight == null ? '—' : `${number(overview.progress.currentWeight, 1)} كجم`}</strong></article><article><span>تغير الوزن</span><strong>${overview.progress.weightChange == null ? '—' : `${overview.progress.weightChange > 0 ? '+' : ''}${number(overview.progress.weightChange, 1)} كجم`}</strong></article><article><span>الجلسات المكتملة</span><strong>${number(overview.progress.completedSessions, 0)}</strong></article><article><span>تسجيلات الوجبات</span><strong>${number(overview.progress.mealLogCount, 0)}</strong></article></div>
             <div class="profile-actions"><button class="btn btn-primary" data-profile-action="new-workout">+ برنامج تدريب</button><button class="btn btn-light" data-profile-action="new-diet">+ خطة تغذية</button><button class="btn btn-light" data-profile-action="start-session">بدء جلسة</button><button class="btn btn-light" data-profile-action="log-meal">تسجيل وجبة</button><button class="btn btn-light" data-profile-action="new-measurement">+ قياس جديد</button><button class="btn btn-light" data-profile-action="edit-client">تعديل البيانات الأساسية</button></div>
             <div class="profile-progress-dashboard"><div class="profile-progress-card"><div class="profile-section-head"><h4>تطور الوزن</h4><span>${escapeHtml(overview.progress.lastMeasurementAt || 'لا توجد قياسات')}</span></div>${renderMeasurementBars(overview.measurements)}</div><div class="profile-progress-card"><div class="profile-section-head"><h4>نسبة تنفيذ الأنظمة</h4><span>تتحدث مع كل جلسة أو وجبة</span></div><div class="profile-progress-meters"><div><span>التدريب</span><b>${progressPercent(overview.progress.workoutCompletionPercent)}٪</b><i><em></em></i></div><div><span>التغذية</span><b>${progressPercent(overview.progress.nutritionCompletionPercent)}٪</b><i><em></em></i></div></div></div></div>
@@ -922,7 +943,7 @@
     function builderClientOptions(selectedId, memberName = '') {
         const clients = [...(state.builderClients || [])];
         if (selectedId && !clients.some((client) => String(client.id) === String(selectedId))) clients.unshift({ id: selectedId, fullName: memberName || 'العميل الحالي', phone: '' });
-        return builderOptionList(clients, selectedId, 'اختر العميل', (client) => `${client.fullName || 'عميل'}${client.phone ? ` · ${client.phone}` : ''}`);
+        return builderOptionList(clients, selectedId, 'اختر العميل', (client) => `${client.fullName || 'عميل'}${client.phone ? ` · ${displayPhone(client.phone, client.phoneCountry)}` : ''}`);
     }
 
     function builderValue(root, selector, fallback = '') {
@@ -1977,7 +1998,7 @@
         ensureClientEditDialog();
         $('coachingEditMemberId').value = member.id;
         $('coachingEditName').value = member.fullName || '';
-        $('coachingEditPhone').value = member.phone || '';
+        window.LogicFitPhoneInputs?.setValue?.($('coachingEditPhone'), member.phoneNational || member.phone || '', member.phoneCountry || '');
         $('coachingEditEmail').value = member.email || '';
         $('coachingEditNotes').value = member.notes || '';
         openDialog($('coachingClientEditDialog'));

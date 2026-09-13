@@ -23,6 +23,8 @@
         return String(value ?? '').replaceAll('TOP GYM', () => brandName());
     }
 
+    function displayPhone(value, iso = '') { return window.LogicFitPhoneInputs?.formatForDisplay?.(value, iso) || String(value || ''); }
+
     function escapeHtml(value) {
         return String(value ?? '').replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[character]));
     }
@@ -104,7 +106,7 @@
     }
 
     function renderChurn(items = []) {
-        const rows = items.map((item) => `<tr><td><div class="intelligence-member-cell"><span class="intelligence-member-avatar">${escapeHtml((item.fullName || 'م').trim().slice(0, 1))}</span><div><strong>${escapeHtml(item.fullName)}</strong><small dir="ltr">${escapeHtml(item.phone || 'بدون هاتف')}</small></div></div></td><td><span class="intelligence-risk-badge ${escapeHtml(item.level)}">${riskLabel(item.level)} · ${number(item.score)}%</span></td><td>${item.daysSinceLastVisit == null ? 'لا يوجد حضور' : `منذ ${number(item.daysSinceLastVisit)} يوم`}</td><td>${item.daysToExpiry == null ? '—' : item.daysToExpiry < 0 ? 'منتهية' : `${number(item.daysToExpiry)} يوم`}</td><td><small>${escapeHtml(item.reasons?.[0] || 'مؤشر يحتاج مراجعة')}</small></td><td><button class="btn btn-light btn-small" type="button" data-required-permission="members.read,memberships.read" data-intelligence-member="${escapeHtml(item.id)}">فتح ملف</button></td></tr>`).join('');
+        const rows = items.map((item) => `<tr><td><div class="intelligence-member-cell"><span class="intelligence-member-avatar">${escapeHtml((item.fullName || 'م').trim().slice(0, 1))}</span><div><strong>${escapeHtml(item.fullName)}</strong><small dir="ltr">${escapeHtml(displayPhone(item.phone, item.phoneCountry) || 'بدون هاتف')}</small></div></div></td><td><span class="intelligence-risk-badge ${escapeHtml(item.level)}">${riskLabel(item.level)} · ${number(item.score)}%</span></td><td>${item.daysSinceLastVisit == null ? 'لا يوجد حضور' : `منذ ${number(item.daysSinceLastVisit)} يوم`}</td><td>${item.daysToExpiry == null ? '—' : item.daysToExpiry < 0 ? 'منتهية' : `${number(item.daysToExpiry)} يوم`}</td><td><small>${escapeHtml(item.reasons?.[0] || 'مؤشر يحتاج مراجعة')}</small></td><td><button class="btn btn-light btn-small" type="button" data-required-permission="members.read,memberships.read" data-intelligence-member="${escapeHtml(item.id)}">فتح ملف</button></td></tr>`).join('');
         $('intelligenceChurnTable').innerHTML = rows ? `<table class="intelligence-table"><thead><tr><th>المشترك</th><th>المؤشر</th><th>آخر حضور</th><th>الانتهاء</th><th>السبب الأبرز</th><th>الإجراء</th></tr></thead><tbody>${rows}</tbody></table>` : '<div class="intelligence-empty-line">لا توجد عضويات نشطة في نطاق التحليل.</div>';
     }
 
@@ -126,7 +128,7 @@
         const select = $('intelligenceMemberId');
         if (!select) return;
         const current = select.value;
-        select.innerHTML = `<option value="">اختر العميل</option>${state.clients.map((client) => `<option value="${escapeHtml(client.id)}">${escapeHtml(client.fullName || 'عميل')}${client.phone ? ` · ${escapeHtml(client.phone)}` : ''}</option>`).join('')}`;
+        select.innerHTML = `<option value="">اختر العميل</option>${state.clients.map((client) => `<option value="${escapeHtml(client.id)}">${escapeHtml(client.fullName || 'عميل')}${client.phone ? ` · ${escapeHtml(displayPhone(client.phone, client.phoneCountry))}` : ''}</option>`).join('')}`;
         if (state.clients.some((client) => String(client.id) === String(current))) select.value = current;
     }
 

@@ -39,7 +39,8 @@ const membership = Object.freeze({
     amountPaid: 0,
     amountRemaining: 305,
     discountAmount: 0,
-    paymentMethod: 'cash'
+    paymentMethod: 'cash',
+    freezes: []
 });
 
 function jsonResponse(route, payload, status = 200) {
@@ -242,12 +243,15 @@ test('browser completes the canonical member phone flow end to end', async ({ pa
         document.getElementById('memberQrDialog')?.close?.();
         document.getElementById('memberQrDialog')?.removeAttribute('open');
     });
+    const detailsResponse = page.waitForResponse((response) => response.url().includes(`/api/members/${memberId}/details`));
     await page.locator(`tr[data-member-id="${memberId}"] [data-action="details"]`).click();
+    await detailsResponse;
     await expect(page.locator('#detailsDialog')).toBeVisible();
-    await expect(page.locator('#detailsSubtitle')).toContainText('+201015819700');
+    await expect(page.locator('#detailsSubtitle')).toContainText('010 15819700');
     await page.evaluate(() => document.getElementById('detailsDialog')?.close?.());
 
     const memberRow = page.locator(`tr[data-member-id="${memberId}"]`);
+    await expect(memberRow.locator('.table-member-phone')).toHaveText('010 15819700');
     await memberRow.locator('[data-menu-toggle]').click();
     await memberRow.locator('[data-action="edit"]').click();
     await expect(dialog).toBeVisible();

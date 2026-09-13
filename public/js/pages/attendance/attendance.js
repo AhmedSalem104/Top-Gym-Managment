@@ -98,7 +98,7 @@
                     <span class="qr-member-preview-avatar" aria-hidden="true">${escapeHtml(memberInitials(member.fullName))}</span>
                     <div class="qr-member-preview-identity-copy">
                         <strong>${escapeHtml(member.fullName || '—')}</strong>
-                        <span dir="ltr">${escapeHtml(member.phone || '—')}</span>
+                        <span dir="ltr">${escapeHtml(displayPhone(member.phone, member.phoneCountry) || '—')}</span>
                     </div>
                     <b class="qr-member-preview-status ${qrStatusClass(status)}"><span class="qr-member-preview-status-dot" aria-hidden="true"></span>${escapeHtml(statusLabel)}</b>
                 </div>
@@ -186,6 +186,10 @@
         return String(prepared ?? '').replace(/[^0-9]/g, '');
     }
 
+    function displayPhone(value, iso = '') {
+        return window.LogicFitPhoneInputs?.formatForDisplay?.(value, iso) || String(value || '');
+    }
+
     function membershipStatus(member) {
         return String(member?.membership?.status || '').toLowerCase();
     }
@@ -270,7 +274,9 @@
         const initials = String(member.fullName || 'TG').trim().split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part.charAt(0)).join('') || 'TG';
         preview.hidden = false;
         preview.className = `attendance-member-preview ${state.inside ? 'inside' : state.eligible ? 'eligible' : 'blocked'}`;
-        preview.innerHTML = `<div class="attendance-preview-member"><span class="attendance-preview-avatar" aria-hidden="true">${escapeHtml(initials)}</span><div><strong>${escapeHtml(member.fullName || '—')}</strong><span dir="ltr">${escapeHtml(member.phone || '—')}</span></div></div><div class="attendance-preview-details"><span><small>الباقة</small><b>${escapeHtml(planLabel)}</b></span><span><small>الحالة</small><b class="attendance-preview-status ${escapeHtml(state.status || 'unknown')}">${escapeHtml(statusLabel)}</b></span><span><small>الانتهاء</small><b dir="ltr">${escapeHtml(dateText(membership.effectiveEndDate || membership.endDate))}</b></span></div><strong class="attendance-preview-action">${escapeHtml(actionText)}</strong>`;
+        preview.innerHTML = `<div class="attendance-preview-member"><span class="attendance-preview-avatar" aria-hidden="true">${escapeHtml(initials)}</span><div><strong>${escapeHtml(member.fullName || '—')}</strong><span dir="ltr">${escapeHtml(displayPhone(member.phone, member.phoneCountry) || '—')}</span></div></div><div class="attendance-preview-details"><span><small>الباقة</small><b>${escapeHtml(planLabel)}</b></span><span><small>الحالة</small><b class="attendance-preview-status ${escapeHtml(state.status || 'unknown')}">${escapeHtml(statusLabel)}</b></span><span><small>الانتهاء</small><b dir="ltr">${escapeHtml(dateText(membership.effectiveEndDate || membership.endDate))}</b></span></div><strong class="attendance-preview-action">${escapeHtml(actionText)}</strong>`;
+        const previewPhone = preview.querySelector('.attendance-preview-member span[dir="ltr"]');
+        if (previewPhone) previewPhone.textContent = displayPhone(member.phone, member.phoneCountry) || '—';
         updateAttendanceActionButtons(member);
     }
 
@@ -344,6 +350,10 @@
             const typeLabel = TYPE_LABELS[record.type] || record.type || '';
             return `<tr><td><span class="attendance-member-name">${escapeHtml(record.memberName)}</span><span class="attendance-member-phone" dir="ltr">${escapeHtml(record.phone)}</span></td><td>${escapeHtml(planLabel)}<span class="table-sub">${escapeHtml(typeLabel)}</span></td><td><span class="attendance-time">${timeText(record.checkInAt)}</span></td><td><span class="attendance-time">${timeText(record.checkOutAt)}</span></td><td>${record.durationMinutes === null ? 'داخل الجيم' : `${record.durationMinutes} دقيقة`}</td><td><span class="attendance-source ${escapeHtml(record.checkInSource)}">${escapeHtml(SOURCE_LABELS[record.checkInSource] || record.checkInSource)}</span></td><td><span class="attendance-status${record.checkOutAt ? ' complete' : ''}">${record.checkOutAt ? (record.checkOutSource === 'auto' ? 'انصرف تلقائيًا' : 'انصرف') : 'داخل الجيم'}</span></td><td></td></tr>`;
         }).join('')}</tbody></table>`;
+        $('attendanceTableWrap').querySelectorAll('.attendance-member-phone').forEach((phoneNode, index) => {
+            const record = records[index];
+            if (record) phoneNode.textContent = displayPhone(record.phone, record.phoneCountry) || record.phone || '—';
+        });
     }
 
     function decorateAttendanceActions(records) {
@@ -553,7 +563,7 @@
             currentQrMember = member;
             try { await qrLibrary; } catch (_) { /* use the same validation below */ }
             $('memberQrName').textContent = member.fullName || '—';
-            $('memberQrPhone').textContent = member.phone || '—';
+            $('memberQrPhone').textContent = displayPhone(member.phone, member.phoneCountry) || '—';
             const canvas = $('memberQrCanvas');
             if (!window.QRCode || !canvas) throw new Error('أداة إنشاء QR Code غير متاحة حالياً.');
             const styles = getComputedStyle(document.documentElement);

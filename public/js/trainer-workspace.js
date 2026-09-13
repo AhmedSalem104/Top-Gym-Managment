@@ -22,6 +22,7 @@
 
     const setText = (element, value) => { if (element) element.textContent = String(value ?? ''); };
     const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]));
+    const displayPhone = (value, iso = '') => window.LogicFitPhoneInputs?.formatForDisplay?.(value, iso) || String(value || '');
     const api = async (path, options = {}) => {
         const response = await fetch(path, { credentials: 'same-origin', ...options, headers: { 'Content-Type': 'application/json', ...(options.headers || {}) } });
         const payload = await response.json().catch(() => ({}));
@@ -120,7 +121,7 @@
         if (!clients.length) { renderEmpty(search?.value ? 'لم نعثر على نتائج مطابقة.' : 'لا يوجد عملاء بعد.'); renderPagination({}); return; }
         clientsList.innerHTML = clients.map((client) => `
             <article class="trainer-client-row" data-client-id="${Number(client.id)}">
-                <div class="trainer-client-name"><strong title="${escapeHtml(client.fullName)}">${escapeHtml(client.fullName)}</strong><span>${escapeHtml(client.phone || client.email || 'لا توجد وسيلة تواصل')}</span></div>
+                <div class="trainer-client-name"><strong title="${escapeHtml(client.fullName)}">${escapeHtml(client.fullName)}</strong><span>${escapeHtml(client.phone ? displayPhone(client.phone, client.phoneCountry) : (client.email || 'لا توجد وسيلة تواصل'))}</span></div>
                 <div class="trainer-client-goal" title="${escapeHtml(client.primaryGoal || '')}">${escapeHtml(client.primaryGoal || 'لم يحدد هدفًا بعد')}</div>
                 <div class="trainer-client-stat"><strong>${Number(client.workoutCount || 0)}</strong><span>تدريب</span></div>
                 <div class="trainer-client-stat"><strong>${Number(client.nutritionCount || 0)}</strong><span>تغذية</span></div>
@@ -172,7 +173,7 @@
         byId('trainerClientForm')?.reset();
         if (byId('trainerClientId')) byId('trainerClientId').value = client?.id || '';
         byId('trainerClientName').value = client?.fullName || '';
-        byId('trainerClientPhone').value = client?.phone || '';
+        window.LogicFitPhoneInputs?.setValue?.(byId('trainerClientPhone'), client?.phoneNational || client?.phone || '', client?.phoneCountry || '');
         byId('trainerClientEmail').value = client?.email || '';
         byId('trainerClientGoal').value = client?.primaryGoal || '';
         byId('trainerClientStatus').value = client?.status || 'active';
@@ -198,7 +199,7 @@
         container.dataset.clientId = String(Number(id));
         container.innerHTML = `<div class="trainer-client-details-grid">
             <div class="trainer-detail-stat"><span>الاسم</span><strong>${escapeHtml(client.fullName)}</strong></div>
-            <div class="trainer-detail-stat"><span>الهاتف</span><strong>${escapeHtml(client.phone || '—')}</strong></div>
+            <div class="trainer-detail-stat"><span>الهاتف</span><strong>${escapeHtml(displayPhone(client.phone, client.phoneCountry) || '—')}</strong></div>
             <div class="trainer-detail-stat"><span>خطط التدريب</span><strong>${Number(payload.trainingPlans?.length || 0)}</strong></div>
             <div class="trainer-detail-stat"><span>خطط التغذية</span><strong>${Number(payload.nutritionPlans?.length || 0)}</strong></div>
             <div class="trainer-detail-stat"><span>القياسات</span><strong>${Number(payload.measurements?.length || 0)}</strong></div>

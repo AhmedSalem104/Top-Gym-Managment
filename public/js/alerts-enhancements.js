@@ -42,6 +42,7 @@
     };
     const whatsappIcon = '<svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11.5a8 8 0 0 1-8 8 8.5 8.5 0 0 1-3.7-.85L4 20l1.35-4.05A8.5 8.5 0 1 1 20 11.5Z"/><path d="M8.7 9.1c.2-.45.4-.46.7-.47h.35c.2 0 .4.08.5.34l.65 1.5c.1.23.08.42-.08.62l-.42.52c.55 1.1 1.4 1.8 2.55 2.3l.45-.5c.17-.2.36-.23.6-.14l1.42.63c.25.12.34.3.31.55-.1.8-.68 1.35-1.47 1.4-2.3.12-5.98-3.5-6.1-6.75-.02-.01.17-.75.54-1.02Z"/></svg>';
     const escape = (value) => String(value ?? '').replace(/[&<>'"]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[char]));
+    const displayPhone = (value, iso = '') => window.LogicFitPhoneInputs?.formatForDisplay?.(value, iso) || String(value || '');
     const whatsappLabel = '\u0625\u0631\u0633\u0627\u0644 \u0648\u0627\u062a\u0633\u0627\u0628';
 
     function prepareWhatsappButton(button) {
@@ -142,6 +143,7 @@
             const name = original[0]?.textContent || '';
             const rawDetail = original[1]?.textContent || '';
             const phone = original[2]?.textContent || '';
+            const phoneCountry = card.dataset.alertPhoneCountry || '';
             const label = kindLabels[kind] || labels[status] || '\u062a\u0646\u0628\u064a\u0647';
             const detail = rawDetail.replace(label + ' \u00b7 ', '').replace((labels[status] || '') + ' \u00b7 ', '');
             const icon = document.createElement('span');
@@ -154,7 +156,7 @@
             const quickAction = memberId
                 ? '<button type="button" class="alert-whatsapp-button" data-alert-whatsapp="' + escape(kind) + '" data-member-id="' + escape(memberId) + '" data-alert-key="' + escape(card.dataset.alertKey || '') + '" data-alert-name="' + escape(card.dataset.alertName || name) + '" data-alert-phone="' + escape(card.dataset.alertPhone || phone) + '" data-alert-status="' + escape(card.dataset.alertStatus || status) + '" data-alert-end="' + escape(card.dataset.alertEnd || '') + '" data-alert-freeze-end="' + escape(card.dataset.alertFreezeEnd || '') + '" data-alert-remaining="' + escape(card.dataset.alertRemaining || '') + '" data-alert-days="' + escape(card.dataset.alertDays || '') + '" title="' + whatsappLabel + '" aria-label="' + whatsappLabel + '">' + whatsappIcon + '<span>\u0648\u0627\u062a\u0633\u0627\u0628</span></button>'
                 : '';
-            body.innerHTML = '<div class="alert-card-content"><div class="alert-card-head"><strong>' + escape(name) + '</strong></div><span class="alert-card-detail">' + escape(detail) + '</span><a class="alert-card-phone" href="tel:' + escape(phone.replace(/\s+/g, '')) + '">' + escape(phone) + '</a></div><div class="alert-card-actions"><span class="alert-status">' + escape(label) + '</span>' + quickAction + '</div>';
+            body.innerHTML = '<div class="alert-card-content"><div class="alert-card-head"><strong>' + escape(name) + '</strong></div><span class="alert-card-detail">' + escape(detail) + '</span><a class="alert-card-phone" href="tel:' + escape(phone.replace(/\s+/g, '')) + '">' + escape(displayPhone(phone, phoneCountry)) + '</a></div><div class="alert-card-actions"><span class="alert-status">' + escape(label) + '</span>' + quickAction + '</div>';
             card.replaceChildren(icon, body);
             card.dataset.alertEnhanced = 'true';
         });
