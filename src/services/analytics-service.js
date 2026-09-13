@@ -422,18 +422,23 @@ async function getDashboardAnalytics(periodValue = 'month', { readOnly = false, 
             WHERE start_date >= @startDate AND start_date < @nextDate
               ${membershipScope('memberships')};
 
+            WITH ledger_entries AS (
+                SELECT payment_transactions.amount_paid,
+                       ${actualCollectionCaseSql({ transactionAlias: 'payment_transactions', membershipAlias: 'payment_membership' })} AS is_actual_collection,
+                       ${refundCaseSql({ transactionAlias: 'payment_transactions' })} AS is_refund
+                FROM dbo.gym_payment_transactions AS payment_transactions
+                INNER JOIN dbo.memberships AS payment_membership ON payment_membership.id = payment_transactions.membership_id
+                WHERE ${financialDateRangeSql('payment_transactions.paid_at', '@startDate', '@nextDate')}
+                  AND payment_transactions.is_voided = 0 AND payment_transactions.amount_paid <> 0
+                  ${subscriptionPaymentScopeSql({ paymentAlias: 'payment_transactions', membershipAlias: 'payment_membership' })}
+            )
             SELECT COUNT_BIG(*) AS total,
                    ISNULL(SUM(amount_paid), 0) AS amount,
-                   ISNULL(SUM(CASE WHEN ${actualCollectionCaseSql({ transactionAlias: 'payment_transactions', membershipAlias: 'payment_membership' })} = 1 THEN 1 ELSE 0 END), 0) AS actualCount,
-                   ISNULL(SUM(CASE WHEN ${refundCaseSql({ transactionAlias: 'payment_transactions' })} = 1 THEN 1 ELSE 0 END), 0) AS refundsCount,
-                   ISNULL(SUM(CASE WHEN ${actualCollectionCaseSql({ transactionAlias: 'payment_transactions', membershipAlias: 'payment_membership' })} = 1 THEN amount_paid ELSE 0 END), 0) AS actualAmount,
-                   ISNULL(SUM(CASE WHEN ${refundCaseSql({ transactionAlias: 'payment_transactions' })} = 1 THEN -amount_paid ELSE 0 END), 0) AS refundsAmount
-            FROM dbo.gym_payment_transactions AS payment_transactions
-            INNER JOIN dbo.memberships AS payment_membership ON payment_membership.id = payment_transactions.membership_id
-            WHERE ${financialDateRangeSql('payment_transactions.paid_at', '@startDate', '@nextDate')}
-              AND payment_transactions.is_voided = 0 AND payment_transactions.amount_paid <> 0
-              ${subscriptionPaymentScopeSql({ paymentAlias: 'payment_transactions', membershipAlias: 'payment_membership' })}
-              ${actualCollectionPredicateSql({ transactionAlias: 'payment_transactions', membershipAlias: 'payment_membership' })};
+                   ISNULL(SUM(CASE WHEN is_actual_collection = 1 THEN 1 ELSE 0 END), 0) AS actualCount,
+                   ISNULL(SUM(CASE WHEN is_refund = 1 THEN 1 ELSE 0 END), 0) AS refundsCount,
+                   ISNULL(SUM(CASE WHEN is_actual_collection = 1 THEN amount_paid ELSE 0 END), 0) AS actualAmount,
+                   ISNULL(SUM(CASE WHEN is_refund = 1 THEN -amount_paid ELSE 0 END), 0) AS refundsAmount
+            FROM ledger_entries;
 
             SELECT COUNT_BIG(*) AS total,
                    ISNULL(SUM(amount_paid), 0) AS amount

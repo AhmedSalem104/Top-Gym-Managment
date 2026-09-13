@@ -8,7 +8,7 @@ const {
     financialDateRangeSql,
     subscriptionPaymentScopeSql
 } = require('./financial-scope');
-const { actualCollectionCaseSql, refundCaseSql } = require('../services/financial-ledger-service');
+const { actualCollectionCaseSql, refundCaseSql, snapshotDuplicateConditionSql } = require('../services/financial-ledger-service');
 
 let expensesTablePromise;
 
@@ -70,15 +70,21 @@ async function getMonthlyData(range, { branchId = null, sectionId = null } = {})
 
     return Promise.all([
         paymentRequest.query(`
-            SELECT COUNT(CASE WHEN ${actualCollectionCaseSql({ transactionAlias: 'payment_transactions', membershipAlias: 'payment_membership' })} = 1 THEN 1 END) AS paidTransactionCount,
-                   ISNULL(SUM(CASE WHEN ${actualCollectionCaseSql({ transactionAlias: 'payment_transactions', membershipAlias: 'payment_membership' })} = 1 THEN payment_transactions.amount_paid ELSE 0 END), 0) AS subscriptionsTotal,
-                   ISNULL(SUM(CASE WHEN ${refundCaseSql({ transactionAlias: 'payment_transactions' })} = 1 THEN -payment_transactions.amount_paid ELSE 0 END), 0) AS refundsTotal
-            FROM dbo.gym_payment_transactions AS payment_transactions
-            INNER JOIN dbo.memberships AS payment_membership ON payment_membership.id = payment_transactions.membership_id
-            WHERE ${financialDateRangeSql('payment_transactions.paid_at', '@monthStart', '@nextMonth')}
-              AND is_voided = 0
-              AND payment_transactions.amount_paid <> 0
-              ${subscriptionPaymentScopeSql({ paymentAlias: 'payment_transactions', membershipAlias: 'payment_membership' })};
+            WITH ledger_entries AS (
+                SELECT payment_transactions.amount_paid,
+                       ${actualCollectionCaseSql({ transactionAlias: 'payment_transactions', membershipAlias: 'payment_membership' })} AS is_actual_collection,
+                       ${refundCaseSql({ transactionAlias: 'payment_transactions' })} AS is_refund
+                FROM dbo.gym_payment_transactions AS payment_transactions
+                INNER JOIN dbo.memberships AS payment_membership ON payment_membership.id = payment_transactions.membership_id
+                WHERE ${financialDateRangeSql('payment_transactions.paid_at', '@monthStart', '@nextMonth')}
+                  AND payment_transactions.is_voided = 0
+                  AND payment_transactions.amount_paid <> 0
+                  ${subscriptionPaymentScopeSql({ paymentAlias: 'payment_transactions', membershipAlias: 'payment_membership' })}
+            )
+            SELECT COUNT(CASE WHEN is_actual_collection = 1 THEN 1 END) AS paidTransactionCount,
+                   ISNULL(SUM(CASE WHEN is_actual_collection = 1 THEN amount_paid ELSE 0 END), 0) AS subscriptionsTotal,
+                   ISNULL(SUM(CASE WHEN is_refund = 1 THEN -amount_paid ELSE 0 END), 0) AS refundsTotal
+            FROM ledger_entries;
         `),
         expenseSummaryRequest.query(`
             SELECT COUNT(*) AS expenseCount,

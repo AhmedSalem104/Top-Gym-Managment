@@ -54,6 +54,7 @@ test('duplicate exclusion requires migration provenance and the full source/paym
     assert.match(ledger.actualCollectionCaseSql({ transactionAlias: 't', membershipAlias: 'm' }), /t\.transaction_type <> 'adjustment'/);
     assert.match(ledger.refundCaseSql({ transactionAlias: 't' }), /t\.amount_paid < 0/);
     assert.match(ledger.refundCaseSql({ transactionAlias: 't' }), /notes LIKE/);
+    assert.match(ledger.snapshotDuplicateConditionSql({ transactionAlias: 't', membershipAlias: 'm' }), /^\s*NOT\s*\(/);
     assert.doesNotMatch(sql, /\b(384|391|392|403|405|415|417|423|424|425|429)\b/);
 });
 
@@ -70,6 +71,10 @@ test('all gym financial read paths use the central ledger semantics', () => {
     }
     assert.match(source('src/services/report-service.js'), /transaction_type <> 'adjustment'/);
     assert.match(source('src/services/platform-admin-service.js'), /payment_transactions\.transaction_type <> 'adjustment'/);
+    assert.match(source('src/repositories/expense.repository.js'), /WITH ledger_entries AS/);
+    assert.match(source('src/services/analytics-service.js'), /WITH ledger_entries AS/);
+    assert.doesNotMatch(source('src/repositories/expense.repository.js'), /SUM\(CASE WHEN \$\{actualCollectionCaseSql/);
+    assert.doesNotMatch(source('src/services/analytics-service.js'), /SUM\(CASE WHEN \$\{actualCollectionCaseSql/);
 });
 
 test('payment transaction runtime readiness is read-only and owns no schema repair/backfill', () => {

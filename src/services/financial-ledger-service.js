@@ -18,11 +18,11 @@ function assertSqlIdentifier(value, label) {
     return value;
 }
 
-function actualCollectionPredicateSql({ transactionAlias = 'payment_transactions', membershipAlias = 'payment_membership' } = {}) {
+function snapshotDuplicateConditionSql({ transactionAlias = 'payment_transactions', membershipAlias = 'payment_membership' } = {}) {
     const transaction = assertSqlIdentifier(transactionAlias, 'transaction alias');
     const membership = assertSqlIdentifier(membershipAlias, 'membership alias');
     return `
-              AND NOT (
+              NOT (
                   ${transaction}.transaction_type = 'subscription'
                   AND ${transaction}.source_payment_id IS NOT NULL
                   AND EXISTS (
@@ -55,6 +55,10 @@ function actualCollectionPredicateSql({ transactionAlias = 'payment_transactions
                         AND source_payment.payment_method = ${transaction}.payment_method
                   )
               )`;
+}
+
+function actualCollectionPredicateSql(options = {}) {
+    return `AND ${snapshotDuplicateConditionSql(options)}`;
 }
 
 function actualCollectionCaseSql(options = {}) {
@@ -91,5 +95,6 @@ module.exports = {
     actualCollectionCaseSql,
     actualCollectionPredicateSql,
     classifyLedgerEntry,
-    refundCaseSql
+    refundCaseSql,
+    snapshotDuplicateConditionSql
 };
