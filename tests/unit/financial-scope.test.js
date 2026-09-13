@@ -44,3 +44,14 @@ test('dashboard, reports and monthly finance share the same financial scope boun
     assert.doesNotMatch(read('src/services/analytics-service.js'), /\$\{membershipScope\('payment_membership'\)\}/u);
     assert.doesNotMatch(read('src/services/report-service.js'), /\$\{membershipScope\('payment_membership'\)\}/u);
 });
+
+test('day-pass pagination remains compatible with the production SQL Server compatibility level', () => {
+    const source = read('src/repositories/day-pass.repository.js');
+    const start = source.indexOf('async function listSales');
+    const end = source.indexOf('async function getRangeData', start);
+    assert.ok(start >= 0 && end > start);
+    const listSales = source.slice(start, end);
+    assert.match(listSales, /ROW_NUMBER\(\) OVER \(ORDER BY s\.visit_date DESC, s\.id DESC\)/u);
+    assert.match(listSales, /row_num > @offset AND row_num <= \(@offset \+ @pageSize\)/u);
+    assert.doesNotMatch(listSales, /FETCH NEXT/u);
+});

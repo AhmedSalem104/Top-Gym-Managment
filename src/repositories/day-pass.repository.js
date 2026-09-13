@@ -242,14 +242,22 @@ async function listSales({ fromDate, nextDate, typeCode = '', paymentMethod = ''
         SELECT COUNT_BIG(*) AS total
         FROM dbo.gym_day_pass_sales AS s
         WHERE ${where};
-        SELECT s.id, s.visitor_name, s.visitor_phone, s.visitor_phone_normalized,
-               s.pass_type_code, s.pass_type_name, s.amount_due, s.amount_paid,
-               s.payment_method, s.visit_date, s.notes, s.status, s.created_by_user_id,
-               s.whatsapp_opened_at, s.created_at, s.updated_at
-        FROM dbo.gym_day_pass_sales AS s
-        WHERE ${where}
-        ORDER BY s.visit_date DESC, s.id DESC
-        OFFSET @offset ROWS FETCH NEXT @pageSize ROWS ONLY;
+        WITH paged_day_passes AS (
+            SELECT s.id, s.visitor_name, s.visitor_phone, s.visitor_phone_normalized,
+                   s.pass_type_code, s.pass_type_name, s.amount_due, s.amount_paid,
+                   s.payment_method, s.visit_date, s.notes, s.status, s.created_by_user_id,
+                   s.whatsapp_opened_at, s.created_at, s.updated_at,
+                   ROW_NUMBER() OVER (ORDER BY s.visit_date DESC, s.id DESC) AS row_num
+            FROM dbo.gym_day_pass_sales AS s
+            WHERE ${where}
+        )
+        SELECT id, visitor_name, visitor_phone, visitor_phone_normalized,
+               pass_type_code, pass_type_name, amount_due, amount_paid,
+               payment_method, visit_date, notes, status, created_by_user_id,
+               whatsapp_opened_at, created_at, updated_at
+        FROM paged_day_passes
+        WHERE row_num > @offset AND row_num <= (@offset + @pageSize)
+        ORDER BY row_num;
     `);
     return {
         records: (result.recordsets[1] || []).map(mapSale),
