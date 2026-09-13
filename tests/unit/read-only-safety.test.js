@@ -164,7 +164,7 @@ test('attendance, pricing and refund preview GETs propagate read-only mode', () 
     assert.match(attendance, /getMemberAttendanceStatuses\(memberIds = \[\], date = todayInTimeZone\(\), options = \{\}\)[\s\S]*?ensureAttendanceTable\(\{ readOnly: Boolean\(options\.readOnly\) \}\)/);
     assert.match(attendance, /getAttendanceReport\(options = \{\}\)[\s\S]*?ensureAttendanceTable\(\{ readOnly: Boolean\(options\.readOnly\) \}\)/);
     assert.match(pricingController, /pricingService\.getPricingCatalog\(null, \{ readOnly: request\.readOnlyRequest \}\)/);
-    assert.match(members, /async function ensureSubscriptionRefundsTable\(\{ readOnly = false \} = \{\}\)[\s\S]*?if \(readOnly \|\| getTenantContext\(\)\?\.readOnlyBaseline\) return;/);
+    assert.match(members, /async function ensureSubscriptionRefundsTable\(\{ readOnly = false \} = \{\}\)[\s\S]*?SUBSCRIPTION_REFUND_SCHEMA_NOT_READY/);
     assert.match(members, /async function getSubscriptionRefundPreview\(id, \{ readOnly = false \} = \{\}\)[\s\S]*?ensureSubscriptionRefundsTable\(\{ readOnly \}\)/);
     assert.match(membersController, /getSubscriptionRefundPreview\(request\.params\.id, \{ readOnly: request\.readOnlyRequest \}\)/);
 });

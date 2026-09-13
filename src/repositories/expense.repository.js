@@ -2,57 +2,48 @@
 
 const { getPool, sql } = require('../database/pool');
 const { toUtcDate } = require('../utils/date');
-const { getTenantContext } = require('../tenancy/tenant-context');
 const {
     bindFinancialScope,
     branchOnlyFinancialScopeSql,
     financialDateRangeSql,
     subscriptionPaymentScopeSql
 } = require('./financial-scope');
+const { actualCollectionCaseSql, refundCaseSql } = require('../services/financial-ledger-service');
 
 let expensesTablePromise;
 
 async function ensureExpensesTable({ readOnly = false } = {}) {
-    if (readOnly || getTenantContext()?.readOnlyBaseline) return;
     if (!expensesTablePromise) {
         expensesTablePromise = (async () => {
             const pool = await getPool();
-            await pool.request().batch(`
-                IF OBJECT_ID(N'dbo.gym_expenses', N'U') IS NULL
-                BEGIN
-                    CREATE TABLE dbo.gym_expenses (
-                        id INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_gym_expenses_runtime PRIMARY KEY,
-                        expense_name NVARCHAR(120) NOT NULL,
-                        amount DECIMAL(12,2) NOT NULL,
-                        expense_date DATE NOT NULL,
-                        notes NVARCHAR(500) NULL,
-                        created_at DATETIME2(0) NOT NULL CONSTRAINT DF_gym_expenses_created_runtime DEFAULT (SYSUTCDATETIME()),
-                        updated_at DATETIME2(0) NOT NULL CONSTRAINT DF_gym_expenses_updated_runtime DEFAULT (SYSUTCDATETIME()),
-                        CONSTRAINT CK_gym_expenses_amount_runtime CHECK (amount > 0)
-                    );
-                END;
-                IF COL_LENGTH(N'dbo.gym_expenses', N'expense_source') IS NULL
-                    ALTER TABLE dbo.gym_expenses ADD expense_source VARCHAR(20) NOT NULL CONSTRAINT DF_gym_expenses_source_runtime DEFAULT ('gym');
-                IF COL_LENGTH(N'dbo.gym_expenses', N'expense_category') IS NULL
-                    ALTER TABLE dbo.gym_expenses ADD expense_category NVARCHAR(80) NULL;
-                IF COL_LENGTH(N'dbo.gym_expenses', N'payment_method') IS NULL
-                    ALTER TABLE dbo.gym_expenses ADD payment_method VARCHAR(20) NULL;
-                IF COL_LENGTH(N'dbo.gym_expenses', N'created_by_user_id') IS NULL
-                    ALTER TABLE dbo.gym_expenses ADD created_by_user_id INT NULL;
-                IF COL_LENGTH(N'dbo.gym_expenses', N'is_voided') IS NULL
-                    ALTER TABLE dbo.gym_expenses ADD is_voided BIT NOT NULL CONSTRAINT DF_gym_expenses_voided_runtime DEFAULT (0);
-                IF COL_LENGTH(N'dbo.gym_expenses', N'voided_at') IS NULL
-                    ALTER TABLE dbo.gym_expenses ADD voided_at DATETIME2(0) NULL;
-                IF COL_LENGTH(N'dbo.gym_expenses', N'voided_by_user_id') IS NULL
-                    ALTER TABLE dbo.gym_expenses ADD voided_by_user_id INT NULL;
-                IF NOT EXISTS (
-                    SELECT 1 FROM sys.indexes
-                    WHERE name = N'IX_gym_expenses_date' AND object_id = OBJECT_ID(N'dbo.gym_expenses')
-                )
-                BEGIN
-                    CREATE INDEX IX_gym_expenses_date ON dbo.gym_expenses(expense_date DESC, id DESC);
-                END;
+            const result = await pool.request().query(`
+                SELECT
+                    CASE WHEN OBJECT_ID(N'dbo.gym_expenses', N'U') IS NULL THEN 1 ELSE 0 END AS table_missing,
+                    CASE WHEN COL_LENGTH(N'dbo.gym_expenses', N'expense_name') IS NULL THEN 1 ELSE 0 END AS name_missing,
+                    CASE WHEN COL_LENGTH(N'dbo.gym_expenses', N'amount') IS NULL THEN 1 ELSE 0 END AS amount_missing,
+                    CASE WHEN COL_LENGTH(N'dbo.gym_expenses', N'expense_date') IS NULL THEN 1 ELSE 0 END AS date_missing,
+                    CASE WHEN COL_LENGTH(N'dbo.gym_expenses', N'branch_id') IS NULL THEN 1 ELSE 0 END AS branch_missing,
+                    CASE WHEN COL_LENGTH(N'dbo.gym_expenses', N'is_voided') IS NULL THEN 1 ELSE 0 END AS void_missing,
+                    CASE WHEN COL_LENGTH(N'dbo.gym_expenses', N'created_at') IS NULL THEN 1 ELSE 0 END AS created_missing
             `);
+            const row = result.recordset?.[0] || {};
+            const missing = Object.entries({
+                table_missing: 'dbo.gym_expenses',
+                name_missing: 'gym_expenses.expense_name',
+                amount_missing: 'gym_expenses.amount',
+                date_missing: 'gym_expenses.expense_date',
+                branch_missing: 'gym_expenses.branch_id',
+                void_missing: 'gym_expenses.is_voided',
+                created_missing: 'gym_expenses.created_at'
+            }).filter(([field]) => Number(row[field]) === 1).map(([, name]) => name);
+            if (missing.length) {
+                const error = new Error('Financial expense schema is not ready. Apply the approved migration before serving financial requests.');
+                error.statusCode = 503;
+                error.code = 'EXPENSES_SCHEMA_NOT_READY';
+                error.expose = true;
+                error.missing = missing;
+                throw error;
+            }
         })().catch((error) => {
             expensesTablePromise = undefined;
             throw error;
@@ -79,8 +70,9 @@ async function getMonthlyData(range, { branchId = null, sectionId = null } = {})
 
     return Promise.all([
         paymentRequest.query(`
-            SELECT COUNT(CASE WHEN amount_paid > 0 THEN 1 END) AS paidTransactionCount,
-                   ISNULL(SUM(amount_paid), 0) AS subscriptionsTotal
+            SELECT COUNT(CASE WHEN ${actualCollectionCaseSql({ transactionAlias: 'payment_transactions', membershipAlias: 'payment_membership' })} = 1 THEN 1 END) AS paidTransactionCount,
+                   ISNULL(SUM(CASE WHEN ${actualCollectionCaseSql({ transactionAlias: 'payment_transactions', membershipAlias: 'payment_membership' })} = 1 THEN payment_transactions.amount_paid ELSE 0 END), 0) AS subscriptionsTotal,
+                   ISNULL(SUM(CASE WHEN ${refundCaseSql({ transactionAlias: 'payment_transactions' })} = 1 THEN -payment_transactions.amount_paid ELSE 0 END), 0) AS refundsTotal
             FROM dbo.gym_payment_transactions AS payment_transactions
             INNER JOIN dbo.memberships AS payment_membership ON payment_membership.id = payment_transactions.membership_id
             WHERE ${financialDateRangeSql('payment_transactions.paid_at', '@monthStart', '@nextMonth')}

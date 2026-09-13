@@ -45,6 +45,14 @@ For every meaningful change:
 - Before reporting a tenant count, correlate the browser/API request with its resolved runtime, deployed SHA, tenant context, `DB_NAME()`, a non-secret database-server fingerprint, and the server-side service/query result.
 - If the application tenant context cannot be reproduced safely, report the result as `NOT VERIFIED` rather than guessing or changing production data. These inspections remain read-only unless the task explicitly authorizes a separately reviewed mutation.
 
+## Financial ledger truth
+
+- `src/services/financial-ledger-service.js` is the shared semantic boundary for Gym membership collections. A migrated `subscription` snapshot linked to a `gym_payments` source is not a second cash event when the matching append-only `payment` transaction is proven by the full source/payment fingerprint and timestamps.
+- Preserve every historical ledger row; do not delete or rewrite financial facts to correct reporting. Reporting paths must use the central actual-collection/refund semantics and the existing tenant/branch/section scope helpers.
+- Gross collections include only non-voided positive collection transactions after migrated-snapshot exclusion. Explicit subscription refund adjustments are reported separately and reduce net once; outstanding balances and discounts are not cash collections.
+- `branch_id` on newly created financial rows is assigned from the validated membership scope. Historical `branch_id IS NULL` rows require evidence-led review and must never be bulk-attributed by runtime code.
+- Runtime member/payment requests may perform read-only schema readiness checks only. DDL, ledger backfills, and historical reconciliation belong to the approved migration/release pipeline.
+
 ## Specialist handoff format
 
 ## Production release and migration pipeline

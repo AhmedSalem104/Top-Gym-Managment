@@ -6,6 +6,7 @@ const saasService = require('./saas-service');
 const sessionRepository = require('../repositories/session.repository');
 const { TENANT_TYPE_VALUES, resolveTenantType } = require('../tenancy/tenant-types');
 const { normalizePhone: normalizeInternationalPhone } = require('./phone-service');
+const { actualCollectionPredicateSql } = require('./financial-ledger-service');
 
 const TENANT_STATUSES = Object.freeze(['trial', 'active', 'suspended', 'expired', 'archived']);
 const USER_STATUSES = Object.freeze(['Active', 'Disabled']);
@@ -308,7 +309,16 @@ async function getTenantStats(tenantId) {
         (SELECT COUNT_BIG(*) FROM dbo.memberships WHERE tenant_id=@tenantId AND (cancelled_at IS NOT NULL OR end_date < CAST(SYSUTCDATETIME() AS DATE))) AS expired_memberships,
         (SELECT COUNT_BIG(*) FROM dbo.gym_attendance WHERE tenant_id=@tenantId AND attendance_date=CAST(SYSUTCDATETIME() AS DATE)) AS attendance_today,
         (SELECT COUNT_BIG(*) FROM dbo.gym_attendance WHERE tenant_id=@tenantId AND attendance_date >= DATEADD(month,DATEDIFF(month,0,SYSUTCDATETIME()),0)) AS attendance_month,
-        (SELECT ISNULL(SUM(amount_paid),0) FROM dbo.gym_payment_transactions WHERE tenant_id=@tenantId AND paid_at >= DATEADD(month,DATEDIFF(month,0,SYSUTCDATETIME()),0) AND is_voided=0 AND amount_paid<>0)
+        (SELECT ISNULL(SUM(payment_transactions.amount_paid),0)
+           FROM dbo.gym_payment_transactions AS payment_transactions
+           INNER JOIN dbo.memberships AS payment_membership ON payment_membership.id = payment_transactions.membership_id
+          WHERE payment_transactions.tenant_id=@tenantId
+            AND payment_membership.tenant_id=@tenantId
+            AND payment_transactions.paid_at >= DATEADD(month,DATEDIFF(month,0,SYSUTCDATETIME()),0)
+            AND payment_transactions.is_voided=0
+            AND payment_transactions.transaction_type <> 'adjustment'
+            AND payment_transactions.amount_paid>0
+            ${actualCollectionPredicateSql({ transactionAlias: 'payment_transactions', membershipAlias: 'payment_membership' })})
           + (SELECT ISNULL(SUM(amount_paid),0) FROM dbo.gym_day_pass_sales WHERE tenant_id=@tenantId AND visit_date >= DATEADD(month,DATEDIFF(month,0,SYSUTCDATETIME()),0) AND status='completed' AND amount_paid>0) AS revenue_month,
         (SELECT ISNULL(SUM(amount),0) FROM dbo.gym_expenses WHERE tenant_id=@tenantId AND expense_date >= DATEADD(month,DATEDIFF(month,0,SYSUTCDATETIME()),0) AND ISNULL(is_voided,0)=0) AS expenses_month,
         (SELECT COUNT_BIG(*) FROM dbo.gym_store_sales WHERE tenant_id=@tenantId AND status='completed' AND sale_date >= DATEADD(month,DATEDIFF(month,0,SYSUTCDATETIME()),0)) AS store_sales_month,

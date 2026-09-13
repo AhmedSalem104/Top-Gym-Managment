@@ -132,8 +132,8 @@
         const attentionCount = Number(kpis.expiringSoon || 0) + Number(kpis.expiredMembers || 0);
         const items = [
             { key: 'newMembers', label: 'أعضاء جدد', value: number(kpis.newMembers), meta: PERIOD_LABELS[data.period?.key] || '', delta: comparisonMarkup(data, 'newMembers'), tone: 'indigo', icon: 'plus' },
-            { key: 'collected', label: 'التحصيل الفعلي', value: money(kpis.collected), meta: `${number(kpis.paidTransactions)} دفعة`, delta: comparisonMarkup(data, 'collected'), tone: 'green', icon: 'up' },
-            { key: 'net', label: 'صافي الفترة', value: money(kpis.net), meta: 'التحصيل − المصروفات', delta: comparisonMarkup(data, 'net'), tone: kpis.net < 0 ? 'red' : 'teal', icon: 'net' },
+            { key: 'collected', label: 'التحصيل الفعلي', value: money(kpis.collected), meta: `${number(kpis.paidTransactions)} دفعة · المبلغ المحصل فعليًا خلال الفترة`, delta: comparisonMarkup(data, 'collected'), tone: 'green', icon: 'up' },
+            { key: 'net', label: 'صافي الفترة', value: money(kpis.net), meta: Number(kpis.refunds || 0) > 0 ? 'التحصيل − المصروفات − الاستردادات' : 'التحصيل − المصروفات', delta: comparisonMarkup(data, 'net'), tone: kpis.net < 0 ? 'red' : 'teal', icon: 'net' },
             { key: 'visits', label: 'زيارات الحضور', value: number(attendance.visits), meta: `${number(attendance.uniqueMembers)} مشترك حضر`, delta: comparisonMarkup(data, 'visits'), tone: 'blue', icon: 'visits' },
             { key: 'outstanding', label: 'المبالغ المتبقية', value: money(kpis.outstanding), meta: `${number(kpis.outstandingCount)} اشتراك`, tone: 'rose', icon: 'clock' },
             { key: 'attention', label: 'تحتاج متابعة', value: number(attentionCount), meta: `${number(attendance.inactiveMembers)} غائب 7 أيام`, tone: 'amber', icon: 'alert' }

@@ -3,7 +3,6 @@
 const { getPool, sql } = require('../database');
 const { withTransaction } = require('../database/transaction');
 const { toUtcDate } = require('../utils/date');
-const { getTenantContext } = require('../tenancy/tenant-context');
 const { branchOnlyFinancialScopeSql, financialDateRangeSql, normalizeFinancialScope } = require('./financial-scope');
 
 const DEFAULT_DAY_PASS_TYPES = Object.freeze([
@@ -14,63 +13,47 @@ const DEFAULT_DAY_PASS_TYPES = Object.freeze([
 let tablePromise;
 
 async function ensureDayPassTables({ readOnly = false } = {}) {
-    if (readOnly || getTenantContext()?.readOnlyBaseline) return;
     if (!tablePromise) {
         tablePromise = (async () => {
             const pool = await getPool();
-            await pool.request().batch(`
-                IF OBJECT_ID(N'dbo.gym_day_pass_types', N'U') IS NULL
-                BEGIN
-                    CREATE TABLE dbo.gym_day_pass_types (
-                        id INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_gym_day_pass_types_runtime PRIMARY KEY,
-                        type_code VARCHAR(40) NOT NULL,
-                        type_name NVARCHAR(120) NOT NULL,
-                        price DECIMAL(12,2) NOT NULL,
-                        is_active BIT NOT NULL CONSTRAINT DF_gym_day_pass_types_active_runtime DEFAULT (1),
-                        sort_order INT NOT NULL CONSTRAINT DF_gym_day_pass_types_sort_runtime DEFAULT (0),
-                        created_at DATETIME2(0) NOT NULL CONSTRAINT DF_gym_day_pass_types_created_runtime DEFAULT (SYSUTCDATETIME()),
-                        updated_at DATETIME2(0) NOT NULL CONSTRAINT DF_gym_day_pass_types_updated_runtime DEFAULT (SYSUTCDATETIME()),
-                        CONSTRAINT UQ_gym_day_pass_types_code_runtime UNIQUE (type_code),
-                        CONSTRAINT CK_gym_day_pass_types_price_runtime CHECK (price > 0)
-                    );
-                END;
-                IF OBJECT_ID(N'dbo.gym_day_pass_sales', N'U') IS NULL
-                BEGIN
-                    CREATE TABLE dbo.gym_day_pass_sales (
-                        id INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_gym_day_pass_sales_runtime PRIMARY KEY,
-                        visitor_name NVARCHAR(120) NOT NULL,
-                        visitor_phone NVARCHAR(30) NOT NULL,
-                        visitor_phone_normalized NVARCHAR(30) NOT NULL,
-                        pass_type_code VARCHAR(40) NOT NULL,
-                        pass_type_name NVARCHAR(120) NOT NULL,
-                        amount_due DECIMAL(12,2) NOT NULL,
-                        amount_paid DECIMAL(12,2) NOT NULL,
-                        payment_method VARCHAR(20) NOT NULL CONSTRAINT DF_gym_day_pass_sales_method_runtime DEFAULT ('cash'),
-                        visit_date DATE NOT NULL,
-                        notes NVARCHAR(500) NULL,
-                        status VARCHAR(20) NOT NULL CONSTRAINT DF_gym_day_pass_sales_status_runtime DEFAULT ('completed'),
-                        created_by_user_id INT NULL,
-                        whatsapp_opened_at DATETIME2(0) NULL,
-                        created_at DATETIME2(0) NOT NULL CONSTRAINT DF_gym_day_pass_sales_created_runtime DEFAULT (SYSUTCDATETIME()),
-                        updated_at DATETIME2(0) NOT NULL CONSTRAINT DF_gym_day_pass_sales_updated_runtime DEFAULT (SYSUTCDATETIME()),
-                        CONSTRAINT FK_gym_day_pass_sales_type_runtime FOREIGN KEY (pass_type_code)
-                            REFERENCES dbo.gym_day_pass_types(type_code) ON DELETE NO ACTION,
-                        CONSTRAINT CK_gym_day_pass_sales_amounts_runtime CHECK (amount_due > 0 AND amount_paid = amount_due),
-                        CONSTRAINT CK_gym_day_pass_sales_method_runtime CHECK (payment_method IN ('cash', 'card', 'transfer', 'other')),
-                        CONSTRAINT CK_gym_day_pass_sales_status_runtime CHECK (status IN ('completed', 'voided'))
-                    );
-                END;
-                IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name IN (N'IX_gym_day_pass_sales_date_runtime', N'IX_gym_day_pass_sales_date') AND object_id = OBJECT_ID(N'dbo.gym_day_pass_sales'))
-                    CREATE INDEX IX_gym_day_pass_sales_date_runtime ON dbo.gym_day_pass_sales(visit_date DESC, id DESC);
-                IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name IN (N'IX_gym_day_pass_sales_type_date_runtime', N'IX_gym_day_pass_sales_type_date') AND object_id = OBJECT_ID(N'dbo.gym_day_pass_sales'))
-                    CREATE INDEX IX_gym_day_pass_sales_type_date_runtime ON dbo.gym_day_pass_sales(pass_type_code, visit_date DESC, id DESC);
-                IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name IN (N'IX_gym_day_pass_sales_phone_runtime', N'IX_gym_day_pass_sales_phone') AND object_id = OBJECT_ID(N'dbo.gym_day_pass_sales'))
-                    CREATE INDEX IX_gym_day_pass_sales_phone_runtime ON dbo.gym_day_pass_sales(visitor_phone_normalized, visit_date DESC, id DESC);
-                IF NOT EXISTS (SELECT 1 FROM dbo.gym_day_pass_types WHERE type_code = 'day_gym')
-                    INSERT INTO dbo.gym_day_pass_types (type_code, type_name, price, sort_order) VALUES ('day_gym', N'حصة جيم فقط', 30, 1);
-                IF NOT EXISTS (SELECT 1 FROM dbo.gym_day_pass_types WHERE type_code = 'day_gym_cardio')
-                    INSERT INTO dbo.gym_day_pass_types (type_code, type_name, price, sort_order) VALUES ('day_gym_cardio', N'حصة جيم وكارديو', 40, 2);
+            const result = await pool.request().query(`
+                SELECT
+                    CASE WHEN OBJECT_ID(N'dbo.gym_day_pass_types', N'U') IS NULL THEN 1 ELSE 0 END AS types_table_missing,
+                    CASE WHEN OBJECT_ID(N'dbo.gym_day_pass_sales', N'U') IS NULL THEN 1 ELSE 0 END AS sales_table_missing,
+                    CASE WHEN COL_LENGTH(N'dbo.gym_day_pass_types', N'type_code') IS NULL THEN 1 ELSE 0 END AS type_code_missing,
+                    CASE WHEN COL_LENGTH(N'dbo.gym_day_pass_types', N'type_name') IS NULL THEN 1 ELSE 0 END AS type_name_missing,
+                    CASE WHEN COL_LENGTH(N'dbo.gym_day_pass_types', N'price') IS NULL THEN 1 ELSE 0 END AS type_price_missing,
+                    CASE WHEN COL_LENGTH(N'dbo.gym_day_pass_sales', N'visitor_name') IS NULL THEN 1 ELSE 0 END AS visitor_name_missing,
+                    CASE WHEN COL_LENGTH(N'dbo.gym_day_pass_sales', N'visitor_phone_normalized') IS NULL THEN 1 ELSE 0 END AS visitor_phone_missing,
+                    CASE WHEN COL_LENGTH(N'dbo.gym_day_pass_sales', N'amount_paid') IS NULL THEN 1 ELSE 0 END AS amount_paid_missing,
+                    CASE WHEN COL_LENGTH(N'dbo.gym_day_pass_sales', N'visit_date') IS NULL THEN 1 ELSE 0 END AS visit_date_missing,
+                    CASE WHEN COL_LENGTH(N'dbo.gym_day_pass_sales', N'status') IS NULL THEN 1 ELSE 0 END AS status_missing,
+                    CASE WHEN COL_LENGTH(N'dbo.gym_day_pass_sales', N'branch_id') IS NULL THEN 1 ELSE 0 END AS branch_missing,
+                    CASE WHEN COL_LENGTH(N'dbo.gym_day_pass_sales', N'created_at') IS NULL THEN 1 ELSE 0 END AS created_missing
             `);
+            const row = result.recordset?.[0] || {};
+            const missing = Object.entries({
+                types_table_missing: 'dbo.gym_day_pass_types',
+                sales_table_missing: 'dbo.gym_day_pass_sales',
+                type_code_missing: 'gym_day_pass_types.type_code',
+                type_name_missing: 'gym_day_pass_types.type_name',
+                type_price_missing: 'gym_day_pass_types.price',
+                visitor_name_missing: 'gym_day_pass_sales.visitor_name',
+                visitor_phone_missing: 'gym_day_pass_sales.visitor_phone_normalized',
+                amount_paid_missing: 'gym_day_pass_sales.amount_paid',
+                visit_date_missing: 'gym_day_pass_sales.visit_date',
+                status_missing: 'gym_day_pass_sales.status',
+                branch_missing: 'gym_day_pass_sales.branch_id',
+                created_missing: 'gym_day_pass_sales.created_at'
+            }).filter(([field]) => Number(row[field]) === 1).map(([, name]) => name);
+            if (missing.length) {
+                const error = new Error('Day-pass schema is not ready. Apply the approved migration before serving financial requests.');
+                error.statusCode = 503;
+                error.code = 'DAY_PASS_SCHEMA_NOT_READY';
+                error.expose = true;
+                error.missing = missing;
+                throw error;
+            }
         })().catch((error) => {
             tablePromise = undefined;
             throw error;

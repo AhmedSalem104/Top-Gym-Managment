@@ -22,6 +22,7 @@ const {
     parsePhone,
     normalizePhoneForSearch
 } = require('./phone-service');
+const { actualCollectionCaseSql } = require('./financial-ledger-service');
 
 const DEFAULT_MEMBERSHIP_PLANS = {
     gym_only: { label: 'جيم فقط', monthlyPrice: 305, active: true, sortOrder: 1 },
@@ -143,168 +144,45 @@ function normalizePaymentCollectionDate(value, fallback = todayInTimeZone()) {
     return date;
 }
 
+/**
+ * Schema ownership belongs to the migration/release pipeline. Runtime payment
+ * paths perform only this read-only readiness check and fail closed when the
+ * already-migrated ledger is not available.
+ */
 async function ensurePaymentTransactionsTable({ readOnly = false } = {}) {
     if (readOnly || getTenantContext()?.readOnlyBaseline) return;
     if (!paymentTransactionsTablePromise) {
         paymentTransactionsTablePromise = (async () => {
             const pool = await getPool();
-            await pool.request().batch(`
-                IF OBJECT_ID(N'dbo.gym_payment_transactions', N'U') IS NULL
-                BEGIN
-                    EXEC(N'CREATE TABLE dbo.gym_payment_transactions (
-                        id INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_gym_payment_transactions_runtime PRIMARY KEY,
-                        membership_id INT NOT NULL,
-                        transaction_type VARCHAR(20) NOT NULL CONSTRAINT DF_gym_payment_transactions_type_runtime DEFAULT (''payment''),
-                        list_price DECIMAL(12,2) NOT NULL,
-                        discount_amount DECIMAL(12,2) NOT NULL,
-                        amount_due DECIMAL(12,2) NOT NULL,
-                        amount_paid DECIMAL(12,2) NOT NULL,
-                        amount_remaining DECIMAL(12,2) NOT NULL,
-                        payment_method VARCHAR(20) NOT NULL CONSTRAINT DF_gym_payment_transactions_method_runtime DEFAULT (''cash''),
-                        paid_at DATE NULL,
-                        notes NVARCHAR(500) NULL,
-                        source_payment_id INT NULL,
-                        is_voided BIT NOT NULL CONSTRAINT DF_gym_payment_transactions_voided_runtime DEFAULT (0),
-                        voided_at DATETIME2(0) NULL,
-                        voided_by_user_id INT NULL,
-                        void_reason NVARCHAR(500) NULL,
-                        idempotency_key_hash CHAR(64) NULL,
-                        created_at DATETIME2(0) NOT NULL CONSTRAINT DF_gym_payment_transactions_created_runtime DEFAULT (SYSUTCDATETIME()),
-                        CONSTRAINT FK_gym_payment_transactions_membership_runtime FOREIGN KEY (membership_id)
-                            REFERENCES dbo.memberships(id) ON DELETE CASCADE,
-                        CONSTRAINT CK_gym_payment_transactions_type_runtime CHECK (transaction_type IN (''subscription'', ''payment'', ''adjustment'')),
-                        CONSTRAINT CK_gym_payment_transactions_amounts_runtime CHECK (
-                            list_price >= 0 AND discount_amount >= 0 AND discount_amount <= list_price
-                            AND amount_due = list_price - discount_amount
-                            AND amount_remaining >= 0 AND amount_remaining <= amount_due
-                            AND ((transaction_type = ''adjustment'' AND amount_paid <> 0) OR (transaction_type <> ''adjustment'' AND amount_paid > 0))
-                        ),
-                        CONSTRAINT CK_gym_payment_transactions_method_runtime CHECK (payment_method IN (''cash'', ''card'', ''transfer'', ''other''))
-                    );');
-                END;
-                IF COL_LENGTH(N'dbo.gym_payment_transactions', N'is_voided') IS NULL
-                    ALTER TABLE dbo.gym_payment_transactions ADD is_voided BIT NOT NULL CONSTRAINT DF_gym_payment_transactions_voided_runtime_migration DEFAULT (0);
-                IF COL_LENGTH(N'dbo.gym_payment_transactions', N'voided_at') IS NULL
-                    ALTER TABLE dbo.gym_payment_transactions ADD voided_at DATETIME2(0) NULL;
-                IF COL_LENGTH(N'dbo.gym_payment_transactions', N'voided_by_user_id') IS NULL
-                    ALTER TABLE dbo.gym_payment_transactions ADD voided_by_user_id INT NULL;
-                IF COL_LENGTH(N'dbo.gym_payment_transactions', N'void_reason') IS NULL
-                    ALTER TABLE dbo.gym_payment_transactions ADD void_reason NVARCHAR(500) NULL;
-                IF COL_LENGTH(N'dbo.gym_payment_transactions', N'idempotency_key_hash') IS NULL
-                    ALTER TABLE dbo.gym_payment_transactions ADD idempotency_key_hash CHAR(64) NULL;
-                IF COL_LENGTH(N'dbo.gym_payment_transactions', N'membership_id') IS NOT NULL
-                   AND EXISTS (
-                       SELECT 1 FROM sys.columns
-                       WHERE object_id = OBJECT_ID(N'dbo.gym_payment_transactions')
-                         AND name = N'membership_id'
-                         AND is_nullable = 0
-                   )
-                    ALTER TABLE dbo.gym_payment_transactions ALTER COLUMN membership_id INT NULL;
-                IF COL_LENGTH(N'dbo.gym_payment_transactions', N'trainer_package_purchase_id') IS NULL
-                    ALTER TABLE dbo.gym_payment_transactions ADD trainer_package_purchase_id INT NULL;
-                IF OBJECT_ID(N'dbo.trainer_package_purchases', N'U') IS NOT NULL
-                   AND NOT EXISTS (
-                       SELECT 1 FROM sys.foreign_keys
-                       WHERE name = N'FK_gym_payment_transactions_trainer_purchase'
-                         AND parent_object_id = OBJECT_ID(N'dbo.gym_payment_transactions')
-                   )
-                    ALTER TABLE dbo.gym_payment_transactions ADD CONSTRAINT FK_gym_payment_transactions_trainer_purchase
-                        FOREIGN KEY (trainer_package_purchase_id) REFERENCES dbo.trainer_package_purchases(id) ON DELETE NO ACTION;
-                IF NOT EXISTS (
-                    SELECT 1 FROM sys.check_constraints
-                    WHERE name = N'CK_gym_payment_transactions_owner_ref'
-                      AND parent_object_id = OBJECT_ID(N'dbo.gym_payment_transactions')
-                )
-                    ALTER TABLE dbo.gym_payment_transactions ADD CONSTRAINT CK_gym_payment_transactions_owner_ref
-                        CHECK ((membership_id IS NOT NULL AND trainer_package_purchase_id IS NULL)
-                            OR (membership_id IS NULL AND trainer_package_purchase_id IS NOT NULL));
-                IF NOT EXISTS (
-                    SELECT 1 FROM sys.check_constraints
-                    WHERE name = N'CK_gym_payment_transactions_void_state'
-                      AND parent_object_id = OBJECT_ID(N'dbo.gym_payment_transactions')
-                )
-                    EXEC(N'ALTER TABLE dbo.gym_payment_transactions ADD CONSTRAINT CK_gym_payment_transactions_void_state
-                        CHECK (is_voided = 0 OR (voided_at IS NOT NULL AND void_reason IS NOT NULL AND LEN(LTRIM(RTRIM(void_reason))) > 0));');
-                IF NOT EXISTS (
-                    SELECT 1 FROM sys.indexes
-                    WHERE name = N'IX_gym_payment_transactions_membership_date'
-                      AND object_id = OBJECT_ID(N'dbo.gym_payment_transactions')
-                )
-                BEGIN
-                    EXEC(N'CREATE INDEX IX_gym_payment_transactions_membership_date
-                          ON dbo.gym_payment_transactions(membership_id, created_at DESC, id DESC);');
-                END;
-                IF NOT EXISTS (
-                    SELECT 1 FROM sys.indexes
-                    WHERE name = N'IX_gym_payment_transactions_paid_at'
-                      AND object_id = OBJECT_ID(N'dbo.gym_payment_transactions')
-                )
-                BEGIN
-                    EXEC(N'CREATE INDEX IX_gym_payment_transactions_paid_at
-                          ON dbo.gym_payment_transactions(paid_at DESC, id DESC);');
-                END;
-                IF NOT EXISTS (
-                    SELECT 1 FROM sys.indexes
-                    WHERE name = N'UX_gym_payment_transactions_source_payment'
-                      AND object_id = OBJECT_ID(N'dbo.gym_payment_transactions')
-                )
-                BEGIN
-                    EXEC(N'CREATE UNIQUE INDEX UX_gym_payment_transactions_source_payment
-                          ON dbo.gym_payment_transactions(source_payment_id)
-                          WHERE source_payment_id IS NOT NULL;');
-                END;
-                IF EXISTS (
-                    SELECT membership_id
-                    FROM dbo.gym_payment_transactions
-                    WHERE transaction_type = 'subscription' AND is_voided = 0
-                    GROUP BY membership_id
-                    HAVING COUNT_BIG(*) > 1
-                )
-                    THROW 51211, 'Duplicate active subscription payment transactions require reconciliation.', 1;
-                IF NOT EXISTS (
-                    SELECT 1 FROM sys.indexes
-                    WHERE name = N'UX_gym_payment_transactions_subscription_membership'
-                      AND object_id = OBJECT_ID(N'dbo.gym_payment_transactions')
-                )
-                BEGIN
-                    EXEC(N'CREATE UNIQUE INDEX UX_gym_payment_transactions_subscription_membership
-                          ON dbo.gym_payment_transactions(membership_id)
-                          WHERE transaction_type = ''subscription'';');
-                END;
-                IF NOT EXISTS (
-                    SELECT 1 FROM sys.indexes
-                    WHERE name = N'UX_gym_payment_transactions_idempotency'
-                      AND object_id = OBJECT_ID(N'dbo.gym_payment_transactions')
-                )
-                BEGIN
-                    EXEC(N'CREATE UNIQUE INDEX UX_gym_payment_transactions_idempotency
-                          ON dbo.gym_payment_transactions(idempotency_key_hash)
-                          WHERE idempotency_key_hash IS NOT NULL;');
-                END;
-                IF NOT EXISTS (
-                    SELECT 1 FROM sys.indexes
-                    WHERE name = N'IX_gym_payment_transactions_trainer_purchase'
-                      AND object_id = OBJECT_ID(N'dbo.gym_payment_transactions')
-                )
-                BEGIN
-                    EXEC(N'CREATE INDEX IX_gym_payment_transactions_trainer_purchase
-                          ON dbo.gym_payment_transactions(trainer_package_purchase_id, paid_at DESC, id DESC);');
-                END;
-                EXEC(N'INSERT INTO dbo.gym_payment_transactions
-                    (membership_id, transaction_type, list_price, discount_amount, amount_due,
-                     amount_paid, amount_remaining, payment_method, paid_at, notes, source_payment_id, created_at)
-                    SELECT p.membership_id, ''subscription'', p.list_price, p.discount_amount, p.amount_due,
-                           p.amount_paid, p.amount_remaining, p.payment_method, p.paid_at,
-                           CASE WHEN p.notes IS NULL THEN N''تم ترحيله من سجل الدفع السابق.'' ELSE p.notes END,
-                           p.id, p.created_at
-                    FROM dbo.gym_payments AS p
-                    WHERE p.amount_paid > 0
-                      AND NOT EXISTS (
-                          SELECT 1 FROM dbo.gym_payment_transactions AS t WITH (UPDLOCK, HOLDLOCK)
-                          WHERE t.source_payment_id = p.id
-                             OR (t.membership_id = p.membership_id AND t.transaction_type = ''subscription'')
-                      );');
+            const result = await pool.request().query(`
+                SELECT
+                    CASE WHEN OBJECT_ID(N'dbo.gym_payment_transactions', N'U') IS NULL THEN 1 ELSE 0 END AS table_missing,
+                    CASE WHEN COL_LENGTH(N'dbo.gym_payment_transactions', N'membership_id') IS NULL THEN 1 ELSE 0 END AS membership_missing,
+                    CASE WHEN COL_LENGTH(N'dbo.gym_payment_transactions', N'transaction_type') IS NULL THEN 1 ELSE 0 END AS type_missing,
+                    CASE WHEN COL_LENGTH(N'dbo.gym_payment_transactions', N'amount_paid') IS NULL THEN 1 ELSE 0 END AS amount_missing,
+                    CASE WHEN COL_LENGTH(N'dbo.gym_payment_transactions', N'source_payment_id') IS NULL THEN 1 ELSE 0 END AS source_missing,
+                    CASE WHEN COL_LENGTH(N'dbo.gym_payment_transactions', N'is_voided') IS NULL THEN 1 ELSE 0 END AS void_missing,
+                    CASE WHEN COL_LENGTH(N'dbo.gym_payment_transactions', N'idempotency_key_hash') IS NULL THEN 1 ELSE 0 END AS idempotency_missing,
+                    CASE WHEN COL_LENGTH(N'dbo.gym_payment_transactions', N'branch_id') IS NULL THEN 1 ELSE 0 END AS branch_missing,
+                    CASE WHEN COL_LENGTH(N'dbo.gym_payment_transactions', N'created_at') IS NULL THEN 1 ELSE 0 END AS created_missing
             `);
+            const row = result.recordset?.[0] || {};
+            const missing = Object.entries({
+                table_missing: 'dbo.gym_payment_transactions',
+                membership_missing: 'gym_payment_transactions.membership_id',
+                type_missing: 'gym_payment_transactions.transaction_type',
+                amount_missing: 'gym_payment_transactions.amount_paid',
+                source_missing: 'gym_payment_transactions.source_payment_id',
+                void_missing: 'gym_payment_transactions.is_voided',
+                idempotency_missing: 'gym_payment_transactions.idempotency_key_hash',
+                branch_missing: 'gym_payment_transactions.branch_id',
+                created_missing: 'gym_payment_transactions.created_at'
+            }).filter(([field]) => Number(row[field]) === 1).map(([, name]) => name);
+            if (missing.length) {
+                const error = appError('Payment ledger schema is not ready. Apply the approved migration before serving payment mutations.', 503, 'PAYMENT_LEDGER_SCHEMA_NOT_READY');
+                error.missing = missing;
+                throw error;
+            }
         })().catch((error) => {
             paymentTransactionsTablePromise = undefined;
             throw error;
@@ -314,46 +192,39 @@ async function ensurePaymentTransactionsTable({ readOnly = false } = {}) {
 }
 
 async function ensureSubscriptionRefundsTable({ readOnly = false } = {}) {
-    if (readOnly || getTenantContext()?.readOnlyBaseline) return;
     if (!subscriptionRefundsTablePromise) {
         subscriptionRefundsTablePromise = (async () => {
             await ensurePaymentTransactionsTable({ readOnly });
             const pool = await getPool();
-            await pool.request().batch(`
-                IF COL_LENGTH(N'dbo.memberships', N'cancelled_at') IS NULL
-                    ALTER TABLE dbo.memberships ADD cancelled_at DATETIME2(0) NULL;
-                IF COL_LENGTH(N'dbo.memberships', N'cancelled_by_user_id') IS NULL
-                    ALTER TABLE dbo.memberships ADD cancelled_by_user_id INT NULL;
-                IF COL_LENGTH(N'dbo.memberships', N'cancellation_reason') IS NULL
-                    ALTER TABLE dbo.memberships ADD cancellation_reason NVARCHAR(500) NULL;
-                IF OBJECT_ID(N'dbo.gym_subscription_refunds', N'U') IS NULL
-                BEGIN
-                    CREATE TABLE dbo.gym_subscription_refunds (
-                        id INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_gym_subscription_refunds_runtime PRIMARY KEY,
-                        membership_id INT NOT NULL,
-                        amount_refunded DECIMAL(12,2) NOT NULL,
-                        refund_method VARCHAR(20) NOT NULL CONSTRAINT DF_gym_subscription_refunds_method_runtime DEFAULT ('cash'),
-                        reason NVARCHAR(500) NOT NULL,
-                        notes NVARCHAR(1000) NULL,
-                        refund_date DATE NOT NULL,
-                        created_by_user_id INT NULL,
-                        created_at DATETIME2(0) NOT NULL CONSTRAINT DF_gym_subscription_refunds_created_runtime DEFAULT (SYSUTCDATETIME()),
-                        CONSTRAINT FK_gym_subscription_refunds_membership_runtime FOREIGN KEY (membership_id)
-                            REFERENCES dbo.memberships(id) ON DELETE CASCADE,
-                        CONSTRAINT CK_gym_subscription_refunds_amount_runtime CHECK (amount_refunded > 0),
-                        CONSTRAINT CK_gym_subscription_refunds_method_runtime CHECK (refund_method IN ('cash', 'card', 'transfer', 'other'))
-                    );
-                END;
-                IF NOT EXISTS (
-                    SELECT 1 FROM sys.indexes
-                    WHERE name = N'IX_gym_subscription_refunds_membership_date'
-                      AND object_id = OBJECT_ID(N'dbo.gym_subscription_refunds')
-                )
-                BEGIN
-                    CREATE INDEX IX_gym_subscription_refunds_membership_date
-                        ON dbo.gym_subscription_refunds(membership_id, refund_date DESC, id DESC);
-                END;
+            const result = await pool.request().query(`
+                SELECT
+                    CASE WHEN OBJECT_ID(N'dbo.memberships', N'U') IS NULL THEN 1 ELSE 0 END AS memberships_missing,
+                    CASE WHEN COL_LENGTH(N'dbo.memberships', N'cancelled_at') IS NULL THEN 1 ELSE 0 END AS cancelled_at_missing,
+                    CASE WHEN COL_LENGTH(N'dbo.memberships', N'cancelled_by_user_id') IS NULL THEN 1 ELSE 0 END AS cancelled_by_missing,
+                    CASE WHEN COL_LENGTH(N'dbo.memberships', N'cancellation_reason') IS NULL THEN 1 ELSE 0 END AS cancellation_reason_missing,
+                    CASE WHEN OBJECT_ID(N'dbo.gym_subscription_refunds', N'U') IS NULL THEN 1 ELSE 0 END AS refunds_table_missing,
+                    CASE WHEN COL_LENGTH(N'dbo.gym_subscription_refunds', N'membership_id') IS NULL THEN 1 ELSE 0 END AS refund_membership_missing,
+                    CASE WHEN COL_LENGTH(N'dbo.gym_subscription_refunds', N'amount_refunded') IS NULL THEN 1 ELSE 0 END AS refund_amount_missing,
+                    CASE WHEN COL_LENGTH(N'dbo.gym_subscription_refunds', N'refund_date') IS NULL THEN 1 ELSE 0 END AS refund_date_missing,
+                    CASE WHEN COL_LENGTH(N'dbo.gym_subscription_refunds', N'created_at') IS NULL THEN 1 ELSE 0 END AS refund_created_missing
             `);
+            const row = result.recordset?.[0] || {};
+            const missing = Object.entries({
+                memberships_missing: 'dbo.memberships',
+                cancelled_at_missing: 'memberships.cancelled_at',
+                cancelled_by_missing: 'memberships.cancelled_by_user_id',
+                cancellation_reason_missing: 'memberships.cancellation_reason',
+                refunds_table_missing: 'dbo.gym_subscription_refunds',
+                refund_membership_missing: 'gym_subscription_refunds.membership_id',
+                refund_amount_missing: 'gym_subscription_refunds.amount_refunded',
+                refund_date_missing: 'gym_subscription_refunds.refund_date',
+                refund_created_missing: 'gym_subscription_refunds.created_at'
+            }).filter(([field]) => Number(row[field]) === 1).map(([, name]) => name);
+            if (missing.length) {
+                const error = appError('Subscription refund schema is not ready. Apply the approved migration before serving refund requests.', 503, 'SUBSCRIPTION_REFUND_SCHEMA_NOT_READY');
+                error.missing = missing;
+                throw error;
+            }
         })().catch((error) => {
             subscriptionRefundsTablePromise = undefined;
             throw error;
@@ -394,6 +265,7 @@ async function assertMemberMutationSchemaReady({ membershipRequired = false, mem
             CASE WHEN OBJECT_ID(N'dbo.membership_events', N'U') IS NULL THEN 1 ELSE 0 END AS membershipEventsTable,
             CASE WHEN OBJECT_ID(N'dbo.memberships', N'U') IS NULL THEN 1 ELSE 0 END AS membershipsTable,
             CASE WHEN OBJECT_ID(N'dbo.gym_payments', N'U') IS NULL THEN 1 ELSE 0 END AS paymentsTable,
+            CASE WHEN COL_LENGTH(N'dbo.gym_payments', N'branch_id') IS NULL THEN 1 ELSE 0 END AS paymentsBranch,
             CASE WHEN OBJECT_ID(N'dbo.gym_payment_transactions', N'U') IS NULL THEN 1 ELSE 0 END AS paymentTransactionsTable
     `);
 
@@ -410,11 +282,12 @@ async function assertMemberMutationSchemaReady({ membershipRequired = false, mem
             ['membershipCodeAuditTable', 'dbo.gym_membership_code_audit'],
             ['membershipEventsTable', 'dbo.membership_events'],
             ['membershipsTable', 'dbo.memberships'],
-            ['paymentsTable', 'dbo.gym_payments']
+            ['paymentsTable', 'dbo.gym_payments'],
+            ['paymentsBranch', 'dbo.gym_payments.branch_id']
         );
     }
     if (membershipTablesRequired && !membershipRequired) {
-        required.push(['membershipsTable', 'dbo.memberships'], ['paymentsTable', 'dbo.gym_payments']);
+        required.push(['membershipsTable', 'dbo.memberships'], ['paymentsTable', 'dbo.gym_payments'], ['paymentsBranch', 'dbo.gym_payments.branch_id']);
     }
 
     if (paymentRequired) {
@@ -643,26 +516,32 @@ function invalidatePricingCatalog() {
 }
 
 async function ensurePricingOverrides({ readOnly = false } = {}) {
-    if (readOnly || getTenantContext()?.readOnlyBaseline) return;
     if (!pricingOverridesPromise) {
         pricingOverridesPromise = (async () => {
             const pool = await getPool();
-            await pool.request().batch(`
-                IF OBJECT_ID(N'dbo.membership_type_prices', N'U') IS NULL
-                BEGIN
-                    CREATE TABLE dbo.membership_type_prices (
-                        plan_code VARCHAR(30) NOT NULL,
-                        type_code VARCHAR(30) NOT NULL,
-                        price DECIMAL(12,2) NOT NULL,
-                        created_at DATETIME2(0) NOT NULL CONSTRAINT DF_membership_type_prices_created_runtime DEFAULT (SYSUTCDATETIME()),
-                        updated_at DATETIME2(0) NOT NULL CONSTRAINT DF_membership_type_prices_updated_runtime DEFAULT (SYSUTCDATETIME()),
-                        CONSTRAINT PK_membership_type_prices_runtime PRIMARY KEY (plan_code, type_code),
-                        CONSTRAINT FK_membership_type_prices_plan_runtime FOREIGN KEY (plan_code) REFERENCES dbo.membership_pricing(plan_code) ON DELETE CASCADE,
-                        CONSTRAINT FK_membership_type_prices_type_runtime FOREIGN KEY (type_code) REFERENCES dbo.membership_types(type_code) ON DELETE CASCADE,
-                        CONSTRAINT CK_membership_type_prices_price_runtime CHECK (price >= 0)
-                    );
-                END;
+            const result = await pool.request().query(`
+                SELECT
+                    CASE WHEN OBJECT_ID(N'dbo.membership_pricing', N'U') IS NULL THEN 1 ELSE 0 END AS pricing_missing,
+                    CASE WHEN OBJECT_ID(N'dbo.membership_types', N'U') IS NULL THEN 1 ELSE 0 END AS types_missing,
+                    CASE WHEN OBJECT_ID(N'dbo.membership_type_prices', N'U') IS NULL THEN 1 ELSE 0 END AS overrides_missing,
+                    CASE WHEN COL_LENGTH(N'dbo.membership_type_prices', N'plan_code') IS NULL THEN 1 ELSE 0 END AS plan_code_missing,
+                    CASE WHEN COL_LENGTH(N'dbo.membership_type_prices', N'type_code') IS NULL THEN 1 ELSE 0 END AS type_code_missing,
+                    CASE WHEN COL_LENGTH(N'dbo.membership_type_prices', N'price') IS NULL THEN 1 ELSE 0 END AS price_missing
             `);
+            const row = result.recordset?.[0] || {};
+            const missing = Object.entries({
+                pricing_missing: 'dbo.membership_pricing',
+                types_missing: 'dbo.membership_types',
+                overrides_missing: 'dbo.membership_type_prices',
+                plan_code_missing: 'membership_type_prices.plan_code',
+                type_code_missing: 'membership_type_prices.type_code',
+                price_missing: 'membership_type_prices.price'
+            }).filter(([field]) => Number(row[field]) === 1).map(([, name]) => name);
+            if (missing.length) {
+                const error = appError('Membership pricing schema is not ready. Apply the approved migration before serving membership pricing requests.', 503, 'MEMBERSHIP_PRICING_SCHEMA_NOT_READY');
+                error.missing = missing;
+                throw error;
+            }
         })().catch((error) => {
             pricingOverridesPromise = undefined;
             throw error;
@@ -1671,6 +1550,23 @@ async function addEvent(connection, memberId, membershipId, eventType, details) 
                 VALUES (@memberId, @membershipId, @eventType, @details);`);
 }
 
+async function resolveMembershipFinancialBranchId(connection, membershipId) {
+    if (membershipId == null) return null;
+    const tenantId = currentTenantId({ required: true });
+    const result = await connection.request()
+        .input('tenantId', sql.Int, tenantId)
+        .input('membershipId', sql.Int, membershipId)
+        .query(`SELECT TOP (1) access.branch_id
+                FROM dbo.gym_membership_branch_access AS access
+                INNER JOIN dbo.gym_branches AS branch
+                    ON branch.id = access.branch_id
+                   AND branch.tenant_id = access.tenant_id
+                WHERE access.tenant_id = @tenantId
+                  AND access.membership_id = @membershipId
+                ORDER BY branch.is_main_branch DESC, access.branch_id ASC;`);
+    return result.recordset[0]?.branch_id == null ? null : Number(result.recordset[0].branch_id);
+}
+
 async function addPaymentTransaction(connection, {
     membershipId,
     transactionType = 'payment',
@@ -1683,6 +1579,7 @@ async function addPaymentTransaction(connection, {
     paidAt = null,
     notes = null,
     sourcePaymentId = null,
+    branchId = null,
     idempotencyKey = null
 }) {
     const idempotencyKeyHash = normalizePaymentIdempotencyKey(idempotencyKey);
@@ -1693,6 +1590,9 @@ async function addPaymentTransaction(connection, {
             return existing.id;
         }
     }
+    const resolvedBranchId = branchId == null
+        ? await resolveMembershipFinancialBranchId(connection, membershipId)
+        : Number(branchId);
     const result = await connection.request()
         .input('membershipId', sql.Int, membershipId)
         .input('transactionType', sql.VarChar(20), transactionType)
@@ -1705,15 +1605,16 @@ async function addPaymentTransaction(connection, {
         .input('paidAt', sql.Date, paidAt ? toUtcDate(paidAt) : null)
         .input('notes', sql.NVarChar(500), notes)
         .input('sourcePaymentId', sql.Int, sourcePaymentId || null)
+        .input('branchId', sql.Int, resolvedBranchId)
         .input('idempotencyKeyHash', sql.Char(64), idempotencyKeyHash)
         .query(`INSERT INTO dbo.gym_payment_transactions
                     (membership_id, transaction_type, list_price, discount_amount, amount_due,
                      amount_paid, amount_remaining, payment_method, paid_at, notes, source_payment_id,
-                     idempotency_key_hash)
+                     branch_id, idempotency_key_hash)
                 OUTPUT INSERTED.id
                 VALUES (@membershipId, @transactionType, @listPrice, @discountAmount, @amountDue,
                         @amountPaid, @amountRemaining, @paymentMethod, @paidAt, @notes, @sourcePaymentId,
-                        @idempotencyKeyHash);`);
+                        @branchId, @idempotencyKeyHash);`);
     return Number(result.recordset[0].id);
 }
 
@@ -1808,6 +1709,7 @@ async function assignDefaultMembershipScope(transaction, membershipId, { branchI
                         INSERT INTO dbo.gym_membership_section_access(tenant_id,membership_id,section_id)
                         VALUES (@tenantId,@membershipId,@sectionId);`);
     }
+    return { branchId: selectedBranchId, sectionId: selectedSectionId || null };
 }
 
 async function createMember(body, { tenantSlug = '', idempotencyKey = null, branchId = null, sectionId = null, actorUserId = null, actorRole = null } = {}) {
@@ -1877,7 +1779,7 @@ async function createMember(body, { tenantSlug = '', idempotencyKey = null, bran
             if (!Number.isInteger(membershipId) || membershipId <= 0) {
                 throw appError('تعذر إنشاء العضوية المرتبطة بالعضو.', 500, 'MEMBERSHIP_CREATION_FAILED');
             }
-            await assignDefaultMembershipScope(transaction, membershipId, { branchId, sectionId, actorUserId, actorRole });
+            const membershipScope = await assignDefaultMembershipScope(transaction, membershipId, { branchId, sectionId, actorUserId, actorRole });
             await transaction.request()
                 .input('membershipId', sql.Int, membershipId)
                 .input('listPrice', sql.Decimal(12, 2), pricing.listPrice)
@@ -1887,8 +1789,9 @@ async function createMember(body, { tenantSlug = '', idempotencyKey = null, bran
                 .input('paymentMethod', sql.VarChar(20), data.paymentMethod)
                 .input('paidAt', sql.Date, paymentDate ? toUtcDate(paymentDate) : null)
                 .input('notes', sql.NVarChar(500), data.paymentNotes)
-                .query(`INSERT INTO dbo.gym_payments (membership_id, list_price, discount_amount, amount_due, amount_paid, payment_method, paid_at, notes)
-                        VALUES (@membershipId, @listPrice, @discountAmount, @amountDue, @amountPaid, @paymentMethod, @paidAt, @notes);`);
+                .input('branchId', sql.Int, membershipScope.branchId)
+                .query(`INSERT INTO dbo.gym_payments (membership_id, list_price, discount_amount, amount_due, amount_paid, payment_method, paid_at, notes, branch_id)
+                        VALUES (@membershipId, @listPrice, @discountAmount, @amountDue, @amountPaid, @paymentMethod, @paidAt, @notes, @branchId);`);
             if (amountPaid > 0) {
                 await addPaymentTransaction(transaction, {
                     membershipId,
@@ -1901,6 +1804,7 @@ async function createMember(body, { tenantSlug = '', idempotencyKey = null, bran
                     paymentMethod: data.paymentMethod,
                     paidAt: paymentDate,
                     notes: data.paymentNotes,
+                    branchId: membershipScope.branchId,
                     idempotencyKey: paymentIdempotencyKey
                 });
             }
@@ -2068,6 +1972,7 @@ async function updateMember(id, body, idempotencyKey = null) {
                             payment_method = @paymentMethod, paid_at = @paidAt, notes = @notes,
                             updated_at = SYSUTCDATETIME() WHERE id = @id;`);
             } else {
+                const membershipBranchId = await resolveMembershipFinancialBranchId(transaction, currentMembership.id);
                 await transaction.request()
                     .input('membershipId', sql.Int, currentMembership.id)
                     .input('listPrice', sql.Decimal(12, 2), payment.listPrice)
@@ -2077,8 +1982,9 @@ async function updateMember(id, body, idempotencyKey = null) {
                     .input('paymentMethod', sql.VarChar(20), payment.paymentMethod)
                     .input('paidAt', sql.Date, payment.paidAt ? toUtcDate(payment.paidAt) : null)
                     .input('notes', sql.NVarChar(500), payment.paymentNotes)
-                    .query(`INSERT INTO dbo.gym_payments (membership_id, list_price, discount_amount, amount_due, amount_paid, payment_method, paid_at, notes)
-                            VALUES (@membershipId, @listPrice, @discountAmount, @amountDue, @amountPaid, @paymentMethod, @paidAt, @notes);`);
+                    .input('branchId', sql.Int, membershipBranchId)
+                    .query(`INSERT INTO dbo.gym_payments (membership_id, list_price, discount_amount, amount_due, amount_paid, payment_method, paid_at, notes, branch_id)
+                            VALUES (@membershipId, @listPrice, @discountAmount, @amountDue, @amountPaid, @paymentMethod, @paidAt, @notes, @branchId);`);
             }
             if (paymentDelta !== 0) {
                 await addPaymentTransaction(transaction, {
@@ -2246,7 +2152,10 @@ async function activateMembership(id, body = {}, idempotencyKey = null) {
             .query(`INSERT INTO dbo.memberships (member_id, membership_plan, membership_type, start_date, end_date, notes)
                     OUTPUT INSERTED.id VALUES (@memberId, @membershipPlan, @membershipType, @startDate, @endDate, @notes);`);
         const membershipId = Number(result.recordset[0].id);
-        await assignDefaultMembershipScope(transaction, membershipId);
+        const membershipScope = await assignDefaultMembershipScope(transaction, membershipId, {
+            branchId: body.branchId,
+            sectionId: body.sectionId
+        });
         await transaction.request()
             .input('membershipId', sql.Int, membershipId)
             .input('listPrice', sql.Decimal(12, 2), pricing.listPrice)
@@ -2256,8 +2165,9 @@ async function activateMembership(id, body = {}, idempotencyKey = null) {
             .input('paymentMethod', sql.VarChar(20), paymentMethod)
             .input('paidAt', sql.Date, paymentDate ? toUtcDate(paymentDate) : null)
             .input('notes', sql.NVarChar(500), paymentNotes)
-            .query(`INSERT INTO dbo.gym_payments (membership_id, list_price, discount_amount, amount_due, amount_paid, payment_method, paid_at, notes)
-                    VALUES (@membershipId, @listPrice, @discountAmount, @amountDue, @amountPaid, @paymentMethod, @paidAt, @notes);`);
+            .input('branchId', sql.Int, membershipScope.branchId)
+            .query(`INSERT INTO dbo.gym_payments (membership_id, list_price, discount_amount, amount_due, amount_paid, payment_method, paid_at, notes, branch_id)
+                    VALUES (@membershipId, @listPrice, @discountAmount, @amountDue, @amountPaid, @paymentMethod, @paidAt, @notes, @branchId);`);
         if (amountPaid > 0) {
             await addPaymentTransaction(transaction, {
                 membershipId,
@@ -2270,6 +2180,7 @@ async function activateMembership(id, body = {}, idempotencyKey = null) {
                 paymentMethod,
                 paidAt: paymentDate,
                 notes: paymentNotes,
+                branchId: membershipScope.branchId,
                 idempotencyKey: paymentIdempotencyKey
             });
         }
@@ -2409,7 +2320,10 @@ async function renewMember(id, body = {}, idempotencyKey = null) {
             .query(`INSERT INTO dbo.memberships (member_id, membership_plan, membership_type, start_date, end_date, notes)
                     OUTPUT INSERTED.id VALUES (@memberId, @membershipPlan, @membershipType, @startDate, @endDate, @notes);`);
         const membershipId = Number(result.recordset[0].id);
-        await assignDefaultMembershipScope(transaction, membershipId);
+        const membershipScope = await assignDefaultMembershipScope(transaction, membershipId, {
+            branchId: body.branchId,
+            sectionId: body.sectionId
+        });
         await transaction.request()
             .input('membershipId', sql.Int, membershipId)
             .input('listPrice', sql.Decimal(12, 2), pricing.listPrice)
@@ -2419,8 +2333,9 @@ async function renewMember(id, body = {}, idempotencyKey = null) {
             .input('paymentMethod', sql.VarChar(20), paymentMethod)
             .input('paidAt', sql.Date, paymentDate ? toUtcDate(paymentDate) : null)
             .input('notes', sql.NVarChar(500), paymentNotes)
-            .query(`INSERT INTO dbo.gym_payments (membership_id, list_price, discount_amount, amount_due, amount_paid, payment_method, paid_at, notes)
-                    VALUES (@membershipId, @listPrice, @discountAmount, @amountDue, @amountPaid, @paymentMethod, @paidAt, @notes);`);
+            .input('branchId', sql.Int, membershipScope.branchId)
+            .query(`INSERT INTO dbo.gym_payments (membership_id, list_price, discount_amount, amount_due, amount_paid, payment_method, paid_at, notes, branch_id)
+                    VALUES (@membershipId, @listPrice, @discountAmount, @amountDue, @amountPaid, @paymentMethod, @paidAt, @notes, @branchId);`);
         if (amountPaid > 0) {
             await addPaymentTransaction(transaction, {
                 membershipId,
@@ -2430,11 +2345,12 @@ async function renewMember(id, body = {}, idempotencyKey = null) {
                 amountDue: pricing.amountDue,
                 amountPaid,
                 amountRemaining: pricing.amountDue - amountPaid,
-            paymentMethod,
-            paidAt: paymentDate,
-            notes: paymentNotes,
-            idempotencyKey: paymentIdempotencyKey
-        });
+                paymentMethod,
+                paidAt: paymentDate,
+                notes: paymentNotes,
+                branchId: membershipScope.branchId,
+                idempotencyKey: paymentIdempotencyKey
+            });
         }
         await addEvent(transaction, memberId, membershipId, 'renewed', {
             membershipPlan, membershipType: resolvedMembershipType, startDate, endDate,
@@ -2500,6 +2416,7 @@ async function recordPayment(membershipId, body = {}, idempotencyKey = null) {
                         payment_method = @paymentMethod, paid_at = @paidAt, notes = @notes,
                         updated_at = SYSUTCDATETIME() WHERE id = @id;`);
         } else {
+            const membershipBranchId = await resolveMembershipFinancialBranchId(transaction, id);
             await transaction.request()
                 .input('membershipId', sql.Int, id)
                 .input('listPrice', sql.Decimal(12, 2), payment.listPrice)
@@ -2509,8 +2426,9 @@ async function recordPayment(membershipId, body = {}, idempotencyKey = null) {
                 .input('paymentMethod', sql.VarChar(20), payment.paymentMethod)
                 .input('paidAt', sql.Date, payment.paidAt ? toUtcDate(payment.paidAt) : null)
                 .input('notes', sql.NVarChar(500), payment.paymentNotes)
-                .query(`INSERT INTO dbo.gym_payments (membership_id, list_price, discount_amount, amount_due, amount_paid, payment_method, paid_at, notes)
-                        VALUES (@membershipId, @listPrice, @discountAmount, @amountDue, @amountPaid, @paymentMethod, @paidAt, @notes);`);
+                .input('branchId', sql.Int, membershipBranchId)
+                .query(`INSERT INTO dbo.gym_payments (membership_id, list_price, discount_amount, amount_due, amount_paid, payment_method, paid_at, notes, branch_id)
+                        VALUES (@membershipId, @listPrice, @discountAmount, @amountDue, @amountPaid, @paymentMethod, @paidAt, @notes, @branchId);`);
         }
         if (paymentDelta !== 0) {
             await addPaymentTransaction(transaction, {
@@ -2638,7 +2556,8 @@ async function createMembershipFromApprovedRequest({
                 OUTPUT INSERTED.id
                 VALUES (@memberId, @membershipPlan, @membershipType, @startDate, @endDate, @notes);`);
     const membershipId = Number(membershipResult.recordset[0]?.id);
-    await assignDefaultMembershipScope(transaction, membershipId);
+    if (!membershipId) throw appError('Membership creation failed.', 500, 'MEMBERSHIP_CREATION_FAILED');
+    const membershipScope = await assignDefaultMembershipScope(transaction, membershipId);
     if (!membershipId) throw appError('ØªØ¹Ø°Ø± Ø¥Ù†Ø´Ø§Ø¡ Ø§Ù„Ø§Ø´ØªØ±Ø§Ùƒ.', 500);
     const paymentResult = await transaction.request()
         .input('membershipId', sql.Int, membershipId)
@@ -2649,9 +2568,10 @@ async function createMembershipFromApprovedRequest({
         .input('paymentMethod', sql.VarChar(20), ledgerMethod)
         .input('paidAt', sql.Date, toUtcDate(collectionDate))
         .input('notes', sql.NVarChar(500), optionalString(paymentNotes, 500))
-        .query(`INSERT INTO dbo.gym_payments (membership_id, list_price, discount_amount, amount_due, amount_paid, payment_method, paid_at, notes)
+        .input('branchId', sql.Int, membershipScope.branchId)
+        .query(`INSERT INTO dbo.gym_payments (membership_id, list_price, discount_amount, amount_due, amount_paid, payment_method, paid_at, notes, branch_id)
                 OUTPUT INSERTED.id
-                VALUES (@membershipId, @listPrice, @discountAmount, @amountDue, @amountPaid, @paymentMethod, @paidAt, @notes);`);
+                VALUES (@membershipId, @listPrice, @discountAmount, @amountDue, @amountPaid, @paymentMethod, @paidAt, @notes, @branchId);`);
     const paymentId = Number(paymentResult.recordset[0]?.id);
     if (!paymentId) throw appError('ØªØ¹Ø°Ø± ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø¯ÙØ¹.', 500);
     const ledgerTransactionId = due > 0
@@ -2666,7 +2586,8 @@ async function createMembershipFromApprovedRequest({
             paymentMethod: ledgerMethod,
             paidAt: collectionDate,
             notes: optionalString(paymentNotes, 500),
-            sourcePaymentId: paymentId
+            sourcePaymentId: paymentId,
+            branchId: membershipScope.branchId
         })
         : null;
     await addEvent(transaction, id, membershipId, ['extension', 'renewal'].includes(normalizedRequestType) ? 'renewed' : 'activated', {
@@ -2848,11 +2769,13 @@ async function getMemberDetails(id, { readOnly = false } = {}) {
         pool.request()
             .input('memberId', sql.Int, memberId)
             .input('tenantId', sql.Int, tenantId)
-            .query(`SELECT p.id, p.membership_id, p.transaction_type,
-                           p.list_price, p.discount_amount, p.amount_due,
-                           p.amount_paid, p.amount_remaining,
-                           p.payment_method, p.paid_at, p.notes, p.created_at,
-                           m.membership_plan, m.membership_type
+                     .query(`SELECT p.id, p.membership_id, p.transaction_type,
+                            p.list_price, p.discount_amount, p.amount_due,
+                            p.amount_paid, p.amount_remaining,
+                            p.payment_method, p.paid_at, p.notes, p.created_at,
+                            p.source_payment_id, p.branch_id,
+                            ${actualCollectionCaseSql({ transactionAlias: 'p', membershipAlias: 'm' })} AS is_actual_collection,
+                            m.membership_plan, m.membership_type
                     FROM dbo.gym_payment_transactions AS p
                     INNER JOIN dbo.memberships AS m ON m.id = p.membership_id
                     WHERE m.member_id = @memberId AND m.tenant_id = @tenantId
@@ -3012,12 +2935,17 @@ async function getMemberDetails(id, { readOnly = false } = {}) {
         paidAt: formatDateOnly(row.paid_at),
         transactionDate: row.created_at,
         notes: row.notes,
-        createdAt: row.created_at
+        createdAt: row.created_at,
+        sourcePaymentId: row.source_payment_id == null ? null : Number(row.source_payment_id),
+        branchId: row.branch_id == null ? null : Number(row.branch_id),
+        isActualCollection: Boolean(row.is_actual_collection)
     }));
     const totalDue = memberships.reduce((sum, item) => sum + item.amountDue, 0);
-    const totalPaid = memberships.reduce((sum, item) => sum + item.amountPaid, 0);
+    const totalPaid = payments
+        .filter((item) => item.isActualCollection && item.amountPaid > 0)
+        .reduce((sum, item) => sum + item.amountPaid, 0);
     const totalRemaining = memberships.reduce((sum, item) => sum + item.amountRemaining, 0);
-    const paidTransactions = payments.filter((item) => item.amountPaid > 0);
+    const paidTransactions = payments.filter((item) => item.isActualCollection && item.amountPaid > 0);
     return {
         member: {
             id: Number(memberRow.id),

@@ -93,8 +93,10 @@ async function getMonthlyFinance({ readOnly = false, branchId = null, sectionId 
     const paymentSummary = resolvedPaymentsResult.recordset[0] || {};
     const expenseSummary = resolvedExpenseSummaryResult.recordset[0] || {};
     const subscriptionsTotal = Number(paymentSummary.subscriptionsTotal || 0);
+    const refundsTotal = Number(paymentSummary.refundsTotal || 0);
     const dayPassesTotal = Number(dayPassData.amount || 0);
     const expensesTotal = Number(expenseSummary.expensesTotal || 0);
+    const totalCollected = subscriptionsTotal + dayPassesTotal;
 
     return {
         period: range,
@@ -106,13 +108,14 @@ async function getMonthlyFinance({ readOnly = false, branchId = null, sectionId 
             total: dayPassesTotal,
             count: Number(dayPassData.count || 0)
         },
-        totalCollected: subscriptionsTotal + dayPassesTotal,
+        totalCollected,
+        refunds: refundsTotal,
         expenses: {
             total: expensesTotal,
             count: Number(expenseSummary.expenseCount || 0),
             items: resolvedExpenseItemsResult.recordset.map(mapExpense)
         },
-        net: subscriptionsTotal + dayPassesTotal - expensesTotal
+        net: totalCollected - refundsTotal - expensesTotal
     };
 }
 

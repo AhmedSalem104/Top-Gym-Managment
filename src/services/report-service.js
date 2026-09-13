@@ -13,6 +13,7 @@ const {
     normalizeFinancialScope,
     subscriptionPaymentScopeSql
 } = require('../repositories/financial-scope');
+const { actualCollectionCaseSql, actualCollectionPredicateSql, refundCaseSql } = require('./financial-ledger-service');
 
 function appError(message, statusCode = 400) {
     const error = new Error(message);
@@ -82,7 +83,7 @@ function emptyTimeline(from, to) {
     const rows = [];
     let cursor = from;
     while (cursor <= to) {
-        rows.push({ date: cursor, newMembers: 0, newMemberships: 0, collected: 0, expenses: 0 });
+        rows.push({ date: cursor, newMembers: 0, newMemberships: 0, collected: 0, refunds: 0, expenses: 0 });
         cursor = addDays(cursor, 1);
     }
     return rows;
@@ -184,7 +185,9 @@ async function getReportData(query = {}, options = {}) {
         baseRequest().query(`
             SELECT t.id, t.membership_id, t.transaction_type, t.list_price, t.discount_amount,
                    t.amount_due, t.amount_paid, t.amount_paid AS amount, t.amount_remaining, t.payment_method,
-                   t.paid_at AS event_date, t.notes, t.created_at,
+                   t.paid_at AS event_date, t.notes, t.created_at, t.source_payment_id, t.branch_id,
+                   ${actualCollectionCaseSql({ transactionAlias: 't', membershipAlias: 'ms' })} AS is_actual_collection,
+                   ${refundCaseSql({ transactionAlias: 't' })} AS is_refund,
                    m.full_name, m.phone, ms.membership_plan, ms.membership_type
             FROM dbo.gym_payment_transactions AS t
             INNER JOIN dbo.memberships AS ms ON ms.id = t.membership_id
@@ -192,6 +195,7 @@ async function getReportData(query = {}, options = {}) {
             WHERE ${financialDateRangeSql('t.paid_at', '@fromDate', '@nextDate')}
               AND t.is_voided = 0 AND t.amount_paid <> 0
               ${subscriptionPaymentScopeSql({ paymentAlias: 't', membershipAlias: 'ms' })}
+              ${actualCollectionPredicateSql({ transactionAlias: 't', membershipAlias: 'ms' })}
             ORDER BY t.paid_at DESC, t.id DESC;
         `),
         baseRequest().query(`
@@ -206,11 +210,12 @@ async function getReportData(query = {}, options = {}) {
             SELECT payment_method, COUNT(*) AS count, ISNULL(SUM(amount_paid), 0) AS amount
             FROM dbo.gym_payment_transactions
             WHERE ${financialDateRangeSql('gym_payment_transactions.paid_at', '@fromDate', '@nextDate')}
-              AND is_voided = 0 AND amount_paid <> 0
+              AND is_voided = 0 AND transaction_type <> 'adjustment' AND amount_paid > 0
               AND EXISTS (
                   SELECT 1 FROM dbo.memberships AS method_membership
                   WHERE method_membership.id = gym_payment_transactions.membership_id
                     ${subscriptionPaymentScopeSql({ paymentAlias: 'gym_payment_transactions', membershipAlias: 'method_membership' })}
+                    ${actualCollectionPredicateSql({ transactionAlias: 'gym_payment_transactions', membershipAlias: 'method_membership' })}
               )
             GROUP BY payment_method ORDER BY amount DESC;
         `),
@@ -348,9 +353,12 @@ async function getReportData(query = {}, options = {}) {
             alertContact: debtAlertContacts.get(alertContactService.compositeKey(alert.id, alert.alertKind, alertKey)) || null
         };
     }
-    const subscriptionCollected = roundMoney(paymentRows.reduce((sum, row) => sum + Number(row.amount || 0), 0));
+    const actualPaymentRows = paymentRows.filter((row) => Number(row.is_actual_collection || 0) === 1);
+    const refundRows = paymentRows.filter((row) => Number(row.is_refund || 0) === 1);
+    const subscriptionCollected = roundMoney(actualPaymentRows.reduce((sum, row) => sum + Number(row.amount || 0), 0));
     const dayPassCollected = roundMoney(dayPassRows.reduce((sum, row) => sum + Number(row.amountPaid || 0), 0));
     const collected = roundMoney(subscriptionCollected + dayPassCollected);
+    const refunds = roundMoney(refundRows.reduce((sum, row) => sum + Math.abs(Number(row.amount || 0)), 0));
     const expenses = roundMoney(expenseRows.reduce((sum, row) => sum + Number(row.amount || 0), 0));
     const paymentMethodTotals = new Map();
     paymentMethodsResult.recordset.forEach((row) => {
@@ -377,7 +385,8 @@ async function getReportData(query = {}, options = {}) {
         const target = timelineByDate.get(formatDateOnly(row.start_date));
         if (target) target.newMemberships += 1;
         });
-    addTimelineAmount(timelineByDate, paymentRows, 'event_date', 'collected');
+    addTimelineAmount(timelineByDate, actualPaymentRows, 'event_date', 'collected');
+    addTimelineAmount(timelineByDate, refundRows.map((row) => ({ ...row, amount: Math.abs(Number(row.amount || 0)) })), 'event_date', 'refunds');
     addTimelineAmount(timelineByDate, dayPassRows, 'visitDate', 'amountPaid');
     addTimelineAmount(timelineByDate, expenseRows, 'event_date', 'expenses');
 
@@ -399,14 +408,15 @@ async function getReportData(query = {}, options = {}) {
         summary: {
             newMembers: memberRows.length,
             newMemberships: membershipRows.length,
-            paidTransactions: paymentRows.length + dayPassRows.length,
-            subscriptionPaidTransactions: paymentRows.length,
+            paidTransactions: actualPaymentRows.length + dayPassRows.length,
+            subscriptionPaidTransactions: actualPaymentRows.length,
             dayPassCount: dayPassRows.length,
             dayPassCollected,
             collected,
+            refunds,
             expenses,
             expensesCount: expenseRows.length,
-            net: roundMoney(collected - expenses),
+            net: roundMoney(collected - refunds - expenses),
             outstanding: roundMoney(outstanding),
             outstandingCount: membershipRows.filter((row) => Number(row.amount_remaining || 0) > 0).length,
             debtorsCount: debtorRows.length,
@@ -450,10 +460,13 @@ async function getReportData(query = {}, options = {}) {
             discountAmount: Number(row.discount_amount || 0),
             amountDue: Number(row.amount_due || 0),
             amountPaid: Number(row.amount_paid || 0),
-            amountRemaining: Number(row.amount_remaining || 0),
-            paymentMethod: row.payment_method,
-            notes: row.notes || null,
-            createdAt: row.created_at
+             amountRemaining: Number(row.amount_remaining || 0),
+             paymentMethod: row.payment_method,
+             notes: row.notes || null,
+             createdAt: row.created_at,
+             isActualCollection: Number(row.is_actual_collection || 0) === 1,
+             isRefund: Number(row.is_refund || 0) === 1,
+             sourcePaymentId: row.source_payment_id == null ? null : Number(row.source_payment_id)
         })),
         dayPasses: dayPassRows.map((row) => ({
             id: row.id,

@@ -16,6 +16,7 @@ const {
     normalizeFinancialScope,
     subscriptionPaymentScopeSql
 } = require('../repositories/financial-scope');
+const { actualCollectionCaseSql, actualCollectionPredicateSql, refundCaseSql } = require('./financial-ledger-service');
 
 const PERIOD_KEYS = new Set(['week', 'month', 'year']);
 
@@ -335,12 +336,15 @@ async function getDashboardAnalytics(periodValue = 'month', { readOnly = false, 
             WHERE start_date >= @startDate AND start_date < @nextDate
               ${membershipScope('memberships')};
 
-            SELECT paid_at AS eventDate, amount_paid AS amount, payment_method AS paymentMethod
+            SELECT paid_at AS eventDate, amount_paid AS amount, payment_method AS paymentMethod,
+                   ${actualCollectionCaseSql({ transactionAlias: 'payment_transactions', membershipAlias: 'payment_membership' })} AS isActualCollection,
+                   ${refundCaseSql({ transactionAlias: 'payment_transactions' })} AS isRefund
             FROM dbo.gym_payment_transactions AS payment_transactions
             INNER JOIN dbo.memberships AS payment_membership ON payment_membership.id = payment_transactions.membership_id
             WHERE ${financialDateRangeSql('payment_transactions.paid_at', '@startDate', '@nextDate')}
               AND payment_transactions.is_voided = 0 AND payment_transactions.amount_paid <> 0
-              ${subscriptionPaymentScopeSql({ paymentAlias: 'payment_transactions', membershipAlias: 'payment_membership' })};
+              ${subscriptionPaymentScopeSql({ paymentAlias: 'payment_transactions', membershipAlias: 'payment_membership' })}
+              ${actualCollectionPredicateSql({ transactionAlias: 'payment_transactions', membershipAlias: 'payment_membership' })};
 
             SELECT visit_date AS eventDate, amount_paid AS amount, payment_method AS paymentMethod
             FROM dbo.gym_day_pass_sales AS day_passes
@@ -419,12 +423,17 @@ async function getDashboardAnalytics(periodValue = 'month', { readOnly = false, 
               ${membershipScope('memberships')};
 
             SELECT COUNT_BIG(*) AS total,
-                   ISNULL(SUM(amount_paid), 0) AS amount
+                   ISNULL(SUM(amount_paid), 0) AS amount,
+                   ISNULL(SUM(CASE WHEN ${actualCollectionCaseSql({ transactionAlias: 'payment_transactions', membershipAlias: 'payment_membership' })} = 1 THEN 1 ELSE 0 END), 0) AS actualCount,
+                   ISNULL(SUM(CASE WHEN ${refundCaseSql({ transactionAlias: 'payment_transactions' })} = 1 THEN 1 ELSE 0 END), 0) AS refundsCount,
+                   ISNULL(SUM(CASE WHEN ${actualCollectionCaseSql({ transactionAlias: 'payment_transactions', membershipAlias: 'payment_membership' })} = 1 THEN amount_paid ELSE 0 END), 0) AS actualAmount,
+                   ISNULL(SUM(CASE WHEN ${refundCaseSql({ transactionAlias: 'payment_transactions' })} = 1 THEN -amount_paid ELSE 0 END), 0) AS refundsAmount
             FROM dbo.gym_payment_transactions AS payment_transactions
             INNER JOIN dbo.memberships AS payment_membership ON payment_membership.id = payment_transactions.membership_id
             WHERE ${financialDateRangeSql('payment_transactions.paid_at', '@startDate', '@nextDate')}
               AND payment_transactions.is_voided = 0 AND payment_transactions.amount_paid <> 0
-              ${subscriptionPaymentScopeSql({ paymentAlias: 'payment_transactions', membershipAlias: 'payment_membership' })};
+              ${subscriptionPaymentScopeSql({ paymentAlias: 'payment_transactions', membershipAlias: 'payment_membership' })}
+              ${actualCollectionPredicateSql({ transactionAlias: 'payment_transactions', membershipAlias: 'payment_membership' })};
 
             SELECT COUNT_BIG(*) AS total,
                    ISNULL(SUM(amount_paid), 0) AS amount
@@ -458,9 +467,12 @@ async function getDashboardAnalytics(periodValue = 'month', { readOnly = false, 
     const expenseRows = currentRecordsets[4] || [];
     const attendanceRows = currentRecordsets[5] || [];
     const inactiveAttendanceRows = currentRecordsets[6] || [];
-    const paymentTotal = paymentRows.reduce((sum, row) => sum + Number(row.amount || 0), 0);
+    const actualPaymentRows = paymentRows.filter((row) => Number(row.isActualCollection || 0) === 1);
+    const refundRows = paymentRows.filter((row) => Number(row.isRefund || 0) === 1);
+    const paymentTotal = actualPaymentRows.reduce((sum, row) => sum + Number(row.amount || 0), 0);
+    const refundTotal = refundRows.reduce((sum, row) => sum + Math.abs(Number(row.amount || 0)), 0);
     const dayPassTotal = dayPassRows.reduce((sum, row) => sum + Number(row.amount || 0), 0);
-    const collectedRows = [...paymentRows, ...dayPassRows];
+    const collectedRows = [...actualPaymentRows, ...dayPassRows];
     const collectedTotal = paymentTotal + dayPassTotal;
     const expenseTotal = expenseRows.reduce((sum, row) => sum + Number(row.amount || 0), 0);
     const statusStats = dashboard.stats || {};
@@ -471,9 +483,10 @@ async function getDashboardAnalytics(periodValue = 'month', { readOnly = false, 
     const previousDayPasses = previousRecordsets[3]?.[0] || {};
     const previousExpenses = previousRecordsets[4]?.[0] || {};
     const previousAttendance = previousRecordsets[5]?.[0] || {};
-    const previousCollected = roundAmount(Number(previousPayments.amount || 0) + Number(previousDayPasses.amount || 0));
+    const previousCollected = roundAmount(Number(previousPayments.actualAmount || 0) + Number(previousDayPasses.amount || 0));
+    const previousRefunds = roundAmount(Number(previousPayments.refundsAmount || 0));
     const previousExpenseTotal = roundAmount(previousExpenses.amount);
-    const previousNet = roundAmount(previousCollected - previousExpenseTotal);
+    const previousNet = roundAmount(previousCollected - previousRefunds - previousExpenseTotal);
     const attendance = buildAttendanceAnalytics(attendanceRows, inactiveAttendanceRows, buckets, range);
     const currentKpis = {
         newMembers: memberRows.length,
@@ -481,15 +494,17 @@ async function getDashboardAnalytics(periodValue = 'month', { readOnly = false, 
         paidTransactions: collectedRows.length,
         collected: roundAmount(collectedTotal),
         expenses: roundAmount(expenseTotal),
-        net: roundAmount(collectedTotal - expenseTotal),
+        refunds: roundAmount(refundTotal),
+        net: roundAmount(collectedTotal - refundTotal - expenseTotal),
         visits: attendanceRows.length,
         uniqueMembers: attendance.kpis.uniqueMembers
     };
     const previousKpis = {
         newMembers: previousMembers,
         newMemberships: previousMemberships,
-        paidTransactions: Number(previousPayments.total || 0) + Number(previousDayPasses.total || 0),
+        paidTransactions: Number(previousPayments.actualCount || 0) + Number(previousDayPasses.total || 0),
         collected: previousCollected,
+        refunds: previousRefunds,
         expenses: previousExpenseTotal,
         net: previousNet,
         visits: Number(previousAttendance.visits || 0),
@@ -522,6 +537,7 @@ async function getDashboardAnalytics(periodValue = 'month', { readOnly = false, 
             newMemberships: currentKpis.newMemberships,
             paidTransactions: currentKpis.paidTransactions,
             collected: currentKpis.collected,
+            refunds: currentKpis.refunds,
             expenseCount: expenseRows.length,
             expenses: currentKpis.expenses,
             net: currentKpis.net,

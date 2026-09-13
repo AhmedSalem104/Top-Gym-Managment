@@ -201,11 +201,15 @@
         $('monthlyExpensesTotal').textContent = money(expenses.total);
         $('monthlyNetTotal').textContent = money(net);
         $('monthlyNetTotal').classList.toggle('negative', net < 0);
-        $('monthlySubscriptionsMeta').textContent = `${Number(subscriptions.count || 0).toLocaleString('ar-EG')} عملية تحصيل خلال الشهر`;
-        if ($('monthlyDayPassesMeta')) $('monthlyDayPassesMeta').textContent = dayPasses.count ? `${Number(dayPasses.count).toLocaleString('ar-EG')} حصة مسجلة خلال الشهر` : 'لا توجد حصص مسجلة';
+        const actualCollectionHint = 'المبلغ المحصل فعليًا خلال الفترة';
+        $('monthlySubscriptionsMeta').textContent = `${Number(subscriptions.count || 0).toLocaleString('ar-EG')} عملية تحصيل · ${actualCollectionHint}`;
+        if ($('monthlyDayPassesMeta')) $('monthlyDayPassesMeta').textContent = dayPasses.count ? `${Number(dayPasses.count).toLocaleString('ar-EG')} حصة · تحصيل فعلي` : 'لا توجد حصص مسجلة';
         $('monthlyExpensesMeta').textContent = expenses.count
-            ? `${Number(expenses.count).toLocaleString('ar-EG')} مصروف مسجل خلال الشهر`
+            ? `${Number(expenses.count).toLocaleString('ar-EG')} مصروف · مصروفات مسجلة خلال الفترة`
             : 'لا توجد مصروفات مسجلة';
+        if ($('monthlyNetMeta')) $('monthlyNetMeta').textContent = Number(data.refunds || 0) > 0
+            ? 'التحصيل الفعلي − المصروفات − الاستردادات'
+            : 'التحصيل الفعلي − المصروفات';
         $('monthlyFinanceStatus').textContent = 'محدث الآن';
 
         if ($('monthlyFinanceSnapshotPeriod')) $('monthlyFinanceSnapshotPeriod').textContent = periodLabel;
