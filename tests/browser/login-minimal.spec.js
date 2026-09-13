@@ -64,7 +64,7 @@ async function assertLoginSurface(page) {
 
 test.beforeEach(async ({ page }) => {
     await mockUnauthenticatedSession(page);
-    await page.goto('/', { waitUntil: 'domcontentloaded' });
+    await page.goto('/login.html', { waitUntil: 'domcontentloaded' });
 });
 
 test('login is a minimal responsive surface with preserved auth hooks', async ({ page }) => {

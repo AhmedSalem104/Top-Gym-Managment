@@ -55,6 +55,8 @@ function assertRequiredFiles() {
         'public/change-password.html',
         'public/css/main.css',
         'public/css/main.source.css',
+        'public/css/app-shell.css',
+        'public/css/app-shell.source.css',
         'public/css/tokens.css',
         'public/css/reset.css',
         'public/css/layout.css',
@@ -72,10 +74,17 @@ function assertRequiredFiles() {
         'public/css/pages/members.css',
         'public/css/pages/attendance.css',
         'public/js/app.js',
+        'public/js/app-shell-bootstrap.js',
+        'public/js/core/feature-manifest.js',
+        'public/js/core/dialog-loader.js',
         'public/js/core/api.js',
         'public/js/core/permissions.js',
         'public/js/core/state.js',
         'public/js/feature-loader.js',
+        'public/dialogs/library.html',
+        'public/dialogs/coaching.html',
+        'public/dialogs/permissions.html',
+        'public/dialogs/backup.html',
         'public/js/integrations/print-enhancements.js',
         'src/db.js',
         'src/services/member-service.js',
@@ -338,7 +347,7 @@ function checkAuthSurface() {
     record('AUTH-BACKEND-MIDDLEWARE', server.includes('createAuthApiMiddleware') && authMiddleware.includes('authorizeRequest(user, request)'), 'backend authentication and centralized authorization middleware is present', 'P0');
     record('AUTH-SCRYPT-HASHING', auth.includes('crypto.scrypt') && auth.includes('timingSafeEqual'), 'password hashing uses scrypt and timing-safe comparison', 'P0');
     record('AUTH-HTTPONLY-SESSION', auth.includes('HttpOnly') && auth.includes('SameSite=Lax'), 'sessions use HttpOnly SameSite cookies', 'P0');
-    record('AUTH-LOGIN-SCREEN', index.includes('id="authScreen"') && index.includes('/css/main.css'), 'login screen structure and central stylesheet are present', 'P1');
+    record('AUTH-LOGIN-SCREEN', index.includes('id="authScreen"') && index.includes('/css/app-shell.css'), 'login screen structure and authenticated app-shell stylesheet are present', 'P1');
     const feedbackRoute = read('src/routes/member-feedback.routes.js');
     const feedbackService = read('src/services/member-feedback-service.js');
     record('FEEDBACK-OWNER-API', feedbackRoute.includes("'/api/member-feedback'") && feedbackRoute.includes('ownerOnly'), 'member feedback administration API is Owner-protected', 'P0');
@@ -520,11 +529,13 @@ function checkProductionClosureContracts() {
 function checkStyleSurface() {
     const index = read('public/index.html');
     const main = read('public/css/main.css');
+    const shell = read('public/css/app-shell.css');
     const mainSource = read('public/css/main.source.css');
     const tokens = read('public/css/tokens.css');
     const print = read('public/css/print.css');
-    record('STYLE-CENTRAL-LINK', index.includes('/css/main.css'), 'index links one central application stylesheet');
-    record('STYLE-TOKENS', mainSource.includes('./tokens.css') && main.includes('--color-primary') && tokens.includes('--color-primary') && tokens.includes('--space-4'), 'design tokens are centralized in the source graph and production bundle');
+    const shellSource = read('public/css/app-shell.source.css');
+    record('STYLE-CENTRAL-LINK', index.includes('/css/app-shell.css'), 'index links the authenticated app-shell stylesheet');
+    record('STYLE-TOKENS', mainSource.includes('./tokens.css') && shellSource.includes('./tokens.css') && main.includes('--color-primary') && shell.includes('--color-primary') && tokens.includes('--color-primary') && tokens.includes('--space-4'), 'design tokens are centralized in the source graph and both production bundles');
     record('STYLE-PRINT', mainSource.includes('./print.css') && main.includes('@media print') && print.includes('@media print'), 'print styles are included in the production stylesheet bundle');
     record('STYLE-CSS-VALIDATOR', fs.existsSync(path.join(root, 'scripts/validate-styles.js')), 'CSS validation script is present');
     const validation = run(process.execPath, ['scripts/validate-styles.js']);
@@ -537,16 +548,20 @@ function checkPrintAndLazyLoadingSurface() {
     const loader = read('public/js/feature-loader.js');
     const index = read('public/index.html');
     const main = read('public/css/main.css');
+    const manifest = read('public/js/core/feature-manifest.js');
+    const dialogLoader = read('public/js/core/dialog-loader.js');
     record('UI-PRINT-MEMBER-ACTION', app.includes("actionButton('print'") && loader.includes('button[data-action="print"]'), 'member print action and lazy handler are present');
-    record('UI-LAZY-FEATURES', loader.includes('async function ensureTab') && loader.includes("features =") && loader.includes("'dashboard-enhancements'") && loader.includes("'smart-assistant'"), 'feature loader maps deferred dashboard and assistant features');
+    record('UI-LAZY-FEATURES', loader.includes('async function ensureTab') && loader.includes('function loadStyle') && loader.includes("features =") && loader.includes("'dashboard-enhancements'") && loader.includes("'smart-assistant'") && loader.includes("'phone-inputs'") && manifest.includes('topGymFeatureManifest'), 'feature loader maps deferred route styles and feature scripts');
     const optionalScripts = ['/js/smart-assistant.js', '/js/whatsapp-enhancements.js', '/js/details-enhancements.js', '/js/day-passes.js', '/js/alerts-enhancements.js', '/js/member-details-ui.js', '/js/member-portal-admin.js', '/js/day-pass-reports.js'];
     record('UI-NO-EAGER-OPTIONALS', optionalScripts.every((source) => !index.includes(source)), 'optional feature scripts are not duplicated in the initial HTML shell');
     record('CSS-PRODUCTION-BUNDLE', !/\/\*@import|@import\s/.test(main.replace(/\/\*[\s\S]*?\*\//g, '')), 'production CSS bundle has no active blocking imports');
     record('UI-API-CORE', index.includes('/js/core/api.js') && app.includes('window.topGymApi.request'), 'frontend API client is centralized');
     const store = read('public/js/pages/store/store.js');
-    record('STORE-MODULE', index.includes('data-page-tab="store"') && index.includes('id="storeSection"') && loader.includes("'/js/pages/store/store.js") && store.includes('/api/store/sales') && store.includes('/api/store/customers/search'), 'Store/POS module is wired through lazy loading and member lookup');
+    record('STORE-MODULE', index.includes('data-page-tab="store"') && index.includes('id="storeSection"') && manifest.includes("'/js/pages/store/store.js") && store.includes('/api/store/sales') && store.includes('/api/store/customers/search'), 'Store/POS module is wired through lazy loading and member lookup');
     record('UI-PERMISSIONS-CORE', index.includes('/js/core/permissions.js') && authUi.includes('window.topGymPermissions'), 'frontend tab permissions are centralized');
-    record('UI-CACHE-BUST', index.includes('app.js?v=feature-expansion'), 'frontend script cache-busting is present');
+    record('UI-CACHE-BUST', index.includes('/js/app-shell-bootstrap.js?v=phase3-6') && index.includes('/js/core/feature-manifest.js?v=phase3-6') && index.includes('/js/core/dialog-loader.js?v=phase3-6'), 'authenticated shell entrypoints use Phase 3-6 cache-busting');
+    const lazyDialogIds = ['libraryFormDialog', 'libraryDetailsDialog', 'externalTraineeDialog', 'coachingProfileDialog', 'coachingBuilderDialog', 'authUserDialog', 'backupRestoreDialog'];
+    record('UI-LAZY-DIALOGS', lazyDialogIds.every((id) => !index.includes(`id="${id}"`)) && dialogLoader.includes('topGymDialogLoader') && dialogLoader.includes('loadPromises'), 'non-critical dialogs are fragment-loaded and deduplicated on demand');
     const memberPortal = read('public/member-portal.html');
     const memberPortalScript = read('public/js/member-portal.js');
     const memberPortalLibrary = read('public/js/member-portal-library.js');

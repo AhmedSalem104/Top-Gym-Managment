@@ -70,7 +70,7 @@ test.beforeEach(async ({ page }) => {
     // not configured: report the scenario as skipped/NOT VERIFIED instead of
     // turning missing credentials into a misleading timeout.
     test.skip(!email || !password, 'NOT VERIFIED: QA_OWNER_* credentials are not configured.');
-    await page.goto('/', { waitUntil: 'domcontentloaded' });
+    await page.goto('/login.html', { waitUntil: 'domcontentloaded' });
     const entryButton = page.locator('#saasEntryContinue');
     if (await entryButton.isVisible().catch(() => false)) {
         await entryButton.click();

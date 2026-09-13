@@ -1,0 +1,24 @@
+<dialog id="externalTraineeDialog" class="coaching-small-dialog rounded-lg border-slate-200 shadow-lift">
+        <form class="dialog-body" id="externalTraineeForm">
+            <div class="details-dialog-head"><div><h3>إضافة متدرب خارجي</h3><p>أدخل البيانات الأساسية فقط، ثم أنشئ له برنامجًا أو خطة تغذية من ملفه.</p></div><button class="btn btn-light btn-small" id="externalTraineeClose" type="button">إغلاق</button></div>
+            <div class="field"><label for="externalFullName">الاسم الكامل *</label><input id="externalFullName" maxlength="120" required placeholder="مثال: كريم عبد الحميد"></div>
+            <div class="field-grid"><div class="field"><label for="externalPhone">رقم الهاتف *</label><input id="externalPhone" type="tel" inputmode="numeric" maxlength="30" autocomplete="tel" data-phone-input required></div><div class="field"><label for="externalEmail">البريد الإلكتروني</label><input id="externalEmail" type="email" maxlength="254" placeholder="اختياري"></div></div>
+            <div class="field"><label for="externalRegistrationDate">تاريخ التسجيل</label><input id="externalRegistrationDate" type="date" required></div>
+            <div class="field"><label for="externalNotes">ملاحظات</label><textarea id="externalNotes" maxlength="1000" rows="3" placeholder="اختياري"></textarea></div>
+            <div class="dialog-actions"><button class="btn btn-light" id="externalTraineeCancel" type="button">إلغاء</button><button class="btn btn-primary" type="submit">حفظ المتدرب</button></div>
+        </form>
+</dialog>
+<dialog id="coachingBuilderDialog" class="coaching-builder-dialog rounded-lg border-slate-200 shadow-lift" aria-labelledby="coachingBuilderTitle" aria-describedby="coachingBuilderSubtitle">
+        <form class="dialog-body" id="coachingBuilderForm" novalidate>
+            <div class="details-dialog-head"><div><h3 id="coachingBuilderTitle">إنشاء نظام</h3><p id="coachingBuilderSubtitle"></p></div><button class="btn btn-light btn-small" id="coachingBuilderClose" type="button">إغلاق</button></div>
+            <input type="hidden" id="coachingBuilderId"><input type="hidden" id="coachingBuilderMemberId">
+            <div class="builder-stepper" id="coachingBuilderStepper" aria-label="مراحل إنشاء النظام"></div>
+            <div class="builder-progress" id="coachingBuilderProgress"></div>
+            <div id="coachingBuilderContent"></div>
+            <section class="coaching-builder-ai-tools" id="coachingBuilderAiTools" hidden aria-label="أدوات الذكاء الاصطناعي"><div><span>تعديل سريع بالذكاء الاصطناعي</span><small>اترك الإنشاء اليدوي متاحًا، أو اطلب تعديلًا على المسودة الحالية.</small></div><div class="coaching-builder-ai-controls"><textarea id="coachingBuilderAiInstruction" rows="2" maxlength="500" placeholder="مثال: أضف تمرين ضغط صدر 4 مجموعات أو بدّل الأرز بالبطاطس"></textarea><button class="btn btn-light btn-small" id="coachingBuilderAiRefine" type="button">تطبيق التعديل</button></div></section>
+            <div class="dialog-actions builder-dialog-actions"><button class="btn btn-light" id="coachingBuilderCancel" type="button">إلغاء</button><button class="btn btn-light" id="coachingBuilderBack" type="button" hidden>السابق</button><button class="btn btn-light" id="coachingBuilderPreview" type="button" hidden>مراجعة</button><button class="btn btn-light" id="coachingBuilderPrint" type="button" hidden>طباعة</button><button class="btn btn-light" id="coachingBuilderPdf" type="button" hidden>PDF</button><button class="btn btn-primary" id="coachingBuilderNext" type="button">التالي</button><button class="btn btn-primary" id="coachingBuilderSave" type="submit" hidden>حفظ النظام</button></div>
+        </form>
+    </dialog>
+<dialog id="coachingProfileDialog" class="coaching-profile-dialog rounded-lg border-slate-200 shadow-lift">
+        <div class="dialog-body"><div class="details-dialog-head"><div><h3 id="coachingProfileTitle">ملف المتدرب</h3><p id="coachingProfileSubtitle"></p></div><button class="btn btn-light btn-small" id="coachingProfileClose" type="button">إغلاق</button></div><div id="coachingProfileContent"><div class="loading">جاري تحميل الملف…</div></div></div>
+    </dialog>

@@ -50,7 +50,9 @@
                 }
             }
 
-            document.addEventListener('DOMContentLoaded', () => {
+            function initializePagination() {
+                if (pagination.dataset.bound === 'true') return;
+                pagination.dataset.bound = 'true';
                 renderPagination();
                 pagination.addEventListener('click', (event) => {
                     const button = event.target.closest('[data-members-page]');
@@ -75,5 +77,8 @@
                     }
                 }, true);
                 new MutationObserver(renderPagination).observe(list, { childList: true, subtree: true });
-            });
+            }
+
+            if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initializePagination, { once: true });
+            else initializePagination();
         })();

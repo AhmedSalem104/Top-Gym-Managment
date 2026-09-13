@@ -17,6 +17,12 @@ const viewports = [
 ];
 const screenIds = ['dashboardSection', 'membersSection', 'traineesSection', 'managementSection', 'backupHistorySection', 'attendanceSection', 'expensesSection', 'librarySection', 'reportsSection', 'brandingSection', 'memberPaymentMethodsSection', 'saasBillingSection', 'permissionsSection', 'intelligenceSection', 'feedbackSection', 'storeSection', 'memberSubscriptionRequestsSection', 'portalAnalyticsSection'];
 const dialogIds = ['actionDialog', 'pricingDialog', 'membershipTypesDialog', 'membershipPlanDialog', 'membershipTypeDialog', 'detailsDialog', 'qrReaderDialog', 'memberQrDialog', 'libraryFormDialog', 'libraryDetailsDialog', 'externalTraineeDialog', 'coachingProfileDialog', 'coachingBuilderDialog', 'authUserDialog', 'backupRestoreDialog', 'expenseDialog', 'memberDialog', 'dayPassDialog'];
+const lazyDialogFragments = [
+  { source: '/dialogs/library.html?v=phase3-6', ids: ['libraryFormDialog', 'libraryDetailsDialog'] },
+  { source: '/dialogs/coaching.html?v=phase3-6', ids: ['externalTraineeDialog', 'coachingProfileDialog', 'coachingBuilderDialog'] },
+  { source: '/dialogs/permissions.html?v=phase3-6', ids: ['authUserDialog'] },
+  { source: '/dialogs/backup.html?v=phase3-6', ids: ['backupRestoreDialog'] }
+];
 
 function assert(condition, message) {
   if (!condition) throw new Error(message);
@@ -89,11 +95,11 @@ async function main() {
       await page.goto(`${baseUrl}/`, { waitUntil: 'networkidle' });
       const login = await page.evaluate(() => ({
         overflow: document.documentElement.scrollWidth > window.innerWidth,
-        stylesheetCount: [...document.styleSheets].filter((sheet) => sheet.href?.includes('/css/main.css')).length,
+        stylesheetCount: [...document.styleSheets].filter((sheet) => sheet.href?.includes('/css/app-shell.css')).length,
         authVisible: getComputedStyle(document.getElementById('authScreen')).display !== 'none'
       }));
       assert(!login.overflow, `login overflows at ${viewport.name}px`);
-      assert(login.stylesheetCount === 1, `main.css is not loaded exactly once at ${viewport.name}px`);
+      assert(login.stylesheetCount === 1, `app-shell.css is not loaded exactly once at ${viewport.name}px`);
       assert(login.authVisible, `login is not visible at ${viewport.name}px`);
       assert(pageErrors.length === 0, `page error at ${viewport.name}px: ${pageErrors.join(' | ')}`);
       assert(consoleErrors.length === 0, `console error at ${viewport.name}px: ${consoleErrors.join(' | ')}`);
@@ -110,6 +116,9 @@ async function main() {
     for (const width of [375, 430, 768, 1440]) {
       const page = await browser.newPage({ viewport: { width, height: 900 } });
       await page.goto(`${baseUrl}/`, { waitUntil: 'networkidle' });
+      await page.evaluate(async (fragments) => {
+        for (const fragment of fragments) await window.topGymDialogLoader?.load(fragment.source, fragment.ids);
+      }, lazyDialogFragments);
       for (const dialogId of dialogIds) {
         const result = await page.evaluate((id) => {
           const dialog = document.getElementById(id);

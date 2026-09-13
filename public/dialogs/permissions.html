@@ -1,0 +1,12 @@
+<dialog id="authUserDialog" class="auth-user-dialog rounded-lg border-slate-200 shadow-lift">
+        <form class="dialog-body" id="authUserForm" novalidate>
+            <div class="details-dialog-head"><div><h3 id="authUserDialogTitle">إضافة مساعد</h3><p id="authUserDialogDescription">أنشئ حسابًا مساعدًا بصلاحيات تشغيلية محدودة.</p></div><button class="btn btn-light btn-small" id="authUserDialogClose" type="button">إغلاق</button></div>
+            <input type="hidden" id="authUserId">
+            <div class="auth-form-grid">
+                <div class="auth-field"><label for="authUserName">الاسم *</label><input id="authUserName" maxlength="120" required></div>
+                <div class="auth-field"><label for="authUserEmail">البريد الإلكتروني *</label><input id="authUserEmail" type="email" maxlength="254" inputmode="email" required></div>
+                <div class="auth-field full"><label for="authUserPassword">كلمة المرور <span id="authUserPasswordRequired">*</span></label><input id="authUserPassword" type="password" maxlength="128" autocomplete="new-password"><p class="auth-helper" id="authUserPasswordHint">يجب أن تكون 8 أحرف على الأقل. لا يتم عرضها أو إرسالها مرة أخرى بعد الحفظ.</p></div>
+            </div>
+            <div class="dialog-actions"><button class="btn btn-light" id="authUserDialogCancel" type="button">إلغاء</button><button class="btn btn-primary" id="authUserSave" type="submit">حفظ الحساب</button></div>
+        </form>
+    </dialog>

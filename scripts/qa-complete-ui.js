@@ -69,6 +69,12 @@ const portalTools = [
     ['subscription', 'portalSubscriptionSection']
 ];
 const dialogIds = ['actionDialog', 'pricingDialog', 'membershipTypesDialog', 'membershipPlanDialog', 'membershipTypeDialog', 'detailsDialog', 'qrReaderDialog', 'memberQrDialog', 'libraryFormDialog', 'libraryDetailsDialog', 'externalTraineeDialog', 'coachingProfileDialog', 'coachingBuilderDialog', 'authUserDialog', 'backupRestoreDialog', 'expenseDialog', 'memberDialog', 'dayPassDialog', 'trainerClientDialog', 'trainerClientDetailsDialog', 'trainerTimelineDialog', 'trainerMeasurementDialog', 'trainerCheckinDialog', 'trainerPackageDialog', 'trainerSessionDialog', 'trainerPurchaseDialog', 'trainerPaymentDialog', 'platformActionDialog', 'platformRegistrationCredentialsDialog'];
+const lazyDialogFragments = [
+    { source: '/dialogs/library.html?v=phase3-6', ids: ['libraryFormDialog', 'libraryDetailsDialog'] },
+    { source: '/dialogs/coaching.html?v=phase3-6', ids: ['externalTraineeDialog', 'coachingProfileDialog', 'coachingBuilderDialog'] },
+    { source: '/dialogs/permissions.html?v=phase3-6', ids: ['authUserDialog'] },
+    { source: '/dialogs/backup.html?v=phase3-6', ids: ['backupRestoreDialog'] }
+];
 
 function assert(condition, message) {
     if (!condition) throw new Error(message);
@@ -496,6 +502,11 @@ async function run() {
                 ? '/trainer-workspace.html'
                 : dialogCase.route;
             await dialogPage.goto(`${baseUrl}${dialogRoute}`, { waitUntil: 'networkidle' });
+            if (dialogCase.surface === 'Gym Dialogs') {
+                await dialogPage.evaluate(async (fragments) => {
+                    for (const fragment of fragments) await window.topGymDialogLoader?.load(fragment.source, fragment.ids);
+                }, lazyDialogFragments);
+            }
             if (dialogCase.surface === 'Gym Dialogs') await prepareApp(dialogPage, 'dashboardSection');
             for (const id of dialogCase.ids) {
             const result = await dialogPage.evaluate((dialogId) => {

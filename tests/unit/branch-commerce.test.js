@@ -48,7 +48,7 @@ test('branch plan limits are additive and constrained', () => {
 });
 
 test('Bar POS is loaded as a Store feature and exposes a touch-safe surface', () => {
-    const loader = read('public/js/feature-loader.js');
+    const loader = read('public/js/core/feature-manifest.js');
     const page = read('public/index.html');
     const script = read('public/js/pages/store/bar-pos.js');
     const styles = read('public/css/components/bar-pos.css');

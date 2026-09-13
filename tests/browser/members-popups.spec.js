@@ -117,7 +117,10 @@ test('member action popups keep hidden edit controls, fields and footer inside t
     expect(payment.footerTop).toBeLessThanOrEqual(payment.viewportHeight + 1);
     await page.locator('#dialogCancel').click();
 
-    await page.evaluate(() => document.getElementById('coachingBuilderDialog').showModal());
+    await page.evaluate(async () => {
+        await window.topGymDialogLoader.load('/dialogs/coaching.html?v=e2e', ['externalTraineeDialog', 'coachingBuilderDialog', 'coachingProfileDialog']);
+        document.getElementById('coachingBuilderDialog').showModal();
+    });
     const builder = await page.locator('#coachingBuilderDialog').boundingBox();
     expect(builder.x).toBeGreaterThanOrEqual(0);
     expect(builder.y).toBeGreaterThanOrEqual(0);

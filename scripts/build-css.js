@@ -6,8 +6,6 @@ const esbuild = require('esbuild');
 
 const root = path.resolve(__dirname, '..');
 const cssRoot = path.join(root, 'public', 'css');
-const sourceEntry = path.join(cssRoot, 'main.source.css');
-const output = path.join(cssRoot, 'main.css');
 const importPattern = /@import\s+(?:url\()?['"]([^'"]+)['"]\)?\s*;/g;
 
 function expand(file, chain = []) {
@@ -24,24 +22,30 @@ function expand(file, chain = []) {
     });
 }
 
-if (!fs.existsSync(sourceEntry)) throw new Error('public/css/main.source.css is missing');
+function buildBundle(sourceName, outputName, label) {
+    const sourceEntry = path.join(cssRoot, sourceName);
+    const output = path.join(cssRoot, outputName);
+    if (!fs.existsSync(sourceEntry)) throw new Error(`public/css/${sourceName} is missing`);
 
-const banner = [
-    '/* TOP GYM production stylesheet. */',
-    '/* Generated from public/css/main.source.css by npm run build:css. */',
-    '/* Edit the layer files, then rebuild; do not edit this artifact manually. */',
-    ''
-].join('\n');
+    const banner = [
+        `/* TOP GYM ${label} stylesheet. */`,
+        `/* Generated from public/css/${sourceName} by npm run build:css. */`,
+        '/* Edit the layer files, then rebuild; do not edit this artifact manually. */',
+        ''
+    ].join('\n');
 
-const bundledCss = `${expand(sourceEntry).replace(/\s+$/u, '')}\n`;
-// The layer files remain the readable source of truth. Minify only the
-// generated delivery artifact so first-load CSS transfer and parse cost stay
-// bounded without changing the cascade or asking production to run a second
-// stylesheet pipeline.
-const minifiedCss = esbuild.transformSync(bundledCss, {
-    loader: 'css',
-    minify: true,
-    legalComments: 'none'
-}).code.trim();
-fs.writeFileSync(output, `${banner}${minifiedCss}\n`, 'utf8');
-console.log(`[CSS-BUNDLE-OK] generated ${path.relative(root, output)} from the organized CSS layers`);
+    const bundledCss = `${expand(sourceEntry).replace(/\s+$/u, '')}\n`;
+    // The layer files remain the readable source of truth. Minify only the
+    // generated delivery artifacts so route entrypoints stay bounded without
+    // changing the cascade or adding a second CSS toolchain.
+    const minifiedCss = esbuild.transformSync(bundledCss, {
+        loader: 'css',
+        minify: true,
+        legalComments: 'none'
+    }).code.trim();
+    fs.writeFileSync(output, `${banner}${minifiedCss}\n`, 'utf8');
+    console.log(`[CSS-BUNDLE-OK] generated ${path.relative(root, output)} from the organized CSS layers`);
+}
+
+buildBundle('main.source.css', 'main.css', 'production');
+buildBundle('app-shell.source.css', 'app-shell.css', 'authenticated app-shell');

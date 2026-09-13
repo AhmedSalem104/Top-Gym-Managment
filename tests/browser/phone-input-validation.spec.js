@@ -32,6 +32,20 @@ const catalog = {
     ]
 };
 
+async function expectFlagVisual(page, isoCode) {
+    const flag = page.locator('[data-phone-country-flag]').first();
+    await expect(flag).toHaveAttribute('data-iso-code', isoCode);
+    const image = flag.locator('img');
+    if (await image.count()) {
+        await expect(image).toHaveAttribute('src', new RegExp(`/${isoCode.toLowerCase()}\\.png$`));
+        return;
+    }
+    // The product intentionally falls back to the ISO flag emoji when the
+    // external flag CDN is unavailable in an offline/local browser run.
+    await expect(flag).toHaveAttribute('data-flag-fallback', 'true');
+    await expect(flag).not.toHaveText('');
+}
+
 test('phone input blocks invalid length/format before registration request', async ({ page }) => {
     await page.route('**/api/phone/countries', (route) => route.fulfill({
         status: 200,
@@ -50,7 +64,7 @@ test('phone input blocks invalid length/format before registration request', asy
     await expect(phone).toHaveAttribute('inputmode', 'numeric');
     await expect(phone).toHaveAttribute('autocomplete', 'tel');
     await expect(phone).toHaveAttribute('pattern', '(?:[0-9]|\\+|\\s|\\.|\\(|\\)|-)*');
-    await expect(flag.locator('img')).toHaveAttribute('src', /\/eg\.png$/);
+    await expectFlagVisual(page, 'EG');
     await expect(page.locator('.phone-country-trigger')).toContainText('+20');
     await expect(page.locator('.phone-country-divider')).toBeVisible();
     await expect(page.locator('.phone-number-icon svg')).toBeVisible();
@@ -104,7 +118,8 @@ test('phone input blocks invalid length/format before registration request', asy
 
     await page.locator('.phone-country-trigger').click();
     await expect(page.locator('.phone-country-menu')).toBeVisible();
-    await expect(page.locator('.phone-country-option img')).toHaveCount(catalog.countries.length);
+    await expect(page.locator('.phone-country-option')).toHaveCount(catalog.countries.length);
+    await expect(page.locator('.phone-country-option [data-iso-code]')).toHaveCount(catalog.countries.length);
     await page.locator('.phone-input-control').screenshot({ path: `qa/artifacts/phone-control-${test.info().project.name}-dropdown.png` });
     const countrySearch = page.locator('.phone-country-search');
     await expect(countrySearch).toBeVisible();
@@ -112,7 +127,7 @@ test('phone input blocks invalid length/format before registration request', asy
     await expect(page.locator('[data-phone-country-option="AE"]')).toHaveCount(1);
     await page.locator('[data-phone-country-option="AE"]').click();
     await expect(phone).toHaveAttribute('placeholder', /^5\d{8}$/);
-    await expect(flag.locator('img')).toHaveAttribute('src', /\/ae\.png$/);
+    await expectFlagVisual(page, 'AE');
     await expect(page.locator('[data-phone-country-code]')).toHaveText('+971');
     await expect(page.locator('[data-phone-country-name]')).toHaveText(catalog.countries[2].country);
     await phone.fill('0101234567');
@@ -181,10 +196,10 @@ test('phone input stays stable and usable at 320px in both themes', async ({ pag
     expect(metrics.errorColor).toMatch(/\d+/);
 
     await page.evaluate(() => document.documentElement.setAttribute('data-theme', 'dark'));
-    await expect(page.locator('[data-phone-country-flag] img')).toBeVisible();
+    await expectFlagVisual(page, 'EG');
     await page.locator('.phone-input-control').screenshot({ path: `qa/artifacts/phone-control-${test.info().project.name}-320-dark.png` });
     await page.evaluate(() => document.documentElement.setAttribute('data-theme', 'light'));
-    await expect(page.locator('[data-phone-country-flag] img')).toBeVisible();
+    await expectFlagVisual(page, 'EG');
     await page.screenshot({ path: `qa/artifacts/phone-control-${test.info().project.name}-320.png`, fullPage: false });
 });
 

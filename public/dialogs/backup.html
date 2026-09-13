@@ -1,0 +1,9 @@
+<dialog id="backupRestoreDialog" class="backup-restore-dialog rounded-lg border-slate-200 shadow-lift">
+        <form class="dialog-body" id="backupRestoreForm">
+            <div class="details-dialog-head"><div><h3>استرجاع نسخة احتياطية</h3><p data-brand-template="backupRestoreDescription">اختر ملف الجيم المضغوط. سيتم فحصه أولًا ولن يبدأ الاسترجاع إلا بعد تأكيدك.</p></div><button class="btn btn-light btn-small" id="backupRestoreClose" type="button">إغلاق</button></div>
+            <label class="backup-file-field" for="backupFileInput"><span>ملف النسخة الاحتياطية (.json.gz)</span><input id="backupFileInput" type="file" accept=".json.gz,.gz,application/gzip,application/x-gzip" required></label>
+            <label class="backup-reason-field" for="backupRestoreReason"><span>سبب الاسترجاع *</span><textarea id="backupRestoreReason" maxlength="1000" rows="2" placeholder="اكتب سبب استرجاع النسخة" required></textarea></label>
+            <div class="backup-validation-box" id="backupValidationBox" hidden></div>
+            <div class="dialog-actions"><button class="btn btn-light" id="backupRestoreCancel" type="button">إلغاء</button><button class="btn btn-primary" id="backupRestoreSubmit" type="submit" disabled>استرجاع بعد التحقق</button></div>
+        </form>
+    </dialog>

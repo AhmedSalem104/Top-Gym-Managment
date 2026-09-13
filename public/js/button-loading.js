@@ -225,7 +225,9 @@
             const optionObserver = new MutationObserver(syncVisiblePlanOptions);
             optionObserver.observe(document.body, { childList: true, subtree: true });
 
-            document.addEventListener('DOMContentLoaded', () => {
+            function initializePlanEnhancements() {
+                if (planTableContainer.dataset.bound === 'true') return;
+                planTableContainer.dataset.bound = 'true';
                 document.getElementById('addMembershipPlanButton').addEventListener('click', () => openPlanDialog());
                 document.getElementById('membershipPlanDialogClose').addEventListener('click', closePlanDialog);
                 document.getElementById('membershipPlanCancel').addEventListener('click', closePlanDialog);
@@ -246,5 +248,8 @@
                 }, true);
                 syncVisiblePlanOptions();
                 enhancePricingTable();
-            });
+            }
+
+            if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initializePlanEnhancements, { once: true });
+            else initializePlanEnhancements();
         })();

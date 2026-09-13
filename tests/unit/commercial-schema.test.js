@@ -105,7 +105,7 @@ test('tenant member payment methods have a dedicated owner-only screen backed by
     const page = read('public/index.html');
     const tabs = read('public/js/page-tabs.js');
     const permissions = read('public/js/core/permissions.js');
-    const loader = read('public/js/feature-loader.js');
+    const loader = read('public/js/core/feature-manifest.js');
     const editor = read('public/js/pages/management/member-payment-methods.js');
     assert.match(page, /data-page-tab="member-payment-methods"[^>]+data-owner-only/);
     assert.match(page, /id="memberPaymentMethodsSection"[^>]+data-owner-only/);
@@ -133,7 +133,7 @@ test('owner member request review and portal analytics surfaces stay tenant-scop
     const routes = read('src/permissions/route-permissions.js');
     const pageTabs = read('public/js/page-tabs.js');
     const permissions = read('public/js/core/permissions.js');
-    const loader = read('public/js/feature-loader.js');
+    const loader = read('public/js/core/feature-manifest.js');
     const page = read('public/index.html');
     assert.match(routes, /member-subscription-requests/);
     assert.match(routes, /PORTAL_ANALYTICS_READ/);

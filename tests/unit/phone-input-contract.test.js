@@ -9,7 +9,9 @@ const root = path.join(__dirname, '..', '..');
 const read = (relativePath) => fs.readFileSync(path.join(root, relativePath), 'utf8');
 
 test('phone input layer is loaded by every page that owns a phone form', () => {
-    assert.match(read('public/index.html'), /core\/phone-inputs\.js\?v=9/);
+    assert.doesNotMatch(read('public/index.html'), /core\/phone-inputs\.js\?v=9/);
+    assert.match(read('public/js/core/feature-manifest.js'), /core\/phone-inputs\.js\?v=9/);
+    assert.match(read('public/js/feature-loader.js'), /bindLazyPhoneInput/);
     assert.match(read('public/register-gym.html'), /core\/phone-inputs\.js\?v=9/);
     assert.match(read('public/register-trainer.html'), /core\/phone-inputs\.js\?v=9/);
     assert.match(read('public/trainer-workspace.html'), /core\/phone-inputs\.js\?v=9/);
@@ -93,13 +95,14 @@ test('phone input layer is loaded by every page that owns a phone form', () => {
 
 test('phone-bearing screens use tel inputs without changing numeric business fields', () => {
     const index = read('public/index.html');
+    const coachingDialogs = read('public/dialogs/coaching.html');
     assert.match(index, /id="phone" type="tel"[^>]*data-phone-input/);
     assert.match(index, /id="attendancePhone" type="tel"[^>]*data-phone-input/);
     assert.match(index, /id="dayPassVisitorPhone" type="tel"[^>]*data-phone-input/);
     assert.match(index, /id="storeSupplierPhone" type="tel"[^>]*data-phone-input/);
     assert.match(index, /id="storeSupplierPhone"[^>]*data-phone-allow-fixed-line="true"/);
     assert.match(index, /id="brandingDocumentPhone"[^>]*data-phone-allow-fixed-line="true"/);
-    assert.match(index, /id="externalPhone" type="tel"[^>]*data-phone-input/);
+    assert.match(coachingDialogs, /id="externalPhone" type="tel"[^>]*data-phone-input/);
     assert.match(read('public/js/branch-context.js'), /id="branchPhoneInput"[^>]*type="tel"[^>]*data-phone-input[^>]*data-phone-allow-fixed-line="true"/);
     assert.match(read('public/js/pages/coaching/coaching.js'), /id="coachingEditPhone"[^>]*type="tel"[^>]*data-phone-input/);
     assert.match(read('public/js/trainer-workspace.js'), /phoneCountry/);

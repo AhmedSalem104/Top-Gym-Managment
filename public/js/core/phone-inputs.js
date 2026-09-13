@@ -446,7 +446,17 @@
     function decorateAll(root = document) { root.querySelectorAll?.(PHONE_FIELD_SELECTOR).forEach(decorate); }
 
     document.addEventListener('submit', (event) => { const result = validateForm(event.target); if (result.valid) return; event.preventDefault(); event.stopImmediatePropagation(); result.input?.focus({ preventScroll: true }); result.input?.reportValidity?.(); }, true);
-    document.addEventListener('DOMContentLoaded', () => { countriesByIso.set(FALLBACK_COUNTRY, { isoCode: FALLBACK_COUNTRY, dialCode: '+20', country: 'مصر', exampleNational: '01015819700', validLengths: [8, 9, 10], mobileRules: { validLengths: [10], nationalPattern: '1[0-25]\\d{8}', localPrefix: '0' } }); decorateAll(); loadCountries().then(() => decorateAll()).catch(() => {}); const observer = new MutationObserver((records) => records.forEach((record) => record.addedNodes.forEach((node) => { if (node.nodeType === Node.ELEMENT_NODE) decorateAll(node); }))); observer.observe(document.body, { childList: true, subtree: true }); });
+    function initializePhoneInputs() {
+        if (window.__topGymPhoneInputsInitialized) return;
+        window.__topGymPhoneInputsInitialized = true;
+        countriesByIso.set(FALLBACK_COUNTRY, { isoCode: FALLBACK_COUNTRY, dialCode: '+20', country: 'مصر', exampleNational: '01015819700', validLengths: [8, 9, 10], mobileRules: { validLengths: [10], nationalPattern: '1[0-25]\\d{8}', localPrefix: '0' } });
+        decorateAll();
+        loadCountries().then(() => decorateAll()).catch(() => {});
+        const observer = new MutationObserver((records) => records.forEach((record) => record.addedNodes.forEach((node) => { if (node.nodeType === Node.ELEMENT_NODE) decorateAll(node); })));
+        observer.observe(document.body, { childList: true, subtree: true });
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initializePhoneInputs, { once: true });
+    else initializePhoneInputs();
 
     window.LogicFitPhoneInputs = Object.freeze({ normalizeForTransport, parsePhoneInput, getState, getSubmissionPayload, prepareForm, validateInput, validateForm, countryForInput, countryCodeForInput, refreshInput, setValue, countryForValue, approximateCountry, loadDetectedCountry });
 })();

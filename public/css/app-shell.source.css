@@ -1,0 +1,41 @@
+/*
+ * Logic Fit authenticated application-shell stylesheet.
+ *
+ * This is the critical CSS entry for the gym application. It contains the
+ * shared shell and the default Dashboard route only; route-specific page
+ * styles are loaded by feature-loader.js when a route is activated. The
+ * complete main.source.css bundle remains the compatibility entry for the
+ * other standalone applications and print surfaces.
+ */
+@import url("./tokens.css");
+@import url("./reset.css");
+@import url("./components/icons.css");
+@import url("./typography.css");
+@import url("./layout.css");
+@import url("./utilities.css");
+@import url("./components/buttons.css");
+@import url("./components/forms.css");
+@import url("./components/phone-inputs.css");
+@import url("./components/cards.css");
+@import url("./components/tables.css");
+@import url("./components/modals.css");
+@import url("./components/tabs.css");
+@import url("./components/badges.css");
+@import url("./components/alerts.css");
+@import url("./components/sidebar.css");
+@import url("./components/navbar.css");
+@import url("./components/branch-context.css");
+@import url("./components/dropdowns.css");
+@import url("./components/assistant.css");
+@import url("./components/pagination.css");
+@import url("./components/loading.css");
+@import url("./components/notifications.css");
+@import url("./components/feedback.css");
+@import url("./components/empty-states.css");
+@import url("./components/ui-foundation.css");
+@import url("./components/design-foundation.css");
+@import url("./components/navigation-shell.css");
+@import url("./components/visual-redesign.css");
+@import url("./pages/dashboard.css");
+@import url("./responsive.css");
+@import url("./theme.css");

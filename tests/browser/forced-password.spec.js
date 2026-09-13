@@ -76,7 +76,7 @@ test('real login response routes a forced Independent Trainer before any workspa
     const user = { id: 34, name: 'Ù…Ø¯Ø±Ø¨ Ø§Ù„Ø§Ø®ØªØ¨Ø¨Ø§Ø±', role: 'Owner', tenantType: 'independent_trainer', mustChangePassword: true };
     const mock = mockLoginFlow(page, user);
     await mock.install();
-    await page.goto('/', { waitUntil: 'networkidle' });
+    await page.goto('/login.html', { waitUntil: 'networkidle' });
     await expect(page.locator('#authLoginCard')).toBeVisible();
     await expect(page.locator('.auth-reference-hero')).toBeHidden();
     await page.locator('#loginEmail').fill('trainer@example.test');

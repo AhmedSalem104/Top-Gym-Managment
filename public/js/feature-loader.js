@@ -5,136 +5,8 @@
     const scriptPromises = new Map();
     const featurePromises = new Map();
 
-    const features = {
-        dashboard: {
-            dependencies: [],
-            styles: [],
-            scripts: []
-        },
-        'dashboard-enhancements': {
-            dependencies: ['finance'],
-            styles: [],
-            scripts: [
-                '/js/day-passes.js?v=8',
-                '/js/alerts-enhancements.js?v=10'
-            ]
-        },
-        finance: {
-            styles: [],
-            scripts: ['/js/pages/finance/monthly-finance.js?v=20']
-        },
-        'member-details': {
-            styles: [],
-            scripts: [
-                '/js/member-details-ui.js?v=6',
-                '/js/member-portal-admin.js?v=4',
-                '/js/member-coaching-summary.js?v=2'
-            ]
-        },
-        members: {
-            dependencies: [],
-            styles: [],
-            scripts: [
-                '/js/design-enhancements.js?v=4',
-                '/js/pages/members/action-menu.js?v=7',
-                '/js/pages/attendance/attendance.js?v=10'
-            ]
-        },
-        coaching: {
-            styles: [],
-            scripts: [
-                '/js/exercise-assets.js?v=5',
-                '/js/muscle-assets.js?v=3',
-                '/js/pages/coaching/coaching.js?v=19'
-            ]
-        },
-        print: {
-            styles: [],
-            scripts: ['/js/exercise-assets.js?v=5', '/js/integrations/print-enhancements.js?v=14']
-        },
-        expenses: {
-            dependencies: ['finance'],
-            styles: [],
-            scripts: []
-        },
-        reports: {
-            styles: [],
-            scripts: ['/js/pages/reports/reports.js?v=10', '/js/day-pass-reports.js?v=2']
-        },
-        feedback: {
-            styles: [],
-            scripts: ['/js/pages/management/member-feedback.js?v=1']
-        },
-        management: {
-            styles: [],
-            scripts: []
-        },
-        branding: {
-            dependencies: [],
-            styles: [],
-            scripts: ['/js/pages/branding/branding.js?v=2']
-        },
-        'member-payment-methods': {
-            dependencies: [],
-            styles: [],
-            scripts: ['/js/pages/management/member-payment-methods.js?v=1']
-        },
-        'saas-billing': {
-            dependencies: [],
-            styles: [],
-            scripts: ['/js/pages/saas/saas.js?v=6']
-        },
-        'backup-history': {
-            dependencies: [],
-            styles: [],
-            scripts: ['/js/pages/management/backup.js?v=11']
-        },
-        'member-subscription-requests': {
-            dependencies: [],
-            styles: [],
-            scripts: ['/js/pages/management/member-subscription-requests.js?v=4']
-        },
-        'portal-analytics': {
-            dependencies: [],
-            styles: [],
-            scripts: ['/js/pages/management/portal-analytics.js?v=1']
-        },
-        permissions: {
-            styles: [],
-            scripts: ['/js/pages/management/permissions.js?v=4', '/js/pages/management/auth-users.js?v=3']
-        },
-        attendance: {
-            styles: [],
-            scripts: ['/js/pages/attendance/attendance.js?v=10']
-        },
-        library: {
-            styles: [],
-            scripts: ['/js/exercise-assets.js?v=5', '/js/muscle-assets.js?v=3', '/js/food-assets.js?v=1', '/js/pages/library/library.js?v=13']
-        },
-        trainees: {
-            dependencies: ['coaching'],
-            styles: [],
-            scripts: []
-        },
-        intelligence: {
-            styles: [],
-            scripts: ['/js/pages/intelligence/intelligence.js?v=3']
-        },
-        store: {
-            styles: [],
-            scripts: ['/js/pages/store/store.js?v=1', '/js/pages/store/bar-pos.js?v=1']
-        },
-        'smart-assistant': {
-            styles: [],
-            scripts: ['/js/smart-assistant.js?v=5']
-        }
-    };
-
-    const externalAssets = {
-        qrcode: 'https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js',
-        'html5-qrcode': 'https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js',
-        sweetalert: 'https://cdn.jsdelivr.net/npm/sweetalert2@11'
-    };
+    const features = window.topGymFeatureManifest || Object.freeze({});
+    const externalAssets = window.topGymExternalAssets || Object.freeze({});
 
     function loadScript(source, key = source) {
         if (scriptPromises.has(key)) return scriptPromises.get(key);
@@ -167,15 +39,53 @@
         return promise;
     }
 
+    function loadStyle(source, key = source) {
+        if (scriptPromises.has(`style:${key}`)) return scriptPromises.get(`style:${key}`);
+        const existing = [...document.querySelectorAll('link[data-top-gym-asset]')]
+            .find((link) => link.dataset.topGymAsset === key);
+        if (existing) {
+            const promise = Promise.resolve(existing);
+            scriptPromises.set(`style:${key}`, promise);
+            return promise;
+        }
+
+        const promise = new Promise((resolve, reject) => {
+            const link = document.createElement('link');
+            link.rel = 'stylesheet';
+            link.href = source;
+            link.dataset.topGymAsset = key;
+            link.onload = () => resolve(link);
+            link.onerror = () => {
+                link.remove();
+                reject(new Error(`تعذر تحميل تنسيق ${key}.`));
+            };
+            document.head.appendChild(link);
+        });
+        scriptPromises.set(`style:${key}`, promise);
+        return promise;
+    }
+
     async function ensureTab(name) {
         const feature = features[name];
         if (!feature) return;
         if (featurePromises.has(name)) return featurePromises.get(name);
 
         const promise = (async () => {
+            // app.js owns the shared application state used by route modules.
+            // Await it before loading any module that reads that state so a
+            // deep link cannot create a race between the shell and a feature.
+            if (window.topGymLoadApp && window.topGymAuth?.getUser?.()) await window.topGymLoadApp();
             for (const dependency of feature.dependencies || []) await ensureTab(dependency);
-            // Feature scripts are independent modules. Start them together so
-            // navigation pays one network round-trip instead of one per file.
+            const dialogLoader = window.topGymDialogLoader;
+            if (feature.dialogs?.length && !dialogLoader) throw new Error(`Lazy dialog loader is unavailable for ${name}.`);
+            // Dialog fragments must be mounted before their feature script is
+            // evaluated because those scripts bind to the dialog controls at
+            // initialization time. Styles remain parallel with the fragment;
+            // scripts start only after both are ready.
+            await Promise.all([
+                ...(feature.styles || []).map((source) => loadStyle(source)),
+                ...(feature.dialogs || []).map(({ source, ids }) => dialogLoader.load(source, ids))
+            ]);
             await Promise.all((feature.scripts || []).map((source) => loadScript(source)));
         })();
         featurePromises.set(name, promise);
@@ -206,6 +116,13 @@
         return String(window.topGymAuth?.getUser?.()?.tenantType || '').trim().toLowerCase() === 'independent_trainer';
     }
 
+    function scheduleIdle(callback, timeout = 1500) {
+        if ('requestIdleCallback' in window) {
+            return window.requestIdleCallback(callback, { timeout });
+        }
+        return window.requestAnimationFrame(() => window.requestAnimationFrame(callback));
+    }
+
     function scheduleDashboardAnalytics(immediate = false) {
         if (window.__topGymDashboardAnalyticsScheduled) return;
         if (!dashboardIsRequested()) return;
@@ -219,11 +136,7 @@
             loadScript('/js/pages/dashboard/analytics.js?v=8', 'dashboard-analytics')
                 .catch((error) => console.warn('[TOP GYM] Dashboard analytics failed to load.', error));
         };
-        const delay = immediate ? 250 : 1100;
-        window.setTimeout(() => {
-            if ('requestIdleCallback' in window) window.requestIdleCallback(() => void start(), { timeout: 1200 });
-            else void start();
-        }, delay);
+        scheduleIdle(() => void start(), immediate ? 700 : 1600);
     }
 
     function scheduleDashboardEnhancements(immediate = false) {
@@ -240,11 +153,7 @@
                 console.warn('[TOP GYM] Dashboard enhancements failed to load.', error);
             });
         };
-        const delay = immediate ? 180 : 900;
-        window.setTimeout(() => {
-            if ('requestIdleCallback' in window) window.requestIdleCallback(() => void start(), { timeout: 1100 });
-            else void start();
-        }, delay);
+        scheduleIdle(() => void start(), immediate ? 500 : 1400);
     }
 
     function bindLazyDashboardActions() {
@@ -334,6 +243,42 @@
             attributes: true,
             attributeFilter: ['class', 'data-top-gym-authenticated']
         });
+    }
+
+    function bindLazyPhoneInput() {
+        const actionSelector = '#topAddMemberButton, #addMemberButton, #membersList [data-action="edit"]';
+        document.addEventListener('click', (event) => {
+            const button = event.target.closest?.(actionSelector);
+            if (!button || window.LogicFitPhoneInputs || button.dataset.topGymPhoneLoading === 'true') return;
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            button.dataset.topGymPhoneLoading = 'true';
+            button.disabled = true;
+            ensureTab('phone-inputs').then(() => {
+                if (button.isConnected) {
+                    button.disabled = false;
+                    button.click();
+                }
+            }).catch((error) => {
+                console.warn('[TOP GYM] Phone input feature failed to load.', error);
+                window.showToast?.(error.message || 'تعذر تحميل حقل الهاتف.', true, 'error');
+            }).finally(() => {
+                delete button.dataset.topGymPhoneLoading;
+                if (button.isConnected) button.disabled = false;
+            });
+        }, true);
+    }
+
+    function scheduleNotificationCenter() {
+        const load = async () => {
+            if (window.topGymNotificationCenter || !window.topGymAuth?.getUser?.()) return;
+            await loadScript('/js/notification-center.js?v=6', 'notification-center');
+        };
+        const schedule = () => {
+            if ('requestIdleCallback' in window) window.requestIdleCallback(() => void load().catch(() => null), { timeout: 1600 });
+            else window.requestAnimationFrame(() => void load().catch(() => null));
+        };
+        if (window.topGymAuthReady) window.topGymAuthReady.then((user) => { if (user) schedule(); }).catch(() => {});
     }
 
     function bindLazyWhatsapp() {
@@ -481,13 +426,29 @@
     }
 
     function scheduleOptionalEnhancements() {
-        const load = () => loadExternalAsset('sweetalert').catch(() => null);
-        // Keep optional third-party UI out of the first interaction window.
-        // Native dialogs/toasts remain available until this enhancement loads.
-        window.setTimeout(() => {
-            if ('requestIdleCallback' in window) window.requestIdleCallback(load, { timeout: 3000 });
-            else load();
-        }, 4500);
+        if (window.__topGymOptionalEnhancementsScheduled) return;
+        window.__topGymOptionalEnhancementsScheduled = true;
+        const load = async () => {
+            if (!window.topGymAuth?.getUser?.()) return;
+            // These enhancements decorate already-mounted UI; they are not
+            // part of the first authenticated paint. Loading them together
+            // after the app controller keeps the critical path deterministic.
+            await Promise.allSettled([
+                loadScript('/js/dialog-enhancements.js?v=3', 'dialog-enhancements'),
+                loadScript('/js/table-cards.js?v=3', 'table-cards'),
+                loadExternalAsset('sweetalert')
+            ]);
+        };
+        const schedule = () => {
+            if ('requestIdleCallback' in window) window.requestIdleCallback(() => void load(), { timeout: 3000 });
+            else window.requestAnimationFrame(() => void load());
+        };
+        // Auth is the first safe boundary for optional UI decorators. The
+        // app controller may still be loading here; the decorators observe
+        // later DOM additions, so waiting for a controller promise would
+        // create a race where this one-shot schedule silently never runs.
+        const ready = window.topGymAuthReady || Promise.resolve(null);
+        ready.then((user) => { if (user) schedule(); }).catch(() => {});
     }
 
     window.topGymEnsureTab = ensureTab;
@@ -504,7 +465,9 @@
     bindLazyDashboardActions();
     bindLazyMemberDetails();
     bindLazyWhatsapp();
+    bindLazyPhoneInput();
     scheduleOptionalEnhancements();
+    scheduleNotificationCenter();
     bindLazySmartAssistant();
 
     if (document.readyState === 'loading') {

@@ -7,6 +7,8 @@ const root = path.resolve(__dirname, '..');
 const cssRoot = path.join(root, 'public', 'css');
 const entry = path.join(cssRoot, 'main.css');
 const sourceEntry = path.join(cssRoot, 'main.source.css');
+const shellEntry = path.join(cssRoot, 'app-shell.css');
+const shellSourceEntry = path.join(cssRoot, 'app-shell.source.css');
 const errors = [];
 const warnings = [];
 const allowedImportantFiles = new Set([
@@ -53,6 +55,7 @@ function walk(directory) {
 
 const cssFiles = walk(cssRoot);
 if (!fs.existsSync(entry)) errors.push('public/css/main.css is missing');
+if (!fs.existsSync(shellEntry)) errors.push('public/css/app-shell.css is missing');
 for (const file of cssFiles) checkCss(file);
 
 const graph = new Map();
@@ -77,6 +80,7 @@ function visit(file, chain = []) {
   visited.add(file);
 }
 if (fs.existsSync(sourceEntry)) visit(sourceEntry);
+if (fs.existsSync(shellSourceEntry)) visit(shellSourceEntry);
 
 const definitions = new Map();
 const uses = new Set();
@@ -88,7 +92,7 @@ for (const file of cssFiles) {
     definitions.get(name).push(file);
   }
   for (const match of source.matchAll(/var\(\s*(--[A-Za-z0-9_-]+)/g)) uses.add(match[1]);
-  if (!allowedImportantFiles.has(file) && file !== entry && source.includes('!important')) {
+  if (!allowedImportantFiles.has(file) && file !== entry && file !== shellEntry && source.includes('!important')) {
     warnings.push(`${path.relative(root, file)} uses !important; review if it is required`);
   }
 }
@@ -96,17 +100,20 @@ for (const name of uses) if (!definitions.has(name)) errors.push(`undefined CSS 
 
 const tokenFile = path.join(cssRoot, 'tokens.css');
 for (const [name, files] of definitions) {
-  const nonTokenFiles = files.filter((file) => file !== tokenFile && file !== entry);
+  const nonTokenFiles = files.filter((file) => file !== tokenFile && file !== entry && file !== shellEntry);
   if (nonTokenFiles.length > 1) warnings.push(`CSS variable ${name} is defined outside tokens.css more than once`);
 }
 
 const index = read(path.join(root, 'public', 'index.html'));
-if (!index.includes('/css/main.css')) errors.push('public/index.html does not link the central stylesheet');
+if (!index.includes('/css/app-shell.css')) errors.push('public/index.html does not link the authenticated app-shell stylesheet');
 const stylesheetLinks = index.match(/<link\b[^>]*rel=["']stylesheet["'][^>]*>/gi) || [];
 if (stylesheetLinks.length !== 1) errors.push(`expected one linked stylesheet, found ${stylesheetLinks.length}`);
 if (!fs.existsSync(sourceEntry)) errors.push('public/css/main.source.css is missing');
 else if (!read(sourceEntry).includes('./tokens.css')) errors.push('main.source.css does not import tokens.css');
+if (!fs.existsSync(shellSourceEntry)) errors.push('public/css/app-shell.source.css is missing');
+else if (!read(shellSourceEntry).includes('./tokens.css')) errors.push('app-shell.source.css does not import tokens.css');
 if (fs.existsSync(entry) && importsFrom(read(entry)).length) errors.push('main.css production bundle still contains active @import rules');
+if (fs.existsSync(shellEntry) && importsFrom(read(shellEntry)).length) errors.push('app-shell.css production bundle still contains active @import rules');
 if (!read(path.join(cssRoot, 'print.css')).includes('@media print')) errors.push('print.css has no print media block');
 if (read(path.join(root, 'package.json')).includes(['Styling', 'layer', 'disabled'].join(' '))) errors.push('stale disabled styling build remains in package.json');
 
