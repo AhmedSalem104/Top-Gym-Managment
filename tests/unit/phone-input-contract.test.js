@@ -10,11 +10,11 @@ const read = (relativePath) => fs.readFileSync(path.join(root, relativePath), 'u
 
 test('phone input layer is loaded by every page that owns a phone form', () => {
     assert.doesNotMatch(read('public/index.html'), /core\/phone-inputs\.js\?v=9/);
-    assert.match(read('public/js/core/feature-manifest.js'), /core\/phone-inputs\.js\?v=10/);
+    assert.match(read('public/js/core/feature-manifest.js'), /core\/phone-inputs\.js\?v=11/);
     assert.match(read('public/js/feature-loader.js'), /bindLazyPhoneInput/);
-    assert.match(read('public/register-gym.html'), /core\/phone-inputs\.js\?v=10/);
-    assert.match(read('public/register-trainer.html'), /core\/phone-inputs\.js\?v=10/);
-    assert.match(read('public/trainer-workspace.html'), /core\/phone-inputs\.js\?v=10/);
+    assert.match(read('public/register-gym.html'), /core\/phone-inputs\.js\?v=11/);
+    assert.match(read('public/register-trainer.html'), /core\/phone-inputs\.js\?v=11/);
+    assert.match(read('public/trainer-workspace.html'), /core\/phone-inputs\.js\?v=11/);
     assert.doesNotMatch(read('public/index.html'), /data-default-country="EG"/);
     assert.doesNotMatch(read('public/register-gym.html'), /data-default-country="EG"/);
     assert.doesNotMatch(read('public/register-trainer.html'), /data-default-country="EG"/);
