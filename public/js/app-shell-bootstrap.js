@@ -2,7 +2,7 @@
     if (window.__topGymAppShellBootstrapLoaded) return;
     window.__topGymAppShellBootstrapLoaded = true;
 
-    const source = '/js/app.js?v=phase2-shell';
+    const source = '/js/app.js?v=attendance-compact';
     let loadPromise = null;
 
     function loadApplication() {
