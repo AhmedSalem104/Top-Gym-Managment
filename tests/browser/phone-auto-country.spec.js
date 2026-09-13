@@ -88,13 +88,13 @@ test.describe('automatic country detection', () => {
             const phone = page.locator('input[name="whatsapp"]');
             await expect(page.locator('select[data-phone-country]')).toHaveValue('EG');
             await expect(phone).toHaveValue('');
-            await expect(phone).toHaveAttribute('placeholder', '1015819700');
+            await expect(phone).toHaveAttribute('placeholder', 'مثال: 01015819700');
             await expect(page.locator('[data-phone-country-code]')).toHaveText('+20');
             await expect(page.locator('[data-phone-country-name]')).toHaveText(catalog.countries[0].country);
             await page.waitForTimeout(900);
             await page.reload({ waitUntil: 'domcontentloaded' });
             await expect(phone).toHaveValue('');
-            await expect(phone).toHaveAttribute('placeholder', '1015819700');
+            await expect(phone).toHaveAttribute('placeholder', 'مثال: 01015819700');
         });
 
         test('Saudi IP selects Saudi metadata from the same catalog', async ({ page }, testInfo) => {
@@ -106,7 +106,7 @@ test.describe('automatic country detection', () => {
             const phone = page.locator('input[name="whatsapp"]');
             await expect(page.locator('select[data-phone-country]')).toHaveValue('SA');
             await expect(phone).toHaveValue('');
-            await expect(phone).toHaveAttribute('placeholder', '501234567');
+            await expect(phone).toHaveAttribute('placeholder', 'مثال: 0501234567');
             await expect(page.locator('[data-phone-country-code]')).toHaveText('+966');
             await expect(page.locator('[data-phone-country-name]')).toHaveText(catalog.countries[1].country);
         });
@@ -120,12 +120,12 @@ test.describe('automatic country detection', () => {
             const phone = page.locator('input[name="whatsapp"]');
             await expect(phone).toHaveValue('');
             await expect(page.locator('select[data-phone-country]')).toHaveValue('AE');
-            await expect(phone).toHaveAttribute('placeholder', '501234567');
+            await expect(phone).toHaveAttribute('placeholder', 'مثال: 050 123 4567');
             await expect(page.locator('[data-phone-country-code]')).toHaveText('+971');
             await expect(page.locator('[data-phone-country-name]')).toHaveText(catalog.countries[2].country);
         });
 
-        test('every selected country exposes digits-only national placeholders', async ({ page }, testInfo) => {
+        test('every selected country exposes a local example placeholder', async ({ page }, testInfo) => {
             skipMobile(testInfo);
             await routeCatalog(page);
             await page.goto('/register-gym.html', { waitUntil: 'domcontentloaded' });
@@ -135,8 +135,10 @@ test.describe('automatic country detection', () => {
             for (const item of catalog.countries) {
                 await country.selectOption(item.isoCode);
                 const placeholder = await phone.getAttribute('placeholder');
-                expect(placeholder).toMatch(/^\d+$/);
-                expect(placeholder).not.toMatch(/\D/u);
+                expect(placeholder).toMatch(/^مثال: [0-9 .()-]+$/u);
+                const example = placeholder.replace(/^مثال: /u, '');
+                expect(example).toMatch(/^[0-9 .()-]+$/u);
+                expect(example).not.toMatch(/^\+/u);
                 expect(await phone.inputValue()).toBe('');
             }
         });
@@ -156,10 +158,10 @@ test.describe('automatic country detection', () => {
             await expect(country).toHaveValue('EG');
             await country.selectOption('SA');
             await expect(phone).toHaveValue('');
-            await expect(phone).toHaveAttribute('placeholder', '501234567');
+            await expect(phone).toHaveAttribute('placeholder', 'مثال: 0501234567');
             await page.waitForTimeout(1_200);
             await expect(country).toHaveValue('SA');
-            await expect(phone).toHaveAttribute('placeholder', '501234567');
+            await expect(phone).toHaveAttribute('placeholder', 'مثال: 0501234567');
             await expect(phone).toHaveValue('');
         });
 
@@ -171,7 +173,7 @@ test.describe('automatic country detection', () => {
                 await page.goto('/register-gym.html', { waitUntil: 'domcontentloaded' });
                 const phone = page.locator('input[name="whatsapp"]');
                 await expect(page.locator('select[data-phone-country]')).toHaveValue('EG');
-                await expect(phone).toHaveAttribute('placeholder', '1015819700');
+                await expect(phone).toHaveAttribute('placeholder', 'مثال: 01015819700');
                 await expect(phone).toHaveValue('');
             });
 
@@ -183,7 +185,7 @@ test.describe('automatic country detection', () => {
                     await routeDetectedCountry(page, { status: 503 });
                     await page.goto('/register-gym.html', { waitUntil: 'domcontentloaded' });
                     await expect(page.locator('select[data-phone-country]')).toHaveValue('SA');
-                    await expect(page.locator('input[name="whatsapp"]')).toHaveAttribute('placeholder', '501234567');
+                    await expect(page.locator('input[name="whatsapp"]')).toHaveAttribute('placeholder', 'مثال: 0501234567');
                 });
             });
 
@@ -195,7 +197,7 @@ test.describe('automatic country detection', () => {
                     await routeDetectedCountry(page, { status: 503 });
                     await page.goto('/register-gym.html', { waitUntil: 'domcontentloaded' });
                     await expect(page.locator('select[data-phone-country]')).toHaveValue('AE');
-                    await expect(page.locator('input[name="whatsapp"]')).toHaveAttribute('placeholder', '501234567');
+                    await expect(page.locator('input[name="whatsapp"]')).toHaveAttribute('placeholder', 'مثال: 050 123 4567');
                 });
             });
         });
@@ -204,15 +206,15 @@ test.describe('automatic country detection', () => {
     test.describe('catalog failure', () => {
         test.use({ locale: 'en-US', timezoneId: 'Asia/Riyadh' });
 
-        test('uses the single central fallback without injecting a phone value', async ({ page }, testInfo) => {
+        test('fails closed without catalog metadata and without injecting a phone value', async ({ page }, testInfo) => {
             skipMobile(testInfo);
             await routeCatalog(page, { status: 503 });
             await routeDetectedCountry(page, { code: 'SA' });
             await page.goto('/register-gym.html', { waitUntil: 'domcontentloaded' });
             const phone = page.locator('input[name="whatsapp"]');
             await expect(phone).toHaveValue('');
-            await expect(page.locator('select[data-phone-country]')).toHaveValue('EG');
-            await expect(phone).toHaveAttribute('placeholder', '1015819700');
+            await expect(page.locator('select[data-phone-country]')).toHaveValue('');
+            await expect(phone).toHaveAttribute('placeholder', '');
         });
     });
 });

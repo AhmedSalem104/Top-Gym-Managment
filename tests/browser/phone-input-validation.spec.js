@@ -60,7 +60,7 @@ test('phone input blocks invalid length/format before registration request', asy
     const flag = page.locator('[data-phone-country-flag]');
     await expect(country).toHaveValue('EG');
     await expect(phone).toHaveValue('');
-    await expect(phone).toHaveAttribute('placeholder', '1015819700');
+    await expect(phone).toHaveAttribute('placeholder', 'مثال: 01015819700');
     await expect(phone).toHaveAttribute('inputmode', 'numeric');
     await expect(phone).toHaveAttribute('autocomplete', 'tel');
     await expect(phone).toHaveAttribute('pattern', '(?:[0-9]|\\+|\\s|\\.|\\(|\\)|-)*');
@@ -126,7 +126,7 @@ test('phone input blocks invalid length/format before registration request', asy
     await countrySearch.fill('+971');
     await expect(page.locator('[data-phone-country-option="AE"]')).toHaveCount(1);
     await page.locator('[data-phone-country-option="AE"]').click();
-    await expect(phone).toHaveAttribute('placeholder', /^5\d{8}$/);
+    await expect(phone).toHaveAttribute('placeholder', 'مثال: 050 123 4567');
     await expectFlagVisual(page, 'AE');
     await expect(page.locator('[data-phone-country-code]')).toHaveText('+971');
     await expect(page.locator('[data-phone-country-name]')).toHaveText(catalog.countries[2].country);
@@ -214,23 +214,23 @@ test('Egypt placeholder remains the national example after async country updates
     const phone = page.locator('input[name="whatsapp"]');
     const country = page.locator('select[data-phone-country]');
     await expect(country).toHaveValue('EG');
-    await expect(phone).toHaveAttribute('placeholder', '1015819700');
+        await expect(phone).toHaveAttribute('placeholder', 'مثال: 01015819700');
 
     await country.selectOption('SA');
-    await expect(phone).toHaveAttribute('placeholder', '501234567');
+        await expect(phone).toHaveAttribute('placeholder', 'مثال: 0501234567');
     await country.selectOption('AE');
-    await expect(phone).toHaveAttribute('placeholder', '501234567');
+        await expect(phone).toHaveAttribute('placeholder', 'مثال: 050 123 4567');
     await country.selectOption('EG');
-    await expect(phone).toHaveAttribute('placeholder', '1015819700');
+        await expect(phone).toHaveAttribute('placeholder', 'مثال: 01015819700');
 
     // Waiting is intentional test observation; production code contains no timer-based fix.
     await page.waitForTimeout(1500);
-    await expect(phone).toHaveAttribute('placeholder', '1015819700');
+        await expect(phone).toHaveAttribute('placeholder', 'مثال: 01015819700');
     expect(await phone.getAttribute('placeholder')).not.toBe('20');
     expect(await phone.getAttribute('placeholder')).not.toBe('+20');
 
     await page.reload({ waitUntil: 'domcontentloaded' });
     await expect(country).toHaveValue('EG');
     await page.waitForTimeout(1500);
-    await expect(phone).toHaveAttribute('placeholder', '1015819700');
+        await expect(phone).toHaveAttribute('placeholder', 'مثال: 01015819700');
 });

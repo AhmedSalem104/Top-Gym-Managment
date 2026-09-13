@@ -4,9 +4,8 @@
     if (window.__logicFitPhoneInputsLoaded) return;
     window.__logicFitPhoneInputsLoaded = true;
 
-    // This is the only UX fallback. It is not a submit-time guess and it is
-    // never copied into a phone value. The API remains authoritative.
-    const FALLBACK_COUNTRY = 'EG';
+    // The fallback is supplied by the central catalog response. It is only
+    // used for initial UX selection and is never copied into a phone value.
     const TIMEZONE_COUNTRY_MAP = Object.freeze({
         'Africa/Cairo': 'EG',
         'Asia/Riyadh': 'SA',
@@ -23,6 +22,7 @@
     let formatterPromise = null;
     let formatterReadyNotified = false;
     let catalogReady = false;
+    let fallbackCountry = '';
 
     const PHONE_FORMATTER_SOURCE = '/js/vendor/phone-formatter.js?v=display-v1';
 
@@ -55,6 +55,7 @@
     }
 
     const PHONE_MESSAGES = Object.freeze({
+        examplePrefix: '\u0645\u062b\u0627\u0644: ',
         required: 'رقم الهاتف مطلوب.',
         characters: 'استخدم أرقامًا فقط في حقل الرقم، ويمكن استخدام تنسيق الرقم عند اللصق.',
         country: 'رقم الهاتف لا يطابق الدولة المختارة.',
@@ -87,6 +88,13 @@
 
     function containsOnlyDigits(value) {
         return /^[0-9٠-٩۰-۹]*$/u.test(String(value ?? ''));
+    }
+
+    function hasSupportedPhoneSyntax(value) {
+        const normalized = latinDigits(value).trim();
+        if (!normalized || !/^[+\d\s().-]+$/u.test(normalized)) return false;
+        const compactSyntax = normalized.replace(/[\s().-]/gu, '');
+        return /^(?:\+?\d+|00\d+)$/u.test(compactSyntax);
     }
 
     function countryFlag(isoCode) {
@@ -131,18 +139,25 @@
     }
 
     function countryInputExample(country, input) {
-        const mobileRules = country?.mobileRules || {};
-        const localPrefix = String(mobileRules.localPrefix || '');
-        const formattedNational = localDigits(country?.exampleNational || '');
-        if (formattedNational) {
-            if (input?.dataset.phoneAllowFixedLine === 'true' || !localPrefix) return formattedNational;
-            return formattedNational.startsWith(localPrefix) ? formattedNational.slice(localPrefix.length) : formattedNational;
-        }
+        // The catalog example is the natural local representation. Keep the
+        // trunk prefix (010 in Egypt) and parser-safe separators; the dial
+        // code belongs only to the country selector.
+        const exampleNational = String(country?.exampleNational || '').trim();
+        if (exampleNational) return exampleNational;
         const international = compact(country?.exampleInternational || '');
         const dialCode = String(country?.dialCode || '').replace(/^\+/, '');
-        if (international.startsWith('+') && dialCode && international.slice(1).startsWith(dialCode)) return international.slice(1 + dialCode.length);
+        if (international.startsWith('+') && dialCode && international.slice(1).startsWith(dialCode)) {
+            const national = international.slice(1 + dialCode.length);
+            const localPrefix = String(country?.mobileRules?.localPrefix || '');
+            return localPrefix ? `${localPrefix}${national}` : national;
+        }
         // A dial code is selector metadata, never a placeholder.
         return '';
+    }
+
+    function centralFallbackCountry() {
+        if (countriesByIso.has(fallbackCountry)) return fallbackCountry;
+        return [...countriesByIso.keys()][0] || '';
     }
 
     function countryForInput(input) {
@@ -177,7 +192,9 @@
         const digits = international ? compactValue.slice(1) : compactValue;
         const localPrefix = String(rules.localPrefix || '');
         const hasLocalPrefix = !international && Boolean(localPrefix) && digits.startsWith(localPrefix);
-        const maximumInputDigits = international ? dialCode.length + maximumNationalDigits : maximumNationalDigits + (hasLocalPrefix ? localPrefix.length : 0);
+        const maximumInputDigits = international
+            ? dialCode.length + maximumNationalDigits
+            : maximumNationalDigits + (hasLocalPrefix ? localPrefix.length : 0);
         return { country, maximumNationalDigits, maximumInputDigits, international, dialCode };
     }
 
@@ -229,7 +246,7 @@
         const base = { value: rawValue, iso, country, compactValue: compact(rawValue), status: 'empty', valid: !required, message: required ? PHONE_MESSAGES.required : '' };
         if (!rawValue) return base;
         if (!country) return { ...base, status: 'not_ready', valid: false, message: PHONE_MESSAGES.catalog };
-        if (!/^[+\d\s().-]+$/u.test(rawValue) || /^[^\d+]/u.test(rawValue) || /\+.*\+/u.test(rawValue) || (rawValue.includes('+') && !/^\+|^00/u.test(rawValue))) {
+        if (!hasSupportedPhoneSyntax(rawValue)) {
             return { ...base, status: 'invalid', valid: false, message: PHONE_MESSAGES.characters };
         }
         const compactValue = compact(rawValue);
@@ -244,10 +261,13 @@
         const allowFixedLine = input?.dataset.phoneAllowFixedLine === 'true';
         const rules = country.mobileRules || {};
         const localPrefix = String(rules.localPrefix || '');
-        const nationalDigits = international ? digits.slice(dialCode.length) : (localPrefix && digits.startsWith(localPrefix) ? digits.slice(localPrefix.length) : digits);
+        const hasLocalPrefix = !international && Boolean(localPrefix) && digits.startsWith(localPrefix);
+        const nationalDigits = international ? digits.slice(dialCode.length) : (hasLocalPrefix ? digits.slice(localPrefix.length) : digits);
         const validLengths = allowFixedLine ? (country.validLengths || []) : (rules.validLengths?.length ? rules.validLengths : (country.validLengths || []));
         const maximumNationalDigits = validLengths.length ? Math.max(...validLengths) : null;
-        const maximumInputDigits = international ? dialCode.length + (maximumNationalDigits || 0) : maximumNationalDigits;
+        const maximumInputDigits = international
+            ? dialCode.length + (maximumNationalDigits || 0)
+            : (maximumNationalDigits || 0) + (hasLocalPrefix ? localPrefix.length : 0);
         if (maximumNationalDigits !== null && nationalDigits.length > maximumNationalDigits) return { ...base, compactValue, nationalDigits, status: 'invalid', valid: false, tooLong: true, maximumInputDigits, message: PHONE_MESSAGES.tooLong(maximumInputDigits) };
         if (!validLengths.includes(nationalDigits.length)) return { ...base, compactValue, nationalDigits, status: nationalDigits.length ? 'incomplete' : 'invalid', valid: false, message: PHONE_MESSAGES.length };
         if (!allowFixedLine && rules.nationalPattern) {
@@ -352,7 +372,7 @@
         const error = validationElement(input);
         if (error) { error.textContent = message; error.hidden = !show || !message; }
         const state = inputStates.get(input) || {};
-        inputStates.set(input, { ...state, ...result, rawInput: String(input.value || ''), countryIso2: result.iso || state.countryIso2 || '' });
+        inputStates.set(input, { ...state, ...result, rawInput: state.rawInput ?? String(input.value || ''), displayValue: String(input.value || ''), countryIso2: result.iso || state.countryIso2 || '' });
         syncSubmitControls(input, result);
         return result;
     }
@@ -374,13 +394,13 @@
     }
 
     function timeZoneCountry() { try { return TIMEZONE_COUNTRY_MAP[Intl.DateTimeFormat().resolvedOptions().timeZone] || ''; } catch (_) { return ''; } }
-    function approximateCountry() { return timeZoneCountry() || localeCountry() || FALLBACK_COUNTRY; }
+    function approximateCountry() { return timeZoneCountry() || localeCountry() || centralFallbackCountry(); }
     function approximateCountryWithSource() {
         const timezone = timeZoneCountry();
         if (timezone) return { code: timezone, source: 'timezone' };
         const locale = localeCountry();
         if (locale) return { code: locale, source: 'locale' };
-        return { code: FALLBACK_COUNTRY, source: 'fallback' };
+        return { code: centralFallbackCountry(), source: 'fallback' };
     }
 
     function countrySelectionGeneration(input) { return Number(input?.dataset?.phoneCountryGeneration || 0); }
@@ -396,7 +416,7 @@
         input.dataset.phoneCountrySource = source;
         if (select) select.value = iso;
         const state = inputStates.get(input) || {};
-        inputStates.set(input, { ...state, countryIso2: iso, userSelectedCountry: source === 'manual', ready: catalogReady || iso === FALLBACK_COUNTRY });
+        inputStates.set(input, { ...state, countryIso2: iso, userSelectedCountry: source === 'manual', ready: catalogReady || iso === centralFallbackCountry() });
         applyCountryPresentation(input, select);
         return true;
     }
@@ -405,27 +425,27 @@
         const current = String(input?.dataset?.phoneCountry || '').trim().toUpperCase();
         if (countriesByIso.has(current)) return current;
         const explicit = String(input?.dataset?.phoneExplicitCountry || '').trim().toUpperCase();
-        return countriesByIso.has(explicit) ? explicit : FALLBACK_COUNTRY;
-    }
-
-    function applyInitialCountryDetection(input, select) {
-        if (!input || input.dataset.phoneCountrySource === 'manual' || input.value.trim()) return '';
-        const explicit = String(input.dataset.phoneExplicitCountry || '').trim().toUpperCase();
-        if (explicit && countriesByIso.has(explicit)) { applyCountrySelection(input, select, explicit, 'explicit'); return explicit; }
-        const detected = approximateCountryWithSource();
-        const next = countriesByIso.has(detected.code) ? detected.code : FALLBACK_COUNTRY;
-        applyCountrySelection(input, select, next, next === detected.code ? detected.source : 'fallback');
-        return next;
+        return countriesByIso.has(explicit) ? explicit : centralFallbackCountry();
     }
 
     function applyCountryPresentation(input, select) {
         const iso = resolveCountryForState(input);
         const country = countriesByIso.get(iso);
-        if (!input || !country) return;
+        if (!input) return;
+        if (!country) {
+            // A failed catalog must fail closed without leaving stale or
+            // feature-owned placeholder/country presentation behind.
+            input.placeholder = '';
+            delete input.dataset.phonePlaceholderExample;
+            input.title = '';
+            return;
+        }
         const example = countryInputExample(country, input);
-        // Placeholder is the national example only; it is never the dial code.
-        input.placeholder = example;
-        input.title = example ? `اكتب مثال: ${example}` : `رقم ${country.country}`;
+        // The placeholder is a local example only; it is never the dial code.
+        const placeholder = example ? `${PHONE_MESSAGES.examplePrefix}${example}` : '';
+        input.placeholder = placeholder;
+        input.dataset.phonePlaceholderExample = example;
+        input.title = placeholder || `رقم ${country.country}`;
         syncNativeInputLimit(input);
         const root = input.closest('.phone-input-control');
         const flag = root?.querySelector('[data-phone-country-flag]');
@@ -453,7 +473,7 @@
         const result = parsePhoneInput(input);
         if (result.valid && result.e164) input.value = formatPhoneForDisplay(result.e164, result.iso) || result.nationalDigits;
         const state = inputStates.get(input) || {};
-        inputStates.set(input, { ...state, lastAcceptedInput: input.value });
+        inputStates.set(input, { ...state, rawInput: String(value || ''), displayValue: input.value, lastAcceptedInput: input.value });
         validateInput(input, { show: false });
         if (result.valid && result.e164 && !window.LogicFitPhoneFormatter) {
             void loadPhoneFormatter().then(() => {
@@ -461,7 +481,7 @@
                 const latest = parsePhoneInput(input);
                 if (!latest.valid || !latest.e164) return;
                 input.value = formatPhoneForDisplay(latest.e164, latest.iso) || latest.nationalDigits;
-                inputStates.set(input, { ...(inputStates.get(input) || {}), lastAcceptedInput: input.value });
+                inputStates.set(input, { ...(inputStates.get(input) || {}), displayValue: input.value, lastAcceptedInput: input.value });
             });
         }
         return getState(input);
@@ -480,7 +500,7 @@
     function getState(input) {
         const parsed = parsePhoneInput(input);
         const state = inputStates.get(input) || {};
-        return Object.freeze({ countryIso2: parsed.iso || state.countryIso2 || '', rawInput: String(input?.value || ''), nationalNumber: parsed.nationalDigits || null, e164: parsed.e164 || null, status: parsed.status, userSelectedCountry: input?.dataset?.phoneCountrySource === 'manual', ready: Boolean(parsed.iso && countriesByIso.has(parsed.iso) && (catalogReady || parsed.iso === FALLBACK_COUNTRY)) });
+        return Object.freeze({ countryIso2: parsed.iso || state.countryIso2 || '', rawInput: state.rawInput ?? String(input?.value || ''), displayValue: String(input?.value || ''), nationalNumber: parsed.nationalDigits || null, e164: parsed.e164 || null, status: parsed.status, userSelectedCountry: input?.dataset?.phoneCountrySource === 'manual', ready: Boolean(parsed.iso && countriesByIso.has(parsed.iso) && (catalogReady || parsed.iso === centralFallbackCountry())) });
     }
 
     function getSubmissionPayload(input) {
@@ -506,7 +526,7 @@
             option.title = `${country.country} (${country.dialCode})`;
             select.appendChild(option);
         });
-        select.value = countriesByIso.has(preferred) ? preferred : FALLBACK_COUNTRY;
+        select.value = countriesByIso.has(preferred) ? preferred : (preferred ? centralFallbackCountry() : '');
     }
 
     function renderCountryOptions(optionsElement, preferred, query = '') {
@@ -546,7 +566,7 @@
             if (!formatted || formatted === input.value) return;
             input.value = formatted;
             const state = inputStates.get(input) || {};
-            inputStates.set(input, { ...state, lastAcceptedInput: formatted });
+            inputStates.set(input, { ...state, rawInput: state.rawInput ?? input.value, displayValue: formatted, lastAcceptedInput: formatted });
         });
     }
 
@@ -562,18 +582,45 @@
         const menu = document.createElement('span'); menu.className = 'phone-country-menu'; menu.hidden = true; menu.setAttribute('role', 'listbox'); const searchInput = document.createElement('input'); searchInput.type = 'search'; searchInput.className = 'phone-country-search'; searchInput.placeholder = PHONE_MESSAGES.search; searchInput.autocomplete = 'off'; searchInput.setAttribute('aria-label', PHONE_MESSAGES.search); const options = document.createElement('span'); options.className = 'phone-country-options'; menu.append(searchInput, options); countryControl.append(trigger, select, menu); wrapper.insertBefore(countryControl, input);
         const phoneControl = document.createElement('span'); phoneControl.className = 'phone-number-control'; const phoneIcon = document.createElement('span'); phoneIcon.className = 'phone-number-icon'; phoneIcon.setAttribute('aria-hidden', 'true'); const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); svg.setAttribute('viewBox', '0 0 24 24'); svg.setAttribute('focusable', 'false'); const path = document.createElementNS('http://www.w3.org/2000/svg', 'path'); path.setAttribute('d', 'M6.62 10.79a15.05 15.05 0 0 0 6.59 6.59l2.2-2.2a1 1 0 0 1 1.02-.24c1.12.37 2.3.57 3.57.57a1 1 0 0 1 1 1v3.49a1 1 0 0 1-1 1C11.72 21 3 12.28 3 2.99a1 1 0 0 1 1-1H7.5a1 1 0 0 1 1 1c0 1.26.2 2.45.57 3.57a1 1 0 0 1-.24 1.02l-2.21 2.21Z'); svg.appendChild(path); phoneIcon.appendChild(svg); const phoneDivider = document.createElement('span'); phoneDivider.className = 'phone-number-divider'; phoneDivider.setAttribute('aria-hidden', 'true'); phoneControl.append(phoneIcon, phoneDivider, input); wrapper.appendChild(phoneControl);
         const help = document.createElement('small'); help.className = 'phone-input-help'; help.dataset.phoneInputHelp = 'true'; help.textContent = 'أدخل الرقم بدون مفتاح الدولة.'; help.id = `${input.id || input.name || 'phone'}InputHelp`; wrapper.appendChild(help); const error = document.createElement('small'); error.className = 'phone-input-error'; error.setAttribute('role', 'alert'); error.hidden = true; error.id = `${input.id || input.name || 'phone'}ValidationError`; wrapper.appendChild(error); input.setAttribute('aria-describedby', [input.getAttribute('aria-describedby'), help.id, error.id].filter(Boolean).join(' '));
-        const initialIso = selectedCountry(input); input.dataset.phoneCountry = initialIso; input.dataset.phoneCountrySource = input.dataset.phoneExplicitCountry ? 'explicit' : 'pending'; input.dataset.phoneCountryGeneration = '0'; inputStates.set(input, { countryIso2: initialIso, rawInput: '', status: 'empty', ready: initialIso === FALLBACK_COUNTRY }); applyCountryPresentation(input, select);
+        const initialIso = selectedCountry(input); input.dataset.phoneCountry = initialIso; input.dataset.phoneCountrySource = input.dataset.phoneExplicitCountry ? 'explicit' : 'pending'; input.dataset.phoneCountryGeneration = '0'; inputStates.set(input, { countryIso2: initialIso, rawInput: '', status: 'empty', ready: Boolean(initialIso && initialIso === centralFallbackCountry()) }); applyCountryPresentation(input, select);
         const closeCountryMenu = () => { menu.hidden = true; trigger.setAttribute('aria-expanded', 'false'); searchInput.value = ''; renderCountryOptions(options, String(input.dataset.phoneCountry || initialIso).toUpperCase()); applyCountryPresentation(input, select); };
         trigger.addEventListener('click', () => { if (!menu.hidden) { closeCountryMenu(); return; } menu.hidden = false; trigger.setAttribute('aria-expanded', 'true'); renderCountryOptions(options, String(input.dataset.phoneCountry || initialIso).toUpperCase()); searchInput.focus(); }); searchInput.addEventListener('input', () => renderCountryOptions(options, String(input.dataset.phoneCountry || initialIso).toUpperCase(), searchInput.value)); searchInput.addEventListener('keydown', (event) => { if (event.key === 'Escape') { closeCountryMenu(); trigger.focus(); } }); options.addEventListener('click', (event) => { const option = event.target.closest('[data-phone-country-option]'); if (!option) return; select.value = option.dataset.phoneCountryOption; select.dispatchEvent(new Event('change', { bubbles: true })); });
         select.addEventListener('change', () => { bumpCountrySelectionGeneration(input); input.dataset.phoneCountry = String(select.value || '').toUpperCase(); input.dataset.phoneCountrySource = 'manual'; const state = inputStates.get(input) || {}; inputStates.set(input, { ...state, countryIso2: input.dataset.phoneCountry, userSelectedCountry: true }); closeCountryMenu(); applyCountryPresentation(input, select); if (input.value.trim()) validateInput(input, { show: true }); else setValidationState(input, { status: 'empty', valid: true, message: '' }, { show: false }); });
         input.addEventListener('beforeinput', (event) => { if (event.inputType === 'insertFromPaste' || !event.data || containsOnlyDigits(event.data)) return; event.preventDefault(); setValidationState(input, { status: 'invalid', valid: false, message: PHONE_MESSAGES.characters }, { show: true }); }); input.addEventListener('beforeinput', (event) => { if (!event.data || event.inputType === 'insertFromPaste') return; const limits = exceedsInputLimit(input, event.data); if (!limits) return; event.preventDefault(); input.dataset.phoneRejectedLimit = 'true'; input.dataset.phoneRejectedLimitMaximum = String(limits.maximumInputDigits); setValidationState(input, { status: 'invalid', valid: false, tooLong: true, message: PHONE_MESSAGES.tooLong(limits.maximumInputDigits) }, { show: true }); });
         input.addEventListener('paste', (event) => { const pasted = event.clipboardData?.getData('text') || ''; if (!pasted) return; if (!/^[+\d\s().-]+$/u.test(latinDigits(pasted))) { event.preventDefault(); setValidationState(input, { status: 'invalid', valid: false, message: PHONE_MESSAGES.characters }, { show: true }); return; } const candidate = projectedInputValue(input, pasted); const limits = inputLimits(input, candidate); if (limits && compact(candidate).replace(/^\+/, '').length > limits.maximumInputDigits) { event.preventDefault(); input.dataset.phoneRejectedLimit = 'true'; input.dataset.phoneRejectedLimitMaximum = String(limits.maximumInputDigits); setValidationState(input, { status: 'invalid', valid: false, tooLong: true, message: PHONE_MESSAGES.tooLong(limits.maximumInputDigits) }, { show: true }); return; } event.preventDefault(); input.value = compact(candidate); input.dispatchEvent(new Event('input', { bubbles: true })); });
-        input.addEventListener('input', () => { delete input.dataset.phoneRejectedLimit; delete input.dataset.phoneRejectedLimitMaximum; const raw = String(input.value || ''); const normalizedDigits = latinDigits(raw); if (normalizedDigits !== raw) input.value = normalizedDigits; const current = String(input.value || ''); const state = inputStates.get(input) || {}; if (!/^[+\d\s().-]*$/u.test(current)) { input.value = state.lastAcceptedInput || ''; setValidationState(input, { status: 'invalid', valid: false, message: PHONE_MESSAGES.characters }, { show: true }); return; } applyAsYouTypeFormatting(input); inputStates.set(input, { ...state, lastAcceptedInput: input.value }); const result = parsePhoneInput(input); if (result.tooLong) { setValidationState(input, result, { show: true }); return; } setValidationState(input, result, { show: Boolean(result.status === 'invalid' && result.message === PHONE_MESSAGES.characters) }); }); input.addEventListener('blur', () => normalizePresentation(input));
-        loadCountries().then(() => { if (!document.contains(select)) return; void loadPhoneFormatter(); if (input.dataset.phoneCountrySource !== 'manual' && !input.value.trim()) { applyInitialCountryDetection(input, select); const detectionGeneration = countrySelectionGeneration(input); loadDetectedCountry().then((detectedIso) => { if (!detectedIso || !canApplyAutomaticCountry(input, detectionGeneration)) return; applyCountrySelection(input, select, detectedIso, 'ip'); renderCountryOptions(options, detectedIso, searchInput.value); }); } populateSelect(select, String(input.dataset.phoneCountry || initialIso).toUpperCase()); renderCountryOptions(options, String(input.dataset.phoneCountry || initialIso).toUpperCase()); applyCountryPresentation(input, select); if (input.value.trim()) validateInput(input, { show: false }); }).catch(() => applyCountryPresentation(input, select));
+        input.addEventListener('input', () => { delete input.dataset.phoneRejectedLimit; delete input.dataset.phoneRejectedLimitMaximum; const raw = String(input.value || ''); const normalizedDigits = latinDigits(raw); if (normalizedDigits !== raw) input.value = normalizedDigits; const current = String(input.value || ''); const state = inputStates.get(input) || {}; if (!/^[+\d\s().-]*$/u.test(current)) { input.value = state.lastAcceptedInput || ''; setValidationState(input, { status: 'invalid', valid: false, message: PHONE_MESSAGES.characters }, { show: true }); return; } applyAsYouTypeFormatting(input); inputStates.set(input, { ...state, rawInput: current, displayValue: input.value, lastAcceptedInput: input.value }); const result = parsePhoneInput(input); if (result.tooLong) { setValidationState(input, result, { show: true }); return; } setValidationState(input, result, { show: Boolean(result.status === 'invalid' && result.message === PHONE_MESSAGES.characters) }); }); input.addEventListener('blur', () => normalizePresentation(input));
+        loadCountries().then(() => {
+            if (!document.contains(select)) return;
+            void loadPhoneFormatter();
+            const explicitIso = String(input.dataset.phoneExplicitCountry || '').trim().toUpperCase();
+            const shouldDetectAutomatically = !explicitIso && input.dataset.phoneCountrySource !== 'manual' && !input.value.trim();
+            if (explicitIso && countriesByIso.has(explicitIso) && !input.value.trim()) {
+                applyCountrySelection(input, select, explicitIso, 'explicit');
+            } else if (shouldDetectAutomatically) {
+                const detectionGeneration = countrySelectionGeneration(input);
+                // Resolve the highest-confidence signal first. Timezone,
+                // locale and the catalog fallback are used only when the
+                // server-side IP country signal is unavailable.
+                loadDetectedCountry().then((detectedIso) => {
+                    if (!canApplyAutomaticCountry(input, detectionGeneration)) return;
+                    const detected = countriesByIso.has(detectedIso)
+                        ? { code: detectedIso, source: 'ip' }
+                        : approximateCountryWithSource();
+                    const next = countriesByIso.has(detected.code) ? detected.code : centralFallbackCountry();
+                    if (!next) return;
+                    applyCountrySelection(input, select, next, detected.code === next ? detected.source : 'fallback');
+                    renderCountryOptions(options, next, searchInput.value);
+                });
+            }
+            populateSelect(select, String(input.dataset.phoneCountry || initialIso).toUpperCase());
+            renderCountryOptions(options, String(input.dataset.phoneCountry || initialIso).toUpperCase());
+            applyCountryPresentation(input, select);
+            if (input.value.trim()) validateInput(input, { show: false });
+        }).catch(() => applyCountryPresentation(input, select));
     }
 
     function loadDetectedCountry() { if (countryDetectionPromise) return countryDetectionPromise; countryDetectionPromise = fetch('/api/phone/country', { credentials: 'same-origin', cache: 'no-store', headers: { Accept: 'application/json' } }).then((response) => response.ok ? response.json() : Promise.reject(new Error('country detection unavailable'))).then((payload) => { const code = String(payload?.countryCode || '').trim().toUpperCase(); return /^[A-Z]{2}$/u.test(code) ? code : ''; }).catch(() => ''); return countryDetectionPromise; }
-    function loadCountries() { if (countriesPromise) return countriesPromise; countriesPromise = fetch('/api/phone/countries', { credentials: 'same-origin', cache: 'force-cache' }).then((response) => response.ok ? response.json() : Promise.reject(new Error('country catalog unavailable'))).then((payload) => { (payload.countries || []).forEach((country) => { if (country?.isoCode && country?.dialCode) countriesByIso.set(String(country.isoCode).toUpperCase(), country); }); if (!countriesByIso.has(FALLBACK_COUNTRY)) throw new Error('fallback country unavailable'); catalogReady = true; window.dispatchEvent(new CustomEvent('logicfit:phone-catalog-ready')); return countriesByIso; }).catch((error) => { countriesPromise = null; throw error; }); return countriesPromise; }
+    function loadCountries() { if (countriesPromise) return countriesPromise; countriesPromise = fetch('/api/phone/countries', { credentials: 'same-origin', cache: 'force-cache' }).then((response) => response.ok ? response.json() : Promise.reject(new Error('country catalog unavailable'))).then((payload) => { (payload.countries || []).forEach((country) => { if (country?.isoCode && country?.dialCode) countriesByIso.set(String(country.isoCode).toUpperCase(), country); }); const configuredFallback = String(payload?.fallbackCountry || '').trim().toUpperCase(); fallbackCountry = countriesByIso.has(configuredFallback) ? configuredFallback : centralFallbackCountry(); if (!fallbackCountry) throw new Error('phone fallback unavailable'); catalogReady = true; window.dispatchEvent(new CustomEvent('logicfit:phone-catalog-ready')); return countriesByIso; }).catch((error) => { countriesPromise = null; throw error; }); return countriesPromise; }
     function decorateAll(root = document) { root.querySelectorAll?.(PHONE_FIELD_SELECTOR).forEach(decorate); }
 
     window.addEventListener('topgym:member-details-opened', (event) => {
@@ -588,7 +635,6 @@
     function initializePhoneInputs() {
         if (window.__topGymPhoneInputsInitialized) return;
         window.__topGymPhoneInputsInitialized = true;
-        countriesByIso.set(FALLBACK_COUNTRY, { isoCode: FALLBACK_COUNTRY, dialCode: '+20', country: 'مصر', exampleNational: '01015819700', validLengths: [8, 9, 10], mobileRules: { validLengths: [10], nationalPattern: '1[0-25]\\d{8}', localPrefix: '0' } });
         decorateAll();
         void loadPhoneFormatter();
         loadCountries().then(() => decorateAll()).catch(() => {});

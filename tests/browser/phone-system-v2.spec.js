@@ -194,7 +194,7 @@ test('browser completes the canonical member phone flow end to end', async ({ pa
             payload: window.LogicFitPhoneInputs.getSubmissionPayload(input)
         };
     });
-    expect(state.placeholder).toBe('1015819700');
+    expect(state.placeholder).toBe('مثال: 01015819700');
     expect(state.state.countryIso2).toBe('EG');
     expect(state.state.nationalNumber).toBe('1015819700');
     expect(state.state.e164).toBe('+201015819700');

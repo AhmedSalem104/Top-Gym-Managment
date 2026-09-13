@@ -84,10 +84,12 @@ test('phone input layer is loaded by every page that owns a phone form', () => {
     assert.match(script, /\/api\/phone\/country/);
     assert.match(script, /loadDetectedCountry/);
     assert.match(script, /countryDetectionPromise/);
-    assert.match(script, /input\.placeholder = example;/);
+    assert.match(script, /const placeholder = example \? `\$\{PHONE_MESSAGES\.examplePrefix\}\$\{example\}` : '';/);
+    assert.match(script, /input\.placeholder = placeholder;/);
     assert.doesNotMatch(script, /input\.placeholder = example \|\|/);
     assert.match(script, /phoneCountryGeneration/);
-    assert.match(script, /applyCountrySelection\(input, select, detectedIso, 'ip'\)/);
+    assert.match(script, /loadDetectedCountry\(\)\.then\(\(detectedIso\) =>/);
+    assert.match(script, /applyCountrySelection\(input, select, next, detected\.code === next \? detected\.source : 'fallback'\)/);
     assert.match(read('src/config/env.js'), /PHONE_IP_GEOLOCATION_URL/);
     assert.match(read('src/config/env.js'), /PHONE_IP_GEOLOCATION_TIMEOUT_MS/);
     assert.match(read('.env.example'), /PHONE_IP_GEOLOCATION_URL=https:\/\/ipapi\.co\/\{ip\}\/country\//);

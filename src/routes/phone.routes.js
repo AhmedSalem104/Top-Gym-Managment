@@ -7,7 +7,10 @@ function registerPhoneRoutes(app, { asyncRoute, countryDetectionService = null }
     // It contains no tenant data and is safe to cache at the edge/browser.
     app.get('/api/phone/countries', asyncRoute(async (_request, response) => {
         response.set('Cache-Control', 'public, max-age=86400, stale-while-revalidate=604800');
-        response.json({ countries: phoneService.getSupportedCountries() });
+        response.json({
+            countries: phoneService.getSupportedCountries(),
+            fallbackCountry: phoneService.FALLBACK_COUNTRY
+        });
     }));
 
     // Keep IP geolocation server-side. The browser receives an ISO code only;

@@ -45,16 +45,21 @@ canonical value:
 - `00201015819700`
 - formatted variants containing spaces or punctuation
 
-The national input displayed after normalization is `1015819700`; `+20` stays
-in the country selector and never becomes a placeholder or input value.
+The phone control's local example preserves the representation users normally
+type. For Egypt its placeholder is `مثال: 01015819700`; after a valid value is
+entered, the display formatter may show `010 15819700`. In both cases `+20`
+stays in the country selector and never becomes a placeholder or input value.
+The parsed national number is still `1015819700`, and the transport/database
+value remains `+201015819700`.
 
 ## Country detection and readiness
 
-Initial UX detection follows IP country, then timezone, browser locale and the
-single central fallback. IP response contains only a country code. Manual
-country selection increments the component generation and cannot be replaced
-by delayed detection or catalog hydration. A phone form cannot submit without
-a ready country and a valid parsed state.
+Initial UX detection follows the server-side IP country signal, then timezone,
+browser locale and the single catalog-provided fallback. The browser receives
+only an ISO country code from the IP route. Manual country selection increments
+the component generation and cannot be replaced by delayed detection or
+catalog hydration. A phone form cannot submit without a ready country and a
+valid parsed state.
 
 ## Duplicate and search behavior
 

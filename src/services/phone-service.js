@@ -53,10 +53,9 @@ function compactPhone(value) {
 function assertPhoneSyntax(value, fieldName) {
     const normalized = normalizeDigits(value).trim();
     if (!normalized) return;
+    const compactSyntax = normalized.replace(/[\s().-]/gu, '');
     if (!/^[+\d\s().-]+$/u.test(normalized)
-        || /^[^\d+]/u.test(normalized)
-        || /\+.*\+/u.test(normalized)
-        || (normalized.includes('+') && !/^\+|^00/u.test(normalized))) {
+        || !/^(?:\+?\d+|00\d+)$/u.test(compactSyntax)) {
         throw phoneError(fieldName, 'INVALID_PHONE_FORMAT', `${fieldName} contains unsupported characters or format.`);
     }
 }

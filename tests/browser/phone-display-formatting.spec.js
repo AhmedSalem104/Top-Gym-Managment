@@ -5,7 +5,7 @@ const catalog = {
         { country: 'مصر', isoCode: 'EG', dialCode: '+20', exampleNational: '01015819700', validLengths: [10], mobileRules: { validLengths: [10], nationalPattern: '1[0-25]\\d{8}', localPrefix: '0' } },
         { country: 'السعودية', isoCode: 'SA', dialCode: '+966', exampleNational: '0501234567', validLengths: [9], mobileRules: { validLengths: [9], nationalPattern: '5\\d{8}', localPrefix: '0' } },
         { country: 'الإمارات', isoCode: 'AE', dialCode: '+971', exampleNational: '0501234567', validLengths: [9], mobileRules: { validLengths: [9], nationalPattern: '5[02-68]\\d{7}', localPrefix: '0' } },
-        { country: 'الكويت', isoCode: 'KW', dialCode: '+965', exampleNational: '050123456', validLengths: [8], mobileRules: { validLengths: [8], nationalPattern: '[569]\\d{7}', localPrefix: '0' } },
+        { country: 'الكويت', isoCode: 'KW', dialCode: '+965', exampleNational: '500 12345', validLengths: [8], mobileRules: { validLengths: [8], nationalPattern: '[569]\\d{7}', localPrefix: '0' } },
         { country: 'الولايات المتحدة', isoCode: 'US', dialCode: '+1', exampleNational: '2025550123', validLengths: [10], mobileRules: { validLengths: [10], nationalPattern: '[2-9]\\d{9}', localPrefix: '' } }
     ]
 };
@@ -45,6 +45,33 @@ test.describe('phone display formatting', () => {
             us: '(202) 555-0123'
         });
 
+        const country = page.locator('select[data-phone-country]');
+        const examples = [
+            ['EG', '01015819700', '1015819700', '+201015819700'],
+            ['SA', '051 234 5678', '512345678', '+966512345678'],
+            ['AE', '050 123 4567', '501234567', '+971501234567'],
+            ['KW', '500 12345', '50012345', '+96550012345'],
+            ['US', '(202) 555-0123', '2025550123', '+12025550123']
+        ];
+        for (const [iso, example, nationalNumber, e164] of examples) {
+            await phone.fill('');
+            await country.selectOption(iso);
+            if (/[^0-9]/u.test(example)) {
+                await phone.evaluate((input, value) => {
+                    const clipboard = new DataTransfer();
+                    clipboard.setData('text/plain', value);
+                    input.dispatchEvent(new ClipboardEvent('paste', { bubbles: true, cancelable: true, clipboardData: clipboard }));
+                }, example);
+            } else {
+                await phone.fill(example);
+            }
+            await phone.blur();
+            const payload = await page.evaluate(() => window.LogicFitPhoneInputs.getSubmissionPayload(document.querySelector('input[name="whatsapp"]')));
+            expect(payload).not.toBeNull();
+            expect(payload).toMatchObject({ phoneCountry: iso, phoneNational: nationalNumber, phone: e164 });
+        }
+
+        await country.selectOption('EG');
         await phone.fill('');
         await phone.pressSequentially('01015819700');
         await expect(phone).toHaveValue('010 15819700');
@@ -99,7 +126,7 @@ test.describe('phone display formatting', () => {
         await phone.blur();
         await page.waitForFunction(() => Boolean(window.LogicFitPhoneFormatter));
         await expect(phone).toHaveValue('010 15819700');
-        await expect(phone).toHaveAttribute('placeholder', '1015819700');
+        await expect(phone).toHaveAttribute('placeholder', 'مثال: 01015819700');
         const payload = await page.evaluate(() => window.LogicFitPhoneInputs.getSubmissionPayload(document.querySelector('input[name="whatsapp"]')));
         expect(payload).toMatchObject({ phoneCountry: 'EG', phoneNational: '1015819700', phone: '+201015819700' });
     });
