@@ -225,7 +225,9 @@ function addListFilters(request, { fromDate, nextDate, typeCode, paymentMethod, 
     const scope = normalizeFinancialScope({ branchId });
     request.input('branchId', sql.Int, scope.branchId);
     request.input('sectionId', sql.Int, null);
-    conditions.push(branchOnlyFinancialScopeSql('s').trim());
+    // `conditions` are joined with ` AND`; remove the helper's leading
+    // conjunction here so generated SQL stays valid (`AND condition`).
+    conditions.push(branchOnlyFinancialScopeSql('s').trim().replace(/^AND\s+/u, ''));
     if (typeCode) { request.input('typeCode', sql.VarChar(40), typeCode); conditions.push('s.pass_type_code = @typeCode'); }
     if (paymentMethod) { request.input('paymentMethod', sql.VarChar(20), paymentMethod); conditions.push('s.payment_method = @paymentMethod'); }
     if (search) { request.input('search', sql.NVarChar(160), `%${search}%`); conditions.push('(s.visitor_name LIKE @search OR s.visitor_phone LIKE @search OR s.visitor_phone_normalized LIKE @search)'); }

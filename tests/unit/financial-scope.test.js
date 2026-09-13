@@ -54,4 +54,5 @@ test('day-pass pagination remains compatible with the production SQL Server comp
     assert.match(listSales, /ROW_NUMBER\(\) OVER \(ORDER BY s\.visit_date DESC, s\.id DESC\)/u);
     assert.match(listSales, /row_num > @offset AND row_num <= \(@offset \+ @pageSize\)/u);
     assert.doesNotMatch(listSales, /FETCH NEXT/u);
+    assert.doesNotMatch(listSales, /AND\s+AND/u);
 });
