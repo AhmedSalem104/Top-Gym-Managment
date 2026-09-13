@@ -38,6 +38,13 @@ For every meaningful change:
 - Before release, the Lead must isolate the intended files, inspect the staged diff, run applicable tests, scan for secrets, and verify the exact commit deployed.
 - Preserve a rollback path and verify health, affected behavior, assets, console/network behavior, and security boundaries after deployment.
 
+## SQL Server tenant/RLS inspection rule
+
+- Any direct SQL Server inspection of tenant-scoped data must establish the same `tenant_id`, authenticated user context where relevant, and tenant/RLS session context used by the application request (including the effective tenant mode).
+- A query executed in platform scope, without session context, or with a missing tenant context can be intentionally filtered by RLS and return a misleading zero; never treat that result as proof that the tenant has no data.
+- Before reporting a tenant count, correlate the browser/API request with its resolved runtime, deployed SHA, tenant context, `DB_NAME()`, a non-secret database-server fingerprint, and the server-side service/query result.
+- If the application tenant context cannot be reproduced safely, report the result as `NOT VERIFIED` rather than guessing or changing production data. These inspections remain read-only unless the task explicitly authorizes a separately reviewed mutation.
+
 ## Specialist handoff format
 
 ## Production release and migration pipeline

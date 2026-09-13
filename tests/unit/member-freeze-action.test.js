@@ -15,6 +15,7 @@ function loadMemberTableRow() {
     return new Function(
         'FREEZE_LIMIT',
         'actionButton',
+        'displayPhone',
         'escapeHtml',
         'formatDate',
         'memberPortalCodeMarkup',
@@ -26,6 +27,7 @@ function loadMemberTableRow() {
     )(
         3,
         (action, memberId, _classes, extra = '') => `<button data-action="${action}" data-id="${memberId}" ${extra}></button>`,
+        (value) => String(value ?? ''),
         (value) => String(value ?? ''),
         (value) => String(value ?? ''),
         () => '',
