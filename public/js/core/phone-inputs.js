@@ -535,6 +535,21 @@
         return validateInput(input, { show: true });
     }
 
+    function refreshLoadedPhoneDisplays() {
+        document.querySelectorAll?.(PHONE_FIELD_SELECTOR).forEach((input) => {
+            // Let an active editor keep its cursor and raw typing state. The
+            // normal blur path will apply the formatter once editing ends.
+            if (document.activeElement === input) return;
+            const result = parsePhoneInput(input);
+            if (!result.valid || !result.e164) return;
+            const formatted = formatPhoneForDisplay(result.e164, result.iso);
+            if (!formatted || formatted === input.value) return;
+            input.value = formatted;
+            const state = inputStates.get(input) || {};
+            inputStates.set(input, { ...state, lastAcceptedInput: formatted });
+        });
+    }
+
     function decorate(input) {
         if (!input || input.dataset.phoneDecorated === 'true') return;
         input.dataset.phoneDecorated = 'true'; input.type = 'tel'; input.inputMode = 'numeric'; input.setAttribute('inputmode', 'numeric'); input.autocomplete = 'tel'; input.setAttribute('pattern', NATIVE_PHONE_PATTERN); input.dir = input.dir || 'ltr';
@@ -580,6 +595,7 @@
         const observer = new MutationObserver((records) => records.forEach((record) => record.addedNodes.forEach((node) => { if (node.nodeType === Node.ELEMENT_NODE) decorateAll(node); })));
         observer.observe(document.body, { childList: true, subtree: true });
     }
+    window.addEventListener('logicfit:phone-formatter-ready', refreshLoadedPhoneDisplays);
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initializePhoneInputs, { once: true });
     else initializePhoneInputs();
 

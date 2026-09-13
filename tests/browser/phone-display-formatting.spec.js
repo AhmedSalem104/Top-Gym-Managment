@@ -84,4 +84,23 @@ test.describe('phone display formatting', () => {
         expect(cursorState.start).toBeGreaterThanOrEqual(0);
         expect(cursorState.end).toBeLessThanOrEqual(cursorState.value.length);
     });
+
+    test('repairs display formatting when typing starts before the formatter is ready', async ({ page }) => {
+        await installCatalog(page);
+        await page.route('**/js/vendor/phone-formatter.js*', async (route) => {
+            const response = await route.fetch();
+            await new Promise((resolve) => setTimeout(resolve, 350));
+            await route.fulfill({ response });
+        });
+        await page.goto('/register-gym.html', { waitUntil: 'domcontentloaded' });
+        const phone = page.locator('input[name="whatsapp"]');
+        await phone.waitFor();
+        await phone.fill('01015819700');
+        await phone.blur();
+        await page.waitForFunction(() => Boolean(window.LogicFitPhoneFormatter));
+        await expect(phone).toHaveValue('010 15819700');
+        await expect(phone).toHaveAttribute('placeholder', '1015819700');
+        const payload = await page.evaluate(() => window.LogicFitPhoneInputs.getSubmissionPayload(document.querySelector('input[name="whatsapp"]')));
+        expect(payload).toMatchObject({ phoneCountry: 'EG', phoneNational: '1015819700', phone: '+201015819700' });
+    });
 });
