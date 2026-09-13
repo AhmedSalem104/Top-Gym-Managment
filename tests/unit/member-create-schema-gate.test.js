@@ -71,3 +71,18 @@ test('the browser always submits initial membership fields for new members', () 
     assert.match(pageSource, /id="memberSectionId"/u);
     assert.match(branchContextSource, /window\.topGymBranchContext = Object\.freeze/u);
 });
+
+test('member creation cannot commit a profile without its initial membership', () => {
+    const createStart = source.indexOf('async function createMember(');
+    const updateStart = source.indexOf('async function updateMember(', createStart);
+    const createBody = source.slice(createStart, updateStart);
+    const memberInsert = createBody.indexOf('INSERT INTO dbo.members');
+    const membershipInsert = createBody.indexOf('INSERT INTO dbo.memberships');
+    const membershipGuard = createBody.indexOf("'MEMBERSHIP_CREATION_FAILED'");
+    const transactionReturn = createBody.lastIndexOf('return id;');
+
+    assert.match(createBody, /await withTransaction\(async \(transaction\) =>/u);
+    assert.ok(memberInsert >= 0 && membershipInsert > memberInsert, 'member insert must precede the initial membership insert');
+    assert.ok(membershipGuard > membershipInsert, 'the membership result must be validated before the transaction can commit');
+    assert.ok(transactionReturn > membershipGuard, 'the transaction must return only after the membership invariant is checked');
+});

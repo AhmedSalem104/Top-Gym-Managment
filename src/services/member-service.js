@@ -1869,7 +1869,14 @@ async function createMember(body, { tenantSlug = '', idempotencyKey = null, bran
                 .query(`INSERT INTO dbo.memberships (member_id, membership_plan, membership_type, start_date, end_date, notes)
                         OUTPUT INSERTED.id
                         VALUES (@memberId, @membershipPlan, @membershipType, @startDate, @endDate, @notes);`);
-            const membershipId = Number(membershipResult.recordset[0].id);
+            const membershipId = Number(membershipResult.recordset?.[0]?.id);
+            // A member created from the Gym Members workspace is not valid
+            // until its initial membership exists. Keep this invariant inside
+            // the same transaction so a malformed/empty INSERT result cannot
+            // commit the profile by itself.
+            if (!Number.isInteger(membershipId) || membershipId <= 0) {
+                throw appError('تعذر إنشاء العضوية المرتبطة بالعضو.', 500, 'MEMBERSHIP_CREATION_FAILED');
+            }
             await assignDefaultMembershipScope(transaction, membershipId, { branchId, sectionId, actorUserId, actorRole });
             await transaction.request()
                 .input('membershipId', sql.Int, membershipId)
