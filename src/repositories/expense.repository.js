@@ -3,6 +3,12 @@
 const { getPool, sql } = require('../database/pool');
 const { toUtcDate } = require('../utils/date');
 const { getTenantContext } = require('../tenancy/tenant-context');
+const {
+    bindFinancialScope,
+    branchOnlyFinancialScopeSql,
+    financialDateRangeSql,
+    subscriptionPaymentScopeSql
+} = require('./financial-scope');
 
 let expensesTablePromise;
 
@@ -57,60 +63,45 @@ async function ensureExpensesTable({ readOnly = false } = {}) {
 
 async function getMonthlyData(range, { branchId = null, sectionId = null } = {}) {
     const pool = await getPool();
+    const scope = { branchId, sectionId };
     const paymentRequest = pool.request()
         .input('monthStart', sql.Date, toUtcDate(range.startDate))
-        .input('nextMonth', sql.Date, toUtcDate(range.nextMonth))
-        .input('branchId', sql.Int, branchId == null ? null : Number(branchId))
-        .input('sectionId', sql.Int, sectionId == null ? null : Number(sectionId));
+        .input('nextMonth', sql.Date, toUtcDate(range.nextMonth));
     const expenseSummaryRequest = pool.request()
         .input('monthStart', sql.Date, toUtcDate(range.startDate))
-        .input('nextMonth', sql.Date, toUtcDate(range.nextMonth))
-        .input('branchId', sql.Int, branchId == null ? null : Number(branchId))
-        .input('sectionId', sql.Int, sectionId == null ? null : Number(sectionId));
+        .input('nextMonth', sql.Date, toUtcDate(range.nextMonth));
     const expenseItemsRequest = pool.request()
         .input('monthStart', sql.Date, toUtcDate(range.startDate))
-        .input('nextMonth', sql.Date, toUtcDate(range.nextMonth))
-        .input('branchId', sql.Int, branchId == null ? null : Number(branchId))
-        .input('sectionId', sql.Int, sectionId == null ? null : Number(sectionId));
+        .input('nextMonth', sql.Date, toUtcDate(range.nextMonth));
+    bindFinancialScope(paymentRequest, scope, sql);
+    bindFinancialScope(expenseSummaryRequest, scope, sql);
+    bindFinancialScope(expenseItemsRequest, scope, sql);
 
     return Promise.all([
         paymentRequest.query(`
             SELECT COUNT(CASE WHEN amount_paid > 0 THEN 1 END) AS paidTransactionCount,
                    ISNULL(SUM(amount_paid), 0) AS subscriptionsTotal
-            FROM dbo.gym_payment_transactions
-            WHERE paid_at >= @monthStart
-              AND paid_at < @nextMonth
+            FROM dbo.gym_payment_transactions AS payment_transactions
+            INNER JOIN dbo.memberships AS payment_membership ON payment_membership.id = payment_transactions.membership_id
+            WHERE ${financialDateRangeSql('payment_transactions.paid_at', '@monthStart', '@nextMonth')}
               AND is_voided = 0
-              AND amount_paid <> 0
-              AND (@branchId IS NULL OR branch_id = @branchId)
-              AND (@sectionId IS NULL OR EXISTS (
-                  SELECT 1
-                  FROM dbo.memberships AS scoped_membership
-                  INNER JOIN dbo.gym_membership_section_access AS section_scope
-                      ON section_scope.tenant_id = scoped_membership.tenant_id
-                     AND section_scope.membership_id = scoped_membership.id
-                  WHERE scoped_membership.id = gym_payment_transactions.membership_id
-                    AND section_scope.section_id = @sectionId
-              ));
+              AND payment_transactions.amount_paid <> 0
+              ${subscriptionPaymentScopeSql({ paymentAlias: 'payment_transactions', membershipAlias: 'payment_membership' })};
         `),
         expenseSummaryRequest.query(`
             SELECT COUNT(*) AS expenseCount,
                    ISNULL(SUM(amount), 0) AS expensesTotal
             FROM dbo.gym_expenses
-            WHERE expense_date >= @monthStart
-              AND expense_date < @nextMonth
+            WHERE ${financialDateRangeSql('expense_date', '@monthStart', '@nextMonth')}
               AND ISNULL(is_voided, 0) = 0
-              AND (@branchId IS NULL OR branch_id = @branchId)
-              AND @sectionId IS NULL;
+              ${branchOnlyFinancialScopeSql('gym_expenses')};
         `),
         expenseItemsRequest.query(`
             SELECT id, expense_name, amount, expense_date, expense_source, expense_category, payment_method, notes, created_at
             FROM dbo.gym_expenses
-            WHERE expense_date >= @monthStart
-              AND expense_date < @nextMonth
+            WHERE ${financialDateRangeSql('expense_date', '@monthStart', '@nextMonth')}
               AND ISNULL(is_voided, 0) = 0
-              AND (@branchId IS NULL OR branch_id = @branchId)
-              AND @sectionId IS NULL
+              ${branchOnlyFinancialScopeSql('gym_expenses')}
             ORDER BY expense_date DESC, id DESC;
         `)
     ]);

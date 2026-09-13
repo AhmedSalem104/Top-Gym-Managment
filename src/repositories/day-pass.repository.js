@@ -4,6 +4,7 @@ const { getPool, sql } = require('../database');
 const { withTransaction } = require('../database/transaction');
 const { toUtcDate } = require('../utils/date');
 const { getTenantContext } = require('../tenancy/tenant-context');
+const { branchOnlyFinancialScopeSql, financialDateRangeSql, normalizeFinancialScope } = require('./financial-scope');
 
 const DEFAULT_DAY_PASS_TYPES = Object.freeze([
     { code: 'day_gym', label: 'حصة جيم فقط', price: 30, sortOrder: 1 },
@@ -236,10 +237,12 @@ async function updateSale({ id, visitorName, visitorPhone, visitorPhoneNormalize
 function addListFilters(request, { fromDate, nextDate, typeCode, paymentMethod, search, includeVoided = false, branchId = null }) {
     request.input('fromDate', sql.Date, toUtcDate(fromDate));
     request.input('nextDate', sql.Date, toUtcDate(nextDate));
-    const conditions = ['s.visit_date >= @fromDate', 's.visit_date < @nextDate'];
+    const conditions = [financialDateRangeSql('s.visit_date')];
     if (!includeVoided) conditions.push("s.status = 'completed'");
-    request.input('branchId', sql.Int, branchId == null ? null : Number(branchId));
-    conditions.push('(@branchId IS NULL OR s.branch_id = @branchId)');
+    const scope = normalizeFinancialScope({ branchId });
+    request.input('branchId', sql.Int, scope.branchId);
+    request.input('sectionId', sql.Int, null);
+    conditions.push(branchOnlyFinancialScopeSql('s').trim());
     if (typeCode) { request.input('typeCode', sql.VarChar(40), typeCode); conditions.push('s.pass_type_code = @typeCode'); }
     if (paymentMethod) { request.input('paymentMethod', sql.VarChar(20), paymentMethod); conditions.push('s.payment_method = @paymentMethod'); }
     if (search) { request.input('search', sql.NVarChar(160), `%${search}%`); conditions.push('(s.visitor_name LIKE @search OR s.visitor_phone LIKE @search OR s.visitor_phone_normalized LIKE @search)'); }
@@ -274,25 +277,26 @@ async function listSales({ fromDate, nextDate, typeCode = '', paymentMethod = ''
 async function getRangeData({ fromDate, nextDate, readOnly = false, branchId = null, sectionId = null }) {
     await ensureDayPassTables({ readOnly });
     const pool = await getPool();
+    const scope = normalizeFinancialScope({ branchId, sectionId });
     const request = pool.request()
         .input('fromDate', sql.Date, toUtcDate(fromDate))
         .input('nextDate', sql.Date, toUtcDate(nextDate))
-        .input('branchId', sql.Int, branchId == null ? null : Number(branchId))
+        .input('branchId', sql.Int, scope.branchId)
         // Day passes are branch-level records and have no section assignment.
         // They remain visible for branch/all-branch views and are excluded from
         // a section view instead of being attributed to the wrong section.
-        .input('sectionId', sql.Int, sectionId == null ? null : Number(sectionId));
+        .input('sectionId', sql.Int, scope.sectionId);
     const result = await request.batch(`
         SELECT s.id, s.visitor_name, s.visitor_phone, s.visitor_phone_normalized,
                s.pass_type_code, s.pass_type_name, s.amount_due, s.amount_paid,
                s.payment_method, s.visit_date, s.notes, s.status, s.created_by_user_id,
                s.whatsapp_opened_at, s.created_at, s.updated_at
         FROM dbo.gym_day_pass_sales AS s
-        WHERE s.visit_date >= @fromDate AND s.visit_date < @nextDate AND s.status = 'completed' AND (@branchId IS NULL OR s.branch_id = @branchId) AND @sectionId IS NULL
+        WHERE ${financialDateRangeSql('s.visit_date')} AND s.status = 'completed' ${branchOnlyFinancialScopeSql('s')}
         ORDER BY s.visit_date DESC, s.id DESC;
         SELECT COUNT_BIG(*) AS count, ISNULL(SUM(s.amount_paid), 0) AS amount
         FROM dbo.gym_day_pass_sales AS s
-        WHERE s.visit_date >= @fromDate AND s.visit_date < @nextDate AND s.status = 'completed' AND (@branchId IS NULL OR s.branch_id = @branchId) AND @sectionId IS NULL;
+        WHERE ${financialDateRangeSql('s.visit_date')} AND s.status = 'completed' ${branchOnlyFinancialScopeSql('s')};
     `);
     return {
         records: (result.recordsets[0] || []).map(mapSale),
@@ -306,15 +310,16 @@ async function getRangeData({ fromDate, nextDate, readOnly = false, branchId = n
 async function getRangeSummary({ fromDate, nextDate, readOnly = false, branchId = null, sectionId = null }) {
     await ensureDayPassTables({ readOnly });
     const pool = await getPool();
+    const scope = normalizeFinancialScope({ branchId, sectionId });
     const result = await pool.request()
         .input('fromDate', sql.Date, toUtcDate(fromDate))
         .input('nextDate', sql.Date, toUtcDate(nextDate))
-        .input('branchId', sql.Int, branchId == null ? null : Number(branchId))
-        .input('sectionId', sql.Int, sectionId == null ? null : Number(sectionId))
+        .input('branchId', sql.Int, scope.branchId)
+        .input('sectionId', sql.Int, scope.sectionId)
         .query(`
             SELECT COUNT_BIG(*) AS count, ISNULL(SUM(s.amount_paid), 0) AS amount
             FROM dbo.gym_day_pass_sales AS s
-            WHERE s.visit_date >= @fromDate AND s.visit_date < @nextDate AND s.status = 'completed' AND (@branchId IS NULL OR s.branch_id = @branchId) AND @sectionId IS NULL;
+            WHERE ${financialDateRangeSql('s.visit_date')} AND s.status = 'completed' ${branchOnlyFinancialScopeSql('s')};
         `);
     return {
         count: Number(result.recordset[0]?.count || 0),

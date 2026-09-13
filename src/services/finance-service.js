@@ -8,6 +8,7 @@ const {
 const { ensurePaymentTransactionsTable } = require('./member-service');
 const expenseRepository = require('../repositories/expense.repository');
 const dayPassRepository = require('../repositories/day-pass.repository');
+const { normalizeFinancialScope } = require('../repositories/financial-scope');
 
 function appError(message, statusCode = 400) {
     const error = new Error(message);
@@ -81,9 +82,10 @@ async function getMonthlyFinance({ readOnly = false, branchId = null, sectionId 
     await ensurePaymentTransactionsTable({ readOnly });
     await dayPassRepository.ensureDayPassTables({ readOnly });
     const range = currentMonthRange();
+    const scope = normalizeFinancialScope({ branchId, sectionId });
     const [monthlyData, dayPassData] = await Promise.all([
-        expenseRepository.getMonthlyData(range, { branchId, sectionId }),
-        dayPassRepository.getRangeSummary({ fromDate: range.startDate, nextDate: range.nextMonth, readOnly, branchId, sectionId })
+        expenseRepository.getMonthlyData(range, scope),
+        dayPassRepository.getRangeSummary({ fromDate: range.startDate, nextDate: range.nextMonth, readOnly, ...scope })
     ]);
 
     const [resolvedPaymentsResult, resolvedExpenseSummaryResult, resolvedExpenseItemsResult] = monthlyData;

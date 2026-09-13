@@ -52,7 +52,7 @@ test('partial payments remain independent transactions and monthly reports use c
     assert.match(memberService, /transactionType: paymentDelta > 0 \? 'payment' : 'adjustment'/);
     assert.match(memberService, /amountPaid: paymentDelta/);
     assert.match(memberService, /if \(paymentDelta !== 0\) \{/);
-    assert.match(reportService, /t\.paid_at >= @fromDate AND t\.paid_at < @nextDate/);
+    assert.match(reportService, /financialDateRangeSql\('t\.paid_at', '@fromDate', '@nextDate'\)/);
     assert.match(reportService, /t\.created_at/);
     assert.match(reportService, /ORDER BY t\.paid_at DESC/);
 });

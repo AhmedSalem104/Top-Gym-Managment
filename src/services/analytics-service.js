@@ -9,6 +9,13 @@ const {
 const { ensurePaymentTransactionsTable, getDashboard } = require('./member-service');
 const { ensureExpensesTable } = require('./finance-service');
 const dayPassRepository = require('../repositories/day-pass.repository');
+const {
+    bindFinancialScope,
+    branchOnlyFinancialScopeSql,
+    financialDateRangeSql,
+    normalizeFinancialScope,
+    subscriptionPaymentScopeSql
+} = require('../repositories/financial-scope');
 
 const PERIOD_KEYS = new Set(['week', 'month', 'year']);
 
@@ -307,17 +314,16 @@ async function getDashboardAnalytics(periodValue = 'month', { readOnly = false, 
         ]);
     }
     const pool = await getPool();
+    const scope = normalizeFinancialScope({ branchId, sectionId });
 
     const currentRequest = createRangeRequest(pool, range)
         .input('today', sql.Date, toUtcDate(today))
-        .input('inactiveSince', sql.Date, toUtcDate(inactiveSince))
-        .input('branchId', sql.Int, branchId == null ? null : Number(branchId))
-        .input('sectionId', sql.Int, sectionId == null ? null : Number(sectionId));
+        .input('inactiveSince', sql.Date, toUtcDate(inactiveSince));
     const previousRequest = createRangeRequest(pool, previousRange)
-        .input('branchId', sql.Int, branchId == null ? null : Number(branchId))
-        .input('sectionId', sql.Int, sectionId == null ? null : Number(sectionId));
+    bindFinancialScope(currentRequest, scope, sql);
+    bindFinancialScope(previousRequest, scope, sql);
     const [dashboard, currentResult, previousResult] = await Promise.all([
-        getDashboard({ readOnly, branchId, sectionId }),
+        getDashboard({ readOnly, ...scope }),
         currentRequest.batch(`
             SELECT registration_date AS eventDate
             FROM dbo.members AS members
@@ -332,22 +338,21 @@ async function getDashboardAnalytics(periodValue = 'month', { readOnly = false, 
             SELECT paid_at AS eventDate, amount_paid AS amount, payment_method AS paymentMethod
             FROM dbo.gym_payment_transactions AS payment_transactions
             INNER JOIN dbo.memberships AS payment_membership ON payment_membership.id = payment_transactions.membership_id
-            WHERE paid_at >= @startDate AND paid_at < @nextDate AND is_voided = 0 AND amount_paid <> 0
-              ${membershipScope('payment_membership')};
+            WHERE ${financialDateRangeSql('payment_transactions.paid_at', '@startDate', '@nextDate')}
+              AND payment_transactions.is_voided = 0 AND payment_transactions.amount_paid <> 0
+              ${subscriptionPaymentScopeSql({ paymentAlias: 'payment_transactions', membershipAlias: 'payment_membership' })};
 
             SELECT visit_date AS eventDate, amount_paid AS amount, payment_method AS paymentMethod
             FROM dbo.gym_day_pass_sales AS day_passes
-            WHERE visit_date >= @startDate AND visit_date < @nextDate
-              AND status = 'completed' AND amount_paid > 0
-              AND (@branchId IS NULL OR day_passes.branch_id = @branchId)
-              AND @sectionId IS NULL;
+            WHERE ${financialDateRangeSql('day_passes.visit_date', '@startDate', '@nextDate')}
+              AND day_passes.status = 'completed' AND day_passes.amount_paid > 0
+              ${branchOnlyFinancialScopeSql('day_passes')};
 
             SELECT expense_date AS eventDate, amount
             FROM dbo.gym_expenses AS expenses
-            WHERE expense_date >= @startDate AND expense_date < @nextDate
-              AND ISNULL(is_voided, 0) = 0
-              AND (@branchId IS NULL OR expenses.branch_id = @branchId)
-              AND @sectionId IS NULL;
+            WHERE ${financialDateRangeSql('expenses.expense_date', '@startDate', '@nextDate')}
+              AND ISNULL(expenses.is_voided, 0) = 0
+              ${branchOnlyFinancialScopeSql('expenses')};
 
             SELECT a.attendance_date AS eventDate, a.member_id AS memberId,
                    a.check_in_at AS checkInAt, a.check_out_at AS checkOutAt,
@@ -417,24 +422,23 @@ async function getDashboardAnalytics(periodValue = 'month', { readOnly = false, 
                    ISNULL(SUM(amount_paid), 0) AS amount
             FROM dbo.gym_payment_transactions AS payment_transactions
             INNER JOIN dbo.memberships AS payment_membership ON payment_membership.id = payment_transactions.membership_id
-            WHERE paid_at >= @startDate AND paid_at < @nextDate AND is_voided = 0 AND amount_paid <> 0
-              ${membershipScope('payment_membership')};
+            WHERE ${financialDateRangeSql('payment_transactions.paid_at', '@startDate', '@nextDate')}
+              AND payment_transactions.is_voided = 0 AND payment_transactions.amount_paid <> 0
+              ${subscriptionPaymentScopeSql({ paymentAlias: 'payment_transactions', membershipAlias: 'payment_membership' })};
 
             SELECT COUNT_BIG(*) AS total,
                    ISNULL(SUM(amount_paid), 0) AS amount
             FROM dbo.gym_day_pass_sales AS day_passes
-            WHERE visit_date >= @startDate AND visit_date < @nextDate
-              AND status = 'completed' AND amount_paid > 0
-              AND (@branchId IS NULL OR day_passes.branch_id = @branchId)
-              AND @sectionId IS NULL;
+            WHERE ${financialDateRangeSql('day_passes.visit_date', '@startDate', '@nextDate')}
+              AND day_passes.status = 'completed' AND day_passes.amount_paid > 0
+              ${branchOnlyFinancialScopeSql('day_passes')};
 
             SELECT COUNT_BIG(*) AS total,
                    ISNULL(SUM(amount), 0) AS amount
             FROM dbo.gym_expenses AS expenses
-            WHERE expense_date >= @startDate AND expense_date < @nextDate
-              AND ISNULL(is_voided, 0) = 0
-              AND (@branchId IS NULL OR expenses.branch_id = @branchId)
-              AND @sectionId IS NULL;
+            WHERE ${financialDateRangeSql('expenses.expense_date', '@startDate', '@nextDate')}
+              AND ISNULL(expenses.is_voided, 0) = 0
+              ${branchOnlyFinancialScopeSql('expenses')};
 
             SELECT COUNT_BIG(*) AS visits,
                    COUNT(DISTINCT member_id) AS uniqueMembers

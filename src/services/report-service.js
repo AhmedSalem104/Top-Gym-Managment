@@ -6,6 +6,13 @@ const { ensureCoachingTables } = require('./coaching-service');
 const { ensureLibraryData } = require('./library-service');
 const alertContactService = require('./alert-contact-service');
 const dayPassRepository = require('../repositories/day-pass.repository');
+const {
+    bindFinancialScope,
+    branchOnlyFinancialScopeSql,
+    financialDateRangeSql,
+    normalizeFinancialScope,
+    subscriptionPaymentScopeSql
+} = require('../repositories/financial-scope');
 
 function appError(message, statusCode = 400) {
     const error = new Error(message);
@@ -102,15 +109,16 @@ async function getReportData(query = {}, options = {}) {
         ]);
     }
     const pool = await getPool();
-    const branchId = options.branchId == null ? null : Number(options.branchId);
-    const sectionId = options.sectionId == null ? null : Number(options.sectionId);
-    const dayPassRangePromise = dayPassRepository.getRangeData({ fromDate: range.from, nextDate: range.nextDate, readOnly, branchId, sectionId });
-    const baseRequest = () => pool.request()
-        .input('fromDate', sql.Date, toUtcDate(range.from))
-        .input('nextDate', sql.Date, toUtcDate(range.nextDate))
-        .input('todayDate', sql.Date, toUtcDate(range.today))
-        .input('branchId', sql.Int, branchId)
-        .input('sectionId', sql.Int, sectionId);
+    const scope = normalizeFinancialScope({ branchId: options.branchId, sectionId: options.sectionId });
+    const dayPassRangePromise = dayPassRepository.getRangeData({ fromDate: range.from, nextDate: range.nextDate, readOnly, ...scope });
+    const baseRequest = () => {
+        const request = pool.request()
+            .input('fromDate', sql.Date, toUtcDate(range.from))
+            .input('nextDate', sql.Date, toUtcDate(range.nextDate))
+            .input('todayDate', sql.Date, toUtcDate(range.today));
+        bindFinancialScope(request, scope, sql);
+        return request;
+    };
 
     const [membersResult, membershipsResult, paymentsResult, expensesResult, paymentMethodsResult, dashboard, debtorsResult, coachingResult, libraryResult] = await Promise.all([
         baseRequest().query(`
@@ -181,34 +189,35 @@ async function getReportData(query = {}, options = {}) {
             FROM dbo.gym_payment_transactions AS t
             INNER JOIN dbo.memberships AS ms ON ms.id = t.membership_id
             INNER JOIN dbo.members AS m ON m.id = ms.member_id
-            WHERE t.paid_at >= @fromDate AND t.paid_at < @nextDate AND t.is_voided = 0 AND t.amount_paid <> 0
-              ${membershipScope('ms')}
+            WHERE ${financialDateRangeSql('t.paid_at', '@fromDate', '@nextDate')}
+              AND t.is_voided = 0 AND t.amount_paid <> 0
+              ${subscriptionPaymentScopeSql({ paymentAlias: 't', membershipAlias: 'ms' })}
             ORDER BY t.paid_at DESC, t.id DESC;
         `),
         baseRequest().query(`
             SELECT id, expense_name, expense_date AS event_date, amount, notes, created_at
             FROM dbo.gym_expenses
-            WHERE expense_date >= @fromDate AND expense_date < @nextDate
-              AND (@branchId IS NULL OR branch_id = @branchId)
-              AND @sectionId IS NULL
+            WHERE ${financialDateRangeSql('gym_expenses.expense_date', '@fromDate', '@nextDate')}
+              ${branchOnlyFinancialScopeSql('gym_expenses')}
               AND ISNULL(is_voided, 0) = 0
             ORDER BY expense_date DESC, id DESC;
         `),
         baseRequest().query(`
             SELECT payment_method, COUNT(*) AS count, ISNULL(SUM(amount_paid), 0) AS amount
             FROM dbo.gym_payment_transactions
-            WHERE paid_at >= @fromDate AND paid_at < @nextDate AND is_voided = 0 AND amount_paid <> 0
-              AND (@branchId IS NULL OR EXISTS (
+            WHERE ${financialDateRangeSql('gym_payment_transactions.paid_at', '@fromDate', '@nextDate')}
+              AND is_voided = 0 AND amount_paid <> 0
+              AND EXISTS (
                   SELECT 1 FROM dbo.memberships AS method_membership
-                  WHERE method_membership.id = membership_id
-                    ${membershipScope('method_membership')}
-              ))
+                  WHERE method_membership.id = gym_payment_transactions.membership_id
+                    ${subscriptionPaymentScopeSql({ paymentAlias: 'gym_payment_transactions', membershipAlias: 'method_membership' })}
+              )
             GROUP BY payment_method ORDER BY amount DESC;
         `),
-        getDashboardSummary({ readOnly, branchId, sectionId }),
+        getDashboardSummary({ readOnly, ...scope }),
         pool.request()
-            .input('branchId', sql.Int, branchId)
-            .input('sectionId', sql.Int, sectionId)
+            .input('branchId', sql.Int, scope.branchId)
+            .input('sectionId', sql.Int, scope.sectionId)
             .query(`
             SELECT TOP (1000)
                    m.id, m.full_name, m.phone, m.email,
