@@ -10,6 +10,21 @@ async function installOwnerApi(page) {
             payload = { identity: { brandName: 'Logic Fit' } };
         } else if (pathname === '/api/members') {
             payload = { members: [], pagination: { page: 1, pageSize: 5, totalItems: 0, totalPages: 0 } };
+        } else if (pathname === '/api/phone/countries') {
+            // Keep the popup contract fixture deterministic while exercising
+            // the same catalog-driven Phone Control used by production.
+            payload = {
+                fallbackCountry: 'EG',
+                countries: [{
+                    isoCode: 'EG',
+                    country: '\u0645\u0635\u0631',
+                    dialCode: '+20',
+                    exampleNational: '01015819700',
+                    exampleInternational: '+201015819700',
+                    validLengths: [8, 9, 10],
+                    mobileRules: { validLengths: [10], localPrefix: '0', nationalPattern: '1[0-25]\\d{8}' }
+                }]
+            };
         } else if (pathname.includes('/pricing')) {
             payload = { plans: {}, types: {}, prices: {} };
         }
@@ -157,7 +172,7 @@ test('member form keeps the selected country, valid phone payload and fixed foot
     });
     expect(initial.value).toBe('');
     expect(initial.country).toMatch(/^[A-Z]{2}$/);
-    expect(initial.placeholder).toMatch(/^\d+$/);
+    expect(initial.placeholder).toBe('مثال: 01015819700');
 
     const initialDialogHeight = await dialog.evaluate((element) => element.getBoundingClientRect().height);
     await page.locator('#phone').fill('966501234567');
