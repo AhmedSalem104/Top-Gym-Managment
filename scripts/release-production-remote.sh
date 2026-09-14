@@ -204,13 +204,18 @@ if [[ "$plan_output" != *'"pending":[]'* ]]; then
     STAGE='backup'
     backup_started_at="$(date -u +%Y-%m-%dT%H:%M:%S.%3NZ)"
     backup_log="$(mktemp)"
+    # The pre-migration snapshot must use the currently running release and
+    # registry. The candidate may introduce tables that are not in Production
+    # until its pending migration has completed.
+    [ -f "$OLD_RELEASE/scripts/run-server-scheduled-backup.js" ]
+    [ -f "$OLD_RELEASE/scripts/verify-production-backup.js" ]
+    # Let the official backup runner apply its bounded 1024 MiB heap policy.
+    # A smaller parent limit prevents its safe re-exec and can fail on the
+    # current validated production snapshot before storage.
     if ! run_with_current_env "$OLD_CONTAINER" \
         -e LOGIC_FIT_JOB_STATE_DIR=/tmp/logicfit-job-state-release \
         -e NODE_ENV=production \
-        -v "$RELEASE_DIR:/app" -w /app "$NODE_IMAGE" \
-        # Let the official backup runner apply its bounded 1024 MiB heap
-        # policy. A smaller parent limit prevents its safe re-exec and can
-        # fail on the current validated production snapshot before storage.
+        -v "$OLD_RELEASE:/app" -w /app "$NODE_IMAGE" \
         node scripts/run-server-scheduled-backup.js >"$backup_log" 2>&1; then
         rm -f "$backup_log"
         abort_release 76
@@ -223,7 +228,7 @@ if [[ "$plan_output" != *'"pending":[]'* ]]; then
         -e NODE_ENV=production \
         -e "BACKUP_STARTED_AT=$backup_started_at" \
         -e PRODUCTION_BACKUP_VERIFY_CONFIRM=YES \
-        -v "$RELEASE_DIR:/app" -w /app "$NODE_IMAGE" \
+        -v "$OLD_RELEASE:/app" -w /app "$NODE_IMAGE" \
         node --max-old-space-size=1024 scripts/verify-production-backup.js >/dev/null; then
         abort_release 77
     fi

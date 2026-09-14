@@ -81,4 +81,11 @@ test('production release lets the official backup runner apply its bounded heap 
     assert.match(release, /node scripts\/run-server-scheduled-backup\.js/);
     assert.match(release, /node --max-old-space-size=1024 scripts\/verify-production-backup\.js/);
     assert.doesNotMatch(release, /node --max-old-space-size=640 scripts\/(?:run-server-scheduled-backup|verify-production-backup)\.js/);
+    const backupStart = release.indexOf("STAGE='backup'");
+    const applyStart = release.indexOf("STAGE='migration-apply'");
+    assert.ok(backupStart >= 0 && applyStart > backupStart);
+    const backupSection = release.slice(backupStart, applyStart);
+    assert.equal((backupSection.match(/-v "\$OLD_RELEASE:\/app"/g) || []).length, 2);
+    assert.doesNotMatch(backupSection, /-v "\$RELEASE_DIR:\/app"/);
+    assert.match(backupSection, /candidate may introduce tables/);
 });
