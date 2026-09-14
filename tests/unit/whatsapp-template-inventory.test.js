@@ -39,3 +39,22 @@ test('platform template routes and tenant registry are explicit', () => {
     assert.match(read('src/services/tenant-service.js'), /gym_whatsapp_template_overrides/);
     assert.match(read('database/migrations/034-whatsapp-message-templates.sql'), /whatsapp_message_templates/);
 });
+
+test('template management UI is a settings section with editor, variables and preview', () => {
+    const pageTabs = read('public/js/page-tabs.js');
+    const templatesUi = read('public/js/pages/management/whatsapp-templates.js');
+    const settingsCss = read('public/css/pages/platform-settings.css');
+    const templatesCss = read('public/css/pages/whatsapp-templates.css');
+
+    assert.match(pageTabs, /platformSettingsShell/);
+    assert.match(pageTabs, /settingsSection/);
+    assert.match(pageTabs, /data-settings-section/);
+    assert.match(templatesUi, /whatsappTemplatesList/);
+    assert.match(templatesUi, /whatsappTemplateBody/);
+    assert.match(templatesUi, /whatsappTemplateVariables/);
+    assert.match(templatesUi, /whatsappTemplatePreview/);
+    assert.match(templatesUi, /confirmLeave/);
+    assert.match(templatesUi, /scope === 'platform'/);
+    assert.match(settingsCss, /platform-settings-card-grid/);
+    assert.match(templatesCss, /grid-template-columns: minmax\(220px, \.25fr\)/);
+});

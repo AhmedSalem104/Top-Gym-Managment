@@ -21,7 +21,7 @@
         expenses: { dependencies: ['finance'], styles: ['/css/pages/expenses.css?v=phase2'], scripts: [] },
         reports: { dependencies: ['phone-inputs', 'whatsapp-templates'], styles: ['/css/pages/reports.css?v=phase2'], scripts: ['/js/pages/reports/reports.js?v=10', '/js/day-pass-reports.js?v=2'] },
         feedback: { dependencies: ['phone-inputs'], styles: ['/css/pages/member-feedback.css?v=phase2'], scripts: ['/js/pages/management/member-feedback.js?v=1'] },
-        management: { dependencies: [], styles: ['/css/pages/memberships.css?v=phase2'], scripts: ['/js/pricing-cards.js?v=1'] },
+        management: { dependencies: [], styles: ['/css/pages/memberships.css?v=phase2', '/css/pages/platform-settings.css?v=1'], scripts: ['/js/pricing-cards.js?v=1'] },
         branding: { dependencies: [], styles: ['/css/pages/branding.css?v=phase2'], scripts: ['/js/pages/branding/branding.js?v=2'] },
         'member-payment-methods': { dependencies: [], styles: ['/css/pages/member-payment-methods.css?v=phase2'], scripts: ['/js/pages/management/member-payment-methods.js?v=1'] },
         'saas-billing': { dependencies: [], styles: ['/css/pages/saas.css?v=phase2'], scripts: ['/js/pages/saas/saas.js?v=6'] },
@@ -36,7 +36,7 @@
         store: { dependencies: ['phone-inputs'], styles: ['/css/pages/store.css?v=phase2', '/css/components/bar-pos.css?v=phase2'], scripts: ['/js/pages/store/store.js?v=1', '/js/pages/store/bar-pos.js?v=1'] },
         'smart-assistant': { dependencies: [], styles: [], scripts: ['/js/smart-assistant.js?v=5'] },
         'phone-inputs': { dependencies: [], styles: [], scripts: ['/js/core/phone-inputs.js?v=12'] },
-        'whatsapp-templates': { dependencies: [], styles: ['/css/pages/whatsapp-templates.css?v=1'], scripts: ['/js/core/whatsapp-templates.js?v=1', '/js/pages/management/whatsapp-templates.js?v=1'] }
+        'whatsapp-templates': { dependencies: [], styles: ['/css/pages/whatsapp-templates.css?v=2'], scripts: ['/js/core/whatsapp-templates.js?v=1', '/js/pages/management/whatsapp-templates.js?v=2'] }
     };
 
     const externalAssets = {

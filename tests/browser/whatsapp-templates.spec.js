@@ -58,15 +58,26 @@ async function installOwnerApi(page, { tenantId = 1, stores = new Map() } = {}) 
 }
 
 async function openTemplates(page) {
-    await page.goto('/?whatsapp-template-qa#whatsapp-templates', { waitUntil: 'domcontentloaded' });
-    const tab = page.locator('[data-page-tab="whatsapp-templates"]');
+    await page.goto('/?whatsapp-template-qa#settings/whatsapp', { waitUntil: 'domcontentloaded' });
+    const tab = page.locator('[data-page-tab="management"]');
     await expect(tab).toBeVisible();
-    await tab.click();
     await expect(page.locator('[data-top-gym-loading-tab]')).toHaveCount(0, { timeout: 20_000 });
-    await expect(tab).toHaveAttribute('aria-selected', 'true');
+    await expect(page.locator('#platformSettingsNav [data-settings-section="whatsapp"]')).toHaveClass(/is-active/);
     await expect(page.locator('#whatsappTemplatesSection')).toBeVisible();
     await expect(page.locator('#whatsappTemplateBody')).toBeVisible();
+    await expect(page.locator('[data-template-id]')).toHaveCount(9);
 }
+
+test('platform settings hub opens WhatsApp as an internal section', async ({ page }) => {
+    await page.goto('/?whatsapp-template-qa#management', { waitUntil: 'domcontentloaded' });
+    await expect(page.locator('#platformSettingsShell')).toBeVisible();
+    await expect(page.locator('#platformSettingsOverview')).toBeVisible();
+    await expect(page.locator('.platform-settings-card')).toHaveCount(7);
+    await page.locator('.platform-settings-card[data-settings-section="whatsapp"]').click();
+    await expect(page.locator('#whatsappTemplatesSection')).toBeVisible();
+    await expect(page).toHaveURL(/#settings\/whatsapp$/);
+    await expect(page.locator('#whatsappTemplateBody')).toHaveValue(/.+/);
+});
 
 async function openActualMemberWhatsapp(page) {
     await page.evaluate(async () => {
@@ -95,12 +106,17 @@ test('edit, save, reload, actual WhatsApp action, restore and actual default act
     await openTemplates(page);
     await page.locator('[data-template-id="PAYMENT_OUTSTANDING"]').click();
     const editor = page.locator('#whatsappTemplateBody');
+    await expect(editor).toHaveValue(defaults.PAYMENT_OUTSTANDING);
+    await expect(page.locator('#whatsappTemplateVariables [data-variable="member_name"]')).toBeVisible();
+    await page.locator('#whatsappTemplateVariables [data-variable="member_name"]').click();
+    await expect(editor).toHaveValue(/\{\{member_name\}\}/);
+    await expect(page.locator('#whatsappTemplatePreview')).toContainText('أحمد محمد');
     await editor.fill('CUSTOM {{member_name}} {{remaining_amount}}');
     await page.locator('#whatsappTemplateSave').click();
     await expect(editor).toHaveValue('CUSTOM {{member_name}} {{remaining_amount}}');
 
     await page.reload({ waitUntil: 'domcontentloaded' });
-    await page.locator('[data-page-tab="whatsapp-templates"]').click();
+    await expect(page.locator('#whatsappTemplatesSection')).toBeVisible();
     await page.locator('[data-template-id="PAYMENT_OUTSTANDING"]').click();
     await expect(editor).toHaveValue('CUSTOM {{member_name}} {{remaining_amount}}');
 
