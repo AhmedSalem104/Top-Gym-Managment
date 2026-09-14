@@ -49,7 +49,7 @@
     },
     "035-central-whatsapp-template-defaults.sql": {
       "version": "035",
-      "checksum": "6ec88ad57213cdf019e93cf3c2c1ce60a7a7f5bd97cee0b0312e68edf6f8849d",
+      "checksum": "4a4f77a12dd4ebdd679b60bbb70cd355b9ac42e04a81210883e35eccab281895",
       "transactional": true,
       "backwardCompatible": true,
       "destructive": false,
