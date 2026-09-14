@@ -144,6 +144,13 @@ function lifecycle still requires provider-side verification.
 7. Verify `/api/health/live`, `/api/health`, login, Owner/Assistant access and one read-only domain flow.
 8. Verify that the cron backup is authorized and recorded.
 
+The VPS release pipeline installs and enables the official
+`logicfit-backup-daily.timer`, scheduled daily at 02:30 UTC. It invokes the
+existing `run-server-scheduled-backup.js` flow with the running production
+environment through an anonymous pipe and honors `.production-release-lock`,
+so backup and release cannot overlap. The Vercel `/api/backup/daily` schedule
+remains configured as the existing fallback path.
+
 ## Serverless constraints
 
 Vercel instances are not durable workers. Do not depend on local temporary files as permanent backup storage or on process memory for sessions/rate limits across instances. Sessions are stored in SQL Server; backup archive durability and retention should be reviewed before treating the current archive implementation as the only disaster-recovery copy.

@@ -16,12 +16,14 @@ const { config } = require('../config/env');
 const libraryService = require('./library-service');
 const featureCatalog = require('./feature-catalog');
 const cacheService = require('./cache-service');
+const { IMAGE_MIME_TYPES, detectProofMime } = require('./image-file-types');
 
 const TRIAL_DAYS = 14;
 const MAX_PROOF_BYTES = 4 * 1024 * 1024;
-const PROOF_MIME_TYPES = Object.freeze(new Set([
-    'image/jpeg', 'image/png', 'image/webp', 'application/pdf'
-]));
+// SVG remains available for branding, where it is sanitized separately. Do
+// not accept raw SVG as a payment proof because proof files are served inline
+// and SVG can carry active markup.
+const PROOF_MIME_TYPES = Object.freeze(new Set([...IMAGE_MIME_TYPES].filter((mimeType) => mimeType !== 'image/svg+xml').concat('application/pdf')));
 
 const SAAS_TABLES = Object.freeze([
     'saas_plan_features',
@@ -1544,8 +1546,8 @@ function validateProof({ buffer, mimeType, fileName }) {
     // the supported proof formats. Persisting the detected type also avoids
     // serving an object under a misleading content type later.
     const detectedMime = detectProofMime(buffer);
-    if (!detectedMime) {
-        if (!PROOF_MIME_TYPES.has(declaredMime)) throw saasError('إثبات الدفع يجب أن يكون صورة PNG/JPG/WebP أو ملف PDF.', 400, 'INVALID_PAYMENT_PROOF_TYPE');
+    if (!detectedMime || !PROOF_MIME_TYPES.has(detectedMime)) {
+        if (!PROOF_MIME_TYPES.has(declaredMime)) throw saasError('إثبات الدفع يجب أن يكون صورة مدعومة أو ملف PDF.', 400, 'INVALID_PAYMENT_PROOF_TYPE');
         throw saasError('Payment proof content does not match its declared type.', 400, 'PAYMENT_PROOF_SIGNATURE_MISMATCH');
     }
     const cleanName = text(fileName, `payment-proof-${Date.now()}`, 255).replace(/[\\/:*?"<>|\r\n]/g, '_') || `payment-proof-${Date.now()}`;
@@ -1555,15 +1557,6 @@ function validateProof({ buffer, mimeType, fileName }) {
 function hasExpectedProofSignature(buffer, mimeType) {
     const normalizedMime = String(mimeType || '').toLowerCase().split(';')[0].trim();
     return detectProofMime(buffer) === normalizedMime;
-}
-
-function detectProofMime(buffer) {
-    if (!Buffer.isBuffer(buffer)) return null;
-    if (buffer.length >= 5 && buffer.subarray(0, 5).toString('ascii') === '%PDF-') return 'application/pdf';
-    if (buffer.length >= 3 && buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) return 'image/jpeg';
-    if (buffer.length >= 8 && buffer.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]))) return 'image/png';
-    if (buffer.length >= 12 && buffer.toString('ascii', 0, 4) === 'RIFF' && buffer.toString('ascii', 8, 12) === 'WEBP') return 'image/webp';
-    return null;
 }
 
 async function uploadPaymentProof({ tenantId = currentTenantId({ required: true }), userId, requestId, buffer, mimeType, fileName }) {

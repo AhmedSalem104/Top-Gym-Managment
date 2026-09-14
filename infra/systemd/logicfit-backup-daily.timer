@@ -1,0 +1,11 @@
+[Unit]
+Description=Run Logic Fit verified daily production backup at 02:30 UTC
+
+[Timer]
+OnCalendar=*-*-* 02:30:00 UTC
+Persistent=true
+AccuracySec=1min
+Unit=logicfit-backup-daily.service
+
+[Install]
+WantedBy=timers.target

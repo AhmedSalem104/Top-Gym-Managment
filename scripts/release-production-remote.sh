@@ -18,6 +18,9 @@ LOCK_DIR="${APP_ROOT}/.production-release-lock"
 JOB_WRAPPER_TARGET="${APP_ROOT}/bin/logicfit-auto-checkout-job.sh"
 JOB_SERVICE_TARGET='/etc/systemd/system/logicfit-attendance-auto-checkout.service'
 JOB_TIMER_TARGET='/etc/systemd/system/logicfit-attendance-auto-checkout.timer'
+BACKUP_JOB_WRAPPER_TARGET="${APP_ROOT}/bin/logicfit-scheduled-backup-job.sh"
+BACKUP_JOB_SERVICE_TARGET='/etc/systemd/system/logicfit-backup-daily.service'
+BACKUP_JOB_TIMER_TARGET='/etc/systemd/system/logicfit-backup-daily.timer'
 STAGE='start'
 
 fail_release() {
@@ -110,6 +113,9 @@ STAGE='scheduler'
 [ -f "$RELEASE_DIR/scripts/run-vps-auto-checkout-job.sh" ]
 [ -f "$RELEASE_DIR/infra/systemd/logicfit-attendance-auto-checkout.service" ]
 [ -f "$RELEASE_DIR/infra/systemd/logicfit-attendance-auto-checkout.timer" ]
+[ -f "$RELEASE_DIR/scripts/run-vps-scheduled-backup-job.sh" ]
+[ -f "$RELEASE_DIR/infra/systemd/logicfit-backup-daily.service" ]
+[ -f "$RELEASE_DIR/infra/systemd/logicfit-backup-daily.timer" ]
 mkdir -p "$APP_ROOT/bin" "$APP_ROOT/job-state"
 chmod 750 "$APP_ROOT/bin" "$APP_ROOT/job-state"
 sed -e "s#@@APP_ROOT@@#${APP_ROOT}#g" \
@@ -124,6 +130,18 @@ systemctl daemon-reload
 systemctl enable logicfit-attendance-auto-checkout.timer >/dev/null
 systemctl start logicfit-attendance-auto-checkout.timer
 printf 'AUTO_CHECKOUT_SCHEDULER=PASS\n'
+sed -e "s#@@APP_ROOT@@#${APP_ROOT}#g" \
+    -e "s#@@CONTAINER_NAME@@#${CONTAINER_NAME}#g" \
+    -e "s#@@NODE_IMAGE@@#${NODE_IMAGE}#g" \
+    "$RELEASE_DIR/scripts/run-vps-scheduled-backup-job.sh" > "$BACKUP_JOB_WRAPPER_TARGET"
+chmod 750 "$BACKUP_JOB_WRAPPER_TARGET"
+sed "s#@@APP_ROOT@@#${APP_ROOT}#g" \
+    "$RELEASE_DIR/infra/systemd/logicfit-backup-daily.service" > "$BACKUP_JOB_SERVICE_TARGET"
+install -m 0644 "$RELEASE_DIR/infra/systemd/logicfit-backup-daily.timer" "$BACKUP_JOB_TIMER_TARGET"
+systemctl daemon-reload
+systemctl enable logicfit-backup-daily.timer >/dev/null
+systemctl start logicfit-backup-daily.timer
+printf 'BACKUP_SCHEDULER=PASS\n'
 
 STAGE='dependencies'
 if [ ! -d "$RELEASE_DIR/node_modules" ]; then

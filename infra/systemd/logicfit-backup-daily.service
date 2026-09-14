@@ -1,0 +1,12 @@
+[Unit]
+Description=Logic Fit verified daily production backup
+After=docker.service
+Requires=docker.service
+ConditionPathExists=@@APP_ROOT@@/bin/logicfit-scheduled-backup-job.sh
+
+[Service]
+Type=oneshot
+ExecStart=@@APP_ROOT@@/bin/logicfit-scheduled-backup-job.sh
+TimeoutStartSec=45min
+StandardOutput=journal
+StandardError=journal

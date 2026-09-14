@@ -60,3 +60,18 @@ test('VPS auto checkout scheduler runs the official job without persisting app s
     assert.match(timer, /OnCalendar=.*0\/5/);
     assert.doesNotMatch(wrapper, /PASSWORD|SECRET_VALUE|ACCESS_KEY/i);
 });
+
+test('VPS daily backup scheduler reuses the official backup runner and release lock', () => {
+    const wrapper = read('scripts/run-vps-scheduled-backup-job.sh');
+    const service = read('infra/systemd/logicfit-backup-daily.service');
+    const timer = read('infra/systemd/logicfit-backup-daily.timer');
+    assert.match(wrapper, /run-server-scheduled-backup\.js/);
+    assert.match(wrapper, /docker inspect[\s\S]*\.Config\.Env/);
+    assert.match(wrapper, /--env-file \/dev\/stdin/);
+    assert.match(wrapper, /\.production-release-lock/);
+    assert.match(wrapper, /max-old-space-size=1024/);
+    assert.match(service, /ExecStart=.*logicfit-scheduled-backup-job\.sh/);
+    assert.match(timer, /OnCalendar=.*02:30:00 UTC/);
+    assert.match(timer, /Persistent=true/);
+    assert.doesNotMatch(wrapper, /PASSWORD|SECRET_VALUE|ACCESS_KEY/i);
+});
