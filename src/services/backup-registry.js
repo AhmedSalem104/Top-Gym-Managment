@@ -10,7 +10,7 @@
 // Bump when the logical tenant artifact contract changes. Existing artifacts
 // remain readable only when their registry matches the current restore
 // inventory; new tenant-owned commercial records are included below.
-const TENANT_BACKUP_REGISTRY_VERSION = 7;
+const TENANT_BACKUP_REGISTRY_VERSION = 8;
 
 function definition(key, table, restorePolicy = 'tenant') {
     return Object.freeze({ key, table, tenantScoped: true, restorePolicy });
@@ -97,7 +97,8 @@ const TENANT_BACKUP_TABLES = Object.freeze([
     definition('gym_store_audit_log', 'gym_store_audit_log'),
     definition('gym_branding_config', 'gym_branding_config'),
     definition('gym_branding_assets', 'gym_branding_assets'),
-    definition('gym_branding_audit', 'gym_branding_audit')
+    definition('gym_branding_audit', 'gym_branding_audit'),
+    definition('gym_whatsapp_template_overrides', 'gym_whatsapp_template_overrides')
 ]);
 
 // These tables may be tenant-scoped in the application database, but they
@@ -149,6 +150,10 @@ const PLATFORM_GLOBAL_BACKUP_TABLES = Object.freeze([
     Object.freeze({ key: 'saas_tenant_overrides', table: 'saas_tenant_overrides' }),
     Object.freeze({ key: 'saas_subscription_changes', table: 'saas_subscription_changes' }),
     Object.freeze({ key: 'saas_platform_notes', table: 'saas_platform_notes' }),
+    // System WhatsApp defaults are platform-owned configuration. Keep them in
+    // the global recovery artifact; tenant overrides remain in the tenant
+    // artifact above.
+    Object.freeze({ key: 'whatsapp_message_templates', table: 'whatsapp_message_templates' }),
     Object.freeze({ key: 'saas_audit_log', table: 'saas_audit_log' }),
     Object.freeze({ key: 'saas_notifications', table: 'saas_notifications' }),
     Object.freeze({ key: 'saas_notification_reads', table: 'saas_notification_reads' }),
@@ -341,6 +346,40 @@ function classifyPlatformTable(table, { hasTenantId = false } = {}) {
     return { classification: 'UNKNOWN', scope: null, key: null, table: name, hasTenantId: Boolean(hasTenantId), reason: 'No reviewed registry entry exists.' };
 }
 
+/**
+ * Return the recovery contract for a table without relying on whether a
+ * particular backup happens to contain rows for it. This is intentionally
+ * metadata-only: an empty table is still covered by its owning artifact.
+ */
+function getBackupClassification(table) {
+    const result = classifyPlatformTable(table);
+    if (result.classification === 'GLOBAL_REQUIRED') {
+        return Object.freeze({
+            table: result.table,
+            scope: 'platform-global',
+            artifact: 'platform-disaster-recovery',
+            classification: 'GLOBAL_REQUIRED',
+            restorePolicy: 'global-control-plane'
+        });
+    }
+    if (result.classification === 'TENANT_REQUIRED') {
+        return Object.freeze({
+            table: result.table,
+            scope: 'tenant',
+            artifact: 'tenant-operational-recovery',
+            classification: 'TENANT_REQUIRED',
+            restorePolicy: 'tenant-scoped'
+        });
+    }
+    return Object.freeze({
+        table: result.table,
+        scope: result.scope,
+        artifact: result.classification === 'UNKNOWN' ? null : 'excluded',
+        classification: result.classification,
+        restorePolicy: result.scope === 'excluded' ? 'excluded' : null
+    });
+}
+
 const TENANT_BACKUP_TABLE_BY_KEY = new Map(TENANT_BACKUP_TABLES.map((item) => [item.key, item]));
 const TENANT_BACKUP_EXCLUDED_SET = new Set(TENANT_BACKUP_EXCLUDED_TABLES);
 
@@ -431,6 +470,7 @@ module.exports = {
     PLATFORM_BACKUP_EXCLUSION_REASONS,
     PLATFORM_GLOBAL_BACKUP_TABLES,
     classifyPlatformTable,
+    getBackupClassification,
     LEGACY_BACKUP_EXCLUDED_TABLES,
     LEGACY_BACKUP_EXCLUSION_REASONS,
     LEGACY_BACKUP_TABLES,

@@ -27,6 +27,7 @@
     "test:performance-baseline": "node --test tests/unit/performance-baseline.test.js",
     "test:database-readiness": "node --test tests/unit/database-readiness.test.js tests/unit/database-pool-config.test.js tests/unit/database-transaction.test.js",
     "qa:database": "node scripts/audit-database-readiness.js",
+    "qa:whatsapp-templates": "node scripts/audit-whatsapp-template-migration.js",
     "migrate:tenancy": "node scripts/migrate-tenancy.js",
     "qa:rls": "node scripts/qa-rls.js",
     "qa:tenancy": "node scripts/verify-tenancy.js",

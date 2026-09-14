@@ -24,7 +24,8 @@
         tenantFilters: { search: '', status: '', plan: '', tenantType: '', expiringDays: '0' },
         backupHealth: null,
         backups: [],
-        backupAudit: []
+        backupAudit: [],
+        platformWhatsappTemplate: null
     };
 
     const $ = (selector, root = document) => root.querySelector(selector);
@@ -261,6 +262,54 @@
         if (view === 'backups') loadBackups();
         if (view === 'plans') loadPlans();
         if (view === 'audit') loadAudit();
+        if (view === 'settings') loadPlatformWhatsappTemplate();
+    }
+
+    async function loadPlatformWhatsappTemplate() {
+        const body = $('#platformWhatsappTemplateBody');
+        if (!body) return;
+        try {
+            const data = await api('/api/platform/whatsapp-templates');
+            state.platformWhatsappTemplate = (data.templates || []).find((item) => item.id === 'TENANT_ACTIVATED') || null;
+            body.value = state.platformWhatsappTemplate?.body || '';
+            body.disabled = !state.platformWhatsappTemplate;
+        } catch (error) {
+            body.value = '';
+            body.disabled = true;
+            showToast(getApiErrorMessage(error), true);
+        }
+    }
+
+    async function savePlatformWhatsappTemplate() {
+        const body = $('#platformWhatsappTemplateBody');
+        if (!body || !state.platformWhatsappTemplate) return;
+        const button = $('[data-platform-action="save-whatsapp-template"]');
+        if (button) button.disabled = true;
+        try {
+            const result = await api('/api/platform/whatsapp-templates/TENANT_ACTIVATED', { method: 'PUT', body: JSON.stringify({ body: body.value }) });
+            state.platformWhatsappTemplate = result.template || state.platformWhatsappTemplate;
+            body.value = state.platformWhatsappTemplate.body;
+            await window.LogicFitWhatsAppTemplates?.load?.({ platform: true, force: true });
+            showToast('تم حفظ قالب تفعيل الحساب للمنصة.');
+        } catch (error) {
+            showToast(getApiErrorMessage(error), true);
+        } finally {
+            if (button) button.disabled = false;
+        }
+    }
+
+    async function restorePlatformWhatsappTemplate() {
+        if (!state.platformWhatsappTemplate || !window.confirm('سيتم استعادة قالب تفعيل الحساب الافتراضي للمنصة. هل تريد المتابعة؟')) return;
+        try {
+            const result = await api('/api/platform/whatsapp-templates/TENANT_ACTIVATED/restore-default', { method: 'POST' });
+            state.platformWhatsappTemplate = result.template || state.platformWhatsappTemplate;
+            const body = $('#platformWhatsappTemplateBody');
+            if (body) body.value = state.platformWhatsappTemplate.body;
+            await window.LogicFitWhatsAppTemplates?.load?.({ platform: true, force: true });
+            showToast('تمت استعادة قالب تفعيل الحساب الافتراضي.');
+        } catch (error) {
+            showToast(getApiErrorMessage(error), true);
+        }
     }
 
     function setDashboardLoading(preserve = false) {
@@ -868,7 +917,7 @@
         dialog.showModal();
     }
 
-    function registrationWelcomeMessage(result) {
+    async function registrationWelcomeMessage(result) {
         const request = result?.request || {};
         const credentials = result?.oneTimeCredentials || {};
         const subscription = result?.subscription || {};
@@ -877,7 +926,16 @@
         const startsAt = formatDate(subscription.startsAt || subscription.starts_at);
         const expiresAt = subscription.expiresAt || subscription.expires_at ? formatDate(subscription.expiresAt || subscription.expires_at) : 'بدون انتهاء';
         const loginUrl = credentials.loginUrl || window.location.origin;
-        return `مرحبًا بك في Logic Fit\n\nتم تفعيل حساب ${isTrainer ? 'المدرب المستقل' : 'الجيم'} بنجاح.\n\n${isTrainer ? 'المدرب' : 'الجيم'}: ${request.gymName || '—'}\nالباقة: ${planName}\nتاريخ البداية: ${startsAt}\nتاريخ الانتهاء: ${expiresAt}\n\nرابط تسجيل الدخول:\n${loginUrl}\n\nاسم المستخدم: ${credentials.username || '—'}\nكلمة المرور المؤقتة: ${credentials.temporaryPassword || '—'}\n\nيرجى تغيير كلمة المرور بعد أول تسجيل دخول.`;
+        return window.LogicFitWhatsAppTemplates.render('TENANT_ACTIVATED', {
+            tenant_type: isTrainer ? 'المدرب المستقل' : 'الجيم',
+            gym_name: request.gymName || '—',
+            plan_name: planName,
+            start_date: startsAt,
+            expiry_date: expiresAt,
+            login_url: loginUrl,
+            username: credentials.username || '—',
+            temporary_password: credentials.temporaryPassword || ''
+        }, { platform: true });
     }
 
     function clearRegistrationCredentials() {
@@ -886,21 +944,21 @@
         if (body) body.replaceChildren();
     }
 
-    function showRegistrationCredentials(result) {
+    async function showRegistrationCredentials(result) {
         if (!registrationCredentialsDialog) return;
         const credentials = result?.oneTimeCredentials || {};
         const request = result?.request || {};
         const loginUrl = credentials.loginUrl || window.location.origin;
-        const message = registrationWelcomeMessage(result);
+        const message = await registrationWelcomeMessage(result);
         state.registrationCredentials = { ...credentials, loginUrl, message };
         const whatsappHref = buildWhatsappHref(request.whatsapp, message);
         $('#platformRegistrationCredentialsBody').innerHTML = `<p class="dialog-hint">تظهر كلمة المرور المؤقتة الآن مرة واحدة فقط. انسخها أو أرسل الرسالة يدويًا قبل إغلاق هذه النافذة؛ لا يمكن استرجاعها من النظام بعد ذلك.</p><div class="registration-credentials-grid"><div class="registration-credential-row"><span>اسم المستخدم</span><code>${escapeHtml(credentials.username || '—')}</code><button class="table-action" type="button" data-copy-registration="username">نسخ</button></div><div class="registration-credential-row"><span>كلمة المرور المؤقتة</span><code>${escapeHtml(credentials.temporaryPassword || '—')}</code><button class="table-action" type="button" data-copy-registration="temporaryPassword">نسخ</button></div><div class="registration-credential-row"><span>رابط الدخول</span><code dir="ltr">${escapeHtml(loginUrl)}</code><button class="table-action" type="button" data-copy-registration="loginUrl">نسخ</button></div></div><div class="registration-whatsapp-box"><div class="card-heading"><div><span class="eyebrow">تواصل يدوي</span><h3>رسالة الترحيب</h3></div>${whatsappHref ? `<a class="platform-btn ghost" target="_blank" rel="noopener noreferrer" href="${escapeHtml(whatsappHref)}">فتح WhatsApp</a>` : ''}</div><textarea id="registrationWelcomeMessage" readonly>${escapeHtml(message)}</textarea><button class="platform-btn ghost" type="button" data-copy-registration="message">نسخ الرسالة</button><small>فتح WhatsApp لا يثبت إرسال الرسالة؛ الإرسال يتم يدويًا داخل التطبيق.</small></div>`;
         registrationCredentialsDialog.showModal();
     }
 
-    function showPasswordResetCredentials(result, userId) {
+    async function showPasswordResetCredentials(result, userId) {
         const user = (state.profile?.users || []).find((item) => String(item.id) === String(userId)) || {};
-        showRegistrationCredentials({
+        await showRegistrationCredentials({
             ...result,
             oneTimeCredentials: {
                 username: user.email || '—',
@@ -951,7 +1009,7 @@
                 const result = await api(`/api/platform-admin/tenants/${state.profile.tenant.id}/users/${payload.userId}/reset-password`, { method: 'POST', body: JSON.stringify({}) });
                 showToast('تم إنشاء كلمة مرور مؤقتة وإبطال الجلسات القديمة.');
                 dialog.close();
-                showPasswordResetCredentials(result, payload.userId);
+                await showPasswordResetCredentials(result, payload.userId);
                 await refreshProfile();
                 return;
             }
@@ -1006,7 +1064,7 @@
                 showToast('تم رفض الطلب وتسجيل السبب.'); dialog.close(); await loadRequests();
             } else if (action === 'gym-registration-approve') {
                 const result = await api(`/api/platform-admin/gym-registration-requests/${payload.requestId}/approve`, { method: 'POST', body: JSON.stringify({ reviewNotes: values.reviewNotes || '' }) });
-                showToast('تم اعتماد طلب الجيم وإنشاء الحساب بنجاح.'); dialog.close(); await loadGymRegistrations(); loadDashboard(); loadTenants(); showRegistrationCredentials(result);
+                showToast('تم اعتماد طلب الجيم وإنشاء الحساب بنجاح.'); dialog.close(); await loadGymRegistrations(); loadDashboard(); loadTenants(); await showRegistrationCredentials(result);
             } else if (action === 'gym-registration-reject') {
                 await api(`/api/platform-admin/gym-registration-requests/${payload.requestId}/reject`, { method: 'POST', body: JSON.stringify({ reason: values.reason }) });
                 showToast('تم رفض طلب الجيم وتسجيل السبب.'); dialog.close(); await loadGymRegistrations();
@@ -1095,6 +1153,8 @@
             if (platformAction?.dataset.platformAction === 'new-platform-payment-method') { openDialog('platform-payment-method-create'); return; }
             if (platformAction?.dataset.platformAction === 'run-platform-backup') { openDialog('platform-backup'); return; }
             if (platformAction?.dataset.platformAction === 'cleanup-backups') { openDialog('backup-retention'); return; }
+            if (platformAction?.dataset.platformAction === 'save-whatsapp-template') { await savePlatformWhatsappTemplate(); return; }
+            if (platformAction?.dataset.platformAction === 'restore-whatsapp-template') { await restorePlatformWhatsappTemplate(); return; }
             const paymentMethodEdit = event.target.closest('[data-platform-payment-method-edit]');
             if (paymentMethodEdit) { openDialog('platform-payment-method-edit', { methodId: paymentMethodEdit.dataset.platformPaymentMethodEdit }); return; }
             const openButton = event.target.closest('[data-open-tenant]');

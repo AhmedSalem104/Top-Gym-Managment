@@ -55,6 +55,7 @@ const { READ_ONLY_METHODS, readOnlyBaselineGuard } = require('./src/middleware/r
 const { getClientErrorCode, getSafeErrorMessage, isPublicClientError, safeErrorCode } = require('./src/utils/error-response');
 const { createPhoneCountryDetectionService } = require('./src/services/phone-country-detection-service');
 const phoneService = require('./src/services/phone-service');
+const whatsappTemplateService = require('./src/services/whatsapp-template-service');
 
 const objectStorageService = createConfiguredObjectStorageService({
     driver: config.objectStorageDriver,
@@ -274,6 +275,7 @@ registerRoutes(app, {
     stockLocationService,
     barService,
     notificationService,
+    whatsappTemplateService,
     getPool,
     phoneCountryDetectionService
 });

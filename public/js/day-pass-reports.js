@@ -6,10 +6,6 @@
     let requestKey = '';
     let requestPromise = null;
 
-    function brandName() {
-        return String(window.topGymBranding?.get?.().identity?.brandName || 'Logic Fit').trim() || 'Logic Fit';
-    }
-
     function escapeHtml(value) { return String(value ?? '').replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[character])); }
     function displayPhone(value, iso = '') { return window.LogicFitPhoneInputs?.formatForDisplay?.(value, iso) || String(value || ''); }
     function money(value) { return `${Number(value || 0).toLocaleString('ar-EG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ج.م`; }
@@ -61,7 +57,7 @@
             const card = document.createElement('section');
             card.id = 'dayPassReportCard';
             card.className = 'report-card finance-detail-card day-pass-report-card';
-            const body = rows.length ? `<table class="reports-table day-pass-report-table"><thead><tr><th>الزائر</th><th>نوع الحصة</th><th>التاريخ</th><th>طريقة الدفع</th><th>المبلغ</th><th>واتساب</th></tr></thead><tbody>${rows.map((item) => { const phone = item.visitorPhoneNormalized || item.visitorPhone || ''; const phoneDisplay = displayPhone(phone, item.visitorPhoneCountry || item.phoneCountry || ''); return `<tr><td><strong>${escapeHtml(item.visitorName || 'زائر')}</strong><small class="day-pass-reference" dir="ltr">${escapeHtml(item.reference || `VIS-${String(item.id).padStart(6, '0')}`)}</small><small dir="ltr">${escapeHtml(phoneDisplay || 'بدون رقم')}</small></td><td>${escapeHtml(item.passTypeName)}</td><td>${dateText(item.visitDate)}</td><td>${escapeHtml(paymentLabel(item.paymentMethod))}</td><td class="paid">${money(item.amountPaid)}</td><td>${phone ? `<button type="button" class="alert-whatsapp-button reports-whatsapp-button" data-day-pass-report-whatsapp="${item.id}" data-phone="${escapeHtml(phone)}" data-name="${escapeHtml(item.visitorName || 'زائر')}" data-type="${escapeHtml(item.passTypeName)}" title="إرسال رسالة واتساب" aria-label="إرسال رسالة واتساب">◉</button>` : '<span class="reports-no-whatsapp">بدون رقم</span>'}</td></tr>`; }).join('')}</tbody></table>` : '<div class="reports-empty-state">لا توجد حصص يومية مطابقة للفلاتر.</div>';
+            const body = rows.length ? `<table class="reports-table day-pass-report-table"><thead><tr><th>الزائر</th><th>نوع الحصة</th><th>التاريخ</th><th>طريقة الدفع</th><th>المبلغ</th><th>واتساب</th></tr></thead><tbody>${rows.map((item) => { const phone = item.visitorPhoneNormalized || item.visitorPhone || ''; const phoneDisplay = displayPhone(phone, item.visitorPhoneCountry || item.phoneCountry || ''); return `<tr><td><strong>${escapeHtml(item.visitorName || 'زائر')}</strong><small class="day-pass-reference" dir="ltr">${escapeHtml(item.reference || `VIS-${String(item.id).padStart(6, '0')}`)}</small><small dir="ltr">${escapeHtml(phoneDisplay || 'بدون رقم')}</small></td><td>${escapeHtml(item.passTypeName)}</td><td>${dateText(item.visitDate)}</td><td>${escapeHtml(paymentLabel(item.paymentMethod))}</td><td class="paid">${money(item.amountPaid)}</td><td>${phone ? `<button type="button" class="alert-whatsapp-button reports-whatsapp-button" data-day-pass-report-whatsapp="${item.id}" data-phone="${escapeHtml(phone)}" data-name="${escapeHtml(item.visitorName || 'زائر')}" data-reference="${escapeHtml(item.reference || '')}" data-type="${escapeHtml(item.passTypeName)}" title="إرسال رسالة واتساب" aria-label="إرسال رسالة واتساب">◉</button>` : '<span class="reports-no-whatsapp">بدون رقم</span>'}</td></tr>`; }).join('')}</tbody></table>` : '<div class="reports-empty-state">لا توجد حصص يومية مطابقة للفلاتر.</div>';
             card.innerHTML = `<div class="report-card-head"><div><span>إيراد مستقل</span><h3>سجل الحصص اليومية</h3></div><span class="reports-members-count">${rows.length.toLocaleString('ar-EG')} نتيجة</span></div><div class="reports-table-wrap">${body}</div>`;
             const grid = view.querySelector('.reports-detail-grid');
             if (grid) grid.appendChild(card);
@@ -70,9 +66,14 @@
         return requestPromise;
     }
 
-    function openWhatsapp(button) {
+    async function openWhatsapp(button) {
         const phone = button.dataset.phone;
-        const message = `أهلًا ${button.dataset.name} 👋\n\nشكرًا لحضورك اليوم في ${brandName()}، نورتنا جدًا 💙\n\nنوع الحصة: ${button.dataset.type}\nنتمنى نشوفك دائمًا 💪`;
+        const message = await window.LogicFitWhatsAppTemplates.render('DAY_PASS_THANK_YOU', {
+            visitor_name: button.dataset.name,
+            gym_name: String(window.topGymBranding?.get?.().identity?.brandName || 'Logic Fit').trim() || 'Logic Fit',
+            visit_reference: button.dataset.reference || '',
+            pass_type: button.dataset.type || ''
+        });
         const opened = window.open(`https://wa.me/${encodeURIComponent(phone)}?text=${encodeURIComponent(message)}`, 'topGymDayPassWhatsapp', 'popup=yes,width=480,height=760,resizable=yes,scrollbars=yes');
         if (opened) void window.topGymApi.request(`/api/day-passes/${encodeURIComponent(button.dataset.dayPassReportWhatsapp)}/whatsapp-opened`, { method: 'POST' }).catch(() => {});
     }
@@ -86,7 +87,7 @@
 
     document.addEventListener('click', (event) => {
         const button = event.target.closest('[data-day-pass-report-whatsapp]');
-        if (button) openWhatsapp(button);
+        if (button) void openWhatsapp(button).catch(() => {});
     });
     document.addEventListener('topgym:tab-changed', (event) => { if (event.detail?.name === 'reports') window.setTimeout(sync, 80); });
     document.addEventListener('topgym:day-pass-created', () => { requestKey = ''; if (isFinanceView()) window.setTimeout(load, 80); });

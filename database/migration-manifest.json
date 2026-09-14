@@ -34,6 +34,18 @@
       "rlsImpact": false,
       "dataBackfill": true,
       "rollback": "forward-fix-or-database-recovery"
+    },
+    "034-whatsapp-message-templates.sql": {
+      "version": "034",
+      "checksum": "adf8972e682dbb192718559c8231b6d792316d937e8abddac69a9c321be75203",
+      "transactional": true,
+      "backwardCompatible": true,
+      "destructive": false,
+      "requiresBackup": true,
+      "requiresMaintenanceMode": false,
+      "rlsImpact": true,
+      "dataBackfill": false,
+      "rollback": "forward-fix-or-database-recovery"
     }
   }
 }

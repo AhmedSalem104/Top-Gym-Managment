@@ -60,6 +60,7 @@ const TENANT_TABLES = Object.freeze([
     'gym_branding_assets',
     'gym_branding_audit',
     'gym_branding_config',
+    'gym_whatsapp_template_overrides',
     'gym_day_pass_sales',
     'gym_day_pass_types',
     'gym_exercises',

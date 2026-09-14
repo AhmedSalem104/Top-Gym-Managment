@@ -28,6 +28,7 @@ const { registerStockLocationRoutes } = require('./stock-location.routes');
 const { registerBarRoutes } = require('./bar.routes');
 const { registerNotificationRoutes } = require('./notification.routes');
 const { registerPhoneRoutes } = require('./phone.routes');
+const { registerWhatsappTemplateRoutes } = require('./whatsapp-template.routes');
 const { platformOnly } = require('../middleware/platform.middleware');
 const trainerStudioService = require('../services/trainer-studio-service');
 
@@ -119,6 +120,7 @@ function registerRoutes(app, {
     stockLocationService,
     barService,
     notificationService,
+    whatsappTemplateService,
     getPool,
     phoneCountryDetectionService
 }) {
@@ -164,6 +166,7 @@ function registerRoutes(app, {
     registerStockLocationRoutes(app, { stockLocationService, asyncRoute });
     registerBarRoutes(app, { barService, asyncRoute });
     registerNotificationRoutes(app, { notificationService, commercialService, asyncRoute });
+    registerWhatsappTemplateRoutes(app, { whatsappTemplateService, asyncRoute });
     registerMembersRoutes(app, { memberService, branchService, asyncRoute });
 }
 

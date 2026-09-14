@@ -2,7 +2,7 @@
     if (window.__topGymPageTabsLoaded) return;
     window.__topGymPageTabsLoaded = true;
 
-    const validTabs = new Set(['dashboard', 'members', 'expenses', 'reports', 'management', 'branding', 'member-payment-methods', 'saas-billing', 'backup-history', 'permissions', 'attendance', 'library', 'trainees', 'intelligence', 'feedback', 'store', 'branches', 'member-subscription-requests', 'portal-analytics']);
+    const validTabs = new Set(['dashboard', 'members', 'expenses', 'reports', 'management', 'whatsapp-templates', 'branding', 'member-payment-methods', 'saas-billing', 'backup-history', 'permissions', 'attendance', 'library', 'trainees', 'intelligence', 'feedback', 'store', 'branches', 'member-subscription-requests', 'portal-analytics']);
     let activationToken = 0;
     let activeTabName = null;
 
@@ -22,7 +22,22 @@
         rail.insertBefore(button, feedbackTab || null);
     }
 
+    function ensureWhatsappTemplatesTab() {
+        const rail = document.getElementById('pageTabs');
+        if (!rail || rail.querySelector('[data-page-tab="whatsapp-templates"]')) return;
+        const button = document.createElement('button');
+        button.className = 'page-tab page-tab-whatsapp-templates';
+        button.type = 'button';
+        button.dataset.pageTab = 'whatsapp-templates';
+        button.dataset.ownerOnly = '';
+        button.setAttribute('aria-selected', 'false');
+        button.innerHTML = '<svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11.5a8 8 0 1 1-4.3-7.1"/><path d="M8.5 9.5c.3 1.5 1.5 2.7 3 3l1-.8c.2-.2.5-.2.7-.1l1.3.6c.3.1.4.5.3.8-.3.8-1 1.2-1.8 1.1-3.3-.5-5.3-2.5-5.8-5.8-.1-.8.3-1.5 1.1-1.8.3-.1.7 0 .8.3l.6 1.3c.1.2.1.5-.1.7Z"/><path d="M17 3v5M14.5 5.5h5"/></svg><span>قوالب الرسائل</span>';
+        const brandingTab = rail.querySelector('[data-page-tab="branding"]');
+        rail.insertBefore(button, brandingTab || null);
+    }
+
     ensureBackupHistoryTab();
+    ensureWhatsappTemplatesTab();
     // Platform Admin has its own application at /platform-admin. Remove the
     // legacy in-shell entry so gym users never see a second control plane.
     document.querySelector('[data-page-tab="platform"]')?.remove();
@@ -329,7 +344,7 @@
             // authoritative, but the client must not route an independent
             // trainer into a dynamically injected Gym panel during startup.
             if (name === 'branches' && user.tenantType !== 'gym') return window.topGymPermissions?.firstAccessibleTab?.(user) || 'members';
-            if ((name === 'management' || name === 'branding' || name === 'member-payment-methods' || name === 'saas-billing' || name === 'backup-history' || name === 'branches' || name === 'member-subscription-requests' || name === 'portal-analytics') && !window.topGymAuth.isOwner?.()) return window.topGymPermissions?.firstAccessibleTab?.(window.topGymAuth.getUser?.()) || 'members';
+            if ((name === 'management' || name === 'whatsapp-templates' || name === 'branding' || name === 'member-payment-methods' || name === 'saas-billing' || name === 'backup-history' || name === 'branches' || name === 'member-subscription-requests' || name === 'portal-analytics') && !window.topGymAuth.isOwner?.()) return window.topGymPermissions?.firstAccessibleTab?.(window.topGymAuth.getUser?.()) || 'members';
             if (!window.topGymAuth.canAccessTab(name)) return window.topGymPermissions?.firstAccessibleTab?.(window.topGymAuth.getUser?.()) || 'members';
         }
         return name;
@@ -345,6 +360,7 @@
         const expensesSection = document.getElementById('expensesSection');
         const monthlyFinanceSnapshot = document.getElementById('monthlyFinanceSnapshot');
         const managementSection = document.getElementById('managementSection');
+        const whatsappTemplatesSection = document.getElementById('whatsappTemplatesSection');
         const brandingSection = document.getElementById('brandingSection');
         const memberPaymentMethodsSection = document.getElementById('memberPaymentMethodsSection');
         const saasBillingSection = document.getElementById('saasBillingSection');
@@ -366,6 +382,7 @@
         const isMembers = name === 'members';
         const isExpenses = name === 'expenses';
         const isManagement = name === 'management';
+        const isWhatsappTemplates = name === 'whatsapp-templates';
         const isBranding = name === 'branding';
         const isMemberPaymentMethods = name === 'member-payment-methods';
         const isSaasBilling = name === 'saas-billing';
@@ -390,6 +407,7 @@
         setHidden(monthlyFinanceSnapshot, !isDashboard);
         setHidden(expensesSection, !isExpenses);
         setHidden(managementSection, !isManagement);
+        setHidden(whatsappTemplatesSection, !isWhatsappTemplates);
         setHidden(brandingSection, !isBranding);
         setHidden(memberPaymentMethodsSection, !isMemberPaymentMethods);
         setHidden(saasBillingSection, !isSaasBilling);
@@ -415,10 +433,10 @@
         setHidden(intelligenceSection, !isIntelligence);
         setHidden(storeSection, !isStore);
         setHidden(branchesSection, !isBranches);
-        setHidden(workspace, isDashboard || isExpenses || isReports || isManagement || isBranding || isMemberPaymentMethods || isSaasBilling || isBackupHistory || isMemberSubscriptionRequests || isPortalAnalytics || isPermissions || isAttendance || isLibrary || isTrainees || isIntelligence || isFeedback || isStore || isBranches);
+        setHidden(workspace, isDashboard || isExpenses || isReports || isManagement || isWhatsappTemplates || isBranding || isMemberPaymentMethods || isSaasBilling || isBackupHistory || isMemberSubscriptionRequests || isPortalAnalytics || isPermissions || isAttendance || isLibrary || isTrainees || isIntelligence || isFeedback || isStore || isBranches);
         setHidden(membersSection, !isMembers);
 
-        const tabPanelIds = { 'saas-billing': 'saasBillingSection', 'backup-history': 'backupHistorySection', 'member-payment-methods': 'memberPaymentMethodsSection', 'member-subscription-requests': 'memberSubscriptionRequestsSection', 'portal-analytics': 'portalAnalyticsSection' };
+        const tabPanelIds = { 'whatsapp-templates': 'whatsappTemplatesSection', 'saas-billing': 'saasBillingSection', 'backup-history': 'backupHistorySection', 'member-payment-methods': 'memberPaymentMethodsSection', 'member-subscription-requests': 'memberSubscriptionRequestsSection', 'portal-analytics': 'portalAnalyticsSection' };
         document.querySelectorAll('[data-page-tab]').forEach((button) => {
             const active = button.dataset.pageTab === name;
             button.classList.toggle('active', active);
@@ -481,6 +499,7 @@
 
     document.addEventListener('DOMContentLoaded', () => {
         ensureBackupHistoryTab();
+        ensureWhatsappTemplatesTab();
         initSidebarPin();
         initMobileNavigation();
         document.querySelectorAll('[data-page-tab]').forEach((button) => {

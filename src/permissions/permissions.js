@@ -10,6 +10,7 @@ const { ROLES } = require('./roles');
 const PERMISSIONS = Object.freeze({
     DASHBOARD_READ: 'dashboard.read',
     NOTIFICATIONS_READ: 'notifications.read',
+    MESSAGE_TEMPLATES_MANAGE: 'message_templates.manage',
 
     MEMBERS_READ: 'members.read',
     MEMBERS_CREATE: 'members.create',
@@ -123,6 +124,7 @@ const PERMISSIONS = Object.freeze({
 
 const CATALOG_DEFINITIONS = [
     ['notifications.read', 'Notifications', 'View role- and tenant-scoped in-app notifications.', 'notifications', 'view'],
+    ['message_templates.manage', 'قوالب رسائل WhatsApp', 'تعديل قوالب WhatsApp الخاصة بالـTenant. صلاحية Owner فقط.', 'messaging', 'manage', true],
     ['dashboard.read', 'لوحة التحكم', 'عرض لوحة التحكم والتحليلات التشغيلية.', 'dashboard', 'عرض'],
     ['members.read', 'المشتركون', 'عرض قائمة المشتركين وتفاصيل ملفاتهم.', 'members', 'عرض'],
     ['members.create', 'إضافة مشترك', 'إنشاء ملف المشترك وعضويته الأولية بدون تحصيل دفعة؛ تحصيل المبلغ يحتاج صلاحية تسجيل دفعة.', 'members', 'إضافة'],

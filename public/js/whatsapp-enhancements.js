@@ -1,444 +1,207 @@
-        (() => {
-            if (window.__topGymWhatsappEnhancementsLoaded) return;
-            window.__topGymWhatsappEnhancementsLoaded = true;
+(() => {
+    'use strict';
+    if (window.__topGymWhatsappEnhancementsLoaded) return;
+    window.__topGymWhatsappEnhancementsLoaded = true;
 
-            const arabicDigits = '٠١٢٣٤٥٦٧٨٩';
-            const memberForm = document.getElementById('memberForm');
-            const whatsappOption = document.getElementById('sendWhatsAppAfterSave');
-            const ICONS = {
-                wave: '\u{1F44B}',
-                check: '\u2705',
-                clipboard: '\u{1F4CB}',
-                workout: '\u{1F3CB}\uFE0F',
-                timer: '\u23F1\uFE0F',
-                calendar: '\u{1F4C5}',
-                calendarEnd: '\u{1F5D3}\uFE0F',
-                card: '\u{1F4B3}',
-                money: '\u{1F4B0}',
-                gift: '\u{1F381}',
-                receipt: '\u{1F9FE}',
-                cash: '\u{1F4B5}',
-                pin: '\u{1F4CC}',
-                sparkles: '\u2728',
-                target: '\u{1F3AF}',
-                thanks: '\u{1F64F}'
-            };
+    const memberForm = document.getElementById('memberForm');
+    const whatsappOption = document.getElementById('sendWhatsAppAfterSave');
+    const checkIcon = '✅';
+    if (!memberForm || !whatsappOption) return;
 
-            if (!memberForm || !whatsappOption) return;
+    function latinDigits(value) {
+        return String(value ?? '').replace(/[٠-٩]/g, (digit) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(digit)));
+    }
 
-            function latinDigits(value) {
-                return String(value ?? '').replace(/[٠-٩]/g, (digit) => String(arabicDigits.indexOf(digit)));
-            }
+    function normalizePhone(value, country = '') {
+        const input = memberForm.elements?.namedItem('phone');
+        const selectedCountry = country
+            || window.LogicFitPhoneInputs?.countryForValue?.(value)
+            || input?.dataset?.phoneCountry
+            || '';
+        const prepared = window.LogicFitPhoneInputs?.normalizeForTransport?.(latinDigits(value), selectedCountry) || latinDigits(value).trim();
+        return /^\+[1-9]\d{6,14}$/.test(prepared) ? prepared.slice(1) : '';
+    }
 
-            function normalizePhone(value, country = '') {
-                const detectedCountry = country
-                    || window.LogicFitPhoneInputs?.countryForValue?.(value)
-                    || window.LogicFitPhoneInputs?.countryCodeForInput?.(memberForm.elements?.namedItem('phone'))
-                    || memberForm.elements?.namedItem('phone')?.dataset?.phoneCountry
-                    || '';
-                const prepared = window.LogicFitPhoneInputs?.normalizeForTransport?.(latinDigits(value), detectedCountry) || latinDigits(value).trim();
-                if (!/^\+[1-9]\d{6,14}$/.test(prepared)) return '';
-                return prepared.slice(1);
-            }
+    function isMobileDevice() { return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || ''); }
 
-            function formatDate(value) {
-                if (!value) return '—';
-                const raw = String(value);
-                const date = /^\d{4}-\d{2}-\d{2}$/.test(raw) ? new Date(`${raw}T00:00:00`) : new Date(raw);
-                if (Number.isNaN(date.getTime())) return raw;
-                return new Intl.DateTimeFormat('ar-EG-u-ca-gregory', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(date);
-            }
+    function openWhatsappChat(phone, message = '', existingWindow = null) {
+        if (!phone) return false;
+        const url = `https://wa.me/${phone}${message ? `?text=${encodeURIComponent(message)}` : ''}`;
+        if (isMobileDevice() && !existingWindow) {
+            const link = document.createElement('a');
+            link.href = `whatsapp://send?phone=${phone}&text=${encodeURIComponent(message)}`;
+            link.hidden = true;
+            link.setAttribute('aria-hidden', 'true');
+            document.body.append(link);
+            link.click();
+            link.remove();
+            return true;
+        }
+        const opened = existingWindow && !existingWindow.closed
+            ? existingWindow
+            : window.open(url, 'topGymWhatsapp', 'popup=yes,width=480,height=760,resizable=yes,scrollbars=yes');
+        if (opened && existingWindow) opened.location.href = url;
+        if (opened) opened.opener = null;
+        return Boolean(opened);
+    }
 
-            function money(value) {
-                return `${Number(value || 0).toLocaleString('ar-EG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ج.م`;
-            }
+    function prepareWhatsappWindow(phone) {
+        if (!normalizePhone(phone) || isMobileDevice()) return null;
+        const opened = window.open('about:blank', 'topGymWhatsapp', 'popup=yes,width=480,height=760,resizable=yes,scrollbars=yes');
+        if (opened) opened.opener = null;
+        return opened || null;
+    }
 
-            function inlineText(value, fallback = '—') {
-                const text = String(value ?? '').replace(/[\r\n\s]+/g, ' ').trim();
-                return text || fallback;
-            }
+    function closeWhatsappWindow(opened) { if (opened && !opened.closed) opened.close(); }
 
-            function brandName() {
-                return String(window.topGymBranding?.get?.().identity?.brandName || 'Logic Fit').trim() || 'Logic Fit';
-            }
+    function showWhatsappStatus(phone, message, opened) {
+        if (!window.Swal) return;
+        if (opened) {
+            window.Swal.fire({ toast: true, position: 'top-start', icon: 'success', title: `تم فتح واتساب والرسالة جاهزة ${checkIcon}`, showConfirmButton: false, timer: 2800, timerProgressBar: true, customClass: { popup: 'top-gym-alert top-gym-toast' } });
+            return;
+        }
+        window.Swal.fire({
+            icon: 'info', title: `تم حفظ المشترك ${checkIcon}`,
+            text: 'لم يفتح واتساب تلقائيًا. اضغط الزر لفتح المحادثة والرسالة جاهزة للإرسال.',
+            showCancelButton: true, confirmButtonText: 'فتح واتساب', cancelButtonText: 'لاحقًا', buttonsStyling: false,
+            customClass: { popup: 'top-gym-alert', confirmButton: 'btn btn-primary', cancelButton: 'btn btn-light' }
+        }).then((result) => { if (result.isConfirmed) openWhatsappChat(phone, message); });
+    }
 
-            function messageFrame(title, lines) {
-                const resolvedBrand = brandName();
-                return [
-                    '╭────────────────────────────╮',
-                    `│  ${title}`,
-                    '├────────────────────────────┤',
-                    ...lines.map((line) => line ? `│  ${line}` : '│'),
-                    '╰────────────────────────────╯'
-                ].map((line) => String(line).replaceAll('TOP GYM', () => resolvedBrand));
-            }
+    async function renderTemplate(templateId, context, options = {}) {
+        if (!window.LogicFitWhatsAppTemplates?.render) throw new Error('أداة قوالب الرسائل غير جاهزة.');
+        return window.LogicFitWhatsAppTemplates.render(templateId, context, options);
+    }
 
-            function isMobileDevice() {
-                return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || '');
-            }
+    function memberContext(member = {}, payload = {}, labels = {}) {
+        const membership = member.membership || {};
+        const due = Number(membership.amountDue ?? payload.amountDue ?? 0);
+        const paid = Number(membership.amountPaid ?? payload.amountPaid ?? 0);
+        const remaining = Math.max(0, Number(membership.amountRemaining ?? due - paid) || 0);
+        const discount = Number(membership.discountAmount ?? payload.discountAmount ?? 0);
+        return {
+            member_name: member.fullName || payload.fullName || 'العضو',
+            gym_name: window.topGymBranding?.get?.().identity?.brandName || 'Logic Fit',
+            plan_name: labels.plan || membership.plan || payload.membershipPlan || '',
+            membership_type: labels.type || membership.type || payload.membershipType || '',
+            start_date: membership.startDate || payload.startDate || '',
+            expiry_date: membership.effectiveEndDate || membership.endDate || payload.endDate || '',
+            list_price: String(Number(membership.listPrice ?? payload.listPrice ?? due + discount) || 0),
+            discount_amount: discount > 0 ? String(discount) : '',
+            amount_due: due > 0 ? String(due) : '',
+            amount_paid: paid > 0 ? String(paid) : '',
+            remaining_amount: remaining > 0 ? String(remaining) : '',
+            payment_method: labels.payment || membership.paymentMethod || payload.paymentMethod || '',
+            freeze_until: membership.freezeEnd || '',
+            days_remaining: member.daysRemaining ?? '',
+            days_since_last_visit: member.daysSinceLastVisit ?? ''
+        };
+    }
 
-            function buildMessage(detail) {
-                const member = detail.member || {};
-                const payload = detail.payload || {};
-                const membership = member.membership || {};
-                const labels = detail.labels || {};
-                const rawMembershipCode = detail.membershipCode || member.membershipCode;
-                const membershipCode = typeof rawMembershipCode === 'string' ? rawMembershipCode : '';
-                const portalUrl = detail.portalUrl || member.membershipCodePortalUrl || `${window.location.origin}/member-portal`;
-                const name = inlineText(member.fullName || payload.fullName, 'عضو TOP GYM');
-                const greetingName = name;
-                const plan = inlineText(labels.plan || membership.plan || payload.membershipPlan);
-                const type = inlineText(labels.type || membership.type || payload.membershipType);
-                const amountDue = membership.amountDue ?? payload.amountDue ?? 0;
-                const amountPaid = membership.amountPaid ?? payload.amountPaid ?? 0;
-                const amountRemaining = membership.amountRemaining ?? Math.max(0, Number(amountDue) - Number(amountPaid));
-                const discountAmount = membership.discountAmount ?? payload.discountAmount ?? 0;
-                const listPrice = membership.listPrice ?? payload.listPrice ?? (Number(amountDue) + Number(discountAmount));
-                const paymentMethod = inlineText(labels.payment || membership.paymentMethod || payload.paymentMethod);
-                const remainingAmount = Math.max(0, Number(amountRemaining) || 0);
-                const accountLines = [
-                    '• السعر الأساسي: *' + money(listPrice) + '*',
-                    '• الخصم: *' + money(discountAmount) + '*',
-                    '• المستحق: *' + money(amountDue) + '*',
-                    '• المدفوع: *' + money(amountPaid) + '*'
-                ];
-                if (remainingAmount > 0) accountLines.push('• المتبقي: *' + money(remainingAmount) + '*');
-                accountLines.push('• طريقة الدفع: *' + paymentMethod + '*');
-                if (membershipCode) {
-                    accountLines.push('', '*كود العضوية الخاص بك لبوابة المشترك:*', `*${membershipCode}*`, '', '*رابط بوابة المشترك:*', portalUrl, 'لا تشارك الكود مع أي شخص.');
-                }
-                return messageFrame('TOP GYM', [
-                    `السلام عليكم يا *${greetingName}*`,
-                    '',
-                    'مبروك يا بطل 🎉',
-                    'تم تسجيل اشتراكك في',
-                    `*TOP GYM* بنجاح ${ICONS.check}`,
-                    '',
-                    '*تفاصيل اشتراكك*',
-                    '• الباقة: *' + plan + '*',
-                    '• النوع: *' + type + '*',
-                    '• البداية: *' + formatDate(membership.startDate || payload.startDate) + '*',
-                    '• الانتهاء: *' + formatDate(membership.effectiveEndDate || membership.endDate || payload.endDate) + '*',
-                    '',
-                    '*ملخص الحساب*',
-                    ...accountLines,
-                    '',
-                    'مبسوطين إنك بقيت جزء من',
-                    '*TOP GYM* ❤️',
-                    'مستنيينك تبدأ بقوة،',
-                    'وإحنا معاك خطوة بخطوة',
-                    'لحد ما توصل لهدفك'
-                ]).join('\n');
-            }
+    function alertTemplateId(member, kind) {
+        if (kind === 'debt') return 'PAYMENT_OUTSTANDING';
+        if (kind === 'inactive') return 'MEMBER_ABSENCE';
+        const status = String(member?.membership?.status || '').toLowerCase();
+        if (status === 'frozen') return 'MEMBERSHIP_FROZEN';
+        if (status === 'expired') return 'MEMBERSHIP_EXPIRED';
+        return 'MEMBERSHIP_EXPIRING';
+    }
 
-            function openWhatsappChat(phone, message = '', existingWindow = null) {
-                if (!phone) return false;
-                const query = message ? `?text=${encodeURIComponent(message)}` : '';
-                const url = `https://wa.me/${phone}${query}`;
-                if (isMobileDevice() && !existingWindow) {
-                    const appLink = document.createElement('a');
-                    appLink.href = `whatsapp://send?phone=${phone}&text=${encodeURIComponent(message)}`;
-                    appLink.setAttribute('aria-hidden', 'true');
-                    appLink.hidden = true;
-                    document.body.append(appLink);
-                    appLink.click();
-                    appLink.remove();
-                    return true;
-                }
-                const opened = existingWindow && !existingWindow.closed ? existingWindow : window.open(url, 'topGymWhatsapp', 'popup=yes,width=480,height=760,resizable=yes,scrollbars=yes');
-                if (opened && existingWindow) opened.location.href = url;
-                if (opened) opened.opener = null;
-                return Boolean(opened);
-            }
+    function alertContext(member = {}) {
+        const context = memberContext(member);
+        context.expiry_date = member.membership?.effectiveEndDate || member.membership?.endDate || '';
+        context.freeze_until = member.membership?.freezeEnd || '';
+        context.remaining_amount = Number(member.membership?.amountRemaining || 0) > 0 ? String(member.membership.amountRemaining) : '';
+        return context;
+    }
 
-            function prepareWhatsappWindow(phone) {
-                if (!normalizePhone(phone)) return null;
-                if (isMobileDevice()) return null;
-                const opened = window.open('about:blank', 'topGymWhatsapp', 'popup=yes,width=480,height=760,resizable=yes,scrollbars=yes');
-                if (opened) opened.opener = null;
-                return opened || null;
-            }
+    async function sendMembershipPortalInvite(detail = {}) {
+        const member = detail.member || {};
+        const phone = normalizePhone(detail.phone || member.phone, member.phoneCountry || detail.payload?.phoneCountry);
+        if (!phone) throw new Error('رقم هاتف المشترك غير صالح لفتح واتساب.');
+        const message = await renderTemplate('PORTAL_ACCESS', {
+            member_name: member.fullName || 'العضو',
+            gym_name: window.topGymBranding?.get?.().identity?.brandName || 'Logic Fit',
+            membership_code: detail.membershipCode || member.membershipCode || '',
+            portal_url: detail.portalUrl || member.membershipCodePortalUrl || `${window.location.origin}/member-portal`
+        });
+        const opened = openWhatsappChat(phone, message);
+        showWhatsappStatus(phone, message, opened);
+        return opened;
+    }
 
-            function closeWhatsappWindow(opened) {
-                if (opened && !opened.closed) opened.close();
-            }
+    async function sendWhatsappMessage(detail = {}) {
+        const member = detail.member || {};
+        const payload = detail.payload || {};
+        const phone = normalizePhone(payload.phone || member.phone, payload.phoneCountry || member.phoneCountry);
+        if (!phone) {
+            window.Swal?.fire({ toast: true, position: 'top-start', icon: 'warning', title: 'تم الحفظ — رقم الهاتف غير صحيح', showConfirmButton: false, timer: 4500, timerProgressBar: true, customClass: { popup: 'top-gym-alert top-gym-toast' } });
+            return;
+        }
+        const message = await renderTemplate('MEMBERSHIP_WELCOME', memberContext(member, payload, detail.labels));
+        const openedWindow = detail.whatsappWindow && !detail.whatsappWindow.closed ? detail.whatsappWindow : null;
+        const opened = openWhatsappChat(phone, message, openedWindow);
+        showWhatsappStatus(phone, message, opened);
+    }
 
-            function showWhatsappStatus(phone, message, opened) {
-                if (!window.Swal) return;
-                if (opened) {
-                    window.Swal.fire({
-                        toast: true,
-                        position: 'top-start',
-                        icon: 'success',
-                        title: `تم فتح واتساب والرسالة جاهزة ${ICONS.check}`,
-                        showConfirmButton: false,
-                        timer: 2800,
-                        timerProgressBar: true,
-                        customClass: { popup: 'top-gym-alert top-gym-toast' }
-                    });
-                    return;
-                }
-                window.Swal.fire({
-                    icon: 'info',
-                    title: `تم حفظ المشترك ${ICONS.check}`,
-                    text: 'لم يفتح واتساب تلقائيًا. اضغط الزر لفتح المحادثة والرسالة جاهزة للإرسال.',
-                    showCancelButton: true,
-                    confirmButtonText: 'فتح واتساب',
-                    cancelButtonText: 'لاحقًا',
-                    buttonsStyling: false,
-                    customClass: { popup: 'top-gym-alert', confirmButton: 'btn btn-primary', cancelButton: 'btn btn-light' }
-                }).then((result) => {
-                    if (result.isConfirmed) openWhatsappChat(phone, message);
-                });
-            }
+    async function recordAlertCommunication(memberId, kind, status, button) {
+        const alertKey = button?.dataset.alertKey || '';
+        if (!memberId || !kind || !alertKey) return null;
+        const response = await fetch(`/api/members/${encodeURIComponent(memberId)}/alert-communications`, {
+            method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ alertKind: kind, alertKey, status })
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.error || 'تعذر حفظ حالة التواصل.');
+        return data.contact || null;
+    }
 
-            function sendMembershipPortalInvite(detail = {}) {
-                const member = detail.member || {};
-                const phone = normalizePhone(detail.phone || member.phone, member.phoneCountry || detail.payload?.phoneCountry);
-                if (!phone) throw new Error('رقم هاتف المشترك غير صالح لفتح واتساب.');
-                const message = buildMessage({ ...detail, member, portalUrl: detail.portalUrl || `${window.location.origin}/member-portal` });
-                const opened = openWhatsappChat(phone, message);
-                showWhatsappStatus(phone, message, opened);
-                return opened;
-            }
+    function updateAlertContactState(button, contact) {
+        if (!button || !contact?.status) return;
+        const host = button.closest('.alert-card-actions, .reports-debtor-actions');
+        if (!host) return;
+        host.querySelectorAll(':scope > .alert-contact-state').forEach((item) => item.remove());
+        const state = document.createElement('span');
+        state.className = `alert-contact-state ${contact.status === 'sent' ? 'sent' : 'opened'}`;
+        state.innerHTML = `<span class="alert-contact-dot" aria-hidden="true"></span>${contact.status === 'sent' ? 'تم التواصل' : 'تم فتح واتساب'}`;
+        host.insertBefore(state, button);
+    }
 
-            function sendWhatsappMessage(detail) {
-                const phone = normalizePhone(detail.payload?.phone || detail.member?.phone, detail.payload?.phoneCountry || detail.member?.phoneCountry);
-                const message = buildMessage(detail);
-                if (!phone) {
-                    if (window.Swal) window.Swal.fire({ toast: true, position: 'top-start', icon: 'warning', title: 'تم الحفظ — رقم الهاتف غير صحيح', showConfirmButton: false, timer: 4500, timerProgressBar: true, customClass: { popup: 'top-gym-alert top-gym-toast' } });
-                    return;
-                }
+    async function markAlertOpened(memberId, kind, button) {
+        try { updateAlertContactState(button, await recordAlertCommunication(memberId, kind, 'opened', button)); } catch (_) { /* opening WhatsApp remains successful even if audit write fails */ }
+        if (!window.Swal || !button?.dataset.alertKey) return;
+        const result = await window.Swal.fire({ icon: 'question', title: 'هل تم إرسال الرسالة؟', text: 'تم فتح واتساب والرسالة جاهزة. أكد الحالة يدويًا.', showCancelButton: true, confirmButtonText: 'تم الإرسال', cancelButtonText: 'لم أرسل بعد', buttonsStyling: false, customClass: { popup: 'top-gym-alert', confirmButton: 'btn btn-primary', cancelButton: 'btn btn-light' } });
+        if (!result.isConfirmed) return;
+        try { updateAlertContactState(button, await recordAlertCommunication(memberId, kind, 'sent', button)); } catch (_) { /* no message content or secret is logged */ }
+    }
 
-                const openedWindow = detail.whatsappWindow && !detail.whatsappWindow.closed ? detail.whatsappWindow : null;
-                const opened = openedWindow ? openWhatsappChat(phone, message, openedWindow) : openWhatsappChat(phone, message);
-                showWhatsappStatus(phone, message, opened);
-            }
+    async function sendAlertWhatsapp(memberId, kind, button = null) {
+        if (button) button.disabled = true;
+        let preparedWindow = null;
+        try {
+            const response = await fetch(`/api/members/${encodeURIComponent(memberId)}`, { credentials: 'same-origin' });
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok) throw new Error(data.error || 'تعذر تحميل بيانات المشترك.');
+            const member = data.member || data;
+            const phone = normalizePhone(member.phone, member.phoneCountry);
+            if (!phone) throw new Error('رقم هاتف المشترك غير صالح لفتح واتساب.');
+            if (!isMobileDevice()) preparedWindow = prepareWhatsappWindow(phone);
+            const message = await renderTemplate(alertTemplateId(member, kind), alertContext(member));
+            const opened = openWhatsappChat(phone, message, preparedWindow);
+            if (opened) await markAlertOpened(memberId, kind, button);
+            else showWhatsappStatus(phone, message, null);
+        } catch (error) {
+            closeWhatsappWindow(preparedWindow);
+            window.Swal?.fire({ toast: true, position: 'top-start', icon: 'error', title: 'تعذر تجهيز رسالة واتساب', text: error.message, showConfirmButton: false, timer: 4500, customClass: { popup: 'top-gym-alert top-gym-toast' } });
+        } finally { if (button) button.disabled = false; }
+    }
 
-            function buildAlertMessage(member, kind) {
-                const name = inlineText(member?.fullName, 'عضو TOP GYM');
-                const greetingName = name;
-                const membership = member?.membership || {};
-                if (kind === 'membership') {
-                    const status = String(membership.status || '').toLowerCase();
-                    const endDate = formatDate(membership.effectiveEndDate || membership.endDate);
-                    if (status === 'frozen') {
-                        return messageFrame('🧊 TOP GYM', [
-                            `السلام عليكم يا *${greetingName}*`,
-                            '',
-                            'اشتراكك متجمّد لحد:',
-                            `*${formatDate(membership.freezeEnd)}*`,
-                            '',
-                            'ياريت تراجع الإدارة لو محتاج أي تفاصيل.',
-                            '',
-                            'مستنيينك ترجع تكمل تمرينك معانا ❤️'
-                        ]).join('\n');
-                    }
-                    if (status === 'expired') {
-                        return messageFrame('⚠️ TOP GYM', [
-                            `السلام عليكم يا *${greetingName}*`,
-                            '',
-                            'حبيت أنبهك إن اشتراكك في',
-                            '*TOP GYM* انتهى بتاريخ:',
-                            '',
-                            `*${endDate}*`,
-                            '',
-                            'ياريت تمر علينا في الإدارة',
-                            'لتجديد الاشتراك والرجوع',
-                            'للتمرين من جديد.',
-                            '',
-                            'مكانك معانا موجود',
-                            'ومستنيين نشوفك راجع بقوة',
-                            '',
-                            'وجودك في *TOP GYM* بيفرق معانا ❤️'
-                        ]).join('\n');
-                    }
-                    return messageFrame('⏳ TOP GYM', [
-                        `السلام عليكم يا *${greetingName}*`,
-                        '',
-                        'حبيت أفكرك إن اشتراكك في',
-                        '*TOP GYM* هينتهي يوم:',
-                        '',
-                        `*${endDate}*`,
-                        '',
-                        'ياريت تعدّي علينا في الإدارة',
-                        'لتجديد الاشتراك واستمرار تمرينك',
-                        'من غير انقطاع.',
-                        '',
-                        'مستنيينك تكمل معانا يا بطل',
-                        'ولسه قدامنا أهداف نحققها سوا',
-                        '',
-                        '*TOP GYM* ❤️'
-                    ]).join('\n');
-                }
-                if (kind === 'debt') {
-                    return messageFrame('TOP GYM', [
-                        `السلام عليكم يا *${greetingName}*`,
-                        '',
-                        'بنحب نفكرك إن فيه مبلغ متبقي',
-                        'على اشتراكك بقيمة:',
-                        '',
-                        `*${money(membership.amountRemaining)}*`,
-                        '',
-                        'واشتراكك مستمر لحد:',
-                        `*${formatDate(membership.effectiveEndDate || membership.endDate)}*`,
-                        '',
-                        'ياريت تعدّي علينا في الإدارة',
-                        'لاستكمال السداد وتنظيم حسابك.',
-                        '',
-                        'مستنيينك في الجيم يا بطل',
-                        'وجودك وتمرينك معانا مهم،',
-                        'ولسه عندنا أهداف نكملها سوا',
-                        '',
-                        'شكرًا إنك جزء من *TOP GYM* ❤️'
-                    ]).join('\n');
-                }
-                return messageFrame('TOP GYM', [
-                    `السلام عليكم يا *${greetingName}*`,
-                    '',
-                    'بقالنا فترة مشوفناكش في الجيم',
-                    '',
-                    'اشتراكك لسه مستمر لحد:',
-                    `*${formatDate(membership.effectiveEndDate || membership.endDate)}*`,
-                    '',
-                    'ومستنيين نشوفك راجع تتمرن',
-                    'معانا قريب',
-                    '',
-                    'الجيم من غيرك ناقصه حماس',
-                    'يلا نرجع نكمل على هدفك سوا ❤️',
-                    '',
-                    '*TOP GYM*'
-                ]).join('\n');
-            }
-
-            function formatContactDate(value) {
-                if (!value) return '';
-                const date = new Date(value);
-                return Number.isNaN(date.getTime()) ? '' : new Intl.DateTimeFormat('ar-EG', { dateStyle: 'medium', timeStyle: 'short' }).format(date);
-            }
-
-            function updateAlertContactState(button, contact) {
-                if (!button || !contact?.status) return;
-                const host = button.closest('.alert-card-actions, .reports-debtor-actions');
-                if (!host) return;
-                host.querySelectorAll(':scope > .alert-contact-state').forEach((item) => item.remove());
-                const state = document.createElement('span');
-                state.className = `alert-contact-state ${contact.status === 'sent' ? 'sent' : 'opened'}`;
-                const label = contact.status === 'sent' ? 'تم التواصل' : 'تم فتح واتساب';
-                const timestamp = contact.status === 'sent' ? contact.sentAt : contact.openedAt;
-                const formatted = formatContactDate(timestamp);
-                state.title = formatted ? `${label} — ${formatted}` : label;
-                state.innerHTML = `<span class="alert-contact-dot" aria-hidden="true"></span>${label}`;
-                host.insertBefore(state, button);
-            }
-
-            async function recordAlertCommunication(memberId, kind, status, button) {
-                const alertKey = button?.dataset.alertKey || '';
-                if (!memberId || !kind || !alertKey) return null;
-                const response = await fetch(`/api/members/${encodeURIComponent(memberId)}/alert-communications`, {
-                    method: 'POST',
-                    credentials: 'same-origin',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ alertKind: kind, alertKey, status })
-                });
-                const data = await response.json().catch(() => ({}));
-                if (!response.ok) throw new Error(data.error || 'تعذر حفظ حالة التواصل.');
-                return data.contact || null;
-            }
-
-            async function markAlertOpened(memberId, kind, button) {
-                let contact = null;
-                try {
-                    contact = await recordAlertCommunication(memberId, kind, 'opened', button);
-                    updateAlertContactState(button, contact);
-                } catch (_) {
-                    if (window.Swal) window.Swal.fire({ toast: true, position: 'top-start', icon: 'warning', title: 'تم فتح واتساب', text: 'تعذر حفظ حالة التواصل في النظام.', showConfirmButton: false, timer: 3800, customClass: { popup: 'top-gym-alert top-gym-toast' } });
-                }
-
-                if (!window.Swal || !button?.dataset.alertKey) return contact;
-                const result = await window.Swal.fire({
-                    icon: 'question',
-                    title: 'هل تم إرسال الرسالة؟',
-                    text: 'تم فتح واتساب والرسالة جاهزة. لا يستطيع النظام معرفة الإرسال تلقائيًا، لذلك أكّد الحالة يدويًا.',
-                    showCancelButton: true,
-                    confirmButtonText: 'تم الإرسال',
-                    cancelButtonText: 'لم أرسل بعد',
-                    buttonsStyling: false,
-                    customClass: { popup: 'top-gym-alert', confirmButton: 'btn btn-primary', cancelButton: 'btn btn-light' }
-                });
-                if (!result.isConfirmed) return contact;
-
-                try {
-                    contact = await recordAlertCommunication(memberId, kind, 'sent', button);
-                    updateAlertContactState(button, contact);
-                    window.Swal.fire({ toast: true, position: 'top-start', icon: 'success', title: 'تم تسجيل التواصل ✅', text: 'لن يظهر التنبيه كغير متواصل حتى تتغير حالته.', showConfirmButton: false, timer: 3600, customClass: { popup: 'top-gym-alert top-gym-toast' } });
-                } catch (_) {
-                    window.Swal.fire({ toast: true, position: 'top-start', icon: 'warning', title: 'تم فتح واتساب', text: 'تعذر تسجيل تأكيد الإرسال.', showConfirmButton: false, timer: 3800, customClass: { popup: 'top-gym-alert top-gym-toast' } });
-                }
-                return contact;
-            }
-
-            async function sendAlertWhatsapp(memberId, kind, button = null) {
-                if (button) button.disabled = true;
-                const fallbackPhone = normalizePhone(button?.dataset.alertPhone);
-                const fallbackMember = {
-                    fullName: button?.dataset.alertName || '',
-                    daysSinceLastVisit: button?.dataset.alertDays ? Number(button.dataset.alertDays) : null,
-                    membership: {
-                        status: button?.dataset.alertStatus || '',
-                        amountRemaining: Number(button?.dataset.alertRemaining || 0),
-                        effectiveEndDate: button?.dataset.alertEnd || '',
-                        endDate: button?.dataset.alertEnd || '',
-                        freezeEnd: button?.dataset.alertFreezeEnd || ''
-                    }
-                };
-                let preparedWindow = null;
-                if (fallbackPhone && !isMobileDevice()) preparedWindow = prepareWhatsappWindow(fallbackPhone);
-                if (fallbackPhone && isMobileDevice()) {
-                    const opened = openWhatsappChat(fallbackPhone, buildAlertMessage(fallbackMember, kind));
-                    if (opened) await markAlertOpened(memberId, kind, button);
-                    if (button) button.disabled = false;
-                    return;
-                }
-                try {
-                    const response = await fetch(`/api/members/${encodeURIComponent(memberId)}`);
-                    const data = await response.json().catch(() => ({}));
-                    if (!response.ok) throw new Error(data.error || 'تعذر تحميل بيانات المشترك.');
-                    const member = data.member || data;
-                    const phone = normalizePhone(member.phone, member.phoneCountry);
-                    if (!phone) throw new Error('رقم هاتف المشترك غير صالح لفتح واتساب.');
-                    const message = buildAlertMessage(member, kind);
-                    const opened = openWhatsappChat(phone, message, preparedWindow);
-                    if (opened) {
-                        await markAlertOpened(memberId, kind, button);
-                    } else {
-                        showWhatsappStatus(phone, message, null);
-                    }
-                } catch (error) {
-                    closeWhatsappWindow(preparedWindow);
-                    if (window.Swal) window.Swal.fire({ toast: true, position: 'top-start', icon: 'error', title: 'تعذر تجهيز رسالة واتساب', text: error.message, showConfirmButton: false, timer: 4500, customClass: { popup: 'top-gym-alert top-gym-toast' } });
-                } finally {
-                    if (button) button.disabled = false;
-                }
-            }
-
-            window.topGymWhatsapp = {
-                prepareWindow: prepareWhatsappWindow,
-                closeWindow: closeWhatsappWindow,
-                sendAlert: sendAlertWhatsapp,
-                sendMembershipPortalInvite
-            };
-
-            window.addEventListener('topgym:member-created', (event) => {
-                const detail = event.detail || {};
-                if (!detail.sendWhatsApp) return;
-                sendWhatsappMessage(detail);
-            });
-            document.addEventListener('click', (event) => {
-                const button = event.target.closest('[data-alert-whatsapp]');
-                if (!button) return;
-                event.preventDefault();
-                event.stopPropagation();
-                sendAlertWhatsapp(button.dataset.memberId, button.dataset.alertWhatsapp, button);
-            });
-        })();
+    window.topGymWhatsapp = { prepareWindow: prepareWhatsappWindow, closeWindow: closeWhatsappWindow, sendAlert: sendAlertWhatsapp, sendMembershipPortalInvite };
+    window.addEventListener('topgym:member-created', (event) => { if (event.detail?.sendWhatsApp) void sendWhatsappMessage(event.detail); });
+    document.addEventListener('click', (event) => {
+        const button = event.target.closest('[data-alert-whatsapp]');
+        if (!button) return;
+        event.preventDefault(); event.stopPropagation();
+        void sendAlertWhatsapp(button.dataset.memberId, button.dataset.alertWhatsapp, button);
+    });
+})();

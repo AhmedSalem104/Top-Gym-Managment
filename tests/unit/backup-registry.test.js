@@ -10,6 +10,7 @@ const {
     TENANT_BACKUP_EXCLUDED_TABLES,
     TENANT_BACKUP_TABLES,
     classifyPlatformTable,
+    getBackupClassification,
     getPlatformBackupCoverage,
     getTenantBackupCoverage
 } = require('../../src/services/backup-registry');
@@ -37,11 +38,38 @@ test('platform backup inventory remains separate from tenant restore inventory',
     assert.ok(PLATFORM_GLOBAL_BACKUP_TABLES.some((item) => item.table === 'saas_plans'));
     assert.ok(PLATFORM_GLOBAL_BACKUP_TABLES.some((item) => item.table === 'saas_plan_features'));
     assert.ok(PLATFORM_GLOBAL_BACKUP_TABLES.some((item) => item.table === 'saas_plan_tenant_types'));
+    assert.ok(PLATFORM_GLOBAL_BACKUP_TABLES.some((item) => item.table === 'whatsapp_message_templates'));
     assert.equal(PLATFORM_GLOBAL_BACKUP_TABLES.some((item) => item.table === 'gym_user_tenants'), true);
     assert.ok(TENANT_BACKUP_EXCLUDED_TABLES.includes('gym_backup_operations'));
     assert.equal(tenantTables.has('gym_user_tenants'), false);
     assert.equal(tenantTables.has('gym_tenants'), false);
     assert.equal(tenantTables.has('saas_plans'), false);
+});
+
+test('WhatsApp template recovery ownership is explicit and survives empty-table coverage', () => {
+    assert.deepEqual(getBackupClassification('whatsapp_message_templates'), {
+        table: 'whatsapp_message_templates',
+        scope: 'platform-global',
+        artifact: 'platform-disaster-recovery',
+        classification: 'GLOBAL_REQUIRED',
+        restorePolicy: 'global-control-plane'
+    });
+    assert.deepEqual(getBackupClassification('gym_whatsapp_template_overrides'), {
+        table: 'gym_whatsapp_template_overrides',
+        scope: 'tenant',
+        artifact: 'tenant-operational-recovery',
+        classification: 'TENANT_REQUIRED',
+        restorePolicy: 'tenant-scoped'
+    });
+
+    const coverage = getPlatformBackupCoverage({
+        existingTables: ['whatsapp_message_templates', 'gym_whatsapp_template_overrides'],
+        tenantTables: ['gym_whatsapp_template_overrides']
+    });
+    assert.equal(coverage.unregisteredTenantTables.length, 0);
+    assert.equal(coverage.unclassifiedTables.length, 0);
+    assert.equal(classifyPlatformTable('whatsapp_message_templates').scope, 'global');
+    assert.equal(classifyPlatformTable('gym_whatsapp_template_overrides').scope, 'tenant');
 });
 
 test('platform coverage identifies missing, unclassified and tenant-owned physical tables', () => {

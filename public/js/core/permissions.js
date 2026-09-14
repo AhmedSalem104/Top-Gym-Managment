@@ -1,7 +1,7 @@
 (() => {
     if (window.topGymPermissions) return;
 
-    const OWNER_TABS = Object.freeze(['dashboard', 'members', 'trainees', 'intelligence', 'management', 'branding', 'member-payment-methods', 'saas-billing', 'backup-history', 'permissions', 'attendance', 'expenses', 'library', 'reports', 'feedback', 'store', 'branches', 'member-subscription-requests', 'portal-analytics']);
+    const OWNER_TABS = Object.freeze(['dashboard', 'members', 'trainees', 'intelligence', 'management', 'whatsapp-templates', 'branding', 'member-payment-methods', 'saas-billing', 'backup-history', 'permissions', 'attendance', 'expenses', 'library', 'reports', 'feedback', 'store', 'branches', 'member-subscription-requests', 'portal-analytics']);
     const PLATFORM_TABS = Object.freeze([]);
     const TAB_PERMISSION_CODES = Object.freeze({
         dashboard: 'dashboard.read',
@@ -9,6 +9,7 @@
         trainees: 'trainees.read',
         intelligence: 'intelligence.read',
         management: 'pricing.read',
+        'whatsapp-templates': 'message_templates.manage',
         branding: 'branding.view',
         'saas-billing': 'saas.subscription.read',
         'backup-history': 'management.backup.read',
@@ -99,7 +100,7 @@
         // is also named Owner in the shared authentication model.
         if (String(user?.tenantType || '').trim().toLowerCase() === 'independent_trainer') return [];
         if (user?.role === 'Owner') return [...OWNER_TABS];
-        return OWNER_TABS.filter((tab) => ['management', 'branding', 'member-payment-methods', 'saas-billing', 'backup-history', 'branches', 'member-subscription-requests', 'portal-analytics'].includes(tab) ? false : TAB_PERMISSION_ALTERNATIVES[tab]
+        return OWNER_TABS.filter((tab) => ['management', 'whatsapp-templates', 'branding', 'member-payment-methods', 'saas-billing', 'backup-history', 'branches', 'member-subscription-requests', 'portal-analytics'].includes(tab) ? false : TAB_PERMISSION_ALTERNATIVES[tab]
             ? TAB_PERMISSION_ALTERNATIVES[tab].some((code) => hasPermission(user, code))
             : hasPermission(user, TAB_PERMISSION_CODES[tab]));
     }

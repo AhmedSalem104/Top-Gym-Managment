@@ -5,10 +5,6 @@
     const $ = (id) => document.getElementById(id);
     const state = { pricing: [], records: [], dashboardRecords: [], initialized: false, loading: false, editingId: null, searchTimer: null };
 
-    function brandName() {
-        return String(window.topGymBranding?.get?.().identity?.brandName || 'Logic Fit').trim() || 'Logic Fit';
-    }
-
     function escapeHtml(value) {
         return String(value ?? '').replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[character]));
     }
@@ -446,11 +442,16 @@
         }
     }
 
-    function whatsappForRecord(id) {
+    async function whatsappForRecord(id) {
         const sale = getRecord(id);
         if (!sale) return;
         if (!recordPhone(sale)) return notify('لا يوجد رقم هاتف مسجل لهذا الزائر.', 'warning');
-        const message = `أهلًا ${sale.visitorName} 👋\n\nشكرًا لحضورك اليوم في ${brandName()}، نورتنا جدًا 💙\n\nنوع الحصة: ${sale.passTypeName}\nنتمنى نشوفك دائمًا 💪`;
+        const message = await window.LogicFitWhatsAppTemplates.render('DAY_PASS_THANK_YOU', {
+            visitor_name: sale.visitorName,
+            gym_name: String(window.topGymBranding?.get?.().identity?.brandName || 'Logic Fit').trim() || 'Logic Fit',
+            visit_reference: sale.reference || '',
+            pass_type: sale.passTypeName || ''
+        });
         openWhatsapp(sale, message);
     }
 
@@ -474,7 +475,7 @@
         $('dayPassSearch')?.addEventListener('input', () => { window.clearTimeout(state.searchTimer); state.searchTimer = window.setTimeout(loadToday, 250); });
         $('dayPassTableWrap')?.addEventListener('click', (event) => {
             const whatsappButton = event.target.closest('[data-day-pass-whatsapp]');
-            if (whatsappButton) return whatsappForRecord(whatsappButton.dataset.dayPassWhatsapp);
+            if (whatsappButton) return void whatsappForRecord(whatsappButton.dataset.dayPassWhatsapp).catch((error) => notify(error.message || 'تعذر تجهيز رسالة واتساب.', 'error'));
             const editButton = event.target.closest('[data-day-pass-edit]');
             if (editButton) return editRecord(editButton.dataset.dayPassEdit);
             const deleteButton = event.target.closest('[data-day-pass-delete]');
@@ -489,7 +490,7 @@
         });
         $('dashboardDayPassTableWrap')?.addEventListener('click', (event) => {
             const whatsappButton = event.target.closest('[data-day-pass-whatsapp]');
-            if (whatsappButton) return whatsappForRecord(whatsappButton.dataset.dayPassWhatsapp);
+            if (whatsappButton) return void whatsappForRecord(whatsappButton.dataset.dayPassWhatsapp).catch((error) => notify(error.message || 'تعذر تجهيز رسالة واتساب.', 'error'));
             const editButton = event.target.closest('[data-day-pass-edit]');
             if (editButton) return editRecord(editButton.dataset.dayPassEdit);
             const deleteButton = event.target.closest('[data-day-pass-delete]');

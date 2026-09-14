@@ -2,6 +2,8 @@
 
 const dayPassRepository = require('../repositories/day-pass.repository');
 const brandingService = require('./branding-service');
+const whatsappTemplateService = require('./whatsapp-template-service');
+const { currentTenantId } = require('../tenancy/tenant-context');
 const { addDays, differenceInDays, parseDateOnly, todayInTimeZone } = require('../utils/date');
 const { normalizePhone: normalizeInternationalPhone } = require('./phone-service');
 
@@ -129,13 +131,22 @@ async function createDayPass(body = {}, { createdByUserId = null, branchId = nul
         createdByUserId,
         branchId
     });
-    const brandName = await currentBrandName();
+    const message = await whatsappTemplateService.renderTemplate({
+        templateId: 'DAY_PASS_THANK_YOU',
+        tenantId: currentTenantId({ required: true }),
+        context: {
+            visitor_name: sale.visitorName,
+            gym_name: await currentBrandName(),
+            visit_reference: sale.reference,
+            pass_type: passType.label
+        }
+    });
     return {
         sale,
         whatsapp: {
             phone: visitorPhoneNormalized || null,
             available: Boolean(visitorPhoneNormalized),
-            message: `أهلًا ${sale.visitorName} 👋\n\nشكرًا لحضورك اليوم في ${brandName}، نورتنا جدًا 💙\n\nرقم الزيارة: ${sale.reference}\nنوع الحصة: ${passType.label}\nنتمنى نشوفك دائمًا 💪`
+            message
         }
     };
 }
@@ -163,13 +174,22 @@ async function updateDayPass(id, body = {}) {
         notes
     });
     if (!sale) throw appError('الحصة غير موجودة أو تم إلغاؤها.', 404, 'DAY_PASS_NOT_FOUND');
-    const brandName = await currentBrandName();
+    const message = await whatsappTemplateService.renderTemplate({
+        templateId: 'DAY_PASS_THANK_YOU',
+        tenantId: currentTenantId({ required: true }),
+        context: {
+            visitor_name: sale.visitorName,
+            gym_name: await currentBrandName(),
+            visit_reference: sale.reference,
+            pass_type: sale.passTypeName
+        }
+    });
     return {
         sale,
         whatsapp: {
             phone: sale.visitorPhoneNormalized || null,
             available: Boolean(sale.visitorPhoneNormalized),
-            message: `أهلًا ${sale.visitorName} 👋\n\nشكرًا لحضورك اليوم في ${brandName}، نورتنا جدًا 💙\n\nرقم الزيارة: ${sale.reference}\nنوع الحصة: ${sale.passTypeName}\nنتمنى نشوفك دائمًا 💪`
+            message
         }
     };
 }
