@@ -75,3 +75,10 @@ test('VPS daily backup scheduler reuses the official backup runner and release l
     assert.match(timer, /Persistent=true/);
     assert.doesNotMatch(wrapper, /PASSWORD|SECRET_VALUE|ACCESS_KEY/i);
 });
+
+test('production release lets the official backup runner apply its bounded heap policy', () => {
+    const release = read('scripts/release-production-remote.sh');
+    assert.match(release, /node scripts\/run-server-scheduled-backup\.js/);
+    assert.match(release, /node --max-old-space-size=1024 scripts\/verify-production-backup\.js/);
+    assert.doesNotMatch(release, /node --max-old-space-size=640 scripts\/(?:run-server-scheduled-backup|verify-production-backup)\.js/);
+});

@@ -208,7 +208,10 @@ if [[ "$plan_output" != *'"pending":[]'* ]]; then
         -e LOGIC_FIT_JOB_STATE_DIR=/tmp/logicfit-job-state-release \
         -e NODE_ENV=production \
         -v "$RELEASE_DIR:/app" -w /app "$NODE_IMAGE" \
-        node --max-old-space-size=640 scripts/run-server-scheduled-backup.js >"$backup_log" 2>&1; then
+        # Let the official backup runner apply its bounded 1024 MiB heap
+        # policy. A smaller parent limit prevents its safe re-exec and can
+        # fail on the current validated production snapshot before storage.
+        node scripts/run-server-scheduled-backup.js >"$backup_log" 2>&1; then
         rm -f "$backup_log"
         abort_release 76
     fi
@@ -221,7 +224,7 @@ if [[ "$plan_output" != *'"pending":[]'* ]]; then
         -e "BACKUP_STARTED_AT=$backup_started_at" \
         -e PRODUCTION_BACKUP_VERIFY_CONFIRM=YES \
         -v "$RELEASE_DIR:/app" -w /app "$NODE_IMAGE" \
-        node --max-old-space-size=640 scripts/verify-production-backup.js >/dev/null; then
+        node --max-old-space-size=1024 scripts/verify-production-backup.js >/dev/null; then
         abort_release 77
     fi
     printf 'BACKUP_VERIFICATION=PASS\n'
