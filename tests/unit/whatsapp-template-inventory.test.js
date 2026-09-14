@@ -16,11 +16,20 @@ test('operational WhatsApp flows use the centralized renderer', () => {
 
     assert.match(memberConnector, /renderTemplate\('PORTAL_ACCESS'/);
     assert.match(memberConnector, /renderTemplate\('MEMBERSHIP_WELCOME'/);
+    assert.match(memberConnector, /renderTemplate\('MEMBERSHIP_FROZEN'/);
+    assert.match(memberConnector, /sendMembershipFreezeNotice/);
     assert.match(memberConnector, /alertTemplateId/);
-    assert.doesNotMatch(memberConnector, /function\s+build(?:Alert)?Message\s*\(/);
+    assert.doesNotMatch(memberConnector, /function\s+(?:messageFrame|build(?:Alert)?Message)\s*\(/);
+    assert.doesNotMatch(memberConnector, /مبروك يا بطل|ملخص الحساب|تفاصيل اشتراكك|كود العضوية الخاص بك/);
     assert.match(dayPass, /LogicFitWhatsAppTemplates\.render\('DAY_PASS_THANK_YOU'/);
     assert.match(dayPassReports, /LogicFitWhatsAppTemplates\.render\('DAY_PASS_THANK_YOU'/);
     assert.match(platformAdmin, /LogicFitWhatsAppTemplates\.render\('TENANT_ACTIVATED'/);
+});
+
+test('the central WhatsApp runtime cache-bust advances with the renderer contract', () => {
+    const loader = read('public/js/feature-loader.js');
+    assert.match(loader, /whatsapp-enhancements\.js\?v=14/);
+    assert.doesNotMatch(loader, /whatsapp-enhancements\.js\?v=13/);
 });
 
 test('Gym feature loading keeps only the runtime renderer and no management UI', () => {

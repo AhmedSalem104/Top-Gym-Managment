@@ -45,8 +45,8 @@
         return Boolean(opened);
     }
 
-    function prepareWhatsappWindow(phone) {
-        if (!normalizePhone(phone) || isMobileDevice()) return null;
+    function prepareWhatsappWindow(phone, country = '') {
+        if (!normalizePhone(phone, country) || isMobileDevice()) return null;
         const opened = window.open('about:blank', 'topGymWhatsapp', 'popup=yes,width=480,height=760,resizable=yes,scrollbars=yes');
         if (opened) opened.opener = null;
         return opened || null;
@@ -130,6 +130,17 @@
         return opened;
     }
 
+    async function sendMembershipFreezeNotice(detail = {}) {
+        const member = detail.member || {};
+        const phone = normalizePhone(member.phone, member.phoneCountry);
+        if (!phone) throw new Error('رقم هاتف العضو غير صالح لفتح واتساب.');
+        const message = await renderTemplate('MEMBERSHIP_FROZEN', memberContext(member, detail.payload, detail.labels));
+        const preparedWindow = detail.whatsappWindow && !detail.whatsappWindow.closed ? detail.whatsappWindow : null;
+        const opened = openWhatsappChat(phone, message, preparedWindow);
+        showWhatsappStatus(phone, message, opened);
+        return opened;
+    }
+
     async function sendWhatsappMessage(detail = {}) {
         const member = detail.member || {};
         const payload = detail.payload || {};
@@ -196,7 +207,7 @@
         } finally { if (button) button.disabled = false; }
     }
 
-    window.topGymWhatsapp = { prepareWindow: prepareWhatsappWindow, closeWindow: closeWhatsappWindow, sendAlert: sendAlertWhatsapp, sendMembershipPortalInvite };
+    window.topGymWhatsapp = { prepareWindow: prepareWhatsappWindow, closeWindow: closeWhatsappWindow, sendAlert: sendAlertWhatsapp, sendMembershipPortalInvite, sendMembershipFreezeNotice };
     window.addEventListener('topgym:member-created', (event) => { if (event.detail?.sendWhatsApp) void sendWhatsappMessage(event.detail); });
     document.addEventListener('click', (event) => {
         const button = event.target.closest('[data-alert-whatsapp]');

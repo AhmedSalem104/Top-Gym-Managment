@@ -289,10 +289,10 @@
     }
 
     function bindLazyWhatsapp() {
-        const source = '/js/whatsapp-enhancements.js?v=13';
+        const source = '/js/whatsapp-enhancements.js?v=14';
         const key = 'whatsapp-enhancements';
         const ensureWhatsapp = () => ensureTab('whatsapp-runtime').then(() => loadScript(source, key));
-        const actionSelector = '[data-alert-whatsapp], [data-report-whatsapp], [data-day-pass-whatsapp], [data-day-pass-report-whatsapp], [data-portal-code-action="whatsapp"]';
+        const actionSelector = '[data-alert-whatsapp], [data-report-whatsapp], [data-day-pass-whatsapp], [data-day-pass-report-whatsapp], [data-portal-code-action="whatsapp"], [data-action="freeze"]';
 
         document.addEventListener('click', (event) => {
             const button = event.target.closest?.(actionSelector);

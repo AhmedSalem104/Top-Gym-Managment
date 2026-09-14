@@ -843,7 +843,7 @@
              }
              state.dialogAction = action; state.dialogMember = member; const sub = member.membership || {}; const fields = $('dialogFields'); const freezeLimit = Number(sub.freezeLimit || FREEZE_LIMIT); const freezeCount = Number(sub.freezeCount || 0); $('dialogTitle').textContent = action === 'freeze' ? 'تجميد العضوية' : action === 'renew' ? 'تجديد العضوية' : 'تسجيل دفعة'; $('dialogDescription').textContent = `${member.fullName} · ${displayPhone(member.phone, member.phoneCountry)}`;
             if (action === 'freeze' && freezeCount >= freezeLimit) { state.dialogAction = null; state.dialogMember = null; notify(`تم استهلاك الحد الأقصى للتجميد (${freezeLimit} مرات) لهذا العضو.`, 'warning'); return; }
-            if (action === 'freeze') fields.innerHTML = `<div class="freeze-limit-note"><span class="freeze-limit-icon">${actionIcon('freeze')}</span><div><strong>التجميد المستخدم ${freezeCount}/${freezeLimit}</strong><span>متبقي ${Math.max(0, freezeLimit - freezeCount)} مرات لهذا العضو.</span></div></div><div class="field"><label for="dialogDays">عدد أيام التجميد</label><input id="dialogDays" type="number" min="1" max="365" value="7" required></div><div class="field"><label for="dialogReason">السبب (اختياري)</label><textarea id="dialogReason" maxlength="500"></textarea></div>`;
+            if (action === 'freeze') fields.innerHTML = `<div class="freeze-limit-note"><span class="freeze-limit-icon">${actionIcon('freeze')}</span><div><strong>التجميد المستخدم ${freezeCount}/${freezeLimit}</strong><span>متبقي ${Math.max(0, freezeLimit - freezeCount)} مرات لهذا العضو.</span></div></div><div class="field"><label for="dialogDays">عدد أيام التجميد</label><input id="dialogDays" type="number" min="1" max="365" value="7" required></div><div class="field"><label for="dialogReason">السبب (اختياري)</label><textarea id="dialogReason" maxlength="500"></textarea></div><label class="checkbox-field freeze-whatsapp-option" for="dialogFreezeSendWhatsApp"><input id="dialogFreezeSendWhatsApp" type="checkbox" checked><span>إرسال إشعار للعضو عبر WhatsApp بعد التجميد</span></label><small class="freeze-whatsapp-hint">سيتم فتح WhatsApp بعد نجاح التجميد، والإرسال يتم يدويًا داخل التطبيق.</small>`;
             if (action === 'renew' || action === 'payment') { const plan = sub.plan || 'gym_only'; const type = sub.type || activeTypeEntries()[0]?.[0] || 'monthly'; const discount = sub.discountAmount || 0; const paidDefault = 0; const collectionDate = todayIso(); const planOptions = Object.entries(state.pricing.plans).map(([code, item]) => `<option value="${escapeHtml(code)}">${escapeHtml(item.label)}</option>`).join(''); const typeOptions = activeTypeEntries().map(([code, item]) => `<option value="${escapeHtml(code)}">${escapeHtml(item.label)}</option>`).join(''); const paymentHint = action === 'payment' ? `<div class="payment-dialog-balance"><span>المدفوع حتى الآن</span><strong>${money(sub.amountPaid)}</strong><span>المتبقي الحالي</span><strong class="has-debt">${money(sub.amountRemaining)}</strong></div>` : ''; fields.innerHTML = `<div class="field-grid"><div class="field"><label for="dialogPlan">الباقة</label><select id="dialogPlan">${planOptions}</select></div><div class="field"><label for="dialogType">نوع العضوية</label><select id="dialogType">${typeOptions}</select></div></div><div class="field-grid"><div class="field"><label for="dialogDiscount">الخصم</label><input id="dialogDiscount" type="number" min="0" step="0.01" value="${discount}"></div><div class="field"><label for="dialogDue">المستحق بعد الخصم</label><input id="dialogDue" type="number" readonly></div></div><div class="pricing-summary" id="dialogPricing"></div>${paymentHint}<div class="field"><label for="dialogPaid">${action === 'payment' ? 'قيمة الدفعة الجديدة' : 'المبلغ المدفوع'}</label><input id="dialogPaid" type="number" min="0" step="0.01" value="${paidDefault}" required></div><div class="field"><label for="dialogMethod">طريقة الدفع</label><select id="dialogMethod"><option value="cash">نقدي</option><option value="card">بطاقة</option><option value="transfer">تحويل</option><option value="other">أخرى</option></select></div><div class="field"><label for="dialogPaidAt">تاريخ التحصيل الفعلي</label><input id="dialogPaidAt" type="date" max="${collectionDate}" value="${collectionDate}" required><small class="field-hint">يُستخدم في التقارير، ولا يمكن أن يكون تاريخًا مستقبليًا.</small></div>`; $('dialogPlan').value = plan; $('dialogType').value = type; $('dialogMethod').value = sub.paymentMethod || 'cash'; updateDialogPricing(); $('dialogPlan').addEventListener('change', updateDialogPricing); $('dialogType').addEventListener('change', updateDialogPricing); $('dialogDiscount').addEventListener('input', updateDialogPricing); }
             openDialogSafely($('actionDialog'));
         }
@@ -938,9 +938,61 @@
             }
         }
 
+        async function submitFreezeDialog(event) {
+            event.preventDefault();
+            if (state.dialogSubmitting) return;
+            const member = state.dialogMember;
+            if (!member || state.dialogAction !== 'freeze') return;
+            if (!canOpenFreezeDialog(member)) {
+                await notify('لا يمكن تنفيذ التجميد لهذه العضوية حاليًا.', 'warning');
+                closeDialog();
+                return;
+            }
+
+            state.dialogSubmitting = true;
+            const shouldSendWhatsApp = Boolean($('dialogFreezeSendWhatsApp')?.checked);
+            const whatsappWindow = shouldSendWhatsApp
+                ? window.topGymWhatsapp?.prepareWindow(member.phone, member.phoneCountry)
+                : null;
+            const submitButton = $('dialogSubmit');
+            if (submitButton) submitButton.disabled = true;
+            try {
+                const result = await withLoader(() => api(`/api/members/${member.id}/freeze`, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        days: Number($('dialogDays').value),
+                        reason: $('dialogReason').value
+                    })
+                }), 'جاري تجميد العضوية…');
+
+                closeDialog();
+                await refreshAfterAction('تم تجميد العضوية.');
+                if (shouldSendWhatsApp) {
+                    const sendFreezeNotice = window.topGymWhatsapp?.sendMembershipFreezeNotice;
+                    if (sendFreezeNotice) {
+                        const opened = await sendFreezeNotice({
+                            member: result?.member || result,
+                            whatsappWindow
+                        });
+                        if (!opened) window.topGymWhatsapp?.closeWindow(whatsappWindow);
+                    } else {
+                        window.topGymWhatsapp?.closeWindow(whatsappWindow);
+                        await notify('تم تجميد العضوية، وتعذر تجهيز رسالة واتساب.', 'warning');
+                    }
+                }
+            } catch (error) {
+                window.topGymWhatsapp?.closeWindow(whatsappWindow);
+                await notify(error.message, 'error');
+            } finally {
+                state.dialogSubmitting = false;
+                if (submitButton) submitButton.disabled = false;
+            }
+        }
+
         const baseSubmitDialog = submitDialog;
         submitDialog = async function(event) {
             if (state.dialogAction === 'refund') return submitRefundDialog(event);
+            if (state.dialogAction === 'freeze') return submitFreezeDialog(event);
             return baseSubmitDialog(event);
         };
         const baseOpenDialog = openDialog;
