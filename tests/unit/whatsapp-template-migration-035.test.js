@@ -41,7 +41,9 @@ test('035 candidate bodies pass the central variable validator and carry matchin
     for (const definition of TEMPLATE_DEFINITIONS) {
         const body = DEFAULT_BODIES[definition.id];
         assert.doesNotThrow(() => validateTemplateBody(definition.id, body));
-        const hash = crypto.createHash('sha256').update(body).digest('hex');
+        // SQL Server hashes NVARCHAR bytes as UTF-16LE; keep the migration
+        // guard aligned with the bytes actually persisted in the table.
+        const hash = crypto.createHash('sha256').update(Buffer.from(body, 'utf16le')).digest('hex');
         assert.match(source, new RegExp(`'${hash}'`, 'i'));
     }
 });
