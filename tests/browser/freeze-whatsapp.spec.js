@@ -1,4 +1,6 @@
 const { test, expect } = require('@playwright/test');
+const path = require('node:path');
+const os = require('node:os');
 
 const TEMPLATE_IDS = [
     'MEMBERSHIP_WELCOME', 'MEMBERSHIP_FROZEN', 'MEMBERSHIP_EXPIRED',
@@ -125,7 +127,23 @@ async function installApi(page, { freezeFails = false, welcomeTemplate = null } 
                 fullName: body.fullName || state.member.fullName,
                 phone: body.phone || state.member.phone,
                 phoneCountry: body.phoneCountry || state.member.phoneCountry,
-                phoneNational: body.phoneNational || state.member.phoneNational
+                phoneNational: body.phoneNational || state.member.phoneNational,
+                membershipCode: 'TG-QA-WELCOME-CODE',
+                membershipCodePortalUrl: 'https://qa.logicfit.test/member-portal?tenant=qa',
+                membership: {
+                    ...state.member.membership,
+                    plan: 'gym_only',
+                    type: 'monthly',
+                    startDate: '2026-09-14',
+                    endDate: '2026-10-13',
+                    effectiveEndDate: '2026-10-13',
+                    listPrice: 350,
+                    discountAmount: 0,
+                    amountDue: 350,
+                    amountPaid: 350,
+                    amountRemaining: 0,
+                    paymentMethod: 'cash'
+                }
             };
             return jsonResponse(route, { member: state.member });
         }
@@ -140,7 +158,23 @@ async function openFreezeDialog(page) {
     const row = page.locator('tr[data-member-id="4242"]');
     await row.locator('[data-menu-toggle]').click();
     await row.locator('.action-menu-panel [data-action="freeze"]').evaluate((button) => button.click());
+    const checkboxBlock = page.locator('#dialogFreezeWhatsappOption');
+    await expect(checkboxBlock).toBeVisible();
+    await expect(checkboxBlock).toContainText('إرسال إشعار للعضو عبر WhatsApp بعد التجميد');
     await expect(page.locator('#dialogFreezeSendWhatsApp')).toBeVisible();
+    await expect(page.locator('#dialogFreezeSendWhatsApp')).toBeChecked();
+    const checkboxLayout = await checkboxBlock.evaluate((element) => {
+        const rect = element.getBoundingClientRect();
+        const style = getComputedStyle(element);
+        return { hidden: element.hidden, display: style.display, width: rect.width, height: rect.height };
+    });
+    expect(checkboxLayout.hidden).toBe(false);
+    expect(checkboxLayout.display).not.toBe('none');
+    expect(checkboxLayout.width).toBeGreaterThan(0);
+    expect(checkboxLayout.height).toBeGreaterThan(0);
+    if (test.info().project.name === 'desktop') {
+        await page.screenshot({ path: path.join(os.tmpdir(), 'logicfit-freeze-popup-actual.png'), fullPage: false });
+    }
 }
 
 test('Add Member sends exactly the saved Platform central welcome template', async ({ page }) => {
@@ -167,6 +201,45 @@ test('Add Member sends exactly the saved Platform central welcome template', asy
         return new URL(record.url).searchParams.get('text');
     });
     expect(message).toBe('TEST-123 QA Welcome Member | Logic Fit');
+});
+
+test('actual Add Member flow renders the complete central welcome data context', async ({ page }) => {
+    const richTemplate = 'WELCOME|{{member_name}}|{{gym_name}}|{{plan_name}}|{{membership_type}}|{{start_date}}|{{expiry_date}}|{{base_price}}|{{discount_amount}}|{{amount_due}}|{{amount_paid}}|{{remaining_amount}}|{{payment_method}}|{{portal_code}}|{{portal_url}}|✅';
+    await installApi(page, { welcomeTemplate: richTemplate });
+    await page.route('**/api/phone/countries', (route) => jsonResponse(route, {
+        fallbackCountry: 'EG',
+        countries: [{
+            isoCode: 'EG', dialCode: '+20', exampleNational: '01012345678', exampleInternational: '+201012345678',
+            validLengths: [10], mobileRules: { localPrefix: '0', validLengths: [10], nationalPattern: '1[0-25]\\d{8}' }
+        }]
+    }));
+    await page.goto('/?members-popup-contract#members', { waitUntil: 'networkidle' });
+    await page.evaluate(() => window.LogicFitPhoneInputs?.loadCatalog?.());
+    await page.locator('#addMemberButton').click();
+    await page.locator('#fullName').fill('QA Rich Member');
+    await page.locator('#phone').fill('1012345678');
+    await page.locator('#membershipPlan').selectOption('gym_only');
+    await page.locator('#membershipType').selectOption('monthly');
+    await page.locator('#startDate').fill('2026-09-14');
+    await page.locator('#endDate').fill('2026-10-13');
+    await page.locator('#discountAmount').fill('0');
+    await page.locator('#amountPaid').fill('350');
+    await page.locator('#paymentMethod').selectOption('cash');
+    await page.locator('#saveButton').click();
+
+    await expect.poll(() => page.evaluate(() => window.__topGymOpenCalls.some((item) => item.url.startsWith('https://wa.me/') || item.url.startsWith('whatsapp://'))), { timeout: 10000 }).toBe(true);
+    const message = await page.evaluate(() => {
+        const record = window.__topGymOpenCalls.find((item) => item.url.startsWith('https://wa.me/') || item.url.startsWith('whatsapp://'));
+        return new URL(record.url).searchParams.get('text');
+    });
+    const expected = await page.evaluate(() => {
+        const formatDate = (value) => new Intl.DateTimeFormat('ar-EG-u-ca-gregory', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date(`${value}T00:00:00`));
+        const money = (value) => `${Number(value).toLocaleString('ar-EG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ج.م`;
+        return `WELCOME|QA Rich Member|Logic Fit|Gym فقط|شهرية|${formatDate('2026-09-14')}|${formatDate('2026-10-13')}|${money(350)}|${money(0)}|${money(350)}|${money(350)}||نقدي|TG-QA-WELCOME-CODE|https://qa.logicfit.test/member-portal?tenant=qa|✅`;
+    });
+    expect(message).toBe(expected);
+    expect(message).not.toContain('�');
+    expect(message).not.toMatch(/[╭│├╰╯]/u);
 });
 
 test('Add Member preserves UTF-8 template text through WhatsApp URL encoding', async ({ page }) => {

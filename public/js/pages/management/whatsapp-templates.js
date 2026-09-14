@@ -8,20 +8,20 @@
     const variableLabels = {
         member_name: 'اسم العضو', gym_name: 'اسم الجيم', plan_name: 'الباقة', membership_type: 'نوع الاشتراك',
         start_date: 'تاريخ البداية', expiry_date: 'تاريخ الانتهاء', days_remaining: 'الأيام المتبقية',
-        list_price: 'السعر الأساسي', discount_amount: 'الخصم', amount_due: 'المستحق', amount_paid: 'المدفوع',
+        base_price: 'السعر الأساسي', list_price: 'السعر الأساسي (قديم)', discount_amount: 'الخصم', amount_due: 'المستحق', amount_paid: 'المدفوع',
         remaining_amount: 'المتبقي', payment_method: 'طريقة الدفع', freeze_until: 'تاريخ انتهاء التجميد',
         days_since_last_visit: 'أيام الغياب', visitor_name: 'اسم الزائر', visit_reference: 'رقم الزيارة',
-        pass_type: 'نوع الحصة', membership_code: 'كود العضوية', portal_url: 'رابط البوابة',
+        pass_type: 'نوع الحصة', portal_code: 'كود العضوية', membership_code: 'كود العضوية (قديم)', portal_url: 'رابط البوابة',
         tenant_type: 'نوع الحساب', login_url: 'رابط الدخول', username: 'اسم المستخدم',
         temporary_password: 'كلمة المرور المؤقتة'
     };
 
     const sampleContext = {
         member_name: 'أحمد محمد', gym_name: 'Top Gym', plan_name: 'الباقة الذهبية', membership_type: 'اشتراك شهري',
-        start_date: '01/09/2026', expiry_date: '30/09/2026', days_remaining: '7', list_price: '300 جنيه',
+        start_date: '01/09/2026', expiry_date: '30/09/2026', days_remaining: '7', base_price: '300 جنيه', list_price: '300 جنيه',
         discount_amount: '50 جنيه', amount_due: '250 جنيه', amount_paid: '200 جنيه', remaining_amount: '50 جنيه',
         payment_method: 'نقدي', freeze_until: '20/09/2026', days_since_last_visit: '14', visitor_name: 'أحمد محمد',
-        visit_reference: 'VIS-000123', pass_type: 'حصة يومية', membership_code: 'LF-AB12CD',
+        visit_reference: 'VIS-000123', pass_type: 'حصة يومية', portal_code: 'LF-AB12CD', membership_code: 'LF-AB12CD',
         portal_url: window.location.origin + '/member-portal', tenant_type: 'الجيم',
         login_url: window.location.origin, username: 'owner@example.com', temporary_password: '********'
     };

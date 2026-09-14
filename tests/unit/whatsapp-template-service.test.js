@@ -31,6 +31,54 @@ test('portal access is independent from membership welcome', () => {
     assert.deepEqual(service.getTemplateDefinition('PORTAL_ACCESS').variables, ['member_name', 'gym_name', 'membership_code', 'portal_url']);
 });
 
+test('welcome default preserves the rich legacy data contract without the decorative frame', () => {
+    const definition = service.getTemplateDefinition('MEMBERSHIP_WELCOME');
+    for (const key of ['base_price', 'discount_amount', 'amount_due', 'amount_paid', 'remaining_amount', 'payment_method', 'portal_code', 'portal_url']) {
+        assert.ok(definition.variables.includes(key), `${key} is allowlisted for welcome`);
+        assert.match(service.DEFAULT_BODIES.MEMBERSHIP_WELCOME, new RegExp(`\\{\\{${key}\\}\\}`));
+    }
+    assert.match(service.DEFAULT_BODIES.MEMBERSHIP_WELCOME, /تفاصيل اشتراكك/);
+    assert.match(service.DEFAULT_BODIES.MEMBERSHIP_WELCOME, /ملخص الحساب/);
+    assert.match(service.DEFAULT_BODIES.MEMBERSHIP_WELCOME, /✅/u);
+    assert.doesNotMatch(service.DEFAULT_BODIES.MEMBERSHIP_WELCOME, /[╭│├╰╯]/u);
+});
+
+test('rich welcome rendering keeps zero discount and hides only an empty remaining balance', () => {
+    const body = service.DEFAULT_BODIES.MEMBERSHIP_WELCOME;
+    const rendered = service.renderTemplateText('MEMBERSHIP_WELCOME', body, {
+        member_name: 'أحمد', gym_name: 'Top Gym', plan_name: 'جيم', membership_type: 'شهرية',
+        start_date: '١٤/٠٩/٢٠٢٦', expiry_date: '١٣/١٠/٢٠٢٦', base_price: '٣٥٠٫٠٠ ج.م',
+        discount_amount: '٠٫٠٠ ج.م', amount_due: '٣٥٠٫٠٠ ج.م', amount_paid: '٣٥٠٫٠٠ ج.م',
+        remaining_amount: '', payment_method: 'نقدي', portal_code: 'TG-QA-CODE', portal_url: 'https://example.test/member-portal'
+    });
+    assert.match(rendered, /السعر الأساسي: \*٣٥٠٫٠٠ ج\.م\*/u);
+    assert.match(rendered, /الخصم: \*٠٫٠٠ ج\.م\*/u);
+    assert.match(rendered, /المدفوع: \*٣٥٠٫٠٠ ج\.م\*/u);
+    assert.doesNotMatch(rendered, /المتبقي:/u);
+    assert.match(rendered, /TG-QA-CODE/u);
+    assert.match(rendered, /https:\/\/example\.test\/member-portal/u);
+    assert.match(rendered, /✅/u);
+});
+
+test('operational legacy content is preserved in central defaults without ASCII frames', () => {
+    const expectedSections = {
+        MEMBERSHIP_FROZEN: ['اشتراكك متجمّد', 'مستنيينك ترجع'],
+        MEMBERSHIP_EXPIRED: ['انتهى بتاريخ', 'مكانك معانا موجود'],
+        MEMBERSHIP_EXPIRING: ['هينتهي يوم', 'استمرار تمرينك'],
+        PAYMENT_OUTSTANDING: ['مبلغ متبقي', 'استكمال السداد'],
+        MEMBER_ABSENCE: ['مشوفناكش في الجيم', 'ناقصه حماس'],
+        DAY_PASS_THANK_YOU: ['شكرًا لحضورك اليوم', 'رقم الزيارة'],
+        TENANT_ACTIVATED: ['تم تفعيل حساب', 'رابط تسجيل الدخول'],
+        PORTAL_ACCESS: ['بيانات الدخول الخاصة ببوابة المشترك', 'رابط البوابة']
+    };
+    for (const [templateId, sections] of Object.entries(expectedSections)) {
+        const body = service.DEFAULT_BODIES[templateId];
+        assert.ok(body, `${templateId} has a system default`);
+        assert.doesNotMatch(body, /[╭│├╰╯]/u, `${templateId} has no decorative frame`);
+        for (const section of sections) assert.match(body, new RegExp(section), `${templateId} keeps ${section}`);
+    }
+});
+
 test('conditional blocks omit empty optional values without leaving labels behind', () => {
     const welcome = service.renderTemplateText('MEMBERSHIP_WELCOME', service.DEFAULT_BODIES.MEMBERSHIP_WELCOME, {
         member_name: 'أحمد', gym_name: 'Top Gym', plan_name: 'شهري', membership_type: 'شهري',

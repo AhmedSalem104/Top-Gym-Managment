@@ -46,6 +46,19 @@
       "rlsImpact": true,
       "dataBackfill": false,
       "rollback": "forward-fix-or-database-recovery"
+    },
+    "035-central-whatsapp-template-defaults.sql": {
+      "version": "035",
+      "checksum": "d6a3ef155f0335698feebae13fcf0ebbe800170019982d3a0dc84946424018a0",
+      "transactional": true,
+      "backwardCompatible": true,
+      "destructive": false,
+      "requiresBackup": true,
+      "requiresMaintenanceMode": false,
+      "rlsImpact": false,
+      "dataBackfill": false,
+      "controlledTemplateUpdate": true,
+      "rollback": "verified-platform-template-backup-restore"
     }
   }
 }

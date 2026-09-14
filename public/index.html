@@ -1029,6 +1029,10 @@
     <dialog id="actionDialog" class="rounded-lg border-slate-200 shadow-lift" aria-labelledby="dialogTitle" aria-describedby="dialogDescription">
         <form class="dialog-body" id="actionForm">
             <h3 id="dialogTitle">إجراء</h3><p id="dialogDescription"></p><div id="dialogFields"></div>
+            <div id="dialogFreezeWhatsappOption" class="freeze-whatsapp-option-wrap" hidden>
+                <label class="checkbox-field freeze-whatsapp-option" for="dialogFreezeSendWhatsApp"><input id="dialogFreezeSendWhatsApp" type="checkbox" checked><span>إرسال إشعار للعضو عبر WhatsApp بعد التجميد</span></label>
+                <small class="freeze-whatsapp-hint">سيتم فتح WhatsApp بعد نجاح التجميد، والإرسال يتم يدويًا داخل التطبيق.</small>
+            </div>
             <div class="dialog-actions"><button class="btn btn-light" id="dialogCancel" type="button">إلغاء</button><button class="btn btn-primary" id="dialogSubmit" type="submit">تأكيد</button></div>
         </form>
     </dialog>
@@ -1152,8 +1156,8 @@
     <script defer src="/js/branch-context.js?v=3"></script>
     <script defer src="/js/kiosk.js?v=1"></script>
     <script defer src="/js/core/feature-manifest.js?v=attendance-compact"></script>
-    <script defer src="/js/feature-loader.js?v=attendance-compact"></script>
-    <script defer src="/js/app-shell-bootstrap.js?v=attendance-compact"></script>
+    <script defer src="/js/feature-loader.js?v=freeze-whatsapp-v2"></script>
+    <script defer src="/js/app-shell-bootstrap.js?v=freeze-whatsapp-v2"></script>
     <script defer src="/js/page-tabs.js?v=23"></script>
 </body>
 </html>

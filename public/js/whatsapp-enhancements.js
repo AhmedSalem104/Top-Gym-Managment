@@ -24,6 +24,25 @@
 
     function isMobileDevice() { return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || ''); }
 
+    function formatTemplateDate(value) {
+        const raw = String(value || '').slice(0, 10);
+        if (!raw) return '';
+        const date = new Date(`${raw}T00:00:00`);
+        if (Number.isNaN(date.getTime())) return '';
+        return new Intl.DateTimeFormat('ar-EG-u-ca-gregory', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(date);
+    }
+
+    function formatTemplateMoney(value) {
+        const numeric = Number(value ?? 0);
+        if (!Number.isFinite(numeric)) return '';
+        return `${numeric.toLocaleString('ar-EG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ج.م`;
+    }
+
+    function membershipCodeValue(member, payload = {}, detail = {}) {
+        const candidate = detail.membershipCode || payload.membershipCode || member.membershipCode;
+        return typeof candidate === 'string' ? candidate.trim() : '';
+    }
+
     function openWhatsappChat(phone, message = '', existingWindow = null) {
         if (!phone) return false;
         const url = `https://wa.me/${phone}${message ? `?text=${encodeURIComponent(message)}` : ''}`;
@@ -73,25 +92,32 @@
         return window.LogicFitWhatsAppTemplates.render(templateId, context, options);
     }
 
-    function memberContext(member = {}, payload = {}, labels = {}) {
+    function memberContext(member = {}, payload = {}, labels = {}, detail = {}) {
         const membership = member.membership || {};
         const due = Number(membership.amountDue ?? payload.amountDue ?? 0);
         const paid = Number(membership.amountPaid ?? payload.amountPaid ?? 0);
         const remaining = Math.max(0, Number(membership.amountRemaining ?? due - paid) || 0);
         const discount = Number(membership.discountAmount ?? payload.discountAmount ?? 0);
+        const listPrice = Number(membership.listPrice ?? payload.listPrice ?? due + discount);
+        const code = membershipCodeValue(member, payload, detail);
+        const paymentMethod = labels.payment || ({ cash: 'نقدي', card: 'بطاقة', transfer: 'تحويل', other: 'أخرى' }[membership.paymentMethod || payload.paymentMethod] || membership.paymentMethod || payload.paymentMethod || '');
         return {
             member_name: member.fullName || payload.fullName || 'العضو',
             gym_name: window.topGymBranding?.get?.().identity?.brandName || 'Logic Fit',
             plan_name: labels.plan || membership.plan || payload.membershipPlan || '',
             membership_type: labels.type || membership.type || payload.membershipType || '',
-            start_date: membership.startDate || payload.startDate || '',
-            expiry_date: membership.effectiveEndDate || membership.endDate || payload.endDate || '',
-            list_price: String(Number(membership.listPrice ?? payload.listPrice ?? due + discount) || 0),
-            discount_amount: discount > 0 ? String(discount) : '',
-            amount_due: due > 0 ? String(due) : '',
-            amount_paid: paid > 0 ? String(paid) : '',
-            remaining_amount: remaining > 0 ? String(remaining) : '',
-            payment_method: labels.payment || membership.paymentMethod || payload.paymentMethod || '',
+            start_date: formatTemplateDate(membership.startDate || payload.startDate),
+            expiry_date: formatTemplateDate(membership.effectiveEndDate || membership.endDate || payload.endDate),
+            base_price: formatTemplateMoney(listPrice),
+            list_price: formatTemplateMoney(listPrice),
+            discount_amount: formatTemplateMoney(discount),
+            amount_due: formatTemplateMoney(due),
+            amount_paid: formatTemplateMoney(paid),
+            remaining_amount: remaining > 0 ? formatTemplateMoney(remaining) : '',
+            payment_method: paymentMethod,
+            portal_code: code,
+            membership_code: code,
+            portal_url: detail.portalUrl || payload.portalUrl || member.membershipCodePortalUrl || `${window.location.origin}/member-portal`,
             freeze_until: membership.freezeEnd || '',
             days_remaining: member.daysRemaining ?? '',
             days_since_last_visit: member.daysSinceLastVisit ?? ''
@@ -134,7 +160,7 @@
         const member = detail.member || {};
         const phone = normalizePhone(member.phone, member.phoneCountry);
         if (!phone) throw new Error('رقم هاتف العضو غير صالح لفتح واتساب.');
-        const message = await renderTemplate('MEMBERSHIP_FROZEN', memberContext(member, detail.payload, detail.labels));
+        const message = await renderTemplate('MEMBERSHIP_FROZEN', memberContext(member, detail.payload, detail.labels, detail));
         const preparedWindow = detail.whatsappWindow && !detail.whatsappWindow.closed ? detail.whatsappWindow : null;
         const opened = openWhatsappChat(phone, message, preparedWindow);
         showWhatsappStatus(phone, message, opened);
@@ -149,7 +175,7 @@
             window.Swal?.fire({ toast: true, position: 'top-start', icon: 'warning', title: 'تم الحفظ — رقم الهاتف غير صحيح', showConfirmButton: false, timer: 4500, timerProgressBar: true, customClass: { popup: 'top-gym-alert top-gym-toast' } });
             return;
         }
-        const message = await renderTemplate('MEMBERSHIP_WELCOME', memberContext(member, payload, detail.labels));
+        const message = await renderTemplate('MEMBERSHIP_WELCOME', memberContext(member, payload, detail.labels, detail));
         const openedWindow = detail.whatsappWindow && !detail.whatsappWindow.closed ? detail.whatsappWindow : null;
         const opened = openWhatsappChat(phone, message, openedWindow);
         showWhatsappStatus(phone, message, opened);

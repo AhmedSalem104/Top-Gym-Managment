@@ -565,7 +565,7 @@ function checkPrintAndLazyLoadingSurface() {
         /\/js\/core\/feature-manifest\.js\?v=[^"'\s]+/u,
         /\/js\/core\/dialog-loader\.js\?v=[^"'\s]+/u
     ].every((pattern) => pattern.test(index))
-        && /\/js\/feature-loader\.js\?v=attendance-compact/u.test(index)
+        && /\/js\/feature-loader\.js\?v=freeze-whatsapp-v2/u.test(index)
         && !/\/js\/(?:core\/dialog-loader|feature-loader)\.js\?v=phase3-6/u.test(index), 'authenticated shell entrypoints use current explicit cache-busting keys');
     const lazyDialogIds = ['libraryFormDialog', 'libraryDetailsDialog', 'externalTraineeDialog', 'coachingProfileDialog', 'coachingBuilderDialog', 'authUserDialog', 'backupRestoreDialog'];
     record('UI-LAZY-DIALOGS', lazyDialogIds.every((id) => !index.includes(`id="${id}"`)) && dialogLoader.includes('topGymDialogLoader') && dialogLoader.includes('loadPromises'), 'non-critical dialogs are fragment-loaded and deduplicated on demand');

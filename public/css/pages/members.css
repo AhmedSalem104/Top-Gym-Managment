@@ -588,6 +588,20 @@
   padding: var(--space-2) var(--space-3);
 }
 
+.freeze-whatsapp-option-wrap {
+  display: grid;
+  gap: var(--space-1);
+  margin-top: var(--space-2);
+}
+
+.freeze-whatsapp-option-wrap[hidden] {
+  display: none;
+}
+
+.freeze-whatsapp-option-wrap .freeze-whatsapp-option {
+  margin-top: 0;
+}
+
 .freeze-whatsapp-option input[type="checkbox"] {
   width: 20px;
   height: 20px;

@@ -99,7 +99,7 @@ function collectMatches(source, pattern) {
     return [...source.matchAll(pattern)].map((match) => ({ match, index: match.index }));
 }
 
-function auditMigrationText(fileName, source, { allowDataBackfill = false } = {}) {
+function auditMigrationText(fileName, source, { allowDataBackfill = false, allowControlledTemplateUpdate = false } = {}) {
     const masked = maskSql(source);
     const findings = [];
     const operations = {
@@ -116,7 +116,7 @@ function auditMigrationText(fileName, source, { allowDataBackfill = false } = {}
         ['DROP_INDEX', /\bDROP\s+INDEX\b/i],
         ['DROP_CONSTRAINT', /\bALTER\s+TABLE[\s\S]{0,160}?\bDROP\s+CONSTRAINT\b/i]
     ];
-    if (!allowDataBackfill) {
+    if (!allowDataBackfill && !allowControlledTemplateUpdate) {
         dangerousPatterns.splice(3, 0, ['UPDATE_ROWS', /\bUPDATE\s+(?:\[?dbo\]?\.)?[A-Za-z_][A-Za-z0-9_]*/i]);
     }
     for (const [code, pattern] of dangerousPatterns) {
@@ -140,6 +140,18 @@ function auditMigrationText(fileName, source, { allowDataBackfill = false } = {}
         ];
         for (const [code, pattern] of requiredMarkers) {
             if (!pattern.test(source)) findings.push({ severity: 'ERROR', code, message: `Safe data backfill marker is missing: ${code}.` });
+        }
+    }
+
+    if (allowControlledTemplateUpdate) {
+        const requiredMarkers = [
+            ['CONTROLLED_TEMPLATE_UPDATE_MARKER', /LOGIC_FIT_CONTROLLED_TEMPLATE_UPDATE:\s*whatsapp-platform-defaults/i],
+            ['TEMPLATE_TABLE_GUARD', /dbo\.whatsapp_message_templates/i],
+            ['TRANSACTION_GUARD', /SET\s+XACT_ABORT\s+ON/i],
+            ['UPDATE_OPERATION', /\bUPDATE\s+target[\s\S]{0,320}\bFROM\s+dbo\.whatsapp_message_templates\b/i]
+        ];
+        for (const [code, pattern] of requiredMarkers) {
+            if (!pattern.test(source)) findings.push({ severity: 'ERROR', code, message: `Controlled template update marker is missing: ${code}.` });
         }
     }
 
@@ -223,7 +235,10 @@ function auditDatabaseReadiness({ rootDir = ROOT } = {}) {
     const migrations = migrationFiles.map((fileName) => auditMigrationText(
         fileName,
         fs.readFileSync(path.join(migrationDirectory, fileName), 'utf8'),
-        { allowDataBackfill: migrationManifest.migrations?.[fileName]?.dataBackfill === true }
+        {
+            allowDataBackfill: migrationManifest.migrations?.[fileName]?.dataBackfill === true,
+            allowControlledTemplateUpdate: migrationManifest.migrations?.[fileName]?.controlledTemplateUpdate === true
+        }
     ));
     const migrationFindings = [];
     if (duplicateVersions.length) migrationFindings.push({ severity: 'ERROR', code: 'DUPLICATE_MIGRATION_VERSION', message: `Duplicate migration version(s): ${[...new Set(duplicateVersions)].join(', ')}` });

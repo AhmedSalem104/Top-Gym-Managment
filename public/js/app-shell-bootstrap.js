@@ -2,7 +2,7 @@
     if (window.__topGymAppShellBootstrapLoaded) return;
     window.__topGymAppShellBootstrapLoaded = true;
 
-    const source = '/js/app.js?v=attendance-compact';
+    const source = '/js/app.js?v=freeze-whatsapp-v2';
     let loadPromise = null;
 
     function loadApplication() {
