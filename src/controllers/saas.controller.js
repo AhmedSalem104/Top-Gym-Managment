@@ -47,6 +47,7 @@ function createSaasController({ saasService }) {
                 userId: request.auth?.id,
                 planId: request.body?.planId,
                 planCode: request.body?.planCode,
+                termCode: request.body?.termCode || request.body?.term,
                 notes: request.body?.notes
             }) });
         },

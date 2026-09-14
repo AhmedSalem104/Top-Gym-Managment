@@ -127,11 +127,11 @@ async function createTables() {
     await pool.request().batch(PERMISSION_SCHEMA_SQL);
 }
 
-async function seedAssistantPermissions(userId, defaults = SAFE_ASSISTANT_DEFAULT_PERMISSIONS) {
+async function seedAssistantPermissions(userId, defaults = SAFE_ASSISTANT_DEFAULT_PERMISSIONS, { executor = null } = {}) {
     const id = normalizeUserId(userId);
     const codes = [...new Set(defaults)].filter((code) => KNOWN_PERMISSION_CODES.has(code) && !OWNER_ONLY_PERMISSION_CODES.has(code));
     if (!codes.length) return;
-    const pool = await getPool();
+    const pool = executor || await getPool();
     const values = permissionValuesSql(codes);
     await pool.request()
         .input('userId', sql.Int, id)

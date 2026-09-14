@@ -53,7 +53,8 @@ test('database readiness audit finds the canonical migration set safe at source 
         '032-notification-portal-recipients.sql',
         '033-top-gym-legacy-branch-attribution.sql',
         '034-whatsapp-message-templates.sql',
-        '035-central-whatsapp-template-defaults.sql'
+        '035-central-whatsapp-template-defaults.sql',
+        '036-saas-plans-phase2.sql'
     ]);
     assert.deepEqual(report.migrationFindings, []);
     assert.equal(report.schemaReview.status, 'REQUIRES STAGING VERIFICATION');

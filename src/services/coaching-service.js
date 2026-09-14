@@ -533,7 +533,7 @@ async function assertNoDuplicatePhone(connection, phoneNormalized, email, exclud
     throw error;
 }
 
-async function createExternalTrainee(body = {}) {
+async function createExternalTrainee(body = {}, { beforeInsert = null } = {}) {
     await ensureMemberIdentityColumn();
     await ensureCoachingTables();
     const fullName = text(body.fullName, 'اسم المتدرب', 120, true);
@@ -550,6 +550,7 @@ async function createExternalTrainee(body = {}) {
     const requestedProfileStatus = String(body.profileStatus || '').trim().toLowerCase();
     const profileStatus = ['active', 'paused', 'archived'].includes(requestedProfileStatus) ? requestedProfileStatus : 'active';
     const memberId = await withTransaction(async (transaction) => {
+        if (typeof beforeInsert === 'function') await beforeInsert(transaction);
         await assertNoDuplicatePhone(transaction, phoneNormalized, email);
         const result = await transaction.request()
             .input('fullName', sql.NVarChar(120), fullName)

@@ -191,7 +191,7 @@ async function getDashboard({ from = null, to = null, readOnly = false } = {}) {
         pool.request().query(`SELECT
             (SELECT COUNT_BIG(*) FROM dbo.members) AS members,
             (SELECT COUNT_BIG(*) FROM dbo.gym_user_tenants WHERE status='active') AS users,
-            (SELECT COUNT_BIG(*) FROM dbo.gym_ai_generation_log WHERE created_at >= DATEADD(month,DATEDIFF(month,0,SYSUTCDATETIME()),0)) AS ai_generations,
+            (SELECT COUNT_BIG(*) FROM dbo.gym_ai_generation_log WHERE action IN ('question','workout_generate','diet_generate','refine') AND created_at >= DATEADD(month,DATEDIFF(month,0,SYSUTCDATETIME()),0)) AS ai_generations,
             ISNULL((SELECT SUM(CONVERT(BIGINT,COALESCE(storage_size_bytes,DATALENGTH(content)))) FROM dbo.gym_branding_assets),0)
               + ISNULL((SELECT SUM(CONVERT(BIGINT,content_bytes)) FROM dbo.gym_backup_archives),0)
               + ISNULL((SELECT SUM(CONVERT(BIGINT,file_size)) FROM dbo.saas_payment_proofs),0) AS storage_bytes;`),
@@ -208,7 +208,7 @@ async function getDashboard({ from = null, to = null, readOnly = false } = {}) {
             OUTER APPLY (SELECT TOP (1) u.id,u.full_name,u.email,u.status,u.last_login_at FROM dbo.gym_user_tenants ut INNER JOIN dbo.gym_users u ON u.id=ut.user_id WHERE ut.tenant_id=t.id AND ut.role='Owner' ORDER BY ut.is_primary DESC,ut.status,u.id) owner
             OUTER APPLY (SELECT COUNT_BIG(*) AS total_members FROM dbo.members m WHERE m.tenant_id=t.id) members
             OUTER APPLY (SELECT COUNT_BIG(*) AS total_users FROM dbo.gym_user_tenants ut WHERE ut.tenant_id=t.id AND ut.status='active') users
-            OUTER APPLY (SELECT COUNT_BIG(*) AS total_ai_generations FROM dbo.gym_ai_generation_log l WHERE l.tenant_id=t.id AND l.created_at >= DATEADD(month,DATEDIFF(month,0,SYSUTCDATETIME()),0)) ai
+            OUTER APPLY (SELECT COUNT_BIG(*) AS total_ai_generations FROM dbo.gym_ai_generation_log l WHERE l.tenant_id=t.id AND l.action IN ('question','workout_generate','diet_generate','refine') AND l.created_at >= DATEADD(month,DATEDIFF(month,0,SYSUTCDATETIME()),0)) ai
             OUTER APPLY (SELECT ISNULL((SELECT SUM(CONVERT(BIGINT,COALESCE(storage_size_bytes,DATALENGTH(content)))) FROM dbo.gym_branding_assets a WHERE a.tenant_id=t.id),0)+ISNULL((SELECT SUM(CONVERT(BIGINT,content_bytes)) FROM dbo.gym_backup_archives b WHERE b.tenant_id=t.id),0)+ISNULL((SELECT SUM(CONVERT(BIGINT,file_size)) FROM dbo.saas_payment_proofs sp WHERE sp.tenant_id=t.id),0) AS storage_bytes) storage
             OUTER APPLY (SELECT MAX(ses.last_seen_at) AS last_activity_at FROM dbo.gym_auth_sessions ses INNER JOIN dbo.gym_user_tenants ut2 ON ut2.user_id=ses.user_id WHERE ut2.tenant_id=t.id) last_activity
             ORDER BY t.created_at DESC,t.id DESC;`),
@@ -238,7 +238,7 @@ const TENANT_LIST_FROM = `FROM dbo.gym_tenants t
     OUTER APPLY (SELECT TOP (1) u.id,u.full_name,u.email,u.status,u.last_login_at FROM dbo.gym_user_tenants ut INNER JOIN dbo.gym_users u ON u.id=ut.user_id WHERE ut.tenant_id=t.id AND ut.role='Owner' ORDER BY ut.is_primary DESC,ut.status,u.id) owner
     OUTER APPLY (SELECT COUNT_BIG(*) AS total_members FROM dbo.members m WHERE m.tenant_id=t.id) members
     OUTER APPLY (SELECT COUNT_BIG(*) AS total_users FROM dbo.gym_user_tenants ut2 WHERE ut2.tenant_id=t.id AND ut2.status='active') users
-    OUTER APPLY (SELECT COUNT_BIG(*) AS total_ai_generations FROM dbo.gym_ai_generation_log l WHERE l.tenant_id=t.id AND l.created_at >= DATEADD(month,DATEDIFF(month,0,SYSUTCDATETIME()),0)) ai
+    OUTER APPLY (SELECT COUNT_BIG(*) AS total_ai_generations FROM dbo.gym_ai_generation_log l WHERE l.tenant_id=t.id AND l.action IN ('question','workout_generate','diet_generate','refine') AND l.created_at >= DATEADD(month,DATEDIFF(month,0,SYSUTCDATETIME()),0)) ai
     OUTER APPLY (SELECT ISNULL((SELECT SUM(CONVERT(BIGINT,COALESCE(storage_size_bytes,DATALENGTH(content)))) FROM dbo.gym_branding_assets a WHERE a.tenant_id=t.id),0)+ISNULL((SELECT SUM(CONVERT(BIGINT,content_bytes)) FROM dbo.gym_backup_archives b WHERE b.tenant_id=t.id),0)+ISNULL((SELECT SUM(CONVERT(BIGINT,file_size)) FROM dbo.saas_payment_proofs sp WHERE sp.tenant_id=t.id),0) AS storage_bytes) storage
     OUTER APPLY (SELECT COUNT_BIG(*) AS total_branches,SUM(CASE WHEN status='active' THEN 1 ELSE 0 END) AS active_branches FROM dbo.gym_branches b WHERE b.tenant_id=t.id) branch_usage
     OUTER APPLY (SELECT MAX(ses.last_seen_at) AS last_activity_at FROM dbo.gym_auth_sessions ses INNER JOIN dbo.gym_user_tenants ut3 ON ut3.user_id=ses.user_id WHERE ut3.tenant_id=t.id) last_activity`;
@@ -498,6 +498,9 @@ async function updateTenantSubscription(tenantId, body = {}, actorUserId, meta =
     if (dangerous.includes(action) && !reason) throw platformError('A reason is required for this subscription action.', 400, 'REASON_REQUIRED');
     const current = await saasService.getCurrentSubscription(id);
     const selectedPlan = await planForBody(body, { required: ['change_plan', 'activate', 'grant_lifetime'].includes(action) && !current, tenantId: id });
+    if (selectedPlan?.code === 'enterprise' && current?.plan?.code !== 'enterprise') {
+        throw platformError('Enterprise is reserved for legacy subscriptions and is not available for new subscriptions.', 409, 'LEGACY_PLAN_NOT_AVAILABLE');
+    }
     if (action === 'change_plan' && !selectedPlan) throw platformError('A new plan is required.', 400, 'PLAN_REQUIRED');
     const when = String(body.effective || body.apply || 'immediate').toLowerCase();
     if (action === 'change_plan' && when === 'renewal') {
@@ -505,7 +508,8 @@ async function updateTenantSubscription(tenantId, body = {}, actorUserId, meta =
         const effectiveAt = current.expiresAt ? new Date(current.expiresAt) : new Date();
         let scheduled;
         await withTransaction(async (transaction) => {
-            await transaction.request().input('tenantId', sql.Int, id).input('subscriptionId', sql.BigInt, current.id).input('planId', sql.Int, selectedPlan.id).input('effectiveAt', sql.DateTime2(0), effectiveAt).input('reason', sql.NVarChar(1000), reason).input('actorId', sql.Int, actorUserId == null ? null : Number(actorUserId)).query("UPDATE dbo.saas_subscription_changes SET status='cancelled',updated_at=SYSUTCDATETIME() WHERE tenant_id=@tenantId AND status='scheduled'; INSERT INTO dbo.saas_subscription_changes (tenant_id,subscription_id,new_plan_id,effective_at,status,reason,requested_by_user_id) OUTPUT INSERTED.id VALUES (@tenantId,@subscriptionId,@planId,@effectiveAt,'scheduled',@reason,@actorId);");
+            const scheduledTerm = saasService.selectPlanTerm(selectedPlan, body.termCode, { allowLegacy: true });
+            await transaction.request().input('tenantId', sql.Int, id).input('subscriptionId', sql.BigInt, current.id).input('planId', sql.Int, selectedPlan.id).input('termCode', sql.VarChar(20), scheduledTerm.code).input('durationMonths', sql.Int, scheduledTerm.durationMonths).input('effectiveAt', sql.DateTime2(0), effectiveAt).input('reason', sql.NVarChar(1000), reason).input('actorId', sql.Int, actorUserId == null ? null : Number(actorUserId)).query("UPDATE dbo.saas_subscription_changes SET status='cancelled',updated_at=SYSUTCDATETIME() WHERE tenant_id=@tenantId AND status='scheduled'; INSERT INTO dbo.saas_subscription_changes (tenant_id,subscription_id,new_plan_id,new_term_code,new_duration_months,effective_at,status,reason,requested_by_user_id) OUTPUT INSERTED.id VALUES (@tenantId,@subscriptionId,@planId,@termCode,@durationMonths,@effectiveAt,'scheduled',@reason,@actorId);");
             await transaction.request().input('subscriptionId', sql.BigInt, current.id).query("UPDATE dbo.saas_tenant_subscriptions SET renewal_status='scheduled',updated_at=SYSUTCDATETIME() WHERE id=@subscriptionId;");
             const change = await transaction.request().input('tenantId', sql.Int, id).query('SELECT TOP (1) id,tenant_id,subscription_id,new_plan_id,effective_at,status,reason,requested_by_user_id,created_at FROM dbo.saas_subscription_changes WHERE tenant_id=@tenantId AND status=\'scheduled\' ORDER BY id DESC;');
             scheduled = change.recordset[0] || null;
@@ -525,9 +529,13 @@ async function updateTenantSubscription(tenantId, body = {}, actorUserId, meta =
     if (nextPlan && ['activate', 'grant_lifetime', 'reactivate', 'change_plan'].includes(action)) {
         await saasService.assertPlanCompatibleWithTenant(id, nextPlan);
     }
+    const requestedTermCode = body.termCode || (!selectedPlan ? current?.termCodeSnapshot : null);
+    const selectedTerm = nextPlan
+        ? saasService.selectPlanTerm(nextPlan, requestedTermCode, { allowLegacy: true })
+        : null;
     if (action === 'activate') {
         nextStatus = 'active';
-        if (!current || !expiresAt || expiresAt.getTime() <= Date.now()) expiresAt = addPeriod(new Date(), nextPlan?.billingPeriod || 'monthly');
+        if (!current || !expiresAt || expiresAt.getTime() <= Date.now()) expiresAt = addPeriod(new Date(), selectedTerm?.code || nextPlan?.billingPeriod || 'monthly', selectedTerm?.durationMonths);
     } else if (action === 'grant_lifetime') {
         nextStatus = 'active';
         expiresAt = null;
@@ -560,13 +568,13 @@ async function updateTenantSubscription(tenantId, body = {}, actorUserId, meta =
     }
 
     let subscriptionId = current?.id || null;
-    const snapshot = saasService.snapshotForPlan(nextPlan);
+    const snapshot = nextPlan ? saasService.snapshotForPlan(nextPlan, selectedTerm) : null;
     await withTransaction(async (transaction) => {
         if (subscriptionId) {
-            await transaction.request().input('id', sql.BigInt, subscriptionId).input('planId', sql.Int, nextPlan?.id || current.plan.id).input('status', sql.VarChar(20), nextStatus).input('startsAt', sql.DateTime2(0), startsAt).input('expiresAt', sql.DateTime2(0), expiresAt).input('notes', sql.NVarChar(1000), notes || null).input('autoRenew', sql.Bit, autoRenew ? 1 : 0).input('billingPeriodSnapshot', sql.VarChar(20), snapshot.billingPeriod).input('priceSnapshot', sql.Decimal(12, 2), snapshot.price).input('maxMembersSnapshot', sql.Int, snapshot.maxMembers).input('maxClientsSnapshot', sql.Int, snapshot.maxClients).input('maxUsersSnapshot', sql.Int, snapshot.maxUsers).input('maxAiGenerationsSnapshot', sql.Int, snapshot.maxAiGenerations).input('maxStorageMbSnapshot', sql.Int, snapshot.maxStorageMb).input('maxBranchesSnapshot', sql.Int, snapshot.maxBranches).input('featuresSnapshotJson', sql.NVarChar(sql.MAX), JSON.stringify(snapshot.features)).query(`UPDATE dbo.saas_tenant_subscriptions SET plan_id=@planId,status=@status,starts_at=@startsAt,expires_at=@expiresAt,notes=@notes,auto_renew=@autoRenew,billing_period_snapshot=@billingPeriodSnapshot,price_snapshot=@priceSnapshot,currency_snapshot=(SELECT TOP (1) currency FROM dbo.saas_plans WHERE id=@planId),max_members_snapshot=@maxMembersSnapshot,max_clients_snapshot=@maxClientsSnapshot,max_users_snapshot=@maxUsersSnapshot,max_ai_generations_snapshot=@maxAiGenerationsSnapshot,max_storage_mb_snapshot=@maxStorageMbSnapshot,max_branches_snapshot=@maxBranchesSnapshot,features_snapshot_json=@featuresSnapshotJson,renewal_status='manual',updated_at=SYSUTCDATETIME() WHERE id=@id;`);
+            await transaction.request().input('id', sql.BigInt, subscriptionId).input('planId', sql.Int, nextPlan?.id || current.plan.id).input('status', sql.VarChar(20), nextStatus).input('startsAt', sql.DateTime2(0), startsAt).input('expiresAt', sql.DateTime2(0), expiresAt).input('notes', sql.NVarChar(1000), notes || null).input('autoRenew', sql.Bit, autoRenew ? 1 : 0).input('billingPeriodSnapshot', sql.VarChar(20), snapshot?.billingPeriod || current?.billingPeriodSnapshot || null).input('termCodeSnapshot', sql.VarChar(20), snapshot?.termCode || current?.termCodeSnapshot || null).input('durationMonthsSnapshot', sql.Int, snapshot?.durationMonths || current?.durationMonthsSnapshot || null).input('priceSnapshot', sql.Decimal(12, 2), snapshot?.price ?? current?.priceSnapshot ?? null).input('currencySnapshot', sql.Char(3), snapshot?.currency || current?.currencySnapshot || null).input('maxMembersSnapshot', sql.Int, snapshot?.maxMembers ?? current?.limitsSnapshot?.maxMembers ?? null).input('maxClientsSnapshot', sql.Int, snapshot?.maxClients ?? current?.limitsSnapshot?.maxClients ?? null).input('maxUsersSnapshot', sql.Int, snapshot?.maxUsers ?? current?.limitsSnapshot?.maxUsers ?? null).input('maxAiGenerationsSnapshot', sql.Int, snapshot?.maxAiGenerations ?? current?.limitsSnapshot?.maxAiGenerations ?? null).input('maxStorageMbSnapshot', sql.Int, snapshot?.maxStorageMb ?? current?.limitsSnapshot?.maxStorageMb ?? null).input('maxBranchesSnapshot', sql.Int, snapshot?.maxBranches ?? current?.limitsSnapshot?.maxBranches ?? null).input('featuresSnapshotJson', sql.NVarChar(sql.MAX), JSON.stringify(snapshot?.features || current?.featuresSnapshot || {})).query(`UPDATE dbo.saas_tenant_subscriptions SET plan_id=@planId,status=@status,starts_at=@startsAt,expires_at=@expiresAt,notes=@notes,auto_renew=@autoRenew,billing_period_snapshot=@billingPeriodSnapshot,term_code_snapshot=@termCodeSnapshot,duration_months_snapshot=@durationMonthsSnapshot,price_snapshot=@priceSnapshot,currency_snapshot=@currencySnapshot,max_members_snapshot=@maxMembersSnapshot,max_clients_snapshot=@maxClientsSnapshot,max_users_snapshot=@maxUsersSnapshot,max_ai_generations_snapshot=@maxAiGenerationsSnapshot,max_storage_mb_snapshot=@maxStorageMbSnapshot,max_branches_snapshot=@maxBranchesSnapshot,features_snapshot_json=@featuresSnapshotJson,renewal_status='manual',updated_at=SYSUTCDATETIME() WHERE id=@id;`);
         } else {
             if (!nextPlan) throw platformError('A plan is required to create a subscription.', 400, 'PLAN_REQUIRED');
-            const insert = await transaction.request().input('tenantId', sql.Int, id).input('planId', sql.Int, nextPlan.id).input('status', sql.VarChar(20), nextStatus).input('startsAt', sql.DateTime2(0), startsAt).input('expiresAt', sql.DateTime2(0), expiresAt).input('notes', sql.NVarChar(1000), notes || null).input('actorId', sql.Int, actorUserId == null ? null : Number(actorUserId)).input('autoRenew', sql.Bit, autoRenew ? 1 : 0).input('billingPeriodSnapshot', sql.VarChar(20), snapshot.billingPeriod).input('priceSnapshot', sql.Decimal(12, 2), snapshot.price).input('maxMembersSnapshot', sql.Int, snapshot.maxMembers).input('maxClientsSnapshot', sql.Int, snapshot.maxClients).input('maxUsersSnapshot', sql.Int, snapshot.maxUsers).input('maxAiGenerationsSnapshot', sql.Int, snapshot.maxAiGenerations).input('maxStorageMbSnapshot', sql.Int, snapshot.maxStorageMb).input('maxBranchesSnapshot', sql.Int, snapshot.maxBranches).input('featuresSnapshotJson', sql.NVarChar(sql.MAX), JSON.stringify(snapshot.features)).query(`INSERT INTO dbo.saas_tenant_subscriptions (tenant_id,plan_id,status,starts_at,expires_at,source,auto_renew,notes,created_by_user_id,billing_period_snapshot,price_snapshot,currency_snapshot,max_members_snapshot,max_clients_snapshot,max_users_snapshot,max_ai_generations_snapshot,max_storage_mb_snapshot,max_branches_snapshot,features_snapshot_json) OUTPUT INSERTED.id VALUES (@tenantId,@planId,@status,@startsAt,@expiresAt,'admin',@autoRenew,@notes,@actorId,@billingPeriodSnapshot,@priceSnapshot,(SELECT TOP (1) currency FROM dbo.saas_plans WHERE id=@planId),@maxMembersSnapshot,@maxClientsSnapshot,@maxUsersSnapshot,@maxAiGenerationsSnapshot,@maxStorageMbSnapshot,@maxBranchesSnapshot,@featuresSnapshotJson);`);
+            const insert = await transaction.request().input('tenantId', sql.Int, id).input('planId', sql.Int, nextPlan.id).input('status', sql.VarChar(20), nextStatus).input('startsAt', sql.DateTime2(0), startsAt).input('expiresAt', sql.DateTime2(0), expiresAt).input('notes', sql.NVarChar(1000), notes || null).input('actorId', sql.Int, actorUserId == null ? null : Number(actorUserId)).input('autoRenew', sql.Bit, autoRenew ? 1 : 0).input('billingPeriodSnapshot', sql.VarChar(20), snapshot.billingPeriod).input('termCodeSnapshot', sql.VarChar(20), snapshot.termCode).input('durationMonthsSnapshot', sql.Int, snapshot.durationMonths).input('priceSnapshot', sql.Decimal(12, 2), snapshot.price).input('currencySnapshot', sql.Char(3), snapshot.currency).input('maxMembersSnapshot', sql.Int, snapshot.maxMembers).input('maxClientsSnapshot', sql.Int, snapshot.maxClients).input('maxUsersSnapshot', sql.Int, snapshot.maxUsers).input('maxAiGenerationsSnapshot', sql.Int, snapshot.maxAiGenerations).input('maxStorageMbSnapshot', sql.Int, snapshot.maxStorageMb).input('maxBranchesSnapshot', sql.Int, snapshot.maxBranches).input('featuresSnapshotJson', sql.NVarChar(sql.MAX), JSON.stringify(snapshot.features)).query(`INSERT INTO dbo.saas_tenant_subscriptions (tenant_id,plan_id,status,starts_at,expires_at,source,auto_renew,notes,created_by_user_id,billing_period_snapshot,term_code_snapshot,duration_months_snapshot,price_snapshot,currency_snapshot,max_members_snapshot,max_clients_snapshot,max_users_snapshot,max_ai_generations_snapshot,max_storage_mb_snapshot,max_branches_snapshot,features_snapshot_json) OUTPUT INSERTED.id VALUES (@tenantId,@planId,@status,@startsAt,@expiresAt,'admin',@autoRenew,@notes,@actorId,@billingPeriodSnapshot,@termCodeSnapshot,@durationMonthsSnapshot,@priceSnapshot,@currencySnapshot,@maxMembersSnapshot,@maxClientsSnapshot,@maxUsersSnapshot,@maxAiGenerationsSnapshot,@maxStorageMbSnapshot,@maxBranchesSnapshot,@featuresSnapshotJson);`);
             subscriptionId = Number(insert.recordset[0].id);
         }
         const tenantStatus = nextStatus === 'suspended' ? 'suspended' : ['expired', 'cancelled'].includes(nextStatus) ? 'expired' : 'active';
@@ -746,10 +754,12 @@ async function addNote(tenantId, note, actorUserId, meta = {}) {
     return (await getTenantNotes(id)).find((item) => item.id === noteId) || { id: noteId, note: value };
 }
 
-function addPeriod(date, period) {
+function addPeriod(date, period, durationMonths = null) {
     const result = new Date(date.getTime());
-    if (period === 'yearly') result.setUTCFullYear(result.getUTCFullYear() + 1);
-    else result.setUTCMonth(result.getUTCMonth() + 1);
+    const months = Number.isInteger(Number(durationMonths)) && Number(durationMonths) > 0
+        ? Number(durationMonths)
+        : (period === 'yearly' || period === 'annual' ? 12 : 1);
+    result.setUTCMonth(result.getUTCMonth() + months);
     return result;
 }
 

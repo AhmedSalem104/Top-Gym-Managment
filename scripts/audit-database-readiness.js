@@ -99,7 +99,7 @@ function collectMatches(source, pattern) {
     return [...source.matchAll(pattern)].map((match) => ({ match, index: match.index }));
 }
 
-function auditMigrationText(fileName, source, { allowDataBackfill = false, allowControlledTemplateUpdate = false } = {}) {
+function auditMigrationText(fileName, source, { allowDataBackfill = false, allowControlledTemplateUpdate = false, allowControlledPlanConfiguration = false } = {}) {
     const masked = maskSql(source);
     const findings = [];
     const operations = {
@@ -116,7 +116,7 @@ function auditMigrationText(fileName, source, { allowDataBackfill = false, allow
         ['DROP_INDEX', /\bDROP\s+INDEX\b/i],
         ['DROP_CONSTRAINT', /\bALTER\s+TABLE[\s\S]{0,160}?\bDROP\s+CONSTRAINT\b/i]
     ];
-    if (!allowDataBackfill && !allowControlledTemplateUpdate) {
+    if (!allowDataBackfill && !allowControlledTemplateUpdate && !allowControlledPlanConfiguration) {
         dangerousPatterns.splice(3, 0, ['UPDATE_ROWS', /\bUPDATE\s+(?:\[?dbo\]?\.)?[A-Za-z_][A-Za-z0-9_]*/i]);
     }
     for (const [code, pattern] of dangerousPatterns) {
@@ -152,6 +152,23 @@ function auditMigrationText(fileName, source, { allowDataBackfill = false, allow
         ];
         for (const [code, pattern] of requiredMarkers) {
             if (!pattern.test(source)) findings.push({ severity: 'ERROR', code, message: `Controlled template update marker is missing: ${code}.` });
+        }
+    }
+
+    if (allowControlledPlanConfiguration) {
+        const requiredMarkers = [
+            ['CONTROLLED_PLAN_CONFIGURATION_MARKER', /LOGIC_FIT_CONTROLLED_PLAN_CONFIGURATION:\s*saas-plan-catalog/i],
+            ['PLAN_TABLE_GUARD', /dbo\.saas_plans/i],
+            ['TERM_TABLE_GUARD', /dbo\.saas_plan_terms/i],
+            ['FEATURE_TABLE_GUARD', /dbo\.saas_plan_features/i],
+            ['COMPATIBILITY_TABLE_GUARD', /dbo\.saas_plan_tenant_types/i],
+            ['TRANSACTION_GUARD', /SET\s+XACT_ABORT\s+ON/i],
+            ['CONTROLLED_MERGE', /\bMERGE\s+dbo\.saas_plan_(?:terms|features|tenant_types)\b/i],
+            ['OFFICIAL_PLAN_GUARD', /@official|COUNT_BIG\s*\(\s*\*\s*\)/i],
+            ['LEGACY_ENTERPRISE_GUARD', /code\s*=\s*'enterprise'/i]
+        ];
+        for (const [code, pattern] of requiredMarkers) {
+            if (!pattern.test(source)) findings.push({ severity: 'ERROR', code, message: `Controlled plan configuration marker is missing: ${code}.` });
         }
     }
 
@@ -237,7 +254,8 @@ function auditDatabaseReadiness({ rootDir = ROOT } = {}) {
         fs.readFileSync(path.join(migrationDirectory, fileName), 'utf8'),
         {
             allowDataBackfill: migrationManifest.migrations?.[fileName]?.dataBackfill === true,
-            allowControlledTemplateUpdate: migrationManifest.migrations?.[fileName]?.controlledTemplateUpdate === true
+            allowControlledTemplateUpdate: migrationManifest.migrations?.[fileName]?.controlledTemplateUpdate === true,
+            allowControlledPlanConfiguration: migrationManifest.migrations?.[fileName]?.controlledPlanConfiguration === true
         }
     ));
     const migrationFindings = [];

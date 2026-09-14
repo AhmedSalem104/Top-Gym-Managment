@@ -140,6 +140,30 @@
 .trainer-studio-settings-card { min-height: 154px; padding: 21px; }
 .trainer-studio-settings-card h2 { margin: 8px 0 5px; color: var(--studio-ink); font-size: 19px; }
 .trainer-studio-settings-card p { margin: 0; color: var(--studio-muted); font-size: 12px; line-height: 1.8; }
+.trainer-studio-settings-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.trainer-studio-current-plan-card { border-color: #a9ddd3; }
+.trainer-studio-plan-current { display: inline-flex; align-items: center; min-height: 27px; padding-inline: 9px; border: 1px solid #bfe5dd; border-radius: 999px; color: #197c6c; background: #e8f8f4; font-size: 11px; font-weight: 850; white-space: nowrap; }
+.trainer-studio-plan-dates { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 11px; color: var(--studio-muted); font-size: 11px; }
+.trainer-studio-plan-dates span { display: grid; gap: 3px; padding: 8px 9px; border-radius: 10px; background: var(--studio-surface-soft); }
+.trainer-studio-plan-dates b { color: var(--studio-ink); font-size: 11px; }
+.trainer-studio-plan-limits { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 10px; margin-top: 12px; color: var(--studio-muted); font-size: 11px; }
+.trainer-studio-plan-limits span { display: flex; justify-content: space-between; gap: 8px; }
+.trainer-studio-plan-limits b { color: var(--studio-ink); }
+.trainer-studio-plan-features { display: flex; flex-wrap: wrap; gap: 6px; margin: 12px 0 0; padding: 0; list-style: none; color: var(--studio-muted); font-size: 11px; }
+.trainer-studio-plan-features li { display: inline-flex; align-items: center; gap: 5px; padding: 5px 7px; border-radius: 999px; background: var(--studio-surface-soft); }
+.trainer-studio-plan-features li span { color: var(--studio-accent-strong); font-weight: 900; }
+.trainer-studio-available-plans { margin-top: 12px; }
+.trainer-studio-plan-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.trainer-studio-plan-card { display: grid; align-content: start; gap: 9px; min-width: 0; padding: 15px; border: 1px solid var(--studio-line); border-radius: 15px; background: var(--studio-surface-soft); }
+.trainer-studio-plan-card.is-current { border-color: var(--studio-accent); box-shadow: 0 0 0 2px rgba(24, 184, 154, .12); }
+.trainer-studio-plan-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.trainer-studio-plan-card h3 { margin: 5px 0 0; color: var(--studio-ink); font-size: 17px; }
+.trainer-studio-plan-card p { min-height: 34px; margin: 0; color: var(--studio-muted); font-size: 11px; line-height: 1.7; }
+.trainer-studio-plan-term { display: grid; gap: 5px; color: var(--studio-muted); font-size: 11px; font-weight: 800; }
+.trainer-studio-plan-term select { min-width: 0; min-height: 35px; padding: 5px 8px; border: 1px solid var(--studio-line); border-radius: 9px; color: var(--studio-ink); background: var(--studio-surface); font: inherit; font-size: 11px; }
+.trainer-studio-plan-price { color: var(--studio-accent-strong); font-size: 19px; font-weight: 900; font-variant-numeric: tabular-nums; }
+.trainer-studio-plan-price small { color: var(--studio-muted); font-size: 10px; font-weight: 700; }
+.trainer-studio-plan-grid .trainer-studio-plan-features { margin-top: 1px; }
 .trainer-studio-panel-actions { display: inline-flex; align-items: center; gap: 8px; }
 .trainer-studio-panel-actions .btn { display: inline-flex; align-items: center; gap: 6px; }
 .trainer-studio-range-control { display: inline-flex; align-items: center; gap: 7px; color: var(--studio-muted); font-size: 11px; font-weight: 800; }
@@ -170,10 +194,13 @@ html[data-theme="dark"] .trainer-workspace-page.trainer-studio-v2 .trainer-studi
 html[data-theme="dark"] .trainer-workspace-page.trainer-studio-v2 .trainer-studio-editor-grid input, html[data-theme="dark"] .trainer-workspace-page.trainer-studio-v2 .trainer-studio-editor-grid select, html[data-theme="dark"] .trainer-workspace-page.trainer-studio-v2 .trainer-studio-editor-grid textarea { color: var(--studio-ink); background: var(--studio-surface-soft); }
 html[data-theme="dark"] .trainer-workspace-page.trainer-studio-v2 .trainer-studio-range-control select { color: var(--studio-ink); background: var(--studio-surface-soft); }
 html[data-theme="dark"] .trainer-workspace-page.trainer-studio-v2 .trainer-studio-row-icon--warning { color: #ffd07a; background: #44351f; }
+html[data-theme="dark"] .trainer-workspace-page.trainer-studio-v2 .trainer-studio-plan-current { color: #91ead9; border-color: #24675e; background: #12372f; }
+html[data-theme="dark"] .trainer-workspace-page.trainer-studio-v2 .trainer-studio-plan-card.is-current { border-color: #3bc5aa; }
 
 @media (max-width: 1120px) {
     .trainer-workspace-page.trainer-studio-v2 .trainer-workspace-shell { grid-template-columns: 220px minmax(0, 1fr); width: min(100% - 28px, 1100px); }
     .trainer-studio-exercise-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .trainer-studio-plan-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 @media (max-width: 860px) {
@@ -204,6 +231,7 @@ html[data-theme="dark"] .trainer-workspace-page.trainer-studio-v2 .trainer-studi
     .trainer-studio-row-actions { width: 100%; justify-content: flex-start; }
     .trainer-studio-data-row .trainer-status-pill, .trainer-studio-inline-number, .trainer-studio-portal-note { margin-inline-start: auto; }
     .trainer-studio-exercise-grid, .trainer-studio-settings-grid, .trainer-studio-editor-grid { grid-template-columns: 1fr; }
+    .trainer-studio-plan-grid { grid-template-columns: 1fr; }
     .trainer-studio-panel-actions { align-items: flex-start; flex-direction: column; }
     .trainer-studio-finance-card strong { font-size: 17px; }
 }

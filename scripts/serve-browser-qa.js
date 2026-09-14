@@ -45,7 +45,8 @@ function resolvePublicFile(requestUrl) {
         ['/trainer-workspace', 'trainer-workspace.html'],
         ['/trainer-workspace/', 'trainer-workspace.html']
     ]);
-    const relativePath = routeFiles.get(pathname) || pathname.replace(/^\/+/, '');
+    const relativePath = routeFiles.get(pathname)
+        || (pathname.startsWith('/trainer-workspace/') ? 'trainer-workspace.html' : pathname.replace(/^\/+/, ''));
     const filePath = path.resolve(root, relativePath);
     if (filePath !== root && !filePath.startsWith(`${root}${path.sep}`)) return null;
     return filePath;

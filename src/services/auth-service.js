@@ -12,6 +12,7 @@ const {
 } = require('../permissions/role-permissions');
 const permissionService = require('./permission-service');
 const tenantService = require('./tenant-service');
+const saasService = require('./saas-service');
 const userRepository = require('../repositories/user.repository');
 const sessionRepository = require('../repositories/session.repository');
 const { currentTenantId, getTenantContext, runTenantContext } = require('../tenancy/tenant-context');
@@ -587,15 +588,21 @@ async function listUsers({ readOnly = false } = {}) {
 
 async function createAssistant(body = {}) {
     await ensureAuthReady();
+    const tenantId = currentTenantId({ required: true });
     const name = validateName(body.name || body.fullName);
     const email = validateEmail(body.email);
     const password = validatePassword(body.password);
     const passwordHash = await hashPassword(password);
     try {
-        const result = await userRepository.createAssistant({ fullName: name, email, passwordHash });
-        await tenantService.assignUserToTenant(result.recordset[0].id, undefined, 'Assistant');
-        await permissionService.seedAssistantPermissions(result.recordset[0].id);
-        return safeUserWithPermissions(result.recordset[0]);
+        let createdUser = null;
+        await withTransaction(async (transaction) => {
+            await saasService.assertResourceLimitInTransaction(transaction, tenantId, 'users');
+            const result = await userRepository.createAssistant({ fullName: name, email, passwordHash }, transaction);
+            createdUser = result.recordset[0];
+            await tenantService.assignUserToTenant(createdUser.id, tenantId, 'Assistant', { executor: transaction });
+            await permissionService.seedAssistantPermissions(createdUser.id, undefined, { executor: transaction });
+        });
+        return safeUserWithPermissions(createdUser);
     } catch (error) {
         if (error.number === 2601 || error.number === 2627) throw authError('هذا البريد الإلكتروني مستخدم بالفعل.', 409, 'DUPLICATE_USER_EMAIL');
         throw error;

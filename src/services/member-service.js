@@ -23,6 +23,7 @@ const {
     normalizePhoneForSearch
 } = require('./phone-service');
 const { actualCollectionCaseSql } = require('./financial-ledger-service');
+const saasService = require('./saas-service');
 
 const DEFAULT_MEMBERSHIP_PLANS = {
     gym_only: { label: 'جيم فقط', monthlyPrice: 305, active: true, sortOrder: 1 },
@@ -1712,7 +1713,7 @@ async function assignDefaultMembershipScope(transaction, membershipId, { branchI
     return { branchId: selectedBranchId, sectionId: selectedSectionId || null };
 }
 
-async function createMember(body, { tenantSlug = '', idempotencyKey = null, branchId = null, sectionId = null, actorUserId = null, actorRole = null } = {}) {
+async function createMember(body, { tenantSlug = '', idempotencyKey = null, branchId = null, sectionId = null, actorUserId = null, actorRole = null, access = null } = {}) {
     const data = normalizePayload(body);
     const membershipRequested = resolveMembershipRequest(body);
     const paymentDetailsProvided = hasPaymentDetails(data);
@@ -1743,6 +1744,7 @@ async function createMember(body, { tenantSlug = '', idempotencyKey = null, bran
             const existing = await findPaymentTransactionByIdempotencyKey(transaction, paymentIdempotencyKey, { lock: true });
             if (existing) return existing.memberId;
         }
+        await saasService.assertResourceLimitInTransaction(transaction, currentTenantId({ required: true }), 'members', { access });
         await assertNoDuplicateMember(transaction, data.phoneNormalized, data.email, null, data.phoneCountry);
         const memberResult = await transaction.request()
             .input('fullName', sql.NVarChar(120), data.fullName)

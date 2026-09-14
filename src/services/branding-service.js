@@ -6,6 +6,7 @@ const { withTransaction } = require('../database/transaction');
 const { currentTenantId } = require('../tenancy/tenant-context');
 const cacheService = require('./cache-service');
 const { normalizePhone: normalizeInternationalPhone } = require('./phone-service');
+const saasService = require('./saas-service');
 
 const BRANDING_ID = 1;
 const MAX_TEXT_LENGTH = 500;
@@ -903,11 +904,7 @@ async function uploadDraftAsset(input, actorUserId) {
     const tenantId = brandingTenantId();
     const storage = requireObjectStorageService();
     const pool = await getPool();
-    const previousResult = await pool.request()
-        .input('tenantId', sql.Int, tenantId)
-        .input('assetKey', sql.VarChar(40), asset.key)
-        .query("SELECT TOP (1) storage_key FROM dbo.gym_branding_assets WHERE scope='draft' AND asset_key=@assetKey AND tenant_id=@tenantId;");
-    const previousStorageKey = previousResult.recordset[0]?.storage_key || null;
+    let previousStorageKey = null;
     let storedObject;
     let revision;
     try {
@@ -926,6 +923,14 @@ async function uploadDraftAsset(input, actorUserId) {
         });
 
         await withTransaction(async (transaction) => {
+            const previous = await transaction.request()
+                .input('tenantId', sql.Int, tenantId)
+                .input('assetKey', sql.VarChar(40), asset.key)
+                .query("SELECT TOP (1) storage_key,CONVERT(BIGINT,COALESCE(storage_size_bytes,DATALENGTH(content))) AS storage_size_bytes FROM dbo.gym_branding_assets WITH (UPDLOCK,HOLDLOCK) WHERE scope='draft' AND asset_key=@assetKey AND tenant_id=@tenantId;");
+            previousStorageKey = previous.recordset[0]?.storage_key || null;
+            await saasService.assertStorageLimitInTransaction(transaction, tenantId, asset.buffer.length, {
+                excludeBytes: Number(previous.recordset[0]?.storage_size_bytes || 0)
+            });
             await transaction.request()
             .input('tenantId', sql.Int, tenantId)
             .input('assetKey', sql.VarChar(40), asset.key)

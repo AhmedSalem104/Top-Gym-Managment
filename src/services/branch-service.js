@@ -367,13 +367,6 @@ async function createBranch(body = {}, { actorUserId = null, role = null, reques
     const currentTenant = tenantId();
     const entitlements = await saasService.getEffectiveEntitlements(currentTenant);
     if (entitlements.capabilities?.branches !== true) throw branchError('Branch management is not available for this Gym subscription.', 403, 'BRANCH_CAPABILITY_DISABLED');
-    const branchLimit = entitlements.limits?.maxBranches;
-    if (branchLimit != null) {
-        const current = await getPool().then((pool) => pool.request().input('tenantId', sql.Int, currentTenant).query("SELECT COUNT_BIG(*) AS total FROM dbo.gym_branches WHERE tenant_id=@tenantId AND status<>'archived';"));
-        if (Number(current.recordset[0]?.total || 0) >= Number(branchLimit)) {
-            throw branchError('The active branch limit for the current plan has been reached.', 409, 'BRANCH_LIMIT_REACHED');
-        }
-    }
     const code = textValue(body.code ?? body.branchCode, 'Branch code', 40, true)
         .toLowerCase().replace(/[^a-z0-9_-]/g, '-').replace(/^-+|-+$/g, '');
     if (!code) throw branchError('Branch code is invalid.', 400, 'BRANCH_CODE_INVALID');
@@ -385,6 +378,10 @@ async function createBranch(body = {}, { actorUserId = null, role = null, reques
     const barEnabled = booleanValue(body.barEnabled, false);
     let created;
     await withTransaction(async (transaction) => {
+        // The middleware performs an early shared entitlement check. The
+        // central transactional guard repeats it while holding the tenant
+        // lock, closing the concurrent-create race without partial data.
+        await saasService.assertResourceLimitInTransaction(transaction, currentTenant, 'branches', { access: entitlements });
         const duplicate = await transaction.request().input('tenantId', sql.Int, currentTenant).input('code', sql.VarChar(40), code)
             .query('SELECT TOP (1) id FROM dbo.gym_branches WHERE tenant_id=@tenantId AND branch_code=@code;');
         if (duplicate.recordset[0]) throw branchError('A branch with this code already exists.', 409, 'BRANCH_CODE_EXISTS');

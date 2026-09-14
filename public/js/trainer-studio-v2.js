@@ -16,6 +16,32 @@
         if (Number.isNaN(date.getTime())) return String(value);
         return new Intl.DateTimeFormat('ar-EG', withTime ? { dateStyle: 'medium', timeStyle: 'short' } : { dateStyle: 'medium' }).format(date);
     };
+    const BILLING_TERM_LABELS = Object.freeze({ monthly: 'شهر واحد', quarterly: '3 شهور', semiannual: '6 شهور', annual: '12 شهرًا' });
+    const limitLabel = (value) => value == null ? 'غير محدود' : formatNumber(value);
+    function planTerms(plan) {
+        return Array.isArray(plan?.terms) && plan.terms.length
+            ? plan.terms.filter((term) => term?.isActive !== false)
+            : [];
+    }
+    function trainerPlanCard(plan, currentCode, featureCatalog) {
+        const terms = planTerms(plan);
+        const selected = terms.find((term) => term.code === 'monthly') || terms[0] || { code: 'monthly', price: plan.price, currency: plan.currency || 'EGP' };
+        const features = (Array.isArray(featureCatalog) ? featureCatalog : [])
+            .filter((feature) => plan.features?.[feature.key] !== false)
+            .slice(0, 8);
+        return `<article class="trainer-studio-plan-card ${String(plan.code) === String(currentCode) ? 'is-current' : ''}" data-trainer-plan-card="${escapeHtml(plan.code)}"><div class="trainer-studio-plan-card-head"><div><span class="trainer-panel-kicker">${String(plan.code) === String(currentCode) ? 'الخطة الحالية' : 'خطة متاحة'}</span><h3>${escapeHtml(plan.name || plan.code)}</h3></div>${String(plan.code) === String(currentCode) ? '<span class="trainer-studio-plan-current">نشطة</span>' : ''}</div><p>${escapeHtml(plan.description || 'خطة تشغيل لمساحة المدرب.')}</p><label class="trainer-studio-plan-term">مدة الفوترة<select data-trainer-plan-term aria-label="مدة فوترة ${escapeHtml(plan.name || plan.code)}">${terms.map((term) => `<option value="${escapeHtml(term.code)}" data-price="${escapeHtml(term.price)}" data-currency="${escapeHtml(term.currency || plan.currency || 'EGP')}" ${term.code === selected.code ? 'selected' : ''}>${escapeHtml(BILLING_TERM_LABELS[term.code] || term.code)} — ${escapeHtml(formatMoney(term.price))}</option>`).join('')}</select></label><strong class="trainer-studio-plan-price" data-trainer-plan-price>${escapeHtml(formatMoney(selected.price))}<small> / ${escapeHtml(BILLING_TERM_LABELS[selected.code] || selected.code)}</small></strong><div class="trainer-studio-plan-limits"><span>العملاء <b>${escapeHtml(limitLabel(plan.maxClients))}</b></span><span>المستخدمون <b>${escapeHtml(limitLabel(plan.maxUsers))}</b></span><span>AI شهريًا <b>${escapeHtml(limitLabel(plan.maxAiGenerations))}</b></span><span>التخزين <b>${escapeHtml(limitLabel(plan.maxStorageMb))} MB</b></span></div><ul class="trainer-studio-plan-features">${features.map((feature) => `<li><span aria-hidden="true">✓</span>${escapeHtml(feature.description || feature.key)}</li>`).join('')}</ul></article>`;
+    }
+
+    function bindTrainerPlanTerms(host) {
+        host?.addEventListener('change', (event) => {
+            const select = event.target.closest('[data-trainer-plan-term]');
+            if (!select || !host.contains(select)) return;
+            const option = select.selectedOptions?.[0];
+            const price = select.closest('[data-trainer-plan-card]')?.querySelector('[data-trainer-plan-price]');
+            if (!option || !price) return;
+            price.innerHTML = `${escapeHtml(formatMoney(option.dataset.price, option.dataset.currency))}<small> / ${escapeHtml(BILLING_TERM_LABELS[option.value] || option.value)}</small>`;
+        });
+    }
     const icon = (name) => ({
         dashboard: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>',
         users: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3.5 20a5.5 5.5 0 0 1 11 0M16 11a3 3 0 1 0 0-6M16 14.5a5.5 5.5 0 0 1 4.5 5.5"/></svg>',
@@ -528,7 +554,30 @@
             const payload = await api('/api/saas/subscription');
             const tenant = payload.tenant || {};
             const subscription = payload.subscription || {};
-            dynamic.innerHTML = pageFrame('settings', `<section class="trainer-studio-settings-grid"><article class="trainer-studio-settings-card"><span class="trainer-panel-kicker">الهوية</span><h2>${escapeHtml(tenant.name || 'مساحة المدرب')}</h2><p>تفضيلات المظهر متاحة من زر الوضع في الشريط العلوي. بيانات الهوية لا يتم تعديلها من هذه الشاشة دون مسار إعدادات مدعوم.</p></article><article class="trainer-studio-settings-card"><span class="trainer-panel-kicker">الاشتراك</span><h2>${escapeHtml(subscription.plan?.name || 'الخطة الحالية')}</h2><p>الحالة: <strong>${escapeHtml(subscription.status || 'غير محددة')}</strong></p></article></section>`);
+            const currentPlan = subscription.plan ? {
+                ...subscription.plan,
+                ...(subscription.limitsSnapshot || {}),
+                features: subscription.featuresSnapshot || subscription.plan.features || {},
+                terms: [{
+                    code: subscription.termCodeSnapshot || 'monthly',
+                    price: subscription.priceSnapshot ?? subscription.plan.price,
+                    currency: subscription.currencySnapshot || subscription.plan.currency || 'EGP',
+                    isActive: true
+                }]
+            } : null;
+            const plans = Array.isArray(payload.plans) ? payload.plans : [];
+            const featureCatalog = Array.isArray(payload.featureCatalog) ? payload.featureCatalog : [];
+            const currentStatus = String(subscription.status || 'غير محددة');
+            const currentDates = subscription.startsAt || subscription.expiresAt
+                ? `<div class="trainer-studio-plan-dates"><span>البداية <b>${escapeHtml(formatDate(subscription.startsAt))}</b></span><span>الانتهاء <b>${escapeHtml(formatDate(subscription.expiresAt))}</b></span></div>`
+                : '';
+            const currentLimits = currentPlan ? `<div class="trainer-studio-plan-limits trainer-studio-plan-limits--current"><span>العملاء <b>${escapeHtml(limitLabel(currentPlan.maxClients))}</b></span><span>المستخدمون <b>${escapeHtml(limitLabel(currentPlan.maxUsers))}</b></span><span>AI شهريًا <b>${escapeHtml(limitLabel(currentPlan.maxAiGenerations))}</b></span><span>التخزين <b>${escapeHtml(limitLabel(currentPlan.maxStorageMb))} MB</b></span></div>` : '';
+            const currentFeatures = currentPlan ? featureCatalog.filter((feature) => currentPlan.features?.[feature.key] !== false).slice(0, 8).map((feature) => `<li><span aria-hidden="true">✓</span>${escapeHtml(feature.description || feature.key)}</li>`).join('') : '';
+            const availablePlansMarkup = plans.length
+                ? plans.map((plan) => trainerPlanCard(plan, currentPlan?.code, featureCatalog)).join('')
+                : '<div class="trainer-studio-empty"><span class="trainer-studio-empty-mark">—</span><strong>لا توجد خطط متاحة</strong><p>تواصل مع إدارة المنصة لمعرفة الخيارات المتاحة.</p></div>';
+            dynamic.innerHTML = pageFrame('settings', `<section class="trainer-studio-settings-grid"><article class="trainer-studio-settings-card"><span class="trainer-panel-kicker">الهوية</span><h2>${escapeHtml(tenant.name || 'مساحة المدرب')}</h2><p>تفضيلات المظهر متاحة من زر الوضع في الشريط العلوي. بيانات الهوية لا يتم تعديلها من هذه الشاشة دون مسار إعدادات مدعوم.</p></article><article class="trainer-studio-settings-card trainer-studio-current-plan-card"><div class="trainer-studio-settings-card-head"><div><span class="trainer-panel-kicker">الاشتراك الحالي</span><h2>${escapeHtml(currentPlan?.name || 'لا يوجد اشتراك')}</h2></div><span class="trainer-studio-plan-current">${escapeHtml(currentStatus)}</span></div>${currentPlan ? `<p>المدة: <strong>${escapeHtml(BILLING_TERM_LABELS[currentPlan.terms[0].code] || currentPlan.terms[0].code)}</strong> · السعر المحفوظ: <strong>${escapeHtml(formatMoney(currentPlan.terms[0].price))}</strong></p>${currentDates}${currentLimits}<ul class="trainer-studio-plan-features">${currentFeatures}</ul>` : '<p>لا يمكن تشغيل مساحة المدرب بدون اشتراك صالح. راجع إدارة المنصة.</p>'}</article></section><section class="trainer-studio-data-panel trainer-studio-available-plans" aria-labelledby="trainerAvailablePlansTitle"><div class="trainer-studio-data-panel-head"><div><span class="trainer-panel-kicker">منصة Logic Fit</span><h2 id="trainerAvailablePlansTitle">الخطط المتاحة لمساحة المدرب</h2><p>اختر مدة الفوترة لمقارنة السعر والمزايا. القيم المعروضة مصدرها إعدادات المنصة الحالية.</p></div><span class="trainer-studio-count-chip">${formatNumber(plans.length)} خطط</span></div><div class="trainer-studio-plan-grid" data-trainer-plan-grid>${availablePlansMarkup}</div></section>`);
+            bindTrainerPlanTerms(dynamic.querySelector('[data-trainer-plan-grid]'));
             dynamic.hidden = false;
         } catch (error) { dynamic.innerHTML = pageFrame('settings', errorState(error.message)); }
     }

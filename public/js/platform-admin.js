@@ -717,19 +717,21 @@
                 const compatible = Array.isArray(plan.compatibleTenantTypes) && plan.compatibleTenantTypes.length
                     ? catalog.filter((feature) => feature.tenantTypes?.some((type) => plan.compatibleTenantTypes.includes(type)))
                     : catalog;
-                return `<article class="plan-card ${plan.code === 'pro' && status === 'active' ? 'featured' : ''} ${status !== 'active' ? 'is-inactive' : ''}">
+                return `<article class="plan-card ${status !== 'active' ? 'is-inactive' : ''}">
                     <div class="card-heading"><div><span class="eyebrow">${escapeHtml(plan.code)}</span><h3>${escapeHtml(plan.name)}</h3></div>${statusPill(status)}</div>
                     <p>${escapeHtml(plan.description || 'SaaS plan')}</p>
-                    <div class="plan-price">${escapeHtml(formatMoney(plan.price, plan.currency))}<small> / ${escapeHtml(plan.billingPeriod === 'yearly' ? 'year' : 'month')}</small></div>
+                    <div class="plan-price">${escapeHtml(formatMoney(plan.price, plan.currency))}<small> / monthly baseline</small></div>
+                    <div class="plan-terms-grid">${planTermsMarkup(plan)}</div>
+                    <div class="plan-availability">${plan.availableForNewSubscriptions === false ? '<span class="status-pill archived">Legacy — not for new subscriptions</span>' : '<span class="status-pill active">Available for new subscriptions</span>'}</div>
                     <div class="plan-limits"><span>Members <b>${escapeHtml(plan.maxMembers ?? '∞')}</b></span><span>Clients <b>${escapeHtml(plan.maxClients ?? '∞')}</b></span><span>Branches <b>${escapeHtml(plan.maxBranches ?? '∞')}</b></span><span>Users <b>${escapeHtml(plan.maxUsers ?? '∞')}</b></span><span>AI <b>${escapeHtml(plan.maxAiGenerations ?? '∞')}</b></span><span>Storage <b>${escapeHtml(plan.maxStorageMb == null ? '∞' : `${plan.maxStorageMb} MB`)}</b></span></div>
                     <div class="plan-features">${compatible.map((feature) => `<span class="feature-chip ${plan.features?.[feature.key] === false ? 'off' : ''}" title="${escapeHtml(feature.description)}">${plan.features?.[feature.key] === false ? '×' : '✓'} ${escapeHtml(feature.key)}</span>`).join('')}</div>
-                    <div class="plan-card-actions"><button class="platform-btn ghost plan-edit" type="button" data-plan-edit="${plan.id}">Edit</button><button class="platform-btn ${status === 'active' ? 'danger' : 'ghost'} plan-status" type="button" data-plan-status="${plan.id}" data-next-status="${statusAction}" ${status === 'active' && activeCount <= 1 ? 'disabled title="Keep one active plan"' : ''}>${status === 'active' ? 'Disable' : 'Activate'}</button><button class="platform-btn danger plan-delete" type="button" data-plan-delete="${plan.id}" ${status === 'archived' ? 'disabled' : ''}>Archive</button></div>
+                    <div class="plan-card-actions"><button class="platform-btn ghost plan-edit" type="button" data-plan-edit="${plan.id}">Edit</button><button class="platform-btn ${status === 'active' ? 'danger' : 'ghost'} plan-status" type="button" data-plan-status="${plan.id}" data-next-status="${statusAction}" ${status === 'active' && activeCount <= 1 ? 'disabled title="Keep one active plan"' : ''}>${status === 'active' ? 'Disable' : 'Activate'}</button><button class="platform-btn danger plan-delete" type="button" data-plan-delete="${plan.id}" ${status === 'archived' || plan.availableForNewSubscriptions === false ? 'disabled title="Legacy plan is protected"' : ''}>Archive</button></div>
                 </article>`;
             }).join('') : '<div class="empty-inline">No plans.</div>';
             return;
         }
         const featureNames = { intelligence: 'الذكاء التشغيلي', coaching: 'التدريب والتغذية', store: 'المتجر', reports: 'التقارير', portal: 'بوابة المشترك', prioritySupport: 'دعم بأولوية' };
-        $('#plansGrid').innerHTML = state.plans.length ? state.plans.map((plan) => `<article class="plan-card ${plan.code === 'pro' && plan.isActive ? 'featured' : ''} ${plan.isActive ? '' : 'is-inactive'}"><div class="card-heading"><div><span class="eyebrow">${escapeHtml(plan.code)}</span><h3>${escapeHtml(plan.name)}</h3></div>${plan.isActive ? statusPill('active') : statusPill('archived')}</div><p>${escapeHtml(plan.description || 'باقة SaaS لمنصة الجيم.')}</p><div class="plan-price">${escapeHtml(formatMoney(plan.price, plan.currency))}<small> / ${escapeHtml(plan.billingPeriod === 'yearly' ? 'سنة' : 'شهر')}</small></div><div class="plan-limits"><span>المشتركون <b>${escapeHtml(plan.maxMembers ?? '∞')}</b></span><span>المستخدمون <b>${escapeHtml(plan.maxUsers ?? '∞')}</b></span><span>AI شهريًا <b>${escapeHtml(plan.maxAiGenerations ?? '∞')}</b></span><span>التخزين <b>${escapeHtml(plan.maxStorageMb ? `${plan.maxStorageMb} MB` : '∞')}</b></span></div><div class="plan-features">${Object.entries(featureNames).map(([key,label]) => `<span class="feature-chip ${plan.features?.[key] === false ? 'off' : ''}">${plan.features?.[key] === false ? '×' : '✓'} ${label}</span>`).join('')}</div><div class="plan-card-actions"><button class="platform-btn ghost plan-edit" type="button" data-plan-edit="${plan.id}">تعديل الباقة</button><button class="platform-btn danger plan-delete" type="button" data-plan-delete="${plan.id}" ${plan.isActive && state.plans.filter((item) => item.isActive).length <= 1 ? 'disabled title="يجب إبقاء باقة مفعّلة"' : ''}>حذف</button></div></article>`).join('') : '<div class="empty-inline">لا توجد باقات.</div>';
+        $('#plansGrid').innerHTML = state.plans.length ? state.plans.map((plan) => `<article class="plan-card ${plan.isActive ? '' : 'is-inactive'}"><div class="card-heading"><div><span class="eyebrow">${escapeHtml(plan.code)}</span><h3>${escapeHtml(plan.name)}</h3></div>${plan.isActive ? statusPill('active') : statusPill('archived')}</div><p>${escapeHtml(plan.description || 'باقة SaaS لمنصة الجيم.')}</p><div class="plan-price">${escapeHtml(formatMoney(plan.price, plan.currency))}<small> / ${escapeHtml(plan.billingPeriod === 'yearly' ? 'سنة' : 'شهر')}</small></div><div class="plan-limits"><span>المشتركون <b>${escapeHtml(plan.maxMembers ?? '∞')}</b></span><span>المستخدمون <b>${escapeHtml(plan.maxUsers ?? '∞')}</b></span><span>AI شهريًا <b>${escapeHtml(plan.maxAiGenerations ?? '∞')}</b></span><span>التخزين <b>${escapeHtml(plan.maxStorageMb ? `${plan.maxStorageMb} MB` : '∞')}</b></span></div><div class="plan-features">${Object.entries(featureNames).map(([key,label]) => `<span class="feature-chip ${plan.features?.[key] === false ? 'off' : ''}">${plan.features?.[key] === false ? '×' : '✓'} ${label}</span>`).join('')}</div><div class="plan-card-actions"><button class="platform-btn ghost plan-edit" type="button" data-plan-edit="${plan.id}">تعديل الباقة</button><button class="platform-btn danger plan-delete" type="button" data-plan-delete="${plan.id}" ${plan.isActive && state.plans.filter((item) => item.isActive).length <= 1 ? 'disabled title="يجب إبقاء باقة مفعّلة"' : ''}>حذف</button></div></article>`).join('') : '<div class="empty-inline">لا توجد باقات.</div>';
     }
 
     async function loadAudit() {
@@ -737,12 +739,12 @@
     }
 
     function planOptions(selected = '') {
-        return state.plans.filter((plan) => plan.isActive || String(plan.id) === String(selected)).map((plan) => `<option value="${plan.id}" ${String(plan.id) === String(selected) ? 'selected' : ''}>${escapeHtml(plan.name)} — ${escapeHtml(formatMoney(plan.price, plan.currency))}</option>`).join('');
+        return state.plans.filter((plan) => (plan.isActive && plan.availableForNewSubscriptions !== false) || String(plan.id) === String(selected)).map((plan) => { const term = (plan.terms || []).find((item) => item.code === 'monthly') || plan.terms?.[0]; return `<option value="${plan.id}" ${String(plan.id) === String(selected) ? 'selected' : ''}>${escapeHtml(plan.name)} — ${escapeHtml(formatMoney(term?.price ?? plan.price, term?.currency || plan.currency))}</option>`; }).join('');
     }
 
     function trialPlanOptions(selected = '') {
-        const plans = state.plans.filter((plan) => plan.isActive);
-        return plans.map((plan) => `<option value="${escapeHtml(plan.code)}" ${String(plan.code) === String(selected) ? 'selected' : ''}>${escapeHtml(plan.name)} — ${escapeHtml(formatMoney(plan.price, plan.currency))}</option>`).join('');
+        const plans = state.plans.filter((plan) => plan.isActive && plan.availableForNewSubscriptions !== false);
+        return plans.map((plan) => { const term = (plan.terms || []).find((item) => item.code === 'monthly') || plan.terms?.[0]; return `<option value="${escapeHtml(plan.code)}" ${String(plan.code) === String(selected) ? 'selected' : ''}>${escapeHtml(plan.name)} — ${escapeHtml(formatMoney(term?.price ?? plan.price, term?.currency || plan.currency))}</option>`; }).join('');
     }
 
     function planFeatureFields(features = {}) {
@@ -774,6 +776,28 @@
     }
 
     function numberOrNull(value) { return value === '' || value == null ? null : Number(value); }
+
+    const billingTermLabels = Object.freeze({ monthly: '1 Month', quarterly: '3 Months', semiannual: '6 Months', annual: '12 Months' });
+    function termValue(plan, code) {
+        const term = (plan?.terms || []).find((item) => item.code === code);
+        return term?.price ?? '';
+    }
+    function planTermsPayload(values) {
+        return Object.entries(billingTermLabels).filter(([code]) => values[`term_${code}`] !== '' && values[`term_${code}`] != null).map(([code]) => ({
+            code,
+            durationMonths: { monthly: 1, quarterly: 3, semiannual: 6, annual: 12 }[code],
+            price: Number(values[`term_${code}`]),
+            currency: values.currency || 'EGP',
+            isActive: true
+        }));
+    }
+    function planTermsMarkup(plan) {
+        const terms = Array.isArray(plan?.terms) ? plan.terms : [];
+        return Object.entries(billingTermLabels).map(([code, label]) => {
+            const term = terms.find((item) => item.code === code);
+            return `<span class="plan-term"><small>${label}</small><strong>${escapeHtml(term ? formatMoney(term.price, term.currency || plan.currency) : 'Not configured')}</strong></span>`;
+        }).join('');
+    }
 
     function planFeaturePayload(values) {
         const keys = (state.featureCatalog || []).map((feature) => feature.key);
@@ -836,6 +860,11 @@
             const plan = type === 'plan-edit' ? (state.plans.find((item) => String(item.id) === String(payload.planId)) || {}) : {};
             title = type === 'plan-edit' ? `تعديل باقة ${plan.name || ''}` : 'إضافة باقة جديدة';
             body = `<div class="dialog-grid">${type === 'plan-create' ? dialogField('معرف الباقة','code','text','','pattern="[a-z0-9]+(?:-[a-z0-9]+)*" minlength="2" maxlength="40" required') : dialogField('معرف الباقة','code','text',plan.code || '','readonly')}${dialogField('اسم الباقة','name','text',plan.name || '','maxlength="120" required')}${dialogField('السعر','price','number',plan.price ?? 0,'min="0" step="0.01" required')}${dialogSelect('الفترة','billingPeriod',`<option value="monthly" ${plan.billingPeriod === 'monthly' || !plan.billingPeriod ? 'selected' : ''}>شهري</option><option value="yearly" ${plan.billingPeriod === 'yearly' ? 'selected' : ''}>سنوي</option>`)}${dialogField('العملة','currency','text',plan.currency || 'EGP','pattern="[A-Za-z]{3}" minlength="3" maxlength="3" required')}${dialogField('ترتيب الظهور','sortOrder','number',plan.sortOrder ?? 0,'min="0" step="1" required')}${dialogField('حد المشتركين','maxMembers','number',plan.maxMembers ?? '')}${dialogField('حد العملاء','maxClients','number',plan.maxClients ?? '')}${dialogField('حد الفروع','maxBranches','number',plan.maxBranches ?? '')}${dialogField('حد المستخدمين','maxUsers','number',plan.maxUsers ?? '')}${dialogField('حد AI الشهري','maxAiGenerations','number',plan.maxAiGenerations ?? '')}${dialogField('التخزين MB','maxStorageMb','number',plan.maxStorageMb ?? '')}</div>${dialogTextarea('وصف الباقة','description',plan.description || '','maxlength="500" rows="3"')}${planCompatibilityFields(plan.compatibleTenantTypes || ['gym'])}${planFeatureFields(plan.features || {})}<label class="dialog-check"><input name="isActive" type="checkbox" ${plan.isActive !== false ? 'checked' : ''}> الباقة مفعلة للاشتراكات الجديدة</label>${dialogField(type === 'plan-edit' ? 'سبب تعديل الباقة' : 'سبب إنشاء الباقة', 'reason', 'text', '', 'required')}`;
+            // The commercial catalog uses four independently priced terms.
+            // Keep the legacy fields above for backward-compatible payloads,
+            // but make the visible editor term-first and server validated.
+            const termFields = Object.entries(billingTermLabels).map(([code, label]) => dialogField(label, `term_${code}`, 'number', termValue(plan, code), 'min="0" step="0.01"' + (plan.availableForNewSubscriptions !== false || termValue(plan, code) !== '' ? ' required' : ''))).join('');
+            body = `<div class="dialog-grid">${type === 'plan-create' ? dialogField('Plan identifier','code','text','','pattern="[a-z0-9]+(?:-[a-z0-9]+)*" minlength="2" maxlength="40" required') : dialogField('Plan identifier','code','text',plan.code || '','readonly')}${dialogField('Plan name','name','text',plan.name || '','maxlength="120" required')}${dialogField('Currency','currency','text',plan.currency || 'EGP','pattern="[A-Za-z]{3}" minlength="3" maxlength="3" required')}${dialogField('Display order','sortOrder','number',plan.sortOrder ?? 0,'min="0" step="1" required')}${dialogField('Max members','maxMembers','number',plan.maxMembers ?? '')}${dialogField('Max clients','maxClients','number',plan.maxClients ?? '')}${dialogField('Max branches','maxBranches','number',plan.maxBranches ?? '')}${dialogField('Max users','maxUsers','number',plan.maxUsers ?? '')}${dialogField('Max AI generations','maxAiGenerations','number',plan.maxAiGenerations ?? '')}${dialogField('Storage MB','maxStorageMb','number',plan.maxStorageMb ?? '')}${termFields}</div>${dialogTextarea('Plan description','description',plan.description || '','maxlength="500" rows="3"')}${planCompatibilityFields(plan.compatibleTenantTypes || ['gym'])}${planFeatureFields(plan.features || {})}<label class="dialog-check"><input name="isActive" type="checkbox" ${plan.isActive !== false ? 'checked' : ''}> Plan is active</label><label class="dialog-check"><input name="availableForNewSubscriptions" type="checkbox" ${plan.availableForNewSubscriptions !== false ? 'checked' : ''}> Available for new subscriptions</label>${dialogField(type === 'plan-edit' ? 'Reason for plan update' : 'Reason for plan creation', 'reason', 'text', '', 'required')}`;
         } else if (type === 'plan-status') {
             const plan = state.plans.find((item) => String(item.id) === String(payload.planId)) || {};
             const nextStatus = payload.nextStatus || 'active';
@@ -1012,12 +1041,12 @@
             } else if (action === 'plan-create') {
                 const features = planFeaturePayload(values);
                 const compatibleTenantTypes = ['gym', 'independent_trainer'].filter((type) => values[`compatibleTenantType_${type}`]);
-                await api('/api/platform-admin/plans', { method: 'POST', body: JSON.stringify({ code: values.code, name: values.name, description: values.description, price: values.price, currency: values.currency, billingPeriod: values.billingPeriod, sortOrder: values.sortOrder, maxMembers: numberOrNull(values.maxMembers), maxClients: numberOrNull(values.maxClients), maxBranches: numberOrNull(values.maxBranches), maxUsers: numberOrNull(values.maxUsers), maxAiGenerations: numberOrNull(values.maxAiGenerations), maxStorageMb: numberOrNull(values.maxStorageMb), isActive: values.isActive, features, compatibleTenantTypes, reason: values.reason }) });
+                await api('/api/platform-admin/plans', { method: 'POST', body: JSON.stringify({ code: values.code, name: values.name, description: values.description, price: Number(values.term_monthly), currency: values.currency, billingPeriod: 'monthly', terms: planTermsPayload(values), sortOrder: values.sortOrder, maxMembers: numberOrNull(values.maxMembers), maxClients: numberOrNull(values.maxClients), maxBranches: numberOrNull(values.maxBranches), maxUsers: numberOrNull(values.maxUsers), maxAiGenerations: numberOrNull(values.maxAiGenerations), maxStorageMb: numberOrNull(values.maxStorageMb), isActive: values.isActive, availableForNewSubscriptions: values.availableForNewSubscriptions, features, compatibleTenantTypes, reason: values.reason }) });
                 showToast('تم إنشاء الباقة بنجاح.'); dialog.close(); await loadPlans();
             } else if (action === 'plan-edit') {
                 const features = planFeaturePayload(values);
                 const compatibleTenantTypes = ['gym', 'independent_trainer'].filter((type) => values[`compatibleTenantType_${type}`]);
-                await api(`/api/platform-admin/plans/${payload.planId}`, { method: 'PATCH', body: JSON.stringify({ name: values.name, description: values.description, price: values.price, currency: values.currency, billingPeriod: values.billingPeriod, sortOrder: values.sortOrder, maxMembers: numberOrNull(values.maxMembers), maxClients: numberOrNull(values.maxClients), maxBranches: numberOrNull(values.maxBranches), maxUsers: numberOrNull(values.maxUsers), maxAiGenerations: numberOrNull(values.maxAiGenerations), maxStorageMb: numberOrNull(values.maxStorageMb), isActive: values.isActive, features, compatibleTenantTypes, reason: values.reason }) });
+                await api(`/api/platform-admin/plans/${payload.planId}`, { method: 'PATCH', body: JSON.stringify({ name: values.name, description: values.description, price: Number(values.term_monthly || 0), currency: values.currency, billingPeriod: 'monthly', terms: planTermsPayload(values), sortOrder: values.sortOrder, maxMembers: numberOrNull(values.maxMembers), maxClients: numberOrNull(values.maxClients), maxBranches: numberOrNull(values.maxBranches), maxUsers: numberOrNull(values.maxUsers), maxAiGenerations: numberOrNull(values.maxAiGenerations), maxStorageMb: numberOrNull(values.maxStorageMb), isActive: values.isActive, availableForNewSubscriptions: values.availableForNewSubscriptions, features, compatibleTenantTypes, reason: values.reason }) });
                 showToast('تم تحديث الباقة.'); dialog.close(); await loadPlans();
             } else if (action === 'plan-status') {
                 await api(`/api/platform-admin/plans/${payload.planId}/status`, { method: 'PATCH', body: JSON.stringify({ status: values.status, reason: values.reason }) });

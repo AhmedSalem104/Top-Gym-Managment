@@ -72,9 +72,9 @@ async function findRoleById(id, tenantId = null) {
         .query("SELECT TOP (1) id, role FROM dbo.gym_users WHERE id=@id AND (@tenantId IS NULL OR EXISTS (SELECT 1 FROM dbo.gym_user_tenants ut WHERE ut.user_id=id AND ut.tenant_id=@tenantId AND ut.status='active')); ");
 }
 
-async function createAssistant({ fullName, email, passwordHash }) {
-    const pool = await getPool();
-    return pool.request()
+async function createAssistant({ fullName, email, passwordHash }, executor = null) {
+    const database = executor || await getPool();
+    return database.request()
         .input('fullName', sql.NVarChar(120), fullName)
         .input('email', sql.NVarChar(254), email)
         .input('emailNormalized', sql.NVarChar(254), email)

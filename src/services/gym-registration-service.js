@@ -293,7 +293,7 @@ async function getCatalog(commercialService, tenantType = TENANT_TYPES.GYM) {
 function normalizeSelection(catalog, body = {}) {
     const planCode = text(body.planCode || body.plan, '', 40).toLowerCase();
     const termCode = text(body.termCode || body.term, '', 20).toLowerCase();
-    const plan = catalog.plans.find((item) => item.code === planCode && item.isActive);
+    const plan = catalog.plans.find((item) => item.code === planCode && item.isActive && item.availableForNewSubscriptions !== false);
     if (!plan) throw registrationError('The selected plan is not available.', 409, 'REGISTRATION_PLAN_UNAVAILABLE', 'planCode');
     const term = plan.terms.find((item) => item.code === termCode && item.isActive);
     if (!term) throw registrationError('The selected subscription term is not available.', 409, 'REGISTRATION_TERM_UNAVAILABLE', 'termCode');

@@ -338,15 +338,15 @@ async function ensureBootstrapTenant() {
     return tenant;
 }
 
-async function assignUserToTenant(userId, tenantId = currentTenantId({ required: true }), role = null) {
-    await ensureTenantTables();
+async function assignUserToTenant(userId, tenantId = currentTenantId({ required: true }), role = null, { executor = null } = {}) {
+    if (!executor) await ensureTenantTables();
     const normalizedUserId = Number(userId);
     const normalizedTenantId = Number(tenantId);
     if (!Number.isInteger(normalizedUserId) || normalizedUserId <= 0 || !Number.isInteger(normalizedTenantId) || normalizedTenantId <= 0) {
         throw tenantError('Invalid user or tenant membership.', 400, 'INVALID_TENANT_MEMBERSHIP');
     }
-    const pool = await getPool();
-    await pool.request()
+    const database = executor || await getPool();
+    await database.request()
         .input('userId', sql.Int, normalizedUserId)
         .input('tenantId', sql.Int, normalizedTenantId)
         .input('role', sql.VarChar(20), role || null)

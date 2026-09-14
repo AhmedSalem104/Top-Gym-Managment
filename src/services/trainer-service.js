@@ -198,6 +198,8 @@ async function createClient(body = {}) {
         notes: boundedText(body.notes, 'الملاحظات', 1000),
         primaryGoal: boundedText(body.primaryGoal, 'الهدف الأساسي', 200),
         profileStatus: profileStatus(body.status)
+    }, {
+        beforeInsert: (transaction) => saasService.assertResourceLimitInTransaction(transaction, tenant.id, 'clients', { access: entitlements })
     });
     return getClient(client.id);
 }

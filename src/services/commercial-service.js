@@ -148,6 +148,7 @@ function planCatalogFromRows(rows) {
                 maxStorageMb: row.max_storage_mb == null ? null : Number(row.max_storage_mb),
                 features: parseFeatures(row.features_json),
                 isActive: Boolean(row.plan_active),
+                availableForNewSubscriptions: row.plan_available_for_new_subscriptions == null ? true : Boolean(row.plan_available_for_new_subscriptions),
                 sortOrder: Number(row.plan_sort_order || 0),
                 terms: []
             });
@@ -197,12 +198,12 @@ async function getCommercialPlanCatalog({ readOnly = false, tenantType = null } 
     const result = await request.query(`
         SELECT p.id AS plan_id,p.code AS plan_code,p.name AS plan_name,p.description AS plan_description,
                p.currency AS plan_currency,p.max_members,p.max_users,p.max_ai_generations,p.max_storage_mb,
-               p.features_json,p.is_active AS plan_active,p.sort_order AS plan_sort_order,
+               p.features_json,p.is_active AS plan_active,p.available_for_new_subscriptions AS plan_available_for_new_subscriptions,p.sort_order AS plan_sort_order,
                t.id AS term_id,t.term_code,t.duration_months,t.price AS term_price,t.currency AS term_currency,
                t.discount_amount,t.discount_percent,t.is_active AS term_active,t.sort_order AS term_sort_order
         FROM dbo.saas_plans p
         LEFT JOIN dbo.saas_plan_terms t ON t.plan_id=p.id AND t.is_active=1
-        WHERE p.is_active=1${compatibilityFilter}
+        WHERE p.is_active=1 AND p.available_for_new_subscriptions=1${compatibilityFilter}
         ORDER BY p.sort_order,p.id,t.sort_order,t.id;
     `);
     return planCatalogFromRows(result.recordset || []);

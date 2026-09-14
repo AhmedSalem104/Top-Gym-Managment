@@ -1,11 +1,14 @@
 'use strict';
 
 const { getPool, sql } = require('../database');
+const { withTransaction } = require('../database/transaction');
 const { addDays, formatDateOnly, todayInTimeZone, toUtcDate } = require('../utils/date');
 const memberService = require('./member-service');
 const coachingService = require('./coaching-service');
 const brandingService = require('./branding-service');
+const saasService = require('./saas-service');
 const { safeErrorCode } = require('../utils/error-response');
+const { currentTenantId } = require('../tenancy/tenant-context');
 
 function appError(message, statusCode = 400, code = null) {
     const error = new Error(message);
@@ -95,6 +98,8 @@ IF NOT EXISTS (
 
 let intelligenceTablesPromise;
 
+const AI_GENERATION_ACTIONS = Object.freeze(['question', 'workout_generate', 'diet_generate', 'refine']);
+
 async function ensureIntelligenceTables() {
     if (!intelligenceTablesPromise) {
         intelligenceTablesPromise = (async () => {
@@ -127,6 +132,47 @@ async function logGeneration({ actorUserId = null, memberId = null, feature, act
         // fail because its optional audit table is temporarily unavailable.
         console.warn('[intelligence-audit] not recorded:', safeErrorCode(error, 'audit_recording_failed'));
     }
+}
+
+async function reserveGeneration({ tenantId, actorUserId = null, memberId = null, feature, action, instruction = '' }) {
+    if (!tenantId) return null;
+    if (!AI_GENERATION_ACTIONS.includes(String(action))) {
+        throw appError('The requested AI operation is not a billable generation action.', 500, 'AI_GENERATION_ACTION_INVALID');
+    }
+    await ensureIntelligenceTables();
+    return withTransaction(async (transaction) => {
+        await saasService.assertResourceLimitInTransaction(transaction, tenantId, 'aiGenerations');
+        const result = await transaction.request()
+            .input('actorUserId', sql.Int, actorUserId ? ensureId(actorUserId, 'Ù…Ø¹Ø±Ù‘Ù Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù…') : null)
+            .input('memberId', sql.Int, memberId ? ensureId(memberId, 'Ù…Ø¹Ø±Ù‘Ù Ø§Ù„Ø¹Ù…ÙŠÙ„') : null)
+            .input('feature', sql.VarChar(40), text(feature, 'unknown', 40))
+            .input('action', sql.VarChar(40), text(action, 'run', 40))
+            .input('instruction', sql.NVarChar(1200), text(instruction, '', 1200) || null)
+            .query(`INSERT INTO dbo.gym_ai_generation_log
+                        (actor_user_id, member_id, feature, action, instruction, result_summary)
+                    OUTPUT INSERTED.id
+                    VALUES (@actorUserId, @memberId, @feature, @action, @instruction, NULL);`);
+        return Number(result.recordset[0]?.id || 0) || null;
+    });
+}
+
+async function completeGeneration(reservationId, resultSummary = '') {
+    if (!reservationId) return;
+    try {
+        const pool = await getPool();
+        await pool.request()
+            .input('id', sql.BigInt, Number(reservationId))
+            .input('resultSummary', sql.NVarChar(2000), text(resultSummary, '', 2000) || null)
+            .query('UPDATE dbo.gym_ai_generation_log SET result_summary=@resultSummary WHERE id=@id;');
+    } catch (error) {
+        console.warn('[intelligence-audit] reservation completion not recorded:', safeErrorCode(error, 'audit_completion_failed'));
+    }
+}
+
+async function recordGeneration({ tenantId, actorUserId = null, memberId = null, feature, action, instruction = '', resultSummary = '' }) {
+    const reservationId = await reserveGeneration({ tenantId, actorUserId, memberId, feature, action, instruction });
+    if (reservationId) return completeGeneration(reservationId, resultSummary);
+    return logGeneration({ actorUserId, memberId, feature, action, instruction, resultSummary });
 }
 
 function memberPublicContext(member, overview) {
@@ -384,6 +430,8 @@ function formatMemberList(items, empty = 'لا توجد نتائج مطابقة.
 
 async function answerQuestion(question, { actorUserId = null } = {}) {
     const asked = text(question, '', 500);
+    const tenantId = currentTenantId();
+    const generationReservation = await reserveGeneration({ tenantId, actorUserId, feature: 'manager', action: 'question', instruction: asked });
     if (!asked) throw appError('اكتب سؤالك للمساعد الذكي أولًا.', 400, 'QUESTION_REQUIRED');
     const normalized = normalizeSearch(asked);
     const dashboard = await memberService.getDashboard();
@@ -410,7 +458,8 @@ async function answerQuestion(question, { actorUserId = null } = {}) {
     } else {
         answer = 'أقدر أساعدك في الاشتراكات القريبة من الانتهاء، الأعضاء المعرضين للتوقف، أو ملخص التدريب والتغذية. جرّب سؤالًا مثل: «اعرض الأعضاء المعرضين للتوقف». ';
     }
-    await logGeneration({ actorUserId, feature: 'manager', action: 'question', instruction: asked, resultSummary: answer.slice(0, 1800) });
+    if (generationReservation) await completeGeneration(generationReservation, answer.slice(0, 1800));
+    else await logGeneration({ actorUserId, feature: 'manager', action: 'question', instruction: asked, resultSummary: answer.slice(0, 1800) });
     return { question: asked, answer, data, suggestions: ['اعرض الأعضاء المعرضين للتوقف', 'مين اشتراكه هينتهي قريب؟', 'اعمل ملخص حالة التدريب والتغذية'] };
 }
 
@@ -484,6 +533,8 @@ function workoutRepConfig(goal) {
 
 async function generateWorkoutSuggestion(body = {}, { actorUserId = null } = {}) {
     const memberId = ensureId(body.memberId ?? body.clientId, 'معرّف العميل');
+    const tenantId = currentTenantId();
+    const generationReservation = await reserveGeneration({ tenantId, actorUserId, memberId, feature: 'coach', action: 'workout_generate' });
     const { publicMember } = await getMemberContext(memberId);
     const catalog = await coachingService.getBuilderCatalog();
     if (!catalog.exercises?.length) throw appError('لا توجد تمارين في المكتبة لإنشاء الاقتراح.', 409, 'EXERCISE_LIBRARY_EMPTY');
@@ -542,7 +593,8 @@ async function generateWorkoutSuggestion(body = {}, { actorUserId = null } = {})
         warnings: ['هذا اقتراح تدريبي وليس تشخيصًا طبيًا. يجب مراجعة المدرب وأي قيود صحية قبل الاعتماد.'],
         requiresReview: true
     };
-    await logGeneration({ actorUserId, memberId, feature: 'coach', action: 'workout_generate', resultSummary: `${suggestion.name}; ${daysPerWeek} days` });
+    if (generationReservation) await completeGeneration(generationReservation, `${suggestion.name}; ${daysPerWeek} days`);
+    else await logGeneration({ actorUserId, memberId, feature: 'coach', action: 'workout_generate', resultSummary: `${suggestion.name}; ${daysPerWeek} days` });
     return response;
 }
 
@@ -604,6 +656,8 @@ function dietCalories({ weightKg, heightCm, age, gender, activity, goal, explici
 
 async function generateDietSuggestion(body = {}, { actorUserId = null } = {}) {
     const memberId = ensureId(body.memberId ?? body.clientId, 'معرّف العميل');
+    const tenantId = currentTenantId();
+    const generationReservation = await reserveGeneration({ tenantId, actorUserId, memberId, feature: 'nutrition', action: 'diet_generate' });
     const { publicMember } = await getMemberContext(memberId);
     const catalog = await coachingService.getBuilderCatalog();
     if (!catalog.foods?.length) throw appError('لا توجد أطعمة في المكتبة لإنشاء الاقتراح.', 409, 'FOOD_LIBRARY_EMPTY');
@@ -666,7 +720,8 @@ async function generateDietSuggestion(body = {}, { actorUserId = null } = {}) {
         warnings: ['هذه خطة غذائية إرشادية وليست تشخيصًا أو علاجًا طبيًا. راجع الحساسية والحالات الصحية مع مختص.'],
         requiresReview: true
     };
-    await logGeneration({ actorUserId, memberId, feature: 'nutrition', action: 'diet_generate', resultSummary: `${suggestion.name}; ${mealsPerDay} meals` });
+    if (generationReservation) await completeGeneration(generationReservation, `${suggestion.name}; ${mealsPerDay} meals`);
+    else await logGeneration({ actorUserId, memberId, feature: 'nutrition', action: 'diet_generate', resultSummary: `${suggestion.name}; ${mealsPerDay} meals` });
     return response;
 }
 
@@ -803,11 +858,14 @@ async function refineSuggestion(body = {}, { actorUserId = null } = {}) {
     const instruction = text(body.instruction, '', 500);
     if (!instruction) throw appError('اكتب التعديل المطلوب أولًا.', 400, 'INSTRUCTION_REQUIRED');
     const memberId = body.memberId ? ensureId(body.memberId, 'معرّف العميل') : ensureId(body.draft?.memberId, 'معرّف العميل');
+    const tenantId = currentTenantId();
+    const generationReservation = await reserveGeneration({ tenantId, actorUserId, memberId, feature: typeValue === 'workout' ? 'coach' : 'nutrition', action: 'refine', instruction });
     const catalog = await coachingService.getBuilderCatalog();
     const result = typeValue === 'workout'
         ? refineWorkoutDraft(body.draft, instruction, catalog)
         : refineDietDraft(body.draft, instruction, catalog);
-    await logGeneration({ actorUserId, memberId, feature: typeValue === 'workout' ? 'coach' : 'nutrition', action: 'refine', instruction, resultSummary: result.changes.join(' | ') });
+    if (generationReservation) await completeGeneration(generationReservation, result.changes.join(' | '));
+    else await logGeneration({ actorUserId, memberId, feature: typeValue === 'workout' ? 'coach' : 'nutrition', action: 'refine', instruction, resultSummary: result.changes.join(' | ') });
     return { type: typeValue, memberId, ...result, requiresReview: true };
 }
 

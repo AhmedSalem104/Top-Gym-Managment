@@ -77,7 +77,8 @@ function classifyMigration(migration, manifestEntry) {
     }
     const audit = auditMigrationText(migration.fileName, migration.source, {
         allowDataBackfill: manifestEntry.dataBackfill === true,
-        allowControlledTemplateUpdate: manifestEntry.controlledTemplateUpdate === true
+        allowControlledTemplateUpdate: manifestEntry.controlledTemplateUpdate === true,
+        allowControlledPlanConfiguration: manifestEntry.controlledPlanConfiguration === true
     });
     if (audit.status !== 'PASS') return { classification: 'REQUIRES_REVIEW', reason: 'static_sql_audit_failed', findings: audit.findings };
     if (manifestEntry.destructive === true || manifestEntry.requiresMaintenanceMode === true || manifestEntry.transactional !== true || manifestEntry.backwardCompatible !== true) {

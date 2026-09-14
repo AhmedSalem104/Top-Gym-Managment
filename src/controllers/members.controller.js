@@ -49,7 +49,8 @@ function createMembersController({ memberService, branchService }) {
                 branchId: request.body?.branchId,
                 sectionId: request.body?.sectionId,
                 actorUserId: request.auth?.id,
-                actorRole: request.auth?.role
+                actorRole: request.auth?.role,
+                access: request.saas?.entitlements || null
             }) });
         },
 

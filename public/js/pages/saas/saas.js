@@ -6,7 +6,7 @@
     const escapeHtml = (value) => String(value ?? '').replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[character]));
     const dateFormatter = new Intl.DateTimeFormat('ar-EG', { dateStyle: 'medium' });
     const numberFormatter = new Intl.NumberFormat('ar-EG');
-    const state = { billing: null, plans: [], requests: [], requestsPagination: {}, requestPage: 1, loaded: false, loading: false };
+    const state = { billing: null, plans: [], requests: [], requestsPagination: {}, requestPage: 1, loaded: false, loading: false, termSelections: {} };
 
     function notify(message, error = false, type = '') {
         if (typeof window.showToast === 'function') window.showToast(message, error, type || (error ? 'error' : 'success'));
@@ -22,6 +22,20 @@
     function statusLabel(status) { return { trial: 'فترة تجريبية', active: 'نشط', expired: 'منتهي', suspended: 'موقوف', cancelled: 'ملغى', pending: 'قيد المراجعة', approved: 'مقبول', rejected: 'مرفوض' }[String(status || '').toLowerCase()] || status || 'غير محدد'; }
     function statusMarkup(status, className = 'saas-status') { const value = String(status || '').toLowerCase(); return `<span class="${className}" data-status="${escapeHtml(value)}">${escapeHtml(statusLabel(value))}</span>`; }
     function limit(value) { return value == null ? 'غير محدود' : numberFormatter.format(value); }
+
+    const termLabels = Object.freeze({ monthly: '1 Month', quarterly: '3 Months', semiannual: '6 Months', annual: '12 Months' });
+    function planTerms(plan) {
+        return Array.isArray(plan?.terms) && plan.terms.length ? plan.terms.filter((term) => term.isActive !== false) : [{ code: plan?.billingPeriod === 'yearly' ? 'annual' : 'monthly', durationMonths: plan?.billingPeriod === 'yearly' ? 12 : 1, price: plan?.price || 0, currency: plan?.currency || 'EGP' }];
+    }
+    function selectedTerm(plan) {
+        const terms = planTerms(plan);
+        const selectedCode = state.termSelections[String(plan?.id)] || (terms.find((term) => term.code === 'monthly')?.code || terms[0]?.code);
+        return terms.find((term) => term.code === selectedCode) || terms[0];
+    }
+    function termSelectMarkup(plan) {
+        const selected = selectedTerm(plan)?.code;
+        return `<label class="saas-term-control"><span>Billing term</span><select data-saas-term-plan="${escapeHtml(plan.id)}" aria-label="Billing term for ${escapeHtml(plan.name)}">${planTerms(plan).map((term) => `<option value="${escapeHtml(term.code)}" ${term.code === selected ? 'selected' : ''}>${escapeHtml(termLabels[term.code] || term.code)} — ${escapeHtml(money(term.price, term.currency))}</option>`).join('')}</select></label>`;
+    }
 
     const featureLabels = Object.freeze({
         dashboard: 'لوحة التحكم', members: 'إدارة المشتركين', attendance: 'الحضور والانصراف',
@@ -39,7 +53,7 @@
         const catalog = state.billing?.featureCatalog || state.billing?.entitlements?.featureCatalog || [];
         const enabled = catalog.filter((feature) => plan.features?.[feature.key] !== false);
         if (!enabled.length) return '<li class="saas-plan-feature-empty">لا توجد مميزات إضافية مسجلة لهذه الباقة.</li>';
-        return enabled.map((feature) => `<li><span class="saas-plan-feature-check" aria-hidden="true">✓</span><span>${escapeHtml(featureLabels[feature.key] || feature.key)}</span></li>`).join('');
+        return enabled.map((feature) => `<li data-saas-feature-key="${escapeHtml(feature.key)}"><span class="saas-plan-feature-check" aria-hidden="true">✓</span><span>${escapeHtml(featureLabels[feature.key] || feature.key)}</span></li>`).join('');
     }
 
     function enhancePlanFeatureComparison(availablePlans, currentPlanId) {
@@ -100,13 +114,6 @@
     }
 
     function planIcon(plan) {
-        const name = String(plan?.name || '').toLowerCase();
-        if (name.includes('enterprise') || name.includes('مؤسس') || name.includes('احتراف')) {
-            return '<svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 2.2 5.1L20 9l-4 3.8 1.1 5.7L12 15.8 6.9 18.5 8 12.8 4 9l5.8-.9L12 3Z"/><path d="M8 21h8"/></svg>';
-        }
-        if (name.includes('pro') || name.includes('احتراف') || name.includes('متقدم')) {
-            return '<svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 1.7 5.3L19 10l-5.3 1.7L12 17l-1.7-5.3L5 10l5.3-1.7L12 3Z"/><path d="m19 16 .7 2.3L22 19l-2.3.7L19 22l-.7-2.3L16 19l2.3-.7L19 16Z"/></svg>';
-        }
         return '<svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 10-12h-7l0-8Z"/></svg>';
     }
 
@@ -152,7 +159,7 @@
             : activePlans;
         if (select) {
             const hasCurrentPlan = requestPlans.some((plan) => String(plan.id) === String(currentPlanId));
-            select.innerHTML = `<option value="">اختر الباقة المطلوبة</option>${requestPlans.map((plan) => `<option value="${plan.id}" ${String(plan.id) === String(currentPlanId) ? 'selected' : ''}>${escapeHtml(plan.name)} — ${money(plan.price, plan.currency)} / ${plan.billingPeriod === 'yearly' ? 'سنة' : 'شهر'}${String(plan.id) === String(currentPlanId) ? ' · الباقة الحالية' : ''}</option>`).join('')}`;
+            select.innerHTML = `<option value="">اختر الباقة المطلوبة</option>${requestPlans.map((plan) => { const term = selectedTerm(plan); return `<option value="${plan.id}" ${String(plan.id) === String(currentPlanId) ? 'selected' : ''}>${escapeHtml(plan.name)} — ${money(term.price, term.currency)} / ${escapeHtml(termLabels[term.code] || term.code)}${String(plan.id) === String(currentPlanId) ? ' · الباقة الحالية' : ''}</option>`; }).join('')}`;
             select.disabled = !requestPlans.length;
             select.value = hasCurrentPlan ? String(currentPlanId) : '';
         }
@@ -162,7 +169,8 @@
         host.innerHTML = availablePlans.map((plan) => {
             const isCurrent = String(plan.id) === String(currentPlanId);
             const isSelected = String(plan.id) === String(selectedId);
-            return `<article class="saas-plan-card ${isSelected ? 'is-selected' : ''} ${isCurrent ? 'is-current' : ''}" data-saas-plan-card="${plan.id}" ${isCurrent ? 'aria-current="true"' : ''}><div class="saas-plan-card-heading"><span class="saas-plan-card-icon">${planIcon(plan)}</span><div><h5>${escapeHtml(plan.name)}</h5><span class="saas-muted">${escapeHtml(plan.description || '')}</span></div></div><div class="saas-plan-price">${money(plan.price, plan.currency)} <small>/ ${plan.billingPeriod === 'yearly' ? 'سنة' : 'شهر'}</small></div><ul class="saas-plan-limits"><li><span>الأعضاء</span><strong>${limit(plan.maxMembers)}</strong></li><li><span>المستخدمون</span><strong>${limit(plan.maxUsers)}</strong></li><li><span>AI شهريًا</span><strong>${limit(plan.maxAiGenerations)}</strong></li><li><span>الفروع</span><strong>${limit(plan.maxBranches)}</strong></li><li><span>التخزين</span><strong>${limit(plan.maxStorageMb)} MB</strong></li></ul><div class="saas-plan-features"><span class="saas-plan-features-title">مميزات الباقة</span><ul>${planFeaturesMarkup(plan)}</ul></div><button class="btn ${isCurrent ? 'btn-current-plan' : 'btn-light'} btn-small" type="button" data-saas-select-plan="${plan.id}" ${isCurrent ? 'disabled aria-pressed="true"' : ''}>${isCurrent ? 'الباقة الحالية' : 'اختيار الباقة'}</button></article>`;
+            const term = selectedTerm(plan);
+            return `<article class="saas-plan-card ${isSelected ? 'is-selected' : ''} ${isCurrent ? 'is-current' : ''}" data-saas-plan-card="${plan.id}" ${isCurrent ? 'aria-current="true"' : ''}><div class="saas-plan-card-heading"><span class="saas-plan-card-icon">${planIcon(plan)}</span><div><h5>${escapeHtml(plan.name)}</h5><span class="saas-muted">${escapeHtml(plan.description || '')}</span></div></div>${termSelectMarkup(plan)}<div class="saas-plan-price">${money(term.price, term.currency)} <small>/ ${escapeHtml(termLabels[term.code] || term.code)}</small></div><ul class="saas-plan-limits"><li><span>الأعضاء</span><strong>${limit(plan.maxMembers)}</strong></li><li><span>العملاء</span><strong>${limit(plan.maxClients)}</strong></li><li><span>المستخدمون</span><strong>${limit(plan.maxUsers)}</strong></li><li><span>AI شهريًا</span><strong>${limit(plan.maxAiGenerations)}</strong></li><li><span>الفروع</span><strong>${limit(plan.maxBranches)}</strong></li><li><span>التخزين</span><strong>${limit(plan.maxStorageMb)} MB</strong></li></ul><div class="saas-plan-features"><span class="saas-plan-features-title">مميزات الباقة</span><ul>${planFeaturesMarkup(plan)}</ul></div><button class="btn ${isCurrent ? 'btn-current-plan' : 'btn-light'} btn-small" type="button" data-saas-select-plan="${plan.id}" ${isCurrent ? 'disabled aria-pressed="true"' : ''}>${isCurrent ? 'الباقة الحالية' : 'اختيار الباقة'}</button></article>`;
         }).join('');
         if (select) select.value = selectedId == null ? '' : String(selectedId);
     }
@@ -290,10 +298,17 @@
         } finally { state.loading = false; }
     }
 
-    function selectPlan(planId) {
+    function selectPlan(planId, termCode = null) {
         const select = $('saasPlanSelect');
         if (select) select.value = String(planId);
+        const plan = state.plans.find((item) => String(item.id) === String(planId));
+        if (plan && termCode) state.termSelections[String(plan.id)] = termCode;
         document.querySelectorAll('[data-saas-plan-card]').forEach((card) => card.classList.toggle('is-selected', card.dataset.saasPlanCard === String(planId)));
+        const termSelect = $('saasTermSelect');
+        if (termSelect && plan) {
+            termSelect.innerHTML = planTerms(plan).map((term) => `<option value="${escapeHtml(term.code)}">${escapeHtml(termLabels[term.code] || term.code)} — ${escapeHtml(money(term.price, term.currency))}</option>`).join('');
+            termSelect.value = selectedTerm(plan)?.code || '';
+        }
     }
 
     async function uploadProof(requestId, file) {
@@ -313,6 +328,8 @@
         const planId = Number($('saasPlanSelect')?.value || 0);
         const file = $('saasPaymentProof')?.files?.[0];
         const notes = $('saasRequestNotes')?.value || '';
+        const selectedPlan = state.plans.find((plan) => String(plan.id) === String(planId));
+        const termCode = selectedPlan ? (selectedTerm(selectedPlan)?.code || 'monthly') : 'monthly';
         const pending = state.requests.find((request) => request.status === 'pending');
         if (!planId) return showMessage('اختر باقة أولًا.', true);
         if (!file) return showMessage('ارفع إثبات الدفع قبل إرسال الطلب.', true);
@@ -323,7 +340,7 @@
         try {
             let request = pending;
             if (!request) {
-                const response = await window.topGymAuth.api('/api/saas/subscription-requests', { method: 'POST', body: JSON.stringify({ planId, notes }) });
+                const response = await window.topGymAuth.api('/api/saas/subscription-requests', { method: 'POST', body: JSON.stringify({ planId, termCode, notes }) });
                 request = response.request;
             }
             await uploadProof(request.id, file);
@@ -340,11 +357,25 @@
     function bind() {
         $('saasSubscriptionForm')?.addEventListener('submit', submit);
         $('saasPlanSelect')?.addEventListener('change', (event) => selectPlan(event.target.value));
+        $('saasTermSelect')?.addEventListener('change', (event) => {
+            const planId = $('saasPlanSelect')?.value;
+            if (!planId) return;
+            state.termSelections[String(planId)] = event.target.value;
+            const plan = state.plans.find((item) => String(item.id) === String(planId));
+            if (plan) renderPlans(state.plans);
+        });
         setupPaymentProofUpload();
         setupRequestDialog();
         $('saasPlansList')?.addEventListener('click', (event) => {
             const button = event.target.closest('[data-saas-select-plan]');
             if (button) selectPlan(button.dataset.saasSelectPlan);
+        });
+        $('saasPlansList')?.addEventListener('change', (event) => {
+            const term = event.target.closest('[data-saas-term-plan]');
+            if (!term) return;
+            state.termSelections[String(term.dataset.saasTermPlan)] = term.value;
+            selectPlan(term.dataset.saasTermPlan, term.value);
+            renderPlans(state.plans);
         });
         document.addEventListener('click', (event) => {
             const button = event.target.closest('[data-saas-request-page]');

@@ -59,6 +59,19 @@
       "dataBackfill": false,
       "controlledTemplateUpdate": true,
       "rollback": "verified-platform-template-backup-restore"
+    },
+    "036-saas-plans-phase2.sql": {
+      "version": "036",
+      "checksum": "83089c1e466fcd3a33b933059882775da9e14b2f6ad8001b4e1aacc5734327a8",
+      "transactional": true,
+      "backwardCompatible": true,
+      "destructive": false,
+      "requiresBackup": true,
+      "requiresMaintenanceMode": false,
+      "rlsImpact": false,
+      "dataBackfill": false,
+      "controlledPlanConfiguration": true,
+      "rollback": "forward-fix-or-database-recovery"
     }
   }
 }
