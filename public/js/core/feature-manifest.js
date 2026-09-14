@@ -8,7 +8,7 @@
     // responsible for ordering, deduplication and failure handling.
     const features = {
         dashboard: { dependencies: [], styles: [], scripts: [] },
-        'dashboard-enhancements': { dependencies: ['finance', 'phone-inputs', 'whatsapp-templates'], styles: [], scripts: ['/js/day-passes.js?v=8', '/js/alerts-enhancements.js?v=10'] },
+        'dashboard-enhancements': { dependencies: ['finance', 'phone-inputs', 'whatsapp-runtime'], styles: [], scripts: ['/js/day-passes.js?v=8', '/js/alerts-enhancements.js?v=10'] },
         finance: { dependencies: [], styles: [], scripts: ['/js/pages/finance/monthly-finance.js?v=20'] },
         'member-details': { dependencies: ['phone-inputs'], styles: [], scripts: ['/js/member-details-ui.js?v=6', '/js/member-portal-admin.js?v=4', '/js/member-coaching-summary.js?v=2'] },
         members: {
@@ -19,9 +19,9 @@
         coaching: { dependencies: ['phone-inputs'], dialogs: [{ source: '/dialogs/coaching.html?v=phase4', ids: ['externalTraineeDialog', 'coachingProfileDialog', 'coachingBuilderDialog'] }], styles: [], scripts: ['/js/exercise-assets.js?v=5', '/js/muscle-assets.js?v=3', '/js/pages/coaching/coaching.js?v=19'] },
         print: { dependencies: ['phone-inputs'], styles: [], scripts: ['/js/exercise-assets.js?v=5', '/js/integrations/print-enhancements.js?v=14'] },
         expenses: { dependencies: ['finance'], styles: ['/css/pages/expenses.css?v=phase2'], scripts: [] },
-        reports: { dependencies: ['phone-inputs', 'whatsapp-templates'], styles: ['/css/pages/reports.css?v=phase2'], scripts: ['/js/pages/reports/reports.js?v=10', '/js/day-pass-reports.js?v=2'] },
+        reports: { dependencies: ['phone-inputs', 'whatsapp-runtime'], styles: ['/css/pages/reports.css?v=phase2'], scripts: ['/js/pages/reports/reports.js?v=10', '/js/day-pass-reports.js?v=2'] },
         feedback: { dependencies: ['phone-inputs'], styles: ['/css/pages/member-feedback.css?v=phase2'], scripts: ['/js/pages/management/member-feedback.js?v=1'] },
-        management: { dependencies: [], styles: ['/css/pages/memberships.css?v=phase2', '/css/pages/platform-settings.css?v=1'], scripts: ['/js/pricing-cards.js?v=1'] },
+        management: { dependencies: [], styles: ['/css/pages/memberships.css?v=phase2'], scripts: ['/js/pricing-cards.js?v=1'] },
         branding: { dependencies: [], styles: ['/css/pages/branding.css?v=phase2'], scripts: ['/js/pages/branding/branding.js?v=2'] },
         'member-payment-methods': { dependencies: [], styles: ['/css/pages/member-payment-methods.css?v=phase2'], scripts: ['/js/pages/management/member-payment-methods.js?v=1'] },
         'saas-billing': { dependencies: [], styles: ['/css/pages/saas.css?v=phase2'], scripts: ['/js/pages/saas/saas.js?v=6'] },
@@ -36,7 +36,7 @@
         store: { dependencies: ['phone-inputs'], styles: ['/css/pages/store.css?v=phase2', '/css/components/bar-pos.css?v=phase2'], scripts: ['/js/pages/store/store.js?v=1', '/js/pages/store/bar-pos.js?v=1'] },
         'smart-assistant': { dependencies: [], styles: [], scripts: ['/js/smart-assistant.js?v=5'] },
         'phone-inputs': { dependencies: [], styles: [], scripts: ['/js/core/phone-inputs.js?v=12'] },
-        'whatsapp-templates': { dependencies: [], styles: ['/css/pages/whatsapp-templates.css?v=2'], scripts: ['/js/core/whatsapp-templates.js?v=1', '/js/pages/management/whatsapp-templates.js?v=2'] }
+        'whatsapp-runtime': { dependencies: [], styles: [], scripts: ['/js/core/whatsapp-templates.js?v=2'] }
     };
 
     const externalAssets = {

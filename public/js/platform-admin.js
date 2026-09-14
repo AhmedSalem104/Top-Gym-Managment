@@ -24,8 +24,7 @@
         tenantFilters: { search: '', status: '', plan: '', tenantType: '', expiringDays: '0' },
         backupHealth: null,
         backups: [],
-        backupAudit: [],
-        platformWhatsappTemplate: null
+        backupAudit: []
     };
 
     const $ = (selector, root = document) => root.querySelector(selector);
@@ -262,54 +261,30 @@
         if (view === 'backups') loadBackups();
         if (view === 'plans') loadPlans();
         if (view === 'audit') loadAudit();
-        if (view === 'settings') loadPlatformWhatsappTemplate();
+        if (view === 'settings') setPlatformSettingsSection('overview', false);
     }
 
-    async function loadPlatformWhatsappTemplate() {
-        const body = $('#platformWhatsappTemplateBody');
-        if (!body) return;
-        try {
-            const data = await api('/api/platform/whatsapp-templates');
-            state.platformWhatsappTemplate = (data.templates || []).find((item) => item.id === 'TENANT_ACTIVATED') || null;
-            body.value = state.platformWhatsappTemplate?.body || '';
-            body.disabled = !state.platformWhatsappTemplate;
-        } catch (error) {
-            body.value = '';
-            body.disabled = true;
-            showToast(getApiErrorMessage(error), true);
-        }
+    function setPlatformSettingsSection(section = 'overview', updateHash = false) {
+        const normalized = section === 'whatsapp' ? 'whatsapp' : 'overview';
+        const overview = $('#platformSettingsOverview');
+        const context = $('#platformSettingsContext');
+        const mount = $('#platformWhatsappTemplatesMount');
+        if (overview) overview.hidden = normalized !== 'overview';
+        if (context) context.hidden = normalized === 'overview';
+        if (mount) mount.hidden = normalized !== 'whatsapp';
+        if (normalized === 'whatsapp') window.topGymPlatformWhatsappTemplates?.mount(mount);
+        if (updateHash) history.replaceState(null, '', normalized === 'whatsapp' ? '#settings/whatsapp' : '#settings');
     }
 
-    async function savePlatformWhatsappTemplate() {
-        const body = $('#platformWhatsappTemplateBody');
-        if (!body || !state.platformWhatsappTemplate) return;
-        const button = $('[data-platform-action="save-whatsapp-template"]');
-        if (button) button.disabled = true;
-        try {
-            const result = await api('/api/platform/whatsapp-templates/TENANT_ACTIVATED', { method: 'PUT', body: JSON.stringify({ body: body.value }) });
-            state.platformWhatsappTemplate = result.template || state.platformWhatsappTemplate;
-            body.value = state.platformWhatsappTemplate.body;
-            await window.LogicFitWhatsAppTemplates?.load?.({ platform: true, force: true });
-            showToast('تم حفظ قالب تفعيل الحساب للمنصة.');
-        } catch (error) {
-            showToast(getApiErrorMessage(error), true);
-        } finally {
-            if (button) button.disabled = false;
+    function applyHashRoute() {
+        const route = window.location.hash.replace(/^#/, '').trim();
+        if (route === 'settings' || route === 'settings/whatsapp') {
+            setView('settings');
+            setPlatformSettingsSection(route === 'settings/whatsapp' ? 'whatsapp' : 'overview', false);
+            return;
         }
-    }
-
-    async function restorePlatformWhatsappTemplate() {
-        if (!state.platformWhatsappTemplate || !window.confirm('سيتم استعادة قالب تفعيل الحساب الافتراضي للمنصة. هل تريد المتابعة؟')) return;
-        try {
-            const result = await api('/api/platform/whatsapp-templates/TENANT_ACTIVATED/restore-default', { method: 'POST' });
-            state.platformWhatsappTemplate = result.template || state.platformWhatsappTemplate;
-            const body = $('#platformWhatsappTemplateBody');
-            if (body) body.value = state.platformWhatsappTemplate.body;
-            await window.LogicFitWhatsAppTemplates?.load?.({ platform: true, force: true });
-            showToast('تمت استعادة قالب تفعيل الحساب الافتراضي.');
-        } catch (error) {
-            showToast(getApiErrorMessage(error), true);
-        }
+        const supported = new Set(['dashboard', 'gyms', 'requests', 'gym-registrations', 'payment-methods', 'backups', 'plans', 'audit', 'settings']);
+        setView(supported.has(route) ? route : 'dashboard');
     }
 
     function setDashboardLoading(preserve = false) {
@@ -1099,7 +1074,15 @@
     }
 
     function bindEvents() {
-        $$('#platformNav [data-platform-view]').forEach((button) => button.addEventListener('click', () => setView(button.dataset.platformView)));
+        $$('#platformNav [data-platform-view]').forEach((button) => button.addEventListener('click', () => {
+            const view = button.dataset.platformView;
+            if (view === 'settings') {
+                history.replaceState(null, '', '#settings');
+                setView(view);
+                return;
+            }
+            setView(view);
+        }));
         $$('[data-platform-view-target]').forEach((button) => button.addEventListener('click', () => setView(button.dataset.platformViewTarget)));
         $('#platformAdminLogoutButton').addEventListener('click', async (event) => {
             const button = event.currentTarget;
@@ -1114,7 +1097,7 @@
             try {
                 const result = await api('/api/auth/login', { method: 'POST', body: JSON.stringify({ email: $('#platformAdminEmail').value, password: $('#platformAdminPassword').value }) });
                 if (result.user?.role !== 'PlatformAdmin') { await api('/api/auth/logout', { method: 'POST' }).catch(() => {}); throw new Error('هذا الدخول مخصص لحساب PlatformAdmin فقط.'); }
-                showApp(result.user); window.topGymNotificationCenter?.refresh?.(); await Promise.all([loadPlans(), loadDashboard()]);
+                showApp(result.user); applyHashRoute(); window.topGymNotificationCenter?.refresh?.(); await Promise.all([loadPlans(), loadDashboard()]);
             } catch (error) { const message = $('#platformAdminLoginMessage'); message.textContent = error.message; message.hidden = false; } finally { setLoading(button, false); }
         });
         $('#tenantSearch').addEventListener('input', (event) => { clearTimeout(searchTimer); state.tenantFilters.search = event.target.value; state.tenantPage = 1; searchTimer = setTimeout(loadTenants, 260); });
@@ -1143,6 +1126,18 @@
         dialog.addEventListener('close', clearDialogError);
         registrationCredentialsDialog?.addEventListener('close', clearRegistrationCredentials);
         document.addEventListener('click', async (event) => {
+            const settingsButton = event.target.closest('[data-settings-section]');
+            const settingsShell = $('#platformSettingsShell');
+            if (settingsButton && settingsShell?.contains(settingsButton)) {
+                const section = settingsButton.dataset.settingsSection || 'overview';
+                if (section === 'whatsapp' || section === 'overview') {
+                    setView('settings');
+                    setPlatformSettingsSection(section, true);
+                } else {
+                    setView(section);
+                }
+                return;
+            }
             const registrationCopy = event.target.closest('[data-copy-registration]');
             if (registrationCopy) { await copyRegistrationValue(registrationCopy.dataset.copyRegistration); return; }
             const registrationAction = event.target.closest('[data-gym-registration-action]');
@@ -1153,8 +1148,6 @@
             if (platformAction?.dataset.platformAction === 'new-platform-payment-method') { openDialog('platform-payment-method-create'); return; }
             if (platformAction?.dataset.platformAction === 'run-platform-backup') { openDialog('platform-backup'); return; }
             if (platformAction?.dataset.platformAction === 'cleanup-backups') { openDialog('backup-retention'); return; }
-            if (platformAction?.dataset.platformAction === 'save-whatsapp-template') { await savePlatformWhatsappTemplate(); return; }
-            if (platformAction?.dataset.platformAction === 'restore-whatsapp-template') { await restorePlatformWhatsappTemplate(); return; }
             const paymentMethodEdit = event.target.closest('[data-platform-payment-method-edit]');
             if (paymentMethodEdit) { openDialog('platform-payment-method-edit', { methodId: paymentMethodEdit.dataset.platformPaymentMethodEdit }); return; }
             const openButton = event.target.closest('[data-open-tenant]');
@@ -1217,9 +1210,11 @@
             if (!session.authenticated) { showLogin(); return; }
             if (session.user?.role !== 'PlatformAdmin') { showLogin('هذه الصفحة مخصصة لحساب PlatformAdmin فقط.'); return; }
             showApp(session.user);
+            applyHashRoute();
             await Promise.all([loadPlans(), loadDashboard()]);
         } catch (error) { showLogin(error.message); }
     }
 
+    window.addEventListener('hashchange', applyHashRoute);
     boot();
 }());

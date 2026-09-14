@@ -389,13 +389,6 @@
         return button;
     }
 
-    function navigationPermissionRoute(rawRoute) {
-        const route = String(rawRoute || '').replace(/^#/, '').trim();
-        if (route === 'settings' || route === 'management' || route.startsWith('settings/')) return 'management';
-        if (route === 'whatsapp-templates' || route === 'branding' || route === 'member-payment-methods' || route === 'saas-billing' || route === 'backup-history') return 'management';
-        return route;
-    }
-
     function applyNavigation(user) {
         const isOwner = user?.role === 'Owner';
         const isPlatformAdmin = user?.role === 'PlatformAdmin';
@@ -439,7 +432,7 @@
         if (accountName) accountName.textContent = user?.name || brandName();
         if (accountEmail) accountEmail.textContent = user?.email || '—';
         if (accountAvatar) accountAvatar.textContent = initials(user?.name);
-        if (!permissions.canAccessTab(user, navigationPermissionRoute(window.location.hash.slice(1)))) {
+        if (!permissions.canAccessTab(user, window.location.hash.slice(1))) {
             window.location.hash = `#${permissions.firstAccessibleTab(user)}`;
         }
         applyPermissionControls(user);

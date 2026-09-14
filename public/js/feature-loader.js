@@ -86,15 +86,7 @@
                 ...(feature.styles || []).map((source) => loadStyle(source)),
                 ...(feature.dialogs || []).map(({ source, ids }) => dialogLoader.load(source, ids))
             ]);
-            // The WhatsApp feature exposes a browser renderer consumed by its
-            // management UI. Keep that pair ordered so the UI can never race
-            // the renderer when both assets are requested together.
-            if (name === 'whatsapp-templates') {
-                for (const source of feature.scripts || []) await loadScript(source);
-            } else {
-                await Promise.all((feature.scripts || []).map((source) => loadScript(source)));
-            }
-            if (name === 'whatsapp-templates') await window.topGymWhatsappTemplatesUi?.load?.();
+            await Promise.all((feature.scripts || []).map((source) => loadScript(source)));
             if (name === 'phone-inputs') {
                 await Promise.all([
                     Promise.resolve(window.LogicFitPhoneInputs?.loadCatalog?.()).catch(() => null),
@@ -299,7 +291,7 @@
     function bindLazyWhatsapp() {
         const source = '/js/whatsapp-enhancements.js?v=13';
         const key = 'whatsapp-enhancements';
-        const ensureWhatsapp = () => ensureTab('whatsapp-templates').then(() => loadScript(source, key));
+        const ensureWhatsapp = () => ensureTab('whatsapp-runtime').then(() => loadScript(source, key));
         const actionSelector = '[data-alert-whatsapp], [data-report-whatsapp], [data-day-pass-whatsapp], [data-day-pass-report-whatsapp], [data-portal-code-action="whatsapp"]';
 
         document.addEventListener('click', (event) => {

@@ -139,7 +139,27 @@
                     <div class="platform-page-head"><div><span class="eyebrow">سجل العمليات</span><h2>سجل عمليات المنصة</h2><p>كل قرار إداري محفوظ مع الممثل والوقت والسبب والتغيير.</p></div></div><div class="platform-card"><div class="table-scroll"><table class="platform-table audit-table"><thead><tr><th>الوقت</th><th>الممثل</th><th>العملية</th><th>الجيم</th><th>السبب</th><th>التفاصيل</th></tr></thead><tbody id="auditTableBody"></tbody></table></div></div>
                 </section>
 
-                <section class="platform-view" data-platform-panel="settings"><div class="platform-page-head"><div><span class="eyebrow">إعدادات المنصة</span><h2>إعدادات المنصة</h2><p>مساحة مخصصة لإعدادات التشغيل العامة، مع إبقاء إعدادات كل جيم داخل ملفه.</p></div></div><div class="platform-card platform-whatsapp-template-card"><div class="card-heading"><div><span class="eyebrow">WhatsApp · Platform default</span><h3>رسالة تفعيل الحساب</h3><p>هذا القالب يُستخدم عند تفعيل Gym أو Independent Trainer، ولا يمكن لصاحب الجيم تعديله.</p></div><span class="status-pill active">Platform فقط</span></div><label for="platformWhatsappTemplateBody">نص الرسالة</label><textarea id="platformWhatsappTemplateBody" rows="12" maxlength="8000" disabled aria-describedby="platformWhatsappTemplateHint"></textarea><p id="platformWhatsappTemplateHint" class="dialog-hint">المتغيرات المسموح بها تُعرض داخل المحرر الخاص بالقوالب، والإرسال عبر WhatsApp يظل يدويًا.</p><div class="platform-page-actions"><button class="platform-btn ghost" type="button" data-platform-action="restore-whatsapp-template">استعادة الافتراضي</button><button class="platform-btn primary" type="button" data-platform-action="save-whatsapp-template">حفظ قالب التفعيل</button></div></div></section>
+                <section class="platform-view" data-platform-panel="settings">
+                    <div class="platform-page-head">
+                        <div><span class="eyebrow">إعدادات المنصة</span><h2>إعدادات المنصة</h2><p>إدارة إعدادات التشغيل والتخصيص الخاصة بالمنصة من مكان واحد.</p></div>
+                    </div>
+                    <div class="platform-settings-shell" id="platformSettingsShell" data-platform-settings-shell>
+                        <div class="platform-settings-overview" id="platformSettingsOverview">
+                            <div class="platform-settings-overview-head"><div><span class="eyebrow">SETTINGS</span><h3>أقسام إعدادات المنصة</h3><p>اختر القسم المطلوب لإدارته. تظهر قوالب WhatsApp هنا كإعداد مركزي للمنصة فقط.</p></div></div>
+                            <div class="platform-settings-card-grid">
+                                <button class="platform-settings-card" type="button" data-settings-section="plans"><span class="platform-settings-card-index">01</span><span class="platform-settings-card-copy"><strong>الاشتراكات والخطط</strong><small>إدارة خطط المنصة وباقاتها.</small></span><span class="platform-settings-card-arrow" aria-hidden="true">←</span></button>
+                                <button class="platform-settings-card" type="button" data-settings-section="payment-methods"><span class="platform-settings-card-index">02</span><span class="platform-settings-card-copy"><strong>وسائل الدفع</strong><small>إدارة وسائل الدفع الخاصة بالمنصة.</small></span><span class="platform-settings-card-arrow" aria-hidden="true">←</span></button>
+                                <button class="platform-settings-card" type="button" data-settings-section="backups"><span class="platform-settings-card-index">03</span><span class="platform-settings-card-copy"><strong>النسخ الاحتياطي</strong><small>مراجعة النسخ والاستعادة الآمنة.</small></span><span class="platform-settings-card-arrow" aria-hidden="true">←</span></button>
+                                <button class="platform-settings-card platform-settings-card-featured" type="button" data-settings-section="whatsapp"><span class="platform-settings-card-index">04</span><span class="platform-settings-card-copy"><strong>الرسائل وWhatsApp</strong><small>إدارة القوالب المركزية المستخدمة لجميع الجيمات والمدربين.</small></span><span class="platform-settings-card-meta">9 قوالب</span><span class="platform-settings-card-arrow" aria-hidden="true">←</span></button>
+                            </div>
+                        </div>
+                        <div class="platform-settings-context" id="platformSettingsContext" hidden>
+                            <button class="platform-settings-back" type="button" data-settings-section="overview">→ العودة إلى إعدادات المنصة</button>
+                            <div><span class="eyebrow">إعدادات المنصة</span><strong id="platformSettingsContextTitle">القسم الحالي</strong><small id="platformSettingsContextDescription">إدارة هذا القسم من الشاشة الحالية.</small></div>
+                        </div>
+                        <div id="platformWhatsappTemplatesMount" data-platform-whatsapp-templates hidden></div>
+                    </div>
+                </section>
             </main>
         </section>
     </div>
@@ -150,6 +170,8 @@
     <script defer src="/js/ui-feedback.js?v=2"></script>
     <script defer src="/js/loading-skeleton.js?v=1"></script>
     <script defer src="/js/notification-center.js?v=6"></script>
-    <script defer src="/js/platform-admin.js?v=8"></script>
+    <script defer src="/js/core/whatsapp-templates.js?v=2"></script>
+    <script defer src="/js/pages/management/whatsapp-templates.js?v=platform-1"></script>
+    <script defer src="/js/platform-admin.js?v=9"></script>
 </body>
 </html>

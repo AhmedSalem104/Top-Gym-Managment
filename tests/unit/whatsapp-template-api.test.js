@@ -7,58 +7,40 @@ const test = require('node:test');
 const { registerWhatsappTemplateRoutes } = require('../../src/routes/whatsapp-template.routes');
 const { ROLES } = require('../../src/permissions/roles');
 
-const DEFAULT_BODY = 'SYSTEM DEFAULT {{member_name}}';
-const TENANT_ACTIVATED_BODY = 'PLATFORM DEFAULT {{gym_name}}';
+const ids = [
+    'MEMBERSHIP_WELCOME', 'MEMBERSHIP_FROZEN', 'MEMBERSHIP_EXPIRED',
+    'MEMBERSHIP_EXPIRING', 'PAYMENT_OUTSTANDING', 'MEMBER_ABSENCE',
+    'DAY_PASS_THANK_YOU', 'TENANT_ACTIVATED', 'PORTAL_ACCESS'
+];
 
 function createApiHarness() {
-    const overrides = new Map();
+    const systemTemplates = ids.map((id) => ({ id, body: 'SYSTEM ' + id + ' {{member_name}}', scope: 'platform', isCustomized: false }));
     const app = express();
     app.use(express.json());
     app.use((request, _response, next) => {
-        const user = String(request.get('x-test-user') || 'owner-a');
+        const user = String(request.get('x-test-user') || 'owner');
         request.auth = user === 'assistant'
             ? { id: 3, role: ROLES.ASSISTANT }
-            : user === 'platform'
-                ? { id: 9, role: ROLES.PLATFORM_ADMIN }
-                : { id: user === 'owner-b' ? 2 : 1, role: ROLES.OWNER };
-        request.tenant = { id: user === 'owner-b' ? 202 : 101 };
+            : user === 'trainer'
+                ? { id: 4, role: ROLES.OWNER }
+                : user === 'platform'
+                    ? { id: 9, role: ROLES.PLATFORM_ADMIN }
+                    : { id: 1, role: ROLES.OWNER };
+        request.tenant = { id: 101, type: user === 'trainer' ? 'independent_trainer' : 'gym' };
         next();
     });
     const service = {
-        listTenantTemplates: async (tenantId) => [{ id: 'PAYMENT_OUTSTANDING', body: overrides.get(Number(tenantId)) || DEFAULT_BODY, isCustomized: overrides.has(Number(tenantId)) }],
-        getEffectiveTemplate: async (templateId, { tenantId = null, platform = false } = {}) => ({
-            id: templateId,
-            body: platform ? TENANT_ACTIVATED_BODY : (overrides.get(Number(tenantId)) || DEFAULT_BODY),
-            isCustomized: !platform && overrides.has(Number(tenantId))
-        }),
-        saveTenantOverride: async (templateId, body, { tenantId }) => {
-            if (templateId === 'TENANT_ACTIVATED') {
-                const error = new Error('platform template');
-                error.statusCode = 403;
-                error.code = 'PLATFORM_TEMPLATE';
-                throw error;
-            }
-            overrides.set(Number(tenantId), String(body));
-            return { id: templateId, body: String(body), isCustomized: true };
-        },
-        restoreTenantDefault: async (templateId, { tenantId }) => {
-            if (templateId === 'TENANT_ACTIVATED') {
-                const error = new Error('platform template');
-                error.statusCode = 403;
-                error.code = 'PLATFORM_TEMPLATE';
-                throw error;
-            }
-            overrides.delete(Number(tenantId));
-            return { id: templateId, body: DEFAULT_BODY, isCustomized: false };
-        },
-        listSystemTemplates: async () => [{ id: 'TENANT_ACTIVATED', body: TENANT_ACTIVATED_BODY }],
-        saveSystemDefault: async () => ({ id: 'TENANT_ACTIVATED', body: 'UPDATED SYSTEM' }),
-        restoreSystemDefault: async () => ({ id: 'TENANT_ACTIVATED', body: TENANT_ACTIVATED_BODY })
+        listTenantTemplates: async () => systemTemplates,
+        listSystemTemplates: async () => systemTemplates,
+        saveSystemDefault: async (templateId, body) => ({ id: templateId, body: String(body), scope: 'platform' }),
+        restoreSystemDefault: async (templateId) => ({ id: templateId, body: 'SYSTEM ' + templateId, scope: 'platform' }),
+        saveTenantOverride: async () => { throw new Error('tenant writes must be disabled'); },
+        restoreTenantDefault: async () => { throw new Error('tenant writes must be disabled'); }
     };
     const asyncRoute = (handler) => (request, response, next) => Promise.resolve(handler(request, response, next)).catch(next);
     registerWhatsappTemplateRoutes(app, { whatsappTemplateService: service, asyncRoute });
     app.use((error, _request, response, _next) => response.status(error.statusCode || 500).json({ code: error.code || 'ERROR' }));
-    return { app, overrides };
+    return app;
 }
 
 function start(app) {
@@ -67,22 +49,19 @@ function start(app) {
     });
 }
 
-function call(server, pathname, { method = 'GET', user = 'owner-a', body } = {}) {
+function call(server, pathname, { method = 'GET', user = 'owner', body } = {}) {
     return new Promise((resolve, reject) => {
         const request = http.request({
-            host: '127.0.0.1',
-            port: server.address().port,
-            path: pathname,
-            method,
+            host: '127.0.0.1', port: server.address().port, path: pathname, method,
             headers: { 'x-test-user': user, ...(body ? { 'content-type': 'application/json' } : {}) }
         }, (response) => {
             let text = '';
             response.setEncoding('utf8');
             response.on('data', (chunk) => { text += chunk; });
             response.on('end', () => {
-                let body = null;
-                try { body = text ? JSON.parse(text) : null; } catch (_) { body = null; }
-                resolve({ status: response.statusCode, body });
+                let parsed = null;
+                try { parsed = text ? JSON.parse(text) : null; } catch (_) { parsed = null; }
+                resolve({ status: response.statusCode, body: parsed });
             });
         });
         request.on('error', reject);
@@ -91,40 +70,42 @@ function call(server, pathname, { method = 'GET', user = 'owner-a', body } = {})
     });
 }
 
-test('direct API enforces tenant context, platform scope, and restore fallback', async (t) => {
-    const { app } = createApiHarness();
-    const server = await start(app);
+test('runtime reads centralized system templates while tenant management is denied', async (t) => {
+    const server = await start(createApiHarness());
     t.after(() => server.close());
 
-    assert.equal((await call(server, '/api/whatsapp-templates/PAYMENT_OUTSTANDING', { method: 'PUT', user: 'owner-a', body: { body: 'TENANT_A {{member_name}}' } })).status, 200);
-    assert.equal((await call(server, '/api/whatsapp-templates/PAYMENT_OUTSTANDING?tenantId=202', { user: 'owner-a' })).body.template.body, 'TENANT_A {{member_name}}');
-    assert.equal((await call(server, '/api/whatsapp-templates/PAYMENT_OUTSTANDING', { method: 'PUT', user: 'owner-a', body: { tenantId: 202, body: 'TENANT_A_UPDATED {{member_name}}' } })).status, 200);
-    assert.equal((await call(server, '/api/whatsapp-templates/PAYMENT_OUTSTANDING', { user: 'owner-b' })).body.template.body, DEFAULT_BODY);
-    assert.equal((await call(server, '/api/whatsapp-templates/PAYMENT_OUTSTANDING', { user: 'owner-b' })).body.template.body, DEFAULT_BODY);
+    const runtime = await call(server, '/api/whatsapp-templates/runtime', { user: 'owner' });
+    assert.equal(runtime.status, 200);
+    assert.equal(runtime.body.templates.length, 9);
+    assert.ok(runtime.body.templates.every((template) => template.scope === 'platform'));
 
-    const restore = await call(server, '/api/whatsapp-templates/PAYMENT_OUTSTANDING/restore-default', { method: 'POST', user: 'owner-a' });
-    assert.equal(restore.status, 200);
-    assert.equal(restore.body.template.isCustomized, false);
-    assert.equal((await call(server, '/api/whatsapp-templates/PAYMENT_OUTSTANDING', { user: 'owner-b' })).body.template.body, DEFAULT_BODY);
-    assert.equal((await call(server, '/api/whatsapp-templates/PAYMENT_OUTSTANDING', { method: 'DELETE', user: 'owner-a' })).status, 404);
+    const tenantRead = await call(server, '/api/whatsapp-templates/PAYMENT_OUTSTANDING', { user: 'owner' });
+    assert.equal(tenantRead.status, 403);
+    assert.equal(tenantRead.body.code, 'PLATFORM_TEMPLATES_ONLY');
+
+    const tenantWrite = await call(server, '/api/whatsapp-templates/PAYMENT_OUTSTANDING', { method: 'PUT', user: 'owner', body: { body: 'tampered' } });
+    assert.equal(tenantWrite.status, 403);
+    assert.equal(tenantWrite.body.code, 'PLATFORM_TEMPLATES_ONLY');
 });
 
-test('direct API keeps system defaults platform-only even when a Gym request is tampered', async (t) => {
-    const { app } = createApiHarness();
-    const server = await start(app);
+test('central template API is PlatformAdmin-only and supports every approved template', async (t) => {
+    const server = await start(createApiHarness());
     t.after(() => server.close());
 
-    const ownerSystemWrite = await call(server, '/api/platform/whatsapp-templates/TENANT_ACTIVATED', { method: 'PUT', user: 'owner-a', body: { body: 'tampered' } });
-    assert.equal(ownerSystemWrite.status, 403);
-    assert.equal(ownerSystemWrite.body.code, 'PLATFORM_ADMIN_REQUIRED');
+    for (const user of ['owner', 'assistant', 'trainer']) {
+        assert.equal((await call(server, '/api/platform/whatsapp-templates', { user })).status, 403);
+        assert.equal((await call(server, '/api/platform/whatsapp-templates/PAYMENT_OUTSTANDING', { method: 'PUT', user, body: { body: 'tampered' } })).status, 403);
+    }
 
-    const ownerTenantWrite = await call(server, '/api/whatsapp-templates/TENANT_ACTIVATED', { method: 'PUT', user: 'owner-a', body: { body: 'tampered' } });
-    assert.equal(ownerTenantWrite.status, 403);
-    assert.equal(ownerTenantWrite.body.code, 'PLATFORM_TEMPLATE');
+    const list = await call(server, '/api/platform/whatsapp-templates', { user: 'platform' });
+    assert.equal(list.status, 200);
+    assert.equal(list.body.templates.length, 9);
 
-    const assistantWrite = await call(server, '/api/whatsapp-templates/PAYMENT_OUTSTANDING', { method: 'PUT', user: 'assistant', body: { body: 'tampered' } });
-    assert.equal(assistantWrite.status, 403);
-    assert.equal(assistantWrite.body.code, 'OWNER_REQUIRED');
-    assert.equal((await call(server, '/api/platform/whatsapp-templates', { user: 'owner-a' })).status, 403);
-    assert.equal((await call(server, '/api/platform/whatsapp-templates', { user: 'platform' })).status, 200);
+    const save = await call(server, '/api/platform/whatsapp-templates/PAYMENT_OUTSTANDING', { method: 'PUT', user: 'platform', body: { body: 'UPDATED {{member_name}}' } });
+    assert.equal(save.status, 200);
+    assert.equal(save.body.template.body, 'UPDATED {{member_name}}');
+
+    const restore = await call(server, '/api/platform/whatsapp-templates/PAYMENT_OUTSTANDING/restore-default', { method: 'POST', user: 'platform' });
+    assert.equal(restore.status, 200);
+    assert.equal(restore.body.template.id, 'PAYMENT_OUTSTANDING');
 });

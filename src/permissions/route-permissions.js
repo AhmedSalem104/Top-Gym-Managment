@@ -49,7 +49,7 @@ const ROUTE_PERMISSION_RULES = Object.freeze([
     { pattern: /^\/dashboard(?:-analytics)?(?:\/|$)/, methods: ['GET'], all: [PERMISSIONS.DASHBOARD_READ] },
     { pattern: /^\/bootstrap(?:\/|$)/, methods: ['GET'], all: [PERMISSIONS.DASHBOARD_READ] },
     { pattern: /^\/notifications(?:\/|$)/, methods: ['GET', 'POST'], all: [PERMISSIONS.NOTIFICATIONS_READ] },
-    { pattern: /^\/whatsapp-templates(?:\/|$)/, methods: ['GET', 'PUT', 'POST'], ownerOnly: true, all: [PERMISSIONS.MESSAGE_TEMPLATES_MANAGE] },
+    { pattern: /^\/whatsapp-templates\/runtime$/, methods: ['GET'], all: [] },
     { pattern: /^\/platform\/whatsapp-templates(?:\/|$)/, methods: ['GET', 'PUT', 'POST'], all: [] },
 
     { pattern: /^\/members\/\d+\/refund-preview$/, methods: ['GET'], ownerOnly: true, all: [PERMISSIONS.PAYMENTS_REFUND] },

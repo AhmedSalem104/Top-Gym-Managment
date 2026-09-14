@@ -8,7 +8,7 @@ const test = require('node:test');
 const root = path.resolve(__dirname, '../..');
 const read = (relativePath) => fs.readFileSync(path.join(root, relativePath), 'utf8');
 
-test('all WhatsApp entry points use the central template renderer', () => {
+test('operational WhatsApp flows use the centralized renderer', () => {
     const memberConnector = read('public/js/whatsapp-enhancements.js');
     const dayPass = read('public/js/day-passes.js');
     const dayPassReports = read('public/js/day-pass-reports.js');
@@ -23,38 +23,50 @@ test('all WhatsApp entry points use the central template renderer', () => {
     assert.match(platformAdmin, /LogicFitWhatsAppTemplates\.render\('TENANT_ACTIVATED'/);
 });
 
-test('the feature loader loads the shared renderer before day-pass/report consumers', () => {
+test('Gym feature loading keeps only the runtime renderer and no management UI', () => {
     const manifest = read('public/js/core/feature-manifest.js');
-    assert.match(manifest, /reports:\s*\{[^\n]*dependencies:\s*\[[^\]]*'whatsapp-templates'/);
-    assert.match(manifest, /'dashboard-enhancements':\s*\{[^\n]*dependencies:\s*\[[^\]]*'whatsapp-templates'/);
-    assert.match(manifest, /'whatsapp-templates':\s*\{[^\n]*whatsapp-templates\.js/);
-    assert.match(read('public/js/feature-loader.js'), /name === 'whatsapp-templates'[\s\S]*for \(const source of feature\.scripts/);
-    assert.match(read('public/js/feature-loader.js'), /name === 'whatsapp-templates'\) await window\.topGymWhatsappTemplatesUi\?\.load/);
-});
-
-test('platform template routes and tenant registry are explicit', () => {
-    assert.match(read('src/routes/whatsapp-template.routes.js'), /api\/whatsapp-templates/);
-    assert.match(read('src/routes/whatsapp-template.routes.js'), /api\/platform\/whatsapp-templates/);
-    assert.match(read('src/permissions/route-permissions.js'), /MESSAGE_TEMPLATES_MANAGE/);
-    assert.match(read('src/services/tenant-service.js'), /gym_whatsapp_template_overrides/);
-    assert.match(read('database/migrations/034-whatsapp-message-templates.sql'), /whatsapp_message_templates/);
-});
-
-test('template management UI is a settings section with editor, variables and preview', () => {
+    const loader = read('public/js/feature-loader.js');
     const pageTabs = read('public/js/page-tabs.js');
+    const permissions = read('public/js/core/permissions.js');
+
+    assert.match(manifest, /'whatsapp-runtime'/);
+    assert.match(manifest, /reports:\s*\{[^\n]*'whatsapp-runtime'/);
+    assert.match(manifest, /'dashboard-enhancements':\s*\{[^\n]*'whatsapp-runtime'/);
+    assert.doesNotMatch(manifest, /'whatsapp-templates'\s*:/);
+    assert.doesNotMatch(loader, /ensureTab\('whatsapp-templates'\)/);
+    assert.doesNotMatch(loader, /topGymWhatsappTemplatesUi/);
+    assert.doesNotMatch(pageTabs, /whatsappTemplatesSection|platformSettingsShell|settings\/whatsapp/);
+    assert.doesNotMatch(permissions, /['"]whatsapp-templates['"]/);
+});
+
+test('Platform Admin owns the only template management surface', () => {
+    const page = read('public/platform-admin.html');
     const templatesUi = read('public/js/pages/management/whatsapp-templates.js');
-    const settingsCss = read('public/css/pages/platform-settings.css');
+    const platformCss = read('public/css/pages/platform-admin.css');
     const templatesCss = read('public/css/pages/whatsapp-templates.css');
 
-    assert.match(pageTabs, /platformSettingsShell/);
-    assert.match(pageTabs, /settingsSection/);
-    assert.match(pageTabs, /data-settings-section/);
-    assert.match(templatesUi, /whatsappTemplatesList/);
-    assert.match(templatesUi, /whatsappTemplateBody/);
-    assert.match(templatesUi, /whatsappTemplateVariables/);
-    assert.match(templatesUi, /whatsappTemplatePreview/);
-    assert.match(templatesUi, /confirmLeave/);
-    assert.match(templatesUi, /scope === 'platform'/);
-    assert.match(settingsCss, /platform-settings-card-grid/);
+    assert.match(page, /id="platformSettingsShell"/);
+    assert.match(page, /id="platformWhatsappTemplatesMount"/);
+    assert.match(page, /data-platform-panel="settings"/);
+    assert.match(page, /js\/pages\/management\/whatsapp-templates\.js/);
+    assert.match(templatesUi, /data-whatsapp-template-list/);
+    assert.match(templatesUi, /data-whatsapp-template-body/);
+    assert.match(templatesUi, /data-whatsapp-template-variables/);
+    assert.match(templatesUi, /data-whatsapp-template-preview/);
+    assert.match(templatesUi, /\/api\/platform\/whatsapp-templates/);
+    assert.match(platformCss, /platform-settings-card-grid/);
+    assert.match(platformCss, /whatsapp-templates\.css/);
     assert.match(templatesCss, /grid-template-columns: minmax\(220px, \.25fr\)/);
+});
+
+test('Tenant management API is disabled while runtime reads system templates', () => {
+    const routes = read('src/routes/whatsapp-template.routes.js');
+    const service = read('src/services/whatsapp-template-service.js');
+    assert.match(routes, /PLATFORM_TEMPLATES_ONLY/);
+    assert.match(routes, /api\/whatsapp-templates\/runtime/);
+    assert.match(routes, /api\/platform\/whatsapp-templates/);
+    assert.match(service, /source of truth|مصدر الحقيقة/);
+    assert.doesNotMatch(service, /gym_whatsapp_template_overrides/);
+    assert.match(read('src/services/tenant-service.js'), /gym_whatsapp_template_overrides/);
+    assert.match(read('database/migrations/034-whatsapp-message-templates.sql'), /whatsapp_message_templates/);
 });

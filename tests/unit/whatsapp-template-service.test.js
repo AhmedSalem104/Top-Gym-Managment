@@ -50,11 +50,8 @@ test('template validation is plain text and allowlisted', () => {
     assert.throws(() => service.validateTemplateBody('PORTAL_ACCESS', '{{#if unknown_key}}x{{/if}}'), (error) => error.code === 'WHATSAPP_TEMPLATE_VARIABLE_NOT_ALLOWED');
 });
 
-test('TENANT_ACTIVATED is platform scoped while operational messages are tenant scoped', () => {
-    assert.equal(service.getTemplateDefinition('TENANT_ACTIVATED').scope, service.TEMPLATE_SCOPE.PLATFORM);
-    for (const id of expectedIds.filter((value) => value !== 'TENANT_ACTIVATED')) {
-        assert.equal(service.getTemplateDefinition(id).scope, service.TEMPLATE_SCOPE.TENANT, id);
-    }
+test('all templates are centrally managed system templates', () => {
+    for (const id of expectedIds) assert.equal(service.getTemplateDefinition(id).scope, service.TEMPLATE_SCOPE.PLATFORM, id);
 });
 
 test('missing or inactive system defaults fail closed instead of using a legacy hard-coded fallback', () => {
@@ -71,9 +68,7 @@ test('missing or inactive system defaults fail closed instead of using a legacy 
     );
 });
 
-test('platform lookup cannot be used to widen a tenant template into the platform scope', async () => {
-    await assert.rejects(
-        service.getEffectiveTemplate('PAYMENT_OUTSTANDING', { platform: true }),
-        (error) => error.code === 'TENANT_TEMPLATE' && error.statusCode === 403
-    );
+test('tenant overrides are an explicit disabled compatibility boundary', async () => {
+    await assert.rejects(service.saveTenantOverride('PAYMENT_OUTSTANDING', 'x', { tenantId: 101 }), (error) => error.code === 'PLATFORM_TEMPLATES_ONLY');
+    await assert.rejects(service.restoreTenantDefault('PAYMENT_OUTSTANDING', { tenantId: 101 }), (error) => error.code === 'PLATFORM_TEMPLATES_ONLY');
 });

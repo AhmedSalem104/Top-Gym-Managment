@@ -1,3 +1,5 @@
+@import url("./whatsapp-templates.css");
+
 /* Platform Admin is a separate product surface. It consumes the same
    semantic tokens as the gym app, but owns its layout and navigation. */
 .platform-admin-page {
@@ -405,6 +407,31 @@ html[data-theme="dark"] .platform-field input { background: rgb(10 30 53 / .78);
 .platform-forbidden-card p { color: var(--text-muted); font-size: .82rem; }
 .platform-forbidden-actions { display: grid; width: min(100%, 340px); gap: 10px; }
 
+.platform-settings-shell { display: grid; gap: 18px; }
+.platform-settings-overview, .platform-settings-context { min-width: 0; border: 1px solid var(--platform-border); border-radius: 15px; background: var(--platform-surface); box-shadow: var(--shadow-card); }
+.platform-settings-overview { padding: clamp(18px, 3vw, 28px); }
+.platform-settings-overview-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
+.platform-settings-overview-head h3 { margin-top: 5px; color: var(--text-primary); font-size: 1.1rem; }
+.platform-settings-overview-head p { max-width: 680px; margin-top: 5px; color: var(--text-muted); font-size: .78rem; line-height: 1.7; }
+.platform-settings-card-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.platform-settings-card { display: grid; min-width: 0; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px; border: 1px solid var(--platform-border); border-radius: 13px; background: var(--bg-surface); color: var(--text-primary); padding: 15px; text-align: right; transition: border-color var(--transition-fast), background var(--transition-fast), transform var(--transition-fast); }
+.platform-settings-card:hover, .platform-settings-card:focus-visible { border-color: var(--primary-border); background: var(--primary-soft); transform: translateY(-1px); outline: 0; }
+.platform-settings-card-featured { border-color: var(--primary-border); background: linear-gradient(135deg, var(--primary-soft), var(--bg-surface)); }
+.platform-settings-card-index { display: grid; width: 32px; height: 32px; place-items: center; border-radius: 9px; background: var(--primary-soft); color: var(--text-primary-soft); font-size: .68rem; font-weight: 800; }
+.platform-settings-card-copy { display: grid; min-width: 0; gap: 3px; }
+.platform-settings-card-copy strong { overflow: hidden; color: var(--text-primary); font-size: .8rem; text-overflow: ellipsis; white-space: nowrap; }
+.platform-settings-card-copy small { overflow: hidden; color: var(--text-muted); font-size: .68rem; line-height: 1.55; text-overflow: ellipsis; }
+.platform-settings-card-arrow { color: var(--text-primary-soft); font-size: 1rem; }
+.platform-settings-card-meta { border-radius: var(--radius-pill); background: var(--info-soft); color: var(--info); padding: 4px 7px; font-size: .62rem; font-weight: 800; white-space: nowrap; }
+.platform-settings-context { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 14px 18px; }
+.platform-settings-context > div { display: grid; min-width: 0; gap: 2px; }
+.platform-settings-context strong { color: var(--text-primary); font-size: .9rem; }
+.platform-settings-context small { color: var(--text-muted); font-size: .7rem; }
+.platform-settings-back { border: 0; background: transparent; color: var(--text-primary-soft); padding: 6px 0; font: inherit; font-size: .74rem; font-weight: 800; white-space: nowrap; }
+.platform-settings-back:hover, .platform-settings-back:focus-visible { color: var(--primary); outline: 0; }
+.platform-whatsapp-management { margin-top: 0; }
+.platform-whatsapp-management .whatsapp-template-editor, .platform-whatsapp-management .whatsapp-template-preview-panel, .platform-whatsapp-management .whatsapp-templates-list-panel { box-shadow: none; }
+
 @media (max-width: 1280px) {
     .platform-kpi-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
     .status-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
@@ -465,4 +492,6 @@ html[data-theme="dark"] .platform-field input { background: rgb(10 30 53 / .78);
     .registration-credential-row { grid-template-columns: 1fr auto; }
     .registration-credential-row code { grid-column: 1 / -1; grid-row: 2; }
     .platform-toast { right: 14px; bottom: 14px; }
+    .platform-settings-card-grid { grid-template-columns: 1fr; }
+    .platform-settings-context { align-items: flex-start; flex-direction: column-reverse; }
 }

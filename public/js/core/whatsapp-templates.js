@@ -23,7 +23,7 @@
 
     async function load({ platform = false, force = false } = {}) {
         const key = platform ? 'platform' : 'tenant';
-        const endpoint = platform ? '/api/platform/whatsapp-templates' : '/api/whatsapp-templates';
+        const endpoint = platform ? '/api/platform/whatsapp-templates' : '/api/whatsapp-templates/runtime';
         const promiseKey = platform ? 'platformPromise' : 'tenantPromise';
         if (!force && window[promiseKey]) return window[promiseKey];
         const promise = fetch(endpoint, { credentials: 'same-origin', cache: 'no-store' })

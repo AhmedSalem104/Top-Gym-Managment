@@ -1,21 +1,20 @@
 'use strict';
 
 const { getPool, sql } = require('../database');
-const { withTransaction } = require('../database/transaction');
 
 const MAX_TEMPLATE_LENGTH = 8000;
 const TEMPLATE_SCOPE = Object.freeze({ TENANT: 'tenant', PLATFORM: 'platform' });
 
 const TEMPLATE_DEFINITIONS = Object.freeze([
-    Object.freeze({ id: 'MEMBERSHIP_WELCOME', name: 'ترحيب الاشتراك', description: 'تُستخدم بعد تسجيل العضو ونجاح إنشاء اشتراكه.', category: 'الاشتراكات', scope: TEMPLATE_SCOPE.TENANT, variables: ['member_name', 'gym_name', 'plan_name', 'membership_type', 'start_date', 'expiry_date', 'list_price', 'discount_amount', 'amount_due', 'amount_paid', 'remaining_amount', 'payment_method'] }),
-    Object.freeze({ id: 'MEMBERSHIP_FROZEN', name: 'الاشتراك المجمد', description: 'تُستخدم لإبلاغ العضو بتجميد اشتراكه.', category: 'الاشتراكات', scope: TEMPLATE_SCOPE.TENANT, variables: ['member_name', 'gym_name', 'freeze_until'] }),
-    Object.freeze({ id: 'MEMBERSHIP_EXPIRED', name: 'انتهاء الاشتراك', description: 'تُستخدم عند انتهاء العضوية الحالية.', category: 'الاشتراكات', scope: TEMPLATE_SCOPE.TENANT, variables: ['member_name', 'gym_name', 'expiry_date'] }),
-    Object.freeze({ id: 'MEMBERSHIP_EXPIRING', name: 'قرب انتهاء الاشتراك', description: 'تُستخدم لتذكير العضو قبل انتهاء الاشتراك.', category: 'الاشتراكات', scope: TEMPLATE_SCOPE.TENANT, variables: ['member_name', 'gym_name', 'expiry_date', 'days_remaining'] }),
-    Object.freeze({ id: 'PAYMENT_OUTSTANDING', name: 'المبلغ المتبقي', description: 'تُستخدم لتذكير العضو بالمبلغ المستحق.', category: 'المدفوعات', scope: TEMPLATE_SCOPE.TENANT, variables: ['member_name', 'gym_name', 'remaining_amount', 'expiry_date'] }),
-    Object.freeze({ id: 'MEMBER_ABSENCE', name: 'الغياب الطويل', description: 'تُستخدم للتواصل مع العضو الغائب لفترة طويلة.', category: 'التواصل', scope: TEMPLATE_SCOPE.TENANT, variables: ['member_name', 'gym_name', 'days_since_last_visit', 'expiry_date'] }),
-    Object.freeze({ id: 'DAY_PASS_THANK_YOU', name: 'شكر الحصة اليومية', description: 'تُستخدم بعد تسجيل الحصة اليومية.', category: 'الحصص اليومية', scope: TEMPLATE_SCOPE.TENANT, variables: ['visitor_name', 'gym_name', 'visit_reference', 'pass_type'] }),
+    Object.freeze({ id: 'MEMBERSHIP_WELCOME', name: 'ترحيب الاشتراك', description: 'تُستخدم بعد تسجيل العضو ونجاح إنشاء اشتراكه.', category: 'الاشتراكات', scope: TEMPLATE_SCOPE.PLATFORM, variables: ['member_name', 'gym_name', 'plan_name', 'membership_type', 'start_date', 'expiry_date', 'list_price', 'discount_amount', 'amount_due', 'amount_paid', 'remaining_amount', 'payment_method'] }),
+    Object.freeze({ id: 'MEMBERSHIP_FROZEN', name: 'الاشتراك المجمد', description: 'تُستخدم لإبلاغ العضو بتجميد اشتراكه.', category: 'الاشتراكات', scope: TEMPLATE_SCOPE.PLATFORM, variables: ['member_name', 'gym_name', 'freeze_until'] }),
+    Object.freeze({ id: 'MEMBERSHIP_EXPIRED', name: 'انتهاء الاشتراك', description: 'تُستخدم عند انتهاء العضوية الحالية.', category: 'الاشتراكات', scope: TEMPLATE_SCOPE.PLATFORM, variables: ['member_name', 'gym_name', 'expiry_date'] }),
+    Object.freeze({ id: 'MEMBERSHIP_EXPIRING', name: 'قرب انتهاء الاشتراك', description: 'تُستخدم لتذكير العضو قبل انتهاء الاشتراك.', category: 'الاشتراكات', scope: TEMPLATE_SCOPE.PLATFORM, variables: ['member_name', 'gym_name', 'expiry_date', 'days_remaining'] }),
+    Object.freeze({ id: 'PAYMENT_OUTSTANDING', name: 'المبلغ المتبقي', description: 'تُستخدم لتذكير العضو بالمبلغ المستحق.', category: 'المدفوعات', scope: TEMPLATE_SCOPE.PLATFORM, variables: ['member_name', 'gym_name', 'remaining_amount', 'expiry_date'] }),
+    Object.freeze({ id: 'MEMBER_ABSENCE', name: 'الغياب الطويل', description: 'تُستخدم للتواصل مع العضو الغائب لفترة طويلة.', category: 'التواصل', scope: TEMPLATE_SCOPE.PLATFORM, variables: ['member_name', 'gym_name', 'days_since_last_visit', 'expiry_date'] }),
+    Object.freeze({ id: 'DAY_PASS_THANK_YOU', name: 'شكر الحصة اليومية', description: 'تُستخدم بعد تسجيل الحصة اليومية.', category: 'الحصص اليومية', scope: TEMPLATE_SCOPE.PLATFORM, variables: ['visitor_name', 'gym_name', 'visit_reference', 'pass_type'] }),
     Object.freeze({ id: 'TENANT_ACTIVATED', name: 'تفعيل الحساب', description: 'تُستخدم من إدارة المنصة عند تفعيل Gym أو Independent Trainer.', category: 'المنصة', scope: TEMPLATE_SCOPE.PLATFORM, variables: ['tenant_type', 'gym_name', 'plan_name', 'start_date', 'expiry_date', 'login_url', 'username', 'temporary_password'] }),
-    Object.freeze({ id: 'PORTAL_ACCESS', name: 'بيانات بوابة المشترك', description: 'تُستخدم لإرسال أو إعادة إرسال كود ورابط بوابة المشترك.', category: 'بوابة المشترك', scope: TEMPLATE_SCOPE.TENANT, variables: ['member_name', 'gym_name', 'membership_code', 'portal_url'] })
+    Object.freeze({ id: 'PORTAL_ACCESS', name: 'بيانات بوابة المشترك', description: 'تُستخدم لإرسال أو إعادة إرسال كود ورابط بوابة المشترك.', category: 'بوابة المشترك', scope: TEMPLATE_SCOPE.PLATFORM, variables: ['member_name', 'gym_name', 'membership_code', 'portal_url'] })
 ]);
 
 const DEFAULT_BODIES = Object.freeze({
@@ -90,13 +89,13 @@ function renderTemplateText(templateId, body, context = {}) {
     return expanded.replace(/\{\{\s*([a-z][a-z0-9_]*)\s*\}\}/gi, (_match, key) => safeContext[key] ?? '').replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
 }
 
-function mapTemplateRow(row, definition, body, isCustomized = false) {
+function mapTemplateRow(row, definition, body, isCustomized = false, scope = definition.scope) {
     return {
         id: definition.id,
         name: definition.name,
         description: definition.description,
         category: definition.category,
-        scope: definition.scope,
+        scope,
         variables: [...definition.variables],
         body: String(body ?? ''),
         isCustomized: Boolean(isCustomized),
@@ -108,26 +107,14 @@ function mapTemplateRow(row, definition, body, isCustomized = false) {
 async function listTenantTemplates(tenantId) {
     const normalizedTenantId = Number(tenantId);
     if (!Number.isInteger(normalizedTenantId) || normalizedTenantId < 1) throw templateError('Tenant context is required.', 403, 'TENANT_CONTEXT_REQUIRED');
-    const pool = await getPool();
-    const result = await pool.request().input('tenantId', sql.Int, normalizedTenantId).query(`
-        SELECT d.template_id, d.default_body, d.is_active AS default_active, d.updated_at AS default_updated_at,
-               o.body AS override_body, o.is_active AS override_active, o.updated_at AS override_updated_at
-        FROM dbo.whatsapp_message_templates AS d
-        LEFT JOIN dbo.gym_whatsapp_template_overrides AS o
-          ON o.template_id = d.template_id AND o.tenant_id = @tenantId
-        WHERE d.is_active = 1
-        ORDER BY d.template_id;
-    `);
-    return TEMPLATE_DEFINITIONS.map((definition) => {
-        const row = result.recordset.find((item) => String(item.template_id) === definition.id);
-        const isTenantTemplate = definition.scope === TEMPLATE_SCOPE.TENANT;
-        const systemBody = requireSystemDefaultRow(definition, row && {
-            template_id: row.template_id,
-            default_body: row.default_body,
-            is_active: row.default_active
-        });
-        return mapTemplateRow(row, definition, isTenantTemplate && row?.override_active ? row.override_body : systemBody, Boolean(isTenantTemplate && row?.override_active));
-    });
+    // Compatibility boundary for old operational callers. Tenant overrides
+    // remain stored for historical/audit purposes, but are no longer a
+    // source of truth for rendered WhatsApp messages.
+    return (await listSystemTemplates()).map((template) => ({
+        ...template,
+        scope: DEFINITIONS_BY_ID.get(template.id)?.scope || TEMPLATE_SCOPE.TENANT,
+        isCustomized: false
+    }));
 }
 
 async function listSystemTemplates() {
@@ -138,91 +125,38 @@ async function listSystemTemplates() {
         WHERE is_active = 1
         ORDER BY template_id;
     `);
-    return TEMPLATE_DEFINITIONS.filter((definition) => definition.scope === TEMPLATE_SCOPE.PLATFORM).map((definition) => {
+    return TEMPLATE_DEFINITIONS.map((definition) => {
         const row = result.recordset.find((item) => String(item.template_id) === definition.id);
-        return mapTemplateRow(row, definition, requireSystemDefaultRow(definition, row), false);
+        return mapTemplateRow(row, definition, requireSystemDefaultRow(definition, row), false, TEMPLATE_SCOPE.PLATFORM);
     });
 }
 
 async function getEffectiveTemplate(templateId, { tenantId = null, platform = false } = {}) {
     const definition = getTemplateDefinition(templateId);
-    if (platform && definition.scope !== TEMPLATE_SCOPE.PLATFORM) {
-        throw templateError('هذا القالب خاص بالجيم ولا يتم الوصول إليه من نطاق المنصة.', 403, 'TENANT_TEMPLATE');
-    }
-    if (definition.scope === TEMPLATE_SCOPE.PLATFORM) {
-        const pool = await getPool();
-        const result = await pool.request().input('templateId', sql.VarChar(64), definition.id).query(`
+    const pool = await getPool();
+    const result = await pool.request()
+        .input('templateId', sql.VarChar(64), definition.id)
+        .query(`
             SELECT TOP (1) template_id, default_body, is_active, updated_at
             FROM dbo.whatsapp_message_templates
             WHERE template_id = @templateId AND is_active = 1;
-        `);
-        const row = result.recordset[0];
-        return mapTemplateRow(row, definition, requireSystemDefaultRow(definition, row), false);
-    }
-    const normalizedTenantId = Number(tenantId);
-    if (!Number.isInteger(normalizedTenantId) || normalizedTenantId < 1) throw templateError('Tenant context is required.', 403, 'TENANT_CONTEXT_REQUIRED');
-    const pool = await getPool();
-    const result = await pool.request()
-        .input('tenantId', sql.Int, normalizedTenantId)
-        .input('templateId', sql.VarChar(64), definition.id)
-        .query(`
-            SELECT TOP (1) d.template_id, d.default_body, d.is_active AS default_active, d.updated_at AS default_updated_at,
-                   o.body AS override_body, o.is_active AS override_active, o.updated_at AS override_updated_at
-            FROM dbo.whatsapp_message_templates AS d
-            LEFT JOIN dbo.gym_whatsapp_template_overrides AS o
-              ON o.template_id = d.template_id AND o.tenant_id = @tenantId
-            WHERE d.template_id = @templateId AND d.is_active = 1;
     `);
     const row = result.recordset[0];
-    const systemBody = requireSystemDefaultRow(definition, row && {
-        template_id: row.template_id,
-        default_body: row.default_body,
-        is_active: row.default_active
-    });
-    return mapTemplateRow(row, definition, row?.override_active ? row.override_body : systemBody, Boolean(row?.override_active));
+    return mapTemplateRow(row, definition, requireSystemDefaultRow(definition, row), false, platform ? TEMPLATE_SCOPE.PLATFORM : definition.scope);
 }
 
 async function saveTenantOverride(templateId, body, { tenantId, userId = null } = {}) {
-    const definition = getTemplateDefinition(templateId);
-    if (definition.scope !== TEMPLATE_SCOPE.TENANT) throw templateError('هذا القالب تتم إدارته من منصة Logic Fit فقط.', 403, 'PLATFORM_TEMPLATE');
-    const normalizedTenantId = Number(tenantId);
-    const normalizedBody = validateTemplateBody(definition.id, body);
-    if (!Number.isInteger(normalizedTenantId) || normalizedTenantId < 1) throw templateError('Tenant context is required.', 403, 'TENANT_CONTEXT_REQUIRED');
-    await withTransaction(async (transaction) => {
-        await transaction.request()
-            .input('tenantId', sql.Int, normalizedTenantId)
-            .input('templateId', sql.VarChar(64), definition.id)
-            .input('body', sql.NVarChar(sql.MAX), normalizedBody)
-            .input('userId', sql.Int, Number.isInteger(Number(userId)) ? Number(userId) : null)
-            .query(`
-                MERGE dbo.gym_whatsapp_template_overrides WITH (HOLDLOCK) AS target
-                USING (SELECT @tenantId AS tenant_id, @templateId AS template_id) AS source
-                  ON target.tenant_id = source.tenant_id AND target.template_id = source.template_id
-                WHEN MATCHED THEN UPDATE SET body=@body, is_active=1, updated_by_user_id=@userId, updated_at=SYSUTCDATETIME()
-                WHEN NOT MATCHED THEN INSERT (tenant_id, template_id, body, is_active, updated_by_user_id)
-                    VALUES (@tenantId, @templateId, @body, 1, @userId);
-            `);
-    });
-    return getEffectiveTemplate(definition.id, { tenantId: normalizedTenantId });
+    void body; void tenantId; void userId;
+    throw templateError('قوالب WhatsApp تدار مركزيًا من منصة Logic Fit فقط.', 403, 'PLATFORM_TEMPLATES_ONLY');
 }
 
 async function restoreTenantDefault(templateId, { tenantId } = {}) {
-    const definition = getTemplateDefinition(templateId);
-    if (definition.scope !== TEMPLATE_SCOPE.TENANT) throw templateError('هذا القالب تتم إدارته من منصة Logic Fit فقط.', 403, 'PLATFORM_TEMPLATE');
-    const normalizedTenantId = Number(tenantId);
-    if (!Number.isInteger(normalizedTenantId) || normalizedTenantId < 1) throw templateError('Tenant context is required.', 403, 'TENANT_CONTEXT_REQUIRED');
-    const pool = await getPool();
-    await pool.request().input('tenantId', sql.Int, normalizedTenantId).input('templateId', sql.VarChar(64), definition.id).query(`
-        UPDATE dbo.gym_whatsapp_template_overrides
-        SET is_active=0, updated_at=SYSUTCDATETIME()
-        WHERE tenant_id=@tenantId AND template_id=@templateId;
-    `);
-    return getEffectiveTemplate(definition.id, { tenantId: normalizedTenantId });
+    void templateId; void tenantId;
+    throw templateError('قوالب WhatsApp تدار مركزيًا من منصة Logic Fit فقط.', 403, 'PLATFORM_TEMPLATES_ONLY');
 }
 
 async function saveSystemDefault(templateId, body, { userId = null } = {}) {
     const definition = getTemplateDefinition(templateId);
-    if (definition.scope !== TEMPLATE_SCOPE.PLATFORM) throw templateError('هذا القالب خاص بالجيم ولا يتم تعديله من هنا.', 403, 'TENANT_TEMPLATE');
     const normalizedBody = validateTemplateBody(definition.id, body);
     const pool = await getPool();
     await pool.request().input('templateId', sql.VarChar(64), definition.id).input('body', sql.NVarChar(sql.MAX), normalizedBody).input('userId', sql.Int, Number.isInteger(Number(userId)) ? Number(userId) : null).query(`
@@ -235,7 +169,6 @@ async function saveSystemDefault(templateId, body, { userId = null } = {}) {
 
 async function restoreSystemDefault(templateId) {
     const definition = getTemplateDefinition(templateId);
-    if (definition.scope !== TEMPLATE_SCOPE.PLATFORM) throw templateError('هذا القالب خاص بالجيم ولا يتم تعديله من هنا.', 403, 'TENANT_TEMPLATE');
     const pool = await getPool();
     await pool.request().input('templateId', sql.VarChar(64), definition.id).input('body', sql.NVarChar(sql.MAX), DEFAULT_BODIES[definition.id]).query(`
         UPDATE dbo.whatsapp_message_templates
