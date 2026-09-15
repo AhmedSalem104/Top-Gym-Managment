@@ -366,7 +366,11 @@ async function createBranch(body = {}, { actorUserId = null, role = null, reques
     if (String(role || '').toLowerCase() !== 'owner') throw branchError('Only the Gym Owner can manage branches.', 403, 'OWNER_REQUIRED');
     const currentTenant = tenantId();
     const entitlements = await saasService.getEffectiveEntitlements(currentTenant);
-    if (entitlements.capabilities?.branches !== true) throw branchError('Branch management is not available for this Gym subscription.', 403, 'BRANCH_CAPABILITY_DISABLED');
+    // getEffectiveEntitlements returns the capability resolver envelope under
+    // `capabilities`; the actual feature map is nested at
+    // `capabilities.capabilities`. Read the central result at its canonical
+    // shape so a Gym core feature is not rejected by a stale wrapper lookup.
+    if (entitlements.capabilities?.capabilities?.branches !== true) throw branchError('Branch management is not available for this Gym subscription.', 403, 'BRANCH_CAPABILITY_DISABLED');
     const code = textValue(body.code ?? body.branchCode, 'Branch code', 40, true)
         .toLowerCase().replace(/[^a-z0-9_-]/g, '-').replace(/^-+|-+$/g, '');
     if (!code) throw branchError('Branch code is invalid.', 400, 'BRANCH_CODE_INVALID');

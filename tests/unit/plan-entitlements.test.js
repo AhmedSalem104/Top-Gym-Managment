@@ -71,6 +71,8 @@ test('Gym core branch entitlement survives an older snapshot that explicitly lac
     });
     assert.equal(resolved.featureEntitlements.branches, true);
     assert.equal(resolved.capabilities.branches, true);
+    const entitlementsEnvelope = { capabilities: resolved };
+    assert.equal(entitlementsEnvelope.capabilities.capabilities.branches, true);
     assert.doesNotThrow(() => capabilityService.assertCapabilityAccess({
         tenantType: 'gym',
         path: '/branches',
