@@ -3,6 +3,7 @@
     window.__topGymPageTabsLoaded = true;
 
     const validTabs = new Set(['dashboard', 'members', 'expenses', 'reports', 'management', 'branding', 'member-payment-methods', 'saas-billing', 'backup-history', 'permissions', 'attendance', 'library', 'trainees', 'intelligence', 'feedback', 'store', 'branches', 'member-subscription-requests', 'portal-analytics']);
+    const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]));
     let activationToken = 0;
     let activeTabName = null;
 
@@ -382,6 +383,9 @@
         const isStore = name === 'store';
         const isBranches = name === 'branches';
 
+        document.getElementById('featureAccessState')?.setAttribute('hidden', '');
+        document.getElementById('dashboardSection')?.removeAttribute('data-feature-blocked');
+
         setHidden(dashboardHero, !isDashboard);
         setHidden(dashboardSectionHeading, !isDashboard);
         setHidden(overview, !isDashboard);
@@ -438,6 +442,37 @@
         }
     }
 
+    function renderFeatureAccessState(tabName, access) {
+        const host = document.getElementById('dashboardSection');
+        if (!host) return;
+        let state = document.getElementById('featureAccessState');
+        if (!state) {
+            state = document.createElement('section');
+            state.id = 'featureAccessState';
+            state.className = 'feature-access-state';
+            state.setAttribute('role', 'status');
+            state.setAttribute('aria-live', 'polite');
+            host.prepend(state);
+        }
+        const feature = access?.feature || window.topGymPermissions?.featureForTab?.(tabName) || tabName;
+        const featureLabel = window.topGymPermissions?.featureLabel?.(feature) || feature;
+        const plan = access?.plan?.name || access?.plan?.nameAr || access?.plan?.code || 'باقتك الحالية';
+        const billingVisible = window.topGymAuth?.canAccessTab?.('saas-billing') === true;
+        const copy = {
+            not_included: ['هذه الميزة غير متاحة في باقتك الحالية', `ميزة «${featureLabel}» غير مشمولة في باقة ${plan} الحالية. يمكنك الترقية إلى باقة تتضمن هذه الميزة للاستفادة منها.`],
+            expired: ['انتهى اشتراكك', 'انتهت صلاحية اشتراك المنصة. جدّد الاشتراك لاستعادة المزايا التشغيلية دون فقد أي بيانات.'],
+            suspended: ['تم إيقاف الحساب', 'تم إيقاف الوصول التشغيلي لهذا الحساب مؤقتًا. تواصل مع إدارة المنصة لاستعادة الوصول.'],
+            not_ready: ['تعذر التحقق من مزايا الاشتراك', 'لم نتمكن من تحميل حالة الباقة الآن. أعد المحاولة بعد لحظات.'],
+            pending: ['جاري التحقق من مزايا الاشتراك', 'انتظر لحظة حتى نحدد المزايا المتاحة لهذا الحساب.']
+        }[access?.state] || ['هذه الميزة غير متاحة حاليًا', `لا يمكن فتح «${featureLabel}» بالحالة الحالية للاشتراك.`];
+        const upgrade = billingVisible && ['not_included', 'expired'].includes(access?.state)
+            ? '<a class="btn btn-primary feature-access-state-action" href="#saas-billing">عرض الباقات</a>'
+            : '';
+        state.innerHTML = `<div class="feature-access-state-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 20 6v5c0 5-3.4 8.5-8 10-4.6-1.5-8-5-8-10V6l8-3Z"/><path d="M12 8v4M12 16h.01"/></svg></div><div class="feature-access-state-copy"><span class="feature-access-state-kicker">${escapeHtml(featureLabel)}</span><h2>${escapeHtml(copy[0])}</h2><p>${escapeHtml(copy[1])}</p></div>${upgrade}`;
+        state.removeAttribute('hidden');
+        host.setAttribute('data-feature-blocked', 'true');
+    }
+
     async function activateTab(rawName) {
         if (window.topGymAuthReady) await window.topGymAuthReady.catch(() => null);
         if (activeTabName === 'branding' && rawName !== 'branding' && window.topGymBrandingEditor?.confirmLeave) {
@@ -460,6 +495,21 @@
         // take a round-trip to load, but dashboard-only content must never
         // remain visible while the next tab is being prepared.
         renderTab(name);
+        const requestedFeature = window.topGymPermissions?.featureForTab?.(name);
+        const featureAccess = requestedFeature
+            ? window.topGymPermissions?.getFeatureAccess?.(requestedFeature, window.topGymAuth?.getUser?.())
+            : null;
+        if (requestedFeature && featureAccess && featureAccess.allowed !== true) {
+            renderFeatureAccessState(name, featureAccess);
+            if (token !== activationToken) return;
+            activeTabName = name;
+            document.documentElement.dataset.topGymActiveTab = name;
+            window.history.replaceState(null, '', `#${name}`);
+            document.body.classList.remove('top-gym-navigation-pending');
+            document.documentElement.removeAttribute('data-top-gym-loading-tab');
+            window.dispatchEvent(new CustomEvent('topgym:tab-changed', { detail: { name, blocked: true, access: featureAccess } }));
+            return;
+        }
         const releaseProgress = window.topGymPerformance?.startTask?.('جاري تجهيز الشاشة…');
         try {
             await window.topGymEnsureTab?.(name);
@@ -508,6 +558,16 @@
 
     window.addEventListener('hashchange', () => {
         void activateTab(window.location.hash.slice(1) || 'dashboard');
+    });
+
+    // Subscription activation, renewal, upgrade, downgrade, suspension and
+    // expiry can all change the effective feature set while the app is open.
+    // Re-evaluate the currently open route so a stale screen cannot remain
+    // usable after the server-side entitlement state changes.
+    window.addEventListener('topgym:entitlements-updated', () => {
+        const current = activeTabName || window.location.hash.slice(1) || 'dashboard';
+        activeTabName = null;
+        void activateTab(current);
     });
 
     window.topGymActivateTab = activateTab;

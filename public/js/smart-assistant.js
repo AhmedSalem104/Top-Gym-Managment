@@ -153,6 +153,17 @@
         'open-feedback': { label: 'فتح تقييمات المشتركين', icon: 'star', type: 'navigate', tab: 'feedback', permission: 'feedback.read', success: 'فتحت شاشة تقييمات المشتركين.' }
     });
 
+    const ACTION_FEATURES = Object.freeze({
+        'add-member': 'members', 'print-pricing': 'pricing', 'search-members': 'members', 'open-members': 'members',
+        'open-pricing': 'pricing', 'add-trainee': 'coaching', 'create-workout': 'coaching', 'create-diet': 'coaching',
+        'open-trainees': 'coaching', 'add-plan': 'pricing', 'add-membership-type': 'pricing', 'add-assistant': 'team',
+        'open-management': 'pricing', 'open-permissions': 'team', 'open-backups': 'backup',
+        'attendance-phone': 'attendance', 'attendance-scan': 'attendance', 'attendance-refresh': 'attendance', 'open-attendance': 'attendance',
+        'add-expense': 'finance', 'open-expenses': 'finance', 'add-day-pass': 'day_passes', 'open-day-passes': 'day_passes',
+        'search-library': 'library', 'add-library-item': 'library', 'refresh-library': 'library', 'open-library': 'library',
+        'reports-focus-date': 'reports', 'reports-refresh': 'reports', 'open-reports': 'reports'
+    });
+
     const ICONS = Object.freeze({
         plus: '<path d="M12 5v14M5 12h14"/>',
         print: '<path d="M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v7H6z"/>',
@@ -229,6 +240,8 @@
         const meta = SCREEN_META[screen];
         if (!meta) return false;
         if (!isAllowedTab(meta.tab)) return false;
+        const feature = window.topGymPermissions?.featureForTab?.(meta.tab);
+        if (feature && window.topGymAuth?.isReady?.() && window.topGymAuth?.canUseFeature?.(feature) !== true) return false;
         if (!anyPermissionAllowed(meta.permissionAny)) return false;
         return permissionAllowed(meta.permission);
     }
@@ -245,6 +258,8 @@
 
     function actionAvailable(action) {
         if (!action || !isAllowedTab(action.tab)) return false;
+        const feature = action.feature || ACTION_FEATURES[action.id] || window.topGymPermissions?.featureForTab?.(action.tab);
+        if (feature && window.topGymAuth?.isReady?.() && window.topGymAuth?.canUseFeature?.(feature) !== true) return false;
         if (!anyPermissionAllowed(action.permissionAny) || !permissionAllowed(action.permission)) return false;
         if (action.type === 'navigate' || action.type === 'navigate-click') return true;
         return [...document.querySelectorAll(action.selector || '')].some((element) => !element.disabled && !element.hidden);

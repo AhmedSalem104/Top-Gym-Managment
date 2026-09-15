@@ -14,6 +14,19 @@ function decodeHeaderFilename(value) {
 
 function createSaasController({ saasService }) {
     return {
+        entitlements: async (request, response) => {
+            // The auth middleware already resolved the tenant, subscription,
+            // expiry policy and effective entitlements for this request. Keep
+            // the browser contract on that same envelope instead of creating
+            // a second client-side entitlement source.
+            const access = request.saas || {};
+            response.json({
+                tenantStatus: access.tenantStatus || request.tenant?.status || null,
+                subscription: access.subscription || access.entitlements?.subscription || null,
+                entitlements: access.entitlements || null,
+                recovery: Boolean(access.recovery)
+            });
+        },
         subscription: async (request, response) => {
             response.json(await saasService.getTenantBilling(request.tenant?.id, {
                 page: request.query?.page,

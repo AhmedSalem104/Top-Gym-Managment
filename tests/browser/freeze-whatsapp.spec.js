@@ -8,6 +8,30 @@ const TEMPLATE_IDS = [
     'DAY_PASS_THANK_YOU', 'TENANT_ACTIVATED', 'PORTAL_ACCESS'
 ];
 
+const QA_ENTITLEMENTS = {
+    tenantType: 'gym',
+    features: {
+        dashboard: true,
+        members: true,
+        attendance: true,
+        pricing: true,
+        payments: true,
+        reports: true,
+        portal: true,
+        notifications: true,
+        coaching: true,
+        nutrition: true,
+        library: true,
+        branding: true,
+        team: true
+    },
+    featureCatalog: [
+        'dashboard', 'members', 'attendance', 'pricing', 'payments', 'reports',
+        'portal', 'notifications', 'coaching', 'nutrition', 'library',
+        'branding', 'team'
+    ].map((key) => ({ key, tenantTypes: ['gym'] }))
+};
+
 function jsonResponse(route, payload, status = 200) {
     return route.fulfill({
         status,
@@ -94,6 +118,14 @@ async function installApi(page, { freezeFails = false, welcomeTemplate = null } 
         }
         if (pathname === '/api/bootstrap') return jsonResponse(route, { branches: [], sections: [], defaultBranch: null });
         if (pathname === '/api/dashboard') return jsonResponse(route, { stats: { total: 1, active: 1, expired: 0, expiringSoon: 0, frozen: 0 }, alerts: [] });
+        if (pathname === '/api/saas/entitlements') {
+            return jsonResponse(route, {
+                tenantStatus: 'active',
+                subscription: { status: 'active', plan: { code: 'qa', name: 'QA Plan' } },
+                entitlements: QA_ENTITLEMENTS,
+                recovery: false
+            });
+        }
         if (pathname === '/api/saas/subscription') return jsonResponse(route, {});
         if (pathname === '/api/whatsapp-templates/runtime') {
             state.templateCalls += 1;

@@ -23,6 +23,15 @@ function installTrainerRuntime(page) {
                 const body = (payload) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(payload) });
                 if (pathname === '/api/auth/session') return body({ authenticated: true, user });
                 if (pathname === '/api/trainer/workspace') return body({ metrics: { activeClients: 1, sessionsToday: 2, upcomingSessions: 4, packagesExpiring: 1, outstandingPayments: 850, clientsNeedingFollowUp: 1, recentMeasurements: 2, recentCheckins: 1 } });
+                if (pathname === '/api/saas/entitlements') return body({
+                    tenantStatus: 'active',
+                    subscription: { status: 'active', plan: { code: 'basic', name: 'Basic' } },
+                    entitlements: {
+                        tenantType: 'independent_trainer',
+                        features: Object.fromEntries(['clients', 'coaching', 'nutrition', 'library', 'assessments', 'progress', 'goals', 'sessions', 'packages', 'payments', 'reports', 'portal', 'notifications', 'tasks', 'templates'].map((key) => [key, true])),
+                        featureCatalog: ['clients', 'coaching', 'nutrition', 'library', 'assessments', 'progress', 'goals', 'sessions', 'packages', 'payments', 'reports', 'portal', 'notifications', 'tasks', 'templates'].map((key) => ({ key, tenantTypes: ['independent_trainer'] }))
+                    }
+                });
                 if (pathname === '/api/saas/subscription') return body({ tenant: { name: 'مساحة اختبار المدرب' }, subscription: { status: 'active', plan: { name: 'Trainer' } } });
                 if (pathname === '/api/trainer/clients') return body({ clients, pagination: { page: 1, totalPages: 1, total: clients.length } });
                 if (pathname === '/api/trainer/sessions') return body({ sessions: [{ id: 10, clientName: 'عميل الاختبار', scheduledStart: '2099-01-01T09:00:00Z', scheduledEnd: '2099-01-01T10:00:00Z', status: 'scheduled' }] });

@@ -1,11 +1,31 @@
 const { test, expect } = require('@playwright/test');
 
+const QA_ENTITLEMENTS = {
+    tenantType: 'gym',
+    features: {
+        dashboard: true, members: true, attendance: true, pricing: true,
+        payments: true, reports: true, portal: true, notifications: true,
+        coaching: true, nutrition: true, library: true, branding: true, team: true
+    },
+    featureCatalog: [
+        'dashboard', 'members', 'attendance', 'pricing', 'payments', 'reports',
+        'portal', 'notifications', 'coaching', 'nutrition', 'library', 'branding', 'team'
+    ].map((key) => ({ key, tenantTypes: ['gym'] }))
+};
+
 async function installOwnerApi(page) {
     await page.route('**/api/**', async (route) => {
         const pathname = new URL(route.request().url()).pathname;
         let payload = {};
         if (pathname === '/api/auth/session') {
             payload = { authenticated: true, user: { role: 'Owner', tenantType: 'gym', permissions: [] } };
+        } else if (pathname === '/api/saas/entitlements') {
+            payload = {
+                tenantStatus: 'active',
+                subscription: { status: 'active', plan: { code: 'qa', name: 'QA Plan' } },
+                entitlements: QA_ENTITLEMENTS,
+                recovery: false
+            };
         } else if (pathname === '/api/branding') {
             payload = { identity: { brandName: 'Logic Fit' } };
         } else if (pathname === '/api/members') {

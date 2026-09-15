@@ -1498,7 +1498,8 @@ function getFeatureCatalog({ tenantType = null } = {}) {
 function recoveryRequest(path, method) {
     const normalizedPath = String(path || '');
     const normalizedMethod = String(method || 'GET').toUpperCase();
-    return (normalizedPath === '/saas/subscription' && normalizedMethod === 'GET')
+    return (normalizedPath === '/saas/entitlements' && normalizedMethod === 'GET')
+        || (normalizedPath === '/saas/subscription' && normalizedMethod === 'GET')
         || (normalizedPath === '/saas/plans' && normalizedMethod === 'GET')
         || (normalizedPath === '/saas/subscription-requests' && ['GET', 'POST'].includes(normalizedMethod))
         || (/^\/saas\/subscription-requests\/\d+\/proof$/.test(normalizedPath) && normalizedMethod === 'POST');

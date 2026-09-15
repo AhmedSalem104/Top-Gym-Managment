@@ -16,6 +16,17 @@
         if (Number.isNaN(date.getTime())) return String(value);
         return new Intl.DateTimeFormat('ar-EG', withTime ? { dateStyle: 'medium', timeStyle: 'short' } : { dateStyle: 'medium' }).format(date);
     };
+    const trainerEntitlementState = { status: 'loading', tenantStatus: null, subscription: null, entitlements: null };
+    const trainerRouteFeatures = Object.freeze({
+        // Trainer Studio's dashboard is the client-operations shell; it is
+        // entitled through the Trainer `clients` capability rather than the
+        // Gym-only dashboard catalog entry.
+        dashboard: 'clients', clients: 'clients', calendar: 'sessions', sessions: 'sessions',
+        training: 'coaching', nutrition: 'nutrition', exercises: 'library', muscles: 'library', foods: 'library',
+        measurements: 'assessments', progress: 'progress', checkins: 'clients', goals: 'goals', packages: 'packages',
+        sales: 'payments', renewals: 'packages', finance: 'payments', reports: 'reports', portal: 'portal',
+        notifications: 'notifications', tasks: 'tasks', templates: 'templates'
+    });
     const BILLING_TERM_LABELS = Object.freeze({ monthly: 'شهر واحد', quarterly: '3 شهور', semiannual: '6 شهور', annual: '12 شهرًا' });
     const limitLabel = (value) => value == null ? 'غير محدود' : formatNumber(value);
     function planTerms(plan) {
@@ -102,6 +113,73 @@
         return payload;
     }
 
+    function trainerFeatureAccess(route) {
+        const feature = trainerRouteFeatures[route];
+        if (!feature) return { allowed: true, state: 'available', feature: null };
+        if (trainerEntitlementState.status !== 'ready') return { allowed: false, state: trainerEntitlementState.status === 'error' ? 'not_ready' : 'pending', feature };
+        const status = String(trainerEntitlementState.subscription?.status || '').toLowerCase();
+        if (status === 'suspended' || ['suspended', 'disabled', 'archived'].includes(String(trainerEntitlementState.tenantStatus || '').toLowerCase())) return { allowed: false, state: 'suspended', feature };
+        if (!['active', 'trial'].includes(status)) return { allowed: false, state: 'expired', feature };
+        const catalogEntry = (trainerEntitlementState.entitlements?.featureCatalog || []).find((item) => item?.key === feature);
+        if (!catalogEntry) return { allowed: false, state: 'not_included', feature, plan: trainerEntitlementState.subscription?.plan || null };
+        const enabled = trainerEntitlementState.entitlements?.features?.[feature];
+        const allowed = enabled === true || enabled === 1 || enabled === '1' || String(enabled).toLowerCase() === 'true';
+        return { allowed, state: allowed ? 'available' : 'not_included', feature, plan: trainerEntitlementState.subscription?.plan || null };
+    }
+
+    function applyTrainerEntitlementVisibility() {
+        $$('.trainer-studio-nav-link').forEach((link) => {
+            const access = trainerFeatureAccess(link.dataset.studioRoute);
+            link.hidden = access.allowed !== true;
+            link.toggleAttribute('inert', access.allowed !== true);
+            link.setAttribute('aria-hidden', String(access.allowed !== true));
+            link.dataset.entitlementFeature = access.feature || '';
+        });
+    }
+
+    function renderTrainerFeatureAccessState(route, access) {
+        const dynamic = $('#trainerStudioDynamicView');
+        if (!dynamic) return;
+        const feature = access.feature || trainerRouteFeatures[route] || route;
+        const plan = access.plan?.name || access.plan?.code || 'باقتك الحالية';
+        const copy = {
+            not_included: ['هذه الميزة غير متاحة في باقتك الحالية', `الميزة غير مشمولة في باقة ${plan} الحالية. يمكنك مراجعة الخطط المتاحة للترقية.`],
+            expired: ['انتهى اشتراكك', 'انتهت صلاحية اشتراك المنصة. جدّد الاشتراك لاستعادة المزايا دون فقد بياناتك.'],
+            suspended: ['تم إيقاف الحساب', 'تم إيقاف الوصول التشغيلي لهذا الحساب مؤقتًا. تواصل مع إدارة المنصة.'],
+            not_ready: ['تعذر التحقق من مزايا الاشتراك', 'أعد المحاولة بعد لحظات.'],
+            pending: ['جاري التحقق من مزايا الاشتراك', 'انتظر لحظة حتى نحدد المزايا المتاحة.']
+        }[access.state] || ['الميزة غير متاحة حاليًا', `لا يمكن فتح ${feature} بالحالة الحالية للاشتراك.`];
+        dynamic.innerHTML = `<section class="trainer-studio-feature-access" role="status"><div class="trainer-studio-feature-access-icon">!</div><span>Entitlement · ${escapeHtml(feature)}</span><h1>${escapeHtml(copy[0])}</h1><p>${escapeHtml(copy[1])}</p>${['not_included', 'expired'].includes(access.state) ? '<a class="btn btn-primary" href="/trainer-workspace/settings">عرض الخطط</a>' : ''}</section>`;
+        dynamic.hidden = false;
+    }
+
+    async function loadTrainerEntitlements() {
+        try {
+            let data = await api('/api/saas/entitlements');
+            if (!data.entitlements && !data.recovery) {
+                const legacy = await api('/api/saas/subscription');
+                data = {
+                    tenantStatus: legacy.tenant?.status || null,
+                    subscription: legacy.subscription,
+                    entitlements: {
+                        tenantType: legacy.tenant?.tenantType || 'independent_trainer',
+                        features: legacy.subscription?.plan?.features || {},
+                        limits: legacy.subscription?.plan?.limits || {},
+                        featureCatalog: legacy.featureCatalog || []
+                    }
+                };
+            }
+            trainerEntitlementState.status = 'ready';
+            trainerEntitlementState.tenantStatus = data.tenantStatus || null;
+            trainerEntitlementState.subscription = data.subscription || data.entitlements?.subscription || null;
+            trainerEntitlementState.entitlements = data.entitlements || {};
+        } catch (_) {
+            trainerEntitlementState.status = 'error';
+        }
+        applyTrainerEntitlementVisibility();
+        renderRoute(resolveRoute());
+    }
+
     function buildShell() {
         if ($('#trainerStudioSidebar')) return;
         document.body.classList.add('trainer-studio-v2');
@@ -154,8 +232,10 @@
         $('#trainerStudioSidebarClose')?.addEventListener('click', () => setSidebarOpen(false));
         $$('.trainer-studio-nav-link').forEach((link) => link.addEventListener('click', (event) => {
             event.preventDefault();
+            if (trainerFeatureAccess(link.dataset.studioRoute).allowed !== true) return;
             navigate(link.dataset.studioRoute);
         }));
+        applyTrainerEntitlementVisibility();
         window.addEventListener('popstate', () => renderRoute(resolveRoute()));
     }
 
@@ -844,6 +924,11 @@
         buildShell();
         setRouteChrome(route);
         hideAllSurfaces();
+        const access = trainerFeatureAccess(route);
+        if (access.allowed !== true) {
+            renderTrainerFeatureAccessState(route, access);
+            return;
+        }
         if (route === 'dashboard') showStatic('dashboard');
         else if (route === 'clients') showStatic('clients');
         else if (route === 'packages') showStatic('packages');
@@ -945,4 +1030,5 @@
 
     buildShell();
     renderRoute(resolveRoute());
+    void loadTrainerEntitlements();
 })();

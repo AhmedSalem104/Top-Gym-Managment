@@ -5,7 +5,7 @@
     const nativeFetch = window.fetch.bind(window);
     const permissions = window.topGymPermissions;
     const rememberEmailKey = 'topgym.login.email';
-    const state = { user: null, ready: false, redirecting: false };
+    const state = { user: null, ready: false, redirecting: false, entitlements: null };
     let tenantWelcomeTimer;
     const brandName = () => window.topGymBranding?.get?.().identity?.brandName || 'Logic Fit';
 
@@ -324,6 +324,47 @@
         await brandingApi.refresh({ scope: 'tenant' });
     }
 
+    async function refreshTenantEntitlements(user = state.user) {
+        if (!user) return null;
+        if (user.role === 'PlatformAdmin') {
+            state.entitlements = permissions.setEntitlements({ tenantStatus: 'active' }, 'ready');
+            return state.entitlements;
+        }
+        permissions.setEntitlements(null, 'loading');
+        try {
+            const response = await nativeFetch('/api/saas/entitlements', { credentials: 'same-origin', cache: 'no-store' });
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok) throw Object.assign(new Error(data.error || 'تعذر التحقق من مزايا الاشتراك.'), { code: data.code, status: response.status });
+            let envelope = data;
+            // Keep older authenticated shells and test/runtime adapters
+            // compatible while the dedicated envelope rolls out. Production
+            // uses the first response; the fallback is only accepted when the
+            // response is missing the central entitlements object entirely.
+            if (!envelope.entitlements && !envelope.recovery) {
+                const legacyResponse = await nativeFetch('/api/saas/subscription', { credentials: 'same-origin', cache: 'no-store' });
+                const legacy = await legacyResponse.json().catch(() => ({}));
+                if (!legacyResponse.ok || !legacy.subscription?.status) throw Object.assign(new Error(legacy.error || 'تعذر تحميل مزايا الاشتراك.'), { code: legacy.code, status: legacyResponse.status });
+                envelope = {
+                    tenantStatus: legacy.tenant?.status || null,
+                    subscription: legacy.subscription,
+                    entitlements: {
+                        tenantType: legacy.tenant?.tenantType || user.tenantType || null,
+                        features: legacy.subscription?.plan?.features || {},
+                        limits: legacy.subscription?.plan?.limits || {},
+                        featureCatalog: legacy.featureCatalog || []
+                    }
+                };
+            }
+            state.entitlements = permissions.setEntitlements(envelope, 'ready');
+            return state.entitlements;
+        } catch (error) {
+            // Navigation fails closed until the central envelope is available.
+            // Backend enforcement remains authoritative for every API.
+            state.entitlements = permissions.setEntitlements({ error: error.code || 'ENTITLEMENTS_NOT_READY' }, 'error');
+            return state.entitlements;
+        }
+    }
+
     function showTenantWelcome() {
         const layer = $('tenantWelcomeLayer');
         if (!layer) return;
@@ -403,13 +444,16 @@
         const accountHost = topbarControls || pageTabs;
         if (accountBar && accountHost && accountBar.parentElement !== accountHost) accountHost.appendChild(accountBar);
         document.querySelectorAll('[data-page-tab]').forEach((button) => {
+            const feature = permissions.featureForTab(button.dataset.pageTab);
+            const entitlementAllowed = !feature || permissions.canUseFeature(feature, user);
             const allowed = button.hasAttribute('data-platform-only')
                 ? isPlatformAdmin
-                : button.hasAttribute('data-owner-only') ? isOwner && !isIndependentTrainer : tabs.includes(button.dataset.pageTab);
+                : button.hasAttribute('data-owner-only') ? isOwner && !isIndependentTrainer && entitlementAllowed : tabs.includes(button.dataset.pageTab) && entitlementAllowed;
             if (!allowed && button === document.activeElement) button.blur();
             button.hidden = !allowed;
             button.toggleAttribute('inert', !allowed);
             button.setAttribute('aria-hidden', String(!allowed));
+            if (feature) button.dataset.entitlementFeature = feature;
         });
         const managementPanel = $('authUsersPanel');
         if (managementPanel) managementPanel.hidden = !isOwner || isIndependentTrainer;
@@ -436,6 +480,61 @@
             window.location.hash = `#${permissions.firstAccessibleTab(user)}`;
         }
         applyPermissionControls(user);
+        applyEntitlementControls(user);
+    }
+
+    function applyEntitlementControls(user) {
+        const idFeatures = {
+            topAddMemberButton: 'members',
+            topPricingButton: 'pricing',
+            dashboardPrintPricingButton: 'pricing',
+            dashboardPrintPricingPreviewButton: 'pricing',
+            dashboardDayPassAdd: 'day_passes',
+            dashboardDayPassManage: 'day_passes',
+            dayPassSaveButton: 'day_passes',
+            addExpenseButton: 'finance',
+            addExpenseFromTabButton: 'finance',
+            storeCreateSaleButton: 'store',
+            brandingAddPaymentMethod: 'payments'
+        };
+        Object.entries(idFeatures).forEach(([id, feature]) => {
+            const element = $(id);
+            if (element) element.dataset.entitlementFeature = feature;
+        });
+        const permissionVisible = (element) => {
+            if (element.hasAttribute('data-platform-only')) return user?.role === 'PlatformAdmin';
+            if (element.hasAttribute('data-owner-only') && user?.role !== 'Owner') return false;
+            if (element.matches('[data-page-tab]')) return permissions.tabsForUser(user).includes(element.dataset.pageTab);
+            const required = element.dataset.requiredPermission;
+            return !required || user?.role === 'Owner' || permissionValueAllowed(user, required);
+        };
+        document.querySelectorAll('[data-page-tab], [data-page-tab-link], [data-entitlement-feature]').forEach((element) => {
+            const feature = element.dataset.entitlementFeature || permissions.featureForTab(element.dataset.pageTab || element.dataset.pageTabLink);
+            if (!feature) return;
+            element.dataset.entitlementFeature = feature;
+            const allowed = permissions.canUseFeature(feature, user) && permissionVisible(element);
+            // Permission visibility and commercial visibility are separate
+            // gates. Preserve the former while hiding the latter entirely.
+            if (!allowed && element === document.activeElement) element.blur();
+            if (!allowed) {
+                element.dataset.entitlementHidden = 'true';
+                element.hidden = true;
+                element.toggleAttribute('inert', true);
+                element.setAttribute('aria-hidden', 'true');
+                if ('disabled' in element && !permissionVisible(element)) element.disabled = true;
+                return;
+            }
+            // Only undo hiding that this entitlement pass applied. This keeps
+            // permission/owner-controlled elements hidden when their feature
+            // becomes available again.
+            if (element.dataset.entitlementHidden === 'true') {
+                delete element.dataset.entitlementHidden;
+                element.hidden = false;
+                element.toggleAttribute('inert', false);
+                element.setAttribute('aria-hidden', 'false');
+                if ('disabled' in element && permissionVisible(element)) element.disabled = false;
+            }
+        });
     }
 
     function showAuthenticated(user, options = {}) {
@@ -626,6 +725,7 @@
                 }
                 if (user.role === 'PlatformAdmin') window.topGymBranding?.apply?.(window.topGymBranding.fallback?.() || {}, 1);
                 else await refreshTenantBranding(user);
+                await refreshTenantEntitlements(user);
                 showAuthenticated(user, { showWelcome: hasTenantWelcomeFlag() });
             }
             else showLogin('', Boolean(data.setupRequired));
@@ -642,13 +742,26 @@
         getUser: () => state.user,
         isOwner: () => state.user?.role === 'Owner',
         isPlatformAdmin: () => state.user?.role === 'PlatformAdmin',
+        getEntitlements: () => permissions.getEntitlementState(),
+        canUseFeature: (featureKey) => permissions.canUseFeature(featureKey, state.user),
+        refreshEntitlements: async () => {
+            const result = await refreshTenantEntitlements(state.user);
+            if (state.ready && state.user) {
+                applyNavigation(state.user);
+                window.dispatchEvent(new CustomEvent('topgym:entitlements-updated', { detail: result }));
+            }
+            return result;
+        },
         isReady: () => state.ready,
         logout: () => $('authLogoutButton')?.click(),
         refresh: checkSession
     };
 
     const permissionObserver = new MutationObserver(() => {
-        if (state.ready) applyPermissionControls(state.user);
+        if (state.ready) {
+            applyPermissionControls(state.user);
+            applyEntitlementControls(state.user);
+        }
     });
     permissionObserver.observe(document.body, { childList: true, subtree: true });
 

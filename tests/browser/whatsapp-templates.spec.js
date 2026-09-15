@@ -103,6 +103,13 @@ test('Gym route has no WhatsApp management UI or management feature', async ({ p
         const pathname = new URL(route.request().url()).pathname;
         const response = pathname === '/api/auth/session'
             ? { authenticated: true, user: { id: 1, tenantId: 101, tenantType: 'gym', role: 'Owner', permissions: [] } }
+            : pathname === '/api/saas/entitlements'
+                ? {
+                    tenantStatus: 'active',
+                    subscription: { status: 'active', plan: { code: 'qa', name: 'QA Plan' } },
+                    entitlements: { tenantType: 'gym', features: { dashboard: true, members: true }, featureCatalog: [] },
+                    recovery: false
+                }
             : {};
         await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(response) });
     });

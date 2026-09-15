@@ -24,6 +24,19 @@ const catalog = {
     ]
 };
 
+const QA_ENTITLEMENTS = {
+    tenantType: 'gym',
+    features: {
+        dashboard: true, members: true, attendance: true, pricing: true,
+        payments: true, reports: true, portal: true, notifications: true,
+        coaching: true, nutrition: true, library: true, branding: true, team: true
+    },
+    featureCatalog: [
+        'dashboard', 'members', 'attendance', 'pricing', 'payments', 'reports',
+        'portal', 'notifications', 'coaching', 'nutrition', 'library', 'branding', 'team'
+    ].map((key) => ({ key, tenantTypes: ['gym'] }))
+};
+
 const membership = Object.freeze({
     id: 5001,
     plan: 'gym_only',
@@ -62,6 +75,12 @@ async function installLocalMemberApi(page) {
         try { body = request.postDataJSON() || {}; } catch (_) { body = {}; }
 
         if (pathname === '/api/auth/session') return jsonResponse(route, { authenticated: true, user: { id: 7, name: 'QA Owner', role: 'Owner', tenantType: 'gym', permissions: [] } });
+        if (pathname === '/api/saas/entitlements') return jsonResponse(route, {
+            tenantStatus: 'active',
+            subscription: { status: 'active', plan: { code: 'qa', name: 'QA Plan' } },
+            entitlements: QA_ENTITLEMENTS,
+            recovery: false
+        });
         if (pathname === '/api/branding') return jsonResponse(route, { identity: { brandName: 'Logic Fit' } });
         if (pathname === '/api/phone/countries') return jsonResponse(route, catalog);
         if (pathname === '/api/phone/country') return jsonResponse(route, { countryCode: 'EG' });
