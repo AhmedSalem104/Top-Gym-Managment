@@ -304,12 +304,20 @@ html[data-theme="dark"] .platform-field input { background: rgb(10 30 53 / .78);
 .note-item small, .audit-item small { display: block; margin-top: 6px; color: var(--text-muted); font-size: .63rem; }
 
 .plan-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
-.plan-card { position: relative; display: grid; gap: 16px; padding: 22px; border: 1px solid var(--platform-border); border-radius: 16px; background: var(--platform-surface); box-shadow: var(--shadow-card); }
+.plan-card { position: relative; display: grid; grid-template-rows: auto auto auto auto auto 1fr auto; gap: 16px; min-width: 0; padding: 22px; border: 1px solid var(--platform-border); border-radius: 16px; background: var(--platform-surface); box-shadow: var(--shadow-card); }
 .plan-card.featured { border-color: var(--primary-border); box-shadow: var(--shadow-primary); }
 .plan-card h3 { color: var(--text-primary); font-size: 1.15rem; }
 .plan-card p { min-height: 46px; color: var(--text-muted); font-size: .72rem; }
-.plan-price { color: var(--text-primary); font-size: 1.7rem; font-weight: 800; }
-.plan-price small { color: var(--text-muted); font-size: .68rem; font-weight: 500; }
+.plan-price { display: flex; align-items: baseline; flex-wrap: wrap; gap: 7px; min-width: 0; color: var(--text-primary); font-size: 1.7rem; font-variant-numeric: tabular-nums; font-weight: 800; line-height: 1.2; }
+.plan-price small { color: var(--text-muted); font-size: .68rem; font-weight: 500; line-height: 1.4; white-space: nowrap; }
+.plan-terms-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; min-width: 0; padding-top: 2px; }
+.plan-term { display: grid; min-width: 0; gap: 4px; border: 1px solid var(--border-secondary); border-radius: 10px; background: var(--bg-surface); padding: 9px 10px; }
+.plan-term small { overflow: hidden; color: var(--text-muted); font-size: .62rem; font-weight: 700; line-height: 1.35; text-overflow: ellipsis; white-space: nowrap; }
+.plan-term strong { min-width: 0; overflow: hidden; color: var(--text-primary); direction: ltr; font-size: .82rem; font-variant-numeric: tabular-nums; line-height: 1.35; text-align: left; text-overflow: ellipsis; white-space: nowrap; unicode-bidi: isolate; }
+.plan-term:first-child { border-color: var(--primary-border); background: var(--primary-soft); }
+.plan-term:first-child strong { color: var(--text-primary-soft); }
+.plan-availability { display: flex; min-width: 0; align-items: center; min-height: 27px; }
+.plan-availability .status-pill { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .plan-compatibility { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-height: 27px; border-top: 1px solid var(--border-secondary); padding-top: 12px; color: var(--text-muted); font-size: .65rem; }
 .plan-compatibility .tenant-type-pill { padding-block: 3px; }
 .plan-limits { display: grid; gap: 7px; border-top: 1px solid var(--border-secondary); padding-top: 14px; }
@@ -318,10 +326,21 @@ html[data-theme="dark"] .platform-field input { background: rgb(10 30 53 / .78);
 .plan-features { display: flex; flex-wrap: wrap; gap: 6px; }
 .plan-card.is-inactive { opacity: .78; border-style: dashed; }
 .plan-card.is-inactive .plan-price { color: var(--text-muted); }
-.plan-card-actions { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center; margin-top: auto; }
+.plan-card-actions { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 8px; align-items: center; margin-top: auto; }
 .plan-edit { width: 100%; }
 .plan-delete { min-width: 66px; }
 .plan-delete:disabled { cursor: not-allowed; opacity: .48; }
+
+@media (max-width: 680px) {
+    .plan-card { gap: 13px; padding: 16px; }
+    .plan-price { font-size: 1.45rem; }
+    .plan-term { padding: 8px; }
+    .plan-term small { font-size: .58rem; }
+    .plan-term strong { font-size: .76rem; }
+    .plan-card-actions { grid-template-columns: 1fr; }
+    .plan-card-actions .plan-delete,
+    .plan-card-actions .plan-status { width: 100%; }
+}
 .dialog-fieldset { min-width: 0; margin: 0; border: 1px solid var(--platform-border); border-radius: 12px; padding: 12px; }
 .dialog-fieldset legend { padding-inline: 6px; color: var(--text-secondary); font-size: .72rem; font-weight: 800; }
 .audit-table { min-width: 850px; }
