@@ -33,7 +33,9 @@ const PLAN_CONFIGURATIONS = Object.freeze([
             Object.freeze({ code: 'annual', durationMonths: 12, price: 2699 })
         ]),
         limits: Object.freeze({ maxMembers: 150, maxClients: 50, maxUsers: 2, maxBranches: 1, maxAiGenerations: 50, maxStorageMb: 1024 }),
-        featureKeys: Object.freeze(['dashboard', 'members', 'attendance', 'pricing', ...SHARED_FEATURES, 'clients'])
+        // Branch context is a core Gym operating surface.  maxBranches remains
+        // the creation limit; it must not disable the existing/default branch.
+        featureKeys: Object.freeze(['dashboard', 'members', 'attendance', 'pricing', 'branches', ...SHARED_FEATURES, 'clients'])
     }),
     Object.freeze({
         code: 'basic', name: 'Basic',

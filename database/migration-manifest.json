@@ -72,6 +72,19 @@
       "dataBackfill": false,
       "controlledPlanConfiguration": true,
       "rollback": "forward-fix-or-database-recovery"
+    },
+    "037-gym-core-branches-entitlement.sql": {
+      "version": "037",
+      "checksum": "f33ff323795de93fc79d19a93d31e706877da6d6c055e977e9c49c0d3d53fe5d",
+      "transactional": true,
+      "backwardCompatible": true,
+      "destructive": false,
+      "requiresBackup": true,
+      "requiresMaintenanceMode": false,
+      "rlsImpact": false,
+      "dataBackfill": false,
+      "controlledPlanConfiguration": true,
+      "rollback": "forward-fix-or-database-recovery"
     }
   }
 }

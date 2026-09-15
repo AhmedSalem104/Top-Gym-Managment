@@ -41,6 +41,13 @@ const FEATURE_CATALOG = Object.freeze([
 
 const FEATURE_BY_KEY = new Map(FEATURE_CATALOG.map((feature) => [feature.key, feature]));
 const FEATURE_KEYS = Object.freeze(FEATURE_CATALOG.map((feature) => feature.key));
+// These are operational foundations, not optional commercial add-ons. A Gym
+// subscription must retain a usable branch context even when an older
+// subscription snapshot predates the current catalog.
+const CORE_FEATURE_KEYS_BY_TENANT_TYPE = Object.freeze({
+    [TENANT_TYPES.GYM]: Object.freeze(['branches']),
+    [TENANT_TYPES.INDEPENDENT_TRAINER]: Object.freeze([])
+});
 const LEGACY_FEATURE_ALIASES = Object.freeze({
     intelligence: 'ai',
     coaching: 'coaching',
@@ -69,6 +76,7 @@ module.exports = {
     FEATURE_KEYS,
     FEATURE_BY_KEY,
     LEGACY_FEATURE_ALIASES,
+    CORE_FEATURE_KEYS_BY_TENANT_TYPE,
     getFeatureCatalog,
     hasFeature,
     normalizeFeatureKey

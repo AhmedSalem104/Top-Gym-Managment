@@ -362,6 +362,11 @@
             if (!authenticatedUser || isIndependentTrainerTenant()) return;
             if (dataLoadPromise) return dataLoadPromise;
             const loadPromise = withLoader(async () => {
+                // Resolve the authoritative branch context before any
+                // branch-scoped request. This removes the startup race where
+                // a stale sessionStorage branch id reached /api/members
+                // before branch bootstrap had validated it.
+                await window.topGymBranchContext?.getBootstrap?.();
                 const isOwner = window.topGymAuth?.isOwner?.() === true;
                 const activeTab = requestedTab();
                 const dashboardRequest = isOwner && activeTab === 'dashboard'
@@ -410,6 +415,7 @@
         }
         async function loadMembersOnly() {
             if (!window.topGymAuth?.getUser?.() || isIndependentTrainerTenant()) return;
+            await window.topGymBranchContext?.getBootstrap?.();
             const queryKey = JSON.stringify([
                 $('searchInput')?.value.trim() || '',
                 $('statusFilter')?.value || '',

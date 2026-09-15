@@ -311,6 +311,12 @@
                 renderSelector(bootstrap);
                 renderManagerWithCommerce({ ...bootstrap, branchLimit: bootstrap.branchLimit });
             } catch (error) {
+                // Never keep sending a branch selected in an older session
+                // after the authoritative bootstrap failed. The next request
+                // can then resolve the tenant's single/default branch instead
+                // of failing with a stale "Branch was not found" context.
+                writeStoredBranch('');
+                writeStoredSection('');
                 if (shell) shell.hidden = true;
                 syncContextBar();
             if (user.role === 'Owner') notify(error.message || 'تعذر تحميل سياق الفروع.', true);

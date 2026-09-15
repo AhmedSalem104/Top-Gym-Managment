@@ -1414,6 +1414,20 @@ function completeEntitlementFeatures(current) {
     return normalized;
 }
 
+function applyCoreFeatureEntitlements(features, { tenantType = null, subscriptionStatus = null } = {}) {
+    const normalizedType = resolveTenantType(tenantType);
+    const isOperational = ['active', 'trial'].includes(String(subscriptionStatus || '').toLowerCase());
+    if (!isOperational) return features;
+    for (const featureKey of featureCatalog.CORE_FEATURE_KEYS_BY_TENANT_TYPE[normalizedType] || []) {
+        // Core features are a compatibility floor for active subscriptions.
+        // This does not rewrite historical snapshots or prices; it prevents a
+        // catalog addition from disabling the operating context of an older
+        // subscription until its next renewal.
+        features[featureKey] = true;
+    }
+    return features;
+}
+
 async function getEffectiveEntitlements(tenantId = currentTenantId({ required: true }), subscription = null, { readOnly = false, tenantType = null } = {}) {
     const id = tenantIdValue(tenantId);
     const current = subscription || await getCurrentSubscription(id, { readOnly });
@@ -1437,7 +1451,10 @@ async function getEffectiveEntitlements(tenantId = currentTenantId({ required: t
         subscriptionStatus,
         requirePlan: Boolean(current)
     });
-    const features = { ...baseFeatures, ...(overrides?.features || {}) };
+    const features = applyCoreFeatureEntitlements(
+        { ...baseFeatures, ...(overrides?.features || {}) },
+        { tenantType: resolvedTenantType, subscriptionStatus }
+    );
     const capabilities = capabilityService.resolveEffectiveCapabilities({
         tenantType: resolvedTenantType,
         features,

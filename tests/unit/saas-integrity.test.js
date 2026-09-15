@@ -136,5 +136,5 @@ test('subscription lifecycle and enforcement have explicit expiry, recovery and 
     assert.match(source, /SAAS_STORAGE_LIMIT_REACHED/);
     assert.match(source, /resolveEffectiveLimits\(/);
     assert.match(source, /overrideLimits: overrides/);
-    assert.match(source, /features = \{ \.\.\.baseFeatures, \.\.\.\(overrides\?\.features \|\| \{\}\) \}/);
+    assert.match(source, /applyCoreFeatureEntitlements\(\s*\{\s*\.\.\.baseFeatures,\s*\.\.\.\(overrides\?\.features \|\| \{\}\)\s*\}/);
 });

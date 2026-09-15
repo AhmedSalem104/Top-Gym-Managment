@@ -11,6 +11,7 @@ const capabilityService = require('../../src/services/capability-service');
 
 const root = path.join(__dirname, '..', '..');
 const migration = fs.readFileSync(path.join(root, 'database', 'migrations', '036-saas-plans-phase2.sql'), 'utf8');
+const branchCoreMigration = fs.readFileSync(path.join(root, 'database', 'migrations', '037-gym-core-branches-entitlement.sql'), 'utf8');
 const manifest = JSON.parse(fs.readFileSync(path.join(root, 'database', 'migration-manifest.json'), 'utf8'));
 const saasService = fs.readFileSync(path.join(root, 'src', 'services', 'saas-service.js'), 'utf8');
 const intelligenceService = fs.readFileSync(path.join(root, 'src', 'services', 'intelligence-service.js'), 'utf8');
@@ -40,6 +41,10 @@ test('Phase 2 catalog contains exactly the approved plans, terms, limits and fea
     assert.equal(new Set(featureCatalog.FEATURE_KEYS).size, 31);
     assert.equal(catalog.featureFlagsForPlan('business').prioritySupport, true);
     assert.equal(catalog.featureFlagsForPlan('pro').prioritySupport, false);
+    for (const code of ['starter', 'basic', 'pro', 'business']) {
+        assert.equal(catalog.featureFlagsForPlan(code).branches, true, `${code}:branches`);
+    }
+    assert.deepEqual(featureCatalog.CORE_FEATURE_KEYS_BY_TENANT_TYPE.independent_trainer, []);
 });
 
 test('feature visibility is catalog-driven by tenant type, not by plan name', () => {
@@ -56,7 +61,7 @@ test('feature visibility is catalog-driven by tenant type, not by plan name', ()
 
 test('the approved plan matrix is explicit for every catalog feature and tenant type', () => {
     const expected = {
-        starter: new Set(['dashboard', 'members', 'attendance', 'coaching', 'nutrition', 'library', 'pricing', 'payments', 'reports', 'portal', 'branding', 'team', 'clients', 'notifications']),
+        starter: new Set(['dashboard', 'members', 'attendance', 'coaching', 'nutrition', 'library', 'pricing', 'payments', 'reports', 'portal', 'branding', 'team', 'clients', 'notifications', 'branches']),
         basic: new Set(['dashboard', 'members', 'attendance', 'coaching', 'nutrition', 'library', 'pricing', 'payments', 'reports', 'portal', 'branding', 'team', 'clients', 'notifications', 'ai', 'finance', 'day_passes', 'branches', 'backup', 'assessments', 'progress', 'goals', 'sessions', 'packages', 'tasks', 'templates']),
         pro: new Set(['dashboard', 'members', 'attendance', 'coaching', 'nutrition', 'library', 'pricing', 'payments', 'reports', 'portal', 'branding', 'team', 'clients', 'notifications', 'ai', 'finance', 'day_passes', 'branches', 'backup', 'assessments', 'progress', 'goals', 'sessions', 'packages', 'tasks', 'templates', 'store', 'inventory', 'bar', 'audit']),
         business: new Set(featureCatalog.FEATURE_KEYS)
@@ -88,6 +93,23 @@ test('migration 036 is guarded, additive and seeds the approved commercial matri
     assert.doesNotMatch(migration, /DROP\s+(?:TABLE|COLUMN|INDEX)/i);
     assert.doesNotMatch(migration, /TRUNCATE\s+TABLE/i);
     assert.equal(manifest.migrations['036-saas-plans-phase2.sql'].checksum.length, 64);
+});
+
+test('migration 037 makes branches core for the four official plans without touching tenant history', () => {
+    assert.match(branchCoreMigration, /BEGIN TRANSACTION/i);
+    assert.match(branchCoreMigration, /MERGE\s+dbo\.saas_plan_features/i);
+    assert.match(branchCoreMigration, /feature_key='branches'/i);
+    assert.match(branchCoreMigration, /JSON_MODIFY/i);
+    assert.match(branchCoreMigration, /starter' THEN 1/i);
+    assert.match(branchCoreMigration, /basic' THEN 2/i);
+    assert.match(branchCoreMigration, /pro' THEN 5/i);
+    assert.match(branchCoreMigration, /business' THEN NULL/i);
+    assert.match(branchCoreMigration, /max_branches/i);
+    assert.match(branchCoreMigration, /COUNT\(\*\).*<> 4/s);
+    assert.doesNotMatch(branchCoreMigration, /saas_tenant_subscriptions[\s\S]*UPDATE/i);
+    assert.doesNotMatch(branchCoreMigration, /UPDATE\s+dbo\.(?:members|memberships|gym_payments|gym_payment_transactions)/i);
+    assert.doesNotMatch(branchCoreMigration, /DROP\s+(?:TABLE|COLUMN|INDEX)/i);
+    assert.doesNotMatch(branchCoreMigration, /TRUNCATE\s+TABLE/i);
 });
 
 test('billing term normalization preserves annual compatibility and independent prices', () => {

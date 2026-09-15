@@ -11,6 +11,7 @@ const FEATURE_CATALOG = [
     { key: 'dashboard', description: 'Dashboard', tenantTypes: ['gym'], limitKeys: [], screens: [], apiPaths: ['/dashboard'] },
     { key: 'members', description: 'Members', tenantTypes: ['gym'], limitKeys: ['maxMembers'], screens: [], apiPaths: ['/members'] },
     { key: 'attendance', description: 'Attendance', tenantTypes: ['gym'], limitKeys: [], screens: [], apiPaths: ['/attendance'] },
+    { key: 'branches', description: 'Branches', tenantTypes: ['gym'], limitKeys: ['maxBranches'], screens: [], apiPaths: ['/branches'] },
     { key: 'clients', description: 'Clients', tenantTypes: ['independent_trainer'], limitKeys: ['maxClients'], screens: [], apiPaths: ['/trainer/clients'] },
     { key: 'assessments', description: 'Assessments', tenantTypes: ['independent_trainer'], limitKeys: [], screens: [], apiPaths: ['/trainer/assessments'] },
     { key: 'coaching', description: 'Coaching', tenantTypes: ['gym', 'independent_trainer'], limitKeys: [], screens: [], apiPaths: ['/coaching'] },
@@ -21,10 +22,10 @@ const FEATURE_CATALOG = [
 ];
 
 const PLAN_CONFIG = [
-    { id: 11, code: 'starter', name: 'Starter', description: 'أساسيات التشغيل', maxMembers: 150, maxClients: 50, maxUsers: 2, maxBranches: 1, maxAiGenerations: 50, maxStorageMb: 1024, enabled: ['dashboard', 'members', 'attendance', 'coaching', 'nutrition', 'payments', 'reports', 'portal', 'clients'] },
-    { id: 12, code: 'basic', name: 'Basic', description: 'تشغيل كامل', maxMembers: 500, maxClients: 150, maxUsers: 5, maxBranches: 2, maxAiGenerations: 200, maxStorageMb: 5120, enabled: ['dashboard', 'members', 'attendance', 'clients', 'assessments', 'coaching', 'nutrition', 'payments', 'reports', 'portal'] },
-    { id: 13, code: 'pro', name: 'Pro', description: 'تشغيل متقدم', maxMembers: 1500, maxClients: 500, maxUsers: 15, maxBranches: 5, maxAiGenerations: 750, maxStorageMb: 20480, enabled: ['dashboard', 'members', 'attendance', 'clients', 'assessments', 'coaching', 'nutrition', 'payments', 'reports', 'portal'] },
-    { id: 14, code: 'business', name: 'Business', description: 'كل الإمكانيات', maxMembers: null, maxClients: null, maxUsers: null, maxBranches: null, maxAiGenerations: 2000, maxStorageMb: 51200, enabled: ['dashboard', 'members', 'attendance', 'clients', 'assessments', 'coaching', 'nutrition', 'payments', 'reports', 'portal'] }
+    { id: 11, code: 'starter', name: 'Starter', description: 'أساسيات التشغيل', maxMembers: 150, maxClients: 50, maxUsers: 2, maxBranches: 1, maxAiGenerations: 50, maxStorageMb: 1024, enabled: ['dashboard', 'members', 'attendance', 'coaching', 'nutrition', 'payments', 'reports', 'portal', 'clients', 'branches'] },
+    { id: 12, code: 'basic', name: 'Basic', description: 'تشغيل كامل', maxMembers: 500, maxClients: 150, maxUsers: 5, maxBranches: 2, maxAiGenerations: 200, maxStorageMb: 5120, enabled: ['dashboard', 'members', 'attendance', 'clients', 'assessments', 'coaching', 'nutrition', 'payments', 'reports', 'portal', 'branches'] },
+    { id: 13, code: 'pro', name: 'Pro', description: 'تشغيل متقدم', maxMembers: 1500, maxClients: 500, maxUsers: 15, maxBranches: 5, maxAiGenerations: 750, maxStorageMb: 20480, enabled: ['dashboard', 'members', 'attendance', 'clients', 'assessments', 'coaching', 'nutrition', 'payments', 'reports', 'portal', 'branches'] },
+    { id: 14, code: 'business', name: 'Business', description: 'كل الإمكانيات', maxMembers: null, maxClients: null, maxUsers: null, maxBranches: null, maxAiGenerations: 2000, maxStorageMb: 51200, enabled: ['dashboard', 'members', 'attendance', 'clients', 'assessments', 'coaching', 'nutrition', 'payments', 'reports', 'portal', 'branches'] }
 ].map((plan) => ({
     ...plan,
     isActive: true,

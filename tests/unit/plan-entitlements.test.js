@@ -26,6 +26,8 @@ test('feature catalog is unique and covers every shipped Gym and Trainer capabil
     }
     assert.ok(!catalog.FEATURE_BY_KEY.get('branches').tenantTypes.includes('independent_trainer'));
     assert.ok(!catalog.FEATURE_BY_KEY.get('members').tenantTypes.includes('independent_trainer'));
+    assert.deepEqual(catalog.CORE_FEATURE_KEYS_BY_TENANT_TYPE.gym, ['branches']);
+    assert.deepEqual(catalog.CORE_FEATURE_KEYS_BY_TENANT_TYPE.independent_trainer, []);
 });
 
 test('legacy aliases normalize into the canonical catalog', () => {
