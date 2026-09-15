@@ -173,6 +173,41 @@ test('Gym branch core entitlement exposes the configured limit and blocks creati
     }
 });
 
+test('Gym Owner can remove a non-main branch through the safe archive action', async ({ page }) => {
+    let archived = false;
+    const archiveRequests = [];
+    await page.route('**/api/**', async (route) => {
+        const request = route.request();
+        const pathname = new URL(request.url()).pathname;
+        if (pathname === '/api/auth/session') return json(route, { authenticated: true, user: { id: 207, name: 'Branch Delete QA', role: 'Owner', tenantType: 'gym', permissions: [] } });
+        if (pathname === '/api/branding') return json(route, { identity: { brandName: 'Branch Delete QA' } });
+        if (pathname === '/api/saas/entitlements') return json(route, entitlementPayload('gym', 'pro'));
+        if (pathname === '/api/branches/bootstrap') {
+            const branches = archived
+                ? [{ id: 1, name: 'Main Branch', code: 'main', status: 'active', isMain: true }]
+                : [{ id: 1, name: 'Main Branch', code: 'main', status: 'active', isMain: true }, { id: 2, name: 'North Branch', code: 'north', status: 'active', isMain: false }];
+            return json(route, { branches, activeBranches: branches, defaultBranch: branches[0], sections: [], branchLimit: 5, hasMultipleActiveBranches: branches.length > 1, canUseAllBranches: true });
+        }
+        if (pathname === '/api/branches/2/archive' && request.method() === 'POST') {
+            archiveRequests.push(pathname);
+            archived = true;
+            return json(route, { branch: { id: 2, status: 'archived' } });
+        }
+        return json(route, {});
+    });
+
+    await page.goto('/?branchDelete=qa#branches', { waitUntil: 'networkidle' });
+    const deleteButton = page.locator('[data-branch-archive="2"]');
+    await expect(deleteButton).toBeVisible();
+    await expect(deleteButton).toHaveClass(/btn-danger/u);
+    await expect(deleteButton).toHaveText('حذف الفرع');
+
+    page.once('dialog', (dialog) => dialog.accept());
+    await deleteButton.click();
+    await expect.poll(() => archiveRequests.length).toBe(1);
+    await expect(page.locator('[data-branch-archive="2"]')).toHaveCount(0);
+});
+
 test('Starter Gym carries the existing branch context across core operational requests', async ({ page }) => {
     const requests = [];
     await page.route('**/api/**', async (route) => {

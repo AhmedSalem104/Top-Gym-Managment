@@ -19,3 +19,14 @@ test('dynamically injected Branches tab keeps delegated navigation and Gym-only 
     assert.match(branches, /button\.setAttribute\('aria-label', 'الفروع'\)/u);
     assert.match(branches, /tab\.toggleAttribute\('inert', !show\)/u);
 });
+
+test('branch delete action keeps safe archive semantics and destructive affordance', () => {
+    const branches = read('public/js/branch-context.js');
+
+    assert.match(branches, /data-branch-archive/u);
+    assert.match(branches, /function decorateBranchDeleteActions\(\)/u);
+    assert.match(branches, /button\.classList\.add\('btn-danger'\)/u);
+    assert.match(branches, /button\.textContent =/u);
+    assert.match(branches, /\/archive`/u);
+    assert.match(branches, /preserving its historical data/u);
+});

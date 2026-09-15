@@ -262,6 +262,19 @@
     }
 
     function renderManagerWithCommerce(data) {
+        // The existing archive endpoint is the safe delete contract: it removes a
+        // branch from active operations while preserving its historical data.
+        function decorateBranchDeleteActions() {
+            document.querySelectorAll('[data-branch-archive]').forEach((button) => {
+                button.classList.remove('btn-light');
+                button.classList.add('btn-danger');
+                button.textContent = 'حذف الفرع';
+                const name = button.closest('[data-branch-row]')?.querySelector('.branch-list-copy strong')?.textContent?.trim();
+                button.title = 'حذف الفرع';
+                button.setAttribute('aria-label', name ? `حذف الفرع ${name}` : 'حذف الفرع');
+            });
+        }
+
         const active = Array.isArray(data?.activeBranches) ? data.activeBranches : [];
         const limit = data?.branchLimit == null ? '—' : Number(data.branchLimit).toLocaleString('ar-EG');
         if ($('branchesActiveCount')) $('branchesActiveCount').textContent = active.length.toLocaleString('ar-EG');
@@ -274,6 +287,7 @@
             const toggleLabel = branch.barEnabled ? 'إيقاف Bar' : 'تفعيل Bar';
             return `<article class="branch-list-item" data-branch-row="${escapeHtml(branch.id)}"><div class="branch-list-marker" aria-hidden="true"></div><div class="branch-list-copy"><strong>${escapeHtml(branch.name)}</strong><span dir="ltr">${escapeHtml(branch.code)}</span><small>${escapeHtml(branch.address || 'بدون عنوان')} · ${branch.isMain ? 'الفرع الرئيسي' : 'فرع تشغيلي'}</small><div class="branch-commerce-chips" aria-label="إعدادات Commerce"><span class="branch-commerce-chip ${branch.storeEnabled ? 'is-on' : ''}">Store ${storeLabel}</span><span class="branch-commerce-chip ${branch.barEnabled ? 'is-on' : ''}">Bar ${barLabel}</span></div></div><div class="branch-list-actions"><span class="branch-status ${escapeHtml(branch.status)}">${branch.status === 'active' ? 'نشط' : branch.status === 'inactive' ? 'متوقف' : 'مؤرشف'}</span><button class="btn btn-light btn-small" type="button" data-branch-commerce="${escapeHtml(branch.id)}" data-next-bar="${branch.barEnabled ? 'false' : 'true'}">${toggleLabel}</button>${!branch.isMain && branch.status !== 'archived' ? `<button class="btn btn-light btn-small" type="button" data-branch-archive="${escapeHtml(branch.id)}">أرشفة</button>` : ''}</div></article>`;
         }).join('') : '<div class="empty">لا توجد فروع نشطة.</div>';
+        decorateBranchDeleteActions();
     }
 
     async function toggleBranchBar(branchId, enabled) {
