@@ -1,6 +1,7 @@
 'use strict';
 
 const { TENANT_TYPES, TENANT_TYPE_VALUES, resolveTenantType } = require('../tenancy/tenant-types');
+const featureCatalog = require('./feature-catalog');
 const { FEATURE_KEYS, LEGACY_FEATURE_ALIASES, normalizeFeatureKey } = require('./feature-catalog');
 
 // A tenant type may be represented by the domain model before its product
@@ -252,9 +253,19 @@ function resolveEffectiveCapabilities({ tenantType = TENANT_TYPES.GYM, features 
         throw capabilityError('The active plan is not compatible with this tenant type.', 503, 'SAAS_PLAN_TENANT_TYPE_MISMATCH');
     }
     const effectiveFeatures = { ...normalizeFeatureFlags(features), ...normalizeFeatureFlags(overrides?.features, 'tenant overrides') };
+    const operational = subscriptionStatus == null || ['trial', 'active'].includes(String(subscriptionStatus).toLowerCase());
+    // Core features are part of the operating contract for the tenant type,
+    // not optional commercial add-ons. Resolve them here as well as in the
+    // SaaS envelope so every capability consumer (including direct service
+    // guards) gets the same result when an older subscription snapshot does
+    // not yet contain the core feature key.
+    if (operational) {
+        for (const featureKey of featureCatalog.CORE_FEATURE_KEYS_BY_TENANT_TYPE[normalizedTenantType] || []) {
+            effectiveFeatures[featureKey] = true;
+        }
+    }
     const baselineCapabilities = TENANT_TYPE_BASELINE_CAPABILITIES[normalizedTenantType] || [];
     const implementedCapabilities = IMPLEMENTED_CAPABILITIES_BY_TENANT_TYPE[normalizedTenantType] || [];
-    const operational = subscriptionStatus == null || ['trial', 'active'].includes(String(subscriptionStatus).toLowerCase());
     const capabilities = Object.fromEntries(implementedCapabilities.map((capability) => {
         const legacyFeature = Object.entries(FEATURE_TO_CAPABILITY).find(([, value]) => value === capability)?.[0];
         const directFeature = effectiveFeatures[capability];

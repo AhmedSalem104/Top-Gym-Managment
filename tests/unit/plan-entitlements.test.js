@@ -63,6 +63,30 @@ test('route enforcement uses canonical feature keys, including catalog-only rout
     );
 });
 
+test('Gym core branch entitlement survives an older snapshot that explicitly lacks branches', () => {
+    const resolved = capabilityService.resolveEffectiveCapabilities({
+        tenantType: 'gym',
+        features: { branches: false },
+        subscriptionStatus: 'active'
+    });
+    assert.equal(resolved.featureEntitlements.branches, true);
+    assert.equal(resolved.capabilities.branches, true);
+    assert.doesNotThrow(() => capabilityService.assertCapabilityAccess({
+        tenantType: 'gym',
+        path: '/branches',
+        features: { branches: false },
+        subscriptionStatus: 'active'
+    }));
+
+    const expired = capabilityService.resolveEffectiveCapabilities({
+        tenantType: 'gym',
+        features: { branches: false },
+        subscriptionStatus: 'expired'
+    });
+    assert.equal(expired.featureEntitlements.branches, false);
+    assert.equal(expired.capabilities.branches, false);
+});
+
 test('every tenant domain route resolves to a central capability or feature', () => {
     const routeRoot = path.join(__dirname, '../../src/routes');
     // Template management is an owner-only settings surface protected by the
