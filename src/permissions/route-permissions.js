@@ -3,6 +3,11 @@
 const { PERMISSIONS } = require('./permissions');
 
 const ROUTE_PERMISSION_RULES = Object.freeze([
+    // Every authenticated tenant user needs the read-only commercial
+    // entitlement envelope so navigation can combine plan access with the
+    // user's operational permissions. This is not a subscription-management
+    // operation and must not be Owner-only.
+    { pattern: /^\/saas\/entitlements$/, methods: ['GET'], all: [] },
     { pattern: /^\/saas\/subscription$/, methods: ['GET'], ownerOnly: true, all: [PERMISSIONS.SAAS_SUBSCRIPTION_READ] },
     { pattern: /^\/saas\/plans$/, methods: ['GET'], ownerOnly: true, all: [PERMISSIONS.SAAS_SUBSCRIPTION_READ] },
     { pattern: /^\/saas\/subscription-requests$/, methods: ['GET'], ownerOnly: true, all: [PERMISSIONS.SAAS_SUBSCRIPTION_READ] },

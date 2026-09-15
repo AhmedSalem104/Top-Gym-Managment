@@ -1,4 +1,5 @@
 const { test, expect } = require('@playwright/test');
+const assert = require('node:assert/strict');
 
 const planCatalog = require('../../src/services/saas-plan-catalog');
 const featureCatalog = require('../../src/services/feature-catalog');
@@ -66,6 +67,31 @@ test('Starter Gym hides excluded feature, blocks direct route, and refreshes aft
     expect(dimensions.body, JSON.stringify(dimensions)).toBeLessThanOrEqual(dimensions.viewport + 1);
     expect(runtime.calls).toContain('/api/saas/entitlements');
     await page.screenshot({ path: testInfo.outputPath('starter-gym-feature-not-available.png'), fullPage: true });
+});
+
+test('Starter Gym navigation exposes every included mapped feature and hides excluded features', async ({ page }) => {
+    const runtime = await installGymRuntime(page);
+    await page.goto('/#dashboard', { waitUntil: 'networkidle' });
+
+    const result = await page.evaluate(() => {
+        const visible = [...document.querySelectorAll('[data-page-tab]')]
+            .filter((button) => !button.hidden)
+            .map((button) => ({ tab: button.dataset.pageTab, feature: window.topGymPermissions?.featureForTab?.(button.dataset.pageTab) }))
+            .filter((item) => item.feature);
+        const hiddenMapped = [...document.querySelectorAll('[data-page-tab]')]
+            .filter((button) => button.hidden)
+            .map((button) => ({ tab: button.dataset.pageTab, feature: window.topGymPermissions?.featureForTab?.(button.dataset.pageTab) }))
+            .filter((item) => item.feature);
+        return { visible, hiddenMapped };
+    });
+    const starter = planCatalog.featureFlagsForPlan('starter');
+    const gymFeatures = new Set(featureCatalog.getFeatureCatalog({ tenantType: 'gym' }).map((feature) => feature.key));
+    const expectedVisible = new Set(['dashboard', 'members', 'attendance', 'coaching', 'pricing', 'branding', 'payments', 'reports', 'team', 'library', 'portal']
+        .filter((feature) => starter[feature] === true && gymFeatures.has(feature)));
+    assert.deepEqual(new Set(result.visible.map((item) => item.feature)), expectedVisible);
+    assert.ok(result.hiddenMapped.some((item) => item.feature === 'store'));
+    assert.ok(result.hiddenMapped.some((item) => item.feature === 'finance'));
+    assert.equal(runtime.calls.includes('/api/saas/entitlements'), true);
 });
 
 test('Starter Trainer hides excluded session route and shows an in-content access state', async ({ page }, testInfo) => {

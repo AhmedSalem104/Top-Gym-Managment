@@ -10,6 +10,13 @@ test('Owner always has access to a resolved API operation', () => {
     assert.equal(canAccessRoleRequest({ role: 'Owner', permissions: [] }, { path: '/reports', method: 'GET' }), true);
 });
 
+test('tenant entitlement envelope is readable by Owner and Assistant without subscription-admin permission', () => {
+    const request = { path: '/saas/entitlements', method: 'GET' };
+    assert.deepEqual(permissionForRequest(request), { all: [], ownerOnly: false });
+    assert.equal(canAccessRoleRequest({ role: 'Owner', permissions: [] }, request), true);
+    assert.equal(canAccessRoleRequest({ role: 'Assistant', permissions: [] }, request), true);
+});
+
 test('Assistant read-only permissions allow GET and reject writes', () => {
     const user = { role: 'Assistant', permissions: ['members.read'] };
     assert.deepEqual(permissionForRequest({ path: '/members', method: 'GET' }).all, ['members.read', 'memberships.read']);
