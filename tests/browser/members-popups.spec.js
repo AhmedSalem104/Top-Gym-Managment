@@ -187,11 +187,11 @@ test('member form keeps the selected country, valid phone payload and fixed foot
     await expect(page.locator('#resetButton')).toBeVisible();
     const initial = await page.evaluate(() => {
         const input = document.getElementById('phone');
-        const country = document.querySelector('#phone')?.closest('[data-phone-control]')?.querySelector('select[data-phone-country]');
-        return { value: input?.value || '', placeholder: input?.getAttribute('placeholder') || '', country: country?.value || '' };
+        return { value: input?.value || '', placeholder: input?.getAttribute('placeholder') || '', country: window.LogicFitPhoneInputs?.countryCodeForInput(input) || '' };
     });
     expect(initial.value).toBe('');
-    expect(initial.country).toMatch(/^[A-Z]{2}$/);
+    expect(initial.country).toBe('EG');
+    await expect(page.locator('#phone').locator('xpath=ancestor::*[@data-phone-control][1]').locator('.phone-country-control')).toBeHidden();
     expect(initial.placeholder).toBe('مثال: 01015819700');
 
     const initialDialogHeight = await dialog.evaluate((element) => element.getBoundingClientRect().height);
@@ -216,8 +216,6 @@ test('member form keeps the selected country, valid phone payload and fixed foot
     await page.locator('#phone').fill('01012345678');
     const repairedCountry = await page.evaluate(() => {
         const input = document.getElementById('phone');
-        const select = input.closest('[data-phone-control]')?.querySelector('select[data-phone-country]');
-        select.value = '';
         return window.LogicFitPhoneInputs.countryCodeForInput(input);
     });
     expect(repairedCountry).toBe(initial.country);

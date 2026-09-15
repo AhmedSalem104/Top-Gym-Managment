@@ -54,8 +54,7 @@ test('member repository keeps the reusable CTE scoped to the following statement
 
 test('today attendance search also matches the centralized canonical phone value', () => {
     const service = read('src/services/attendance-service.js');
-    assert.match(service, /FALLBACK_COUNTRY/u);
-    assert.match(service, /normalizePhoneForSearch\(search/u);
+    assert.match(service, /normalizeEgyptianMobileForSearch\(search/u);
     assert.match(service, /\.input\('phoneSearch', sql\.NVarChar\(30\), phoneSearch\)/u);
     assert.match(service, /m\.phone_normalized = @phoneSearch/u);
     assert.match(service, /a\.attendance_date = @attendanceDate/u);

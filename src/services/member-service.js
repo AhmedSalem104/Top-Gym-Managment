@@ -18,9 +18,9 @@ const { ensureAttendanceTable, getMemberAttendanceStatuses } = require('./attend
 const { currentTenantId, getTenantContext } = require('../tenancy/tenant-context');
 const { publish, publishForRoles } = require('./notification-dispatcher');
 const {
-    FALLBACK_COUNTRY,
     parsePhone,
-    normalizePhoneForSearch
+    normalizeEgyptianMobileForSearch,
+    EGYPT_COUNTRY
 } = require('./phone-service');
 const { actualCollectionCaseSql } = require('./financial-ledger-service');
 const saasService = require('./saas-service');
@@ -323,8 +323,7 @@ async function assertNoDuplicateMember(connection, phoneNormalized, email, exclu
     const normalizedEmail = String(email || '').trim().toLowerCase();
     const duplicate = result.recordset.find((row) => {
         if (excludeId && Number(row.id) === Number(excludeId)) return false;
-        const rowPhone = normalizePhoneForSearch(row.phone_normalized || row.phone, {
-            country: phoneCountry || null,
+        const rowPhone = normalizeEgyptianMobileForSearch(row.phone_normalized || row.phone, {
             fieldName: 'Phone number'
         });
         const rowEmail = String(row.email || '').trim().toLowerCase();
@@ -332,8 +331,7 @@ async function assertNoDuplicateMember(connection, phoneNormalized, email, exclu
             || (normalizedEmail && rowEmail && rowEmail === normalizedEmail);
     });
     if (!duplicate) return;
-    const samePhone = phoneNormalized && normalizePhoneForSearch(duplicate.phone_normalized || duplicate.phone, {
-        country: phoneCountry || null,
+    const samePhone = phoneNormalized && normalizeEgyptianMobileForSearch(duplicate.phone_normalized || duplicate.phone, {
         fieldName: 'Phone number'
     }) === phoneNormalized;
     const error = appError(samePhone
@@ -655,7 +653,9 @@ function normalizePayload(body = {}, { partial = false } = {}) {
         const phoneInput = body.phoneNational ?? body.phone;
         output.phoneInput = requiredString(phoneInput, 'رقم الهاتف', 30);
         const parsedPhone = parsePhone(output.phoneInput, {
-            country: body.phoneCountry || body.country || null,
+            country: EGYPT_COUNTRY,
+            requireCountryForLocal: false,
+            allowFixedLine: false,
             fieldName: 'Phone number'
         });
         output.phoneNormalized = parsedPhone.e164;
@@ -830,8 +830,7 @@ async function getMemberById(id, connection = null) {
 
 async function getMembers({ search = '', status = '', sort = 'expiry', page = 1, pageSize = DEFAULT_MEMBER_PAGE_SIZE, readOnly = false, branchId = null, sectionId = null, phoneCountry = null } = {}) {
     const normalizedSearch = String(search || '').trim().slice(0, 100);
-    const normalizedPhoneSearch = normalizePhoneForSearch(normalizedSearch, {
-        country: /^\+|^00/.test(normalizedSearch) ? null : (phoneCountry || FALLBACK_COUNTRY),
+    const normalizedPhoneSearch = normalizeEgyptianMobileForSearch(normalizedSearch, {
         required: false,
         fieldName: 'Phone number'
     }) || '';
@@ -1874,12 +1873,10 @@ async function updateMember(id, body, idempotencyKey = null) {
 
         const memberData = {
             fullName: patch.fullName ?? currentMember.full_name,
-            phone: patch.phoneNormalized ?? normalizePhoneForSearch(currentMember.phone_normalized || currentMember.phone, {
-                country: patch.phoneCountry || null,
+            phone: patch.phoneNormalized ?? normalizeEgyptianMobileForSearch(currentMember.phone_normalized || currentMember.phone, {
                 fieldName: 'Phone number'
             }),
-            phoneNormalized: patch.phoneNormalized ?? normalizePhoneForSearch(currentMember.phone_normalized || currentMember.phone, {
-                country: patch.phoneCountry || null,
+            phoneNormalized: patch.phoneNormalized ?? normalizeEgyptianMobileForSearch(currentMember.phone_normalized || currentMember.phone, {
                 fieldName: 'Phone number'
             }),
             email: patch.email === undefined ? currentMember.email : patch.email,

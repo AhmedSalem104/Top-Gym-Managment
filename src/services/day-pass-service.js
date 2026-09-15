@@ -5,7 +5,7 @@ const brandingService = require('./branding-service');
 const whatsappTemplateService = require('./whatsapp-template-service');
 const { currentTenantId } = require('../tenancy/tenant-context');
 const { addDays, differenceInDays, parseDateOnly, todayInTimeZone } = require('../utils/date');
-const { normalizePhone: normalizeInternationalPhone } = require('./phone-service');
+const { normalizeEgyptianMobile } = require('./phone-service');
 
 const PAYMENT_METHODS = ['cash', 'card', 'transfer', 'other'];
 
@@ -50,14 +50,13 @@ function ensureId(value, label = 'المعرّف') {
 
 function normalizePhone(value, options = {}) {
     try {
-        return normalizeInternationalPhone(value, {
-            country: null,
+        return normalizeEgyptianMobile(value, {
             required: false,
             fieldName: 'Visitor phone',
             ...options
         }) || '';
     } catch (_) {
-        throw appError('رقم هاتف الزائر غير صالح للدولة المختارة.', 400, 'INVALID_VISITOR_PHONE');
+        throw appError('أدخل رقم هاتف مصري صحيح للزائر.', 400, 'INVALID_VISITOR_PHONE');
     }
 }
 

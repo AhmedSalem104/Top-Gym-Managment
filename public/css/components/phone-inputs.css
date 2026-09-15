@@ -15,6 +15,33 @@
   direction: ltr;
 }
 
+/* Logic Fit currently accepts Egyptian local mobile input only. Keep the
+   country control in the DOM for legacy form/state compatibility, but remove
+   it from the visual and keyboard layout so the number field is the single
+   user-facing control. */
+.phone-input-control.phone-egypt-local-only[data-phone-control] {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas:
+    "number"
+    "help"
+    "error";
+}
+
+.phone-input-control.phone-egypt-local-only .phone-country-control,
+.phone-input-control.phone-egypt-local-only .phone-country-native-select {
+  display: none !important;
+}
+
+/* The member dialog has a more specific two-column phone rule. Keep the
+   Egypt-only contract single-column there as well. */
+body #memberDialog .phone-input-control.phone-egypt-local-only[data-phone-control] {
+  grid-template-columns: minmax(0, 1fr) !important;
+  grid-template-areas:
+    "number"
+    "help"
+    "error";
+}
+
 .phone-country-control {
   position: relative;
   z-index: 2;

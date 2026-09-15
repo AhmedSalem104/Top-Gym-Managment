@@ -25,6 +25,25 @@ test('canonical normalization makes local and international duplicates identical
     );
 });
 
+test('Egypt-only write policy accepts all Egyptian mobile ranges and stores E.164', () => {
+    for (const prefix of ['010', '011', '012', '015']) {
+        assert.equal(phoneService.normalizeEgyptianMobile(`${prefix}15819700`), `+20${prefix.slice(1)}15819700`);
+    }
+    assert.equal(phoneService.normalizeEgyptianMobile('010 1581 9700'), '+201015819700');
+    assert.equal(phoneService.normalizeEgyptianMobile('+201015819700'), '+201015819700');
+    assert.equal(phoneService.normalizeEgyptianMobile('00201015819700'), '+201015819700');
+    assert.equal(phoneService.normalizeEgyptianMobile('1015819700'), '+201015819700');
+    assert.throws(() => phoneService.normalizeEgyptianMobile('+966501234567'), (error) => error.code === 'PHONE_COUNTRY_MISMATCH');
+    assert.throws(() => phoneService.normalizeEgyptianMobile('0223456789'), (error) => error.code === 'MOBILE_NUMBER_REQUIRED');
+    assert.throws(() => phoneService.normalizeEgyptianMobile('01015819700abc'), (error) => error.code === 'INVALID_PHONE_FORMAT');
+});
+
+test('Egypt-only search policy canonicalizes legacy and local representations equally', () => {
+    for (const value of ['01015819700', '1015819700', '+201015819700', '00201015819700', '010 1581 9700']) {
+        assert.equal(phoneService.normalizeEgyptianMobileForSearch(value), '+201015819700');
+    }
+});
+
 test('search normalization uses the same canonical value', () => {
     for (const value of ['01012345678', '1012345678', '+201012345678', '00201012345678', '010 1234 5678']) {
         assert.equal(phoneService.normalizePhoneForSearch(value, { country: 'EG' }), '+201012345678');

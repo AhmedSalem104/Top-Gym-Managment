@@ -7,7 +7,7 @@ const { TENANT_TYPES } = require('../tenancy/tenant-types');
 const { BRANCH_STATUS, canAcceptNewOperations, normalizeBranchId, normalizeSectionId, normalizeBranchStatus, normalizeMembershipBranchAccessMode, MEMBERSHIP_BRANCH_ACCESS_MODE } = require('../branches/branch-contract');
 const saasService = require('./saas-service');
 const cacheService = require('./cache-service');
-const { normalizePhone: normalizeInternationalPhone } = require('./phone-service');
+const { normalizeEgyptianMobile } = require('./phone-service');
 
 function branchError(message, statusCode = 400, code = 'BRANCH_ERROR') {
     const error = new Error(message);
@@ -36,10 +36,8 @@ function textValue(value, label, maxLength, required = false) {
 
 function normalizeContactPhone(value, country = null) {
     try {
-        return normalizeInternationalPhone(value, {
-            country,
+        return normalizeEgyptianMobile(value, {
             required: false,
-            allowFixedLine: true,
             fieldName: 'Phone number'
         });
     } catch (_) {

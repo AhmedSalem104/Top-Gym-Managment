@@ -35,7 +35,7 @@
         intelligence: { dependencies: ['phone-inputs'], styles: ['/css/pages/intelligence.css?v=phase2'], scripts: ['/js/pages/intelligence/intelligence.js?v=3'] },
         store: { dependencies: ['phone-inputs'], styles: ['/css/pages/store.css?v=phase2', '/css/components/bar-pos.css?v=phase2'], scripts: ['/js/pages/store/store.js?v=1', '/js/pages/store/bar-pos.js?v=1'] },
         'smart-assistant': { dependencies: [], styles: [], scripts: ['/js/smart-assistant.js?v=5'] },
-        'phone-inputs': { dependencies: [], styles: [], scripts: ['/js/core/phone-inputs.js?v=12'] },
+        'phone-inputs': { dependencies: [], styles: [], scripts: ['/js/core/phone-inputs.js?v=13'] },
         'whatsapp-runtime': { dependencies: [], styles: [], scripts: ['/js/core/whatsapp-templates.js?v=2'] }
     };
 

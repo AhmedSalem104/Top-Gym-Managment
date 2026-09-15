@@ -1,7 +1,7 @@
 const { getPool, sql } = require('../database');
 const { ensureLibraryData, ensureLibraryTables } = require('./library-service');
 const { getTenantContext, currentTenantId } = require('../tenancy/tenant-context');
-const { normalizePhone: normalizeInternationalPhone } = require('./phone-service');
+const { normalizeEgyptianMobile } = require('./phone-service');
 const { safeErrorCode } = require('../utils/error-response');
 const { publish } = require('./notification-dispatcher');
 const {
@@ -96,7 +96,7 @@ function dietGoalValue(value, fallback = 'maintain') {
 }
 
 function normalizePhone(value) {
-    return normalizeInternationalPhone(value, { country: null, fieldName: 'Phone number' });
+    return normalizeEgyptianMobile(value, { fieldName: 'Phone number' });
 }
 
 function withTransaction(work) {
@@ -538,8 +538,7 @@ async function createExternalTrainee(body = {}, { beforeInsert = null } = {}) {
     await ensureCoachingTables();
     const fullName = text(body.fullName, 'اسم المتدرب', 120, true);
     const phone = text(body.phoneNational ?? body.phone, 'رقم الهاتف', 30, true);
-    const phoneNormalized = normalizeInternationalPhone(phone, {
-        country: body.phoneCountry || body.country || null,
+    const phoneNormalized = normalizeEgyptianMobile(phone, {
         fieldName: 'Phone number'
     });
     const email = text(body.email, 'البريد الإلكتروني', 254);
@@ -598,8 +597,8 @@ async function updateClientBasic(memberIdValue, body = {}) {
     const phoneProvided = body.phone !== undefined || body.phoneNational !== undefined;
     const phone = !phoneProvided ? current.phone : text(body.phoneNational ?? body.phone, 'رقم الهاتف', 30, true);
     const phoneNormalized = !phoneProvided
-        ? normalizeInternationalPhone(current.phone, { country: null, fieldName: 'Phone number' })
-        : normalizeInternationalPhone(phone, { country: body.phoneCountry || body.country || null, fieldName: 'Phone number' });
+        ? normalizeEgyptianMobile(current.phone, { fieldName: 'Phone number' })
+        : normalizeEgyptianMobile(phone, { fieldName: 'Phone number' });
     const email = body.email === undefined ? current.email : text(body.email, 'البريد الإلكتروني', 254);
     if (email && !/^\S+@\S+\.\S+$/.test(email)) throw appError('البريد الإلكتروني غير صالح.');
     const registrationDate = body.registrationDate === undefined ? current.registrationDate : dateValue(body.registrationDate, 'تاريخ التسجيل');

@@ -10,8 +10,10 @@ const metadata = require('libphonenumber-js/metadata.full.json');
 const mobileExamples = require('libphonenumber-js/examples.mobile.json');
 
 // A single server-side fallback is retained only for legacy/internal parsing.
-// New local input must carry the country selected by the caller.
+// User-facing Logic Fit phone writes use the explicit Egyptian policy below;
+// generic parsing remains available for compatibility boundaries only.
 const FALLBACK_COUNTRY = 'EG';
+const EGYPT_COUNTRY = 'EG';
 const MOBILE_TYPES = new Set(['MOBILE', 'FIXED_LINE_OR_MOBILE']);
 const PHONE_DISPLAY_EXAMPLES = Object.freeze({
     EG: Object.freeze({ national: '01015819700', international: '+201015819700' })
@@ -149,6 +151,30 @@ function normalizeMobile(value, options = {}) {
     return normalizePhone(value, { ...options, allowFixedLine: false });
 }
 
+/**
+ * Central write policy for Logic Fit phone fields. New user-facing phone
+ * values are Egyptian mobile numbers, while the parser still accepts the
+ * existing canonical/local legacy representations and stores E.164.
+ */
+function normalizeEgyptianMobile(value, options = {}) {
+    return normalizeMobile(value, {
+        ...options,
+        country: EGYPT_COUNTRY,
+        requireCountryForLocal: false,
+        allowFixedLine: false
+    });
+}
+
+function normalizeEgyptianMobileForSearch(value, options = {}) {
+    return normalizePhoneForSearch(value, {
+        ...options,
+        country: EGYPT_COUNTRY,
+        required: false,
+        requireCountryForLocal: false,
+        allowFixedLine: false
+    });
+}
+
 function normalizePhoneForSearch(value, options = {}) {
     if (value === undefined || value === null || String(value).trim() === '') return null;
     try {
@@ -210,11 +236,14 @@ function getSupportedCountries() {
 
 module.exports = {
     FALLBACK_COUNTRY,
+    EGYPT_COUNTRY,
     normalizeDigits,
     normalizeCountry,
     parsePhone,
     normalizePhone,
     normalizeMobile,
+    normalizeEgyptianMobile,
+    normalizeEgyptianMobileForSearch,
     normalizePhoneForSearch,
     toMessagingDigits,
     getSupportedCountries

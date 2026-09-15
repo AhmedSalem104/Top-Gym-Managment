@@ -8,7 +8,7 @@ const commercialSchema = require('./commercial-schema');
 const { runTenantContext } = require('../tenancy/tenant-context');
 const { TENANT_TYPES, resolveTenantType } = require('../tenancy/tenant-types');
 const { secretRing } = require('./secret-ring');
-const { normalizeMobile, normalizeDigits } = require('./phone-service');
+const { normalizeEgyptianMobile } = require('./phone-service');
 
 const MAX_PAGE_SIZE = 100;
 const REGISTRATION_TOKEN_PATTERN = /^[A-Za-z0-9_-]{32,128}$/;
@@ -92,12 +92,11 @@ function normalizeAccessToken(value) {
     return token;
 }
 
-function normalizeWhatsapp(value, { country = null } = {}) {
-    const raw = normalizeDigits(value).trim();
+function normalizeWhatsapp(value) {
     try {
-        return normalizeMobile(value, { country: country || null, requireCountryForLocal: true, fieldName: 'WhatsApp number' });
+        return normalizeEgyptianMobile(value, { fieldName: 'WhatsApp number' });
     } catch (_) {
-        throw registrationError('Enter a valid WhatsApp number for the selected country.', 400, 'INVALID_REGISTRATION_WHATSAPP', 'whatsapp');
+        throw registrationError('Enter a valid Egyptian local mobile number.', 400, 'INVALID_REGISTRATION_WHATSAPP', 'whatsapp');
     }
 }
 

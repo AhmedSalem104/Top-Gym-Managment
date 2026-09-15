@@ -89,15 +89,15 @@ test('registration approval reuses transactional provisioning and never accepts 
     assert.doesNotMatch(service, /INSERT INTO[\s\S]{0,400}temporaryPassword/);
 });
 
-test('registration WhatsApp numbers are canonicalized for Egyptian and explicit international formats', () => {
+test('registration WhatsApp numbers use the Egypt-only local-input policy', () => {
     const service = require('../../src/services/gym-registration-service');
     assert.equal(service.normalizeWhatsapp('01 0123 45678', { country: 'EG' }), '+201012345678');
     assert.equal(service.normalizeWhatsapp('+201112345678'), '+201112345678');
     assert.equal(service.normalizeWhatsapp('+201212345678'), '+201212345678');
     assert.equal(service.normalizeWhatsapp('00201512345678'), '+201512345678');
-    assert.equal(service.normalizeWhatsapp('+971501234567'), '+971501234567');
-    assert.throws(() => service.normalizeWhatsapp('01112345', { country: 'EG' }), /WhatsApp/);
-    assert.throws(() => service.normalizeWhatsapp('01012345678'), (error) => error.code === 'INVALID_REGISTRATION_WHATSAPP');
+    assert.throws(() => service.normalizeWhatsapp('+971501234567'), (error) => error.code === 'INVALID_REGISTRATION_WHATSAPP');
+    assert.throws(() => service.normalizeWhatsapp('01112345', { country: 'EG' }), (error) => error.code === 'INVALID_REGISTRATION_WHATSAPP');
+    assert.equal(service.normalizeWhatsapp('01012345678'), '+201012345678');
 });
 
 test('approval and reset onboarding paths keep WhatsApp target and temporary credentials transient', () => {

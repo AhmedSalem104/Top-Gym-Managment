@@ -5,7 +5,7 @@ const { withTransaction } = require('../database/transaction');
 const saasService = require('./saas-service');
 const sessionRepository = require('../repositories/session.repository');
 const { TENANT_TYPE_VALUES, resolveTenantType } = require('../tenancy/tenant-types');
-const { normalizePhone: normalizeInternationalPhone } = require('./phone-service');
+const { normalizeEgyptianMobile } = require('./phone-service');
 const { actualCollectionPredicateSql } = require('./financial-ledger-service');
 
 const TENANT_STATUSES = Object.freeze(['trial', 'active', 'suspended', 'expired', 'archived']);
@@ -633,10 +633,8 @@ async function updateTenantProfile(tenantId, body = {}, actorUserId, meta = {}) 
     if (!before) throw platformError('Gym was not found.', 404, 'TENANT_NOT_FOUND');
     const phone = body.contactPhone === undefined
         ? before.contact_phone
-        : normalizeInternationalPhone(body.contactPhone, {
-            country: body.contactPhoneCountry || body.phoneCountry || null,
+        : normalizeEgyptianMobile(body.contactPhone, {
             required: false,
-            allowFixedLine: true,
             fieldName: 'Contact phone'
         });
     await pool.request().input('tenantId', sql.Int, id).input('name', sql.NVarChar(160), name || before.name).input('phone', sql.NVarChar(40), phone || null).input('email', sql.NVarChar(254), body.contactEmail === undefined ? before.contact_email : contactEmail || null).query('UPDATE dbo.gym_tenants SET name=@name,contact_phone=@phone,contact_email=@email,updated_at=SYSUTCDATETIME() WHERE id=@tenantId;');

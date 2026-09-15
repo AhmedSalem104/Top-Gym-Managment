@@ -1428,6 +1428,21 @@ function applyCoreFeatureEntitlements(features, { tenantType = null, subscriptio
     return features;
 }
 
+function resolveEntitlementPlanLimits(current, tenantType, snapshotLimits) {
+    const base = snapshotLimits || (current ? null : {});
+    const operationalGym = current
+        && ['active', 'trial'].includes(String(current.status).toLowerCase())
+        && resolveTenantType(tenantType) === TENANT_TYPES.GYM
+        && current.plan;
+    if (!operationalGym) return base;
+    // Branch capacity is a current operational plan entitlement.  Price,
+    // term, and every other resource limit remain snapshot-based.
+    return {
+        ...(base || {}),
+        maxBranches: current.plan.maxBranches == null ? null : Number(current.plan.maxBranches)
+    };
+}
+
 async function getEffectiveEntitlements(tenantId = currentTenantId({ required: true }), subscription = null, { readOnly = false, tenantType = null } = {}) {
     const id = tenantIdValue(tenantId);
     const current = subscription || await getCurrentSubscription(id, { readOnly });
@@ -1438,7 +1453,7 @@ async function getEffectiveEntitlements(tenantId = currentTenantId({ required: t
     if (current?.plan && ['active', 'trial'].includes(String(current.status).toLowerCase())) {
         assertPlanCompatibleForTenantType(current.plan, resolvedTenantType);
     }
-    const base = current?.limitsSnapshot || (current ? null : {});
+    const base = resolveEntitlementPlanLimits(current, resolvedTenantType, current?.limitsSnapshot || (current ? null : {}));
     const baseFeatures = completeEntitlementFeatures(current);
     const overrides = subscription?.__tenantOverrides !== undefined
         ? subscription.__tenantOverrides
@@ -2672,5 +2687,6 @@ module.exports = {
     recordAudit,
     selectPlanTerm,
     snapshotForPlan,
+    resolveEntitlementPlanLimits,
     FEATURE_ENTITLEMENTS_SCHEMA_SQL
 };

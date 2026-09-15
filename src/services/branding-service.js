@@ -5,7 +5,7 @@ const { getPool, sql } = require('../database');
 const { withTransaction } = require('../database/transaction');
 const { currentTenantId } = require('../tenancy/tenant-context');
 const cacheService = require('./cache-service');
-const { normalizePhone: normalizeInternationalPhone } = require('./phone-service');
+const { normalizeEgyptianMobile } = require('./phone-service');
 const saasService = require('./saas-service');
 
 const BRANDING_ID = 1;
@@ -384,10 +384,8 @@ function normalizeBrandingPhone(value, { strict = false } = {}) {
     const raw = cleanText(value, '', 40);
     if (!raw) return '';
     try {
-        return normalizeInternationalPhone(raw, {
-            country: null,
+        return normalizeEgyptianMobile(raw, {
             required: false,
-            allowFixedLine: true,
             fieldName: 'Phone number'
         }) || '';
     } catch (error) {

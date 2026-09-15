@@ -4,9 +4,8 @@ const { config } = require('../config/env');
 const { currentTenantId, getTenantContext } = require('../tenancy/tenant-context');
 const { publish, publishForRoles } = require('./notification-dispatcher');
 const {
-    FALLBACK_COUNTRY,
-    normalizePhone: normalizeInternationalPhone,
-    normalizePhoneForSearch
+    normalizeEgyptianMobile,
+    normalizeEgyptianMobileForSearch
 } = require('./phone-service');
 
 const ATTENDANCE_SOURCES = new Set(['phone', 'qr', 'manual']);
@@ -217,8 +216,7 @@ function parseQrToken(value) {
 
 async function findMember(pool, body = {}, { requireActive = true, branchId = null, sectionId = null } = {}) {
     const qrMemberId = parseQrToken(body.qrToken ?? body.token);
-    const phone = qrMemberId ? null : normalizeInternationalPhone(body.phone, {
-        country: body.phoneCountry || body.country || null,
+    const phone = qrMemberId ? null : normalizeEgyptianMobile(body.phone, {
         required: false,
         fieldName: 'Phone number'
     });
@@ -306,8 +304,7 @@ async function getTodayAttendance(options = {}) {
     const pool = await getPool();
     const date = parseDateOnly(options.date || todayInTimeZone(), 'تاريخ الحضور');
     const search = String(options.search || '').trim();
-    const phoneSearch = normalizePhoneForSearch(search, {
-        country: /^\+|^00/.test(search) ? null : FALLBACK_COUNTRY,
+    const phoneSearch = normalizeEgyptianMobileForSearch(search, {
         required: false,
         fieldName: 'Phone number'
     }) || '';

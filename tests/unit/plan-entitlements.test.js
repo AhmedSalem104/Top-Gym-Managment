@@ -7,6 +7,8 @@ const test = require('node:test');
 
 const catalog = require('../../src/services/feature-catalog');
 const capabilityService = require('../../src/services/capability-service');
+const saasService = require('../../src/services/saas-service');
+const { PLAN_CONFIGURATIONS } = require('../../src/services/saas-plan-catalog');
 
 const migrationPath = path.join(__dirname, '../../database/migrations/030-plan-entitlements.sql');
 const migrationSql = fs.readFileSync(migrationPath, 'utf8');
@@ -87,6 +89,43 @@ test('Gym core branch entitlement survives an older snapshot that explicitly lac
     });
     assert.equal(expired.featureEntitlements.branches, false);
     assert.equal(expired.capabilities.branches, false);
+});
+
+test('Gym maxBranches follows the current plan while other limits stay snapshot-based', () => {
+    const current = {
+        status: 'active',
+        plan: { maxBranches: 5 },
+        limitsSnapshot: { maxMembers: 149, maxUsers: 3, maxBranches: 3 }
+    };
+    const limits = saasService.resolveEntitlementPlanLimits(current, 'gym', current.limitsSnapshot);
+    assert.deepEqual(limits, { maxMembers: 149, maxUsers: 3, maxBranches: 5 });
+
+    const trainer = saasService.resolveEntitlementPlanLimits({
+        status: 'active',
+        plan: { maxBranches: 5 },
+        limitsSnapshot: { maxClients: 50, maxBranches: 3 }
+    }, 'independent_trainer', { maxClients: 50, maxBranches: 3 });
+    assert.deepEqual(trainer, { maxClients: 50, maxBranches: 3 });
+
+    const expired = saasService.resolveEntitlementPlanLimits({
+        status: 'expired',
+        plan: { maxBranches: 5 },
+        limitsSnapshot: { maxBranches: 3 }
+    }, 'gym', { maxBranches: 3 });
+    assert.deepEqual(expired, { maxBranches: 3 });
+});
+
+test('current Gym plan configuration supplies the approved branch capacity matrix', () => {
+    const expected = { starter: 1, basic: 2, pro: 5, business: null };
+    for (const [code, maxBranches] of Object.entries(expected)) {
+        const plan = PLAN_CONFIGURATIONS.find((item) => item.code === code);
+        assert.ok(plan, `missing ${code} configuration`);
+        assert.equal(plan.limits.maxBranches, maxBranches);
+        const resolved = saasService.resolveEntitlementPlanLimits({ status: 'active', plan: { maxBranches: plan.limits.maxBranches }, limitsSnapshot: { maxBranches: 3 } }, 'gym', { maxBranches: 3 });
+        assert.equal(resolved.maxBranches, maxBranches);
+    }
+    const trainer = saasService.resolveEntitlementPlanLimits({ status: 'trial', plan: { maxBranches: 5 }, limitsSnapshot: { maxBranches: null } }, 'independent_trainer', { maxBranches: null });
+    assert.equal(trainer.maxBranches, null);
 });
 
 test('every tenant domain route resolves to a central capability or feature', () => {

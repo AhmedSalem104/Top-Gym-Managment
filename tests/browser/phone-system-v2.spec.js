@@ -274,7 +274,7 @@ test('browser completes the canonical member phone flow end to end', async ({ pa
     await memberRow.locator('[data-menu-toggle]').click();
     await memberRow.locator('[data-action="edit"]').click();
     await expect(dialog).toBeVisible();
-    await phone.fill('1015819700');
+    await phone.fill('01015819700');
     await phone.blur();
     const updateRequestPromise = page.waitForRequest((request) => request.url().endsWith(`/api/members/${memberId}`) && request.method() === 'PUT');
     await page.locator('#saveButton').click();
@@ -291,23 +291,20 @@ test('browser completes the canonical member phone flow end to end', async ({ pa
     expect(database.members[0].id).toBe(memberId);
 });
 
-test('browser exposes selected-country mismatch without changing manual country', async ({ page }) => {
+test('browser rejects a foreign international paste while keeping the Egyptian local contract', async ({ page }) => {
     await installLocalMemberApi(page);
     await page.goto('/register-gym.html', { waitUntil: 'domcontentloaded' });
     const phone = page.locator('input[name="whatsapp"]');
-    const country = page.locator('select[data-phone-country]');
-    await country.selectOption('EG');
+    await expect(page.locator('.phone-country-control')).toBeHidden();
     await phone.focus();
     await phone.evaluate((input) => {
         const clipboard = new DataTransfer();
         clipboard.setData('text/plain', '+966501234567');
         input.dispatchEvent(new ClipboardEvent('paste', { bubbles: true, cancelable: true, clipboardData: clipboard }));
     });
-    await expect(phone).toHaveValue('+966501234567');
     await phone.blur();
     await expect(phone).toHaveAttribute('aria-invalid', 'true');
     await expect(page.locator('.phone-input-error')).toBeVisible();
-    await expect(country).toHaveValue('EG');
     await expect(phone).toHaveValue('+966501234567');
 });
 

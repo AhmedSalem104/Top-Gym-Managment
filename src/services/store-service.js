@@ -7,7 +7,7 @@ const { getPool, sql } = require('../database');
 const { withTransaction } = require('../database/transaction');
 const { addDays, formatDateOnly, parseDateOnly, todayInTimeZone, toUtcDate } = require('../utils/date');
 const { getTenantContext } = require('../tenancy/tenant-context');
-const { normalizePhone: normalizeInternationalPhone } = require('./phone-service');
+const { normalizeEgyptianMobile } = require('./phone-service');
 
 const PAYMENT_METHODS = new Set(['cash', 'card', 'transfer', 'wallet', 'other']);
 const MOVEMENT_TYPES = new Set(['purchase', 'sale', 'sale_return', 'purchase_return', 'adjustment', 'damaged', 'expired', 'manual']);
@@ -85,10 +85,8 @@ function rangeFromQuery(query = {}) {
 }
 
 function normalizePhone(value, options = {}) {
-    return normalizeInternationalPhone(value, {
-        country: null,
+    return normalizeEgyptianMobile(value, {
         required: false,
-        allowFixedLine: true,
         fieldName: 'Phone number',
         ...options
     });
