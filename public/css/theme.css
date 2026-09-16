@@ -1594,8 +1594,10 @@ html[data-theme="dark"] .day-pass-actions > .day-pass-action-button.is-compact{
 
 html[data-theme="dark"] .table-actions > .icon-action[data-action="renew"],
 html[data-theme="dark"] .table-actions > .table-action-visible[data-action="renew"]{
-  min-width: 96px;
-  padding-inline: 10px;
+  width: 40px;
+  min-width: 40px;
+  max-width: 40px;
+  padding: 0;
 }
 
 html[data-theme="dark"] .attendance-row-actions > .btn{
