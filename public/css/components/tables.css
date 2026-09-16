@@ -412,6 +412,26 @@ table .action-group {
   background: var(--color-primary-soft);
 }
 
+/* Keep the members row visually uniform, including the sticky actions cell.
+   The row owns the zebra/hover color; cells only inherit it. */
+.members-table > tbody > tr {
+  background: var(--color-surface);
+}
+
+.members-table > tbody > tr:nth-child(even) {
+  background: var(--color-surface-muted);
+}
+
+.members-table > tbody > tr:hover {
+  background: var(--color-primary-soft);
+}
+
+.members-table > tbody > tr > td,
+.members-table > tbody > tr:nth-child(even) > td:last-child,
+.members-table > tbody > tr:hover > td:last-child {
+  background: inherit;
+}
+
 /* One interaction contract for every data table. Page-specific files may
    keep semantic colors for dangerous/success actions, but the row hover and
    action wrapping stay identical everywhere. */
