@@ -435,7 +435,8 @@ table .action-group {
 /* The sticky actions cell must not look like a separate surface because of
    the shared sticky-column shadow. */
 .members-table > tbody > tr > td:last-child {
-  box-shadow: none;
+  background: inherit !important;
+  box-shadow: none !important;
 }
 
 /* One interaction contract for every data table. Page-specific files may
