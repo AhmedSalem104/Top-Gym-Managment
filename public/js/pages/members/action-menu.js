@@ -68,9 +68,10 @@
                         button.classList.add('table-action-visible');
                         button.setAttribute('aria-label', label);
                         button.title = label;
-                        button.innerHTML = button.dataset.action === 'renew'
-                            ? `${actionIcon(button.dataset.action)}<span class="table-action-label">${escapeHtml(label)}</span>`
-                            : actionIcon(button.dataset.action);
+                        // Keep the primary row actions compact. The accessible name and
+                        // tooltip carry the action label; the button itself stays icon-only
+                        // so the members table does not surrender most of its width to one CTA.
+                        button.innerHTML = actionIcon(button.dataset.action);
                     });
                     if (!advanced.length) return;
 
