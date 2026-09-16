@@ -2280,6 +2280,21 @@ body .app-shell > .page-tabs > .page-tab[aria-selected="true"] {
     display: none;
   }
 
+  body .members-table .table-actions > [data-action="renew"] {
+    width: 40px;
+    min-width: 40px;
+    max-width: 40px;
+    height: 40px;
+    min-height: 40px;
+    flex: 0 0 40px;
+    gap: 0;
+    padding: 0;
+  }
+
+  body .members-table .table-actions .table-action-label {
+    display: none;
+  }
+
   body .members-table:not(.table-card-layout) .action-menu {
     position: relative;
     display: inline-flex;
