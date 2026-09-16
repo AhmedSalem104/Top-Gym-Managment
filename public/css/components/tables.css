@@ -432,6 +432,12 @@ table .action-group {
   background: inherit;
 }
 
+/* The sticky actions cell must not look like a separate surface because of
+   the shared sticky-column shadow. */
+.members-table > tbody > tr > td:last-child {
+  box-shadow: none;
+}
+
 /* One interaction contract for every data table. Page-specific files may
    keep semantic colors for dangerous/success actions, but the row hover and
    action wrapping stay identical everywhere. */
