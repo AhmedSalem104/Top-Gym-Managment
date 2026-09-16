@@ -411,6 +411,87 @@ test('attendance workspace stays compact at the intermediate 1024px desktop widt
     });
 });
 
+test('attendance log uses readable mobile cards without changing the desktop table contract', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'desktop', 'The desktop project owns the full responsive screenshot matrix.');
+    await installLocalMemberApi(page);
+    await page.goto('/?members-popup-contract#members', { waitUntil: 'networkidle' });
+
+    const recordTable = `
+        <table class="attendance-table">
+            <thead><tr><th>العضو</th><th>الباقة</th><th>الحضور</th><th>الانصراف</th><th>المدة</th><th>المصدر</th><th>الحالة</th><th>الإجراءات</th></tr></thead>
+            <tbody><tr>
+                <td><strong class="attendance-member-name">أحمد محمد</strong><span class="attendance-member-phone">01015819700</span></td>
+                <td>شهري</td><td>09:15</td><td>—</td><td>01:20</td>
+                <td><span class="attendance-source phone">هاتف</span></td>
+                <td><span class="attendance-status">داخل الجيم</span></td>
+                <td><div class="attendance-row-actions"><button class="btn btn-small">تسجيل انصراف</button></div></td>
+            </tr></tbody>
+        </table>`;
+
+    await page.locator('#attendanceSection').evaluate((section, table) => {
+        section.hidden = false;
+        section.querySelector('#attendanceTableWrap').innerHTML = table;
+    }, recordTable);
+    await expect(page.locator('#attendanceTableWrap table')).toHaveClass(/table-card-layout/);
+
+    const viewports = [
+        [1440, 900], [1280, 800], [1024, 768], [768, 900],
+        [430, 844], [390, 844], [375, 812], [360, 800], [320, 568]
+    ];
+
+    for (const [width, height] of viewports) {
+        await page.setViewportSize({ width, height });
+        const metrics = await page.evaluate(() => {
+            const section = document.getElementById('attendanceSection');
+            const table = section.querySelector('.attendance-table');
+            const row = section.querySelector('tbody tr');
+            const actions = section.querySelector('.attendance-row-actions');
+            return {
+                viewport: window.innerWidth,
+                documentWidth: document.documentElement.scrollWidth,
+                bodyWidth: document.body.scrollWidth,
+                tableDisplay: getComputedStyle(table).display,
+                headDisplay: getComputedStyle(table.tHead).display,
+                rowDisplay: getComputedStyle(row).display,
+                packageDisplay: getComputedStyle(row.cells[1]).display,
+                sourceDisplay: getComputedStyle(row.cells[5]).display,
+                actionHeight: Math.round(actions.getBoundingClientRect().height)
+            };
+        });
+
+        expect(metrics.documentWidth).toBeLessThanOrEqual(width + 1);
+        expect(metrics.bodyWidth).toBeLessThanOrEqual(width + 1);
+        if (width <= 767) {
+            expect(metrics.tableDisplay).toBe('block');
+            expect(metrics.headDisplay).toBe('none');
+            expect(metrics.rowDisplay).toBe('grid');
+            expect(metrics.packageDisplay).toBe('none');
+            expect(metrics.sourceDisplay).toBe('none');
+            expect(metrics.actionHeight).toBeGreaterThanOrEqual(44);
+        } else {
+            expect(metrics.tableDisplay).toBe('table');
+            expect(metrics.headDisplay).toBe('table-header-group');
+            expect(metrics.rowDisplay).toBe('table-row');
+        }
+
+        await page.screenshot({ path: `qa/artifacts/attendance-responsive-${width}-dark.png`, fullPage: true });
+        await testInfo.attach(`attendance-record-${width}-dark.png`, {
+            body: await page.screenshot({ fullPage: true }),
+            contentType: 'image/png'
+        });
+    }
+
+    for (const [width, height] of [[1440, 900], [390, 844], [320, 568]]) {
+        await page.setViewportSize({ width, height });
+        await page.evaluate(() => document.documentElement.setAttribute('data-theme', 'light'));
+        await page.screenshot({ path: `qa/artifacts/attendance-responsive-${width}-light.png`, fullPage: true });
+        await testInfo.attach(`attendance-record-${width}-light.png`, {
+            body: await page.screenshot({ fullPage: true }),
+            contentType: 'image/png'
+        });
+    }
+});
+
 test('authenticated shell reveals without a dimmed or overlapping first-login state', async ({ page }) => {
     await installLocalMemberApi(page);
     await page.goto('/?members-popup-contract#members', { waitUntil: 'networkidle' });

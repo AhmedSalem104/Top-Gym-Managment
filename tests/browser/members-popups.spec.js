@@ -472,3 +472,63 @@ test('members table keeps responsive overflow inside its scroll container', asyn
         expect(metrics.tableMinWidth).toBe('1120px');
     }
 });
+
+test('members table has a light frame and pagination renders from the API contract', async ({ page }) => {
+    const requestedPages = [];
+    await page.route('**/api/members*', async (route) => {
+        if (route.request().method() !== 'GET') {
+            await route.fallback();
+            return;
+        }
+        const url = new URL(route.request().url());
+        const currentPage = Number(url.searchParams.get('page') || 1);
+        requestedPages.push(currentPage);
+        await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({
+                members: [],
+                pagination: {
+                    page: currentPage,
+                    pageSize: 5,
+                    total: 11,
+                    totalPages: 3,
+                    hasNext: currentPage < 3,
+                    hasPrevious: currentPage > 1
+                }
+            })
+        });
+    });
+
+    await page.reload({ waitUntil: 'networkidle' });
+    await expect(page.locator('#membersPagination')).toBeVisible();
+    await expect.poll(() => requestedPages.length).toBeGreaterThan(0);
+
+    const styles = await page.evaluate(() => {
+        document.getElementById('membersList').insertAdjacentHTML('beforeend', `
+            <div class="table-scroll"><table class="members-table"><thead><tr><th>العضو</th><th>الإجراءات</th></tr></thead><tbody><tr><td>QA</td><td>—</td></tr></tbody></table></div>
+        `);
+        const table = document.querySelector('#membersList .members-table');
+        const headerCells = table.querySelectorAll('thead th');
+        return {
+            viewport: innerWidth,
+            tableBorder: getComputedStyle(table).borderTopWidth,
+            firstHeaderBackground: getComputedStyle(headerCells[0]).backgroundColor,
+            actionHeaderBackground: getComputedStyle(headerCells[1]).backgroundColor,
+            actionHeaderShadow: getComputedStyle(headerCells[1]).boxShadow,
+            divider: getComputedStyle(headerCells[1]).borderInlineStartWidth,
+            sharedState: Boolean(window.topGymMembersState)
+        };
+    });
+
+    expect(styles.tableBorder).toBe('1px');
+    expect(styles.firstHeaderBackground).toBe(styles.actionHeaderBackground);
+    expect(styles.actionHeaderShadow).toBe('none');
+    expect(styles.divider).toBe(styles.viewport >= 768 ? '1px' : '0px');
+    expect(styles.sharedState).toBe(true);
+    await expect(page.locator('#membersPagination')).toContainText('11');
+
+    await page.locator('[data-members-page="2"]').click();
+    await expect.poll(() => requestedPages.at(-1)).toBe(2);
+    await expect(page.locator('[data-members-page="2"].active')).toBeVisible();
+});

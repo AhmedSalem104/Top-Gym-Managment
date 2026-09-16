@@ -439,6 +439,33 @@ table .action-group {
   box-shadow: none !important;
 }
 
+/* The actions header belongs to the same header row as every other column;
+   do not let the sticky-column surface override its header background. */
+.members-table > thead > tr > th:last-child {
+  background: var(--rf-surface-soft) !important;
+  box-shadow: none !important;
+}
+
+/* A quiet outer frame and subtle column dividers keep the members table easy
+   to scan without turning every cell into a heavy card. */
+.table-scroll > .members-table {
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+}
+
+@media (min-width: 768px) {
+  .table-scroll > .members-table > thead > tr > th,
+  .table-scroll > .members-table > tbody > tr > td {
+    border-inline-start: 1px solid var(--border-secondary);
+  }
+
+  .table-scroll > .members-table > thead > tr > th:first-child,
+  .table-scroll > .members-table > tbody > tr > td:first-child {
+    border-inline-start: 0;
+  }
+}
+
 /* One interaction contract for every data table. Page-specific files may
    keep semantic colors for dangerous/success actions, but the row hover and
    action wrapping stay identical everywhere. */

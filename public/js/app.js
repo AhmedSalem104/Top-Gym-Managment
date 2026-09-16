@@ -58,6 +58,10 @@
          function memberStatusBadge(status, label = STATUS_LABELS[status] || status) { const path = ALERT_ICON_PATHS[status] || ALERT_ICON_PATHS.inactive; return `<span class="badge ${escapeHtml(status || 'unknown')} status-badge-with-icon"><svg class="status-badge-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${path}</svg><span>${escapeHtml(label)}</span></span>`; }
          const DEFAULT_PRICING = { plans: { gym_only: { label: 'جيم فقط', monthlyPrice: 305, active: true, sortOrder: 1 }, gym_cardio: { label: 'جيم وكارديو', monthlyPrice: 400, active: true, sortOrder: 2 } }, types: { monthly: { label: 'شهرية', mode: 'months', durationValue: 1, priceMultiplier: 1, active: true, sortOrder: 1 }, half_month: { label: 'نصف شهر', mode: 'days', durationValue: 15, priceMultiplier: .5, active: true, sortOrder: 2 }, quarterly: { label: 'ربع سنوية', mode: 'months', durationValue: 3, priceMultiplier: 3, active: true, sortOrder: 3 }, semiannual: { label: 'نصف سنوية', mode: 'months', durationValue: 6, priceMultiplier: 6, active: true, sortOrder: 4 }, annual: { label: 'سنوية', mode: 'months', durationValue: 12, priceMultiplier: 12, active: true, sortOrder: 5 } }, durations: { monthly: 1, quarterly: 3, semiannual: 6, annual: 12 } };
          const state = { members: [], dashboard: null, saasSubscription: null, saasSubscriptionLoaded: false, pricing: DEFAULT_PRICING, pricingLoadedAt: 0, editing: null, dialogAction: null, dialogMember: null, endDateManual: false, membersPageSize: 5 };
+        // Feature modules such as members pagination are loaded separately from
+        // the app controller. Expose only this existing UI state bridge; the
+        // API/business state remains owned by this controller.
+        window.topGymMembersState = state;
         const $ = (id) => document.getElementById(id);
         const displayPhone = (value, iso = '') => window.LogicFitPhoneInputs?.formatForDisplay?.(value, iso) || String(value || '');
         window.addEventListener('logicfit:phone-formatter-ready', () => {

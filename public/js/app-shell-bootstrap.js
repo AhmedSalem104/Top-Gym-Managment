@@ -2,7 +2,7 @@
     if (window.__topGymAppShellBootstrapLoaded) return;
     window.__topGymAppShellBootstrapLoaded = true;
 
-    const source = '/js/app.js?v=loading-path-v1';
+    const source = '/js/app.js?v=members-pagination-fix-v1';
     let loadPromise = null;
     let appUsableResolve;
     let appUsableReject;
