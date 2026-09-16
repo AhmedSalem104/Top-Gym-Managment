@@ -419,9 +419,19 @@ test('attendance workspace stays compact at the intermediate 1024px desktop widt
 
 test('attendance quick card uses the two-column member context only on large screens', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'desktop', 'The desktop project owns the large-screen quick-card contract.');
-    await installLocalMemberApi(page);
+    const database = await installLocalMemberApi(page);
+    database.members.push({
+        id: 6101,
+        fullName: 'محمد محمود بويكا',
+        phone: '+201015819700',
+        phoneNormalized: '+201015819700',
+        phoneCountry: 'EG',
+        membership
+    });
     await page.goto('/?members-popup-contract#members', { waitUntil: 'networkidle' });
     await page.locator('#attendanceSection').evaluate((section) => { section.hidden = false; });
+    await page.locator('#attendancePhone').fill('01015819700');
+    await page.waitForTimeout(500);
 
     const largeScreen = await page.evaluate(() => {
         const card = document.querySelector('.attendance-entry-card');
@@ -432,8 +442,8 @@ test('attendance quick card uses the two-column member context only on large scr
         return {
             workspaceColumns: getComputedStyle(workspace).gridTemplateColumns,
             workspaceDisplay: getComputedStyle(workspace).display,
-            dividerStyle: getComputedStyle(memberContext).borderInlineStartStyle,
-            dividerWidth: getComputedStyle(memberContext).borderInlineStartWidth,
+            dividerBackground: getComputedStyle(memberContext, '::before').backgroundColor,
+            dividerWidth: getComputedStyle(memberContext, '::before').width,
             buttonHeights: buttons.map((button) => Math.round(button.getBoundingClientRect().height)),
             infoGridColumn: getComputedStyle(info).gridColumn,
             phoneId: document.getElementById('attendancePhone')?.id,
@@ -444,8 +454,8 @@ test('attendance quick card uses the two-column member context only on large scr
 
     expect(largeScreen.workspaceDisplay).toBe('grid');
     expect(largeScreen.workspaceColumns.split(' ').length).toBe(2);
-    expect(largeScreen.dividerStyle).toBe('solid');
-    expect(largeScreen.dividerWidth).not.toBe('0px');
+    expect(largeScreen.dividerBackground).not.toBe('rgba(0, 0, 0, 0)');
+    expect(largeScreen.dividerWidth).toBe('1px');
     expect(largeScreen.buttonHeights.every((height) => height >= 48 && height <= 56)).toBeTruthy();
     expect(largeScreen.infoGridColumn).toBe('1 / -1');
     expect(largeScreen.phoneId).toBe('attendancePhone');
@@ -473,6 +483,32 @@ test('attendance quick card uses the two-column member context only on large scr
     expect(tablet.workspaceDisplay).toBe('contents');
     expect(tablet.modePosition).toBe('absolute');
     expect(tablet.buttonHeights.every((height) => height >= 44 && height <= 50)).toBeTruthy();
+
+    for (const [width, height] of [[390, 844], [320, 568]]) {
+        await page.setViewportSize({ width, height });
+        const mobile = await page.evaluate(() => ({
+            documentWidth: document.documentElement.scrollWidth,
+            bodyWidth: document.body.scrollWidth,
+            phoneValue: document.getElementById('attendancePhone')?.value,
+            previewHeight: Math.round(document.querySelector('#attendanceMemberPreview').getBoundingClientRect().height),
+            actionHeights: [...document.querySelectorAll('.attendance-action-buttons > .btn')].map((button) => Math.round(button.getBoundingClientRect().height)),
+            iconRect: (() => {
+                const icon = document.querySelector('.phone-number-icon');
+                const input = document.querySelector('.phone-number-control');
+                if (!icon || !input) return null;
+                const iconBox = icon.getBoundingClientRect();
+                const inputBox = input.getBoundingClientRect();
+                return { inside: iconBox.top >= inputBox.top && iconBox.bottom <= inputBox.bottom };
+            })()
+        }));
+        expect(mobile.documentWidth).toBeLessThanOrEqual(width + 1);
+        expect(mobile.bodyWidth).toBeLessThanOrEqual(width + 1);
+        expect(mobile.phoneValue).toBe('010 15819700');
+        expect(mobile.previewHeight).toBeGreaterThan(120);
+        expect(mobile.actionHeights.every((item) => item >= 44)).toBeTruthy();
+        expect(mobile.iconRect?.inside).toBeTruthy();
+        await page.screenshot({ path: `qa/artifacts/attendance-quick-card-${width}.png`, fullPage: true });
+    }
 });
 
 test('attendance log uses readable mobile cards without changing the desktop table contract', async ({ page }, testInfo) => {
