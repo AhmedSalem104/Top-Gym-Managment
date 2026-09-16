@@ -2039,6 +2039,17 @@ body .swal2-popup.qr-member-preview-alert .swal2-actions > button.qr-member-prev
   }
 }
 
+/* Responsive composition: summary leads the operational card below desktop. */
+@media (max-width: 1199px) {
+  .attendance-summary {
+    order: 1;
+  }
+
+  .attendance-entry-card {
+    order: 2;
+  }
+}
+
 @media (max-width: 374px) {
   .attendance-summary-card {
     min-height: 84px;

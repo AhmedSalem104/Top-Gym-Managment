@@ -349,6 +349,8 @@ test('attendance workspace stays compact and overflow-free at supported viewport
             viewport: window.innerWidth,
             documentWidth: document.documentElement.scrollWidth,
             bodyWidth: document.body.scrollWidth,
+            entryTop: Math.round(entry.top),
+            summaryTop: Math.round(Math.min(...summary.map((box) => box.top))),
             entryHeight: Math.round(entry.height),
             summaryHeights: summary.map((box) => Math.round(box.height)),
             summaryWidths: summary.map((box) => Math.round(box.width)),
@@ -362,6 +364,7 @@ test('attendance workspace stays compact and overflow-free at supported viewport
     expect(metrics.bodyWidth).toBeLessThanOrEqual(metrics.viewport + 1);
     expect(new Set(metrics.summaryWidths).size).toBe(1);
     expect(Math.max(...metrics.summaryHeights)).toBeLessThanOrEqual(metrics.viewport <= 767 ? 100 : 112);
+    if (metrics.viewport < 1200) expect(metrics.summaryTop).toBeLessThanOrEqual(metrics.entryTop);
     expect(metrics.tableTop - metrics.listHeadBottom).toBeLessThanOrEqual(2);
     expect(metrics.sectionBottom).toBeGreaterThan(metrics.tableTop);
 
@@ -391,6 +394,8 @@ test('attendance workspace stays compact at the intermediate 1024px desktop widt
             viewport: window.innerWidth,
             documentWidth: document.documentElement.scrollWidth,
             bodyWidth: document.body.scrollWidth,
+            entryTop: Math.round(section.querySelector('.attendance-entry-card').getBoundingClientRect().top),
+            summaryTop: Math.round(Math.min(...summary.map((box) => box.top))),
             summaryHeights: summary.map((box) => Math.round(box.height)),
             summaryWidths: summary.map((box) => Math.round(box.width)),
             listHeadBottom: Math.round(listHead.bottom),
@@ -403,6 +408,7 @@ test('attendance workspace stays compact at the intermediate 1024px desktop widt
     expect(metrics.bodyWidth).toBeLessThanOrEqual(metrics.viewport + 1);
     expect(new Set(metrics.summaryWidths).size).toBe(1);
     expect(Math.max(...metrics.summaryHeights)).toBeLessThanOrEqual(112);
+    expect(metrics.summaryTop).toBeLessThanOrEqual(metrics.entryTop);
     expect(metrics.tableTop - metrics.listHeadBottom).toBeLessThanOrEqual(2);
 
     await testInfo.attach('attendance-1024.png', {
