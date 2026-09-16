@@ -417,6 +417,64 @@ test('attendance workspace stays compact at the intermediate 1024px desktop widt
     });
 });
 
+test('attendance quick card uses the two-column member context only on large screens', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'desktop', 'The desktop project owns the large-screen quick-card contract.');
+    await installLocalMemberApi(page);
+    await page.goto('/?members-popup-contract#members', { waitUntil: 'networkidle' });
+    await page.locator('#attendanceSection').evaluate((section) => { section.hidden = false; });
+
+    const largeScreen = await page.evaluate(() => {
+        const card = document.querySelector('.attendance-entry-card');
+        const workspace = card?.querySelector('.attendance-entry-workspace');
+        const memberContext = card?.querySelector('.attendance-member-context');
+        const buttons = [...card.querySelectorAll('.attendance-action-buttons > .btn')];
+        const info = card?.querySelector('.attendance-info-strip');
+        return {
+            workspaceColumns: getComputedStyle(workspace).gridTemplateColumns,
+            workspaceDisplay: getComputedStyle(workspace).display,
+            dividerStyle: getComputedStyle(memberContext).borderInlineStartStyle,
+            dividerWidth: getComputedStyle(memberContext).borderInlineStartWidth,
+            buttonHeights: buttons.map((button) => Math.round(button.getBoundingClientRect().height)),
+            infoGridColumn: getComputedStyle(info).gridColumn,
+            phoneId: document.getElementById('attendancePhone')?.id,
+            checkInId: document.getElementById('attendanceCheckInButton')?.id,
+            checkOutId: document.getElementById('attendanceCheckOutButton')?.id
+        };
+    });
+
+    expect(largeScreen.workspaceDisplay).toBe('grid');
+    expect(largeScreen.workspaceColumns.split(' ').length).toBe(2);
+    expect(largeScreen.dividerStyle).toBe('solid');
+    expect(largeScreen.dividerWidth).not.toBe('0px');
+    expect(largeScreen.buttonHeights.every((height) => height >= 48 && height <= 56)).toBeTruthy();
+    expect(largeScreen.infoGridColumn).toBe('1 / -1');
+    expect(largeScreen.phoneId).toBe('attendancePhone');
+    expect(largeScreen.checkInId).toBe('attendanceCheckInButton');
+    expect(largeScreen.checkOutId).toBe('attendanceCheckOutButton');
+
+    await page.screenshot({ path: 'qa/artifacts/attendance-quick-card-1440.png', fullPage: true });
+    for (const width of [1600, 1920]) {
+        await page.setViewportSize({ width, height: 900 });
+        await page.screenshot({ path: `qa/artifacts/attendance-quick-card-${width}.png`, fullPage: true });
+    }
+    await page.setViewportSize({ width: 1024, height: 768 });
+    const tablet = await page.evaluate(() => {
+        const card = document.querySelector('.attendance-entry-card');
+        const workspace = card?.querySelector('.attendance-entry-workspace');
+        const mode = card?.querySelector('.attendance-entry-mode');
+        const buttons = [...card.querySelectorAll('.attendance-action-buttons > .btn')];
+        return {
+            workspaceDisplay: getComputedStyle(workspace).display,
+            modePosition: getComputedStyle(mode).position,
+            buttonHeights: buttons.map((button) => Math.round(button.getBoundingClientRect().height))
+        };
+    });
+
+    expect(tablet.workspaceDisplay).toBe('contents');
+    expect(tablet.modePosition).toBe('absolute');
+    expect(tablet.buttonHeights.every((height) => height >= 44 && height <= 50)).toBeTruthy();
+});
+
 test('attendance log uses readable mobile cards without changing the desktop table contract', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'desktop', 'The desktop project owns the full responsive screenshot matrix.');
     await installLocalMemberApi(page);

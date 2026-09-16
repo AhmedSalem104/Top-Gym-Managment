@@ -2059,3 +2059,302 @@ body .swal2-popup.qr-member-preview-alert .swal2-actions > button.qr-member-prev
     font-size: 1.3rem !important;
   }
 }
+
+/* Desktop workspace: registration on the left, member context on the right. */
+@media (min-width: 1200px) {
+  .attendance-entry-card {
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, .9fr);
+    gap: var(--space-4) var(--space-5);
+    min-height: 0;
+    padding: var(--space-5);
+  }
+
+  .attendance-entry-head,
+  .attendance-info-strip {
+    grid-column: 1 / -1;
+  }
+
+  .attendance-entry-head {
+    display: block;
+    padding-inline: var(--space-1);
+  }
+
+  .attendance-entry-head h4 {
+    font-size: var(--font-lg);
+  }
+
+  .attendance-entry-head p {
+    margin-top: 2px;
+    font-size: var(--font-xs);
+  }
+
+  .attendance-entry-workspace {
+    display: grid;
+    grid-column: 1 / -1;
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, .9fr);
+    gap: var(--space-5);
+    direction: ltr;
+  }
+
+  .attendance-entry-input,
+  .attendance-member-context {
+    min-width: 0;
+    direction: rtl;
+  }
+
+  .attendance-entry-input {
+    display: grid;
+    align-content: start;
+    gap: var(--space-3);
+  }
+
+  .attendance-entry-mode {
+    justify-self: start;
+  }
+
+  .attendance-entry-mode .attendance-segmented-control {
+    gap: 2px;
+    padding: 2px;
+  }
+
+  .attendance-entry-mode .attendance-segmented-control > button {
+    min-height: 36px;
+    padding-inline: var(--space-3);
+    font-size: var(--font-xs);
+  }
+
+  .attendance-entry-input #attendancePhoneModePanel {
+    min-width: 0;
+  }
+
+  .attendance-input-row {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--space-2);
+  }
+
+  .attendance-input-label {
+    color: var(--color-text-soft);
+    font-size: var(--font-xs);
+    font-weight: var(--weight-semibold);
+  }
+
+  .attendance-input-wrap {
+    width: 100%;
+  }
+
+  .attendance-section .attendance-input-wrap > input:not([type="checkbox"]):not([type="radio"]) {
+    min-height: 48px;
+    padding-inline: 44px var(--space-3);
+    font-size: var(--font-sm);
+  }
+
+  .attendance-phone-helper {
+    color: var(--color-text-muted);
+    font-size: 11px;
+  }
+
+  .attendance-action-buttons {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-2);
+    margin-top: var(--space-1);
+  }
+
+  .attendance-action-buttons > .btn {
+    min-width: 0;
+    min-height: 52px;
+    padding-inline: var(--space-3);
+    box-shadow: none;
+  }
+
+  .attendance-member-context {
+    display: grid;
+    align-content: start;
+    gap: var(--space-3);
+    border-inline-start: 1px solid var(--border-secondary);
+    padding-inline-start: var(--space-5);
+  }
+
+  .attendance-member-context-heading {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-3);
+  }
+
+  .attendance-member-context-heading span {
+    color: var(--color-text-soft);
+    font-size: var(--font-sm);
+    font-weight: var(--weight-bold);
+  }
+
+  .attendance-member-context-heading small {
+    color: var(--color-text-muted);
+    font-size: 10px;
+  }
+
+  .attendance-member-empty {
+    display: grid;
+    min-height: 142px;
+    align-content: center;
+    justify-items: center;
+    gap: var(--space-2);
+    border: 1px dashed var(--border-secondary);
+    border-radius: var(--radius-md);
+    background: var(--color-surface-muted);
+    color: var(--color-text-muted);
+    padding: var(--space-4);
+    text-align: center;
+  }
+
+  .attendance-member-empty-icon {
+    display: grid;
+    width: 36px;
+    height: 36px;
+    place-items: center;
+    border-radius: 50%;
+    background: var(--color-primary-soft);
+    color: var(--color-primary);
+  }
+
+  .attendance-member-empty-icon .ui-icon {
+    width: 18px;
+    height: 18px;
+  }
+
+  .attendance-member-empty strong {
+    color: var(--color-text-soft);
+    font-size: var(--font-sm);
+  }
+
+  .attendance-member-empty p {
+    font-size: 11px;
+  }
+
+  .attendance-member-context:has(#attendanceMemberPreview:not([hidden])) .attendance-member-empty {
+    display: none;
+  }
+
+  .attendance-member-preview {
+    min-height: 142px;
+    padding: var(--space-4);
+  }
+
+  .attendance-info-strip {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-2);
+    border: 1px solid var(--info-border);
+    border-radius: var(--radius-md);
+    background: var(--color-info-soft);
+    color: var(--color-text-muted);
+    padding: var(--space-3) var(--space-4);
+    font-size: 11px;
+    line-height: 1.55;
+  }
+
+  .attendance-info-icon {
+    display: inline-grid;
+    flex: 0 0 18px;
+    width: 18px;
+    height: 18px;
+    place-items: center;
+    color: var(--color-info);
+  }
+
+  .attendance-info-icon .ui-icon {
+    width: 17px;
+    height: 17px;
+  }
+}
+
+@media (max-width: 1199px) {
+  .attendance-entry-workspace {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--space-3);
+  }
+
+  .attendance-entry-input,
+  .attendance-member-context {
+    min-width: 0;
+  }
+
+  .attendance-member-context {
+    display: grid;
+    gap: var(--space-2);
+  }
+
+  .attendance-member-context-heading {
+    display: none;
+  }
+
+  .attendance-member-empty {
+    display: none;
+  }
+
+  /* The new desktop context markup stays visually neutral below desktop. */
+  .attendance-input-label {
+    display: none;
+  }
+
+  .attendance-info-strip {
+    display: flex;
+    align-items: flex-start;
+    gap: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    color: var(--color-text-muted);
+    padding: 0;
+    font-size: 10px;
+    line-height: 1.5;
+  }
+
+  .attendance-info-icon {
+    display: none;
+  }
+}
+
+/* Preserve the pre-existing tablet composition: title and mode share one
+   compact row, followed by the original input/result flow. */
+@media (min-width: 768px) and (max-width: 1199px) {
+  .attendance-entry-card {
+    position: relative;
+  }
+
+  .attendance-entry-head {
+    min-height: 36px;
+    padding-inline-end: 190px;
+  }
+
+  .attendance-entry-mode {
+    position: absolute;
+    top: var(--space-4);
+    inset-inline-end: var(--space-4);
+  }
+
+  .attendance-entry-workspace,
+  .attendance-entry-input,
+  .attendance-entry-input #attendancePhoneModePanel,
+  .attendance-member-context {
+    display: contents;
+  }
+
+  .attendance-input-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: var(--space-3);
+  }
+
+  .attendance-action-buttons {
+    align-self: start;
+    align-content: start;
+  }
+
+  .attendance-action-buttons > .btn {
+    height: 46px;
+    min-height: 46px;
+  }
+}
