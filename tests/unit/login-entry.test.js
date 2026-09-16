@@ -46,3 +46,28 @@ test('login entry stylesheet is materially smaller than the full app stylesheet'
     const mainCss = fs.statSync(path.join(ROOT, 'public/css/main.css')).size;
     assert.ok(loginCss < mainCss * 0.5, `login CSS ${loginCss} should be less than half of main CSS ${mainCss}`);
 });
+
+test('welcome card styles are shared by the login entry and authenticated app shell', () => {
+    const shared = read('public/css/components/tenant-welcome.css');
+    const appShellSource = read('public/css/app-shell.source.css');
+    const loginBuilder = read('scripts/build-login-entry.js');
+    const appShell = read('public/css/app-shell.css');
+    const loginCss = read('public/css/login-entry.css');
+
+    assert.match(shared, /\.tenant-welcome-card\s*\{/u);
+    assert.match(shared, /max-width:\s*100%/u);
+    assert.match(appShellSource, /components\/tenant-welcome\.css/u);
+    assert.match(loginBuilder, /components\/tenant-welcome\.css/u);
+    assert.match(appShell, /\.tenant-welcome-card\{/u);
+    assert.match(loginCss, /\.tenant-welcome-card\{/u);
+    assert.doesNotMatch(appShell, /\.auth-form\{/u);
+});
+
+test('post-auth loading has no fixed welcome timeout or double-rAF bootstrap', () => {
+    const auth = read('public/js/auth-ui.js');
+    const bootstrap = read('public/js/app-shell-bootstrap.js');
+    assert.match(auth, /topGymAppUsable/u);
+    assert.equal(auth.includes('1450'), false);
+    assert.match(bootstrap, /requestAnimationFrame\(start\)/u);
+    assert.doesNotMatch(bootstrap, /requestAnimationFrame\(\(\)\s*=>\s*window\.requestAnimationFrame/u);
+});

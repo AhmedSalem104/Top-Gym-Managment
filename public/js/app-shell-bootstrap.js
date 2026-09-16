@@ -2,8 +2,27 @@
     if (window.__topGymAppShellBootstrapLoaded) return;
     window.__topGymAppShellBootstrapLoaded = true;
 
-    const source = '/js/app.js?v=freeze-whatsapp-v2';
+    const source = '/js/app.js?v=loading-path-v1';
     let loadPromise = null;
+    let appUsableResolve;
+    let appUsableReject;
+
+    // Script download and route usability are different milestones. The
+    // welcome surface waits for the latter instead of using a fixed timer.
+    if (!window.topGymAppUsable) {
+        window.topGymAppUsable = new Promise((resolve, reject) => {
+            appUsableResolve = resolve;
+            appUsableReject = reject;
+        });
+        window.topGymMarkAppUsable = (detail = {}) => {
+            appUsableResolve?.(detail);
+            window.dispatchEvent(new CustomEvent('topgym:app-usable', { detail }));
+        };
+        window.topGymMarkAppBootstrapFailed = (error) => {
+            appUsableReject?.(error);
+            window.dispatchEvent(new CustomEvent('topgym:app-bootstrap-failed', { detail: { error } }));
+        };
+    }
 
     function loadApplication() {
         if (loadPromise) return loadPromise;
@@ -50,15 +69,15 @@
                 return;
             }
             void loadApplication().then(loadPostAppSupport).catch((error) => {
+                window.topGymMarkAppBootstrapFailed?.(error);
                 console.error('[TOP GYM] Application shell failed to load.', error);
             });
         };
 
-        // The shell and navigation can paint first. The app controller is
-        // still loaded immediately after that paint, so interaction does not
-        // wait for an arbitrary timer and direct routes remain deterministic.
+        // One frame lets the authenticated shell paint first. A second rAF
+        // added a frame without a real dependency and delayed app bootstrap.
         if (typeof window.requestAnimationFrame === 'function') {
-            window.requestAnimationFrame(() => window.requestAnimationFrame(start));
+            window.requestAnimationFrame(start);
         } else start();
     }
 

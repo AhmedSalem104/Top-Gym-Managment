@@ -365,6 +365,24 @@
         }
     }
 
+    function hideTenantWelcome() {
+        const layer = $('tenantWelcomeLayer');
+        if (!layer || layer.hidden) return;
+        layer.classList.remove('is-visible');
+        window.clearTimeout(tenantWelcomeTimer);
+        tenantWelcomeTimer = window.setTimeout(() => { layer.hidden = true; }, 240);
+    }
+
+    function waitForApplicationUsable() {
+        if (window.topGymAppUsable?.then) return window.topGymAppUsable;
+        return new Promise((resolve, reject) => {
+            const onReady = (event) => resolve(event.detail || {});
+            const onFailure = (event) => reject(event.detail?.error || new Error('Application bootstrap failed.'));
+            window.addEventListener('topgym:app-usable', onReady, { once: true });
+            window.addEventListener('topgym:app-bootstrap-failed', onFailure, { once: true });
+        });
+    }
+
     function showTenantWelcome() {
         const layer = $('tenantWelcomeLayer');
         if (!layer) return;
@@ -376,10 +394,13 @@
         layer.classList.remove('is-visible');
         window.requestAnimationFrame(() => layer.classList.add('is-visible'));
         clearTenantWelcomeFlag();
-        tenantWelcomeTimer = window.setTimeout(() => {
-            layer.classList.remove('is-visible');
-            window.setTimeout(() => { layer.hidden = true; }, 240);
-        }, 1450);
+        // Branding is presentation-only and may arrive after the security
+        // gate. Update the visible copy when it does, without blocking app
+        // bootstrap on the branding request.
+        window.addEventListener('topgym:brandingchange', () => {
+            if (!layer.hidden && $('tenantWelcomeName')) $('tenantWelcomeName').textContent = brandName();
+        }, { once: true });
+        void waitForApplicationUsable().then(hideTenantWelcome, hideTenantWelcome);
     }
 
     function setSubmitLoading(loading) {
@@ -723,9 +744,15 @@
                     showAuthenticated(user);
                     return;
                 }
-                if (user.role === 'PlatformAdmin') window.topGymBranding?.apply?.(window.topGymBranding.fallback?.() || {}, 1);
-                else await refreshTenantBranding(user);
-                await refreshTenantEntitlements(user);
+                if (user.role === 'PlatformAdmin') {
+                    window.topGymBranding?.apply?.(window.topGymBranding.fallback?.() || {}, 1);
+                } else {
+                    // Session is the security gate. Branding is presentation
+                    // only, so run it alongside the entitlement request.
+                    const brandingPromise = refreshTenantBranding(user);
+                    await refreshTenantEntitlements(user);
+                    void brandingPromise.catch(() => {});
+                }
                 showAuthenticated(user, { showWelcome: hasTenantWelcomeFlag() });
             }
             else showLogin('', Boolean(data.setupRequired));

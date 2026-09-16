@@ -17,7 +17,7 @@ test('authenticated entry keeps route features out of the initial shell', () => 
     assert.match(index, /\/js\/app-shell-bootstrap\.js\?v=[^"'\s]+/u);
     assert.match(index, /\/js\/core\/feature-manifest\.js\?v=[^"'\s]+/u);
     assert.match(index, /\/js\/core\/dialog-loader\.js\?v=[^"'\s]+/u);
-    assert.match(index, /\/js\/feature-loader\.js\?v=freeze-whatsapp-v2/u);
+    assert.match(index, /\/js\/feature-loader\.js\?v=loading-path-v1/u);
     assert.doesNotMatch(index, /\/js\/(?:core\/dialog-loader|feature-loader)\.js\?v=phase3-6/u);
     assert.doesNotMatch(index, /\/js\/app\.js\?/u);
     assert.doesNotMatch(index, /notification-center\.js/u);

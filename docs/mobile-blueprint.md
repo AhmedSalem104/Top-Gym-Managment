@@ -50,6 +50,12 @@ creation remain server-authoritative.
 - Branch navigation and branch context are available for Gym subscriptions when
   the current plan permits the requested branch count; they are hidden for
   Independent Trainer tenants.
+- The post-login shell must prove the server session first and then obtain
+  effective entitlements before exposing protected navigation. Tenant branding
+  is presentation-only and may load in parallel; it must never grant access.
+- The first route is usable only after its existing authoritative bootstrap/data
+  work completes. The welcome surface follows that readiness signal and does
+  not use a fixed-duration loading timer.
 
 ## User flows
 
@@ -70,6 +76,7 @@ creation remain server-authoritative.
 | Trainer branches unavailable | Tenant type compatibility | Capability and navigation tests |
 | Egypt-only UI | `public/js/core/phone-inputs.js` | Phone contract/browser tests |
 | E.164 persistence/search | `src/services/phone-service.js` | Phone normalization and duplicate/search tests |
+| Post-login readiness | Session + entitlement gate, then route bootstrap | Critical-path browser trace; app usable event; auth/entitlement regression tests |
 
 ## Blueprint changelog
 
@@ -79,3 +86,10 @@ creation remain server-authoritative.
 - Recorded Egypt-only local phone UX and canonical E.164 backend contract.
 - Recorded removal of country selection and automatic country detection from the
   Logic Fit phone flow.
+
+### 2026-09-16
+
+- Recorded the post-login loading contract: session remains the security gate,
+  entitlements remain server-authoritative, branding may run in parallel, and
+  the authenticated welcome surface closes on real route readiness rather than
+  a fixed delay. No API or security contract changed.

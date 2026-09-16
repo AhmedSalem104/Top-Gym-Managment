@@ -22,6 +22,7 @@ const cssLayers = [
     'components/buttons.css',
     'components/forms.css',
     'components/alerts.css',
+    'components/tenant-welcome.css',
     'pages/login.css',
     'responsive.css',
     'theme.css',
@@ -82,5 +83,5 @@ fs.writeFileSync(loginCssPath, [
     minifiedCss,
     ''
 ].join('\n'), 'utf8');
-fs.writeFileSync(loginPath, buildLoginHtml(source, cssVersion), 'utf8');
+fs.writeFileSync(loginPath, buildLoginHtml(source, cssVersion).replaceAll('/js/auth-ui.js?v=20', '/js/auth-ui.js?v=21'), 'utf8');
 console.log(`[LOGIN-ENTRY-OK] generated ${path.relative(root, loginPath)} and ${path.relative(root, loginCssPath)}`);

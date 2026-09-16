@@ -1296,8 +1296,16 @@
                 if (isDashboardViewActive()) void loadData();
                 if (isMembersTabActive()) void loadMembersOnly();
             });
-            const loadAfterAuth = () => {
-                if (window.topGymAuth?.getUser?.() && !window.topGymAuth.getUser()?.mustChangePassword) void loadData();
+            const loadAfterAuth = async () => {
+                const user = window.topGymAuth?.getUser?.();
+                if (!user || user.mustChangePassword) return;
+                try {
+                    await loadData();
+                } finally {
+                    // Route readiness follows the existing branch/data
+                    // bootstrap, not merely the app.js download event.
+                    window.topGymMarkAppUsable?.({ route: requestedTab() });
+                }
             };
             if (window.topGymAuthReady) window.topGymAuthReady.then(loadAfterAuth).catch(() => {});
             else loadAfterAuth();

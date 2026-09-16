@@ -135,6 +135,7 @@
         window.__topGymDashboardAnalyticsScheduled = true;
         const start = async () => {
             if (window.topGymAuthReady) await window.topGymAuthReady.catch(() => null);
+            if (window.topGymAppUsable) await window.topGymAppUsable.catch(() => null);
             if (isIndependentTrainer() || !dashboardIsRequested() || !window.topGymAuth?.canAccessTab?.('dashboard') || (!window.topGymAuth?.isOwner?.() && !window.topGymAuth?.hasPermission?.('finance.read'))) {
                 window.__topGymDashboardAnalyticsScheduled = false;
                 return;
@@ -151,6 +152,7 @@
         window.__topGymDashboardEnhancementsScheduled = true;
         const start = async () => {
             if (window.topGymAuthReady) await window.topGymAuthReady.catch(() => null);
+            if (window.topGymAppUsable) await window.topGymAppUsable.catch(() => null);
             if (isIndependentTrainer() || !dashboardIsRequested() || !window.topGymAuth?.getUser?.() || !window.topGymAuth?.canAccessTab?.('dashboard')) {
                 window.__topGymDashboardEnhancementsScheduled = false;
                 return;
@@ -285,7 +287,13 @@
             if ('requestIdleCallback' in window) window.requestIdleCallback(() => void load().catch(() => null), { timeout: 1600 });
             else window.requestAnimationFrame(() => void load().catch(() => null));
         };
-        if (window.topGymAuthReady) window.topGymAuthReady.then((user) => { if (user) schedule(); }).catch(() => {});
+        if (window.topGymAuthReady) {
+            window.topGymAuthReady.then(async (user) => {
+                if (!user) return;
+                if (window.topGymAppUsable) await window.topGymAppUsable.catch(() => null);
+                schedule();
+            }).catch(() => {});
+        }
     }
 
     function bindLazyWhatsapp() {
@@ -455,7 +463,11 @@
         // later DOM additions, so waiting for a controller promise would
         // create a race where this one-shot schedule silently never runs.
         const ready = window.topGymAuthReady || Promise.resolve(null);
-        ready.then((user) => { if (user) schedule(); }).catch(() => {});
+        ready.then(async (user) => {
+            if (!user) return;
+            if (window.topGymAppUsable) await window.topGymAppUsable.catch(() => null);
+            schedule();
+        }).catch(() => {});
     }
 
     window.topGymEnsureTab = ensureTab;
@@ -464,7 +476,11 @@
     window.addEventListener('topgym:tab-changed', (event) => {
         if (event.detail?.name === 'dashboard') {
             scheduleDashboardEnhancements();
-            scheduleDashboardAnalytics(true);
+            // Analytics and dashboard enhancements decorate an already usable
+            // route. Loading them immediately competed with the first route's
+            // data/bootstrap requests and pulled phone/formatter assets into
+            // the critical post-login window.
+            scheduleDashboardAnalytics();
         }
     });
     bindLazyPrintActions();

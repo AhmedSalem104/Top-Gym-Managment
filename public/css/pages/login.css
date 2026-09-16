@@ -373,8 +373,7 @@ body.auth-locked .auth-screen {
 
 .saas-entry-brand-copy > span,
 .saas-entry-eyebrow,
-.saas-entry-action-label,
-.tenant-welcome-eyebrow {
+.saas-entry-action-label {
   color: var(--primary);
   font-size: 11px;
   font-weight: var(--weight-extrabold);
@@ -541,107 +540,6 @@ body.auth-locked .auth-screen {
   text-align: center;
 }
 
-.tenant-welcome-layer {
-  position: fixed;
-  z-index: var(--z-modal);
-  inset: 0;
-  display: grid;
-  place-items: center;
-  padding: 20px;
-  background: var(--overlay);
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 220ms ease;
-}
-
-.tenant-welcome-layer.is-visible {
-  opacity: 1;
-}
-
-.tenant-welcome-card {
-  display: grid;
-  width: min(470px, 100%);
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: 16px;
-  align-items: center;
-  padding: 24px;
-  border: 1px solid var(--primary-border);
-  border-radius: 22px;
-  background: var(--bg-card);
-  box-shadow: var(--shadow-popup);
-  transform: translateY(8px) scale(.98);
-  transition: transform 240ms ease;
-}
-
-.tenant-welcome-layer.is-visible .tenant-welcome-card {
-  transform: translateY(0) scale(1);
-}
-
-.tenant-welcome-mark {
-  display: grid;
-  width: 58px;
-  height: 58px;
-  place-items: center;
-  overflow: hidden;
-  border: 0;
-  border-radius: var(--brand-image-radius);
-  background: transparent;
-  color: var(--primary);
-  font-size: 25px;
-  font-weight: var(--weight-extrabold);
-}
-
-.tenant-welcome-mark img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  padding: 7px;
-}
-
-.tenant-welcome-copy {
-  min-width: 0;
-}
-
-.tenant-welcome-copy h2 {
-  margin: 7px 0 4px;
-  color: var(--text-primary);
-  font-size: clamp(20px, 3vw, 26px);
-  font-weight: var(--weight-extrabold);
-}
-
-.tenant-welcome-copy h2 strong {
-  color: var(--primary);
-}
-
-.tenant-welcome-copy p {
-  margin: 0;
-  color: var(--text-muted);
-  font-size: var(--font-sm);
-  line-height: 1.7;
-}
-
-.tenant-welcome-progress {
-  grid-column: 1 / -1;
-  height: 3px;
-  overflow: hidden;
-  border-radius: 999px;
-  background: var(--border-secondary);
-}
-
-.tenant-welcome-progress span {
-  display: block;
-  width: 42%;
-  height: 100%;
-  border-radius: inherit;
-  background: var(--primary);
-  animation: tenant-welcome-progress 1.35s ease-in-out forwards;
-}
-
-@keyframes tenant-welcome-progress {
-  from { width: 0; }
-  to { width: 100%; }
-}
-
 @media (max-width: 760px) {
   .saas-entry-layout {
     grid-template-columns: 1fr;
@@ -675,23 +573,6 @@ body.auth-locked .auth-screen {
     font-size: 30px;
   }
 
-  .tenant-welcome-card {
-    grid-template-columns: 1fr;
-    text-align: center;
-  }
-
-  .tenant-welcome-mark {
-    margin-inline: auto;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .tenant-welcome-layer,
-  .tenant-welcome-card,
-  .tenant-welcome-progress span {
-    animation: none;
-    transition: none;
-  }
 }
 
 /* Logic Fit product gateway ---------------------------------------------
