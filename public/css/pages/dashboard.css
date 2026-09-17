@@ -1733,9 +1733,10 @@
   .dashboard-day-pass-kpis { grid-template-columns: 1fr; }
 }
 
-/* Keep the dashboard command center compact: alerts stay on the right,
-   daily passes use the left column, and the monthly summary gets the full
-   width below them. RTL grid lines start from the right side. */
+/* Keep the dashboard command center compact: alerts stay on the right in a
+   focused 4-column rail, daily passes get the wider 8-column workspace, and
+   the monthly summary keeps the full width below them. RTL grid lines start
+   from the right side. */
 @media (min-width: 1200px) {
   .overview-grid {
     column-gap: var(--space-4);
@@ -1743,12 +1744,12 @@
   }
 
   .overview-grid > .alerts-panel {
-    grid-column: 1 / span 6;
+    grid-column: 1 / span 4;
     grid-row: 2;
   }
 
   .overview-grid > .dashboard-day-pass-card {
-    grid-column: 7 / span 6;
+    grid-column: 5 / span 8;
     grid-row: 2;
   }
 

@@ -92,6 +92,28 @@ test('all application tabs open without layout breakage', async ({ page }, testI
     }
 });
 
+test('dashboard daily passes use the wider column beside the alerts rail', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'desktop', 'The wide desktop project owns the dashboard column contract.');
+    await waitForTab(page, 'dashboard', '#dashboardSection');
+    const layout = await page.evaluate(() => {
+        const grid = document.querySelector('.overview-grid');
+        const alerts = grid?.querySelector('.alerts-panel');
+        const dayPasses = grid?.querySelector('.dashboard-day-pass-card');
+        return {
+            gridColumns: grid ? getComputedStyle(grid).gridTemplateColumns.split(' ').length : 0,
+            alertsColumn: alerts ? getComputedStyle(alerts).gridColumn : '',
+            dayPassesColumn: dayPasses ? getComputedStyle(dayPasses).gridColumn : '',
+            documentWidth: document.documentElement.scrollWidth,
+            viewportWidth: document.documentElement.clientWidth
+        };
+    });
+    expect(layout.gridColumns).toBe(12);
+    expect(layout.alertsColumn).toBe('1 / span 4');
+    expect(layout.dayPassesColumn).toBe('5 / span 8');
+    expect(layout.documentWidth).toBeLessThanOrEqual(layout.viewportWidth + 1);
+    await capture(page, testInfo, 'dashboard-day-passes-8-alerts-4');
+});
+
 test('mobile UI remains compact and usable', async ({ page }, testInfo) => {
     await page.setViewportSize({ width: 390, height: 844 });
     for (const [name, selector] of tabs) {
