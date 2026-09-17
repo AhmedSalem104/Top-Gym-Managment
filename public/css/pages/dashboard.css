@@ -1383,8 +1383,8 @@
 
 /* Daily passes dashboard card ----------------------------------------- */
 .day-pass-dialog {
-  width: min(920px, calc(100% - 28px));
-  max-width: 920px;
+  width: min(720px, calc(100% - 28px));
+  max-width: 720px;
   max-height: calc(100dvh - 28px);
 }
 
@@ -1416,6 +1416,123 @@
 }
 .day-pass-dialog-head-actions { display: flex; align-items: center; gap: var(--space-2); }
 .day-pass-dialog-head-actions .btn { min-height: 40px; white-space: nowrap; }
+
+/* Add-pass modal: a focused form surface, without the records table. The
+   records toolbar/table live on the Attendance screen so the modal stays
+   quick to scan and safe to use on small screens. */
+.day-pass-dialog > .day-pass-panel {
+  display: grid;
+  min-width: 0;
+  gap: 0;
+  overflow-y: auto;
+  border: 0;
+  border-radius: inherit;
+  background: var(--color-surface);
+  box-shadow: none;
+  scrollbar-color: var(--border-strong) transparent;
+  scrollbar-width: thin;
+}
+.day-pass-dialog > .day-pass-panel::-webkit-scrollbar { width: 7px; }
+.day-pass-dialog > .day-pass-panel::-webkit-scrollbar-thumb { border-radius: var(--radius-pill); background: var(--border-strong); }
+.day-pass-dialog .day-pass-head {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-content);
+  display: flex;
+  min-height: 92px;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin: 0;
+  border-bottom: 1px solid var(--border-secondary);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--color-primary) 8%, var(--color-surface)), var(--color-surface));
+  padding: 20px 24px;
+}
+.day-pass-dialog .day-pass-heading { min-width: 0; align-items: center; }
+.day-pass-dialog .day-pass-heading > div { display: grid; min-width: 0; gap: 3px; }
+.day-pass-dialog .day-pass-heading h3 { font-size: var(--font-xl); line-height: 1.3; }
+.day-pass-dialog .day-pass-heading p { max-width: 44ch; line-height: 1.5; }
+.day-pass-dialog .day-pass-icon { width: 52px; height: 52px; flex-basis: 52px; border: 1px solid var(--primary-border); border-radius: var(--radius-lg); }
+.day-pass-dialog .day-pass-dialog-head-actions { flex: 0 0 auto; align-items: center; }
+.day-pass-dialog .day-pass-today-badge { min-height: 32px; }
+.day-pass-dialog .day-pass-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: 16px;
+  border: 0;
+  border-radius: 0;
+  background: var(--color-surface);
+  padding: 24px;
+}
+.day-pass-form-lead {
+  display: grid;
+  grid-column: 1 / -1;
+  gap: 2px;
+  border-bottom: 1px solid var(--border-secondary);
+  padding-bottom: 14px;
+}
+.day-pass-form-lead > span { color: var(--color-primary); font-size: var(--font-xs); font-weight: var(--weight-bold); }
+.day-pass-form-lead h4 { color: var(--color-text); font-size: var(--font-lg); font-weight: var(--weight-bold); }
+.day-pass-form-lead p { color: var(--color-text-muted); font-size: var(--font-xs); }
+.day-pass-dialog .day-pass-form .field { display: grid; min-width: 0; gap: 7px; }
+.day-pass-dialog .day-pass-form .field > label { color: var(--color-text-soft); font-size: var(--font-sm); font-weight: var(--weight-semibold); }
+.day-pass-dialog .day-pass-form .field > input,
+.day-pass-dialog .day-pass-form .field > select { width: 100%; min-width: 0; min-height: 48px; border: 1px solid var(--border-primary); border-radius: var(--radius-md); background: var(--color-surface-elevated); padding-inline: 14px; }
+.day-pass-dialog .day-pass-form .field > input:focus,
+.day-pass-dialog .day-pass-form .field > select:focus { border-color: var(--color-primary); box-shadow: var(--focus-ring); outline: 0; }
+.day-pass-dialog .day-pass-price-box {
+  display: grid;
+  min-height: 64px;
+  align-content: center;
+  gap: 2px;
+  border: 1px solid var(--success-border);
+  border-radius: var(--radius-md);
+  background: var(--color-success-soft);
+  padding: 0 14px;
+}
+.day-pass-dialog .day-pass-price-box span { color: var(--color-text-muted); font-size: var(--font-xs); }
+.day-pass-dialog .day-pass-price-box strong { color: var(--color-success); font-family: var(--font-latin); font-size: var(--font-lg); }
+.day-pass-dialog .day-pass-whatsapp-option {
+  display: flex;
+  grid-column: 1 / -1;
+  min-height: 48px;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-muted);
+  padding: 10px 12px;
+}
+.day-pass-dialog .day-pass-form-actions {
+  display: flex;
+  grid-column: 1 / -1;
+  justify-content: flex-start;
+  gap: 10px;
+  margin-top: 4px;
+  border-top: 1px solid var(--border-secondary);
+  padding-top: 18px;
+}
+.day-pass-dialog .day-pass-form-actions .btn { min-height: 46px; min-width: 132px; }
+.day-pass-dialog .day-pass-form-actions #dayPassCancelEditButton { min-width: 116px; }
+
+/* The daily log remains available in the Attendance workspace, outside the
+   add/edit modal. */
+.day-pass-records-panel {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-4);
+  margin-top: var(--space-5);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  padding: var(--space-5);
+  box-shadow: var(--shadow-xs);
+}
+.day-pass-records-panel .day-pass-list-head { padding-top: 0; }
+.day-pass-list-actions { display: flex; min-width: 0; align-items: center; gap: var(--space-2); }
+.day-pass-list-actions .day-pass-search { min-width: min(260px, 100%); }
+.day-pass-list-actions .btn { min-height: 42px; white-space: nowrap; }
 
 .dashboard-day-pass-card {
   display: grid;
@@ -1512,6 +1629,57 @@
 }
 .dashboard-day-pass-table td small { color: var(--color-text-muted); font-family: var(--font-latin); font-size: var(--font-xs); }
 .dashboard-day-pass-table .day-pass-actions { flex-wrap: nowrap; gap: 4px; }
+
+/* Keep the identity data and row actions in separate visual zones. The phone
+   placeholder belongs to the visitor identity, never to the action group. */
+.dashboard-day-pass-table {
+  border: 1px solid var(--border-secondary);
+  border-collapse: separate;
+  border-spacing: 0;
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  overflow: hidden;
+}
+.dashboard-day-pass-table th,
+.dashboard-day-pass-table td { border-inline-start: 1px solid var(--border-secondary); }
+.dashboard-day-pass-table th:first-child,
+.dashboard-day-pass-table td:first-child { border-inline-start: 0; }
+.dashboard-day-pass-table thead th { border-bottom: 1px solid var(--border-primary); }
+.dashboard-day-pass-table tbody tr + tr td { border-top: 1px solid var(--border-secondary); }
+.dashboard-day-pass-table tbody tr:last-child td { border-bottom: 0; }
+.dashboard-day-pass-table th:last-child,
+.dashboard-day-pass-table td:last-child { width: 132px; }
+.dashboard-day-pass-table .day-pass-identity {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+  text-align: start;
+}
+.dashboard-day-pass-table .day-pass-identity strong,
+.dashboard-day-pass-table .day-pass-identity small {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  margin-inline-start: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dashboard-day-pass-table .day-pass-identity strong { font-size: var(--font-sm); }
+.dashboard-day-pass-table .day-pass-identity .day-pass-reference {
+  color: var(--color-primary);
+  font-size: 10px;
+  font-weight: var(--weight-bold);
+}
+.dashboard-day-pass-table .day-pass-identity .day-pass-phone { color: var(--color-text-muted); }
+.dashboard-day-pass-table .day-pass-actions {
+  display: flex;
+  min-width: 0;
+  min-height: 40px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
 
 /* Dashboard command-center hierarchy ----------------------------------- */
 .dashboard-section-heading {
@@ -1720,13 +1888,26 @@
     width: calc(100% - 20px);
     max-height: calc(100dvh - 20px);
   }
-  .day-pass-dialog > .day-pass-panel { max-height: calc(100dvh - 20px); padding: var(--space-4); }
+  .day-pass-dialog > .day-pass-panel { max-height: calc(100dvh - 20px); }
   .day-pass-dialog .day-pass-head {
     top: calc(var(--space-4) * -1);
     margin: calc(var(--space-4) * -1) calc(var(--space-4) * -1) 0;
     padding: var(--space-4);
   }
   .day-pass-dialog-head-actions { align-self: stretch; justify-content: space-between; }
+  .day-pass-dialog .day-pass-head { top: 0; margin: 0; padding: 16px; }
+  .day-pass-dialog .day-pass-heading { align-items: flex-start; }
+  .day-pass-dialog .day-pass-form { grid-template-columns: 1fr; gap: 14px; padding: 18px 16px; }
+  .day-pass-dialog .day-pass-form-lead,
+  .day-pass-dialog .day-pass-whatsapp-option,
+  .day-pass-dialog .day-pass-form-actions { grid-column: auto; }
+  .day-pass-dialog .day-pass-form-actions { align-items: stretch; flex-direction: column; }
+  .day-pass-dialog .day-pass-form-actions .btn { width: 100%; }
+  .day-pass-records-panel { padding: var(--space-4); }
+  .day-pass-records-panel .day-pass-list-head { align-items: stretch; flex-direction: column; }
+  .day-pass-list-actions { width: 100%; flex-wrap: wrap; }
+  .day-pass-list-actions .day-pass-search { flex: 1 1 180px; min-width: 0; }
+  .day-pass-list-actions .btn { flex: 0 0 auto; }
   .dashboard-day-pass-head { align-items: stretch; flex-direction: column; }
   .dashboard-day-pass-actions { justify-content: stretch; }
   .dashboard-day-pass-actions .btn { flex: 1 1 0; }

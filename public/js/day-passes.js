@@ -187,6 +187,21 @@
         const dialog = $('dayPassDialog');
         const panel = $('dayPassPanel');
         if (!dialog || !panel) return dialog;
+        if (!dialog.hasAttribute('aria-labelledby')) dialog.setAttribute('aria-labelledby', 'dayPassTitle');
+        const sourceParent = panel.parentElement;
+        const listHead = panel.querySelector('.day-pass-list-head');
+        const tableWrap = panel.querySelector('.day-pass-table-wrap');
+        if (sourceParent && listHead && tableWrap && !dialog.dataset.dayPassRecordsDetached) {
+            const recordsSection = document.createElement('section');
+            recordsSection.id = 'dayPassRecordsSection';
+            recordsSection.className = 'day-pass-records-panel';
+            recordsSection.setAttribute('aria-labelledby', 'dayPassRecordsTitle');
+            const title = listHead.querySelector('h4');
+            if (title) title.id = 'dayPassRecordsTitle';
+            recordsSection.append(listHead, tableWrap);
+            sourceParent.insertBefore(recordsSection, panel.nextElementSibling);
+            dialog.dataset.dayPassRecordsDetached = 'true';
+        }
         if (panel.parentElement !== dialog) dialog.appendChild(panel);
         if (!dialog.dataset.dayPassReady) {
             const head = panel.querySelector('.day-pass-head');
@@ -211,6 +226,12 @@
             dialog.dataset.dayPassReady = 'true';
         }
         return dialog;
+    }
+
+    function openDayPassRecords() {
+        const tab = document.querySelector('[data-page-tab="attendance"]');
+        if (tab && !tab.classList.contains('active')) tab.click();
+        window.setTimeout(() => $('dayPassRecordsSection')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 160);
     }
 
     function showDayPassDialog({ reset = true } = {}) {
@@ -243,7 +264,7 @@
         const iconButton = (action, label, icon, extra = '') => `<button type="button" class="btn btn-light btn-small day-pass-action-button ${compact ? 'is-compact' : ''} ${extra}" data-day-pass-${action}="${item.id}" data-required-permission="${permissionByAction[action] || 'day_passes.read'}" title="${label}" aria-label="${label}">${icon}${compact ? '' : `<span>${label}</span>`}</button>`;
         const whatsapp = phone
             ? iconButton('whatsapp', 'واتساب', '<svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11.5a8 8 0 0 1-11.9 7L4 20l1.5-4.1A8 8 0 1 1 20 11.5Z"/><path d="M8.5 9.5c.3 1.5 1.5 2.7 3 3l1-.8c.2-.2.5-.2.7-.1l1.3.6c.3.1.4.5.3.8-.3.8-1 1.2-1.8 1.1-3.3-.5-5.3-2.5-5.8-5.8-.1-.8.3-1.5 1.1-1.8.3-.1.7 0 .8.3l.6 1.3c.1.2.1.5-.1.7Z"/></svg>')
-            : `<span class="day-pass-no-phone">بدون رقم</span>`;
+            : '';
         const ownerActions = owner
             ? `${iconButton('edit', 'تعديل', '<svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z"/></svg>')} ${iconButton('delete', 'حذف', '<svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>', 'day-pass-delete-button')}`
             : '';
@@ -261,7 +282,7 @@
             host.innerHTML = '<div class="day-pass-empty">لا توجد حصص مطابقة حتى الآن.</div>';
             return;
         }
-        host.innerHTML = `<table class="day-pass-table"><thead><tr><th>الزائر</th><th>نوع الحصة</th><th>المبلغ</th><th>طريقة الدفع</th><th>الوقت</th><th>الإجراءات</th></tr></thead><tbody>${records.map((item) => `<tr data-day-pass-id="${item.id}"><td><strong>${escapeHtml(recordDisplayName(item))}</strong><small class="day-pass-reference" dir="ltr">${escapeHtml(item.reference || `VIS-${String(item.id).padStart(6, '0')}`)}</small><small dir="ltr">${escapeHtml(recordPhone(item) || 'بدون رقم')}</small></td><td><span class="day-pass-type-badge ${escapeHtml(item.passTypeCode)}">${escapeHtml(item.passTypeName)}</span></td><td class="day-pass-amount">${money(item.amountPaid)}</td><td>${escapeHtml(paymentLabel(item.paymentMethod))}</td><td dir="ltr">${new Intl.DateTimeFormat('ar-EG', { timeStyle: 'short' }).format(new Date(item.createdAt))}</td><td>${renderRecordActions(item)}</td></tr>`).join('')}</tbody></table>`;
+        host.innerHTML = `<table class="day-pass-table"><thead><tr><th>الزائر</th><th>نوع الحصة</th><th>المبلغ</th><th>طريقة الدفع</th><th>الوقت</th><th>الإجراءات</th></tr></thead><tbody>${records.map((item) => `<tr data-day-pass-id="${item.id}"><td><div class="day-pass-identity"><strong>${escapeHtml(recordDisplayName(item))}</strong><small class="day-pass-reference" dir="ltr">${escapeHtml(item.reference || `VIS-${String(item.id).padStart(6, '0')}`)}</small><small class="day-pass-phone" dir="ltr">${escapeHtml(recordPhone(item) || 'بدون رقم')}</small></div></td><td><span class="day-pass-type-badge ${escapeHtml(item.passTypeCode)}">${escapeHtml(item.passTypeName)}</span></td><td class="day-pass-amount">${money(item.amountPaid)}</td><td>${escapeHtml(paymentLabel(item.paymentMethod))}</td><td dir="ltr">${new Intl.DateTimeFormat('ar-EG', { timeStyle: 'short' }).format(new Date(item.createdAt))}</td><td>${renderRecordActions(item)}</td></tr>`).join('')}</tbody></table>`;
     }
 
     function monthRange() {
@@ -276,7 +297,7 @@
             host.innerHTML = '<div class="day-pass-empty">لا توجد حصص مسجلة هذا الشهر.</div>';
             return;
         }
-        host.innerHTML = `<table class="dashboard-day-pass-table"><thead><tr><th>الزائر</th><th>نوع الحصة</th><th>التاريخ</th><th>المبلغ</th><th>الإجراءات</th></tr></thead><tbody>${state.dashboardRecords.map((item) => `<tr data-day-pass-id="${item.id}"><td><strong>${escapeHtml(recordDisplayName(item))}</strong><small dir="ltr">${escapeHtml(item.reference || '')} · ${escapeHtml(recordPhone(item) || 'بدون رقم')}</small></td><td><span class="day-pass-type-badge ${escapeHtml(item.passTypeCode)}">${escapeHtml(item.passTypeName)}</span></td><td dir="ltr">${escapeHtml(dateText(item.visitDate))}</td><td class="day-pass-amount">${money(item.amountPaid)}</td><td>${renderRecordActions(item, { compact: true })}</td></tr>`).join('')}</tbody></table>`;
+        host.innerHTML = `<table class="dashboard-day-pass-table"><thead><tr><th>الزائر</th><th>نوع الحصة</th><th>التاريخ</th><th>المبلغ</th><th>الإجراءات</th></tr></thead><tbody>${state.dashboardRecords.map((item) => `<tr data-day-pass-id="${item.id}"><td><div class="day-pass-identity"><strong>${escapeHtml(recordDisplayName(item))}</strong><small class="day-pass-reference" dir="ltr">${escapeHtml(item.reference || '')}</small><small class="day-pass-phone" dir="ltr">${escapeHtml(recordPhone(item) || 'بدون رقم')}</small></div></td><td><span class="day-pass-type-badge ${escapeHtml(item.passTypeCode)}">${escapeHtml(item.passTypeName)}</span></td><td dir="ltr">${escapeHtml(dateText(item.visitDate))}</td><td class="day-pass-amount">${money(item.amountPaid)}</td><td>${renderRecordActions(item, { compact: true })}</td></tr>`).join('')}</tbody></table>`;
     }
 
     function yieldToBrowser() {
@@ -360,6 +381,7 @@
         state.editingId = null;
         $('dayPassForm')?.reset();
         renderPricingOptions();
+        if ($('dayPassTitle')) $('dayPassTitle').textContent = 'إضافة حصة يومية';
         if ($('dayPassSaveButton')) $('dayPassSaveButton').textContent = 'حفظ الحصة';
         if ($('dayPassCancelEditButton')) $('dayPassCancelEditButton').hidden = true;
     }
@@ -374,6 +396,7 @@
         $('dayPassType').value = sale.passTypeCode || '';
         $('dayPassPaymentMethod').value = sale.paymentMethod || 'cash';
         $('dayPassSendWhatsApp').checked = false;
+        if ($('dayPassTitle')) $('dayPassTitle').textContent = 'تعديل الحصة اليومية';
         updatePricePreview();
         if ($('dayPassSaveButton')) $('dayPassSaveButton').textContent = 'حفظ التعديل';
         if ($('dayPassCancelEditButton')) $('dayPassCancelEditButton').hidden = false;
@@ -484,7 +507,7 @@
             if (voidButton) return voidDayPass(voidButton.dataset.dayPassVoid);
         });
         $('dashboardDayPassAdd')?.addEventListener('click', openForm);
-        $('dashboardDayPassManage')?.addEventListener('click', () => showDayPassDialog());
+        $('dashboardDayPassManage')?.addEventListener('click', openDayPassRecords);
         $('dayPassDialog')?.addEventListener('click', (event) => {
             if (event.target.closest('[data-day-pass-dialog-close]')) closeDayPassDialog();
         });

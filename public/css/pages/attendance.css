@@ -583,6 +583,51 @@ body .swal2-popup.qr-member-preview-alert .swal2-actions > button.qr-member-prev
 .day-pass-empty { color: var(--color-text-muted); padding: var(--space-8); text-align: center; }
 .field-optional { color: var(--color-text-muted); font-size: 11px; font-weight: var(--weight-regular); }
 
+/* The visitor identity owns the phone/empty-phone state; the final column is
+   reserved for actions so the table remains scannable in RTL and LTR. */
+.day-pass-table {
+  border: 1px solid var(--border-secondary);
+  border-collapse: separate;
+  border-spacing: 0;
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  overflow: hidden;
+}
+.day-pass-table th,
+.day-pass-table td { border-inline-start: 1px solid var(--border-secondary); }
+.day-pass-table th:first-child,
+.day-pass-table td:first-child { border-inline-start: 0; }
+.day-pass-table thead th { border-bottom: 1px solid var(--border-primary); }
+.day-pass-table tbody tr + tr td { border-top: 1px solid var(--border-secondary); }
+.day-pass-table tbody tr:last-child td { border-bottom: 0; }
+.day-pass-table th:last-child,
+.day-pass-table td:last-child { width: 176px; }
+.day-pass-table .day-pass-identity {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+  text-align: start;
+}
+.day-pass-table .day-pass-identity strong,
+.day-pass-table .day-pass-identity small {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  margin-inline-start: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.day-pass-table .day-pass-identity .day-pass-phone { color: var(--color-text-muted); }
+.day-pass-table .day-pass-actions {
+  display: flex;
+  min-width: 0;
+  min-height: 40px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
 /* Attendance workspace refinement ---------------------------------------
    Keep the page operationally dense without flattening the hierarchy. The
    controls remain the same DOM/IDs so attendance handlers and permissions are
