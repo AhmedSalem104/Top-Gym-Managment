@@ -188,10 +188,14 @@
         const panel = $('dayPassPanel');
         if (!dialog || !panel) return dialog;
         if (!dialog.hasAttribute('aria-labelledby')) dialog.setAttribute('aria-labelledby', 'dayPassTitle');
-        const sourceParent = panel.parentElement;
+        const recordsHost = $('attendanceSection');
+        const existingRecordsSection = $('dayPassRecordsSection');
         const listHead = panel.querySelector('.day-pass-list-head');
         const tableWrap = panel.querySelector('.day-pass-table-wrap');
-        if (sourceParent && listHead && tableWrap && !dialog.dataset.dayPassRecordsDetached) {
+        if (existingRecordsSection && recordsHost && existingRecordsSection.parentElement !== recordsHost) {
+            recordsHost.appendChild(existingRecordsSection);
+        }
+        if (recordsHost && listHead && tableWrap && !existingRecordsSection) {
             const recordsSection = document.createElement('section');
             recordsSection.id = 'dayPassRecordsSection';
             recordsSection.className = 'day-pass-records-panel';
@@ -199,8 +203,7 @@
             const title = listHead.querySelector('h4');
             if (title) title.id = 'dayPassRecordsTitle';
             recordsSection.append(listHead, tableWrap);
-            sourceParent.insertBefore(recordsSection, panel.nextElementSibling);
-            dialog.dataset.dayPassRecordsDetached = 'true';
+            recordsHost.appendChild(recordsSection);
         }
         if (panel.parentElement !== dialog) dialog.appendChild(panel);
         if (!dialog.dataset.dayPassReady) {
