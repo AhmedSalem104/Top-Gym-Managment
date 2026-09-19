@@ -323,10 +323,10 @@ html[data-theme="dark"] .members-pagination button.active{
   box-shadow: var(--shadow-primary);
 }
 
-html[data-theme="dark"] dialog,
-html[data-theme="dark"] .modal,
-html[data-theme="dark"] .modal-dialog,
-html[data-theme="dark"] [role="dialog"],
+html[data-theme="dark"] dialog:not(.lf-modal-shell),
+html[data-theme="dark"] .modal:not(.lf-modal-shell),
+html[data-theme="dark"] .modal-dialog:not(.lf-modal-shell),
+html[data-theme="dark"] [role="dialog"]:not(.lf-modal-shell),
 html[data-theme="dark"] .swal2-popup,
 html[data-theme="dark"] .dropdown,
 html[data-theme="dark"] .dropdown-menu,
@@ -342,7 +342,7 @@ html[data-theme="dark"] .side-panel{
   box-shadow: var(--shadow-popup);
 }
 
-html[data-theme="dark"] dialog::backdrop,
+html[data-theme="dark"] dialog:not(.lf-modal-shell)::backdrop,
 html[data-theme="dark"] .modal-backdrop,
 html[data-theme="dark"] .modal-overlay,
 html[data-theme="dark"] .portal-library-modal{
@@ -353,16 +353,16 @@ html[data-theme="dark"] .modal-header,
 html[data-theme="dark"] .dialog-header,
 html[data-theme="dark"] .modal-footer,
 html[data-theme="dark"] .dialog-footer,
-html[data-theme="dark"] dialog .details-dialog-head,
-html[data-theme="dark"] dialog .dialog-actions{
+html[data-theme="dark"] dialog:not(.lf-modal-shell) .details-dialog-head,
+html[data-theme="dark"] dialog:not(.lf-modal-shell) .dialog-actions{
   border-color: var(--border-secondary);
   background: var(--bg-card);
 }
 
 html[data-theme="dark"] .modal-title,
 html[data-theme="dark"] .dialog-title,
-html[data-theme="dark"] .details-dialog-head h3,
-html[data-theme="dark"] .details-dialog-head h4,
+html[data-theme="dark"] dialog:not(.lf-modal-shell) .details-dialog-head h3,
+html[data-theme="dark"] dialog:not(.lf-modal-shell) .details-dialog-head h4,
 html[data-theme="dark"] .swal2-title{
   color: var(--text-primary);
 }

@@ -1,7 +1,7 @@
-dialog,
-.modal,
-.modal-dialog,
-[role="dialog"] {
+dialog:not(.lf-modal-shell),
+.modal:not(.lf-modal-shell),
+.modal-dialog:not(.lf-modal-shell),
+[role="dialog"]:not(.lf-modal-shell) {
   width: min(680px, calc(100% - 32px));
   max-width: 100%;
   max-height: calc(100vh - 48px);
@@ -14,14 +14,14 @@ dialog,
   box-shadow: var(--shadow-lg);
 }
 
-dialog {
+dialog:not(.lf-modal-shell) {
   padding: 0;
 }
 
 /* One predictable close affordance for every native popup. It stays in the
    upper-left corner in RTL as part of the popup shell, not inside the
    scrolling content. */
-dialog > .dialog-close-button {
+dialog:not(.lf-modal-shell) > .dialog-close-button {
   position: absolute;
   top: 12px;
   left: 12px;
@@ -38,15 +38,15 @@ dialog > .dialog-close-button {
   transition: border-color var(--transition-fast), background var(--transition-fast), color var(--transition-fast), transform var(--transition-fast);
 }
 
-dialog > .dialog-close-button:hover,
-dialog > .dialog-close-button:focus-visible {
+dialog:not(.lf-modal-shell) > .dialog-close-button:hover,
+dialog:not(.lf-modal-shell) > .dialog-close-button:focus-visible {
   border-color: var(--danger-border);
   background: var(--color-danger-soft);
   color: var(--color-danger);
   transform: translateY(-1px);
 }
 
-dialog > .dialog-close-button .ui-icon {
+dialog:not(.lf-modal-shell) > .dialog-close-button .ui-icon {
   width: 16px;
   height: 16px;
 }
@@ -54,17 +54,17 @@ dialog > .dialog-close-button .ui-icon {
 /* Legacy dialogs still keep their IDs for backwards-compatible event
    bindings, but the shared shell exposes one close control only: the X. */
 button.legacy-dialog-close {
-  display: none !important;
+  display: none;
 }
 
-dialog:has(> .dialog-close-button) .dialog-header,
-dialog:has(> .dialog-close-button) .details-dialog-head,
-dialog:has(> .dialog-close-button) .member-details-head,
-dialog:has(> .dialog-close-button) .section-heading {
+dialog:not(.lf-modal-shell):has(> .dialog-close-button) .dialog-header,
+dialog:not(.lf-modal-shell):has(> .dialog-close-button) .details-dialog-head,
+dialog:not(.lf-modal-shell):has(> .dialog-close-button) .member-details-head,
+dialog:not(.lf-modal-shell):has(> .dialog-close-button) .section-heading {
   padding-left: 56px;
 }
 
-dialog::backdrop,
+dialog:not(.lf-modal-shell)::backdrop,
 .modal-backdrop,
 .modal-overlay {
   background: var(--overlay);
@@ -142,12 +142,12 @@ body.dialog-open {
 
 /* Native dialogs share one predictable shell even though their inner forms
    are owned by different features. */
-dialog[open] {
+dialog:not(.lf-modal-shell)[open] {
   display: block;
 }
 
-dialog > .dialog-body,
-dialog > form.dialog-body {
+dialog:not(.lf-modal-shell) > .dialog-body,
+dialog:not(.lf-modal-shell) > form.dialog-body {
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
@@ -164,8 +164,8 @@ dialog > form.dialog-body {
 /* Every native dialog uses the same three visual zones. The body owns the
    scroll, while the heading and actions remain readable above it instead of
    covering fields when a form is taller than the viewport. */
-dialog > .dialog-body > .details-dialog-head,
-dialog > form.dialog-body > .details-dialog-head {
+dialog:not(.lf-modal-shell) > .dialog-body > .details-dialog-head,
+dialog:not(.lf-modal-shell) > form.dialog-body > .details-dialog-head {
   position: sticky;
   top: calc(var(--space-5) * -1);
   z-index: var(--z-content);
@@ -176,8 +176,8 @@ dialog > form.dialog-body > .details-dialog-head {
   padding: var(--space-5) var(--space-5) var(--space-4);
 }
 
-dialog > .dialog-body > .dialog-actions,
-dialog > form.dialog-body > .dialog-actions {
+dialog:not(.lf-modal-shell) > .dialog-body > .dialog-actions,
+dialog:not(.lf-modal-shell) > form.dialog-body > .dialog-actions {
   position: sticky;
   bottom: calc(var(--space-5) * -1);
   z-index: var(--z-content);
@@ -188,18 +188,18 @@ dialog > form.dialog-body > .dialog-actions {
   padding: var(--space-4) var(--space-5);
 }
 
-dialog > .dialog-body::-webkit-scrollbar,
-dialog > form.dialog-body::-webkit-scrollbar {
+dialog:not(.lf-modal-shell) > .dialog-body::-webkit-scrollbar,
+dialog:not(.lf-modal-shell) > form.dialog-body::-webkit-scrollbar {
   width: 7px;
 }
 
-dialog > .dialog-body::-webkit-scrollbar-thumb,
-dialog > form.dialog-body::-webkit-scrollbar-thumb {
+dialog:not(.lf-modal-shell) > .dialog-body::-webkit-scrollbar-thumb,
+dialog:not(.lf-modal-shell) > form.dialog-body::-webkit-scrollbar-thumb {
   border-radius: var(--radius-pill);
   background: var(--border-strong);
 }
 
-dialog .details-dialog-head {
+dialog:not(.lf-modal-shell) .details-dialog-head {
   position: sticky;
   top: calc(var(--space-5) * -1);
   z-index: var(--z-content);
@@ -207,32 +207,32 @@ dialog .details-dialog-head {
   background: var(--color-surface);
 }
 
-dialog .details-dialog-head > div {
+dialog:not(.lf-modal-shell) .details-dialog-head > div {
   display: grid;
   min-width: 0;
   gap: var(--space-1);
 }
 
-dialog .details-dialog-head > button,
-dialog .details-dialog-head > .btn {
+dialog:not(.lf-modal-shell) .details-dialog-head > button,
+dialog:not(.lf-modal-shell) .details-dialog-head > .btn {
   flex: 0 0 auto;
   min-width: 76px;
   min-height: 40px;
   white-space: nowrap;
 }
 
-dialog .details-dialog-head h3,
-dialog .details-dialog-head h4 {
+dialog:not(.lf-modal-shell) .details-dialog-head h3,
+dialog:not(.lf-modal-shell) .details-dialog-head h4 {
   color: var(--color-text);
 }
 
-dialog .details-dialog-head p {
+dialog:not(.lf-modal-shell) .details-dialog-head p {
   max-width: 70ch;
   color: var(--color-text-muted);
   line-height: 1.6;
 }
 
-dialog .dialog-actions {
+dialog:not(.lf-modal-shell) .dialog-actions {
   align-items: center;
   border-top: 1px solid var(--border-color);
   padding-top: var(--space-4);
@@ -245,7 +245,7 @@ body .swal2-container {
   font-family: var(--font-body);
 }
 
-dialog .swal2-container {
+dialog:not(.lf-modal-shell) .swal2-container {
   position: absolute;
   inset: 0;
   z-index: calc(var(--z-content) + 20);
@@ -354,44 +354,44 @@ body .swal2-close:hover {
 }
 
 @media (max-width: 600px) {
-  dialog,
-  .modal,
-  .modal-dialog,
-  [role="dialog"] {
+  dialog:not(.lf-modal-shell),
+  .modal:not(.lf-modal-shell),
+  .modal-dialog:not(.lf-modal-shell),
+  [role="dialog"]:not(.lf-modal-shell) {
     width: calc(100% - 24px);
     max-height: calc(100vh - 24px);
     border-radius: var(--radius-lg);
   }
 
-  dialog > .dialog-body,
-  dialog > form.dialog-body {
+  dialog:not(.lf-modal-shell) > .dialog-body,
+  dialog:not(.lf-modal-shell) > form.dialog-body {
     max-height: calc(100vh - 24px);
     padding: var(--space-4);
   }
 
-  dialog > .dialog-body > .details-dialog-head,
-  dialog > form.dialog-body > .details-dialog-head {
+  dialog:not(.lf-modal-shell) > .dialog-body > .details-dialog-head,
+  dialog:not(.lf-modal-shell) > form.dialog-body > .details-dialog-head {
     top: calc(var(--space-4) * -1);
     margin: calc(var(--space-4) * -1) calc(var(--space-4) * -1) var(--space-1);
     padding: var(--space-4) var(--space-4) var(--space-3);
   }
 
-  dialog > .dialog-body > .dialog-actions,
-  dialog > form.dialog-body > .dialog-actions {
+  dialog:not(.lf-modal-shell) > .dialog-body > .dialog-actions,
+  dialog:not(.lf-modal-shell) > form.dialog-body > .dialog-actions {
     bottom: calc(var(--space-4) * -1);
     margin: var(--space-1) calc(var(--space-4) * -1) calc(var(--space-4) * -1);
     padding: var(--space-3) var(--space-4);
   }
 
-  dialog .details-dialog-head {
+  dialog:not(.lf-modal-shell) .details-dialog-head {
     top: calc(var(--space-4) * -1);
   }
 
-  dialog .dialog-actions {
+  dialog:not(.lf-modal-shell) .dialog-actions {
     flex-wrap: wrap;
   }
 
-  dialog .dialog-actions > * {
+  dialog:not(.lf-modal-shell) .dialog-actions > * {
     flex: 1 1 140px;
   }
 

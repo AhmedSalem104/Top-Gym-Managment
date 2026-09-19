@@ -92,16 +92,16 @@
                     <div class="branches-card-header"><div><span class="branches-card-kicker">BRANCH DIRECTORY</span><h3>الفروع الحالية</h3><p>الأرشفة تحفظ السجل ولا تحذف البيانات التشغيلية.</p></div><button class="btn btn-light btn-small" id="branchesRefresh" type="button">تحديث</button></div>
                     <div id="branchesList" class="branches-list"><div class="loading">جارٍ تحميل الفروع…</div></div>
             </section>
-            <dialog id="branchCreateDialog" class="branch-create-dialog rounded-lg border-slate-200 shadow-lift">
+            <dialog id="branchCreateDialog" class="branch-create-dialog lf-modal-shell lf-modal--md">
                 <form id="branchCreateForm" class="dialog-body branches-form" novalidate>
                     <div class="details-dialog-head"><div><span class="branches-card-kicker">NEW BRANCH</span><h3>إضافة فرع</h3><p>سيتم حفظه كفرع تابع لنفس الجيم.</p></div><button class="btn btn-light btn-small" id="branchCreateDialogClose" type="button">إغلاق</button></div>
                     <div class="branch-create-fields">
-                        <label>كود الفرع<input id="branchCodeInput" name="code" required maxlength="40" dir="ltr" placeholder="nasr-city"></label>
-                        <label>اسم الفرع<input id="branchNameInput" name="name" required maxlength="160" placeholder="فرع مدينة نصر"></label>
-                        <label>العنوان<input id="branchAddressInput" name="address" maxlength="300"></label>
-                        <label>الهاتف<input id="branchPhoneInput" name="phone" type="tel" inputmode="numeric" autocomplete="tel" data-phone-input maxlength="40" dir="ltr"></label>
+                        <label class="form-label">كود الفرع<input id="branchCodeInput" name="code" required maxlength="40" dir="ltr" placeholder="nasr-city"></label>
+                        <label class="form-label">اسم الفرع<input id="branchNameInput" name="name" required maxlength="160" placeholder="فرع مدينة نصر"></label>
+                        <label class="form-label">العنوان<input id="branchAddressInput" name="address" maxlength="300"></label>
+                        <label class="form-label">الهاتف<input id="branchPhoneInput" name="phone" type="tel" inputmode="numeric" autocomplete="tel" data-phone-input maxlength="40" dir="ltr"></label>
                     </div>
-                    <div class="branch-create-options"><label class="branches-check-field"><input type="checkbox" name="storeEnabled" checked> تفعيل Store</label><label class="branches-check-field"><input type="checkbox" name="barEnabled"> تفعيل Bar وإنشاء موقع البيع</label></div>
+                    <div class="branch-create-options"><label class="checkbox-field branches-check-field"><input type="checkbox" name="storeEnabled" checked> تفعيل Store</label><label class="checkbox-field branches-check-field"><input type="checkbox" name="barEnabled"> تفعيل Bar وإنشاء موقع البيع</label></div>
                     <p class="branches-form-status" id="branchFormStatus" role="status" aria-live="polite"></p>
                     <div class="dialog-actions"><button class="btn btn-light" id="branchCreateCancel" type="button">إلغاء</button><button class="btn btn-primary" type="submit">إضافة الفرع</button></div>
                 </form>

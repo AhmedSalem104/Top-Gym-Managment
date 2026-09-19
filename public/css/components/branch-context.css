@@ -186,11 +186,11 @@
 .branches-card-header h3 { margin-top: 5px; color: var(--color-text); }
 .branches-card-header p { margin-top: 6px; color: var(--color-text-muted); font-size: 13px; line-height: 1.6; }
 .branches-form { display: grid; gap: 11px; }
-.branches-form label { display: grid; gap: 6px; color: var(--color-text-muted); font-size: 12px; font-weight: 800; }
 .branches-form input { width: 100%; }
-.branches-check-field { display: flex !important; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 8px !important; min-height: 38px; padding: 8px 10px; border: 1px solid var(--border-color); border-radius: 11px; background: var(--color-surface-elevated); }
+.branch-create-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); }
+.branch-create-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); margin-top: var(--space-2); }
+.branches-check-field { min-height: 38px; padding: 8px 10px; border: 1px solid var(--border-color); border-radius: 11px; background: var(--color-surface-elevated); }
 .branches-check-field input { width: 16px; height: 16px; accent-color: var(--color-primary); }
-.branches-form button { margin-top: 4px; }
 .branches-form-status { min-height: 22px; margin: 14px 0 0; color: var(--color-success, #059669); font-size: 13px; font-weight: 700; }
 .branches-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(255px, 1fr)); gap: 10px; align-items: start; }
 .branch-list-item { position: relative; display: grid; grid-template-columns: auto minmax(0,1fr); align-items: start; gap: 10px; min-width: 0; padding: 13px; border: 1px solid var(--border-color); border-radius: 15px; background: var(--color-surface-elevated); transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease; }
@@ -225,6 +225,11 @@
   .branches-page-summary { width: 100%; }
   .branches-page-summary span { flex: 1; }
   .branches-list { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 640px) {
+  .branch-create-fields,
+  .branch-create-options { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 480px) {

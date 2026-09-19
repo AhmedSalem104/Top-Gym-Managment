@@ -353,8 +353,8 @@ table{
     min-width: 720px;
   }
 
-  .modal,
-dialog{
+  .modal:not(.lf-modal-shell),
+dialog:not(.lf-modal-shell){
     width: calc(100% - 24px);
     max-height: calc(100vh - 24px);
   }

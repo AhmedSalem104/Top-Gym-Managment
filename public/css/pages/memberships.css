@@ -11,7 +11,6 @@
   width: min(820px, calc(100% - 32px));
 }
 
-.details-dialog-head,
 .pricing-section-head {
   display: flex;
   align-items: flex-start;
@@ -19,14 +18,12 @@
   gap: var(--space-4);
 }
 
-.details-dialog-head h3,
 .pricing-section-head h4 {
   color: var(--color-text);
   font-size: var(--font-xl);
   font-weight: var(--weight-extrabold);
 }
 
-.details-dialog-head p,
 .pricing-section-head p {
   color: var(--color-text-muted);
   font-size: var(--font-xs);
@@ -38,15 +35,6 @@
   overflow-x: auto;
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
-}
-
-.dialog-actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: flex-start;
-  gap: var(--space-2);
-  margin-top: var(--space-5);
 }
 
 .pricing-summary,
@@ -551,7 +539,6 @@
   .expense-form-grid { grid-template-columns: 1fr; }
   .auth-form-grid .full,
   .expense-notes-field { grid-column: auto; }
-  .details-dialog-head,
   .pricing-section-head { align-items: stretch; flex-direction: column; }
 
   #pricingDialog > form.dialog-body,
@@ -719,26 +706,6 @@
 .coaching-profile-dialog .dialog-body,
 .coaching-builder-dialog .dialog-body {
   padding: var(--space-6);
-}
-
-.details-dialog-head {
-  align-items: center;
-  border-bottom: 1px solid var(--border-color);
-  padding-bottom: var(--space-5);
-}
-
-.details-dialog-head > div:first-child {
-  min-width: 0;
-}
-
-.details-dialog-head h3 {
-  margin: 0;
-  line-height: 1.35;
-}
-
-.details-dialog-head p {
-  margin-top: var(--space-2);
-  line-height: 1.7;
 }
 
 #detailsContent,
