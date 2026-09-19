@@ -8,6 +8,22 @@ function json(route, payload, status = 200) {
     return route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(payload) });
 }
 
+async function openMobileNavigation(page, testInfo) {
+    if (testInfo.project.use.viewport.width > 767) return;
+    const toggle = page.locator('#mobileNavToggle');
+    if (await toggle.isVisible()) {
+        await toggle.click();
+        await expect(page.locator('#pageTabs')).toBeVisible();
+    }
+}
+
+async function closeMobileNavigation(page, testInfo) {
+    if (testInfo.project.use.viewport.width <= 767 && await page.locator('.app-shell').evaluate((element) => element.classList.contains('mobile-nav-open'))) {
+        await page.keyboard.press('Escape');
+        await expect(page.locator('#pageTabs')).toBeHidden();
+    }
+}
+
 function entitlementPayload(tenantType, planCode, featureOverride = {}) {
     const plan = planCatalog.PLAN_CONFIGURATIONS.find((item) => item.code === planCode);
     const features = { ...planCatalog.featureFlagsForPlan(planCode), ...featureOverride };
@@ -53,7 +69,9 @@ test('Starter Gym hides excluded feature, blocks direct route, and refreshes aft
 
     runtime.setPlan('pro');
     await page.evaluate(() => window.topGymAuth.refreshEntitlements());
+    await openMobileNavigation(page, testInfo);
     await expect(page.locator('[data-page-tab="store"]')).toBeVisible();
+    await closeMobileNavigation(page, testInfo);
     await expect(page.locator('#storeSection')).toBeVisible();
 
     runtime.setPlan('starter');
@@ -94,7 +112,7 @@ test('Starter Gym navigation exposes every included mapped feature and hides exc
     assert.equal(runtime.calls.includes('/api/saas/entitlements'), true);
 });
 
-test('Starter Gym resolves branch context before members and ignores a stale stored branch', async ({ page }) => {
+test('Starter Gym resolves branch context before members and ignores a stale stored branch', async ({ page }, testInfo) => {
     const calls = [];
     await page.addInitScript(() => sessionStorage.setItem('logicfit.branchId', '99999'));
     await page.route('**/api/**', async (route) => {
@@ -123,7 +141,9 @@ test('Starter Gym resolves branch context before members and ignores a stale sto
 
     await page.goto('/#members', { waitUntil: 'networkidle' });
 
+    await openMobileNavigation(page, testInfo);
     await expect(page.locator('[data-page-tab="branches"]')).toBeVisible();
+    await closeMobileNavigation(page, testInfo);
     await expect(page.locator('#membersList')).not.toContainText('Branch was not found');
     const branchBootstrapIndex = calls.findIndex((call) => call.pathname === '/api/branches/bootstrap');
     const membersIndex = calls.findIndex((call) => call.pathname === '/api/members');
@@ -205,7 +225,7 @@ test('branch switching keeps the selected branch membership, including expired h
     await expect.poll(() => requests.at(-1)).toBe(2);
 });
 
-test('Gym branch core entitlement exposes the configured limit and blocks creation at the limit', async ({ page }) => {
+test('Gym branch core entitlement exposes the configured limit and blocks creation at the limit', async ({ page }, testInfo) => {
     const limits = { starter: 1, basic: 2, pro: 5, business: null };
     let planCode = 'starter';
     await page.route('**/api/**', async (route) => {
@@ -233,7 +253,9 @@ test('Gym branch core entitlement exposes the configured limit and blocks creati
         // Use a distinct document URL for each plan so the browser test cannot
         // reuse a previous page's in-memory entitlement/bootstrap state.
         await page.goto(`/?branchPlan=${encodeURIComponent(code)}#branches`, { waitUntil: 'networkidle' });
+        await openMobileNavigation(page, testInfo);
         await expect(page.locator('[data-page-tab="branches"]')).toBeVisible();
+        await closeMobileNavigation(page, testInfo);
         await expect(page.locator('#branchesLimitValue')).toHaveText(expectedLimit == null ? '—' : new Intl.NumberFormat('ar-EG').format(expectedLimit));
         if (code === 'starter') {
             await page.locator('#branchCreateOpen').click();

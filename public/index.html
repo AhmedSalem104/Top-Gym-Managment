@@ -20,7 +20,7 @@
     <link rel="preload" href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap" as="style" onload="this.onload=null;this.rel='sty'+'lesheet'">
     <link rel="icon" type="image/svg+xml" href="/assets/gym-brand.svg?v=2" sizes="any">
     <link rel="shortcut icon" type="image/svg+xml" href="/assets/gym-brand.svg?v=2">
-    <link rel="stylesheet" href="/css/app-shell.css?v=dashboard-overview-v2">
+    <link rel="stylesheet" href="/css/app-shell.css?v=navigation-drawer-v1">
     <title>Logic Fit | Gym Management</title>
 </head>
 <body class="auth-pending font-sans bg-slate-100 text-slate-900 gym-page-bg" data-branding-entry="saas">
@@ -212,6 +212,10 @@
                 </div>
                 <div class="topbar-controls">
                     <div class="branch-context-shell" id="branchContextShell" hidden>
+                        <div class="branch-context-kicker" aria-hidden="true">
+                            <span class="branch-context-kicker-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16"/><path d="M6 20V8l6-4 6 4v12"/><path d="M9 11h.01M15 11h.01M9 15h.01M15 15h.01"/></svg></span>
+                            <span><strong>سياق العمل</strong><small>الفرع والقسم</small></span>
+                        </div>
                         <div class="branch-context-divider" aria-hidden="true"></div>
                         <div class="branch-context-field" data-context-field="branch">
                             <span class="branch-context-field-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16"/><path d="M6 20V8l6-4 6 4v12"/><path d="M9 11h.01M15 11h.01M9 15h.01M15 15h.01"/></svg></span>
@@ -253,7 +257,7 @@
 
         <nav class="page-tabs topgym-nav" id="pageTabs" role="tablist" aria-label="أقسام الإدارة">
             <div class="mobile-nav-header">
-                <strong>أقسام الجيم</strong>
+                <div class="mobile-nav-heading"><strong>أقسام الجيم</strong><small id="mobileNavCurrent" aria-live="polite">لوحة التحكم</small></div>
                 <button class="mobile-nav-close" id="mobileNavClose" type="button" aria-label="إغلاق القائمة" title="إغلاق القائمة">
                     <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
                     <span class="visually-hidden">إغلاق القائمة</span>
@@ -1169,6 +1173,6 @@
     <script defer src="/js/core/feature-manifest.js?v=membership-type-delete-v1"></script>
     <script defer src="/js/feature-loader.js?v=freeze-whatsapp-v2"></script>
     <script defer src="/js/app-shell-bootstrap.js?v=membership-type-delete-v1"></script>
-    <script defer src="/js/page-tabs.js?v=23"></script>
+    <script defer src="/js/page-tabs.js?v=24"></script>
 </body>
 </html>

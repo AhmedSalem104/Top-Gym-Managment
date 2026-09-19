@@ -1742,3 +1742,312 @@ html[data-brand-active-style="pill"] .app-shell > .page-tabs > .page-tab.active 
 @media (max-width: 1199px) {
   .sidebar-pin-toggle { display: none; }
 }
+
+/* Navigation v3: grouped destinations on desktop and a real off-canvas
+   navigation surface on phones. The existing page-tab hooks remain the route
+   contract; only presentation and interaction change here. */
+.sidebar-section-label {
+  box-sizing: border-box;
+  min-height: 24px;
+  margin-block: 12px 4px;
+  padding-inline: 10px;
+  color: var(--sidebar-text-muted);
+  font-size: 10px;
+  font-weight: var(--weight-extrabold);
+  letter-spacing: .04em;
+  line-height: 1.4;
+  text-transform: uppercase;
+  transition: opacity var(--sidebar-label-transition), max-height var(--sidebar-label-transition), margin var(--sidebar-label-transition), padding var(--sidebar-label-transition);
+}
+
+.sidebar-section-label::after {
+  display: block;
+  width: 28px;
+  height: 2px;
+  margin-block-start: 5px;
+  border-radius: var(--radius-pill);
+  background: var(--primary);
+  content: "";
+  opacity: .62;
+}
+
+.page-tabs > [data-nav-group-label="workspace"] { order: 0; }
+.page-tabs > [data-nav-group-label="location"] { order: 5; }
+.page-tabs > [data-nav-group-label="operations"] { order: 6; }
+.page-tabs > [data-nav-group-label="management"] { order: 11; }
+.page-tabs > [data-page-tab="dashboard"] { order: 1; }
+.page-tabs > [data-page-tab="members"] { order: 2; }
+.page-tabs > [data-page-tab="attendance"] { order: 3; }
+.page-tabs > [data-page-tab="reports"] { order: 4; }
+.page-tabs > [data-page-tab="branches"] { order: 5; }
+.page-tabs > [data-page-tab="trainees"] { order: 7; }
+.page-tabs > [data-page-tab="library"] { order: 8; }
+.page-tabs > [data-page-tab="store"] { order: 9; }
+.page-tabs > [data-page-tab="intelligence"] { order: 10; }
+.page-tabs > [data-page-tab="feedback"] { order: 11; }
+.page-tabs > [data-page-tab="management"] { order: 12; }
+.page-tabs > [data-page-tab="branding"] { order: 13; }
+.page-tabs > [data-page-tab="member-payment-methods"] { order: 14; }
+.page-tabs > [data-page-tab="permissions"] { order: 15; }
+.page-tabs > [data-page-tab="expenses"] { order: 16; }
+.page-tabs > [data-page-tab="member-subscription-requests"] { order: 17; }
+.page-tabs > [data-page-tab="portal-analytics"] { order: 18; }
+.page-tabs > [data-page-tab="saas-billing"] { order: 19; }
+.page-tabs > [data-page-tab="backup-history"] { order: 20; }
+.page-tabs > .smart-assistant-launcher { order: 99; }
+
+@media (min-width: 1200px) {
+  .app-shell {
+    transition: grid-template-columns 280ms cubic-bezier(.22, 1, .36, 1);
+    will-change: grid-template-columns;
+  }
+
+  .app-shell > .page-tabs {
+    contain: layout paint;
+  }
+
+  .app-shell > .page-tabs:not(.is-hovered):not(.sidebar-pinned):not(:focus-within) > .sidebar-section-label {
+    max-height: 0;
+    min-height: 0;
+    margin-block: 0;
+    padding-block: 0;
+    overflow: hidden;
+    opacity: 0;
+  }
+
+  .app-shell > .page-tabs.is-hovered > .sidebar-section-label,
+  .app-shell > .page-tabs.sidebar-pinned > .sidebar-section-label,
+  .app-shell > .page-tabs:focus-within > .sidebar-section-label {
+    max-height: 36px;
+    opacity: 1;
+  }
+}
+
+@media (max-width: 1199px) {
+  .app-shell > .page-tabs > .sidebar-section-label {
+    display: none;
+  }
+}
+
+@media (max-width: 767px) {
+  .app-shell > .topbar .mobile-nav-toggle {
+    display: inline-flex;
+  }
+
+  .app-shell > .page-tabs {
+    position: fixed;
+    z-index: var(--z-overlay);
+    inset-block: 0;
+    inset-inline-end: 0;
+    display: flex;
+    width: min(88vw, 360px);
+    height: 100dvh;
+    min-height: 100dvh;
+    max-height: none;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 4px;
+    overflow-x: hidden;
+    overflow-y: auto;
+    border: 0;
+    border-inline-start: 1px solid var(--sidebar-divider);
+    border-radius: 0;
+    background: linear-gradient(180deg, var(--sidebar-bg) 0%, var(--sidebar-bg-deep) 100%);
+    box-shadow: -18px 0 40px rgb(2 6 23 / .22);
+    padding: max(14px, env(safe-area-inset-top)) 12px max(18px, env(safe-area-inset-bottom));
+    transform: translateX(110%);
+    visibility: hidden;
+    pointer-events: none;
+    transition: transform 260ms cubic-bezier(.22, 1, .36, 1), visibility 0s linear 260ms;
+  }
+
+  .app-shell.mobile-nav-open > .page-tabs,
+  .app-shell > .page-tabs.is-mobile-open {
+    transform: translateX(0);
+    visibility: visible;
+    pointer-events: auto;
+    transition-delay: 0s;
+  }
+
+  html[dir="ltr"] .app-shell > .page-tabs {
+    inset-inline-end: auto;
+    inset-inline-start: 0;
+    border-inline-start: 0;
+    border-inline-end: 1px solid var(--sidebar-divider);
+    box-shadow: 18px 0 40px rgb(2 6 23 / .22);
+    transform: translateX(-110%);
+  }
+
+  html[dir="ltr"] .app-shell.mobile-nav-open > .page-tabs,
+  html[dir="ltr"] .app-shell > .page-tabs.is-mobile-open {
+    transform: translateX(0);
+  }
+
+  .app-shell > .page-tabs > .mobile-nav-header {
+    display: flex;
+    min-height: 64px;
+    flex: 0 0 auto;
+    margin-block: 0 8px;
+    padding: 0 4px 12px;
+    border-bottom-color: var(--sidebar-divider);
+  }
+
+  .mobile-nav-heading {
+    display: grid;
+    min-width: 0;
+    gap: 2px;
+  }
+
+  .mobile-nav-heading strong {
+    color: var(--sidebar-text);
+    font-size: var(--font-lg);
+    font-weight: var(--weight-extrabold);
+  }
+
+  .mobile-nav-heading small {
+    overflow: hidden;
+    color: var(--sidebar-text-muted);
+    font-size: var(--font-xs);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .app-shell > .page-tabs > .sidebar-brand {
+    display: flex;
+    order: -98;
+    width: auto;
+    min-width: 0;
+    align-self: stretch;
+    justify-content: flex-start;
+    gap: var(--space-3);
+    margin: 0 0 8px;
+    padding: 0 4px 12px;
+    border-bottom: 1px solid var(--sidebar-divider);
+  }
+
+  .app-shell > .page-tabs > .sidebar-brand > .sidebar-brand-copy {
+    max-width: 220px;
+    max-inline-size: 220px;
+    opacity: 1;
+    transform: none;
+    visibility: visible;
+  }
+
+  .app-shell > .page-tabs > .sidebar-section-label {
+    display: block;
+    min-height: 28px;
+    margin: 10px 0 2px;
+    padding: 4px 8px 0;
+    border-top: 1px solid var(--sidebar-divider);
+    color: var(--sidebar-text-muted);
+    font-size: 10px;
+    letter-spacing: .06em;
+    opacity: .92;
+  }
+
+  .app-shell > .page-tabs > .sidebar-section-label::after {
+    display: none;
+  }
+
+  .app-shell > .page-tabs > .page-tab,
+  .app-shell > .page-tabs > .smart-assistant-launcher {
+    width: 100%;
+    min-width: 0;
+    min-height: 50px;
+    flex: 0 0 auto;
+    align-self: stretch;
+    justify-content: flex-start;
+    gap: var(--space-3);
+    border-color: transparent;
+    border-radius: 12px;
+    background: transparent;
+    padding-inline: 12px;
+    font-size: var(--font-sm);
+    text-align: start;
+    white-space: nowrap;
+  }
+
+  .app-shell > .page-tabs > .page-tab:hover,
+  .app-shell > .page-tabs > .page-tab:focus-visible,
+  .app-shell > .page-tabs > .smart-assistant-launcher:hover,
+  .app-shell > .page-tabs > .smart-assistant-launcher:focus-visible {
+    transform: translateX(-3px);
+  }
+
+  .app-shell > .page-tabs > .page-tab > span,
+  .app-shell > .page-tabs > .smart-assistant-launcher-label {
+    display: block;
+    width: auto;
+    max-width: 220px;
+    min-height: 0;
+    opacity: 1;
+    transform: none;
+    visibility: visible;
+    line-height: 1.35;
+    text-align: start;
+    white-space: nowrap;
+  }
+
+  .app-shell > .page-tabs > .page-tab .ui-icon,
+  .app-shell > .page-tabs > .smart-assistant-launcher .ui-icon {
+    width: 24px;
+    height: 24px;
+    flex-basis: 24px;
+    padding: 4px;
+  }
+
+  .app-shell > .page-tabs > .page-tab.active,
+  .app-shell > .page-tabs > .page-tab[aria-selected="true"] {
+    background: var(--sidebar-active-bg);
+    color: var(--sidebar-active-text);
+    box-shadow: var(--sidebar-active-shadow);
+  }
+
+  .app-shell > .page-tabs > .page-tab::before {
+    inset-block: 8px;
+    inset-inline-end: 3px;
+    width: 3px;
+    height: auto;
+    transform: scaleY(.55);
+  }
+
+  .app-shell > .page-tabs > .page-tab.active::before,
+  .app-shell > .page-tabs > .page-tab[aria-selected="true"]::before {
+    transform: scaleY(1);
+  }
+
+  .app-shell > .mobile-nav-backdrop:not([hidden]) {
+    display: block;
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .app-shell > .mobile-nav-backdrop[hidden] {
+    display: none;
+  }
+}
+
+@media (max-width: 379px) {
+  .app-shell > .page-tabs {
+    width: min(92vw, 340px);
+    padding-inline: 9px;
+  }
+
+  .app-shell > .page-tabs > .page-tab,
+  .app-shell > .page-tabs > .smart-assistant-launcher {
+    min-height: 48px;
+    padding-inline: 10px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-shell,
+  .app-shell > .page-tabs,
+  .app-shell > .mobile-nav-backdrop,
+  .app-shell > .page-tabs > .page-tab,
+  .app-shell > .page-tabs > .page-tab > span,
+  .app-shell > .page-tabs > .page-tab .ui-icon,
+  .sidebar-section-label {
+    transition: none !important;
+  }
+}

@@ -7,6 +7,36 @@
     let activationToken = 0;
     let activeTabName = null;
 
+    const navigationGroups = [
+        { key: 'workspace', label: '\u0645\u0633\u0627\u062d\u0629 \u0627\u0644\u0639\u0645\u0644', tabs: ['dashboard', 'members', 'attendance', 'reports'] },
+        { key: 'location', label: '\u0627\u0644\u0641\u0631\u0648\u0639 \u0648\u0627\u0644\u0623\u0642\u0633\u0627\u0645', tabs: ['branches'] },
+        { key: 'operations', label: '\u0627\u0644\u062a\u0634\u063a\u064a\u0644', tabs: ['trainees', 'library', 'store', 'intelligence', 'feedback'] },
+        { key: 'management', label: '\u0627\u0644\u0625\u062f\u0627\u0631\u0629', tabs: ['management', 'branding', 'member-payment-methods', 'permissions', 'expenses', 'member-subscription-requests', 'portal-analytics', 'saas-billing', 'backup-history'] }
+    ];
+
+    function ensureNavigationSections() {
+        const rail = document.getElementById('pageTabs');
+        if (!rail) return;
+
+        navigationGroups.forEach((group) => {
+            const firstTab = rail.querySelector(`[data-page-tab="${group.tabs[0]}"]`);
+            if (!firstTab) return;
+
+            let label = rail.querySelector(`[data-nav-group-label="${group.key}"]`);
+            if (!label) {
+                label = document.createElement('div');
+                label.className = 'sidebar-section-label';
+                label.dataset.navGroupLabel = group.key;
+                label.innerHTML = `<span>${escapeHtml(group.label)}</span>`;
+                firstTab.before(label);
+            }
+
+            group.tabs.forEach((tabName) => {
+                rail.querySelector(`[data-page-tab="${tabName}"]`)?.setAttribute('data-nav-group', group.key);
+            });
+        });
+    }
+
     function ensureBackupHistoryTab() {
         const rail = document.getElementById('pageTabs');
         if (!rail || rail.querySelector('[data-page-tab="backup-history"]')) return;
@@ -24,6 +54,7 @@
     }
 
     ensureBackupHistoryTab();
+    ensureNavigationSections();
     // Platform Admin has its own application at /platform-admin. Remove the
     // legacy in-shell entry so gym users never see a second control plane.
     document.querySelector('[data-page-tab="platform"]')?.remove();
@@ -267,58 +298,118 @@
         const backdrop = document.getElementById('mobileNavBackdrop');
         if (!rail || !shell || !toggle) return;
 
-        const mediaQuery = window.matchMedia('(max-width: 1199px)');
+        // Only the phone layout is an off-canvas drawer. Tablet keeps the
+        // navigation visible, so it must remain interactive and exposed to
+        // assistive technology at 768px and above.
+        const mediaQuery = window.matchMedia('(max-width: 767px)');
         const openLabel = '\u0641\u062a\u062d \u0627\u0644\u0642\u0627\u0626\u0645\u0629';
+        const closeLabel = '\u0625\u063a\u0644\u0627\u0642 \u0627\u0644\u0642\u0627\u0626\u0645\u0629';
+        let lastFocusedElement = null;
 
-        const syncNavigationAria = () => {
-            // On small screens the navigation is an always-visible tab rail,
-            // not an off-canvas drawer. It must remain exposed to keyboard and
-            // screen-reader users even while the legacy toggle is hidden.
-            rail.removeAttribute('aria-hidden');
+        const focusableItems = () => Array.from(rail.querySelectorAll('button:not([hidden]):not([disabled]), a[href]:not([hidden])'))
+            .filter((element) => getComputedStyle(element).display !== 'none' && getComputedStyle(element).visibility !== 'hidden');
+
+        const syncNavigationAria = (open = false) => {
+            const isMobile = mediaQuery.matches;
+            if (!isMobile) {
+                rail.removeAttribute('aria-hidden');
+                rail.inert = false;
+                return;
+            }
+            rail.setAttribute('aria-hidden', String(!open));
+            rail.inert = !open;
         };
 
-        const resetNavigationPresentation = () => {
-            shell.classList.remove('mobile-nav-open');
-            document.body.classList.remove('mobile-nav-open');
-            rail.classList.remove('is-mobile-open');
-            toggle.setAttribute('aria-expanded', 'false');
-            toggle.setAttribute('aria-label', openLabel);
-            toggle.setAttribute('title', openLabel);
+        const setOpen = (open, restoreFocus = true) => {
+            const nextOpen = Boolean(open) && mediaQuery.matches;
+            shell.classList.toggle('mobile-nav-open', nextOpen);
+            document.body.classList.toggle('mobile-nav-open', nextOpen);
+            rail.classList.toggle('is-mobile-open', nextOpen);
+            toggle.setAttribute('aria-expanded', String(nextOpen));
+            toggle.setAttribute('aria-label', nextOpen ? closeLabel : openLabel);
+            toggle.setAttribute('title', nextOpen ? closeLabel : openLabel);
             const toggleLabel = toggle.querySelector('[data-mobile-nav-label]');
-            if (toggleLabel) toggleLabel.textContent = openLabel;
+            if (toggleLabel) toggleLabel.textContent = nextOpen ? closeLabel : openLabel;
 
             if (backdrop) {
-                backdrop.hidden = true;
-                backdrop.setAttribute('aria-hidden', 'true');
+                backdrop.hidden = !nextOpen;
+                backdrop.setAttribute('aria-hidden', String(!nextOpen));
             }
-            syncNavigationAria();
+            syncNavigationAria(nextOpen);
+
+            if (nextOpen) {
+                window.requestAnimationFrame(() => focusableItems()[0]?.focus());
+            } else if (restoreFocus && lastFocusedElement && typeof lastFocusedElement.focus === 'function') {
+                lastFocusedElement.focus();
+                lastFocusedElement = null;
+            }
         };
 
-        const setOpen = () => {
-            // Keep the old event hooks harmless for cached markup or a stale
-            // script, while the canonical mobile presentation remains a
-            // visible four-column tab grid.
-            resetNavigationPresentation();
+        const openNavigation = () => {
+            lastFocusedElement = document.activeElement;
+            setOpen(true, false);
         };
+        const closeNavigation = () => setOpen(false);
 
-        toggle.addEventListener('click', () => setOpen());
-        closeButton?.addEventListener('click', () => setOpen());
-        backdrop?.addEventListener('click', () => setOpen());
+        toggle.addEventListener('click', () => {
+            if (mediaQuery.matches && shell.classList.contains('mobile-nav-open')) closeNavigation();
+            else openNavigation();
+        });
+        closeButton?.addEventListener('click', closeNavigation);
+        backdrop?.addEventListener('click', closeNavigation);
         rail.addEventListener('click', (event) => {
-            if (event.target.closest('[data-page-tab]')) setOpen();
+            if (event.target.closest('[data-page-tab]')) window.requestAnimationFrame(closeNavigation);
         });
         document.addEventListener('keydown', (event) => {
-            if (event.key === 'Escape' && shell.classList.contains('mobile-nav-open')) setOpen();
+            if (!shell.classList.contains('mobile-nav-open')) return;
+            if (event.key === 'Escape') {
+                event.preventDefault();
+                closeNavigation();
+                return;
+            }
+            if (event.key !== 'Tab') return;
+            const items = focusableItems();
+            if (!items.length) return;
+            const first = items[0];
+            const last = items[items.length - 1];
+            if (event.shiftKey && document.activeElement === first) {
+                event.preventDefault();
+                last.focus();
+            } else if (!event.shiftKey && document.activeElement === last) {
+                event.preventDefault();
+                first.focus();
+            }
         });
 
-        const handleViewportChange = () => setOpen();
+        const handleViewportChange = () => {
+            if (!mediaQuery.matches) {
+                shell.classList.remove('mobile-nav-open');
+                document.body.classList.remove('mobile-nav-open');
+                rail.classList.remove('is-mobile-open');
+                toggle.setAttribute('aria-expanded', 'false');
+                if (backdrop) backdrop.hidden = true;
+            }
+            syncNavigationAria(false);
+        };
         if (typeof mediaQuery.addEventListener === 'function') {
             mediaQuery.addEventListener('change', handleViewportChange);
         } else if (typeof mediaQuery.addListener === 'function') {
             mediaQuery.addListener(handleViewportChange);
         }
 
-        setOpen();
+        setOpen(false, false);
+    }
+
+    function syncMobileNavigationContext(name) {
+        const active = document.querySelector(`[data-page-tab="${name}"]`);
+        const label = active?.querySelector('span:not(.visually-hidden)')?.textContent?.trim();
+        if (!label) return;
+        const current = document.getElementById('mobileNavCurrent');
+        if (current) current.textContent = label;
+        const toggle = document.getElementById('mobileNavToggle');
+        if (toggle && !document.querySelector('.app-shell.mobile-nav-open')) {
+            toggle.setAttribute('title', `${'\u0641\u062a\u062d \u0627\u0644\u0642\u0627\u0626\u0645\u0629'}: ${label}`);
+        }
     }
 
     function normalizeTab(name) {
@@ -431,6 +522,7 @@
             button.toggleAttribute('aria-current', active);
             button.setAttribute('aria-controls', tabPanelIds[button.dataset.pageTab] || `${button.dataset.pageTab}Section`);
         });
+        syncMobileNavigationContext(name);
 
         // A direct link such as #library can activate a tab that is outside
         // the initial RTL scroll position on tablet widths. Reveal it without
@@ -531,6 +623,7 @@
 
     document.addEventListener('DOMContentLoaded', () => {
         ensureBackupHistoryTab();
+        ensureNavigationSections();
         initSidebarPin();
         initMobileNavigation();
         document.querySelectorAll('[data-page-tab]').forEach((button) => {
