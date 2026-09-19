@@ -16,7 +16,7 @@
             styles: ['/css/pages/members.css?v=attendance-compact', '/css/pages/memberships.css?v=phase2', '/css/pages/attendance.css?v=attendance-ui-v5'],
             scripts: ['/js/design-enhancements.js?v=4', '/js/pages/members/action-menu.js?v=8', '/js/pagination.js?v=members-branch-scope-v1', '/js/pages/attendance/attendance.js?v=attendance-compact']
         },
-        coaching: { dependencies: ['phone-inputs'], dialogs: [{ source: '/dialogs/coaching.html?v=phase4', ids: ['externalTraineeDialog', 'coachingProfileDialog', 'coachingBuilderDialog'] }], styles: ['/css/pages/coaching.css?v=builder-workspace-v1'], scripts: ['/js/exercise-assets.js?v=5', '/js/muscle-assets.js?v=3', '/js/pages/coaching/coaching.js?v=19'] },
+        coaching: { dependencies: ['phone-inputs'], dialogs: [{ source: '/dialogs/coaching.html?v=phase4', ids: ['externalTraineeDialog', 'coachingProfileDialog', 'coachingBuilderDialog'] }], styles: ['/css/pages/coaching.css?v=builder-workspace-v1'], scripts: ['/js/exercise-assets.js?v=5', '/js/muscle-assets.js?v=3', '/js/pages/coaching/coaching.js?v=20'] },
         print: { dependencies: ['phone-inputs'], styles: [], scripts: ['/js/exercise-assets.js?v=5', '/js/integrations/print-enhancements.js?v=14'] },
         expenses: { dependencies: ['finance'], styles: ['/css/pages/expenses.css?v=phase2'], scripts: [] },
         reports: { dependencies: ['phone-inputs', 'whatsapp-runtime'], styles: ['/css/pages/reports.css?v=phase2'], scripts: ['/js/pages/reports/reports.js?v=10', '/js/day-pass-reports.js?v=2'] },
