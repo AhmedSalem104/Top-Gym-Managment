@@ -355,17 +355,30 @@
         });
     }
 
-    function setValidationState(input, result, { show = true } = {}) {
+    function setValidationState(input, result, { show = true, touched, submitted, reset = false } = {}) {
         if (!input) return result;
         const message = result.valid ? '' : result.message || PHONE_MESSAGES.format;
+        const previous = reset ? {} : (inputStates.get(input) || {});
+        const nextTouched = reset ? false : Boolean(touched ?? previous.touched);
+        const nextSubmitted = reset ? false : Boolean(submitted ?? previous.submitted);
+        const feedbackVisible = !reset && !result.valid && Boolean(show || previous.feedbackVisible);
         input.setCustomValidity(message);
-        input.setAttribute('aria-invalid', String(!result.valid));
-        input.classList.toggle('is-invalid', !result.valid);
-        input.closest('.phone-number-control')?.classList.toggle('is-invalid', !result.valid);
+        input.setAttribute('aria-invalid', String(feedbackVisible));
+        input.classList.toggle('is-invalid', feedbackVisible);
+        input.closest('.phone-number-control')?.classList.toggle('is-invalid', feedbackVisible);
         const error = validationElement(input);
-        if (error) { error.textContent = message; error.hidden = !show || !message; }
-        const state = inputStates.get(input) || {};
-        inputStates.set(input, { ...state, ...result, rawInput: state.rawInput ?? String(input.value || ''), displayValue: String(input.value || ''), countryIso2: result.iso || state.countryIso2 || '' });
+        if (error) { error.textContent = message; error.hidden = !feedbackVisible || !message; }
+        inputStates.set(input, {
+            ...previous,
+            ...result,
+            touched: nextTouched,
+            submitted: nextSubmitted,
+            feedbackVisible,
+            validationState: result.valid ? 'valid' : (feedbackVisible ? 'invalid' : 'untouched'),
+            rawInput: previous.rawInput ?? String(input.value || ''),
+            displayValue: String(input.value || ''),
+            countryIso2: result.iso || previous.countryIso2 || ''
+        });
         syncSubmitControls(input, result);
         return result;
     }
@@ -373,11 +386,18 @@
     function validateInput(input, options = {}) { return setValidationState(input, rejectedLimitResult(input) || parsePhoneInput(input), options); }
 
     function validateForm(form) {
+        let firstInvalid = null;
+        let firstResult = null;
         for (const input of form.querySelectorAll(PHONE_FIELD_SELECTOR)) {
-            const result = validateInput(input, { show: true });
-            if (!result.valid) return { ...result, input };
+            const result = validateInput(input, { show: true, touched: true, submitted: true });
+            if (!result.valid && !firstInvalid) { firstInvalid = input; firstResult = result; }
         }
-        return { valid: true, input: null };
+        return firstInvalid ? { ...firstResult, input: firstInvalid } : { valid: true, input: null };
+    }
+
+    function resetValidationState(input) {
+        if (!input) return null;
+        return setValidationState(input, parsePhoneInput(input), { show: false, reset: true });
     }
 
     function applyCountrySelection(input, select, isoCode, source) {
@@ -454,8 +474,8 @@
         const result = parsePhoneInput(input);
         if (result.valid && result.e164) input.value = formatPhoneForDisplay(result.e164, result.iso) || result.nationalDigits;
         const state = inputStates.get(input) || {};
-        inputStates.set(input, { ...state, rawInput: String(value || ''), displayValue: input.value, lastAcceptedInput: input.value });
-        validateInput(input, { show: false });
+        inputStates.set(input, { ...state, touched: false, submitted: false, feedbackVisible: false, validationState: 'untouched', rawInput: String(value || ''), displayValue: input.value, lastAcceptedInput: input.value });
+        resetValidationState(input);
         if (result.valid && result.e164 && !window.LogicFitPhoneFormatter) {
             void loadPhoneFormatter().then(() => {
                 if (!input.isConnected || document.activeElement === input) return;
@@ -481,7 +501,7 @@
     function getState(input) {
         const parsed = parsePhoneInput(input);
         const state = inputStates.get(input) || {};
-        return Object.freeze({ countryIso2: parsed.iso || state.countryIso2 || '', rawInput: state.rawInput ?? String(input?.value || ''), displayValue: String(input?.value || ''), nationalNumber: parsed.nationalDigits || null, e164: parsed.e164 || null, status: parsed.status, userSelectedCountry: input?.dataset?.phoneCountrySource === 'manual', ready: Boolean(parsed.iso && countriesByIso.has(parsed.iso) && (catalogReady || parsed.iso === centralFallbackCountry())) });
+        return Object.freeze({ countryIso2: parsed.iso || state.countryIso2 || '', rawInput: state.rawInput ?? String(input?.value || ''), displayValue: String(input?.value || ''), nationalNumber: parsed.nationalDigits || null, e164: parsed.e164 || null, status: parsed.status, validationState: state.validationState || (parsed.valid ? 'valid' : 'untouched'), touched: Boolean(state.touched), submitted: Boolean(state.submitted), userSelectedCountry: input?.dataset?.phoneCountrySource === 'manual', ready: Boolean(parsed.iso && countriesByIso.has(parsed.iso) && (catalogReady || parsed.iso === centralFallbackCountry())) });
     }
 
     function getSubmissionPayload(input) {
@@ -533,7 +553,7 @@
     function normalizePresentation(input) {
         const result = parsePhoneInput(input);
         if (result.valid && result.e164) input.value = formatPhoneForDisplay(result.e164, result.iso) || result.nationalDigits;
-        return validateInput(input, { show: true });
+        return validateInput(input, { show: true, touched: true });
     }
 
     function refreshLoadedPhoneDisplays() {
@@ -563,13 +583,13 @@
         const menu = document.createElement('span'); menu.className = 'phone-country-menu'; menu.hidden = true; menu.setAttribute('role', 'listbox'); const searchInput = document.createElement('input'); searchInput.type = 'search'; searchInput.className = 'phone-country-search'; searchInput.placeholder = PHONE_MESSAGES.search; searchInput.autocomplete = 'off'; searchInput.setAttribute('aria-label', PHONE_MESSAGES.search); const options = document.createElement('span'); options.className = 'phone-country-options'; menu.append(searchInput, options); countryControl.append(trigger, select, menu); countryControl.hidden = true; countryControl.setAttribute('aria-hidden', 'true'); wrapper.insertBefore(countryControl, input);
         const phoneControl = document.createElement('span'); phoneControl.className = 'phone-number-control'; const phoneIcon = document.createElement('span'); phoneIcon.className = 'phone-number-icon'; phoneIcon.setAttribute('aria-hidden', 'true'); const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); svg.setAttribute('viewBox', '0 0 24 24'); svg.setAttribute('focusable', 'false'); const path = document.createElementNS('http://www.w3.org/2000/svg', 'path'); path.setAttribute('d', 'M6.62 10.79a15.05 15.05 0 0 0 6.59 6.59l2.2-2.2a1 1 0 0 1 1.02-.24c1.12.37 2.3.57 3.57.57a1 1 0 0 1 1 1v3.49a1 1 0 0 1-1 1C11.72 21 3 12.28 3 2.99a1 1 0 0 1 1-1H7.5a1 1 0 0 1 1 1c0 1.26.2 2.45.57 3.57a1 1 0 0 1-.24 1.02l-2.21 2.21Z'); svg.appendChild(path); phoneIcon.appendChild(svg); const phoneDivider = document.createElement('span'); phoneDivider.className = 'phone-number-divider'; phoneDivider.setAttribute('aria-hidden', 'true'); phoneControl.append(phoneIcon, phoneDivider, input); wrapper.appendChild(phoneControl);
         const help = document.createElement('small'); help.className = 'phone-input-help'; help.dataset.phoneInputHelp = 'true'; help.textContent = 'أدخل الرقم بدون مفتاح الدولة.'; help.id = `${input.id || input.name || 'phone'}InputHelp`; wrapper.appendChild(help); const error = document.createElement('small'); error.className = 'phone-input-error'; error.setAttribute('role', 'alert'); error.hidden = true; error.id = `${input.id || input.name || 'phone'}ValidationError`; wrapper.appendChild(error); input.setAttribute('aria-describedby', [input.getAttribute('aria-describedby'), help.id, error.id].filter(Boolean).join(' '));
-        const initialIso = selectedCountry(input); input.dataset.phoneCountry = initialIso; input.dataset.phoneCountrySource = input.dataset.phoneExplicitCountry ? 'explicit' : 'pending'; input.dataset.phoneCountryGeneration = '0'; inputStates.set(input, { countryIso2: initialIso, rawInput: '', status: 'empty', ready: Boolean(initialIso && initialIso === centralFallbackCountry()) }); applyCountryPresentation(input, select);
+        const initialIso = selectedCountry(input); input.dataset.phoneCountry = initialIso; input.dataset.phoneCountrySource = input.dataset.phoneExplicitCountry ? 'explicit' : 'pending'; input.dataset.phoneCountryGeneration = '0'; inputStates.set(input, { countryIso2: initialIso, rawInput: '', status: 'empty', touched: false, submitted: false, feedbackVisible: false, validationState: 'untouched', ready: Boolean(initialIso && initialIso === centralFallbackCountry()) }); input.setAttribute('aria-invalid', 'false'); applyCountryPresentation(input, select);
         const closeCountryMenu = () => { menu.hidden = true; trigger.setAttribute('aria-expanded', 'false'); searchInput.value = ''; renderCountryOptions(options, String(input.dataset.phoneCountry || initialIso).toUpperCase()); applyCountryPresentation(input, select); };
         trigger.addEventListener('click', () => { if (!menu.hidden) { closeCountryMenu(); return; } menu.hidden = false; trigger.setAttribute('aria-expanded', 'true'); renderCountryOptions(options, String(input.dataset.phoneCountry || initialIso).toUpperCase()); searchInput.focus(); }); searchInput.addEventListener('input', () => renderCountryOptions(options, String(input.dataset.phoneCountry || initialIso).toUpperCase(), searchInput.value)); searchInput.addEventListener('keydown', (event) => { if (event.key === 'Escape') { closeCountryMenu(); trigger.focus(); } }); options.addEventListener('click', (event) => { const option = event.target.closest('[data-phone-country-option]'); if (!option) return; select.value = option.dataset.phoneCountryOption; select.dispatchEvent(new Event('change', { bubbles: true })); });
-        select.addEventListener('change', () => { input.dataset.phoneCountry = LOCAL_PHONE_COUNTRY; input.dataset.phoneCountrySource = 'explicit'; const state = inputStates.get(input) || {}; inputStates.set(input, { ...state, countryIso2: LOCAL_PHONE_COUNTRY, userSelectedCountry: false }); closeCountryMenu(); applyCountryPresentation(input, select); if (input.value.trim()) validateInput(input, { show: true }); else setValidationState(input, { status: 'empty', valid: true, message: '' }, { show: false }); });
-        input.addEventListener('beforeinput', (event) => { if (event.inputType === 'insertFromPaste' || !event.data || containsOnlyDigits(event.data)) return; event.preventDefault(); setValidationState(input, { status: 'invalid', valid: false, message: PHONE_MESSAGES.characters }, { show: true }); }); input.addEventListener('beforeinput', (event) => { if (!event.data || event.inputType === 'insertFromPaste') return; const limits = exceedsInputLimit(input, event.data); if (!limits) return; event.preventDefault(); input.dataset.phoneRejectedLimit = 'true'; input.dataset.phoneRejectedLimitMaximum = String(limits.maximumInputDigits); setValidationState(input, { status: 'invalid', valid: false, tooLong: true, message: PHONE_MESSAGES.tooLong(limits.maximumInputDigits) }, { show: true }); });
-        input.addEventListener('paste', (event) => { const pasted = event.clipboardData?.getData('text') || ''; if (!pasted) return; const normalizedPaste = latinDigits(pasted).trim(); if (!/^[+\d\s().-]+$/u.test(normalizedPaste)) { event.preventDefault(); setValidationState(input, { status: 'invalid', valid: false, message: PHONE_MESSAGES.characters }, { show: true }); return; } const pasteValue = normalizedPaste.startsWith('+') || normalizedPaste.startsWith('00') ? toEgyptLocalInput(normalizedPaste) : normalizedPaste; const candidate = projectedInputValue(input, pasteValue); const limits = inputLimits(input, candidate); if (limits && compact(candidate).replace(/^\+/, '').length > limits.maximumInputDigits) { event.preventDefault(); input.dataset.phoneRejectedLimit = 'true'; input.dataset.phoneRejectedLimitMaximum = String(limits.maximumInputDigits); setValidationState(input, { status: 'invalid', valid: false, tooLong: true, message: PHONE_MESSAGES.tooLong(limits.maximumInputDigits) }, { show: true }); return; } event.preventDefault(); input.value = compact(candidate); input.dispatchEvent(new Event('input', { bubbles: true })); });
-        input.addEventListener('input', () => { delete input.dataset.phoneRejectedLimit; delete input.dataset.phoneRejectedLimitMaximum; const raw = String(input.value || ''); const normalizedDigits = latinDigits(raw); if (normalizedDigits !== raw) input.value = normalizedDigits; const current = String(input.value || ''); const state = inputStates.get(input) || {}; if (!/^[+\d\s().-]*$/u.test(current)) { input.value = state.lastAcceptedInput || ''; setValidationState(input, { status: 'invalid', valid: false, message: PHONE_MESSAGES.characters }, { show: true }); return; } applyAsYouTypeFormatting(input); inputStates.set(input, { ...state, rawInput: current, displayValue: input.value, lastAcceptedInput: input.value }); const result = parsePhoneInput(input); if (result.tooLong) { setValidationState(input, result, { show: true }); return; } setValidationState(input, result, { show: Boolean(result.status === 'invalid' && result.message === PHONE_MESSAGES.characters) }); }); input.addEventListener('blur', () => normalizePresentation(input));
+        select.addEventListener('change', () => { input.dataset.phoneCountry = LOCAL_PHONE_COUNTRY; input.dataset.phoneCountrySource = 'explicit'; const state = inputStates.get(input) || {}; inputStates.set(input, { ...state, countryIso2: LOCAL_PHONE_COUNTRY, userSelectedCountry: false }); closeCountryMenu(); applyCountryPresentation(input, select); if (input.value.trim()) validateInput(input, { show: Boolean(state.touched || state.submitted), touched: state.touched, submitted: state.submitted }); else resetValidationState(input); });
+        input.addEventListener('beforeinput', (event) => { if (event.inputType === 'insertFromPaste' || !event.data || containsOnlyDigits(event.data)) return; event.preventDefault(); setValidationState(input, { status: 'invalid', valid: false, message: PHONE_MESSAGES.characters }, { show: true, touched: true }); }); input.addEventListener('beforeinput', (event) => { if (!event.data || event.inputType === 'insertFromPaste') return; const limits = exceedsInputLimit(input, event.data); if (!limits) return; event.preventDefault(); input.dataset.phoneRejectedLimit = 'true'; input.dataset.phoneRejectedLimitMaximum = String(limits.maximumInputDigits); setValidationState(input, { status: 'invalid', valid: false, tooLong: true, message: PHONE_MESSAGES.tooLong(limits.maximumInputDigits) }, { show: true, touched: true }); });
+        input.addEventListener('paste', (event) => { const pasted = event.clipboardData?.getData('text') || ''; if (!pasted) return; const normalizedPaste = latinDigits(pasted).trim(); if (!/^[+\d\s().-]+$/u.test(normalizedPaste)) { event.preventDefault(); setValidationState(input, { status: 'invalid', valid: false, message: PHONE_MESSAGES.characters }, { show: true, touched: true }); return; } const pasteValue = normalizedPaste.startsWith('+') || normalizedPaste.startsWith('00') ? toEgyptLocalInput(normalizedPaste) : normalizedPaste; const candidate = projectedInputValue(input, pasteValue); const limits = inputLimits(input, candidate); if (limits && compact(candidate).replace(/^\+/, '').length > limits.maximumInputDigits) { event.preventDefault(); input.dataset.phoneRejectedLimit = 'true'; input.dataset.phoneRejectedLimitMaximum = String(limits.maximumInputDigits); setValidationState(input, { status: 'invalid', valid: false, tooLong: true, message: PHONE_MESSAGES.tooLong(limits.maximumInputDigits) }, { show: true, touched: true }); return; } event.preventDefault(); input.value = compact(candidate); input.dispatchEvent(new Event('input', { bubbles: true })); });
+        input.addEventListener('input', () => { delete input.dataset.phoneRejectedLimit; delete input.dataset.phoneRejectedLimitMaximum; const raw = String(input.value || ''); const normalizedDigits = latinDigits(raw); if (normalizedDigits !== raw) input.value = normalizedDigits; const current = String(input.value || ''); const state = inputStates.get(input) || {}; if (!/^[+\d\s().-]*$/u.test(current)) { input.value = state.lastAcceptedInput || ''; setValidationState(input, { status: 'invalid', valid: false, message: PHONE_MESSAGES.characters }, { show: true, touched: true }); return; } applyAsYouTypeFormatting(input); inputStates.set(input, { ...state, rawInput: current, displayValue: input.value, lastAcceptedInput: input.value }); const result = parsePhoneInput(input); if (result.tooLong) { setValidationState(input, result, { show: true, touched: true, submitted: state.submitted }); return; } setValidationState(input, result, { show: Boolean(state.touched || state.submitted || (result.status === 'invalid' && result.message === PHONE_MESSAGES.characters)), touched: state.touched, submitted: state.submitted }); }); input.addEventListener('blur', () => normalizePresentation(input));
         loadCountries().then(() => {
             if (!document.contains(select)) return;
             void loadPhoneFormatter();
@@ -592,6 +612,16 @@
         });
     });
 
+    document.addEventListener('reset', (event) => {
+        const form = event.target;
+        if (!(form instanceof HTMLFormElement)) return;
+        // Native form.reset() restores values but does not reset the custom
+        // validation presentation maintained by this component. Clear that
+        // presentation on the next tick so a reopened form starts neutral.
+        window.setTimeout(() => {
+            form.querySelectorAll(PHONE_FIELD_SELECTOR).forEach((input) => resetValidationState(input));
+        }, 0);
+    }, true);
     document.addEventListener('submit', (event) => { const result = validateForm(event.target); if (result.valid) return; event.preventDefault(); event.stopImmediatePropagation(); result.input?.focus({ preventScroll: true }); result.input?.reportValidity?.(); }, true);
     function initializePhoneInputs() {
         if (window.__topGymPhoneInputsInitialized) return;
