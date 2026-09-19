@@ -35,10 +35,15 @@ test('membership types management renders delete action and keeps it on responsi
     const app = read('public/js/app.js');
     const cards = read('public/js/pricing-cards.js');
     const styles = read('public/css/pages/memberships.css');
+    const index = read('public/index.html');
+    const bootstrap = read('public/js/app-shell-bootstrap.js');
 
     assert.match(app, /data-type-action="delete"/);
     assert.match(app, /confirmMembershipTypeDelete/);
     assert.match(app, /api\('\/api\/membership-types\/' \+ encodeURIComponent\(code\), \{ method: 'DELETE' \}\)/);
     assert.match(cards, /data-type-action="delete"/);
     assert.match(styles, /\.type-delete-button/);
+    assert.match(index, /feature-manifest\.js\?v=membership-type-delete-v1/);
+    assert.match(index, /app-shell-bootstrap\.js\?v=membership-type-delete-v1/);
+    assert.match(bootstrap, /app\.js\?v=membership-type-delete-v1/);
 });
