@@ -1139,7 +1139,7 @@
             dialog.dataset.builderType = mode;
             dialog.dataset.builderStep = String(step);
         }
-        const steps = state.builder.type === 'diet' ? ['المعلومات وحساب السعرات', 'بناء الوجبات', 'المراجعة والحفظ'] : ['بيانات البرنامج', 'بناء الأيام والتمارين', 'المراجعة والحفظ'];
+        const steps = state.builder.type === 'diet' ? ['البيانات الأساسية', 'بناء الوجبات', 'المراجعة والحفظ'] : ['البيانات الأساسية', 'بناء الأيام والتمارين', 'المراجعة والحفظ'];
         $('coachingBuilderStepper').innerHTML = steps.map((label, index) => { const number = index + 1; return `<button type="button" class="builder-step ${number === step ? 'active' : ''} ${number < step ? 'complete' : ''}" data-builder-step-target="${number}" ${number > step ? 'disabled' : ''}${number === step ? ' aria-current="step"' : ''}><span>${number}</span><strong>${label}</strong></button>`; }).join('');
         const draft = state.builder.draft;
         const basicDone = builderBasicComplete(draft);
@@ -1155,6 +1155,12 @@
         $('coachingBuilderPdf').hidden = step !== 3;
         $('coachingBuilderNext').hidden = step === 3;
         $('coachingBuilderSave').hidden = step !== 3;
+        $('coachingBuilderBack').dataset.builderHidden = String(step === 1);
+        $('coachingBuilderPreview').dataset.builderHidden = 'true';
+        $('coachingBuilderPrint').dataset.builderHidden = String(step !== 3);
+        $('coachingBuilderPdf').dataset.builderHidden = String(step !== 3);
+        $('coachingBuilderNext').dataset.builderHidden = String(step === 3);
+        $('coachingBuilderSave').dataset.builderHidden = String(step !== 3);
         const actionHints = state.builder.type === 'diet'
             ? { 1: '١/٣ — بيانات العميل والسعرات', 2: '٢/٣ — ترتيب الوجبات والأطعمة', 3: '٣/٣ — مراجعة واعتماد الخطة' }
             : { 1: '١/٣ — بيانات البرنامج والهدف', 2: '٢/٣ — بناء الأيام والتمارين', 3: '٣/٣ — مراجعة واعتماد البرنامج' };
@@ -1561,6 +1567,11 @@
         window.TopGymExerciseAssets?.hydrate($('coachingBuilderContent'));
     }
 
+    function resetBuilderViewport() {
+        const body = $('coachingBuilderDialog')?.querySelector('.dialog-body');
+        if (body) body.scrollTop = 0;
+    }
+
     function syncBuilderDraft() {
         if (!state.builder) return null;
         return state.builder.type === 'diet' ? readBuilderDietDraft() : readBuilderWorkoutDraft();
@@ -1631,6 +1642,7 @@
             $('coachingBuilderSubtitle').textContent = `العميل: ${draft.memberName || resolvedMemberName || 'العميل المحدد'} · ثلاث مراحل واضحة حتى الحفظ.`;
             renderBuilderV2();
             openDialog($('coachingBuilderDialog'));
+            resetBuilderViewport();
         } catch (error) { notify(error.message, 'error'); }
     }
 
@@ -1659,6 +1671,7 @@
             if ($('coachingBuilderAiInstruction')) $('coachingBuilderAiInstruction').value = '';
             renderBuilderV2();
             openDialog($('coachingBuilderDialog'));
+            resetBuilderViewport();
             notify('تم فتح المسودة داخل المحرر اليدوي. يمكنك تعديل أي حقل قبل الحفظ.');
         } catch (error) { notify(error.message || 'تعذر فتح مسودة الذكاء الاصطناعي.', 'error'); }
     }

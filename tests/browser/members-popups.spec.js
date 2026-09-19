@@ -55,7 +55,15 @@ async function installOwnerApi(page) {
 async function openSyntheticDetails(page, subscription = {}) {
     await page.evaluate(async (currentSubscription) => {
         window.topGymAuth = { isOwner: () => true, hasPermission: () => true };
-        window.topGymApi = { get: async () => ({ purchases: [] }) };
+        window.topGymApi = {
+            get: async () => ({ purchases: [] }),
+            request: async (url, options = {}) => {
+                const response = await fetch(url, options);
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok) throw Object.assign(new Error(data.error || 'Request failed'), data);
+                return data;
+            }
+        };
         await window.topGymEnsureTab?.('member-details');
         const dialog = document.getElementById('detailsDialog');
         if (!dialog.open) dialog.showModal();
@@ -267,6 +275,52 @@ test('member form keeps the selected country, valid phone payload and fixed foot
     expect(geometry.pageOverflow).toBe(false);
     await page.screenshot({ path: `qa/artifacts/member-form-${testInfo.project.name}.png`, fullPage: false });
     await page.keyboard.press('Escape');
+});
+
+test('coaching builders use the shared workspace layout at desktop and mobile widths', async ({ page }, testInfo) => {
+    await page.route('**/api/clients/4242/training-overview', async (route) => {
+        await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({ workoutPrograms: [], dietPlans: [], measurements: [], progress: { completedSessions: 0 }, mealLogs: [] })
+        });
+    });
+    await openSyntheticDetails(page);
+    await expect(page.locator('#detailsDialog')).toBeVisible();
+    await expect(page.locator('.member-training-panel')).toBeVisible();
+    await expect(page.locator('.member-training-head')).toBeVisible();
+    const coachingActions = page.locator('[data-member-coaching-action]');
+    await expect(coachingActions.first()).toBeVisible();
+    const actionNames = await coachingActions.evaluateAll((buttons) => buttons.map((button) => button.dataset.memberCoachingAction));
+    expect(actionNames).toContain('new-workout');
+    expect(actionNames).toContain('new-diet');
+
+    await page.locator('[data-member-coaching-action="new-workout"]').first().click();
+    await expect(page.locator('#coachingBuilderDialog')).toBeVisible();
+    expect(await page.locator('#coachingBuilderDialog').count()).toBe(1);
+    expect(await page.locator('#coachingBuilderStepper').count()).toBe(1);
+    await expect(page.locator('#coachingBuilderStepper .builder-step')).toHaveCount(3);
+    await expect(page.locator('#coachingBuilderProgress')).toBeHidden();
+    await page.screenshot({ path: testInfo.outputPath('training-builder-desktop.png'), fullPage: false });
+    await page.locator('#coachingBuilderCancel').click();
+
+    await page.locator('[data-member-coaching-action="new-diet"]').first().click();
+    await expect(page.locator('#coachingBuilderDialog')).toBeVisible();
+    await page.screenshot({ path: testInfo.outputPath('nutrition-builder-desktop.png'), fullPage: false });
+    await page.locator('#coachingBuilderCancel').click();
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.locator('[data-member-coaching-action="new-workout"]').first().click();
+    await expect(page.locator('#coachingBuilderDialog')).toBeVisible();
+    await page.screenshot({ path: testInfo.outputPath('training-builder-mobile390.png'), fullPage: false });
+    await page.locator('#coachingBuilderCancel').click();
+
+    await page.locator('[data-member-coaching-action="new-diet"]').first().click();
+    await expect(page.locator('#coachingBuilderDialog')).toBeVisible();
+    await page.screenshot({ path: testInfo.outputPath('nutrition-builder-mobile390.png'), fullPage: false });
+    const dimensions = await page.evaluate(() => ({ viewport: document.documentElement.clientWidth, document: document.documentElement.scrollWidth, body: document.body.scrollWidth }));
+    expect(dimensions.document, JSON.stringify(dimensions)).toBeLessThanOrEqual(dimensions.viewport + 1);
+    expect(dimensions.body, JSON.stringify(dimensions)).toBeLessThanOrEqual(dimensions.viewport + 1);
 });
 
 test('member form remains usable in portrait tablet layout', async ({ page }, testInfo) => {
