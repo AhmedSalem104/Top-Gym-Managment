@@ -11,6 +11,7 @@ function registerPricingRoutes(app, { pricingService, asyncRoute }) {
     app.put('/api/pricing-plans/:planCode', asyncRoute(controller.updatePlanDetails));
     app.post('/api/membership-types', asyncRoute(controller.createMembershipType));
     app.put('/api/membership-types/:typeCode', asyncRoute(controller.updateMembershipType));
+    app.delete('/api/membership-types/:typeCode', asyncRoute(controller.deleteMembershipType));
 }
 
 module.exports = { registerPricingRoutes };

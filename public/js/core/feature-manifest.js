@@ -21,7 +21,7 @@
         expenses: { dependencies: ['finance'], styles: ['/css/pages/expenses.css?v=phase2'], scripts: [] },
         reports: { dependencies: ['phone-inputs', 'whatsapp-runtime'], styles: ['/css/pages/reports.css?v=phase2'], scripts: ['/js/pages/reports/reports.js?v=10', '/js/day-pass-reports.js?v=2'] },
         feedback: { dependencies: ['phone-inputs'], styles: ['/css/pages/member-feedback.css?v=phase2'], scripts: ['/js/pages/management/member-feedback.js?v=1'] },
-        management: { dependencies: [], styles: ['/css/pages/memberships.css?v=phase2'], scripts: ['/js/pricing-cards.js?v=1'] },
+        management: { dependencies: [], styles: ['/css/pages/memberships.css?v=phase2'], scripts: ['/js/pricing-cards.js?v=membership-type-delete-v1'] },
         branding: { dependencies: [], styles: ['/css/pages/branding.css?v=phase2'], scripts: ['/js/pages/branding/branding.js?v=2'] },
         'member-payment-methods': { dependencies: [], styles: ['/css/pages/member-payment-methods.css?v=phase2'], scripts: ['/js/pages/management/member-payment-methods.js?v=1'] },
         'saas-billing': { dependencies: [], styles: ['/css/pages/saas.css?v=phase2'], scripts: ['/js/pages/saas/saas.js?v=6'] },

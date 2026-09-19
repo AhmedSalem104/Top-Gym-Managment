@@ -22,6 +22,9 @@ function createPricingController({ pricingService }) {
         },
         updateMembershipType: async (request, response) => {
             response.json(await pricingService.updateMembershipType(request.params.typeCode, request.body));
+        },
+        deleteMembershipType: async (request, response) => {
+            response.json(await pricingService.deleteMembershipType(request.params.typeCode));
         }
     };
 }

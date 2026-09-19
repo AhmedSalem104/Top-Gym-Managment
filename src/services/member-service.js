@@ -1158,6 +1158,43 @@ async function updateMembershipType(typeCodeValue, body = {}) {
     return getPricingCatalog();
 }
 
+async function deleteMembershipType(typeCodeValue) {
+    const typeCode = normalizeTypeCode(typeCodeValue);
+    if (Object.prototype.hasOwnProperty.call(DEFAULT_MEMBERSHIP_TYPES, typeCode)) {
+        throw appError('لا يمكن حذف نوع عضوية أساسي. يمكنك إخفاؤه من التعديل بدلًا من حذفه.', 409, 'MEMBERSHIP_TYPE_SYSTEM_TYPE');
+    }
+
+    await withTransaction(async (transaction) => {
+        const currentResult = await transaction.request()
+            .input('typeCode', sql.VarChar(30), typeCode)
+            .query(`SELECT type_code
+                    FROM dbo.membership_types WITH (UPDLOCK, HOLDLOCK)
+                    WHERE type_code = @typeCode;`);
+        if (!currentResult.recordset[0]) {
+            throw appError('نوع العضوية غير موجود.', 404, 'MEMBERSHIP_TYPE_NOT_FOUND');
+        }
+
+        const usageResult = await transaction.request()
+            .input('typeCode', sql.VarChar(30), typeCode)
+            .query(`SELECT COUNT_BIG(1) AS usage_count
+                    FROM dbo.memberships
+                    WHERE membership_type = @typeCode;`);
+        if (Number(usageResult.recordset[0]?.usage_count || 0) > 0) {
+            throw appError('لا يمكن حذف نوع عضوية مستخدم في اشتراكات محفوظة. يمكنك إخفاؤه من التعديل بدلًا من حذفه.', 409, 'MEMBERSHIP_TYPE_IN_USE');
+        }
+
+        // Remove only unused pricing rows for this type. Historical member
+        // and membership rows are never touched by this operation.
+        await transaction.request()
+            .input('typeCode', sql.VarChar(30), typeCode)
+            .query(`DELETE FROM dbo.membership_type_prices WHERE type_code = @typeCode;
+                    DELETE FROM dbo.membership_types WHERE type_code = @typeCode;`);
+    });
+
+    invalidatePricingCatalog();
+    return getPricingCatalog();
+}
+
 async function getDashboard({ readOnly = false, branchId = null, sectionId = null } = {}) {
     if (!readOnly) await ensureAttendanceTable();
     const pool = await getPool();
@@ -3005,6 +3042,7 @@ module.exports = {
     getPricingCatalog,
     createPricingPlan,
     createMembershipType,
+    deleteMembershipType,
     freezeMember,
     recordPayment,
     refundSubscription,

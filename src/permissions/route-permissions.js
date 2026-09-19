@@ -157,6 +157,7 @@ const ROUTE_PERMISSION_RULES = Object.freeze([
     { pattern: /^\/pricing-plans\/[^/]+$/, methods: ['PUT'], ownerOnly: true, all: [PERMISSIONS.PRICING_UPDATE] },
     { pattern: /^\/membership-types$/, methods: ['POST'], ownerOnly: true, all: [PERMISSIONS.PRICING_CREATE] },
     { pattern: /^\/membership-types\/[^/]+$/, methods: ['PUT'], ownerOnly: true, all: [PERMISSIONS.PRICING_UPDATE] },
+    { pattern: /^\/membership-types\/[^/]+$/, methods: ['DELETE'], ownerOnly: true, all: [PERMISSIONS.PRICING_UPDATE] },
 
     { pattern: /^\/day-passes\/pricing$/, methods: ['GET'], all: [PERMISSIONS.DAY_PASSES_READ] },
     { pattern: /^\/day-passes\/pricing$/, methods: ['PUT'], ownerOnly: true, all: [PERMISSIONS.PRICING_UPDATE] },

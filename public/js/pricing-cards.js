@@ -177,6 +177,7 @@
 
         rows.forEach((row, index) => {
             const editButton = row.querySelector('[data-type-action="edit"]');
+            const deleteButton = row.querySelector('[data-type-action="delete"]');
             const code = editButton?.dataset.code || '';
             const card = createElement('article', 'membership-type-card');
             const header = createElement('div', 'membership-type-card-header');
@@ -198,6 +199,11 @@
             actionBar.appendChild(createElement('span', 'pricing-card-index', String(index + 1).padStart(2, '0')));
             if (editButton) {
                 const button = editButton.cloneNode(true);
+                button.classList.add('pricing-card-action');
+                actionBar.appendChild(button);
+            }
+            if (deleteButton) {
+                const button = deleteButton.cloneNode(true);
                 button.classList.add('pricing-card-action');
                 actionBar.appendChild(button);
             }

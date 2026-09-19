@@ -107,7 +107,8 @@ test('pricing catalog stays readable while pricing configuration is Owner-only',
         { path: '/pricing-plans', method: 'POST' },
         { path: '/pricing-plans/gym_only', method: 'PUT' },
         { path: '/membership-types', method: 'POST' },
-        { path: '/membership-types/monthly', method: 'PUT' }
+        { path: '/membership-types/monthly', method: 'PUT' },
+        { path: '/membership-types/custom_type', method: 'DELETE' }
     ];
 
     assert.equal(permissionForRequest(readRequest).ownerOnly, false);

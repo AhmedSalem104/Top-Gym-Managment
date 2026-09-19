@@ -323,6 +323,25 @@
              const selects = [$('membershipType'), $('dialogType')].filter(Boolean);
              selects.forEach((select) => { const current = select.value; select.innerHTML = activeTypeEntries().map(([code, type]) => `<option value="${escapeHtml(code)}">${escapeHtml(type.label)}</option>`).join(''); if ((state.pricing.types || {})[current]?.active !== false) select.value = current; if (!select.value && select.options.length) select.selectedIndex = 0; });
          }
+
+        async function confirmMembershipTypeDelete(label) {
+            if (window.Swal) {
+                const result = await window.Swal.fire({
+                    position: 'center',
+                    backdrop: window.topGymThemeValue('--overlay'),
+                    icon: 'warning',
+                    title: '\u062a\u0623\u0643\u064a\u062f \u062d\u0630\u0641 \u0646\u0648\u0639 \u0627\u0644\u0639\u0636\u0648\u064a\u0629',
+                    text: `\u0647\u0644 \u062a\u0631\u064a\u062f \u062d\u0630\u0641 \u0646\u0648\u0639 \u0627\u0644\u0639\u0636\u0648\u064a\u0629 \u00ab${label}\u00bb\u061f`,
+                    showCancelButton: true,
+                    confirmButtonText: '\u0646\u0639\u0645\u060c \u0627\u062d\u0630\u0641',
+                    cancelButtonText: '\u0625\u0644\u063a\u0627\u0621',
+                    buttonsStyling: false,
+                    customClass: { popup: 'delete-confirm-alert', confirmButton: 'btn btn-danger', cancelButton: 'btn btn-light' }
+                });
+                return result.isConfirmed;
+            }
+            return window.confirm(`\u0647\u0644 \u062a\u0631\u064a\u062f \u062d\u0630\u0641 \u0646\u0648\u0639 \u0627\u0644\u0639\u0636\u0648\u064a\u0629 \u00ab${label}\u00bb\u061f`);
+        }
          function syncPlanOptions() {
              const selects = [$('membershipPlan'), $('dialogPlan')].filter(Boolean); selects.forEach((select) => { const current = select.value; select.innerHTML = Object.entries(state.pricing.plans).map(([code, plan]) => `<option value="${escapeHtml(code)}">${escapeHtml(plan.label)}</option>`).join(''); if (state.pricing.plans[current]) select.value = current; }); syncTypeOptions();
          }
@@ -1022,7 +1041,44 @@
 
          function renderPricingTable() { const typeEntries = activeTypeEntries(); const headers = typeEntries.map(([, type]) => `<th>${escapeHtml(type.label)}<small class="pricing-column-hint">سعر مستقل</small></th>`).join(''); const rows = Object.entries(state.pricing.plans).map(([code, plan]) => `<tr data-plan="${escapeHtml(code)}"><td><input data-field="planName" maxlength="80" value="${escapeHtml(plan.label)}"><span class="table-sub">${escapeHtml(code)}</span></td><td><input data-field="monthlyPrice" type="number" min="0" step="0.01" value="${Number(plan.monthlyPrice).toFixed(2)}"></td>${typeEntries.map(([typeCode, type]) => { const currentPrice = Number(state.pricing.prices?.[code]?.[typeCode] ?? (Number(plan.monthlyPrice || 0) * Number(type.priceMultiplier || 1))); return `<td class="duration-price"><input data-field="typePrice" data-type-code="${escapeHtml(typeCode)}" type="number" min="0" step="0.01" value="${currentPrice.toFixed(2)}"></td>`; }).join('')}</tr>`).join(''); $('pricingTableContainer').innerHTML = `<table class="pricing-table"><thead><tr><th>الباقة</th><th>السعر الشهري</th>${headers}</tr></thead><tbody>${rows}</tbody></table>`; }
          function renderMembershipTypesTable() { const entries = Object.entries(state.pricing.types || {}).sort(([, first], [, second]) => Number(first.sortOrder || 0) - Number(second.sortOrder || 0)); const rows = entries.map(([code, type]) => { const duration = type.mode === 'days' ? `${Number(type.durationValue)} يوم` : `${Number(type.durationValue)} شهر`; const status = type.active === false ? '<span class="type-status off">غير ظاهر</span>' : '<span class="type-status">نشط</span>'; return `<tr><td><strong>${escapeHtml(type.label)}</strong><span class="table-sub">${escapeHtml(code)}</span></td><td>${duration}</td><td>${Number(type.priceMultiplier || 0).toFixed(4).replace(/0+$/, '').replace(/\.$/, '')}</td><td>${status}</td><td><div class="type-actions"><button class="btn btn-light btn-small" type="button" data-type-action="edit" data-code="${escapeHtml(code)}">تعديل</button></div></td></tr>`; }).join(''); $('membershipTypesTableContainer').innerHTML = `<table class="membership-types-table"><thead><tr><th>النوع</th><th>المدة</th><th>معامل السعر</th><th>الحالة</th><th>الإجراء</th></tr></thead><tbody>${rows || '<tr><td colspan="5">لا توجد أنواع عضويات.</td></tr>'}</tbody></table>`; }
-         async function openPricingDialog() { try { await loadPricingCatalog(); syncPlanOptions(); renderPricingTable(); const dialog = $('pricingDialog'); if (typeof dialog.showModal === 'function') dialog.showModal(); else dialog.setAttribute('open', ''); } catch (error) { await notify(error.message, 'error'); } }
+         const legacyRenderMembershipTypesTable = renderMembershipTypesTable;
+         renderMembershipTypesTable = function() {
+             legacyRenderMembershipTypesTable();
+             const container = $('membershipTypesTableContainer');
+             container?.querySelectorAll('tbody tr').forEach((row) => {
+                 const editButton = row.querySelector('[data-type-action="edit"]');
+                 const actions = editButton?.closest('.type-actions');
+                 if (!editButton || !actions || actions.querySelector('[data-type-action="delete"]')) return;
+                 const deleteButton = document.createElement('button');
+                 deleteButton.className = 'btn btn-light btn-small type-delete-button';
+                 deleteButton.type = 'button';
+                 deleteButton.dataset.typeAction = 'delete';
+                 deleteButton.dataset.code = editButton.dataset.code || '';
+                 deleteButton.dataset.label = row.querySelector('strong')?.textContent?.trim() || editButton.dataset.code || '';
+                 deleteButton.setAttribute('aria-label', '\u062d\u0630\u0641 \u0646\u0648\u0639 \u0627\u0644\u0639\u0636\u0648\u064a\u0629');
+                 deleteButton.title = '\u062d\u0630\u0641';
+                 deleteButton.textContent = '\u062d\u0630\u0641';
+                 actions.appendChild(deleteButton);
+             });
+         };
+          document.addEventListener('click', (event) => {
+              const button = event.target.closest('#membershipTypesTableContainer [data-type-action="delete"]');
+              if (!button) return;
+              void deleteMembershipType(button.dataset.code, button.dataset.label || button.dataset.code);
+          });
+          async function deleteMembershipType(code, label) {
+              if (!(await confirmMembershipTypeDelete(label))) return;
+              try {
+                  const catalog = await api('/api/membership-types/' + encodeURIComponent(code), { method: 'DELETE' });
+                  applyPricingCatalog(catalog);
+                  renderPricingTable();
+                  renderMembershipTypesTable();
+                  await notify('\u062a\u0645 \u062d\u0630\u0641 \u0646\u0648\u0639 \u0627\u0644\u0639\u0636\u0648\u064a\u0629.');
+              } catch (error) {
+                  await notify(error.message, 'error');
+              }
+          }
+          async function openPricingDialog() { try { await loadPricingCatalog(); syncPlanOptions(); renderPricingTable(); const dialog = $('pricingDialog'); if (typeof dialog.showModal === 'function') dialog.showModal(); else dialog.setAttribute('open', ''); } catch (error) { await notify(error.message, 'error'); } }
          async function openMembershipTypesDialog() { try { await loadPricingCatalog(); syncPlanOptions(); renderMembershipTypesTable(); const dialog = $('membershipTypesDialog'); if (typeof dialog.showModal === 'function') dialog.showModal(); else dialog.setAttribute('open', ''); } catch (error) { await notify(error.message, 'error'); } }
          function closePricingDialog() { const dialog = $('pricingDialog'); if (typeof dialog.close === 'function' && dialog.open) dialog.close(); else dialog.removeAttribute('open'); }
          function closeMembershipTypesDialog() { const dialog = $('membershipTypesDialog'); if (typeof dialog.close === 'function' && dialog.open) dialog.close(); else dialog.removeAttribute('open'); }

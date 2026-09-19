@@ -366,6 +366,20 @@
   color: var(--text-on-primary);
 }
 
+#membershipTypesDialog .type-actions .type-delete-button,
+.membership-type-card-actions .type-delete-button {
+  border-color: var(--danger-border);
+  background: var(--danger-soft);
+  color: var(--danger-text);
+}
+
+#membershipTypesDialog .type-actions .type-delete-button:hover:not(:disabled),
+.membership-type-card-actions .type-delete-button:hover:not(:disabled) {
+  border-color: var(--color-danger);
+  background: var(--color-danger);
+  color: var(--text-on-primary);
+}
+
 /* Pricing management dialogs use three independent zones: the header and
    footer stay in place while only the content region scrolls. This prevents
    sticky layers from covering fields or table rows when the catalog grows. */
