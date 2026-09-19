@@ -7,21 +7,26 @@
 
             function renderPagination() {
                 const data = getState()?.pagination;
-                const total = Number(data?.total || 0);
-                const totalPages = Number(data?.totalPages || 0);
+                const rawTotal = data?.total ?? data?.totalItems ?? data?.totalCount;
+                const total = rawTotal === undefined
+                    ? Number(getState()?.members?.length || 0)
+                    : Number(rawTotal || 0);
+                const pageSize = Math.max(1, Number(data?.pageSize || getState()?.membersPageSize || 5));
+                const totalPages = Math.max(0, Number(data?.totalPages ?? data?.pages ?? (total ? Math.ceil(total / pageSize) : 0)));
                 if (!data || total === 0 || totalPages === 0) {
                     pagination.hidden = true;
                     pagination.innerHTML = '';
                     return;
                 }
                 const page = Number(data.page || 1);
-                const pageSize = Number(data.pageSize || 5);
                 const first = (page - 1) * pageSize + 1;
                 const last = Math.min(page * pageSize, total);
+                const hasPrevious = data.hasPrevious === undefined ? page > 1 : Boolean(data.hasPrevious);
+                const hasNext = data.hasNext === undefined ? page < totalPages : Boolean(data.hasNext);
                 const icon = (path) => `<svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${path}</svg>`;
                 const pageButton = (targetPage, label, path, disabled = false, active = false) => `<button class="btn ${active ? 'btn-primary' : 'btn-light'} btn-small members-page-button${active ? ' active' : ''}" type="button" data-members-page="${targetPage}" aria-label="${label}" title="${label}" ${disabled ? 'disabled' : ''}>${path ? icon(path) : label}</button>`;
                 pagination.hidden = false;
-                pagination.innerHTML = `<span class="members-pagination-info">عرض ${first}–${last} من ${total}</span><div class="members-pagination-actions">${pageButton(1, 'أول صفحة', '<path d="m17 5-7 7 7 7"/><path d="M6 5v14"/>', !data.hasPrevious)}${pageButton(page - 1, 'الصفحة السابقة', '<path d="m14 5-7 7 7 7"/>', !data.hasPrevious)}${pageButton(page, String(page), '', false, true)}${pageButton(page + 1, 'الصفحة التالية', '<path d="m10 5 7 7-7 7"/>', !data.hasNext)}${pageButton(totalPages, 'آخر صفحة', '<path d="m7 5 7 7-7 7"/><path d="M18 5v14"/>', !data.hasNext)}<label class="members-page-size"><span>لكل صفحة</span><select data-members-page-size aria-label="عدد النتائج في الصفحة"><option value="5" ${pageSize === 5 ? 'selected' : ''}>5</option><option value="10" ${pageSize === 10 ? 'selected' : ''}>10</option><option value="20" ${pageSize === 20 ? 'selected' : ''}>20</option></select></label></div>`;
+                pagination.innerHTML = `<span class="members-pagination-info">عرض ${first}–${last} من ${total}</span><div class="members-pagination-actions">${pageButton(1, 'أول صفحة', '<path d="m17 5-7 7 7 7"/><path d="M6 5v14"/>', !hasPrevious)}${pageButton(page - 1, 'الصفحة السابقة', '<path d="m14 5-7 7 7 7"/>', !hasPrevious)}${pageButton(page, String(page), '', false, true)}${pageButton(page + 1, 'الصفحة التالية', '<path d="m10 5 7 7-7 7"/>', !hasNext)}${pageButton(totalPages, 'آخر صفحة', '<path d="m7 5 7 7-7 7"/><path d="M18 5v14"/>', !hasNext)}<label class="members-page-size"><span>لكل صفحة</span><select data-members-page-size aria-label="عدد النتائج في الصفحة"><option value="5" ${pageSize === 5 ? 'selected' : ''}>5</option><option value="10" ${pageSize === 10 ? 'selected' : ''}>10</option><option value="20" ${pageSize === 20 ? 'selected' : ''}>20</option></select></label></div>`;
             }
 
             async function loadPage(page, pageSize = Number(getState()?.membersPageSize || 5)) {

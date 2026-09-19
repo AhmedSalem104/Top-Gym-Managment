@@ -32,7 +32,7 @@ test('the central WhatsApp runtime cache-bust advances with the renderer contrac
     const loader = read('public/js/feature-loader.js');
     assert.match(loader, /whatsapp-enhancements\.js\?v=14/);
     assert.doesNotMatch(loader, /whatsapp-enhancements\.js\?v=13/);
-    assert.match(read('public/index.html'), /feature-loader\.js\?v=loading-path-v1/);
+    assert.match(read('public/index.html'), /feature-loader\.js\?v=freeze-whatsapp-v2/);
     assert.match(read('public/index.html'), /app-shell-bootstrap\.js\?v=members-pagination-fix-v1/);
     assert.match(read('public/js/app-shell-bootstrap.js'), /app\.js\?v=members-pagination-fix-v1/);
 });

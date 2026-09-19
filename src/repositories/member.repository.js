@@ -5,12 +5,15 @@ const { todayInTimeZone, toUtcDate } = require('../utils/date');
 
 function createMemberRowsCte({ scoped = false } = {}) {
     const membershipScope = scoped ? `
-        AND (@branchId IS NULL OR EXISTS (
+        AND (@branchId IS NULL OR (
+            m.branch_access_mode = 'all_branches'
+            OR EXISTS (
             SELECT 1
             FROM dbo.gym_membership_branch_access AS branch_access
             WHERE branch_access.tenant_id=m.tenant_id
               AND branch_access.membership_id=m.id
               AND branch_access.branch_id=@branchId
+            )
         ))
         AND (@sectionId IS NULL OR EXISTS (
             SELECT 1
@@ -19,6 +22,30 @@ function createMemberRowsCte({ scoped = false } = {}) {
               AND section_access.membership_id=m.id
               AND section_access.section_id=@sectionId
         ))` : '';
+    const memberScope = scoped ? `
+WHERE EXISTS (
+    SELECT 1
+    FROM dbo.memberships AS scoped_membership
+    WHERE scoped_membership.tenant_id=b.tenant_id
+      AND scoped_membership.member_id=b.id
+      AND (@branchId IS NULL OR (
+          scoped_membership.branch_access_mode = 'all_branches'
+          OR EXISTS (
+              SELECT 1
+              FROM dbo.gym_membership_branch_access AS scoped_branch_access
+              WHERE scoped_branch_access.tenant_id=scoped_membership.tenant_id
+                AND scoped_branch_access.membership_id=scoped_membership.id
+                AND scoped_branch_access.branch_id=@branchId
+          )
+      ))
+      AND (@sectionId IS NULL OR EXISTS (
+          SELECT 1
+          FROM dbo.gym_membership_section_access AS scoped_section_access
+          WHERE scoped_section_access.tenant_id=scoped_membership.tenant_id
+            AND scoped_section_access.membership_id=scoped_membership.id
+            AND scoped_section_access.section_id=@sectionId
+      ))
+)` : '';
     return `
 WITH latest_membership AS (
     SELECT
@@ -120,6 +147,7 @@ LEFT JOIN freeze_totals AS ft ON ft.freezeMembershipId = lm.membershipId
 LEFT JOIN freeze_counts AS fc ON fc.freezeCountMemberId = b.id
 LEFT JOIN current_freeze AS cf ON cf.currentFreezeMembershipId = lm.membershipId
 LEFT JOIN payment_summary AS ps ON ps.paymentMembershipId = lm.membershipId
+${memberScope}
 )
 `;
 }

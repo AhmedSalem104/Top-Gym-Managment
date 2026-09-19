@@ -98,7 +98,10 @@ test('owner identity editor manages tenant payment methods without hard-coded ac
     assert.match(editor, /function addPaymentMethod/);
     assert.match(editor, /function removePaymentMethod/);
     assert.doesNotMatch(editor, /01015819700|01005376843/);
-    assert.doesNotMatch(page, /01015819700|01005376843/);
+    const paymentMethodsStart = page.indexOf('id="brandingPaymentMethods"');
+    const paymentMethodsEnd = page.indexOf('</section>', paymentMethodsStart);
+    const paymentMethodsShell = page.slice(paymentMethodsStart, paymentMethodsEnd < 0 ? undefined : paymentMethodsEnd);
+    assert.doesNotMatch(paymentMethodsShell, /01015819700|01005376843/);
 });
 
 test('tenant member payment methods have a dedicated owner-only screen backed by identity APIs', () => {

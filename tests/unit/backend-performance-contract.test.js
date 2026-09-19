@@ -67,6 +67,14 @@ test('member list includes profile-only members without manufacturing a subscrip
     assert.doesNotMatch(listBody, /AND membershipId IS NOT NULL/u);
 });
 
+test('branch-scoped member lists keep member and membership scope aligned', () => {
+    const source = read('src/repositories/member.repository.js');
+    assert.match(source, /FROM dbo\.memberships AS scoped_membership[\s\S]*?scoped_membership\.member_id=b\.id/u);
+    assert.match(source, /scoped_membership\.branch_access_mode = 'all_branches'/u);
+    assert.match(source, /FROM dbo\.gym_membership_branch_access AS scoped_branch_access[\s\S]*?scoped_branch_access\.branch_id=@branchId/u);
+    assert.match(source, /FROM dbo\.gym_membership_section_access AS scoped_section_access[\s\S]*?scoped_section_access\.section_id=@sectionId/u);
+});
+
 test('pricing catalog uses one SQL batch for uncached lookups', () => {
     const source = read('src/services/member-service.js');
     const block = source.slice(source.indexOf('async function getPricingCatalog'), source.indexOf('\nfunction invalidatePricingCatalog'));

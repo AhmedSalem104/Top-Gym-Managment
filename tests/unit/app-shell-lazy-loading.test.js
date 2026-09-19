@@ -17,7 +17,7 @@ test('authenticated entry keeps route features out of the initial shell', () => 
     assert.match(index, /\/js\/app-shell-bootstrap\.js\?v=[^"'\s]+/u);
     assert.match(index, /\/js\/core\/feature-manifest\.js\?v=[^"'\s]+/u);
     assert.match(index, /\/js\/core\/dialog-loader\.js\?v=[^"'\s]+/u);
-    assert.match(index, /\/js\/feature-loader\.js\?v=loading-path-v1/u);
+    assert.match(index, /\/js\/feature-loader\.js\?v=freeze-whatsapp-v2/u);
     assert.doesNotMatch(index, /\/js\/(?:core\/dialog-loader|feature-loader)\.js\?v=phase3-6/u);
     assert.doesNotMatch(index, /\/js\/app\.js\?/u);
     assert.doesNotMatch(index, /notification-center\.js/u);
@@ -40,7 +40,7 @@ test('route loader owns route styles and waits for the shared application state'
     assert.match(manifest, /\/css\/pages\/members\.css\?v=attendance-compact/u);
     assert.match(manifest, /\/js\/core\/phone-inputs\.js\?v=13/u);
     assert.match(loader, /\/js\/notification-center\.js\?v=6/u);
-    assert.match(manifest, /\/js\/pagination\.js\?v=3/u);
+    assert.match(manifest, /\/js\/pagination\.js\?v=members-branch-scope-v1/u);
     assert.match(pagination, /document\.readyState === 'loading'/u);
     assert.match(pagination, /else initializePagination\(\)/u);
     assert.match(pagination, /topGymMembersState/u);

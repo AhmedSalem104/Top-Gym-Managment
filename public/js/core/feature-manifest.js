@@ -14,7 +14,7 @@
         members: {
             dependencies: ['phone-inputs'],
             styles: ['/css/pages/members.css?v=attendance-compact', '/css/pages/memberships.css?v=phase2', '/css/pages/attendance.css?v=attendance-ui-v5'],
-            scripts: ['/js/design-enhancements.js?v=4', '/js/pages/members/action-menu.js?v=8', '/js/pagination.js?v=3', '/js/pages/attendance/attendance.js?v=attendance-compact']
+            scripts: ['/js/design-enhancements.js?v=4', '/js/pages/members/action-menu.js?v=8', '/js/pagination.js?v=members-branch-scope-v1', '/js/pages/attendance/attendance.js?v=attendance-compact']
         },
         coaching: { dependencies: ['phone-inputs'], dialogs: [{ source: '/dialogs/coaching.html?v=phase4', ids: ['externalTraineeDialog', 'coachingProfileDialog', 'coachingBuilderDialog'] }], styles: [], scripts: ['/js/exercise-assets.js?v=5', '/js/muscle-assets.js?v=3', '/js/pages/coaching/coaching.js?v=19'] },
         print: { dependencies: ['phone-inputs'], styles: [], scripts: ['/js/exercise-assets.js?v=5', '/js/integrations/print-enhancements.js?v=14'] },

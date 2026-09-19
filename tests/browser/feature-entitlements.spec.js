@@ -131,6 +131,80 @@ test('Starter Gym resolves branch context before members and ignores a stale sto
     assert.notEqual(calls[membersIndex].branch, '99999');
 });
 
+test('branch switching keeps the selected branch membership, including expired history, and preserves pagination', async ({ page }) => {
+    const requests = [];
+    const memberForBranch = (branchId) => ({
+        id: branchId === 1 ? 501 : 502,
+        fullName: branchId === 1 ? 'Main Branch Member' : 'North Branch Member',
+        phone: branchId === 1 ? '01010000001' : '01010000002',
+        registrationDate: '2026-01-01',
+        phoneCountry: 'EG',
+        membership: {
+            id: branchId === 1 ? 601 : 602,
+            plan: 'gym_only',
+            type: 'monthly',
+            startDate: '2026-01-01',
+            endDate: branchId === 1 ? '2026-12-31' : '2026-08-31',
+            effectiveEndDate: branchId === 1 ? '2026-12-31' : '2026-08-31',
+            status: branchId === 1 ? 'active' : 'expired',
+            daysRemaining: branchId === 1 ? 103 : -19,
+            amountDue: 300,
+            amountPaid: 300,
+            amountRemaining: 0,
+            paymentMethod: 'cash',
+            freezeCount: 0,
+            freezeLimit: 3
+        },
+        membershipCode: { active: false, maskedCode: null },
+        attendance: null
+    });
+
+    await page.route('**/api/**', async (route) => {
+        const request = route.request();
+        const pathname = new URL(request.url()).pathname;
+        const branch = Number(request.headers()['x-branch-id'] || 1);
+        if (pathname === '/api/auth/session') return json(route, { authenticated: true, user: { id: 208, name: 'Branch Scope QA', role: 'Owner', tenantType: 'gym', permissions: [] } });
+        if (pathname === '/api/branding') return json(route, { identity: { brandName: 'Branch Scope QA' } });
+        if (pathname === '/api/saas/entitlements') return json(route, entitlementPayload('gym', 'starter'));
+        if (pathname === '/api/branches/bootstrap') return json(route, {
+            branches: [
+                { id: 1, name: 'Main Branch', code: 'main', status: 'active', isMain: true },
+                { id: 2, name: 'North Branch', code: 'north', status: 'active', isMain: false }
+            ],
+            activeBranches: [
+                { id: 1, name: 'Main Branch', code: 'main', status: 'active', isMain: true },
+                { id: 2, name: 'North Branch', code: 'north', status: 'active', isMain: false }
+            ],
+            defaultBranch: { id: 1, name: 'Main Branch', code: 'main', status: 'active', isMain: true },
+            sections: [],
+            branchLimit: 1,
+            hasMultipleActiveBranches: true,
+            canUseAllBranches: true
+        });
+        if (pathname === '/api/members') {
+            requests.push(branch);
+            return json(route, {
+                members: [memberForBranch(branch)],
+                pagination: { page: 1, pageSize: 5, total: 6, totalPages: 2, hasNext: true, hasPrevious: false }
+            });
+        }
+        if (pathname.includes('/pricing')) return json(route, { plans: {}, types: {}, prices: {} });
+        return json(route, {});
+    });
+
+    await page.goto('/?branchScope=qa#members', { waitUntil: 'networkidle' });
+    await expect(page.locator('#branchContextSelect')).toBeVisible();
+    await expect(page.locator('#membersList tr[data-member-id="501"]')).toBeVisible();
+    await expect(page.locator('#membersPagination')).toBeVisible();
+
+    await page.locator('#branchContextSelect').selectOption('2');
+    await expect(page.locator('#membersList tr[data-member-id="502"]')).toBeVisible();
+    await expect(page.locator('#membersList tr[data-member-id="502"] .badge.expired')).toBeVisible();
+    await expect(page.locator('#membersList tr[data-member-id="502"]')).not.toContainText('بدون اشتراك');
+    await expect(page.locator('#membersPagination')).toBeVisible();
+    await expect.poll(() => requests.at(-1)).toBe(2);
+});
+
 test('Gym branch core entitlement exposes the configured limit and blocks creation at the limit', async ({ page }) => {
     const limits = { starter: 1, basic: 2, pro: 5, business: null };
     let planCode = 'starter';

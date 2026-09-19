@@ -17,6 +17,10 @@ with the web application and its central services.
   detection, GPS, IP, timezone, or locale inference in the phone flow.
 - Backend phone identity remains canonical E.164. For example,
   `01015819700` is stored and searched as `+201015819700`.
+- A selected Gym branch scopes the member list and its displayed membership
+  together through membership branch eligibility. Historical memberships remain
+  visible when they belong to the selected branch, including expired ones;
+  tenant-wide profile rows must not appear with a fabricated empty membership.
 
 ## API catalog
 
@@ -24,6 +28,7 @@ with the web application and its central services.
 | --- | --- |
 | `GET /api/saas/entitlements` | Returns effective tenant capabilities and limits. Gym `maxBranches` comes from the current plan; other limits retain snapshot semantics. |
 | Branch context and branch APIs | Require a valid Gym branch context and enforce the effective branch limit server-side. |
+| Branch-scoped member list | Send the selected branch/section context and return only members with an eligible membership in that scope; preserve expired membership history. |
 | Member, registration, attendance, day-pass, coaching, store, branding, tenant-contact and WhatsApp phone flows | Submit local Egyptian mobile input; the server normalizes it through the central phone service. |
 | Phone search and duplicate checks | Normalize to canonical E.164 before lookup; never compare display formatting. |
 
@@ -50,6 +55,9 @@ creation remain server-authoritative.
 - Branch navigation and branch context are available for Gym subscriptions when
   the current plan permits the requested branch count; they are hidden for
   Independent Trainer tenants.
+- Changing the active branch refreshes the member list and pagination from the
+  same authoritative branch context; the UI must not reuse a member row with a
+  membership from another branch or show an empty membership placeholder.
 - The post-login shell must prove the server session first and then obtain
   effective entitlements before exposing protected navigation. Tenant branding
   is presentation-only and may load in parallel; it must never grant access.
@@ -74,6 +82,7 @@ creation remain server-authoritative.
 | Gym branches are core | Feature catalog + capability service | Entitlement and branch-service tests |
 | Starter/Basic/Pro/Business branch limits | Current plan configuration | Plan-entitlement unit tests and branch limit matrix |
 | Trainer branches unavailable | Tenant type compatibility | Capability and navigation tests |
+| Branch member/membership alignment | Membership branch eligibility + selected context | Branch-switch browser test with expired membership and pagination |
 | Egypt-only UI | `public/js/core/phone-inputs.js` | Phone contract/browser tests |
 | E.164 persistence/search | `src/services/phone-service.js` | Phone normalization and duplicate/search tests |
 | Post-login readiness | Session + entitlement gate, then route bootstrap | Critical-path browser trace; app usable event; auth/entitlement regression tests |
@@ -93,3 +102,8 @@ creation remain server-authoritative.
   entitlements remain server-authoritative, branding may run in parallel, and
   the authenticated welcome surface closes on real route readiness rather than
   a fixed delay. No API or security contract changed.
+
+### 2026-09-19
+
+- Recorded branch-scoped member/membership alignment and branch-switch refresh
+  behavior, including preservation of expired membership history and pagination.
