@@ -94,3 +94,175 @@ Each specialist reports to the Lead using:
 - A failed release leaves the prior healthy Production container running and
   preserves the prior immutable release for rollback. Manual SSH/publish
   instructions are emergency fallback only, not the normal path.
+
+## Codex Agent Operating Policy
+
+This section is a permanent operating reference for delegation, adaptive
+agent routing, context discipline, token efficiency, and safe verification.
+The existing security, SQL/RLS, financial-ledger, and production-release
+rules above remain authoritative; where rules overlap, the stricter rule
+applies.
+
+### Operating priorities
+
+- Optimize for correctness, security, data integrity, explicit user
+  requirements, verification, maintainability, token efficiency, then speed.
+- Token efficiency must remove waste, never required engineering work,
+  security checks, tenant isolation, migration safety, or regression testing.
+- The Lead Agent owns architecture, dependency ordering, security review,
+  integration, regression, release decisions, and the final report.
+
+### Orchestration and delegation
+
+- The Lead should orchestrate non-trivial work: understand the request,
+  search narrowly, classify risk, split separable workstreams, delegate when
+  useful, collect compressed findings, implement the smallest correct change,
+  verify, integrate, and review the final diff.
+- Use the minimum necessary agents. Delegate before duplicating clearly
+  separable exploration or specialist work; do not create agents for
+  appearance or post-hoc review.
+- Suitable workstreams include Frontend/Runtime, Backend/API, Database/SQL,
+  Auth/Security, Performance, Infrastructure/Cache, UI/UX, Browser/E2E,
+  Testing, Migration, and independent verification.
+- Every workstream has one owner. Never let multiple agents edit the same
+  shared file concurrently without explicit coordination.
+- Specialists provide evidence, files, dependencies, risks, and tests; they
+  do not make independent architecture or release decisions.
+
+### Complexity and escalation
+
+- Simple work: `Understand → Locate → Implement → Targeted Verify → Done`.
+- Medium work: targeted exploration, specialist implementation when useful,
+  related tests, and diff review.
+- Complex or high-risk work: specialized exploration, compressed findings,
+  smallest implementation, independent verification where warranted,
+  regression, and final diff review.
+- Use the least expensive reasoning level that is reliable. Escalate only for
+  ambiguity, conflicting evidence, security/data risk, migration uncertainty,
+  concurrency, or repeated meaningful failure.
+- Do not retry the same failed action without inspecting and changing the
+  diagnosis or evidence.
+
+### Plan, explore, and hand off once
+
+- Search before reading broadly. Use `rg`, `git grep`, symbols, routes,
+  imports, references, and targeted file reads.
+- Reuse confirmed findings. Do not make downstream agents repeat repository
+  exploration unless evidence conflicts or the code changed materially.
+- A confirmed plan is reusable; do not re-plan independently for every
+  implementer.
+- Pass compressed handoffs, not full transcripts:
+
+  `Objective → Finding → Evidence → Files/symbols → Decision → Next action → Constraints → Verification`
+
+- Default specialist output is:
+
+  `Finding → Evidence → Files → Recommended action → Verification`
+
+- Do not request chain-of-thought, oversized logs, full repository dumps, or
+  repeated explanations of known architecture.
+
+### Context and parallelism
+
+- Give each agent only the objective, relevant facts/files, constraints,
+  expected behavior, and required verification.
+- Load context progressively: minimum context, attempt, identify missing
+  evidence, then load only the needed sections.
+- Run independent workstreams in parallel when safe; do not parallelize work
+  with unresolved dependencies or conflicting editors.
+- Maintain a compact working map of files, symbols, behavior, root cause,
+  modifications, and verification status.
+
+### Implementation discipline
+
+- For meaningful changes use:
+
+  `Inspect → Measure or reproduce → Identify root cause → Fix → Test → Re-measure → Integrate`
+
+- Implement the smallest correct change. Do not add unrelated refactors,
+  formatting churn, dependency changes, temporary artifacts, or scope
+  expansion.
+- Preserve existing APIs, business behavior, authentication, authorization,
+  permissions, capabilities, plans, branch/section scope, RLS, tenant
+  isolation, and product boundaries.
+- Do not weaken a security or data-integrity control to unblock a test.
+
+### Search, output, testing, and failure discipline
+
+- Avoid duplicate reads and large raw output. Filter tests, builds, logs,
+  SQL, Docker, and Git output to the evidence needed for the decision.
+- Verify progressively:
+
+  `Targeted Test → Related Suite → Build/Static Checks → Broader Regression when risk requires`
+
+- A passing build alone is not performance or browser evidence.
+- Use browser/E2E and visual verification for UI changes, server-side checks
+  for permissions/entitlements, and transaction/migration gates for data
+  changes.
+- Never claim PASS without running the check. Use `NOT VERIFIED` when safe
+  verification is unavailable.
+
+### Git, production, and communication
+
+- Git is the source of truth. After implementation review `git diff`, the
+  affected files, dependency paths, targeted tests, secret scan, and
+  `git diff --check` as appropriate.
+- Do not use Production as a test environment. Prefer fixtures or QA data,
+  preserve rollback paths, and follow the existing release pipeline.
+- Do not deploy, mutate production data, run migrations, or alter schema/RLS
+  without the explicit authorization and gates required by the task and the
+  existing release rules above.
+- Communicate briefly: report root cause, change, evidence, remaining risk,
+  and production status. Do not narrate every command or repeat the request.
+
+### Adaptive workflow and stop conditions
+
+- Simple: `Understand → Search Narrowly → Implement → Targeted Verify → Diff → Report`.
+- Medium: `Understand → Search → Split if Useful → Specialist → Implement → Tests → Diff → Report`.
+- Complex: `Understand → Classify Risk → Split → Explore → Compress Findings → Implement → Verify → Regression → Diff → Report`.
+- Stop a workstream when its objective/evidence is complete, it reaches
+  another owner's dependency, it finds an escalation risk, or required safe
+  information is unavailable.
+- Do not continue exploring merely because more code exists.
+
+### Permanent formula
+
+`Understand + Search Narrowly + Delegate Before Duplicating Work + Right Specialist + Plan Once + Explore Once + Reuse Findings + Compress Handoffs + Parallelize Safely + Smallest Correct Change + Risk-Based Verification + Review Diff + Evidence-Based Report`
+
+## Approved UI Design Contract
+
+The approved Logic Fit visual baseline is **HeroUI Calm Data Workspace**.
+It is the primary visual reference for all future UI work; do not select a
+different design direction without explicit approval.
+
+- Preserve Logic Fit's blue/deep-navy identity and Cairo typography.
+- Use semantic design tokens for color, typography, spacing, radius, borders,
+  shadows, focus, status, and motion. Themes change token values; feature CSS
+  must not recreate component themes.
+- Shared ownership is mandatory:
+
+  `Tokens → Shared Component Foundation → Layout/App Shell → Feature Composition`
+
+- Buttons, inputs, cards, tables, modals, dropdowns, navigation, statuses, and
+  feedback states each have one visual owner and documented variants.
+- Feature/page CSS is limited to composition, layout, and genuinely
+  feature-specific content. It must not redefine shared component shells.
+- Before creating CSS or a component, search for and reuse the existing shared
+  owner. Extend a documented variant when needed; do not create a duplicate
+  implementation.
+- Do not add arbitrary overrides, specificity wars, or new `!important` rules.
+  Legacy rules may be removed or scoped only after consumer and browser
+  evidence proves they are no longer required.
+- RTL is first-class. Responsive behavior must recompose at the established
+  breakpoints and must remain usable from 1920px through 320px without
+  overflow, clipping, overlap, or hidden actions.
+- Light and dark themes must use the same component contract and semantic
+  tokens. Interactive states require visible focus, keyboard support, adequate
+  touch targets, accessible labels, and reduced-motion support.
+- UI migration must preserve IDs, events, APIs, routes, business logic,
+  permissions, entitlements, tenant isolation, RLS, authentication, phone
+  behavior, and financial behavior.
+- Every future UI change or new screen MUST follow the Logic Fit Design
+  System. Before implementation: inspect the shared owner, define any
+  documented variant, verify CSS ownership, and run browser visual QA in RTL,
+  Light, Dark, and representative desktop/mobile viewports.

@@ -101,3 +101,161 @@
   background: var(--color-info-soft);
   color: var(--color-info);
 }
+
+/* Platform status/entitlement chips use the same semantic badge contract. */
+.status-pill,
+.feature-chip,
+.trainer-status-pill,
+.reports-status-badge,
+.attendance-source,
+.attendance-status,
+.attendance-action-done,
+.day-pass-type-badge,
+.day-pass-type-status,
+.type-status {
+  display: inline-flex;
+  min-height: 26px;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  border: 1px solid transparent;
+  border-radius: var(--radius-pill);
+  padding: 4px var(--space-2);
+  color: var(--color-text-soft);
+  font-size: var(--font-2xs);
+  font-weight: var(--weight-bold);
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.status-pill,
+.trainer-status-pill,
+.reports-status-badge,
+.attendance-status,
+.day-pass-type-badge,
+.day-pass-type-status,
+.type-status {
+  background: var(--color-primary-soft);
+  color: var(--text-primary-soft);
+}
+
+.attendance-source {
+  padding: 0 var(--space-3);
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+
+.attendance-status,
+.reports-status-badge,
+.type-status,
+.day-pass-type-status {
+  padding: 0 var(--space-3);
+  background: var(--color-surface-muted);
+  color: var(--color-text-muted);
+}
+
+.attendance-action-done {
+  padding: 0 var(--space-3);
+  border-color: var(--success-border);
+  background: var(--color-success-soft);
+  color: var(--success-text);
+}
+
+.attendance-action-done.auto {
+  border-color: var(--primary-border);
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+
+.attendance-status.complete,
+.reports-status-badge.active,
+.reports-status-badge.success,
+.reports-status-badge.completed,
+.reports-status-badge.paid,
+.type-status.active,
+.day-pass-type-status {
+  border-color: var(--success-border);
+  background: var(--color-success-soft);
+  color: var(--success-text);
+}
+
+.attendance-status:not(.complete),
+.reports-status-badge.pending,
+.reports-status-badge.draft,
+.reports-status-badge.expiring_soon,
+.type-status.off,
+.day-pass-type-status.inactive {
+  border-color: var(--warning-border);
+  background: var(--color-warning-soft);
+  color: var(--warning-text);
+}
+
+.attendance-source.phone,
+.attendance-source.qr,
+.reports-status-badge.transaction-badge,
+.attendance-action-done.auto {
+  border-color: var(--primary-border);
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+
+.reports-status-badge.frozen,
+.reports-status-badge.paused {
+  border-color: var(--info-border);
+  background: var(--color-info-soft);
+  color: var(--info-text);
+}
+
+.reports-status-badge.expired,
+.reports-status-badge.failed,
+.reports-status-badge.archived,
+.type-status.disabled {
+  border-color: var(--danger-border);
+  background: var(--color-danger-soft);
+  color: var(--danger-text);
+}
+
+.status-pill.active,
+.status-pill.verified,
+.feature-chip,
+.trainer-status-pill--active,
+.trainer-status-pill--scheduled {
+  border-color: var(--success-border);
+  background: var(--color-success-soft);
+  color: var(--color-success);
+}
+
+.status-pill.trial,
+.status-pill.running,
+.status-pill.pending,
+.status-pill.verifying,
+.trainer-status-pill--completed {
+  border-color: var(--info-border);
+  background: var(--color-info-soft);
+  color: var(--color-info);
+}
+
+.status-pill.suspended,
+.status-pill.expired,
+.trainer-status-pill--no_show {
+  border-color: var(--warning-border);
+  background: var(--color-warning-soft);
+  color: var(--color-warning);
+}
+
+.status-pill.archived,
+.status-pill.cancelled,
+.status-pill.failed {
+  border-color: var(--danger-border);
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+}
+
+.status-pill.deleted,
+.feature-chip.off,
+.trainer-status-pill--cancelled,
+.trainer-status-pill--archived {
+  border-color: var(--border-secondary);
+  background: var(--color-surface-muted);
+  color: var(--color-text-muted);
+}

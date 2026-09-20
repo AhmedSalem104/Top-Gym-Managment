@@ -60,6 +60,7 @@ function readAuthCard(source) {
 function buildLoginHtml(source, cssVersion) {
     const htmlOpen = source.match(/<html\b[^>]*>/i)?.[0];
     const head = source.match(/<head>[\s\S]*?<\/head>/i)?.[0]
+        ?.replace(/[ \t]*<link\s+rel="stylesheet"\s+href="\/css\/pages\/login\.css[^>]*>\r?\n?/i, '')
         ?.replace(/<link\s+rel="stylesheet"\s+href="\/css\/(?:main|app-shell)\.css[^>]*>/i, `<link rel="stylesheet" href="/css/login-entry.css?v=${cssVersion}">`);
     const bodyOpen = source.match(/<body\b[^>]*>/i)?.[0]
         ?.replace('data-branding-entry="saas"', 'data-branding-entry="saas" data-auth-entry="login"');

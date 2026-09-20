@@ -264,7 +264,6 @@
 }
 
 #expenseDialog {
-  width: min(720px, calc(100% - 32px));
   border-color: var(--danger-border);
 }
 
@@ -290,7 +289,6 @@
   .expenses-tab-panel .monthly-expenses-list-head { grid-template-columns: minmax(0, 1fr) auto auto; gap: var(--space-2); }
   .expenses-tab-panel .monthly-expense-item { grid-template-columns: minmax(0, 1fr) auto; gap: var(--space-2); }
   .expenses-tab-panel .monthly-expense-actions { grid-column: 1 / -1; justify-content: flex-start; }
-  #expenseDialog { width: calc(100% - 20px); }
 }
 
 @media (max-width: 991px) and (min-width: 768px) {

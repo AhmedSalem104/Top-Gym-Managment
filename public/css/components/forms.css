@@ -6,6 +6,17 @@
   min-width: 0;
 }
 
+/* Shared two-column field composition. Feature pages own only the grid
+   columns; field typography and rhythm stay in the form foundation. */
+.ui-form-grid > label {
+  display: grid;
+  gap: var(--space-2);
+  min-width: 0;
+  color: var(--color-text-soft);
+  font-size: var(--font-sm);
+  font-weight: var(--weight-semibold);
+}
+
 .form-field > label,
 .field > label,
 .auth-field > label,
@@ -25,11 +36,12 @@ textarea,
 .filter-input {
   width: 100%;
   min-height: 44px;
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--border-primary);
   border-radius: var(--radius-md);
   outline: 0;
-  background: var(--color-surface);
-  color: var(--color-text);
+  background: var(--bg-input);
+  color: var(--text-primary);
+  caret-color: var(--color-primary);
   font-size: var(--font-sm);
   transition: border-color var(--transition-fast), box-shadow var(--transition-fast), background-color var(--transition-fast);
 }
@@ -57,7 +69,7 @@ textarea::placeholder {
 input:not([type="checkbox"]):not([type="radio"]):hover,
 select:hover,
 textarea:hover {
-  border-color: var(--border-strong);
+  border-color: var(--border-hover);
 }
 
 input:not([type="checkbox"]):not([type="radio"]):focus,
@@ -66,7 +78,7 @@ textarea:focus,
 .form-control:focus,
 .search-input:focus,
 .filter-input:focus {
-  border-color: var(--color-primary);
+  border-color: var(--border-focus);
   box-shadow: var(--focus-ring);
 }
 

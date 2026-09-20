@@ -526,12 +526,7 @@
   color: var(--text-on-primary);
 }
 
-/* Details dialogs ------------------------------------------------------- */
-.library-details-dialog .dialog-body {
-  min-height: 0;
-  overflow-y: auto;
-}
-
+/* Details dialog content ------------------------------------------------ */
 .library-details-dialog #libraryDetailsContent {
   display: grid;
   min-width: 0;
@@ -699,11 +694,6 @@
 
 .library-pagination {
   margin-top: var(--space-3);
-}
-
-.library-dialog,
-.library-details-dialog {
-  width: min(920px, calc(100vw - 32px));
 }
 
 @media (max-width: 900px) {

@@ -40,17 +40,6 @@ body.auth-locked .auth-screen {
   margin: auto;
 }
 
-.auth-card {
-  display: block;
-  width: 100%;
-  min-height: 0;
-  overflow: hidden;
-  border: 1px solid var(--border-primary);
-  border-radius: 24px;
-  background: var(--bg-card);
-  box-shadow: var(--shadow-popup);
-}
-
 .auth-form-panel {
   position: relative;
   display: block;
@@ -2974,7 +2963,7 @@ html[data-theme="dark"] .auth-screen[data-auth-stage="login"] {
 
 .auth-screen[data-auth-stage="login"] .auth-shell {
   display: block;
-  width: min(100%, 456px);
+  width: min(100%, 460px);
   min-height: 0;
   height: auto;
   margin-inline: auto;

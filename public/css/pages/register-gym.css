@@ -655,29 +655,11 @@
   box-sizing: border-box;
   width: 100%;
   min-height: 50px;
-  border: 1px solid var(--border-primary);
-  border-radius: var(--radius-md);
-  background: var(--bg-input);
-  color: var(--text-primary);
-  padding: var(--space-3) var(--space-4);
-  transition: border-color var(--transition-fast), box-shadow var(--transition-fast), background-color var(--transition-fast);
 }
 
 .registration-field textarea {
   min-height: 92px;
   resize: vertical;
-}
-
-.registration-field input:hover,
-.registration-field textarea:hover {
-  border-color: var(--border-hover);
-}
-
-.registration-field input:focus,
-.registration-field textarea:focus {
-  border-color: var(--primary);
-  box-shadow: var(--focus-ring);
-  outline: 0;
 }
 
 .registration-section-intro {

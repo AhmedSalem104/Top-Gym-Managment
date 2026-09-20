@@ -112,11 +112,11 @@
             </div>
         </section>
     </main>
-    <dialog id="trainerClientDialog" class="trainer-client-dialog" aria-labelledby="trainerClientDialogTitle">
-        <form id="trainerClientForm" method="dialog" novalidate>
+    <dialog id="trainerClientDialog" class="trainer-client-dialog lf-modal-shell lf-modal--md" aria-labelledby="trainerClientDialogTitle">
+        <form id="trainerClientForm" class="dialog-body" method="dialog" novalidate>
             <div class="trainer-dialog-header"><div><span class="trainer-panel-kicker">ملف العميل</span><h2 id="trainerClientDialogTitle">إضافة عميل</h2></div><button type="button" class="trainer-dialog-close" id="trainerClientDialogClose" aria-label="إغلاق">×</button></div>
             <input id="trainerClientId" type="hidden">
-            <div class="trainer-form-grid">
+            <div class="trainer-form-grid ui-form-grid">
                 <label>اسم العميل<input id="trainerClientName" name="fullName" required maxlength="120" autocomplete="name"></label>
                 <label>رقم الهاتف<input id="trainerClientPhone" name="phone" required maxlength="30" inputmode="numeric" autocomplete="tel" data-phone-input></label>
                 <label>البريد الإلكتروني<input id="trainerClientEmail" name="email" maxlength="254" type="email" autocomplete="email"></label>
@@ -128,19 +128,19 @@
             <div class="trainer-dialog-actions"><button class="btn btn-light" type="button" id="trainerClientCancel">إلغاء</button><button class="btn btn-primary" type="submit" id="trainerClientSave">حفظ العميل</button></div>
         </form>
     </dialog>
-    <dialog id="trainerClientDetailsDialog" class="trainer-client-dialog trainer-client-details-dialog" aria-labelledby="trainerClientDetailsTitle">
+    <dialog id="trainerClientDetailsDialog" class="trainer-client-dialog trainer-client-details-dialog lf-modal-shell lf-modal--md" aria-labelledby="trainerClientDetailsTitle">
         <div class="trainer-dialog-header"><div><span class="trainer-panel-kicker">نظرة على الملف</span><h2 id="trainerClientDetailsTitle">تفاصيل العميل</h2></div><button type="button" class="trainer-dialog-close" id="trainerClientDetailsClose" aria-label="إغلاق">×</button></div>
-        <div id="trainerClientDetails" class="trainer-client-details"></div>
+        <div id="trainerClientDetails" class="trainer-client-details dialog-body"></div>
     </dialog>
-    <dialog id="trainerTimelineDialog" class="trainer-client-dialog" aria-labelledby="trainerTimelineDialogTitle">
+    <dialog id="trainerTimelineDialog" class="trainer-client-dialog lf-modal-shell lf-modal--md" aria-labelledby="trainerTimelineDialogTitle">
         <div class="trainer-dialog-header"><div><span class="trainer-panel-kicker">سجل الملف</span><h2 id="trainerTimelineDialogTitle">الخط الزمني للعميل</h2></div><button type="button" class="trainer-dialog-close" id="trainerTimelineDialogClose" aria-label="إغلاق">×</button></div>
-        <div id="trainerTimelineList" class="trainer-client-details trainer-timeline-list" aria-live="polite"></div>
+        <div id="trainerTimelineList" class="trainer-client-details dialog-body trainer-timeline-list" aria-live="polite"></div>
     </dialog>
-    <dialog id="trainerMeasurementDialog" class="trainer-client-dialog" aria-labelledby="trainerMeasurementDialogTitle">
-        <form id="trainerMeasurementForm" method="dialog" novalidate>
+    <dialog id="trainerMeasurementDialog" class="trainer-client-dialog lf-modal-shell lf-modal--lg" aria-labelledby="trainerMeasurementDialogTitle">
+        <form id="trainerMeasurementForm" class="dialog-body" method="dialog" novalidate>
             <div class="trainer-dialog-header"><div><span class="trainer-panel-kicker">تقييم وتقدم</span><h2 id="trainerMeasurementDialogTitle">إضافة قياس</h2></div><button type="button" class="trainer-dialog-close" id="trainerMeasurementDialogClose" aria-label="إغلاق">×</button></div>
             <input id="trainerMeasurementClientId" type="hidden">
-            <div class="trainer-form-grid">
+            <div class="trainer-form-grid ui-form-grid">
                 <label>التاريخ<input id="trainerMeasurementDate" required type="date"></label>
                 <label>الوزن (كجم)<input id="trainerMeasurementWeight" type="number" min="0" max="1000" step="0.1" inputmode="decimal"></label>
                 <label>الطول (سم)<input id="trainerMeasurementHeight" type="number" min="0" max="300" step="0.1" inputmode="decimal"></label>
@@ -156,11 +156,11 @@
             <div class="trainer-dialog-actions"><button class="btn btn-light" type="button" id="trainerMeasurementCancel">إلغاء</button><button class="btn btn-primary" type="submit" id="trainerMeasurementSave">حفظ القياس</button></div>
         </form>
     </dialog>
-    <dialog id="trainerCheckinDialog" class="trainer-client-dialog" aria-labelledby="trainerCheckinDialogTitle">
-        <form id="trainerCheckinForm" method="dialog" novalidate>
+    <dialog id="trainerCheckinDialog" class="trainer-client-dialog lf-modal-shell lf-modal--md" aria-labelledby="trainerCheckinDialogTitle">
+        <form id="trainerCheckinForm" class="dialog-body" method="dialog" novalidate>
             <div class="trainer-dialog-header"><div><span class="trainer-panel-kicker">متابعة العميل</span><h2 id="trainerCheckinDialogTitle">إضافة متابعة</h2></div><button type="button" class="trainer-dialog-close" id="trainerCheckinDialogClose" aria-label="إغلاق">×</button></div>
             <input id="trainerCheckinClientId" type="hidden">
-            <div class="trainer-form-grid">
+            <div class="trainer-form-grid ui-form-grid">
                 <label>التاريخ<input id="trainerCheckinDate" required type="date"></label>
                 <label>وزن المتابعة (كجم)<input id="trainerCheckinWeight" type="number" min="0" max="1000" step="0.1" inputmode="decimal"></label>
                 <label>جودة النوم (1–5)<input id="trainerCheckinSleepQuality" type="number" min="1" max="5" step="1" inputmode="numeric"></label>
@@ -172,10 +172,10 @@
             <div class="trainer-dialog-actions"><button class="btn btn-light" type="button" id="trainerCheckinCancel">إلغاء</button><button class="btn btn-primary" type="submit" id="trainerCheckinSave">حفظ المتابعة</button></div>
         </form>
     </dialog>
-    <dialog id="trainerPackageDialog" class="trainer-client-dialog" aria-labelledby="trainerPackageDialogTitle">
-        <form id="trainerPackageForm" method="dialog" novalidate>
+    <dialog id="trainerPackageDialog" class="trainer-client-dialog lf-modal-shell lf-modal--md" aria-labelledby="trainerPackageDialogTitle">
+        <form id="trainerPackageForm" class="dialog-body" method="dialog" novalidate>
             <div class="trainer-dialog-header"><div><span class="trainer-panel-kicker">الخدمات التجارية</span><h2 id="trainerPackageDialogTitle">إضافة باقة</h2></div><button type="button" class="trainer-dialog-close" id="trainerPackageDialogClose" aria-label="إغلاق">×</button></div>
-            <div class="trainer-form-grid">
+            <div class="trainer-form-grid ui-form-grid">
                 <label>اسم الباقة<input id="trainerPackageName" required maxlength="160"></label>
                 <label>السعر<input id="trainerPackagePrice" required type="number" min="0" step="0.01" inputmode="decimal"></label>
                 <label>مدة الباقة بالأيام<input id="trainerPackageDuration" type="number" min="1" max="3650"></label>
@@ -187,10 +187,10 @@
             <div class="trainer-dialog-actions"><button class="btn btn-light" type="button" id="trainerPackageCancel">إلغاء</button><button class="btn btn-primary" type="submit" id="trainerPackageSave">حفظ الباقة</button></div>
         </form>
     </dialog>
-    <dialog id="trainerSessionDialog" class="trainer-client-dialog" aria-labelledby="trainerSessionDialogTitle">
-        <form id="trainerSessionForm" method="dialog" novalidate>
+    <dialog id="trainerSessionDialog" class="trainer-client-dialog lf-modal-shell lf-modal--md" aria-labelledby="trainerSessionDialogTitle">
+        <form id="trainerSessionForm" class="dialog-body" method="dialog" novalidate>
             <div class="trainer-dialog-header"><div><span class="trainer-panel-kicker">الجدولة</span><h2 id="trainerSessionDialogTitle">جدولة جلسة</h2></div><button type="button" class="trainer-dialog-close" id="trainerSessionDialogClose" aria-label="إغلاق">×</button></div>
-            <div class="trainer-form-grid">
+            <div class="trainer-form-grid ui-form-grid">
                 <label>العميل<select id="trainerSessionClient" required></select></label>
                 <label>الباقة المرتبطة<select id="trainerSessionPurchase"><option value="">بدون باقة</option></select></label>
                 <label>تبدأ في<input id="trainerSessionStart" required type="datetime-local"></label>
@@ -201,10 +201,10 @@
             <div class="trainer-dialog-actions"><button class="btn btn-light" type="button" id="trainerSessionCancel">إلغاء</button><button class="btn btn-primary" type="submit" id="trainerSessionSave">حفظ الجلسة</button></div>
         </form>
     </dialog>
-    <dialog id="trainerPurchaseDialog" class="trainer-client-dialog" aria-labelledby="trainerPurchaseDialogTitle">
-        <form id="trainerPurchaseForm" method="dialog" novalidate>
+    <dialog id="trainerPurchaseDialog" class="trainer-client-dialog lf-modal-shell lf-modal--md" aria-labelledby="trainerPurchaseDialogTitle">
+        <form id="trainerPurchaseForm" class="dialog-body" method="dialog" novalidate>
             <div class="trainer-dialog-header"><div><span class="trainer-panel-kicker">بيع باقة</span><h2 id="trainerPurchaseDialogTitle">تسجيل شراء جديد</h2></div><button type="button" class="trainer-dialog-close" id="trainerPurchaseDialogClose" aria-label="إغلاق">×</button></div>
-            <div class="trainer-form-grid">
+            <div class="trainer-form-grid ui-form-grid">
                 <label>العميل<select id="trainerPurchaseClient" required></select></label>
                 <label>الباقة<select id="trainerPurchasePackage" required></select></label>
                 <label>تاريخ البداية<input id="trainerPurchaseStart" required type="date"></label>
@@ -217,11 +217,11 @@
             <div class="trainer-dialog-actions"><button class="btn btn-light" type="button" id="trainerPurchaseCancel">إلغاء</button><button class="btn btn-primary" type="submit" id="trainerPurchaseSave">تسجيل الشراء</button></div>
         </form>
     </dialog>
-    <dialog id="trainerPaymentDialog" class="trainer-client-dialog" aria-labelledby="trainerPaymentDialogTitle">
-        <form id="trainerPaymentForm" method="dialog" novalidate>
+    <dialog id="trainerPaymentDialog" class="trainer-client-dialog lf-modal-shell lf-modal--md" aria-labelledby="trainerPaymentDialogTitle">
+        <form id="trainerPaymentForm" class="dialog-body" method="dialog" novalidate>
             <div class="trainer-dialog-header"><div><span class="trainer-panel-kicker">دفعة مستقلة</span><h2 id="trainerPaymentDialogTitle">تسجيل دفعة</h2></div><button type="button" class="trainer-dialog-close" id="trainerPaymentDialogClose" aria-label="إغلاق">×</button></div>
             <input id="trainerPaymentPurchaseId" type="hidden">
-            <div class="trainer-form-grid">
+            <div class="trainer-form-grid ui-form-grid">
                 <label>المبلغ<input id="trainerPaymentAmount" required type="number" min="0.01" step="0.01" inputmode="decimal"></label>
                 <label>طريقة الدفع<select id="trainerPaymentMethod"><option value="cash">نقدي</option><option value="card">بطاقة</option><option value="transfer">تحويل</option><option value="other">أخرى</option></select></label>
                 <label>تاريخ التحصيل<input id="trainerPaymentPaidAt" required type="date"></label>

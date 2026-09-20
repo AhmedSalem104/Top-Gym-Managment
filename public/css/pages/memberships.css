@@ -1,16 +1,3 @@
-.pricing-dialog,
-.type-dialog,
-.expense-dialog,
-.member-dialog,
-.details-dialog,
-.library-dialog,
-.library-details-dialog,
-.coaching-small-dialog,
-.auth-user-dialog,
-.backup-restore-dialog {
-  width: min(820px, calc(100% - 32px));
-}
-
 .pricing-section-head {
   display: flex;
   align-items: flex-start;
@@ -99,24 +86,16 @@
 
 #pricingDialog,
 #membershipTypesDialog {
-  max-height: calc(100vh - 32px);
-  overflow: hidden;
-}
-
-#pricingDialog {
-  width: min(1060px, calc(100% - 32px));
   border-color: var(--primary-border);
 }
 
 #membershipTypesDialog {
-  width: min(940px, calc(100% - 32px));
   border-color: var(--success-border);
 }
 
 #pricingDialog > form.dialog-body,
 #membershipTypesDialog > .dialog-body {
   gap: var(--space-5);
-  padding: var(--space-6);
 }
 
 #pricingDialog .details-dialog-head,
@@ -314,27 +293,6 @@
 
 #membershipTypesDialog .membership-types-table td:first-child { text-align: start; }
 #membershipTypesDialog .membership-types-table tbody tr:hover td { background: var(--color-primary-soft); }
-
-.type-status {
-  display: inline-flex;
-  min-height: 28px;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid var(--success-border);
-  border-radius: var(--radius-pill);
-  background: var(--color-success-soft);
-  color: var(--success-text);
-  padding: 0 var(--space-3);
-  font-size: var(--font-xs);
-  font-weight: var(--weight-bold);
-  white-space: nowrap;
-}
-
-.type-status.off {
-  border-color: var(--warning-border);
-  background: var(--color-warning-soft);
-  color: var(--warning-text);
-}
 
 .type-actions {
   display: flex;
@@ -557,9 +515,6 @@
 }
 
 @media (max-width: 767px) {
-  #pricingDialog,
-  #membershipTypesDialog { width: calc(100% - 20px); }
-
   #managementSection .management-shortcuts { grid-template-columns: 1fr; }
   #managementSection .management-shortcut { min-height: 82px; }
 }
@@ -585,9 +540,6 @@
 .day-pass-pricing-table small { display: block; }
 .day-pass-pricing-table small { color: var(--color-text-muted); font-family: var(--font-latin); font-size: var(--font-xs); }
 .day-pass-pricing-table input { max-width: 150px; direction: ltr; text-align: center; }
-.day-pass-type-status { display: inline-flex; min-height: 26px; align-items: center; border-radius: var(--radius-pill); background: var(--color-success-soft); color: var(--color-success); padding: 0 var(--space-3); font-size: var(--font-xs); font-weight: var(--weight-bold); }
-.day-pass-type-status.inactive { background: var(--color-warning-soft); color: var(--color-warning); }
-
 /* Member details is a workspace, not a narrow alert. The content is built
    dynamically by app.js, so the visual contract lives here and applies to
    every member without changing the data flow. */
@@ -841,11 +793,6 @@
 }
 
 @media (max-width: 767px) {
-  .member-dialog {
-    width: calc(100% - 20px);
-    max-height: calc(100vh - 20px);
-  }
-
   .member-dialog .section-heading {
     min-height: 64px;
     align-items: flex-start;
@@ -878,12 +825,6 @@
 
   .member-dialog .form-actions .btn {
     flex: 1 1 140px;
-  }
-
-  .details-dialog,
-  .coaching-profile-dialog,
-  .coaching-builder-dialog {
-    width: calc(100% - 20px);
   }
 
   .details-dialog .dialog-body,

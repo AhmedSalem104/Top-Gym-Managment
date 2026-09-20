@@ -73,12 +73,6 @@
 .attendance-member-name { display: block; color: var(--color-text); font-weight: var(--weight-bold); text-align: start; }
 .attendance-member-phone { display: block; color: var(--color-text-muted); direction: ltr; font-family: var(--font-latin); font-size: var(--font-xs); text-align: start; }
 .attendance-time { direction: ltr; font-family: var(--font-latin); font-variant-numeric: tabular-nums; font-weight: var(--weight-semibold); }
-.attendance-source,
-.attendance-status { display: inline-flex; min-height: 28px; align-items: center; justify-content: center; border: 1px solid var(--border-color); border-radius: var(--radius-pill); padding: 0 var(--space-3); font-size: var(--font-xs); font-weight: var(--weight-bold); white-space: nowrap; }
-.attendance-source.phone { border-color: var(--primary-border); background: var(--color-primary-soft); color: var(--color-primary); }
-.attendance-source.qr { border-color: var(--primary-border); background: var(--color-primary-soft); color: var(--text-primary-soft); }
-.attendance-status { border-color: var(--warning-border); background: var(--color-warning-soft); color: var(--warning-text); }
-.attendance-status.complete { border-color: var(--success-border); background: var(--color-success-soft); color: var(--success-text); }
 .attendance-row-actions {
   min-width: 132px;
   white-space: nowrap;
@@ -87,24 +81,6 @@
 .attendance-action-done {
   min-width: 118px;
   white-space: nowrap;
-}
-.attendance-action-done {
-  display: inline-flex;
-  min-height: 30px;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid var(--success-border);
-  border-radius: var(--radius-pill);
-  background: var(--color-success-soft);
-  color: var(--success-text);
-  padding: 0 var(--space-3);
-  font-size: var(--font-xs);
-  font-weight: var(--weight-bold);
-}
-.attendance-action-done.auto {
-  border-color: var(--primary-border);
-  background: var(--color-primary-soft);
-  color: var(--color-primary);
 }
 .attendance-member-row { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); border-bottom: 1px solid var(--border-color); padding: var(--space-3); }
 .attendance-member-copy { display: grid; gap: 1px; }
@@ -129,15 +105,6 @@
 }
 
 /* QR dialogs ------------------------------------------------------------- */
-.qr-reader-dialog,
-.member-qr-dialog {
-  width: min(560px, calc(100% - 32px));
-}
-
-.member-qr-dialog {
-  width: min(520px, calc(100% - 32px));
-}
-
 .member-qr-dialog .dialog-body,
 .qr-reader-dialog .dialog-body {
   align-items: stretch;
@@ -492,9 +459,6 @@ body .swal2-popup.qr-member-preview-alert .swal2-actions > button.qr-member-prev
   .attendance-list-head { padding: var(--space-4); }
   .attendance-search-wrap { min-width: 0; }
 
-  .qr-reader-dialog,
-  .member-qr-dialog { width: calc(100% - 24px); }
-
   #qrReader { min-height: min(300px, 68vw); }
   .member-qr-card { padding: var(--space-4); }
   .member-qr-dialog .dialog-actions .btn { width: 100%; }
@@ -568,8 +532,7 @@ body .swal2-popup.qr-member-preview-alert .swal2-actions > button.qr-member-prev
 .day-pass-table td strong { color: var(--color-text); font-size: var(--font-sm); }
 .day-pass-table td small { color: var(--color-text-muted); direction: ltr; font-family: var(--font-latin); font-size: var(--font-xs); }
 .day-pass-table td small.day-pass-reference { color: var(--color-primary); font-size: 10px; font-weight: var(--weight-bold); }
-.day-pass-type-badge { display: inline-flex; min-height: 28px; align-items: center; border-radius: var(--radius-pill); background: var(--color-primary-soft); color: var(--color-primary); padding: 0 var(--space-3); font-size: var(--font-xs); font-weight: var(--weight-bold); white-space: nowrap; }
-.day-pass-type-badge.day_gym_cardio { background: var(--color-warning-soft); color: var(--color-warning); }
+.day-pass-type-badge.day_gym_cardio { border-color: var(--warning-border); background: var(--color-warning-soft); color: var(--warning-text); }
 .day-pass-amount { direction: ltr; color: var(--color-success); font-family: var(--font-latin); font-weight: var(--weight-bold); }
 .day-pass-actions { min-width: max-content; justify-content: center; flex-wrap: nowrap; }
 .day-pass-actions .btn { min-height: 36px; }

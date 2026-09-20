@@ -497,9 +497,6 @@ html[data-theme="dark"] .trainer-workspace-page.trainer-studio-v2 .trainer-ai-wa
 .trainer-workspace-page.trainer-studio-v2 .trainer-studio-route-meta { color: var(--studio-muted); }
 
 .trainer-workspace-page.trainer-studio-v2 .trainer-welcome-strip { display: none; }
-.trainer-workspace-page.trainer-studio-v2 .btn.btn-primary { border-color: var(--studio-brand); background: var(--studio-brand); box-shadow: 0 8px 16px rgb(23 105 232 / .16); }
-.trainer-workspace-page.trainer-studio-v2 .btn.btn-primary:hover,
-.trainer-workspace-page.trainer-studio-v2 .btn.btn-primary:focus-visible { border-color: var(--studio-brand-strong); background: var(--studio-brand-strong); box-shadow: 0 10px 20px rgb(23 105 232 / .23); }
 .trainer-workspace-page.trainer-studio-v2 .trainer-studio-page-tag,
 .trainer-workspace-page.trainer-studio-v2 .trainer-studio-count-chip { border-color: var(--studio-brand-border); color: var(--studio-brand-strong); background: var(--studio-brand-soft); }
 .trainer-workspace-page.trainer-studio-v2 .trainer-studio-row-icon { color: var(--studio-brand-strong); background: var(--studio-brand-soft); }
@@ -508,27 +505,7 @@ html[data-theme="dark"] .trainer-workspace-page.trainer-studio-v2 .trainer-ai-wa
 .trainer-workspace-page.trainer-studio-v2 .trainer-studio-editor-grid select:focus,
 .trainer-workspace-page.trainer-studio-v2 .trainer-studio-editor-grid textarea:focus { border-color: var(--studio-brand); outline-color: var(--studio-brand-soft); }
 
-/* Dialogs use one clear HeroUI-like composition: a quiet scrim, strong
-   header hierarchy, visible escape action and a mobile-safe footer. */
-.trainer-workspace-page.trainer-studio-v2 dialog.trainer-client-dialog { width: min(720px, calc(100vw - 32px)); max-height: min(820px, calc(100dvh - 32px)); overflow: auto; padding: 0; border: 1px solid var(--studio-line); border-radius: 24px; color: var(--studio-ink); background: var(--studio-surface); box-shadow: 0 30px 90px rgb(15 45 83 / .26); overscroll-behavior: contain; }
-.trainer-workspace-page.trainer-studio-v2 dialog.trainer-client-dialog::backdrop { background: rgb(8 24 45 / .58); backdrop-filter: blur(7px); }
-.trainer-workspace-page.trainer-studio-v2 .trainer-dialog-header { align-items: center; padding: 21px 24px 18px; border-bottom: 1px solid var(--studio-line); background: linear-gradient(120deg, var(--studio-brand-soft), transparent 70%); }
-.trainer-workspace-page.trainer-studio-v2 .trainer-dialog-header h2 { margin-block-start: 5px; color: var(--studio-ink); font-size: 22px; letter-spacing: -.035em; }
-.trainer-workspace-page.trainer-studio-v2 .trainer-dialog-close { display: grid; width: 44px; height: 44px; place-items: center; border: 1px solid var(--studio-line); border-radius: 13px; color: var(--studio-muted); background: var(--studio-surface); font-size: 24px; line-height: 1; cursor: pointer; transition: color 180ms ease, border-color 180ms ease, background-color 180ms ease, transform 180ms ease; }
-.trainer-workspace-page.trainer-studio-v2 .trainer-dialog-close:hover,
-.trainer-workspace-page.trainer-studio-v2 .trainer-dialog-close:focus-visible { border-color: var(--studio-brand); color: var(--studio-brand-strong); background: var(--studio-brand-soft); outline: none; transform: rotate(3deg); }
-.trainer-workspace-page.trainer-studio-v2 dialog.trainer-client-dialog form,
-.trainer-workspace-page.trainer-studio-v2 dialog.trainer-client-dialog .trainer-client-details { padding: 24px; }
 .trainer-workspace-page.trainer-studio-v2 .trainer-form-grid { gap: 15px; margin-block-start: 20px; }
-.trainer-workspace-page.trainer-studio-v2 .trainer-form-grid label { color: var(--studio-ink); font-size: 12px; font-weight: 850; }
-.trainer-workspace-page.trainer-studio-v2 .trainer-form-grid input,
-.trainer-workspace-page.trainer-studio-v2 .trainer-form-grid select,
-.trainer-workspace-page.trainer-studio-v2 .trainer-form-grid textarea { min-height: 46px; border-color: var(--studio-line); border-radius: 12px; color: var(--studio-ink); background: var(--studio-surface-soft); font-size: 13px; }
-.trainer-workspace-page.trainer-studio-v2 .trainer-form-grid input:focus,
-.trainer-workspace-page.trainer-studio-v2 .trainer-form-grid select:focus,
-.trainer-workspace-page.trainer-studio-v2 .trainer-form-grid textarea:focus { border-color: var(--studio-brand); box-shadow: 0 0 0 4px var(--studio-brand-soft); outline: none; }
-.trainer-workspace-page.trainer-studio-v2 .trainer-dialog-actions { justify-content: flex-start; gap: 10px; margin-block-start: 18px; padding-block-start: 17px; border-top: 1px solid var(--studio-line); }
-.trainer-workspace-page.trainer-studio-v2 .trainer-dialog-actions .btn { min-height: 44px; }
 .trainer-workspace-page.trainer-studio-v2 .trainer-detail-stat { border: 1px solid var(--studio-line); background: var(--studio-surface-soft); }
 
 html[data-theme="dark"] .trainer-workspace-page.trainer-studio-v2 {
@@ -536,8 +513,6 @@ html[data-theme="dark"] .trainer-workspace-page.trainer-studio-v2 {
 html[data-theme="dark"] .trainer-workspace-page.trainer-studio-v2 .trainer-studio-topbar { border-color: var(--studio-line); background: color-mix(in srgb, var(--studio-surface) 92%, var(--studio-brand-soft)); }
 html[data-theme="dark"] .trainer-workspace-page.trainer-studio-v2 .trainer-studio-topbar-button { border-color: var(--studio-line); color: var(--studio-ink); background: var(--studio-surface-soft); }
 html[data-theme="dark"] .trainer-workspace-page.trainer-studio-v2 .trainer-studio-logout-button { color: #e4f1ff; background: rgb(98 167 255 / .16); }
-html[data-theme="dark"] .trainer-workspace-page.trainer-studio-v2 dialog.trainer-client-dialog::backdrop { background: rgb(0 8 20 / .72); }
-html[data-theme="dark"] .trainer-workspace-page.trainer-studio-v2 .trainer-dialog-header { background: linear-gradient(120deg, var(--studio-brand-soft), transparent 70%); }
 
 @media (max-width: 1180px) {
     .trainer-workspace-page.trainer-studio-v2 .trainer-workspace-shell { grid-template-columns: minmax(250px, 276px) minmax(0, 1fr); gap: 18px; width: min(100% - 32px, 1120px); }
@@ -553,7 +528,6 @@ html[data-theme="dark"] .trainer-workspace-page.trainer-studio-v2 .trainer-dialo
     .trainer-workspace-page.trainer-studio-v2 .trainer-studio-topbar { flex-wrap: wrap; }
     .trainer-workspace-page.trainer-studio-v2 .trainer-studio-topbar-context { order: 3; width: 100%; margin-inline-start: 54px; }
     .trainer-workspace-page.trainer-studio-v2 .trainer-studio-content { gap: 14px; }
-    .trainer-workspace-page.trainer-studio-v2 dialog.trainer-client-dialog { width: min(680px, calc(100vw - 24px)); max-height: calc(100dvh - 24px); }
 }
 
 @media (max-width: 560px) {
@@ -569,7 +543,6 @@ html[data-theme="dark"] .trainer-workspace-page.trainer-studio-v2 .trainer-dialo
     .trainer-workspace-page.trainer-studio-v2 .trainer-studio-route-bar { min-height: 56px; }
     .trainer-workspace-page.trainer-studio-v2 dialog.trainer-client-dialog form,
     .trainer-workspace-page.trainer-studio-v2 dialog.trainer-client-dialog .trainer-client-details { padding: 18px; }
-    .trainer-workspace-page.trainer-studio-v2 .trainer-dialog-header { padding: 17px 18px 15px; }
     .trainer-workspace-page.trainer-studio-v2 .trainer-dialog-header h2 { font-size: 19px; }
     .trainer-workspace-page.trainer-studio-v2 .trainer-dialog-actions { flex-direction: column-reverse; }
     .trainer-workspace-page.trainer-studio-v2 .trainer-dialog-actions .btn { width: 100%; }

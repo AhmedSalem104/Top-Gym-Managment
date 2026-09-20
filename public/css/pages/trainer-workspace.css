@@ -170,8 +170,6 @@
 .trainer-client-goal { overflow: hidden; color: var(--color-text-soft); font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
 .trainer-client-stat { color: var(--trainer-ink); font-variant-numeric: tabular-nums; text-align: center; }
 .trainer-client-actions { display: flex; gap: 6px; justify-content: flex-end; }
-.trainer-client-actions button { min-height: 36px; padding-inline: 10px; border: 1px solid var(--trainer-line); border-radius: 9px; color: var(--color-primary); background: var(--color-surface); cursor: pointer; font: inherit; font-size: 12px; font-weight: 700; }
-.trainer-client-actions button:hover { border-color: var(--color-primary); background: var(--trainer-blue-soft); }
 .trainer-empty-state { padding: 32px 16px; border: 1px dashed var(--trainer-line); border-radius: 14px; color: var(--trainer-muted); text-align: center; }
 .trainer-empty-state strong { display: block; margin-block-end: 6px; color: var(--trainer-ink); }
 
@@ -201,31 +199,14 @@
 .trainer-compact-row-main strong { display: block; overflow: hidden; color: var(--trainer-ink); font-size: 14px; text-overflow: ellipsis; white-space: nowrap; }
 .trainer-compact-row-main span { display: block; margin-block-start: 4px; overflow: hidden; color: var(--trainer-muted); font-size: 12px; line-height: 1.5; text-overflow: ellipsis; white-space: nowrap; }
 .trainer-compact-row-actions { display: flex; flex: 0 0 auto; align-items: center; gap: 7px; }
-.trainer-status-pill { display: inline-flex; min-height: 26px; align-items: center; padding-inline: 9px; border: 1px solid var(--trainer-line); border-radius: 999px; color: var(--trainer-muted); background: var(--color-surface-muted); font-size: 11px; font-weight: 800; white-space: nowrap; }
-.trainer-status-pill--active, .trainer-status-pill--scheduled { border-color: rgba(24, 146, 103, .24); color: #137b5b; background: rgba(24, 146, 103, .09); }
-.trainer-status-pill--completed { border-color: rgba(21, 111, 244, .22); color: var(--color-primary); background: var(--trainer-blue-soft); }
-.trainer-status-pill--cancelled, .trainer-status-pill--archived { color: var(--trainer-muted); }
-.trainer-status-pill--no_show { border-color: rgba(194, 107, 39, .24); color: #a65c22; background: rgba(194, 107, 39, .09); }
 .trainer-inline-action { min-height: 32px; padding-inline: 9px; border: 1px solid var(--trainer-line); border-radius: 8px; color: var(--color-primary); background: var(--color-surface); cursor: pointer; font: inherit; font-size: 11px; font-weight: 800; }
 .trainer-inline-action:hover { border-color: var(--color-primary); background: var(--trainer-blue-soft); }
 
 .trainer-pagination { display: flex; justify-content: center; gap: 8px; margin-block-start: 16px; }
-.trainer-pagination button { min-width: 36px; min-height: 34px; border: 1px solid var(--trainer-line); border-radius: 9px; color: var(--color-primary); background: var(--color-surface); cursor: pointer; font: inherit; }
 
-.trainer-client-dialog { width: min(620px, calc(100% - 28px)); max-height: calc(100dvh - 28px); box-sizing: border-box; overflow: auto; padding: 0; border: 1px solid var(--trainer-line); border-radius: 22px; color: var(--color-text); background: var(--color-surface); box-shadow: 0 28px 90px rgba(7, 28, 57, .28); overscroll-behavior: contain; }
-.trainer-client-dialog::backdrop { background: rgba(7, 25, 50, .52); backdrop-filter: blur(3px); }
-.trainer-client-dialog form, .trainer-client-details { padding: 23px; }
-.trainer-dialog-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding-block-end: 17px; border-bottom: 1px solid var(--trainer-line); }
-.trainer-dialog-header h2 { margin: 6px 0 0; color: var(--trainer-ink); font-size: 23px; }
-.trainer-dialog-close { width: 38px; height: 38px; border: 1px solid var(--trainer-line); border-radius: 10px; color: var(--trainer-muted); background: transparent; cursor: pointer; font-size: 24px; line-height: 1; }
-.trainer-dialog-close:hover { color: var(--color-primary); background: var(--trainer-blue-soft); }
 .trainer-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 13px; margin-block-start: 19px; }
-.trainer-form-grid label { display: grid; gap: 7px; color: var(--trainer-ink); font-size: 13px; font-weight: 700; }
-.trainer-form-grid input, .trainer-form-grid select, .trainer-form-grid textarea { width: 100%; box-sizing: border-box; min-height: 42px; padding: 9px 11px; border: 1px solid var(--trainer-line); border-radius: 10px; color: var(--color-text); background: var(--color-surface-muted); font: inherit; font-size: 14px; resize: vertical; }
-.trainer-form-grid input:focus, .trainer-form-grid select:focus, .trainer-form-grid textarea:focus { border-color: var(--color-primary); outline: 0; box-shadow: 0 0 0 3px var(--trainer-blue-soft); }
 .trainer-form-field--wide { grid-column: 1 / -1; }
 .trainer-form-message { min-height: 22px; margin: 12px 0 0; font-size: 13px; }
-.trainer-dialog-actions { display: flex; justify-content: flex-start; gap: 9px; margin-block-start: 12px; }
 .trainer-client-details-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-block-start: 19px; }
 .trainer-detail-stat { padding: 13px; border-radius: 12px; background: var(--color-surface-muted); }
 .trainer-detail-stat span { display: block; color: var(--trainer-muted); font-size: 12px; }
@@ -248,7 +229,6 @@ html[data-theme="dark"] .trainer-priority-item strong,
 html[data-theme="dark"] .trainer-dialog-header h2,
 html[data-theme="dark"] .trainer-detail-stat strong,
 html[data-theme="dark"] .trainer-workspace-brand,
-html[data-theme="dark"] .trainer-form-grid label,
 html[data-theme="dark"] .trainer-report-stat strong { color: #eaf2ff; }
 
 html[data-theme="dark"] .trainer-workspace-page { background: radial-gradient(circle at 5% 0%, rgba(41, 127, 248, .14), transparent 26rem), var(--color-bg); }
@@ -354,7 +334,6 @@ html[data-theme="dark"] .trainer-workspace-panel { box-shadow: 0 16px 40px rgba(
 .trainer-welcome-strip h2 span { color: var(--trainer-indigo); }
 .trainer-welcome-strip p { margin: 5px 0 0; color: var(--trainer-muted); font-size: 13px; }
 .trainer-welcome-meta { flex: 0 0 auto; }
-.trainer-welcome-meta .trainer-status-pill { background: rgba(20,184,166,.08); border-color: rgba(20,184,166,.22); color: #138d80; }
 .trainer-live-dot { display: inline-block; margin-inline-end: 7px; vertical-align: middle; }
 
 .trainer-workspace-summary { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; margin-block-start: 12px; }

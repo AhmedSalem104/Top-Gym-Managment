@@ -110,6 +110,12 @@ test.describe('branchCreateDialog cascade contract', () => {
         await mountBranchDialog(page);
         snapshots.push(await signature(page));
 
+        for (let cycle = 0; cycle < 10; cycle += 1) {
+            await page.locator('#branchCreateDialog').evaluate((dialog) => dialog.close());
+            await mountBranchDialog(page);
+            snapshots.push(await signature(page));
+        }
+
         expect(snapshots.slice(1)).toEqual(snapshots.slice(0, -1));
         await expect(page.locator('#branchCreateDialog')).toHaveClass(/lf-modal-shell/);
         await expect(page.locator('#branchCreateDialog')).toHaveClass(/lf-modal--md/);

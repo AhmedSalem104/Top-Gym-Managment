@@ -205,6 +205,14 @@
   --shadow-md: 0 10px 28px rgb(30 61 104 / 0.08);
   --shadow-lg: 0 18px 48px rgb(30 61 104 / 0.12);
   --focus-ring: 0 0 0 3px rgb(23 105 232 / 0.18);
+  /* Shared UI foundation tokens. Components consume these; feature layers
+     should only compose layout around them. */
+  --ui-control-height: 44px;
+  --ui-touch-target: 44px;
+  --ui-content-gutter: clamp(16px, 2.6vw, 32px);
+  --ui-surface-radius: var(--radius-lg);
+  --ui-elevation-rest: var(--shadow-xs);
+  --ui-elevation-hover: var(--shadow-sm);
   --anatomy-canvas-bg: #fafdff;
   --anatomy-selection: #2563eb;
   --anatomy-key-light: #ffffff;
@@ -286,8 +294,8 @@
 html[data-theme="dark"],
 body[data-theme="dark"] {
   color-scheme: dark;
-  /* Dark Navy + Purple system. Keep enough surface separation to preserve
-     depth between the app canvas, cards and overlays. */
+  /* Dark Navy + Logic Fit Blue system. Keep enough surface separation to
+     preserve depth between the app canvas, cards and overlays. */
   --bg-app: #070d16;
   --bg-sidebar: #09111d;
   --bg-header: #0c1421;
@@ -299,17 +307,17 @@ body[data-theme="dark"] {
   --border-primary: #243247;
   --border-secondary: #1b293b;
   --border-hover: #35465e;
-  --primary: #7c3aed;
-  --primary-hover: #8b5cf6;
-  --primary-active: #6d28d9;
-  --primary-soft: rgb(124 58 237 / 0.14);
-  --primary-border: rgb(139 92 246 / 0.3);
+  --primary: #5ca8ff;
+  --primary-hover: #82bbff;
+  --primary-active: #3b8fe8;
+  --primary-soft: rgb(92 168 255 / 0.14);
+  --primary-border: rgb(130 187 255 / 0.3);
   --text-primary: #f8fafc;
   --text-secondary: #cbd5e1;
   --text-muted: #94a3b8;
   --text-disabled: #64748b;
   --text-on-primary: #ffffff;
-  --text-primary-soft: #c4b5fd;
+  --text-primary-soft: #c6e0ff;
   --success-text: #4ade80;
   --danger-text: #fb7185;
   --warning-text: #fbbf24;
@@ -332,8 +340,8 @@ body[data-theme="dark"] {
   --overlay: rgb(2 6 23 / 0.75);
   --shadow-card: 0 8px 24px rgb(0 0 0 / 0.18);
   --shadow-popup: 0 20px 50px rgb(0 0 0 / 0.4);
-  --shadow-primary: 0 8px 20px rgb(124 58 237 / 0.18);
-  --shadow-primary-strong: 0 8px 20px rgb(124 58 237 / 0.22);
+  --shadow-primary: 0 8px 20px rgb(92 168 255 / 0.18);
+  --shadow-primary-strong: 0 8px 20px rgb(92 168 255 / 0.22);
   --text-shadow-soft: 0 4px 16px rgb(0 0 0 / 0.4);
   --text-shadow-strong: 0 5px 18px rgb(0 0 0 / 0.5);
 
@@ -359,19 +367,19 @@ body[data-theme="dark"] {
   --color-info: var(--info);
   --color-info-soft: var(--info-soft);
   --nav-active-bg: var(--primary-soft);
-  --nav-active-text: #c4b5fd;
+  --nav-active-text: #c6e0ff;
   --nav-active-border: var(--primary-border);
-  --nav-active-shadow: 0 8px 20px rgb(124 58 237 / 0.18);
+  --nav-active-shadow: 0 8px 20px rgb(92 168 255 / 0.18);
   --sidebar-bg: var(--bg-sidebar);
   --sidebar-bg-deep: #070d16;
   --sidebar-text: #f8fafc;
   --sidebar-text-muted: #94a3b8;
   --sidebar-border: var(--border-primary);
   --sidebar-divider: var(--border-secondary);
-  --sidebar-hover-bg: rgb(124 58 237 / 0.1);
+  --sidebar-hover-bg: rgb(92 168 255 / 0.1);
   --sidebar-active-bg: var(--primary);
   --sidebar-active-text: #ffffff;
-  --sidebar-active-shadow: 0 8px 20px rgb(124 58 237 / 0.18);
+  --sidebar-active-shadow: 0 8px 20px rgb(92 168 255 / 0.18);
   --builder-diet-accent: var(--success);
   --builder-diet-accent-strong: var(--success);
   --builder-diet-soft: var(--success-soft);
@@ -396,12 +404,12 @@ body[data-theme="dark"] {
   --shadow-sm: 0 4px 14px rgb(0 0 0 / 0.18);
   --shadow-md: 0 10px 28px rgb(0 0 0 / 0.24);
   --shadow-lg: var(--shadow-popup);
-  --focus-ring: 0 0 0 3px rgb(124 58 237 / 0.18);
+  --focus-ring: 0 0 0 3px rgb(92 168 255 / 0.2);
   --anatomy-canvas-bg: #0b1522;
-  --anatomy-selection: #a78bfa;
+  --anatomy-selection: #82bbff;
   --anatomy-key-light: #f8fafc;
-  --anatomy-fill-light: #a78bfa;
-  --anatomy-rim-light: #7c3aed;
+  --anatomy-fill-light: #9fc4ff;
+  --anatomy-rim-light: #5ca8ff;
   --qr-ink: #0f172a;
   --qr-paper: #ffffff;
   --rf-page: #070c15;

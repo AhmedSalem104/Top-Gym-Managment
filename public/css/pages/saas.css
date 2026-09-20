@@ -1177,28 +1177,8 @@ body .saas-billing-page .saas-request-open span {
     font-size: 14px;
 }
 
-.saas-request-dialog {
-    width: min(700px, calc(100vw - 32px));
-    max-width: 700px;
-    max-height: calc(100dvh - 32px);
-    padding: 0;
-    overflow: hidden;
-    border: 1px solid var(--subscription-line, var(--border-secondary));
-    border-radius: 18px;
-    background: var(--subscription-page, var(--bg-card));
-    color: var(--text-primary);
-    box-shadow: 0 24px 70px rgba(1, 8, 20, .34);
-}
-
-.saas-request-dialog::backdrop {
-    background: rgba(2, 10, 24, .62);
-    backdrop-filter: blur(3px);
-}
-
 .saas-request-dialog .saas-request-panel {
     min-height: 0;
-    max-height: calc(100dvh - 32px);
-    overflow: auto;
     border: 0;
     border-radius: 0;
     box-shadow: none;
@@ -1242,8 +1222,4 @@ body .saas-billing-page .saas-request-open span {
         grid-template-columns: 1fr;
     }
 
-    .saas-request-dialog {
-        width: calc(100vw - 20px);
-        max-height: calc(100dvh - 20px);
-    }
 }

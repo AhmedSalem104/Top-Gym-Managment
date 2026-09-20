@@ -22,7 +22,6 @@
 @import url("./components/tabs.css");
 @import url("./components/badges.css");
 @import url("./components/alerts.css");
-@import url("./components/sidebar.css");
 @import url("./components/navbar.css");
 @import url("./components/branch-context.css");
 @import url("./components/dropdowns.css");
@@ -40,4 +39,5 @@
 @import url("./pages/dashboard.css");
 @import url("./responsive.css");
 @import url("./theme.css");
+@import url("./print.css");
 @import url("./components/modal-foundation.css");

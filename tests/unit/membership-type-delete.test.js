@@ -43,7 +43,7 @@ test('membership types management renders delete action and keeps it on responsi
     assert.match(app, /api\('\/api\/membership-types\/' \+ encodeURIComponent\(code\), \{ method: 'DELETE' \}\)/);
     assert.match(cards, /data-type-action="delete"/);
     assert.match(styles, /\.type-delete-button/);
-    assert.match(index, /feature-manifest\.js\?v=membership-type-delete-v1/);
+    assert.match(index, /feature-manifest\.js\?v=builder-workspace-v2/);
     assert.match(index, /app-shell-bootstrap\.js\?v=membership-type-delete-v1/);
     assert.match(bootstrap, /app\.js\?v=membership-type-delete-v1/);
 });

@@ -1829,9 +1829,45 @@ html[data-brand-active-style="pill"] .app-shell > .page-tabs > .page-tab.active 
   }
 }
 
+/* Approved Calm Data Workspace composition. The shell owns the workspace
+   frame and context-control placement; branch-context.css owns the control
+   anatomy itself. */
+.app-shell {
+  background: var(--bg-app);
+}
+
+.app-shell > main.page {
+  min-width: 0;
+  padding-block: clamp(20px, 3vw, 34px);
+}
+
+.topbar-controls > .branch-context-shell {
+  position: relative;
+  inset: auto;
+  flex: 0 1 auto;
+  width: auto;
+  max-width: min(100%, 620px);
+  transform: none;
+}
+
+.topbar-controls > .branch-context-shell:hover,
+.topbar-controls > .branch-context-shell:focus-within {
+  transform: none;
+}
+
+@media (max-width: 1023px) {
+  .topbar-controls > .branch-context-shell {
+    max-width: 100%;
+  }
+}
+
 @media (max-width: 767px) {
   .app-shell > .topbar .mobile-nav-toggle {
     display: inline-flex;
+  }
+
+  .topbar-controls > .branch-context-shell {
+    width: 100%;
   }
 
   .app-shell > .page-tabs {
@@ -2031,6 +2067,10 @@ html[data-brand-active-style="pill"] .app-shell > .page-tabs > .page-tab.active 
   .app-shell > .page-tabs {
     width: min(92vw, 340px);
     padding-inline: 9px;
+  }
+
+  .app-shell > main.page {
+    padding-inline: 12px;
   }
 
   .app-shell > .page-tabs > .page-tab,

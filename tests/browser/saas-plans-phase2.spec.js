@@ -84,9 +84,13 @@ async function installTenantApi(page, tenantType) {
     return calls;
 }
 
-test('Gym plan UI exposes four terms and only Gym-compatible feature labels', async ({ page }) => {
+test('Gym plan UI exposes four terms and only Gym-compatible feature labels', async ({ page }, testInfo) => {
     await installTenantApi(page, 'gym');
     await page.goto('/#saas-billing', { waitUntil: 'domcontentloaded' });
+    if (testInfo.project.use.viewport.width <= 767) {
+        await page.locator('#mobileNavToggle').click();
+        await expect(page.locator('#pageTabs')).toBeVisible();
+    }
     await page.locator('[data-page-tab="saas-billing"]').click();
     await expect(page.locator('#saasPlansList [data-saas-plan-card]')).toHaveCount(4);
     await expect(page.locator('#saasPlansList [data-saas-term-plan]')).toHaveCount(4);

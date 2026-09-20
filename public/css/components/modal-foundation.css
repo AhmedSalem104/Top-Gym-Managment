@@ -44,7 +44,9 @@ dialog.lf-modal-shell::backdrop {
 
 .lf-modal-shell > form.dialog-body,
 .lf-modal-shell > .dialog-body,
-.lf-modal-shell > .modal-body {
+.lf-modal-shell > .modal-body,
+.lf-modal-shell > form > .dialog-body,
+.lf-modal-shell > form > .modal-body {
   box-sizing: border-box;
   display: flex;
   min-height: 0;
@@ -62,15 +64,35 @@ dialog.lf-modal-shell::backdrop {
 
 .lf-modal-shell > form.dialog-body::-webkit-scrollbar,
 .lf-modal-shell > .dialog-body::-webkit-scrollbar,
-.lf-modal-shell > .modal-body::-webkit-scrollbar {
+.lf-modal-shell > .modal-body::-webkit-scrollbar,
+.lf-modal-shell > form > .dialog-body::-webkit-scrollbar,
+.lf-modal-shell > form > .modal-body::-webkit-scrollbar {
   width: 8px;
 }
 
 .lf-modal-shell > form.dialog-body::-webkit-scrollbar-thumb,
 .lf-modal-shell > .dialog-body::-webkit-scrollbar-thumb,
-.lf-modal-shell > .modal-body::-webkit-scrollbar-thumb {
+.lf-modal-shell > .modal-body::-webkit-scrollbar-thumb,
+.lf-modal-shell > form > .dialog-body::-webkit-scrollbar-thumb,
+.lf-modal-shell > form > .modal-body::-webkit-scrollbar-thumb {
   border-radius: var(--radius-pill);
   background: var(--border-strong);
+}
+
+/* A small structural variant for the existing Platform Admin wrapper.
+   The feature keeps its DOM/event contract; the shared shell owns the
+   wrapper flow and nested scroll body instead of a page stylesheet. */
+.lf-modal-shell.platform-dialog > form {
+  display: flex;
+  min-height: 0;
+  max-height: inherit;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.lf-modal-shell.platform-dialog > form > .dialog-body,
+.lf-modal-shell.platform-dialog > form > .modal-body {
+  flex: 1 1 auto;
 }
 
 .lf-modal-shell .dialog-header,
@@ -128,6 +150,35 @@ dialog.lf-modal-shell::backdrop {
 .lf-modal-shell > footer > a {
   min-height: 44px;
   touch-action: manipulation;
+}
+
+/* Trainer dialogs keep their existing close-button classes and listeners;
+   the visual shell remains owned by the shared modal foundation. */
+.lf-modal-shell .trainer-dialog-close {
+  display: inline-grid;
+  width: 40px;
+  min-width: 40px;
+  height: 40px;
+  min-height: 40px;
+  place-items: center;
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-md);
+  padding: 0;
+  color: var(--color-text-muted);
+  background: var(--color-surface-muted);
+  cursor: pointer;
+  font: inherit;
+  font-size: 1.25rem;
+  line-height: 1;
+  transition: background-color var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
+}
+
+.lf-modal-shell .trainer-dialog-close:hover,
+.lf-modal-shell .trainer-dialog-close:focus-visible {
+  border-color: var(--color-danger);
+  color: var(--color-danger);
+  background: var(--color-danger-soft);
+  outline: 0;
 }
 
 .lf-modal-shell > .dialog-close-button {

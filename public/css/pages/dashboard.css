@@ -1382,12 +1382,6 @@
 }
 
 /* Daily passes dashboard card ----------------------------------------- */
-.day-pass-dialog {
-  width: min(720px, calc(100% - 28px));
-  max-width: 720px;
-  max-height: calc(100dvh - 28px);
-}
-
 #attendanceSection > #dayPassPanel { display: none; }
 .day-pass-dialog > #dayPassPanel { display: grid; }
 
@@ -1884,10 +1878,6 @@
 }
 
 @media (max-width: 600px) {
-  .day-pass-dialog {
-    width: calc(100% - 20px);
-    max-height: calc(100dvh - 20px);
-  }
   .day-pass-dialog > .day-pass-panel { max-height: calc(100dvh - 20px); }
   .day-pass-dialog .day-pass-head {
     top: calc(var(--space-4) * -1);

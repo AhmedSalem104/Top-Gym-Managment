@@ -7,13 +7,206 @@
  * existing page contracts and business behavior remain untouched.
  */
 
-:root {
-  --ui-control-height: 44px;
-  --ui-touch-target: 44px;
-  --ui-content-gutter: clamp(16px, 2.6vw, 32px);
-  --ui-surface-radius: var(--radius-lg);
-  --ui-elevation-rest: var(--shadow-xs);
-  --ui-elevation-hover: var(--shadow-sm);
+/* Surfaces/cards ----------------------------------------------------------- */
+body .panel,
+body .card,
+body .content-card,
+body .shadow-panel,
+body .stat-card,
+body .management-card,
+body .library-card,
+body .finance-card,
+body .attendance-card,
+body .portal-tool-card,
+body .store-card,
+body .branches-card,
+body .saas-panel,
+body .platform-card,
+body .platform-kpi {
+  border: 1px solid var(--rf-line);
+  border-radius: var(--rf-radius-card);
+  background: var(--rf-surface);
+  box-shadow: var(--rf-shadow-sm);
+}
+
+body .panel,
+body .content-card,
+body .shadow-panel,
+body .branches-card,
+body .store-card,
+body .saas-panel {
+  padding: clamp(16px, 2vw, 24px);
+}
+
+body .panel:hover,
+body .card:hover,
+body .content-card:hover,
+body .stat-card:hover,
+body .management-card:hover,
+body .store-card:hover,
+body .branches-card:hover,
+body .saas-panel:hover {
+  border-color: color-mix(in srgb, var(--rf-accent) 33%, var(--rf-line));
+  box-shadow: var(--rf-shadow-md);
+}
+
+body .panel-header,
+body .card-header,
+body .section-heading,
+body .store-card-header,
+body .branches-card-header,
+body .saas-panel-head,
+body .platform-page-head {
+  min-height: 44px;
+  margin-bottom: 18px;
+  border-bottom: 1px solid var(--rf-line-soft);
+  background: transparent;
+  padding: 0 0 15px;
+}
+
+body .panel-header > div,
+body .card-header > div,
+body .section-heading > div,
+body .store-card-header > div,
+body .branches-card-header > div,
+body .saas-panel-head > div {
+  min-width: 0;
+}
+
+body .stat-card,
+body .platform-kpi {
+  position: relative;
+  min-height: 126px;
+  overflow: hidden;
+  padding: 18px;
+}
+
+body .stat-card::before,
+body .platform-kpi::before {
+  position: absolute;
+  inset-inline: 18px;
+  top: 0;
+  height: 3px;
+  border-radius: 0 0 999px 999px;
+  background: var(--rf-accent);
+  content: "";
+}
+
+body .stat-label,
+body .platform-kpi-label {
+  color: var(--rf-muted);
+  font-size: .72rem;
+  font-weight: 800;
+}
+
+body .stat-value,
+body .platform-kpi-value {
+  color: var(--rf-ink);
+  font-size: clamp(1.5rem, 2.5vw, 2rem);
+  font-weight: 800;
+  letter-spacing: -.04em;
+}
+
+/* Inputs/forms ------------------------------------------------------------- */
+body .store-form-grid label,
+body .platform-field {
+  gap: 7px;
+  color: var(--rf-ink-soft);
+  font-size: .77rem;
+  font-weight: 800;
+}
+
+body .members-search-field,
+body .store-search-field,
+body .platform-global-search,
+body .platform-search-field {
+  min-height: 44px;
+  border: 1px solid var(--rf-line);
+  border-radius: var(--rf-radius-control);
+  background: var(--rf-surface-raised);
+  color: var(--rf-ink);
+  box-shadow: inset 0 1px 1px rgb(11 23 41 / .025);
+  transition: border-color 160ms ease, background-color 160ms ease, box-shadow 160ms ease;
+}
+
+body .members-search-field:hover,
+body .store-search-field:hover,
+body .platform-global-search:hover,
+body .platform-search-field:hover {
+  border-color: color-mix(in srgb, var(--rf-accent) 45%, var(--rf-line));
+}
+
+body .members-search-field:focus-within,
+body .store-search-field:focus-within,
+body .platform-global-search:focus-within,
+body .platform-search-field:focus-within {
+  border-color: var(--rf-accent);
+  background: var(--rf-surface-raised);
+  box-shadow: var(--rf-shadow-focus);
+  outline: 0;
+}
+
+body .form-error,
+body .field-error,
+body .auth-message,
+body .platform-form-message {
+  border-radius: 10px;
+  background: var(--danger-soft);
+  color: var(--danger-text);
+  line-height: 1.65;
+}
+
+body .form-help,
+body .helper-text,
+body .auth-helper,
+body .field-hint {
+  color: var(--rf-muted);
+  font-size: .7rem;
+  line-height: 1.65;
+}
+
+/* Tables, tabs and statuses ------------------------------------------------ */
+body .tab-button,
+body .library-type-tabs button,
+body .store-tab,
+body [role="tab"] {
+  min-height: 40px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  color: var(--rf-muted);
+  font-weight: 800;
+}
+
+body .tab-button:hover,
+body .library-type-tabs button:hover,
+body .store-tab:hover,
+body [role="tab"]:hover {
+  background: var(--rf-accent-soft);
+  color: var(--rf-accent-strong);
+}
+
+body .tab-button.active,
+body .tab-button[aria-selected="true"],
+body .library-type-tabs button.active,
+body .store-tab.active,
+body [role="tab"][aria-selected="true"] {
+  border-color: color-mix(in srgb, var(--rf-accent) 22%, var(--rf-line));
+  background: var(--rf-accent-soft);
+  color: var(--rf-accent-strong);
+  box-shadow: inset 0 -2px 0 var(--rf-accent);
+}
+
+/* Auth card variant: shared surface ownership, login page controls only the
+   composition around it. */
+.auth-card {
+  display: block;
+  width: 100%;
+  min-height: 0;
+  overflow: hidden;
+  border: 1px solid var(--border-primary);
+  border-radius: 24px;
+  background: var(--bg-card);
+  box-shadow: var(--shadow-popup);
 }
 
 /* Semantic focus is shared by every interactive surface. */
@@ -21,86 +214,6 @@
   outline: 2px solid var(--color-primary);
   outline-offset: 3px;
   box-shadow: var(--focus-ring);
-}
-
-/* Keep controls composable: existing page-specific variants still win where
-   they intentionally define a different size or layout. */
-:where(input:not([type="checkbox"]):not([type="radio"]), select, textarea) {
-  border-color: var(--border-primary);
-  background: var(--bg-input);
-}
-
-:where(input:not([type="checkbox"]):not([type="radio"]), select, textarea):hover:not(:disabled) {
-  border-color: var(--border-hover);
-}
-
-:where(input:not([type="checkbox"]):not([type="radio"]), select, textarea):focus-visible {
-  border-color: var(--border-focus);
-  outline: 0;
-}
-
-:where(.panel, .card, .content-card, .shadow-panel, .stat-card, .management-card,
-  .library-card, .finance-card, .attendance-card, .platform-card, .portal-tool-card) {
-  border-color: var(--border-secondary);
-  background: var(--bg-surface);
-  box-shadow: var(--ui-elevation-rest);
-}
-
-:where(.panel, .card, .content-card, .shadow-panel, .platform-card, .portal-tool-card) {
-  border-radius: var(--ui-surface-radius);
-}
-
-:where(.panel, .card, .content-card, .shadow-panel, .stat-card, .management-card,
-  .library-card, .finance-card, .attendance-card, .platform-card, .portal-tool-card) {
-  transition: border-color var(--transition-fast), box-shadow var(--transition-fast), transform var(--transition-fast);
-}
-
-:where(.panel, .card, .content-card, .shadow-panel, .stat-card, .management-card,
-  .library-card, .finance-card, .attendance-card, .platform-card, .portal-tool-card):hover {
-  border-color: var(--border-hover);
-  box-shadow: var(--ui-elevation-hover);
-}
-
-/* HeroUI's semantic variant language mapped to the existing button contract. */
-:where(.btn-primary, .platform-btn-primary, [data-variant="primary"]) {
-  background: var(--color-primary);
-  color: var(--text-on-primary);
-}
-
-:where(.btn-secondary, .btn-light, .platform-btn-secondary, [data-variant="secondary"]) {
-  border-color: var(--border-primary);
-  background: var(--bg-surface);
-  color: var(--color-primary);
-}
-
-:where(.btn-ghost, .btn-link, [data-variant="ghost"]) {
-  background: transparent;
-  color: var(--color-primary);
-}
-
-:where(.btn-danger, [data-variant="danger"]) {
-  background: var(--color-danger);
-  color: var(--text-on-primary);
-}
-
-:where(.btn, .platform-btn, .platform-link-btn, .portal-actions .btn) {
-  min-height: var(--ui-control-height);
-  touch-action: manipulation;
-  -webkit-tap-highlight-color: transparent;
-}
-
-:where(.btn, .platform-btn, .platform-link-btn, .portal-actions .btn):disabled,
-:where(.btn, .platform-btn, .platform-link-btn, .portal-actions .btn)[aria-disabled="true"] {
-  cursor: not-allowed;
-  filter: saturate(.72);
-  opacity: .56;
-  transform: none;
-}
-
-:where(.btn[aria-busy="true"], .platform-btn[aria-busy="true"], .btn.is-loading,
-  .platform-btn.is-loading) {
-  cursor: wait;
-  pointer-events: none;
 }
 
 /* Composed status surfaces keep loading, empty and error states legible in
@@ -111,7 +224,10 @@
   overflow-wrap: anywhere;
 }
 
-:where(.empty-state, .empty, .no-data, .not-found-state) {
+:where(.empty-state, .empty, .no-data, .not-found-state, .loading) {
+  display: grid;
+  min-height: 84px;
+  place-items: center;
   border: 1px dashed var(--border-primary);
   background: var(--bg-card-hover);
   color: var(--text-muted);
@@ -132,28 +248,16 @@
   overflow-wrap: anywhere;
 }
 
-:where(.table-wrap, .table-scroll, .data-table-wrap, .portal-table-wrap,
-  .member-requests-table-wrap) {
-  max-width: 100%;
-  overflow-x: auto;
-  overscroll-behavior-inline: contain;
+:where(.skeleton, .loading-skeleton) {
+  border-radius: var(--radius-md);
+  background: linear-gradient(90deg, var(--bg-card-hover), var(--border-secondary), var(--bg-card-hover));
+  background-size: 200% 100%;
+  animation: lf-foundation-skeleton 1.4s ease-in-out infinite;
+}
+
+@keyframes lf-foundation-skeleton {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }
 
 /* Do not animate if the user has requested reduced motion. */
-@media (prefers-reduced-motion: reduce) {
-  :where(.panel, .card, .content-card, .shadow-panel, .stat-card, .management-card,
-    .library-card, .finance-card, .attendance-card, .platform-card, .portal-tool-card,
-    .btn, .platform-btn) {
-    transition: none;
-  }
-}
-
-@media (max-width: 767px) {
-  :where(.btn, .platform-btn, .platform-link-btn, .portal-actions .btn) {
-    min-height: var(--ui-touch-target);
-  }
-
-  :where(.panel, .card, .content-card, .shadow-panel, .platform-card, .portal-tool-card) {
-    border-radius: var(--radius-lg);
-  }
-}

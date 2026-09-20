@@ -17,8 +17,8 @@
         trainerSessionDialog: 'md',
         trainerPurchaseDialog: 'md',
         trainerPaymentDialog: 'md',
-        memberQrDialog: 'md',
-        qrReaderDialog: 'md',
+        memberQrDialog: 'sm',
+        qrReaderDialog: 'sm',
         platformActionDialog: 'lg',
         platformRegistrationCredentialsDialog: 'lg',
         detailsDialog: 'lg',
@@ -61,8 +61,8 @@
         dialog.hidden = true;
     }
 
-    function hideLegacyCloseButtons(dialog) {
-        if (!dialog) return;
+    function hideLegacyCloseButtons(dialog, hasDirectSharedClose = false) {
+        if (!dialog || !hasDirectSharedClose) return;
         dialog.querySelectorAll('button').forEach((button) => {
             if (button.classList.contains('dialog-close-button')) {
                 // Keep the shared top-level close control visible. Older
@@ -92,12 +92,12 @@
     function ensureCloseButton(dialog) {
         if (!dialog) return;
         hydrateDialog(dialog);
-        hideLegacyCloseButtons(dialog);
+        const hasDirectSharedClose = dialog.querySelector(':scope > .dialog-close-button, :scope > [data-dialog-close]');
+        hideLegacyCloseButtons(dialog, Boolean(hasDirectSharedClose));
         if (dialog.dataset.dialogCloseReady === 'true') return;
         // Several feature dialogs already own a close control inside their
         // header. Treat all existing close contracts as authoritative so the
         // shared decorator never places a second button on top of it.
-        const hasDirectSharedClose = dialog.querySelector(':scope > .dialog-close-button, :scope > [data-dialog-close]');
         const hasFeatureOwnedHeaderClose = dialog.querySelector('.dialog-close, .trainer-dialog-close, [data-dialog-cancel]');
         if (hasDirectSharedClose || hasFeatureOwnedHeaderClose) {
             dialog.dataset.dialogCloseReady = 'true';

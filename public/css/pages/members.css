@@ -301,10 +301,6 @@
 .members-table .member-cell { min-width: 220px; }
 .members-table .actions-cell { width: 190px; }
 
-.members-table {
-  min-width: 1120px;
-}
-
 .membership-portal-code-card {
   display: grid;
   gap: var(--space-4);
@@ -652,10 +648,6 @@
 }
 
 @media (max-width: 991px) {
-  .members-table {
-    min-width: 1040px;
-  }
-
   .members-table th,
   .members-table td {
     padding-inline: var(--space-3);

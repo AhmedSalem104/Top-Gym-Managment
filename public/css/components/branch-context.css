@@ -76,6 +76,7 @@
 }
 
 .branch-context-field {
+  position: relative;
   display: inline-flex;
   min-width: 126px;
   align-items: center;
@@ -95,29 +96,171 @@
 .branch-context-field:focus-within { transform: translateY(-1px); }
 
 .branch-context-field-copy select {
-  display: block;
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+.branch-context-trigger {
+  display: inline-flex;
   width: 100%;
   min-width: 0;
-  border: 0;
-  outline: 0;
+  min-height: 32px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 5px 7px;
+  border: 1px solid transparent;
+  border-radius: 9px;
   background: transparent;
   color: var(--sidebar-text);
   cursor: pointer;
   font: inherit;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 900;
   line-height: 1.35;
-  text-overflow: ellipsis;
+  text-align: start;
+  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease;
 }
 
-.branch-context-field-copy select:disabled {
+.branch-context-trigger > [data-context-value] {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.branch-context-trigger:hover {
+  border-color: color-mix(in srgb, var(--primary-border) 48%, transparent);
+  background: color-mix(in srgb, var(--primary-soft) 50%, transparent);
+}
+
+.branch-context-trigger:focus-visible {
+  border-color: var(--primary);
+  background: color-mix(in srgb, var(--primary-soft) 62%, transparent);
+  box-shadow: var(--focus-ring);
+  outline: none;
+}
+
+.branch-context-trigger:active,
+.branch-context-field.is-open .branch-context-trigger {
+  border-color: color-mix(in srgb, var(--primary-border) 76%, transparent);
+  background: color-mix(in srgb, var(--primary-soft) 72%, transparent);
+}
+
+.branch-context-trigger:disabled,
+.branch-context-trigger[aria-disabled="true"] {
   cursor: not-allowed;
   opacity: .55;
 }
 
-.branch-context-field-copy select option {
-  background: var(--sidebar-bg);
-  color: var(--sidebar-text);
+.branch-context-trigger-chevron {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 7px;
+  margin-inline-start: auto;
+  border-inline-end: 1.5px solid currentColor;
+  border-block-end: 1.5px solid currentColor;
+  opacity: .72;
+  transform: translateY(-2px) rotate(45deg);
+  transition: transform 160ms ease, opacity 160ms ease;
+}
+
+.branch-context-field.is-open .branch-context-trigger-chevron {
+  opacity: 1;
+  transform: translateY(2px) rotate(225deg);
+}
+
+.branch-context-menu {
+  position: absolute;
+  z-index: var(--z-dropdown);
+  inset-block-start: calc(100% + 7px);
+  inset-inline-start: 0;
+  display: none;
+  width: min(240px, calc(100vw - 24px));
+  max-height: min(280px, calc(100vh - 24px));
+  gap: 2px;
+  padding: 5px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  border: 1px solid color-mix(in srgb, var(--border-primary) 82%, var(--primary-border));
+  border-radius: 12px;
+  background: var(--color-surface-elevated);
+  box-shadow: var(--shadow-popup);
+  direction: rtl;
+  isolation: isolate;
+}
+
+.branch-context-field.is-open .branch-context-menu {
+  display: grid;
+}
+
+.branch-context-option {
+  display: flex;
+  width: 100%;
+  min-height: 34px;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  padding: 7px 9px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-text);
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.35;
+  text-align: start;
+  transition: background-color 140ms ease, border-color 140ms ease, color 140ms ease;
+}
+
+.branch-context-option::before {
+  width: 16px;
+  flex: 0 0 16px;
+  color: var(--color-primary);
+  content: '';
+  font-size: 12px;
+  font-weight: 900;
+  text-align: center;
+}
+
+.branch-context-option:hover,
+.branch-context-option:focus-visible {
+  border-color: color-mix(in srgb, var(--color-primary) 22%, var(--border-color));
+  background: color-mix(in srgb, var(--color-primary-soft) 58%, transparent);
+  color: var(--color-text);
+  outline: none;
+}
+
+.branch-context-option:active,
+.branch-context-option.is-selected {
+  border-color: color-mix(in srgb, var(--color-primary) 35%, var(--border-color));
+  background: color-mix(in srgb, var(--color-primary-soft) 78%, transparent);
+  color: var(--color-primary);
+}
+
+.branch-context-option.is-selected::before {
+  content: '✓';
+}
+
+html[data-theme="dark"] .branch-context-option:not(.is-selected),
+body[data-theme="dark"] .branch-context-option:not(.is-selected) {
+  color: var(--text-on-primary);
+}
+
+.branch-context-option:disabled,
+.branch-context-option[aria-disabled="true"] {
+  cursor: not-allowed;
+  opacity: .5;
 }
 
 .branch-context-status {
@@ -220,6 +363,14 @@
   .branch-context-kicker small,
   .branch-context-field-icon { display: none; }
   .branch-context-field { min-width: 0; flex: 1 1 0; padding-inline: 7px; }
+  /* Anchor the menu to the field's viewport-safe edge in RTL. The desktop
+     menu aligns to the inline start; mobile uses the opposite edge so a
+     compact 240px surface cannot run off the left side of the viewport. */
+  .branch-context-menu {
+    inset-inline-start: auto;
+    inset-inline-end: 0;
+    width: min(240px, calc(100vw - 24px));
+  }
   .branch-context-status { margin-inline-start: 3px; padding-inline: 8px; }
   .branches-page-header, .branches-card { padding: 16px; }
   .branches-page-summary { width: 100%; }
@@ -239,9 +390,15 @@
   .branch-context-kicker-icon { width: 26px; height: 26px; flex-basis: 26px; border-radius: 8px; }
   .branch-context-field { gap: 0; padding-inline: 5px; }
   .branch-context-field-copy small { font-size: 8px; }
-  .branch-context-field-copy select { font-size: 11px; }
+  .branch-context-trigger { min-height: 30px; padding-inline: 5px; font-size: 11px; }
+  .branch-context-menu { inset-block-start: calc(100% + 5px); max-height: min(240px, calc(100vh - 20px)); }
+  .branch-context-option { min-height: 36px; padding-block: 8px; }
   .branch-context-status { min-height: 28px; padding-inline: 6px; font-size: 9px; }
   .branch-context-status-dot { width: 6px; height: 6px; flex-basis: 6px; }
+}
+
+@media (max-width: 379px) {
+  .branch-context-menu { transform: translateX(-4px); }
 }
 
 @media (prefers-reduced-motion: reduce) {

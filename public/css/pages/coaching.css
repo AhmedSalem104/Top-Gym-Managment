@@ -658,10 +658,6 @@
 }
 
 /* Coaching profile dialog ----------------------------------------------- */
-.coaching-profile-dialog {
-  width: min(1060px, calc(100% - 32px));
-}
-
 .coaching-profile-content {
   min-width: 0;
 }
@@ -1752,12 +1748,6 @@
 
 /* Builder clarity layer --------------------------------------------------
    Keep the workflow compact and give each plan type its own visual language. */
-.coaching-builder-dialog {
-  width: min(1080px, calc(100vw - 32px));
-  max-width: 1080px;
-  max-height: calc(100vh - 24px);
-}
-
 .coaching-builder-dialog > form.dialog-body {
   overflow-x: hidden;
 }

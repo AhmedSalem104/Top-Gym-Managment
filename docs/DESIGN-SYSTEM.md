@@ -52,7 +52,24 @@ Shared component styles live in `public/css/components/`:
 - Data: `table`, `.table-scroll`, `.table-actions`, `.pagination`
 - Feedback: `.badge-*`, `.alert-*`, `.loading`, `.empty-state`
 - Overlays: `dialog`, `.modal-body`, `.dialog-actions`, `.dropdown-menu`
-- Navigation: `.topbar`, `.page-tabs`, `.page-tab`, `.sidebar-link`; Gym App shell ownership is consolidated in `public/css/components/navigation-shell.css`
+- Navigation: `.topbar`, `.page-tabs`, `.page-tab`, and shell controls; Gym App shell ownership is consolidated in `public/css/components/navigation-shell.css`
+
+Platform, Gym operational, and Trainer status pills and entitlement chips use
+the shared badge owner (`.status-pill`, `.reports-status-badge`,
+`.attendance-status`, `.attendance-source`, `.attendance-action-done`,
+`.trainer-status-pill`, `.feature-chip`) rather than feature-only visual
+definitions. Page styles may add only semantic variants that are not shared
+across the product; the pill anatomy, density, radius, and surface treatment
+remain owned by `components/badges.css`.
+Independent Trainer dialogs opt into the same Modal Foundation
+(`.lf-modal-shell`) while keeping their existing IDs, event hooks, and
+feature-specific grid composition.
+Platform Admin dialogs use the same foundation for the shell, including the
+existing nested form wrapper and scroll body; `platform-admin.css` owns only
+the admin form composition and content states.
+Public registration and forced-password forms reuse the shared input/textarea
+contract; their page styles keep only field sizing, layout, and password-icon
+composition.
 
 Every interactive component has a visible `:focus-visible` state, a disabled state where relevant, and a touch target of at least 40–44px. Destructive actions use the danger color and do not rely on color alone when their label is available.
 
@@ -128,9 +145,11 @@ changes presentation.
 The current shared foundation is loaded last from
 `public/css/components/ui-foundation.css`. It does not introduce a second
 palette or a component framework. It reinforces the existing token graph for
-focus rings, touch targets, surface hierarchy, input sizing, contained table
-scrolling, dialog bounds, safe-area spacing and reduced motion across the Gym
-Application, Platform Admin, Member Portal and Register Gym surfaces.
+focus rings, layout isolation, safe-area spacing and reduced motion across the
+Gym Application, Platform Admin, Member Portal and Register Gym surfaces.
+Buttons, fields, tables, dropdowns and dialogs are owned by their dedicated
+component stylesheets; page CSS may compose them but must not restyle their
+shared shells.
 
 The interaction contract is implemented by `public/js/ui-feedback.js` and the
 compatibility bridge in `public/js/button-loading.js`:

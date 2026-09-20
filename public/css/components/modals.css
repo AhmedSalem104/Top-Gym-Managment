@@ -140,6 +140,14 @@ body.dialog-open {
   overflow: hidden;
 }
 
+@media (max-width: 767px) {
+  .modal:not(.lf-modal-shell),
+  dialog:not(.lf-modal-shell) {
+    width: calc(100% - 24px);
+    max-height: calc(100vh - 24px);
+  }
+}
+
 /* Native dialogs share one predictable shell even though their inner forms
    are owned by different features. */
 dialog:not(.lf-modal-shell)[open] {

@@ -221,6 +221,10 @@
         const dialog = document.createElement('dialog');
         dialog.className = 'saas-request-dialog';
         dialog.setAttribute('aria-labelledby', 'saasRequestTitle');
+        // The shared modal foundation owns the dialog body contract. Keep the
+        // feature class for content composition and add the shared body hook
+        // before the dialog is observed and hydrated.
+        panel.classList.add('dialog-body');
         const close = document.createElement('button');
         close.className = 'btn btn-light btn-small saas-request-dialog-close';
         close.type = 'button';

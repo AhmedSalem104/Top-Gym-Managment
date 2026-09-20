@@ -215,10 +215,10 @@ async function main() {
     const print = await printPage.evaluate(() => ({
       topbar: getComputedStyle(document.querySelector('.topbar')).display,
       tabs: getComputedStyle(document.querySelector('.page-tabs')).display,
-      stylesheetCount: [...document.styleSheets].filter((sheet) => sheet.href?.includes('/css/main.css')).length
+      stylesheetCount: [...document.styleSheets].filter((sheet) => sheet.href?.includes('/css/app-shell.css')).length
     }));
     assert(print.topbar === 'none' && print.tabs === 'none', 'print view exposes navigation');
-    assert(print.stylesheetCount === 1, 'print view loses main stylesheet');
+    assert(print.stylesheetCount === 1, 'print view loses app-shell stylesheet');
     const pdfPath = path.join(artifacts, 'print-qa.pdf');
     await printPage.pdf({ path: pdfPath, format: 'A4', printBackground: true });
     assert(fs.statSync(pdfPath).size > 1000, 'print PDF is empty or too small');

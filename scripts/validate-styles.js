@@ -107,7 +107,10 @@ for (const [name, files] of definitions) {
 const index = read(path.join(root, 'public', 'index.html'));
 if (!index.includes('/css/app-shell.css')) errors.push('public/index.html does not link the authenticated app-shell stylesheet');
 const stylesheetLinks = index.match(/<link\b[^>]*rel=["']stylesheet["'][^>]*>/gi) || [];
-if (stylesheetLinks.length !== 1) errors.push(`expected one linked stylesheet, found ${stylesheetLinks.length}`);
+const allowedIndexStylesheets = stylesheetLinks.filter((link) => /href=["']\/css\/(?:app-shell|pages\/login)\.css(?:\?|["'])/i.test(link));
+if (stylesheetLinks.length !== 2 || allowedIndexStylesheets.length !== 2) {
+  errors.push(`expected the authenticated shell plus the scoped login stylesheet, found ${stylesheetLinks.length}`);
+}
 if (!fs.existsSync(sourceEntry)) errors.push('public/css/main.source.css is missing');
 else if (!read(sourceEntry).includes('./tokens.css')) errors.push('main.source.css does not import tokens.css');
 if (!fs.existsSync(shellSourceEntry)) errors.push('public/css/app-shell.source.css is missing');
