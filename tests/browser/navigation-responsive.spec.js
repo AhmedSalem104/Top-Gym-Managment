@@ -74,3 +74,30 @@ test('responsive navigation stays organized and accessible at each viewport', as
         await page.screenshot({ path: testInfo.outputPath('navigation-desktop.png'), fullPage: true });
     }
 });
+
+test('SPA navigation leaves one ready surface with no stale or blank route', async ({ page }) => {
+    await installNavigationRuntime(page);
+    await page.goto('/#dashboard', { waitUntil: 'networkidle' });
+
+    for (const route of ['members', 'reports', 'dashboard']) {
+        await page.evaluate(async (name) => {
+            await window.topGymActivateTab(name);
+        }, route);
+        await expect(page.locator('#dashboardSection')).toHaveAttribute('data-active-route', route);
+        await expect(page.locator('#dashboardSection')).toHaveAttribute('data-route-state', 'ready');
+        await expect(page.locator('#dashboardSection')).toHaveAttribute('aria-busy', 'false');
+
+        const state = await page.evaluate(() => {
+            const visiblePanels = [...document.querySelectorAll('[data-page-tab-panel]')]
+                .filter((panel) => !panel.hidden && panel.getAttribute('aria-hidden') !== 'true');
+            return {
+                visiblePanels: visiblePanels.length,
+                activeRoute: document.getElementById('dashboardSection')?.dataset.activeRoute,
+                featureBlocked: document.getElementById('dashboardSection')?.dataset.featureBlocked === 'true'
+            };
+        });
+        expect(state.visiblePanels, `${route} left multiple active panels`).toBeLessThanOrEqual(1);
+        expect(state.activeRoute).toBe(route);
+        expect(state.featureBlocked).toBeFalsy();
+    }
+});

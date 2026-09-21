@@ -23,18 +23,74 @@
 }
 
 @layer components {
-    /* A stable icon contract prevents SVGs in generated empty/loading states
-       from inheriting the browser's unconstrained inline dimensions. */
-    :where(.ui-icon, .icon, .nav-icon, .action-icon) {
-        inline-size: 1.25rem;
-        block-size: 1.25rem;
+    /* Shared icon contract. UI icons have a semantic size and may never
+       inherit the dimensions of their card, panel, or grid parent. Large
+       empty-state illustrations use their own explicit role below. */
+    :root {
+        --lf-icon-xs: 0.75rem;
+        --lf-icon-sm: 1rem;
+        --lf-icon-md: 1.25rem;
+        --lf-icon-lg: 1.5rem;
+        --lf-illustration-md: 3rem;
+    }
+
+    :where(
+        .ui-icon,
+        .icon,
+        .nav-icon,
+        .action-icon,
+        .alert-status-icon,
+        .status-badge-icon,
+        .notification-center-icon-svg,
+        .notification-center-action-icon,
+        .coaching-inline-icon,
+        .permission-group-chevron-icon
+    ) {
+        inline-size: var(--lf-icon-md);
+        block-size: var(--lf-icon-md);
+        max-inline-size: 100%;
+        max-block-size: 100%;
         flex: 0 0 auto;
+        display: block;
+    }
+
+    :where(
+        .btn .ui-icon,
+        .icon-action .action-icon,
+        .status-badge-icon,
+        .alert-status-icon,
+        .notification-center-action-icon,
+        .coaching-inline-icon,
+        .permission-group-chevron-icon
+    ) {
+        inline-size: var(--lf-icon-sm);
+        block-size: var(--lf-icon-sm);
+    }
+
+    :where(
+        .notification-center-icon-button > svg,
+        .notification-center-read-all > svg,
+        .member-dialog-heading-icon > svg,
+        .member-form-section-icon > svg,
+        .registration-type-option-icon > svg,
+        .trainer-studio-sidebar-nav svg,
+        .trainer-studio-nav-icon svg,
+        .trainer-quick-action svg
+    ) {
+        inline-size: var(--lf-icon-md);
+        block-size: var(--lf-icon-md);
+        max-inline-size: 100%;
+        max-block-size: 100%;
+        flex: 0 0 auto;
+        display: block;
     }
 
     :where(.empty, .loading, .error, .history-empty, .coaching-empty, .library-empty, .portal-empty) svg.ui-icon,
     :where(.empty, .loading, .error, .history-empty, .coaching-empty, .library-empty, .portal-empty) > svg {
-        inline-size: 3rem;
-        block-size: 3rem;
+        inline-size: var(--lf-illustration-md);
+        block-size: var(--lf-illustration-md);
+        max-inline-size: 100%;
+        max-block-size: 100%;
     }
 
     /* All existing tab panels share the same page composition contract. */
@@ -1702,6 +1758,12 @@
         grid-column: auto;
     }
 
+}
+
+/* Trainer Studio switches to its drawer composition below the usable
+   navigation width. Keeping this contract scoped to the shared Trainer
+   surface lets the rest of the application retain its tablet composition. */
+@media (max-width: 860px) {
     .trainer-workspace-page.trainer-studio-v2 .trainer-workspace-shell {
         display: block;
         inline-size: calc(100% - 1.5rem);
@@ -1786,6 +1848,523 @@
 
     :where(.card-body, .panel-body, .form-body, .section-body) {
         padding: 0.875rem;
+    }
+}
+
+/* ------------------------------
+   Branch and reports compositions
+   These rules own page composition only. Shared controls remain owned by the
+   primitives above and are deliberately not restyled here.
+   ------------------------------ */
+@layer components {
+    :where(.branches-page, .reports-section) {
+        min-width: 0;
+        display: grid;
+        gap: 1rem;
+    }
+
+    :where(.branches-page-header, .reports-header) {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 1.25rem;
+        min-width: 0;
+        padding: 1.25rem;
+        border: 1px solid var(--lf-border);
+        border-radius: var(--radius-lf-card);
+        background: var(--lf-surface);
+        box-shadow: var(--shadow-lf-card);
+    }
+
+    :where(.branches-page-heading, .reports-heading) {
+        display: flex;
+        min-width: 0;
+        align-items: flex-start;
+        gap: 0.75rem;
+    }
+
+    :where(.branches-page-heading > div, .reports-heading > div) {
+        min-width: 0;
+    }
+
+    :where(.branches-page-kicker, .branches-card-kicker, .reports-eyebrow) {
+        display: block;
+        color: var(--lf-text-subtle);
+        font-size: 0.6875rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        line-height: 1.5;
+    }
+
+    :where(.branches-page-heading h2, .reports-heading h2) {
+        margin-block-start: 0.25rem;
+        color: var(--lf-text);
+        font-size: clamp(1.125rem, 1.6vw, 1.5rem);
+        font-weight: 800;
+        line-height: 1.4;
+    }
+
+    :where(.branches-page-heading p, .reports-heading p) {
+        max-inline-size: 42rem;
+        margin-block-start: 0.375rem;
+        color: var(--lf-text-muted);
+        font-size: 0.8125rem;
+        line-height: 1.7;
+    }
+
+    :where(.branches-page-actions, .reports-actions) {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.625rem;
+    }
+
+    .branches-page-summary {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.625rem;
+    }
+
+    .branches-page-summary > span {
+        display: grid;
+        min-inline-size: 6.5rem;
+        gap: 0.125rem;
+        padding: 0.625rem 0.75rem;
+        border: 1px solid var(--lf-border);
+        border-radius: var(--radius-lf-control);
+        background: var(--lf-surface-muted);
+    }
+
+    .branches-page-summary strong {
+        color: var(--lf-text);
+        font-size: 1rem;
+        line-height: 1.2;
+    }
+
+    .branches-page-summary small {
+        color: var(--lf-text-muted);
+        font-size: 0.6875rem;
+    }
+
+    :where(.branches-card, .report-card) {
+        min-width: 0;
+        border: 1px solid var(--lf-border);
+        border-radius: var(--radius-lf-card);
+        background: var(--lf-surface);
+        box-shadow: var(--shadow-lf-card);
+    }
+
+    :where(.branches-card-header, .report-card-head) {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 0.75rem;
+        padding: 1rem 1.125rem;
+        border-bottom: 1px solid var(--lf-border);
+    }
+
+    :where(.branches-card-header h3, .report-card-head h3) {
+        margin-block-start: 0.25rem;
+        color: var(--lf-text);
+        font-size: 0.9375rem;
+        font-weight: 800;
+        line-height: 1.5;
+    }
+
+    :where(.branches-card-header p, .report-card-head span, .report-card-head small) {
+        margin-block-start: 0.25rem;
+        color: var(--lf-text-muted);
+        font-size: 0.75rem;
+        line-height: 1.6;
+    }
+
+    .branches-list {
+        display: grid;
+        gap: 0.625rem;
+        padding: 1rem 1.125rem 1.125rem;
+    }
+
+    .branch-list-item {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 0.75rem;
+        min-width: 0;
+        padding: 0.875rem;
+        border: 1px solid var(--lf-border);
+        border-radius: var(--radius-lf-control);
+        background: var(--lf-surface-muted);
+    }
+
+    .branch-list-marker {
+        inline-size: 0.5rem;
+        block-size: 2.5rem;
+        border-radius: 999px;
+        background: var(--lf-primary);
+    }
+
+    .branch-list-copy {
+        display: grid;
+        min-width: 0;
+        gap: 0.2rem;
+    }
+
+    .branch-list-copy strong {
+        overflow: hidden;
+        color: var(--lf-text);
+        font-size: 0.875rem;
+        font-weight: 800;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .branch-list-copy > span {
+        color: var(--lf-primary);
+        font-size: 0.75rem;
+        font-weight: 700;
+    }
+
+    .branch-list-copy small {
+        overflow: hidden;
+        color: var(--lf-text-muted);
+        font-size: 0.6875rem;
+        line-height: 1.5;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .branch-list-actions {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 0.5rem;
+    }
+
+    .branch-status,
+    .branch-commerce-chip {
+        display: inline-flex;
+        min-block-size: 1.75rem;
+        align-items: center;
+        border-radius: 999px;
+        padding-inline: 0.625rem;
+        background: var(--lf-surface);
+        color: var(--lf-text-muted);
+        font-size: 0.6875rem;
+        font-weight: 700;
+        white-space: nowrap;
+    }
+
+    .branch-status.active,
+    .branch-commerce-chip.is-on {
+        background: var(--lf-success-soft);
+        color: var(--lf-success);
+    }
+
+    .branch-status.inactive,
+    .branch-status.archived {
+        background: var(--lf-warning-soft);
+        color: var(--lf-warning);
+    }
+
+    .branch-commerce-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.375rem;
+        margin-block-start: 0.25rem;
+    }
+
+    .branches-form {
+        display: grid;
+        gap: 1rem;
+    }
+
+    .branch-create-fields {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.875rem;
+    }
+
+    .branch-create-options {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        padding-block-start: 0.25rem;
+    }
+
+    .branches-form-status {
+        min-block-size: 1.25rem;
+        color: var(--lf-danger);
+        font-size: 0.75rem;
+        line-height: 1.6;
+    }
+
+    .reports-section {
+        align-content: start;
+    }
+
+    .reports-icon {
+        display: inline-grid;
+        inline-size: 2.5rem;
+        block-size: 2.5rem;
+        flex: 0 0 auto;
+        place-items: center;
+        border: 1px solid color-mix(in srgb, var(--lf-primary) 18%, var(--lf-border));
+        border-radius: var(--radius-lf-control);
+        background: var(--lf-primary-soft);
+        color: var(--lf-primary);
+    }
+
+    .reports-tabs {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.375rem;
+        padding: 0.375rem;
+        border: 1px solid var(--lf-border);
+        border-radius: var(--radius-lf-control);
+        background: var(--lf-surface-muted);
+    }
+
+    .reports-tab {
+        display: inline-flex;
+        min-block-size: 2.5rem;
+        align-items: center;
+        justify-content: center;
+        gap: 0.375rem;
+        border: 1px solid transparent;
+        border-radius: calc(var(--radius-lf-control) - 0.125rem);
+        background: transparent;
+        padding-inline: 0.75rem;
+        color: var(--lf-text-muted);
+        cursor: pointer;
+        font: inherit;
+        font-size: 0.75rem;
+        font-weight: 700;
+    }
+
+    .reports-tab:hover,
+    .reports-tab:focus-visible,
+    .reports-tab.active,
+    .reports-tab[aria-selected="true"] {
+        border-color: var(--lf-border);
+        background: var(--lf-surface);
+        color: var(--lf-primary);
+        outline: none;
+    }
+
+    .reports-filters {
+        display: grid;
+        grid-template-columns: minmax(10rem, 0.7fr) minmax(18rem, 1.4fr) auto;
+        align-items: end;
+        gap: 0.875rem;
+        padding: 1rem;
+        border: 1px solid var(--lf-border);
+        border-radius: var(--radius-lf-card);
+        background: var(--lf-surface);
+    }
+
+    .reports-filter-heading {
+        display: grid;
+        gap: 0.25rem;
+        align-self: center;
+    }
+
+    .reports-filter-heading span,
+    .reports-filter-heading strong,
+    .reports-filters label > span {
+        color: var(--lf-text-muted);
+        font-size: 0.75rem;
+        line-height: 1.5;
+    }
+
+    .reports-filter-heading strong {
+        color: var(--lf-text);
+        font-weight: 800;
+    }
+
+    .reports-date-fields,
+    .reports-extra-filters {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.75rem;
+        min-width: 0;
+    }
+
+    .reports-extra-filters {
+        grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+    }
+
+    .reports-filters label {
+        display: grid;
+        min-width: 0;
+        gap: 0.375rem;
+    }
+
+    .reports-filters .reports-check-field {
+        display: flex;
+        min-block-size: 2.75rem;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .reports-filter-note {
+        display: inline-flex;
+        min-block-size: 2.75rem;
+        align-items: center;
+        color: var(--lf-text-muted);
+        font-size: 0.75rem;
+    }
+
+    .reports-submit-button {
+        white-space: nowrap;
+    }
+
+    .reports-view {
+        display: grid;
+        gap: 1rem;
+        min-width: 0;
+    }
+
+    .reports-kpis {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 0.875rem;
+    }
+
+    .reports-grid,
+    .reports-detail-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 1rem;
+        min-width: 0;
+    }
+
+    .report-card {
+        overflow: hidden;
+    }
+
+    .reports-table-wrap {
+        min-width: 0;
+        overflow-x: auto;
+    }
+
+    .reports-table {
+        width: 100%;
+        min-width: 42rem;
+        border-collapse: collapse;
+        color: var(--lf-text);
+        font-size: 0.75rem;
+    }
+
+    .reports-table th,
+    .reports-table td {
+        padding: 0.75rem 1rem;
+        border-bottom: 1px solid var(--lf-border);
+        text-align: start;
+        vertical-align: middle;
+    }
+
+    .reports-table th {
+        background: var(--lf-surface-muted);
+        color: var(--lf-text-muted);
+        font-size: 0.6875rem;
+        font-weight: 800;
+        white-space: nowrap;
+    }
+
+    .reports-table tbody tr:last-child td {
+        border-bottom: 0;
+    }
+
+    .reports-table tbody tr:hover td {
+        background: color-mix(in srgb, var(--lf-primary-soft) 28%, var(--lf-surface));
+    }
+
+    .reports-table td small {
+        display: block;
+        margin-block-start: 0.25rem;
+        color: var(--lf-text-muted);
+        font-size: 0.6875rem;
+    }
+
+    :where(.reports-loading, .reports-error, .reports-empty-state) {
+        display: grid;
+        min-block-size: 10rem;
+        place-items: center;
+        padding: 1.5rem;
+        border: 1px dashed var(--lf-border);
+        border-radius: var(--radius-lf-control);
+        background: var(--lf-surface-muted);
+        color: var(--lf-text-muted);
+        font-size: 0.8125rem;
+        text-align: center;
+    }
+
+    .reports-error {
+        border-color: color-mix(in srgb, var(--lf-danger) 35%, var(--lf-border));
+        background: var(--lf-danger-soft);
+        color: var(--lf-danger);
+    }
+}
+
+@media (max-width: 767px) {
+    :where(.branches-page-header, .reports-header) {
+        padding: 1rem;
+    }
+
+    :where(.branches-page-actions, .reports-actions) {
+        inline-size: 100%;
+    }
+
+    .branches-page-summary {
+        flex: 1 1 100%;
+    }
+
+    .branches-page-summary > span {
+        flex: 1 1 8rem;
+    }
+
+    .branches-create-trigger,
+    .reports-actions .btn {
+        flex: 1 1 auto;
+    }
+
+    .branch-list-item {
+        grid-template-columns: auto minmax(0, 1fr);
+        align-items: start;
+    }
+
+    .branch-list-actions {
+        grid-column: 2;
+        justify-content: flex-start;
+    }
+
+    .branch-create-fields,
+    .reports-date-fields,
+    .reports-extra-filters,
+    .reports-grid,
+    .reports-detail-grid,
+    .reports-kpis {
+        grid-template-columns: 1fr;
+    }
+
+    .reports-filters {
+        grid-template-columns: 1fr;
+    }
+
+    .reports-tabs {
+        overflow-x: auto;
+        flex-wrap: nowrap;
+    }
+
+    .reports-tab {
+        flex: 0 0 auto;
+    }
+
+    .reports-table {
+        min-width: 38rem;
     }
 }
 

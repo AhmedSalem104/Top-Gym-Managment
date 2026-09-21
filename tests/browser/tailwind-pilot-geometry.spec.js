@@ -76,12 +76,22 @@ test('Tailwind shared shell keeps RTL sidebar and dashboard geometry isolated', 
                     navItems: [...document.querySelectorAll('#pageTabs .page-tab')]
                         .filter((item) => getComputedStyle(item).display !== 'none' && !item.hidden)
                         .map((item) => { const box = item.getBoundingClientRect(); return { left: box.left, right: box.right }; }),
-                    cards: cardSelectors.map(rect).filter(Boolean)
+                    cards: cardSelectors.map(rect).filter(Boolean),
+                    oversizedIcons: [
+                        ...document.querySelectorAll('svg.ui-icon, svg.icon, svg.nav-icon, svg.action-icon, svg.alert-status-icon, svg.status-badge-icon, svg.notification-center-icon-svg, svg.notification-center-action-icon, svg.coaching-inline-icon, svg.permission-group-chevron-icon, .notification-center-icon-button > svg, .notification-center-read-all > svg, .member-dialog-heading-icon > svg, .member-form-section-icon > svg, .registration-type-option-icon > svg, .trainer-studio-sidebar-nav svg, .trainer-studio-nav-icon svg, .trainer-quick-action svg')
+                    ].filter((icon) => {
+                        const style = getComputedStyle(icon);
+                        return style.display !== 'none' && style.visibility !== 'hidden' && !icon.closest('[hidden]') && !icon.classList.contains('analytics-trend-svg');
+                    }).map((icon) => {
+                        const box = icon.getBoundingClientRect();
+                        return { className: icon.getAttribute('class') || '', width: box.width, height: box.height };
+                    }).filter((icon) => Math.max(icon.width, icon.height) > 64)
                 };
             });
             assertLayoutContract(snapshot, viewport);
+            expect(snapshot.oversizedIcons, `rtl/${viewport.name} oversized shared icons`).toEqual([]);
 
-            if (viewport.width <= 1023) {
+            if (viewport.width <= 767) {
                 const toggle = page.locator('#mobileNavToggle');
                 if (await toggle.isVisible()) {
                     await toggle.click();
@@ -100,6 +110,8 @@ test('Tailwind shared shell keeps RTL sidebar and dashboard geometry isolated', 
                         `rtl/${viewport.name} closed mobile drawer still covers content`
                     ).toBeTruthy();
                 }
+            } else if (viewport.width <= 1023) {
+                expect(snapshot.sidebar.visible, `rtl/${viewport.name} tablet sidebar should own its reserved track`).toBeTruthy();
             }
     }
 });

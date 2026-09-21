@@ -300,7 +300,9 @@
 
         // Phone and tablet use the same off-canvas navigation composition;
         // desktop keeps the persistent rail. The event contract is unchanged.
-        const mediaQuery = window.matchMedia('(max-width: 1023px)');
+        // Tablet keeps the persistent RTL rail. Only phone widths use the
+        // off-canvas drawer; this matches the shell's reserved sidebar track.
+        const mediaQuery = window.matchMedia('(max-width: 767px)');
         const openLabel = '\u0641\u062a\u062d \u0627\u0644\u0642\u0627\u0626\u0645\u0629';
         const closeLabel = '\u0625\u063a\u0644\u0627\u0642 \u0627\u0644\u0642\u0627\u0626\u0645\u0629';
         let lastFocusedElement = null;
@@ -427,6 +429,9 @@
     }
 
     function renderTab(name) {
+        const routeHost = document.getElementById('dashboardSection');
+        routeHost?.setAttribute('data-active-route', name);
+        routeHost?.setAttribute('aria-busy', document.body.classList.contains('top-gym-navigation-pending') ? 'true' : 'false');
         const overview = document.querySelector('.overview-grid');
         const dashboardHero = document.querySelector('.dashboard-page-actions');
         const dashboardSectionHeading = document.querySelector('.dashboard-section-heading');
@@ -512,6 +517,14 @@
         setHidden(workspace, isDashboard || isExpenses || isReports || isManagement || isBranding || isMemberPaymentMethods || isSaasBilling || isBackupHistory || isMemberSubscriptionRequests || isPortalAnalytics || isPermissions || isAttendance || isLibrary || isTrainees || isIntelligence || isFeedback || isStore || isBranches);
         setHidden(membersSection, !isMembers);
 
+        // Dynamic features opt into the same panel contract as static screens.
+        // This final pass prevents a late-mounted panel from remaining visible
+        // beside the active route after navigation or lazy CSS/script loading.
+        document.querySelectorAll('[data-page-tab-panel]').forEach((panel) => {
+            const panelName = panel.dataset.pageTabPanel;
+            if (panelName) setHidden(panel, panelName !== name);
+        });
+
         const tabPanelIds = { 'saas-billing': 'saasBillingSection', 'backup-history': 'backupHistorySection', 'member-payment-methods': 'memberPaymentMethodsSection', 'member-subscription-requests': 'memberSubscriptionRequestsSection', 'portal-analytics': 'portalAnalyticsSection' };
         document.querySelectorAll('[data-page-tab]').forEach((button) => {
             const active = button.dataset.pageTab === name;
@@ -536,6 +549,16 @@
     function renderFeatureAccessState(tabName, access) {
         const host = document.getElementById('dashboardSection');
         if (!host) return;
+        // An excluded route must never leave the feature's previously mounted
+        // surface underneath the access explanation. Hiding the complete
+        // panel contract here also prevents feature-specific min-widths from
+        // creating overflow while the route is blocked.
+        document.querySelectorAll('[data-page-tab-panel], [id$="Section"]').forEach((panel) => {
+            // dashboardSection is the route host for this access state. It
+            // must remain visible so the explanation is not hidden with its
+            // own parent while we clear the previously mounted panel.
+            if (panel.id !== 'featureAccessState' && panel !== host) setHidden(panel, true);
+        });
         let state = document.getElementById('featureAccessState');
         if (!state) {
             state = document.createElement('section');
@@ -577,8 +600,13 @@
         const name = normalizeTab(rawName);
         const token = ++activationToken;
         document.body.classList.add('top-gym-navigation-pending');
+        const routeHost = document.getElementById('dashboardSection');
+        routeHost?.setAttribute('data-route-state', 'loading');
+        routeHost?.setAttribute('aria-busy', 'true');
         if (name === activeTabName) {
             document.body.classList.remove('top-gym-navigation-pending');
+            routeHost?.setAttribute('data-route-state', 'ready');
+            routeHost?.setAttribute('aria-busy', 'false');
             return;
         }
         document.documentElement.setAttribute('data-top-gym-loading-tab', name);
@@ -591,13 +619,15 @@
             ? window.topGymPermissions?.getFeatureAccess?.(requestedFeature, window.topGymAuth?.getUser?.())
             : null;
         if (requestedFeature && featureAccess && featureAccess.allowed !== true) {
-            renderFeatureAccessState(name, featureAccess);
             if (token !== activationToken) return;
+            renderFeatureAccessState(name, featureAccess);
             activeTabName = name;
             document.documentElement.dataset.topGymActiveTab = name;
             window.history.replaceState(null, '', `#${name}`);
             document.body.classList.remove('top-gym-navigation-pending');
             document.documentElement.removeAttribute('data-top-gym-loading-tab');
+            routeHost?.setAttribute('data-route-state', 'ready');
+            routeHost?.setAttribute('aria-busy', 'false');
             window.dispatchEvent(new CustomEvent('topgym:tab-changed', { detail: { name, blocked: true, access: featureAccess } }));
             return;
         }
@@ -617,6 +647,8 @@
         window.history.replaceState(null, '', `#${name}`);
         document.body.classList.remove('top-gym-navigation-pending');
         document.documentElement.removeAttribute('data-top-gym-loading-tab');
+        routeHost?.setAttribute('data-route-state', 'ready');
+        routeHost?.setAttribute('aria-busy', 'false');
         window.dispatchEvent(new CustomEvent('topgym:tab-changed', { detail: { name } }));
     }
 

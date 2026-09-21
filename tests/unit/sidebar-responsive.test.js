@@ -17,9 +17,9 @@ test('Gym App exposes an accessible grouped mobile navigation drawer', () => {
     assert.match(index, /id="mobileNavBackdrop"[^>]*hidden/);
     assert.match(index, /id="mobileNavCurrent"/);
     assert.match(index, /branch-context-kicker/);
-    assert.match(index, /\/js\/page-tabs\.js\?v=24/);
+    assert.match(index, /\/js\/page-tabs\.js\?v=25/);
     assert.match(source, /function initMobileNavigation\(\)/);
-    assert.match(source, /matchMedia\('\(max-width: 1023px\)'\)/);
+    assert.match(source, /matchMedia\('\(max-width: 767px\)'\)/);
     assert.match(source, /rail\.inert = !open/u);
     assert.match(source, /function ensureNavigationSections\(\)/u);
     assert.match(source, /data-nav-group-label/u);

@@ -16,6 +16,7 @@
 @source "../dialogs/coaching.html";
 @source "../dialogs/library.html";
 @source "../dialogs/permissions.html";
+@source "../js";
 
 @import "./functional-state.css";
 @import "./shared-components.source.css";
@@ -870,6 +871,7 @@
     .app-shell {
         --lf-sidebar-width: 18rem;
         @apply min-h-dvh bg-slate-50;
+        min-inline-size: 0;
     }
 
     .topbar {
@@ -895,7 +897,16 @@
 
         .app-shell > .page {
             min-width: 0;
-            max-width: 90rem;
+            max-width: none;
+            padding-inline: clamp(1rem, 2vw, 2rem);
+        }
+
+        /* The HTML entrypoint keeps max-w-7xl for the pre-Tailwind contract.
+           The shell owns the available track now, so that utility must not
+           reintroduce an arbitrary content cap or a second geometry owner. */
+        .app-shell > .page.max-w-7xl,
+        .app-shell > .topbar .topbar-inner.max-w-7xl {
+            max-width: none;
         }
     }
 
@@ -1863,6 +1874,69 @@
         @apply fixed inset-0 z-20 bg-slate-950/50;
     }
 
+}
+
+/* Tablet keeps the same reserved sidebar track as desktop. The drawer is a
+   phone-only composition; leaving the tablet rail hidden while the page still
+   reserves its width creates the blank strip and makes navigation appear lost. */
+@media (min-width: 768px) and (max-width: 1023px) {
+    .app-shell > .topbar,
+    .app-shell > .page {
+        box-sizing: border-box;
+        width: calc(100% - var(--lf-sidebar-width));
+        margin-inline-start: var(--lf-sidebar-width);
+        margin-inline-end: 0;
+    }
+
+    .app-shell > .page {
+        max-width: none;
+        padding-inline: clamp(1rem, 2vw, 1.5rem);
+    }
+
+    /* The tablet shell has only the content track left of the persistent
+       rail. Keep the topbar controls in that track instead of allowing the
+       optional brand copy to force them outside the viewport. */
+    .topbar-brand-area {
+        min-width: 0;
+    }
+
+    .brand-copy {
+        display: none;
+    }
+
+    .app-shell > .page-tabs {
+        width: var(--lf-sidebar-width);
+        transform: none;
+        translate: none;
+        --tw-translate-x: 0px;
+        --tw-translate-y: 0px;
+        visibility: visible;
+        pointer-events: auto;
+        inset-inline-start: 0;
+        inset-inline-end: auto;
+        transition: none;
+    }
+
+    html[dir="rtl"] .app-shell > .page-tabs {
+        --tw-translate-x: 0px;
+        --tw-translate-y: 0px;
+        translate: 0 0;
+        inset-inline-start: 0;
+        inset-inline-end: auto;
+    }
+
+    .mobile-nav-toggle,
+    .mobile-nav-header,
+    .mobile-nav-backdrop {
+        display: none;
+    }
+}
+
+@media (min-width: 1024px) {
+    .mobile-nav-toggle,
+    .mobile-nav-header {
+        display: none;
+    }
 }
 
 @media (max-width: 1199px) {

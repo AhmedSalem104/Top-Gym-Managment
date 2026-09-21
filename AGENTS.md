@@ -103,6 +103,39 @@ The existing security, SQL/RLS, financial-ledger, and production-release
 rules above remain authoritative; where rules overlap, the stricter rule
 applies.
 
+### Installation and precedence
+
+- The repository `AGENTS.md` is the persistent operating reference. Read it
+  before changing files and preserve existing rules unless they directly
+  duplicate a policy below; when consolidating, preserve the stricter rule and
+  every unique security, verification, repository, or user constraint.
+- Installing this policy must not modify source code or unrelated files. Verify
+  policy installation with `git diff -- AGENTS.md` and `git status --short`.
+- Never commit, push, deploy, alter Production, or run a migration merely to
+  install or document this policy.
+- Higher-priority system, platform, repository, or security instructions win
+  over this policy.
+
+### Main Agent = Lead / Orchestrator only
+
+- The Main Agent is the Lead/Orchestrator. In non-trivial work it must not
+  personally perform an investigation, implementation, UI/CSS/Tailwind fix,
+  backend/API change, database/SQL change, security review, test analysis,
+  Browser/E2E investigation, visual QA, or regression analysis when that work
+  can be assigned to a capable Specialist/Subagent.
+- The Lead owns only the orchestration boundary: understand the request,
+  split the work, define workstreams and owners, use `delegate`, run
+  independent work safely in parallel, manage dependencies, collect findings,
+  resolve conflicts, review the final diff, confirm verification completeness,
+  and issue the final report.
+- Investigation, implementation, UI, backend, database, security, testing,
+  Browser/E2E, visual QA, and regression work must be delegated whenever it is
+  separable. If delegation is unavailable, the Lead must state that limitation
+  and preserve the same specialist ownership boundaries as closely as possible.
+- A healthy in-flight test or Subagent must not be interrupted merely to
+  reorganize work. Do not repeat completed work; continue from the current
+  evidence and use targeted verification for any newly identified failure.
+
 ### Operating priorities
 
 - Optimize for correctness, security, data integrity, explicit user
@@ -129,6 +162,25 @@ applies.
 - Specialists provide evidence, files, dependencies, risks, and tests; they
   do not make independent architecture or release decisions.
 
+### Agent role routing
+
+- Use a Planner/Reasoning role for architecture, security-sensitive design,
+  migration strategy, ambiguous root causes, and complex dependencies. Its
+  output is a plan, affected areas, dependencies, risks, and execution order;
+  it should not implement when execution can be delegated safely.
+- Use an Explorer/Search role for read-only file, symbol, route, import,
+  reference, dependency, and behavior discovery. Its output is finding,
+  evidence, files/symbols, and recommended next action.
+- Use an Implementation role only after the target behavior is understood;
+  hand it the exact scope, confirmed findings, constraints, expected behavior,
+  and verification requirements. It follows the smallest-correct-change rule.
+- Use a Verification/QA role for targeted tests, browser/E2E, visual,
+  security, tenant, migration, build, and independent regression checks. Its
+  output is PASS/FAIL, evidence, and remaining risk.
+- Route work to the narrowest useful specialist: Frontend/Runtime,
+  Backend/API, Database/SQL, Auth/Security, Performance, Infrastructure/Cache,
+  UI/UX, Browser/E2E, Testing, or Migration.
+
 ### Complexity and escalation
 
 - Simple work: `Understand → Locate → Implement → Targeted Verify → Done`.
@@ -142,6 +194,16 @@ applies.
   concurrency, or repeated meaningful failure.
 - Do not retry the same failed action without inspecting and changing the
   diagnosis or evidence.
+
+### Reasoning budget
+
+- Use low effort for search, file discovery, small edits, targeted tests, and
+  known fixes; medium effort for bounded bugs and integrations; high effort for
+  architecture, security, database integrity, migrations, concurrency, and
+  cross-module failures.
+- Escalation is evidence-driven, not automatic: ambiguity, conflicting
+  evidence, security/data risk, migration uncertainty, or repeated meaningful
+  failure justify escalation.
 
 ### Plan, explore, and hand off once
 
@@ -172,6 +234,19 @@ applies.
   with unresolved dependencies or conflicting editors.
 - Maintain a compact working map of files, symbols, behavior, root cause,
   modifications, and verification status.
+
+### Handoff and output contract
+
+- Pass compressed handoffs using:
+
+  `Objective → Finding → Evidence → Files/symbols → Decision → Next action → Constraints → Verification`
+
+- Default specialist output is:
+
+  `Finding → Evidence → Files → Recommended action → Verification`
+
+- Do not request or expose chain-of-thought, full transcripts, oversized raw
+  logs, full repository dumps, or repeated explanations of known architecture.
 
 ### Implementation discipline
 
@@ -224,6 +299,32 @@ applies.
   another owner's dependency, it finds an escalation risk, or required safe
   information is unavailable.
 - Do not continue exploring merely because more code exists.
+
+### Agent usage and checklists
+
+- Before creating a subagent, identify the unique work it owns, why
+  specialization helps, whether it can run safely in parallel, its minimum
+  context, and its exact output. Do not create agents for appearance or
+  post-hoc review.
+- Before handing off work, remove irrelevant history, include only confirmed
+  evidence and exact files/symbols, state uncertainty and constraints, and list
+  the required verification. Do not make the next agent rediscover solved
+  facts.
+- Stop a workstream when its objective/evidence is complete, it reaches
+  another owner's dependency, it finds an escalation risk, or safe information
+  is unavailable.
+
+### Evidence, final response, and token optimization
+
+- Evidence is preferred over narration. Never claim a check passed unless it
+  ran successfully; use `NOT VERIFIED` when safe verification is unavailable.
+- Final reports should be concise and include what changed, root cause,
+  affected files/areas, verification evidence, remaining limitations, and
+  production/deployment status when relevant.
+- Save tokens by removing duplicate reasoning, searches, reads, explanations,
+  agents, and raw output—not by reducing correctness, security checks,
+  permission/tenant checks, database integrity, migration safety, regression
+  coverage, or production safeguards.
 
 ### Permanent formula
 
