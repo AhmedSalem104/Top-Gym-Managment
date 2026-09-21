@@ -1,0 +1,3743 @@
+/*
+ * Logic Fit Visual Redesign
+ * -------------------------
+ * Vanilla translation of the HeroUI patterns researched through the live MCP:
+ * semantic variants, composed surfaces, restrained elevation, strong focus,
+ * and predictable loading/empty/error states.  This file is the final screen
+ * layer in main.source.css.  It intentionally uses explicit body-scoped
+ * selectors so old utility/page rules remain available as fallbacks without
+ * winning the computed UI styles.
+ */
+
+/* Page canvas and typography ------------------------------------------------ */
+body.gym-page-bg,
+body.gym-page-bg.font-sans,
+body.gym-page-bg.text-slate-900 {
+  background: var(--rf-page);
+  color: var(--rf-ink);
+}
+
+body.gym-page-bg::selection {
+  background: var(--rf-accent);
+  color: #fff;
+}
+
+body .app-shell {
+  background: var(--rf-page);
+  color: var(--rf-ink);
+}
+
+body .app-shell > main.page {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: clamp(20px, 3vw, 42px) clamp(16px, 3.2vw, 52px) 64px;
+}
+
+body .page > .workspace,
+body .page > .content-grid,
+body .page > .dashboard-section,
+body .page > .section-stack {
+  gap: 22px;
+}
+
+body .page-header h2,
+body .section-heading h2,
+body .section-heading h3,
+body .page-title,
+body .members-panel h3,
+body .panel-header h3 {
+  color: var(--rf-ink);
+  letter-spacing: -.025em;
+}
+
+body .page-header h2,
+body .section-heading h2 {
+  font-size: clamp(1.35rem, 2.1vw, 1.8rem);
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+body .page-header p,
+body .section-heading p,
+body .panel-header p,
+body .card-header p {
+  color: var(--rf-muted);
+  line-height: 1.75;
+}
+
+/* Header and navigation ---------------------------------------------------- */
+body .app-shell > .topbar {
+  border-bottom: 1px solid rgb(255 255 255 / .08);
+  background: linear-gradient(112deg, #071326 0%, #0c1b32 62%, #102a4b 100%);
+  box-shadow: 0 8px 26px rgb(7 19 38 / .18);
+}
+
+body .topbar-inner {
+  min-height: 76px;
+  width: min(100% - 36px, 1540px);
+  padding-block: 12px;
+}
+
+body .topbar-brand-area .brand-mark {
+  width: 46px;
+  height: 46px;
+  flex-basis: 46px;
+  border: 1px solid rgb(255 255 255 / .14);
+  border-radius: 14px;
+  background: linear-gradient(145deg, rgb(92 168 255 / .2), rgb(18 169 154 / .14));
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / .04), 0 8px 20px rgb(0 0 0 / .18);
+}
+
+body .topbar-brand-area .brand-copy h1 {
+  font-size: 1rem;
+  letter-spacing: -.01em;
+}
+
+body .topbar-brand-area .brand-copy p {
+  color: #9eb1c9;
+  font-size: .7rem;
+}
+
+body .topbar-quick-actions .header-search,
+body .topbar-quick-actions .header-notification,
+body .topbar-quick-actions .header-backup,
+body .topbar-quick-actions .header-refresh,
+body .topbar-theme-toggle,
+body .kiosk-toggle-button,
+body .mobile-nav-toggle {
+  border-color: rgb(255 255 255 / .14);
+  border-radius: 12px;
+  background: rgb(255 255 255 / .07);
+  color: #d6e3f4;
+}
+
+body .topbar-quick-actions .header-search:hover,
+body .topbar-quick-actions .header-search:focus-visible,
+body .topbar-quick-actions .header-notification:hover,
+body .topbar-quick-actions .header-notification:focus-visible,
+body .topbar-quick-actions .header-backup:hover,
+body .topbar-quick-actions .header-backup:focus-visible,
+body .topbar-quick-actions .header-refresh:hover,
+body .topbar-quick-actions .header-refresh:focus-visible,
+body .topbar-theme-toggle:hover,
+body .topbar-theme-toggle:focus-visible,
+body .kiosk-toggle-button:hover,
+body .kiosk-toggle-button:focus-visible,
+body .mobile-nav-toggle:hover,
+body .mobile-nav-toggle:focus-visible {
+  border-color: rgb(92 168 255 / .58);
+  background: rgb(92 168 255 / .16);
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+body .auth-account-avatar {
+  border-color: rgb(92 168 255 / .55);
+  background: rgb(92 168 255 / .16);
+  color: #ddecff;
+}
+
+body .app-shell > .page-tabs {
+  background: linear-gradient(180deg, #0b1a2f 0%, #071326 100%);
+  border-inline-end-color: rgb(255 255 255 / .08);
+  border-block-end-color: rgb(255 255 255 / .08);
+  box-shadow: 10px 0 30px rgb(7 19 38 / .08);
+}
+
+body .app-shell > .page-tabs > .page-tab,
+body .app-shell > .page-tabs > .smart-assistant-launcher {
+  min-height: 48px;
+  border-color: transparent;
+  border-radius: 13px;
+  color: #9eb1c9;
+  font-weight: 700;
+}
+
+body .app-shell > .page-tabs > .page-tab::before,
+body .app-shell > .page-tabs > .smart-assistant-launcher::before {
+  width: 4px;
+  border-radius: 999px;
+  background: #63b2ff;
+}
+
+body .app-shell > .page-tabs > .page-tab:hover,
+body .app-shell > .page-tabs > .page-tab:focus-visible,
+body .app-shell > .page-tabs > .smart-assistant-launcher:hover,
+body .app-shell > .page-tabs > .smart-assistant-launcher:focus-visible {
+  border-color: rgb(92 168 255 / .18);
+  background: rgb(92 168 255 / .1);
+  color: #f7fbff;
+  transform: translateX(-3px);
+}
+
+body .app-shell > .page-tabs > .page-tab.active,
+body .app-shell > .page-tabs > .page-tab[aria-selected="true"],
+body .app-shell > .page-tabs > .smart-assistant-launcher[aria-expanded="true"] {
+  border-color: rgb(92 168 255 / .34);
+  background: linear-gradient(90deg, rgb(25 118 243 / .2), rgb(92 168 255 / .09));
+  color: #ffffff;
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / .03), 0 8px 18px rgb(0 0 0 / .12);
+}
+
+body .app-shell > .page-tabs > .page-tab .ui-icon,
+body .app-shell > .page-tabs > .smart-assistant-launcher .ui-icon {
+  border: 0;
+  border-radius: 10px;
+  background: rgb(255 255 255 / .055);
+}
+
+body .app-shell > .page-tabs > .page-tab.active .ui-icon,
+body .app-shell > .page-tabs > .page-tab[aria-selected="true"] .ui-icon,
+body .app-shell > .page-tabs > .smart-assistant-launcher[aria-expanded="true"] .ui-icon {
+  background: rgb(92 168 255 / .2);
+  color: #74bcff;
+}
+
+body .sidebar-brand {
+  border-bottom-color: rgb(255 255 255 / .11);
+}
+
+/* HeroUI-style primitive components --------------------------------------- */
+body .btn,
+body button.btn,
+body a.btn,
+body .platform-btn,
+body .platform-link-btn {
+  min-height: 42px;
+  border: 1px solid transparent;
+  border-radius: var(--rf-radius-control);
+  box-shadow: none;
+  font-size: .8rem;
+  font-weight: 800;
+  letter-spacing: -.005em;
+  transition: background-color 160ms ease, border-color 160ms ease, box-shadow 160ms ease, color 160ms ease, transform 160ms ease;
+}
+
+body .btn:hover:not(:disabled),
+body .platform-btn:hover:not(:disabled),
+body .platform-link-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+body .btn:active:not(:disabled),
+body .platform-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+body .btn-primary,
+body .btn.btn-primary,
+body .platform-btn.primary {
+  border-color: var(--rf-accent);
+  background: var(--rf-accent);
+  color: #fff;
+  box-shadow: 0 7px 16px rgb(25 118 243 / .2);
+}
+
+body .btn-primary:hover:not(:disabled),
+body .btn.btn-primary:hover:not(:disabled),
+body .platform-btn.primary:hover:not(:disabled) {
+  border-color: var(--rf-accent-strong);
+  background: var(--rf-accent-strong);
+  box-shadow: 0 10px 22px rgb(25 118 243 / .26);
+}
+
+body .btn-secondary,
+body .btn-light,
+body .btn.btn-light,
+body .platform-btn.ghost {
+  border-color: var(--rf-line);
+  background: var(--rf-surface);
+  color: var(--rf-ink-soft);
+}
+
+body .btn-secondary:hover:not(:disabled),
+body .btn-light:hover:not(:disabled),
+body .btn.btn-light:hover:not(:disabled),
+body .platform-btn.ghost:hover:not(:disabled) {
+  border-color: var(--rf-accent);
+  background: var(--rf-accent-soft);
+  color: var(--rf-accent-strong);
+}
+
+body .btn-ghost,
+body .btn-link,
+body .platform-link-btn {
+  border-color: transparent;
+  background: transparent;
+  color: var(--rf-accent-strong);
+}
+
+body .btn-danger,
+body .platform-btn.danger {
+  border-color: var(--danger-border);
+  background: var(--danger-soft);
+  color: var(--danger-text);
+}
+
+body .btn-danger:hover:not(:disabled),
+body .platform-btn.danger:hover:not(:disabled) {
+  border-color: var(--danger);
+  background: var(--danger);
+  color: #fff;
+}
+
+body .btn:focus-visible,
+body button:focus-visible,
+body a.btn:focus-visible,
+body input:focus-visible,
+body select:focus-visible,
+body textarea:focus-visible,
+body .platform-btn:focus-visible {
+  outline: 2px solid var(--rf-accent);
+  outline-offset: 3px;
+  box-shadow: var(--rf-shadow-focus);
+}
+
+body .btn:disabled,
+body .platform-btn:disabled,
+body .btn[aria-disabled="true"],
+body .platform-btn[aria-disabled="true"] {
+  opacity: .52;
+  cursor: not-allowed;
+  transform: none;
+}
+
+body .btn-small,
+body .btn-sm {
+  min-height: 36px;
+  border-radius: 9px;
+  padding-inline: 12px;
+  font-size: .72rem;
+}
+
+/* Surfaces/cards ----------------------------------------------------------- */
+body .panel,
+body .card,
+body .content-card,
+body .shadow-panel,
+body .stat-card,
+body .management-card,
+body .library-card,
+body .finance-card,
+body .attendance-card,
+body .portal-tool-card,
+body .store-card,
+body .branches-card,
+body .saas-panel,
+body .platform-card,
+body .platform-kpi {
+  border: 1px solid var(--rf-line);
+  border-radius: var(--rf-radius-card);
+  background: var(--rf-surface);
+  box-shadow: var(--rf-shadow-sm);
+}
+
+body .panel,
+body .content-card,
+body .shadow-panel,
+body .branches-card,
+body .store-card,
+body .saas-panel {
+  padding: clamp(16px, 2vw, 24px);
+}
+
+body .panel:hover,
+body .card:hover,
+body .content-card:hover,
+body .stat-card:hover,
+body .management-card:hover,
+body .store-card:hover,
+body .branches-card:hover,
+body .saas-panel:hover {
+  border-color: color-mix(in srgb, var(--rf-accent) 33%, var(--rf-line));
+  box-shadow: var(--rf-shadow-md);
+}
+
+body .panel-header,
+body .card-header,
+body .section-heading,
+body .store-card-header,
+body .branches-card-header,
+body .saas-panel-head,
+body .platform-page-head {
+  min-height: 44px;
+  margin-bottom: 18px;
+  border-bottom: 1px solid var(--rf-line-soft);
+  background: transparent;
+  padding: 0 0 15px;
+}
+
+body .panel-header > div,
+body .card-header > div,
+body .section-heading > div,
+body .store-card-header > div,
+body .branches-card-header > div,
+body .saas-panel-head > div {
+  min-width: 0;
+}
+
+body .stat-card,
+body .platform-kpi {
+  position: relative;
+  min-height: 126px;
+  overflow: hidden;
+  padding: 18px;
+}
+
+body .stat-card::before,
+body .platform-kpi::before {
+  position: absolute;
+  inset-inline: 18px;
+  top: 0;
+  height: 3px;
+  border-radius: 0 0 999px 999px;
+  background: var(--rf-accent);
+  content: "";
+}
+
+body .stat-label,
+body .platform-kpi-label {
+  color: var(--rf-muted);
+  font-size: .72rem;
+  font-weight: 800;
+}
+
+body .stat-value,
+body .platform-kpi-value {
+  color: var(--rf-ink);
+  font-size: clamp(1.5rem, 2.5vw, 2rem);
+  font-weight: 800;
+  letter-spacing: -.04em;
+}
+
+/* Inputs/forms ------------------------------------------------------------- */
+body .store-form-grid label,
+body .platform-field {
+  gap: 7px;
+  color: var(--rf-ink-soft);
+  font-size: .77rem;
+  font-weight: 800;
+}
+
+body .members-search-field,
+body .store-search-field,
+body .platform-global-search,
+body .platform-search-field {
+  min-height: 44px;
+  border: 1px solid var(--rf-line);
+  border-radius: var(--rf-radius-control);
+  background: var(--rf-surface-raised);
+  color: var(--rf-ink);
+  box-shadow: inset 0 1px 1px rgb(11 23 41 / .025);
+  transition: border-color 160ms ease, background-color 160ms ease, box-shadow 160ms ease;
+}
+
+body .members-search-field:hover,
+body .store-search-field:hover,
+body .platform-global-search:hover,
+body .platform-search-field:hover {
+  border-color: color-mix(in srgb, var(--rf-accent) 45%, var(--rf-line));
+}
+
+body .members-search-field:focus-within,
+body .store-search-field:focus-within,
+body .platform-global-search:focus-within,
+body .platform-search-field:focus-within {
+  border-color: var(--rf-accent);
+  background: var(--rf-surface-raised);
+  box-shadow: var(--rf-shadow-focus);
+  outline: 0;
+}
+
+body .form-error,
+body .field-error,
+body .auth-message,
+body .platform-form-message {
+  border-radius: 10px;
+  background: var(--danger-soft);
+  color: var(--danger-text);
+  line-height: 1.65;
+}
+
+body .form-help,
+body .helper-text,
+body .auth-helper,
+body .field-hint {
+  color: var(--rf-muted);
+  font-size: .7rem;
+  line-height: 1.65;
+}
+
+/* Tables, tabs and statuses ------------------------------------------------ */
+body .table-container,
+body .table-panel,
+body .members-panel,
+body .store-table-wrap,
+body .saas-table-wrap,
+body .platform-table-wrap,
+body .auth-users-table-wrap,
+body .attendance-table-wrap,
+body .member-requests-table-wrap {
+  border: 1px solid var(--rf-line);
+  border-radius: 14px;
+  background: var(--rf-surface);
+  box-shadow: none;
+}
+
+body table {
+  color: var(--rf-ink-soft);
+}
+
+body table thead,
+body table th {
+  background: var(--rf-surface-soft);
+  color: var(--rf-muted);
+}
+
+body table th {
+  min-height: 44px;
+  border-bottom: 1px solid var(--rf-line);
+  font-size: .7rem;
+  font-weight: 800;
+  letter-spacing: .01em;
+}
+
+body table td {
+  border-bottom-color: var(--rf-line-soft);
+  color: var(--rf-ink-soft);
+  font-size: .76rem;
+}
+
+body table tbody tr {
+  transition: background-color 140ms ease;
+}
+
+body table tbody tr:hover {
+  background: var(--rf-accent-soft);
+}
+
+body .tab-button,
+body .library-type-tabs button,
+body .store-tab,
+body [role="tab"] {
+  min-height: 40px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  color: var(--rf-muted);
+  font-weight: 800;
+}
+
+body .tab-button:hover,
+body .library-type-tabs button:hover,
+body .store-tab:hover,
+body [role="tab"]:hover {
+  background: var(--rf-accent-soft);
+  color: var(--rf-accent-strong);
+}
+
+body .tab-button.active,
+body .tab-button[aria-selected="true"],
+body .library-type-tabs button.active,
+body .store-tab.active,
+body [role="tab"][aria-selected="true"] {
+  border-color: color-mix(in srgb, var(--rf-accent) 22%, var(--rf-line));
+  background: var(--rf-accent-soft);
+  color: var(--rf-accent-strong);
+  box-shadow: inset 0 -2px 0 var(--rf-accent);
+}
+
+body .badge,
+body .chip,
+body .status-badge,
+body .branch-status,
+body .saas-status-pill,
+body .saas-panel-badge,
+body .platform-branch-usage {
+  min-height: 26px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font-size: .68rem;
+  font-weight: 800;
+}
+
+/* Dashboard: the command centre should read as a deliberate hero, not a
+   generic collection of cards. */
+body .dashboard-hero {
+  min-height: 248px;
+  overflow: hidden;
+  border: 1px solid rgb(92 168 255 / .28);
+  border-radius: 22px;
+  background:
+    radial-gradient(circle at 12% 12%, rgb(92 168 255 / .18), transparent 34%),
+    linear-gradient(118deg, #0a1730 0%, #10294c 58%, #0f6b72 155%);
+  box-shadow: 0 18px 42px rgb(10 23 48 / .18);
+}
+
+body .dashboard-hero-heading h2,
+body .dashboard-hero-heading h2 strong,
+body .dashboard-hero-eyebrow,
+body .dashboard-hero-action-copy span {
+  color: #fff;
+}
+
+body .dashboard-hero-heading-copy p,
+body .dashboard-hero-heading-copy .dashboard-hero-meta,
+body .dashboard-hero-meta,
+body .dashboard-hero-action-copy small {
+  color: #b6c9e1;
+}
+
+body .dashboard-hero-actions {
+  border-inline-start-color: rgb(255 255 255 / .13);
+  background: rgb(0 0 0 / .12);
+}
+
+body .dashboard-hero-actions .btn-light {
+  border-color: rgb(255 255 255 / .18);
+  background: rgb(255 255 255 / .1);
+  color: #f1f7ff;
+}
+
+body .dashboard-hero-actions .btn-light:hover:not(:disabled) {
+  border-color: rgb(255 255 255 / .42);
+  background: rgb(255 255 255 / .18);
+  color: #fff;
+}
+
+body .dashboard-hero-actions .btn-primary {
+  border-color: #67b2ff;
+  background: #348cf4;
+}
+
+body .dashboard-live-status {
+  border-color: rgb(66 211 197 / .25);
+  background: rgb(66 211 197 / .12);
+  color: #8ef0e3;
+}
+
+/* Reference screens -------------------------------------------------------- */
+body .saas-entry-card {
+  width: min(1220px, 100%);
+  border: 1px solid rgb(255 255 255 / .16);
+  border-radius: 28px;
+  background: linear-gradient(145deg, rgb(10 23 48 / .97), rgb(14 40 72 / .96));
+  box-shadow: 0 26px 80px rgb(5 17 36 / .32);
+}
+
+body .auth-screen {
+  background:
+    radial-gradient(circle at 78% 15%, rgb(25 118 243 / .18), transparent 30%),
+    radial-gradient(circle at 10% 90%, rgb(18 169 154 / .14), transparent 34%),
+    #eef3f8;
+}
+
+html[data-theme="dark"] body .auth-screen,
+body[data-theme="dark"] .auth-screen {
+  background:
+    radial-gradient(circle at 78% 15%, rgb(92 168 255 / .14), transparent 30%),
+    #070c15;
+}
+
+body .saas-entry-brand,
+body .saas-entry-copy,
+body .saas-entry-action,
+body .saas-entry-feature-icon,
+body .saas-entry-features article {
+  color: #eef7ff;
+}
+
+body .saas-entry-layout {
+  gap: clamp(24px, 4vw, 58px);
+  padding: clamp(24px, 4vw, 52px);
+}
+
+body .saas-entry-copy h1 {
+  font-size: clamp(2.15rem, 5vw, 4.6rem);
+  letter-spacing: -.055em;
+  line-height: 1.08;
+}
+
+body .saas-entry-copy h1 span {
+  color: #70b6ff;
+}
+
+body .saas-entry-copy p,
+body .saas-entry-action p,
+body .saas-entry-features small {
+  color: #b0c4dd;
+  line-height: 1.85;
+}
+
+body .saas-entry-action {
+  border-color: rgb(112 182 255 / .27);
+  border-radius: 18px;
+  background: linear-gradient(145deg, rgb(255 255 255 / .1), rgb(255 255 255 / .04));
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / .07);
+}
+
+body .saas-entry-continue {
+  min-height: 52px;
+  border-color: #70b6ff;
+  background: #2f86ef;
+  box-shadow: 0 12px 24px rgb(25 118 243 / .28);
+}
+
+body .saas-entry-preview {
+  border-color: rgb(112 182 255 / .25);
+  border-radius: 20px;
+  box-shadow: 0 20px 44px rgb(0 0 0 / .2);
+}
+
+body .auth-card {
+  width: min(100%, 480px);
+  border: 1px solid var(--rf-line);
+  border-radius: 22px;
+  background: var(--rf-surface);
+  box-shadow: 0 24px 70px rgb(11 23 41 / .2);
+}
+
+body .auth-form-panel {
+  padding: clamp(24px, 5vw, 42px);
+}
+
+body .auth-form-heading {
+  text-align: start;
+}
+
+body .auth-form-heading h2 {
+  color: var(--rf-ink);
+  font-size: clamp(1.5rem, 3vw, 2rem);
+}
+
+body .auth-form:not(#loginForm) .auth-input-wrap > input:not([type="checkbox"]):not([type="radio"]),
+body .auth-form:not(#loginForm) .auth-password-wrap > input:not([type="checkbox"]):not([type="radio"]) {
+  min-height: 50px;
+  border-color: var(--rf-line);
+  border-radius: var(--rf-radius-control);
+  background: var(--rf-surface-raised);
+}
+
+/* The reference login control is a compact two-state switch. Keep the
+   existing data-theme click contract while making both states visible. */
+.auth-screen[data-auth-stage="login"] .auth-theme-toggle {
+  position: absolute;
+  width: 96px;
+  height: 40px;
+  min-height: 40px;
+  justify-content: space-between;
+  padding: 0 10px;
+  border-radius: 999px;
+  overflow: hidden;
+}
+.auth-screen[data-auth-stage="login"] .auth-theme-toggle::before {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 48px;
+  height: 36px;
+  border-radius: 999px;
+  background: var(--auth-blue);
+  box-shadow: 0 6px 14px rgb(23 105 232 / .26);
+  content: "";
+  transition: left .18s ease, right .18s ease;
+}
+.auth-screen[data-auth-stage="login"] .auth-theme-toggle .theme-toggle-icon-dark,
+.auth-screen[data-auth-stage="login"] .auth-theme-toggle .theme-toggle-icon-light {
+  position: relative;
+  z-index: 1;
+  display: block !important;
+  width: 19px;
+  height: 19px;
+}
+html[data-theme="dark"] .auth-screen[data-auth-stage="login"] .auth-theme-toggle::before {
+  left: 3px;
+  right: auto;
+}
+html:not([data-theme="dark"]) .auth-screen[data-auth-stage="login"] .auth-theme-toggle::before {
+  right: 3px;
+  left: auto;
+}
+
+body .auth-submit {
+  min-height: 50px;
+  border-radius: var(--rf-radius-control);
+}
+
+body .branches-page {
+  overflow: hidden;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+body .branches-page-header {
+  margin-bottom: 20px;
+  border: 1px solid rgb(92 168 255 / .25);
+  border-radius: 22px;
+  background: linear-gradient(118deg, #0a1730, #12345c 65%, #0f6b72);
+  box-shadow: 0 16px 34px rgb(10 23 48 / .17);
+}
+
+body .branches-page-heading h2,
+body .branches-page-heading p,
+body .branches-page-kicker {
+  color: #f7fbff;
+}
+
+body .branches-page-heading p {
+  color: #b6c9e1;
+}
+
+body .branches-page-summary span {
+  border-color: rgb(255 255 255 / .16);
+  background: rgb(255 255 255 / .08);
+}
+
+body .branches-page-summary small {
+  color: #b6c9e1;
+}
+
+body .branch-list-item {
+  border-color: var(--rf-line);
+  border-radius: 14px;
+  background: var(--rf-surface-raised);
+  transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+body .branch-list-item:hover {
+  border-color: var(--rf-accent);
+  box-shadow: var(--rf-shadow-sm);
+  transform: translateY(-1px);
+}
+
+/* Platform Admin ----------------------------------------------------------- */
+body .platform-shell {
+  background: var(--rf-page);
+}
+
+body .platform-sidebar {
+  background: linear-gradient(180deg, #08162a, #071326);
+  border-left-color: rgb(255 255 255 / .09);
+}
+
+body .platform-nav-item {
+  min-height: 46px;
+  border-radius: 12px;
+  color: #9eb1c9;
+}
+
+body .platform-nav-item:hover,
+body .platform-nav-item:focus-visible {
+  background: rgb(92 168 255 / .12);
+  color: #fff;
+}
+
+body .platform-nav-item.active {
+  border-color: rgb(92 168 255 / .34);
+  background: linear-gradient(90deg, rgb(25 118 243 / .24), rgb(92 168 255 / .1));
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / .03), 0 8px 18px rgb(0 0 0 / .13);
+}
+
+body .platform-main,
+body .platform-content {
+  background: var(--rf-page);
+}
+
+body .platform-topbar {
+  border-bottom-color: var(--rf-line);
+  background: color-mix(in srgb, var(--rf-surface) 94%, transparent);
+}
+
+body .platform-card,
+body .platform-kpi,
+body .saas-page,
+body .saas-panel {
+  border-color: var(--rf-line);
+  background: var(--rf-surface);
+  box-shadow: var(--rf-shadow-sm);
+}
+
+body .platform-page-head h2,
+body .saas-page-header h2,
+body .saas-panel h4 {
+  color: var(--rf-ink);
+}
+
+/* Dialog, dropdown and state surfaces ------------------------------------- */
+body .modal,
+body .modal-dialog {
+  border: 1px solid var(--rf-line);
+  border-radius: 20px;
+  background: var(--rf-surface);
+  color: var(--rf-ink);
+  box-shadow: 0 24px 80px rgb(5 17 36 / .24);
+}
+
+body .modal-backdrop {
+  background: rgb(4 13 26 / .62);
+  backdrop-filter: blur(5px);
+}
+
+body .dropdown-menu,
+body .popover,
+body [role="listbox"] {
+  border: 1px solid var(--rf-line);
+  border-radius: 13px;
+  background: var(--rf-surface-raised);
+  box-shadow: var(--rf-shadow-md);
+}
+
+body .loading,
+body .empty,
+body .no-data,
+body .empty-state,
+body .saas-empty {
+  min-height: 84px;
+  display: grid;
+  place-items: center;
+  border: 1px dashed var(--rf-line);
+  border-radius: 14px;
+  background: var(--rf-surface-soft);
+  color: var(--rf-muted);
+}
+
+body .error-state,
+body .page-error,
+body .registration-error,
+body .portal-error {
+  border: 1px solid var(--danger-border);
+  border-radius: 14px;
+  background: var(--danger-soft);
+  color: var(--danger-text);
+}
+
+body .skeleton,
+body .loading-skeleton {
+  border-radius: 10px;
+  background: linear-gradient(90deg, var(--rf-surface-soft), var(--rf-line-soft), var(--rf-surface-soft));
+  background-size: 200% 100%;
+  animation: rf-skeleton 1.4s ease-in-out infinite;
+}
+
+@keyframes rf-skeleton {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Responsive: recompose rather than merely shrink ------------------------ */
+@media (max-width: 1199px) {
+  body .app-shell > main.page {
+    padding-inline: clamp(14px, 3vw, 28px);
+  }
+
+  body .app-shell > .page-tabs {
+    background: #0a192e;
+  }
+}
+
+@media (max-width: 767px) {
+  body .app-shell > main.page {
+    padding: 16px 10px 40px;
+  }
+
+  body .app-shell > .page-tabs {
+    gap: 5px;
+    border-bottom-color: rgb(255 255 255 / .1);
+    padding: 6px 8px;
+  }
+
+  body .app-shell > .page-tabs > .page-tab,
+  body .app-shell > .page-tabs > .smart-assistant-launcher {
+    min-height: 54px;
+    border-radius: 12px;
+    background: rgb(255 255 255 / .055);
+  }
+
+  body .topbar-inner {
+    width: calc(100% - 16px);
+    min-height: 68px;
+  }
+
+  body .topbar-brand-area .brand-copy h1 {
+    font-size: .9rem;
+  }
+
+  body .panel,
+  body .content-card,
+  body .shadow-panel,
+  body .branches-card,
+  body .store-card,
+  body .saas-panel {
+    border-radius: 15px;
+    padding: 15px;
+  }
+
+  body .panel-header,
+  body .card-header,
+  body .section-heading,
+  body .store-card-header,
+  body .branches-card-header,
+  body .saas-panel-head,
+  body .platform-page-head {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  body .panel-header .header-actions,
+  body .store-card-header .header-actions,
+  body .page-header .actions-row,
+  body .platform-page-head > .platform-btn {
+    width: 100%;
+  }
+
+  body .panel-header .header-actions .btn,
+  body .store-card-header .header-actions .btn {
+    flex: 1 1 auto;
+  }
+
+  body .form-grid,
+  body .field-grid,
+  body .two-column-grid,
+  body .content-grid-two,
+  body .dashboard-grid,
+  body .branches-layout,
+  body .saas-entry-layout {
+    grid-template-columns: 1fr;
+  }
+
+  body .dashboard-hero {
+    border-radius: 18px;
+  }
+
+  body .dashboard-hero-actions {
+    border-top-color: rgb(255 255 255 / .13);
+    border-inline-start: 0;
+  }
+
+  body .dashboard-hero-buttons {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  body .dashboard-hero-buttons .btn {
+    width: 100%;
+  }
+
+  body .saas-entry-card {
+    border-radius: 20px;
+  }
+
+  body .saas-entry-layout {
+    padding: 18px;
+  }
+
+  body .saas-entry-preview {
+    order: 2;
+  }
+
+  body .saas-entry-copy {
+    order: 1;
+  }
+
+  body .saas-entry-copy h1 {
+    font-size: clamp(2rem, 11vw, 3.2rem);
+  }
+
+  body .branches-page-header {
+    border-radius: 18px;
+  }
+
+  body .branches-page-summary {
+    width: 100%;
+  }
+
+  body .branches-page-summary span {
+    min-width: 0;
+    flex: 1;
+  }
+
+  body .branch-list-item {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  body .branch-list-actions {
+    grid-column: 2;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+
+  body .table-container,
+  body .table-panel,
+  body .members-panel,
+  body .store-table-wrap,
+  body .saas-table-wrap,
+  body .platform-table-wrap,
+  body .auth-users-table-wrap,
+  body .attendance-table-wrap,
+  body .member-requests-table-wrap {
+    overflow-x: auto;
+  }
+}
+
+@media (max-width: 420px) {
+  body .topbar-brand-area .brand-copy {
+    display: none;
+  }
+
+  body .topbar-brand-area .brand-mark {
+    width: 40px;
+    height: 40px;
+    flex-basis: 40px;
+  }
+
+  body .page-tabs > .page-tab > span,
+  body .page-tabs > .smart-assistant-launcher-label {
+    font-size: .62rem;
+  }
+
+  body .btn,
+  body button.btn,
+  body a.btn {
+    min-height: 44px;
+  }
+
+  body .btn-small,
+  body .btn-sm {
+    min-height: 38px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body *,
+  body *::before,
+  body *::after {
+    animation: none;
+    scroll-behavior: auto;
+    transition: none;
+  }
+}
+
+/* Branch management: compact summary + full-width directory --------------- */
+body .branches-page {
+  width: 100%;
+  max-width: none;
+  padding: 0;
+  display: grid;
+  gap: 16px;
+}
+
+body .branches-page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  min-height: 0;
+  margin: 0;
+  padding: 16px 18px;
+  border: 1px solid var(--rf-line);
+  border-radius: 16px;
+  background: var(--rf-surface);
+  box-shadow: var(--rf-shadow-sm);
+}
+
+body .branches-page-heading {
+  min-width: 0;
+}
+
+body .branches-page-heading h2 {
+  margin: 4px 0 0;
+  color: var(--rf-ink);
+  font-size: clamp(1.05rem, 1.7vw, 1.35rem);
+  letter-spacing: -.025em;
+}
+
+body .branches-page-heading p {
+  max-width: 560px;
+  margin: 5px 0 0;
+  color: var(--rf-muted);
+  font-size: .76rem;
+  line-height: 1.55;
+}
+
+body .branches-page-kicker,
+body .branches-card-kicker {
+  color: var(--rf-accent);
+  font-size: .62rem;
+  font-weight: 900;
+  letter-spacing: .12em;
+}
+
+body .branches-page-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  flex: 0 0 auto;
+}
+
+body .branches-page-summary {
+  display: flex;
+  gap: 8px;
+}
+
+body .branches-page-summary span {
+  display: grid;
+  gap: 1px;
+  min-width: 82px;
+  padding: 8px 11px;
+  border: 1px solid var(--rf-line);
+  border-radius: 11px;
+  background: var(--rf-surface-soft);
+}
+
+body .branches-page-summary strong {
+  color: var(--rf-ink);
+  font-size: 1.15rem;
+  line-height: 1.15;
+}
+
+body .branches-page-summary small {
+  color: var(--rf-muted);
+  font-size: .62rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+body .branches-create-trigger {
+  min-height: 44px;
+  padding-inline: 16px;
+  white-space: nowrap;
+}
+
+body .branches-create-trigger > span {
+  margin-inline-end: 4px;
+  font-size: 1.15em;
+  font-weight: 500;
+  line-height: 0;
+}
+
+body .branches-layout {
+  display: block;
+}
+
+body .branches-list-card {
+  width: 100%;
+  min-width: 0;
+  padding: 20px;
+}
+
+body .branches-list-card .branches-card-header {
+  align-items: center;
+  margin-bottom: 18px;
+}
+
+body .branches-list-card .branches-card-header h3 {
+  color: var(--rf-ink);
+  font-size: 1rem;
+}
+
+body .branches-list-card .branches-card-header p {
+  color: var(--rf-muted);
+  font-size: .75rem;
+}
+
+body .branches-list {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 290px), 1fr));
+  gap: 14px;
+  align-items: stretch;
+}
+
+body .branch-list-item {
+  min-height: 168px;
+  padding: 16px;
+  border-color: var(--rf-line);
+  border-radius: 15px;
+  background: var(--rf-surface-raised);
+  box-shadow: 0 4px 16px rgb(11 23 41 / .045);
+}
+
+body .branch-list-item:hover {
+  border-color: color-mix(in srgb, var(--rf-accent) 48%, var(--rf-line));
+  box-shadow: var(--rf-shadow-sm);
+  transform: translateY(-2px);
+}
+
+body .branch-list-marker {
+  width: 4px;
+  min-height: 82px;
+  border-radius: 999px;
+  background: var(--rf-accent);
+}
+
+body .branch-list-copy {
+  gap: 4px;
+}
+
+body .branch-list-copy strong {
+  color: var(--rf-ink);
+  font-size: .94rem;
+  line-height: 1.35;
+}
+
+body .branch-list-copy span {
+  color: var(--rf-accent-strong);
+  font-size: .68rem;
+  letter-spacing: .02em;
+}
+
+body .branch-list-copy small {
+  color: var(--rf-muted);
+  font-size: .72rem;
+}
+
+body .branch-list-actions {
+  align-items: center;
+  padding-top: 12px;
+}
+
+body .branch-list-actions .btn {
+  min-height: 36px;
+}
+
+@media (max-width: 900px) {
+  body .branches-page-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  body .branches-page-actions {
+    justify-content: space-between;
+  }
+}
+
+@media (max-width: 640px) {
+  body .branches-page-header,
+  body .branches-list-card {
+    padding: 15px;
+    border-radius: 14px;
+  }
+
+  body .branches-page-actions,
+  body .branches-page-summary {
+    width: 100%;
+  }
+
+  body .branches-page-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  body .branches-page-summary span {
+    flex: 1 1 0;
+  }
+
+  body .branches-create-trigger {
+    width: 100%;
+  }
+
+  body .branches-list-card .branches-card-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  body .branches-list-card .branches-card-header .btn {
+    width: 100%;
+  }
+
+  body .branches-list {
+    grid-template-columns: 1fr;
+  }
+
+}
+
+/* Topbar context control: centered operational scope, left-side actions, and
+   hover/focus dropdowns without changing the existing branch/section APIs. */
+@media (min-width: 1200px) {
+  body .app-shell > .topbar,
+  body .topbar-inner {
+    overflow: visible;
+  }
+
+  body .topbar-inner {
+    position: relative;
+    justify-content: flex-end;
+  }
+
+  body .topbar-controls {
+    position: static;
+    flex: 0 0 auto;
+    justify-content: flex-start;
+  }
+
+  body .topbar-controls > .branch-context-shell {
+    position: absolute;
+    z-index: 12;
+    inset-block-start: 50%;
+    inset-inline-start: 50%;
+    width: min(430px, calc(100% - 500px));
+    max-width: 430px;
+    height: 50px;
+    min-height: 50px;
+    margin: 0;
+    padding: 4px;
+    inset-inline-start: auto;
+    left: 50%;
+    border-color: color-mix(in srgb, var(--primary) 32%, var(--sidebar-divider));
+    border-radius: 16px;
+    background: color-mix(in srgb, var(--sidebar-bg) 92%, var(--primary) 8%);
+    box-shadow: 0 12px 28px rgb(2 6 23 / .18), inset 0 1px 0 rgb(255 255 255 / .07);
+    transform: translate(-50%, -50%);
+    transition: box-shadow 180ms ease, border-color 180ms ease, transform 180ms ease;
+  }
+
+  body .topbar-controls > .branch-context-shell:hover,
+  body .topbar-controls > .branch-context-shell:focus-within {
+    border-color: color-mix(in srgb, var(--primary) 62%, var(--sidebar-divider));
+    box-shadow: 0 16px 34px rgb(2 6 23 / .24), 0 0 0 3px color-mix(in srgb, var(--primary) 12%, transparent), inset 0 1px 0 rgb(255 255 255 / .08);
+    transform: translate(-50%, calc(-50% - 1px));
+  }
+}
+
+body .branch-context-shell {
+  overflow: visible;
+}
+
+body .branch-context-kicker {
+  min-width: 112px;
+}
+
+body .branch-context-field {
+  position: relative;
+  min-width: 132px;
+  border-color: transparent;
+  background: color-mix(in srgb, var(--sidebar-bg) 68%, var(--primary) 5%);
+  cursor: pointer;
+  transition: min-width 180ms ease, border-color 180ms ease, background-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+}
+
+body .branch-context-field:hover,
+body .branch-context-field:focus-within,
+body .branch-context-field.is-open {
+  min-width: 158px;
+  border-color: color-mix(in srgb, var(--primary) 48%, transparent);
+  background: color-mix(in srgb, var(--primary-soft) 70%, var(--sidebar-bg));
+  box-shadow: 0 8px 18px rgb(2 6 23 / .13);
+  transform: translateY(-1px);
+}
+
+body .branch-context-field-copy {
+  width: 100%;
+}
+
+body .branch-context-field-copy select {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+body .branch-context-trigger {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 31px;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--sidebar-text);
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1.35;
+  text-align: start;
+}
+
+body .branch-context-trigger:disabled {
+  cursor: not-allowed;
+  opacity: .52;
+}
+
+body .branch-context-trigger:focus-visible {
+  border-radius: 7px;
+  box-shadow: var(--focus-ring);
+}
+
+body .branch-context-trigger > [data-context-value] {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+body .branch-context-trigger-chevron {
+  width: 6px;
+  height: 6px;
+  flex: 0 0 6px;
+  border-inline-end: 1.5px solid currentColor;
+  border-block-end: 1.5px solid currentColor;
+  color: var(--sidebar-text-muted);
+  transform: rotate(45deg) translateY(-2px);
+  transition: transform 180ms ease, color 180ms ease;
+}
+
+body .branch-context-field:hover .branch-context-trigger-chevron,
+body .branch-context-field:focus-within .branch-context-trigger-chevron,
+body .branch-context-field.is-open .branch-context-trigger-chevron {
+  color: var(--color-primary);
+  transform: rotate(225deg) translateY(-1px);
+}
+
+body .branch-context-menu {
+  position: absolute;
+  z-index: 30;
+  inset-block-start: calc(100% + 8px);
+  inset-inline: 0;
+  display: grid;
+  max-height: 230px;
+  gap: 4px;
+  padding: 6px;
+  overflow-y: auto;
+  border: 1px solid color-mix(in srgb, var(--primary) 34%, var(--sidebar-divider));
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--sidebar-bg) 96%, var(--primary) 4%);
+  box-shadow: 0 18px 34px rgb(2 6 23 / .28);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-5px) scale(.98);
+  transform-origin: top center;
+  transition: opacity 160ms ease, transform 160ms ease;
+}
+
+body .branch-context-field:hover .branch-context-menu,
+body .branch-context-field:focus-within .branch-context-menu,
+body .branch-context-field.is-open .branch-context-menu {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0) scale(1);
+}
+
+body .branch-context-option {
+  display: flex;
+  min-height: 34px;
+  align-items: center;
+  justify-content: flex-start;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--sidebar-text);
+  cursor: pointer;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 800;
+  padding-inline: 10px;
+  text-align: start;
+  transition: background-color 140ms ease, color 140ms ease, border-color 140ms ease;
+}
+
+body .branch-context-option:hover,
+body .branch-context-option:focus-visible,
+body .branch-context-option.is-selected {
+  border-color: color-mix(in srgb, var(--primary) 30%, transparent);
+  background: color-mix(in srgb, var(--primary-soft) 78%, transparent);
+  color: var(--color-primary);
+  outline: 0;
+}
+
+body .branch-context-option:disabled {
+  cursor: not-allowed;
+  opacity: .45;
+}
+
+@media (max-width: 1199px) {
+  body .topbar-inner {
+    flex-wrap: wrap;
+  }
+
+  body .topbar-controls {
+    flex: 1 1 100%;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    row-gap: 8px;
+  }
+
+  body .topbar-controls > .branch-context-shell {
+    position: static;
+    order: -2;
+    width: min(100%, 500px);
+    max-width: 100%;
+    height: 46px;
+    min-height: 46px;
+    margin-inline: auto;
+    transform: none;
+  }
+
+  body .topbar-controls > .branch-context-shell:hover,
+  body .topbar-controls > .branch-context-shell:focus-within {
+    transform: translateY(-1px);
+  }
+}
+
+@media (max-width: 767px) {
+  body .topbar-inner {
+    gap: 6px;
+  }
+
+  body .topbar-controls {
+    align-items: stretch;
+  }
+
+  body .topbar-controls > .branch-context-shell {
+    width: 100%;
+    height: 44px;
+    min-height: 44px;
+  }
+
+  body .branch-context-kicker {
+    min-width: 84px;
+  }
+
+  body .branch-context-kicker small,
+  body .branch-context-field-icon {
+    display: none;
+  }
+
+  body .branch-context-field,
+  body .branch-context-field:hover,
+  body .branch-context-field:focus-within,
+  body .branch-context-field.is-open {
+    min-width: 0;
+    flex: 1 1 0;
+  }
+
+  body .branch-context-status {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body .branch-context-shell,
+  body .branch-context-field,
+  body .branch-context-trigger-chevron,
+  body .branch-context-menu {
+    transition: none;
+  }
+}
+
+/* -------------------------------------------------------------------------
+   Final visual pass: dashboard welcome, image-backed navigation and the
+   desktop members table.  Mobile member cards intentionally remain outside
+   this block so their existing composition is untouched.
+   ------------------------------------------------------------------------- */
+
+body .dashboard-hero {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  grid-template-columns: minmax(0, 1.12fr) minmax(350px, .88fr);
+  min-height: 320px;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid rgb(219 228 240 / .95);
+  border-radius: 26px;
+  background: #fff;
+  box-shadow: 0 18px 44px rgb(37 55 91 / .08);
+}
+
+body .dashboard-hero::before {
+  position: absolute;
+  z-index: -2;
+  inset: 0;
+  content: '';
+  background:
+    linear-gradient(90deg, rgb(255 255 255 / .08) 0%, rgb(255 255 255 / .38) 45%, rgb(255 255 255 / .98) 88%),
+    url('/assets/gym-background.webp') center / cover no-repeat;
+  opacity: .32;
+  pointer-events: none;
+}
+
+body .dashboard-hero::after {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  content: '';
+  background: linear-gradient(90deg, rgb(255 255 255 / .72), rgb(255 255 255 / .18) 56%, rgb(255 255 255 / .9));
+  pointer-events: none;
+}
+
+body .dashboard-hero-content,
+body .dashboard-hero-actions {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+  padding: 30px 32px;
+}
+
+body .dashboard-hero-content {
+  display: flex;
+  min-height: 320px;
+  flex-direction: column;
+  justify-content: center;
+  gap: 22px;
+  color: var(--text-primary, #17233d);
+}
+
+body .dashboard-hero-topline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+body .dashboard-hero-kicker {
+  color: #7a8ba5;
+  font-size: .66rem;
+  font-weight: 900;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+}
+
+body .dashboard-live-status {
+  display: inline-flex;
+  min-height: 29px;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 11px;
+  border: 1px solid rgb(24 177 112 / .18);
+  border-radius: 999px;
+  background: rgb(232 250 242 / .92);
+  color: #087a51;
+  font-size: .72rem;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+body .dashboard-live-status i {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 7px;
+  border-radius: 50%;
+  background: #18b170;
+  box-shadow: 0 0 0 4px rgb(24 177 112 / .12);
+}
+
+body .dashboard-hero-heading {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+body .dashboard-hero-brand-mark {
+  display: grid;
+  width: 62px;
+  height: 62px;
+  flex: 0 0 62px;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid rgb(111 93 230 / .2);
+  border-radius: 18px;
+  background: linear-gradient(145deg, #7768e8, #4933ad);
+  box-shadow: 0 12px 25px rgb(85 66 193 / .18);
+  color: #fff;
+  font-size: 1.7rem;
+  font-weight: 900;
+}
+
+body .dashboard-hero-brand-mark img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 8px;
+  background: #fff;
+}
+
+body .dashboard-hero-heading-copy {
+  min-width: 0;
+}
+
+body .dashboard-hero-eyebrow {
+  display: block;
+  margin-block-end: 7px;
+  color: #64748b;
+  font-size: .76rem;
+  font-weight: 800;
+}
+
+body .dashboard-hero-heading h2,
+body .dashboard-hero-heading h2 strong {
+  margin: 0;
+  color: #17233d;
+  font-size: clamp(1.45rem, 2.1vw, 2.15rem);
+  font-weight: 900;
+  letter-spacing: -.03em;
+  line-height: 1.25;
+}
+
+body .dashboard-hero-heading h2 strong {
+  color: #5d46d6;
+}
+
+body .dashboard-hero-heading-copy p {
+  margin: 8px 0 0;
+  color: #6a7890;
+  font-size: .9rem;
+  font-weight: 700;
+}
+
+body .dashboard-hero-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 18px;
+  margin-inline-start: 78px;
+  color: #63738d;
+  font-size: .72rem;
+  font-weight: 800;
+}
+
+body .dashboard-hero-meta span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+body .dashboard-hero-meta .ui-icon {
+  width: 16px;
+  height: 16px;
+  color: #6755da;
+}
+
+body .dashboard-hero-actions {
+  display: flex;
+  min-height: 320px;
+  flex-direction: column;
+  justify-content: center;
+  gap: 18px;
+  border: 0;
+  border-inline-start: 1px solid rgb(214 223 237 / .8);
+  background: rgb(248 250 253 / .52);
+}
+
+body .dashboard-hero-action-copy {
+  display: grid;
+  gap: 6px;
+}
+
+body .dashboard-hero-action-copy span {
+  color: #17233d;
+  font-size: 1.06rem;
+  font-weight: 900;
+}
+
+body .dashboard-hero-action-copy small {
+  max-width: 360px;
+  color: #77859b;
+  font-size: .78rem;
+  font-weight: 700;
+  line-height: 1.7;
+}
+
+body .dashboard-hero-buttons {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+/* The preview action is the user-facing pricing shortcut in the reference;
+   the full subscription PDF remains available from the top toolbar. */
+body .dashboard-hero #dashboardPrintPricingButton {
+  display: none;
+}
+
+body .dashboard-hero-buttons .btn {
+  min-height: 45px;
+  justify-content: center;
+  padding-inline: 13px;
+  border-radius: 12px;
+  font-size: .76rem;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+body .dashboard-hero-buttons .btn-light {
+  border-color: #dbe2ef;
+  background: #fff;
+  color: #31415f;
+  box-shadow: 0 8px 18px rgb(37 55 91 / .06);
+}
+
+body .dashboard-hero-buttons .btn-primary {
+  border-color: #654bd4;
+  background: linear-gradient(135deg, #765ee4, #5034ba);
+  color: #fff;
+  box-shadow: 0 10px 22px rgb(91 64 202 / .22);
+}
+
+body .dashboard-hero-buttons #dashboardPrintPricingPreviewButton {
+  border-color: #654bd4;
+  background: linear-gradient(135deg, #765ee4, #5034ba);
+  color: #fff;
+  box-shadow: 0 10px 22px rgb(91 64 202 / .22);
+}
+
+body .dashboard-hero-mini-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-block-start: auto;
+}
+
+body .dashboard-hero-mini-stat {
+  display: flex;
+  min-width: 0;
+  min-height: 66px;
+  align-items: center;
+  gap: 9px;
+  padding: 10px;
+  border: 1px solid rgb(218 226 240 / .92);
+  border-radius: 14px;
+  background: rgb(255 255 255 / .8);
+  box-shadow: 0 8px 20px rgb(37 55 91 / .05);
+}
+
+body .dashboard-hero-mini-stat > span:last-child {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+body .dashboard-hero-mini-stat small {
+  overflow: hidden;
+  color: #78869a;
+  font-size: .64rem;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+body .dashboard-hero-mini-stat strong {
+  overflow: hidden;
+  color: #253453;
+  font-size: .82rem;
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+body .dashboard-hero-mini-stat-icon {
+  display: grid;
+  width: 31px;
+  height: 31px;
+  flex: 0 0 31px;
+  place-items: center;
+  border-radius: 10px;
+  background: #f0edff;
+  color: #6550d7;
+}
+
+body .dashboard-hero-mini-stat-icon .ui-icon {
+  width: 16px;
+  height: 16px;
+}
+
+html[data-theme="dark"] body .dashboard-hero,
+body[data-theme="dark"] .dashboard-hero {
+  border-color: rgb(104 129 170 / .32);
+  background: #101a2c;
+  box-shadow: 0 20px 48px rgb(1 6 18 / .24);
+}
+
+html[data-theme="dark"] body .dashboard-hero::before,
+body[data-theme="dark"] .dashboard-hero::before {
+  background:
+    linear-gradient(90deg, rgb(8 17 34 / .2), rgb(8 17 34 / .7) 54%, rgb(8 17 34 / .96)),
+    url('/assets/gym-background.webp') center / cover no-repeat;
+  opacity: .52;
+}
+
+html[data-theme="dark"] body .dashboard-hero::after,
+body[data-theme="dark"] .dashboard-hero::after {
+  background: linear-gradient(90deg, rgb(8 17 34 / .62), rgb(8 17 34 / .12) 54%, rgb(8 17 34 / .76));
+}
+
+html[data-theme="dark"] body .dashboard-hero-heading h2,
+html[data-theme="dark"] body .dashboard-hero-heading h2 strong,
+body[data-theme="dark"] .dashboard-hero-heading h2,
+body[data-theme="dark"] .dashboard-hero-heading h2 strong,
+html[data-theme="dark"] body .dashboard-hero-action-copy span,
+body[data-theme="dark"] .dashboard-hero-action-copy span {
+  color: #f5f8ff;
+}
+
+html[data-theme="dark"] body .dashboard-hero-heading h2 strong,
+body[data-theme="dark"] .dashboard-hero-heading h2 strong {
+  color: #b3a7ff;
+}
+
+html[data-theme="dark"] body .dashboard-hero-eyebrow,
+body[data-theme="dark"] .dashboard-hero-eyebrow,
+html[data-theme="dark"] body .dashboard-hero-heading-copy p,
+body[data-theme="dark"] .dashboard-hero-heading-copy p,
+html[data-theme="dark"] body .dashboard-hero-meta,
+body[data-theme="dark"] .dashboard-hero-meta,
+html[data-theme="dark"] body .dashboard-hero-action-copy small,
+body[data-theme="dark"] .dashboard-hero-action-copy small {
+  color: #b2c0d7;
+}
+
+html[data-theme="dark"] body .dashboard-hero-actions,
+body[data-theme="dark"] .dashboard-hero-actions {
+  border-inline-start-color: rgb(158 179 217 / .17);
+  background: rgb(2 9 22 / .22);
+}
+
+html[data-theme="dark"] body .dashboard-hero-buttons .btn-light,
+body[data-theme="dark"] .dashboard-hero-buttons .btn-light {
+  border-color: rgb(155 177 216 / .25);
+  background: rgb(255 255 255 / .08);
+  color: #edf4ff;
+  box-shadow: none;
+}
+
+html[data-theme="dark"] body .dashboard-hero-mini-stat,
+body[data-theme="dark"] .dashboard-hero-mini-stat {
+  border-color: rgb(149 174 219 / .2);
+  background: rgb(13 29 52 / .72);
+  box-shadow: none;
+}
+
+html[data-theme="dark"] body .dashboard-hero-mini-stat small,
+body[data-theme="dark"] .dashboard-hero-mini-stat small {
+  color: #aebdd3;
+}
+
+html[data-theme="dark"] body .dashboard-hero-mini-stat strong,
+body[data-theme="dark"] .dashboard-hero-mini-stat strong {
+  color: #f3f7ff;
+}
+
+html[data-theme="dark"] body .dashboard-hero-mini-stat-icon,
+body[data-theme="dark"] .dashboard-hero-mini-stat-icon {
+  background: rgb(121 100 231 / .18);
+  color: #b8adff;
+}
+
+/* Sidebar image treatment. The navigation geometry and interactions remain
+   owned by navigation-shell.css; this layer only changes its surface. */
+body .app-shell > .page-tabs,
+body .app-shell > .page-tabs:hover,
+body .app-shell > .page-tabs:focus-within {
+  background-color: #071326;
+  background-image: linear-gradient(180deg, rgb(3 10 26 / .94), rgb(4 13 31 / .39)), url('/assets/gym-sidebar-aesthetic.jpg');
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-blend-mode: normal;
+}
+
+body .app-shell > .page-tabs::before {
+  background: linear-gradient(180deg, rgb(2 8 22 / .18), rgb(2 8 22 / .62));
+  opacity: 1;
+}
+
+body .app-shell > .page-tabs > .page-tab {
+  color: #c1ccdc;
+}
+
+body .app-shell > .page-tabs > .page-tab:hover,
+body .app-shell > .page-tabs > .page-tab:focus-visible {
+  border-color: rgb(174 153 255 / .28);
+  background: rgb(126 101 227 / .2);
+  color: #fff;
+}
+
+body .app-shell > .page-tabs > .page-tab.active,
+body .app-shell > .page-tabs > .page-tab[aria-selected="true"] {
+  border-color: rgb(180 160 255 / .48);
+  background: linear-gradient(135deg, rgb(121 92 227 / .9), rgb(75 50 157 / .88));
+  box-shadow: 0 10px 24px rgb(50 29 126 / .26), inset 0 1px 0 rgb(255 255 255 / .15);
+  color: #fff;
+}
+
+/* Desktop/tablet table geometry. The mobile card layout intentionally does
+   not match this selector and therefore keeps its established composition. */
+@media (min-width: 768px) {
+  body .members-table:not(.table-card-layout) {
+    width: 100%;
+    min-width: 1180px;
+    table-layout: fixed;
+  }
+
+  body .members-table:not(.table-card-layout) th,
+  body .members-table:not(.table-card-layout) td {
+    box-sizing: border-box;
+    vertical-align: middle;
+    white-space: nowrap;
+  }
+
+  body .members-table:not(.table-card-layout) th:nth-child(1),
+  body .members-table:not(.table-card-layout) td:nth-child(1) { width: 29%; }
+  body .members-table:not(.table-card-layout) th:nth-child(2),
+  body .members-table:not(.table-card-layout) td:nth-child(2) { width: 14%; }
+  body .members-table:not(.table-card-layout) th:nth-child(3),
+  body .members-table:not(.table-card-layout) td:nth-child(3) { width: 8%; }
+  body .members-table:not(.table-card-layout) th:nth-child(4),
+  body .members-table:not(.table-card-layout) td:nth-child(4) { width: 12%; }
+  body .members-table:not(.table-card-layout) th:nth-child(5),
+  body .members-table:not(.table-card-layout) td:nth-child(5) { width: 7%; }
+  body .members-table:not(.table-card-layout) th:nth-child(6),
+  body .members-table:not(.table-card-layout) td:nth-child(6) { width: 10%; }
+  body .members-table:not(.table-card-layout) th:nth-child(7),
+  body .members-table:not(.table-card-layout) td:nth-child(7) { width: 20%; min-width: 236px; }
+
+  body .members-table:not(.table-card-layout) th:last-child {
+    text-align: center;
+  }
+
+  body .members-table:not(.table-card-layout) td:first-child {
+    min-width: 330px;
+  }
+
+  body .members-table:not(.table-card-layout) .member-identity {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 11px;
+  }
+
+  body .members-table:not(.table-card-layout) .member-identity-copy {
+    display: grid;
+    min-width: 0;
+    gap: 3px;
+  }
+
+  body .members-table:not(.table-card-layout) .table-member-name {
+    overflow: hidden;
+    color: var(--text-primary, #17233d);
+    font-size: .88rem;
+    font-weight: 900;
+    line-height: 1.35;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  body .members-table:not(.table-card-layout) .table-member-phone,
+  body .members-table:not(.table-card-layout) .member-identity-copy .table-sub,
+  body .members-table:not(.table-card-layout) .member-code-preview {
+    color: var(--text-secondary, #718096);
+    font-size: .72rem;
+    line-height: 1.45;
+  }
+
+  body .members-table:not(.table-card-layout) .table-actions,
+  body .members-table:not(.table-card-layout) .member-action-row > .table-actions {
+    display: flex;
+    min-width: 0;
+    min-height: 40px;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    flex-wrap: nowrap;
+    white-space: nowrap;
+  }
+
+  body .members-table:not(.table-card-layout) .table-actions > .table-action-visible,
+  body .members-table:not(.table-card-layout) .table-actions > .action-menu,
+  body .members-table:not(.table-card-layout) .table-actions > .btn,
+  body .members-table:not(.table-card-layout) .table-actions .action-menu-toggle {
+    width: 40px;
+    min-width: 40px;
+    height: 40px;
+    min-height: 40px;
+    flex: 0 0 40px;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border-radius: 10px;
+  }
+
+  body .members-table:not(.table-card-layout) .table-actions > [data-action="renew"] {
+    width: 40px;
+    min-width: 40px;
+    max-width: 40px;
+    height: 40px;
+    min-height: 40px;
+    flex: 0 0 40px;
+    gap: 0;
+    padding: 0;
+  }
+
+  body .members-table:not(.table-card-layout) .table-actions .table-action-label {
+    display: none;
+  }
+
+  body .members-table .table-actions > [data-action="renew"] {
+    width: 40px;
+    min-width: 40px;
+    max-width: 40px;
+    height: 40px;
+    min-height: 40px;
+    flex: 0 0 40px;
+    gap: 0;
+    padding: 0;
+  }
+
+  body .members-table .table-actions .table-action-label {
+    display: none;
+  }
+
+  body .members-table:not(.table-card-layout) .action-menu {
+    position: relative;
+    display: inline-flex;
+    flex: 0 0 40px;
+  }
+
+  body .members-table:not(.table-card-layout) .action-menu-panel {
+    min-width: 190px;
+  }
+
+  body .members-table:not(.table-card-layout) .badge {
+    min-width: 74px;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 1199px) and (min-width: 768px) {
+  body .dashboard-hero {
+    grid-template-columns: minmax(0, 1fr) minmax(300px, .9fr);
+  }
+
+  body .dashboard-hero-content,
+  body .dashboard-hero-actions {
+    padding: 26px 22px;
+  }
+
+  body .dashboard-hero-heading h2,
+  body .dashboard-hero-heading h2 strong {
+    font-size: clamp(1.3rem, 2.5vw, 1.75rem);
+  }
+}
+
+@media (max-width: 767px) {
+  body .dashboard-hero {
+    display: flex;
+    min-height: 0;
+    flex-direction: column;
+    border-radius: 20px;
+  }
+
+  body .dashboard-hero::before {
+    opacity: .2;
+  }
+
+  body .dashboard-hero-content,
+  body .dashboard-hero-actions {
+    min-height: 0;
+    padding: 22px 18px;
+  }
+
+  body .dashboard-hero-content {
+    order: 1;
+  }
+
+  body .dashboard-hero-actions {
+    order: 2;
+  }
+
+  body .dashboard-hero-content {
+    gap: 18px;
+  }
+
+  body .dashboard-hero-actions {
+    gap: 15px;
+    border-top: 1px solid rgb(214 223 237 / .8);
+    border-inline-start: 0;
+  }
+
+  body .dashboard-hero-topline {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  body .dashboard-hero-heading h2,
+  body .dashboard-hero-heading h2 strong {
+    font-size: clamp(1.25rem, 6vw, 1.7rem);
+  }
+
+  body .dashboard-hero-meta {
+    margin-inline-start: 0;
+  }
+
+  body .dashboard-hero-buttons {
+    grid-template-columns: 1fr;
+  }
+
+  body .dashboard-hero-buttons .btn {
+    width: 100%;
+  }
+
+  body .dashboard-hero-mini-stats {
+    gap: 8px;
+  }
+
+  body .dashboard-hero-mini-stat {
+    min-height: 62px;
+    padding: 8px;
+  }
+
+  body .dashboard-hero-mini-stat-icon {
+    width: 28px;
+    height: 28px;
+    flex-basis: 28px;
+  }
+
+  body .dashboard-hero-mini-stat strong {
+    font-size: .72rem;
+  }
+}
+
+@media (max-width: 430px) {
+  body .dashboard-hero-content,
+  body .dashboard-hero-actions {
+    padding: 18px 14px;
+  }
+
+  body .dashboard-hero-mini-stats {
+    grid-template-columns: 1fr;
+  }
+
+  body .dashboard-hero-mini-stat {
+    min-height: 52px;
+  }
+}
+
+/* Navbar context: keep branch and section as lightweight, independent
+   controls. The existing select/trigger/menu behavior stays untouched. */
+body .topbar-controls > .branch-context-shell {
+  position: static;
+  inset: auto;
+  z-index: auto;
+  display: inline-flex;
+  flex: 0 1 auto;
+  width: auto;
+  max-width: min(100%, 640px);
+  height: 36px;
+  min-height: 36px;
+  margin: 0;
+  padding: 0;
+  gap: 3px;
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  transform: none;
+  isolation: auto;
+}
+
+body .topbar-controls > .branch-context-shell:hover,
+body .topbar-controls > .branch-context-shell:focus-within {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  transform: none;
+}
+
+body .topbar-controls > .branch-context-shell .branch-context-kicker {
+  display: inline-flex;
+  min-width: auto;
+  height: 34px;
+  align-items: center;
+  gap: 6px;
+  padding: 0 7px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+}
+
+body .topbar-controls > .branch-context-shell .branch-context-kicker-icon,
+body .topbar-controls > .branch-context-shell .branch-context-field-icon {
+  width: 17px;
+  height: 17px;
+  flex-basis: 17px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--sidebar-text-muted);
+}
+
+body .topbar-controls > .branch-context-shell .branch-context-kicker-icon svg,
+body .topbar-controls > .branch-context-shell .branch-context-field-icon svg {
+  width: 14px;
+  height: 14px;
+}
+
+body .topbar-controls > .branch-context-shell .branch-context-kicker strong {
+  color: var(--sidebar-text);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+body .topbar-controls > .branch-context-shell .branch-context-kicker small {
+  display: none;
+}
+
+body .topbar-controls > .branch-context-shell .branch-context-divider {
+  display: none;
+}
+
+body .topbar-controls > .branch-context-shell .branch-context-field {
+  min-width: 0;
+  height: 34px;
+  flex: 0 1 auto;
+  align-items: center;
+  gap: 4px;
+  padding: 0 7px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  box-shadow: none;
+  transform: none;
+  transition: background-color 160ms ease, color 160ms ease;
+}
+
+body .topbar-controls > .branch-context-shell .branch-context-field:hover,
+body .topbar-controls > .branch-context-shell .branch-context-field:focus-within,
+body .topbar-controls > .branch-context-shell .branch-context-field.is-open {
+  min-width: 0;
+  border: 0;
+  background: color-mix(in srgb, var(--primary-soft) 42%, transparent);
+  box-shadow: none;
+  transform: none;
+}
+
+body .topbar-controls > .branch-context-shell .branch-context-field-copy {
+  display: flex;
+  width: auto;
+  min-width: 0;
+  align-items: center;
+  gap: 5px;
+}
+
+body .topbar-controls > .branch-context-shell .branch-context-field-copy small {
+  color: var(--sidebar-text-muted);
+  font-size: 10px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+body .topbar-controls > .branch-context-shell .branch-context-trigger {
+  width: auto;
+  min-width: 0;
+  min-height: 30px;
+  gap: 7px;
+  color: var(--sidebar-text);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+body .topbar-controls > .branch-context-shell .branch-context-trigger > [data-context-value] {
+  display: block;
+  max-width: 122px;
+}
+
+body .topbar-controls > .branch-context-shell .branch-context-trigger-chevron {
+  width: 5px;
+  height: 5px;
+  flex-basis: 5px;
+}
+
+body .topbar-controls > .branch-context-shell .branch-context-status {
+  min-height: 28px;
+  margin-inline-start: 0;
+  gap: 5px;
+  padding: 0 6px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--success-text);
+  font-size: 10px;
+  font-weight: 800;
+}
+
+body .topbar-controls > .branch-context-shell .branch-context-status-dot {
+  width: 6px;
+  height: 6px;
+  flex-basis: 6px;
+  box-shadow: 0 0 0 3px var(--success-soft);
+}
+
+body .topbar-controls > .branch-context-shell .branch-context-menu {
+  inset-block-start: calc(100% + 5px);
+  min-width: 170px;
+  border-radius: 10px;
+}
+
+@media (max-width: 1199px) {
+  body .topbar-controls > .branch-context-shell {
+    position: static;
+    width: auto;
+    max-width: 100%;
+    height: 34px;
+    min-height: 34px;
+    margin-inline: 0;
+  }
+}
+
+@media (max-width: 767px) {
+  body .topbar-controls > .branch-context-shell {
+    width: 100%;
+    max-width: 100%;
+    min-height: 34px;
+    flex: 1 1 100%;
+    order: -2;
+    justify-content: flex-start;
+    gap: 1px;
+  }
+
+  body .topbar-controls > .branch-context-shell .branch-context-kicker {
+    flex: 0 0 auto;
+    padding-inline: 2px 5px;
+  }
+
+  body .topbar-controls > .branch-context-shell .branch-context-kicker strong {
+    font-size: 10px;
+  }
+
+  body .topbar-controls > .branch-context-shell .branch-context-field {
+    flex: 1 1 0;
+    padding-inline: 4px;
+  }
+
+  body .topbar-controls > .branch-context-shell .branch-context-field-copy small {
+    display: none;
+  }
+
+  body .topbar-controls > .branch-context-shell .branch-context-trigger {
+    gap: 4px;
+    font-size: 10px;
+  }
+
+  body .topbar-controls > .branch-context-shell .branch-context-trigger > [data-context-value] {
+    max-width: min(32vw, 112px);
+  }
+
+  body .topbar-controls > .branch-context-shell .branch-context-status {
+    padding-inline: 4px;
+    font-size: 9px;
+  }
+}
+
+@media (max-width: 380px) {
+  body .topbar-controls > .branch-context-shell .branch-context-kicker strong {
+    display: none;
+  }
+
+  body .topbar-controls > .branch-context-shell .branch-context-kicker-icon {
+    width: 16px;
+    height: 16px;
+    flex-basis: 16px;
+  }
+
+  body .topbar-controls > .branch-context-shell .branch-context-trigger > [data-context-value] {
+    max-width: 26vw;
+  }
+}
+
+/* Navbar reference pass: keep the existing controls and handlers, but make
+   the bar a compact command row with no brand/context/status containers. */
+body .app-shell > .topbar .topbar-brand-area {
+  display: none !important;
+}
+
+body .app-shell > .topbar .topbar-inner {
+  width: calc(100% - 32px);
+  max-width: none;
+  justify-content: stretch;
+  gap: 0;
+}
+
+body .app-shell > .topbar .topbar-controls {
+  width: 100%;
+  flex: 1 1 auto;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  flex-wrap: nowrap;
+}
+
+body .topbar-controls > .branch-context-shell {
+  order: 1;
+  width: auto;
+  max-width: 410px;
+  height: 38px;
+  min-height: 38px;
+  flex: 0 1 auto;
+  gap: 0;
+}
+
+body .topbar-controls > .branch-context-shell .branch-context-kicker,
+body .topbar-controls > .branch-context-shell .branch-context-status,
+body .topbar-controls > .branch-context-shell .branch-context-divider {
+  display: none !important;
+}
+
+body .topbar-controls > .branch-context-shell .branch-context-field {
+  height: 34px;
+  min-height: 34px;
+  padding-inline: 8px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+}
+
+body .topbar-controls > .branch-context-shell .branch-context-field + .branch-context-field {
+  border-inline-start: 1px solid var(--sidebar-divider);
+  border-radius: 0 8px 8px 0;
+}
+
+body .topbar-controls > .branch-context-shell .branch-context-field:hover,
+body .topbar-controls > .branch-context-shell .branch-context-field:focus-within,
+body .topbar-controls > .branch-context-shell .branch-context-field.is-open {
+  background: color-mix(in srgb, var(--primary-soft) 36%, transparent);
+}
+
+body .topbar-controls > .branch-context-shell .branch-context-field-copy {
+  gap: 5px;
+}
+
+body .topbar-controls > .branch-context-shell .branch-context-field-copy small {
+  color: var(--sidebar-text-muted);
+  font-size: 10px;
+}
+
+body .topbar-controls > .branch-context-shell .branch-context-trigger {
+  min-height: 30px;
+  gap: 6px;
+  font-size: 11px;
+}
+
+body .topbar-controls > .branch-context-shell .branch-context-trigger > [data-context-value] {
+  max-width: 128px;
+}
+
+body .topbar-quick-actions {
+  order: 2;
+  min-width: 0;
+  flex: 0 0 auto;
+  gap: 7px;
+  margin: 0;
+}
+
+body .topbar-quick-actions #topPricingButton,
+body .topbar-quick-actions #refreshButton {
+  display: none !important;
+}
+
+body .topbar-quick-actions #topAddMemberButton {
+  display: inline-flex;
+  height: 40px;
+  min-height: 40px;
+  min-width: 112px;
+  align-items: center;
+  justify-content: center;
+  padding-inline: 14px;
+  border-radius: 10px;
+  white-space: nowrap;
+}
+
+body .topbar-controls > #mobileNavToggle {
+  order: 3;
+}
+
+body .topbar-controls > #themeToggleButton,
+body .topbar-controls > #globalKioskToggle,
+body .topbar-controls > #authAccountBar {
+  order: 4;
+}
+
+body .topbar-controls > #globalKioskToggle { order: 5; }
+body .topbar-controls > #authAccountBar { order: 6; }
+
+body .topbar-controls > #themeToggleButton,
+body .topbar-controls > #globalKioskToggle,
+body .topbar-controls > #authAccountBar .auth-logout-button {
+  box-sizing: border-box;
+  width: 40px;
+  min-width: 40px;
+  height: 40px;
+  min-height: 40px;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border-radius: 10px;
+}
+
+body .topbar-controls > #authAccountBar .auth-logout-button > span {
+  display: none;
+}
+
+body .topbar-controls > #themeToggleButton .ui-icon,
+body .topbar-controls > #globalKioskToggle .ui-icon,
+body .topbar-controls > #authAccountBar .auth-logout-button .ui-icon {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+}
+
+@media (max-width: 1199px) {
+  body .app-shell > .topbar .topbar-controls {
+    flex-wrap: nowrap;
+  }
+
+  body .topbar-controls > .branch-context-shell {
+    max-width: 360px;
+  }
+
+  body .topbar-controls > .branch-context-shell .branch-context-trigger > [data-context-value] {
+    max-width: 105px;
+  }
+
+  body .topbar-quick-actions #topAddMemberButton {
+    min-width: 104px;
+    padding-inline: 10px;
+    font-size: 11px;
+  }
+}
+
+@media (max-width: 767px) {
+  body .app-shell > .topbar .topbar-inner {
+    width: calc(100% - 16px);
+    min-height: 0;
+    padding-block: 8px;
+  }
+
+  body .app-shell > .topbar .topbar-controls {
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  body .topbar-controls > .branch-context-shell {
+    width: 100%;
+    max-width: none;
+    height: 34px;
+    min-height: 34px;
+    flex: 1 1 100%;
+    order: 1;
+  }
+
+  body .topbar-controls > .branch-context-shell .branch-context-field {
+    min-width: 0;
+    flex: 1 1 0;
+    padding-inline: 5px;
+  }
+
+  body .topbar-controls > .branch-context-shell .branch-context-field-copy small {
+    font-size: 9px;
+  }
+
+  body .topbar-controls > .branch-context-shell .branch-context-trigger {
+    gap: 4px;
+    font-size: 10px;
+  }
+
+  body .topbar-controls > .branch-context-shell .branch-context-trigger > [data-context-value] {
+    max-width: 27vw;
+  }
+
+  body .topbar-quick-actions {
+    order: 2;
+    flex: 0 1 auto;
+    gap: 5px;
+  }
+
+  body .topbar-quick-actions #topAddMemberButton {
+    width: auto;
+    min-width: 0;
+    max-width: none;
+    flex: 0 1 auto;
+    height: 38px;
+    min-height: 38px;
+    overflow: visible;
+    padding-inline: 8px;
+    font-size: 10px;
+  }
+
+  body .topbar-controls > #mobileNavToggle,
+  body .topbar-controls > #themeToggleButton,
+  body .topbar-controls > #globalKioskToggle,
+  body .topbar-controls > #authAccountBar .auth-logout-button {
+    width: 38px;
+    min-width: 38px;
+    height: 38px;
+    min-height: 38px;
+    flex: 0 0 38px;
+    border-radius: 9px;
+  }
+
+  body .topbar-controls > #themeToggleButton .ui-icon,
+  body .topbar-controls > #globalKioskToggle .ui-icon,
+  body .topbar-controls > #authAccountBar .auth-logout-button .ui-icon,
+  body .topbar-controls > #mobileNavToggle .ui-icon {
+    width: 17px;
+    height: 17px;
+    flex-basis: 17px;
+  }
+}
+
+@media (max-width: 380px) {
+  body .topbar-controls > .branch-context-shell .branch-context-field-copy small {
+    display: none;
+  }
+
+  body .topbar-controls > .branch-context-shell .branch-context-trigger > [data-context-value] {
+    max-width: 32vw;
+  }
+
+  body .topbar-quick-actions #topAddMemberButton {
+    padding-inline: 6px;
+    font-size: 9px;
+  }
+}
+
+/* Navbar context alignment: centered selectors on desktop, two equal controls
+   above the action row on mobile. The existing selects and handlers remain. */
+body .app-shell > .topbar .topbar-controls {
+  position: relative;
+}
+
+body .topbar-controls > .branch-context-shell {
+  position: absolute;
+  left: 50%;
+  right: auto;
+  top: 50%;
+  z-index: 3;
+  width: min(430px, 42vw);
+  max-width: none;
+  height: 38px;
+  min-height: 38px;
+  justify-content: center;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  box-shadow: none;
+  transform: translate(-50%, -50%);
+}
+
+body .topbar-controls > .branch-context-shell:hover,
+body .topbar-controls > .branch-context-shell:focus-within {
+  transform: translate(-50%, -50%) !important;
+}
+
+body .topbar-controls > .branch-context-shell .branch-context-field {
+  min-width: 0;
+  flex: 1 1 0;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid color-mix(in srgb, var(--sidebar-divider) 46%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--sidebar-bg) 22%, transparent);
+}
+
+body .topbar-controls > .branch-context-shell .branch-context-field + .branch-context-field {
+  border-inline-start: 1px solid color-mix(in srgb, var(--sidebar-divider) 58%, transparent);
+  border-radius: 8px;
+}
+
+body .topbar-controls > .branch-context-shell .branch-context-field:hover,
+body .topbar-controls > .branch-context-shell .branch-context-field:focus-within,
+body .topbar-controls > .branch-context-shell .branch-context-field.is-open {
+  width: 50%;
+  min-width: 0 !important;
+  max-width: 50%;
+  flex: 0 0 50%;
+  transform: none !important;
+}
+
+/* Keep the centered context controls geometrically stable while their native
+   hover/focus state opens a menu. The interaction must not reflow the bar. */
+body .topbar-controls > .branch-context-shell,
+body .topbar-controls > .branch-context-shell .branch-context-field {
+  box-sizing: border-box;
+}
+
+body .topbar-controls > .branch-context-shell .branch-context-field {
+  width: 50%;
+  max-width: 50%;
+  min-width: 0 !important;
+  flex: 0 0 50%;
+}
+
+body .topbar-controls > .branch-context-shell .branch-context-field-copy {
+  display: flex;
+  width: 0;
+  flex: 1 1 0;
+  min-width: 0;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+body .topbar-controls > .branch-context-shell .branch-context-field-copy small {
+  display: none !important;
+}
+
+body .topbar-controls > .branch-context-shell .branch-context-field-copy select {
+  position: absolute;
+  flex: 1 1 auto;
+  width: 1px;
+  min-width: 1px;
+  max-width: 1px;
+  height: 1px;
+  min-height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+body .topbar-controls > .branch-context-shell .branch-context-trigger {
+  display: inline-flex;
+  width: auto;
+  min-width: 90px;
+  max-width: 150px;
+  height: 30px;
+  min-height: 30px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding-inline: 6px;
+  border: 0;
+  border-radius: 7px;
+  color: var(--sidebar-text);
+  font-size: 11px;
+  text-align: center;
+}
+
+body .topbar-controls > .branch-context-shell .branch-context-trigger > [data-context-value] {
+  max-width: 116px;
+  text-align: center;
+}
+
+body .topbar-controls > .branch-context-shell .branch-context-field-icon {
+  width: 22px;
+  height: 22px;
+  flex-basis: 22px;
+  border-color: color-mix(in srgb, var(--sidebar-divider) 90%, transparent);
+  background: transparent;
+}
+
+body .topbar-quick-actions {
+  margin-inline-start: auto;
+}
+
+@media (max-width: 767px) {
+  body .topbar-controls > .branch-context-shell {
+    position: relative;
+    inset: auto;
+    left: auto;
+    right: auto;
+    min-width: 0;
+    width: 100%;
+    max-width: none;
+    height: 36px;
+    min-height: 36px;
+    flex: 1 1 100%;
+    transform: none !important;
+  }
+
+  body .topbar-controls > .branch-context-shell:hover,
+  body .topbar-controls > .branch-context-shell:focus-within {
+    transform: none !important;
+  }
+
+  body .topbar-controls > .branch-context-shell .branch-context-field {
+    width: auto;
+    height: 34px;
+    min-height: 34px;
+    min-width: 0;
+    flex: 1 1 50%;
+    padding-inline: 5px;
+  }
+
+  body .topbar-controls > .branch-context-shell .branch-context-field-icon {
+    width: 20px;
+    height: 20px;
+    flex-basis: 20px;
+  }
+
+  body .topbar-controls > .branch-context-shell .branch-context-field-copy select {
+    min-width: 1px;
+    max-width: 1px;
+  }
+
+  body .topbar-controls > .branch-context-shell .branch-context-trigger {
+    min-width: 90px;
+    max-width: 31vw;
+    padding-inline: 4px;
+    font-size: 11px;
+  }
+
+  body .topbar-controls > .branch-context-shell .branch-context-trigger > [data-context-value] {
+    max-width: 24vw;
+  }
+
+  body .topbar-quick-actions {
+    margin-inline-start: auto;
+  }
+}
+
+@media (max-width: 380px) {
+  body .topbar-controls > .branch-context-shell .branch-context-field-copy select {
+    min-width: 1px;
+    max-width: 1px;
+  }
+
+  body .topbar-controls > .branch-context-shell .branch-context-trigger {
+    min-width: 90px;
+    max-width: 28vw;
+    font-size: 10px;
+  }
+}
+
+/* The rail uses the supplied gym photograph as a quiet visual surface. The
+   existing navigation markup, sizing, and active-state treatment remain
+   unchanged; only the background layer is replaced. */
+body .app-shell > .page-tabs {
+  background-image: linear-gradient(180deg, rgb(3 10 26 / .94), rgb(4 13 31 / 0%)), url(/assets/gym-sidebar-aesthetic.jpg);
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+
+/* Members workspace popup polish -----------------------------------------
+   This layer is intentionally scoped to the members dialogs. It fixes the
+   visual contracts without changing the underlying API or business flow. */
+body #memberDialog {
+  width: min(900px, calc(100vw - 32px));
+  max-height: calc(100dvh - 32px);
+}
+
+body #memberDialog .section-heading > div:first-child {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+body #memberDialog .form-body {
+  gap: var(--space-3);
+  padding: var(--space-5);
+  padding-bottom: calc(var(--space-5) + 76px);
+  scroll-padding-bottom: calc(var(--space-5) + 76px);
+}
+
+body #memberDialog .section-label {
+  margin-top: var(--space-1);
+  padding-bottom: var(--space-1);
+}
+
+body #memberDialog .field-grid {
+  gap: var(--space-3);
+}
+
+body #memberDialog .form-actions {
+  bottom: calc(var(--space-5) * -1);
+  margin-inline: calc(var(--space-5) * -1);
+  margin-bottom: calc(var(--space-5) * -1);
+  padding: var(--space-3) var(--space-5);
+}
+
+body #detailsDialog .member-profile-name-row h3,
+body #detailsDialog .member-detail-stat-copy strong,
+body #detailsDialog .member-details-actions h4 {
+  color: var(--color-text);
+}
+
+body #detailsDialog > .dialog-body {
+  gap: var(--space-4);
+  padding: var(--space-5);
+  scroll-padding-bottom: var(--space-5);
+}
+
+body #detailsDialog .member-details-overview {
+  gap: var(--space-4);
+}
+
+body #detailsDialog .member-detail-stat {
+  min-height: 112px;
+  padding: var(--space-3);
+}
+
+body #detailsDialog .member-detail-stat-copy strong {
+  font-size: 21px;
+}
+
+body #detailsDialog .member-details-action-grid {
+  grid-template-columns: repeat(auto-fit, minmax(108px, 1fr));
+}
+
+body #detailsDialog .member-details-action {
+  min-height: 48px;
+  padding-inline: var(--space-2);
+}
+
+body #detailsDialog {
+  overflow: visible;
+}
+
+body #detailsDialog .member-details-more-menu.is-floating {
+  position: fixed;
+  z-index: calc(var(--z-modal) + 5);
+  display: grid;
+  gap: 2px;
+  max-height: calc(100dvh - 24px);
+  overflow-y: auto;
+  border: 1px solid var(--color-border-soft);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  padding: var(--space-2);
+  box-shadow: var(--shadow-lg);
+  overscroll-behavior: contain;
+}
+
+/* The details menu is promoted to a fixed layer inside the native dialog by
+   member-details-ui.js while open, so it can escape the scrolling body and be
+   placed above/below the trigger according to the available viewport space. */
+body .member-details-more-menu.is-floating {
+  position: fixed;
+  z-index: calc(var(--z-modal) + 5);
+  display: grid;
+  gap: 2px;
+  max-height: calc(100dvh - 24px);
+  overflow-y: auto;
+  border: 1px solid var(--color-border-soft);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  padding: var(--space-2);
+  box-shadow: var(--shadow-lg);
+  overscroll-behavior: contain;
+}
+
+body .member-details-more-menu.is-floating button {
+  display: flex;
+  min-height: 42px;
+  width: 100%;
+  align-items: center;
+  gap: var(--space-2);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-soft);
+  padding: 0 var(--space-3);
+  font-family: var(--font-body);
+  font-size: var(--font-xs);
+  text-align: start;
+}
+
+body .member-details-more-menu.is-floating button:hover,
+body .member-details-more-menu.is-floating button:focus-visible {
+  background: var(--color-pale-blue);
+  color: var(--color-primary);
+  outline: 0;
+}
+
+body .member-details-more-menu.is-floating button[data-member-detail-action="refund"] {
+  color: var(--color-danger);
+}
+
+body .member-details-more-menu.is-floating .ui-icon {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+}
+
+body #actionDialog > form.dialog-body {
+  scroll-padding-bottom: 104px;
+  padding-bottom: calc(var(--space-5) + 104px);
+}
+
+body #actionDialog > form.dialog-body > .dialog-actions {
+  margin-bottom: calc(var(--space-5) * -1);
+  padding: var(--space-3) var(--space-5);
+}
+
+body .coaching-builder-dialog > form.dialog-body {
+  scroll-padding-bottom: 112px;
+}
+
+body .coaching-builder-dialog > form.dialog-body > #coachingBuilderContent {
+  padding-bottom: var(--space-7);
+}
+
+body .coaching-builder-dialog > form.dialog-body > .builder-dialog-actions {
+  min-height: 66px;
+  padding-block: var(--space-3);
+}
+
+body #membersSection .members-table {
+  min-width: 1120px;
+}
+
+@media (max-width: 767px) {
+  body #memberDialog {
+    width: calc(100vw - 24px);
+    max-height: calc(100dvh - 24px);
+  }
+
+  body #memberDialog .form-body {
+    padding: var(--space-4);
+    padding-bottom: calc(var(--space-4) + 76px);
+    scroll-padding-bottom: calc(var(--space-4) + 76px);
+  }
+
+  body #memberDialog .form-actions {
+    bottom: calc(var(--space-4) * -1);
+    margin-inline: calc(var(--space-4) * -1);
+    margin-bottom: calc(var(--space-4) * -1);
+    padding-inline: var(--space-4);
+  }
+
+  body #detailsDialog > .dialog-body {
+    padding: var(--space-4);
+  }
+
+  body #detailsDialog .member-details-action-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  body #detailsDialog .member-details-action-renew {
+    grid-column: 1 / -1;
+  }
+
+  body #detailsDialog .member-details-action-more {
+    width: 100%;
+  }
+
+  body #actionDialog > form.dialog-body {
+    padding-bottom: calc(var(--space-4) + 104px);
+  }
+
+  body #actionDialog > form.dialog-body > .dialog-actions {
+    margin-bottom: calc(var(--space-4) * -1);
+    padding-inline: var(--space-4);
+  }
+
+  body .coaching-builder-dialog > form.dialog-body > #coachingBuilderContent {
+    padding-bottom: var(--space-6);
+  }
+}
+
+@media (max-width: 380px) {
+  body #memberDialog .field-grid {
+    grid-template-columns: 1fr;
+  }
+
+  body #detailsDialog .member-details-action {
+    font-size: var(--font-xs);
+  }
+}
+
+/* Member add/edit form ----------------------------------------------------
+   The form keeps its existing ids, event hooks and API payload, while this
+   shell gives the popup a predictable header / scroll body / action footer. */
+body #memberDialog.member-dialog {
+  width: min(960px, calc(100vw - 48px));
+  max-width: calc(100vw - 48px);
+  max-height: calc(100dvh - 32px);
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--color-border-soft);
+  border-radius: 18px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: var(--shadow-popup);
+}
+
+body #memberDialog .member-dialog-shell {
+  display: flex;
+  min-height: 0;
+  max-height: inherit;
+  flex-direction: column;
+  background: var(--color-surface);
+}
+
+body #memberDialog .member-dialog-header {
+  display: flex;
+  min-height: 92px;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  border-bottom: 1px solid var(--color-border-soft);
+  background: var(--color-surface);
+  padding: 20px 24px;
+  direction: rtl;
+}
+
+body #memberDialog .member-dialog-heading {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 12px;
+}
+
+body #memberDialog .member-dialog-heading > div,
+body #memberDialog .member-form-section-heading > div {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+body #memberDialog .member-dialog-heading-icon,
+body #memberDialog .member-form-section-icon {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid var(--color-primary-soft);
+  border-radius: 12px;
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+
+body #memberDialog .member-dialog-heading-icon {
+  width: 48px;
+  height: 48px;
+}
+
+body #memberDialog .member-dialog-heading-icon svg {
+  width: 24px;
+  height: 24px;
+}
+
+body #memberDialog .member-dialog-heading h3 {
+  color: var(--color-text);
+  font-size: 27px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+body #memberDialog .member-dialog-heading p {
+  color: var(--color-text-muted);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+body #memberDialog .dialog-heading-actions {
+  display: flex;
+  min-width: 40px;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+body #memberDialog .member-dialog-form {
+  display: flex;
+  min-height: 0;
+  max-height: calc(100dvh - 124px);
+  flex: 1 1 auto;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--color-surface);
+  gap: 0;
+  padding: 0;
+}
+
+body #memberDialog .member-dialog-scroll {
+  display: grid;
+  min-height: 0;
+  flex: 1 1 auto;
+  gap: 18px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 20px 24px 18px;
+  scroll-padding-block: 20px;
+}
+
+body #memberDialog .member-form-section {
+  min-width: 0;
+  border: 1px solid color-mix(in srgb, var(--color-primary) 10%, var(--color-border-soft));
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--color-primary) 4%, var(--color-surface));
+  padding: 20px;
+}
+
+body #memberDialog .member-form-section-heading {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 18px;
+  direction: rtl;
+}
+
+body #memberDialog .member-form-section-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+}
+
+body #memberDialog .member-form-section-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+body #memberDialog .member-form-section-heading h4 {
+  color: var(--color-text);
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+body #memberDialog .member-form-section-heading p {
+  color: var(--color-text-muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+body #memberDialog .member-form-grid {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 20px;
+  row-gap: 16px;
+}
+
+body #memberDialog .member-form-grid > .field,
+body #memberDialog .member-form-field-full {
+  min-width: 0;
+}
+
+body #memberDialog .member-form-field-full {
+  grid-column: 1 / -1;
+}
+
+body #memberDialog .member-form-section .field {
+  display: grid;
+  align-content: start;
+  min-width: 0;
+  gap: 7px;
+}
+
+body #memberDialog .member-form-section .field > label {
+  min-height: 20px;
+  color: var(--color-text-soft);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+body #memberDialog .member-form-section .field > input:not([type="checkbox"]),
+body #memberDialog .member-form-section .field > select,
+body #memberDialog .member-form-section .phone-number-control,
+body #memberDialog .member-form-section .phone-country-trigger {
+  min-width: 0;
+  height: 48px;
+  min-height: 48px;
+  border-radius: 10px;
+}
+
+body #memberDialog .member-form-section .field > input:not([type="checkbox"]),
+body #memberDialog .member-form-section .field > select {
+  width: 100%;
+  border: 1px solid var(--color-border-soft);
+  background: var(--color-surface-elevated);
+  padding-inline: 14px;
+  font-size: 14px;
+}
+
+body #memberDialog .member-form-section .field > input:not([type="checkbox"]):focus,
+body #memberDialog .member-form-section .field > select:focus {
+  border-color: var(--color-primary);
+  box-shadow: var(--focus-ring);
+  outline: 0;
+}
+
+body #memberDialog .member-phone-field {
+  min-width: 0;
+}
+
+body #memberDialog .member-phone-field .phone-input-control[data-phone-control] {
+  grid-template-columns: minmax(8rem, 31%) minmax(0, 1fr);
+  grid-template-rows: 48px 20px minmax(28px, auto);
+  column-gap: 8px;
+  row-gap: 3px;
+}
+
+body #memberDialog .member-phone-field .phone-country-trigger,
+body #memberDialog .member-phone-field .phone-number-control {
+  border-radius: 10px;
+}
+
+body #memberDialog .member-phone-field .phone-country-trigger {
+  gap: 7px;
+  padding-inline: 10px;
+}
+
+body #memberDialog .member-phone-field .phone-country-name,
+body #memberDialog .member-phone-field .phone-country-code {
+  font-size: 12px;
+}
+
+body #memberDialog .member-phone-field .phone-number-icon {
+  flex-basis: 38px;
+  width: 38px;
+  min-width: 38px;
+}
+
+body #memberDialog .member-phone-field .phone-number-control > input[data-phone-input] {
+  padding-inline: 12px;
+  font-size: 14px;
+}
+
+body #memberDialog .member-phone-field .phone-input-help {
+  min-height: 20px;
+  padding-inline: 2px;
+  font-size: 11px;
+}
+
+body #memberDialog .member-phone-field .phone-input-error {
+  min-height: 28px;
+  padding: 3px 8px;
+  font-size: 11px;
+}
+
+body #memberDialog .member-form-section .field-hint {
+  min-height: 18px;
+  color: var(--color-text-muted);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+body #memberDialog .member-payment-section {
+  display: grid;
+  gap: 16px;
+  margin-top: 18px;
+  border: 1px solid color-mix(in srgb, var(--color-success) 14%, var(--color-border-soft));
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--color-success) 5%, var(--color-surface));
+  padding: 20px;
+}
+
+body #memberDialog .member-payment-section .member-form-section-heading {
+  margin-bottom: 0;
+}
+
+body #memberDialog .member-payment-section .member-form-section-icon {
+  border-color: color-mix(in srgb, var(--color-success) 20%, var(--color-border-soft));
+  background: color-mix(in srgb, var(--color-success) 12%, var(--color-surface));
+  color: var(--color-success);
+}
+
+body #memberDialog .permission-note {
+  margin: 0;
+  border-radius: 10px;
+  font-size: 12px;
+}
+
+body #memberDialog .pricing-summary {
+  display: flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: space-between;
+  border: 1px solid color-mix(in srgb, var(--color-success) 18%, var(--color-border-soft));
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--color-success) 8%, var(--color-surface));
+  color: var(--color-text-soft);
+  padding: 10px 14px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+body #memberDialog .whatsapp-after-save {
+  min-width: 0;
+  min-height: 24px;
+  margin: 0;
+  color: var(--color-text-soft);
+  font-size: 12px;
+}
+
+body #memberDialog .whatsapp-after-save span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+body #memberDialog .form-actions {
+  position: relative;
+  inset: auto;
+  z-index: 1;
+  display: flex;
+  min-height: 76px;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 12px;
+  margin: 0;
+  border-top: 1px solid var(--color-border-soft);
+  background: var(--color-surface);
+  padding: 14px 24px;
+  direction: rtl;
+}
+
+body #memberDialog .form-actions .btn {
+  min-height: 48px;
+  border-radius: 10px;
+  padding-inline: 18px;
+  font-size: 14px;
+}
+
+body #memberDialog .form-actions #saveButton {
+  min-width: 150px;
+}
+
+body #memberDialog .form-actions #saveButton::before {
+  content: "+";
+  display: inline-block;
+  margin-inline-end: 8px;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1;
+  vertical-align: -1px;
+}
+
+body #memberDialog > .dialog-close-button {
+  top: 26px;
+  left: 24px;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+}
+
+body #memberDialog > .dialog-close-button .ui-icon {
+  width: 18px;
+  height: 18px;
+}
+
+@media (max-width: 767px) {
+  body #memberDialog.member-dialog {
+    width: calc(100vw - 24px);
+    max-width: calc(100vw - 24px);
+    max-height: calc(100dvh - 24px);
+  }
+
+  body #memberDialog .member-dialog-header {
+    min-height: 84px;
+    padding: 16px;
+  }
+
+  body #memberDialog .member-dialog-heading h3 {
+    font-size: 22px;
+  }
+
+  body #memberDialog .member-dialog-heading p {
+    font-size: 12px;
+  }
+
+  body #memberDialog .member-dialog-form {
+    max-height: calc(100dvh - 108px);
+  }
+
+  body #memberDialog .member-dialog-scroll {
+    gap: 16px;
+    padding: 16px;
+  }
+
+  body #memberDialog .member-form-section,
+  body #memberDialog .member-payment-section {
+    padding: 16px;
+  }
+
+  body #memberDialog .form-actions {
+    min-height: 68px;
+    padding: 10px 16px;
+  }
+
+  body #memberDialog > .dialog-close-button {
+    top: 20px;
+    left: 16px;
+  }
+}
+
+@media (max-width: 639px) {
+  body #memberDialog .member-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  body #memberDialog .member-form-field-full {
+    grid-column: auto;
+  }
+
+  body #memberDialog .member-phone-field .phone-input-control[data-phone-control] {
+    grid-template-columns: minmax(7rem, 30%) minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 380px) {
+  body #memberDialog .member-dialog-heading-icon {
+    width: 42px;
+    height: 42px;
+  }
+
+  body #memberDialog .member-dialog-heading-icon svg {
+    width: 21px;
+    height: 21px;
+  }
+
+  body #memberDialog .member-dialog-heading h3 {
+    font-size: 19px;
+  }
+
+  body #memberDialog .member-dialog-heading p {
+    display: none;
+  }
+
+  body #memberDialog .member-phone-field .phone-input-control[data-phone-control] {
+    grid-template-columns: minmax(5.6rem, 28%) minmax(0, 1fr);
+    column-gap: 6px;
+  }
+
+  body #memberDialog .member-phone-field .phone-country-trigger {
+    gap: 4px;
+    padding-inline: 6px;
+  }
+
+  body #memberDialog .member-phone-field .phone-country-name,
+  body #memberDialog .member-phone-field .phone-country-code {
+    font-size: 10px;
+  }
+
+  body #memberDialog .member-phone-field .phone-number-icon {
+    flex-basis: 30px;
+    width: 30px;
+    min-width: 30px;
+  }
+
+  body #memberDialog .member-phone-field .phone-number-control > input[data-phone-input] {
+    padding-inline: 8px;
+    font-size: 13px;
+  }
+
+  body #memberDialog .form-actions {
+    gap: 8px;
+    padding-inline: 12px;
+  }
+
+  body #memberDialog .form-actions .btn {
+    flex: 1 1 0;
+    min-width: 0;
+    padding-inline: 10px;
+  }
+}

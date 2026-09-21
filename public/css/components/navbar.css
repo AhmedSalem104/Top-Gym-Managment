@@ -1,0 +1,19 @@
+/* Generic header utility primitives live here. The application shell header
+   and navigation rail are intentionally kept in one canonical stylesheet:
+   components/navigation-shell.css. */
+.header-status {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  color: var(--success);
+  font-size: var(--font-xs);
+}
+
+.header-status-dot,
+.online-dot {
+  width: 8px;
+  height: 8px;
+  border: 2px solid currentColor;
+  border-radius: 50%;
+  background: var(--color-success);
+}

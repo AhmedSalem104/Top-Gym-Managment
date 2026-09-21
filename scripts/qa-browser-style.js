@@ -28,16 +28,6 @@ function assert(condition, message) {
   if (!condition) throw new Error(message);
 }
 
-function isExpectedUnauthenticatedQaResponse(response) {
-  if (response.status() !== 404) return false;
-  try {
-    const url = new URL(response.url());
-    return url.pathname === '/api/auth/session' || (url.pathname === '/api/branding' && url.searchParams.get('scope') === 'platform');
-  } catch (_) {
-    return false;
-  }
-}
-
 function prepareShell(page, target) {
   return page.evaluate((targetId) => {
     document.body.classList.remove('auth-pending', 'auth-locked', 'top-gym-navigation-pending');
@@ -94,15 +84,10 @@ async function main() {
         // errors in an offline QA environment; app-origin errors are still
         // collected by the response assertion below.
         if (message.text().includes('net::ERR_NAME_NOT_RESOLVED')) return;
-        // The browser-QA server intentionally returns 404 for the anonymous
-        // session and optional platform-branding probes. Their response is
-        // checked explicitly below; do not duplicate them as console errors.
-        if (message.text().includes('Failed to load resource: the server responded with a status of 404 (Not Found)')) return;
         consoleErrors.push(message.text());
       });
       page.on('response', (response) => {
         if (response.status() < 400) return;
-        if (isExpectedUnauthenticatedQaResponse(response)) return;
         try {
           if (new URL(response.url()).origin === new URL(baseUrl).origin) badResponses.push(`${response.status()} ${response.url()}`);
         } catch (_) { badResponses.push(`${response.status()} ${response.url()}`); }
@@ -157,8 +142,11 @@ async function main() {
         await page.addInitScript((savedTheme) => {
           window.localStorage.setItem('topgym-theme', savedTheme);
         }, theme);
-        await page.goto(`${baseUrl}/member-portal.html`, { waitUntil: 'networkidle' });
+        await page.goto(`${baseUrl}/member-portal`, { waitUntil: 'networkidle' });
         const portal = await page.evaluate(() => {
+          const visibleSurfaces = [...document.querySelectorAll('.portal-login, .portal-result, .portal-tool-card, input, textarea, select')]
+            .filter((element) => !element.hidden && getComputedStyle(element).display !== 'none');
+          const whiteSurfaces = visibleSurfaces.filter((element) => getComputedStyle(element).backgroundColor === 'rgb(255, 255, 255)').length;
           return {
             theme: document.documentElement.dataset.theme,
             overflow: document.documentElement.scrollWidth > window.innerWidth,
@@ -166,15 +154,18 @@ async function main() {
             viewport: window.innerWidth,
             stylesheetCount: [...document.styleSheets].filter((sheet) => sheet.href?.includes('/css/main.css')).length,
             brandingLoaded: Boolean(window.topGymBranding?.get),
-            brandName: document.querySelector('[data-brand-text="brandName"]')?.textContent?.trim() || ''
+            brandName: document.querySelector('[data-brand-text="brandName"]')?.textContent?.trim() || '',
+            appBackground: getComputedStyle(document.documentElement).getPropertyValue('--bg-app').trim(),
+            whiteSurfaces
           };
         });
         assert(portal.theme === theme, `member portal did not load ${theme} theme at ${viewport.name}px`);
         assert(!portal.overflow, `member portal overflows at ${theme}/${viewport.name}px (${portal.scrollWidth}/${portal.viewport})`);
         assert(portal.stylesheetCount === 1, `member portal loads main.css more than once at ${theme}/${viewport.name}px`);
         assert(portal.brandingLoaded && portal.brandName, `member portal branding did not load at ${theme}/${viewport.name}px`);
+        if (theme === 'dark') assert(portal.whiteSurfaces === 0, `member portal exposes ${portal.whiteSurfaces} white surface(s) in dark mode at ${viewport.name}px`);
         if (viewport.name === '430') await page.screenshot({ path: path.join(artifacts, `member-portal-${theme}-${viewport.name}.png`), fullPage: true });
-        summary.push(`Member portal ${theme} ${viewport.name}: PASS (${portal.scrollWidth}px)`);
+        summary.push(`Member portal ${theme} ${viewport.name}: PASS (${portal.scrollWidth}px, ${portal.appBackground})`);
         await page.close();
       }
     }
@@ -187,6 +178,9 @@ async function main() {
         }, theme);
         await gatewayPage.goto(`${baseUrl}/`, { waitUntil: 'networkidle' });
         const gateway = await gatewayPage.evaluate(() => {
+          const surfaces = [...document.querySelectorAll('.saas-entry-preview-window, .saas-entry-preview-welcome, .saas-entry-preview-kpis article, .saas-entry-preview-chart, .saas-entry-preview-activity, .saas-entry-action')]
+            .filter((element) => !element.hidden && getComputedStyle(element).display !== 'none');
+          const whiteSurfaces = surfaces.filter((element) => getComputedStyle(element).backgroundColor === 'rgb(255, 255, 255)').length;
           return {
             theme: document.documentElement.dataset.theme,
             overflow: document.documentElement.scrollWidth > window.innerWidth,
@@ -195,7 +189,8 @@ async function main() {
             stage: document.getElementById('authScreen')?.dataset.authStage || '',
             entryVisible: Boolean(document.getElementById('saasEntryCard') && !document.getElementById('saasEntryCard').hidden),
             loginVisible: Boolean(document.getElementById('authLoginCard') && !document.getElementById('authLoginCard').hidden),
-            previewVisible: Boolean(document.querySelector('.saas-entry-preview'))
+            previewVisible: Boolean(document.querySelector('.saas-entry-preview')),
+            whiteSurfaces
           };
         });
         assert(gateway.theme === theme, `pre-login gateway did not load ${theme} theme at ${viewport.name}px`);
@@ -206,6 +201,7 @@ async function main() {
         const gatewayOrLoginVisible = (gateway.stage === 'gateway' && gateway.entryVisible && gateway.previewVisible)
           || (gateway.stage === 'login' && gateway.loginVisible);
         assert(gatewayOrLoginVisible, `pre-login gateway/login is not visible at ${theme}/${viewport.name}px`);
+        if (theme === 'dark') assert(gateway.whiteSurfaces === 0, `pre-login gateway exposes ${gateway.whiteSurfaces} white surface(s) in dark mode at ${viewport.name}px`);
         if (viewport.name === '430') await gatewayPage.screenshot({ path: path.join(artifacts, `login-gateway-${theme}-${viewport.name}.png`), fullPage: true });
         summary.push(`Pre-login gateway ${theme} ${viewport.name}: PASS (${gateway.scrollWidth}px)`);
         await gatewayPage.close();
@@ -217,9 +213,12 @@ async function main() {
     await prepareShell(printPage, 'dashboardSection');
     await printPage.emulateMedia({ media: 'print' });
     const print = await printPage.evaluate(() => ({
-      stylesheetCount: [...document.styleSheets].filter((sheet) => sheet.href?.includes('/css/app-shell.css')).length
+      topbar: getComputedStyle(document.querySelector('.topbar')).display,
+      tabs: getComputedStyle(document.querySelector('.page-tabs')).display,
+      stylesheetCount: [...document.styleSheets].filter((sheet) => sheet.href?.includes('/css/main.css')).length
     }));
-    assert(print.stylesheetCount === 1, 'print view loses app-shell stylesheet');
+    assert(print.topbar === 'none' && print.tabs === 'none', 'print view exposes navigation');
+    assert(print.stylesheetCount === 1, 'print view loses main stylesheet');
     const pdfPath = path.join(artifacts, 'print-qa.pdf');
     await printPage.pdf({ path: pdfPath, format: 'A4', printBackground: true });
     assert(fs.statSync(pdfPath).size > 1000, 'print PDF is empty or too small');
@@ -229,10 +228,10 @@ async function main() {
     await browser.close();
   }
   console.log(summary.join('\n'));
-  console.log('BROWSER_RESET_FUNCTIONAL_QA_PASSED');
+  console.log('BROWSER_STYLE_QA_PASSED');
 }
 
 main().catch((error) => {
-  console.error(`BROWSER_RESET_FUNCTIONAL_QA_FAILED: ${error.message}`);
+  console.error(`BROWSER_STYLE_QA_FAILED: ${error.message}`);
   process.exitCode = 1;
 });

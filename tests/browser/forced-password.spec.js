@@ -77,8 +77,8 @@ test('real login response routes a forced Independent Trainer before any workspa
     const mock = mockLoginFlow(page, user);
     await mock.install();
     await page.goto('/login.html', { waitUntil: 'networkidle' });
-    await page.evaluate(() => window.topGymAuthReady);
     await expect(page.locator('#authLoginCard')).toBeVisible();
+    await expect(page.locator('.auth-reference-hero')).toBeHidden();
     await page.locator('#loginEmail').fill('trainer@example.test');
     await page.locator('#loginPassword').fill('TemporaryPassword123!');
     await page.locator('#loginForm').evaluate((form) => form.requestSubmit());

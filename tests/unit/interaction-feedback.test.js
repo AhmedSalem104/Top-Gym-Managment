@@ -21,16 +21,21 @@ test('unified feedback utility exposes safe async action primitives', () => {
     assert.match(source, /messageElement\.textContent/);
 });
 
-test('feedback reset does not retain a legacy visual stylesheet', () => {
-    const functionalState = read('public/css/functional-state.css');
-    assert.match(functionalState, /\[hidden\]/);
-    assert.doesNotMatch(functionalState, /logicfit-button-spinner|logicfit-feedback-toast-stack/);
+test('feedback CSS has accessible loading, toast and reduced-motion states', () => {
+    const styles = read('public/css/components/feedback.css');
+
+    assert.match(styles, /\.logicfit-button-spinner/);
+    assert.match(styles, /\.logicfit-feedback-toast-stack/);
+    assert.match(styles, /prefers-reduced-motion/);
+    assert.match(styles, /pointer-events:\s*none/);
+    assert.match(styles, /pointer-events:\s*auto/);
 });
 
-test('aria-busy behavior remains owned by the feedback runtime', () => {
-    const source = read('public/js/ui-feedback.js');
-    assert.match(source, /setAttribute\('aria-busy', 'true'\)/);
-    assert.doesNotMatch(read('public/css/functional-state.css'), /aria-busy/);
+test('aria-busy only blocks the busy control, never an entire section', () => {
+    const styles = read('public/css/components/ui-foundation.css');
+
+    assert.match(styles, /button\[aria-busy="true"\]/);
+    assert.doesNotMatch(styles, /:where\([^)]*,\s*\[aria-busy="true"\]\)/);
 });
 
 test('late dashboard data cannot reveal the store summary outside the dashboard tab', () => {

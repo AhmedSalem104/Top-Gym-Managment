@@ -1,0 +1,167 @@
+body {
+  overflow-x: hidden;
+}
+
+.auth-screen {
+  min-height: 100vh;
+}
+
+.auth-pending .auth-screen,
+.auth-locked .auth-screen {
+  display: grid;
+}
+
+/* Session restoration happens before the application shell is released. Keep
+   the login form out of the first paint so an already-authenticated user does
+   not see it flash for a moment during refresh. */
+.auth-pending .auth-screen {
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+
+body.auth-pending::before {
+  position: fixed;
+  z-index: var(--z-overlay);
+  inset: 0;
+  background: var(--color-bg);
+  content: "";
+}
+
+.top-gym-navigation-pending .page {
+  /* Navigation requests already have a token/idempotency guard in
+     page-tabs.js. Do not dim the whole application while the first
+     authenticated route is settling: that transient opacity made the
+     post-login shell look visually broken even though it was usable. */
+  opacity: 1;
+  transition: none;
+}
+
+/* Dashboard analytics is dashboard-only. Keep this invariant in the layout
+   layer as a second guard for late feature responses or cached scripts. */
+html[data-top-gym-active-tab]:not([data-top-gym-active-tab="dashboard"]) #dashboardAnalytics,
+html[data-top-gym-loading-tab]:not([data-top-gym-loading-tab="dashboard"]) #dashboardAnalytics {
+  display: none;
+}
+
+html {
+  scroll-padding-top: 104px;
+}
+
+.page {
+  width: min(1440px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: var(--space-8) 0 var(--space-12);
+}
+
+.workspace,
+.content-grid,
+.dashboard-section,
+.section-stack {
+  display: grid;
+  gap: var(--space-6);
+}
+
+.section-stack {
+  gap: var(--space-8);
+}
+
+.overview-grid,
+.stats-grid,
+.kpi-grid,
+.metrics-grid,
+.management-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+.two-column-grid,
+.content-grid-two,
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-5);
+}
+
+.three-column-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-5);
+}
+
+.page-header,
+.section-heading,
+.toolbar,
+.panel-header,
+.members-toolbar,
+.actions-row,
+.form-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.page-header,
+.section-heading {
+  flex-wrap: wrap;
+}
+
+.page-header-copy,
+.section-heading-copy,
+.members-toolbar-copy {
+  display: grid;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.toolbar,
+.actions-row,
+.form-actions {
+  flex-wrap: wrap;
+}
+
+.form-grid,
+.field-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+.field-span-2,
+.form-field-full {
+  grid-column: 1 / -1;
+}
+
+.table-scroll,
+.table-wrap,
+.data-table-wrap {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.stack-sm,
+.stack-md,
+.stack-lg {
+  display: grid;
+}
+
+.stack-sm { gap: var(--space-2); }
+.stack-md { gap: var(--space-4); }
+.stack-lg { gap: var(--space-6); }

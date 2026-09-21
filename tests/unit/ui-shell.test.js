@@ -5,39 +5,59 @@ const test = require('node:test');
 
 const root = path.resolve(__dirname, '..', '..');
 
-test('navigation pending state remains a functional JS/DOM contract during reset', () => {
-    const state = fs.readFileSync(path.join(root, 'public/css/functional-state.css'), 'utf8');
-    const source = fs.readFileSync(path.join(root, 'public/js/page-tabs.js'), 'utf8');
-    assert.match(state, /auth-pending/);
-    assert.match(source, /top-gym-navigation-pending/);
+test('navigation pending state keeps the first authenticated shell crisp and interactive', () => {
+    const source = fs.readFileSync(path.join(root, 'public/css/layout.css'), 'utf8');
+    const pendingBlock = source.match(/\.top-gym-navigation-pending[\s\S]*?transition: none;/u)?.[0] || '';
+
+    assert.match(pendingBlock, /opacity:\s*1/u);
+    assert.match(pendingBlock, /transition:\s*none/u);
+    assert.doesNotMatch(pendingBlock, /pointer-events:\s*none/u);
 });
 
-test('desktop sidebar hover behavior remains in the existing navigation runtime', () => {
+test('desktop sidebar hover contract expands a safe layout track and reveals labels', () => {
+    const source = fs.readFileSync(path.join(root, 'public/css/components/navigation-shell.css'), 'utf8');
     const script = fs.readFileSync(path.join(root, 'public/js/page-tabs.js'), 'utf8');
+
+    assert.match(source, /grid-template-columns:\s*var\(--sidebar-width-collapsed\)\s+minmax\(0,\s*1fr\)/u);
+    assert.match(source, /\.app-shell\.sidebar-expanded[\s\S]*?grid-template-columns:\s*var\(--sidebar-width-expanded\)\s+minmax\(0,\s*1fr\)/u);
+    assert.match(source, /\.app-shell\s*>\s*main\.page[\s\S]*?grid-column:\s*2/u);
+    assert.match(source, /\.app-shell\s*>\s*\.page-tabs\.is-hovered\s*>\s*\.page-tab\s*>\s*span[\s\S]*?opacity:\s*1/u);
+    assert.match(source, /\.app-shell\s*>\s*\.page-tabs\s*>\s*\.sidebar-brand\s*>\s*\.sidebar-brand-copy[\s\S]*?max-inline-size:\s*0/u);
     assert.match(script, /function initSidebarTooltip\(rail\)/u);
     assert.match(script, /hoverOpenTimer\s*=\s*window\.setTimeout\(revealRail,\s*120\)/u);
 });
 
-test('navigation reset removes the old visual owner without changing the runtime hooks', () => {
-    const source = fs.readFileSync(path.join(root, 'public/js/page-tabs.js'), 'utf8');
-    assert.match(source, /mobile-nav-open/);
-    assert.match(source, /sidebar-expanded/);
-    assert.doesNotMatch(fs.readFileSync(path.join(root, 'public/index.html'), 'utf8'), /\/css\/components\/navigation-shell\.css/u);
+test('navigation polish keeps desktop controls usable and coordinated', () => {
+    const source = fs.readFileSync(path.join(root, 'public/css/components/navigation-shell.css'), 'utf8');
+
+    assert.match(source, /grid-template-columns:\s*var\(--sidebar-width-collapsed\)\s+minmax\(0,\s*1fr\)[\s\S]*?transition:\s*grid-template-columns\s+var\(--sidebar-rail-transition\)/u);
+    assert.match(source, /\.app-shell:not\(:has\(> \.workspace-contextbar:not\(\[hidden\]\)\)\)\s*>\s*\.page-tabs[\s\S]*?top:\s*0[\s\S]*?grid-row:\s*1\s*\/\s*-1/u);
+    assert.match(source, /page-tabs\s*>\s*\.page-tab \.ui-icon[\s\S]*?width:\s*32px[\s\S]*?height:\s*32px/u);
+    assert.match(source, /topbar-controls[\s\S]*?gap:\s*var\(--space-2\)/u);
+    assert.match(source, /auth-logout-button[\s\S]*?background:\s*var\(--danger-soft\)/u);
+    assert.match(source, /auth-logout-button[\s\S]*?color:\s*var\(--danger-text\)/u);
+    assert.match(source, /auth-logout-button \.ui-icon[\s\S]*?stroke-width:\s*2\.2px/u);
+    assert.match(source, /page-tabs::-webkit-scrollbar[\s\S]*?width:\s*5px/u);
+    assert.match(source, /sidebar-floating-tooltip[\s\S]*?pointer-events:\s*none/u);
 });
 
-test('Gym App shell has one Tailwind shared owner plus the functional state source', () => {
-    const files = fs.readdirSync(path.join(root, 'public/css'), { withFileTypes: true });
-    assert.deepEqual(files.filter((entry) => entry.isFile()).map((entry) => entry.name).sort(), ['app-shell.css', 'app-shell.source.css', 'functional-state.css', 'login-entry.css', 'main.css', 'main.source.css', 'shared-components.source.css', 'tailwind.source.css']);
-    assert.match(fs.readFileSync(path.join(root, 'public/css/app-shell.source.css'), 'utf8'), /tailwind\.source\.css/u);
-});
+test('Gym App shell styles have one canonical source', () => {
+    const canonical = fs.readFileSync(path.join(root, 'public/css/components/navigation-shell.css'), 'utf8');
+    const secondarySources = [
+        'public/css/components/ui-foundation.css',
+        'public/css/components/tabs.css',
+        'public/css/components/navbar.css',
+        'public/css/components/assistant.css',
+        'public/css/responsive.css',
+        'public/css/theme.css',
+        'public/css/pages/branding.css',
+        'public/css/layout.css'
+    ].map(readRelative => fs.readFileSync(path.join(root, readRelative), 'utf8'));
 
-test('shared Tailwind foundation owns the application-wide component contracts', () => {
-    const shared = fs.readFileSync(path.join(root, 'public/css/shared-components.source.css'), 'utf8');
-    const tailwind = fs.readFileSync(path.join(root, 'public/css/tailwind.source.css'), 'utf8');
-    assert.match(tailwind, /shared-components\.source\.css/u);
-    for (const selector of ['form label', '\.data-table', '\.branch-context-trigger', '\.branch-context-menu', 'dialog', '\.pagination']) {
-        assert.match(shared, new RegExp(selector));
+    assert.match(canonical, /\.app-shell\s*\{/u);
+    assert.match(canonical, /\.page-tabs\s*\{/u);
+    assert.match(canonical, /\.topbar\s*\{/u);
+    for (const source of secondarySources) {
+        assert.doesNotMatch(source, /(^|[^a-z0-9_-])(?:#pageTabs|\.app-shell|\.page-tabs|\.page-tab|\.topbar|\.auth-logout-button|\.sidebar-pin-button|\.mobile-nav-toggle|\.kiosk-toggle-button)(?=$|[^a-z0-9_-])/imu);
     }
-    assert.match(tailwind, /\.btn-primary/u);
-    assert.doesNotMatch(shared, /!important/u);
 });

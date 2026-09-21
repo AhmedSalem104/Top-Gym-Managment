@@ -63,12 +63,12 @@ async function signature(page) {
     });
 }
 
-async function loadResetStylesheet(page) {
+async function loadLazyMembershipCss(page) {
     await page.evaluate(() => {
         if (document.querySelector('link[data-branch-cascade-test]')) return;
         const link = document.createElement('link');
         link.rel = 'stylesheet';
-        link.href = `/css/app-shell.css?branch-reset-test=${Date.now()}`;
+        link.href = `/css/pages/memberships.css?branch-cascade-test=${Date.now()}`;
         link.dataset.branchCascadeTest = '';
         document.head.append(link);
     });
@@ -93,7 +93,7 @@ test.describe('branchCreateDialog cascade contract', () => {
         await mountBranchDialog(page);
         snapshots.push(await signature(page));
 
-        await loadResetStylesheet(page);
+        await loadLazyMembershipCss(page);
         await page.locator('#branchCreateDialog').evaluate((dialog) => dialog.close());
         await mountBranchDialog(page);
         snapshots.push(await signature(page));
@@ -109,12 +109,6 @@ test.describe('branchCreateDialog cascade contract', () => {
         await page.locator('#branchCreateDialog').evaluate((dialog) => dialog.close());
         await mountBranchDialog(page);
         snapshots.push(await signature(page));
-
-        for (let cycle = 0; cycle < 10; cycle += 1) {
-            await page.locator('#branchCreateDialog').evaluate((dialog) => dialog.close());
-            await mountBranchDialog(page);
-            snapshots.push(await signature(page));
-        }
 
         expect(snapshots.slice(1)).toEqual(snapshots.slice(0, -1));
         await expect(page.locator('#branchCreateDialog')).toHaveClass(/lf-modal-shell/);
@@ -136,7 +130,17 @@ test.describe('branchCreateDialog cascade contract', () => {
             for (const width of [1440, 1024, 768, 390, 320]) {
                 await page.setViewportSize({ width, height: width < 600 ? 800 : 900 });
                 await mountBranchDialog(page);
-                await expect(page.locator('#branchCreateDialog')).toBeVisible();
+                const layout = await page.locator('#branchCreateDialog').evaluate((dialog) => ({
+                    viewportWidth: window.innerWidth,
+                    scrollWidth: document.documentElement.scrollWidth,
+                    dialogWidth: dialog.getBoundingClientRect().width,
+                    dialogRight: dialog.getBoundingClientRect().right,
+                    dialogLeft: dialog.getBoundingClientRect().left
+                }));
+                expect(layout.scrollWidth).toBeLessThanOrEqual(layout.viewportWidth);
+                expect(layout.dialogWidth).toBeLessThanOrEqual(layout.viewportWidth);
+                expect(layout.dialogLeft).toBeGreaterThanOrEqual(0);
+                expect(layout.dialogRight).toBeLessThanOrEqual(layout.viewportWidth);
                 await page.locator('#branchCreateDialog').evaluate((dialog) => dialog.close());
             }
         }

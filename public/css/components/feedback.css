@@ -1,0 +1,112 @@
+/* Unified interaction feedback: one language and one visual contract for
+   buttons, toasts and assistive status updates across all app surfaces. */
+.logicfit-button-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  border: 2px solid color-mix(in srgb, currentColor 28%, transparent);
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: logicfit-feedback-spin .72s linear infinite;
+}
+
+.logicfit-button-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.logicfit-button-success { display: inline-flex; flex: 0 0 auto; align-items: center; justify-content: center; }
+.logicfit-button-success .ui-icon { width: 16px; height: 16px; }
+button[data-feedback-loading="true"],
+button[data-loading="true"] { cursor: wait; }
+
+#toast,
+.logicfit-feedback-toast-stack {
+  position: fixed;
+  z-index: calc(var(--z-toast, 100) + 2);
+  inset-inline-start: max(16px, env(safe-area-inset-left));
+  bottom: max(18px, env(safe-area-inset-bottom));
+  display: grid;
+  width: min(430px, calc(100vw - 32px));
+  gap: 10px;
+  pointer-events: none;
+}
+
+.toast:not(.show),
+.logicfit-feedback-toast-stack:not(.show) { visibility: hidden; }
+.toast.show { visibility: visible; }
+
+.toast > .toast-item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  min-height: 52px;
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-lg, 14px);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  padding: 11px 12px;
+  box-shadow: var(--shadow-popup);
+  pointer-events: auto;
+  animation: logicfit-feedback-toast-in 180ms ease-out both;
+}
+
+.toast > .toast-item.success { border-color: var(--success-border); }
+.toast > .toast-item.error { border-color: var(--danger-border); }
+.toast > .toast-item.warning { border-color: var(--warning-border); }
+.toast > .toast-item.info { border-color: var(--info-border); }
+.toast > .toast-item .toast-icon { display: inline-flex; color: var(--primary); }
+.toast > .toast-item.success .toast-icon { color: var(--success-text); }
+.toast > .toast-item.error .toast-icon { color: var(--danger-text); }
+.toast > .toast-item.warning .toast-icon { color: var(--warning-text); }
+.toast > .toast-item.info .toast-icon { color: var(--info-text); }
+.toast > .toast-item .toast-icon .ui-icon { width: 19px; height: 19px; }
+.toast > .toast-item .toast-message { min-width: 0; color: var(--text-secondary); font-size: var(--font-sm, 13px); font-weight: var(--weight-semibold, 600); line-height: 1.55; }
+.toast > .toast-item .toast-close { display: inline-grid; width: 28px; height: 28px; place-items: center; border: 0; border-radius: 8px; background: transparent; color: var(--text-muted); font-size: 18px; line-height: 1; }
+.toast > .toast-item .toast-close:hover { background: var(--bg-card-hover); color: var(--text-primary); }
+.toast > .toast-item.is-leaving { animation: logicfit-feedback-toast-out 180ms ease-in both; }
+
+.logicfit-feedback-toast {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  min-height: 52px;
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-lg, 14px);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  padding: 11px 12px;
+  box-shadow: var(--shadow-popup);
+  pointer-events: auto;
+  animation: logicfit-feedback-toast-in 180ms ease-out both;
+}
+
+.logicfit-feedback-toast.success { border-color: var(--success-border); }
+.logicfit-feedback-toast.error { border-color: var(--danger-border); }
+.logicfit-feedback-toast.warning { border-color: var(--warning-border); }
+.logicfit-feedback-toast.info { border-color: var(--info-border); }
+.logicfit-feedback-toast .toast-icon { display: inline-flex; color: var(--primary); }
+.logicfit-feedback-toast.success .toast-icon { color: var(--success-text); }
+.logicfit-feedback-toast.error .toast-icon { color: var(--danger-text); }
+.logicfit-feedback-toast.warning .toast-icon { color: var(--warning-text); }
+.logicfit-feedback-toast.info .toast-icon { color: var(--info-text); }
+.logicfit-feedback-toast .toast-icon .ui-icon { width: 19px; height: 19px; }
+.logicfit-feedback-toast .toast-message { min-width: 0; color: var(--text-secondary); font-size: var(--font-sm, 13px); font-weight: var(--weight-semibold, 600); line-height: 1.55; }
+.logicfit-feedback-toast .toast-close { display: inline-grid; width: 28px; height: 28px; place-items: center; border: 0; border-radius: 8px; background: transparent; color: var(--text-muted); font-size: 18px; line-height: 1; }
+.logicfit-feedback-toast .toast-close:hover { background: var(--bg-card-hover); color: var(--text-primary); }
+.logicfit-feedback-toast.is-leaving { animation: logicfit-feedback-toast-out 180ms ease-in both; }
+
+@keyframes logicfit-feedback-spin { to { transform: rotate(360deg); } }
+@keyframes logicfit-feedback-toast-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes logicfit-feedback-toast-out { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(8px); } }
+
+@media (max-width: 560px) {
+  #toast,
+  .logicfit-feedback-toast-stack { inset-inline: 12px; bottom: max(12px, env(safe-area-inset-bottom)); width: auto; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .logicfit-button-spinner { animation: none; }
+  .toast > .toast-item,
+  .logicfit-feedback-toast,
+  .logicfit-feedback-toast.is-leaving { animation: none; }
+}

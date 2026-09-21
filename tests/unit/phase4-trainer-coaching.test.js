@@ -14,6 +14,7 @@ const trainerRoutes = read('src/routes/trainer.routes.js');
 const trainerController = read('src/controllers/trainer.controller.js');
 const workspace = read('public/trainer-workspace.html');
 const workspaceScript = read('public/js/trainer-workspace.js');
+const workspaceStyle = read('public/css/pages/trainer-workspace.css');
 const routePermissions = read('src/permissions/route-permissions.js');
 const routeIndex = read('src/routes/index.js');
 
@@ -65,7 +66,8 @@ test('Trainer workspace uses real API metrics and gives no fake operational data
     assert.match(workspaceScript, /mustChangePassword/);
     assert.match(workspace, /id="trainerMetricClients"/);
     assert.doesNotMatch(workspaceScript, /fake|mock|demo/i);
-    assert.match(workspace, /main\.css\?v=[^"'\s]+/u);
+    assert.match(workspaceStyle, /@media \(max-width: 480px\)/);
+    assert.match(workspaceStyle, /@media \(prefers-reduced-motion: reduce\)/);
 });
 
 test('Trainer commercial routes remain explicit and phase-owned', () => {

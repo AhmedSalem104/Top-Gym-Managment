@@ -52,52 +52,31 @@ test('responsive navigation stays organized and accessible at each viewport', as
     await page.goto('/#dashboard', { waitUntil: 'networkidle' });
 
     const width = testInfo.project.use.viewport.width;
+    const dimensions = await page.evaluate(() => ({ viewport: innerWidth, document: document.documentElement.scrollWidth, body: document.body.scrollWidth }));
+    expect(dimensions.document, JSON.stringify(dimensions)).toBeLessThanOrEqual(dimensions.viewport + 1);
+    expect(dimensions.body, JSON.stringify(dimensions)).toBeLessThanOrEqual(dimensions.viewport + 1);
+
     if (width <= 767) {
-        await expect(page.locator('#mobileNavToggle')).toBeAttached();
-        await expect(page.locator('#pageTabs')).toBeAttached();
+        await expect(page.locator('#mobileNavToggle')).toBeVisible();
+        await expect(page.locator('#pageTabs')).toBeHidden();
         await page.locator('#mobileNavToggle').click();
         await expect(page.locator('.app-shell')).toHaveClass(/mobile-nav-open/);
-        await expect(page.locator('[data-nav-group-label="workspace"]')).toBeAttached();
-        await expect(page.locator('[data-nav-group-label="location"]')).toBeAttached();
-        await expect(page.locator('[data-page-tab="branches"]')).toBeAttached();
+        await expect(page.locator('#pageTabs')).toBeVisible();
+        await expect(page.locator('[data-nav-group-label="workspace"]')).toBeVisible();
+        await expect(page.locator('[data-nav-group-label="location"]')).toBeVisible();
+        await expect(page.locator('[data-page-tab="branches"]')).toBeVisible();
         await page.screenshot({ path: testInfo.outputPath(`navigation-drawer-open-${width}.png`), fullPage: false });
         await page.keyboard.press('Escape');
         await expect(page.locator('.app-shell')).not.toHaveClass(/mobile-nav-open/);
+        await expect(page.locator('#pageTabs')).toBeHidden();
         await page.screenshot({ path: testInfo.outputPath(`navigation-mobile-${width}.png`), fullPage: true });
     } else if (width < 1200) {
-        await expect(page.locator('#mobileNavToggle')).toBeAttached();
-        await expect(page.locator('#pageTabs')).toBeAttached();
+        await expect(page.locator('#mobileNavToggle')).toBeHidden();
+        await expect(page.locator('#pageTabs')).toBeVisible();
     } else {
-        await expect(page.locator('#mobileNavToggle')).toBeAttached();
-        await expect(page.locator('#pageTabs')).toBeAttached();
-        await expect(page.locator('[data-page-tab="branches"]')).toBeAttached();
+        await expect(page.locator('#mobileNavToggle')).toBeHidden();
+        await expect(page.locator('#pageTabs')).toBeVisible();
+        await expect(page.locator('[data-page-tab="branches"]')).toBeVisible();
         await page.screenshot({ path: testInfo.outputPath('navigation-desktop.png'), fullPage: true });
-    }
-});
-
-test('SPA navigation leaves one ready surface with no stale or blank route', async ({ page }) => {
-    await installNavigationRuntime(page);
-    await page.goto('/#dashboard', { waitUntil: 'networkidle' });
-
-    for (const route of ['members', 'reports', 'dashboard']) {
-        await page.evaluate(async (name) => {
-            await window.topGymActivateTab(name);
-        }, route);
-        await expect(page.locator('#dashboardSection')).toHaveAttribute('data-active-route', route);
-        await expect(page.locator('#dashboardSection')).toHaveAttribute('data-route-state', 'ready');
-        await expect(page.locator('#dashboardSection')).toHaveAttribute('aria-busy', 'false');
-
-        const state = await page.evaluate(() => {
-            const visiblePanels = [...document.querySelectorAll('[data-page-tab-panel]')]
-                .filter((panel) => !panel.hidden && panel.getAttribute('aria-hidden') !== 'true');
-            return {
-                visiblePanels: visiblePanels.length,
-                activeRoute: document.getElementById('dashboardSection')?.dataset.activeRoute,
-                featureBlocked: document.getElementById('dashboardSection')?.dataset.featureBlocked === 'true'
-            };
-        });
-        expect(state.visiblePanels, `${route} left multiple active panels`).toBeLessThanOrEqual(1);
-        expect(state.activeRoute).toBe(route);
-        expect(state.featureBlocked).toBeFalsy();
     }
 });

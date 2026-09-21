@@ -1,0 +1,139 @@
+.dropdown,
+.dropdown-menu,
+.more-menu,
+[data-dropdown-menu] {
+  position: absolute;
+  z-index: var(--z-dropdown);
+  min-width: 180px;
+  max-width: min(320px, calc(100vw - 24px));
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-md);
+  color: var(--color-text-soft);
+  padding: var(--space-2);
+}
+
+.action-menu {
+  position: relative;
+  display: inline-flex;
+  min-width: 0;
+  max-width: none;
+  align-items: center;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
+}
+
+.action-menu-panel {
+  position: absolute;
+  top: calc(100% + var(--space-2));
+  inset-inline-end: 0;
+  z-index: var(--z-dropdown);
+  min-width: 180px;
+  max-width: min(320px, calc(100vw - 24px));
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-md);
+  color: var(--color-text-soft);
+  padding: var(--space-2);
+}
+
+.action-menu-panel.is-floating {
+  position: fixed;
+  inset: auto;
+  z-index: var(--z-modal);
+  inset-inline-end: auto;
+  max-height: min(360px, calc(100vh - 16px));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* Lift an open menu above adjacent table rows. Sticky action cells otherwise
+   create competing stacking contexts and can paint over the dropdown. */
+.action-menu.is-open {
+  position: relative;
+  z-index: var(--z-modal);
+}
+
+.action-menu > .action-menu-toggle {
+  width: 40px;
+  min-width: 40px;
+  padding-inline: 0;
+}
+
+.action-menu-toggle .action-menu-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.dropdown-item,
+.action-menu button,
+.more-menu button,
+[data-dropdown-menu] button,
+[data-dropdown-item] {
+  display: flex;
+  width: 100%;
+  min-height: 38px;
+  align-items: center;
+  gap: var(--space-2);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: inherit;
+  padding: 0 var(--space-3);
+  text-align: start;
+  font-size: var(--font-sm);
+}
+
+.dropdown-item:hover,
+.action-menu button:hover,
+.more-menu button:hover,
+[data-dropdown-menu] button:hover,
+[data-dropdown-item]:hover {
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+
+/* Member advanced actions keep the same compact menu, but each operation has
+   a recognizable semantic accent without adding another row of buttons. */
+.action-menu-item[data-action="freeze"] .action-icon {
+  color: var(--color-warning);
+}
+
+.action-menu-item[data-action="payment"] .action-icon {
+  color: var(--color-success);
+}
+
+.action-menu-item[data-action="qr"] .action-icon {
+  color: var(--color-primary);
+}
+
+.action-menu-item[data-action="print"] .action-menu-print-icon {
+  color: var(--color-warning);
+}
+
+.action-menu-item[data-action="freeze"]:hover {
+  background: var(--color-warning-soft);
+  color: var(--color-warning);
+}
+
+.action-menu-item[data-action="payment"]:hover {
+  background: var(--color-success-soft);
+  color: var(--color-success);
+}
+
+.action-menu-item[data-action="qr"]:hover {
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+
+.dropdown-item.danger,
+.action-menu button.danger,
+.more-menu button.danger,
+[data-dropdown-item][data-danger] {
+  color: var(--color-danger);
+}

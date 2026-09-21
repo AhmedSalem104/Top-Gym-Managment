@@ -133,12 +133,16 @@ test('new registration page is independent from the existing landing page', () =
 
 test('registration wizard keeps its functional hooks while using the responsive product onboarding layout', () => {
     const registration = read('public/register-gym.html');
+    const styles = read('public/css/pages/register-gym.css');
     assert.match(registration, /class="registration-progress"/);
     assert.equal((registration.match(/data-step-indicator="[1-6]"/g) || []).length, 6);
     assert.match(registration, /class="registration-return"[^>]+href="\//);
     assert.match(registration, /registration-aside-visual["]?[^>]*>[\s\S]*?gym-background\.webp/);
     assert.match(registration, /id="gymRegistrationForm"/);
-    assert.doesNotMatch(registration, /\/css\/pages\/register-gym\.css/);
+    assert.match(styles, /grid-template-columns:\s*repeat\(6,\s*minmax\(0,\s*1fr\)\)/);
+    assert.match(styles, /\.registration-main\s*\{[\s\S]*?grid-template-columns:\s*minmax\(300px,\s*\.82fr\)\s+minmax\(0,\s*1\.35fr\)/);
+    assert.match(styles, /@media \(max-width: 900px\)[\s\S]*?\.registration-card\s*\{[\s\S]*?grid-row:\s*1/);
+    assert.match(styles, /html\[data-theme="dark"\] \.registration-aside-visual img/);
 });
 
 test('public registration fails safely when the catalog shape or API response is invalid', () => {

@@ -1,0 +1,159 @@
+/*
+ * Logic Fit product foundation
+ *
+ * This is the Vanilla CSS adaptation of the HeroUI patterns researched via
+ * the live MCP: semantic action variants, composed surfaces, visible focus,
+ * and predictable disabled/loading states. It is intentionally additive so
+ * existing page contracts and business behavior remain untouched.
+ */
+
+:root {
+  --ui-control-height: 44px;
+  --ui-touch-target: 44px;
+  --ui-content-gutter: clamp(16px, 2.6vw, 32px);
+  --ui-surface-radius: var(--radius-lg);
+  --ui-elevation-rest: var(--shadow-xs);
+  --ui-elevation-hover: var(--shadow-sm);
+}
+
+/* Semantic focus is shared by every interactive surface. */
+:where(button, a, input, select, textarea, [role="button"], [role="tab"]):focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 3px;
+  box-shadow: var(--focus-ring);
+}
+
+/* Keep controls composable: existing page-specific variants still win where
+   they intentionally define a different size or layout. */
+:where(input:not([type="checkbox"]):not([type="radio"]), select, textarea) {
+  border-color: var(--border-primary);
+  background: var(--bg-input);
+}
+
+:where(input:not([type="checkbox"]):not([type="radio"]), select, textarea):hover:not(:disabled) {
+  border-color: var(--border-hover);
+}
+
+:where(input:not([type="checkbox"]):not([type="radio"]), select, textarea):focus-visible {
+  border-color: var(--border-focus);
+  outline: 0;
+}
+
+:where(.panel, .card, .content-card, .shadow-panel, .stat-card, .management-card,
+  .library-card, .finance-card, .attendance-card, .platform-card, .portal-tool-card) {
+  border-color: var(--border-secondary);
+  background: var(--bg-surface);
+  box-shadow: var(--ui-elevation-rest);
+}
+
+:where(.panel, .card, .content-card, .shadow-panel, .platform-card, .portal-tool-card) {
+  border-radius: var(--ui-surface-radius);
+}
+
+:where(.panel, .card, .content-card, .shadow-panel, .stat-card, .management-card,
+  .library-card, .finance-card, .attendance-card, .platform-card, .portal-tool-card) {
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast), transform var(--transition-fast);
+}
+
+:where(.panel, .card, .content-card, .shadow-panel, .stat-card, .management-card,
+  .library-card, .finance-card, .attendance-card, .platform-card, .portal-tool-card):hover {
+  border-color: var(--border-hover);
+  box-shadow: var(--ui-elevation-hover);
+}
+
+/* HeroUI's semantic variant language mapped to the existing button contract. */
+:where(.btn-primary, .platform-btn-primary, [data-variant="primary"]) {
+  background: var(--color-primary);
+  color: var(--text-on-primary);
+}
+
+:where(.btn-secondary, .btn-light, .platform-btn-secondary, [data-variant="secondary"]) {
+  border-color: var(--border-primary);
+  background: var(--bg-surface);
+  color: var(--color-primary);
+}
+
+:where(.btn-ghost, .btn-link, [data-variant="ghost"]) {
+  background: transparent;
+  color: var(--color-primary);
+}
+
+:where(.btn-danger, [data-variant="danger"]) {
+  background: var(--color-danger);
+  color: var(--text-on-primary);
+}
+
+:where(.btn, .platform-btn, .platform-link-btn, .portal-actions .btn) {
+  min-height: var(--ui-control-height);
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+:where(.btn, .platform-btn, .platform-link-btn, .portal-actions .btn):disabled,
+:where(.btn, .platform-btn, .platform-link-btn, .portal-actions .btn)[aria-disabled="true"] {
+  cursor: not-allowed;
+  filter: saturate(.72);
+  opacity: .56;
+  transform: none;
+}
+
+:where(.btn[aria-busy="true"], .platform-btn[aria-busy="true"], .btn.is-loading,
+  .platform-btn.is-loading) {
+  cursor: wait;
+  pointer-events: none;
+}
+
+/* Composed status surfaces keep loading, empty and error states legible in
+   both themes without requiring every feature page to invent its own box. */
+:where(.empty-state, .empty, .no-data, .not-found-state, .loading, .error-state,
+  .page-error, .registration-error, .portal-error) {
+  border-radius: var(--radius-lg);
+  overflow-wrap: anywhere;
+}
+
+:where(.empty-state, .empty, .no-data, .not-found-state) {
+  border: 1px dashed var(--border-primary);
+  background: var(--bg-card-hover);
+  color: var(--text-muted);
+}
+
+:where(.loading) {
+  color: var(--text-muted);
+}
+
+:where(.error-state, .page-error, .registration-error, .portal-error) {
+  border-color: var(--danger-border);
+  background: var(--danger-soft);
+  color: var(--danger-text);
+}
+
+:where(.badge, .chip, .status-badge, .branch-status) {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+:where(.table-wrap, .table-scroll, .data-table-wrap, .portal-table-wrap,
+  .member-requests-table-wrap) {
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+}
+
+/* Do not animate if the user has requested reduced motion. */
+@media (prefers-reduced-motion: reduce) {
+  :where(.panel, .card, .content-card, .shadow-panel, .stat-card, .management-card,
+    .library-card, .finance-card, .attendance-card, .platform-card, .portal-tool-card,
+    .btn, .platform-btn) {
+    transition: none;
+  }
+}
+
+@media (max-width: 767px) {
+  :where(.btn, .platform-btn, .platform-link-btn, .portal-actions .btn) {
+    min-height: var(--ui-touch-target);
+  }
+
+  :where(.panel, .card, .content-card, .shadow-panel, .platform-card, .portal-tool-card) {
+    border-radius: var(--radius-lg);
+  }
+}

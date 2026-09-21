@@ -25,11 +25,35 @@ async function waitForTab(page, name, selector) {
 }
 
 async function assertNoPageOverflow(page) {
-    await expect(page.locator('body')).toBeAttached();
+    const metrics = await page.evaluate(() => ({
+        viewport: document.documentElement.clientWidth,
+        documentWidth: document.documentElement.scrollWidth,
+        bodyWidth: document.body.scrollWidth
+    }));
+    expect(metrics.documentWidth, `document overflow: ${JSON.stringify(metrics)}`).toBeLessThanOrEqual(metrics.viewport + 1);
+    expect(metrics.bodyWidth, `body overflow: ${JSON.stringify(metrics)}`).toBeLessThanOrEqual(metrics.viewport + 1);
 }
 
 async function assertTouchTargets(page) {
-    expect(await page.locator('button, input, select, textarea').count()).toBeGreaterThan(0);
+    const undersized = await page.locator('button:visible, input:visible, select:visible, textarea:visible').evaluateAll((elements) => elements
+        .map((element) => {
+            const box = element.getBoundingClientRect();
+            const style = getComputedStyle(element);
+            return {
+                tag: element.tagName,
+                id: element.id,
+                className: element.className,
+                text: element.textContent?.trim().slice(0, 30),
+                box: box.toJSON(),
+                minHeight: style.minHeight,
+                height: style.height,
+                padding: style.padding,
+                lineHeight: style.lineHeight,
+                boxSizing: style.boxSizing
+            };
+        })
+        .filter(({ box }) => box.width > 0 && box.height > 0 && (box.width < 32 || box.height < 32)));
+    expect(undersized, `interactive controls below the 32px minimum: ${JSON.stringify(undersized)}`).toEqual([]);
 }
 
 async function capture(page, testInfo, name) {
@@ -76,14 +100,17 @@ test('dashboard daily passes use the wider column beside the alerts rail', async
         const alerts = grid?.querySelector('.alerts-panel');
         const dayPasses = grid?.querySelector('.dashboard-day-pass-card');
         return {
-            gridPresent: Boolean(grid),
-            alertsPresent: Boolean(alerts),
-            dayPassesPresent: Boolean(dayPasses)
+            gridColumns: grid ? getComputedStyle(grid).gridTemplateColumns.split(' ').length : 0,
+            alertsColumn: alerts ? getComputedStyle(alerts).gridColumn : '',
+            dayPassesColumn: dayPasses ? getComputedStyle(dayPasses).gridColumn : '',
+            documentWidth: document.documentElement.scrollWidth,
+            viewportWidth: document.documentElement.clientWidth
         };
     });
-    expect(layout.gridPresent).toBe(true);
-    expect(layout.alertsPresent).toBe(true);
-    expect(layout.dayPassesPresent).toBe(true);
+    expect(layout.gridColumns).toBe(12);
+    expect(layout.alertsColumn).toBe('1 / span 4');
+    expect(layout.dayPassesColumn).toBe('5 / span 8');
+    expect(layout.documentWidth).toBeLessThanOrEqual(layout.viewportWidth + 1);
     await capture(page, testInfo, 'dashboard-day-passes-8-alerts-4');
 });
 
@@ -104,6 +131,13 @@ test('members modal and action menu stay inside the viewport', async ({ page }) 
     await addButton.click();
     const dialog = page.locator('#memberDialog');
     await expect(dialog).toBeVisible();
+    const dialogBox = await dialog.boundingBox();
+    const viewport = page.viewportSize();
+    expect(dialogBox).not.toBeNull();
+    expect(dialogBox.x).toBeGreaterThanOrEqual(0);
+    expect(dialogBox.y).toBeGreaterThanOrEqual(0);
+    expect(dialogBox.x + dialogBox.width).toBeLessThanOrEqual(viewport.width + 1);
+    expect(dialogBox.y + dialogBox.height).toBeLessThanOrEqual(viewport.height + 1);
     const dialogClose = page.locator('#memberDialog .dialog-close-button');
     await expect(dialogClose).toBeVisible();
     await dialogClose.click();
@@ -114,6 +148,10 @@ test('members modal and action menu stay inside the viewport', async ({ page }) 
         await menuToggle.click();
         const menu = menuToggle.locator('..').locator('.action-menu-panel');
         await expect(menu).toBeVisible();
+        const menuBox = await menu.boundingBox();
+        expect(menuBox).not.toBeNull();
+        expect(menuBox.x).toBeGreaterThanOrEqual(0);
+        expect(menuBox.x + menuBox.width).toBeLessThanOrEqual(viewport.width + 1);
     }
 });
 

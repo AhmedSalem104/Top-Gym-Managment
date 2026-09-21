@@ -34,11 +34,6 @@
     const dialog = $('#platformActionDialog');
     const dialogForm = $('#platformActionForm');
     const registrationCredentialsDialog = $('#platformRegistrationCredentialsDialog');
-    // Keep the existing IDs and listeners while opting both platform dialogs
-    // into the shared Modal Foundation at the source of their lifecycle.
-    [dialog, registrationCredentialsDialog].forEach((element) => {
-        element?.classList.add('lf-modal-shell', 'lf-modal--md');
-    });
     let toastTimer;
     let searchTimer;
 
@@ -767,7 +762,7 @@
         return '<div class="dialog-feature-grid full">' + entries.map((feature) => {
             const key = feature.key;
             const current = Object.prototype.hasOwnProperty.call(features, key) ? (features[key] === true ? 'enabled' : 'disabled') : 'inherit';
-            return '<label class="dialog-label"><span title="' + escapeHtml(feature.description) + '">' + escapeHtml(key) + '</span><select class="form-control" name="feature_override_' + escapeHtml(key) + '"><option value="inherit" ' + (current === 'inherit' ? 'selected' : '') + '>Use plan</option><option value="enabled" ' + (current === 'enabled' ? 'selected' : '') + '>Enabled</option><option value="disabled" ' + (current === 'disabled' ? 'selected' : '') + '>Disabled</option></select></label>';
+            return '<label class="dialog-label"><span title="' + escapeHtml(feature.description) + '">' + escapeHtml(key) + '</span><select name="feature_override_' + escapeHtml(key) + '"><option value="inherit" ' + (current === 'inherit' ? 'selected' : '') + '>Use plan</option><option value="enabled" ' + (current === 'enabled' ? 'selected' : '') + '>Enabled</option><option value="disabled" ' + (current === 'disabled' ? 'selected' : '') + '>Disabled</option></select></label>';
         }).join('') + '</div>';
     }
 
@@ -777,7 +772,7 @@
     }
 
     function tenantTypeField(selected = 'gym') {
-        return `<label class="dialog-label full"><span>نوع العميل</span><select class="form-control" name="tenantType"><option value="gym" ${selected === 'gym' ? 'selected' : ''}>جيم</option><option value="independent_trainer" ${selected === 'independent_trainer' ? 'selected' : ''}>مدرب مستقل</option></select></label><p class="dialog-hint full">نوع العميل جزء ثابت من ملف الـTenant، وسيتم التحقق منه مع الباقة قبل الإنشاء.</p>`;
+        return `<label class="dialog-label full"><span>نوع العميل</span><select name="tenantType"><option value="gym" ${selected === 'gym' ? 'selected' : ''}>جيم</option><option value="independent_trainer" ${selected === 'independent_trainer' ? 'selected' : ''}>مدرب مستقل</option></select></label><p class="dialog-hint full">نوع العميل جزء ثابت من ملف الـTenant، وسيتم التحقق منه مع الباقة قبل الإنشاء.</p>`;
     }
 
     function numberOrNull(value) { return value === '' || value == null ? null : Number(value); }
@@ -825,9 +820,9 @@
         return features;
     }
 
-    function dialogField(label, name, type = 'text', value = '', extra = '') { return `<label class="dialog-label"><span>${escapeHtml(label)}</span><input class="form-control" name="${escapeHtml(name)}" type="${type}" value="${escapeHtml(value)}" ${extra}></label>`; }
-    function dialogSelect(label, name, options, extraClass = '') { return `<label class="dialog-label ${extraClass}"><span>${escapeHtml(label)}</span><select class="form-control" name="${escapeHtml(name)}">${options}</select></label>`; }
-    function dialogTextarea(label, name, value = '', extra = '') { return `<label class="dialog-label full"><span>${escapeHtml(label)}</span><textarea class="form-control" name="${escapeHtml(name)}" ${extra}>${escapeHtml(value)}</textarea></label>`; }
+    function dialogField(label, name, type = 'text', value = '', extra = '') { return `<label class="dialog-label"><span>${escapeHtml(label)}</span><input name="${escapeHtml(name)}" type="${type}" value="${escapeHtml(value)}" ${extra}></label>`; }
+    function dialogSelect(label, name, options, extraClass = '') { return `<label class="dialog-label ${extraClass}"><span>${escapeHtml(label)}</span><select name="${escapeHtml(name)}">${options}</select></label>`; }
+    function dialogTextarea(label, name, value = '', extra = '') { return `<label class="dialog-label full"><span>${escapeHtml(label)}</span><textarea name="${escapeHtml(name)}" ${extra}>${escapeHtml(value)}</textarea></label>`; }
 
     function openDialog(type, payload = {}) {
         const profile = state.profile;

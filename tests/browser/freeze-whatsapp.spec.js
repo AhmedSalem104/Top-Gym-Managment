@@ -195,7 +195,15 @@ async function openFreezeDialog(page) {
     await expect(checkboxBlock).toContainText('إرسال إشعار للعضو عبر WhatsApp بعد التجميد');
     await expect(page.locator('#dialogFreezeSendWhatsApp')).toBeVisible();
     await expect(page.locator('#dialogFreezeSendWhatsApp')).toBeChecked();
-    expect(await checkboxBlock.isHidden()).toBe(false);
+    const checkboxLayout = await checkboxBlock.evaluate((element) => {
+        const rect = element.getBoundingClientRect();
+        const style = getComputedStyle(element);
+        return { hidden: element.hidden, display: style.display, width: rect.width, height: rect.height };
+    });
+    expect(checkboxLayout.hidden).toBe(false);
+    expect(checkboxLayout.display).not.toBe('none');
+    expect(checkboxLayout.width).toBeGreaterThan(0);
+    expect(checkboxLayout.height).toBeGreaterThan(0);
     if (test.info().project.name === 'desktop') {
         await page.screenshot({ path: path.join(os.tmpdir(), 'logicfit-freeze-popup-actual.png'), fullPage: false });
     }
@@ -214,7 +222,7 @@ test('Add Member sends exactly the saved Platform central welcome template', asy
     await page.evaluate(() => window.LogicFitPhoneInputs?.loadCatalog?.());
     await page.locator('#addMemberButton').click();
     await page.locator('#fullName').fill('QA Welcome Member');
-    await page.locator('#phone').fill('01012345678');
+    await page.locator('#phone').fill('1012345678');
     await page.locator('#saveButton').click();
 
     await expect.poll(() => page.evaluate(() => window.__topGymOpenCalls.some((item) => item.url.startsWith('https://wa.me/') || item.url.startsWith('whatsapp://'))), { timeout: 10000 }).toBe(true);
@@ -241,7 +249,7 @@ test('actual Add Member flow renders the complete central welcome data context',
     await page.evaluate(() => window.LogicFitPhoneInputs?.loadCatalog?.());
     await page.locator('#addMemberButton').click();
     await page.locator('#fullName').fill('QA Rich Member');
-    await page.locator('#phone').fill('01012345678');
+    await page.locator('#phone').fill('1012345678');
     await page.locator('#membershipPlan').selectOption('gym_only');
     await page.locator('#membershipType').selectOption('monthly');
     await page.locator('#startDate').fill('2026-09-14');
@@ -280,7 +288,7 @@ test('Add Member preserves UTF-8 template text through WhatsApp URL encoding', a
     await page.evaluate(() => window.LogicFitPhoneInputs?.loadCatalog?.());
     await page.locator('#addMemberButton').click();
     await page.locator('#fullName').fill('QA Unicode Member');
-    await page.locator('#phone').fill('01012345678');
+    await page.locator('#phone').fill('1012345678');
     await page.locator('#saveButton').click();
     await expect.poll(() => page.evaluate(() => window.__topGymOpenCalls.some((item) => item.url.startsWith('https://wa.me/') || item.url.startsWith('whatsapp://'))), { timeout: 10000 }).toBe(true);
 

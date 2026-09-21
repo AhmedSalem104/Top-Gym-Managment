@@ -213,7 +213,7 @@ test('branch switching keeps the selected branch membership, including expired h
     });
 
     await page.goto('/?branchScope=qa#members', { waitUntil: 'networkidle' });
-    await expect(page.locator('[data-context-field="branch"] .branch-context-trigger')).toBeVisible();
+    await expect(page.locator('#branchContextSelect')).toBeVisible();
     await expect(page.locator('#membersList tr[data-member-id="501"]')).toBeVisible();
     await expect(page.locator('#membersPagination')).toBeVisible();
 
@@ -406,10 +406,10 @@ for (const matrixCase of BROWSER_MATRIX) {
                 if (testInfo.project.name === 'desktop') await expect(nav).toBeVisible();
                 await expect(page.locator('.trainer-studio-feature-access')).toHaveCount(0);
             }
-            const dimensions = await page.evaluate(() => ({ viewport: innerWidth, document: document.documentElement.scrollWidth, body: document.body.scrollWidth }));
-            expect(dimensions.document, JSON.stringify(dimensions)).toBeLessThanOrEqual(dimensions.viewport + 1);
-            expect(dimensions.body, JSON.stringify(dimensions)).toBeLessThanOrEqual(dimensions.viewport + 1);
         }
+        const dimensions = await page.evaluate(() => ({ viewport: innerWidth, document: document.documentElement.scrollWidth, body: document.body.scrollWidth }));
+        expect(dimensions.document, JSON.stringify(dimensions)).toBeLessThanOrEqual(dimensions.viewport + 1);
+        expect(dimensions.body, JSON.stringify(dimensions)).toBeLessThanOrEqual(dimensions.viewport + 1);
     });
 }
 

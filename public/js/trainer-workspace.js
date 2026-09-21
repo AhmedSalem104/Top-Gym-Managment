@@ -126,7 +126,7 @@
                 <div class="trainer-client-stat"><strong>${Number(client.workoutCount || 0)}</strong><span>تدريب</span></div>
                 <div class="trainer-client-stat"><strong>${Number(client.nutritionCount || 0)}</strong><span>تغذية</span></div>
                 <div class="trainer-client-stat"><strong>${Number(client.measurementCount || 0)}</strong><span>قياس</span></div>
-                <div class="trainer-client-actions"><button class="btn btn-secondary btn-small" type="button" data-client-action="details">فتح</button><button class="btn btn-secondary btn-small" type="button" data-client-action="edit">تعديل</button></div>
+                <div class="trainer-client-actions"><button type="button" data-client-action="details">فتح</button><button type="button" data-client-action="edit">تعديل</button></div>
             </article>`).join('');
         renderPagination(payload?.pagination);
     }
@@ -136,7 +136,7 @@
         const totalPages = Number(info.totalPages || 0);
         pagination.hidden = totalPages <= 1;
         if (pagination.hidden) return;
-        pagination.innerHTML = `<button class="btn btn-secondary btn-small" type="button" data-page="prev" ${info.hasPrevious ? '' : 'disabled'} aria-label="الصفحة السابقة">‹</button><span>${Number(info.page || 1)} / ${totalPages}</span><button class="btn btn-secondary btn-small" type="button" data-page="next" ${info.hasNext ? '' : 'disabled'} aria-label="الصفحة التالية">›</button>`;
+        pagination.innerHTML = `<button type="button" data-page="prev" ${info.hasPrevious ? '' : 'disabled'} aria-label="الصفحة السابقة">‹</button><span>${Number(info.page || 1)} / ${totalPages}</span><button type="button" data-page="next" ${info.hasNext ? '' : 'disabled'} aria-label="الصفحة التالية">›</button>`;
     }
 
     async function loadClients(pageNumber = currentPage) {
