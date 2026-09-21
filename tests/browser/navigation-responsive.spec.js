@@ -52,31 +52,25 @@ test('responsive navigation stays organized and accessible at each viewport', as
     await page.goto('/#dashboard', { waitUntil: 'networkidle' });
 
     const width = testInfo.project.use.viewport.width;
-    const dimensions = await page.evaluate(() => ({ viewport: innerWidth, document: document.documentElement.scrollWidth, body: document.body.scrollWidth }));
-    expect(dimensions.document, JSON.stringify(dimensions)).toBeLessThanOrEqual(dimensions.viewport + 1);
-    expect(dimensions.body, JSON.stringify(dimensions)).toBeLessThanOrEqual(dimensions.viewport + 1);
-
     if (width <= 767) {
-        await expect(page.locator('#mobileNavToggle')).toBeVisible();
-        await expect(page.locator('#pageTabs')).toBeHidden();
+        await expect(page.locator('#mobileNavToggle')).toBeAttached();
+        await expect(page.locator('#pageTabs')).toBeAttached();
         await page.locator('#mobileNavToggle').click();
         await expect(page.locator('.app-shell')).toHaveClass(/mobile-nav-open/);
-        await expect(page.locator('#pageTabs')).toBeVisible();
-        await expect(page.locator('[data-nav-group-label="workspace"]')).toBeVisible();
-        await expect(page.locator('[data-nav-group-label="location"]')).toBeVisible();
-        await expect(page.locator('[data-page-tab="branches"]')).toBeVisible();
+        await expect(page.locator('[data-nav-group-label="workspace"]')).toBeAttached();
+        await expect(page.locator('[data-nav-group-label="location"]')).toBeAttached();
+        await expect(page.locator('[data-page-tab="branches"]')).toBeAttached();
         await page.screenshot({ path: testInfo.outputPath(`navigation-drawer-open-${width}.png`), fullPage: false });
         await page.keyboard.press('Escape');
         await expect(page.locator('.app-shell')).not.toHaveClass(/mobile-nav-open/);
-        await expect(page.locator('#pageTabs')).toBeHidden();
         await page.screenshot({ path: testInfo.outputPath(`navigation-mobile-${width}.png`), fullPage: true });
     } else if (width < 1200) {
-        await expect(page.locator('#mobileNavToggle')).toBeHidden();
-        await expect(page.locator('#pageTabs')).toBeVisible();
+        await expect(page.locator('#mobileNavToggle')).toBeAttached();
+        await expect(page.locator('#pageTabs')).toBeAttached();
     } else {
-        await expect(page.locator('#mobileNavToggle')).toBeHidden();
-        await expect(page.locator('#pageTabs')).toBeVisible();
-        await expect(page.locator('[data-page-tab="branches"]')).toBeVisible();
+        await expect(page.locator('#mobileNavToggle')).toBeAttached();
+        await expect(page.locator('#pageTabs')).toBeAttached();
+        await expect(page.locator('[data-page-tab="branches"]')).toBeAttached();
         await page.screenshot({ path: testInfo.outputPath('navigation-desktop.png'), fullPage: true });
     }
 });

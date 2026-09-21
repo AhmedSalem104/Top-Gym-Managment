@@ -1,0 +1,1796 @@
+/*
+ * Logic Fit shared component foundation.
+ *
+ * TailAdmin is the visual reference; this file is the only shared visual
+ * owner for controls used by application surfaces. Feature styles may arrange
+ * these components, but must not redefine their shell or states.
+ */
+
+@layer base {
+    html {
+        direction: rtl;
+    }
+
+    body {
+        direction: rtl;
+    }
+
+    :where(input, textarea, select)[dir="ltr"],
+    :where([dir="ltr"] input, [dir="ltr"] textarea, [dir="ltr"] select) {
+        direction: ltr;
+        text-align: left;
+    }
+}
+
+@layer components {
+    /* A stable icon contract prevents SVGs in generated empty/loading states
+       from inheriting the browser's unconstrained inline dimensions. */
+    :where(.ui-icon, .icon, .nav-icon, .action-icon) {
+        inline-size: 1.25rem;
+        block-size: 1.25rem;
+        flex: 0 0 auto;
+    }
+
+    :where(.empty, .loading, .error, .history-empty, .coaching-empty, .library-empty, .portal-empty) svg.ui-icon,
+    :where(.empty, .loading, .error, .history-empty, .coaching-empty, .library-empty, .portal-empty) > svg {
+        inline-size: 3rem;
+        block-size: 3rem;
+    }
+
+    /* All existing tab panels share the same page composition contract. */
+    :where(section[id$="Section"]:not([hidden]), [data-page-tab-panel]:not([hidden])) {
+        min-width: 0;
+        max-width: 100%;
+    }
+
+    :where(.store-page-header, .member-feedback-header, .permissions-header, .branding-page-head, .member-payment-page-head, .backup-history-page-head, .saas-page-header, .member-requests-header, .portal-analytics-header, .library-header, .attendance-header, .coaching-header, .intelligence-page-header) {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-block-end: 1.5rem;
+        padding-block-end: 1rem;
+        border-bottom: 1px solid var(--lf-border);
+    }
+
+    :where(.store-page-header h2, .member-feedback-header h2, .permissions-header h2, .branding-page-head h2, .member-payment-page-head h2, .backup-history-page-head h2, .saas-page-header h2, .member-requests-header h2, .portal-analytics-header h2, .library-header h2, .attendance-header h2, .coaching-header h2, .intelligence-page-header h2, .store-page-header h3, .member-feedback-header h3, .permissions-header h3, .branding-page-head h3, .member-payment-page-head h3, .backup-history-page-head h3, .saas-page-header h3, .member-requests-header h3, .portal-analytics-header h3, .library-header h3, .attendance-header h3, .coaching-header h3, .intelligence-page-header h3) {
+        color: var(--lf-text);
+        font-size: clamp(1rem, 1.2vw, 1.25rem);
+        font-weight: 700;
+        line-height: 1.5;
+    }
+
+    :where(.store-page-header p, .member-feedback-header p, .permissions-header p, .branding-page-head p, .member-payment-page-head p, .backup-history-page-head p, .saas-page-header p, .member-requests-header p, .portal-analytics-header p, .library-header p, .attendance-header p, .coaching-header p, .intelligence-page-header p) {
+        margin-block-start: 0.375rem;
+        color: var(--lf-text-muted);
+        font-size: 0.8125rem;
+        line-height: 1.7;
+    }
+
+    :where(.store-page-actions, .member-feedback-actions, .permissions-actions, .branding-page-actions, .member-payment-page-actions, .backup-history-page-actions, .saas-page-actions, .member-requests-actions, .portal-analytics-actions, .library-actions, .attendance-header-actions, .coaching-toolbar-actions, .intelligence-header-actions) {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    /* ------------------------------
+       Surface and page primitives
+       ------------------------------ */
+    :where(.card, .surface-card, .data-card, .form-card, .store-card, .platform-card, .section-card) {
+        border: 1px solid var(--lf-border);
+        border-radius: var(--radius-lf-card);
+        background: var(--lf-surface);
+        box-shadow: var(--shadow-lf-card);
+    }
+
+    :where(.card-header, .panel-header, .store-card-header, .section-header, .page-section-head) {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: 1.25rem 1.5rem;
+        border-bottom: 1px solid var(--lf-border);
+    }
+
+    :where(.card-header h2, .card-header h3, .card-header h4, .panel-header h2, .panel-header h3, .panel-header h4, .store-card-header h3, .store-card-header h4, .section-header h2, .section-header h3) {
+        color: var(--lf-text);
+        font-size: 1rem;
+        font-weight: 700;
+        line-height: 1.5;
+    }
+
+    :where(.card-header p, .panel-header p, .store-card-header p, .section-header p) {
+        margin-top: 0.25rem;
+        color: var(--lf-text-muted);
+        font-size: 0.8125rem;
+        line-height: 1.6;
+    }
+
+    :where(.card-body, .panel-body, .form-body, .section-body) {
+        min-width: 0;
+        padding: 1.5rem;
+    }
+
+    :where(.page-section, .feature-section, .workspace-section) {
+        min-width: 0;
+        margin-block: 1.5rem;
+    }
+
+    :where(.page-section:first-child, .feature-section:first-child, .workspace-section:first-child) {
+        margin-block-start: 0;
+    }
+
+    /* ------------------------------
+       Form contract
+       ------------------------------ */
+    :where(.field, .form-field, .field-grid > label, .form-grid > label, .store-form-grid > label, .platform-field, .members-filter-field, .coaching-search, .store-search-field) {
+        display: grid;
+        min-width: 0;
+        align-content: start;
+        gap: 0.5rem;
+        color: var(--lf-text);
+        font-size: 0.8125rem;
+        font-weight: 600;
+        line-height: 1.5;
+    }
+
+    /* Forms that predate the shared field wrappers still inherit the same
+       control contract through their semantic label/control relationship. */
+    :where(form label:not(.checkbox-field):not(.check-field):not(.store-check-field):not(.permission-option):not(.auth-remember)) {
+        display: grid;
+        min-width: 0;
+        align-content: start;
+        gap: 0.5rem;
+        color: var(--lf-text);
+        font-size: 0.8125rem;
+        font-weight: 600;
+        line-height: 1.5;
+    }
+
+    :where(.field > input, .field > select, .field > textarea, .form-field > input, .form-field > select, .form-field > textarea, .field-grid > label > input, .field-grid > label > select, .field-grid > label > textarea, .form-grid > label > input, .form-grid > label > select, .form-grid > label > textarea, .store-form-grid > label > input, .store-form-grid > label > select, .store-form-grid > label > textarea, .platform-field > input, .platform-field > select, .platform-field > textarea, .members-filter-field > select, .coaching-search > input, .store-search-field > input) {
+        width: 100%;
+        min-width: 0;
+        min-height: 2.75rem;
+        border: 1px solid var(--lf-border);
+        border-radius: var(--radius-lf-control);
+        background: var(--lf-surface);
+        padding: 0.625rem 0.875rem;
+        color: var(--lf-text);
+        font-size: 0.875rem;
+        font-weight: 400;
+        line-height: 1.5;
+        transition: border-color 160ms ease, box-shadow 160ms ease, background-color 160ms ease;
+    }
+
+    :where(form label:not(.checkbox-field):not(.check-field):not(.store-check-field):not(.permission-option):not(.auth-remember) > input:not([type="checkbox"]):not([type="radio"]), form label:not(.checkbox-field):not(.check-field):not(.store-check-field):not(.permission-option):not(.auth-remember) > select, form label:not(.checkbox-field):not(.check-field):not(.store-check-field):not(.permission-option):not(.auth-remember) > textarea) {
+        width: 100%;
+        min-width: 0;
+        min-height: 2.75rem;
+        border: 1px solid var(--lf-border);
+        border-radius: var(--radius-lf-control);
+        background: var(--lf-surface);
+        padding: 0.625rem 0.875rem;
+        color: var(--lf-text);
+        font-size: 0.875rem;
+        font-weight: 400;
+        line-height: 1.5;
+        transition: border-color 160ms ease, box-shadow 160ms ease, background-color 160ms ease;
+    }
+
+    :where(form label:not(.checkbox-field):not(.check-field):not(.store-check-field):not(.permission-option):not(.auth-remember) > input:not([type="checkbox"]):not([type="radio"]), form label:not(.checkbox-field):not(.check-field):not(.store-check-field):not(.permission-option):not(.auth-remember) > select, form label:not(.checkbox-field):not(.check-field):not(.store-check-field):not(.permission-option):not(.auth-remember) > textarea):focus {
+        border-color: var(--lf-primary);
+        outline: 0;
+        box-shadow: 0 0 0 3px var(--lf-focus);
+    }
+
+    :where(.field > textarea, .form-field > textarea, .field-grid > label > textarea, .form-grid > label > textarea, .store-form-grid > label > textarea, .platform-field > textarea) {
+        min-height: 6rem;
+        resize: vertical;
+    }
+
+    :where(.field > input, .field > select, .field > textarea, .form-field > input, .form-field > select, .form-field > textarea, .field-grid > label > input, .field-grid > label > select, .field-grid > label > textarea, .form-grid > label > input, .form-grid > label > select, .form-grid > label > textarea, .store-form-grid > label > input, .store-form-grid > label > select, .store-form-grid > label > textarea, .platform-field > input, .platform-field > select, .platform-field > textarea, .members-filter-field > select, .coaching-search > input, .store-search-field > input):focus {
+        border-color: var(--lf-primary);
+        outline: 0;
+        box-shadow: 0 0 0 3px var(--lf-focus);
+    }
+
+    :where(.field > input[aria-invalid="true"], .field > select[aria-invalid="true"], .field > textarea[aria-invalid="true"], .form-field > input[aria-invalid="true"], .form-field > select[aria-invalid="true"], .form-field > textarea[aria-invalid="true"]) {
+        border-color: var(--lf-danger);
+    }
+
+    :where(.field-hint, .field-hint, .form-hint, .helper-text) {
+        color: var(--lf-text-muted);
+        font-size: 0.75rem;
+        font-weight: 400;
+        line-height: 1.6;
+    }
+
+    :where(.field-error, .form-error, .error-text, [data-field-error]) {
+        color: var(--lf-danger);
+        font-size: 0.75rem;
+        font-weight: 600;
+        line-height: 1.5;
+    }
+
+    :where(.field-grid, .form-grid, .member-form-grid, .store-form-grid, .platform-form, .checkin-field-grid) {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 1rem;
+    }
+
+    :where(.field-full, .member-form-field-full, .form-field-full, .store-form-field-full) {
+        grid-column: 1 / -1;
+    }
+
+    :where(.form-actions, .dialog-actions, .form-footer, .store-form-actions, .platform-page-actions) {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    :where(.form-actions, .form-footer, .dialog-actions, .store-form-actions) {
+        justify-content: flex-start;
+        padding-block: 1rem;
+    }
+
+    :where(.checkbox-field, .check-field, .store-check-field, .permission-option, .auth-remember) {
+        display: inline-flex;
+        min-height: 2.75rem;
+        align-items: center;
+        gap: 0.625rem;
+        color: var(--lf-text);
+        font-size: 0.8125rem;
+        font-weight: 500;
+        cursor: pointer;
+    }
+
+    :where(.checkbox-field input, .check-field input, .store-check-field input, .permission-option input, .auth-remember input) {
+        inline-size: 1rem;
+        block-size: 1rem;
+        accent-color: var(--lf-primary);
+    }
+
+    /* ------------------------------
+       Shared button variants
+       ------------------------------ */
+    :where(.btn-secondary) {
+        border-color: var(--lf-primary);
+        background: var(--lf-primary-soft);
+        color: var(--lf-primary);
+    }
+
+    :where(.btn-secondary:hover) {
+        background: color-mix(in srgb, var(--lf-primary-soft) 76%, var(--lf-primary));
+    }
+
+    :where(.btn-danger) {
+        border-color: transparent;
+        background: var(--lf-danger);
+        color: #fff;
+    }
+
+    :where(.btn-danger:hover) {
+        background: #d92d20;
+    }
+
+    :where(.btn-ghost) {
+        border-color: transparent;
+        background: transparent;
+        color: var(--lf-text-muted);
+    }
+
+    :where(.btn-ghost:hover) {
+        background: var(--lf-surface-muted);
+        color: var(--lf-text);
+    }
+
+    :where(.icon-action, .icon-btn, .action-menu-toggle, .notification-center-icon-button, .platform-icon-btn) {
+        display: inline-grid;
+        min-inline-size: 2.75rem;
+        min-block-size: 2.75rem;
+        place-items: center;
+        border: 1px solid var(--lf-border);
+        border-radius: var(--radius-lf-control);
+        color: var(--lf-text-muted);
+        cursor: pointer;
+        transition: color 160ms ease, border-color 160ms ease, background-color 160ms ease;
+    }
+
+    :where(.icon-action:hover, .icon-btn:hover, .action-menu-toggle:hover, .notification-center-icon-button:hover, .platform-icon-btn:hover) {
+        border-color: var(--lf-primary);
+        background: var(--lf-primary-soft);
+        color: var(--lf-primary);
+    }
+
+    /* ------------------------------
+       Data surfaces
+       ------------------------------ */
+    :where(.table-wrap, .table-container, .data-table-wrap, .members-list, .members-table-wrap, .history-scroll, .audit-table-wrap, .library-table-wrap, .library-table-scroll, .payment-history-table-wrap, .feedback-table-wrap, .platform-table-wrap, .store-table-wrap, .attendance-table-wrap, .pricing-table-scroll) {
+        min-width: 0;
+        overflow-x: auto;
+        border: 1px solid var(--lf-border);
+        border-radius: var(--radius-lf-control);
+        background: var(--lf-surface);
+        scrollbar-width: thin;
+    }
+
+    :where(.members-table, .attendance-table, .history-table, .audit-table, .library-data-table, .library-report-table, .payment-history-table, .membership-types-table, .platform-table, .data-table, .table-wrap table, .table-container table, .store-table-wrap table) {
+        width: 100%;
+        min-width: 42rem;
+        border-collapse: separate;
+        border-spacing: 0;
+        color: var(--lf-text);
+        font-size: 0.8125rem;
+        text-align: right;
+    }
+
+    :where(.members-table th, .attendance-table th, .history-table th, .audit-table th, .library-data-table th, .library-report-table th, .payment-history-table th, .membership-types-table th, .platform-table th, .data-table th, .table-wrap th, .table-container th, .store-table-wrap th) {
+        border-bottom: 1px solid var(--lf-border);
+        background: var(--lf-surface-muted);
+        padding: 0.875rem 1rem;
+        color: var(--lf-text-muted);
+        font-size: 0.75rem;
+        font-weight: 700;
+        white-space: nowrap;
+    }
+
+    :where(.members-table td, .attendance-table td, .history-table td, .audit-table td, .library-data-table td, .library-report-table td, .payment-history-table td, .membership-types-table td, .platform-table td, .data-table td, .table-wrap td, .table-container td, .store-table-wrap td) {
+        border-bottom: 1px solid var(--lf-border);
+        padding: 0.875rem 1rem;
+        background: var(--lf-surface);
+        vertical-align: middle;
+    }
+
+    :where(.members-table tbody tr:last-child td, .attendance-table tbody tr:last-child td, .history-table tbody tr:last-child td, .audit-table tbody tr:last-child td, .library-data-table tbody tr:last-child td, .library-report-table tbody tr:last-child td, .payment-history-table tbody tr:last-child td, .membership-types-table tbody tr:last-child td, .platform-table tbody tr:last-child td, .data-table tbody tr:last-child td, .table-wrap tbody tr:last-child td, .table-container tbody tr:last-child td, .store-table-wrap tbody tr:last-child td) {
+        border-bottom: 0;
+    }
+
+    :where(.members-table tbody tr:hover td, .attendance-table tbody tr:hover td, .history-table tbody tr:hover td, .audit-table tbody tr:hover td, .library-data-table tbody tr:hover td, .library-report-table tbody tr:hover td, .payment-history-table tbody tr:hover td, .membership-types-table tbody tr:hover td, .platform-table tbody tr:hover td, .data-table tbody tr:hover td, .table-wrap tbody tr:hover td, .table-container tbody tr:hover td, .store-table-wrap tbody tr:hover td) {
+        background: var(--lf-surface-muted);
+    }
+
+    :where(.table-actions, .row-actions, .branch-list-actions, .library-row-actions, .member-details-actions, .coaching-toolbar-actions) {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    /* ------------------------------
+       Status and feedback
+       ------------------------------ */
+    :where(.badge, .status-badge, .member-profile-badge, .branch-status, .coaching-result-badge, .feature-chip, .permission-owner-badge, .permission-readonly-badge, .member-request-status) {
+        display: inline-flex;
+        min-height: 1.75rem;
+        align-items: center;
+        gap: 0.375rem;
+        border: 1px solid color-mix(in srgb, var(--lf-border) 70%, transparent);
+        border-radius: 999px;
+        background: var(--lf-surface-muted);
+        padding-inline: 0.625rem;
+        color: var(--lf-text-muted);
+        font-size: 0.6875rem;
+        font-weight: 700;
+        white-space: nowrap;
+    }
+
+    :where(.badge.success, .status-badge.success, .branch-status.active, .checked-in, .paid, .collected) {
+        border-color: #abefc6;
+        background: var(--lf-success-soft);
+        color: var(--lf-success);
+    }
+
+    :where(.badge.warning, .status-badge.warning, .has-debt, .pending, .orange) {
+        border-color: #fedf89;
+        background: var(--lf-warning-soft);
+        color: var(--lf-warning);
+    }
+
+    :where(.badge.danger, .status-badge.danger, .expired, .danger, .blocked) {
+        border-color: #fecdca;
+        background: var(--lf-danger-soft);
+        color: var(--lf-danger);
+    }
+
+    :where(.loading, .empty, .error, .history-empty, .members-users-empty, .coaching-empty, .library-empty, .portal-empty) {
+        display: grid;
+        min-height: 7rem;
+        place-items: center;
+        border: 1px dashed var(--lf-border);
+        border-radius: var(--radius-lf-control);
+        background: var(--lf-surface-muted);
+        padding: 1.25rem;
+        color: var(--lf-text-muted);
+        font-size: 0.8125rem;
+        line-height: 1.7;
+        text-align: center;
+    }
+
+    :where(.error, .auth-message, .form-error) {
+        border-color: #fecdca;
+        background: var(--lf-danger-soft);
+        color: var(--lf-danger);
+    }
+
+    :where(.alert-card, .inline-alert, .notification, .notice, .backup-storage-warning) {
+        border: 1px solid var(--lf-border);
+        border-radius: var(--radius-lf-control);
+        background: var(--lf-surface-muted);
+        padding: 0.875rem 1rem;
+        color: var(--lf-text);
+    }
+
+    :where(.toast, .logicfit-feedback-toast-stack) {
+        z-index: 1000;
+    }
+
+    /* ------------------------------
+       Menus, tabs and pagination
+       ------------------------------ */
+    :where(.dropdown-menu, .popover, .menu-panel, .action-menu-panel, .member-details-more-menu, .notification-center-panel, .smart-assistant-panel) {
+        border: 1px solid var(--lf-border);
+        border-radius: var(--radius-lf-card);
+        background: var(--lf-surface);
+        box-shadow: var(--shadow-lf-popover);
+        color: var(--lf-text);
+    }
+
+    :where(.dropdown-item, .menu-item, .action-menu-item, .member-details-more-menu button) {
+        display: flex;
+        min-height: 2.75rem;
+        align-items: center;
+        gap: 0.625rem;
+        width: 100%;
+        border-radius: var(--radius-lf-control);
+        padding: 0.625rem 0.75rem;
+        color: var(--lf-text);
+        font-size: 0.8125rem;
+        text-align: start;
+        cursor: pointer;
+    }
+
+    :where(.dropdown-item:hover, .dropdown-item:focus-visible, .menu-item:hover, .menu-item:focus-visible, .action-menu-item:hover, .action-menu-item:focus-visible, .member-details-more-menu button:hover) {
+        background: var(--lf-primary-soft);
+        color: var(--lf-primary);
+    }
+
+    :where(.tabs, .tab-list, .store-subnav, .library-type-tabs, .builder-day-tabs) {
+        display: flex;
+        min-width: 0;
+        gap: 0.375rem;
+        overflow-x: auto;
+        scrollbar-width: thin;
+    }
+
+    :where(.tabs > button, .tab-list > button, .store-subnav-button, .library-type-tab, .builder-day-tab) {
+        min-height: 2.75rem;
+        flex: 0 0 auto;
+        border: 1px solid transparent;
+        border-radius: var(--radius-lf-control);
+        padding-inline: 0.875rem;
+        color: var(--lf-text-muted);
+        font-size: 0.8125rem;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    :where(.tabs > button:hover, .tabs > button[aria-selected="true"], .tab-list > button[aria-selected="true"], .store-subnav-button:hover, .store-subnav-button[aria-selected="true"], .store-subnav-button.is-active, .library-type-tab:hover, .library-type-tab.active, .builder-day-tab:hover, .builder-day-tab.active) {
+        border-color: color-mix(in srgb, var(--lf-primary) 20%, var(--lf-border));
+        background: var(--lf-primary-soft);
+        color: var(--lf-primary);
+    }
+
+    :where(.pagination, .members-pagination, .coaching-pagination, .library-pagination, .member-feedback-pagination, .member-requests-pagination) {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        margin-block-start: 1rem;
+        color: var(--lf-text-muted);
+        font-size: 0.75rem;
+    }
+
+    :where(.pagination button, .pagination a, .members-pagination button, .coaching-pagination button, .library-pagination button, .member-feedback-pagination button, .member-requests-pagination button) {
+        min-width: 2.5rem;
+        min-height: 2.5rem;
+        border: 1px solid var(--lf-border);
+        border-radius: var(--radius-lf-control);
+        background: var(--lf-surface);
+        color: var(--lf-text-muted);
+        cursor: pointer;
+    }
+
+    :where(.pagination button:hover, .pagination button[aria-current="page"], .pagination a:hover, .members-pagination button:hover, .coaching-pagination button:hover, .library-pagination button:hover, .member-feedback-pagination button:hover, .member-requests-pagination button:hover) {
+        border-color: var(--lf-primary);
+        background: var(--lf-primary-soft);
+        color: var(--lf-primary);
+    }
+
+    /* ------------------------------
+       Dialog contract
+       ------------------------------ */
+    :where(dialog, .modal, .lf-modal-shell) {
+        inline-size: min(100% - 2rem, 46rem);
+        max-inline-size: calc(100vw - 2rem);
+        max-block-size: min(44rem, calc(100dvh - 2rem));
+        margin: auto;
+        overflow: hidden;
+        border: 1px solid var(--lf-border);
+        border-radius: 1rem;
+        background: var(--lf-surface);
+        color: var(--lf-text);
+        box-shadow: var(--shadow-lf-popover);
+    }
+
+    :where(dialog)::backdrop {
+        background: rgb(16 24 40 / 0.48);
+        backdrop-filter: blur(2px);
+    }
+
+    :where(.dialog-body, .modal-body, .lf-modal-body) {
+        display: flex;
+        max-block-size: min(44rem, calc(100dvh - 2rem));
+        flex-direction: column;
+        min-height: 0;
+    }
+
+    :where(.dialog-header, .modal-header, .details-dialog-head, .management-dialog-header) {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: 1.25rem 1.5rem;
+        border-bottom: 1px solid var(--lf-border);
+    }
+
+    :where(.dialog-header h3, .modal-header h3, .details-dialog-head h3, .management-dialog-header h3) {
+        color: var(--lf-text);
+        font-size: 1.125rem;
+        font-weight: 700;
+        line-height: 1.5;
+    }
+
+    :where(.dialog-header p, .modal-header p, .details-dialog-head p, .management-dialog-header p) {
+        margin-block-start: 0.25rem;
+        color: var(--lf-text-muted);
+        font-size: 0.8125rem;
+        line-height: 1.65;
+    }
+
+    :where(.dialog-scroll-content, .dialog-content, .modal-content, .dialog-body > :not(.dialog-header):not(.dialog-actions):not(.dialog-footer)) {
+        min-height: 0;
+        overflow-y: auto;
+        padding: 1.5rem;
+    }
+
+    :where(.dialog-actions, .dialog-footer, .modal-footer) {
+        justify-content: flex-start;
+        border-top: 1px solid var(--lf-border);
+        margin-block-start: auto;
+        padding: 1rem 1.5rem;
+        background: var(--lf-surface);
+    }
+
+    /* ------------------------------
+       Branch/section context contract
+       ------------------------------ */
+    :where(.branch-context-shell) {
+        position: relative;
+        z-index: 40;
+        display: flex;
+        min-width: 0;
+        align-items: center;
+        gap: 0.75rem;
+        border: 1px solid var(--lf-border);
+        border-radius: var(--radius-lf-card);
+        background: var(--lf-surface);
+        padding: 0.5rem 0.75rem;
+        box-shadow: var(--shadow-lf-card);
+    }
+
+    :where(.branch-context-kicker) {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: var(--lf-text);
+        font-size: 0.75rem;
+        font-weight: 700;
+        white-space: nowrap;
+    }
+
+    :where(.branch-context-kicker small, .branch-context-field-copy small) {
+        display: block;
+        color: var(--lf-text-muted);
+        font-size: 0.6875rem;
+        font-weight: 600;
+        line-height: 1.4;
+    }
+
+    :where(.branch-context-divider) {
+        align-self: stretch;
+        inline-size: 1px;
+        background: var(--lf-border);
+    }
+
+    :where(.branch-context-field) {
+        position: relative;
+        display: flex;
+        min-width: 0;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    :where(.branch-context-field-icon, .branch-context-kicker-icon) {
+        display: inline-grid;
+        place-items: center;
+        flex: 0 0 auto;
+        inline-size: 1.75rem;
+        block-size: 1.75rem;
+        border-radius: 0.5rem;
+        background: var(--lf-primary-soft);
+        color: var(--lf-primary);
+    }
+
+    :where(.branch-context-field-icon svg, .branch-context-kicker-icon svg) {
+        inline-size: 1rem;
+        block-size: 1rem;
+    }
+
+    :where(.branch-context-field-copy) {
+        position: relative;
+        display: grid;
+        min-width: 8.5rem;
+        gap: 0.25rem;
+    }
+
+    :where(.branch-context-field select) {
+        position: absolute;
+        inline-size: 1px;
+        block-size: 1px;
+        overflow: hidden;
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    :where(.branch-context-trigger) {
+        display: inline-flex;
+        min-block-size: 2.5rem;
+        min-inline-size: 10rem;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        border: 1px solid var(--lf-border);
+        border-radius: var(--radius-lf-control);
+        background: var(--lf-surface);
+        padding: 0.5rem 0.75rem;
+        color: var(--lf-text);
+        font: inherit;
+        font-size: 0.8125rem;
+        font-weight: 700;
+        text-align: start;
+        cursor: pointer;
+        transition: border-color 160ms ease, box-shadow 160ms ease, background-color 160ms ease;
+    }
+
+    :where(.branch-context-trigger:hover, .branch-context-trigger[aria-expanded="true"]) {
+        border-color: var(--lf-primary);
+        background: var(--lf-surface-muted);
+    }
+
+    :where(.branch-context-trigger:focus-visible) {
+        outline: 0;
+        border-color: var(--lf-primary);
+        box-shadow: 0 0 0 3px var(--lf-focus);
+    }
+
+    :where(.branch-context-trigger:disabled, .branch-context-trigger[aria-disabled="true"]) {
+        cursor: not-allowed;
+        opacity: 0.55;
+    }
+
+    :where(.branch-context-trigger-chevron) {
+        inline-size: 0.5rem;
+        block-size: 0.5rem;
+        flex: 0 0 auto;
+        border-inline-end: 1.5px solid currentColor;
+        border-block-end: 1.5px solid currentColor;
+        transform: rotate(45deg) translateY(-2px);
+        transition: transform 160ms ease;
+    }
+
+    :where(.branch-context-trigger[aria-expanded="true"] .branch-context-trigger-chevron) {
+        transform: rotate(225deg) translate(-2px, -2px);
+    }
+
+    :where(.branch-context-menu) {
+        position: absolute;
+        inset-block-start: calc(100% + 0.5rem);
+        inset-inline-end: 0;
+        z-index: 60;
+        display: none;
+        min-inline-size: 100%;
+        max-block-size: min(18rem, 50dvh);
+        overflow-y: auto;
+        border: 1px solid var(--lf-border);
+        border-radius: var(--radius-lf-card);
+        background: var(--lf-surface-elevated);
+        padding: 0.375rem;
+        box-shadow: var(--shadow-lf-popover);
+    }
+
+    :where(.branch-context-field.is-open .branch-context-menu) {
+        display: grid;
+        gap: 0.25rem;
+    }
+
+    :where(.branch-context-option) {
+        display: flex;
+        min-block-size: 2.5rem;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        border: 0;
+        border-radius: 0.5rem;
+        background: transparent;
+        padding: 0.625rem 0.75rem;
+        color: var(--lf-text);
+        font: inherit;
+        font-size: 0.8125rem;
+        text-align: start;
+        cursor: pointer;
+    }
+
+    :where(.branch-context-option:hover, .branch-context-option:focus-visible) {
+        background: var(--lf-primary-soft);
+        color: var(--lf-primary-dark);
+        outline: 0;
+    }
+
+    :where(.branch-context-option.is-selected) {
+        background: var(--lf-primary-soft);
+        color: var(--lf-primary-dark);
+        font-weight: 700;
+    }
+
+    :where(.branch-context-option.is-selected)::after {
+        content: "✓";
+        color: var(--lf-primary);
+        font-weight: 800;
+    }
+
+    :where(.branch-context-status) {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.375rem;
+        color: var(--lf-text-muted);
+        font-size: 0.6875rem;
+        white-space: nowrap;
+    }
+
+    :where(.branch-context-status-dot) {
+        inline-size: 0.425rem;
+        block-size: 0.425rem;
+        border-radius: 999px;
+        background: var(--lf-success);
+    }
+
+    :where(.branch-context-shell[data-context-state="loading"] .branch-context-status-dot) { background: var(--lf-warning); }
+    :where(.branch-context-shell[data-context-state="error"] .branch-context-status-dot) { background: var(--lf-danger); }
+
+    /* Feature composition contracts: page layout only, never component skin. */
+    :where(.members-toolbar, .coaching-toolbar, .library-toolbar, .attendance-list-head, .reports-toolbar, .branding-action-bar, .backup-history-tools, .member-requests-toolbar) {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-block-end: 1rem;
+    }
+
+    :where(.members-toolbar-controls, .members-filter-field, .alerts-toolbar, .attendance-list-actions, .reports-filter, .library-filters) {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    /* ------------------------------
+       Core application surface compositions
+       ------------------------------ */
+    :where(.members-panel, .attendance-section, .coaching-section, .intelligence-section, .library-section, .store-section, .reports-section, .branding-page, .permissions-section, .member-payment-methods-page, .backup-history-page, .member-requests-page, .portal-analytics-page, .saas-billing-page) {
+        min-width: 0;
+        padding: 1.5rem;
+    }
+
+    :where(.members-toolbar-copy, .attendance-heading, .coaching-heading, .intelligence-page-heading, .library-heading, .day-pass-heading) {
+        display: flex;
+        min-width: 0;
+        align-items: flex-start;
+        gap: 0.75rem;
+    }
+
+    :where(.members-toolbar-copy > div, .attendance-heading > div, .coaching-heading > div, .intelligence-page-heading > div, .library-heading > div, .day-pass-heading > div) {
+        min-width: 0;
+    }
+
+    :where(.members-toolbar-copy strong, .attendance-heading h3, .coaching-heading h3, .intelligence-page-heading h3, .library-heading h3, .day-pass-heading h3) {
+        display: block;
+        color: var(--lf-text);
+        font-size: 1rem;
+        font-weight: 700;
+        line-height: 1.5;
+    }
+
+    :where(.members-toolbar-copy > div > span, .attendance-heading p, .coaching-heading p, .intelligence-page-heading p, .library-heading p, .day-pass-heading p) {
+        display: block;
+        margin-block-start: 0.25rem;
+        color: var(--lf-text-muted);
+        font-size: 0.75rem;
+        line-height: 1.7;
+    }
+
+    :where(.members-toolbar-icon, .attendance-heading-icon, .coaching-heading-icon, .intelligence-page-icon, .library-heading-icon, .day-pass-icon) {
+        display: inline-grid;
+        inline-size: 2.5rem;
+        block-size: 2.5rem;
+        flex: 0 0 auto;
+        place-items: center;
+        border: 1px solid color-mix(in srgb, var(--lf-primary) 18%, var(--lf-border));
+        border-radius: var(--radius-lf-control);
+        background: var(--lf-primary-soft);
+        color: var(--lf-primary);
+    }
+
+    :where(.members-toolbar-icon .ui-icon, .attendance-heading-icon .ui-icon, .coaching-heading-icon .ui-icon, .intelligence-page-icon .ui-icon, .library-heading-icon .ui-icon, .day-pass-icon .ui-icon) {
+        inline-size: 1.25rem;
+        block-size: 1.25rem;
+    }
+
+    :where(.members-search-field, .library-search, .attendance-search-wrap, .alerts-search-field, .store-search-field) {
+        position: relative;
+        display: flex;
+        min-width: 0;
+        width: min(100%, 20rem);
+        max-width: 100%;
+        align-items: center;
+    }
+
+    :where(.members-search-field input, .library-search input, .attendance-search-wrap input, .alerts-search-field input, .store-search-field input) {
+        min-width: 0;
+        width: 100%;
+        min-height: 2.75rem;
+        border: 1px solid var(--lf-border);
+        border-radius: var(--radius-lf-control);
+        background: var(--lf-surface);
+        padding: 0.625rem 2.75rem 0.625rem 0.875rem;
+        color: var(--lf-text);
+        font-size: 0.8125rem;
+    }
+
+    :where(.members-search-field > .ui-icon, .library-search > .ui-icon, .attendance-search-wrap > .ui-icon, .alerts-search-field > .ui-icon, .store-search-field > .ui-icon) {
+        pointer-events: none;
+        position: absolute;
+        inset-inline-start: 0.75rem;
+        inline-size: 1.125rem;
+        block-size: 1.125rem;
+        color: var(--lf-text-subtle);
+    }
+
+    :where(.members-toolbar-controls) {
+        display: grid;
+        grid-template-columns: minmax(15rem, 1.4fr) repeat(2, minmax(9rem, 1fr));
+        align-items: end;
+        gap: 0.75rem;
+        min-width: min(100%, 42rem);
+    }
+
+    :where(.attendance-section) {
+        display: block;
+    }
+
+    :where(.attendance-header) {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-block-end: 1.25rem;
+    }
+
+    :where(.attendance-header-actions, .attendance-mode-actions, .attendance-list-actions, .day-pass-list-actions) {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.625rem;
+    }
+
+    :where(.attendance-date-badge, .day-pass-today-badge) {
+        display: inline-flex;
+        min-height: 2.25rem;
+        align-items: center;
+        gap: 0.375rem;
+        border: 1px solid var(--lf-border);
+        border-radius: 999px;
+        background: var(--lf-surface-muted);
+        padding-inline: 0.75rem;
+        color: var(--lf-text-muted);
+        font-size: 0.75rem;
+        font-weight: 700;
+        white-space: nowrap;
+    }
+
+    :where(.attendance-control-panel) {
+        display: grid;
+        grid-template-columns: minmax(0, 1.35fr) minmax(16rem, 0.65fr);
+        gap: 1rem;
+        align-items: stretch;
+    }
+
+    :where(.attendance-entry-card, .day-pass-panel) {
+        min-width: 0;
+        border: 1px solid var(--lf-border);
+        border-radius: var(--radius-lf-card);
+        background: var(--lf-surface);
+        box-shadow: var(--shadow-lf-card);
+    }
+
+    :where(.attendance-entry-head, .attendance-list-head, .day-pass-head, .day-pass-list-head) {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: 1.25rem 1.5rem;
+        border-bottom: 1px solid var(--lf-border);
+    }
+
+    :where(.attendance-entry-head h4, .attendance-list-head h4, .day-pass-head h3, .day-pass-list-head h4) {
+        color: var(--lf-text);
+        font-size: 1rem;
+        font-weight: 700;
+    }
+
+    :where(.attendance-entry-head p, .attendance-list-head p, .day-pass-head p, .day-pass-list-head p) {
+        margin-block-start: 0.25rem;
+        color: var(--lf-text-muted);
+        font-size: 0.75rem;
+        line-height: 1.7;
+    }
+
+    :where(.attendance-entry-workspace) {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        gap: 1.25rem;
+        padding: 1.25rem 1.5rem;
+    }
+
+    :where(.attendance-entry-input, .attendance-member-context) {
+        min-width: 0;
+    }
+
+    :where(.attendance-entry-input) {
+        display: grid;
+        align-content: start;
+        gap: 1rem;
+    }
+
+    :where(.attendance-segmented-control) {
+        display: inline-flex;
+        width: fit-content;
+        max-width: 100%;
+        gap: 0.25rem;
+        border: 1px solid var(--lf-border);
+        border-radius: var(--radius-lf-control);
+        background: var(--lf-surface-muted);
+        padding: 0.25rem;
+    }
+
+    :where(.attendance-segmented-control > button) {
+        min-height: 2.5rem;
+        border-radius: 0.5rem;
+        padding-inline: 0.875rem;
+        color: var(--lf-text-muted);
+        font-size: 0.75rem;
+        font-weight: 700;
+        cursor: pointer;
+    }
+
+    :where(.attendance-segmented-control > button.active, .attendance-segmented-control > button[aria-selected="true"]) {
+        background: var(--lf-surface);
+        color: var(--lf-primary);
+        box-shadow: 0 1px 3px rgb(16 24 40 / 0.08);
+    }
+
+    :where(.attendance-input-row) {
+        display: grid;
+        gap: 0.5rem;
+    }
+
+    :where(.attendance-input-label) {
+        color: var(--lf-text);
+        font-size: 0.8125rem;
+        font-weight: 700;
+    }
+
+    :where(.attendance-input-wrap) {
+        position: relative;
+        display: flex;
+        align-items: center;
+    }
+
+    :where(.attendance-input-wrap > .ui-icon) {
+        pointer-events: none;
+        position: absolute;
+        inset-inline-start: 0.875rem;
+        inline-size: 1.125rem;
+        block-size: 1.125rem;
+        color: var(--lf-text-subtle);
+    }
+
+    :where(.attendance-input-wrap > input) {
+        width: 100%;
+        min-height: 3rem;
+        border: 1px solid var(--lf-border);
+        border-radius: var(--radius-lf-control);
+        background: var(--lf-surface);
+        padding-inline: 2.75rem 0.875rem;
+        color: var(--lf-text);
+        direction: ltr;
+        text-align: left;
+    }
+
+    :where(.attendance-action-buttons) {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.625rem;
+    }
+
+    :where(.btn-check-in, .btn-check-out) {
+        min-height: 3rem;
+        border-color: transparent;
+        color: #fff;
+    }
+
+    :where(.btn-check-in) { background: var(--lf-success); }
+    :where(.btn-check-out) { background: var(--lf-warning); }
+
+    :where(.attendance-member-context) {
+        display: grid;
+        align-content: start;
+        gap: 0.75rem;
+        border: 1px solid var(--lf-border);
+        border-radius: var(--radius-lf-card);
+        background: var(--lf-surface-muted);
+        padding: 1rem;
+    }
+
+    :where(.attendance-member-context-heading) {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        color: var(--lf-text);
+        font-size: 0.8125rem;
+        font-weight: 700;
+    }
+
+    :where(.attendance-member-context-heading small) {
+        color: var(--lf-text-subtle);
+        font-size: 0.6875rem;
+        font-weight: 400;
+    }
+
+    :where(.attendance-member-empty) {
+        display: grid;
+        min-height: 12rem;
+        place-items: center;
+        align-content: center;
+        gap: 0.5rem;
+        color: var(--lf-text-muted);
+        text-align: center;
+    }
+
+    :where(.attendance-member-empty-icon) {
+        display: grid;
+        inline-size: 3rem;
+        block-size: 3rem;
+        place-items: center;
+        border-radius: 999px;
+        background: var(--lf-primary-soft);
+        color: var(--lf-primary);
+    }
+
+    :where(.attendance-member-empty strong) { color: var(--lf-text); font-size: 0.875rem; }
+    :where(.attendance-member-empty p) { max-width: 24rem; font-size: 0.75rem; line-height: 1.7; }
+
+    :where(.attendance-info-strip) {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.625rem;
+        margin: 0 1.5rem 1.25rem;
+        border: 1px solid color-mix(in srgb, var(--lf-primary) 18%, var(--lf-border));
+        border-radius: var(--radius-lf-control);
+        background: var(--lf-primary-soft);
+        padding: 0.75rem 0.875rem;
+        color: var(--lf-text-muted);
+        font-size: 0.75rem;
+        line-height: 1.7;
+    }
+
+    :where(.attendance-summary) {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+    }
+
+    :where(.attendance-summary-card) {
+        display: grid;
+        align-content: center;
+        gap: 0.25rem;
+        min-height: 8rem;
+        border: 1px solid var(--lf-border);
+        border-radius: var(--radius-lf-card);
+        background: var(--lf-surface);
+        padding: 1rem;
+    }
+
+    :where(.attendance-summary-card .summary-icon) {
+        color: var(--lf-primary);
+    }
+
+    :where(.attendance-summary-card strong) {
+        color: var(--lf-text);
+        font-size: 1.75rem;
+        line-height: 1.1;
+        direction: ltr;
+        text-align: start;
+    }
+
+    :where(.attendance-summary-card > span:last-child) {
+        color: var(--lf-text-muted);
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+
+    :where(.attendance-list-head) {
+        margin-block-start: 1.25rem;
+        border: 1px solid var(--lf-border);
+        border-block-end: 0;
+        border-radius: var(--radius-lf-card) var(--radius-lf-card) 0 0;
+        background: var(--lf-surface);
+    }
+
+    :where(.attendance-table-wrap) {
+        border-radius: 0 0 var(--radius-lf-card) var(--radius-lf-card);
+    }
+
+    :where(.day-pass-panel) {
+        grid-column: 1 / -1;
+        margin-block-start: 1.25rem;
+        padding: 0;
+    }
+
+    :where(.day-pass-form) {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 1rem;
+        padding: 1.25rem 1.5rem;
+    }
+
+    :where(.day-pass-form-lead, .day-pass-price-box, .day-pass-form-actions, .day-pass-whatsapp-option) { grid-column: 1 / -1; }
+
+    :where(.day-pass-price-box) {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        border: 1px solid var(--lf-border);
+        border-radius: var(--radius-lf-control);
+        background: var(--lf-surface-muted);
+        padding: 0.875rem 1rem;
+    }
+
+    :where(.day-pass-list-head) {
+        border-block-start: 1px solid var(--lf-border);
+        border-block-end: 0;
+    }
+
+    :where(.day-pass-table-wrap) { margin: 0 1.5rem 1.5rem; }
+
+    :where(.coaching-summary, .intelligence-stats-grid, .permissions-account-metrics, .portal-analytics-cards, .platform-kpi-grid) {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+        gap: 0.75rem;
+        margin-block-end: 1rem;
+    }
+
+    :where(.coaching-summary-card, .intelligence-stat-card, .permissions-account-metric, .portal-analytics-card, .platform-kpi) {
+        border: 1px solid var(--lf-border);
+        border-radius: var(--radius-lf-card);
+        background: var(--lf-surface);
+        padding: 1rem;
+    }
+
+    :where(.intelligence-dashboard-grid, .intelligence-plan-layout, .permissions-layout, .branding-workspace, .portal-financial-grid, .platform-dashboard-grid, .saas-billing-grid) {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 1rem;
+        min-width: 0;
+    }
+
+    :where(.intelligence-card, .permissions-users-panel, .permissions-editor-panel, .branding-editor-card, .branding-preview-card, .portal-analytics-card, .platform-kpi, .saas-panel) {
+        min-width: 0;
+        border: 1px solid var(--lf-border);
+        border-radius: var(--radius-lf-card);
+        background: var(--lf-surface);
+        box-shadow: var(--shadow-lf-card);
+        padding: 1.25rem;
+    }
+
+    :where(.intelligence-card-head, .saas-panel-head, .permissions-editor-head, .branding-section-head) {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-block-end: 1rem;
+    }
+
+    :where(.intelligence-query-form, .intelligence-plan-form, .saas-form-grid) {
+        display: grid;
+        gap: 1rem;
+    }
+
+    :where(.intelligence-plan-form, .saas-form-grid) {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    :where(.intelligence-plan-form > label, .saas-form-grid > .field, .intelligence-query-form > label) {
+        display: grid;
+        gap: 0.5rem;
+        color: var(--lf-text);
+        font-size: 0.8125rem;
+        font-weight: 600;
+    }
+
+    :where(.intelligence-query-form > label, .intelligence-plan-form > .intelligence-plan-type, .intelligence-plan-form > button, .saas-form-actions) { grid-column: 1 / -1; }
+
+    :where(.saas-table-wrap, .saas-subscription-summary, .saas-requests-panel) {
+        min-width: 0;
+        overflow-x: auto;
+    }
+
+    /* Store POS composition: the shared card/form/table contracts own the
+       visuals; these rules only arrange the two POS workspaces and checkout
+       fields. */
+    :where(.store-view:not([hidden]), .store-pos-layout, .store-card, .store-product-grid, .store-customer-picker, .store-cart-lines, .store-checkout-form) {
+        min-width: 0;
+    }
+
+    :where(.store-pos-layout) {
+        display: grid;
+        grid-template-columns: minmax(0, 1.15fr) minmax(20rem, 0.85fr);
+        align-items: start;
+        gap: 1rem;
+    }
+
+    :where(.store-card) {
+        overflow: hidden;
+    }
+
+    :where(.store-customer-picker) {
+        display: grid;
+        gap: 0.75rem;
+        padding: 1rem 1.5rem;
+    }
+
+    :where(.store-customer-picker > label, .store-checkout-form > label) {
+        display: grid;
+        min-width: 0;
+        gap: 0.5rem;
+        color: var(--lf-text);
+        font-size: 0.8125rem;
+        font-weight: 600;
+        line-height: 1.5;
+    }
+
+    :where(.store-customer-picker input, .store-checkout-form input, .store-checkout-form select, .store-checkout-form textarea) {
+        width: 100%;
+        min-width: 0;
+        min-height: 2.75rem;
+        border: 1px solid var(--lf-border);
+        border-radius: var(--radius-lf-control);
+        background: var(--lf-surface);
+        padding: 0.625rem 0.875rem;
+        color: var(--lf-text);
+        font-size: 0.875rem;
+        font-weight: 400;
+        line-height: 1.5;
+    }
+
+    :where(.store-customer-picker input, .store-checkout-form input, .store-checkout-form select, .store-checkout-form textarea):focus {
+        border-color: var(--lf-primary);
+        outline: 0;
+        box-shadow: 0 0 0 3px var(--lf-focus);
+    }
+
+    :where(.store-selected-customer, .store-customer-results) {
+        min-width: 0;
+        border: 1px solid var(--lf-border);
+        border-radius: var(--radius-lf-control);
+        background: var(--lf-surface-muted);
+        padding: 0.75rem;
+    }
+
+    :where(.store-cart-lines) {
+        min-height: 10rem;
+        padding: 1rem 1.5rem;
+    }
+
+    :where(.store-checkout-form) {
+        display: grid;
+        gap: 1rem;
+        padding: 1rem 1.5rem 1.5rem;
+        border-top: 1px solid var(--lf-border);
+    }
+
+    :where(.store-checkout-form .store-form-row) {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.75rem;
+    }
+
+    :where(.store-checkout-form .store-form-row > label) {
+        display: grid;
+        min-width: 0;
+        gap: 0.5rem;
+        color: var(--lf-text);
+        font-size: 0.8125rem;
+        font-weight: 600;
+        line-height: 1.5;
+    }
+
+    :where(.store-cart-total) {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        padding-block: 0.75rem;
+        border-top: 1px solid var(--lf-border);
+        color: var(--lf-text-muted);
+        font-size: 0.8125rem;
+    }
+
+    :where(.store-cart-total strong) {
+        color: var(--lf-text);
+        font-size: 1.125rem;
+        font-weight: 800;
+    }
+
+    :where(.store-complete-sale) {
+        width: 100%;
+    }
+
+    /* Branding is a two-column composition; the shared .field contract owns
+       labels and controls while these rules only define the feature layout. */
+    :where(.branding-field-grid, .branding-control-row, .branding-token-grid, .branding-asset-grid) {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 1rem;
+        min-width: 0;
+    }
+
+    :where(.branding-field-grid .field-full, .branding-control-row .field-full) {
+        grid-column: 1 / -1;
+    }
+
+    :where(.branding-editor-content, .branding-form-panel, .branding-payment-panel) {
+        min-width: 0;
+    }
+
+    /* Trainer Studio composition. Shared tokens/components remain the visual
+       owners; these rules only arrange the existing Trainer surface. */
+    .trainer-workspace-page.trainer-studio-v2 {
+        min-block-size: 100dvh;
+        background: var(--lf-bg);
+        color: var(--lf-text);
+    }
+
+    .trainer-workspace-page.trainer-studio-v2 .trainer-workspace-shell {
+        display: grid;
+        grid-template-columns: minmax(16rem, 18rem) minmax(0, 1fr);
+        align-items: start;
+        gap: 1.5rem;
+        inline-size: min(112rem, calc(100% - 3rem));
+        margin-inline: auto;
+        padding-block: 1.5rem 3rem;
+    }
+
+    .trainer-studio-sidebar {
+        position: sticky;
+        inset-block-start: 1.5rem;
+        z-index: 30;
+        display: flex;
+        min-block-size: calc(100dvh - 3rem);
+        flex-direction: column;
+        overflow: hidden;
+        border: 1px solid rgb(255 255 255 / 0.12);
+        border-radius: 1.25rem;
+        background: var(--lf-sidebar);
+        color: #e6edf7;
+        box-shadow: 0 1rem 2.5rem rgb(16 24 40 / 0.16);
+    }
+
+    .trainer-studio-sidebar-brand,
+    .trainer-studio-sidebar-footer {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 1rem 1.125rem;
+        border-block-end: 1px solid rgb(255 255 255 / 0.1);
+    }
+
+    .trainer-studio-sidebar-footer { border-block-end: 0; border-block-start: 1px solid rgb(255 255 255 / 0.1); color: #aab4c5; font-size: 0.6875rem; }
+    .trainer-studio-brand-mark,
+    .trainer-studio-topbar-mark { display: grid; flex: 0 0 auto; inline-size: 2.5rem; block-size: 2.5rem; place-items: center; border: 1px solid rgb(255 255 255 / 0.24); border-radius: 0.875rem; background: linear-gradient(145deg, var(--lf-primary), var(--lf-primary-dark)); color: #fff; font-size: 1.125rem; font-weight: 800; }
+    .trainer-studio-sidebar-brand strong, .trainer-studio-sidebar-brand small { display: block; }
+    .trainer-studio-sidebar-brand strong { color: #fff; font-size: 0.875rem; }
+    .trainer-studio-sidebar-brand small { margin-block-start: 0.125rem; color: #aab4c5; font-size: 0.6875rem; }
+    .trainer-studio-sidebar-close { display: none; margin-inline-start: auto; border: 0; color: #fff; background: transparent; font-size: 1.5rem; cursor: pointer; }
+    .trainer-studio-sidebar-scroll { flex: 1; overflow: auto; padding: 1rem 0.625rem; }
+    .trainer-studio-nav-group + .trainer-studio-nav-group { margin-block-start: 1.25rem; }
+    .trainer-studio-nav-label { display: block; padding: 0 0.625rem 0.5rem; color: #8fa4be; font-size: 0.625rem; font-weight: 700; }
+    .trainer-studio-nav-group nav { display: grid; gap: 0.25rem; }
+    .trainer-studio-nav-link { display: flex; min-block-size: 2.75rem; align-items: center; gap: 0.625rem; border: 1px solid transparent; border-radius: 0.75rem; padding: 0.5rem 0.625rem; color: #b9c9dc; font-size: 0.75rem; font-weight: 700; text-decoration: none; transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease; }
+    .trainer-studio-nav-link:hover, .trainer-studio-nav-link:focus-visible, .trainer-studio-nav-link.is-active { border-color: rgb(128 145 255 / 0.3); background: rgb(70 95 255 / 0.18); color: #fff; outline: 0; }
+    .trainer-studio-nav-link:focus-visible { box-shadow: 0 0 0 3px rgb(128 145 255 / 0.24); }
+    .trainer-studio-nav-icon { display: grid; flex: 0 0 auto; inline-size: 1.75rem; block-size: 1.75rem; place-items: center; border-radius: 0.625rem; background: rgb(255 255 255 / 0.07); color: #aab9cf; }
+    .trainer-studio-nav-icon svg { inline-size: 1rem; block-size: 1rem; }
+    .trainer-studio-nav-link.is-active .trainer-studio-nav-icon { background: rgb(128 145 255 / 0.25); color: #fff; }
+    .trainer-studio-secure-dot, .trainer-studio-live-indicator, .trainer-context-dot, .trainer-live-dot { inline-size: 0.4375rem; block-size: 0.4375rem; flex: 0 0 auto; border-radius: 999px; background: var(--lf-success); box-shadow: 0 0 0 4px rgb(18 183 106 / 0.14); }
+
+    .trainer-studio-content { display: flex; min-width: 0; flex-direction: column; gap: 1rem; }
+    .trainer-studio-topbar, .trainer-workspace-page.trainer-studio-v2 .trainer-workspace-header { display: flex; min-block-size: 4.75rem; align-items: center; justify-content: space-between; gap: 1rem; border: 1px solid var(--lf-border); border-radius: 1rem; background: var(--lf-surface); padding: 0.8125rem 1rem; box-shadow: var(--shadow-lf-card); }
+    .trainer-studio-topbar-brand, .trainer-studio-topbar-context, .trainer-studio-topbar-actions, .trainer-studio-topbar-badge, .trainer-studio-topbar-brand > div { display: flex; align-items: center; }
+    .trainer-studio-topbar-brand { min-width: 0; gap: 0.75rem; }
+    .trainer-studio-topbar-mark { inline-size: 2.625rem; block-size: 2.625rem; }
+    .trainer-studio-topbar-kicker { display: block; color: var(--lf-primary); font-size: 0.625rem; font-weight: 800; }
+    .trainer-studio-topbar-tenant { display: block; max-inline-size: 18rem; overflow: hidden; margin-block-start: 0.125rem; color: var(--lf-text); font-size: 0.875rem; font-weight: 800; text-overflow: ellipsis; white-space: nowrap; }
+    .trainer-studio-topbar-context { gap: 0.5rem; margin-inline-start: auto; }
+    .trainer-studio-topbar-badge, .trainer-studio-topbar-plan { min-block-size: 2rem; gap: 0.375rem; border: 1px solid var(--lf-primary-soft); border-radius: 999px; background: var(--lf-primary-soft); color: var(--lf-primary-dark); padding-inline: 0.625rem; font-size: 0.6875rem; font-weight: 700; white-space: nowrap; }
+    .trainer-studio-topbar-actions { gap: 0.5rem; }
+    .trainer-studio-topbar-button, .trainer-studio-logout-button { min-block-size: 2.625rem; }
+    .trainer-studio-logout-button { display: inline-flex; align-items: center; gap: 0.5rem; }
+    .trainer-studio-runtime-message { position: absolute; inline-size: 1px; block-size: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+    .trainer-studio-route-bar { display: flex; min-block-size: 3.75rem; align-items: center; justify-content: space-between; gap: 1rem; padding-inline: 0.125rem; }
+    .trainer-studio-route-bar h2 { margin-block-start: 0.125rem; color: var(--lf-text); font-size: clamp(1.125rem, 1.8vw, 1.5rem); font-weight: 800; }
+    .trainer-studio-route-eyebrow, .trainer-panel-kicker, .trainer-card-eyebrow { color: var(--lf-primary); font-size: 0.625rem; font-weight: 800; }
+    .trainer-studio-route-meta { display: inline-flex; align-items: center; gap: 0.5rem; color: var(--lf-text-muted); font-size: 0.6875rem; }
+    .trainer-studio-menu-button { display: none; inline-size: 2.75rem; block-size: 2.75rem; place-items: center; border: 1px solid var(--lf-border); border-radius: var(--radius-lf-control); background: var(--lf-surface); color: var(--lf-primary); cursor: pointer; box-shadow: var(--shadow-lf-card); }
+    .trainer-studio-menu-button span { display: block; inline-size: 1rem; block-size: 2px; margin-block: 0.1875rem; border-radius: 99px; background: currentColor; }
+    .trainer-workspace-page.trainer-studio-v2 .trainer-workspace-nav, .trainer-workspace-page.trainer-studio-v2 .trainer-welcome-strip { display: none; }
+
+    .trainer-workspace-summary, .trainer-operations-grid, .trainer-studio-finance-grid, .trainer-studio-plan-grid, .trainer-studio-settings-grid { display: grid; min-width: 0; gap: 0.75rem; }
+    .trainer-workspace-summary { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+    .trainer-workspace-card, .trainer-workspace-panel, .trainer-studio-data-panel, .trainer-studio-editor-panel, .trainer-studio-finance-card, .trainer-studio-settings-card, .trainer-studio-plan-card, .trainer-ai-draft-panel { min-width: 0; border: 1px solid var(--lf-border); border-radius: var(--radius-lf-card); background: var(--lf-surface); box-shadow: var(--shadow-lf-card); }
+    .trainer-workspace-card { display: grid; gap: 0.375rem; min-block-size: 7rem; padding: 1rem; }
+    .trainer-workspace-card strong { color: var(--lf-text); font-size: 1.5rem; font-variant-numeric: tabular-nums; }
+    .trainer-workspace-card small { color: var(--lf-text-muted); font-size: 0.6875rem; }
+    .trainer-card-icon, .trainer-priority-icon, .trainer-quick-icon { display: grid; inline-size: 2.25rem; block-size: 2.25rem; place-items: center; border-radius: 0.75rem; background: var(--lf-primary-soft); color: var(--lf-primary); font-weight: 800; }
+    .trainer-card-icon--green, .trainer-priority-icon--green { background: var(--lf-success-soft); color: var(--lf-success); }
+    .trainer-card-icon--orange { background: var(--lf-warning-soft); color: var(--lf-warning); }
+    .trainer-card-icon--blue { background: var(--lf-primary-soft); color: var(--lf-info); }
+    .trainer-workspace-main-grid { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(17rem, 0.65fr); gap: 0.75rem; min-width: 0; }
+    .trainer-operations-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .trainer-workspace-panel { padding: 1.25rem; }
+    .trainer-panel-header, .trainer-studio-page-head, .trainer-studio-data-panel-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-block-end: 1rem; }
+    .trainer-panel-header h2, .trainer-studio-page-head h1, .trainer-studio-data-panel-head h2 { margin-block-start: 0.25rem; color: var(--lf-text); font-size: 1rem; font-weight: 800; }
+    .trainer-panel-header p, .trainer-studio-page-head p, .trainer-studio-data-panel-head p, .trainer-studio-settings-card p { margin-block-start: 0.25rem; color: var(--lf-text-muted); font-size: 0.75rem; line-height: 1.7; }
+    .trainer-quick-actions { display: grid; gap: 0.75rem; }
+    .trainer-quick-actions-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.75rem; }
+    .trainer-quick-action { display: flex; min-width: 0; align-items: center; gap: 0.625rem; border: 1px solid var(--lf-border); border-radius: var(--radius-lf-card); background: var(--lf-surface); padding: 0.875rem; color: var(--lf-text); text-align: start; cursor: pointer; box-shadow: var(--shadow-lf-card); }
+    .trainer-quick-action:hover, .trainer-quick-action:focus-visible { border-color: var(--lf-primary); outline: 0; box-shadow: 0 0 0 3px var(--lf-focus); }
+    .trainer-quick-action > span:nth-child(2) { min-width: 0; display: grid; gap: 0.25rem; }
+    .trainer-quick-action strong { font-size: 0.75rem; }
+    .trainer-quick-action small { color: var(--lf-text-muted); font-size: 0.625rem; }
+    .trainer-quick-arrow { margin-inline-start: auto; color: var(--lf-primary); }
+    .trainer-compact-list, .trainer-priority-list, .trainer-studio-data-list { display: grid; gap: 0.5rem; }
+    .trainer-priority-item, .trainer-studio-data-row, .trainer-studio-notification-row { display: flex; min-block-size: 3.75rem; align-items: center; gap: 0.75rem; border: 1px solid var(--lf-border); border-radius: 0.75rem; background: var(--lf-surface-muted); padding: 0.75rem; }
+    .trainer-priority-item > div, .trainer-studio-row-main { min-width: 0; flex: 1; }
+    .trainer-priority-item strong, .trainer-priority-item span { display: block; }
+    .trainer-priority-item strong { color: var(--lf-text); font-size: 0.875rem; }
+    .trainer-priority-item span { color: var(--lf-text-muted); font-size: 0.6875rem; }
+    .trainer-priority-icon--violet { background: var(--lf-primary-soft); color: var(--lf-primary); }
+    .trainer-availability-note, .trainer-inline-message { margin-block-start: 1rem; color: var(--lf-text-muted); font-size: 0.75rem; line-height: 1.7; }
+    .trainer-form-grid, .trainer-studio-editor-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+    .trainer-form-grid label, .trainer-studio-editor-grid label, .trainer-ai-refine-form label { display: grid; gap: 0.5rem; color: var(--lf-text); font-size: 0.75rem; font-weight: 700; }
+    .trainer-form-field--wide, .trainer-studio-field-wide, .trainer-studio-editor-field-wide { grid-column: 1 / -1; }
+    .trainer-dialog-header, .trainer-dialog-actions { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; }
+    .trainer-dialog-actions { justify-content: flex-start; margin-block-start: 1rem; }
+    .trainer-dialog-close { border: 0; color: var(--lf-text-muted); background: transparent; cursor: pointer; font-size: 1.25rem; }
+    .trainer-form-message, .trainer-studio-form-message { min-block-size: 1.25rem; color: var(--lf-danger); font-size: 0.75rem; }
+    .trainer-studio-data-panel, .trainer-studio-editor-panel, .trainer-studio-settings-card, .trainer-studio-finance-card, .trainer-studio-plan-card, .trainer-ai-draft-panel { padding: 1.25rem; }
+    .trainer-studio-row-main strong, .trainer-studio-row-main span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .trainer-studio-row-main strong { color: var(--lf-text); font-size: 0.8125rem; }
+    .trainer-studio-row-main span { margin-block-start: 0.25rem; color: var(--lf-text-muted); font-size: 0.6875rem; }
+    .trainer-studio-row-actions, .trainer-studio-panel-actions { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
+    .trainer-studio-row-icon { display: grid; flex: 0 0 auto; inline-size: 2.125rem; block-size: 2.125rem; place-items: center; border-radius: 0.625rem; background: var(--lf-primary-soft); color: var(--lf-primary); }
+    .trainer-studio-row-icon--warning { color: var(--lf-warning); background: var(--lf-warning-soft); }
+    .trainer-studio-row-icon--success { color: var(--lf-success); background: var(--lf-success-soft); }
+    .trainer-studio-loading, .trainer-studio-empty, .trainer-studio-error { display: grid; min-block-size: 10rem; place-items: center; align-content: center; gap: 0.5rem; color: var(--lf-text-muted); text-align: center; }
+    .trainer-studio-empty-mark, .trainer-studio-feature-access-icon { display: grid; inline-size: 2.75rem; block-size: 2.75rem; place-items: center; border-radius: 0.875rem; background: var(--lf-primary-soft); color: var(--lf-primary); font-weight: 800; }
+    .trainer-studio-feature-access { display: grid; justify-items: center; gap: 0.75rem; max-inline-size: 42rem; margin-inline: auto; padding: 3rem 1.5rem; border: 1px solid var(--lf-border); border-radius: var(--radius-lf-card); background: var(--lf-surface); box-shadow: var(--shadow-lf-card); text-align: center; }
+    .trainer-studio-feature-access h1 { color: var(--lf-text); font-size: 1.25rem; font-weight: 800; }
+    .trainer-studio-feature-access p { color: var(--lf-text-muted); font-size: 0.8125rem; line-height: 1.8; }
+    .trainer-studio-finance-grid, .trainer-studio-plan-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .trainer-studio-settings-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .trainer-studio-finance-card, .trainer-studio-plan-card { display: grid; align-content: start; gap: 0.5rem; }
+    .trainer-studio-finance-card strong, .trainer-studio-plan-price { color: var(--lf-text); font-size: 1.25rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+    .trainer-studio-finance-card > span:first-child { color: var(--lf-text-muted); font-size: 0.6875rem; }
+    .trainer-studio-plan-card.is-current, .trainer-studio-current-plan-card { border-color: var(--lf-primary); }
+    .trainer-studio-plan-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.5rem; }
+    .trainer-studio-plan-card h3, .trainer-studio-settings-card h2 { color: var(--lf-text); font-size: 1rem; font-weight: 800; }
+    .trainer-studio-plan-card p, .trainer-studio-plan-dates, .trainer-studio-plan-limits { color: var(--lf-text-muted); font-size: 0.6875rem; line-height: 1.7; }
+    .trainer-studio-plan-features { display: flex; flex-wrap: wrap; gap: 0.375rem; margin: 0; padding: 0; list-style: none; }
+    .trainer-studio-plan-features li, .trainer-studio-page-tag, .trainer-studio-count-chip, .trainer-studio-plan-current, .trainer-studio-portal-note, .trainer-status-pill { display: inline-flex; min-block-size: 1.75rem; align-items: center; border: 1px solid var(--lf-border); border-radius: 999px; background: var(--lf-surface-muted); color: var(--lf-text-muted); padding-inline: 0.625rem; font-size: 0.6875rem; font-weight: 700; }
+    .trainer-studio-plan-dates, .trainer-studio-plan-limits { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.5rem; margin-block-start: 0.75rem; }
+    .trainer-studio-plan-dates span, .trainer-studio-plan-limits span { display: flex; justify-content: space-between; gap: 0.5rem; padding: 0.5rem; border-radius: 0.625rem; background: var(--lf-surface-muted); }
+    .trainer-studio-plan-dates b, .trainer-studio-plan-limits b { color: var(--lf-text); }
+    .trainer-library-grid, .trainer-studio-exercise-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.75rem; }
+    .trainer-library-hero, .trainer-library-panel, .trainer-library-visual-card, .trainer-studio-exercise-card { min-width: 0; border: 1px solid var(--lf-border); border-radius: var(--radius-lf-card); background: var(--lf-surface); box-shadow: var(--shadow-lf-card); }
+    .trainer-library-hero, .trainer-library-panel { padding: 1.25rem; }
+    .trainer-library-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-block: 1rem; }
+    .trainer-library-search-form, .trainer-search { display: flex; min-block-size: 2.75rem; align-items: center; gap: 0.5rem; min-width: 0; border: 1px solid var(--lf-border); border-radius: var(--radius-lf-control); background: var(--lf-surface); padding-inline: 0.75rem; }
+    .trainer-library-search-form input, .trainer-search input { min-width: 0; flex: 1; border: 0; outline: 0; background: transparent; color: var(--lf-text); }
+    .trainer-library-tabs { display: flex; gap: 0.375rem; overflow-x: auto; margin-block: 0.25rem 1rem; padding: 0.25rem; border: 1px solid var(--lf-border); border-radius: 0.875rem; background: var(--lf-surface-muted); }
+    .trainer-library-tab { min-block-size: 2.375rem; border: 1px solid transparent; border-radius: 0.625rem; background: transparent; color: var(--lf-text-muted); padding-inline: 0.75rem; font: inherit; font-size: 0.75rem; font-weight: 700; white-space: nowrap; cursor: pointer; }
+    .trainer-library-tab.is-active, .trainer-library-tab:hover, .trainer-library-tab:focus-visible { border-color: var(--lf-border); background: var(--lf-surface); color: var(--lf-primary); outline: 0; }
+    .trainer-library-visual-card { overflow: hidden; }
+    .trainer-library-card-media-wrap { min-block-size: 8rem; background: var(--lf-primary-soft); }
+    .trainer-library-card-body { display: grid; gap: 0.5rem; padding: 0.875rem; }
+    .trainer-library-card-heading { display: flex; justify-content: space-between; gap: 0.5rem; }
+    .trainer-library-card-heading h3 { color: var(--lf-text); font-size: 0.8125rem; font-weight: 800; }
+    .trainer-library-card-heading small, .trainer-library-card-body p { color: var(--lf-text-muted); font-size: 0.6875rem; }
+    .trainer-library-tags { display: flex; flex-wrap: wrap; gap: 0.375rem; }
+    .trainer-library-tag { display: inline-flex; min-block-size: 1.5rem; align-items: center; border-radius: 999px; background: var(--lf-primary-soft); color: var(--lf-primary-dark); padding-inline: 0.5rem; font-size: 0.625rem; font-weight: 700; }
+}
+
+@media (max-width: 767px) {
+    :where(.field-grid, .form-grid, .member-form-grid, .store-form-grid, .platform-form, .checkin-field-grid) {
+        grid-template-columns: 1fr;
+    }
+
+    :where(.branding-field-grid, .branding-control-row, .branding-token-grid, .branding-asset-grid) {
+        grid-template-columns: 1fr;
+    }
+
+    :where(.branding-field-grid .field-full, .branding-control-row .field-full) {
+        grid-column: auto;
+    }
+
+    :where(.field-full, .member-form-field-full, .form-field-full, .store-form-field-full) {
+        grid-column: auto;
+    }
+
+    :where(.card-header, .panel-header, .store-card-header, .section-header, .page-section-head, .dialog-header, .modal-header, .details-dialog-head, .management-dialog-header) {
+        padding: 1rem;
+    }
+
+    :where(.card-body, .panel-body, .form-body, .section-body, .dialog-scroll-content, .dialog-content, .modal-content) {
+        padding: 1rem;
+    }
+
+    :where(.dialog-actions, .dialog-footer, .modal-footer) {
+        padding: 0.875rem 1rem;
+    }
+
+    :where(dialog, .modal, .lf-modal-shell) {
+        inline-size: calc(100% - 1rem);
+        max-block-size: calc(100dvh - 1rem);
+        border-radius: 0.875rem;
+    }
+
+    :where(.branch-context-shell) {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    :where(.branch-context-field) {
+        min-width: 0;
+        inline-size: 100%;
+    }
+
+    :where(.branch-context-field-copy, .branch-context-trigger) {
+        min-inline-size: 0;
+        inline-size: 100%;
+    }
+
+    :where(.branch-context-menu) {
+        max-block-size: min(16rem, 45dvh);
+    }
+
+    :where(.members-toolbar, .coaching-toolbar, .library-toolbar, .attendance-list-head, .reports-toolbar, .branding-action-bar, .backup-history-tools, .member-requests-toolbar) {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    :where(.members-toolbar-controls, .members-filter-field, .alerts-toolbar, .attendance-list-actions, .reports-filter, .library-filters) {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    :where(.members-panel, .attendance-section, .coaching-section, .intelligence-section, .library-section, .store-section, .reports-section, .branding-page, .permissions-section, .member-payment-methods-page, .backup-history-page, .member-requests-page, .portal-analytics-page, .saas-billing-page) {
+        padding: 1rem;
+    }
+
+    :where(.members-toolbar-controls) {
+        grid-template-columns: 1fr;
+        min-width: 0;
+    }
+
+    :where(.attendance-header, .attendance-entry-head, .attendance-list-head, .day-pass-head, .day-pass-list-head) {
+        align-items: stretch;
+        flex-direction: column;
+        padding: 1rem;
+    }
+
+    :where(.attendance-control-panel, .attendance-entry-workspace, .intelligence-dashboard-grid, .intelligence-plan-layout, .permissions-layout, .branding-workspace, .portal-financial-grid, .platform-dashboard-grid, .saas-billing-grid) {
+        grid-template-columns: 1fr;
+    }
+
+    :where(.store-pos-layout) {
+        grid-template-columns: 1fr;
+    }
+
+    :where(.store-customer-picker, .store-cart-lines, .store-checkout-form) {
+        padding-inline: 1rem;
+    }
+
+    :where(.store-checkout-form .store-form-row) {
+        grid-template-columns: 1fr;
+    }
+
+    :where(.attendance-entry-workspace) {
+        padding: 1rem;
+    }
+
+    :where(.attendance-summary) {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    :where(.attendance-summary-card) {
+        min-height: 7rem;
+        padding: 0.75rem;
+    }
+
+    :where(.attendance-summary-card strong) {
+        font-size: 1.375rem;
+    }
+
+    :where(.attendance-summary-card > span:last-child) {
+        font-size: 0.6875rem;
+        line-height: 1.5;
+    }
+
+    :where(.attendance-info-strip) {
+        margin-inline: 1rem;
+    }
+
+    :where(.attendance-action-buttons) {
+        grid-template-columns: 1fr;
+    }
+
+    :where(.day-pass-form) {
+        grid-template-columns: 1fr;
+        padding: 1rem;
+    }
+
+    :where(.day-pass-form-lead, .day-pass-price-box, .day-pass-form-actions, .day-pass-whatsapp-option) {
+        grid-column: auto;
+    }
+
+    :where(.day-pass-table-wrap) {
+        margin-inline: 1rem;
+    }
+
+    :where(.intelligence-plan-form, .saas-form-grid) {
+        grid-template-columns: 1fr;
+    }
+
+    :where(.intelligence-query-form > label, .intelligence-plan-form > .intelligence-plan-type, .intelligence-plan-form > button, .saas-form-actions) {
+        grid-column: auto;
+    }
+
+    .trainer-workspace-page.trainer-studio-v2 .trainer-workspace-shell {
+        display: block;
+        inline-size: calc(100% - 1.5rem);
+        padding-block: 0.75rem 2rem;
+    }
+
+    .trainer-studio-sidebar {
+        position: fixed;
+        inset-block: 0.75rem;
+        inset-inline-end: 0.75rem;
+        inline-size: min(20rem, calc(100vw - 1.5rem));
+        min-block-size: 0;
+        visibility: hidden;
+        pointer-events: none;
+        transform: translateX(calc(100% + 1.5rem));
+        transition: transform 180ms ease, visibility 0s linear 180ms;
+    }
+
+    .trainer-workspace-page.trainer-studio-v2.trainer-sidebar-open .trainer-studio-sidebar {
+        visibility: visible;
+        pointer-events: auto;
+        transform: translateX(0);
+        transition-delay: 0s;
+    }
+
+    .trainer-sidebar-open::before {
+        position: fixed;
+        inset: 0;
+        z-index: 20;
+        content: "";
+        background: rgb(16 24 40 / 0.5);
+    }
+
+    .trainer-studio-sidebar-close,
+    .trainer-studio-menu-button {
+        display: grid;
+    }
+
+    .trainer-studio-topbar,
+    .trainer-workspace-page.trainer-studio-v2 .trainer-workspace-header {
+        flex-wrap: wrap;
+    }
+
+    .trainer-studio-topbar-context {
+        order: 3;
+        inline-size: 100%;
+        margin-inline-start: 3.25rem;
+    }
+
+    .trainer-studio-topbar-actions {
+        margin-inline-start: auto;
+    }
+
+    .trainer-workspace-summary,
+    .trainer-quick-actions-list,
+    .trainer-operations-grid,
+    .trainer-studio-finance-grid,
+    .trainer-studio-plan-grid,
+    .trainer-studio-settings-grid,
+    .trainer-library-grid,
+    .trainer-studio-exercise-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .trainer-workspace-main-grid,
+    .trainer-form-grid,
+    .trainer-studio-editor-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .trainer-form-field--wide,
+    .trainer-studio-field-wide,
+    .trainer-studio-editor-field-wide {
+        grid-column: auto;
+    }
+}
+
+@media (max-width: 374px) {
+    :where(.card-header, .panel-header, .store-card-header, .section-header, .page-section-head) {
+        padding: 0.875rem;
+    }
+
+    :where(.card-body, .panel-body, .form-body, .section-body) {
+        padding: 0.875rem;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    :where(.btn, input, select, textarea, .icon-action, .icon-btn, .dropdown-item, .menu-item) {
+        transition-duration: 0.01ms;
+    }
+}

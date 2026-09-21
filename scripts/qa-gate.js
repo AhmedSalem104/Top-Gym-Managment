@@ -57,22 +57,8 @@ function assertRequiredFiles() {
         'public/css/main.source.css',
         'public/css/app-shell.css',
         'public/css/app-shell.source.css',
-        'public/css/tokens.css',
-        'public/css/reset.css',
-        'public/css/layout.css',
-        'public/css/responsive.css',
-        'public/css/print.css',
-        'public/css/components/buttons.css',
-        'public/css/components/forms.css',
-        'public/css/components/cards.css',
-        'public/css/components/tables.css',
-        'public/css/components/modals.css',
-        'public/css/components/navbar.css',
-        'public/css/pages/login.css',
-        'public/css/pages/change-password.css',
-        'public/css/pages/dashboard.css',
-        'public/css/pages/members.css',
-        'public/css/pages/attendance.css',
+        'public/css/login-entry.css',
+        'public/css/functional-state.css',
         'public/js/app.js',
         'public/js/app-shell-bootstrap.js',
         'public/js/core/feature-manifest.js',
@@ -128,8 +114,6 @@ function assertRequiredFiles() {
         'database/migrations/014-tenant-type-foundation.sql',
         'database/migrations/015-plan-tenant-type-compatibility.sql',
         'public/js/pages/management/permissions.js',
-        'public/css/pages/permissions.css',
-        'public/css/pages/store.css',
         'src/routes/index.js',
         'src/routes/auth.routes.js',
         'src/controllers/auth.controller.js',
@@ -191,15 +175,11 @@ function assertRequiredFiles() {
         'public/platform-admin.html',
         'public/platform-admin-forbidden.html',
         'public/js/platform-admin.js',
-        'public/css/pages/platform-admin.css',
         'public/js/pages/platform/platform.js',
         'public/js/pages/saas/saas.js',
-        'public/css/pages/saas.css',
         'public/trainer-workspace.html',
         'public/js/trainer-workspace.js',
         'public/js/trainer-studio-v2.js',
-        'public/css/pages/trainer-workspace.css',
-        'public/css/pages/trainer-studio-v2.css',
         'src/routes/trainer.routes.js',
         'src/controllers/trainer.controller.js',
         'src/services/trainer-service.js',
@@ -229,8 +209,6 @@ function assertRequiredFiles() {
         'docs/ANATOMY-BODYPARTS3D-REPORT.json',
         'tsconfig.anatomy.json',
         'public/js/pages/management/member-feedback.js',
-        'public/css/pages/member-feedback.css',
-        'public/css/pages/branding.css',
         'public/js/branding.js',
         'public/js/pages/branding/branding.js',
         'public/assets/gym-brand.svg',
@@ -532,13 +510,13 @@ function checkStyleSurface() {
     const main = read('public/css/main.css');
     const shell = read('public/css/app-shell.css');
     const mainSource = read('public/css/main.source.css');
-    const tokens = read('public/css/tokens.css');
-    const print = read('public/css/print.css');
     const shellSource = read('public/css/app-shell.source.css');
     record('STYLE-CENTRAL-LINK', index.includes('/css/app-shell.css'), 'index links the authenticated app-shell stylesheet');
-    record('STYLE-TOKENS', mainSource.includes('./tokens.css') && shellSource.includes('./tokens.css') && main.includes('--color-primary') && shell.includes('--color-primary') && tokens.includes('--color-primary') && tokens.includes('--space-4'), 'design tokens are centralized in the source graph and both production bundles');
-    record('STYLE-PRINT', mainSource.includes('./print.css') && main.includes('@media print') && print.includes('@media print'), 'print styles are included in the production stylesheet bundle');
-    record('STYLE-CSS-VALIDATOR', fs.existsSync(path.join(root, 'scripts/validate-styles.js')), 'CSS validation script is present');
+    const functionalState = read('public/css/functional-state.css');
+    const tailwindSource = read('public/css/tailwind.source.css');
+    record('STYLE-TAILWIND-SHARED-FOUNDATION', shellSource.includes('./tailwind.source.css') && mainSource.includes('./tailwind.source.css') && tailwindSource.includes('@import "tailwindcss"') && tailwindSource.includes('./functional-state.css') && shell.includes('.page-tabs') && shell.includes('.dashboard-hero'), 'One Tailwind source owns the shared application presentation while functional state remains separate');
+    record('STYLE-NO-VISUAL-TOKENS', !/--[A-Za-z0-9_-]+\s*:|font-family\s*:|background\s*:|color\s*:/u.test(functionalState), 'functional state layer contains no visual tokens or component styling');
+    record('STYLE-CSS-VALIDATOR', fs.existsSync(path.join(root, 'scripts/validate-styles.js')), 'Tailwind/functional CSS validation script is present');
     const validation = run(process.execPath, ['scripts/validate-styles.js']);
     record('STYLE-INTEGRITY', validation.status === 0, validation.status === 0 ? 'CSS import, variable, brace, media-query and entrypoint checks passed' : (validation.stderr || validation.stdout || 'CSS integrity validation failed').trim(), 'P0');
 }

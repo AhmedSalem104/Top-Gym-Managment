@@ -74,7 +74,7 @@
             }
 
             function printStylesheetLink() {
-                return '<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" data-top-gym-print-fonts href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap"><link rel="stylesheet" data-top-gym-print-styles href="' + assetUrl('/css/print.css?v=5') + '">' + printBrandVariables();
+                return '<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" data-top-gym-print-fonts href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap">' + printBrandVariables();
             }
 
             function printBrandMarkup(subtitle = 'إدارة الجيم') {

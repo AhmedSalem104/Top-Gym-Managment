@@ -229,33 +229,41 @@ applies.
 
 `Understand + Search Narrowly + Delegate Before Duplicating Work + Right Specialist + Plan Once + Explore Once + Reuse Findings + Compress Handoffs + Parallelize Safely + Smallest Correct Change + Risk-Based Verification + Review Diff + Evidence-Based Report`
 
-## Approved UI Design Contract
+## Current UI Design Contract
 
-The approved Logic Fit visual baseline is **HeroUI Calm Data Workspace**.
-It is the primary visual reference for all future UI work; do not select a
-different design direction without explicit approval.
+The approved Logic Fit visual baseline is **TailAdmin/Tailwind — Calm Data
+Workspace**, implemented in the existing HTML + Vanilla JavaScript stack.
+TailAdmin is the primary visual reference; React, Next.js, and other UI
+frameworks are not part of this project.
 
+- Logic Fit remains Arabic-only and RTL-only: every product document, page,
+  and shared component uses `<html lang="ar" dir="rtl">`.
 - Preserve Logic Fit's blue/deep-navy identity and Cairo typography.
 - Use semantic design tokens for color, typography, spacing, radius, borders,
-  shadows, focus, status, and motion. Themes change token values; feature CSS
-  must not recreate component themes.
+  shadows, focus, status, motion, and responsive breakpoints. Themes change
+  token values; feature CSS must not recreate component themes.
 - Shared ownership is mandatory:
 
   `Tokens → Shared Component Foundation → Layout/App Shell → Feature Composition`
 
-- Buttons, inputs, cards, tables, modals, dropdowns, navigation, statuses, and
-  feedback states each have one visual owner and documented variants.
+- Buttons, inputs, selects, cards, tables, modals, dropdowns, tabs, filters,
+  pagination, navigation, statuses, and feedback states each have one visual
+  owner and documented variants. The current shared CSS owners live in the
+  Tailwind source and `shared-components.source.css`.
 - Feature/page CSS is limited to composition, layout, and genuinely
   feature-specific content. It must not redefine shared component shells.
 - Before creating CSS or a component, search for and reuse the existing shared
   owner. Extend a documented variant when needed; do not create a duplicate
-  implementation.
+  implementation or a page-specific patch layer.
 - Do not add arbitrary overrides, specificity wars, or new `!important` rules.
   Legacy rules may be removed or scoped only after consumer and browser
   evidence proves they are no longer required.
-- RTL is first-class. Responsive behavior must recompose at the established
-  breakpoints and must remain usable from 1920px through 320px without
-  overflow, clipping, overlap, or hidden actions.
+- RTL is first-class and the only supported UI direction. Use logical CSS
+  properties (`margin-inline`, `padding-inline`, `inset-inline`) where
+  possible. Do not add LTR UI, language toggles, or LTR-only visual layouts.
+- Responsive behavior must recompose at the established breakpoints and must
+  remain usable from 1920px through 320px without overflow, clipping,
+  overlap, or hidden actions.
 - Light and dark themes must use the same component contract and semantic
   tokens. Interactive states require visible focus, keyboard support, adequate
   touch targets, accessible labels, and reduced-motion support.
@@ -264,5 +272,5 @@ different design direction without explicit approval.
   behavior, and financial behavior.
 - Every future UI change or new screen MUST follow the Logic Fit Design
   System. Before implementation: inspect the shared owner, define any
-  documented variant, verify CSS ownership, and run browser visual QA in RTL,
-  Light, Dark, and representative desktop/mobile viewports.
+  documented variant, verify CSS ownership, and run browser visual QA in
+  Arabic RTL, Light, Dark, and representative desktop/mobile viewports.

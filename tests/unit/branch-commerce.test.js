@@ -51,12 +51,10 @@ test('Bar POS is loaded as a Store feature and exposes a touch-safe surface', ()
     const loader = read('public/js/core/feature-manifest.js');
     const page = read('public/index.html');
     const script = read('public/js/pages/store/bar-pos.js');
-    const styles = read('public/css/components/bar-pos.css');
     assert.match(loader, /pages\/store\/bar-pos\.js\?v=1/);
     assert.match(page, /data-store-view="bar"/);
     assert.match(page, /id="barPosView"/);
     assert.match(script, /\/api\/bar\/menu/);
     assert.match(script, /\/api\/bar\/sales/);
-    assert.match(styles, /@media \(max-width: 900px\)/);
-    assert.match(styles, /@media \(max-width: 560px\)/);
+    assert.match(loader, /store:\s*\{[\s\S]*?styles:\s*\[\]/);
 });

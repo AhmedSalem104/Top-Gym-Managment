@@ -29,11 +29,8 @@ test('phone input contract is Egypt-only, local-first, and cache-busted consiste
     assert.doesNotMatch(script, /loadDetectedCountry/);
     assert.doesNotMatch(script, /fetch\(['"]\/api\/phone\/country/);
 
-    const css = read('public/css/components/phone-inputs.css');
-    assert.match(css, /phone-egypt-local-only/);
-    assert.match(css, /grid-template-columns: minmax\(0, 1fr\)/);
-    assert.match(css, /phone-country-control/);
-    assert.match(css, /phone-input-error/);
+    assert.doesNotMatch(read('public/index.html'), /\/css\/components\/phone-inputs\.css/);
+    assert.match(read('public/css/functional-state.css'), /\[hidden\]/);
 });
 
 test('phone-bearing screens use local Egyptian mobile inputs', () => {

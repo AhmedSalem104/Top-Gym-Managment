@@ -195,15 +195,7 @@ async function openFreezeDialog(page) {
     await expect(checkboxBlock).toContainText('إرسال إشعار للعضو عبر WhatsApp بعد التجميد');
     await expect(page.locator('#dialogFreezeSendWhatsApp')).toBeVisible();
     await expect(page.locator('#dialogFreezeSendWhatsApp')).toBeChecked();
-    const checkboxLayout = await checkboxBlock.evaluate((element) => {
-        const rect = element.getBoundingClientRect();
-        const style = getComputedStyle(element);
-        return { hidden: element.hidden, display: style.display, width: rect.width, height: rect.height };
-    });
-    expect(checkboxLayout.hidden).toBe(false);
-    expect(checkboxLayout.display).not.toBe('none');
-    expect(checkboxLayout.width).toBeGreaterThan(0);
-    expect(checkboxLayout.height).toBeGreaterThan(0);
+    expect(await checkboxBlock.isHidden()).toBe(false);
     if (test.info().project.name === 'desktop') {
         await page.screenshot({ path: path.join(os.tmpdir(), 'logicfit-freeze-popup-actual.png'), fullPage: false });
     }

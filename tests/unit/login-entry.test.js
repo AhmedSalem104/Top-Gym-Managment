@@ -41,26 +41,27 @@ test('unauthenticated protected deep links receive the login entry instead of th
     assert.match(server, /if \(!user\) \{[\s\S]*?return response\.sendFile\(path\.join\(publicDirectory, 'login\.html'\)\);[\s\S]*?response\.sendFile\(path\.join\(publicDirectory, 'index\.html'\)\);/u);
 });
 
-test('login entry stylesheet is materially smaller than the full app stylesheet', () => {
+test('login entry uses the shared Tailwind artifact and application entry', () => {
     const loginCss = fs.statSync(path.join(ROOT, 'public/css/login-entry.css')).size;
     const mainCss = fs.statSync(path.join(ROOT, 'public/css/main.css')).size;
-    assert.ok(loginCss < mainCss * 0.5, `login CSS ${loginCss} should be less than half of main CSS ${mainCss}`);
+    // The generated login entry shares the authenticated pilot foundation so
+    // the root auth gateway and standalone login cannot diverge by load order.
+    assert.ok(loginCss < 220_000, `Tailwind login CSS ${loginCss} exceeds the shared foundation budget`);
+    assert.ok(mainCss < 220_000, `Tailwind application CSS ${mainCss} exceeds the shared foundation budget`);
 });
 
-test('welcome card styles are shared by the login entry and authenticated app shell', () => {
-    const shared = read('public/css/components/tenant-welcome.css');
+test('login and authenticated shell share the Tailwind pilot source and functional state contract', () => {
     const appShellSource = read('public/css/app-shell.source.css');
     const loginBuilder = read('scripts/build-login-entry.js');
     const appShell = read('public/css/app-shell.css');
     const loginCss = read('public/css/login-entry.css');
 
-    assert.match(shared, /\.tenant-welcome-card\s*\{/u);
-    assert.match(shared, /max-width:\s*100%/u);
-    assert.match(appShellSource, /components\/tenant-welcome\.css/u);
-    assert.match(loginBuilder, /components\/tenant-welcome\.css/u);
-    assert.match(appShell, /\.tenant-welcome-card\{/u);
-    assert.match(loginCss, /\.tenant-welcome-card\{/u);
-    assert.doesNotMatch(appShell, /\.auth-form\{/u);
+    assert.match(appShellSource, /tailwind\.source\.css/u);
+    assert.match(loginBuilder, /buildLoginEntryStyles/u);
+    assert.match(appShell, /\.page-tabs/u);
+    assert.match(appShell, /\.auth-card/u);
+    assert.match(loginCss, /\.auth-card/u);
+    assert.match(loginCss, /\[hidden\]/u);
 });
 
 test('post-auth loading has no fixed welcome timeout or double-rAF bootstrap', () => {

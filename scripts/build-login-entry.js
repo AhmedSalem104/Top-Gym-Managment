@@ -3,7 +3,7 @@
 const fs = require('node:fs');
 const crypto = require('node:crypto');
 const path = require('node:path');
-const esbuild = require('esbuild');
+const { buildLoginEntryStyles } = require('./build-tailwind');
 
 const root = path.resolve(__dirname, '..');
 const publicDirectory = path.join(root, 'public');
@@ -11,42 +11,6 @@ const indexPath = path.join(publicDirectory, 'index.html');
 const loginPath = path.join(publicDirectory, 'login.html');
 const cssRoot = path.join(publicDirectory, 'css');
 const loginCssPath = path.join(cssRoot, 'login-entry.css');
-
-const cssLayers = [
-    'tokens.css',
-    'reset.css',
-    'components/icons.css',
-    'typography.css',
-    'layout.css',
-    'utilities.css',
-    'components/buttons.css',
-    'components/forms.css',
-    'components/alerts.css',
-    'components/tenant-welcome.css',
-    'pages/login.css',
-    'responsive.css',
-    'theme.css',
-    'components/ui-foundation.css',
-    'components/design-foundation.css',
-    'components/navigation-shell.css',
-    'components/visual-redesign.css'
-];
-
-const cssImportPattern = /@import\s+(?:url\()?['"]([^'"]+)['"]\)?\s*;/g;
-
-function expandCss(file, chain = []) {
-    const absolute = path.resolve(file);
-    if (chain.includes(absolute)) {
-        throw new Error(`Circular CSS import: ${[...chain, absolute].map((item) => path.relative(root, item)).join(' -> ')}`);
-    }
-    const source = fs.readFileSync(absolute, 'utf8');
-    return source.replace(cssImportPattern, (_, importPath) => {
-        if (/^(?:https?:|data:)/i.test(importPath)) return `@import url("${importPath}");`;
-        const target = path.resolve(path.dirname(absolute), importPath);
-        if (!fs.existsSync(target)) throw new Error(`${path.relative(root, absolute)} imports missing ${importPath}`);
-        return `\n/* TOP GYM login layer: ${path.relative(root, target).replaceAll('\\', '/')} */\n${expandCss(target, [...chain, absolute])}\n/* END TOP GYM login layer */\n`;
-    });
-}
 
 function readAuthCard(source) {
     const startMarker = '<!-- AUTH_ENTRY_CARD_START -->';
@@ -70,19 +34,8 @@ function buildLoginHtml(source, cssVersion) {
 }
 
 const source = fs.readFileSync(indexPath, 'utf8');
-const loginCss = cssLayers.map((layer) => expandCss(path.join(cssRoot, layer))).join('\n');
-const minifiedCss = esbuild.transformSync(loginCss, {
-    loader: 'css',
-    minify: true,
-    legalComments: 'none'
-}).code.trim();
-const cssVersion = crypto.createHash('sha256').update(minifiedCss).digest('hex').slice(0, 12);
-fs.writeFileSync(loginCssPath, [
-    '/* Logic Fit login entry stylesheet. */',
-    '/* Generated from the shared CSS layers by npm run build:login-entry. */',
-    '/* Edit the layer files, then rebuild; do not edit this artifact manually. */',
-    minifiedCss,
-    ''
-].join('\n'), 'utf8');
+buildLoginEntryStyles();
+const generatedCss = fs.readFileSync(loginCssPath, 'utf8');
+const cssVersion = crypto.createHash('sha256').update(generatedCss).digest('hex').slice(0, 12);
 fs.writeFileSync(loginPath, buildLoginHtml(source, cssVersion).replaceAll('/js/auth-ui.js?v=20', '/js/auth-ui.js?v=21'), 'utf8');
 console.log(`[LOGIN-ENTRY-OK] generated ${path.relative(root, loginPath)} and ${path.relative(root, loginCssPath)}`);

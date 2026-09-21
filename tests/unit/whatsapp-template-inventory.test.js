@@ -56,8 +56,6 @@ test('Gym feature loading keeps only the runtime renderer and no management UI',
 test('Platform Admin owns the only template management surface', () => {
     const page = read('public/platform-admin.html');
     const templatesUi = read('public/js/pages/management/whatsapp-templates.js');
-    const platformCss = read('public/css/pages/platform-admin.css');
-    const templatesCss = read('public/css/pages/whatsapp-templates.css');
 
     assert.match(page, /id="platformSettingsShell"/);
     assert.match(page, /id="platformWhatsappTemplatesMount"/);
@@ -68,9 +66,8 @@ test('Platform Admin owns the only template management surface', () => {
     assert.match(templatesUi, /data-whatsapp-template-variables/);
     assert.match(templatesUi, /data-whatsapp-template-preview/);
     assert.match(templatesUi, /\/api\/platform\/whatsapp-templates/);
-    assert.match(platformCss, /platform-settings-card-grid/);
-    assert.match(platformCss, /whatsapp-templates\.css/);
-    assert.match(templatesCss, /grid-template-columns: minmax\(220px, \.25fr\)/);
+    assert.doesNotMatch(page, /\/css\/pages\/platform-admin\.css/);
+    assert.doesNotMatch(page, /\/css\/pages\/whatsapp-templates\.css/);
 });
 
 test('Tenant management API is disabled while runtime reads system templates', () => {

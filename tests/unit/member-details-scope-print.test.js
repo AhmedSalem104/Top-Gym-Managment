@@ -9,7 +9,6 @@ const root = path.join(__dirname, '..', '..');
 const serviceSource = fs.readFileSync(path.join(root, 'src/services/member-service.js'), 'utf8');
 const detailsUiSource = fs.readFileSync(path.join(root, 'public/js/member-details-ui.js'), 'utf8');
 const printSource = fs.readFileSync(path.join(root, 'public/js/integrations/print-enhancements.js'), 'utf8');
-const printCss = fs.readFileSync(path.join(root, 'public/css/pages/memberships.css'), 'utf8');
 
 test('member details read membership branch and section scope tenant-safely', () => {
     const detailsStart = serviceSource.indexOf('async function getMemberDetails');
@@ -54,5 +53,5 @@ test('details and print surfaces render branch, section, and portal access infor
     assert.match(printSource, /scopeNames\(membershipScope\.branches\)/u);
     assert.match(printSource, /scopeNames\(membershipScope\.sections\)/u);
     assert.match(printSource, /membershipCodePortalUrl/u);
-    assert.match(printCss, /member-scope-grid/u);
+    assert.match(printSource, /print-sheet/u);
 });

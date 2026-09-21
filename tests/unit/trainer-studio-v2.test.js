@@ -11,7 +11,8 @@ const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');
 test('Trainer Studio V2 has a dedicated route shell and no Gym navigation dependency', () => {
     const html = read('public/trainer-workspace.html');
     const script = read('public/js/trainer-studio-v2.js');
-    assert.match(html, /trainer-studio-v2\.css/);
+    assert.match(html, /main\.css\?v=[^"'\s]+/u);
+    assert.doesNotMatch(html, /trainer-studio-v2\.css/);
     assert.match(html, /trainer-studio-v2\.js/);
     assert.match(script, /trainerStudioSidebar/);
     assert.match(script, /trainer-workspace\/\$\{route\}/);

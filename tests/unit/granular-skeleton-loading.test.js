@@ -33,7 +33,6 @@ test('members, dashboard, platform and trainer surfaces use component-scoped loa
     const index = read('public/index.html');
     const trainerMarkup = read('public/trainer-workspace.html');
     const trainerScript = read('public/js/trainer-workspace.js');
-    const dashboardStyles = read('public/css/pages/dashboard.css');
 
     assert.match(index, /id="membersList"[^>]+data-skeleton-kind="table"/);
     assert.match(index, /id="alertsList"[^>]+data-skeleton-kind="list"/);
@@ -46,16 +45,14 @@ test('members, dashboard, platform and trainer surfaces use component-scoped loa
     assert.match(trainerMarkup, /id="trainerSessionsList"[^>]+data-skeleton-kind="list"/);
     assert.match(trainerScript, /function beginRegionLoading\(/);
     assert.match(trainerScript, /topGymSkeleton\?\.ready/);
-    assert.match(dashboardStyles, /#dashboardSection\.data-loading > \.dashboard-hero,[\s\S]*display: grid;/);
+    assert.doesNotMatch(index, /\/css\/pages\/dashboard\.css/);
 });
 
 test('refreshing a region preserves its current content and reduced motion disables shimmer', () => {
     const utility = read('public/js/loading-skeleton.js');
-    const styles = read('public/css/components/loading.css');
-    const trainerStyles = read('public/css/pages/trainer-workspace.css');
 
     assert.match(utility, /function refresh\(host\) \{[\s\S]*preserve: true/);
-    assert.match(styles, /\.skeleton-region\[data-loading-state="refreshing"\]/);
-    assert.match(styles, /prefers-reduced-motion[\s\S]*animation: none/);
-    assert.match(trainerStyles, /prefers-reduced-motion[\s\S]*trainer-workspace-summary\[data-loading-state="refreshing"\]/);
+    const functionalState = read('public/css/functional-state.css');
+    assert.match(functionalState, /prefers-reduced-motion/);
+    assert.doesNotMatch(functionalState, /\.skeleton-region|trainer-workspace-summary/);
 });

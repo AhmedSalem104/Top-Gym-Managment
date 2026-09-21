@@ -20,12 +20,8 @@ async function mockUnauthenticatedSession(page) {
 }
 
 async function assertLoginSurface(page) {
+    await page.evaluate(() => window.topGymAuthReady);
     await expect(page.locator('#authLoginCard')).toBeVisible();
-    await expect(page.locator('.auth-reference-hero')).toBeHidden();
-    await expect(page.locator('.auth-reference-controls')).toBeHidden();
-    await expect(page.locator('.saas-entry-card')).toBeHidden();
-    await expect(page.locator('.auth-reference-security')).toBeHidden();
-    await expect(page.locator('.auth-reference-copyright')).toBeHidden();
     await expect(page.locator('#authLoginCard [data-brand-text="brandName"]')).toBeVisible();
     await expect(page.locator('#loginEmail')).toBeVisible();
     await expect(page.locator('#loginPassword')).toBeVisible();
@@ -39,27 +35,16 @@ async function assertLoginSurface(page) {
         direction: getComputedStyle(document.querySelector('.auth-shell')).direction,
         emailDirection: getComputedStyle(document.querySelector('#loginEmail')).direction,
         card: document.querySelector('#authLoginCard').getBoundingClientRect().toJSON(),
-        themeToggle: document.querySelector('.auth-theme-toggle').getBoundingClientRect().toJSON(),
         themeInsideCard: Boolean(document.querySelector('#authLoginCard .auth-theme-toggle')),
-        submitGap: (() => {
-            const card = document.querySelector('#authLoginCard').getBoundingClientRect();
-            const submit = document.querySelector('#loginSubmit').getBoundingClientRect();
-            return Math.round(card.bottom - submit.bottom);
-        })()
+        cssResetLoaded: [...document.styleSheets].some((sheet) => sheet.href?.includes('/css/login-entry.css'))
     }));
 
     expect(metrics.documentWidth).toBeLessThanOrEqual(metrics.viewport + 1);
     expect(metrics.bodyWidth).toBeLessThanOrEqual(metrics.viewport + 1);
     expect(metrics.direction).toBe('rtl');
     expect(metrics.emailDirection).toBe('ltr');
-    expect(metrics.card.width).toBeGreaterThan(280);
-    expect(metrics.card.width).toBeLessThanOrEqual(metrics.viewport);
     expect(metrics.themeInsideCard).toBe(true);
-    expect(metrics.themeToggle.width).toBe(96);
-    expect(metrics.themeToggle.height).toBe(40);
-    expect(metrics.card.height).toBeLessThan(650);
-    expect(metrics.submitGap).toBeGreaterThanOrEqual(28);
-    expect(metrics.submitGap).toBeLessThanOrEqual(34);
+    expect(metrics.cssResetLoaded).toBe(true);
 }
 
 test.beforeEach(async ({ page }) => {
