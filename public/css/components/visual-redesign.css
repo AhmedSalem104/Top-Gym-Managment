@@ -3028,34 +3028,34 @@ body .app-shell > .page-tabs {
 /* Members workspace popup polish -----------------------------------------
    This layer is intentionally scoped to the members dialogs. It fixes the
    visual contracts without changing the underlying API or business flow. */
-body #memberDialog {
+body #memberDialog:not(.lf-modal-shell) {
   width: min(900px, calc(100vw - 32px));
   max-height: calc(100dvh - 32px);
 }
 
-body #memberDialog .section-heading > div:first-child {
+body #memberDialog:not(.lf-modal-shell) .section-heading > div:first-child {
   display: grid;
   min-width: 0;
   gap: 2px;
 }
 
-body #memberDialog .form-body {
+body #memberDialog:not(.lf-modal-shell) .form-body {
   gap: var(--space-3);
   padding: var(--space-5);
   padding-bottom: calc(var(--space-5) + 76px);
   scroll-padding-bottom: calc(var(--space-5) + 76px);
 }
 
-body #memberDialog .section-label {
+body #memberDialog:not(.lf-modal-shell) .section-label {
   margin-top: var(--space-1);
   padding-bottom: var(--space-1);
 }
 
-body #memberDialog .field-grid {
+body #memberDialog:not(.lf-modal-shell) .field-grid {
   gap: var(--space-3);
 }
 
-body #memberDialog .form-actions {
+body #memberDialog:not(.lf-modal-shell) .form-actions {
   bottom: calc(var(--space-5) * -1);
   margin-inline: calc(var(--space-5) * -1);
   margin-bottom: calc(var(--space-5) * -1);
@@ -3194,18 +3194,18 @@ body #membersSection .members-table {
 }
 
 @media (max-width: 767px) {
-  body #memberDialog {
+  body #memberDialog:not(.lf-modal-shell) {
     width: calc(100vw - 24px);
     max-height: calc(100dvh - 24px);
   }
 
-  body #memberDialog .form-body {
+  body #memberDialog:not(.lf-modal-shell) .form-body {
     padding: var(--space-4);
     padding-bottom: calc(var(--space-4) + 76px);
     scroll-padding-bottom: calc(var(--space-4) + 76px);
   }
 
-  body #memberDialog .form-actions {
+  body #memberDialog:not(.lf-modal-shell) .form-actions {
     bottom: calc(var(--space-4) * -1);
     margin-inline: calc(var(--space-4) * -1);
     margin-bottom: calc(var(--space-4) * -1);
@@ -3243,7 +3243,7 @@ body #membersSection .members-table {
 }
 
 @media (max-width: 380px) {
-  body #memberDialog .field-grid {
+  body #memberDialog:not(.lf-modal-shell) .field-grid {
     grid-template-columns: 1fr;
   }
 
@@ -3255,7 +3255,7 @@ body #membersSection .members-table {
 /* Member add/edit form ----------------------------------------------------
    The form keeps its existing ids, event hooks and API payload, while this
    shell gives the popup a predictable header / scroll body / action footer. */
-body #memberDialog.member-dialog {
+body #memberDialog:not(.lf-modal-shell).member-dialog {
   width: min(960px, calc(100vw - 48px));
   max-width: calc(100vw - 48px);
   max-height: calc(100dvh - 32px);
@@ -3268,7 +3268,7 @@ body #memberDialog.member-dialog {
   box-shadow: var(--shadow-popup);
 }
 
-body #memberDialog .member-dialog-shell {
+body #memberDialog:not(.lf-modal-shell) .member-dialog-shell {
   display: flex;
   min-height: 0;
   max-height: inherit;
@@ -3276,7 +3276,7 @@ body #memberDialog .member-dialog-shell {
   background: var(--color-surface);
 }
 
-body #memberDialog .member-dialog-header {
+body #memberDialog:not(.lf-modal-shell) .member-dialog-header {
   display: flex;
   min-height: 92px;
   flex: 0 0 auto;
@@ -3289,22 +3289,22 @@ body #memberDialog .member-dialog-header {
   direction: rtl;
 }
 
-body #memberDialog .member-dialog-heading {
+body #memberDialog:not(.lf-modal-shell) .member-dialog-heading {
   display: flex;
   min-width: 0;
   align-items: center;
   gap: 12px;
 }
 
-body #memberDialog .member-dialog-heading > div,
-body #memberDialog .member-form-section-heading > div {
+body #memberDialog:not(.lf-modal-shell) .member-dialog-heading > div,
+body #memberDialog:not(.lf-modal-shell) .member-form-section-heading > div {
   display: grid;
   min-width: 0;
   gap: 2px;
 }
 
-body #memberDialog .member-dialog-heading-icon,
-body #memberDialog .member-form-section-icon {
+body #memberDialog:not(.lf-modal-shell) .member-dialog-heading-icon,
+body #memberDialog:not(.lf-modal-shell) .member-form-section-icon {
   display: grid;
   flex: 0 0 auto;
   place-items: center;
@@ -3314,37 +3314,37 @@ body #memberDialog .member-form-section-icon {
   color: var(--color-primary);
 }
 
-body #memberDialog .member-dialog-heading-icon {
+body #memberDialog:not(.lf-modal-shell) .member-dialog-heading-icon {
   width: 48px;
   height: 48px;
 }
 
-body #memberDialog .member-dialog-heading-icon svg {
+body #memberDialog:not(.lf-modal-shell) .member-dialog-heading-icon svg {
   width: 24px;
   height: 24px;
 }
 
-body #memberDialog .member-dialog-heading h3 {
+body #memberDialog:not(.lf-modal-shell) .member-dialog-heading h3 {
   color: var(--color-text);
   font-size: 27px;
   font-weight: 700;
   line-height: 1.25;
 }
 
-body #memberDialog .member-dialog-heading p {
+body #memberDialog:not(.lf-modal-shell) .member-dialog-heading p {
   color: var(--color-text-muted);
   font-size: 14px;
   line-height: 1.5;
 }
 
-body #memberDialog .dialog-heading-actions {
+body #memberDialog:not(.lf-modal-shell) .dialog-heading-actions {
   display: flex;
   min-width: 40px;
   align-items: center;
   gap: var(--space-2);
 }
 
-body #memberDialog .member-dialog-form {
+body #memberDialog:not(.lf-modal-shell) .member-dialog-form {
   display: flex;
   min-height: 0;
   max-height: calc(100dvh - 124px);
@@ -3356,7 +3356,7 @@ body #memberDialog .member-dialog-form {
   padding: 0;
 }
 
-body #memberDialog .member-dialog-scroll {
+body #memberDialog:not(.lf-modal-shell) .member-dialog-scroll {
   display: grid;
   min-height: 0;
   flex: 1 1 auto;
@@ -3367,7 +3367,7 @@ body #memberDialog .member-dialog-scroll {
   scroll-padding-block: 20px;
 }
 
-body #memberDialog .member-form-section {
+body #memberDialog:not(.lf-modal-shell) .member-form-section {
   min-width: 0;
   border: 1px solid color-mix(in srgb, var(--color-primary) 10%, var(--color-border-soft));
   border-radius: 14px;
@@ -3375,7 +3375,7 @@ body #memberDialog .member-form-section {
   padding: 20px;
 }
 
-body #memberDialog .member-form-section-heading {
+body #memberDialog:not(.lf-modal-shell) .member-form-section-heading {
   display: flex;
   min-width: 0;
   align-items: center;
@@ -3384,31 +3384,31 @@ body #memberDialog .member-form-section-heading {
   direction: rtl;
 }
 
-body #memberDialog .member-form-section-icon {
+body #memberDialog:not(.lf-modal-shell) .member-form-section-icon {
   width: 34px;
   height: 34px;
   border-radius: 10px;
 }
 
-body #memberDialog .member-form-section-icon svg {
+body #memberDialog:not(.lf-modal-shell) .member-form-section-icon svg {
   width: 18px;
   height: 18px;
 }
 
-body #memberDialog .member-form-section-heading h4 {
+body #memberDialog:not(.lf-modal-shell) .member-form-section-heading h4 {
   color: var(--color-text);
   font-size: 17px;
   font-weight: 700;
   line-height: 1.35;
 }
 
-body #memberDialog .member-form-section-heading p {
+body #memberDialog:not(.lf-modal-shell) .member-form-section-heading p {
   color: var(--color-text-muted);
   font-size: 12px;
   line-height: 1.45;
 }
 
-body #memberDialog .member-form-grid {
+body #memberDialog:not(.lf-modal-shell) .member-form-grid {
   display: grid;
   min-width: 0;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -3416,23 +3416,23 @@ body #memberDialog .member-form-grid {
   row-gap: 16px;
 }
 
-body #memberDialog .member-form-grid > .field,
-body #memberDialog .member-form-field-full {
+body #memberDialog:not(.lf-modal-shell) .member-form-grid > .field,
+body #memberDialog:not(.lf-modal-shell) .member-form-field-full {
   min-width: 0;
 }
 
-body #memberDialog .member-form-field-full {
+body #memberDialog:not(.lf-modal-shell) .member-form-field-full {
   grid-column: 1 / -1;
 }
 
-body #memberDialog .member-form-section .field {
+body #memberDialog:not(.lf-modal-shell) .member-form-section .field {
   display: grid;
   align-content: start;
   min-width: 0;
   gap: 7px;
 }
 
-body #memberDialog .member-form-section .field > label {
+body #memberDialog:not(.lf-modal-shell) .member-form-section .field > label {
   min-height: 20px;
   color: var(--color-text-soft);
   font-size: 13px;
@@ -3440,18 +3440,18 @@ body #memberDialog .member-form-section .field > label {
   line-height: 1.5;
 }
 
-body #memberDialog .member-form-section .field > input:not([type="checkbox"]),
-body #memberDialog .member-form-section .field > select,
-body #memberDialog .member-form-section .phone-number-control,
-body #memberDialog .member-form-section .phone-country-trigger {
+body #memberDialog:not(.lf-modal-shell) .member-form-section .field > input:not([type="checkbox"]),
+body #memberDialog:not(.lf-modal-shell) .member-form-section .field > select,
+body #memberDialog:not(.lf-modal-shell) .member-form-section .phone-number-control,
+body #memberDialog:not(.lf-modal-shell) .member-form-section .phone-country-trigger {
   min-width: 0;
   height: 48px;
   min-height: 48px;
   border-radius: 10px;
 }
 
-body #memberDialog .member-form-section .field > input:not([type="checkbox"]),
-body #memberDialog .member-form-section .field > select {
+body #memberDialog:not(.lf-modal-shell) .member-form-section .field > input:not([type="checkbox"]),
+body #memberDialog:not(.lf-modal-shell) .member-form-section .field > select {
   width: 100%;
   border: 1px solid var(--color-border-soft);
   background: var(--color-surface-elevated);
@@ -3459,70 +3459,70 @@ body #memberDialog .member-form-section .field > select {
   font-size: 14px;
 }
 
-body #memberDialog .member-form-section .field > input:not([type="checkbox"]):focus,
-body #memberDialog .member-form-section .field > select:focus {
+body #memberDialog:not(.lf-modal-shell) .member-form-section .field > input:not([type="checkbox"]):focus,
+body #memberDialog:not(.lf-modal-shell) .member-form-section .field > select:focus {
   border-color: var(--color-primary);
   box-shadow: var(--focus-ring);
   outline: 0;
 }
 
-body #memberDialog .member-phone-field {
+body #memberDialog:not(.lf-modal-shell) .member-phone-field {
   min-width: 0;
 }
 
-body #memberDialog .member-phone-field .phone-input-control[data-phone-control] {
+body #memberDialog:not(.lf-modal-shell) .member-phone-field .phone-input-control[data-phone-control] {
   grid-template-columns: minmax(8rem, 31%) minmax(0, 1fr);
   grid-template-rows: 48px 20px minmax(28px, auto);
   column-gap: 8px;
   row-gap: 3px;
 }
 
-body #memberDialog .member-phone-field .phone-country-trigger,
-body #memberDialog .member-phone-field .phone-number-control {
+body #memberDialog:not(.lf-modal-shell) .member-phone-field .phone-country-trigger,
+body #memberDialog:not(.lf-modal-shell) .member-phone-field .phone-number-control {
   border-radius: 10px;
 }
 
-body #memberDialog .member-phone-field .phone-country-trigger {
+body #memberDialog:not(.lf-modal-shell) .member-phone-field .phone-country-trigger {
   gap: 7px;
   padding-inline: 10px;
 }
 
-body #memberDialog .member-phone-field .phone-country-name,
-body #memberDialog .member-phone-field .phone-country-code {
+body #memberDialog:not(.lf-modal-shell) .member-phone-field .phone-country-name,
+body #memberDialog:not(.lf-modal-shell) .member-phone-field .phone-country-code {
   font-size: 12px;
 }
 
-body #memberDialog .member-phone-field .phone-number-icon {
+body #memberDialog:not(.lf-modal-shell) .member-phone-field .phone-number-icon {
   flex-basis: 38px;
   width: 38px;
   min-width: 38px;
 }
 
-body #memberDialog .member-phone-field .phone-number-control > input[data-phone-input] {
+body #memberDialog:not(.lf-modal-shell) .member-phone-field .phone-number-control > input[data-phone-input] {
   padding-inline: 12px;
   font-size: 14px;
 }
 
-body #memberDialog .member-phone-field .phone-input-help {
+body #memberDialog:not(.lf-modal-shell) .member-phone-field .phone-input-help {
   min-height: 20px;
   padding-inline: 2px;
   font-size: 11px;
 }
 
-body #memberDialog .member-phone-field .phone-input-error {
+body #memberDialog:not(.lf-modal-shell) .member-phone-field .phone-input-error {
   min-height: 28px;
   padding: 3px 8px;
   font-size: 11px;
 }
 
-body #memberDialog .member-form-section .field-hint {
+body #memberDialog:not(.lf-modal-shell) .member-form-section .field-hint {
   min-height: 18px;
   color: var(--color-text-muted);
   font-size: 11px;
   line-height: 1.45;
 }
 
-body #memberDialog .member-payment-section {
+body #memberDialog:not(.lf-modal-shell) .member-payment-section {
   display: grid;
   gap: 16px;
   margin-top: 18px;
@@ -3532,23 +3532,23 @@ body #memberDialog .member-payment-section {
   padding: 20px;
 }
 
-body #memberDialog .member-payment-section .member-form-section-heading {
+body #memberDialog:not(.lf-modal-shell) .member-payment-section .member-form-section-heading {
   margin-bottom: 0;
 }
 
-body #memberDialog .member-payment-section .member-form-section-icon {
+body #memberDialog:not(.lf-modal-shell) .member-payment-section .member-form-section-icon {
   border-color: color-mix(in srgb, var(--color-success) 20%, var(--color-border-soft));
   background: color-mix(in srgb, var(--color-success) 12%, var(--color-surface));
   color: var(--color-success);
 }
 
-body #memberDialog .permission-note {
+body #memberDialog:not(.lf-modal-shell) .permission-note {
   margin: 0;
   border-radius: 10px;
   font-size: 12px;
 }
 
-body #memberDialog .pricing-summary {
+body #memberDialog:not(.lf-modal-shell) .pricing-summary {
   display: flex;
   min-height: 44px;
   align-items: center;
@@ -3562,7 +3562,7 @@ body #memberDialog .pricing-summary {
   font-weight: 600;
 }
 
-body #memberDialog .whatsapp-after-save {
+body #memberDialog:not(.lf-modal-shell) .whatsapp-after-save {
   min-width: 0;
   min-height: 24px;
   margin: 0;
@@ -3570,12 +3570,12 @@ body #memberDialog .whatsapp-after-save {
   font-size: 12px;
 }
 
-body #memberDialog .whatsapp-after-save span {
+body #memberDialog:not(.lf-modal-shell) .whatsapp-after-save span {
   min-width: 0;
   overflow-wrap: anywhere;
 }
 
-body #memberDialog .form-actions {
+body #memberDialog:not(.lf-modal-shell) .form-actions {
   position: relative;
   inset: auto;
   z-index: 1;
@@ -3592,18 +3592,18 @@ body #memberDialog .form-actions {
   direction: rtl;
 }
 
-body #memberDialog .form-actions .btn {
+body #memberDialog:not(.lf-modal-shell) .form-actions .btn {
   min-height: 48px;
   border-radius: 10px;
   padding-inline: 18px;
   font-size: 14px;
 }
 
-body #memberDialog .form-actions #saveButton {
+body #memberDialog:not(.lf-modal-shell) .form-actions #saveButton {
   min-width: 150px;
 }
 
-body #memberDialog .form-actions #saveButton::before {
+body #memberDialog:not(.lf-modal-shell) .form-actions #saveButton::before {
   content: "+";
   display: inline-block;
   margin-inline-end: 8px;
@@ -3613,7 +3613,7 @@ body #memberDialog .form-actions #saveButton::before {
   vertical-align: -1px;
 }
 
-body #memberDialog > .dialog-close-button {
+body #memberDialog:not(.lf-modal-shell) > .dialog-close-button {
   top: 26px;
   left: 24px;
   width: 40px;
@@ -3621,121 +3621,121 @@ body #memberDialog > .dialog-close-button {
   border-radius: 10px;
 }
 
-body #memberDialog > .dialog-close-button .ui-icon {
+body #memberDialog:not(.lf-modal-shell) > .dialog-close-button .ui-icon {
   width: 18px;
   height: 18px;
 }
 
 @media (max-width: 767px) {
-  body #memberDialog.member-dialog {
+  body #memberDialog:not(.lf-modal-shell).member-dialog {
     width: calc(100vw - 24px);
     max-width: calc(100vw - 24px);
     max-height: calc(100dvh - 24px);
   }
 
-  body #memberDialog .member-dialog-header {
+  body #memberDialog:not(.lf-modal-shell) .member-dialog-header {
     min-height: 84px;
     padding: 16px;
   }
 
-  body #memberDialog .member-dialog-heading h3 {
+  body #memberDialog:not(.lf-modal-shell) .member-dialog-heading h3 {
     font-size: 22px;
   }
 
-  body #memberDialog .member-dialog-heading p {
+  body #memberDialog:not(.lf-modal-shell) .member-dialog-heading p {
     font-size: 12px;
   }
 
-  body #memberDialog .member-dialog-form {
+  body #memberDialog:not(.lf-modal-shell) .member-dialog-form {
     max-height: calc(100dvh - 108px);
   }
 
-  body #memberDialog .member-dialog-scroll {
+  body #memberDialog:not(.lf-modal-shell) .member-dialog-scroll {
     gap: 16px;
     padding: 16px;
   }
 
-  body #memberDialog .member-form-section,
-  body #memberDialog .member-payment-section {
+  body #memberDialog:not(.lf-modal-shell) .member-form-section,
+  body #memberDialog:not(.lf-modal-shell) .member-payment-section {
     padding: 16px;
   }
 
-  body #memberDialog .form-actions {
+  body #memberDialog:not(.lf-modal-shell) .form-actions {
     min-height: 68px;
     padding: 10px 16px;
   }
 
-  body #memberDialog > .dialog-close-button {
+  body #memberDialog:not(.lf-modal-shell) > .dialog-close-button {
     top: 20px;
     left: 16px;
   }
 }
 
 @media (max-width: 639px) {
-  body #memberDialog .member-form-grid {
+  body #memberDialog:not(.lf-modal-shell) .member-form-grid {
     grid-template-columns: 1fr;
   }
 
-  body #memberDialog .member-form-field-full {
+  body #memberDialog:not(.lf-modal-shell) .member-form-field-full {
     grid-column: auto;
   }
 
-  body #memberDialog .member-phone-field .phone-input-control[data-phone-control] {
+  body #memberDialog:not(.lf-modal-shell) .member-phone-field .phone-input-control[data-phone-control] {
     grid-template-columns: minmax(7rem, 30%) minmax(0, 1fr);
   }
 }
 
 @media (max-width: 380px) {
-  body #memberDialog .member-dialog-heading-icon {
+  body #memberDialog:not(.lf-modal-shell) .member-dialog-heading-icon {
     width: 42px;
     height: 42px;
   }
 
-  body #memberDialog .member-dialog-heading-icon svg {
+  body #memberDialog:not(.lf-modal-shell) .member-dialog-heading-icon svg {
     width: 21px;
     height: 21px;
   }
 
-  body #memberDialog .member-dialog-heading h3 {
+  body #memberDialog:not(.lf-modal-shell) .member-dialog-heading h3 {
     font-size: 19px;
   }
 
-  body #memberDialog .member-dialog-heading p {
+  body #memberDialog:not(.lf-modal-shell) .member-dialog-heading p {
     display: none;
   }
 
-  body #memberDialog .member-phone-field .phone-input-control[data-phone-control] {
+  body #memberDialog:not(.lf-modal-shell) .member-phone-field .phone-input-control[data-phone-control] {
     grid-template-columns: minmax(5.6rem, 28%) minmax(0, 1fr);
     column-gap: 6px;
   }
 
-  body #memberDialog .member-phone-field .phone-country-trigger {
+  body #memberDialog:not(.lf-modal-shell) .member-phone-field .phone-country-trigger {
     gap: 4px;
     padding-inline: 6px;
   }
 
-  body #memberDialog .member-phone-field .phone-country-name,
-  body #memberDialog .member-phone-field .phone-country-code {
+  body #memberDialog:not(.lf-modal-shell) .member-phone-field .phone-country-name,
+  body #memberDialog:not(.lf-modal-shell) .member-phone-field .phone-country-code {
     font-size: 10px;
   }
 
-  body #memberDialog .member-phone-field .phone-number-icon {
+  body #memberDialog:not(.lf-modal-shell) .member-phone-field .phone-number-icon {
     flex-basis: 30px;
     width: 30px;
     min-width: 30px;
   }
 
-  body #memberDialog .member-phone-field .phone-number-control > input[data-phone-input] {
+  body #memberDialog:not(.lf-modal-shell) .member-phone-field .phone-number-control > input[data-phone-input] {
     padding-inline: 8px;
     font-size: 13px;
   }
 
-  body #memberDialog .form-actions {
+  body #memberDialog:not(.lf-modal-shell) .form-actions {
     gap: 8px;
     padding-inline: 12px;
   }
 
-  body #memberDialog .form-actions .btn {
+  body #memberDialog:not(.lf-modal-shell) .form-actions .btn {
     flex: 1 1 0;
     min-width: 0;
     padding-inline: 10px;

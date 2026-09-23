@@ -1,7 +1,6 @@
 .pricing-dialog,
 .type-dialog,
 .expense-dialog,
-.member-dialog,
 .details-dialog,
 .library-dialog,
 .library-details-dialog,
@@ -605,13 +604,13 @@
 
 /* The member form has its own shell (header outside the form). Keep the
    header and action footer visible while only the form fields scroll. */
-.member-dialog {
+.member-dialog:not(.lf-modal-shell) {
   max-height: calc(100vh - 32px);
   overflow: hidden;
   padding: 0;
 }
 
-.member-dialog > .form-panel {
+.member-dialog:not(.lf-modal-shell) > .form-panel {
   display: grid;
   width: 100%;
   max-height: inherit;
@@ -624,7 +623,7 @@
   box-shadow: none;
 }
 
-.member-dialog .section-heading {
+.member-dialog:not(.lf-modal-shell) .section-heading {
   position: relative;
   z-index: var(--z-content);
   display: flex;
@@ -637,19 +636,19 @@
   padding: var(--space-4) var(--space-6);
 }
 
-.member-dialog .section-heading h3 {
+.member-dialog:not(.lf-modal-shell) .section-heading h3 {
   margin: 0;
   color: var(--color-text);
   font-size: var(--font-xl);
 }
 
-.member-dialog .dialog-heading-actions {
+.member-dialog:not(.lf-modal-shell) .dialog-heading-actions {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-2);
 }
 
-.member-dialog .form-body {
+.member-dialog:not(.lf-modal-shell) .form-body {
   display: flex;
   min-height: 0;
   flex-direction: column;
@@ -661,16 +660,16 @@
   scrollbar-width: thin;
 }
 
-.member-dialog .form-body::-webkit-scrollbar {
+.member-dialog:not(.lf-modal-shell) .form-body::-webkit-scrollbar {
   width: 8px;
 }
 
-.member-dialog .form-body::-webkit-scrollbar-thumb {
+.member-dialog:not(.lf-modal-shell) .form-body::-webkit-scrollbar-thumb {
   border-radius: var(--radius-pill);
   background: var(--border-strong);
 }
 
-.member-dialog .section-label {
+.member-dialog:not(.lf-modal-shell) .section-label {
   margin-top: var(--space-2);
   border-bottom: 1px solid var(--border-color);
   color: var(--color-primary);
@@ -679,13 +678,13 @@
   font-weight: var(--weight-bold);
 }
 
-.member-dialog .field-grid {
+.member-dialog:not(.lf-modal-shell) .field-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--space-4);
 }
 
-.member-dialog .form-actions {
+.member-dialog:not(.lf-modal-shell) .form-actions {
   position: sticky;
   bottom: calc(var(--space-6) * -1);
   z-index: var(--z-content);
@@ -698,7 +697,7 @@
   padding: var(--space-4) var(--space-6);
 }
 
-.member-dialog .form-actions .btn {
+.member-dialog:not(.lf-modal-shell) .form-actions .btn {
   min-width: 130px;
 }
 
@@ -841,42 +840,42 @@
 }
 
 @media (max-width: 767px) {
-  .member-dialog {
+  .member-dialog:not(.lf-modal-shell) {
     width: calc(100% - 20px);
     max-height: calc(100vh - 20px);
   }
 
-  .member-dialog .section-heading {
+  .member-dialog:not(.lf-modal-shell) .section-heading {
     min-height: 64px;
     align-items: flex-start;
     flex-direction: column;
     padding: var(--space-4);
   }
 
-  .member-dialog .dialog-heading-actions {
+  .member-dialog:not(.lf-modal-shell) .dialog-heading-actions {
     width: 100%;
   }
 
-  .member-dialog .dialog-heading-actions .btn {
+  .member-dialog:not(.lf-modal-shell) .dialog-heading-actions .btn {
     flex: 1 1 120px;
   }
 
-  .member-dialog .form-body {
+  .member-dialog:not(.lf-modal-shell) .form-body {
     padding: var(--space-4);
   }
 
-  .member-dialog .field-grid {
+  .member-dialog:not(.lf-modal-shell) .field-grid {
     grid-template-columns: 1fr;
   }
 
-  .member-dialog .form-actions {
+  .member-dialog:not(.lf-modal-shell) .form-actions {
     bottom: calc(var(--space-4) * -1);
     margin-inline: calc(var(--space-4) * -1);
     margin-bottom: calc(var(--space-4) * -1);
     padding: var(--space-3) var(--space-4);
   }
 
-  .member-dialog .form-actions .btn {
+  .member-dialog:not(.lf-modal-shell) .form-actions .btn {
     flex: 1 1 140px;
   }
 

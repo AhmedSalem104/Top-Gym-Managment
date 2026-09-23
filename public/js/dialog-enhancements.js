@@ -28,7 +28,7 @@
         libraryDetailsDialog: 'lg',
         authUserDialog: 'lg',
         backupRestoreDialog: 'lg',
-        memberDialog: 'xl',
+        memberDialog: 'lg',
         dayPassDialog: 'xl',
         pricingDialog: 'xl',
         membershipTypesDialog: 'xl',

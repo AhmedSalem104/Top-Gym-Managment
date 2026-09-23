@@ -927,7 +927,8 @@
                         <div class="dialog-actions"><button class="btn btn-light" id="expenseCancel" type="button">إلغاء</button><button class="btn btn-primary" id="expenseSave" type="submit">حفظ المصروف</button></div>
                     </form>
                 </dialog>
-                <dialog id="memberDialog" class="member-dialog rounded-lg border-slate-200" aria-labelledby="formTitle" aria-describedby="memberDialogDescription">
+                <dialog id="memberDialog" class="member-dialog lf-modal-shell lf-modal--lg" aria-labelledby="formTitle" aria-describedby="memberDialogDescription">
+                    <button class="btn btn-light btn-small rounded-lg dialog-close-button" id="memberDialogClose" type="button">إغلاق</button>
                     <section class="member-dialog-shell">
                         <header class="member-dialog-header">
                             <div class="member-dialog-heading">
@@ -939,7 +940,6 @@
                             </div>
                             <div class="dialog-heading-actions">
                                 <button class="btn btn-light btn-small rounded-lg hidden" id="cancelEditButton" type="button">إلغاء التعديل</button>
-                                <button class="btn btn-light btn-small rounded-lg dialog-close-button" id="memberDialogClose" type="button">إغلاق</button>
                             </div>
                         </header>
                         <form class="form-body member-dialog-form" id="memberForm">

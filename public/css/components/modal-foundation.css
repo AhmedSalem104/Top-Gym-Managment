@@ -131,10 +131,17 @@ dialog.lf-modal-shell::backdrop {
 }
 
 .lf-modal-shell > .dialog-close-button {
+  position: absolute;
   top: var(--lf-modal-block);
   left: var(--lf-modal-inline);
-  width: 40px;
-  height: 40px;
+  z-index: var(--z-modal);
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border-radius: var(--radius-md);
   background: var(--color-surface-muted);
   box-shadow: var(--shadow-xs);
@@ -278,6 +285,385 @@ body .swal2-popup.lf-modal--workspace {
     width: calc(100vw - 24px);
     max-width: calc(100vw - 24px);
     border-radius: var(--radius-lg);
+  }
+}
+
+/* Member form variant -----------------------------------------------------
+   This is the single visual owner for the add/edit member popup. Feature CSS
+   keeps the content hooks; the modal foundation owns its shell, geometry,
+   scrolling and responsive contract. */
+.lf-modal-shell.member-dialog {
+  width: min(960px, calc(100vw - 32px));
+  max-width: calc(100vw - 32px);
+  height: min(92dvh, 960px);
+  max-height: min(92dvh, 960px);
+}
+
+.lf-modal-shell.member-dialog .member-dialog-shell {
+  display: flex;
+  height: 100%;
+  min-height: 0;
+  max-height: inherit;
+  flex-direction: column;
+  background: var(--color-surface);
+}
+
+.lf-modal-shell.member-dialog .member-dialog-header {
+  display: flex;
+  min-width: 0;
+  min-height: 88px;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin: 0;
+  position: static;
+  border-bottom: 1px solid var(--border-secondary);
+  background: var(--color-surface);
+  padding: var(--space-5) var(--space-6);
+  direction: rtl;
+}
+
+.lf-modal-shell.member-dialog .member-dialog-heading {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.lf-modal-shell.member-dialog .member-dialog-heading > div,
+.lf-modal-shell.member-dialog .member-form-section-heading > div {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-1);
+}
+
+.lf-modal-shell.member-dialog .member-dialog-heading-icon,
+.lf-modal-shell.member-dialog .member-form-section-icon {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid var(--color-primary-soft);
+  border-radius: var(--radius-md);
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+
+.lf-modal-shell.member-dialog .member-dialog-heading-icon {
+  width: 48px;
+  height: 48px;
+}
+
+.lf-modal-shell.member-dialog .member-dialog-heading-icon svg,
+.lf-modal-shell.member-dialog .member-form-section-icon svg {
+  display: block;
+  width: 1.25rem;
+  height: 1.25rem;
+  max-width: 100%;
+  max-height: 100%;
+  flex: 0 0 auto;
+}
+
+.lf-modal-shell.member-dialog .member-dialog-heading h3,
+.lf-modal-shell.member-dialog .member-form-section-heading h4 {
+  margin: 0;
+  color: var(--color-text);
+  font-weight: var(--weight-bold);
+  line-height: 1.35;
+}
+
+.lf-modal-shell.member-dialog .member-dialog-heading h3 {
+  font-size: var(--font-xl);
+}
+
+.lf-modal-shell.member-dialog .member-dialog-heading p,
+.lf-modal-shell.member-dialog .member-form-section-heading p {
+  margin: 0;
+  color: var(--color-text-muted);
+  line-height: 1.55;
+}
+
+.lf-modal-shell.member-dialog .member-dialog-heading p {
+  font-size: var(--font-sm);
+}
+
+.lf-modal-shell.member-dialog .dialog-heading-actions {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: flex-start;
+  gap: var(--space-2);
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+}
+
+.lf-modal-shell.member-dialog .dialog-heading-actions > .dialog-close-button {
+  position: static;
+  min-width: 44px;
+  min-height: 44px;
+  touch-action: manipulation;
+}
+
+.lf-modal-shell.member-dialog .dialog-heading-actions > .dialog-close-button:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--color-primary) 35%, transparent);
+  outline-offset: 2px;
+}
+
+.lf-modal-shell.member-dialog .member-dialog-form {
+  display: flex;
+  min-height: 0;
+  max-height: inherit;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 0;
+  overflow: hidden;
+  background: var(--color-surface);
+}
+
+.lf-modal-shell.member-dialog .member-dialog-scroll {
+  display: grid;
+  min-height: 0;
+  flex: 1 1 auto;
+  gap: var(--space-4);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: var(--space-5) var(--space-6);
+  scroll-padding-block: var(--space-5);
+  scrollbar-color: var(--border-strong) transparent;
+  scrollbar-width: thin;
+}
+
+.lf-modal-shell.member-dialog .member-dialog-scroll::-webkit-scrollbar {
+  width: 8px;
+}
+
+.lf-modal-shell.member-dialog .member-dialog-scroll::-webkit-scrollbar-thumb {
+  border-radius: var(--radius-pill);
+  background: var(--border-strong);
+}
+
+.lf-modal-shell.member-dialog .member-form-section,
+.lf-modal-shell.member-dialog .member-payment-section {
+  min-width: 0;
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-muted);
+  padding: var(--space-5);
+}
+
+.lf-modal-shell.member-dialog .member-form-section-heading {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+  direction: rtl;
+}
+
+.lf-modal-shell.member-dialog .member-form-section-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-sm);
+}
+
+.lf-modal-shell.member-dialog .member-form-section-heading h4 {
+  font-size: var(--font-md);
+}
+
+.lf-modal-shell.member-dialog .member-form-section-heading p {
+  font-size: var(--font-xs);
+}
+
+.lf-modal-shell.member-dialog .member-form-grid {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: var(--space-5);
+  row-gap: var(--space-4);
+}
+
+.lf-modal-shell.member-dialog .member-form-grid > .field,
+.lf-modal-shell.member-dialog .member-form-field-full {
+  min-width: 0;
+}
+
+.lf-modal-shell.member-dialog .member-form-field-full {
+  grid-column: 1 / -1;
+}
+
+.lf-modal-shell.member-dialog .member-form-section .field {
+  display: grid;
+  align-content: start;
+  min-width: 0;
+  gap: var(--space-2);
+}
+
+.lf-modal-shell.member-dialog .member-form-section .field > label {
+  min-height: 20px;
+  color: var(--color-text-soft);
+  font-size: var(--font-sm);
+  font-weight: var(--weight-semibold);
+  line-height: 1.5;
+}
+
+.lf-modal-shell.member-dialog .member-form-section .field > input:not([type="checkbox"]),
+.lf-modal-shell.member-dialog .member-form-section .field > select {
+  width: 100%;
+  min-width: 0;
+  min-height: 48px;
+}
+
+.lf-modal-shell.member-dialog .member-phone-field {
+  min-width: 0;
+}
+
+.lf-modal-shell.member-dialog .member-form-section .field-hint {
+  min-height: 18px;
+  color: var(--color-text-muted);
+  font-size: var(--font-xs);
+  line-height: 1.45;
+}
+
+.lf-modal-shell.member-dialog .member-payment-section {
+  display: grid;
+  gap: var(--space-4);
+  margin-top: var(--space-4);
+}
+
+.lf-modal-shell.member-dialog .member-payment-section .member-form-section-heading {
+  margin-bottom: 0;
+}
+
+.lf-modal-shell.member-dialog .permission-note,
+.lf-modal-shell.member-dialog .pricing-summary,
+.lf-modal-shell.member-dialog .whatsapp-after-save {
+  min-width: 0;
+}
+
+.lf-modal-shell.member-dialog .pricing-summary {
+  min-height: 44px;
+}
+
+.lf-modal-shell.member-dialog .whatsapp-after-save {
+  margin: 0;
+}
+
+.lf-modal-shell.member-dialog .form-actions {
+  display: flex;
+  min-width: 0;
+  min-height: 76px;
+  align-items: center;
+  justify-content: flex-start;
+  gap: var(--space-3);
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  position: static;
+  margin: 0;
+  border-top: 1px solid var(--border-secondary);
+  background: var(--color-surface);
+  padding: var(--space-4) var(--space-6);
+  direction: rtl;
+}
+
+.lf-modal-shell.member-dialog .form-actions > .btn {
+  min-height: 48px;
+  min-width: 130px;
+  touch-action: manipulation;
+}
+
+.lf-modal-shell.member-dialog .form-actions #saveButton {
+  min-width: 150px;
+}
+
+.lf-modal-shell.member-dialog .form-actions #saveButton::before {
+  content: "+";
+  display: inline-block;
+  margin-inline-end: var(--space-2);
+  font-size: var(--font-lg);
+  font-weight: var(--weight-bold);
+  line-height: 1;
+  vertical-align: -1px;
+}
+
+@media (max-width: 639px) {
+  .lf-modal-shell.member-dialog .member-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .lf-modal-shell.member-dialog .member-form-field-full {
+    grid-column: auto;
+  }
+}
+
+@media (max-width: 600px) {
+  .lf-modal-shell.member-dialog {
+    height: calc(100dvh - 24px);
+    max-height: calc(100dvh - 24px);
+  }
+
+  .lf-modal-shell.member-dialog .member-dialog-header {
+    min-height: 80px;
+    align-items: flex-start;
+    flex-direction: row;
+    padding: var(--space-4);
+  }
+
+  .lf-modal-shell.member-dialog .member-dialog-heading-icon {
+    width: 44px;
+    height: 44px;
+  }
+
+  .lf-modal-shell.member-dialog .member-dialog-heading h3 {
+    font-size: var(--font-lg);
+  }
+
+  .lf-modal-shell.member-dialog .member-dialog-heading p {
+    font-size: var(--font-xs);
+  }
+
+  .lf-modal-shell.member-dialog .member-dialog-scroll {
+    gap: var(--space-3);
+    padding: var(--space-4);
+  }
+
+  .lf-modal-shell.member-dialog .member-form-section,
+  .lf-modal-shell.member-dialog .member-payment-section {
+    padding: var(--space-4);
+  }
+
+  .lf-modal-shell.member-dialog .form-actions {
+    min-height: 68px;
+    gap: var(--space-2);
+    padding: var(--space-3) var(--space-4);
+  }
+
+  .lf-modal-shell.member-dialog .form-actions > .btn {
+    flex: 1 1 140px;
+    min-width: 0;
+  }
+}
+
+@media (max-width: 380px) {
+  .lf-modal-shell.member-dialog .member-dialog-heading-icon {
+    width: 40px;
+    height: 40px;
+  }
+
+  .lf-modal-shell.member-dialog .member-dialog-heading h3 {
+    font-size: var(--font-md);
+  }
+
+  .lf-modal-shell.member-dialog .member-dialog-heading p {
+    display: none;
+  }
+
+  .lf-modal-shell.member-dialog .member-dialog-scroll {
+    padding-inline: var(--space-3);
+  }
+
+  .lf-modal-shell.member-dialog .member-form-section,
+  .lf-modal-shell.member-dialog .member-payment-section {
+    padding: var(--space-3);
   }
 }
 
