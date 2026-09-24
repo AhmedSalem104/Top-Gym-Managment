@@ -526,6 +526,81 @@
   color: var(--text-on-primary);
 }
 
+/* Library form dialogs -------------------------------------------------- */
+.library-form-grid {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+.library-form-section-title {
+  grid-column: 1 / -1;
+  margin-top: var(--space-2);
+  border-bottom: 1px solid var(--border-secondary);
+  padding-bottom: var(--space-2);
+  color: var(--color-text);
+  font-size: var(--font-md);
+  font-weight: var(--weight-bold);
+  line-height: 1.4;
+}
+
+.library-form-section-title:not(:first-child) {
+  margin-top: var(--space-3);
+}
+
+.library-field {
+  display: grid;
+  min-width: 0;
+  align-content: start;
+  gap: var(--space-2);
+}
+
+.library-field.full {
+  grid-column: 1 / -1;
+}
+
+.library-field > label {
+  min-width: 0;
+  color: var(--color-text-soft);
+  font-size: var(--font-sm);
+  font-weight: var(--weight-semibold);
+  line-height: 1.5;
+}
+
+.library-field > input,
+.library-field > select,
+.library-field > textarea {
+  width: 100%;
+  min-width: 0;
+}
+
+.library-field > textarea {
+  min-height: 112px;
+  resize: vertical;
+}
+
+.library-field.checkbox {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.library-field.checkbox > label {
+  min-height: 0;
+}
+
+@media (max-width: 639px) {
+  .library-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .library-form-section-title,
+  .library-field.full {
+    grid-column: auto;
+  }
+}
+
 /* Details dialogs ------------------------------------------------------- */
 .library-details-dialog .dialog-body {
   min-height: 0;
@@ -693,11 +768,6 @@
 
 .library-pagination {
   margin-top: var(--space-3);
-}
-
-.library-dialog,
-.library-details-dialog {
-  width: min(920px, calc(100vw - 32px));
 }
 
 @media (max-width: 900px) {

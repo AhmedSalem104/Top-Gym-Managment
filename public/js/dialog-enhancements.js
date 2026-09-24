@@ -32,7 +32,7 @@
         dayPassDialog: 'xl',
         pricingDialog: 'xl',
         membershipTypesDialog: 'xl',
-        libraryFormDialog: 'xl',
+        libraryFormDialog: 'lg',
         externalTraineeDialog: 'xl',
         coachingBuilderDialog: 'workspace'
     });
