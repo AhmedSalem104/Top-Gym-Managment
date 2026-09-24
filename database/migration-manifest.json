@@ -85,6 +85,18 @@
       "dataBackfill": false,
       "controlledPlanConfiguration": true,
       "rollback": "forward-fix-or-database-recovery"
+    },
+    "038-notification-read-cascade-fix.sql": {
+      "version": "038",
+      "checksum": "0952e3328badb53049e3340fcbdfea134076f2f9d1afd5798f0e3b4815e7bafa",
+      "transactional": true,
+      "backwardCompatible": true,
+      "destructive": false,
+      "requiresBackup": true,
+      "requiresMaintenanceMode": false,
+      "rlsImpact": true,
+      "dataBackfill": false,
+      "rollback": "forward-fix-or-database-recovery"
     }
   }
 }

@@ -1,94 +1,159 @@
-.btn,
-button.btn,
-a.btn {
+/*
+ * Logic Fit button primitives
+ *
+ * This file is the visual owner for the shared button contract. Feature
+ * styles may compose buttons (size, placement, or local layout), but must not
+ * redefine the shared button surface, variants, or interaction states.
+ *
+ * The body scope is retained deliberately while visual-redesign.css is being
+ * retired from this contract. It preserves the existing cascade strength
+ * without introducing a stronger selector than the previous owner used.
+ */
+
+body .btn,
+body button.btn,
+body a.btn,
+body .platform-btn,
+body .platform-link-btn {
   display: inline-flex;
   min-height: 42px;
   align-items: center;
   justify-content: center;
   gap: var(--space-2);
   border: 1px solid transparent;
-  border-radius: var(--radius-md);
+  border-radius: var(--rf-radius-control);
   padding: 0 var(--space-4);
   background: var(--color-surface-muted);
   color: var(--color-text-soft);
-  font-size: var(--font-sm);
-  font-weight: var(--weight-semibold);
-  line-height: 1.2;
+  box-shadow: none;
+  font-size: .8rem;
+  font-weight: 800;
+  letter-spacing: -.005em;
+  line-height: 1.35;
   white-space: nowrap;
-  transition: background-color var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast), box-shadow var(--transition-fast), transform var(--transition-fast);
+  transition: background-color 160ms ease, border-color 160ms ease,
+    box-shadow 160ms ease, color 160ms ease, transform 160ms ease;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
-.btn:hover:not(:disabled),
-a.btn:hover {
+body .btn:hover:not(:disabled),
+body .platform-btn:hover:not(:disabled),
+body .platform-link-btn:hover:not(:disabled),
+body a.btn:hover {
   transform: translateY(-1px);
 }
 
-.btn:active:not(:disabled) {
+body .btn:active:not(:disabled),
+body .platform-btn:active:not(:disabled) {
   transform: translateY(0);
 }
 
-.btn:disabled,
-.btn[aria-disabled="true"] {
+body .btn-primary,
+body .btn.btn-primary,
+body .platform-btn.primary,
+body .platform-btn-primary,
+body [data-variant="primary"] {
+  border-color: var(--rf-accent);
+  background: var(--rf-accent);
+  color: var(--text-on-primary);
+  box-shadow: 0 7px 16px rgb(25 118 243 / .2);
+}
+
+body .btn-primary:hover:not(:disabled),
+body .btn.btn-primary:hover:not(:disabled),
+body .platform-btn.primary:hover:not(:disabled),
+body .platform-btn-primary:hover:not(:disabled),
+body [data-variant="primary"]:hover:not(:disabled) {
+  border-color: var(--rf-accent-strong);
+  background: var(--rf-accent-strong);
+  box-shadow: 0 10px 22px rgb(25 118 243 / .26);
+}
+
+body .btn-secondary,
+body .btn-light,
+body .btn.btn-light,
+body .platform-btn.ghost,
+body .platform-btn-secondary,
+body [data-variant="secondary"] {
+  border-color: var(--rf-line);
+  background: var(--rf-surface);
+  color: var(--rf-ink-soft);
+}
+
+body .btn-secondary:hover:not(:disabled),
+body .btn-light:hover:not(:disabled),
+body .btn.btn-light:hover:not(:disabled),
+body .platform-btn.ghost:hover:not(:disabled),
+body .platform-btn-secondary:hover:not(:disabled),
+body [data-variant="secondary"]:hover:not(:disabled) {
+  border-color: var(--rf-accent);
+  background: var(--rf-accent-soft);
+  color: var(--rf-accent-strong);
+}
+
+body .btn-ghost,
+body .btn-link,
+body .platform-link-btn,
+body [data-variant="ghost"] {
+  border-color: transparent;
+  background: transparent;
+  color: var(--rf-accent-strong);
+}
+
+body .btn-danger,
+body .danger-action,
+body .platform-btn.danger,
+body [data-variant="danger"] {
+  border-color: var(--danger-border);
+  background: var(--danger-soft);
+  color: var(--danger-text);
+}
+
+body .btn-danger:hover:not(:disabled),
+body .danger-action:hover:not(:disabled),
+body .platform-btn.danger:hover:not(:disabled),
+body [data-variant="danger"]:hover:not(:disabled) {
+  border-color: var(--danger);
+  background: var(--danger);
+  color: var(--text-on-primary);
+}
+
+body .btn:focus-visible,
+body button.btn:focus-visible,
+body a.btn:focus-visible,
+body button:focus-visible,
+body .platform-btn:focus-visible,
+body .platform-link-btn:focus-visible {
+  outline: 2px solid var(--rf-accent);
+  outline-offset: 3px;
+  box-shadow: var(--rf-shadow-focus);
+}
+
+body .btn:disabled,
+body .platform-btn:disabled,
+body .btn[aria-disabled="true"],
+body .platform-btn[aria-disabled="true"] {
+  opacity: .52;
   cursor: not-allowed;
-  opacity: 0.55;
+  filter: saturate(.72);
   transform: none;
 }
 
-.btn-primary,
-.btn.btn-primary {
-  background: var(--color-primary);
-  color: var(--text-on-primary);
-  box-shadow: 0 6px 16px var(--primary-border);
+body .btn-small,
+body .btn-sm {
+  min-height: 36px;
+  border-radius: 9px;
+  padding-inline: 12px;
+  font-size: .72rem;
 }
 
-.btn-primary:hover:not(:disabled),
-.btn.btn-primary:hover:not(:disabled) {
-  background: var(--color-primary-hover);
-  box-shadow: 0 8px 20px var(--primary-border);
-}
-
-.btn-secondary,
-.btn-light,
-.btn.btn-light {
-  border-color: var(--border-color);
-  background: var(--color-surface);
-  color: var(--color-primary);
-}
-
-.btn-secondary:hover:not(:disabled),
-.btn-light:hover:not(:disabled) {
-  border-color: var(--border-hover);
-  background: var(--color-primary-soft);
-}
-
-.btn-ghost,
-.btn-link {
-  background: transparent;
-  color: var(--color-primary);
-}
-
-.btn-ghost:hover:not(:disabled),
-.btn-link:hover:not(:disabled) {
-  background: var(--color-primary-soft);
-}
-
-.btn-danger,
-.danger-action,
-.btn.btn-danger {
-  background: var(--color-danger);
-  color: var(--text-on-primary);
-}
-
-.btn-danger:hover:not(:disabled),
-.danger-action:hover:not(:disabled) {
-  background: var(--color-danger);
-}
-
-.btn-small,
-.btn-sm {
-  min-height: 34px;
-  padding-inline: var(--space-3);
-  font-size: var(--font-xs);
+body .btn.is-loading,
+body button[aria-busy="true"],
+body .platform-btn.is-loading,
+body .platform-btn[aria-busy="true"] {
+  cursor: wait;
+  pointer-events: none;
 }
 
 .btn-icon,
@@ -133,7 +198,28 @@ button[data-action]:hover:not(:disabled) {
   font-size: var(--font-lg);
 }
 
-.btn.is-loading,
-button[aria-busy="true"] {
-  pointer-events: none;
+@media (max-width: 767px) {
+  body .btn,
+  body button.btn,
+  body a.btn,
+  body .platform-btn,
+  body .platform-link-btn {
+    min-height: 44px;
+  }
+
+  body .btn-small,
+  body .btn-sm {
+    min-height: 38px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body .btn,
+  body .platform-btn,
+  body .platform-link-btn,
+  body .btn-icon,
+  body .icon-button,
+  body .action-button {
+    transition: none;
+  }
 }

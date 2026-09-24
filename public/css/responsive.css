@@ -255,9 +255,7 @@
 
 
 
-  .header-status{
-    display: none;
-  }
+  /* Retired legacy header-status selector; active shell owns its header. */
 
 
 
@@ -332,12 +330,6 @@
     grid-column: 1 / -1;
   }
 
-  .panel,
-.card,
-.shadow-panel{
-    border-radius: var(--radius-lg);
-  }
-
   .table-scroll,
 .table-wrap,
 .data-table-wrap{
@@ -353,11 +345,6 @@ table{
     min-width: 720px;
   }
 
-  .modal:not(.lf-modal-shell),
-dialog:not(.lf-modal-shell){
-    width: calc(100% - 24px);
-    max-height: calc(100vh - 24px);
-  }
 }
 
 
@@ -1243,16 +1230,6 @@ dialog:not(.lf-modal-shell){
 
 
 
-  @keyframes sidebar-tab-label-in{
-    from{
-      opacity: 0;
-      transform: translateX(6px);
-    }
-    to{
-      opacity: 1;
-      transform: translateX(0);
-    }
-  }
 }
 
 

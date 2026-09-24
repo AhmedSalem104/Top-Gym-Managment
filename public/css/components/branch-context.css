@@ -205,7 +205,7 @@
 .branch-commerce-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 9px; }
 .branch-commerce-chip { display: inline-flex; align-items: center; min-height: 24px; padding: 0 8px; border: 1px solid var(--border-color); border-radius: 999px; color: var(--color-text-muted); font-size: .7rem; font-weight: 800; letter-spacing: .02em; }
 .branch-commerce-chip.is-on { border-color: color-mix(in srgb, var(--color-primary) 38%, var(--border-color)); color: var(--color-primary); background: color-mix(in srgb, var(--color-primary-soft) 72%, transparent); }
-.branch-status { padding: 5px 8px; border-radius: 99px; background: var(--success-soft); color: var(--success-text); font-size: 11px; font-weight: 800; white-space: nowrap; }
+.branch-status { max-width: 100%; padding: 5px 8px; border-radius: 99px; background: var(--success-soft); color: var(--success-text); font-size: 11px; font-weight: 800; overflow-wrap: anywhere; white-space: nowrap; }
 .branch-status.inactive { background: var(--warning-soft); color: var(--warning-text); }
 .branch-status.archived { background: var(--color-surface-muted); color: var(--text-muted); }
 

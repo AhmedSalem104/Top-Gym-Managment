@@ -42,7 +42,10 @@ async function installAuthenticatedRuntime(page) {
 
 test('authenticated welcome is bounded and closes after actual route readiness', async ({ page }) => {
     const { apiTimings } = await installAuthenticatedRuntime(page);
-    await page.goto('/?welcome=1', { waitUntil: 'domcontentloaded' });
+    // The server intentionally serves the unauthenticated login entry at `/`.
+    // Use the static authenticated shell entry so the browser-side session
+    // fixture can control readiness without being bypassed by server routing.
+    await page.goto('/index.html?welcome=1#dashboard', { waitUntil: 'domcontentloaded' });
     await expect(page.locator('body')).toHaveAttribute('data-top-gym-authenticated', 'true');
     await expect(page.locator('.tenant-welcome-card')).toBeVisible();
 
@@ -65,7 +68,7 @@ test('authenticated welcome is bounded and closes after actual route readiness',
 
 test('first dashboard does not pull phone formatter or dashboard enhancements before route readiness', async ({ page }) => {
     await installAuthenticatedRuntime(page);
-    await page.goto('/?welcome=1', { waitUntil: 'domcontentloaded' });
+    await page.goto('/index.html?welcome=1#dashboard', { waitUntil: 'domcontentloaded' });
     const timing = await page.evaluate(() => window.topGymAppUsable.then(() => {
         const readyAt = performance.now();
         const deferred = performance.getEntriesByType('resource')

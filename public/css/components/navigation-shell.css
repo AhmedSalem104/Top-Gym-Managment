@@ -1743,6 +1743,202 @@ html[data-brand-active-style="pill"] .app-shell > .page-tabs > .page-tab.active 
   .sidebar-pin-toggle { display: none; }
 }
 
+/* Final shell visual layer. App Shell, header and rail presentation are
+   owned here so feature/page styles cannot become a second navigation owner.
+   Values are intentionally preserved from the approved visual baseline. */
+body .app-shell {
+  background: var(--rf-page);
+  color: var(--rf-ink);
+}
+
+body .app-shell > main.page {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: clamp(20px, 3vw, 42px) clamp(16px, 3.2vw, 52px) 64px;
+}
+
+body .app-shell > .topbar {
+  border-bottom: 1px solid rgb(255 255 255 / .08);
+  background: linear-gradient(112deg, #071326 0%, #0c1b32 62%, #102a4b 100%);
+  box-shadow: 0 8px 26px rgb(7 19 38 / .18);
+}
+
+body .topbar-inner {
+  min-height: 76px;
+  width: min(100% - 36px, 1540px);
+  padding-block: 12px;
+}
+
+body .topbar-brand-area .brand-mark {
+  width: 46px;
+  height: 46px;
+  flex-basis: 46px;
+  border: 1px solid rgb(255 255 255 / .14);
+  border-radius: 14px;
+  background: linear-gradient(145deg, rgb(92 168 255 / .2), rgb(18 169 154 / .14));
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / .04), 0 8px 20px rgb(0 0 0 / .18);
+}
+
+body .topbar-brand-area .brand-copy h1 {
+  font-size: 1rem;
+  letter-spacing: -.01em;
+}
+
+body .topbar-brand-area .brand-copy p {
+  color: #9eb1c9;
+  font-size: .7rem;
+}
+
+body .topbar-quick-actions .header-search,
+body .topbar-quick-actions .header-notification,
+body .topbar-quick-actions .header-backup,
+body .topbar-quick-actions .header-refresh,
+body .topbar-theme-toggle,
+body .kiosk-toggle-button,
+body .mobile-nav-toggle {
+  border-color: rgb(255 255 255 / .14);
+  border-radius: 12px;
+  background: rgb(255 255 255 / .07);
+  color: #d6e3f4;
+}
+
+body .topbar-quick-actions .header-search:hover,
+body .topbar-quick-actions .header-search:focus-visible,
+body .topbar-quick-actions .header-notification:hover,
+body .topbar-quick-actions .header-notification:focus-visible,
+body .topbar-quick-actions .header-backup:hover,
+body .topbar-quick-actions .header-backup:focus-visible,
+body .topbar-quick-actions .header-refresh:hover,
+body .topbar-quick-actions .header-refresh:focus-visible,
+body .topbar-theme-toggle:hover,
+body .topbar-theme-toggle:focus-visible,
+body .kiosk-toggle-button:hover,
+body .kiosk-toggle-button:focus-visible,
+body .mobile-nav-toggle:hover,
+body .mobile-nav-toggle:focus-visible {
+  border-color: rgb(92 168 255 / .58);
+  background: rgb(92 168 255 / .16);
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+body .auth-account-avatar {
+  border-color: rgb(92 168 255 / .55);
+  background: rgb(92 168 255 / .16);
+  color: #ddecff;
+}
+
+body .app-shell > .page-tabs {
+  background: linear-gradient(180deg, #0b1a2f 0%, #071326 100%);
+  border-inline-end-color: rgb(255 255 255 / .08);
+  border-block-end-color: rgb(255 255 255 / .08);
+  box-shadow: 10px 0 30px rgb(7 19 38 / .08);
+}
+
+body .app-shell > .page-tabs > .page-tab,
+body .app-shell > .page-tabs > .smart-assistant-launcher {
+  min-height: 48px;
+  border-color: transparent;
+  border-radius: 13px;
+  color: #9eb1c9;
+  font-weight: 700;
+}
+
+body .app-shell > .page-tabs > .page-tab::before,
+body .app-shell > .page-tabs > .smart-assistant-launcher::before {
+  width: 4px;
+  border-radius: 999px;
+  background: #63b2ff;
+}
+
+body .app-shell > .page-tabs > .page-tab:hover,
+body .app-shell > .page-tabs > .page-tab:focus-visible,
+body .app-shell > .page-tabs > .smart-assistant-launcher:hover,
+body .app-shell > .page-tabs > .smart-assistant-launcher:focus-visible {
+  border-color: rgb(92 168 255 / .18);
+  background: rgb(92 168 255 / .1);
+  color: #f7fbff;
+  transform: translateX(-3px);
+}
+
+body .app-shell > .page-tabs > .page-tab.active,
+body .app-shell > .page-tabs > .page-tab[aria-selected="true"],
+body .app-shell > .page-tabs > .smart-assistant-launcher[aria-expanded="true"] {
+  border-color: rgb(92 168 255 / .34);
+  background: linear-gradient(90deg, rgb(25 118 243 / .2), rgb(92 168 255 / .09));
+  color: #ffffff;
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / .03), 0 8px 18px rgb(0 0 0 / .12);
+}
+
+body .app-shell > .page-tabs > .page-tab .ui-icon,
+body .app-shell > .page-tabs > .smart-assistant-launcher .ui-icon {
+  border: 0;
+  border-radius: 10px;
+  background: rgb(255 255 255 / .055);
+}
+
+body .app-shell > .page-tabs > .page-tab.active .ui-icon,
+body .app-shell > .page-tabs > .page-tab[aria-selected="true"] .ui-icon,
+body .app-shell > .page-tabs > .smart-assistant-launcher[aria-expanded="true"] .ui-icon {
+  background: rgb(92 168 255 / .2);
+  color: #74bcff;
+}
+
+body .sidebar-brand {
+  border-bottom-color: rgb(255 255 255 / .11);
+}
+
+/* Sidebar image treatment belongs to the shell owner, not a page layer. */
+body .app-shell > .page-tabs,
+body .app-shell > .page-tabs:hover,
+body .app-shell > .page-tabs:focus-within {
+  background-color: #071326;
+  background-image: linear-gradient(180deg, rgb(3 10 26 / .94), rgb(4 13 31 / .39)), url('/assets/gym-sidebar-aesthetic.jpg');
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-blend-mode: normal;
+}
+
+body .app-shell > .page-tabs::before {
+  background: linear-gradient(180deg, rgb(2 8 22 / .18), rgb(2 8 22 / .62));
+  opacity: 1;
+}
+
+body .app-shell > .page-tabs > .page-tab {
+  color: #c1ccdc;
+}
+
+body .app-shell > .page-tabs > .page-tab:hover,
+body .app-shell > .page-tabs > .page-tab:focus-visible {
+  border-color: rgb(174 153 255 / .28);
+  background: rgb(126 101 227 / .2);
+  color: #fff;
+}
+
+body .app-shell > .page-tabs > .page-tab.active,
+body .app-shell > .page-tabs > .page-tab[aria-selected="true"] {
+  border-color: rgb(180 160 255 / .48);
+  background: linear-gradient(135deg, rgb(121 92 227 / .9), rgb(75 50 157 / .88));
+  box-shadow: 0 10px 24px rgb(50 29 126 / .26), inset 0 1px 0 rgb(255 255 255 / .15);
+  color: #fff;
+}
+
+@media (min-width: 1200px) {
+  @keyframes sidebar-tab-label-in {
+    from {
+      opacity: 0;
+      transform: translateX(6px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+}
+
 /* Navigation v3: grouped destinations on desktop and a real off-canvas
    navigation surface on phones. The existing page-tab hooks remain the route
    contract; only presentation and interaction change here. */
@@ -1827,9 +2023,51 @@ html[data-brand-active-style="pill"] .app-shell > .page-tabs > .page-tab.active 
   .app-shell > .page-tabs > .sidebar-section-label {
     display: none;
   }
+
+  body .app-shell > main.page {
+    padding-inline: clamp(14px, 3vw, 28px);
+  }
+
+  body .app-shell > .page-tabs {
+    background: #0a192e;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1199px) {
+  /* The wrapped tablet header is 77px tall; matching the sticky offset to
+     that measured shell track prevents a sub-pixel rail/content overlap. */
+  .app-shell > .page-tabs {
+    top: 77px;
+  }
 }
 
 @media (max-width: 767px) {
+  body .app-shell > main.page {
+    padding: 16px 10px 40px;
+  }
+
+  body .app-shell > .page-tabs {
+    gap: 5px;
+    border-bottom-color: rgb(255 255 255 / .1);
+    padding: 6px 8px;
+  }
+
+  body .app-shell > .page-tabs > .page-tab,
+  body .app-shell > .page-tabs > .smart-assistant-launcher {
+    min-height: 54px;
+    border-radius: 12px;
+    background: rgb(255 255 255 / .055);
+  }
+
+  body .topbar-inner {
+    width: calc(100% - 16px);
+    min-height: 68px;
+  }
+
+  body .topbar-brand-area .brand-copy h1 {
+    font-size: .9rem;
+  }
+
   .app-shell > .topbar .mobile-nav-toggle {
     display: inline-flex;
   }
@@ -2024,6 +2262,23 @@ html[data-brand-active-style="pill"] .app-shell > .page-tabs > .page-tab.active 
 
   .app-shell > .mobile-nav-backdrop[hidden] {
     display: none;
+  }
+}
+
+@media (max-width: 420px) {
+  body .topbar-brand-area .brand-copy {
+    display: none;
+  }
+
+  body .topbar-brand-area .brand-mark {
+    width: 40px;
+    height: 40px;
+    flex-basis: 40px;
+  }
+
+  body .app-shell > .page-tabs > .page-tab > span,
+  body .app-shell > .page-tabs > .smart-assistant-launcher-label {
+    font-size: .62rem;
   }
 }
 

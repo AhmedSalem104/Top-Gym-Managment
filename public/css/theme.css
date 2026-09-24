@@ -1047,9 +1047,8 @@ html[data-theme="dark"] .auth-submit:hover:not(:disabled){
   background: var(--primary-hover);
 }
 
-html[data-theme="dark"] .member-portal-page,
-html[data-theme="dark"] .member-portal-page .portal-shell{
-  background: var(--bg-app);
+html[data-theme="dark"] .member-portal-page{
+  background-color: var(--bg-app);
   color: var(--text-primary);
 }
 

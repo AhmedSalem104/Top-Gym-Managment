@@ -668,7 +668,7 @@
             const detail = event.detail || {};
             if (detail.isNew && detail.member?.id) openMemberQr(detail.member.id);
         });
-        document.addEventListener('topgym:tab-changed', (event) => { if (event.detail?.name === 'attendance') loadAttendance(); });
+        window.addEventListener('topgym:tab-changed', (event) => { if (event.detail?.name === 'attendance') loadAttendance(); });
         window.addEventListener('topgym:branch-context-changed', () => {
             attendanceSnapshot = null;
             if (isAttendanceActive()) void loadAttendance();

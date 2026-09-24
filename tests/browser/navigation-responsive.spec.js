@@ -49,7 +49,10 @@ async function installNavigationRuntime(page) {
 
 test('responsive navigation stays organized and accessible at each viewport', async ({ page }, testInfo) => {
     await installNavigationRuntime(page);
-    await page.goto('/#dashboard', { waitUntil: 'networkidle' });
+    // `/` is the auth-aware login entry when no server session cookie exists;
+    // use the static shell entry so the browser fixture can provide the local
+    // authenticated runtime deterministically.
+    await page.goto('/index.html#dashboard', { waitUntil: 'networkidle' });
 
     const width = testInfo.project.use.viewport.width;
     const dimensions = await page.evaluate(() => ({ viewport: innerWidth, document: document.documentElement.scrollWidth, body: document.body.scrollWidth }));

@@ -44,6 +44,12 @@ const PHASE15_TRAINER_ACTION_CENTER_MIGRATION_PATH = path.join(__dirname, '..', 
 const PHASE16_BRANCH_SECTIONS_MIGRATION_PATH = path.join(__dirname, '..', 'database', 'migrations', '029-branch-sections.sql');
 const PHASE17_PLAN_ENTITLEMENTS_MIGRATION_PATH = path.join(__dirname, '..', 'database', 'migrations', '030-plan-entitlements.sql');
 const PHASE18_NOTIFICATIONS_MIGRATION_PATH = path.join(__dirname, '..', 'database', 'migrations', '031-central-notifications.sql');
+const PHASE19_NOTIFICATION_CASCADE_FIX_MIGRATION_PATH = path.join(__dirname, '..', 'database', 'migrations', '038-notification-read-cascade-fix.sql');
+const PHASE20_NOTIFICATION_PORTAL_RECIPIENTS_MIGRATION_PATH = path.join(__dirname, '..', 'database', 'migrations', '032-notification-portal-recipients.sql');
+const PHASE21_TOP_GYM_BRANCH_ATTRIBUTION_MIGRATION_PATH = path.join(__dirname, '..', 'database', 'migrations', '033-top-gym-legacy-branch-attribution.sql');
+const PHASE22_WHATSAPP_TEMPLATES_MIGRATION_PATH = path.join(__dirname, '..', 'database', 'migrations', '034-whatsapp-message-templates.sql');
+const PHASE23_SAAS_PLANS_MIGRATION_PATH = path.join(__dirname, '..', 'database', 'migrations', '036-saas-plans-phase2.sql');
+const PHASE24_GYM_BRANCH_ENTITLEMENT_MIGRATION_PATH = path.join(__dirname, '..', 'database', 'migrations', '037-gym-core-branches-entitlement.sql');
 const PHASE0_SECURITY_MIGRATION_PATH = path.join(__dirname, '..', 'database', 'migrations', '013-phase0-security-preconditions.sql');
 const BASE_COMMERCIAL_MIGRATION_PATH = commercialSchema.MIGRATION_PATH;
 const MIGRATION_HISTORY_TABLE = '__TenantEFMigrationsHistory';
@@ -126,17 +132,30 @@ async function recordMigrationHistory(executor, migrationId) {
         `);
 }
 
+async function recordFullBootstrapMigration(migrationId, tenantId) {
+    return runTenantContext({ mode: 'platform', tenantId }, async () => {
+        const pool = await getPool();
+        await ensureMigrationHistory(pool);
+        await recordMigrationHistory(pool, migrationId);
+    });
+}
+
 function isLocalDatabaseServer(server) {
     const value = String(server || '').trim().toLowerCase();
     return value === 'localhost' || value === '127.0.0.1' || value === '::1';
 }
 
-function assertMigrationTarget({
-    connectionString = process.env.MSSQL_CONNECTION_STRING || process.env.DATABASE_URL,
-    environment = process.env.MIGRATION_ENV,
-    productionConfirmation = process.env.MIGRATION_PRODUCTION_CONFIRM,
-    nonProductionExternalConfirmation = process.env.MIGRATION_NON_PRODUCTION_CONFIRM
-} = {}) {
+function assertMigrationTarget(options = {}) {
+    const hasExplicitConnectionString = Object.prototype.hasOwnProperty.call(options, 'connectionString');
+    const hasExplicitEnvironment = Object.prototype.hasOwnProperty.call(options, 'environment');
+    const connectionString = hasExplicitConnectionString
+        ? options.connectionString
+        : (process.env.MSSQL_CONNECTION_STRING || process.env.DATABASE_URL);
+    const environment = hasExplicitEnvironment || hasExplicitConnectionString
+        ? options.environment
+        : process.env.MIGRATION_ENV;
+    const productionConfirmation = options.productionConfirmation ?? process.env.MIGRATION_PRODUCTION_CONFIRM;
+    const nonProductionExternalConfirmation = options.nonProductionExternalConfirmation ?? process.env.MIGRATION_NON_PRODUCTION_CONFIRM;
     const target = parseConnectionString(connectionString);
     const localTarget = isLocalDatabaseServer(target.server);
     const configuredEnvironment = String(environment || '').trim().toLowerCase();
@@ -166,6 +185,10 @@ async function migrate() {
         await pool.request().batch(phase1TenantTypeMigration);
     });
     const bootstrapTenant = await runTenantContext({ mode: 'platform', tenantId: 1 }, () => tenantService.ensureBootstrapTenant());
+    await runTenantContext({ mode: 'platform', tenantId: bootstrapTenant.id }, async () => {
+        const pool = await getPool();
+        await ensureMigrationHistory(pool);
+    });
     const backupRecoveryService = createBackupRecoveryService();
     await runTenantContext({ mode: 'platform', tenantId: bootstrapTenant.id }, () => backupRecoveryService.ensureRecoveryTables());
     await runTenantContext({ mode: 'platform', tenantId: bootstrapTenant.id }, () => saasService.ensureSaasTables());
@@ -214,7 +237,6 @@ async function migrate() {
         await authService.ensureAuthReady();
         await libraryService.ensureLibraryTables();
         await coachingService.ensureCoachingTables({ seedLibrary: false });
-        await dayPassService.ensureDayPassTables();
         await membershipCodeService.ensureMembershipCodeStorage();
         await memberFeedbackService.ensureMemberFeedbackTable();
         await storeService.ensureStoreTables();
@@ -241,6 +263,10 @@ async function migrate() {
         const pool = await getPool();
         await pool.request().batch(financialBranchAttributionMigration);
     });
+    // The day-pass readiness contract includes branch_id, which is added by
+    // migration 022 above. Keep the readiness check after that prerequisite
+    // instead of making a fresh database look partially migrated.
+    await runTenantContext({ mode: 'tenant', tenantId: bootstrapTenant.id }, () => dayPassService.ensureDayPassTables());
     const postFinanceResult = await runTenantContext({ mode: 'platform', tenantId: bootstrapTenant.id }, () => tenantService.ensureTenantColumnsAndRls(bootstrapTenant.id));
     const stockLocationsMigration = fs.readFileSync(PHASE10_STOCK_LOCATIONS_MIGRATION_PATH, 'utf8');
     await runTenantContext({ mode: 'platform', tenantId: bootstrapTenant.id }, async () => {
@@ -285,11 +311,77 @@ async function migrate() {
         const pool = await getPool();
         await pool.request().batch(planEntitlementsMigration);
     });
+    // 038 is a forward-safe notification bootstrap/fix. Running it before
+    // historical 031 lets a fresh local database avoid the SQL Server
+    // multiple-cascade-path definition while remaining idempotent for an
+    // existing QA database. Production release paths still apply 031 first
+    // and then 038 through the migration manifest.
+    const notificationCascadeFixMigration = fs.readFileSync(PHASE19_NOTIFICATION_CASCADE_FIX_MIGRATION_PATH, 'utf8');
+    await runTenantContext({ mode: 'platform', tenantId: bootstrapTenant.id }, async () => {
+        const pool = await getPool();
+        await pool.request().batch(notificationCascadeFixMigration);
+    });
+    await recordFullBootstrapMigration('038-notification-read-cascade-fix.sql', bootstrapTenant.id);
     const notificationsMigration = fs.readFileSync(PHASE18_NOTIFICATIONS_MIGRATION_PATH, 'utf8');
     await runTenantContext({ mode: 'platform', tenantId: bootstrapTenant.id }, async () => {
         const pool = await getPool();
         await pool.request().batch(notificationsMigration);
     });
+    await recordFullBootstrapMigration('031-central-notifications.sql', bootstrapTenant.id);
+    // The manifest migrations after 031 are part of the complete local/QA
+    // bootstrap chain. Keep them ordered after their schema prerequisites so
+    // a fresh database reaches the same runtime contract as an upgraded one.
+    const notificationPortalRecipientsMigration = fs.readFileSync(PHASE20_NOTIFICATION_PORTAL_RECIPIENTS_MIGRATION_PATH, 'utf8');
+    await runTenantContext({ mode: 'platform', tenantId: bootstrapTenant.id }, async () => {
+        const pool = await getPool();
+        await pool.request().batch(notificationPortalRecipientsMigration);
+    });
+    await recordFullBootstrapMigration('032-notification-portal-recipients.sql', bootstrapTenant.id);
+    const topGymBranchAttributionMigration = fs.readFileSync(PHASE21_TOP_GYM_BRANCH_ATTRIBUTION_MIGRATION_PATH, 'utf8');
+    const activeTopGymBranchCount = await runTenantContext({ mode: 'platform', tenantId: bootstrapTenant.id }, async () => {
+        const pool = await getPool();
+        const result = await pool.request()
+            .input('tenantId', sql.Int, bootstrapTenant.id)
+            .query("SELECT COUNT_BIG(*) AS branch_count FROM dbo.gym_branches WHERE tenant_id=@tenantId AND status='active';");
+        return Number(result.recordset[0]?.branch_count || 0);
+    });
+    if (activeTopGymBranchCount === 1) {
+        await runTenantContext({ mode: 'platform', tenantId: bootstrapTenant.id }, async () => {
+            const pool = await getPool();
+            await pool.request().batch(topGymBranchAttributionMigration);
+        });
+        await recordFullBootstrapMigration('033-top-gym-legacy-branch-attribution.sql', bootstrapTenant.id);
+    } else if (new Set(['local', 'development', 'test']).has(String(process.env.MIGRATION_ENV || '').trim().toLowerCase())) {
+        console.warn(JSON.stringify({
+            migration: '033-top-gym-legacy-branch-attribution.sql',
+            status: 'skipped-local-precondition',
+            activeTopGymBranchCount,
+            reason: 'The controlled legacy backfill requires exactly one active Top Gym branch; no existing QA data was changed.'
+        }));
+    } else {
+        throw new Error('Migration 033 requires exactly one active Top Gym branch; refusing to infer legacy attribution.');
+    }
+    const whatsappTemplatesMigration = fs.readFileSync(PHASE22_WHATSAPP_TEMPLATES_MIGRATION_PATH, 'utf8');
+    await runTenantContext({ mode: 'platform', tenantId: bootstrapTenant.id }, async () => {
+        const pool = await getPool();
+        await pool.request().batch(whatsappTemplatesMigration);
+    });
+    await recordFullBootstrapMigration('034-whatsapp-message-templates.sql', bootstrapTenant.id);
+    // 035 is an upgrade-only controlled content migration. It intentionally
+    // fails closed when the approved pre-image is not present, so it remains
+    // in the release/ledger path and is not part of fresh local bootstrap.
+    const saasPlansMigration = fs.readFileSync(PHASE23_SAAS_PLANS_MIGRATION_PATH, 'utf8');
+    await runTenantContext({ mode: 'platform', tenantId: bootstrapTenant.id }, async () => {
+        const pool = await getPool();
+        await pool.request().batch(saasPlansMigration);
+    });
+    await recordFullBootstrapMigration('036-saas-plans-phase2.sql', bootstrapTenant.id);
+    const gymBranchEntitlementMigration = fs.readFileSync(PHASE24_GYM_BRANCH_ENTITLEMENT_MIGRATION_PATH, 'utf8');
+    await runTenantContext({ mode: 'platform', tenantId: bootstrapTenant.id }, async () => {
+        const pool = await getPool();
+        await pool.request().batch(gymBranchEntitlementMigration);
+    });
+    await recordFullBootstrapMigration('037-gym-core-branches-entitlement.sql', bootstrapTenant.id);
     await runTenantContext({ mode: 'platform', tenantId: bootstrapTenant.id }, () => tenantService.ensureTenantColumnsAndRls(bootstrapTenant.id));
     await runTenantContext({ mode: 'tenant', tenantId: bootstrapTenant.id }, () => libraryService.ensureLibraryData());
     await runTenantContext({ mode: 'platform', tenantId: bootstrapTenant.id }, () => saasService.ensureBootstrapSubscription(bootstrapTenant.id));

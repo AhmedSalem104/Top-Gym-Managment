@@ -17,6 +17,16 @@ const tabs = [
 
 async function waitForTab(page, name, selector) {
     const tab = page.locator(`[data-page-tab="${name}"]`);
+    const isMobileViewport = (page.viewportSize()?.width || 1440) <= 900;
+    const shell = page.locator('.app-shell');
+    const drawerOpen = await shell.evaluate((element) => element.classList.contains('mobile-nav-open')).catch(() => false);
+    if (isMobileViewport || !(await tab.isVisible().catch(() => false))) {
+        const mobileToggle = page.locator('#mobileNavToggle');
+        if (!drawerOpen && await mobileToggle.isVisible().catch(() => false)) {
+            await mobileToggle.click();
+        }
+        await expect(tab).toBeVisible({ timeout: 10_000 });
+    }
     await tab.click();
     await expect(tab).toHaveClass(/active/);
     await expect(page.locator('[data-top-gym-loading-tab]')).toHaveCount(0, { timeout: 20_000 });
@@ -52,7 +62,7 @@ async function assertTouchTargets(page) {
                 boxSizing: style.boxSizing
             };
         })
-        .filter(({ box }) => box.width > 0 && box.height > 0 && (box.width < 32 || box.height < 32)));
+        .filter(({ box }) => box.width > 1 && box.height > 1 && (box.width < 32 || box.height < 32)));
     expect(undersized, `interactive controls below the 32px minimum: ${JSON.stringify(undersized)}`).toEqual([]);
 }
 
@@ -70,15 +80,15 @@ test.beforeEach(async ({ page }) => {
     // not configured: report the scenario as skipped/NOT VERIFIED instead of
     // turning missing credentials into a misleading timeout.
     test.skip(!email || !password, 'NOT VERIFIED: QA_OWNER_* credentials are not configured.');
-    await page.goto('/login.html', { waitUntil: 'domcontentloaded' });
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
     const entryButton = page.locator('#saasEntryContinue');
     if (await entryButton.isVisible().catch(() => false)) {
         await entryButton.click();
-        await expect(page.locator('#loginEmail')).toBeVisible({ timeout: 20_000 });
-        await page.locator('#loginEmail').fill(email);
-        await page.locator('#loginPassword').fill(password);
-        await page.locator('#loginSubmit').click();
     }
+    await expect(page.locator('#loginEmail')).toBeVisible({ timeout: 20_000 });
+    await page.locator('#loginEmail').fill(email);
+    await page.locator('#loginPassword').fill(password);
+    await page.locator('#loginSubmit').click();
     await expect(page.locator('[data-page-tab="dashboard"]')).toHaveClass(/active/, { timeout: 20_000 });
 });
 

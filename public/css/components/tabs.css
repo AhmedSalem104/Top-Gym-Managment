@@ -9,41 +9,47 @@
   gap: var(--space-1);
 }
 
-.tab-button {
+.tab-button,
+[role="tab"] {
   position: relative;
   display: inline-flex;
-  min-height: 42px;
+  min-height: 40px;
   min-width: max-content;
   flex: 0 1 auto;
   align-items: center;
   justify-content: center;
   gap: var(--space-2);
   border: 1px solid transparent;
-  border-radius: var(--radius-sm);
+  border-radius: 10px;
   background: transparent;
-  color: var(--text-secondary);
+  color: var(--rf-muted);
   padding: 0 var(--space-4);
   font-size: var(--font-sm);
-  font-weight: var(--weight-semibold);
+  font-weight: 800;
   white-space: nowrap;
   transition: background-color var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
 }
 
 .tab-button:hover,
-.tab-button:focus-visible {
+.tab-button:focus-visible,
+[role="tab"]:hover,
+[role="tab"]:focus-visible {
   border-color: var(--border-hover);
-  background: var(--primary-soft);
-  color: var(--color-primary);
+  background: var(--rf-accent-soft);
+  color: var(--rf-accent-strong);
 }
 
 .tab-button.active,
-.tab-button[aria-selected="true"] {
-  border-color: var(--primary-border);
-  background: var(--primary-soft);
-  color: var(--color-primary);
+.tab-button[aria-selected="true"],
+[role="tab"][aria-selected="true"] {
+  border-color: color-mix(in srgb, var(--rf-accent) 22%, var(--rf-line));
+  background: var(--rf-accent-soft);
+  color: var(--rf-accent-strong);
+  box-shadow: inset 0 -2px 0 var(--rf-accent);
 }
 
-.tab-button .ui-icon {
+.tab-button .ui-icon,
+[role="tab"] .ui-icon {
   width: 18px;
   height: 18px;
   flex: 0 0 auto;
@@ -60,7 +66,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .tab-button {
+  .tab-button,
+  [role="tab"] {
     transition: none;
   }
 }

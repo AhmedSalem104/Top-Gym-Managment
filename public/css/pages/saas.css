@@ -561,8 +561,6 @@
 .saas-upload-box input[type="file"] { cursor: pointer; }
 .saas-form-actions .btn { min-height: 48px; padding-inline: 24px; }
 
-.saas-requests-panel { margin-top: 0; }
-
 @media (max-width: 1279px) {
     .saas-subscription-summary { grid-template-columns: repeat(3, minmax(0, 1fr)); }
     .saas-summary-status { grid-column: span 2; }

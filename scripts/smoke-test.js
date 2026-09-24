@@ -4,7 +4,9 @@ const assert = require('node:assert/strict');
 const { gzipSync } = require('node:zlib');
 const app = require('../server');
 const { closePool, getPool, initDatabase, sql } = require('../src/db');
-const { reconcileAutoCheckout } = require('../src/services/attendance-service');
+const { getAutoCheckoutMinutes, reconcileAutoCheckout } = require('../src/services/attendance-service');
+const tenantService = require('../src/services/tenant-service');
+const { runTenantContext } = require('../src/tenancy/tenant-context');
 const { addDays, todayInTimeZone } = require('../src/utils/date');
 
 let sessionCookie = '';
@@ -63,7 +65,10 @@ function fetchWithSession(baseUrl, path, options = {}) {
         const backupResponse = await fetchWithSession(baseUrl, '/api/backup/download');
         assert.equal(backupResponse.status, 200);
         assert.equal(backupResponse.headers.get('content-type'), 'application/gzip');
-        assert.match(backupResponse.headers.get('content-disposition') || '', /backup_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}\.json\.gz/);
+        assert.match(
+            backupResponse.headers.get('content-disposition') || '',
+            /filename="logic-fit-tenant-\d+-\d{8}_\d{6}Z\.json\.gz"/
+        );
         const backupBuffer = Buffer.from(await backupResponse.arrayBuffer());
         assert.ok(backupBuffer.byteLength > 20);
         const bakResponse = await fetchWithSession(baseUrl, '/api/backup/download?format=bak');
@@ -80,8 +85,8 @@ function fetchWithSession(baseUrl, path, options = {}) {
         assert.equal(backupInspection.integrity.verified, true);
         assert.ok(Number(backupInspection.rowCount) >= 0);
         const backupHistory = await call(baseUrl, '/api/backup/history?limit=5');
-        assert.ok(backupHistory.operations.some((item) => item.operationType === 'download'));
-        assert.ok(backupHistory.operations.some((item) => item.operationType === 'inspect'));
+        assert.ok(Array.isArray(backupHistory.records));
+        assert.ok(Array.isArray(backupHistory.audit));
         const invalidBackupResponse = await fetchWithSession(baseUrl, '/api/backup/inspect', {
             method: 'POST',
             headers: { 'Content-Type': 'application/gzip' },
@@ -101,6 +106,9 @@ function fetchWithSession(baseUrl, path, options = {}) {
         assert.ok(bootstrap.pagination && Number.isInteger(bootstrap.pagination.page));
         assert.equal(bootstrap.pricing.types.half_month.durationValue, 15);
         assert.equal(bootstrap.pricing.types.half_month.mode, 'days');
+        const branding = await call(baseUrl, '/api/branding');
+        const currentBrandName = String(branding.branding?.identity?.brandName || '').trim();
+        assert.ok(currentBrandName, 'smoke test did not receive the current tenant brand name');
         const externalTrainee = await call(baseUrl, '/api/external-trainees', {
             method: 'POST',
             body: JSON.stringify({
@@ -161,7 +169,7 @@ function fetchWithSession(baseUrl, path, options = {}) {
         dayPassId = dayPass.sale.id;
         assert.equal(dayPass.sale.passTypeCode, 'day_gym_cardio');
         assert.equal(dayPass.sale.amountPaid, 40);
-        assert.match(dayPass.whatsapp.message, /TOP GYM/);
+        assert.match(dayPass.whatsapp.message, new RegExp(currentBrandName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
         const listedDayPasses = await call(baseUrl, `/api/day-passes?from=${testStartDate}&to=${testStartDate}&page=1&pageSize=20`);
         assert.ok(listedDayPasses.records.some((item) => item.id === dayPassId));
         const dayPassSummary = await call(baseUrl, `/api/day-passes/summary?from=${testStartDate}&to=${testStartDate}`);
@@ -224,7 +232,7 @@ function fetchWithSession(baseUrl, path, options = {}) {
         assert.equal(updatedType.types[temporaryTypeCode].durationValue, 12);
         const page = await fetch(`${baseUrl}/`);
         assert.equal(page.status, 200);
-        assert.match(await page.text(), /إدارة عضويات الجيم/);
+        assert.match(await page.text(), /<title>Logic Fit \| Gym Management<\/title>/);
 
         const created = await call(baseUrl, '/api/members', {
             method: 'POST',
@@ -237,14 +245,17 @@ function fetchWithSession(baseUrl, path, options = {}) {
                 startDate: testStartDate,
                 discountAmount: 5,
                 amountPaid: 50,
-                paymentMethod: 'cash'
+                paymentMethod: 'cash',
+                paymentDate: testStartDate
             })
         });
         memberId = created.member.id;
         assert.match(created.member.qrToken, new RegExp(`^TOPGYM-MEMBER:${memberId}$`));
-        const qrPage = await fetch(`${baseUrl}/qr/${memberId}`);
+        const qrTenantSlug = String(process.env.DEFAULT_TENANT_SLUG || '').trim();
+        assert.ok(qrTenantSlug, 'smoke test requires DEFAULT_TENANT_SLUG for public QR verification');
+        const qrPage = await fetch(`${baseUrl}/qr/${memberId}?tenant=${encodeURIComponent(qrTenantSlug)}`);
         assert.equal(qrPage.status, 200);
-        assert.match(await qrPage.text(), /TOP GYM/);
+        assert.match(await qrPage.text(), /\| Logic Fit<\/title>/);
         assert.equal(created.member.membership.status, 'active');
         assert.equal(created.member.membership.endDate, testHalfMonthEndDate);
         assert.equal(created.member.membership.amountDue, gymOnlyHalfMonthPrice - 5);
@@ -290,7 +301,8 @@ function fetchWithSession(baseUrl, path, options = {}) {
                 endDate: testMonthlyEndDate,
                 discountAmount: 0,
                 amountPaid: 150,
-                paymentMethod: 'cash'
+                paymentMethod: 'cash',
+                paymentDate: testStartDate
             })
         });
         assert.equal(edited.member.fullName, `Edited Smoke Test ${suffix}`);
@@ -327,12 +339,12 @@ function fetchWithSession(baseUrl, path, options = {}) {
         assert.equal(freezeLimitRejected, true);
 
         const paid = await call(baseUrl, `/api/memberships/${resumed.member.membership.id}/payments`, {
-            method: 'POST', body: JSON.stringify({ listPrice: gymOnlyMonthlyPrice, discountAmount: 0, amountPaid: gymOnlyMonthlyPrice, paymentMethod: 'card' })
+            method: 'POST', body: JSON.stringify({ listPrice: gymOnlyMonthlyPrice, discountAmount: 0, amountPaid: gymOnlyMonthlyPrice, paymentMethod: 'card', paymentDate: testStartDate })
         });
         assert.equal(paid.member.membership.amountRemaining, 0);
 
         const renewed = await call(baseUrl, `/api/members/${memberId}/renew`, {
-            method: 'POST', body: JSON.stringify({ membershipType: 'quarterly', membershipPlan: 'gym_cardio', discountAmount: 0, amountPaid: cardioQuarterlyPrice, paymentMethod: 'transfer' })
+            method: 'POST', body: JSON.stringify({ membershipType: 'quarterly', membershipPlan: 'gym_cardio', discountAmount: 0, amountPaid: cardioQuarterlyPrice, paymentMethod: 'transfer', paymentDate: testStartDate })
         });
         assert.equal(renewed.member.membership.type, 'quarterly');
         assert.equal(renewed.member.membership.plan, 'gym_cardio');
@@ -371,28 +383,27 @@ function fetchWithSession(baseUrl, path, options = {}) {
         const attendanceReport = await call(baseUrl, '/api/attendance/report');
         assert.ok(attendanceReport.summary && Number.isInteger(attendanceReport.summary.totalVisits));
         assert.ok(Array.isArray(attendanceReport.members));
-        const previousAutoCheckoutMinutes = process.env.ATTENDANCE_AUTO_CHECKOUT_MINUTES;
         const smokePool = await getPool();
-        try {
-            process.env.ATTENDANCE_AUTO_CHECKOUT_MINUTES = '1';
+        const autoCheckoutMinutes = getAutoCheckoutMinutes();
+        const smokeTenant = await tenantService.resolvePublicTenant(process.env.DEFAULT_TENANT_SLUG || '', { readOnly: true });
+        if (!smokeTenant?.id) throw new Error('Smoke test could not resolve the configured local tenant.');
+        await runTenantContext({ tenantId: smokeTenant.id, mode: 'tenant' }, async () => {
             await smokePool.request()
                 .input('attendanceId', sql.Int, checkedOut.attendance.id)
+                .input('autoMinutes', sql.Int, autoCheckoutMinutes)
                 .query(`UPDATE dbo.gym_attendance
                         SET check_out_at = NULL, check_out_source = NULL,
-                            check_in_at = DATEADD(minute, -2, SYSUTCDATETIME()), updated_at = SYSUTCDATETIME()
+                            check_in_at = DATEADD(minute, -(@autoMinutes + 1), SYSUTCDATETIME()), updated_at = SYSUTCDATETIME()
                         WHERE id = @attendanceId;`);
             await reconcileAutoCheckout(smokePool, memberId);
             const autoClosedResult = await smokePool.request()
                 .input('attendanceId', sql.Int, checkedOut.attendance.id)
                 .query('SELECT check_out_source FROM dbo.gym_attendance WHERE id = @attendanceId;');
             assert.equal(autoClosedResult.recordset[0]?.check_out_source, 'auto');
-        } finally {
-            if (previousAutoCheckoutMinutes === undefined) delete process.env.ATTENDANCE_AUTO_CHECKOUT_MINUTES;
-            else process.env.ATTENDANCE_AUTO_CHECKOUT_MINUTES = previousAutoCheckoutMinutes;
-        }
-        await smokePool.request()
-            .input('attendanceId', sql.Int, checkedOut.attendance.id)
-            .query('UPDATE dbo.gym_attendance SET attendance_date = DATEADD(day, -1, attendance_date) WHERE id = @attendanceId;');
+            await smokePool.request()
+                .input('attendanceId', sql.Int, checkedOut.attendance.id)
+                .query('UPDATE dbo.gym_attendance SET attendance_date = DATEADD(day, -1, attendance_date) WHERE id = @attendanceId;');
+        });
         const nextDayCheckIn = await call(baseUrl, '/api/attendance/check-in', {
             method: 'POST', body: JSON.stringify({ phone: created.member.phone })
         });

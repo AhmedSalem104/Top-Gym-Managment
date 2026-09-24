@@ -465,12 +465,12 @@ html[data-theme="dark"] .trainer-workspace-page.trainer-studio-v2 .trainer-ai-wa
 .trainer-studio-topbar-context,
 .trainer-studio-topbar-actions,
 .trainer-studio-topbar-badge,
-.trainer-studio-topbar-brand > div { display: flex; align-items: center; }
+.trainer-studio-topbar-brand > div { display: flex; position: relative; min-width: 0; align-items: center; }
 .trainer-studio-topbar-brand { min-width: 0; gap: 12px; }
 .trainer-studio-topbar-mark { display: grid; width: 42px; height: 42px; flex: 0 0 auto; place-items: center; border-radius: 14px; color: #fff; font-size: 19px; font-weight: 900; }
 .trainer-studio-topbar-kicker { display: block; color: var(--studio-brand-strong); font-size: 10px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
 .trainer-studio-topbar-tenant { display: block; margin-block-start: 3px; overflow: hidden; color: var(--studio-ink); font-size: 15px; font-weight: 900; text-overflow: ellipsis; white-space: nowrap; }
-.trainer-studio-runtime-message { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.trainer-studio-runtime-message { position: absolute; inset-block-start: 0; inset-inline-start: 0; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .trainer-studio-topbar-context { gap: 8px; margin-inline-start: auto; }
 .trainer-studio-topbar-badge,
 .trainer-studio-topbar-plan { min-height: 32px; align-items: center; padding-inline: 10px; border: 1px solid var(--studio-brand-border); border-radius: 999px; color: var(--studio-brand-strong); background: var(--studio-brand-soft); font-size: 11px; font-weight: 850; white-space: nowrap; }
@@ -545,13 +545,13 @@ html[data-theme="dark"] .trainer-workspace-page.trainer-studio-v2 .trainer-dialo
 
 @media (max-width: 900px) {
     .trainer-workspace-page.trainer-studio-v2 .trainer-workspace-shell { display: block; width: min(100% - 24px, 760px); padding-block-start: 14px; }
-    .trainer-workspace-page.trainer-studio-v2 .trainer-studio-sidebar { position: fixed; z-index: 100; inset-block: 12px; inset-inline-end: 12px; width: min(320px, calc(100vw - 24px)); min-height: 0; visibility: hidden; pointer-events: none; transform: translateX(calc(100% + 24px)); transition: transform 220ms ease, visibility 0s linear 220ms; }
-    .trainer-workspace-page.trainer-studio-v2.trainer-sidebar-open .trainer-studio-sidebar { visibility: visible; pointer-events: auto; transform: translateX(0); transition-delay: 0s; }
+    .trainer-workspace-page.trainer-studio-v2 .trainer-studio-sidebar { position: fixed; z-index: 100; inset-block: 12px; inset-inline-end: 12px; width: min(320px, calc(100vw - 24px)); min-height: 0; display: none; visibility: hidden; pointer-events: none; transform: translateX(calc(100% + 24px)); transition: transform 220ms ease, visibility 0s linear 220ms; }
+    .trainer-workspace-page.trainer-studio-v2.trainer-sidebar-open .trainer-studio-sidebar { display: flex; visibility: visible; pointer-events: auto; transform: translateX(0); transition-delay: 0s; }
     .trainer-sidebar-open::before { position: fixed; z-index: 90; inset: 0; content: ''; background: rgb(4 19 37 / .48); backdrop-filter: blur(3px); }
     .trainer-workspace-page.trainer-studio-v2 .trainer-studio-sidebar-close { display: block; }
     .trainer-workspace-page.trainer-studio-v2 .trainer-studio-menu-button { display: grid; place-items: center; }
     .trainer-workspace-page.trainer-studio-v2 .trainer-studio-topbar { flex-wrap: wrap; }
-    .trainer-workspace-page.trainer-studio-v2 .trainer-studio-topbar-context { order: 3; width: 100%; margin-inline-start: 54px; }
+    .trainer-workspace-page.trainer-studio-v2 .trainer-studio-topbar-context { order: 3; width: 100%; margin-inline-start: 0; }
     .trainer-workspace-page.trainer-studio-v2 .trainer-studio-content { gap: 14px; }
     .trainer-workspace-page.trainer-studio-v2 dialog.trainer-client-dialog { width: min(680px, calc(100vw - 24px)); max-height: calc(100dvh - 24px); }
 }
@@ -560,12 +560,13 @@ html[data-theme="dark"] .trainer-workspace-page.trainer-studio-v2 .trainer-dialo
     .trainer-workspace-page.trainer-studio-v2 .trainer-workspace-shell { width: calc(100% - 16px); padding-block: 8px 30px; }
     .trainer-workspace-page.trainer-studio-v2 .trainer-studio-topbar { align-items: flex-start; gap: 12px; padding: 12px; border-radius: 17px; }
     .trainer-workspace-page.trainer-studio-v2 .trainer-studio-topbar-brand { max-width: calc(100% - 8px); }
+    .trainer-workspace-page.trainer-studio-v2 .trainer-studio-topbar-brand > div { flex-direction: column; align-items: flex-start; justify-content: center; }
     .trainer-workspace-page.trainer-studio-v2 .trainer-studio-topbar-mark { width: 38px; height: 38px; border-radius: 12px; }
     .trainer-workspace-page.trainer-studio-v2 .trainer-studio-topbar-tenant { font-size: 13px; }
-    .trainer-workspace-page.trainer-studio-v2 .trainer-studio-topbar-actions { width: 100%; margin-inline-start: 50px; }
+    .trainer-workspace-page.trainer-studio-v2 .trainer-studio-topbar-actions { width: 100%; margin-inline-start: 0; }
     .trainer-workspace-page.trainer-studio-v2 .trainer-studio-topbar-button,
     .trainer-workspace-page.trainer-studio-v2 .trainer-studio-logout-button { flex: 1; min-height: 44px; }
-    .trainer-workspace-page.trainer-studio-v2 .trainer-studio-topbar-context { margin-inline-start: 50px; }
+    .trainer-workspace-page.trainer-studio-v2 .trainer-studio-topbar-context { margin-inline-start: 0; }
     .trainer-workspace-page.trainer-studio-v2 .trainer-studio-route-bar { min-height: 56px; }
     .trainer-workspace-page.trainer-studio-v2 dialog.trainer-client-dialog form,
     .trainer-workspace-page.trainer-studio-v2 dialog.trainer-client-dialog .trainer-client-details { padding: 18px; }

@@ -50,7 +50,7 @@ BEGIN
         read_at DATETIME2(0) NOT NULL CONSTRAINT DF_saas_notification_reads_read DEFAULT (SYSUTCDATETIME()),
         CONSTRAINT PK_saas_notification_reads PRIMARY KEY (notification_id,user_id),
         CONSTRAINT FK_saas_notification_reads_notification FOREIGN KEY (notification_id) REFERENCES ${NOTIFICATION_TABLE}(id) ON DELETE CASCADE,
-        CONSTRAINT FK_saas_notification_reads_user FOREIGN KEY (user_id) REFERENCES dbo.gym_users(id) ON DELETE CASCADE
+        CONSTRAINT FK_saas_notification_reads_user FOREIGN KEY (user_id) REFERENCES dbo.gym_users(id) ON DELETE NO ACTION
     );
 END;
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name=N'IX_saas_notification_reads_user' AND object_id=OBJECT_ID(N'${NOTIFICATION_READ_TABLE}'))

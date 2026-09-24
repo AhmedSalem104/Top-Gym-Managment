@@ -32,7 +32,7 @@ test('feedback CSS has accessible loading, toast and reduced-motion states', () 
 });
 
 test('aria-busy only blocks the busy control, never an entire section', () => {
-    const styles = read('public/css/components/ui-foundation.css');
+    const styles = read('public/css/components/buttons.css');
 
     assert.match(styles, /button\[aria-busy="true"\]/);
     assert.doesNotMatch(styles, /:where\([^)]*,\s*\[aria-busy="true"\]\)/);

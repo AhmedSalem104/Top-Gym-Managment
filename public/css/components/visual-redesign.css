@@ -22,18 +22,6 @@ body.gym-page-bg::selection {
   color: #fff;
 }
 
-body .app-shell {
-  background: var(--rf-page);
-  color: var(--rf-ink);
-}
-
-body .app-shell > main.page {
-  width: 100%;
-  max-width: none;
-  margin: 0;
-  padding: clamp(20px, 3vw, 42px) clamp(16px, 3.2vw, 52px) 64px;
-}
-
 body .page > .workspace,
 body .page > .content-grid,
 body .page > .dashboard-section,
@@ -45,8 +33,7 @@ body .page-header h2,
 body .section-heading h2,
 body .section-heading h3,
 body .page-title,
-body .members-panel h3,
-body .panel-header h3 {
+body .members-panel h3 {
   color: var(--rf-ink);
   letter-spacing: -.025em;
 }
@@ -59,273 +46,17 @@ body .section-heading h2 {
 }
 
 body .page-header p,
-body .section-heading p,
-body .panel-header p,
-body .card-header p {
+body .section-heading p {
   color: var(--rf-muted);
   line-height: 1.75;
 }
 
-/* Header and navigation ---------------------------------------------------- */
-body .app-shell > .topbar {
-  border-bottom: 1px solid rgb(255 255 255 / .08);
-  background: linear-gradient(112deg, #071326 0%, #0c1b32 62%, #102a4b 100%);
-  box-shadow: 0 8px 26px rgb(7 19 38 / .18);
-}
-
-body .topbar-inner {
-  min-height: 76px;
-  width: min(100% - 36px, 1540px);
-  padding-block: 12px;
-}
-
-body .topbar-brand-area .brand-mark {
-  width: 46px;
-  height: 46px;
-  flex-basis: 46px;
-  border: 1px solid rgb(255 255 255 / .14);
-  border-radius: 14px;
-  background: linear-gradient(145deg, rgb(92 168 255 / .2), rgb(18 169 154 / .14));
-  box-shadow: inset 0 0 0 1px rgb(255 255 255 / .04), 0 8px 20px rgb(0 0 0 / .18);
-}
-
-body .topbar-brand-area .brand-copy h1 {
-  font-size: 1rem;
-  letter-spacing: -.01em;
-}
-
-body .topbar-brand-area .brand-copy p {
-  color: #9eb1c9;
-  font-size: .7rem;
-}
-
-body .topbar-quick-actions .header-search,
-body .topbar-quick-actions .header-notification,
-body .topbar-quick-actions .header-backup,
-body .topbar-quick-actions .header-refresh,
-body .topbar-theme-toggle,
-body .kiosk-toggle-button,
-body .mobile-nav-toggle {
-  border-color: rgb(255 255 255 / .14);
-  border-radius: 12px;
-  background: rgb(255 255 255 / .07);
-  color: #d6e3f4;
-}
-
-body .topbar-quick-actions .header-search:hover,
-body .topbar-quick-actions .header-search:focus-visible,
-body .topbar-quick-actions .header-notification:hover,
-body .topbar-quick-actions .header-notification:focus-visible,
-body .topbar-quick-actions .header-backup:hover,
-body .topbar-quick-actions .header-backup:focus-visible,
-body .topbar-quick-actions .header-refresh:hover,
-body .topbar-quick-actions .header-refresh:focus-visible,
-body .topbar-theme-toggle:hover,
-body .topbar-theme-toggle:focus-visible,
-body .kiosk-toggle-button:hover,
-body .kiosk-toggle-button:focus-visible,
-body .mobile-nav-toggle:hover,
-body .mobile-nav-toggle:focus-visible {
-  border-color: rgb(92 168 255 / .58);
-  background: rgb(92 168 255 / .16);
-  color: #fff;
-  transform: translateY(-1px);
-}
-
-body .auth-account-avatar {
-  border-color: rgb(92 168 255 / .55);
-  background: rgb(92 168 255 / .16);
-  color: #ddecff;
-}
-
-body .app-shell > .page-tabs {
-  background: linear-gradient(180deg, #0b1a2f 0%, #071326 100%);
-  border-inline-end-color: rgb(255 255 255 / .08);
-  border-block-end-color: rgb(255 255 255 / .08);
-  box-shadow: 10px 0 30px rgb(7 19 38 / .08);
-}
-
-body .app-shell > .page-tabs > .page-tab,
-body .app-shell > .page-tabs > .smart-assistant-launcher {
-  min-height: 48px;
-  border-color: transparent;
-  border-radius: 13px;
-  color: #9eb1c9;
-  font-weight: 700;
-}
-
-body .app-shell > .page-tabs > .page-tab::before,
-body .app-shell > .page-tabs > .smart-assistant-launcher::before {
-  width: 4px;
-  border-radius: 999px;
-  background: #63b2ff;
-}
-
-body .app-shell > .page-tabs > .page-tab:hover,
-body .app-shell > .page-tabs > .page-tab:focus-visible,
-body .app-shell > .page-tabs > .smart-assistant-launcher:hover,
-body .app-shell > .page-tabs > .smart-assistant-launcher:focus-visible {
-  border-color: rgb(92 168 255 / .18);
-  background: rgb(92 168 255 / .1);
-  color: #f7fbff;
-  transform: translateX(-3px);
-}
-
-body .app-shell > .page-tabs > .page-tab.active,
-body .app-shell > .page-tabs > .page-tab[aria-selected="true"],
-body .app-shell > .page-tabs > .smart-assistant-launcher[aria-expanded="true"] {
-  border-color: rgb(92 168 255 / .34);
-  background: linear-gradient(90deg, rgb(25 118 243 / .2), rgb(92 168 255 / .09));
-  color: #ffffff;
-  box-shadow: inset 0 0 0 1px rgb(255 255 255 / .03), 0 8px 18px rgb(0 0 0 / .12);
-}
-
-body .app-shell > .page-tabs > .page-tab .ui-icon,
-body .app-shell > .page-tabs > .smart-assistant-launcher .ui-icon {
-  border: 0;
-  border-radius: 10px;
-  background: rgb(255 255 255 / .055);
-}
-
-body .app-shell > .page-tabs > .page-tab.active .ui-icon,
-body .app-shell > .page-tabs > .page-tab[aria-selected="true"] .ui-icon,
-body .app-shell > .page-tabs > .smart-assistant-launcher[aria-expanded="true"] .ui-icon {
-  background: rgb(92 168 255 / .2);
-  color: #74bcff;
-}
-
-body .sidebar-brand {
-  border-bottom-color: rgb(255 255 255 / .11);
-}
-
-/* HeroUI-style primitive components --------------------------------------- */
-body .btn,
-body button.btn,
-body a.btn,
-body .platform-btn,
-body .platform-link-btn {
-  min-height: 42px;
-  border: 1px solid transparent;
-  border-radius: var(--rf-radius-control);
-  box-shadow: none;
-  font-size: .8rem;
-  font-weight: 800;
-  letter-spacing: -.005em;
-  transition: background-color 160ms ease, border-color 160ms ease, box-shadow 160ms ease, color 160ms ease, transform 160ms ease;
-}
-
-body .btn:hover:not(:disabled),
-body .platform-btn:hover:not(:disabled),
-body .platform-link-btn:hover:not(:disabled) {
-  transform: translateY(-1px);
-}
-
-body .btn:active:not(:disabled),
-body .platform-btn:active:not(:disabled) {
-  transform: translateY(0);
-}
-
-body .btn-primary,
-body .btn.btn-primary,
-body .platform-btn.primary {
-  border-color: var(--rf-accent);
-  background: var(--rf-accent);
-  color: #fff;
-  box-shadow: 0 7px 16px rgb(25 118 243 / .2);
-}
-
-body .btn-primary:hover:not(:disabled),
-body .btn.btn-primary:hover:not(:disabled),
-body .platform-btn.primary:hover:not(:disabled) {
-  border-color: var(--rf-accent-strong);
-  background: var(--rf-accent-strong);
-  box-shadow: 0 10px 22px rgb(25 118 243 / .26);
-}
-
-body .btn-secondary,
-body .btn-light,
-body .btn.btn-light,
-body .platform-btn.ghost {
-  border-color: var(--rf-line);
-  background: var(--rf-surface);
-  color: var(--rf-ink-soft);
-}
-
-body .btn-secondary:hover:not(:disabled),
-body .btn-light:hover:not(:disabled),
-body .btn.btn-light:hover:not(:disabled),
-body .platform-btn.ghost:hover:not(:disabled) {
-  border-color: var(--rf-accent);
-  background: var(--rf-accent-soft);
-  color: var(--rf-accent-strong);
-}
-
-body .btn-ghost,
-body .btn-link,
-body .platform-link-btn {
-  border-color: transparent;
-  background: transparent;
-  color: var(--rf-accent-strong);
-}
-
-body .btn-danger,
-body .platform-btn.danger {
-  border-color: var(--danger-border);
-  background: var(--danger-soft);
-  color: var(--danger-text);
-}
-
-body .btn-danger:hover:not(:disabled),
-body .platform-btn.danger:hover:not(:disabled) {
-  border-color: var(--danger);
-  background: var(--danger);
-  color: #fff;
-}
-
-body .btn:focus-visible,
-body button:focus-visible,
-body a.btn:focus-visible,
-body input:focus-visible,
-body select:focus-visible,
-body textarea:focus-visible,
-body .platform-btn:focus-visible {
-  outline: 2px solid var(--rf-accent);
-  outline-offset: 3px;
-  box-shadow: var(--rf-shadow-focus);
-}
-
-body .btn:disabled,
-body .platform-btn:disabled,
-body .btn[aria-disabled="true"],
-body .platform-btn[aria-disabled="true"] {
-  opacity: .52;
-  cursor: not-allowed;
-  transform: none;
-}
-
-body .btn-small,
-body .btn-sm {
-  min-height: 36px;
-  border-radius: 9px;
-  padding-inline: 12px;
-  font-size: .72rem;
-}
-
-/* Surfaces/cards ----------------------------------------------------------- */
-body .panel,
-body .card,
-body .content-card,
-body .shadow-panel,
-body .stat-card,
-body .management-card,
-body .library-card,
-body .finance-card,
-body .attendance-card,
-body .portal-tool-card,
+/* Feature-owned card extensions. Generic Card primitives live in cards.css. */
 body .store-card,
 body .branches-card,
 body .saas-panel,
 body .platform-card,
+body .portal-tool-card,
 body .platform-kpi {
   border: 1px solid var(--rf-line);
   border-radius: var(--rf-radius-card);
@@ -333,20 +64,12 @@ body .platform-kpi {
   box-shadow: var(--rf-shadow-sm);
 }
 
-body .panel,
-body .content-card,
-body .shadow-panel,
 body .branches-card,
 body .store-card,
 body .saas-panel {
   padding: clamp(16px, 2vw, 24px);
 }
 
-body .panel:hover,
-body .card:hover,
-body .content-card:hover,
-body .stat-card:hover,
-body .management-card:hover,
 body .store-card:hover,
 body .branches-card:hover,
 body .saas-panel:hover {
@@ -354,8 +77,6 @@ body .saas-panel:hover {
   box-shadow: var(--rf-shadow-md);
 }
 
-body .panel-header,
-body .card-header,
 body .section-heading,
 body .store-card-header,
 body .branches-card-header,
@@ -368,8 +89,6 @@ body .platform-page-head {
   padding: 0 0 15px;
 }
 
-body .panel-header > div,
-body .card-header > div,
 body .section-heading > div,
 body .store-card-header > div,
 body .branches-card-header > div,
@@ -377,7 +96,6 @@ body .saas-panel-head > div {
   min-width: 0;
 }
 
-body .stat-card,
 body .platform-kpi {
   position: relative;
   min-height: 126px;
@@ -385,7 +103,6 @@ body .platform-kpi {
   padding: 18px;
 }
 
-body .stat-card::before,
 body .platform-kpi::before {
   position: absolute;
   inset-inline: 18px;
@@ -396,14 +113,12 @@ body .platform-kpi::before {
   content: "";
 }
 
-body .stat-label,
 body .platform-kpi-label {
   color: var(--rf-muted);
   font-size: .72rem;
   font-weight: 800;
 }
 
-body .stat-value,
 body .platform-kpi-value {
   color: var(--rf-ink);
   font-size: clamp(1.5rem, 2.5vw, 2rem);
@@ -450,8 +165,6 @@ body .platform-search-field:focus-within {
   outline: 0;
 }
 
-body .form-error,
-body .field-error,
 body .auth-message,
 body .platform-form-message {
   border-radius: 10px;
@@ -460,10 +173,7 @@ body .platform-form-message {
   line-height: 1.65;
 }
 
-body .form-help,
-body .helper-text,
-body .auth-helper,
-body .field-hint {
+body .auth-helper {
   color: var(--rf-muted);
   font-size: .7rem;
   line-height: 1.65;
@@ -485,42 +195,8 @@ body .member-requests-table-wrap {
   box-shadow: none;
 }
 
-body table {
-  color: var(--rf-ink-soft);
-}
-
-body table thead,
-body table th {
-  background: var(--rf-surface-soft);
-  color: var(--rf-muted);
-}
-
-body table th {
-  min-height: 44px;
-  border-bottom: 1px solid var(--rf-line);
-  font-size: .7rem;
-  font-weight: 800;
-  letter-spacing: .01em;
-}
-
-body table td {
-  border-bottom-color: var(--rf-line-soft);
-  color: var(--rf-ink-soft);
-  font-size: .76rem;
-}
-
-body table tbody tr {
-  transition: background-color 140ms ease;
-}
-
-body table tbody tr:hover {
-  background: var(--rf-accent-soft);
-}
-
-body .tab-button,
 body .library-type-tabs button,
-body .store-tab,
-body [role="tab"] {
+body .store-tab {
   min-height: 40px;
   border: 1px solid transparent;
   border-radius: 10px;
@@ -528,28 +204,20 @@ body [role="tab"] {
   font-weight: 800;
 }
 
-body .tab-button:hover,
 body .library-type-tabs button:hover,
-body .store-tab:hover,
-body [role="tab"]:hover {
+body .store-tab:hover {
   background: var(--rf-accent-soft);
   color: var(--rf-accent-strong);
 }
 
-body .tab-button.active,
-body .tab-button[aria-selected="true"],
 body .library-type-tabs button.active,
-body .store-tab.active,
-body [role="tab"][aria-selected="true"] {
+body .store-tab.active {
   border-color: color-mix(in srgb, var(--rf-accent) 22%, var(--rf-line));
   background: var(--rf-accent-soft);
   color: var(--rf-accent-strong);
   box-shadow: inset 0 -2px 0 var(--rf-accent);
 }
 
-body .badge,
-body .chip,
-body .status-badge,
 body .branch-status,
 body .saas-status-pill,
 body .saas-panel-badge,
@@ -864,30 +532,8 @@ body .saas-panel h4 {
   color: var(--rf-ink);
 }
 
-/* Dialog, dropdown and state surfaces ------------------------------------- */
-body .modal,
-body .modal-dialog {
-  border: 1px solid var(--rf-line);
-  border-radius: 20px;
-  background: var(--rf-surface);
-  color: var(--rf-ink);
-  box-shadow: 0 24px 80px rgb(5 17 36 / .24);
-}
-
-body .modal-backdrop {
-  background: rgb(4 13 26 / .62);
-  backdrop-filter: blur(5px);
-}
-
-body .dropdown-menu,
-body .popover,
-body [role="listbox"] {
-  border: 1px solid var(--rf-line);
-  border-radius: 13px;
-  background: var(--rf-surface-raised);
-  box-shadow: var(--rf-shadow-md);
-}
-
+/* Feedback/state surfaces. Modal geometry and backdrop ownership lives in
+   components/modals.css and components/modal-foundation.css. */
 body .loading,
 body .empty,
 body .no-data,
@@ -927,45 +573,9 @@ body .loading-skeleton {
 
 /* Responsive: recompose rather than merely shrink ------------------------ */
 @media (max-width: 1199px) {
-  body .app-shell > main.page {
-    padding-inline: clamp(14px, 3vw, 28px);
-  }
-
-  body .app-shell > .page-tabs {
-    background: #0a192e;
-  }
 }
 
 @media (max-width: 767px) {
-  body .app-shell > main.page {
-    padding: 16px 10px 40px;
-  }
-
-  body .app-shell > .page-tabs {
-    gap: 5px;
-    border-bottom-color: rgb(255 255 255 / .1);
-    padding: 6px 8px;
-  }
-
-  body .app-shell > .page-tabs > .page-tab,
-  body .app-shell > .page-tabs > .smart-assistant-launcher {
-    min-height: 54px;
-    border-radius: 12px;
-    background: rgb(255 255 255 / .055);
-  }
-
-  body .topbar-inner {
-    width: calc(100% - 16px);
-    min-height: 68px;
-  }
-
-  body .topbar-brand-area .brand-copy h1 {
-    font-size: .9rem;
-  }
-
-  body .panel,
-  body .content-card,
-  body .shadow-panel,
   body .branches-card,
   body .store-card,
   body .saas-panel {
@@ -973,8 +583,6 @@ body .loading-skeleton {
     padding: 15px;
   }
 
-  body .panel-header,
-  body .card-header,
   body .section-heading,
   body .store-card-header,
   body .branches-card-header,
@@ -985,14 +593,12 @@ body .loading-skeleton {
     gap: 12px;
   }
 
-  body .panel-header .header-actions,
   body .store-card-header .header-actions,
   body .page-header .actions-row,
   body .platform-page-head > .platform-btn {
     width: 100%;
   }
 
-  body .panel-header .header-actions .btn,
   body .store-card-header .header-actions .btn {
     flex: 1 1 auto;
   }
@@ -1078,34 +684,6 @@ body .loading-skeleton {
   body .attendance-table-wrap,
   body .member-requests-table-wrap {
     overflow-x: auto;
-  }
-}
-
-@media (max-width: 420px) {
-  body .topbar-brand-area .brand-copy {
-    display: none;
-  }
-
-  body .topbar-brand-area .brand-mark {
-    width: 40px;
-    height: 40px;
-    flex-basis: 40px;
-  }
-
-  body .page-tabs > .page-tab > span,
-  body .page-tabs > .smart-assistant-launcher-label {
-    font-size: .62rem;
-  }
-
-  body .btn,
-  body button.btn,
-  body a.btn {
-    min-height: 44px;
-  }
-
-  body .btn-small,
-  body .btn-sm {
-    min-height: 38px;
   }
 }
 
@@ -1452,7 +1030,7 @@ body .branch-context-trigger {
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  min-height: 31px;
+  min-height: 32px;
   border: 0;
   outline: 0;
   background: transparent;
@@ -1520,8 +1098,6 @@ body .branch-context-menu {
   transition: opacity 160ms ease, transform 160ms ease;
 }
 
-body .branch-context-field:hover .branch-context-menu,
-body .branch-context-field:focus-within .branch-context-menu,
 body .branch-context-field.is-open .branch-context-menu {
   opacity: 1;
   pointer-events: auto;
@@ -2030,43 +1606,6 @@ html[data-theme="dark"] body .dashboard-hero-mini-stat-icon,
 body[data-theme="dark"] .dashboard-hero-mini-stat-icon {
   background: rgb(121 100 231 / .18);
   color: #b8adff;
-}
-
-/* Sidebar image treatment. The navigation geometry and interactions remain
-   owned by navigation-shell.css; this layer only changes its surface. */
-body .app-shell > .page-tabs,
-body .app-shell > .page-tabs:hover,
-body .app-shell > .page-tabs:focus-within {
-  background-color: #071326;
-  background-image: linear-gradient(180deg, rgb(3 10 26 / .94), rgb(4 13 31 / .39)), url('/assets/gym-sidebar-aesthetic.jpg');
-  background-position: center;
-  background-size: cover;
-  background-repeat: no-repeat;
-  background-blend-mode: normal;
-}
-
-body .app-shell > .page-tabs::before {
-  background: linear-gradient(180deg, rgb(2 8 22 / .18), rgb(2 8 22 / .62));
-  opacity: 1;
-}
-
-body .app-shell > .page-tabs > .page-tab {
-  color: #c1ccdc;
-}
-
-body .app-shell > .page-tabs > .page-tab:hover,
-body .app-shell > .page-tabs > .page-tab:focus-visible {
-  border-color: rgb(174 153 255 / .28);
-  background: rgb(126 101 227 / .2);
-  color: #fff;
-}
-
-body .app-shell > .page-tabs > .page-tab.active,
-body .app-shell > .page-tabs > .page-tab[aria-selected="true"] {
-  border-color: rgb(180 160 255 / .48);
-  background: linear-gradient(135deg, rgb(121 92 227 / .9), rgb(75 50 157 / .88));
-  box-shadow: 0 10px 24px rgb(50 29 126 / .26), inset 0 1px 0 rgb(255 255 255 / .15);
-  color: #fff;
 }
 
 /* Desktop/tablet table geometry. The mobile card layout intentionally does
@@ -2623,7 +2162,7 @@ body .topbar-controls > .branch-context-shell .branch-context-field-copy small {
 }
 
 body .topbar-controls > .branch-context-shell .branch-context-trigger {
-  min-height: 30px;
+  min-height: 32px;
   gap: 6px;
   font-size: 11px;
 }
@@ -2916,8 +2455,8 @@ body .topbar-controls > .branch-context-shell .branch-context-trigger {
   width: auto;
   min-width: 90px;
   max-width: 150px;
-  height: 30px;
-  min-height: 30px;
+  height: 32px;
+  min-height: 32px;
   align-items: center;
   justify-content: center;
   gap: 6px;
@@ -3013,16 +2552,6 @@ body .topbar-quick-actions {
     max-width: 28vw;
     font-size: 10px;
   }
-}
-
-/* The rail uses the supplied gym photograph as a quiet visual surface. The
-   existing navigation markup, sizing, and active-state treatment remain
-   unchanged; only the background layer is replaced. */
-body .app-shell > .page-tabs {
-  background-image: linear-gradient(180deg, rgb(3 10 26 / .94), rgb(4 13 31 / 0%)), url(/assets/gym-sidebar-aesthetic.jpg);
-  background-position: center;
-  background-repeat: no-repeat;
-  background-size: cover;
 }
 
 /* Members workspace popup polish -----------------------------------------

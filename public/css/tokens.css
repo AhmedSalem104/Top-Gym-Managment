@@ -205,6 +205,16 @@
   --shadow-md: 0 10px 28px rgb(30 61 104 / 0.08);
   --shadow-lg: 0 18px 48px rgb(30 61 104 / 0.12);
   --focus-ring: 0 0 0 3px rgb(23 105 232 / 0.18);
+
+  /* Shared UI foundation contract. These values are global semantic tokens,
+     not implementation details of the foundation stylesheet. */
+  --ui-control-height: 44px;
+  --ui-touch-target: 44px;
+  --ui-content-gutter: clamp(16px, 2.6vw, 32px);
+  --ui-surface-radius: var(--radius-lg);
+  --ui-elevation-rest: var(--shadow-xs);
+  --ui-elevation-hover: var(--shadow-sm);
+
   --anatomy-canvas-bg: #fafdff;
   --anatomy-selection: #2563eb;
   --anatomy-key-light: #ffffff;

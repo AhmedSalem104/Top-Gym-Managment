@@ -20,6 +20,20 @@
   white-space: nowrap;
 }
 
+/* Canonical shared status shape. Branch/SaaS status classes may extend this
+   contract in their feature owners without redefining the primitive. */
+body .badge,
+body .chip,
+body .status-badge {
+  min-height: 26px;
+  max-width: 100%;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font-size: .68rem;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
 .badge::before,
 .status-badge::before {
   width: 6px;

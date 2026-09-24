@@ -61,9 +61,17 @@
         dialog.hidden = true;
     }
 
+    function isFeatureOwnedCloseButton(button) {
+        return button.matches('.dialog-close, .trainer-dialog-close, [data-dialog-cancel]');
+    }
+
     function hideLegacyCloseButtons(dialog) {
         if (!dialog) return;
         dialog.querySelectorAll('button').forEach((button) => {
+            // Feature dialogs already own these controls and their listeners.
+            // Keep them visible and keyboard-accessible; only compatibility
+            // duplicates should receive the legacy hidden marker.
+            if (isFeatureOwnedCloseButton(button)) return;
             if (button.classList.contains('dialog-close-button')) {
                 // Keep the shared top-level close control visible. Older
                 // dialogs may also render a header close button; hide only

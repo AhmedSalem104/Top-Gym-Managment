@@ -46,6 +46,24 @@ function prepareShell(page, target) {
   }, target);
 }
 
+async function installShellRuntime(page) {
+  await page.route('**/api/**', async (route) => {
+    const pathname = new URL(route.request().url()).pathname;
+    const payload = pathname === '/api/auth/session'
+      ? { authenticated: true, user: { id: 1, role: 'Owner', tenantId: 1, tenantType: 'gym', name: 'Local QA Owner', permissions: [] } }
+      : pathname === '/api/branding'
+        ? { identity: { brandName: 'Local QA Gym' }, assets: {} }
+        : pathname === '/api/saas/entitlements'
+          ? { tenantStatus: 'active', subscription: { status: 'active', plan: { code: 'starter' } }, entitlements: { tenantType: 'gym', features: {}, limits: {} } }
+          : pathname === '/api/branches/bootstrap'
+            ? { branches: [{ id: 1, name: 'Main', status: 'active' }], activeBranches: [{ id: 1, name: 'Main', status: 'active' }], branch: { id: 1, name: 'Main', status: 'active' }, hasMultipleActiveBranches: false }
+            : pathname === '/api/dashboard'
+              ? { stats: {}, alerts: [] }
+              : {};
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(payload) });
+  });
+}
+
 async function checkPage(page, target, viewport, saveScreenshot) {
   const requiredFeature = target === 'expensesSection' ? 'finance' : target === 'saasBillingSection' ? 'saas-billing' : null;
   if (requiredFeature) {
@@ -95,27 +113,33 @@ async function main() {
       await page.goto(`${baseUrl}/`, { waitUntil: 'networkidle' });
       const login = await page.evaluate(() => ({
         overflow: document.documentElement.scrollWidth > window.innerWidth,
-        stylesheetCount: [...document.styleSheets].filter((sheet) => sheet.href?.includes('/css/app-shell.css')).length,
+        stylesheetCount: [...document.styleSheets].filter((sheet) => sheet.href?.includes('/css/login-entry.css')).length,
         authVisible: getComputedStyle(document.getElementById('authScreen')).display !== 'none'
       }));
       assert(!login.overflow, `login overflows at ${viewport.name}px`);
-      assert(login.stylesheetCount === 1, `app-shell.css is not loaded exactly once at ${viewport.name}px`);
+      assert(login.stylesheetCount === 1, `login-entry.css is not loaded exactly once at ${viewport.name}px`);
       assert(login.authVisible, `login is not visible at ${viewport.name}px`);
       assert(pageErrors.length === 0, `page error at ${viewport.name}px: ${pageErrors.join(' | ')}`);
       assert(consoleErrors.length === 0, `console error at ${viewport.name}px: ${consoleErrors.join(' | ')}`);
       assert(badResponses.length === 0, `failed response at ${viewport.name}px: ${badResponses.join(' | ')}`);
       await page.screenshot({ path: path.join(artifacts, `login-${viewport.name}.png`), fullPage: true });
       summary.push(`Login ${viewport.name}: PASS (console 0, failed requests 0)`);
+      await page.close();
+
+      const shellPage = await browser.newPage({ viewport: { width: viewport.width, height: viewport.height } });
+      await installShellRuntime(shellPage);
+      await shellPage.goto(`${baseUrl}/index.html#dashboard`, { waitUntil: 'networkidle' });
       for (const target of screenIds) {
-        const result = await checkPage(page, target, viewport, viewport.name === '430' || viewport.name === '1440');
+        const result = await checkPage(shellPage, target, viewport, viewport.name === '430' || viewport.name === '1440');
         summary.push(`${target} ${viewport.name}: PASS (${result.scrollWidth}px)`);
       }
-      await page.close();
+      await shellPage.close();
     }
 
     for (const width of [375, 430, 768, 1440]) {
       const page = await browser.newPage({ viewport: { width, height: 900 } });
-      await page.goto(`${baseUrl}/`, { waitUntil: 'networkidle' });
+      await installShellRuntime(page);
+      await page.goto(`${baseUrl}/index.html#dashboard`, { waitUntil: 'networkidle' });
       await page.evaluate(async (fragments) => {
         for (const fragment of fragments) await window.topGymDialogLoader?.load(fragment.source, fragment.ids);
       }, lazyDialogFragments);
@@ -209,16 +233,31 @@ async function main() {
     }
 
     const printPage = await browser.newPage({ viewport: { width: 1440, height: 900 } });
-    await printPage.goto(`${baseUrl}/`, { waitUntil: 'networkidle' });
+    await installShellRuntime(printPage);
+    await printPage.goto(`${baseUrl}/index.html#dashboard`, { waitUntil: 'networkidle' });
     await prepareShell(printPage, 'dashboardSection');
+    await printPage.evaluate(() => {
+      const link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = `/css/print.css?qa-print=${Date.now()}`;
+      link.dataset.qaPrint = '';
+      document.head.append(link);
+    });
+    await printPage.locator('link[data-qa-print]').evaluate((link) => new Promise((resolve, reject) => {
+      if (link.sheet) return resolve();
+      link.addEventListener('load', resolve, { once: true });
+      link.addEventListener('error', reject, { once: true });
+    }));
     await printPage.emulateMedia({ media: 'print' });
     const print = await printPage.evaluate(() => ({
       topbar: getComputedStyle(document.querySelector('.topbar')).display,
       tabs: getComputedStyle(document.querySelector('.page-tabs')).display,
-      stylesheetCount: [...document.styleSheets].filter((sheet) => sheet.href?.includes('/css/main.css')).length
+      shellStylesheetCount: [...document.styleSheets].filter((sheet) => sheet.href?.includes('/css/app-shell.css')).length,
+      printStylesheetCount: [...document.styleSheets].filter((sheet) => sheet.href?.includes('/css/print.css')).length
     }));
     assert(print.topbar === 'none' && print.tabs === 'none', 'print view exposes navigation');
-    assert(print.stylesheetCount === 1, 'print view loses main stylesheet');
+    assert(print.shellStylesheetCount === 1, 'print view loses app-shell stylesheet');
+    assert(print.printStylesheetCount === 1, 'print view does not load the official print stylesheet');
     const pdfPath = path.join(artifacts, 'print-qa.pdf');
     await printPage.pdf({ path: pdfPath, format: 'A4', printBackground: true });
     assert(fs.statSync(pdfPath).size > 1000, 'print PDF is empty or too small');

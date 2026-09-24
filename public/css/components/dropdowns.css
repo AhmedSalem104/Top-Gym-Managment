@@ -1,7 +1,4 @@
-.dropdown,
-.dropdown-menu,
-.more-menu,
-[data-dropdown-menu] {
+.dropdown {
   position: absolute;
   z-index: var(--z-dropdown);
   min-width: 180px;
@@ -11,6 +8,23 @@
   background: var(--color-surface);
   box-shadow: var(--shadow-md);
   color: var(--color-text-soft);
+  padding: var(--space-2);
+}
+
+body .dropdown-menu,
+body .more-menu,
+body [data-dropdown-menu],
+body .popover,
+body [role="listbox"] {
+  position: absolute;
+  z-index: var(--z-dropdown);
+  min-width: 180px;
+  max-width: min(320px, calc(100vw - 24px));
+  border: 1px solid var(--rf-line);
+  border-radius: 13px;
+  background: var(--rf-surface-raised);
+  box-shadow: var(--rf-shadow-md);
+  color: var(--rf-ink-soft);
   padding: var(--space-2);
 }
 

@@ -81,7 +81,11 @@ async function loadLazyMembershipCss(page) {
 
 test.describe('branchCreateDialog cascade contract', () => {
     test('keeps one deterministic shell across dynamic and lazy-load sequences', async ({ page }, testInfo) => {
-        await page.goto('/');
+        // Branch dialogs belong to the authenticated app shell. The server's
+        // `/` route intentionally serves the login entry without shell CSS;
+        // mounting here would measure the browser's native dialog defaults,
+        // not the canonical modal contract.
+        await page.goto('/index.html#branches');
         await page.waitForLoadState('domcontentloaded');
         await page.evaluate(() => { document.documentElement.dir = 'rtl'; });
 

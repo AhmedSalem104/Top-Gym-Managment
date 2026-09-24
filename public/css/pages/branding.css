@@ -1011,15 +1011,6 @@ html[data-brand-card-style="soft-shadow"] .content-card {
   box-shadow: var(--shadow-card);
 }
 
-body.auth-locked .auth-screen {
-  background-color: var(--brand-login-background, var(--bg-app));
-  background-image: linear-gradient(180deg, rgb(2 6 23 / var(--brand-login-overlay-opacity, .72)), rgb(2 6 23 / var(--brand-login-overlay-opacity, .72))), var(--brand-login-image, url("/assets/gym-background.webp"));
-}
-
-.member-portal-page {
-  background-image: linear-gradient(180deg, rgb(2 6 23 / var(--brand-login-overlay-opacity, .72)), rgb(2 6 23 / var(--brand-login-overlay-opacity, .72))), var(--brand-login-image, url("/assets/gym-background.webp"));
-}
-
 @media (max-width: 1100px) {
   .branding-workspace {
     grid-template-columns: 1fr;

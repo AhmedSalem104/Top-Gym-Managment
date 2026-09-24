@@ -12,6 +12,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { chromium } = require('playwright');
+const featureCatalog = require('../src/services/feature-catalog');
 
 const root = path.resolve(__dirname, '..');
 // This audit must run against the application server, not a static file server.
@@ -80,6 +81,33 @@ function assert(condition, message) {
     if (!condition) throw new Error(message);
 }
 
+async function installAppVisualStubs(page) {
+    await page.route('**/api/**', async (route) => {
+        const pathname = new URL(route.request().url()).pathname;
+        if (pathname === '/api/notifications/stream') {
+            return route.fulfill({ status: 200, contentType: 'text/event-stream', headers: { 'Cache-Control': 'no-cache' }, body: ': local-qa\n\n' });
+        }
+        const allFeatures = Object.fromEntries([
+            'dashboard', 'members', 'attendance', 'reports', 'branches', 'trainees', 'library', 'store',
+            'intelligence', 'feedback', 'management', 'branding', 'member-payment-methods', 'permissions',
+            'expenses', 'member-subscription-requests', 'portal-analytics', 'saas-billing', 'backup-history',
+            'finance', 'coaching'
+        ].map((key) => [key, true]));
+        const body = pathname === '/api/auth/session'
+            ? { authenticated: true, user: { id: 1, role: 'Owner', tenantId: 1, tenantType: 'gym', name: 'Local QA Owner', permissions: [] } }
+            : pathname === '/api/branding'
+                ? { branding: { identity: { brandName: 'Local QA Gym' }, assets: {} }, identity: { brandName: 'Local QA Gym' }, assets: {} }
+                : pathname === '/api/saas/entitlements'
+                    ? { tenantStatus: 'active', subscription: { status: 'active', plan: { code: 'business', name: 'Business' } }, entitlements: { tenantType: 'gym', featureCatalog: featureCatalog.getFeatureCatalog({ tenantType: 'gym' }), features: allFeatures, limits: {} } }
+                    : pathname === '/api/branches/bootstrap'
+                        ? { branch: { id: 1, name: 'Main', status: 'active' }, branches: [{ id: 1, name: 'Main', status: 'active' }], activeBranches: [{ id: 1, name: 'Main', status: 'active' }], defaultBranch: { id: 1, name: 'Main', status: 'active' }, hasMultipleActiveBranches: false, branchLimit: null, canUseAllBranches: true }
+                        : pathname === '/api/dashboard'
+                            ? { stats: {}, alerts: [] }
+                            : {};
+        await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) });
+    });
+}
+
 function listen(page) {
     const diagnostics = { pageErrors: [], consoleErrors: [], failedResponses: [], expectedUnauthorizedResponses: [] };
     page.on('pageerror', (error) => diagnostics.pageErrors.push(error.message));
@@ -135,7 +163,11 @@ async function inspect(page, evidence, diagnostics, options = {}) {
             viewport: window.innerWidth,
             theme: document.documentElement.dataset.theme || 'light',
             direction: document.documentElement.dir || getComputedStyle(document.documentElement).direction,
-            mainCssCount: document.querySelectorAll('link[rel="stylesheet"][href*="/css/main.css"]').length,
+            stylesheetCount: expected?.cssEntry === 'shell'
+                ? document.querySelectorAll('link[rel="stylesheet"][href*="/css/app-shell.css"]').length
+                : expected?.cssEntry === 'none'
+                    ? null
+                    : document.querySelectorAll('link[rel="stylesheet"][href*="/css/main.css"]').length,
             unnamedInteractive: interactive.length
         };
     }, options);
@@ -143,7 +175,10 @@ async function inspect(page, evidence, diagnostics, options = {}) {
     assert(result.rootExists, `${prefix}: root is missing`);
     if (options.rootId || options.rootSelector) assert(result.rootVisible, `${prefix}: root is not visible`);
     assert(!result.overflow, `${prefix}: horizontal overflow ${result.scrollWidth}/${result.viewport}`);
-    assert(result.mainCssCount === 1, `${prefix}: main.css count is ${result.mainCssCount}`);
+    if (options.cssEntry !== 'none') {
+        const stylesheetName = options.cssEntry === 'shell' ? 'app-shell.css' : 'main.css';
+        assert(result.stylesheetCount === 1, `${prefix}: ${stylesheetName} count is ${result.stylesheetCount}`);
+    }
     assert(result.direction === 'rtl', `${prefix}: document direction is ${result.direction}`);
     assert(diagnostics.pageErrors.length === 0, `${prefix}: page error ${diagnostics.pageErrors.join(' | ')}`);
     assert(diagnostics.consoleErrors.length === 0, `${prefix}: console error ${diagnostics.consoleErrors.join(' | ')}`);
@@ -288,6 +323,9 @@ async function assertDesktopNavigation(page) {
         const sidebarMainOverlap = sidebarRect && mainRect
             ? Math.max(0, Math.min(sidebarRect.right, mainRect.right) - Math.max(sidebarRect.left, mainRect.left))
             : null;
+        const sidebarTopbarOverlap = sidebarRect && topbarRect
+            ? Math.max(0, Math.min(sidebarRect.right, topbarRect.right) - Math.max(sidebarRect.left, topbarRect.left))
+            : null;
         return {
             topbarVisible: Boolean(topbar && getComputedStyle(topbar).display !== 'none'),
             sidebarVisible: Boolean(sidebar && getComputedStyle(sidebar).display !== 'none'),
@@ -302,6 +340,7 @@ async function assertDesktopNavigation(page) {
             topbarRect: topbarRect ? { left: topbarRect.left, right: topbarRect.right, top: topbarRect.top, bottom: topbarRect.bottom } : null,
             mainRect: mainRect ? { left: mainRect.left, right: mainRect.right, top: mainRect.top, bottom: mainRect.bottom } : null,
             sidebarMainOverlap,
+            sidebarTopbarOverlap,
             gridColumns: shellStyle?.gridTemplateColumns || ''
         };
     });
@@ -309,13 +348,13 @@ async function assertDesktopNavigation(page) {
     assert(closed.topbarVisible, 'desktop navbar is hidden');
     assert(closed.sidebarVisible, 'desktop sidebar is hidden');
     assert(closed.sidebarWidth >= 64 && closed.sidebarWidth <= 120, `desktop sidebar is not compact before hover (${closed.sidebarWidth}px)`);
-    assert(closed.sidebarRect && closed.topbarRect && (closed.sidebarRect.top >= closed.topbarRect.bottom - 1 || closed.topbarRect.top >= closed.sidebarRect.top + 1), 'desktop sidebar intersects navbar before hover');
+    assert(closed.sidebarTopbarOverlap <= 1, `desktop sidebar intersects navbar before hover (${closed.sidebarTopbarOverlap}px horizontal overlap)`);
 
     await page.locator('#pageTabs').hover();
     await page.waitForTimeout(320);
     const expanded = await readLayout();
     assert(expanded.sidebarWidth >= closed.sidebarWidth + 80, `desktop sidebar did not expand on hover (${closed.sidebarWidth}px -> ${expanded.sidebarWidth}px)`);
-    assert(expanded.sidebarRect && expanded.topbarRect && (expanded.sidebarRect.top >= expanded.topbarRect.bottom - 1 || expanded.topbarRect.top >= expanded.sidebarRect.top + 1), 'desktop sidebar intersects navbar after hover');
+    assert(expanded.sidebarTopbarOverlap <= 1, `desktop sidebar intersects navbar after hover (${expanded.sidebarTopbarOverlap}px horizontal overlap)`);
     assert(expanded.mainRect && expanded.sidebarMainOverlap <= 1, `desktop sidebar overlaps the page canvas after hover (${expanded.sidebarMainOverlap}px)`);
     assert(expanded.gridColumns !== closed.gridColumns, 'desktop hover did not allocate a separate expanded layout track');
     assert(expanded.sidebarLabel && Number.parseFloat(expanded.sidebarLabel.maxWidth) > 0 && Number.parseFloat(expanded.sidebarLabel.opacity) > 0, 'desktop sidebar labels stay hidden after hover');
@@ -339,12 +378,13 @@ async function run() {
         }
         for (const viewport of viewports) {
             const page = await browser.newPage({ viewport: { width: viewport.width, height: viewport.height } });
+            await installAppVisualStubs(page);
             const diagnostics = listen(page);
-            await page.goto(`${baseUrl}/#dashboard`, { waitUntil: 'networkidle' });
+            await page.goto(`${baseUrl}/index.html#dashboard`, { waitUntil: 'networkidle' });
             for (const [id, target] of appSections) {
                 await ensureApplicationFeature(page, target);
                 await prepareApp(page, id);
-                await runCase(page, { surface: 'Gym Application', target: `#${target}`, theme: 'light', viewport: viewport.name }, { rootId: id, diagnostics });
+                await runCase(page, { surface: 'Gym Application', target: `#${target}`, theme: 'light', viewport: viewport.name }, { rootId: id, cssEntry: 'shell', diagnostics });
             }
             if (viewport.name === '1440') {
                 try {
@@ -360,13 +400,14 @@ async function run() {
         for (const theme of ['light', 'dark']) {
             for (const viewport of viewports.filter((item) => darkEvidenceWidths.has(item.name))) {
                 const page = await browser.newPage({ viewport: { width: viewport.width, height: viewport.height } });
+                await installAppVisualStubs(page);
                 await page.addInitScript((savedTheme) => { window.localStorage.setItem('topgym-theme', savedTheme); }, theme);
                 const diagnostics = listen(page);
-                await page.goto(`${baseUrl}/#dashboard`, { waitUntil: 'networkidle' });
+                await page.goto(`${baseUrl}/index.html#dashboard`, { waitUntil: 'networkidle' });
                 for (const [id, target] of appSections) {
                     await ensureApplicationFeature(page, target);
                     await prepareApp(page, id);
-                    await runCase(page, { surface: 'Gym Application', target: `#${target}`, theme, viewport: viewport.name }, { rootId: id, diagnostics });
+                    await runCase(page, { surface: 'Gym Application', target: `#${target}`, theme, viewport: viewport.name }, { rootId: id, cssEntry: 'shell', diagnostics });
                 }
                 await page.close();
             }
@@ -398,14 +439,15 @@ async function run() {
         for (const theme of ['light', 'dark']) {
             for (const viewport of viewports.filter((item) => darkEvidenceWidths.has(item.name))) {
                 const page = await browser.newPage({ viewport: { width: viewport.width, height: viewport.height } });
+                await installAppVisualStubs(page);
                 await page.addInitScript((savedTheme) => { window.localStorage.setItem('topgym-theme', savedTheme); }, theme);
                 const diagnostics = listen(page);
-                await page.goto(`${baseUrl}/#store`, { waitUntil: 'networkidle' });
+                await page.goto(`${baseUrl}/index.html#store`, { waitUntil: 'networkidle' });
                 await ensureApplicationFeature(page, 'store');
                 await prepareApp(page, 'storeSection');
                 for (const view of storeViews) {
                     await prepareStoreView(page, view);
-                    await runCase(page, { surface: 'Store nested views', target: view, theme, viewport: viewport.name }, { rootSelector: `[data-store-view-panel="${view}"]`, diagnostics });
+                    await runCase(page, { surface: 'Store nested views', target: view, theme, viewport: viewport.name }, { rootSelector: `[data-store-view-panel="${view}"]`, cssEntry: 'shell', diagnostics });
                 }
                 await page.close();
             }
@@ -417,7 +459,7 @@ async function run() {
                 const diagnostics = listen(page);
                 await page.goto(`${baseUrl}${route}`, { waitUntil: 'networkidle' });
                 const surface = route === '/member-portal' ? 'Member Portal' : route === '/register-gym' ? 'Register Gym' : route === '/platform-admin' ? 'Platform Admin' : 'Forbidden State';
-                await runCase(page, { surface, target: 'entry', theme: 'light', viewport: viewport.name }, { diagnostics });
+                await runCase(page, { surface, target: 'entry', theme: 'light', viewport: viewport.name }, { cssEntry: route === '/platform-admin-forbidden' ? 'none' : undefined, diagnostics });
                 if (route === '/member-portal') {
                     await runCase(page, { surface, target: 'portal-login', theme: 'light', viewport: viewport.name }, { rootId: 'portalLoginPanel', diagnostics });
                     for (const rootId of portalRoots.slice(1)) {
@@ -487,7 +529,7 @@ async function run() {
         }
 
         const dialogCases = [
-            { route: '/#dashboard', ids: dialogIds.filter((id) => !id.startsWith('platform') && !id.startsWith('trainer')), surface: 'Gym Dialogs' },
+            { route: '/index.html#dashboard', ids: dialogIds.filter((id) => !id.startsWith('platform') && !id.startsWith('trainer')), surface: 'Gym Dialogs' },
             { route: '/trainer-workspace', ids: dialogIds.filter((id) => id.startsWith('trainer')), surface: 'Trainer Dialogs' },
             { route: '/platform-admin', ids: dialogIds.filter((id) => id.startsWith('platform')), surface: 'Platform Dialogs' }
         ];
@@ -501,6 +543,7 @@ async function run() {
             const dialogRoute = dialogCase.surface === 'Trainer Dialogs'
                 ? '/trainer-workspace.html'
                 : dialogCase.route;
+            if (dialogCase.surface === 'Gym Dialogs') await installAppVisualStubs(dialogPage);
             await dialogPage.goto(`${baseUrl}${dialogRoute}`, { waitUntil: 'networkidle' });
             if (dialogCase.surface === 'Gym Dialogs') {
                 await dialogPage.evaluate(async (fragments) => {

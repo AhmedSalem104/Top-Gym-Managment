@@ -85,23 +85,23 @@
         panel.setAttribute('aria-labelledby', 'branchesTitle');
         panel.innerHTML = `
             <header class="branches-page-header">
-                <div class="branches-page-heading"><span class="branches-page-kicker">BRANCH MANAGEMENT</span><h2 id="branchesTitle">إدارة فروع الجيم</h2><p>أضف الفروع وحدد بيانات التشغيل داخل حساب الجيم.</p></div>
+                <div class="branches-page-heading"><span class="branches-page-kicker">إدارة الفروع</span><h2 id="branchesTitle">إدارة فروع الجيم</h2><p>أضف الفروع وحدد بيانات التشغيل داخل حساب الجيم.</p></div>
                 <div class="branches-page-actions"><div class="branches-page-summary" aria-label="ملخص الفروع"><span><strong id="branchesActiveCount">0</strong><small>فروع نشطة</small></span><span><strong id="branchesLimitValue">—</strong><small>حد الباقة</small></span></div><button class="btn btn-primary branches-create-trigger" id="branchCreateOpen" type="button"><span aria-hidden="true">+</span> إضافة فرع</button></div>
             </header>
             <section class="branches-card branches-list-card">
-                    <div class="branches-card-header"><div><span class="branches-card-kicker">BRANCH DIRECTORY</span><h3>الفروع الحالية</h3><p>الأرشفة تحفظ السجل ولا تحذف البيانات التشغيلية.</p></div><button class="btn btn-light btn-small" id="branchesRefresh" type="button">تحديث</button></div>
+                    <div class="branches-card-header"><div><span class="branches-card-kicker">دليل الفروع</span><h3>الفروع الحالية</h3><p>الأرشفة تحفظ السجل ولا تحذف البيانات التشغيلية.</p></div><button class="btn btn-light btn-small" id="branchesRefresh" type="button">تحديث</button></div>
                     <div id="branchesList" class="branches-list"><div class="loading">جارٍ تحميل الفروع…</div></div>
             </section>
             <dialog id="branchCreateDialog" class="branch-create-dialog lf-modal-shell lf-modal--md">
                 <form id="branchCreateForm" class="dialog-body branches-form" novalidate>
-                    <div class="details-dialog-head"><div><span class="branches-card-kicker">NEW BRANCH</span><h3>إضافة فرع</h3><p>سيتم حفظه كفرع تابع لنفس الجيم.</p></div><button class="btn btn-light btn-small" id="branchCreateDialogClose" type="button">إغلاق</button></div>
+                    <div class="details-dialog-head"><div><span class="branches-card-kicker">فرع جديد</span><h3>إضافة فرع</h3><p>سيتم حفظه كفرع تابع لنفس الجيم.</p></div><button class="btn btn-light btn-small" id="branchCreateDialogClose" type="button">إغلاق</button></div>
                     <div class="branch-create-fields">
                         <label class="form-label">كود الفرع<input id="branchCodeInput" name="code" required maxlength="40" dir="ltr" placeholder="nasr-city"></label>
                         <label class="form-label">اسم الفرع<input id="branchNameInput" name="name" required maxlength="160" placeholder="فرع مدينة نصر"></label>
                         <label class="form-label">العنوان<input id="branchAddressInput" name="address" maxlength="300"></label>
                         <label class="form-label">الهاتف<input id="branchPhoneInput" name="phone" type="tel" inputmode="numeric" autocomplete="tel" data-phone-input maxlength="40" dir="ltr"></label>
                     </div>
-                    <div class="branch-create-options"><label class="checkbox-field branches-check-field"><input type="checkbox" name="storeEnabled" checked> تفعيل Store</label><label class="checkbox-field branches-check-field"><input type="checkbox" name="barEnabled"> تفعيل Bar وإنشاء موقع البيع</label></div>
+                    <div class="branch-create-options"><label class="checkbox-field branches-check-field"><input type="checkbox" name="storeEnabled" checked> تفعيل المتجر</label><label class="checkbox-field branches-check-field"><input type="checkbox" name="barEnabled"> تفعيل البار وإنشاء موقع البيع</label></div>
                     <p class="branches-form-status" id="branchFormStatus" role="status" aria-live="polite"></p>
                     <div class="dialog-actions"><button class="btn btn-light" id="branchCreateCancel" type="button">إلغاء</button><button class="btn btn-primary" type="submit">إضافة الفرع</button></div>
                 </form>
@@ -154,11 +154,30 @@
                 if (select.disabled) return;
                 select.value = optionButton.dataset.contextOption || '';
                 select.dispatchEvent(new Event('change', { bubbles: true }));
-                field.classList.remove('is-open');
-                trigger.setAttribute('aria-expanded', 'false');
-                trigger.focus();
+                closeContextField(field);
             });
         });
+    }
+
+    function closeContextField(field, { restoreFocus = true } = {}) {
+        if (!field) return false;
+        const wasOpen = field.classList.contains('is-open');
+        const trigger = field.querySelector('.branch-context-trigger');
+        field.classList.remove('is-open');
+        trigger?.setAttribute('aria-expanded', 'false');
+        if (restoreFocus && wasOpen && trigger && !trigger.disabled) {
+            trigger.focus({ preventScroll: true });
+        }
+        return wasOpen;
+    }
+
+    function closeOpenContextFields(event) {
+        if (event.key !== 'Escape') return;
+        const openFields = [...document.querySelectorAll('[data-context-field].is-open')];
+        if (!openFields.length) return;
+        event.preventDefault();
+        event.stopPropagation();
+        openFields.forEach((field) => closeContextField(field));
     }
 
     function ensureContextDropdown(select, field) {
@@ -186,13 +205,13 @@
             });
             trigger.addEventListener('keydown', (event) => {
                 if (event.key === 'Escape') {
-                    field.classList.remove('is-open');
-                    trigger.setAttribute('aria-expanded', 'false');
+                    event.preventDefault();
+                    closeContextField(field);
                 }
             });
             select.addEventListener('change', () => {
                 refreshContextDropdown(select);
-                field.classList.remove('is-open');
+                closeContextField(field, { restoreFocus: false });
             });
         }
         refreshContextDropdown(select);
@@ -282,10 +301,10 @@
         const list = $('branchesList');
         if (!list) return;
         list.innerHTML = active.length ? active.map((branch) => {
-            const storeLabel = branch.storeEnabled ? 'ON' : 'OFF';
-            const barLabel = branch.barEnabled ? 'ON' : 'OFF';
-            const toggleLabel = branch.barEnabled ? 'إيقاف Bar' : 'تفعيل Bar';
-            return `<article class="branch-list-item" data-branch-row="${escapeHtml(branch.id)}"><div class="branch-list-marker" aria-hidden="true"></div><div class="branch-list-copy"><strong>${escapeHtml(branch.name)}</strong><span dir="ltr">${escapeHtml(branch.code)}</span><small>${escapeHtml(branch.address || 'بدون عنوان')} · ${branch.isMain ? 'الفرع الرئيسي' : 'فرع تشغيلي'}</small><div class="branch-commerce-chips" aria-label="إعدادات Commerce"><span class="branch-commerce-chip ${branch.storeEnabled ? 'is-on' : ''}">Store ${storeLabel}</span><span class="branch-commerce-chip ${branch.barEnabled ? 'is-on' : ''}">Bar ${barLabel}</span></div></div><div class="branch-list-actions"><span class="branch-status ${escapeHtml(branch.status)}">${branch.status === 'active' ? 'نشط' : branch.status === 'inactive' ? 'متوقف' : 'مؤرشف'}</span><button class="btn btn-light btn-small" type="button" data-branch-commerce="${escapeHtml(branch.id)}" data-next-bar="${branch.barEnabled ? 'false' : 'true'}">${toggleLabel}</button>${!branch.isMain && branch.status !== 'archived' ? `<button class="btn btn-light btn-small" type="button" data-branch-archive="${escapeHtml(branch.id)}">أرشفة</button>` : ''}</div></article>`;
+            const storeLabel = branch.storeEnabled ? 'مفعل' : 'غير مفعل';
+            const barLabel = branch.barEnabled ? 'مفعل' : 'غير مفعل';
+            const toggleLabel = branch.barEnabled ? 'إيقاف البار' : 'تفعيل البار';
+            return `<article class="branch-list-item" data-branch-row="${escapeHtml(branch.id)}"><div class="branch-list-marker" aria-hidden="true"></div><div class="branch-list-copy"><strong>${escapeHtml(branch.name)}</strong><span dir="ltr">${escapeHtml(branch.code)}</span><small>${escapeHtml(branch.address || 'بدون عنوان')} · ${branch.isMain ? 'الفرع الرئيسي' : 'فرع تشغيلي'}</small><div class="branch-commerce-chips" aria-label="إعدادات التجارة"><span class="branch-commerce-chip ${branch.storeEnabled ? 'is-on' : ''}">المتجر ${storeLabel}</span><span class="branch-commerce-chip ${branch.barEnabled ? 'is-on' : ''}">البار ${barLabel}</span></div></div><div class="branch-list-actions"><span class="branch-status ${escapeHtml(branch.status)}">${branch.status === 'active' ? 'نشط' : branch.status === 'inactive' ? 'متوقف' : 'مؤرشف'}</span><button class="btn btn-light btn-small" type="button" data-branch-commerce="${escapeHtml(branch.id)}" data-next-bar="${branch.barEnabled ? 'false' : 'true'}">${toggleLabel}</button>${!branch.isMain && branch.status !== 'archived' ? `<button class="btn btn-light btn-small" type="button" data-branch-archive="${escapeHtml(branch.id)}">أرشفة</button>` : ''}</div></article>`;
         }).join('') : '<div class="empty">لا توجد فروع نشطة.</div>';
         decorateBranchDeleteActions();
     }
@@ -296,7 +315,7 @@
         try {
             await window.topGymApi.patch(`/api/branches/${encodeURIComponent(branchId)}`, { name: branch.name, address: branch.address, phone: branch.phone, workingHours: branch.workingHours, storeEnabled: branch.storeEnabled, barEnabled: enabled });
             await loadBranches();
-        } catch (error) { notify(error.message || 'تعذر تحديث إعدادات Bar.', true); }
+        } catch (error) { notify(error.message || 'تعذر تحديث إعدادات البار.', true); }
     }
 
     async function loadBranches() {
@@ -388,6 +407,7 @@
     }
 
     function bind() {
+        document.addEventListener('keydown', closeOpenContextFields, true);
         mountContextShell();
         ensureBranchTab();
         ensureBranchPanel();

@@ -5,14 +5,14 @@
 }
 
 html {
-  min-width: 320px;
+  min-width: 0;
   min-height: 100%;
   background: var(--color-bg);
   scroll-behavior: smooth;
 }
 
 body {
-  min-width: 320px;
+  min-width: 0;
   min-height: 100vh;
   margin: 0;
   background: var(--color-bg);
@@ -83,9 +83,18 @@ table {
   display: none !important;
 }
 
+/* Foundation accessibility baseline. Component files may refine the
+   appearance of their own focus state, but they do not redefine the global
+   focus contract. */
 :focus-visible {
   outline: 3px solid var(--border-focus);
   outline-offset: 2px;
+}
+
+:where(button, a, input, select, textarea, [role="button"], [role="tab"], [tabindex]):focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 3px;
+  box-shadow: var(--focus-ring);
 }
 
 ::selection {
