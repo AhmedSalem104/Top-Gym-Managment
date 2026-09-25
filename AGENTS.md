@@ -94,3 +94,29 @@ Each specialist reports to the Lead using:
 - A failed release leaves the prior healthy Production container running and
   preserves the prior immutable release for rollback. Manual SSH/publish
   instructions are emergency fallback only, not the normal path.
+
+## Mobile Blueprint Synchronization
+
+`docs/mobile-blueprint` is a living specification for the future/current Logic Fit mobile application.
+
+Any code change that affects a mobile-relevant API, domain rule, authentication/session behavior, role, permission, entitlement, feature, limit, tenant behavior, branch/section behavior, validation contract, error contract, shared workflow, or cross-platform capability MUST update the relevant Mobile Blueprint documentation in the same changeset.
+
+A task affecting these contracts is not considered complete until code and Mobile Blueprint are synchronized.
+
+Do not update documentation speculatively. Update it from the final implemented behavior and tests.
+
+If no Mobile Blueprint update is required for a change that appears mobile-relevant, explicitly verify and state why.
+
+Before changing a shared system contract:
+
+- Read the relevant `docs/mobile-blueprint/*.md` documents.
+
+After changing it:
+
+- Update the relevant Blueprint documents.
+- Update `19-TRACEABILITY-MATRIX.md` if the mapping changed.
+- Update `22-CHANGELOG.md`.
+- Update an ADR under `docs/mobile-blueprint/ADR/` if an architecture decision changed.
+- Verify that documentation matches actual code and tests.
+
+This rule applies to future Codex/AI agents and human contributors.

@@ -1,0 +1,12 @@
+# 21 — Open Questions
+
+Only decisions not resolved by current executable source are listed here.
+
+| ID | Question | Why it matters | Evidence | Options | Recommendation | Blocking? | Owner | Status |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| MOB-001 | What mobile auth transport will be approved: cookie session, mobile token exchange, or a new server contract? | Native clients do not share browser cookie assumptions reliably. | `auth-service.js` currently creates HttpOnly cookie sessions; no native contract exists. | Adapt cookie jar; add reviewed token exchange; platform bridge | Add an explicit reviewed mobile session contract without weakening current web auth. | YES for implementation | Backend/Lead | OPEN |
+| MOB-002 | Expo managed/prebuild or bare React Native? | Private uploads, notifications, deep links and signing affect build architecture. | Repository has no native project or mobile dependencies. | Expo; bare RN; Expo prebuild | Evaluate against required native capabilities after MOB-001. | YES for foundation | Mobile architecture | OPEN |
+| MOB-003 | Which push provider and notification contract will be supported? | Current notifications are API polling/stream/read state; no device token route. | `notification.routes.js`, no device registration route. | Poll; SSE-compatible gateway; FCM/APNs service | Define server-backed device registration and revocation before push. | NO initially | Product/Backend | OPEN |
+| MOB-004 | Will any mutation be offline-queued? | Financial/attendance/member writes need server authority and conflict handling. | No mobile queue contract; services use transactions/idempotency selectively. | Online-only; selected idempotent queue; broad offline | Start online-only; add per-endpoint reviewed contracts later. | NO for read-only cache | Product/Backend | OPEN |
+| MOB-005 | Should Platform Admin be shipped in the first mobile release? | It is a separate high-risk tenantless control plane. | Dedicated platform routes/shell exist; no mobile requirement in source. | Web-only; read-only mobile; full mobile | Keep web-only until separate product/security approval. | NO | Product | OPEN |
+| MOB-006 | Should the mobile API get a versioned OpenAPI/schema artifact? | Current field contracts are distributed across controllers/services/tests. | No OpenAPI file found; `docs/API.md` is prose. | Generate OpenAPI; typed contract package; maintain prose only | Generate a reviewed schema/contract package before RN implementation. | NO for blueprint | Backend | OPEN |
