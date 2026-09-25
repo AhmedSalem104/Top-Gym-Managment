@@ -558,11 +558,11 @@ body .swal2-popup.qr-member-preview-alert .swal2-actions > button.qr-member-prev
 .day-pass-table th:nth-child(5) { width: 12%; }
 .day-pass-table th:nth-child(6) { width: 19%; }
 .day-pass-table th,
-.day-pass-table td { padding: var(--space-3) var(--space-4); text-align: center; vertical-align: middle; }
+.day-pass-table td { padding: var(--space-3) var(--space-4); text-align: center; vertical-align: middle; line-height: 1.4; }
 .day-pass-table th { background: var(--color-surface-muted); color: var(--color-text-soft); font-size: var(--font-xs); font-weight: var(--weight-bold); }
 .day-pass-table tbody tr + tr td { border-top: 1px solid var(--border-color); }
 .day-pass-table tbody tr:hover td { background: var(--color-primary-soft); }
-.day-pass-table td:first-child { text-align: start; }
+.day-pass-table td:first-child { text-align: center; }
 .day-pass-table td strong,
 .day-pass-table td small { display: block; }
 .day-pass-table td strong { color: var(--color-text); font-size: var(--font-sm); }
@@ -571,12 +571,12 @@ body .swal2-popup.qr-member-preview-alert .swal2-actions > button.qr-member-prev
 .day-pass-type-badge { display: inline-flex; min-height: 28px; align-items: center; border-radius: var(--radius-pill); background: var(--color-primary-soft); color: var(--color-primary); padding: 0 var(--space-3); font-size: var(--font-xs); font-weight: var(--weight-bold); white-space: nowrap; }
 .day-pass-type-badge.day_gym_cardio { background: var(--color-warning-soft); color: var(--color-warning); }
 .day-pass-amount { direction: ltr; color: var(--color-success); font-family: var(--font-latin); font-weight: var(--weight-bold); }
-.day-pass-actions { min-width: max-content; justify-content: center; flex-wrap: nowrap; }
+.day-pass-actions { min-width: max-content; align-items: center; justify-content: center; flex-wrap: nowrap; }
 .day-pass-actions .btn { min-height: 36px; }
 .day-pass-action-button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; white-space: nowrap; }
 .day-pass-action-button .ui-icon { width: 16px; height: 16px; }
-.day-pass-action-button.is-compact { width: 40px; min-width: 40px; min-height: 40px; padding-inline: 0; }
-.day-pass-action-button.is-compact .ui-icon { width: 19px; height: 19px; }
+.day-pass-action-button.is-compact { width: 42px; min-width: 42px; height: 42px; min-height: 42px; padding-inline: 0; }
+.day-pass-action-button.is-compact .ui-icon { width: 20px; height: 20px; }
 .day-pass-no-phone { display: inline-flex; align-items: center; min-height: 30px; border-radius: var(--radius-pill); background: var(--color-surface-muted); color: var(--color-text-muted); padding-inline: var(--space-2); font-size: 10px; white-space: nowrap; }
 .day-pass-delete-button { color: var(--color-danger); }
 .day-pass-void-button { color: var(--color-danger); }
@@ -606,7 +606,7 @@ body .swal2-popup.qr-member-preview-alert .swal2-actions > button.qr-member-prev
   display: grid;
   min-width: 0;
   gap: 2px;
-  text-align: start;
+  text-align: center;
 }
 .day-pass-table .day-pass-identity strong,
 .day-pass-table .day-pass-identity small {

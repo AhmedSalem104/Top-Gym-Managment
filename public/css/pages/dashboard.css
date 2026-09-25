@@ -1383,9 +1383,7 @@
 
 /* Daily passes dashboard card ----------------------------------------- */
 .day-pass-dialog {
-  width: min(720px, calc(100% - 28px));
-  max-width: 720px;
-  max-height: calc(100dvh - 28px);
+  max-height: min(92dvh, 960px);
 }
 
 #attendanceSection > #dayPassPanel { display: none; }
@@ -1421,7 +1419,8 @@
    records toolbar/table live on the Attendance screen so the modal stays
    quick to scan and safe to use on small screens. */
 .day-pass-dialog > .day-pass-panel {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   min-width: 0;
   gap: 0;
   overflow-y: auto;
@@ -1439,14 +1438,14 @@
   top: 0;
   z-index: var(--z-content);
   display: flex;
-  min-height: 92px;
+  min-height: 0;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-4);
   margin: 0;
   border-bottom: 1px solid var(--border-secondary);
-  background: linear-gradient(135deg, color-mix(in srgb, var(--color-primary) 8%, var(--color-surface)), var(--color-surface));
-  padding: 20px 24px;
+  background: var(--color-surface);
+  padding: var(--lf-modal-block) var(--lf-modal-inline) var(--space-4);
 }
 .day-pass-dialog .day-pass-heading { min-width: 0; align-items: center; }
 .day-pass-dialog .day-pass-heading > div { display: grid; min-width: 0; gap: 3px; }
@@ -1459,11 +1458,11 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   align-items: start;
-  gap: 16px;
+  gap: var(--space-4);
   border: 0;
   border-radius: 0;
   background: var(--color-surface);
-  padding: 24px;
+  padding: var(--space-4) var(--lf-modal-inline) var(--space-5);
 }
 .day-pass-form-lead {
   display: grid;
@@ -1507,11 +1506,16 @@
 .day-pass-dialog .day-pass-form-actions {
   display: flex;
   grid-column: 1 / -1;
+  position: sticky;
+  bottom: 0;
+  z-index: var(--z-sticky);
+  align-items: center;
   justify-content: flex-start;
-  gap: 10px;
-  margin-top: 4px;
+  gap: var(--space-2);
+  margin: var(--space-2) calc(var(--lf-modal-inline) * -1) calc(var(--space-5) * -1);
   border-top: 1px solid var(--border-secondary);
-  padding-top: 18px;
+  background: var(--color-surface);
+  padding: var(--space-4) var(--lf-modal-inline) var(--space-5);
 }
 .day-pass-dialog .day-pass-form-actions .btn { min-height: 46px; min-width: 132px; }
 .day-pass-dialog .day-pass-form-actions #dayPassCancelEditButton { min-width: 116px; }
@@ -1600,13 +1604,13 @@
 .dashboard-day-pass-table-wrap::-webkit-scrollbar-thumb { border-radius: var(--radius-pill); background: var(--border-strong); }
 .dashboard-day-pass-table { width: 100%; min-width: 760px; table-layout: fixed; border-spacing: 0; }
 .dashboard-day-pass-table th,
-.dashboard-day-pass-table td { padding: var(--space-3) var(--space-4); text-align: center; vertical-align: middle; white-space: nowrap; }
+.dashboard-day-pass-table td { padding: var(--space-3) var(--space-4); text-align: center; vertical-align: middle; line-height: 1.4; white-space: nowrap; }
 .dashboard-day-pass-table th { position: sticky; top: 0; z-index: 1; background: var(--color-surface-muted); color: var(--color-text-soft); font-size: var(--font-xs); font-weight: var(--weight-bold); white-space: nowrap; }
 .dashboard-day-pass-table tbody tr { min-height: 0; height: 48px; }
 .dashboard-day-pass-table tbody td { height: 48px; }
 .dashboard-day-pass-table tbody tr + tr td { border-top: 1px solid var(--border-color); }
 .dashboard-day-pass-table tbody tr:hover td { background: var(--color-primary-soft); }
-.dashboard-day-pass-table td:first-child { overflow: hidden; text-align: start; text-overflow: ellipsis; }
+.dashboard-day-pass-table td:first-child { overflow: hidden; text-align: center; text-overflow: ellipsis; }
 .dashboard-day-pass-table td strong,
 .dashboard-day-pass-table td small {
   display: inline-block;
@@ -1628,7 +1632,7 @@
   font-size: var(--font-sm);
 }
 .dashboard-day-pass-table td small { color: var(--color-text-muted); font-family: var(--font-latin); font-size: var(--font-xs); }
-.dashboard-day-pass-table .day-pass-actions { flex-wrap: nowrap; gap: 4px; }
+.dashboard-day-pass-table .day-pass-actions { flex-wrap: nowrap; gap: var(--space-2); }
 
 /* Keep the identity data and row actions in separate visual zones. The phone
    placeholder belongs to the visitor identity, never to the action group. */
@@ -1648,12 +1652,12 @@
 .dashboard-day-pass-table tbody tr + tr td { border-top: 1px solid var(--border-secondary); }
 .dashboard-day-pass-table tbody tr:last-child td { border-bottom: 0; }
 .dashboard-day-pass-table th:last-child,
-.dashboard-day-pass-table td:last-child { width: 132px; }
+.dashboard-day-pass-table td:last-child { width: 156px; }
 .dashboard-day-pass-table .day-pass-identity {
   display: grid;
   min-width: 0;
   gap: 2px;
-  text-align: start;
+  text-align: center;
 }
 .dashboard-day-pass-table .day-pass-identity strong,
 .dashboard-day-pass-table .day-pass-identity small {
@@ -1678,7 +1682,20 @@
   min-height: 40px;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: var(--space-2);
+}
+
+.dashboard-day-pass-table .day-pass-action-button.is-compact {
+  width: 42px;
+  min-width: 42px;
+  height: 42px;
+  min-height: 42px;
+  padding-inline: 0;
+}
+
+.dashboard-day-pass-table .day-pass-action-button.is-compact .ui-icon {
+  width: 20px;
+  height: 20px;
 }
 
 /* Dashboard command-center hierarchy ----------------------------------- */
@@ -1884,10 +1901,7 @@
 }
 
 @media (max-width: 600px) {
-  .day-pass-dialog {
-    width: calc(100% - 20px);
-    max-height: calc(100dvh - 20px);
-  }
+  .day-pass-dialog { max-height: calc(100dvh - 24px); }
   .day-pass-dialog > .day-pass-panel { max-height: calc(100dvh - 20px); }
   .day-pass-dialog .day-pass-head {
     top: calc(var(--space-4) * -1);
@@ -1895,13 +1909,19 @@
     padding: var(--space-4);
   }
   .day-pass-dialog-head-actions { align-self: stretch; justify-content: space-between; }
-  .day-pass-dialog .day-pass-head { top: 0; margin: 0; padding: 16px; }
+  .day-pass-dialog .day-pass-head { top: 0; margin: 0; padding: var(--space-4); }
   .day-pass-dialog .day-pass-heading { align-items: flex-start; }
-  .day-pass-dialog .day-pass-form { grid-template-columns: 1fr; gap: 14px; padding: 18px 16px; }
+  .day-pass-dialog .day-pass-form { grid-template-columns: 1fr; gap: var(--space-3); padding: var(--space-4) var(--space-4) var(--space-5); }
   .day-pass-dialog .day-pass-form-lead,
   .day-pass-dialog .day-pass-whatsapp-option,
   .day-pass-dialog .day-pass-form-actions { grid-column: auto; }
-  .day-pass-dialog .day-pass-form-actions { align-items: stretch; flex-direction: column; }
+  .day-pass-dialog .day-pass-form-actions {
+    position: static;
+    align-items: stretch;
+    flex-direction: column;
+    margin: var(--space-2) calc(var(--space-4) * -1) calc(var(--space-5) * -1);
+    padding: var(--space-3) var(--space-4) var(--space-4);
+  }
   .day-pass-dialog .day-pass-form-actions .btn { width: 100%; }
   .day-pass-records-panel { padding: var(--space-4); }
   .day-pass-records-panel .day-pass-list-head { align-items: stretch; flex-direction: column; }
@@ -2005,15 +2025,15 @@
   }
 
   .dashboard-day-pass-table .day-pass-action-button.is-compact {
-    width: 40px;
-    min-width: 40px;
-    height: 40px;
-    min-height: 40px;
+    width: 42px;
+    min-width: 42px;
+    height: 42px;
+    min-height: 42px;
   }
 
   .dashboard-day-pass-table .day-pass-action-button.is-compact .ui-icon {
-    width: 19px;
-    height: 19px;
+    width: 20px;
+    height: 20px;
   }
 }
 

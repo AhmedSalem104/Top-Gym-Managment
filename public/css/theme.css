@@ -1582,13 +1582,17 @@ html[data-theme="dark"] .type-actions > .btn{
 html[data-theme="dark"] .table-actions > .icon-action:not([data-action="renew"]),
 html[data-theme="dark"] .table-actions > .table-action-visible:not([data-action="renew"]),
 html[data-theme="dark"] .action-menu > .action-menu-toggle,
-html[data-theme="dark"] .library-row-actions > .library-action-button,
-html[data-theme="dark"] .day-pass-actions > .day-pass-action-button.is-compact{
+html[data-theme="dark"] .library-row-actions > .library-action-button{
   width: 36px;
   min-width: 36px;
   height: 36px;
   min-height: 36px;
   padding: 0;
+}
+
+html[data-theme="dark"] .day-pass-actions > .day-pass-action-button.is-compact{
+  height: 42px;
+  min-height: 42px;
 }
 
 html[data-theme="dark"] .table-actions > .icon-action[data-action="renew"],

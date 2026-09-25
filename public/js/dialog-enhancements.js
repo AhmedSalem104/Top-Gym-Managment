@@ -29,7 +29,7 @@
         authUserDialog: 'lg',
         backupRestoreDialog: 'lg',
         memberDialog: 'lg',
-        dayPassDialog: 'xl',
+        dayPassDialog: 'lg',
         pricingDialog: 'xl',
         membershipTypesDialog: 'xl',
         libraryFormDialog: 'lg',
