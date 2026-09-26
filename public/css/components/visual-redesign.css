@@ -1227,8 +1227,23 @@ body .dashboard-hero {
   overflow: hidden;
   border: 1px solid rgb(219 228 240 / .95);
   border-radius: 26px;
-  background: #17212d url('/assets/gym-background.webp') center / cover no-repeat;
+  background:
+    radial-gradient(circle at 12% 12%, rgb(92 168 255 / .18), transparent 34%),
+    linear-gradient(118deg, #0a1730 0%, #10294c 58%, #0f6b72 155%);
   box-shadow: 0 18px 44px rgb(37 55 91 / .08);
+  animation: dashboard-hero-enter 420ms ease-out both;
+  transition: transform 220ms ease, box-shadow 220ms ease, border-color 220ms ease;
+}
+
+body .dashboard-hero:hover {
+  transform: translateY(-3px);
+  border-color: rgb(92 168 255 / .5);
+  box-shadow: 0 22px 48px rgb(10 23 48 / .2);
+}
+
+@keyframes dashboard-hero-enter {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 body .dashboard-hero::before {
@@ -1516,8 +1531,19 @@ body .dashboard-hero-mini-stat-icon .ui-icon {
 html[data-theme="dark"] body .dashboard-hero,
 body[data-theme="dark"] .dashboard-hero {
   border-color: rgb(104 129 170 / .32);
-  background: #101a2c url('/assets/gym-background.webp') center / cover no-repeat;
+  background:
+    radial-gradient(circle at 12% 12%, rgb(92 168 255 / .14), transparent 34%),
+    linear-gradient(118deg, #101a2c 0%, #142b48 58%, #12474c 155%);
   box-shadow: 0 20px 48px rgb(1 6 18 / .24);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body .dashboard-hero {
+    animation: none;
+    transition: none;
+  }
+
+  body .dashboard-hero:hover { transform: none; }
 }
 
 html[data-theme="dark"] body .dashboard-hero::before,
