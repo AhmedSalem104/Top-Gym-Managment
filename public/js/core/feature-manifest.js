@@ -8,7 +8,7 @@
     // responsible for ordering, deduplication and failure handling.
     const features = {
         dashboard: { dependencies: [], styles: [], scripts: [] },
-        'dashboard-enhancements': { dependencies: ['finance', 'phone-inputs', 'whatsapp-runtime'], styles: [], scripts: ['/js/day-passes.js?v=9', '/js/alerts-enhancements.js?v=10'] },
+        'dashboard-enhancements': { dependencies: ['finance', 'phone-inputs', 'whatsapp-runtime'], styles: [], scripts: ['/js/day-passes.js?v=10', '/js/alerts-enhancements.js?v=10'] },
         finance: { dependencies: [], styles: [], scripts: ['/js/pages/finance/monthly-finance.js?v=20'] },
         'member-details': { dependencies: ['phone-inputs'], styles: [], scripts: ['/js/member-details-ui.js?v=6', '/js/member-portal-admin.js?v=4', '/js/member-coaching-summary.js?v=2'] },
         members: {
