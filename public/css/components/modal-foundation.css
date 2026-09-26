@@ -185,11 +185,17 @@ dialog.lf-modal-shell::backdrop {
 .lf-modal-shell .details-dialog-head > div:first-child,
 .lf-modal-shell .dialog-header > div:first-child,
 .lf-modal-shell .member-dialog-header > div:first-child,
-.lf-modal-shell .trainer-dialog-header > div:first-child,
-.lf-modal-shell .day-pass-head > div:first-child {
+.lf-modal-shell .trainer-dialog-header > div:first-child {
   display: grid;
   min-width: 0;
   gap: var(--space-1);
+}
+
+.lf-modal-shell .modal-heading-content {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: var(--space-3);
 }
 
 .lf-modal-shell .details-dialog-head > button,
@@ -201,6 +207,150 @@ dialog.lf-modal-shell::backdrop {
   min-height: 40px;
   white-space: nowrap;
 }
+
+/* Shared compact form primitives for dialogs that opt into the canonical
+   modal body/form structure. */
+.lf-modal-shell > .dialog-body.dialog-body--flush {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: var(--color-surface);
+  box-shadow: none;
+}
+
+.lf-modal-shell > .dialog-body--flush > :is(
+  .dialog-header,
+  .details-dialog-head,
+  .member-dialog-header,
+  .trainer-dialog-header,
+  .day-pass-head
+) { margin: 0; }
+
+.lf-modal-shell .modal-form-grid {
+  box-sizing: border-box;
+  display: grid;
+  min-width: 0;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: var(--space-3) var(--space-4);
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  padding: var(--space-4) var(--lf-modal-inline) var(--lf-modal-block);
+}
+
+.lf-modal-shell .modal-form-grid > .form-actions { grid-column: 1 / -1; }
+
+.lf-modal-shell .modal-form-grid > .field {
+  display: grid;
+  min-width: 0;
+  align-content: start;
+  gap: var(--space-2);
+}
+
+.lf-modal-shell .modal-form-grid > .field > label {
+  color: var(--color-text-soft);
+  font-size: var(--font-sm);
+  font-weight: var(--weight-semibold);
+  line-height: 1.45;
+}
+
+.lf-modal-shell .modal-form-grid > .field > input:not([type="checkbox"]),
+.lf-modal-shell .modal-form-grid > .field > select {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: 46px;
+  border-radius: var(--radius-md);
+}
+
+.lf-modal-shell .modal-form-intro {
+  display: grid;
+  grid-column: 1 / -1;
+  gap: var(--space-1);
+  padding-block-end: var(--space-1);
+}
+
+.lf-modal-shell .modal-form-intro > :first-child {
+  color: var(--color-primary);
+  font-size: var(--font-xs);
+  font-weight: var(--weight-bold);
+}
+
+.lf-modal-shell .modal-form-intro h2,
+.lf-modal-shell .modal-form-intro h3,
+.lf-modal-shell .modal-form-intro h4,
+.lf-modal-shell .modal-form-intro p { margin: 0; }
+
+.lf-modal-shell .modal-form-intro h2,
+.lf-modal-shell .modal-form-intro h3,
+.lf-modal-shell .modal-form-intro h4 {
+  color: var(--color-text);
+  font-size: var(--font-md);
+  line-height: 1.4;
+}
+
+.lf-modal-shell .modal-form-intro p {
+  color: var(--color-text-muted);
+  font-size: var(--font-xs);
+  line-height: 1.5;
+}
+
+.lf-modal-shell .modal-form-summary {
+  display: grid;
+  min-width: 0;
+  min-height: 46px;
+  align-content: center;
+  gap: 2px;
+  border: 1px solid var(--success-border);
+  border-radius: var(--radius-md);
+  background: var(--color-success-soft);
+  padding-inline: var(--space-3);
+}
+
+.lf-modal-shell .modal-form-summary > :first-child {
+  color: var(--color-text-muted);
+  font-size: var(--font-xs);
+}
+
+.lf-modal-shell .modal-form-summary > strong {
+  color: var(--color-success);
+  font-family: var(--font-latin);
+  font-size: var(--font-md);
+}
+
+.lf-modal-shell .modal-form-option {
+  display: flex;
+  grid-column: 1 / -1;
+  min-width: 0;
+  min-height: 44px;
+  align-items: center;
+  gap: var(--space-2);
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-muted);
+  padding: var(--space-2) var(--space-3);
+}
+
+.lf-modal-shell .modal-form-option > input { flex: 0 0 auto; margin: 0; }
+
+.lf-modal-shell input[type="checkbox"],
+.lf-modal-shell input[type="radio"] {
+  inline-size: 20px;
+  block-size: 20px;
+  min-inline-size: 20px;
+  min-block-size: 20px;
+}
+
+.lf-modal-shell .modal-heading-actions {
+  display: flex;
+  min-width: 0;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.lf-modal-shell .modal-heading-actions > .btn { min-height: 40px; white-space: nowrap; }
 
 /* SweetAlert remains the confirmation/feedback engine, but follows the same
    shell proportions, controls and responsive spacing. */
@@ -279,6 +429,39 @@ body .swal2-popup.lf-modal--workspace {
   .lf-modal-shell .day-pass-head {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .lf-modal-shell .modal-form-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-3);
+    padding-block: var(--space-3) var(--space-4);
+  }
+
+  .lf-modal-shell .modal-form-intro,
+  .lf-modal-shell .modal-form-option {
+    grid-column: auto;
+  }
+
+  .lf-modal-shell .modal-form-grid .form-actions {
+    position: static;
+    align-items: center;
+    flex-direction: row;
+    flex-wrap: wrap;
+    margin-block-end: 0;
+    padding-block: var(--space-3) 0;
+  }
+
+  .lf-modal-shell .modal-heading-actions { margin-inline-start: auto; }
+
+  .lf-modal-shell .modal-heading-actions > .btn {
+    min-width: 0;
+    min-height: 40px;
+  }
+
+  .lf-modal-shell .modal-form-grid .form-actions > .btn {
+    width: auto;
+    min-height: 44px;
+    flex: 1 1 116px;
   }
 
   body .swal2-popup.top-gym-alert {

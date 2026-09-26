@@ -211,7 +211,7 @@
             const badge = $('dayPassTodayCount');
             if (head && badge) {
                 const actions = document.createElement('div');
-                actions.className = 'day-pass-dialog-head-actions';
+                actions.className = 'modal-heading-actions day-pass-dialog-head-actions';
                 const closeButton = document.createElement('button');
                 closeButton.type = 'button';
                 closeButton.className = 'btn btn-light btn-small';
