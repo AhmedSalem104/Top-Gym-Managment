@@ -214,7 +214,7 @@
                 actions.className = 'modal-heading-actions day-pass-dialog-head-actions';
                 const closeButton = document.createElement('button');
                 closeButton.type = 'button';
-                closeButton.className = 'btn btn-light btn-small';
+                closeButton.className = 'btn btn-light btn-small dialog-close';
                 closeButton.dataset.dayPassDialogClose = 'true';
                 closeButton.setAttribute('aria-label', 'إغلاق نافذة الحصص اليومية');
                 closeButton.textContent = 'إغلاق';

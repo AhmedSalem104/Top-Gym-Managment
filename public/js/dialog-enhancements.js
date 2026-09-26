@@ -29,7 +29,7 @@
         authUserDialog: 'lg',
         backupRestoreDialog: 'lg',
         memberDialog: 'lg',
-        dayPassDialog: 'lg',
+        dayPassDialog: 'md',
         pricingDialog: 'xl',
         membershipTypesDialog: 'xl',
         libraryFormDialog: 'lg',
@@ -83,7 +83,7 @@
                 return;
             }
             if (button.hasAttribute('data-dialog-close')) return;
-            const header = button.closest('.dialog-header, .details-dialog-head, .member-dialog-header, .trainer-dialog-header, .day-pass-head');
+            const header = button.closest('.dialog-header, .details-dialog-head, .member-dialog-header, .trainer-dialog-header, .modal-header');
             if (header && /close$/i.test(button.id || '')) {
                 button.classList.add('legacy-dialog-close');
                 button.setAttribute('aria-hidden', 'true');
@@ -101,13 +101,18 @@
         if (!dialog) return;
         hydrateDialog(dialog);
         hideLegacyCloseButtons(dialog);
+        const hasFeatureOwnedHeaderClose = dialog.querySelector('.dialog-close, .trainer-dialog-close, [data-dialog-cancel]');
+        if (hasFeatureOwnedHeaderClose) {
+            dialog.querySelector(':scope > .dialog-close-button[data-dialog-close-generated]')?.remove();
+            dialog.dataset.dialogCloseReady = 'true';
+            return;
+        }
         if (dialog.dataset.dialogCloseReady === 'true') return;
         // Several feature dialogs already own a close control inside their
         // header. Treat all existing close contracts as authoritative so the
         // shared decorator never places a second button on top of it.
         const hasDirectSharedClose = dialog.querySelector(':scope > .dialog-close-button, :scope > [data-dialog-close]');
-        const hasFeatureOwnedHeaderClose = dialog.querySelector('.dialog-close, .trainer-dialog-close, [data-dialog-cancel]');
-        if (hasDirectSharedClose || hasFeatureOwnedHeaderClose) {
+        if (hasDirectSharedClose) {
             dialog.dataset.dialogCloseReady = 'true';
             return;
         }
@@ -116,6 +121,7 @@
         button.type = 'button';
         button.className = 'dialog-close-button';
         button.dataset.dialogClose = '';
+        button.dataset.dialogCloseGenerated = '';
         button.setAttribute('aria-label', 'إغلاق النافذة');
         button.title = 'إغلاق';
         button.innerHTML = closeIcon;
