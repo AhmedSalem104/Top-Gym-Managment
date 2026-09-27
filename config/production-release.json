@@ -1,7 +1,8 @@
 {
-  "host": "128.140.58.112",
-  "user": "root",
+  "host": "13.140.170.148",
+  "user": "admin",
   "identityPath": "%USERPROFILE%/AppData/Local/LogicFitssh/logicfit-vps-admin",
+  "knownHostsPath": "infra/ssh/production-known-hosts",
   "repositoryUrl": "https://github.com/AhmedSalem104/Top-Gym-Managment.git",
   "gitCacheDir": "/opt/logicfit-vps/git-cache",
   "appRoot": "/opt/logicfit-vps",
@@ -9,6 +10,7 @@
   "nodeImage": "node:24-bookworm-slim",
   "internalPort": 3017,
   "candidatePort": 3027,
+  "bootstrapEnvFile": "/etc/logicfit/production.env",
   "publicBaseUrl": "https://getlogicfit.com",
   "healthPaths": [
     "/api/health/live",

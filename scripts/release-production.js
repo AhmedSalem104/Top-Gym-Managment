@@ -69,9 +69,11 @@ function loadReleaseConfig() {
     for (const key of required) if (config[key] === undefined || config[key] === null || String(config[key]).trim() === '') fail(`Release configuration is missing ${key}.`, 'RELEASE_CONFIG_INVALID');
     const identityPath = expandPath(process.env.RELEASE_SSH_IDENTITY_PATH || config.identityPath);
     if (!identityPath || !fs.existsSync(identityPath)) fail('Canonical production SSH identity is unavailable locally.', 'RELEASE_SSH_IDENTITY_MISSING');
+    const knownHostsPath = path.resolve(ROOT, String(config.knownHostsPath || ''));
+    if (!config.knownHostsPath || !fs.existsSync(knownHostsPath)) fail('Pinned production SSH host keys are unavailable locally.', 'RELEASE_KNOWN_HOSTS_MISSING');
     if (!Number.isInteger(Number(config.internalPort)) || !Number.isInteger(Number(config.candidatePort))) fail('Release ports are invalid.', 'RELEASE_CONFIG_INVALID');
     if (Number(config.internalPort) === Number(config.candidatePort)) fail('Release ports must be distinct.', 'RELEASE_CONFIG_INVALID');
-    return { ...config, identityPath };
+    return { ...config, identityPath, knownHostsPath };
 }
 
 function gitOutput(args) {
@@ -157,14 +159,14 @@ function remoteTarget(config, fileName) {
 }
 
 function sshArgs(config) {
-    return ['-T', '-i', config.identityPath, '-o', 'IdentitiesOnly=yes', '-o', 'BatchMode=yes', '-o', 'StrictHostKeyChecking=no', '-o', 'ConnectTimeout=15', `${config.user}@${config.host}`];
+    return ['-T', '-i', config.identityPath, '-o', 'IdentitiesOnly=yes', '-o', 'BatchMode=yes', '-o', 'StrictHostKeyChecking=yes', '-o', `UserKnownHostsFile=${config.knownHostsPath}`, '-o', 'ConnectTimeout=15', `${config.user}@${config.host}`];
 }
 
 function uploadArchive(config, archivePath, archiveName, expectedChecksum) {
     const existing = run('ssh', [...sshArgs(config), `sha256sum -- /tmp/${archiveName}`], { encoding: 'utf8', timeout: 30000, code: 'RELEASE_REMOTE_ARCHIVE_CHECK' });
     const existingChecksum = existing.status === 0 ? String(existing.stdout || '').trim().split(/\s+/)[0].toLowerCase() : '';
     if (existingChecksum === expectedChecksum) return 'REMOTE_ALREADY_VERIFIED';
-    const result = run('scp', ['-i', config.identityPath, '-o', 'IdentitiesOnly=yes', '-o', 'BatchMode=yes', '-o', 'StrictHostKeyChecking=no', '-o', 'ConnectTimeout=15', archivePath, remoteTarget(config, archiveName)], { stdio: 'ignore', timeout: 900000, allowError: true, code: 'RELEASE_ARCHIVE_UPLOAD' });
+    const result = run('scp', ['-i', config.identityPath, '-o', 'IdentitiesOnly=yes', '-o', 'BatchMode=yes', '-o', 'StrictHostKeyChecking=yes', '-o', `UserKnownHostsFile=${config.knownHostsPath}`, '-o', 'ConnectTimeout=15', archivePath, remoteTarget(config, archiveName)], { stdio: 'ignore', timeout: 900000, allowError: true, code: 'RELEASE_ARCHIVE_UPLOAD' });
     if (!result.error && result.status === 0) return 'PASS';
     // Some Windows OpenSSH/scp builds return a non-zero status after the
     // remote file is completely written. Accept only an exact remote digest;
@@ -192,6 +194,7 @@ function renderRemoteScript(config, sha, archiveName = '', controlArchiveName = 
         __CONTAINER_NAME__: config.containerName,
         __INTERNAL_PORT__: String(config.internalPort),
         __CANDIDATE_PORT__: String(config.candidatePort),
+        __BOOTSTRAP_ENV_FILE__: String(config.bootstrapEnvFile || '/etc/logicfit/production.env'),
         __ARCHIVE_NAME__: archiveName,
         __CONTROL_ARCHIVE_NAME__: controlArchiveName
     };
@@ -204,7 +207,7 @@ function renderRemoteScript(config, sha, archiveName = '', controlArchiveName = 
 }
 
 function runRemoteRelease(config, script) {
-    const result = run('ssh', [...sshArgs(config), 'bash', '-s'], { input: script, encoding: 'utf8', timeout: 900000 });
+    const result = run('ssh', [...sshArgs(config), 'sudo', '-n', 'bash', '-s'], { input: script, encoding: 'utf8', timeout: 900000 });
     const safeLines = String(result.stdout || '').split(/\r?\n/).filter((line) => /^(RELEASE_|DEPENDENCIES=|BACKUP_|MIGRATION_|RLS_|CANDIDATE_|DEPLOYED_|SHA_|HEALTH=|ROLLBACK_)/.test(line));
     if (result.error || result.status !== 0) {
         const failure = String(result.stderr || '').match(/RELEASE_REMOTE_FAIL stage=([a-z0-9-]+) code=([0-9]+)/i);

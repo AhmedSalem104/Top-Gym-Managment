@@ -1,0 +1,18 @@
+[Unit]
+Description=Logic Fit Caddy reverse proxy and TLS edge
+After=docker.service network-online.target
+Wants=network-online.target
+Requires=docker.service
+
+[Service]
+Type=simple
+ExecStartPre=/usr/bin/docker image inspect sha256:c3d7ee5d2b11f9dc54f947f68a734c84e9c9666c92c88a7f30b9cba5da182adb
+ExecStart=/usr/bin/docker run --rm --name logicfit-caddy --network host --volume /etc/logicfit/Caddyfile:/etc/caddy/Caddyfile:ro --volume /etc/logicfit/sites:/etc/logicfit/sites:ro --volume logicfit-caddy-data:/data --volume logicfit-caddy-config:/config sha256:c3d7ee5d2b11f9dc54f947f68a734c84e9c9666c92c88a7f30b9cba5da182adb caddy run --config /etc/caddy/Caddyfile --adapter caddyfile
+ExecStop=/usr/bin/docker stop --time 15 logicfit-caddy
+ExecStopPost=-/usr/bin/docker rm --force logicfit-caddy
+Restart=always
+RestartSec=5
+TimeoutStopSec=30
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,16 @@
+getlogicfit.com, www.getlogicfit.com {
+	encode gzip
+	request_body {
+		max_size 25MB
+	}
+	reverse_proxy 127.0.0.1:3017 {
+		header_up X-Forwarded-Host {http.request.host}
+		header_up X-Real-IP {http.request.remote.host}
+		transport http {
+			dial_timeout 2s
+			response_header_timeout 120s
+			read_timeout 120s
+			write_timeout 120s
+		}
+	}
+}

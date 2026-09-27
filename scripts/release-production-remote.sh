@@ -10,6 +10,7 @@ NODE_IMAGE='__NODE_IMAGE__'
 CONTAINER_NAME='__CONTAINER_NAME__'
 INTERNAL_PORT='__INTERNAL_PORT__'
 CANDIDATE_PORT='__CANDIDATE_PORT__'
+BOOTSTRAP_ENV_FILE='__BOOTSTRAP_ENV_FILE__'
 ARCHIVE_PATH='/tmp/__ARCHIVE_NAME__'
 CONTROL_ARCHIVE_PATH='/tmp/__CONTROL_ARCHIVE_NAME__'
 RELEASE_DIR="${APP_ROOT}/app-${RELEASE_SHA:0:12}"
@@ -52,11 +53,19 @@ trap 'cleanup_lock; cleanup_artifacts' EXIT
 printf 'RELEASE_LOCK=ACQUIRED\n'
 
 STAGE='preflight'
-docker inspect "$CONTAINER_NAME" >/dev/null 2>&1
-OLD_CONTAINER="$CONTAINER_NAME"
-OLD_RELEASE="$(docker inspect "$OLD_CONTAINER" --format '{{range .Mounts}}{{if eq .Destination "/app"}}{{.Source}}{{end}}{{end}}')"
-[ -n "$OLD_RELEASE" ]
-printf 'CURRENT_CONTAINER=PASS\n'
+BOOTSTRAP_MODE=0
+if docker inspect "$CONTAINER_NAME" >/dev/null 2>&1; then
+    OLD_CONTAINER="$CONTAINER_NAME"
+    OLD_RELEASE="$(docker inspect "$OLD_CONTAINER" --format '{{range .Mounts}}{{if eq .Destination "/app"}}{{.Source}}{{end}}{{end}}')"
+    [ -n "$OLD_RELEASE" ]
+    printf 'CURRENT_CONTAINER=PASS\n'
+else
+    [ -s "$BOOTSTRAP_ENV_FILE" ] || abort_release 72
+    BOOTSTRAP_MODE=1
+    OLD_CONTAINER=''
+    OLD_RELEASE=''
+    printf 'BOOTSTRAP_MODE=PASS\n'
+fi
 
 STAGE='stage-release'
 mkdir -p "$APP_ROOT"
@@ -127,9 +136,13 @@ sed "s#@@APP_ROOT@@#${APP_ROOT}#g" \
     "$RELEASE_DIR/infra/systemd/logicfit-attendance-auto-checkout.service" > "$JOB_SERVICE_TARGET"
 install -m 0644 "$RELEASE_DIR/infra/systemd/logicfit-attendance-auto-checkout.timer" "$JOB_TIMER_TARGET"
 systemctl daemon-reload
-systemctl enable logicfit-attendance-auto-checkout.timer >/dev/null
-systemctl start logicfit-attendance-auto-checkout.timer
-printf 'AUTO_CHECKOUT_SCHEDULER=PASS\n'
+if [ "$BOOTSTRAP_MODE" = '1' ]; then
+    printf 'AUTO_CHECKOUT_SCHEDULER=DEFERRED_UNTIL_CUTOVER\n'
+else
+    systemctl enable logicfit-attendance-auto-checkout.timer >/dev/null
+    systemctl start logicfit-attendance-auto-checkout.timer
+    printf 'AUTO_CHECKOUT_SCHEDULER=PASS\n'
+fi
 sed -e "s#@@APP_ROOT@@#${APP_ROOT}#g" \
     -e "s#@@CONTAINER_NAME@@#${CONTAINER_NAME}#g" \
     -e "s#@@NODE_IMAGE@@#${NODE_IMAGE}#g" \
@@ -139,9 +152,30 @@ sed "s#@@APP_ROOT@@#${APP_ROOT}#g" \
     "$RELEASE_DIR/infra/systemd/logicfit-backup-daily.service" > "$BACKUP_JOB_SERVICE_TARGET"
 install -m 0644 "$RELEASE_DIR/infra/systemd/logicfit-backup-daily.timer" "$BACKUP_JOB_TIMER_TARGET"
 systemctl daemon-reload
-systemctl enable logicfit-backup-daily.timer >/dev/null
-systemctl start logicfit-backup-daily.timer
-printf 'BACKUP_SCHEDULER=PASS\n'
+if [ "$BOOTSTRAP_MODE" = '1' ]; then
+    printf 'BACKUP_SCHEDULER=DEFERRED_UNTIL_CUTOVER\n'
+else
+    systemctl enable logicfit-backup-daily.timer >/dev/null
+    systemctl start logicfit-backup-daily.timer
+    printf 'BACKUP_SCHEDULER=PASS\n'
+fi
+
+STAGE='edge-config'
+[ -f "$RELEASE_DIR/infra/caddy/Caddyfile" ]
+[ -f "$RELEASE_DIR/infra/caddy/sites/storage.caddy" ]
+[ -f "$RELEASE_DIR/infra/systemd/logicfit-caddy.service" ]
+install -d -m 0755 /etc/logicfit/sites
+install -m 0644 "$RELEASE_DIR/infra/caddy/Caddyfile" /etc/logicfit/Caddyfile
+install -m 0644 "$RELEASE_DIR/infra/caddy/sites/storage.caddy" /etc/logicfit/sites/storage.caddy
+install -m 0644 "$RELEASE_DIR/infra/systemd/logicfit-caddy.service" /etc/systemd/system/logicfit-caddy.service
+docker run --rm --network host \
+    -v /etc/logicfit/Caddyfile:/etc/caddy/Caddyfile:ro \
+    -v /etc/logicfit/sites:/etc/logicfit/sites:ro \
+    sha256:c3d7ee5d2b11f9dc54f947f68a734c84e9c9666c92c88a7f30b9cba5da182adb \
+    caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile >/dev/null
+systemctl daemon-reload
+printf 'CADDY_CONFIG=PASS\n'
+printf 'CADDY_TLS=WAITING_FOR_STORAGE_DNS\n'
 
 STAGE='dependencies'
 if [ ! -d "$RELEASE_DIR/node_modules" ]; then
@@ -152,7 +186,11 @@ printf 'DEPENDENCIES=PASS\n'
 run_with_current_env() {
     source_container="$1"
     shift
-    docker inspect "$source_container" --format '{{range .Config.Env}}{{println .}}{{end}}' | docker run --rm --network host --env-file /dev/stdin "$@"
+    if [ "$BOOTSTRAP_MODE" = '1' ]; then
+        docker run --rm --network host --env-file "$BOOTSTRAP_ENV_FILE" "$@"
+    else
+        docker inspect "$source_container" --format '{{range .Config.Env}}{{println .}}{{end}}' | docker run --rm --network host --env-file /dev/stdin "$@"
+    fi
 }
 
 # Persistent containers must not use --rm: Docker rejects --rm together with
@@ -162,7 +200,11 @@ run_with_current_env() {
 run_with_current_env_persistent() {
     source_container="$1"
     shift
-    docker inspect "$source_container" --format '{{range .Config.Env}}{{println .}}{{end}}' | docker run --network host --env-file /dev/stdin "$@"
+    if [ "$BOOTSTRAP_MODE" = '1' ]; then
+        docker run --network host --env-file "$BOOTSTRAP_ENV_FILE" "$@"
+    else
+        docker inspect "$source_container" --format '{{range .Config.Env}}{{println .}}{{end}}' | docker run --network host --env-file /dev/stdin "$@"
+    fi
 }
 
 STAGE='migration-plan'
@@ -197,6 +239,10 @@ case "$plan_output" in
     abort_release 78
     ;;
 esac
+if [ "$BOOTSTRAP_MODE" = '1' ] && [[ "$plan_output" != *'"pending":[]'* ]]; then
+    STAGE='bootstrap-migration-safety'
+    abort_release 78
+fi
 printf 'MIGRATION_PLAN=PASS\n'
 
 MIGRATION_APPLY_OUTPUT='{"status":"SKIPPED","applied":[],"pending":[],"ledger":"verified"}'
@@ -249,7 +295,13 @@ else
     printf 'BACKUP_JOB=SKIPPED_CODE_ONLY\n'
     printf 'BACKUP_VERIFICATION=SKIPPED_CODE_ONLY\n'
     printf 'MIGRATIONS_PENDING=NONE\n'
-    printf 'RLS_TENANCY=SKIPPED_CODE_ONLY\n'
+    if [ "$BOOTSTRAP_MODE" = '1' ]; then
+        STAGE='bootstrap-rls-tenancy'
+        run_control -e RELEASE_PRODUCTION_SECURITY_CONFIRM=YES node scripts/production-security-gate.js >/dev/null
+        printf 'RLS_TENANCY=PASS_BOOTSTRAP\n'
+    else
+        printf 'RLS_TENANCY=SKIPPED_CODE_ONLY\n'
+    fi
 fi
 
 STAGE='candidate'
@@ -275,17 +327,27 @@ docker rm "$CANDIDATE_NAME" >/dev/null
 printf 'CANDIDATE_SMOKE=PASS\n'
 
 STAGE='cutover'
-PREVIOUS_NAME="${CONTAINER_NAME}-previous-$(date -u +%Y%m%d%H%M%S)"
-docker rename "$OLD_CONTAINER" "$PREVIOUS_NAME"
-if ! docker stop "$PREVIOUS_NAME" >/dev/null; then
-    docker rename "$PREVIOUS_NAME" "$CONTAINER_NAME"
-    docker start "$CONTAINER_NAME" >/dev/null
-    abort_release 80
-fi
-if ! run_with_current_env_persistent "$PREVIOUS_NAME" -e NODE_ENV=production -e PORT="$INTERNAL_PORT" -e APP_RELEASE_ID="$RELEASE_SHA" -d --name "$CONTAINER_NAME" --restart unless-stopped -v "$RELEASE_DIR:/app" -w /app "$NODE_IMAGE" node -e 'const app=require("./server"); const {closePool}=require("./src/database"); const port=Number(process.env.PORT||3017); const server=app.listen(port,"127.0.0.1",()=>process.stdout.write("production-ready\n")); const shutdown=()=>server.close(()=>closePool().finally(()=>process.exit(0))); process.once("SIGTERM",shutdown); process.once("SIGINT",shutdown);' >/dev/null; then
-    docker rename "$PREVIOUS_NAME" "$CONTAINER_NAME"
-    docker start "$CONTAINER_NAME" >/dev/null
-    abort_release 80
+if [ "$BOOTSTRAP_MODE" = '1' ]; then
+    # First deployment is isolated to the new VPS. Do not rename, stop, or
+    # otherwise affect the old production server; only the later DNS cutover
+    # moves user traffic.
+    PREVIOUS_NAME='external-old-production-vps'
+    if ! docker run --network host --env-file "$BOOTSTRAP_ENV_FILE" -e NODE_ENV=production -e PORT="$INTERNAL_PORT" -e APP_RELEASE_ID="$RELEASE_SHA" -d --name "$CONTAINER_NAME" --restart unless-stopped -v "$RELEASE_DIR:/app" -w /app "$NODE_IMAGE" node -e 'const app=require("./server"); const {closePool}=require("./src/database"); const port=Number(process.env.PORT||3017); const server=app.listen(port,"127.0.0.1",()=>process.stdout.write("production-ready\n")); const shutdown=()=>server.close(()=>closePool().finally(()=>process.exit(0))); process.once("SIGTERM",shutdown); process.once("SIGINT",shutdown);' >/dev/null; then
+        abort_release 80
+    fi
+else
+    PREVIOUS_NAME="${CONTAINER_NAME}-previous-$(date -u +%Y%m%d%H%M%S)"
+    docker rename "$OLD_CONTAINER" "$PREVIOUS_NAME"
+    if ! docker stop "$PREVIOUS_NAME" >/dev/null; then
+        docker rename "$PREVIOUS_NAME" "$CONTAINER_NAME"
+        docker start "$CONTAINER_NAME" >/dev/null
+        abort_release 80
+    fi
+    if ! run_with_current_env_persistent "$PREVIOUS_NAME" -e NODE_ENV=production -e PORT="$INTERNAL_PORT" -e APP_RELEASE_ID="$RELEASE_SHA" -d --name "$CONTAINER_NAME" --restart unless-stopped -v "$RELEASE_DIR:/app" -w /app "$NODE_IMAGE" node -e 'const app=require("./server"); const {closePool}=require("./src/database"); const port=Number(process.env.PORT||3017); const server=app.listen(port,"127.0.0.1",()=>process.stdout.write("production-ready\n")); const shutdown=()=>server.close(()=>closePool().finally(()=>process.exit(0))); process.once("SIGTERM",shutdown); process.once("SIGINT",shutdown);' >/dev/null; then
+        docker rename "$PREVIOUS_NAME" "$CONTAINER_NAME"
+        docker start "$CONTAINER_NAME" >/dev/null
+        abort_release 80
+    fi
 fi
 health_ok=0
 for _ in $(seq 1 60); do
@@ -294,8 +356,10 @@ for _ in $(seq 1 60); do
 done
 if [ "$health_ok" -ne 1 ]; then
     docker rm -f "$CONTAINER_NAME" >/dev/null 2>&1 || true
-    docker rename "$PREVIOUS_NAME" "$CONTAINER_NAME"
-    docker start "$CONTAINER_NAME" >/dev/null
+    if [ "$BOOTSTRAP_MODE" != '1' ]; then
+        docker rename "$PREVIOUS_NAME" "$CONTAINER_NAME"
+        docker start "$CONTAINER_NAME" >/dev/null
+    fi
     abort_release 81
 fi
 

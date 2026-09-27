@@ -54,9 +54,25 @@ function main() {
     assert.doesNotMatch(rendered, /run_with_current_env_persistent "\$OLD_CONTAINER"[^\n]*--network host/);
     assert.doesNotMatch(rendered, /run_with_current_env_persistent "\$PREVIOUS_NAME"[^\n]*--network host/);
     assert.match(rendered, /production-migration-gate\.js --apply --json/);
+    assert.match(rendered, /BOOTSTRAP_MODE=1/);
+    assert.match(rendered, /bootstrap-migration-safety/);
+    assert.match(rendered, /external-old-production-vps/);
+    assert.match(rendered, /if \[ "\$BOOTSTRAP_MODE" != '1' \]; then/);
+    assert.match(rendered, /docker run --network host --env-file "\$BOOTSTRAP_ENV_FILE"/);
+    assert.match(rendered, /AUTO_CHECKOUT_SCHEDULER=DEFERRED_UNTIL_CUTOVER/);
+    assert.match(rendered, /BACKUP_SCHEDULER=DEFERRED_UNTIL_CUTOVER/);
+    assert.match(rendered, /CADDY_TLS=WAITING_FOR_STORAGE_DNS/);
+    assert.match(rendered, /caddy validate --config \/etc\/caddy\/Caddyfile/);
     assert.doesNotMatch(rendered, /MIGRATION_PENDING='031-central-notifications\.sql'/);
     assert.match(rendered, /migrationPlan":\$plan_output/);
     assert.doesNotMatch(rendered, /__[A-Z0-9_]+__/);
+
+    const fs = require('node:fs');
+    const path = require('node:path');
+    const releaseSource = fs.readFileSync(path.join(__dirname, 'release-production.js'), 'utf8');
+    assert.match(releaseSource, /StrictHostKeyChecking=yes/);
+    assert.match(releaseSource, /UserKnownHostsFile=/);
+    assert.doesNotMatch(releaseSource, /StrictHostKeyChecking=no/);
 
     process.stdout.write('RELEASE_PIPELINE_SELF_TEST=PASS\n');
 }
