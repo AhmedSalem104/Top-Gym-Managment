@@ -181,16 +181,30 @@
         if (!host || !state.catalog) return;
         host.replaceChildren();
         state.catalog.paymentMethods.forEach((method) => {
-            const label = document.createElement('label');
-            label.className = 'registration-payment-option';
-            label.innerHTML = `<input type="radio" name="registrationPaymentMethod" value="${escapeHtml(method.methodCode)}"><span class="registration-payment-content"><span class="registration-payment-top"><strong>${escapeHtml(method.displayName)}</strong><span class="registration-select-dot" aria-hidden="true"></span></span><b dir="ltr">${escapeHtml(method.accountReference)}</b>${method.recipientName ? `<small>المستلم: ${escapeHtml(method.recipientName)}</small>` : ''}${method.instructions ? `<small>${escapeHtml(method.instructions)}</small>` : ''}</span>`;
-            label.querySelector('input').addEventListener('change', () => {
+            const choice = document.createElement('div');
+            choice.className = 'registration-payment-choice';
+            choice.innerHTML = `<label class="registration-payment-option"><input type="radio" name="registrationPaymentMethod" value="${escapeHtml(method.methodCode)}"><span class="registration-payment-content"><span class="registration-payment-top"><strong>${escapeHtml(method.displayName)}</strong><span class="registration-select-dot" aria-hidden="true"></span></span><b dir="ltr">${escapeHtml(method.accountReference)}</b>${method.recipientName ? `<small>المستلم: ${escapeHtml(method.recipientName)}</small>` : ''}${method.instructions ? `<small>${escapeHtml(method.instructions)}</small>` : ''}</span></label><button class="btn btn-light btn-small registration-copy-payment" type="button" data-registration-copy-payment="${escapeHtml(method.methodCode)}">نسخ رقم الحساب</button>`;
+            choice.querySelector('input').addEventListener('change', () => {
                 state.selectedPaymentMethod = method;
                 updateReview();
             });
-            host.appendChild(label);
+            host.appendChild(choice);
         });
         if (!state.catalog.paymentMethods.length) host.innerHTML = '<p class="registration-empty">لم تُجهّز وسائل دفع Logic Fit بعد. لا يمكن إرسال طلب التسجيل قبل تفعيل وسيلة دفع من لوحة إدارة المنصة.</p>';
+    }
+
+    async function copyText(value) {
+        if (navigator.clipboard?.writeText) return navigator.clipboard.writeText(String(value));
+        const field = document.createElement('textarea');
+        field.value = String(value);
+        field.setAttribute('readonly', '');
+        field.style.position = 'fixed';
+        field.style.opacity = '0';
+        document.body.appendChild(field);
+        field.select();
+        const copied = document.execCommand('copy');
+        field.remove();
+        if (!copied) throw new Error('clipboard_unavailable');
     }
 
     function renderPriceSummary() {
@@ -334,7 +348,29 @@
             'X-Payment-Proof-Mime': state.proof.type || 'application/octet-stream',
             'X-Payment-Proof-Name-Encoded': encodeURIComponent(state.proof.name)
         };
-        await api(`/api/public/${registrationEndpoint}/requests/${encodeURIComponent(state.requestId)}/proof`, { method: 'POST', headers, body: state.proof });
+        return api(`/api/public/${registrationEndpoint}/requests/${encodeURIComponent(state.requestId)}/proof`, { method: 'POST', headers, body: state.proof });
+    }
+
+    function registrationStatusLabel(status) {
+        return ({ pending: 'قيد المراجعة', approved: 'تم اعتماد الطلب', rejected: 'مرفوض', cancelled: 'ملغي' })[String(status || '').toLowerCase()] || 'غير متاح حاليًا';
+    }
+
+    async function refreshRegistrationStatus(button) {
+        if (!state.requestId || !state.accessToken || !button || button.disabled) return;
+        button.disabled = true;
+        const status = $('registrationPaymentConfirmation')?.querySelector('[data-registration-status]');
+        if (status) status.textContent = 'جارٍ تحديث الحالة…';
+        try {
+            const result = await api(`/api/public/${registrationEndpoint}/requests/${encodeURIComponent(state.requestId)}`, {
+                headers: { 'X-Registration-Token': state.accessToken, Accept: 'application/json' }
+            });
+            if (status) status.textContent = registrationStatusLabel(result.request?.status);
+        } catch (error) {
+            if (status) status.textContent = 'تعذر تحديث الحالة. حاول مرة أخرى.';
+            toast(errorMessage(error, 'تعذر تحديث حالة الطلب.'), 'error');
+        } finally {
+            button.disabled = false;
+        }
     }
 
     async function submitRequest() {
@@ -345,8 +381,13 @@
         const record = feedback?.start?.(button, { loadingText: 'جاري إرسال الطلب...' });
         clearError();
         try {
-            await uploadProof();
+            const proofResult = await uploadProof();
             $('registrationReference').textContent = `#${state.requestId}`;
+            const successDetails = $('registrationPaymentConfirmation');
+            if (successDetails) {
+                const amount = Number(state.selectedTerm?.price || 0) - Number(state.selectedTerm?.discountAmount || 0);
+                successDetails.innerHTML = `<div><small>المبلغ المسجل</small><strong>${formatMoney(amount, state.selectedTerm?.currency)}</strong></div><div><small>وسيلة الدفع</small><strong>${escapeHtml(state.selectedPaymentMethod?.displayName || '—')}</strong></div><div class="registration-confirmation-status"><small>حالة الطلب</small><strong data-registration-status role="status">${escapeHtml(registrationStatusLabel(proofResult?.request?.status))}</strong><button class="btn btn-light btn-small" type="button" data-registration-refresh-status>تحديث الحالة</button></div><p>تم استلام إثبات التحويل. لا يتم تفعيل الحساب إلا بعد مراجعة فريق Logic Fit واعتماد الطلب.</p>`;
+            }
             $('registrationSuccess').hidden = false;
             $('registrationActions').hidden = true;
             panels.forEach((panel) => { panel.hidden = true; panel.classList.remove('is-active'); });
@@ -375,6 +416,22 @@
 
     form.addEventListener('input', () => { if (state.step === 6) updateReview(); });
     $('registrationBack').addEventListener('click', () => { clearError(); goToStep(state.step - 1); });
+    $('registrationPaymentMethods')?.addEventListener('click', async (event) => {
+        const button = event.target instanceof Element ? event.target.closest('[data-registration-copy-payment]') : null;
+        if (!button) return;
+        const method = state.catalog?.paymentMethods?.find((item) => item.methodCode === button.dataset.registrationCopyPayment);
+        if (!method?.accountReference) return;
+        try {
+            await copyText(method.accountReference);
+            toast('تم نسخ رقم الحساب.', 'success');
+        } catch (_) {
+            toast('تعذر النسخ تلقائيًا. يمكنك تحديد رقم الحساب ونسخه يدويًا.', 'error');
+        }
+    });
+    $('registrationSuccess')?.addEventListener('click', (event) => {
+        const button = event.target instanceof Element ? event.target.closest('[data-registration-refresh-status]') : null;
+        if (button) void refreshRegistrationStatus(button);
+    });
     $('registrationNext').addEventListener('click', async () => {
         if (!validateStep(state.step)) return;
         if (state.step === 6) return submitRequest();

@@ -730,6 +730,36 @@
   cursor: pointer;
 }
 
+.registration-payment-choice {
+  display: grid;
+  min-width: 0;
+  align-content: start;
+  justify-items: start;
+  gap: var(--space-2);
+}
+
+.registration-payment-choice .registration-payment-option,
+.registration-payment-choice .registration-payment-content {
+  width: 100%;
+}
+
+.registration-copy-payment {
+  min-height: 36px;
+}
+
+.registration-payment-steps {
+  display: grid;
+  gap: var(--space-2);
+  margin: var(--space-3) 0 0;
+  padding: var(--space-3) var(--space-5) var(--space-3) var(--space-3);
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-md);
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+  font-size: var(--font-sm);
+  line-height: 1.6;
+}
+
 .registration-plan-option input,
 .registration-term-option input,
 .registration-payment-option input {
@@ -1117,6 +1147,51 @@
   color: var(--primary);
   font-family: var(--font-latin);
   font-size: var(--font-lg);
+}
+
+.registration-payment-confirmation {
+  display: grid;
+  width: min(100%, 440px);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-lg);
+  background: var(--bg-surface);
+  text-align: start;
+}
+
+.registration-payment-confirmation > div {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-1);
+}
+
+.registration-confirmation-status {
+  align-content: start;
+}
+
+.registration-confirmation-status .btn {
+  width: fit-content;
+  min-height: 34px;
+  margin-top: var(--space-1);
+}
+
+.registration-payment-confirmation small {
+  color: var(--text-muted);
+  font-size: var(--font-xs);
+}
+
+.registration-payment-confirmation strong {
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+.registration-payment-confirmation p {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: var(--font-sm);
 }
 
 @keyframes registration-spin {

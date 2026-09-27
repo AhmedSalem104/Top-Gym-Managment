@@ -154,6 +154,23 @@ test('public registration fails safely when the catalog shape or API response is
     assert.doesNotMatch(registration, /return text\(error\?\.message\) \|\| fallback/);
 });
 
+test('Gym and Trainer registration expose configured transfer details, copy action, and review-only receipt without changing proof flow', () => {
+    const gym = read('public/register-gym.html');
+    const trainer = read('public/register-trainer.html');
+    const client = read('public/js/register-gym.js');
+    assert.match(gym, /registration-payment-steps/);
+    assert.match(trainer, /registration-payment-steps/);
+    assert.match(gym, /id="registrationPaymentConfirmation"/);
+    assert.match(trainer, /id="registrationPaymentConfirmation"/);
+    assert.match(client, /data-registration-copy-payment/);
+    assert.match(client, /copyText\(method\.accountReference\)/);
+    assert.match(client, /uploadProof\(\)/);
+    assert.match(client, /data-registration-refresh-status/);
+    assert.match(client, /X-Registration-Token/);
+    assert.match(client, /لا يتم تفعيل الحساب إلا بعد مراجعة فريق Logic Fit واعتماد الطلب/);
+    assert.doesNotMatch(client, /01015819700|01005376843/);
+});
+
 test('platform admin exposes a separate gym registration queue with one-time credential handling', () => {
     const html = read('public/platform-admin.html');
     const client = read('public/js/platform-admin.js');

@@ -282,11 +282,14 @@
     const selected = methods.some((item) => String(item.id) === String(previous)) ? String(previous) : String(methods[0].id);
     elements.method.value = selected;
     elements.methodList.innerHTML = methods.map((item) => `
-      <label class="portal-payment-method-row">
-        <input type="radio" name="portalPaymentMethod" value="${escapeHtml(item.id)}" ${String(item.id) === selected ? 'checked' : ''}>
-        <span class="portal-payment-method-copy"><strong>${escapeHtml(item.name || 'وسيلة دفع')}</strong><small>${escapeHtml(item.recipientName || item.instructions || 'تحويل مباشر للجيم')}</small></span>
-        <span class="portal-payment-method-account" dir="ltr">${escapeHtml(item.accountReference || '—')}</span>
-      </label>`).join('');
+      <div class="portal-payment-method-choice">
+        <label class="portal-payment-method-row">
+          <input type="radio" name="portalPaymentMethod" value="${escapeHtml(item.id)}" ${String(item.id) === selected ? 'checked' : ''}>
+          <span class="portal-payment-method-copy"><strong>${escapeHtml(item.name || 'وسيلة دفع')}</strong>${item.recipientName ? `<small>${escapeHtml(item.recipientName)}</small>` : ''}${item.instructions ? `<small>${escapeHtml(item.instructions)}</small>` : ''}</span>
+          <span class="portal-payment-method-account" dir="ltr">${escapeHtml(item.accountReference || '—')}</span>
+        </label>
+        <button class="btn btn-light btn-small portal-copy-payment" type="button" data-portal-copy-payment="${escapeHtml(item.id)}">نسخ رقم الحساب</button>
+      </div>`).join('');
     syncSubmitState();
   }
 
@@ -338,7 +341,7 @@
         ? `<button class="btn btn-light btn-small portal-proof-retry" type="button" data-portal-proof-retry="${escapeHtml(item.id)}">رفع الإثبات</button>`
         : '';
       return `<article class="portal-request-history-row">
-        <div class="portal-request-history-copy"><strong>${escapeHtml(requestTypeLabel(item.requestType))} · ${escapeHtml(membership.type || 'عضوية')}</strong><small>${formatDate(membership.startDate)} · ${formatMoney(pricing.amountDue, pricing.currency || 'EGP')} · ${proofLabel}</small>${reviewReason}</div>
+        <div class="portal-request-history-copy"><strong>طلب #${escapeHtml(item.id)} · ${escapeHtml(requestTypeLabel(item.requestType))} · ${escapeHtml(membership.type || 'عضوية')}</strong><small>${formatDate(membership.startDate)} · ${formatMoney(pricing.amountDue, pricing.currency || 'EGP')} · ${proofLabel}</small>${reviewReason}</div>
         <div class="portal-request-history-actions"><span class="portal-request-history-status ${escapeHtml(status)}">${escapeHtml(statusLabel(status))}</span>${proofRecovery}</div>
       </article>`;
     }).join('');
@@ -419,6 +422,20 @@
     return `portal-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 14)}`;
   }
 
+  async function copyText(value) {
+    if (navigator.clipboard?.writeText) return navigator.clipboard.writeText(String(value));
+    const field = document.createElement('textarea');
+    field.value = String(value);
+    field.setAttribute('readonly', '');
+    field.style.position = 'fixed';
+    field.style.opacity = '0';
+    document.body.appendChild(field);
+    field.select();
+    const copied = document.execCommand('copy');
+    field.remove();
+    if (!copied) throw new Error('clipboard_unavailable');
+  }
+
   elements.plan?.addEventListener('change', updateSummary);
   elements.type?.addEventListener('change', updateSummary);
   elements.requestType?.addEventListener('change', syncRequestTypePresentation);
@@ -428,6 +445,18 @@
     if (event.target.matches('input[name="portalPaymentMethod"]')) {
       elements.method.value = event.target.value;
       syncSubmitState();
+    }
+  });
+  elements.methodList?.addEventListener('click', async (event) => {
+    const button = event.target instanceof Element ? event.target.closest('[data-portal-copy-payment]') : null;
+    if (!button) return;
+    const method = state.paymentMethods.find((item) => String(item.id) === String(button.dataset.portalCopyPayment));
+    if (!method?.accountReference) return;
+    try {
+      await copyText(method.accountReference);
+      setFeedback('تم نسخ رقم الحساب. أرفق إثبات الدفع بعد إتمام التحويل.', 'success');
+    } catch (_) {
+      setFeedback('تعذر النسخ تلقائيًا. يمكنك تحديد رقم الحساب ونسخه يدويًا.', 'error');
     }
   });
   elements.proof?.addEventListener('change', () => {

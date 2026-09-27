@@ -77,6 +77,7 @@ test('Platform Admin UI manages platform methods and keeps tenant payment settin
     const branding = read('public/index.html');
     const registerPage = read('public/js/register-gym.js');
     const portal = read('public/js/member-portal-subscription.js');
+    const portalHtml = read('public/member-portal.html');
 
     assert.match(html, /data-platform-view="payment-methods"/);
     assert.match(html, /data-platform-panel="payment-methods"/);
@@ -89,6 +90,10 @@ test('Platform Admin UI manages platform methods and keeps tenant payment settin
     assert.match(branding, /id="brandingPaymentMethods"/);
     assert.match(registerPage, /Platform Admin تهيئة وسيلة دفع/);
     assert.match(portal, /يجب على Owner إضافة وسيلة دفع من إعدادات هوية الجيم ثم نشر الهوية/);
+    assert.match(portal, /data-portal-copy-payment/);
+    assert.match(portal, /copyText\(method\.accountReference\)/);
+    assert.match(portalHtml, /portal-payment-steps/);
+    assert.match(portal, /طلب #\$\{escapeHtml\(item\.id\)\}/);
     assert.doesNotMatch(registerPage, /01015819700|01005376843/);
     assert.doesNotMatch(portal, /01015819700|01005376843/);
 });

@@ -138,6 +138,7 @@
                     <section class="registration-step-panel" data-registration-step="4" aria-labelledby="stepFourTitle" hidden>
                         <div class="registration-section-intro"><span class="registration-step-number">04</span><div><h3 id="stepFourTitle">طريقة الدفع</h3><p>حوّل المبلغ إلى وسيلة الدفع الخاصة بـLogic Fit ثم احتفظ بالإثبات.</p></div></div>
                         <div class="registration-payment-grid" id="registrationPaymentMethods" aria-live="polite"></div>
+                        <ol class="registration-payment-steps" aria-label="خطوات الدفع"><li>حوّل المبلغ إلى بيانات وسيلة الدفع المختارة.</li><li>احتفظ بإثبات التحويل وارفعه في الخطوة التالية.</li><li>تابع رقم الطلب حتى يكتمل التحقق والمراجعة.</li></ol>
                         <div class="registration-price-summary" id="registrationPriceSummary"></div>
                     </section>
 
@@ -165,6 +166,7 @@
                         <h3>طلبك الآن قيد المراجعة</h3>
                         <p>سيتم مراجعة الدفع، وبعد الاعتماد ستصلك رسالة عبر WhatsApp تحتوي على تفاصيل تفعيل حساب الجيم وبيانات الدخول.</p>
                         <div class="registration-reference"><small>رقم الطلب</small><strong id="registrationReference">—</strong></div>
+                        <div class="registration-payment-confirmation" id="registrationPaymentConfirmation" aria-live="polite"></div>
                         <a class="btn btn-light" href="/">العودة إلى Logic Fit</a>
                     </section>
 
@@ -181,6 +183,6 @@
     <script defer src="/js/theme.js?v=1"></script><script defer src="/js/core/phone-inputs.js?v=14"></script>
     <script defer src="/js/branding.js?v=5"></script>
     <script defer src="/js/ui-feedback.js?v=2"></script>
-    <script defer src="/js/register-gym.js?v=2"></script>
+    <script defer src="/js/register-gym.js?v=4"></script>
 </body>
 </html>
