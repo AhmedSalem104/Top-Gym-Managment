@@ -31,6 +31,15 @@ async function mountBranchDialog(page) {
     await page.locator('#branchCreateDialog').waitFor({ state: 'visible' });
 }
 
+async function waitForStableTypography(page) {
+    await page.waitForFunction(() => {
+        const fontStylesheet = Array.from(document.querySelectorAll('link[rel="stylesheet"]'))
+            .find((link) => link.href.includes('fonts.googleapis.com/css2?family=Cairo'));
+        return Boolean(fontStylesheet?.sheet);
+    });
+    await page.evaluate(() => document.fonts.ready);
+}
+
 async function signature(page) {
     return page.locator('#branchCreateDialog').evaluate((dialog) => {
         const form = dialog.querySelector('.dialog-body');
@@ -53,7 +62,19 @@ async function signature(page) {
                 overflowY: computed.overflowY
             };
         };
+        const geometry = (node) => {
+            const rect = node.getBoundingClientRect();
+            return { x: rect.x, y: rect.y, width: rect.width, height: rect.height };
+        };
         return {
+            geometry: {
+                viewport: { width: innerWidth, height: innerHeight },
+                dialog: geometry(dialog),
+                form: geometry(form),
+                head: geometry(head),
+                fields: geometry(fields),
+                footer: geometry(footer)
+            },
             dialog: style(dialog),
             form: style(form),
             head: style(head),
@@ -88,6 +109,7 @@ test.describe('branchCreateDialog cascade contract', () => {
         await page.goto('/index.html#branches');
         await page.waitForLoadState('domcontentloaded');
         await page.evaluate(() => { document.documentElement.dir = 'rtl'; });
+        await waitForStableTypography(page);
 
         const snapshots = [];
         await mountBranchDialog(page);
@@ -98,6 +120,7 @@ test.describe('branchCreateDialog cascade contract', () => {
         snapshots.push(await signature(page));
 
         await loadLazyMembershipCss(page);
+        await waitForStableTypography(page);
         await page.locator('#branchCreateDialog').evaluate((dialog) => dialog.close());
         await mountBranchDialog(page);
         snapshots.push(await signature(page));

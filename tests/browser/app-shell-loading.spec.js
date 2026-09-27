@@ -1,4 +1,5 @@
 const { test, expect } = require('@playwright/test');
+const featureCatalog = require('../../src/services/feature-catalog');
 
 async function installAuthenticatedRuntime(page) {
     const started = Date.now();
@@ -27,7 +28,16 @@ async function installAuthenticatedRuntime(page) {
         } else if (pathname === '/api/branding') {
             body = { branding: { identity: { brandName: 'QA Gym' }, assets: {} } };
         } else if (pathname === '/api/saas/entitlements') {
-            body = { tenantStatus: 'active', subscription: { status: 'active', plan: { code: 'starter' } }, entitlements: { tenantType: 'gym', features: { dashboard: true, members: true, attendance: true, reports: true }, limits: {} } };
+            body = {
+                tenantStatus: 'active',
+                subscription: { status: 'active', plan: { code: 'starter' } },
+                entitlements: {
+                    tenantType: 'gym',
+                    features: { dashboard: true, members: true, attendance: true, reports: true },
+                    featureCatalog: featureCatalog.getFeatureCatalog({ tenantType: 'gym' }),
+                    limits: {}
+                }
+            };
         } else if (pathname === '/api/branches/bootstrap') {
             body = { branch: { id: 1, name: 'Main', status: 'active' }, branches: [{ id: 1, name: 'Main', status: 'active' }], activeBranches: [{ id: 1, name: 'Main', status: 'active' }], hasMultipleActiveBranches: false, branchLimit: 1 };
         } else if (pathname === '/api/dashboard') {
@@ -47,9 +57,15 @@ test('authenticated welcome is bounded and closes after actual route readiness',
     // fixture can control readiness without being bypassed by server routing.
     await page.goto('/index.html?welcome=1#dashboard', { waitUntil: 'domcontentloaded' });
     await expect(page.locator('body')).toHaveAttribute('data-top-gym-authenticated', 'true');
-    await expect(page.locator('.tenant-welcome-card')).toBeVisible();
-
-    const card = await page.locator('.tenant-welcome-card').boundingBox();
+    const welcomeCard = await page.waitForFunction(() => {
+        const element = document.querySelector('.tenant-welcome-card');
+        if (!element?.isConnected) return null;
+        const style = getComputedStyle(element);
+        const rect = element.getBoundingClientRect();
+        if (style.display === 'none' || style.visibility === 'hidden' || rect.width <= 0 || rect.height <= 0) return null;
+        return { width: rect.width, height: rect.height };
+    }, null, { timeout: 10000 });
+    const card = await welcomeCard.jsonValue();
     expect(card.width).toBeLessThanOrEqual(470);
     // At 320px the card keeps the intended side margins, so its rendered
     // border box is slightly below 280px. The contract is bounded, visible,

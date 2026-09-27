@@ -14,8 +14,7 @@
 body .dropdown-menu,
 body .more-menu,
 body [data-dropdown-menu],
-body .popover,
-body [role="listbox"] {
+body .popover {
   position: absolute;
   z-index: var(--z-dropdown);
   min-width: 180px;

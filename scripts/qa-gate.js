@@ -27,14 +27,14 @@ function read(relativePath) {
     return fs.readFileSync(path.join(root, relativePath), 'utf8');
 }
 
-function run(command, commandArgs) {
+function run(command, commandArgs, { inheritOutput = false } = {}) {
     const executable = process.platform === 'win32' && command === 'npm' ? 'npm.cmd' : command;
     return spawnSync(executable, commandArgs, {
         cwd: root,
         encoding: 'utf8',
         env: { ...process.env, CI: process.env.CI || '1' },
         shell: process.platform === 'win32' && command === 'npm',
-        stdio: ['ignore', 'pipe', 'pipe']
+        stdio: inheritOutput ? 'inherit' : ['ignore', 'pipe', 'pipe']
     });
 }
 
@@ -600,8 +600,8 @@ function checkTrackedSecrets() {
     record('SEC-TRACKED-ENV', files.length === 0, files.length === 0 ? 'no environment file is tracked' : `tracked environment files: ${files.join(', ')}`, 'P0');
 }
 
-function runOptionalCommand(label, command, commandArgs) {
-    const result = run(command, commandArgs);
+function runOptionalCommand(label, command, commandArgs, options = {}) {
+    const result = run(command, commandArgs, options);
     const output = `${result.stdout || ''}${result.stderr || ''}`.trim();
     record(label, result.status === 0, result.status === 0 ? 'command passed' : output.slice(-2000) || result.error?.message || 'command failed');
 }
@@ -620,7 +620,7 @@ checkAnatomyAsset();
 checkTrackedSecrets();
 if (runBuild) runOptionalCommand('BUILD', 'npm', ['run', 'build']);
 if (runSmoke) runOptionalCommand('SMOKE', 'npm', ['run', 'test:smoke']);
-if (runBrowser) runOptionalCommand('BROWSER', 'npm', ['run', 'test:e2e']);
+if (runBrowser) runOptionalCommand('BROWSER', 'npm', ['run', 'test:e2e'], { inheritOutput: true });
 
 const failed = results.filter((item) => item.status === 'FAIL');
 const report = {

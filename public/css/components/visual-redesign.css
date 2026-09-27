@@ -2729,7 +2729,7 @@ body #actionDialog > form.dialog-body {
 }
 
 body #actionDialog > form.dialog-body > .dialog-actions {
-  margin-bottom: calc(var(--space-5) * -1);
+  margin-bottom: 0;
   padding: var(--space-3) var(--space-5);
 }
 

@@ -86,7 +86,17 @@ async function installTenantApi(page, tenantType) {
 
 test('Gym plan UI exposes four terms and only Gym-compatible feature labels', async ({ page }) => {
     await installTenantApi(page, 'gym');
-    await page.goto('/#saas-billing', { waitUntil: 'domcontentloaded' });
+    await page.goto('/index.html#saas-billing', { waitUntil: 'domcontentloaded' });
+    await page.evaluate(async () => {
+        if (!window.topGymAuthReady) throw new Error('Application auth readiness contract is unavailable.');
+        await window.topGymAuthReady;
+    });
+    const mobileNavToggle = page.locator('#mobileNavToggle');
+    if (await page.evaluate(() => window.matchMedia('(max-width: 767px)').matches)) {
+        await expect(mobileNavToggle).toBeVisible();
+        await mobileNavToggle.click();
+        await expect(page.locator('.app-shell')).toHaveClass(/mobile-nav-open/);
+    }
     await page.locator('[data-page-tab="saas-billing"]').click();
     await expect(page.locator('#saasPlansList [data-saas-plan-card]')).toHaveCount(4);
     await expect(page.locator('#saasPlansList [data-saas-term-plan]')).toHaveCount(4);
