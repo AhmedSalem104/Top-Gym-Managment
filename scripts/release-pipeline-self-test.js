@@ -41,6 +41,7 @@ function main() {
     const rendered = renderRemoteScript({
         appRoot: '/opt/logicfit-vps',
         repositoryUrl: 'https://github.com/example/logic-fit.git',
+        host: '13.140.170.148',
         gitCacheDir: '/opt/logicfit-vps/git-cache',
         nodeImage: 'node:24-bookworm-slim',
         containerName: 'logicfit-production-vps',
@@ -62,6 +63,12 @@ function main() {
     assert.match(rendered, /AUTO_CHECKOUT_SCHEDULER=DEFERRED_UNTIL_CUTOVER/);
     assert.match(rendered, /BACKUP_SCHEDULER=DEFERRED_UNTIL_CUTOVER/);
     assert.match(rendered, /CADDY_TLS=WAITING_FOR_STORAGE_DNS/);
+    assert.match(rendered, /getent ahostsv4 getlogicfit\.com/);
+    assert.match(rendered, /infra\/caddy\/sites\/application\.caddy/);
+    assert.match(rendered, /systemctl restart logicfit-caddy/);
+    assert.match(rendered, /APP_SITE_PREEXISTED/);
+    assert.match(rendered, /CADDY_TLS=PASS/);
+    assert.match(rendered, /CADDY_APP_SITE=PASS/);
     assert.match(rendered, /caddy validate --config \/etc\/caddy\/Caddyfile/);
     assert.doesNotMatch(rendered, /MIGRATION_PENDING='031-central-notifications\.sql'/);
     assert.match(rendered, /migrationPlan":\$plan_output/);

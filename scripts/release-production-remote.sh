@@ -8,6 +8,7 @@ GIT_CACHE_DIR='__GIT_CACHE_DIR__'
 RELEASE_TRANSPORT='__RELEASE_TRANSPORT__'
 NODE_IMAGE='__NODE_IMAGE__'
 CONTAINER_NAME='__CONTAINER_NAME__'
+PRODUCTION_HOST='__PRODUCTION_HOST__'
 INTERNAL_PORT='__INTERNAL_PORT__'
 CANDIDATE_PORT='__CANDIDATE_PORT__'
 BOOTSTRAP_ENV_FILE='__BOOTSTRAP_ENV_FILE__'
@@ -22,6 +23,9 @@ JOB_TIMER_TARGET='/etc/systemd/system/logicfit-attendance-auto-checkout.timer'
 BACKUP_JOB_WRAPPER_TARGET="${APP_ROOT}/bin/logicfit-scheduled-backup-job.sh"
 BACKUP_JOB_SERVICE_TARGET='/etc/systemd/system/logicfit-backup-daily.service'
 BACKUP_JOB_TIMER_TARGET='/etc/systemd/system/logicfit-backup-daily.timer'
+APP_SITE_TARGET='/etc/logicfit/sites/application.caddy'
+APP_SITE_BACKUP="/run/logicfit-application-site-${RELEASE_SHA}.caddy"
+APP_SITE_PREEXISTED=0
 STAGE='start'
 
 fail_release() {
@@ -168,6 +172,16 @@ install -d -m 0755 /etc/logicfit/sites
 install -m 0644 "$RELEASE_DIR/infra/caddy/Caddyfile" /etc/logicfit/Caddyfile
 install -m 0644 "$RELEASE_DIR/infra/caddy/sites/storage.caddy" /etc/logicfit/sites/storage.caddy
 install -m 0644 "$RELEASE_DIR/infra/systemd/logicfit-caddy.service" /etc/systemd/system/logicfit-caddy.service
+if [ "$BOOTSTRAP_MODE" != '1' ]; then
+    [ -f "$RELEASE_DIR/infra/caddy/sites/application.caddy" ]
+    resolved_app_addresses="$(getent ahostsv4 getlogicfit.com | awk '{print $1}' | sort -u)"
+    printf '%s\n' "$resolved_app_addresses" | grep -Fxq "$PRODUCTION_HOST"
+    if [ -f "$APP_SITE_TARGET" ]; then
+        cp -p "$APP_SITE_TARGET" "$APP_SITE_BACKUP"
+        APP_SITE_PREEXISTED=1
+    fi
+    install -m 0644 "$RELEASE_DIR/infra/caddy/sites/application.caddy" "$APP_SITE_TARGET"
+fi
 docker run --rm --network host \
     -v /etc/logicfit/Caddyfile:/etc/caddy/Caddyfile:ro \
     -v /etc/logicfit/sites:/etc/logicfit/sites:ro \
@@ -175,7 +189,33 @@ docker run --rm --network host \
     caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile >/dev/null
 systemctl daemon-reload
 printf 'CADDY_CONFIG=PASS\n'
-printf 'CADDY_TLS=WAITING_FOR_STORAGE_DNS\n'
+if [ "$BOOTSTRAP_MODE" = '1' ]; then
+    printf 'CADDY_TLS=WAITING_FOR_STORAGE_DNS\n'
+else
+    if ! systemctl restart logicfit-caddy; then
+        if [ "$APP_SITE_PREEXISTED" = '1' ]; then install -m 0644 "$APP_SITE_BACKUP" "$APP_SITE_TARGET"; else rm -f "$APP_SITE_TARGET"; fi
+        systemctl restart logicfit-caddy || true
+        rm -f "$APP_SITE_BACKUP"
+        abort_release 84
+    fi
+    caddy_app_health_ok=0
+    for _ in $(seq 1 60); do
+        if curl --resolve "getlogicfit.com:443:127.0.0.1" -fsS --max-time 5 https://getlogicfit.com/api/health/live >/dev/null 2>&1; then
+            caddy_app_health_ok=1
+            break
+        fi
+        sleep 1
+    done
+    if [ "$caddy_app_health_ok" -ne 1 ]; then
+        if [ "$APP_SITE_PREEXISTED" = '1' ]; then install -m 0644 "$APP_SITE_BACKUP" "$APP_SITE_TARGET"; else rm -f "$APP_SITE_TARGET"; fi
+        systemctl restart logicfit-caddy || true
+        rm -f "$APP_SITE_BACKUP"
+        abort_release 85
+    fi
+    rm -f "$APP_SITE_BACKUP"
+    printf 'CADDY_APP_SITE=PASS\n'
+    printf 'CADDY_TLS=PASS\n'
+fi
 
 STAGE='dependencies'
 if [ ! -d "$RELEASE_DIR/node_modules" ]; then

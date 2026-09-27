@@ -194,6 +194,7 @@ function renderRemoteScript(config, sha, archiveName = '', controlArchiveName = 
         __CONTAINER_NAME__: config.containerName,
         __INTERNAL_PORT__: String(config.internalPort),
         __CANDIDATE_PORT__: String(config.candidatePort),
+        __PRODUCTION_HOST__: String(config.host),
         __BOOTSTRAP_ENV_FILE__: String(config.bootstrapEnvFile || '/etc/logicfit/production.env'),
         __ARCHIVE_NAME__: archiveName,
         __CONTROL_ARCHIVE_NAME__: controlArchiveName
@@ -208,7 +209,7 @@ function renderRemoteScript(config, sha, archiveName = '', controlArchiveName = 
 
 function runRemoteRelease(config, script) {
     const result = run('ssh', [...sshArgs(config), 'sudo', '-n', 'bash', '-s'], { input: script, encoding: 'utf8', timeout: 900000 });
-    const safeLines = String(result.stdout || '').split(/\r?\n/).filter((line) => /^(RELEASE_|DEPENDENCIES=|BACKUP_|MIGRATION_|RLS_|CANDIDATE_|DEPLOYED_|SHA_|HEALTH=|ROLLBACK_)/.test(line));
+    const safeLines = String(result.stdout || '').split(/\r?\n/).filter((line) => /^(RELEASE_|DEPENDENCIES=|BACKUP_|MIGRATION_|RLS_|CANDIDATE_|DEPLOYED_|SHA_|HEALTH=|ROLLBACK_|CADDY_)/.test(line));
     if (result.error || result.status !== 0) {
         const failure = String(result.stderr || '').match(/RELEASE_REMOTE_FAIL stage=([a-z0-9-]+) code=([0-9]+)/i);
         const safeErrors = String(result.stderr || '').split(/\r?\n/).filter((line) =>
