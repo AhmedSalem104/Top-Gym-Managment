@@ -6,6 +6,7 @@ const { closePool, getPool, sql } = require('../src/database');
 const { runTenantContext } = require('../src/tenancy/tenant-context');
 const { createBackupRecoveryService } = require('../src/services/backup-recovery-service');
 const { createConfiguredObjectStorageService } = require('../src/services/object-storage-service');
+const { pendingMigrationVersionsFromEnv } = require('./run-server-scheduled-backup');
 
 async function verifyProductionBackup() {
     if (String(process.env.PRODUCTION_BACKUP_VERIFY_CONFIRM || '').trim() !== 'YES') {
@@ -51,7 +52,10 @@ async function verifyProductionBackup() {
         // downloadPlatformBackup re-reads the private object and hashes its
         // bytes before returning; the body is discarded immediately.
         await service.downloadPlatformBackup(Number(row.id), { readOnly: true, auditDownload: false, inspectPayload: false });
-        const health = await service.getPlatformBackupHealth({ readOnly: true });
+        const health = await service.getPlatformBackupHealth({
+            readOnly: true,
+            pendingMigrationVersions: pendingMigrationVersionsFromEnv()
+        });
         if (health.summary.missingToday !== 0 || health.summary.failedToday !== 0 || health.lastVerifiedPlatformBackup?.status !== 'VERIFIED') {
             const error = new Error('Backup coverage or verification health is incomplete.');
             error.code = 'BACKUP_COVERAGE_INCOMPLETE';

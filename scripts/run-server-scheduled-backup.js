@@ -15,6 +15,18 @@ const { acquireJobLock, writeJobResult } = require('./server-job-utils');
 // but leave enough headroom for the validated payload plus gzip buffers.
 const BACKUP_HEAP_MB = 1024;
 
+function pendingMigrationVersionsFromEnv(value = process.env.LOGIC_FIT_BACKUP_PENDING_MIGRATIONS) {
+    const source = String(value || '').trim();
+    if (!source) return [];
+    const versions = source.split(',').map((version) => version.trim());
+    if (versions.some((version) => !/^\d{3}$/.test(version)) || new Set(versions).size !== versions.length) {
+        const error = new Error('The release backup migration context is invalid.');
+        error.code = 'BACKUP_MIGRATION_CONTEXT_INVALID';
+        throw error;
+    }
+    return versions;
+}
+
 function relaunchWithBoundedBackupHeap() {
     const hasHeapLimit = process.execArgv.some((argument) => /^--max-old-space-size=\d+$/.test(argument))
         || /(?:^|\s)--max-old-space-size=\d+(?:\s|$)/.test(String(process.env.NODE_OPTIONS || ''));
@@ -50,7 +62,7 @@ async function main() {
         // eligible tenants without inheriting a web request tenant.
         const result = await runTenantContext({ mode: 'platform', tenantId: null }, async () => {
             const service = createBackupRecoveryService({ storageService: storage });
-            return service.runDailyBackupCycle();
+            return service.runDailyBackupCycle({ pendingMigrationVersions: pendingMigrationVersionsFromEnv() });
         });
         const failed = Number(result.tenantFailed || 0) + (result.platform?.status === 'failed' ? 1 : 0) + Number(result.retention?.failed || 0);
         writeJobResult({
@@ -70,11 +82,15 @@ async function main() {
     }
 }
 
-if (relaunchWithBoundedBackupHeap()) {
-    process.exit(process.exitCode || 0);
-} else {
-    main().catch((error) => {
-        writeJobResult({ job: 'backup', status: 'failed', code: error.code || 'BACKUP_JOB_FAILED', message: error.message });
-        process.exitCode = 1;
-    }).finally(() => closePool().catch(() => {}));
+if (require.main === module) {
+    if (relaunchWithBoundedBackupHeap()) {
+        process.exit(process.exitCode || 0);
+    } else {
+        main().catch((error) => {
+            writeJobResult({ job: 'backup', status: 'failed', code: error.code || 'BACKUP_JOB_FAILED', message: error.message });
+            process.exitCode = 1;
+        }).finally(() => closePool().catch(() => {}));
+    }
 }
+
+module.exports = { BACKUP_HEAP_MB, pendingMigrationVersionsFromEnv };

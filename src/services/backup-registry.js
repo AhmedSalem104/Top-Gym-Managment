@@ -158,7 +158,11 @@ const PLATFORM_GLOBAL_BACKUP_TABLES = Object.freeze([
     Object.freeze({ key: 'saas_notifications', table: 'saas_notifications' }),
     // Pending/sent mail delivery state is part of operational recovery: a
     // restored request must retain its committed notification intent.
-    Object.freeze({ key: 'email_outbox', table: 'email_outbox' }),
+    // This table is required once migration 039 is applied. During a release
+    // backup immediately before that additive migration, the release runner
+    // supplies the authoritative pending-migration set so its absence is
+    // treated as a not-yet-created table, not a coverage gap.
+    Object.freeze({ key: 'email_outbox', table: 'email_outbox', introducedByMigration: '039' }),
     Object.freeze({ key: 'saas_notification_reads', table: 'saas_notification_reads' }),
     Object.freeze({ key: 'saas_member_notification_reads', table: 'saas_member_notification_reads' })
 ]);
@@ -417,7 +421,7 @@ function getTenantBackupDefinition(key) {
     return TENANT_BACKUP_TABLE_BY_KEY.get(String(key || '').trim()) || null;
 }
 
-function getPlatformBackupCoverage({ existingTables = [], tenantTables = [], sourceSchemaGeneration = null } = {}) {
+function getPlatformBackupCoverage({ existingTables = [], tenantTables = [], sourceSchemaGeneration = null, pendingMigrationVersions = [] } = {}) {
     const actual = normalizedNames(existingTables);
     const tenantOwned = normalizedNames(tenantTables);
     const global = new Set(PLATFORM_GLOBAL_BACKUP_TABLES.map((item) => item.table.toLowerCase()));
@@ -428,9 +432,25 @@ function getPlatformBackupCoverage({ existingTables = [], tenantTables = [], sou
         ...LEGACY_BACKUP_EXCLUDED_TABLES
     ].map((item) => item.toLowerCase()));
     const legacySource = sourceSchemaGeneration === 'legacy-pre-trainer';
+    const pendingMigrations = new Set((Array.isArray(pendingMigrationVersions) ? pendingMigrationVersions : [])
+        .map((version) => String(version || '').trim())
+        .filter((version) => /^\d{3}$/.test(version)));
+    const absentModernTables = [...PLATFORM_GLOBAL_BACKUP_TABLES, ...TENANT_BACKUP_TABLES]
+        .map((item) => item.table)
+        .filter((table) => !actual.has(table.toLowerCase()));
+    const optionalNotYetCreatedGlobalTables = PLATFORM_GLOBAL_BACKUP_TABLES
+        .filter((item) => !actual.has(item.table.toLowerCase())
+            && item.introducedByMigration
+            && pendingMigrations.has(item.introducedByMigration))
+        .map((item) => item.table)
+        .sort();
     const missingGlobalTables = legacySource ? [] : PLATFORM_GLOBAL_BACKUP_TABLES
         .map((item) => item.table)
         .filter((table) => !actual.has(table.toLowerCase()))
+        .filter((table) => {
+            const definition = PLATFORM_GLOBAL_BACKUP_TABLES.find((item) => item.table.toLowerCase() === table.toLowerCase());
+            return !definition?.introducedByMigration || !pendingMigrations.has(definition.introducedByMigration);
+        })
         .sort();
     const missingTenantTables = legacySource ? [] : TENANT_BACKUP_TABLES
         .map((item) => item.table)
@@ -446,9 +466,6 @@ function getPlatformBackupCoverage({ existingTables = [], tenantTables = [], sou
     const unclassifiedTables = [...actual].filter((table) => !known.has(table)).sort();
     const presentLegacyTables = LEGACY_BACKUP_TABLES.map((item) => item.table).filter((table) => actual.has(table.toLowerCase()));
     const absentLegacyTables = LEGACY_BACKUP_TABLES.map((item) => item.table).filter((table) => !actual.has(table.toLowerCase()));
-    const absentModernTables = [...PLATFORM_GLOBAL_BACKUP_TABLES, ...TENANT_BACKUP_TABLES]
-        .map((item) => item.table)
-        .filter((table) => !actual.has(table.toLowerCase()));
     return {
         registryVersion: TENANT_BACKUP_REGISTRY_VERSION,
         status: missingGlobalTables.length || missingTenantTables.length || unregisteredTenantTables.length || unclassifiedTables.length
@@ -461,6 +478,8 @@ function getPlatformBackupCoverage({ existingTables = [], tenantTables = [], sou
         presentLegacyTables,
         absentLegacyTables,
         absentModernTables,
+        pendingMigrationVersions: [...pendingMigrations].sort(),
+        optionalNotYetCreatedGlobalTables,
         legacyExcludedTables: [...LEGACY_BACKUP_EXCLUDED_TABLES],
         legacyExclusionReasons: LEGACY_BACKUP_EXCLUSION_REASONS,
         excludedTables: [...PLATFORM_BACKUP_EXCLUDED_TABLES],

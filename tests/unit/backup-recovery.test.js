@@ -28,7 +28,13 @@ const {
     getDailyBackupCycleHttpStatus
 } = require('../../src/services/backup-recovery-service');
 const { createObjectStorageService } = require('../../src/services/object-storage-service');
-const { TENANT_BACKUP_REGISTRY_VERSION, TENANT_BACKUP_TABLES } = require('../../src/services/backup-registry');
+const {
+    PLATFORM_BACKUP_EXCLUDED_TABLES,
+    PLATFORM_GLOBAL_BACKUP_TABLES,
+    TENANT_BACKUP_REGISTRY_VERSION,
+    TENANT_BACKUP_TABLES,
+    getPlatformBackupCoverage
+} = require('../../src/services/backup-registry');
 
 function samplePayload() {
     return buildTenantBackupPayload({
@@ -163,6 +169,101 @@ test('platform v3 manifest covers every registered table with per-table checksum
     const tampered = structuredClone(payload);
     tampered.manifest.tableInventory.tenant.find((item) => item.key === 'members').sha256 = '0'.repeat(64);
     assert.throws(() => validatePlatformBackupPayload(tampered), { code: 'PLATFORM_BACKUP_INVENTORY_INVALID' });
+});
+
+test('pre-039 platform artifact validates only the explicitly pending additive table as absent', () => {
+    const existingTables = [
+        ...PLATFORM_GLOBAL_BACKUP_TABLES.map((definition) => definition.table).filter((table) => table !== 'email_outbox'),
+        ...TENANT_BACKUP_TABLES.map((definition) => definition.table),
+        ...PLATFORM_BACKUP_EXCLUDED_TABLES
+    ];
+    const globalDefinitions = PLATFORM_GLOBAL_BACKUP_TABLES.filter((definition) => existingTables.includes(definition.table));
+    const tenantDefinitions = TENANT_BACKUP_TABLES.filter((definition) => existingTables.includes(definition.table));
+    const tables = {
+        global: Object.fromEntries(globalDefinitions.map((definition) => [definition.key, []])),
+        tenant: Object.fromEntries(tenantDefinitions.map((definition) => [definition.key, []]))
+    };
+    tables.global.gym_tenants = [{ id: 7, name: 'Synthetic Gym' }];
+    tables.tenant.members = [{ id: 11, tenant_id: 7, full_name: 'Synthetic Member' }];
+    const tableCounts = {
+        global: Object.fromEntries(Object.entries(tables.global).map(([key, rows]) => [key, rows.length])),
+        tenant: Object.fromEntries(Object.entries(tables.tenant).map(([key, rows]) => [key, rows.length]))
+    };
+    const coverage = getPlatformBackupCoverage({
+        existingTables,
+        tenantTables: TENANT_BACKUP_TABLES.map((definition) => definition.table),
+        pendingMigrationVersions: ['039']
+    });
+    assert.equal(coverage.status, 'covered');
+    assert.deepEqual(coverage.optionalNotYetCreatedGlobalTables, ['email_outbox']);
+    const definitionsByScope = { global: globalDefinitions, tenant: tenantDefinitions };
+    const payload = {
+        format: 'logic-fit-platform-backup',
+        version: 3,
+        backupType: 'platform-disaster-recovery',
+        generatedAt: '2026-08-29T00:00:00.000Z',
+        manifest: buildPlatformManifest({
+            tables,
+            tableCounts,
+            now: '2026-08-29T00:00:00.000Z',
+            definitionsByScope,
+            coverage
+        }),
+        tables,
+        integrity: { algorithm: 'sha256', sha256: payloadDigest(tables) }
+    };
+    assert.doesNotThrow(() => validatePlatformBackupPayload(payload));
+
+    const unexpectedGap = structuredClone(payload);
+    delete unexpectedGap.tables.global.saas_plans;
+    delete unexpectedGap.manifest.tableCounts.global.saas_plans;
+    unexpectedGap.manifest.tableInventory.global = unexpectedGap.manifest.tableInventory.global.filter((item) => item.key !== 'saas_plans');
+    delete unexpectedGap.manifest.tableChecksums.global.saas_plans;
+    unexpectedGap.integrity.sha256 = payloadDigest(unexpectedGap.tables);
+    assert.throws(() => validatePlatformBackupPayload(unexpectedGap), { code: 'PLATFORM_BACKUP_REGISTRY_INCOMPLETE' });
+
+    const post039Tables = [...existingTables, 'email_outbox'];
+    const post039GlobalDefinitions = PLATFORM_GLOBAL_BACKUP_TABLES.filter((definition) => post039Tables.includes(definition.table));
+    const post039PayloadTables = {
+        global: { ...structuredClone(tables.global), email_outbox: [] },
+        tenant: structuredClone(tables.tenant)
+    };
+    const post039Counts = {
+        global: Object.fromEntries(Object.entries(post039PayloadTables.global).map(([key, rows]) => [key, rows.length])),
+        tenant: Object.fromEntries(Object.entries(post039PayloadTables.tenant).map(([key, rows]) => [key, rows.length]))
+    };
+    const post039Coverage = getPlatformBackupCoverage({
+        existingTables: post039Tables,
+        tenantTables: TENANT_BACKUP_TABLES.map((definition) => definition.table)
+    });
+    const post039Payload = {
+        ...payload,
+        tables: post039PayloadTables,
+        manifest: buildPlatformManifest({
+            tables: post039PayloadTables,
+            tableCounts: post039Counts,
+            now: '2026-08-29T00:00:00.000Z',
+            definitionsByScope: { global: post039GlobalDefinitions, tenant: tenantDefinitions },
+            coverage: post039Coverage
+        }),
+        integrity: { algorithm: 'sha256', sha256: payloadDigest(post039PayloadTables) }
+    };
+    assert.equal(post039Coverage.status, 'covered');
+    assert.deepEqual(post039Coverage.optionalNotYetCreatedGlobalTables, []);
+    assert.doesNotThrow(() => validatePlatformBackupPayload(post039Payload));
+
+    const missingPost039Outbox = structuredClone(post039Payload);
+    delete missingPost039Outbox.tables.global.email_outbox;
+    delete missingPost039Outbox.manifest.tableCounts.global.email_outbox;
+    missingPost039Outbox.manifest.tableInventory.global = missingPost039Outbox.manifest.tableInventory.global
+        .filter((item) => item.key !== 'email_outbox');
+    delete missingPost039Outbox.manifest.tableChecksums.global.email_outbox;
+    missingPost039Outbox.integrity.sha256 = payloadDigest(missingPost039Outbox.tables);
+    assert.throws(() => validatePlatformBackupPayload(missingPost039Outbox), { code: 'PLATFORM_BACKUP_REGISTRY_INCOMPLETE' });
+
+    const forgedOptional = structuredClone(payload);
+    forgedOptional.manifest.coverage.optionalNotYetCreatedGlobalTables = ['saas_plans'];
+    assert.throws(() => validatePlatformBackupPayload(forgedOptional), { code: 'PLATFORM_BACKUP_MANIFEST_INVALID' });
 });
 
 test('daily backup health endpoint status fails closed for partial or failed cycles', () => {

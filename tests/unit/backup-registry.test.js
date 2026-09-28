@@ -96,6 +96,58 @@ test('platform coverage identifies missing, unclassified and tenant-owned physic
     assert.deepEqual(gap.unclassifiedTables, ['future_platform_table', 'future_tenant_table']);
 });
 
+test('039 outbox table is optional only while migration 039 is explicitly pending', () => {
+    const completePhysicalSchema = [
+        ...PLATFORM_GLOBAL_BACKUP_TABLES.map((item) => item.table),
+        ...TENANT_BACKUP_TABLES.map((item) => item.table),
+        ...PLATFORM_BACKUP_EXCLUDED_TABLES
+    ];
+    const pre039Schema = completePhysicalSchema.filter((table) => table !== 'email_outbox');
+
+    const pre039 = getPlatformBackupCoverage({
+        existingTables: pre039Schema,
+        tenantTables: TENANT_BACKUP_TABLES.map((item) => item.table),
+        pendingMigrationVersions: ['039']
+    });
+    assert.equal(pre039.status, 'covered');
+    assert.ok(pre039.absentModernTables.includes('email_outbox'));
+    assert.ok(!PLATFORM_GLOBAL_BACKUP_TABLES.some((item) => item.table === 'email_outbox'
+        && pre039Schema.includes(item.table)));
+
+    const post039 = getPlatformBackupCoverage({
+        existingTables: completePhysicalSchema,
+        tenantTables: TENANT_BACKUP_TABLES.map((item) => item.table)
+    });
+    assert.equal(post039.status, 'covered');
+    assert.ok(!post039.absentModernTables.includes('email_outbox'));
+    assert.ok(PLATFORM_GLOBAL_BACKUP_TABLES
+        .filter((item) => completePhysicalSchema.includes(item.table))
+        .some((item) => item.table === 'email_outbox'));
+
+    const post039MissingOutbox = getPlatformBackupCoverage({
+        existingTables: pre039Schema,
+        tenantTables: TENANT_BACKUP_TABLES.map((item) => item.table)
+    });
+    assert.equal(post039MissingOutbox.status, 'attention');
+    assert.deepEqual(post039MissingOutbox.missingGlobalTables, ['email_outbox']);
+
+    const unrelatedGap = getPlatformBackupCoverage({
+        existingTables: completePhysicalSchema.filter((table) => table !== 'saas_plans'),
+        tenantTables: TENANT_BACKUP_TABLES.map((item) => item.table),
+        pendingMigrationVersions: ['039']
+    });
+    assert.equal(unrelatedGap.status, 'attention');
+    assert.ok(unrelatedGap.missingGlobalTables.includes('saas_plans'));
+
+    const malformedContext = getPlatformBackupCoverage({
+        existingTables: pre039Schema,
+        tenantTables: TENANT_BACKUP_TABLES.map((item) => item.table),
+        pendingMigrationVersions: ['39']
+    });
+    assert.equal(malformedContext.status, 'attention');
+    assert.ok(malformedContext.missingGlobalTables.includes('email_outbox'));
+});
+
 test('legacy production tables are classified without requiring the modern tenant_type schema', () => {
     assert.equal(classifyPlatformTable('Appointments').classification, 'LEGACY_REQUIRED');
     assert.equal(classifyPlatformTable('UserProfiles').classification, 'LEGACY_REQUIRED');

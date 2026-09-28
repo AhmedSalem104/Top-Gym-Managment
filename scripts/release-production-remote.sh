@@ -24,8 +24,24 @@ BACKUP_JOB_WRAPPER_TARGET="${APP_ROOT}/bin/logicfit-scheduled-backup-job.sh"
 BACKUP_JOB_SERVICE_TARGET='/etc/systemd/system/logicfit-backup-daily.service'
 BACKUP_JOB_TIMER_TARGET='/etc/systemd/system/logicfit-backup-daily.timer'
 APP_SITE_TARGET='/etc/logicfit/sites/application.caddy'
-APP_SITE_BACKUP="/run/logicfit-application-site-${RELEASE_SHA}.caddy"
-APP_SITE_PREEXISTED=0
+HOST_RUNTIME_BACKUP_DIR="/run/logicfit-release-host-${RELEASE_SHA}"
+HOST_RUNTIME_MUTATED=0
+CUTOVER_COMMITTED=0
+HOST_CONFIG_TARGETS=(
+    "$JOB_WRAPPER_TARGET"
+    "$JOB_SERVICE_TARGET"
+    "$JOB_TIMER_TARGET"
+    "$BACKUP_JOB_WRAPPER_TARGET"
+    "$BACKUP_JOB_SERVICE_TARGET"
+    "$BACKUP_JOB_TIMER_TARGET"
+    '/etc/logicfit/Caddyfile'
+    '/etc/logicfit/sites/storage.caddy'
+    "$APP_SITE_TARGET"
+    '/etc/systemd/system/logicfit-caddy.service'
+)
+HOST_TIMER_UNITS=('logicfit-attendance-auto-checkout.timer' 'logicfit-backup-daily.timer' 'logicfit-caddy.service')
+HOST_TIMER_ENABLED=()
+HOST_TIMER_ACTIVE=()
 STAGE='start'
 
 fail_release() {
@@ -53,7 +69,58 @@ printf '%s\n' "$$" > "$LOCK_DIR/pid"
 printf '%s\n' "$RELEASE_SHA" > "$LOCK_DIR/sha"
 cleanup_lock() { rm -f "$LOCK_DIR/pid" "$LOCK_DIR/sha" 2>/dev/null || true; rmdir "$LOCK_DIR" 2>/dev/null || true; }
 cleanup_artifacts() { rm -f "$ARCHIVE_PATH" "$CONTROL_ARCHIVE_PATH" 2>/dev/null || true; rm -rf -- "$CONTROL_DIR" 2>/dev/null || true; }
-trap 'cleanup_lock; cleanup_artifacts' EXIT
+snapshot_host_runtime() {
+    install -d -m 0700 "$HOST_RUNTIME_BACKUP_DIR"
+    for index in "${!HOST_CONFIG_TARGETS[@]}"; do
+        target="${HOST_CONFIG_TARGETS[$index]}"
+        if [ -e "$target" ]; then
+            cp -p -- "$target" "$HOST_RUNTIME_BACKUP_DIR/$index"
+            printf 'present\n' > "$HOST_RUNTIME_BACKUP_DIR/$index.state"
+        else
+            printf 'absent\n' > "$HOST_RUNTIME_BACKUP_DIR/$index.state"
+        fi
+    done
+    for index in "${!HOST_TIMER_UNITS[@]}"; do
+        unit="${HOST_TIMER_UNITS[$index]}"
+        HOST_TIMER_ENABLED[$index]="$(systemctl is-enabled "$unit" 2>/dev/null || true)"
+        HOST_TIMER_ACTIVE[$index]="$(systemctl is-active "$unit" 2>/dev/null || true)"
+    done
+}
+restore_host_runtime() {
+    HOST_RUNTIME_MUTATED=0
+    for index in "${!HOST_CONFIG_TARGETS[@]}"; do
+        target="${HOST_CONFIG_TARGETS[$index]}"
+        if [ "$(cat "$HOST_RUNTIME_BACKUP_DIR/$index.state" 2>/dev/null || true)" = 'present' ]; then
+            install -D -p -- "$HOST_RUNTIME_BACKUP_DIR/$index" "$target" 2>/dev/null || cp -p -- "$HOST_RUNTIME_BACKUP_DIR/$index" "$target"
+        else
+            rm -f -- "$target"
+        fi
+    done
+    systemctl daemon-reload >/dev/null 2>&1 || true
+    for index in "${!HOST_TIMER_UNITS[@]}"; do
+        unit="${HOST_TIMER_UNITS[$index]}"
+        case "${HOST_TIMER_ENABLED[$index]:-}" in
+            enabled) systemctl enable "$unit" >/dev/null 2>&1 || true ;;
+            disabled) systemctl disable "$unit" >/dev/null 2>&1 || true ;;
+        esac
+        if [ "${HOST_TIMER_ACTIVE[$index]:-}" = 'active' ]; then
+            systemctl start "$unit" >/dev/null 2>&1 || true
+        else
+            systemctl stop "$unit" >/dev/null 2>&1 || true
+        fi
+    done
+    systemctl restart logicfit-caddy >/dev/null 2>&1 || true
+    rm -rf -- "$HOST_RUNTIME_BACKUP_DIR"
+}
+cleanup_release() {
+    result="$?"
+    trap - EXIT
+    if [ "$HOST_RUNTIME_MUTATED" = '1' ] && [ "$CUTOVER_COMMITTED" != '1' ]; then restore_host_runtime; fi
+    cleanup_lock
+    cleanup_artifacts
+    exit "$result"
+}
+trap cleanup_release EXIT
 printf 'RELEASE_LOCK=ACQUIRED\n'
 
 STAGE='preflight'
@@ -122,100 +189,28 @@ if [ "$RELEASE_TRANSPORT" = 'archive' ]; then
     rm -f "$ARCHIVE_PATH" "$CONTROL_ARCHIVE_PATH"
 fi
 
-STAGE='scheduler'
+STAGE='runtime-config-validation'
 [ -f "$RELEASE_DIR/scripts/run-vps-auto-checkout-job.sh" ]
 [ -f "$RELEASE_DIR/infra/systemd/logicfit-attendance-auto-checkout.service" ]
 [ -f "$RELEASE_DIR/infra/systemd/logicfit-attendance-auto-checkout.timer" ]
 [ -f "$RELEASE_DIR/scripts/run-vps-scheduled-backup-job.sh" ]
 [ -f "$RELEASE_DIR/infra/systemd/logicfit-backup-daily.service" ]
 [ -f "$RELEASE_DIR/infra/systemd/logicfit-backup-daily.timer" ]
-mkdir -p "$APP_ROOT/bin" "$APP_ROOT/job-state"
-chmod 750 "$APP_ROOT/bin" "$APP_ROOT/job-state"
-sed -e "s#@@APP_ROOT@@#${APP_ROOT}#g" \
-    -e "s#@@CONTAINER_NAME@@#${CONTAINER_NAME}#g" \
-    -e "s#@@NODE_IMAGE@@#${NODE_IMAGE}#g" \
-    "$RELEASE_DIR/scripts/run-vps-auto-checkout-job.sh" > "$JOB_WRAPPER_TARGET"
-chmod 750 "$JOB_WRAPPER_TARGET"
-sed "s#@@APP_ROOT@@#${APP_ROOT}#g" \
-    "$RELEASE_DIR/infra/systemd/logicfit-attendance-auto-checkout.service" > "$JOB_SERVICE_TARGET"
-install -m 0644 "$RELEASE_DIR/infra/systemd/logicfit-attendance-auto-checkout.timer" "$JOB_TIMER_TARGET"
-systemctl daemon-reload
-if [ "$BOOTSTRAP_MODE" = '1' ]; then
-    printf 'AUTO_CHECKOUT_SCHEDULER=DEFERRED_UNTIL_CUTOVER\n'
-else
-    systemctl enable logicfit-attendance-auto-checkout.timer >/dev/null
-    systemctl start logicfit-attendance-auto-checkout.timer
-    printf 'AUTO_CHECKOUT_SCHEDULER=PASS\n'
-fi
-sed -e "s#@@APP_ROOT@@#${APP_ROOT}#g" \
-    -e "s#@@CONTAINER_NAME@@#${CONTAINER_NAME}#g" \
-    -e "s#@@NODE_IMAGE@@#${NODE_IMAGE}#g" \
-    "$RELEASE_DIR/scripts/run-vps-scheduled-backup-job.sh" > "$BACKUP_JOB_WRAPPER_TARGET"
-chmod 750 "$BACKUP_JOB_WRAPPER_TARGET"
-sed "s#@@APP_ROOT@@#${APP_ROOT}#g" \
-    "$RELEASE_DIR/infra/systemd/logicfit-backup-daily.service" > "$BACKUP_JOB_SERVICE_TARGET"
-install -m 0644 "$RELEASE_DIR/infra/systemd/logicfit-backup-daily.timer" "$BACKUP_JOB_TIMER_TARGET"
-systemctl daemon-reload
-if [ "$BOOTSTRAP_MODE" = '1' ]; then
-    printf 'BACKUP_SCHEDULER=DEFERRED_UNTIL_CUTOVER\n'
-else
-    systemctl enable logicfit-backup-daily.timer >/dev/null
-    systemctl start logicfit-backup-daily.timer
-    printf 'BACKUP_SCHEDULER=PASS\n'
-fi
-
-STAGE='edge-config'
 [ -f "$RELEASE_DIR/infra/caddy/Caddyfile" ]
 [ -f "$RELEASE_DIR/infra/caddy/sites/storage.caddy" ]
 [ -f "$RELEASE_DIR/infra/systemd/logicfit-caddy.service" ]
-install -d -m 0755 /etc/logicfit/sites
-install -m 0644 "$RELEASE_DIR/infra/caddy/Caddyfile" /etc/logicfit/Caddyfile
-install -m 0644 "$RELEASE_DIR/infra/caddy/sites/storage.caddy" /etc/logicfit/sites/storage.caddy
-install -m 0644 "$RELEASE_DIR/infra/systemd/logicfit-caddy.service" /etc/systemd/system/logicfit-caddy.service
 if [ "$BOOTSTRAP_MODE" != '1' ]; then
     [ -f "$RELEASE_DIR/infra/caddy/sites/application.caddy" ]
     resolved_app_addresses="$(getent ahostsv4 getlogicfit.com | awk '{print $1}' | sort -u)"
     printf '%s\n' "$resolved_app_addresses" | grep -Fxq "$PRODUCTION_HOST"
-    if [ -f "$APP_SITE_TARGET" ]; then
-        cp -p "$APP_SITE_TARGET" "$APP_SITE_BACKUP"
-        APP_SITE_PREEXISTED=1
-    fi
-    install -m 0644 "$RELEASE_DIR/infra/caddy/sites/application.caddy" "$APP_SITE_TARGET"
 fi
 docker run --rm --network host \
-    -v /etc/logicfit/Caddyfile:/etc/caddy/Caddyfile:ro \
-    -v /etc/logicfit/sites:/etc/logicfit/sites:ro \
+    -v "$RELEASE_DIR/infra/caddy/Caddyfile:/etc/caddy/Caddyfile:ro" \
+    -v "$RELEASE_DIR/infra/caddy/sites:/etc/logicfit/sites:ro" \
     sha256:c3d7ee5d2b11f9dc54f947f68a734c84e9c9666c92c88a7f30b9cba5da182adb \
     caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile >/dev/null
-systemctl daemon-reload
-printf 'CADDY_CONFIG=PASS\n'
-if [ "$BOOTSTRAP_MODE" = '1' ]; then
-    printf 'CADDY_TLS=WAITING_FOR_STORAGE_DNS\n'
-else
-    if ! systemctl restart logicfit-caddy; then
-        if [ "$APP_SITE_PREEXISTED" = '1' ]; then install -m 0644 "$APP_SITE_BACKUP" "$APP_SITE_TARGET"; else rm -f "$APP_SITE_TARGET"; fi
-        systemctl restart logicfit-caddy || true
-        rm -f "$APP_SITE_BACKUP"
-        abort_release 84
-    fi
-    caddy_app_health_ok=0
-    for _ in $(seq 1 60); do
-        if curl --resolve "getlogicfit.com:443:127.0.0.1" -fsS --max-time 5 https://getlogicfit.com/api/health/live >/dev/null 2>&1; then
-            caddy_app_health_ok=1
-            break
-        fi
-        sleep 1
-    done
-    if [ "$caddy_app_health_ok" -ne 1 ]; then
-        if [ "$APP_SITE_PREEXISTED" = '1' ]; then install -m 0644 "$APP_SITE_BACKUP" "$APP_SITE_TARGET"; else rm -f "$APP_SITE_TARGET"; fi
-        systemctl restart logicfit-caddy || true
-        rm -f "$APP_SITE_BACKUP"
-        abort_release 85
-    fi
-    rm -f "$APP_SITE_BACKUP"
-    printf 'CADDY_APP_SITE=PASS\n'
-    printf 'CADDY_TLS=PASS\n'
-fi
+printf 'RUNTIME_CONFIG_VALIDATION=PASS\n'
+printf 'PRODUCTION_RUNTIME_CONFIG=UNCHANGED\n'
 
 STAGE='dependencies'
 if [ ! -d "$RELEASE_DIR/node_modules" ]; then
@@ -284,24 +279,30 @@ if [ "$BOOTSTRAP_MODE" = '1' ] && [[ "$plan_output" != *'"pending":[]'* ]]; then
     abort_release 78
 fi
 printf 'MIGRATION_PLAN=PASS\n'
+pending_migration_versions="$(run_control node -e 'const plan=JSON.parse(process.argv[1]); if(plan.status!=="PASS"||!Array.isArray(plan.pending)) process.exit(1); process.stdout.write(plan.pending.map(item=>String(item.version).padStart(3,"0")).join(","))' "$plan_output")"
+if [[ -n "$pending_migration_versions" && ! "$pending_migration_versions" =~ ^[0-9]{3}(,[0-9]{3})*$ ]]; then
+    STAGE='migration-plan'
+    abort_release 78
+fi
 
 MIGRATION_APPLY_OUTPUT='{"status":"SKIPPED","applied":[],"pending":[],"ledger":"verified"}'
 if [[ "$plan_output" != *'"pending":[]'* ]]; then
     STAGE='backup'
     backup_started_at="$(date -u +%Y-%m-%dT%H:%M:%S.%3NZ)"
     backup_log="$(mktemp)"
-    # The pre-migration snapshot must use the currently running release and
-    # registry. The candidate may introduce tables that are not in Production
-    # until its pending migration has completed.
-    [ -f "$OLD_RELEASE/scripts/run-server-scheduled-backup.js" ]
-    [ -f "$OLD_RELEASE/scripts/verify-production-backup.js" ]
+    # Run the new release's backup tools in an isolated one-shot container.
+    # Its schema-aware registry receives only versions proven pending by the
+    # authoritative migration plan; the live application remains OLD_RELEASE.
+    [ -f "$RELEASE_DIR/scripts/run-server-scheduled-backup.js" ]
+    [ -f "$RELEASE_DIR/scripts/verify-production-backup.js" ]
     # Let the official backup runner apply its bounded 1024 MiB heap policy.
     # A smaller parent limit prevents its safe re-exec and can fail on the
     # current validated production snapshot before storage.
     if ! run_with_current_env "$OLD_CONTAINER" \
         -e LOGIC_FIT_JOB_STATE_DIR=/tmp/logicfit-job-state-release \
+        -e "LOGIC_FIT_BACKUP_PENDING_MIGRATIONS=$pending_migration_versions" \
         -e NODE_ENV=production \
-        -v "$OLD_RELEASE:/app" -w /app "$NODE_IMAGE" \
+        -v "$RELEASE_DIR:/app:ro" -w /app "$NODE_IMAGE" \
         node scripts/run-server-scheduled-backup.js >"$backup_log" 2>&1; then
         rm -f "$backup_log"
         abort_release 76
@@ -312,9 +313,10 @@ if [[ "$plan_output" != *'"pending":[]'* ]]; then
     STAGE='backup-verification'
     if ! run_with_current_env "$OLD_CONTAINER" \
         -e NODE_ENV=production \
+        -e "LOGIC_FIT_BACKUP_PENDING_MIGRATIONS=$pending_migration_versions" \
         -e "BACKUP_STARTED_AT=$backup_started_at" \
         -e PRODUCTION_BACKUP_VERIFY_CONFIRM=YES \
-        -v "$OLD_RELEASE:/app" -w /app "$NODE_IMAGE" \
+        -v "$RELEASE_DIR:/app:ro" -w /app "$NODE_IMAGE" \
         node --max-old-space-size=1024 scripts/verify-production-backup.js >/dev/null; then
         abort_release 77
     fi
@@ -366,13 +368,68 @@ docker stop "$CANDIDATE_NAME" >/dev/null
 docker rm "$CANDIDATE_NAME" >/dev/null
 printf 'CANDIDATE_SMOKE=PASS\n'
 
+STAGE='cutover-runtime-config'
+snapshot_host_runtime
+HOST_RUNTIME_MUTATED=1
+mkdir -p "$APP_ROOT/bin" "$APP_ROOT/job-state"
+chmod 750 "$APP_ROOT/bin" "$APP_ROOT/job-state"
+sed -e "s#@@APP_ROOT@@#${APP_ROOT}#g" \
+    -e "s#@@CONTAINER_NAME@@#${CONTAINER_NAME}#g" \
+    -e "s#@@NODE_IMAGE@@#${NODE_IMAGE}#g" \
+    "$RELEASE_DIR/scripts/run-vps-auto-checkout-job.sh" > "$JOB_WRAPPER_TARGET"
+chmod 750 "$JOB_WRAPPER_TARGET"
+sed "s#@@APP_ROOT@@#${APP_ROOT}#g" \
+    "$RELEASE_DIR/infra/systemd/logicfit-attendance-auto-checkout.service" > "$JOB_SERVICE_TARGET"
+install -m 0644 "$RELEASE_DIR/infra/systemd/logicfit-attendance-auto-checkout.timer" "$JOB_TIMER_TARGET"
+sed -e "s#@@APP_ROOT@@#${APP_ROOT}#g" \
+    -e "s#@@CONTAINER_NAME@@#${CONTAINER_NAME}#g" \
+    -e "s#@@NODE_IMAGE@@#${NODE_IMAGE}#g" \
+    -e "s#@@BACKUP_RELEASE_DIR@@#${RELEASE_DIR}#g" \
+    "$RELEASE_DIR/scripts/run-vps-scheduled-backup-job.sh" > "$BACKUP_JOB_WRAPPER_TARGET"
+chmod 750 "$BACKUP_JOB_WRAPPER_TARGET"
+sed "s#@@APP_ROOT@@#${APP_ROOT}#g" \
+    "$RELEASE_DIR/infra/systemd/logicfit-backup-daily.service" > "$BACKUP_JOB_SERVICE_TARGET"
+install -m 0644 "$RELEASE_DIR/infra/systemd/logicfit-backup-daily.timer" "$BACKUP_JOB_TIMER_TARGET"
+install -d -m 0755 /etc/logicfit/sites
+install -m 0644 "$RELEASE_DIR/infra/caddy/Caddyfile" /etc/logicfit/Caddyfile
+install -m 0644 "$RELEASE_DIR/infra/caddy/sites/storage.caddy" /etc/logicfit/sites/storage.caddy
+install -m 0644 "$RELEASE_DIR/infra/systemd/logicfit-caddy.service" /etc/systemd/system/logicfit-caddy.service
+if [ "$BOOTSTRAP_MODE" != '1' ]; then
+    install -m 0644 "$RELEASE_DIR/infra/caddy/sites/application.caddy" "$APP_SITE_TARGET"
+fi
+systemctl daemon-reload
+if [ "$BOOTSTRAP_MODE" = '1' ]; then
+    printf 'AUTO_CHECKOUT_SCHEDULER=DEFERRED_UNTIL_CUTOVER\n'
+    printf 'BACKUP_SCHEDULER=DEFERRED_UNTIL_CUTOVER\n'
+    printf 'CADDY_TLS=WAITING_FOR_STORAGE_DNS\n'
+else
+    systemctl enable logicfit-attendance-auto-checkout.timer >/dev/null
+    systemctl start logicfit-attendance-auto-checkout.timer
+    systemctl enable logicfit-backup-daily.timer >/dev/null
+    systemctl start logicfit-backup-daily.timer
+    printf 'AUTO_CHECKOUT_SCHEDULER=PASS\n'
+    printf 'BACKUP_SCHEDULER=PASS\n'
+    if ! systemctl restart logicfit-caddy; then abort_release 84; fi
+    caddy_app_health_ok=0
+    for _ in $(seq 1 60); do
+        if curl --resolve "getlogicfit.com:443:127.0.0.1" -fsS --max-time 5 https://getlogicfit.com/api/health/live >/dev/null 2>&1; then
+            caddy_app_health_ok=1
+            break
+        fi
+        sleep 1
+    done
+    if [ "$caddy_app_health_ok" -ne 1 ]; then abort_release 85; fi
+    printf 'CADDY_APP_SITE=PASS\n'
+    printf 'CADDY_TLS=PASS\n'
+fi
+
 STAGE='cutover'
 if [ "$BOOTSTRAP_MODE" = '1' ]; then
     # First deployment is isolated to the new VPS. Do not rename, stop, or
     # otherwise affect the old production server; only the later DNS cutover
     # moves user traffic.
     PREVIOUS_NAME='external-old-production-vps'
-    if ! docker run --network host --env-file "$BOOTSTRAP_ENV_FILE" -e NODE_ENV=production -e PORT="$INTERNAL_PORT" -e APP_RELEASE_ID="$RELEASE_SHA" -d --name "$CONTAINER_NAME" --restart unless-stopped -v "$RELEASE_DIR:/app" -w /app "$NODE_IMAGE" node -e 'const app=require("./server"); const {closePool}=require("./src/database"); const port=Number(process.env.PORT||3017); const server=app.listen(port,"127.0.0.1",()=>process.stdout.write("production-ready\n")); const shutdown=()=>server.close(()=>closePool().finally(()=>process.exit(0))); process.once("SIGTERM",shutdown); process.once("SIGINT",shutdown);' >/dev/null; then
+    if ! docker run --network host --env-file "$BOOTSTRAP_ENV_FILE" -e NODE_ENV=production -e PORT="$INTERNAL_PORT" -e APP_RELEASE_ID="$RELEASE_SHA" -d --name "$CONTAINER_NAME" --restart unless-stopped -v "$RELEASE_DIR:/app" -w /app "$NODE_IMAGE" node -e 'const app=require("./server"); const outbox=require("./src/services/email-outbox-dispatcher"); const {closePool}=require("./src/database"); const port=Number(process.env.PORT||3017); outbox.start(); const server=app.listen(port,"127.0.0.1",()=>process.stdout.write("production-ready\n")); const shutdown=()=>server.close(()=>outbox.stop().then(()=>closePool()).finally(()=>process.exit(0))); process.once("SIGTERM",shutdown); process.once("SIGINT",shutdown);' >/dev/null; then
         abort_release 80
     fi
 else
@@ -407,6 +464,8 @@ STAGE='sha-verification'
 DEPLOYED_RELEASE="$(docker inspect "$CONTAINER_NAME" --format '{{range .Mounts}}{{if eq .Destination "/app"}}{{.Source}}{{end}}{{end}}')"
 [ "$DEPLOYED_RELEASE" = "$RELEASE_DIR" ]
 [ "$(cat "$RELEASE_DIR/.logicfit-release-sha")" = "$RELEASE_SHA" ]
+CUTOVER_COMMITTED=1
+rm -rf -- "$HOST_RUNTIME_BACKUP_DIR"
 printf 'DEPLOYED_SHA=%s\n' "$RELEASE_SHA"
 printf 'SHA_MATCH=PASS\n'
 printf 'HEALTH=PASS\n'

@@ -4,6 +4,7 @@ set -Eeuo pipefail
 APP_ROOT='@@APP_ROOT@@'
 CONTAINER_NAME='@@CONTAINER_NAME@@'
 NODE_IMAGE='@@NODE_IMAGE@@'
+BACKUP_RELEASE_DIR='@@BACKUP_RELEASE_DIR@@'
 STATE_DIR="${APP_ROOT}/job-state"
 RELEASE_LOCK="${APP_ROOT}/.production-release-lock"
 
@@ -22,8 +23,7 @@ if [ -z "$container_id" ]; then
     exit 1
 fi
 
-release_dir="$(docker inspect "$CONTAINER_NAME" --format '{{range .Mounts}}{{if eq .Destination "/app"}}{{.Source}}{{end}}{{end}}')"
-case "$release_dir" in
+case "$BACKUP_RELEASE_DIR" in
     "$APP_ROOT"/app-*) ;;
     *)
         printf '%s\n' 'BACKUP_FAILED=RELEASE_PATH_INVALID' >&2
@@ -31,17 +31,19 @@ case "$release_dir" in
         ;;
 esac
 
-[ -f "$release_dir/scripts/run-server-scheduled-backup.js" ]
+[ -f "$BACKUP_RELEASE_DIR/scripts/run-server-scheduled-backup.js" ]
 mkdir -p "$STATE_DIR"
 chmod 750 "$STATE_DIR"
 
-# Reuse the running application's environment through an anonymous pipe. No
-# secret is placed in this wrapper, a command argument, or a host-side file.
+# Run the release-pinned backup tooling against the live application's current
+# schema/config. Pinning the tooling independently lets OLD_RELEASE serve as
+# rollback source after an additive migration without losing new-table coverage.
+# Environment is passed through an anonymous pipe; no secret is stored here.
 docker inspect "$CONTAINER_NAME" --format '{{range .Config.Env}}{{println .}}{{end}}' |
     docker run --rm --network host --env-file /dev/stdin \
         -e NODE_ENV=production \
         -e LOGIC_FIT_JOB_STATE_DIR=/var/lib/logicfit/jobs \
         -v "$STATE_DIR:/var/lib/logicfit/jobs" \
-        -v "$release_dir:/app:ro" \
+        -v "$BACKUP_RELEASE_DIR:/app:ro" \
         -w /app \
         "$NODE_IMAGE" node --max-old-space-size=1024 scripts/run-server-scheduled-backup.js

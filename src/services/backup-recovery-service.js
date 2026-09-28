@@ -389,6 +389,36 @@ function validatePlatformTenantReferences(globalTables, tenantTables) {
     return true;
 }
 
+function platformNotYetCreatedGlobalKeys(manifest) {
+    const coverage = manifest?.coverage;
+    const listed = coverage?.optionalNotYetCreatedGlobalTables;
+    if (listed === undefined) return new Set();
+    if (!Array.isArray(listed)
+        || !Array.isArray(coverage?.pendingMigrationVersions)
+        || !Array.isArray(coverage?.absentModernTables)) {
+        throw backupError('The platform backup migration coverage metadata is invalid.', 400, 'PLATFORM_BACKUP_MANIFEST_INVALID');
+    }
+    const pending = new Set(coverage.pendingMigrationVersions.map((version) => String(version || '').trim()).filter((version) => /^\d{3}$/.test(version)));
+    const absent = new Set(coverage.absentModernTables.map((table) => String(table || '').toLowerCase()));
+    const expected = PLATFORM_GLOBAL_BACKUP_TABLES
+        .filter((definition) => definition.introducedByMigration
+            && pending.has(definition.introducedByMigration)
+            && absent.has(definition.table.toLowerCase()))
+        .map((definition) => definition.key)
+        .sort();
+    const listedKeys = listed.map((table) => {
+        const definition = PLATFORM_GLOBAL_BACKUP_TABLES.find((item) => item.table.toLowerCase() === String(table || '').toLowerCase());
+        if (!definition?.introducedByMigration || !pending.has(definition.introducedByMigration) || !absent.has(definition.table.toLowerCase())) {
+            throw backupError('The platform backup marks a required table as not yet created.', 400, 'PLATFORM_BACKUP_MANIFEST_INVALID');
+        }
+        return definition.key;
+    }).sort();
+    if (listedKeys.length !== expected.length || listedKeys.some((key, index) => key !== expected[index])) {
+        throw backupError('The platform backup migration coverage metadata is inconsistent.', 400, 'PLATFORM_BACKUP_MANIFEST_INVALID');
+    }
+    return new Set(listedKeys);
+}
+
 function validatePlatformBackupPayload(payload, { requireCompleteRegistry = true } = {}) {
     if (!payload || payload.format !== 'logic-fit-platform-backup') {
         throw backupError('The uploaded file is not a Logic Fit platform backup.', 400, 'PLATFORM_BACKUP_FORMAT_UNSUPPORTED');
@@ -412,6 +442,10 @@ function validatePlatformBackupPayload(payload, { requireCompleteRegistry = true
     const tenantTables = normalizedTableMap(tables.tenant);
     const legacyTables = normalizedTableMap(tables.legacy);
     const legacySource = manifest.sourceSchemaGeneration === 'legacy-pre-trainer';
+    const notYetCreatedGlobalKeys = platformNotYetCreatedGlobalKeys(manifest);
+    if ([...notYetCreatedGlobalKeys].some((key) => Object.prototype.hasOwnProperty.call(globalTables, key))) {
+        throw backupError('The platform backup contains a table marked absent from its source schema.', 400, 'PLATFORM_BACKUP_MANIFEST_INVALID');
+    }
     const knownGlobalKeys = new Set(PLATFORM_GLOBAL_BACKUP_TABLES.map((item) => item.key));
     const knownTenantKeys = new Set(TENANT_BACKUP_TABLES.map((item) => item.key));
     const knownLegacyKeys = new Set(LEGACY_BACKUP_TABLES.map((item) => item.key));
@@ -423,7 +457,7 @@ function validatePlatformBackupPayload(payload, { requireCompleteRegistry = true
     }
     if (requireCompleteRegistry && !legacySource) {
         const missingGlobal = PLATFORM_GLOBAL_BACKUP_TABLES.map((item) => item.key)
-            .filter((key) => !Object.prototype.hasOwnProperty.call(globalTables, key));
+            .filter((key) => !Object.prototype.hasOwnProperty.call(globalTables, key) && !notYetCreatedGlobalKeys.has(key));
         const missingTenant = TENANT_BACKUP_TABLES.map((item) => item.key)
             .filter((key) => !Object.prototype.hasOwnProperty.call(tenantTables, key));
         if (missingGlobal.length || missingTenant.length) {
@@ -489,9 +523,12 @@ function validatePlatformBackupPayload(payload, { requireCompleteRegistry = true
         || (legacySource && (!manifestCounts.legacy || typeof manifestCounts.legacy !== 'object' || Array.isArray(manifestCounts.legacy)))) {
         throw backupError('The platform backup table counts are incomplete.', 400, 'PLATFORM_BACKUP_MANIFEST_INVALID');
     }
+    if ([...notYetCreatedGlobalKeys].some((key) => Object.prototype.hasOwnProperty.call(manifestCounts.global, key))) {
+        throw backupError('The platform backup counts include a table marked absent from its source schema.', 400, 'PLATFORM_BACKUP_MANIFEST_INVALID');
+    }
     if (requireCompleteRegistry && !legacySource) {
         const missingGlobalCounts = PLATFORM_GLOBAL_BACKUP_TABLES.map((item) => item.key)
-            .filter((key) => !Object.prototype.hasOwnProperty.call(manifestCounts.global, key));
+            .filter((key) => !Object.prototype.hasOwnProperty.call(manifestCounts.global, key) && !notYetCreatedGlobalKeys.has(key));
         const missingTenantCounts = TENANT_BACKUP_TABLES.map((item) => item.key)
             .filter((key) => !Object.prototype.hasOwnProperty.call(manifestCounts.tenant, key));
         if (missingGlobalCounts.length || missingTenantCounts.length) {
@@ -549,7 +586,10 @@ function validatePlatformBackupPayload(payload, { requireCompleteRegistry = true
             const scopedRows = scope === 'global' ? globalTables : scope === 'tenant' ? tenantTables : legacyTables;
             const presentDefinitions = definitions.filter((definition) => Object.prototype.hasOwnProperty.call(scopedRows, definition.key));
             const inventoryByKey = new Map(inventory[scope].map((item) => [String(item?.key || ''), item]));
-            if (requireCompleteRegistry && !legacySource && inventoryByKey.size !== definitions.length) {
+            const optionalMissingCount = scope === 'global'
+                ? definitions.filter((definition) => notYetCreatedGlobalKeys.has(definition.key)).length
+                : 0;
+            if (requireCompleteRegistry && !legacySource && inventoryByKey.size !== definitions.length - optionalMissingCount) {
                 throw backupError('The platform backup inventory does not cover the current registry.', 400, 'PLATFORM_BACKUP_INVENTORY_INVALID');
             }
             for (const [key, rows] of Object.entries(scopedRows)) {
@@ -563,8 +603,9 @@ function validatePlatformBackupPayload(payload, { requireCompleteRegistry = true
             }
             if (requireCompleteRegistry && !legacySource) {
                 for (const definition of definitions) {
-                    if (!inventoryByKey.has(definition.key)
-                        || !Object.prototype.hasOwnProperty.call(checksums[scope], definition.key)) {
+                    if (!notYetCreatedGlobalKeys.has(definition.key)
+                        && (!inventoryByKey.has(definition.key)
+                        || !Object.prototype.hasOwnProperty.call(checksums[scope], definition.key))) {
                         throw backupError('The platform backup inventory does not cover the current registry.', 400, 'PLATFORM_BACKUP_INVENTORY_INVALID');
                     }
                 }
@@ -1031,7 +1072,7 @@ async function getTenantBackupCoverageStatus({ readOnly = false } = {}) {
     };
 }
 
-async function getPlatformBackupCoverageStatus({ readOnly = false, executor = null } = {}) {
+async function getPlatformBackupCoverageStatus({ readOnly = false, executor = null, pendingMigrationVersions = [] } = {}) {
     assertPlatformScope();
     if (!executor) await ensureRecoveryTables({ readOnly });
     const pool = executor || await getPool();
@@ -1059,7 +1100,7 @@ async function getPlatformBackupCoverageStatus({ readOnly = false, executor = nu
     const legacyNameSet = new Set(LEGACY_BACKUP_TABLES.map((item) => item.table.toLowerCase()));
     const legacySource = !tenantTypeColumn || existingTables.some((table) => legacyNameSet.has(table.toLowerCase()));
     const sourceSchemaGeneration = legacySource ? 'legacy-pre-trainer' : 'modern-phase3-8';
-    const coverage = getPlatformBackupCoverage({ existingTables, tenantTables, sourceSchemaGeneration });
+    const coverage = getPlatformBackupCoverage({ existingTables, tenantTables, sourceSchemaGeneration, pendingMigrationVersions });
     const globalDefinitions = PLATFORM_GLOBAL_BACKUP_TABLES.filter((definition) => existingTables.some((table) => table.toLowerCase() === definition.table.toLowerCase()));
     const tenantDefinitions = TENANT_BACKUP_TABLES.filter((definition) => existingTables.some((table) => table.toLowerCase() === definition.table.toLowerCase()));
     const legacyDefinitions = LEGACY_BACKUP_TABLES.filter((definition) => existingTables.some((table) => table.toLowerCase() === definition.table.toLowerCase()));
@@ -2436,7 +2477,7 @@ async function claimPlatformRecord({ backupType, backupDay, fileName, format, ac
     }
 }
 
-async function buildPlatformBackupArtifact({ format = 'json.gz', now = new Date(), concurrency = 2 } = {}) {
+async function buildPlatformBackupArtifact({ format = 'json.gz', now = new Date(), concurrency = 2, pendingMigrationVersions = [] } = {}) {
     assertPlatformScope();
     const normalizedFormat = normalizeBackupFormat(format);
     const pool = await getPool();
@@ -2450,7 +2491,7 @@ async function buildPlatformBackupArtifact({ format = 'json.gz', now = new Date(
         // the registry check and the table reads. The platform RLS context is
         // still applied to every transaction request by the database wrapper.
         await transaction.begin(sql.ISOLATION_LEVEL.SERIALIZABLE);
-        const coverage = await getPlatformBackupCoverageStatus({ executor: transaction });
+        const coverage = await getPlatformBackupCoverageStatus({ executor: transaction, pendingMigrationVersions });
         if (coverage.status !== 'covered') {
             throw backupError('The platform backup registry does not cover the current database schema.', 503, 'PLATFORM_BACKUP_COVERAGE_MISMATCH');
         }
@@ -2557,7 +2598,7 @@ async function buildPlatformBackupArtifact({ format = 'json.gz', now = new Date(
     };
 }
 
-async function createPlatformBackup({ backupType = 'platform_daily', format = 'json.gz', actorUserId = null, reason = '', now = new Date(), concurrency = 2, storageService = null } = {}) {
+async function createPlatformBackup({ backupType = 'platform_daily', format = 'json.gz', actorUserId = null, reason = '', now = new Date(), concurrency = 2, storageService = null, pendingMigrationVersions = [] } = {}) {
     assertPlatformScope();
     if (!['platform_daily', 'platform_weekly', 'platform_monthly', 'platform_manual'].includes(backupType)) throw backupError('The platform backup type is invalid.', 400, 'BACKUP_TYPE_INVALID');
     const normalizedReason = String(reason || '').trim().slice(0, 1000);
@@ -2617,7 +2658,7 @@ async function createPlatformBackup({ backupType = 'platform_daily', format = 'j
             reason: normalizedReason,
             metadata: { backupType, format: normalizedFormat }
         });
-        const backup = await buildPlatformBackupArtifact({ format: normalizedFormat, now, concurrency });
+        const backup = await buildPlatformBackupArtifact({ format: normalizedFormat, now, concurrency, pendingMigrationVersions });
         stored = await storage.putPrivatePlatformObject({
             category: BACKUP_CATEGORY,
             objectName: backup.filename,
@@ -2946,7 +2987,8 @@ async function runDailyBackupCycle({
     concurrency = config.backupSchedulerConcurrency,
     retryCount = config.backupSchedulerRetryCount,
     scheduleWeekly = config.backupEnablePlatformWeekly,
-    scheduleMonthly = config.backupEnablePlatformMonthly
+    scheduleMonthly = config.backupEnablePlatformMonthly,
+    pendingMigrationVersions = []
 } = {}) {
     assertPlatformScope();
     await ensureRecoveryTables();
@@ -2999,7 +3041,7 @@ async function runDailyBackupCycle({
     }, concurrency);
     let platform = null;
     try {
-        platform = await createPlatformBackup({ backupType: 'platform_daily', now, concurrency, storageService: storage });
+        platform = await createPlatformBackup({ backupType: 'platform_daily', now, concurrency, storageService: storage, pendingMigrationVersions });
     } catch (error) {
         platform = { status: 'failed', errorCode: recoveryErrorCode(error, 'PLATFORM_BACKUP_FAILED') };
     }
@@ -3008,7 +3050,7 @@ async function runDailyBackupCycle({
         try {
             scheduledPlatform.push({
                 backupType,
-                ...(await createPlatformBackup({ backupType, now, concurrency, storageService: storage }))
+                ...(await createPlatformBackup({ backupType, now, concurrency, storageService: storage, pendingMigrationVersions }))
             });
         } catch (error) {
             // A weekly/monthly snapshot must not turn a successful daily run
@@ -3040,7 +3082,7 @@ async function runDailyBackupCycle({
     };
 }
 
-async function getPlatformBackupHealth({ readOnly = false, limit = 20, now = new Date(), storageService = null } = {}) {
+async function getPlatformBackupHealth({ readOnly = false, limit = 20, now = new Date(), storageService = null, pendingMigrationVersions = [] } = {}) {
     assertPlatformScope();
     await ensureRecoveryTables({ readOnly });
     const safeLimit = normalizePositiveInteger(limit, 20, 100);
@@ -3073,7 +3115,7 @@ async function getPlatformBackupHealth({ readOnly = false, limit = 20, now = new
         pool.request().input('limit', sql.Int, safeLimit).query(`SELECT TOP (@limit) id,tenant_id,status,error_code,created_at FROM dbo.gym_backup_records WHERE status='FAILED' ORDER BY created_at DESC,id DESC;`),
         pool.request().input('limit', sql.Int, safeLimit).query(`SELECT TOP (@limit) id,status,error_code,created_at FROM dbo.gym_platform_backup_records WHERE status='FAILED' ORDER BY created_at DESC,id DESC;`),
         getTenantBackupCoverageStatus({ readOnly }),
-        getPlatformBackupCoverageStatus({ readOnly })
+        getPlatformBackupCoverageStatus({ readOnly, pendingMigrationVersions })
     ]);
     const summary = tenantSummary.recordset[0] || {};
     return {
