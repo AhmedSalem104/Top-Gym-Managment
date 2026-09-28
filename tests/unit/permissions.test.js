@@ -17,6 +17,13 @@ test('tenant entitlement envelope is readable by Owner and Assistant without sub
     assert.equal(canAccessRoleRequest({ role: 'Assistant', permissions: [] }, request), true);
 });
 
+test('atomic SaaS subscription submission keeps the Owner permission contract', () => {
+    const request = { path: '/saas/subscription-requests/submit', method: 'POST' };
+    assert.deepEqual(permissionForRequest(request), { all: ['saas.subscription.request'], ownerOnly: true });
+    assert.equal(canAccessRoleRequest({ role: 'Owner', permissions: [] }, request), true);
+    assert.equal(canAccessRoleRequest({ role: 'Assistant', permissions: ['saas.subscription.request'] }, request), false);
+});
+
 test('Assistant read-only permissions allow GET and reject writes', () => {
     const user = { role: 'Assistant', permissions: ['members.read'] };
     assert.deepEqual(permissionForRequest({ path: '/members', method: 'GET' }).all, ['members.read', 'memberships.read']);

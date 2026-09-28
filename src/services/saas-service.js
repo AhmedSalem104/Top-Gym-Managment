@@ -27,6 +27,7 @@ const {
 } = require('./saas-plan-catalog');
 const cacheService = require('./cache-service');
 const { IMAGE_MIME_TYPES, detectProofMime } = require('./image-file-types');
+const notificationDispatcher = require('./notification-dispatcher');
 
 const TRIAL_DAYS = 14;
 const MAX_PROOF_BYTES = 4 * 1024 * 1024;
@@ -1929,6 +1930,130 @@ async function uploadPaymentProof({ tenantId = currentTenantId({ required: true 
     return (await listTenantRequests(id, { requestId: requestNumber })).find((item) => item.id === requestNumber) || { id: requestNumber, proof: { fileName: proof.fileName, mimeType: proof.mimeType, fileSize: proof.buffer.length } };
 }
 
+async function submitSubscriptionRequest({ tenantId = currentTenantId({ required: true }), userId, planId, planCode, termCode = null, notes = '', proof: submittedProof }) {
+    const id = tenantIdValue(tenantId);
+    const actorId = Number(userId);
+    if (!Number.isInteger(actorId) || actorId <= 0) throw saasError('الحساب المنفذ غير صحيح.', 400, 'INVALID_USER');
+    if (!submittedProof) throw saasError('ارفع إثبات الدفع قبل إرسال الطلب.', 422, 'PAYMENT_PROOF_REQUIRED');
+    const proof = validateProof(submittedProof);
+    const notificationService = notificationDispatcher.getNotificationService();
+    if (!notificationService?.recordEvent || !notificationService?.dispatchEvent) {
+        throw saasError('خدمة إشعارات المنصة غير متاحة حاليًا.', 503, 'SAAS_NOTIFICATIONS_UNAVAILABLE');
+    }
+
+    const plan = await getPlan({ id: planId, code: planCode });
+    if (!plan) throw saasError('الباقة المطلوبة غير متاحة.', 404, 'SAAS_PLAN_NOT_FOUND');
+    await assertPlanCompatibleWithTenant(id, plan);
+    const term = selectPlanTerm(plan, termCode, { allowLegacy: false });
+    const pool = await getPool();
+    const storage = requireObjectStorageService();
+    let storedObject;
+    let requestId;
+    let proofId;
+    let createdAt;
+    let notificationEvent;
+    try {
+        storedObject = await storage.putPrivateObject({
+            tenantId: id,
+            category: 'payment-proofs',
+            objectName: proof.fileName,
+            contentType: proof.mimeType,
+            body: proof.buffer,
+            checksum: proof.sha256
+        });
+        await storage.verifyPrivateObject({ tenantId: id, key: storedObject.key, expectedSize: proof.buffer.length, expectedChecksum: proof.sha256 });
+
+        await withTransaction(async (transaction) => {
+            const tenantResult = await transaction.request()
+                .input('tenantId', sql.Int, id)
+                .query('SELECT TOP (1) id,name FROM dbo.gym_tenants WITH (UPDLOCK,HOLDLOCK) WHERE id=@tenantId;');
+            const tenant = tenantResult.recordset[0];
+            if (!tenant) throw saasError('الجيم غير موجود.', 404, 'TENANT_NOT_FOUND');
+            const pending = await transaction.request()
+                .input('tenantId', sql.Int, id)
+                .query("SELECT TOP (1) r.id,r.created_at,proof.id AS proof_id FROM dbo.saas_subscription_requests r WITH (UPDLOCK,HOLDLOCK) LEFT JOIN dbo.saas_payment_proofs proof WITH (UPDLOCK,HOLDLOCK) ON proof.request_id=r.id AND proof.tenant_id=r.tenant_id WHERE r.tenant_id=@tenantId AND r.status='pending';");
+            const incompleteRequest = pending.recordset[0] || null;
+            if (incompleteRequest?.proof_id) throw saasError('لديك طلب اشتراك مكتمل قيد المراجعة بالفعل.', 409, 'SAAS_REQUEST_ALREADY_PENDING');
+
+            await assertStorageLimitInTransaction(transaction, id, proof.buffer.length);
+            const writeRequest = transaction.request()
+                .input('tenantId', sql.Int, id)
+                .input('planId', sql.Int, plan.id)
+                .input('userId', sql.Int, actorId)
+                .input('termCode', sql.VarChar(20), term.code)
+                .input('durationMonths', sql.Int, term.durationMonths)
+                .input('amount', sql.Decimal(12, 2), term.price)
+                .input('currency', sql.VarChar(3), term.currency)
+                .input('notes', sql.NVarChar(1000), text(notes, '', 1000) || null);
+            if (incompleteRequest) {
+                const updated = await writeRequest.input('requestId', sql.BigInt, Number(incompleteRequest.id))
+                    .query("UPDATE dbo.saas_subscription_requests SET plan_id=@planId,requested_by_user_id=@userId,term_code=@termCode,duration_months=@durationMonths,amount_snapshot=@amount,currency=@currency,notes=@notes,updated_at=SYSUTCDATETIME() OUTPUT INSERTED.id,INSERTED.created_at WHERE id=@requestId AND tenant_id=@tenantId AND status='pending';");
+                requestId = Number(updated.recordset[0].id);
+                createdAt = updated.recordset[0].created_at;
+            } else {
+                const inserted = await writeRequest.query('INSERT INTO dbo.saas_subscription_requests (tenant_id,plan_id,requested_by_user_id,term_code,duration_months,amount_snapshot,currency,notes) OUTPUT INSERTED.id,INSERTED.created_at VALUES (@tenantId,@planId,@userId,@termCode,@durationMonths,@amount,@currency,@notes);');
+                requestId = Number(inserted.recordset[0].id);
+                createdAt = inserted.recordset[0].created_at;
+            }
+
+            const insertedProof = await transaction.request()
+                .input('requestId', sql.BigInt, requestId)
+                .input('tenantId', sql.Int, id)
+                .input('fileName', sql.NVarChar(255), proof.fileName)
+                .input('mimeType', sql.VarChar(80), proof.mimeType)
+                .input('fileSize', sql.Int, proof.buffer.length)
+                .input('sha256', sql.Char(64), proof.sha256)
+                .input('storageKey', sql.NVarChar(512), storedObject.key)
+                .input('storageProvider', sql.VarChar(40), String(storage.provider || storage.providerStatus || 'private').slice(0, 40))
+                .input('userId', sql.Int, actorId)
+                .query('INSERT INTO dbo.saas_payment_proofs (request_id,tenant_id,file_name,mime_type,file_size,sha256,content,storage_key,storage_provider,storage_verified_at,uploaded_by_user_id) OUTPUT INSERTED.id VALUES (@requestId,@tenantId,@fileName,@mimeType,@fileSize,@sha256,NULL,@storageKey,@storageProvider,SYSUTCDATETIME(),@userId);');
+            proofId = Number(insertedProof.recordset?.[0]?.id || 0) || null;
+
+            await recordAudit({ tenantId: id, actorUserId: actorId, action: incompleteRequest ? 'subscription_request_completed' : 'subscription_requested', entityType: 'subscription_request', entityId: requestId, details: `تم إرسال باقة ${plan.code} مع إثبات الدفع.`, executor: transaction });
+            const eventInput = {
+                type: 'saas_subscription_request_created',
+                entityType: 'saas_subscription_request',
+                entityId: requestId,
+                title: 'طلب اشتراك جديد',
+                message: `تم استلام طلب اشتراك جديد من ${tenant.name} ويحتاج إلى المراجعة.`,
+                payload: {
+                    gymName: tenant.name,
+                    planName: plan.name,
+                    amountDue: Number(term.price),
+                    currency: term.currency,
+                    submittedAt: new Date(createdAt).toISOString(),
+                    actionUrl: '/platform-admin.html#subscription-requests'
+                },
+                dedupeKey: `saas-subscription-request-created:${requestId}`,
+                auditDetails: 'New SaaS subscription request submitted.'
+            };
+            notificationEvent = await runTenantContext({ mode: 'platform', tenantId: null }, () => notificationService.recordEvent(eventInput, { executor: transaction }));
+        });
+    } catch (error) {
+        if (storedObject?.key) await storage.deletePrivateObject({ tenantId: id, key: storedObject.key }).catch(() => {});
+        if (isDuplicateSqlError(error)) throw saasError('لديك طلب اشتراك قيد المراجعة بالفعل.', 409, 'SAAS_REQUEST_ALREADY_PENDING');
+        throw normalizeStorageFailure(error);
+    }
+
+    try {
+        await runTenantContext({ mode: 'platform', tenantId: null }, () => notificationService.dispatchEvent(notificationEvent));
+    } catch (_) {
+        // The request, proof, audit and in-app notification are already committed.
+        // Email is a post-commit side effect and must not turn that success into an API failure.
+        try { console.warn('[SAAS_REQUEST_EMAIL_DISPATCH_FAILED]', { requestId }); } catch (_) { /* best effort */ }
+    }
+    return {
+        id: requestId,
+        tenantId: id,
+        status: 'pending',
+        createdAt,
+        amount: Number(term.price),
+        currency: term.currency,
+        plan: { id: plan.id, code: plan.code, name: plan.name },
+        proof: { id: proofId, fileName: proof.fileName, mimeType: proof.mimeType, fileSize: proof.buffer.length }
+    };
+}
+
 async function listPlatformRequests({ status = '', page = 1, pageSize = 25, requestId = null, readOnly = false, includePagination = false } = {}) {
     await ensureSaasTables({ readOnly });
     const pool = await getPool();
@@ -1978,6 +2103,30 @@ async function getPaymentProofFile(proofId, tenantId = null, { readOnly = false 
     return { ...proof, content: object.body };
 }
 
+async function publishSubscriptionDecision({ type, tenantId, requestId, actorUserId, reason = '' }) {
+    const notificationService = notificationDispatcher.getNotificationService();
+    if (!notificationService?.publish) return;
+    const approved = type === 'saas_subscription_request_approved';
+    try {
+        await runTenantContext({ mode: 'tenant', tenantId }, () => notificationDispatcher.publishForRoles({
+            type,
+            tenantId,
+            actorUserId,
+            entityType: 'saas_subscription_request',
+            entityId: requestId,
+            title: approved ? 'تم قبول طلب اشتراك المنصة' : 'تم رفض طلب اشتراك المنصة',
+            message: approved
+                ? 'تمت الموافقة على طلب اشتراك المنصة وتفعيل الاشتراك.'
+                : `تم رفض طلب اشتراك المنصة. السبب: ${text(reason, 'راجع إدارة المنصة', 500)}`,
+            payload: { actionUrl: '/index.html#saas-billing' },
+            dedupeKey: `${type}:${requestId}`,
+            auditDetails: 'SaaS subscription decision notification.'
+        }, ['Owner', 'Assistant']));
+    } catch (_) {
+        try { console.warn('[SAAS_REQUEST_TENANT_NOTIFICATION_FAILED]', { requestId, type }); } catch (_) { /* best effort */ }
+    }
+}
+
 async function approveRequest(requestId, actorUserId, reviewNotes = '') {
     await ensureSaasTables();
     const id = Number(requestId);
@@ -2018,6 +2167,7 @@ async function approveRequest(requestId, actorUserId, reviewNotes = '') {
         await transaction.request().input('tenantId', sql.Int, tenantId).input('planId', sql.Int, planId).input('startsAt', sql.DateTime2(0), now).input('expiresAt', sql.DateTime2(0), expiresAt).input('actorId', sql.Int, actorId).input('notes', sql.NVarChar(1000), text(reviewNotes, '', 1000) || null).input('billingPeriodSnapshot', sql.VarChar(20), snapshot.billingPeriod).input('termCodeSnapshot', sql.VarChar(20), snapshot.termCode).input('durationMonthsSnapshot', sql.Int, snapshot.durationMonths).input('priceSnapshot', sql.Decimal(12, 2), snapshot.price).input('currencySnapshot', sql.Char(3), snapshot.currency).input('maxMembersSnapshot', sql.Int, snapshot.maxMembers).input('maxClientsSnapshot', sql.Int, snapshot.maxClients).input('maxUsersSnapshot', sql.Int, snapshot.maxUsers).input('maxAiGenerationsSnapshot', sql.Int, snapshot.maxAiGenerations).input('maxStorageMbSnapshot', sql.Int, snapshot.maxStorageMb).input('maxBranchesSnapshot', sql.Int, snapshot.maxBranches).input('featuresSnapshotJson', sql.NVarChar(sql.MAX), JSON.stringify(snapshot.features)).query("INSERT INTO dbo.saas_tenant_subscriptions (tenant_id,plan_id,status,starts_at,expires_at,source,approved_by_user_id,approved_at,notes,billing_period_snapshot,term_code_snapshot,duration_months_snapshot,price_snapshot,currency_snapshot,max_members_snapshot,max_clients_snapshot,max_users_snapshot,max_ai_generations_snapshot,max_storage_mb_snapshot,max_branches_snapshot,features_snapshot_json) VALUES (@tenantId,@planId,'active',@startsAt,@expiresAt,'manual',@actorId,SYSUTCDATETIME(),@notes,@billingPeriodSnapshot,@termCodeSnapshot,@durationMonthsSnapshot,@priceSnapshot,@currencySnapshot,@maxMembersSnapshot,@maxClientsSnapshot,@maxUsersSnapshot,@maxAiGenerationsSnapshot,@maxStorageMbSnapshot,@maxBranchesSnapshot,@featuresSnapshotJson); UPDATE dbo.gym_tenants SET status='active',updated_at=SYSUTCDATETIME() WHERE id=@tenantId;");
         await recordAudit({ tenantId, actorUserId: actorId, action: 'subscription_approved', entityType: 'subscription_request', entityId: id, details: `تم قبول طلب الاشتراك وإنشاء اشتراك ${request.code}.`, executor: transaction });
     });
+    await publishSubscriptionDecision({ type: 'saas_subscription_request_approved', tenantId, requestId: id, actorUserId: actorId });
     return { request: (await listPlatformRequests({ requestId: id }))[0] || null, subscription: await getCurrentSubscription(tenantId) };
 }
 
@@ -2045,6 +2195,7 @@ async function rejectRequest(requestId, actorUserId, reviewNotes = '') {
         if (!Number(updated.rowsAffected?.[0] || 0)) throw saasError('تمت مراجعة طلب الاشتراك من قبل.', 409, 'SAAS_REQUEST_ALREADY_REVIEWED');
         await recordAudit({ tenantId, actorUserId: actorId, action: 'subscription_rejected', entityType: 'subscription_request', entityId: id, details: notes, executor: transaction });
     });
+    await publishSubscriptionDecision({ type: 'saas_subscription_request_rejected', tenantId, requestId: id, actorUserId: actorId, reason: notes });
     return (await listPlatformRequests({ requestId: id }))[0] || null;
 }
 
@@ -2652,6 +2803,7 @@ module.exports = {
     configureObjectStorageService,
     createPlan,
     createSubscriptionRequest,
+    submitSubscriptionRequest,
     createTenantWithOwner,
     enforceRequestLimit,
     enforceTenantAccess,

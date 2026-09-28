@@ -84,6 +84,21 @@ const EVENT_CATALOG = Object.freeze({
         audienceRole: 'PlatformAdmin', audienceRoles: Object.freeze(['PlatformAdmin']), requiredPermission: null, severity: 'info',
         channels: Object.freeze({ inApp: true, email: true, audit: true })
     }),
+    saas_subscription_request_created: Object.freeze({
+        category: 'subscription', audience: 'platform-admin', tenantScope: 'platform',
+        audienceRole: 'PlatformAdmin', audienceRoles: Object.freeze(['PlatformAdmin']), requiredPermission: null, severity: 'info',
+        channels: Object.freeze({ inApp: true, email: true, audit: false })
+    }),
+    saas_subscription_request_approved: Object.freeze({
+        category: 'subscription', audience: 'tenant-staff', tenantScope: 'tenant',
+        audienceRole: 'Owner', audienceRoles: STAFF_ROLES, requiredPermission: null, severity: 'success',
+        channels: Object.freeze({ inApp: true, email: false, audit: false })
+    }),
+    saas_subscription_request_rejected: Object.freeze({
+        category: 'subscription', audience: 'tenant-staff', tenantScope: 'tenant',
+        audienceRole: 'Owner', audienceRoles: STAFF_ROLES, requiredPermission: null, severity: 'warning',
+        channels: Object.freeze({ inApp: true, email: false, audit: false })
+    }),
     member_created: Object.freeze({
         category: 'membership', audience: 'tenant-staff', tenantScope: 'tenant', audienceRole: 'Owner', audienceRoles: STAFF_ROLES,
         requiredPermission: 'members.read', severity: 'success', channels: Object.freeze({ inApp: true, email: false, audit: true })
@@ -328,6 +343,22 @@ function buildRegistrationEmail(event, publicAppUrl = '') {
     return { subject, text: lines.join('\n'), html };
 }
 
+function buildSaasSubscriptionRequestEmail(event, publicAppUrl = '') {
+    const payload = event.payload;
+    const actionUrl = absoluteEmailActionUrl(payload.actionUrl, publicAppUrl);
+    const gymName = payload.gymName || 'Gym tenant';
+    const planName = payload.planName || 'Not provided';
+    const amount = payload.amountDue == null ? 'Not provided' : `${payload.amountDue.toFixed(2)} ${payload.currency}`;
+    const subject = 'Logic Fit | New platform subscription request';
+    const text = [
+        'Logic Fit', 'New platform subscription request', '',
+        `Business: ${gymName}`, `Plan: ${planName}`, `Amount: ${amount}`,
+        `Submitted at: ${payload.submittedAt || 'Not provided'}`, '', `Review request: ${actionUrl}`
+    ].join('\n');
+    const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"></head><body><h1>New platform subscription request</h1><p>A request from <strong>${htmlEscape(gymName)}</strong> is ready for review.</p><p>Plan: ${htmlEscape(planName)}<br>Amount: ${htmlEscape(amount)}</p><p><a href="${htmlEscape(actionUrl)}">Review request</a></p></body></html>`;
+    return { subject, text, html };
+}
+
 function sameNullable(value, parameter) {
     return `((${parameter} IS NULL AND ${value} IS NULL) OR ${value}=${parameter})`;
 }
@@ -482,7 +513,7 @@ function createNotificationService({
                 audit: { status: 'recorded' },
                 inApp: event.channels.inApp ? { status: 'already_recorded' } : { status: 'skipped', reason: 'not_selected' },
                 email: event.channels.email
-                    ? await dispatchChannel(event, 'email', emailService?.send ? (item) => emailService.send({ ...item, email: buildRegistrationEmail(item, publicAppUrl) }) : null)
+                    ? await dispatchChannel(event, 'email', emailService?.send ? (item) => emailService.send({ ...item, email: item.type === 'saas_subscription_request_created' ? buildSaasSubscriptionRequestEmail(item, publicAppUrl) : buildRegistrationEmail(item, publicAppUrl) }) : null)
                     : { status: 'skipped', reason: 'not_selected' }
             };
             if (channels.inApp.status !== 'skipped') broadcast(event);
@@ -735,5 +766,5 @@ function createNotificationService({
 
 module.exports = {
     DEFAULT_DEDUPE_TTL_MS, EVENT_CATALOG, MEMBER_NOTIFICATION_READ_TABLE, NOTIFICATION_READ_TABLE, NOTIFICATION_SCHEMA_SQL,
-    NOTIFICATION_TABLE, buildRegistrationEmail, createNotificationService, normalizeEvent
+    NOTIFICATION_TABLE, buildRegistrationEmail, buildSaasSubscriptionRequestEmail, createNotificationService, normalizeEvent
 };

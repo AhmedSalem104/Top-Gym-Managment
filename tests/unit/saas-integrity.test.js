@@ -99,6 +99,7 @@ test('subscription rejection updates the request and audit atomically', () => {
     assert.match(block, /WITH \(UPDLOCK,HOLDLOCK\)/);
     assert.match(block, /WHERE id=@requestId AND status='pending'/);
     assert.match(block, /executor: transaction/);
+    assert.match(block, /publishSubscriptionDecision\(\{ type: 'saas_subscription_request_rejected'/);
 });
 
 test('subscription approval locks the request and commits the state transition atomically', () => {
@@ -119,6 +120,7 @@ test('subscription approval locks the request and commits the state transition a
     assert.match(block, /UPDATE dbo\.gym_tenants SET status='active'/);
     assert.match(block, /action: 'subscription_approved'/);
     assert.match(block, /executor: transaction/);
+    assert.match(block, /publishSubscriptionDecision\(\{ type: 'saas_subscription_request_approved'/);
 });
 
 test('subscription lifecycle and enforcement have explicit expiry, recovery and limit guards', () => {

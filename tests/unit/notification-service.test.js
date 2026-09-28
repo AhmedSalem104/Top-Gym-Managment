@@ -6,10 +6,13 @@ const test = require('node:test');
 const {
     EVENT_CATALOG,
     buildRegistrationEmail,
+    buildSaasSubscriptionRequestEmail,
     createNotificationService,
     normalizeEvent
 } = require('../../src/services/notification-service');
 const { createEmailNotificationService } = require('../../src/services/email-notification-service');
+const fs = require('node:fs');
+const path = require('node:path');
 
 function registrationEvent(type = 'gym_registration_requested', entityId = 41) {
     return {
@@ -47,6 +50,9 @@ test('catalog contains registration, operational and portal notification events'
         'membership_resumed',
         'membership_updated',
         'payment_updated',
+        'saas_subscription_request_approved',
+        'saas_subscription_request_created',
+        'saas_subscription_request_rejected',
         'system_announcement',
         'trainer_plan_published',
         'trainer_registration_requested',
@@ -55,10 +61,14 @@ test('catalog contains registration, operational and portal notification events'
         'trainer_session_updated'
     ]);
     for (const event of Object.values(EVENT_CATALOG)) {
-        assert.equal(event.channels.audit, true);
         assert.equal(event.channels.inApp, true);
         assert.ok(Array.isArray(event.audienceRoles));
     }
+    assert.equal(EVENT_CATALOG.gym_registration_requested.channels.audit, true);
+    assert.equal(EVENT_CATALOG.saas_subscription_request_created.channels.audit, false);
+    assert.equal(EVENT_CATALOG.saas_subscription_request_created.audienceRole, 'PlatformAdmin');
+    assert.equal(EVENT_CATALOG.saas_subscription_request_created.channels.email, true);
+    assert.deepEqual(EVENT_CATALOG.saas_subscription_request_approved.audienceRoles, ['Owner', 'Assistant']);
     assert.equal(EVENT_CATALOG.gym_registration_requested.channels.email, true);
     assert.equal(EVENT_CATALOG.member_created.channels.email, false);
     assert.deepEqual(EVENT_CATALOG.trainer_plan_published.audienceRoles, ['Member']);
@@ -223,6 +233,63 @@ test('registration email is safe, bounded and contains a review destination', ()
     assert.match(message.text, /Review request: https:\/\/logicfit\.example\/platform-admin/);
     assert.match(message.html, /href="https:\/\/logicfit\.example\/platform-admin"/);
     assert.doesNotMatch(message.text, /accessToken|publicTokenHash|idempotencyKey/i);
+});
+
+test('SaaS subscription request notification is platform-scoped, persisted in-app and delivered through the configured admin email service', async () => {
+    const queries = [];
+    let sentEmail;
+    const fakeRequest = {
+        input() { return this; },
+        async query(statement) { queries.push(statement); return { recordset: [{ id: 902 }] }; }
+    };
+    const fakePool = { request: () => fakeRequest };
+    const service = createNotificationService({
+        databaseEnabled: true,
+        getPool: async () => fakePool,
+        emailService: { send: async (input) => { sentEmail = input.email; return { status: 'sent' }; } },
+        publicAppUrl: 'https://logicfit.example'
+    });
+    const event = await service.recordEvent({
+        type: 'saas_subscription_request_created', entityType: 'saas_subscription_request', entityId: 84,
+        title: 'طلب اشتراك جديد', message: 'طلب جديد من QA Gym.',
+        payload: { gymName: 'QA Gym', planName: 'Basic', amountDue: 599, currency: 'EGP', actionUrl: '/platform-admin.html#subscription-requests' },
+        dedupeKey: 'saas-subscription-request-created:84'
+    }, { executor: fakePool });
+    assert.equal(event.tenantId, null);
+    assert.equal(event.audienceRole, 'PlatformAdmin');
+    assert.equal(event.notificationId, 902);
+    assert.match(queries[0], /INSERT INTO dbo\.saas_notifications/i);
+    const delivery = await service.dispatchEvent(event);
+    assert.equal(delivery.channels.email.status, 'sent');
+    assert.match(sentEmail.subject, /subscription request/i);
+    assert.match(sentEmail.text, /QA Gym/);
+    assert.match(sentEmail.text, /https:\/\/logicfit\.example\/platform-admin\.html#subscription-requests/);
+});
+
+test('SaaS subscription decisions are tenant-scoped notifications', () => {
+    for (const type of ['saas_subscription_request_approved', 'saas_subscription_request_rejected']) {
+        const event = normalizeEvent({ type, tenantId: 18, entityType: 'saas_subscription_request', entityId: 84 });
+        assert.equal(event.tenantId, 18);
+        assert.deepEqual(event.channels, { inApp: true, email: false, audit: false });
+    }
+});
+
+test('SaaS subscription email builder escapes user-controlled content and preserves configured review destination', () => {
+    const event = normalizeEvent({
+        type: 'saas_subscription_request_created', entityType: 'saas_subscription_request', entityId: 84,
+        payload: { gymName: '<img src=x>', planName: 'Basic', amountDue: 599, currency: 'EGP', actionUrl: '/platform-admin.html#subscription-requests' }
+    });
+    const email = buildSaasSubscriptionRequestEmail(event, 'https://logicfit.example');
+    assert.match(email.text, /https:\/\/logicfit\.example\/platform-admin\.html#subscription-requests/);
+    assert.match(email.html, /&lt;img src=x&gt;/);
+    assert.doesNotMatch(email.html, /<img src=x>/);
+});
+
+test('SaaS admin email uses the existing configured recipient chain and server mail wiring', () => {
+    const env = fs.readFileSync(path.join(__dirname, '../../src/config/env.js'), 'utf8');
+    const server = fs.readFileSync(path.join(__dirname, '../../server.js'), 'utf8');
+    assert.match(env, /platformAdminNotificationEmail:\s*getEnv\('PLATFORM_ADMIN_NOTIFICATION_EMAIL',\s*getEnv\('NOTIFICATION_ADMIN_EMAIL',\s*getEnv\('AUTH_PLATFORM_ADMIN_EMAIL'\)\)\)/);
+    assert.match(server, /recipients:\s*config\.platformAdminNotificationEmail/);
 });
 
 test('notification action URLs fail closed to the platform review path', () => {

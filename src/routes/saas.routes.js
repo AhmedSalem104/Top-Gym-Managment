@@ -2,6 +2,7 @@
 
 const express = require('express');
 const { createSaasController } = require('../controllers/saas.controller');
+const { parseSaasSubscriptionSubmission } = require('../middleware/saas-subscription-submission.middleware');
 
 function registerSaasRoutes(app, { saasService, asyncRoute, ownerOnly }) {
     const controller = createSaasController({ saasService });
@@ -13,6 +14,7 @@ function registerSaasRoutes(app, { saasService, asyncRoute, ownerOnly }) {
     app.get('/api/saas/plans', ownerOnly, asyncRoute(controller.plans));
     app.get('/api/saas/feature-catalog', ownerOnly, asyncRoute(controller.featureCatalog));
     app.get('/api/saas/subscription-requests', ownerOnly, asyncRoute(controller.requests));
+    app.post('/api/saas/subscription-requests/submit', ownerOnly, parseSaasSubscriptionSubmission, asyncRoute(controller.submitRequest));
     app.post('/api/saas/subscription-requests', ownerOnly, asyncRoute(controller.createRequest));
     app.post('/api/saas/subscription-requests/:id/proof', ownerOnly, express.raw({ type: 'application/octet-stream', limit: '4mb' }), asyncRoute(controller.uploadProof));
     app.get('/api/saas/payment-proofs/:id/file', ownerOnly, asyncRoute(controller.paymentProof));

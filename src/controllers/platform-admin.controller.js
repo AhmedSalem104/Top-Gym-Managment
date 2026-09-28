@@ -1,5 +1,7 @@
 'use strict';
 
+const { PROOF_MIME_TYPES } = require('../services/saas-service');
+
 function sendBackupDownload(response, backup) {
     response.set({
         'Cache-Control': 'no-store, no-cache, must-revalidate, private',
@@ -225,10 +227,13 @@ function createPlatformAdminController({ platformAdminService, saasService, auth
 
         paymentProof: async (request, response) => {
             const proof = await saasService.getPaymentProofFile(request.params.proofId, null, { readOnly: request.readOnlyRequest });
-            if (!proof) return response.status(404).end();
+            if (!proof || !Buffer.isBuffer(proof.content) || !PROOF_MIME_TYPES.has(String(proof.mime_type || '').toLowerCase())) {
+                return response.status(404).json({ error: 'Payment proof is unavailable or not a supported file.', code: 'PAYMENT_PROOF_UNAVAILABLE' });
+            }
             response.set({
                 'Cache-Control': 'no-store, no-cache, must-revalidate, private',
                 'Content-Type': proof.mime_type,
+                'X-Content-Type-Options': 'nosniff',
                 'Content-Disposition': `inline; filename="${String(proof.file_name || 'payment-proof').replace(/[^\w.\- ]/g, '_')}"`
             });
             return response.send(proof.content);

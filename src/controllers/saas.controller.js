@@ -1,5 +1,7 @@
 'use strict';
 
+const { PROOF_MIME_TYPES } = require('../services/saas-service');
+
 function decodeHeaderFilename(value) {
     const encoded = String(value || '');
     if (!encoded) return '';
@@ -55,13 +57,29 @@ function createSaasController({ saasService }) {
         },
 
         createRequest: async (request, response) => {
-            response.status(201).json({ request: await saasService.createSubscriptionRequest({
+            return response.status(410).json({
+                error: 'يجب إرسال الطلب وإثبات الدفع في عملية واحدة لحماية الطلب من الحفظ الجزئي.',
+                code: 'ATOMIC_SUBSCRIPTION_SUBMISSION_REQUIRED',
+                submitUrl: '/api/saas/subscription-requests/submit'
+            });
+        },
+
+        submitRequest: async (request, response) => {
+            const submission = request.saasSubscriptionSubmission;
+            if (!submission) {
+                const error = new Error('Payment proof is required before submitting the request.');
+                error.statusCode = 422;
+                error.expose = true;
+                error.code = 'PAYMENT_PROOF_REQUIRED';
+                throw error;
+            }
+            response.status(201).json({ request: await saasService.submitSubscriptionRequest({
                 tenantId: request.tenant?.id,
                 userId: request.auth?.id,
-                planId: request.body?.planId,
-                planCode: request.body?.planCode,
-                termCode: request.body?.termCode || request.body?.term,
-                notes: request.body?.notes
+                planId: submission.fields.planId,
+                termCode: submission.fields.termCode,
+                notes: submission.fields.notes,
+                proof: submission.proof
             }) });
         },
 
@@ -81,9 +99,13 @@ function createSaasController({ saasService }) {
         paymentProof: async (request, response) => {
             const proof = await saasService.getPaymentProofFile(request.params.id, request.tenant?.id, { readOnly: request.readOnlyRequest });
             if (!proof) return response.status(404).end();
+            if (!Buffer.isBuffer(proof.content) || !PROOF_MIME_TYPES.has(String(proof.mime_type || '').toLowerCase())) {
+                return response.status(404).json({ error: 'إثبات الدفع غير متاح أو لم يعد صالحًا للعرض.', code: 'PAYMENT_PROOF_UNAVAILABLE' });
+            }
             response.set({
                 'Cache-Control': 'no-store, no-cache, must-revalidate, private',
                 'Content-Type': proof.mime_type,
+                'X-Content-Type-Options': 'nosniff',
                 'Content-Disposition': `inline; filename="${String(proof.file_name || 'payment-proof').replace(/[^\w.\- ]/g, '_')}"`
             });
             return response.send(proof.content);

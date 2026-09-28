@@ -6,7 +6,7 @@
     const escapeHtml = (value) => String(value ?? '').replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[character]));
     const dateFormatter = new Intl.DateTimeFormat('ar-EG', { dateStyle: 'medium' });
     const numberFormatter = new Intl.NumberFormat('ar-EG');
-    const state = { billing: null, plans: [], requests: [], requestsPagination: {}, requestPage: 1, loaded: false, loading: false, termSelections: {} };
+    const state = { billing: null, plans: [], requests: [], requestsPagination: {}, requestPage: 1, loaded: false, loading: false, submitting: false, termSelections: {} };
 
     function notify(message, error = false, type = '') {
         if (typeof window.showToast === 'function') window.showToast(message, error, type || (error ? 'error' : 'success'));
@@ -231,8 +231,9 @@
         currentContext.id = 'saasRequestCurrent';
         currentContext.className = 'saas-request-current';
         panel.querySelector('.saas-panel-head')?.after(currentContext);
-        close.addEventListener('click', () => dialog.close());
-        dialog.addEventListener('click', (event) => { if (event.target === dialog) dialog.close(); });
+        close.addEventListener('click', () => { if (!state.submitting) dialog.close(); });
+        dialog.addEventListener('cancel', (event) => { if (state.submitting) event.preventDefault(); });
+        dialog.addEventListener('click', (event) => { if (event.target === dialog && !state.submitting) dialog.close(); });
         panel.parentElement.insertBefore(dialog, panel);
         dialog.appendChild(panel);
         const actionBar = document.createElement('div');
@@ -252,7 +253,7 @@
         const host = $('saasRequestsList');
         if (!host) return;
         if (!requests?.length) { host.innerHTML = '<tr><td colspan="6"><div class="saas-empty">لم يتم إرسال طلبات اشتراك بعد.</div></td></tr>'; return; }
-        host.innerHTML = requests.map((request) => `<tr><td data-label="التاريخ">${escapeHtml(date(request.createdAt))}</td><td data-label="الباقة">${escapeHtml(request.plan?.name || '—')}</td><td data-label="المبلغ">${money(request.amount, request.currency)}</td><td data-label="الحالة">${statusMarkup(request.status)}</td><td data-label="إثبات الدفع">${request.proof ? `<a class="btn btn-light btn-small" href="/api/saas/payment-proofs/${request.proof.id}/file" target="_blank" rel="noreferrer">عرض الإثبات</a>` : '<span class="saas-muted">غير مرفق</span>'}</td><td data-label="ملاحظات"><span class="saas-muted">${escapeHtml(request.reviewNotes || 'لا توجد ملاحظات')}</span></td></tr>`).join('');
+        host.innerHTML = requests.map((request) => `<tr><td data-label="التاريخ">${escapeHtml(date(request.createdAt))}</td><td data-label="الباقة">${escapeHtml(request.plan?.name || '—')}</td><td data-label="المبلغ">${money(request.amount, request.currency)}</td><td data-label="الحالة">${statusMarkup(request.status)}</td><td data-label="إثبات الدفع">${request.proof ? `<a class="btn btn-light btn-small" data-saas-payment-proof href="/api/saas/payment-proofs/${request.proof.id}/file" target="_blank" rel="noreferrer">عرض الإثبات</a>` : '<span class="saas-muted">غير مرفق</span>'}</td><td data-label="ملاحظات"><span class="saas-muted">${escapeHtml(request.reviewNotes || 'لا توجد ملاحظات')}</span></td></tr>`).join('');
     }
 
     function ensureRequestPagination() {
@@ -311,47 +312,73 @@
         }
     }
 
-    async function uploadProof(requestId, file) {
-        return window.topGymAuth.api(`/api/saas/subscription-requests/${requestId}/proof`, {
-            method: 'POST',
-            // HTTP header values are restricted to ISO-8859-1 by the browser.
-            // Encode the user-facing filename before sending it in a header so
-            // Arabic filenames do not make fetch fail before the request starts.
-            headers: { 'Content-Type': 'application/octet-stream', 'X-Payment-Proof-Mime': file.type, 'X-Payment-Proof-Name-Encoded': encodeURIComponent(file.name) },
-            body: file
-        });
-    }
-
     async function submit(event) {
         event.preventDefault();
+        if (state.submitting) return;
         const button = $('saasSubscriptionSubmit');
         const planId = Number($('saasPlanSelect')?.value || 0);
         const file = $('saasPaymentProof')?.files?.[0];
         const notes = $('saasRequestNotes')?.value || '';
         const selectedPlan = state.plans.find((plan) => String(plan.id) === String(planId));
         const termCode = selectedPlan ? (selectedTerm(selectedPlan)?.code || 'monthly') : 'monthly';
-        const pending = state.requests.find((request) => request.status === 'pending');
         if (!planId) return showMessage('اختر باقة أولًا.', true);
         if (!file) return showMessage('ارفع إثبات الدفع قبل إرسال الطلب.', true);
         if (file.size > 4 * 1024 * 1024) return showMessage('حجم إثبات الدفع يجب ألا يتجاوز 4MB.', true);
+        state.submitting = true;
         button.disabled = true;
         button.setAttribute('aria-busy', 'true');
+        button.innerHTML = '<span class="loading-spinner" aria-hidden="true"></span><span>جارٍ إرسال الطلب…</span>';
         showMessage('جارٍ إرسال الطلب ورفع إثبات الدفع…');
         try {
-            let request = pending;
-            if (!request) {
-                const response = await window.topGymAuth.api('/api/saas/subscription-requests', { method: 'POST', body: JSON.stringify({ planId, termCode, notes }) });
-                request = response.request;
-            }
-            await uploadProof(request.id, file);
-            showMessage('تم إرسال الطلب وإثبات الدفع للمراجعة.', false);
-            notify('تم إرسال طلب الاشتراك بنجاح.', false, 'success');
+            const payload = new FormData();
+            payload.set('planId', String(planId));
+            payload.set('termCode', termCode);
+            payload.set('notes', notes);
+            payload.set('proof', file, file.name);
+            const response = await window.topGymAuth.api('/api/saas/subscription-requests/submit', { method: 'POST', body: payload });
+            const request = response.request;
+            if (!request?.id || !request.proof) throw new Error('تم حفظ الطلب لكن تعذر تأكيد إثبات الدفع. حدّث سجل الطلبات قبل إعادة الإرسال.');
+            state.requests = [request, ...state.requests.filter((item) => Number(item.id) !== Number(request.id))];
+            renderRequests(state.requests);
+            state.submitting = false;
             $('saasSubscriptionForm')?.reset();
+            const dialog = $('saasSubscriptionForm')?.closest('dialog');
+            if (dialog?.open) dialog.close();
+            notify('تم إرسال طلب الاشتراك بنجاح، والطلب الآن تحت المراجعة.', false, 'success');
             await load();
         } catch (error) {
             showMessage(error.message || 'تعذر إرسال طلب الاشتراك.', true);
             notify(error.message || 'تعذر إرسال طلب الاشتراك.', true, 'error');
-        } finally { button.disabled = false; button.removeAttribute('aria-busy'); }
+        } finally {
+            state.submitting = false;
+            button.disabled = false;
+            button.removeAttribute('aria-busy');
+            button.innerHTML = 'إرسال الطلب للمراجعة';
+        }
+    }
+
+    async function previewPaymentProof(event) {
+        const link = event.target.closest('[data-saas-payment-proof]');
+        if (!link) return;
+        event.preventDefault();
+        const preview = window.open('about:blank', '_blank');
+        if (!preview) {
+            notify('اسمح بفتح نافذة معاينة الإثبات ثم حاول مرة أخرى.', true, 'error');
+            return;
+        }
+        try {
+            const response = await window.topGymApi.raw(link.href, { cache: 'no-store', headers: { Accept: 'image/*, application/pdf' } });
+            const contentType = (response.headers.get('content-type') || '').split(';')[0].trim().toLowerCase();
+            if (!(contentType.startsWith('image/') || contentType === 'application/pdf')) {
+                throw new Error('استجابة ملف الإثبات ليست صورة أو PDF صالحًا.');
+            }
+            const blob = await response.blob();
+            if (!blob.size || blob.type && blob.type !== contentType) throw new Error('تعذر التحقق من ملف إثبات الدفع.');
+            preview.location.replace(URL.createObjectURL(blob));
+        } catch (error) {
+            preview.close();
+            notify(error.message || 'تعذر عرض إثبات الدفع.', true, 'error');
+        }
     }
 
     function bind() {
@@ -378,6 +405,7 @@
             renderPlans(state.plans);
         });
         document.addEventListener('click', (event) => {
+            void previewPaymentProof(event);
             const button = event.target.closest('[data-saas-request-page]');
             if (!button) return;
             state.requestPage = Number(button.dataset.saasRequestPage) || 1;
@@ -386,5 +414,5 @@
     }
 
     bind();
-    window.addEventListener('topgym:tab-changed', (event) => { if (event.detail?.name === 'saas-billing' && !state.loaded) void load(); });
+    window.addEventListener('topgym:tab-changed', (event) => { if (event.detail?.name === 'saas-billing') void load(); });
 })();
