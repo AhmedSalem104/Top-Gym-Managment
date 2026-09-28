@@ -71,6 +71,18 @@ This document records current behavior as rules, not UI labels. Sources are list
 
 Transactions are used for membership/payment/subscription/branch and other multi-row operations where the service requires them. Trainer tasks/templates and selected writes carry idempotency keys. Mobile must preserve server-provided idempotency behavior and retry only documented safe operations.
 
+## SaaS subscription request + proof lifecycle
+
+- An authenticated tenant Owner submits a plan/term request with exactly one payment-proof file through `POST /api/saas/subscription-requests/submit` as multipart data. Supported images/PDFs are checked by declared type, signature, and the 4 MiB size limit.
+- The client contract is atomic: success is returned only after request, proof metadata, audit entry, and notification records commit. Private storage is written and verified before the SQL transaction; storage is compensated if the transaction fails. The client must not report success before the API response.
+- Each tenant can have at most one completed pending request. An incomplete pending row may be completed; a second completed pending request is rejected (`409 SAAS_REQUEST_ALREADY_PENDING`). The filtered unique index and service transaction are authoritative. Web also locks submit while in flight. Since there is no idempotency-key contract, mobile must block concurrent submission and reconcile an ambiguous timeout against history before retry.
+- Lifecycle is `pending -> approved | rejected`, once only. Approval requires valid proof and changes subscription state; rejection records the decision. Repeated/concurrent review is rejected.
+- Gym proof reads are authenticated and tenant-scoped. Files remain private and return validated image/PDF content inline; a public storage URL is not an authorization mechanism. Platform Admin uses separately authorized review and proof endpoints.
+- Successful submission persists notifications for PlatformAdmin (`saas_subscription_request_created`) and tenant Owner/Assistant (`saas_subscription_request_submitted`) with category `subscription`. Approval/rejection produces a persistent tenant decision notification in the same category. Read/unread state is server-persisted.
+- Admin email is a post-commit side effect to the configured administrative recipient. Mail failure must not roll back a valid pending request or be reported to the Gym as submission failure; it is safely recorded and does not change request state.
+- Registration and in-app subscription requests share active terms from `saas_plan_terms` and the shared server pricing function. `amountDue = max(0, roundMoney(price) - roundMoney(discountAmount))`; client-supplied amount is not accepted. Request amount/email reflect amount due, while the active subscription price snapshot retains the catalog term price according to the existing subscription snapshot contract.
+- Approval rechecks current term and currency before applying the plan/duration. If pricing changed, `409 SAAS_TERM_PRICE_CHANGED` prevents approval and requires a current-price request. Previously created pending requests at the current undiscounted catalog price remain reviewable; this compatibility does not affect new request pricing.
+
 ## Failure rules
 
 Missing/expired auth → `401`; forbidden role/permission → `403`; feature not included → `SAAS_FEATURE_NOT_INCLUDED`; incompatible tenant/plan → `SAAS_PLAN_TENANT_TYPE_MISMATCH`; wrong tenant type for Trainer → `TRAINER_ROUTE_NOT_FOUND`; missing tenant context fails closed. Error mapping must not expose SQL, stack traces, credentials, or connection strings.

@@ -26,3 +26,14 @@ Current repository tests include Node unit tests, browser Playwright tests, CSS/
 ## Security/regression cases
 
 Cross-tenant IDs, stale branch/section, expired/suspended plan, feature false, limit reached, revoked session, malformed upload, replay/idempotency, rate limits, RLS, PII logging, and raw code/token persistence are blocking tests.
+
+## Subscription request and notification contract cases
+
+| Scenario | Required evidence |
+| --- | --- |
+| Gym request submit | Multipart with exactly one image/PDF proof returns pending request; duplicate in-flight submit is blocked; ambiguous timeout reconciles from history before retry. |
+| Pending rules | Second completed pending request is rejected; incomplete pending request follows service completion contract; approve/reject is one-time and conflicts on stale state. |
+| Proof | Gym can fetch only own tenant proof; PlatformAdmin uses separate route; body is actual image/PDF with correct content type; unauthenticated and cross-tenant access are rejected; no public storage fallback. |
+| Transaction/failure | SQL failure compensates private object write; request/proof/audit/notification persistence is atomic; post-commit email failure does not report request failure or cause resubmission. |
+| Notifications | New request generates PlatformAdmin and tenant audience events with `category=subscription`; recipient/audience is correct; unread count/list/read state persist; decision notification prompts authoritative refresh. |
+| Review | PlatformAdmin-only queue/proof/approve/reject; approval requires proof and updates subscription; rejection persists decision; Gym receives resulting state and persistent notification. |

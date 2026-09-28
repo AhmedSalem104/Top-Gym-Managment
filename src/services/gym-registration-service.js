@@ -9,6 +9,7 @@ const { runTenantContext } = require('../tenancy/tenant-context');
 const { TENANT_TYPES, resolveTenantType } = require('../tenancy/tenant-types');
 const { secretRing } = require('./secret-ring');
 const { normalizeEgyptianMobile } = require('./phone-service');
+const { priceSaasTerm } = require('./saas-term-pricing');
 
 const MAX_PAGE_SIZE = 100;
 const REGISTRATION_TOKEN_PATTERN = /^[A-Za-z0-9_-]{32,128}$/;
@@ -299,15 +300,12 @@ function normalizeSelection(catalog, body = {}) {
     const paymentMethodCode = text(body.paymentMethodCode || body.paymentMethod, '', 60).toLowerCase();
     const paymentMethod = catalog.paymentMethods.find((item) => item.methodCode === paymentMethodCode);
     if (!paymentMethod) throw registrationError('Select an active Logic Fit payment method.', 409, 'REGISTRATION_PAYMENT_METHOD_UNAVAILABLE', 'paymentMethodCode');
-    const price = roundMoney(term.price);
-    const discountAmount = roundMoney(term.discountAmount);
+    const pricing = priceSaasTerm(term);
     return {
         plan,
         term,
         paymentMethod,
-        price,
-        discountAmount,
-        amountDue: roundMoney(Math.max(0, price - discountAmount))
+        ...pricing
     };
 }
 

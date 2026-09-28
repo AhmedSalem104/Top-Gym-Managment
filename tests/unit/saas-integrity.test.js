@@ -115,6 +115,10 @@ test('subscription approval locks the request and commits the state transition a
     assert.match(block, /if \(request\.status !== 'pending'\)/);
     assert.match(block, /if \(!request\.proof_id\)/);
     assert.match(block, /status='approved'/);
+    assert.match(block, /const term = selectPlanTerm\(requestedPlan, request\.term_code \|\| request\.billing_period, \{ allowLegacy: true \}\)/);
+    assert.match(block, /const expectedPricing = priceSaasTerm\(term\)/);
+    assert.match(block, /addBillingPeriod\(now, term\.code, term\.durationMonths\)/);
+    assert.match(block, /input\('durationMonthsSnapshot', sql\.Int, snapshot\.durationMonths\)/);
     assert.match(block, /saas_tenant_subscriptions SET status='expired'/);
     assert.match(block, /INSERT INTO dbo\.saas_tenant_subscriptions/);
     assert.match(block, /UPDATE dbo\.gym_tenants SET status='active'/);

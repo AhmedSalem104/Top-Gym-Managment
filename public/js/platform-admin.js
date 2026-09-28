@@ -436,7 +436,7 @@
 
     function profilePaymentsPanel(profile) {
         const requests = profile.payments || [];
-        return profilePanel('payments', `<div class="profile-section profile-wide"><h3>طلبات الاشتراك وإثباتات الدفع</h3><div class="table-scroll"><table class="profile-table"><thead><tr><th>الباقة</th><th>المبلغ</th><th>الحالة</th><th>الإثبات</th><th>التاريخ</th><th></th></tr></thead><tbody>${requests.length ? requests.map((request) => `<tr><td>${escapeHtml(request.plan?.name || '—')}</td><td>${escapeHtml(formatMoney(request.amount, request.currency))}</td><td>${statusPill(request.status)}</td><td>${request.proof ? `<a class="table-action" target="_blank" rel="noreferrer" href="/api/platform-admin/payment-proofs/${request.proof.id}/file">معاينة آمنة</a><br><small>${escapeHtml(request.proof.fileName)}</small>` : '—'}</td><td>${escapeHtml(formatDate(request.createdAt))}</td><td>${request.status === 'pending' ? `<button class="table-action" type="button" data-request-action="approve" data-request-id="${request.id}">قبول</button> <button class="table-action" type="button" data-request-action="reject" data-request-id="${request.id}">رفض</button>` : ''}</td></tr>`).join('') : '<tr><td colspan="6">لا توجد طلبات اشتراك.</td></tr>'}</tbody></table></div></div>`);
+        return profilePanel('payments', `<div class="profile-section profile-wide"><h3>طلبات الاشتراك وإثباتات الدفع</h3><div class="table-scroll"><table class="profile-table"><thead><tr><th>الباقة</th><th>المدة</th><th>المبلغ</th><th>الحالة</th><th>الإثبات</th><th>التاريخ</th><th></th></tr></thead><tbody>${requests.length ? requests.map((request) => `<tr><td>${escapeHtml(request.plan?.name || '—')}</td><td>${escapeHtml(registrationTermLabel({ durationMonths: request.durationMonths }))}</td><td>${escapeHtml(formatMoney(request.amount, request.currency))}</td><td>${statusPill(request.status)}</td><td>${request.proof ? `<a class="table-action" target="_blank" rel="noreferrer" href="/api/platform-admin/payment-proofs/${request.proof.id}/file">معاينة آمنة</a><br><small>${escapeHtml(request.proof.fileName)}</small>` : '—'}</td><td>${escapeHtml(formatDate(request.createdAt))}</td><td>${request.status === 'pending' ? `<button class="table-action" type="button" data-request-action="approve" data-request-id="${request.id}">قبول</button> <button class="table-action" type="button" data-request-action="reject" data-request-id="${request.id}">رفض</button>` : ''}</td></tr>`).join('') : '<tr><td colspan="7">لا توجد طلبات اشتراك.</td></tr>'}</tbody></table></div></div>`);
     }
 
     function renderProfilePaymentsPagination(profile) {
@@ -542,6 +542,23 @@
         const summary = $('#requestResultsSummary');
         const host = $('#requestPagination');
         if (!summary || !host) return;
+        const table = host.closest('.platform-card')?.querySelector('#requestsTableBody')?.closest('table');
+        const headerRow = table?.tHead?.rows?.[0];
+        if (headerRow && !headerRow.querySelector('[data-request-duration-column]')) {
+            const heading = document.createElement('th');
+            heading.dataset.requestDurationColumn = 'true';
+            heading.textContent = 'المدة';
+            headerRow.insertBefore(heading, headerRow.cells[3] || null);
+        }
+        const rows = $('#requestsTableBody')?.rows || [];
+        if (rows.length === 1 && rows[0].cells[0]?.colSpan) rows[0].cells[0].colSpan = 9;
+        else [...rows].forEach((row, index) => {
+            if (row.querySelector('[data-request-duration]')) return;
+            const cell = document.createElement('td');
+            cell.dataset.requestDuration = 'true';
+            cell.textContent = `${Number(state.requests[index]?.durationMonths || 0)} شهر`;
+            row.insertBefore(cell, row.cells[3] || null);
+        });
         const pagination = state.requestPagination || {};
         const total = Number(pagination.total || 0);
         const page = Number(pagination.page || state.requestPage || 1);

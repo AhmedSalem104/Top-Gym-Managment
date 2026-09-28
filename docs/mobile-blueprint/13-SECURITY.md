@@ -22,3 +22,12 @@ Threats include stolen device, rooted/jailbroken device, token theft, replay, te
 - Redact PII, tokens, codes, request bodies, and auth headers from telemetry.
 - Consider screenshot blocking only for explicitly sensitive surfaces; do not claim it as a server security boundary.
 - Certificate pinning/root detection are risk decisions, not substitutes for TLS/backend auth; record them in an ADR if adopted.
+
+## Subscription request proof and notification boundaries
+
+- Submit proof using the authenticated multipart request contract; never upload directly with embedded storage credentials or make the bucket/object public.
+- Gym proof preview calls the authenticated tenant-scoped file route. A proof ID is only a locator; authorization is checked against the current tenant on every read. Render only the validated image/PDF response and do not expose cross-tenant object existence.
+- Platform Admin proof access uses its distinct PlatformAdmin-only route. Do not reuse the Gym proof route as a privilege bridge.
+- Request/notification audiences, role, and tenant are resolved server-side. Mobile may filter `category=subscription`, but must not synthesize recipients or trust cached unread state for authorization.
+- Approval/rejection notification is a state-change signal. Refresh request and effective subscription/entitlements from the server; never enable a feature from notification payload alone.
+- Admin email is post-commit delivery. A mail failure does not mean request creation failed and must not trigger client resubmission; persisted request and in-app notification remain authoritative.

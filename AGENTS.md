@@ -120,3 +120,29 @@ After changing it:
 - Verify that documentation matches actual code and tests.
 
 This rule applies to future Codex/AI agents and human contributors.
+
+### Mandatory Mobile Impact Check on Every Logic Fit Change
+
+Before closing **any** Logic Fit change, evaluate and record its effect on the Mobile Flow. This check is mandatory for changes to business flows; APIs/endpoints and request/response contracts; authentication/session behavior; permissions/roles; feature entitlements; notifications; mobile-visible email events; upload/download/file-preview behavior; subscriptions/plans; members/attendance/payments; Trainer Studio; branch/section behavior; status transitions; validation/error codes; database behavior that changes a contract or flow; and any new or modified feature.
+
+If the change affects mobile:
+
+- Update the relevant `docs/mobile-blueprint/` documents in the same changeset.
+- Synchronize the API contract, mobile flow/state transitions, and affected roles/permissions/entitlements.
+- Update notification contracts and document every new status, error, or response shape.
+- Preserve one set of business rules across Web, Backend, and Blueprint; mobile documentation describes **what, why, contract, and flow**, not Web UI implementation details.
+- Do not close the task until the documentation matches the final code and tests.
+
+If there is no mobile impact, include `MOBILE IMPACT: NONE` and a concise reason in the task report. If there is impact, include `MOBILE IMPACT: UPDATED`, `MOBILE BLUEPRINT: PASS`, and `UPDATED MOBILE DOCS: [files]`.
+
+Do not start mobile implementation as part of this check, create a mobile app, copy Web UI into the Blueprint, or change Backend behavior solely for mobile without a demonstrated need. Never defer a required contract/documentation update on the assumption that mobile will be updated later.
+
+Before changing a shared contract, read its relevant Blueprint documents. Afterward update the relevant API/flow/access/notification documentation, `19-TRACEABILITY-MATRIX.md` when the mapping changes, `22-CHANGELOG.md`, and an ADR only when an architecture decision changes; then verify every documented claim against executable source and tests.
+
+Every final report must contain:
+
+```text
+MOBILE IMPACT: NONE / UPDATED
+MOBILE BLUEPRINT: PASS / N/A
+UPDATED MOBILE DOCS: [files]
+```

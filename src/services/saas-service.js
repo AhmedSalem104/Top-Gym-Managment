@@ -28,6 +28,7 @@ const {
 const cacheService = require('./cache-service');
 const { IMAGE_MIME_TYPES, detectProofMime } = require('./image-file-types');
 const notificationDispatcher = require('./notification-dispatcher');
+const { priceSaasTerm } = require('./saas-term-pricing');
 
 const TRIAL_DAYS = 14;
 const MAX_PROOF_BYTES = 4 * 1024 * 1024;
@@ -1834,7 +1835,7 @@ async function createSubscriptionRequest({ tenantId = currentTenantId({ required
         .input('userId', sql.Int, actorId)
         .input('termCode', sql.VarChar(20), term.code)
         .input('durationMonths', sql.Int, term.durationMonths)
-        .input('amount', sql.Decimal(12, 2), term.price)
+        .input('amount', sql.Decimal(12, 2), priceSaasTerm(term).amountDue)
         .input('currency', sql.VarChar(3), term.currency)
         .input('notes', sql.NVarChar(1000), text(notes, '', 1000) || null)
         .query('INSERT INTO dbo.saas_subscription_requests (tenant_id,plan_id,requested_by_user_id,term_code,duration_months,amount_snapshot,currency,notes) OUTPUT INSERTED.id VALUES (@tenantId,@planId,@userId,@termCode,@durationMonths,@amount,@currency,@notes);');
@@ -1983,7 +1984,7 @@ async function submitSubscriptionRequest({ tenantId = currentTenantId({ required
                 .input('userId', sql.Int, actorId)
                 .input('termCode', sql.VarChar(20), term.code)
                 .input('durationMonths', sql.Int, term.durationMonths)
-                .input('amount', sql.Decimal(12, 2), term.price)
+                .input('amount', sql.Decimal(12, 2), priceSaasTerm(term).amountDue)
                 .input('currency', sql.VarChar(3), term.currency)
                 .input('notes', sql.NVarChar(1000), text(notes, '', 1000) || null);
             if (incompleteRequest) {
@@ -2020,7 +2021,7 @@ async function submitSubscriptionRequest({ tenantId = currentTenantId({ required
                 payload: {
                     gymName: tenant.name,
                     planName: plan.name,
-                    amountDue: Number(term.price),
+                    amountDue: priceSaasTerm(term).amountDue,
                     currency: term.currency,
                     submittedAt: new Date(createdAt).toISOString(),
                     actionUrl: '/platform-admin.html#subscription-requests'
@@ -2072,7 +2073,7 @@ async function submitSubscriptionRequest({ tenantId = currentTenantId({ required
         tenantId: id,
         status: 'pending',
         createdAt,
-        amount: Number(term.price),
+        amount: priceSaasTerm(term).amountDue,
         currency: term.currency,
         plan: { id: plan.id, code: plan.code, name: plan.name },
         proof: { id: proofId, fileName: proof.fileName, mimeType: proof.mimeType, fileSize: proof.buffer.length }
@@ -2181,7 +2182,9 @@ async function approveRequest(requestId, actorUserId, reviewNotes = '') {
         ), (await getPlanTerms([planId], { executor: transaction })).get(planId) || []);
         assertPlanCompatibleForTenantType(requestedPlan, request.tenant_type);
         const term = selectPlanTerm(requestedPlan, request.term_code || request.billing_period, { allowLegacy: true });
-        if (request.term_code && (Number(request.amount_snapshot) !== Number(term.price) || String(request.currency || '').toUpperCase() !== String(term.currency || '').toUpperCase())) {
+        const expectedPricing = priceSaasTerm(term);
+        const acceptedRequestAmounts = request.term_code ? new Set([expectedPricing.amountDue, expectedPricing.price]) : null;
+        if (request.term_code && (!acceptedRequestAmounts.has(Number(request.amount_snapshot)) || String(request.currency || '').toUpperCase() !== expectedPricing.currency)) {
             throw saasError('تغير سعر مدة الاشتراك قبل المراجعة؛ أعد إرسال الطلب بالسعر الحالي.', 409, 'SAAS_TERM_PRICE_CHANGED');
         }
         const expiresAt = addBillingPeriod(now, term.code, term.durationMonths);

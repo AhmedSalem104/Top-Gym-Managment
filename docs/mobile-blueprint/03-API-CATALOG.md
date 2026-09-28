@@ -330,6 +330,7 @@ The following table is the machine-extracted method/path index used for the comp
 | GET | `/api/saas/plans` | `src/routes/saas.routes.js` |
 | GET | `/api/saas/feature-catalog` | `src/routes/saas.routes.js` |
 | GET | `/api/saas/subscription-requests` | `src/routes/saas.routes.js` |
+| POST | `/api/saas/subscription-requests/submit` | `src/routes/saas.routes.js` |
 | POST | `/api/saas/subscription-requests` | `src/routes/saas.routes.js` |
 | POST | `/api/saas/subscription-requests/:id/proof` | `src/routes/saas.routes.js` |
 | GET | `/api/saas/payment-proofs/:id/file` | `src/routes/saas.routes.js` |
@@ -442,3 +443,22 @@ The following table is the machine-extracted method/path index used for the comp
 ## Unresolved API contract detail
 
 The repository has no machine-readable OpenAPI schema. Exact field-level request/response contracts are distributed across controllers/services and existing tests. Future mobile implementation must generate/maintain typed client contracts from reviewed endpoint evidence; `21-OPEN-QUESTIONS.md` records this as a non-critical tooling decision, not as permission to guess.
+
+## SaaS subscription request and proof contracts
+
+Sources: `src/routes/saas.routes.js`, `src/controllers/saas-controller.js`, `src/services/saas-service.js`, `src/routes/platform-admin.routes.js`, `src/services/notification-service.js`, and `public/js/pages/saas/saas.js`.
+
+| Operation | Contract and authorization | Mobile implications |
+| --- | --- | --- |
+| Submit request | `POST /api/saas/subscription-requests/submit`, authenticated Owner-only route, `multipart/form-data`; requires `planId`, `termCode`, exactly one proof, optional `notes`; proof max 4 MiB and image/PDF content is checked by signature. `201` returns `{request:{id,tenantId,status,createdAt,termCode,durationMonths,amount,currency,plan,proof}}`. | Treat as a single multipart submission. Lock submit in-flight; do not report success before API completion. |
+| Request history | `GET /api/saas/subscription-requests`, Owner-only; tenant context is derived from the authenticated session. Legacy `POST /api/saas/subscription-requests` returns `410 ATOMIC_SUBSCRIPTION_SUBMISSION_REQUIRED`. | Reload authoritative history after success. |
+| Gym proof preview | `GET /api/saas/payment-proofs/:id/file`, authenticated and tenant-scoped; returns the private file inline with validated content type, `private,no-store`, and `nosniff`. | Render image/PDF according to content type via authenticated request; never construct a public object URL. Cross-tenant/missing proof is unavailable (`404`); unauthenticated is `401`. |
+| Platform review queue | `GET /api/platform-admin/subscription-requests`, PlatformAdmin-only, status and pagination filters. | Separate Platform Admin workspace/authorization; no Gym tenant credential or scope substitution. |
+| Approve / reject | `POST /api/platform-admin/subscription-requests/:requestId/approve` and `/reject`, PlatformAdmin-only. Only pending requests can transition. Approval requires valid attached proof and updates subscription state. | Refresh request and effective subscription state; never optimistically grant entitlements. Repeated/concurrent review returns `409 SAAS_REQUEST_ALREADY_REVIEWED`; missing request is `404 SAAS_REQUEST_NOT_FOUND`. |
+| Notifications | `GET /api/notifications` supports `page`, `pageSize`, `unreadOnly`, `category`; `GET /api/notifications/unread-count`; `POST /api/notifications/:id/read`; `POST /api/notifications/read-all`; `GET /api/notifications/stream`. Audience and tenant scope are session-derived. | Subscription events use `category=subscription`; unread state is persisted server-side. |
+
+Submission errors include `400 INVALID_SUBSCRIPTION_SUBMISSION`, `400 PAYMENT_PROOF_TOO_LARGE`, `400 INVALID_PAYMENT_PROOF_TYPE`, `400 PAYMENT_PROOF_SIGNATURE_MISMATCH`, `422 PAYMENT_PROOF_REQUIRED`, `409 SAAS_REQUEST_ALREADY_PENDING`, plus auth/authorization and plan applicability errors. An incomplete pending row may be completed; a completed pending request cannot be duplicated. There is no explicit idempotency-key contract: the client must prevent concurrent double submit and reconcile ambiguous network outcomes against history before retry. A filtered unique pending-tenant index and service transaction are the final duplicate guard.
+
+The proof object is written and verified in private storage before the SQL transaction; transaction failure triggers storage compensation. Request, proof metadata, audit, and notification records commit together. Email is post-commit; delivery failure does not invalidate a persisted request. Events are `saas_subscription_request_created` (PlatformAdmin, in-app + configured admin email), `saas_subscription_request_submitted` (tenant Owner/Assistant, in-app), and `saas_subscription_request_approved` / `saas_subscription_request_rejected` (tenant Owner/Assistant, in-app). All use category `subscription`.
+
+Plan durations and prices come from the active `saas_plan_terms` entries returned with the plan catalog (`code`, `durationMonths`, `price`, `discountAmount`, `currency`, `isActive`). Registration and in-app requests read this same catalog. The multipart submit contract takes `planId`, `termCode`, `notes`, and `proof`; it does not accept a client amount. The server resolves the active compatible plan term and computes `amountDue = max(0, roundMoney(price) - roundMoney(discountAmount))`; request `amount` and Admin email use this expected amount. The persisted request also returns `termCode` and `durationMonths`. Platform Admin approval revalidates the currently configured term price and currency and applies the persisted term duration when setting expiry. `409 SAAS_TERM_PRICE_CHANGED` requires the Gym to review current terms and submit again. Legacy pending requests whose amount equals the current undiscounted term price remain reviewable for compatibility; newly submitted requests use the discounted amount-due contract.

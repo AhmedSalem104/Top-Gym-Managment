@@ -159,3 +159,10 @@ The following 93 entries are extracted from `PERMISSION_CATALOG` in `src/permiss
 ## Mobile rule
 
 Do not cache an entitlement as authority. On app bootstrap, tenant change, branch change, subscription change, permission change, and session refresh, mobile must revalidate/refresh the effective envelope. A stale cache may render a disabled screen but must never authorize a request.
+
+## Subscription request authorization boundary
+
+- `saas.subscription.read` and `saas.subscription.request` are catalog permissions; SaaS request routes are additionally Owner-only. Assistant permission alone does not authorize this flow.
+- Platform review and Platform proof routes require PlatformAdmin middleware, not a Gym permission or tenant-supplied role. Gym proof reads are authenticated and tenant-scoped.
+- Notification reads require `notifications.read`; visibility is further limited by recipient/audience role and tenant scope. Platform and tenant audiences are distinct. Do not infer access from category or notification ID.
+- Pending/review state and effective plan/entitlements are server-owned. A notification or cached response never grants Platform review capability or subscription features.
