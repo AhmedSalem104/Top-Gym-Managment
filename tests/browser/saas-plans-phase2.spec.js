@@ -106,7 +106,7 @@ test('Gym plan UI exposes four terms and only Gym-compatible feature labels', as
     const basic = page.locator('[data-saas-plan-card="12"]');
     await basic.locator('[data-saas-term-plan]').selectOption('quarterly');
     await expect(basic.locator('.saas-plan-price')).toContainText('١٬٥٩٩');
-    await expect(basic.locator('.saas-plan-price')).toContainText('3 Months');
+    await expect(basic.locator('.saas-plan-price')).toContainText('3 شهور');
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth);
     expect(overflow).toBeTruthy();
 });
