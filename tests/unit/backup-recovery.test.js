@@ -9,6 +9,7 @@ const {
     assertBackupNotExpired,
     deletePlatformArtifactAndVerify,
     deleteTenantArtifactAndVerify,
+    dailyBackupRetentionCutoff,
     getRetentionPolicy,
     getScheduledPlatformBackupTypes,
     getTenantBackupCoverageStatus,
@@ -246,9 +247,21 @@ test('backup table workers are bounded and preserve result order', async () => {
 
 test('retention defaults are configurable and never include an unlimited value', () => {
     const policy = getRetentionPolicy();
-    assert.equal(policy.tenant_daily, 30);
+    assert.equal(policy.tenant_daily, 3);
+    assert.equal(policy.tenant_manual, 30);
+    assert.equal(policy.tenant_pre_restore, 30);
+    assert.equal(policy.platform_daily, 3);
     assert.equal(policy.platform_weekly, 84);
+    assert.equal(policy.platform_monthly, 365);
+    assert.equal(policy.platform_manual, 30);
     assert.ok(Object.values(policy).every((days) => Number.isInteger(days) && days > 0));
+});
+
+test('daily retention keeps the current and two preceding UTC calendar days', () => {
+    const cutoff = dailyBackupRetentionCutoff(new Date('2026-09-28T14:30:00.000Z'), 3);
+    assert.equal(cutoff.toISOString(), '2026-09-26T00:00:00.000Z');
+    assert.equal(new Date('2026-09-25T00:00:00.000Z') < cutoff, true);
+    assert.equal(new Date('2026-09-26T00:00:00.000Z') < cutoff, false);
 });
 
 test('expired or malformed backup metadata cannot pass the download freshness gate', () => {

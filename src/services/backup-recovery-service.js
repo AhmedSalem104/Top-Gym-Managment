@@ -114,18 +114,30 @@ function retentionDays(name, fallback) {
 
 function getRetentionPolicy() {
     return Object.freeze({
-        tenant_daily: retentionDays('BACKUP_TENANT_DAILY_RETENTION_DAYS', 30),
+        tenant_daily: retentionDays('BACKUP_TENANT_DAILY_RETENTION_DAYS', 3),
         tenant_manual: retentionDays('BACKUP_TENANT_MANUAL_RETENTION_DAYS', 30),
         tenant_pre_restore: retentionDays('BACKUP_TENANT_PRE_RESTORE_RETENTION_DAYS', 30),
-        platform_daily: retentionDays('BACKUP_PLATFORM_DAILY_RETENTION_DAYS', 30),
+        platform_daily: retentionDays('BACKUP_PLATFORM_DAILY_RETENTION_DAYS', 3),
         platform_weekly: retentionDays('BACKUP_PLATFORM_WEEKLY_RETENTION_DAYS', 84),
         platform_monthly: retentionDays('BACKUP_PLATFORM_MONTHLY_RETENTION_DAYS', 365),
         platform_manual: retentionDays('BACKUP_PLATFORM_MANUAL_RETENTION_DAYS', 30)
     });
 }
 
+function dailyBackupRetentionCutoff(now = new Date(), days = 3) {
+    const date = new Date(now);
+    if (Number.isNaN(date.getTime())) throw backupError('Backup date is invalid.', 400, 'INVALID_BACKUP_DATE');
+    const safeDays = normalizePositiveInteger(days, 3, 3650);
+    return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate() - safeDays + 1));
+}
+
 function retentionExpiry(backupType, now = new Date()) {
     const days = getRetentionPolicy()[backupType] || 30;
+    if (backupType === 'tenant_daily' || backupType === 'platform_daily') {
+        const date = new Date(now);
+        if (Number.isNaN(date.getTime())) throw backupError('Backup date is invalid.', 400, 'INVALID_BACKUP_DATE');
+        return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate() + days));
+    }
     return new Date(new Date(now).getTime() + days * 24 * 60 * 60 * 1000);
 }
 
@@ -2850,16 +2862,21 @@ async function cleanupExpiredBackups({ now = new Date(), concurrency = 2, storag
     }
     const safeLimit = normalizePositiveInteger(limit, 200, 500);
     const pool = await getPool();
+    const policy = getRetentionPolicy();
     const [tenantResult, platformResult] = await Promise.all([
-        pool.request().input('now', sql.DateTime2(0), now).input('limit', sql.Int, safeLimit).query(`
+        pool.request().input('now', sql.DateTime2(0), now).input('dailyCutoff', sql.Date, dailyBackupRetentionCutoff(now, policy.tenant_daily)).input('limit', sql.Int, safeLimit).query(`
             SELECT TOP (@limit) id,tenant_id,status,storage_key,checksum_sha256,size_bytes
             FROM dbo.gym_backup_records
-            WHERE expires_at IS NOT NULL AND expires_at <= @now AND status IN ('VERIFIED','FAILED','EXPIRED')
+            WHERE ((backup_type='tenant_daily' AND backup_day < @dailyCutoff)
+                OR (backup_type<>'tenant_daily' AND expires_at IS NOT NULL AND expires_at <= @now))
+                AND status IN ('VERIFIED','FAILED','EXPIRED')
             ORDER BY expires_at,id;`),
-        pool.request().input('now', sql.DateTime2(0), now).input('limit', sql.Int, safeLimit).query(`
+        pool.request().input('now', sql.DateTime2(0), now).input('dailyCutoff', sql.Date, dailyBackupRetentionCutoff(now, policy.platform_daily)).input('limit', sql.Int, safeLimit).query(`
             SELECT TOP (@limit) id,status,storage_key,checksum_sha256,size_bytes
             FROM dbo.gym_platform_backup_records
-            WHERE expires_at IS NOT NULL AND expires_at <= @now AND status IN ('VERIFIED','FAILED','EXPIRED')
+            WHERE ((backup_type='platform_daily' AND backup_day < @dailyCutoff)
+                OR (backup_type<>'platform_daily' AND expires_at IS NOT NULL AND expires_at <= @now))
+                AND status IN ('VERIFIED','FAILED','EXPIRED')
             ORDER BY expires_at,id;`)
     ]);
     const tenantResults = await mapWithConcurrency(tenantResult.recordset, async (row) => {
@@ -3156,6 +3173,7 @@ module.exports = {
     assertBackupNotExpired,
     cleanupExpiredBackups,
     getRetentionPolicy,
+    dailyBackupRetentionCutoff,
     getScheduledPlatformBackupTypes,
     isStalePlatformVerification,
     getTenantBackupHistory,

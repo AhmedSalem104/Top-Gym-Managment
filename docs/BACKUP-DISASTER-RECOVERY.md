@@ -212,8 +212,8 @@ create only its dedicated audit event.
 
 Default retention is configurable through environment variables:
 
-- tenant daily/manual/pre-restore: 30 days;
-- platform daily/manual: 30 days;
+- tenant daily: 3 days; manual/pre-restore: 30 days;
+- platform daily: 3 days; manual: 30 days;
 - platform weekly: 84 days;
 - platform monthly: 365 days.
 
