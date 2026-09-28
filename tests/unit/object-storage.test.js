@@ -183,6 +183,28 @@ test('local private storage cannot be enabled in production or staging', () => {
     assert.equal(isVercelRuntime('local'), false);
 });
 
+test('tenant object deletion passes the tenant scope to the storage adapter', async () => {
+    const calls = [];
+    const storage = createObjectStorageService({
+        adapter: {
+            async deletePrivateObject(input) {
+                calls.push(input);
+                return true;
+            }
+        }
+    });
+
+    assert.equal(await storage.deletePrivateObject({
+        tenantId: 7,
+        key: 'tenants/7/private/backups/abcdefghijklmnop.gz'
+    }), true);
+    assert.deepEqual(calls, [{
+        tenantId: 7,
+        scope: 'tenant',
+        key: 'tenants/7/private/backups/abcdefghijklmnop.gz'
+    }]);
+});
+
 test('s3 driver wires the production adapter without activating local storage', () => {
     const storage = createConfiguredObjectStorageService({
         driver: 's3',

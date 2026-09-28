@@ -407,7 +407,7 @@ function createObjectStorageService({ adapter = null, maxBytes = MAX_PRIVATE_OBJ
             const normalizedTenantId = normalizeTenantId(tenantId);
             const normalizedKey = assertPrivateObjectKey(normalizedTenantId, key);
             assertAdapter(adapter, 'deletePrivateObject');
-            const result = await adapter.deletePrivateObject({ tenantId: normalizedTenantId, key: normalizedKey });
+            const result = await adapter.deletePrivateObject({ tenantId: normalizedTenantId, scope: 'tenant', key: normalizedKey });
             return result !== false;
         },
         getPublicUrl() {
