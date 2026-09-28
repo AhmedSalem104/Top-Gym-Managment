@@ -128,7 +128,7 @@
         button.setAttribute('aria-busy', 'true');
         button.setAttribute('aria-label', loadingText);
         button.disabled = true;
-        if (rect?.width > 0 && !options.allowLayoutShift) button.style.minWidth = `${Math.ceil(rect.width)}px`;
+        if (rect?.width > 0 && !options.allowLayoutShift) button.style.minWidth = `${rect.width}px`;
         button.innerHTML = `<span class="logicfit-button-spinner" aria-hidden="true"></span><span class="logicfit-button-label"></span>`;
         button.querySelector('.logicfit-button-label').textContent = loadingText;
         announce(loadingText);

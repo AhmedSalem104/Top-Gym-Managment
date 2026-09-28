@@ -137,13 +137,15 @@ test('subscription submit and proof routes remain owner-authenticated and proof 
     assert.match(service, /WHERE id=@id AND \(@tenantId IS NULL OR tenant_id=@tenantId\)/);
     const ui = fs.readFileSync(path.join(root, 'public/js/pages/saas/saas.js'), 'utf8');
     assert.match(ui, /state\.submitting/);
-    assert.match(ui, /loading-spinner/);
+    const shell = fs.readFileSync(path.join(root, 'public/index.html'), 'utf8');
+    assert.match(shell, /id="saasSubscriptionSubmit"/);
+    assert.match(shell, /\/js\/ui-feedback\.js\?v=3/);
     assert.match(ui, /subscription-requests\/submit/);
     assert.match(ui, /contentType\.startsWith\('image\/'\) \|\| contentType === 'application\/pdf'/);
     assert.match(ui, /dialog\.close\(\)/);
 });
 
-test('request, proof, audit and both-party in-app notifications share a transaction; email dispatch follows commit', () => {
+test('request, proof, audit, notifications and durable email intent share one transaction without SMTP dispatch', () => {
     const service = fs.readFileSync(path.join(root, 'src/services/saas-service.js'), 'utf8');
     const start = service.indexOf('async function submitSubscriptionRequest');
     const end = service.indexOf('\nasync function listPlatformRequests', start);
@@ -158,7 +160,9 @@ test('request, proof, audit and both-party in-app notifications share a transact
     assert.match(block, /type: 'saas_subscription_request_submitted'/);
     assert.match(block, /for \(const audienceRole of \['Owner', 'Assistant'\]\)/);
     assert.match(block, /tenantNotificationEvents\.push\(await runTenantContext\(\{ mode: 'tenant', tenantId: id \}/);
-    assert.match(block, /SAAS_REQUEST_EMAIL_NOT_SENT/);
-    assert.ok(block.indexOf('await withTransaction') < block.indexOf('notificationService.dispatchEvent(notificationEvent)'));
+    assert.match(block, /emailOutboxDispatcher\.enqueue\(notificationEvent, \{ executor: transaction \}\)/);
+    assert.doesNotMatch(block, /dispatchEvent\(notificationEvent\)|sendEmailEvent\(/);
+    assert.match(block, /for \(const event of \[notificationEvent, \.\.\.tenantNotificationEvents\]\)[\s\S]*?notificationService\.dispatchInAppEvent\(event\)/);
+    assert.doesNotMatch(block, /notificationService\.dispatchEvent\(event\)/);
     assert.match(block, /deletePrivateObject\(\{ tenantId: id, key: storedObject.key \}\)/);
 });

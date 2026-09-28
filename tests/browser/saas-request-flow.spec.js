@@ -28,15 +28,22 @@ function billing(requests = []) {
     };
 }
 
-async function openBilling(page, onSubmit, initialRequests = []) {
+async function openBilling(page, onSubmit, initialRequests = [], options = {}) {
     let requests = initialRequests;
+    let submitCompleted = false;
     await page.route('**/api/**', async (route) => {
         const request = route.request();
         const pathname = new URL(request.url()).pathname;
         if (pathname === '/api/auth/session') return route.fulfill({ json: { authenticated: true, user: { id: 9, name: 'QA Owner', role: 'Owner', tenantType: 'gym', permissions: [] } } });
         if (pathname === '/api/branding') return route.fulfill({ json: { identity: { brandName: 'Logic Fit' } } });
         if (pathname === '/api/bootstrap') return route.fulfill({ json: { branches: [], sections: [], defaultBranch: null } });
-        if (pathname === '/api/saas/subscription') return route.fulfill({ json: billing(requests) });
+        if (pathname === '/api/saas/subscription') {
+            if (submitCompleted && options.holdPostSubmitRefresh) {
+                options.onRefreshStarted?.();
+                await options.waitForRefresh;
+            }
+            return route.fulfill({ json: billing(requests) });
+        }
         if (pathname === '/api/saas/entitlements') {
             const data = billing(requests);
             return route.fulfill({ json: {
@@ -47,6 +54,7 @@ async function openBilling(page, onSubmit, initialRequests = []) {
         }
         if (pathname === '/api/saas/subscription-requests/submit' && request.method() === 'POST') {
             const result = await onSubmit(route, request);
+            submitCompleted = true;
             if (result) requests = [result];
             return;
         }
@@ -92,9 +100,21 @@ test('subscription submit is single-flight, visibly pending, cannot close, then 
     const dialog = page.locator('.saas-request-dialog');
     const form = page.locator('#saasSubscriptionForm');
     const button = page.locator('#saasSubscriptionSubmit');
+    const idleBounds = await button.boundingBox();
     await button.click();
     await expect(button).toBeDisabled();
-    await expect(button.locator('.loading-spinner')).toBeVisible();
+    const buttonState = await button.evaluate((element) => ({
+        busy: element.getAttribute('aria-busy'),
+        loadingClass: element.className,
+        spinner: Boolean(element.querySelector('.logicfit-button-spinner'))
+    }));
+    expect(buttonState.busy).toBe('true');
+    expect(buttonState.loadingClass).toContain('is-loading');
+    expect(buttonState.spinner).toBe(true);
+    await expect(button.locator('.logicfit-button-spinner')).toBeVisible();
+    const pendingBounds = await button.boundingBox();
+    expect(Math.abs((pendingBounds?.width || 0) - (idleBounds?.width || 0))).toBeLessThanOrEqual(0.5);
+    expect(Math.abs((pendingBounds?.height || 0) - (idleBounds?.height || 0))).toBeLessThanOrEqual(0.5);
     await expect(dialog).toBeVisible();
     await page.keyboard.press('Escape');
     await expect(dialog).toBeVisible();
@@ -111,6 +131,29 @@ test('subscription submit is single-flight, visibly pending, cannot close, then 
     expect(submittedPayload).toContain('name="termCode"\r\n\r\nsemiannual');
     expect(submittedPayload).toContain('name="proof"; filename="proof.png"');
     await expect(page.locator('#saasRequestsList [data-saas-request-duration]')).toHaveText(`${new Intl.NumberFormat('ar-EG').format(6)} شهر`);
+});
+
+test('successful submit closes and publishes its optimistic history before non-critical billing refresh completes', async ({ page }) => {
+    let releaseRefresh;
+    let refreshStarted;
+    const refreshGate = new Promise((resolve) => { releaseRefresh = resolve; });
+    const refreshSeen = new Promise((resolve) => { refreshStarted = resolve; });
+    await openBilling(page, async (route) => {
+        await route.fulfill({ status: 201, json: { request: requestRow(75) } });
+        return requestRow(75);
+    }, [], {
+        holdPostSubmitRefresh: true,
+        waitForRefresh: refreshGate,
+        onRefreshStarted: refreshStarted
+    });
+    const dialog = page.locator('.saas-request-dialog');
+    const submitButton = page.locator('#saasSubscriptionSubmit');
+    await submitButton.click();
+    await expect(dialog).toBeHidden();
+    await expect(page.locator('#saasRequestsList [data-saas-payment-proof]')).toHaveCount(1);
+    await refreshSeen;
+    await expect(dialog).toBeHidden();
+    releaseRefresh();
 });
 
 test('subscription billing loads current fingerprinted assets on refresh, cache bypass, and a fresh browser session', async ({ page, browser }) => {
@@ -171,20 +214,48 @@ test('subscription popup uses catalog durations and discounted server-catalog am
     await expect(page.locator('#saasRequestCurrent')).toContainText('Basic');
     await expect(page.locator('.saas-request-dialog')).toBeVisible();
     await expect(page.locator('#saasTermSelect')).toBeVisible();
+    const currentCard = await page.locator('#saasRequestCurrent').evaluate((element) => ({
+        display: getComputedStyle(element).display,
+        labelTop: element.querySelector('small')?.getBoundingClientRect().top,
+        planTop: element.querySelector('strong')?.getBoundingClientRect().top,
+        statusTop: element.querySelector('span')?.getBoundingClientRect().top,
+        secureBadgeInsideUpload: Boolean(element.ownerDocument.querySelector('.saas-upload-box .status-badge.success'))
+    }));
+    expect(currentCard.display).toBe('grid');
+    expect(currentCard.planTop).toBeGreaterThan(currentCard.labelTop);
+    expect(currentCard.statusTop).toBeGreaterThan(currentCard.planTop);
+    expect(currentCard.secureBadgeInsideUpload).toBe(true);
     for (const width of [320, 390, 768, 1024, 1440]) {
         await page.setViewportSize({ width, height: 900 });
         for (const theme of ['light', 'dark']) {
             await page.evaluate((value) => document.documentElement.setAttribute('data-theme', value), theme);
             const geometry = await page.evaluate(() => {
-                const dialog = document.querySelector('.saas-request-dialog').getBoundingClientRect();
+                const dialogElement = document.querySelector('.saas-request-dialog');
+                const dialog = dialogElement.getBoundingClientRect();
+                const body = dialogElement.querySelector(':scope > .modal-body');
+                const form = body?.querySelector('#saasSubscriptionForm');
+                const footer = dialogElement.querySelector(':scope > .form-actions');
+                const header = dialogElement.querySelector(':scope > .modal-header');
+                const headerRect = header?.getBoundingClientRect();
                 return {
                     direction: getComputedStyle(document.documentElement).direction,
                     overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth,
                     dialogWidth: dialog.width,
                     dialogLeft: dialog.left,
                     dialogRight: dialog.right,
+                    dialogTop: dialog.top,
+                    dialogBottom: dialog.bottom,
                     viewportWidth: document.documentElement.clientWidth,
-                    termVisible: Boolean(document.querySelector('#saasTermSelect')?.getClientRects().length)
+                    viewportHeight: document.documentElement.clientHeight,
+                    headerLeft: headerRect?.left,
+                    headerRight: headerRect?.right,
+                    headerTop: headerRect?.top,
+                    dialogContainedVertically: dialog.top >= 0 && dialog.bottom <= document.documentElement.clientHeight,
+                    termVisible: Boolean(document.querySelector('#saasTermSelect')?.getClientRects().length),
+                    scrollOwners: [body, form].filter((element) => element && ['auto', 'scroll'].includes(getComputedStyle(element).overflowY)).length,
+                    headerPosition: header && getComputedStyle(header).position,
+                    footerPosition: footer && getComputedStyle(footer).position,
+                    formColumns: form && getComputedStyle(form).gridTemplateColumns
                 };
             });
             expect(geometry.direction).toBe('rtl');
@@ -192,9 +263,27 @@ test('subscription popup uses catalog durations and discounted server-catalog am
             expect(geometry.dialogWidth).toBeLessThanOrEqual(geometry.viewportWidth);
             expect(geometry.dialogLeft).toBeGreaterThanOrEqual(0);
             expect(geometry.dialogRight).toBeLessThanOrEqual(geometry.viewportWidth);
+            expect(geometry.dialogContainedVertically).toBe(true);
+            expect(geometry.headerLeft).toBeGreaterThanOrEqual(geometry.dialogLeft - 0.5);
+            expect(geometry.headerRight).toBeLessThanOrEqual(geometry.dialogRight + 0.5);
+            expect(geometry.headerTop).toBeGreaterThanOrEqual(geometry.dialogTop);
             expect(geometry.termVisible).toBe(true);
+            expect(geometry.scrollOwners).toBe(1);
+            expect(geometry.headerPosition).toBe('sticky');
+            expect(geometry.footerPosition).toBe('sticky');
+            expect(geometry.formColumns.split(' ').length).toBe(width < 601 ? 1 : 2);
         }
     }
+    await page.setViewportSize({ width: 320, height: 568 });
+    const scrollCheck = await page.locator('.saas-request-dialog').evaluate((dialogElement) => {
+        const body = dialogElement.querySelector(':scope > .modal-body');
+        body.scrollTop = body.scrollHeight;
+        const upload = dialogElement.querySelector('.file-upload-control-trigger').getBoundingClientRect();
+        const footer = dialogElement.querySelector(':scope > .form-actions').getBoundingClientRect();
+        return { uploadBottom: upload.bottom, footerTop: footer.top, bodyHasOverflow: body.scrollHeight > body.clientHeight };
+    });
+    expect(scrollCheck.bodyHasOverflow).toBe(true);
+    expect(scrollCheck.uploadBottom).toBeLessThanOrEqual(scrollCheck.footerTop + 1);
 });
 
 test('failed subscription submit keeps dialog and entered form state and restores submit control', async ({ page }) => {

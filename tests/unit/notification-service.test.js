@@ -130,6 +130,25 @@ test('recording with an executor persists one durable in-app notification atomic
     assert.match(queries[0], /dedupe_key=@dedupeKey/i);
 });
 
+test('committed subscription in-app notifications broadcast without invoking SMTP', () => {
+    let sends = 0;
+    const received = [];
+    const service = createNotificationService({
+        emailService: { send: async () => { sends += 1; return { status: 'sent' }; } }
+    });
+    service.subscribe({ kind: 'user', tenantId: null, userId: 7, role: 'PlatformAdmin' }, (item) => received.push(item));
+    const result = service.dispatchInAppEvent({
+        type: 'saas_subscription_request_created', audienceRole: 'PlatformAdmin',
+        entityType: 'saas_subscription_request', entityId: 73, notificationId: 901,
+        payload: { gymName: 'Synthetic QA Gym', planName: 'Business', durationMonths: 6, amountDue: 10 }
+    });
+    assert.equal(result.status, 'broadcast');
+    assert.equal(received.length, 1);
+    assert.equal(received[0].category, 'subscription');
+    assert.equal(received[0].read, false);
+    assert.equal(sends, 0);
+});
+
 test('default event dedupe keys include scope so tenant events cannot collide', () => {
     const first = normalizeEvent({ type: 'member_created', tenantId: 7, entityId: 55 });
     const second = normalizeEvent({ type: 'member_created', tenantId: 8, entityId: 55 });
@@ -230,15 +249,18 @@ test('configured email adapter sends through the injected transport without expo
 
 test('registration email is safe, bounded and contains a review destination', () => {
     const message = buildRegistrationEmail(normalizeEvent(registrationEvent()), 'https://logicfit.example');
-    assert.match(message.subject, /New Gym registration request/);
-    assert.match(message.text, /Review request: https:\/\/logicfit\.example\/platform-admin/);
+    assert.match(message.subject, /\u0637\u0644\u0628 \u0627\u0646\u0636\u0645\u0627\u0645/);
+    assert.match(message.text, /\u0645\u0631\u0627\u062c\u0639\u0629.*https:\/\/logicfit\.example\/platform-admin/);
     assert.match(message.html, /href="https:\/\/logicfit\.example\/platform-admin"/);
+    assert.match(message.html, /lang="ar" dir="rtl"/);
+    assert.match(message.html, /LOGIC <span/);
     assert.doesNotMatch(message.text, /accessToken|publicTokenHash|idempotencyKey/i);
 });
 
-test('SaaS subscription request notification is platform-scoped, persisted in-app and delivered through the configured admin email service', async () => {
+test('SaaS subscription request notification is persistent while its branded email is delivered by the outbox adapter', async () => {
     const queries = [];
     let sentEmail;
+    let sends = 0;
     const fakeRequest = {
         input() { return this; },
         async query(statement) { queries.push(statement); return { recordset: [{ id: 902 }] }; }
@@ -247,24 +269,34 @@ test('SaaS subscription request notification is platform-scoped, persisted in-ap
     const service = createNotificationService({
         databaseEnabled: true,
         getPool: async () => fakePool,
-        emailService: { send: async (input) => { sentEmail = input.email; return { status: 'sent' }; } },
+        emailService: { send: async (input) => { sends += 1; sentEmail = input.email; return { status: 'sent' }; } },
         publicAppUrl: 'https://logicfit.example'
     });
     const event = await service.recordEvent({
         type: 'saas_subscription_request_created', entityType: 'saas_subscription_request', entityId: 84,
         title: 'طلب اشتراك جديد', message: 'طلب جديد من QA Gym.',
-        payload: { gymName: 'QA Gym', planName: 'Basic', amountDue: 599, currency: 'EGP', actionUrl: '/platform-admin.html#subscription-requests' },
+        payload: { gymName: 'QA Gym', planName: 'Basic', durationMonths: 6, amountDue: 599, currency: 'EGP', submittedAt: '2026-09-28T10:00:00.000Z', actionUrl: '/platform-admin.html#subscription-requests' },
         dedupeKey: 'saas-subscription-request-created:84'
     }, { executor: fakePool });
     assert.equal(event.tenantId, null);
     assert.equal(event.audienceRole, 'PlatformAdmin');
+    assert.equal(event.category, 'subscription');
     assert.equal(event.notificationId, 902);
     assert.match(queries[0], /INSERT INTO dbo\.saas_notifications/i);
-    const delivery = await service.dispatchEvent(event);
-    assert.equal(delivery.channels.email.status, 'sent');
-    assert.match(sentEmail.subject, /subscription request/i);
+    assert.equal(sends, 0, 'recording the event must not contact SMTP');
+    const delivery = await service.sendEmailEvent(event);
+    assert.equal(delivery.status, 'sent');
+    assert.equal(sends, 1);
+    assert.match(sentEmail.subject, /\u0637\u0644\u0628 \u0627\u0634\u062a\u0631\u0627\u0643/);
     assert.match(sentEmail.text, /QA Gym/);
+    assert.match(sentEmail.text, /Basic/);
+    assert.match(sentEmail.text, /6/);
+    assert.match(sentEmail.text, /599\.00 EGP/);
+    assert.match(sentEmail.text, /\u062a\u062d\u062a \u0627\u0644\u0645\u0631\u0627\u062c\u0639\u0629/);
     assert.match(sentEmail.text, /https:\/\/logicfit\.example\/platform-admin\.html#subscription-requests/);
+    assert.match(sentEmail.html, /lang="ar" dir="rtl"/);
+    assert.doesNotMatch(sentEmail.text + sentEmail.html, /storage_key|payment-proof|\.min\.io|proof\.png/i);
+    assert.doesNotMatch(sentEmail.text + sentEmail.html, /\{"gymName"/);
 });
 
 test('SaaS subscription decisions are tenant-scoped notifications', () => {

@@ -39,6 +39,7 @@ test('platform backup inventory remains separate from tenant restore inventory',
     assert.ok(PLATFORM_GLOBAL_BACKUP_TABLES.some((item) => item.table === 'saas_plan_features'));
     assert.ok(PLATFORM_GLOBAL_BACKUP_TABLES.some((item) => item.table === 'saas_plan_tenant_types'));
     assert.ok(PLATFORM_GLOBAL_BACKUP_TABLES.some((item) => item.table === 'whatsapp_message_templates'));
+    assert.ok(PLATFORM_GLOBAL_BACKUP_TABLES.some((item) => item.table === 'email_outbox'));
     assert.equal(PLATFORM_GLOBAL_BACKUP_TABLES.some((item) => item.table === 'gym_user_tenants'), true);
     assert.ok(TENANT_BACKUP_EXCLUDED_TABLES.includes('gym_backup_operations'));
     assert.equal(tenantTables.has('gym_user_tenants'), false);

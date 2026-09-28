@@ -156,6 +156,9 @@ const PLATFORM_GLOBAL_BACKUP_TABLES = Object.freeze([
     Object.freeze({ key: 'whatsapp_message_templates', table: 'whatsapp_message_templates' }),
     Object.freeze({ key: 'saas_audit_log', table: 'saas_audit_log' }),
     Object.freeze({ key: 'saas_notifications', table: 'saas_notifications' }),
+    // Pending/sent mail delivery state is part of operational recovery: a
+    // restored request must retain its committed notification intent.
+    Object.freeze({ key: 'email_outbox', table: 'email_outbox' }),
     Object.freeze({ key: 'saas_notification_reads', table: 'saas_notification_reads' }),
     Object.freeze({ key: 'saas_member_notification_reads', table: 'saas_member_notification_reads' })
 ]);

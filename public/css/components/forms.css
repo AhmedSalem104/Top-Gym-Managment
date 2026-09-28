@@ -18,6 +18,92 @@ label.form-label {
   line-height: 1.55;
 }
 
+.file-upload-control {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  min-width: 0;
+  align-items: center;
+  gap: var(--space-3);
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-muted);
+  padding: var(--space-3);
+  transition: border-color var(--transition-fast), background-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.file-upload-control.is-dragging,
+.file-upload-control:focus-within {
+  border-color: var(--color-primary);
+  background: var(--color-primary-soft);
+  box-shadow: var(--focus-ring);
+}
+
+.file-upload-control.has-file {
+  border-style: solid;
+  border-color: var(--success-border);
+  background: var(--color-success-soft);
+}
+
+.file-upload-control-icon {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
+  place-items: center;
+  border-radius: var(--radius-md);
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+
+.file-upload-control > div { display: grid; min-width: 0; gap: var(--space-1); }
+.file-upload-control > div > strong { color: var(--color-text-soft); font-size: var(--font-sm); }
+.file-upload-control > div > small { color: var(--color-text-muted); font-size: var(--font-xs); }
+
+.file-upload-control-name {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  color: var(--color-text-muted);
+  font-size: var(--font-xs);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-upload-control.has-file .file-upload-control-name { color: var(--color-success); font-weight: var(--weight-semibold); }
+
+.file-upload-control > input[type="file"].visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.file-upload-control-trigger {
+  min-width: 104px;
+  min-height: 44px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-primary);
+  font: inherit;
+  font-size: var(--font-xs);
+  font-weight: var(--weight-semibold);
+  cursor: pointer;
+}
+
+.file-upload-control-trigger:hover:not(:disabled) { border-color: var(--color-primary); background: var(--color-primary); color: var(--text-on-primary); }
+.file-upload-control-trigger:focus-visible { outline: 3px solid var(--border-focus); outline-offset: 2px; }
+
+@media (max-width: 560px) {
+  .file-upload-control { grid-template-columns: auto minmax(0, 1fr); }
+  .file-upload-control-trigger { grid-column: 1 / -1; width: 100%; }
+}
+
 input:not([type="checkbox"]):not([type="radio"]),
 select,
 textarea,

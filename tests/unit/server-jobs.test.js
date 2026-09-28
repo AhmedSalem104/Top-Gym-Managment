@@ -89,3 +89,14 @@ test('production release lets the official backup runner apply its bounded heap 
     assert.doesNotMatch(backupSection, /-v "\$RELEASE_DIR:\/app"/);
     assert.match(backupSection, /candidate may introduce tables/);
 });
+
+test('production app containers start and gracefully stop the durable email outbox worker', () => {
+    const release = read('scripts/release-production-remote.sh');
+    assert.equal((release.match(/const outbox=require\("\.\/src\/services\/email-outbox-dispatcher"\);/g) || []).length, 1);
+    assert.match(release, /outbox\.start\(\); const server=app\.listen\(port,"127\.0\.0\.1"/);
+    assert.match(release, /server\.close\(\(\)=>outbox\.stop\(\)\.then\(\(\)=>closePool\(\)\)\.finally\(\(\)=>process\.exit\(0\)\)\)/);
+    const candidateStart = release.indexOf('const CANDIDATE_NAME=');
+    const cutoverStart = release.indexOf("STAGE='cutover'");
+    const candidateCommands = release.slice(candidateStart, cutoverStart);
+    assert.doesNotMatch(candidateCommands, /outbox\.start\(\)/);
+});

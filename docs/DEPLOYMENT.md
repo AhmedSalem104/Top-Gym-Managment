@@ -151,6 +151,26 @@ environment through an anonymous pipe and honors `.production-release-lock`,
 so backup and release cannot overlap. The Vercel `/api/backup/daily` schedule
 remains configured as the existing fallback path.
 
+### Durable administrative email delivery
+
+Subscription-request administrative mail is recorded in `dbo.email_outbox`
+inside the same SQL transaction as the request and persistent notifications.
+The standalone Node 24 `node server.js` runtime starts the bounded outbox
+poller after database bootstrap and stops it during graceful shutdown. The
+poller claims rows with SQL Server update/read-past locks, sends through the
+configured mail service, and stores only bounded delivery states and safe
+error codes. Retries are scheduled in SQL with bounded delays; pending rows
+survive an application or VPS restart. `email_outbox` is part of the platform
+backup/recovery registry.
+
+The outbox schema is migration `039-durable-email-outbox.sql` and must be
+applied only by the canonical production release/migration pipeline. Do not
+manually create the table or send subscription-request mail directly from the
+HTTP handler. The current serverless import path does not run a durable
+background worker; an environment using only serverless functions must not be
+considered an active outbox delivery host until it has an approved durable
+worker runtime.
+
 ## Serverless constraints
 
 Vercel instances are not durable workers. Do not depend on local temporary files as permanent backup storage or on process memory for sessions/rate limits across instances. Sessions are stored in SQL Server; backup archive durability and retention should be reviewed before treating the current archive implementation as the only disaster-recovery copy.

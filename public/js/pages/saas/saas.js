@@ -6,7 +6,7 @@
     const escapeHtml = (value) => String(value ?? '').replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[character]));
     const dateFormatter = new Intl.DateTimeFormat('ar-EG', { dateStyle: 'medium' });
     const numberFormatter = new Intl.NumberFormat('ar-EG');
-    const state = { billing: null, plans: [], requests: [], requestsPagination: {}, requestPage: 1, loaded: false, loading: false, submitting: false, termSelections: {} };
+    const state = { billing: null, plans: [], requests: [], optimisticRequests: new Map(), requestsPagination: {}, requestPage: 1, loaded: false, loading: false, refreshAfterLoad: false, submitting: false, termSelections: {} };
 
     function notify(message, error = false, type = '') {
         if (typeof window.showToast === 'function') window.showToast(message, error, type || (error ? 'error' : 'success'));
@@ -163,16 +163,9 @@
             : activePlans;
         if (select) {
             const hasCurrentPlan = requestPlans.some((plan) => String(plan.id) === String(currentPlanId));
-            select.innerHTML = `<option value="">اختر الباقة المطلوبة</option>${requestPlans.map((plan) => { const term = selectedTerm(plan); return `<option value="${plan.id}" ${String(plan.id) === String(currentPlanId) ? 'selected' : ''}>${escapeHtml(plan.name)} — ${money(term.price, term.currency)} / ${escapeHtml(termLabels[term.code] || term.code)}${String(plan.id) === String(currentPlanId) ? ' · الباقة الحالية' : ''}</option>`; }).join('')}`;
+            select.innerHTML = `<option value="">اختر الباقة المطلوبة</option>${requestPlans.map((plan) => `<option value="${plan.id}" ${String(plan.id) === String(currentPlanId) ? 'selected' : ''}>${escapeHtml(plan.name)}${String(plan.id) === String(currentPlanId) ? ' · الباقة الحالية' : ''}</option>`).join('')}`;
             select.disabled = !requestPlans.length;
             select.value = hasCurrentPlan ? String(currentPlanId) : '';
-            [...select.options].forEach((option) => {
-                const plan = requestPlans.find((item) => String(item.id) === option.value);
-                if (!plan) return;
-                const term = selectedTerm(plan);
-                if (term) option.textContent = `${plan.name} — ${termLabel(term)} — ${money(termAmountDue(term), term.currency)}${String(plan.id) === String(currentPlanId) ? ' · الباقة الحالية' : ''}`;
-                else option.textContent = `${plan.name} — لا توجد مدة مفعلة${String(plan.id) === String(currentPlanId) ? ' · الباقة الحالية' : ''}`;
-            });
         }
         if (!host) return;
         if (!availablePlans.length) { host.innerHTML = '<div class="saas-empty">لا توجد باقات مفعّلة حاليًا. راجع مدير المنصة.</div>'; return; }
@@ -206,19 +199,22 @@
         const box = input?.closest('.saas-upload-box');
         if (!input || !box || box.dataset.uploadReady === 'true') return;
         box.dataset.uploadReady = 'true';
+        box.classList.add('file-upload-control');
         box.setAttribute('role', 'group');
+        box.querySelector('.saas-upload-icon')?.classList.replace('saas-upload-icon', 'file-upload-control-icon');
         const copy = box.querySelector('div');
         const fileName = document.createElement('span');
-        fileName.className = 'saas-upload-file-name';
+        fileName.className = 'file-upload-control-name';
         fileName.setAttribute('aria-live', 'polite');
         fileName.textContent = 'لم يتم اختيار ملف بعد';
         copy?.appendChild(fileName);
         const trigger = document.createElement('button');
-        trigger.className = 'saas-upload-trigger';
+        trigger.className = 'file-upload-control-trigger';
         trigger.type = 'button';
         trigger.textContent = 'اختيار ملف';
         trigger.addEventListener('click', () => input.click());
         box.appendChild(trigger);
+        input.classList.add('visually-hidden');
         const update = (file) => {
             box.classList.toggle('has-file', Boolean(file));
             fileName.textContent = file ? `${file.name} · ${Math.max(1, Math.round(file.size / 1024))} KB` : 'لم يتم اختيار ملف بعد';
@@ -245,32 +241,69 @@
         if (!page || !panel || !plansPanel || panel.dataset.dialogReady === 'true') return;
         panel.dataset.dialogReady = 'true';
         const dialog = document.createElement('dialog');
-        dialog.className = 'saas-request-dialog';
+        dialog.className = 'saas-request-dialog lf-modal-shell lf-modal--md lf-modal--structured';
         dialog.setAttribute('aria-labelledby', 'saasRequestTitle');
         const close = document.createElement('button');
-        close.className = 'btn btn-light btn-small saas-request-dialog-close';
+        close.className = 'btn btn-light dialog-close-button';
         close.type = 'button';
         close.setAttribute('aria-label', 'إغلاق نموذج طلب الاشتراك');
         close.textContent = 'إغلاق';
-        panel.querySelector('.saas-panel-head')?.appendChild(close);
+        close.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m18 6-12 12M6 6l12 12"/></svg>';
+        close.setAttribute('aria-label', 'إغلاق نموذج طلب الاشتراك');
+        dialog.appendChild(close);
+        const header = panel.querySelector('.saas-panel-head');
+        header?.classList.add('modal-header');
+        header?.querySelector(':scope > div')?.classList.add('modal-heading-content', 'modal-heading-stack');
+        if (header) dialog.appendChild(header);
+        const secureBadge = header?.querySelector('.saas-panel-badge.is-secure');
+        const uploadDetails = panel.querySelector('.saas-upload-box > div');
+        if (secureBadge && uploadDetails) {
+            secureBadge.className = 'status-badge success';
+            uploadDetails.appendChild(secureBadge);
+        }
+        const title = $('saasRequestTitle');
+        if (title?.tagName === 'H4') {
+            const headingTitle = document.createElement('h3');
+            headingTitle.id = title.id;
+            headingTitle.textContent = title.textContent;
+            title.replaceWith(headingTitle);
+        }
         const currentContext = document.createElement('div');
         currentContext.id = 'saasRequestCurrent';
-        currentContext.className = 'saas-request-current';
-        panel.querySelector('.saas-panel-head')?.after(currentContext);
+        currentContext.className = 'saas-request-current modal-form-context';
         close.addEventListener('click', () => { if (!state.submitting) dialog.close(); });
         dialog.addEventListener('cancel', (event) => { if (state.submitting) event.preventDefault(); });
         dialog.addEventListener('click', (event) => { if (event.target === dialog && !state.submitting) dialog.close(); });
         panel.parentElement.insertBefore(dialog, panel);
+        document.body.appendChild(dialog);
+        panel.classList.remove('saas-panel');
+        panel.classList.add('modal-body');
         dialog.appendChild(panel);
         const planSelect = $('saasPlanSelect');
         const planField = planSelect?.closest('.field');
         const form = $('saasSubscriptionForm');
+        form?.classList.add('modal-form-grid');
+        if (form) panel.insertBefore(currentContext, form);
+        planField?.classList.remove('field-full');
         if (form && planField && !$('saasTermSelect')) {
             const termField = document.createElement('div');
-            termField.className = 'field field-full';
+            termField.className = 'field';
             termField.innerHTML = '<label for="saasTermSelect">مدة الاشتراك المطلوبة *</label><select id="saasTermSelect" required disabled></select><div id="saasRequestPriceSummary" class="modal-form-summary" aria-live="polite"><span>الإجمالي حسب إعدادات المنصة</span><strong>اختر الباقة والمدة</strong></div>';
             planField.after(termField);
         }
+        const actions = form?.querySelector('.saas-form-actions');
+        actions?.classList.add('form-actions');
+        const message = $('saasSubscriptionMessage');
+        if (form && actions && message) {
+            message.classList.add('field-full');
+            form.insertBefore(message, actions);
+        }
+        const submitButton = $('saasSubscriptionSubmit');
+        if (submitButton && form && actions) {
+            submitButton.setAttribute('form', form.id);
+            actions.remove();
+        }
+        if (actions) dialog.appendChild(actions);
         const actionBar = document.createElement('div');
         actionBar.className = 'saas-plan-action-bar';
         actionBar.innerHTML = '<div><span>إدارة اشتراك الجيم</span><strong>هل تريد الترقية أو التجديد؟</strong></div>';
@@ -278,7 +311,12 @@
         trigger.className = 'btn btn-primary saas-request-open';
         trigger.type = 'button';
         trigger.innerHTML = '<span aria-hidden="true">＋</span><span>إرسال طلب اشتراك</span>';
-        trigger.addEventListener('click', () => { selectPlan($('saasPlanSelect')?.value || ''); renderRequestPricing(); dialog.showModal(); });
+        trigger.addEventListener('click', () => {
+            selectPlan($('saasPlanSelect')?.value || '');
+            renderRequestPricing();
+            currentContext.querySelector('.saas-request-current-icon')?.remove();
+            dialog.showModal();
+        });
         actionBar.appendChild(trigger);
         plansPanel.parentElement.insertBefore(actionBar, plansPanel);
         renderRequestContext();
@@ -334,13 +372,18 @@
     }
 
     async function load() {
-        if (state.loading || !window.topGymAuth?.isOwner?.()) return;
+        if (state.loading) { state.refreshAfterLoad = true; return; }
+        if (!window.topGymAuth?.isOwner?.()) return;
         state.loading = true;
         try {
             const data = await window.topGymAuth.api(`/api/saas/subscription?page=${state.requestPage}&pageSize=25`);
             state.billing = data;
             state.plans = data.plans || [];
-            state.requests = data.requests || [];
+            const loadedRequests = data.requests || [];
+            const loadedIds = new Set(loadedRequests.map((item) => Number(item.id)));
+            for (const id of loadedIds) state.optimisticRequests.delete(id);
+            const optimistic = [...state.optimisticRequests.values()].filter((item) => !loadedIds.has(Number(item.id)));
+            state.requests = [...loadedRequests, ...optimistic].sort((left, right) => new Date(right.createdAt || 0) - new Date(left.createdAt || 0));
             state.requestsPagination = data.requestsPagination || {};
             renderSummary(data);
             renderPlans(state.plans);
@@ -349,7 +392,13 @@
             state.loaded = true;
         } catch (error) {
             showMessage(error.message || 'تعذر تحميل اشتراك المنصة.', true);
-        } finally { state.loading = false; }
+        } finally {
+            state.loading = false;
+            if (state.refreshAfterLoad) {
+                state.refreshAfterLoad = false;
+                void load().catch(() => {});
+            }
+        }
     }
 
     function selectPlan(planId, termCode = null) {
@@ -365,6 +414,14 @@
             termSelect.disabled = !planTerms(plan).length;
         }
         if (termSelect && !plan) { termSelect.replaceChildren(); termSelect.disabled = true; }
+        if (select) {
+            const currentId = state.billing?.subscription?.plan?.id ?? state.billing?.subscription?.planId ?? null;
+            [...select.options].forEach((option) => {
+                if (!option.value) return;
+                const optionPlan = state.plans.find((item) => String(item.id) === option.value);
+                if (optionPlan) option.textContent = `${optionPlan.name}${String(optionPlan.id) === String(currentId) ? ' · الباقة الحالية' : ''}`;
+            });
+        }
         renderRequestPricing();
     }
 
@@ -396,8 +453,6 @@
         state.submitting = true;
         button.disabled = true;
         button.setAttribute('aria-busy', 'true');
-        button.innerHTML = '<span class="loading-spinner" aria-hidden="true"></span><span>جارٍ إرسال الطلب…</span>';
-        showMessage('جارٍ إرسال الطلب ورفع إثبات الدفع…');
         try {
             const payload = new FormData();
             payload.set('planId', String(planId));
@@ -405,16 +460,19 @@
             payload.set('notes', notes);
             payload.set('proof', file, file.name);
             const response = await window.topGymAuth.api('/api/saas/subscription-requests/submit', { method: 'POST', body: payload });
-            const request = response.request;
-            if (!request?.id || !request.proof) throw new Error('تم حفظ الطلب لكن تعذر تأكيد إثبات الدفع. حدّث سجل الطلبات قبل إعادة الإرسال.');
-            state.requests = [request, ...state.requests.filter((item) => Number(item.id) !== Number(request.id))];
-            renderRequests(state.requests);
+            const responseRequest = response.request;
+            if (!responseRequest?.id || !responseRequest.proof) throw new Error('تم حفظ الطلب لكن تعذر تأكيد إثبات الدفع. حدّث سجل الطلبات قبل إعادة الإرسال.');
+            const request = { ...responseRequest, termCode, durationMonths: selectedBillingTerm.durationMonths };
             state.submitting = false;
             $('saasSubscriptionForm')?.reset();
             const dialog = $('saasSubscriptionForm')?.closest('dialog');
             if (dialog?.open) dialog.close();
             notify('تم إرسال طلب الاشتراك بنجاح، والطلب الآن تحت المراجعة.', false, 'success');
-            await load();
+            state.requestPage = 1;
+            state.optimisticRequests.set(Number(request.id), request);
+            state.requests = [request, ...state.requests.filter((item) => Number(item.id) !== Number(request.id))];
+            renderRequests(state.requests);
+            void load().catch(() => {});
         } catch (error) {
             showMessage(error.message || 'تعذر إرسال طلب الاشتراك.', true);
             notify(error.message || 'تعذر إرسال طلب الاشتراك.', true, 'error');
@@ -422,7 +480,6 @@
             state.submitting = false;
             button.disabled = false;
             button.removeAttribute('aria-busy');
-            button.innerHTML = 'إرسال الطلب للمراجعة';
         }
     }
 

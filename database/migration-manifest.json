@@ -97,6 +97,18 @@
       "rlsImpact": true,
       "dataBackfill": false,
       "rollback": "forward-fix-or-database-recovery"
+    },
+    "039-durable-email-outbox.sql": {
+      "version": "039",
+      "checksum": "b4c17d31a76c112223ed97c3227e27f518512d90c4647d89e68709e29cdb3539",
+      "transactional": true,
+      "backwardCompatible": true,
+      "destructive": false,
+      "requiresBackup": true,
+      "requiresMaintenanceMode": false,
+      "rlsImpact": false,
+      "dataBackfill": false,
+      "rollback": "forward-fix-or-database-recovery"
     }
   }
 }

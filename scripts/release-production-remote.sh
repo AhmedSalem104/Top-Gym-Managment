@@ -383,7 +383,7 @@ else
         docker start "$CONTAINER_NAME" >/dev/null
         abort_release 80
     fi
-    if ! run_with_current_env_persistent "$PREVIOUS_NAME" -e NODE_ENV=production -e PORT="$INTERNAL_PORT" -e APP_RELEASE_ID="$RELEASE_SHA" -d --name "$CONTAINER_NAME" --restart unless-stopped -v "$RELEASE_DIR:/app" -w /app "$NODE_IMAGE" node -e 'const app=require("./server"); const {closePool}=require("./src/database"); const port=Number(process.env.PORT||3017); const server=app.listen(port,"127.0.0.1",()=>process.stdout.write("production-ready\n")); const shutdown=()=>server.close(()=>closePool().finally(()=>process.exit(0))); process.once("SIGTERM",shutdown); process.once("SIGINT",shutdown);' >/dev/null; then
+    if ! run_with_current_env_persistent "$PREVIOUS_NAME" -e NODE_ENV=production -e PORT="$INTERNAL_PORT" -e APP_RELEASE_ID="$RELEASE_SHA" -d --name "$CONTAINER_NAME" --restart unless-stopped -v "$RELEASE_DIR:/app" -w /app "$NODE_IMAGE" node -e 'const app=require("./server"); const outbox=require("./src/services/email-outbox-dispatcher"); const {closePool}=require("./src/database"); const port=Number(process.env.PORT||3017); outbox.start(); const server=app.listen(port,"127.0.0.1",()=>process.stdout.write("production-ready\n")); const shutdown=()=>server.close(()=>outbox.stop().then(()=>closePool()).finally(()=>process.exit(0))); process.once("SIGTERM",shutdown); process.once("SIGINT",shutdown);' >/dev/null; then
         docker rename "$PREVIOUS_NAME" "$CONTAINER_NAME"
         docker start "$CONTAINER_NAME" >/dev/null
         abort_release 80

@@ -7,6 +7,7 @@ const { test } = require('node:test');
 const source = fs.readFileSync(path.join(__dirname, '..', '..', 'scripts', 'production-migration-gate.js'), 'utf8');
 const migration = fs.readFileSync(path.join(__dirname, '..', '..', 'database', 'migrations', '031-central-notifications.sql'), 'utf8');
 const legacyBranchMigration = fs.readFileSync(path.join(__dirname, '..', '..', 'database', 'migrations', '033-top-gym-legacy-branch-attribution.sql'), 'utf8');
+const emailOutboxMigration = fs.readFileSync(path.join(__dirname, '..', '..', 'database', 'migrations', '039-durable-email-outbox.sql'), 'utf8');
 const manifest = JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..', 'database', 'migration-manifest.json'), 'utf8'));
 const { classifyMigration } = require('../../scripts/production-migration-gate');
 
@@ -33,4 +34,16 @@ test('legacy branch backfill is explicitly classified through the reviewed data-
     }, manifest.migrations['033-top-gym-legacy-branch-attribution.sql']);
     assert.equal(result.classification, 'SAFE_AUTOMATIC');
     assert.equal(result.rlsImpact, false);
+});
+
+test('durable email outbox migration is checksummed, additive and non-RLS', () => {
+    const fileName = '039-durable-email-outbox.sql';
+    const checksum = require('node:crypto').createHash('sha256').update(emailOutboxMigration).digest('hex');
+    assert.equal(manifest.migrations[fileName].checksum, checksum);
+    const result = classifyMigration({ fileName, version: '039', source: emailOutboxMigration, checksum }, manifest.migrations[fileName]);
+    assert.equal(result.classification, 'SAFE_AUTOMATIC');
+    assert.equal(result.rlsImpact, false);
+    assert.match(emailOutboxMigration, /UQ_email_outbox_idempotency_key/);
+    assert.match(emailOutboxMigration, /lease_token/);
+    assert.match(emailOutboxMigration, /next_attempt_at/);
 });

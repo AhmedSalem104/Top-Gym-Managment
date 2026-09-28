@@ -45,6 +45,8 @@ const { createGymRegistrationService } = require('./src/services/gym-registratio
 const { createEmailNotificationService } = require('./src/services/email-notification-service');
 const { createNotificationService } = require('./src/services/notification-service');
 const { configureNotificationService } = require('./src/services/notification-dispatcher');
+const { createEmailOutboxService } = require('./src/services/email-outbox-service');
+const { configureEmailOutboxService } = require('./src/services/email-outbox-dispatcher');
 const { secretRing } = require('./src/services/secret-ring');
 const platformAdminService = require('./src/services/platform-admin-service');
 const { runTenantContext } = require('./src/tenancy/tenant-context');
@@ -105,6 +107,12 @@ const notificationService = createNotificationService({
     publicAppUrl: config.publicAppUrl
 });
 configureNotificationService(notificationService);
+const emailOutboxService = createEmailOutboxService({
+    getPool,
+    sendEmailEvent: (event) => notificationService.sendEmailEvent(event),
+    logger: console
+});
+configureEmailOutboxService(emailOutboxService);
 const gymRegistrationService = createGymRegistrationService({
     commercialService,
     saasService,
@@ -433,6 +441,7 @@ async function start() {
     await runTenantContext({ mode: 'tenant', tenantId: bootstrapTenant.id }, () => ensureLibraryData());
     await runTenantContext({ mode: 'platform', tenantId: bootstrapTenant.id }, () => saasService.ensureBootstrapSubscription(bootstrapTenant.id));
     if (shutdownStarted) return null;
+    emailOutboxService.start();
     const port = config.port;
     httpServer = app.listen(port, () => console.log(`Gym membership app is running on http://localhost:${port}`));
     return httpServer;
@@ -451,6 +460,7 @@ async function gracefulShutdown(signal = 'shutdown') {
             });
             httpServer = null;
         }
+        await emailOutboxService.stop();
         await closePool();
     } catch (error) {
         console.error('[SHUTDOWN_ERROR]', JSON.stringify({ signal, code: safeErrorCode(error, 'shutdown_failed') }));

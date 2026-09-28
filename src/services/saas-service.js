@@ -28,6 +28,7 @@ const {
 const cacheService = require('./cache-service');
 const { IMAGE_MIME_TYPES, detectProofMime } = require('./image-file-types');
 const notificationDispatcher = require('./notification-dispatcher');
+const emailOutboxDispatcher = require('./email-outbox-dispatcher');
 const { priceSaasTerm } = require('./saas-term-pricing');
 
 const TRIAL_DAYS = 14;
@@ -1938,7 +1939,7 @@ async function submitSubscriptionRequest({ tenantId = currentTenantId({ required
     if (!submittedProof) throw saasError('ارفع إثبات الدفع قبل إرسال الطلب.', 422, 'PAYMENT_PROOF_REQUIRED');
     const proof = validateProof(submittedProof);
     const notificationService = notificationDispatcher.getNotificationService();
-    if (!notificationService?.recordEvent || !notificationService?.dispatchEvent) {
+    if (!notificationService?.recordEvent || !notificationService?.dispatchEvent || !notificationService?.dispatchInAppEvent || !emailOutboxDispatcher.isConfigured()) {
         throw saasError('خدمة إشعارات المنصة غير متاحة حاليًا.', 503, 'SAAS_NOTIFICATIONS_UNAVAILABLE');
     }
 
@@ -2022,6 +2023,7 @@ async function submitSubscriptionRequest({ tenantId = currentTenantId({ required
                     gymName: tenant.name,
                     planName: plan.name,
                     amountDue: priceSaasTerm(term).amountDue,
+                    durationMonths: term.durationMonths,
                     currency: term.currency,
                     submittedAt: new Date(createdAt).toISOString(),
                     actionUrl: '/platform-admin.html#subscription-requests'
@@ -2030,6 +2032,7 @@ async function submitSubscriptionRequest({ tenantId = currentTenantId({ required
                 auditDetails: 'New SaaS subscription request submitted.'
             };
             notificationEvent = await runTenantContext({ mode: 'platform', tenantId: null }, () => notificationService.recordEvent(eventInput, { executor: transaction }));
+            await emailOutboxDispatcher.enqueue(notificationEvent, { executor: transaction });
             for (const audienceRole of ['Owner', 'Assistant']) {
                 const tenantEvent = {
                     type: 'saas_subscription_request_submitted',
@@ -2053,21 +2056,12 @@ async function submitSubscriptionRequest({ tenantId = currentTenantId({ required
         throw normalizeStorageFailure(error);
     }
 
-    for (const event of tenantNotificationEvents) {
-        try { await notificationService.dispatchEvent(event); }
+    for (const event of [notificationEvent, ...tenantNotificationEvents]) {
+        try { notificationService.dispatchInAppEvent(event); }
         catch (_) { try { console.warn('[SAAS_REQUEST_TENANT_NOTIFICATION_FAILED]', { requestId }); } catch (_) { /* best effort */ } }
     }
-    try {
-        const delivery = await runTenantContext({ mode: 'platform', tenantId: null }, () => notificationService.dispatchEvent(notificationEvent));
-        if (delivery?.channels?.email?.status !== 'sent') {
-            try { console.warn('[SAAS_REQUEST_EMAIL_NOT_SENT]', { requestId, status: delivery?.channels?.email?.status || 'unknown', reason: delivery?.channels?.email?.reason || 'no_delivery_result' }); }
-            catch (_) { /* best effort */ }
-        }
-    } catch (_) {
-        // The request, proof and in-app notifications are already committed.
-        // Email is a post-commit side effect and must not turn that success into an API failure.
-        try { console.warn('[SAAS_REQUEST_EMAIL_DISPATCH_FAILED]', { requestId }); } catch (_) { /* best effort */ }
-    }
+    // The durable outbox row is committed with the request, proof and in-app
+    // notifications. SMTP is delivered by the SQL-claimed runtime worker.
     return {
         id: requestId,
         tenantId: id,

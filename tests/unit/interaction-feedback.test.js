@@ -19,6 +19,8 @@ test('unified feedback utility exposes safe async action primitives', () => {
     assert.match(source, /setAttribute\('aria-busy', 'true'\)/);
     assert.match(source, /originalHtml: button\.innerHTML/);
     assert.match(source, /messageElement\.textContent/);
+    assert.match(source, /button\.style\.minWidth = `\$\{rect\.width\}px`/);
+    assert.doesNotMatch(source, /Math\.ceil\(rect\.width\)/);
 });
 
 test('feedback CSS has accessible loading, toast and reduced-motion states', () => {
@@ -60,13 +62,17 @@ test('critical surfaces load the same feedback layer with context-aware labels',
     const index = read('public/index.html');
     const portal = read('public/member-portal.html');
     const platform = read('public/platform-admin.html');
+    const gymRegistration = read('public/register-gym.html');
+    const trainerRegistration = read('public/register-trainer.html');
 
-    assert.match(index, /\/js\/ui-feedback\.js\?v=2/);
+    assert.match(index, /\/js\/ui-feedback\.js\?v=3/);
     assert.match(index, /id="loginSubmit"[^>]*data-feedback-ignore[^>]*data-loading-text="جاري تسجيل الدخول\.\.\."/);
-    assert.match(portal, /\/js\/ui-feedback\.js\?v=2/);
+    assert.match(portal, /\/js\/ui-feedback\.js\?v=3/);
     assert.match(portal, /id="portalSubmitButton"[^>]*data-loading-text="جاري التحقق من الكود\.\.\."/);
     assert.match(portal, /id="portalOccupancyRefresh"[^>]*data-async-action="true"/);
-    assert.match(platform, /\/js\/ui-feedback\.js\?v=2/);
+    assert.match(platform, /\/js\/ui-feedback\.js\?v=3/);
+    assert.match(gymRegistration, /\/js\/ui-feedback\.js\?v=3/);
+    assert.match(trainerRegistration, /\/js\/ui-feedback\.js\?v=3/);
 });
 
 test('legacy auto-loading bridge excludes immediate controls and preserves compatibility hooks', () => {

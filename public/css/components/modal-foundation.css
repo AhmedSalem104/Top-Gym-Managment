@@ -29,6 +29,23 @@ dialog.lf-modal-shell[open] {
   display: block;
 }
 
+dialog.lf-modal-shell.lf-modal--structured[open] {
+  display: flex;
+  flex-direction: column;
+}
+
+.lf-modal-shell.lf-modal--structured > .modal-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none;
+}
+
+.lf-modal-shell.lf-modal--structured > :is(.modal-header, .form-actions) {
+  width: 100%;
+  margin: 0;
+}
+
+
 dialog.lf-modal-shell::backdrop {
   background: var(--overlay);
   backdrop-filter: blur(3px);
@@ -199,6 +216,13 @@ dialog.lf-modal-shell::backdrop {
   gap: var(--space-2);
 }
 
+.lf-modal-shell .modal-heading-content.modal-heading-stack {
+  display: grid;
+  align-content: start;
+  align-items: start;
+  gap: var(--space-1);
+}
+
 .lf-modal-shell .details-dialog-head > button,
 .lf-modal-shell .details-dialog-head > .btn,
 .lf-modal-shell .dialog-header > button,
@@ -254,6 +278,16 @@ dialog.lf-modal-shell::backdrop {
   border: 0;
   background: transparent;
   padding: var(--space-1) 0 0;
+}
+
+.lf-modal-shell .modal-form-grid--sticky-footer > .form-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: var(--z-sticky);
+  margin: var(--space-1) calc(var(--lf-modal-inline) * -1) calc(var(--lf-modal-block) * -1);
+  border-top: 1px solid var(--border-secondary);
+  background: var(--color-surface);
+  padding: var(--space-2) var(--lf-modal-inline) var(--lf-modal-block);
 }
 
 .lf-modal-shell .modal-form-grid > .field {
@@ -353,6 +387,38 @@ dialog.lf-modal-shell::backdrop {
 }
 
 .lf-modal-shell .modal-form-option > input { flex: 0 0 auto; margin: 0; }
+
+.lf-modal-shell .modal-form-context {
+  display: grid;
+  grid-column: 1 / -1;
+  min-width: 0;
+  gap: var(--space-1);
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-muted);
+  padding: var(--space-2) var(--space-3);
+}
+
+.lf-modal-shell .modal-form-context > div {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-1);
+}
+
+.lf-modal-shell .modal-form-context > div > small {
+  color: var(--color-text-muted);
+  font-size: var(--font-xs);
+}
+
+.lf-modal-shell .modal-form-context > div > strong {
+  color: var(--color-text);
+  font-size: var(--font-md);
+}
+
+.lf-modal-shell .modal-form-context > div > span {
+  color: var(--color-text-soft);
+  font-size: var(--font-sm);
+}
 
 .lf-modal-shell input[type="checkbox"],
 .lf-modal-shell input[type="radio"] {
@@ -477,6 +543,16 @@ body .swal2-popup.lf-modal--workspace {
     flex-wrap: wrap;
     margin-block-end: 0;
     padding-block: var(--space-2) 0;
+  }
+
+  .lf-modal-shell .modal-form-grid--sticky-footer .form-actions {
+    position: sticky;
+    bottom: 0;
+    z-index: var(--z-sticky);
+    margin: var(--space-1) calc(var(--lf-modal-inline) * -1) calc(var(--lf-modal-block) * -1);
+    border-top: 1px solid var(--border-secondary);
+    background: var(--color-surface);
+    padding: var(--space-2) var(--lf-modal-inline) var(--lf-modal-block);
   }
 
   .lf-modal-shell .modal-heading-actions { margin-inline-start: auto; }
