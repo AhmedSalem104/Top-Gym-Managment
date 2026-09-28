@@ -24,7 +24,7 @@
         management: { dependencies: [], styles: ['/css/pages/memberships.css?v=phase2'], scripts: ['/js/pricing-cards.js?v=membership-type-delete-v1'] },
         branding: { dependencies: [], styles: ['/css/pages/branding.css?v=phase2'], scripts: ['/js/pages/branding/branding.js?v=2'] },
         'member-payment-methods': { dependencies: [], styles: ['/css/pages/member-payment-methods.css?v=phase2'], scripts: ['/js/pages/management/member-payment-methods.js?v=1'] },
-        'saas-billing': { dependencies: [], styles: ['/css/pages/saas.css?v=phase2'], scripts: ['/js/pages/saas/saas.js?v=b1783a35b185b82e'] },
+        'saas-billing': { dependencies: [], styles: ['/css/pages/saas.css?v=phase2'], scripts: ['/js/pages/saas/saas.js?v=f8cfa93446bdffe7'] },
         'backup-history': { dependencies: [], dialogs: [{ source: '/dialogs/backup.html?v=phase4', ids: ['backupRestoreDialog'] }], styles: [], scripts: ['/js/pages/management/backup.js?v=11'] },
         'member-subscription-requests': { dependencies: [], styles: ['/css/pages/member-subscription-requests.css?v=phase2'], scripts: ['/js/pages/management/member-subscription-requests.js?v=4'] },
         'portal-analytics': { dependencies: [], styles: ['/css/pages/portal-analytics.css?v=phase2'], scripts: ['/js/pages/management/portal-analytics.js?v=1'] },

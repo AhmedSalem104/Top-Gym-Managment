@@ -42,6 +42,27 @@ test('SaaS asset fingerprint changes with content and remains stable for unchang
     }
 });
 
+test('content fingerprints are stable across Windows and Unix line endings', () => {
+    const root = makeFixture();
+    try {
+        const first = planRuntimeAssetVersions(root);
+        for (const relativePath of [
+            'public/index.html',
+            'public/js/core/feature-manifest.js',
+            'public/js/pages/saas/saas.js'
+        ]) {
+            const filePath = path.join(root, relativePath);
+            fs.writeFileSync(filePath, fs.readFileSync(filePath, 'utf8').replace(/\n/g, '\r\n'));
+        }
+        const crlf = planRuntimeAssetVersions(root);
+
+        assert.equal(crlf.saasVersion, first.saasVersion);
+        assert.equal(crlf.manifestVersion, first.manifestVersion);
+    } finally {
+        fs.rmSync(root, { recursive: true, force: true });
+    }
+});
+
 test('checked-in HTML and manifest are synchronized to content-derived immutable SaaS asset URLs', () => {
     const plan = planRuntimeAssetVersions();
 

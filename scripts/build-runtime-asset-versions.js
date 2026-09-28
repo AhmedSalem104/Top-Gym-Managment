@@ -10,7 +10,10 @@ const manifestPath = path.join(root, 'public', 'js', 'core', 'feature-manifest.j
 const saasAssetPath = path.join(root, 'public', 'js', 'pages', 'saas', 'saas.js');
 
 function sha256File(filePath) {
-    return crypto.createHash('sha256').update(fs.readFileSync(filePath)).digest('hex').slice(0, 16);
+    // Git checkouts may use CRLF on Windows and LF on Linux. Fingerprints must
+    // represent the source text, not the checkout's line-ending convention.
+    const content = fs.readFileSync(filePath, 'utf8').replace(/\r\n?/g, '\n');
+    return crypto.createHash('sha256').update(content, 'utf8').digest('hex').slice(0, 16);
 }
 
 function replaceExactlyOnce(source, pattern, replacement, description) {
@@ -36,7 +39,8 @@ function planRuntimeAssetVersions(projectRoot = root) {
         (match, quote) => `${quote}/js/pages/saas/saas.js?v=${saasVersion}${quote}`,
         'SaaS feature asset URL'
     );
-    const manifestVersion = crypto.createHash('sha256').update(versionedManifest, 'utf8').digest('hex').slice(0, 16);
+    const manifestContent = versionedManifest.replace(/\r\n?/g, '\n');
+    const manifestVersion = crypto.createHash('sha256').update(manifestContent, 'utf8').digest('hex').slice(0, 16);
     const versionedIndex = replaceExactlyOnce(
         index,
         /(<script\b[^>]*\bsrc=["'])\/js\/core\/feature-manifest\.js(?:\?v=[^"']*)?(["'][^>]*>)/i,
