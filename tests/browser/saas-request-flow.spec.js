@@ -1,4 +1,5 @@
 const { test, expect } = require('@playwright/test');
+const { planRuntimeAssetVersions } = require('../../scripts/build-runtime-asset-versions');
 
 const PNG = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10, 0]);
 
@@ -72,10 +73,17 @@ test('subscription submit is single-flight, visibly pending, cannot close, then 
     let release;
     let submitCount = 0;
     let submittedPayload = '';
+    let submittedContentType = '';
+    const subscriptionPostPaths = [];
+    page.on('request', (request) => {
+        const pathname = new URL(request.url()).pathname;
+        if (request.method() === 'POST' && pathname.startsWith('/api/saas/subscription-requests')) subscriptionPostPaths.push(pathname);
+    });
     const pendingResponse = new Promise((resolve) => { release = resolve; });
     await openBilling(page, async (route, request) => {
         submitCount += 1;
         submittedPayload = request.postDataBuffer()?.toString('utf8') || '';
+        submittedContentType = request.headers()['content-type'] || '';
         await pendingResponse;
         await route.fulfill({ status: 201, json: { request: requestRow() } });
         return requestRow();
@@ -97,8 +105,56 @@ test('subscription submit is single-flight, visibly pending, cannot close, then 
     await expect(page.locator('#saasRequestsList [data-saas-payment-proof]')).toHaveCount(1);
     await expect(button).toBeEnabled();
     await expect(page.locator('#saasPaymentProof')).toHaveValue('');
+    expect(subscriptionPostPaths).toEqual(['/api/saas/subscription-requests/submit']);
+    expect(submittedContentType).toMatch(/^multipart\/form-data;\s*boundary=/i);
+    expect(submittedPayload).toContain('name="planId"\r\n\r\n12');
     expect(submittedPayload).toContain('name="termCode"\r\n\r\nsemiannual');
+    expect(submittedPayload).toContain('name="proof"; filename="proof.png"');
     await expect(page.locator('#saasRequestsList [data-saas-request-duration]')).toHaveText(`${new Intl.NumberFormat('ar-EG').format(6)} شهر`);
+});
+
+test('subscription billing loads current fingerprinted assets on refresh, cache bypass, and a fresh browser session', async ({ page, browser }) => {
+    await openBilling(page, async (route) => {
+        await route.fulfill({ status: 503, json: { error: 'Temporary QA failure', code: 'TEMPORARY_FAILURE' } });
+        return null;
+    });
+
+    const currentVersions = planRuntimeAssetVersions();
+    const expectedManifest = `/js/core/feature-manifest.js?v=${currentVersions.manifestVersion}`;
+    const expectedSaas = `/js/pages/saas/saas.js?v=${currentVersions.saasVersion}`;
+    const assertCurrentAssets = async (targetPage) => {
+        await expect(targetPage.locator('#saasPlansList [data-saas-plan-card]')).toHaveCount(1);
+        const loaded = await targetPage.evaluate(() => performance.getEntriesByType('resource')
+            .map((entry) => new URL(entry.name).pathname + new URL(entry.name).search)
+            .filter((path) => path.includes('feature-manifest.js') || path.includes('/js/pages/saas/saas.js')));
+        expect(loaded).toContain(expectedManifest);
+        expect(loaded).toContain(expectedSaas);
+        expect(loaded).not.toContain('/js/pages/saas/saas.js?v=6');
+        await expect(targetPage.locator('#saasTermSelect')).toBeAttached();
+    };
+
+    await assertCurrentAssets(page);
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await assertCurrentAssets(page);
+
+    const cdp = await page.context().newCDPSession(page);
+    await cdp.send('Network.enable');
+    await cdp.send('Network.setCacheDisabled', { cacheDisabled: true });
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await assertCurrentAssets(page);
+    await cdp.detach();
+
+    const freshContext = await browser.newContext({ locale: 'ar-EG', colorScheme: 'dark' });
+    try {
+        const freshPage = await freshContext.newPage();
+        await openBilling(freshPage, async (route) => {
+            await route.fulfill({ status: 503, json: { error: 'Temporary QA failure', code: 'TEMPORARY_FAILURE' } });
+            return null;
+        });
+        await assertCurrentAssets(freshPage);
+    } finally {
+        await freshContext.close();
+    }
 });
 
 test('subscription popup uses catalog durations and discounted server-catalog amount responsively in RTL light/dark', async ({ page }) => {

@@ -13,7 +13,7 @@
     "build:anatomy:bodyparts3d": "node scripts/build-bodyparts3d-anatomy.mjs",
     "build:login-entry": "node scripts/build-login-entry.js",
     "build:phone-formatter": "node scripts/build-phone-formatter.js",
-    "build": "npm run build:css && npm run build:login-entry && npm run build:phone-formatter && npm run build:anatomy",
+    "build": "npm run build:css && npm run build:login-entry && npm run build:phone-formatter && npm run build:anatomy && node scripts/build-runtime-asset-versions.js",
     "test:smoke": "node scripts/smoke-test.js",
     "test:e2e": "playwright test",
     "test:e2e:headed": "playwright test --headed",

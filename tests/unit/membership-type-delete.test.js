@@ -4,6 +4,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
+const { planRuntimeAssetVersions } = require('../../scripts/build-runtime-asset-versions');
 
 const root = path.join(__dirname, '..', '..');
 const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');
@@ -43,7 +44,8 @@ test('membership types management renders delete action and keeps it on responsi
     assert.match(app, /api\('\/api\/membership-types\/' \+ encodeURIComponent\(code\), \{ method: 'DELETE' \}\)/);
     assert.match(cards, /data-type-action="delete"/);
     assert.match(styles, /\.type-delete-button/);
-    assert.match(index, /feature-manifest\.js\?v=builder-workspace-v2/);
+    const assetVersions = planRuntimeAssetVersions();
+    assert.match(index, new RegExp(`feature-manifest\\.js\\?v=${assetVersions.manifestVersion}`));
     assert.match(index, /app-shell-bootstrap\.js\?v=membership-type-delete-v1/);
     assert.match(bootstrap, /app\.js\?v=membership-type-delete-v1/);
 });
