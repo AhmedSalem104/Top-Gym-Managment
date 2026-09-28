@@ -143,7 +143,7 @@ test('subscription submit and proof routes remain owner-authenticated and proof 
     assert.match(ui, /dialog\.close\(\)/);
 });
 
-test('request, proof, audit and in-app admin event share a transaction; email dispatch follows commit', () => {
+test('request, proof, audit and both-party in-app notifications share a transaction; email dispatch follows commit', () => {
     const service = fs.readFileSync(path.join(root, 'src/services/saas-service.js'), 'utf8');
     const start = service.indexOf('async function submitSubscriptionRequest');
     const end = service.indexOf('\nasync function listPlatformRequests', start);
@@ -155,6 +155,10 @@ test('request, proof, audit and in-app admin event share a transaction; email di
     assert.match(block, /INSERT INTO dbo\.saas_payment_proofs/);
     assert.match(block, /recordAudit\([\s\S]*?executor: transaction/);
     assert.match(block, /notificationService\.recordEvent\(eventInput, \{ executor: transaction \}\)/);
+    assert.match(block, /type: 'saas_subscription_request_submitted'/);
+    assert.match(block, /for \(const audienceRole of \['Owner', 'Assistant'\]\)/);
+    assert.match(block, /tenantNotificationEvents\.push\(await runTenantContext\(\{ mode: 'tenant', tenantId: id \}/);
+    assert.match(block, /SAAS_REQUEST_EMAIL_NOT_SENT/);
     assert.ok(block.indexOf('await withTransaction') < block.indexOf('notificationService.dispatchEvent(notificationEvent)'));
     assert.match(block, /deletePrivateObject\(\{ tenantId: id, key: storedObject.key \}\)/);
 });

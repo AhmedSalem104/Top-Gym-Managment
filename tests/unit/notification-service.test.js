@@ -53,6 +53,7 @@ test('catalog contains registration, operational and portal notification events'
         'saas_subscription_request_approved',
         'saas_subscription_request_created',
         'saas_subscription_request_rejected',
+        'saas_subscription_request_submitted',
         'system_announcement',
         'trainer_plan_published',
         'trainer_registration_requested',
@@ -272,6 +273,19 @@ test('SaaS subscription decisions are tenant-scoped notifications', () => {
         assert.equal(event.tenantId, 18);
         assert.deepEqual(event.channels, { inApp: true, email: false, audit: false });
     }
+});
+
+test('SaaS subscription submission notifications target gym staff independently of the platform event', () => {
+    for (const audienceRole of ['Owner', 'Assistant']) {
+        const event = normalizeEvent({
+            type: 'saas_subscription_request_submitted', tenantId: 18, audienceRole, entityId: 84
+        });
+        assert.equal(event.tenantScope, 'tenant');
+        assert.equal(event.audience, 'tenant-staff');
+        assert.equal(event.channels.inApp, true);
+        assert.equal(event.channels.email, false);
+    }
+    assert.throws(() => normalizeEvent({ type: 'saas_subscription_request_submitted', entityId: 84 }), /requires tenantId/);
 });
 
 test('SaaS subscription email builder escapes user-controlled content and preserves configured review destination', () => {

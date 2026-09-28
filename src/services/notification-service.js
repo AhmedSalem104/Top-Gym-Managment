@@ -89,6 +89,11 @@ const EVENT_CATALOG = Object.freeze({
         audienceRole: 'PlatformAdmin', audienceRoles: Object.freeze(['PlatformAdmin']), requiredPermission: null, severity: 'info',
         channels: Object.freeze({ inApp: true, email: true, audit: false })
     }),
+    saas_subscription_request_submitted: Object.freeze({
+        category: 'subscription', audience: 'tenant-staff', tenantScope: 'tenant',
+        audienceRole: 'Owner', audienceRoles: STAFF_ROLES, requiredPermission: null, severity: 'info',
+        channels: Object.freeze({ inApp: true, email: false, audit: false })
+    }),
     saas_subscription_request_approved: Object.freeze({
         category: 'subscription', audience: 'tenant-staff', tenantScope: 'tenant',
         audienceRole: 'Owner', audienceRoles: STAFF_ROLES, requiredPermission: null, severity: 'success',

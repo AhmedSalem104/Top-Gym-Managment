@@ -13,16 +13,19 @@
     category: '',
     items: []
   };
-  const categoryMeta = Object.freeze({
+  const categoryMeta = {
     coaching: { label: '\u0627\u0644\u062a\u062f\u0631\u064a\u0628', tone: 'info', icon: 'coaching' },
     registration: { label: 'التسجيل', tone: 'info', icon: 'registration' },
     membership: { label: 'العضويات', tone: 'success', icon: 'membership' },
     payment: { label: 'المدفوعات', tone: 'warning', icon: 'payment' },
     system: { label: 'النظام', tone: 'neutral', icon: 'system' },
     default: { label: 'تنبيه', tone: 'neutral', icon: 'default' }
-  });
+  };
+  categoryMeta.subscription = { label: '\u0627\u0644\u0627\u0634\u062a\u0631\u0627\u0643\u0627\u062a', tone: 'warning', icon: 'subscription' };
+  Object.freeze(categoryMeta);
   const iconPaths = Object.freeze({
     registration: '<path d="M12 5v14M5 12h14"/>',
+    subscription: '<path d="M7 4h10v16H7z"/><path d="M9 8h6M9 12h6M9 16h4"/>',
     membership: '<path d="M7 4h10v16H7z"/><path d="M9.5 8h5M9.5 12h5M9.5 16h3"/>',
     coaching: '<path d="M4 6h16v12H4z"/><path d="M8 10h8M8 14h5"/>',
     payment: '<path d="M5 7h14v10H5z"/><path d="M5 10h14M8 14h3"/>',
@@ -403,6 +406,10 @@
     coachingOption.value = 'coaching';
     coachingOption.textContent = '\u0627\u0644\u062a\u062f\u0631\u064a\u0628';
     categoryFilter.appendChild(coachingOption);
+    const subscriptionOption = document.createElement('option');
+    subscriptionOption.value = 'subscription';
+    subscriptionOption.textContent = '\u0627\u0644\u0627\u0634\u062a\u0631\u0627\u0643\u0627\u062a';
+    categoryFilter.appendChild(subscriptionOption);
     trigger.addEventListener('click', () => toggle());
     refreshButton.addEventListener('click', () => void load());
     categoryFilter.addEventListener('change', () => { state.category = categoryFilter.value; state.loaded = false; state.page = 1; void load(); });

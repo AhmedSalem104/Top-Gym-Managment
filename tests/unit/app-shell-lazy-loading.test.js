@@ -39,7 +39,7 @@ test('route loader owns route styles and waits for the shared application state'
     assert.match(loader, /await window\.topGymLoadApp\(\)/u);
     assert.match(manifest, /\/css\/pages\/members\.css\?v=attendance-compact/u);
     assert.match(manifest, /\/js\/core\/phone-inputs\.js\?v=14/u);
-    assert.match(loader, /\/js\/notification-center\.js\?v=6/u);
+    assert.match(loader, /\/js\/notification-center\.js\?v=7/u);
     assert.match(manifest, /\/js\/pagination\.js\?v=members-branch-scope-v1/u);
     assert.match(pagination, /document\.readyState === 'loading'/u);
     assert.match(pagination, /else initializePagination\(\)/u);

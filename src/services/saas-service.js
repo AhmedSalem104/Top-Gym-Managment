@@ -1952,6 +1952,7 @@ async function submitSubscriptionRequest({ tenantId = currentTenantId({ required
     let proofId;
     let createdAt;
     let notificationEvent;
+    const tenantNotificationEvents = [];
     try {
         storedObject = await storage.putPrivateObject({
             tenantId: id,
@@ -2028,6 +2029,22 @@ async function submitSubscriptionRequest({ tenantId = currentTenantId({ required
                 auditDetails: 'New SaaS subscription request submitted.'
             };
             notificationEvent = await runTenantContext({ mode: 'platform', tenantId: null }, () => notificationService.recordEvent(eventInput, { executor: transaction }));
+            for (const audienceRole of ['Owner', 'Assistant']) {
+                const tenantEvent = {
+                    type: 'saas_subscription_request_submitted',
+                    tenantId: id,
+                    audienceRole,
+                    actorUserId: actorId,
+                    entityType: 'saas_subscription_request',
+                    entityId: requestId,
+                    title: '\u062a\u0645 \u0625\u0631\u0633\u0627\u0644 \u0637\u0644\u0628 \u0627\u0634\u062a\u0631\u0627\u0643',
+                    message: '\u0627\u0633\u062a\u0644\u0645\u062a \u0627\u0644\u0645\u0646\u0635\u0629 \u0637\u0644\u0628 \u0627\u0644\u0627\u0634\u062a\u0631\u0627\u0643 \u0648\u0625\u062b\u0628\u0627\u062a \u0627\u0644\u062f\u0641\u0639\u060c \u0648\u0647\u0648 \u0627\u0644\u0622\u0646 \u0642\u064a\u062f \u0627\u0644\u0645\u0631\u0627\u062c\u0639\u0629.',
+                    payload: { actionUrl: '/index.html#saas-billing' },
+                    dedupeKey: `saas-subscription-request-submitted:${requestId}:${audienceRole}`,
+                    auditDetails: 'SaaS subscription request submitted notification.'
+                };
+                tenantNotificationEvents.push(await runTenantContext({ mode: 'tenant', tenantId: id }, () => notificationService.recordEvent(tenantEvent, { executor: transaction })));
+            }
         });
     } catch (error) {
         if (storedObject?.key) await storage.deletePrivateObject({ tenantId: id, key: storedObject.key }).catch(() => {});
@@ -2035,10 +2052,18 @@ async function submitSubscriptionRequest({ tenantId = currentTenantId({ required
         throw normalizeStorageFailure(error);
     }
 
+    for (const event of tenantNotificationEvents) {
+        try { await notificationService.dispatchEvent(event); }
+        catch (_) { try { console.warn('[SAAS_REQUEST_TENANT_NOTIFICATION_FAILED]', { requestId }); } catch (_) { /* best effort */ } }
+    }
     try {
-        await runTenantContext({ mode: 'platform', tenantId: null }, () => notificationService.dispatchEvent(notificationEvent));
+        const delivery = await runTenantContext({ mode: 'platform', tenantId: null }, () => notificationService.dispatchEvent(notificationEvent));
+        if (delivery?.channels?.email?.status !== 'sent') {
+            try { console.warn('[SAAS_REQUEST_EMAIL_NOT_SENT]', { requestId, status: delivery?.channels?.email?.status || 'unknown', reason: delivery?.channels?.email?.reason || 'no_delivery_result' }); }
+            catch (_) { /* best effort */ }
+        }
     } catch (_) {
-        // The request, proof, audit and in-app notification are already committed.
+        // The request, proof and in-app notifications are already committed.
         // Email is a post-commit side effect and must not turn that success into an API failure.
         try { console.warn('[SAAS_REQUEST_EMAIL_DISPATCH_FAILED]', { requestId }); } catch (_) { /* best effort */ }
     }

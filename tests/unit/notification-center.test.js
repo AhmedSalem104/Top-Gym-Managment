@@ -31,7 +31,7 @@ test('notification center is loaded only by account shells and uses safe same-or
     assert.doesNotMatch(center, /All notifications|Registration|System/);
     assert.doesNotMatch(center, /console\.(log|error|warn)\([^)]*(token|secret|password)/i);
     assert.doesNotMatch(read('public/index.html'), /notification-center\.js/);
-    assert.match(read('public/js/feature-loader.js'), /notification-center\.js\?v=6/);
+    assert.match(read('public/js/feature-loader.js'), /notification-center\.js\?v=7/);
     assert.match(read('public/platform-admin.html'), /notification-center\.js/);
     assert.match(read('public/trainer-workspace.html'), /notification-center\.js/);
     assert.match(read('public/js/platform-admin.js'), /topGymNotificationCenter\?\.refresh/);
