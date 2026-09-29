@@ -25,7 +25,8 @@ test('SaaS request backend resolves submitted term and price from active plan ca
     assert.match(submit, /priceSaasTerm\(term\)\.amountDue/);
     assert.doesNotMatch(submit, /body\.amount|fields\.amount|submittedAmount/);
     assert.match(service, /durationMonths: row\.duration_months/);
-    assert.match(service, /addBillingPeriod\(now, term\.code, term\.durationMonths\)/);
+    assert.match(service, /calculateApprovedSubscriptionExpiry\(now, currentPaidSubscription, term\)/);
+    assert.match(service, /WHERE tenant_id=@tenantId AND status IN \('active','suspended'\) AND source='manual'[\s\S]*?price_snapshot>0 AND expires_at>@approvalTime/);
     assert.match(service, /expectedPricing\.amountDue/);
 });
 

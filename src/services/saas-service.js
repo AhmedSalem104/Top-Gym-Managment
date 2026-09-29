@@ -974,6 +974,21 @@ function addBillingPeriod(date, period, durationMonths = null) {
     return result;
 }
 
+function calculateApprovedSubscriptionExpiry(approvalTime, currentSubscription, term) {
+    const now = approvalTime instanceof Date ? new Date(approvalTime.getTime()) : new Date(approvalTime);
+    const currentExpiry = currentSubscription?.expires_at
+        ? new Date(currentSubscription.expires_at)
+        : null;
+    const isUnexpiredPaidSubscription = ['active', 'suspended'].includes(currentSubscription?.status)
+        && currentSubscription?.source === 'manual'
+        && Number(currentSubscription?.price_snapshot) > 0
+        && currentExpiry instanceof Date
+        && Number.isFinite(currentExpiry.getTime())
+        && currentExpiry.getTime() > now.getTime();
+    const baseDate = isUnexpiredPaidSubscription && currentExpiry > now ? currentExpiry : now;
+    return addBillingPeriod(baseDate, term.code, term.durationMonths);
+}
+
 async function seedPlans(pool) {
     for (const plan of DEFAULT_PLANS) {
         await pool.request()
@@ -2181,7 +2196,20 @@ async function approveRequest(requestId, actorUserId, reviewNotes = '') {
         if (request.term_code && (!acceptedRequestAmounts.has(Number(request.amount_snapshot)) || String(request.currency || '').toUpperCase() !== expectedPricing.currency)) {
             throw saasError('تغير سعر مدة الاشتراك قبل المراجعة؛ أعد إرسال الطلب بالسعر الحالي.', 409, 'SAAS_TERM_PRICE_CHANGED');
         }
-        const expiresAt = addBillingPeriod(now, term.code, term.durationMonths);
+        // Only a paid subscription created by the reviewed-payment flow
+        // (source=manual with a positive price snapshot) carries remaining
+        // time forward. Trials and complimentary/admin/bootstrap access must
+        // not grant free duration to the newly approved term.
+        const currentPaidResult = await transaction.request()
+            .input('tenantId', sql.Int, tenantId)
+            .input('approvalTime', sql.DateTime2(0), now)
+            .query(`SELECT TOP (1) id,status,source,price_snapshot,expires_at
+                    FROM dbo.saas_tenant_subscriptions WITH (UPDLOCK,HOLDLOCK)
+                    WHERE tenant_id=@tenantId AND status IN ('active','suspended') AND source='manual'
+                      AND price_snapshot>0 AND expires_at>@approvalTime
+                    ORDER BY expires_at DESC,id DESC;`);
+        const currentPaidSubscription = currentPaidResult.recordset[0] || null;
+        const expiresAt = calculateApprovedSubscriptionExpiry(now, currentPaidSubscription, term);
         const snapshot = snapshotForPlan(requestedPlan, term);
         if (!request.term_code && request.amount_snapshot != null) snapshot.price = Number(request.amount_snapshot);
         await transaction.request().input('requestId', sql.BigInt, id).input('actorId', sql.Int, actorId).input('reviewNotes', sql.NVarChar(1000), text(reviewNotes, '', 1000) || null).query("UPDATE dbo.saas_subscription_requests SET status='approved',reviewed_by_user_id=@actorId,reviewed_at=SYSUTCDATETIME(),review_notes=@reviewNotes,updated_at=SYSUTCDATETIME() WHERE id=@requestId;");
@@ -2820,6 +2848,7 @@ module.exports = {
     approveRequest,
     assertPlanCompatibleForTenantType,
     assertPlanCompatibleWithTenant,
+    calculateApprovedSubscriptionExpiry,
     applyScheduledSubscriptionChanges,
     assertResourceLimitInTransaction,
     configureObjectStorageService,

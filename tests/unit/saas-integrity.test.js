@@ -5,6 +5,7 @@ const test = require('node:test');
 
 const {
     SAAS_SCHEMA_SQL,
+    calculateApprovedSubscriptionExpiry,
     isDuplicateSqlError
 } = require('../../src/services/saas-service');
 const fs = require('node:fs');
@@ -117,7 +118,10 @@ test('subscription approval locks the request and commits the state transition a
     assert.match(block, /status='approved'/);
     assert.match(block, /const term = selectPlanTerm\(requestedPlan, request\.term_code \|\| request\.billing_period, \{ allowLegacy: true \}\)/);
     assert.match(block, /const expectedPricing = priceSaasTerm\(term\)/);
-    assert.match(block, /addBillingPeriod\(now, term\.code, term\.durationMonths\)/);
+    assert.match(block, /FROM dbo\.saas_tenant_subscriptions WITH \(UPDLOCK,HOLDLOCK\)/);
+    assert.match(block, /status IN \('active','suspended'\) AND source='manual'/);
+    assert.match(block, /price_snapshot>0 AND expires_at>@approvalTime/);
+    assert.match(block, /calculateApprovedSubscriptionExpiry\(now, currentPaidSubscription, term\)/);
     assert.match(block, /input\('durationMonthsSnapshot', sql\.Int, snapshot\.durationMonths\)/);
     assert.match(block, /saas_tenant_subscriptions SET status='expired'/);
     assert.match(block, /INSERT INTO dbo\.saas_tenant_subscriptions/);
@@ -125,6 +129,58 @@ test('subscription approval locks the request and commits the state transition a
     assert.match(block, /action: 'subscription_approved'/);
     assert.match(block, /executor: transaction/);
     assert.match(block, /publishSubscriptionDecision\(\{ type: 'saas_subscription_request_approved'/);
+});
+
+test('sequential paid subscription approvals accumulate expiry from the remaining paid term', () => {
+    const firstApprovalTime = new Date('2026-09-28T12:00:00.000Z');
+    const firstExpiry = calculateApprovedSubscriptionExpiry(firstApprovalTime, null, { code: 'monthly', durationMonths: 1 });
+    assert.equal(firstExpiry.toISOString(), '2026-10-28T12:00:00.000Z');
+
+    const secondExpiry = calculateApprovedSubscriptionExpiry(firstApprovalTime, {
+        status: 'active',
+        source: 'manual',
+        price_snapshot: 1499,
+        expires_at: firstExpiry
+    }, { code: 'quarterly', durationMonths: 3 });
+    assert.equal(secondExpiry.toISOString(), '2027-01-28T12:00:00.000Z');
+    assert.notEqual(secondExpiry.toISOString(), '2026-12-28T12:00:00.000Z');
+});
+
+test('paid remaining term carries across same or different plan because expiry is plan-independent', () => {
+    const now = new Date('2026-09-28T12:00:00.000Z');
+    const currentPaid = { status: 'active', source: 'manual', price_snapshot: 3999, expires_at: '2026-10-28T12:00:00.000Z' };
+    assert.equal(calculateApprovedSubscriptionExpiry(now, currentPaid, { code: 'quarterly', durationMonths: 3 }).toISOString(), '2027-01-28T12:00:00.000Z');
+    assert.equal(calculateApprovedSubscriptionExpiry(now, currentPaid, { code: 'semiannual', durationMonths: 6 }).toISOString(), '2027-04-28T12:00:00.000Z');
+    assert.equal(calculateApprovedSubscriptionExpiry(now, { ...currentPaid, status: 'suspended' }, { code: 'quarterly', durationMonths: 3 }).toISOString(), '2027-01-28T12:00:00.000Z');
+});
+
+test('trial, expired, complimentary, or missing subscriptions do not extend the new paid term', () => {
+    const now = new Date('2026-09-28T12:00:00.000Z');
+    const term = { code: 'quarterly', durationMonths: 3 };
+    const expected = '2026-12-28T12:00:00.000Z';
+    for (const current of [
+        null,
+        { status: 'trial', source: 'trial', price_snapshot: 0, expires_at: '2026-10-28T12:00:00.000Z' },
+        { status: 'active', source: 'trial', price_snapshot: 1499, expires_at: '2026-10-28T12:00:00.000Z' },
+        { status: 'expired', source: 'manual', price_snapshot: 1499, expires_at: '2026-09-27T12:00:00.000Z' },
+        { status: 'active', source: 'manual', price_snapshot: 1499, expires_at: '2026-09-27T12:00:00.000Z' },
+        { status: 'active', source: 'admin', price_snapshot: 1499, expires_at: '2026-10-28T12:00:00.000Z' },
+        { status: 'active', source: 'manual', price_snapshot: 0, expires_at: '2026-10-28T12:00:00.000Z' }
+    ]) {
+        assert.equal(calculateApprovedSubscriptionExpiry(now, current, term).toISOString(), expected);
+    }
+});
+
+test('approval uses approval time when paid expiry is earlier and does not depend on scheduled plan changes', () => {
+    const now = new Date('2026-09-28T12:00:00.000Z');
+    const stalePaid = { status: 'active', source: 'manual', price_snapshot: 1499, expires_at: '2026-09-28T11:59:59.000Z' };
+    assert.equal(calculateApprovedSubscriptionExpiry(now, stalePaid, { code: 'monthly', durationMonths: 1 }).toISOString(), '2026-10-28T12:00:00.000Z');
+
+    const service = fs.readFileSync(path.join(__dirname, '../../src/services/saas-service.js'), 'utf8');
+    const start = service.indexOf('async function approveRequest');
+    const end = service.indexOf('\nasync function rejectRequest', start);
+    const approval = service.slice(start, end);
+    assert.doesNotMatch(approval, /saas_subscription_changes/);
 });
 
 test('subscription lifecycle and enforcement have explicit expiry, recovery and limit guards', () => {
