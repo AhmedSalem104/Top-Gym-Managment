@@ -191,6 +191,22 @@ dialog.lf-modal-shell::backdrop {
   line-height: 1.35;
 }
 
+.lf-modal-shell .modal-header .dialog-close-button {
+  position: static;
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  min-height: 44px;
+  padding: 0;
+}
+
+.lf-modal-shell .modal-header .dialog-close-button > svg {
+  display: block;
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+}
+
 .lf-modal-shell .dialog-header p,
 .lf-modal-shell .details-dialog-head p,
 .lf-modal-shell .member-dialog-header p,
@@ -270,6 +286,7 @@ dialog.lf-modal-shell::backdrop {
 }
 
 .lf-modal-shell .modal-form-grid > .form-actions { grid-column: 1 / -1; }
+.lf-modal-shell .modal-form-grid > .field-full { grid-column: 1 / -1; }
 
 .lf-modal-shell .modal-form-grid > .form-actions {
   position: static;
@@ -371,6 +388,17 @@ dialog.lf-modal-shell::backdrop {
   color: var(--color-success);
   font-family: var(--font-latin);
   font-size: var(--font-md);
+}
+
+.lf-modal-shell .modal-form-summary--neutral {
+  min-height: 52px;
+  border-color: var(--border-secondary);
+  background: var(--color-surface-muted);
+  padding-block: var(--space-2);
+}
+
+.lf-modal-shell .modal-form-summary--neutral > strong {
+  color: var(--color-text);
 }
 
 .lf-modal-shell .modal-form-option {

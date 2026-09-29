@@ -53,10 +53,10 @@ Login at `/platform-admin` → platform session → overview → select explicit
 
 ## Gym subscription request and secure proof preview
 
-1. Owner loads plan/term options and request history from the authenticated tenant context.
-2. Owner selects a plan and one active duration supplied by that plan's server catalog, sees the server-catalog price after configured discount, enters optional notes, and attaches one supported image/PDF proof. Submit one `multipart/form-data` request to `POST /api/saas/subscription-requests/submit` with plan, term code, notes, and proof (never a trusted client amount).
-3. While pending, disable duplicate submission and prevent dismissal that implies cancellation. Only after API success, show confirmation, close/reset the form, and reload `GET /api/saas/subscription-requests`. On error, retain the draft where safe and present the mapped server error.
-4. The request remains `pending` until Platform Admin review. History shows the persisted duration and expected amount. On an ambiguous timeout, reload history before retrying; this endpoint has no explicit idempotency-key contract.
+1. Owner loads plan/term options and request history from the authenticated tenant context. Before opening create UI, read the latest request (`GET /api/saas/subscription-requests?page=1&pageSize=1`). If it is `pending`, present plan, duration, amount, submitted date, proof status, and status; do not expose create/submit controls.
+2. With no pending request, Owner selects a plan and an active duration from the server catalog, sees catalog pricing, enters optional notes, and attaches one supported image/PDF proof. Submit one `multipart/form-data` request to `POST /api/saas/subscription-requests/submit` with plan, term code, notes, and proof (never a trusted client amount).
+3. Lock the client submit immediately and prevent modal dismissal while in flight. Server serializes same-tenant submissions with a tenant-row lock and the filtered unique index. Only after API success, close/reset the create form, show confirmation, and transition immediately to pending state; refresh history afterward without delaying that transition. On other errors, retain the draft where safe. A `409 SAAS_REQUEST_ALREADY_PENDING` refreshes the latest request and transitions to its pending state.
+4. The request remains `pending` until Platform Admin review. History shows the persisted duration and expected amount. Approval or rejection releases the tenant to submit a later request. On an ambiguous timeout, reload latest history before retrying; this endpoint has no explicit idempotency-key contract.
 5. Preview proof through authenticated `GET /api/saas/payment-proofs/:id/file`; render by returned content type (image/PDF). Never use a public storage URL or treat a proof ID as authorization.
 
 ## Platform Admin subscription review and Gym result

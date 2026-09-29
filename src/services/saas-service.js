@@ -1989,9 +1989,8 @@ async function submitSubscriptionRequest({ tenantId = currentTenantId({ required
             if (!tenant) throw saasError('الجيم غير موجود.', 404, 'TENANT_NOT_FOUND');
             const pending = await transaction.request()
                 .input('tenantId', sql.Int, id)
-                .query("SELECT TOP (1) r.id,r.created_at,proof.id AS proof_id FROM dbo.saas_subscription_requests r WITH (UPDLOCK,HOLDLOCK) LEFT JOIN dbo.saas_payment_proofs proof WITH (UPDLOCK,HOLDLOCK) ON proof.request_id=r.id AND proof.tenant_id=r.tenant_id WHERE r.tenant_id=@tenantId AND r.status='pending';");
-            const incompleteRequest = pending.recordset[0] || null;
-            if (incompleteRequest?.proof_id) throw saasError('لديك طلب اشتراك مكتمل قيد المراجعة بالفعل.', 409, 'SAAS_REQUEST_ALREADY_PENDING');
+                .query("SELECT TOP (1) r.id FROM dbo.saas_subscription_requests r WITH (UPDLOCK,HOLDLOCK) WHERE r.tenant_id=@tenantId AND r.status='pending';");
+            if (pending.recordset[0]) throw saasError('لديك طلب اشتراك قيد المراجعة بالفعل.', 409, 'SAAS_REQUEST_ALREADY_PENDING');
 
             await assertStorageLimitInTransaction(transaction, id, proof.buffer.length);
             const writeRequest = transaction.request()
@@ -2003,16 +2002,9 @@ async function submitSubscriptionRequest({ tenantId = currentTenantId({ required
                 .input('amount', sql.Decimal(12, 2), priceSaasTerm(term).amountDue)
                 .input('currency', sql.VarChar(3), term.currency)
                 .input('notes', sql.NVarChar(1000), text(notes, '', 1000) || null);
-            if (incompleteRequest) {
-                const updated = await writeRequest.input('requestId', sql.BigInt, Number(incompleteRequest.id))
-                    .query("UPDATE dbo.saas_subscription_requests SET plan_id=@planId,requested_by_user_id=@userId,term_code=@termCode,duration_months=@durationMonths,amount_snapshot=@amount,currency=@currency,notes=@notes,updated_at=SYSUTCDATETIME() OUTPUT INSERTED.id,INSERTED.created_at WHERE id=@requestId AND tenant_id=@tenantId AND status='pending';");
-                requestId = Number(updated.recordset[0].id);
-                createdAt = updated.recordset[0].created_at;
-            } else {
-                const inserted = await writeRequest.query('INSERT INTO dbo.saas_subscription_requests (tenant_id,plan_id,requested_by_user_id,term_code,duration_months,amount_snapshot,currency,notes) OUTPUT INSERTED.id,INSERTED.created_at VALUES (@tenantId,@planId,@userId,@termCode,@durationMonths,@amount,@currency,@notes);');
-                requestId = Number(inserted.recordset[0].id);
-                createdAt = inserted.recordset[0].created_at;
-            }
+            const inserted = await writeRequest.query('INSERT INTO dbo.saas_subscription_requests (tenant_id,plan_id,requested_by_user_id,term_code,duration_months,amount_snapshot,currency,notes) OUTPUT INSERTED.id,INSERTED.created_at VALUES (@tenantId,@planId,@userId,@termCode,@durationMonths,@amount,@currency,@notes);');
+            requestId = Number(inserted.recordset[0].id);
+            createdAt = inserted.recordset[0].created_at;
 
             const insertedProof = await transaction.request()
                 .input('requestId', sql.BigInt, requestId)
@@ -2027,7 +2019,7 @@ async function submitSubscriptionRequest({ tenantId = currentTenantId({ required
                 .query('INSERT INTO dbo.saas_payment_proofs (request_id,tenant_id,file_name,mime_type,file_size,sha256,content,storage_key,storage_provider,storage_verified_at,uploaded_by_user_id) OUTPUT INSERTED.id VALUES (@requestId,@tenantId,@fileName,@mimeType,@fileSize,@sha256,NULL,@storageKey,@storageProvider,SYSUTCDATETIME(),@userId);');
             proofId = Number(insertedProof.recordset?.[0]?.id || 0) || null;
 
-            await recordAudit({ tenantId: id, actorUserId: actorId, action: incompleteRequest ? 'subscription_request_completed' : 'subscription_requested', entityType: 'subscription_request', entityId: requestId, details: `تم إرسال باقة ${plan.code} مع إثبات الدفع.`, executor: transaction });
+            await recordAudit({ tenantId: id, actorUserId: actorId, action: 'subscription_requested', entityType: 'subscription_request', entityId: requestId, details: `تم إرسال باقة ${plan.code} مع إثبات الدفع.`, executor: transaction });
             const eventInput = {
                 type: 'saas_subscription_request_created',
                 entityType: 'saas_subscription_request',

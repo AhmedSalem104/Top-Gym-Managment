@@ -786,18 +786,6 @@ body[data-theme="dark"] .saas-billing-page { background: linear-gradient(180deg,
 .saas-billing-page .saas-plan-entitlements { display: none; }
 .saas-billing-page .saas-plan-card .btn { min-height: 36px; font-size: 11px; }
 
-.saas-billing-page .saas-request-panel { display: flex; flex-direction: column; }
-.saas-billing-page .saas-request-panel .saas-form-grid { flex: 1 1 auto; gap: 9px 12px; align-content: start; }
-.saas-billing-page .saas-form-grid label { margin-bottom: 4px; font-size: 11px; }
-.saas-billing-page .saas-form-grid input,
-.saas-billing-page .saas-form-grid select,
-.saas-billing-page .saas-form-grid textarea { border-color: var(--subscription-line); background: var(--subscription-panel-soft); }
-.saas-billing-page .saas-form-grid select,
-.saas-billing-page .saas-form-grid textarea { min-height: 42px; }
-.saas-billing-page .saas-form-grid textarea { min-height: 64px; }
-
-.saas-billing-page .saas-form-actions { justify-content: flex-end; padding-top: 2px; }
-.saas-billing-page .saas-form-actions .btn { min-width: 190px; min-height: 42px; padding-inline: 18px; }
 .saas-billing-page .saas-requests-panel { margin-top: 0; }
 .saas-billing-page .saas-requests-panel .saas-panel-head { margin-bottom: 10px; }
 .saas-billing-page .saas-table-wrap { border-color: var(--subscription-line); }
@@ -946,30 +934,6 @@ body[data-theme="dark"] .saas-billing-page { background: linear-gradient(180deg,
     color: var(--subscription-muted);
 }
 
-.saas-billing-page .saas-request-open {
-    min-width: 216px;
-    min-height: 52px;
-    margin-inline-start: auto;
-    padding-inline: 24px;
-    color: #fff !important;
-    font-size: 14px !important;
-    font-weight: 800;
-    letter-spacing: 0;
-    line-height: 1.35;
-    white-space: nowrap;
-    box-shadow: 0 9px 22px color-mix(in srgb, var(--primary) 20%, transparent);
-}
-
-.saas-billing-page .saas-request-open span:last-child {
-    display: inline-block;
-    min-width: max-content;
-}
-
-body .saas-billing-page .saas-request-open,
-body .saas-billing-page .saas-request-open span {
-    color: #fff !important;
-}
-
 .saas-billing-page .saas-plan-action-bar {
     display: flex;
     align-items: center;
@@ -1014,11 +978,6 @@ body .saas-billing-page .saas-request-open span {
 
     .saas-billing-page .saas-page-header {
         align-items: stretch;
-    }
-
-    .saas-billing-page .saas-request-open {
-        width: 100%;
-        margin-inline-start: 0;
     }
 
     .saas-billing-page .saas-owner-plan-list {

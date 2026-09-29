@@ -30,6 +30,7 @@ function billing(requests = []) {
 
 async function openBilling(page, onSubmit, initialRequests = [], options = {}) {
     let requests = initialRequests;
+    const currentRequests = () => options.requestStore?.requests || requests;
     let submitCompleted = false;
     await page.route('**/api/**', async (route) => {
         const request = route.request();
@@ -42,20 +43,27 @@ async function openBilling(page, onSubmit, initialRequests = [], options = {}) {
                 options.onRefreshStarted?.();
                 await options.waitForRefresh;
             }
-            return route.fulfill({ json: billing(requests) });
+            return route.fulfill({ json: billing(currentRequests()) });
         }
         if (pathname === '/api/saas/entitlements') {
-            const data = billing(requests);
+            const data = billing(currentRequests());
             return route.fulfill({ json: {
                 tenantStatus: data.tenant.status,
                 subscription: data.subscription,
                 entitlements: { tenantType: data.tenant.tenantType, features: data.subscription.plan.features, featureCatalog: data.featureCatalog }
             } });
         }
+        if (pathname === '/api/saas/subscription-requests' && request.method() === 'GET') {
+            const rows = currentRequests();
+            return route.fulfill({ json: { requests: rows.slice(0, 1), pagination: { page: 1, pageSize: 1, total: rows.length, pages: Math.max(1, rows.length) } } });
+        }
         if (pathname === '/api/saas/subscription-requests/submit' && request.method() === 'POST') {
             const result = await onSubmit(route, request);
             submitCompleted = true;
-            if (result) requests = [result];
+            if (result) {
+                requests = [result];
+                if (options.requestStore) options.requestStore.requests = [result];
+            }
             return;
         }
         return route.fulfill({ json: {} });
@@ -70,12 +78,79 @@ async function openBilling(page, onSubmit, initialRequests = [], options = {}) {
     }
     await page.locator('[data-page-tab="saas-billing"]').click();
     await expect(page.locator('#saasPlansList [data-saas-plan-card]')).toHaveCount(1);
+    if (currentRequests().some((request) => ['pending', 'under_review'].includes(String(request.status || '').toLowerCase()))) return page;
     await page.locator('.saas-request-open').click();
     await page.locator('#saasPlanSelect').selectOption('12');
     await page.locator('#saasTermSelect').selectOption('semiannual');
     await page.locator('#saasPaymentProof').setInputFiles({ name: 'proof.png', mimeType: 'image/png', buffer: PNG });
     return page;
 }
+
+test('existing pending request replaces the create action with its read-only pending state', async ({ page }) => {
+    await openBilling(page, async (route) => {
+        await route.fulfill({ status: 409, json: { error: 'Already pending', code: 'SAAS_REQUEST_ALREADY_PENDING' } });
+        return null;
+    }, [requestRow(91)]);
+
+    await expect(page.locator('#saasPendingRequestState')).toBeVisible();
+    await expect(page.locator('#saasPendingRequestState')).toContainText('طلب الاشتراك قيد المراجعة');
+    await expect(page.locator('#saasPendingRequestState')).toContainText('Basic');
+    await expect(page.locator('#saasPendingRequestState [data-saas-pending-duration="6"]')).toBeVisible();
+    await expect(page.locator('#saasPendingRequestState')).toContainText('مرفق');
+    await expect(page.locator('.saas-plan-action-bar')).toBeHidden();
+    await expect(page.locator('.saas-request-open')).toBeHidden();
+    await expect(page.locator('.saas-request-dialog')).toBeHidden();
+});
+
+test('two tabs racing to submit leave exactly one pending request and the loser sees pending state', async ({ page }) => {
+    const store = { requests: [] };
+    let postCount = 0;
+    const submit = async (route) => {
+        postCount += 1;
+        if (store.requests.some((request) => request.status === 'pending')) {
+            await route.fulfill({ status: 409, json: { error: 'Already pending', code: 'SAAS_REQUEST_ALREADY_PENDING' } });
+            return null;
+        }
+        const created = requestRow(101);
+        store.requests = [created];
+        await route.fulfill({ status: 201, json: { request: created } });
+        return created;
+    };
+    const second = await page.context().newPage();
+    try {
+        await openBilling(page, submit, [], { requestStore: store });
+        await openBilling(second, submit, [], { requestStore: store });
+        await Promise.all([
+            page.locator('#saasSubscriptionSubmit').click(),
+            second.locator('#saasSubscriptionSubmit').click()
+        ]);
+        await expect(page.locator('#saasPendingRequestState')).toBeVisible();
+        await expect(second.locator('#saasPendingRequestState')).toBeVisible();
+        expect(postCount).toBe(2);
+        expect(store.requests.filter((request) => request.status === 'pending')).toHaveLength(1);
+        await expect(second.locator('.saas-request-open')).toBeHidden();
+    } finally {
+        await second.close();
+    }
+});
+
+test('approved and rejected history does not block a new request', async ({ browser }) => {
+    for (const status of ['approved', 'rejected']) {
+        const context = await browser.newContext();
+        try {
+            const page = await context.newPage();
+            await openBilling(page, async (route) => {
+                await route.fulfill({ status: 409, json: { error: 'QA only', code: 'QA_ONLY' } });
+                return null;
+            }, [{ ...requestRow(status === 'approved' ? 92 : 93), status }]);
+            await expect(page.locator('#saasPendingRequestState')).toBeHidden();
+            await expect(page.locator('.saas-plan-action-bar')).toBeVisible();
+            await expect(page.locator('.saas-request-open')).toBeVisible();
+        } finally {
+            await context.close();
+        }
+    }
+});
 
 test('subscription submit is single-flight, visibly pending, cannot close, then refreshes history on success', async ({ page }) => {
     let release;
@@ -213,18 +288,26 @@ test('subscription popup uses catalog durations and discounted server-catalog am
     await expect(page.locator('#saasRequestPriceSummary')).toContainText(new Intl.NumberFormat('ar-EG').format(4999));
     await expect(page.locator('#saasRequestCurrent')).toContainText('Basic');
     await expect(page.locator('.saas-request-dialog')).toBeVisible();
+    const currentSaasVersion = planRuntimeAssetVersions().saasVersion;
+    const saasAssetUrl = await page.evaluate(() => performance.getEntriesByType('resource').map((entry) => entry.name).find((name) => name.includes('/js/pages/saas/saas.js')));
+    expect(saasAssetUrl).toContain(`/js/pages/saas/saas.js?v=${currentSaasVersion}`);
+    const runtimeSaasSource = await page.evaluate(async (url) => (await fetch(url, { cache: 'no-store' })).text(), saasAssetUrl);
+    expect(runtimeSaasSource).toContain("const title = header?.querySelector('#saasRequestTitle');");
+    await expect(page.locator('#saasRequestTitle')).toHaveText('طلب تجديد الاشتراك');
     await expect(page.locator('#saasTermSelect')).toBeVisible();
     const currentCard = await page.locator('#saasRequestCurrent').evaluate((element) => ({
         display: getComputedStyle(element).display,
         labelTop: element.querySelector('small')?.getBoundingClientRect().top,
         planTop: element.querySelector('strong')?.getBoundingClientRect().top,
         statusTop: element.querySelector('span')?.getBoundingClientRect().top,
-        secureBadgeInsideUpload: Boolean(element.ownerDocument.querySelector('.saas-upload-box .status-badge.success'))
+        secureBadgeInsideUpload: Boolean(element.ownerDocument.querySelector('.saas-upload-box .status-badge.success')),
+        uploadHint: element.ownerDocument.querySelector('.saas-upload-box small')?.textContent
     }));
     expect(currentCard.display).toBe('grid');
     expect(currentCard.planTop).toBeGreaterThan(currentCard.labelTop);
-    expect(currentCard.statusTop).toBeGreaterThan(currentCard.planTop);
-    expect(currentCard.secureBadgeInsideUpload).toBe(true);
+    expect(currentCard.statusTop).toBeGreaterThanOrEqual(currentCard.planTop);
+    expect(currentCard.secureBadgeInsideUpload).toBe(false);
+    expect(currentCard.uploadHint).toContain('PNG');
     for (const width of [320, 390, 768, 1024, 1440]) {
         await page.setViewportSize({ width, height: 900 });
         for (const theme of ['light', 'dark']) {
