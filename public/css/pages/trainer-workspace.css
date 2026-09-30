@@ -212,10 +212,8 @@
 .trainer-pagination { display: flex; justify-content: center; gap: 8px; margin-block-start: 16px; }
 .trainer-pagination button { min-width: 36px; min-height: 34px; border: 1px solid var(--trainer-line); border-radius: 9px; color: var(--color-primary); background: var(--color-surface); cursor: pointer; font: inherit; }
 
-.trainer-client-dialog { width: min(620px, calc(100% - 28px)); max-height: calc(100dvh - 28px); box-sizing: border-box; overflow: auto; padding: 0; border: 1px solid var(--trainer-line); border-radius: 22px; color: var(--color-text); background: var(--color-surface); box-shadow: 0 28px 90px rgba(7, 28, 57, .28); overscroll-behavior: contain; }
 .trainer-client-dialog::backdrop { background: rgba(7, 25, 50, .52); backdrop-filter: blur(3px); }
-.trainer-client-dialog form, .trainer-client-details { padding: 23px; }
-.trainer-dialog-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding-block-end: 17px; border-bottom: 1px solid var(--trainer-line); }
+.trainer-dialog-header { border-color: var(--trainer-line); }
 .trainer-dialog-header h2 { margin: 6px 0 0; color: var(--trainer-ink); font-size: 23px; }
 .trainer-dialog-close { width: 38px; height: 38px; border: 1px solid var(--trainer-line); border-radius: 10px; color: var(--trainer-muted); background: transparent; cursor: pointer; font-size: 24px; line-height: 1; }
 .trainer-dialog-close:hover { color: var(--color-primary); background: var(--trainer-blue-soft); }
@@ -225,7 +223,6 @@
 .trainer-form-grid input:focus, .trainer-form-grid select:focus, .trainer-form-grid textarea:focus { border-color: var(--color-primary); outline: 0; box-shadow: 0 0 0 3px var(--trainer-blue-soft); }
 .trainer-form-field--wide { grid-column: 1 / -1; }
 .trainer-form-message { min-height: 22px; margin: 12px 0 0; font-size: 13px; }
-.trainer-dialog-actions { display: flex; justify-content: flex-start; gap: 9px; margin-block-start: 12px; }
 .trainer-client-details-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-block-start: 19px; }
 .trainer-detail-stat { padding: 13px; border-radius: 12px; background: var(--color-surface-muted); }
 .trainer-detail-stat span { display: block; color: var(--trainer-muted); font-size: 12px; }
@@ -295,7 +292,6 @@ html[data-theme="dark"] .trainer-workspace-panel { box-shadow: 0 16px 40px rgba(
   .trainer-form-grid { grid-template-columns: 1fr; }
   .trainer-form-field--wide { grid-column: auto; }
   .trainer-detail-actions .btn { flex: 1 1 calc(50% - 8px); }
-  .trainer-client-dialog form, .trainer-client-details { padding: 18px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

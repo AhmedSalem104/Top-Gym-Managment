@@ -301,10 +301,6 @@
 .members-table .member-cell { min-width: 220px; }
 .members-table .actions-cell { width: 190px; }
 
-.members-table {
-  min-width: 1120px;
-}
-
 .membership-portal-code-card {
   display: grid;
   gap: var(--space-4);
@@ -341,44 +337,129 @@
   .membership-portal-code-actions .btn:last-child { grid-column: 1 / -1; }
 }
 
-.members-table th,
-.members-table td {
-  white-space: nowrap;
+/* Members table composition belongs to this feature; shared cell, row,
+   wrapper and horizontal-overflow behavior remain owned by Tables. */
+@media (min-width: 768px) {
+  #membersSection .members-table {
+    min-width: 1120px;
+  }
 }
 
-.members-table th:nth-child(1) { width: 25%; }
-.members-table th:nth-child(2) { width: 15%; }
-.members-table th:nth-child(3) { width: 13%; }
-.members-table th:nth-child(4) { width: 14%; }
-.members-table th:nth-child(5) { width: 9%; }
-.members-table th:nth-child(6) { width: 13%; }
-.members-table th:nth-child(7) { width: 19%; }
+@media (min-width: 768px) {
+  .members-table:not(.table-card-layout) {
+    width: 100%;
+    min-width: 1120px;
+    table-layout: fixed;
+  }
 
-.members-table th:last-child,
-.members-table td:last-child {
-  min-width: 320px;
-}
+  .members-table:not(.table-card-layout) th,
+  .members-table:not(.table-card-layout) td {
+    box-sizing: border-box;
+    vertical-align: middle;
+    white-space: nowrap;
+  }
 
-.members-table .table-actions {
-  justify-content: center;
-  gap: var(--space-1);
-  min-width: 304px;
-  max-width: none;
-  flex-wrap: nowrap;
-}
+  .members-table:not(.table-card-layout) th:nth-child(1),
+  .members-table:not(.table-card-layout) td:nth-child(1) { width: 29%; }
+  .members-table:not(.table-card-layout) th:nth-child(2),
+  .members-table:not(.table-card-layout) td:nth-child(2) { width: 14%; }
+  .members-table:not(.table-card-layout) th:nth-child(3),
+  .members-table:not(.table-card-layout) td:nth-child(3) { width: 8%; }
+  .members-table:not(.table-card-layout) th:nth-child(4),
+  .members-table:not(.table-card-layout) td:nth-child(4) { width: 12%; }
+  .members-table:not(.table-card-layout) th:nth-child(5),
+  .members-table:not(.table-card-layout) td:nth-child(5) { width: 7%; }
+  .members-table:not(.table-card-layout) th:nth-child(6),
+  .members-table:not(.table-card-layout) td:nth-child(6) { width: 10%; }
+  .members-table:not(.table-card-layout) th:nth-child(7),
+  .members-table:not(.table-card-layout) td:nth-child(7) { width: 20%; min-width: 236px; }
 
-.members-table .member-action-row {
-  min-width: 304px;
-}
+  .members-table:not(.table-card-layout) th:last-child { text-align: center; }
+  .members-table:not(.table-card-layout) td:first-child { min-width: 330px; }
 
-.members-table .table-actions .btn {
-  min-width: 34px;
-  padding-inline: var(--space-2);
-}
+  .members-table:not(.table-card-layout) .member-identity {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 11px;
+  }
 
-.members-table .table-actions .btn-primary {
-  min-width: 116px;
-  padding-inline: var(--space-3);
+  .members-table:not(.table-card-layout) .member-identity-copy {
+    display: grid;
+    min-width: 0;
+    gap: 3px;
+  }
+
+  .members-table:not(.table-card-layout) .table-member-name {
+    overflow: hidden;
+    color: var(--text-primary, #17233d);
+    font-size: .88rem;
+    font-weight: 900;
+    line-height: 1.35;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .members-table:not(.table-card-layout) .table-member-phone,
+  .members-table:not(.table-card-layout) .member-identity-copy .table-sub,
+  .members-table:not(.table-card-layout) .member-code-preview {
+    color: var(--text-secondary, #718096);
+    font-size: .72rem;
+    line-height: 1.45;
+  }
+
+  .members-table:not(.table-card-layout) .table-actions,
+  .members-table:not(.table-card-layout) .member-action-row > .table-actions {
+    display: flex;
+    min-width: 0;
+    min-height: 40px;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    flex-wrap: nowrap;
+    white-space: nowrap;
+  }
+
+  .members-table:not(.table-card-layout) .table-actions > .table-action-visible,
+  .members-table:not(.table-card-layout) .table-actions > .action-menu,
+  .members-table:not(.table-card-layout) .table-actions > .btn,
+  .members-table:not(.table-card-layout) .table-actions .action-menu-toggle {
+    width: 40px;
+    min-width: 40px;
+    height: 40px;
+    min-height: 40px;
+    flex: 0 0 40px;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border-radius: 10px;
+  }
+
+  .members-table:not(.table-card-layout) .table-actions > [data-action="renew"] {
+    width: 40px;
+    min-width: 40px;
+    max-width: 40px;
+    height: 40px;
+    min-height: 40px;
+    flex: 0 0 40px;
+    gap: 0;
+    padding: 0;
+  }
+
+  .members-table:not(.table-card-layout) .table-actions .table-action-label { display: none; }
+
+  .members-table:not(.table-card-layout) .action-menu {
+    position: relative;
+    display: inline-flex;
+    flex: 0 0 40px;
+  }
+
+  .members-table:not(.table-card-layout) .action-menu-panel { min-width: 190px; }
+
+  .members-table:not(.table-card-layout) .badge {
+    min-width: 74px;
+    justify-content: center;
+  }
 }
 
 .members-table .table-actions .icon-action[data-action="freeze"],
@@ -652,10 +733,6 @@
 }
 
 @media (max-width: 991px) {
-  .members-table {
-    min-width: 1040px;
-  }
-
   .members-table th,
   .members-table td {
     padding-inline: var(--space-3);

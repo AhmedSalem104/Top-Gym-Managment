@@ -45,7 +45,8 @@ async function assertLoginSurface(page) {
             const card = document.querySelector('#authLoginCard').getBoundingClientRect();
             const submit = document.querySelector('#loginSubmit').getBoundingClientRect();
             return Math.round(card.bottom - submit.bottom);
-        })()
+        })(),
+        submitHeight: document.querySelector('#loginSubmit').getBoundingClientRect().height
     }));
 
     expect(metrics.documentWidth).toBeLessThanOrEqual(metrics.viewport + 1);
@@ -60,6 +61,7 @@ async function assertLoginSurface(page) {
     expect(metrics.card.height).toBeLessThan(650);
     expect(metrics.submitGap).toBeGreaterThanOrEqual(28);
     expect(metrics.submitGap).toBeLessThanOrEqual(34);
+    expect(metrics.submitHeight).toBeGreaterThanOrEqual(54);
 }
 
 test.beforeEach(async ({ page }) => {
@@ -79,4 +81,24 @@ test('login keeps theme toggle accessible on mobile', async ({ page }) => {
     await toggle.click();
     await expect(page.locator('html')).toHaveAttribute('data-theme', before === 'dark' ? 'light' : 'dark');
     await expect(toggle).toHaveAttribute('aria-pressed', before === 'dark' ? 'false' : 'true');
+});
+
+test('login feedback uses centralized error and information alert states', async ({ page }) => {
+    const feedback = await page.locator('#loginMessage').evaluate((element) => {
+        const expectedErrorElement = document.createElement('div');
+        expectedErrorElement.className = 'alert-danger';
+        const expectedInfoElement = document.createElement('div');
+        expectedInfoElement.className = 'alert-info';
+        document.body.append(expectedErrorElement, expectedInfoElement);
+        const expectedError = getComputedStyle(expectedErrorElement).backgroundColor;
+        const expectedInfo = getComputedStyle(expectedInfoElement).backgroundColor;
+        expectedErrorElement.remove();
+        expectedInfoElement.remove();
+        const errorBackground = getComputedStyle(element).backgroundColor;
+        element.classList.add('info');
+        const infoBackground = getComputedStyle(element).backgroundColor;
+        return { errorBackground, infoBackground, expectedError, expectedInfo };
+    });
+    expect(feedback.errorBackground).toBe(feedback.expectedError);
+    expect(feedback.infoBackground).toBe(feedback.expectedInfo);
 });

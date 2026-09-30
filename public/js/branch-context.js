@@ -92,7 +92,7 @@
                     <div class="branches-card-header"><div><span class="branches-card-kicker">دليل الفروع</span><h3>الفروع الحالية</h3><p>الأرشفة تحفظ السجل ولا تحذف البيانات التشغيلية.</p></div><button class="btn btn-light btn-small" id="branchesRefresh" type="button">تحديث</button></div>
                     <div id="branchesList" class="branches-list"><div class="loading">جارٍ تحميل الفروع…</div></div>
             </section>
-            <dialog id="branchCreateDialog" class="branch-create-dialog lf-modal-shell lf-modal--md">
+            <dialog id="branchCreateDialog" class="branch-create-dialog lf-modal-shell lf-modal--md lf-modal--structured">
                 <form id="branchCreateForm" class="dialog-body branches-form" novalidate>
                     <div class="details-dialog-head"><div><span class="branches-card-kicker">فرع جديد</span><h3>إضافة فرع</h3><p>سيتم حفظه كفرع تابع لنفس الجيم.</p></div><button class="btn btn-light btn-small" id="branchCreateDialogClose" type="button">إغلاق</button></div>
                     <div class="branch-create-fields">

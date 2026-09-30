@@ -51,32 +51,6 @@ body .section-heading p {
   line-height: 1.75;
 }
 
-/* Feature-owned card extensions. Generic Card primitives live in cards.css. */
-body .store-card,
-body .branches-card,
-body .saas-panel,
-body .platform-card,
-body .portal-tool-card,
-body .platform-kpi {
-  border: 1px solid var(--rf-line);
-  border-radius: var(--rf-radius-card);
-  background: var(--rf-surface);
-  box-shadow: var(--rf-shadow-sm);
-}
-
-body .branches-card,
-body .store-card,
-body .saas-panel {
-  padding: clamp(16px, 2vw, 24px);
-}
-
-body .store-card:hover,
-body .branches-card:hover,
-body .saas-panel:hover {
-  border-color: color-mix(in srgb, var(--rf-accent) 33%, var(--rf-line));
-  box-shadow: var(--rf-shadow-md);
-}
-
 body .section-heading,
 body .store-card-header,
 body .branches-card-header,
@@ -126,53 +100,6 @@ body .platform-kpi-value {
   letter-spacing: -.04em;
 }
 
-/* Inputs/forms ------------------------------------------------------------- */
-body .store-form-grid label,
-body .platform-field {
-  gap: 7px;
-  color: var(--rf-ink-soft);
-  font-size: .77rem;
-  font-weight: 800;
-}
-
-body .members-search-field,
-body .store-search-field,
-body .platform-global-search,
-body .platform-search-field {
-  min-height: 44px;
-  border: 1px solid var(--rf-line);
-  border-radius: var(--rf-radius-control);
-  background: var(--rf-surface-raised);
-  color: var(--rf-ink);
-  box-shadow: inset 0 1px 1px rgb(11 23 41 / .025);
-  transition: border-color 160ms ease, background-color 160ms ease, box-shadow 160ms ease;
-}
-
-body .members-search-field:hover,
-body .store-search-field:hover,
-body .platform-global-search:hover,
-body .platform-search-field:hover {
-  border-color: color-mix(in srgb, var(--rf-accent) 45%, var(--rf-line));
-}
-
-body .members-search-field:focus-within,
-body .store-search-field:focus-within,
-body .platform-global-search:focus-within,
-body .platform-search-field:focus-within {
-  border-color: var(--rf-accent);
-  background: var(--rf-surface-raised);
-  box-shadow: var(--rf-shadow-focus);
-  outline: 0;
-}
-
-body .auth-message,
-body .platform-form-message {
-  border-radius: 10px;
-  background: var(--danger-soft);
-  color: var(--danger-text);
-  line-height: 1.65;
-}
-
 body .auth-helper {
   color: var(--rf-muted);
   font-size: .7rem;
@@ -180,55 +107,6 @@ body .auth-helper {
 }
 
 /* Tables, tabs and statuses ------------------------------------------------ */
-body .table-container,
-body .table-panel,
-body .members-panel,
-body .store-table-wrap,
-body .saas-table-wrap,
-body .platform-table-wrap,
-body .auth-users-table-wrap,
-body .attendance-table-wrap,
-body .member-requests-table-wrap {
-  border: 1px solid var(--rf-line);
-  border-radius: 14px;
-  background: var(--rf-surface);
-  box-shadow: none;
-}
-
-body .library-type-tabs button,
-body .store-tab {
-  min-height: 40px;
-  border: 1px solid transparent;
-  border-radius: 10px;
-  color: var(--rf-muted);
-  font-weight: 800;
-}
-
-body .library-type-tabs button:hover,
-body .store-tab:hover {
-  background: var(--rf-accent-soft);
-  color: var(--rf-accent-strong);
-}
-
-body .library-type-tabs button.active,
-body .store-tab.active {
-  border-color: color-mix(in srgb, var(--rf-accent) 22%, var(--rf-line));
-  background: var(--rf-accent-soft);
-  color: var(--rf-accent-strong);
-  box-shadow: inset 0 -2px 0 var(--rf-accent);
-}
-
-body .branch-status,
-body .saas-status-pill,
-body .saas-panel-badge,
-body .platform-branch-usage {
-  min-height: 26px;
-  border: 1px solid transparent;
-  border-radius: 999px;
-  font-size: .68rem;
-  font-weight: 800;
-}
-
 /* Dashboard: the command centre should read as a deliberate hero, not a
    generic collection of cards. */
 body .dashboard-hero {
@@ -427,11 +305,6 @@ html:not([data-theme="dark"]) .auth-screen[data-auth-stage="login"] .auth-theme-
   left: auto;
 }
 
-body .auth-submit {
-  min-height: 50px;
-  border-radius: var(--rf-radius-control);
-}
-
 body .branches-page {
   overflow: hidden;
   border: 0;
@@ -489,24 +362,6 @@ body .platform-sidebar {
   border-left-color: rgb(255 255 255 / .09);
 }
 
-body .platform-nav-item {
-  min-height: 46px;
-  border-radius: 12px;
-  color: #9eb1c9;
-}
-
-body .platform-nav-item:hover,
-body .platform-nav-item:focus-visible {
-  background: rgb(92 168 255 / .12);
-  color: #fff;
-}
-
-body .platform-nav-item.active {
-  border-color: rgb(92 168 255 / .34);
-  background: linear-gradient(90deg, rgb(25 118 243 / .24), rgb(92 168 255 / .1));
-  box-shadow: inset 0 0 0 1px rgb(255 255 255 / .03), 0 8px 18px rgb(0 0 0 / .13);
-}
-
 body .platform-main,
 body .platform-content {
   background: var(--rf-page);
@@ -517,10 +372,7 @@ body .platform-topbar {
   background: color-mix(in srgb, var(--rf-surface) 94%, transparent);
 }
 
-body .platform-card,
-body .platform-kpi,
-body .saas-page,
-body .saas-panel {
+body .saas-page {
   border-color: var(--rf-line);
   background: var(--rf-surface);
   box-shadow: var(--rf-shadow-sm);
@@ -530,32 +382,6 @@ body .platform-page-head h2,
 body .saas-page-header h2,
 body .saas-panel h4 {
   color: var(--rf-ink);
-}
-
-/* Feedback/state surfaces. Modal geometry and backdrop ownership lives in
-   components/modals.css and components/modal-foundation.css. */
-body .loading,
-body .empty,
-body .no-data,
-body .empty-state,
-body .saas-empty {
-  min-height: 84px;
-  display: grid;
-  place-items: center;
-  border: 1px dashed var(--rf-line);
-  border-radius: 14px;
-  background: var(--rf-surface-soft);
-  color: var(--rf-muted);
-}
-
-body .error-state,
-body .page-error,
-body .registration-error,
-body .portal-error {
-  border: 1px solid var(--danger-border);
-  border-radius: 14px;
-  background: var(--danger-soft);
-  color: var(--danger-text);
 }
 
 body .skeleton,
@@ -576,13 +402,6 @@ body .loading-skeleton {
 }
 
 @media (max-width: 767px) {
-  body .branches-card,
-  body .store-card,
-  body .saas-panel {
-    border-radius: 15px;
-    padding: 15px;
-  }
-
   body .section-heading,
   body .store-card-header,
   body .branches-card-header,
@@ -674,17 +493,6 @@ body .loading-skeleton {
     flex-wrap: wrap;
   }
 
-  body .table-container,
-  body .table-panel,
-  body .members-panel,
-  body .store-table-wrap,
-  body .saas-table-wrap,
-  body .platform-table-wrap,
-  body .auth-users-table-wrap,
-  body .attendance-table-wrap,
-  body .member-requests-table-wrap {
-    overflow-x: auto;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1621,149 +1429,6 @@ body[data-theme="dark"] .dashboard-hero-mini-stat-icon {
   color: #b8adff;
 }
 
-/* Desktop/tablet table geometry. The mobile card layout intentionally does
-   not match this selector and therefore keeps its established composition. */
-@media (min-width: 768px) {
-  body .members-table:not(.table-card-layout) {
-    width: 100%;
-    min-width: 1180px;
-    table-layout: fixed;
-  }
-
-  body .members-table:not(.table-card-layout) th,
-  body .members-table:not(.table-card-layout) td {
-    box-sizing: border-box;
-    vertical-align: middle;
-    white-space: nowrap;
-  }
-
-  body .members-table:not(.table-card-layout) th:nth-child(1),
-  body .members-table:not(.table-card-layout) td:nth-child(1) { width: 29%; }
-  body .members-table:not(.table-card-layout) th:nth-child(2),
-  body .members-table:not(.table-card-layout) td:nth-child(2) { width: 14%; }
-  body .members-table:not(.table-card-layout) th:nth-child(3),
-  body .members-table:not(.table-card-layout) td:nth-child(3) { width: 8%; }
-  body .members-table:not(.table-card-layout) th:nth-child(4),
-  body .members-table:not(.table-card-layout) td:nth-child(4) { width: 12%; }
-  body .members-table:not(.table-card-layout) th:nth-child(5),
-  body .members-table:not(.table-card-layout) td:nth-child(5) { width: 7%; }
-  body .members-table:not(.table-card-layout) th:nth-child(6),
-  body .members-table:not(.table-card-layout) td:nth-child(6) { width: 10%; }
-  body .members-table:not(.table-card-layout) th:nth-child(7),
-  body .members-table:not(.table-card-layout) td:nth-child(7) { width: 20%; min-width: 236px; }
-
-  body .members-table:not(.table-card-layout) th:last-child {
-    text-align: center;
-  }
-
-  body .members-table:not(.table-card-layout) td:first-child {
-    min-width: 330px;
-  }
-
-  body .members-table:not(.table-card-layout) .member-identity {
-    display: flex;
-    min-width: 0;
-    align-items: center;
-    gap: 11px;
-  }
-
-  body .members-table:not(.table-card-layout) .member-identity-copy {
-    display: grid;
-    min-width: 0;
-    gap: 3px;
-  }
-
-  body .members-table:not(.table-card-layout) .table-member-name {
-    overflow: hidden;
-    color: var(--text-primary, #17233d);
-    font-size: .88rem;
-    font-weight: 900;
-    line-height: 1.35;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  body .members-table:not(.table-card-layout) .table-member-phone,
-  body .members-table:not(.table-card-layout) .member-identity-copy .table-sub,
-  body .members-table:not(.table-card-layout) .member-code-preview {
-    color: var(--text-secondary, #718096);
-    font-size: .72rem;
-    line-height: 1.45;
-  }
-
-  body .members-table:not(.table-card-layout) .table-actions,
-  body .members-table:not(.table-card-layout) .member-action-row > .table-actions {
-    display: flex;
-    min-width: 0;
-    min-height: 40px;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    flex-wrap: nowrap;
-    white-space: nowrap;
-  }
-
-  body .members-table:not(.table-card-layout) .table-actions > .table-action-visible,
-  body .members-table:not(.table-card-layout) .table-actions > .action-menu,
-  body .members-table:not(.table-card-layout) .table-actions > .btn,
-  body .members-table:not(.table-card-layout) .table-actions .action-menu-toggle {
-    width: 40px;
-    min-width: 40px;
-    height: 40px;
-    min-height: 40px;
-    flex: 0 0 40px;
-    align-items: center;
-    justify-content: center;
-    padding: 0;
-    border-radius: 10px;
-  }
-
-  body .members-table:not(.table-card-layout) .table-actions > [data-action="renew"] {
-    width: 40px;
-    min-width: 40px;
-    max-width: 40px;
-    height: 40px;
-    min-height: 40px;
-    flex: 0 0 40px;
-    gap: 0;
-    padding: 0;
-  }
-
-  body .members-table:not(.table-card-layout) .table-actions .table-action-label {
-    display: none;
-  }
-
-  body .members-table .table-actions > [data-action="renew"] {
-    width: 40px;
-    min-width: 40px;
-    max-width: 40px;
-    height: 40px;
-    min-height: 40px;
-    flex: 0 0 40px;
-    gap: 0;
-    padding: 0;
-  }
-
-  body .members-table .table-actions .table-action-label {
-    display: none;
-  }
-
-  body .members-table:not(.table-card-layout) .action-menu {
-    position: relative;
-    display: inline-flex;
-    flex: 0 0 40px;
-  }
-
-  body .members-table:not(.table-card-layout) .action-menu-panel {
-    min-width: 190px;
-  }
-
-  body .members-table:not(.table-card-layout) .badge {
-    min-width: 74px;
-    justify-content: center;
-  }
-}
-
 @media (max-width: 1199px) and (min-width: 768px) {
   body .dashboard-hero {
     grid-template-columns: minmax(0, 1fr) minmax(300px, .9fr);
@@ -2653,10 +2318,6 @@ body #detailsDialog .member-details-action {
   padding-inline: var(--space-2);
 }
 
-body #detailsDialog {
-  overflow: visible;
-}
-
 body #detailsDialog .member-details-more-menu.is-floating {
   position: fixed;
   z-index: calc(var(--z-modal) + 5);
@@ -2744,10 +2405,6 @@ body .coaching-builder-dialog > form.dialog-body > #coachingBuilderContent {
 body .coaching-builder-dialog > form.dialog-body > .builder-dialog-actions {
   min-height: 66px;
   padding-block: var(--space-3);
-}
-
-body #membersSection .members-table {
-  min-width: 1120px;
 }
 
 @media (max-width: 767px) {

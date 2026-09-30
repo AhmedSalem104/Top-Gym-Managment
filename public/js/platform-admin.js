@@ -446,7 +446,7 @@
         if (!footer) {
             footer = document.createElement('div');
             footer.className = 'directory-footer profile-payments-footer';
-            footer.innerHTML = '<span id="profilePaymentsSummary" class="table-summary"></span><div id="profilePaymentsPagination" class="pagination" aria-label="Tenant payment history pagination"></div>';
+            footer.innerHTML = '<span id="profilePaymentsSummary" class="table-summary"></span><div id="profilePaymentsPagination" class="pagination pagination--compact" aria-label="Tenant payment history pagination"></div>';
             (panel.querySelector('.profile-section') || panel).appendChild(footer);
         }
         const pagination = profile.paymentsPagination || {};

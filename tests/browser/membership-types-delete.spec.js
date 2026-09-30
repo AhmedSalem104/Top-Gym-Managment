@@ -43,6 +43,36 @@ test('membership types exposes delete action and removes an unused custom type a
     await expect(page.locator('#managementSection')).toBeVisible();
     await page.locator('[data-open-dialog-button="membershipTypesButton"]').click();
 
+    const dialog = page.locator('#membershipTypesDialog');
+    const layout = dialog.locator(':scope > .lf-modal-layout');
+    const content = layout.locator(':scope > .dialog-scroll-content');
+    const footer = layout.locator(':scope > .dialog-footer');
+    await expect(dialog).toBeVisible();
+    await expect(layout).toHaveClass(/lf-modal-layout/u);
+    const modalContract = await dialog.evaluate((element) => {
+        const rect = element.getBoundingClientRect();
+        const body = element.querySelector(':scope > .lf-modal-layout > .dialog-scroll-content');
+        const footerElement = element.querySelector(':scope > .lf-modal-layout > .dialog-footer');
+        const bodyRect = body.getBoundingClientRect();
+        const footerRect = footerElement.getBoundingClientRect();
+        return {
+            insideViewport: rect.left >= 0 && rect.top >= 0
+                && rect.right <= window.innerWidth && rect.bottom <= window.innerHeight,
+            structured: getComputedStyle(element).display === 'flex',
+            singleBodyScroller: getComputedStyle(body).overflowY === 'auto',
+            emptyFooterCollapsed: footerRect.height === 0
+        };
+    });
+    expect(modalContract).toEqual({
+        insideViewport: true,
+        structured: true,
+        singleBodyScroller: true,
+        emptyFooterCollapsed: true
+    });
+    await expect(content).toBeVisible();
+    await expect(footer).toBeHidden();
+    await expect(page.locator('#membershipTypesClose')).toBeHidden();
+
     await expect(page.locator('.membership-type-card [data-type-action="delete"][data-code="custom_weekly"]')).toBeVisible();
     await page.locator('.membership-type-card [data-type-action="delete"][data-code="custom_weekly"]').click();
     await expect(page.locator('.swal2-popup')).toBeVisible();

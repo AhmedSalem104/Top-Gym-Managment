@@ -14,6 +14,23 @@
   text-align: center;
 }
 
+/* Shared visual contract for legacy and feature empty-state variants.
+   Component-specific content remains owned by its feature stylesheet. */
+body .empty-state,
+body .empty,
+body .no-data,
+body .not-found-state,
+body .saas-empty {
+  min-height: 84px;
+  display: grid;
+  place-items: center;
+  border: 1px dashed var(--rf-line);
+  border-radius: 14px;
+  background: var(--rf-surface-soft);
+  color: var(--rf-muted);
+  overflow-wrap: anywhere;
+}
+
 .empty-state h3,
 .empty-state strong,
 .empty-title {

@@ -34,15 +34,54 @@ dialog.lf-modal-shell.lf-modal--structured[open] {
   flex-direction: column;
 }
 
-.lf-modal-shell.lf-modal--structured > .modal-body {
+.lf-modal-shell.lf-modal--structured > :is(.modal-body, .dialog-body, form.dialog-body) {
   flex: 1 1 auto;
   min-height: 0;
   max-height: none;
 }
 
-.lf-modal-shell.lf-modal--structured > :is(.modal-header, .form-actions) {
+.lf-modal-shell.lf-modal--structured > :is(.modal-header, .form-actions, .dialog-actions) {
   width: 100%;
   margin: 0;
+}
+
+/* Explicit nested layout for modals whose form contains separate header,
+   scroll body and footer regions. The inner body is the sole scroll owner. */
+.lf-modal-shell.lf-modal--structured > .lf-modal-layout {
+  box-sizing: border-box;
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  max-height: inherit;
+  flex: 1 1 auto;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0;
+}
+
+.lf-modal-shell.lf-modal--structured > .lf-modal-layout > :is(header, footer, .dialog-header, .dialog-actions) {
+  position: static;
+  z-index: auto;
+  flex: 0 0 auto;
+  width: 100%;
+  margin: 0;
+}
+
+.lf-modal-shell.lf-modal--structured > .lf-modal-layout > :is(.dialog-actions, .form-actions):not(:has(> :not([hidden]):not([aria-hidden="true"]))) {
+  display: none;
+}
+
+.lf-modal-shell.lf-modal--structured > .lf-modal-layout > :is(.dialog-body, .dialog-scroll-content) {
+  box-sizing: border-box;
+  display: grid;
+  min-width: 0;
+  min-height: 0;
+  max-height: none;
+  flex: 1 1 auto;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: var(--lf-modal-block) var(--lf-modal-inline);
 }
 
 

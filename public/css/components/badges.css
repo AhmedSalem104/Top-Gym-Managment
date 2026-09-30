@@ -24,7 +24,10 @@
    contract in their feature owners without redefining the primitive. */
 body .badge,
 body .chip,
-body .status-badge {
+body .status-badge,
+body .branch-status,
+body .saas-status-pill,
+body .saas-panel-badge {
   min-height: 26px;
   max-width: 100%;
   border: 1px solid transparent;

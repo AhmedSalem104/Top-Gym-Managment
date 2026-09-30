@@ -198,11 +198,6 @@
 .saas-panel {
     min-width: 0;
     overflow: hidden;
-    padding: var(--space-5);
-    background: var(--bg-card);
-    border: 1px solid var(--border-primary);
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-card);
 }
 
 .saas-panel-head { margin-bottom: var(--space-4); }
@@ -435,7 +430,6 @@
     .saas-subscription-summary,
     .saas-form-grid { grid-template-columns: 1fr; }
     .saas-form-grid .field-full { grid-column: auto; }
-    .saas-panel { padding: var(--space-4); }
     .saas-kpi { padding: 12px; }
     .saas-kpi strong { font-size: var(--font-xl); }
     .saas-panel-badge { align-self: flex-start; }
@@ -492,7 +486,6 @@
 
 .saas-billing-grid > .saas-plans-panel { order: 1; }
 .saas-billing-grid > .saas-request-panel { order: 2; }
-.saas-panel { border-radius: 16px; padding: 20px; }
 .saas-panel-head { align-items: center; }
 
 .saas-owner-plan-list {
@@ -577,7 +570,6 @@
 @media (max-width: 389px) {
     .saas-subscription-summary { grid-template-columns: 1fr; }
     .saas-summary-status { grid-column: auto; }
-    .saas-panel { padding: 16px; }
     .saas-summary-card strong { overflow-wrap: anywhere; }
 }
 

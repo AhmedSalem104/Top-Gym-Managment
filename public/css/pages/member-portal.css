@@ -100,7 +100,7 @@
 .portal-submit[aria-busy="true"] { cursor: wait; opacity: .82; }
 .portal-spinner { display: none; width: 17px; height: 17px; border: 2px solid var(--border-secondary); border-top-color: var(--text-on-primary); border-radius: 50%; animation: portal-spin .7s linear infinite; }
 .portal-submit[aria-busy="true"] .portal-spinner { display: inline-block; }
-.portal-error { margin: 4px 0 0; color: var(--danger-text); font-size: 13px; font-weight: 700; }
+.portal-error { margin: 4px 0 0; font-size: 13px; font-weight: 700; }
 .portal-result { padding: 32px; background: var(--bg-card); border: 1px solid var(--border-primary); border-radius: 24px; box-shadow: var(--shadow-card); }
 .portal-result-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; padding-bottom: 24px; border-bottom: 1px solid var(--border-secondary); }
 .portal-result-header h2 { margin-top: 5px; font-size: 2rem; }

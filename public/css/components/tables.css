@@ -22,6 +22,21 @@ table,
   font-size: var(--font-sm);
 }
 
+body .table-container,
+body .table-panel,
+body .members-panel,
+body .store-table-wrap,
+body .saas-table-wrap,
+body .platform-table-wrap,
+body .auth-users-table-wrap,
+body .attendance-table-wrap,
+body .member-requests-table-wrap {
+  border: 1px solid var(--rf-line);
+  border-radius: 14px;
+  background: var(--rf-surface);
+  box-shadow: none;
+}
+
 thead,
 .table-head {
   background: var(--color-surface-muted);
@@ -572,6 +587,24 @@ body table tbody tr:hover {
   max-width: 100%;
   overflow-x: auto;
   overscroll-behavior-inline: contain;
+}
+
+.table-scroll--content-height {
+  min-height: max-content;
+}
+
+@media (max-width: 767px) {
+  body .table-container,
+  body .table-panel,
+  body .members-panel,
+  body .store-table-wrap,
+  body .saas-table-wrap,
+  body .platform-table-wrap,
+  body .auth-users-table-wrap,
+  body .attendance-table-wrap,
+  body .member-requests-table-wrap {
+    overflow-x: auto;
+  }
 }
 
 :where(.table-scroll, .table-wrap, .data-table-wrap, .portal-table-wrap,

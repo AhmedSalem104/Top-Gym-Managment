@@ -37,6 +37,12 @@ body .platform-link-btn {
   -webkit-tap-highlight-color: transparent;
 }
 
+body .platform-btn.full {
+  width: 100%;
+  min-height: 47px;
+  margin-top: 3px;
+}
+
 body .btn:hover:not(:disabled),
 body .platform-btn:hover:not(:disabled),
 body .platform-link-btn:hover:not(:disabled),

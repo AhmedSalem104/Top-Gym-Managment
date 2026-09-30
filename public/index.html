@@ -909,12 +909,12 @@
                         <div class="day-pass-form-actions form-actions"><button class="btn btn-primary" type="submit" id="dayPassSaveButton">حفظ الحصة</button><button class="btn btn-light" type="button" data-day-pass-dialog-close>إلغاء</button><button class="btn btn-light" type="button" id="dayPassCancelEditButton" hidden>إلغاء التعديل</button></div>
                     </form>
                     <div class="day-pass-list-head"><div><h4>سجل حصص اليوم</h4><p id="dayPassListMeta">جاري تحميل السجل…</p></div><div class="day-pass-list-actions"><label class="day-pass-search"><span class="visually-hidden">بحث في الحصص</span><input id="dayPassSearch" type="search" placeholder="بحث بالاسم أو الهاتف"></label><button class="btn btn-light btn-small" type="button" id="dayPassRefreshButton">تحديث السجل</button></div></div>
-                    <div class="day-pass-table-wrap" id="dayPassTableWrap"><div class="loading">جاري تحميل سجل الحصص…</div></div>
+                    <div class="day-pass-table-wrap table-scroll table-scroll--content-height" id="dayPassTableWrap"><div class="loading">جاري تحميل سجل الحصص…</div></div>
                 </section>
             </section>
 
             <section class="workspace">
-                <dialog id="expenseDialog" class="expense-dialog rounded-lg border-slate-200 shadow-lift">
+                <dialog id="expenseDialog" class="expense-dialog lf-modal-shell lf-modal--md lf-modal--structured rounded-lg border-slate-200 shadow-lift">
                     <form class="dialog-body" id="expenseForm">
                         <div class="details-dialog-head"><div><h3 id="expenseDialogTitle">إضافة مصروف</h3><p id="expenseDialogDescription">سجّل مصروفًا جديدًا ليُخصم مباشرة من صافي الشهر الحالي.</p></div><button class="btn btn-light btn-small" id="expenseDialogClose" type="button">إغلاق</button></div>
                         <input type="hidden" id="editingExpenseId">
@@ -1041,7 +1041,7 @@
         </main>
     </div>
 
-    <dialog id="actionDialog" class="rounded-lg border-slate-200 shadow-lift" aria-labelledby="dialogTitle" aria-describedby="dialogDescription">
+    <dialog id="actionDialog" class="lf-modal-shell lf-modal--structured rounded-lg border-slate-200 shadow-lift" aria-labelledby="dialogTitle" aria-describedby="dialogDescription">
         <form class="dialog-body" id="actionForm">
             <h3 id="dialogTitle">إجراء</h3><p id="dialogDescription"></p><div id="dialogFields"></div>
             <div id="dialogFreezeWhatsappOption" class="freeze-whatsapp-option-wrap" hidden>
@@ -1051,7 +1051,7 @@
             <div class="dialog-actions"><button class="btn btn-light" id="dialogCancel" type="button">إلغاء</button><button class="btn btn-primary" id="dialogSubmit" type="submit">تأكيد</button></div>
         </form>
     </dialog>
-    <dialog id="dayPassDialog" class="day-pass-dialog lf-modal-shell lf-modal--md rounded-lg border-slate-200 shadow-lift"></dialog>
+    <dialog id="dayPassDialog" class="day-pass-dialog lf-modal-shell lf-modal--md lf-modal--structured rounded-lg border-slate-200 shadow-lift"></dialog>
     <dialog id="pricingDialog" class="pricing-dialog rounded-lg border-slate-200 shadow-lift" data-owner-only aria-labelledby="pricingDialogTitle">
         <form class="dialog-body" id="pricingForm">
             <header class="dialog-header management-dialog-header">
@@ -1083,7 +1083,7 @@
             <div class="dialog-actions dialog-footer"><button class="btn btn-light" id="membershipTypesClose" type="button">إغلاق</button></div>
         </div>
     </dialog>
-    <dialog id="membershipPlanDialog" class="type-dialog rounded-lg border-slate-200 shadow-lift" data-owner-only>
+    <dialog id="membershipPlanDialog" class="type-dialog lf-modal-shell lf-modal--md lf-modal--structured rounded-lg border-slate-200 shadow-lift" data-owner-only>
         <form class="dialog-body" id="membershipPlanForm">
             <div class="details-dialog-head"><div><h3 id="membershipPlanDialogTitle">إضافة باقة جديدة</h3><p id="membershipPlanDialogDescription">أدخل اسم الباقة وسعرها الشهري لتظهر عند إضافة أو تجديد الاشتراك.</p></div><button class="btn btn-light btn-small" id="membershipPlanDialogClose" type="button">إغلاق</button></div>
             <input type="hidden" id="editingMembershipPlanCode">
@@ -1100,7 +1100,7 @@
             <div class="dialog-actions"><button class="btn btn-light" id="membershipPlanCancel" type="button">إلغاء</button><button class="btn btn-primary" id="membershipPlanSave" type="submit">حفظ الباقة</button></div>
         </form>
     </dialog>
-    <dialog id="membershipTypeDialog" class="type-dialog rounded-lg border-slate-200 shadow-lift" data-owner-only>
+    <dialog id="membershipTypeDialog" class="type-dialog lf-modal-shell lf-modal--md lf-modal--structured rounded-lg border-slate-200 shadow-lift" data-owner-only>
         <form class="dialog-body" id="membershipTypeForm">
             <div class="details-dialog-head"><div><h3 id="membershipTypeDialogTitle">إضافة نوع عضوية</h3><p id="membershipTypeDialogDescription">أدخل مدة النوع ومعامل السعر ليتم احتساب الاشتراك تلقائيًا.</p></div><button class="btn btn-light btn-small" id="membershipTypeDialogClose" type="button">إغلاق</button></div>
             <input type="hidden" id="editingMembershipTypeCode">
@@ -1121,17 +1121,17 @@
             <div class="dialog-actions"><button class="btn btn-light" id="membershipTypeCancel" type="button">إلغاء</button><button class="btn btn-primary" id="membershipTypeSave" type="submit">حفظ النوع</button></div>
         </form>
     </dialog>
-    <dialog id="detailsDialog" class="details-dialog rounded-lg border-slate-200 shadow-lift" aria-labelledby="detailsTitle" aria-describedby="detailsSubtitle">
+    <dialog id="detailsDialog" class="details-dialog lf-modal-shell lf-modal--lg lf-modal--structured rounded-lg border-slate-200 shadow-lift" aria-labelledby="detailsTitle" aria-describedby="detailsSubtitle">
         <div class="dialog-body">
             <div class="details-dialog-head member-details-head"><div class="member-details-head-content"><div class="member-profile-identity"><span class="member-profile-avatar" id="detailsAvatar" aria-hidden="true">م</span><span class="member-profile-copy"><span class="member-profile-name-row"><h3 id="detailsTitle">تفاصيل العميل</h3><span class="member-profile-badge" id="detailsMemberBadge">عضو</span></span><p id="detailsSubtitle" class="member-profile-phone" dir="ltr"></p><small id="detailsRegistration" class="member-profile-registration"></small></span></div></div><button class="btn btn-light btn-small" id="detailsClose" type="button">إغلاق</button></div>
             <div class="member-expiry-banner" id="detailsExpiryBanner" hidden><span class="member-expiry-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span><span><strong id="detailsExpiryTitle">قريبة الانتهاء</strong><small id="detailsExpiryText">ينتهي الاشتراك قريبًا</small></span></div>
             <div id="detailsContent"><div class="loading">جاري تحميل التفاصيل…</div></div>
         </div>
     </dialog>
-    <dialog id="qrReaderDialog" class="qr-reader-dialog rounded-lg border-slate-200 shadow-lift">
+    <dialog id="qrReaderDialog" class="qr-reader-dialog lf-modal-shell lf-modal--md lf-modal--structured rounded-lg border-slate-200 shadow-lift">
         <div class="dialog-body"><div class="details-dialog-head"><div><h3>مسح QR Code</h3><p>وجّه كاميرا الهاتف إلى رمز العضو.</p></div><button class="btn btn-light btn-small" id="qrReaderClose" type="button">إغلاق</button></div><div id="qrReader"></div><p class="qr-reader-note">إذا لم تعمل الكاميرا، أغلق النافذة وسجّل الحضور برقم الهاتف.</p></div>
     </dialog>
-    <dialog id="memberQrDialog" class="member-qr-dialog rounded-lg border-slate-200 shadow-lift" aria-labelledby="memberQrDialogTitle" aria-describedby="memberQrDialogDescription">
+    <dialog id="memberQrDialog" class="member-qr-dialog lf-modal-shell lf-modal--sm lf-modal--structured rounded-lg border-slate-200 shadow-lift" aria-labelledby="memberQrDialogTitle" aria-describedby="memberQrDialogDescription">
         <div class="dialog-body"><div class="details-dialog-head"><div><h3 id="memberQrDialogTitle">QR Code العضو</h3><p id="memberQrDialogDescription">احتفظ بالرمز أو اطبعه لاستخدامه عند الحضور.</p></div><button class="btn btn-light btn-small" id="memberQrClose" type="button">إغلاق</button></div><div class="member-qr-card"><canvas id="memberQrCanvas" width="210" height="210"></canvas><strong id="memberQrName">—</strong><span id="memberQrPhone">—</span></div><div class="dialog-actions"><button class="btn btn-primary" id="memberQrDownload" type="button">تحميل QR Code</button></div></div>
     </dialog>
     <div class="toast" id="toast" role="status" aria-live="polite"></div>

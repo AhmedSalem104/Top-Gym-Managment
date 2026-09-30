@@ -5,7 +5,7 @@ async function mountBranchDialog(page) {
         document.getElementById('branchCreateDialog')?.remove();
         const dialog = document.createElement('dialog');
         dialog.id = 'branchCreateDialog';
-        dialog.className = 'branch-create-dialog lf-modal-shell lf-modal--md';
+        dialog.className = 'branch-create-dialog lf-modal-shell lf-modal--md lf-modal--structured';
         dialog.innerHTML = `
             <form class="dialog-body branches-form" novalidate>
                 <div class="details-dialog-head">
@@ -140,6 +140,7 @@ test.describe('branchCreateDialog cascade contract', () => {
         expect(snapshots.slice(1)).toEqual(snapshots.slice(0, -1));
         await expect(page.locator('#branchCreateDialog')).toHaveClass(/lf-modal-shell/);
         await expect(page.locator('#branchCreateDialog')).toHaveClass(/lf-modal--md/);
+        await expect(page.locator('#branchCreateDialog')).toHaveClass(/lf-modal--structured/);
 
         await page.screenshot({
             path: testInfo.outputPath(`branch-create-${testInfo.project.name}.png`),

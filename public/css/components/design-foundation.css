@@ -6,27 +6,3 @@
  * and predictable disabled/loading states. It is intentionally additive so
  * existing page contracts and business behavior remain untouched.
  */
-
-/* Composed status surfaces keep loading, empty and error states legible in
-   both themes without requiring every feature page to invent its own box. */
-:where(.empty-state, .empty, .no-data, .not-found-state, .loading, .error-state,
-  .page-error, .registration-error, .portal-error) {
-  border-radius: var(--radius-lg);
-  overflow-wrap: anywhere;
-}
-
-:where(.empty-state, .empty, .no-data, .not-found-state) {
-  border: 1px dashed var(--border-primary);
-  background: var(--bg-card-hover);
-  color: var(--text-muted);
-}
-
-:where(.loading) {
-  color: var(--text-muted);
-}
-
-:where(.error-state, .page-error, .registration-error, .portal-error) {
-  border-color: var(--danger-border);
-  background: var(--danger-soft);
-  color: var(--danger-text);
-}

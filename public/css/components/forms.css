@@ -279,6 +279,53 @@ input[type="radio"] {
   flex: 1 1 260px;
 }
 
+/* Shared search-control treatment for Gym, Store and Platform surfaces.
+   Feature files own placement and width; this component owns the control. */
+body .store-form-grid label,
+body .platform-field {
+  gap: 7px;
+  color: var(--rf-ink-soft);
+  font-size: .77rem;
+  font-weight: 800;
+}
+
+body .members-search-field,
+body .store-search-field,
+body .platform-global-search,
+body .platform-search-field {
+  min-height: 44px;
+  border: 1px solid var(--rf-line);
+  border-radius: var(--rf-radius-control);
+  background: var(--rf-surface-raised);
+  color: var(--rf-ink);
+  box-shadow: inset 0 1px 1px rgb(11 23 41 / .025);
+  transition: border-color 160ms ease, background-color 160ms ease, box-shadow 160ms ease;
+}
+
+body .members-search-field:hover,
+body .store-search-field:hover,
+body .platform-global-search:hover,
+body .platform-search-field:hover {
+  border-color: color-mix(in srgb, var(--rf-accent) 45%, var(--rf-line));
+}
+
+body .members-search-field:focus-within,
+body .store-search-field:focus-within,
+body .platform-global-search:focus-within,
+body .platform-search-field:focus-within {
+  border-color: var(--rf-accent);
+  background: var(--rf-surface-raised);
+  box-shadow: var(--rf-shadow-focus);
+  outline: 0;
+}
+
+.platform-global-search > span .ui-icon,
+.platform-search-field > span .ui-icon {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+}
+
 .filter-row,
 .filters-row,
 .members-toolbar-controls {

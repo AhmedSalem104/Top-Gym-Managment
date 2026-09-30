@@ -94,26 +94,10 @@
   color: var(--color-success);
 }
 
-#pricingDialog,
-#membershipTypesDialog {
-  max-height: calc(100vh - 32px);
-  overflow: hidden;
-}
-
-#pricingDialog {
-  width: min(1060px, calc(100% - 32px));
-  border-color: var(--primary-border);
-}
+#pricingDialog { border-color: var(--primary-border); }
 
 #membershipTypesDialog {
-  width: min(940px, calc(100% - 32px));
   border-color: var(--success-border);
-}
-
-#pricingDialog > form.dialog-body,
-#membershipTypesDialog > .dialog-body {
-  gap: var(--space-5);
-  padding: var(--space-6);
 }
 
 #pricingDialog .details-dialog-head,
@@ -368,26 +352,6 @@
 /* Pricing management dialogs use three independent zones: the header and
    footer stay in place while only the content region scrolls. This prevents
    sticky layers from covering fields or table rows when the catalog grows. */
-#pricingDialog,
-#membershipTypesDialog {
-  height: min(820px, calc(100dvh - 32px));
-  max-height: calc(100dvh - 32px);
-  overflow: hidden;
-  padding: 0;
-}
-
-#pricingDialog > form.dialog-body,
-#membershipTypesDialog > .dialog-body {
-  box-sizing: border-box;
-  display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto;
-  gap: 0;
-  height: 100%;
-  max-height: none;
-  overflow: hidden;
-  padding: 0;
-}
-
 .management-dialog-header {
   align-items: center;
   flex: 0 0 auto;
@@ -449,19 +413,6 @@
   min-height: 0;
   align-content: start;
   gap: var(--space-5);
-  overflow-x: hidden;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  padding: var(--space-5) var(--space-6);
-  scrollbar-color: var(--border-strong) transparent;
-  scrollbar-width: thin;
-}
-
-.dialog-scroll-content::-webkit-scrollbar { width: 7px; }
-.dialog-scroll-content::-webkit-scrollbar-track { background: transparent; }
-.dialog-scroll-content::-webkit-scrollbar-thumb {
-  border-radius: var(--radius-pill);
-  background: var(--border-strong);
 }
 
 #pricingDialog .dialog-scroll-content .day-pass-pricing-section {
@@ -470,18 +421,9 @@
 
 #pricingDialog .dialog-footer,
 #membershipTypesDialog .dialog-footer {
-  position: static;
-  z-index: auto;
-  display: flex;
-  flex: 0 0 auto;
-  align-items: center;
-  justify-content: flex-start;
-  gap: var(--space-2);
-  margin: 0;
   border-top: 1px solid var(--border-color);
   background: var(--color-surface);
   box-shadow: none;
-  padding: var(--space-4) var(--space-6);
 }
 
 #pricingDialog .dialog-footer .btn,
@@ -490,13 +432,6 @@
 }
 
 @media (max-width: 600px) {
-  #pricingDialog,
-  #membershipTypesDialog {
-    width: calc(100% - 20px);
-    height: calc(100dvh - 20px);
-    max-height: calc(100dvh - 20px);
-  }
-
   .management-dialog-header {
     padding: var(--space-4);
   }
@@ -509,7 +444,6 @@
   #pricingDialog .dialog-footer,
   #membershipTypesDialog .dialog-footer {
     flex-wrap: wrap;
-    padding: var(--space-3) var(--space-4);
   }
 
   #pricingDialog .dialog-footer .btn,
@@ -537,9 +471,6 @@
   .auth-form-grid .full,
   .expense-notes-field { grid-column: auto; }
   .pricing-section-head { align-items: stretch; flex-direction: column; }
-
-  #pricingDialog > form.dialog-body,
-  #membershipTypesDialog > .dialog-body { padding: var(--space-4); }
 
   #pricingDialog .details-dialog-head,
   #membershipTypesDialog .details-dialog-head,
@@ -1654,11 +1585,6 @@
 /* Both management dialogs share the same width and scroll contract. The
    content area owns vertical scrolling, while wide tables can scroll only
    horizontally inside their own wrapper when the viewport is narrow. */
-#pricingDialog,
-#membershipTypesDialog {
-  width: min(1060px, calc(100% - 32px));
-}
-
 #pricingDialog .pricing-table-scroll,
 #membershipTypesDialog .pricing-table-scroll {
   min-width: 0;

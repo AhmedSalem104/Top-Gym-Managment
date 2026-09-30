@@ -36,12 +36,30 @@
   color: var(--color-danger);
 }
 
+/* Shared error-state surface contract. Feature styles may arrange the
+   contents, but do not redefine the semantic error treatment. */
+body .error-state,
+body .page-error,
+body .registration-error,
+body .portal-error {
+  border: 1px solid var(--danger-border);
+  border-radius: 14px;
+  background: var(--danger-soft);
+  color: var(--danger-text);
+  padding: var(--space-3) var(--space-4);
+  overflow-wrap: anywhere;
+}
+
 .alert-info,
 .info-message,
 .auth-message.info {
   border-color: var(--info-border);
   background: var(--color-info-soft);
   color: var(--color-info);
+}
+
+.auth-message {
+  line-height: 1.65;
 }
 
 .alerts-panel,

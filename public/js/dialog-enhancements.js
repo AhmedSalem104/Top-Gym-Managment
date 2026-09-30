@@ -36,12 +36,25 @@
         externalTraineeDialog: 'xl',
         coachingBuilderDialog: 'workspace'
     });
+    const structuredLayoutById = new Set([
+        'platformActionDialog',
+        'platformRegistrationCredentialsDialog',
+        'pricingDialog',
+        'membershipTypesDialog'
+    ]);
 
     function hydrateDialog(dialog) {
         if (!dialog) return;
         dialog.classList.add('lf-modal-shell');
         const size = sizeById[dialog.id] || (dialog.classList.contains('trainer-client-dialog') ? 'md' : 'md');
         dialog.classList.add(`lf-modal--${size}`);
+        const usesNestedLayout = structuredLayoutById.has(dialog.id);
+        if (usesNestedLayout || dialog.classList.contains('coaching-small-dialog')) {
+            dialog.classList.add('lf-modal--structured');
+            if (usesNestedLayout) {
+                dialog.querySelector(':scope > form, :scope > .dialog-body')?.classList.add('lf-modal-layout');
+            }
+        }
         dialog.dataset.modalContract = 'logic-fit-v1';
         dialog.setAttribute('role', 'dialog');
         dialog.setAttribute('aria-modal', 'true');

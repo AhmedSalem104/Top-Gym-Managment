@@ -9,6 +9,18 @@
   color: var(--color-text-muted);
 }
 
+/* Keep the shared loading surface owned here instead of in global polish
+   layers. The skeleton-specific structure below remains unchanged. */
+body .loading {
+  min-height: 84px;
+  display: grid;
+  place-items: center;
+  border: 1px dashed var(--rf-line);
+  border-radius: 14px;
+  background: var(--rf-surface-soft);
+  color: var(--rf-muted);
+}
+
 div.loading,
 div.loading-state,
 div.page-loading {

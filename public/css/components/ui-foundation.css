@@ -23,14 +23,6 @@
   overflow-wrap: anywhere;
 }
 
-:where(.empty-state, .empty, .no-data, .not-found-state) {
-  min-height: 156px;
-}
-
-:where(.error-state, .page-error, .registration-error, .portal-error) {
-  overflow-wrap: anywhere;
-}
-
 /* Platform Admin */
 .platform-shell {
   min-height: 100dvh;
@@ -53,13 +45,6 @@
 .directory-toolbar,
 .platform-dashboard-grid {
   min-width: 0;
-}
-
-.platform-global-search > span .ui-icon,
-.platform-search-field > span .ui-icon {
-  width: 16px;
-  height: 16px;
-  flex: 0 0 16px;
 }
 
 .platform-table th {

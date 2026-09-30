@@ -22,6 +22,40 @@ body .shadow-panel {
   padding: clamp(16px, 2vw, 24px);
 }
 
+body .store-card,
+body .branches-card,
+body .saas-panel,
+body .platform-card,
+body .portal-tool-card,
+body .platform-kpi {
+  border: 1px solid var(--rf-line);
+  border-radius: var(--rf-radius-card);
+  background: var(--rf-surface);
+  box-shadow: var(--rf-shadow-sm);
+}
+
+body .branches-card,
+body .store-card,
+body .saas-panel {
+  padding: clamp(16px, 2vw, 24px);
+}
+
+body .store-card:hover,
+body .branches-card:hover,
+body .saas-panel:hover {
+  border-color: color-mix(in srgb, var(--rf-accent) 33%, var(--rf-line));
+  box-shadow: var(--rf-shadow-md);
+}
+
+@media (max-width: 767px) {
+  body .branches-card,
+  body .store-card,
+  body .saas-panel {
+    border-radius: 15px;
+    padding: 15px;
+  }
+}
+
 body .panel-header,
 body .card-header {
   min-height: 44px;

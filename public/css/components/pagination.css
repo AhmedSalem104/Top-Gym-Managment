@@ -16,6 +16,23 @@
   font-size: var(--font-xs);
 }
 
+.pagination--compact {
+  min-height: 0;
+  justify-content: flex-start;
+  gap: var(--space-1);
+  border: 0;
+  background: transparent;
+  padding: 0;
+}
+
+.pagination--compact button,
+.pagination--compact a {
+  min-width: 38px;
+  min-height: 38px;
+  border-radius: var(--radius-md);
+  background: var(--color-surface-muted);
+}
+
 .pagination-controls,
 .pagination-pages,
 .members-pagination-actions,
@@ -164,6 +181,12 @@
     align-items: stretch;
     flex-direction: column;
     padding: var(--space-3);
+  }
+
+  .pagination--compact {
+    align-items: center;
+    flex-direction: row;
+    padding: 0;
   }
 
   .members-pagination-info,
