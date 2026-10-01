@@ -4,7 +4,7 @@ Status values: `PLANNED`, `IMPLEMENTED`, `INTENTIONALLY_WEB_ONLY`, `NOT_APPLICAB
 
 | Current capability | Source | API family | Rule/access | Role/tenant | Entitlement/limit | Proposed mobile flow/destination | Tests/evidence | Status |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Authentication/session | `auth-service.js`, `auth.middleware.js` | `/api/auth/*` | active user/session, 401 | all staff roles | none | login/restore/logout | auth unit/browser tests | PLANNED |
+| Authentication/session | `auth-service.js`, `auth.middleware.js`, `auth.routes.js` | `/api/auth/*`, `/api/mobile/auth/*` | active user/session, bearer refresh rotation, 401 | all staff roles | none | login/restore/logout | auth unit/browser tests plus mobile contract smoke | IMPLEMENTED |
 | Gym bootstrap/dashboard | `dashboard.routes.js`, `branch-service.js` | `/api/bootstrap`, `/api/dashboard` | tenant + subscription + permission | Owner/Assistant, gym | dashboard | Gym Home | dashboard/bootstrap tests | PLANNED |
 | Members/memberships | `member-service.js`, `members.routes.js` | `/api/members*`, `/api/memberships*` | scope/permission/limits | Owner/Assistant, gym | members/maxMembers | member list/detail/actions | member contract/browser tests | PLANNED |
 | Attendance | `attendance-service.js` | `/api/attendance*` | branch/section and state | Owner/Assistant, gym | attendance | quick check-in/out | attendance tests | PLANNED |

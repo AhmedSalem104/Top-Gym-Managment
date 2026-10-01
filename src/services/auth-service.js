@@ -20,6 +20,8 @@ const { resolveTenantType } = require('../tenancy/tenant-types');
 
 const SESSION_COOKIE_NAME = 'topgym_session';
 const DEFAULT_SESSION_DAYS = 7;
+const MOBILE_ACCESS_MINUTES = 15;
+const MOBILE_REFRESH_DAYS = 30;
 const PASSWORD_MIN_LENGTH = 8;
 const PASSWORD_MAX_LENGTH = 128;
 const SCRYPT_PARAMS = { N: 32768, r: 8, p: 1, keyLength: 64 };
@@ -175,6 +177,7 @@ BEGIN
     CREATE INDEX IX_gym_auth_sessions_user_expiry
         ON dbo.gym_auth_sessions(user_id, expires_at DESC, revoked_at);
 END;
+
 `;
 
 let authReadyPromise;
@@ -498,6 +501,67 @@ async function login(body = {}, request) {
     return { token, expiresAt, user: await safeUserWithPermissions(user) };
 }
 
+async function createMobileAccessSession(userId, request) {
+    const token = crypto.randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + MOBILE_ACCESS_MINUTES * 60 * 1000);
+    await sessionRepository.create({
+        userId,
+        tokenHash: tokenHash(token),
+        expiresAt,
+        ipAddress: String(request?.ip || request?.socket?.remoteAddress || '').slice(0, 64),
+        userAgent: String(request?.get?.('user-agent') || '').slice(0, 512)
+    });
+    return { token, expiresAt };
+}
+
+async function createMobileRefreshSession(userId) {
+    const token = crypto.randomBytes(48).toString('hex');
+    const expiresAt = new Date(Date.now() + MOBILE_REFRESH_DAYS * 24 * 60 * 60 * 1000);
+    const pool = await getPool();
+    await pool.request()
+        .input('userId', sql.Int, userId)
+        .input('tokenHash', sql.Char(64), tokenHash(token))
+        .input('expiresAt', sql.DateTime2, expiresAt)
+        .query(`INSERT INTO dbo.gym_mobile_refresh_sessions (user_id, token_hash, expires_at)
+                VALUES (@userId, @tokenHash, @expiresAt);`);
+    return { token, expiresAt };
+}
+
+async function mobileLogin(body = {}, request) {
+    const result = await login(body, request);
+    const access = await createMobileAccessSession(result.user.id, request);
+    const refresh = await createMobileRefreshSession(result.user.id);
+    await revokeSession(result.token);
+    return { accessToken: access.token, refreshToken: refresh.token, expiresAt: access.expiresAt, user: result.user };
+}
+
+async function mobileRefresh(refreshToken, request) {
+    const token = String(refreshToken || '');
+    if (!token || token.length > 128) throw authError('جلسة التطبيق غير صالحة.', 401, 'INVALID_REFRESH_TOKEN');
+    await ensureAuthReady();
+    const pool = await getPool();
+    const found = await pool.request().input('tokenHash', sql.Char(64), tokenHash(token)).query(`
+        SELECT TOP 1 r.id, r.user_id, r.expires_at, u.*
+        FROM dbo.gym_mobile_refresh_sessions r
+        INNER JOIN dbo.gym_users u ON u.id = r.user_id
+        WHERE r.token_hash=@tokenHash AND r.revoked_at IS NULL AND r.expires_at > SYSUTCDATETIME();`);
+    const row = found.recordset[0];
+    if (!row || row.status !== 'Active') throw authError('انتهت جلسة التطبيق.', 401, 'INVALID_REFRESH_TOKEN');
+    await pool.request().input('id', sql.UniqueIdentifier, row.id).query(`UPDATE dbo.gym_mobile_refresh_sessions SET revoked_at=SYSUTCDATETIME() WHERE id=@id AND revoked_at IS NULL;`);
+    const access = await createMobileAccessSession(Number(row.user_id), request);
+    const refresh = await createMobileRefreshSession(Number(row.user_id));
+    return { accessToken: access.token, refreshToken: refresh.token, expiresAt: access.expiresAt, user: await safeUserWithPermissions(row) };
+}
+
+async function mobileLogout(accessToken, refreshToken) {
+    await revokeSession(accessToken);
+    const token = String(refreshToken || '');
+    if (!token) return;
+    await ensureAuthReady();
+    const pool = await getPool();
+    await pool.request().input('tokenHash', sql.Char(64), tokenHash(token)).query(`UPDATE dbo.gym_mobile_refresh_sessions SET revoked_at=SYSUTCDATETIME() WHERE token_hash=@tokenHash AND revoked_at IS NULL;`);
+}
+
 async function getSessionUser(token, { includePermissions = true, ensureReady = true, touch = true, readOnly = false } = {}) {
     if (!token) return null;
     if (ensureReady) await ensureAuthReady();
@@ -694,6 +758,12 @@ function readSessionCookie(request) {
     }
 }
 
+function readBearerToken(request) {
+    const header = String(request.get?.('authorization') || '');
+    const match = header.match(/^Bearer\s+([A-Za-z0-9._~+\/-]+=*)$/i);
+    return match && match[1].length <= 128 ? match[1] : '';
+}
+
 function appendCookie(response, value) {
     response.setHeader('Set-Cookie', value);
 }
@@ -717,9 +787,13 @@ module.exports = {
     hashPassword,
     listUsers,
     login,
+    mobileLogin,
+    mobileLogout,
+    mobileRefresh,
     parseScryptHash,
     permissionsForRole,
     readSessionCookie,
+    readBearerToken,
     revokeSession,
     safeUser,
     withPermissions,

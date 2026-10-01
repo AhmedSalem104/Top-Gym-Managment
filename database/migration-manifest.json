@@ -109,6 +109,18 @@
       "rlsImpact": false,
       "dataBackfill": false,
       "rollback": "forward-fix-or-database-recovery"
+    },
+    "040-mobile-refresh-sessions.sql": {
+      "version": "040",
+      "checksum": "e6f54a3632cdd4fc5094e46541be7a561da6cc06e377209496d588e09307c96a",
+      "transactional": true,
+      "backwardCompatible": true,
+      "destructive": false,
+      "requiresBackup": true,
+      "requiresMaintenanceMode": false,
+      "rlsImpact": false,
+      "dataBackfill": false,
+      "rollback": "forward-fix-or-database-recovery"
     }
   }
 }

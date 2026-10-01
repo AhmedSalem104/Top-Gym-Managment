@@ -172,6 +172,7 @@ const PLATFORM_GLOBAL_BACKUP_TABLES = Object.freeze([
 // recovery system itself, and legacy archives are not the source of truth.
 const PLATFORM_BACKUP_EXCLUDED_TABLES = Object.freeze([
     'gym_auth_sessions',
+    'gym_mobile_refresh_sessions',
     'gym_member_portal_sessions',
     'gym_backup_archives',
     'gym_backup_operations',
@@ -183,6 +184,7 @@ const PLATFORM_BACKUP_EXCLUDED_TABLES = Object.freeze([
 
 const PLATFORM_BACKUP_EXCLUSION_REASONS = Object.freeze({
     gym_auth_sessions: 'Bearer sessions are transient and must be revoked during recovery.',
+    gym_mobile_refresh_sessions: 'Mobile refresh sessions are transient bearer material and must be revoked during recovery.',
     gym_member_portal_sessions: 'Portal bearer sessions are transient and must be revoked during recovery.',
     gym_backup_archives: 'Legacy tenant archive metadata is not the platform recovery source of truth.',
     gym_backup_operations: 'Legacy operational metadata is not required to recover business data.',
@@ -344,7 +346,7 @@ function classifyPlatformTable(table, { hasTenantId = false } = {}) {
     const legacy = LEGACY_BACKUP_TABLE_BY_NAME.get(normalized);
     if (legacy) return { classification: legacy.classification, scope: legacy.scope, key: legacy.key, table: legacy.table, ownership: legacy.ownership, reason: legacy.reason };
     const platformExcluded = PLATFORM_BACKUP_EXCLUDED_TABLES.find((item) => item.toLowerCase() === normalized);
-    if (platformExcluded) return { classification: ['gym_auth_sessions', 'gym_member_portal_sessions'].includes(platformExcluded) ? 'SECRET_EXCLUDED' : 'TRANSIENT_EXCLUDED', scope: 'excluded', key: `excluded:${platformExcluded}`, table: platformExcluded, reason: PLATFORM_BACKUP_EXCLUSION_REASONS[platformExcluded] };
+    if (platformExcluded) return { classification: ['gym_auth_sessions', 'gym_mobile_refresh_sessions', 'gym_member_portal_sessions'].includes(platformExcluded) ? 'SECRET_EXCLUDED' : 'TRANSIENT_EXCLUDED', scope: 'excluded', key: `excluded:${platformExcluded}`, table: platformExcluded, reason: PLATFORM_BACKUP_EXCLUSION_REASONS[platformExcluded] };
     const legacyExcluded = LEGACY_BACKUP_EXCLUDED_TABLES.find((item) => item.toLowerCase() === normalized);
     if (legacyExcluded) return { classification: 'TRANSIENT_EXCLUDED', scope: 'excluded', key: `excluded:${legacyExcluded}`, table: legacyExcluded, reason: LEGACY_BACKUP_EXCLUSION_REASONS[legacyExcluded] || 'Legacy transient table excluded by policy.' };
     // `hasTenantId` is deliberately not enough to classify an unknown table;

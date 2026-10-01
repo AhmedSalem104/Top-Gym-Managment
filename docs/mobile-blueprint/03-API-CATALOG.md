@@ -2,7 +2,7 @@
 
 ## Inventory method and completeness
 
-The inventory was extracted from the executable route registrations under `src/routes/` and cross-checked against `src/routes/index.js`, `docs/API.md`, controllers, frontend API calls, and tests. It contains **347 route declarations across 29 route modules**. A declaration is counted once by method and path; compatibility namespaces are retained because they are real current routes.
+The inventory was extracted from the executable route registrations under `src/routes/` and cross-checked against `src/routes/index.js`, `docs/API.md`, controllers, frontend API calls, and tests. It contains **351 route declarations across 29 route modules**. A declaration is counted once by method and path; compatibility namespaces are retained because they are real current routes.
 
 The route modules are the authoritative endpoint list. Shared middleware applies authentication, same-origin, tenant context, permission, capability, subscription, rate-limit, read-only, and branch/section checks; the specific service/controller is the source for request and response fields.
 
@@ -10,7 +10,7 @@ The route modules are the authoritative endpoint list. Shared middleware applies
 
 | Concern | Current contract | Source |
 | --- | --- | --- |
-| Staff authentication | HttpOnly SameSite cookie backed by hashed SQL session; missing/expired is `401` | `src/services/auth-service.js`, `src/middleware/auth.middleware.js` |
+| Staff authentication | Web uses an HttpOnly SameSite cookie backed by a hashed SQL session. Native mobile uses short-lived bearer access tokens plus rotating, hashed refresh sessions; missing/expired is `401` | `src/services/auth-service.js`, `src/middleware/auth.middleware.js`, `src/routes/auth.routes.js` |
 | Tenant context | trusted session/user resolution plus `AsyncLocalStorage`; SQL request sets `tenant_id` and `tenant_mode` session context | `src/tenancy/tenant-context.js`, `src/database/pool.js` |
 | Platform context | tenantless session; target tenant must be explicit | `src/middleware/platform.middleware.js`, `src/services/platform-admin-service.js` |
 | Authorization | role defaults plus route/body-aware permission resolution; forbidden is `403` | `src/permissions/role-permissions.js`, `src/permissions/route-permissions.js` |
@@ -26,7 +26,7 @@ The following index accounts for every declaration. The count is the source-deri
 | Module/source | Count | Endpoint families |
 | --- | ---: | --- |
 | `attendance.routes.js` | 5 | attendance list/report/member/check-in/check-out |
-| `auth.routes.js` | 13 | session/login/logout/password/users/permissions |
+| `auth.routes.js` | 17 | web session/login/logout/password/users/permissions plus mobile login/refresh/session/logout |
 | `backup.routes.js` | 12 | status/history/daily/records/archives/download/inspect/restore |
 | `bar.routes.js` | 10 | menu/modifiers/recipes/sales/shifts/waste |
 | `branch.routes.js` | 7 | branch bootstrap/list/create/update/archive/user access |
@@ -62,7 +62,7 @@ The full method/path declarations are in the listed route modules; the following
 | Domain | Canonical source | Auth/context | Main request/response contract | Mobile readiness |
 | --- | --- | --- | --- | --- |
 | Health | `routes/index.js` | public | liveness; health checks DB/storage/cache | READY_WITH_CLIENT_ADAPTATION |
-| Auth/team | `auth.routes.js`, `auth-service.js` | staff session/Owner for team | email/password login, session probe/logout/password, assistant users and permissions | READY_WITH_CLIENT_ADAPTATION |
+| Auth/team | `auth.routes.js`, `auth-service.js` | staff session/Owner for team | web cookie contract plus mobile login/refresh/session/logout bearer contract; assistant users and permissions remain server-authorized | READY |
 | Bootstrap | `dashboard.routes.js`, `branch-service.js`, `saas-service.js` | staff tenant | current user, tenant, entitlements, branch context, dashboard seed | READY_WITH_CLIENT_ADAPTATION |
 | Gym members/memberships | `members.routes.js`, `member-service.js`, `member-subscription-service.js` | tenant + branch/section where applicable + permission | list/detail/create/update/freeze/renew/refund/membership/payment/code | READY_WITH_CLIENT_ADAPTATION |
 | Attendance | `attendance.routes.js`, `attendance-service.js` | Gym tenant + branch/section | today/report/member/check-in/out | READY_WITH_CLIENT_ADAPTATION |
@@ -84,6 +84,14 @@ The full method/path declarations are in the listed route modules; the following
 ## Current consumers and mobile notes
 
 Web consumers are in `public/js/` and are not a mobile contract by themselves. Mobile must use the same server paths and response semantics, replace cookie/session transport only through an approved server-compatible strategy, and add contract tests before implementation. Browser-only downloads, print, hash routes, and DOM-driven dialogs are `WEB_SPECIFIC` unless a user workflow is explicitly mapped in `09-MOBILE-INFORMATION-ARCHITECTURE.md`.
+
+### Native mobile authentication contract (MOB-001)
+
+- `POST /api/mobile/auth/login` accepts the existing staff email/password contract and returns `{ accessToken, refreshToken, session, expiresAt }`.
+- `GET /api/mobile/auth/session` requires the bearer access token and returns the server-derived mobile session envelope; it never authorizes from cached client state.
+- `POST /api/mobile/auth/refresh` accepts the refresh token, revokes it, and returns a newly rotated access/refresh pair.
+- `POST /api/mobile/auth/logout` revokes the bearer access session and supplied refresh session.
+- Access tokens are short-lived; refresh tokens are stored only in the native secure store. Web cookie login behavior is unchanged.
 
 ## Exact source declaration index
 

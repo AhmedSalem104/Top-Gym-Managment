@@ -33,11 +33,13 @@ function requestedTenantSlug(request) {
 
 function createAuthApiMiddleware({ authService, isAuthorizedCronRequest, tenantService, saasService }) {
     const { ensureAuthReady, getSessionUser, readSessionCookie } = authService;
+    const readBearerToken = typeof authService.readBearerToken === 'function' ? authService.readBearerToken : () => '';
     const assertTenantIsolationReady = typeof tenantService?.assertTenantIsolationReady === 'function'
         ? tenantService.assertTenantIsolationReady
         : async () => {};
     return (request, response, next) => {
-        const authPublicPath = ['/auth/login', '/auth/session', '/auth/logout'].includes(request.path);
+        const authPublicPath = ['/auth/login', '/auth/session', '/auth/logout', '/mobile/auth/login', '/mobile/auth/refresh', '/mobile/auth/logout'].includes(request.path);
+        const mobileSessionPath = request.method === 'GET' && request.path === '/mobile/auth/session';
         const passwordChangePath = request.method === 'POST' && request.path === '/auth/change-password';
         const tenantBrandingPath = request.method === 'GET'
             && (request.path === '/branding' || request.path.startsWith('/branding/assets/'));
@@ -146,7 +148,7 @@ function createAuthApiMiddleware({ authService, isAuthorizedCronRequest, tenantS
             if (platformBrandingRequest) return runTenantContext({ tenantId: null, mode: 'platform', readOnlyBaseline: Boolean(request.readOnlyBaseline) }, next);
             const readOnlyOptions = { includePermissions: false, ensureReady: !readOnlyRequest, touch: !readOnlyRequest };
             return (readOnlyRequest ? Promise.resolve() : ensureAuthReady())
-                .then(() => getSessionUser(readSessionCookie(request), { ...readOnlyOptions, readOnly: readOnlyRequest }))
+                .then(() => getSessionUser(readBearerToken(request) || readSessionCookie(request), { ...readOnlyOptions, readOnly: readOnlyRequest }))
                 .then((user) => {
                     if (user && user.role !== ROLES.PLATFORM_ADMIN) {
                         return tenantService.resolveTenantForUser(user.id, requestedTenantSlug(request), { readOnly: readOnlyRequest }).then((tenant) => {
@@ -191,7 +193,7 @@ function createAuthApiMiddleware({ authService, isAuthorizedCronRequest, tenantS
         }
         const readOnlyOptions = { includePermissions: false, ensureReady: !readOnlyRequest, touch: !readOnlyRequest };
         return (readOnlyRequest ? Promise.resolve() : ensureAuthReady())
-            .then(() => getSessionUser(readSessionCookie(request), { ...readOnlyOptions, readOnly: readOnlyRequest }))
+            .then(() => getSessionUser(readBearerToken(request) || readSessionCookie(request), { ...readOnlyOptions, readOnly: readOnlyRequest }))
             .then((user) => {
                 if (!user) return response.status(401).json({ error: 'انتهت جلسة الدخول. سجّل الدخول مرة أخرى.', code: 'AUTH_REQUIRED' });
                 // A forced-password session may only inspect its session,
@@ -217,6 +219,23 @@ function createAuthApiMiddleware({ authService, isAuthorizedCronRequest, tenantS
                 }
                 if (user.mustChangePassword) {
                     return response.status(403).json({ error: 'يجب تغيير كلمة المرور المؤقتة قبل استخدام النظام.', code: 'PASSWORD_CHANGE_REQUIRED' });
+                }
+                if (mobileSessionPath) {
+                    if (user.role === ROLES.PLATFORM_ADMIN) {
+                        return runTenantContext({ tenantId: null, userId: user.id, mode: 'platform', readOnlyBaseline: Boolean(request.readOnlyBaseline) }, async () => {
+                            request.auth = await authService.withPermissions(user, { readOnly: readOnlyRequest });
+                            return next();
+                        });
+                    }
+                    return tenantService.resolveTenantForUser(user.id, requestedTenantSlug(request), { readOnly: readOnlyRequest }).then((tenant) => {
+                        if (!tenant) return response.status(403).json({ error: 'Tenant access is required to restore the mobile session.', code: 'TENANT_ACCESS_REQUIRED' });
+                        request.tenant = tenant;
+                        return runTenantContext({ tenantId: tenant.id, userId: user.id, mode: 'tenant', readOnlyBaseline: Boolean(request.readOnlyBaseline) }, async () => {
+                            await assertTenantIsolationReady();
+                            request.auth = await authService.withPermissions(user, { readOnly: readOnlyRequest });
+                            return next();
+                        });
+                    });
                 }
                 if (notificationPath && user.role === ROLES.PLATFORM_ADMIN) {
                     return runTenantContext({ tenantId: null, userId: user.id, mode: 'platform', readOnlyBaseline: Boolean(request.readOnlyBaseline) }, async () => {

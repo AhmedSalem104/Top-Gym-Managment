@@ -132,7 +132,7 @@ test('every tenant domain route resolves to a central capability or feature', ()
     const routeRoot = path.join(__dirname, '../../src/routes');
     // Template management is an owner-only settings surface protected by the
     // permission registry, not a plan-entitled operational capability.
-    const ignoredPrefixes = ['/auth/', '/public/', '/health', '/platform', '/saas/', '/phone/', '/whatsapp-templates'];
+    const ignoredPrefixes = ['/auth/', '/mobile/auth/', '/public/', '/health', '/platform', '/saas/', '/phone/', '/whatsapp-templates'];
     const files = fs.readdirSync(routeRoot).filter((file) => file.endsWith('.js'));
     const uncovered = [];
     for (const file of files) {

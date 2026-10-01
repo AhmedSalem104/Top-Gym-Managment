@@ -4,6 +4,10 @@ const { createAuthController } = require('../controllers/auth.controller');
 
 function registerAuthRoutes(app, { authService, permissionService, saasService, asyncRoute, ownerOnly, allowLoginAttempt }) {
     const controller = createAuthController({ authService, permissionService, allowLoginAttempt, saasService });
+    app.post('/api/mobile/auth/login', asyncRoute(controller.mobileLogin));
+    app.post('/api/mobile/auth/refresh', asyncRoute(controller.mobileRefresh));
+    app.get('/api/mobile/auth/session', asyncRoute(controller.mobileSession));
+    app.post('/api/mobile/auth/logout', asyncRoute(controller.mobileLogout));
     app.get('/api/auth/session', asyncRoute(controller.session));
     app.post('/api/auth/login', asyncRoute(controller.login));
     app.post('/api/auth/logout', asyncRoute(controller.logout));

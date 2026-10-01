@@ -17,11 +17,13 @@ No session → login or portal code entry. Expired/revoked session → clear sec
 ## Staff login
 
 1. Validate email/password locally for form UX.
-2. `POST /api/auth/login`.
-3. Server verifies scrypt password, active user, creates server-side session cookie.
+2. Web uses `POST /api/auth/login`; native mobile uses `POST /api/mobile/auth/login`.
+3. Server verifies the same scrypt password and active user. Web receives a server-side session cookie; native mobile receives a short-lived bearer access token and rotating refresh token.
 4. Fetch session/bootstrap/effective entitlements.
 5. Resolve tenant type: Gym shell or Trainer Studio; PlatformAdmin goes to platform shell.
 6. Resolve branch/section context only from server-provided accessible values.
+
+Native mobile restore calls `GET /api/mobile/auth/session` with the bearer access token. A `401` triggers one refresh attempt; invalid refresh state clears secure storage and returns to login. Logout revokes both server-side mobile sessions before local secure cleanup.
 
 ## Gym critical flows
 
