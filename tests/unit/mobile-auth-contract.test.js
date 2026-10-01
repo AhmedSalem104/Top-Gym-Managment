@@ -57,6 +57,7 @@ test('mobile refresh-session migration is checksummed, additive, safe, and cover
 
 test('mobile refresh-session schema is not created or repaired by runtime auth initialization', () => {
     assert.doesNotMatch(AUTH_SCHEMA_SQL, /gym_mobile_refresh_sessions/i);
+    assert.doesNotMatch(read('database/schema.sql'), /gym_mobile_refresh_sessions/i);
     assert.match(read('src/services/auth-service.js'), /INSERT INTO dbo\.gym_mobile_refresh_sessions/);
     assert.doesNotMatch(read('src/services/auth-service.js'), /CREATE\s+TABLE\s+dbo\.gym_mobile_refresh_sessions/i);
     assert.doesNotMatch(read('src/services/auth-service.js'), /ALTER\s+TABLE\s+dbo\.gym_mobile_refresh_sessions/i);
