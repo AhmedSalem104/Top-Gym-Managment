@@ -1,5 +1,15 @@
 # Logic Fit Mobile Blueprint
 
+## Actor and journey references
+
+- [System actors and authorization boundaries](24-SYSTEM-ACTORS.md)
+- [End-to-end user journeys](25-END-TO-END-FLOWS.md)
+- [Business state machines](26-STATE-MACHINES.md)
+- [Feature, permission, limit, and flow crosswalk](27-FEATURE-PERMISSION-MATRIX.md)
+- [Traceability and explicit unmapped register](19-TRACEABILITY-MATRIX.md)
+
+These documents derive from current Web/Backend source and tests. Their strict completion status is recorded in the traceability matrix; catalog presence is not equivalent to every route/action being mapped.
+
 This directory is the evidence-backed, living specification for a future Logic Fit mobile client. It describes the current Web/Backend contracts; it does not create a mobile application and it is not a second implementation of business logic.
 
 ## Source of truth
@@ -34,6 +44,7 @@ The older flat file `docs/mobile-blueprint.md` is a pre-existing partial note. T
 | Mobile UX | `08-MOBILE-PRODUCT-ARCHITECTURE.md`, `09-MOBILE-INFORMATION-ARCHITECTURE.md` | proposal constrained by current contracts |
 | Security/operations | `13-SECURITY.md`, `17-OBSERVABILITY.md`, `18-RELEASE-STORE.md` | middleware, release scripts, infra |
 | Completeness | `19-TRACEABILITY-MATRIX.md` | cross-check of source, API, role, feature, and tests |
+| Web inventory / UI parity | `23-WEB-MOBILE-PARITY-AUDIT.md` and `../COMPLETE-SCREEN-INVENTORY.md` | source-discovered route/view hooks, forms, dialogs, actions, API consumers, dashboard, access boundaries, and outstanding strict coverage |
 
 ## Synchronization
 
@@ -45,11 +56,13 @@ Every task must perform and report a Mobile Impact Check before closure. For mob
 - Last verified date: `2026-09-28`
 - Repository branch observed: `main`
 - Application: Node `24.x`, Express 4, SQL Server via `mssql`, browser UI in `public/`.
-- Route declarations discovered: `347` across `29` route modules.
+- Route declarations discovered: `351` across `29` route modules (current API Catalog inventory).
 - Feature catalog entries: `31`.
 - Permission catalog entries: `93`.
 
 ## Completeness status
+
+The source-derived Web screen/action parity audit is recorded in [`23-WEB-MOBILE-PARITY-AUDIT.md`](23-WEB-MOBILE-PARITY-AUDIT.md). It inventories discovered Web destinations, Dashboard elements, forms/dialogs/actions and source/API families, and explicitly records evidence gaps. The current Web-to-Blueprint strict coverage gate is **not passed** because dynamic Web controls and all method/path declarations have not yet been linked one-by-one to UI consumers, role/permission predicates, feature/limit rules, and success/error states. Native app implementation verification is a separate future phase and is not a blocker for this Web/Backend inventory.
 
 | DOMAIN | DOCUMENT | STATUS | LAST VERIFIED | NOTES |
 | --- | --- | --- | --- | --- |

@@ -166,3 +166,7 @@ Do not cache an entitlement as authority. On app bootstrap, tenant change, branc
 - Platform review and Platform proof routes require PlatformAdmin middleware, not a Gym permission or tenant-supplied role. Gym proof reads are authenticated and tenant-scoped.
 - Notification reads require `notifications.read`; visibility is further limited by recipient/audience role and tenant scope. Platform and tenant audiences are distinct. Do not infer access from category or notification ID.
 - Pending/review state and effective plan/entitlements are server-owned. A notification or cached response never grants Platform review capability or subscription features.
+
+## Permission operational disposition
+
+The 93 keys above are all classified in `27-FEATURE-PERMISSION-MATRIX.md`: route-enforced, special branch-resolved, UI/controller-projection, or retained-but-unused legacy. In particular, `message_templates.manage` is not a current tenant grant: tenant management endpoints are disabled with `403 PLATFORM_TEMPLATES_ONLY`; current system template administration is `PlatformAdmin`-only via `platformOnly`. Do not use the stale catalog flag to expose a Gym Owner or Assistant workflow.

@@ -2,6 +2,8 @@
 
 Status values: `PLANNED`, `IMPLEMENTED`, `INTENTIONALLY_WEB_ONLY`, `NOT_APPLICABLE`, `BLOCKED`, `NEEDS_DECISION`.
 
+This matrix is the domain-level overview, not proof of native implementation parity. The source-derived screen/action inventory is in [`23-WEB-MOBILE-PARITY-AUDIT.md`](23-WEB-MOBILE-PARITY-AUDIT.md). Actor, flow, state, and authorization references are [`24-SYSTEM-ACTORS.md`](24-SYSTEM-ACTORS.md), [`25-END-TO-END-FLOWS.md`](25-END-TO-END-FLOWS.md), [`26-STATE-MACHINES.md`](26-STATE-MACHINES.md), and [`27-FEATURE-PERMISSION-MATRIX.md`](27-FEATURE-PERMISSION-MATRIX.md). `PLANNED` never means that a native screen/action already exists. Coverage here concerns source-grounded business operations and current contracts; detailed DOM/control inventory and native implementation parity are distinct work products.
+
 | Current capability | Source | API family | Rule/access | Role/tenant | Entitlement/limit | Proposed mobile flow/destination | Tests/evidence | Status |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | Authentication/session | `auth-service.js`, `auth.middleware.js`, `auth.routes.js` | `/api/auth/*`, `/api/mobile/auth/*` | active user/session, bearer refresh rotation, 401 | all staff roles | none | login/restore/logout | auth unit/browser tests plus mobile contract smoke | IMPLEMENTED |
@@ -33,4 +35,35 @@ Status values: `PLANNED`, `IMPLEMENTED`, `INTENTIONALLY_WEB_ONLY`, `NOT_APPLICAB
 
 ## Completeness notes
 
-All 31 canonical feature keys are represented in `05-FEATURE-CATALOG.md`; the table above maps the meaningful domains. Exact method/path declarations remain in the 347-declaration module index in `03-API-CATALOG.md`. A future implementation must add one row per new mobile capability and link its contract test before calling it implemented.
+All 31 canonical feature keys and six quota keys are reconciled in `27-FEATURE-PERMISSION-MATRIX.md`; the table above is a concise capability index, while 24–27 contain the operative actor/flow/action/guard/state/result contract. The API catalog's 351 registrations include Web-only, internal, compatibility, and operational endpoints; they are not 351 mobile business features. The flows in 25 map current Mobile-relevant operations to API families/actions and guards without duplicating every internal route. Native implementation status is outside this Web/Backend documentation task.
+
+## Functional-flow completion register — 2026-10-01
+
+| Previous gap | Classification | Resolution / current contract |
+|---|---|---|
+| Gym Owner/Assistant actions lacked joined permission + feature/limit/denial | **A — DOCUMENTATION GAP CLOSED** | 24 contains a module/action Owner-vs-Assistant matrix; 25 has end-to-end member, membership, payment, attendance, branches, day-pass, finance, reports, store, team, SaaS, settings and notification journeys. New vs legacy Assistant defaults are distinguished. |
+| Trainer action/API/permission/limit paths incomplete | **A — DOCUMENTATION GAP CLOSED for shipped flow families** | 25 maps workspace, clients, assessments, plans, sessions, packages, payments/refunds, goals/tasks/templates, notification/follow-up/report and client-portal access; 24 distinguishes Trainer Owner/Assistant and 27 maps permission operations. Portal access currently requires `coaching.create`. |
+| Member/Trainer portal identity and access behavior incomplete | **A — DOCUMENTATION GAP CLOSED for current behavior** | 25 documents server-resolved mode, lookup/session payload distinction, configurable session expiry, self-scope, code/session revocation behavior and tenant/client status checks. **B — PRODUCT DECISION REQUIRED** remains for stronger logout/revocation and policy gates; other flows are unblocked. |
+| Member subscription request/proof API sequence unclear | **A — DOCUMENTATION GAP CLOSED** | Current Member Portal contract is create request then upload proof to the same request, with history/recovery and approval proof verification; it is not the Owner's atomic SaaS multipart contract. |
+| Platform API families/registration scope unclear | **A — DOCUMENTATION GAP CLOSED for mobile routing and current review behavior** | 25 classifies `/api/platform-admin/*`, legacy `/api/platform/*`, active central-template exception, disabled tenant-template API, and confirms the shared registration queue reviews Gym and Independent Trainer applications. **B — MAINTENANCE DECISION REQUIRED** only for eventual legacy route retention/removal. |
+| Permission catalog existed without operating dispositions | **A — DOCUMENTATION GAP CLOSED** | 27 contains a permission-by-permission operation index: 86 static route-coded, 3 special branch matcher, 3 UI/controller/data-projection, and one retained `message_templates.manage` legacy/unused tenant key. It distinguishes implementation mapping from test coverage. |
+| Feature/limit mapping too high-level | **A — DOCUMENTATION GAP CLOSED** | All 31 keys and all 6 limit keys map to actor/workflow/tenant applicability in 27; runtime tenant snapshots/overrides remain server-authoritative. |
+| Lifecycle states and denied transitions incomplete | **A — DOCUMENTATION GAP CLOSED for exposed operations and state guards** | 26 records source-accepted states/transitions, tenant lifecycle's lack of a previous-state graph, subscription accumulation boundary, requests, membership/freeze, attendance, day-pass, Trainer, notification, and financial semantics. It does not invent enum-pair transitions absent from services. |
+| Generic errors not tied to flows | **A — DOCUMENTATION GAP CLOSED for flow-changing failure families** | 24/25/26 connect 401, 403, feature/limit, tenant lifecycle, member inactive/frozen, validation, duplicate/conflict, proof, and invalid-state results to affected flows. The blueprint does not duplicate all 351 route error payloads. |
+| `message_templates.manage` and tenant template ambiguity | **D — LEGACY/UNUSED tenant permission; current central management mapped** | Tenant management is explicitly disabled (`403 PLATFORM_TEMPLATES_ONLY`); central templates are PlatformAdmin-only via `platformOnly`; tests confirm the boundary. Catalog description remains stale but does not grant a current tenant operation. |
+| Platform Admin mobile inclusion | **B — PRODUCT DECISION REQUIRED** | It is a separate high-risk tenantless control plane. It is documented, but whether it ships in the Gym/Trainer mobile product is not decided. No platform flow is silently lost. |
+| Platform backups/restore on mobile | **C — MOBILE_NOT_APPLICABLE** | Backup restore/download/retention are privileged operational recovery actions with artifact/integrity controls; remain in Platform/Gym Web operational surfaces unless a separately approved secure native workflow is specified. Read-only health/status may be considered separately. |
+
+### Remaining product decisions (not documentation blockers)
+
+1. Portal session invalidation semantics for logout, membership-code rotation, tenant suspension/expiry, and Trainer client pause/archive; current behavior is documented in 25–26.
+2. Whether membership codes should expire independently of Owner revocation/rotation.
+3. Whether Gym/Trainer Portal access should be uniformly gated by the `portal` plan feature; current dedicated Portal paths do not enforce that uniformly.
+4. Whether Platform Admin is included in the first mobile release. If approved, 25 identifies current canonical routes; backup/recovery remains excluded absent distinct security approval.
+5. Whether unreferenced legacy `/api/platform/*` handlers are retained for compatibility or retired. Mobile uses current canonical routes either way.
+
+These decisions affect only the named Portal/Platform choices. Gym, Trainer, Member self-service, permissions, features, limits, and existing state/error flows can be implemented according to the documented current contract without waiting for them.
+
+## Coverage status
+
+**Documentation gaps for the current Mobile-relevant Actor → Flow → Action → API → Permission → Feature/limit → Preconditions/state → Result/denial contract: 0.** Product/Security and maintenance decisions above are explicitly isolated; their current behavior is documented, and they do not block unrelated flows. This does not claim every one of 351 registrations is a mobile feature, that every permission combination has an integration test, or that the native app already has parity. Native implementation status is outside this Web/Backend documentation task.
