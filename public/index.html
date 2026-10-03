@@ -862,7 +862,7 @@
                 <div class="attendance-header">
                     <div class="attendance-heading">
                         <span class="attendance-heading-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h8M8 11h3M8 15h8"/><path d="m14 11 1.5 1.5L18 10"/></svg></span>
-                        <div><span class="attendance-kicker">تشغيل يومي</span><h3 id="attendanceTitle">الحضور والانصراف</h3><p>سجّل دخول وخروج المشترك بسرعة عن طريق الهاتف أو QR Code.</p></div>
+                        <div><span class="attendance-kicker">تشغيل يومي</span><h3 id="attendanceTitle">الحضور والانصراف</h3><p>تسجيل دخول وخروج الأعضاء ومتابعة حركة اليوم.</p></div>
                     </div>
                     <div class="attendance-header-actions">
                         <span class="attendance-date-badge"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg><span id="attendanceDateLabel">اليوم</span></span>
@@ -871,30 +871,32 @@
                 </div>
                 <div class="attendance-control-panel">
                     <div class="attendance-entry-card">
-                        <div class="attendance-entry-head"><div><h4>تسجيل سريع</h4><p>اكتب رقم الهاتف، أو استخدم الكاميرا لمسح QR Code.</p></div></div>
                         <div class="attendance-entry-workspace">
                             <div class="attendance-entry-input">
+                                <div class="attendance-entry-head"><div><h4>تسجيل حضور عضو</h4><p>ابحث برقم الهاتف أو استخدم QR Code للتعرف على العضو.</p></div></div>
                                 <div class="attendance-entry-mode"><div class="attendance-segmented-control" role="tablist" aria-label="طريقة التسجيل"><button class="active" id="attendancePhoneModeButton" type="button" role="tab" aria-selected="true" data-attendance-mode="phone"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.6 3h3l1.4 4-2 1.5a15 15 0 0 0 6.5 6.5l1.5-2 4 1.4v3c0 1-.8 1.8-1.8 1.8C11.5 19.2 4.8 12.5 4.8 4.8 4.8 3.8 5.6 3 6.6 3Z"/></svg> بالهاتف</button><button class="btn btn-light btn-small" id="attendanceScanButton" type="button" role="tab" aria-selected="false" data-attendance-mode="qr"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h2M18 14h2v2M14 18h2v2M18 18h2"/></svg> QR Code</button></div></div>
                                 <div id="attendancePhoneModePanel">
                                     <div class="attendance-input-row">
                                         <label class="attendance-input-label" for="attendancePhone">رقم الهاتف</label>
                                         <label class="attendance-input-wrap" for="attendancePhone"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.6 3h3l1.4 4-2 1.5a15 15 0 0 0 6.5 6.5l1.5-2 4 1.4v3c0 1-.8 1.8-1.8 1.8C11.5 19.2 4.8 12.5 4.8 4.8 4.8 3.8 5.6 3 6.6 3Z"/></svg><span class="visually-hidden">رقم الهاتف</span><input id="attendancePhone" type="tel" inputmode="numeric" autocomplete="tel" placeholder="01015819700" data-phone-input></label>
-                                        <div class="attendance-action-buttons"><button class="btn btn-check-in" id="attendanceCheckInButton" type="button">تسجيل حضور</button><button class="btn btn-check-out" id="attendanceCheckOutButton" type="button">تسجيل انصراف</button></div>
                                     </div>
+                                    <button class="btn btn-primary attendance-member-search-button" type="button"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>بحث عن العضو</button>
                                 </div>
+                                <div class="attendance-info-strip" role="note"><span class="attendance-info-icon"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7h.01"/></svg></span><span>يُسمح بالحضور للعضوية السارية وغير المجمدة مرة واحدة يوميًا. يُغلق الحضور المفتوح تلقائيًا بعد ساعة.</span></div>
                             </div>
                             <div class="attendance-member-context">
                                 <div class="attendance-member-context-heading"><span>بيانات العضو</span><small>تظهر بعد العثور على الرقم</small></div>
                                 <div class="attendance-member-empty"><span class="attendance-member-empty-icon"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c.7-3.4 3.1-5 7-5s6.3 1.6 7 5"/></svg></span><strong>بانتظار رقم العضو</strong><p>أدخل رقم الهاتف لعرض الحالة ووقت الدخول.</p></div>
                                 <div id="attendanceMemberPreview" class="attendance-member-preview" hidden aria-live="polite"></div>
+                                <div class="attendance-action-buttons" aria-label="إجراء الحضور"><button class="btn btn-check-in" id="attendanceCheckInButton" type="button" hidden>تسجيل حضور</button><button class="btn btn-check-out" id="attendanceCheckOutButton" type="button" hidden>تسجيل انصراف</button></div>
                             </div>
                         </div>
-                        <div class="attendance-info-strip" role="note"><span class="attendance-info-icon"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7h.01"/></svg></span><span>يتم السماح بالحضور فقط للعضوية السارية وغير المجمدة، مرة واحدة يوميًا. إذا لم يُسجل انصراف يتم إغلاق الحضور تلقائيًا بعد ساعة.</span></div>
                     </div>
                 <div class="attendance-summary" aria-label="ملخص الحضور"><article class="attendance-summary-card"><span class="summary-icon"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M3 12h18"/></svg></span><strong id="attendancePresentCount">0</strong><span>إجمالي حضور اليوم</span></article><article class="attendance-summary-card checked-in"><span class="summary-icon"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8 12 2.5 2.5L16 9"/></svg></span><strong id="attendanceCheckedInCount">0</strong><span>داخل الجيم الآن</span></article><article class="attendance-summary-card checked-out"><span class="summary-icon"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12h8m-3-3 3 3-3 3"/></svg></span><strong id="attendanceCheckedOutCount">0</strong><span>انصرفوا اليوم</span></article></div>
                 </div>
-                <div class="attendance-list-head"><div><h4>سجل اليوم</h4><p id="attendanceListMeta">جاري تحميل سجل الحضور…</p></div><div class="attendance-list-actions"><label class="attendance-search-wrap" for="attendanceSearch"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><span class="visually-hidden">بحث في حضور اليوم بالاسم أو الهاتف</span><input class="attendance-search" id="attendanceSearch" type="search" placeholder="ابحث في حضور اليوم بالاسم أو الهاتف" aria-label="بحث في حضور اليوم بالاسم أو الهاتف" autocomplete="off"><button class="search-clear-button" id="attendanceSearchClearButton" type="button" aria-label="مسح بحث حضور اليوم" hidden>×</button></label><select class="attendance-status-filter" id="attendanceStatusFilter" aria-label="فلترة حالة الحضور"><option value="all">كل الحالات</option><option value="inside">داخل الجيم</option><option value="checked_out">تم الانصراف</option></select><button class="btn btn-light btn-small" id="attendanceRefreshButton" type="button">تحديث</button></div></div>
+                <div class="attendance-list-head"><div><h4>سجل اليوم</h4><p id="attendanceListMeta">جاري تحميل سجل الحضور…</p></div><div class="attendance-list-actions"><label class="attendance-search-wrap" for="attendanceSearch"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><span class="visually-hidden">بحث في حضور اليوم بالاسم أو الهاتف</span><input class="attendance-search" id="attendanceSearch" type="search" placeholder="ابحث بالاسم أو رقم الهاتف" aria-label="بحث في حضور اليوم بالاسم أو الهاتف" autocomplete="off"><button class="search-clear-button" id="attendanceSearchClearButton" type="button" aria-label="مسح بحث حضور اليوم" hidden>×</button></label><select class="attendance-status-filter" id="attendanceStatusFilter" aria-label="فلترة حالة الحضور"><option value="all">كل الحالات</option><option value="inside">داخل الجيم</option><option value="checked_out">تم الانصراف</option></select><button class="btn btn-light btn-small" id="attendanceRefreshButton" type="button">تحديث</button></div></div>
                 <div class="attendance-table-wrap" id="attendanceTableWrap"><div class="loading">جاري تحميل سجل الحضور…</div></div>
+                <dialog id="dayPassDialog" class="day-pass-dialog lf-modal-shell lf-modal--md lf-modal--structured rounded-lg border-slate-200 shadow-lift">
                 <section class="day-pass-panel dialog-body dialog-body--flush" id="dayPassPanel" aria-labelledby="dayPassTitle">
                     <div class="day-pass-head modal-header">
                         <div class="day-pass-heading modal-heading-content"><span class="day-pass-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 9h10M7 13h5"/><path d="M16 13h.01"/></svg></span><div><span>دخول يومي</span><h3 id="dayPassTitle">الحصص اليومية</h3><p>سجّل زيارة الزائر مرة واحدة، واحصل على سجل مالي ورسالة واتساب جاهزة.</p></div></div><span class="day-pass-today-badge" id="dayPassTodayCount">0 حصة اليوم</span></div>
@@ -911,6 +913,7 @@
                     <div class="day-pass-list-head"><div><h4>سجل حصص اليوم</h4><p id="dayPassListMeta">جاري تحميل السجل…</p></div><div class="day-pass-list-actions"><label class="day-pass-search"><span class="visually-hidden">بحث في الحصص</span><input id="dayPassSearch" type="search" placeholder="بحث بالاسم أو الهاتف"></label><button class="btn btn-light btn-small" type="button" id="dayPassRefreshButton">تحديث السجل</button></div></div>
                     <div class="day-pass-table-wrap table-scroll table-scroll--content-height" id="dayPassTableWrap"><div class="loading">جاري تحميل سجل الحصص…</div></div>
                 </section>
+                </dialog>
             </section>
 
             <section class="workspace">
@@ -1051,7 +1054,6 @@
             <div class="dialog-actions"><button class="btn btn-light" id="dialogCancel" type="button">إلغاء</button><button class="btn btn-primary" id="dialogSubmit" type="submit">تأكيد</button></div>
         </form>
     </dialog>
-    <dialog id="dayPassDialog" class="day-pass-dialog lf-modal-shell lf-modal--md lf-modal--structured rounded-lg border-slate-200 shadow-lift"></dialog>
     <dialog id="pricingDialog" class="pricing-dialog rounded-lg border-slate-200 shadow-lift" data-owner-only aria-labelledby="pricingDialogTitle">
         <form class="dialog-body" id="pricingForm">
             <header class="dialog-header management-dialog-header">
@@ -1170,7 +1172,7 @@
     <script defer src="/js/auth-ui.js?v=21"></script>
     <script defer src="/js/branch-context.js?v=4"></script>
     <script defer src="/js/kiosk.js?v=1"></script>
-    <script defer src="/js/core/feature-manifest.js?v=339e83a955147b78"></script>
+    <script defer src="/js/core/feature-manifest.js?v=0ffd80ebc0806d39"></script>
     <script defer src="/js/feature-loader.js?v=freeze-whatsapp-v2"></script>
     <script defer src="/js/app-shell-bootstrap.js?v=membership-type-delete-v1"></script>
     <script defer src="/js/page-tabs.js?v=24"></script>

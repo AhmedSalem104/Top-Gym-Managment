@@ -13,8 +13,8 @@
         'member-details': { dependencies: ['phone-inputs'], styles: [], scripts: ['/js/member-details-ui.js?v=6', '/js/member-portal-admin.js?v=4', '/js/member-coaching-summary.js?v=2'] },
         members: {
             dependencies: ['phone-inputs'],
-            styles: ['/css/pages/members.css?v=attendance-compact', '/css/pages/memberships.css?v=phase2', '/css/pages/attendance.css?v=attendance-ui-v5'],
-            scripts: ['/js/design-enhancements.js?v=4', '/js/pages/members/action-menu.js?v=8', '/js/pagination.js?v=members-branch-scope-v1', '/js/pages/attendance/attendance.js?v=attendance-compact']
+            styles: ['/css/pages/members.css?v=attendance-compact', '/css/pages/memberships.css?v=phase2', '/css/pages/attendance.css?v=7ebed57a5df97ef3'],
+            scripts: ['/js/design-enhancements.js?v=4', '/js/pages/members/action-menu.js?v=8', '/js/pagination.js?v=members-branch-scope-v1', '/js/pages/attendance/attendance.js?v=a4dcbb036b361649']
         },
         coaching: { dependencies: ['phone-inputs'], dialogs: [{ source: '/dialogs/coaching.html?v=phase4', ids: ['externalTraineeDialog', 'coachingProfileDialog', 'coachingBuilderDialog'] }], styles: ['/css/pages/coaching.css?v=builder-workspace-v1'], scripts: ['/js/exercise-assets.js?v=5', '/js/muscle-assets.js?v=3', '/js/pages/coaching/coaching.js?v=20'] },
         print: { dependencies: ['phone-inputs'], styles: [], scripts: ['/js/exercise-assets.js?v=5', '/js/integrations/print-enhancements.js?v=14'] },
@@ -29,7 +29,7 @@
         'member-subscription-requests': { dependencies: [], styles: ['/css/pages/member-subscription-requests.css?v=phase2'], scripts: ['/js/pages/management/member-subscription-requests.js?v=4'] },
         'portal-analytics': { dependencies: [], styles: ['/css/pages/portal-analytics.css?v=phase2'], scripts: ['/js/pages/management/portal-analytics.js?v=1'] },
         permissions: { dependencies: [], dialogs: [{ source: '/dialogs/permissions.html?v=phase4', ids: ['authUserDialog'] }], styles: ['/css/pages/permissions.css?v=phase2'], scripts: ['/js/pages/management/permissions.js?v=4', '/js/pages/management/auth-users.js?v=3'] },
-        attendance: { dependencies: ['phone-inputs'], styles: ['/css/pages/attendance.css?v=attendance-ui-v5'], scripts: ['/js/pages/attendance/attendance.js?v=attendance-compact'] },
+        attendance: { dependencies: ['phone-inputs'], styles: ['/css/pages/attendance.css?v=7ebed57a5df97ef3'], scripts: ['/js/pages/attendance/attendance.js?v=a4dcbb036b361649'] },
         library: { dependencies: [], dialogs: [{ source: '/dialogs/library.html?v=phase4', ids: ['libraryFormDialog', 'libraryDetailsDialog'] }], styles: ['/css/pages/library.css?v=phase2'], scripts: ['/js/exercise-assets.js?v=5', '/js/muscle-assets.js?v=3', '/js/food-assets.js?v=1', '/js/pages/library/library.js?v=13'] },
         trainees: { dependencies: ['coaching'], styles: ['/css/pages/trainees.css?v=phase2', '/css/pages/coaching.css?v=phase2', '/css/pages/nutrition.css?v=phase2'], scripts: [] },
         intelligence: { dependencies: ['phone-inputs'], styles: ['/css/pages/intelligence.css?v=phase2'], scripts: ['/js/pages/intelligence/intelligence.js?v=3'] },

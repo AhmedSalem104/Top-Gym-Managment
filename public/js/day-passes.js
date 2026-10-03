@@ -188,23 +188,6 @@
         const panel = $('dayPassPanel');
         if (!dialog || !panel) return dialog;
         if (!dialog.hasAttribute('aria-labelledby')) dialog.setAttribute('aria-labelledby', 'dayPassTitle');
-        const recordsHost = $('attendanceSection');
-        const existingRecordsSection = $('dayPassRecordsSection');
-        const listHead = panel.querySelector('.day-pass-list-head');
-        const tableWrap = panel.querySelector('.day-pass-table-wrap');
-        if (existingRecordsSection && recordsHost && existingRecordsSection.parentElement !== recordsHost) {
-            recordsHost.appendChild(existingRecordsSection);
-        }
-        if (recordsHost && listHead && tableWrap && !existingRecordsSection) {
-            const recordsSection = document.createElement('section');
-            recordsSection.id = 'dayPassRecordsSection';
-            recordsSection.className = 'day-pass-records-panel';
-            recordsSection.setAttribute('aria-labelledby', 'dayPassRecordsTitle');
-            const title = listHead.querySelector('h4');
-            if (title) title.id = 'dayPassRecordsTitle';
-            recordsSection.append(listHead, tableWrap);
-            recordsHost.appendChild(recordsSection);
-        }
         if (panel.parentElement !== dialog) dialog.appendChild(panel);
         if (!dialog.dataset.dayPassReady) {
             const head = panel.querySelector('.day-pass-head');
@@ -234,7 +217,8 @@
     function openDayPassRecords() {
         const tab = document.querySelector('[data-page-tab="attendance"]');
         if (tab && !tab.classList.contains('active')) tab.click();
-        window.setTimeout(() => $('dayPassRecordsSection')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 160);
+        showDayPassDialog({ reset: false });
+        window.setTimeout(() => $('dayPassDialog')?.querySelector('.day-pass-list-head')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 160);
     }
 
     function showDayPassDialog({ reset = true } = {}) {

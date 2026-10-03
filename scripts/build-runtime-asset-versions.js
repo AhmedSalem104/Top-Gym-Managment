@@ -8,6 +8,8 @@ const root = path.resolve(__dirname, '..');
 const indexPath = path.join(root, 'public', 'index.html');
 const manifestPath = path.join(root, 'public', 'js', 'core', 'feature-manifest.js');
 const saasAssetPath = path.join(root, 'public', 'js', 'pages', 'saas', 'saas.js');
+const attendanceScriptPath = path.join(root, 'public', 'js', 'pages', 'attendance', 'attendance.js');
+const attendanceStylePath = path.join(root, 'public', 'css', 'pages', 'attendance.css');
 
 function sha256File(filePath) {
     // Git checkouts may use CRLF on Windows and LF on Linux. Fingerprints must
@@ -26,20 +28,40 @@ function replaceExactlyOnce(source, pattern, replacement, description) {
     return output;
 }
 
+function fingerprintManifestAsset(manifest, assetUrl, version, expectedCount) {
+    const escapedUrl = assetUrl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const pattern = new RegExp(`(['"])${escapedUrl}(?:\\?v=[^'"]*)?\\1`, 'g');
+    let matches = 0;
+    const output = manifest.replace(pattern, (_match, quote) => {
+        matches += 1;
+        return `${quote}${assetUrl}?v=${version}${quote}`;
+    });
+    if (matches !== expectedCount) {
+        throw new Error(`Expected ${expectedCount} references to ${assetUrl}; found ${matches}.`);
+    }
+    return output;
+}
+
 function planRuntimeAssetVersions(projectRoot = root) {
     const resolvedIndexPath = path.join(projectRoot, 'public', 'index.html');
     const resolvedManifestPath = path.join(projectRoot, 'public', 'js', 'core', 'feature-manifest.js');
     const resolvedSaasAssetPath = path.join(projectRoot, 'public', 'js', 'pages', 'saas', 'saas.js');
+    const resolvedAttendanceScriptPath = path.join(projectRoot, 'public', 'js', 'pages', 'attendance', 'attendance.js');
+    const resolvedAttendanceStylePath = path.join(projectRoot, 'public', 'css', 'pages', 'attendance.css');
     const index = fs.readFileSync(resolvedIndexPath, 'utf8');
     const manifest = fs.readFileSync(resolvedManifestPath, 'utf8');
     const saasVersion = sha256File(resolvedSaasAssetPath);
+    const attendanceScriptVersion = sha256File(resolvedAttendanceScriptPath);
+    const attendanceStyleVersion = sha256File(resolvedAttendanceStylePath);
     const versionedManifest = replaceExactlyOnce(
         manifest,
         /(['"])\/js\/pages\/saas\/saas\.js(?:\?v=[^'"]*)?\1/g,
         (match, quote) => `${quote}/js/pages/saas/saas.js?v=${saasVersion}${quote}`,
         'SaaS feature asset URL'
     );
-    const manifestContent = versionedManifest.replace(/\r\n?/g, '\n');
+    const withAttendanceScript = fingerprintManifestAsset(versionedManifest, '/js/pages/attendance/attendance.js', attendanceScriptVersion, 2);
+    const withAttendanceStyle = fingerprintManifestAsset(withAttendanceScript, '/css/pages/attendance.css', attendanceStyleVersion, 2);
+    const manifestContent = withAttendanceStyle.replace(/\r\n?/g, '\n');
     const manifestVersion = crypto.createHash('sha256').update(manifestContent, 'utf8').digest('hex').slice(0, 16);
     const versionedIndex = replaceExactlyOnce(
         index,
@@ -54,10 +76,12 @@ function planRuntimeAssetVersions(projectRoot = root) {
         currentIndex: index,
         generatedIndex: versionedIndex,
         currentManifest: manifest,
-        generatedManifest: versionedManifest,
+        generatedManifest: withAttendanceStyle,
         saasVersion,
+        attendanceScriptVersion,
+        attendanceStyleVersion,
         manifestVersion,
-        stale: index !== versionedIndex || manifest !== versionedManifest
+        stale: index !== versionedIndex || manifest !== withAttendanceStyle
     };
 }
 
@@ -65,11 +89,11 @@ function run() {
     const plan = planRuntimeAssetVersions();
     if (process.argv.includes('--check')) {
         if (plan.stale) {
-            console.error('[ASSET-VERSION-STALE] Run npm run build to synchronize immutable SaaS asset URLs.');
+            console.error('[ASSET-VERSION-STALE] Run npm run build to synchronize immutable feature asset URLs.');
             process.exitCode = 1;
             return;
         }
-        console.log(`[ASSET-VERSION-OK] SaaS ${plan.saasVersion}; manifest ${plan.manifestVersion}`);
+        console.log(`[ASSET-VERSION-OK] SaaS ${plan.saasVersion}; attendance JS ${plan.attendanceScriptVersion}; attendance CSS ${plan.attendanceStyleVersion}; manifest ${plan.manifestVersion}`);
         return;
     }
 
@@ -77,7 +101,7 @@ function run() {
         fs.writeFileSync(plan.manifestPath, plan.generatedManifest, 'utf8');
         fs.writeFileSync(plan.indexPath, plan.generatedIndex, 'utf8');
     }
-    console.log(`[ASSET-VERSION-OK] SaaS ${plan.saasVersion}; manifest ${plan.manifestVersion}`);
+    console.log(`[ASSET-VERSION-OK] SaaS ${plan.saasVersion}; attendance JS ${plan.attendanceScriptVersion}; attendance CSS ${plan.attendanceStyleVersion}; manifest ${plan.manifestVersion}`);
 }
 
 if (require.main === module) run();

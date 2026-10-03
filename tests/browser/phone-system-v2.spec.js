@@ -65,7 +65,7 @@ function jsonResponse(route, payload, status = 200) {
 }
 
 async function installLocalMemberApi(page) {
-    const database = { members: [], nextId: 6101, createRequests: [], updateRequests: [], searchRequests: [] };
+    const database = { members: [], nextId: 6101, createRequests: [], updateRequests: [], searchRequests: [], attendanceRequests: [] };
 
     await page.route('**/api/**', async (route) => {
         const request = route.request();
@@ -91,6 +91,15 @@ async function installLocalMemberApi(page) {
         });
         if (pathname === '/api/bootstrap') return jsonResponse(route, { branches: [], sections: [], defaultBranch: null });
         if (pathname === '/api/dashboard') return jsonResponse(route, { stats: { total: database.members.length, active: database.members.length, expired: 0, expiringSoon: 0, frozen: 0 }, alerts: [] });
+        if (pathname === '/api/attendance' && request.method() === 'GET') return jsonResponse(route, { date: '2026-10-03', summary: { present: 0, checkedIn: 0, checkedOut: 0 }, records: [] });
+        if (pathname === '/api/attendance/check-in' && request.method() === 'POST') {
+            database.attendanceRequests.push({ action: 'check-in', body });
+            return jsonResponse(route, { message: 'تم تسجيل الحضور بنجاح' });
+        }
+        if (pathname === '/api/attendance/check-out' && request.method() === 'POST') {
+            database.attendanceRequests.push({ action: 'check-out', body });
+            return jsonResponse(route, { message: 'تم تسجيل الانصراف بنجاح' });
+        }
         if (pathname === '/api/saas/subscription') return jsonResponse(route, {});
 
         if (pathname === '/api/members' && request.method() === 'GET') {
@@ -332,7 +341,7 @@ test('member and today-attendance searches expose an in-field clear action', asy
 
 test('attendance workspace stays compact and overflow-free at supported viewports', async ({ page }, testInfo) => {
     await installLocalMemberApi(page);
-    await page.goto('/?members-popup-contract#members', { waitUntil: 'networkidle' });
+    await page.goto('/?members-popup-contract#attendance', { waitUntil: 'networkidle' });
 
     await page.locator('#attendanceSection').evaluate((section) => {
         section.hidden = false;
@@ -345,6 +354,7 @@ test('attendance workspace stays compact and overflow-free at supported viewport
         const summary = [...section.querySelectorAll('.attendance-summary-card')].map((card) => card.getBoundingClientRect());
         const listHead = section.querySelector('.attendance-list-head').getBoundingClientRect();
         const table = section.querySelector('.attendance-table-wrap').getBoundingClientRect();
+        const actionDisplays = [...section.querySelectorAll('.attendance-action-buttons > .btn')].map((button) => getComputedStyle(button).display);
         return {
             viewport: window.innerWidth,
             documentWidth: document.documentElement.scrollWidth,
@@ -356,7 +366,8 @@ test('attendance workspace stays compact and overflow-free at supported viewport
             summaryWidths: summary.map((box) => Math.round(box.width)),
             listHeadBottom: Math.round(listHead.bottom),
             tableTop: Math.round(table.top),
-            sectionBottom: Math.round(section.getBoundingClientRect().bottom)
+            sectionBottom: Math.round(section.getBoundingClientRect().bottom),
+            actionDisplays
         };
     });
 
@@ -367,6 +378,7 @@ test('attendance workspace stays compact and overflow-free at supported viewport
     if (metrics.viewport < 1200) expect(metrics.summaryTop).toBeLessThanOrEqual(metrics.entryTop);
     expect(metrics.tableTop - metrics.listHeadBottom).toBeLessThanOrEqual(2);
     expect(metrics.sectionBottom).toBeGreaterThan(metrics.tableTop);
+    expect(metrics.actionDisplays.every((display) => display === 'none')).toBeTruthy();
 
     await testInfo.attach(`attendance-${testInfo.project.name}.png`, {
         body: await page.screenshot({ fullPage: true }),
@@ -417,7 +429,7 @@ test('attendance workspace stays compact at the intermediate 1024px desktop widt
     });
 });
 
-test('attendance quick card uses the two-column member context only on large screens', async ({ page }, testInfo) => {
+test('attendance workspace keeps the identification and member summary as balanced surfaces', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'desktop', 'The desktop project owns the large-screen quick-card contract.');
     const database = await installLocalMemberApi(page);
     database.members.push({
@@ -428,10 +440,14 @@ test('attendance quick card uses the two-column member context only on large scr
         phoneCountry: 'EG',
         membership
     });
-    await page.goto('/?members-popup-contract#members', { waitUntil: 'networkidle' });
+    await page.goto('/?members-popup-contract#attendance', { waitUntil: 'networkidle' });
     await page.locator('#attendanceSection').evaluate((section) => { section.hidden = false; });
     await page.locator('#attendancePhone').fill('01015819700');
-    await page.waitForTimeout(500);
+    await expect(page.locator('#attendanceMemberPreview')).toBeVisible();
+    const memberLookupsBeforeClick = database.searchRequests.length;
+    await page.locator('.attendance-member-search-button').click();
+    await page.waitForTimeout(50);
+    expect(database.searchRequests).toHaveLength(memberLookupsBeforeClick);
 
     const largeScreen = await page.evaluate(() => {
         const card = document.querySelector('.attendance-entry-card');
@@ -442,10 +458,9 @@ test('attendance quick card uses the two-column member context only on large scr
         return {
             workspaceColumns: getComputedStyle(workspace).gridTemplateColumns,
             workspaceDisplay: getComputedStyle(workspace).display,
-            dividerBackground: getComputedStyle(memberContext, '::before').backgroundColor,
-            dividerWidth: getComputedStyle(memberContext, '::before').width,
-            buttonHeights: buttons.map((button) => Math.round(button.getBoundingClientRect().height)),
-            infoGridColumn: getComputedStyle(info).gridColumn,
+            contextBorder: getComputedStyle(memberContext).borderTopWidth,
+            visibleActions: buttons.filter((button) => getComputedStyle(button).display !== 'none').map((button) => ({ height: Math.round(button.getBoundingClientRect().height), label: button.textContent.trim() })),
+            infoInsideIdentification: info?.parentElement?.classList.contains('attendance-entry-input'),
             phoneId: document.getElementById('attendancePhone')?.id,
             checkInId: document.getElementById('attendanceCheckInButton')?.id,
             checkOutId: document.getElementById('attendanceCheckOutButton')?.id
@@ -454,10 +469,11 @@ test('attendance quick card uses the two-column member context only on large scr
 
     expect(largeScreen.workspaceDisplay).toBe('grid');
     expect(largeScreen.workspaceColumns.split(' ').length).toBe(2);
-    expect(largeScreen.dividerBackground).not.toBe('rgba(0, 0, 0, 0)');
-    expect(largeScreen.dividerWidth).toBe('1px');
-    expect(largeScreen.buttonHeights.every((height) => height >= 48 && height <= 56)).toBeTruthy();
-    expect(largeScreen.infoGridColumn).toBe('1 / -1');
+    expect(largeScreen.contextBorder).toBe('1px');
+    expect(largeScreen.visibleActions).toHaveLength(1);
+    expect(largeScreen.visibleActions[0].height).toBeGreaterThanOrEqual(48);
+    expect(largeScreen.visibleActions[0].label).toContain('تسجيل حضور');
+    expect(largeScreen.infoInsideIdentification).toBe(true);
     expect(largeScreen.phoneId).toBe('attendancePhone');
     expect(largeScreen.checkInId).toBe('attendanceCheckInButton');
     expect(largeScreen.checkOutId).toBe('attendanceCheckOutButton');
@@ -476,22 +492,26 @@ test('attendance quick card uses the two-column member context only on large scr
         return {
             workspaceDisplay: getComputedStyle(workspace).display,
             modePosition: getComputedStyle(mode).position,
-            buttonHeights: buttons.map((button) => Math.round(button.getBoundingClientRect().height))
+            visibleActions: buttons.filter((button) => getComputedStyle(button).display !== 'none').map((button) => Math.round(button.getBoundingClientRect().height))
         };
     });
 
-    expect(tablet.workspaceDisplay).toBe('contents');
-    expect(tablet.modePosition).toBe('absolute');
-    expect(tablet.buttonHeights.every((height) => height >= 44 && height <= 50)).toBeTruthy();
+    expect(tablet.workspaceDisplay).toBe('grid');
+    expect(tablet.modePosition).toBe('static');
+    expect(tablet.visibleActions).toHaveLength(1);
+    expect(tablet.visibleActions[0]).toBeGreaterThanOrEqual(44);
 
     for (const [width, height] of [[390, 844], [320, 568]]) {
         await page.setViewportSize({ width, height });
+        await page.locator('#attendancePhone').fill('01015819700');
+        await page.waitForTimeout(450);
         const mobile = await page.evaluate(() => ({
             documentWidth: document.documentElement.scrollWidth,
             bodyWidth: document.body.scrollWidth,
             phoneValue: document.getElementById('attendancePhone')?.value,
+            phoneControlWidth: Math.round(document.querySelector('.attendance-section .phone-number-control')?.getBoundingClientRect().width || 0),
             previewHeight: Math.round(document.querySelector('#attendanceMemberPreview').getBoundingClientRect().height),
-            actionHeights: [...document.querySelectorAll('.attendance-action-buttons > .btn')].map((button) => Math.round(button.getBoundingClientRect().height)),
+            actionHeights: [...document.querySelectorAll('.attendance-action-buttons > .btn')].map((button) => Math.round(parseFloat(getComputedStyle(button).minHeight) || 0)),
             iconRect: (() => {
                 const icon = document.querySelector('.phone-number-icon');
                 const input = document.querySelector('.phone-number-control');
@@ -503,6 +523,7 @@ test('attendance quick card uses the two-column member context only on large scr
         }));
         expect(mobile.documentWidth).toBeLessThanOrEqual(width + 1);
         expect(mobile.bodyWidth).toBeLessThanOrEqual(width + 1);
+        expect(mobile.phoneControlWidth).toBeGreaterThan(width - 105);
         expect(mobile.phoneValue).toBe('010 15819700');
         expect(mobile.previewHeight).toBeGreaterThan(120);
         expect(mobile.actionHeights.every((item) => item >= 44)).toBeTruthy();
@@ -511,20 +532,96 @@ test('attendance quick card uses the two-column member context only on large scr
     }
 });
 
-test('attendance log uses readable mobile cards without changing the desktop table contract', async ({ page }, testInfo) => {
+test('attendance check-in keeps the existing API flow and gives immediate success feedback', async ({ page }) => {
+    const database = await installLocalMemberApi(page);
+    database.members.push({
+        id: 6101,
+        fullName: 'عضو اختبار الحضور',
+        phone: '+201015819700',
+        phoneNormalized: '+201015819700',
+        phoneCountry: 'EG',
+        membership
+    });
+    await page.goto('/?members-popup-contract#attendance', { waitUntil: 'networkidle' });
+    await page.locator('#attendancePhone').fill('01015819700');
+    await expect(page.locator('#attendanceMemberPreview')).toBeVisible();
+    const checkIn = page.locator('#attendanceCheckInButton');
+    await expect(checkIn).toBeVisible();
+    const request = page.waitForRequest((item) => item.url().endsWith('/api/attendance/check-in') && item.method() === 'POST');
+    await checkIn.click();
+    await request;
+    await expect(page.locator('#toast')).toContainText('تم تسجيل حضور عضو اختبار الحضور بنجاح');
+    expect(database.attendanceRequests).toHaveLength(1);
+    expect(database.attendanceRequests[0]).toMatchObject({ action: 'check-in', body: { phone: '+201015819700' } });
+    await expect(page.locator('.swal2-container')).toHaveCount(0);
+});
+
+test('attendance check-out is the single primary action for a member already inside', async ({ page }) => {
+    const database = await installLocalMemberApi(page);
+    database.members.push({
+        id: 6102,
+        fullName: 'عضو حضور داخل الجيم',
+        phone: '+201015819701',
+        phoneNormalized: '+201015819701',
+        phoneCountry: 'EG',
+        attendance: { checkInAt: '2026-10-03T09:15:00.000Z', checkOutAt: null },
+        membership
+    });
+    await page.goto('/?members-popup-contract#attendance', { waitUntil: 'networkidle' });
+    await page.locator('#attendancePhone').fill('01015819701');
+    await expect(page.locator('#attendanceMemberPreview')).toBeVisible();
+    await expect(page.locator('#attendanceCheckInButton')).toBeHidden();
+    const checkOut = page.locator('#attendanceCheckOutButton');
+    await expect(checkOut).toBeVisible();
+    const request = page.waitForRequest((item) => item.url().endsWith('/api/attendance/check-out') && item.method() === 'POST');
+    await checkOut.click();
+    await request;
+    expect(database.attendanceRequests).toHaveLength(1);
+    expect(database.attendanceRequests[0]).toMatchObject({ action: 'check-out', body: { phone: '+201015819701' } });
+    await expect(page.locator('#toast')).toContainText('عضو حضور داخل الجيم');
+    await expect(page.locator('.swal2-container')).toHaveCount(0);
+});
+
+test('attendance QR mode opens the existing scanner and returns to phone mode on close', async ({ page }) => {
+    await installLocalMemberApi(page);
+    await page.goto('/?members-popup-contract#attendance', { waitUntil: 'networkidle' });
+    await page.evaluate(() => {
+        window.topGymLoadExternalAsset = async (name) => {
+            if (name !== 'html5-qrcode') throw new Error('Unexpected external asset');
+            window.Html5Qrcode = class {
+                async start() {}
+                async stop() {}
+                clear() {}
+            };
+        };
+    });
+    await page.locator('#attendanceScanButton').click();
+    await expect(page.locator('#qrReaderDialog')).toBeVisible();
+    await expect(page.locator('#attendancePhoneModePanel')).toBeHidden();
+    await page.locator('#qrReaderDialog [data-dialog-close]').click();
+    await expect(page.locator('#qrReaderDialog')).toBeHidden();
+    await expect(page.locator('#attendancePhoneModePanel')).toBeVisible();
+    await page.locator('#attendanceScanButton').click();
+    await expect(page.locator('#qrReaderDialog')).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(page.locator('#qrReaderDialog')).toBeHidden();
+    await expect(page.locator('#attendancePhoneModePanel')).toBeVisible();
+});
+
+test('attendance log uses readable labeled mobile records without changing the desktop table contract', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'desktop', 'The desktop project owns the full responsive screenshot matrix.');
     await installLocalMemberApi(page);
-    await page.goto('/?members-popup-contract#members', { waitUntil: 'networkidle' });
+    await page.goto('/?members-popup-contract#attendance', { waitUntil: 'networkidle' });
 
     const recordTable = `
         <table class="attendance-table">
-            <thead><tr><th>العضو</th><th>الباقة</th><th>الحضور</th><th>الانصراف</th><th>المدة</th><th>المصدر</th><th>الحالة</th><th>الإجراءات</th></tr></thead>
+            <thead><tr><th>العضو</th><th>الهاتف</th><th>وقت الدخول</th><th>وقت الخروج</th><th>المدة</th><th>الحالة</th><th>الإجراء</th></tr></thead>
             <tbody><tr>
-                <td><strong class="attendance-member-name">أحمد محمد</strong><span class="attendance-member-phone">01015819700</span></td>
-                <td>شهري</td><td>09:15</td><td>—</td><td>01:20</td>
-                <td><span class="attendance-source phone">هاتف</span></td>
-                <td><span class="attendance-status">داخل الجيم</span></td>
-                <td><div class="attendance-row-actions"><button class="btn btn-small">تسجيل انصراف</button></div></td>
+                <td data-label="العضو"><strong class="attendance-member-name">أحمد محمد</strong></td>
+                <td data-label="الهاتف"><span class="attendance-member-phone">01015819700</span></td>
+                <td data-label="وقت الدخول">09:15</td><td data-label="وقت الخروج">—</td><td data-label="المدة">01:20</td>
+                <td data-label="الحالة"><span class="attendance-status">داخل الجيم</span></td>
+                <td data-label="الإجراء" class="attendance-row-actions"><button class="btn btn-small">تسجيل انصراف</button></td>
             </tr></tbody>
         </table>`;
 
@@ -532,6 +629,10 @@ test('attendance log uses readable mobile cards without changing the desktop tab
         section.hidden = false;
         section.querySelector('#attendanceTableWrap').innerHTML = table;
     }, recordTable);
+    await page.evaluate(() => {
+        document.documentElement.setAttribute('data-theme', 'dark');
+        document.body.setAttribute('data-theme', 'dark');
+    });
     await expect(page.locator('#attendanceTableWrap table')).toHaveClass(/table-card-layout/);
 
     const viewports = [
@@ -553,8 +654,8 @@ test('attendance log uses readable mobile cards without changing the desktop tab
                 tableDisplay: getComputedStyle(table).display,
                 headDisplay: getComputedStyle(table.tHead).display,
                 rowDisplay: getComputedStyle(row).display,
-                packageDisplay: getComputedStyle(row.cells[1]).display,
-                sourceDisplay: getComputedStyle(row.cells[5]).display,
+                phoneDisplay: getComputedStyle(row.cells[1]).display,
+                statusDisplay: getComputedStyle(row.cells[5]).display,
                 actionHeight: Math.round(actions.getBoundingClientRect().height)
             };
         });
@@ -565,8 +666,8 @@ test('attendance log uses readable mobile cards without changing the desktop tab
             expect(metrics.tableDisplay).toBe('block');
             expect(metrics.headDisplay).toBe('none');
             expect(metrics.rowDisplay).toBe('grid');
-            expect(metrics.packageDisplay).toBe('none');
-            expect(metrics.sourceDisplay).toBe('none');
+            expect(metrics.phoneDisplay).not.toBe('none');
+            expect(metrics.statusDisplay).not.toBe('none');
             expect(metrics.actionHeight).toBeGreaterThanOrEqual(44);
         } else {
             expect(metrics.tableDisplay).toBe('table');
@@ -581,9 +682,12 @@ test('attendance log uses readable mobile cards without changing the desktop tab
         });
     }
 
-    for (const [width, height] of [[1440, 900], [390, 844], [320, 568]]) {
+    for (const [width, height] of [[1440, 900], [1024, 768], [768, 900], [390, 844], [320, 568]]) {
         await page.setViewportSize({ width, height });
-        await page.evaluate(() => document.documentElement.setAttribute('data-theme', 'light'));
+        await page.evaluate(() => {
+            document.documentElement.setAttribute('data-theme', 'light');
+            document.body.setAttribute('data-theme', 'light');
+        });
         await page.screenshot({ path: `qa/artifacts/attendance-responsive-${width}-light.png`, fullPage: true });
         await testInfo.attach(`attendance-record-${width}-light.png`, {
             body: await page.screenshot({ fullPage: true }),
@@ -592,9 +696,24 @@ test('attendance log uses readable mobile cards without changing the desktop tab
     }
 });
 
+test('day-pass records stay inside their dialog and are not mounted in attendance', async ({ page }) => {
+    await installLocalMemberApi(page);
+    await page.goto('/?members-popup-contract#attendance', { waitUntil: 'networkidle' });
+    const state = await page.evaluate(() => ({
+        injectedAttendanceRecords: Boolean(document.getElementById('dayPassRecordsSection')),
+        dayPassTableInDialog: document.querySelector('#dayPassDialog #dayPassPanel .day-pass-table-wrap') !== null,
+        attendanceContainsOldHeading: [...document.querySelectorAll('#attendanceSection h1,#attendanceSection h2,#attendanceSection h3,#attendanceSection h4')].some((heading) => heading.textContent.trim() === 'سجل حصص اليوم' && heading.getClientRects().length > 0),
+        dayPassPanelParent: document.getElementById('dayPassPanel')?.parentElement?.id || ''
+    }));
+    expect(state.injectedAttendanceRecords).toBe(false);
+    expect(state.dayPassTableInDialog).toBe(true);
+    expect(state.attendanceContainsOldHeading).toBe(false);
+    expect(state.dayPassPanelParent).toBe('dayPassDialog');
+});
+
 test('authenticated shell reveals without a dimmed or overlapping first-login state', async ({ page }) => {
     await installLocalMemberApi(page);
-    await page.goto('/?members-popup-contract#members', { waitUntil: 'networkidle' });
+    await page.goto('/?members-popup-contract#attendance', { waitUntil: 'networkidle' });
     await expect(page.locator('.app-shell')).toBeVisible();
 
     const state = await page.evaluate(() => ({
