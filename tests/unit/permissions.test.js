@@ -33,6 +33,17 @@ test('Assistant read-only permissions allow GET and reject writes', () => {
     assert.equal(canAccessRoleRequest(user, { path: '/members', method: 'POST' }), false);
 });
 
+test('digital attendance QR issue and resolution require tenant read scopes', () => {
+    const issue = { path: '/attendance/qr/7', method: 'GET' };
+    const resolve = { path: '/attendance/resolve-qr', method: 'POST' };
+    const expected = ['attendance.read', 'members.read', 'memberships.read'];
+    for (const request of [issue, resolve]) {
+        assert.deepEqual(permissionForRequest(request).all, expected);
+        assert.equal(canAccessRoleRequest({ role: 'Assistant', permissions: expected }, request), true);
+        assert.equal(canAccessRoleRequest({ role: 'Assistant', permissions: expected.slice(0, 2) }, request), false);
+    }
+});
+
 test('member registration is available with members.create while paid onboarding stays financial-permission protected', () => {
     const unpaidRequest = {
         path: '/members',

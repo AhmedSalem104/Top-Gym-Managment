@@ -6,6 +6,8 @@ Staff authentication uses scrypt password verification, random server-side sessi
 
 Member Portal uses a separate membership-code HMAC lookup and portal session secret/ring. Raw codes are not logged; encrypted owner-reveal material and audit rows are stored for controlled owner flows.
 
+Gym staff digital cards use a distinct `LFQR1` attendance identity token. It is authenticated-encrypted with a key derived for this protocol from the configured membership-code secret ring; it contains no readable IDs and is not a membership-portal bearer credential. `GET /api/attendance/qr/:id` and `POST /api/attendance/resolve-qr` require `attendance.read`, `members.read`, and `memberships.read`; both issuance and resolution validate `tenant_id = currentTenantId`, and the resolve response returns no token or storage reference. Check-in/out independently resolve the token and revalidate tenant, membership, freeze, branch, section, duplicate, and current-state rules. Tenant branding uses only the published tenant identity and same-origin asset path; missing logo falls back to tenant initials, never platform branding.
+
 ## Mobile threat model
 
 Threats include stolen device, rooted/jailbroken device, token theft, replay, tenant/branch ID tampering, stale entitlement cache, deep-link injection, malicious uploads, PII leakage in logs/screenshots, network interception, notification previews, and offline database extraction.

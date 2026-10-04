@@ -2,7 +2,7 @@
 
 ## Inventory method and completeness
 
-The inventory was extracted from the executable route registrations under `src/routes/` and cross-checked against `src/routes/index.js`, `docs/API.md`, controllers, frontend API calls, and tests. It contains **351 route declarations across 29 route modules**. A declaration is counted once by method and path; compatibility namespaces are retained because they are real current routes.
+The inventory was extracted from the executable route registrations under `src/routes/` and cross-checked against `src/routes/index.js`, `docs/API.md`, controllers, frontend API calls, and tests. It contains **353 route declarations across 29 route modules**. A declaration is counted once by method and path; compatibility namespaces are retained because they are real current routes.
 
 The route modules are the authoritative endpoint list. Shared middleware applies authentication, same-origin, tenant context, permission, capability, subscription, rate-limit, read-only, and branch/section checks; the specific service/controller is the source for request and response fields.
 
@@ -25,7 +25,7 @@ The following index accounts for every declaration. The count is the source-deri
 
 | Module/source | Count | Endpoint families |
 | --- | ---: | --- |
-| `attendance.routes.js` | 5 | attendance list/report/member/check-in/check-out |
+| `attendance.routes.js` | 7 | attendance list/report/member/issue QR/resolve QR/check-in/check-out |
 | `auth.routes.js` | 17 | web session/login/logout/password/users/permissions plus mobile login/refresh/session/logout |
 | `backup.routes.js` | 12 | status/history/daily/records/archives/download/inspect/restore |
 | `bar.routes.js` | 10 | menu/modifiers/recipes/sales/shifts/waste |
@@ -65,7 +65,7 @@ The full method/path declarations are in the listed route modules; the following
 | Auth/team | `auth.routes.js`, `auth-service.js` | staff session/Owner for team | web cookie contract plus mobile login/refresh/session/logout bearer contract; assistant users and permissions remain server-authorized | READY |
 | Bootstrap | `dashboard.routes.js`, `branch-service.js`, `saas-service.js` | staff tenant | current user, tenant, entitlements, branch context, dashboard seed | READY_WITH_CLIENT_ADAPTATION |
 | Gym members/memberships | `members.routes.js`, `member-service.js`, `member-subscription-service.js` | tenant + branch/section where applicable + permission | list/detail/create/update/freeze/renew/refund/membership/payment/code | READY_WITH_CLIENT_ADAPTATION |
-| Attendance | `attendance.routes.js`, `attendance-service.js` | Gym tenant + branch/section | today/report/member/check-in/out | READY_WITH_CLIENT_ADAPTATION |
+| Attendance | `attendance.routes.js`, `attendance-service.js`, `attendance-qr-token-service.js` | Gym tenant + branch/section | today/report/member/issue-opaque-QR/resolve-QR/check-in/out | READY_WITH_CLIENT_ADAPTATION |
 | Day passes | `day-pass.routes.js`, `day-pass-service.js` | Gym tenant + Owner/Assistant permission | list/summary/pricing/create/update/void | READY_WITH_CLIENT_ADAPTATION |
 | Finance | `finance.routes.js`, `finance-service.js`, `financial-ledger-service.js` | Gym tenant + finance permission | expenses/monthly finance and ledger-scoped reporting | READY_WITH_CLIENT_ADAPTATION |
 | Coaching/nutrition | `coaching.routes.js`, `coaching-service.js` | tenant feature + coaching permission | client plans, workouts, diet, measurements/check-ins/session logs | READY_WITH_CLIENT_ADAPTATION |
@@ -102,6 +102,8 @@ The following table is the machine-extracted method/path index used for the comp
 | GET | `/api/attendance` | `src/routes/attendance.routes.js` |
 | GET | `/api/attendance/report` | `src/routes/attendance.routes.js` |
 | GET | `/api/attendance/member/:id` | `src/routes/attendance.routes.js` |
+| GET | `/api/attendance/qr/:id` | `src/routes/attendance.routes.js` |
+| POST | `/api/attendance/resolve-qr` | `src/routes/attendance.routes.js` |
 | POST | `/api/attendance/check-in` | `src/routes/attendance.routes.js` |
 | POST | `/api/attendance/check-out` | `src/routes/attendance.routes.js` |
 | GET | `/api/auth/session` | `src/routes/auth.routes.js` |

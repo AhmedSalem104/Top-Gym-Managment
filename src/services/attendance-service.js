@@ -2,6 +2,7 @@ const { getPool, sql } = require('../database');
 const { addDays, differenceInDays, formatDateOnly, parseDateOnly, todayInTimeZone, toUtcDate } = require('../utils/date');
 const { config } = require('../config/env');
 const { currentTenantId, getTenantContext } = require('../tenancy/tenant-context');
+const attendanceQrTokenService = require('./attendance-qr-token-service');
 const { publish, publishForRoles } = require('./notification-dispatcher');
 const {
     normalizeEgyptianMobile,
@@ -215,7 +216,12 @@ function parseQrToken(value) {
 }
 
 async function findMember(pool, body = {}, { requireActive = true, branchId = null, sectionId = null } = {}) {
-    const qrMemberId = parseQrToken(body.qrToken ?? body.token);
+    const rawQrToken = body.qrToken ?? body.token;
+    let qrMemberId = parseQrToken(rawQrToken);
+    if (!qrMemberId && String(rawQrToken || '').trim().startsWith('LFQR1.')) {
+        qrMemberId = await attendanceQrTokenService.resolveForCurrentTenant(rawQrToken);
+        if (!qrMemberId) throw appError('Ù„Ù… ÙŠØªÙ… Ø§Ù„Ø¹Ø«ÙˆØ± Ø¹Ù„Ù‰ Ù…Ø´ØªØ±Ùƒ Ø¨Ù‡Ø°Ø§ Ø§Ù„Ø±Ù…Ø².', 404, 'ATTENDANCE_MEMBER_NOT_FOUND');
+    }
     const phone = qrMemberId ? null : normalizeEgyptianMobile(body.phone, {
         required: false,
         fieldName: 'Phone number'
@@ -482,6 +488,36 @@ async function getMemberAttendanceStatuses(memberIds = [], date = todayInTimeZon
     return new Map(rows.map((row) => [Number(row.member_id), mapAttendance(row)]));
 }
 
+async function resolveQrMember(qrToken, { branchId = null, sectionId = null } = {}) {
+    await ensureAttendanceTable({ readOnly: true });
+    const pool = await getPool();
+    const resolved = await findMember(pool, { qrToken }, { requireActive: false, branchId, sectionId });
+    const attendance = await getAttendanceRecordForDate(pool, resolved.member.id, resolved.today, branchId, sectionId);
+    const membership = resolved.membership;
+    let status = 'expired';
+    if (membership && Number(membership.is_frozen)) status = 'frozen';
+    else if (membership && formatDateOnly(membership.start_date) <= resolved.today && formatDateOnly(membership.end_date) >= resolved.today) status = 'active';
+    return {
+        member: {
+            id: Number(resolved.member.id),
+            fullName: resolved.member.full_name,
+            phone: resolved.member.phone,
+            membership: membership ? {
+                plan: membership.membership_plan,
+                type: membership.membership_type,
+                startDate: formatDateOnly(membership.start_date),
+                endDate: formatDateOnly(membership.end_date),
+                status
+            } : null
+        },
+        attendance: attendance ? { inside: !attendance.checkOutAt, checkedOut: Boolean(attendance.checkOutAt) } : null
+    };
+}
+
+async function getMemberQrToken(memberId) {
+    return attendanceQrTokenService.getForMember(memberId);
+}
+
 async function checkIn(body = {}, { branchId = null, sectionId = null } = {}) {
     await ensureAttendanceTable();
     const pool = await getPool();
@@ -698,5 +734,7 @@ module.exports = {
     getMemberAttendanceStatuses,
     getMemberAttendance,
     getTodayAttendance,
-    reconcileAutoCheckout
+    reconcileAutoCheckout,
+    resolveQrMember,
+    getMemberQrToken
 };

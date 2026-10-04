@@ -40,7 +40,7 @@ This document records current behavior as rules, not UI labels. Sources are list
 
 ## Attendance and day passes
 
-- Attendance check-in/out is tenant/branch/section scoped and permission-protected; scheduled auto-checkout is a separate server job.
+- Attendance check-in/out is tenant/branch/section scoped and permission-protected; scheduled auto-checkout is a separate server job. Authorized staff issue an opaque QR with `GET /api/attendance/qr/:id` and may resolve it with `POST /api/attendance/resolve-qr` (`attendance.read`, `members.read`, `memberships.read`) to obtain minimal member/membership and today's inside/checkout state. New `LFQR1` tokens are authenticated-encrypted with a purpose-derived key, contain no readable identifiers, and are distinct from member-portal bearer codes. The server checks tenant ownership at issuance and resolution; check-in/out independently resolves the same token and enforces current membership, branch, section, duplicate-visit, and freeze rules. Legacy numeric attendance QR formats remain accepted for compatibility; new digital cards never use them.
 - Day passes have pricing/list/summary/create/update/void and WhatsApp-opened state; writes are Gym-scoped and permission-checked.
 
 ## Trainer rules
@@ -65,6 +65,7 @@ This document records current behavior as rules, not UI labels. Sources are list
 
 - Uploads require validated type/size/signature and private storage; mobile must use multipart/approved upload contracts, not public filesystem assumptions.
 - WhatsApp behavior is link/template rendering and audited open/send-related state; no server-side WhatsApp provider contract is inferred from a browser link.
+- Gym-member digital cards are generated client-side on authorized staff action from tenant-published branding and authorized member data. The QR is a stable, encrypted `LFQR1` attendance identity token, distinct from membership-portal codes; it contains no readable member/tenant ID and grants no access. The backend resolves it only inside the authenticated tenant, then independently enforces current membership, branch/section, freeze, and attendance rules on each mutation. Opening a WhatsApp share target is not evidence a message or image was sent. Gym member phone create/update validation remains Egypt-first even though the shared phone library and WhatsApp normalization can handle valid international E.164 values.
 - Staff and member notifications are tenant/recipient scoped; read state is explicit and notification tables avoid SQL Server multiple cascade paths.
 
 ## Atomicity/idempotency

@@ -613,10 +613,10 @@
                     if (detailsAction) detailsAction.insertAdjacentHTML('afterend', coachingActions);
                     else tableActions.insertAdjacentHTML('afterbegin', coachingActions);
                 }
-                if (tableActions && !tableActions.querySelector('[data-action="qr"]')) {
+                if (hasRequiredPermissions('members.read,memberships.read,attendance.read') && tableActions && !tableActions.querySelector('[data-action="qr"]')) {
                     const menuPanel = tableActions.querySelector('.action-menu-panel');
                     if (menuPanel) {
-                        menuPanel.insertAdjacentHTML('beforeend', `<button class="action-menu-item" type="button" data-action="qr" data-required-permission="members.read,memberships.read" data-id="${member.id}" aria-label="${ACTION_LABELS.qr}" title="${ACTION_LABELS.qr}">${actionIcon('qr')}<span>${escapeHtml(ACTION_LABELS.qr)}</span></button>`);
+                        menuPanel.insertAdjacentHTML('beforeend', `<button class="action-menu-item" type="button" data-action="qr" data-required-permission="members.read,memberships.read,attendance.read" data-id="${member.id}" aria-label="${ACTION_LABELS.qr}" title="${ACTION_LABELS.qr}">${actionIcon('qr')}<span>${escapeHtml(ACTION_LABELS.qr)}</span></button>`);
                     } else {
                         tableActions.insertAdjacentHTML('beforeend', actionButton('qr', member.id));
                     }
@@ -1266,12 +1266,18 @@
             try {
                 const saved = await withLoader(() => api(id ? `/api/members/${id}` : '/api/members', { method: id ? 'PUT' : 'POST', body: JSON.stringify(body) }), `جاري حفظ بيانات ${brandName()}…`);
                 setFormDefaults(true);
+                if (!id) {
+                    window.dispatchEvent(new CustomEvent('topgym:member-created', { detail: { member: saved?.member || saved, payload: body, membershipCode: saved?.membershipCode || saved?.member?.membershipCode || null, portalUrl: saved?.membershipCodePortalUrl || saved?.member?.membershipCodePortalUrl || null, whatsappWindow, sendWhatsApp: shouldSendWhatsApp, isNew: true, labels: { plan: planLabel(body.membershipPlan), type: typeLabel(body.membershipType), payment: PAYMENT_LABELS[body.paymentMethod] || body.paymentMethod } } }));
+                    void notify('تمت إضافة العضو بنجاح.', 'success');
+                    void loadData().catch(() => notify('تم إنشاء العضو، لكن تعذر تحديث القائمة الآن.', 'warning'));
+                    return;
+                }
                 if (shouldSendWhatsApp) {
                     await loadData();
                     window.dispatchEvent(new CustomEvent('topgym:member-created', { detail: { member: saved?.member || saved, payload: body, membershipCode: saved?.membershipCode || saved?.member?.membershipCode || null, portalUrl: saved?.membershipCodePortalUrl || saved?.member?.membershipCodePortalUrl || null, whatsappWindow, sendWhatsApp: true, isNew: !id, labels: { plan: planLabel(body.membershipPlan), type: typeLabel(body.membershipType), payment: PAYMENT_LABELS[body.paymentMethod] || body.paymentMethod } } }));
                 } else {
                     await refreshAfterAction(id ? 'تم حفظ تعديلات العضو.' : 'تمت إضافة العضو بنجاح.');
-                    if (!id) window.dispatchEvent(new CustomEvent('topgym:member-created', { detail: { member: saved?.member || saved, payload: body, sendWhatsApp: false, isNew: true } }));
+                    if (!id) window.dispatchEvent(new CustomEvent('topgym:member-created', { detail: { member: saved?.member || saved, payload: body, membershipCode: saved?.membershipCode || saved?.member?.membershipCode || null, portalUrl: saved?.membershipCodePortalUrl || saved?.member?.membershipCodePortalUrl || null, whatsappWindow: null, sendWhatsApp: false, isNew: true } }));
                 }
             } catch (error) {
                 window.topGymWhatsapp?.closeWindow(whatsappWindow);

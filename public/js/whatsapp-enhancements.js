@@ -233,7 +233,15 @@
         } finally { if (button) button.disabled = false; }
     }
 
-    window.topGymWhatsapp = { prepareWindow: prepareWhatsappWindow, closeWindow: closeWhatsappWindow, sendAlert: sendAlertWhatsapp, sendMembershipPortalInvite, sendMembershipFreezeNotice };
+    window.topGymWhatsapp = Object.freeze({
+        normalizePhone,
+        prepareWindow: prepareWhatsappWindow,
+        closeWindow: closeWhatsappWindow,
+        openMessage: openWhatsappChat,
+        sendAlert: sendAlertWhatsapp,
+        sendMembershipPortalInvite,
+        sendMembershipFreezeNotice
+    });
     window.addEventListener('topgym:member-created', (event) => { if (event.detail?.sendWhatsApp) void sendWhatsappMessage(event.detail); });
     document.addEventListener('click', (event) => {
         const button = event.target.closest('[data-alert-whatsapp]');

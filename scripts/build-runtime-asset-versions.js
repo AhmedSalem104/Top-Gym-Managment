@@ -10,6 +10,8 @@ const manifestPath = path.join(root, 'public', 'js', 'core', 'feature-manifest.j
 const saasAssetPath = path.join(root, 'public', 'js', 'pages', 'saas', 'saas.js');
 const attendanceScriptPath = path.join(root, 'public', 'js', 'pages', 'attendance', 'attendance.js');
 const attendanceStylePath = path.join(root, 'public', 'css', 'pages', 'attendance.css');
+const memberCardScriptPath = path.join(root, 'public', 'js', 'member-digital-card.js');
+const memberCardStylePath = path.join(root, 'public', 'css', 'components', 'member-digital-card.css');
 
 function sha256File(filePath) {
     // Git checkouts may use CRLF on Windows and LF on Linux. Fingerprints must
@@ -48,11 +50,15 @@ function planRuntimeAssetVersions(projectRoot = root) {
     const resolvedSaasAssetPath = path.join(projectRoot, 'public', 'js', 'pages', 'saas', 'saas.js');
     const resolvedAttendanceScriptPath = path.join(projectRoot, 'public', 'js', 'pages', 'attendance', 'attendance.js');
     const resolvedAttendanceStylePath = path.join(projectRoot, 'public', 'css', 'pages', 'attendance.css');
+    const resolvedMemberCardScriptPath = path.join(projectRoot, 'public', 'js', 'member-digital-card.js');
+    const resolvedMemberCardStylePath = path.join(projectRoot, 'public', 'css', 'components', 'member-digital-card.css');
     const index = fs.readFileSync(resolvedIndexPath, 'utf8');
     const manifest = fs.readFileSync(resolvedManifestPath, 'utf8');
     const saasVersion = sha256File(resolvedSaasAssetPath);
     const attendanceScriptVersion = sha256File(resolvedAttendanceScriptPath);
     const attendanceStyleVersion = sha256File(resolvedAttendanceStylePath);
+    const memberCardScriptVersion = sha256File(resolvedMemberCardScriptPath);
+    const memberCardStyleVersion = sha256File(resolvedMemberCardStylePath);
     const versionedManifest = replaceExactlyOnce(
         manifest,
         /(['"])\/js\/pages\/saas\/saas\.js(?:\?v=[^'"]*)?\1/g,
@@ -61,7 +67,9 @@ function planRuntimeAssetVersions(projectRoot = root) {
     );
     const withAttendanceScript = fingerprintManifestAsset(versionedManifest, '/js/pages/attendance/attendance.js', attendanceScriptVersion, 2);
     const withAttendanceStyle = fingerprintManifestAsset(withAttendanceScript, '/css/pages/attendance.css', attendanceStyleVersion, 2);
-    const manifestContent = withAttendanceStyle.replace(/\r\n?/g, '\n');
+    const withMemberCardScript = fingerprintManifestAsset(withAttendanceStyle, '/js/member-digital-card.js', memberCardScriptVersion, 3);
+    const withMemberCardStyle = fingerprintManifestAsset(withMemberCardScript, '/css/components/member-digital-card.css', memberCardStyleVersion, 3);
+    const manifestContent = withMemberCardStyle.replace(/\r\n?/g, '\n');
     const manifestVersion = crypto.createHash('sha256').update(manifestContent, 'utf8').digest('hex').slice(0, 16);
     const versionedIndex = replaceExactlyOnce(
         index,
@@ -76,12 +84,14 @@ function planRuntimeAssetVersions(projectRoot = root) {
         currentIndex: index,
         generatedIndex: versionedIndex,
         currentManifest: manifest,
-        generatedManifest: withAttendanceStyle,
+        generatedManifest: withMemberCardStyle,
         saasVersion,
         attendanceScriptVersion,
         attendanceStyleVersion,
+        memberCardScriptVersion,
+        memberCardStyleVersion,
         manifestVersion,
-        stale: index !== versionedIndex || manifest !== withAttendanceStyle
+        stale: index !== versionedIndex || manifest !== withMemberCardStyle
     };
 }
 

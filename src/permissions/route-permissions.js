@@ -142,6 +142,8 @@ const ROUTE_PERMISSION_RULES = Object.freeze([
 
     { pattern: /^\/attendance\/report$/, methods: ['GET'], all: [PERMISSIONS.ATTENDANCE_REPORT] },
     { pattern: /^\/attendance\/member\/\d+$/, methods: ['GET'], all: [PERMISSIONS.ATTENDANCE_READ] },
+    { pattern: /^\/attendance\/resolve-qr$/, methods: ['POST'], all: [PERMISSIONS.ATTENDANCE_READ, PERMISSIONS.MEMBERS_READ, PERMISSIONS.MEMBERSHIPS_READ] },
+    { pattern: /^\/attendance\/qr\/\d+$/, methods: ['GET'], all: [PERMISSIONS.ATTENDANCE_READ, PERMISSIONS.MEMBERS_READ, PERMISSIONS.MEMBERSHIPS_READ] },
     { pattern: /^\/attendance$/, methods: ['GET'], all: [PERMISSIONS.ATTENDANCE_READ] },
     { pattern: /^\/attendance\/check-in$/, methods: ['POST'], all: [PERMISSIONS.ATTENDANCE_CHECK_IN] },
     { pattern: /^\/attendance\/check-out$/, methods: ['POST'], all: [PERMISSIONS.ATTENDANCE_CHECK_OUT] },

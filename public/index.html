@@ -1133,8 +1133,19 @@
     <dialog id="qrReaderDialog" class="qr-reader-dialog lf-modal-shell lf-modal--md lf-modal--structured rounded-lg border-slate-200 shadow-lift">
         <div class="dialog-body"><div class="details-dialog-head"><div><h3>مسح QR Code</h3><p>وجّه كاميرا الهاتف إلى رمز العضو.</p></div><button class="btn btn-light btn-small" id="qrReaderClose" type="button">إغلاق</button></div><div id="qrReader"></div><p class="qr-reader-note">إذا لم تعمل الكاميرا، أغلق النافذة وسجّل الحضور برقم الهاتف.</p></div>
     </dialog>
-    <dialog id="memberQrDialog" class="member-qr-dialog lf-modal-shell lf-modal--sm lf-modal--structured rounded-lg border-slate-200 shadow-lift" aria-labelledby="memberQrDialogTitle" aria-describedby="memberQrDialogDescription">
-        <div class="dialog-body"><div class="details-dialog-head"><div><h3 id="memberQrDialogTitle">QR Code العضو</h3><p id="memberQrDialogDescription">احتفظ بالرمز أو اطبعه لاستخدامه عند الحضور.</p></div><button class="btn btn-light btn-small" id="memberQrClose" type="button">إغلاق</button></div><div class="member-qr-card"><canvas id="memberQrCanvas" width="210" height="210"></canvas><strong id="memberQrName">—</strong><span id="memberQrPhone">—</span></div><div class="dialog-actions"><button class="btn btn-primary" id="memberQrDownload" type="button">تحميل QR Code</button></div></div>
+    <dialog id="memberQrDialog" class="member-qr-dialog lf-modal-shell lf-modal--md lf-modal--structured" aria-labelledby="memberQrDialogTitle" aria-describedby="memberQrDialogDescription">
+        <div class="dialog-body member-digital-card-dialog-body">
+            <div class="details-dialog-head"><div><h3 id="memberQrDialogTitle">بطاقة العضوية الرقمية</h3><p id="memberQrDialogDescription">بطاقة بهوية الجيم ورمز حضور آمن. فتح واتساب لا يعني إرسال الرسالة.</p></div><button class="btn btn-light btn-small" id="memberQrClose" type="button">إغلاق</button></div>
+            <div class="member-digital-card-preview"><canvas id="memberQrCanvas" width="1080" height="1350" aria-label="معاينة بطاقة العضوية الرقمية"></canvas></div>
+            <p class="member-digital-card-status" id="memberQrStatus" role="status" aria-live="polite">جارٍ تجهيز بطاقة العضوية...</p>
+            <div class="dialog-actions member-digital-card-actions">
+                <button class="btn btn-primary" id="memberQrShare" type="button">مشاركة البطاقة</button>
+                <button class="btn btn-light" id="memberQrWhatsapp" type="button">تحميل البطاقة وفتح واتساب</button>
+                <button class="btn btn-light" id="memberQrDownload" type="button">تحميل البطاقة</button>
+                <button class="btn btn-light" id="memberQrEditPhone" type="button" hidden>تعديل رقم الهاتف</button>
+                <button class="btn btn-light" id="memberQrRetry" type="button" hidden>إعادة تجهيز البطاقة</button>
+            </div>
+        </div>
     </dialog>
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
@@ -1172,7 +1183,7 @@
     <script defer src="/js/auth-ui.js?v=21"></script>
     <script defer src="/js/branch-context.js?v=4"></script>
     <script defer src="/js/kiosk.js?v=1"></script>
-    <script defer src="/js/core/feature-manifest.js?v=0ffd80ebc0806d39"></script>
+    <script defer src="/js/core/feature-manifest.js?v=2e9599d555f54706"></script>
     <script defer src="/js/feature-loader.js?v=freeze-whatsapp-v2"></script>
     <script defer src="/js/app-shell-bootstrap.js?v=membership-type-delete-v1"></script>
     <script defer src="/js/page-tabs.js?v=24"></script>

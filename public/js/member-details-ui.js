@@ -358,13 +358,27 @@
       ${actionButton('view', 'عرض', 'member-details-action-secondary')}
       ${actionButton('print', 'طباعة', 'member-details-action-secondary')}
        ${freezeAction}
-       <span class="member-details-more"><button class="member-details-action member-details-action-more" type="button" data-member-detail-action="more" aria-haspopup="menu" aria-expanded="false" aria-controls="memberDetailsMoreMenu" aria-label="المزيد" title="المزيد">${icon('more')}</button><span class="member-details-more-menu" id="memberDetailsMoreMenu" hidden>${paymentAction}<button type="button" data-member-detail-action="qr" data-required-permission="members.read,memberships.read">${icon('qr')}<span>عرض QR</span></button><button type="button" data-member-detail-action="edit" data-required-permission="members.update">${icon('view')}<span>تعديل البيانات</span></button>${refundAction}</span></span>
+       <span class="member-details-more"><button class="member-details-action member-details-action-more" type="button" data-member-detail-action="more" aria-haspopup="menu" aria-expanded="false" aria-controls="memberDetailsMoreMenu" aria-label="المزيد" title="المزيد">${icon('more')}</button><span class="member-details-more-menu" id="memberDetailsMoreMenu" hidden>${paymentAction}${window.topGymAuth?.isOwner?.() === true ? `<button type="button" data-member-detail-action="qr" data-owner-only>${icon('qr')}<span>بطاقة العضوية</span></button>` : ''}<button type="button" data-member-detail-action="edit" data-required-permission="members.update">${icon('view')}<span>تعديل البيانات</span></button>${refundAction}</span></span>
        </div></section>`;
+    overview.querySelector('[data-member-detail-action="qr"]')?.remove();
+    if (hasRequiredPermissions('members.read,memberships.read,attendance.read')) {
+      const menu = overview.querySelector('#memberDetailsMoreMenu');
+      if (menu) {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.dataset.memberDetailAction = 'qr';
+        button.dataset.id = String(member.id);
+        button.dataset.requiredPermission = 'members.read,memberships.read,attendance.read';
+        button.innerHTML = `${icon('qr')}<span>بطاقة العضوية</span>`;
+        menu.append(button);
+      }
+    }
     content.prepend(overview);
     const moreMenu = overview.querySelector('#memberDetailsMoreMenu');
     moreMenu?.addEventListener('click', (event) => {
       const item = event.target.closest('[data-member-detail-action]');
       if (!item) return;
+      if (item.hasAttribute('data-owner-only') && window.topGymAuth?.isOwner?.() !== true) return;
       if (!hasRequiredPermissions(item.dataset.requiredPermission)) return;
       const action = item.dataset.memberDetailAction;
       closeMoreMenu();
@@ -409,8 +423,13 @@
   content.addEventListener('click', (event) => {
     const button = event.target.closest('[data-member-detail-action]');
     if (!button) return;
+    if (button.hasAttribute('data-owner-only') && window.topGymAuth?.isOwner?.() !== true) return;
     if (!hasRequiredPermissions(button.dataset.requiredPermission)) return;
     const action = button.dataset.memberDetailAction;
+    if (action === 'qr') {
+      if (button.dataset.id) void window.topGymMemberDigitalCard?.openFromMemberId(button.dataset.id);
+      return;
+    }
     if (action === 'more') {
       if (activeMoreMenu) closeMoreMenu({ restoreFocus: true });
       else openMoreMenu(button);

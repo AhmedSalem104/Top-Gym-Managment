@@ -6,10 +6,10 @@
     const can = (permission) => window.topGymAuth?.isOwner?.() === true
         || window.topGymAuth?.hasPermission?.(permission) === true;
     const canReadMember = () => can('members.read') && can('memberships.read');
+    const canReadAttendanceQr = () => canReadMember() && can('attendance.read');
     const SOURCE_LABELS = { phone: 'بالهاتف', qr: 'QR Code', manual: 'يدوي', auto: 'تلقائي' };
     let scanner = null;
     let scannerRunning = false;
-    let currentQrMember = null;
     let attendanceAbortController = null;
     let memberPreviewAbortController = null;
     let memberPreviewTimer = null;
@@ -62,12 +62,12 @@
         }
     }
 
-    function qrStatusClass(status) {
-        return ['active', 'expiring_soon', 'expired', 'frozen'].includes(status) ? status : 'unknown';
+    function isSecureMembershipQr(value) {
+        return /^LFQR1\.[A-Za-z0-9_-]{32,160}$/.test(String(value || '').trim());
     }
 
-    function qrPayload(member) {
-        return `${window.location.origin}/qr/${encodeURIComponent(Number(member.id))}`;
+    function qrStatusClass(status) {
+        return ['active', 'expiring_soon', 'expired', 'frozen'].includes(status) ? status : 'unknown';
     }
 
     function memberInitials(name) {
@@ -530,6 +530,22 @@
     }
 
     async function handleQrScan(decodedText) {
+        if (isSecureMembershipQr(decodedText) && canReadAttendanceQr()) {
+            try {
+                const resolved = await request('/api/attendance/resolve-qr', { method: 'POST', body: JSON.stringify({ qrToken: decodedText }) });
+                const member = resolved.member;
+                if (resolved.attendance?.checkedOut) {
+                    await showMessage('تم تسجيل انصراف هذا العضو اليوم بالفعل.', 'info');
+                    return;
+                }
+                const action = resolved.attendance?.inside ? 'checkout' : 'checkin';
+                if (await showQrMemberPreview(member, action)) {
+                    if (action === 'checkout') await checkOut({ qrToken: decodedText });
+                    else await checkIn({ qrToken: decodedText });
+                }
+            } catch (error) { await showMessage(error.message, 'error'); }
+            return;
+        }
         const memberId = qrMemberId(decodedText);
         if (!memberId) {
             await checkIn({ qrToken: decodedText });
@@ -586,43 +602,11 @@
     }
 
     async function openMemberQr(memberId) {
-        if (!canReadMember()) {
-            await showMessage('لا تملك صلاحية عرض بيانات المشترك أو رمز QR.', 'error');
+        if (window.topGymMemberDigitalCard?.openFromMemberId) {
+            await window.topGymMemberDigitalCard.openFromMemberId(memberId);
             return;
         }
-        try {
-            const qrLibrary = window.topGymLoadExternalAsset?.('qrcode');
-            const response = await request(`/api/members/${encodeURIComponent(memberId)}`);
-            const member = response.member || response;
-            currentQrMember = member;
-            try { await qrLibrary; } catch (_) { /* use the same validation below */ }
-            $('memberQrName').textContent = member.fullName || '—';
-            $('memberQrPhone').textContent = displayPhone(member.phone, member.phoneCountry) || '—';
-            const canvas = $('memberQrCanvas');
-            if (!window.QRCode || !canvas) throw new Error('أداة إنشاء QR Code غير متاحة حالياً.');
-            const styles = getComputedStyle(document.documentElement);
-            const qrInk = styles.getPropertyValue('--qr-ink').trim();
-            const qrPaper = styles.getPropertyValue('--qr-paper').trim();
-            await window.QRCode.toCanvas(canvas, qrPayload(member), { width: 210, margin: 1, color: { dark: qrInk, light: qrPaper } });
-            const dialog = $('memberQrDialog');
-            if (dialog?.showModal) dialog.showModal(); else dialog?.setAttribute('open', '');
-        } catch (error) {
-            await showMessage(error.message, 'error');
-        }
-    }
-
-    function closeMemberQr() {
-        const dialog = $('memberQrDialog');
-        if (dialog?.close && dialog.open) dialog.close(); else dialog?.removeAttribute('open');
-    }
-
-    function downloadMemberQr() {
-        const canvas = $('memberQrCanvas');
-        if (!canvas || !currentQrMember) return;
-        const link = document.createElement('a');
-        link.download = `TOP-GYM-QR-${currentQrMember.id}.png`;
-        link.href = canvas.toDataURL('image/png');
-        link.click();
+        await showMessage('أداة بطاقة العضوية غير جاهزة. لم يتم عرض رمز QR غير آمن؛ أعد تحميل الشاشة وحاول مرة أخرى.', 'error');
     }
 
     function isAttendanceActive() {
@@ -652,8 +636,6 @@
             void stopScanner();
             setAttendanceMode('phone');
         });
-        $('memberQrClose')?.addEventListener('click', closeMemberQr);
-        $('memberQrDownload')?.addEventListener('click', downloadMemberQr);
         let timer;
         const attendanceSearch = $('attendanceSearch');
         const attendanceSearchClear = $('attendanceSearchClearButton');
@@ -703,10 +685,6 @@
                 menu.querySelector('[data-menu-toggle]')?.setAttribute('aria-expanded', 'false');
             }
             openMemberQr(button.dataset.id || button.dataset.memberQr || button.closest('[data-member-id]')?.dataset.memberId);
-        });
-        window.addEventListener('topgym:member-created', (event) => {
-            const detail = event.detail || {};
-            if (detail.isNew && detail.member?.id) openMemberQr(detail.member.id);
         });
         window.addEventListener('topgym:tab-changed', (event) => { if (event.detail?.name === 'attendance') loadAttendance(); });
         window.addEventListener('topgym:branch-context-changed', () => {

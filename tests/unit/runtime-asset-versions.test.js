@@ -14,11 +14,14 @@ function makeFixture() {
     fs.mkdirSync(path.join(publicDir, 'js', 'pages', 'saas'), { recursive: true });
     fs.mkdirSync(path.join(publicDir, 'js', 'pages', 'attendance'), { recursive: true });
     fs.mkdirSync(path.join(publicDir, 'css', 'pages'), { recursive: true });
+    fs.mkdirSync(path.join(publicDir, 'css', 'components'), { recursive: true });
     fs.writeFileSync(path.join(publicDir, 'index.html'), '<script defer src="/js/core/feature-manifest.js?v=old"></script>\n');
-    fs.writeFileSync(path.join(publicDir, 'js', 'core', 'feature-manifest.js'), "const features = { 'saas-billing': { scripts: ['/js/pages/saas/saas.js?v=old'] }, attendance: { styles: ['/css/pages/attendance.css?v=old'], scripts: ['/js/pages/attendance/attendance.js?v=old'] }, members: { styles: ['/css/pages/attendance.css?v=old'], scripts: ['/js/pages/attendance/attendance.js?v=old'] } };\n");
+    fs.writeFileSync(path.join(publicDir, 'js', 'core', 'feature-manifest.js'), "const features = { 'saas-billing': { scripts: ['/js/pages/saas/saas.js?v=old'] }, attendance: { styles: ['/css/pages/attendance.css?v=old', '/css/components/member-digital-card.css?v=old'], scripts: ['/js/pages/attendance/attendance.js?v=old', '/js/member-digital-card.js?v=old'] }, members: { styles: ['/css/pages/attendance.css?v=old', '/css/components/member-digital-card.css?v=old'], scripts: ['/js/pages/attendance/attendance.js?v=old', '/js/member-digital-card.js?v=old'] }, 'member-details': { styles: ['/css/components/member-digital-card.css?v=old'], scripts: ['/js/member-digital-card.js?v=old'] } };\n");
     fs.writeFileSync(path.join(publicDir, 'js', 'pages', 'saas', 'saas.js'), 'window.saasBuild = 1;\n');
     fs.writeFileSync(path.join(publicDir, 'js', 'pages', 'attendance', 'attendance.js'), 'window.attendanceBuild = 1;\n');
+    fs.writeFileSync(path.join(publicDir, 'js', 'member-digital-card.js'), 'window.memberCardBuild = 1;\n');
     fs.writeFileSync(path.join(publicDir, 'css', 'pages', 'attendance.css'), '.attendance { color: blue; }\n');
+    fs.writeFileSync(path.join(publicDir, 'css', 'components', 'member-digital-card.css'), '.card { color: blue; }\n');
     return root;
 }
 
@@ -55,7 +58,9 @@ test('content fingerprints are stable across Windows and Unix line endings', () 
             'public/js/core/feature-manifest.js',
             'public/js/pages/saas/saas.js',
             'public/js/pages/attendance/attendance.js',
-            'public/css/pages/attendance.css'
+            'public/css/pages/attendance.css',
+            'public/js/member-digital-card.js',
+            'public/css/components/member-digital-card.css'
         ]) {
             const filePath = path.join(root, relativePath);
             fs.writeFileSync(filePath, fs.readFileSync(filePath, 'utf8').replace(/\n/g, '\r\n'));
@@ -89,6 +94,21 @@ test('attendance JS and CSS URLs track content and remain stable for unchanged f
         const changedStyle = planRuntimeAssetVersions(root);
         assert.notEqual(changedStyle.attendanceStyleVersion, first.attendanceStyleVersion);
         assert.notEqual(changedStyle.manifestVersion, changedScript.manifestVersion);
+    } finally {
+        fs.rmSync(root, { recursive: true, force: true });
+    }
+});
+
+test('member digital card JS and CSS URLs track content-derived fingerprints', () => {
+    const root = makeFixture();
+    try {
+        const first = planRuntimeAssetVersions(root);
+        assert.equal((first.generatedManifest.match(new RegExp(`member-digital-card\\.js\\?v=${first.memberCardScriptVersion}`, 'g')) || []).length, 3);
+        assert.equal((first.generatedManifest.match(new RegExp(`member-digital-card\\.css\\?v=${first.memberCardStyleVersion}`, 'g')) || []).length, 3);
+        fs.writeFileSync(path.join(root, 'public', 'js', 'member-digital-card.js'), 'window.memberCardBuild = 2;\n');
+        const changed = planRuntimeAssetVersions(root);
+        assert.notEqual(changed.memberCardScriptVersion, first.memberCardScriptVersion);
+        assert.notEqual(changed.manifestVersion, first.manifestVersion);
     } finally {
         fs.rmSync(root, { recursive: true, force: true });
     }

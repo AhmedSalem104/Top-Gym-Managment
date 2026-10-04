@@ -7,6 +7,8 @@ function registerAttendanceRoutes(app, { attendanceService, branchService, async
     app.get('/api/attendance', asyncRoute(controller.today));
     app.get('/api/attendance/report', asyncRoute(controller.report));
     app.get('/api/attendance/member/:id', asyncRoute(controller.member));
+    app.get('/api/attendance/qr/:id', asyncRoute(controller.qr));
+    app.post('/api/attendance/resolve-qr', asyncRoute(controller.resolveQr));
     app.post('/api/attendance/check-in', asyncRoute(controller.checkIn));
     app.post('/api/attendance/check-out', asyncRoute(controller.checkOut));
 }

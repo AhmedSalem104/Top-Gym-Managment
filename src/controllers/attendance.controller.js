@@ -20,6 +20,15 @@ function createAttendanceController({ attendanceService, branchService }) {
             const branch = await branchOptions(request);
             response.json(await attendanceService.getMemberAttendance(request.params.id, { ...request.query, readOnly: request.readOnlyRequest, ...branch }));
         },
+        qr: async (request, response) => {
+            response.set('Cache-Control', 'private, no-store');
+            response.json(await attendanceService.getMemberQrToken(request.params.id));
+        },
+        resolveQr: async (request, response) => {
+            const branch = await branchOptions(request);
+            response.set('Cache-Control', 'private, no-store');
+            response.json(await attendanceService.resolveQrMember(request.body?.qrToken, branch));
+        },
         checkIn: async (request, response) => {
             const branch = await branchOptions(request, true);
             response.status(201).json(await attendanceService.checkIn(request.body, branch));
