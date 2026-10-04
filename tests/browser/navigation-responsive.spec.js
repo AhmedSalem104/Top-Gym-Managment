@@ -33,12 +33,21 @@ async function installNavigationRuntime(page) {
         }
         if (pathname === '/api/branches/bootstrap') {
             return json(route, {
-                branches: [{ id: 1, name: 'Main Branch', code: 'main', status: 'active', isMain: true }],
-                activeBranches: [{ id: 1, name: 'Main Branch', code: 'main', status: 'active', isMain: true }],
+                branches: [
+                    { id: 1, name: 'Main Branch', code: 'main', status: 'active', isMain: true },
+                    { id: 2, name: 'North Branch', code: 'north', status: 'active', isMain: false }
+                ],
+                activeBranches: [
+                    { id: 1, name: 'Main Branch', code: 'main', status: 'active', isMain: true },
+                    { id: 2, name: 'North Branch', code: 'north', status: 'active', isMain: false }
+                ],
                 defaultBranch: { id: 1, name: 'Main Branch', code: 'main', status: 'active', isMain: true },
-                sections: [{ id: 11, name: 'Mixed', type: 'mixed', branchId: 1, active: true }],
+                sections: [
+                    { id: 11, name: 'Mixed', type: 'mixed', branchId: 1, active: true },
+                    { id: 21, name: 'Mixed', type: 'mixed', branchId: 2, active: true }
+                ],
                 branchLimit: null,
-                hasMultipleActiveBranches: false,
+                hasMultipleActiveBranches: true,
                 canUseAllBranches: true
             });
         }
@@ -53,6 +62,7 @@ test('responsive navigation stays organized and accessible at each viewport', as
     // use the static shell entry so the browser fixture can provide the local
     // authenticated runtime deterministically.
     await page.goto('/index.html#dashboard', { waitUntil: 'networkidle' });
+    await expect(page.locator('#branchContextSelect')).toHaveValue('1');
 
     const width = testInfo.project.use.viewport.width;
     const dimensions = await page.evaluate(() => ({ viewport: innerWidth, document: document.documentElement.scrollWidth, body: document.body.scrollWidth }));

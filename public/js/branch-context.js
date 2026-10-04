@@ -246,8 +246,15 @@
         const stored = readStoredBranch();
         const allowedIds = new Set(allowed.map((branch) => String(branch.id)));
         if (stored && allowedIds.has(stored)) select.value = stored;
-        else if (allowed.length === 1) { select.value = String(allowed[0].id); writeStoredBranch(select.value); }
-        else { select.value = ''; writeStoredBranch(''); }
+        else {
+            const activeMain = active.find((branch) => branch.isMain && allowedIds.has(String(branch.id)));
+            const permittedDefault = data?.defaultBranch && allowedIds.has(String(data.defaultBranch.id))
+                ? data.defaultBranch
+                : null;
+            const initialBranch = activeMain || permittedDefault || allowed[0] || null;
+            select.value = initialBranch ? String(initialBranch.id) : '';
+            writeStoredBranch(select.value);
+        }
         const selected = active.find((branch) => String(branch.id) === select.value);
         $('branchContextStatus').textContent = selected ? `${selected.status === 'active' ? 'نشط' : 'غير نشط'}` : 'عرض موحد';
         refreshContextDropdown(select);
@@ -341,7 +348,14 @@
         const loadPromise = (async () => {
             try {
                 bootstrap = await window.topGymApi.request('/api/branches/bootstrap');
+                const previousBranch = readStoredBranch();
                 renderSelector(bootstrap);
+                const selectedBranch = $('branchContextSelect')?.value || '';
+                if (selectedBranch && selectedBranch !== previousBranch) {
+                    window.dispatchEvent(new CustomEvent('topgym:branch-context-changed', {
+                        detail: { branchId: Number(selectedBranch), sectionId: null }
+                    }));
+                }
                 renderManagerWithCommerce({ ...bootstrap, branchLimit: bootstrap.branchLimit });
             } catch (error) {
                 // Never keep sending a branch selected in an older session
