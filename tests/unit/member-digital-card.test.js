@@ -36,8 +36,25 @@ test('attendance QR token is independent from the member portal bearer-code reve
     assert.doesNotMatch(card, /membership-code\/reveal/);
 });
 
-test('card QR block stays below the full five-field membership grid', () => {
+test('card branding uses separate logo and tenant-name zones and adapts the QR position to real fields', () => {
     const card = read('public/js/member-digital-card.js');
-    assert.match(card, /const qrSize = 290;\s*const qrX = \(CARD_WIDTH - qrSize\) \/ 2;\s*const qrY = 930;/);
-    assert.match(card, /CARD_WIDTH \/ 2, 1280, 23/);
+    assert.match(card, /roundedRect\(92, 88, 176, 142, 24, CARD_COLORS\.surfaceMuted/);
+    assert.match(card, /drawText\(gymName, 970, 126, 46, CARD_COLORS\.text, 800, 'right', 640\)/);
+    assert.match(card, /const rowCount = Math\.ceil\(fields\.length \/ 2\)/);
+    assert.match(card, /const qrSize = 350/);
+    assert.match(card, /const qrY = Math\.max\(574, Math\.min\(790, gridTop \+ rowCount \* \(tileHeight \+ rowGap\) \+ 24\)\)/);
+    assert.doesNotMatch(card, /\['الحالة', membershipStatus\(membership\)\]/);
+});
+
+test('a card QR is consumed by the current attendance scanner and resolved before check-in/out', () => {
+    const card = read('public/js/member-digital-card.js');
+    const scanner = read('public/js/pages/attendance/attendance.js');
+    const service = read('src/services/attendance-service.js');
+    assert.match(card, /const validCode = .*LFQR1/);
+    assert.match(scanner, /function isSecureMembershipQr\(value\)/);
+    assert.match(scanner, /request\('\/api\/attendance\/resolve-qr', \{ method: 'POST', body: JSON\.stringify\(\{ qrToken: decodedText \}\) \}\)/);
+    assert.match(scanner, /checkOut\(\{ qrToken: decodedText \}\)/);
+    assert.match(scanner, /checkIn\(\{ qrToken: decodedText \}\)/);
+    assert.match(service, /attendanceQrTokenService\.resolveForCurrentTenant/);
+    assert.match(service, /resolveQrMember\(qrToken/);
 });

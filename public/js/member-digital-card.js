@@ -44,14 +44,26 @@
     const membershipTypeLabel = (value) => ({ monthly: 'شهرية', half_month: 'نصف شهر', quarterly: 'ربع سنوية', semiannual: 'نصف سنوية', annual: 'سنوية' })[String(value || '').toLowerCase()] || String(value || '');
     const membershipPlanLabel = (value) => ({ gym_only: 'جيم فقط', gym_cardio: 'جيم وكارديو' })[String(value || '').toLowerCase()] || String(value || '');
     const initials = (value) => String(value || '').trim().split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join('') || '—';
-    const drawText = (text, x, y, size, color, weight = 500, align = 'right') => {
+    const CARD_COLORS = Object.freeze({
+        background: '#f5f7fb',
+        surface: '#ffffff',
+        surfaceMuted: '#f8fbff',
+        border: '#d9e2ef',
+        borderSubtle: '#e7edf5',
+        primary: '#1769e8',
+        primarySoft: '#eaf1ff',
+        text: '#172033',
+        textSecondary: '#41516a',
+        textMuted: '#718096'
+    });
+    const drawText = (text, x, y, size, color, weight = 500, align = 'right', maxWidth = 840) => {
         if (!text) return;
         ctx.fillStyle = color;
         ctx.font = `${weight} ${size}px Cairo, Tahoma, sans-serif`;
         ctx.textAlign = align;
         ctx.textBaseline = 'middle';
         ctx.direction = 'rtl';
-        ctx.fillText(String(text), x, y, 840);
+        ctx.fillText(String(text), x, y, maxWidth);
     };
     const roundedRect = (x, y, width, height, radius, fill, stroke = null) => {
         ctx.beginPath();
@@ -83,57 +95,71 @@
     }
     function drawCard({ member, membership, gymName, logo, qrCanvas }) {
         ctx.clearRect(0, 0, CARD_WIDTH, CARD_HEIGHT);
-        ctx.fillStyle = '#f2f6fc'; ctx.fillRect(0, 0, CARD_WIDTH, CARD_HEIGHT);
-        roundedRect(42, 42, 996, 1266, 34, '#ffffff', '#dbe5f2');
-        roundedRect(42, 42, 996, 18, 9, '#1769e8');
-        const logoX = 920;
+        ctx.fillStyle = CARD_COLORS.background;
+        ctx.fillRect(0, 0, CARD_WIDTH, CARD_HEIGHT);
+        roundedRect(42, 42, 996, 1266, 34, CARD_COLORS.surface, CARD_COLORS.border);
+        roundedRect(42, 42, 996, 18, 9, CARD_COLORS.primary);
+
+        // Keep tenant identity and logo in separate, predictable zones. Long
+        // gym names are constrained before the logo tile rather than drawn
+        // underneath it.
+        roundedRect(92, 88, 176, 142, 24, CARD_COLORS.surfaceMuted, CARD_COLORS.borderSubtle);
         if (logo) {
-            const ratio = Math.min(112 / logo.width, 112 / logo.height);
-            const width = logo.width * ratio; const height = logo.height * ratio;
-            ctx.drawImage(logo, logoX - width, 100, width, height);
+            const ratio = Math.min(140 / logo.width, 106 / logo.height);
+            const width = logo.width * ratio;
+            const height = logo.height * ratio;
+            ctx.drawImage(logo, 110 + (140 - width) / 2, 106 + (106 - height) / 2, width, height);
         } else {
-            roundedRect(900, 92, 92, 92, 24, '#eaf1ff');
-            drawText(initials(gymName), 946, 138, 32, '#1769e8', 800, 'center');
+            roundedRect(110, 106, 140, 106, 20, CARD_COLORS.primarySoft);
+            drawText(initials(gymName), 180, 159, 36, CARD_COLORS.primary, 800, 'center');
         }
-        drawText(gymName, 870, 116, 42, '#172033', 800);
-        drawText('بطاقة العضوية الرقمية', 870, 168, 24, '#66758b', 500);
-        ctx.strokeStyle = '#e6edf5'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(100, 230); ctx.lineTo(980, 230); ctx.stroke();
+        drawText(gymName, 970, 126, 46, CARD_COLORS.text, 800, 'right', 640);
+        drawText('بطاقة العضوية الرقمية', 970, 180, 24, CARD_COLORS.textMuted, 600, 'right', 640);
+        ctx.strokeStyle = CARD_COLORS.borderSubtle;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(92, 254);
+        ctx.lineTo(988, 254);
+        ctx.stroke();
 
-        roundedRect(814, 274, 166, 166, 83, '#eaf1ff');
-        drawText(initials(member.fullName), 897, 357, 56, '#1769e8', 800, 'center');
-        drawText(member.fullName || '', 770, 300, 44, '#172033', 800);
+        roundedRect(92, 282, 896, 178, 28, CARD_COLORS.surfaceMuted, CARD_COLORS.borderSubtle);
+        roundedRect(818, 296, 146, 146, 73, CARD_COLORS.primarySoft);
+        drawText(initials(member.fullName), 891, 369, 52, CARD_COLORS.primary, 800, 'center');
+        drawText(member.fullName || '', 780, 342, 43, CARD_COLORS.text, 800, 'right', 660);
         const statusColors = statusAppearance(membership);
-        roundedRect(618, 390, 164, 48, 24, statusColors.background);
-        drawText(membershipStatus(membership), 700, 414, 21, statusColors.foreground, 700, 'center');
+        roundedRect(592, 390, 188, 44, 22, statusColors.background);
+        drawText(membershipStatus(membership), 686, 412, 21, statusColors.foreground, 700, 'center');
 
-        let y = 520;
         const fields = [
             ['الباقة', membershipPlanLabel(membership?.plan)],
             ['نوع الاشتراك', membershipTypeLabel(membership?.typeLabel || membership?.type)],
-            ['الحالة', membershipStatus(membership)],
             ['تاريخ البداية', dateText(membership?.startDate)],
             ['تاريخ الانتهاء', dateText(membership?.effectiveEndDate || membership?.endDate)]
         ].filter(([, value]) => String(value || '').trim());
+        const gridTop = 500;
+        const tileHeight = 112;
+        const rowGap = 20;
         fields.forEach(([label, value], index) => {
             const column = index % 2;
             const row = Math.floor(index / 2);
-            const x = column === 0 ? 980 : 520;
-            const top = y + row * 132;
-            roundedRect(x - 410, top, 410, 104, 18, '#f8fafd', '#edf1f7');
-            drawText(label, x - 28, top + 32, 20, '#718096', 500);
-            drawText(value, x - 28, top + 72, 27, '#172033', 700);
+            const x = column === 0 ? 548 : 92;
+            const top = gridTop + row * (tileHeight + rowGap);
+            roundedRect(x, top, 440, tileHeight, 20, CARD_COLORS.surfaceMuted, CARD_COLORS.borderSubtle);
+            drawText(label, x + 408, top + 34, 20, CARD_COLORS.textMuted, 500, 'right', 390);
+            drawText(value, x + 408, top + 76, 28, CARD_COLORS.text, 700, 'right', 390);
         });
         if (qrCanvas) {
-            const qrSize = 290;
+            const qrSize = 350;
             const qrX = (CARD_WIDTH - qrSize) / 2;
-            const qrY = 930;
-            roundedRect(qrX - 25, qrY - 25, qrSize + 50, qrSize + 50, 22, '#ffffff', '#e1e8f0');
+            const rowCount = Math.ceil(fields.length / 2);
+            const qrY = Math.max(574, Math.min(790, gridTop + rowCount * (tileHeight + rowGap) + 24));
+            roundedRect(qrX - 24, qrY - 24, qrSize + 48, qrSize + 48, 26, CARD_COLORS.surface, CARD_COLORS.border);
             ctx.imageSmoothingEnabled = false;
             ctx.drawImage(qrCanvas, qrX, qrY, qrSize, qrSize);
             ctx.imageSmoothingEnabled = true;
-            drawText('استخدم الرمز عند تسجيل الحضور والانصراف', CARD_WIDTH / 2, 1280, 23, '#526176', 600, 'center');
+            drawText('اعرض الرمز لموظف الاستقبال لتسجيل الحضور أو الانصراف', CARD_WIDTH / 2, qrY + qrSize + 64, 22, CARD_COLORS.textSecondary, 600, 'center', 880);
         } else {
-            drawText('لا يوجد رمز عضوية نشط لهذه البطاقة', CARD_WIDTH / 2, 1000, 24, '#718096', 600, 'center');
+            drawText('لا يوجد رمز عضوية نشط لهذه البطاقة', CARD_WIDTH / 2, 1080, 24, CARD_COLORS.textMuted, 600, 'center');
         }
     }
     async function renderCard(member, qrToken, tenant) {
