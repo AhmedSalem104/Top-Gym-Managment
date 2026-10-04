@@ -28,6 +28,16 @@ test('member card sharing is user-initiated and never claims delivery', () => {
     assert.doesNotMatch(card, /تم إرسال البطاقة/);
 });
 
+test('successful membership renewal opens the current member QR card through the existing authorized flow', () => {
+    const app = read('public/js/app.js');
+    const card = read('public/js/member-digital-card.js');
+    assert.match(app, /if \(action === 'renew'\) window\.dispatchEvent\(new CustomEvent\('topgym:membership-renewed', \{ detail: \{ memberId: member\.id \} \}\)\)/);
+    assert.match(card, /topgym:membership-renewed/);
+    assert.match(card, /openFromMemberId\(memberId, 'renewed'\)/);
+    assert.match(card, /\/api\/attendance\/qr\//);
+    assert.match(card, /if \(!canUseCard\(\)\)/);
+});
+
 test('attendance QR token is independent from the member portal bearer-code reveal flow', () => {
     const attendance = read('src/services/attendance-service.js');
     const card = read('public/js/member-digital-card.js');

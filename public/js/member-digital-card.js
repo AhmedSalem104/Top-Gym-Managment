@@ -340,5 +340,10 @@
         if (!detail.isNew || !detail.member?.id || !canUseCard()) return;
         void openFromMemberId(detail.member.id, 'created');
     });
+    window.addEventListener('topgym:membership-renewed', (event) => {
+        const memberId = event.detail?.memberId;
+        if (memberId == null || !canUseCard()) return;
+        void openFromMemberId(memberId, 'renewed');
+    });
     window.topGymMemberDigitalCard = Object.freeze({ openFromMemberId, download: downloadCard, openCard });
 })();
