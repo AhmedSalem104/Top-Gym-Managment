@@ -11,12 +11,14 @@ function makeFixture() {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'logicfit-runtime-asset-version-'));
     const publicDir = path.join(root, 'public');
     fs.mkdirSync(path.join(publicDir, 'js', 'core'), { recursive: true });
+    fs.mkdirSync(path.join(publicDir, 'js'), { recursive: true });
     fs.mkdirSync(path.join(publicDir, 'js', 'pages', 'saas'), { recursive: true });
     fs.mkdirSync(path.join(publicDir, 'js', 'pages', 'attendance'), { recursive: true });
     fs.mkdirSync(path.join(publicDir, 'css', 'pages'), { recursive: true });
     fs.mkdirSync(path.join(publicDir, 'css', 'components'), { recursive: true });
-    fs.writeFileSync(path.join(publicDir, 'index.html'), '<script defer src="/js/core/feature-manifest.js?v=old"></script>\n');
+    fs.writeFileSync(path.join(publicDir, 'index.html'), '<script defer src="/js/branch-context.js?v=old"></script>\n<script defer src="/js/core/feature-manifest.js?v=old"></script>\n');
     fs.writeFileSync(path.join(publicDir, 'js', 'core', 'feature-manifest.js'), "const features = { 'saas-billing': { scripts: ['/js/pages/saas/saas.js?v=old'] }, attendance: { styles: ['/css/pages/attendance.css?v=old', '/css/components/member-digital-card.css?v=old'], scripts: ['/js/pages/attendance/attendance.js?v=old', '/js/member-digital-card.js?v=old'] }, members: { styles: ['/css/pages/attendance.css?v=old', '/css/components/member-digital-card.css?v=old'], scripts: ['/js/pages/attendance/attendance.js?v=old', '/js/member-digital-card.js?v=old'] }, 'member-details': { styles: ['/css/components/member-digital-card.css?v=old'], scripts: ['/js/member-digital-card.js?v=old'] } };\n");
+    fs.writeFileSync(path.join(publicDir, 'js', 'branch-context.js'), 'window.branchContextBuild = 1;\n');
     fs.writeFileSync(path.join(publicDir, 'js', 'pages', 'saas', 'saas.js'), 'window.saasBuild = 1;\n');
     fs.writeFileSync(path.join(publicDir, 'js', 'pages', 'attendance', 'attendance.js'), 'window.attendanceBuild = 1;\n');
     fs.writeFileSync(path.join(publicDir, 'js', 'member-digital-card.js'), 'window.memberCardBuild = 1;\n');
@@ -31,6 +33,7 @@ test('SaaS asset fingerprint changes with content and remains stable for unchang
         const first = planRuntimeAssetVersions(root);
         const repeated = planRuntimeAssetVersions(root);
         assert.equal(first.saasVersion, repeated.saasVersion);
+        assert.equal(first.branchContextVersion, repeated.branchContextVersion);
         assert.equal(first.manifestVersion, repeated.manifestVersion);
 
         fs.writeFileSync(path.join(root, 'public', 'js', 'pages', 'saas', 'saas.js'), 'window.saasBuild = 2;\n');
@@ -44,6 +47,11 @@ test('SaaS asset fingerprint changes with content and remains stable for unchang
         assert.equal(changedManifest.saasVersion, changedSaas.saasVersion);
         assert.notEqual(changedManifest.manifestVersion, changedSaas.manifestVersion);
         assert.match(changedManifest.generatedIndex, new RegExp(`/js/core/feature-manifest\\.js\\?v=${changedManifest.manifestVersion}`));
+
+        fs.writeFileSync(path.join(root, 'public', 'js', 'branch-context.js'), 'window.branchContextBuild = 2;\n');
+        const changedBranchContext = planRuntimeAssetVersions(root);
+        assert.notEqual(changedBranchContext.branchContextVersion, first.branchContextVersion);
+        assert.match(changedBranchContext.generatedIndex, new RegExp(`/js/branch-context\\.js\\?v=${changedBranchContext.branchContextVersion}`));
     } finally {
         fs.rmSync(root, { recursive: true, force: true });
     }
@@ -55,6 +63,7 @@ test('content fingerprints are stable across Windows and Unix line endings', () 
         const first = planRuntimeAssetVersions(root);
         for (const relativePath of [
             'public/index.html',
+            'public/js/branch-context.js',
             'public/js/core/feature-manifest.js',
             'public/js/pages/saas/saas.js',
             'public/js/pages/attendance/attendance.js',
@@ -68,6 +77,7 @@ test('content fingerprints are stable across Windows and Unix line endings', () 
         const crlf = planRuntimeAssetVersions(root);
 
         assert.equal(crlf.saasVersion, first.saasVersion);
+        assert.equal(crlf.branchContextVersion, first.branchContextVersion);
         assert.equal(crlf.manifestVersion, first.manifestVersion);
     } finally {
         fs.rmSync(root, { recursive: true, force: true });
@@ -119,5 +129,6 @@ test('checked-in HTML and manifest are synchronized to content-derived immutable
 
     assert.match(plan.generatedManifest, new RegExp(`/js/pages/saas/saas\\.js\\?v=${plan.saasVersion}`));
     assert.match(plan.generatedIndex, new RegExp(`/js/core/feature-manifest\\.js\\?v=${plan.manifestVersion}`));
+    assert.match(plan.generatedIndex, new RegExp(`/js/branch-context\\.js\\?v=${plan.branchContextVersion}`));
     assert.equal(plan.stale, false, 'run npm run build after changing SaaS runtime source so deployed HTML cannot retain an old immutable URL');
 });

@@ -47,6 +47,7 @@ function fingerprintManifestAsset(manifest, assetUrl, version, expectedCount) {
 function planRuntimeAssetVersions(projectRoot = root) {
     const resolvedIndexPath = path.join(projectRoot, 'public', 'index.html');
     const resolvedManifestPath = path.join(projectRoot, 'public', 'js', 'core', 'feature-manifest.js');
+    const resolvedBranchContextAssetPath = path.join(projectRoot, 'public', 'js', 'branch-context.js');
     const resolvedSaasAssetPath = path.join(projectRoot, 'public', 'js', 'pages', 'saas', 'saas.js');
     const resolvedAttendanceScriptPath = path.join(projectRoot, 'public', 'js', 'pages', 'attendance', 'attendance.js');
     const resolvedAttendanceStylePath = path.join(projectRoot, 'public', 'css', 'pages', 'attendance.css');
@@ -54,11 +55,18 @@ function planRuntimeAssetVersions(projectRoot = root) {
     const resolvedMemberCardStylePath = path.join(projectRoot, 'public', 'css', 'components', 'member-digital-card.css');
     const index = fs.readFileSync(resolvedIndexPath, 'utf8');
     const manifest = fs.readFileSync(resolvedManifestPath, 'utf8');
+    const branchContextVersion = sha256File(resolvedBranchContextAssetPath);
     const saasVersion = sha256File(resolvedSaasAssetPath);
     const attendanceScriptVersion = sha256File(resolvedAttendanceScriptPath);
     const attendanceStyleVersion = sha256File(resolvedAttendanceStylePath);
     const memberCardScriptVersion = sha256File(resolvedMemberCardScriptPath);
     const memberCardStyleVersion = sha256File(resolvedMemberCardStylePath);
+    const versionedBranchContextIndex = replaceExactlyOnce(
+        index,
+        /(<script\b[^>]*\bsrc=["'])\/js\/branch-context\.js(?:\?v=[^"']*)?(["'][^>]*>)/i,
+        (match, prefix, suffix) => `${prefix}/js/branch-context.js?v=${branchContextVersion}${suffix}`,
+        'branch context script reference'
+    );
     const versionedManifest = replaceExactlyOnce(
         manifest,
         /(['"])\/js\/pages\/saas\/saas\.js(?:\?v=[^'"]*)?\1/g,
@@ -72,7 +80,7 @@ function planRuntimeAssetVersions(projectRoot = root) {
     const manifestContent = withMemberCardStyle.replace(/\r\n?/g, '\n');
     const manifestVersion = crypto.createHash('sha256').update(manifestContent, 'utf8').digest('hex').slice(0, 16);
     const versionedIndex = replaceExactlyOnce(
-        index,
+        versionedBranchContextIndex,
         /(<script\b[^>]*\bsrc=["'])\/js\/core\/feature-manifest\.js(?:\?v=[^"']*)?(["'][^>]*>)/i,
         (match, prefix, suffix) => `${prefix}/js/core/feature-manifest.js?v=${manifestVersion}${suffix}`,
         'HTML feature-manifest script reference'
@@ -85,6 +93,7 @@ function planRuntimeAssetVersions(projectRoot = root) {
         generatedIndex: versionedIndex,
         currentManifest: manifest,
         generatedManifest: withMemberCardStyle,
+        branchContextVersion,
         saasVersion,
         attendanceScriptVersion,
         attendanceStyleVersion,
@@ -103,7 +112,7 @@ function run() {
             process.exitCode = 1;
             return;
         }
-        console.log(`[ASSET-VERSION-OK] SaaS ${plan.saasVersion}; attendance JS ${plan.attendanceScriptVersion}; attendance CSS ${plan.attendanceStyleVersion}; manifest ${plan.manifestVersion}`);
+        console.log(`[ASSET-VERSION-OK] branch context ${plan.branchContextVersion}; SaaS ${plan.saasVersion}; attendance JS ${plan.attendanceScriptVersion}; attendance CSS ${plan.attendanceStyleVersion}; manifest ${plan.manifestVersion}`);
         return;
     }
 
@@ -111,7 +120,7 @@ function run() {
         fs.writeFileSync(plan.manifestPath, plan.generatedManifest, 'utf8');
         fs.writeFileSync(plan.indexPath, plan.generatedIndex, 'utf8');
     }
-    console.log(`[ASSET-VERSION-OK] SaaS ${plan.saasVersion}; attendance JS ${plan.attendanceScriptVersion}; attendance CSS ${plan.attendanceStyleVersion}; manifest ${plan.manifestVersion}`);
+    console.log(`[ASSET-VERSION-OK] branch context ${plan.branchContextVersion}; SaaS ${plan.saasVersion}; attendance JS ${plan.attendanceScriptVersion}; attendance CSS ${plan.attendanceStyleVersion}; manifest ${plan.manifestVersion}`);
 }
 
 if (require.main === module) run();
