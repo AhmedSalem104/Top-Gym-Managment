@@ -7,19 +7,21 @@ const test = require('node:test');
 
 const source = fs.readFileSync(path.join(__dirname, '../../public/css/pages/members.css'), 'utf8');
 
-test('dark member row actions retain the light-theme control geometry', () => {
-    assert.match(source, /html\[data-theme="dark"\] \.members-table \.table-actions > \.table-action-visible\s*\{[^}]*width: 38px;[^}]*height: 38px;[^}]*flex: 0 0 38px;/u);
-    assert.match(source, /html\[data-theme="dark"\] \.members-table \.table-actions \.action-menu-toggle\s*\{[^}]*width: 38px;[^}]*height: 38px;/u);
-    assert.match(source, /\.members-table \.table-actions \.action-menu-toggle\s*\{[^}]*width: 38px;[^}]*height: 38px;/u);
+test('subscriber row action geometry is theme-independent, with one mobile size', () => {
+    assert.match(source, /\.members-table \.actions-cell \.table-actions > \.icon-action\[data-action\],[\s\S]*?width: 38px;[\s\S]*?height: 38px;[\s\S]*?flex: 0 0 38px;/u);
+    assert.match(source, /\.members-table \.actions-cell \.table-actions \.action-menu-toggle\s*\{[^}]*width: 38px;[^}]*height: 38px;/u);
+    assert.match(source, /@media \(max-width: 767px\)\s*\{[\s\S]*?\.members-table \.actions-cell \.table-actions > \.icon-action\[data-action\],[\s\S]*?width: 40px;[\s\S]*?height: 40px;/u);
+    assert.doesNotMatch(source, /html\[data-theme="dark"\] \.members-table \.table-actions[^}]*width:/u);
 });
 
-test('the renewal refresh action remains solid primary in the dark theme', () => {
-    assert.match(source, /html\[data-theme="dark"\] \.members-table \.table-actions > \[data-action="renew"\]\s*\{[^}]*background: var\(--rf-accent\);[^}]*color: var\(--text-on-primary\);/u);
-    assert.match(source, /\[data-action="renew"\]:hover:not\(:disabled\)\s*\{[^}]*background: var\(--rf-accent-strong\);/u);
+test('renew is solid semantic primary in both themes', () => {
+    assert.match(source, /\.members-table \.actions-cell \.table-actions > \.icon-action\[data-action="renew"\]\s*\{[^}]*background: var\(--primary\);[^}]*color: var\(--text-on-primary\);/u);
+    assert.match(source, /\.members-table \.actions-cell \.table-actions > \.icon-action\[data-action="renew"\]:hover:not\(:disabled\)\s*\{[^}]*background: var\(--primary-hover\);/u);
 });
 
-test('dark member secondary and unavailable actions stay neutral and theme-token based', () => {
-    assert.match(source, /\.table-action-visible:not\(\[data-action="renew"\]\)\s*\{[^}]*background: var\(--bg-elevated\);[^}]*color: var\(--text-secondary\);/u);
-    assert.match(source, /\.table-action-visible:disabled[\s\S]*?background: var\(--bg-app\);[\s\S]*?color: var\(--text-disabled\);/u);
-    assert.doesNotMatch(source, /html\[data-theme="dark"\] \.members-table[^}]*#[\da-f]{3,8}/iu);
+test('secondary, unavailable, focus and disabled states use shared theme tokens', () => {
+    assert.match(source, /\.members-table \.actions-cell \.table-actions > \.icon-action:not\(\[data-action="renew"\]\),[\s\S]*?background: var\(--bg-elevated\);[\s\S]*?color: var\(--text-secondary\);/u);
+    assert.match(source, /\.members-table \.actions-cell \.table-actions > \.icon-action:disabled[\s\S]*?background: var\(--bg-app\);[\s\S]*?color: var\(--text-disabled\);/u);
+    assert.match(source, /\.members-table \.actions-cell \.member-attendance-status\.unavailable\s*\{[^}]*color: var\(--text-disabled\);/u);
+    assert.doesNotMatch(source, /\.members-table \.actions-cell[^}]*#[\da-f]{3,8}/iu);
 });

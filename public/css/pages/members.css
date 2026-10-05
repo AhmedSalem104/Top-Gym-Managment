@@ -320,111 +320,6 @@
   height: 17px;
 }
 
-/* Keep the Subscribers row actions on the same geometry in both themes.
-   theme.css has broader dark-mode action rules; these scoped rules preserve
-   the light-theme dimensions and keep Renew as the sole primary action. */
-html[data-theme="dark"] .members-table .table-actions {
-  gap: var(--space-2);
-}
-
-html[data-theme="dark"] .members-table .table-actions > .table-action-visible {
-  box-sizing: border-box;
-  width: 38px;
-  min-width: 38px;
-  max-width: 38px;
-  height: 38px;
-  min-height: 38px;
-  flex: 0 0 38px;
-  padding: 0;
-  border-radius: var(--radius-md);
-}
-
-html[data-theme="dark"] .members-table .table-actions > .action-menu {
-  flex: 0 0 38px;
-}
-
-html[data-theme="dark"] .members-table .table-actions .action-menu-toggle {
-  box-sizing: border-box;
-  width: 38px;
-  min-width: 38px;
-  height: 38px;
-  min-height: 38px;
-  padding: 0;
-  border-radius: var(--radius-md);
-  background: var(--bg-elevated);
-  color: var(--text-secondary);
-}
-
-html[data-theme="dark"] .members-table .table-actions > .table-action-visible:not([data-action="renew"]) {
-  border-color: var(--border-primary);
-  background: var(--bg-elevated);
-  color: var(--text-secondary);
-}
-
-html[data-theme="dark"] .members-table .table-actions > [data-action="renew"] {
-  border-color: var(--rf-accent);
-  background: var(--rf-accent);
-  color: var(--text-on-primary);
-  box-shadow: var(--shadow-primary);
-}
-
-html[data-theme="dark"] .members-table .table-actions > [data-action="renew"]:hover:not(:disabled) {
-  border-color: var(--rf-accent-strong);
-  background: var(--rf-accent-strong);
-  color: var(--text-on-primary);
-  box-shadow: var(--shadow-primary-strong);
-}
-
-html[data-theme="dark"] .members-table .table-actions > .table-action-visible:not([data-action="renew"]):hover:not(:disabled),
-html[data-theme="dark"] .members-table .table-actions .action-menu-toggle:hover:not(:disabled) {
-  border-color: var(--rf-accent);
-  background: var(--rf-accent-soft);
-  color: var(--rf-accent-strong);
-}
-
-html[data-theme="dark"] .members-table .table-actions > .table-action-visible:active:not(:disabled),
-html[data-theme="dark"] .members-table .table-actions .action-menu-toggle:active:not(:disabled) {
-  transform: translateY(0);
-}
-
-html[data-theme="dark"] .members-table .table-actions > .table-action-visible:focus-visible,
-html[data-theme="dark"] .members-table .table-actions .action-menu-toggle:focus-visible {
-  outline: 2px solid var(--rf-accent);
-  outline-offset: 2px;
-}
-
-html[data-theme="dark"] .members-table .table-actions > .table-action-visible:disabled,
-html[data-theme="dark"] .members-table .table-actions .action-menu-toggle:disabled,
-html[data-theme="dark"] .members-table .table-actions > .table-action-visible[aria-disabled="true"],
-html[data-theme="dark"] .members-table .table-actions .action-menu-toggle[aria-disabled="true"] {
-  border-color: var(--border-secondary);
-  background: var(--bg-app);
-  color: var(--text-disabled);
-  box-shadow: none;
-}
-
-@media (max-width: 767px) {
-  html[data-theme="dark"] .members-table:not(.table-card-layout) .table-actions > .action-menu {
-    flex-basis: 40px;
-  }
-
-  html[data-theme="dark"] .members-table:not(.table-card-layout) .table-actions .action-menu-toggle {
-    width: 40px;
-    min-width: 40px;
-    height: 40px;
-    min-height: 40px;
-  }
-
-  html[data-theme="dark"] .members-table:not(.table-card-layout) .table-actions > .table-action-visible {
-    width: 40px;
-    min-width: 40px;
-    max-width: 40px;
-    height: 40px;
-    min-height: 40px;
-    flex-basis: 40px;
-  }
-}
-
 .membership-portal-code-card {
   display: grid;
   gap: var(--space-4);
@@ -870,4 +765,99 @@ html[data-theme="dark"] .members-table .table-actions .action-menu-toggle[aria-d
   .members-toolbar-controls { width: 100%; }
   .members-filter-field { min-width: 0; flex: 1 1 calc(50% - var(--space-2)); }
   .members-search-field { flex-basis: 100%; }
+}
+
+/* Subscriber actions use btn-light defaults unless explicitly normalized here.
+   The renew icon was inheriting btn-small's content-based width in Light mode,
+   while theme.css forced a fixed width in Dark mode; normalize both from the
+   same component scope and keep color semantic-token driven. */
+.members-table .actions-cell .table-actions > .icon-action[data-action],
+.members-table .actions-cell .table-actions > .table-action-visible[data-member-coaching-action],
+.members-table .actions-cell .table-actions .action-menu-toggle {
+  box-sizing: border-box;
+  width: 38px;
+  min-width: 38px;
+  max-width: 38px;
+  height: 38px;
+  min-height: 38px;
+  flex: 0 0 38px;
+  padding: 0;
+  border-radius: var(--radius-md);
+}
+
+.members-table .actions-cell .table-actions > .icon-action[data-action="renew"] {
+  border-color: var(--primary);
+  background: var(--primary);
+  color: var(--text-on-primary);
+  box-shadow: var(--shadow-primary);
+}
+
+.members-table .actions-cell .table-actions > .icon-action[data-action="renew"]:hover:not(:disabled) {
+  border-color: var(--primary-hover);
+  background: var(--primary-hover);
+  color: var(--text-on-primary);
+  box-shadow: var(--shadow-primary-strong);
+}
+
+.members-table .actions-cell .table-actions > .icon-action:active:not(:disabled),
+.members-table .actions-cell .table-actions > .table-action-visible:active:not(:disabled),
+.members-table .actions-cell .table-actions .action-menu-toggle:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.members-table .actions-cell .table-actions > .icon-action:disabled,
+.members-table .actions-cell .table-actions > .table-action-visible:disabled,
+.members-table .actions-cell .table-actions .action-menu-toggle:disabled,
+.members-table .actions-cell .table-actions > .icon-action[aria-disabled="true"],
+.members-table .actions-cell .table-actions > .table-action-visible[aria-disabled="true"],
+.members-table .actions-cell .table-actions .action-menu-toggle[aria-disabled="true"] {
+  border-color: var(--border-secondary);
+  background: var(--bg-app);
+  color: var(--text-disabled);
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+.members-table .actions-cell .table-actions > .icon-action:not([data-action="renew"]),
+.members-table .actions-cell .table-actions > .table-action-visible:not([data-action="renew"]),
+.members-table .actions-cell .table-actions .action-menu-toggle {
+  border-color: var(--border-primary);
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  box-shadow: none;
+}
+
+.members-table .actions-cell .table-actions > .icon-action:not([data-action="renew"]):hover:not(:disabled),
+.members-table .actions-cell .table-actions > .table-action-visible:not([data-action="renew"]):hover:not(:disabled),
+.members-table .actions-cell .table-actions .action-menu-toggle:hover:not(:disabled) {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+  color: var(--primary-hover);
+}
+
+.members-table .actions-cell .table-actions > .icon-action:focus-visible,
+.members-table .actions-cell .table-actions > .table-action-visible:focus-visible,
+.members-table .actions-cell .table-actions .action-menu-toggle:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.members-table .actions-cell .member-attendance-status.unavailable {
+  border-color: var(--border-secondary);
+  background: var(--bg-app);
+  color: var(--text-disabled);
+  box-shadow: none;
+}
+
+@media (max-width: 767px) {
+  .members-table .actions-cell .table-actions > .icon-action[data-action],
+  .members-table .actions-cell .table-actions > .table-action-visible[data-member-coaching-action],
+  .members-table .actions-cell .table-actions .action-menu-toggle {
+    width: 40px;
+    min-width: 40px;
+    max-width: 40px;
+    height: 40px;
+    min-height: 40px;
+    flex-basis: 40px;
+  }
 }
