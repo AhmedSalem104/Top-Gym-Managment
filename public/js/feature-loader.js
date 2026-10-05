@@ -255,7 +255,7 @@
     }
 
     function bindLazyPhoneInput() {
-        const actionSelector = '#topAddMemberButton, #addMemberButton, #membersList [data-action="edit"]';
+        const actionSelector = '#addMemberButton, #membersList [data-action="edit"]';
         document.addEventListener('click', (event) => {
             const button = event.target.closest?.(actionSelector);
             if (!button || window.LogicFitPhoneInputs || button.dataset.topGymPhoneLoading === 'true') return;

@@ -54,7 +54,6 @@
 
     function annotatePermissionControls() {
         const idPermissions = {
-            topAddMemberButton: 'members.create',
             addMemberButton: 'members.create',
             topPricingButton: 'pricing.read',
             pricingButton: 'pricing.read',
@@ -506,7 +505,6 @@
 
     function applyEntitlementControls(user) {
         const idFeatures = {
-            topAddMemberButton: 'members',
             topPricingButton: 'pricing',
             dashboardPrintPricingButton: 'pricing',
             dashboardPrintPricingPreviewButton: 'pricing',

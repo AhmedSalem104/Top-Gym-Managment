@@ -63,6 +63,8 @@ test('responsive navigation stays organized and accessible at each viewport', as
     // authenticated runtime deterministically.
     await page.goto('/index.html#dashboard', { waitUntil: 'networkidle' });
     await expect(page.locator('#branchContextSelect')).toHaveValue('1');
+    await expect(page.locator('#topAddMemberButton')).toBeHidden();
+    await expect(page.locator('#addMemberButton')).toHaveCount(1);
 
     const width = testInfo.project.use.viewport.width;
     const dimensions = await page.evaluate(() => ({ viewport: innerWidth, document: document.documentElement.scrollWidth, body: document.body.scrollWidth }));
